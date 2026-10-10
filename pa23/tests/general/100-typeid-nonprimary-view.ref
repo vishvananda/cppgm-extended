@@ -1,35 +1,35 @@
-declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
 declare function @__external_runtime____cxa_bad_typeid() -> void [return=noreturn, role=bad_typeid, linkage=c, binding=strong, object=__cxa_bad_typeid]
 
-global @__typeinfo_name__class_YA [binding=weak, object=_ZTS2YA] = {
-  i8 50
-  i8 89
-  i8 65
-  i8 0
-}
-global @__rtti_class_YA [binding=weak, object=_ZTI2YA] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__class_YA
-}
-global @__typeinfo_name__class_YB [binding=weak, object=_ZTS2YB] = {
-  i8 50
-  i8 89
-  i8 66
-  i8 0
-}
-global @__rtti_class_YB [binding=weak, object=_ZTI2YB] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__class_YB
-}
-global @__typeinfo_name__class_YD [binding=weak, object=_ZTS2YD] = {
+global @__typeinfo_name__class_YD [storage=readonly, binding=weak, object=_ZTS2YD] = {
   i8 50
   i8 89
   i8 68
   i8 0
 }
-global @__rtti_class_YD [binding=weak, object=_ZTI2YD] = {
+global @__typeinfo_name__class_YA [storage=readonly, binding=weak, object=_ZTS2YA] = {
+  i8 50
+  i8 89
+  i8 65
+  i8 0
+}
+global @__rtti_class_YA [storage=readonly, binding=weak, object=_ZTI2YA] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__class_YA
+}
+global @__typeinfo_name__class_YB [storage=readonly, binding=weak, object=_ZTS2YB] = {
+  i8 50
+  i8 89
+  i8 66
+  i8 0
+}
+global @__rtti_class_YB [storage=readonly, binding=weak, object=_ZTI2YB] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__class_YB
+}
+global @__rtti_class_YD [storage=readonly, binding=weak, object=_ZTI2YD] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__class_YD
   i32 0
@@ -39,6 +39,16 @@ global @__rtti_class_YD [binding=weak, object=_ZTI2YD] = {
   ptr addr @__rtti_class_YB
   i64 2050
 }
+global @YD__vtable [storage=readonly, binding=weak, object=_ZTV2YD] = {
+  i64 0
+  ptr addr @__rtti_class_YD
+  ptr addr @YA__f
+}
+global @YD____view__YB__8__vtable [storage=readonly, binding=internal] = {
+  i64 -8
+  ptr addr @__rtti_class_YD
+  ptr addr @YB__g
+}
 global @YA__vtable [storage=readonly, binding=weak, object=_ZTV2YA] = {
   i64 0
   ptr addr @__rtti_class_YA
@@ -47,16 +57,6 @@ global @YA__vtable [storage=readonly, binding=weak, object=_ZTV2YA] = {
 global @YB__vtable [storage=readonly, binding=weak, object=_ZTV2YB] = {
   i64 0
   ptr addr @__rtti_class_YB
-  ptr addr @YB__g
-}
-global @YD__vtable [storage=readonly, binding=weak, object=_ZTV2YD] = {
-  i64 0
-  ptr addr @__rtti_class_YD
-  ptr addr @YA__f
-}
-global @YD____view__YB__8__vtable [storage=readonly, binding=internal, object=@YD____view__YB__8__vtable] = {
-  i64 -8
-  ptr addr @__rtti_class_YD
   ptr addr @YB__g
 }
 
@@ -99,21 +99,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load typed i32 $cond__1
     return i32 %t11
 }
-function @YA__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YA1fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 1
-}
-function @YB__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YB1gEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 2
-}
-function @YD__YD(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN2YDC1Ev, inline_hint=yes] {
+function @YD__YD(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN2YDC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -134,6 +120,20 @@ function @YD__YD(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_Z
     %t11 = index i8 %t10, 16
     store typed ptr %t11, %t9
     return void
+}
+function @YA__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YA1fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 1
+}
+function @YB__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YB1gEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 2
 }
 function @YA__YA__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YAC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr

@@ -1,8 +1,8 @@
+global @factory_calls : i32 [binding=strong] = 0
 global @__local_static__read_cached__decl0__cached : obj<24x8> [binding=internal, object=_ZZ11read_cachedlE6cached] = {
   zero 24
 }
 global @__local_static__read_cached__decl0__cached__guard : i64 [binding=internal, object=_ZGVZ11read_cachedlE6cached] = zero
-global @factory_calls : i32 [binding=strong] = 0
 
 function @make_wide(%ret : ptr [pass=indirect_result, object_bytes=24], %seed : i64) -> void [binding=strong, object=_Z9make_widel] {
   slot $seed : i64
@@ -55,9 +55,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call i64 @read_cached(7)
     %t2 = cmp ne i64 %t1, 16
-    branch %t2, ^if_then_1, ^lor_rhs_4
+    branch %t2, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t3 = load typed i32 @factory_calls
     %t4 = cmp ne i32 %t3, 1
     branch %t4, ^if_then_1, ^if_else_2
@@ -66,14 +66,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t5 = call i64 @read_cached(9)
     %t6 = cmp ne i64 %t5, 16
-    branch %t6, ^if_then_5, ^lor_rhs_8
+    branch %t6, ^if_then_5, ^lor_rhs_7
 
-  block ^lor_rhs_8:
+  block ^lor_rhs_7:
     %t7 = load typed i32 @factory_calls
     %t8 = cmp ne i32 %t7, 1
     branch %t8, ^if_then_5, ^if_else_6
@@ -82,8 +82,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_6:
-    jump ^if_end_7
+    jump ^if_end_8
 
-  block ^if_end_7:
+  block ^if_end_8:
     return i32 0
 }

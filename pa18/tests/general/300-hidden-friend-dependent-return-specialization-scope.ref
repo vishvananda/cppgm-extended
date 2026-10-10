@@ -1,3 +1,5 @@
+declare global @has_equal_any_completion_executor_void___value : u8 [binding=weak, object=_ZN9has_equalI23any_completion_executorvE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $ex : obj<1x1>
   slot $converted : obj<1x1>
@@ -9,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $converted
     %t3 = addr $argobj__1
     %t4 = addr $ex
-    call void @any_completion_executor__any_completion_executor__ov3(%t2, $argobj__1)
+    call void @any_completion_executor__any_completion_executor(%t2, $argobj__1)
     branch 1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -24,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__2
     return i32 %t5
 }
-function @any_completion_executor__any_completion_executor__ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN23any_completion_executorC1I15any_io_executorvEET_, inline_hint=yes] {
+function @any_completion_executor__any_completion_executor(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN23any_completion_executorC1I15any_io_executorvEET_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
@@ -32,4 +34,4 @@ function @any_completion_executor__any_completion_executor__ov3(%this : ptr [obj
     store typed ptr %this, $this
     return void
 }
-alias object _ZN23any_completion_executorC2I15any_io_executorvEET_ = @any_completion_executor__any_completion_executor__ov3
+alias object _ZN23any_completion_executorC2I15any_io_executorvEET_ = @any_completion_executor__any_completion_executor

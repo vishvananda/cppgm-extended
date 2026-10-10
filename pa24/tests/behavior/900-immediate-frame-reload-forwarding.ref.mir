@@ -9,30 +9,26 @@ function @reload_to_return_register
   abi
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $home -> [rbp-8] : i64
 
   block ^entry
-    store.i64 [rbp-8], 13
-    load.i64 rax, [rbp-8]
+    mov rax, 13
     ret rax
 
 function @reload_to_same_register
   abi
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $home -> [rbp-8] : i64
 
   block ^entry
-    store.i64 [rbp-8], 29
-    load.i64 r8, [rbp-8]
+    mov r8, 29
     add r8, 1
     ret r8
 
@@ -50,16 +46,14 @@ function @main
     call @reload_to_return_register [args=()]
     mov rbx, rax
     call @reload_to_same_register [args=()]
-    mov r8, rax
     mov rdx, 13
     cmp.i64 rbx, rdx
     setne rbx
     movzx rbx, rbx
     mov rdx, 30
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    or rbx, r8
-    mov rax, rbx
-    sext.i32 rax
-    ret rax
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    sext.i32 rbx
+    ret rbx

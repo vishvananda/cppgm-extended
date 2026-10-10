@@ -1,7 +1,7 @@
 declare function @may_throw() -> void
 declare function @cleanup() -> void
 
-function @main() -> void {
+function @main() -> void [role=entry] {
   block ^entry:
     eh_try ^dispatch
     call void @may_throw()

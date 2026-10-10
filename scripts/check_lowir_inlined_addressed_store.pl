@@ -25,14 +25,14 @@ sub optimize
 	my $output = "$directory/$level.lowir";
 	my $stderr = "$directory/$level.stderr";
 	my $status = run_command_capture(
-		cmd => [$app, "-$level", '--stats', '-o', $output, $test],
+		cmd => [$app, "-$level", '-o', $output, $test],
 		stdout => "$directory/$level.stdout",
 		stderr => $stderr,
 		timeout => 30,
 	);
 	die "$test: lowiropt -$level failed\n" . read_file($stderr)
 		if $status != 0;
-	return (read_file($output), read_file($stderr), $output);
+	return (read_file($output), $output);
 }
 
 sub main_body
@@ -40,13 +40,6 @@ sub main_body
 	my ($test, $lowir) = @_;
 	return $1 if $lowir =~ /(function \@main\b.*?)(?=\nfunction \@|\z)/s;
 	die "$test: optimized output has no main definition\n";
-}
-
-sub stat_value
-{
-	my ($test, $stats, $name) = @_;
-	return 0 + $1 if $stats =~ /(?:^|\s)\Q$name\E=(\d+)(?:\s|$)/;
-	die "$test: optimizer stats omit $name\n";
 }
 
 sub compile_and_run
@@ -86,29 +79,30 @@ for my $test (@tests)
 {
 	my $directory = tempdir('lowir-inlined-addressed-store-XXXXXX',
 		TMPDIR => 1, CLEANUP => 1);
-	my (%outputs, %stats, %paths);
+	my (%outputs, %paths);
 	for my $level ('O0', 'O1', 'O2', 'O3') {
-		($outputs{$level}, $stats{$level}, $paths{$level}) =
+		($outputs{$level}, $paths{$level}) =
 			optimize($app, $test, $directory, $level);
 	}
 
-	for my $level ('O0', 'O1') {
+	# O0 keeps the slot whose address the callee stores through.  Every
+	# optimizing level inlines the internal callee, after which the
+	# address only reaches a whole-slot store and load: the slot, its
+	# address, the call and the reload are all gone.
+	my $o0 = main_body($test, $outputs{O0});
+	die "$test: O0 did not retain the unoptimized addressed slot\n"
+		if $o0 !~ /^\s+slot \$value : i32$/m ||
+		   $o0 !~ /^\s+%\w+ = addr \$value$/m ||
+		   $o0 !~ /^\s+call void \@write_inlined_value\(%\w+\)$/m;
+	for my $level ('O1', 'O2', 'O3') {
 		my $body = main_body($test, $outputs{$level});
-		die "$test: $level did not retain the lower-level addressed slot\n"
-			if $body !~ /^\s+slot \$value : i32$/m ||
-			   $body !~ /^\s+%\w+ = addr \$value$/m;
-		die "$test: $level reported addressed-slot recovery\n"
-			if stat_value($test, $stats{$level},
-				'addressed_scalars_promoted') != 0;
-	}
-	for my $level ('O2', 'O3') {
-		my $body = main_body($test, $outputs{$level});
+		die "$test: $level did not inline the addressed store\n"
+			if $body =~ /\bcall void \@write_inlined_value\(/;
 		die "$test: $level retained the recoverable addressed slot\n"
 			if $body =~ /^\s+slot \$value : i32$/m ||
 			   $body =~ /^\s+%\w+ = addr \$value$/m;
-		die "$test: $level did not report addressed-slot recovery\n"
-			if stat_value($test, $stats{$level},
-				'addressed_scalars_promoted') == 0;
+		die "$test: $level did not forward the inlined store to its load\n"
+			if $body =~ /^\s+(?:store i32 |%\w+ = load i32 )/m;
 	}
 
 	for my $level ('O1', 'O2', 'O3') {

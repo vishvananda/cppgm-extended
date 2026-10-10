@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call ptr @source__operatorT_(%t2)
     store typed ptr %t3, $first
     %t4 = addr $x
-    %t5 = call ptr @source__operatorT___ov2(%t4)
+    %t5 = call ptr @source__operatorT___2(%t4)
     store typed ptr %t5, $second
     %t6 = load typed ptr $first
     %t7 = load typed ptr $second
@@ -34,14 +34,14 @@ function @source__operatorT_(%this : ptr [object_bytes=1]) -> ptr [binding=weak,
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = copy ptr nullptr
+    %t1 = copy ptr 0
     return ptr %t1
 }
-function @source__operatorT___ov2(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK6sourcecvPT_IK5valueEEv, inline_hint=yes] {
+function @source__operatorT___2(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK6sourcecvPT_IK5valueEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = copy ptr nullptr
+    %t1 = copy ptr 0
     return ptr %t1
 }

@@ -20,49 +20,46 @@ function @probe
     param %e -> r9 : i64
     return i64 -> rax
   frame
-    stack_size 64
+    stack_size 32
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve r13 r14 rbx r12
-    param-slot %b -> [rbp-8] : i64
-    param-slot %c -> [rbp-16] : i64
-    slot $iteration -> [rbp-24] : i64
+    preserve rbx
+    slot $iteration -> [rbp-8] : i64
+    temp %pressure -> [rbp-16] : i64
+    temp %iteration -> [rbp-24] : i64
 
   block ^entry
-    store.i64 [rbp-8], rdx
-    store.i64 [rbp-16], rcx
-    mov r13, r8
-    mov r14, r9
-    mov r9, rsi
-    store.i64 [rbp-24], 0
+    store.i64 [rbp-8], 0
+    lea rax, [rdi+8]
     jmp ^condition
 
   block ^condition
-    mov r8, r9
-    add r8, [rbp-8]
-    load.i64 rsi, [rbp-24]
-    load.i64 rbx, [rdi]
-    cmp.i64 rsi, rbx
+    mov rbx, rsi
+    add rbx, rdx
+    store.i64 [rbp-16], rbx
+    load.i64 rbx, [rbp-8]
+    store.i64 [rbp-24], rbx
+    cmp.i64 rbx, [rdi]
     jb ^body
     jmp ^done
 
   block ^body
-    load.i64 rbx, [rbp-16]
-    add rbx, r13
-    mov r12, r8
-    add r12, rbx
-    add r12, r9
-    add r12, [rbp-8]
-    add r12, r14
-    store.i64 [rdi+8], r12
-    mov r8, rsi
-    add r8, 1
-    store.i64 [rbp-24], r8
+    mov rbx, rcx
+    add rbx, r8
+    add rbx, [rbp-16]
+    add rbx, rsi
+    add rbx, rdx
+    add rbx, r9
+    store.i64 [rax], rbx
+    load.i64 rbx, [rbp-24]
+    add rbx, 1
+    store.i64 [rbp-8], rbx
     jmp ^condition
 
   block ^done
-    ret rsi
+    load.i64 rax, [rbp-24]
+    ret rax
 
 function @main
   abi

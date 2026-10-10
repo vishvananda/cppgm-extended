@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 3, %t3
     %t4 = addr $third
     %t5 = addr $first
-    call void @external_owner_int___external_owner_int_(%t4, %t5)
+    call void @external_owner_int___external_owner(%t4, %t5)
     store typed i32 0, $fourth
     %t6 = addr $third
     %t7 = load typed i32 $first
@@ -38,7 +38,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load typed i32 $cond__1
     return i32 %t15
 }
-function @external_owner_int___external_owner_int_(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN14external_ownerIiEC1ERKi, inline_hint=yes] {
+function @external_owner_int___external_owner(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN14external_ownerIiEC1ERKi] {
   slot $this : ptr
   slot $value : ptr
 
@@ -49,4 +49,4 @@ function @external_owner_int___external_owner_int_(%this : ptr [object_bytes=1],
     %t2 = load typed i32 %t1
     return void
 }
-alias object _ZN14external_ownerIiEC2ERKi = @external_owner_int___external_owner_int_
+alias object _ZN14external_ownerIiEC2ERKi = @external_owner_int___external_owner

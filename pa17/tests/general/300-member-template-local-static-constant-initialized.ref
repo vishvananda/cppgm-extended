@@ -1,4 +1,4 @@
-global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__stored__source2061742074657374732f67656e6572616c2f3330302d6d656d6265722d74656d706c6174652d6c6f63616c2d7374617469632d636f6e7374616e742d696e697469616c697a65642e743a31393a3236 [binding=weak, object=_ZZN10function_nIvE9assign_toI11log_functorEEiT_bS3_bE6stored] = {
+global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__decl0__stored [binding=weak, object=_ZZN10function_nIvE9assign_toI11log_functorEEiT_bE6stored] = {
   ptr addr @manager_log_functor___call
   ptr addr @invoker_log_functor___call
 }
@@ -41,27 +41,27 @@ function @function_n_void___assign_to(%this : ptr [object_bytes=1], %__param1 : 
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    jump ^goto_4
+    jump ^goto_3
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
-    jump ^goto_4
+  block ^if_end_4:
+    jump ^goto_3
 
-  block ^goto_4:
-    %t2 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__stored__source2061742074657374732f67656e6572616c2f3330302d6d656d6265722d74656d706c6174652d6c6f63616c2d7374617469632d636f6e7374616e742d696e697469616c697a65642e743a31393a3236
+  block ^goto_3:
+    %t2 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__decl0__stored
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
     %t5 = cmp ne ptr %t4, 0
     branch %t5, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
-    %t6 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__stored__source2061742074657374732f67656e6572616c2f3330302d6d656d6265722d74656d706c6174652d6c6f63616c2d7374617469632d636f6e7374616e742d696e697469616c697a65642e743a31393a3236
+    %t6 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__decl0__stored
     %t7 = index i8 [projection=field] %t6, 0
     %t8 = load typed ptr %t7
     %t9 = call i32 %t8() as () -> i32
-    %t10 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__stored__source2061742074657374732f67656e6572616c2f3330302d6d656d6265722d74656d706c6174652d6c6f63616c2d7374617469632d636f6e7374616e742d696e697469616c697a65642e743a31393a3236
+    %t10 = addr @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__decl0__stored
     %t11 = index i8 [projection=field] %t10, 8
     %t12 = load typed ptr %t11
     %t13 = call i32 %t12() as () -> i32
@@ -77,11 +77,11 @@ function @function_n_void___assign_to(%this : ptr [object_bytes=1], %__param1 : 
     %t15 = load typed i32 $cond__1
     return i32 %t15
 }
-function @invoker_log_functor___call() -> i32 [binding=weak, object=_ZN7invokerI11log_functorE4callEv, inline_hint=yes] {
-  block ^entry:
-    return i32 1
-}
 function @manager_log_functor___call() -> i32 [binding=weak, object=_ZN7managerI11log_functorE4callEv, inline_hint=yes] {
   block ^entry:
     return i32 10
+}
+function @invoker_log_functor___call() -> i32 [binding=weak, object=_ZN7invokerI11log_functorE4callEv, inline_hint=yes] {
+  block ^entry:
+    return i32 1
 }

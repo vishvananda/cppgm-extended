@@ -10,10 +10,10 @@ function @id
     param %p -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     load.i32 rax, [rdi]
@@ -26,7 +26,7 @@ function @main
     stack_size 16
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     slot $x -> [rbp-8] : i64
 
   block ^entry

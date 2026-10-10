@@ -1,5 +1,5 @@
 #if __has_builtin(__builtin_trap)
-bad
+yes
 #else
 builtin_off
 #endif

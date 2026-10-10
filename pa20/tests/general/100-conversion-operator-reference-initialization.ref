@@ -1,6 +1,6 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_Base [binding=weak, object=_ZTS4Base] = {
+global @__typeinfo_name__struct_Base [storage=readonly, binding=weak, object=_ZTS4Base] = {
   i8 52
   i8 66
   i8 97
@@ -8,7 +8,7 @@ global @__typeinfo_name__struct_Base [binding=weak, object=_ZTS4Base] = {
   i8 101
   i8 0
 }
-global @__rtti_struct_Base [binding=weak, object=_ZTI4Base] = {
+global @__rtti_struct_Base [storage=readonly, binding=weak, object=_ZTI4Base] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_Base
 }
@@ -93,13 +93,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_end_7:
     return i32 0
 }
-function @Base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK4Base5valueEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 7
-}
 function @Base__Base(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -110,6 +103,13 @@ function @Base__Base(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=w
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
+}
+function @Base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK4Base5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 7
 }
 function @Wrapper__Wrapper(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN7WrapperC1ER4Base, inline_hint=yes] {
   slot $this : ptr

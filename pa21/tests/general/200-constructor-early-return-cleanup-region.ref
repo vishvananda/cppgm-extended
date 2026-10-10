@@ -1,22 +1,22 @@
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
+global @constructed : i32 [binding=strong] = zero
+global @destroyed : i32 [binding=strong] = zero
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
   i8 105
   i8 0
 }
-global @__rtti_int [binding=weak, object=_ZTIi] = {
+global @__rtti_int [storage=readonly, binding=internal] = {
   ptr addr @__external_rtti_vtable____fundamental_type_info + 16
   ptr addr @__typeinfo_name__int
 }
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
+global @__ehobj_int [binding=internal] = {
   zero 4
 }
-global @constructed : i32 [binding=strong] = zero
-global @destroyed : i32 [binding=strong] = zero
 
 function @check(%populate : u8, %expected_constructed : i32) -> i32 [binding=strong, object=_Z5checkbi] {
   slot $populate : u8
@@ -98,28 +98,28 @@ function @Holder__Holder(%this : ptr [object_bytes=2], %seed : i32, %populate : 
     %t3 = load typed i32 $seed
     call void @Member__Member(%t2, %t3)
     eh_cleanup ^constructor_cleanup_1
-    %t6 = load typed ptr $this
-    %t7 = index i8 [projection=field] %t6, 1
-    %t8 = load typed i32 $seed
-    %t9 = binary add nowrap i32 %t8, 1
-    call void @Member__Member(%t7, %t9)
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 1
+    %t6 = load typed i32 $seed
+    %t7 = binary add nowrap i32 %t6, 1
+    call void @Member__Member(%t5, %t7)
     eh_end
     eh_cleanup ^constructor_cleanup_2
-    %t12 = load u8 $populate
-    %t13 = cmp eq u8 %t12, 0
-    branch %t13, ^if_then_3, ^if_else_4
+    %t8 = load u8 $populate
+    %t9 = cmp eq u8 %t8, 0
+    branch %t9, ^if_then_3, ^if_else_4
 
   block ^constructor_cleanup_1:
-    %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
-    call void @Member___Member(%t5)
+    %t10 = load typed ptr $this
+    %t11 = index i8 [projection=field] %t10, 0
+    call void @Member___Member(%t11)
     eh_end
     resume
 
   block ^constructor_cleanup_2:
-    %t10 = load typed ptr $this
-    %t11 = index i8 [projection=field] %t10, 1
-    call void @Member___Member(%t11)
+    %t12 = load typed ptr $this
+    %t13 = index i8 [projection=field] %t12, 1
+    call void @Member___Member(%t13)
     jump ^constructor_cleanup_1
 
   block ^if_then_3:

@@ -35,9 +35,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $values
     %t4 = call i32 @select_array(%t3)
     %t5 = cmp ne i32 %t4, 1
-    branch %t5, ^if_then_1, ^lor_rhs_4
+    branch %t5, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t6 = addr $const_values
     %t7 = call i32 @select_array(%t6)
     %t8 = cmp ne i32 %t7, 1
@@ -47,8 +47,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     return i32 0
 }

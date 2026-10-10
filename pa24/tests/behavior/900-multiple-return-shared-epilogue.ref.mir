@@ -70,7 +70,7 @@ function @choose_float
     param %value -> rdi : i64
     return f64 -> xmm0
   frame
-    stack_size 80
+    stack_size 64
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
@@ -90,22 +90,22 @@ function @choose_float
 
   block ^return_first
     fmov.f64 xmm0, 1.25
-    ret
+    ret xmm0
 
   block ^return_second
     fmov.f64 xmm0, 2.5
-    ret
+    ret xmm0
 
   block ^return_third
     fmov.f64 xmm0, 3.75
-    ret
+    ret xmm0
 
 function @choose_extended
   abi
     param %value -> rdi : i64
     return f80 -> st0
   frame
-    stack_size 80
+    stack_size 64
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
@@ -163,11 +163,11 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 144
+    stack_size 128
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
-    preserve rbx r12 r13 r14 r15
+    preserve rbx r12 r13 r14
     temp %f0 -> [rbp-8] : f64
     temp %f1 -> [rbp-16] : f64
     temp %f2 -> [rbp-24] : f64
@@ -188,13 +188,16 @@ function @main
     mov r14, rax
     mov rdi, 0
     call @choose_float [args=(rdi)]
-    fmov.f64 [rbp-8], xmm0
+    fmov.f64 xmm14, xmm0
+    fmov.f64 [rbp-8], xmm14
     mov rdi, 1
     call @choose_float [args=(rdi)]
-    fmov.f64 [rbp-16], xmm0
+    fmov.f64 xmm14, xmm0
+    fmov.f64 [rbp-16], xmm14
     mov rdi, 2
     call @choose_float [args=(rdi)]
-    fmov.f64 [rbp-24], xmm0
+    fmov.f64 xmm14, xmm0
+    fmov.f64 [rbp-24], xmm14
     mov rdi, 1
     call @choose_extended [args=(rdi)]
     fstp.f80 [rbp-48]
@@ -217,14 +220,10 @@ function @main
     cmp.i64 r14, rdx
     setne r14
     movzx r14, r14
-    fne.f64 rax, [rbp-8], 1.25
-    mov r9, rax
-    fne.f64 rax, [rbp-16], 2.5
-    mov rdi, rax
-    fne.f64 rax, [rbp-24], 3.75
-    mov rsi, rax
-    fne.f80 rax, [rbp-48], 5.5L
-    mov r15, rax
+    fne.f64 r9, [rbp-8], 1.25
+    fne.f64 rdi, [rbp-16], 2.5
+    fne.f64 rsi, [rbp-24], 3.75
+    fne.f80 rcx, [rbp-48], 5.5L
     mov rdx, 53
     cmp.i64 r8, rdx
     setne r8
@@ -232,11 +231,10 @@ function @main
     or rbx, r12
     or r13, r14
     or r9, rdi
-    or rsi, r15
+    or rsi, rcx
     or rsi, r8
     or rbx, r13
     or r9, rsi
     or rbx, r9
-    mov rax, rbx
-    sext.i32 rax
-    ret rax
+    sext.i32 rbx
+    ret rbx

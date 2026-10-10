@@ -38,7 +38,7 @@ function @make_tag
 
 function @copy_after_call
   abi
-    param %tag -> rdi : i64
+    param %tag -> rdi : obj<8x8>
     return void -> void
   frame
     stack_size 16
@@ -50,9 +50,7 @@ function @copy_after_call
   block ^entry
     store.i64 [rbp-8], rdi
     call @touch [args=()]
-    mov rdi, @copied
-    lea rsi, [rbp-8]
-    copy_bytes 8x8, rdi, rsi
+    copy_bytes 8x8, @copied, [rbp-8]
     ret
 
 function @main
@@ -70,15 +68,12 @@ function @main
     store.i64 [rbp-8], rax
     load.i64 rdi, [rbp-8]
     call @copy_after_call [args=(rdi)]
-    load.i64 r8, @copied
     mov rdx, 77
-    cmp.i64 r8, rdx
+    cmp.i64 @copied, rdx
     sete r8
     movzx r8, r8
     mov rdx, 0
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    ret r8

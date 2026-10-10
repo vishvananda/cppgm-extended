@@ -24,9 +24,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store volatile i32 8, %t11
     %t12 = load typed i32 $first
     %t13 = cmp eq i32 %t12, 3
-    branch %t13, ^land_rhs_10, ^land_short_11
+    branch %t13, ^land_rhs_4, ^land_short_5
 
-  block ^land_rhs_10:
+  block ^land_rhs_4:
     %t14 = addr $devices
     %t15 = binary mul i64 1, 8
     %t16 = index i8 [projection=array_element] %t14, %t15
@@ -34,15 +34,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = load volatile i32 %t17
     %t19 = cmp eq i32 %t18, 8
     %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $land__4
-    jump ^land_end_12
+    store typed i64 %t20, $land__2
+    jump ^land_end_6
 
-  block ^land_short_11:
-    store typed i64 0, $land__4
-    jump ^land_end_12
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
 
-  block ^land_end_12:
-    %t21 = load typed i64 $land__4
+  block ^land_end_6:
+    %t21 = load typed i64 $land__2
     branch %t21, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
@@ -62,9 +62,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_end_9:
     %t29 = load typed i64 $land__3
-    branch %t29, ^land_rhs_4, ^land_short_5
+    branch %t29, ^land_rhs_10, ^land_short_11
 
-  block ^land_rhs_4:
+  block ^land_rhs_10:
     %t30 = addr $devices
     %t31 = binary mul i64 1, 8
     %t32 = index i8 [projection=array_element] %t30, %t31
@@ -72,15 +72,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t34 = load typed i32 %t33
     %t35 = cmp eq i32 %t34, 2
     %t36 = cmp ne i64 %t35, 0
-    store typed i64 %t36, $land__2
-    jump ^land_end_6
+    store typed i64 %t36, $land__4
+    jump ^land_end_12
 
-  block ^land_short_5:
-    store typed i64 0, $land__2
-    jump ^land_end_6
+  block ^land_short_11:
+    store typed i64 0, $land__4
+    jump ^land_end_12
 
-  block ^land_end_6:
-    %t37 = load typed i64 $land__2
+  block ^land_end_12:
+    %t37 = load typed i64 $land__4
     branch %t37, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

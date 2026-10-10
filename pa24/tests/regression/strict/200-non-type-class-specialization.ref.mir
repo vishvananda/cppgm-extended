@@ -31,7 +31,7 @@ function @Box_3___get
     param %this -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -45,7 +45,7 @@ function @Box_3___Box
     param %this -> rdi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -58,7 +58,7 @@ function @Box_3____Box
     param %this -> rdi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared

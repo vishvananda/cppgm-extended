@@ -46,13 +46,6 @@ function @StringLike__resize_and_overwrite(%this : ptr [object_bytes=1], %n : i3
     store typed i32 %t10, %t12
     return void
 }
-function @StringLike__Terminator___Terminator(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZZN10StringLike20resize_and_overwriteIZ6helperiE3$_0EEviT_EN10TerminatorD1Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
 function @move_ref(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=internal, object=_Z8move_refIZ6helperiE3$_0EOT_RS1_] {
   slot $value : ptr
 
@@ -78,4 +71,11 @@ function @__lambda_helper_t113_123__operator__(%this : ptr [object_bytes=4], %__
     %t6 = binary add nowrap i32 %t3, %t5
     return i32 %t6
 }
-alias object _ZZN10StringLike20resize_and_overwriteIZ6helperiE3$_0EEviT_EN10TerminatorD2Ev = @StringLike__Terminator___Terminator
+function @Terminator___Terminator(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZZN10StringLike20resize_and_overwriteIZ6helperiE3$_0EEviT_EN10TerminatorD1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+alias object _ZZN10StringLike20resize_and_overwriteIZ6helperiE3$_0EEviT_EN10TerminatorD2Ev = @Terminator___Terminator

@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i16 2, %t3
     %t4 = addr $it
     %t5 = addr $value
-    call void @iter___cppgm_class_template_identity_0_1_0___iter___cppgm_class_template_identity_0_1_0_(%t4, %t5)
+    call void @iter___cppgm_class_template_identity_1___iter(%t4, %t5)
     %t6 = addr $it
     %t7 = call ptr @deref(%t6)
     store typed i16 7, %t7
@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load typed i32 $cond__1
     return i32 %t13
 }
-function @iter___cppgm_class_template_identity_0_1_0___iter___cppgm_class_template_identity_0_1_0_(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4iterI4consIs3nilEEC1ERS2_, inline_hint=yes] {
+function @iter___cppgm_class_template_identity_1___iter(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4iterI4consIs3nilEEC1ERS2_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -57,4 +57,4 @@ function @deref(%i : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak
     %t4 = index i8 [projection=field] %t3, 0
     return ptr %t4
 }
-alias object _ZN4iterI4consIs3nilEEC2ERS2_ = @iter___cppgm_class_template_identity_0_1_0___iter___cppgm_class_template_identity_0_1_0_
+alias object _ZN4iterI4consIs3nilEEC2ERS2_ = @iter___cppgm_class_template_identity_1___iter

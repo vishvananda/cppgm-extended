@@ -89,5 +89,6 @@ function @dijkstra_shortest_paths(%__param0 : ptr [pass=by_address, object_bytes
     store typed i32 %__param9, $__param9
     store typed ptr %__param11, $__param11
     %t1 = addr $retobj__1
+    zeroinit 1x1 %t1
     return obj<1x1> $retobj__1
 }

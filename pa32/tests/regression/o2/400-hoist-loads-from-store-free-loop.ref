@@ -1,11 +1,6 @@
 function @hash_bytes(%text : ptr, %first : i64, %count : i64) -> i64 {
   block ^entry:
     %end = binary add i64 %first, %count
-    %flag = load u8 %text
-    %long_slot = index i8 %text, 16
-    %data_short = index i8 %text, 1
-    %long_bit = binary and u8 %flag, 1
-    %is_long = cmp ne u8 %long_bit, 0
     jump ^cond
 
   block ^cond:
@@ -15,13 +10,17 @@ function @hash_bytes(%text : ptr, %first : i64, %count : i64) -> i64 {
     branch %more, ^body, ^done
 
   block ^body:
-    branch %is_long, ^long, ^short
+    %flag = load u8 %text
+    %long_bit = binary and u8 %flag, 1
+    branch %long_bit, ^long, ^short
 
   block ^long:
+    %long_slot = index i8 %text, 16
     %data_long = load ptr %long_slot
     jump ^join
 
   block ^short:
+    %data_short = index i8 %text, 1
     jump ^join
 
   block ^join:

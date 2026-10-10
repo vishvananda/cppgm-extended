@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $value
     %t3 = addr $argobj__1
     %t4 = addr $tag
-    call void @any_like__any_like__ov4(%t2, $argobj__1)
+    call void @any_like__any_like(%t2, $argobj__1)
     %t5 = addr $value
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load typed i32 $cond__2
     return i32 %t9
 }
-function @any_like__any_like__ov4(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN8any_likeC1IiJEEE15in_place_type_tIT_EDpOT0_, inline_hint=yes] {
+function @any_like__any_like(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN8any_likeC1IiJEEE15in_place_type_tIT_EDpOT0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
@@ -39,4 +39,4 @@ function @any_like__any_like__ov4(%this : ptr [object_bytes=4], %__param1 : obj<
     store typed i32 2, %t2
     return void
 }
-alias object _ZN8any_likeC2IiJEEE15in_place_type_tIT_EDpOT0_ = @any_like__any_like__ov4
+alias object _ZN8any_likeC2IiJEEE15in_place_type_tIT_EDpOT0_ = @any_like__any_like

@@ -29,7 +29,7 @@ function @invoke(%f1 : obj<1x1> [classes=none]) -> i32 [binding=weak, object=_Z6
     %t1 = addr $value
     %t2 = addr $enc
     %t3 = addr $value
-    call void @json_encoder_json___json_encoder_json_(%t2, %t3)
+    call void @json_encoder_json___json_encoder(%t2, %t3)
     %t4 = addr $f1
     %t5 = addr $enc
     call void @first_callable__operator__(%t4, %t5)
@@ -38,7 +38,7 @@ function @invoke(%f1 : obj<1x1> [classes=none]) -> i32 [binding=weak, object=_Z6
     %t8 = load typed i32 %t7
     return i32 %t8
 }
-function @json_encoder_json___json_encoder_json_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN12json_encoderI4jsonEC1ERS0_, inline_hint=yes] {
+function @json_encoder_json___json_encoder(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN12json_encoderI4jsonEC1ERS0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -62,4 +62,4 @@ function @first_callable__operator__(%this : ptr [object_bytes=1], %enc : ptr [p
     store typed i32 7, %t2
     return void
 }
-alias object _ZN12json_encoderI4jsonEC2ERS0_ = @json_encoder_json___json_encoder_json_
+alias object _ZN12json_encoderI4jsonEC2ERS0_ = @json_encoder_json___json_encoder

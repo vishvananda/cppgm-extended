@@ -22,7 +22,7 @@ function @clobber
     param %wrong -> r8 : ptr
     return void -> void
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -43,33 +43,22 @@ function @return_saved
     param %h -> [rbp+32] : i64
     return ptr -> rax
   frame
-    stack_size 80
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx
-    param-slot %f -> [rbp-8] : i64
-    param-slot %g -> [rbp-16] : i64
-    param-slot %h -> [rbp-24] : i64
-    slot $saved -> [rbp-32] : ptr
 
   block ^entry
-    load.i64 rax, [rbp+16]
-    store.i64 [rbp-8], rax
-    load.i64 rax, [rbp+24]
-    store.i64 [rbp-16], rax
-    load.i64 rax, [rbp+32]
-    store.i64 [rbp-24], rax
-    store.ptr [rbp-32], rdi
+    mov rbx, rdi
     jmp ^after
 
   block ^after
-    load.ptr rbx, [rbp-32]
+    mov r8, @bad
     mov rdi, 1
     mov rsi, 2
     mov rdx, 3
     mov rcx, 4
-    mov r8, @bad
     call @clobber [args=(rcx,rdx,rsi,rdi,r8)]
     ret rbx
 
@@ -100,21 +89,16 @@ function @main
     store.i64 [rsp+16], r11
     call @return_saved [args=(rcx,rdx,rsi,rdi,r8,r9), stack=32]
     add rsp, 32
-    mov r8, rax
-    mov r9, r8
-    cmp.ptr r9, rbx
-    sete r9
-    movzx r9, r9
-    load.i64 rdi, [r8]
+    cmp.ptr rax, rbx
+    sete rbx
+    movzx rbx, rbx
     mov rdx, 7
-    cmp.i64 rdi, rdx
-    sete rdi
-    movzx rdi, rdi
-    and r9, rdi
+    cmp.i64 [rax], rdx
+    sete r8
+    movzx r8, r8
+    and rbx, r8
     mov rdx, 0
-    cmp.i64 r9, rdx
-    sete r9
-    movzx r9, r9
-    mov rax, r9
-    sext.i32 rax
-    ret rax
+    cmp.i64 rbx, rdx
+    sete rbx
+    movzx rbx, rbx
+    ret rbx

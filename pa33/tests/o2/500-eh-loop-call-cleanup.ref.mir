@@ -13,46 +13,44 @@ function @eh_loop
   frame
     stack_size 32
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
-    preserve r12 r15 r14 rbx
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14
 
   block ^entry
-    mov r12, rdi
-    mov rbx, rsi
-    mov r15, 0
-    mov r14, 0
+    mov r14, rdi
+    mov r13, rsi
+    mov r12, 0
+    mov rbx, 0
 
   block ^for_cond_1
-    cmp.i64 r14, r12
-    jge ^for_end_4
-
-  block ^for_body_2
-    mov rdi, r14
-    call @work [args=(rdi)]
-    mov r8, rax
-    shl r8, 1
-    add r8, r14
-    lea r9, [r15+r8]
-    load.i64 r8, [rbx]
-    add r8, 1
-    store.i64 [rbx], r8
-    add r14, 1
-    mov r15, r9
-    jmp ^for_cond_1
+    cmp.i64 rbx, r14
+    jl ^for_body_2
 
   block ^for_end_4
-    ret r15
+    ret r12
+
+  block ^for_body_2
+    mov rdi, rbx
+    call @work [args=(rdi)]
+    shl rax, 1
+    add rax, rbx
+    add r12, rax
+    add [r13], 1
+    add rbx, 1
+    cmp.i64 rbx, r14
+    jl ^for_body_2
+    jmp ^for_end_4
 
 function @work
   abi
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     add rdi, 3
@@ -62,13 +60,11 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 80
+    stack_size 64
     scratch_bytes 48
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     slot $cleanups -> [rbp-8] : i64
-    temp %t9 -> [rbp-16] : i64
-    temp %t0 -> [rbp-20] : i32
 
   block ^entry
     store.i64 [rbp-8], 0
@@ -76,35 +72,25 @@ function @main
     lea rsi, [rbp-8]
     call @eh_loop [args=(rsi,rdi)]
     cmp.i64 rax, 42
-    jne ^land_short_5
-
-  block ^land_rhs_4
-    load.i64 r9, [rbp-8]
-    mov rdx, 4
-    cmp.i64 r9, rdx
-    sete r9
-    movzx r9, r9
-    store.i64 [rbp-16], r9
-    jmp ^land_end_6
+    je ^land_rhs_4
 
   block ^land_short_5
-    mov r11, 0
-    store.i64 [rbp-16], r11
+    mov r8, 0
+
+  block ^cond_else_2
+    mov rax, 1
+
+  block ^cond_end_3
+    ret rax
+
+  block ^land_rhs_4
+    cmp.i64 [rbp-8], 4
+    sete r8
 
   block ^land_end_6
-    load.i64 rax, [rbp-16]
-    test.i64 rax, rax
+    cmp.u8 r8, 0
     je ^cond_else_2
 
   block ^cond_then_1
-    mov r11, 0
-    store.i32 [rbp-20], r11
+    mov rax, 0
     jmp ^cond_end_3
-
-  block ^cond_else_2
-    mov r11, 1
-    store.i32 [rbp-20], r11
-
-  block ^cond_end_3
-    load.i32 rax, [rbp-20]
-    ret rax

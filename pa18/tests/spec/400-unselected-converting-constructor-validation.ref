@@ -1,4 +1,4 @@
-declare function @A_int___A_int_(%arg0 : ptr [alias=noalias, object_bytes=1], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN1AIiEC1EOS0_]
+declare function @A_int___A(%arg0 : ptr [alias=noalias, object_bytes=1], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN1AIiEC1EOS0_]
 
 global @c [binding=strong] = {
   zero 1
@@ -12,6 +12,6 @@ function @f(%x : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong,
     store typed ptr %x, $x
     %t1 = addr $a
     %t2 = load typed ptr $x
-    call void @A_int___A_int_(%t1, %t2)
+    call void @A_int___A(%t1, %t2)
     return void
 }

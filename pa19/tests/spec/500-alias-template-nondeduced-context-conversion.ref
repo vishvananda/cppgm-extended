@@ -6,7 +6,7 @@ global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 0
 }
 
-function @identity_only() -> i32 [arity=variadic, binding=strong, object=_Z13identity_onlyz] {
+function @identity_only__ov2() -> i32 [arity=variadic, binding=strong, object=_Z13identity_onlyz] {
   block ^entry:
     return i32 0
 }
@@ -20,18 +20,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $lhs
     %t2 = addr @__strlit__1
-    call void @view_char___view_char_(%t1, %t2)
+    call void @view_char___view(%t1, %t2)
     %t3 = addr $argobj__3
     %t4 = addr $lhs
     %t5 = addr $argobj__4
     %t6 = addr @__strlit__1
-    call void @view_char___view_char_(%t5, %t6)
+    call void @view_char___view(%t5, %t6)
     %t7 = call i32 @equal($argobj__3, $argobj__4)
     %t8 = cmp eq i32 %t7, 1
     branch %t8, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t9 = call i32 @identity_only(1)
+    %t9 = call i32 @identity_only__ov2(1)
     %t10 = cmp eq i32 %t9, 0
     %t11 = cmp ne i64 %t10, 0
     store typed i64 %t11, $land__2
@@ -57,7 +57,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load typed i32 $cond__1
     return i32 %t13
 }
-function @view_char___view_char_(%this : ptr [object_bytes=1], %__param1 : ptr) -> void [binding=weak, object=_ZN4viewIcEC1EPKc, inline_hint=yes] {
+function @view_char___view(%this : ptr [object_bytes=1], %__param1 : ptr) -> void [binding=weak, object=_ZN4viewIcEC1EPKc, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -73,4 +73,4 @@ function @equal(%__param0 : obj<1x1> [classes=none], %__param1 : obj<1x1> [class
   block ^entry:
     return i32 1
 }
-alias object _ZN4viewIcEC2EPKc = @view_char___view_char_
+alias object _ZN4viewIcEC2EPKc = @view_char___view

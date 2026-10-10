@@ -15,9 +15,8 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rax, 4294967295
-    mov rdx, 4294967295
-    cmp.i64 rax, rdx
+    mov r10, 4294967295
+    cmp.i64 r10, 4294967295
     jne ^bad_u32
     jmp ^check_above_u32
 
@@ -26,9 +25,8 @@ function @main
     ret rax
 
   block ^check_above_u32
-    mov rax, 4294967296
-    mov rdx, 4294967296
-    cmp.i64 rax, rdx
+    mov r10, 4294967296
+    cmp.i64 r10, 4294967296
     jne ^bad_above_u32
     jmp ^check_i32_min
 
@@ -37,8 +35,8 @@ function @main
     ret rax
 
   block ^check_i32_min
-    mov rax, -2147483648
-    cmp.i64 rax, -2147483648
+    mov r10, -2147483648
+    cmp.i64 r10, -2147483648
     jne ^bad_i32_min
     jmp ^check_below_i32
 
@@ -47,9 +45,8 @@ function @main
     ret rax
 
   block ^check_below_i32
-    mov rax, -2147483649
-    mov rdx, -2147483649
-    cmp.i64 rax, rdx
+    mov r10, -2147483649
+    cmp.i64 r10, -2147483649
     jne ^bad_below_i32
     jmp ^ok
 

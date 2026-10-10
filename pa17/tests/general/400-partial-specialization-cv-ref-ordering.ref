@@ -1,3 +1,8 @@
+declare global @tag_0___value : i32 [binding=weak, object=_ZN3tagILi0EE5valueE]
+declare global @tag_1___value : i32 [binding=weak, object=_ZN3tagILi1EE5valueE]
+declare global @tag_2___value : i32 [binding=weak, object=_ZN3tagILi2EE5valueE]
+declare global @tag_3___value : i32 [binding=weak, object=_ZN3tagILi3EE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

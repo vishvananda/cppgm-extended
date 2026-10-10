@@ -1,4 +1,4 @@
-function @choose(%__param0 : i32) -> i32 [binding=strong, object=_Z6choosei] {
+function @choose__ov2(%__param0 : i32) -> i32 [binding=strong, object=_Z6choosei] {
   slot $__param0 : i32
 
   block ^entry:
@@ -10,12 +10,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $land__2 : i64
 
   block ^entry:
-    %t1 = call i32 @choose(3)
+    %t1 = call i32 @choose__ov2(3)
     %t2 = cmp eq i32 %t1, 2
     branch %t2, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t3 = call i32 @choose__ov3(3)
+    %t3 = call i32 @choose(3)
     %t4 = cmp eq i32 %t3, 1
     %t5 = cmp ne i64 %t4, 0
     store typed i64 %t5, $land__2
@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load typed i32 $cond__1
     return i32 %t7
 }
-function @choose__ov3(%__param0 : i64) -> i32 [binding=weak, object=_Z6chooseIlEiT_] {
+function @choose(%__param0 : i64) -> i32 [binding=weak, object=_Z6chooseIlEiT_] {
   slot $__param0 : i64
 
   block ^entry:

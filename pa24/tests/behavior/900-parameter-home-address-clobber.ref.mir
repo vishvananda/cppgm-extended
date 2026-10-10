@@ -9,11 +9,11 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 144
+    stack_size 160
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
-    preserve rbx r12
+    preserve rbx r12 r13 r14
     slot $object -> [rbp-24] : obj<24x8>
     slot $first -> [rbp-32] : i64
     slot $second -> [rbp-40] : i64
@@ -22,29 +22,29 @@ function @main
     slot $atomic_context -> [rbp-80] : i64
 
   block ^entry
-    lea rbx, [rbp-48]
     lea rdi, [rbp-24]
-    lea rsi, [rbp-32]
-    lea rdx, [rbp-40]
-    mov rcx, rbx
+    lea rbx, [rbp-32]
+    lea r12, [rbp-40]
+    lea r13, [rbp-48]
+    mov rsi, rbx
+    mov rdx, r12
+    mov rcx, r13
     call @initialize [args=(rcx,rdx,rsi,rdi)]
-    mov r12, rax
-    cmp.ptr r12, rbx
-    setne r12
-    movzx r12, r12
-    lea rbx, [rbp-80]
+    cmp.ptr rax, r13
+    setne r13
+    movzx r13, r13
     lea rdi, [rbp-72]
-    lea rsi, [rbp-32]
-    lea rdx, [rbp-40]
-    mov rcx, rbx
+    lea r14, [rbp-80]
+    mov rsi, rbx
+    mov rdx, r12
+    mov rcx, r14
     call @initialize_atomic [args=(rcx,rdx,rsi,rdi)]
-    cmp.ptr rax, rbx
+    cmp.ptr rax, r14
     setne rax
     movzx rax, rax
-    or r12, rax
-    mov rax, r12
-    sext.i32 rax
-    ret rax
+    or r13, rax
+    sext.i32 r13
+    ret r13
 
 function @initialize
   abi
@@ -54,20 +54,16 @@ function @initialize
     param %context -> rcx : ptr
     return ptr -> rax
   frame
-    stack_size 32
+    stack_size 96
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
-    temp %host-eh-exception -> [rbp-8] : ptr
-    temp %host-eh-selector -> [rbp-16] : i64
-    temp %context_field -> [rbp-24] : ptr
+    temp %context_field -> [rbp-8] : ptr
 
   block ^entry
-    lea rbx, [rdi+16]
-    store.ptr [rbp-24], rbx
-    load.ptr rax, [rbp-24]
-    store.ptr [rax], rcx
+    lea rdi, [rdi+16]
+    store.ptr [rbp-8], rdi
+    store.ptr [rdi], rcx
     eh_push ^unwind, 0
     call @touch [args=()]
     eh_pop
@@ -77,8 +73,8 @@ function @initialize
     resume
 
   block ^read_context
-    load.ptr rcx, [rbp-24]
-    load.ptr rax, [rcx]
+    load.ptr r10, [rbp-8]
+    load.ptr rax, [r10]
     ret rax
 
 function @initialize_atomic
@@ -89,20 +85,16 @@ function @initialize_atomic
     param %context -> rcx : ptr
     return ptr -> rax
   frame
-    stack_size 32
+    stack_size 96
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
-    temp %host-eh-exception -> [rbp-8] : ptr
-    temp %host-eh-selector -> [rbp-16] : i64
-    temp %context_field -> [rbp-24] : ptr
+    temp %context_field -> [rbp-8] : ptr
 
   block ^entry
-    lea rbx, [rdi+16]
-    store.ptr [rbp-24], rbx
-    load.ptr rax, [rbp-24]
-    store.ptr [rax], rcx
+    lea rdi, [rdi+16]
+    store.ptr [rbp-8], rdi
+    store.ptr [rdi], rcx
     eh_push ^unwind, 0
     call @touch [args=()]
     eh_pop
@@ -112,8 +104,8 @@ function @initialize_atomic
     resume
 
   block ^read_context
-    load.ptr rcx, [rbp-24]
-    load.ptr rax, [rcx]
+    load.ptr r10, [rbp-8]
+    load.ptr rax, [r10]
     ret rax
 
 function @touch

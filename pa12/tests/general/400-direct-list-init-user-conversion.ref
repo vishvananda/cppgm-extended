@@ -45,40 +45,40 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = index i8 [projection=field] %t21, 0
     %t23 = load typed i32 %t22
     %t24 = cmp eq i32 %t23, 7
-    branch %t24, ^land_rhs_16, ^land_short_17
+    branch %t24, ^land_rhs_4, ^land_short_5
 
-  block ^land_rhs_16:
+  block ^land_rhs_4:
     %t25 = addr $direct_list
     %t26 = index i8 [projection=field] %t25, 0
     %t27 = load typed i32 %t26
     %t28 = cmp eq i32 %t27, 7
     %t29 = cmp ne i64 %t28, 0
-    store typed i64 %t29, $land__6
-    jump ^land_end_18
+    store typed i64 %t29, $land__2
+    jump ^land_end_6
 
-  block ^land_short_17:
-    store typed i64 0, $land__6
-    jump ^land_end_18
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
 
-  block ^land_end_18:
-    %t30 = load typed i64 $land__6
-    branch %t30, ^land_rhs_13, ^land_short_14
+  block ^land_end_6:
+    %t30 = load typed i64 $land__2
+    branch %t30, ^land_rhs_7, ^land_short_8
 
-  block ^land_rhs_13:
+  block ^land_rhs_7:
     %t31 = addr $copy_list
     %t32 = index i8 [projection=field] %t31, 0
     %t33 = load typed i32 %t32
     %t34 = cmp eq i32 %t33, 7
     %t35 = cmp ne i64 %t34, 0
-    store typed i64 %t35, $land__5
-    jump ^land_end_15
+    store typed i64 %t35, $land__3
+    jump ^land_end_9
 
-  block ^land_short_14:
-    store typed i64 0, $land__5
-    jump ^land_end_15
+  block ^land_short_8:
+    store typed i64 0, $land__3
+    jump ^land_end_9
 
-  block ^land_end_15:
-    %t36 = load typed i64 $land__5
+  block ^land_end_9:
+    %t36 = load typed i64 $land__3
     branch %t36, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
@@ -96,40 +96,40 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_end_12:
     %t42 = load typed i64 $land__4
-    branch %t42, ^land_rhs_7, ^land_short_8
+    branch %t42, ^land_rhs_13, ^land_short_14
 
-  block ^land_rhs_7:
+  block ^land_rhs_13:
     %t43 = addr $class_direct_list
     %t44 = index i8 [projection=field] %t43, 0
     %t45 = load typed i32 %t44
     %t46 = cmp eq i32 %t45, 9
     %t47 = cmp ne i64 %t46, 0
-    store typed i64 %t47, $land__3
-    jump ^land_end_9
+    store typed i64 %t47, $land__5
+    jump ^land_end_15
 
-  block ^land_short_8:
-    store typed i64 0, $land__3
-    jump ^land_end_9
+  block ^land_short_14:
+    store typed i64 0, $land__5
+    jump ^land_end_15
 
-  block ^land_end_9:
-    %t48 = load typed i64 $land__3
-    branch %t48, ^land_rhs_4, ^land_short_5
+  block ^land_end_15:
+    %t48 = load typed i64 $land__5
+    branch %t48, ^land_rhs_16, ^land_short_17
 
-  block ^land_rhs_4:
+  block ^land_rhs_16:
     %t49 = addr $class_copy_list
     %t50 = index i8 [projection=field] %t49, 0
     %t51 = load typed i32 %t50
     %t52 = cmp eq i32 %t51, 9
     %t53 = cmp ne i64 %t52, 0
-    store typed i64 %t53, $land__2
-    jump ^land_end_6
+    store typed i64 %t53, $land__6
+    jump ^land_end_18
 
-  block ^land_short_5:
-    store typed i64 0, $land__2
-    jump ^land_end_6
+  block ^land_short_17:
+    store typed i64 0, $land__6
+    jump ^land_end_18
 
-  block ^land_end_6:
-    %t54 = load typed i64 $land__2
+  block ^land_end_18:
+    %t54 = load typed i64 $land__6
     branch %t54, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

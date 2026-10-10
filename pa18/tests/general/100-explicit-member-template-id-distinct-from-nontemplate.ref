@@ -32,10 +32,10 @@ function @stack_like__pop(%this : ptr [object_bytes=1], %value : ptr [pass=by_ad
     store typed ptr %value, $value
     %t1 = load typed ptr $this
     %t2 = load typed ptr $value
-    %t3 = call u8 @stack_like__pop__ov2(%t1, %t2)
+    %t3 = call u8 @stack_like__pop__2(%t1, %t2)
     return u8 %t3
 }
-function @stack_like__pop__ov2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=8]) -> u8 [binding=weak, object=_ZN10stack_like3popIlvEEbRT_, inline_hint=yes] {
+function @stack_like__pop__2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=8]) -> u8 [binding=weak, object=_ZN10stack_like3popIlvEEbRT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

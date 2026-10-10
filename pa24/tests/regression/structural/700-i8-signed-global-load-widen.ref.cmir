@@ -21,6 +21,6 @@ function @main
   block ^entry
     load.i8 r8, @g
     cmp.i64 r8, -1
-    sete rax
-    movzx rax, rax
-    ret rax
+    sete r8
+    movzx r8, r8
+    ret r8

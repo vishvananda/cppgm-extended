@@ -40,10 +40,9 @@ function @write
   block ^entry
     mov rbx, rdi
     call @produce [args=()]
-    mov r8, rax
-    store.i64 [rbx], r8
-    add r8, @other
-    ret r8
+    store.i64 [rbx], rax
+    add rax, @other
+    ret rax
 
 function @main
   abi
@@ -57,17 +56,14 @@ function @main
   block ^entry
     mov rdi, @result
     call @write [args=(rdi)]
-    mov r8, rax
-    load.i64 r9, @result
     mov rdx, 17
-    cmp.i64 r9, rdx
-    setne r9
-    movzx r9, r9
-    mov rdx, 42
-    cmp.i64 r8, rdx
+    cmp.i64 @result, rdx
     setne r8
     movzx r8, r8
-    or r9, r8
-    mov rax, r9
-    sext.i32 rax
-    ret rax
+    mov rdx, 42
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    or r8, rax
+    sext.i32 r8
+    ret r8

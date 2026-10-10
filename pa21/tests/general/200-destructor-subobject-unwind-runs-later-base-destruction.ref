@@ -1,12 +1,13 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
+declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__struct_failure [binding=weak, object=_ZTS7failure] = {
+global @order : i32 [binding=strong] = zero
+global @__typeinfo_name__struct_failure [storage=readonly, binding=weak, object=_ZTS7failure] = {
   i8 55
   i8 102
   i8 97
@@ -17,21 +18,14 @@ global @__typeinfo_name__struct_failure [binding=weak, object=_ZTS7failure] = {
   i8 101
   i8 0
 }
-global @__rtti_struct_failure [binding=weak, object=_ZTI7failure] = {
+global @__rtti_struct_failure [storage=readonly, binding=weak, object=_ZTI7failure] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_failure
 }
-global @__ehobj_struct_failure [binding=internal, object=@__ehobj_struct_failure] = {
+global @__ehobj_struct_failure [binding=internal] = {
   zero 1
 }
-global @order : i32 [binding=strong] = zero
 
-function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
-  block ^entry:
-    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
-    call void @std_terminate()
-    return void
-}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : obj<1x1>
   slot $cond__1 : i32
@@ -119,23 +113,29 @@ function @Derived___Derived(%this : ptr [object_bytes=1]) -> void [binding=weak,
 
   block ^destructor_cleanup_1:
     eh_try ^lexical_cleanup_terminate_5
-    %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 0
-    call void @Member___Member(%t12)
+    %t10 = load typed ptr $this
+    %t11 = index i8 [projection=field] %t10, 0
+    call void @Member___Member(%t11)
     eh_end
-    %t13 = load typed ptr $this
-    %t14 = index i8 %t13, 0
-    call void @Base___Base(%t14)
+    %t12 = load typed ptr $this
+    %t13 = index i8 %t12, 0
+    call void @Base___Base(%t13)
     eh_end
     resume
 
   block ^lexical_cleanup_terminate_5:
     eh_catch_all, 1
-    %t10 = exception ptr
-    call void @cppgm_call_terminate(%t10)
+    %t14 = exception ptr
+    call void @cppgm_call_terminate(%t14)
     unreachable
 
   block ^destructor_end_2:
+    return void
+}
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
     return void
 }
 function @Member___Member(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6MemberD1Ev, inline_hint=yes] {
@@ -148,6 +148,7 @@ function @Member___Member(%this : ptr [object_bytes=1]) -> void [binding=weak, o
     %t3 = binary add nowrap i32 %t2, 1
     store typed i32 %t3, @order
     %t4 = call ptr @__external_runtime____cxa_allocate_exception(1)
+    zeroinit 1x1 %t4
     %t5 = addr @__rtti_struct_failure
     call void @__external_runtime____cxa_throw(%t4, %t5, 0)
     return void

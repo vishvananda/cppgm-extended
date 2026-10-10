@@ -15,11 +15,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     zeroinit 8x8 %t5
     %t6 = addr $argobj__4
     zeroinit 8x8 %t6
-    %t7 = call obj<8x8> @holder_int__int___move_and_check(%t3, $argobj__2, $argobj__3, $argobj__4)
+    %t7 = call obj<8x8> @holder_int_int___move_and_check(%t3, $argobj__2, $argobj__3, $argobj__4)
     copyobj 8x8 %t7, %t2
     return i32 0
 }
-function @holder_int__int___move_and_check(%this : ptr [object_bytes=1], %f : obj<8x8>, %l : obj<8x8>, %r : obj<8x8>) -> obj<8x8> [binding=weak, object=_ZN6holderIiiE14move_and_checkE4iterIiPilLl1024EES3_S3_] {
+function @holder_int_int___move_and_check(%this : ptr [object_bytes=1], %f : obj<8x8>, %l : obj<8x8>, %r : obj<8x8>) -> obj<8x8> [binding=weak, object=_ZN6holderIiiE14move_and_checkE4iterIiPilLl1024EES3_S3_] {
   slot $this : ptr
   slot $f : obj<8x8>
   slot $l : obj<8x8>

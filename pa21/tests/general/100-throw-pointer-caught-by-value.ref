@@ -1,87 +1,15 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti_vtable____pointer_type_info [role=rtti_pointer, binding=strong, object=_ZTVN10__cxxabiv119__pointer_type_infoE]
 declare global @__external_rtti__pointer_to_const_char [role=rtti_data, binding=strong, object=_ZTIPKc]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__pointer_to_int [role=rtti_data, binding=strong, object=_ZTIPi]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
 declare function @__external_runtime____cxa_rethrow() -> void [return=noreturn, role=eh_rethrow, linkage=c, binding=strong, object=__cxa_rethrow]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__struct_B [binding=weak, object=_ZTS1B] = {
-  i8 49
-  i8 66
-  i8 0
-}
-global @__rtti_struct_B [binding=weak, object=_ZTI1B] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_B
-}
-global @__typeinfo_name__char [binding=weak, object=_ZTSc] = {
-  i8 99
-  i8 0
-}
-global @__rtti_char [binding=weak, object=_ZTIc] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__char
-}
-global @__typeinfo_name_type_PKc [binding=weak, object=_ZTSPKc] = {
-  i8 80
-  i8 75
-  i8 99
-  i8 0
-}
-global @__rtti_type_PKc [binding=weak, object=_ZTIPKc] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_PKc
-  i32 1
-  ptr addr @__rtti_char
-}
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
-  i8 105
-  i8 0
-}
-global @__rtti_int [binding=weak, object=_ZTIi] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__int
-}
-global @__typeinfo_name_type_P1B [binding=weak, object=_ZTSP1B] = {
-  i8 80
-  i8 49
-  i8 66
-  i8 0
-}
-global @__rtti_type_P1B [binding=weak, object=_ZTIP1B] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_P1B
-  i32 0
-  ptr addr @__rtti_struct_B
-}
-global @__typeinfo_name_type_Pi [binding=weak, object=_ZTSPi] = {
-  i8 80
-  i8 105
-  i8 0
-}
-global @__rtti_type_Pi [binding=weak, object=_ZTIPi] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_Pi
-  i32 0
-  ptr addr @__rtti_int
-}
-global @__ehobj_type_PKc [binding=internal, object=@__ehobj_type_PKc] = {
-  zero 8
-}
-global @__ehobj_struct_B [binding=internal, object=@__ehobj_struct_B] = {
-  zero 4
-}
-global @__ehobj_type_P1B [binding=internal, object=@__ehobj_type_P1B] = {
-  zero 8
-}
-global @__ehobj_type_Pi [binding=internal, object=@__ehobj_type_Pi] = {
-  zero 8
-}
 global @object [binding=internal, object=_ZL6object] = {
   i32 7
 }
@@ -93,6 +21,78 @@ global @text [binding=internal, object=_ZL4text] = {
   i8 108
   i8 111
   i8 0
+}
+global @__typeinfo_name__struct_B [storage=readonly, binding=weak, object=_ZTS1B] = {
+  i8 49
+  i8 66
+  i8 0
+}
+global @__rtti_struct_B [storage=readonly, binding=weak, object=_ZTI1B] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_B
+}
+global @__typeinfo_name_type_P1B [storage=readonly, binding=weak, object=_ZTSP1B] = {
+  i8 80
+  i8 49
+  i8 66
+  i8 0
+}
+global @__rtti_type_P1B [storage=readonly, binding=weak, object=_ZTIP1B] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_P1B
+  i32 0
+  ptr addr @__rtti_struct_B
+}
+global @__ehobj_type_P1B [binding=internal] = {
+  zero 8
+}
+global @__typeinfo_name__char [storage=readonly, binding=weak, object=_ZTSc] = {
+  i8 99
+  i8 0
+}
+global @__rtti_char [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__char
+}
+global @__typeinfo_name_type_PKc [storage=readonly, binding=weak, object=_ZTSPKc] = {
+  i8 80
+  i8 75
+  i8 99
+  i8 0
+}
+global @__rtti_type_PKc [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_PKc
+  i32 1
+  ptr addr @__rtti_char
+}
+global @__ehobj_type_PKc [binding=internal] = {
+  zero 8
+}
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__typeinfo_name_type_Pi [storage=readonly, binding=weak, object=_ZTSPi] = {
+  i8 80
+  i8 105
+  i8 0
+}
+global @__rtti_type_Pi [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_Pi
+  i32 0
+  ptr addr @__rtti_int
+}
+global @__ehobj_type_Pi [binding=internal] = {
+  zero 8
+}
+global @__ehobj_struct_B [binding=internal] = {
+  zero 4
 }
 
 function @by_value() -> i32 [binding=strong, object=_Z8by_valuev] {
@@ -333,6 +333,7 @@ function @nested() -> i32 [binding=strong, object=_Z6nestedv] {
     %t3 = addr @__external_rtti__pointer_to_int
     call void @__external_runtime____cxa_throw(%t1, %t3, 0)
     eh_end
+    eh_end
     return i32 0
 
   block ^catch_dispatch_4:
@@ -508,16 +509,3 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = binary add nowrap i32 %t7, %t8
     return i32 %t9
 }
-function @B__B(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN1BC1ERKS_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $other
-    copyobj 4x4 %t2, %t1
-    return void
-}
-alias object _ZN1BC2ERKS_ = @B__B

@@ -46,25 +46,22 @@ function @main
     mov rbx, rax
     sext.i32 rbx
     call @unsigned_source [args=()]
-    mov r8, rax
-    zext.i8 r8
-    mov r9, 17
+    zext.i8 rax
+    mov r8, 17
+    sext.i32 r8
     mov rdx, -17
     cmp.i64 rbx, rdx
     setne rbx
     movzx rbx, rbx
     mov rdx, 250
-    cmp.i64 r8, rdx
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    mov rdx, 17
+    cmp.i32 r8, rdx
     setne r8
     movzx r8, r8
-    mov rdx, 17
-    cmp.i32 r9, rdx
-    setne r9
-    movzx r9, r9
+    or rbx, rax
     or rbx, r8
-    mov r8, r9
-    zext.i64 r8
-    or rbx, r8
-    mov rax, rbx
-    sext.i32 rax
-    ret rax
+    sext.i32 rbx
+    ret rbx

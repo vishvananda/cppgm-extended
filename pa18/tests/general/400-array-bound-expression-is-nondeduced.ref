@@ -14,13 +14,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 0, %t2
     %t3 = index i8 [projection=array_element] %t1, 8
     store typed i32 0, %t3
-    %t4 = index i8 [projection=array_element] %t1, 12
+    %t4 = index i8 %t1, 12
     store typed i32 0, %t4
     %t5 = index i8 [projection=array_element] %t4, 4
     store typed i32 0, %t5
     %t6 = index i8 [projection=array_element] %t4, 8
     store typed i32 0, %t6
-    %t7 = index i8 [projection=array_element] %t1, 24
+    %t7 = index i8 %t1, 24
     store typed i32 0, %t7
     %t8 = index i8 [projection=array_element] %t7, 4
     store typed i32 0, %t8

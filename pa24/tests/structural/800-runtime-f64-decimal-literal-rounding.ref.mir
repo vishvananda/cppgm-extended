@@ -15,9 +15,7 @@ function @main
     epilogues shared
 
   block ^entry
-    fmov.f64 xmm0, 623e+100
-    fmov.f64 xmm1, 0x1.640a62f3a83dfp+341
-    fcmp.f64 xmm0, xmm1
+    fcmp.f64 6.23e+102, 6.23e+102
     jp ^bad
     je ^ok
     jmp ^bad

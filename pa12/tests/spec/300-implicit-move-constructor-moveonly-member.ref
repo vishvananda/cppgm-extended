@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Outer__Outer(%t1)
     %t2 = addr $moved
     %t3 = addr $source
-    call void @Outer__Outer__ov2(%t2, %t3)
+    call void @Outer__Outer__2(%t2, %t3)
     %t4 = addr $moved
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = index i8 [projection=field] %t5, 0
@@ -36,16 +36,18 @@ function @Outer__Outer(%this : ptr [object_bytes=4]) -> void [unwind=no, binding
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @Inner__Inner(%t2)
+    eh_cleanup ^constructor_cleanup_1
+    eh_end
     return void
-}
-function @Outer___Outer(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5OuterD1Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
 
-  block ^entry:
-    store typed ptr %this, $this
-    return void
+  block ^constructor_cleanup_1:
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    call void @Inner___Inner(%t4)
+    eh_end
+    resume
 }
-function @Outer__Outer__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5OuterC1EOS_, inline_hint=yes] {
+function @Outer__Outer__2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5OuterC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -88,8 +90,23 @@ function @Inner__Inner__ov3(%this : ptr [alias=noalias, object_bytes=4], %other 
     store typed i32 %t6, %t8
     return void
 }
+function @Outer___Outer(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5OuterD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Inner___Inner(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5InnerD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
 alias object _ZN5OuterC2Ev = @Outer__Outer
 alias object _ZN5OuterD2Ev = @Outer___Outer
-alias object _ZN5OuterC2EOS_ = @Outer__Outer__ov2
+alias object _ZN5OuterC2EOS_ = @Outer__Outer__2
 alias object _ZN5InnerC2Ev = @Inner__Inner
+alias object _ZN5InnerD2Ev = @Inner___Inner
 alias object _ZN5InnerC2EOS_ = @Inner__Inner__ov3

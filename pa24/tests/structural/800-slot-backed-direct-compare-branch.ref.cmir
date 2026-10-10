@@ -13,11 +13,10 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $op -> [rbp-<off0>] : i32
 
   block ^entry
-    store.i32 [rbp-<off0>], 6
-    cmp.i32 [rbp-<off0>], 6
+    mov <gpr0>, 6
+    cmp.i32 <gpr0>, 6
     je ^ok
     jmp ^bad
 

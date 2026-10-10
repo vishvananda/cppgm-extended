@@ -14,7 +14,7 @@ function @id
     param %x -> rdi : ptr
     return ptr -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -34,8 +34,7 @@ function @wrap
     epilogues shared
 
   block ^entry
-    mov r10, rsi
-    call *r10 [args=(rdi)]
+    call *rsi [args=(rdi)]
     ret rax
 
 function @main
@@ -50,8 +49,8 @@ function @main
 
   block ^entry
     mov rbx, @box
-    mov rdi, rbx
     mov rsi, @id
+    mov rdi, rbx
     call @wrap [args=(rsi,rdi)]
     cmp.ptr rax, rbx
     sete rax

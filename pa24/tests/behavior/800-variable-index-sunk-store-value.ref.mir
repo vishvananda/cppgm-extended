@@ -25,7 +25,7 @@ function @touch
     param %scratch -> rdi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -46,12 +46,10 @@ function @run
   block ^entry
     lea rdi, [rbp-40]
     call @touch [args=(rdi)]
-    load.i64 r8, @which
-    mov r9, @buffer
-    mov rdx, r8
-    imul rdx, 8
-    add r9, rdx
-    store.ptr @saved, r9
+    mov r8, @buffer
+    load.i64 r9, @which
+    lea r8, [r8+r9*8]
+    store.ptr @saved, r8
     ret
 
 function @main
@@ -65,23 +63,18 @@ function @main
 
   block ^entry
     call @run [args=()]
-    mov r8, @buffer
-    lea r8, [r8+16]
+    mov r8, @buffer+16
     load.ptr r9, @saved
-    mov rdi, r9
-    cmp.ptr rdi, r8
-    sete rdi
-    movzx rdi, rdi
-    load.i64 r8, [r9]
+    cmp.ptr r9, r8
+    sete r8
+    movzx r8, r8
     mov rdx, 30
+    cmp.i64 [r9], rdx
+    sete r9
+    movzx r9, r9
+    and r8, r9
+    mov rdx, 0
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    and rdi, r8
-    mov rdx, 0
-    cmp.i64 rdi, rdx
-    sete rdi
-    movzx rdi, rdi
-    mov rax, rdi
-    sext.i32 rax
-    ret rax
+    ret r8

@@ -1,24 +1,13 @@
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
 declare function @printf(%arg0 : ptr) -> i32 [arity=variadic, linkage=c, binding=strong]
 
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
-  i8 105
-  i8 0
-}
-global @__rtti_int [binding=weak, object=_ZTIi] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__int
-}
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
-  zero 4
-}
 global @alive : i32 [binding=strong] = zero
 global @made : i32 [binding=strong] = zero
 global @destroyed : i32 [binding=strong] = zero
@@ -30,6 +19,17 @@ global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 100
   i8 44
   i8 0
+}
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal] = {
+  zero 4
 }
 global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 58
@@ -54,12 +54,6 @@ global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 0
 }
 
-function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
-  block ^entry:
-    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
-    call void @std_terminate()
-    return void
-}
 function @record(%v : i32) -> void [binding=strong, object=_Z6recordi] {
   slot $v : i32
 
@@ -76,9 +70,9 @@ function @checkpoint() -> void [binding=strong, object=_Z10checkpointv] {
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @attempts
     %t3 = load typed i32 @limit
-    branch %t3, ^land_rhs_4, ^if_else_2
+    branch %t3, ^land_rhs_3, ^if_else_2
 
-  block ^land_rhs_4:
+  block ^land_rhs_3:
     %t4 = load typed i32 @attempts
     %t5 = load typed i32 @limit
     %t6 = cmp eq i32 %t4, %t5
@@ -93,9 +87,9 @@ function @checkpoint() -> void [binding=strong, object=_Z10checkpointv] {
     return void
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     return void
 }
 function @pick() -> i32 [binding=strong, object=_Z4pickv] {
@@ -242,18 +236,18 @@ function @stop() -> void [binding=strong, object=_Z4stopv] {
 function @test() -> i32 [binding=strong, object=_Z4testv] {
   slot $earlier : obj<4x4>
   slot $xs : ptr
-  slot $initlist__1 : obj<8x4>
-  slot $lor__2 : i64
-  slot $call__3 : i64
-  slot $cleanup_return__4 : i32
-  slot $refcall__5 : obj<16x8>
+  slot $tmpobj__1 : obj<16x8>
+  slot $initlist__2 : obj<8x4>
+  slot $lor__3 : i64
+  slot $call__4 : i64
+  slot $cleanup_return__5 : i32
 
   block ^entry:
     %t1 = addr $earlier
     call void @S__S(%t1, 9)
-    %t2 = addr $refcall__5
+    %t2 = addr $tmpobj__1
     eh_try ^cleanup_action_2
-    %t3 = addr $initlist__1
+    %t3 = addr $initlist__2
     call void @S__S(%t3, 1)
     eh_try ^call_unwind_dispatch_3
     %t4 = index i8 [projection=array_element] %t3, 4
@@ -296,27 +290,27 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
   block ^call_unwind_end_7:
     %t7 = load typed i32 @alive
     %t8 = cmp ne i32 %t7, 3
-    branch %t8, ^lor_short_12, ^lor_rhs_11
+    branch %t8, ^lor_short_11, ^lor_rhs_10
 
-  block ^lor_rhs_11:
+  block ^lor_rhs_10:
     eh_try ^cleanup_action_6
     %t9 = load typed ptr $xs
     %t10 = call i64 @std__initializer_list_S___size(%t9)
-    store typed i64 %t10, $call__3
-    %t11 = load typed i64 $call__3
+    store typed i64 %t10, $call__4
+    %t11 = load typed i64 $call__4
     %t12 = convert sext i64 i32 2
     %t13 = cmp ne i64 %t11, %t12
     %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $lor__2
+    store typed i64 %t14, $lor__3
     eh_end
-    jump ^lor_end_13
+    jump ^lor_end_12
 
-  block ^lor_short_12:
-    store typed i64 1, $lor__2
-    jump ^lor_end_13
+  block ^lor_short_11:
+    store typed i64 1, $lor__3
+    jump ^lor_end_12
 
-  block ^lor_end_13:
-    %t15 = load typed i64 $lor__2
+  block ^lor_end_12:
+    %t15 = load typed i64 $lor__3
     branch %t15, ^if_then_8, ^if_else_9
 
   block ^if_then_8:
@@ -327,9 +321,9 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     return i32 2
 
   block ^if_else_9:
-    jump ^if_end_10
+    jump ^if_end_13
 
-  block ^if_end_10:
+  block ^if_end_13:
     call void @S___S(%t4)
     call void @S___S(%t3)
     %t17 = load typed i32 @alive
@@ -337,23 +331,23 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     branch %t18, ^if_then_14, ^if_else_15
 
   block ^if_then_14:
-    store typed i32 3, $cleanup_return__4
-    jump ^return_cleanup_action_18
+    store typed i32 3, $cleanup_return__5
+    jump ^return_cleanup_action_17
 
-  block ^return_cleanup_terminal_17:
-    return i32 $cleanup_return__4
+  block ^return_cleanup_terminal_16:
+    return i32 $cleanup_return__5
 
-  block ^return_cleanup_action_18:
+  block ^return_cleanup_action_17:
     %t19 = addr $earlier
     call void @S___S(%t19)
-    jump ^return_cleanup_terminal_17
+    jump ^return_cleanup_terminal_16
 
   block ^if_else_15:
-    jump ^if_end_16
+    jump ^if_end_18
 
-  block ^if_end_16:
-    store typed i32 0, $cleanup_return__4
-    jump ^return_cleanup_action_18
+  block ^if_end_18:
+    store typed i32 0, $cleanup_return__5
+    jump ^return_cleanup_action_17
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $p : i32
@@ -437,13 +431,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t17 = load typed i32 $status
     call void @print(%t15, %t16, %t17)
     %t18 = load typed i32 $status
-    branch %t18, ^if_then_18, ^lor_rhs_22
-
-  block ^lor_rhs_22:
-    %t19 = load typed i32 @alive
-    branch %t19, ^if_then_18, ^lor_rhs_21
+    branch %t18, ^if_then_18, ^lor_rhs_21
 
   block ^lor_rhs_21:
+    %t19 = load typed i32 @alive
+    branch %t19, ^if_then_18, ^lor_rhs_20
+
+  block ^lor_rhs_20:
     %t20 = load typed i32 @made
     %t21 = load typed i32 @destroyed
     %t22 = cmp ne i32 %t20, %t21
@@ -453,9 +447,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_19:
-    jump ^if_end_20
+    jump ^if_end_22
 
-  block ^if_end_20:
+  block ^if_end_22:
     jump ^for_iter_7
 
   block ^for_iter_7:
@@ -528,6 +522,12 @@ function @S___S(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, 
   block ^function_exception_action_2:
     %t10 = load typed ptr $function_exception__1
     call void @cppgm_call_terminate(%t10)
+    return void
+}
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
     return void
 }
 function @std__initializer_list_S___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listI1SE4sizeEv, inline_hint=yes] {

@@ -4,10 +4,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     store typed ptr 0, $w
     %t1 = load typed ptr $w
-    %t2 = call ptr @wrapper_void_____operator___ov3(%t1, 0)
+    %t2 = call ptr @wrapper_void_____operator_(%t1, 0)
     return i32 0
 }
-function @wrapper_void_____operator___ov3(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZN7wrapperIFvvEEaSIiEERS1_T_, inline_hint=yes] {
+function @wrapper_void_____operator_(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZN7wrapperIFvvEEaSIiEERS1_T_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 

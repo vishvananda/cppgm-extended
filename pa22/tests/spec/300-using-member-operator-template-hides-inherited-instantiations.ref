@@ -22,11 +22,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 1x1 %t11, %t7
     %t12 = index i8 %t7, 0
     %t13 = addr $c
-    %t14 = call obj<2x1> @comma_base___cppgm_class_template_identity_0_2_0___operator_(%t12, %t13)
+    %t14 = call obj<2x1> @comma_base___cppgm_class_template_identity_1___operator_(%t12, %t13)
     copyobj 2x1 %t14, %t6
     %t15 = index i8 %t6, 0
     %t16 = addr $d
-    %t17 = call obj<3x1> @comma_base___cppgm_class_template_identity_0_3_0___operator_(%t15, %t16)
+    %t17 = call obj<3x1> @comma_base___cppgm_class_template_identity_2___operator_(%t15, %t16)
     copyobj 3x1 %t17, %t5
     %t18 = addr $result
     return i32 0
@@ -42,10 +42,10 @@ function @comma_base_first___operator_(%this : ptr [object_bytes=1], %np : ptr [
     %t1 = addr $retobj__1
     %t2 = load typed ptr $np
     %t3 = load typed ptr $this
-    call void @combine_second__first___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_(%t1, %t2, %t3)
+    call void @combine_second_first___combine(%t1, %t2, %t3)
     return obj<1x1> $retobj__1
 }
-function @comma_base___cppgm_class_template_identity_0_2_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<2x1> [result_classes=none, binding=weak, object=_ZNK10comma_baseI7combineI6second5firstEEcmI5thirdEES0_IT_S3_ERKS7_, inline_hint=yes] {
+function @comma_base___cppgm_class_template_identity_1___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<2x1> [result_classes=none, binding=weak, object=_ZNK10comma_baseI7combineI6second5firstEEcmI5thirdEES0_IT_S3_ERKS7_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $retobj__1 : obj<2x1>
@@ -56,10 +56,10 @@ function @comma_base___cppgm_class_template_identity_0_2_0___operator_(%this : p
     %t1 = addr $retobj__1
     %t2 = load typed ptr $np
     %t3 = load typed ptr $this
-    call void @combine_third____cppgm_class_template_identity_0_2_0___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_(%t1, %t2, %t3)
+    call void @combine_third___cppgm_class_template_identity_1___combine(%t1, %t2, %t3)
     return obj<2x1> $retobj__1
 }
-function @comma_base___cppgm_class_template_identity_0_3_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<3x1> [result_classes=none, binding=weak, object=_ZNK10comma_baseI7combineI5thirdS0_I6second5firstEEEcmI6fourthEES0_IT_S5_ERKS9_, inline_hint=yes] {
+function @comma_base___cppgm_class_template_identity_2___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<3x1> [result_classes=none, binding=weak, object=_ZNK10comma_baseI7combineI5thirdS0_I6second5firstEEEcmI6fourthEES0_IT_S5_ERKS9_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $retobj__1 : obj<3x1>
@@ -70,10 +70,10 @@ function @comma_base___cppgm_class_template_identity_0_3_0___operator_(%this : p
     %t1 = addr $retobj__1
     %t2 = load typed ptr $np
     %t3 = load typed ptr $this
-    call void @combine_fourth____cppgm_class_template_identity_0_3_0___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_(%t1, %t2, %t3)
+    call void @combine_fourth___cppgm_class_template_identity_2___combine(%t1, %t2, %t3)
     return obj<3x1> $retobj__1
 }
-function @combine_second__first___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1], %rest : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7combineI6second5firstEC1ERKS0_RKS1_, inline_hint=yes] {
+function @combine_second_first___combine(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1], %rest : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7combineI6second5firstEC1ERKS0_RKS1_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $rest : ptr
@@ -88,7 +88,7 @@ function @combine_second__first___combine_typename___retained_template_parameter
     %t4 = index i8 [projection=field] %t3, 0
     return void
 }
-function @combine_third____cppgm_class_template_identity_0_2_0___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_(%this : ptr [object_bytes=2], %np : ptr [pass=by_address, object_bytes=1], %rest : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7combineI5thirdS_I6second5firstEEC1ERKS0_RKS3_, inline_hint=yes] {
+function @combine_third___cppgm_class_template_identity_1___combine(%this : ptr [object_bytes=2], %np : ptr [pass=by_address, object_bytes=1], %rest : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7combineI5thirdS_I6second5firstEEC1ERKS0_RKS3_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $rest : ptr
@@ -105,7 +105,7 @@ function @combine_third____cppgm_class_template_identity_0_2_0___combine_typenam
     %t5 = index i8 [projection=field] %t4, 1
     return void
 }
-function @combine_fourth____cppgm_class_template_identity_0_3_0___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_(%this : ptr [object_bytes=3], %np : ptr [pass=by_address, object_bytes=1], %rest : ptr [pass=by_address, object_bytes=2]) -> void [binding=weak, object=_ZN7combineI6fourthS_I5thirdS_I6second5firstEEEC1ERKS0_RKS5_, inline_hint=yes] {
+function @combine_fourth___cppgm_class_template_identity_2___combine(%this : ptr [object_bytes=3], %np : ptr [pass=by_address, object_bytes=1], %rest : ptr [pass=by_address, object_bytes=2]) -> void [binding=weak, object=_ZN7combineI6fourthS_I5thirdS_I6second5firstEEEC1ERKS0_RKS5_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $rest : ptr
@@ -122,6 +122,6 @@ function @combine_fourth____cppgm_class_template_identity_0_3_0___combine_typena
     %t5 = index i8 [projection=field] %t4, 2
     return void
 }
-alias object _ZN7combineI6second5firstEC2ERKS0_RKS1_ = @combine_second__first___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_
-alias object _ZN7combineI5thirdS_I6second5firstEEC2ERKS0_RKS3_ = @combine_third____cppgm_class_template_identity_0_2_0___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_
-alias object _ZN7combineI6fourthS_I5thirdS_I6second5firstEEEC2ERKS0_RKS5_ = @combine_fourth____cppgm_class_template_identity_0_3_0___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_
+alias object _ZN7combineI6second5firstEC2ERKS0_RKS1_ = @combine_second_first___combine
+alias object _ZN7combineI5thirdS_I6second5firstEEC2ERKS0_RKS3_ = @combine_third___cppgm_class_template_identity_1___combine
+alias object _ZN7combineI6fourthS_I5thirdS_I6second5firstEEEC2ERKS0_RKS5_ = @combine_fourth___cppgm_class_template_identity_2___combine

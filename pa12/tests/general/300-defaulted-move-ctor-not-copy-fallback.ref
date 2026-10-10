@@ -62,16 +62,16 @@ function @X__X(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1X
     call void @Member__Member(%t2)
     return void
 }
-function @X__X__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN1XC1EOS_, inline_hint=yes] {
+function @X__X__ov3(%this : ptr [alias=noalias, object_bytes=4], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN1XC1EOS_, inline_hint=yes] {
   slot $this : ptr
-  slot $other : ptr
+  slot $__param1 : ptr
 
   block ^entry:
     store typed ptr %this, $this
-    store typed ptr %other, $other
+    store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load typed ptr $other
+    %t3 = load typed ptr $__param1
     %t4 = index i8 [projection=field] %t3, 0
     call void @Member__Member__ov3(%t2, %t4)
     return void

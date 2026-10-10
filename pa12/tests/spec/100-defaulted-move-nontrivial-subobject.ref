@@ -25,24 +25,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load typed i32 %t9
     %t11 = unary neg i32 1
     %t12 = cmp eq i32 %t10, %t11
-    branch %t12, ^land_rhs_10, ^land_short_11
+    branch %t12, ^land_rhs_4, ^land_short_5
 
-  block ^land_rhs_10:
+  block ^land_rhs_4:
     %t13 = addr $base_dest
     %t14 = index i8 %t13, 0
     %t15 = index i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 42
     %t18 = cmp ne i64 %t17, 0
-    store typed i64 %t18, $land__4
-    jump ^land_end_12
+    store typed i64 %t18, $land__2
+    jump ^land_end_6
 
-  block ^land_short_11:
-    store typed i64 0, $land__4
-    jump ^land_end_12
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
 
-  block ^land_end_12:
-    %t19 = load typed i64 $land__4
+  block ^land_end_6:
+    %t19 = load typed i64 $land__2
     branch %t19, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
@@ -62,24 +62,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_end_9:
     %t27 = load typed i64 $land__3
-    branch %t27, ^land_rhs_4, ^land_short_5
+    branch %t27, ^land_rhs_10, ^land_short_11
 
-  block ^land_rhs_4:
+  block ^land_rhs_10:
     %t28 = addr $member_dest
     %t29 = index i8 [projection=field] %t28, 0
     %t30 = index i8 [projection=field] %t29, 0
     %t31 = load typed i32 %t30
     %t32 = cmp eq i32 %t31, 17
     %t33 = cmp ne i64 %t32, 0
-    store typed i64 %t33, $land__2
-    jump ^land_end_6
+    store typed i64 %t33, $land__4
+    jump ^land_end_12
 
-  block ^land_short_5:
-    store typed i64 0, $land__2
-    jump ^land_end_6
+  block ^land_short_11:
+    store typed i64 0, $land__4
+    jump ^land_end_12
 
-  block ^land_end_6:
-    %t34 = load typed i64 $land__2
+  block ^land_end_12:
+    %t34 = load typed i64 $land__4
     branch %t34, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

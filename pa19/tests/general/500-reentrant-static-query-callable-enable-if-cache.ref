@@ -1,3 +1,8 @@
+declare global @api__is_executor_executor___value : u8 [binding=weak, object=_ZN3api11is_executorINS_8executorEE5valueE]
+declare global @api__query_fn__call_traits_impl_executor_void___cppgm_class_template_identity_1__void_void_void_void___overload : i32 [binding=weak, object=_ZN3api8query_fn11call_traitsINS0_4implENS_8executorEFvNS_9execution6detail12relationship14continuation_tILi0EEEEvvvvE8overloadE]
+declare global @api__query_fn__call_traits_impl_executor_void___cppgm_class_template_identity_2__void_void_void_void___overload : i32 [binding=weak, object=_ZN3api8query_fn11call_traitsINS0_4implENS_8executorEFvNS_9execution6detail12relationship6fork_tILi0EEEEvvvvE8overloadE]
+declare global @api__can_query_executor___cppgm_class_template_identity_2___value : u8 [binding=weak, object=_ZN3api9can_queryINS_8executorENS_9execution6detail12relationship6fork_tILi0EEEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $query : obj<1x1>
   slot $result : obj<1x1>

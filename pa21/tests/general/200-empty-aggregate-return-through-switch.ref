@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $v
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load typed ptr %t4
-    %t6 = copy ptr nullptr
+    %t6 = copy ptr 0
     %t7 = cmp eq ptr %t5, %t6
     branch %t7, ^cond_then_1, ^cond_else_2
 

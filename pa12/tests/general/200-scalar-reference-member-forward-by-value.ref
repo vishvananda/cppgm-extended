@@ -5,7 +5,7 @@ function @take(%x : f64) -> i32 [binding=strong, object=_Z4taked] {
   block ^entry:
     store typed f64 %x, $x
     %t1 = load typed f64 $x
-    %t2 = cmp eq f64 %t1, 2.0
+    %t2 = cmp eq f64 %t1, 2
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $h : obj<8x8>
 
   block ^entry:
-    store typed f64 2.0, $x
+    store typed f64 2, $x
     %t1 = addr $h
     %t2 = addr $x
     call void @holder__holder(%t1, %t2)

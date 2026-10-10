@@ -9,43 +9,32 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    temp %left -> [rbp-8] : i64
-    temp %right -> [rbp-16] : i64
-    temp %iteration -> [rbp-24] : i64
-    temp %phi-cycle-scratch -> [rbp-32] : i64
 
   block ^entry
-    mov r11, 1
-    store.i64 [rbp-8], r11
-    mov r11, 2
-    store.i64 [rbp-16], r11
-    mov r11, 0
-    store.i64 [rbp-24], r11
+    mov r9, 1
+    mov rdi, 2
+    mov r8, 0
     jmp ^loop
 
   block ^loop
-    cmp.i64 [rbp-24], 1
+    cmp.i64 r8, 1
     jge ^exit
     jmp ^latch
 
   block ^latch
-    load.i64 r8, [rbp-24]
-    add r8, 1
-    store.i64 [rbp-24], r8
-    load.i64 r11, [rbp-16]
-    store.i64 [rbp-32], r11
-    load.i64 r11, [rbp-8]
-    store.i64 [rbp-16], r11
-    load.i64 r11, [rbp-32]
-    store.i64 [rbp-8], r11
+    mov rsi, r8
+    add rsi, 1
+    mov r8, rsi
+    mov r10, r9
+    mov r9, rdi
+    mov rdi, r10
     jmp ^loop
 
   block ^exit
-    load.i64 r8, [rbp-8]
-    imul r8, 10
-    add r8, [rbp-16]
-    ret r8
+    imul r9, 10
+    add r9, rdi
+    ret r9

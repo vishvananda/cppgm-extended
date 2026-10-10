@@ -1,4 +1,4 @@
-global @__cppgm_class_template_identity_0_0_0__data [binding=weak, object=_ZN6tablesIvE4dataE] = {
+global @tables_void___data [binding=weak, object=_ZN6tablesIvE4dataE] = {
   i32 4
   i32 10
   i32 3
@@ -20,7 +20,7 @@ function @reader__read(%this : ptr [object_bytes=1]) -> i32 [binding=weak, objec
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = addr @__cppgm_class_template_identity_0_0_0__data
+    %t1 = addr @tables_void___data
     %t2 = binary mul i64 1, 8
     %t3 = index i8 [projection=array_element] %t1, %t2
     %t4 = index i32 [projection=array_element] %t3, 0

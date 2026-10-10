@@ -13,41 +13,32 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    temp %start -> [rbp-<off0>] : i64
-    temp %current -> [rbp-<off1>] : i64
 
   block ^entry
-    mov rax, 0
-    cmp.i64 rax, 0
-    jne ^side
-    jmp ^__phi_edge_6
+    jmp ^entry~join
+
+  block ^entry~join
+    mov r8, 7
+    jmp ^join
 
   block ^side
-    mov <gpr0>, 9
-    store.i64 [rbp-<off0>], <gpr0>
+    mov r8, 9
     jmp ^join
 
   block ^join
-    load.i64 <gpr0>, [rbp-<off0>]
-    store.i64 [rbp-<off1>], <gpr0>
+    mov r9, r8
     jmp ^loop
 
   block ^loop
-    cmp.i64 [rbp-<off1>], 12
+    cmp.i64 r9, 12
     jge ^exit
     jmp ^latch
 
   block ^latch
-    load.i64 r8, [rbp-<off1>]
+    mov r8, r9
     add r8, 1
-    store.i64 [rbp-<off1>], r8
+    mov r9, r8
     jmp ^loop
 
   block ^exit
-    load.i64 rax, [rbp-<off1>]
-    ret rax
-
-  block ^__phi_edge_6
-    mov <gpr0>, 7
-    store.i64 [rbp-<off0>], <gpr0>
-    jmp ^join
+    ret r9

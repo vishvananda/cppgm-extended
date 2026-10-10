@@ -47,70 +47,44 @@ function @copy_all
     epilogues shared
 
   block ^entry
-    mov rdi, @dst24
-    mov rsi, @src24
-    copy_bytes 24x8, rdi, rsi
-    mov rdi, @dst7
-    mov rsi, @src7
-    copy_bytes 7x1, rdi, rsi
-    mov rdi, @dst33
-    mov rsi, @src33
-    copy_bytes 33x1, rdi, rsi
+    copy_bytes 24x8, @dst24, @src24
+    copy_bytes 7x1, @dst7, @src7
+    copy_bytes 33x1, @dst33, @src33
     ret
 
 function @main
   abi
     return i64 -> rax
   frame
-    stack_size 80
+    stack_size 48
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
-    preserve rbx r12 r13
 
   block ^entry
     call @copy_all [args=()]
     load.i64 r8, @dst24
-    mov r9, @dst24
-    lea r9, [r9+8]
-    load.i64 rdi, [r9]
-    mov r9, @dst24
-    lea r9, [r9+16]
-    load.i64 rsi, [r9]
+    load.i64 r9, @dst24+8
+    load.i64 rdi, @dst24+16
+    add r8, r9
+    add r8, rdi
+    load.u32 r9, @dst7
+    load.u16 rdi, @dst7+4
+    load.u8 rsi, @dst7+6
+    add r8, r9
     add r8, rdi
     add r8, rsi
-    load.u32 r9, @dst7
-    mov rdi, @dst7
-    lea rdi, [rdi+4]
-    load.u16 rsi, [rdi]
-    mov rdi, @dst7
-    lea rdi, [rdi+6]
-    load.u8 rbx, [rdi]
-    zext.i32 r9
-    zext.i16 rsi
-    zext.i8 rbx
-    add r8, r9
-    add r8, rsi
-    add r8, rbx
     load.i64 r9, @dst33
-    mov rdi, @dst33
-    lea rdi, [rdi+8]
-    load.i64 rsi, [rdi]
-    mov rdi, @dst33
-    lea rdi, [rdi+16]
-    load.i64 rbx, [rdi]
-    mov rdi, @dst33
-    lea rdi, [rdi+24]
-    load.i64 r12, [rdi]
-    mov rdi, @dst33
-    lea rdi, [rdi+32]
-    load.u8 r13, [rdi]
+    load.i64 rdi, @dst33+8
+    load.i64 rsi, @dst33+16
+    load.i64 rdx, @dst33+24
+    load.u8 rcx, @dst33+32
     add r8, r9
+    add r8, rdi
     add r8, rsi
-    add r8, rbx
-    add r8, r12
-    add r8, r13
+    add r8, rdx
+    add r8, rcx
     cmp.i64 r8, 431
-    setne rax
-    movzx rax, rax
-    ret rax
+    setne r8
+    movzx r8, r8
+    ret r8

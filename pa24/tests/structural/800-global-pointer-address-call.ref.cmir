@@ -33,6 +33,5 @@ function @main
 
   block ^entry
     mov r8, @fp
-    load.ptr <gpr0>, @fp
-    call *<gpr0> [args=()]
+    call *@fp [args=()]
     ret rax

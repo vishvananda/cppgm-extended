@@ -19,23 +19,23 @@ function @builder__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=
     %t2 = addr $arg__1
     %t3 = addr $argobj__2
     %t4 = addr $m
-    %t5 = call obj<1x1> @map_like_builder__value_type___end(%t4)
+    %t5 = call obj<1x1> @map_like_value_type___end(%t4)
     copyobj 1x1 %t5, %t3
-    call void @map_const_iter_builder__value_type___map_const_iter_builder__value_type___ov2(%t2, $argobj__2)
+    call void @map_const_iter_value_type___map_const_iter__ov2(%t2, $argobj__2)
     call void @use_const_ref(%t2)
     return i32 0
 }
-function @map_like_builder__value_type___end(%this : ptr [object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN8map_likeIZN7builder1fEvE10value_typeE3endEv, inline_hint=yes] {
+function @map_like_value_type___end(%this : ptr [object_bytes=1]) -> obj<1x1> [result_classes=none, binding=internal, object=_ZN8map_likeIZN7builder1fEvE10value_typeE3endEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<1x1>
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr $retobj__1
-    call void @map_iter_builder__value_type___map_iter_builder__value_type_(%t1)
+    call void @map_iter_value_type___map_iter(%t1)
     return obj<1x1> $retobj__1
 }
-function @map_const_iter_builder__value_type___map_const_iter_builder__value_type___ov2(%this : ptr [object_bytes=1], %x : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN14map_const_iterIZN7builder1fEvE10value_typeEC1E8map_iterIS1_E, inline_hint=yes] {
+function @map_const_iter_value_type___map_const_iter__ov2(%this : ptr [object_bytes=1], %x : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN14map_const_iterIZN7builder1fEvE10value_typeEC1E8map_iterIS1_E, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $x : obj<1x1>
 
@@ -47,19 +47,19 @@ function @map_const_iter_builder__value_type___map_const_iter_builder__value_typ
     %t3 = index i8 [projection=field] %t2, 0
     return void
 }
-function @use_const_ref(%__param0 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_Z13use_const_refIZN7builder1fEvE10value_typeEvRK14map_const_iterIT_E] {
+function @use_const_ref(%__param0 : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_Z13use_const_refIZN7builder1fEvE10value_typeEvRK14map_const_iterIT_E] {
   slot $__param0 : ptr
 
   block ^entry:
     store typed ptr %__param0, $__param0
     return void
 }
-function @map_iter_builder__value_type___map_iter_builder__value_type_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN8map_iterIZN7builder1fEvE10value_typeEC1Ev, inline_hint=yes] {
+function @map_iter_value_type___map_iter(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZN8map_iterIZN7builder1fEvE10value_typeEC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return void
 }
-alias object _ZN14map_const_iterIZN7builder1fEvE10value_typeEC2E8map_iterIS1_E = @map_const_iter_builder__value_type___map_const_iter_builder__value_type___ov2
-alias object _ZN8map_iterIZN7builder1fEvE10value_typeEC2Ev = @map_iter_builder__value_type___map_iter_builder__value_type_
+alias object _ZN14map_const_iterIZN7builder1fEvE10value_typeEC2E8map_iterIS1_E = @map_const_iter_value_type___map_const_iter__ov2
+alias object _ZN8map_iterIZN7builder1fEvE10value_typeEC2Ev = @map_iter_value_type___map_iter

@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @arg__arg(%t1, 7)
     %t2 = addr $d
     %t3 = addr $a
-    call void @derived_int___derived_int___ov3(%t2, %t3)
+    call void @derived_int___derived(%t2, %t3)
     %t4 = addr $d
     %t5 = index i8 %t4, 0
     %t6 = index i8 [projection=field] %t5, 0
@@ -41,20 +41,20 @@ function @arg__arg(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak
     store typed i32 %t1, %t3
     return void
 }
-function @derived_int___derived_int___ov3(%this : ptr [object_bytes=4], %u : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7derivedIiECI14baseIiEI3argEEOT_, inline_hint=yes] {
+function @derived_int___derived(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7derivedIiEC1EO3arg, inline_hint=yes] {
   slot $this : ptr
-  slot $u : ptr
+  slot $__param1 : ptr
 
   block ^entry:
     store typed ptr %this, $this
-    store typed ptr %u, $u
+    store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load typed ptr $u
-    call void @base_int___base_int___ov3__base_entry(%t2, %t3)
+    %t3 = load typed ptr $__param1
+    call void @base_int___base__base_entry(%t2, %t3)
     return void
 }
-function @base_int___base_int___ov3__base_entry(%this : ptr [object_bytes=4], %u : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4baseIiEC2I3argEEOT_, object_root=yes, inline_hint=yes] {
+function @base_int___base__base_entry(%this : ptr [object_bytes=4], %u : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4baseIiEC2I3argEEOT_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $u : ptr
 
@@ -70,4 +70,4 @@ function @base_int___base_int___ov3__base_entry(%this : ptr [object_bytes=4], %u
     return void
 }
 alias object _ZN3argC2Ei = @arg__arg
-alias object _ZN7derivedIiECI24baseIiEI3argEEOT_ = @derived_int___derived_int___ov3
+alias object _ZN7derivedIiEC2EO3arg = @derived_int___derived

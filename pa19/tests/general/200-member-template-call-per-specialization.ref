@@ -10,11 +10,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $narrow
     store typed i32 7, $refarg__1
     %t2 = addr $refarg__1
-    call void @leaf_int___leaf_wide___ov3(%t1, %t2)
+    call void @leaf_int___leaf(%t1, %t2)
     %t3 = addr $payload
     %t4 = addr $broad
     %t5 = addr $payload
-    call void @leaf_wide___leaf_wide___ov3(%t4, %t5)
+    call void @leaf_wide___leaf(%t4, %t5)
     %t6 = addr $narrow
     store typed i32 1, $refarg__2
     %t7 = addr $refarg__2
@@ -49,7 +49,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_6:
     %t18 = addr $narrow
     %t19 = addr $payload
-    %t20 = call i32 @leaf_int___measure__ov2(%t18, %t19)
+    %t20 = call i32 @leaf_int___measure__2(%t18, %t19)
     %t21 = binary mul nowrap i32 4, 1000
     %t22 = binary add nowrap i32 %t21, 16
     %t23 = cmp ne i32 %t20, %t22
@@ -64,7 +64,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_9:
     return i32 0
 }
-function @leaf_int___leaf_wide___ov3(%this : ptr [object_bytes=4], %t : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4leafIiEC1IiEEOT_, inline_hint=yes] {
+function @leaf_int___leaf(%this : ptr [object_bytes=4], %t : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4leafIiEC1IiEEOT_, inline_hint=yes] {
   slot $this : ptr
   slot $t : ptr
 
@@ -78,7 +78,7 @@ function @leaf_int___leaf_wide___ov3(%this : ptr [object_bytes=4], %t : ptr [pas
     store typed i32 %t2, %t4
     return void
 }
-function @leaf_wide___leaf_wide___ov3(%this : ptr [object_bytes=16], %t : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZN4leafI4wideEC1IRS0_EEOT_, inline_hint=yes] {
+function @leaf_wide___leaf(%this : ptr [object_bytes=16], %t : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZN4leafI4wideEC1IRS0_EEOT_, inline_hint=yes] {
   slot $this : ptr
   slot $t : ptr
 
@@ -108,17 +108,17 @@ function @leaf_wide___measure(%this : ptr [object_bytes=16], %__param1 : ptr [pa
   block ^entry:
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
-    %t1 = call i32 @leaf_wide___width__ov2()
+    %t1 = call i32 @leaf_wide___width()
     return i32 %t1
 }
-function @leaf_int___measure__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=weak, object=_ZNK4leafIiE7measureIR4wideEEiOT_, inline_hint=yes] {
+function @leaf_int___measure__2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=weak, object=_ZNK4leafIiE7measureIR4wideEEiOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
   block ^entry:
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
-    %t1 = call i32 @leaf_int___width__ov2()
+    %t1 = call i32 @leaf_int___width__2()
     return i32 %t1
 }
 function @leaf_int___width() -> i32 [binding=weak, object=_ZN4leafIiE5widthIOiEEiv, inline_hint=yes] {
@@ -131,7 +131,7 @@ function @leaf_int___width() -> i32 [binding=weak, object=_ZN4leafIiE5widthIOiEE
     %t6 = convert trunc i32 i64 %t5
     return i32 %t6
 }
-function @leaf_wide___width__ov2() -> i32 [binding=weak, object=_ZN4leafI4wideE5widthIOiEEiv, inline_hint=yes] {
+function @leaf_wide___width() -> i32 [binding=weak, object=_ZN4leafI4wideE5widthIOiEEiv, inline_hint=yes] {
   block ^entry:
     %t1 = const i64 16
     %t2 = convert sext i64 i32 1000
@@ -141,7 +141,7 @@ function @leaf_wide___width__ov2() -> i32 [binding=weak, object=_ZN4leafI4wideE5
     %t6 = convert trunc i32 i64 %t5
     return i32 %t6
 }
-function @leaf_int___width__ov2() -> i32 [binding=weak, object=_ZN4leafIiE5widthIR4wideEEiv, inline_hint=yes] {
+function @leaf_int___width__2() -> i32 [binding=weak, object=_ZN4leafIiE5widthIR4wideEEiv, inline_hint=yes] {
   block ^entry:
     %t1 = const i64 4
     %t2 = convert sext i64 i32 1000
@@ -151,5 +151,5 @@ function @leaf_int___width__ov2() -> i32 [binding=weak, object=_ZN4leafIiE5width
     %t6 = convert trunc i32 i64 %t5
     return i32 %t6
 }
-alias object _ZN4leafIiEC2IiEEOT_ = @leaf_int___leaf_wide___ov3
-alias object _ZN4leafI4wideEC2IRS0_EEOT_ = @leaf_wide___leaf_wide___ov3
+alias object _ZN4leafIiEC2IiEEOT_ = @leaf_int___leaf
+alias object _ZN4leafI4wideEC2IRS0_EEOT_ = @leaf_wide___leaf

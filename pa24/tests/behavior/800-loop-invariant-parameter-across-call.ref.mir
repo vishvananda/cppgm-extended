@@ -18,7 +18,7 @@ function @sink
     param %value -> rdi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -33,7 +33,7 @@ function @write_and_clobber
     param %other -> rdx : ptr
     return void -> void
   frame
-    stack_size 32
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -57,28 +57,26 @@ function @loop_store
     epilogues shared
     preserve rbx r12 r13 r14
     slot $iteration -> [rbp-8] : i64
-    temp %current -> [rbp-16] : i64
 
   block ^entry
-    mov r13, rdi
+    mov rbx, rdi
     mov r12, rsi
-    mov rbx, rdx
+    mov r13, rdx
     store.i64 [rbp-8], 0
     jmp ^condition
 
   block ^condition
     load.i64 r14, [rbp-8]
-    store.i64 [rbp-16], r14
-    cmp.i64 [rbp-16], rbx
+    cmp.i64 r14, r13
     jb ^body
     jmp ^done
 
   block ^body
-    mov rdi, r13
-    load.i64 rsi, [rbp-16]
+    mov rdi, rbx
+    mov rsi, r14
     mov rdx, r12
     call @write_and_clobber [args=(rdx,rsi,rdi)]
-    load.i64 r8, [rbp-16]
+    mov r8, r14
     add r8, 1
     store.i64 [rbp-8], r8
     jmp ^condition
@@ -103,17 +101,16 @@ function @main
     mov rsi, r12
     mov rdx, 2
     call @loop_store [args=(rdx,rsi,rdi)]
-    load.i64 r8, [rbx]
-    load.i64 r9, [r12]
+    load.i64 rbx, [rbx]
+    load.i64 r12, [r12]
     mov rdx, 1
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
+    cmp.i64 rbx, rdx
+    setne rbx
+    movzx rbx, rbx
     mov rdx, 0
-    cmp.i64 r9, rdx
-    setne r9
-    movzx r9, r9
-    or r8, r9
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    cmp.i64 r12, rdx
+    setne r12
+    movzx r12, r12
+    or rbx, r12
+    sext.i32 rbx
+    ret rbx

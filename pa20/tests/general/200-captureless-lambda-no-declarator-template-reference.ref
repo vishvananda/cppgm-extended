@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = index i8 [projection=field] %t3, 0
     store typed ptr %t2, %t4
     %t5 = addr $ref
-    %t6 = call ptr @optional_ref_lvalue_reference_to_int___get(%t5)
+    %t6 = call ptr @optional_ref_int____get(%t5)
     %t7 = load typed i32 %t6
     %t8 = load typed i32 $value
     %t9 = cmp eq i32 %t7, %t8
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load typed i32 $cond__1
     return i32 %t10
 }
-function @optional_ref_lvalue_reference_to_int___get(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK12optional_refIRiE3getEv, inline_hint=yes] {
+function @optional_ref_int____get(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK12optional_refIRiE3getEv, inline_hint=yes] {
   slot $this : ptr
   slot $condaddr__1 : ptr
 
@@ -48,7 +48,7 @@ function @optional_ref_lvalue_reference_to_int___get(%this : ptr [object_bytes=8
     jump ^condaddr_end_3
 
   block ^condaddr_else_2:
-    %t7 = addr @__lambda___cppgm_class_template_identity_0_0_0__get_t40_40
+    %t7 = addr @optional_ref_int______lambda_optional_ref_int____get_t40_40___FUN
     call void %t7() as () -> void
     %t8 = load typed ptr $this
     %t9 = index i8 [projection=field] %t8, 0
@@ -60,7 +60,7 @@ function @optional_ref_lvalue_reference_to_int___get(%this : ptr [object_bytes=8
     %t11 = load typed ptr $condaddr__1
     return ptr %t11
 }
-function @__lambda___cppgm_class_template_identity_0_0_0__get_t40_40() -> void [binding=weak, object=_ZZNK12optional_refIRiE3getEvENUlvE_8__invokeEv, inline_hint=yes] {
+function @optional_ref_int______lambda_optional_ref_int____get_t40_40___FUN() -> void [binding=internal, object=_ZZNK12optional_refIRiE3getEvENUlvE_8__invokeEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $marker : i32
 
   block ^entry:

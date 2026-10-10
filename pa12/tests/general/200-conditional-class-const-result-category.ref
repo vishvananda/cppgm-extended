@@ -22,234 +22,234 @@ function @make_constant(%ret : ptr [pass=indirect_result, object_bytes=4]) -> vo
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $fixed : obj<4x4>
-  slot $call__1 : i32
-  slot $arg__2 : obj<4x4>
-  slot $call__3 : i32
+  slot $arg__1 : obj<4x4>
+  slot $call__2 : i32
+  slot $cleanup_return__3 : i32
   slot $arg__4 : obj<4x4>
   slot $call__5 : i32
   slot $arg__6 : obj<4x4>
   slot $arg__7 : obj<4x4>
-  slot $call__8 : i32
-  slot $arg__9 : obj<4x4>
+  slot $lifetime__8 : u8
+  slot $lifetime__9 : u8
   slot $call__10 : i32
   slot $arg__11 : obj<4x4>
+  slot $call__12 : i32
+  slot $arg__13 : obj<4x4>
+  slot $call__14 : i32
   slot $extended : ptr
-  slot $arg__12 : obj<4x4>
-  slot $cleanup_return__13 : i32
-  slot $lifetime__14 : u8
-  slot $lifetime__15 : u8
-  slot $lifetime__16 : u8
+  slot $tmpobj__15 : obj<4x4>
+  slot $arg__16 : obj<4x4>
   slot $lifetime__17 : u8
-  slot $tmpobj__18 : obj<4x4>
+  slot $lifetime__18 : u8
   slot $lor__19 : i64
 
   block ^entry:
     %t1 = addr $fixed
     call void @Box__Box(%t1, 7)
-    eh_try ^cleanup_action_5
-    %t2 = addr $arg__2
+    eh_try ^cleanup_action_4
+    %t2 = addr $arg__1
     eh_end
-    jump ^call_unwind_end_9
+    jump ^call_unwind_end_8
 
-  block ^cleanup_resume_4:
+  block ^cleanup_resume_3:
     resume
 
-  block ^cleanup_action_5:
+  block ^cleanup_action_4:
     %t3 = addr $fixed
     call void @Box___Box(%t3)
-    jump ^cleanup_resume_4
+    jump ^cleanup_resume_3
 
-  block ^call_unwind_end_9:
-    branch 0, ^condobj_then_6, ^condobj_else_7
+  block ^call_unwind_end_8:
+    branch 0, ^condobj_then_5, ^condobj_else_6
 
-  block ^condobj_then_6:
-    eh_try ^cleanup_action_5
+  block ^condobj_then_5:
+    eh_try ^cleanup_action_4
     call void @Box__Box(%t2, 3)
     eh_end
-    jump ^condobj_end_8
+    jump ^condobj_end_7
 
-  block ^condobj_else_7:
-    eh_try ^cleanup_action_5
+  block ^condobj_else_6:
+    eh_try ^cleanup_action_4
     %t4 = addr $fixed
     call void @Box__Box__ov3(%t2, %t4)
     eh_end
-    jump ^condobj_end_8
+    jump ^condobj_end_7
 
-  block ^condobj_end_8:
-    eh_try ^cleanup_action_10
+  block ^condobj_end_7:
+    eh_try ^cleanup_action_9
     %t5 = call i32 @category(%t2)
-    store typed i32 %t5, $call__1
-    %t6 = load typed i32 $call__1
+    store typed i32 %t5, $call__2
+    %t6 = load typed i32 $call__2
     %t7 = cmp ne i32 %t6, 0
     eh_end
-    jump ^call_unwind_end_11
+    jump ^call_unwind_end_12
 
-  block ^cleanup_action_10:
+  block ^cleanup_action_9:
     call void @Box___Box(%t2)
-    jump ^cleanup_action_5
+    jump ^cleanup_action_4
 
-  block ^call_unwind_end_11:
-    branch %t7, ^cond_true_cleanup_12, ^cond_false_cleanup_13
+  block ^call_unwind_end_12:
+    branch %t7, ^cond_true_cleanup_10, ^cond_false_cleanup_11
 
-  block ^cond_true_cleanup_12:
+  block ^cond_true_cleanup_10:
     call void @Box___Box(%t2)
     jump ^if_then_1
 
-  block ^cond_false_cleanup_13:
+  block ^cond_false_cleanup_11:
     call void @Box___Box(%t2)
     jump ^if_else_2
 
   block ^if_then_1:
-    store typed i32 1, $cleanup_return__13
-    jump ^return_cleanup_action_15
+    store typed i32 1, $cleanup_return__3
+    jump ^return_cleanup_action_14
 
-  block ^return_cleanup_terminal_14:
-    return i32 $cleanup_return__13
+  block ^return_cleanup_terminal_13:
+    return i32 $cleanup_return__3
 
-  block ^return_cleanup_action_15:
+  block ^return_cleanup_action_14:
     %t8 = addr $fixed
     call void @Box___Box(%t8)
-    jump ^return_cleanup_terminal_14
+    jump ^return_cleanup_terminal_13
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_15
 
-  block ^if_end_3:
-    eh_try ^cleanup_action_5
+  block ^if_end_15:
+    eh_try ^cleanup_action_4
     %t9 = addr $arg__4
     eh_end
-    branch 1, ^condobj_then_19, ^condobj_else_20
+    branch 1, ^condobj_then_18, ^condobj_else_19
 
-  block ^condobj_then_19:
-    eh_try ^cleanup_action_5
+  block ^condobj_then_18:
+    eh_try ^cleanup_action_4
     call void @Box__Box(%t9, 3)
     eh_end
-    jump ^condobj_end_21
+    jump ^condobj_end_20
 
-  block ^condobj_else_20:
-    eh_try ^cleanup_action_5
+  block ^condobj_else_19:
+    eh_try ^cleanup_action_4
     %t10 = addr $fixed
     call void @Box__Box__ov3(%t9, %t10)
     eh_end
-    jump ^condobj_end_21
+    jump ^condobj_end_20
 
-  block ^condobj_end_21:
-    eh_try ^cleanup_action_22
+  block ^condobj_end_20:
+    eh_try ^cleanup_action_21
     %t11 = call i32 @category(%t9)
-    store typed i32 %t11, $call__3
-    %t12 = load typed i32 $call__3
+    store typed i32 %t11, $call__5
+    %t12 = load typed i32 $call__5
     %t13 = cmp ne i32 %t12, 0
     eh_end
-    jump ^call_unwind_end_23
+    jump ^call_unwind_end_24
 
-  block ^cleanup_action_22:
+  block ^cleanup_action_21:
     call void @Box___Box(%t9)
-    jump ^cleanup_action_5
+    jump ^cleanup_action_4
 
-  block ^call_unwind_end_23:
-    branch %t13, ^cond_true_cleanup_24, ^cond_false_cleanup_25
+  block ^call_unwind_end_24:
+    branch %t13, ^cond_true_cleanup_22, ^cond_false_cleanup_23
 
-  block ^cond_true_cleanup_24:
+  block ^cond_true_cleanup_22:
     call void @Box___Box(%t9)
     jump ^if_then_16
 
-  block ^cond_false_cleanup_25:
+  block ^cond_false_cleanup_23:
     call void @Box___Box(%t9)
     jump ^if_else_17
 
   block ^if_then_16:
-    store typed i32 1, $cleanup_return__13
-    jump ^return_cleanup_action_15
+    store typed i32 1, $cleanup_return__3
+    jump ^return_cleanup_action_14
 
   block ^if_else_17:
-    jump ^if_end_18
+    jump ^if_end_25
 
-  block ^if_end_18:
-    store u8 0, $lifetime__14
-    store u8 0, $lifetime__15
-    eh_try ^conditional_cleanup_dispatch_34
-    %t19 = addr $arg__6
+  block ^if_end_25:
+    store u8 0, $lifetime__9
+    store u8 0, $lifetime__8
+    eh_try ^conditional_cleanup_dispatch_37
+    %t14 = addr $arg__6
     eh_end
-    branch 1, ^condobj_then_37, ^condobj_else_38
+    branch 1, ^condobj_then_29, ^condobj_else_30
 
-  block ^conditional_cleanup_resume_29:
+  block ^conditional_cleanup_resume_34:
     resume
 
-  block ^conditional_cleanup_dispatch_30:
-    %t14 = addr $fixed
-    call void @Box___Box(%t14)
-    jump ^conditional_cleanup_resume_29
+  block ^conditional_cleanup_dispatch_35:
+    %t20 = addr $fixed
+    call void @Box___Box(%t20)
+    jump ^conditional_cleanup_resume_34
 
-  block ^conditional_cleanup_dispatch_31:
-    %t15 = load u8 $lifetime__15
-    branch %t15, ^conditional_temporary_destroy_32, ^conditional_temporary_done_33
+  block ^conditional_cleanup_dispatch_36:
+    %t21 = load u8 $lifetime__8
+    branch %t21, ^conditional_temporary_destroy_38, ^conditional_temporary_done_39
 
-  block ^conditional_temporary_destroy_32:
-    store u8 0, $lifetime__15
-    %t16 = addr $arg__7
-    call void @Tracker___Tracker(%t16)
-    jump ^conditional_temporary_done_33
+  block ^conditional_temporary_destroy_38:
+    store u8 0, $lifetime__8
+    %t22 = addr $arg__7
+    call void @Tracker___Tracker(%t22)
+    jump ^conditional_temporary_done_39
 
-  block ^conditional_temporary_done_33:
-    jump ^conditional_cleanup_dispatch_30
+  block ^conditional_temporary_done_39:
+    jump ^conditional_cleanup_dispatch_35
 
-  block ^conditional_cleanup_dispatch_34:
-    %t17 = load u8 $lifetime__14
-    branch %t17, ^conditional_temporary_destroy_35, ^conditional_temporary_done_36
+  block ^conditional_cleanup_dispatch_37:
+    %t23 = load u8 $lifetime__9
+    branch %t23, ^conditional_temporary_destroy_40, ^conditional_temporary_done_41
 
-  block ^conditional_temporary_destroy_35:
-    store u8 0, $lifetime__14
-    %t18 = addr $arg__6
-    call void @Box___Box(%t18)
-    jump ^conditional_temporary_done_36
+  block ^conditional_temporary_destroy_40:
+    store u8 0, $lifetime__9
+    %t24 = addr $arg__6
+    call void @Box___Box(%t24)
+    jump ^conditional_temporary_done_41
 
-  block ^conditional_temporary_done_36:
-    jump ^conditional_cleanup_dispatch_31
+  block ^conditional_temporary_done_41:
+    jump ^conditional_cleanup_dispatch_36
 
-  block ^condobj_then_37:
-    eh_try ^conditional_cleanup_dispatch_34
-    %t20 = addr $arg__7
-    call void @Tracker__Tracker(%t20, 5)
-    store u8 1, $lifetime__15
+  block ^condobj_then_29:
+    eh_try ^conditional_cleanup_dispatch_37
+    %t15 = addr $arg__7
+    call void @Tracker__Tracker(%t15, 5)
+    store u8 1, $lifetime__8
     eh_end
-    eh_try ^conditional_cleanup_dispatch_34
-    call void @Box__Box__ov2(%t19, %t20)
+    eh_try ^conditional_cleanup_dispatch_37
+    call void @Box__Box__ov2(%t14, %t15)
     eh_end
-    jump ^condobj_end_39
+    jump ^condobj_end_31
 
-  block ^condobj_else_38:
-    eh_try ^conditional_cleanup_dispatch_34
-    %t21 = addr $fixed
-    call void @Box__Box__ov3(%t19, %t21)
+  block ^condobj_else_30:
+    eh_try ^conditional_cleanup_dispatch_37
+    %t16 = addr $fixed
+    call void @Box__Box__ov3(%t14, %t16)
     eh_end
-    jump ^condobj_end_39
+    jump ^condobj_end_31
 
-  block ^condobj_end_39:
-    store u8 1, $lifetime__14
-    eh_try ^conditional_cleanup_dispatch_34
-    %t22 = call i32 @category(%t19)
-    store typed i32 %t22, $call__5
-    %t23 = load typed i32 $call__5
-    %t24 = cmp ne i32 %t23, 0
+  block ^condobj_end_31:
+    store u8 1, $lifetime__9
+    eh_try ^conditional_cleanup_dispatch_37
+    %t17 = call i32 @category(%t14)
+    store typed i32 %t17, $call__10
+    %t18 = load typed i32 $call__10
+    %t19 = cmp ne i32 %t18, 0
     eh_end
-    branch %t24, ^cond_true_cleanup_40, ^cond_false_cleanup_41
+    branch %t19, ^cond_true_cleanup_32, ^cond_false_cleanup_33
 
-  block ^cond_true_cleanup_40:
-    %t25 = load u8 $lifetime__14
+  block ^cond_true_cleanup_32:
+    %t25 = load u8 $lifetime__9
     branch %t25, ^conditional_temporary_destroy_42, ^conditional_temporary_done_43
 
   block ^conditional_temporary_destroy_42:
-    store u8 0, $lifetime__14
+    store u8 0, $lifetime__9
     %t26 = addr $arg__6
     call void @Box___Box(%t26)
     jump ^conditional_temporary_done_43
 
   block ^conditional_temporary_done_43:
-    %t27 = load u8 $lifetime__15
+    %t27 = load u8 $lifetime__8
     branch %t27, ^conditional_temporary_destroy_44, ^conditional_temporary_done_45
 
   block ^conditional_temporary_destroy_44:
-    store u8 0, $lifetime__15
+    store u8 0, $lifetime__8
     %t28 = addr $arg__7
     call void @Tracker___Tracker(%t28)
     jump ^conditional_temporary_done_45
@@ -257,22 +257,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^conditional_temporary_done_45:
     jump ^if_then_26
 
-  block ^cond_false_cleanup_41:
-    %t29 = load u8 $lifetime__14
+  block ^cond_false_cleanup_33:
+    %t29 = load u8 $lifetime__9
     branch %t29, ^conditional_temporary_destroy_46, ^conditional_temporary_done_47
 
   block ^conditional_temporary_destroy_46:
-    store u8 0, $lifetime__14
+    store u8 0, $lifetime__9
     %t30 = addr $arg__6
     call void @Box___Box(%t30)
     jump ^conditional_temporary_done_47
 
   block ^conditional_temporary_done_47:
-    %t31 = load u8 $lifetime__15
+    %t31 = load u8 $lifetime__8
     branch %t31, ^conditional_temporary_destroy_48, ^conditional_temporary_done_49
 
   block ^conditional_temporary_destroy_48:
-    store u8 0, $lifetime__15
+    store u8 0, $lifetime__8
     %t32 = addr $arg__7
     call void @Tracker___Tracker(%t32)
     jump ^conditional_temporary_done_49
@@ -281,26 +281,26 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_else_27
 
   block ^if_then_26:
-    store typed i32 1, $cleanup_return__13
-    jump ^return_cleanup_action_15
+    store typed i32 1, $cleanup_return__3
+    jump ^return_cleanup_action_14
 
   block ^if_else_27:
-    jump ^if_end_28
+    jump ^if_end_50
 
-  block ^if_end_28:
-    eh_try ^cleanup_action_5
-    %t33 = addr $arg__9
+  block ^if_end_50:
+    eh_try ^cleanup_action_4
+    %t33 = addr $arg__11
     eh_end
     branch 0, ^condobj_then_53, ^condobj_else_54
 
   block ^condobj_then_53:
-    eh_try ^cleanup_action_5
+    eh_try ^cleanup_action_4
     call void @make_constant(%t33)
     eh_end
     jump ^condobj_end_55
 
   block ^condobj_else_54:
-    eh_try ^cleanup_action_5
+    eh_try ^cleanup_action_4
     call void @Box__Box(%t33, 4)
     eh_end
     jump ^condobj_end_55
@@ -308,48 +308,48 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^condobj_end_55:
     eh_try ^cleanup_action_56
     %t34 = call i32 @category(%t33)
-    store typed i32 %t34, $call__8
-    %t35 = load typed i32 $call__8
+    store typed i32 %t34, $call__12
+    %t35 = load typed i32 $call__12
     %t36 = cmp ne i32 %t35, 0
     eh_end
-    jump ^call_unwind_end_57
+    jump ^call_unwind_end_59
 
   block ^cleanup_action_56:
     call void @Box___Box(%t33)
-    jump ^cleanup_action_5
+    jump ^cleanup_action_4
 
-  block ^call_unwind_end_57:
-    branch %t36, ^cond_true_cleanup_58, ^cond_false_cleanup_59
+  block ^call_unwind_end_59:
+    branch %t36, ^cond_true_cleanup_57, ^cond_false_cleanup_58
 
-  block ^cond_true_cleanup_58:
+  block ^cond_true_cleanup_57:
     call void @Box___Box(%t33)
-    jump ^if_then_50
+    jump ^if_then_51
 
-  block ^cond_false_cleanup_59:
+  block ^cond_false_cleanup_58:
     call void @Box___Box(%t33)
-    jump ^if_else_51
+    jump ^if_else_52
 
-  block ^if_then_50:
-    store typed i32 1, $cleanup_return__13
-    jump ^return_cleanup_action_15
+  block ^if_then_51:
+    store typed i32 1, $cleanup_return__3
+    jump ^return_cleanup_action_14
 
-  block ^if_else_51:
-    jump ^if_end_52
+  block ^if_else_52:
+    jump ^if_end_60
 
-  block ^if_end_52:
-    eh_try ^cleanup_action_5
-    %t37 = addr $arg__11
+  block ^if_end_60:
+    eh_try ^cleanup_action_4
+    %t37 = addr $arg__13
     eh_end
     branch 0, ^condobj_then_63, ^condobj_else_64
 
   block ^condobj_then_63:
-    eh_try ^cleanup_action_5
+    eh_try ^cleanup_action_4
     call void @Box__Box(%t37, 3)
     eh_end
     jump ^condobj_end_65
 
   block ^condobj_else_64:
-    eh_try ^cleanup_action_5
+    eh_try ^cleanup_action_4
     call void @Box__Box(%t37, 4)
     eh_end
     jump ^condobj_end_65
@@ -357,161 +357,161 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^condobj_end_65:
     eh_try ^cleanup_action_66
     %t38 = call i32 @category__ov2(%t37)
-    store typed i32 %t38, $call__10
-    %t39 = load typed i32 $call__10
+    store typed i32 %t38, $call__14
+    %t39 = load typed i32 $call__14
     %t40 = cmp ne i32 %t39, 1
     eh_end
-    jump ^call_unwind_end_67
+    jump ^call_unwind_end_69
 
   block ^cleanup_action_66:
     call void @Box___Box(%t37)
-    jump ^cleanup_action_5
+    jump ^cleanup_action_4
 
-  block ^call_unwind_end_67:
-    branch %t40, ^cond_true_cleanup_68, ^cond_false_cleanup_69
+  block ^call_unwind_end_69:
+    branch %t40, ^cond_true_cleanup_67, ^cond_false_cleanup_68
 
-  block ^cond_true_cleanup_68:
+  block ^cond_true_cleanup_67:
     call void @Box___Box(%t37)
-    jump ^if_then_60
+    jump ^if_then_61
 
-  block ^cond_false_cleanup_69:
+  block ^cond_false_cleanup_68:
     call void @Box___Box(%t37)
-    jump ^if_else_61
+    jump ^if_else_62
 
-  block ^if_then_60:
-    store typed i32 1, $cleanup_return__13
-    jump ^return_cleanup_action_15
+  block ^if_then_61:
+    store typed i32 1, $cleanup_return__3
+    jump ^return_cleanup_action_14
 
-  block ^if_else_61:
-    jump ^if_end_62
+  block ^if_else_62:
+    jump ^if_end_70
 
-  block ^if_end_62:
+  block ^if_end_70:
     %t41 = load typed i32 @boxes_alive
     %t42 = cmp ne i32 %t41, 1
-    branch %t42, ^if_then_70, ^lor_rhs_73
+    branch %t42, ^if_then_71, ^lor_rhs_73
 
   block ^lor_rhs_73:
     %t43 = load typed i32 @trackers_alive
     %t44 = cmp ne i32 %t43, 0
-    branch %t44, ^if_then_70, ^if_else_71
+    branch %t44, ^if_then_71, ^if_else_72
 
-  block ^if_then_70:
-    store typed i32 2, $cleanup_return__13
-    jump ^return_cleanup_action_15
+  block ^if_then_71:
+    store typed i32 2, $cleanup_return__3
+    jump ^return_cleanup_action_14
 
-  block ^if_else_71:
-    jump ^if_end_72
+  block ^if_else_72:
+    jump ^if_end_74
 
-  block ^if_end_72:
-    store u8 0, $lifetime__16
+  block ^if_end_74:
+    store u8 0, $lifetime__18
     store u8 0, $lifetime__17
-    %t49 = addr $tmpobj__18
-    branch 1, ^condobj_then_80, ^condobj_else_81
+    %t45 = addr $tmpobj__15
+    branch 1, ^condobj_then_75, ^condobj_else_76
 
-  block ^conditional_cleanup_dispatch_74:
-    %t45 = load u8 $lifetime__17
-    branch %t45, ^conditional_temporary_destroy_75, ^conditional_temporary_done_76
+  block ^conditional_cleanup_dispatch_79:
+    %t48 = load u8 $lifetime__17
+    branch %t48, ^conditional_temporary_destroy_81, ^conditional_temporary_done_82
 
-  block ^conditional_temporary_destroy_75:
+  block ^conditional_temporary_destroy_81:
     store u8 0, $lifetime__17
-    %t46 = addr $arg__12
-    call void @Tracker___Tracker(%t46)
-    jump ^conditional_temporary_done_76
+    %t49 = addr $arg__16
+    call void @Tracker___Tracker(%t49)
+    jump ^conditional_temporary_done_82
 
-  block ^conditional_temporary_done_76:
-    jump ^conditional_cleanup_dispatch_30
+  block ^conditional_temporary_done_82:
+    jump ^conditional_cleanup_dispatch_35
 
-  block ^conditional_cleanup_dispatch_77:
-    %t47 = load u8 $lifetime__16
-    branch %t47, ^conditional_temporary_destroy_78, ^conditional_temporary_done_79
-
-  block ^conditional_temporary_destroy_78:
-    store u8 0, $lifetime__16
-    %t48 = addr $tmpobj__18
-    call void @Box___Box(%t48)
-    jump ^conditional_temporary_done_79
-
-  block ^conditional_temporary_done_79:
-    jump ^conditional_cleanup_dispatch_74
-
-  block ^condobj_then_80:
-    eh_try ^conditional_cleanup_dispatch_77
-    %t50 = addr $arg__12
-    call void @Tracker__Tracker(%t50, 5)
-    store u8 1, $lifetime__17
-    eh_end
-    eh_try ^conditional_cleanup_dispatch_77
-    call void @Box__Box__ov2(%t49, %t50)
-    eh_end
-    jump ^condobj_end_82
-
-  block ^condobj_else_81:
-    eh_try ^conditional_cleanup_dispatch_77
-    %t51 = addr $fixed
-    call void @Box__Box__ov3(%t49, %t51)
-    eh_end
-    jump ^condobj_end_82
-
-  block ^condobj_end_82:
-    store u8 1, $lifetime__16
-    eh_try ^conditional_cleanup_dispatch_77
-    store typed ptr %t49, $extended
-    %t52 = load u8 $lifetime__17
-    branch %t52, ^conditional_temporary_destroy_83, ^conditional_temporary_done_84
+  block ^conditional_cleanup_dispatch_80:
+    %t50 = load u8 $lifetime__18
+    branch %t50, ^conditional_temporary_destroy_83, ^conditional_temporary_done_84
 
   block ^conditional_temporary_destroy_83:
-    store u8 0, $lifetime__17
-    %t53 = addr $arg__12
-    call void @Tracker___Tracker(%t53)
+    store u8 0, $lifetime__18
+    %t51 = addr $tmpobj__15
+    call void @Box___Box(%t51)
     jump ^conditional_temporary_done_84
 
   block ^conditional_temporary_done_84:
+    jump ^conditional_cleanup_dispatch_79
+
+  block ^condobj_then_75:
+    eh_try ^conditional_cleanup_dispatch_80
+    %t46 = addr $arg__16
+    call void @Tracker__Tracker(%t46, 5)
+    store u8 1, $lifetime__17
+    eh_end
+    eh_try ^conditional_cleanup_dispatch_80
+    call void @Box__Box__ov2(%t45, %t46)
+    eh_end
+    jump ^condobj_end_77
+
+  block ^condobj_else_76:
+    eh_try ^conditional_cleanup_dispatch_80
+    %t47 = addr $fixed
+    call void @Box__Box__ov3(%t45, %t47)
+    eh_end
+    jump ^condobj_end_77
+
+  block ^condobj_end_77:
+    store u8 1, $lifetime__18
+    eh_try ^conditional_cleanup_dispatch_80
+    store typed ptr %t45, $extended
+    %t52 = load u8 $lifetime__17
+    branch %t52, ^conditional_temporary_destroy_85, ^conditional_temporary_done_86
+
+  block ^conditional_temporary_destroy_85:
+    store u8 0, $lifetime__17
+    %t53 = addr $arg__16
+    call void @Tracker___Tracker(%t53)
+    jump ^conditional_temporary_done_86
+
+  block ^conditional_temporary_done_86:
     eh_end
     %t54 = load typed ptr $extended
     %t55 = index i8 [projection=field] %t54, 0
     %t56 = load typed i32 %t55
     %t57 = cmp ne i32 %t56, 15
-    branch %t57, ^if_then_85, ^lor_rhs_89
+    branch %t57, ^if_then_87, ^lor_rhs_90
 
-  block ^lor_rhs_89:
+  block ^lor_rhs_90:
     %t58 = load typed i32 @boxes_alive
     %t59 = cmp ne i32 %t58, 2
-    branch %t59, ^if_then_85, ^lor_rhs_88
+    branch %t59, ^if_then_87, ^lor_rhs_89
 
-  block ^lor_rhs_88:
+  block ^lor_rhs_89:
     %t60 = load typed i32 @trackers_alive
     %t61 = cmp ne i32 %t60, 0
-    branch %t61, ^if_then_85, ^if_else_86
+    branch %t61, ^if_then_87, ^if_else_88
 
-  block ^if_then_85:
-    call void @Box___Box(%t49)
+  block ^if_then_87:
+    call void @Box___Box(%t45)
     %t62 = addr $fixed
     call void @Box___Box(%t62)
     return i32 3
 
-  block ^if_else_86:
-    jump ^if_end_87
+  block ^if_else_88:
+    jump ^if_end_91
 
-  block ^if_end_87:
-    call void @Box___Box(%t49)
+  block ^if_end_91:
+    call void @Box___Box(%t45)
     %t63 = addr $fixed
     call void @Box___Box(%t63)
     %t64 = load typed i32 @boxes_alive
     %t65 = cmp ne i32 %t64, 0
-    branch %t65, ^lor_short_91, ^lor_rhs_90
+    branch %t65, ^lor_short_93, ^lor_rhs_92
 
-  block ^lor_rhs_90:
+  block ^lor_rhs_92:
     %t66 = load typed i32 @trackers_alive
     %t67 = cmp ne i32 %t66, 0
     %t68 = cmp ne i64 %t67, 0
     store typed i64 %t68, $lor__19
-    jump ^lor_end_92
+    jump ^lor_end_94
 
-  block ^lor_short_91:
+  block ^lor_short_93:
     store typed i64 1, $lor__19
-    jump ^lor_end_92
+    jump ^lor_end_94
 
-  block ^lor_end_92:
+  block ^lor_end_94:
     %t69 = load typed i64 $lor__19
     %t70 = convert trunc i32 i64 %t69
     return i32 %t70

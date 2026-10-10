@@ -11,8 +11,8 @@ function @noop
   frame
     stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     mov rax, 0
@@ -25,19 +25,16 @@ function @main
     stack_size 64
     scratch_bytes 48
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     slot $bytes -> [rbp-16] : obj<16x1>
 
   block ^entry
     call @noop [args=()]
-    lea r9, [rbp-16]
-    lea r8, [r9+16]
-    sub r8, r9
-    add r8, 7
-    mov rdx, 23
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    lea r8, [rbp-16]
+    lea r9, [r8+16]
+    sub r9, r8
+    add r9, 7
+    cmp.i64 r9, 23
+    setne r9
+    movzx r9, r9
+    ret r9

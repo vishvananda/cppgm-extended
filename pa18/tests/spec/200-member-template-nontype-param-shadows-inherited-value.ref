@@ -1,3 +1,5 @@
+declare global @detail__base_value_1___width : i64 [binding=weak, object=_ZN6detail10base_valueILm1EE5widthE]
+
 declare function @get_expr() -> ptr [binding=strong, object=_Z8get_exprv]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -5,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = call ptr @get_expr()
-    %t2 = call i64 @detail__expression_detail____cppgm_class_template_identity_2_2_0___get_width(%t1)
+    %t2 = call i64 @detail__expression___cppgm_class_template_identity_1___get_width(%t1)
     %t3 = convert sext i64 i32 1
     %t4 = cmp eq i64 %t2, %t3
     branch %t4, ^cond_then_1, ^cond_else_2
@@ -22,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @detail__expression_detail____cppgm_class_template_identity_2_2_0___get_width(%this : ptr [object_bytes=1]) -> i64 [binding=weak, object=_ZNK6detail10expressionINS_7matcherI6traitsEEE9get_widthEv, inline_hint=yes] {
+function @detail__expression___cppgm_class_template_identity_1___get_width(%this : ptr [object_bytes=1]) -> i64 [binding=weak, object=_ZNK6detail10expressionINS_7matcherI6traitsEEE9get_widthEv, inline_hint=yes] {
   slot $this : ptr
   slot $argobj__1 : obj<1x1>
 
@@ -30,10 +32,10 @@ function @detail__expression_detail____cppgm_class_template_identity_2_2_0___get
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = addr $argobj__1
-    %t3 = call i64 @detail__expression_detail____cppgm_class_template_identity_2_2_0___get_width___ov2(%t1, $argobj__1)
+    %t3 = call i64 @detail__expression___cppgm_class_template_identity_1___get_width_(%t1, $argobj__1)
     return i64 %t3
 }
-function @detail__expression_detail____cppgm_class_template_identity_2_2_0___get_width___ov2(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none]) -> i64 [binding=weak, object=_ZNK6detail10expressionINS_7matcherI6traitsEEE10get_width_ILm1EEEmN4mpl_6size_tIXT_EEE, inline_hint=yes] {
+function @detail__expression___cppgm_class_template_identity_1___get_width_(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none]) -> i64 [binding=weak, object=_ZNK6detail10expressionINS_7matcherI6traitsEEE10get_width_ILm1EEEmN4mpl_6size_tIXT_EEE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 

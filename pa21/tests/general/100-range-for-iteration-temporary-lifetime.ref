@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_try ^cleanup_resume_5
     %t23 = addr $discard__1
     %t24 = addr $__begin1
-    call void @Iterator__operator____sym2(%t23, %t24)
+    call void @Iterator__operator____2(%t23, %t24)
     eh_end
     jump ^call_unwind_end_6
 
@@ -116,6 +116,19 @@ function @Range__begin(%this : ptr [object_bytes=8]) -> obj<8x8> [binding=weak, 
     call void @Iterator__Iterator__aggregate(%t1, %t3)
     return obj<8x8> $retobj__1
 }
+function @Iterator__Iterator__aggregate(%this : ptr, %current : ptr) -> void [unwind=no, binding=internal] {
+  slot $this : ptr
+  slot $current : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %current, $current
+    %t1 = load typed ptr $current
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed ptr %t1, %t3
+    return void
+}
 function @Range__end(%this : ptr [object_bytes=8]) -> obj<8x8> [binding=weak, object=_ZN5Range3endEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<8x8>
@@ -157,7 +170,7 @@ function @Iterator__operator_(%this : ptr [object_bytes=8]) -> ptr [binding=weak
     %t3 = load typed ptr %t2
     return ptr %t3
 }
-function @Iterator__operator____sym2(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8IteratorppEv, inline_hint=yes] {
+function @Iterator__operator____2(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8IteratorppEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -186,19 +199,6 @@ function @Step__Step(%this : ptr [object_bytes=1]) -> void [binding=weak, object
 
   block ^entry:
     store typed ptr %this, $this
-    return void
-}
-function @Iterator__Iterator__aggregate(%this : ptr, %current : ptr) -> void [unwind=no, binding=internal] {
-  slot $this : ptr
-  slot $current : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %current, $current
-    %t1 = load typed ptr $current
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed ptr %t1, %t3
     return void
 }
 alias object _ZN4StepD2Ev = @Step___Step

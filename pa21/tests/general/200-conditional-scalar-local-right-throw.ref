@@ -1,20 +1,20 @@
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
   i8 105
   i8 0
 }
-global @__rtti_int [binding=weak, object=_ZTIi] = {
+global @__rtti_int [storage=readonly, binding=internal] = {
   ptr addr @__external_rtti_vtable____fundamental_type_info + 16
   ptr addr @__typeinfo_name__int
 }
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
+global @__ehobj_int [binding=internal] = {
   zero 4
 }
 global @selected : i32 [binding=internal, object=_ZL8selected] = zero
@@ -109,6 +109,166 @@ function @next() -> i32 [binding=internal, object=_ZL4nextv] {
   block ^if_end_3:
     %t8 = load typed i32 @progress
     return i32 %t8
+}
+function @S__S__base_entry(%this : ptr [object_bytes=8], %n : i32) -> void [binding=strong, object=_ZN1SC2Ei, object_root=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    %t4 = call i32 @next()
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    store typed i32 %t4, %t6
+    %t7 = load typed i32 @live
+    %t8 = binary add nowrap i32 %t7, 1
+    store typed i32 %t8, @live
+    %t9 = load typed ptr $this
+    %t10 = index i8 [projection=field] %t9, 4
+    %t11 = load typed i32 %t10
+    %t12 = addr @trace
+    %t13 = load typed i32 @count
+    %t14 = binary add nowrap i32 %t13, 1
+    store typed i32 %t14, @count
+    %t15 = index i32 [projection=array_element] %t12, %t13
+    store typed i32 %t11, %t15
+    return void
+}
+function @S__S(%this : ptr [object_bytes=8], %n : i32) -> void [binding=strong, object=_ZN1SC1Ei] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    %t4 = call i32 @next()
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    store typed i32 %t4, %t6
+    %t7 = load typed i32 @live
+    %t8 = binary add nowrap i32 %t7, 1
+    store typed i32 %t8, @live
+    %t9 = load typed ptr $this
+    %t10 = index i8 [projection=field] %t9, 4
+    %t11 = load typed i32 %t10
+    %t12 = addr @trace
+    %t13 = load typed i32 @count
+    %t14 = binary add nowrap i32 %t13, 1
+    store typed i32 %t14, @count
+    %t15 = index i32 [projection=array_element] %t12, %t13
+    store typed i32 %t11, %t15
+    return void
+}
+function @S__S__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=8], %x : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=strong, object=_ZN1SC2ERKS_, object_root=yes] {
+  slot $this : ptr
+  slot $x : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %x, $x
+    %t1 = load typed ptr $x
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store typed i32 %t3, %t5
+    %t6 = call i32 @next()
+    %t7 = load typed ptr $this
+    %t8 = index i8 [projection=field] %t7, 4
+    store typed i32 %t6, %t8
+    %t9 = load typed i32 @live
+    %t10 = binary add nowrap i32 %t9, 1
+    store typed i32 %t10, @live
+    %t11 = load typed ptr $this
+    %t12 = index i8 [projection=field] %t11, 4
+    %t13 = load typed i32 %t12
+    %t14 = addr @trace
+    %t15 = load typed i32 @count
+    %t16 = binary add nowrap i32 %t15, 1
+    store typed i32 %t16, @count
+    %t17 = index i32 [projection=array_element] %t14, %t15
+    store typed i32 %t13, %t17
+    return void
+}
+function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=8], %x : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=strong, object=_ZN1SC1ERKS_] {
+  slot $this : ptr
+  slot $x : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %x, $x
+    %t1 = load typed ptr $x
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store typed i32 %t3, %t5
+    %t6 = call i32 @next()
+    %t7 = load typed ptr $this
+    %t8 = index i8 [projection=field] %t7, 4
+    store typed i32 %t6, %t8
+    %t9 = load typed i32 @live
+    %t10 = binary add nowrap i32 %t9, 1
+    store typed i32 %t10, @live
+    %t11 = load typed ptr $this
+    %t12 = index i8 [projection=field] %t11, 4
+    %t13 = load typed i32 %t12
+    %t14 = addr @trace
+    %t15 = load typed i32 @count
+    %t16 = binary add nowrap i32 %t15, 1
+    store typed i32 %t16, @count
+    %t17 = index i32 [projection=array_element] %t14, %t15
+    store typed i32 %t13, %t17
+    return void
+}
+function @S___S__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=strong, object=_ZN1SD2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @live
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 4
+    %t5 = load typed i32 %t4
+    %t6 = unary neg i32 %t5
+    %t7 = addr @trace
+    %t8 = load typed i32 @count
+    %t9 = binary add nowrap i32 %t8, 1
+    store typed i32 %t9, @count
+    %t10 = index i32 [projection=array_element] %t7, %t8
+    store typed i32 %t6, %t10
+    return void
+}
+function @S___S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=strong, object=_ZN1SD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @live
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 4
+    %t5 = load typed i32 %t4
+    %t6 = unary neg i32 %t5
+    %t7 = addr @trace
+    %t8 = load typed i32 @count
+    %t9 = binary add nowrap i32 %t8, 1
+    store typed i32 %t9, @count
+    %t10 = index i32 [projection=array_element] %t7, %t8
+    store typed i32 %t6, %t10
+    return void
 }
 function @choice() -> i32 [binding=strong, object=_Z6choicev] {
   block ^entry:
@@ -247,78 +407,78 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 %t16, $normal_caught
     %t17 = load typed i32 $caught
     %t18 = load typed i32 @selected
-    branch %t18, ^cond_then_21, ^cond_else_22
+    branch %t18, ^cond_then_19, ^cond_else_20
 
-  block ^cond_then_21:
+  block ^cond_then_19:
     store typed i32 0, $cond__2
-    jump ^cond_end_23
+    jump ^cond_end_21
 
-  block ^cond_else_22:
+  block ^cond_else_20:
     store typed i32 99, $cond__2
-    jump ^cond_end_23
+    jump ^cond_end_21
 
-  block ^cond_end_23:
+  block ^cond_end_21:
     %t19 = load typed i32 $cond__2
     %t20 = cmp ne i32 %t17, %t19
-    branch %t20, ^if_then_18, ^if_else_19
+    branch %t20, ^if_then_17, ^if_else_18
 
-  block ^if_then_18:
+  block ^if_then_17:
     %t21 = load typed i32 @bad
     %t22 = binary add nowrap i32 %t21, 1
     store typed i32 %t22, @bad
-    jump ^if_end_20
+    jump ^if_end_22
 
-  block ^if_else_19:
-    jump ^if_end_20
+  block ^if_else_18:
+    jump ^if_end_22
 
-  block ^if_end_20:
-    jump ^if_end_17
+  block ^if_end_22:
+    jump ^if_end_23
 
   block ^if_else_16:
-    jump ^if_end_17
+    jump ^if_end_23
 
-  block ^if_end_17:
+  block ^if_end_23:
     %t23 = load typed i32 @live
-    branch %t23, ^if_then_24, ^lor_rhs_27
+    branch %t23, ^if_then_24, ^lor_rhs_26
 
-  block ^lor_rhs_27:
+  block ^lor_rhs_26:
     %t24 = load typed i32 @limit
     %t25 = cmp gt i32 %t24, 0
-    branch %t25, ^land_rhs_31, ^land_short_32
+    branch %t25, ^land_rhs_30, ^land_short_31
 
-  block ^land_rhs_31:
+  block ^land_rhs_30:
     %t26 = load typed i32 @limit
     %t27 = load typed i32 $bound
     %t28 = cmp le i32 %t26, %t27
     %t29 = cmp ne i64 %t28, 0
     store typed i64 %t29, $land__4
-    jump ^land_end_33
+    jump ^land_end_32
 
-  block ^land_short_32:
+  block ^land_short_31:
     store typed i64 0, $land__4
-    jump ^land_end_33
+    jump ^land_end_32
 
-  block ^land_end_33:
+  block ^land_end_32:
     %t30 = load typed i64 $land__4
-    branch %t30, ^cond_then_28, ^cond_else_29
+    branch %t30, ^cond_then_27, ^cond_else_28
 
-  block ^cond_then_28:
+  block ^cond_then_27:
     %t31 = load typed i32 $caught
     %t32 = load typed i32 @limit
     %t33 = cmp ne i32 %t31, %t32
     %t34 = convert trunc u8 i64 %t33
     store u8 %t34, $cond__3
-    jump ^cond_end_30
+    jump ^cond_end_29
 
-  block ^cond_else_29:
+  block ^cond_else_28:
     %t35 = load typed i32 $caught
     %t36 = load typed i32 $normal_caught
     %t37 = cmp ne i32 %t35, %t36
     %t38 = convert trunc u8 i64 %t37
     store u8 %t38, $cond__3
-    jump ^cond_end_30
+    jump ^cond_end_29
 
-  block ^cond_end_30:
+  block ^cond_end_29:
     %t39 = load u8 $cond__3
     branch %t39, ^if_then_24, ^if_else_25
 
@@ -326,12 +486,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t40 = load typed i32 @bad
     %t41 = binary add nowrap i32 %t40, 1
     store typed i32 %t41, @bad
-    jump ^if_end_26
+    jump ^if_end_33
 
   block ^if_else_25:
-    jump ^if_end_26
+    jump ^if_end_33
 
-  block ^if_end_26:
+  block ^if_end_33:
     jump ^for_iter_7
 
   block ^for_iter_7:
@@ -364,164 +524,4 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^cond_end_36:
     %t47 = load typed i32 $cond__5
     return i32 %t47
-}
-function @S__S__base_entry(%this : ptr [object_bytes=8], %n : i32) -> void [binding=strong, object=_ZN1SC2Ei, object_root=yes] {
-  slot $this : ptr
-  slot $n : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %n, $n
-    %t1 = load typed i32 $n
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed i32 %t1, %t3
-    %t4 = call i32 @next()
-    %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
-    store typed i32 %t4, %t6
-    %t7 = load typed i32 @live
-    %t8 = binary add nowrap i32 %t7, 1
-    store typed i32 %t8, @live
-    %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 4
-    %t11 = load typed i32 %t10
-    %t12 = addr @trace
-    %t13 = load typed i32 @count
-    %t14 = binary add nowrap i32 %t13, 1
-    store typed i32 %t14, @count
-    %t15 = index i32 [projection=array_element] %t12, %t13
-    store typed i32 %t11, %t15
-    return void
-}
-function @S__S(%this : ptr [object_bytes=8], %n : i32) -> void [binding=strong, object=_ZN1SC1Ei] {
-  slot $this : ptr
-  slot $n : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %n, $n
-    %t1 = load typed i32 $n
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed i32 %t1, %t3
-    %t4 = call i32 @next()
-    %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
-    store typed i32 %t4, %t6
-    %t7 = load typed i32 @live
-    %t8 = binary add nowrap i32 %t7, 1
-    store typed i32 %t8, @live
-    %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 4
-    %t11 = load typed i32 %t10
-    %t12 = addr @trace
-    %t13 = load typed i32 @count
-    %t14 = binary add nowrap i32 %t13, 1
-    store typed i32 %t14, @count
-    %t15 = index i32 [projection=array_element] %t12, %t13
-    store typed i32 %t11, %t15
-    return void
-}
-function @S___S__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=strong, object=_ZN1SD2Ev, object_root=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @live
-    %t2 = binary sub nowrap i32 %t1, 1
-    store typed i32 %t2, @live
-    %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
-    %t5 = load typed i32 %t4
-    %t6 = unary neg i32 %t5
-    %t7 = addr @trace
-    %t8 = load typed i32 @count
-    %t9 = binary add nowrap i32 %t8, 1
-    store typed i32 %t9, @count
-    %t10 = index i32 [projection=array_element] %t7, %t8
-    store typed i32 %t6, %t10
-    return void
-}
-function @S___S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=strong, object=_ZN1SD1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @live
-    %t2 = binary sub nowrap i32 %t1, 1
-    store typed i32 %t2, @live
-    %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
-    %t5 = load typed i32 %t4
-    %t6 = unary neg i32 %t5
-    %t7 = addr @trace
-    %t8 = load typed i32 @count
-    %t9 = binary add nowrap i32 %t8, 1
-    store typed i32 %t9, @count
-    %t10 = index i32 [projection=array_element] %t7, %t8
-    store typed i32 %t6, %t10
-    return void
-}
-function @S__S__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=8], %x : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=strong, object=_ZN1SC2ERKS_, object_root=yes] {
-  slot $this : ptr
-  slot $x : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %x, $x
-    %t1 = load typed ptr $x
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load typed i32 %t2
-    %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
-    store typed i32 %t3, %t5
-    %t6 = call i32 @next()
-    %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 4
-    store typed i32 %t6, %t8
-    %t9 = load typed i32 @live
-    %t10 = binary add nowrap i32 %t9, 1
-    store typed i32 %t10, @live
-    %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 4
-    %t13 = load typed i32 %t12
-    %t14 = addr @trace
-    %t15 = load typed i32 @count
-    %t16 = binary add nowrap i32 %t15, 1
-    store typed i32 %t16, @count
-    %t17 = index i32 [projection=array_element] %t14, %t15
-    store typed i32 %t13, %t17
-    return void
-}
-function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=8], %x : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=strong, object=_ZN1SC1ERKS_] {
-  slot $this : ptr
-  slot $x : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %x, $x
-    %t1 = load typed ptr $x
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load typed i32 %t2
-    %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
-    store typed i32 %t3, %t5
-    %t6 = call i32 @next()
-    %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 4
-    store typed i32 %t6, %t8
-    %t9 = load typed i32 @live
-    %t10 = binary add nowrap i32 %t9, 1
-    store typed i32 %t10, @live
-    %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 4
-    %t13 = load typed i32 %t12
-    %t14 = addr @trace
-    %t15 = load typed i32 @count
-    %t16 = binary add nowrap i32 %t15, 1
-    store typed i32 %t16, @count
-    %t17 = index i32 [projection=array_element] %t14, %t15
-    store typed i32 %t13, %t17
-    return void
 }

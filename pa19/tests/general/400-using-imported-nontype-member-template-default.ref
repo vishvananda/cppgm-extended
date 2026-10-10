@@ -1,3 +1,5 @@
+declare global @destination__outer_int___box__policy_1___value : i32 [binding=weak, object=_ZN11destination5outerIiE3boxILN6source6policyE1EE5valueE]
+
 global @source__default_policy : i32 [storage=readonly, binding=internal, object=_ZN6sourceL14default_policyE] = 1
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

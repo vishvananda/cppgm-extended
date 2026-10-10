@@ -1,4 +1,4 @@
-global @__cppgm_class_template_identity_0_0_0__data [binding=weak, object=_ZN6tablesILb1EE4dataE] = {
+global @tables_true___data [binding=weak, object=_ZN6tablesILb1EE4dataE] = {
   u16 0
   u16 0
   u16 171
@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = addr @__cppgm_class_template_identity_0_0_0__data
+    %t1 = addr @tables_true___data
     %t2 = binary mul i64 1, 4
     %t3 = index i8 [projection=array_element] %t1, %t2
     %t4 = index i8 [projection=field] %t3, 2

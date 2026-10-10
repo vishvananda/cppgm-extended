@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $argobj__2
     call void @string__string(%t4, 3)
     %t5 = load typed i32 $token
-    %t6 = call i32 @sender_error_code__string___send(%t2, $argobj__1, $argobj__2, %t5)
+    %t6 = call i32 @sender_error_code_string___send(%t2, $argobj__1, $argobj__2, %t5)
     %t7 = cmp ne i32 %t6, 6
     %t8 = convert trunc i32 i64 %t7
     return i32 %t8
@@ -62,7 +62,7 @@ function @string__string(%this : ptr [object_bytes=4], %v : i32) -> void [bindin
     store typed i32 %t1, %t3
     return void
 }
-function @sender_error_code__string___send(%this : ptr [object_bytes=1], %args : obj<4x4>, %args__pack2 : obj<4x4>, %token : i32) -> i32 [binding=weak, object=_ZN6senderIJ10error_code6stringEE4sendIiEEiS0_S1_T_, inline_hint=yes] {
+function @sender_error_code_string___send(%this : ptr [object_bytes=1], %args : obj<4x4>, %args__pack2 : obj<4x4>, %token : i32) -> i32 [binding=weak, object=_ZN6senderIJ10error_code6stringEE4sendIiEEiS0_S1_T_, inline_hint=yes] {
   slot $this : ptr
   slot $args : obj<4x4>
   slot $args__pack2 : obj<4x4>

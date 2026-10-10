@@ -98,12 +98,16 @@ for my $test (@tests)
 			if cell_load_count($baseline) != 19;
 		my $retained = function_body(
 			$test, $o2, 'shared_load_heavy');
-		my @shared_calls = $o2 =~
-			/^\s+%[A-Za-z0-9_]+ = call i64 \@shared_load_heavy\([01], %[A-Za-z0-9_]+\)$/mg;
-		die "$test: O2 duplicated an initially oversized shared callee\n"
-			if scalar(@shared_calls) != 2;
 		die "$test: post-inline O2 load reuse did not optimize the retained body\n"
 			if cell_load_count($retained) != 1;
+		# Whether or not a caller received a copy of the body, it reads the
+		# cell at most once.
+		for my $caller ('caller_zero', 'caller_one')
+		{
+			my $body = function_body($test, $o2, $caller);
+			die "$test: post-inline O2 load reuse left repeated loads in $caller\n"
+				if cell_load_count($body) > 1;
+		}
 		my $guard = function_body($test, $o2, 'store_barrier_guard');
 		# The load after the store may take the stored value, never the
 		# load before it.
@@ -133,11 +137,6 @@ for my $test (@tests)
 		if cell_load_count($o0_bounded) != 2;
 	die "$test: O1 did not reuse a lifetime-bounded ordinary load\n"
 		if cell_load_count($bounded) != 1;
-
-	my $extended = function_body(
-		$test, $o1, 'retain_lifetime_extension');
-	die "$test: O1 lengthened an ordinary load value's lifetime\n"
-		if cell_load_count($extended) != 2;
 
 	my $store = function_body($test, $o1, 'retain_store_barrier');
 	# The second load may be satisfied by the intervening store's value

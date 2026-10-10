@@ -1,3 +1,5 @@
+declare global @Match_const__cppgm_class_template_identity_1__const__cppgm_class_template_identity_1____value : i32 [binding=weak, object=_ZN5MatchIPK3BoxIilES3_E5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

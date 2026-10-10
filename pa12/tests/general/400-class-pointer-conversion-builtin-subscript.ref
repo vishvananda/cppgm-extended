@@ -23,7 +23,7 @@ function @read_const(%b : ptr [pass=by_address, object_bytes=16], %i : i32) -> i
     store typed ptr %b, $b
     store typed i32 %i, $i
     %t1 = load typed ptr $b
-    %t2 = call ptr @buffer__operatorconstitem_(%t1)
+    %t2 = call ptr @buffer__operatorconstitem___ov2(%t1)
     %t3 = load typed i32 $i
     %t4 = convert sext i64 i32 %t3
     %t5 = binary mul i64 %t4, 4
@@ -95,7 +95,7 @@ function @buffer__operatoritem_(%this : ptr [object_bytes=16]) -> ptr [binding=w
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
-function @buffer__operatorconstitem_(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZNK6buffercvPK4itemEv, inline_hint=yes] {
+function @buffer__operatorconstitem___ov2(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZNK6buffercvPK4itemEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

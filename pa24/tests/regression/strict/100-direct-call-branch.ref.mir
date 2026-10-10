@@ -10,7 +10,7 @@ function @helper
     param %x -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -28,10 +28,7 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rax, 1
-    cmp.i64 rax, 0
-    jne ^then
-    jmp ^else
+    jmp ^then
 
   block ^then
     mov rdi, 7

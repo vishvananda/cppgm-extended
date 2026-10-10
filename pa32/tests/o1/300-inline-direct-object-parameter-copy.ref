@@ -7,7 +7,7 @@ function @read_object(%value : obj<8x8>) -> i64 {
     %result = load i64 %local_address
     return i64 %result
 }
-function @main() -> i64 {
+function @main() -> i64 [role=entry] {
   block ^entry:
     return i64 37
 }

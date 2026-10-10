@@ -1,24 +1,7 @@
-declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_EmptyRoot [binding=weak, object=_ZTS9EmptyRoot] = {
-  i8 57
-  i8 69
-  i8 109
-  i8 112
-  i8 116
-  i8 121
-  i8 82
-  i8 111
-  i8 111
-  i8 116
-  i8 0
-}
-global @__rtti_struct_EmptyRoot [binding=weak, object=_ZTI9EmptyRoot] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_EmptyRoot
-}
-global @__typeinfo_name__struct_EmptyDerived [binding=weak, object=_ZTS12EmptyDerived] = {
+global @__typeinfo_name__struct_EmptyDerived [storage=readonly, binding=weak, object=_ZTS12EmptyDerived] = {
   i8 49
   i8 50
   i8 69
@@ -35,89 +18,29 @@ global @__typeinfo_name__struct_EmptyDerived [binding=weak, object=_ZTS12EmptyDe
   i8 100
   i8 0
 }
-global @__rtti_struct_EmptyDerived [binding=weak, object=_ZTI12EmptyDerived] = {
+global @__typeinfo_name__struct_EmptyRoot [storage=readonly, binding=weak, object=_ZTS9EmptyRoot] = {
+  i8 57
+  i8 69
+  i8 109
+  i8 112
+  i8 116
+  i8 121
+  i8 82
+  i8 111
+  i8 111
+  i8 116
+  i8 0
+}
+global @__rtti_struct_EmptyRoot [storage=readonly, binding=weak, object=_ZTI9EmptyRoot] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_EmptyRoot
+}
+global @__rtti_struct_EmptyDerived [storage=readonly, binding=weak, object=_ZTI12EmptyDerived] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_EmptyDerived
   i32 0
   i32 1
   ptr addr @__rtti_struct_EmptyRoot
-  i64 -6141
-}
-global @__typeinfo_name__struct_Tail [binding=weak, object=_ZTS4Tail] = {
-  i8 52
-  i8 84
-  i8 97
-  i8 105
-  i8 108
-  i8 0
-}
-global @__rtti_struct_Tail [binding=weak, object=_ZTI4Tail] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Tail
-}
-global @__typeinfo_name__struct_Mark [binding=weak, object=_ZTS4Mark] = {
-  i8 52
-  i8 77
-  i8 97
-  i8 114
-  i8 107
-  i8 0
-}
-global @__rtti_struct_Mark [binding=weak, object=_ZTI4Mark] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Mark
-}
-global @__typeinfo_name__struct_Holder [binding=weak, object=_ZTS6Holder] = {
-  i8 54
-  i8 72
-  i8 111
-  i8 108
-  i8 100
-  i8 101
-  i8 114
-  i8 0
-}
-global @__rtti_struct_Holder [binding=weak, object=_ZTI6Holder] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Holder
-  i32 0
-  i32 2
-  ptr addr @__rtti_struct_Tail
-  i64 2050
-  ptr addr @__rtti_struct_Mark
-  i64 -6141
-}
-global @__typeinfo_name__struct_Plain [binding=weak, object=_ZTS5Plain] = {
-  i8 53
-  i8 80
-  i8 108
-  i8 97
-  i8 105
-  i8 110
-  i8 0
-}
-global @__rtti_struct_Plain [binding=weak, object=_ZTI5Plain] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Plain
-}
-global @__typeinfo_name__struct_Zeroed [binding=weak, object=_ZTS6Zeroed] = {
-  i8 54
-  i8 90
-  i8 101
-  i8 114
-  i8 111
-  i8 101
-  i8 100
-  i8 0
-}
-global @__rtti_struct_Zeroed [binding=weak, object=_ZTI6Zeroed] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Zeroed
-  i32 0
-  i32 2
-  ptr addr @__rtti_struct_Plain
-  i64 2050
-  ptr addr @__rtti_struct_Mark
   i64 -6141
 }
 global @EmptyDerived__vtable [storage=readonly, binding=weak, object=_ZTV12EmptyDerived] = {
@@ -128,6 +51,50 @@ global @EmptyDerived__vtable [storage=readonly, binding=weak, object=_ZTV12Empty
 global @EmptyDerived____vtt [storage=readonly, binding=weak, object=_ZTT12EmptyDerived, object_root=yes] = {
   ptr addr @EmptyDerived__vtable + 24
 }
+global @__typeinfo_name__struct_Holder [storage=readonly, binding=weak, object=_ZTS6Holder] = {
+  i8 54
+  i8 72
+  i8 111
+  i8 108
+  i8 100
+  i8 101
+  i8 114
+  i8 0
+}
+global @__typeinfo_name__struct_Tail [storage=readonly, binding=weak, object=_ZTS4Tail] = {
+  i8 52
+  i8 84
+  i8 97
+  i8 105
+  i8 108
+  i8 0
+}
+global @__rtti_struct_Tail [storage=readonly, binding=weak, object=_ZTI4Tail] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Tail
+}
+global @__typeinfo_name__struct_Mark [storage=readonly, binding=weak, object=_ZTS4Mark] = {
+  i8 52
+  i8 77
+  i8 97
+  i8 114
+  i8 107
+  i8 0
+}
+global @__rtti_struct_Mark [storage=readonly, binding=weak, object=_ZTI4Mark] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Mark
+}
+global @__rtti_struct_Holder [storage=readonly, binding=weak, object=_ZTI6Holder] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Holder
+  i32 0
+  i32 2
+  ptr addr @__rtti_struct_Tail
+  i64 2050
+  ptr addr @__rtti_struct_Mark
+  i64 -6141
+}
 global @Holder__vtable [storage=readonly, binding=weak, object=_ZTV6Holder] = {
   i64 13
   i64 0
@@ -135,6 +102,39 @@ global @Holder__vtable [storage=readonly, binding=weak, object=_ZTV6Holder] = {
 }
 global @Holder____vtt [storage=readonly, binding=weak, object=_ZTT6Holder, object_root=yes] = {
   ptr addr @Holder__vtable + 24
+}
+global @__typeinfo_name__struct_Zeroed [storage=readonly, binding=weak, object=_ZTS6Zeroed] = {
+  i8 54
+  i8 90
+  i8 101
+  i8 114
+  i8 111
+  i8 101
+  i8 100
+  i8 0
+}
+global @__typeinfo_name__struct_Plain [storage=readonly, binding=weak, object=_ZTS5Plain] = {
+  i8 53
+  i8 80
+  i8 108
+  i8 97
+  i8 105
+  i8 110
+  i8 0
+}
+global @__rtti_struct_Plain [storage=readonly, binding=weak, object=_ZTI5Plain] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Plain
+}
+global @__rtti_struct_Zeroed [storage=readonly, binding=weak, object=_ZTI6Zeroed] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Zeroed
+  i32 0
+  i32 2
+  ptr addr @__rtti_struct_Plain
+  i64 2050
+  ptr addr @__rtti_struct_Mark
+  i64 -6141
 }
 global @Zeroed__vtable [storage=readonly, binding=weak, object=_ZTV6Zeroed] = {
   i64 14
@@ -169,9 +169,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = const i64 8
     %t3 = convert sext i64 i32 8
     %t4 = cmp ne i64 %t2, %t3
-    branch %t4, ^if_then_1, ^lor_rhs_4
+    branch %t4, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t5 = addr $empty
     %t6 = load typed ptr %t5
     %t7 = index i8 %t6, -24
@@ -187,17 +187,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t14 = addr $holder
     call void @Holder__Holder(%t14)
     %t15 = const i64 16
     %t16 = convert sext i64 i32 16
     %t17 = cmp ne i64 %t15, %t16
-    branch %t17, ^if_then_5, ^lor_rhs_8
+    branch %t17, ^if_then_5, ^lor_rhs_7
 
-  block ^lor_rhs_8:
+  block ^lor_rhs_7:
     %t18 = addr $holder
     %t19 = load typed ptr %t18
     %t20 = index i8 %t19, -24
@@ -213,9 +213,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_6:
-    jump ^if_end_7
+    jump ^if_end_8
 
-  block ^if_end_7:
+  block ^if_end_8:
     %t27 = addr $holder
     %t28 = index i8 %t27, 13
     %t29 = index i8 [projection=field] %t28, 0
@@ -233,18 +233,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t38 = load i8 %t37
     %t39 = convert sext i32 i8 %t38
     %t40 = cmp ne i32 %t39, 6
-    branch %t40, ^if_then_9, ^lor_rhs_13
+    branch %t40, ^if_then_9, ^lor_rhs_12
 
-  block ^lor_rhs_13:
+  block ^lor_rhs_12:
     %t41 = addr $copy
     %t42 = index i8 %t41, 8
     %t43 = index i8 [projection=field] %t42, 4
     %t44 = load i8 %t43
     %t45 = convert sext i32 i8 %t44
     %t46 = cmp ne i32 %t45, 7
-    branch %t46, ^if_then_9, ^lor_rhs_12
+    branch %t46, ^if_then_9, ^lor_rhs_11
 
-  block ^lor_rhs_12:
+  block ^lor_rhs_11:
     %t47 = addr $copy
     %t48 = index i8 %t47, 8
     %t49 = index i8 [projection=field] %t48, 0
@@ -256,34 +256,34 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_else_10:
-    jump ^if_end_11
+    jump ^if_end_13
 
-  block ^if_end_11:
+  block ^if_end_13:
     %t52 = addr $zeroed
     call void @Zeroed__Zeroed(%t52)
     %t53 = const i64 16
     %t54 = convert sext i64 i32 16
     %t55 = cmp ne i64 %t53, %t54
-    branch %t55, ^if_then_14, ^lor_rhs_19
+    branch %t55, ^if_then_14, ^lor_rhs_18
 
-  block ^lor_rhs_19:
+  block ^lor_rhs_18:
     %t56 = addr $zeroed
     %t57 = index i8 %t56, 14
     %t58 = index i8 [projection=field] %t57, 0
     %t59 = load i8 %t58
     %t60 = convert sext i32 i8 %t59
     %t61 = cmp ne i32 %t60, 5
-    branch %t61, ^if_then_14, ^lor_rhs_18
+    branch %t61, ^if_then_14, ^lor_rhs_17
 
-  block ^lor_rhs_18:
+  block ^lor_rhs_17:
     %t62 = addr $zeroed
     %t63 = index i8 %t62, 8
     %t64 = index i8 [projection=field] %t63, 0
     %t65 = load typed i32 %t64
     %t66 = cmp ne i32 %t65, 0
-    branch %t66, ^if_then_14, ^lor_rhs_17
+    branch %t66, ^if_then_14, ^lor_rhs_16
 
-  block ^lor_rhs_17:
+  block ^lor_rhs_16:
     %t67 = addr $zeroed
     %t68 = index i8 %t67, 8
     %t69 = index i8 [projection=field] %t68, 4
@@ -296,9 +296,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 4
 
   block ^if_else_15:
-    jump ^if_end_16
+    jump ^if_end_19
 
-  block ^if_end_16:
+  block ^if_end_19:
     return i32 0
 }
 function @EmptyDerived__EmptyDerived(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1Ev, inline_hint=yes] {

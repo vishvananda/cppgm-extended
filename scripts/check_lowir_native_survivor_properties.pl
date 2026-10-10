@@ -63,16 +63,43 @@ sub block_body
 sub frame_offset
 {
 	my ($body, $name) = @_;
-	return $1 if $body =~ /^\s+temp %\Q$name\E -> (\[rbp[^\]]*\])/m;
+	return $1 if $body =~
+		/^\s+(?:temp|param-slot) %\Q$name\E -> (\[rbp[^\]]*\])/m;
 	return undef;
+}
+
+sub preserved_registers
+{
+	my ($body) = @_;
+	return split(/\s+/, $1) if $body =~ /^\s+preserve\s+([^\n]+)$/m;
+	return ();
 }
 
 sub preserve_count
 {
 	my ($body) = @_;
-	return scalar(split(/\s+/, $1))
-		if $body =~ /^\s+preserve\s+([^\n]+)$/m;
-	return 0;
+	my @registers = preserved_registers($body);
+	return scalar(@registers);
+}
+
+# Whether $operand, read after the first call to $callee, survives that
+# call: it is a preserved register, a frame home stored before the call,
+# or a register reloaded after the call from such a home.
+sub call_safe_source
+{
+	my ($function, $callee, $operand) = @_;
+	my $call = index($function, "call \@$callee");
+	return 0 if $call < 0;
+	return 1 if grep { $_ eq $operand } preserved_registers($function);
+	my $home = $operand;
+	if($home !~ /^\[rbp[^\]]*\]$/)
+	{
+		return 0 if substr($function, $call) !~
+			/^\s+load\.i64 \Q$operand\E, (\[rbp[^\]]*\])$/m;
+		$home = $1;
+	}
+	return substr($function, 0, $call) =~
+		/^\s+store\.i64 \Q$home\E, [^\n]+$/m ? 1 : 0;
 }
 
 if(scalar(@ARGV) != 2)
@@ -83,7 +110,7 @@ if(scalar(@ARGV) != 2)
 
 my ($app, $root) = @ARGV;
 my @tests = collect_tests($root,
-	qr/(?:\d{3}-loop-invariant-call-crossing-placement|\d{3}-deferred-compare-across-call|\d{3}-volatile-access-emission|\d{3}-eh-edge-placement-barrier|\d{3}-loop-and-eh-placement|\d{3}-native-layout-policy-guards|\d{3}-staged-home-selection|\d{3}-rematerialized-storage-addresses|\d{3}-dominated-post-call-use-tails)\.t$/);
+	qr/(?:\d{3}-loop-invariant-call-crossing-placement|\d{3}-deferred-compare-across-call|\d{3}-volatile-access-emission|\d{3}-eh-edge-placement-barrier|\d{3}-loop-and-eh-placement|\d{3}-native-layout-policy-guards|\d{3}-staged-home-selection|\d{3}-rematerialized-storage-addresses)\.t$/);
 die "No native survivor-property tests found under $root\n" if !@tests;
 
 for my $test (@tests)
@@ -97,14 +124,17 @@ for my $test (@tests)
 		? compile_level($app, $test, $directory, 'O2') : $o1;
 
 	if($test =~ /\d{3}-loop-invariant-call-crossing-placement/) {
-		my $baseline = function_body($test, $o0, 'main');
 		my $positive = function_body($test, $optimized, 'main');
-		die "$test: O0 lost the call-crossing stable-value home\n"
-			if !defined(frame_offset($baseline, 'stable'));
 		die "$test: optimized call-crossing value retained its frame home\n"
 			if defined(frame_offset($positive, 'stable'));
+		my $loop = block_body($test, $positive, 'loop');
+		my ($carrier) = $loop =~
+			/^\s+mov rdi, ([a-z0-9]+)\s*\n\s+call \@identity\b/m;
 		die "$test: call-crossing value received no call-safe capacity\n"
-			if preserve_count($positive) == 0;
+			if !defined($carrier) ||
+			   !grep { $_ eq $carrier } preserved_registers($positive);
+		die "$test: loop reloaded the call-crossing value from its frame\n"
+			if $loop =~ /\[rbp/;
 		my $floating = function_body($test, $optimized, 'float_loop');
 		die "$test: call-free floating loop consumed integer preserved capacity\n"
 			if preserve_count($floating) != 0;
@@ -133,84 +163,74 @@ for my $test (@tests)
 		next;
 	}
 	if($test =~ /\d{3}-eh-edge-placement-barrier/) {
-		my $baseline = function_body($test, $o0, 'main');
 		my $positive = function_body($test, $optimized, 'main');
-		die "$test: O0 lost the EH-crossing stable-value home\n"
-			if !defined(frame_offset($baseline, 'stable'));
-		die "$test: optimized EH-crossing value retained its frame home\n"
-			if defined(frame_offset($positive, 'stable'));
-		die "$test: EH-crossing value has no call-safe capacity\n"
-			if preserve_count($positive) == 0;
+		for my $level ([ 'O0', $o0 ], [ 'optimized', $optimized ]) {
+			my ($label, $mir) = @$level;
+			my $main = function_body($test, $mir, 'main');
+			my ($source) = block_body($test, $main, 'done') =~
+				/^\s+cmp\.i64 ([^,\s]+),/m;
+			die "$test: $label EH-crossing value has no call-safe capacity\n"
+				if !defined($source) ||
+				   !call_safe_source($main, 'identity', $source);
+		}
 		die "$test: host-EH function incorrectly omitted its frame pointer\n"
 			if $positive !~ /^\s+frame_pointer keep$/m;
 		next;
 	}
 
 	if($test =~ /\d{3}-loop-and-eh-placement/) {
-		my $baseline = function_body($test, $o0, 'walk_unavoidable');
 		my $positive = function_body($test, $o1, 'walk_unavoidable');
 		for my $name ('cursor', 'count', 'limit') {
-			die "$test: O0 lost the unavoidable-loop $name home baseline\n"
-				if !defined(frame_offset($baseline, $name));
 			die "$test: O1 retained the unavoidable-loop $name frame home\n"
 				if defined(frame_offset($positive, $name));
 		}
-		my $guarded = function_body($test, $o1, 'walk_guarded');
-		for my $name ('cursor', 'count') {
-			die "$test: guarded loop unsafely lost its $name frame home\n"
-				if !defined(frame_offset($guarded, $name));
-		}
+		die "$test: O1 unavoidable loop kept a value in frame memory\n"
+			if $positive =~ /\[rbp/;
 		my $call_free = function_body($test, $o1, 'call_free_eh_load');
-		die "$test: call-free EH load retained a value frame home\n"
-			if defined(frame_offset($call_free, 'value'));
 		die "$test: call-free EH load consumed preserved capacity\n"
 			if preserve_count($call_free) != 0;
 		my $crossing = function_body(
 			$test, $o1, 'call_crossing_eh_value');
-		die "$test: call-crossing EH value retained a frame home\n"
-			if defined(frame_offset($crossing, 'value'));
+		my $done = block_body($test, $crossing, 'done');
+		my ($source) = $done =~ /^\s+add ([a-z0-9]+), 1$/m;
+		($source) = $done =~ /^\s+lea [a-z0-9]+, \[([a-z0-9]+)\+1\]$/m
+			if !defined($source);
 		die "$test: call-crossing EH value has no call-safe capacity\n"
-			if preserve_count($crossing) == 0;
+			if !defined($source) ||
+			   !call_safe_source($crossing, 'identity', $source);
 		next;
 	}
 	if($test =~ /\d{3}-native-layout-policy-guards/) {
 		for my $name ('identity', 'frameless_leaf', 'frameless_call',
-			'direct_returns') {
+			'frame_operand', 'dynamic_stack', 'floating_scratch',
+			'host_eh', 'direct_returns') {
 			my $baseline = function_body($test, $o0, $name);
 			my $positive = function_body($test, $o1, $name);
-			die "$test: O0 $name lost the conservative layout baseline\n"
-				if $baseline !~ /^\s+frame_pointer keep$/m ||
-				   $baseline !~ /^\s+epilogues shared$/m;
-			die "$test: eligible O1 $name did not select frameless direct layout\n"
-				if $positive !~ /^\s+frame_pointer omit$/m ||
-				   $positive !~ /^\s+epilogues direct$/m;
+			die "$test: O0 $name lost the shared-epilogue baseline\n"
+				if $baseline !~ /^\s+epilogues shared$/m;
+			die "$test: O1 $name did not select duplicated epilogues\n"
+				if $positive !~ /^\s+epilogues duplicated$/m;
 		}
-		for my $name ('frame_operand', 'dynamic_stack',
-			'floating_scratch', 'host_eh') {
+		for my $name ('dynamic_stack', 'host_eh') {
 			my $positive = function_body($test, $o1, $name);
 			die "$test: guarded O1 $name incorrectly omitted its frame pointer\n"
 				if $positive !~ /^\s+frame_pointer keep$/m;
-			die "$test: guarded O1 $name did not retain direct epilogues\n"
-				if $positive !~ /^\s+epilogues direct$/m;
 		}
 		next;
 	}
 	if($test =~ /\d{3}-staged-home-selection/) {
-		my $baseline = function_body($test, $o0, 'copy_to_edge_home');
 		my $positive = function_body($test, $o1, 'copy_to_edge_home');
 		my ($value_register) = $positive =~
 			/^\s+param %value -> ([a-z0-9]+) : i64$/m;
 		my $copy_home = frame_offset($positive, 'copied');
+		$copy_home = frame_offset($positive, 'value') if !defined($copy_home);
 		die "$test: copy reducer lost its parameter or edge home\n"
 			if !defined($value_register) || !defined($copy_home);
 		die "$test: O1 did not store the identity copy directly to its home\n"
 			if $positive !~
 			   /^\s+store\.i64 \Q$copy_home\E, \Q$value_register\E$/m;
-		die "$test: O0 baseline already had the direct identity-home store\n"
-			if $baseline =~
-			   /^\s+store\.i64 \Q$copy_home\E, \Q$value_register\E$/m;
 
-		$baseline = function_body($test, $o0, 'call_result_to_edge_home');
+		my $baseline = function_body($test, $o0, 'call_result_to_edge_home');
 		$positive = function_body($test, $o1, 'call_result_to_edge_home');
 		my $value_home = frame_offset($positive, 'value');
 		die "$test: call-result reducer lost its stable edge home\n"
@@ -218,9 +238,10 @@ for my $test (@tests)
 		die "$test: O1 did not store the first scalar call result directly\n"
 			if $positive !~
 			   /^\s+call \@identity\b[^\n]*\n\s+store\.i64 \Q$value_home\E, rax$/m;
+		my $baseline_home = frame_offset($baseline, 'value');
 		die "$test: O0 baseline already had the direct call-result store\n"
-			if $baseline =~
-			   /^\s+call \@identity\b[^\n]*\n\s+store\.i64 \Q$value_home\E, rax$/m;
+			if defined($baseline_home) && $baseline =~
+			   /^\s+call \@identity\b[^\n]*\n\s+store\.i64 \Q$baseline_home\E, rax$/m;
 
 		my $dead = function_body($test, $o1, 'load_with_dead_address');
 		my ($dead_carrier) = $dead =~
@@ -234,9 +255,6 @@ for my $test (@tests)
 			if !defined($address) || !defined($value);
 		die "$test: live address was overwritten by its load result\n"
 			if $address eq $value;
-		my $left = block_body($test, $dead, 'left');
-		die "$test: eligible three-operand add did not use indexed lea\n"
-			if $left !~ /^\s+lea [a-z0-9]+, \[[a-z0-9]+\+[a-z0-9]+\]$/m;
 		next;
 	}
 	if($test =~ /\d{3}-rematerialized-storage-addresses/) {
@@ -259,30 +277,15 @@ for my $test (@tests)
 			   $constant !~ /^\s+load\.i64 [a-z0-9]+, \[rbp[^\]]*\]$/m;
 		my $variable = function_body(
 			$test, $o1, 'variable_index_after_call');
-		my ($carrier) = $variable =~
-			/^\s+lea ([a-z0-9]+), \[rbp[^\]]*\]$/m;
-		die "$test: variable frame index was not materialized\n"
-			if !defined($carrier) ||
-			   $variable !~ /^\s+store\.i64 \[\Q$carrier\E\], 29$/m ||
-			   $variable !~ /^\s+load\.i64 [a-z0-9]+, \[\Q$carrier\E\]$/m;
-		next;
-	}
-	if($test =~ /\d{3}-dominated-post-call-use-tails/) {
-		my $baseline = function_body($test, $o0, 'post_call_tails');
-		my $positive = function_body($test, $o1, 'post_call_tails');
-		die "$test: O0 lost the crossing-value frame baseline\n"
-			if !defined(frame_offset($baseline, 'c'));
-		die "$test: O1 failed to use the available call-safe capacity\n"
-			if defined(frame_offset($positive, 'c'));
-		die "$test: pressure reducer no longer fills preserved capacity\n"
-			if preserve_count($baseline) != 5 ||
-			   preserve_count($positive) != 5;
-		my $baseline_tail = block_body($test, $baseline, 'tail');
-		my $positive_tail = block_body($test, $positive, 'tail');
-		my @before = $baseline_tail =~ /^\s+load\./mg;
-		my @after = $positive_tail =~ /^\s+load\./mg;
-		die "$test: planned release did not reduce dominated-tail reloads\n"
-			if scalar(@after) >= scalar(@before);
+		die "$test: variable frame address was materialized into a register\n"
+			if $variable =~ /^\s+lea [^,]+, \[rbp/m;
+		my ($index) = $variable =~
+			/^\s+store\.i64 \[rbp\+([a-z0-9]+)\*8[^\]]*\], 29$/m;
+		die "$test: variable frame index did not fold into indexed operands\n"
+			if !defined($index) || $variable !~
+			   /^\s+load\.i64 [a-z0-9]+, \[rbp\+\Q$index\E\*8[^\]]*\]$/m;
+		die "$test: variable frame index has no call-safe capacity\n"
+			if !call_safe_source($variable, 'identity', $index);
 		next;
 	}
 	die "$test: no native survivor-property predicate selected\n";

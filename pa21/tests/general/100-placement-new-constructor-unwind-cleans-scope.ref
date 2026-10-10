@@ -1,6 +1,6 @@
 declare function @guard__guard(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN5guardC1Ev]
-declare function @guard___guard(%arg0 : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5guardD1Ev]
 declare function @item__item(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN4itemC1Ev]
+declare function @guard___guard(%arg0 : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5guardD1Ev]
 
 global @storage : i64 [binding=strong] = zero
 

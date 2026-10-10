@@ -25,14 +25,14 @@ sub run_optimizer
 	my $output = "$directory/$level.lowir";
 	my $stderr = "$directory/$level.stderr";
 	my $status = run_command_capture(
-		cmd => [$app, "-$level", '--stats', '-o', $output, $test],
+		cmd => [$app, "-$level", '-o', $output, $test],
 		stdout => "$directory/$level.stdout",
 		stderr => $stderr,
 		timeout => 30,
 	);
 	die "$test: lowiropt -$level failed\n" . read_file($stderr)
 		if $status != 0;
-	return ($output, read_file($output), read_file($stderr));
+	return ($output, read_file($output));
 }
 
 sub function_body
@@ -56,10 +56,28 @@ sub has_any_signed_bound
 	return $body =~ /^\s+%\w+ = cmp (?:lt i32 %value, 0|gt i32 %value, 127)$/m;
 }
 
-sub has_unsigned_bound
+# The two signed bounds became one switch on %value that sends exactly
+# 0 through 127 to ^accept and every other value to ^reject.
+sub has_range_switch
 {
 	my ($body) = @_;
-	return $body =~ /^\s+%\w+ = cmp ugt i32 %value, 127$/m;
+	my @switches = $body =~ /^\s+switch %value, (.*)$/mg;
+	return 0 if scalar(@switches) != 1;
+	my ($default, @cases) = split(/, /, $switches[0]);
+	return 0 if $default ne '^reject' || scalar(@cases) != 128;
+	my %values;
+	for my $case (@cases)
+	{
+		return 0 if $case !~ /^(-?\d+):\^accept$/;
+		$values{$1} = 1;
+	}
+	return !grep { !$values{$_} } (0 .. 127);
+}
+
+sub has_switch
+{
+	my ($body) = @_;
+	return $body =~ /^\s+switch\b/m;
 }
 
 if (scalar(@ARGV) != 3)
@@ -78,43 +96,43 @@ for my $test (@tests)
 		TMPDIR => 1, CLEANUP => 1);
 	my %paths;
 	my %outputs;
-	my %stats;
 	for my $level ('O0', 'O1', 'O2', 'O3')
 	{
-		($paths{$level}, $outputs{$level}, $stats{$level}) =
+		($paths{$level}, $outputs{$level}) =
 			run_optimizer($app, $test, $directory, $level);
 	}
 
-	for my $level ('O0', 'O1', 'O2')
+	for my $level ('O0', 'O1')
 	{
 		for my $name ('fold_zero_bounded', 'fold_with_accept_phi')
 		{
 			my $body = function_body($test, $outputs{$level}, $name);
 			die "$test: $level did not preserve the two signed bounds in $name\n"
-				if !has_signed_bounds($body) || has_unsigned_bound($body);
+				if !has_signed_bounds($body) || has_switch($body);
 		}
 	}
 
-	for my $name ('fold_zero_bounded', 'fold_with_accept_phi')
+	for my $level ('O2', 'O3')
 	{
-		my $body = function_body($test, $outputs{O3}, $name);
-		die "$test: O3 did not combine the signed bounds in $name\n"
-			if !has_unsigned_bound($body) || has_any_signed_bound($body);
+		for my $name ('fold_zero_bounded', 'fold_with_accept_phi')
+		{
+			my $body = function_body($test, $outputs{$level}, $name);
+			die "$test: $level did not combine the signed bounds in $name\n"
+				if !has_range_switch($body) || has_any_signed_bound($body);
+		}
+		for my $name ('retain_distinct_rejections', 'retain_distinct_values',
+			'retain_shared_upper', 'retain_rejection_phi')
+		{
+			my $body = function_body($test, $outputs{$level}, $name);
+			die "$test: $level combined unsafe bounds in $name\n"
+				if has_switch($body) ||
+				   $body =~ /^\s+%\w+ = cmp ugt i32 /m ||
+				   $body !~ /^\s+%\w+ = cmp lt i32 /m ||
+				   $body !~ /^\s+%\w+ = cmp gt i32 /m;
+		}
 	}
-	for my $name ('retain_distinct_rejections', 'retain_distinct_values',
-		'retain_shared_upper',
-		'retain_shared_upper_predicate', 'retain_rejection_phi')
-	{
-		my $body = function_body($test, $outputs{O3}, $name);
-		die "$test: O3 combined unsafe bounds in $name\n"
-			if $body =~ /^\s+%\w+ = cmp ugt i32 /m ||
-			   $body !~ /^\s+%\w+ = cmp lt i32 /m ||
-			   $body !~ /^\s+%\w+ = cmp gt i32 /m;
-	}
-	die "$test: O3 stats did not report the signed-range fold\n"
-		if $stats{O3} !~ /(?:^|\s)predicate_range_folds=([1-9]\d*)(?:\s|$)/;
 
-	for my $level ('O1', 'O3')
+	for my $level ('O1', 'O2', 'O3')
 	{
 		my $executable = "$directory/behavior-$level";
 		my $compile_stderr = "$directory/compile-$level.stderr";

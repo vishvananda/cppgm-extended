@@ -4,12 +4,12 @@ function @f() -> i64 [binding=strong, object=_Z1fv] {
 
   block ^entry:
     %t1 = addr $a
-    call void @Box_int___Box_char_(%t1)
+    call void @Box_int___Box(%t1)
     %t2 = addr $b
-    call void @Box_char___Box_char_(%t2)
+    call void @Box_char___Box(%t2)
     return i64 0
 }
-function @Box_int___Box_char_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIiEC1Ev, inline_hint=yes] {
+function @Box_int___Box(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -28,14 +28,7 @@ function @Box_int___Box_char_(%this : ptr [object_bytes=1]) -> void [binding=wea
     eh_end
     resume
 }
-function @Box_int____Box(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN3BoxIiED1Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @Box_char___Box_char_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIcEC1Ev, inline_hint=yes] {
+function @Box_char___Box(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIcEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -54,21 +47,7 @@ function @Box_char___Box_char_(%this : ptr [object_bytes=1]) -> void [binding=we
     eh_end
     resume
 }
-function @Box_char____Box(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN3BoxIcED1Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
 function @Box_int___Tag__Tag(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIiE3TagC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @Box_int___Tag___Tag(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN3BoxIiE3TagD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -82,6 +61,27 @@ function @Box_char___Tag__Tag(%this : ptr [object_bytes=1]) -> void [binding=wea
     store typed ptr %this, $this
     return void
 }
+function @Box_int____Box(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN3BoxIiED1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Box_char____Box(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN3BoxIcED1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Box_int___Tag___Tag(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN3BoxIiE3TagD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
 function @Box_char___Tag___Tag(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN3BoxIcE3TagD1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -89,9 +89,9 @@ function @Box_char___Tag___Tag(%this : ptr [object_bytes=1]) -> void [unwind=no,
     store typed ptr %this, $this
     return void
 }
-alias object _ZN3BoxIiEC2Ev = @Box_int___Box_char_
+alias object _ZN3BoxIiEC2Ev = @Box_int___Box
 alias object _ZN3BoxIiED2Ev = @Box_int____Box
-alias object _ZN3BoxIcEC2Ev = @Box_char___Box_char_
+alias object _ZN3BoxIcEC2Ev = @Box_char___Box
 alias object _ZN3BoxIcED2Ev = @Box_char____Box
 alias object _ZN3BoxIiE3TagC2Ev = @Box_int___Tag__Tag
 alias object _ZN3BoxIiE3TagD2Ev = @Box_int___Tag___Tag

@@ -1,6 +1,6 @@
-declare function @make_value(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z10make_valuev]
 declare function @Value__Value(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN5ValueC1Ev]
 declare function @Value___Value(%arg0 : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5ValueD1Ev]
+declare function @make_value(%arg0 : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z10make_valuev]
 
 function @choose(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z6choosev] {
   slot $left : obj<1x1>

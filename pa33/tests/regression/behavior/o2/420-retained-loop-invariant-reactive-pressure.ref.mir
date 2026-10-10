@@ -55,16 +55,16 @@ function @edge_at
     param %index -> rsi : i64
     return ptr -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     imul rsi, 8
-    mov rax, @edges
-    add rax, rsi
-    ret rax
+    mov r10, @edges
+    add rsi, r10
+    ret rsi
 
 function @node_at
   abi
@@ -72,10 +72,10 @@ function @node_at
     param %index -> rsi : i64
     return ptr -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     mov rax, @node
@@ -87,10 +87,10 @@ function @payload
     param %value -> rsi : u32
     return u32 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rsi
@@ -101,10 +101,10 @@ function @append
     param %value -> rsi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret
@@ -117,145 +117,98 @@ function @walk
     param %names -> rcx : ptr
     return void -> void
   frame
-    stack_size 96
+    stack_size 48
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    preserve rbx r12 r15 r13 r14
-    slot $fallback -> [rbp-4] : u32
+    epilogues duplicated
+    preserve rbx r12 r13 r14
+    slot $fallback -> [rbp-16] : u32
     slot $payload -> [rbp-8] : u32
-    temp %inner_edge -> [rbp-12] : u32
-    temp %child_index -> [rbp-24] : i64
-    temp %kind -> [rbp-26] : u16
-    temp %inner_first -> [rbp-32] : u32
-    temp %inner_edges_1 -> [rbp-24] : ptr
-    temp %inner_wide -> [rbp-40] : i64
-    temp %inner_record_1 -> [rbp-48] : ptr
-    temp %inner_child -> [rbp-32] : u32
-    temp %inner_next -> [rbp-32] : u32
-    temp %next_edge -> [rbp-32] : u32
 
   block ^entry
-    mov r12, rdi
-    mov rbx, rcx
-    store.u32 [rbp-4], rdx
-    load.ptr r8, [rdi+24]
-    lea r8, [r8+32]
-    mov r9, rsi
-    zext.i32 r9
-    mov rdi, r8
-    mov rsi, r9
+    mov r14, rcx
+    store.u32 [rbp-16], rdx
+    lea rbx, [rdi+24]
+    load.ptr r8, [rbx]
+    lea rdi, [r8+32]
     call @node_at [args=(rsi,rdi), unwind=no]
-    load.u32 r9, [rax+12]
-    mov r15, r9
+    load.u32 r12, [rax+12]
 
   block ^outer_condition
-    cmp.u32 r15, @no_edge
+    cmp.u32 r12, @no_edge
     je ^outer_done
 
   block ^outer_body
-    load.ptr r8, [r12+24]
-    lea r8, [r8+56]
-    mov r13, r15
-    zext.i32 r13
-    mov rdi, r8
-    mov rsi, r13
+    load.ptr r8, [rbx]
+    lea rdi, [r8+56]
+    mov rsi, r12
     call @edge_at [args=(rsi,rdi), unwind=no]
-    load.u32 r8, [rax]
-    load.ptr r9, [r12+24]
-    load.ptr rdi, [r9+8]
-    test.i64 rdi, rdi
+    load.u32 r13, [rax]
+    load.ptr r8, [rbx]
+    load.ptr r9, [r8+8]
+    cmp.ptr r9, 0
     je ^inspect
 
   block ^record
-    load.i64 r14, [rdi]
-    add r14, 1
-    store.i64 [rdi], r14
+    add [r9], 1
 
   block ^inspect
-    lea r14, [r9+32]
-    mov rax, r8
-    zext.i32 rax
-    store.i64 [rbp-24], rax
-    mov rdi, r14
-    load.i64 rsi, [rbp-24]
+    lea rdi, [r8+32]
+    mov rsi, r13
     call @node_at [args=(rsi,rdi), unwind=no]
-    load.u16 rax, [rax+30]
-    store.u16 [rbp-26], rax
-    load.u16 r14, [rbp-26]
-    mov rdx, 121
-    cmp.u16 r14, rdx
-    sete r14
-    movzx r14, r14
-    mov rdx, 0
-    cmp.u8 r14, rdx
-    je ^outer_iterate
-
-  block ^inner_start
-    load.ptr r14, [r12+24]
-    lea r14, [r14+32]
-    mov rdi, r14
-    load.i64 rsi, [rbp-24]
-    call @node_at [args=(rsi,rdi), unwind=no]
-    load.u32 rax, [rax+12]
-    store.u32 [rbp-32], rax
-    load.u32 r11, [rbp-32]
-    store.u32 [rbp-12], r11
-
-  block ^inner_condition
-    load.u32 rdx, @no_edge
-    cmp.u32 [rbp-12], rdx
-    je ^inner_done
-
-  block ^inner_body
-    load.ptr r14, [r12+24]
-    lea rax, [r14+56]
-    store.ptr [rbp-24], rax
-    load.u32 rax, [rbp-12]
-    store.i64 [rbp-40], rax
-    load.ptr rdi, [rbp-24]
-    load.i64 rsi, [rbp-40]
-    call @edge_at [args=(rsi,rdi), unwind=no]
-    store.ptr [rbp-48], rax
-    load.ptr rcx, [rbp-48]
-    load.u32 rax, [rcx]
-    store.u32 [rbp-32], rax
-    mov rdi, r14
-    load.u32 rsi, [rbp-32]
-    call @payload [args=(rsi,rdi), unwind=no]
-    store.u32 [rbp-8], rax
-    mov rdi, rbx
-    lea rsi, [rbp-8]
-    call @append [args=(rsi,rdi), unwind=no]
-    load.ptr r14, [r12+24]
-    lea r14, [r14+56]
-    mov rdi, r14
-    load.i64 rsi, [rbp-40]
-    call @edge_at [args=(rsi,rdi), unwind=no]
-    load.u32 rax, [rax+4]
-    store.u32 [rbp-32], rax
-    load.u32 r11, [rbp-32]
-    store.u32 [rbp-12], r11
-    jmp ^inner_condition
-
-  block ^inner_done
-    ret
+    cmp.u16 [rax+30], 121
+    sete r8
+    cmp.u8 r8, 0
+    jne ^inner_start
 
   block ^outer_iterate
-    load.ptr r14, [r12+24]
-    lea r14, [r14+56]
-    mov rdi, r14
-    mov rsi, r13
+    load.ptr r8, [rbx]
+    lea rdi, [r8+56]
+    mov rsi, r12
     call @edge_at [args=(rsi,rdi), unwind=no]
-    load.u32 rax, [rax+4]
-    store.u32 [rbp-32], rax
-    load.u32 r15, [rbp-32]
-    jmp ^outer_condition
+    load.u32 r12, [rax+4]
+    cmp.u32 r12, @no_edge
+    jne ^outer_body
 
   block ^outer_done
-    mov rdi, rbx
-    lea rsi, [rbp-4]
+    mov rdi, r14
+    lea rsi, [rbp-16]
     call @append [args=(rsi,rdi), unwind=no]
+    ret
+
+  block ^inner_body
+    load.ptr r13, [rbx]
+    lea rdi, [r13+56]
+    mov rsi, r12
+    call @edge_at [args=(rsi,rdi), unwind=no]
+    load.u32 rsi, [rax]
+    mov rdi, r13
+    call @payload [args=(rsi,rdi), unwind=no]
+    store.u32 [rbp-8], rax
+    mov rdi, r14
+    lea rsi, [rbp-8]
+    call @append [args=(rsi,rdi), unwind=no]
+    load.ptr r8, [rbx]
+    lea rdi, [r8+56]
+    mov rsi, r12
+    call @edge_at [args=(rsi,rdi), unwind=no]
+    load.u32 r12, [rax+4]
+    cmp.u32 r12, @no_edge
+    jne ^inner_body
+    jmp ^inner_done
+
+  block ^inner_start
+    load.ptr r8, [rbx]
+    lea rdi, [r8+32]
+    mov rsi, r13
+    call @node_at [args=(rsi,rdi), unwind=no]
+    load.u32 r12, [rax+12]
+
+  block ^inner_condition
+    cmp.u32 r12, @no_edge
+    jne ^inner_body
+
+  block ^inner_done
     ret
 
 function @main
@@ -264,23 +217,20 @@ function @main
   frame
     stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
-    mov rax, @arena
-    mov rcx, @state
-    store.ptr [rcx+24], rax
-    mov rax, @stats
-    mov rcx, @arena
-    store.ptr [rcx+8], rax
+    mov r11, @arena
+    store.ptr @state+24, r11
+    mov r11, @stats
+    store.ptr @arena+8, r11
     mov rdi, @state
     mov rsi, 0
     mov rdx, 0
     mov rcx, @result
     call @walk [args=(rcx,rdx,rsi,rdi), unwind=no]
-    load.i64 r9, @stats
-    cmp.i64 r9, 2
+    cmp.i64 @stats, 2
     setne rax
     movzx rax, rax
     ret rax

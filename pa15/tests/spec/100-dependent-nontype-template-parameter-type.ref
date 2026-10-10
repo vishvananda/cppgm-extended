@@ -1,3 +1,5 @@
+declare global @integral_constant_int_7___value : i32 [binding=weak, object=_ZN17integral_constantIiLi7EE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

@@ -21,11 +21,11 @@ function @call(%target : ptr) -> i32 [binding=strong, object=_Z4callPFiR4SinkPKc
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    %t1 = addr @select__ov2
+    %t1 = addr @select
     %t2 = call i32 @call(%t1)
     return i32 %t2
 }
-function @select__ov2(%sink : ptr [pass=by_address, object_bytes=4], %__param1 : ptr) -> i32 [binding=weak, object=_Z6selectI4SinkEiRT_PKc] {
+function @select(%sink : ptr [pass=by_address, object_bytes=4], %__param1 : ptr) -> i32 [binding=weak, object=_Z6selectI4SinkEiRT_PKc] {
   slot $sink : ptr
   slot $__param1 : ptr
   slot $cond__1 : i32

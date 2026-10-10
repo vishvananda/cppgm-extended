@@ -115,6 +115,14 @@ sub main {
     if(defined($predefined_probe) && $predefined_probe->{status} == 0) {
         $predefined = $predefined_probe->{stdout};
     }
+    # The strict ISO dialect's macros (-std=c++11: __STRICT_ANSI__, and
+    # what the host withholds under it), for cppgm++'s -std=c++NN.
+    my $strict = $predefined;
+    my $strict_probe =
+        run_probe([@base_args, "-std=c++11", "-dM", "-E", "-x", "c++", "-"], "");
+    if(defined($strict_probe) && $strict_probe->{status} == 0) {
+        $strict = $strict_probe->{stdout};
+    }
 
     my @include_paths;
     my $include_probe =
@@ -144,6 +152,8 @@ sub main {
           raw_string_literal($search_dirs), ";\n";
     print "static const char kHostPredefinedMacros[] = ",
           raw_string_literal($predefined), ";\n";
+    print "static const char kHostStrictPredefinedMacros[] = ",
+          raw_string_literal($strict), ";\n";
     print "static const char * const kStandardIncludePaths[] = {\n";
     for my $path (@include_paths) {
         print "  ", string_literal($path), ",\n";

@@ -18,28 +18,28 @@ function @variable_address
     param %which -> rsi : i64
     return ptr -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    lea rax, [rdi+rsi*8]
-    ret rax
+    lea rdi, [rdi+rsi*8]
+    ret rdi
 
 function @constant_address
   abi
     param %base -> rdi : ptr
     return ptr -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    lea rax, [rdi+24]
-    ret rax
+    lea rdi, [rdi+24]
+    ret rdi
 
 function @main
   abi
@@ -59,16 +59,15 @@ function @main
     load.i64 r12, [rax]
     mov rdi, rbx
     call @constant_address [args=(rdi)]
-    load.i64 r8, [rax]
+    load.i64 rax, [rax]
     mov rdx, 30
     cmp.i64 r12, rdx
     setne r12
     movzx r12, r12
     mov rdx, 40
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    or r12, r8
-    mov rax, r12
-    sext.i32 rax
-    ret rax
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    or r12, rax
+    sext.i32 r12
+    ret r12

@@ -1,3 +1,8 @@
+declare global @is_same_int_int__bool__char____int_int__bool__char______value : u8 [binding=weak, object=_ZN7is_sameIPFiRiRbRcES4_E5valueE]
+declare global @function_traits_int_char_longint____arity : i32 [binding=weak, object=_ZN15function_traitsIFiclEE5arityE]
+declare global @is_same_int_int___value : u8 [binding=weak, object=_ZN7is_sameIiiE5valueE]
+declare global @make_function_type_int_char_longint___arity : i32 [binding=weak, object=_ZN18make_function_typeIiJclEE5arityE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

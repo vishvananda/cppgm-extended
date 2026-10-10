@@ -1,3 +1,5 @@
+declare global @is_same___cppgm_class_template_identity_1___cppgm_class_template_identity_1___value : u8 [binding=weak, object=_ZN7is_sameI16simple_allocatorIdES1_E5valueE]
+
 function @instantiate_standard_owner() -> void [binding=strong, object=_Z26instantiate_standard_ownerv] {
   slot $traits : obj<1x1>
 

@@ -1,3 +1,6 @@
+declare global @has_iterator_category_iter_like_void___value : u8 [binding=weak, object=_ZN21has_iterator_categoryI9iter_likevE5valueE]
+declare global @has_iterator_category_plain_void___value : u8 [binding=weak, object=_ZN21has_iterator_categoryI5plainvE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

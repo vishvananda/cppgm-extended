@@ -1,3 +1,5 @@
+declare global @std__integral_constant_unsignedlongint_3___value : i64 [binding=weak, object=_ZNSt17integral_constantImLm3EE5valueE]
+
 global @check : obj<4x4> [binding=strong] = {
   zero 4
 }

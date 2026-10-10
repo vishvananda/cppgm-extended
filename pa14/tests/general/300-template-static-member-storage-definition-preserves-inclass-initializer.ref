@@ -1,4 +1,4 @@
-global @__cppgm_class_template_identity_0_0_0__value : i32 [storage=readonly, binding=weak, object=_ZN3BoxIiE5valueE] = 9
+global @Box_int___value : i32 [storage=readonly, binding=weak, object=_ZN3BoxIiE5valueE] = 9
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $box : obj<1x1>

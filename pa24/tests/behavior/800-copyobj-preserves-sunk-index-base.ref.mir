@@ -29,7 +29,7 @@ function @mark
     param %p -> rdi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -43,17 +43,13 @@ function @copy_then_mark_base
     param %this -> rdi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov r8, rdi
-    mov rdi, @dest
-    mov rsi, @source
-    copy_bytes 24x8, rdi, rsi
-    mov rdi, r8
+    copy_bytes 24x8, @dest, @source
     call @mark [args=(rdi)]
     ret
 
@@ -69,15 +65,12 @@ function @main
   block ^entry
     mov rdi, @cell
     call @copy_then_mark_base [args=(rdi)]
-    load.i64 r8, @cell
     mov rdx, 99
-    cmp.i64 r8, rdx
+    cmp.i64 @cell, rdx
     sete r8
     movzx r8, r8
     mov rdx, 0
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    ret r8

@@ -1,3 +1,5 @@
+declare global @lib__wrapper___cppgm_class_template_identity_1___cppgm_class_template_identity_1_false_t___value : i32 [binding=weak, object=_ZN3lib7wrapperINS_3boxIiEES2_NS_6detail7false_tEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

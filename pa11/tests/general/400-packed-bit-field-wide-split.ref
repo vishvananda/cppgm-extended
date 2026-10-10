@@ -11,9 +11,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = const i64 10
     %t2 = convert sext i64 i32 10
     %t3 = cmp ne i64 %t1, %t2
-    branch %t3, ^if_then_1, ^lor_rhs_4
+    branch %t3, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t4 = const i64 9
     %t5 = convert sext i64 i32 9
     %t6 = cmp ne i64 %t4, %t5
@@ -23,9 +23,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t7 = addr @global
     %t8 = index i8 [projection=field] %t7, 0
     %t9 = load i8 %t8
@@ -34,9 +34,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = binary shr i8 %t11, 5
     %t13 = convert sext i32 i8 %t12
     %t14 = cmp ne i32 %t13, 2
-    branch %t14, ^if_then_5, ^lor_rhs_9
+    branch %t14, ^if_then_5, ^lor_rhs_8
 
-  block ^lor_rhs_9:
+  block ^lor_rhs_8:
     %t15 = addr @global
     %t16 = index i8 [projection=field] %t15, 0
     %t17 = load i64 %t16
@@ -50,9 +50,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t25 = binary and i128 %t24, 18446744073709551615
     %t26 = convert trunc i64 i128 %t25
     %t27 = cmp ne i64 %t26, 81985529216486895
-    branch %t27, ^if_then_5, ^lor_rhs_8
+    branch %t27, ^if_then_5, ^lor_rhs_7
 
-  block ^lor_rhs_8:
+  block ^lor_rhs_7:
     %t28 = addr @global
     %t29 = index i8 [projection=field] %t28, 9
     %t30 = load i8 %t29
@@ -64,9 +64,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_6:
-    jump ^if_end_7
+    jump ^if_end_9
 
-  block ^if_end_7:
+  block ^if_end_9:
     %t33 = addr $spans
     %t34 = addr $spans
     %t35 = index i8 [projection=field] %t34, 0
@@ -76,7 +76,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t39 = binary shl i8 %t38, 5
     %t40 = binary shr i8 %t39, 5
     %t41 = load i8 %t35
-    %t42 = binary and i8 %t41, 248
+    %t42 = binary and i8 %t41, -8
     %t43 = binary or i8 %t42, %t38
     store i8 %t43, %t35
     %t44 = addr $spans
@@ -111,9 +111,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t70 = unary neg i32 3
     %t71 = convert sext i32 i8 %t69
     %t72 = cmp ne i32 %t71, %t70
-    branch %t72, ^if_then_10, ^lor_rhs_14
+    branch %t72, ^if_then_10, ^lor_rhs_13
 
-  block ^lor_rhs_14:
+  block ^lor_rhs_13:
     %t73 = addr $spans
     %t74 = index i8 [projection=field] %t73, 0
     %t75 = load i64 %t74
@@ -127,9 +127,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t83 = binary and i128 %t82, 18446744073709551615
     %t84 = convert trunc i64 i128 %t83
     %t85 = cmp ne i64 %t84, -81985529216486896
-    branch %t85, ^if_then_10, ^lor_rhs_13
+    branch %t85, ^if_then_10, ^lor_rhs_12
 
-  block ^lor_rhs_13:
+  block ^lor_rhs_12:
     %t86 = addr $spans
     %t87 = index i8 [projection=field] %t86, 9
     %t88 = load i8 %t87
@@ -141,9 +141,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_else_11:
-    jump ^if_end_12
+    jump ^if_end_14
 
-  block ^if_end_12:
+  block ^if_end_14:
     %t91 = addr $spans
     %t92 = index i8 [projection=field] %t91, 0
     %t93 = convert sext i64 i32 1
@@ -173,25 +173,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t114 = load u8 %t113
     %t115 = convert zext i32 u8 %t114
     %t116 = cmp ne i32 %t115, 13
-    branch %t116, ^if_then_15, ^lor_rhs_20
+    branch %t116, ^if_then_15, ^lor_rhs_19
 
-  block ^lor_rhs_20:
+  block ^lor_rhs_19:
     %t117 = load typed ptr $bytes
     %t118 = index u8 [projection=array_element] %t117, 1
     %t119 = load u8 %t118
     %t120 = convert zext i32 u8 %t119
     %t121 = cmp ne i32 %t120, 0
-    branch %t121, ^if_then_15, ^lor_rhs_19
+    branch %t121, ^if_then_15, ^lor_rhs_18
 
-  block ^lor_rhs_19:
+  block ^lor_rhs_18:
     %t122 = load typed ptr $bytes
     %t123 = index u8 [projection=array_element] %t122, 7
     %t124 = load u8 %t123
     %t125 = convert zext i32 u8 %t124
     %t126 = cmp ne i32 %t125, 0
-    branch %t126, ^if_then_15, ^lor_rhs_18
+    branch %t126, ^if_then_15, ^lor_rhs_17
 
-  block ^lor_rhs_18:
+  block ^lor_rhs_17:
     %t127 = load typed ptr $bytes
     %t128 = index u8 [projection=array_element] %t127, 8
     %t129 = load u8 %t128
@@ -204,9 +204,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 4
 
   block ^if_else_16:
-    jump ^if_end_17
+    jump ^if_end_20
 
-  block ^if_end_17:
+  block ^if_end_20:
     %t133 = addr $spans
     %t134 = index i8 [projection=field] %t133, 0
     %t135 = load i64 %t134
@@ -255,9 +255,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t176 = convert trunc i64 i128 %t175
     %t177 = convert sext i64 i32 2
     %t178 = cmp ne i64 %t176, %t177
-    branch %t178, ^if_then_21, ^lor_rhs_25
+    branch %t178, ^if_then_21, ^lor_rhs_24
 
-  block ^lor_rhs_25:
+  block ^lor_rhs_24:
     %t179 = addr $spans
     %t180 = index i8 [projection=field] %t179, 0
     %t181 = load i8 %t180
@@ -267,9 +267,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t185 = unary neg i32 3
     %t186 = convert sext i32 i8 %t184
     %t187 = cmp ne i32 %t186, %t185
-    branch %t187, ^if_then_21, ^lor_rhs_24
+    branch %t187, ^if_then_21, ^lor_rhs_23
 
-  block ^lor_rhs_24:
+  block ^lor_rhs_23:
     %t188 = addr $spans
     %t189 = index i8 [projection=field] %t188, 9
     %t190 = load i8 %t189
@@ -281,9 +281,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 5
 
   block ^if_else_22:
-    jump ^if_end_23
+    jump ^if_end_25
 
-  block ^if_end_23:
+  block ^if_end_25:
     %t193 = addr $value
     %t194 = addr $value
     %t195 = index i8 [projection=field] %t194, 0
@@ -332,9 +332,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t234 = binary and u8 %t233, 127
     %t235 = convert zext i32 u8 %t234
     %t236 = cmp ne i32 %t235, 100
-    branch %t236, ^if_then_26, ^lor_rhs_30
+    branch %t236, ^if_then_26, ^lor_rhs_29
 
-  block ^lor_rhs_30:
+  block ^lor_rhs_29:
     %t237 = addr $value
     %t238 = index i8 [projection=field] %t237, 0
     %t239 = load i64 %t238
@@ -351,9 +351,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t250 = convert trunc i64 i128 %t249
     %t251 = unary neg i64 123456789012345
     %t252 = cmp ne i64 %t250, %t251
-    branch %t252, ^if_then_26, ^lor_rhs_29
+    branch %t252, ^if_then_26, ^lor_rhs_28
 
-  block ^lor_rhs_29:
+  block ^lor_rhs_28:
     %t253 = addr $value
     %t254 = index i8 [projection=field] %t253, 8
     %t255 = load u8 %t254
@@ -367,9 +367,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 6
 
   block ^if_else_27:
-    jump ^if_end_28
+    jump ^if_end_30
 
-  block ^if_end_28:
+  block ^if_end_30:
     %t260 = addr $value
     %t261 = index i8 [projection=field] %t260, 0
     %t262 = convert sext i64 i32 60
@@ -414,18 +414,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t299 = binary shl i64 1, %t298
     %t300 = binary add nowrap i64 %t299, 3
     %t301 = cmp ne i64 %t297, %t300
-    branch %t301, ^if_then_31, ^lor_rhs_35
+    branch %t301, ^if_then_31, ^lor_rhs_34
 
-  block ^lor_rhs_35:
+  block ^lor_rhs_34:
     %t302 = addr $value
     %t303 = index i8 [projection=field] %t302, 0
     %t304 = load u8 %t303
     %t305 = binary and u8 %t304, 127
     %t306 = convert zext i32 u8 %t305
     %t307 = cmp ne i32 %t306, 100
-    branch %t307, ^if_then_31, ^lor_rhs_34
+    branch %t307, ^if_then_31, ^lor_rhs_33
 
-  block ^lor_rhs_34:
+  block ^lor_rhs_33:
     %t308 = addr $value
     %t309 = index i8 [projection=field] %t308, 8
     %t310 = load u8 %t309
@@ -439,9 +439,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 7
 
   block ^if_else_32:
-    jump ^if_end_33
+    jump ^if_end_35
 
-  block ^if_end_33:
+  block ^if_end_35:
     return i32 0
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {
@@ -450,7 +450,7 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = binary and i8 7, 2
     %t4 = load i8 %t2
-    %t5 = binary and i8 %t4, 248
+    %t5 = binary and i8 %t4, -8
     %t6 = binary or i8 %t5, %t3
     store i8 %t6, %t2
     %t7 = addr @global

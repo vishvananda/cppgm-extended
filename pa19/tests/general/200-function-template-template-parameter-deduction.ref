@@ -5,7 +5,7 @@ function @ttp_deduce__test() -> i32 [binding=strong, object=_ZN10ttp_deduce4test
 
   block ^entry:
     %t1 = addr $a
-    call void @ttp_deduce__box_double___box_double_(%t1)
+    call void @ttp_deduce__box_double___box(%t1)
     %t2 = addr $a
     %t3 = addr $arg__1
     %t4 = addr $argobj__2
@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @ttp_deduce__test()
     return i32 %t1
 }
-function @ttp_deduce__box_double___box_double_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN10ttp_deduce3boxIdEC1Ev, inline_hint=yes] {
+function @ttp_deduce__box_double___box(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN10ttp_deduce3boxIdEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -54,4 +54,4 @@ function @ttp_deduce__box_double___self(%this : ptr [object_bytes=1]) -> ptr [bi
     %t1 = load typed ptr $this
     return ptr %t1
 }
-alias object _ZN10ttp_deduce3boxIdEC2Ev = @ttp_deduce__box_double___box_double_
+alias object _ZN10ttp_deduce3boxIdEC2Ev = @ttp_deduce__box_double___box

@@ -13,15 +13,11 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $retained -> [rbp-<off0>] : i64
 
   block ^entry
-    store.i64 [rbp-<off0>], 42
-    load.i64 r8, [rbp-<off0>]
+    mov <gpr0>, 42
     mov rdx, 42
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
+    cmp.i64 <gpr0>, rdx
+    setne rax
+    movzx rax, rax
     ret rax

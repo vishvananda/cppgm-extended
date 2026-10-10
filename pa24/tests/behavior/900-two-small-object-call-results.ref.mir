@@ -23,8 +23,8 @@ function @make_value
 
 function @combine
   abi
-    param %left -> rdi : i64
-    param %right -> rsi : i64
+    param %left -> rdi : obj<8x8>
+    param %right -> rsi : obj<8x8>
     return i64 -> rax
   frame
     stack_size 16

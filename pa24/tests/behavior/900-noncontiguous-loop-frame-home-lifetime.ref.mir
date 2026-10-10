@@ -10,7 +10,7 @@ function @make_value
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -22,7 +22,7 @@ function @probe
   abi
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 32
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -30,13 +30,11 @@ function @probe
     slot $outer -> [rbp-8] : i64
     slot $inner -> [rbp-16] : i64
     slot $total -> [rbp-24] : i64
-    temp %original -> [rbp-32] : i64
 
   block ^entry
     mov rdi, 91
     call @make_value [args=(rdi)]
     mov rbx, rax
-    store.i64 [rbp-32], rbx
     store.i64 [rbp-8], 2
     store.i64 [rbp-24], 0
     jmp ^outer_cond
@@ -46,14 +44,13 @@ function @probe
     mov r9, r8
     sub r9, 1
     store.i64 [rbp-8], r9
-    mov rax, r8
-    cmp.i64 rax, 0
+    cmp.i64 r8, 0
     jne ^outer_body
     jmp ^exit
 
   block ^outer_body
-    load.i64 r8, [rbp-24]
-    add r8, [rbp-32]
+    mov r8, rbx
+    add r8, [rbp-24]
     store.i64 [rbp-24], r8
     store.i64 [rbp-16], 1
     jmp ^inner_cond
@@ -63,22 +60,18 @@ function @probe
     mov r9, r8
     sub r9, 1
     store.i64 [rbp-16], r9
-    mov rax, r8
-    cmp.i64 rax, 0
+    cmp.i64 r8, 0
     jne ^inner_body
     jmp ^outer_cond
 
   block ^inner_body
     mov rdi, 7
     call @make_value [args=(rdi)]
-    mov rbx, rax
     jmp ^after_replacement
 
   block ^after_replacement
     mov rdi, 3
     call @make_value [args=(rdi)]
-    mov r8, rax
-    add rbx, r8
     jmp ^inner_cond
 
   block ^exit

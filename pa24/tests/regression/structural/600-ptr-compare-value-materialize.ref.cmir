@@ -22,8 +22,7 @@ function @main
   block ^entry
     mov r8, @cells
     lea r9, [r8+<off0>]
-    mov rdi, r9
-    cmp.ptr rdi, r9
+    cmp.ptr r9, r9
     sete rdi
     movzx rdi, rdi
     cmp.ptr r9, r8

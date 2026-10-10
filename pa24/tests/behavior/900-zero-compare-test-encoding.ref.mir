@@ -15,14 +15,14 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rax, 1
-    cmp.u32 rax, 0
+    mov r10, 1
+    cmp.u32 r10, 0
     ja ^check_i64
     jmp ^bad
 
   block ^check_i64
-    mov rax, 0
-    cmp.i64 rax, 0
+    mov r10, 0
+    cmp.i64 r10, 0
     je ^ok
     jmp ^bad
 

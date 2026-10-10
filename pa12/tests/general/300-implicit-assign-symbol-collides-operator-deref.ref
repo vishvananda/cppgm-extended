@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $a
     %t9 = call ptr @Iter__operator_(%t7, %t8)
     %t10 = addr $b
-    %t11 = call ptr @Iter__operator___sym2(%t10)
+    %t11 = call ptr @Iter__operator___2(%t10)
     %t12 = index i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12
     %t14 = cmp eq i32 %t13, 7
@@ -47,7 +47,7 @@ function @Iter__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_ad
     %t3 = load typed ptr $this
     return ptr %t3
 }
-function @Iter__operator___sym2(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN4IterdeEv, inline_hint=yes] {
+function @Iter__operator___2(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN4IterdeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -34,15 +34,16 @@ function @write_second
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve <gpr0>
+    preserve <gpr0> <gpr1>
 
   block ^entry
     mov <gpr0>, rdi
+    lea <gpr1>, [<gpr0>+<off0>]
     jmp ^write
 
   block ^write
     call @produce [args=()]
-    store.i64 [<gpr0>+<off0>], rax
+    store.i64 [<gpr1>], rax
     store.i64 [<gpr0>], 11
     ret
 
@@ -55,27 +56,24 @@ function @initialize_tail
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    temp %index -> [rbp-<off0>] : i64
 
   block ^entry
-    mov <gpr1>, 0
-    store.i64 [rbp-<off0>], <gpr1>
+    lea r8, [rdi+<off0>]
+    mov r9, 0
     jmp ^condition
 
   block ^condition
-    cmp.i64 [rbp-<off0>], 2
+    cmp.i64 r9, 2
     jb ^body
     jmp ^done
 
   block ^body
-    load.i64 r8, [rbp-<off0>]
-    lea r8, [rdi+r8*8+<off0>]
-    load.i64 r9, [rbp-<off0>]
-    add r9, 40
-    store.i64 [r8], r9
-    load.i64 r8, [rbp-<off0>]
-    add r8, 1
-    store.i64 [rbp-<off0>], r8
+    mov rdi, r9
+    add rdi, 40
+    store.i64 [r8+r9*8], rdi
+    mov rdi, r9
+    add rdi, 1
+    mov r9, rdi
     jmp ^condition
 
   block ^done
@@ -92,31 +90,32 @@ function @read_before_call
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve <gpr0> <gpr2> <gpr3>
+    preserve <gpr0> <gpr1> <gpr2> <gpr3>
 
   block ^entry
     mov <gpr0>, rdi
+    mov <gpr1>, rsi
+    mov <gpr2>, rdx
+    lea <gpr3>, [<gpr0>+<off0>]
     jmp ^compute
 
   block ^compute
-    add rsi, 1
-    add rdx, 2
+    add <gpr1>, 1
+    add <gpr2>, 2
     mov r8, 10
     add r8, 20
     mov r9, 30
     add r9, 40
-    mov rdi, rsi
-    add rdi, rdx
-    load.i64 <gpr2>, [<gpr0>+<off0>]
+    add <gpr1>, <gpr2>
+    load.i64 <gpr3>, [<gpr3>]
     add r8, r9
-    add rdi, r8
-    mov <gpr3>, rdi
-    add <gpr3>, <gpr2>
+    add <gpr1>, r8
+    add <gpr1>, <gpr3>
     call @produce [args=()]
     mov r8, rax
     store.i64 [<gpr0>], r8
-    add <gpr3>, r8
-    ret <gpr3>
+    add <gpr1>, r8
+    ret <gpr1>
 
 function @main
   abi
@@ -138,29 +137,27 @@ function @main
     mov rsi, 3
     mov rdx, 5
     call @read_before_call [args=(rdx,rsi,rdi)]
-    mov r8, rax
-    load.i64 r9, [<gpr0>+<off0>]
-    load.i64 rdi, [<gpr0>+<off1>]
-    load.i64 rsi, [<gpr0>+<off2>]
+    load.i64 r8, [<gpr0>+<off0>]
+    load.i64 r9, [<gpr0>+<off1>]
+    load.i64 <gpr0>, [<gpr0>+<off2>]
     mov rdx, 29
-    cmp.i64 r9, rdx
-    setne r9
-    movzx r9, r9
-    mov rdx, 40
-    cmp.i64 rdi, rdx
-    setne rdi
-    movzx rdi, rdi
-    mov rdx, 41
-    cmp.i64 rsi, rdx
-    setne rsi
-    movzx rsi, rsi
-    mov rdx, 169
     cmp.i64 r8, rdx
     setne r8
     movzx r8, r8
-    or rdi, rsi
-    or r9, r8
-    or r9, rdi
-    mov rax, r9
-    sext.i32 rax
-    ret rax
+    mov rdx, 40
+    cmp.i64 r9, rdx
+    setne r9
+    movzx r9, r9
+    mov rdx, 41
+    cmp.i64 <gpr0>, rdx
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    mov rdx, 169
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    or r9, <gpr0>
+    or r8, rax
+    or r8, r9
+    sext.i32 r8
+    ret r8

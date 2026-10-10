@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $const_data
     copyobj 12x4 @__constexpr_template__1, %t2
     %t3 = addr $data
-    %t4 = call ptr @ns__detail__range_begin__ov3(%t3)
+    %t4 = call ptr @ns__detail__range_begin(%t3)
     %t5 = load typed i32 @ns__selected
     %t6 = cmp ne i32 %t5, 3
     branch %t6, ^if_then_1, ^if_else_2
@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_6:
     %t11 = addr $const_data
-    %t12 = call ptr @ns__detail__range_begin__ov2(%t11)
+    %t12 = call ptr @ns__detail__range_begin__2(%t11)
     %t13 = load typed i32 @ns__selected
     %t14 = cmp ne i32 %t13, 2
     branch %t14, ^if_then_7, ^if_else_8
@@ -55,7 +55,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_9:
     return i32 0
 }
-function @ns__detail__range_begin__ov3(%a : ptr [pass=by_address, object_bytes=12]) -> ptr [binding=weak, object=_ZN2ns6detail11range_beginIiLm3EEEPKiRAT0__T_] {
+function @ns__detail__range_begin(%a : ptr [pass=by_address, object_bytes=12]) -> ptr [binding=weak, object=_ZN2ns6detail11range_beginIiLm3EEEPKiRAT0__T_] {
   slot $a : ptr
 
   block ^entry:
@@ -70,10 +70,10 @@ function @ns__begin(%r : ptr [pass=by_address, object_bytes=12]) -> ptr [binding
   block ^entry:
     store typed ptr %r, $r
     %t1 = load typed ptr $r
-    %t2 = call ptr @ns__detail__range_begin__ov2(%t1)
+    %t2 = call ptr @ns__detail__range_begin__2(%t1)
     return ptr %t2
 }
-function @ns__detail__range_begin__ov2(%a : ptr [pass=by_address, object_bytes=12]) -> ptr [binding=weak, object=_ZN2ns6detail11range_beginIiLm3EEEPKiRAT0__KT_] {
+function @ns__detail__range_begin__2(%a : ptr [pass=by_address, object_bytes=12]) -> ptr [binding=weak, object=_ZN2ns6detail11range_beginIiLm3EEEPKiRAT0__KT_] {
   slot $a : ptr
 
   block ^entry:

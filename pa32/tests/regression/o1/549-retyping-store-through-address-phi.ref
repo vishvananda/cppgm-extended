@@ -2,55 +2,39 @@ declare function @exit(%status : i32) -> void [unwind=no]
 
 function @main() -> i32 [unwind=no, role=entry] {
   slot $buffer : obj<16x1>
-  slot $__o1inl0__size : i64
-  slot $__o1inl0__n : i64
-  slot $__o1inl1__size : i64
-  slot $__o1inl1__n : i64
+  slot $size__1 : i64
+  slot $size__2 : i64
 
   block ^entry:
     %p = addr $buffer
     %q = index i8 %p, 5
-    %__o1inl0__size = binary sub ptr %q, %p
-    store i64 %__o1inl0__size, $__o1inl0__size
-    store i64 3, $__o1inl0__n
-    %__o1inl0__a = addr $__o1inl0__size
-    %__o1inl0__b = addr $__o1inl0__n
-    %__o1inl0____o1inl0__x = copy i64 %__o1inl0__size
-    %__o1inl0____o1inl0__less = cmp ult i64 %__o1inl0____o1inl0__x, 3
-    branch %__o1inl0____o1inl0__less, ^__o1inl0____o1inl0__then, ^__o1inl0____o1inl0__else
+    %size_3 = binary sub ptr %q, %p
+    store i64 %size_3, $size__1
+    %a_4 = addr $size__1
+    %x_5 = load i64 %a_4
+    %less_6 = cmp ult i64 %x_5, 3
+    branch %less_6, ^inline_cont_2, ^inline_copy_1
 
-  block ^__o1inl0____o1inl0__then:
-    jump ^__o1inl0____o1inl0__cont
+  block ^inline_copy_1:
+    jump ^inline_cont_2
 
-  block ^__o1inl0____o1inl0__else:
-    jump ^__o1inl0____o1inl0__cont
+  block ^inline_cont_2:
+    %v_7 = phi i64 [^inline_copy_1: %x_5, ^entry: 3]
+    %r_8 = binary add i64 %size_3, %v_7
+    store i64 %size_3, $size__2
+    %a_9 = addr $size__2
+    %x_10 = load i64 %a_9
+    %less_11 = cmp ult i64 %x_10, 9
+    branch %less_11, ^inline_cont_4, ^inline_copy_3
 
-  block ^__o1inl0____o1inl0__cont:
-    %t0 = phi ptr [^__o1inl0____o1inl0__then: %__o1inl0__b, ^__o1inl0____o1inl0__else: %__o1inl0__a]
-    %__o1inl0__m = copy ptr %t0
-    %__o1inl0__v = load i64 %__o1inl0__m
-    %__o1inl0__r = binary add i64 %__o1inl0__size, %__o1inl0__v
-    store i64 %__o1inl0__size, $__o1inl1__size
-    store i64 9, $__o1inl1__n
-    %__o1inl1__a = addr $__o1inl1__size
-    %__o1inl1__b = addr $__o1inl1__n
-    %__o1inl1____o1inl0__x = copy i64 %__o1inl0__size
-    %__o1inl1____o1inl0__less = cmp ult i64 %__o1inl1____o1inl0__x, 9
-    branch %__o1inl1____o1inl0__less, ^__o1inl1____o1inl0__then, ^__o1inl1____o1inl0__else
+  block ^inline_copy_3:
+    jump ^inline_cont_4
 
-  block ^__o1inl1____o1inl0__then:
-    jump ^__o1inl1____o1inl0__cont
-
-  block ^__o1inl1____o1inl0__else:
-    jump ^__o1inl1____o1inl0__cont
-
-  block ^__o1inl1____o1inl0__cont:
-    %t1 = phi ptr [^__o1inl1____o1inl0__then: %__o1inl1__b, ^__o1inl1____o1inl0__else: %__o1inl1__a]
-    %__o1inl1__m = copy ptr %t1
-    %__o1inl1__v = load i64 %__o1inl1__m
-    %__o1inl1__r = binary add i64 %__o1inl0__size, %__o1inl1__v
-    %bad_first = cmp ne i64 %__o1inl0__r, 10
-    %bad_second = cmp ne i64 %__o1inl1__r, 14
+  block ^inline_cont_4:
+    %v_12 = phi i64 [^inline_copy_3: %x_10, ^inline_cont_2: 9]
+    %r_13 = binary add i64 %size_3, %v_12
+    %bad_first = cmp ne i64 %r_8, 10
+    %bad_second = cmp ne i64 %r_13, 14
     %first_bad = convert zext i64 i1 %bad_first
     %second_bad = convert zext i64 i1 %bad_second
     %bad = binary or i64 %first_bad, %second_bad

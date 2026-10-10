@@ -13,12 +13,12 @@ function @ns__make(%w : ptr [pass=by_address, object_bytes=16]) -> void [binding
     %t1 = load typed ptr $w
     %t2 = addr $arg__1
     %t3 = addr @__strlit__1
-    call void @ns__error_info_ns__detail__file_tag__pointer_to_const_char___error_info_ns__detail__line_tag__int_(%t2, %t3)
+    call void @ns__error_info_file_tag_constchar____error_info(%t2, %t3)
     %t4 = call ptr @ns__detail__set_info(%t1, %t2)
     %t5 = load typed ptr $w
     %t6 = addr $arg__2
-    call void @ns__error_info_ns__detail__line_tag__int___error_info_ns__detail__line_tag__int_(%t6, 7)
-    %t7 = call ptr @ns__detail__set_info__ov2(%t5, %t6)
+    call void @ns__error_info_line_tag_int___error_info(%t6, 7)
+    %t7 = call ptr @ns__detail__set_info__2(%t5, %t6)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @ns__make(%t2)
     return i32 0
 }
-function @ns__error_info_ns__detail__file_tag__pointer_to_const_char___error_info_ns__detail__line_tag__int_(%this : ptr [object_bytes=8], %v : ptr) -> void [binding=weak, object=_ZN2ns10error_infoINS_6detail8file_tagEPKcEC1ES4_, inline_hint=yes] {
+function @ns__error_info_file_tag_constchar____error_info(%this : ptr [object_bytes=8], %v : ptr) -> void [binding=weak, object=_ZN2ns10error_infoINS_6detail8file_tagEPKcEC1ES4_, inline_hint=yes] {
   slot $this : ptr
   slot $v : ptr
 
@@ -60,7 +60,7 @@ function @ns__detail__set_info(%x : ptr [pass=by_address, object_bytes=16], %y :
     %t7 = load typed ptr $x
     return ptr %t7
 }
-function @ns__error_info_ns__detail__line_tag__int___error_info_ns__detail__line_tag__int_(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN2ns10error_infoINS_6detail8line_tagEiEC1Ei, inline_hint=yes] {
+function @ns__error_info_line_tag_int___error_info(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN2ns10error_infoINS_6detail8line_tagEiEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -73,7 +73,7 @@ function @ns__error_info_ns__detail__line_tag__int___error_info_ns__detail__line
     store typed i32 %t1, %t3
     return void
 }
-function @ns__detail__set_info__ov2(%x : ptr [pass=by_address, object_bytes=16], %y : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN2ns6detail8set_infoINS_7wrapperEEERKT_S5_RKNS_10error_infoINS0_8line_tagEiEE] {
+function @ns__detail__set_info__2(%x : ptr [pass=by_address, object_bytes=16], %y : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN2ns6detail8set_infoINS_7wrapperEEERKT_S5_RKNS_10error_infoINS0_8line_tagEiEE] {
   slot $x : ptr
   slot $y : ptr
 
@@ -90,5 +90,5 @@ function @ns__detail__set_info__ov2(%x : ptr [pass=by_address, object_bytes=16],
     %t7 = load typed ptr $x
     return ptr %t7
 }
-alias object _ZN2ns10error_infoINS_6detail8file_tagEPKcEC2ES4_ = @ns__error_info_ns__detail__file_tag__pointer_to_const_char___error_info_ns__detail__line_tag__int_
-alias object _ZN2ns10error_infoINS_6detail8line_tagEiEC2Ei = @ns__error_info_ns__detail__line_tag__int___error_info_ns__detail__line_tag__int_
+alias object _ZN2ns10error_infoINS_6detail8file_tagEPKcEC2ES4_ = @ns__error_info_file_tag_constchar____error_info
+alias object _ZN2ns10error_infoINS_6detail8line_tagEiEC2Ei = @ns__error_info_line_tag_int___error_info

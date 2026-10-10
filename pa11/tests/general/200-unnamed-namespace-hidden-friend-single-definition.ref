@@ -9,10 +9,3 @@ function @_GLOBAL__N_1__X__X__base_entry(%this : ptr [object_bytes=1]) -> void [
     store typed ptr %this, $this
     return void
 }
-function @_GLOBAL__N_1__f(%__param0 : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN12_GLOBAL__N_11fERKNS_1XE, inline_hint=yes] {
-  slot $__param0 : ptr
-
-  block ^entry:
-    store typed ptr %__param0, $__param0
-    return void
-}

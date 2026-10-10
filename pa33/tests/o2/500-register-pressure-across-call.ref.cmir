@@ -13,86 +13,63 @@ function @pressure
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
-    temp %t48 -> [rbp-<off0>] : i64
-    temp %t51 -> [rbp-<off1>] : i64
-    temp %t52 -> [rbp-<off2>] : i64
-    temp %t53 -> [rbp-<off3>] : i64
-    temp %t54 -> [rbp-<off4>] : i64
-    temp %t20 -> [rbp-<off5>] : i64
-    temp %t23 -> [rbp-<off6>] : i64
-    temp %t26 -> [rbp-<off7>] : i64
-    temp %t29 -> [rbp-<off8>] : i64
-    temp %t31 -> [rbp-<off9>] : i64
+    param-slot %n -> [rbp-<off0>] : i64
+    temp %t50 -> [rbp-<off1>] : i64
+    temp %t51 -> [rbp-<off2>] : i64
+    temp %t52 -> [rbp-<off3>] : i64
+    temp %t53 -> [rbp-<off4>] : i64
 
   block ^entry
-    mov <gpr0>, rdi
+    store.i64 [rbp-<off0>], rdi
     mov <gpr1>, 1
     mov <gpr2>, 2
-    mov <gpr5>, 3
-    store.i64 [rbp-<off0>], <gpr5>
-    mov <gpr3>, 4
-    mov <gpr4>, 5
-    mov <gpr5>, 6
-    store.i64 [rbp-<off1>], <gpr5>
-    mov <gpr5>, 7
-    store.i64 [rbp-<off2>], <gpr5>
-    mov <gpr5>, 8
-    store.i64 [rbp-<off3>], <gpr5>
-    mov <gpr5>, 0
-    store.i64 [rbp-<off4>], <gpr5>
+    mov <gpr3>, 3
+    mov <gpr4>, 4
+    store.i64 [rbp-<off1>], 5
+    store.i64 [rbp-<off2>], 6
+    store.i64 [rbp-<off3>], 7
+    store.i64 [rbp-<off4>], 8
+    mov <gpr0>, 0
 
   block ^for_cond_1
-    cmp.i64 [rbp-<off4>], <gpr0>
-    jge ^for_end_4
-
-  block ^for_body_2
-    load.i64 rdi, [rbp-<off4>]
-    call @step [args=(rdi)]
-    lea r9, [<gpr1>+rax]
-    lea r8, [<gpr2>+r9]
-    load.i64 rdi, [rbp-<off0>]
-    add rdi, r8
-    lea rsi, [<gpr3>+rdi]
-    lea rax, [<gpr4>+rsi]
-    store.i64 [rbp-<off5>], rax
-    load.i64 rax, [rbp-<off1>]
-    add rax, [rbp-<off5>]
-    store.i64 [rbp-<off6>], rax
-    load.i64 rax, [rbp-<off2>]
-    add rax, [rbp-<off6>]
-    store.i64 [rbp-<off7>], rax
-    load.i64 rax, [rbp-<off3>]
-    add rax, [rbp-<off7>]
-    store.i64 [rbp-<off8>], rax
-    load.i64 rax, [rbp-<off4>]
-    add rax, 1
-    store.i64 [rbp-<off9>], rax
-    mov <gpr1>, r9
-    mov <gpr2>, r8
-    store.i64 [rbp-<off0>], rdi
-    mov <gpr3>, rsi
-    load.i64 <gpr4>, [rbp-<off5>]
-    load.i64 <gpr5>, [rbp-<off6>]
-    store.i64 [rbp-<off1>], <gpr5>
-    load.i64 <gpr5>, [rbp-<off7>]
-    store.i64 [rbp-<off2>], <gpr5>
-    load.i64 <gpr5>, [rbp-<off8>]
-    store.i64 [rbp-<off3>], <gpr5>
-    load.i64 <gpr5>, [rbp-<off9>]
-    store.i64 [rbp-<off4>], <gpr5>
-    jmp ^for_cond_1
+    cmp.i64 <gpr0>, rdi
+    jl ^for_body_2
 
   block ^for_end_4
-    lea r9, [<gpr1>+<gpr2>]
-    add r9, [rbp-<off0>]
-    add r9, <gpr3>
-    add r9, <gpr4>
-    add r9, [rbp-<off1>]
+    add <gpr1>, <gpr2>
+    add <gpr1>, <gpr3>
+    add <gpr1>, <gpr4>
+    add <gpr1>, [rbp-<off1>]
+    add <gpr1>, [rbp-<off2>]
+    add <gpr1>, [rbp-<off3>]
+    add <gpr1>, [rbp-<off4>]
+    ret <gpr1>
+
+  block ^for_body_2
+    mov rdi, <gpr0>
+    call @step [args=(rdi)]
+    add <gpr1>, rax
+    add <gpr2>, <gpr1>
+    add <gpr3>, <gpr2>
+    add <gpr4>, <gpr3>
+    mov r8, <gpr4>
+    add r8, [rbp-<off1>]
+    mov r9, r8
     add r9, [rbp-<off2>]
-    add r9, [rbp-<off3>]
-    ret r9
+    mov rdi, r9
+    add rdi, [rbp-<off3>]
+    mov rsi, rdi
+    add rsi, [rbp-<off4>]
+    add <gpr0>, 1
+    store.i64 [rbp-<off1>], r8
+    store.i64 [rbp-<off2>], r9
+    store.i64 [rbp-<off3>], rdi
+    store.i64 [rbp-<off4>], rsi
+    cmp.i64 <gpr0>, [rbp-<off0>]
+    jl ^for_body_2
+    jmp ^for_end_4
 
 function @step
   abi
@@ -101,8 +78,8 @@ function @step
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     add rdi, 1
@@ -115,24 +92,20 @@ function @main
     stack_size N
     scratch_bytes 48
     frame_pointer keep
-    epilogues direct
-    temp %t0 -> [rbp-<off10>] : i32
+    epilogues duplicated
 
   block ^entry
     mov rdi, 3
     call @pressure [args=(rdi)]
     cmp.i64 rax, 1008
-    jne ^cond_else_2
-
-  block ^cond_then_1
-    mov <gpr5>, 0
-    store.i32 [rbp-<off10>], <gpr5>
-    jmp ^cond_end_3
+    je ^cond_then_1
 
   block ^cond_else_2
-    mov <gpr5>, 1
-    store.i32 [rbp-<off10>], <gpr5>
+    mov rax, 1
 
   block ^cond_end_3
-    load.i32 rax, [rbp-<off10>]
     ret rax
+
+  block ^cond_then_1
+    mov rax, 0
+    jmp ^cond_end_3

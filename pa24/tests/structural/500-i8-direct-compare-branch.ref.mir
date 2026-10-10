@@ -15,9 +15,8 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rax, 7
-    mov rdx, 7
-    cmp.i8 rax, rdx
+    mov r10, 7
+    cmp.i8 r10, 7
     je ^ok
     jmp ^bad
 

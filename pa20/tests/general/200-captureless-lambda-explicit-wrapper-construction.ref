@@ -16,63 +16,63 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $land__2 : i64
   slot $land__3 : i64
   slot $land__4 : i64
-  slot $land__5 : i64
+  slot $arg__5 : obj<8x8>
   slot $land__6 : i64
   slot $arg__7 : obj<8x8>
-  slot $arg__8 : obj<8x8>
+  slot $land__8 : i64
   slot $arg__9 : obj<8x8>
 
   block ^entry:
     %t1 = addr $closure
     %t2 = addr $direct
-    %t3 = addr @__lambda_main_t75_79
+    %t3 = addr @__lambda_main_t75_79___FUN
     call void @Wrapper__Wrapper(%t2, %t3)
     %t4 = addr $direct_list
-    %t5 = addr @__lambda_main_t75_79
+    %t5 = addr @__lambda_main_t75_79___FUN
     call void @Wrapper__Wrapper(%t4, %t5)
     %t6 = addr $copy_list
-    %t7 = addr @__lambda_main_t75_79
+    %t7 = addr @__lambda_main_t75_79___FUN
     call void @Wrapper__Wrapper(%t6, %t7)
     %t8 = addr $direct
     %t9 = call i32 @use(%t8)
     %t10 = cmp eq i32 %t9, 5
-    branch %t10, ^land_rhs_16, ^land_short_17
+    branch %t10, ^land_rhs_4, ^land_short_5
 
-  block ^land_rhs_16:
+  block ^land_rhs_4:
     %t11 = addr $direct_list
     %t12 = call i32 @use(%t11)
     %t13 = cmp eq i32 %t12, 5
     %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__6
-    jump ^land_end_18
+    store typed i64 %t14, $land__2
+    jump ^land_end_6
 
-  block ^land_short_17:
-    store typed i64 0, $land__6
-    jump ^land_end_18
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
 
-  block ^land_end_18:
-    %t15 = load typed i64 $land__6
-    branch %t15, ^land_rhs_13, ^land_short_14
+  block ^land_end_6:
+    %t15 = load typed i64 $land__2
+    branch %t15, ^land_rhs_7, ^land_short_8
 
-  block ^land_rhs_13:
+  block ^land_rhs_7:
     %t16 = addr $copy_list
     %t17 = call i32 @use(%t16)
     %t18 = cmp eq i32 %t17, 5
     %t19 = cmp ne i64 %t18, 0
-    store typed i64 %t19, $land__5
-    jump ^land_end_15
+    store typed i64 %t19, $land__3
+    jump ^land_end_9
 
-  block ^land_short_14:
-    store typed i64 0, $land__5
-    jump ^land_end_15
+  block ^land_short_8:
+    store typed i64 0, $land__3
+    jump ^land_end_9
 
-  block ^land_end_15:
-    %t20 = load typed i64 $land__5
+  block ^land_end_9:
+    %t20 = load typed i64 $land__3
     branch %t20, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t21 = addr $arg__7
-    %t22 = addr @__lambda_main_t75_79
+    %t21 = addr $arg__5
+    %t22 = addr @__lambda_main_t75_79___FUN
     call void @Wrapper__Wrapper(%t21, %t22)
     %t23 = call i32 @use(%t21)
     %t24 = cmp eq i32 %t23, 5
@@ -86,42 +86,42 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_end_12:
     %t26 = load typed i64 $land__4
-    branch %t26, ^land_rhs_7, ^land_short_8
+    branch %t26, ^land_rhs_13, ^land_short_14
 
-  block ^land_rhs_7:
-    %t27 = addr $arg__8
-    %t28 = addr @__lambda_main_t75_79
+  block ^land_rhs_13:
+    %t27 = addr $arg__7
+    %t28 = addr @__lambda_main_t75_79___FUN
     call void @Wrapper__Wrapper(%t27, %t28)
     %t29 = call i32 @use(%t27)
     %t30 = cmp eq i32 %t29, 5
     %t31 = cmp ne i64 %t30, 0
-    store typed i64 %t31, $land__3
-    jump ^land_end_9
+    store typed i64 %t31, $land__6
+    jump ^land_end_15
 
-  block ^land_short_8:
-    store typed i64 0, $land__3
-    jump ^land_end_9
+  block ^land_short_14:
+    store typed i64 0, $land__6
+    jump ^land_end_15
 
-  block ^land_end_9:
-    %t32 = load typed i64 $land__3
-    branch %t32, ^land_rhs_4, ^land_short_5
+  block ^land_end_15:
+    %t32 = load typed i64 $land__6
+    branch %t32, ^land_rhs_16, ^land_short_17
 
-  block ^land_rhs_4:
+  block ^land_rhs_16:
     %t33 = addr $arg__9
-    %t34 = addr @__lambda_main_t75_79
+    %t34 = addr @__lambda_main_t75_79___FUN
     call void @Wrapper__Wrapper(%t33, %t34)
     %t35 = call i32 @use(%t33)
     %t36 = cmp eq i32 %t35, 5
     %t37 = cmp ne i64 %t36, 0
-    store typed i64 %t37, $land__2
-    jump ^land_end_6
+    store typed i64 %t37, $land__8
+    jump ^land_end_18
 
-  block ^land_short_5:
-    store typed i64 0, $land__2
-    jump ^land_end_6
+  block ^land_short_17:
+    store typed i64 0, $land__8
+    jump ^land_end_18
 
-  block ^land_end_6:
-    %t38 = load typed i64 $land__2
+  block ^land_end_18:
+    %t38 = load typed i64 $land__8
     branch %t38, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -150,7 +150,7 @@ function @Wrapper__operator__(%this : ptr [object_bytes=8], %n : i32) -> i32 [bi
     %t5 = call i32 %t4(%t1) as (%arg0 : i32) -> i32
     return i32 %t5
 }
-function @__lambda_main_t75_79(%n : i32) -> i32 [binding=internal, object=_ZZ4mainEN3$_08__invokeEi, object_root=yes, inline_hint=yes] {
+function @__lambda_main_t75_79___FUN(%n : i32) -> i32 [binding=internal, object=_ZZ4mainEN3$_08__invokeEi, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $n : i32
 
   block ^entry:

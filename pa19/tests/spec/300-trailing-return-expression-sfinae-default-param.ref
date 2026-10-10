@@ -1,3 +1,8 @@
+declare global @can_require_wrapper_supported___value : u8 [binding=weak, object=_ZN11can_requireI7wrapper9supportedE5valueE]
+declare global @can_require_wrapper_unsupported___value : u8 [binding=weak, object=_ZN11can_requireI7wrapper11unsupportedE5valueE]
+declare global @can_require_proxy_wrapper_supported___value : u8 [binding=weak, object=_ZN17can_require_proxyI7wrapper9supportedE5valueE]
+declare global @can_require_proxy_wrapper_unsupported___value : u8 [binding=weak, object=_ZN17can_require_proxyI7wrapper11unsupportedE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

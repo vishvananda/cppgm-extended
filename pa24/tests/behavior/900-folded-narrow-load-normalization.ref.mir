@@ -14,15 +14,13 @@ function @accept
     param %value -> rdi : u8
     return i32 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rax, rdi
-    mov rcx, 2
-    cmp.i64 rax, rcx
+    cmp.u8 rdi, 2
     je ^good
     jmp ^bad
 
@@ -44,7 +42,7 @@ function @get_record
     param %record -> r9 : ptr
     return ptr -> rax
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -57,13 +55,10 @@ function @reduced
     param %record -> rdi : ptr
     return i32 -> rax
   frame
-    stack_size 32
+    stack_size 80
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    temp %host-eh-exception -> [rbp-8] : ptr
-    temp %host-eh-selector -> [rbp-16] : i64
-    temp %entity -> [rbp-24] : ptr
 
   block ^entry
     mov rsi, 2
@@ -73,20 +68,16 @@ function @reduced
     mov r9, rdi
     mov rdi, 1
     call @get_record [args=(rcx,rdx,rsi,rdi,r8,r9), unwind=no]
-    store.ptr [rbp-24], rax
+    mov r8, rax
     eh_push ^unwind, 0
-    load.ptr r8, [rbp-24]
-    lea r8, [r8+8]
-    load.u8 r9, [r8]
+    load.u8 rdi, [r8+8]
     mov r8, 20
     add r8, 22
     store.i64 @sink, r8
-    mov rdi, r9
     call @accept [args=(rdi)]
-    mov r8, rax
-    sext.i32 r8
+    sext.i32 rax
     eh_pop
-    ret r8
+    ret rax
 
   block ^unwind
     resume
@@ -102,7 +93,8 @@ function @main
     slot $record -> [rbp-16] : obj<16x8>
 
   block ^entry
-    store.u8 [rbp-8], 2
     lea rdi, [rbp-16]
+    store.u8 [rdi+8], 2
     call @reduced [args=(rdi)]
+    sext.i32 rax
     ret rax

@@ -11,11 +11,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $lazy
     %t2 = addr $lazy
-    %t3 = call ptr @Lazy_int___Vec_T____ov2(%t2)
+    %t3 = call ptr @Lazy_int___operatorN__Vec_T____ov2(%t2)
     call void @sink(%t3)
     return i32 0
 }
-function @Lazy_int___Vec_T____ov2(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZN4LazyIiEcvRN1N3VecIiEEEv, inline_hint=yes] {
+function @Lazy_int___operatorN__Vec_T____ov2(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZN4LazyIiEcvRN1N3VecIiEEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

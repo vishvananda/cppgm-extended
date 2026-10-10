@@ -29,16 +29,16 @@ function @small_copy_control() -> i64 [unwind=no] {
 }
 
 function @large_copy_control() -> i64 [unwind=no] {
-  slot $source : obj<65x1>
-  slot $destination : obj<65x1>
+  slot $source : obj<129x1>
+  slot $destination : obj<129x1>
 
   block ^entry:
     %source = addr $source
-    %source_tail = index i8 [projection=field] %source, 57
+    %source_tail = index i8 [projection=field] %source, 121
     store volatile i64 43, %source_tail
-    copyobj 65x1 $source, $destination
+    copyobj 129x1 $source, $destination
     %destination = addr $destination
-    %destination_tail = index i8 [projection=field] %destination, 57
+    %destination_tail = index i8 [projection=field] %destination, 121
     %result = load volatile i64 %destination_tail
     return i64 %result
 }

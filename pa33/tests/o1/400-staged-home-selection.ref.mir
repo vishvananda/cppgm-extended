@@ -38,10 +38,10 @@ function @identity
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi
@@ -52,40 +52,38 @@ function @copy_to_edge_home
     param %condition -> rsi : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 32
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     preserve rbx
-    temp %host-eh-exception -> [rbp-8] : ptr
-    temp %host-eh-selector -> [rbp-16] : i64
-    temp %result -> [rbp-24] : i64
-    temp %copied -> [rbp-32] : i64
+    param-slot %value -> [rbp-8] : i64
+    temp %result -> [rbp-16] : i64
 
   block ^entry
+    store.i64 [rbp-8], rdi
     mov rbx, rsi
     eh_push ^handler, 0
-    store.i64 [rbp-32], rdi
     mov rdi, 7
     call @identity [args=(rdi), unwind=no]
     eh_pop
-    test.i64 rbx, rbx
+    cmp.i64 rbx, 0
     je ^right
 
   block ^left
-    load.i64 r9, [rbp-32]
-    add r9, 1
-    store.i64 [rbp-24], r9
-    jmp ^done
-
-  block ^right
-    load.i64 r9, [rbp-32]
-    sub r9, 1
-    store.i64 [rbp-24], r9
+    load.i64 r8, [rbp-8]
+    add r8, 1
+    store.i64 [rbp-16], r8
 
   block ^done
-    load.i64 rax, [rbp-24]
+    mov rax, r8
     ret rax
+
+  block ^right
+    load.i64 r8, [rbp-8]
+    sub r8, 1
+    store.i64 [rbp-16], r8
+    jmp ^done
 
   block ^handler
     mov rax, 99
@@ -96,42 +94,40 @@ function @call_result_to_edge_home
     param %condition -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 32
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    preserve rbx r12
-    temp %host-eh-exception -> [rbp-8] : ptr
-    temp %host-eh-selector -> [rbp-16] : i64
-    temp %result -> [rbp-24] : i64
-    temp %value -> [rbp-32] : i64
+    epilogues duplicated
+    preserve rbx
+    temp %value -> [rbp-8] : i64
+    temp %result -> [rbp-16] : i64
 
   block ^entry
     mov rbx, rdi
     eh_push ^handler, 0
     mov rdi, 40
     call @identity [args=(rdi), unwind=no]
-    store.i64 [rbp-32], rax
+    store.i64 [rbp-8], rax
     mov rdi, 9
     call @identity [args=(rdi), unwind=no]
     eh_pop
-    test.i64 rbx, rbx
+    cmp.i64 rbx, 0
     je ^right
 
   block ^left
-    load.i64 r9, [rbp-32]
-    add r9, 2
-    store.i64 [rbp-24], r9
-    jmp ^done
-
-  block ^right
-    load.i64 r9, [rbp-32]
-    sub r9, 2
-    store.i64 [rbp-24], r9
+    load.i64 r8, [rbp-8]
+    add r8, 2
+    store.i64 [rbp-16], r8
 
   block ^done
-    load.i64 rax, [rbp-24]
+    mov rax, r8
     ret rax
+
+  block ^right
+    load.i64 r8, [rbp-8]
+    sub r8, 2
+    store.i64 [rbp-16], r8
+    jmp ^done
 
   block ^handler
     mov rax, 99
@@ -142,58 +138,65 @@ function @load_with_dead_address
     param %condition -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 80
+    stack_size 64
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    preserve rbx r13 r12 r14 r15
-    temp %host-eh-exception -> [rbp-8] : ptr
-    temp %host-eh-selector -> [rbp-16] : i64
-    temp %result -> [rbp-24] : i64
-    temp %c -> [rbp-32] : i64
-    temp %value -> [rbp-40] : i64
+    epilogues duplicated
+    preserve rbx
+    temp %a -> [rbp-8] : i64
+    temp %b -> [rbp-16] : i64
+    temp %c -> [rbp-24] : i64
+    temp %d -> [rbp-32] : i64
+    temp %e -> [rbp-40] : i64
+    temp %value -> [rbp-48] : i64
+    temp %result -> [rbp-56] : i64
 
   block ^entry
     mov rbx, rdi
     eh_push ^handler, 0
-    load.i64 r13, @keep1
-    load.i64 r12, @keep2
-    load.i64 r14, @keep3
-    store.i64 [rbp-32], r14
-    load.i64 r14, @keep4
-    load.i64 r15, @keep5
+    load.i64 r8, @keep1
+    store.i64 [rbp-8], r8
+    load.i64 r8, @keep2
+    store.i64 [rbp-16], r8
+    load.i64 r8, @keep3
+    store.i64 [rbp-24], r8
+    load.i64 r8, @keep4
+    store.i64 [rbp-32], r8
+    load.i64 r8, @keep5
+    store.i64 [rbp-40], r8
     load.ptr r8, @number_pointer
     load.i64 r8, [r8]
-    store.i64 [rbp-40], r8
+    store.i64 [rbp-48], r8
     mov rdi, 11
     call @identity [args=(rdi), unwind=no]
     eh_pop
-    test.i64 rbx, rbx
+    cmp.i64 rbx, 0
     je ^right
 
   block ^left
-    lea r9, [r13+r12]
-    load.i64 r8, [rbp-32]
-    add r8, r14
-    add r9, r8
-    add r9, r15
-    add r9, 3
-    store.i64 [rbp-24], r9
-    jmp ^done
-
-  block ^right
-    lea r9, [r13+r12]
-    load.i64 r8, [rbp-32]
-    add r8, r14
-    add r9, r8
-    add r9, r15
-    sub r9, 3
-    store.i64 [rbp-24], r9
+    load.i64 r8, [rbp-8]
+    add r8, [rbp-16]
+    load.i64 r9, [rbp-24]
+    add r9, [rbp-32]
+    add r8, r9
+    add r8, [rbp-40]
+    add r8, 3
+    store.i64 [rbp-56], r8
 
   block ^done
+    add r8, [rbp-48]
+    ret r8
+
+  block ^right
+    load.i64 r8, [rbp-8]
+    add r8, [rbp-16]
     load.i64 r9, [rbp-24]
-    add r9, [rbp-40]
-    ret r9
+    add r9, [rbp-32]
+    add r8, r9
+    add r8, [rbp-40]
+    sub r8, 3
+    store.i64 [rbp-56], r8
+    jmp ^done
 
   block ^handler
     mov rax, 99
@@ -203,31 +206,27 @@ function @load_with_live_address
   abi
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    preserve r13 r12
-    temp %host-eh-exception -> [rbp-8] : ptr
-    temp %host-eh-selector -> [rbp-16] : i64
+    epilogues duplicated
+    preserve rbx r12
 
   block ^entry
     eh_push ^handler, 0
-    load.ptr r13, @number_pointer
-    load.i64 r12, [r13]
+    load.ptr rbx, @number_pointer
+    load.i64 r12, [rbx]
     mov rdi, 13
     call @identity [args=(rdi), unwind=no]
     eh_pop
-    mov rdx, 0
-    cmp.ptr r13, rdx
-    sete r13
-    movzx r13, r13
-    mov rdx, 40
-    cmp.i64 r12, rdx
+    cmp.ptr rbx, 0
+    sete rbx
+    movzx rbx, rbx
+    cmp.i64 r12, 40
     setne r12
     movzx r12, r12
-    or r13, r12
-    ret r13
+    or rbx, r12
+    ret rbx
 
   block ^handler
     mov rax, 99
@@ -239,8 +238,8 @@ function @main
   frame
     stack_size 32
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
     preserve rbx r12 r13
 
   block ^entry
@@ -255,16 +254,13 @@ function @main
     call @load_with_dead_address [args=(rdi)]
     mov r13, rax
     call @load_with_live_address [args=()]
-    mov rdx, 41
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 41
     setne rbx
     movzx rbx, rbx
-    mov rdx, 42
-    cmp.i64 r12, rdx
+    cmp.i64 r12, 42
     setne r12
     movzx r12, r12
-    mov rdx, 58
-    cmp.i64 r13, rdx
+    cmp.i64 r13, 58
     setne r13
     movzx r13, r13
     or rbx, r12

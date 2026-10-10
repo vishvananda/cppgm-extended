@@ -1,3 +1,6 @@
+declare global @pick_true___implicit : u8 [binding=weak, object=_ZN4pickILb1EE8implicitE]
+declare global @pick_false___implicit : u8 [binding=weak, object=_ZN4pickILb0EE8implicitE]
+
 function @take_box(%b : obj<8x8>) -> void [binding=strong, object=_Z8take_box3boxIlE] {
   slot $b : obj<8x8>
 
@@ -9,23 +12,23 @@ function @take_box(%b : obj<8x8>) -> void [binding=strong, object=_Z8take_box3bo
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $narrow : obj<4x4>
-  slot $arg__1 : obj<8x8>
+  slot $argobj__1 : obj<8x8>
   slot $source : obj<4x4>
   slot $direct : obj<8x8>
   slot $cond__2 : i32
 
   block ^entry:
     %t1 = addr $narrow
-    call void @box_int___box_int_(%t1)
-    %t2 = addr $arg__1
+    call void @box_int___box(%t1)
+    %t2 = addr $argobj__1
     %t3 = addr $narrow
-    call void @box_long_int___box_int___ov4(%t2, %t3)
-    call void @take_box($arg__1)
+    call void @box_longint___box(%t2, %t3)
+    call void @take_box($argobj__1)
     %t4 = addr $source
-    call void @guarded_int___guarded_long_int_(%t4)
+    call void @guarded_int___guarded(%t4)
     %t5 = addr $direct
     %t6 = addr $source
-    call void @guarded_long_int___guarded_long_int___ov4(%t5, %t6)
+    call void @guarded_longint___guarded(%t5, %t6)
     %t7 = addr $direct
     %t8 = index i8 [projection=field] %t7, 0
     %t9 = load typed i64 %t8
@@ -44,7 +47,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load typed i32 $cond__2
     return i32 %t11
 }
-function @box_int___box_int_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3boxIiEC1Ev, inline_hint=yes] {
+function @box_int___box(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3boxIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -54,7 +57,7 @@ function @box_int___box_int_(%this : ptr [object_bytes=4]) -> void [binding=weak
     store typed i32 0, %t2
     return void
 }
-function @box_long_int___box_int___ov4(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN3boxIlEC1IiEERKS_IT_E, inline_hint=yes] {
+function @box_longint___box(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN3boxIlEC1IiEERKS_IT_E, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -70,7 +73,7 @@ function @box_long_int___box_int___ov4(%this : ptr [object_bytes=8], %other : pt
     store typed i64 %t4, %t6
     return void
 }
-function @guarded_int___guarded_long_int_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7guardedIiEC1Ev, inline_hint=yes] {
+function @guarded_int___guarded(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7guardedIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -80,7 +83,7 @@ function @guarded_int___guarded_long_int_(%this : ptr [object_bytes=4]) -> void 
     store typed i32 0, %t2
     return void
 }
-function @guarded_long_int___guarded_long_int___ov4(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7guardedIlEC1IiEERKS_IT_E, inline_hint=yes] {
+function @guarded_longint___guarded(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7guardedIlEC1IiEERKS_IT_E, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -96,7 +99,7 @@ function @guarded_long_int___guarded_long_int___ov4(%this : ptr [object_bytes=8]
     store typed i64 %t4, %t6
     return void
 }
-alias object _ZN3boxIiEC2Ev = @box_int___box_int_
-alias object _ZN3boxIlEC2IiEERKS_IT_E = @box_long_int___box_int___ov4
-alias object _ZN7guardedIiEC2Ev = @guarded_int___guarded_long_int_
-alias object _ZN7guardedIlEC2IiEERKS_IT_E = @guarded_long_int___guarded_long_int___ov4
+alias object _ZN3boxIiEC2Ev = @box_int___box
+alias object _ZN3boxIlEC2IiEERKS_IT_E = @box_longint___box
+alias object _ZN7guardedIiEC2Ev = @guarded_int___guarded
+alias object _ZN7guardedIlEC2IiEERKS_IT_E = @guarded_longint___guarded

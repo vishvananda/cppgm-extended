@@ -113,60 +113,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = addr @global_device
     %t21 = call i32 @read_reference(%t20)
     %t22 = cmp eq i32 %t21, 5
-    branch %t22, ^land_rhs_13, ^land_short_14
+    branch %t22, ^land_rhs_4, ^land_short_5
 
-  block ^land_rhs_13:
+  block ^land_rhs_4:
     %t23 = call i32 @read_global()
     %t24 = cmp eq i32 %t23, 11
     %t25 = cmp ne i64 %t24, 0
-    store typed i64 %t25, $land__5
-    jump ^land_end_15
-
-  block ^land_short_14:
-    store typed i64 0, $land__5
-    jump ^land_end_15
-
-  block ^land_end_15:
-    %t26 = load typed i64 $land__5
-    branch %t26, ^land_rhs_10, ^land_short_11
-
-  block ^land_rhs_10:
-    %t27 = addr @global_device
-    %t28 = call i32 @read_nested(%t27)
-    %t29 = cmp eq i32 %t28, 12
-    %t30 = cmp ne i64 %t29, 0
-    store typed i64 %t30, $land__4
-    jump ^land_end_12
-
-  block ^land_short_11:
-    store typed i64 0, $land__4
-    jump ^land_end_12
-
-  block ^land_end_12:
-    %t31 = load typed i64 $land__4
-    branch %t31, ^land_rhs_7, ^land_short_8
-
-  block ^land_rhs_7:
-    %t32 = addr $plain
-    %t33 = call i32 @read_plain(%t32)
-    %t34 = cmp eq i32 %t33, 7
-    %t35 = cmp ne i64 %t34, 0
-    store typed i64 %t35, $land__3
-    jump ^land_end_9
-
-  block ^land_short_8:
-    store typed i64 0, $land__3
-    jump ^land_end_9
-
-  block ^land_end_9:
-    %t36 = load typed i64 $land__3
-    branch %t36, ^land_rhs_4, ^land_short_5
-
-  block ^land_rhs_4:
-    %t37 = call i32 @read_local()
-    %t38 = cmp eq i32 %t37, 10
-    %t39 = cmp ne i64 %t38, 0
-    store typed i64 %t39, $land__2
+    store typed i64 %t25, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -174,7 +127,54 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t40 = load typed i64 $land__2
+    %t26 = load typed i64 $land__2
+    branch %t26, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t27 = addr @global_device
+    %t28 = call i32 @read_nested(%t27)
+    %t29 = cmp eq i32 %t28, 12
+    %t30 = cmp ne i64 %t29, 0
+    store typed i64 %t30, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store typed i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t31 = load typed i64 $land__3
+    branch %t31, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t32 = addr $plain
+    %t33 = call i32 @read_plain(%t32)
+    %t34 = cmp eq i32 %t33, 7
+    %t35 = cmp ne i64 %t34, 0
+    store typed i64 %t35, $land__4
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store typed i64 0, $land__4
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t36 = load typed i64 $land__4
+    branch %t36, ^land_rhs_13, ^land_short_14
+
+  block ^land_rhs_13:
+    %t37 = call i32 @read_local()
+    %t38 = cmp eq i32 %t37, 10
+    %t39 = cmp ne i64 %t38, 0
+    store typed i64 %t39, $land__5
+    jump ^land_end_15
+
+  block ^land_short_14:
+    store typed i64 0, $land__5
+    jump ^land_end_15
+
+  block ^land_end_15:
+    %t40 = load typed i64 $land__5
     branch %t40, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

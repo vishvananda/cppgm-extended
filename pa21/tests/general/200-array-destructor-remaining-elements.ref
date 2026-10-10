@@ -1,34 +1,28 @@
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
-declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
-declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
+declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
+declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
-  i8 105
-  i8 0
-}
-global @__rtti_int [binding=weak, object=_ZTIi] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__int
-}
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
-  zero 4
-}
 global @created : i32 [binding=strong] = zero
 global @drops : i32 [binding=strong] = zero
 global @bad : i32 [binding=strong] = zero
 global @next : i32 [binding=strong] = 3
-
-function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
-  block ^entry:
-    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
-    call void @std_terminate()
-    return void
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
 }
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal] = {
+  zero 4
+}
+
 function @f() -> void [binding=strong, object=_Z1fv] {
   slot $objects : obj<12x4>
   slot $destructor_array_index__1 : i64
@@ -48,17 +42,17 @@ function @f() -> void [binding=strong, object=_Z1fv] {
 
   block ^call_unwind_dispatch_1:
     eh_try ^lexical_cleanup_terminate_3
-    %t8 = addr $objects
-    %t9 = binary mul i64 0, 4
-    %t10 = index i8 [projection=array_element] %t8, %t9
-    call void @G___G(%t10)
+    %t7 = addr $objects
+    %t8 = binary mul i64 0, 4
+    %t9 = index i8 [projection=array_element] %t7, %t8
+    call void @G___G(%t9)
     eh_end
     resume
 
   block ^lexical_cleanup_terminate_3:
     eh_catch_all, 1
-    %t7 = exception ptr
-    call void @cppgm_call_terminate(%t7)
+    %t10 = exception ptr
+    call void @cppgm_call_terminate(%t10)
     unreachable
 
   block ^call_unwind_end_2:
@@ -72,21 +66,21 @@ function @f() -> void [binding=strong, object=_Z1fv] {
 
   block ^call_unwind_dispatch_4:
     eh_try ^lexical_cleanup_terminate_6
-    %t15 = addr $objects
-    %t16 = binary mul i64 1, 4
-    %t17 = index i8 [projection=array_element] %t15, %t16
-    call void @G___G(%t17)
-    %t18 = addr $objects
-    %t19 = binary mul i64 0, 4
-    %t20 = index i8 [projection=array_element] %t18, %t19
-    call void @G___G(%t20)
+    %t14 = addr $objects
+    %t15 = binary mul i64 1, 4
+    %t16 = index i8 [projection=array_element] %t14, %t15
+    call void @G___G(%t16)
+    %t17 = addr $objects
+    %t18 = binary mul i64 0, 4
+    %t19 = index i8 [projection=array_element] %t17, %t18
+    call void @G___G(%t19)
     eh_end
     resume
 
   block ^lexical_cleanup_terminate_6:
     eh_catch_all, 2
-    %t14 = exception ptr
-    call void @cppgm_call_terminate(%t14)
+    %t20 = exception ptr
+    call void @cppgm_call_terminate(%t20)
     unreachable
 
   block ^call_unwind_end_5:
@@ -118,16 +112,16 @@ function @f() -> void [binding=strong, object=_Z1fv] {
     %t29 = binary sub i64 %t27, 1
     store typed i64 %t29, $destructor_array_index__1
     eh_try ^lexical_cleanup_terminate_13
-    %t31 = binary mul i64 %t29, 4
-    %t32 = index i8 [projection=array_element] %t21, %t31
-    call void @G___G(%t32)
+    %t30 = binary mul i64 %t29, 4
+    %t31 = index i8 [projection=array_element] %t21, %t30
+    call void @G___G(%t31)
     eh_end
     jump ^destructor_array_cleanup_10
 
   block ^lexical_cleanup_terminate_13:
     eh_catch_all, 3
-    %t30 = exception ptr
-    call void @cppgm_call_terminate(%t30)
+    %t32 = exception ptr
+    call void @cppgm_call_terminate(%t32)
     unreachable
 
   block ^destructor_array_resume_12:
@@ -167,20 +161,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 %t5, $value
     %t6 = load typed i32 $value
     %t7 = cmp ne i32 %t6, 7
-    branch %t7, ^lor_short_14, ^lor_rhs_13
+    branch %t7, ^lor_short_8, ^lor_rhs_7
 
-  block ^lor_rhs_13:
+  block ^lor_rhs_7:
     %t8 = load typed i32 @bad
     %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__4
-    jump ^lor_end_15
+    store typed i64 %t9, $lor__2
+    jump ^lor_end_9
 
-  block ^lor_short_14:
-    store typed i64 1, $lor__4
-    jump ^lor_end_15
+  block ^lor_short_8:
+    store typed i64 1, $lor__2
+    jump ^lor_end_9
 
-  block ^lor_end_15:
-    %t10 = load typed i64 $lor__4
+  block ^lor_end_9:
+    %t10 = load typed i64 $lor__2
     branch %t10, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
@@ -195,21 +189,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_end_12:
     %t13 = load typed i64 $lor__3
-    branch %t13, ^lor_short_8, ^lor_rhs_7
+    branch %t13, ^lor_short_14, ^lor_rhs_13
 
-  block ^lor_rhs_7:
+  block ^lor_rhs_13:
     %t14 = load typed i32 @drops
     %t15 = cmp ne i32 %t14, 3
     %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__2
-    jump ^lor_end_9
+    store typed i64 %t16, $lor__4
+    jump ^lor_end_15
 
-  block ^lor_short_8:
-    store typed i64 1, $lor__2
-    jump ^lor_end_9
+  block ^lor_short_14:
+    store typed i64 1, $lor__4
+    jump ^lor_end_15
 
-  block ^lor_end_9:
-    %t17 = load typed i64 $lor__2
+  block ^lor_end_15:
+    %t17 = load typed i64 $lor__4
     %t18 = convert trunc i32 i64 %t17
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -225,6 +219,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^try_end_3:
     return i32 0
+}
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
+    return void
+}
+function @G__G(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1GC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @created
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @created
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store typed i32 %t2, %t4
+    return void
 }
 function @G___G(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1GD1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -270,18 +283,5 @@ function @G___G(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1
   block ^if_end_6:
     return void
 }
-function @G__G(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1GC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @created
-    %t2 = binary add nowrap i32 %t1, 1
-    store typed i32 %t2, @created
-    %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
-    store typed i32 %t2, %t4
-    return void
-}
-alias object _ZN1GD2Ev = @G___G
 alias object _ZN1GC2Ev = @G__G
+alias object _ZN1GD2Ev = @G___G

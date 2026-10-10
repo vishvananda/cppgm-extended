@@ -15,7 +15,7 @@ function @touch
     param %n -> rsi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -30,27 +30,25 @@ function @dispatch
     param %n -> rdx : i64
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx r12
 
   block ^entry
-    mov r12, rsi
-    mov rbx, rdx
-    mov rax, rdi
-    mov rcx, 1
-    cmp.i64 rax, rcx
+    mov rbx, rsi
+    mov r12, rdx
+    cmp.i64 rdi, 1
     je ^case
     jmp ^miss
 
   block ^case
-    mov rdi, rsi
-    mov rsi, rdx
+    mov rdi, rbx
+    mov rsi, r12
     call @touch [args=(rsi,rdi)]
-    mov rdi, r12
-    mov rsi, rbx
+    mov rdi, rbx
+    mov rsi, r12
     call @touch [args=(rsi,rdi)]
     ret rax
 
@@ -68,8 +66,8 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rdi, 1
     mov rsi, @cell
+    mov rdi, 1
     mov rdx, 7
     call @dispatch [args=(rdx,rsi,rdi)]
     mov r8, rax

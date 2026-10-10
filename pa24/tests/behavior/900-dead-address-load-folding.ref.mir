@@ -20,15 +20,10 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, @values
-    lea r8, [r8+8]
-    load.i64 r9, [r8]
-    load.i64 r8, @values
-    add r8, r9
+    load.i64 r8, @values+8
+    add r8, @values
     mov rdx, 42
     cmp.i64 r8, rdx
     setne r8
     movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    ret r8

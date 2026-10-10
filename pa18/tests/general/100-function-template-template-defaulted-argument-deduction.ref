@@ -23,10 +23,10 @@ function @ttp_default_arg__pass(%__param0 : ptr [pass=by_address, object_bytes=4
     store typed ptr %__param0, $__param0
     store typed ptr %destination, $destination
     %t1 = load typed ptr $destination
-    call void @ttp_default_arg__interval_map_int__int__int__ttp_default_arg____cppgm_class_template_identity_0_5_0__ttp_default_arg____cppgm_class_template_identity_1_5_0__ttp_default_arg____cppgm_class_template_identity_2_5_0__ttp_default_arg____cppgm_class_template_identity_3_6_0__template_parameter_ttp_default_arg__allocator___clear(%t1)
+    call void @ttp_default_arg__interval_map___cppgm_class_template_identity_3___clear(%t1)
     return void
 }
-function @ttp_default_arg__interval_map_int__int__int__ttp_default_arg____cppgm_class_template_identity_0_5_0__ttp_default_arg____cppgm_class_template_identity_1_5_0__ttp_default_arg____cppgm_class_template_identity_2_5_0__ttp_default_arg____cppgm_class_template_identity_3_6_0__template_parameter_ttp_default_arg__allocator___clear(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN15ttp_default_arg12interval_mapIiiiNS_4lessIiEENS_4plusIiEENS_7sectionIiEENS_8intervalIiS2_EENS_9allocatorEE5clearEv, inline_hint=yes] {
+function @ttp_default_arg__interval_map___cppgm_class_template_identity_3___clear(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN15ttp_default_arg12interval_mapIiiiNS_4lessIiEENS_4plusIiEENS_7sectionIiEENS_8intervalIiS2_EENS_9allocatorEE5clearEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

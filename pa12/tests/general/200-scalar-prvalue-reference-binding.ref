@@ -1,6 +1,6 @@
 global @counter : i32 [binding=strong] = 40
-global @__cppgm_ref_temporary__global_bound_0 : i32 [binding=internal, object=_ZGR12global_bound_] = zero
 global @global_bound : ptr [binding=strong] = zero
+global @__cppgm_ref_temporary__global_bound_0 : i32 [binding=internal, object=_ZGR12global_bound_] = zero
 
 function @next() -> i32 [binding=strong, object=_Z4nextv] {
   block ^entry:
@@ -85,7 +85,7 @@ function @arithmetic() -> i32 [binding=strong, object=_Z10arithmeticv] {
 function @conditional(%select : i32) -> i32 [binding=strong, object=_Z11conditionali] {
   slot $select : i32
   slot $bound : ptr
-  slot $tmpref__1 : i32
+  slot $cond__1 : i32
   slot $tmpobj__2 : obj<4x4>
 
   block ^entry:
@@ -99,17 +99,17 @@ function @conditional(%select : i32) -> i32 [binding=strong, object=_Z11conditio
     copyobj 4x4 %t3, %t2
     %t4 = index i8 [projection=field] %t2, 0
     %t5 = load typed i32 %t4
-    store typed i32 %t5, $tmpref__1
+    store typed i32 %t5, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store typed i32 0, $tmpref__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t6 = load typed i32 $tmpref__1
-    store typed i32 %t6, $tmpref__1
-    %t7 = addr $tmpref__1
+    %t6 = load typed i32 $cond__1
+    store typed i32 %t6, $cond__1
+    %t7 = addr $cond__1
     store typed ptr %t7, $bound
     %t8 = load typed ptr $bound
     %t9 = load typed i32 %t8
@@ -123,9 +123,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store volatile i32 99, $clobber
     %t1 = load typed i32 @counter
     %t2 = cmp ne i32 %t1, 41
-    branch %t2, ^if_then_1, ^lor_rhs_4
+    branch %t2, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t3 = load typed ptr @global_bound
     %t4 = load typed i32 %t3
     %t5 = load typed i32 @counter
@@ -136,9 +136,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 8
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t7 = call i32 @literal()
     %t8 = cmp ne i32 %t7, 5
     branch %t8, ^if_then_5, ^if_else_6
@@ -160,9 +160,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = binary add nowrap i32 %t12, %t14
     %t16 = binary sub nowrap i32 %t15, 42
     %t17 = cmp ne i32 %t10, %t16
-    branch %t17, ^if_then_8, ^lor_rhs_11
+    branch %t17, ^if_then_8, ^lor_rhs_10
 
-  block ^lor_rhs_11:
+  block ^lor_rhs_10:
     %t18 = load typed i32 @counter
     %t19 = load typed i32 $before
     %t20 = binary add nowrap i32 %t19, 2
@@ -173,9 +173,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_9:
-    jump ^if_end_10
+    jump ^if_end_11
 
-  block ^if_end_10:
+  block ^if_end_11:
     %t22 = load typed i32 @counter
     store typed i32 %t22, $before
     %t23 = call i64 @converting()
@@ -183,9 +183,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t25 = binary add nowrap i32 %t24, 1
     %t26 = convert sext i64 i32 %t25
     %t27 = cmp ne i64 %t23, %t26
-    branch %t27, ^if_then_12, ^lor_rhs_15
+    branch %t27, ^if_then_12, ^lor_rhs_14
 
-  block ^lor_rhs_15:
+  block ^lor_rhs_14:
     %t28 = load typed i32 @counter
     %t29 = load typed i32 $before
     %t30 = binary add nowrap i32 %t29, 1
@@ -196,18 +196,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_else_13:
-    jump ^if_end_14
+    jump ^if_end_15
 
-  block ^if_end_14:
+  block ^if_end_15:
     %t32 = load typed i32 @counter
     store typed i32 %t32, $before
     %t33 = call i32 @arithmetic()
     %t34 = load typed i32 $before
     %t35 = binary add nowrap i32 %t34, 2
     %t36 = cmp ne i32 %t33, %t35
-    branch %t36, ^if_then_16, ^lor_rhs_19
+    branch %t36, ^if_then_16, ^lor_rhs_18
 
-  block ^lor_rhs_19:
+  block ^lor_rhs_18:
     %t37 = load typed i32 @counter
     %t38 = load typed i32 $before
     %t39 = binary add nowrap i32 %t38, 1
@@ -218,9 +218,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 4
 
   block ^if_else_17:
-    jump ^if_end_18
+    jump ^if_end_19
 
-  block ^if_end_18:
+  block ^if_end_19:
     %t41 = call i32 @conditional(1)
     %t42 = cmp ne i32 %t41, 7
     branch %t42, ^if_then_20, ^if_else_21

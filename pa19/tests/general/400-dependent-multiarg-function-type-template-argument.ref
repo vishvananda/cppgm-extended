@@ -1,3 +1,6 @@
+declare global @unary_void_int____value : i32 [binding=weak, object=_ZN5unaryIFviEE5valueE]
+declare global @unary_void_int_float____value : i32 [binding=weak, object=_ZN5unaryIFvifEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lor__1 : i64
 

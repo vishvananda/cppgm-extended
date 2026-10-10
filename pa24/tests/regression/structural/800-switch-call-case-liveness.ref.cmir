@@ -37,20 +37,18 @@ function @dispatch
     preserve <gpr0> <gpr1>
 
   block ^entry
-    mov <gpr1>, rsi
-    mov <gpr0>, rdx
-    mov rax, rdi
-    mov rcx, 1
-    cmp.i64 rax, rcx
+    mov <gpr0>, rsi
+    mov <gpr1>, rdx
+    cmp.i64 rdi, 1
     je ^case
     jmp ^miss
 
   block ^case
-    mov rdi, rsi
-    mov rsi, rdx
+    mov rdi, <gpr0>
+    mov rsi, <gpr1>
     call @touch [args=(rsi,rdi)]
-    mov rdi, <gpr1>
-    mov rsi, <gpr0>
+    mov rdi, <gpr0>
+    mov rsi, <gpr1>
     call @touch [args=(rsi,rdi)]
     ret rax
 
@@ -68,8 +66,8 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rdi, 1
     mov rsi, @cell
+    mov rdi, 1
     mov rdx, 7
     call @dispatch [args=(rdx,rsi,rdi)]
     mov r8, rax

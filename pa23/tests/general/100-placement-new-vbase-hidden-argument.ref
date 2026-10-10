@@ -1,24 +1,24 @@
-declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
 declare function @operatornew__ov2(%arg0 : i64, %arg1 : ptr) -> ptr [unwind=no, binding=strong, object=_ZnwmPv]
 declare function @B__B(%arg0 : ptr [alias=noalias, object_bytes=8], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=strong, object=_ZN1BC1ERS_]
 
-global @__typeinfo_name__struct_A [binding=weak, object=_ZTS1A] = {
-  i8 49
-  i8 65
-  i8 0
-}
-global @__rtti_struct_A [binding=weak, object=_ZTI1A] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_A
-}
-global @__typeinfo_name__struct_B [binding=weak, object=_ZTS1B] = {
+global @__typeinfo_name__struct_B [storage=readonly, binding=weak, object=_ZTS1B] = {
   i8 49
   i8 66
   i8 0
 }
-global @__rtti_struct_B [binding=weak, object=_ZTI1B] = {
+global @__typeinfo_name__struct_A [storage=readonly, binding=weak, object=_ZTS1A] = {
+  i8 49
+  i8 65
+  i8 0
+}
+global @__rtti_struct_A [storage=readonly, binding=weak, object=_ZTI1A] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_A
+}
+global @__rtti_struct_B [storage=readonly, binding=weak, object=_ZTI1B] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_B
   i32 0

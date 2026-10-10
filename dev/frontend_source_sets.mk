@@ -1,61 +1,76 @@
 # Per-tool implementation source lists for the compiler.
 #
-# Add dev/src/foo.cpp to the responsibility list that owns it. For
-# subdirectories, use the path without `.cpp`, such as `syntax/parser/foo`.
-# Compose responsibility groups as `FRONTEND_SOURCE_IDS_*`; the
-# `FRONTEND_OBJ_BASENAMES_<tool>` variables remain the per-tool interface.
-# Keep the composed target order stable: it is also the canonical link order.
+# Add dev/src/foo.cpp to the tools that use it by adding `foo` below. For
+# subdirectories, use the path without `.cpp`, such as `parser/foo`.
 
 FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ppexpr preproc cppgm++ lowiropt lowir lowir2native
 FRONTEND_TEST_RUNNER_SOURCE_ID := support/testing/test_runner
-FRONTEND_BUILTIN_CONFIG_SOURCE_ID := preprocess/preprocessor
-FRONTEND_SOURCE_IDS_ERROR_SUPPORT := support/exceptions support/exception_types native/errors
+# The one source that includes the generated cppgm_builtin_host_config.h
+# (the host compiler's macros and include directories, probed at build time).
+FRONTEND_BUILTIN_CONFIG_SOURCE_ID := driver/host_environment
 
-FRONTEND_SOURCE_IDS_PREPROCESS_TOKEN := preprocess/tokens/pp_tokenizer
-FRONTEND_SOURCE_IDS_PREPROCESS_POSTTOKEN := $(FRONTEND_SOURCE_IDS_PREPROCESS_TOKEN) preprocess/tokens/post_tokenizer
-FRONTEND_SOURCE_IDS_PREPROCESS_CONTROL := $(FRONTEND_SOURCE_IDS_PREPROCESS_POSTTOKEN) preprocess/expressions/control_expression
-FRONTEND_SOURCE_IDS_PREPROCESS_MACRO := $(FRONTEND_SOURCE_IDS_PREPROCESS_CONTROL) preprocess/hosted/builtin_registry preprocess/hosted/preprocessor_probes preprocess/macros/macro_operator_code preprocess/macros/paint_table preprocess/macros/macro_processor
-FRONTEND_SOURCE_IDS_PREPROCESS_TOOL := $(FRONTEND_SOURCE_IDS_PREPROCESS_MACRO) preprocess/tool_support
+# Shared phases: translation phases 1-3 (the pp-token lexer), literal and
+# operator classification, phases 5-7 (post-tokens, with identifier
+# interning and the arena it uses), controlling-expression
+# evaluation and phase 4 (the preprocessor). Tool output adapters are listed
+# only by their tools.
+FRONTEND_PHASE_BASENAMES_pplex := support/unicode/utf8 preprocess/source/source_buffer preprocess/source/translation_reader preprocess/lexer/char_classes preprocess/lexer/pp_lexer preprocess/lexer/pp_lexer_literals preprocess/lexer/pp_lexer_punctuators
+FRONTEND_PHASE_BASENAMES_literals := types/fundamental_type lex/gnu_builtins lex/token_kind lex/ud_suffix lex/number_literal lex/interchange_float lex/text_literal
+FRONTEND_PHASE_BASENAMES_posttoken := support/memory/arena lex/identifier_table lex/string_concatenation lex/post_tokenizer
+FRONTEND_PHASE_BASENAMES_ppexpr := preprocess/expr/pp_arithmetic preprocess/expr/controlling_expression
+# Translation phase 4: directives, macro replacement and the file stack.
+FRONTEND_PHASE_BASENAMES_preprocess := preprocess/preprocessor_names preprocess/source/source_files preprocess/source/source_stack preprocess/macro/hide_sets preprocess/macro/macro_definition preprocess/macro/feature_probes preprocess/macro/macro_expander preprocess/preprocessor preprocess/preprocessor_directives
 
-FRONTEND_SOURCE_IDS_ABI_MANGLE_TOOL := abi/itanium/abi_mangle_model abi/itanium/abi_mangle_parse abi/itanium/abi_mangle_identity abi/itanium/abi_mangle_graph_argument abi/itanium/abi_mangle_graph_type abi/itanium/abi_mangle_type_vocabulary abi/itanium/abi_mangle_presentation abi/itanium/abi_mangle_substitution abi/itanium/abi_mangle_paths abi/itanium/abi_mangle
+# Translation phases 7-8 as far as PA5 goes: the parser and its tree, with
+# the dump view.
+FRONTEND_PHASE_BASENAMES_syntax := syntax/parse_token_stream syntax/name_scopes syntax/parser_state syntax/parser syntax/parser_names syntax/parser_declarators syntax/parser_specifiers syntax/parser_declarations syntax/parser_statements syntax/parser_expressions syntax/syntax_unit
 
+# PA6's semantic layer: interned types, scopes and lookup, the declaration
+# analyzer and integral constant evaluation; PA7's expression typing,
+# conversions, calls and initialization. The --emit-types and
+# --emit-semantics dumps (sema/semantic_dump, sema/semantics_dump) are
+# linked only by cppgm++.
+FRONTEND_PHASE_BASENAMES_sema := sema/type_table sema/lookup sema/integral_arithmetic sema/constant_evaluator sema/constant_interpreter sema/constant_expressions sema/constant_complex sema/constant_construction sema/constant_statements sema/layout sema/primary_bases sema/conversions sema/string_literals sema/analyzer sema/analyzer_types sema/analyzer_declarations sema/analyzer_classes sema/analyzer_bodies sema/analyzer_expressions sema/analyzer_literals sema/analyzer_member_pointers sema/analyzer_calls sema/analyzer_builtins sema/analyzer_asm sema/asm_statements sema/analyzer_bindings sema/pretty_function sema/analyzer_initialization sema/analyzer_construction sema/analyzer_copy sema/analyzer_conversions sema/analyzer_operators sema/analyzer_access sema/analyzer_virtual sema/analyzer_constexpr sema/analyzer_traits sema/analyzer_exceptions sema/analyzer_exception_sets sema/analyzer_lambdas sema/analyzer_range_for sema/analyzer_rtti sema/analyzer_initializer_lists sema/analyzer_handlers sema/function_templates sema/class_templates sema/template_specializations sema/template_packs sema/variable_templates sema/template_names sema/template_addresses sema/template_dependence sema/template_fixed_expressions sema/template_placeholders syntax/ast_clone
 
-FRONTEND_SOURCE_IDS_CPPGM_PREPROCESS := preprocess/tokens/pp_tokenizer preprocess/tokens/post_tokenizer preprocess/expressions/control_expression preprocess/hosted/preprocessor_probes preprocess/macros/macro_operator_code preprocess/macros/paint_table preprocess/macros/macro_processor preprocess/preprocessor support/interning/frontend_intern preprocess/hosted/builtin_registry hosted_extension_registry
-FRONTEND_SOURCE_IDS_CPPGM_SYNTAX_PRIMARY := syntax/model/arena syntax/parser/brace_matching syntax/extensions/object_attributes syntax/parser/parser syntax/driver syntax/stats
-FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_PRIMARY := semantic/model/program semantic/object_model/type_layout semantic/object_model/inheritance semantic/extensions/hosted_extensions semantic/analysis/analyzer semantic/analysis/name_resolution semantic/analysis/capacity semantic/driver semantic/expressions/calls semantic/lifetime/elision semantic/declarations/analysis semantic/object_model/object_data semantic/extensions/abi_tags semantic/templates/preemption semantic/declarations/declarator_types semantic/extensions/hosted_builtins semantic/extensions/hosted_traits semantic/expressions/conversion_functions semantic/declarations/functions semantic/object_model/inheritance_analysis semantic/initialization/analysis semantic/initialization/allocation semantic/initialization/list_initialization semantic/expressions/literals semantic/expressions/operators semantic/presentation/render semantic/presentation/diagnostic_names semantic/analysis/scope semantic/lifetime/special_members semantic/analysis/storage semantic/analysis/index_tables semantic/extensions/regions semantic/object_model/virtual_base_model semantic/object_model/virtual_bases semantic/object_model/polymorphic_layout semantic/object_model/vtable_groups semantic/extensions/lambda_capture semantic/extensions/range_for semantic/extensions/exceptions semantic/initialization/initializer_lists semantic/object_model/rtti semantic/object_model/base_paths semantic/object_model/multiple_inheritance semantic/expressions/member_pointers semantic/templates/syntax_identity semantic/presentation/templates semantic/templates/classes semantic/templates/validation semantic/templates/function_deduction semantic/templates/function_instantiation semantic/templates/ambiguities semantic/constants/analysis semantic/templates/arguments semantic/templates/packs semantic/constants/scalar_evaluator semantic/constants/object_evaluator semantic/constants/address_evaluator semantic/lifetime/local_statics semantic/templates/aliases_and_lambdas semantic/declarations/friends semantic/templates/nondeduced_contexts semantic/templates/result_identity semantic/templates/function_abi_result semantic/templates/placeholders semantic/templates/integration semantic/lifetime/constructor_definitions semantic/object_model/polymorphism
-FRONTEND_SOURCE_IDS_CPPGM_ABI := abi/itanium/abi_mangle_model abi/itanium/abi_mangle_identity abi/itanium/abi_mangle_graph_argument abi/itanium/abi_mangle_graph_type abi/itanium/abi_mangle_type_vocabulary abi/itanium/abi_mangle_presentation abi/itanium/abi_mangle_substitution abi/itanium/abi_mangle_paths abi/itanium/abi_mangle
-FRONTEND_SOURCE_IDS_CPPGM_LOWERING_PRIMARY_BEFORE_OVERLOAD := lowering/ir/model lowering/core/program_lowerer lowering/abi/symbol_metadata lowering/abi/emission_policy lowering/abi/mangling lowering/abi/mangling_vocabulary lowering/abi/mangling_owners lowering/abi/local_entity_names lowering/core/driver lowering/support/identity_maps lowering/abi/symbol_names lowering/core/source_types lowering/ir/render lowering/objects/storage_facts lowering/objects/static_initialization
-FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_OVERLOAD := semantic/expressions/overload_resolution
-FRONTEND_SOURCE_IDS_CPPGM_LOWERING_PRIMARY_AFTER_OVERLOAD := lowering/objects/polymorphism lowering/objects/vtt_layout lowering/objects/vtable_thunks lowir/io/frontend_adapter compiler_object/serialization compiler_object/linker compiler_object/elf_import
-FRONTEND_SOURCE_IDS_CPPGM_LOWIR_NATIVE_PRIMARY := lowir/io/parse lowir/io/prepare lowir/io/serialize lowir/analysis/inline lowir/optimize/inline_o1 lowir/optimize/pipeline lowir/optimize/constant_folding lowir/optimize/force_inline native/lowering/abi native/analysis/function native/mir/block_labels native/object/code_buffer native/eh/lowering native/allocation/frame_forwarding native/eh/host_regions native/mir/construction native/object/elf_format native/mir/optimize native/driver/program native/allocation/registers native/lowering/selection native/driver/session native/frame/stack native/lowering/varargs native/lowering/wide native/lowering/function native/object/elf_writer native/mir/model native/mir/serialize
-FRONTEND_SOURCE_IDS_CPPGM_NATIVE_EXTENSION := native/analysis/data_layout native/encoding/address_folding native/lowering/control_flow native/analysis/forward_edges native/encoding/instructions native/frame/epilogue native/encoding/scalar_memory native/encoding/strlen native/encoding/lifecycle native/eh/catch_matching native/encoding/zeroing native/encoding/integers native/object/fixups native/object/string_table native/driver/stats_report
-FRONTEND_SOURCE_IDS_CPPGM_REPORT_AND_NATIVE_PLANNING := lowir/driver/stats_report native/allocation/movement_stats native/eh/references native/eh/lsda lowir/model/identity lowir/model/program native/allocation/spill_slots native/frame/layout native/frame/home_planning native/encoding/globals native/allocation/location_planning native/allocation/linear_scan
-FRONTEND_SOURCE_IDS_CPPGM_LOWIR_CLEANUP := lowir/optimize/cleanup_o1 lowir/optimize/slot_forward_o1 lowir/optimize/slot_promotion lowir/optimize/scalar_rules lowir/optimize/staged_copy_forwarding lowir/optimize/small_object_promotion lowir/optimize/unreachable
-FRONTEND_SOURCE_IDS_CPPGM_FRONTEND_LATE := semantic/declarations/entity_ownership lowering/transforms/force_inline lowering/presentation/local_names lowering/presentation/special_member_order lowering/core/reachability semantic/analysis/switch
-FRONTEND_SOURCE_IDS_CPPGM_LOWIR_ADVANCED := lowir/analysis/function_reachability lowir/analysis/function lowir/analysis/eh_context lowir/optimize/full_unroll_o3 lowir/optimize/private_table_prefilter lowir/optimize/interprocedural_specialization lowir/optimize/copy_elision lowir/optimize/loops lowir/optimize/loop_simplify lowir/optimize/boolean_cfg lowir/optimize/diamonds lowir/optimize/memory_gvn lowir/optimize/expression_key lowir/optimize/pre lowir/analysis/phi_edges native/lowering/phi
-FRONTEND_SOURCE_IDS_CPPGM_LOWIR_QUERY_SPLIT := lowir/optimize/terminal_query_split
-FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_EXTENSION := semantic/lifetime/lifetime semantic/templates/internal_identity semantic/templates/partial_storage semantic/constants/static_storage lowering/constants/templates lowering/constants/static_objects semantic/object_model/layout_builder semantic/extensions/gnu_asm semantic/extensions/numeric_types semantic/extensions/numeric semantic/extensions/numeric_templates semantic/extensions/complex semantic/extensions/pack_builtins semantic/initialization/aggregates semantic/extensions/compiler_builtins semantic/extensions/control_flow semantic/constants/wide_integer semantic/presentation/source_identity
-FRONTEND_SOURCE_IDS_CPPGM_LOWERING_SUPPORT := lowering/objects/cleanup_continuations lowering/objects/zero_initialization
-FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_FINAL := semantic/templates/shape semantic/expressions/conditions semantic/model/name_identity semantic/model/local_contexts semantic/presentation/type_view semantic/presentation/type_projection semantic/declarations/anonymous_unions semantic/object_model/class_layout semantic/declarations/class_scope semantic/lifetime/constructor_demand semantic/lifetime/demand semantic/lifetime/demand_stats
-FRONTEND_SOURCE_IDS_CPPGM_SYNTAX_FINAL := syntax/model/tags
-FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_ENUM := semantic/declarations/enums
-FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_VOCABULARY := semantic/analysis/vocabulary
-FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_LAMBDA_PRESENTATION := semantic/presentation/lambdas
-FRONTEND_SOURCE_IDS_CPPGM_LOWIR_DEBUG := lowir/io/line_table_debug
+# PA8's LowIR model: names, types, literals, the program and its builder,
+# and the validator. The text reader and writer (lowir/text_*) are tool
+# adapters, listed only by the tools that read or write LowIR text; the
+# construction exercises only by lowir.
+FRONTEND_PHASE_BASENAMES_lowir := support/memory/arena lowir/name_table lowir/program lowir/builder lowir/literals lowir/metadata_spellings lowir/validator
 
-FRONTEND_SOURCE_IDS_LOWIR_CORE := lowir/model/identity lowir/model/program lowir/io/parse lowir/io/prepare
-FRONTEND_SOURCE_IDS_LOWIR_OPT_PRIMARY := $(FRONTEND_SOURCE_IDS_LOWIR_CORE) lowir/io/serialize lowir/analysis/function_reachability lowir/analysis/inline lowir/optimize/inline_o1 lowir/optimize/pipeline lowir/optimize/constant_folding
-FRONTEND_SOURCE_IDS_LOWIR_OPT_ADVANCED := lowir/driver/stats_report lowir/analysis/function lowir/analysis/eh_context lowir/optimize/full_unroll_o3 lowir/optimize/private_table_prefilter lowir/optimize/interprocedural_specialization lowir/optimize/copy_elision lowir/optimize/loops lowir/optimize/loop_simplify lowir/optimize/boolean_cfg lowir/optimize/diamonds lowir/optimize/memory_gvn lowir/optimize/expression_key lowir/optimize/pre lowir/optimize/cleanup_o1 lowir/optimize/slot_forward_o1 lowir/optimize/slot_promotion lowir/optimize/scalar_rules lowir/optimize/staged_copy_forwarding lowir/optimize/small_object_promotion lowir/optimize/unreachable lowir/analysis/phi_edges
+# PA9's ABI naming: the canonical ABI graph, the vocabulary tables and the
+# one Itanium encoder, which later stages link to name their symbols. The
+# fact-file reader (abi/facts/) is the abimangle tool adapter.
+FRONTEND_PHASE_BASENAMES_abi := support/memory/arena abi/itanium/abi_vocabulary abi/itanium/abi_graph abi/itanium/abi_encoder
 
-FRONTEND_SOURCE_IDS_NATIVE_PRIMARY := $(FRONTEND_SOURCE_IDS_LOWIR_CORE) lowir/analysis/function_reachability lowir/optimize/force_inline native/mir/model native/mir/serialize native/lowering/abi native/analysis/function native/mir/block_labels native/object/code_buffer native/eh/lowering native/allocation/frame_forwarding native/eh/host_regions native/mir/construction native/object/elf_format native/mir/optimize native/driver/program native/allocation/registers native/lowering/selection native/driver/session native/frame/stack native/lowering/varargs native/lowering/wide native/lowering/function native/object/elf_writer
-FRONTEND_SOURCE_IDS_NATIVE_EXTENSION := native/driver/stats_report native/allocation/movement_stats native/analysis/data_layout native/encoding/address_folding native/lowering/control_flow native/analysis/forward_edges native/encoding/instructions native/frame/epilogue native/encoding/scalar_memory native/encoding/strlen native/encoding/lifecycle native/encoding/zeroing native/encoding/integers native/object/fixups native/object/string_table native/eh/references native/eh/lsda native/eh/catch_matching native/allocation/spill_slots native/frame/layout native/frame/home_planning native/encoding/globals native/allocation/location_planning native/allocation/linear_scan lowir/analysis/phi_edges native/lowering/phi
+FRONTEND_OBJ_BASENAMES_abimangle := $(FRONTEND_PHASE_BASENAMES_abi) abi/facts/abi_fact_reader abi/facts/abi_fact_definitions
+FRONTEND_OBJ_BASENAMES_pptoken := $(FRONTEND_PHASE_BASENAMES_pplex) preprocess/tokens/pp_token_emitter
+FRONTEND_OBJ_BASENAMES_posttoken := $(FRONTEND_PHASE_BASENAMES_pplex) $(FRONTEND_PHASE_BASENAMES_literals) $(FRONTEND_PHASE_BASENAMES_posttoken) lex/post_token_writer
+FRONTEND_OBJ_BASENAMES_ppexpr := $(FRONTEND_PHASE_BASENAMES_pplex) $(FRONTEND_PHASE_BASENAMES_literals) $(FRONTEND_PHASE_BASENAMES_ppexpr)
+FRONTEND_OBJ_BASENAMES_preproc := $(FRONTEND_PHASE_BASENAMES_pplex) $(FRONTEND_PHASE_BASENAMES_literals) $(FRONTEND_PHASE_BASENAMES_posttoken) $(FRONTEND_PHASE_BASENAMES_ppexpr) $(FRONTEND_PHASE_BASENAMES_preprocess) lex/post_token_writer
+# PA10's procedural lowering: the typed LowIR program built from the
+# semantic facts (symbols through the PA9 encoder); the LowIR text writer is
+# the --emit-lowir view.
+FRONTEND_PHASE_BASENAMES_lower := lower/program_lowering lower/definition_order lower/symbol_lowering lower/placeholder_mangling lower/local_mangling lower/global_lowering lower/constant_lowering lower/local_static_lowering lower/function_lowering lower/statement_lowering lower/object_lowering lower/copy_lowering lower/conversion_lowering lower/allocation_lowering lower/aggregate_lowering lower/cleanup_lowering lower/expression_lowering lower/discard_lowering lower/intrinsic_lowering lower/soft_float_lowering lower/complex_lowering lower/vector_lowering lower/member_pointer_lowering lower/condition_lowering lower/vtable_lowering lower/covariant_lowering lower/itanium_layout lower/virtual_base_lowering lower/rtti_lowering lower/dispatch_lowering lower/dynamic_type_lowering lower/initializer_list_lowering lower/exception_lowering lower/lexical_cleanup_lowering lower/tracked_lifetime_lowering
 
-FRONTEND_OBJ_BASENAMES_abimangle := $(FRONTEND_SOURCE_IDS_ABI_MANGLE_TOOL) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
-FRONTEND_OBJ_BASENAMES_pptoken := $(FRONTEND_SOURCE_IDS_PREPROCESS_TOKEN) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
-FRONTEND_OBJ_BASENAMES_posttoken := $(FRONTEND_SOURCE_IDS_PREPROCESS_POSTTOKEN) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
-FRONTEND_OBJ_BASENAMES_ppexpr := $(FRONTEND_SOURCE_IDS_PREPROCESS_CONTROL) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
-FRONTEND_OBJ_BASENAMES_preproc := $(FRONTEND_SOURCE_IDS_PREPROCESS_TOOL) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
-FRONTEND_OBJ_BASENAMES_cppgm++ := $(FRONTEND_SOURCE_IDS_CPPGM_PREPROCESS) $(FRONTEND_SOURCE_IDS_CPPGM_SYNTAX_PRIMARY) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_PRIMARY) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_ENUM) $(FRONTEND_SOURCE_IDS_CPPGM_ABI) $(FRONTEND_SOURCE_IDS_CPPGM_LOWERING_PRIMARY_BEFORE_OVERLOAD) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_OVERLOAD) $(FRONTEND_SOURCE_IDS_CPPGM_LOWERING_PRIMARY_AFTER_OVERLOAD) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_NATIVE_PRIMARY) $(FRONTEND_SOURCE_IDS_CPPGM_NATIVE_EXTENSION) $(FRONTEND_SOURCE_IDS_CPPGM_REPORT_AND_NATIVE_PLANNING) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_CLEANUP) $(FRONTEND_SOURCE_IDS_CPPGM_FRONTEND_LATE) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_ADVANCED) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_EXTENSION) $(FRONTEND_SOURCE_IDS_CPPGM_LOWERING_SUPPORT) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_FINAL) $(FRONTEND_SOURCE_IDS_CPPGM_SYNTAX_FINAL) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_VOCABULARY) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_LAMBDA_PRESENTATION) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_DEBUG) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_QUERY_SPLIT) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
-FRONTEND_OBJ_BASENAMES_lowiropt := $(FRONTEND_SOURCE_IDS_LOWIR_OPT_PRIMARY) $(FRONTEND_SOURCE_IDS_LOWIR_OPT_ADVANCED) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_QUERY_SPLIT) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
-FRONTEND_OBJ_BASENAMES_lowir := $(FRONTEND_SOURCE_IDS_LOWIR_CORE) lowir/io/serialize lowir/intro/exercises $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
-FRONTEND_OBJ_BASENAMES_lowir2native := $(FRONTEND_SOURCE_IDS_NATIVE_PRIMARY) $(FRONTEND_SOURCE_IDS_NATIVE_EXTENSION) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_cppgm++ := $(FRONTEND_PHASE_BASENAMES_pplex) $(FRONTEND_PHASE_BASENAMES_literals) $(FRONTEND_PHASE_BASENAMES_posttoken) $(FRONTEND_PHASE_BASENAMES_ppexpr) $(FRONTEND_PHASE_BASENAMES_preprocess) $(FRONTEND_PHASE_BASENAMES_syntax) syntax/ast_render syntax/ast_printer $(FRONTEND_PHASE_BASENAMES_sema) sema/semantic_dump sema/semantics_dump abi/itanium/abi_vocabulary abi/itanium/abi_graph abi/itanium/abi_encoder lowir/name_table lowir/program lowir/builder lowir/literals lowir/metadata_spellings lowir/validator lowir/text_writer lowir/local_names $(FRONTEND_PHASE_BASENAMES_lower) lex/post_token_writer
+# PA32's LowIR optimizer: the passes over the typed program (opt/), linked
+# by lowiropt and by cppgm++'s --emit-lowir and object paths.
+FRONTEND_PHASE_BASENAMES_opt := opt/function_ir opt/scalar_fold opt/value_simplify opt/dead_code opt/memory_forwarding opt/copy_coalescing opt/constant_propagation opt/cfg_cleanup opt/jump_threading opt/aggregate_slots opt/wide_integers opt/slot_promotion opt/eh_regions opt/loops opt/loop_passes opt/switch_formation opt/select_formation opt/call_graph opt/inliner opt/interprocedural opt/optimizer
+FRONTEND_OBJ_BASENAMES_lowiropt := $(FRONTEND_PHASE_BASENAMES_lowir) lowir/text_lexer lowir/text_parser lowir/text_parser_body lowir/text_reader lowir/text_writer lowir/local_names $(FRONTEND_PHASE_BASENAMES_opt)
+FRONTEND_OBJ_BASENAMES_lowir := $(FRONTEND_PHASE_BASENAMES_lowir) lowir/text_lexer lowir/text_parser lowir/text_parser_body lowir/text_reader lowir/text_writer lowir/local_names lowir/exercises
+# PA24's native backend: selection and allocation (native/select), x86-64
+# emission, the runtime routines and the ELF image.
+FRONTEND_PHASE_BASENAMES_native := native/select/call_abi native/select/analysis native/select/allocation native/select/global_allocation native/select/register_allocation native/select/loop_split native/select/operands native/select/emit_values native/select/emit_divide native/select/emit_convert native/select/emit_memory native/select/emit_calls native/select/emit_control native/select/host_eh native/select/host_eh_tables native/select/branch_layout native/select/block_placement native/select/frame_layout native/select/shrink_wrap native/select/mir_cleanup native/select/selector native/x86/assembler native/x86/emitter native/x86/emitter_floating native/x86/emitter_memory native/image/executable_file native/image/global_data native/image/image native/runtime/runtime
+# lowir2native's whole-program pipeline and its MIR dump view.
+FRONTEND_OBJ_BASENAMES_lowir2native := $(FRONTEND_PHASE_BASENAMES_lowir) lowir/text_lexer lowir/text_parser lowir/text_parser_body lowir/text_reader $(FRONTEND_PHASE_BASENAMES_native) native/backend native/mir/mir_writer
+# PA25's compile and link modes: the relocatable object model, its ELF
+# encoding and the object back end (native/object), the linker and its
+# runtime library (native/link), and the driver that runs them.
+FRONTEND_PHASE_BASENAMES_object := native/object/object_file native/object/elf_object_writer native/object/elf_object_reader native/object/host_unwind native/object/function_census native/object/object_compiler
+FRONTEND_PHASE_BASENAMES_link := native/link/routine_builder native/link/runtime_support native/link/runtime_library native/link/linker
+# lowir2native links an executable needing link mode's runtime library.
+FRONTEND_OBJ_BASENAMES_lowir2native += $(FRONTEND_PHASE_BASENAMES_object) $(FRONTEND_PHASE_BASENAMES_link)
+FRONTEND_OBJ_BASENAMES_cppgm++ += $(FRONTEND_PHASE_BASENAMES_native) $(FRONTEND_PHASE_BASENAMES_object) $(FRONTEND_PHASE_BASENAMES_link) driver/host_environment driver/toolchain
+# PA32: the optimizer, and the LowIR reader for LowIR object inputs.
+FRONTEND_OBJ_BASENAMES_cppgm++ += lowir/text_lexer lowir/text_parser lowir/text_parser_body lowir/text_reader $(FRONTEND_PHASE_BASENAMES_opt)

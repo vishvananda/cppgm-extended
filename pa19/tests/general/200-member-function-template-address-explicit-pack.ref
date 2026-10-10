@@ -45,7 +45,7 @@ function @service_registry__get(%this : ptr [object_bytes=1]) -> ptr [binding=we
     %t2 = load typed ptr $factory
     return ptr %t2
 }
-function @service_registry__create(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr) -> ptr [binding=weak, object=_ZN16service_registry6createI7service7contextJEEEPS1_RS2_PvDpOT1_, inline_hint=yes] {
+function @service_registry__create(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr) -> ptr [binding=weak, object=_ZN16service_registry6createI7service7contextJEEEPS1_RS2_PvDpOT1_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

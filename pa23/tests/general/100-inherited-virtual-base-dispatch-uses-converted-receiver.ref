@@ -1,7 +1,38 @@
-declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_virtual_base [binding=weak, object=_ZTS12virtual_base] = {
+global @called : i32 [binding=strong] = zero
+global @__typeinfo_name__struct_derived [storage=readonly, binding=weak, object=_ZTS7derived] = {
+  i8 55
+  i8 100
+  i8 101
+  i8 114
+  i8 105
+  i8 118
+  i8 101
+  i8 100
+  i8 0
+}
+global @__typeinfo_name__struct_empty_base [storage=readonly, binding=weak, object=_ZTS10empty_base] = {
+  i8 49
+  i8 48
+  i8 101
+  i8 109
+  i8 112
+  i8 116
+  i8 121
+  i8 95
+  i8 98
+  i8 97
+  i8 115
+  i8 101
+  i8 0
+}
+global @__rtti_struct_empty_base [storage=readonly, binding=weak, object=_ZTI10empty_base] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_empty_base
+}
+global @__typeinfo_name__struct_virtual_base [storage=readonly, binding=weak, object=_ZTS12virtual_base] = {
   i8 49
   i8 50
   i8 118
@@ -18,41 +49,11 @@ global @__typeinfo_name__struct_virtual_base [binding=weak, object=_ZTS12virtual
   i8 101
   i8 0
 }
-global @__rtti_struct_virtual_base [binding=weak, object=_ZTI12virtual_base] = {
+global @__rtti_struct_virtual_base [storage=readonly, binding=weak, object=_ZTI12virtual_base] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_virtual_base
 }
-global @__typeinfo_name__struct_empty_base [binding=weak, object=_ZTS10empty_base] = {
-  i8 49
-  i8 48
-  i8 101
-  i8 109
-  i8 112
-  i8 116
-  i8 121
-  i8 95
-  i8 98
-  i8 97
-  i8 115
-  i8 101
-  i8 0
-}
-global @__rtti_struct_empty_base [binding=weak, object=_ZTI10empty_base] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_empty_base
-}
-global @__typeinfo_name__struct_derived [binding=weak, object=_ZTS7derived] = {
-  i8 55
-  i8 100
-  i8 101
-  i8 114
-  i8 105
-  i8 118
-  i8 101
-  i8 100
-  i8 0
-}
-global @__rtti_struct_derived [binding=weak, object=_ZTI7derived] = {
+global @__rtti_struct_derived [storage=readonly, binding=weak, object=_ZTI7derived] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_derived
   i32 0
@@ -61,11 +62,6 @@ global @__rtti_struct_derived [binding=weak, object=_ZTI7derived] = {
   i64 2
   ptr addr @__rtti_struct_virtual_base
   i64 -8189
-}
-global @virtual_base__vtable [storage=readonly, binding=weak, object=_ZTV12virtual_base] = {
-  i64 0
-  ptr addr @__rtti_struct_virtual_base
-  ptr addr @virtual_base__function
 }
 global @derived__vtable [storage=readonly, binding=weak, object=_ZTV7derived] = {
   i64 0
@@ -78,7 +74,11 @@ global @derived____vtt [storage=readonly, binding=weak, object=_ZTT7derived, obj
   ptr addr @derived__vtable + 32
   ptr addr @derived__vtable + 32
 }
-global @called : i32 [binding=strong] = zero
+global @virtual_base__vtable [storage=readonly, binding=weak, object=_ZTV12virtual_base] = {
+  i64 0
+  ptr addr @__rtti_struct_virtual_base
+  ptr addr @virtual_base__function
+}
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : obj<8x8>
@@ -112,15 +112,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load typed i32 $cond__1
     return i32 %t12
 }
-function @virtual_base__function(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN12virtual_base8functionEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 1, @called
-    return void
-}
-function @derived__derived(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN7derivedC1Ev, inline_hint=yes] {
+function @derived__derived(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7derivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -132,6 +124,14 @@ function @derived__derived(%this : ptr [object_bytes=8]) -> void [binding=weak, 
     %t4 = addr @derived__vtable
     %t5 = index i8 %t4, 32
     store typed ptr %t5, %t3
+    return void
+}
+function @virtual_base__function(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN12virtual_base8functionEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 1, @called
     return void
 }
 function @virtual_base__virtual_base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12virtual_baseC2Ev, object_root=yes, inline_hint=yes] {

@@ -4,8 +4,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $f
-    %t2 = addr @__lambda_main_t10_12
-    %t3 = addr @__lambda_main_t10_12
+    %t2 = addr @__lambda_main_t10_12___FUN
+    %t3 = addr @__lambda_main_t10_12___FUN
     %t4 = cmp eq ptr %t2, %t3
     branch %t4, ^cond_then_1, ^cond_else_2
 
@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @__lambda_main_t10_12() -> void [binding=internal, object=_ZZ4mainEN3$_08__invokeEv, object_root=yes, inline_hint=yes] {
+function @__lambda_main_t10_12___FUN() -> void [binding=internal, object=_ZZ4mainEN3$_08__invokeEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
   block ^entry:
     return void
 }

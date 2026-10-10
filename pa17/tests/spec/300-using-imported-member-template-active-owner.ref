@@ -15,26 +15,26 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $visitor
     %t4 = addr $tagged_index
     %t5 = addr $map
-    call void @tagged_argument_IndexTag__Map___tagged_argument_VisitorTag__Visitor_(%t4, %t5)
+    call void @tagged_argument_IndexTag_Map___tagged_argument(%t4, %t5)
     %t6 = addr $tagged_visitor
     %t7 = addr $visitor
-    call void @tagged_argument_VisitorTag__Visitor___tagged_argument_VisitorTag__Visitor_(%t6, %t7)
+    call void @tagged_argument_VisitorTag_Visitor___tagged_argument(%t6, %t7)
     %t8 = addr $tail_args
     %t9 = addr $tagged_index
     %t10 = addr $arg__1
     zeroinit 1x1 %t10
-    call void @arg_list___cppgm_class_template_identity_1_3_0__empty_arg_list___arg_list___cppgm_class_template_identity_1_4_0____cppgm_class_template_identity_2_5_0_(%t8, %t9, %t10)
+    call void @arg_list___cppgm_class_template_identity_1_empty_arg_list___arg_list(%t8, %t9, %t10)
     %t11 = addr $args
     %t12 = addr $tagged_visitor
     %t13 = addr $tail_args
-    call void @arg_list___cppgm_class_template_identity_1_4_0____cppgm_class_template_identity_2_5_0___arg_list___cppgm_class_template_identity_1_4_0____cppgm_class_template_identity_2_5_0_(%t11, %t12, %t13)
+    call void @arg_list___cppgm_class_template_identity_2___cppgm_class_template_identity_3___arg_list(%t11, %t12, %t13)
     %t14 = addr $discard__2
     %t15 = addr $args
     %t16 = addr $g
     %t17 = call obj<1x1> @override_const_property(%t15, %t16)
     return i32 0
 }
-function @tagged_argument_IndexTag__Map___tagged_argument_VisitorTag__Visitor_(%this : ptr [object_bytes=8], %v : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN15tagged_argumentI8IndexTag3MapEC1ERKS1_, inline_hint=yes] {
+function @tagged_argument_IndexTag_Map___tagged_argument(%this : ptr [object_bytes=8], %v : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN15tagged_argumentI8IndexTag3MapEC1ERKS1_, inline_hint=yes] {
   slot $this : ptr
   slot $v : ptr
 
@@ -47,7 +47,7 @@ function @tagged_argument_IndexTag__Map___tagged_argument_VisitorTag__Visitor_(%
     store typed ptr %t1, %t3
     return void
 }
-function @tagged_argument_VisitorTag__Visitor___tagged_argument_VisitorTag__Visitor_(%this : ptr [object_bytes=8], %v : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN15tagged_argumentI10VisitorTag7VisitorEC1ERKS1_, inline_hint=yes] {
+function @tagged_argument_VisitorTag_Visitor___tagged_argument(%this : ptr [object_bytes=8], %v : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN15tagged_argumentI10VisitorTag7VisitorEC1ERKS1_, inline_hint=yes] {
   slot $this : ptr
   slot $v : ptr
 
@@ -60,7 +60,7 @@ function @tagged_argument_VisitorTag__Visitor___tagged_argument_VisitorTag__Visi
     store typed ptr %t1, %t3
     return void
 }
-function @arg_list___cppgm_class_template_identity_1_3_0__empty_arg_list___arg_list___cppgm_class_template_identity_1_4_0____cppgm_class_template_identity_2_5_0_(%this : ptr [object_bytes=8], %head : ptr [pass=by_address, object_bytes=8], %tail : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8arg_listI15tagged_argumentI8IndexTag3MapE14empty_arg_listEC1ERKS3_RKS4_, inline_hint=yes] {
+function @arg_list___cppgm_class_template_identity_1_empty_arg_list___arg_list(%this : ptr [object_bytes=8], %head : ptr [pass=by_address, object_bytes=8], %tail : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8arg_listI15tagged_argumentI8IndexTag3MapE14empty_arg_listEC1ERKS3_RKS4_, inline_hint=yes] {
   slot $this : ptr
   slot $head : ptr
   slot $tail : ptr
@@ -77,7 +77,7 @@ function @arg_list___cppgm_class_template_identity_1_3_0__empty_arg_list___arg_l
     copyobj 8x8 %t5, %t4
     return void
 }
-function @arg_list___cppgm_class_template_identity_1_4_0____cppgm_class_template_identity_2_5_0___arg_list___cppgm_class_template_identity_1_4_0____cppgm_class_template_identity_2_5_0_(%this : ptr [object_bytes=16], %head : ptr [pass=by_address, object_bytes=8], %tail : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN8arg_listI15tagged_argumentI10VisitorTag7VisitorES_IS0_I8IndexTag3MapE14empty_arg_listEEC1ERKS3_RKS8_, inline_hint=yes] {
+function @arg_list___cppgm_class_template_identity_2___cppgm_class_template_identity_3___arg_list(%this : ptr [object_bytes=16], %head : ptr [pass=by_address, object_bytes=8], %tail : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN8arg_listI15tagged_argumentI10VisitorTag7VisitorES_IS0_I8IndexTag3MapE14empty_arg_listEEC1ERKS3_RKS8_, inline_hint=yes] {
   slot $this : ptr
   slot $head : ptr
   slot $tail : ptr
@@ -116,12 +116,12 @@ function @override_const_property(%ap : ptr [pass=by_address, object_bytes=16], 
     %t5 = index i8 %t4, 0
     %t6 = addr $arg__3
     %t7 = addr $fallback
-    call void @default__IndexTag__int___default__VisitorTag__int_(%t6, %t7)
-    %t8 = call ptr @arg_list___cppgm_class_template_identity_1_3_0__empty_arg_list___operator__(%t5, %t6)
-    %t9 = call obj<1x1> @override_const_property_t_Map__true___operator__(%t2, %t3, %t8)
+    call void @default__IndexTag_int___default_(%t6, %t7)
+    %t8 = call ptr @arg_list___cppgm_class_template_identity_1_empty_arg_list___operator__(%t5, %t6)
+    %t9 = call obj<1x1> @override_const_property_t_Map_true___operator__(%t2, %t3, %t8)
     return obj<1x1> $retobj__1
 }
-function @default__IndexTag__int___default__VisitorTag__int_(%this : ptr [object_bytes=8], %v : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8default_I8IndexTagiEC1ERKi, inline_hint=yes] {
+function @default__IndexTag_int___default_(%this : ptr [object_bytes=8], %v : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8default_I8IndexTagiEC1ERKi, inline_hint=yes] {
   slot $this : ptr
   slot $v : ptr
 
@@ -134,7 +134,7 @@ function @default__IndexTag__int___default__VisitorTag__int_(%this : ptr [object
     store typed ptr %t1, %t3
     return void
 }
-function @arg_list___cppgm_class_template_identity_1_3_0__empty_arg_list___operator__(%this : ptr [object_bytes=8], %__param1 : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZNK8arg_listI15tagged_argumentI8IndexTag3MapE14empty_arg_listEixIiEERKS2_RK8default_IS1_T_E, inline_hint=yes] {
+function @arg_list___cppgm_class_template_identity_1_empty_arg_list___operator__(%this : ptr [object_bytes=8], %__param1 : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZNK8arg_listI15tagged_argumentI8IndexTag3MapE14empty_arg_listEixIiEERKS2_RK8default_IS1_T_E, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -143,10 +143,10 @@ function @arg_list___cppgm_class_template_identity_1_3_0__empty_arg_list___opera
     store typed ptr %__param1, $__param1
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = call ptr @tagged_argument_IndexTag__Map___get_value(%t2)
+    %t3 = call ptr @tagged_argument_IndexTag_Map___get_value(%t2)
     return ptr %t3
 }
-function @override_const_property_t_Map__true___operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %a : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZNK25override_const_property_tI3MapLb1EEclERK5GraphRKS0_, inline_hint=yes] {
+function @override_const_property_t_Map_true___operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %a : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZNK25override_const_property_tI3MapLb1EEclERK5GraphRKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $a : ptr
@@ -160,7 +160,7 @@ function @override_const_property_t_Map__true___operator__(%this : ptr [object_b
     %t2 = load typed ptr $a
     return obj<1x1> $retobj__1
 }
-function @tagged_argument_IndexTag__Map___get_value(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK15tagged_argumentI8IndexTag3MapE9get_valueEv, inline_hint=yes] {
+function @tagged_argument_IndexTag_Map___get_value(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK15tagged_argumentI8IndexTag3MapE9get_valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -170,8 +170,8 @@ function @tagged_argument_IndexTag__Map___get_value(%this : ptr [object_bytes=8]
     %t3 = load typed ptr %t2
     return ptr %t3
 }
-alias object _ZN15tagged_argumentI8IndexTag3MapEC2ERKS1_ = @tagged_argument_IndexTag__Map___tagged_argument_VisitorTag__Visitor_
-alias object _ZN15tagged_argumentI10VisitorTag7VisitorEC2ERKS1_ = @tagged_argument_VisitorTag__Visitor___tagged_argument_VisitorTag__Visitor_
-alias object _ZN8arg_listI15tagged_argumentI8IndexTag3MapE14empty_arg_listEC2ERKS3_RKS4_ = @arg_list___cppgm_class_template_identity_1_3_0__empty_arg_list___arg_list___cppgm_class_template_identity_1_4_0____cppgm_class_template_identity_2_5_0_
-alias object _ZN8arg_listI15tagged_argumentI10VisitorTag7VisitorES_IS0_I8IndexTag3MapE14empty_arg_listEEC2ERKS3_RKS8_ = @arg_list___cppgm_class_template_identity_1_4_0____cppgm_class_template_identity_2_5_0___arg_list___cppgm_class_template_identity_1_4_0____cppgm_class_template_identity_2_5_0_
-alias object _ZN8default_I8IndexTagiEC2ERKi = @default__IndexTag__int___default__VisitorTag__int_
+alias object _ZN15tagged_argumentI8IndexTag3MapEC2ERKS1_ = @tagged_argument_IndexTag_Map___tagged_argument
+alias object _ZN15tagged_argumentI10VisitorTag7VisitorEC2ERKS1_ = @tagged_argument_VisitorTag_Visitor___tagged_argument
+alias object _ZN8arg_listI15tagged_argumentI8IndexTag3MapE14empty_arg_listEC2ERKS3_RKS4_ = @arg_list___cppgm_class_template_identity_1_empty_arg_list___arg_list
+alias object _ZN8arg_listI15tagged_argumentI10VisitorTag7VisitorES_IS0_I8IndexTag3MapE14empty_arg_listEEC2ERKS3_RKS8_ = @arg_list___cppgm_class_template_identity_2___cppgm_class_template_identity_3___arg_list
+alias object _ZN8default_I8IndexTagiEC2ERKi = @default__IndexTag_int___default_

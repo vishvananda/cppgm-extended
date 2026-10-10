@@ -1,101 +1,161 @@
 kind	path	token	reason
-comment	dev/abimangle.cpp	PA9	assignment boundary or compatibility note
-comment	dev/cppgm++.cpp	PA5	assignment boundary or compatibility note
-comment	dev/lowir2native.cpp	PA24	assignment boundary or compatibility note
-comment	dev/lowiropt.cpp	PA32	assignment boundary or compatibility note
-comment	dev/src/abi/itanium/abi_mangle.h	PA9	assignment boundary or compatibility note
-comment	dev/src/abi/itanium/abi_mangle_expression.h	PA9	assignment boundary or compatibility note
-comment	dev/src/abi/itanium/abi_mangle_reference.h	PA9	assignment boundary or compatibility note
-comment	dev/src/abi/itanium/abi_mangle_terminal.h	PA9	assignment boundary or compatibility note
-comment	dev/src/backend_variant.h	PA33	assignment boundary or compatibility note
-comment	dev/src/lowering/api.h	PA7	assignment boundary or compatibility note
-comment	dev/src/lowering/api.h	PA10	assignment boundary or compatibility note
-comment	dev/src/lowir/model/program.h	PA8	assignment boundary or compatibility note
-comment	dev/src/lowir/optimize/inline_o1.cpp	PA32	assignment boundary or compatibility note
-comment	dev/src/lowir_model.h	PA8	assignment boundary or compatibility note
-comment	dev/src/native/allocation/linear_scan.cpp	PA33	assignment boundary or compatibility note
-comment	dev/src/native/allocation/planning_seam.h	PA33	assignment boundary or compatibility note
-comment	dev/src/native/encoding/instructions.cpp	PA27	assignment boundary or compatibility note
-comment	dev/src/native/mir/optimize.cpp	PA24	assignment boundary or compatibility note
-comment	dev/src/native/mir/optimize.cpp	PA33	assignment boundary or compatibility note
-comment	dev/src/preprocess/expressions/control_expression.cpp	PA1	assignment boundary or compatibility note
-comment	dev/src/preprocess/expressions/control_expression.cpp	PA3	assignment boundary or compatibility note
-comment	dev/src/preprocess/expressions/control_expression.h	PA2	assignment boundary or compatibility note
-comment	dev/src/preprocess/expressions/control_expression.h	PA3	assignment boundary or compatibility note
-comment	dev/src/preprocess/macros/macro_processor.h	PA2	assignment boundary or compatibility note
-comment	dev/src/preprocess/macros/macro_processor.h	PA4	assignment boundary or compatibility note
-comment	dev/src/preprocess/macros/macro_processor.h	PA5	assignment boundary or compatibility note
-comment	dev/src/preprocess/tokens/IPPTokenStream.h	PA1	assignment boundary or compatibility note
-comment	dev/src/preprocess/tokens/IPPTokenStream.h	PA4	assignment boundary or compatibility note
-comment	dev/src/preprocess/tokens/post_tokenizer.h	PA1	assignment boundary or compatibility note
-comment	dev/src/preprocess/tokens/post_tokenizer.h	PA2	assignment boundary or compatibility note
-comment	dev/src/preprocess/tokens/post_tokenizer.h	PA3	assignment boundary or compatibility note
-comment	dev/src/preprocess/tokens/pp_tokenizer.cpp	PA2	assignment boundary or compatibility note
-comment	dev/src/semantic/analysis/analyzer.cpp	PA29	assignment boundary or compatibility note
-comment	dev/src/semantic/constants/analysis.cpp	PA10	assignment boundary or compatibility note
-comment	dev/src/semantic/constants/analysis.cpp	PA16	assignment boundary or compatibility note
-comment	dev/src/semantic/declarations/analysis.cpp	PA7	assignment boundary or compatibility note
-comment	dev/src/semantic/extensions/range_for.cpp	PA20	assignment boundary or compatibility note
-comment	dev/src/semantic/initialization/allocation.cpp	PA18	assignment boundary or compatibility note
-comment	dev/src/semantic/model/graph.h	PA7	assignment boundary or compatibility note
-comment	dev/src/semantic/presentation/type_projection.cpp	PA6	assignment boundary or compatibility note
-comment	dev/src/semantic/semantic.h	PA5	assignment boundary or compatibility note
-comment	dev/src/semantic/semantic.h	PA7	assignment boundary or compatibility note
-comment	dev/src/semantic/templates/ambiguities.cpp	PA5	assignment boundary or compatibility note
-comment	dev/src/semantic/templates/validation.cpp	PA5	assignment boundary or compatibility note
-comment	dev/src/semantic/type_view.h	PA5	assignment boundary or compatibility note
-comment	dev/src/semantic/type_view.h	PA6	assignment boundary or compatibility note
-comment	dev/src/syntax/syntax.h	PA5	assignment boundary or compatibility note
-diagnostic	dev/cppgm++.cpp	pa5_stats	stable emitted statistics key
-diagnostic	dev/cppgm++.cpp	pa6_stats	stable emitted statistics key
-diagnostic	dev/cppgm++.cpp	pa7_stats	stable emitted statistics key
-diagnostic	dev/cppgm++.cpp	pa10_stats	stable emitted statistics key
-diagnostic	dev/cppgm++.cpp	pa25_compile_stats	stable emitted statistics key
-diagnostic	dev/cppgm++.cpp	pa25_driver_stats	stable emitted statistics key
-diagnostic	dev/cppgm++.cpp	pa26_object_stats	stable emitted statistics key
-diagnostic	dev/cppgm++.cpp	pa29_preproc_stats	stable emitted statistics key
-diagnostic	dev/src/lowir/driver/stats_report.cpp	pa10_retained_fallback	stable emitted statistics key
-diagnostic	dev/src/lowir/driver/stats_report.cpp	pa10_unreachable_internal	stable emitted statistics key
-diagnostic	dev/src/lowir/driver/stats_report.cpp	pa32_opt_stats	stable emitted statistics key
-diagnostic	dev/src/lowir/driver/stats_report.cpp	pa32_prepare_stats	stable emitted statistics key
-error-prose	dev/src/lowering/abi/mangling.cpp	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/calls/arguments.h	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/calls/function_calls.h	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/control/control_flow.h	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/control/regions.h	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/control/statements.h	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/core/driver.cpp	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/core/program_lowerer.cpp	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/core/source_types.cpp	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/expressions/assignment.h	PA7	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/expressions/assignment.h	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/expressions/core.h	PA7	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/expressions/core.h	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/ir/model.cpp	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/ir/render.cpp	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/ir/render.cpp	PA11	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/ir/render.cpp	PA12	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/ir/render.cpp	PA21	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/ir/types.h	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/objects/initialization.h	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/objects/initialization.h	PA12	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/objects/polymorphism.cpp	PA13	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/objects/static_initialization.cpp	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/objects/static_initialization.cpp	PA11	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/objects/static_members.h	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/objects/storage_access.h	PA10	existing diagnostic prose; output contract
-error-prose	dev/src/lowering/objects/temporary_lifetime.h	PA12	existing diagnostic prose; output contract
-error-prose	dev/src/preprocess/tokens/post_tokenizer.cpp	PA2	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/analysis/analyzer.cpp	PA7	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/declarations/analysis.cpp	PA7	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/declarations/declarator_types.cpp	PA6	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/expressions/literals.cpp	PA7	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/initialization/allocation.cpp	PA11	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/initialization/allocation.cpp	PA12	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/model/graph.h	PA7	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/model/program.cpp	PA6	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/presentation/type_projection.cpp	PA6	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/templates/aliases_and_lambdas.cpp	PA17	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/templates/arguments.cpp	PA15	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/templates/function_instantiation.cpp	PA7	existing diagnostic prose; output contract
-error-prose	dev/src/semantic/templates/placeholders.cpp	PA18	existing diagnostic prose; output contract
+diagnostic	dev/src/opt/optimizer.cpp	pa32_opt_stats	stable emitted statistics key
+comment	dev/cppgm++.cpp	PA12	handout or fixture cross-reference in a comment
+comment	dev/cppgm++.cpp	PA32	handout or fixture cross-reference in a comment
+comment	dev/cppgm++.cpp	PA5	handout or fixture cross-reference in a comment
+comment	dev/cppgm++.cpp	PA6	handout or fixture cross-reference in a comment
+comment	dev/lowir.cpp	PA8	handout or fixture cross-reference in a comment
+comment	dev/preproc.cpp	PA2	handout or fixture cross-reference in a comment
+comment	dev/src/abi/facts/abi_fact_case.h	PA9	handout or fixture cross-reference in a comment
+comment	dev/src/abi/facts/abi_fact_reader.cpp	PA9	handout or fixture cross-reference in a comment
+comment	dev/src/abi/facts/abi_fact_reader.h	PA9	handout or fixture cross-reference in a comment
+comment	dev/src/abi/itanium/abi_encoder.h	PA9	handout or fixture cross-reference in a comment
+comment	dev/src/abi/itanium/abi_graph.cpp	PA9	handout or fixture cross-reference in a comment
+comment	dev/src/abi/itanium/abi_graph.h	PA9	handout or fixture cross-reference in a comment
+comment	dev/src/abi/itanium/abi_mangle.h	PA9	shipped scaffold header: assignment cross-reference in a comment
+comment	dev/src/abi/itanium/abi_mangle_expression.h	PA9	shipped scaffold header: assignment cross-reference in a comment
+comment	dev/src/abi/itanium/abi_mangle_reference.h	PA9	shipped scaffold header: assignment cross-reference in a comment
+comment	dev/src/abi/itanium/abi_mangle_terminal.h	PA9	shipped scaffold header: assignment cross-reference in a comment
+comment	dev/src/abi/itanium/abi_terminal_vocabulary.h	PA9	handout or fixture cross-reference in a comment
+comment	dev/src/abi/itanium/abi_type_vocabulary.h	PA9	handout or fixture cross-reference in a comment
+comment	dev/src/driver/host_environment.h	PA26	handout or fixture cross-reference in a comment
+comment	dev/src/driver/host_environment.h	PA29	handout or fixture cross-reference in a comment
+comment	dev/src/driver/toolchain.cpp	PA2	handout or fixture cross-reference in a comment
+comment	dev/src/driver/toolchain.cpp	PA25	handout or fixture cross-reference in a comment
+comment	dev/src/driver/toolchain.cpp	PA32	handout or fixture cross-reference in a comment
+comment	dev/src/driver/toolchain.cpp	PA4	handout or fixture cross-reference in a comment
+comment	dev/src/driver/toolchain.h	PA25	handout or fixture cross-reference in a comment
+comment	dev/src/driver/toolchain.h	PA29	handout or fixture cross-reference in a comment
+comment	dev/src/driver/toolchain.h	PA4	handout or fixture cross-reference in a comment
+comment	dev/src/driver/toolchain.h	pa26	handout or fixture cross-reference in a comment
+comment	dev/src/lex/gnu_builtins.h	PA26	handout or fixture cross-reference in a comment
+comment	dev/src/lex/gnu_builtins.h	PA29	handout or fixture cross-reference in a comment
+comment	dev/src/lex/gnu_builtins.h	pa28	handout or fixture cross-reference in a comment
+comment	dev/src/lex/number_literal.cpp	pa29	handout or fixture cross-reference in a comment
+comment	dev/src/lex/number_literal.h	PA2	handout or fixture cross-reference in a comment
+comment	dev/src/lex/number_literal.h	PA4	handout or fixture cross-reference in a comment
+comment	dev/src/lex/number_literal.h	pa2	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/lex/number_literal.h	pa29	handout or fixture cross-reference in a comment
+comment	dev/src/lex/post_token.h	PA2	handout or fixture cross-reference in a comment
+comment	dev/src/lex/post_token_writer.cpp	PA2	handout or fixture cross-reference in a comment; inherited CPPGM starter-code attribution
+comment	dev/src/lex/post_token_writer.h	PA2	handout or fixture cross-reference in a comment; inherited CPPGM starter-code attribution
+comment	dev/src/lex/text_literal.h	PA2	handout or fixture cross-reference in a comment
+comment	dev/src/lex/token_kind.cpp	PA2	inherited CPPGM starter-code attribution
+comment	dev/src/lex/token_kind.h	PA2	inherited CPPGM starter-code attribution
+comment	dev/src/lower/allocation_lowering.cpp	pa12	handout or fixture cross-reference in a comment
+comment	dev/src/lower/cleanup_lowering.cpp	PA17	handout or fixture cross-reference in a comment
+comment	dev/src/lower/cleanup_lowering.cpp	pa26	handout or fixture cross-reference in a comment
+comment	dev/src/lower/constant_lowering.cpp	PA16	handout or fixture cross-reference in a comment
+comment	dev/src/lower/dispatch_lowering.cpp	PA31	handout or fixture cross-reference in a comment
+comment	dev/src/lower/function_lowering.h	PA34	handout or fixture cross-reference in a comment
+comment	dev/src/lower/global_lowering.cpp	PA11	handout or fixture cross-reference in a comment
+comment	dev/src/lower/global_lowering.cpp	pa25	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/lower/local_mangling.cpp	pa27	handout or fixture cross-reference in a comment
+comment	dev/src/lower/local_static_lowering.cpp	PA16	handout or fixture cross-reference in a comment
+comment	dev/src/lower/object_lowering.cpp	PA31	handout or fixture cross-reference in a comment
+comment	dev/src/lower/program_lowering.cpp	PA31	handout or fixture cross-reference in a comment
+comment	dev/src/lower/program_lowering.cpp	pa8	handout or fixture cross-reference in a comment
+comment	dev/src/lower/program_lowering.h	PA16	handout or fixture cross-reference in a comment
+comment	dev/src/lower/rtti_lowering.cpp	PA31	handout or fixture cross-reference in a comment
+comment	dev/src/lower/symbol_lowering.cpp	PA9	handout or fixture cross-reference in a comment
+comment	dev/src/lower/symbol_lowering.cpp	pa27	handout or fixture cross-reference in a comment
+comment	dev/src/lower/symbol_lowering.cpp	pa28	handout or fixture cross-reference in a comment
+comment	dev/src/lower/symbol_lowering.cpp	pa8	handout or fixture cross-reference in a comment
+comment	dev/src/lowir/exercises.h	PA8	handout or fixture cross-reference in a comment
+comment	dev/src/lowir/instruction.h	PA17	handout or fixture cross-reference in a comment
+comment	dev/src/lowir/instruction.h	PA8	handout or fixture cross-reference in a comment
+comment	dev/src/lowir_model.h	PA8	shipped scaffold header: assignment cross-reference in a comment
+comment	dev/src/native/object/host_unwind.h	pa26	handout or fixture cross-reference in a comment
+comment	dev/src/native/object/object_compiler.cpp	pa27	handout or fixture cross-reference in a comment
+comment	dev/src/native/object/object_compiler.h	PA25	handout or fixture cross-reference in a comment
+comment	dev/src/native/object/object_compiler.h	pa26	handout or fixture cross-reference in a comment
+comment	dev/src/native/object/object_compiler.h	pa8	handout or fixture cross-reference in a comment
+comment	dev/src/native/select/allocation.cpp	PA24	handout or fixture cross-reference in a comment
+comment	dev/src/native/select/allocation.cpp	pa33	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/native/select/emit_calls.cpp	pa33	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/native/select/global_allocation.cpp	PA10	handout or fixture cross-reference in a comment
+comment	dev/src/native/select/global_allocation.cpp	PA23	handout or fixture cross-reference in a comment
+comment	dev/src/native/select/host_eh.cpp	pa26	handout or fixture cross-reference in a comment
+comment	dev/src/native/select/operands.cpp	pa27	handout or fixture cross-reference in a comment
+comment	dev/src/native/select/register_allocation.cpp	PA24	handout or fixture cross-reference in a comment
+comment	dev/src/native/select/selector.h	pa27	handout or fixture cross-reference in a comment
+comment	dev/src/native/x86/emitter.cpp	pa26	handout or fixture cross-reference in a comment
+comment	dev/src/native/x86/emitter_floating.cpp	PA25	handout or fixture cross-reference in a comment
+comment	dev/src/native/x86/emitter_memory.cpp	pa33	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/opt/aggregate_slots.cpp	pa32	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/opt/call_graph.h	PA32	handout or fixture cross-reference in a comment
+comment	dev/src/opt/function_ir.h	pa10	handout or fixture cross-reference in a comment
+comment	dev/src/opt/inliner.cpp	pa32	handout or fixture cross-reference in a comment
+comment	dev/src/opt/inliner.h	PA32	handout or fixture cross-reference in a comment
+comment	dev/src/opt/inliner.h	pa32	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/opt/interprocedural.h	PA32	handout or fixture cross-reference in a comment
+comment	dev/src/opt/loop_passes.cpp	pa32	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/opt/loops.h	PA32	handout or fixture cross-reference in a comment
+comment	dev/src/opt/optimizer.h	pa32	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/opt/optimizer.h	pa32_opt_stats	handout or fixture cross-reference in a comment
+comment	dev/src/opt/value_simplify.cpp	pa32	handout or fixture cross-reference in a comment
+comment	dev/src/preprocess/expr/controlling_expression.h	PA3	handout or fixture cross-reference in a comment
+comment	dev/src/preprocess/macro/macro_definition.cpp	pa4	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/preprocess/macro/macro_definition.h	PA12	handout or fixture cross-reference in a comment
+comment	dev/src/preprocess/preprocessor.h	PA2	handout or fixture cross-reference in a comment
+comment	dev/src/preprocess/preprocessor.h	PA26	handout or fixture cross-reference in a comment
+comment	dev/src/preprocess/preprocessor.h	PA29	handout or fixture cross-reference in a comment
+comment	dev/src/preprocess/preprocessor.h	PA4	handout or fixture cross-reference in a comment
+comment	dev/src/preprocess/preprocessor_directives.cpp	PA3	handout or fixture cross-reference in a comment
+comment	dev/src/preprocess/tokens/IPPTokenStream.h	PA1	shipped scaffold header: assignment cross-reference in a comment
+comment	dev/src/preprocess/tokens/IPPTokenStream.h	PA4	shipped scaffold header: assignment cross-reference in a comment
+comment	dev/src/preprocess/tokens/pp_token_cursor.h	PA3	handout or fixture cross-reference in a comment
+comment	dev/src/preprocess/tokens/pp_token_cursor.h	PA4	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer.cpp	PA6	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer.h	PA16	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer.h	PA29	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer.h	PA6	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer.h	PA7	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer.h	pa18	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/sema/analyzer_bindings.cpp	PA29	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer_bodies.cpp	PA6	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer_builtins.cpp	PA27	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer_constexpr.cpp	PA16	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer_conversions.cpp	PA23	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer_declarations.cpp	PA27	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer_declarations.cpp	pa27	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer_declarations.cpp	pa28	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer_declarations.cpp	pa8	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer_exceptions.cpp	pa30	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/sema/analyzer_expressions.cpp	PA13	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer_expressions.cpp	PA7	handout or fixture cross-reference in a comment
+comment	dev/src/sema/analyzer_lambdas.cpp	PA20	handout or fixture cross-reference in a comment
+comment	dev/src/sema/constant_evaluator.h	PA6	handout or fixture cross-reference in a comment
+comment	dev/src/sema/constant_expressions.cpp	pa25	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/sema/constant_values.h	PA18	handout or fixture cross-reference in a comment
+comment	dev/src/sema/conversions.h	PA7	handout or fixture cross-reference in a comment
+comment	dev/src/sema/entity_records.h	PA18	handout or fixture cross-reference in a comment
+comment	dev/src/sema/function_records.h	PA29	handout or fixture cross-reference in a comment
+comment	dev/src/sema/function_records.h	PA6	handout or fixture cross-reference in a comment
+comment	dev/src/sema/function_records.h	pa28	handout or fixture cross-reference in a comment
+comment	dev/src/sema/placeholder_words.h	PA15	handout or fixture cross-reference in a comment
+comment	dev/src/sema/placeholder_words.h	PA18	handout or fixture cross-reference in a comment
+comment	dev/src/sema/semantic_dump.h	PA6	handout or fixture cross-reference in a comment
+comment	dev/src/sema/semantic_graph.h	PA6	handout or fixture cross-reference in a comment
+comment	dev/src/sema/semantic_types.h	PA29	handout or fixture cross-reference in a comment
+comment	dev/src/sema/semantic_unit.h	PA16	handout or fixture cross-reference in a comment
+comment	dev/src/sema/semantic_unit.h	pa27	handout or fixture cross-reference in a comment
+comment	dev/src/sema/semantic_unit.h	pa28	handout or fixture cross-reference in a comment
+comment	dev/src/sema/semantics_dump.h	PA7	handout or fixture cross-reference in a comment
+comment	dev/src/sema/template_packs.h	PA15	handout or fixture cross-reference in a comment
+comment	dev/src/sema/template_records.h	PA15	handout or fixture cross-reference in a comment
+comment	dev/src/sema/template_specializations.cpp	PA15	handout or fixture cross-reference in a comment
+comment	dev/src/sema/variable_templates.cpp	PA15	handout or fixture cross-reference in a comment
+comment	dev/src/syntax/ast.h	PA5	handout or fixture cross-reference in a comment
+comment	dev/src/syntax/ast_declarations.h	pa28	handout or fixture cross-reference in a comment
+comment	dev/src/syntax/ast_printer.cpp	PA5	handout or fixture cross-reference in a comment
+comment	dev/src/syntax/ast_printer.h	PA5	handout or fixture cross-reference in a comment
+comment	dev/src/syntax/ast_types.h	PA34	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
+comment	dev/src/syntax/ast_types.h	pa27	handout or fixture cross-reference in a comment
+comment	dev/src/syntax/ast_types.h	pa28	handout or fixture cross-reference in a comment
+comment	dev/src/syntax/parser.h	PA5	handout or fixture cross-reference in a comment
+comment	dev/src/syntax/parser.h	pa5	handout or fixture cross-reference in a comment
+comment	dev/src/syntax/parser_state.cpp	PA5	handout or fixture cross-reference in a comment
+comment	dev/src/syntax/parser_statements.cpp	PA29	handout or fixture cross-reference in a comment
+comment	dev/src/types/fundamental_type.h	PA29	handout or fixture cross-reference in a comment
+comment	dev/src/types/fundamental_type.h	PA34	handout or fixture cross-reference in a comment

@@ -29,14 +29,12 @@ function @main
     movzx r9, r9
     mov rdi, -1
     zext.i16 rdi
-    sext.i32 rdi
     mov rdx, 65535
     cmp.i32 rdi, rdx
     setne rdi
     movzx rdi, rdi
     mov rsi, 65535
     sext.i16 rsi
-    sext.i32 rsi
     mov rdx, -1
     cmp.i32 rsi, rdx
     setne rsi
@@ -44,6 +42,5 @@ function @main
     or r8, r9
     or rdi, rsi
     or r8, rdi
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    sext.i32 r8
+    ret r8

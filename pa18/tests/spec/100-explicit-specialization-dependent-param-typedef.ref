@@ -1,3 +1,26 @@
+function @convert(%value : u32, %exponent : i32, %first : ptr, %last : ptr) -> obj<16x8> [binding=strong, object=_Z7convertIf12traits_floatE6resultNT0_12carrier_uintEiPcS4_] {
+  slot $value : u32
+  slot $exponent : i32
+  slot $first : ptr
+  slot $last : ptr
+  slot $retobj__1 : obj<16x8>
+
+  block ^entry:
+    store typed u32 %value, $value
+    store typed i32 %exponent, $exponent
+    store typed ptr %first, $first
+    store typed ptr %last, $last
+    %t1 = addr $retobj__1
+    %t2 = load typed ptr $last
+    %t3 = load typed u32 $value
+    %t4 = convert zext i64 u32 %t3
+    %t5 = index i8 %t2, %t4
+    %t6 = load typed i32 $exponent
+    %t7 = convert sext i64 i32 %t6
+    %t8 = index i8 %t5, %t7
+    call void @result__result__aggregate(%t1, %t8, 0)
+    return obj<16x8> $retobj__1
+}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $buf : obj<8x1>
   slot $r : obj<16x8>
@@ -29,29 +52,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^cond_end_3:
     %t12 = load typed i32 $cond__1
     return i32 %t12
-}
-function @convert(%value : u32, %exponent : i32, %first : ptr, %last : ptr) -> obj<16x8> [binding=strong, object=_Z7convertIf12traits_floatE6resultNT0_12carrier_uintEiPcS4_] {
-  slot $value : u32
-  slot $exponent : i32
-  slot $first : ptr
-  slot $last : ptr
-  slot $retobj__1 : obj<16x8>
-
-  block ^entry:
-    store typed u32 %value, $value
-    store typed i32 %exponent, $exponent
-    store typed ptr %first, $first
-    store typed ptr %last, $last
-    %t1 = addr $retobj__1
-    %t2 = load typed ptr $last
-    %t3 = load typed u32 $value
-    %t4 = convert zext i64 u32 %t3
-    %t5 = index i8 %t2, %t4
-    %t6 = load typed i32 $exponent
-    %t7 = convert sext i64 i32 %t6
-    %t8 = index i8 %t5, %t7
-    call void @result__result__aggregate(%t1, %t8, 0)
-    return obj<16x8> $retobj__1
 }
 function @result__result__aggregate(%this : ptr, %ptr : ptr, %ec : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr

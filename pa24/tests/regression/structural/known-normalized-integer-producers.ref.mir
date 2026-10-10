@@ -49,17 +49,15 @@ function @main
     mov rbx, rax
     sext.i32 rbx
     call @explicit_truncation [args=()]
-    mov r8, rax
-    sext.i32 r8
+    sext.i32 rax
     mov rdx, 12
     cmp.i32 rbx, rdx
     setne rbx
     movzx rbx, rbx
     mov rdx, 1
-    cmp.i32 r8, rdx
-    setne r8
-    movzx r8, r8
-    or rbx, r8
-    mov rax, rbx
-    sext.i32 rax
-    ret rax
+    cmp.i32 rax, rdx
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    sext.i32 rbx
+    ret rbx

@@ -14,8 +14,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = call f32 @use_mlf(1.0f)
-    %t2 = cmp gt f32 %t1, 1.0f
+    %t1 = call f32 @use_mlf(1f)
+    %t2 = cmp gt f32 %t1, 1f
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

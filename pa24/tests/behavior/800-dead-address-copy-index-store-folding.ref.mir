@@ -21,7 +21,7 @@ function @write_second
     param %value -> rsi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -45,19 +45,14 @@ function @main
     mov rdi, @values
     mov rsi, 25
     call @write_second [args=(rsi,rdi)]
-    mov r8, rax
-    mov r9, @values
-    lea r9, [r9+8]
-    load.i64 rdi, [r9]
     mov rdx, 25
-    cmp.i64 rdi, rdx
-    setne rdi
-    movzx rdi, rdi
-    mov rdx, 25
-    cmp.i64 r8, rdx
+    cmp.i64 @values+8, rdx
     setne r8
     movzx r8, r8
-    or rdi, r8
-    mov rax, rdi
-    sext.i32 rax
-    ret rax
+    mov rdx, 25
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    or r8, rax
+    sext.i32 r8
+    ret r8

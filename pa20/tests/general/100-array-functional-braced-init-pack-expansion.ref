@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t3 = call i32 @add_each__ov2()
+    %t3 = call i32 @add_each__2()
     %t4 = cmp eq i32 %t3, 6
     %t5 = cmp ne i64 %t4, 0
     store typed i64 %t5, $land__2
@@ -45,7 +45,7 @@ function @add_each() -> i32 [binding=weak, object=_Z8add_eachIJEEiv] {
     %t2 = load typed i32 $st
     return i32 %t2
 }
-function @add_each__ov2() -> i32 [binding=weak, object=_Z8add_eachIJicEEiv] {
+function @add_each__2() -> i32 [binding=weak, object=_Z8add_eachIJicEEiv] {
   slot $st : i32
   slot $discardarr__1 : obj<12x4>
 
@@ -53,13 +53,13 @@ function @add_each__ov2() -> i32 [binding=weak, object=_Z8add_eachIJicEEiv] {
     store typed i32 1, $st
     %t1 = addr $discardarr__1
     store typed i32 0, %t1
-    %t2 = index i8 %t1, 4
+    %t2 = index i8 [projection=array_element] %t1, 4
     %t3 = addr $st
     %t4 = call i32 @add_impl(%t3)
     store typed i32 %t4, %t2
-    %t5 = index i8 %t1, 8
+    %t5 = index i8 [projection=array_element] %t1, 8
     %t6 = addr $st
-    %t7 = call i32 @add_impl__ov2(%t6)
+    %t7 = call i32 @add_impl__2(%t6)
     store typed i32 %t7, %t5
     %t8 = load typed i32 $st
     return i32 %t8
@@ -80,7 +80,7 @@ function @add_impl(%st : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=
     %t8 = load typed i32 %t7
     return i32 %t8
 }
-function @add_impl__ov2(%st : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z8add_implIcEiRi] {
+function @add_impl__2(%st : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z8add_implIcEiRi] {
   slot $st : ptr
 
   block ^entry:

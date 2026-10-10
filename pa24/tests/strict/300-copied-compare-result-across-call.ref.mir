@@ -27,7 +27,7 @@ function @clobber_caller_saved
     param %e -> r8 : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -50,17 +50,12 @@ function @main
     call @zero [args=()]
     mov rdx, 0
     cmp.i64 rax, rdx
-    setne rax
-    movzx rax, rax
-    mov rbx, rax
-    zext.i8 rbx
+    setne rbx
+    movzx rbx, rbx
     mov rdi, 1
     mov rsi, 2
     mov rdx, 3
     mov rcx, 4
     mov r8, 5
     call @clobber_caller_saved [args=(rcx,rdx,rsi,rdi,r8)]
-    mov rax, rbx
-    zext.i8 rax
-    sext.i32 rax
-    ret rax
+    ret rbx

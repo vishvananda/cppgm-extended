@@ -12,8 +12,8 @@ function @identity
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi
@@ -25,13 +25,12 @@ function @float_loop
     stack_size N
     scratch_bytes 48
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
 
   block ^entry
-    fmov.f64 xmm0, 3.5
 
   block ^loop
-    fcmp.f64 xmm0, 3.5
+    fcmp.f64 3.5, 3.5
     jp ^loop
     jne ^loop
 
@@ -45,9 +44,9 @@ function @main
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
-    preserve <gpr0> <gpr1>
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0>
 
   block ^entry
     mov <gpr0>, 40
@@ -56,15 +55,13 @@ function @main
   block ^loop
     mov rdi, <gpr0>
     call @identity [args=(rdi), unwind=no]
-    mov r8, rax
-    test.i64 rax, rax
+    cmp.i64 rax, 0
     je ^loop
 
   block ^done
-    mov rdx, 42
-    cmp.i64 r8, rdx
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
+    cmp.i64 rax, 42
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
     call @float_loop [args=(), unwind=no]
-    or <gpr1>, rax
-    ret <gpr1>
+    or <gpr0>, rax
+    ret <gpr0>

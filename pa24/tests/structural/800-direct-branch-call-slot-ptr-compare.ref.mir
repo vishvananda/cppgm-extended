@@ -20,7 +20,7 @@ function @clobber
     param %f -> r9 : i64
     return void -> void
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -36,13 +36,10 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $first -> [rbp-8] : ptr
-    slot $last -> [rbp-16] : ptr
+    preserve rbx
 
   block ^entry
-    mov r8, @cells
-    store.ptr [rbp-8], r8
-    store.ptr [rbp-16], r8
+    mov rbx, @cells
     mov rdi, 10
     mov rsi, 20
     mov rdx, 30
@@ -50,8 +47,7 @@ function @main
     mov r8, 50
     mov r9, 60
     call @clobber [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    load.ptr rax, [rbp-8]
-    cmp.ptr rax, [rbp-16]
+    cmp.ptr rbx, rbx
     je ^done
     jmp ^body
 

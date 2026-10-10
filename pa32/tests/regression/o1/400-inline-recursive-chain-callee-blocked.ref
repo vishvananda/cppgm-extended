@@ -4,7 +4,7 @@ function @alpha(%n : i64) -> i64 {
     branch %t1, ^base, ^step
 
   block ^base:
-    return i64 %n
+    return i64 0
 
   block ^step:
     %t2 = binary sub i64 %n, 1
@@ -17,7 +17,7 @@ function @beta(%n : i64) -> i64 {
     branch %t1, ^base, ^step
 
   block ^base:
-    return i64 %n
+    return i64 0
 
   block ^step:
     %t2 = binary sub i64 %n, 1
@@ -30,7 +30,7 @@ function @gamma(%n : i64) -> i64 {
     branch %t1, ^base, ^step
 
   block ^base:
-    return i64 %n
+    return i64 0
 
   block ^step:
     %t2 = binary sub i64 %n, 1

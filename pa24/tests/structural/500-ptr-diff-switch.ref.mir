@@ -25,9 +25,7 @@ function @main
     mov r8, @cells
     lea r9, [r8+24]
     sub r9, r8
-    mov rax, r9
-    mov rcx, 24
-    cmp.i64 rax, rcx
+    cmp.ptr r9, 24
     je ^case_three
     jmp ^default
 

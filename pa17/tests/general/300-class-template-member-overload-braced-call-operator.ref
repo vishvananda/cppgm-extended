@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $h
     %t6 = addr $h
     %t7 = addr $n
-    %t8 = call i32 @hash_code_base_key__key__identity__hash_key____M_hash_code__ov2(%t6, %t7)
+    %t8 = call i32 @hash_code_base_key_key_identity_hash_key____M_hash_code__ov2(%t6, %t7)
     %t9 = cmp eq i32 %t8, 61
     branch %t9, ^cond_then_1, ^cond_else_2
 
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load typed i32 $cond__1
     return i32 %t10
 }
-function @hash_code_base_key__key__identity__hash_key____M_hash_code__ov2(%this : ptr [object_bytes=1], %n : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK14hash_code_baseI3keyS0_8identity8hash_keyE12_M_hash_codeERK10node_valueIS0_E, inline_hint=yes] {
+function @hash_code_base_key_key_identity_hash_key____M_hash_code__ov2(%this : ptr [object_bytes=1], %n : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK14hash_code_baseI3keyS0_8identity8hash_keyE12_M_hash_codeERK10node_valueIS0_E, inline_hint=yes] {
   slot $this : ptr
   slot $n : ptr
   slot $tmpobj__1 : obj<1x1>
@@ -41,7 +41,7 @@ function @hash_code_base_key__key__identity__hash_key____M_hash_code__ov2(%this 
     %t3 = load typed ptr $n
     %t4 = call ptr @node_value_key____M_v(%t3)
     %t5 = call ptr @identity__operator__(%t2, %t4)
-    %t6 = call i32 @hash_code_base_key__key__identity__hash_key____M_hash_code(%t1, %t5)
+    %t6 = call i32 @hash_code_base_key_key_identity_hash_key____M_hash_code(%t1, %t5)
     return i32 %t6
 }
 function @node_value_key____M_v(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZNK10node_valueI3keyE4_M_vEv, inline_hint=yes] {
@@ -63,7 +63,7 @@ function @identity__operator__(%this : ptr [object_bytes=1], %x : ptr [pass=by_a
     %t1 = load typed ptr $x
     return ptr %t1
 }
-function @hash_code_base_key__key__identity__hash_key____M_hash_code(%this : ptr [object_bytes=1], %k : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK14hash_code_baseI3keyS0_8identity8hash_keyE12_M_hash_codeERKS0_, inline_hint=yes] {
+function @hash_code_base_key_key_identity_hash_key____M_hash_code(%this : ptr [object_bytes=1], %k : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK14hash_code_baseI3keyS0_8identity8hash_keyE12_M_hash_codeERKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $k : ptr
   slot $tmpobj__1 : obj<1x1>

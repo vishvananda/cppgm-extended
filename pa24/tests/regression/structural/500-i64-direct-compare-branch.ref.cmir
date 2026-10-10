@@ -15,8 +15,8 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rax, 5
-    cmp.i64 rax, 5
+    mov <gpr0>, 5
+    cmp.i64 <gpr0>, 5
     jge ^ok
     jmp ^bad
 

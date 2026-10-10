@@ -1,5 +1,3 @@
-declare function @__cppgm_tls_wrapper__Holder__value() -> ptr [binding=weak, object=_ZTWN6Holder5valueE, tls_for=@Holder__value]
-
 global @Holder__value : i32 [storage=thread_local, binding=strong, object=_ZN6Holder5valueE] = 3
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

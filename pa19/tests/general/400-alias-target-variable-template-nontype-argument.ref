@@ -1,3 +1,5 @@
+declare global @constant_bool_true___result : u8 [binding=weak, object=_ZN8constantIbLb1EE6resultE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

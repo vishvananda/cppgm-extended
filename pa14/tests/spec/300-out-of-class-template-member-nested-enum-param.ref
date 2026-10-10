@@ -19,12 +19,12 @@ function @Box_int___call(%this : ptr [object_bytes=1], %tag : i32) -> i32 [bindi
     %t3 = call i32 @Box_int___value(%t1, %t2)
     return i32 %t3
 }
-function @Box_int___value(%this : ptr [object_bytes=1], %tag : i32) -> i32 [binding=weak, object=_ZN3BoxIiE5valueENS0_3TagE] {
+function @Box_int___value(%this : ptr [object_bytes=1], %__param1 : i32) -> i32 [binding=weak, object=_ZN3BoxIiE5valueENS0_3TagE] {
   slot $this : ptr
-  slot $tag : i32
+  slot $__param1 : i32
 
   block ^entry:
     store typed ptr %this, $this
-    store typed i32 %tag, $tag
+    store typed i32 %__param1, $__param1
     return i32 0
 }

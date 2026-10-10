@@ -43,9 +43,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $converted : i128
   slot $cond__1 : i32
   slot $land__2 : i64
-  slot $land__3 : i64
+  slot $member_pointer_callee__3 : ptr
   slot $land__4 : i64
-  slot $member_pointer_callee__5 : ptr
+  slot $land__5 : i64
 
   block ^entry:
     %t1 = addr @Base__f
@@ -99,71 +99,35 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t42 = binary and i64 %t41, 1
     %t43 = cmp ne i64 %t42, 0
     %t44 = index i8 %t37, %t40
-    branch %t43, ^member_pointer_virtual_13, ^member_pointer_direct_14
+    branch %t43, ^member_pointer_virtual_7, ^member_pointer_direct_8
 
-  block ^member_pointer_virtual_13:
+  block ^member_pointer_virtual_7:
     %t45 = load typed ptr %t44
     %t46 = binary sub i64 %t41, 1
     %t47 = index i8 %t45, %t46
     %t48 = load typed ptr %t47
-    store typed ptr %t48, $member_pointer_callee__5
-    jump ^member_pointer_end_15
+    store typed ptr %t48, $member_pointer_callee__3
+    jump ^member_pointer_end_9
 
-  block ^member_pointer_direct_14:
+  block ^member_pointer_direct_8:
     %t49 = copy ptr %t41
-    store typed ptr %t49, $member_pointer_callee__5
-    jump ^member_pointer_end_15
+    store typed ptr %t49, $member_pointer_callee__3
+    jump ^member_pointer_end_9
 
-  block ^member_pointer_end_15:
-    %t50 = load typed ptr $member_pointer_callee__5
+  block ^member_pointer_end_9:
+    %t50 = load typed ptr $member_pointer_callee__3
     %t51 = call i32 %t50(%t44) as (%arg0 : ptr [object_bytes=8]) -> i32
     %t52 = cmp eq i32 %t51, 5
-    branch %t52, ^land_rhs_10, ^land_short_11
+    branch %t52, ^land_rhs_4, ^land_short_5
 
-  block ^land_rhs_10:
+  block ^land_rhs_4:
     %t53 = addr $d
     %t54 = index i8 %t53, 4
     %t55 = load typed i128 $base_ptr
     %t56 = call i32 @invoke(%t54, %t55)
     %t57 = cmp eq i32 %t56, 5
     %t58 = cmp ne i64 %t57, 0
-    store typed i64 %t58, $land__4
-    jump ^land_end_12
-
-  block ^land_short_11:
-    store typed i64 0, $land__4
-    jump ^land_end_12
-
-  block ^land_end_12:
-    %t59 = load typed i64 $land__4
-    branch %t59, ^land_rhs_7, ^land_short_8
-
-  block ^land_rhs_7:
-    %t60 = addr $d
-    %t61 = index i8 %t60, 4
-    %t62 = load typed i128 $inverse
-    %t63 = call i32 @invoke(%t61, %t62)
-    %t64 = cmp eq i32 %t63, 7
-    %t65 = cmp ne i64 %t64, 0
-    store typed i64 %t65, $land__3
-    jump ^land_end_9
-
-  block ^land_short_8:
-    store typed i64 0, $land__3
-    jump ^land_end_9
-
-  block ^land_end_9:
-    %t66 = load typed i64 $land__3
-    branch %t66, ^land_rhs_4, ^land_short_5
-
-  block ^land_rhs_4:
-    %t67 = addr $d
-    %t68 = index i8 %t67, 4
-    %t69 = load typed i128 $converted
-    %t70 = call i32 @invoke(%t68, %t69)
-    %t71 = cmp eq i32 %t70, 7
-    %t72 = cmp ne i64 %t71, 0
-    store typed i64 %t72, $land__2
+    store typed i64 %t58, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -171,7 +135,43 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t73 = load typed i64 $land__2
+    %t59 = load typed i64 $land__2
+    branch %t59, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t60 = addr $d
+    %t61 = index i8 %t60, 4
+    %t62 = load typed i128 $inverse
+    %t63 = call i32 @invoke(%t61, %t62)
+    %t64 = cmp eq i32 %t63, 7
+    %t65 = cmp ne i64 %t64, 0
+    store typed i64 %t65, $land__4
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store typed i64 0, $land__4
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t66 = load typed i64 $land__4
+    branch %t66, ^land_rhs_13, ^land_short_14
+
+  block ^land_rhs_13:
+    %t67 = addr $d
+    %t68 = index i8 %t67, 4
+    %t69 = load typed i128 $converted
+    %t70 = call i32 @invoke(%t68, %t69)
+    %t71 = cmp eq i32 %t70, 7
+    %t72 = cmp ne i64 %t71, 0
+    store typed i64 %t72, $land__5
+    jump ^land_end_15
+
+  block ^land_short_14:
+    store typed i64 0, $land__5
+    jump ^land_end_15
+
+  block ^land_end_15:
+    %t73 = load typed i64 $land__5
     branch %t73, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

@@ -1,7 +1,7 @@
 global @width : i32 [binding=weak, object=_Z5widthIiE] = 4
-global @width__sym2 : i32 [binding=weak, object=_Z5widthIcE] = 1
+global @width__2 : i32 [binding=weak, object=_Z5widthIcE] = 1
 global @store__count : i32 [binding=weak, object=_ZN5store5countIiEE] = 0
-global @store__count__sym2 : i32 [binding=weak, object=_ZN5store5countIcEE] = 0
+global @store__count__2 : i32 [binding=weak, object=_ZN5store5countIcEE] = 0
 
 function @address_int() -> ptr [binding=strong, object=_Z11address_intv] {
   block ^entry:
@@ -10,7 +10,7 @@ function @address_int() -> ptr [binding=strong, object=_Z11address_intv] {
 }
 function @address_char() -> ptr [binding=strong, object=_Z12address_charv] {
   block ^entry:
-    %t1 = addr @width__sym2
+    %t1 = addr @width__2
     return ptr %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_3:
     store typed i32 3, @store__count
-    store typed i32 4, @store__count__sym2
+    store typed i32 4, @store__count__2
     %t4 = load typed i32 @store__count
     %t5 = cmp ne i32 %t4, 3
     branch %t5, ^if_then_4, ^if_else_5

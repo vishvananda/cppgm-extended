@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $x
     %t3 = addr $x
     %t4 = addr $s
-    %t5 = call u8 @static_xpression_matcher__next___run(%t3, %t4)
+    %t5 = call u8 @static_xpression_matcher_next___run(%t3, %t4)
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load typed i32 $cond__1
     return i32 %t6
 }
-function @static_xpression_matcher__next___run(%this : ptr [object_bytes=1], %s : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZNK16static_xpressionI7matcher4nextE3runER5state, inline_hint=yes] {
+function @static_xpression_matcher_next___run(%this : ptr [object_bytes=1], %s : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZNK16static_xpressionI7matcher4nextE3runER5state, inline_hint=yes] {
   slot $this : ptr
   slot $s : ptr
 

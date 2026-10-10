@@ -19,12 +19,12 @@ function @main
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
-    load.ptr r9, @value_ptr
-    cmp.ptr r9, r9
+    load.ptr r8, @value_ptr
+    cmp.ptr r8, r8
     je ^check
 
   block ^bad
@@ -32,8 +32,7 @@ function @main
     ret rax
 
   block ^check
-    load.i64 r8, [r9]
-    cmp.i64 r8, 77
+    cmp.i64 [r8], 77
     setne rax
     movzx rax, rax
     ret rax

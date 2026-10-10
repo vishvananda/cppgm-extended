@@ -182,8 +182,8 @@ the fixture is about in terms of the LowIR it reads and writes:
 `none(phi) in ^merge` for a choice that must collapse.  Budget lines bound
 the output's size: `instructions <= N`, `blocks <= N`, `count(call)`,
 `count(load)`, `count(store)`, `count(phi)`, and `instructions <= N in
-@function`.  The budgets were generated from the course solution's output
-at 10% tolerance plus one. Each sidecar states the actual required bounds
+@function`.  The budgets were generated from an earlier course solution's
+output at 10% tolerance plus one. Each sidecar states the actual required bounds
 and outcomes. The adjacent `x.ref` is an informational example; matching its
 instruction sequence is not required.
 
@@ -302,7 +302,9 @@ This also runs `tests/object-roundtrip` in debuginfo mode, comparing direct
 The direct debug-info tests run `lowiropt -O*` over LowIR containing
 `!dbg(...)` metadata. The driver debug-info tests run
 `cppgm++ --emit-lowir -gline-tables-only -O*` and check that source locations
-survive the source-to-LowIR optimizer path.
+survive the source-to-LowIR optimizer path: the locations of
+`../pa8/lowir.md` "Debug Locations", which each surviving, moved or copied
+instruction keeps.
 
 For each `.t` test, the harness records the tool exit status and compares the
 generated output against the oracle for that test directory. Failed reference

@@ -1,24 +1,24 @@
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
-declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
+declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
+global @constructed : i32 [binding=strong] = zero
+global @destroyed : i32 [binding=strong] = zero
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
   i8 105
   i8 0
 }
-global @__rtti_int [binding=weak, object=_ZTIi] = {
+global @__rtti_int [storage=readonly, binding=internal] = {
   ptr addr @__external_rtti_vtable____fundamental_type_info + 16
   ptr addr @__typeinfo_name__int
 }
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
+global @__ehobj_int [binding=internal] = {
   zero 4
 }
-global @constructed : i32 [binding=strong] = zero
-global @destroyed : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $owner : obj<8x1>
@@ -100,85 +100,85 @@ function @YB__YB(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN
     %t2 = index i8 [projection=field] %t1, 0
     call void @YA__YA(%t2)
     eh_cleanup ^constructor_cleanup_1
-    %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 1
-    call void @YA__YA(%t6)
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 1
+    call void @YA__YA(%t4)
     eh_end
     eh_cleanup ^constructor_cleanup_2
-    %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 2
-    call void @YA__YA(%t10)
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 2
+    call void @YA__YA(%t6)
     eh_end
     eh_cleanup ^constructor_cleanup_3
-    %t13 = load typed ptr $this
-    %t14 = index i8 [projection=field] %t13, 3
-    call void @YA__YA(%t14)
+    %t7 = load typed ptr $this
+    %t8 = index i8 [projection=field] %t7, 3
+    call void @YA__YA(%t8)
     eh_end
     eh_cleanup ^constructor_cleanup_4
-    %t17 = load typed ptr $this
-    %t18 = index i8 [projection=field] %t17, 4
-    call void @YA__YA(%t18)
+    %t9 = load typed ptr $this
+    %t10 = index i8 [projection=field] %t9, 4
+    call void @YA__YA(%t10)
     eh_end
     eh_cleanup ^constructor_cleanup_5
-    %t21 = load typed ptr $this
-    %t22 = index i8 [projection=field] %t21, 5
-    call void @YA__YA(%t22)
+    %t11 = load typed ptr $this
+    %t12 = index i8 [projection=field] %t11, 5
+    call void @YA__YA(%t12)
     eh_end
     eh_cleanup ^constructor_cleanup_6
-    %t25 = load typed ptr $this
-    %t26 = index i8 [projection=field] %t25, 6
-    call void @YA__YA(%t26)
+    %t13 = load typed ptr $this
+    %t14 = index i8 [projection=field] %t13, 6
+    call void @YA__YA(%t14)
     eh_end
     eh_cleanup ^constructor_cleanup_7
-    %t29 = load typed ptr $this
-    %t30 = index i8 [projection=field] %t29, 7
-    call void @YA__YA(%t30)
+    %t15 = load typed ptr $this
+    %t16 = index i8 [projection=field] %t15, 7
+    call void @YA__YA(%t16)
     eh_end
     eh_cleanup ^constructor_cleanup_8
     eh_end
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
-    call void @YA___YA(%t4)
+    %t17 = load typed ptr $this
+    %t18 = index i8 [projection=field] %t17, 0
+    call void @YA___YA(%t18)
     eh_end
     resume
 
   block ^constructor_cleanup_2:
-    %t7 = load typed ptr $this
-    %t8 = index i8 [projection=field] %t7, 1
-    call void @YA___YA(%t8)
+    %t19 = load typed ptr $this
+    %t20 = index i8 [projection=field] %t19, 1
+    call void @YA___YA(%t20)
     jump ^constructor_cleanup_1
 
   block ^constructor_cleanup_3:
-    %t11 = load typed ptr $this
-    %t12 = index i8 [projection=field] %t11, 2
-    call void @YA___YA(%t12)
+    %t21 = load typed ptr $this
+    %t22 = index i8 [projection=field] %t21, 2
+    call void @YA___YA(%t22)
     jump ^constructor_cleanup_2
 
   block ^constructor_cleanup_4:
-    %t15 = load typed ptr $this
-    %t16 = index i8 [projection=field] %t15, 3
-    call void @YA___YA(%t16)
+    %t23 = load typed ptr $this
+    %t24 = index i8 [projection=field] %t23, 3
+    call void @YA___YA(%t24)
     jump ^constructor_cleanup_3
 
   block ^constructor_cleanup_5:
-    %t19 = load typed ptr $this
-    %t20 = index i8 [projection=field] %t19, 4
-    call void @YA___YA(%t20)
+    %t25 = load typed ptr $this
+    %t26 = index i8 [projection=field] %t25, 4
+    call void @YA___YA(%t26)
     jump ^constructor_cleanup_4
 
   block ^constructor_cleanup_6:
-    %t23 = load typed ptr $this
-    %t24 = index i8 [projection=field] %t23, 5
-    call void @YA___YA(%t24)
+    %t27 = load typed ptr $this
+    %t28 = index i8 [projection=field] %t27, 5
+    call void @YA___YA(%t28)
     jump ^constructor_cleanup_5
 
   block ^constructor_cleanup_7:
-    %t27 = load typed ptr $this
-    %t28 = index i8 [projection=field] %t27, 6
-    call void @YA___YA(%t28)
+    %t29 = load typed ptr $this
+    %t30 = index i8 [projection=field] %t29, 6
+    call void @YA___YA(%t30)
     jump ^constructor_cleanup_6
 
   block ^constructor_cleanup_8:

@@ -34,10 +34,10 @@ function @probe__find(%this : ptr [object_bytes=1], %value : ptr [pass=by_addres
     store typed ptr %value, $value
     %t1 = load typed ptr $this
     %t2 = load typed ptr $value
-    %t3 = call i32 @probe__tag__ov2(%t1, %t2)
+    %t3 = call i32 @probe__tag(%t1, %t2)
     return i32 %t3
 }
-function @probe__tag__ov2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK5probe3tagIiEEiRKT_, inline_hint=yes] {
+function @probe__tag(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK5probe3tagIiEEiRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

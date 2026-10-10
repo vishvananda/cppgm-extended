@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Sink__Sink(%t1)
     %t2 = addr $sink
     %t3 = addr $argobj__1
-    %t4 = call ptr @Sink__operator___ov2(%t2, $argobj__1)
+    %t4 = call ptr @Sink__operator_(%t2, $argobj__1)
     %t5 = addr $sink
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
@@ -37,7 +37,7 @@ function @Sink__Sink(%this : ptr [object_bytes=4]) -> void [binding=weak, object
     store typed i32 0, %t2
     return void
 }
-function @Sink__operator___ov2(%this : ptr [object_bytes=4], %f : obj<1x1> [classes=none]) -> ptr [binding=internal, object=_ZN4SinkaSIZ4mainE3$_0EERS_T_, inline_hint=yes] {
+function @Sink__operator_(%this : ptr [object_bytes=4], %f : obj<1x1> [classes=none]) -> ptr [binding=internal, object=_ZN4SinkaSIZ4mainE3$_0EERS_T_, inline_hint=yes] {
   slot $this : ptr
   slot $f : obj<1x1>
 

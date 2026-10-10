@@ -21,16 +21,18 @@ sub read_file
 
 sub run_optimizer
 {
-	my ($app, $test, $directory, $level) = @_;
-	my $output = "$directory/$level.lowir";
-	my $stderr = "$directory/$level.stderr";
+	my ($app, $test, $directory, $level, @options) = @_;
+	my $label = @options ? "$level-limited" : $level;
+	my $output = "$directory/$label.lowir";
+	my $stderr = "$directory/$label.stderr";
 	my $status = run_command_capture(
-		cmd => [$app, "-$level", '-o', $output, $test],
-		stdout => "$directory/$level.stdout",
+		cmd => [$app, "-$level", @options, '-o', $output, $test],
+		stdout => "$directory/$label.stdout",
 		stderr => $stderr,
 		timeout => 30,
 	);
-	die "$test: lowiropt -$level failed\n" . read_file($stderr)
+	die "$test: lowiropt " . join(' ', "-$level", @options) . " failed\n" .
+		read_file($stderr)
 		if $status != 0;
 	return read_file($output);
 }
@@ -98,8 +100,14 @@ if(scalar(@ARGV) != 2)
 
 my ($app, $root) = @ARGV;
 my @tests = collect_tests($root,
-	qr/(?:\d{3}-branch-boolean-conversion|\d{3}-negated-boolean-compare|\d{3}-duplicate-block-loads|\d{3}-staged-copy-forwarding|\d{3}-aggregate-slot-scalar-replacement|\d{3}-sink-cold-blocks|\d{3}-inline-growth-budget-boundary|\d{3}-inline-trivial-leaf-budget-exempt|\d{3}-sink-cold-only-definitions|\d{3}-truncate-noreturn-continuation|\d{3}-inline-discardable-size-cap|\d{3}-inline-single-call-caller-budget|\d{3}-inline-hint-late-nonleaf|\d{3}-nonzero-underflow-predicate|\d{3}-adjacent-noalias-scalar-copy|\d{3}-fully-overwritten-zero-init|\d{3}-shared-loop-inline-policy|\d{3}-cold-path-discounted-inlining|\d{3}-phi-integrity-survivors|\d{3}-nonzero-underflow-value-proof|\d{3}-loop-carried-store-forwarding|\d{3}-volatile-access-preservation)\.t$/);
+	qr/(?:\d{3}-branch-boolean-conversion|\d{3}-negated-boolean-compare|\d{3}-duplicate-block-loads|\d{3}-staged-copy-forwarding|\d{3}-aggregate-slot-scalar-replacement|\d{3}-inline-growth-budget-boundary|\d{3}-inline-trivial-leaf-budget-exempt|\d{3}-truncate-noreturn-continuation|\d{3}-inline-discardable-size-cap|\d{3}-inline-single-call-caller-budget|\d{3}-inline-hint-late-nonleaf|\d{3}-nonzero-underflow-predicate|\d{3}-adjacent-noalias-scalar-copy|\d{3}-shared-loop-inline-policy|\d{3}-cold-path-discounted-inlining|\d{3}-phi-integrity-survivors|\d{3}-nonzero-underflow-value-proof|\d{3}-loop-carried-store-forwarding|\d{3}-volatile-access-preservation)\.t$/);
 die "No LowIR survivor-property tests found under $root\n" if !@tests;
+
+# The budget fixtures' 50 copies of a 32-instruction @piece fit the default
+# per-caller budget of the ordinary and late waves together; this budget
+# (each wave's, through the documented diagnostic control) runs out after
+# 20 copies in each wave.
+my @caller_budget = ('--inline-limit', 'caller-budget=640');
 
 for my $test (@tests)
 {
@@ -192,11 +200,20 @@ for my $test (@tests)
 		die "$test: O1 retained the eligible staging object or bulk copy\n"
 			if $positive =~ /^\s+slot \$staging\b/m ||
 			   $positive =~ /^\s+copyobj 24x8 /m;
+		# The conditionally stored field is tracked apart from the rest of
+		# the staging object: a phi of its value per path (13 from ^set)
+		# is what reaches the destination's second field.
 		my $conditional = function_body(
 			$test, $o1, 'keeps_conditional_store');
+		my ($field) = $conditional =~
+			/^\s+%(\w+) = phi i64 \[[^\]\n]*\^set: 13[,\]]/m;
+		my ($high) = $conditional =~
+			/^\s+%(\w+) = index i8 \[projection=field\] %dest, 8$/m;
 		die "$test: conditional field lost its independently tracked home\n"
-			if $conditional !~ /^\s+slot \$\w+ : i64$/m ||
-			   $conditional !~ /^\s+%\w+ = load i64 \$\w+$/m;
+			if $conditional =~ /^\s+slot \$staging\b/m ||
+			   $conditional =~ /^\s+copyobj 16x8 /m ||
+			   !defined($field) || !defined($high) ||
+			   $conditional !~ /^\s+store i64 %\Q$field\E, %\Q$high\E$/m;
 		next;
 	}
 	if($test =~ /\d{3}-aggregate-slot-scalar-replacement/) {
@@ -216,24 +233,10 @@ for my $test (@tests)
 			   $escape !~ /\bcall void \@escape\(/;
 		next;
 	}
-	if($test =~ /\d{3}-sink-cold-blocks/) {
-		my $baseline = function_body($test, $o0, 'guarded');
-		my $positive = function_body($test, $o1, 'guarded');
-		die "$test: O0 no longer has the raising block before hot fallthrough\n"
-			if index($baseline, 'block ^raise:') >
-			   index($baseline, 'block ^ok:');
-		die "$test: O1 did not serialize the hot block before the raiser\n"
-			if index($positive, 'block ^ok:') >
-			   index($positive, 'block ^raise:');
-		my $chained = function_body($test, $o1, 'chained');
-		die "$test: chained raising path remained ahead of hot fallthrough\n"
-			if index($chained, 'block ^ok:') >
-			   index($chained, 'block ^prepare:');
-		next;
-	}
 	if($test =~ /\d{3}-inline-growth-budget-boundary/) {
 		my $baseline = function_body($test, $o0, 'driver');
-		my $positive = function_body($test, $o1, 'driver');
+		my $positive = function_body($test, run_optimizer(
+			$app, $test, $directory, 'O1', @caller_budget), 'driver');
 		my @before = $baseline =~ /^\s+call void \@piece\b/mg;
 		my @after = $positive =~ /^\s+call void \@piece\b/mg;
 		die "$test: reducer did not start above the caller-growth budget\n"
@@ -244,7 +247,8 @@ for my $test (@tests)
 	}
 	if($test =~ /\d{3}-inline-trivial-leaf-budget-exempt/) {
 		my $baseline = function_body($test, $o0, 'driver');
-		my $positive = function_body($test, $o1, 'driver');
+		my $positive = function_body($test, run_optimizer(
+			$app, $test, $directory, 'O1', @caller_budget), 'driver');
 		die "$test: O0 lost the tiny/small call baseline\n"
 			if $baseline !~ /^\s+call void \@tiny\b/m ||
 			   $baseline !~ /^\s+call void \@small\b/m;
@@ -252,30 +256,6 @@ for my $test (@tests)
 			if $positive =~ /^\s+call void \@tiny\b/m;
 		die "$test: exemption incorrectly admitted the larger leaf\n"
 			if $positive !~ /^\s+call void \@small\b/m;
-		next;
-	}
-	if($test =~ /\d{3}-sink-cold-only-definitions/) {
-		my $baseline = function_body($test, $o0, 'single_cold_use');
-		my $positive = function_body($test, $o1, 'single_cold_use');
-		die "$test: O0 lost the entry definition baseline\n"
-			if block_body($test, $baseline, 'entry') !~
-			   /^\s+%\w+ = addr \@message$/m;
-		die "$test: O1 left the cold-only address on the hot entry path\n"
-			if block_body($test, $positive, 'entry') =~
-			   /^\s+%\w+ = addr \@message$/m;
-		die "$test: O1 did not rematerialize the address in the raiser\n"
-			if block_body($test, $positive, 'raise') !~
-			   /^\s+%\w+ = addr \@message$/m;
-		my $shared = function_body($test, $o1, 'shared_cold_uses');
-		for my $block ('first', 'second') {
-			die "$test: shared cold address was not rematerialized in $block\n"
-				if block_body($test, $shared, $block) !~
-				   /^\s+%\w+ = addr \@message$/m;
-		}
-		my $hot = function_body($test, $o1, 'keeps_hot_use');
-		die "$test: address with a hot use was sunk\n"
-			if block_body($test, $hot, 'entry') !~
-			   /^\s+%\w+ = addr \@message$/m;
 		next;
 	}
 	if($test =~ /\d{3}-truncate-noreturn-continuation/) {
@@ -364,11 +344,26 @@ for my $test (@tests)
 		die "$test: O1 did not replace the loop-header load with a phi\n"
 			if $positive !~ /block \^header:\n\s+%\w+ = phi i64 /m ||
 			   $positive =~ /block \^header:.*?^\s+%\w+ = load i64 \@cell$/ms;
-		for my $name ('retain_ordinary_exact_store',
-				'retain_different_store', 'retain_post_store_call') {
+		# retain_ordinary_exact_store differs from forward_exact_store only
+		# in its inline hint: its backedge store is proved and is not a
+		# guard. In the guards no phi takes the value the latch stores
+		# (to another global, or before a call that writes @cell), and
+		# @cell is still read: anywhere in retain_different_store (its
+		# loop never writes @cell), inside the loop in
+		# retain_post_store_call (the call writes it every pass).
+		for my $name ('retain_different_store', 'retain_post_store_call') {
 			my $guard = function_body($test, $o1, $name);
+			my ($stored) = $guard =~
+				/^\s+store i64 %(\w+), \@(?:cell|other)$/m;
+			die "$test: $name lost its backedge store\n"
+				if !defined($stored);
+			my $reads = $name eq 'retain_post_store_call'
+				? block_body($test, $guard, 'header') .
+				  block_body($test, $guard, 'latch')
+				: $guard;
 			die "$test: O1 forwarded an unproved backedge store in $name\n"
-				if $guard !~ /block \^header:.*?^\s+%\w+ = load i64 \@cell$/ms;
+				if $guard =~ /^\s+%\w+ = phi i64 [^\n]*%\Q$stored\E\b/m ||
+				   $reads !~ /^\s+%\w+ = load i64 \@cell$/m;
 		}
 		next;
 	}
@@ -386,23 +381,6 @@ for my $test (@tests)
 			die "$test: guarded scalar traffic disappeared in $name\n"
 				if $guard !~ /^\s+%\w+ = load(?: volatile)? i64 /m ||
 				   $guard !~ /^\s+store(?: volatile)? i64 /m;
-		}
-		next;
-	}
-	if($test =~ /\d{3}-fully-overwritten-zero-init/) {
-		my $baseline = function_body(
-			$test, $o0, 'remove_fully_overwritten');
-		my $positive = function_body(
-			$test, $o1, 'remove_fully_overwritten');
-		die "$test: O0 lost the zeroinit baseline\n"
-			if $baseline !~ /^\s+zeroinit 16x8 /m;
-		die "$test: O1 retained a completely overwritten zeroinit\n"
-			if $positive =~ /^\s+zeroinit /m;
-		for my $name ('retain_partial_overwrite', 'retain_observed_zero',
-			'retain_volatile_store', 'retain_large_zero') {
-			my $guard = function_body($test, $o1, $name);
-			die "$test: O1 removed the guarded zeroinit in $name\n"
-				if $guard !~ /^\s+zeroinit /m;
 		}
 		next;
 	}

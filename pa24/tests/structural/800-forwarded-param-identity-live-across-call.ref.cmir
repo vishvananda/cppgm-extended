@@ -51,6 +51,7 @@ function @read_after_call
 
   block ^entry
     mov <gpr0>, rdi
+    mov rdi, <gpr0>
     call @touch [args=(rsi,rdi)]
     mov rdi, <gpr0>
     call @load_value [args=(rdi)]

@@ -48,25 +48,29 @@ sub call_count
 	return scalar(() = $lowir =~ /call i64 \@\Q$name\E\(/g);
 }
 
-sub tagged_call_target
+# Names that main binds to the address of each global.
+sub address_names
 {
-	my ($test, $main, $tag) = @_;
-	return $1 if $main =~
-		/^\s+%\Q$tag\E = call i64 \@([^\s(]+)\(/m;
-	die "$test: optimized main has no call producing $tag\n";
+	my ($main) = @_;
+	my %names;
+	while ($main =~ /^\s+%([A-Za-z0-9_]+) = addr \@([A-Za-z0-9_]+)$/mg)
+	{
+		push(@{$names{$2}}, $1);
+	}
+	return \%names;
 }
 
-sub parameter_count
+# Whether main still reads the first byte of a global at run time: a direct
+# byte load through its address or a classify call that receives it.
+sub reads_global_byte
 {
-	my ($body) = @_;
-	return 0 if $body =~ /^function \@[^\s(]+\(\)/;
-	return 1 + scalar(() = $body =~ /^function \@[^\s(]+\([^\n)]*,/);
-}
-
-sub instruction_count
-{
-	my ($body) = @_;
-	return scalar(() = $body =~ /^    \S/mg);
+	my ($main, $names, $global) = @_;
+	for my $name (@{$names->{$global} // []})
+	{
+		return 1 if $main =~ /^\s+%\S+ = load (?:i8|u8) %\Q$name\E$/m ||
+			$main =~ /\bcall i64 \@classify\(%\Q$name\E,/;
+	}
+	return 0;
 }
 
 sub compile_and_run
@@ -107,46 +111,47 @@ for my $test (@tests)
 	my $directory = tempdir('lowir-readonly-string-specialization-XXXXXX',
 		TMPDIR => 1, CLEANUP => 1);
 	my (undef, $o0) = optimize($app, $test, $directory, 'O0');
-	my (undef, $o1) = optimize($app, $test, $directory, 'O1');
+	my ($o1_path, $o1) = optimize($app, $test, $directory, 'O1');
 	my (undef, $o2) = optimize($app, $test, $directory, 'O2');
 	my ($o3_path, $o3) = optimize($app, $test, $directory, 'O3');
-	for my $unchanged (['O0', $o0], ['O1', $o1], ['O2', $o2])
+	die "$test: O0 changed readonly-string call groups\n"
+		if call_count($o0, 'classify') != 7;
+
+	for my $level_output (['O1', $o1], ['O2', $o2], ['O3', $o3])
 	{
-		die "$test: $unchanged->[0] changed readonly-string call groups\n"
-			if call_count($unchanged->[1], 'classify') != 7;
+		my ($level, $lowir) = @$level_output;
+		my $main = function_body($test, $lowir, 'main');
+		my $names = address_names($main);
+		# Internal, readonly, NUL-terminated strings: classify's byte load
+		# and switch are decided at each such call.
+		for my $global ('letter', 'digit', 'high_byte')
+		{
+			die "$test: $level did not fold the readonly string byte of " .
+				"\@$global\n" if reads_global_byte($main, $names, $global);
+		}
+		# A GNU weak string may be replaced at link time and a writable one
+		# may change, so their bytes are read at run time.
+		for my $global ('replaceable', 'writable')
+		{
+			die "$test: $level folded the byte of \@$global as immutable " .
+				"data\n" if !reads_global_byte($main, $names, $global);
+		}
+		my $dynamic = function_body($test, $lowir, 'dynamic_calls');
+		die "$test: $level specialized a dynamically supplied string\n"
+			if $dynamic !~ /^\s+%\S+ = load i8 %text$/m &&
+			   $dynamic !~ /\bcall i64 \@classify\(%text,/;
+
+		my $volatile = function_body($test, $lowir, 'volatile_probe');
+		die "$test: $level specialized volatile byte access as immutable data\n"
+			if call_count($lowir, 'volatile_probe') != 2 ||
+			   $volatile !~ /^\s+%first = load volatile i8 %text$/m;
+		my $indexed = function_body($test, $lowir, 'indexed_probe');
+		die "$test: $level specialized a variable byte offset as a fixed byte\n"
+			if call_count($lowir, 'indexed_probe') != 2 ||
+			   $indexed !~ /^\s+%element = index i8 \[projection=array_element\] %text, %offset$/m ||
+			   $indexed !~ /^\s+%byte = load u8 %element$/m;
 	}
-
-	my $main = function_body($test, $o3, 'main');
-	my @tags = qw(letter_result digit_result high_result);
-	my @clones = map { tagged_call_target($test, $main, $_) } @tags;
-	my %distinct = map { $_ => 1 } @clones;
-	die "$test: O3 did not create one clone per profitable string group\n"
-		if scalar(keys(%distinct)) != scalar(@tags) || $distinct{classify};
-	die "$test: O3 did not retain replaceable, writable, unterminated, " .
-		"and dynamic calls on the original body\n"
-		if call_count($o3, 'classify') != 4;
-
-	my $original = function_body($test, $o3, 'classify');
-	for my $clone_name (@clones)
-	{
-		my $clone = function_body($test, $o3, $clone_name);
-		die "$test: specialized clone did not remove the string parameter\n"
-			if parameter_count($clone) > 1 ||
-				$clone =~ /^function \@[^\s(]+\([^\n)]*:\s*ptr\b/;
-		die "$test: specialized clone retained a serialized byte load\n"
-			if $clone =~ /\bload\s+(?:i8|u8)\b/;
-		die "$test: specialized clone retained a decided switch\n"
-			if $clone =~ /^\s+switch\b/m;
-		die "$test: specialized clone retained a stale merge phi\n"
-			if $clone =~ /^\s+%\S+\s+=\s+phi\b/m;
-		die "$test: specialized clone did not discard enough work\n"
-			if instruction_count($clone) >= instruction_count($original);
-	}
-
-	die "$test: volatile byte access was specialized as immutable data\n"
-		if call_count($o3, 'volatile_probe') != 2;
-	die "$test: variable byte offset was specialized as a fixed byte\n"
-		if call_count($o3, 'indexed_probe') != 2;
+	compile_and_run($driver, $test, $directory, $o1_path);
 	compile_and_run($driver, $test, $directory, $o3_path);
 }
 

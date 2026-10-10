@@ -10,10 +10,10 @@ function @identity
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi
@@ -25,13 +25,12 @@ function @float_loop
     stack_size 48
     scratch_bytes 48
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
 
   block ^entry
-    fmov.f64 xmm0, 3.5
 
   block ^loop
-    fcmp.f64 xmm0, 3.5
+    fcmp.f64 3.5, 3.5
     jp ^loop
     jne ^loop
 
@@ -45,26 +44,24 @@ function @main
   frame
     stack_size 16
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
-    preserve r15 r13
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
 
   block ^entry
-    mov r15, 40
-    add r15, 2
+    mov rbx, 40
+    add rbx, 2
 
   block ^loop
-    mov rdi, r15
+    mov rdi, rbx
     call @identity [args=(rdi), unwind=no]
-    mov r8, rax
-    test.i64 rax, rax
+    cmp.i64 rax, 0
     je ^loop
 
   block ^done
-    mov rdx, 42
-    cmp.i64 r8, rdx
-    setne r13
-    movzx r13, r13
+    cmp.i64 rax, 42
+    setne rbx
+    movzx rbx, rbx
     call @float_loop [args=(), unwind=no]
-    or r13, rax
-    ret r13
+    or rbx, rax
+    ret rbx

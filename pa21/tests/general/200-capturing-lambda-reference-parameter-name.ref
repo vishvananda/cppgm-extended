@@ -35,6 +35,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @run(%t2, 1)
     return i32 %t3
 }
+function @Item__Item__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    return void
+}
 function @__lambda_run_t34_38__operator__(%this : ptr [object_bytes=16]) -> i32 [binding=internal, object=_ZZ3runP4ItemiENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $match : obj<8x8>
@@ -74,17 +87,4 @@ function @__lambda_run_t34_38____lambda_nested_t45_53__operator__(%this : ptr [o
     %t11 = index i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
     return i32 %t12
-}
-function @Item__Item__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
-  slot $this : ptr
-  slot $value : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %value, $value
-    %t1 = load typed i32 $value
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed i32 %t1, %t3
-    return void
 }

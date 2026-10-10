@@ -18,15 +18,6 @@ function @choose(%condition : i64, %value : i64) -> i64 [binding=strong] {
 function @main(%condition : i64, %value : i64) -> i64 [role=entry] {
   block ^entry:
     call void @observe(%value)
-    branch %condition, ^__o1inl1__selected, ^__o1inl1__zero
-
-  block ^__o1inl1__selected:
-    jump ^__o1inl1__cont
-
-  block ^__o1inl1__zero:
-    jump ^__o1inl1__cont
-
-  block ^__o1inl1__cont:
-    %t0 = phi i64 [^__o1inl1__selected: %value, ^__o1inl1__zero: 0]
-    return i64 %t0
+    %t1 = select i64 %condition, %value, 0
+    return i64 %t1
 }

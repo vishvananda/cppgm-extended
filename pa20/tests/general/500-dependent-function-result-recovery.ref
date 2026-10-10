@@ -117,7 +117,7 @@ function @lib__address_unwrap_iter(%value : obj<8x8>) -> ptr [binding=weak, obje
     %t2 = addr $argobj__1
     %t3 = addr $value
     copyobj 8x8 %t3, %t2
-    %t4 = call ptr @lib__address_unwrap_impl_lib____cppgm_class_template_identity_3_9_0__true___unwrap($argobj__1)
+    %t4 = call ptr @lib__address_unwrap_impl___cppgm_class_template_identity_1_true___unwrap($argobj__1)
     return ptr %t4
 }
 function @lib__move(%t : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN3lib4moveIRPiEEONS_16remove_referenceIT_E4typeEOS4_] {
@@ -155,7 +155,7 @@ function @lib__unwrap_iter(%i : ptr) -> ptr [binding=weak, object=_ZN3lib11unwra
   block ^entry:
     store typed ptr %i, $i
     %t1 = load typed ptr $i
-    %t2 = call ptr @lib__unwrap_iter_impl_pointer_to_int___unwrap(%t1)
+    %t2 = call ptr @lib__unwrap_iter_impl_int____unwrap(%t1)
     return ptr %t2
 }
 function @lib__copy_impl__operator__(%this : ptr [object_bytes=1], %first : ptr, %last : ptr, %result : ptr) -> obj<16x8> [binding=weak, object=_ZNK3lib9copy_implclIPiS2_S2_EENS_4pairIT_T1_EES4_T0_S5_, inline_hint=yes] {
@@ -234,7 +234,7 @@ function @lib__rewrap_iter(%orig : ptr, %iter : ptr) -> ptr [binding=weak, objec
     %t4 = addr $iter
     %t5 = call ptr @lib__move(%t4)
     %t6 = load typed ptr %t5
-    %t7 = call ptr @lib__unwrap_iter_impl_pointer_to_int___rewrap(%t3, %t6)
+    %t7 = call ptr @lib__unwrap_iter_impl_int____rewrap(%t3, %t6)
     return ptr %t7
 }
 function @lib__make_pair(%a : ptr, %b : ptr) -> obj<16x8> [binding=weak, object=_ZN3lib9make_pairIPiS1_EENS_4pairIT_T0_EES3_S4_] {
@@ -248,7 +248,7 @@ function @lib__make_pair(%a : ptr, %b : ptr) -> obj<16x8> [binding=weak, object=
     %t1 = addr $retobj__1
     %t2 = load typed ptr $a
     %t3 = load typed ptr $b
-    call void @lib__pair_pointer_to_int__pointer_to_int___pair_pointer_to_int__pointer_to_int_(%t1, %t2, %t3)
+    call void @lib__pair_int__int____pair(%t1, %t2, %t3)
     return obj<16x8> $retobj__1
 }
 function @lib__selected_unwrap_iter(%i : ptr) -> ptr [binding=weak, object=_ZN3lib20selected_unwrap_iterIPiNS_25selected_unwrap_iter_implIS1_Lb0EEEEEDTclsrT0_6unwrapcl7declvalIT_EEEES5_] {
@@ -257,10 +257,10 @@ function @lib__selected_unwrap_iter(%i : ptr) -> ptr [binding=weak, object=_ZN3l
   block ^entry:
     store typed ptr %i, $i
     %t1 = load typed ptr $i
-    %t2 = call ptr @lib__selected_unwrap_iter_impl_pointer_to_int__false___unwrap(%t1)
+    %t2 = call ptr @lib__selected_unwrap_iter_impl_int__false___unwrap(%t1)
     return ptr %t2
 }
-function @lib__address_unwrap_impl_lib____cppgm_class_template_identity_3_9_0__true___unwrap(%value : obj<8x8>) -> ptr [binding=weak, object=_ZN3lib19address_unwrap_implINS_12wrapped_iterIPiEELb1EE6unwrapES3_, inline_hint=yes] {
+function @lib__address_unwrap_impl___cppgm_class_template_identity_1_true___unwrap(%value : obj<8x8>) -> ptr [binding=weak, object=_ZN3lib19address_unwrap_implINS_12wrapped_iterIPiEELb1EE6unwrapES3_, inline_hint=yes] {
   slot $value : obj<8x8>
   slot $argobj__1 : obj<8x8>
 
@@ -273,7 +273,7 @@ function @lib__address_unwrap_impl_lib____cppgm_class_template_identity_3_9_0__t
     %t4 = call ptr @lib__to_address($argobj__1)
     return ptr %t4
 }
-function @lib__unwrap_iter_impl_pointer_to_int___unwrap(%i : ptr) -> ptr [binding=weak, object=_ZN3lib16unwrap_iter_implIPiE6unwrapES1_, inline_hint=yes] {
+function @lib__unwrap_iter_impl_int____unwrap(%i : ptr) -> ptr [binding=weak, object=_ZN3lib16unwrap_iter_implIPiE6unwrapES1_, inline_hint=yes] {
   slot $i : ptr
 
   block ^entry:
@@ -281,7 +281,7 @@ function @lib__unwrap_iter_impl_pointer_to_int___unwrap(%i : ptr) -> ptr [bindin
     %t1 = load typed ptr $i
     return ptr %t1
 }
-function @lib__unwrap_iter_impl_pointer_to_int___rewrap(%__param0 : ptr, %iter : ptr) -> ptr [binding=weak, object=_ZN3lib16unwrap_iter_implIPiE6rewrapES1_S1_, inline_hint=yes] {
+function @lib__unwrap_iter_impl_int____rewrap(%__param0 : ptr, %iter : ptr) -> ptr [binding=weak, object=_ZN3lib16unwrap_iter_implIPiE6rewrapES1_S1_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $iter : ptr
 
@@ -291,7 +291,7 @@ function @lib__unwrap_iter_impl_pointer_to_int___rewrap(%__param0 : ptr, %iter :
     %t1 = load typed ptr $iter
     return ptr %t1
 }
-function @lib__pair_pointer_to_int__pointer_to_int___pair_pointer_to_int__pointer_to_int_(%this : ptr [object_bytes=16], %a : ptr, %b : ptr) -> void [binding=weak, object=_ZN3lib4pairIPiS1_EC1ES1_S1_, inline_hint=yes] {
+function @lib__pair_int__int____pair(%this : ptr [object_bytes=16], %a : ptr, %b : ptr) -> void [binding=weak, object=_ZN3lib4pairIPiS1_EC1ES1_S1_, inline_hint=yes] {
   slot $this : ptr
   slot $a : ptr
   slot $b : ptr
@@ -310,7 +310,7 @@ function @lib__pair_pointer_to_int__pointer_to_int___pair_pointer_to_int__pointe
     store typed ptr %t4, %t6
     return void
 }
-function @lib__selected_unwrap_iter_impl_pointer_to_int__false___unwrap(%i : ptr) -> ptr [binding=weak, object=_ZN3lib25selected_unwrap_iter_implIPiLb0EE6unwrapES1_, inline_hint=yes] {
+function @lib__selected_unwrap_iter_impl_int__false___unwrap(%i : ptr) -> ptr [binding=weak, object=_ZN3lib25selected_unwrap_iter_implIPiLb0EE6unwrapES1_, inline_hint=yes] {
   slot $i : ptr
 
   block ^entry:
@@ -329,4 +329,4 @@ function @lib__to_address(%value : obj<8x8>) -> ptr [binding=weak, object=_ZN3li
     %t4 = load typed ptr %t3
     return ptr %t4
 }
-alias object _ZN3lib4pairIPiS1_EC2ES1_S1_ = @lib__pair_pointer_to_int__pointer_to_int___pair_pointer_to_int__pointer_to_int_
+alias object _ZN3lib4pairIPiS1_EC2ES1_S1_ = @lib__pair_int__int____pair

@@ -33,10 +33,10 @@ function @holder_int___make(%p : ptr) -> obj<8x8> [binding=weak, object=_ZN6hold
     store typed ptr %p, $p
     %t1 = addr $retobj__1
     %t2 = load typed ptr $p
-    call void @holder_int___holder_int___ov3(%t1, %t2)
+    call void @holder_int___holder(%t1, %t2)
     return obj<8x8> $retobj__1
 }
-function @holder_int___holder_int___ov3(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN6holderIiEC1IiEEPT_, inline_hint=yes] {
+function @holder_int___holder(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN6holderIiEC1IiEEPT_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -49,4 +49,4 @@ function @holder_int___holder_int___ov3(%this : ptr [object_bytes=8], %p : ptr) 
     store typed ptr %t1, %t3
     return void
 }
-alias object _ZN6holderIiEC2IiEEPT_ = @holder_int___holder_int___ov3
+alias object _ZN6holderIiEC2IiEEPT_ = @holder_int___holder

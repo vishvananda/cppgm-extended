@@ -3,8 +3,7 @@ declare function @mutate(%address : ptr) -> void
 function @fold_after_nonzero_edge(%address : ptr) -> i64 {
   block ^entry:
     %initial = load u32 %address
-    %nonzero = cmp ne u32 %initial, 0
-    branch %nonzero, ^good, ^zero
+    branch %initial, ^good, ^zero
 
   block ^zero:
     return i64 0
@@ -15,8 +14,7 @@ function @fold_after_nonzero_edge(%address : ptr) -> i64 {
 function @retain_after_mutation(%address : ptr) -> i64 {
   block ^entry:
     %initial = load u32 %address
-    %nonzero = cmp ne u32 %initial, 0
-    branch %nonzero, ^check, ^zero
+    branch %initial, ^check, ^zero
 
   block ^check:
     call void @mutate(%address)
@@ -37,8 +35,7 @@ function @retain_after_mutation(%address : ptr) -> i64 {
 function @retain_volatile_reload(%address : ptr) -> i64 {
   block ^entry:
     %initial = load volatile u32 %address
-    %nonzero = cmp ne u32 %initial, 0
-    branch %nonzero, ^check, ^zero
+    branch %initial, ^check, ^zero
 
   block ^check:
     %reloaded = load volatile u32 %address

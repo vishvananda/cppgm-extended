@@ -29,7 +29,7 @@ function @boost__runtime__run_case() -> i32 [binding=strong, object=_ZN5boost7ru
   block ^land_rhs_4:
     %t16 = addr $combined
     %t17 = index i8 %t16, 0
-    %t18 = call i32 @boost__nfp__nfp_detail____cppgm_class_template_1_0__marker(%t17)
+    %t18 = call i32 @boost__nfp__nfp_detail__named_parameter_base___cppgm_class_template_identity_1___marker(%t17)
     %t19 = cmp eq i32 %t18, 1
     %t20 = cmp ne i64 %t19, 0
     store typed i64 %t20, $land__2
@@ -73,20 +73,20 @@ function @boost__nfp__opt_append(%__param0 : ptr [pass=by_address, object_bytes=
     %t2 = addr $result
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed ptr $np
-    %t5 = call ptr @boost__nfp____cppgm_class_template_4_1__operator_(%t3, %t4)
+    %t5 = call ptr @boost__nfp__named_parameter_int_second_id_constint____operator_(%t3, %t4)
     %t6 = addr $retobj__1
     %t7 = addr $result
     copyobj 4x4 %t7, %t6
     return obj<4x4> $retobj__1
 }
-function @boost__nfp__nfp_detail____cppgm_class_template_1_0__marker(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZNK5boost3nfp10nfp_detail20named_parameter_baseINS0_23named_parameter_combineINS0_15named_parameterIiNS_7runtime12_GLOBAL__N_19second_idERKiEENS4_IiNS6_8first_idES9_EEEEE6markerEv, inline_hint=yes] {
+function @boost__nfp__nfp_detail__named_parameter_base___cppgm_class_template_identity_1___marker(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZNK5boost3nfp10nfp_detail20named_parameter_baseINS0_23named_parameter_combineINS0_15named_parameterIiNS_7runtime12_GLOBAL__N_19second_idERKiEENS4_IiNS6_8first_idES9_EEEEE6markerEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return i32 1
 }
-function @boost__nfp____cppgm_class_template_4_1__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=internal, object=_ZN5boost3nfp15named_parameterIiNS_7runtime12_GLOBAL__N_19second_idERKiEaSERKS7_, inline_hint=yes] {
+function @boost__nfp__named_parameter_int_second_id_constint____operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=internal, object=_ZN5boost3nfp15named_parameterIiNS_7runtime12_GLOBAL__N_19second_idERKiEaSERKS7_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

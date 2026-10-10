@@ -1,3 +1,5 @@
+declare global @container_rebind___cppgm_class_template_identity_1_longint___value : i32 [binding=weak, object=_ZN16container_rebindI6vectorIivvElE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

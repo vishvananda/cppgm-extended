@@ -110,6 +110,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = load typed i32 $cond__1
     return i32 %t27
 }
+function @cell__cell__aggregate(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
+  slot $this : ptr
+  slot $first : i32
+  slot $second : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %first, $first
+    store typed i32 %second, $second
+    %t1 = load typed i32 $first
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $second
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    store typed i32 %t4, %t6
+    return void
+}
 function @cell__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN4cellaSERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
@@ -131,23 +150,4 @@ function @cell__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_ad
     store typed i32 %t8, %t10
     %t11 = load typed ptr $this
     return ptr %t11
-}
-function @cell__cell__aggregate(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
-  slot $this : ptr
-  slot $first : i32
-  slot $second : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %first, $first
-    store typed i32 %second, $second
-    %t1 = load typed i32 $first
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed i32 %t1, %t3
-    %t4 = load typed i32 $second
-    %t5 = load typed ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
-    store typed i32 %t4, %t6
-    return void
 }

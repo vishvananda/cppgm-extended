@@ -68,11 +68,11 @@ function @append(%params : ptr [pass=by_address, object_bytes=4], %np : ptr [pas
     %t2 = load typed ptr $params
     %t3 = index i8 %t2, 0
     %t4 = load typed ptr $np
-    %t5 = call obj<8x4> @named_parameter_base___cppgm_class_template_identity_2_1_0___operator_(%t3, %t4)
+    %t5 = call obj<8x4> @named_parameter_base___cppgm_class_template_identity_1___operator_(%t3, %t4)
     copyobj 8x4 %t5, %t1
     return obj<8x4> $retobj__1
 }
-function @named_parameter_base___cppgm_class_template_identity_2_1_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=4]) -> obj<8x4> [binding=weak, object=_ZNK20named_parameter_baseI15named_parameterIi8first_idEEcmIS0_Ii9second_idEEE23named_parameter_combineIT_S2_ERKS8_, inline_hint=yes] {
+function @named_parameter_base___cppgm_class_template_identity_1___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=4]) -> obj<8x4> [binding=weak, object=_ZNK20named_parameter_baseI15named_parameterIi8first_idEEcmIS0_Ii9second_idEEE23named_parameter_combineIT_S2_ERKS8_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $retobj__1 : obj<8x4>
@@ -83,10 +83,10 @@ function @named_parameter_base___cppgm_class_template_identity_2_1_0___operator_
     %t1 = addr $retobj__1
     %t2 = load typed ptr $np
     %t3 = load typed ptr $this
-    call void @named_parameter_combine___cppgm_class_template_identity_2_4_0____cppgm_class_template_identity_2_1_0___named_parameter_combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_7_0_(%t1, %t2, %t3)
+    call void @named_parameter_combine___cppgm_class_template_identity_2___cppgm_class_template_identity_1___named_parameter_combine(%t1, %t2, %t3)
     return obj<8x4> $retobj__1
 }
-function @named_parameter_combine___cppgm_class_template_identity_2_4_0____cppgm_class_template_identity_2_1_0___named_parameter_combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_7_0_(%this : ptr [object_bytes=8], %np : ptr [pass=by_address, object_bytes=4], %rest : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN23named_parameter_combineI15named_parameterIi9second_idES0_Ii8first_idEEC1ERKS2_RKS4_, inline_hint=yes] {
+function @named_parameter_combine___cppgm_class_template_identity_2___cppgm_class_template_identity_1___named_parameter_combine(%this : ptr [object_bytes=8], %np : ptr [pass=by_address, object_bytes=4], %rest : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN23named_parameter_combineI15named_parameterIi9second_idES0_Ii8first_idEEC1ERKS2_RKS4_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $rest : ptr
@@ -105,4 +105,4 @@ function @named_parameter_combine___cppgm_class_template_identity_2_4_0____cppgm
     copyobj 4x4 %t6, %t5
     return void
 }
-alias object _ZN23named_parameter_combineI15named_parameterIi9second_idES0_Ii8first_idEEC2ERKS2_RKS4_ = @named_parameter_combine___cppgm_class_template_identity_2_4_0____cppgm_class_template_identity_2_1_0___named_parameter_combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_7_0_
+alias object _ZN23named_parameter_combineI15named_parameterIi9second_idES0_Ii8first_idEEC2ERKS2_RKS4_ = @named_parameter_combine___cppgm_class_template_identity_2___cppgm_class_template_identity_1___named_parameter_combine

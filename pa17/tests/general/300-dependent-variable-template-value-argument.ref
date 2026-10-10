@@ -1,3 +1,6 @@
+declare global @is_small_char___value : u8 [binding=weak, object=_ZN8is_smallIcE5valueE]
+declare global @is_small_double___value : u8 [binding=weak, object=_ZN8is_smallIdE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $both_small : i8
   slot $one_large : f64

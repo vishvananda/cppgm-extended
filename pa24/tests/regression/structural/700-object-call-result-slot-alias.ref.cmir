@@ -29,10 +29,12 @@ function @unwrap
     frame_pointer keep
     epilogues shared
     slot $x -> [rbp-<off0>] : obj<8x8>
+    temp %t -> [rbp-<off1>] : obj<8x8>
 
   block ^entry
     call @make_value [args=()]
-    store.i64 [rbp-<off0>], rax
+    store.i64 [rbp-<off1>], rax
+    copy_bytes 8x8, [rbp-<off0>], [rbp-<off1>]
     load.i64 rax, [rbp-<off0>]
     ret rax
 

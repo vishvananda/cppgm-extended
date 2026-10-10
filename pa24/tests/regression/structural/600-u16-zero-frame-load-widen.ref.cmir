@@ -19,6 +19,6 @@ function @main
     store.u16 [rbp-<off0>], 65535
     load.u16 r8, [rbp-<off0>]
     cmp.i64 r8, 65535
-    sete rax
-    movzx rax, rax
-    ret rax
+    sete r8
+    movzx r8, r8
+    ret r8

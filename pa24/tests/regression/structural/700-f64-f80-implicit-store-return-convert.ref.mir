@@ -14,16 +14,16 @@ function @roundtrip
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
-    param-slot %x -> [rbp-8] : f64
-    slot $y -> [rbp-32] : f80
+    slot $y -> [rbp-16] : f80
+    param-slot %x -> [rbp-24] : f64
     temp %t -> [rbp-48] : f80
 
   block ^entry
-    fmov.f64 [rbp-8], xmm0
-    fpext.f64.f80 [rbp-32], [rbp-8]
-    fmov.f80 [rbp-48], [rbp-32]
+    fmov.f64 [rbp-24], xmm0
+    fpext.f64.f80 [rbp-16], [rbp-24]
+    fmov.f80 [rbp-48], [rbp-16]
     fptrunc.f80.f64 xmm0, [rbp-48]
-    ret
+    ret xmm0
 
 function @main
   abi
@@ -37,10 +37,8 @@ function @main
   block ^entry
     fmov.f64 xmm0, 2.0
     call @roundtrip [args=(xmm0)]
-    fmov.f64 xmm0, xmm0
-    feq.f64 rax, xmm0, 2.0
-    mov r8, rax
+    feq.f64 r8, xmm0, 2.0
     cmp.i64 r8, 0
-    sete rax
-    movzx rax, rax
-    ret rax
+    sete r8
+    movzx r8, r8
+    ret r8

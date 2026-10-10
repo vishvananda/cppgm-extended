@@ -28,7 +28,6 @@ function @choose
     frame_pointer keep
     epilogues shared
     preserve rbx
-    temp %raw -> [rbp-8] : i64
 
   block ^entry
     cmp.i64 rsi, 0
@@ -36,14 +35,12 @@ function @choose
     jmp ^sibling
 
   block ^compute
-    mov rbx, rdi
-    mov rcx, 1
-    mov rax, rbx
+    mov r11, 1
+    mov rax, rdi
     cqo
-    idiv rcx
+    idiv r11
     mov rbx, rax
-    store.i64 [rbp-8], rbx
-    cmp.i64 [rbp-8], 0
+    cmp.i64 rbx, 0
     jl ^call_path
     jmp ^merge
 
@@ -52,22 +49,9 @@ function @choose
     jmp ^merge
 
   block ^merge
-    mov r8, 1
-    add r8, 2
-    mov r9, 3
-    add r9, 4
-    add r8, r9
-    add r8, 5
-    load.i64 rax, [rbp-8]
-    ret rax
+    ret rbx
 
   block ^sibling
-    mov r8, 1
-    add r8, 2
-    mov r9, 3
-    add r9, 4
-    add r8, r9
-    add r8, 5
     mov rax, 0
     ret rax
 

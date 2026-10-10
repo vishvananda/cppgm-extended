@@ -2,6 +2,7 @@ declare function @observe(%address : ptr) -> void [effects=readonly]
 
 function @remove_fully_overwritten(%destination : ptr) -> void {
   block ^entry:
+    zeroinit 16x8 %destination
     %high = index i8 [projection=field] %destination, 8
     store i64 11, %destination
     store i64 22, %high

@@ -1,3 +1,6 @@
+declare global @box_int_____arity : i32 [binding=weak, object=_ZN3boxIFivEE5arityE]
+declare global @box_int_int_float____arity : i32 [binding=weak, object=_ZN3boxIFiifEE5arityE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lor__1 : i64
 

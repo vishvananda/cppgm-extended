@@ -139,7 +139,7 @@ function @unwrap_iter_like(%value : ptr) -> ptr [binding=weak, object=_Z16unwrap
   block ^entry:
     store typed ptr %value, $value
     %t1 = load typed ptr $value
-    %t2 = call ptr @unwrap_impl_like_pointer_to_int__true___unwrap(%t1)
+    %t2 = call ptr @unwrap_impl_like_int__true___unwrap(%t1)
     return ptr %t2
 }
 function @copy_algorithm__operator__(%this : ptr [object_bytes=1], %first : ptr, %__param2 : ptr, %result : ptr) -> obj<16x8> [binding=weak, object=_ZN14copy_algorithmclIPiS1_EE9pair_likeIT_T0_ES3_S3_S4_, inline_hint=yes] {
@@ -176,10 +176,10 @@ function @make_pair_like(%first : ptr [pass=by_address, object_bytes=8], %second
     %t3 = call ptr @move_like(%t2)
     %t4 = load typed ptr $second
     %t5 = call ptr @move_like(%t4)
-    call void @pair_like_pointer_to_int__pointer_to_int___pair_like_pointer_to_int__pointer_to_int___ov3(%t1, %t3, %t5)
+    call void @pair_like_int__int____pair_like(%t1, %t3, %t5)
     return obj<16x8> $retobj__1
 }
-function @unwrap_impl_like_pointer_to_int__true___unwrap(%value : ptr) -> ptr [binding=weak, object=_ZN16unwrap_impl_likeIPiLb1EE6unwrapES0_, inline_hint=yes] {
+function @unwrap_impl_like_int__true___unwrap(%value : ptr) -> ptr [binding=weak, object=_ZN16unwrap_impl_likeIPiLb1EE6unwrapES0_, inline_hint=yes] {
   slot $value : ptr
 
   block ^entry:
@@ -187,7 +187,7 @@ function @unwrap_impl_like_pointer_to_int__true___unwrap(%value : ptr) -> ptr [b
     %t1 = load typed ptr $value
     return ptr %t1
 }
-function @pair_like_pointer_to_int__pointer_to_int___pair_like_pointer_to_int__pointer_to_int___ov3(%this : ptr [object_bytes=16], %u1 : ptr [pass=by_address, object_bytes=8], %u2 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN9pair_likeIPiS0_EC1IS0_S0_EEOT_OT0_, inline_hint=yes] {
+function @pair_like_int__int____pair_like(%this : ptr [object_bytes=16], %u1 : ptr [pass=by_address, object_bytes=8], %u2 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN9pair_likeIPiS0_EC1IS0_S0_EEOT_OT0_, inline_hint=yes] {
   slot $this : ptr
   slot $u1 : ptr
   slot $u2 : ptr
@@ -210,4 +210,4 @@ function @pair_like_pointer_to_int__pointer_to_int___pair_like_pointer_to_int__p
     store typed ptr %t8, %t10
     return void
 }
-alias object _ZN9pair_likeIPiS0_EC2IS0_S0_EEOT_OT0_ = @pair_like_pointer_to_int__pointer_to_int___pair_like_pointer_to_int__pointer_to_int___ov3
+alias object _ZN9pair_likeIPiS0_EC2IS0_S0_EEOT_OT0_ = @pair_like_int__int____pair_like

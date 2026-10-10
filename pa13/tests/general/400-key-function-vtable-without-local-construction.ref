@@ -1,34 +1,10 @@
-declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-declare function @__cxa_pure_virtual(%arg0 : ptr) -> i32 [unwind=no, return=noreturn, role=pure_virtual, binding=strong]
+declare function @__cxa_pure_virtual(%arg0 : ptr [object_bytes=8]) -> i32 [unwind=no, return=noreturn, role=pure_virtual, binding=strong]
 declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
-global @__typeinfo_name__struct_KeyFunctionBase [binding=weak, object=_ZTS15KeyFunctionBase] = {
-  i8 49
-  i8 53
-  i8 75
-  i8 101
-  i8 121
-  i8 70
-  i8 117
-  i8 110
-  i8 99
-  i8 116
-  i8 105
-  i8 111
-  i8 110
-  i8 66
-  i8 97
-  i8 115
-  i8 101
-  i8 0
-}
-global @__rtti_struct_KeyFunctionBase [binding=weak, object=_ZTI15KeyFunctionBase] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_KeyFunctionBase
-}
-global @__typeinfo_name__struct_KeyFunctionDerived [binding=weak, object=_ZTS18KeyFunctionDerived] = {
+global @__typeinfo_name__struct_KeyFunctionDerived [storage=readonly, binding=weak, object=_ZTS18KeyFunctionDerived] = {
   i8 49
   i8 56
   i8 75
@@ -51,17 +27,34 @@ global @__typeinfo_name__struct_KeyFunctionDerived [binding=weak, object=_ZTS18K
   i8 100
   i8 0
 }
-global @__rtti_struct_KeyFunctionDerived [binding=weak, object=_ZTI18KeyFunctionDerived] = {
+global @__typeinfo_name__struct_KeyFunctionBase [storage=readonly, binding=weak, object=_ZTS15KeyFunctionBase] = {
+  i8 49
+  i8 53
+  i8 75
+  i8 101
+  i8 121
+  i8 70
+  i8 117
+  i8 110
+  i8 99
+  i8 116
+  i8 105
+  i8 111
+  i8 110
+  i8 66
+  i8 97
+  i8 115
+  i8 101
+  i8 0
+}
+global @__rtti_struct_KeyFunctionBase [storage=readonly, binding=weak, object=_ZTI15KeyFunctionBase] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_KeyFunctionBase
+}
+global @__rtti_struct_KeyFunctionDerived [storage=readonly, binding=weak, object=_ZTI18KeyFunctionDerived] = {
   ptr addr @__external_rtti_vtable____si_class_type_info + 16
   ptr addr @__typeinfo_name__struct_KeyFunctionDerived
   ptr addr @__rtti_struct_KeyFunctionBase
-}
-global @KeyFunctionBase__vtable [storage=readonly, binding=weak, object=_ZTV15KeyFunctionBase] = {
-  i64 0
-  ptr addr @__rtti_struct_KeyFunctionBase
-  ptr addr @KeyFunctionBase___KeyFunctionBase
-  ptr addr @KeyFunctionBase___KeyFunctionBase__deleting_entry
-  ptr addr @__cxa_pure_virtual
 }
 global @KeyFunctionDerived__vtable [storage=readonly, binding=strong, object=_ZTV18KeyFunctionDerived] = {
   i64 0
@@ -70,8 +63,22 @@ global @KeyFunctionDerived__vtable [storage=readonly, binding=strong, object=_ZT
   ptr addr @KeyFunctionDerived___KeyFunctionDerived__deleting_entry
   ptr addr @KeyFunctionDerived__value
 }
+global @KeyFunctionBase__vtable [storage=readonly, binding=weak, object=_ZTV15KeyFunctionBase] = {
+  i64 0
+  ptr addr @__rtti_struct_KeyFunctionBase
+  ptr addr @KeyFunctionBase___KeyFunctionBase
+  ptr addr @KeyFunctionBase___KeyFunctionBase__deleting_entry
+  ptr addr @__cxa_pure_virtual
+}
 
-function @KeyFunctionDerived___KeyFunctionDerived__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN18KeyFunctionDerivedD0Ev] {
+function @KeyFunctionDerived__value(%this : ptr [object_bytes=8]) -> i32 [binding=strong, object=_ZN18KeyFunctionDerived5valueEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 11
+}
+function @KeyFunctionDerived___KeyFunctionDerived__deleting_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN18KeyFunctionDerivedD0Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -138,13 +145,6 @@ function @KeyFunctionDerived___KeyFunctionDerived(%this : ptr [object_bytes=8]) 
   block ^destructor_end_2:
     return void
 }
-function @KeyFunctionDerived__value(%this : ptr [object_bytes=8]) -> i32 [binding=strong, object=_ZN18KeyFunctionDerived5valueEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 11
-}
 function @KeyFunctionBase___KeyFunctionBase__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN15KeyFunctionBaseD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -156,7 +156,7 @@ function @KeyFunctionBase___KeyFunctionBase__base_entry(%this : ptr [object_byte
     store typed ptr %t3, %t1
     return void
 }
-function @KeyFunctionBase___KeyFunctionBase__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN15KeyFunctionBaseD0Ev] {
+function @KeyFunctionBase___KeyFunctionBase__deleting_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN15KeyFunctionBaseD0Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

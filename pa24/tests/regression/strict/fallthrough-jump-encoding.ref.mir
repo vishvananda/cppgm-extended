@@ -15,18 +15,12 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rax, 0
-    cmp.i64 rax, 0
-    jne ^bad
     jmp ^step_one
 
   block ^step_one
     jmp ^step_two
 
   block ^step_two
-    mov rax, 0
-    cmp.i64 rax, 0
-    jne ^bad
     jmp ^step_three
 
   block ^step_three

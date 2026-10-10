@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
-    %t3 = call i32 @read_digits__ov2()
+    %t3 = call i32 @read_digits__2()
     %t4 = cmp ne i32 %t3, 53
     %t5 = cmp ne i64 %t4, 0
     store typed i64 %t5, $lor__1
@@ -86,7 +86,7 @@ function @read_digits() -> i32 [binding=weak, object=_Z11read_digitsILi2EEiv] {
     %t21 = load typed i32 $cond__1
     return i32 %t21
 }
-function @read_digits__ov2() -> i32 [binding=weak, object=_Z11read_digitsILi5EEiv] {
+function @read_digits__2() -> i32 [binding=weak, object=_Z11read_digitsILi5EEiv] {
   slot $first : obj<7x1>
   slot $second : obj<7x1>
   slot $cond__1 : i32

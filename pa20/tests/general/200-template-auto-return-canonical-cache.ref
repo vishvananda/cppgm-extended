@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = binary sub nowrap i32 %t10, 4
     return i32 %t11
 }
-function @lvalue(%input : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z6lvalueIiERiRT_] {
+function @lvalue(%input : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z6lvalueIiERT_S1_] {
   slot $input : ptr
 
   block ^entry:
@@ -27,7 +27,7 @@ function @lvalue(%input : ptr [pass=by_address, object_bytes=4]) -> ptr [binding
     %t1 = load typed ptr $input
     return ptr %t1
 }
-function @pointer(%input : ptr) -> ptr [binding=weak, object=_Z7pointerIiEPiPT_] {
+function @pointer(%input : ptr) -> ptr [binding=weak, object=_Z7pointerIiEPT_S1_] {
   slot $input : ptr
 
   block ^entry:
@@ -35,7 +35,7 @@ function @pointer(%input : ptr) -> ptr [binding=weak, object=_Z7pointerIiEPiPT_]
     %t1 = load typed ptr $input
     return ptr %t1
 }
-function @collapse(%input : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z8collapseIiERiRT_] {
+function @collapse(%input : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z8collapseIiEOT_RS0_] {
   slot $input : ptr
 
   block ^entry:
@@ -43,7 +43,7 @@ function @collapse(%input : ptr [pass=by_address, object_bytes=4]) -> ptr [bindi
     %t1 = load typed ptr $input
     return ptr %t1
 }
-function @value(%input : i32) -> i32 [binding=weak, object=_Z5valueIiEiT_] {
+function @value(%input : i32) -> i32 [binding=weak, object=_Z5valueIiET_S0_, inline_hint=yes] {
   slot $input : i32
 
   block ^entry:

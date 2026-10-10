@@ -1,3 +1,6 @@
+declare global @derivative___cppgm_class_template_identity_1___cppgm_class_template_identity_2___value : i32 [binding=weak, object=_ZN10derivativeI12interval_mapIiE4pairI8intervalIi4lessEiEE5valueE]
+declare global @derivative___cppgm_class_template_identity_1___cppgm_class_template_identity_3___value : i32 [binding=weak, object=_ZN10derivativeI12interval_mapIiE4pairIK8intervalIi4lessEiEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

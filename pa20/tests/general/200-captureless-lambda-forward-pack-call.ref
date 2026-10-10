@@ -40,8 +40,8 @@ function @run(%args : ptr [pass=by_address, object_bytes=4], %args__pack2 : ptr 
     %t3 = load typed ptr $args
     %t4 = call ptr @std__forward(%t3)
     %t5 = load typed ptr $args__pack2
-    %t6 = call ptr @std__forward__ov3(%t5)
-    %t7 = call i32 @__lambda_run__lvalue_reference_to_int__lvalue_reference_to_unsigned_long_int_t161_167__operator__(%t2, %t4, %t6)
+    %t6 = call ptr @std__forward__2(%t5)
+    %t7 = call i32 @__lambda_run_t161_167__operator__(%t2, %t4, %t6)
     return i32 %t7
 }
 function @std__forward(%t : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZSt7forwardIRiEOT_RNSt16remove_referenceIS1_E4typeE] {
@@ -52,7 +52,7 @@ function @std__forward(%t : ptr [pass=by_address, object_bytes=4]) -> ptr [bindi
     %t1 = load typed ptr $t
     return ptr %t1
 }
-function @std__forward__ov3(%t : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZSt7forwardIRmEOT_RNSt16remove_referenceIS1_E4typeE] {
+function @std__forward__2(%t : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZSt7forwardIRmEOT_RNSt16remove_referenceIS1_E4typeE] {
   slot $t : ptr
 
   block ^entry:
@@ -60,7 +60,7 @@ function @std__forward__ov3(%t : ptr [pass=by_address, object_bytes=8]) -> ptr [
     %t1 = load typed ptr $t
     return ptr %t1
 }
-function @__lambda_run__lvalue_reference_to_int__lvalue_reference_to_unsigned_long_int_t161_167__operator__(%this : ptr [object_bytes=1], %args2 : ptr [pass=by_address, object_bytes=4], %args2__pack2 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZZ3runIJRiRmEEiDpOT_ENKUlS0_S1_E_clES0_S1_, inline_hint=yes] {
+function @__lambda_run_t161_167__operator__(%this : ptr [object_bytes=1], %args2 : ptr [pass=by_address, object_bytes=4], %args2__pack2 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=internal, object=_ZZ3runIJRiRmEEiDpOT_ENKUlS0_S1_E_clES0_S1_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $args2 : ptr
   slot $args2__pack2 : ptr
@@ -72,7 +72,7 @@ function @__lambda_run__lvalue_reference_to_int__lvalue_reference_to_unsigned_lo
     %t1 = load typed ptr $args2
     %t2 = call ptr @std__forward(%t1)
     %t3 = load typed ptr $args2__pack2
-    %t4 = call ptr @std__forward__ov3(%t3)
+    %t4 = call ptr @std__forward__2(%t3)
     %t5 = call i32 @sink(%t2, %t4)
     return i32 %t5
 }

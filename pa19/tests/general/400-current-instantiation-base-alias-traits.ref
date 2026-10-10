@@ -1,3 +1,5 @@
+declare global @same_random_access_iterator_tag_random_access_iterator_tag___value : u8 [binding=weak, object=_ZN4sameI26random_access_iterator_tagS0_E5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

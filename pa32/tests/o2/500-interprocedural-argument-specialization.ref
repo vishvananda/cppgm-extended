@@ -19,7 +19,7 @@ function @internal_target(%value : i64) -> i64 [unwind=no, binding=internal, no_
 }
 function @read_constant(%addend : i64) -> i64 [effects=readonly, unwind=no, binding=internal, no_inline=yes] {
   block ^entry:
-    %result = binary add i64 7, %addend
+    %result = binary add i64 %addend, 7
     return i64 %result
 }
 function @differing(%mode : i64) -> i64 [unwind=no, binding=internal, no_inline=yes] {
@@ -51,8 +51,7 @@ function @main() -> i64 [role=entry] {
     %constant_b = call i64 @read_constant(2)
     %different_a = call i64 @differing(0)
     %different_b = call i64 @differing(1)
-    %address = addr @addressed
-    %addressed_indirect = call i64 %address(2, 3) as (%mode : i64, %value : i64) -> i64 [unwind=no]
+    %addressed_indirect = call i64 @addressed(2, 3) as (%mode : i64, %value : i64) -> i64 [unwind=no]
     %addressed_direct = call i64 @addressed(2, 4)
     %rooted_value = call i64 @rooted(3, 4)
     %sum1 = binary add i64 %internal_a, %internal_b
@@ -63,6 +62,6 @@ function @main() -> i64 [role=entry] {
     %sum7 = binary add i64 %sum5, %sum6
     %sum8 = binary add i64 %constant_a, %constant_b
     %sum9 = binary add i64 %sum7, %sum8
-    %result = binary add i64 %sum9, %rooted_value
+    %result = binary add i64 %rooted_value, %sum9
     return i64 %result
 }

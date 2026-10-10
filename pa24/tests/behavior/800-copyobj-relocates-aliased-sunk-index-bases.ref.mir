@@ -31,7 +31,7 @@ function @mark_two
     param %second -> rsi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -46,22 +46,14 @@ function @copy_then_mark_two
     param %this -> rdi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $this -> [rbp-8] : ptr
 
   block ^entry
-    store.ptr [rbp-8], rdi
-    load.ptr r8, [rbp-8]
-    load.ptr r9, [rbp-8]
-    lea r9, [r9+8]
-    mov rdi, @dest
-    mov rsi, @source
-    copy_bytes 24x8, rdi, rsi
-    mov rdi, r8
-    mov rsi, r9
+    lea rsi, [rdi+8]
+    copy_bytes 24x8, @dest, @source
     call @mark_two [args=(rsi,rdi)]
     ret
 
@@ -80,20 +72,18 @@ function @main
     mov rdi, rbx
     call @copy_then_mark_two [args=(rdi)]
     load.i64 r8, @pair
-    load.i64 r9, [rbx+8]
+    load.i64 rbx, [rbx+8]
     mov rdx, 99
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
     mov rdx, 77
-    cmp.i64 r9, rdx
-    sete r9
-    movzx r9, r9
-    and r8, r9
+    cmp.i64 rbx, rdx
+    sete rbx
+    movzx rbx, rbx
+    and r8, rbx
     mov rdx, 0
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    ret r8

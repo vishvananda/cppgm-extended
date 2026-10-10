@@ -5,7 +5,7 @@ function @N__f(%x : f32) -> i32 [unwind=no, binding=strong, object=_ZN1N1fEf] {
   block ^entry:
     store typed f32 %x, $x
     %t1 = load typed f32 $x
-    %t2 = cmp eq f32 %t1, 1.0f
+    %t2 = cmp eq f32 %t1, 1f
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -27,7 +27,7 @@ function @N__f__ov2(%x : f64) -> i32 [unwind=no, binding=strong, object=_ZN1N1fE
   block ^entry:
     store typed f64 %x, $x
     %t1 = load typed f64 $x
-    %t2 = cmp eq f64 %t1, 1.0
+    %t2 = cmp eq f64 %t1, 1
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

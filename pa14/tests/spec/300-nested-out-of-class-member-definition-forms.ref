@@ -79,7 +79,7 @@ function @Iter_int___operator__(%this : ptr [object_bytes=4]) -> ptr [binding=we
     %t5 = load typed ptr $this
     return ptr %t5
 }
-function @Outer_int___Ref__operatorbool(%this : ptr [object_bytes=8]) -> u8 [binding=weak, object=_ZNK5OuterIiE3RefcvbEv, inline_hint=yes] {
+function @Outer_int___Ref__operatorbool(%this : ptr [object_bytes=8]) -> u8 [binding=weak, object=_ZNK5OuterIiE3RefcvbEv] {
   slot $this : ptr
 
   block ^entry:

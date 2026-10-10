@@ -23,33 +23,30 @@ function @probe
     param %d -> r8 : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12 r13 r14 r15
 
   block ^entry
     store.i64 @observed, 11
-    load.i64 rbx, [rdi+8]
-    mov r12, rsi
-    add r12, rdx
-    mov r13, rcx
-    add r13, r8
-    mov r14, rsi
-    add r14, rcx
-    mov r15, rdx
-    add r15, r8
-    add r12, r13
-    add r14, r15
-    add r12, r14
-    load.i64 r13, @observed
-    mov r14, 100
-    add r14, 200
-    add rbx, r13
-    add r14, rbx
-    add r14, r12
-    ret r14
+    load.i64 rdi, [rdi+8]
+    mov r9, rsi
+    add r9, rdx
+    mov rax, rcx
+    add rax, r8
+    add rsi, rcx
+    add rdx, r8
+    add r9, rax
+    add rsi, rdx
+    add r9, rsi
+    load.i64 r8, @observed
+    mov rsi, 100
+    add rsi, 200
+    add rdi, r8
+    add rsi, rdi
+    add rsi, r9
+    ret rsi
 
 function @main
   abi

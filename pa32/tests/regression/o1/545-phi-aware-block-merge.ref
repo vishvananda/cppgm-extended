@@ -9,7 +9,7 @@ function @merge_chain_renames_phi_input(%n : i64, %x : i64) -> i64 {
 
   block ^head:
     %i = phi i64 [^entry: 0, ^step1: %next]
-    %done = cmp eq i64 %i, %n
+    %done = cmp eq i64 %n, %i
     branch %done, ^exit, ^step1
 
   block ^step1:
@@ -23,7 +23,7 @@ function @merge_chain_renames_phi_input(%n : i64, %x : i64) -> i64 {
 function @single_input_phi_becomes_copy(%x : i64) -> i64 {
   block ^entry:
     %y = binary add i64 %x, 1
-    %w = binary add i64 %y, %x
+    %w = binary add i64 %x, %y
     return i64 %w
 }
 function @keep_two_predecessors(%flag : i64, %x : i64) -> i64 {
@@ -47,9 +47,6 @@ function @keep_landing_pad(%x : i64) -> i64 {
     eh_try ^pad
     call void @risky()
     eh_end
-    jump ^after
-
-  block ^after:
     return i64 %x
 
   block ^pad:

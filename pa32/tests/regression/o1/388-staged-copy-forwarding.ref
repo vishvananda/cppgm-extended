@@ -5,8 +5,8 @@ function @forwards(%dest : ptr, %a : i64, %b : i64) -> void {
     store i64 %a, %dest
     %t1 = index i8 [projection=field] %dest, 8
     store i64 %b, %t1
-    %t3 = index i8 [projection=field] %dest, 16
-    store i64 7, %t3
+    %t2 = index i8 [projection=field] %dest, 16
+    store i64 7, %t2
     return void
 }
 function @keeps_load(%dest : ptr, %a : i64) -> i64 {
@@ -22,24 +22,21 @@ function @keeps_two_copies(%dest : ptr, %other : ptr, %a : i64) -> void {
     %t1 = index i8 [projection=field] %dest, 8
     store i64 11, %t1
     store i64 %a, %other
-    %t4 = index i8 [projection=field] %other, 8
-    store i64 11, %t4
+    %t2 = index i8 [projection=field] %other, 8
+    store i64 11, %t2
     return void
 }
 function @keeps_conditional_store(%dest : ptr, %a : i64, %pick : u8) -> void {
-  slot $staging__sroa8 : i64
-
   block ^entry:
     branch %pick, ^set, ^done
 
   block ^set:
-    store i64 13, $staging__sroa8
     jump ^done
 
   block ^done:
+    %t1 = phi i64 [^entry: 0, ^set: 13]
     store i64 %a, %dest
-    %t1 = index i8 [projection=field] %dest, 8
-    %t2 = load i64 $staging__sroa8
-    store i64 %t2, %t1
+    %t2 = index i8 [projection=field] %dest, 8
+    store i64 %t1, %t2
     return void
 }

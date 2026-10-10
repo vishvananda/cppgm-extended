@@ -11,6 +11,6 @@ function @f() -> i64 [binding=strong] {
     jump ^after
 
   block ^after:
-    %t0 = phi i64 [^entry: 1, ^catch_1: 2]
-    return i64 %t0
+    %t1 = phi i64 [^entry: 1, ^catch_1: 2]
+    return i64 %t1
 }

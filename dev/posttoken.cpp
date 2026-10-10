@@ -1,137 +1,84 @@
-#include <cstdlib>
-#include <exception>
+// (C) 2013 CPPGM Foundation www.cppgm.org.  All rights reserved.
+// Revised for cppgm-extended; see NOTICE.
+
 #include <iostream>
-#include <iterator>
+#include <stdexcept>
 #include <string>
 
-#include "preprocess/tokens/post_tokenizer.h"
-#include "support/exception_types.h"
+using namespace std;
 
-namespace
-{
+#include "lex/post_token_writer.h"
+#include "lex/post_tokenizer.h"
+#include "preprocess/lexer/pp_lexer.h"
+#include "preprocess/source/source_buffer.h"
+#include "support/internal_error.h"
 
-char HexDigit(unsigned int value)
+// posttoken: translation phases 1-6 and the tokenization part of phase 7 of
+// a C++ source file read from standard input, describing the resulting
+// tokens on standard output.
+
+bool HasBatchStdinArg(int argc, char** argv)
 {
-	return value < 10 ? static_cast<char>('0' + value) :
-		static_cast<char>('A' + value - 10);
+	for (int i = 1; i < argc; i++)
+	{
+		if (string(argv[i]) == "--batch-stdin")
+			return true;
+	}
+	return false;
 }
 
-std::string HexDump(const void* data, std::size_t size)
+// Batch requests are served by the linked test runner; a build without it
+// cannot run them.
+int RunNotImplementedBatchMode()
 {
-	const unsigned char* bytes = static_cast<const unsigned char*>(data);
-	std::string result(size * 2, '0');
-	for (std::size_t i = 0; i < size; ++i)
+	string line;
+	while (getline(cin, line))
 	{
-		result[i * 2] = HexDigit(bytes[i] >> 4);
-		result[i * 2 + 1] = HexDigit(bytes[i] & 0xF);
+		(void)line;
+		cout << "EXIT_NOT_IMPLEMENTED" << endl;
 	}
-	return result;
-}
-
-class DebugPostTokenStream : public cppgm::IPostTokenStream
-{
-public:
-	explicit DebugPostTokenStream(std::ostream& output) : output_(output) {}
-
-	void EmitInvalid(const std::string& source)
-	{
-		output_ << "invalid " << source << '\n';
-	}
-
-	void EmitSimple(const std::string& source,
-		cppgm::SimpleTokenKind kind)
-	{
-		output_ << "simple " << source << ' ' <<
-			cppgm::SimpleTokenKindName(kind) << '\n';
-	}
-
-	void EmitIdentifier(const std::string& source)
-	{
-		output_ << "identifier " << source << '\n';
-	}
-
-	void EmitLiteral(const std::string& source,
-		cppgm::FundamentalType type, const void* data, std::size_t size)
-	{
-		output_ << "literal " << source << ' ' <<
-			cppgm::FundamentalTypeName(type) << ' ' <<
-			HexDump(data, size) << '\n';
-	}
-
-	void EmitLiteralArray(const std::string& source, std::size_t elements,
-		cppgm::FundamentalType type, const void* data, std::size_t size)
-	{
-		output_ << "literal " << source << " array of " << elements << ' ' <<
-			cppgm::FundamentalTypeName(type) << ' ' <<
-			HexDump(data, size) << '\n';
-	}
-
-	void EmitUserDefinedCharacter(const std::string& source,
-		const std::string& suffix, cppgm::FundamentalType type,
-		const void* data, std::size_t size)
-	{
-		output_ << "user-defined-literal " << source << ' ' << suffix <<
-			" character " << cppgm::FundamentalTypeName(type) << ' ' <<
-			HexDump(data, size) << '\n';
-	}
-
-	void EmitUserDefinedString(const std::string& source,
-		const std::string& suffix, std::size_t elements,
-		cppgm::FundamentalType type, const void* data, std::size_t size)
-	{
-		output_ << "user-defined-literal " << source << ' ' << suffix <<
-			" string array of " << elements << ' ' <<
-			cppgm::FundamentalTypeName(type) << ' ' <<
-			HexDump(data, size) << '\n';
-	}
-
-	void EmitUserDefinedInteger(const std::string& source,
-		const std::string& suffix, const std::string& prefix)
-	{
-		output_ << "user-defined-literal " << source << ' ' << suffix <<
-			" integer " << prefix << '\n';
-	}
-
-	void EmitUserDefinedFloating(const std::string& source,
-		const std::string& suffix, const std::string& prefix)
-	{
-		output_ << "user-defined-literal " << source << ' ' << suffix <<
-			" floating " << prefix << '\n';
-	}
-
-	void EmitEof()
-	{
-		output_ << "eof\n";
-	}
-
-private:
-	std::ostream& output_;
-};
-
+	return EXIT_SUCCESS;
 }
 
 int main(int argc, char** argv)
 {
-	(void)argc;
-	(void)argv;
 	try
 	{
-		std::ios_base::sync_with_stdio(false);
-		std::cin.tie(0);
-		const std::string source((std::istreambuf_iterator<char>(std::cin)),
-			std::istreambuf_iterator<char>());
-		DebugPostTokenStream output(std::cout);
-		cppgm::TokenizePostTokens(source, output);
+		if (HasBatchStdinArg(argc, argv))
+			return RunNotImplementedBatchMode();
+
+		SourceBuffer source = SourceBuffer::ReadFrom(cin);
+		PPLexer lexer(source);
+		PostTokenizer tokens(lexer);
+		PostTokenWriter output(cout);
+		try
+		{
+			for (;;)
+			{
+				const PostToken& token = tokens.next();
+				output.write(token);
+				if (token.kind == PostTokenKind::EndOfFile)
+					break;
+			}
+		}
+		catch (const SourceError& e)
+		{
+			// Phases 1-3 failed; the tokens before the error are kept.
+			output.flush();
+			cerr << "ERROR: <stdin>:" << FormatSourceError(source, e) << endl;
+			return EXIT_FAILURE;
+		}
+		output.flush();
 		return EXIT_SUCCESS;
 	}
-	catch (const CompilerError& error)
+	catch (const InternalError& e)
 	{
-		std::cerr << "ERROR: " << error.what() << std::endl;
-		return EXIT_FAILURE;
+		cerr << "internal compiler error: " << e.what() << endl;
+		return CPPGM_EXIT_INTERNAL_ERROR;
 	}
-	catch (const std::exception& error)
+	catch (const exception& e)
 	{
-		std::cerr << "ERROR: " << error.what() << std::endl;
+		cerr << "ERROR: " << e.what() << endl;
 		return EXIT_FAILURE;
 	}
 }

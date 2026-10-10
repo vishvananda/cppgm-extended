@@ -30,13 +30,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Y___Y(%t18)
     return i32 0
 }
-function @Y___Y(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN1YD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
 function @Y__Y(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN1YC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -44,5 +37,12 @@ function @Y__Y(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, o
     store typed ptr %this, $this
     return void
 }
-alias object _ZN1YD2Ev = @Y___Y
+function @Y___Y(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN1YD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
 alias object _ZN1YC2Ev = @Y__Y
+alias object _ZN1YD2Ev = @Y___Y

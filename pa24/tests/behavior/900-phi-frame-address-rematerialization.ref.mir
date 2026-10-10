@@ -15,32 +15,27 @@ function @select_local_address
     frame_pointer keep
     epilogues shared
     slot $value -> [rbp-8] : obj<8x8>
-    temp %selected -> [rbp-16] : ptr
 
   block ^entry
-    mov r8, rdi
-    lea r9, [rbp-8]
-    zero_bytes 8x8, r9
-    store.i64 [r9], 77
-    mov rax, r8
-    cmp.i64 rax, 0
+    lea r8, [rbp-8]
+    zero_bytes 8x8, r8
+    store.i64 [r8], 77
+    cmp.i64 rdi, 0
     jne ^left
     jmp ^right
 
   block ^left
-    store.ptr [rbp-16], r9
+    mov r9, r8
     jmp ^join
 
   block ^right
-    store.ptr [rbp-16], r9
+    mov r9, r8
     jmp ^join
 
   block ^join
-    load.ptr rcx, [rbp-16]
-    load.i64 r9, [rcx]
-    mov rax, r9
-    sext.i32 rax
-    ret rax
+    load.i64 r9, [r9]
+    sext.i32 r9
+    ret r9
 
 function @main
   abi
@@ -59,18 +54,14 @@ function @main
     sext.i32 rbx
     mov rdi, 0
     call @select_local_address [args=(rdi)]
-    mov r8, rax
-    sext.i32 r8
+    sext.i32 rax
     mov rdx, 77
     cmp.i32 rbx, rdx
     setne rbx
     movzx rbx, rbx
     mov rdx, 77
-    cmp.i32 r8, rdx
-    setne r8
-    movzx r8, r8
-    or rbx, r8
-    mov rax, rbx
-    zext.i64 rax
-    sext.i32 rax
-    ret rax
+    cmp.i32 rax, rdx
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    ret rbx

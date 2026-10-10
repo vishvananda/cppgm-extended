@@ -1,3 +1,5 @@
+declare global @iter_fold_impl___cppgm_class_template_identity_2___value : i32 [binding=weak, object=_ZN14iter_fold_implILin1E4iterILi2EES1_5state2opE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

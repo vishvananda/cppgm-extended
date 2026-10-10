@@ -47,15 +47,12 @@ function @main
   block ^entry
     call @false_condition [args=()]
     mov r8, rax
-    cmp.i64 rax, 0
+    cmp.i64 r8, 0
     jne ^wrong
     jmp ^continue
 
   block ^continue
     call @one [args=()]
-    mov rax, 0
-    cmp.i64 rax, 0
-    jne ^wrong
     jmp ^correct
 
   block ^wrong

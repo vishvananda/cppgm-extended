@@ -1,22 +1,9 @@
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
-declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 
-global @__typeinfo_name__struct_shared [binding=weak, object=_ZTS6shared] = {
-  i8 54
-  i8 115
-  i8 104
-  i8 97
-  i8 114
-  i8 101
-  i8 100
-  i8 0
-}
-global @__rtti_struct_shared [binding=weak, object=_ZTI6shared] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_shared
-}
-global @__typeinfo_name__struct_counted [binding=weak, object=_ZTS7counted] = {
+global @destroyed : i32 [binding=strong] = 0
+global @__typeinfo_name__struct_counted [storage=readonly, binding=weak, object=_ZTS7counted] = {
   i8 55
   i8 99
   i8 111
@@ -27,7 +14,21 @@ global @__typeinfo_name__struct_counted [binding=weak, object=_ZTS7counted] = {
   i8 100
   i8 0
 }
-global @__rtti_struct_counted [binding=weak, object=_ZTI7counted] = {
+global @__typeinfo_name__struct_shared [storage=readonly, binding=weak, object=_ZTS6shared] = {
+  i8 54
+  i8 115
+  i8 104
+  i8 97
+  i8 114
+  i8 101
+  i8 100
+  i8 0
+}
+global @__rtti_struct_shared [storage=readonly, binding=weak, object=_ZTI6shared] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_shared
+}
+global @__rtti_struct_counted [storage=readonly, binding=weak, object=_ZTI7counted] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_counted
   i32 0
@@ -35,7 +36,15 @@ global @__rtti_struct_counted [binding=weak, object=_ZTI7counted] = {
   ptr addr @__rtti_struct_shared
   i64 -6141
 }
-global @__typeinfo_name__struct_derived [binding=weak, object=_ZTS7derived] = {
+global @counted__vtable [storage=readonly, binding=weak, object=_ZTV7counted] = {
+  i64 12
+  i64 0
+  ptr addr @__rtti_struct_counted
+}
+global @counted____vtt [storage=readonly, binding=weak, object=_ZTT7counted, object_root=yes] = {
+  ptr addr @counted__vtable + 24
+}
+global @__typeinfo_name__struct_derived [storage=readonly, binding=weak, object=_ZTS7derived] = {
   i8 55
   i8 100
   i8 101
@@ -46,18 +55,10 @@ global @__typeinfo_name__struct_derived [binding=weak, object=_ZTS7derived] = {
   i8 100
   i8 0
 }
-global @__rtti_struct_derived [binding=weak, object=_ZTI7derived] = {
+global @__rtti_struct_derived [storage=readonly, binding=weak, object=_ZTI7derived] = {
   ptr addr @__external_rtti_vtable____si_class_type_info + 16
   ptr addr @__typeinfo_name__struct_derived
   ptr addr @__rtti_struct_counted
-}
-global @counted__vtable [storage=readonly, binding=weak, object=_ZTV7counted] = {
-  i64 12
-  i64 0
-  ptr addr @__rtti_struct_counted
-}
-global @counted____vtt [storage=readonly, binding=weak, object=_ZTT7counted, object_root=yes] = {
-  ptr addr @counted__vtable + 24
 }
 global @derived__vtable [storage=readonly, binding=weak, object=_ZTV7derived] = {
   i64 12
@@ -73,9 +74,8 @@ global @derived____vtt [storage=readonly, binding=weak, object=_ZTT7derived, obj
   ptr addr @derived__vtable + 24
   ptr addr @derived____construction__counted__0__s0__vtable + 24
 }
-global @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count : i32 [binding=weak, object=_ZZN7countedC1EvE5count] = 0
-global @__local_static__function_symbol_5f5a4e37636f756e74656444324576__decl0__gone : i32 [binding=weak, object=_ZZN7countedD1EvE4gone] = 0
-global @destroyed : i32 [binding=strong] = 0
+global @__local_static__counted__counted__decl0__count : i32 [binding=weak, object=_ZZN7countedC1EvE5count] = 0
+global @__local_static__counted___counted__decl0__gone : i32 [binding=weak, object=_ZZN7countedD1EvE4gone] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $whole : obj<16x8>
@@ -109,25 +109,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_then_4:
     store typed i32 10, $cleanup_return__1
-    jump ^return_cleanup_action_9
-
-  block ^return_cleanup_terminal_7:
-    return i32 $cleanup_return__1
-
-  block ^return_cleanup_action_8:
-    %t8 = addr $whole
-    call void @counted___counted(%t8)
-    jump ^return_cleanup_terminal_7
-
-  block ^return_cleanup_action_9:
-    %t9 = addr $part
-    call void @derived___derived(%t9)
     jump ^return_cleanup_action_8
 
-  block ^if_else_5:
-    jump ^if_end_6
+  block ^return_cleanup_terminal_6:
+    return i32 $cleanup_return__1
 
-  block ^if_end_6:
+  block ^return_cleanup_action_7:
+    %t8 = addr $whole
+    call void @counted___counted(%t8)
+    jump ^return_cleanup_terminal_6
+
+  block ^return_cleanup_action_8:
+    %t9 = addr $part
+    call void @derived___derived(%t9)
+    jump ^return_cleanup_action_7
+
+  block ^if_else_5:
+    jump ^if_end_9
+
+  block ^if_end_9:
     %t10 = addr $part
     %t11 = index i8 %t10, 0
     %t12 = index i8 [projection=field] %t11, 8
@@ -137,7 +137,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_then_10:
     store typed i32 11, $cleanup_return__1
-    jump ^return_cleanup_action_9
+    jump ^return_cleanup_action_8
 
   block ^if_else_11:
     jump ^if_end_12
@@ -171,58 +171,13 @@ function @counted__counted__base_entry(%this : ptr [object_bytes=16], %__vtt : p
     %t1 = load typed ptr $this
     %t2 = load typed ptr %__vtt
     store typed ptr %t2, %t1
-    %t3 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
+    %t3 = load typed i32 @__local_static__counted__counted__decl0__count
     %t4 = binary add nowrap i32 %t3, 1
-    store typed i32 %t4, @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
-    %t5 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
+    store typed i32 %t4, @__local_static__counted__counted__decl0__count
+    %t5 = load typed i32 @__local_static__counted__counted__decl0__count
     %t6 = load typed ptr $this
     %t7 = index i8 [projection=field] %t6, 8
     store typed i32 %t5, %t7
-    return void
-}
-function @counted__counted(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7countedC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 12
-    call void @shared__shared__base_entry(%t2)
-    %t3 = load typed ptr $this
-    %t4 = addr @counted__vtable
-    %t5 = index i8 %t4, 24
-    store typed ptr %t5, %t3
-    %t6 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
-    %t7 = binary add nowrap i32 %t6, 1
-    store typed i32 %t7, @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
-    %t8 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
-    %t9 = load typed ptr $this
-    %t10 = index i8 [projection=field] %t9, 8
-    store typed i32 %t8, %t10
-    return void
-}
-function @counted___counted__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN7countedD2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656444324576__decl0__gone
-    %t2 = binary add nowrap i32 %t1, 1
-    store typed i32 %t2, @__local_static__function_symbol_5f5a4e37636f756e74656444324576__decl0__gone
-    %t3 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656444324576__decl0__gone
-    store typed i32 %t3, @destroyed
-    return void
-}
-function @counted___counted(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7countedD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656444324576__decl0__gone
-    %t2 = binary add nowrap i32 %t1, 1
-    store typed i32 %t2, @__local_static__function_symbol_5f5a4e37636f756e74656444324576__decl0__gone
-    %t3 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656444324576__decl0__gone
-    store typed i32 %t3, @destroyed
     return void
 }
 function @derived__derived(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7derivedC1Ev, inline_hint=yes] {
@@ -239,23 +194,47 @@ function @derived__derived(%this : ptr [object_bytes=16]) -> void [binding=weak,
     %t6 = index i8 %t5, 8
     call void @counted__counted__base_entry(%t4, %t6)
     eh_cleanup ^constructor_cleanup_1
-    %t11 = load typed ptr $this
-    %t12 = addr @derived__vtable
-    %t13 = index i8 %t12, 24
-    store typed ptr %t13, %t11
+    %t7 = load typed ptr $this
+    %t8 = addr @derived__vtable
+    %t9 = index i8 %t8, 24
+    store typed ptr %t9, %t7
     eh_end
     return void
 
   block ^constructor_cleanup_1:
-    %t7 = load typed ptr $this
-    %t8 = index i8 %t7, 0
-    %t9 = addr @derived____vtt
-    %t10 = index i8 %t9, 8
-    call void @counted___counted__base_entry(%t8, %t10)
+    %t10 = load typed ptr $this
+    %t11 = index i8 %t10, 0
+    %t12 = addr @derived____vtt
+    %t13 = index i8 %t12, 8
+    call void @counted___counted__base_entry(%t11, %t13)
     eh_end
     resume
 }
-function @derived___derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [binding=weak, object=_ZN7derivedD2Ev, object_root=yes, inline_hint=yes] {
+function @counted___counted__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN7countedD2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @__local_static__counted___counted__decl0__gone
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @__local_static__counted___counted__decl0__gone
+    %t3 = load typed i32 @__local_static__counted___counted__decl0__gone
+    store typed i32 %t3, @destroyed
+    return void
+}
+function @counted___counted(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7countedD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @__local_static__counted___counted__decl0__gone
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @__local_static__counted___counted__decl0__gone
+    %t3 = load typed i32 @__local_static__counted___counted__decl0__gone
+    store typed i32 %t3, @destroyed
+    return void
+}
+function @derived___derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN7derivedD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -323,5 +302,26 @@ function @shared__shared(%this : ptr [object_bytes=4]) -> void [binding=weak, ob
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     store typed i32 1, %t2
+    return void
+}
+function @counted__counted(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7countedC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 12
+    call void @shared__shared__base_entry(%t2)
+    %t3 = load typed ptr $this
+    %t4 = addr @counted__vtable
+    %t5 = index i8 %t4, 24
+    store typed ptr %t5, %t3
+    %t6 = load typed i32 @__local_static__counted__counted__decl0__count
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @__local_static__counted__counted__decl0__count
+    %t8 = load typed i32 @__local_static__counted__counted__decl0__count
+    %t9 = load typed ptr $this
+    %t10 = index i8 [projection=field] %t9, 8
+    store typed i32 %t8, %t10
     return void
 }

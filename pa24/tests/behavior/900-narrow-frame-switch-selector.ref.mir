@@ -19,43 +19,34 @@ function @dispatch
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r13 r14 r15
-    param-slot %d -> [rbp-8] : i64
-    slot $selector_word -> [rbp-16] : i64
-    slot $poison_word -> [rbp-24] : i64
-    temp %poison -> [rbp-28] : u32
-    temp %selector -> [rbp-32] : u32
+    preserve rbx r12 r13
+    slot $selector_word -> [rbp-8] : i64
+    slot $poison_word -> [rbp-16] : i64
+    temp %selector -> [rbp-24] : u32
+    temp %all -> [rbp-32] : i64
 
   block ^entry
-    store.i64 [rbp-8], rcx
-    mov rbx, rdx
-    mov r13, r8
-    mov r14, r9
-    mov r9, rsi
-    mov r15, rdi
-    store.i64 [rbp-16], 4294967335
-    store.i64 [rbp-24], 1
-    load.u32 r8, [rbp-24]
-    store.u32 [rbp-28], r8
-    load.u32 r8, [rbp-16]
-    store.u32 [rbp-32], r8
+    store.i64 [rbp-8], 4294967335
+    store.i64 [rbp-16], 1
+    load.u32 rax, [rbp-16]
+    load.u32 rbx, [rbp-8]
+    store.u32 [rbp-24], rbx
     jmp ^dispatch
 
   block ^dispatch
-    mov r8, r15
-    add r8, r9
-    mov r9, rbx
-    add r9, [rbp-8]
-    mov rdi, r13
-    add rdi, r14
-    add r8, r9
-    add r8, rdi
-    load.u32 rax, [rbp-32]
-    mov rcx, 39
-    cmp.i64 rax, rcx
+    mov rbx, rdi
+    add rbx, rsi
+    mov r12, rdx
+    add r12, rcx
+    mov r13, r8
+    add r13, r9
+    add rbx, r12
+    add rbx, r13
+    store.i64 [rbp-32], rbx
+    load.u32 r10, [rbp-24]
+    cmp.u32 r10, 39
     je ^success
-    load.u32 rcx, [rbp-28]
-    cmp.i64 rax, rcx
+    cmp.u32 r10, rax
     je ^failure
     jmp ^retry
 
@@ -63,7 +54,8 @@ function @dispatch
     jmp ^dispatch
 
   block ^success
-    ret r8
+    load.i64 rax, [rbp-32]
+    ret rax
 
   block ^failure
     mov rax, -1

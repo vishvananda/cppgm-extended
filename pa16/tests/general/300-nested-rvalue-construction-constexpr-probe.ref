@@ -39,10 +39,10 @@ function @Outer__Outer(%this : ptr [object_bytes=1], %source : ptr [pass=by_addr
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr $source
-    call void @Middle__Middle__ov3(%t2, %t3)
+    call void @Middle__Middle__2(%t2, %t3)
     return void
 }
-function @Middle__Middle__ov3(%this : ptr [alias=noalias, object_bytes=1], %other : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN6MiddleC1EOS_, inline_hint=yes] {
+function @Middle__Middle__2(%this : ptr [alias=noalias, object_bytes=1], %other : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN6MiddleC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -58,4 +58,4 @@ function @Middle__Middle__ov3(%this : ptr [alias=noalias, object_bytes=1], %othe
 }
 alias object _ZN6MiddleC2EO4Leaf = @Middle__Middle
 alias object _ZN5OuterC2EO6Middle = @Outer__Outer
-alias object _ZN6MiddleC2EOS_ = @Middle__Middle__ov3
+alias object _ZN6MiddleC2EOS_ = @Middle__Middle__2

@@ -12,17 +12,17 @@ function @spin_flag
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     slot $flag -> [rbp-<off0>] : i32
 
   block ^entry
     store.i32 [rbp-<off0>], 0
     store.i32 [rbp-<off0>], 1
-    load.i32 r9, [rbp-<off0>]
     load.i32 r8, [rbp-<off0>]
-    add r9, r8
-    sext.i32 r9
-    ret r9
+    load.i32 r9, [rbp-<off0>]
+    add r8, r9
+    sext.i32 r8
+    ret r8
 
 function @main
   abi
@@ -30,14 +30,12 @@ function @main
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     call @spin_flag [args=(), unwind=no]
-    sext.i32 rax
-    mov rdx, 2
-    cmp.i32 rax, rdx
+    cmp.i32 rax, 2
     setne rax
     movzx rax, rax
     ret rax

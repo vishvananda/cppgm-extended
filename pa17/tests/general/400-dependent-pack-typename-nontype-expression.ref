@@ -1,3 +1,5 @@
+declare global @sizeof_typelist___cppgm_class_template_identity_1___value : i64 [binding=weak, object=_ZN15sizeof_typelistI8typelistIJiclEEE5valueE]
+
 declare function @expect(%arg0 : ptr) -> i32 [binding=strong, object=_Z6expectP8typelistIJlciEE]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

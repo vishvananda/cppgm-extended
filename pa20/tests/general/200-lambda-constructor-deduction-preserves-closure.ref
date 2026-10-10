@@ -1,3 +1,6 @@
+declare global @same___lambda1_int_int_____value : u8 [binding=internal, object=_ZN4sameIZ4mainE3$_0PFiiEE5valueE]
+declare global @same___lambda2_int_int_____value : u8 [binding=internal, object=_ZN4sameIZ4mainE3$_1PFiiEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $captureless : obj<4x4>
   slot $argobj__1 : obj<1x1>
@@ -10,13 +13,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $captureless
     %t2 = addr $argobj__1
-    call void @Sink__Sink__ov3(%t1, $argobj__1)
+    call void @Sink__Sink(%t1, $argobj__1)
     store typed i32 1, $delta
     %t3 = addr $captured
     %t4 = addr $argobj__2
     %t5 = addr $delta
     store typed ptr %t5, %t4
-    call void @Sink__Sink__ov4(%t3, $argobj__2)
+    call void @Sink__Sink__2(%t3, $argobj__2)
     %t6 = addr $captureless
     %t7 = index i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
@@ -52,7 +55,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = load typed i32 $cond__3
     return i32 %t16
 }
-function @Sink__Sink__ov3(%this : ptr [object_bytes=4], %function : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_0EET_, object_root=yes, inline_hint=yes] {
+function @Sink__Sink(%this : ptr [object_bytes=4], %function : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_0EET_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $function : obj<1x1>
 
@@ -65,7 +68,7 @@ function @Sink__Sink__ov3(%this : ptr [object_bytes=4], %function : obj<1x1> [cl
     store typed i32 %t2, %t4
     return void
 }
-function @Sink__Sink__ov4(%this : ptr [object_bytes=4], %function : obj<8x8>) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_1EET_, object_root=yes, inline_hint=yes] {
+function @Sink__Sink__2(%this : ptr [object_bytes=4], %function : obj<8x8>) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_1EET_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $function : obj<8x8>
 
@@ -106,5 +109,5 @@ function @__lambda_main_t125_129_n1__operator__(%this : ptr [object_bytes=8], %n
     %t6 = binary add nowrap i32 %t1, %t5
     return i32 %t6
 }
-alias object _ZN4SinkC2IZ4mainE3$_0EET_ = @Sink__Sink__ov3
-alias object _ZN4SinkC2IZ4mainE3$_1EET_ = @Sink__Sink__ov4
+alias object _ZN4SinkC2IZ4mainE3$_0EET_ = @Sink__Sink
+alias object _ZN4SinkC2IZ4mainE3$_1EET_ = @Sink__Sink__2

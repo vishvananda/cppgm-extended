@@ -14,7 +14,7 @@ function @consume
     param %p -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -28,7 +28,7 @@ function @load_value
     param %p -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -71,11 +71,11 @@ function @main
     epilogues shared
 
   block ^entry
+    mov r8, @value
     mov rdi, 0
     mov rsi, 0
     mov rdx, 0
     mov rcx, 0
-    mov r8, @value
     call @target [args=(rcx,rdx,rsi,rdi,r8)]
     mov rdx, 77
     cmp.i64 rax, rdx

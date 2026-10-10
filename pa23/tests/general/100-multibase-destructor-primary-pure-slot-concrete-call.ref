@@ -1,17 +1,17 @@
-declare global @__external_vtable__B [binding=strong, object=_ZTV1B]
-declare global @__external_vtable__C [binding=strong, object=_ZTV1C]
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @C__vtable [binding=strong, object=_ZTV1C]
+declare global @B__vtable [binding=strong, object=_ZTV1B]
 
-declare function @__cxa_pure_virtual(%arg0 : ptr) -> void [unwind=no, return=noreturn, role=pure_virtual, binding=strong]
+declare function @__cxa_pure_virtual(%arg0 : ptr [object_bytes=8]) -> void [unwind=no, return=noreturn, role=pure_virtual, binding=strong]
 declare function @take(%arg0 : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z4take1C]
 declare function @C___C(%arg0 : ptr [object_bytes=16]) -> void [unwind=no, binding=strong, object=_ZN1CD1Ev]
 
-global @__typeinfo_name__struct_A [binding=weak, object=_ZTS1A] = {
+global @__typeinfo_name__struct_A [storage=readonly, binding=weak, object=_ZTS1A] = {
   i8 49
   i8 65
   i8 0
 }
-global @__rtti_struct_A [binding=weak, object=_ZTI1A] = {
+global @__rtti_struct_A [storage=readonly, binding=weak, object=_ZTI1A] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_A
 }
@@ -70,12 +70,12 @@ function @C__C(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=
     %t8 = index i8 %t7, 8
     call void @B__B__base_entry(%t6, %t8)
     %t9 = load typed ptr $this
-    %t10 = addr @__external_vtable__C
+    %t10 = addr @C__vtable
     %t11 = index i8 %t10, 16
     store typed ptr %t11, %t9
     %t12 = load typed ptr $this
     %t13 = index i8 %t12, 8
-    %t14 = addr @__external_vtable__C
+    %t14 = addr @C__vtable
     %t15 = index i8 %t14, 48
     store typed ptr %t15, %t13
     return void
@@ -101,7 +101,7 @@ function @B__B__base_entry(%this : ptr [alias=noalias, object_bytes=8], %other :
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = addr @__external_vtable__B
+    %t2 = addr @B__vtable
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void

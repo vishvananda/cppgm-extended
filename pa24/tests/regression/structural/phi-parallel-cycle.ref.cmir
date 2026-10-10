@@ -13,39 +13,28 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    temp %left -> [rbp-<off0>] : i64
-    temp %right -> [rbp-<off1>] : i64
-    temp %iteration -> [rbp-<off2>] : i64
-    temp %phi-cycle-scratch -> [rbp-<off3>] : i64
 
   block ^entry
-    mov <gpr0>, 1
-    store.i64 [rbp-<off0>], <gpr0>
-    mov <gpr0>, 2
-    store.i64 [rbp-<off1>], <gpr0>
-    mov <gpr0>, 0
-    store.i64 [rbp-<off2>], <gpr0>
+    mov r9, 1
+    mov rdi, 2
+    mov r8, 0
     jmp ^loop
 
   block ^loop
-    cmp.i64 [rbp-<off2>], 1
+    cmp.i64 r8, 1
     jge ^exit
     jmp ^latch
 
   block ^latch
-    load.i64 r8, [rbp-<off2>]
-    add r8, 1
-    store.i64 [rbp-<off2>], r8
-    load.i64 <gpr0>, [rbp-<off1>]
-    store.i64 [rbp-<off3>], <gpr0>
-    load.i64 <gpr0>, [rbp-<off0>]
-    store.i64 [rbp-<off1>], <gpr0>
-    load.i64 <gpr0>, [rbp-<off3>]
-    store.i64 [rbp-<off0>], <gpr0>
+    mov rsi, r8
+    add rsi, 1
+    mov r8, rsi
+    mov <gpr0>, r9
+    mov r9, rdi
+    mov rdi, <gpr0>
     jmp ^loop
 
   block ^exit
-    load.i64 r8, [rbp-<off0>]
-    imul r8, 10
-    add r8, [rbp-<off1>]
-    ret r8
+    imul r9, 10
+    add r9, rdi
+    ret r9

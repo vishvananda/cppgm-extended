@@ -13,7 +13,7 @@ function @f(%p : ptr [pass=by_address, object_bytes=4]) -> f32 [binding=strong, 
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store typed f32 0.0f, $cond__1
+    store typed f32 0f, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:

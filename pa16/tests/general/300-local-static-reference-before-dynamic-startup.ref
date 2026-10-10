@@ -1,10 +1,10 @@
-global @__local_static__read_constant_reference__decl0__reference : ptr [binding=internal, object=_ZZ23read_constant_referencevE9reference] = addr @source
-global @__local_static__read_dynamic_reference__decl0__reference : ptr [binding=internal, object=_ZZ22read_dynamic_referencevE9reference] = zero
-global @__local_static__read_dynamic_reference__decl0__reference__guard : i64 [binding=internal, object=_ZGVZ22read_dynamic_referencevE9reference] = zero
 global @source : i32 [binding=strong] = 7
 global @observed : i32 [binding=strong] = zero
+global @__local_static__read_constant_reference__decl0__reference : ptr [binding=internal, object=_ZZ23read_constant_referencevE9reference] = addr @source
 global @selections : i32 [binding=strong] = 0
 global @other : i32 [binding=strong] = 13
+global @__local_static__read_dynamic_reference__decl0__reference : ptr [binding=internal, object=_ZZ22read_dynamic_referencevE9reference] = zero
+global @__local_static__read_dynamic_reference__decl0__reference__guard : i64 [binding=internal, object=_ZGVZ22read_dynamic_referencevE9reference] = zero
 
 function @read_constant_reference() -> i32 [binding=strong, object=_Z23read_constant_referencev] {
   block ^entry:
@@ -44,9 +44,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = load typed i32 @observed
     %t2 = cmp ne i32 %t1, 7
-    branch %t2, ^if_then_1, ^lor_rhs_4
+    branch %t2, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t3 = load typed i32 @selections
     %t4 = cmp ne i32 %t3, 0
     branch %t4, ^if_then_1, ^if_else_2
@@ -55,9 +55,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t5 = call ptr @read_dynamic_reference()
     store typed i32 17, %t5
     %t6 = call ptr @read_dynamic_reference()

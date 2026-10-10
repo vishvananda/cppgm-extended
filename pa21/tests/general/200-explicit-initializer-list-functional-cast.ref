@@ -18,9 +18,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $argobj__2
     %t2 = addr $initlist__3
     store typed i32 1, %t2
-    %t3 = index i8 %t2, 4
+    %t3 = index i8 [projection=array_element] %t2, 4
     store typed i32 2, %t3
-    %t4 = index i8 %t2, 8
+    %t4 = index i8 [projection=array_element] %t2, 8
     store typed i32 3, %t4
     store typed ptr %t2, %t1
     %t5 = index i8 %t1, 8

@@ -11,13 +11,13 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     store typed i32 1, $ex
     %t1 = addr $tmpobj__1
     %t2 = addr $ex
-    call void @outer__inner__dispatch_int___dispatch_int_(%t1, %t2)
+    call void @outer__inner__dispatch_int___dispatch(%t1, %t2)
     %t3 = addr @handler
     %t4 = addr $argobj__2
     call void @outer__inner__dispatch_int___operator__(%t1, %t3, $argobj__2)
     return i32 0
 }
-function @outer__inner__dispatch_int___dispatch_int_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5outer5inner8dispatchIiEC1ERKi, inline_hint=yes] {
+function @outer__inner__dispatch_int___dispatch(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5outer5inner8dispatchIiEC1ERKi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -36,4 +36,4 @@ function @outer__inner__dispatch_int___operator__(%this : ptr [object_bytes=1], 
     store typed ptr %__param1, $__param1
     return void
 }
-alias object _ZN5outer5inner8dispatchIiEC2ERKi = @outer__inner__dispatch_int___dispatch_int_
+alias object _ZN5outer5inner8dispatchIiEC2ERKi = @outer__inner__dispatch_int___dispatch

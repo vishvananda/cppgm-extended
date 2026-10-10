@@ -89,11 +89,14 @@ for my $test (@tests)
 		if scalar(() = $baseline_main =~ /call i64 \@data_target\(/g) != 2;
 
 	my $optimized_main = function_body($test, $o2, 'main');
-	die "$test: O2 did not specialize the uniform control-flow parameter\n"
+	die "$test: O2 did not fold the uniform control-flow argument of a " .
+		"weak target\n"
 		if $optimized_main =~ /call i64 \@control_target\(/;
+	# Another unit's copy of a weak (vague-linkage) target keeps the
+	# original signature, so its uniform argument may not leave the ABI.
 	my @guard_calls = $optimized_main =~
 		/^\s+%\w+ = call i64 \@data_target\(7, [34]\)$/mg;
-	die "$test: O2 cloned a weak target for a data-only uniform parameter\n"
+	die "$test: O2 specialized the uniform argument of a weak data target\n"
 		if scalar(@guard_calls) != 2;
 	my $guard = function_body($test, $o2, 'data_target');
 	die "$test: O2 changed the observable weak data-target ABI\n"

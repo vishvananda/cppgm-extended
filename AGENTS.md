@@ -56,14 +56,16 @@ does not run them:
 
 ```sh
 make audit-lowir-contract audit-compiler-layout audit-compiler-exceptions \
-  audit-frontend-source-sets audit-builtin-registry-tables
+  audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-headers
 perl scripts/cppgm_file_audit.pl --paths dev
 python3 scripts/audit_pa_feature_placement.py --fail-on-early
 ```
 
-The file audit enforces file/function limits and forbids environment reads in
-`dev/src/`. Run `make test-harness` after changing harnesses or export logic.
-Validate a student export after changing shipped files or their discovery.
+The file audit enforces file/function limits, counting lines of code (blank
+and comment-only lines are not counted; a dispatch switch may run longer), and
+forbids environment reads in `dev/src/`; it skips the shipped scaffold files.
+Run `make test-harness` after changing harnesses or export logic. Validate a
+student export after changing shipped files or their discovery.
 Student documents are listed in `scripts/student_export_documents.txt`;
 keep run plans, audits and implementation journals out of the export.
 
@@ -77,10 +79,19 @@ verify output equality.
 
 ## Layout
 
-- `dev/src/preprocess`, `syntax`, `semantic`: source-language processing.
-- `abi`, `lowering`, `lowir`, `native`: ABI names, typed IR, optimization and
-  native code. PA8's LowIR construction work lives in `lowir/intro/`.
-- `compiler_object`, `support`: object/link support and shared utilities.
+- `dev/src/lex`, `preprocess`, `syntax`, `sema`, `types`: tokens and
+  literals, the preprocessor, the parser and syntax tree, semantic analysis,
+  and the fundamental types.
+- `abi`, `lower`, `lowir`, `opt`: Itanium names (with PA9's fact reader),
+  lowering of the analyzed program to LowIR, the LowIR program with its text
+  reader, writer and validator, and the LowIR optimizer. PA8's construction
+  exercises are in `lowir/exercises.cpp`.
+- `native`: instruction selection to machine IR, x86-64 encoding, objects,
+  the course runtime and the linker; `driver`: `cppgm++`'s modes and host
+  toolchain; `support`: shared utilities.
+- The shipped scaffold headers (`dev_support_files` in
+  `scripts/export_student_repo.sh`) are course files; `audit-scaffold-headers`
+  keeps the implementation off the ones it replaces.
 - `scripts/`: runners, comparison, audits and export; `shared/`: source grammar.
 - `doc/`: the C++ draft and Itanium ABI reference.
 - `scripts/architecture/`: live audit tables.

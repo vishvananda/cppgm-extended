@@ -25,7 +25,7 @@ function @N__operator_(%a : obj<4x4>, %b : obj<4x4>) -> obj<4x4> [binding=strong
     copyobj 4x4 %t14, %t13
     return obj<4x4> $retobj__1
 }
-function @N__operator___sym2(%a : obj<4x4>, %b : obj<4x4>) -> u8 [binding=strong, object=_ZN1NgtENS_1DES0_] {
+function @N__operator___2(%a : obj<4x4>, %b : obj<4x4>) -> u8 [binding=strong, object=_ZN1NgtENS_1DES0_] {
   slot $a : obj<4x4>
   slot $b : obj<4x4>
 
@@ -78,7 +78,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = addr $argobj__5
     %t16 = addr $b
     copyobj 4x4 %t16, %t15
-    %t17 = call u8 @N__operator___sym2($argobj__4, $argobj__5)
+    %t17 = call u8 @N__operator___2($argobj__4, $argobj__5)
     branch %t17, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

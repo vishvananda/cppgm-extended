@@ -37,8 +37,8 @@ function @normal(%value : f80) -> i32 [binding=strong, object=_Z6normale] {
   block ^entry:
     store typed f80 %value, $value
     %t1 = load typed f80 $value
-    %t2 = unary neg f80 3.36210314311209350626267781732175260e-4932L
-    %t3 = cmp ge f80 %t1, 3.36210314311209350626267781732175260e-4932L
+    %t2 = unary neg f80 3.3621031431120935063e-4932L
+    %t3 = cmp ge f80 %t1, 3.3621031431120935063e-4932L
     %t4 = convert trunc i32 i64 %t3
     %t5 = cmp le f80 %t1, %t2
     %t6 = convert trunc i32 i64 %t5
@@ -74,10 +74,10 @@ function @classify(%value : f80) -> i32 [binding=strong, object=_Z8classifye] {
     %t10 = binary sub i32 1, %t3
     %t11 = binary sub i32 1, %t9
     %t12 = binary and i32 %t10, %t11
-    %t13 = cmp eq f80 %t1, 0.0L
+    %t13 = cmp eq f80 %t1, 0L
     %t14 = convert trunc i32 i64 %t13
-    %t15 = unary neg f80 3.36210314311209350626267781732175260e-4932L
-    %t16 = cmp ge f80 %t1, 3.36210314311209350626267781732175260e-4932L
+    %t15 = unary neg f80 3.3621031431120935063e-4932L
+    %t16 = cmp ge f80 %t1, 3.3621031431120935063e-4932L
     %t17 = convert trunc i32 i64 %t16
     %t18 = cmp le f80 %t1, %t15
     %t19 = convert trunc i32 i64 %t18

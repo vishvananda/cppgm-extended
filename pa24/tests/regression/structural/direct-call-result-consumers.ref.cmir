@@ -110,20 +110,18 @@ function @main
     load.i64 <gpr0>, @saved
     call @saved_address [args=()]
     mov <gpr1>, rax
-    mov rdi, rax
+    mov rdi, <gpr1>
     call @observe_reference [args=(rdi)]
     mov rdi, <gpr1>
     call @load_saved [args=(rdi)]
-    mov r8, rax
     mov rdx, 41
     cmp.i64 <gpr0>, rdx
     setne <gpr0>
     movzx <gpr0>, <gpr0>
     mov rdx, 41
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    or <gpr0>, r8
-    mov rax, <gpr0>
-    sext.i32 rax
-    ret rax
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    or <gpr0>, rax
+    sext.i32 <gpr0>
+    ret <gpr0>

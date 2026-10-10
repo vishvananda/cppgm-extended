@@ -14,7 +14,7 @@ function @f() -> void [binding=strong, object=_Z1fv] {
     %t2 = addr @deleter
     store typed ptr %t2, $refarg__1
     %t3 = addr $refarg__1
-    call void @S_pointer_to_function_of__pointer_to_void__returning_void___S_pointer_to_function_of__pointer_to_void__returning_void___ov3(%t1, 0, %t3)
+    call void @S_void_void______S(%t1, 0, %t3)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @f()
     return i32 0
 }
-function @S_pointer_to_function_of__pointer_to_void__returning_void___S_pointer_to_function_of__pointer_to_void__returning_void___ov3(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN1SIPFvPvEEC1ILb1EiEEiOS2_, inline_hint=yes] {
+function @S_void_void______S(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN1SIPFvPvEEC1ILb1EiEEiOS2_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $__param2 : ptr
@@ -33,4 +33,4 @@ function @S_pointer_to_function_of__pointer_to_void__returning_void___S_pointer_
     store typed ptr %__param2, $__param2
     return void
 }
-alias object _ZN1SIPFvPvEEC2ILb1EiEEiOS2_ = @S_pointer_to_function_of__pointer_to_void__returning_void___S_pointer_to_function_of__pointer_to_void__returning_void___ov3
+alias object _ZN1SIPFvPvEEC2ILb1EiEEiOS2_ = @S_void_void______S

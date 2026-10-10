@@ -16,8 +16,7 @@ function @choose
     epilogues shared
 
   block ^entry
-    mov rax, rdi
-    cmp.i64 rax, 0
+    cmp.i64 rdi, 0
     jne ^yes
     jmp ^no
 

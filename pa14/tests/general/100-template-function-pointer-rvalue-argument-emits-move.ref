@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     store typed i32 1, $value
     %t1 = addr $object
-    call void @holder_int___holder_int_(%t1)
+    call void @holder_int___holder(%t1)
     %t2 = addr $value
     %t3 = addr $object
     %t4 = index i8 [projection=field] %t3, 0
@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr @check
     %t6 = addr $arg__2
     %t7 = addr $object
-    call void @holder_int___holder_int___ov2(%t6, %t7)
+    call void @holder_int___holder__ov2(%t6, %t7)
     %t8 = call u8 @invoke(%t5, %t6)
     branch %t8, ^cond_then_1, ^cond_else_2
 
@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load typed i32 $cond__1
     return i32 %t9
 }
-function @holder_int___holder_int_(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6holderIiEC1Ev, inline_hint=yes] {
+function @holder_int___holder(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6holderIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -51,7 +51,7 @@ function @holder_int___holder_int_(%this : ptr [object_bytes=8]) -> void [unwind
     store typed ptr 0, %t2
     return void
 }
-function @holder_int___holder_int___ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6holderIiEC1ERKS0_, inline_hint=yes] {
+function @holder_int___holder__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6holderIiEC1ERKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -74,12 +74,12 @@ function @invoke(%function : ptr, %value : ptr [pass=by_address, object_bytes=8]
   block ^entry:
     store typed ptr %function, $function
     %t1 = addr $arg__1
-    call void @holder_int___holder_int___ov3(%t1, %value)
+    call void @holder_int___holder__ov3(%t1, %value)
     %t2 = load typed ptr $function
     %t3 = call u8 %t2(%t1) as (%arg0 : ptr [pass=by_address, object_bytes=8]) -> u8
     return u8 %t3
 }
-function @holder_int___holder_int___ov3(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6holderIiEC1EOS0_, inline_hint=yes] {
+function @holder_int___holder__ov3(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6holderIiEC1EOS0_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -97,6 +97,6 @@ function @holder_int___holder_int___ov3(%this : ptr [alias=noalias, object_bytes
     store typed ptr 0, %t7
     return void
 }
-alias object _ZN6holderIiEC2Ev = @holder_int___holder_int_
-alias object _ZN6holderIiEC2ERKS0_ = @holder_int___holder_int___ov2
-alias object _ZN6holderIiEC2EOS0_ = @holder_int___holder_int___ov3
+alias object _ZN6holderIiEC2Ev = @holder_int___holder
+alias object _ZN6holderIiEC2ERKS0_ = @holder_int___holder__ov2
+alias object _ZN6holderIiEC2EOS0_ = @holder_int___holder__ov3

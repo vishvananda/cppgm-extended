@@ -1,3 +1,5 @@
+declare global @is_same___cppgm_class_template_identity_1___cppgm_class_template_identity_1___value : u8 [binding=weak, object=_ZN7is_sameI6traitsIiES1_E5valueE]
+
 global @value [binding=strong] = {
   zero 1
 }

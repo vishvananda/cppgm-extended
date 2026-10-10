@@ -25,14 +25,14 @@ sub run_optimizer
 	my $output = "$directory/$label.lowir";
 	my $stderr = "$directory/$label.stderr";
 	my $status = run_command_capture(
-		cmd => [$app, "-$level", '--stats', '-o', $output, $input],
+		cmd => [$app, "-$level", '-o', $output, $input],
 		stdout => "$directory/$label.stdout",
 		stderr => $stderr,
 		timeout => 30,
 	);
 	die "$input: lowiropt -$level failed\n" . read_file($stderr)
 		if $status != 0;
-	return ($output, read_file($output), read_file($stderr));
+	return ($output, read_file($output));
 }
 
 sub function_body
@@ -41,13 +41,6 @@ sub function_body
 	return $1 if $output =~
 		/(function \@\Q$name\E\b.*?)(?=\nfunction \@|\z)/s;
 	die "$test: optimized output has no $name definition\n";
-}
-
-sub stat_value
-{
-	my ($test, $stats, $name) = @_;
-	return 0 + $1 if $stats =~ /(?:^|\s)\Q$name\E=(\d+)(?:\s|$)/;
-	die "$test: optimizer stats omit $name\n";
 }
 
 sub check_positive_shapes
@@ -61,19 +54,13 @@ sub check_positive_shapes
 		if($expect_recovered) {
 			die "$test: $label retained the recoverable slot in $name\n"
 				if $has_value_slot || $has_value_address;
+			die "$test: $label left memory traffic in $name\n"
+				if $body =~ /^\s+(?:store|zeroinit|%\w+ = load) /m;
 		} else {
-			# O1 forwards a block-local load through the slot address from
-			# the direct store that precedes it; the address dies, and the
-			# dead-slot pass then removes the store-only slot in the direct
-			# forms.  The addressed forms keep their slot at O1: only the O2
-			# recovery removes a slot that is stored or zeroed through its
-			# address, and the promotion stat below is the level's evidence.
-			my $addressed = $name eq 'recover_addressed_store' ||
-				$name eq 'recover_complete_zero';
-			die "$test: $label recovered the O2 scalar slot in $name\n"
-				if ($label eq 'O0' || $addressed) && !$has_value_slot;
+			die "$test: $label recovered the scalar slot in $name\n"
+				if !$has_value_slot;
 			die "$test: $label dropped the slot address in $name\n"
-				if $label eq 'O0' && !$has_value_address;
+				if !$has_value_address;
 		}
 	}
 	my $copy = function_body($test, $output, 'recover_complete_copy');
@@ -83,7 +70,7 @@ sub check_positive_shapes
 		die "$test: $label retained the complete local scalar copy\n"
 			if $has_copy_slots || $has_bulk_copy;
 	} else {
-		die "$test: $label changed the lower-level scalar-copy baseline\n"
+		die "$test: $label changed the unoptimized scalar-copy baseline\n"
 			if !$has_copy_slots || !$has_bulk_copy;
 	}
 }
@@ -130,43 +117,30 @@ for my $test (@tests)
 {
 	my $directory = tempdir('cppgm-addressed-scalar-XXXXXX',
 		TMPDIR => 1, CLEANUP => 1);
-	my (%paths, %outputs, %stats);
+	my (%paths, %outputs);
 	for my $level ('O0', 'O1', 'O2', 'O3') {
-		($paths{$level}, $outputs{$level}, $stats{$level}) =
+		($paths{$level}, $outputs{$level}) =
 			run_optimizer($app, $test, $directory, $level, $level);
 	}
 
-	for my $level ('O0', 'O1') {
-		check_positive_shapes($test, $outputs{$level}, $level, 0);
-		die "$test: $level reported the O2 addressed-slot recovery\n"
-			if stat_value($test, $stats{$level},
-				'addressed_scalars_promoted') != 0;
-	}
-	for my $level ('O2', 'O3') {
+	# O0 is the unoptimized baseline.  Every optimizing level removes a
+	# scalar slot whose address only reaches whole-slot loads, stores,
+	# zeroing and copies (directly, through a copy, or through a zero
+	# index), and keeps the slot when the address escapes, is offset,
+	# is used volatilely or is read at a narrower type.
+	check_positive_shapes($test, $outputs{O0}, 'O0', 0);
+	for my $level ('O1', 'O2', 'O3') {
 		check_positive_shapes($test, $outputs{$level}, $level, 1);
 		check_guard_shapes($test, $outputs{$level}, $level);
 
-		my $candidates = stat_value(
-			$test, $stats{$level}, 'addressed_scalar_candidates');
-		my $promoted = stat_value(
-			$test, $stats{$level}, 'addressed_scalars_promoted');
-		my $memory = stat_value(
-			$test, $stats{$level}, 'addressed_scalar_memory_rewrites');
-		my $copies = stat_value(
-			$test, $stats{$level}, 'addressed_scalar_copies_rewritten');
-		die "$test: $level addressed-scalar stats are empty or unbounded\n"
-			if !$promoted || !$memory || !$copies ||
-			   $promoted > $candidates || $candidates > 64 ||
-			   $memory > $candidates * 8 || $copies > $candidates * 2;
-
-		my ($replay_path, $replay, $replay_stats) = run_optimizer(
+		my ($replay_path, $replay) = run_optimizer(
 			$app, $paths{$level}, $directory, "$level-replay", $level);
 		check_positive_shapes(
 			$test, $replay, "serialized $level replay", 1);
 		check_guard_shapes($test, $replay, "serialized $level replay");
 	}
 
-	for my $level ('O2', 'O3') {
+	for my $level ('O1', 'O2', 'O3') {
 		my $executable = "$directory/behavior-$level";
 		my $compile_stderr = "$directory/compile-$level.stderr";
 		my $compile_status = run_command_capture(

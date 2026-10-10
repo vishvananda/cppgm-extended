@@ -1,17 +1,10 @@
+declare function @__cppgm_builtin_memset(%arg0 : ptr, %arg1 : i32, %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memset]
+
 function @fill_range(%first : ptr, %last : ptr) -> void {
   block ^entry:
-    jump ^cond
-
-  block ^cond:
-    %p = phi ptr [^entry: %first, ^body: %next]
-    %more = cmp ne ptr %p, %last
-    branch %more, ^body, ^done
-
-  block ^body:
-    store u8 0, %p
-    %next = index i8 %p, 1
-    jump ^cond
-
-  block ^done:
+    %t1 = copy i64 %last
+    %t2 = copy i64 %first
+    %t3 = binary sub i64 %t1, %t2
+    %t4 = call ptr @__cppgm_builtin_memset(%first, 0, %t3)
     return void
 }

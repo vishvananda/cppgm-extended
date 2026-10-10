@@ -1,4 +1,4 @@
-global @__cppgm_class_template_identity_0_0_0__cache [binding=weak, object=_ZN12cache_holderILb1EE5cacheE] = {
+global @cache_holder_true___cache [binding=weak, object=_ZN12cache_holderILb1EE5cacheE] = {
   i64 1
   i64 2
   i64 3
@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = addr @__cppgm_class_template_identity_0_0_0__cache
+    %t1 = addr @cache_holder_true___cache
     %t2 = binary mul i64 1, 16
     %t3 = index i8 [projection=array_element] %t1, %t2
     %t4 = index i8 [projection=field] %t3, 8

@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    call void @context__executor_int___executor_long_int_(%t1)
+    call void @context__executor_int___executor(%t1)
     store typed i64 0, $next_value
     eh_try ^cleanup_action_2
     %t2 = addr $tmpobj__1
@@ -27,13 +27,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^call_unwind_end_3:
     eh_try ^cleanup_action_4
-    call void @context__executor_long_int___execute(%t2)
-    call void @context__executor_long_int____executor(%t2)
+    call void @context__executor_longint___execute(%t2)
+    call void @context__executor_longint____executor(%t2)
     eh_end
     jump ^call_unwind_end_5
 
   block ^cleanup_action_4:
-    call void @context__executor_long_int____executor(%t2)
+    call void @context__executor_longint____executor(%t2)
     jump ^cleanup_action_2
 
   block ^call_unwind_end_5:
@@ -44,11 +44,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @context__executor_int____executor(%t9)
     return i32 %t8
 }
-function @context__executor_int___executor_long_int_(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7context8executorIiEC1Ev, inline_hint=yes] {
+function @context__executor_int___executor(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7context8executorIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
+    return void
+}
+function @context__executor_int___require(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZNK7context8executorIiE7requireIlEENS0_IT_EERKS3_, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param2 : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %__param2, $__param2
+    call void @context__executor_longint___executor(%ret)
     return void
 }
 function @context__executor_int____executor(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7context8executorIiED1Ev, inline_hint=yes] {
@@ -61,17 +71,7 @@ function @context__executor_int____executor(%this : ptr [object_bytes=1]) -> voi
     store typed i32 %t2, @sink
     return void
 }
-function @context__executor_int___require(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZNK7context8executorIiE7requireIlEENS0_IT_EERKS3_, inline_hint=yes] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %__param1, $__param1
-    call void @context__executor_long_int___executor_long_int_(%ret)
-    return void
-}
-function @context__executor_long_int___execute(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7context8executorIlE7executeEv, inline_hint=yes] {
+function @context__executor_longint___execute(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7context8executorIlE7executeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -81,7 +81,7 @@ function @context__executor_long_int___execute(%this : ptr [object_bytes=1]) -> 
     store typed i32 %t2, @sink
     return void
 }
-function @context__executor_long_int____executor(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7context8executorIlED1Ev, inline_hint=yes] {
+function @context__executor_longint____executor(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7context8executorIlED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -91,14 +91,14 @@ function @context__executor_long_int____executor(%this : ptr [object_bytes=1]) -
     store typed i32 %t2, @sink
     return void
 }
-function @context__executor_long_int___executor_long_int_(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7context8executorIlEC1Ev, inline_hint=yes] {
+function @context__executor_longint___executor(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7context8executorIlEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return void
 }
-alias object _ZN7context8executorIiEC2Ev = @context__executor_int___executor_long_int_
+alias object _ZN7context8executorIiEC2Ev = @context__executor_int___executor
 alias object _ZN7context8executorIiED2Ev = @context__executor_int____executor
-alias object _ZN7context8executorIlED2Ev = @context__executor_long_int____executor
-alias object _ZN7context8executorIlEC2Ev = @context__executor_long_int___executor_long_int_
+alias object _ZN7context8executorIlED2Ev = @context__executor_longint____executor
+alias object _ZN7context8executorIlEC2Ev = @context__executor_longint___executor

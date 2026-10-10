@@ -2,11 +2,11 @@ declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding
 
 global @selected : i32 [binding=strong] = zero
 
-function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete] {
-  slot $arg0 : ptr
+function @operatordelete(%__param0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete] {
+  slot $__param0 : ptr
 
   block ^entry:
-    store typed ptr %arg0, $arg0
+    store typed ptr %__param0, $__param0
     store typed i32 1, @selected
     return void
 }

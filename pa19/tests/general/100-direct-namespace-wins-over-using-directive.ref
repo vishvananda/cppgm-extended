@@ -1,3 +1,5 @@
+declare global @meta__mpl__integral_c_longint_4___value : i64 [binding=weak, object=_ZN4meta3mpl10integral_cIlLl4EE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

@@ -22,7 +22,7 @@ function @touch
     param %e -> r9 : i64
     return void -> void
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -41,8 +41,7 @@ function @main
     preserve rbx
 
   block ^entry
-    mov rbx, @bytes
-    lea rbx, [rbx+2]
+    mov rbx, @bytes+2
     mov rdi, rbx
     mov rsi, 1
     mov rdx, 2
@@ -50,8 +49,7 @@ function @main
     mov r8, 4
     mov r9, 5
     call @touch [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    mov r8, @bytes
-    lea r8, [r8+2]
+    mov r8, @bytes+2
     cmp.ptr rbx, r8
     je ^good
     jmp ^bad
@@ -67,9 +65,9 @@ function @main
     sete r8
     movzx r8, r8
     cmp.i64 r8, 0
-    sete rax
-    movzx rax, rax
-    ret rax
+    sete r8
+    movzx r8, r8
+    ret r8
 
   block ^bad
     mov rax, 1

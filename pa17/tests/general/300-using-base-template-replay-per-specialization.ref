@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = index i8 [projection=field] %t7, 0
     store typed ptr %t6, %t8
     %t9 = addr $first
-    %t10 = call i32 @holder_long_int___run(%t9)
+    %t10 = call i32 @holder_longint___run(%t9)
     %t11 = addr $second
     %t12 = call i32 @holder_int___run(%t11)
     %t13 = binary add nowrap i32 %t10, %t12
@@ -38,7 +38,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load typed i32 $cond__1
     return i32 %t15
 }
-function @holder_long_int___run(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN6holderIlE3runEv, inline_hint=yes] {
+function @holder_longint___run(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN6holderIlE3runEv, inline_hint=yes] {
   slot $this : ptr
   slot $t : obj<4x4>
 
@@ -46,7 +46,7 @@ function @holder_long_int___run(%this : ptr [object_bytes=8]) -> i32 [binding=we
     store typed ptr %this, $this
     %t1 = addr $t
     %t2 = load typed ptr $this
-    call void @holder_long_int___temp__temp__ov3(%t1, %t2, 0)
+    call void @holder_longint___temp__temp(%t1, %t2, 0)
     %t3 = addr $t
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
@@ -60,13 +60,13 @@ function @holder_int___run(%this : ptr [object_bytes=8]) -> i32 [binding=weak, o
     store typed ptr %this, $this
     %t1 = addr $t
     %t2 = load typed ptr $this
-    call void @holder_int___temp__temp__ov3(%t1, %t2, 0)
+    call void @holder_int___temp__temp(%t1, %t2, 0)
     %t3 = addr $t
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     return i32 %t5
 }
-function @holder_long_int___temp__temp__ov3(%this : ptr [object_bytes=4], %h : ptr, %__param2 : i32) -> void [binding=weak, object=_ZN6holderIlE4tempC1IiEEPS0_T_, inline_hint=yes] {
+function @holder_longint___temp__temp(%this : ptr [object_bytes=4], %h : ptr, %__param2 : i32) -> void [binding=weak, object=_ZN6holderIlE4tempC1IiEEPS0_T_, inline_hint=yes] {
   slot $this : ptr
   slot $h : ptr
   slot $__param2 : i32
@@ -81,13 +81,13 @@ function @holder_long_int___temp__temp__ov3(%this : ptr [object_bytes=4], %h : p
     %t2 = load typed ptr $h
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed ptr %t3
-    %t5 = call i32 @traits_long_int___construct(%t1, %t4)
+    %t5 = call i32 @traits_longint___construct(%t1, %t4)
     %t6 = load typed ptr $this
     %t7 = index i8 [projection=field] %t6, 0
     store typed i32 %t5, %t7
     return void
 }
-function @holder_int___temp__temp__ov3(%this : ptr [object_bytes=4], %h : ptr, %__param2 : i32) -> void [binding=weak, object=_ZN6holderIiE4tempC1IiEEPS0_T_, inline_hint=yes] {
+function @holder_int___temp__temp(%this : ptr [object_bytes=4], %h : ptr, %__param2 : i32) -> void [binding=weak, object=_ZN6holderIiE4tempC1IiEEPS0_T_, inline_hint=yes] {
   slot $this : ptr
   slot $h : ptr
   slot $__param2 : i32
@@ -108,7 +108,7 @@ function @holder_int___temp__temp__ov3(%this : ptr [object_bytes=4], %h : ptr, %
     store typed i32 %t5, %t7
     return void
 }
-function @traits_long_int___construct(%__param0 : ptr [pass=by_address, object_bytes=8], %p : ptr) -> i32 [binding=weak, object=_ZN6traitsIlE9constructIlEEiRlPT_, inline_hint=yes] {
+function @traits_longint___construct(%__param0 : ptr [pass=by_address, object_bytes=8], %p : ptr) -> i32 [binding=weak, object=_ZN6traitsIlE9constructIlEEiRlPT_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $p : ptr
 
@@ -131,5 +131,5 @@ function @traits_int___construct(%__param0 : ptr [pass=by_address, object_bytes=
     %t2 = load typed i32 %t1
     return i32 %t2
 }
-alias object _ZN6holderIlE4tempC2IiEEPS0_T_ = @holder_long_int___temp__temp__ov3
-alias object _ZN6holderIiE4tempC2IiEEPS0_T_ = @holder_int___temp__temp__ov3
+alias object _ZN6holderIlE4tempC2IiEEPS0_T_ = @holder_longint___temp__temp
+alias object _ZN6holderIiE4tempC2IiEEPS0_T_ = @holder_int___temp__temp

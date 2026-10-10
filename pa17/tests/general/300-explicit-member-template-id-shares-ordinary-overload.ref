@@ -22,10 +22,10 @@ function @S__run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN1
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = call i32 @S__choose__ov2(%t1, 0)
+    %t2 = call i32 @S__choose__2(%t1, 0)
     return i32 %t2
 }
-function @S__choose__ov2(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=weak, object=_ZN1S6chooseIiEEii, inline_hint=yes] {
+function @S__choose__2(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=weak, object=_ZN1S6chooseIiEEii, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

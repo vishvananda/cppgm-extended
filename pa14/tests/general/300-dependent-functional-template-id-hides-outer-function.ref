@@ -18,11 +18,11 @@ function @outer__inner__box_int___set(%this : ptr [object_bytes=1], %c : i32) ->
     %t1 = addr $arg__1
     %t2 = load typed i32 $c
     %t3 = load typed i32 $c
-    call void @outer__inner__range_int___range_int_(%t1, %t2, %t3)
+    call void @outer__inner__range_int___range(%t1, %t2, %t3)
     call void @outer__inner__sink(%t1)
     return void
 }
-function @outer__inner__range_int___range_int_(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : i32) -> void [binding=weak, object=_ZN5outer5inner5rangeIiEC1Eii, inline_hint=yes] {
+function @outer__inner__range_int___range(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : i32) -> void [binding=weak, object=_ZN5outer5inner5rangeIiEC1Eii, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $__param2 : i32
@@ -40,4 +40,4 @@ function @outer__inner__sink(%__param0 : ptr [pass=by_address, object_bytes=1]) 
     store typed ptr %__param0, $__param0
     return void
 }
-alias object _ZN5outer5inner5rangeIiEC2Eii = @outer__inner__range_int___range_int_
+alias object _ZN5outer5inner5rangeIiEC2Eii = @outer__inner__range_int___range

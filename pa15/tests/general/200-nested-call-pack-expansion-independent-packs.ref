@@ -1,4 +1,4 @@
-global @transform_address : ptr [binding=strong] = addr @transform__ov2
+global @transform_address : ptr [binding=strong] = addr @transform
 
 function @sum(%a : i32, %b : i32) -> i32 [binding=strong, object=_Z3sumii] {
   slot $a : i32
@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $argobj__2
-    %t2 = call i32 @transform__ov2($argobj__2, 4)
+    %t2 = call i32 @transform($argobj__2, 4)
     %t3 = binary sub nowrap i32 %t2, 3
     branch %t3, ^lor_short_2, ^lor_rhs_1
 
@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = convert trunc i32 i64 %t9
     return i32 %t10
 }
-function @transform__ov2(%__param0 : obj<1x1> [classes=none], %t : i32) -> i32 [binding=weak, object=_Z9transformIJcsEJiEEi1SIJDpT_EEDpT0_] {
+function @transform(%__param0 : obj<1x1> [classes=none], %t : i32) -> i32 [binding=weak, object=_Z9transformIJcsEJiEEi1SIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $t : i32
 
@@ -50,7 +50,7 @@ function @transform__ov2(%__param0 : obj<1x1> [classes=none], %t : i32) -> i32 [
     %t1 = load typed i32 $t
     %t2 = call i32 @get(%t1)
     %t3 = load typed i32 $t
-    %t4 = call i32 @get__ov2(%t3)
+    %t4 = call i32 @get__2(%t3)
     %t5 = call i32 @sum(%t2, %t4)
     return i32 %t5
 }
@@ -63,7 +63,7 @@ function @get(%__param0 : i32) -> i32 [binding=weak, object=_Z3getIcJiEEiDpT0_] 
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
 }
-function @get__ov2(%__param0 : i32) -> i32 [binding=weak, object=_Z3getIsJiEEiDpT0_] {
+function @get__2(%__param0 : i32) -> i32 [binding=weak, object=_Z3getIsJiEEiDpT0_] {
   slot $__param0 : i32
 
   block ^entry:

@@ -1,3 +1,8 @@
+declare global @holder_void_____value : i32 [binding=weak, object=_ZN6holderIFvvEE5valueE]
+declare global @holder_void_____value__2 : i32 [binding=weak, object=_ZN6holderIFvvREE5valueE]
+declare global @holder_void_____value__3 : i32 [binding=weak, object=_ZN6holderIKFvvREE5valueE]
+declare global @holder_void_____value__4 : i32 [binding=weak, object=_ZN6holderIFvvOEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

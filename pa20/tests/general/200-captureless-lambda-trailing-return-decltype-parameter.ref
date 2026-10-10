@@ -38,7 +38,7 @@ function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [p
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr $other
-    %t4 = addr @__lambda_S__S_t68_81
+    %t4 = addr @S____lambda_S__S_t68_81___FUN
     %t5 = call ptr %t4(%t3) as (%arg0 : ptr [pass=by_address, object_bytes=4]) -> ptr
     copyobj 4x4 %t5, %t2
     return void
@@ -56,7 +56,7 @@ function @U__U__ov2(%this : ptr [object_bytes=4], %x : i32) -> void [binding=wea
     store typed i32 %t1, %t3
     return void
 }
-function @__lambda_S__S_t68_81(%s : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZZN1SC1EOS_ENUlRS_E_8__invokeES1_, inline_hint=yes] {
+function @S____lambda_S__S_t68_81___FUN(%s : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZZN1SC1EOS_ENUlRS_E_8__invokeES1_, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $s : ptr
 
   block ^entry:

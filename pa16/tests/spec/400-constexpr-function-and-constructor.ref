@@ -19,14 +19,4 @@ function @Point__Point(%this : ptr [object_bytes=4], %v : i32) -> void [binding=
     store typed i32 %t1, %t3
     return void
 }
-function @square(%x : i32) -> i32 [binding=weak, object=_Z6squarei, inline_hint=yes] {
-  slot $x : i32
-
-  block ^entry:
-    store typed i32 %x, $x
-    %t1 = load typed i32 $x
-    %t2 = load typed i32 $x
-    %t3 = binary mul nowrap i32 %t1, %t2
-    return i32 %t3
-}
 alias object _ZN5PointC2Ei = @Point__Point

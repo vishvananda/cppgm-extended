@@ -1,3 +1,10 @@
+function @ns__json__value___value__base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN2ns4json5valueD2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
 function @destroy(%h : ptr) -> void [binding=strong, object=_Z7destroyPN2ns4json6detail6holderE] {
   slot $h : ptr
 
@@ -25,13 +32,6 @@ function @ns__json__detail__holder___holder(%this : ptr [object_bytes=8]) -> voi
     %t5 = binary mul i64 0, 4
     %t6 = index i8 [projection=array_element] %t4, %t5
     call void @ns__json__value___value(%t6)
-    return void
-}
-function @ns__json__value___value__base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN2ns4json5valueD2Ev, object_root=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
     return void
 }
 function @ns__json__value___value(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN2ns4json5valueD1Ev] {

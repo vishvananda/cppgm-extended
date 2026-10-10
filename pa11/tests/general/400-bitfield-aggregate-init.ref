@@ -12,7 +12,7 @@ function @observe(%value : ptr [pass=by_address, object_bytes=4], %x : ptr [pass
     %t5 = binary shl i32 %t4, 29
     %t6 = binary shr i32 %t5, 29
     %t7 = load i32 %t2
-    %t8 = binary and i32 %t7, 4294967288
+    %t8 = binary and i32 %t7, -8
     %t9 = binary or i32 %t8, %t4
     store i32 %t9, %t2
     %t10 = load typed ptr $value
@@ -48,15 +48,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = binary shl i32 %t15, 29
     %t17 = binary shr i32 %t16, 29
     %t18 = load i32 %t13
-    %t19 = binary and i32 %t18, 4294967288
+    %t19 = binary and i32 %t18, -8
     %t20 = binary or i32 %t19, %t15
     store i32 %t20, %t13
     %t21 = load typed ptr $snapshot
     %t22 = load typed i32 %t21
     %t23 = cmp ne i32 %t22, 3
-    branch %t23, ^if_then_1, ^lor_rhs_4
+    branch %t23, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t24 = addr $x
     %t25 = index i8 [projection=field] %t24, 0
     %t26 = load i32 %t25
@@ -71,16 +71,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t32 = addr $x
     %t33 = index i8 [projection=field] %t32, 0
     %t34 = binary and i32 3, 7
     %t35 = binary shl i32 %t34, 29
     %t36 = binary shr i32 %t35, 29
     %t37 = load i32 %t33
-    %t38 = binary and i32 %t37, 4294967288
+    %t38 = binary and i32 %t37, -8
     %t39 = binary or i32 %t38, %t34
     store i32 %t39, %t33
     %t40 = addr $x

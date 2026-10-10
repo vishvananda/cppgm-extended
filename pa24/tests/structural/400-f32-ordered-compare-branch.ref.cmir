@@ -16,8 +16,7 @@ function @main
 
   block ^entry
     fcmp.f32 1.0f, 2.0f
-    jp ^right
-    jb ^wrong
+    ja ^wrong
     jmp ^right
 
   block ^wrong

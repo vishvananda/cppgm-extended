@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 0, %t1
     %t2 = index i8 [projection=array_element] %t1, 4
     store typed i32 0, %t2
-    %t3 = index i8 [projection=array_element] %t1, 8
+    %t3 = index i8 %t1, 8
     store typed i32 0, %t3
     %t4 = index i8 [projection=array_element] %t3, 4
     store typed i32 0, %t4
@@ -33,7 +33,7 @@ function @inner(%__param0 : ptr [pass=by_address, object_bytes=16]) -> void [bin
     store typed i32 0, %t1
     %t2 = index i8 [projection=array_element] %t1, 4
     store typed i32 0, %t2
-    %t3 = index i8 [projection=array_element] %t1, 8
+    %t3 = index i8 %t1, 8
     store typed i32 0, %t3
     %t4 = index i8 [projection=array_element] %t3, 4
     store typed i32 0, %t4

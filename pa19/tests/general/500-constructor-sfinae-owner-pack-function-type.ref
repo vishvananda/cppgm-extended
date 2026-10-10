@@ -1,3 +1,7 @@
+declare global @supportable_properties_0_void___cppgm_class_template_identity_1____is_valid_target_executor___value : u8 [binding=weak, object=_ZN22supportable_propertiesILi0EFv11prefer_onlyI7trackedEEE15is_valid_targetIN4pool8executorEE5valueE]
+declare global @supportable_properties_1_void___cppgm_class_template_identity_2____is_valid_target_executor___value : u8 [binding=weak, object=_ZN22supportable_propertiesILi1EFv11prefer_onlyI9untrackedEEE15is_valid_targetIN4pool8executorEE5valueE]
+declare global @supportable_properties___cppgm_class_template_identity_3___is_valid_target_executor___value : u8 [binding=weak, object=_ZN22supportable_propertiesILi0EFv11prefer_onlyI7trackedES0_I9untrackedEEE15is_valid_targetIN4pool8executorEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $p : obj<1x1>
   slot $ex : obj<4x4>
@@ -10,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $argobj__1
     %t4 = addr $p
     %t5 = call obj<1x1> @pool__get_executor(%t4)
-    call void @any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___ov3(%t2, $argobj__1, 0)
+    call void @any_executor___cppgm_class_template_identity_1___cppgm_class_template_identity_2___any_executor(%t2, $argobj__1, 0)
     %t6 = addr $ex
     %t7 = index i8 [projection=field] %t6, 0
     %t8 = load typed i32 %t7
@@ -38,7 +42,7 @@ function @pool__get_executor(%this : ptr [object_bytes=1]) -> obj<1x1> [result_c
     %t1 = addr $retobj__1
     return obj<1x1> $retobj__1
 }
-function @any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___ov3(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [classes=none], %__param2 : ptr) -> void [binding=weak, object=_ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC1IN4pool8executorEEET_PN9enable_ifIXaaaantsr7is_sameIS9_S5_EE5valuentsr10is_base_ofI13executor_baseS9_EE5valuesr24is_valid_target_executorIS9_FvS2_S4_EEE5valueEvE4typeE, inline_hint=yes] {
+function @any_executor___cppgm_class_template_identity_1___cppgm_class_template_identity_2___any_executor(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [classes=none], %__param2 : ptr) -> void [binding=weak, object=_ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC1IN4pool8executorEEET_PN9enable_ifIXaaaantsr7is_sameIS9_S5_EE5valuentsr10is_base_ofI13executor_baseS9_EE5valuesr24is_valid_target_executorIS9_FvS2_S4_EEE5valueEvE4typeE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : ptr
@@ -51,4 +55,4 @@ function @any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_temp
     store typed i32 1, %t2
     return void
 }
-alias object _ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC2IN4pool8executorEEET_PN9enable_ifIXaaaantsr7is_sameIS9_S5_EE5valuentsr10is_base_ofI13executor_baseS9_EE5valuesr24is_valid_target_executorIS9_FvS2_S4_EEE5valueEvE4typeE = @any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___ov3
+alias object _ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC2IN4pool8executorEEET_PN9enable_ifIXaaaantsr7is_sameIS9_S5_EE5valuentsr10is_base_ofI13executor_baseS9_EE5valuesr24is_valid_target_executorIS9_FvS2_S4_EEE5valueEvE4typeE = @any_executor___cppgm_class_template_identity_1___cppgm_class_template_identity_2___any_executor

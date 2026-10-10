@@ -14,10 +14,10 @@ function @identity
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi
@@ -29,7 +29,7 @@ function @frame_storage_after_call
     stack_size 16
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     slot $value -> [rbp-8] : i64
 
   block ^entry
@@ -45,8 +45,8 @@ function @global_storage_after_call
   frame
     stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     mov rdi, 5
@@ -61,7 +61,7 @@ function @constant_field_after_call
     stack_size 32
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     slot $object -> [rbp-24] : obj<24x8>
 
   block ^entry
@@ -79,19 +79,16 @@ function @variable_index_after_call
     stack_size 32
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     preserve rbx
     slot $object -> [rbp-24] : obj<24x8>
 
   block ^entry
-    lea rbx, [rbp-24]
-    mov rdx, rdi
-    imul rdx, 8
-    add rbx, rdx
-    store.i64 [rbx], 29
+    mov rbx, rdi
+    store.i64 [rbp+rbx*8-24], 29
     mov rdi, 9
     call @identity [args=(rdi), unwind=no]
-    load.i64 rax, [rbx]
+    load.i64 rax, [rbp+rbx*8-24]
     ret rax
 
 function @main
@@ -100,8 +97,8 @@ function @main
   frame
     stack_size 32
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
     preserve rbx r12 r13
 
   block ^entry
@@ -113,23 +110,19 @@ function @main
     mov r13, rax
     mov rdi, 1
     call @variable_index_after_call [args=(rdi), unwind=no]
-    mov rdx, 19
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 19
     setne rbx
     movzx rbx, rbx
-    mov rdx, 11
-    cmp.i64 r12, rdx
+    cmp.i64 r12, 11
     setne r12
     movzx r12, r12
-    mov rdx, 23
-    cmp.i64 r13, rdx
+    cmp.i64 r13, 23
     setne r13
     movzx r13, r13
-    mov rdx, 29
-    cmp.i64 rax, rdx
-    setne r8
-    movzx r8, r8
+    cmp.i64 rax, 29
+    setne rax
+    movzx rax, rax
     or rbx, r12
-    or r13, r8
+    or r13, rax
     or rbx, r13
     ret rbx

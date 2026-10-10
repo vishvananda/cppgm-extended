@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $value
     %t2 = addr $value
-    %t3 = call i32 @sum_bases_one__two___sum(%t2)
+    %t3 = call i32 @sum_bases_one_two___sum(%t2)
     %t4 = cmp eq i32 %t3, 3
     branch %t4, ^cond_then_1, ^cond_else_2
 
@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @sum_bases_one__two___sum(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK9sum_basesIJ3one3twoEE3sumEv, inline_hint=yes] {
+function @sum_bases_one_two___sum(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK9sum_basesIJ3one3twoEE3sumEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -16,8 +16,8 @@ function @sink
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret
@@ -30,8 +30,8 @@ function @probe
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
     preserve <gpr0> <gpr1>
 
   block ^entry
@@ -61,8 +61,8 @@ function @main
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    preserve <gpr2>
+    epilogues duplicated
+    preserve <gpr0>
     slot $left -> [rbp-<off0>] : obj<16x8>
     slot $right -> [rbp-<off1>] : i64
 
@@ -72,18 +72,16 @@ function @main
     lea rdi, [rbp-<off0>]
     lea rsi, [rbp-<off1>]
     call @probe [args=(rsi,rdi), unwind=no]
-    mov <gpr2>, rax
+    mov <gpr0>, rax
     store.i64 [rbp-<off1>], 41
     lea rdi, [rbp-<off0>]
     lea rsi, [rbp-<off1>]
     call @probe [args=(rsi,rdi), unwind=no]
-    mov rdx, 1
-    cmp.i64 <gpr2>, rdx
-    setne <gpr2>
-    movzx <gpr2>, <gpr2>
-    mov rdx, 0
-    cmp.i64 rax, rdx
-    setne r8
-    movzx r8, r8
-    or <gpr2>, r8
-    ret <gpr2>
+    cmp.i64 <gpr0>, 1
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    cmp.i64 rax, 0
+    setne rax
+    movzx rax, rax
+    or <gpr0>, rax
+    ret <gpr0>

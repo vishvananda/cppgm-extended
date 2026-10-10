@@ -78,10 +78,10 @@ function @Analyzer__lookup_b(%this : ptr [object_bytes=8], %scope : ptr [pass=by
     %t3 = load typed ptr $scope
     %t4 = load typed ptr $qualified
     %t5 = addr $arg__2
-    %t6 = call obj<1x1> @Analyzer__lookup_qualified_generic__ov2(%t2, %t3, %t4, %t5)
+    %t6 = call obj<1x1> @Analyzer__lookup_qualified_generic__2(%t2, %t3, %t4, %t5)
     return obj<1x1> $retobj__1
 }
-function @Analyzer__lookup_qualified_generic(%this : ptr [object_bytes=8], %scope : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN8Analyzer24lookup_qualified_genericI3VecIP1AEZNS_8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_, inline_hint=yes] {
+function @Analyzer__lookup_qualified_generic(%this : ptr [object_bytes=8], %scope : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=internal, object=_ZN8Analyzer24lookup_qualified_genericI3VecIP1AEZNS_8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_, inline_hint=yes] {
   slot $this : ptr
   slot $scope : ptr
   slot $qualified : ptr
@@ -111,7 +111,7 @@ function @Analyzer__lookup_qualified_generic(%this : ptr [object_bytes=8], %scop
     %t12 = call obj<1x1> @cpp_scope_lookup__lookup_qualified(%t4, %t5, %t6, %t10, %t11)
     return obj<1x1> $retobj__1
 }
-function @Analyzer__lookup_qualified_generic__ov2(%this : ptr [object_bytes=8], %scope : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN8Analyzer24lookup_qualified_genericI3VecIP1BEZNS_8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_, inline_hint=yes] {
+function @Analyzer__lookup_qualified_generic__2(%this : ptr [object_bytes=8], %scope : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=internal, object=_ZN8Analyzer24lookup_qualified_genericI3VecIP1BEZNS_8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_, inline_hint=yes] {
   slot $this : ptr
   slot $scope : ptr
   slot $qualified : ptr
@@ -138,10 +138,10 @@ function @Analyzer__lookup_qualified_generic__ov2(%this : ptr [object_bytes=8], 
     store typed ptr %t9, %t8
     %t10 = addr $arg__3
     %t11 = load typed ptr $final_lookup
-    %t12 = call obj<1x1> @cpp_scope_lookup__lookup_qualified__ov2(%t4, %t5, %t6, %t10, %t11)
+    %t12 = call obj<1x1> @cpp_scope_lookup__lookup_qualified__2(%t4, %t5, %t6, %t10, %t11)
     return obj<1x1> $retobj__1
 }
-function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %resolve_unqualified_qualifier : ptr [pass=by_address, object_bytes=16], %resolve_direct_qualifier : ptr [pass=by_address, object_bytes=1], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1AE5ScopeZN8Analyzer24lookup_qualified_genericIS4_ZNS6_8lookup_aERS5_RK13QualifiedNameEUlS8_PKcE_EET_S8_SB_RKT0_EUlSD_E_ZNS7_IS4_SE_EESF_S8_SB_SI_EUlS8_SD_E_SE_EESF_RSG_SB_RKT1_RKT2_RKT3_] {
+function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %resolve_unqualified_qualifier : ptr [pass=by_address, object_bytes=16], %resolve_direct_qualifier : ptr [pass=by_address, object_bytes=1], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=internal, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1AE5ScopeZN8Analyzer24lookup_qualified_genericIS4_ZNS6_8lookup_aERS5_RK13QualifiedNameEUlS8_PKcE_EET_S8_SB_RKT0_EUlSD_E_ZNS7_IS4_SE_EESF_S8_SB_SI_EUlS8_SD_E_SE_EESF_RSG_SB_RKT1_RKT2_RKT3_] {
   slot $root : ptr
   slot $qualified : ptr
   slot $resolve_unqualified_qualifier : ptr
@@ -159,9 +159,9 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     %t1 = load typed ptr $qualified
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load u8 %t2
-    branch %t3, ^land_rhs_4, ^if_else_2
+    branch %t3, ^land_rhs_3, ^if_else_2
 
-  block ^land_rhs_4:
+  block ^land_rhs_3:
     %t4 = load typed ptr $qualified
     %t5 = index i8 [projection=field] %t4, 16
     %t6 = load typed ptr %t5
@@ -179,16 +179,16 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     return obj<1x1> $retobj__1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t15 = load typed ptr $qualified
     %t16 = index i8 [projection=field] %t15, 0
     %t17 = load u8 %t16
     %t18 = cmp eq u8 %t17, 0
-    branch %t18, ^land_rhs_8, ^if_else_6
+    branch %t18, ^land_rhs_7, ^if_else_6
 
-  block ^land_rhs_8:
+  block ^land_rhs_7:
     %t19 = load typed ptr $qualified
     %t20 = index i8 [projection=field] %t19, 16
     %t21 = load typed ptr %t20
@@ -197,13 +197,13 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
 
   block ^if_then_5:
     %t23 = addr $retobj__1
-    call void @Vec_pointer_to_struct_A___Vec_pointer_to_struct_B_(%t23)
+    call void @Vec_A____Vec(%t23)
     return obj<1x1> $retobj__1
 
   block ^if_else_6:
-    jump ^if_end_7
+    jump ^if_end_8
 
-  block ^if_end_7:
+  block ^if_end_8:
     store typed ptr 0, $current
     %t24 = load typed ptr $qualified
     %t25 = index i8 [projection=field] %t24, 0
@@ -220,7 +220,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     %t29 = load typed ptr $qualified
     %t30 = index i8 [projection=field] %t29, 16
     %t31 = load typed ptr %t30
-    %t32 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_0_0__class_Analyzer____lambda_Analyzer__lookup_a_t347_361_t274_282__operator__(%t28, %t31)
+    %t32 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic_t274_282__operator__(%t28, %t31)
     store typed ptr %t32, $current
     %t33 = load typed ptr $current
     %t34 = cmp eq ptr %t33, 0
@@ -228,7 +228,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
 
   block ^if_then_12:
     %t35 = addr $retobj__1
-    call void @Vec_pointer_to_struct_A___Vec_pointer_to_struct_B_(%t35)
+    call void @Vec_A____Vec(%t35)
     return obj<1x1> $retobj__1
 
   block ^if_else_13:
@@ -243,7 +243,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     %t38 = load typed ptr $qualified
     %t39 = index i8 [projection=field] %t38, 16
     %t40 = load typed ptr %t39
-    %t41 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_0_0__class_Analyzer____lambda_Analyzer__lookup_a_t347_361_t291_303_n1__operator__(%t36, %t37, %t40)
+    %t41 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic_t291_303__operator__(%t36, %t37, %t40)
     store typed ptr %t41, $current
     %t42 = load typed ptr $current
     %t43 = cmp eq ptr %t42, 0
@@ -251,7 +251,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
 
   block ^if_then_15:
     %t44 = addr $retobj__1
-    call void @Vec_pointer_to_struct_A___Vec_pointer_to_struct_B_(%t44)
+    call void @Vec_A____Vec(%t44)
     return obj<1x1> $retobj__1
 
   block ^if_else_16:
@@ -267,7 +267,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     %t51 = call obj<1x1> @Analyzer____lambda_Analyzer__lookup_a_t347_361__operator__(%t46, %t47, %t50)
     return obj<1x1> $retobj__1
 }
-function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %resolve_unqualified_qualifier : ptr [pass=by_address, object_bytes=16], %resolve_direct_qualifier : ptr [pass=by_address, object_bytes=1], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1BE5ScopeZN8Analyzer24lookup_qualified_genericIS4_ZNS6_8lookup_bERS5_RK13QualifiedNameEUlS8_PKcE_EET_S8_SB_RKT0_EUlSD_E_ZNS7_IS4_SE_EESF_S8_SB_SI_EUlS8_SD_E_SE_EESF_RSG_SB_RKT1_RKT2_RKT3_] {
+function @cpp_scope_lookup__lookup_qualified__2(%root : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %resolve_unqualified_qualifier : ptr [pass=by_address, object_bytes=16], %resolve_direct_qualifier : ptr [pass=by_address, object_bytes=1], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=internal, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1BE5ScopeZN8Analyzer24lookup_qualified_genericIS4_ZNS6_8lookup_bERS5_RK13QualifiedNameEUlS8_PKcE_EET_S8_SB_RKT0_EUlSD_E_ZNS7_IS4_SE_EESF_S8_SB_SI_EUlS8_SD_E_SE_EESF_RSG_SB_RKT1_RKT2_RKT3_] {
   slot $root : ptr
   slot $qualified : ptr
   slot $resolve_unqualified_qualifier : ptr
@@ -285,9 +285,9 @@ function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=by_address, 
     %t1 = load typed ptr $qualified
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load u8 %t2
-    branch %t3, ^land_rhs_4, ^if_else_2
+    branch %t3, ^land_rhs_3, ^if_else_2
 
-  block ^land_rhs_4:
+  block ^land_rhs_3:
     %t4 = load typed ptr $qualified
     %t5 = index i8 [projection=field] %t4, 16
     %t6 = load typed ptr %t5
@@ -305,16 +305,16 @@ function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=by_address, 
     return obj<1x1> $retobj__1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t15 = load typed ptr $qualified
     %t16 = index i8 [projection=field] %t15, 0
     %t17 = load u8 %t16
     %t18 = cmp eq u8 %t17, 0
-    branch %t18, ^land_rhs_8, ^if_else_6
+    branch %t18, ^land_rhs_7, ^if_else_6
 
-  block ^land_rhs_8:
+  block ^land_rhs_7:
     %t19 = load typed ptr $qualified
     %t20 = index i8 [projection=field] %t19, 16
     %t21 = load typed ptr %t20
@@ -323,13 +323,13 @@ function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=by_address, 
 
   block ^if_then_5:
     %t23 = addr $retobj__1
-    call void @Vec_pointer_to_struct_B___Vec_pointer_to_struct_B_(%t23)
+    call void @Vec_B____Vec(%t23)
     return obj<1x1> $retobj__1
 
   block ^if_else_6:
-    jump ^if_end_7
+    jump ^if_end_8
 
-  block ^if_end_7:
+  block ^if_end_8:
     store typed ptr 0, $current
     %t24 = load typed ptr $qualified
     %t25 = index i8 [projection=field] %t24, 0
@@ -346,7 +346,7 @@ function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=by_address, 
     %t29 = load typed ptr $qualified
     %t30 = index i8 [projection=field] %t29, 16
     %t31 = load typed ptr %t30
-    %t32 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_1_0__class_Analyzer____lambda_Analyzer__lookup_b_t408_422_t274_282__operator__(%t28, %t31)
+    %t32 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic_t274_282__operator____2(%t28, %t31)
     store typed ptr %t32, $current
     %t33 = load typed ptr $current
     %t34 = cmp eq ptr %t33, 0
@@ -354,7 +354,7 @@ function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=by_address, 
 
   block ^if_then_12:
     %t35 = addr $retobj__1
-    call void @Vec_pointer_to_struct_B___Vec_pointer_to_struct_B_(%t35)
+    call void @Vec_B____Vec(%t35)
     return obj<1x1> $retobj__1
 
   block ^if_else_13:
@@ -369,7 +369,7 @@ function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=by_address, 
     %t38 = load typed ptr $qualified
     %t39 = index i8 [projection=field] %t38, 16
     %t40 = load typed ptr %t39
-    %t41 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_1_0__class_Analyzer____lambda_Analyzer__lookup_b_t408_422_t291_303_n1__operator__(%t36, %t37, %t40)
+    %t41 = call ptr @Analyzer____lambda_Analyzer__lookup_qualified_generic_t291_303__operator____2(%t36, %t37, %t40)
     store typed ptr %t41, $current
     %t42 = load typed ptr $current
     %t43 = cmp eq ptr %t42, 0
@@ -377,7 +377,7 @@ function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=by_address, 
 
   block ^if_then_15:
     %t44 = addr $retobj__1
-    call void @Vec_pointer_to_struct_B___Vec_pointer_to_struct_B_(%t44)
+    call void @Vec_B____Vec(%t44)
     return obj<1x1> $retobj__1
 
   block ^if_else_16:
@@ -393,7 +393,7 @@ function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=by_address, 
     %t51 = call obj<1x1> @Analyzer____lambda_Analyzer__lookup_b_t408_422__operator__(%t46, %t47, %t50)
     return obj<1x1> $retobj__1
 }
-function @Analyzer____lambda_Analyzer__lookup_a_t347_361__operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> obj<1x1> [result_classes=none, binding=weak, object=_ZZN8Analyzer8lookup_aER5ScopeRK13QualifiedNameENKUlS1_PKcE_clES1_S6_, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__lookup_a_t347_361__operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> obj<1x1> [result_classes=none, binding=weak, object=_ZZN8Analyzer8lookup_aER5ScopeRK13QualifiedNameENKUlS1_PKcE_clES1_S6_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -404,17 +404,17 @@ function @Analyzer____lambda_Analyzer__lookup_a_t347_361__operator__(%this : ptr
     store typed ptr %__param1, $__param1
     store typed ptr %__param2, $__param2
     %t1 = addr $retobj__1
-    call void @Vec_pointer_to_struct_A___Vec_pointer_to_struct_B_(%t1)
+    call void @Vec_A____Vec(%t1)
     return obj<1x1> $retobj__1
 }
-function @Vec_pointer_to_struct_A___Vec_pointer_to_struct_B_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3VecIP1AEC1Ev, inline_hint=yes] {
+function @Vec_A____Vec(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3VecIP1AEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return void
 }
-function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_0_0__class_Analyzer____lambda_Analyzer__lookup_a_t347_361_t274_282__operator__(%this : ptr [object_bytes=16], %__param1 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1AEZNS_8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlSB_E_clESB_, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__lookup_qualified_generic_t274_282__operator__(%this : ptr [object_bytes=16], %__param1 : ptr) -> ptr [binding=internal, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1AEZNS_8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlSB_E_clESB_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -426,7 +426,7 @@ function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_
     %t3 = load typed ptr %t2
     return ptr %t3
 }
-function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_0_0__class_Analyzer____lambda_Analyzer__lookup_a_t347_361_t291_303_n1__operator__(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1AEZNS_8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E_clES6_SB_, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__lookup_qualified_generic_t291_303__operator__(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> ptr [binding=internal, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1AEZNS_8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E_clES6_SB_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $target : ptr
   slot $__param2 : ptr
@@ -438,7 +438,7 @@ function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_
     %t1 = load typed ptr $target
     return ptr %t1
 }
-function @Analyzer____lambda_Analyzer__lookup_b_t408_422__operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> obj<1x1> [result_classes=none, binding=weak, object=_ZZN8Analyzer8lookup_bER5ScopeRK13QualifiedNameENKUlS1_PKcE_clES1_S6_, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__lookup_b_t408_422__operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> obj<1x1> [result_classes=none, binding=weak, object=_ZZN8Analyzer8lookup_bER5ScopeRK13QualifiedNameENKUlS1_PKcE_clES1_S6_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -449,17 +449,17 @@ function @Analyzer____lambda_Analyzer__lookup_b_t408_422__operator__(%this : ptr
     store typed ptr %__param1, $__param1
     store typed ptr %__param2, $__param2
     %t1 = addr $retobj__1
-    call void @Vec_pointer_to_struct_B___Vec_pointer_to_struct_B_(%t1)
+    call void @Vec_B____Vec(%t1)
     return obj<1x1> $retobj__1
 }
-function @Vec_pointer_to_struct_B___Vec_pointer_to_struct_B_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3VecIP1BEC1Ev, inline_hint=yes] {
+function @Vec_B____Vec(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3VecIP1BEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return void
 }
-function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_1_0__class_Analyzer____lambda_Analyzer__lookup_b_t408_422_t274_282__operator__(%this : ptr [object_bytes=16], %__param1 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1BEZNS_8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlSB_E_clESB_, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__lookup_qualified_generic_t274_282__operator____2(%this : ptr [object_bytes=16], %__param1 : ptr) -> ptr [binding=internal, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1BEZNS_8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlSB_E_clESB_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -471,7 +471,7 @@ function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_
     %t3 = load typed ptr %t2
     return ptr %t3
 }
-function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_1_0__class_Analyzer____lambda_Analyzer__lookup_b_t408_422_t291_303_n1__operator__(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1BEZNS_8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E_clES6_SB_, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__lookup_qualified_generic_t291_303__operator____2(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> ptr [binding=internal, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1BEZNS_8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E_clES6_SB_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $target : ptr
   slot $__param2 : ptr
@@ -483,5 +483,5 @@ function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_
     %t1 = load typed ptr $target
     return ptr %t1
 }
-alias object _ZN3VecIP1AEC2Ev = @Vec_pointer_to_struct_A___Vec_pointer_to_struct_B_
-alias object _ZN3VecIP1BEC2Ev = @Vec_pointer_to_struct_B___Vec_pointer_to_struct_B_
+alias object _ZN3VecIP1AEC2Ev = @Vec_A____Vec
+alias object _ZN3VecIP1BEC2Ev = @Vec_B____Vec

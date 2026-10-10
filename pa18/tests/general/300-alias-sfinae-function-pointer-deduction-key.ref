@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr @__strlit__1
     %t2 = call i32 @test_trait_impl(%t1, 0, 0)
     %t3 = addr @__strlit__2
-    %t4 = call i32 @test_trait_impl__ov2(%t3, 0, 0)
+    %t4 = call i32 @test_trait_impl__2(%t3, 0, 0)
     %t5 = binary add nowrap i32 %t2, %t4
     return i32 %t5
 }
@@ -83,7 +83,7 @@ function @test_trait_impl(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i
     %t4 = load typed i32 $cond__1
     return i32 %t4
 }
-function @test_trait_impl__ov2(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_Z15test_trait_implIN6traits6detail15has_descriptionI2E2vEEEiPKcPFvT_Eb] {
+function @test_trait_impl__2(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_Z15test_trait_implIN6traits6detail15has_descriptionI2E2vEEEiPKcPFvT_Eb] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $expected : u8

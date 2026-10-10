@@ -12,24 +12,19 @@ function @pick(%ret : ptr [pass=indirect_result], %cond : i64, %lhs : ptr, %rhs 
     store i64 %b, %ret
     return void
 }
-function @main(%cond : i64, %lhs : ptr, %rhs : ptr) -> i64 {
-  slot $value : i64
-
+function @main(%cond : i64, %lhs : ptr, %rhs : ptr) -> i64 [role=entry] {
   block ^entry:
-    %p = addr $value
-    branch %cond, ^__o1inl0__left, ^__o1inl0__right
+    branch %cond, ^left_1, ^right_2
 
-  block ^__o1inl0__left:
-    %__o1inl0__a = load i64 %lhs
-    store i64 %__o1inl0__a, %p
-    jump ^__o1inl0__cont
+  block ^left_1:
+    %a_1 = load i64 %lhs
+    jump ^inline_cont_3
 
-  block ^__o1inl0__right:
-    %__o1inl0__b = load i64 %rhs
-    store i64 %__o1inl0__b, %p
-    jump ^__o1inl0__cont
+  block ^right_2:
+    %b_2 = load i64 %rhs
+    jump ^inline_cont_3
 
-  block ^__o1inl0__cont:
-    %r = load i64 $value
+  block ^inline_cont_3:
+    %r = phi i64 [^left_1: %a_1, ^right_2: %b_2]
     return i64 %r
 }

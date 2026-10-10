@@ -38,11 +38,11 @@ function @post(%ctx : ptr [pass=by_address, object_bytes=1], %token : ptr [pass=
     %t2 = addr $arg__2
     %t3 = load typed ptr $ctx
     %t4 = call obj<1x1> @context__get_executor(%t3)
-    call void @initiate_executor___initiate_executor_(%t1, %t2)
+    call void @initiate_executor___initiate(%t1, %t2)
     %t5 = load typed ptr $token
     %t6 = addr $arg__3
     zeroinit 1x1 %t6
-    %t7 = call i32 @async_result_initiate__ov2(%t1, %t5, %t6)
+    %t7 = call i32 @async_result_initiate(%t1, %t5, %t6)
     return i32 %t7
 }
 function @context__get_executor(%this : ptr [object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN7context12get_executorEv, inline_hint=yes] {
@@ -54,7 +54,7 @@ function @context__get_executor(%this : ptr [object_bytes=1]) -> obj<1x1> [resul
     %t1 = addr $retobj__1
     return obj<1x1> $retobj__1
 }
-function @initiate_executor___initiate_executor_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8initiateI8executorEC1ERKS0_, inline_hint=yes] {
+function @initiate_executor___initiate(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8initiateI8executorEC1ERKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -63,7 +63,7 @@ function @initiate_executor___initiate_executor_(%this : ptr [object_bytes=1], %
     store typed ptr %__param1, $__param1
     return void
 }
-function @async_result_initiate__ov2(%initiation : ptr [pass=by_address, object_bytes=1], %token : ptr [pass=by_address, object_bytes=1], %args : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z21async_result_initiateI8initiateI8executorE7handlerJ19empty_work_functionEEiOT_OT0_DpOT1_] {
+function @async_result_initiate(%initiation : ptr [pass=by_address, object_bytes=1], %token : ptr [pass=by_address, object_bytes=1], %args : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z21async_result_initiateI8initiateI8executorE7handlerJ19empty_work_functionEEiOT_OT0_DpOT1_] {
   slot $initiation : ptr
   slot $token : ptr
   slot $args : ptr
@@ -93,4 +93,4 @@ function @initiate_executor___operator__(%this : ptr [object_bytes=1], %__param1
     store typed ptr %__param4, $__param4
     return i32 1
 }
-alias object _ZN8initiateI8executorEC2ERKS0_ = @initiate_executor___initiate_executor_
+alias object _ZN8initiateI8executorEC2ERKS0_ = @initiate_executor___initiate

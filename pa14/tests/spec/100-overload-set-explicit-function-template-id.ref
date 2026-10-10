@@ -1,4 +1,4 @@
-function @choose(%__param0 : i32) -> i32 [binding=strong, object=_Z6choosei] {
+function @choose__ov2(%__param0 : i32) -> i32 [binding=strong, object=_Z6choosei] {
   slot $__param0 : i32
 
   block ^entry:
@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = call i32 @choose__ov2(0)
+    %t1 = call i32 @choose(0)
     %t2 = cmp eq i32 %t1, 1
     branch %t2, ^cond_then_1, ^cond_else_2
 
@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load typed i32 $cond__1
     return i32 %t3
 }
-function @choose__ov2(%__param0 : i32) -> i32 [binding=weak, object=_Z6chooseIiEiT_] {
+function @choose(%__param0 : i32) -> i32 [binding=weak, object=_Z6chooseIiEiT_] {
   slot $__param0 : i32
 
   block ^entry:

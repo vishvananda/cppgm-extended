@@ -12,13 +12,13 @@ function @main
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     slot $x -> [rbp-<off0>] : i8
 
   block ^entry
     store.i8 [rbp-<off0>], -1
-    load.i8 r9, [rbp-<off0>]
-    cmp.i64 r9, -1
-    sete rax
-    movzx rax, rax
-    ret rax
+    load.i8 r8, [rbp-<off0>]
+    cmp.i64 r8, -1
+    sete r8
+    movzx r8, r8
+    ret r8

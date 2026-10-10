@@ -17,7 +17,7 @@ function @sum8
     param %h -> [rbp+24] : i64
     return i64 -> rax
   frame
-    stack_size 64
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared

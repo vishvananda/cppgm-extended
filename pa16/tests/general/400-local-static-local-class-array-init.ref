@@ -1,3 +1,8 @@
+global @constructed : i32 [binding=strong] = 0
+global @__local_static__make_result__decl0__prefixes : obj<32x8> [binding=internal, object=_ZZ11make_resultvE8prefixes] = {
+  zero 32
+}
+global @__local_static__make_result__decl0__prefixes__guard : i64 [binding=internal, object=_ZGVZ11make_resultvE8prefixes] = zero
 global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 99
   i8 108
@@ -7,11 +12,6 @@ global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 32
   i8 0
 }
-global @__local_static__make_result__decl0__prefixes : obj<32x8> [binding=internal, object=_ZZ11make_resultvE8prefixes] = {
-  zero 32
-}
-global @__local_static__make_result__decl0__prefixes__guard : i64 [binding=internal, object=_ZGVZ11make_resultvE8prefixes] = zero
-global @constructed : i32 [binding=strong] = 0
 global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 115
   i8 116
@@ -89,30 +89,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load typed i64 %t6
     %t8 = convert sext i64 i32 7
     %t9 = cmp eq i64 %t7, %t8
-    branch %t9, ^land_rhs_10, ^land_short_11
+    branch %t9, ^land_rhs_7, ^land_short_8
 
-  block ^land_rhs_10:
+  block ^land_rhs_7:
     %t10 = addr $result
     %t11 = index i8 [projection=field] %t10, 8
     %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 2
     %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__3
-    jump ^land_end_12
-
-  block ^land_short_11:
-    store typed i64 0, $land__3
-    jump ^land_end_12
-
-  block ^land_end_12:
-    %t15 = load typed i64 $land__3
-    branch %t15, ^land_rhs_7, ^land_short_8
-
-  block ^land_rhs_7:
-    %t16 = load typed i32 @constructed
-    %t17 = cmp eq i32 %t16, 2
-    %t18 = cmp ne i64 %t17, 0
-    store typed i64 %t18, $land__2
+    store typed i64 %t14, $land__2
     jump ^land_end_9
 
   block ^land_short_8:
@@ -120,7 +105,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t19 = load typed i64 $land__2
+    %t15 = load typed i64 $land__2
+    branch %t15, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t16 = load typed i32 @constructed
+    %t17 = cmp eq i32 %t16, 2
+    %t18 = cmp ne i64 %t17, 0
+    store typed i64 %t18, $land__3
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store typed i64 0, $land__3
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t19 = load typed i64 $land__3
     branch %t19, ^cond_then_4, ^cond_else_5
 
   block ^cond_then_4:

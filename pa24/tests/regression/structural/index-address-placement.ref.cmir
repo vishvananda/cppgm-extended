@@ -24,8 +24,8 @@ function @variable_address
     epilogues shared
 
   block ^entry
-    lea rax, [rdi+rsi*8]
-    ret rax
+    lea rdi, [rdi+rsi*8]
+    ret rdi
 
 function @constant_address
   abi
@@ -38,8 +38,8 @@ function @constant_address
     epilogues shared
 
   block ^entry
-    lea rax, [rdi+<off0>]
-    ret rax
+    lea rdi, [rdi+<off0>]
+    ret rdi
 
 function @main
   abi
@@ -59,16 +59,15 @@ function @main
     load.i64 <gpr1>, [rax]
     mov rdi, <gpr0>
     call @constant_address [args=(rdi)]
-    load.i64 r8, [rax]
+    load.i64 rax, [rax]
     mov rdx, 30
     cmp.i64 <gpr1>, rdx
     setne <gpr1>
     movzx <gpr1>, <gpr1>
     mov rdx, 40
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    or <gpr1>, r8
-    mov rax, <gpr1>
-    sext.i32 rax
-    ret rax
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    sext.i32 <gpr1>
+    ret <gpr1>

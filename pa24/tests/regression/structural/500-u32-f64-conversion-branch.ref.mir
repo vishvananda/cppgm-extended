@@ -15,8 +15,10 @@ function @main
     epilogues shared
 
   block ^entry
-    uitofp.i32.f64 xmm0, 7
-    fptoui.f64.i32 r8, xmm0
+    mov r11, 7
+    sitofp.u32.f64 xmm0, r11
+    fptosi.f64.u32 r8, xmm0
+    zext.i32 r8
     cmp.u32 r8, 7
     je ^ok
     jmp ^bad

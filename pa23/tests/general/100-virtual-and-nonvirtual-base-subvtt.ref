@@ -1,19 +1,28 @@
-declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_Root [binding=weak, object=_ZTS4Root] = {
+global @seen : obj<32x4> [binding=strong] = {
+  zero 32
+}
+global @count : i32 [binding=strong] = zero
+global @__typeinfo_name__struct_Outer [storage=readonly, binding=weak, object=_ZTS5Outer] = {
+  i8 53
+  i8 79
+  i8 117
+  i8 116
+  i8 101
+  i8 114
+  i8 0
+}
+global @__typeinfo_name__struct_Left [storage=readonly, binding=weak, object=_ZTS4Left] = {
   i8 52
-  i8 82
-  i8 111
-  i8 111
+  i8 76
+  i8 101
+  i8 102
   i8 116
   i8 0
 }
-global @__rtti_struct_Root [binding=weak, object=_ZTI4Root] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Root
-}
-global @__typeinfo_name__struct_Inner [binding=weak, object=_ZTS5Inner] = {
+global @__typeinfo_name__struct_Inner [storage=readonly, binding=weak, object=_ZTS5Inner] = {
   i8 53
   i8 73
   i8 110
@@ -22,7 +31,19 @@ global @__typeinfo_name__struct_Inner [binding=weak, object=_ZTS5Inner] = {
   i8 114
   i8 0
 }
-global @__rtti_struct_Inner [binding=weak, object=_ZTI5Inner] = {
+global @__typeinfo_name__struct_Root [storage=readonly, binding=weak, object=_ZTS4Root] = {
+  i8 52
+  i8 82
+  i8 111
+  i8 111
+  i8 116
+  i8 0
+}
+global @__rtti_struct_Root [storage=readonly, binding=weak, object=_ZTI4Root] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Root
+}
+global @__rtti_struct_Inner [storage=readonly, binding=weak, object=_ZTI5Inner] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_Inner
   i32 0
@@ -30,15 +51,7 @@ global @__rtti_struct_Inner [binding=weak, object=_ZTI5Inner] = {
   ptr addr @__rtti_struct_Root
   i64 -6141
 }
-global @__typeinfo_name__struct_Left [binding=weak, object=_ZTS4Left] = {
-  i8 52
-  i8 76
-  i8 101
-  i8 102
-  i8 116
-  i8 0
-}
-global @__rtti_struct_Left [binding=weak, object=_ZTI4Left] = {
+global @__rtti_struct_Left [storage=readonly, binding=weak, object=_ZTI4Left] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_Left
   i32 1
@@ -48,16 +61,7 @@ global @__rtti_struct_Left [binding=weak, object=_ZTI4Left] = {
   ptr addr @__rtti_struct_Root
   i64 2
 }
-global @__typeinfo_name__struct_Outer [binding=weak, object=_ZTS5Outer] = {
-  i8 53
-  i8 79
-  i8 117
-  i8 116
-  i8 101
-  i8 114
-  i8 0
-}
-global @__rtti_struct_Outer [binding=weak, object=_ZTI5Outer] = {
+global @__rtti_struct_Outer [storage=readonly, binding=weak, object=_ZTI5Outer] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_Outer
   i32 3
@@ -69,66 +73,6 @@ global @__rtti_struct_Outer [binding=weak, object=_ZTI5Outer] = {
   ptr addr @__rtti_struct_Root
   i64 -8189
 }
-global @Root__vtable [storage=readonly, binding=weak, object=_ZTV4Root] = {
-  i64 0
-  ptr addr @__rtti_struct_Root
-  ptr addr @Root__id
-}
-global @Inner__vtable [storage=readonly, binding=weak, object=_ZTV5Inner] = {
-  i64 8
-  i64 0
-  ptr addr @__rtti_struct_Inner
-  ptr addr @Inner__id
-}
-global @Inner____view__Root__8__vtable [storage=readonly, binding=internal, object=@Inner____view__Root__8__vtable] = {
-  i64 -8
-  i64 -8
-  ptr addr @__rtti_struct_Inner
-  ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
-}
-global @Inner____vtt [storage=readonly, binding=weak, object=_ZTT5Inner, object_root=yes] = {
-  ptr addr @Inner__vtable + 24
-  ptr addr @Inner____view__Root__8__vtable + 24
-}
-global @Left__vtable [storage=readonly, binding=weak, object=_ZTV4Left] = {
-  i64 24
-  i64 16
-  i64 0
-  ptr addr @__rtti_struct_Left
-  ptr addr @Root__id
-}
-global @Left____view__Inner__16__vtable [storage=readonly, binding=internal, object=@Left____view__Inner__16__vtable] = {
-  i64 0
-  i64 8
-  i64 -16
-  ptr addr @__rtti_struct_Left
-  ptr addr @Inner__id
-}
-global @Left____view__Root__24__vtable [storage=readonly, binding=internal, object=@Left____view__Root__24__vtable] = {
-  i64 -8
-  i64 -24
-  ptr addr @__rtti_struct_Left
-  ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
-}
-global @Left____construction__Inner__16__s0__vtable [storage=readonly, binding=internal, object=_ZTC4Left16_5Inner] = {
-  i64 8
-  i64 0
-  ptr addr @__rtti_struct_Inner
-  ptr addr @Inner__id
-}
-global @Left____construction__Inner__16__s1__vtable [storage=readonly, binding=internal, object=@Left____construction__Inner__16__s1__vtable] = {
-  i64 -8
-  i64 -8
-  ptr addr @__rtti_struct_Inner
-  ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
-}
-global @Left____vtt [storage=readonly, binding=weak, object=_ZTT4Left, object_root=yes] = {
-  ptr addr @Left__vtable + 32
-  ptr addr @Left____view__Inner__16__vtable + 32
-  ptr addr @Left____view__Root__24__vtable + 24
-  ptr addr @Left____construction__Inner__16__s0__vtable + 24
-  ptr addr @Left____construction__Inner__16__s1__vtable + 24
-}
 global @Outer__vtable [storage=readonly, binding=weak, object=_ZTV5Outer] = {
   i64 40
   i64 32
@@ -136,24 +80,24 @@ global @Outer__vtable [storage=readonly, binding=weak, object=_ZTV5Outer] = {
   ptr addr @__rtti_struct_Outer
   ptr addr @Outer__id
 }
-global @Outer____view__Inner__16__vtable [storage=readonly, binding=internal, object=@Outer____view__Inner__16__vtable] = {
+global @Outer____view__Inner__16__vtable [storage=readonly, binding=internal] = {
   i64 24
   i64 -16
   ptr addr @__rtti_struct_Outer
   ptr addr @_Outer__id__vtable_return_adjust__this_neg16__return_pos0
 }
-global @Outer____view__Inner__32__vtable [storage=readonly, binding=internal, object=@Outer____view__Inner__32__vtable] = {
+global @Outer____view__Inner__32__vtable [storage=readonly, binding=internal] = {
   i64 -32
   i64 8
   i64 -32
   ptr addr @__rtti_struct_Outer
-  ptr addr @_Outer__id__vtable_virtual_adjust_n32__return_pos0
+  ptr addr @_Outer__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n32
 }
-global @Outer____view__Root__40__vtable [storage=readonly, binding=internal, object=@Outer____view__Root__40__vtable] = {
+global @Outer____view__Root__40__vtable [storage=readonly, binding=internal] = {
   i64 -40
   i64 -40
   ptr addr @__rtti_struct_Outer
-  ptr addr @_Outer__id__vtable_virtual_adjust_n24__return_pos0
+  ptr addr @_Outer__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24
 }
 global @Outer____construction__Left__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC5Outer0_4Left] = {
   i64 40
@@ -162,18 +106,18 @@ global @Outer____construction__Left__0__s0__vtable [storage=readonly, binding=in
   ptr addr @__rtti_struct_Left
   ptr addr @Root__id
 }
-global @Outer____construction__Left__0__s1__vtable [storage=readonly, binding=internal, object=@Outer____construction__Left__0__s1__vtable] = {
+global @Outer____construction__Left__0__s1__vtable [storage=readonly, binding=internal] = {
   i64 0
   i64 8
   i64 -32
   ptr addr @__rtti_struct_Left
   ptr addr @Inner__id
 }
-global @Outer____construction__Left__0__s2__vtable [storage=readonly, binding=internal, object=@Outer____construction__Left__0__s2__vtable] = {
+global @Outer____construction__Left__0__s2__vtable [storage=readonly, binding=internal] = {
   i64 -8
   i64 -40
   ptr addr @__rtti_struct_Left
-  ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
+  ptr addr @_Inner__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24
 }
 global @Outer____construction__Inner__16__s0__vtable [storage=readonly, binding=internal, object=_ZTC5Outer16_5Inner] = {
   i64 24
@@ -181,11 +125,11 @@ global @Outer____construction__Inner__16__s0__vtable [storage=readonly, binding=
   ptr addr @__rtti_struct_Inner
   ptr addr @Inner__id
 }
-global @Outer____construction__Inner__16__s1__vtable [storage=readonly, binding=internal, object=@Outer____construction__Inner__16__s1__vtable] = {
+global @Outer____construction__Inner__16__s1__vtable [storage=readonly, binding=internal] = {
   i64 -24
   i64 -24
   ptr addr @__rtti_struct_Inner
-  ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
+  ptr addr @_Inner__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24
 }
 global @Outer____construction__Inner__32__s0__vtable [storage=readonly, binding=internal, object=_ZTC5Outer32_5Inner] = {
   i64 8
@@ -193,11 +137,11 @@ global @Outer____construction__Inner__32__s0__vtable [storage=readonly, binding=
   ptr addr @__rtti_struct_Inner
   ptr addr @Inner__id
 }
-global @Outer____construction__Inner__32__s1__vtable [storage=readonly, binding=internal, object=@Outer____construction__Inner__32__s1__vtable] = {
+global @Outer____construction__Inner__32__s1__vtable [storage=readonly, binding=internal] = {
   i64 -8
   i64 -8
   ptr addr @__rtti_struct_Inner
-  ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
+  ptr addr @_Inner__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24
 }
 global @Outer____vtt [storage=readonly, binding=weak, object=_ZTT5Outer, object_root=yes] = {
   ptr addr @Outer__vtable + 32
@@ -212,10 +156,66 @@ global @Outer____vtt [storage=readonly, binding=weak, object=_ZTT5Outer, object_
   ptr addr @Outer____construction__Inner__32__s0__vtable + 24
   ptr addr @Outer____construction__Inner__32__s1__vtable + 24
 }
-global @seen : obj<32x4> [binding=strong] = {
-  zero 32
+global @Left__vtable [storage=readonly, binding=weak, object=_ZTV4Left] = {
+  i64 24
+  i64 16
+  i64 0
+  ptr addr @__rtti_struct_Left
+  ptr addr @Root__id
 }
-global @count : i32 [binding=strong] = zero
+global @Left____view__Inner__16__vtable [storage=readonly, binding=internal] = {
+  i64 0
+  i64 8
+  i64 -16
+  ptr addr @__rtti_struct_Left
+  ptr addr @Inner__id
+}
+global @Left____view__Root__24__vtable [storage=readonly, binding=internal] = {
+  i64 -8
+  i64 -24
+  ptr addr @__rtti_struct_Left
+  ptr addr @_Inner__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24
+}
+global @Left____construction__Inner__16__s0__vtable [storage=readonly, binding=internal, object=_ZTC4Left16_5Inner] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_Inner
+  ptr addr @Inner__id
+}
+global @Left____construction__Inner__16__s1__vtable [storage=readonly, binding=internal] = {
+  i64 -8
+  i64 -8
+  ptr addr @__rtti_struct_Inner
+  ptr addr @_Inner__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24
+}
+global @Left____vtt [storage=readonly, binding=weak, object=_ZTT4Left, object_root=yes] = {
+  ptr addr @Left__vtable + 32
+  ptr addr @Left____view__Inner__16__vtable + 32
+  ptr addr @Left____view__Root__24__vtable + 24
+  ptr addr @Left____construction__Inner__16__s0__vtable + 24
+  ptr addr @Left____construction__Inner__16__s1__vtable + 24
+}
+global @Inner__vtable [storage=readonly, binding=weak, object=_ZTV5Inner] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_Inner
+  ptr addr @Inner__id
+}
+global @Inner____view__Root__8__vtable [storage=readonly, binding=internal] = {
+  i64 -8
+  i64 -8
+  ptr addr @__rtti_struct_Inner
+  ptr addr @_Inner__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24
+}
+global @Inner____vtt [storage=readonly, binding=weak, object=_ZTT5Inner, object_root=yes] = {
+  ptr addr @Inner__vtable + 24
+  ptr addr @Inner____view__Root__8__vtable + 24
+}
+global @Root__vtable [storage=readonly, binding=weak, object=_ZTV4Root] = {
+  i64 0
+  ptr addr @__rtti_struct_Root
+  ptr addr @Root__id
+}
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $outer : obj<56x8>
@@ -226,16 +226,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Outer__Outer(%t1)
     %t2 = load typed i32 @count
     %t3 = cmp ne i32 %t2, 2
-    branch %t3, ^if_then_1, ^lor_rhs_5
+    branch %t3, ^if_then_1, ^lor_rhs_4
 
-  block ^lor_rhs_5:
+  block ^lor_rhs_4:
     %t4 = addr @seen
     %t5 = index i32 [projection=array_element] %t4, 0
     %t6 = load typed i32 %t5
     %t7 = cmp ne i32 %t6, 72
-    branch %t7, ^if_then_1, ^lor_rhs_4
+    branch %t7, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t8 = addr @seen
     %t9 = index i32 [projection=array_element] %t8, 1
     %t10 = load typed i32 %t9
@@ -246,9 +246,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_5
 
-  block ^if_end_3:
+  block ^if_end_5:
     %t12 = addr $outer
     %t13 = index i8 %t12, 0
     %t14 = load typed ptr %t13
@@ -266,9 +266,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t25 = index i8 [projection=field] %t24, 8
     %t26 = load typed i32 %t25
     %t27 = cmp ne i32 %t26, 7
-    branch %t27, ^if_then_6, ^lor_rhs_9
+    branch %t27, ^if_then_6, ^lor_rhs_8
 
-  block ^lor_rhs_9:
+  block ^lor_rhs_8:
     %t28 = load typed ptr $shared
     %t29 = load typed ptr %t28
     %t30 = load typed ptr %t29
@@ -280,17 +280,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_7:
-    jump ^if_end_8
+    jump ^if_end_9
 
-  block ^if_end_8:
+  block ^if_end_9:
     return i32 0
-}
-function @Outer__id(%this : ptr [object_bytes=56]) -> i32 [binding=weak, object=_ZN5Outer2idEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 3
 }
 function @Outer__Outer(%this : ptr [object_bytes=56]) -> void [binding=weak, object=_ZN5OuterC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -344,12 +337,12 @@ function @Outer__Outer(%this : ptr [object_bytes=56]) -> void [binding=weak, obj
     store typed ptr %t37, %t35
     return void
 }
-function @Inner__id(%this : ptr [object_bytes=24]) -> i32 [binding=weak, object=_ZN5Inner2idEv, inline_hint=yes] {
+function @Outer__id(%this : ptr [object_bytes=56]) -> i32 [binding=weak, object=_ZN5Outer2idEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
-    return i32 2
+    return i32 3
 }
 function @Root__id(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN4Root2idEv, inline_hint=yes] {
   slot $this : ptr
@@ -357,6 +350,13 @@ function @Root__id(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_
   block ^entry:
     store typed ptr %this, $this
     return i32 1
+}
+function @Inner__id(%this : ptr [object_bytes=24]) -> i32 [binding=weak, object=_ZN5Inner2idEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 2
 }
 function @Root__Root__base_entry(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN4RootC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
@@ -490,22 +490,13 @@ function @Left__Left__base_entry(%this : ptr [object_bytes=40], %__vtt : ptr) ->
     store typed ptr %t16, %t14
     return void
 }
-function @_Inner__id__vtable_virtual_adjust_n24__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZTv0_n24_N5Inner2idEv] {
-  block ^entry:
-    %t1 = load typed ptr %arg0
-    %t2 = index i8 %t1, -24
-    %t3 = load typed i64 %t2
-    %t4 = index i8 %arg0, %t3
-    %t5 = call i32 @Inner__id(%t4)
-    return i32 %t5
-}
-function @_Outer__id__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn16_N5Outer2idEv] {
+function @_Outer__id__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr [object_bytes=56]) -> i32 [binding=weak, object=_ZThn16_N5Outer2idEv] {
   block ^entry:
     %t1 = index i8 %arg0, -16
     %t2 = call i32 @Outer__id(%t1)
     return i32 %t2
 }
-function @_Outer__id__vtable_virtual_adjust_n32__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZTv0_n32_N5Outer2idEv] {
+function @_Outer__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n32(%arg0 : ptr [object_bytes=56]) -> i32 [binding=weak, object=_ZTv0_n32_N5Outer2idEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
     %t2 = index i8 %t1, -32
@@ -514,12 +505,21 @@ function @_Outer__id__vtable_virtual_adjust_n32__return_pos0(%arg0 : ptr) -> i32
     %t5 = call i32 @Outer__id(%t4)
     return i32 %t5
 }
-function @_Outer__id__vtable_virtual_adjust_n24__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZTv0_n24_N5Outer2idEv] {
+function @_Outer__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%arg0 : ptr [object_bytes=56]) -> i32 [binding=weak, object=_ZTv0_n24_N5Outer2idEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
     %t2 = index i8 %t1, -24
     %t3 = load typed i64 %t2
     %t4 = index i8 %arg0, %t3
     %t5 = call i32 @Outer__id(%t4)
+    return i32 %t5
+}
+function @_Inner__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%arg0 : ptr [object_bytes=24]) -> i32 [binding=weak, object=_ZTv0_n24_N5Inner2idEv] {
+  block ^entry:
+    %t1 = load typed ptr %arg0
+    %t2 = index i8 %t1, -24
+    %t3 = load typed i64 %t2
+    %t4 = index i8 %arg0, %t3
+    %t5 = call i32 @Inner__id(%t4)
     return i32 %t5
 }

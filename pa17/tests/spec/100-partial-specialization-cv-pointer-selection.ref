@@ -1,3 +1,6 @@
+declare global @pick_int____value : i32 [binding=weak, object=_ZN4pickIPiE5valueE]
+declare global @pick_constint____value : i32 [binding=weak, object=_ZN4pickIPKiE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
   slot $land__2 : i64

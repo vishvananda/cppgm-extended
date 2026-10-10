@@ -5,11 +5,3 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @address_of(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z10address_ofRKi, inline_hint=yes] {
-  slot $value : ptr
-
-  block ^entry:
-    store typed ptr %value, $value
-    %t1 = load typed ptr $value
-    return ptr %t1
-}

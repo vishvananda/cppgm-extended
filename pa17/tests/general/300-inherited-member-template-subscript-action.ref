@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     zeroinit 1x1 %t7
     %t8 = call obj<4x4> @parser_base_rule___operator__(%t6, %t7)
     copyobj 4x4 %t8, %t4
-    %t9 = call ptr @rule__operator___ov3(%t3, %t4)
+    %t9 = call ptr @rule__operator_(%t3, %t4)
     %t10 = addr $tag
     %t11 = index i8 [projection=field] %t10, 0
     %t12 = load typed i32 %t11
@@ -58,10 +58,10 @@ function @parser_base_rule___operator__(%this : ptr [object_bytes=1], %action : 
     %t1 = addr $retobj__1
     %t2 = load typed ptr $this
     %t3 = load typed ptr $action
-    call void @parser_action_rule__action___parser_action_rule__action_(%t1, %t2, %t3)
+    call void @parser_action_rule_action___parser_action(%t1, %t2, %t3)
     return obj<4x4> $retobj__1
 }
-function @rule__operator___ov3(%this : ptr [object_bytes=4], %parser : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN4ruleaSI13parser_actionIS_6actionEEERS_RKT_, inline_hint=yes] {
+function @rule__operator_(%this : ptr [object_bytes=4], %parser : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN4ruleaSI13parser_actionIS_6actionEEERS_RKT_, inline_hint=yes] {
   slot $this : ptr
   slot $parser : ptr
 
@@ -77,7 +77,7 @@ function @rule__operator___ov3(%this : ptr [object_bytes=4], %parser : ptr [pass
     %t6 = load typed ptr $this
     return ptr %t6
 }
-function @parser_action_rule__action___parser_action_rule__action_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN13parser_actionI4rule6actionEC1ERKS0_RKS1_, inline_hint=yes] {
+function @parser_action_rule_action___parser_action(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN13parser_actionI4rule6actionEC1ERKS0_RKS1_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -92,4 +92,4 @@ function @parser_action_rule__action___parser_action_rule__action_(%this : ptr [
     return void
 }
 alias object _ZN4ruleC2Ev = @rule__rule
-alias object _ZN13parser_actionI4rule6actionEC2ERKS0_RKS1_ = @parser_action_rule__action___parser_action_rule__action_
+alias object _ZN13parser_actionI4rule6actionEC2ERKS0_RKS1_ = @parser_action_rule_action___parser_action

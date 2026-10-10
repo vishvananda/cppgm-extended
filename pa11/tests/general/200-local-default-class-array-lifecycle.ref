@@ -68,16 +68,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t23 = load typed i32 $cond__1
     return i32 %t23
 }
-function @Element___Element(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7ElementD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @destroyed
-    %t2 = binary add nowrap i32 %t1, 1
-    store typed i32 %t2, @destroyed
-    return void
-}
 function @Element__Element(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7ElementC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -88,5 +78,15 @@ function @Element__Element(%this : ptr [object_bytes=1]) -> void [unwind=no, bin
     store typed i32 %t2, @constructed
     return void
 }
-alias object _ZN7ElementD2Ev = @Element___Element
+function @Element___Element(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7ElementD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
+    return void
+}
 alias object _ZN7ElementC2Ev = @Element__Element
+alias object _ZN7ElementD2Ev = @Element___Element

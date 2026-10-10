@@ -47,7 +47,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^for_iter_3:
     %t19 = addr $__begin1
-    %t20 = call ptr @Iter__operator____sym2(%t19)
+    %t20 = call ptr @Iter__operator____2(%t19)
     jump ^for_cond_1
 
   block ^for_end_4:
@@ -122,7 +122,7 @@ function @Iter__operator_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, ob
     %t3 = load typed ptr %t2
     return ptr %t3
 }
-function @Iter__operator____sym2(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN4IterppEv, inline_hint=yes] {
+function @Iter__operator____2(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN4IterppEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

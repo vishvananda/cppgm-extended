@@ -9,10 +9,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $discard__1
     %t4 = addr $f
     %t5 = addr $value
-    %t6 = call obj<1x1> @functor_int___operator___ov3(%t4, %t5)
+    %t6 = call obj<1x1> @functor_int___operator_(%t4, %t5)
     return i32 0
 }
-function @functor_int___operator___ov3(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZNK7functorIiEaSI6actualEE5pair2IS0_N13copy_argumentIKT_E4typeEERS6_, inline_hint=yes] {
+function @functor_int___operator_(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZNK7functorIiEaSI6actualEE5pair2IS0_N13copy_argumentIKT_E4typeEERS6_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
   slot $retobj__1 : obj<1x1>
@@ -23,10 +23,10 @@ function @functor_int___operator___ov3(%this : ptr [object_bytes=1], %value : pt
     %t1 = addr $retobj__1
     %t2 = load typed ptr $this
     %t3 = load typed ptr $value
-    call void @pair2___cppgm_class_template_identity_2_0_0__actual_const___pair2___cppgm_class_template_identity_2_0_0__actual_const_(%t1, %t2, %t3)
+    call void @pair2___cppgm_class_template_identity_1_constactual___pair2(%t1, %t2, %t3)
     return obj<1x1> $retobj__1
 }
-function @pair2___cppgm_class_template_identity_2_0_0__actual_const___pair2___cppgm_class_template_identity_2_0_0__actual_const_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5pair2I7functorIiEK6actualEC1ERKS1_RS3_, inline_hint=yes] {
+function @pair2___cppgm_class_template_identity_1_constactual___pair2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5pair2I7functorIiEK6actualEC1ERKS1_RS3_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -37,4 +37,4 @@ function @pair2___cppgm_class_template_identity_2_0_0__actual_const___pair2___cp
     store typed ptr %__param2, $__param2
     return void
 }
-alias object _ZN5pair2I7functorIiEK6actualEC2ERKS1_RS3_ = @pair2___cppgm_class_template_identity_2_0_0__actual_const___pair2___cppgm_class_template_identity_2_0_0__actual_const_
+alias object _ZN5pair2I7functorIiEK6actualEC2ERKS1_RS3_ = @pair2___cppgm_class_template_identity_1_constactual___pair2

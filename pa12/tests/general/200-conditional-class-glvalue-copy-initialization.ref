@@ -13,12 +13,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $base : obj<4x4>
   slot $derived : obj<4x4>
   slot $copy : obj<4x4>
+  slot $condaddr__1 : ptr
   slot $first : obj<4x4>
   slot $second : obj<4x4>
   slot $copied : obj<4x4>
-  slot $call__1 : u8
   slot $condaddr__2 : ptr
-  slot $condaddr__3 : ptr
+  slot $call__3 : u8
 
   block ^entry:
     %t1 = addr $base
@@ -33,25 +33,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^condaddr_then_1:
     %t7 = addr $base
-    store typed ptr %t7, $condaddr__2
+    store typed ptr %t7, $condaddr__1
     jump ^condaddr_end_3
 
   block ^condaddr_else_2:
     %t8 = addr $derived
     %t9 = index i8 %t8, 0
-    store typed ptr %t9, $condaddr__2
+    store typed ptr %t9, $condaddr__1
     jump ^condaddr_end_3
 
   block ^condaddr_end_3:
-    %t10 = load typed ptr $condaddr__2
+    %t10 = load typed ptr $condaddr__1
     copyobj 4x4 %t10, %t5
     %t11 = addr $copy
     %t12 = index i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12
     %t14 = cmp ne i32 %t13, 7
-    branch %t14, ^if_then_4, ^lor_rhs_7
+    branch %t14, ^if_then_4, ^lor_rhs_6
 
-  block ^lor_rhs_7:
+  block ^lor_rhs_6:
     %t15 = load typed i32 @conditions
     %t16 = cmp ne i32 %t15, 1
     branch %t16, ^if_then_4, ^if_else_5
@@ -60,9 +60,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_7
 
-  block ^if_end_6:
+  block ^if_end_7:
     %t17 = addr $copy
     %t18 = index i8 [projection=field] %t17, 0
     store typed i32 9, %t18
@@ -100,8 +100,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = addr $copied
     eh_try ^cleanup_action_17
     %t28 = call u8 @select_left()
-    store u8 %t28, $call__1
-    %t29 = load u8 $call__1
+    store u8 %t28, $call__3
+    %t29 = load u8 $call__3
     eh_end
     jump ^call_unwind_end_18
 
@@ -115,16 +115,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^condaddr_then_14:
     %t31 = addr $first
-    store typed ptr %t31, $condaddr__3
+    store typed ptr %t31, $condaddr__2
     jump ^condaddr_end_16
 
   block ^condaddr_else_15:
     %t32 = addr $second
-    store typed ptr %t32, $condaddr__3
+    store typed ptr %t32, $condaddr__2
     jump ^condaddr_end_16
 
   block ^condaddr_end_16:
-    %t33 = load typed ptr $condaddr__3
+    %t33 = load typed ptr $condaddr__2
     eh_try ^cleanup_action_17
     call void @Observed__Observed__ov2(%t27, %t33)
     eh_end
@@ -132,19 +132,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t35 = index i8 [projection=field] %t34, 0
     %t36 = load typed i32 %t35
     %t37 = cmp ne i32 %t36, 8
-    branch %t37, ^if_then_19, ^lor_rhs_24
-
-  block ^lor_rhs_24:
-    %t38 = load typed i32 @copies
-    %t39 = cmp ne i32 %t38, 1
-    branch %t39, ^if_then_19, ^lor_rhs_23
+    branch %t37, ^if_then_19, ^lor_rhs_23
 
   block ^lor_rhs_23:
-    %t40 = load typed i32 @alive
-    %t41 = cmp ne i32 %t40, 3
-    branch %t41, ^if_then_19, ^lor_rhs_22
+    %t38 = load typed i32 @copies
+    %t39 = cmp ne i32 %t38, 1
+    branch %t39, ^if_then_19, ^lor_rhs_22
 
   block ^lor_rhs_22:
+    %t40 = load typed i32 @alive
+    %t41 = cmp ne i32 %t40, 3
+    branch %t41, ^if_then_19, ^lor_rhs_21
+
+  block ^lor_rhs_21:
     %t42 = load typed i32 @conditions
     %t43 = cmp ne i32 %t42, 2
     branch %t43, ^if_then_19, ^if_else_20
@@ -159,9 +159,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_else_20:
-    jump ^if_end_21
+    jump ^if_end_24
 
-  block ^if_end_21:
+  block ^if_end_24:
     %t47 = addr $copied
     call void @Observed___Observed(%t47)
     %t48 = addr $second

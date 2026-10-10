@@ -31,16 +31,18 @@ function @forward_pair
   abi
     return obj<16x8> -> rax
   frame
-    stack_size 16
+    stack_size 32
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $result -> [rbp-16] : obj<16x8>
+    temp %value -> [rbp-32] : obj<16x8>
 
   block ^entry
     call @make_pair [args=()]
-    store.i64 [rbp-16], rax
-    store.i64 [rbp-8], rdx
+    store.i64 [rbp-32], rax
+    store.i64 [rbp-24], rdx
+    copy_bytes 16x8, [rbp-16], [rbp-32]
     load.i64 rax, [rbp-16]
     load.i64 rdx, [rbp-8]
     ret
@@ -49,29 +51,27 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 0
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
+    temp %value -> [rbp-16] : obj<16x8>
 
   block ^entry
     call @forward_pair [args=()]
-    mov r11, @result
-    store.i64 [r11], rax
-    store.i64 [r11+8], rdx
+    store.i64 [rbp-16], rax
+    store.i64 [rbp-8], rdx
+    copy_bytes 16x8, @result, [rbp-16]
     load.i64 r8, @result
-    mov r9, @result
-    lea r9, [r9+8]
-    load.i64 rdi, [r9]
+    load.i64 r9, @result+8
     mov rdx, 17
     cmp.i64 r8, rdx
     setne r8
     movzx r8, r8
     mov rdx, 23
-    cmp.i64 rdi, rdx
-    setne rdi
-    movzx rdi, rdi
-    or r8, rdi
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    cmp.i64 r9, rdx
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    sext.i32 r8
+    ret r8

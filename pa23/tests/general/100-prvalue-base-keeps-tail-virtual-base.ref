@@ -1,33 +1,7 @@
-declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_Tail [binding=weak, object=_ZTS4Tail] = {
-  i8 52
-  i8 84
-  i8 97
-  i8 105
-  i8 108
-  i8 0
-}
-global @__rtti_struct_Tail [binding=weak, object=_ZTI4Tail] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Tail
-}
-global @__typeinfo_name__struct_Padded [binding=weak, object=_ZTS6Padded] = {
-  i8 54
-  i8 80
-  i8 97
-  i8 100
-  i8 100
-  i8 101
-  i8 100
-  i8 0
-}
-global @__rtti_struct_Padded [binding=weak, object=_ZTI6Padded] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Padded
-}
-global @__typeinfo_name__struct_Holder [binding=weak, object=_ZTS6Holder] = {
+global @__typeinfo_name__struct_Holder [storage=readonly, binding=weak, object=_ZTS6Holder] = {
   i8 54
   i8 72
   i8 111
@@ -37,7 +11,33 @@ global @__typeinfo_name__struct_Holder [binding=weak, object=_ZTS6Holder] = {
   i8 114
   i8 0
 }
-global @__rtti_struct_Holder [binding=weak, object=_ZTI6Holder] = {
+global @__typeinfo_name__struct_Tail [storage=readonly, binding=weak, object=_ZTS4Tail] = {
+  i8 52
+  i8 84
+  i8 97
+  i8 105
+  i8 108
+  i8 0
+}
+global @__rtti_struct_Tail [storage=readonly, binding=weak, object=_ZTI4Tail] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Tail
+}
+global @__typeinfo_name__struct_Padded [storage=readonly, binding=weak, object=_ZTS6Padded] = {
+  i8 54
+  i8 80
+  i8 97
+  i8 100
+  i8 100
+  i8 101
+  i8 100
+  i8 0
+}
+global @__rtti_struct_Padded [storage=readonly, binding=weak, object=_ZTI6Padded] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Padded
+}
+global @__rtti_struct_Holder [storage=readonly, binding=weak, object=_ZTI6Holder] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_Holder
   i32 0
@@ -94,17 +94,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = load i8 %t13
     %t15 = convert sext i32 i8 %t14
     %t16 = cmp ne i32 %t15, 9
-    branch %t16, ^if_then_4, ^lor_rhs_8
+    branch %t16, ^if_then_4, ^lor_rhs_7
 
-  block ^lor_rhs_8:
+  block ^lor_rhs_7:
     %t17 = addr $holder
     %t18 = index i8 %t17, 8
     %t19 = index i8 [projection=field] %t18, 0
     %t20 = load typed i32 %t19
     %t21 = cmp ne i32 %t20, 1
-    branch %t21, ^if_then_4, ^lor_rhs_7
+    branch %t21, ^if_then_4, ^lor_rhs_6
 
-  block ^lor_rhs_7:
+  block ^lor_rhs_6:
     %t22 = addr $holder
     %t23 = index i8 %t22, 8
     %t24 = index i8 [projection=field] %t23, 4
@@ -117,9 +117,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_8
 
-  block ^if_end_6:
+  block ^if_end_8:
     return i32 0
 }
 function @Padded__Padded(%this : ptr [object_bytes=8], %x : i32, %y : i8) -> void [binding=weak, object=_ZN6PaddedC1Eic, inline_hint=yes] {

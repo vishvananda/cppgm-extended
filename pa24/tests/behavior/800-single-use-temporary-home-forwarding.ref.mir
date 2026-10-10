@@ -22,40 +22,36 @@ function @pressure
     param %e -> r8 : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12 r13 r14 r15
 
   block ^entry
     store.i64 @single_observed, 11
     store.i64 @shared_observed, 13
-    mov rbx, rdi
-    add rbx, rsi
-    mov r12, rdx
-    add r12, rcx
-    mov r13, r8
-    add r13, rdi
-    mov r14, rsi
-    add r14, rdx
-    mov r15, rcx
-    add r15, r8
-    add rbx, r12
-    add r13, r14
-    add rbx, r13
-    add rbx, r15
-    mov r12, 13
-    add r12, 2
-    load.i64 r13, @single_observed
-    load.i64 r14, @shared_observed
-    mov r15, 100
-    add r15, 200
-    add r13, r14
-    add r13, r12
-    add r15, r13
-    add r15, rbx
-    ret r15
+    mov r9, rdi
+    add r9, rsi
+    mov rax, rdx
+    add rax, rcx
+    add rdi, r8
+    add rsi, rdx
+    add rcx, r8
+    add r9, rax
+    add rdi, rsi
+    add r9, rdi
+    add r9, rcx
+    mov r8, 13
+    add r8, 2
+    load.i64 rdi, @single_observed
+    load.i64 rsi, @shared_observed
+    mov rdx, 100
+    add rdx, 200
+    add rdi, rsi
+    add rdi, r8
+    add rdx, rdi
+    add rdx, r9
+    ret rdx
 
 function @main
   abi

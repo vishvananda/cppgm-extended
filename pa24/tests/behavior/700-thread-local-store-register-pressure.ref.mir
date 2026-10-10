@@ -19,26 +19,22 @@ function @f
     param %x -> r9 : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12
 
   block ^entry
     add rdi, 1
     add rsi, 2
     add rdx, 3
-    mov rbx, rcx
-    add rbx, 4
+    add rcx, 4
     add r8, 5
     add r9, 1
-    mov r12, r9
-    tls_addr r11, @g__tls_wrapper
-    store.i64 [r11], r12
+    store.i64 @g, r9
     add rdi, rsi
     add rdi, rdx
-    add rdi, rbx
+    add rdi, rcx
     add rdi, r8
     add rdi, r9
     ret rdi

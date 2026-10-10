@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : f32
 
   block ^entry:
-    store typed f32 1.25F, $value
+    store typed f32 1.25f, $value
     %t1 = addr @__strlit__1
     %t2 = load typed f32 $value
     %t3 = convert fpext f64 f32 %t2

@@ -1,4 +1,8 @@
-global @__cppgm_class_template_identity_3_0_0__count : i64 [storage=readonly, binding=weak, object=_ZN3BoxIiE5countE] = 4
+declare global @Iter_int_4___value : i64 [binding=weak, object=_ZN4IterIiLm4EE5valueE]
+declare global @Rev___cppgm_class_template_identity_1___value : i64 [binding=weak, object=_ZN3RevI4IterIiLm4EEE5valueE]
+declare global @Block_int___value : i64 [binding=weak, object=_ZN5BlockIiE5valueE]
+
+global @Box_int___count : i64 [storage=readonly, binding=weak, object=_ZN3BoxIiE5countE] = 4
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $box : obj<1x1>

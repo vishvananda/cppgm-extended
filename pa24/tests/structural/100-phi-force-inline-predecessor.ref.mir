@@ -21,38 +21,24 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    temp %result -> [rbp-8] : i64
 
   block ^entry
-    mov rax, 1
-    cmp.i64 rax, 0
-    jne ^left
-    jmp ^right
+    jmp ^left
 
   block ^left
-    jmp ^__force_inline_prologue_1
-
-  block ^__force_inline_prologue_1
-    jmp ^__force_inline_block_0
-
-  block ^__force_inline_block_0
-    jmp ^__force_inline_continuation_2
-
-  block ^__force_inline_continuation_2
-    mov r8, 40
-    add r8, 2
-    store.i64 [rbp-8], r8
+    call @touch [args=()]
+    mov r9, 40
+    add r9, 2
+    mov r8, r9
     jmp ^join
 
   block ^right
-    mov r11, 7
-    store.i64 [rbp-8], r11
+    mov r8, 7
     jmp ^join
 
   block ^join
-    load.i64 rax, [rbp-8]
-    ret rax
+    ret r8

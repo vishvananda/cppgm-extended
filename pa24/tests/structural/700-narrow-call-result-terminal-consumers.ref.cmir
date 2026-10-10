@@ -34,10 +34,7 @@ function @store_result
   block ^entry
     call @byte_value [args=()]
     store.u8 @saved, rax
-    load.u8 r8, @saved
-    mov rax, r8
-    zext.i8 rax
-    sext.i32 rax
+    load.u8 rax, @saved
     ret rax
 
 function @return_result
@@ -51,6 +48,7 @@ function @return_result
 
   block ^entry
     call @byte_value [args=()]
+    zext.i8 rax
     ret rax
 
 function @widen_result
@@ -65,7 +63,6 @@ function @widen_result
   block ^entry
     call @byte_value [args=()]
     zext.i8 rax
-    sext.i32 rax
     ret rax
 
 function @main
@@ -85,10 +82,8 @@ function @main
     call @return_result [args=()]
     mov <gpr1>, rax
     zext.i8 <gpr1>
-    sext.i32 <gpr1>
     call @widen_result [args=()]
-    mov r8, rax
-    sext.i32 r8
+    sext.i32 rax
     mov rdx, 173
     cmp.i32 <gpr0>, rdx
     setne <gpr0>
@@ -98,11 +93,10 @@ function @main
     setne <gpr1>
     movzx <gpr1>, <gpr1>
     mov rdx, 173
-    cmp.i32 r8, rdx
-    setne r8
-    movzx r8, r8
+    cmp.i32 rax, rdx
+    setne rax
+    movzx rax, rax
     or <gpr0>, <gpr1>
-    or <gpr0>, r8
-    mov rax, <gpr0>
-    sext.i32 rax
-    ret rax
+    or <gpr0>, rax
+    sext.i32 <gpr0>
+    ret <gpr0>

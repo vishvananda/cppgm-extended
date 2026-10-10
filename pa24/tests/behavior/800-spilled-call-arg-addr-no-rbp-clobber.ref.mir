@@ -10,7 +10,7 @@ function @sink
     param %v -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -29,19 +29,15 @@ function @run
     param %g -> [rbp+16] : i64
     return i64 -> rax
   frame
-    stack_size 64
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %g -> [rbp-8] : i64
-    slot $cell -> [rbp-24] : i64
+    slot $cell -> [rbp-8] : i64
 
   block ^entry
-    load.i64 rax, [rbp+16]
-    store.i64 [rbp-8], rax
-    store.i64 [rbp-24], 42
-    load.i64 r8, [rbp-24]
-    mov rdi, r8
+    store.i64 [rbp-8], 42
+    load.i64 rdi, [rbp-8]
     call @sink [args=(rdi)]
     ret rax
 

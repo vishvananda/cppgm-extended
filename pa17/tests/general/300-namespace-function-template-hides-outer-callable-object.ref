@@ -1,7 +1,7 @@
-global @outer___GLOBAL__N_1__print : ptr [binding=internal, object=_ZN5outer12_GLOBAL__N_15printE] = addr @outer____cppgm_class_template_identity_0_0_0__value
-global @outer____cppgm_class_template_identity_0_0_0__value [binding=weak, object=_ZN5outer12static_constINS_4impl7printerEE5valueE] = {
+global @outer__static_const_printer___value [binding=weak, object=_ZN5outer12static_constINS_4impl7printerEE5valueE] = {
   zero 1
 }
+global @outer___GLOBAL__N_1__print : ptr [binding=internal, object=_ZN5outer12_GLOBAL__N_15printE] = addr @outer__static_const_printer___value
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

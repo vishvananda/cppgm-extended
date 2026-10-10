@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $value
     %t2 = addr $value
-    %t3 = call u8 @matcher_int__long_int__char___find(%t2)
+    %t3 = call u8 @matcher_int_longint_char___find(%t2)
     branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -20,14 +20,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load typed i32 $cond__1
     return i32 %t4
 }
-function @matcher_int__long_int__char___find(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZN7matcherIilcE4findEv] {
+function @matcher_int_longint_char___find(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZN7matcherIilcE4findEv] {
   slot $this : ptr
   slot $pointer : i128
   slot $member_pointer_callee__1 : ptr
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = addr @matcher_int__long_int__char___first
+    %t1 = addr @matcher_int_longint_char___first
     %t2 = copy i64 %t1
     %t3 = convert zext i128 i64 %t2
     store typed i128 %t3, $pointer
@@ -59,7 +59,7 @@ function @matcher_int__long_int__char___find(%this : ptr [object_bytes=1]) -> u8
     %t18 = call u8 %t17(%t11) as (%arg0 : ptr [object_bytes=1]) -> u8
     return u8 %t18
 }
-function @matcher_int__long_int__char___first(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZN7matcherIilcE5firstEv] {
+function @matcher_int_longint_char___first(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZN7matcherIilcE5firstEv] {
   slot $this : ptr
 
   block ^entry:

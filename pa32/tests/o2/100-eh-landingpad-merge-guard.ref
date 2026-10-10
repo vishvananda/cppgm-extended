@@ -1,7 +1,7 @@
 declare function @may_throw() -> void
 declare function @end_catch() -> void [unwind=no]
 
-function @main() -> void {
+function @main() -> void [role=entry] {
   block ^entry:
     eh_try ^catch_dispatch
     call void @may_throw()
@@ -12,9 +12,6 @@ function @main() -> void {
     eh_catch_all
     %ex = exception ptr
     eh_cleanup ^catch_cleanup
-    jump ^catch_finish
-
-  block ^catch_finish:
     eh_end
     call void @end_catch()
     return void

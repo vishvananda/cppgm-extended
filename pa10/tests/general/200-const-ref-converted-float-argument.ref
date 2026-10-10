@@ -60,7 +60,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed f32 %t2, $hi
     %t3 = load typed f32 $lo
     %t4 = convert fpext f64 f32 %t3
-    %t5 = binary add f64 %t4, 0.01
+    %t5 = binary add f64 %t4, 0.010000000000000000208
     store typed f64 %t5, $refarg__2
     %t6 = addr $refarg__2
     %t7 = load typed f32 $lo

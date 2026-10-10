@@ -9,10 +9,10 @@ function @use(%p : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong
     %t2 = addr $fy
     %t3 = addr $fx
     %t4 = load typed ptr $p
-    %t5 = call i32 @foo_pair__x___bar(%t3, %t4)
+    %t5 = call i32 @foo__pair__x___bar(%t3, %t4)
     %t6 = addr $fy
     %t7 = load typed ptr $p
-    %t8 = call i32 @foo_pair__y___bar(%t6, %t7)
+    %t8 = call i32 @foo__pair__y___bar(%t6, %t7)
     %t9 = binary add nowrap i32 %t5, %t8
     return i32 %t9
 }
@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @foo_pair__x___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN3fooIXadL_ZN4pair1xEEEE3barERS0_, inline_hint=yes] {
+function @foo__pair__x___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN3fooIXadL_ZN4pair1xEEEE3barERS0_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -32,7 +32,7 @@ function @foo_pair__x___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_addr
     %t3 = load typed i32 %t2
     return i32 %t3
 }
-function @foo_pair__y___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN3fooIXadL_ZN4pair1yEEEE3barERS0_, inline_hint=yes] {
+function @foo__pair__y___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN3fooIXadL_ZN4pair1yEEEE3barERS0_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 

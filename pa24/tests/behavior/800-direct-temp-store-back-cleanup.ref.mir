@@ -15,7 +15,7 @@ function @clobber
     param %f -> r9 : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -32,10 +32,10 @@ function @f
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $y -> [rbp-8] : i64
+    preserve rbx
 
   block ^entry
-    store.i64 [rbp-8], rdi
+    mov rbx, rdi
     mov rdi, 10
     mov rsi, 20
     mov rdx, 30
@@ -43,8 +43,7 @@ function @f
     mov r8, 50
     mov r9, 60
     call @clobber [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    load.i64 rax, [rbp-8]
-    ret rax
+    ret rbx
 
 function @__cppgm_406d61696e
   abi

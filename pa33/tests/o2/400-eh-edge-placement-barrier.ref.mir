@@ -10,10 +10,10 @@ function @identity
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi
@@ -22,24 +22,22 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    preserve r13
-    temp %host-eh-exception -> [rbp-8] : ptr
-    temp %host-eh-selector -> [rbp-16] : i64
+    epilogues duplicated
+    temp %stable -> [rbp-8] : i64
 
   block ^entry
-    mov r13, 40
-    add r13, 2
+    mov rdi, 40
+    add rdi, 2
+    store.i64 [rbp-8], rdi
     eh_push ^handler, 0
-    mov rdi, r13
     call @identity [args=(rdi), unwind=no]
     eh_pop
 
   block ^done
-    cmp.i64 r13, 42
+    cmp.i64 [rbp-8], 42
     setne rax
     movzx rax, rax
     ret rax

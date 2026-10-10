@@ -1,14 +1,4 @@
-function @main() -> i64 {
+function @main() -> i64 [role=entry] {
   block ^entry:
-    jump ^loop
-
-  block ^loop:
-    %t0 = phi i64 [^entry: 0, ^body: 1]
-    branch %t0, ^body, ^exit
-
-  block ^body:
-    jump ^loop
-
-  block ^exit:
     return i64 7
 }

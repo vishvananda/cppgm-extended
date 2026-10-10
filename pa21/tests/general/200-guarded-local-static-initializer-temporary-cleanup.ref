@@ -1,24 +1,24 @@
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
-  i8 105
-  i8 0
-}
-global @__rtti_int [binding=weak, object=_ZTIi] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__int
-}
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
-  zero 4
-}
 global @__local_static__read_static__value__tokens129_141 : obj<4x4> [binding=internal, object=_ZZ11read_staticPiE5value] = {
   zero 4
 }
 global @__local_static__read_static__value__tokens129_141__guard : i64 [binding=internal, object=_ZGVZ11read_staticPiE5value] = zero
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal] = {
+  zero 4
+}
 
 function @read_static(%live_count : ptr) -> i32 [binding=strong, object=_Z11read_staticPi] {
   slot $live_count : ptr
@@ -94,9 +94,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $live_count
     %t2 = call i32 @read_static(%t1)
     %t3 = cmp ne i32 %t2, 3
-    branch %t3, ^if_then_1, ^lor_rhs_4
+    branch %t3, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t4 = load typed i32 $live_count
     %t5 = cmp ne i32 %t4, 0
     branch %t5, ^if_then_1, ^if_else_2
@@ -105,15 +105,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t6 = addr $live_count
     %t7 = call i32 @read_static(%t6)
     %t8 = cmp ne i32 %t7, 3
-    branch %t8, ^if_then_5, ^lor_rhs_8
+    branch %t8, ^if_then_5, ^lor_rhs_7
 
-  block ^lor_rhs_8:
+  block ^lor_rhs_7:
     %t9 = load typed i32 $live_count
     %t10 = cmp ne i32 %t9, 0
     branch %t10, ^if_then_5, ^if_else_6
@@ -122,9 +122,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_6:
-    jump ^if_end_7
+    jump ^if_end_8
 
-  block ^if_end_7:
+  block ^if_end_8:
     return i32 0
 }
 function @Live__Live(%this : ptr [object_bytes=8], %value : ptr) -> void [binding=weak, object=_ZN4LiveC1EPi, inline_hint=yes] {
@@ -144,19 +144,6 @@ function @Live__Live(%this : ptr [object_bytes=8], %value : ptr) -> void [bindin
     %t7 = load typed i32 %t6
     %t8 = binary add nowrap i32 %t7, 1
     store typed i32 %t8, %t6
-    return void
-}
-function @Live___Live(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4LiveD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load typed ptr %t2
-    %t4 = load typed i32 %t3
-    %t5 = binary sub nowrap i32 %t4, 1
-    store typed i32 %t5, %t3
     return void
 }
 function @Temporary__Temporary(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN9TemporaryC1Ei, inline_hint=yes] {
@@ -186,6 +173,19 @@ function @Temporary__Temporary(%this : ptr [object_bytes=4], %input : i32) -> vo
     jump ^if_end_3
 
   block ^if_end_3:
+    return void
+}
+function @Live___Live(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4LiveD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed ptr %t2
+    %t4 = load typed i32 %t3
+    %t5 = binary sub nowrap i32 %t4, 1
+    store typed i32 %t5, %t3
     return void
 }
 function @StaticValue__StaticValue(%this : ptr [object_bytes=4], %left : ptr [pass=by_address, object_bytes=4], %right : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN11StaticValueC1ERK9TemporaryS2_, inline_hint=yes] {
@@ -237,7 +237,7 @@ function @Temporary___Temporary(%this : ptr [object_bytes=4]) -> void [unwind=no
     return void
 }
 alias object _ZN4LiveC2EPi = @Live__Live
-alias object _ZN4LiveD2Ev = @Live___Live
 alias object _ZN9TemporaryC2Ei = @Temporary__Temporary
-alias object _ZN11StaticValueC2ERK9TemporaryS2_ = @StaticValue__StaticValue
+alias object _ZN4LiveD2Ev = @Live___Live
 alias object _ZN9TemporaryD2Ev = @Temporary___Temporary
+alias object _ZN11StaticValueC2ERK9TemporaryS2_ = @StaticValue__StaticValue

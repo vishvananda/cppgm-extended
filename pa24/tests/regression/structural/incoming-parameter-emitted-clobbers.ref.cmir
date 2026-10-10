@@ -46,18 +46,14 @@ function @main
 
   block ^entry
     mov <gpr0>, @cells
-    mov r8, @source
+    mov rsi, @source
     mov rdi, <gpr0>
-    mov rsi, r8
     mov rdx, 17
-    mov rcx, r8
+    mov rcx, rsi
     call @write_fields [args=(rcx,rdx,rsi,rdi)]
-    load.ptr r8, [<gpr0>+<off0>]
-    load.i64 r9, [r8]
+    load.ptr <gpr0>, [<gpr0>+<off0>]
     mov rdx, 99
-    cmp.i64 r9, rdx
-    setne r9
-    movzx r9, r9
-    mov rax, r9
-    sext.i32 rax
+    cmp.i64 [<gpr0>], rdx
+    setne rax
+    movzx rax, rax
     ret rax

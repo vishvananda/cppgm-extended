@@ -24,7 +24,7 @@ function @A__run(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN1
     %t4 = call i32 @A____lambda_A__run_t17_21__operator__(%t3)
     return i32 %t4
 }
-function @A____lambda_A__run_t17_21__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZZN1A3runEvENKUlvE_clEv, inline_hint=yes] {
+function @A____lambda_A__run_t17_21__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZZN1A3runEvENKUlvE_clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

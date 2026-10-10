@@ -59,10 +59,10 @@ function @allocate_at_least(%ptr : ptr, %n : i64) -> obj<16x8> [binding=weak, ob
     %t1 = addr $retobj__1
     %t2 = load typed ptr $ptr
     %t3 = load typed i64 $n
-    call void @__cppgm_class_template_identity_0_1_0__allocation_result__aggregate(%t1, %t2, %t3)
+    call void @allocation_result__allocation_result__aggregate(%t1, %t2, %t3)
     return obj<16x8> $retobj__1
 }
-function @__cppgm_class_template_identity_0_1_0__allocation_result__aggregate(%this : ptr, %ptr : ptr, %count : i64) -> void [unwind=no, binding=internal] {
+function @allocation_result__allocation_result__aggregate(%this : ptr, %ptr : ptr, %count : i64) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $ptr : ptr
   slot $count : i64

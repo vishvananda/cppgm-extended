@@ -17,9 +17,7 @@ function @main
   block ^entry
     mov r8, 0
     add r8, 3472328296227680304
-    mov rax, r8
-    mov rdx, 3472328296227680304
-    cmp.i64 rax, rdx
+    cmp.i64 r8, 3472328296227680304
     jne ^bad_add
     jmp ^check_sub
 

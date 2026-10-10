@@ -54,13 +54,6 @@ function @X__operatornew__(%n : i64) -> ptr [binding=weak, object=_ZN1XnaEm, inl
     store typed ptr %t2, @allocated
     return ptr %t2
 }
-function @X___X(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN1XD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
 function @X__operatordelete__(%p : ptr) -> void [unwind=no, binding=weak, object=_ZN1XdaEPv, inline_hint=yes] {
   slot $p : ptr
 
@@ -73,6 +66,13 @@ function @X__operatordelete__(%p : ptr) -> void [unwind=no, binding=weak, object
     store typed i32 %t4, @good
     %t5 = load typed ptr $p
     call void @operatordelete__(%t5)
+    return void
+}
+function @X___X(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN1XD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN1XD2Ev = @X___X

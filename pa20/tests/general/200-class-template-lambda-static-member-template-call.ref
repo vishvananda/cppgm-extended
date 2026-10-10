@@ -26,11 +26,11 @@ function @Box_int___run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, obje
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = addr @__lambda___cppgm_class_template_identity_0_0_0__run_t42_44
+    %t1 = addr @Box_int_____lambda_Box_int___run_t42_44___FUN
     %t2 = call i32 %t1() as () -> i32
     return i32 %t2
 }
-function @__lambda___cppgm_class_template_identity_0_0_0__run_t42_44() -> i32 [binding=weak, object=_ZZNK3BoxIiE3runEvENUlvE_8__invokeEv, inline_hint=yes] {
+function @Box_int_____lambda_Box_int___run_t42_44___FUN() -> i32 [binding=internal, object=_ZZNK3BoxIiE3runEvENUlvE_8__invokeEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
   block ^entry:
     %t1 = call i32 @Box_int___cast(4)
     return i32 %t1

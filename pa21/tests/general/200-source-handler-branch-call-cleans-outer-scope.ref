@@ -1,23 +1,23 @@
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
+global @depth : i32 [binding=strong] = zero
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
   i8 105
   i8 0
 }
-global @__rtti_int [binding=weak, object=_ZTIi] = {
+global @__rtti_int [storage=readonly, binding=internal] = {
   ptr addr @__external_rtti_vtable____fundamental_type_info + 16
   ptr addr @__typeinfo_name__int
 }
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
+global @__ehobj_int [binding=internal] = {
   zero 4
 }
-global @depth : i32 [binding=strong] = zero
 
 function @raise(%value : i32) -> void [binding=strong, object=_Z5raisei] {
   slot $value : i32
@@ -62,35 +62,35 @@ function @exercise() -> void [binding=strong, object=_Z8exercisev] {
     branch %t7, ^if_then_7, ^if_else_8
 
   block ^if_then_7:
-    eh_try ^call_unwind_dispatch_13
+    eh_try ^call_unwind_dispatch_12
     call void @raise(2)
     eh_end
-    jump ^call_unwind_end_14
+    jump ^call_unwind_end_13
 
-  block ^cleanup_resume_10:
+  block ^cleanup_resume_9:
     resume
 
-  block ^cleanup_action_11:
+  block ^cleanup_action_10:
     %t8 = addr $guard
     call void @Guard___Guard(%t8)
-    jump ^cleanup_resume_10
+    jump ^cleanup_resume_9
 
-  block ^cleanup_action_12:
+  block ^cleanup_action_11:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     eh_end
+    jump ^cleanup_action_10
+
+  block ^call_unwind_dispatch_12:
     jump ^cleanup_action_11
 
-  block ^call_unwind_dispatch_13:
-    jump ^cleanup_action_12
-
-  block ^call_unwind_end_14:
-    jump ^if_end_9
+  block ^call_unwind_end_13:
+    jump ^if_end_14
 
   block ^if_else_8:
-    jump ^if_end_9
+    jump ^if_end_14
 
-  block ^if_end_9:
+  block ^if_end_14:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_3

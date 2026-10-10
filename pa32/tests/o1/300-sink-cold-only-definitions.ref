@@ -7,40 +7,39 @@ global @message = {
 
 function @single_cold_use(%value : i64) -> i64 {
   block ^entry:
+    %text = addr @message
     %bad = cmp ugt i64 %value, 100
     branch %bad, ^raise, ^ok
+
+  block ^raise:
+    call void @fail(%text)
+    unreachable
 
   block ^ok:
     %sum = binary add i64 %value, 1
     return i64 %sum
-
-  block ^raise:
-    %text = addr @message
-    call void @fail(%text)
-    return i64 0
 }
 function @shared_cold_uses(%value : i64) -> i64 {
   block ^entry:
+    %text = addr @message
     %bad = cmp ugt i64 %value, 100
     branch %bad, ^first, ^middle
+
+  block ^first:
+    call void @fail(%text)
+    unreachable
 
   block ^middle:
     %worse = cmp ugt i64 %value, 200
     branch %worse, ^second, ^ok
 
+  block ^second:
+    call void @fail(%text)
+    unreachable
+
   block ^ok:
     %sum = binary add i64 %value, 2
     return i64 %sum
-
-  block ^first:
-    %t0 = addr @message
-    call void @fail(%t0)
-    return i64 0
-
-  block ^second:
-    %t1 = addr @message
-    call void @fail(%t1)
-    return i64 0
 }
 function @keeps_hot_use(%value : i64) -> i64 {
   block ^entry:
@@ -49,11 +48,11 @@ function @keeps_hot_use(%value : i64) -> i64 {
     %bad = cmp ugt i64 %value, 100
     branch %bad, ^raise, ^ok
 
+  block ^raise:
+    call void @fail(%text)
+    unreachable
+
   block ^ok:
     %sum = binary add i64 %value, 3
     return i64 %sum
-
-  block ^raise:
-    call void @fail(%text)
-    return i64 0
 }

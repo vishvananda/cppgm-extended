@@ -4,7 +4,7 @@ function @scale(%den : i64) -> f80 [binding=strong, object=_Z5scaley] {
 
   block ^entry:
     store typed i64 %den, $den
-    store typed f80 12.0L, $t
+    store typed f80 12L, $t
     %t1 = load typed f80 $t
     %t2 = load typed i64 $den
     %t3 = convert uitofp f80 i64 %t2
@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = call f80 @scale(3)
-    %t2 = cmp eq f80 %t1, 4.0L
+    %t2 = cmp eq f80 %t1, 4L
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

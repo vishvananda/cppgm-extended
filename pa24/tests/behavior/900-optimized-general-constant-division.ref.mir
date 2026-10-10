@@ -10,33 +10,43 @@ function @smod7
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
-    mov rcx, 7
     mov rax, rdi
-    cqo
-    idiv rcx
-    ret rdx
+    mov r11, 5270498306774157605
+    imul r11
+    sar rdx, 1
+    mov rax, rdx
+    shr rax, 63
+    add rdx, rax
+    imul rdx, 7
+    mov rax, rdi
+    sub rax, rdx
+    ret rax
 
 function @udiv7
   abi
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
-    mov rcx, 7
     mov rax, rdi
-    mov rdx, 0
-    div rcx
+    mov r11, 2635249153387078803
+    mul r11
+    mov rax, rdi
+    sub rax, rdx
+    shr rax, 1
+    add rax, rdx
+    shr rax, 2
     ret rax
 
 function @umod31
@@ -44,16 +54,23 @@ function @umod31
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
-    mov rcx, 31
     mov rax, rdi
-    mov rdx, 0
-    div rcx
+    mov r11, 595056260442243601
+    mul r11
+    mov rax, rdi
+    sub rax, rdx
+    shr rax, 1
+    add rax, rdx
+    shr rax, 4
+    imul rax, 31
+    mov rdx, rdi
+    sub rdx, rax
     ret rdx
 
 function @main
@@ -63,30 +80,25 @@ function @main
     stack_size 64
     scratch_bytes 48
     frame_pointer keep
-    epilogues direct
-    preserve r13 r12
+    epilogues duplicated
+    preserve rbx r12
 
   block ^entry
     mov rdi, -9223372036854775808
     call @smod7 [args=(rdi)]
-    mov rdx, -1
-    cmp.i64 rax, rdx
-    setne r13
-    movzx r13, r13
+    cmp.i64 rax, -1
+    setne rbx
+    movzx rbx, rbx
     mov rdi, -1
     call @udiv7 [args=(rdi)]
-    mov rdx, 2635249153387078802
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 2635249153387078802
     setne r12
     movzx r12, r12
     mov rdi, -1
     call @umod31 [args=(rdi)]
-    mov rdx, 15
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 15
     setne rax
     movzx rax, rax
-    or r13, r12
-    or r13, rax
-    mov rax, r13
-    sext.i32 rax
-    ret rax
+    or rbx, r12
+    or rbx, rax
+    ret rbx

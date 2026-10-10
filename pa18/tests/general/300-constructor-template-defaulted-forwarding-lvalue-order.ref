@@ -14,12 +14,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $tmp
     %t2 = call ptr @source()
-    call void @box__box__ov3(%t1, %t2)
+    call void @box__box(%t1, %t2)
     %t3 = load typed i32 @box__selected
     %t4 = binary sub nowrap i32 %t3, 1
     return i32 %t4
 }
-function @box__box__ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3boxC1I5valueEERKT_, inline_hint=yes] {
+function @box__box(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3boxC1I5valueEERKT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -29,4 +29,4 @@ function @box__box__ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_a
     store typed i32 1, @box__selected
     return void
 }
-alias object _ZN3boxC2I5valueEERKT_ = @box__box__ov3
+alias object _ZN3boxC2I5valueEERKT_ = @box__box

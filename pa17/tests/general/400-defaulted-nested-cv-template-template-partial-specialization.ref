@@ -1,3 +1,6 @@
+declare global @holder___cppgm_class_template_identity_1___value : i32 [binding=weak, object=_ZN6holderI3mapIi5value4lessIiE9allocatorI4pairIKiS1_EEEE5valueE]
+declare global @holder___cppgm_class_template_identity_2___value : i32 [binding=weak, object=_ZN6holderI13unordered_mapIi5value4hashIiE8equal_toIiE9allocatorI4pairIKiS1_EEEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

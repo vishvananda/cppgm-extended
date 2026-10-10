@@ -9,7 +9,7 @@ function @atomic_barrier() -> i64 {
     %observed = atomic_load i64 %address, 5
     %after = load i64 @value
     %sum1 = binary add i64 %before, %observed
-    %sum2 = binary add i64 %sum1, %after
+    %sum2 = binary add i64 %after, %sum1
     return i64 %sum2
 }
 function @exception_region() -> i64 {

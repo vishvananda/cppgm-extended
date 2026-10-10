@@ -1,3 +1,6 @@
+declare global @is_same_constbool__constbool____value : u8 [binding=weak, object=_ZN7is_sameIRKbS1_E5valueE]
+declare global @is_same_void___void_____value : u8 [binding=weak, object=_ZN7is_sameIRPvS1_E5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

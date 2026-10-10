@@ -41,22 +41,19 @@ function @finish
     param %fourth -> rcx : i32
     return void -> void
   frame
-    stack_size 32
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12
 
   block ^entry
-    load.i64 r9, [rdi]
-    load.i64 rbx, [rsi]
-    load.i64 r12, [rdx]
-    add r9, rbx
-    add r9, r12
-    mov rbx, rcx
-    sext.i32 rbx
-    add r9, rbx
-    store.i64 @observed, r9
+    load.i64 rdi, [rdi]
+    load.i64 rsi, [rsi]
+    load.i64 rdx, [rdx]
+    add rdi, rsi
+    add rdi, rdx
+    add rdi, rcx
+    store.i64 @observed, rdi
     ret
 
 function @reduced
@@ -74,15 +71,15 @@ function @reduced
     preserve rbx r12 r13 r14
 
   block ^entry
-    mov r14, rdi
-    mov r13, rsi
-    mov r12, rdx
-    mov rbx, rcx
+    mov rbx, rdi
+    mov r12, rsi
+    mov r13, rdx
+    mov r14, rcx
     call @touch [args=()]
-    mov rdi, r14
-    mov rsi, r13
-    mov rdx, r12
-    mov rcx, rbx
+    mov rdi, rbx
+    mov rsi, r12
+    mov rdx, r13
+    mov rcx, r14
     call @finish [args=(rcx,rdx,rsi,rdi)]
     ret
 
@@ -101,11 +98,8 @@ function @main
     mov rdx, @third_value
     mov rcx, 19
     call @reduced [args=(rcx,rdx,rsi,rdi)]
-    load.i64 r8, @observed
     mov rdx, 60
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
+    cmp.i64 @observed, rdx
+    setne rax
+    movzx rax, rax
     ret rax

@@ -36,13 +36,13 @@ function @wrapper(%value : ptr [pass=by_address, object_bytes=1], %fn : obj<1x1>
   block ^entry:
     store typed ptr %value, $value
     %t1 = addr $fn
-    %t2 = call i32 @example__maker_member_pointer_of_class_target_to_function_of____const_returning_int___value(%t1)
+    %t2 = call i32 @example__maker_int__target______value(%t1)
     %t3 = load typed ptr $value
     %t4 = call i32 @target__id(%t3)
     %t5 = binary add nowrap i32 %t2, %t4
     return i32 %t5
 }
-function @example__maker_member_pointer_of_class_target_to_function_of____const_returning_int___value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK7example5makerIM6targetKFivEE5valueEv, inline_hint=yes] {
+function @example__maker_int__target______value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK7example5makerIM6targetKFivEE5valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

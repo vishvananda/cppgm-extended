@@ -1,3 +1,5 @@
+declare global @outer_int___inner_char___value : i32 [binding=weak, object=_ZN5outerIiE5innerIcE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

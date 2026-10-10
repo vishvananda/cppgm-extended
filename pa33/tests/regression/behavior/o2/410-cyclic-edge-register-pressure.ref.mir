@@ -32,8 +32,8 @@ function @noop
   frame
     stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     mov rax, 0
@@ -43,52 +43,48 @@ function @probe
   abi
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 64
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    preserve r14 rbx r12 r13 r15
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
     slot $counter -> [rbp-8] : i64
+    temp %a -> [rbp-16] : i64
 
   block ^entry
-    load.i64 r14, @a
-    load.i64 rbx, @b
-    load.i64 r12, @c
+    mov r12, @data
+    load.i64 r8, @a
+    store.i64 [rbp-16], r8
+    load.i64 r15, @b
+    load.i64 r14, @c
     load.i64 r13, @d
     store.i64 [rbp-8], 0
 
   block ^condition
-    load.i64 r15, [rbp-8]
-    cmp.i64 r15, 2
+    load.i64 rbx, [rbp-8]
+    cmp.i64 rbx, 2
     jae ^done
 
   block ^body
-    mov r8, @data
-    mov rdx, r15
-    imul rdx, 8
-    add r8, rdx
-    store.i64 [r8], r15
+    store.i64 [r12+rbx*8], rbx
     call @noop [args=(), unwind=no]
-    lea r9, [r14+rbx]
-    lea r8, [r12+r13]
-    add r9, r8
-    add r9, 7
-    lea r8, [r15+1]
-    store.i64 [rbp-8], r8
-    cmp.i64 r9, 17
+    mov r8, r15
+    add r8, [rbp-16]
+    lea r9, [r14+r13]
+    lea r8, [r8+r9+7]
+    add rbx, 1
+    store.i64 [rbp-8], rbx
+    cmp.i64 r8, 17
     je ^condition
-    jmp ^failure
-
-  block ^done
-    mov rcx, @data
-    load.i64 r9, [rcx+8]
-    cmp.i64 r9, 1
-    setne rax
-    movzx rax, rax
-    ret rax
 
   block ^failure
     mov rax, 1
+    ret rax
+
+  block ^done
+    cmp.i64 [r12+8], 1
+    setne rax
+    movzx rax, rax
     ret rax
 
 function @main
@@ -97,8 +93,8 @@ function @main
   frame
     stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     call @probe [args=(), unwind=no]

@@ -6,11 +6,11 @@ function @strength_reduce() -> i64 [no_inline=yes] {
 
   block ^header:
     %i = phi i64 [^entry: 0, ^body: %next]
-    %done = cmp lt i64 %i, 4
-    branch %done, ^body, ^exit
+    %done = cmp ge i64 %i, 4
+    branch %done, ^exit, ^body
 
   block ^body:
-    %scaled = binary shl i64 %i, 3
+    %scaled = binary mul i64 %i, 8
     store i64 %scaled, @result
     %next = binary add i64 %i, 1
     jump ^header

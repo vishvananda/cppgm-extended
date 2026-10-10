@@ -1,34 +1,28 @@
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
-declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
-declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
+declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
+declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
-  i8 105
-  i8 0
-}
-global @__rtti_int [binding=weak, object=_ZTIi] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__int
-}
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
-  zero 4
-}
 global @live : i32 [binding=strong] = zero
 global @order : i32 [binding=strong] = zero
 global @throw_at : i32 [binding=strong] = zero
 global @made : i32 [binding=strong] = zero
-
-function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
-  block ^entry:
-    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
-    call void @std_terminate()
-    return void
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
 }
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal] = {
+  zero 4
+}
+
 function @make(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [binding=strong, object=_Z4makev] {
   block ^entry:
     call void @R__R__ov2(%ret, 5)
@@ -47,29 +41,29 @@ function @constructed(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i3
     branch %t3, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    eh_try ^cleanup_action_5
+    eh_try ^cleanup_action_4
     call void @R__R(%ret)
     eh_end
-    jump ^call_unwind_end_6
+    jump ^call_unwind_end_5
 
-  block ^cleanup_resume_4:
+  block ^cleanup_resume_3:
     resume
 
-  block ^cleanup_action_5:
+  block ^cleanup_action_4:
     %t4 = addr $h
     call void @H___H(%t4)
-    jump ^cleanup_resume_4
+    jump ^cleanup_resume_3
 
-  block ^call_unwind_end_6:
+  block ^call_unwind_end_5:
     %t5 = addr $h
     call void @H___H(%t5)
     return void
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_6
 
-  block ^if_end_3:
-    eh_try ^cleanup_action_5
+  block ^if_end_6:
+    eh_try ^cleanup_action_4
     call void @R__R(%ret)
     eh_end
     %t6 = addr $h
@@ -110,15 +104,15 @@ function @copied(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i32) ->
 
   block ^cleanup_action_4:
     eh_try ^lexical_cleanup_terminate_6
-    %t6 = addr $g
-    call void @G___G(%t6)
+    %t5 = addr $g
+    call void @G___G(%t5)
     eh_end
     jump ^cleanup_action_2
 
   block ^lexical_cleanup_terminate_6:
     eh_catch_all, 1
-    %t5 = exception ptr
-    call void @cppgm_call_terminate(%t5)
+    %t6 = exception ptr
+    call void @cppgm_call_terminate(%t6)
     unreachable
 
   block ^call_unwind_end_5:
@@ -138,47 +132,47 @@ function @copied(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i32) ->
     branch %t9, ^if_then_9, ^if_else_10
 
   block ^if_then_9:
-    %t11 = addr $r
-    eh_try ^cleanup_action_12
-    call void @R__R__ov3(%ret, %t11)
+    %t10 = addr $r
+    eh_try ^cleanup_action_11
+    call void @R__R__ov3(%ret, %t10)
     eh_end
-    %t12 = addr $s
+    %t11 = addr $s
+    call void @R___R(%t11)
+    %t12 = addr $r
     call void @R___R(%t12)
-    %t13 = addr $r
-    call void @R___R(%t13)
-    eh_try ^lexical_cleanup_dispatch_15
-    %t15 = addr $g
-    call void @G___G(%t15)
+    eh_try ^lexical_cleanup_dispatch_14
+    %t13 = addr $g
+    call void @G___G(%t13)
     eh_end
-    %t16 = addr $h
-    call void @H___H(%t16)
+    %t14 = addr $h
+    call void @H___H(%t14)
     return void
 
-  block ^cleanup_action_12:
-    %t10 = addr $s
-    call void @R___R(%t10)
+  block ^cleanup_action_11:
+    %t15 = addr $s
+    call void @R___R(%t15)
     jump ^cleanup_action_7
 
-  block ^lexical_unwind_14:
+  block ^lexical_unwind_12:
     resume
 
   block ^lexical_unwind_13:
-    %t14 = addr $h
-    call void @H___H(%t14)
-    jump ^lexical_unwind_14
+    %t16 = addr $h
+    call void @H___H(%t16)
+    jump ^lexical_unwind_12
 
-  block ^lexical_cleanup_dispatch_15:
+  block ^lexical_cleanup_dispatch_14:
     eh_cleanup
     eh_end
     call void @R___R(%ret)
     jump ^lexical_unwind_13
 
   block ^if_else_10:
-    jump ^if_end_11
+    jump ^if_end_15
 
-  block ^if_end_11:
+  block ^if_end_15:
     %t17 = addr $s
-    eh_try ^cleanup_action_12
+    eh_try ^cleanup_action_11
     call void @R__R__ov3(%ret, %t17)
     eh_end
     %t18 = addr $s
@@ -223,40 +217,40 @@ function @converted(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i32)
     jump ^cleanup_resume_1
 
   block ^call_unwind_end_3:
-    %t6 = load typed i32 $m
+    %t4 = load typed i32 $m
     eh_try ^cleanup_action_4
-    call void @R__R__ov2(%ret, %t6)
+    call void @R__R__ov2(%ret, %t4)
     eh_end
-    eh_try ^lexical_cleanup_dispatch_8
-    %t8 = addr $g
-    call void @G___G(%t8)
-    eh_end
-    %t9 = addr $h
-    call void @H___H(%t9)
-    return void
-
-  block ^cleanup_action_4:
-    eh_try ^lexical_cleanup_terminate_5
+    eh_try ^lexical_cleanup_dispatch_7
     %t5 = addr $g
     call void @G___G(%t5)
     eh_end
+    %t6 = addr $h
+    call void @H___H(%t6)
+    return void
+
+  block ^cleanup_action_4:
+    eh_try ^lexical_cleanup_terminate_8
+    %t7 = addr $g
+    call void @G___G(%t7)
+    eh_end
     jump ^cleanup_action_2
 
-  block ^lexical_cleanup_terminate_5:
+  block ^lexical_cleanup_terminate_8:
     eh_catch_all, 1
-    %t4 = exception ptr
-    call void @cppgm_call_terminate(%t4)
+    %t8 = exception ptr
+    call void @cppgm_call_terminate(%t8)
     unreachable
 
-  block ^lexical_unwind_7:
+  block ^lexical_unwind_5:
     resume
 
   block ^lexical_unwind_6:
-    %t7 = addr $h
-    call void @H___H(%t7)
-    jump ^lexical_unwind_7
+    %t9 = addr $h
+    call void @H___H(%t9)
+    jump ^lexical_unwind_5
 
-  block ^lexical_cleanup_dispatch_8:
+  block ^lexical_cleanup_dispatch_7:
     eh_cleanup
     eh_end
     call void @R___R(%ret)
@@ -297,15 +291,15 @@ function @called(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i32) ->
 
   block ^cleanup_action_7:
     eh_try ^lexical_cleanup_terminate_9
-    %t6 = addr $g
-    call void @G___G(%t6)
+    %t5 = addr $g
+    call void @G___G(%t5)
     eh_end
     jump ^cleanup_action_2
 
   block ^lexical_cleanup_terminate_9:
     eh_catch_all, 1
-    %t5 = exception ptr
-    call void @cppgm_call_terminate(%t5)
+    %t6 = exception ptr
+    call void @cppgm_call_terminate(%t6)
     unreachable
 
   block ^call_unwind_end_8:
@@ -319,26 +313,26 @@ function @called(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i32) ->
 
   block ^condobj_end_6:
     eh_try ^lexical_cleanup_dispatch_12
-    %t8 = addr $g
-    call void @G___G(%t8)
+    %t7 = addr $g
+    call void @G___G(%t7)
     eh_end
-    %t9 = addr $h
-    call void @H___H(%t9)
+    %t8 = addr $h
+    call void @H___H(%t8)
     return void
 
-  block ^lexical_unwind_11:
+  block ^lexical_unwind_10:
     resume
 
-  block ^lexical_unwind_10:
-    %t7 = addr $h
-    call void @H___H(%t7)
-    jump ^lexical_unwind_11
+  block ^lexical_unwind_11:
+    %t9 = addr $h
+    call void @H___H(%t9)
+    jump ^lexical_unwind_10
 
   block ^lexical_cleanup_dispatch_12:
     eh_cleanup
     eh_end
     call void @R___R(%ret)
-    jump ^lexical_unwind_10
+    jump ^lexical_unwind_11
 }
 function @parameter(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i32, %p : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z9parameteri1R] {
   slot $m : i32
@@ -352,9 +346,9 @@ function @parameter(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i32,
     eh_try ^cleanup_action_2
     call void @R__R__ov3(%ret, %p)
     eh_end
-    eh_try ^lexical_cleanup_dispatch_5
-    %t4 = addr $g
-    call void @G___G(%t4)
+    eh_try ^lexical_cleanup_dispatch_4
+    %t2 = addr $g
+    call void @G___G(%t2)
     eh_end
     return void
 
@@ -362,26 +356,26 @@ function @parameter(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i32,
     resume
 
   block ^cleanup_action_2:
-    eh_try ^lexical_cleanup_terminate_3
+    eh_try ^lexical_cleanup_terminate_5
     %t3 = addr $g
     call void @G___G(%t3)
     eh_end
     jump ^cleanup_resume_1
 
-  block ^lexical_cleanup_terminate_3:
+  block ^lexical_cleanup_terminate_5:
     eh_catch_all, 1
-    %t2 = exception ptr
-    call void @cppgm_call_terminate(%t2)
+    %t4 = exception ptr
+    call void @cppgm_call_terminate(%t4)
     unreachable
 
-  block ^lexical_unwind_4:
+  block ^lexical_unwind_3:
     resume
 
-  block ^lexical_cleanup_dispatch_5:
+  block ^lexical_cleanup_dispatch_4:
     eh_cleanup
     eh_end
     call void @R___R(%ret)
-    jump ^lexical_unwind_4
+    jump ^lexical_unwind_3
 }
 function @member(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i32) -> void [binding=strong, object=_Z6memberi] {
   slot $m : i32
@@ -420,15 +414,15 @@ function @member(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i32) ->
 
   block ^cleanup_action_7:
     eh_try ^lexical_cleanup_terminate_9
-    %t7 = addr $g
-    call void @G___G(%t7)
+    %t6 = addr $g
+    call void @G___G(%t6)
     eh_end
     jump ^cleanup_action_2
 
   block ^lexical_cleanup_terminate_9:
     eh_catch_all, 1
-    %t6 = exception ptr
-    call void @cppgm_call_terminate(%t6)
+    %t7 = exception ptr
+    call void @cppgm_call_terminate(%t7)
     unreachable
 
   block ^call_unwind_end_8:
@@ -455,26 +449,26 @@ function @member(%ret : ptr [pass=indirect_result, object_bytes=4], %m : i32) ->
 
   block ^condobj_end_6:
     eh_try ^lexical_cleanup_dispatch_14
-    %t11 = addr $g
-    call void @G___G(%t11)
+    %t10 = addr $g
+    call void @G___G(%t10)
     eh_end
-    %t12 = addr $base
-    call void @R___R(%t12)
+    %t11 = addr $base
+    call void @R___R(%t11)
     return void
 
-  block ^lexical_unwind_13:
+  block ^lexical_unwind_12:
     resume
 
-  block ^lexical_unwind_12:
-    %t10 = addr $base
-    call void @R___R(%t10)
-    jump ^lexical_unwind_13
+  block ^lexical_unwind_13:
+    %t12 = addr $base
+    call void @R___R(%t12)
+    jump ^lexical_unwind_12
 
   block ^lexical_cleanup_dispatch_14:
     eh_cleanup
     eh_end
     call void @R___R(%ret)
-    jump ^lexical_unwind_12
+    jump ^lexical_unwind_13
 }
 function @run_constructed() -> void [binding=strong, object=_Z15run_constructedv] {
   slot $discard__1 : obj<4x4>
@@ -762,6 +756,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = binary add nowrap i32 %t18, %t21
     return i32 %t22
 }
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
+    return void
+}
 function @R__R__ov2(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN1RC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
@@ -789,20 +789,6 @@ function @H__H(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1H
     store typed i32 %t2, @live
     return void
 }
-function @H___H(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN1HD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @live
-    %t2 = binary sub nowrap i32 %t1, 1
-    store typed i32 %t2, @live
-    %t3 = load typed i32 @order
-    %t4 = binary mul nowrap i32 %t3, 10
-    %t5 = binary add nowrap i32 %t4, 1
-    store typed i32 %t5, @order
-    return void
-}
 function @R__R(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1RC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -815,6 +801,20 @@ function @R__R(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1R
     %t3 = load typed i32 @live
     %t4 = binary add nowrap i32 %t3, 1
     store typed i32 %t4, @live
+    return void
+}
+function @H___H(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN1HD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @live
+    %t3 = load typed i32 @order
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @order
     return void
 }
 function @G__G(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1GC1Ev, inline_hint=yes] {
@@ -882,16 +882,16 @@ function @Box__Box(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak
     %t3 = load typed i32 $x
     call void @R__R__ov2(%t2, %t3)
     eh_cleanup ^constructor_cleanup_1
-    %t6 = load typed i32 @live
-    %t7 = binary add nowrap i32 %t6, 1
-    store typed i32 %t7, @live
+    %t4 = load typed i32 @live
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @live
     eh_end
     return void
 
   block ^constructor_cleanup_1:
-    %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
-    call void @R___R(%t5)
+    %t6 = load typed ptr $this
+    %t7 = index i8 [projection=field] %t6, 0
+    call void @R___R(%t7)
     eh_end
     resume
 }
@@ -944,8 +944,8 @@ function @R__step() -> void [binding=weak, object=_ZN1R4stepEv, inline_hint=yes]
 }
 alias object _ZN1RC2Ei = @R__R__ov2
 alias object _ZN1HC2Ev = @H__H
-alias object _ZN1HD2Ev = @H___H
 alias object _ZN1RC2Ev = @R__R
+alias object _ZN1HD2Ev = @H___H
 alias object _ZN1GC2Ev = @G__G
 alias object _ZN1GD2Ev = @G___G
 alias object _ZN1RD2Ev = @R___R

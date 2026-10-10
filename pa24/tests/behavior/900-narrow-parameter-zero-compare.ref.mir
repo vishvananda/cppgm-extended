@@ -44,4 +44,5 @@ function @main
     mov rsi, 0
     mov rdx, 1
     call @check [args=(rdx,rsi,rdi)]
+    sext.i32 rax
     ret rax

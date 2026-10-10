@@ -29,7 +29,8 @@ function @main
 
   block ^entry
     call @zero [args=()]
-    cmp.i64 rax, 0
+    mov r8, rax
+    cmp.i64 r8, 0
     je ^true
     jmp ^false
 

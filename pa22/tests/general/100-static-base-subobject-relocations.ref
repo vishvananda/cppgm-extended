@@ -37,9 +37,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = index i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp ne i32 %t11, 3
-    branch %t12, ^lor_short_17, ^lor_rhs_16
+    branch %t12, ^lor_short_2, ^lor_rhs_1
 
-  block ^lor_rhs_16:
+  block ^lor_rhs_1:
     %t13 = addr @objects
     %t14 = binary mul i64 1, 12
     %t15 = index i8 [projection=array_element] %t13, %t14
@@ -48,36 +48,36 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = load typed i32 %t17
     %t19 = cmp ne i32 %t18, 5
     %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $lor__6
-    jump ^lor_end_18
+    store typed i64 %t20, $lor__1
+    jump ^lor_end_3
 
-  block ^lor_short_17:
-    store typed i64 1, $lor__6
-    jump ^lor_end_18
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
 
-  block ^lor_end_18:
-    %t21 = load typed i64 $lor__6
-    branch %t21, ^lor_short_14, ^lor_rhs_13
+  block ^lor_end_3:
+    %t21 = load typed i64 $lor__1
+    branch %t21, ^lor_short_5, ^lor_rhs_4
 
-  block ^lor_rhs_13:
+  block ^lor_rhs_4:
     %t22 = addr @further
     %t23 = index i8 %t22, 4
     %t24 = index i8 [projection=field] %t23, 0
     %t25 = load typed i32 %t24
     %t26 = cmp ne i32 %t25, 7
     %t27 = cmp ne i64 %t26, 0
-    store typed i64 %t27, $lor__5
-    jump ^lor_end_15
+    store typed i64 %t27, $lor__2
+    jump ^lor_end_6
 
-  block ^lor_short_14:
-    store typed i64 1, $lor__5
-    jump ^lor_end_15
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
 
-  block ^lor_end_15:
-    %t28 = load typed i64 $lor__5
-    branch %t28, ^lor_short_11, ^lor_rhs_10
+  block ^lor_end_6:
+    %t28 = load typed i64 $lor__2
+    branch %t28, ^lor_short_8, ^lor_rhs_7
 
-  block ^lor_rhs_10:
+  block ^lor_rhs_7:
     %t29 = addr @objects
     %t30 = binary mul i64 0, 12
     %t31 = index i8 [projection=array_element] %t29, %t30
@@ -86,18 +86,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t34 = load typed i32 %t33
     %t35 = cmp ne i32 %t34, 0
     %t36 = cmp ne i64 %t35, 0
-    store typed i64 %t36, $lor__4
-    jump ^lor_end_12
+    store typed i64 %t36, $lor__3
+    jump ^lor_end_9
 
-  block ^lor_short_11:
-    store typed i64 1, $lor__4
-    jump ^lor_end_12
+  block ^lor_short_8:
+    store typed i64 1, $lor__3
+    jump ^lor_end_9
 
-  block ^lor_end_12:
-    %t37 = load typed i64 $lor__4
-    branch %t37, ^lor_short_8, ^lor_rhs_7
+  block ^lor_end_9:
+    %t37 = load typed i64 $lor__3
+    branch %t37, ^lor_short_11, ^lor_rhs_10
 
-  block ^lor_rhs_7:
+  block ^lor_rhs_10:
     %t38 = addr @objects
     %t39 = binary mul i64 2, 12
     %t40 = index i8 [projection=array_element] %t38, %t39
@@ -106,36 +106,36 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t43 = load typed i32 %t42
     %t44 = cmp ne i32 %t43, 0
     %t45 = cmp ne i64 %t44, 0
-    store typed i64 %t45, $lor__3
-    jump ^lor_end_9
+    store typed i64 %t45, $lor__4
+    jump ^lor_end_12
 
-  block ^lor_short_8:
-    store typed i64 1, $lor__3
-    jump ^lor_end_9
+  block ^lor_short_11:
+    store typed i64 1, $lor__4
+    jump ^lor_end_12
 
-  block ^lor_end_9:
-    %t46 = load typed i64 $lor__3
-    branch %t46, ^lor_short_5, ^lor_rhs_4
+  block ^lor_end_12:
+    %t46 = load typed i64 $lor__4
+    branch %t46, ^lor_short_14, ^lor_rhs_13
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_13:
     %t47 = load typed ptr @member_pointer
     %t48 = addr @holder
     %t49 = index i8 [projection=field] %t48, 8
     %t50 = index i8 %t49, 4
     %t51 = cmp ne ptr %t47, %t50
     %t52 = cmp ne i64 %t51, 0
-    store typed i64 %t52, $lor__2
-    jump ^lor_end_6
+    store typed i64 %t52, $lor__5
+    jump ^lor_end_15
 
-  block ^lor_short_5:
-    store typed i64 1, $lor__2
-    jump ^lor_end_6
+  block ^lor_short_14:
+    store typed i64 1, $lor__5
+    jump ^lor_end_15
 
-  block ^lor_end_6:
-    %t53 = load typed i64 $lor__2
-    branch %t53, ^lor_short_2, ^lor_rhs_1
+  block ^lor_end_15:
+    %t53 = load typed i64 $lor__5
+    branch %t53, ^lor_short_17, ^lor_rhs_16
 
-  block ^lor_rhs_1:
+  block ^lor_rhs_16:
     %t54 = load typed ptr @alias
     %t55 = addr @objects
     %t56 = binary mul i64 1, 12
@@ -143,15 +143,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t58 = index i8 %t57, 4
     %t59 = cmp ne ptr %t54, %t58
     %t60 = cmp ne i64 %t59, 0
-    store typed i64 %t60, $lor__1
-    jump ^lor_end_3
+    store typed i64 %t60, $lor__6
+    jump ^lor_end_18
 
-  block ^lor_short_2:
-    store typed i64 1, $lor__1
-    jump ^lor_end_3
+  block ^lor_short_17:
+    store typed i64 1, $lor__6
+    jump ^lor_end_18
 
-  block ^lor_end_3:
-    %t61 = load typed i64 $lor__1
+  block ^lor_end_18:
+    %t61 = load typed i64 $lor__6
     %t62 = convert trunc i32 i64 %t61
     return i32 %t62
 }

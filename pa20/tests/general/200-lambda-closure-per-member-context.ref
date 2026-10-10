@@ -1,7 +1,7 @@
 global @first_default : ptr [binding=strong] = 0
 global @early : i32 [binding=strong] = zero
-global @__cppgm_class_template_identity_0_0_0__get : ptr [binding=weak, object=_ZN5widthIiE3getE] = addr @__1
-global @__cppgm_class_template_identity_0_1_0__get : ptr [binding=weak, object=_ZN5widthIcE3getE] = addr @__2
+global @width_int___get : ptr [binding=weak, object=_ZN5widthIiE3getE] = addr @width_int_____lambda3___FUN
+global @width_char___get : ptr [binding=weak, object=_ZN5widthIcE3getE] = addr @width_char_____lambda4___FUN
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $a : obj<16x8>
@@ -29,13 +29,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_3
 
   block ^if_end_3:
-    %t10 = load typed ptr @__cppgm_class_template_identity_0_0_0__get
+    %t10 = load typed ptr @width_int___get
     %t11 = call i32 %t10() as () -> i32
     %t12 = cmp ne i32 %t11, 4
-    branch %t12, ^if_then_4, ^lor_rhs_7
+    branch %t12, ^if_then_4, ^lor_rhs_6
 
-  block ^lor_rhs_7:
-    %t13 = load typed ptr @__cppgm_class_template_identity_0_1_0__get
+  block ^lor_rhs_6:
+    %t13 = load typed ptr @width_char___get
     %t14 = call i32 %t13() as () -> i32
     %t15 = cmp ne i32 %t14, 1
     branch %t15, ^if_then_4, ^if_else_5
@@ -44,10 +44,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 11
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_7
 
-  block ^if_end_6:
-    %t16 = addr @__0
+  block ^if_end_7:
+    %t16 = addr @chooser____lambda2___FUN
     %t17 = call i32 @chooser__call(%t16)
     %t18 = cmp ne i32 %t17, 2
     branch %t18, ^if_then_8, ^if_else_9
@@ -84,7 +84,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t30 = load typed i32 $cond__1
     return i32 %t30
 }
-function @__0() -> i32 [binding=weak, object=_ZZN7chooser4callEPFivEEd_NUlvE_8__invokeEv, inline_hint=yes] {
+function @chooser____lambda2___FUN() -> i32 [binding=weak, object=_ZN7chooserUlvE_8__invokeEv, object_root=yes, inline_hint=yes] {
   block ^entry:
     return i32 2
 }
@@ -131,7 +131,7 @@ function @holder__holder(%this : ptr [object_bytes=16]) -> void [binding=weak, o
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = addr @__lambda_holder__holder_t13_13
+    %t1 = addr @holder____lambda1___FUN
     %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
@@ -147,7 +147,7 @@ function @holder__holder__ov2(%this : ptr [object_bytes=16], %b : i32) -> void [
   block ^entry:
     store typed ptr %this, $this
     store typed i32 %b, $b
-    %t1 = addr @__lambda_holder__holder_t13_13
+    %t1 = addr @holder____lambda1___FUN
     %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     store typed ptr %t1, %t3
@@ -157,25 +157,25 @@ function @holder__holder__ov2(%this : ptr [object_bytes=16], %b : i32) -> void [
     store typed i32 %t4, %t6
     return void
 }
-function @__1() -> i32 [binding=weak, object=_ZN5widthIiE3getMUlvE_8__invokeEv, inline_hint=yes] {
+function @width_int_____lambda3___FUN() -> i32 [binding=internal, object=_ZN5widthIiEUlvE_8__invokeEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
   block ^entry:
     %t1 = const i64 4
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
 }
-function @__2() -> i32 [binding=weak, object=_ZN5widthIcE3getMUlvE_8__invokeEv, inline_hint=yes] {
+function @width_char_____lambda4___FUN() -> i32 [binding=internal, object=_ZN5widthIcEUlvE0_8__invokeEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
   block ^entry:
     %t1 = const i64 1
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
 }
-function @__lambda_holder__holder_t13_13() -> i32 [binding=weak, object=_ZN6holder4makeMUlvE_8__invokeEv, inline_hint=yes] {
+function @holder____lambda1___FUN() -> i32 [binding=weak, object=_ZN6holderUlvE_8__invokeEv, object_root=yes, inline_hint=yes] {
   block ^entry:
     return i32 1
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
-    %t1 = addr @__0
+    %t1 = addr @chooser____lambda2___FUN
     %t2 = call i32 @chooser__call(%t1)
     store typed i32 %t2, @early
     return void

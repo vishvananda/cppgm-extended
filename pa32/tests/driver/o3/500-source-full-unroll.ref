@@ -6,18 +6,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store volatile i32 1, @observed
     store volatile i32 3, @observed
     store volatile i32 6, @observed
-    %t11 = load volatile i32 @observed
-    %t12 = cmp eq i32 %t11, 6
-    %t18 = copy i64 %t12
-    branch %t18, ^cond_then_5, ^cond_else_6
-
-  block ^cond_then_5:
-    jump ^cond_end_7
-
-  block ^cond_else_6:
-    jump ^cond_end_7
-
-  block ^cond_end_7:
-    %t17 = phi i32 [^cond_then_5: 0, ^cond_else_6: 1]
-    return i32 %t17
+    %t1 = load volatile i32 @observed
+    %t2 = cmp eq i32 %t1, 6
+    %t3 = select i32 %t2, 0, 1
+    return i32 %t3
 }

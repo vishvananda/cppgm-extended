@@ -4,7 +4,7 @@ function @positive_infinity() -> f64 [binding=strong] {
 }
 function @negative_infinity() -> f32 [binding=strong] {
   block ^entry:
-    return f32 -inf
+    return f32 -INFINITYf
 }
 function @quiet_nan() -> f64 [binding=strong] {
   block ^entry:
@@ -12,7 +12,7 @@ function @quiet_nan() -> f64 [binding=strong] {
 }
 function @extended_infinity() -> f80 [binding=strong] {
   block ^entry:
-    return f80 inf
+    return f80 INFINITYL
 }
 function @suffixed_literal() -> f32 [binding=strong] {
   block ^entry:

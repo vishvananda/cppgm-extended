@@ -16,7 +16,7 @@ function @store_dec
     param %dec -> rsi : i64
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -61,20 +61,18 @@ function @main
     mov rdi, rbx
     call @call_field_with_later_arg [args=(rdi)]
     load.i64 r8, @pair
-    load.i64 r9, [rbx+8]
+    load.i64 rbx, [rbx+8]
     mov rdx, 0
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
     mov rdx, 99
-    cmp.i64 r9, rdx
-    sete r9
-    movzx r9, r9
-    and r8, r9
+    cmp.i64 rbx, rdx
+    sete rbx
+    movzx rbx, rbx
+    and r8, rbx
     mov rdx, 0
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    ret r8

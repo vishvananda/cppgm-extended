@@ -1,36 +1,69 @@
-#include <cstdlib>
-#include <exception>
 #include <iostream>
-#include <iterator>
+#include <stdexcept>
 #include <string>
 
-#include "preprocess/tokens/DebugPPTokenStream.h"
-#include "preprocess/tokens/pp_tokenizer.h"
-#include "support/exception_types.h"
+using namespace std;
+
+#include "preprocess/source/source_buffer.h"
+#include "preprocess/tokens/debug_pp_token_stream.h"
+#include "preprocess/tokens/pp_token_emitter.h"
+#include "support/internal_error.h"
+
+// pptoken: translation phases 1-3 of a C++ source file read from standard
+// input, describing the resulting preprocessing tokens on standard output.
+
+bool HasBatchStdinArg(int argc, char** argv)
+{
+	for (int i = 1; i < argc; i++)
+	{
+		if (string(argv[i]) == "--batch-stdin")
+			return true;
+	}
+	return false;
+}
+
+// Batch requests are served by the linked test runner; a build without it
+// cannot run them.
+int RunNotImplementedBatchMode()
+{
+	string line;
+	while (getline(cin, line))
+	{
+		(void)line;
+		cout << "EXIT_NOT_IMPLEMENTED" << endl;
+	}
+	return EXIT_SUCCESS;
+}
 
 int main(int argc, char** argv)
 {
-	(void)argc;
-	(void)argv;
 	try
 	{
-		std::ios_base::sync_with_stdio(false);
-		std::cin.tie(0);
-		const std::string source((std::istreambuf_iterator<char>(std::cin)),
-			std::istreambuf_iterator<char>());
+		if (HasBatchStdinArg(argc, argv))
+			return RunNotImplementedBatchMode();
 
+		SourceBuffer source = SourceBuffer::ReadFrom(cin);
 		DebugPPTokenStream output;
-		cppgm::TokenizePreprocessingFile(source, output);
+		try
+		{
+			EmitPPTokens(source, output);
+		}
+		catch (const SourceError& e)
+		{
+			cout.flush();
+			cerr << "ERROR: <stdin>:" << FormatSourceError(source, e) << endl;
+			return EXIT_FAILURE;
+		}
 		return EXIT_SUCCESS;
 	}
-	catch (const CompilerError& error)
+	catch (const InternalError& e)
 	{
-		std::cerr << "ERROR: " << error.what() << std::endl;
-		return EXIT_FAILURE;
+		cerr << "internal compiler error: " << e.what() << endl;
+		return CPPGM_EXIT_INTERNAL_ERROR;
 	}
-	catch (const std::exception& error)
+	catch (const exception& e)
 	{
-		std::cerr << "ERROR: " << error.what() << std::endl;
+		cerr << "ERROR: " << e.what() << endl;
 		return EXIT_FAILURE;
 	}
 }

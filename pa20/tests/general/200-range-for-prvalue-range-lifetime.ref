@@ -35,9 +35,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 %t10, $value
     %t11 = load typed i32 @range_alive
     %t12 = cmp eq i32 %t11, 0
-    branch %t12, ^if_then_5, ^lor_rhs_8
+    branch %t12, ^if_then_5, ^lor_rhs_7
 
-  block ^lor_rhs_8:
+  block ^lor_rhs_7:
     %t13 = load typed i32 @range_destroyed
     %t14 = cmp ne i32 %t13, 0
     branch %t14, ^if_then_5, ^if_else_6
@@ -48,9 +48,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_6:
-    jump ^if_end_7
+    jump ^if_end_8
 
-  block ^if_end_7:
+  block ^if_end_8:
     %t16 = load typed i32 $sum
     %t17 = load typed i32 $value
     %t18 = binary add nowrap i32 %t16, %t17
@@ -69,28 +69,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Range___Range(%t22)
     %t23 = load typed i32 $sum
     %t24 = cmp eq i32 %t23, 5
-    branch %t24, ^land_rhs_15, ^land_short_16
+    branch %t24, ^land_rhs_12, ^land_short_13
 
-  block ^land_rhs_15:
+  block ^land_rhs_12:
     %t25 = load typed i32 @range_alive
     %t26 = cmp eq i32 %t25, 0
     %t27 = cmp ne i64 %t26, 0
-    store typed i64 %t27, $land__3
-    jump ^land_end_17
-
-  block ^land_short_16:
-    store typed i64 0, $land__3
-    jump ^land_end_17
-
-  block ^land_end_17:
-    %t28 = load typed i64 $land__3
-    branch %t28, ^land_rhs_12, ^land_short_13
-
-  block ^land_rhs_12:
-    %t29 = load typed i32 @range_destroyed
-    %t30 = cmp eq i32 %t29, 1
-    %t31 = cmp ne i64 %t30, 0
-    store typed i64 %t31, $land__2
+    store typed i64 %t27, $land__2
     jump ^land_end_14
 
   block ^land_short_13:
@@ -98,7 +83,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_14
 
   block ^land_end_14:
-    %t32 = load typed i64 $land__2
+    %t28 = load typed i64 $land__2
+    branch %t28, ^land_rhs_15, ^land_short_16
+
+  block ^land_rhs_15:
+    %t29 = load typed i32 @range_destroyed
+    %t30 = cmp eq i32 %t29, 1
+    %t31 = cmp ne i64 %t30, 0
+    store typed i64 %t31, $land__3
+    jump ^land_end_17
+
+  block ^land_short_16:
+    store typed i64 0, $land__3
+    jump ^land_end_17
+
+  block ^land_end_17:
+    %t32 = load typed i64 $land__3
     branch %t32, ^cond_then_9, ^cond_else_10
 
   block ^cond_then_9:
@@ -129,17 +129,6 @@ function @Range__Range(%this : ptr [object_bytes=8]) -> void [binding=weak, obje
     store typed i32 3, %t6
     return void
 }
-function @Range___Range(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5RangeD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 0, @range_alive
-    %t1 = load typed i32 @range_destroyed
-    %t2 = binary add nowrap i32 %t1, 1
-    store typed i32 %t2, @range_destroyed
-    return void
-}
 function @Range__begin(%this : ptr [object_bytes=8]) -> ptr [unwind=no, binding=weak, object=_ZN5Range5beginEv, inline_hint=yes] {
   slot $this : ptr
 
@@ -159,6 +148,17 @@ function @Range__end(%this : ptr [object_bytes=8]) -> ptr [unwind=no, binding=we
     %t3 = binary mul i64 2, 4
     %t4 = index i8 %t2, %t3
     return ptr %t4
+}
+function @Range___Range(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5RangeD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 0, @range_alive
+    %t1 = load typed i32 @range_destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @range_destroyed
+    return void
 }
 alias object _ZN5RangeC2Ev = @Range__Range
 alias object _ZN5RangeD2Ev = @Range___Range

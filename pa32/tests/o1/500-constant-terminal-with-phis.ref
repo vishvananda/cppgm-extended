@@ -7,13 +7,13 @@ function @constant_branch_drops_phi_input(%n : i64, %x : i64) -> i64 {
   block ^head:
     %i = phi i64 [^entry: 0, ^keep: %next]
     %acc = phi i64 [^entry: 0, ^keep: %acc2]
-    %done = cmp eq i64 %i, %n
+    %done = cmp eq i64 %n, %i
     branch %done, ^exit, ^keep
 
   block ^keep:
     call void @observe(%i)
     %next = binary add i64 %i, 1
-    %acc2 = binary add i64 %acc, %x
+    %acc2 = binary add i64 %x, %acc
     jump ^head
 
   block ^exit:

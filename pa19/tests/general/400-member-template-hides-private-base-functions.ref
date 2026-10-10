@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $tr
     %t3 = addr $value
     %t4 = addr $tr
-    %t5 = call u8 @matcher_traits__meta__true_____cppgm_class_template_identity_0_0_0___match(%t3, 120, %t4)
+    %t5 = call u8 @matcher_traits_true____cppgm_class_template_identity_1___match(%t3, 120, %t4)
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load typed i32 $cond__1
     return i32 %t6
 }
-function @matcher_traits__meta__true_____cppgm_class_template_identity_0_0_0___match(%this : ptr [object_bytes=1], %ch : i8, %tr : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZNK7matcherI6traitsN4meta5true_E11derived_setIS0_EE5matchEcRKS0_, inline_hint=yes] {
+function @matcher_traits_true____cppgm_class_template_identity_1___match(%this : ptr [object_bytes=1], %ch : i8, %tr : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZNK7matcherI6traitsN4meta5true_E11derived_setIS0_EE5matchEcRKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $ch : i8
   slot $tr : ptr

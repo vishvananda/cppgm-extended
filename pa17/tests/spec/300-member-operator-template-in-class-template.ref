@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 7, %t6
     %t7 = addr $out
     %t8 = addr $value
-    %t9 = call ptr @sink_int___operator____ov2(%t7, %t8)
+    %t9 = call ptr @sink_int___operator__(%t7, %t8)
     store typed ptr %t9, $selected
     %t10 = load typed ptr $selected
     %t11 = addr $out
@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = load typed i32 $cond__1
     return i32 %t19
 }
-function @sink_int___operator____ov2(%this : ptr [object_bytes=4], %value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN4sinkIiElsI7payloadEERS0_RKT_, inline_hint=yes] {
+function @sink_int___operator__(%this : ptr [object_bytes=4], %value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN4sinkIiElsI7payloadEERS0_RKT_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 

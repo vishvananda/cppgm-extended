@@ -14,13 +14,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^call_unwind_end_2:
+    eh_try ^cleanup_action_3
     call void @result_int____result(%t1)
+    eh_end
+    jump ^call_unwind_end_4
+
+  block ^cleanup_action_3:
+    call void @result_int____result(%t1)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_4:
     %t2 = load typed i32 @count
     return i32 %t2
 }
 function @make(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=weak, object=_Z4makeIiE6resultIT_Ev] {
   block ^entry:
-    call void @result_int___result_int_(%ret)
+    zeroinit 1x1 %ret
+    call void @result_int___result(%ret)
     return void
 }
 function @result_int____result(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6resultIiED1Ev, inline_hint=yes] {
@@ -45,24 +55,14 @@ function @result_int____result(%this : ptr [object_bytes=1]) -> void [unwind=no,
   block ^destructor_end_2:
     return void
 }
-function @value_int___value_int_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5valueIiEC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @count
-    %t2 = binary add nowrap i32 %t1, 1
-    store typed i32 %t2, @count
-    return void
-}
-function @result_int___result_int_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6resultIiEC1Ev, inline_hint=yes] {
+function @result_int___result(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6resultIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @value_int___value_int_(%t2)
+    call void @value_int___value(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
     return void
@@ -84,7 +84,17 @@ function @value_int____value(%this : ptr [object_bytes=1]) -> void [unwind=no, b
     store typed i32 %t2, @count
     return void
 }
+function @value_int___value(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5valueIiEC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @count
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @count
+    return void
+}
 alias object _ZN6resultIiED2Ev = @result_int____result
-alias object _ZN5valueIiEC2Ev = @value_int___value_int_
-alias object _ZN6resultIiEC2Ev = @result_int___result_int_
+alias object _ZN6resultIiEC2Ev = @result_int___result
 alias object _ZN5valueIiED2Ev = @value_int____value
+alias object _ZN5valueIiEC2Ev = @value_int___value

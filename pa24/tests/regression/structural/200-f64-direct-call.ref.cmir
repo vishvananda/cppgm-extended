@@ -22,8 +22,7 @@ function @add
     fmov.f64 [rbp-<off0>], xmm0
     fmov.f64 [rbp-<off1>], xmm1
     fadd.f64 xmm0, [rbp-<off0>], [rbp-<off1>]
-    fmov.f64 xmm0, xmm0
-    ret
+    ret xmm0
 
 function @main
   abi
@@ -38,7 +37,5 @@ function @main
     fmov.f64 xmm0, 1.5
     fmov.f64 xmm1, 2.25
     call @add [args=(xmm0,xmm1)]
-    fmov.f64 <xmm0>, xmm0
-    fmov.f64 xmm0, 3.75
-    feq.f64 rax, <xmm0>, xmm0
+    feq.f64 rax, xmm0, 3.75
     ret rax

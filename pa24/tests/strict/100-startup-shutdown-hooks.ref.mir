@@ -41,8 +41,7 @@ function @__cppgm_fini
     jmp ^fail
 
   block ^fail
-    mov rcx, 0
-    store.i64 [rcx], 1
+    store.i64 [0], 1
     ret
 
   block ^finish
@@ -64,8 +63,7 @@ function @first
     jmp ^fail
 
   block ^fail
-    mov rcx, 0
-    store.i64 [rcx], 1
+    store.i64 [0], 1
     ret
 
   block ^finish
@@ -87,8 +85,7 @@ function @third
     jmp ^fail
 
   block ^fail
-    mov rcx, 0
-    store.i64 [rcx], 1
+    store.i64 [0], 1
     ret
 
   block ^finish

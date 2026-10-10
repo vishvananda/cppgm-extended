@@ -1,3 +1,11 @@
+function @owner_X___get() -> i32 [binding=strong, object=_ZN5ownerI1XE3getEv] {
+  block ^entry:
+    return i32 1
+}
+function @owner_Y___get() -> i32 [binding=strong, object=_ZN5ownerI1YE3getEv] {
+  block ^entry:
+    return i32 2
+}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
@@ -19,12 +27,4 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^cond_end_3:
     %t5 = load typed i32 $cond__1
     return i32 %t5
-}
-function @owner_X___get() -> i32 [binding=weak, object=_ZN5ownerI1XE3getEv] {
-  block ^entry:
-    return i32 1
-}
-function @owner_Y___get() -> i32 [binding=weak, object=_ZN5ownerI1YE3getEv] {
-  block ^entry:
-    return i32 2
 }

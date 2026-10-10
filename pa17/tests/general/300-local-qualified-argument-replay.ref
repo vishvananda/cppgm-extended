@@ -32,15 +32,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = addr $tmpobj__2
     zeroinit 1x1 %t16
     %t17 = addr $ap
-    call void @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_2_0___operator__(%t15, %t16, %t17)
+    call void @as_marker__impl_const__cppgm_class_template_identity_1____operator__(%t15, %t16, %t17)
     %t18 = addr $discard__3
     %t19 = addr $tmpobj__4
     zeroinit 1x1 %t19
     %t20 = addr $ad
-    call void @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0___operator__(%t18, %t19, %t20)
+    call void @as_marker__impl_const__cppgm_class_template_identity_2____operator__(%t18, %t19, %t20)
     return i32 0
 }
-function @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_2_0___operator__(%ret : ptr [pass=indirect_result, object_bytes=24], %this : ptr [object_bytes=1], %expr : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR9plus_leafEELi2EEEEclESD_, inline_hint=yes] {
+function @as_marker__impl_const__cppgm_class_template_identity_1____operator__(%ret : ptr [pass=indirect_result, object_bytes=24], %this : ptr [object_bytes=1], %expr : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR9plus_leafEELi2EEEEclESD_, inline_hint=yes] {
   slot $this : ptr
   slot $expr : ptr
   slot $begin : obj<1x1>
@@ -54,16 +54,18 @@ function @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_
     %t2 = addr $end
     call void @end_expr__end_expr(%t2, 1)
     %t3 = index i8 [projection=field] %ret, 0
-    %t4 = load typed ptr $expr
-    %t5 = call ptr @proto__right_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0_(%t4)
-    %t6 = index i8 [projection=field] %ret, 8
-    %t7 = index i8 [projection=field] %t6, 0
-    store typed ptr %t5, %t7
-    %t8 = index i8 [projection=field] %ret, 8
-    %t9 = index i8 [projection=field] %t8, 8
+    %t4 = addr $begin
+    %t5 = load typed ptr $expr
+    %t6 = call ptr @proto__right(%t5)
+    %t7 = index i8 [projection=field] %ret, 8
+    %t8 = index i8 [projection=field] %t7, 0
+    store typed ptr %t6, %t8
+    %t9 = index i8 [projection=field] %ret, 8
+    %t10 = index i8 [projection=field] %t9, 8
+    %t11 = addr $end
     return void
 }
-function @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0___operator__(%ret : ptr [pass=indirect_result, object_bytes=24], %this : ptr [object_bytes=1], %expr : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR10deref_leafEELi2EEEEclESD_, inline_hint=yes] {
+function @as_marker__impl_const__cppgm_class_template_identity_2____operator__(%ret : ptr [pass=indirect_result, object_bytes=24], %this : ptr [object_bytes=1], %expr : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR10deref_leafEELi2EEEEclESD_, inline_hint=yes] {
   slot $this : ptr
   slot $expr : ptr
   slot $begin : obj<1x1>
@@ -77,13 +79,15 @@ function @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_
     %t2 = addr $end
     call void @end_expr__end_expr(%t2, 1)
     %t3 = index i8 [projection=field] %ret, 0
-    %t4 = load typed ptr $expr
-    %t5 = call ptr @proto__right_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0___ov2(%t4)
-    %t6 = index i8 [projection=field] %ret, 8
-    %t7 = index i8 [projection=field] %t6, 0
-    store typed ptr %t5, %t7
-    %t8 = index i8 [projection=field] %ret, 8
-    %t9 = index i8 [projection=field] %t8, 8
+    %t4 = addr $begin
+    %t5 = load typed ptr $expr
+    %t6 = call ptr @proto__right__2(%t5)
+    %t7 = index i8 [projection=field] %ret, 8
+    %t8 = index i8 [projection=field] %t7, 0
+    store typed ptr %t6, %t8
+    %t9 = index i8 [projection=field] %ret, 8
+    %t10 = index i8 [projection=field] %t9, 8
+    %t11 = addr $end
     return void
 }
 function @begin_expr__begin_expr(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN10begin_exprC1Ei, inline_hint=yes] {
@@ -104,7 +108,7 @@ function @end_expr__end_expr(%this : ptr [object_bytes=1], %__param1 : i32) -> v
     store typed i32 %__param1, $__param1
     return void
 }
-function @proto__right_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0_(%e : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR9plus_leafEELi2EEEEENS_9result_of5rightIRT_E4typeESF_] {
+function @proto__right(%e : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR9plus_leafEELi2EEEEENS_9result_of5rightIRT_E4typeESF_] {
   slot $e : ptr
 
   block ^entry:
@@ -114,7 +118,7 @@ function @proto__right_lvalue_reference_to_const_struct_proto____cppgm_class_tem
     %t3 = load typed ptr %t2
     return ptr %t3
 }
-function @proto__right_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0___ov2(%e : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR10deref_leafEELi2EEEEENS_9result_of5rightIRT_E4typeESF_] {
+function @proto__right__2(%e : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR10deref_leafEELi2EEEEENS_9result_of5rightIRT_E4typeESF_] {
   slot $e : ptr
 
   block ^entry:

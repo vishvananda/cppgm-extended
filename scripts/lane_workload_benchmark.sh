@@ -1,7 +1,6 @@
 #!/bin/bash
 # Time one compiler binary on the eight largest translation units of the
-# compiler, serially, one process each, best of N runs.  This is the workload
-# PLAN-LIBCXX-PERFORMANCE.md defines its targets on: run it once per lane
+# compiler, serially, one process each, best of N runs.  Run it once per lane
 # binary (host-built and self-built, each cell) at -O1 and at -O3 and read the
 # self-built over host-built ratio.
 #
@@ -18,14 +17,14 @@ cxx=$1; label=$2; opt=$3; generated=${4:-obj/generated}; runs=${5:-3}
 out=${LANE_BENCH_OUT:-$HOME/lane-bench-out}
 mkdir -p "$out"
 workload="
-dev/src/native/lowering/function.cpp
-dev/src/lowir/optimize/pipeline.cpp
-dev/src/semantic/declarations/analysis.cpp
-dev/src/semantic/analysis/analyzer.cpp
-dev/src/native/object/elf_writer.cpp
-dev/src/semantic/initialization/analysis.cpp
-dev/src/semantic/templates/classes.cpp
-dev/src/semantic/constants/scalar_evaluator.cpp
+dev/src/lower/expression_lowering.cpp
+dev/src/lower/symbol_lowering.cpp
+dev/src/sema/analyzer_expressions.cpp
+dev/src/sema/class_templates.cpp
+dev/src/sema/analyzer_declarations.cpp
+dev/src/opt/loop_passes.cpp
+dev/src/lower/cleanup_lowering.cpp
+dev/src/lower/global_lowering.cpp
 "
 best=""
 for run in $(seq 1 "$runs"); do

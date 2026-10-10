@@ -32,8 +32,6 @@ function @keep_aliased_global(%limit : i64) -> i64 [no_inline=yes] {
     branch %more, ^body, ^exit
 
   block ^body:
-    %value = load i64 @changed
-    store i64 %value, @changed
     %next = binary add i64 %i, 1
     jump ^header
 

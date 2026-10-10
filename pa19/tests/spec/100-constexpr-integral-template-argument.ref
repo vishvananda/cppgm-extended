@@ -1,3 +1,5 @@
+declare global @box_4___value : i32 [binding=weak, object=_ZN3boxILi4EE5valueE]
+
 global @k : i32 [storage=readonly, binding=internal, object=_ZL1k] = 3
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

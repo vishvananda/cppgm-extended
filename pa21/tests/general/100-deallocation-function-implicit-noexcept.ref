@@ -1,40 +1,40 @@
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
-  i8 105
-  i8 0
-}
-global @__rtti_int [binding=weak, object=_ZTIi] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__int
-}
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
-  zero 4
-}
 global @released : i32 [binding=strong] = 0
 global @storage [binding=strong] = {
   zero 16
 }
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal] = {
+  zero 4
+}
 
-function @Guarded__operatornew(%size : i64) -> ptr [binding=strong, object=_ZN7GuardednwEm] {
-  slot $size : i64
+function @Guarded__operatornew(%__param0 : i64) -> ptr [binding=strong, object=_ZN7GuardednwEm] {
+  slot $__param0 : i64
 
   block ^entry:
-    store typed i64 %size, $size
+    store typed i64 %__param0, $__param0
     %t1 = addr @storage
     return ptr %t1
 }
-function @Guarded__operatordelete(%storage : ptr, %size : i64) -> void [unwind=no, binding=strong, object=_ZN7GuardeddlEPvm] {
-  slot $storage : ptr
-  slot $size : i64
+function @Guarded__operatordelete(%__param0 : ptr, %__param1 : i64) -> void [unwind=no, binding=strong, object=_ZN7GuardeddlEPvm] {
+  slot $__param0 : ptr
+  slot $__param1 : i64
 
   block ^entry:
-    store typed ptr %storage, $storage
-    store typed i64 %size, $size
+    store typed ptr %__param0, $__param0
+    store typed i64 %__param1, $__param1
     %t1 = load typed i32 @released
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @released

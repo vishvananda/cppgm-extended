@@ -27,10 +27,10 @@ function @read(%input : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=w
   block ^entry:
     store typed ptr %input, $input
     %t1 = load typed ptr $input
-    %t2 = call i32 @result_int__void___value(%t1)
+    %t2 = call i32 @result_int_void___value(%t1)
     return i32 %t2
 }
-function @result_int__void___value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNO6resultIivE5valueIiEEN9enable_ifIXsr10is_movableIT_EE5valueEiE4typeEv, inline_hint=yes] {
+function @result_int_void___value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNO6resultIivE5valueIiEEN9enable_ifIXsr10is_movableIT_EE5valueEiE4typeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

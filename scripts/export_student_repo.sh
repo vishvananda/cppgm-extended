@@ -310,8 +310,8 @@ prune_student_pa33() {
   perl -0pi -e 's/\n-include maintainer\/Makefile\n/\n/' "$dest/pa33/Makefile"
   local script
   for script in check_cppgm_function_census \
-    check_lowir_native_structural_controls check_lowir_native_parameter_rematerialization \
-    check_lowir_native_sibling_tail check_lowir_native_scalar_query \
+    check_lowir_native_structural_controls check_lowir_native_parameter_addresses \
+    check_lowir_native_tail_jump check_lowir_native_scalar_query \
     check_lowir_native_survivor_properties; do
     rm -f "$dest/scripts/$script.pl"
   done

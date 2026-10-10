@@ -35,7 +35,7 @@ function @clobber
     param %f -> r9 : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -62,20 +62,16 @@ function @preserve
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %a -> [rbp-8] : i64
-    param-slot %b -> [rbp-16] : i64
-    param-slot %c -> [rbp-24] : i64
-    param-slot %d -> [rbp-32] : i64
-    param-slot %e -> [rbp-40] : i64
-    param-slot %f -> [rbp-48] : i64
+    preserve rbx r12 r13 r14 r15
+    param-slot %f -> [rbp-8] : i64
 
   block ^entry
-    store.i64 [rbp-8], rdi
-    store.i64 [rbp-16], rsi
-    store.i64 [rbp-24], rdx
-    store.i64 [rbp-32], rcx
-    store.i64 [rbp-40], r8
-    store.i64 [rbp-48], r9
+    mov rbx, rdi
+    mov r12, rsi
+    mov r13, rdx
+    mov r14, rcx
+    mov r15, r8
+    store.i64 [rbp-8], r9
     mov rdi, 101
     mov rsi, 102
     mov rdx, 103
@@ -83,15 +79,12 @@ function @preserve
     mov r8, 105
     mov r9, 106
     call @clobber [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    load.i64 r8, [rbp-8]
-    add r8, [rbp-16]
-    load.i64 r9, [rbp-24]
-    add r9, [rbp-32]
-    load.i64 rdi, [rbp-40]
-    add rdi, [rbp-48]
-    add r8, r9
-    add r8, rdi
-    ret r8
+    add rbx, r12
+    add r13, r14
+    add r15, [rbp-8]
+    add rbx, r13
+    add rbx, r15
+    ret rbx
 
 function @main
   abi

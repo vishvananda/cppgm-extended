@@ -22,11 +22,11 @@ function @keep_trapping_divide(%limit : i64, %left : i64, %right : i64) -> i64 [
 }
 function @keep_without_preheader(%choose : i64, %limit : i64, %value : i64) -> i64 [no_inline=yes] {
   block ^entry:
-    %adjusted = binary add i64 %value, 3
     jump ^header
 
   block ^header:
     %i = phi i64 [^latch: %next, ^entry: 0]
+    %adjusted = binary add i64 %value, 3
     %more = cmp lt i64 %i, %limit
     branch %more, ^latch, ^exit
 
@@ -56,9 +56,9 @@ function @keep_across_eh(%limit : i64, %value : i64) -> i64 [no_inline=yes] {
     %next = binary add i64 %i, 1
     jump ^header
 
-  block ^exit:
-    return i64 0
-
   block ^cleanup:
     resume
+
+  block ^exit:
+    return i64 0
 }

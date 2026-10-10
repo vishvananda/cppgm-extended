@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 32x4 @__constexpr_template__1, %t1
     %t2 = addr $b
     %t3 = addr $values
-    call void @Box_int___Box_int_(%t2, %t3)
+    call void @Box_int___Box(%t2, %t3)
     %t4 = addr $tmpobj__1
     %t5 = addr $b
     %t6 = call obj<8x8> @Box_int___operator_(%t5, 4)
@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = convert trunc i32 i64 %t12
     return i32 %t13
 }
-function @Box_int___Box_int_(%this : ptr [object_bytes=8], %x : ptr) -> void [binding=weak, object=_ZN3BoxIiEC1EPi, inline_hint=yes] {
+function @Box_int___Box(%this : ptr [object_bytes=8], %x : ptr) -> void [binding=weak, object=_ZN3BoxIiEC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $x : ptr
 
@@ -66,18 +66,6 @@ function @Box_int___operator_(%this : ptr [object_bytes=8], %n : i64) -> obj<8x8
     copyobj 8x8 %t7, %t6
     return obj<8x8> $retobj__1
 }
-function @Box_int___Box_int___ov2(%this : ptr [alias=noalias, object_bytes=8], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN3BoxIiEC1ERKS0_, inline_hint=yes] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %__param1, $__param1
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $__param1
-    copyobj 8x8 %t2, %t1
-    return void
-}
 function @Box_int___operator__(%this : ptr [object_bytes=8], %n : i64) -> ptr [binding=weak, object=_ZN3BoxIiEpLEl, inline_hint=yes] {
   slot $this : ptr
   slot $n : i64
@@ -95,5 +83,4 @@ function @Box_int___operator__(%this : ptr [object_bytes=8], %n : i64) -> ptr [b
     %t7 = load typed ptr $this
     return ptr %t7
 }
-alias object _ZN3BoxIiEC2EPi = @Box_int___Box_int_
-alias object _ZN3BoxIiEC2ERKS0_ = @Box_int___Box_int___ov2
+alias object _ZN3BoxIiEC2EPi = @Box_int___Box

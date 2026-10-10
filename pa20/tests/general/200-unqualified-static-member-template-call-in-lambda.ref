@@ -16,11 +16,11 @@ function @Box__run(%this : ptr [object_bytes=1], %v : i32) -> i32 [binding=weak,
     store typed ptr %this, $this
     store typed i32 %v, $v
     %t1 = load typed i32 $v
-    %t2 = addr @__lambda_Box__run_t32_38
+    %t2 = addr @Box____lambda_Box__run_t32_38___FUN
     %t3 = call i32 %t2(%t1) as (%arg0 : i32) -> i32
     return i32 %t3
 }
-function @__lambda_Box__run_t32_38(%x : i32) -> i32 [binding=weak, object=_ZZN3Box3runEiENUliE_8__invokeEi, inline_hint=yes] {
+function @Box____lambda_Box__run_t32_38___FUN(%x : i32) -> i32 [binding=weak, object=_ZZN3Box3runEiENUliE_8__invokeEi, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $x : i32
 
   block ^entry:

@@ -1,3 +1,68 @@
+function @Empty__Empty__base_entry(%this : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN5EmptyC2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Empty__Empty(%this : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN5EmptyC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Empty___Empty__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5EmptyD2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Box__Box__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=4], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=strong, object=_ZN3BoxC2EOS_, object_root=yes] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $__param1
+    copyobj 4x4 %t2, %t1
+    return void
+}
+function @Box__Box__ov2(%this : ptr [alias=noalias, object_bytes=4], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=strong, object=_ZN3BoxC1EOS_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $__param1
+    copyobj 4x4 %t2, %t1
+    return void
+}
+function @Box__operator_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_ZN3BoxaSEOS_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $__param1
+    copyobj 4x4 %t2, %t1
+    %t3 = load typed ptr $this
+    return ptr %t3
+}
+function @Box___Box__base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN3BoxD2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $empty : obj<1x1>
   slot $source : obj<4x4>
@@ -7,6 +72,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $empty
+    call void @Empty__Empty(%t1)
     %t2 = addr $source
     call void @Box__Box(%t2, 9)
     %t3 = addr $assigned
@@ -35,65 +101,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load typed i32 $cond__1
     return i32 %t13
 }
-function @Empty__Empty__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5EmptyC2Ev, object_root=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @Empty___Empty__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5EmptyD2Ev, object_root=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @Empty___Empty(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5EmptyD1Ev, object_root=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @Box__Box__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=4], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN3BoxC2EOS_, object_root=yes] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %__param1, $__param1
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $__param1
-    copyobj 4x4 %t2, %t1
-    return void
-}
-function @Box__Box__ov2(%this : ptr [alias=noalias, object_bytes=4], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN3BoxC1EOS_] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %__param1, $__param1
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $__param1
-    copyobj 4x4 %t2, %t1
-    return void
-}
-function @Box___Box__base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN3BoxD2Ev, object_root=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @Box___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN3BoxD1Ev, object_root=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
 function @Box__Box(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN3BoxC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
@@ -107,17 +114,18 @@ function @Box__Box(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak
     store typed i32 %t1, %t3
     return void
 }
-function @Box__operator_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_ZN3BoxaSEOS_] {
+function @Empty___Empty(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5EmptyD1Ev, object_root=yes] {
   slot $this : ptr
-  slot $__param1 : ptr
 
   block ^entry:
     store typed ptr %this, $this
-    store typed ptr %__param1, $__param1
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $__param1
-    copyobj 4x4 %t2, %t1
-    %t3 = load typed ptr $this
-    return ptr %t3
+    return void
+}
+function @Box___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN3BoxD1Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
 }
 alias object _ZN3BoxC2Ei = @Box__Box

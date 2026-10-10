@@ -34,7 +34,7 @@ function @sink
     param %size -> r8 : i64
     return void -> void
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -52,17 +52,14 @@ function @forward
     param %size -> r8 : i64
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
 
   block ^entry
-    mov r9, rcx
-    load.ptr rbx, @dispatch
-    mov rcx, r9
-    call *rbx [args=(rcx,rdx,rsi,rdi,r8)]
+    load.ptr r9, @dispatch
+    call *r9 [args=(rcx,rdx,rsi,rdi,r8)]
     ret
 
 function @main
@@ -77,15 +74,12 @@ function @main
   block ^entry
     mov rdi, @receiver
     mov rsi, @source
-    mov rdx, 13
     mov rcx, @payload
+    mov rdx, 13
     mov r8, 77
     call @forward [args=(rcx,rdx,rsi,rdi,r8)]
-    load.i64 r8, @observed
     mov rdx, 77
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
+    cmp.i64 @observed, rdx
+    setne rax
+    movzx rax, rax
     ret rax

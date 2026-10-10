@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Value__Value(%t1, 1)
     %t2 = addr $node
     %t3 = addr $value
-    call void @Node_Value___Node_Value___ov2(%t2, %t3)
+    call void @Node_Value___Node(%t2, %t3)
     %t4 = addr $node
     return i32 0
 }
@@ -24,7 +24,7 @@ function @Value__Value(%this : ptr [object_bytes=4], %v : i32) -> void [binding=
     store typed i32 %t1, %t3
     return void
 }
-function @Node_Value___Node_Value___ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4NodeI5ValueEC1IS0_EERT_, inline_hint=yes] {
+function @Node_Value___Node(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4NodeI5ValueEC1IS0_EERT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -34,4 +34,4 @@ function @Node_Value___Node_Value___ov2(%this : ptr [object_bytes=4], %__param1 
     return void
 }
 alias object _ZN5ValueC2Ei = @Value__Value
-alias object _ZN4NodeI5ValueEC2IS0_EERT_ = @Node_Value___Node_Value___ov2
+alias object _ZN4NodeI5ValueEC2IS0_EERT_ = @Node_Value___Node

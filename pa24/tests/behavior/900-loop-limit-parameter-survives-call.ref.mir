@@ -11,7 +11,7 @@ function @overwrite_argument_registers
     param %second -> rsi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared

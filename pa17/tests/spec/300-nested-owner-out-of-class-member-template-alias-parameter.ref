@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $request
     %t3 = addr $value
     %t4 = addr $request
-    %t5 = call i32 @stream_int__true___implementation__build(%t3, %t4)
+    %t5 = call i32 @stream_int_true___implementation__build(%t3, %t4)
     %t6 = const i64 4
     %t7 = const i64 1
     %t8 = binary add i64 %t6, %t7
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load typed i32 $cond__1
     return i32 %t11
 }
-function @stream_int__true___implementation__build(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN6streamIiLb1EE14implementation5buildIicEEiRKN8protocol7messageILb1ET_NS3_6fieldsIT0_EEEE] {
+function @stream_int_true___implementation__build(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN6streamIiLb1EE14implementation5buildIicEEiRKN8protocol7messageILb1ET_NS3_6fieldsIT0_EEEE] {
   slot $this : ptr
   slot $__param1 : ptr
 

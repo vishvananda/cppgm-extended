@@ -1,62 +1,8 @@
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
-declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 
-global @__typeinfo_name__struct_First [binding=weak, object=_ZTS5First] = {
-  i8 53
-  i8 70
-  i8 105
-  i8 114
-  i8 115
-  i8 116
-  i8 0
-}
-global @__rtti_struct_First [binding=weak, object=_ZTI5First] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_First
-}
-global @__typeinfo_name__struct_Tagged [binding=weak, object=_ZTS6Tagged] = {
-  i8 54
-  i8 84
-  i8 97
-  i8 103
-  i8 103
-  i8 101
-  i8 100
-  i8 0
-}
-global @__rtti_struct_Tagged [binding=weak, object=_ZTI6Tagged] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Tagged
-}
-global @__typeinfo_name__struct_Left [binding=weak, object=_ZTS4Left] = {
-  i8 52
-  i8 76
-  i8 101
-  i8 102
-  i8 116
-  i8 0
-}
-global @__rtti_struct_Left [binding=weak, object=_ZTI4Left] = {
-  ptr addr @__external_rtti_vtable____si_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Left
-  ptr addr @__rtti_struct_Tagged
-}
-global @__typeinfo_name__struct_Right [binding=weak, object=_ZTS5Right] = {
-  i8 53
-  i8 82
-  i8 105
-  i8 103
-  i8 104
-  i8 116
-  i8 0
-}
-global @__rtti_struct_Right [binding=weak, object=_ZTI5Right] = {
-  ptr addr @__external_rtti_vtable____si_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Right
-  ptr addr @__rtti_struct_Tagged
-}
-global @__typeinfo_name__struct_Repeated [binding=weak, object=_ZTS8Repeated] = {
+global @__typeinfo_name__struct_Repeated [storage=readonly, binding=weak, object=_ZTS8Repeated] = {
   i8 56
   i8 82
   i8 101
@@ -68,7 +14,61 @@ global @__typeinfo_name__struct_Repeated [binding=weak, object=_ZTS8Repeated] = 
   i8 100
   i8 0
 }
-global @__rtti_struct_Repeated [binding=weak, object=_ZTI8Repeated] = {
+global @__typeinfo_name__struct_First [storage=readonly, binding=weak, object=_ZTS5First] = {
+  i8 53
+  i8 70
+  i8 105
+  i8 114
+  i8 115
+  i8 116
+  i8 0
+}
+global @__rtti_struct_First [storage=readonly, binding=weak, object=_ZTI5First] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_First
+}
+global @__typeinfo_name__struct_Left [storage=readonly, binding=weak, object=_ZTS4Left] = {
+  i8 52
+  i8 76
+  i8 101
+  i8 102
+  i8 116
+  i8 0
+}
+global @__typeinfo_name__struct_Tagged [storage=readonly, binding=weak, object=_ZTS6Tagged] = {
+  i8 54
+  i8 84
+  i8 97
+  i8 103
+  i8 103
+  i8 101
+  i8 100
+  i8 0
+}
+global @__rtti_struct_Tagged [storage=readonly, binding=weak, object=_ZTI6Tagged] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Tagged
+}
+global @__rtti_struct_Left [storage=readonly, binding=weak, object=_ZTI4Left] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Left
+  ptr addr @__rtti_struct_Tagged
+}
+global @__typeinfo_name__struct_Right [storage=readonly, binding=weak, object=_ZTS5Right] = {
+  i8 53
+  i8 82
+  i8 105
+  i8 103
+  i8 104
+  i8 116
+  i8 0
+}
+global @__rtti_struct_Right [storage=readonly, binding=weak, object=_ZTI5Right] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Right
+  ptr addr @__rtti_struct_Tagged
+}
+global @__rtti_struct_Repeated [storage=readonly, binding=weak, object=_ZTI8Repeated] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_Repeated
   i32 1
@@ -80,15 +80,25 @@ global @__rtti_struct_Repeated [binding=weak, object=_ZTI8Repeated] = {
   ptr addr @__rtti_struct_Right
   i64 6146
 }
+global @Repeated__vtable [storage=readonly, binding=weak, object=_ZTV8Repeated] = {
+  i64 0
+  ptr addr @__rtti_struct_Repeated
+  ptr addr @First__f
+}
+global @Repeated____view__Left__8__vtable [storage=readonly, binding=internal] = {
+  i64 -8
+  ptr addr @__rtti_struct_Repeated
+  ptr addr @Tagged__g
+}
+global @Repeated____view__Right__24__vtable [storage=readonly, binding=internal] = {
+  i64 -24
+  ptr addr @__rtti_struct_Repeated
+  ptr addr @Tagged__g
+}
 global @First__vtable [storage=readonly, binding=weak, object=_ZTV5First] = {
   i64 0
   ptr addr @__rtti_struct_First
   ptr addr @First__f
-}
-global @Tagged__vtable [storage=readonly, binding=weak, object=_ZTV6Tagged] = {
-  i64 0
-  ptr addr @__rtti_struct_Tagged
-  ptr addr @Tagged__g
 }
 global @Left__vtable [storage=readonly, binding=weak, object=_ZTV4Left] = {
   i64 0
@@ -100,19 +110,9 @@ global @Right__vtable [storage=readonly, binding=weak, object=_ZTV5Right] = {
   ptr addr @__rtti_struct_Right
   ptr addr @Tagged__g
 }
-global @Repeated__vtable [storage=readonly, binding=weak, object=_ZTV8Repeated] = {
+global @Tagged__vtable [storage=readonly, binding=weak, object=_ZTV6Tagged] = {
   i64 0
-  ptr addr @__rtti_struct_Repeated
-  ptr addr @First__f
-}
-global @Repeated____view__Left__8__vtable [storage=readonly, binding=internal, object=@Repeated____view__Left__8__vtable] = {
-  i64 -8
-  ptr addr @__rtti_struct_Repeated
-  ptr addr @Tagged__g
-}
-global @Repeated____view__Right__24__vtable [storage=readonly, binding=internal, object=@Repeated____view__Right__24__vtable] = {
-  i64 -24
-  ptr addr @__rtti_struct_Repeated
+  ptr addr @__rtti_struct_Tagged
   ptr addr @Tagged__g
 }
 
@@ -173,13 +173,6 @@ function @Tagged__g(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=
     %t3 = load typed i32 %t2
     return i32 %t3
 }
-function @First__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN5First1fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 1
-}
 function @Repeated__Repeated(%this : ptr [object_bytes=40]) -> void [binding=weak, object=_ZN8RepeatedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -209,6 +202,13 @@ function @Repeated__Repeated(%this : ptr [object_bytes=40]) -> void [binding=wea
     %t17 = index i8 %t16, 16
     store typed ptr %t17, %t15
     return void
+}
+function @First__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN5First1fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 1
 }
 function @First__First__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5FirstC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr

@@ -15,8 +15,8 @@ function @one
     epilogues shared
 
   block ^entry
-    fmov.f64 xmm0, 1
-    ret
+    fmov.f64 xmm0, 1.0
+    ret xmm0
 
 function @main
   abi
@@ -29,13 +29,9 @@ function @main
 
   block ^entry
     call @one [args=()]
-    fmov.f64 xmm0, xmm0
-    feq.f64 rax, xmm0, 1.0
-    mov r8, rax
+    feq.f64 r8, xmm0, 1.0
     mov rdx, 0
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    ret r8

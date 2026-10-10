@@ -1,6 +1,6 @@
 global @__local_static__walker__up__decl0__first : i32 [binding=internal, object=_ZZNK6walker2upEiE5first] = zero
 global @__local_static__walker__up__decl0__first__guard : i64 [binding=internal, object=_ZGVZNK6walker2upEiE5first] = zero
-global @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count : i32 [binding=weak, object=_ZZN7countedC1EvE5count] = 0
+global @__local_static__counted__counted__decl0__count : i32 [binding=weak, object=_ZZN7countedC1EvE5count] = 0
 
 function @walker__down(%this : ptr [object_bytes=1], %depth : i32) -> i32 [binding=strong, object=_ZNK6walker4downEi] {
   slot $this : ptr
@@ -14,6 +14,43 @@ function @walker__down(%this : ptr [object_bytes=1], %depth : i32) -> i32 [bindi
     %t3 = binary add nowrap i32 %t2, 1
     %t4 = call i32 @walker__up(%t1, %t3)
     return i32 %t4
+}
+function @walker__up(%this : ptr [object_bytes=1], %depth : i32) -> i32 [binding=strong, object=_ZNK6walker2upEi] {
+  slot $this : ptr
+  slot $depth : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %depth, $depth
+    %t1 = load typed i64 @__local_static__walker__up__decl0__first__guard
+    %t2 = cmp ne i64 %t1, 0
+    branch %t2, ^local_static_ready_1, ^local_static_init_2
+
+  block ^local_static_init_2:
+    %t3 = addr @__local_static__walker__up__decl0__first
+    %t4 = load typed i32 $depth
+    %t5 = binary add nowrap i32 %t4, 5
+    store typed i32 %t5, %t3
+    store typed i64 1, @__local_static__walker__up__decl0__first__guard
+    jump ^local_static_ready_1
+
+  block ^local_static_ready_1:
+    %t6 = load typed i32 $depth
+    %t7 = cmp gt i32 %t6, 2
+    branch %t7, ^if_then_3, ^if_else_4
+
+  block ^if_then_3:
+    %t8 = load typed i32 @__local_static__walker__up__decl0__first
+    return i32 %t8
+
+  block ^if_else_4:
+    jump ^if_end_5
+
+  block ^if_end_5:
+    %t9 = load typed ptr $this
+    %t10 = load typed i32 $depth
+    %t11 = call i32 @walker__down(%t9, %t10)
+    return i32 %t11
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $whole : obj<4x4>
@@ -71,66 +108,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = load typed i32 $cond__1
     return i32 %t16
 }
-function @walker__up(%this : ptr [object_bytes=1], %depth : i32) -> i32 [binding=strong, object=_ZNK6walker2upEi] {
-  slot $this : ptr
-  slot $depth : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %depth, $depth
-    %t1 = load typed i64 @__local_static__walker__up__decl0__first__guard
-    %t2 = cmp ne i64 %t1, 0
-    branch %t2, ^local_static_ready_1, ^local_static_init_2
-
-  block ^local_static_init_2:
-    %t3 = addr @__local_static__walker__up__decl0__first
-    %t4 = load typed i32 $depth
-    %t5 = binary add nowrap i32 %t4, 5
-    store typed i32 %t5, %t3
-    store typed i64 1, @__local_static__walker__up__decl0__first__guard
-    jump ^local_static_ready_1
-
-  block ^local_static_ready_1:
-    %t6 = load typed i32 $depth
-    %t7 = cmp gt i32 %t6, 2
-    branch %t7, ^if_then_3, ^if_else_4
-
-  block ^if_then_3:
-    %t8 = load typed i32 @__local_static__walker__up__decl0__first
-    return i32 %t8
-
-  block ^if_else_4:
-    jump ^if_end_5
-
-  block ^if_end_5:
-    %t9 = load typed ptr $this
-    %t10 = load typed i32 $depth
-    %t11 = call i32 @walker__down(%t9, %t10)
-    return i32 %t11
-}
 function @counted__counted__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7countedC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
+    %t1 = load typed i32 @__local_static__counted__counted__decl0__count
     %t2 = binary add nowrap i32 %t1, 1
-    store typed i32 %t2, @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
-    %t3 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
-    %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
-    store typed i32 %t3, %t5
-    return void
-}
-function @counted__counted(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7countedC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
-    %t2 = binary add nowrap i32 %t1, 1
-    store typed i32 %t2, @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
-    %t3 = load typed i32 @__local_static__function_symbol_5f5a4e37636f756e74656443314576__decl0__count
+    store typed i32 %t2, @__local_static__counted__counted__decl0__count
+    %t3 = load typed i32 @__local_static__counted__counted__decl0__count
     %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
     store typed i32 %t3, %t5
@@ -144,6 +130,20 @@ function @derived__derived(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @counted__counted__base_entry(%t2)
+    return void
+}
+function @counted__counted(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7countedC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @__local_static__counted__counted__decl0__count
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @__local_static__counted__counted__decl0__count
+    %t3 = load typed i32 @__local_static__counted__counted__decl0__count
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store typed i32 %t3, %t5
     return void
 }
 alias object _ZN7derivedC2Ev = @derived__derived

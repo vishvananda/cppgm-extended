@@ -28,6 +28,7 @@ function @library__detail__choose(%__param0 : ptr [pass=by_address, object_bytes
   block ^entry:
     store typed ptr %__param0, $__param0
     %t1 = addr $retobj__1
+    zeroinit 2x1 %t1
     return obj<2x1> $retobj__1
 }
 function @library__classify(%__param0 : ptr [pass=by_address, object_bytes=2]) -> i32 [binding=weak, object=_ZN7library8classifyINS_6detail8selectedEEEiRKT_] {

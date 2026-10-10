@@ -23,7 +23,7 @@ function @id
     param %a -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -47,6 +47,6 @@ function @main
     mov rdi, 99
     call @id [args=(rdi)]
     cmp.i64 rbx, 7
-    setne rax
-    movzx rax, rax
-    ret rax
+    setne rbx
+    movzx rbx, rbx
+    ret rbx

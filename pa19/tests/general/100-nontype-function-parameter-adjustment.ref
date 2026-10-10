@@ -1,3 +1,5 @@
+declare global @tester__target___value : u8 [binding=weak, object=_ZN6testerIXadL_Z6targetsldEEE5valueE]
+
 function @target(%__param0 : i16, %__param1 : i64, %__param2 : f64) -> i32 [binding=strong, object=_Z6targetsld] {
   slot $__param0 : i16
   slot $__param1 : i64

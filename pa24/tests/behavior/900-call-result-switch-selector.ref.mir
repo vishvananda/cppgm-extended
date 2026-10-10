@@ -46,12 +46,9 @@ function @classify
     mov rbx, rax
     sext.i32 rbx
     call @spoil [args=()]
-    mov rax, rbx
-    mov rcx, -7
-    cmp.i64 rax, rcx
+    cmp.i32 rbx, -7
     je ^hit
-    mov rcx, 9
-    cmp.i64 rax, rcx
+    cmp.i32 rbx, 9
     je ^wrong
     jmp ^default
 
@@ -78,4 +75,5 @@ function @main
 
   block ^entry
     call @classify [args=()]
+    sext.i32 rax
     ret rax

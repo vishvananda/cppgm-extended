@@ -26,6 +26,5 @@ function @main
     setne r9
     movzx r9, r9
     or r8, r9
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    sext.i32 r8
+    ret r8

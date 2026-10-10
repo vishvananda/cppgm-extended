@@ -1,9 +1,9 @@
 global @live : i32 [binding=strong] = zero
-global @__cppgm_initlist_backing_1 [binding=internal, object=_ZGR6values_] = {
-  zero 8
-}
 global @values : obj<16x8> [binding=strong] = {
   zero 16
+}
+global @__cppgm_initlist_backing_1 [binding=internal, object=_ZGR6values_] = {
+  zero 8
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -13,9 +13,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = load typed i32 @live
     %t2 = cmp ne i32 %t1, 2
-    branch %t2, ^lor_short_5, ^lor_rhs_4
+    branch %t2, ^lor_short_2, ^lor_rhs_1
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_1:
     %t3 = addr @values
     %t4 = call ptr @std__initializer_list_item___begin(%t3)
     %t5 = binary mul i64 0, 4
@@ -24,18 +24,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load typed i32 %t7
     %t9 = cmp ne i32 %t8, 1
     %t10 = cmp ne i64 %t9, 0
-    store typed i64 %t10, $lor__2
-    jump ^lor_end_6
+    store typed i64 %t10, $lor__1
+    jump ^lor_end_3
 
-  block ^lor_short_5:
-    store typed i64 1, $lor__2
-    jump ^lor_end_6
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
 
-  block ^lor_end_6:
-    %t11 = load typed i64 $lor__2
-    branch %t11, ^lor_short_2, ^lor_rhs_1
+  block ^lor_end_3:
+    %t11 = load typed i64 $lor__1
+    branch %t11, ^lor_short_5, ^lor_rhs_4
 
-  block ^lor_rhs_1:
+  block ^lor_rhs_4:
     %t12 = addr @values
     %t13 = call ptr @std__initializer_list_item___begin(%t12)
     %t14 = binary mul i64 1, 4
@@ -44,15 +44,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t17 = load typed i32 %t16
     %t18 = cmp ne i32 %t17, 2
     %t19 = cmp ne i64 %t18, 0
-    store typed i64 %t19, $lor__1
-    jump ^lor_end_3
+    store typed i64 %t19, $lor__2
+    jump ^lor_end_6
 
-  block ^lor_short_2:
-    store typed i64 1, $lor__1
-    jump ^lor_end_3
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
 
-  block ^lor_end_3:
-    %t20 = load typed i64 $lor__1
+  block ^lor_end_6:
+    %t20 = load typed i64 $lor__2
     %t21 = convert trunc i32 i64 %t20
     return i32 %t21
 }

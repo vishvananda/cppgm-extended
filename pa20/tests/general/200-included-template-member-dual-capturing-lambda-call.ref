@@ -32,7 +32,7 @@ function @LambdaBox_int___run(%this : ptr [object_bytes=1], %args : ptr [pass=by
     %t5 = load typed i32 $value
     return i32 %t5
 }
-function @std__helper(%cond : u8, %if_fn : obj<8x8>, %else_fn : obj<8x8>) -> void [binding=weak, object=_ZSt6helperIZN9LambdaBoxIiE3runIJiEEEiDpOT_S5_EUlvE_ZNS2_IJiEEEiS5_S5_EUlvE0_EvbT_T0_] {
+function @std__helper(%cond : u8, %if_fn : obj<8x8>, %else_fn : obj<8x8>) -> void [binding=internal, object=_ZSt6helperIZN9LambdaBoxIiE3runIJiEEEiDpOT_EUlvE_ZNS2_IJiEEEiS5_EUlvE0_EvbT_T0_] {
   slot $cond : u8
   slot $if_fn : obj<8x8>
   slot $else_fn : obj<8x8>
@@ -48,18 +48,18 @@ function @std__helper(%cond : u8, %if_fn : obj<8x8>, %else_fn : obj<8x8>) -> voi
 
   block ^if_then_1:
     %t4 = addr $if_fn
-    call void @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template_identity_0_0_0__run__int_t80_80__operator__(%t4)
+    call void @LambdaBox_int_____lambda_LambdaBox_int___run_t80_80__operator__(%t4)
     jump ^if_end_3
 
   block ^if_else_2:
     %t5 = addr $else_fn
-    call void @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template_identity_0_0_0__run__int_t90_90_n1__operator__(%t5)
+    call void @LambdaBox_int_____lambda_LambdaBox_int___run_t90_90_n1__operator__(%t5)
     jump ^if_end_3
 
   block ^if_end_3:
     return void
 }
-function @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template_identity_0_0_0__run__int_t80_80__operator__(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZZN9LambdaBoxIiE3runIJiEEEiDpOT_S4_ENKUlvE_clEv, inline_hint=yes] {
+function @LambdaBox_int_____lambda_LambdaBox_int___run_t80_80__operator__(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZN9LambdaBoxIiE3runIJiEEEiDpOT_ENKUlvE_clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -70,7 +70,7 @@ function @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template
     store typed i32 1, %t3
     return void
 }
-function @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template_identity_0_0_0__run__int_t90_90_n1__operator__(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZZN9LambdaBoxIiE3runIJiEEEiDpOT_S4_ENKUlvE0_clEv, inline_hint=yes] {
+function @LambdaBox_int_____lambda_LambdaBox_int___run_t90_90_n1__operator__(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZN9LambdaBoxIiE3runIJiEEEiDpOT_ENKUlvE0_clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -6,10 +6,10 @@ function @boost_no_using_breaks_adl__test() -> i32 [binding=strong, object=_ZN25
   slot $land__3 : i64
 
   block ^entry:
-    %t1 = call i32 @boost_no_using_breaks_adl__user__f(nullptr)
+    %t1 = call i32 @boost_no_using_breaks_adl__user__f(0)
     store typed i32 %t1, $first
     %t2 = addr $argobj__1
-    %t3 = call i32 @boost_no_using_breaks_adl__user__f__ov2($argobj__1)
+    %t3 = call i32 @boost_no_using_breaks_adl__user__f__2($argobj__1)
     store typed i32 %t3, $second
     %t4 = load typed i32 $first
     %t5 = cmp eq i32 %t4, 1
@@ -58,7 +58,7 @@ function @boost_no_using_breaks_adl__user__f(%x : ptr) -> i32 [binding=weak, obj
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @boost_no_using_breaks_adl__user__f__ov2(%x : obj<1x1> [classes=none]) -> i32 [binding=weak, object=_ZN25boost_no_using_breaks_adl4user1fINS_3lib5inner1XIiEEEEiT_] {
+function @boost_no_using_breaks_adl__user__f__2(%x : obj<1x1> [classes=none]) -> i32 [binding=weak, object=_ZN25boost_no_using_breaks_adl4user1fINS_3lib5inner1XIiEEEEiT_] {
   slot $x : obj<1x1>
   slot $argobj__1 : obj<1x1>
 

@@ -1,4 +1,4 @@
-global @__cppgm_class_template_identity_0_0_0__data [binding=weak, object=_ZN9constantsIvE4dataE] = {
+global @constants_void___data [binding=weak, object=_ZN9constantsIvE4dataE] = {
   u32 11
   u32 22
   u32 33
@@ -29,7 +29,7 @@ function @reader__first() -> u32 [binding=weak, object=_ZN6reader5firstEv, inlin
   slot $data : ptr
 
   block ^entry:
-    %t1 = addr @__cppgm_class_template_identity_0_0_0__data
+    %t1 = addr @constants_void___data
     store typed ptr %t1, $data
     %t2 = load typed ptr $data
     %t3 = index u32 [projection=array_element] %t2, 0

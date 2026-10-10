@@ -2,9 +2,8 @@ declare function @observe_object(%object : ptr) -> void [unwind=no]
 
 function @late_split(%p : ptr, %n : i64) -> i64 {
   block ^entry:
-    %q = copy ptr %p
-    %v = load i64 %q
-    %s = binary add i64 %v, %n
+    %v = load i64 %p
+    %s = binary add i64 %n, %v
     return i64 %s
 }
 function @keep_escaping_object(%p : ptr, %n : i64) -> i64 {

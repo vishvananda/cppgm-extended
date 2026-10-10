@@ -18,5 +18,6 @@ function @N__forward_as_tuple(%__param0 : ptr [pass=by_address, object_bytes=4])
   block ^entry:
     store typed ptr %__param0, $__param0
     %t1 = addr $retobj__1
+    zeroinit 4x4 %t1
     return obj<4x4> $retobj__1
 }

@@ -9,12 +9,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr @g
     store typed ptr %t1, $fp
     %t2 = addr $fp
-    %t3 = call i32 @invoke__ov2(%t2)
+    %t3 = call i32 @invoke(%t2)
     %t4 = cmp ne i32 %t3, 7
     %t5 = convert trunc i32 i64 %t4
     return i32 %t5
 }
-function @invoke__ov2(%f : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z6invokeIRPFivEJEEDTclfp_spfp0_EEOT_DpOT0_] {
+function @invoke(%f : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z6invokeIRPFivEJEEDTclfp_spfp0_EEOT_DpOT0_] {
   slot $f : ptr
 
   block ^entry:

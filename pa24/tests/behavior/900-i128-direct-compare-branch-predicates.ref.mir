@@ -15,122 +15,34 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rax, 1
-    mov rdx, 1
-    mov rcx, 1
-    mov rsi, 1
-    cmp.i64 rdx, rsi
-    jne ^bad
-    cmp.i64 rax, rcx
-    je ^ne
-    jmp ^bad
+    cmp_branch.eq.i128 0x00000000000000010000000000000001, 0x00000000000000010000000000000001, ^ne, ^bad
 
   block ^ne
-    mov rax, 1
-    mov rdx, 1
-    mov rcx, 2
-    mov rsi, 1
-    cmp.i64 rdx, rsi
-    jne ^lt
-    cmp.i64 rax, rcx
-    jne ^lt
-    jmp ^bad
+    cmp_branch.ne.i128 0x00000000000000010000000000000001, 0x00000000000000010000000000000002, ^lt, ^bad
 
   block ^lt
-    mov rax, 0
-    mov rdx, -1
-    mov rcx, 0
-    mov rsi, 0
-    cmp.i64 rdx, rsi
-    jl ^le
-    jg ^bad
-    cmp.i64 rax, rcx
-    jb ^le
-    jmp ^bad
+    cmp_branch.lt.i128 0xffffffffffffffff0000000000000000, 0, ^le, ^bad
 
   block ^le
-    mov rax, 0
-    mov rdx, -1
-    mov rcx, 0
-    mov rsi, -1
-    cmp.i64 rdx, rsi
-    jl ^gt
-    jg ^bad
-    cmp.i64 rax, rcx
-    jbe ^gt
-    jmp ^bad
+    cmp_branch.le.i128 0xffffffffffffffff0000000000000000, 0xffffffffffffffff0000000000000000, ^gt, ^bad
 
   block ^gt
-    mov rax, 0
-    mov rdx, 1
-    mov rcx, 0
-    mov rsi, 0
-    cmp.i64 rdx, rsi
-    jg ^ge
-    jl ^bad
-    cmp.i64 rax, rcx
-    ja ^ge
-    jmp ^bad
+    cmp_branch.gt.i128 0x00000000000000010000000000000000, 0, ^ge, ^bad
 
   block ^ge
-    mov rax, 0
-    mov rdx, 1
-    mov rcx, 0
-    mov rsi, 1
-    cmp.i64 rdx, rsi
-    jg ^ult
-    jl ^bad
-    cmp.i64 rax, rcx
-    jae ^ult
-    jmp ^bad
+    cmp_branch.ge.i128 0x00000000000000010000000000000000, 0x00000000000000010000000000000000, ^ult, ^bad
 
   block ^ult
-    mov rax, 0
-    mov rdx, 1
-    mov rcx, 1
-    mov rsi, 1
-    cmp.i64 rdx, rsi
-    jb ^ule
-    ja ^bad
-    cmp.i64 rax, rcx
-    jb ^ule
-    jmp ^bad
+    cmp_branch.ult.i128 0x00000000000000010000000000000000, 0x00000000000000010000000000000001, ^ule, ^bad
 
   block ^ule
-    mov rax, 0
-    mov rdx, 1
-    mov rcx, 0
-    mov rsi, 1
-    cmp.i64 rdx, rsi
-    jb ^ugt
-    ja ^bad
-    cmp.i64 rax, rcx
-    jbe ^ugt
-    jmp ^bad
+    cmp_branch.ule.i128 0x00000000000000010000000000000000, 0x00000000000000010000000000000000, ^ugt, ^bad
 
   block ^ugt
-    mov rax, -1
-    mov rdx, -1
-    mov rcx, 0
-    mov rsi, 1
-    cmp.i64 rdx, rsi
-    ja ^uge
-    jb ^bad
-    cmp.i64 rax, rcx
-    ja ^uge
-    jmp ^bad
+    cmp_branch.ugt.i128 -1, 0x00000000000000010000000000000000, ^uge, ^bad
 
   block ^uge
-    mov rax, -1
-    mov rdx, -1
-    mov rcx, -1
-    mov rsi, -1
-    cmp.i64 rdx, rsi
-    ja ^good
-    jb ^bad
-    cmp.i64 rax, rcx
-    jae ^good
-    jmp ^bad
+    cmp_branch.uge.i128 -1, -1, ^good, ^bad
 
   block ^bad
     mov rax, 1

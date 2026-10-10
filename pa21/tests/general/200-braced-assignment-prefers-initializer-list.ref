@@ -1,4 +1,4 @@
-declare function @Box__operator___ov3(%arg0 : ptr [object_bytes=1], %arg1 : obj<16x8> [classes=none_none]) -> ptr [binding=strong, object=_ZN3BoxaSESt16initializer_listI4ItemE]
+declare function @Box__operator___ov3(%arg0 : ptr [object_bytes=1], %arg1 : obj<16x8>) -> ptr [binding=strong, object=_ZN3BoxaSESt16initializer_listI4ItemE]
 
 function @f(%b : ptr [pass=by_address, object_bytes=1], %item : obj<1x1> [classes=none]) -> void [binding=strong, object=_Z1fR3Box4Item] {
   slot $b : ptr

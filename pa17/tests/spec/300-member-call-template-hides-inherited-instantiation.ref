@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $derived
     %t9 = addr $it
     %t10 = addr $derived
-    call void @unrolled_void___call__ov2(%t9, %t10)
+    call void @unrolled_void___call__2(%t9, %t10)
     %t11 = load typed i32 $value
     return i32 %t11
 }
@@ -35,7 +35,7 @@ function @unrolled_void___call(%i0 : ptr [pass=by_address, object_bytes=8], %fn 
     call void @base_fn__operator__(%t1, %t3)
     return void
 }
-function @unrolled_void___call__ov2(%i0 : ptr [pass=by_address, object_bytes=8], %fn : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8unrolledIvE4callI4iterIiE10derived_fnEEvRKT_RT0_, inline_hint=yes] {
+function @unrolled_void___call__2(%i0 : ptr [pass=by_address, object_bytes=8], %fn : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8unrolledIvE4callI4iterIiE10derived_fnEEvRKT_RT0_, inline_hint=yes] {
   slot $i0 : ptr
   slot $fn : ptr
 

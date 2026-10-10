@@ -1,5 +1,15 @@
 #!/usr/bin/perl
 
+# The LowIR contract audit: every public LowIR spelling has a reviewed ledger
+# row (scripts/architecture/lowir-contract-ledger.tsv), is documented in
+# pa8/lowir.md, and is both read and written by the implementation.
+#
+# The student-facing vocabulary is the ir_symbol_model.h scaffold's enums.
+# The implementation spells them through the tables of
+# dev/src/lowir/metadata_spellings.cpp, reads text with
+# dev/src/lowir/text_parser*.cpp, writes it with dev/src/lowir/text_writer.cpp
+# and spells scalar types in dev/src/lowir/program.cpp.
+
 use strict;
 use warnings;
 
@@ -11,31 +21,21 @@ my $root = abs_path("$FindBin::Bin/..");
 sub read_file
 {
 	my ($path) = @_;
-	open(my $fh, '<', $path) or die "Unable to read $path: $!\n";
+	open(my $fh, '<', "$root/$path") or die "Unable to read $path: $!\n";
 	local $/;
 	my $data = <$fh>;
 	close($fh) or die "Unable to close $path: $!\n";
 	return defined($data) ? $data : '';
 }
 
-sub sorted_keys
-{
-	my ($values) = @_;
-	return sort keys %$values;
-}
-
-# The metadata vocabulary is the student-facing contract surface shared with
-# the model scaffolds; the model header adds this implementation's containers.
-my $model = read_file("$root/dev/src/ir_symbol_model.h") .
-	read_file("$root/dev/src/lowir/model/program.h");
-# The operation and type spellings are the model's own helpers
-# (lowir/model/program.cpp); the reader and the writer both consume them.
-my $model_helpers = read_file("$root/dev/src/lowir/model/program.cpp");
-my $parser = read_file("$root/dev/src/lowir/io/parse.cpp") . $model_helpers;
-my $serializer = read_file("$root/dev/src/lowir/io/serialize.cpp") . $model_helpers;
-my $documentation = read_file("$root/pa8/lowir.md");
-my $ledger_path = "$root/scripts/architecture/lowir-contract-ledger.tsv";
-my $ledger = read_file($ledger_path);
+my $scaffold = read_file('dev/src/ir_symbol_model.h');
+my $spellings = read_file('dev/src/lowir/metadata_spellings.cpp');
+my $parser = read_file('dev/src/lowir/text_parser.cpp') .
+	read_file('dev/src/lowir/text_parser_body.cpp');
+my $writer = read_file('dev/src/lowir/text_writer.cpp');
+my $program = read_file('dev/src/lowir/program.cpp');
+my $documentation = read_file('pa8/lowir.md');
+my $ledger = read_file('scripts/architecture/lowir-contract-ledger.tsv');
 
 my @errors;
 my @rows;
@@ -93,122 +93,159 @@ for my $row (@retained)
 	}
 }
 
-# These prefixes are the human-reviewed set of model enums that can represent a
-# public LowIR text choice. Internal presentation and entry-policy enums are
-# deliberately outside this census. Values whose only meaning is the canonical
-# omitted/default state have no public spelling and are removed below.
-my %public_enum;
-while ($model =~ /\b((?:LTK|LOP|SR|LLM|SBM|PPM|PALM|CAM|CFXM|CUM|CRM|GSM|IPK|ITEM|INIT|IK|OP)_[A-Z0-9_]+)\b/g)
+my %count = (values => 0, keys => 0, roles => 0, instructions => 0, types => 0);
+
+# The string literals of `name[] = { ... };` in $text.
+sub table_strings
 {
-	$public_enum{$1} = 1;
+	my ($text, $name, $where) = @_;
+	if ($text !~ /\b\Q$name\E\[\]\s*=\s*\{(.*?)\};/s)
+	{
+		push @errors, "cannot locate the spelling table $name in $where";
+		return ();
+	}
+	my $body = $1;
+	return $body =~ /"([^"]*)"/g;
 }
 
-my %omitted_or_internal = map { $_ => 1 } qw(
-	LTK_INVALID LOP_NONE SR_NONE LLM_DEFAULT SBM_DEFAULT PPM_DIRECT
-	PALM_DEFAULT CAM_FIXED CFXM_DEFAULT CUM_DEFAULT CRM_DEFAULT GSM_DEFAULT
-	IPK_NONE
+# 1. Each public scaffold enum and its spelling table agree value for value:
+# the default enumerator has no spelling (it is the omitted metadata) and
+# every other one is spelled as its lower-cased name without the prefix.
+my %table_for_enum = (
+	SymbolRole => 'kRoles',
+	LanguageLinkageMode => 'kLinkages',
+	SymbolBindingMode => 'kBindings',
+	GlobalStorageMode => 'kStorages',
+	CallArityMode => 'kArities',
+	CallEffectsMode => 'kEffects',
+	CallUnwindMode => 'kUnwinds',
+	CallReturnMode => 'kReturns',
+	CallQueryMode => 'kQueries',
+	ParamPassingMode => 'kPasses',
+	ParamAliasMode => 'kAliases',
+	IndexProjectionKind => 'kProjections',
 );
-delete @public_enum{keys %omitted_or_internal};
-
-# lowir_operation_text() and lowir_type_text() are shared parser/serializer
-# helpers that happen to be implemented in lowir_parse.cpp. Limit the added
-# serializer evidence to those two function bodies: treating the entire parser
-# as serializer evidence would hide a newly parsed but unserialized value.
-my $shared_text_helpers = '';
-if ($parser =~ /(const char \* lowir_operation_text\b.*?)(?=\nbool operator==)/s)
+my %enum_spellings;
+while ($scaffold =~ /enum\s+(\w+)\s*\{(.*?)\};/sg)
 {
-	$shared_text_helpers .= $1;
+	my ($enum, $body) = ($1, $2);
+	my $table = $table_for_enum{$enum};
+	next if !defined($table);
+	my @names = $body =~ /\b([A-Z]+_[A-Z0-9_]+)\b/g;
+	my @spelled = table_strings($spellings, $table, 'lowir/metadata_spellings.cpp');
+	next if !@spelled;
+	push @errors, "$enum has " . scalar(@names) . " enumerators but $table has " .
+		scalar(@spelled) . " spellings"
+		if scalar(@names) != scalar(@spelled);
+	push @errors, "$enum default $names[0] is spelled '$spelled[0]'; it must be omitted"
+		if $spelled[0] ne '';
+	for my $index (1 .. $#names)
+	{
+		(my $want = lc $names[$index]) =~ s/^[a-z]+_//;
+		my $have = $index < scalar(@spelled) ? $spelled[$index] : '<none>';
+		push @errors, "$names[$index] is spelled '$have' in $table; the scaffold implies '$want'"
+			if $have ne $want;
+		++$count{values};
+	}
+	$enum_spellings{$enum} = [@spelled[1 .. $#spelled]];
 }
-else
+for my $enum (sort keys %table_for_enum)
 {
-	push @errors, "cannot locate shared LowIR operation serializer helper";
-}
-if ($parser =~ /(std::string lowir_type_text\b.*?)(?=\nbool InstructionDebugLocation::present)/s)
-{
-	$shared_text_helpers .= $1;
-}
-else
-{
-	push @errors, "cannot locate shared LowIR type serializer helper";
-}
-my $serializer_surface = $serializer . $shared_text_helpers;
-
-# These two existing branches spell the remaining enum alternative with a
-# final else after testing every other value. Keep that deliberate exception
-# narrow so adding another enum alternative still fails the audit.
-my %serializer_fallback = map { $_ => 1 } qw(ITEM_INTEGER INIT_ADDR);
-for my $value (sorted_keys(\%public_enum))
-{
-	push @errors, "public model enum $value is absent from the parser"
-		if $parser !~ /\b\Q$value\E\b/;
-	push @errors, "public model enum $value is absent from the serializer"
-		if $serializer_surface !~ /\b\Q$value\E\b/ &&
-			!$serializer_fallback{$value};
+	push @errors, "ir_symbol_model.h has no enum $enum" if !$enum_spellings{$enum};
 }
 
-my (%parser_key, %serializer_key);
-while ($parser =~ /\bkey\s*==\s*"([a-z_]+)"/g)
+# 2. Metadata keys: the key table and the words the parser recognizes as keys
+# against the ledger, pa8/lowir.md and the writer.
+my %key_source = map { $_ => 'table' }
+	table_strings($spellings, 'kKeys', 'lowir/metadata_spellings.cpp');
+while ($parser =~ /(?:at_word\("|memcmp\([^,]+,\s*")([a-z_]+)"/g)
 {
-	$parser_key{$1} = 1;
+	$key_source{$1} //= 'parser';
 }
-while ($parser =~ /\.first\s*[!=]=\s*"([a-z_]+)"/g)
+my %ledger_key;
+for my $row (@retained)
 {
-	$parser_key{$1} = 1;
+	next if $row->{category} ne 'metadata';
+	(my $key = $row->{surface}) =~ s/=.*//;
+	$ledger_key{$key} = 1;
 }
-while ($serializer =~ /metadata\.(?:item|flag)\("([a-z_]+)"/g)
+for my $key (sort keys %ledger_key)
 {
-	$serializer_key{$1} = 1;
+	push @errors, "retained ledger metadata key '$key' is not recognized by the parser"
+		if !$key_source{$key};
 }
-while ($serializer =~ /\[([a-z_]+)=/g)
+for my $key (sort keys %key_source)
 {
-	$serializer_key{$1} = 1;
-}
-
-for my $key (sorted_keys(\%parser_key))
-{
-	push @errors, "parser metadata key '$key' is absent from the serializer"
-		if !$serializer_key{$key};
-	push @errors, "parser metadata key '$key' is absent from pa8/lowir.md"
+	# Other words the parser matches (`zero`, `copy`, ...) are not keys.
+	next if $key_source{$key} eq 'parser' && !$ledger_key{$key};
+	push @errors, "metadata key '$key' has no retained ledger row"
+		if !$ledger_key{$key};
+	push @errors, "metadata key '$key' is absent from pa8/lowir.md"
 		if $documentation !~ /\b\Q$key\E\b/;
-	my @owners = grep {
-		$_->{disposition} eq 'keep' && $_->{category} eq 'metadata' &&
-		($_->{surface} eq $key || $_->{surface} =~ /^\Q$key\E=/)
-	} @rows;
-	push @errors, "parser metadata key '$key' has no retained ledger owner"
-		if !@owners;
-}
-for my $key (sorted_keys(\%serializer_key))
-{
-	push @errors, "serializer metadata key '$key' is absent from the parser"
-		if !$parser_key{$key};
+	push @errors, "metadata key '$key' is not written by lowir/text_writer.cpp"
+		if $key_source{$key} eq 'parser' && $writer !~ /\Q$key\E=/;
+	++$count{keys};
 }
 
-my (%parsed_role, %serialized_role);
-while ($parser =~ /\{"([a-z_]+)",\s*SR_[A-Z0-9_]+\}/g)
+# 3. Roles: the scaffold's SymbolRole spellings against the ledger and
+# pa8/lowir.md.
+my %role = map { $_ => 1 } @{$enum_spellings{SymbolRole} || []};
+my %ledger_role = map { $_->{surface} => $_->{disposition} }
+	grep { $_->{category} eq 'role' } @rows;
+for my $name (sort keys %role)
 {
-	$parsed_role{$1} = 1;
+	push @errors, "role '$name' has no retained ledger row"
+		if ($ledger_role{$name} // '') ne 'keep';
+	push @errors, "role '$name' is absent from pa8/lowir.md"
+		if $documentation !~ /\b\Q$name\E\b/;
+	++$count{roles};
 }
-while ($serializer =~ /case\s+SR_[A-Z0-9_]+:\s*return\s+"([a-z_]+)"/g)
+for my $name (sort keys %ledger_role)
 {
-	$serialized_role{$1} = 1;
+	push @errors, "retained ledger role '$name' is not a SymbolRole of ir_symbol_model.h"
+		if $ledger_role{$name} eq 'keep' && !$role{$name};
 }
-for my $role (sorted_keys(\%parsed_role))
+
+# 4. Instructions: every word of a retained instruction row is a parser
+# keyword and is written by the writer.
+my %keyword = map { $_ => 1 }
+	table_strings($parser, 'kKeywordSpellings', 'lowir/text_parser.cpp'),
+	table_strings($parser, 'kUnarySpellings', 'lowir/text_parser.cpp');
+for my $row (@retained)
 {
-	push @errors, "parsed role '$role' is absent from the serializer"
-		if !$serialized_role{$role};
-	push @errors, "parsed role '$role' is absent from pa8/lowir.md"
-		if $documentation !~ /\b\Q$role\E\b/;
-	my @owners = grep {
-		$_->{disposition} eq 'keep' && $_->{category} eq 'role' &&
-		$_->{surface} eq $role
-	} @rows;
-	push @errors, "parsed role '$role' has no retained ledger owner"
-		if !@owners;
+	next if $row->{category} ne 'instruction';
+	for my $form (split /\|/, $row->{surface})
+	{
+		for my $word (split /\s+/, $form)
+		{
+			next if $word eq 'clause';
+			push @errors, "ledger instruction word '$word' is not a parser keyword"
+				if !$keyword{$word};
+			push @errors, "ledger instruction word '$word' is not written by lowir/text_writer.cpp"
+				if $writer !~ /\b\Q$word\E\b/;
+		}
+		++$count{instructions};
+	}
 }
-for my $role (sorted_keys(\%serialized_role))
+
+# 5. Types: every retained type row has a scalar type spelling.
+my %type;
+if ($program =~ /scalar_type_spelling.*?\{(.*?)\};/s)
 {
-	push @errors, "serialized role '$role' is absent from the parser"
-		if !$parsed_role{$role};
+	my $body = $1;
+	%type = map { $_ => 1 } $body =~ /"([^"]+)"/g;
+}
+else
+{
+	push @errors, "cannot locate scalar_type_spelling in lowir/program.cpp";
+}
+for my $row (@retained)
+{
+	next if $row->{category} ne 'type';
+	(my $name = $row->{surface}) =~ s/<.*//;
+	push @errors, "ledger type '$name' has no spelling in lowir/program.cpp"
+		if !$type{$name};
+	++$count{types};
 }
 
 if (@errors)
@@ -220,6 +257,6 @@ if (@errors)
 }
 
 print "LowIR contract audit: PASS (" . scalar(@rows) . " ledger rows, " .
-	scalar(@retained) . " retained, " . scalar(keys %public_enum) .
-	" public enum values, " . scalar(keys %parser_key) .
-	" metadata keys, " . scalar(keys %parsed_role) . " roles)\n";
+	scalar(@retained) . " retained, $count{values} public enum values, " .
+	"$count{keys} metadata keys, $count{roles} roles, " .
+	"$count{instructions} instruction forms, $count{types} types)\n";

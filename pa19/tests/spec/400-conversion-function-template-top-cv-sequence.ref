@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call obj<4x4> @make_result()
     copyobj 4x4 %t2, %t1
     %t3 = addr $second
-    %t4 = call obj<4x4> @make_result__ov2()
+    %t4 = call obj<4x4> @make_result__2()
     copyobj 4x4 %t4, %t3
     %t5 = addr $first
     %t6 = index i8 [projection=field] %t5, 0
@@ -57,7 +57,7 @@ function @make_result() -> obj<4x4> [binding=weak, object=_Z11make_resultI6resul
     copyobj 4x4 %t3, %t1
     return obj<4x4> $retobj__1
 }
-function @make_result__ov2() -> obj<4x4> [binding=weak, object=_Z11make_resultIK6resultIiEET_v] {
+function @make_result__2() -> obj<4x4> [binding=weak, object=_Z11make_resultIK6resultIiEET_v] {
   slot $retobj__1 : obj<4x4>
   slot $tmpobj__2 : obj<1x1>
 
@@ -75,10 +75,10 @@ function @source__operatorType(%this : ptr [object_bytes=1]) -> obj<4x4> [bindin
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr $retobj__1
-    call void @result_int___result_int_(%t1, 7)
+    call void @result_int___result(%t1, 7)
     return obj<4x4> $retobj__1
 }
-function @result_int___result_int_(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN6resultIiEC1Ei, inline_hint=yes] {
+function @result_int___result(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN6resultIiEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -91,4 +91,4 @@ function @result_int___result_int_(%this : ptr [object_bytes=4], %input : i32) -
     store typed i32 %t1, %t3
     return void
 }
-alias object _ZN6resultIiEC2Ei = @result_int___result_int_
+alias object _ZN6resultIiEC2Ei = @result_int___result

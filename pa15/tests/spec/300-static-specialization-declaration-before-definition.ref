@@ -1,16 +1,16 @@
-global @__cppgm_class_template_identity_0_0_0__n : i32 [binding=weak, object=_ZN1XIiE1nE] = 7
-global @__cppgm_class_template_identity_0_1_0__n : i32 [binding=weak, object=_ZN1XIcE1nE] = 3
+global @X_int___n : i32 [binding=strong, object=_ZN1XIiE1nE] = 7
+global @X_char___n : i32 [binding=weak, object=_ZN1XIcE1nE] = 3
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lor__1 : i64
 
   block ^entry:
-    %t1 = load typed i32 @__cppgm_class_template_identity_0_1_0__n
+    %t1 = load typed i32 @X_char___n
     %t2 = cmp ne i32 %t1, 3
     branch %t2, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
-    %t3 = load typed i32 @__cppgm_class_template_identity_0_0_0__n
+    %t3 = load typed i32 @X_int___n
     %t4 = cmp ne i32 %t3, 7
     %t5 = cmp ne i64 %t4, 0
     store typed i64 %t5, $lor__1

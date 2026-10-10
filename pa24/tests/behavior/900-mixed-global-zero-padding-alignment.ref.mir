@@ -35,6 +35,4 @@ function @main
     cmp.i64 r9, rdx
     sete r9
     movzx r9, r9
-    mov rax, r9
-    sext.i32 rax
-    ret rax
+    ret r9

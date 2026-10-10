@@ -1,38 +1,8 @@
-declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_IOS [binding=weak, object=_ZTS3IOS] = {
-  i8 51
-  i8 73
-  i8 79
-  i8 83
-  i8 0
-}
-global @__rtti_struct_IOS [binding=weak, object=_ZTI3IOS] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_IOS
-}
-global @__typeinfo_name__struct_OStream [binding=weak, object=_ZTS7OStream] = {
-  i8 55
-  i8 79
-  i8 83
-  i8 116
-  i8 114
-  i8 101
-  i8 97
-  i8 109
-  i8 0
-}
-global @__rtti_struct_OStream [binding=weak, object=_ZTI7OStream] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_OStream
-  i32 0
-  i32 1
-  ptr addr @__rtti_struct_IOS
-  i64 -6141
-}
-global @__typeinfo_name__struct_StringStream [binding=weak, object=_ZTS12StringStream] = {
+global @__typeinfo_name__struct_StringStream [storage=readonly, binding=weak, object=_ZTS12StringStream] = {
   i8 49
   i8 50
   i8 83
@@ -49,18 +19,40 @@ global @__typeinfo_name__struct_StringStream [binding=weak, object=_ZTS12StringS
   i8 109
   i8 0
 }
-global @__rtti_struct_StringStream [binding=weak, object=_ZTI12StringStream] = {
+global @__typeinfo_name__struct_OStream [storage=readonly, binding=weak, object=_ZTS7OStream] = {
+  i8 55
+  i8 79
+  i8 83
+  i8 116
+  i8 114
+  i8 101
+  i8 97
+  i8 109
+  i8 0
+}
+global @__typeinfo_name__struct_IOS [storage=readonly, binding=weak, object=_ZTS3IOS] = {
+  i8 51
+  i8 73
+  i8 79
+  i8 83
+  i8 0
+}
+global @__rtti_struct_IOS [storage=readonly, binding=weak, object=_ZTI3IOS] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_IOS
+}
+global @__rtti_struct_OStream [storage=readonly, binding=weak, object=_ZTI7OStream] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_OStream
+  i32 0
+  i32 1
+  ptr addr @__rtti_struct_IOS
+  i64 -6141
+}
+global @__rtti_struct_StringStream [storage=readonly, binding=weak, object=_ZTI12StringStream] = {
   ptr addr @__external_rtti_vtable____si_class_type_info + 16
   ptr addr @__typeinfo_name__struct_StringStream
   ptr addr @__rtti_struct_OStream
-}
-global @OStream__vtable [storage=readonly, binding=weak, object=_ZTV7OStream] = {
-  i64 8
-  i64 0
-  ptr addr @__rtti_struct_OStream
-}
-global @OStream____vtt [storage=readonly, binding=weak, object=_ZTT7OStream, object_root=yes] = {
-  ptr addr @OStream__vtable + 24
 }
 global @StringStream__vtable [storage=readonly, binding=weak, object=_ZTV12StringStream] = {
   i64 8
@@ -75,6 +67,14 @@ global @StringStream____construction__OStream__0__s0__vtable [storage=readonly, 
 global @StringStream____vtt [storage=readonly, binding=weak, object=_ZTT12StringStream, object_root=yes] = {
   ptr addr @StringStream__vtable + 24
   ptr addr @StringStream____construction__OStream__0__s0__vtable + 24
+}
+global @OStream__vtable [storage=readonly, binding=weak, object=_ZTV7OStream] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_OStream
+}
+global @OStream____vtt [storage=readonly, binding=weak, object=_ZTT7OStream, object_root=yes] = {
+  ptr addr @OStream__vtable + 24
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

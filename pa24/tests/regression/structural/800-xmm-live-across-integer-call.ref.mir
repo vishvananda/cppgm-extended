@@ -14,20 +14,19 @@ function @clobber_xmm_from_integer
     param %value -> rdi : i32
     return i32 -> rax
   frame
-    stack_size 64
+    stack_size 48
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
 
   block ^entry
     sitofp.i32.f64 xmm0, rdi
-    fadd.f64 xmm1, xmm0, 0.5
-    fmul.f64 xmm0, xmm1, 3.0
+    fadd.f64 xmm0, xmm0, 0.5
+    fmul.f64 xmm0, xmm0, 3.0
     fmov.f64 @observed, xmm0
-    mov r8, rdi
-    sub r8, 5
-    sext.i32 r8
-    ret r8
+    sub rdi, 5
+    sext.i32 rdi
+    ret rdi
 
 function @preserve_across_integer_call
   abi
@@ -43,14 +42,14 @@ function @preserve_across_integer_call
 
   block ^entry
     fmov.f64 [rbp-8], xmm0
-    fadd.f64 [rbp-16], [rbp-8], 1.25
+    fadd.f64 xmm14, [rbp-8], 1.25
+    fmov.f64 [rbp-16], xmm14
     mov rdi, 7
     call @clobber_xmm_from_integer [args=(rdi)]
     sext.i32 rax
     sitofp.i32.f64 xmm0, rax
-    fadd.f64 xmm1, [rbp-16], xmm0
-    fmov.f64 xmm0, xmm1
-    ret
+    fadd.f64 xmm0, [rbp-16], xmm0
+    ret xmm0
 
 function @main
   abi
@@ -64,17 +63,12 @@ function @main
   block ^entry
     fmov.f64 xmm0, 4.0
     call @preserve_across_integer_call [args=(xmm0)]
-    fmov.f64 xmm0, xmm0
-    feq.f64 rax, xmm0, 7.25
-    mov r8, rax
+    feq.f64 r8, xmm0, 7.25
     fmov.f64 xmm0, @observed
-    feq.f64 rax, xmm0, 22.5
-    mov r9, rax
+    feq.f64 r9, xmm0, 22.5
     and r8, r9
     mov rdx, 0
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    ret r8

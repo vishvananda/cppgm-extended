@@ -28,8 +28,7 @@ function @main
     call @length [args=(rdi), unwind=no]
     mov r12, rax
     mov r8, @length
-    lea r9, [rbx+24]
-    mov rdi, r9
+    lea rdi, [rbx+24]
     call *r8 [args=(rdi)]
     mov r13, rax
     store.i8 [rbx], 0

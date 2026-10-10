@@ -37,10 +37,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @move_only__move_only(%t1, %t2)
     %t3 = addr $boxed
     %t4 = addr $source
-    call void @box_move_only___box_move_only_(%t3, %t4)
+    call void @box_move_only___box(%t3, %t4)
     %t5 = addr $arg__1
     %t6 = addr $boxed
-    call void @box_move_only___box_move_only___ov2(%t5, %t6)
+    call void @box_move_only___box__ov2(%t5, %t6)
     %t7 = addr $value
     %t8 = call i32 @sink(%t5, %t7)
     return i32 %t8
@@ -58,7 +58,7 @@ function @move_only__move_only(%this : ptr [object_bytes=8], %value : ptr) -> vo
     store typed ptr %t1, %t3
     return void
 }
-function @box_move_only___box_move_only_(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN3boxI9move_onlyEC1EOS0_, inline_hint=yes] {
+function @box_move_only___box(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN3boxI9move_onlyEC1EOS0_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -71,7 +71,7 @@ function @box_move_only___box_move_only_(%this : ptr [object_bytes=8], %value : 
     call void @move_only__move_only__ov2(%t2, %t3)
     return void
 }
-function @box_move_only___box_move_only___ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN3boxI9move_onlyEC1EOS1_, inline_hint=yes] {
+function @box_move_only___box__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN3boxI9move_onlyEC1EOS1_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -104,6 +104,6 @@ function @move_only__move_only__ov2(%this : ptr [alias=noalias, object_bytes=8],
     return void
 }
 alias object _ZN9move_onlyC2EPi = @move_only__move_only
-alias object _ZN3boxI9move_onlyEC2EOS0_ = @box_move_only___box_move_only_
-alias object _ZN3boxI9move_onlyEC2EOS1_ = @box_move_only___box_move_only___ov2
+alias object _ZN3boxI9move_onlyEC2EOS0_ = @box_move_only___box
+alias object _ZN3boxI9move_onlyEC2EOS1_ = @box_move_only___box__ov2
 alias object _ZN9move_onlyC2EOS_ = @move_only__move_only__ov2

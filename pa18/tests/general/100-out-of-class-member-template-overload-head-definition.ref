@@ -11,10 +11,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $value
     %t3 = addr $arg__1
     zeroinit 1x1 %t3
-    %t4 = call i32 @suite__except__ov2(%t2, %t3)
+    %t4 = call i32 @suite__except(%t2, %t3)
     return i32 %t4
 }
-function @suite__except__ov2(%this : ptr [object_bytes=1], %f : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN5suite6exceptI7problem8callableEEiOT0_, inline_hint=yes] {
+function @suite__except(%this : ptr [object_bytes=1], %f : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN5suite6exceptI7problem8callableEEiOT0_, inline_hint=yes] {
   slot $this : ptr
   slot $f : ptr
 
@@ -24,10 +24,10 @@ function @suite__except__ov2(%this : ptr [object_bytes=1], %f : ptr [pass=by_add
     %t1 = load typed ptr $this
     %t2 = load typed ptr $f
     %t3 = addr @__strlit__1
-    %t4 = call i32 @suite__except__ov4(%t1, %t2, %t3)
+    %t4 = call i32 @suite__except__2(%t1, %t2, %t3)
     return i32 %t4
 }
-function @suite__except__ov4(%this : ptr [object_bytes=1], %f : ptr [pass=by_address, object_bytes=1], %reason : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN5suite6exceptI7problemR8callableA1_cEEiOT0_RKT1_, inline_hint=yes] {
+function @suite__except__2(%this : ptr [object_bytes=1], %f : ptr [pass=by_address, object_bytes=1], %reason : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN5suite6exceptI7problemR8callableA1_cEEiOT0_RKT1_] {
   slot $this : ptr
   slot $f : ptr
   slot $reason : ptr

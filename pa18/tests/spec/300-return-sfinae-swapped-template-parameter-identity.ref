@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t6 = addr $s
     %t7 = addr $p
-    %t8 = call u8 @equal__ov2(%t6, %t7)
+    %t8 = call u8 @equal__2(%t6, %t7)
     %t9 = cmp ne i64 %t8, 0
     store typed i64 %t9, $land__2
     jump ^land_end_6
@@ -49,7 +49,7 @@ function @equal(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : p
     store typed ptr %__param1, $__param1
     return u8 1
 }
-function @equal__ov2(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_Z5equalI6source4pathEN9enable_ifIXaasr7is_pathIT0_EE5valuesr9is_sourceIT_EE5valueEbE4typeERKS4_RKS3_] {
+function @equal__2(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_Z5equalI6source4pathEN9enable_ifIXaasr7is_pathIT0_EE5valuesr9is_sourceIT_EE5valueEbE4typeERKS4_RKS3_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

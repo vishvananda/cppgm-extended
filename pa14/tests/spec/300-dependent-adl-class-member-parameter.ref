@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $g
     %t3 = addr $check
     %t4 = addr $g
-    call void @lib__vertex_list_graph_user__graph___const_constraints(%t3, %t4)
+    call void @lib__vertex_list_graph_graph___const_constraints(%t3, %t4)
     %t5 = addr $check
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load typed i32 $cond__1
     return i32 %t9
 }
-function @lib__vertex_list_graph_user__graph___const_constraints(%this : ptr [object_bytes=4], %cg : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3lib17vertex_list_graphIN4user5graphEE17const_constraintsERKS2_, inline_hint=yes] {
+function @lib__vertex_list_graph_graph___const_constraints(%this : ptr [object_bytes=4], %cg : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3lib17vertex_list_graphIN4user5graphEE17const_constraintsERKS2_, inline_hint=yes] {
   slot $this : ptr
   slot $cg : ptr
 

@@ -63,9 +63,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $two : obj<4x4>
   slot $cond__1 : i32
   slot $land__2 : i64
-  slot $land__3 : i64
+  slot $argobj__3 : obj<4x4>
   slot $argobj__4 : obj<4x4>
-  slot $argobj__5 : obj<4x4>
+  slot $land__5 : i64
   slot $argobj__6 : obj<4x4>
 
   block ^entry:
@@ -76,33 +76,33 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $two
     call void @offset__offset(%t3, 2)
     %t4 = addr $values
-    %t5 = addr $argobj__4
+    %t5 = addr $argobj__3
     %t6 = addr $two
     copyobj 4x4 %t6, %t5
-    %t7 = call i32 @read_at(%t4, $argobj__4)
+    %t7 = call i32 @read_at(%t4, $argobj__3)
     %t8 = cmp eq i32 %t7, 5
-    branch %t8, ^land_rhs_7, ^land_short_8
-
-  block ^land_rhs_7:
-    %t9 = addr $values
-    %t10 = addr $argobj__5
-    %t11 = addr $one
-    copyobj 4x4 %t11, %t10
-    %t12 = call i32 @read_reverse(%t9, $argobj__5)
-    %t13 = cmp eq i32 %t12, 3
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__3
-    jump ^land_end_9
-
-  block ^land_short_8:
-    store typed i64 0, $land__3
-    jump ^land_end_9
-
-  block ^land_end_9:
-    %t15 = load typed i64 $land__3
-    branch %t15, ^land_rhs_4, ^land_short_5
+    branch %t8, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
+    %t9 = addr $values
+    %t10 = addr $argobj__4
+    %t11 = addr $one
+    copyobj 4x4 %t11, %t10
+    %t12 = call i32 @read_reverse(%t9, $argobj__4)
+    %t13 = cmp eq i32 %t12, 3
+    %t14 = cmp ne i64 %t13, 0
+    store typed i64 %t14, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t15 = load typed i64 $land__2
+    branch %t15, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
     %t16 = addr $values
     %t17 = binary mul i64 3, 4
     %t18 = index i8 %t16, %t17
@@ -112,15 +112,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t21 = call i32 @read_before(%t18, $argobj__6)
     %t22 = cmp eq i32 %t21, 3
     %t23 = cmp ne i64 %t22, 0
-    store typed i64 %t23, $land__2
-    jump ^land_end_6
+    store typed i64 %t23, $land__5
+    jump ^land_end_9
 
-  block ^land_short_5:
-    store typed i64 0, $land__2
-    jump ^land_end_6
+  block ^land_short_8:
+    store typed i64 0, $land__5
+    jump ^land_end_9
 
-  block ^land_end_6:
-    %t24 = load typed i64 $land__2
+  block ^land_end_9:
+    %t24 = load typed i64 $land__5
     branch %t24, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

@@ -22,23 +22,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
-    branch %t6, ^cond_then_4, ^cond_else_5
+    branch %t6, ^cond_then_3, ^cond_else_4
 
-  block ^cond_then_4:
+  block ^cond_then_3:
     store typed i32 0, $cond__1
-    jump ^cond_end_6
+    jump ^cond_end_5
 
-  block ^cond_else_5:
+  block ^cond_else_4:
     store typed i32 1, $cond__1
-    jump ^cond_end_6
+    jump ^cond_end_5
 
-  block ^cond_end_6:
+  block ^cond_end_5:
     %t7 = load typed i32 $cond__1
     return i32 %t7
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_6
 
-  block ^if_end_3:
+  block ^if_end_6:
     return i32 2
 }

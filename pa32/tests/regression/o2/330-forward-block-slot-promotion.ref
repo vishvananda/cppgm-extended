@@ -3,7 +3,6 @@ declare function @sink(%value : ptr) -> void [unwind=no]
 
 function @probe(%condition : i64) -> void {
   slot $object : obj<8x8>
-  slot $saved : ptr
 
   block ^entry:
     eh_try ^cleanup_start
@@ -11,18 +10,13 @@ function @probe(%condition : i64) -> void {
     eh_end
     return void
 
-  block ^use:
-    %loaded = load ptr $saved
-    call void @sink(%loaded)
-    jump ^resume
-
-  block ^cleanup_next:
+  block ^cleanup_start:
     %address = addr $object
-    store ptr %address, $saved
     branch %condition, ^use, ^resume
 
-  block ^cleanup_start:
-    jump ^cleanup_next
+  block ^use:
+    call void @sink(%address)
+    jump ^resume
 
   block ^resume:
     resume

@@ -12,8 +12,8 @@ function @identity
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi
@@ -25,8 +25,8 @@ function @frameless_leaf
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     add rdi, 1
@@ -39,8 +39,8 @@ function @frameless_call
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     call @identity [args=(rdi), unwind=no]
@@ -53,12 +53,10 @@ function @frame_operand
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    slot $value -> [rbp-<off0>] : i64
+    epilogues duplicated
 
   block ^entry
-    store.i64 [rbp-<off0>], 31
-    load.i64 rax, [rbp-<off0>]
+    mov rax, 31
     ret rax
 
 function @dynamic_stack
@@ -69,15 +67,12 @@ function @dynamic_stack
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
 
   block ^entry
-    mov rax, rdi
-    add rax, 15
-    and rax, -16
-    sub rsp, rax
-    store.i64 [rsp], 37
-    load.i64 rax, [rsp]
+    stack_alloc r8, rdi
+    store.i64 [r8], 37
+    load.i64 rax, [r8]
     ret rax
 
 function @floating_scratch
@@ -87,7 +82,7 @@ function @floating_scratch
     stack_size N
     scratch_bytes 48
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
 
   block ^entry
     fadd.f64 xmm0, 1.25, 2.5
@@ -101,17 +96,14 @@ function @host_eh
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    temp %host-eh-exception -> [rbp-<off0>] : ptr
-    temp %host-eh-selector -> [rbp-<off1>] : i64
+    epilogues duplicated
 
   block ^entry
     eh_push ^handler, 0
     mov rdi, 41
     call @identity [args=(rdi), unwind=no]
-    mov r8, rax
     eh_pop
-    ret r8
+    ret rax
 
   block ^handler
     mov rax, 99
@@ -124,11 +116,11 @@ function @direct_returns
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
-    test.i64 rdi, rdi
+    cmp.i64 rdi, 0
     je ^no
 
   block ^yes
@@ -146,9 +138,9 @@ function @main
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
-    temp %floating_bad -> [rbp-<off0>] : i64
+    temp %eh_value -> [rbp-<off0>] : i64
 
   block ^entry
     mov rdi, 28
@@ -165,39 +157,32 @@ function @main
     call @floating_scratch [args=(), unwind=no]
     mov <gpr4>, rax
     call @host_eh [args=()]
-    store.i64 [rbp-<off0>], <gpr4>
-    mov <gpr4>, rax
+    mov <gpr5>, rax
+    store.i64 [rbp-<off0>], <gpr5>
     mov rdi, 1
     call @direct_returns [args=(rdi), unwind=no]
-    mov rdx, 29
-    cmp.i64 <gpr0>, rdx
+    cmp.i64 <gpr0>, 29
     setne <gpr0>
     movzx <gpr0>, <gpr0>
-    mov rdx, 30
-    cmp.i64 <gpr1>, rdx
+    cmp.i64 <gpr1>, 30
     setne <gpr1>
     movzx <gpr1>, <gpr1>
-    mov rdx, 31
-    cmp.i64 <gpr2>, rdx
+    cmp.i64 <gpr2>, 31
     setne <gpr2>
     movzx <gpr2>, <gpr2>
-    mov rdx, 37
-    cmp.i64 <gpr3>, rdx
+    cmp.i64 <gpr3>, 37
     setne <gpr3>
     movzx <gpr3>, <gpr3>
-    mov rdx, 41
-    cmp.i64 <gpr4>, rdx
-    setne <gpr4>
-    movzx <gpr4>, <gpr4>
-    mov rdx, 43
-    cmp.i64 rax, rdx
+    cmp.i64 [rbp-<off0>], 41
     setne r8
     movzx r8, r8
+    cmp.i64 rax, 43
+    setne rax
+    movzx rax, rax
     or <gpr0>, <gpr1>
     or <gpr2>, <gpr3>
-    load.i64 r9, [rbp-<off0>]
-    or r9, <gpr4>
+    or <gpr4>, r8
     or <gpr0>, <gpr2>
-    or r9, r8
-    or <gpr0>, r9
+    or <gpr4>, rax
+    or <gpr0>, <gpr4>
     ret <gpr0>

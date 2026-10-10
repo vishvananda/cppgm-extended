@@ -1,3 +1,6 @@
+declare global @nested_arg_is_function_pointer_get_value_value_____value : i32 [binding=weak, object=_ZN30nested_arg_is_function_pointerIPF9get_value5valueEE5valueE]
+declare global @call_push_get_value_value______value : i32 [binding=weak, object=_ZN4callIF4pushPF9get_value5valueEEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

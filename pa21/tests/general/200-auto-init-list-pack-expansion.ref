@@ -37,8 +37,8 @@ function @visit() -> i32 [binding=weak, object=_Z5visitIJciEEiv] {
     %t4 = call i32 @touch($argobj__2)
     store typed i32 0, %t2
     %t5 = addr $argobj__3
-    %t6 = call i32 @touch__ov2($argobj__3)
-    %t7 = index i8 %t2, 4
+    %t6 = call i32 @touch__2($argobj__3)
+    %t7 = index i8 [projection=array_element] %t2, 4
     store typed i32 0, %t7
     store typed ptr %t2, %t1
     %t8 = index i8 %t1, 8
@@ -59,7 +59,7 @@ function @touch(%__param0 : obj<1x1> [classes=none]) -> i32 [binding=weak, objec
     store typed i32 %t5, @total
     return i32 0
 }
-function @touch__ov2(%__param0 : obj<1x1> [classes=none]) -> i32 [binding=weak, object=_Z5touchIiEi8identityIT_E] {
+function @touch__2(%__param0 : obj<1x1> [classes=none]) -> i32 [binding=weak, object=_Z5touchIiEi8identityIT_E] {
   slot $__param0 : obj<1x1>
 
   block ^entry:

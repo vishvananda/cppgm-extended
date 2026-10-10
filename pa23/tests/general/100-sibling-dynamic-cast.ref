@@ -1,40 +1,40 @@
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
-declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 
+declare function @__external_runtime____dynamic_cast(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr, %arg3 : i64) -> ptr [role=dynamic_cast, linkage=c, binding=strong, object=__dynamic_cast]
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
-declare function @__external_runtime____dynamic_cast(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr, %arg3 : i64) -> ptr [role=dynamic_cast, linkage=c, binding=strong, object=__dynamic_cast]
 
-global @__typeinfo_name__class_YA [binding=weak, object=_ZTS2YA] = {
-  i8 50
-  i8 89
-  i8 65
-  i8 0
-}
-global @__rtti_class_YA [binding=weak, object=_ZTI2YA] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__class_YA
-}
-global @__typeinfo_name__class_YB [binding=weak, object=_ZTS2YB] = {
-  i8 50
-  i8 89
-  i8 66
-  i8 0
-}
-global @__rtti_class_YB [binding=weak, object=_ZTI2YB] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__class_YB
-}
-global @__typeinfo_name__class_YD [binding=weak, object=_ZTS2YD] = {
+global @__typeinfo_name__class_YD [storage=readonly, binding=weak, object=_ZTS2YD] = {
   i8 50
   i8 89
   i8 68
   i8 0
 }
-global @__rtti_class_YD [binding=weak, object=_ZTI2YD] = {
+global @__typeinfo_name__class_YA [storage=readonly, binding=weak, object=_ZTS2YA] = {
+  i8 50
+  i8 89
+  i8 65
+  i8 0
+}
+global @__rtti_class_YA [storage=readonly, binding=weak, object=_ZTI2YA] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__class_YA
+}
+global @__typeinfo_name__class_YB [storage=readonly, binding=weak, object=_ZTS2YB] = {
+  i8 50
+  i8 89
+  i8 66
+  i8 0
+}
+global @__rtti_class_YB [storage=readonly, binding=weak, object=_ZTI2YB] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__class_YB
+}
+global @__rtti_class_YD [storage=readonly, binding=weak, object=_ZTI2YD] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__class_YD
   i32 0
@@ -44,129 +44,15 @@ global @__rtti_class_YD [binding=weak, object=_ZTI2YD] = {
   ptr addr @__rtti_class_YB
   i64 2050
 }
-global @__typeinfo_name__struct_Left [binding=weak, object=_ZTS4Left] = {
-  i8 52
-  i8 76
-  i8 101
-  i8 102
-  i8 116
-  i8 0
+global @YD__vtable [storage=readonly, binding=weak, object=_ZTV2YD] = {
+  i64 0
+  ptr addr @__rtti_class_YD
+  ptr addr @YA__f
 }
-global @__rtti_struct_Left [binding=weak, object=_ZTI4Left] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Left
-  i32 0
-  i32 1
-  ptr addr @__rtti_class_YA
-  i64 -8189
-}
-global @__typeinfo_name__struct_Right [binding=weak, object=_ZTS5Right] = {
-  i8 53
-  i8 82
-  i8 105
-  i8 103
-  i8 104
-  i8 116
-  i8 0
-}
-global @__rtti_struct_Right [binding=weak, object=_ZTI5Right] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Right
-  i32 0
-  i32 1
-  ptr addr @__rtti_class_YA
-  i64 -8189
-}
-global @__typeinfo_name__struct_Diamond [binding=weak, object=_ZTS7Diamond] = {
-  i8 55
-  i8 68
-  i8 105
-  i8 97
-  i8 109
-  i8 111
-  i8 110
-  i8 100
-  i8 0
-}
-global @__rtti_struct_Diamond [binding=weak, object=_ZTI7Diamond] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Diamond
-  i32 2
-  i32 2
-  ptr addr @__rtti_struct_Left
-  i64 2
-  ptr addr @__rtti_struct_Right
-  i64 2050
-}
-global @__typeinfo_name__struct_RepeatedLeft [binding=weak, object=_ZTS12RepeatedLeft] = {
-  i8 49
-  i8 50
-  i8 82
-  i8 101
-  i8 112
-  i8 101
-  i8 97
-  i8 116
-  i8 101
-  i8 100
-  i8 76
-  i8 101
-  i8 102
-  i8 116
-  i8 0
-}
-global @__rtti_struct_RepeatedLeft [binding=weak, object=_ZTI12RepeatedLeft] = {
-  ptr addr @__external_rtti_vtable____si_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_RepeatedLeft
-  ptr addr @__rtti_class_YB
-}
-global @__typeinfo_name__struct_RepeatedRight [binding=weak, object=_ZTS13RepeatedRight] = {
-  i8 49
-  i8 51
-  i8 82
-  i8 101
-  i8 112
-  i8 101
-  i8 97
-  i8 116
-  i8 101
-  i8 100
-  i8 82
-  i8 105
-  i8 103
-  i8 104
-  i8 116
-  i8 0
-}
-global @__rtti_struct_RepeatedRight [binding=weak, object=_ZTI13RepeatedRight] = {
-  ptr addr @__external_rtti_vtable____si_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_RepeatedRight
-  ptr addr @__rtti_class_YB
-}
-global @__typeinfo_name__struct_Ambiguous [binding=weak, object=_ZTS9Ambiguous] = {
-  i8 57
-  i8 65
-  i8 109
-  i8 98
-  i8 105
-  i8 103
-  i8 117
-  i8 111
-  i8 117
-  i8 115
-  i8 0
-}
-global @__rtti_struct_Ambiguous [binding=weak, object=_ZTI9Ambiguous] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Ambiguous
-  i32 1
-  i32 3
-  ptr addr @__rtti_class_YA
-  i64 2
-  ptr addr @__rtti_struct_RepeatedLeft
-  i64 2050
-  ptr addr @__rtti_struct_RepeatedRight
-  i64 4098
+global @YD____view__YB__8__vtable [storage=readonly, binding=internal] = {
+  i64 -8
+  ptr addr @__rtti_class_YD
+  ptr addr @YB__g
 }
 global @YA__vtable [storage=readonly, binding=weak, object=_ZTV2YA] = {
   i64 0
@@ -178,15 +64,102 @@ global @YB__vtable [storage=readonly, binding=weak, object=_ZTV2YB] = {
   ptr addr @__rtti_class_YB
   ptr addr @YB__g
 }
-global @YD__vtable [storage=readonly, binding=weak, object=_ZTV2YD] = {
+global @__typeinfo_name__struct_Diamond [storage=readonly, binding=weak, object=_ZTS7Diamond] = {
+  i8 55
+  i8 68
+  i8 105
+  i8 97
+  i8 109
+  i8 111
+  i8 110
+  i8 100
+  i8 0
+}
+global @__typeinfo_name__struct_Left [storage=readonly, binding=weak, object=_ZTS4Left] = {
+  i8 52
+  i8 76
+  i8 101
+  i8 102
+  i8 116
+  i8 0
+}
+global @__rtti_struct_Left [storage=readonly, binding=weak, object=_ZTI4Left] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Left
+  i32 0
+  i32 1
+  ptr addr @__rtti_class_YA
+  i64 -8189
+}
+global @__typeinfo_name__struct_Right [storage=readonly, binding=weak, object=_ZTS5Right] = {
+  i8 53
+  i8 82
+  i8 105
+  i8 103
+  i8 104
+  i8 116
+  i8 0
+}
+global @__rtti_struct_Right [storage=readonly, binding=weak, object=_ZTI5Right] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Right
+  i32 0
+  i32 1
+  ptr addr @__rtti_class_YA
+  i64 -8189
+}
+global @__rtti_struct_Diamond [storage=readonly, binding=weak, object=_ZTI7Diamond] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Diamond
+  i32 2
+  i32 2
+  ptr addr @__rtti_struct_Left
+  i64 2
+  ptr addr @__rtti_struct_Right
+  i64 2050
+}
+global @Diamond__vtable [storage=readonly, binding=weak, object=_ZTV7Diamond] = {
   i64 0
-  ptr addr @__rtti_class_YD
+  i64 0
+  i64 0
+  ptr addr @__rtti_struct_Diamond
   ptr addr @YA__f
 }
-global @YD____view__YB__8__vtable [storage=readonly, binding=internal, object=@YD____view__YB__8__vtable] = {
+global @Diamond____view__Right__8__vtable [storage=readonly, binding=internal] = {
   i64 -8
-  ptr addr @__rtti_class_YD
-  ptr addr @YB__g
+  i64 -8
+  i64 -8
+  ptr addr @__rtti_struct_Diamond
+  ptr 0
+}
+global @Diamond____construction__Left__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC7Diamond0_4Left] = {
+  i64 0
+  i64 0
+  i64 0
+  ptr addr @__rtti_struct_Left
+  ptr addr @YA__f
+}
+global @Diamond____construction__Right__8__s0__vtable [storage=readonly, binding=internal, object=_ZTC7Diamond8_5Right] = {
+  i64 -8
+  i64 -8
+  i64 0
+  ptr addr @__rtti_struct_Right
+  ptr addr @YA__f
+}
+global @Diamond____construction__Right__8__s1__vtable [storage=readonly, binding=internal] = {
+  i64 0
+  i64 8
+  ptr addr @__rtti_struct_Right
+  ptr addr @YA__f
+}
+global @Diamond____vtt [storage=readonly, binding=weak, object=_ZTT7Diamond, object_root=yes] = {
+  ptr addr @Diamond__vtable + 32
+  ptr addr @Diamond____construction__Left__0__s0__vtable + 32
+  ptr addr @Diamond____construction__Left__0__s0__vtable + 32
+  ptr addr @Diamond____construction__Right__8__s0__vtable + 32
+  ptr addr @Diamond____construction__Right__8__s1__vtable + 24
+  ptr addr @Diamond__vtable + 32
+  ptr addr @Diamond____view__Right__8__vtable + 32
 }
 global @Left__vtable [storage=readonly, binding=weak, object=_ZTV4Left] = {
   i64 0
@@ -210,48 +183,90 @@ global @Right____vtt [storage=readonly, binding=weak, object=_ZTT5Right, object_
   ptr addr @Right__vtable + 32
   ptr addr @Right__vtable + 32
 }
-global @Diamond__vtable [storage=readonly, binding=weak, object=_ZTV7Diamond] = {
+global @__typeinfo_name__struct_Ambiguous [storage=readonly, binding=weak, object=_ZTS9Ambiguous] = {
+  i8 57
+  i8 65
+  i8 109
+  i8 98
+  i8 105
+  i8 103
+  i8 117
+  i8 111
+  i8 117
+  i8 115
+  i8 0
+}
+global @__typeinfo_name__struct_RepeatedLeft [storage=readonly, binding=weak, object=_ZTS12RepeatedLeft] = {
+  i8 49
+  i8 50
+  i8 82
+  i8 101
+  i8 112
+  i8 101
+  i8 97
+  i8 116
+  i8 101
+  i8 100
+  i8 76
+  i8 101
+  i8 102
+  i8 116
+  i8 0
+}
+global @__rtti_struct_RepeatedLeft [storage=readonly, binding=weak, object=_ZTI12RepeatedLeft] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_RepeatedLeft
+  ptr addr @__rtti_class_YB
+}
+global @__typeinfo_name__struct_RepeatedRight [storage=readonly, binding=weak, object=_ZTS13RepeatedRight] = {
+  i8 49
+  i8 51
+  i8 82
+  i8 101
+  i8 112
+  i8 101
+  i8 97
+  i8 116
+  i8 101
+  i8 100
+  i8 82
+  i8 105
+  i8 103
+  i8 104
+  i8 116
+  i8 0
+}
+global @__rtti_struct_RepeatedRight [storage=readonly, binding=weak, object=_ZTI13RepeatedRight] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_RepeatedRight
+  ptr addr @__rtti_class_YB
+}
+global @__rtti_struct_Ambiguous [storage=readonly, binding=weak, object=_ZTI9Ambiguous] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Ambiguous
+  i32 1
+  i32 3
+  ptr addr @__rtti_class_YA
+  i64 2
+  ptr addr @__rtti_struct_RepeatedLeft
+  i64 2050
+  ptr addr @__rtti_struct_RepeatedRight
+  i64 4098
+}
+global @Ambiguous__vtable [storage=readonly, binding=weak, object=_ZTV9Ambiguous] = {
   i64 0
-  i64 0
-  i64 0
-  ptr addr @__rtti_struct_Diamond
+  ptr addr @__rtti_struct_Ambiguous
   ptr addr @YA__f
 }
-global @Diamond____view__Right__8__vtable [storage=readonly, binding=internal, object=@Diamond____view__Right__8__vtable] = {
+global @Ambiguous____view__RepeatedLeft__8__vtable [storage=readonly, binding=internal] = {
   i64 -8
-  i64 -8
-  i64 -8
-  ptr addr @__rtti_struct_Diamond
-  ptr 0
+  ptr addr @__rtti_struct_Ambiguous
+  ptr addr @YB__g
 }
-global @Diamond____construction__Left__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC7Diamond0_4Left] = {
-  i64 0
-  i64 0
-  i64 0
-  ptr addr @__rtti_struct_Left
-  ptr addr @YA__f
-}
-global @Diamond____construction__Right__8__s0__vtable [storage=readonly, binding=internal, object=_ZTC7Diamond8_5Right] = {
-  i64 -8
-  i64 -8
-  i64 0
-  ptr addr @__rtti_struct_Right
-  ptr addr @YA__f
-}
-global @Diamond____construction__Right__8__s1__vtable [storage=readonly, binding=internal, object=@Diamond____construction__Right__8__s1__vtable] = {
-  i64 0
-  i64 8
-  ptr addr @__rtti_struct_Right
-  ptr addr @YA__f
-}
-global @Diamond____vtt [storage=readonly, binding=weak, object=_ZTT7Diamond, object_root=yes] = {
-  ptr addr @Diamond__vtable + 32
-  ptr addr @Diamond____construction__Left__0__s0__vtable + 32
-  ptr addr @Diamond____construction__Left__0__s0__vtable + 32
-  ptr addr @Diamond____construction__Right__8__s0__vtable + 32
-  ptr addr @Diamond____construction__Right__8__s1__vtable + 24
-  ptr addr @Diamond__vtable + 32
-  ptr addr @Diamond____view__Right__8__vtable + 32
+global @Ambiguous____view__RepeatedRight__16__vtable [storage=readonly, binding=internal] = {
+  i64 -16
+  ptr addr @__rtti_struct_Ambiguous
+  ptr addr @YB__g
 }
 global @RepeatedLeft__vtable [storage=readonly, binding=weak, object=_ZTV12RepeatedLeft] = {
   i64 0
@@ -263,34 +278,19 @@ global @RepeatedRight__vtable [storage=readonly, binding=weak, object=_ZTV13Repe
   ptr addr @__rtti_struct_RepeatedRight
   ptr addr @YB__g
 }
-global @Ambiguous__vtable [storage=readonly, binding=weak, object=_ZTV9Ambiguous] = {
-  i64 0
-  ptr addr @__rtti_struct_Ambiguous
-  ptr addr @YA__f
-}
-global @Ambiguous____view__RepeatedLeft__8__vtable [storage=readonly, binding=internal, object=@Ambiguous____view__RepeatedLeft__8__vtable] = {
-  i64 -8
-  ptr addr @__rtti_struct_Ambiguous
-  ptr addr @YB__g
-}
-global @Ambiguous____view__RepeatedRight__16__vtable [storage=readonly, binding=internal, object=@Ambiguous____view__RepeatedRight__16__vtable] = {
-  i64 -16
-  ptr addr @__rtti_struct_Ambiguous
-  ptr addr @YB__g
-}
-global @__ehobj_struct_Ambiguous [binding=internal, object=@__ehobj_struct_Ambiguous] = {
+global @__ehobj_struct_Ambiguous [binding=internal] = {
   zero 24
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $ordinary : obj<16x8>
   slot $primary : ptr
+  slot $dyn_cast__1 : ptr
   slot $diamond : obj<16x8>
   slot $shared : ptr
+  slot $dyn_cast__2 : ptr
   slot $ambiguous : obj<24x8>
   slot $source : ptr
-  slot $dyn_cast__1 : ptr
-  slot $dyn_cast__2 : ptr
   slot $dyn_cast__3 : ptr
 
   block ^entry:
@@ -302,16 +302,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load typed ptr $primary
     store typed ptr 0, $dyn_cast__1
     %t5 = cmp eq ptr %t4, 0
-    branch %t5, ^dyn_cast_end_5, ^dyn_cast_scan_4
+    branch %t5, ^dyn_cast_end_4, ^dyn_cast_scan_3
 
-  block ^dyn_cast_scan_4:
+  block ^dyn_cast_scan_3:
     %t6 = addr @__rtti_class_YA
     %t7 = addr @__rtti_class_YB
     %t8 = call ptr @__external_runtime____dynamic_cast(%t4, %t6, %t7, -2)
     store typed ptr %t8, $dyn_cast__1
-    jump ^dyn_cast_end_5
+    jump ^dyn_cast_end_4
 
-  block ^dyn_cast_end_5:
+  block ^dyn_cast_end_4:
     %t9 = load typed ptr $dyn_cast__1
     %t10 = addr $ordinary
     %t11 = index i8 %t10, 8
@@ -322,9 +322,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_5
 
-  block ^if_end_3:
+  block ^if_end_5:
     %t13 = addr $diamond
     call void @Diamond__Diamond(%t13)
     %t14 = addr $diamond
@@ -337,16 +337,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = load typed ptr $shared
     store typed ptr 0, $dyn_cast__2
     %t21 = cmp eq ptr %t20, 0
-    branch %t21, ^dyn_cast_end_10, ^dyn_cast_scan_9
+    branch %t21, ^dyn_cast_end_9, ^dyn_cast_scan_8
 
-  block ^dyn_cast_scan_9:
+  block ^dyn_cast_scan_8:
     %t22 = addr @__rtti_class_YA
     %t23 = addr @__rtti_struct_Right
     %t24 = call ptr @__external_runtime____dynamic_cast(%t20, %t22, %t23, -1)
     store typed ptr %t24, $dyn_cast__2
-    jump ^dyn_cast_end_10
+    jump ^dyn_cast_end_9
 
-  block ^dyn_cast_end_10:
+  block ^dyn_cast_end_9:
     %t25 = load typed ptr $dyn_cast__2
     %t26 = addr $diamond
     %t27 = index i8 %t26, 8
@@ -357,9 +357,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_7:
-    jump ^if_end_8
+    jump ^if_end_10
 
-  block ^if_end_8:
+  block ^if_end_10:
     %t29 = addr $ambiguous
     call void @Ambiguous__Ambiguous(%t29)
     %t30 = addr $ambiguous
@@ -368,16 +368,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t32 = load typed ptr $source
     store typed ptr 0, $dyn_cast__3
     %t33 = cmp eq ptr %t32, 0
-    branch %t33, ^dyn_cast_end_15, ^dyn_cast_scan_14
+    branch %t33, ^dyn_cast_end_14, ^dyn_cast_scan_13
 
-  block ^dyn_cast_scan_14:
+  block ^dyn_cast_scan_13:
     %t34 = addr @__rtti_class_YA
     %t35 = addr @__rtti_class_YB
     %t36 = call ptr @__external_runtime____dynamic_cast(%t32, %t34, %t35, -2)
     store typed ptr %t36, $dyn_cast__3
-    jump ^dyn_cast_end_15
+    jump ^dyn_cast_end_14
 
-  block ^dyn_cast_end_15:
+  block ^dyn_cast_end_14:
     %t37 = load typed ptr $dyn_cast__3
     branch %t37, ^if_then_11, ^if_else_12
 
@@ -385,13 +385,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_else_12:
-    jump ^if_end_13
+    jump ^if_end_15
 
-  block ^if_end_13:
+  block ^if_end_15:
     eh_try ^catch_dispatch_16
     %t38 = call ptr @__external_runtime____cxa_allocate_exception(24)
     %t39 = addr $ambiguous
-    call void @Ambiguous__Ambiguous__sym2(%t38, %t39)
+    call void @Ambiguous__Ambiguous__2(%t38, %t39)
     %t40 = addr @__rtti_struct_Ambiguous
     call void @__external_runtime____cxa_throw(%t38, %t40, 0)
     eh_end
@@ -444,21 +444,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^try_end_18:
     return i32 0
 }
-function @YA__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YA1fEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 1
-}
-function @YB__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YB1gEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 2
-}
-function @YD__YD(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN2YDC1Ev, inline_hint=yes] {
+function @YD__YD(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN2YDC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -480,7 +466,21 @@ function @YD__YD(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_Z
     store typed ptr %t11, %t9
     return void
 }
-function @Diamond__Diamond(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7DiamondC1Ev, inline_hint=yes] {
+function @YA__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YA1fEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 1
+}
+function @YB__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YB1gEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 2
+}
+function @Diamond__Diamond(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7DiamondC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -509,7 +509,7 @@ function @Diamond__Diamond(%this : ptr [object_bytes=16]) -> void [binding=weak,
     store typed ptr %t17, %t15
     return void
 }
-function @Ambiguous__Ambiguous(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN9AmbiguousC1Ev, inline_hint=yes] {
+function @Ambiguous__Ambiguous(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN9AmbiguousC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -539,7 +539,7 @@ function @Ambiguous__Ambiguous(%this : ptr [object_bytes=24]) -> void [binding=w
     store typed ptr %t17, %t15
     return void
 }
-function @Ambiguous__Ambiguous__sym2(%this : ptr [alias=noalias, object_bytes=24], %other : ptr [pass=by_address, alias=noalias, object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN9AmbiguousC1ERKS_, inline_hint=yes] {
+function @Ambiguous__Ambiguous__2(%this : ptr [alias=noalias, object_bytes=24], %other : ptr [pass=by_address, alias=noalias, object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN9AmbiguousC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -550,17 +550,17 @@ function @Ambiguous__Ambiguous__sym2(%this : ptr [alias=noalias, object_bytes=24
     %t2 = index i8 %t1, 0
     %t3 = load typed ptr $other
     %t4 = index i8 %t3, 0
-    call void @YA__YA__base_entry__sym2(%t2, %t4)
+    call void @YA__YA__base_entry__2(%t2, %t4)
     %t5 = load typed ptr $this
     %t6 = index i8 %t5, 8
     %t7 = load typed ptr $other
     %t8 = index i8 %t7, 8
-    call void @RepeatedLeft__RepeatedLeft__base_entry__sym2(%t6, %t8)
+    call void @RepeatedLeft__RepeatedLeft__base_entry__2(%t6, %t8)
     %t9 = load typed ptr $this
     %t10 = index i8 %t9, 16
     %t11 = load typed ptr $other
     %t12 = index i8 %t11, 16
-    call void @RepeatedRight__RepeatedRight__base_entry__sym2(%t10, %t12)
+    call void @RepeatedRight__RepeatedRight__base_entry__2(%t10, %t12)
     %t13 = load typed ptr $this
     %t14 = addr @Ambiguous__vtable
     %t15 = index i8 %t14, 16
@@ -661,7 +661,7 @@ function @RepeatedRight__RepeatedRight__base_entry(%this : ptr [object_bytes=8])
     store typed ptr %t5, %t3
     return void
 }
-function @YA__YA__base_entry__sym2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YAC2ERKS_, object_root=yes, inline_hint=yes] {
+function @YA__YA__base_entry__2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YAC2ERKS_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -674,7 +674,7 @@ function @YA__YA__base_entry__sym2(%this : ptr [alias=noalias, object_bytes=8], 
     store typed ptr %t3, %t1
     return void
 }
-function @RepeatedLeft__RepeatedLeft__base_entry__sym2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12RepeatedLeftC2ERKS_, object_root=yes, inline_hint=yes] {
+function @RepeatedLeft__RepeatedLeft__base_entry__2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12RepeatedLeftC2ERKS_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -685,14 +685,14 @@ function @RepeatedLeft__RepeatedLeft__base_entry__sym2(%this : ptr [alias=noalia
     %t2 = index i8 %t1, 0
     %t3 = load typed ptr $other
     %t4 = index i8 %t3, 0
-    call void @YB__YB__base_entry__sym2(%t2, %t4)
+    call void @YB__YB__base_entry__2(%t2, %t4)
     %t5 = load typed ptr $this
     %t6 = addr @RepeatedLeft__vtable
     %t7 = index i8 %t6, 16
     store typed ptr %t7, %t5
     return void
 }
-function @RepeatedRight__RepeatedRight__base_entry__sym2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN13RepeatedRightC2ERKS_, object_root=yes, inline_hint=yes] {
+function @RepeatedRight__RepeatedRight__base_entry__2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN13RepeatedRightC2ERKS_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -703,14 +703,14 @@ function @RepeatedRight__RepeatedRight__base_entry__sym2(%this : ptr [alias=noal
     %t2 = index i8 %t1, 0
     %t3 = load typed ptr $other
     %t4 = index i8 %t3, 0
-    call void @YB__YB__base_entry__sym2(%t2, %t4)
+    call void @YB__YB__base_entry__2(%t2, %t4)
     %t5 = load typed ptr $this
     %t6 = addr @RepeatedRight__vtable
     %t7 = index i8 %t6, 16
     store typed ptr %t7, %t5
     return void
 }
-function @YB__YB__base_entry__sym2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YBC2ERKS_, object_root=yes, inline_hint=yes] {
+function @YB__YB__base_entry__2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YBC2ERKS_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -725,4 +725,4 @@ function @YB__YB__base_entry__sym2(%this : ptr [alias=noalias, object_bytes=8], 
 }
 alias object _ZN2YDC2Ev = @YD__YD
 alias object _ZN9AmbiguousC2Ev = @Ambiguous__Ambiguous
-alias object _ZN9AmbiguousC2ERKS_ = @Ambiguous__Ambiguous__sym2
+alias object _ZN9AmbiguousC2ERKS_ = @Ambiguous__Ambiguous__2

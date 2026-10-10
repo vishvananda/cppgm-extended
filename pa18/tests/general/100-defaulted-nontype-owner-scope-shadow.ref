@@ -1,3 +1,10 @@
+declare global @is_convertible___cppgm_class_template_identity_1_unsignedlongint___value : u8 [binding=weak, object=_ZN14is_convertibleI14input_iteratorI9containerI10first_typeEEmE5valueE]
+declare global @is_input_iterator___cppgm_class_template_identity_1_true___value : u8 [binding=weak, object=_ZN17is_input_iteratorI14input_iteratorI9containerI10first_typeEELb1EE5valueE]
+declare global @is_not_input_iterator___cppgm_class_template_identity_1___value : u8 [binding=weak, object=_ZN21is_not_input_iteratorI14input_iteratorI9containerI10first_typeEEE5valueE]
+declare global @is_convertible___cppgm_class_template_identity_2_unsignedlongint___value : u8 [binding=weak, object=_ZN14is_convertibleI14input_iteratorI9containerI11second_typeEEmE5valueE]
+declare global @is_input_iterator___cppgm_class_template_identity_2_true___value : u8 [binding=weak, object=_ZN17is_input_iteratorI14input_iteratorI9containerI11second_typeEELb1EE5valueE]
+declare global @is_not_input_iterator___cppgm_class_template_identity_2___value : u8 [binding=weak, object=_ZN21is_not_input_iteratorI14input_iteratorI9containerI11second_typeEEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
   slot $land__2 : i64
@@ -8,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t3 = call i32 @exercise__ov2()
+    %t3 = call i32 @exercise__2()
     %t4 = cmp eq i32 %t3, 1
     %t5 = cmp ne i64 %t4, 0
     store typed i64 %t5, $land__2
@@ -51,7 +58,7 @@ function @exercise() -> i32 [binding=weak, object=_Z8exerciseI10first_typeEiv] {
     %t8 = call i32 @container_first_type___assign(%t3, $argobj__1, $argobj__2, 0)
     return i32 %t8
 }
-function @exercise__ov2() -> i32 [binding=weak, object=_Z8exerciseI11second_typeEiv] {
+function @exercise__2() -> i32 [binding=weak, object=_Z8exerciseI11second_typeEiv] {
   slot $value : obj<1x1>
   slot $iterator : obj<1x1>
   slot $argobj__1 : obj<1x1>

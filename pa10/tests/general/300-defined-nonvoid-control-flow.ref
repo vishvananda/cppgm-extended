@@ -32,16 +32,16 @@ function @label_return() -> i32 [binding=strong, object=_Z12label_returnv] {
   block ^entry:
     jump ^goto_1
 
-  block ^unreachable_2:
-    jump ^if_else_4
+  block ^unreachable_4:
+    jump ^if_else_3
 
-  block ^if_then_3:
+  block ^if_then_2:
     jump ^goto_1
 
   block ^goto_1:
     return i32 5
 
-  block ^if_else_4:
+  block ^if_else_3:
     jump ^if_end_5
 
   block ^if_end_5:

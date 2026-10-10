@@ -21,9 +21,9 @@ function @round_trip
 
   block ^entry
     cmp.ptr rdi, rdi
-    setne rax
-    movzx rax, rax
-    ret rax
+    setne rdi
+    movzx rdi, rdi
+    ret rdi
 
 function @main
   abi

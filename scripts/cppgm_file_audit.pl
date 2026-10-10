@@ -15,6 +15,8 @@ my %opt = (
     max_header_lines => 2400,
     max_internal_header_lines => 1800,
     max_function_lines => 240,
+    max_switch_function_lines => 360,
+    switch_function_case_labels => 8,
     warn_nesting => 6,
     max_nesting => 8,
     max_line_semicolons => 24,
@@ -39,6 +41,8 @@ GetOptions(
     'max-header-lines=i' => \$opt{max_header_lines},
     'max-internal-header-lines=i' => \$opt{max_internal_header_lines},
     'max-function-lines=i' => \$opt{max_function_lines},
+    'max-switch-function-lines=i' => \$opt{max_switch_function_lines},
+    'switch-function-case-labels=i' => \$opt{switch_function_case_labels},
     'warn-nesting=i' => \$opt{warn_nesting},
     'max-nesting=i' => \$opt{max_nesting},
     'max-line-semicolons=i' => \$opt{max_line_semicolons},
@@ -60,6 +64,7 @@ if ($opt{help}) {
 }
 
 my $root = abs_path($opt{root}) // die "Cannot resolve root $opt{root}\n";
+my %shipped_scaffold = read_shipped_scaffold_files($root);
 my @paths = expand_path_options(@{$opt{paths}});
 @paths = ('dev') if !@paths;
 if ($opt{include_stage_tools}) {
@@ -92,14 +97,15 @@ for my $file (@files) {
     my $line_count = count_lines($text);
     $line_count_by_file{$rel} = $line_count;
     push @{$stem_groups{division_stem($rel)}}, $rel;
+    my @non_code = non_code_lines($text, $comment_masked_text);
 
-    check_file_size($rel, $line_count, \@fatal);
+    check_file_size($rel, $line_count - scalar(grep { $_ } @non_code), \@fatal);
     check_file_name($rel, $line_count, \@fatal, \@warning);
     check_includes($rel, $text, $comment_masked_text, $code_masked_text, \%included_by, \@fatal, \@warning);
     check_shortcut_smells($rel, $text, $comment_masked_text, $code_masked_text, \@fatal, \@warning);
     check_hosted_library_specialization_smells($rel, $comment_masked_text, $code_masked_text, \@fatal, \@warning);
     check_compressed_code_lines($rel, $code_masked_text, \@fatal);
-    check_functions($rel, $code_masked_text, \@fatal, \@warning);
+    check_functions($rel, $code_masked_text, \@non_code, \@fatal, \@warning);
     check_header_body_weight($rel, $code_masked_text, \@fatal, \@warning);
 }
 
@@ -133,6 +139,11 @@ Usage:
 Audits C/C++ implementation shape for CPPGM runs. The check is deliberately
 heuristic: high-confidence cheating and mechanical split patterns are fatal,
 while lower-confidence structure smells are warnings.
+
+File and function size limits count lines of code only: blank lines and lines
+that hold only comments are not counted. A function with at least --switch-function-case-labels case
+labels (a dispatch switch) is held to --max-switch-function-lines instead of
+--max-function-lines.
 USAGE
 }
 
@@ -286,11 +297,27 @@ sub is_source_file {
     return $path =~ /\.(?:c|cc|cpp|cxx|h|hh|hpp|hxx)$/;
 }
 
+# The scaffold files the student export ships from dev/src
+# (dev_support_files in scripts/export_student_repo.sh) are the students'
+# starting points, not the implementation: not audited.
+sub read_shipped_scaffold_files {
+    my ($root) = @_;
+    my $export = File::Spec->catfile($root, 'scripts', 'export_student_repo.sh');
+    return () if !-f $export;
+    my %shipped;
+    if (read_text($export) =~ /^dev_support_files=\(\n(.*?)^\)/ms) {
+        my $list = $1;
+        $shipped{$_} = 1 for $list =~ /^\s*(dev\/\S+)\s*$/mg;
+    }
+    return %shipped;
+}
+
 sub is_exempt_file {
     my ($rel) = @_;
-    return $rel =~ m{^dev/src/support/testing/test_runner\.cpp$} ||
-        $rel =~ m{^dev/src/support/tool_help_text\.h$} ||
-        $rel =~ m{^dev/[^/]+-scaffold\.cpp$};
+    return $shipped_scaffold{$rel} ||
+        $rel =~ m{^dev/[^/]+-scaffold\.cpp$} ||
+        $rel =~ m{^dev/src/support/testing/test_runner\.cpp$} ||
+        $rel =~ m{^dev/src/support/tool_help_text\.h$};
 }
 
 sub is_top_level_dev_tool {
@@ -323,6 +350,14 @@ sub count_lines {
     return $text =~ /\n\z/ ? $count : $count + 1;
 }
 
+# Per line (0-based): true when the line is blank or holds only comment
+# text, so the size limits count lines of code only.
+sub non_code_lines {
+    my ($text, $comment_masked_text) = @_;
+    my @masked = split /\n/, $comment_masked_text, -1;
+    return map { $_ !~ /\S/ ? 1 : 0 } @masked;
+}
+
 sub add_finding {
     my ($out, $category, $path, $line, $message) = @_;
     push @$out, {
@@ -343,7 +378,7 @@ sub check_file_size {
         $limit = $opt{max_internal_header_lines};
     }
     if ($line_count > $limit) {
-        add_finding($fatal, 'size', $rel, 1, "$line_count lines exceeds limit $limit");
+        add_finding($fatal, 'size', $rel, 1, "$line_count lines of code (blank and comment-only lines not counted) exceeds limit $limit");
     }
 }
 
@@ -615,7 +650,7 @@ sub hosted_library_private_marker {
 }
 
 sub check_functions {
-    my ($rel, $code_masked_text, $fatal, $warning) = @_;
+    my ($rel, $code_masked_text, $non_code, $fatal, $warning) = @_;
     my @lines = split /\n/, $code_masked_text;
     my @signature;
     my $in_function = 0;
@@ -648,7 +683,7 @@ sub check_functions {
             $max_relative_depth = $brace_depth;
             if ($brace_depth <= 0) {
                 report_function_shape($rel, $function_name, $function_start, $i + 1,
-                    $max_relative_depth, $fatal, $warning);
+                    $max_relative_depth, \@lines, $non_code, $fatal, $warning);
                 $in_function = 0;
                 @signature = ();
             }
@@ -659,7 +694,7 @@ sub check_functions {
         $max_relative_depth = $brace_depth if $brace_depth > $max_relative_depth;
         if ($brace_depth <= 0) {
             report_function_shape($rel, $function_name, $function_start, $i + 1,
-                $max_relative_depth, $fatal, $warning);
+                $max_relative_depth, \@lines, $non_code, $fatal, $warning);
             $in_function = 0;
             @signature = ();
         }
@@ -685,11 +720,19 @@ sub function_name_from_signature {
 }
 
 sub report_function_shape {
-    my ($rel, $name, $start, $end, $max_depth, $fatal, $warning) = @_;
-    my $length = $end - $start + 1;
-    if ($length > $opt{max_function_lines}) {
+    my ($rel, $name, $start, $end, $max_depth, $lines, $non_code, $fatal, $warning) = @_;
+    my $length = 0;
+    my $case_labels = 0;
+    for my $i ($start - 1 .. $end - 1) {
+        $length++ if !$non_code->[$i];
+        $case_labels++ if ($lines->[$i] // '') =~ /^\s*(?:case\b[^:]*:|default\s*:)/;
+    }
+    # A dispatch function (a switch with many cases) may run longer.
+    my $limit = $case_labels >= $opt{switch_function_case_labels}
+        ? $opt{max_switch_function_lines} : $opt{max_function_lines};
+    if ($length > $limit) {
         add_finding($fatal, 'function-size', $rel, $start,
-            "$name is $length lines; limit is $opt{max_function_lines}");
+            "$name is $length lines of code (blank and comment-only lines not counted); limit is $limit");
     }
     my $nesting = $max_depth - 1;
     if ($nesting > $opt{max_nesting}) {
@@ -707,6 +750,7 @@ sub check_header_body_weight {
     my @lines = split /\n/, $code_masked_text;
     my $body_lines = 0;
     for my $line (@lines) {
+        next if $line =~ /^\s*[{}]+\s*;?\s*$/;   # a brace alone is layout, not body
         $body_lines++ if $line =~ /[{};]/ && $line !~ /^\s*(?:class|struct|enum|namespace|typedef|using|#)/;
     }
     if ($body_lines > 180) {

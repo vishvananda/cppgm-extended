@@ -84,22 +84,73 @@ function @Holder__Holder(%this : ptr [object_bytes=5], %__param1 : i32, %value :
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr $value
     call void @Counter__Counter__ov2(%t2, %t3)
+    eh_cleanup ^constructor_cleanup_1
     %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 1
     %t6 = load typed ptr $value
     call void @Counter__Counter__ov2(%t5, %t6)
+    eh_end
+    eh_cleanup ^constructor_cleanup_2
     %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 2
     %t9 = load typed ptr $value
     call void @Counter__Counter__ov2(%t8, %t9)
+    eh_end
+    eh_cleanup ^constructor_cleanup_3
     %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 3
     %t12 = load typed ptr $value
     call void @Counter__Counter__ov2(%t11, %t12)
+    eh_end
+    eh_cleanup ^constructor_cleanup_4
     %t13 = load typed ptr $this
     %t14 = index i8 [projection=field] %t13, 4
     %t15 = load typed ptr $value
     call void @Counter__Counter__ov2(%t14, %t15)
+    eh_end
+    eh_cleanup ^constructor_cleanup_5
+    eh_end
+    return void
+
+  block ^constructor_cleanup_1:
+    %t16 = load typed ptr $this
+    %t17 = index i8 [projection=field] %t16, 0
+    call void @Counter___Counter(%t17)
+    eh_end
+    resume
+
+  block ^constructor_cleanup_2:
+    %t18 = load typed ptr $this
+    %t19 = index i8 [projection=field] %t18, 1
+    call void @Counter___Counter(%t19)
+    jump ^constructor_cleanup_1
+
+  block ^constructor_cleanup_3:
+    %t20 = load typed ptr $this
+    %t21 = index i8 [projection=field] %t20, 2
+    call void @Counter___Counter(%t21)
+    jump ^constructor_cleanup_2
+
+  block ^constructor_cleanup_4:
+    %t22 = load typed ptr $this
+    %t23 = index i8 [projection=field] %t22, 3
+    call void @Counter___Counter(%t23)
+    jump ^constructor_cleanup_3
+
+  block ^constructor_cleanup_5:
+    %t24 = load typed ptr $this
+    %t25 = index i8 [projection=field] %t24, 4
+    call void @Counter___Counter(%t25)
+    jump ^constructor_cleanup_4
+}
+function @Counter___Counter(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7CounterD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @Counter__count
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @Counter__count
     return void
 }
 function @Holder___Holder(%this : ptr [object_bytes=5]) -> void [unwind=no, binding=weak, object=_ZN6HolderD1Ev, inline_hint=yes] {
@@ -214,16 +265,6 @@ function @Holder___Holder(%this : ptr [object_bytes=5]) -> void [unwind=no, bind
   block ^destructor_end_2:
     return void
 }
-function @Counter___Counter(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7CounterD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @Counter__count
-    %t2 = binary sub nowrap i32 %t1, 1
-    store typed i32 %t2, @Counter__count
-    return void
-}
 function @Counter__Counter__ov2(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7CounterC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
@@ -238,6 +279,6 @@ function @Counter__Counter__ov2(%this : ptr [alias=noalias, object_bytes=1], %__
 }
 alias object _ZN7CounterC2Ev = @Counter__Counter
 alias object _ZN6HolderC2EiRK7Counter = @Holder__Holder
-alias object _ZN6HolderD2Ev = @Holder___Holder
 alias object _ZN7CounterD2Ev = @Counter___Counter
+alias object _ZN6HolderD2Ev = @Holder___Holder
 alias object _ZN7CounterC2ERKS_ = @Counter__Counter__ov2

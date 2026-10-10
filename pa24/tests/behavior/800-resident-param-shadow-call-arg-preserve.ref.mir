@@ -22,7 +22,7 @@ function @clobber
     param %wrong -> r8 : ptr
     return void -> void
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -36,7 +36,7 @@ function @assign
     param %rhs -> rsi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -50,23 +50,24 @@ function @reset
     param %target -> rdi : ptr
     return void -> void
   frame
-    stack_size 48
+    stack_size 64
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
+    preserve rbx r12
     slot $temp -> [rbp-40] : obj<40x8>
 
   block ^entry
     mov rbx, rdi
-    lea rdi, [rbp-40]
+    lea r12, [rbp-40]
+    mov r8, @bad
+    mov rdi, r12
     mov rsi, 1
     mov rdx, 2
     mov rcx, 3
-    mov r8, @bad
     call @clobber [args=(rcx,rdx,rsi,rdi,r8)]
     mov rdi, rbx
-    lea rsi, [rbp-40]
+    mov rsi, r12
     call @assign [args=(rsi,rdi)]
     ret
 
@@ -97,6 +98,4 @@ function @main
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    ret r8

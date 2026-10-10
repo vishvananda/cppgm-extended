@@ -35,10 +35,10 @@ function @loop_sum
     slot $current -> [rbp-24] : i64
 
   block ^entry
-    mov r14, rdi
-    mov r13, rsi
-    mov r12, rdx
-    mov rbx, rcx
+    mov rbx, rdi
+    mov r12, rsi
+    mov r13, rdx
+    mov r14, rcx
     store.i64 [rbp-8], 7
     store.i64 [rbp-24], 0
     jmp ^loop_condition
@@ -62,13 +62,11 @@ function @loop_sum
     jmp ^loop_condition
 
   block ^loop_end
-    add r14, r13
-    add r12, rbx
-    mov r8, r14
-    add r8, r12
-    load.i64 r9, [rbp-8]
-    add r8, r9
-    ret r8
+    add rbx, r12
+    add r13, r14
+    add rbx, r13
+    add rbx, [rbp-8]
+    ret rbx
 
   block ^failure
     mov rax, -1

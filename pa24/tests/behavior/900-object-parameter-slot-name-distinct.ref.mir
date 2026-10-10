@@ -22,20 +22,20 @@ function @make_value
 
 function @read_parameter
   abi
-    param %value -> rdi : i64
+    param %value -> rdi : obj<8x8>
     return i64 -> rax
   frame
     stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %value -> [rbp-8] : obj<8x8>
-    slot $value -> [rbp-16] : obj<8x8>
+    slot $value -> [rbp-8] : obj<8x8>
+    param-slot %value -> [rbp-16] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-8], rdi
-    store.i64 [rbp-16], 99
-    load.i64 rax, [rbp-8]
+    store.i64 [rbp-16], rdi
+    store.i64 [rbp-8], 99
+    load.i64 rax, [rbp-16]
     ret rax
 
 function @main

@@ -15,7 +15,7 @@ function @g
     param %b -> rsi : i64
     return ptr -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -48,16 +48,14 @@ function @main
     frame_pointer keep
     epilogues shared
     preserve rbx
-    temp %base -> [rbp-8] : ptr
 
   block ^entry
     mov rbx, @cell
-    store.ptr [rbp-8], rbx
-    load.ptr rdi, [rbp-8]
+    mov rdi, rbx
     mov rsi, 123
     call @f [args=(rsi,rdi)]
     mov r8, rax
-    cmp.ptr r8, [rbp-8]
+    cmp.ptr r8, rbx
     jne ^bad_ptr
     jmp ^check_value
 
@@ -66,9 +64,7 @@ function @main
     ret rax
 
   block ^check_value
-    load.ptr rcx, [rbp-8]
-    load.i64 r8, [rcx]
-    cmp.i64 r8, 123
+    cmp.i64 [rbx], 123
     setne rax
     movzx rax, rax
     ret rax

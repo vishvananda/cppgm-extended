@@ -16,7 +16,7 @@ function @makef
 
   block ^entry
     fmov.f32 xmm0, 1.5f
-    ret
+    ret xmm0
 
 function @main
   abi
@@ -29,7 +29,6 @@ function @main
 
   block ^entry
     call @makef [args=()]
-    fmov.f32 xmm0, xmm0
     fcmp.f32 xmm0, 1.5f
     jp ^wrong
     je ^right

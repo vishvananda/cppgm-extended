@@ -44,7 +44,7 @@ function @item__item(%this : ptr [object_bytes=12], %a : i32) -> void [binding=w
     store typed i32 %t6, %t8
     return void
 }
-function @marker__marker__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6markerC2Ev, inline_hint=yes] {
+function @marker__marker__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6markerC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -59,142 +59,142 @@ function @measure_10___of() -> i32 [binding=weak, object=_ZN7measureILi10EE2ofEv
 
   block ^entry:
     %t1 = addr $tmpobj__1
-    call void @chain_10___chain_1_(%t1)
+    call void @chain_10___chain(%t1)
     %t2 = index i8 [projection=field] %t1, 40
     %t3 = load typed i32 %t2
     return i32 %t3
 }
-function @chain_10___chain_1_(%this : ptr [object_bytes=44]) -> void [binding=weak, object=_ZN5chainILi10EEC1Ev, inline_hint=yes] {
+function @chain_10___chain(%this : ptr [object_bytes=44]) -> void [binding=weak, object=_ZN5chainILi10EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @chain_9___chain_1_(%t2)
+    call void @chain_9___chain(%t2)
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 40
     store typed i32 10, %t4
     return void
 }
-function @chain_9___chain_1_(%this : ptr [object_bytes=40]) -> void [binding=weak, object=_ZN5chainILi9EEC1Ev, inline_hint=yes] {
+function @chain_9___chain(%this : ptr [object_bytes=40]) -> void [binding=weak, object=_ZN5chainILi9EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @chain_8___chain_1_(%t2)
+    call void @chain_8___chain(%t2)
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 36
     store typed i32 9, %t4
     return void
 }
-function @chain_8___chain_1_(%this : ptr [object_bytes=36]) -> void [binding=weak, object=_ZN5chainILi8EEC1Ev, inline_hint=yes] {
+function @chain_8___chain(%this : ptr [object_bytes=36]) -> void [binding=weak, object=_ZN5chainILi8EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @chain_7___chain_1_(%t2)
+    call void @chain_7___chain(%t2)
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 32
     store typed i32 8, %t4
     return void
 }
-function @chain_7___chain_1_(%this : ptr [object_bytes=32]) -> void [binding=weak, object=_ZN5chainILi7EEC1Ev, inline_hint=yes] {
+function @chain_7___chain(%this : ptr [object_bytes=32]) -> void [binding=weak, object=_ZN5chainILi7EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @chain_6___chain_1_(%t2)
+    call void @chain_6___chain(%t2)
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 28
     store typed i32 7, %t4
     return void
 }
-function @chain_6___chain_1_(%this : ptr [object_bytes=28]) -> void [binding=weak, object=_ZN5chainILi6EEC1Ev, inline_hint=yes] {
+function @chain_6___chain(%this : ptr [object_bytes=28]) -> void [binding=weak, object=_ZN5chainILi6EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @chain_5___chain_1_(%t2)
+    call void @chain_5___chain(%t2)
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 24
     store typed i32 6, %t4
     return void
 }
-function @chain_5___chain_1_(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN5chainILi5EEC1Ev, inline_hint=yes] {
+function @chain_5___chain(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN5chainILi5EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @chain_4___chain_1_(%t2)
+    call void @chain_4___chain(%t2)
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 20
     store typed i32 5, %t4
     return void
 }
-function @chain_4___chain_1_(%this : ptr [object_bytes=20]) -> void [binding=weak, object=_ZN5chainILi4EEC1Ev, inline_hint=yes] {
+function @chain_4___chain(%this : ptr [object_bytes=20]) -> void [binding=weak, object=_ZN5chainILi4EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @chain_3___chain_1_(%t2)
+    call void @chain_3___chain(%t2)
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 16
     store typed i32 4, %t4
     return void
 }
-function @chain_3___chain_1_(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN5chainILi3EEC1Ev, inline_hint=yes] {
+function @chain_3___chain(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN5chainILi3EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @chain_2___chain_1_(%t2)
+    call void @chain_2___chain(%t2)
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 12
     store typed i32 3, %t4
     return void
 }
-function @chain_2___chain_1_(%this : ptr [object_bytes=12]) -> void [binding=weak, object=_ZN5chainILi2EEC1Ev, inline_hint=yes] {
+function @chain_2___chain(%this : ptr [object_bytes=12]) -> void [binding=weak, object=_ZN5chainILi2EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @chain_1___chain_1_(%t2)
+    call void @chain_1___chain(%t2)
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 8
     store typed i32 2, %t4
     return void
 }
-function @chain_1___chain_1_(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5chainILi1EEC1Ev, inline_hint=yes] {
+function @chain_1___chain(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5chainILi1EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @chain_0___chain_1_(%t2)
+    call void @chain_0___chain(%t2)
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 4
     store typed i32 1, %t4
     return void
 }
-function @chain_0___chain_1_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5chainILi0EEC1Ev, inline_hint=yes] {
+function @chain_0___chain(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5chainILi0EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -205,14 +205,14 @@ function @chain_0___chain_1_(%this : ptr [object_bytes=4]) -> void [binding=weak
     return void
 }
 alias object _ZN4itemC2Ei = @item__item
-alias object _ZN5chainILi10EEC2Ev = @chain_10___chain_1_
-alias object _ZN5chainILi9EEC2Ev = @chain_9___chain_1_
-alias object _ZN5chainILi8EEC2Ev = @chain_8___chain_1_
-alias object _ZN5chainILi7EEC2Ev = @chain_7___chain_1_
-alias object _ZN5chainILi6EEC2Ev = @chain_6___chain_1_
-alias object _ZN5chainILi5EEC2Ev = @chain_5___chain_1_
-alias object _ZN5chainILi4EEC2Ev = @chain_4___chain_1_
-alias object _ZN5chainILi3EEC2Ev = @chain_3___chain_1_
-alias object _ZN5chainILi2EEC2Ev = @chain_2___chain_1_
-alias object _ZN5chainILi1EEC2Ev = @chain_1___chain_1_
-alias object _ZN5chainILi0EEC2Ev = @chain_0___chain_1_
+alias object _ZN5chainILi10EEC2Ev = @chain_10___chain
+alias object _ZN5chainILi9EEC2Ev = @chain_9___chain
+alias object _ZN5chainILi8EEC2Ev = @chain_8___chain
+alias object _ZN5chainILi7EEC2Ev = @chain_7___chain
+alias object _ZN5chainILi6EEC2Ev = @chain_6___chain
+alias object _ZN5chainILi5EEC2Ev = @chain_5___chain
+alias object _ZN5chainILi4EEC2Ev = @chain_4___chain
+alias object _ZN5chainILi3EEC2Ev = @chain_3___chain
+alias object _ZN5chainILi2EEC2Ev = @chain_2___chain
+alias object _ZN5chainILi1EEC2Ev = @chain_1___chain
+alias object _ZN5chainILi0EEC2Ev = @chain_0___chain

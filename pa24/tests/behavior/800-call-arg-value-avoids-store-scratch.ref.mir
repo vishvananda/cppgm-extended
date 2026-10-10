@@ -26,7 +26,7 @@ function @read_first
     param %c -> rcx : i64
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -46,29 +46,20 @@ function @run
     param %v -> [rbp+16] : i64
     return i64 -> rax
   frame
-    stack_size 64
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %v -> [rbp-8] : i64
-    slot $p -> [rbp-16] : ptr
-    slot $scratch -> [rbp-24] : i64
+    preserve rbx
 
   block ^entry
-    load.i64 rax, [rbp+16]
-    store.i64 [rbp-8], rax
-    store.ptr [rbp-16], rdi
-    store.i64 [rbp-24], 5
+    mov rbx, rdi
     jmp ^call
 
   block ^call
-    load.i64 rax, [rbp-24]
-    store.i64 @sink, rax
-    load.ptr r8, [rbp-16]
-    mov r9, @object
-    lea r9, [r9+8]
-    store.i64 [r9], 123456789
-    mov rdi, r8
+    store.i64 @sink, 5
+    store.i64 @object+8, 123456789
+    mov rdi, rbx
     mov rsi, 1
     mov rdx, 2
     mov rcx, 3
@@ -85,8 +76,8 @@ function @main
     epilogues shared
 
   block ^entry
-    sub rsp, 16
     mov rdi, @good
+    sub rsp, 16
     mov rsi, 1
     mov rdx, 2
     mov rcx, 3
@@ -96,29 +87,22 @@ function @main
     store.i64 [rsp], r11
     call @run [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    mov r8, rax
     mov rdx, 42
-    cmp.i64 r8, rdx
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
+    mov rdx, 5
+    cmp.i64 @sink, rdx
     sete r8
     movzx r8, r8
-    load.i64 r9, @sink
-    mov rdx, 5
-    cmp.i64 r9, rdx
+    mov rdx, 123456789
+    cmp.i64 @object+8, rdx
     sete r9
     movzx r9, r9
-    mov rdi, @object
-    lea rdi, [rdi+8]
-    load.i64 rsi, [rdi]
-    mov rdx, 123456789
-    cmp.i64 rsi, rdx
-    sete rsi
-    movzx rsi, rsi
-    and r8, r9
-    and r8, rsi
+    and rax, r8
+    and rax, r9
     mov rdx, 0
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
     ret rax

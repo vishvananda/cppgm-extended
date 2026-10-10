@@ -11,18 +11,15 @@ function @callee(%x : i64, %take_x : u8) -> i64 {
 }
 function @caller(%x : i64, %take_x : u8) -> i64 {
   block ^entry:
-    branch %take_x, ^__o1inl0__take_x, ^__o1inl0__increment
+    branch %take_x, ^inline_cont_2, ^increment_1
 
-  block ^__o1inl0__take_x:
-    jump ^__o1inl0__cont
+  block ^increment_1:
+    %t2_2 = binary add i64 %x, 1
+    jump ^inline_cont_2
 
-  block ^__o1inl0__increment:
-    %__o1inl0__t2 = binary add i64 %x, 1
-    jump ^__o1inl0__cont
-
-  block ^__o1inl0__cont:
-    %t0 = phi i64 [^__o1inl0__take_x: %x, ^__o1inl0__increment: %__o1inl0__t2]
-    return i64 %t0
+  block ^inline_cont_2:
+    %t1 = phi i64 [^increment_1: %t2_2, ^entry: %x]
+    return i64 %t1
 }
 function @object_callee(%p : ptr, %take_p : u8) -> obj<8x8> {
   slot $__o1inl0__retmergeobj__1 : obj<8x8>
@@ -42,16 +39,13 @@ function @object_callee(%p : ptr, %take_p : u8) -> obj<8x8> {
 }
 function @object_caller(%p : ptr, %take_p : u8, %out : ptr) -> void {
   block ^entry:
-    branch %take_p, ^__o1inl0__take_p, ^__o1inl0__take_null
+    branch %take_p, ^inline_cont_2, ^take_null_1
 
-  block ^__o1inl0__take_p:
-    jump ^__o1inl0__cont
+  block ^take_null_1:
+    jump ^inline_cont_2
 
-  block ^__o1inl0__take_null:
-    jump ^__o1inl0__cont
-
-  block ^__o1inl0__cont:
-    %t5 = phi ptr [^__o1inl0__take_p: %p, ^__o1inl0__take_null: 0]
-    store ptr %t5, %out
+  block ^inline_cont_2:
+    %t1 = phi ptr [^take_null_1: 0, ^entry: %p]
+    store ptr %t1, %out
     return void
 }

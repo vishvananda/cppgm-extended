@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $input
-    call void @units__box_long_int___box_double_(%t1, 6)
+    call void @units__box_longint___box(%t1, 6)
     %t2 = addr $result
     %t3 = addr $input
     %t4 = call obj<8x8> @units__operator_(%t3, 2.0)
@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $result
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load typed f64 %t6
-    %t8 = cmp eq f64 %t7, 3.0
+    %t8 = cmp eq f64 %t7, 3
     branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load typed i32 $cond__1
     return i32 %t9
 }
-function @units__box_long_int___box_double_(%this : ptr [object_bytes=8], %input : i64) -> void [binding=weak, object=_ZN5units3boxIlEC1El, inline_hint=yes] {
+function @units__box_longint___box(%this : ptr [object_bytes=8], %input : i64) -> void [binding=weak, object=_ZN5units3boxIlEC1El, inline_hint=yes] {
   slot $this : ptr
   slot $input : i64
 
@@ -56,10 +56,10 @@ function @units__operator_(%input : ptr [pass=by_address, object_bytes=8], %scal
     %t5 = convert sitofp f64 i64 %t4
     %t6 = load typed f64 $scalar
     %t7 = binary div f64 %t5, %t6
-    call void @units__box_double___box_double_(%t1, %t7)
+    call void @units__box_double___box(%t1, %t7)
     return obj<8x8> $retobj__1
 }
-function @units__box_double___box_double_(%this : ptr [object_bytes=8], %input : f64) -> void [binding=weak, object=_ZN5units3boxIdEC1Ed, inline_hint=yes] {
+function @units__box_double___box(%this : ptr [object_bytes=8], %input : f64) -> void [binding=weak, object=_ZN5units3boxIdEC1Ed, inline_hint=yes] {
   slot $this : ptr
   slot $input : f64
 
@@ -72,5 +72,5 @@ function @units__box_double___box_double_(%this : ptr [object_bytes=8], %input :
     store typed f64 %t1, %t3
     return void
 }
-alias object _ZN5units3boxIlEC2El = @units__box_long_int___box_double_
-alias object _ZN5units3boxIdEC2Ed = @units__box_double___box_double_
+alias object _ZN5units3boxIlEC2El = @units__box_longint___box
+alias object _ZN5units3boxIdEC2Ed = @units__box_double___box

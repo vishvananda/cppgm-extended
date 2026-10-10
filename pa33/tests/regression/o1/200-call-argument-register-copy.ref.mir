@@ -10,10 +10,10 @@ function @sink
     param %x -> rdi : i64
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret
@@ -24,13 +24,12 @@ function @main
   frame
     stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
-    mov r8, 20
-    add r8, 22
-    mov rdi, r8
+    mov rdi, 20
+    add rdi, 22
     call @sink [args=(rdi)]
     mov rax, 0
     ret rax

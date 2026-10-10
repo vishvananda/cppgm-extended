@@ -1,4 +1,4 @@
-global @count_address : ptr [binding=strong] = addr @count__ov2
+global @count_address : ptr [binding=strong] = addr @count
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lor__1 : i64
@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $arg__2
     zeroinit 1x1 %t1
-    %t2 = call i32 @count__ov2(%t1)
+    %t2 = call i32 @count(%t1)
     %t3 = cmp ne i32 %t2, 3
     branch %t3, ^lor_short_2, ^lor_rhs_1
 
@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = convert trunc i32 i64 %t9
     return i32 %t10
 }
-function @count__ov2(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z5countILi7EJLi8ELi9ELi10EEEiRK3boxIXT_EXspT0_EE, inline_hint=yes] {
+function @count(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z5countILi7EJLi8ELi9ELi10EEEiRK3boxIXT_EXspT0_EE, inline_hint=yes] {
   slot $__param0 : ptr
 
   block ^entry:

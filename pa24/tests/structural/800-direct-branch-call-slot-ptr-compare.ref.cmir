@@ -36,13 +36,10 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $first -> [rbp-<off0>] : ptr
-    slot $last -> [rbp-<off1>] : ptr
+    preserve <gpr0>
 
   block ^entry
-    mov r8, @cells
-    store.ptr [rbp-<off0>], r8
-    store.ptr [rbp-<off1>], r8
+    mov <gpr0>, @cells
     mov rdi, 10
     mov rsi, 20
     mov rdx, 30
@@ -50,8 +47,7 @@ function @main
     mov r8, 50
     mov r9, 60
     call @clobber [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    load.ptr rax, [rbp-<off0>]
-    cmp.ptr rax, [rbp-<off1>]
+    cmp.ptr <gpr0>, <gpr0>
     je ^done
     jmp ^body
 

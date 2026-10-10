@@ -14,7 +14,7 @@ function @initialize
     param %base -> rdi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -24,14 +24,14 @@ function @initialize
     store.i8 [rdi+1], 35
     store.i8 [rdi+2], 69
     store.i8 [rdi+3], 103
-    store.i8 [rdi+4], 137
-    store.i8 [rdi+5], 171
-    store.i8 [rdi+6], 205
-    store.i8 [rdi+7], 239
-    store.i8 [rdi+8], 254
-    store.i8 [rdi+9], 220
-    store.i8 [rdi+10], 186
-    store.i8 [rdi+11], 152
+    store.i8 [rdi+4], -119
+    store.i8 [rdi+5], -85
+    store.i8 [rdi+6], -51
+    store.i8 [rdi+7], -17
+    store.i8 [rdi+8], -2
+    store.i8 [rdi+9], -36
+    store.i8 [rdi+10], -70
+    store.i8 [rdi+11], -104
     store.i8 [rdi+12], 118
     store.i8 [rdi+13], 84
     store.i8 [rdi+14], 50
@@ -50,19 +50,12 @@ function @main
   block ^entry
     mov rdi, @bytes
     call @initialize [args=(rdi)]
-    load.i64 rax, @bytes
-    mov rdx, -1167088121787636991
-    cmp.i64 rax, rdx
+    cmp.i64 @bytes, -1167088121787636991
     jne ^bad
     jmp ^second
 
   block ^second
-    mov r8, @bytes
-    lea r8, [r8+8]
-    load.i64 r9, [r8]
-    mov rax, r9
-    mov rdx, 1167088121787636990
-    cmp.i64 rax, rdx
+    cmp.i64 @bytes+8, 1167088121787636990
     jne ^bad
     jmp ^ok
 

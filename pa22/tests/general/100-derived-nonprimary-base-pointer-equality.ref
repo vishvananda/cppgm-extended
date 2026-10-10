@@ -19,18 +19,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t4, $base_pointer
     %t5 = load typed ptr $derived_pointer
     %t6 = cmp eq ptr %t5, 0
-    branch %t6, ^basecast_null_4, ^basecast_adjust_5
+    branch %t6, ^basecast_null_3, ^basecast_adjust_4
 
-  block ^basecast_null_4:
+  block ^basecast_null_3:
     store typed ptr 0, $basecast__1
-    jump ^basecast_end_6
+    jump ^basecast_end_5
 
-  block ^basecast_adjust_5:
+  block ^basecast_adjust_4:
     %t7 = index i8 %t5, 4
     store typed ptr %t7, $basecast__1
-    jump ^basecast_end_6
+    jump ^basecast_end_5
 
-  block ^basecast_end_6:
+  block ^basecast_end_5:
     %t8 = load typed ptr $basecast__1
     %t9 = load typed ptr $base_pointer
     %t10 = cmp ne ptr %t8, %t9
@@ -40,24 +40,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_6
 
-  block ^if_end_3:
+  block ^if_end_6:
     %t11 = load typed ptr $base_pointer
     %t12 = load typed ptr $derived_pointer
     %t13 = cmp eq ptr %t12, 0
-    branch %t13, ^basecast_null_10, ^basecast_adjust_11
+    branch %t13, ^basecast_null_9, ^basecast_adjust_10
 
-  block ^basecast_null_10:
+  block ^basecast_null_9:
     store typed ptr 0, $basecast__2
-    jump ^basecast_end_12
+    jump ^basecast_end_11
 
-  block ^basecast_adjust_11:
+  block ^basecast_adjust_10:
     %t14 = index i8 %t12, 4
     store typed ptr %t14, $basecast__2
-    jump ^basecast_end_12
+    jump ^basecast_end_11
 
-  block ^basecast_end_12:
+  block ^basecast_end_11:
     %t15 = load typed ptr $basecast__2
     %t16 = cmp ne ptr %t11, %t15
     branch %t16, ^if_then_7, ^if_else_8
@@ -66,9 +66,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_8:
-    jump ^if_end_9
+    jump ^if_end_12
 
-  block ^if_end_9:
+  block ^if_end_12:
     %t17 = addr $object
     store typed ptr %t17, $const_derived_pointer
     %t18 = addr $object
@@ -76,18 +76,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t19, $volatile_base_pointer
     %t20 = load typed ptr $const_derived_pointer
     %t21 = cmp eq ptr %t20, 0
-    branch %t21, ^basecast_null_16, ^basecast_adjust_17
+    branch %t21, ^basecast_null_15, ^basecast_adjust_16
 
-  block ^basecast_null_16:
+  block ^basecast_null_15:
     store typed ptr 0, $basecast__3
-    jump ^basecast_end_18
+    jump ^basecast_end_17
 
-  block ^basecast_adjust_17:
+  block ^basecast_adjust_16:
     %t22 = index i8 %t20, 4
     store typed ptr %t22, $basecast__3
-    jump ^basecast_end_18
+    jump ^basecast_end_17
 
-  block ^basecast_end_18:
+  block ^basecast_end_17:
     %t23 = load typed ptr $basecast__3
     %t24 = load typed ptr $volatile_base_pointer
     %t25 = cmp eq ptr %t23, %t24
@@ -98,9 +98,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_else_14:
-    jump ^if_end_15
+    jump ^if_end_18
 
-  block ^if_end_15:
+  block ^if_end_18:
     store typed ptr 0, $derived_pointer
     store typed ptr 0, $base_pointer
     %t27 = load typed ptr $derived_pointer

@@ -2,16 +2,6 @@ global @buffer : obj<32x16> [binding=strong] = {
   zero 32
 }
 
-function @operatornew__ov2(%__param0 : i64, %place : ptr) -> ptr [unwind=no, binding=weak, object=_ZnwmPv, inline_hint=yes] {
-  slot $__param0 : i64
-  slot $place : ptr
-
-  block ^entry:
-    store typed i64 %__param0, $__param0
-    store typed ptr %place, $place
-    %t1 = load typed ptr $place
-    return ptr %t1
-}
 function @fill() -> void [binding=strong, object=_Z4fillv] {
   slot $i : u32
 
@@ -58,18 +48,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load typed i32 %t6
     %t8 = cmp ne i32 %t7, 0
-    branch %t8, ^if_then_1, ^lor_rhs_5
+    branch %t8, ^if_then_1, ^lor_rhs_4
 
-  block ^lor_rhs_5:
+  block ^lor_rhs_4:
     %t9 = load typed ptr $built
     %t10 = index i8 %t9, 0
     %t11 = index i8 [projection=field] %t10, 4
     %t12 = load i8 %t11
     %t13 = convert sext i32 i8 %t12
     %t14 = cmp ne i32 %t13, 0
-    branch %t14, ^if_then_1, ^lor_rhs_4
+    branch %t14, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t15 = load typed ptr $built
     %t16 = index i8 [projection=field] %t15, 8
     %t17 = load i8 %t16
@@ -81,9 +71,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_5
 
-  block ^if_end_3:
+  block ^if_end_5:
     call void @fill()
     %t20 = convert sext i64 i32 12
     %t21 = addr @buffer
@@ -95,17 +85,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t25 = index i8 [projection=field] %t24, 0
     %t26 = load typed i32 %t25
     %t27 = cmp ne i32 %t26, 0
-    branch %t27, ^if_then_6, ^lor_rhs_10
+    branch %t27, ^if_then_6, ^lor_rhs_9
 
-  block ^lor_rhs_10:
+  block ^lor_rhs_9:
     %t28 = load typed ptr $aggregate
     %t29 = index i8 %t28, 0
     %t30 = index i8 [projection=field] %t29, 4
     %t31 = load typed i32 %t30
     %t32 = cmp ne i32 %t31, 0
-    branch %t32, ^if_then_6, ^lor_rhs_9
+    branch %t32, ^if_then_6, ^lor_rhs_8
 
-  block ^lor_rhs_9:
+  block ^lor_rhs_8:
     %t33 = load typed ptr $aggregate
     %t34 = index i8 [projection=field] %t33, 8
     %t35 = load typed i32 %t34
@@ -116,10 +106,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_7:
-    jump ^if_end_8
+    jump ^if_end_10
 
-  block ^if_end_8:
+  block ^if_end_10:
     return i32 0
+}
+function @operatornew__ov2(%__param0 : i64, %place : ptr) -> ptr [unwind=no, binding=weak, object=_ZnwmPv, inline_hint=yes] {
+  slot $__param0 : i64
+  slot $place : ptr
+
+  block ^entry:
+    store typed i64 %__param0, $__param0
+    store typed ptr %place, $place
+    %t1 = load typed ptr $place
+    return ptr %t1
 }
 function @Builds__Builds(%this : ptr [object_bytes=12]) -> void [binding=weak, object=_ZN6BuildsC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -145,13 +145,6 @@ function @Aggregates__Aggregates(%this : ptr [object_bytes=12]) -> void [binding
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 8
     store typed i32 8, %t4
-    return void
-}
-function @Defaulted__Defaulted__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN9DefaultedC2Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
     return void
 }
 alias object _ZN6BuildsC2Ev = @Builds__Builds

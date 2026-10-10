@@ -1,8 +1,10 @@
+declare global @selected_2___value : i64 [binding=weak, object=_ZN8selectedILm2EE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = call i64 @observed_int__char___run()
+    %t1 = call i64 @observed_int_char___run()
     %t2 = convert sext i64 i32 4
     %t3 = cmp eq i64 %t1, %t2
     branch %t3, ^cond_then_1, ^cond_else_2
@@ -19,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load typed i32 $cond__1
     return i32 %t4
 }
-function @observed_int__char___run() -> i64 [binding=weak, object=_ZN8observedIJicEE3runEv, inline_hint=yes] {
+function @observed_int_char___run() -> i64 [binding=weak, object=_ZN8observedIJicEE3runEv, inline_hint=yes] {
   block ^entry:
     %t1 = binary add i64 2, 2
     return i64 %t1

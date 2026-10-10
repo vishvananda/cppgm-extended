@@ -18,7 +18,7 @@ function @g
     param %a -> rdi : ptr
     return ptr -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -34,16 +34,15 @@ function @f
     param %src -> rcx : ptr
     return ptr -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $tmp -> [rbp-8] : obj<8x8>
 
   block ^entry
-    mov r8, rcx
     copy_bytes 8x8, [rbp-8], rcx
-    mov rdi, r8
+    mov rdi, rcx
     call @g [args=(rdi)]
     ret rax
 
@@ -58,15 +57,14 @@ function @main
     preserve rbx
 
   block ^entry
-    mov r8, @other
+    mov rdi, @other
     mov rbx, @src
-    mov rdi, r8
-    mov rsi, r8
-    mov rdx, r8
+    mov rsi, rdi
+    mov rdx, rdi
     mov rcx, rbx
     call @f [args=(rcx,rdx,rsi,rdi)]
-    mov r9, rax
-    cmp.ptr r9, rbx
+    mov r8, rax
+    cmp.ptr r8, rbx
     jne ^bad_ptr
     jmp ^check_value
 
@@ -75,8 +73,7 @@ function @main
     ret rax
 
   block ^check_value
-    load.i64 r8, [r9]
-    cmp.i64 r8, 77
+    cmp.i64 [r8], 77
     setne rax
     movzx rax, rax
     ret rax

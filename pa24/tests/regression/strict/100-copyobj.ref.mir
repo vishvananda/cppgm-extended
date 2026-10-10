@@ -25,11 +25,7 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rdi, @dst
-    mov rsi, @src
-    copy_bytes 16x8, rdi, rsi
+    copy_bytes 16x8, @dst, @src
     load.i64 r8, @dst
-    mov r9, @dst
-    lea r9, [r9+8]
-    add r8, [r9]
+    add r8, @dst+8
     ret r8

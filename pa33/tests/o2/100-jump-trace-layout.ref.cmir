@@ -11,15 +11,11 @@ function @main
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
 
   block ^done
     mov rax, 0
-    ret rax
-
-  block ^cold
-    mov rax, 1
     ret rax

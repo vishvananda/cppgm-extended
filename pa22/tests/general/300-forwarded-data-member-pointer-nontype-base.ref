@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     zeroinit 1x1 %t4
     %t5 = index i8 %t4, 0
     %t6 = addr $value
-    %t7 = call ptr @member_base_record__int__record__id___operator__(%t5, %t6)
+    %t7 = call ptr @member_base_record_int__record__id___operator__(%t5, %t6)
     %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 7
     branch %t9, ^cond_then_1, ^cond_else_2
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load typed i32 $cond__1
     return i32 %t10
 }
-function @member_base_record__int__record__id___operator__(%this : ptr [object_bytes=1], %x : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZNK11member_baseI6recordiXadL_ZNS0_2idEEEEclERS0_, inline_hint=yes] {
+function @member_base_record_int__record__id___operator__(%this : ptr [object_bytes=1], %x : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZNK11member_baseI6recordiXadL_ZNS0_2idEEEEclERS0_, inline_hint=yes] {
   slot $this : ptr
   slot $x : ptr
 

@@ -1,13 +1,3 @@
-function @X__flags(%this : ptr [object_bytes=4]) -> u32 [binding=weak, object=_ZNK1X5flagsEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load typed u32 %t2
-    return u32 %t3
-}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $x : obj<4x4>
   slot $cond__1 : i32
@@ -33,4 +23,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^cond_end_3:
     %t7 = load typed i32 $cond__1
     return i32 %t7
+}
+function @X__flags(%this : ptr [object_bytes=4]) -> u32 [binding=weak, object=_ZNK1X5flagsEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed u32 %t2
+    return u32 %t3
 }

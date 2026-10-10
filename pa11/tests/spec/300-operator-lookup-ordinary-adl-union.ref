@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $rhs
     %t3 = addr $lhs
     %t4 = addr $rhs
-    %t5 = call u8 @operator____ov2(%t3, %t4)
+    %t5 = call u8 @operator__(%t3, %t4)
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load typed i32 $cond__1
     return i32 %t6
 }
-function @operator____ov2(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZeqRK5TokenS1_, inline_hint=yes] {
+function @operator__(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZeqRK5TokenS1_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

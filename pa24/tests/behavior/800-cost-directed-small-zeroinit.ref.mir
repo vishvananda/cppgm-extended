@@ -32,34 +32,27 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rdi, @one
-    zero_bytes 1x1, rdi
-    mov rdx, 0
-    cmp.i8 @one, rdx
+    zero_bytes 1x1, @one
+    cmp.i8 @one, 0
     jne ^bad
     jmp ^four
 
   block ^four
-    mov rdi, @four
-    zero_bytes 4x4, rdi
+    zero_bytes 4x4, @four
     cmp.i32 @four, 0
     jne ^bad
     jmp ^eight
 
   block ^eight
-    mov rdi, @eight
-    zero_bytes 8x8, rdi
+    zero_bytes 8x8, @eight
     cmp.i64 @eight, 0
     jne ^bad
     jmp ^sixteen
 
   block ^sixteen
-    mov rdi, @sixteen
-    zero_bytes 16x8, rdi
+    zero_bytes 16x8, @sixteen
     load.i64 r8, @sixteen
-    mov r9, @sixteen
-    lea r9, [r9+8]
-    or r8, [r9]
+    or r8, @sixteen+8
     cmp.i64 r8, 0
     jne ^bad
     jmp ^ok

@@ -1,3 +1,5 @@
+declare global @range_const_iterator_constint_5____selected : i32 [binding=weak, object=_ZN20range_const_iteratorIA5_KiE8selectedE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

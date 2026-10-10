@@ -15,7 +15,7 @@ function @clobber
     param %f -> r9 : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -38,26 +38,21 @@ function @f
     param %j -> [rbp+40] : i64
     return i64 -> rax
   frame
-    stack_size 144
+    stack_size 128
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve r15
+    preserve rbx r12 r13 r14 r15
     param-slot %g -> [rbp-8] : i64
     param-slot %h -> [rbp-16] : i64
     param-slot %i -> [rbp-24] : i64
     param-slot %j -> [rbp-32] : i64
-    temp %t2 -> [rbp-40] : i64
-    temp %t3 -> [rbp-48] : i64
-    temp %t4 -> [rbp-56] : i64
-    temp %t5 -> [rbp-64] : i64
-    temp %t6 -> [rbp-72] : i64
-    temp %t7 -> [rbp-80] : i64
-    temp %t8 -> [rbp-88] : i64
-    temp %t9 -> [rbp-96] : i64
-    temp %t10 -> [rbp-104] : i64
-    temp %ignored -> [rbp-112] : i64
-    temp %q -> [rbp-120] : i64
+    temp %t6 -> [rbp-40] : i64
+    temp %t7 -> [rbp-48] : i64
+    temp %t8 -> [rbp-56] : i64
+    temp %t9 -> [rbp-64] : i64
+    temp %t10 -> [rbp-72] : i64
+    temp %ignored -> [rbp-80] : i64
 
   block ^entry
     load.i64 rax, [rbp+16]
@@ -68,35 +63,31 @@ function @f
     store.i64 [rbp-24], rax
     load.i64 rax, [rbp+40]
     store.i64 [rbp-32], rax
-    mov r15, rdi
-    add r15, 1
-    mov rax, rsi
-    add rax, 2
-    store.i64 [rbp-40], rax
-    mov rax, rdx
-    add rax, 3
-    store.i64 [rbp-48], rax
-    mov rax, rcx
-    add rax, 4
-    store.i64 [rbp-56], rax
-    mov rax, r8
-    add rax, 5
-    store.i64 [rbp-64], rax
-    mov rax, r9
-    add rax, 6
-    store.i64 [rbp-72], rax
-    load.i64 rax, [rbp-8]
-    add rax, 7
-    store.i64 [rbp-80], rax
-    load.i64 rax, [rbp-16]
-    add rax, 8
-    store.i64 [rbp-88], rax
-    load.i64 rax, [rbp-24]
-    add rax, 9
-    store.i64 [rbp-96], rax
-    load.i64 rax, [rbp-32]
-    add rax, 10
-    store.i64 [rbp-104], rax
+    mov rbx, rdi
+    add rbx, 1
+    mov r12, rsi
+    add r12, 2
+    mov r13, rdx
+    add r13, 3
+    mov r14, rcx
+    add r14, 4
+    mov r15, r8
+    add r15, 5
+    mov r10, r9
+    add r10, 6
+    store.i64 [rbp-40], r10
+    load.i64 r10, [rbp-8]
+    add r10, 7
+    store.i64 [rbp-48], r10
+    load.i64 r10, [rbp-16]
+    add r10, 8
+    store.i64 [rbp-56], r10
+    load.i64 r10, [rbp-24]
+    add r10, 9
+    store.i64 [rbp-64], r10
+    load.i64 r10, [rbp-32]
+    add r10, 10
+    store.i64 [rbp-72], r10
     mov rdi, 1
     mov rsi, 2
     mov rdx, 3
@@ -104,24 +95,23 @@ function @f
     mov r8, 5
     mov r9, 6
     call @clobber [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    store.i64 [rbp-112], rax
+    store.i64 [rbp-80], rax
+    mov r11, -3
     load.i64 rax, [rbp-32]
-    mov rcx, -3
     cqo
-    idiv rcx
-    store.i64 [rbp-120], rax
-    add r15, [rbp-40]
-    add r15, [rbp-48]
-    add r15, [rbp-56]
-    add r15, [rbp-64]
-    add r15, [rbp-72]
-    add r15, [rbp-80]
-    add r15, [rbp-88]
-    add r15, [rbp-96]
-    add r15, [rbp-104]
-    add r15, [rbp-120]
-    add r15, [rbp-112]
-    ret r15
+    idiv r11
+    add rbx, r12
+    add rbx, r13
+    add rbx, r14
+    add rbx, r15
+    add rbx, [rbp-40]
+    add rbx, [rbp-48]
+    add rbx, [rbp-56]
+    add rbx, [rbp-64]
+    add rbx, [rbp-72]
+    add rbx, rax
+    add rbx, [rbp-80]
+    ret rbx
 
 function @main
   abi

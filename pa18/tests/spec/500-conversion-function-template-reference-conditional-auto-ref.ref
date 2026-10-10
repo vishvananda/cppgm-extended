@@ -1,7 +1,7 @@
-global @selected : ptr [binding=internal, object=_ZL8selected] = addr @__cppgm_class_template_identity_0_3_0__value
-global @__cppgm_class_template_identity_0_3_0__value [binding=weak, object=_ZN14static_storageI7wrapperI12callable_tagEE5valueE] = {
+global @static_storage___cppgm_class_template_identity_1___value [binding=weak, object=_ZN14static_storageI7wrapperI12callable_tagEE5valueE] = {
   i32 11
 }
+global @selected : ptr [binding=internal, object=_ZL8selected] = addr @static_storage___cppgm_class_template_identity_1___value
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
@@ -25,44 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @deduce_unique_unique_tag___deduce_unique_unique_tag_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN13deduce_uniqueI10unique_tagEC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @factor_unique_tag___factor_unique_tag_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6factorI10unique_tagEC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @factor_unique_tag___operator___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZNK6factorI10unique_tagEaSI12callable_tagEERK7wrapperIT_ERKS5_, inline_hint=yes] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %__param1, $__param1
-    %t1 = call ptr @static_const_var()
-    return ptr %t1
-}
-function @deduce_unique_unique_tag___operatorconstF_(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK13deduce_uniqueI10unique_tagEcvRKT_I7wrapperI12callable_tagEEEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = call ptr @static_const_var()
-    return ptr %t1
-}
-function @static_const_var() -> ptr [binding=weak, object=_Z16static_const_varI7wrapperI12callable_tagEERKT_v, inline_hint=yes] {
-  block ^entry:
-    %t1 = addr @__cppgm_class_template_identity_0_3_0__value
-    return ptr %t1
-}
-function @wrapper_callable_tag___wrapper_callable_tag_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7wrapperI12callable_tagEC1Ev, inline_hint=yes] {
+function @wrapper_callable_tag___wrapper(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7wrapperI12callable_tagEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -72,6 +35,43 @@ function @wrapper_callable_tag___wrapper_callable_tag_(%this : ptr [object_bytes
     store typed i32 11, %t2
     return void
 }
-alias object _ZN13deduce_uniqueI10unique_tagEC2Ev = @deduce_unique_unique_tag___deduce_unique_unique_tag_
-alias object _ZN6factorI10unique_tagEC2Ev = @factor_unique_tag___factor_unique_tag_
-alias object _ZN7wrapperI12callable_tagEC2Ev = @wrapper_callable_tag___wrapper_callable_tag_
+function @deduce_unique_unique_tag___operatorconstF_(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK13deduce_uniqueI10unique_tagEcvRKT_I7wrapperI12callable_tagEEEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = call ptr @static_const_var()
+    return ptr %t1
+}
+function @factor_unique_tag___operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZNK6factorI10unique_tagEaSI12callable_tagEERK7wrapperIT_ERKS5_, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = call ptr @static_const_var()
+    return ptr %t1
+}
+function @factor_unique_tag___factor(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6factorI10unique_tagEC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @deduce_unique_unique_tag___deduce_unique(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN13deduce_uniqueI10unique_tagEC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @static_const_var() -> ptr [binding=weak, object=_Z16static_const_varI7wrapperI12callable_tagEERKT_v, inline_hint=yes] {
+  block ^entry:
+    %t1 = addr @static_storage___cppgm_class_template_identity_1___value
+    return ptr %t1
+}
+alias object _ZN7wrapperI12callable_tagEC2Ev = @wrapper_callable_tag___wrapper
+alias object _ZN6factorI10unique_tagEC2Ev = @factor_unique_tag___factor
+alias object _ZN13deduce_uniqueI10unique_tagEC2Ev = @deduce_unique_unique_tag___deduce_unique

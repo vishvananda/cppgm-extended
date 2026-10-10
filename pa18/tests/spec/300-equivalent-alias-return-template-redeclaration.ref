@@ -1,3 +1,11 @@
+declare global @compat____is_tuple_like_int___value : u8 [binding=weak, object=_ZN6compat15__is_tuple_likeIiE5valueE]
+declare global @compat____not____cppgm_class_template_identity_1___value : u8 [binding=weak, object=_ZN6compat6__not_INS_15__is_tuple_likeIiEEE5valueE]
+declare global @compat__is_move_constructible_int___value : u8 [binding=weak, object=_ZN6compat21is_move_constructibleIiE5valueE]
+declare global @compat__is_move_assignable_int___value : u8 [binding=weak, object=_ZN6compat18is_move_assignableIiE5valueE]
+declare global @compat____and_____value : u8 [binding=weak, object=_ZN6compat6__and_IJEE5valueE]
+declare global @compat____and____cppgm_class_template_identity_2___value : u8 [binding=weak, object=_ZN6compat6__and_IJNS_18is_move_assignableIiEEEE5valueE]
+declare global @compat____and____cppgm_class_template_identity_3___cppgm_class_template_identity_2___value : u8 [binding=weak, object=_ZN6compat6__and_IJNS_21is_move_constructibleIiEENS_18is_move_assignableIiEEEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $left : i32
   slot $right : i32

@@ -3,9 +3,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    store typed f64 0.0, $value
+    store typed f64 0, $value
     %t1 = addr $value
-    %t2 = call ptr @Base_int___f__ov2(%t1)
+    %t2 = call ptr @Base_int___f(%t1)
     %t3 = addr $value
     %t4 = cmp eq ptr %t2, %t3
     branch %t4, ^cond_then_1, ^cond_else_2
@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @Base_int___f__ov2(%p : ptr) -> ptr [binding=weak, object=_ZN4BaseIiE1fIdEEPT_S3_, inline_hint=yes] {
+function @Base_int___f(%p : ptr) -> ptr [binding=weak, object=_ZN4BaseIiE1fIdEEPT_S3_, inline_hint=yes] {
   slot $p : ptr
 
   block ^entry:

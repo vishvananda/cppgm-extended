@@ -27,32 +27,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = index i8 [projection=field] %t11, 0
     %t13 = load typed i32 %t12
     %t14 = cmp ne i32 %t13, 7
-    branch %t14, ^lor_short_5, ^lor_rhs_4
+    branch %t14, ^lor_short_2, ^lor_rhs_1
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_1:
     %t15 = addr $b
     %t16 = index i8 [projection=field] %t15, 0
     %t17 = load typed i32 %t16
     %t18 = cmp ne i32 %t17, 9
     %t19 = cmp ne i64 %t18, 0
-    store typed i64 %t19, $lor__2
-    jump ^lor_end_6
-
-  block ^lor_short_5:
-    store typed i64 1, $lor__2
-    jump ^lor_end_6
-
-  block ^lor_end_6:
-    %t20 = load typed i64 $lor__2
-    branch %t20, ^lor_short_2, ^lor_rhs_1
-
-  block ^lor_rhs_1:
-    %t21 = addr $c
-    %t22 = index i8 [projection=field] %t21, 0
-    %t23 = load typed i32 %t22
-    %t24 = cmp ne i32 %t23, 11
-    %t25 = cmp ne i64 %t24, 0
-    store typed i64 %t25, $lor__1
+    store typed i64 %t19, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -60,7 +43,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t26 = load typed i64 $lor__1
+    %t20 = load typed i64 $lor__1
+    branch %t20, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t21 = addr $c
+    %t22 = index i8 [projection=field] %t21, 0
+    %t23 = load typed i32 %t22
+    %t24 = cmp ne i32 %t23, 11
+    %t25 = cmp ne i64 %t24, 0
+    store typed i64 %t25, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t26 = load typed i64 $lor__2
     %t27 = convert trunc i32 i64 %t26
     return i32 %t27
 }
@@ -72,7 +72,7 @@ function @make_alias(%x : i32) -> obj<4x4> [binding=weak, object=_Z10make_aliasI
     store typed i32 %x, $x
     %t1 = addr $retobj__1
     %t2 = load typed i32 $x
-    call void @Value_int___Value_int_(%t1, %t2)
+    call void @Value_int___Value(%t1, %t2)
     return obj<4x4> $retobj__1
 }
 function @make_plain(%x : i32) -> obj<4x4> [binding=weak, object=_Z10make_plainIiE5ValueIT_Ei] {
@@ -83,10 +83,10 @@ function @make_plain(%x : i32) -> obj<4x4> [binding=weak, object=_Z10make_plainI
     store typed i32 %x, $x
     %t1 = addr $retobj__1
     %t2 = load typed i32 $x
-    call void @Value_int___Value_int_(%t1, %t2)
+    call void @Value_int___Value(%t1, %t2)
     return obj<4x4> $retobj__1
 }
-function @Value_int___Value_int_(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN5ValueIiEC1Ei, inline_hint=yes] {
+function @Value_int___Value(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN5ValueIiEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 
@@ -99,4 +99,4 @@ function @Value_int___Value_int_(%this : ptr [object_bytes=4], %x : i32) -> void
     store typed i32 %t1, %t3
     return void
 }
-alias object _ZN5ValueIiEC2Ei = @Value_int___Value_int_
+alias object _ZN5ValueIiEC2Ei = @Value_int___Value

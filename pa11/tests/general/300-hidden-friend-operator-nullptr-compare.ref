@@ -56,12 +56,12 @@ function @operator__(%a : ptr [pass=by_address, object_bytes=8], %b : ptr [pass=
     store typed ptr %b, $b
     %t1 = load typed ptr $a
     %t2 = load typed ptr $b
-    %t3 = call u8 @operator____sym2(%t1, %t2)
+    %t3 = call u8 @operator____2(%t1, %t2)
     %t4 = cmp eq u8 %t3, 0
     %t5 = convert trunc u8 i64 %t4
     return u8 %t5
 }
-function @operator____sym2(%a : ptr [pass=by_address, object_bytes=8], %b : ptr [pass=by_address, object_bytes=8]) -> u8 [binding=weak, object=_ZeqRK6HandleS1_, inline_hint=yes] {
+function @operator____2(%a : ptr [pass=by_address, object_bytes=8], %b : ptr [pass=by_address, object_bytes=8]) -> u8 [binding=weak, object=_ZeqRK6HandleS1_, inline_hint=yes] {
   slot $a : ptr
   slot $b : ptr
 

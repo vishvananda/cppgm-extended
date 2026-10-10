@@ -15,7 +15,7 @@ function @identity
     param %address -> rdi : ptr
     return ptr -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -35,13 +35,10 @@ function @main
   block ^entry
     mov rdi, @values
     call @identity [args=(rdi)]
-    load.i64 r8, [rax+8]
-    load.i64 r9, @values
-    add r9, r8
+    load.i64 rax, [rax+8]
+    add rax, @values
     mov rdx, 42
-    cmp.i64 r9, rdx
-    setne r9
-    movzx r9, r9
-    mov rax, r9
-    sext.i32 rax
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
     ret rax

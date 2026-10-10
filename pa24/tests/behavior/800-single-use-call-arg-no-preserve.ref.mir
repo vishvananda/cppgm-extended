@@ -28,7 +28,7 @@ function @foo
     param %f -> r9 : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -41,11 +41,10 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    temp %r -> [rbp-8] : i64
 
   block ^entry
     call @one [args=()]
@@ -56,8 +55,7 @@ function @main
     mov r8, 50
     mov r9, 60
     call @foo [args=(rcx,rdx,rsi,rdi,r8,r9)]
-    store.i64 [rbp-8], rax
-    cmp.i64 [rbp-8], 51
+    cmp.i64 rax, 51
     setne rax
     movzx rax, rax
     ret rax

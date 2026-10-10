@@ -23,7 +23,7 @@ function @sink
     param %b -> rsi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -37,17 +37,20 @@ function @f
   abi
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 32
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
+    preserve rbx r12
     slot $x -> [rbp-8] : i64
     slot $y -> [rbp-16] : i64
 
   block ^entry
+    lea rbx, [rbp-8]
+    lea r12, [rbp-16]
     call @mark [args=()]
-    lea rdi, [rbp-8]
-    lea rsi, [rbp-16]
+    mov rdi, rbx
+    mov rsi, r12
     call @sink [args=(rsi,rdi)]
     load.i64 r8, [rbp-8]
     add r8, [rbp-16]

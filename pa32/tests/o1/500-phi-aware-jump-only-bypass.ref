@@ -7,11 +7,11 @@ function @empty_diamond_in_loop(%n : i64, %flag : u8) -> i64 {
   block ^head:
     %i = phi i64 [^entry: 0, ^join: %next]
     %sum = phi i64 [^entry: 0, ^join: %sum2]
-    %done = cmp eq i64 %i, %n
+    %done = cmp eq i64 %n, %i
     branch %done, ^exit, ^join
 
   block ^join:
-    %sum2 = binary add i64 %sum, %i
+    %sum2 = binary add i64 %i, %sum
     %next = binary add i64 %i, 1
     jump ^head
 
@@ -20,17 +20,13 @@ function @empty_diamond_in_loop(%n : i64, %flag : u8) -> i64 {
 }
 function @distinct_arm_values_stay(%flag : u8, %x : i64, %y : i64) -> i64 {
   block ^entry:
-    %c = cmp ne u8 %flag, 0
-    branch %c, ^left, ^right
-
-  block ^left:
-    jump ^join
+    branch %flag, ^join, ^right
 
   block ^right:
     jump ^join
 
   block ^join:
-    %r = phi i64 [^left: %x, ^right: %y]
+    %r = phi i64 [^right: %y, ^entry: %x]
     return i64 %r
 }
 function @one_arm_same_value(%flag : u8, %x : i64) -> i64 {
@@ -39,8 +35,7 @@ function @one_arm_same_value(%flag : u8, %x : i64) -> i64 {
 }
 function @jump_chain_into_phi(%flag : u8, %x : i64, %y : i64) -> i64 {
   block ^entry:
-    %c = cmp ne u8 %flag, 0
-    branch %c, ^left, ^right
+    branch %flag, ^left, ^right
 
   block ^left:
     call void @observe(%x)
@@ -51,6 +46,6 @@ function @jump_chain_into_phi(%flag : u8, %x : i64, %y : i64) -> i64 {
     jump ^join
 
   block ^join:
-    %r = phi i64 [^left: %x, ^right: %y]
+    %r = phi i64 [^right: %y, ^left: %x]
     return i64 %r
 }

@@ -61,9 +61,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve <gpr0> <gpr1>
-    slot $inside_i32 -> [rbp-<off0>] : i64
-    slot $outside_i32 -> [rbp-<off1>] : i64
+    preserve <gpr0>
 
   block ^entry
     store.u8 @byte_value, 171
@@ -73,15 +71,11 @@ function @main
     mov rdi, <gpr0>
     mov rsi, 2
     call @store_indexed [args=(rsi,rdi)]
-    store.i64 [rbp-<off0>], 2147483647
-    store.i64 [rbp-<off1>], 4294967296
     store.i64 @wide_value, -2147483648
     load.u8 r8, @byte_value
     load.u16 r9, @short_value
-    load.u32 rdi, [<gpr0>+<off0>]
-    load.i64 rsi, [rbp-<off0>]
-    load.i64 <gpr0>, [rbp-<off1>]
-    load.i64 <gpr1>, @wide_value
+    load.u32 <gpr0>, [<gpr0>+<off0>]
+    load.i64 rdi, @wide_value
     mov rdx, 171
     cmp.u8 r8, rdx
     setne r8
@@ -91,26 +85,27 @@ function @main
     setne r9
     movzx r9, r9
     mov rdx, 305419896
-    cmp.u32 rdi, rdx
-    setne rdi
-    movzx rdi, rdi
-    mov rdx, 2147483647
-    cmp.i64 rsi, rdx
-    setne rsi
-    movzx rsi, rsi
-    mov rdx, 4294967296
-    cmp.i64 <gpr0>, rdx
+    cmp.u32 <gpr0>, rdx
     setne <gpr0>
     movzx <gpr0>, <gpr0>
-    mov rdx, -2147483648
+    mov <gpr1>, 2147483647
+    mov rdx, 2147483647
     cmp.i64 <gpr1>, rdx
-    setne <gpr1>
-    movzx <gpr1>, <gpr1>
+    setne rsi
+    movzx rsi, rsi
+    mov <gpr1>, 4294967296
+    mov rdx, 4294967296
+    cmp.i64 <gpr1>, rdx
+    setne rcx
+    movzx rcx, rcx
+    mov rdx, -2147483648
+    cmp.i64 rdi, rdx
+    setne rdi
+    movzx rdi, rdi
     or r8, r9
-    or rdi, rsi
-    or <gpr0>, <gpr1>
-    or r8, rdi
+    or <gpr0>, rsi
+    or rcx, rdi
     or r8, <gpr0>
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    or r8, rcx
+    sext.i32 r8
+    ret r8

@@ -58,7 +58,7 @@ jobs:
         run: |
           make audit-lowir-contract audit-compiler-layout \
             audit-compiler-exceptions audit-frontend-source-sets \
-            audit-builtin-registry-tables
+            audit-builtin-registry-tables audit-scaffold-headers
 
       - name: Run the file audit
         run: perl scripts/cppgm_file_audit.pl --paths dev

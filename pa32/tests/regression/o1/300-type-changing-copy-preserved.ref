@@ -1,4 +1,4 @@
-function @main(%bits : i64) -> i64 {
+function @main(%bits : i64) -> i64 [role=entry] {
   block ^entry:
     %address = copy ptr %bits
     store i32 0, %address

@@ -12,8 +12,8 @@ function @identity
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi
@@ -25,21 +25,19 @@ function @main
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    preserve <gpr0>
-    temp %host-eh-exception -> [rbp-<off0>] : ptr
-    temp %host-eh-selector -> [rbp-<off1>] : i64
+    epilogues duplicated
+    temp %stable -> [rbp-<off0>] : i64
 
   block ^entry
-    mov <gpr0>, 40
-    add <gpr0>, 2
+    mov rdi, 40
+    add rdi, 2
+    store.i64 [rbp-<off0>], rdi
     eh_push ^handler, 0
-    mov rdi, <gpr0>
     call @identity [args=(rdi), unwind=no]
     eh_pop
 
   block ^done
-    cmp.i64 <gpr0>, 42
+    cmp.i64 [rbp-<off0>], 42
     setne rax
     movzx rax, rax
     ret rax

@@ -1,13 +1,13 @@
 function @make_pointer() -> ptr [binding=strong, object=_Z12make_pointerv] {
   block ^entry:
-    return ptr nullptr
+    return ptr 0
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : ptr
   slot $cond__1 : i32
 
   block ^entry:
-    store typed ptr nullptr, $value
+    store typed ptr 0, $value
     %t1 = call ptr @make_pointer()
     %t2 = load typed ptr $value
     %t3 = cmp eq ptr %t1, %t2

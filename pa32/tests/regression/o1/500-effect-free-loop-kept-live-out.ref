@@ -5,7 +5,7 @@ function @count(%first : ptr, %last : ptr) -> i64 {
   block ^cond:
     %p = phi ptr [^entry: %first, ^body: %next]
     %n = phi i64 [^entry: 0, ^body: %n1]
-    %more = cmp ne ptr %p, %last
+    %more = cmp ne ptr %last, %p
     branch %more, ^body, ^done
 
   block ^body:

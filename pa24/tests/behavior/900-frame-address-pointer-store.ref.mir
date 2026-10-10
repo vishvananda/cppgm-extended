@@ -27,21 +27,16 @@ function @main
     epilogues shared
     preserve rbx
     slot $backing -> [rbp-16] : obj<16x8>
-    slot $saved -> [rbp-24] : ptr
 
   block ^entry
     lea rbx, [rbp-16]
     store.i64 [rbx], 1
     call @touch [args=()]
-    store.ptr [rbp-24], rbx
-    load.ptr r8, [rbp-24]
-    cmp.ptr r8, rbx
-    sete r8
-    movzx r8, r8
+    cmp.ptr rbx, rbx
+    sete rbx
+    movzx rbx, rbx
     mov rdx, 0
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    cmp.i64 rbx, rdx
+    sete rbx
+    movzx rbx, rbx
+    ret rbx

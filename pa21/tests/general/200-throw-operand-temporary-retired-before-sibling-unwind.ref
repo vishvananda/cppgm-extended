@@ -1,42 +1,26 @@
-declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__struct_Error [binding=weak, object=_ZTS5Error] = {
-  i8 53
-  i8 69
-  i8 114
-  i8 114
-  i8 111
-  i8 114
-  i8 0
-}
-global @__rtti_struct_Error [binding=weak, object=_ZTI5Error] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Error
-}
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
-  i8 105
-  i8 0
-}
-global @__rtti_int [binding=weak, object=_ZTIi] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__int
-}
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
-  zero 4
-}
-global @__ehobj_struct_Error [binding=internal, object=@__ehobj_struct_Error] = {
-  zero 4
-}
 global @temporary_destructions : i32 [binding=strong] = zero
 global @scope_destructions : i32 [binding=strong] = zero
 global @source : obj<4x4> [binding=strong] = {
+  zero 4
+}
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal] = {
   zero 4
 }
 global @__strlit__1 [storage=readonly, binding=internal] = {
@@ -48,13 +32,29 @@ global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 100
   i8 0
 }
+global @__typeinfo_name__struct_Error [storage=readonly, binding=weak, object=_ZTS5Error] = {
+  i8 53
+  i8 69
+  i8 114
+  i8 114
+  i8 111
+  i8 114
+  i8 0
+}
+global @__rtti_struct_Error [storage=readonly, binding=weak, object=_ZTI5Error] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Error
+}
+global @__ehobj_struct_Error [binding=internal] = {
+  zero 4
+}
 
-function @operator_(%ret : ptr [pass=indirect_result, object_bytes=4], %__param0 : ptr, %right : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_ZplPKcRK4Text] {
-  slot $__param0 : ptr
+function @operator_(%ret : ptr [pass=indirect_result, object_bytes=4], %__param1 : ptr, %right : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_ZplPKcRK4Text] {
+  slot $__param1 : ptr
   slot $right : ptr
 
   block ^entry:
-    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     store typed ptr %right, $right
     %t1 = load typed ptr $right
     %t2 = index i8 [projection=field] %t1, 0
@@ -84,40 +84,40 @@ function @exercise(%take_throw : u8) -> void [binding=strong, object=_Z8exercise
     branch %t2, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    eh_try ^cleanup_action_5
+    eh_try ^cleanup_action_4
     %t3 = call ptr @__external_runtime____cxa_allocate_exception(4)
     store typed ptr %t3, $throw_alloc__1
     eh_end
-    jump ^throw_alloc_unwind_end_6
+    jump ^throw_alloc_unwind_end_5
 
-  block ^cleanup_resume_4:
+  block ^cleanup_resume_3:
     resume
 
-  block ^cleanup_action_5:
+  block ^cleanup_action_4:
     %t4 = addr $scope
     call void @Scope___Scope(%t4)
-    jump ^cleanup_resume_4
+    jump ^cleanup_resume_3
 
-  block ^throw_alloc_unwind_end_6:
+  block ^throw_alloc_unwind_end_5:
     %t5 = load typed ptr $throw_alloc__1
-    eh_try ^cleanup_action_5
+    eh_try ^cleanup_action_4
     %t6 = addr $arg__2
     %t7 = addr @__strlit__1
     %t8 = addr @source
     call void @operator_(%t6, %t7, %t8)
     eh_end
-    eh_try ^cleanup_action_7
+    eh_try ^cleanup_action_6
     call void @Error__Error(%t5, %t6)
     call void @Text___Text(%t6)
     eh_end
-    jump ^call_unwind_end_8
+    jump ^call_unwind_end_7
 
-  block ^cleanup_action_7:
+  block ^cleanup_action_6:
     call void @Text___Text(%t6)
-    jump ^cleanup_action_5
+    jump ^cleanup_action_4
 
-  block ^call_unwind_end_8:
-    eh_try ^cleanup_action_5
+  block ^call_unwind_end_7:
+    eh_try ^cleanup_action_4
     %t9 = addr @__rtti_struct_Error
     %t10 = addr @Error___Error
     call void @__external_runtime____cxa_throw(%t5, %t9, %t10)
@@ -125,10 +125,10 @@ function @exercise(%take_throw : u8) -> void [binding=strong, object=_Z8exercise
     return void
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_8
 
-  block ^if_end_3:
-    eh_try ^cleanup_action_5
+  block ^if_end_8:
+    eh_try ^cleanup_action_4
     call void @raise_later()
     eh_end
     %t11 = addr $scope

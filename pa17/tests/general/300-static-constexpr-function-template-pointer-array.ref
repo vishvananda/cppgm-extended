@@ -1,13 +1,15 @@
-global @__cppgm_class_template_identity_0_0_0__inv_sizes32 [binding=weak, object=_ZN5tableIvE11inv_sizes32E] = {
+declare global @table_void___inv_sizes32_len : i64 [binding=weak, object=_ZN5tableIvE15inv_sizes32_lenE]
+
+global @table_void___inv_sizes32 [binding=weak, object=_ZN5tableIvE11inv_sizes32E] = {
   i64 1
   i64 2
 }
-global @__cppgm_class_template_identity_0_0_0__sizes [binding=weak, object=_ZN5tableIvE5sizesE] = {
+global @table_void___sizes [binding=weak, object=_ZN5tableIvE5sizesE] = {
   i64 13
   i64 29
   i64 53
 }
-global @__cppgm_class_template_identity_0_0_0__positions [binding=weak, object=_ZN5tableIvE9positionsE] = {
+global @table_void___positions [binding=weak, object=_ZN5tableIvE9positionsE] = {
   ptr addr @table_void___position
 }
 
@@ -63,12 +65,12 @@ function @table_void___call(%hash : i64, %index : i64) -> i64 [binding=weak, obj
 
   block ^if_then_1:
     %t4 = load typed i64 $hash
-    %t5 = addr @__cppgm_class_template_identity_0_0_0__inv_sizes32
+    %t5 = addr @table_void___inv_sizes32
     %t6 = load typed i64 $index
     %t7 = index i64 [projection=array_element] %t5, %t6
     %t8 = load typed i64 %t7
     %t9 = binary add i64 %t4, %t8
-    %t10 = addr @__cppgm_class_template_identity_0_0_0__sizes
+    %t10 = addr @table_void___sizes
     %t11 = load typed i64 $index
     %t12 = index i64 [projection=array_element] %t10, %t11
     %t13 = load typed i64 %t12
@@ -80,7 +82,7 @@ function @table_void___call(%hash : i64, %index : i64) -> i64 [binding=weak, obj
 
   block ^if_end_3:
     %t15 = load typed i64 $hash
-    %t16 = addr @__cppgm_class_template_identity_0_0_0__positions
+    %t16 = addr @table_void___positions
     %t17 = load typed i64 $index
     %t18 = load typed i64 $sizes_under_32bit
     %t19 = binary sub i64 %t17, %t18

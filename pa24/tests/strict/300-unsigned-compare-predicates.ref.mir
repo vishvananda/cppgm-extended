@@ -15,24 +15,24 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, 1
+    mov r10, 1
     mov rdx, -1
-    cmp.i64 r8, rdx
+    cmp.i64 r10, rdx
     setb r8
     movzx r8, r8
-    mov r9, 5
+    mov r10, 5
     mov rdx, 5
-    cmp.i64 r9, rdx
+    cmp.i64 r10, rdx
     setbe r9
     movzx r9, r9
-    mov rdi, -1
+    mov r10, -1
     mov rdx, 1
-    cmp.i64 rdi, rdx
+    cmp.i64 r10, rdx
     seta rdi
     movzx rdi, rdi
-    mov rsi, 5
+    mov r10, 5
     mov rdx, 5
-    cmp.i64 rsi, rdx
+    cmp.i64 r10, rdx
     setae rsi
     movzx rsi, rsi
     add r8, r9

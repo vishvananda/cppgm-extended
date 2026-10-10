@@ -29,10 +29,10 @@ built the same way.
   fixture's size envelope (`x.ref.expect`) or, for the fixtures whose
   shape is the contract, matches the canonical dump.  The Testing section
   states it.
-- **One design** is how the course solution lowers LowIR: the five-stage
-  structure and compact shapes in the linked design notes.  A different lowering
-  that meets the bar is a correct PA24; only the contract-shape fixtures
-  compare your instruction selection with the course solution's.
+- **One design** is a way to lower LowIR: the five-stage structure and
+  compact shapes in the linked design notes.  A different lowering that meets
+  the bar is a correct PA24; only the contract-shape fixtures compare your
+  instruction selection with the course solution's.
 
 Run `make test` from this assignment directory to check the course contract.
 See [Testing and references](../TESTING_AND_REFERENCES.md) for selecting tests.
@@ -153,9 +153,9 @@ final instruction body actually uses after local setup/copy cleanup, and the
 stack size should match that final frame layout.
 
 The frame section also records the final native layout policy.  It contains
-`frame_pointer keep|omit` and `epilogues shared|direct`; these are the exact
-facts consumed by prologue/epilogue and unwind emission, not optimization
-hints.
+`frame_pointer keep|omit` and `epilogues shared|duplicated` (one epilogue
+that every return reaches, or one per return); these are the exact facts
+consumed by prologue/epilogue and unwind emission, not optimization hints.
 
 `--stats` writes one diagnostic record to standard error after successful
 lowering and encoding. Among its structural counters,

@@ -7,7 +7,7 @@ startup
 
 global @wide
   storage scalar i128
-  init i128 1267650600228229401496703205376
+  init i128 0x00000010000000000000000000000000
 
 function @main
   abi
@@ -20,26 +20,6 @@ function @main
     temp %wide -> [rbp-16] : i128
 
   block ^entry
-    mov r11, @wide
-    load.i64 rax, [r11]
-    load.i64 rdx, [r11+8]
-    lea r11, [rbp-16]
-    store.i64 [r11], rax
-    store.i64 [r11+8], rdx
-    lea r11, [rbp-16]
-    load.i64 rax, [r11]
-    load.i64 rdx, [r11+8]
-    mov rcx, 0
-    mov rsi, 68719476736
-    cmp.i64 rdx, rsi
-    sete r10
-    movzx r10, r10
-    cmp.i64 rax, rcx
-    sete r11
-    movzx r11, r11
-    and r10, r11
-    xor r10, 1
-    mov r8, r10
-    mov rax, r8
-    sext.i32 rax
+    mov.i128 [rbp-16], @wide
+    set.ne.i128 rax, [rbp-16], 0x00000010000000000000000000000000
     ret rax

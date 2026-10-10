@@ -20,13 +20,13 @@ function @allocator_adaptor_int___construct(%this : ptr [object_bytes=4], %outpu
     store typed ptr %output, $output
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = call ptr @detail__adaptor_base_int___outer_allocator(%t2)
+    %t3 = call ptr @detail__adaptor_base_int____outer_allocator(%t2)
     %t4 = load typed i32 %t3
     %t5 = load typed ptr $output
     call void @detail__dispatch(%t4, 0, %t5)
     return void
 }
-function @detail__adaptor_base_int___outer_allocator(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN6detail12adaptor_baseIiJEE15outer_allocatorEv, inline_hint=yes] {
+function @detail__adaptor_base_int____outer_allocator(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN6detail12adaptor_baseIiJEE15outer_allocatorEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

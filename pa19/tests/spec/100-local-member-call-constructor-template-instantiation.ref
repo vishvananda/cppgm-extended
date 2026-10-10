@@ -22,23 +22,23 @@ function @call_erase(%active : ptr [pass=by_address, object_bytes=1], %ai : i32)
     %t3 = addr $arg__2
     %t4 = addr $argobj__3
     %t5 = load typed ptr $active
-    %t6 = call obj<8x8> @__cppgm_class_template_2_1__begin(%t5)
+    %t6 = call obj<8x8> @mini_vec_local___begin(%t5)
     copyobj 8x8 %t6, %t4
     %t7 = load typed i32 $ai
     %t8 = call obj<8x8> @operator_($argobj__3, %t7)
     copyobj 8x8 %t8, %t3
-    call void @__cppgm_class_template_1_2__wrap_pointer_to_const_struct_local___ov5(%t2, %t3)
-    %t9 = call i32 @__cppgm_class_template_2_1__erase(%t1, $argobj__1)
+    call void @wrap_constlocal____wrap(%t2, %t3)
+    %t9 = call i32 @mini_vec_local___erase(%t1, $argobj__1)
     return i32 %t9
 }
-function @__cppgm_class_template_2_1__begin(%this : ptr [object_bytes=1]) -> obj<8x8> [binding=internal, object=_ZN8mini_vecIZ4mainE5localE5beginEv, inline_hint=yes] {
+function @mini_vec_local___begin(%this : ptr [object_bytes=1]) -> obj<8x8> [binding=internal, object=_ZN8mini_vecIZ4mainE5localE5beginEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr $retobj__1
-    call void @__cppgm_class_template_1_1__wrap_pointer_to_const_struct_local_(%t1)
+    call void @wrap_local____wrap(%t1)
     return obj<8x8> $retobj__1
 }
 function @operator_(%it : obj<8x8>, %__param1 : i32) -> obj<8x8> [binding=internal, object=_ZplIPZ4mainE5localE4wrapIT_ES4_i] {
@@ -55,7 +55,7 @@ function @operator_(%it : obj<8x8>, %__param1 : i32) -> obj<8x8> [binding=intern
     copyobj 8x8 %t3, %t2
     return obj<8x8> $retobj__1
 }
-function @__cppgm_class_template_1_2__wrap_pointer_to_const_struct_local___ov5(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=internal, object=_ZN4wrapIPKZ4mainE5localEC1IPS0_EERKS_IT_E, object_root=yes, inline_hint=yes] {
+function @wrap_constlocal____wrap(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=internal, object=_ZN4wrapIPKZ4mainE5localEC1IPS0_EERKS_IT_E, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -70,7 +70,7 @@ function @__cppgm_class_template_1_2__wrap_pointer_to_const_struct_local___ov5(%
     store typed ptr %t3, %t5
     return void
 }
-function @__cppgm_class_template_2_1__erase(%this : ptr [object_bytes=1], %__param1 : obj<8x8>) -> i32 [binding=internal, object=_ZN8mini_vecIZ4mainE5localE5eraseE4wrapIPKS0_E, inline_hint=yes] {
+function @mini_vec_local___erase(%this : ptr [object_bytes=1], %__param1 : obj<8x8>) -> i32 [binding=internal, object=_ZN8mini_vecIZ4mainE5localE5eraseE4wrapIPKS0_E, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<8x8>
 
@@ -80,7 +80,7 @@ function @__cppgm_class_template_2_1__erase(%this : ptr [object_bytes=1], %__par
     copyobj 8x8 %__param1, %t1
     return i32 0
 }
-function @__cppgm_class_template_1_1__wrap_pointer_to_const_struct_local_(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZN4wrapIPZ4mainE5localEC1Ev, object_root=yes, inline_hint=yes] {
+function @wrap_local____wrap(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZN4wrapIPZ4mainE5localEC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -90,5 +90,5 @@ function @__cppgm_class_template_1_1__wrap_pointer_to_const_struct_local_(%this 
     store typed ptr 0, %t2
     return void
 }
-alias object _ZN4wrapIPKZ4mainE5localEC2IPS0_EERKS_IT_E = @__cppgm_class_template_1_2__wrap_pointer_to_const_struct_local___ov5
-alias object _ZN4wrapIPZ4mainE5localEC2Ev = @__cppgm_class_template_1_1__wrap_pointer_to_const_struct_local_
+alias object _ZN4wrapIPKZ4mainE5localEC2IPS0_EERKS_IT_E = @wrap_constlocal____wrap
+alias object _ZN4wrapIPZ4mainE5localEC2Ev = @wrap_local____wrap

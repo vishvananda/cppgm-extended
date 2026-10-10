@@ -13,7 +13,7 @@ function @encode
     param %rm -> rcx : u32
     return u32 -> rax
   frame
-    stack_size 32
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -22,15 +22,11 @@ function @encode
     shl rsi, 6
     zext.i32 rsi
     and rdx, 7
-    zext.i32 rdx
     shl rdx, 3
     zext.i32 rdx
     or rsi, rdx
-    zext.i32 rsi
     and rcx, 7
-    zext.i32 rcx
     or rsi, rcx
-    zext.i32 rsi
     ret rsi
 
 function @main

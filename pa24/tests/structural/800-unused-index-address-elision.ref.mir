@@ -13,7 +13,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $byte -> [rbp-1] : i8
+    slot $byte -> [rbp-8] : i8
 
   block ^entry
     mov rax, 0

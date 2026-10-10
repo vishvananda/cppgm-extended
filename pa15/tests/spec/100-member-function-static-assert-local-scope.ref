@@ -1,3 +1,5 @@
+declare global @accepts_type_executor___value : u8 [binding=weak, object=_ZN12accepts_typeI8executorE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $suite : obj<1x1>
 

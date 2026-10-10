@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 1, $refarg__4
     %t8 = addr $refarg__4
     %t9 = addr @read_handler
-    %t10 = call i32 @stream__async_read_some__ov2(%t7, %t8, %t9)
+    %t10 = call i32 @stream__async_read_some__2(%t7, %t8, %t9)
     %t11 = cmp eq i32 %t10, 7
     branch %t11, ^cond_then_1, ^cond_else_2
 
@@ -57,7 +57,7 @@ function @stream__async_read_some(%this : ptr [object_bytes=1], %buffer : ptr [p
     %t3 = call i32 @async_initiate(%t1, %t2)
     return i32 %t3
 }
-function @stream__async_read_some__ov2(%this : ptr [object_bytes=1], %buffer : ptr [pass=by_address, object_bytes=4], %handler : ptr [pass=by_address]) -> i32 [binding=weak, object=_ZN6stream15async_read_someIiRFviEEEDTcl14async_initiateIT0_S1_EclL_Z7declvalIiEOT_vEEscS3_fp0_EERKS5_OS3_, inline_hint=yes] {
+function @stream__async_read_some__2(%this : ptr [object_bytes=1], %buffer : ptr [pass=by_address, object_bytes=4], %handler : ptr [pass=by_address]) -> i32 [binding=weak, object=_ZN6stream15async_read_someIiRFviEEEDTcl14async_initiateIT0_S1_EclL_Z7declvalIiEOT_vEEscS3_fp0_EERKS5_OS3_, inline_hint=yes] {
   slot $this : ptr
   slot $buffer : ptr
   slot $handler : ptr
@@ -68,7 +68,7 @@ function @stream__async_read_some__ov2(%this : ptr [object_bytes=1], %buffer : p
     store typed ptr %handler, $handler
     %t1 = call ptr @declval()
     %t2 = load typed ptr $handler
-    %t3 = call i32 @async_initiate__ov2(%t1, %t2)
+    %t3 = call i32 @async_initiate__2(%t1, %t2)
     return i32 %t3
 }
 function @async_initiate(%initiation : ptr [pass=by_address, object_bytes=4], %token : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z14async_initiateIPFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
@@ -80,10 +80,10 @@ function @async_initiate(%initiation : ptr [pass=by_address, object_bytes=4], %t
     store typed ptr %token, $token
     %t1 = load typed ptr $initiation
     %t2 = load typed ptr $token
-    %t3 = call i32 @async_result_pointer_to_function_of__int__returning_void__void_int____initiate(%t1, %t2)
+    %t3 = call i32 @async_result_void_int___void_int____initiate(%t1, %t2)
     return i32 %t3
 }
-function @async_initiate__ov2(%initiation : ptr [pass=by_address, object_bytes=4], %token : ptr [pass=by_address]) -> i32 [binding=weak, object=_Z14async_initiateIRFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
+function @async_initiate__2(%initiation : ptr [pass=by_address, object_bytes=4], %token : ptr [pass=by_address]) -> i32 [binding=weak, object=_Z14async_initiateIRFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
   slot $initiation : ptr
   slot $token : ptr
 
@@ -92,10 +92,10 @@ function @async_initiate__ov2(%initiation : ptr [pass=by_address, object_bytes=4
     store typed ptr %token, $token
     %t1 = load typed ptr $initiation
     %t2 = load typed ptr $token
-    %t3 = call i32 @async_result_lvalue_reference_to_function_of__int__returning_void__void_int____initiate(%t1, %t2)
+    %t3 = call i32 @async_result_void_int___void_int____initiate__2(%t1, %t2)
     return i32 %t3
 }
-function @async_result_pointer_to_function_of__int__returning_void__void_int____initiate(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN12async_resultIPFviES0_E8initiateIiS1_EEiOT_OT0_, inline_hint=yes] {
+function @async_result_void_int___void_int____initiate(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN12async_resultIPFviES0_E8initiateIiS1_EEiOT_OT0_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 
@@ -104,7 +104,7 @@ function @async_result_pointer_to_function_of__int__returning_void__void_int____
     store typed ptr %__param1, $__param1
     return i32 7
 }
-function @async_result_lvalue_reference_to_function_of__int__returning_void__void_int____initiate(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address]) -> i32 [binding=weak, object=_ZN12async_resultIRFviES0_E8initiateIiS1_EEiOT_OT0_, inline_hint=yes] {
+function @async_result_void_int___void_int____initiate__2(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address]) -> i32 [binding=weak, object=_ZN12async_resultIRFviES0_E8initiateIiS1_EEiOT_OT0_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

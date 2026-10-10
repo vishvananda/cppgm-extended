@@ -38,12 +38,12 @@ function @base_int___create(%this : ptr [object_bytes=1], %__param1 : i32) -> pt
     store typed ptr %this, $this
     store typed i32 %__param1, $__param1
     %t1 = addr $g
-    call void @guard_int___guard_int_(%t1, 0)
+    call void @guard_int___guard(%t1, 0)
     %t2 = addr $g
     %t3 = call ptr @guard_int___get(%t2)
     return ptr %t3
 }
-function @guard_int___guard_int_(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN5guardIiEC1Ei, inline_hint=yes] {
+function @guard_int___guard(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN5guardIiEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -59,4 +59,4 @@ function @guard_int___get(%this : ptr [object_bytes=1]) -> ptr [binding=weak, ob
     store typed ptr %this, $this
     return ptr 0
 }
-alias object _ZN5guardIiEC2Ei = @guard_int___guard_int_
+alias object _ZN5guardIiEC2Ei = @guard_int___guard

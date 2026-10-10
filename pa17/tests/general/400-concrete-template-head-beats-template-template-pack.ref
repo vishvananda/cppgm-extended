@@ -1,3 +1,5 @@
+declare global @refs___cppgm_class_template_identity_1___value : i32 [binding=weak, object=_ZN4refsIN6tuples4consIiNS1_IlvEEEEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = copy u32 %t14
     %t16 = binary shl i32 %t14, 1
     %t17 = load i32 %t13
-    %t18 = binary and i32 %t17, 4294967289
+    %t18 = binary and i32 %t17, -7
     %t19 = binary or i32 %t18, %t16
     store i32 %t19, %t13
     %t20 = copy i32 %t15

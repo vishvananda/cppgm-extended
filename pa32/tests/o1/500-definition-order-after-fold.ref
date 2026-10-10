@@ -10,8 +10,8 @@ function @late_block_becomes_dominator(%x : ptr, %n : i64) -> i64 {
 
   block ^loop:
     %i = phi i64 [^entry: 0, ^loop: %next]
-    %next = binary add i64 %i, %v
-    %done = cmp eq i64 %next, %n
+    %next = binary add i64 %v, %i
+    %done = cmp eq i64 %n, %next
     branch %done, ^exit, ^loop
 
   block ^exit:

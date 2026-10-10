@@ -9,11 +9,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $os
     %t4 = addr $arg__1
     %t5 = addr $s
-    %t6 = call obj<1x1> @fusion__clear_fusion____cppgm_class_template_identity_0_0_0_const_(%t5)
+    %t6 = call obj<1x1> @fusion__clear(%t5)
     %t7 = call ptr @fusion__operators__operator__(%t3, %t4)
     return i32 0
 }
-function @fusion__clear_fusion____cppgm_class_template_identity_0_0_0_const_(%s : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN6fusion5clearINS_6vectorIJiEEEEENS_9result_of5clearIKT_E4typeERS6_] {
+function @fusion__clear(%s : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN6fusion5clearINS_6vectorIJiEEEEENS_9result_of5clearIKT_E4typeERS6_] {
   slot $s : ptr
   slot $retobj__1 : obj<1x1>
 

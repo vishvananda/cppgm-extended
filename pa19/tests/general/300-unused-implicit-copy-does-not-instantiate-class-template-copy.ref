@@ -32,10 +32,10 @@ function @holder__holder(%this : ptr [object_bytes=4]) -> void [binding=weak, ob
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @deferred_copy_noncopyable___deferred_copy_noncopyable_(%t2)
+    call void @deferred_copy_noncopyable___deferred_copy(%t2)
     return void
 }
-function @deferred_copy_noncopyable___deferred_copy_noncopyable_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN13deferred_copyI11noncopyableEC1Ev, inline_hint=yes] {
+function @deferred_copy_noncopyable___deferred_copy(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN13deferred_copyI11noncopyableEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -56,5 +56,5 @@ function @noncopyable__noncopyable(%this : ptr [object_bytes=4]) -> void [bindin
     return void
 }
 alias object _ZN6holderC2Ev = @holder__holder
-alias object _ZN13deferred_copyI11noncopyableEC2Ev = @deferred_copy_noncopyable___deferred_copy_noncopyable_
+alias object _ZN13deferred_copyI11noncopyableEC2Ev = @deferred_copy_noncopyable___deferred_copy
 alias object _ZN11noncopyableC2Ev = @noncopyable__noncopyable

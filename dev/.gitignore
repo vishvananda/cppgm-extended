@@ -1,4 +1,5 @@
 /obj
+/.link_root
 *.dSYM
 *.o
 /abimangle

@@ -15,7 +15,7 @@ function @narrow_false
     epilogues shared
 
   block ^entry
-    mov rax, 256
+    mov rax, 0
     ret rax
 
 function @main

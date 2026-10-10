@@ -18,22 +18,18 @@ function @main
 
   block ^entry
     store.i64 [rbp-8], 7
-    mov r8, 96
-    mov rcx, 32
-    mov rax, r8
+    mov r11, 32
+    mov rax, 96
     cqo
-    idiv rcx
-    mov r8, rax
+    idiv r11
     copy_bytes 8x8, [rbp-16], [rbp-8]
-    load.i64 r9, [rbp-16]
-    mov rdi, 10
-    add rdi, 20
-    add rdi, r8
-    add rdi, r9
+    load.i64 r8, [rbp-16]
+    mov r9, 10
+    add r9, 20
+    add r9, rax
+    add r9, r8
     mov rdx, 40
-    cmp.i64 rdi, rdx
-    setne rdi
-    movzx rdi, rdi
-    mov rax, rdi
-    sext.i32 rax
-    ret rax
+    cmp.i64 r9, rdx
+    setne r9
+    movzx r9, r9
+    ret r9

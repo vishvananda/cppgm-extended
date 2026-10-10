@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @foo__bar(%t2)
     store typed i32 %t3, $a
     %t4 = addr $f
-    %t5 = call i32 @foo__bar__ov2(%t4)
+    %t5 = call i32 @foo__bar__2(%t4)
     store typed i32 %t5, $b
     %t6 = load typed i32 $a
     %t7 = cmp ne i32 %t6, 0
@@ -39,7 +39,7 @@ function @foo__bar(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_Z
     store typed ptr %this, $this
     return i32 0
 }
-function @foo__bar__ov2(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3foo3barILi2EEEiv, inline_hint=yes] {
+function @foo__bar__2(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3foo3barILi2EEEiv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

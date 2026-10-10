@@ -10,25 +10,19 @@ function @choose(%condition : i64) -> i64 {
 }
 function @caller(%use_call : i64, %condition : i64) -> i64 [binding=strong] {
   block ^entry:
-    branch %use_call, ^__o1inl0__entry, ^other
+    branch %use_call, ^inline_entry_1, ^join
 
-  block ^__o1inl0__entry:
-    branch %condition, ^__o1inl0__left, ^__o1inl0__right
+  block ^inline_entry_1:
+    branch %condition, ^inline_cont_3, ^right_2
 
-  block ^__o1inl0__left:
-    jump ^__o1inl0__cont
+  block ^right_2:
+    jump ^inline_cont_3
 
-  block ^__o1inl0__right:
-    jump ^__o1inl0__cont
-
-  block ^__o1inl0__cont:
-    %t0 = phi i64 [^__o1inl0__left: 11, ^__o1inl0__right: 22]
-    jump ^join
-
-  block ^other:
+  block ^inline_cont_3:
+    %chosen = phi i64 [^right_2: 22, ^inline_entry_1: 11]
     jump ^join
 
   block ^join:
-    %result = phi i64 [^__o1inl0__cont: %t0, ^other: 33]
+    %result = phi i64 [^inline_cont_3: %chosen, ^entry: 33]
     return i64 %result
 }

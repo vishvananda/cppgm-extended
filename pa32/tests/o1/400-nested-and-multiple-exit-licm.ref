@@ -6,23 +6,20 @@ function @nested() -> i64 [no_inline=yes] {
   block ^entry:
     %left = load i64 @left
     %right = load i64 @right
-    %sum = binary add i64 %left, %right
     jump ^outer_header
 
   block ^outer_header:
     %outer = phi i64 [^entry: 0, ^outer_latch: %outer_next]
     %outer_more = cmp lt i64 %outer, 2
-    branch %outer_more, ^inner_entry, ^exit
-
-  block ^inner_entry:
-    jump ^inner_header
+    branch %outer_more, ^inner_header, ^exit
 
   block ^inner_header:
-    %inner = phi i64 [^inner_entry: 0, ^inner_body: %inner_next]
+    %inner = phi i64 [^inner_body: %inner_next, ^outer_header: 0]
     %inner_more = cmp lt i64 %inner, 2
     branch %inner_more, ^inner_body, ^outer_latch
 
   block ^inner_body:
+    %sum = binary add i64 %left, %right
     store i64 %sum, @sink
     %inner_next = binary add i64 %inner, 1
     jump ^inner_header
@@ -37,7 +34,6 @@ function @nested() -> i64 [no_inline=yes] {
 }
 function @multiple_exits(%limit : i64, %stop : i64, %value : i64) -> i64 [no_inline=yes] {
   block ^entry:
-    %adjusted = binary add i64 %value, 5
     jump ^header
 
   block ^header:
@@ -46,6 +42,7 @@ function @multiple_exits(%limit : i64, %stop : i64, %value : i64) -> i64 [no_inl
     branch %more, ^body, ^normal_exit
 
   block ^body:
+    %adjusted = binary add i64 %value, 5
     store i64 %adjusted, @sink
     branch %stop, ^early_exit, ^latch
 

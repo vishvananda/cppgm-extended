@@ -1,11 +1,11 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_V [binding=weak, object=_ZTS1V] = {
+global @__typeinfo_name__struct_V [storage=readonly, binding=weak, object=_ZTS1V] = {
   i8 49
   i8 86
   i8 0
 }
-global @__rtti_struct_V [binding=weak, object=_ZTI1V] = {
+global @__rtti_struct_V [storage=readonly, binding=weak, object=_ZTI1V] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_V
 }
@@ -62,6 +62,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load typed i32 $cond__1
     return i32 %t15
 }
+function @V__V(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1VC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @V__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
 function @V__z(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN1V1zEv, inline_hint=yes] {
   slot $this : ptr
 
@@ -75,16 +86,5 @@ function @V__a(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN1V1
   block ^entry:
     store typed ptr %this, $this
     return i32 2
-}
-function @V__V(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1VC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @V__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
 }
 alias object _ZN1VC2Ev = @V__V

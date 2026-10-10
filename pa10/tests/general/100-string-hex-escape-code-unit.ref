@@ -1,5 +1,5 @@
 global @__strlit__1 [storage=readonly, binding=internal] = {
-  i8 171
+  i8 -85
   i8 0
 }
 

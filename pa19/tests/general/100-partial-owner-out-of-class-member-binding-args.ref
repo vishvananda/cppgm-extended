@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $bits
     %t2 = addr $bits
-    %t3 = call i32 @box_bool__int___f(%t2)
+    %t3 = call i32 @box_bool_int___f(%t2)
     %t4 = cmp eq i32 %t3, 4
     branch %t4, ^cond_then_1, ^cond_else_2
 
@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @box_bool__int___f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3boxIbiE1fEv] {
+function @box_bool_int___f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3boxIbiE1fEv] {
   slot $this : ptr
 
   block ^entry:

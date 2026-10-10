@@ -24,14 +24,14 @@ function @main
     lea r9, [r8+8]
     mov rdi, r9
     sub rdi, r8
-    load.i64 r8, [r9]
+    load.i64 r9, [r9]
     mov rdx, 1
     cmp.i64 rdi, rdx
     sete rdi
     movzx rdi, rdi
     mov rdx, 13
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    and rdi, r8
+    cmp.i64 r9, rdx
+    sete r9
+    movzx r9, r9
+    and rdi, r9
     ret rdi

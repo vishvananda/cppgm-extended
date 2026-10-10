@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @U_int___U_int_(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN1UIiEC1E3tag, inline_hint=yes] {
+function @U_int___U(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN1UIiEC1E3tag, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
@@ -21,7 +21,7 @@ function @U_int___U_int_(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [cla
     store u8 0, %t2
     return void
 }
-function @U_int___U_int___ov6(%this : ptr [object_bytes=4], %args : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1UIiEC1IJiEEEDpOT_, inline_hint=yes] {
+function @U_int___U__2(%this : ptr [object_bytes=4], %args : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1UIiEC1IJiEEEDpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $args : ptr
 
@@ -44,5 +44,5 @@ function @forward(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [bindin
     %t1 = load typed ptr $value
     return ptr %t1
 }
-alias object _ZN1UIiEC2E3tag = @U_int___U_int_
-alias object _ZN1UIiEC2IJiEEEDpOT_ = @U_int___U_int___ov6
+alias object _ZN1UIiEC2E3tag = @U_int___U
+alias object _ZN1UIiEC2IJiEEEDpOT_ = @U_int___U__2

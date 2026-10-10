@@ -17,11 +17,11 @@ function @S__f(%this : ptr [object_bytes=1], %s : ptr [pass=by_address, object_b
     store typed ptr %this, $this
     store typed ptr %s, $s
     %t1 = load typed ptr $s
-    %t2 = addr @__lambda_S__f_t29_36
+    %t2 = addr @S____lambda_S__f_t29_36___FUN
     %t3 = call i32 %t2(%t1) as (%arg0 : ptr [pass=by_address, object_bytes=1]) -> i32
     return i32 %t3
 }
-function @__lambda_S__f_t29_36(%x : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZZNK1S1fERS_ENUlS0_E_8__invokeES0_, inline_hint=yes] {
+function @S____lambda_S__f_t29_36___FUN(%x : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZZNK1S1fERS_ENUlS0_E_8__invokeES0_, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $x : ptr
 
   block ^entry:

@@ -1,7 +1,7 @@
 function @retained_leaf(%value : i32) -> i32 [binding=strong, object=_Z13retained_leafi, no_inline=yes] {
   block ^entry:
-    %t2 = binary add nowrap i32 %value, 1
-    return i32 %t2
+    %t1 = binary add nowrap i32 %value, 1
+    return i32 %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

@@ -1,3 +1,5 @@
+declare global @is_same_char_char___value : u8 [binding=weak, object=_ZN7is_sameIccE5valueE]
+
 global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 44
   i8 0
@@ -24,10 +26,10 @@ function @delimiter(%s : ptr) -> obj<1x1> [result_classes=none, binding=weak, ob
     %t2 = addr $retobj__1
     %t3 = addr $arg__2
     zeroinit 1x1 %t3
-    call void @delimiter_type_char__char_traits_char____delimiter_type_pointer_to_const_char____cppgm_class_template_identity_0_5_0_(%t2, %t3)
+    call void @delimiter_type_char___cppgm_class_template_identity_1___delimiter_type(%t2, %t3)
     return obj<1x1> $retobj__1
 }
-function @delimiter_type_char__char_traits_char____delimiter_type_pointer_to_const_char____cppgm_class_template_identity_0_5_0_(%this : ptr [object_bytes=1], %d : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN14delimiter_typeIc11char_traitsIcEEC1ERK11string_likeIcS1_E, inline_hint=yes] {
+function @delimiter_type_char___cppgm_class_template_identity_1___delimiter_type(%this : ptr [object_bytes=1], %d : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN14delimiter_typeIc11char_traitsIcEEC1ERK11string_likeIcS1_E, inline_hint=yes] {
   slot $this : ptr
   slot $d : ptr
 
@@ -38,4 +40,4 @@ function @delimiter_type_char__char_traits_char____delimiter_type_pointer_to_con
     %t2 = index i8 [projection=field] %t1, 0
     return void
 }
-alias object _ZN14delimiter_typeIc11char_traitsIcEEC2ERK11string_likeIcS1_E = @delimiter_type_char__char_traits_char____delimiter_type_pointer_to_const_char____cppgm_class_template_identity_0_5_0_
+alias object _ZN14delimiter_typeIc11char_traitsIcEEC2ERK11string_likeIcS1_E = @delimiter_type_char___cppgm_class_template_identity_1___delimiter_type

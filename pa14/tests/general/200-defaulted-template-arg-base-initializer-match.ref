@@ -18,7 +18,7 @@ function @Derived__Derived(%this : ptr [object_bytes=1]) -> void [binding=weak, 
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    call void @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0___base_entry(%t2, 0)
+    call void @Base_char___cppgm_class_template_identity_1___Base__base_entry(%t2, 0)
     return void
 }
 function @Derived__Derived__ov2(%this : ptr [alias=noalias, object_bytes=1], %other : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN7DerivedC1EOS_, inline_hint=yes] {
@@ -32,10 +32,10 @@ function @Derived__Derived__ov2(%this : ptr [alias=noalias, object_bytes=1], %ot
     %t2 = index i8 %t1, 0
     %t3 = load typed ptr $other
     %t4 = index i8 %t3, 0
-    call void @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0___ov2__base_entry(%t2, %t4)
+    call void @Base_char___cppgm_class_template_identity_1___Base__ov2__base_entry(%t2, %t4)
     return void
 }
-function @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0___base_entry(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC2Ei, object_root=yes, inline_hint=yes] {
+function @Base_char___cppgm_class_template_identity_1___Base__base_entry(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC2Ei, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -44,25 +44,7 @@ function @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_
     store typed i32 %__param1, $__param1
     return void
 }
-function @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0_(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC1Ei, inline_hint=yes] {
-  slot $this : ptr
-  slot $__param1 : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %__param1, $__param1
-    return void
-}
-function @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0___ov2__base_entry(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC2EOS2_, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %__param1, $__param1
-    return void
-}
-function @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0___ov2(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC1EOS2_, inline_hint=yes] {
+function @Base_char___cppgm_class_template_identity_1___Base__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC2EOS2_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

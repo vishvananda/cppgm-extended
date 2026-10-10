@@ -1,204 +1,178 @@
-// (C) 2013 CPPGM Foundation www.cppgm.org. All rights reserved.
+// (C) 2013 CPPGM Foundation www.cppgm.org.  All rights reserved.
+// Revised for cppgm-extended; see NOTICE.
 
-#include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
-#include "preprocess/macros/macro_processor.h"
-#include "preprocess/tool_support.h"
-#include "support/driver_errors.h"
-#include "support/exception_types.h"
+using namespace std;
 
-namespace
-{
+#include "lex/post_token_writer.h"
+#include "lex/post_tokenizer.h"
+#include "preprocess/preprocessor.h"
+#include "support/internal_error.h"
+#include "support/telemetry.h"
+#include "support/tool_errors.h"
 
-char HexDigit(unsigned int value)
+// preproc: translation phases 1-6 and the tokenization part of phase 7 of
+// each primary source file, written as `sof`/PA2 post-token/`eof` records.
+// Each source file is a translation unit with its own preprocessing state.
+// The host file identity that the scaffold's GetPreprocessorFileId gives
+// #pragma once is GetFileIdentity in preprocess/source/source_files.
+
+bool HasBatchStdinArg(int argc, char** argv)
 {
-	return value < 10 ? static_cast<char>('0' + value) :
-		static_cast<char>('A' + value - 10);
+	for (int i = 1; i < argc; i++)
+	{
+		if (string(argv[i]) == "--batch-stdin")
+			return true;
+	}
+	return false;
 }
 
-std::string HexDump(const void* data, std::size_t size)
+// Batch requests are served by the linked test runner; a build without it
+// cannot run them.
+int RunNotImplementedBatchMode()
 {
-	const unsigned char* bytes = static_cast<const unsigned char*>(data);
-	std::string result(size * 2, '0');
-	for (std::size_t i = 0; i < size; ++i)
+	string line;
+	while (getline(cin, line))
 	{
-		result[i * 2] = HexDigit(bytes[i] >> 4);
-		result[i * 2 + 1] = HexDigit(bytes[i] & 0xF);
+		(void)line;
+		cout << "EXIT_NOT_IMPLEMENTED" << endl;
 	}
-	return result;
+	return EXIT_SUCCESS;
 }
 
-class PreprocessorOutput : public cppgm::IPostTokenStream
+// __DATE__ and __TIME__ from one asctime call at the start of main
+// (directives.md): "Www Mmm dd hh:mm:ss yyyy\n".
+void SetBuildTime(PreprocessorOptions& options)
 {
-public:
-	explicit PreprocessorOutput(std::ostream& output) : output_(output) {}
-
-	void EmitInvalid(const std::string& source)
-	{
-		(void)source;
-		cppgm::driver_errors::ThrowLexicalSource("invalid phase-7 token");
-	}
-
-	void EmitSimple(const std::string& source, cppgm::SimpleTokenKind kind)
-	{
-		output_ << "simple " << source << ' ' <<
-			cppgm::SimpleTokenKindName(kind) << '\n';
-	}
-
-	void EmitIdentifier(const std::string& source)
-	{
-		output_ << "identifier " << source << '\n';
-	}
-
-	void EmitLiteral(const std::string& source,
-		cppgm::FundamentalType type, const void* data, std::size_t size)
-	{
-		output_ << "literal " << source << ' ' <<
-			cppgm::FundamentalTypeName(type) << ' ' << HexDump(data, size) << '\n';
-	}
-
-	void EmitLiteralArray(const std::string& source, std::size_t elements,
-		cppgm::FundamentalType type, const void* data, std::size_t size)
-	{
-		output_ << "literal " << source << " array of " << elements << ' ' <<
-			cppgm::FundamentalTypeName(type) << ' ' << HexDump(data, size) << '\n';
-	}
-
-	void EmitUserDefinedCharacter(const std::string& source,
-		const std::string& suffix, cppgm::FundamentalType type,
-		const void* data, std::size_t size)
-	{
-		output_ << "user-defined-literal " << source << ' ' << suffix <<
-			" character " << cppgm::FundamentalTypeName(type) << ' ' <<
-			HexDump(data, size) << '\n';
-	}
-
-	void EmitUserDefinedString(const std::string& source,
-		const std::string& suffix, std::size_t elements,
-		cppgm::FundamentalType type, const void* data, std::size_t size)
-	{
-		output_ << "user-defined-literal " << source << ' ' << suffix <<
-			" string array of " << elements << ' ' <<
-			cppgm::FundamentalTypeName(type) << ' ' << HexDump(data, size) << '\n';
-	}
-
-	void EmitUserDefinedInteger(const std::string& source,
-		const std::string& suffix, const std::string& prefix)
-	{
-		output_ << "user-defined-literal " << source << ' ' << suffix <<
-			" integer " << prefix << '\n';
-	}
-
-	void EmitUserDefinedFloating(const std::string& source,
-		const std::string& suffix, const std::string& prefix)
-	{
-		output_ << "user-defined-literal " << source << ' ' << suffix <<
-			" floating " << prefix << '\n';
-	}
-
-	void EmitEof()
-	{
-		output_ << "eof\n";
-	}
-
-private:
-	std::ostream& output_;
-};
-
-void ReportStats(const std::string& path,
-	const cppgm::PreprocessingStats& stats)
-{
-	std::cerr << "preproc_stats"
-		<< " file=" << path
-		<< " source_files=" << stats.source_files
-		<< " source_bytes=" << stats.source_bytes
-		<< " peak_source_bytes=" << stats.peak_live_source_bytes
-		<< " pp_tokens=" << stats.macros.tokenization.emitted_tokens
-		<< " source_tokens=" << stats.macros.source_tokens
-		<< " post_tokens=" << stats.macros.postprocessing.emitted_tokens
-		<< " directives=" << stats.macros.directive_lines
-		<< " conditions=" << stats.controlling_expressions
-		<< " condition_nodes=" << stats.condition_evaluation.syntax_nodes
-		<< " condition_visits=" << stats.condition_evaluation.evaluation_visits
-		<< " condition_skips=" << stats.condition_evaluation.skipped_subexpressions
-		<< " condition_peak_bytes=" <<
-			stats.condition_evaluation.peak_line_storage_bytes
-		<< " condition_ns=" << stats.condition_evaluation.elapsed_nanoseconds
-		<< " includes=" << stats.includes
-		<< " once_skips=" << stats.skipped_once_includes
-		<< " once_files=" << stats.pragma_once_files
-		<< " lookups=" << stats.macros.macro_lookups
-		<< " invocations=" << stats.macros.macro_invocations
-		<< " argument_prescans=" << stats.macros.argument_prescans
-		<< " expanded_tokens=" << stats.macros.expanded_tokens
-		<< " pasted_tokens=" << stats.macros.pasted_tokens
-		<< " interned_ids=" << stats.macros.interned_identifiers
-		<< " interned_bytes=" << stats.macros.interned_identifier_bytes
-		<< " retained_replacements=" <<
-			stats.macros.peak_retained_replacement_tokens
-		<< " paint_roots=" << stats.macros.paint_roots
-		<< " paint_singletons=" << stats.macros.paint_singletons
-		<< " paint_nodes=" << stats.macros.paint_nodes
-		<< " peak_line_tokens=" << stats.macros.peak_line_tokens
-		<< " peak_line_bytes=" << stats.macros.peak_line_storage_bytes
-		<< " peak_rescan_tokens=" << stats.macros.peak_rescan_tokens
-		<< " peak_argument_bytes=" << stats.macros.peak_argument_storage_bytes
-		<< " peak_posttoken_bytes=" <<
-			stats.macros.postprocessing.peak_phase_storage_bytes
-		<< " peak_frames=" << stats.macros.peak_expansion_frames
-		<< " peak_include_depth=" << stats.peak_include_depth
-		<< " peak_conditional_depth=" << stats.peak_conditional_depth
-		<< " elapsed_ns=" << stats.elapsed_nanoseconds << '\n';
+	const time_t now = time(nullptr);
+	const string stamp = asctime(localtime(&now));
+	options.date = stamp.substr(4, 7) + stamp.substr(20, 4);
+	options.time = stamp.substr(11, 8);
 }
 
+// `--stats` (before -o) reports the work counters of each translation unit
+// on standard error, also when preprocessing fails.
+void ReportCounters(const string& path, const PreprocessorCounters& counters)
+{
+#if CPPGM_TELEMETRY_ENABLED
+	cerr << "preproc stats " << path << ": source_tokens=" << counters.source_tokens
+		 << " directives=" << counters.directives << " skipped_directives=" << counters.skipped_directives
+		 << " includes=" << counters.includes << " guarded_skips=" << counters.guarded_skips
+		 << " files=" << counters.files << " source_bytes=" << counters.source_bytes
+		 << " identifiers=" << counters.identifiers << " arena_bytes=" << counters.arena_bytes
+		 << " invocations=" << counters.expansion.invocations
+		 << " produced_tokens=" << counters.expansion.produced_tokens
+		 << " argument_tokens=" << counters.expansion.argument_tokens
+		 << " argument_expansions=" << counters.expansion.argument_expansions
+		 << " nested_collections=" << counters.expansion.nested_collections << " pastes=" << counters.expansion.pastes
+		 << " stringizes=" << counters.expansion.stringizes
+		 << " raw_operands_hidden=" << counters.expansion.raw_operands_hidden
+		 << " peak_contexts=" << counters.expansion.peak_contexts
+		 << " peak_context_tokens=" << counters.expansion.peak_context_tokens
+		 << " peak_invocations=" << counters.expansion.peak_invocations << endl;
+#endif
+}
+
+// Preprocesses one source file into the writer; false after an error.
+bool PreprocessSource(const PreprocessorOptions& options, const string& path, PostTokenWriter& output, bool stats)
+{
+	output.write_line("sof " + path);
+	try
+	{
+		Preprocessor preprocessor(options, path);
+		try
+		{
+			PostTokenizer tokens(preprocessor);
+			for (;;)
+			{
+				const PostToken& token = tokens.next();
+				if (token.kind == PostTokenKind::Invalid)
+				{
+					cerr << "ERROR: " << path << ": invalid phase-7 token" << endl;
+					if (stats)
+						ReportCounters(path, preprocessor.counters());
+					return false;
+				}
+				output.write(token);
+				if (token.kind == PostTokenKind::EndOfFile)
+					break;
+			}
+		}
+		catch (const PreprocessError& e)
+		{
+			cerr << "ERROR: " << preprocessor.describe(e) << endl;
+			if (stats)
+				ReportCounters(path, preprocessor.counters());
+			return false;
+		}
+		catch (const SourceError& e)
+		{
+			cerr << "ERROR: " << preprocessor.describe(e) << endl;
+			if (stats)
+				ReportCounters(path, preprocessor.counters());
+			return false;
+		}
+		if (stats)
+			ReportCounters(path, preprocessor.counters());
+	}
+	catch (const PreprocessError& e)
+	{
+		cerr << "ERROR: " << path << ": " << e.what() << endl;
+		return false;
+	}
+	return true;
 }
 
 int main(int argc, char** argv)
 {
 	try
 	{
-		std::ios_base::sync_with_stdio(false);
-		const bool report_stats = argc > 1 &&
-			std::string(argv[argc - 1]) == "--stats";
-		const int input_end = report_stats ? argc - 1 : argc;
-		if (input_end < 4 || std::string(argv[1]) != "-o")
-			cppgm::driver_errors::ThrowInvocation("invalid usage");
+		if (HasBatchStdinArg(argc, argv))
+			return RunNotImplementedBatchMode();
 
-		const cppgm::PreprocessingOptions options =
-			cppgm::BuildPreprocessingOptions();
-		std::ofstream output(argv[2], std::ios::out | std::ios::trunc);
-		if (!output)
-			cppgm::driver_errors::ThrowInputOutput("unable to open output file");
-		output << "preproc " << input_end - 3 << '\n';
-		PreprocessorOutput tokens(output);
+		PreprocessorOptions options;
+		SetBuildTime(options);
+		options.author = "Vish Abrams";
 
-		for (int i = 3; i < input_end; ++i)
+		vector<string> args;
+		for (int i = 1; i < argc; i++)
+			args.emplace_back(argv[i]);
+		const bool stats = !args.empty() && args[0] == "--stats";
+		if (stats && !telemetry::kEnabled)
+			throw InvocationError(telemetry::kUnavailable);
+		if (stats)
+			args.erase(args.begin());
+
+		if (args.size() < 3 || args[0] != "-o")
+			throw InvocationError("invalid usage");
+
+		const string outfile = args[1];
+		const size_t nsrcfiles = args.size() - 2;
+		ofstream out(outfile);
+		PostTokenWriter output(out);
+		output.write_line("preproc " + to_string(nsrcfiles));
+		for (size_t i = 0; i < nsrcfiles; i++)
 		{
-			const std::string path(argv[i]);
-			const std::string source = cppgm::ReadPreprocessingSource(path);
-			output << "sof " << path << '\n';
-			cppgm::PreprocessingStats stats;
-			cppgm::PreprocessFile(path, source, tokens, options,
-				report_stats ? &stats : 0);
-			if (report_stats)
-				ReportStats(path, stats);
+			if (!PreprocessSource(options, args[i + 2], output, stats))
+				return EXIT_FAILURE;
 		}
-		if (!output)
-			cppgm::driver_errors::ThrowInputOutput("unable to write output file");
+		output.flush();
 		return EXIT_SUCCESS;
 	}
-	catch (const CompilerError& error)
+	catch (const InternalError& e)
 	{
-		std::cerr << "ERROR: " << error.what() << '\n';
-		return EXIT_FAILURE;
+		cerr << "internal compiler error: " << e.what() << endl;
+		return CPPGM_EXIT_INTERNAL_ERROR;
 	}
-	catch (const std::exception& error)
+	catch (const exception& e)
 	{
-		std::cerr << "ERROR: " << error.what() << '\n';
+		cerr << "ERROR: " << e.what() << endl;
 		return EXIT_FAILURE;
 	}
 }

@@ -1,7 +1,7 @@
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call i32 @construct()
-    %t2 = call i32 @construct__ov2(1, 2)
+    %t2 = call i32 @construct__2(1, 2)
     %t3 = binary add nowrap i32 %t1, %t2
     return i32 %t3
 }
@@ -12,7 +12,7 @@ function @construct() -> i32 [binding=weak, object=_Z9constructI5emptyJEEiDpT0_]
     %t1 = addr $value
     return i32 0
 }
-function @construct__ov2(%args : i32, %args__pack2 : i32) -> i32 [binding=weak, object=_Z9constructI10pair_valueJiiEEiDpT0_] {
+function @construct__2(%args : i32, %args__pack2 : i32) -> i32 [binding=weak, object=_Z9constructI10pair_valueJiiEEiDpT0_] {
   slot $args : i32
   slot $args__pack2 : i32
   slot $value : obj<8x4>

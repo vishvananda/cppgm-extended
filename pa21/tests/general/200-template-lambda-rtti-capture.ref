@@ -1,6 +1,6 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__class___lambda_has_lambda_rtti__int_t25_27 [binding=weak, object=_ZTSZ15has_lambda_rttiIiEiT_EUlvE_] = {
+global @__typeinfo_name_type_Z15has_lambda_rttiIiEiT_EUlvE_ [storage=readonly, binding=internal, object=_ZTSZ15has_lambda_rttiIiEiT_EUlvE_] = {
   i8 90
   i8 49
   i8 53
@@ -33,9 +33,9 @@ global @__typeinfo_name__class___lambda_has_lambda_rtti__int_t25_27 [binding=wea
   i8 95
   i8 0
 }
-global @__rtti_class___lambda_has_lambda_rtti__int_t25_27 [binding=weak, object=_ZTIZ15has_lambda_rttiIiEiT_EUlvE_] = {
+global @__rtti_type_Z15has_lambda_rttiIiEiT_EUlvE_ [storage=readonly, binding=internal, object=_ZTIZ15has_lambda_rttiIiEiT_EUlvE_] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__class___lambda_has_lambda_rtti__int_t25_27
+  ptr addr @__typeinfo_name_type_Z15has_lambda_rttiIiEiT_EUlvE_
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -66,8 +66,8 @@ function @has_lambda_rtti(%value : i32) -> i32 [binding=weak, object=_Z15has_lam
     %t1 = addr $closure
     %t2 = load typed i32 $value
     store typed i32 %t2, %t1
-    %t3 = addr @__rtti_class___lambda_has_lambda_rtti__int_t25_27
-    %t4 = addr @__rtti_class___lambda_has_lambda_rtti__int_t25_27
+    %t3 = addr @__rtti_type_Z15has_lambda_rttiIiEiT_EUlvE_
+    %t4 = addr @__rtti_type_Z15has_lambda_rttiIiEiT_EUlvE_
     %t5 = cmp eq ptr %t3, %t4
     %t6 = convert trunc i32 i64 %t5
     return i32 %t6

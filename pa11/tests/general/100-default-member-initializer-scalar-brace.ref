@@ -51,7 +51,7 @@ function @Cache__Cache(%this : ptr [object_bytes=16]) -> void [unwind=no, bindin
     store typed i32 0, %t2
     %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 8
-    store typed ptr nullptr, %t4
+    store typed ptr 0, %t4
     return void
 }
 alias object _ZN5CacheC2Ev = @Cache__Cache

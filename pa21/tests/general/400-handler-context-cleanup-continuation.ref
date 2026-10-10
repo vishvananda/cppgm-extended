@@ -15,12 +15,12 @@ function @read(%value : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=s
 }
 function @choose(%first : u8) -> i32 [binding=strong, object=_Z6chooseb] {
   slot $first : u8
-  slot $call__1 : i32
+  slot $arg__1 : obj<4x4>
   slot $call__2 : i32
-  slot $call__3 : i32
-  slot $arg__4 : obj<4x4>
+  slot $arg__3 : obj<4x4>
+  slot $call__4 : i32
   slot $arg__5 : obj<4x4>
-  slot $arg__6 : obj<4x4>
+  slot $call__6 : i32
 
   block ^entry:
     store u8 %first, $first
@@ -29,63 +29,63 @@ function @choose(%first : u8) -> i32 [binding=strong, object=_Z6chooseb] {
     branch %t1, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
-    eh_try ^call_unwind_dispatch_8
-    %t2 = addr $arg__4
+    eh_try ^call_unwind_dispatch_7
+    %t2 = addr $arg__1
     call void @Value__Value(%t2, 7)
     eh_end
-    jump ^call_unwind_end_9
+    jump ^call_unwind_end_8
 
-  block ^cleanup_resume_7:
+  block ^cleanup_resume_6:
     eh_end
     eh_end
     jump ^catch_entry_2
 
-  block ^call_unwind_dispatch_8:
+  block ^call_unwind_dispatch_7:
     eh_catch_all, 1
     eh_cleanup
-    jump ^cleanup_resume_7
+    jump ^cleanup_resume_6
 
-  block ^call_unwind_end_9:
-    eh_try ^call_unwind_dispatch_11
+  block ^call_unwind_end_8:
+    eh_try ^call_unwind_dispatch_10
     %t3 = call i32 @read(%t2)
-    store typed i32 %t3, $call__1
-    %t4 = load typed i32 $call__1
+    store typed i32 %t3, $call__2
+    %t4 = load typed i32 $call__2
     call void @Value___Value(%t2)
     eh_end
-    jump ^call_unwind_end_12
+    jump ^call_unwind_end_11
 
-  block ^cleanup_action_10:
+  block ^cleanup_action_9:
     call void @Value___Value(%t2)
-    jump ^cleanup_resume_7
+    jump ^cleanup_resume_6
 
-  block ^call_unwind_dispatch_11:
+  block ^call_unwind_dispatch_10:
     eh_catch_all, 1
     eh_cleanup
-    jump ^cleanup_action_10
+    jump ^cleanup_action_9
 
-  block ^call_unwind_end_12:
+  block ^call_unwind_end_11:
     eh_end
     return i32 %t4
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_12
 
-  block ^if_end_6:
-    eh_try ^call_unwind_dispatch_8
-    %t5 = addr $arg__5
+  block ^if_end_12:
+    eh_try ^call_unwind_dispatch_7
+    %t5 = addr $arg__3
     call void @Value__Value(%t5, 9)
     eh_end
     eh_try ^call_unwind_dispatch_14
     %t6 = call i32 @read(%t5)
-    store typed i32 %t6, $call__2
-    %t7 = load typed i32 $call__2
+    store typed i32 %t6, $call__4
+    %t7 = load typed i32 $call__4
     call void @Value___Value(%t5)
     eh_end
     jump ^call_unwind_end_15
 
   block ^cleanup_action_13:
     call void @Value___Value(%t5)
-    jump ^cleanup_resume_7
+    jump ^cleanup_resume_6
 
   block ^call_unwind_dispatch_14:
     eh_catch_all, 1
@@ -110,7 +110,7 @@ function @choose(%first : u8) -> i32 [binding=strong, object=_Z6chooseb] {
     %t11 = call ptr @__external_runtime____cxa_begin_catch(%t8)
     eh_cleanup ^catch_cleanup_18
     eh_try ^call_unwind_dispatch_21
-    %t12 = addr $arg__6
+    %t12 = addr $arg__5
     call void @Value__Value(%t12, 11)
     eh_end
     jump ^call_unwind_end_22
@@ -130,8 +130,8 @@ function @choose(%first : u8) -> i32 [binding=strong, object=_Z6chooseb] {
   block ^call_unwind_end_22:
     eh_try ^call_unwind_dispatch_24
     %t13 = call i32 @read(%t12)
-    store typed i32 %t13, $call__3
-    %t14 = load typed i32 $call__3
+    store typed i32 %t13, $call__6
+    %t14 = load typed i32 $call__6
     call void @Value___Value(%t12)
     eh_end
     jump ^call_unwind_end_25
@@ -166,9 +166,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 0, @trace
     %t1 = call i32 @choose(1)
     %t2 = cmp ne i32 %t1, 7
-    branch %t2, ^if_then_1, ^lor_rhs_4
+    branch %t2, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t3 = load typed i32 @trace
     %t4 = cmp ne i32 %t3, 7
     branch %t4, ^if_then_1, ^if_else_2
@@ -177,9 +177,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     store typed i32 0, @trace
     %t5 = call i32 @choose(0)
     %t6 = cmp ne i32 %t5, 9

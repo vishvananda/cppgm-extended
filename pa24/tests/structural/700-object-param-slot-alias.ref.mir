@@ -22,17 +22,19 @@ function @make_value
 
 function @unwrap
   abi
-    param %x -> rdi : i64
+    param %x -> rdi : obj<8x8>
     return i64 -> rax
   frame
     stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %x -> [rbp-8] : obj<8x8>
+    slot $x -> [rbp-8] : obj<8x8>
+    param-slot %x -> [rbp-16] : obj<8x8>
 
   block ^entry
-    store.i64 [rbp-8], rdi
+    store.i64 [rbp-16], rdi
+    copy_bytes 8x8, [rbp-8], [rbp-16]
     load.i64 rax, [rbp-8]
     ret rax
 

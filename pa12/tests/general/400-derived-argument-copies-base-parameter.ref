@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $derived : obj<8x4>
   slot $arg__1 : obj<4x4>
   slot $arg__2 : obj<4x4>
-  slot $tmpobj__3 : obj<8x4>
+  slot $arg__3 : obj<8x4>
 
   block ^entry:
     %t1 = addr $derived
@@ -24,9 +24,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Base__Base__ov2(%t2, %t4)
     %t5 = call i32 @take(%t2)
     %t6 = cmp ne i32 %t5, 4
-    branch %t6, ^if_then_1, ^lor_rhs_4
+    branch %t6, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t7 = addr $derived
     %t8 = index i8 %t7, 0
     %t9 = index i8 [projection=field] %t8, 0
@@ -38,14 +38,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t12 = load typed i32 @copies
     %t13 = cmp ne i32 %t12, 1
-    branch %t13, ^if_then_5, ^lor_rhs_8
+    branch %t13, ^if_then_5, ^lor_rhs_7
 
-  block ^lor_rhs_8:
+  block ^lor_rhs_7:
     %t14 = load typed i32 @moves
     %t15 = cmp ne i32 %t14, 0
     branch %t15, ^if_then_5, ^if_else_6
@@ -54,19 +54,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_6:
-    jump ^if_end_7
+    jump ^if_end_8
 
-  block ^if_end_7:
+  block ^if_end_8:
     %t16 = addr $arg__2
-    %t17 = addr $tmpobj__3
+    %t17 = addr $arg__3
     call void @Derived__Derived(%t17)
     %t18 = index i8 %t17, 0
     call void @Base__Base__ov3(%t16, %t18)
     %t19 = call i32 @take(%t16)
     %t20 = cmp ne i32 %t19, 4
-    branch %t20, ^if_then_9, ^lor_rhs_12
+    branch %t20, ^if_then_9, ^lor_rhs_11
 
-  block ^lor_rhs_12:
+  block ^lor_rhs_11:
     %t21 = load typed i32 @moves
     %t22 = cmp ne i32 %t21, 1
     branch %t22, ^if_then_9, ^if_else_10
@@ -75,9 +75,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_else_10:
-    jump ^if_end_11
+    jump ^if_end_12
 
-  block ^if_end_11:
+  block ^if_end_12:
     return i32 0
 }
 function @Derived__Derived(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {

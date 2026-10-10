@@ -4,7 +4,7 @@ global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 101
   i8 0
 }
-global @__cppgm_class_template_identity_0_0_0__row [binding=weak, object=_ZN5tableIiE3rowE] = {
+global @table_int___row [binding=weak, object=_ZN5tableIiE3rowE] = {
   ptr addr @__strlit__1
 }
 
@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = addr @__cppgm_class_template_identity_0_0_0__row
+    %t1 = addr @table_int___row
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = index i8 [projection=array_element] %t3, 0

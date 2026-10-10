@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $functor
     %t2 = addr $fn
-    call void @callable_box_int_int____callable_box_int_int__(%t2)
+    call void @callable_box_int_int____callable_box(%t2)
     %t3 = addr $fn
     %t4 = addr $functor
     call void @callable_box_int_int____assign(%t3, %t4)
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load typed i32 $cond__1
     return i32 %t8
 }
-function @callable_box_int_int____callable_box_int_int__(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN12callable_boxIFiiEEC1Ev, inline_hint=yes] {
+function @callable_box_int_int____callable_box(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN12callable_boxIFiiEEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -97,4 +97,4 @@ function @add_one__operator__(%this : ptr [object_bytes=1], %value : i32) -> i32
     %t2 = binary add nowrap i32 %t1, 1
     return i32 %t2
 }
-alias object _ZN12callable_boxIFiiEEC2Ev = @callable_box_int_int____callable_box_int_int__
+alias object _ZN12callable_boxIFiiEEC2Ev = @callable_box_int_int____callable_box

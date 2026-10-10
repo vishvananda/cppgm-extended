@@ -1,14 +1,19 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
 
-global @__typeinfo_name__struct_case_0__E [binding=weak, object=_ZTSN6case_01EE] = {
+global @case_0__live : i32 [binding=strong, object=_ZN6case_04liveE] = zero
+global @case_0__drops : i32 [binding=strong, object=_ZN6case_05dropsE] = zero
+global @case_0__bad : i32 [binding=strong, object=_ZN6case_03badE] = zero
+global @case_0__trace : i32 [binding=strong, object=_ZN6case_05traceE] = zero
+global @case_0__should_throw : i32 [binding=strong, object=_ZN6case_012should_throwE] = 1
+global @__typeinfo_name__struct_case_0__E [storage=readonly, binding=weak, object=_ZTSN6case_01EE] = {
   i8 78
   i8 54
   i8 99
@@ -22,11 +27,27 @@ global @__typeinfo_name__struct_case_0__E [binding=weak, object=_ZTSN6case_01EE]
   i8 69
   i8 0
 }
-global @__rtti_struct_case_0__E [binding=weak, object=_ZTIN6case_01EE] = {
+global @__rtti_struct_case_0__E [storage=readonly, binding=weak, object=_ZTIN6case_01EE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_case_0__E
 }
-global @__typeinfo_name__struct_case_1__E [binding=weak, object=_ZTSN6case_11EE] = {
+global @__ehobj_struct_case_0__E [binding=internal] = {
+  zero 1
+}
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @case_1__live : i32 [binding=strong, object=_ZN6case_14liveE] = zero
+global @case_1__drops : i32 [binding=strong, object=_ZN6case_15dropsE] = zero
+global @case_1__bad : i32 [binding=strong, object=_ZN6case_13badE] = zero
+global @case_1__trace : i32 [binding=strong, object=_ZN6case_15traceE] = zero
+global @case_1__should_throw : i32 [binding=strong, object=_ZN6case_112should_throwE] = 1
+global @__typeinfo_name__struct_case_1__E [storage=readonly, binding=weak, object=_ZTSN6case_11EE] = {
   i8 78
   i8 54
   i8 99
@@ -40,11 +61,19 @@ global @__typeinfo_name__struct_case_1__E [binding=weak, object=_ZTSN6case_11EE]
   i8 69
   i8 0
 }
-global @__rtti_struct_case_1__E [binding=weak, object=_ZTIN6case_11EE] = {
+global @__rtti_struct_case_1__E [storage=readonly, binding=weak, object=_ZTIN6case_11EE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_case_1__E
 }
-global @__typeinfo_name__struct_case_2__E [binding=weak, object=_ZTSN6case_21EE] = {
+global @__ehobj_struct_case_1__E [binding=internal] = {
+  zero 1
+}
+global @case_2__live : i32 [binding=strong, object=_ZN6case_24liveE] = zero
+global @case_2__drops : i32 [binding=strong, object=_ZN6case_25dropsE] = zero
+global @case_2__bad : i32 [binding=strong, object=_ZN6case_23badE] = zero
+global @case_2__trace : i32 [binding=strong, object=_ZN6case_25traceE] = zero
+global @case_2__should_throw : i32 [binding=strong, object=_ZN6case_212should_throwE] = 1
+global @__typeinfo_name__struct_case_2__E [storage=readonly, binding=weak, object=_ZTSN6case_21EE] = {
   i8 78
   i8 54
   i8 99
@@ -58,11 +87,19 @@ global @__typeinfo_name__struct_case_2__E [binding=weak, object=_ZTSN6case_21EE]
   i8 69
   i8 0
 }
-global @__rtti_struct_case_2__E [binding=weak, object=_ZTIN6case_21EE] = {
+global @__rtti_struct_case_2__E [storage=readonly, binding=weak, object=_ZTIN6case_21EE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_case_2__E
 }
-global @__typeinfo_name__struct_case_3__E [binding=weak, object=_ZTSN6case_31EE] = {
+global @__ehobj_struct_case_2__E [binding=internal] = {
+  zero 1
+}
+global @case_3__live : i32 [binding=strong, object=_ZN6case_34liveE] = zero
+global @case_3__drops : i32 [binding=strong, object=_ZN6case_35dropsE] = zero
+global @case_3__bad : i32 [binding=strong, object=_ZN6case_33badE] = zero
+global @case_3__trace : i32 [binding=strong, object=_ZN6case_35traceE] = zero
+global @case_3__should_throw : i32 [binding=strong, object=_ZN6case_312should_throwE] = 1
+global @__typeinfo_name__struct_case_3__E [storage=readonly, binding=weak, object=_ZTSN6case_31EE] = {
   i8 78
   i8 54
   i8 99
@@ -76,11 +113,19 @@ global @__typeinfo_name__struct_case_3__E [binding=weak, object=_ZTSN6case_31EE]
   i8 69
   i8 0
 }
-global @__rtti_struct_case_3__E [binding=weak, object=_ZTIN6case_31EE] = {
+global @__rtti_struct_case_3__E [storage=readonly, binding=weak, object=_ZTIN6case_31EE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_case_3__E
 }
-global @__typeinfo_name__struct_case_4__E [binding=weak, object=_ZTSN6case_41EE] = {
+global @__ehobj_struct_case_3__E [binding=internal] = {
+  zero 1
+}
+global @case_4__live : i32 [binding=strong, object=_ZN6case_44liveE] = zero
+global @case_4__drops : i32 [binding=strong, object=_ZN6case_45dropsE] = zero
+global @case_4__bad : i32 [binding=strong, object=_ZN6case_43badE] = zero
+global @case_4__trace : i32 [binding=strong, object=_ZN6case_45traceE] = zero
+global @case_4__should_throw : i32 [binding=strong, object=_ZN6case_412should_throwE] = 1
+global @__typeinfo_name__struct_case_4__E [storage=readonly, binding=weak, object=_ZTSN6case_41EE] = {
   i8 78
   i8 54
   i8 99
@@ -94,11 +139,19 @@ global @__typeinfo_name__struct_case_4__E [binding=weak, object=_ZTSN6case_41EE]
   i8 69
   i8 0
 }
-global @__rtti_struct_case_4__E [binding=weak, object=_ZTIN6case_41EE] = {
+global @__rtti_struct_case_4__E [storage=readonly, binding=weak, object=_ZTIN6case_41EE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_case_4__E
 }
-global @__typeinfo_name__struct_case_5__E [binding=weak, object=_ZTSN6case_51EE] = {
+global @__ehobj_struct_case_4__E [binding=internal] = {
+  zero 1
+}
+global @case_5__live : i32 [binding=strong, object=_ZN6case_54liveE] = zero
+global @case_5__drops : i32 [binding=strong, object=_ZN6case_55dropsE] = zero
+global @case_5__bad : i32 [binding=strong, object=_ZN6case_53badE] = zero
+global @case_5__trace : i32 [binding=strong, object=_ZN6case_55traceE] = zero
+global @case_5__should_throw : i32 [binding=strong, object=_ZN6case_512should_throwE] = 1
+global @__typeinfo_name__struct_case_5__E [storage=readonly, binding=weak, object=_ZTSN6case_51EE] = {
   i8 78
   i8 54
   i8 99
@@ -112,11 +165,19 @@ global @__typeinfo_name__struct_case_5__E [binding=weak, object=_ZTSN6case_51EE]
   i8 69
   i8 0
 }
-global @__rtti_struct_case_5__E [binding=weak, object=_ZTIN6case_51EE] = {
+global @__rtti_struct_case_5__E [storage=readonly, binding=weak, object=_ZTIN6case_51EE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_case_5__E
 }
-global @__typeinfo_name__struct_case_6__E [binding=weak, object=_ZTSN6case_61EE] = {
+global @__ehobj_struct_case_5__E [binding=internal] = {
+  zero 1
+}
+global @case_6__live : i32 [binding=strong, object=_ZN6case_64liveE] = zero
+global @case_6__drops : i32 [binding=strong, object=_ZN6case_65dropsE] = zero
+global @case_6__bad : i32 [binding=strong, object=_ZN6case_63badE] = zero
+global @case_6__trace : i32 [binding=strong, object=_ZN6case_65traceE] = zero
+global @case_6__should_throw : i32 [binding=strong, object=_ZN6case_612should_throwE] = 1
+global @__typeinfo_name__struct_case_6__E [storage=readonly, binding=weak, object=_ZTSN6case_61EE] = {
   i8 78
   i8 54
   i8 99
@@ -130,11 +191,19 @@ global @__typeinfo_name__struct_case_6__E [binding=weak, object=_ZTSN6case_61EE]
   i8 69
   i8 0
 }
-global @__rtti_struct_case_6__E [binding=weak, object=_ZTIN6case_61EE] = {
+global @__rtti_struct_case_6__E [storage=readonly, binding=weak, object=_ZTIN6case_61EE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_case_6__E
 }
-global @__typeinfo_name__struct_case_7__E [binding=weak, object=_ZTSN6case_71EE] = {
+global @__ehobj_struct_case_6__E [binding=internal] = {
+  zero 1
+}
+global @case_7__live : i32 [binding=strong, object=_ZN6case_74liveE] = zero
+global @case_7__drops : i32 [binding=strong, object=_ZN6case_75dropsE] = zero
+global @case_7__bad : i32 [binding=strong, object=_ZN6case_73badE] = zero
+global @case_7__trace : i32 [binding=strong, object=_ZN6case_75traceE] = zero
+global @case_7__should_throw : i32 [binding=strong, object=_ZN6case_712should_throwE] = 1
+global @__typeinfo_name__struct_case_7__E [storage=readonly, binding=weak, object=_ZTSN6case_71EE] = {
   i8 78
   i8 54
   i8 99
@@ -148,92 +217,17 @@ global @__typeinfo_name__struct_case_7__E [binding=weak, object=_ZTSN6case_71EE]
   i8 69
   i8 0
 }
-global @__rtti_struct_case_7__E [binding=weak, object=_ZTIN6case_71EE] = {
+global @__rtti_struct_case_7__E [storage=readonly, binding=weak, object=_ZTIN6case_71EE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_case_7__E
 }
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
-  i8 105
-  i8 0
+global @__ehobj_struct_case_7__E [binding=internal] = {
+  zero 1
 }
-global @__rtti_int [binding=weak, object=_ZTIi] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__int
-}
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
+global @__ehobj_int [binding=internal] = {
   zero 4
 }
-global @__ehobj_struct_case_0__E [binding=internal, object=@__ehobj_struct_case_0__E] = {
-  zero 1
-}
-global @__ehobj_struct_case_1__E [binding=internal, object=@__ehobj_struct_case_1__E] = {
-  zero 1
-}
-global @__ehobj_struct_case_2__E [binding=internal, object=@__ehobj_struct_case_2__E] = {
-  zero 1
-}
-global @__ehobj_struct_case_3__E [binding=internal, object=@__ehobj_struct_case_3__E] = {
-  zero 1
-}
-global @__ehobj_struct_case_4__E [binding=internal, object=@__ehobj_struct_case_4__E] = {
-  zero 1
-}
-global @__ehobj_struct_case_5__E [binding=internal, object=@__ehobj_struct_case_5__E] = {
-  zero 1
-}
-global @__ehobj_struct_case_6__E [binding=internal, object=@__ehobj_struct_case_6__E] = {
-  zero 1
-}
-global @__ehobj_struct_case_7__E [binding=internal, object=@__ehobj_struct_case_7__E] = {
-  zero 1
-}
-global @case_0__live : i32 [binding=strong, object=_ZN6case_04liveE] = zero
-global @case_0__drops : i32 [binding=strong, object=_ZN6case_05dropsE] = zero
-global @case_0__bad : i32 [binding=strong, object=_ZN6case_03badE] = zero
-global @case_0__trace : i32 [binding=strong, object=_ZN6case_05traceE] = zero
-global @case_0__should_throw : i32 [binding=strong, object=_ZN6case_012should_throwE] = 1
-global @case_1__live : i32 [binding=strong, object=_ZN6case_14liveE] = zero
-global @case_1__drops : i32 [binding=strong, object=_ZN6case_15dropsE] = zero
-global @case_1__bad : i32 [binding=strong, object=_ZN6case_13badE] = zero
-global @case_1__trace : i32 [binding=strong, object=_ZN6case_15traceE] = zero
-global @case_1__should_throw : i32 [binding=strong, object=_ZN6case_112should_throwE] = 1
-global @case_2__live : i32 [binding=strong, object=_ZN6case_24liveE] = zero
-global @case_2__drops : i32 [binding=strong, object=_ZN6case_25dropsE] = zero
-global @case_2__bad : i32 [binding=strong, object=_ZN6case_23badE] = zero
-global @case_2__trace : i32 [binding=strong, object=_ZN6case_25traceE] = zero
-global @case_2__should_throw : i32 [binding=strong, object=_ZN6case_212should_throwE] = 1
-global @case_3__live : i32 [binding=strong, object=_ZN6case_34liveE] = zero
-global @case_3__drops : i32 [binding=strong, object=_ZN6case_35dropsE] = zero
-global @case_3__bad : i32 [binding=strong, object=_ZN6case_33badE] = zero
-global @case_3__trace : i32 [binding=strong, object=_ZN6case_35traceE] = zero
-global @case_3__should_throw : i32 [binding=strong, object=_ZN6case_312should_throwE] = 1
-global @case_4__live : i32 [binding=strong, object=_ZN6case_44liveE] = zero
-global @case_4__drops : i32 [binding=strong, object=_ZN6case_45dropsE] = zero
-global @case_4__bad : i32 [binding=strong, object=_ZN6case_43badE] = zero
-global @case_4__trace : i32 [binding=strong, object=_ZN6case_45traceE] = zero
-global @case_4__should_throw : i32 [binding=strong, object=_ZN6case_412should_throwE] = 1
-global @case_5__live : i32 [binding=strong, object=_ZN6case_54liveE] = zero
-global @case_5__drops : i32 [binding=strong, object=_ZN6case_55dropsE] = zero
-global @case_5__bad : i32 [binding=strong, object=_ZN6case_53badE] = zero
-global @case_5__trace : i32 [binding=strong, object=_ZN6case_55traceE] = zero
-global @case_5__should_throw : i32 [binding=strong, object=_ZN6case_512should_throwE] = 1
-global @case_6__live : i32 [binding=strong, object=_ZN6case_64liveE] = zero
-global @case_6__drops : i32 [binding=strong, object=_ZN6case_65dropsE] = zero
-global @case_6__bad : i32 [binding=strong, object=_ZN6case_63badE] = zero
-global @case_6__trace : i32 [binding=strong, object=_ZN6case_65traceE] = zero
-global @case_6__should_throw : i32 [binding=strong, object=_ZN6case_612should_throwE] = 1
-global @case_7__live : i32 [binding=strong, object=_ZN6case_74liveE] = zero
-global @case_7__drops : i32 [binding=strong, object=_ZN6case_75dropsE] = zero
-global @case_7__bad : i32 [binding=strong, object=_ZN6case_73badE] = zero
-global @case_7__trace : i32 [binding=strong, object=_ZN6case_75traceE] = zero
-global @case_7__should_throw : i32 [binding=strong, object=_ZN6case_712should_throwE] = 1
 
-function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
-  block ^entry:
-    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
-    call void @std_terminate()
-    return void
-}
 function @case_0__f() -> void [binding=strong, object=_ZN6case_01fEv] {
   slot $a : obj<8x4>
   slot $b : obj<8x4>
@@ -281,60 +275,60 @@ function @case_0__f() -> void [binding=strong, object=_ZN6case_01fEv] {
 
   block ^cleanup_action_9:
     eh_try ^lexical_cleanup_terminate_12
-    %t11 = addr $a
-    call void @case_0__G___G(%t11)
+    %t10 = addr $a
+    call void @case_0__G___G(%t10)
     eh_end
     jump ^cleanup_action_8
 
   block ^lexical_cleanup_terminate_12:
     eh_catch_all, 2
-    %t10 = exception ptr
-    call void @cppgm_call_terminate(%t10)
+    %t11 = exception ptr
+    call void @cppgm_call_terminate(%t11)
     unreachable
 
   block ^call_unwind_dispatch_10:
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
-    eh_try ^lexical_cleanup_dispatch_17
-    %t14 = addr $b
-    call void @case_0__G___G(%t14)
+    eh_try ^lexical_cleanup_dispatch_16
+    %t12 = addr $b
+    call void @case_0__G___G(%t12)
     eh_end
-    eh_try ^lexical_cleanup_dispatch_18
-    %t15 = addr $a
-    call void @case_0__G___G(%t15)
+    eh_try ^lexical_cleanup_dispatch_17
+    %t13 = addr $a
+    call void @case_0__G___G(%t13)
     eh_end
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_3
 
-  block ^lexical_unwind_15:
+  block ^lexical_unwind_13:
     resume
 
   block ^lexical_unwind_14:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_15
+    jump ^lexical_unwind_13
 
-  block ^lexical_unwind_13:
-    eh_try ^lexical_cleanup_terminate_16
-    %t13 = addr $a
-    call void @case_0__G___G(%t13)
+  block ^lexical_unwind_15:
+    eh_try ^lexical_cleanup_terminate_18
+    %t14 = addr $a
+    call void @case_0__G___G(%t14)
     eh_end
     jump ^lexical_unwind_14
 
-  block ^lexical_cleanup_terminate_16:
+  block ^lexical_cleanup_terminate_18:
     eh_catch_all, 3
-    %t12 = exception ptr
-    call void @cppgm_call_terminate(%t12)
+    %t15 = exception ptr
+    call void @cppgm_call_terminate(%t15)
     unreachable
 
-  block ^lexical_cleanup_dispatch_17:
+  block ^lexical_cleanup_dispatch_16:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_13
+    jump ^lexical_unwind_15
 
-  block ^lexical_cleanup_dispatch_18:
+  block ^lexical_cleanup_dispatch_17:
     eh_cleanup
     eh_end
     jump ^lexical_unwind_14
@@ -382,56 +376,12 @@ function @case_0__check() -> i32 [binding=strong, object=_ZN6case_05checkEv] {
     store typed i32 %t5, $n
     %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
-    branch %t7, ^lor_short_17, ^lor_rhs_16
-
-  block ^lor_rhs_16:
-    %t8 = load typed i32 @case_0__live
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_short_17:
-    store typed i64 1, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_end_18:
-    %t10 = load typed i64 $lor__5
-    branch %t10, ^lor_short_14, ^lor_rhs_13
-
-  block ^lor_rhs_13:
-    %t11 = load typed i32 @case_0__bad
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_short_14:
-    store typed i64 1, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_end_15:
-    %t13 = load typed i64 $lor__4
-    branch %t13, ^lor_short_11, ^lor_rhs_10
-
-  block ^lor_rhs_10:
-    %t14 = load typed i32 @case_0__drops
-    %t15 = cmp ne i32 %t14, 2
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_short_11:
-    store typed i64 1, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_end_12:
-    %t17 = load typed i64 $lor__3
-    branch %t17, ^lor_short_8, ^lor_rhs_7
+    branch %t7, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load typed i32 @case_0__trace
-    %t19 = cmp ne i32 %t18, 219
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $lor__2
+    %t8 = load typed i32 @case_0__live
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -439,7 +389,51 @@ function @case_0__check() -> i32 [binding=strong, object=_ZN6case_05checkEv] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load typed i64 $lor__2
+    %t10 = load typed i64 $lor__2
+    branch %t10, ^lor_short_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t11 = load typed i32 @case_0__bad
+    %t12 = cmp ne i64 %t11, 0
+    store typed i64 %t12, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_short_11:
+    store typed i64 1, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_end_12:
+    %t13 = load typed i64 $lor__3
+    branch %t13, ^lor_short_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t14 = load typed i32 @case_0__drops
+    %t15 = cmp ne i32 %t14, 2
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_short_14:
+    store typed i64 1, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_end_15:
+    %t17 = load typed i64 $lor__4
+    branch %t17, ^lor_short_17, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t18 = load typed i32 @case_0__trace
+    %t19 = cmp ne i32 %t18, 219
+    %t20 = cmp ne i64 %t19, 0
+    store typed i64 %t20, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_short_17:
+    store typed i64 1, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_end_18:
+    %t21 = load typed i64 $lor__5
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -503,60 +497,60 @@ function @case_1__f() -> void [binding=strong, object=_ZN6case_11fEv] {
 
   block ^cleanup_action_9:
     eh_try ^lexical_cleanup_terminate_12
-    %t11 = addr $a
-    call void @case_1__G___G(%t11)
+    %t10 = addr $a
+    call void @case_1__G___G(%t10)
     eh_end
     jump ^cleanup_action_8
 
   block ^lexical_cleanup_terminate_12:
     eh_catch_all, 2
-    %t10 = exception ptr
-    call void @cppgm_call_terminate(%t10)
+    %t11 = exception ptr
+    call void @cppgm_call_terminate(%t11)
     unreachable
 
   block ^call_unwind_dispatch_10:
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
-    eh_try ^lexical_cleanup_dispatch_17
-    %t14 = addr $b
-    call void @case_1__G___G(%t14)
+    eh_try ^lexical_cleanup_dispatch_16
+    %t12 = addr $b
+    call void @case_1__G___G(%t12)
     eh_end
-    eh_try ^lexical_cleanup_dispatch_18
-    %t15 = addr $a
-    call void @case_1__G___G(%t15)
+    eh_try ^lexical_cleanup_dispatch_17
+    %t13 = addr $a
+    call void @case_1__G___G(%t13)
     eh_end
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_3
 
-  block ^lexical_unwind_15:
+  block ^lexical_unwind_13:
     resume
 
   block ^lexical_unwind_14:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_15
+    jump ^lexical_unwind_13
 
-  block ^lexical_unwind_13:
-    eh_try ^lexical_cleanup_terminate_16
-    %t13 = addr $a
-    call void @case_1__G___G(%t13)
+  block ^lexical_unwind_15:
+    eh_try ^lexical_cleanup_terminate_18
+    %t14 = addr $a
+    call void @case_1__G___G(%t14)
     eh_end
     jump ^lexical_unwind_14
 
-  block ^lexical_cleanup_terminate_16:
+  block ^lexical_cleanup_terminate_18:
     eh_catch_all, 3
-    %t12 = exception ptr
-    call void @cppgm_call_terminate(%t12)
+    %t15 = exception ptr
+    call void @cppgm_call_terminate(%t15)
     unreachable
 
-  block ^lexical_cleanup_dispatch_17:
+  block ^lexical_cleanup_dispatch_16:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_13
+    jump ^lexical_unwind_15
 
-  block ^lexical_cleanup_dispatch_18:
+  block ^lexical_cleanup_dispatch_17:
     eh_cleanup
     eh_end
     jump ^lexical_unwind_14
@@ -604,56 +598,12 @@ function @case_1__check() -> i32 [binding=strong, object=_ZN6case_15checkEv] {
     store typed i32 %t5, $n
     %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
-    branch %t7, ^lor_short_17, ^lor_rhs_16
-
-  block ^lor_rhs_16:
-    %t8 = load typed i32 @case_1__live
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_short_17:
-    store typed i64 1, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_end_18:
-    %t10 = load typed i64 $lor__5
-    branch %t10, ^lor_short_14, ^lor_rhs_13
-
-  block ^lor_rhs_13:
-    %t11 = load typed i32 @case_1__bad
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_short_14:
-    store typed i64 1, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_end_15:
-    %t13 = load typed i64 $lor__4
-    branch %t13, ^lor_short_11, ^lor_rhs_10
-
-  block ^lor_rhs_10:
-    %t14 = load typed i32 @case_1__drops
-    %t15 = cmp ne i32 %t14, 2
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_short_11:
-    store typed i64 1, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_end_12:
-    %t17 = load typed i64 $lor__3
-    branch %t17, ^lor_short_8, ^lor_rhs_7
+    branch %t7, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load typed i32 @case_1__trace
-    %t19 = cmp ne i32 %t18, 219
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $lor__2
+    %t8 = load typed i32 @case_1__live
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -661,7 +611,51 @@ function @case_1__check() -> i32 [binding=strong, object=_ZN6case_15checkEv] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load typed i64 $lor__2
+    %t10 = load typed i64 $lor__2
+    branch %t10, ^lor_short_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t11 = load typed i32 @case_1__bad
+    %t12 = cmp ne i64 %t11, 0
+    store typed i64 %t12, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_short_11:
+    store typed i64 1, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_end_12:
+    %t13 = load typed i64 $lor__3
+    branch %t13, ^lor_short_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t14 = load typed i32 @case_1__drops
+    %t15 = cmp ne i32 %t14, 2
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_short_14:
+    store typed i64 1, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_end_15:
+    %t17 = load typed i64 $lor__4
+    branch %t17, ^lor_short_17, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t18 = load typed i32 @case_1__trace
+    %t19 = cmp ne i32 %t18, 219
+    %t20 = cmp ne i64 %t19, 0
+    store typed i64 %t20, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_short_17:
+    store typed i64 1, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_end_18:
+    %t21 = load typed i64 $lor__5
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -728,60 +722,60 @@ function @case_2__f() -> void [binding=strong, object=_ZN6case_21fEv] {
 
   block ^cleanup_action_12:
     eh_try ^lexical_cleanup_terminate_15
-    %t11 = addr $a
-    call void @case_2__G___G(%t11)
+    %t10 = addr $a
+    call void @case_2__G___G(%t10)
     eh_end
     jump ^cleanup_action_11
 
   block ^lexical_cleanup_terminate_15:
     eh_catch_all, 2
-    %t10 = exception ptr
-    call void @cppgm_call_terminate(%t10)
+    %t11 = exception ptr
+    call void @cppgm_call_terminate(%t11)
     unreachable
 
   block ^call_unwind_dispatch_13:
     jump ^cleanup_action_12
 
   block ^call_unwind_end_14:
-    eh_try ^lexical_cleanup_dispatch_20
-    %t14 = addr $b
-    call void @case_2__G___G(%t14)
+    eh_try ^lexical_cleanup_dispatch_19
+    %t12 = addr $b
+    call void @case_2__G___G(%t12)
     eh_end
-    eh_try ^lexical_cleanup_dispatch_21
-    %t15 = addr $a
-    call void @case_2__G___G(%t15)
+    eh_try ^lexical_cleanup_dispatch_20
+    %t13 = addr $a
+    call void @case_2__G___G(%t13)
     eh_end
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^do_end_3
 
-  block ^lexical_unwind_18:
+  block ^lexical_unwind_16:
     resume
 
   block ^lexical_unwind_17:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_18
+    jump ^lexical_unwind_16
 
-  block ^lexical_unwind_16:
-    eh_try ^lexical_cleanup_terminate_19
-    %t13 = addr $a
-    call void @case_2__G___G(%t13)
+  block ^lexical_unwind_18:
+    eh_try ^lexical_cleanup_terminate_21
+    %t14 = addr $a
+    call void @case_2__G___G(%t14)
     eh_end
     jump ^lexical_unwind_17
 
-  block ^lexical_cleanup_terminate_19:
+  block ^lexical_cleanup_terminate_21:
     eh_catch_all, 3
-    %t12 = exception ptr
-    call void @cppgm_call_terminate(%t12)
+    %t15 = exception ptr
+    call void @cppgm_call_terminate(%t15)
     unreachable
 
-  block ^lexical_cleanup_dispatch_20:
+  block ^lexical_cleanup_dispatch_19:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_16
+    jump ^lexical_unwind_18
 
-  block ^lexical_cleanup_dispatch_21:
+  block ^lexical_cleanup_dispatch_20:
     eh_cleanup
     eh_end
     jump ^lexical_unwind_17
@@ -835,56 +829,12 @@ function @case_2__check() -> i32 [binding=strong, object=_ZN6case_25checkEv] {
     store typed i32 %t5, $n
     %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
-    branch %t7, ^lor_short_17, ^lor_rhs_16
-
-  block ^lor_rhs_16:
-    %t8 = load typed i32 @case_2__live
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_short_17:
-    store typed i64 1, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_end_18:
-    %t10 = load typed i64 $lor__5
-    branch %t10, ^lor_short_14, ^lor_rhs_13
-
-  block ^lor_rhs_13:
-    %t11 = load typed i32 @case_2__bad
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_short_14:
-    store typed i64 1, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_end_15:
-    %t13 = load typed i64 $lor__4
-    branch %t13, ^lor_short_11, ^lor_rhs_10
-
-  block ^lor_rhs_10:
-    %t14 = load typed i32 @case_2__drops
-    %t15 = cmp ne i32 %t14, 2
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_short_11:
-    store typed i64 1, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_end_12:
-    %t17 = load typed i64 $lor__3
-    branch %t17, ^lor_short_8, ^lor_rhs_7
+    branch %t7, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load typed i32 @case_2__trace
-    %t19 = cmp ne i32 %t18, 219
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $lor__2
+    %t8 = load typed i32 @case_2__live
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -892,7 +842,51 @@ function @case_2__check() -> i32 [binding=strong, object=_ZN6case_25checkEv] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load typed i64 $lor__2
+    %t10 = load typed i64 $lor__2
+    branch %t10, ^lor_short_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t11 = load typed i32 @case_2__bad
+    %t12 = cmp ne i64 %t11, 0
+    store typed i64 %t12, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_short_11:
+    store typed i64 1, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_end_12:
+    %t13 = load typed i64 $lor__3
+    branch %t13, ^lor_short_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t14 = load typed i32 @case_2__drops
+    %t15 = cmp ne i32 %t14, 2
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_short_14:
+    store typed i64 1, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_end_15:
+    %t17 = load typed i64 $lor__4
+    branch %t17, ^lor_short_17, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t18 = load typed i32 @case_2__trace
+    %t19 = cmp ne i32 %t18, 219
+    %t20 = cmp ne i64 %t19, 0
+    store typed i64 %t20, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_short_17:
+    store typed i64 1, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_end_18:
+    %t21 = load typed i64 $lor__5
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -966,60 +960,60 @@ function @case_3__f() -> void [binding=strong, object=_ZN6case_31fEv] {
 
   block ^cleanup_action_13:
     eh_try ^lexical_cleanup_terminate_16
-    %t13 = addr $a
-    call void @case_3__G___G(%t13)
+    %t12 = addr $a
+    call void @case_3__G___G(%t12)
     eh_end
     jump ^cleanup_action_12
 
   block ^lexical_cleanup_terminate_16:
     eh_catch_all, 2
-    %t12 = exception ptr
-    call void @cppgm_call_terminate(%t12)
+    %t13 = exception ptr
+    call void @cppgm_call_terminate(%t13)
     unreachable
 
   block ^call_unwind_dispatch_14:
     jump ^cleanup_action_13
 
   block ^call_unwind_end_15:
-    eh_try ^lexical_cleanup_dispatch_21
-    %t16 = addr $b
-    call void @case_3__G___G(%t16)
+    eh_try ^lexical_cleanup_dispatch_20
+    %t14 = addr $b
+    call void @case_3__G___G(%t14)
     eh_end
-    eh_try ^lexical_cleanup_dispatch_22
-    %t17 = addr $a
-    call void @case_3__G___G(%t17)
+    eh_try ^lexical_cleanup_dispatch_21
+    %t15 = addr $a
+    call void @case_3__G___G(%t15)
     eh_end
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^for_iter_3
 
-  block ^lexical_unwind_19:
+  block ^lexical_unwind_17:
     resume
 
   block ^lexical_unwind_18:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_19
+    jump ^lexical_unwind_17
 
-  block ^lexical_unwind_17:
-    eh_try ^lexical_cleanup_terminate_20
-    %t15 = addr $a
-    call void @case_3__G___G(%t15)
+  block ^lexical_unwind_19:
+    eh_try ^lexical_cleanup_terminate_22
+    %t16 = addr $a
+    call void @case_3__G___G(%t16)
     eh_end
     jump ^lexical_unwind_18
 
-  block ^lexical_cleanup_terminate_20:
+  block ^lexical_cleanup_terminate_22:
     eh_catch_all, 3
-    %t14 = exception ptr
-    call void @cppgm_call_terminate(%t14)
+    %t17 = exception ptr
+    call void @cppgm_call_terminate(%t17)
     unreachable
 
-  block ^lexical_cleanup_dispatch_21:
+  block ^lexical_cleanup_dispatch_20:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_17
+    jump ^lexical_unwind_19
 
-  block ^lexical_cleanup_dispatch_22:
+  block ^lexical_cleanup_dispatch_21:
     eh_cleanup
     eh_end
     jump ^lexical_unwind_18
@@ -1076,56 +1070,12 @@ function @case_3__check() -> i32 [binding=strong, object=_ZN6case_35checkEv] {
     store typed i32 %t5, $n
     %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
-    branch %t7, ^lor_short_17, ^lor_rhs_16
-
-  block ^lor_rhs_16:
-    %t8 = load typed i32 @case_3__live
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_short_17:
-    store typed i64 1, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_end_18:
-    %t10 = load typed i64 $lor__5
-    branch %t10, ^lor_short_14, ^lor_rhs_13
-
-  block ^lor_rhs_13:
-    %t11 = load typed i32 @case_3__bad
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_short_14:
-    store typed i64 1, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_end_15:
-    %t13 = load typed i64 $lor__4
-    branch %t13, ^lor_short_11, ^lor_rhs_10
-
-  block ^lor_rhs_10:
-    %t14 = load typed i32 @case_3__drops
-    %t15 = cmp ne i32 %t14, 2
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_short_11:
-    store typed i64 1, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_end_12:
-    %t17 = load typed i64 $lor__3
-    branch %t17, ^lor_short_8, ^lor_rhs_7
+    branch %t7, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load typed i32 @case_3__trace
-    %t19 = cmp ne i32 %t18, 219
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $lor__2
+    %t8 = load typed i32 @case_3__live
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -1133,7 +1083,51 @@ function @case_3__check() -> i32 [binding=strong, object=_ZN6case_35checkEv] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load typed i64 $lor__2
+    %t10 = load typed i64 $lor__2
+    branch %t10, ^lor_short_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t11 = load typed i32 @case_3__bad
+    %t12 = cmp ne i64 %t11, 0
+    store typed i64 %t12, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_short_11:
+    store typed i64 1, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_end_12:
+    %t13 = load typed i64 $lor__3
+    branch %t13, ^lor_short_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t14 = load typed i32 @case_3__drops
+    %t15 = cmp ne i32 %t14, 2
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_short_14:
+    store typed i64 1, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_end_15:
+    %t17 = load typed i64 $lor__4
+    branch %t17, ^lor_short_17, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t18 = load typed i32 @case_3__trace
+    %t19 = cmp ne i32 %t18, 219
+    %t20 = cmp ne i64 %t19, 0
+    store typed i64 %t20, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_short_17:
+    store typed i64 1, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_end_18:
+    %t21 = load typed i64 $lor__5
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -1197,60 +1191,60 @@ function @case_4__f() -> void [binding=strong, object=_ZN6case_41fEv] {
 
   block ^cleanup_action_9:
     eh_try ^lexical_cleanup_terminate_12
-    %t11 = addr $a
-    call void @case_4__G___G(%t11)
+    %t10 = addr $a
+    call void @case_4__G___G(%t10)
     eh_end
     jump ^cleanup_action_8
 
   block ^lexical_cleanup_terminate_12:
     eh_catch_all, 2
-    %t10 = exception ptr
-    call void @cppgm_call_terminate(%t10)
+    %t11 = exception ptr
+    call void @cppgm_call_terminate(%t11)
     unreachable
 
   block ^call_unwind_dispatch_10:
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
-    eh_try ^lexical_cleanup_dispatch_17
-    %t14 = addr $b
-    call void @case_4__G___G(%t14)
+    eh_try ^lexical_cleanup_dispatch_16
+    %t12 = addr $b
+    call void @case_4__G___G(%t12)
     eh_end
-    eh_try ^lexical_cleanup_dispatch_18
-    %t15 = addr $a
-    call void @case_4__G___G(%t15)
+    eh_try ^lexical_cleanup_dispatch_17
+    %t13 = addr $a
+    call void @case_4__G___G(%t13)
     eh_end
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^goto_19
+    jump ^goto_18
 
-  block ^lexical_unwind_15:
+  block ^lexical_unwind_13:
     resume
 
   block ^lexical_unwind_14:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_15
+    jump ^lexical_unwind_13
 
-  block ^lexical_unwind_13:
-    eh_try ^lexical_cleanup_terminate_16
-    %t13 = addr $a
-    call void @case_4__G___G(%t13)
+  block ^lexical_unwind_15:
+    eh_try ^lexical_cleanup_terminate_19
+    %t14 = addr $a
+    call void @case_4__G___G(%t14)
     eh_end
     jump ^lexical_unwind_14
 
-  block ^lexical_cleanup_terminate_16:
+  block ^lexical_cleanup_terminate_19:
     eh_catch_all, 3
-    %t12 = exception ptr
-    call void @cppgm_call_terminate(%t12)
+    %t15 = exception ptr
+    call void @cppgm_call_terminate(%t15)
     unreachable
 
-  block ^lexical_cleanup_dispatch_17:
+  block ^lexical_cleanup_dispatch_16:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_13
+    jump ^lexical_unwind_15
 
-  block ^lexical_cleanup_dispatch_18:
+  block ^lexical_cleanup_dispatch_17:
     eh_cleanup
     eh_end
     jump ^lexical_unwind_14
@@ -1264,9 +1258,9 @@ function @case_4__f() -> void [binding=strong, object=_ZN6case_41fEv] {
     resume
 
   block ^try_end_3:
-    jump ^goto_19
+    jump ^goto_18
 
-  block ^goto_19:
+  block ^goto_18:
     return void
 }
 function @case_4__check() -> i32 [binding=strong, object=_ZN6case_45checkEv] {
@@ -1301,56 +1295,12 @@ function @case_4__check() -> i32 [binding=strong, object=_ZN6case_45checkEv] {
     store typed i32 %t5, $n
     %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
-    branch %t7, ^lor_short_17, ^lor_rhs_16
-
-  block ^lor_rhs_16:
-    %t8 = load typed i32 @case_4__live
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_short_17:
-    store typed i64 1, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_end_18:
-    %t10 = load typed i64 $lor__5
-    branch %t10, ^lor_short_14, ^lor_rhs_13
-
-  block ^lor_rhs_13:
-    %t11 = load typed i32 @case_4__bad
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_short_14:
-    store typed i64 1, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_end_15:
-    %t13 = load typed i64 $lor__4
-    branch %t13, ^lor_short_11, ^lor_rhs_10
-
-  block ^lor_rhs_10:
-    %t14 = load typed i32 @case_4__drops
-    %t15 = cmp ne i32 %t14, 2
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_short_11:
-    store typed i64 1, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_end_12:
-    %t17 = load typed i64 $lor__3
-    branch %t17, ^lor_short_8, ^lor_rhs_7
+    branch %t7, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load typed i32 @case_4__trace
-    %t19 = cmp ne i32 %t18, 219
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $lor__2
+    %t8 = load typed i32 @case_4__live
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -1358,7 +1308,51 @@ function @case_4__check() -> i32 [binding=strong, object=_ZN6case_45checkEv] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load typed i64 $lor__2
+    %t10 = load typed i64 $lor__2
+    branch %t10, ^lor_short_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t11 = load typed i32 @case_4__bad
+    %t12 = cmp ne i64 %t11, 0
+    store typed i64 %t12, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_short_11:
+    store typed i64 1, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_end_12:
+    %t13 = load typed i64 $lor__3
+    branch %t13, ^lor_short_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t14 = load typed i32 @case_4__drops
+    %t15 = cmp ne i32 %t14, 2
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_short_14:
+    store typed i64 1, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_end_15:
+    %t17 = load typed i64 $lor__4
+    branch %t17, ^lor_short_17, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t18 = load typed i32 @case_4__trace
+    %t19 = cmp ne i32 %t18, 219
+    %t20 = cmp ne i64 %t19, 0
+    store typed i64 %t20, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_short_17:
+    store typed i64 1, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_end_18:
+    %t21 = load typed i64 $lor__5
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -1425,52 +1419,52 @@ function @case_5__f() -> void [binding=strong, object=_ZN6case_51fEv] {
 
   block ^cleanup_action_12:
     eh_try ^lexical_cleanup_terminate_15
-    %t11 = addr $a
-    call void @case_5__G___G(%t11)
+    %t10 = addr $a
+    call void @case_5__G___G(%t10)
     eh_end
     jump ^cleanup_action_11
 
   block ^lexical_cleanup_terminate_15:
     eh_catch_all, 2
-    %t10 = exception ptr
-    call void @cppgm_call_terminate(%t10)
+    %t11 = exception ptr
+    call void @cppgm_call_terminate(%t11)
     unreachable
 
   block ^call_unwind_dispatch_13:
     jump ^cleanup_action_12
 
   block ^call_unwind_end_14:
-    eh_try ^lexical_cleanup_dispatch_20
-    %t14 = addr $b
-    call void @case_5__G___G(%t14)
+    eh_try ^lexical_cleanup_dispatch_19
+    %t12 = addr $b
+    call void @case_5__G___G(%t12)
     eh_end
     jump ^do_end_9
 
-  block ^lexical_unwind_18:
+  block ^lexical_unwind_16:
     resume
 
   block ^lexical_unwind_17:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_18
+    jump ^lexical_unwind_16
 
-  block ^lexical_unwind_16:
-    eh_try ^lexical_cleanup_terminate_19
+  block ^lexical_unwind_18:
+    eh_try ^lexical_cleanup_terminate_20
     %t13 = addr $a
     call void @case_5__G___G(%t13)
     eh_end
     jump ^lexical_unwind_17
 
-  block ^lexical_cleanup_terminate_19:
+  block ^lexical_cleanup_terminate_20:
     eh_catch_all, 3
-    %t12 = exception ptr
-    call void @cppgm_call_terminate(%t12)
+    %t14 = exception ptr
+    call void @cppgm_call_terminate(%t14)
     unreachable
 
-  block ^lexical_cleanup_dispatch_20:
+  block ^lexical_cleanup_dispatch_19:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_16
+    jump ^lexical_unwind_18
 
   block ^do_cond_8:
     branch 0, ^do_body_7, ^do_end_9
@@ -1532,56 +1526,12 @@ function @case_5__check() -> i32 [binding=strong, object=_ZN6case_55checkEv] {
     store typed i32 %t5, $n
     %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
-    branch %t7, ^lor_short_17, ^lor_rhs_16
-
-  block ^lor_rhs_16:
-    %t8 = load typed i32 @case_5__live
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_short_17:
-    store typed i64 1, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_end_18:
-    %t10 = load typed i64 $lor__5
-    branch %t10, ^lor_short_14, ^lor_rhs_13
-
-  block ^lor_rhs_13:
-    %t11 = load typed i32 @case_5__bad
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_short_14:
-    store typed i64 1, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_end_15:
-    %t13 = load typed i64 $lor__4
-    branch %t13, ^lor_short_11, ^lor_rhs_10
-
-  block ^lor_rhs_10:
-    %t14 = load typed i32 @case_5__drops
-    %t15 = cmp ne i32 %t14, 2
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_short_11:
-    store typed i64 1, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_end_12:
-    %t17 = load typed i64 $lor__3
-    branch %t17, ^lor_short_8, ^lor_rhs_7
+    branch %t7, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load typed i32 @case_5__trace
-    %t19 = cmp ne i32 %t18, 219
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $lor__2
+    %t8 = load typed i32 @case_5__live
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -1589,7 +1539,51 @@ function @case_5__check() -> i32 [binding=strong, object=_ZN6case_55checkEv] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load typed i64 $lor__2
+    %t10 = load typed i64 $lor__2
+    branch %t10, ^lor_short_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t11 = load typed i32 @case_5__bad
+    %t12 = cmp ne i64 %t11, 0
+    store typed i64 %t12, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_short_11:
+    store typed i64 1, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_end_12:
+    %t13 = load typed i64 $lor__3
+    branch %t13, ^lor_short_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t14 = load typed i32 @case_5__drops
+    %t15 = cmp ne i32 %t14, 2
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_short_14:
+    store typed i64 1, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_end_15:
+    %t17 = load typed i64 $lor__4
+    branch %t17, ^lor_short_17, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t18 = load typed i32 @case_5__trace
+    %t19 = cmp ne i32 %t18, 219
+    %t20 = cmp ne i64 %t19, 0
+    store typed i64 %t20, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_short_17:
+    store typed i64 1, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_end_18:
+    %t21 = load typed i64 $lor__5
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -1663,52 +1657,52 @@ function @case_6__f() -> void [binding=strong, object=_ZN6case_61fEv] {
 
   block ^cleanup_action_13:
     eh_try ^lexical_cleanup_terminate_16
-    %t13 = addr $a
-    call void @case_6__G___G(%t13)
+    %t12 = addr $a
+    call void @case_6__G___G(%t12)
     eh_end
     jump ^cleanup_action_12
 
   block ^lexical_cleanup_terminate_16:
     eh_catch_all, 2
-    %t12 = exception ptr
-    call void @cppgm_call_terminate(%t12)
+    %t13 = exception ptr
+    call void @cppgm_call_terminate(%t13)
     unreachable
 
   block ^call_unwind_dispatch_14:
     jump ^cleanup_action_13
 
   block ^call_unwind_end_15:
-    eh_try ^lexical_cleanup_dispatch_21
-    %t16 = addr $b
-    call void @case_6__G___G(%t16)
+    eh_try ^lexical_cleanup_dispatch_20
+    %t14 = addr $b
+    call void @case_6__G___G(%t14)
     eh_end
     jump ^for_iter_9
 
-  block ^lexical_unwind_19:
+  block ^lexical_unwind_17:
     resume
 
   block ^lexical_unwind_18:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_19
+    jump ^lexical_unwind_17
 
-  block ^lexical_unwind_17:
-    eh_try ^lexical_cleanup_terminate_20
+  block ^lexical_unwind_19:
+    eh_try ^lexical_cleanup_terminate_21
     %t15 = addr $a
     call void @case_6__G___G(%t15)
     eh_end
     jump ^lexical_unwind_18
 
-  block ^lexical_cleanup_terminate_20:
+  block ^lexical_cleanup_terminate_21:
     eh_catch_all, 3
-    %t14 = exception ptr
-    call void @cppgm_call_terminate(%t14)
+    %t16 = exception ptr
+    call void @cppgm_call_terminate(%t16)
     unreachable
 
-  block ^lexical_cleanup_dispatch_21:
+  block ^lexical_cleanup_dispatch_20:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_17
+    jump ^lexical_unwind_19
 
   block ^for_iter_9:
     %t17 = load typed i32 $i
@@ -1773,56 +1767,12 @@ function @case_6__check() -> i32 [binding=strong, object=_ZN6case_65checkEv] {
     store typed i32 %t5, $n
     %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
-    branch %t7, ^lor_short_17, ^lor_rhs_16
-
-  block ^lor_rhs_16:
-    %t8 = load typed i32 @case_6__live
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_short_17:
-    store typed i64 1, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_end_18:
-    %t10 = load typed i64 $lor__5
-    branch %t10, ^lor_short_14, ^lor_rhs_13
-
-  block ^lor_rhs_13:
-    %t11 = load typed i32 @case_6__bad
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_short_14:
-    store typed i64 1, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_end_15:
-    %t13 = load typed i64 $lor__4
-    branch %t13, ^lor_short_11, ^lor_rhs_10
-
-  block ^lor_rhs_10:
-    %t14 = load typed i32 @case_6__drops
-    %t15 = cmp ne i32 %t14, 2
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_short_11:
-    store typed i64 1, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_end_12:
-    %t17 = load typed i64 $lor__3
-    branch %t17, ^lor_short_8, ^lor_rhs_7
+    branch %t7, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load typed i32 @case_6__trace
-    %t19 = cmp ne i32 %t18, 219
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $lor__2
+    %t8 = load typed i32 @case_6__live
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -1830,7 +1780,51 @@ function @case_6__check() -> i32 [binding=strong, object=_ZN6case_65checkEv] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load typed i64 $lor__2
+    %t10 = load typed i64 $lor__2
+    branch %t10, ^lor_short_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t11 = load typed i32 @case_6__bad
+    %t12 = cmp ne i64 %t11, 0
+    store typed i64 %t12, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_short_11:
+    store typed i64 1, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_end_12:
+    %t13 = load typed i64 $lor__3
+    branch %t13, ^lor_short_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t14 = load typed i32 @case_6__drops
+    %t15 = cmp ne i32 %t14, 2
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_short_14:
+    store typed i64 1, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_end_15:
+    %t17 = load typed i64 $lor__4
+    branch %t17, ^lor_short_17, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t18 = load typed i32 @case_6__trace
+    %t19 = cmp ne i32 %t18, 219
+    %t20 = cmp ne i64 %t19, 0
+    store typed i64 %t20, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_short_17:
+    store typed i64 1, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_end_18:
+    %t21 = load typed i64 $lor__5
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -1894,54 +1888,54 @@ function @case_7__f() -> void [binding=strong, object=_ZN6case_71fEv] {
 
   block ^cleanup_action_9:
     eh_try ^lexical_cleanup_terminate_12
-    %t11 = addr $a
-    call void @case_7__G___G(%t11)
+    %t10 = addr $a
+    call void @case_7__G___G(%t10)
     eh_end
     jump ^cleanup_action_8
 
   block ^lexical_cleanup_terminate_12:
     eh_catch_all, 2
-    %t10 = exception ptr
-    call void @cppgm_call_terminate(%t10)
+    %t11 = exception ptr
+    call void @cppgm_call_terminate(%t11)
     unreachable
 
   block ^call_unwind_dispatch_10:
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
-    eh_try ^lexical_cleanup_dispatch_17
-    %t14 = addr $b
-    call void @case_7__G___G(%t14)
+    eh_try ^lexical_cleanup_dispatch_16
+    %t12 = addr $b
+    call void @case_7__G___G(%t12)
     eh_end
-    jump ^goto_18
+    jump ^goto_17
 
-  block ^lexical_unwind_15:
+  block ^lexical_unwind_13:
     resume
 
   block ^lexical_unwind_14:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_15
+    jump ^lexical_unwind_13
 
-  block ^lexical_unwind_13:
-    eh_try ^lexical_cleanup_terminate_16
+  block ^lexical_unwind_15:
+    eh_try ^lexical_cleanup_terminate_18
     %t13 = addr $a
     call void @case_7__G___G(%t13)
     eh_end
     jump ^lexical_unwind_14
 
-  block ^lexical_cleanup_terminate_16:
+  block ^lexical_cleanup_terminate_18:
     eh_catch_all, 3
-    %t12 = exception ptr
-    call void @cppgm_call_terminate(%t12)
+    %t14 = exception ptr
+    call void @cppgm_call_terminate(%t14)
     unreachable
 
-  block ^lexical_cleanup_dispatch_17:
+  block ^lexical_cleanup_dispatch_16:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_13
+    jump ^lexical_unwind_15
 
-  block ^goto_18:
+  block ^goto_17:
     eh_try ^lexical_cleanup_dispatch_19
     %t15 = addr $a
     call void @case_7__G___G(%t15)
@@ -1998,56 +1992,12 @@ function @case_7__check() -> i32 [binding=strong, object=_ZN6case_75checkEv] {
     store typed i32 %t5, $n
     %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
-    branch %t7, ^lor_short_17, ^lor_rhs_16
-
-  block ^lor_rhs_16:
-    %t8 = load typed i32 @case_7__live
-    %t9 = cmp ne i64 %t8, 0
-    store typed i64 %t9, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_short_17:
-    store typed i64 1, $lor__5
-    jump ^lor_end_18
-
-  block ^lor_end_18:
-    %t10 = load typed i64 $lor__5
-    branch %t10, ^lor_short_14, ^lor_rhs_13
-
-  block ^lor_rhs_13:
-    %t11 = load typed i32 @case_7__bad
-    %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_short_14:
-    store typed i64 1, $lor__4
-    jump ^lor_end_15
-
-  block ^lor_end_15:
-    %t13 = load typed i64 $lor__4
-    branch %t13, ^lor_short_11, ^lor_rhs_10
-
-  block ^lor_rhs_10:
-    %t14 = load typed i32 @case_7__drops
-    %t15 = cmp ne i32 %t14, 2
-    %t16 = cmp ne i64 %t15, 0
-    store typed i64 %t16, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_short_11:
-    store typed i64 1, $lor__3
-    jump ^lor_end_12
-
-  block ^lor_end_12:
-    %t17 = load typed i64 $lor__3
-    branch %t17, ^lor_short_8, ^lor_rhs_7
+    branch %t7, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load typed i32 @case_7__trace
-    %t19 = cmp ne i32 %t18, 219
-    %t20 = cmp ne i64 %t19, 0
-    store typed i64 %t20, $lor__2
+    %t8 = load typed i32 @case_7__live
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
@@ -2055,7 +2005,51 @@ function @case_7__check() -> i32 [binding=strong, object=_ZN6case_75checkEv] {
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load typed i64 $lor__2
+    %t10 = load typed i64 $lor__2
+    branch %t10, ^lor_short_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t11 = load typed i32 @case_7__bad
+    %t12 = cmp ne i64 %t11, 0
+    store typed i64 %t12, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_short_11:
+    store typed i64 1, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_end_12:
+    %t13 = load typed i64 $lor__3
+    branch %t13, ^lor_short_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t14 = load typed i32 @case_7__drops
+    %t15 = cmp ne i32 %t14, 2
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_short_14:
+    store typed i64 1, $lor__4
+    jump ^lor_end_15
+
+  block ^lor_end_15:
+    %t17 = load typed i64 $lor__4
+    branch %t17, ^lor_short_17, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t18 = load typed i32 @case_7__trace
+    %t19 = cmp ne i32 %t18, 219
+    %t20 = cmp ne i64 %t19, 0
+    store typed i64 %t20, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_short_17:
+    store typed i64 1, $lor__5
+    jump ^lor_end_18
+
+  block ^lor_end_18:
+    %t21 = load typed i64 $lor__5
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -2156,6 +2150,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_24:
     return i32 0
 }
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
+    return void
+}
 function @case_0__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6case_01EC1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -2233,9 +2233,9 @@ function @case_0__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t15 = index i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
-    branch %t17, ^land_rhs_7, ^if_else_5
+    branch %t17, ^land_rhs_6, ^if_else_5
 
-  block ^land_rhs_7:
+  block ^land_rhs_6:
     %t18 = load typed i32 @case_0__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
@@ -2247,9 +2247,9 @@ function @case_0__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     return void
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_7
 
-  block ^if_end_6:
+  block ^if_end_7:
     return void
 }
 function @case_1__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6case_11EC1Ev, inline_hint=yes] {
@@ -2329,9 +2329,9 @@ function @case_1__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t15 = index i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
-    branch %t17, ^land_rhs_7, ^if_else_5
+    branch %t17, ^land_rhs_6, ^if_else_5
 
-  block ^land_rhs_7:
+  block ^land_rhs_6:
     %t18 = load typed i32 @case_1__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
@@ -2343,9 +2343,9 @@ function @case_1__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     return void
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_7
 
-  block ^if_end_6:
+  block ^if_end_7:
     return void
 }
 function @case_2__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6case_21EC1Ev, inline_hint=yes] {
@@ -2425,9 +2425,9 @@ function @case_2__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t15 = index i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
-    branch %t17, ^land_rhs_7, ^if_else_5
+    branch %t17, ^land_rhs_6, ^if_else_5
 
-  block ^land_rhs_7:
+  block ^land_rhs_6:
     %t18 = load typed i32 @case_2__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
@@ -2439,9 +2439,9 @@ function @case_2__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     return void
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_7
 
-  block ^if_end_6:
+  block ^if_end_7:
     return void
 }
 function @case_3__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6case_31EC1Ev, inline_hint=yes] {
@@ -2521,9 +2521,9 @@ function @case_3__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t15 = index i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
-    branch %t17, ^land_rhs_7, ^if_else_5
+    branch %t17, ^land_rhs_6, ^if_else_5
 
-  block ^land_rhs_7:
+  block ^land_rhs_6:
     %t18 = load typed i32 @case_3__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
@@ -2535,9 +2535,9 @@ function @case_3__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     return void
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_7
 
-  block ^if_end_6:
+  block ^if_end_7:
     return void
 }
 function @case_4__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6case_41EC1Ev, inline_hint=yes] {
@@ -2617,9 +2617,9 @@ function @case_4__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t15 = index i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
-    branch %t17, ^land_rhs_7, ^if_else_5
+    branch %t17, ^land_rhs_6, ^if_else_5
 
-  block ^land_rhs_7:
+  block ^land_rhs_6:
     %t18 = load typed i32 @case_4__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
@@ -2631,9 +2631,9 @@ function @case_4__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     return void
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_7
 
-  block ^if_end_6:
+  block ^if_end_7:
     return void
 }
 function @case_5__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6case_51EC1Ev, inline_hint=yes] {
@@ -2713,9 +2713,9 @@ function @case_5__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t15 = index i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
-    branch %t17, ^land_rhs_7, ^if_else_5
+    branch %t17, ^land_rhs_6, ^if_else_5
 
-  block ^land_rhs_7:
+  block ^land_rhs_6:
     %t18 = load typed i32 @case_5__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
@@ -2727,9 +2727,9 @@ function @case_5__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     return void
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_7
 
-  block ^if_end_6:
+  block ^if_end_7:
     return void
 }
 function @case_6__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6case_61EC1Ev, inline_hint=yes] {
@@ -2809,9 +2809,9 @@ function @case_6__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t15 = index i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
-    branch %t17, ^land_rhs_7, ^if_else_5
+    branch %t17, ^land_rhs_6, ^if_else_5
 
-  block ^land_rhs_7:
+  block ^land_rhs_6:
     %t18 = load typed i32 @case_6__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
@@ -2823,9 +2823,9 @@ function @case_6__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     return void
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_7
 
-  block ^if_end_6:
+  block ^if_end_7:
     return void
 }
 function @case_7__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6case_71EC1Ev, inline_hint=yes] {
@@ -2905,9 +2905,9 @@ function @case_7__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t15 = index i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
-    branch %t17, ^land_rhs_7, ^if_else_5
+    branch %t17, ^land_rhs_6, ^if_else_5
 
-  block ^land_rhs_7:
+  block ^land_rhs_6:
     %t18 = load typed i32 @case_7__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
@@ -2919,9 +2919,9 @@ function @case_7__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     return void
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_7
 
-  block ^if_end_6:
+  block ^if_end_7:
     return void
 }
 alias object _ZN6case_01EC2Ev = @case_0__E__E

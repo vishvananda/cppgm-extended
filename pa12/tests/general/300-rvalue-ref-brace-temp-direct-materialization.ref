@@ -1,19 +1,40 @@
 function @assign_from_empty_braces() -> i32 [binding=strong, object=_Z24assign_from_empty_bracesv] {
   slot $box : obj<4x4>
   slot $arg__1 : obj<4x4>
+  slot $call__2 : ptr
 
   block ^entry:
     %t1 = addr $box
     call void @Box__Box(%t1)
+    eh_try ^cleanup_resume_1
     %t2 = addr $box
     %t3 = addr $arg__1
     call void @Box__Box(%t3)
+    eh_end
+    jump ^call_unwind_end_2
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^call_unwind_end_2:
+    eh_try ^cleanup_action_3
     %t4 = call ptr @Box__operator_(%t2, %t3)
-    %t5 = addr $box
-    %t6 = index i8 %t5, 0
-    %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load typed i32 %t7
-    return i32 %t8
+    store typed ptr %t4, $call__2
+    %t5 = load typed ptr $call__2
+    call void @Box___Box(%t3)
+    eh_end
+    jump ^call_unwind_end_4
+
+  block ^cleanup_action_3:
+    call void @Box___Box(%t3)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_4:
+    %t6 = addr $box
+    %t7 = index i8 %t6, 0
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = load typed i32 %t8
+    return i32 %t9
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
@@ -54,13 +75,6 @@ function @Box__Box(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_
     eh_end
     resume
 }
-function @Box___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3BoxD1Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
 function @Box__operator_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN3BoxaSEOS_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
@@ -86,13 +100,6 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=4]) -> void [binding=
     store typed i32 7, %t2
     return void
 }
-function @Base___Base(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4BaseD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
 function @Base__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN4BaseaSEOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
@@ -111,6 +118,20 @@ function @Base__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_ad
     store typed i32 0, %t7
     %t8 = load typed ptr $this
     return ptr %t8
+}
+function @Box___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3BoxD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Base___Base(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4BaseD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
 }
 alias object _ZN3BoxC2Ev = @Box__Box
 alias object _ZN3BoxD2Ev = @Box___Box

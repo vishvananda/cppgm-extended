@@ -20,9 +20,9 @@ function @direct_storage_use
     epilogues shared
 
   block ^entry
-    load.i64 r8, @value
+    load.i64 rax, @value
     store.i64 @value, rdi
-    ret r8
+    ret rax
 
 function @observe_address
   abi
@@ -53,7 +53,6 @@ function @main
     mov <gpr0>, rax
     load.i64 <gpr1>, @value
     call @observe_address [args=(), unwind=no]
-    mov r8, rax
     mov rdx, 41
     cmp.i64 <gpr0>, rdx
     setne <gpr0>
@@ -63,9 +62,9 @@ function @main
     setne <gpr1>
     movzx <gpr1>, <gpr1>
     mov rdx, 0
-    cmp.ptr r8, rdx
-    sete r8
-    movzx r8, r8
+    cmp.ptr rax, rdx
+    sete rax
+    movzx rax, rax
     or <gpr0>, <gpr1>
-    or <gpr0>, r8
+    or <gpr0>, rax
     ret <gpr0>

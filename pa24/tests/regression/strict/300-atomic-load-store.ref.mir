@@ -19,12 +19,11 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, @g
-    load.i64 r9, [r8]
-    add r9, 1
-    store.i64 [r8], r9
-    load.i64 r9, [r8]
-    cmp.i64 r9, 8
-    sete rax
-    movzx rax, rax
-    ret rax
+    load.i64 r8, @g
+    add r8, 1
+    store.i64 @g, r8
+    load.i64 r8, @g
+    cmp.i64 r8, 8
+    sete r8
+    movzx r8, r8
+    ret r8

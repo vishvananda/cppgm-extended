@@ -12,7 +12,7 @@ function @semantic_lookup__lookup_direct_function_templates(%__param0 : ptr [pas
     store typed ptr %__param0, $__param0
     store typed ptr %__param1, $__param1
     %t1 = addr $retobj__1
-    call void @Box_pointer_to_int___Box_pointer_to_int_(%t1)
+    call void @Box_int____Box(%t1)
     return obj<1x1> $retobj__1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = call obj<1x1> @Analyzer__lookup_functions(%t4, %t5, %t6)
     return i32 0
 }
-function @Box_pointer_to_int___Box_pointer_to_int_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIPiEC1Ev, inline_hint=yes] {
+function @Box_int____Box(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIPiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -65,10 +65,10 @@ function @Analyzer__lookup_functions(%this : ptr [object_bytes=1], %scope : ptr 
 
   block ^if_end_3:
     %t8 = addr $retobj__1
-    call void @Box_pointer_to_int___Box_pointer_to_int_(%t8)
+    call void @Box_int____Box(%t8)
     return obj<1x1> $retobj__1
 }
-function @Analyzer__lookup_qualified_class_or_namespace_generic(%this : ptr [object_bytes=1], %scope : ptr [pass=by_address, object_bytes=1], %qualified : ptr, %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN8Analyzer43lookup_qualified_class_or_namespace_genericI3BoxIPiEZNS_16lookup_functionsER5ScopePKcEUlS5_S7_E_EET_S5_S7_RKT0_, inline_hint=yes] {
+function @Analyzer__lookup_qualified_class_or_namespace_generic(%this : ptr [object_bytes=1], %scope : ptr [pass=by_address, object_bytes=1], %qualified : ptr, %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=internal, object=_ZN8Analyzer43lookup_qualified_class_or_namespace_genericI3BoxIPiEZNS_16lookup_functionsER5ScopePKcEUlS5_S7_E_EET_S5_S7_RKT0_, inline_hint=yes] {
   slot $this : ptr
   slot $scope : ptr
   slot $qualified : ptr
@@ -87,7 +87,7 @@ function @Analyzer__lookup_qualified_class_or_namespace_generic(%this : ptr [obj
     %t5 = call obj<1x1> @Analyzer____lambda_Analyzer__lookup_functions_t125_141__operator__(%t2, %t3, %t4)
     return obj<1x1> $retobj__1
 }
-function @Analyzer____lambda_Analyzer__lookup_functions_t125_141__operator__(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=1], %lookup_name : ptr) -> obj<1x1> [result_classes=none, binding=weak, object=_ZZN8Analyzer16lookup_functionsER5ScopePKcENKUlS1_S3_E_clES1_S3_, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__lookup_functions_t125_141__operator__(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=1], %lookup_name : ptr) -> obj<1x1> [result_classes=none, binding=weak, object=_ZZN8Analyzer16lookup_functionsER5ScopePKcENKUlS1_S3_E_clES1_S3_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $target : ptr
   slot $lookup_name : ptr
@@ -103,4 +103,4 @@ function @Analyzer____lambda_Analyzer__lookup_functions_t125_141__operator__(%th
     %t4 = call obj<1x1> @semantic_lookup__lookup_direct_function_templates(%t2, %t3)
     return obj<1x1> $retobj__1
 }
-alias object _ZN3BoxIPiEC2Ev = @Box_pointer_to_int___Box_pointer_to_int_
+alias object _ZN3BoxIPiEC2Ev = @Box_int____Box

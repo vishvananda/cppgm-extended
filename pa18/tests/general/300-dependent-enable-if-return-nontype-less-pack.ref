@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t5 = addr $value
-    %t6 = call ptr @find__ov2(%t5)
+    %t6 = call ptr @find__2(%t5)
     %t7 = cmp eq ptr %t6, 0
     %t8 = cmp ne i64 %t7, 0
     store typed i64 %t8, $land__2
@@ -45,7 +45,7 @@ function @find(%__param0 : ptr [pass=by_address, object_bytes=1]) -> ptr [bindin
     store typed ptr %__param0, $__param0
     return ptr 0
 }
-function @find__ov2(%__param0 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z4findI6secondLi1EJ5firstS0_EEPKN9enable_ifIXeqT0_misZT1_Li1EET_E4typeERK5tupleIJDpT1_EE] {
+function @find__2(%__param0 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z4findI6secondLi1EJ5firstS0_EEPKN9enable_ifIXeqT0_misZT1_Li1EET_E4typeERK5tupleIJDpT1_EE] {
   slot $__param0 : ptr
 
   block ^entry:

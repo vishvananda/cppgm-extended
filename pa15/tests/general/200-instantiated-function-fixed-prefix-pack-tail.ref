@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t3 = call i32 @Box_int__float___f(5, 1, 2.0f)
+    %t3 = call i32 @Box_int_float___f(5, 1, 2f)
     %t4 = cmp eq i32 %t3, 7
     %t5 = cmp ne i64 %t4, 0
     store typed i64 %t5, $land__2
@@ -46,15 +46,15 @@ function @Box____f(%prefix : i32) -> i32 [binding=weak, object=_ZN3BoxIJEE1fEi] 
     %t5 = convert trunc i32 i64 %t4
     return i32 %t5
 }
-function @Box_int__float___f(%prefix : i32, %args : i32, %args__pack2 : f32) -> i32 [binding=weak, object=_ZN3BoxIJifEE1fEiif] {
+function @Box_int_float___f(%prefix : i32, %__param1 : i32, %__param2 : f32) -> i32 [binding=weak, object=_ZN3BoxIJifEE1fEiif] {
   slot $prefix : i32
-  slot $args : i32
-  slot $args__pack2 : f32
+  slot $__param1 : i32
+  slot $__param2 : f32
 
   block ^entry:
     store typed i32 %prefix, $prefix
-    store typed i32 %args, $args
-    store typed f32 %args__pack2, $args__pack2
+    store typed i32 %__param1, $__param1
+    store typed f32 %__param2, $__param2
     %t1 = load typed i32 $prefix
     %t2 = const i64 2
     %t3 = convert sext i64 i32 %t1

@@ -38,17 +38,15 @@ function @load_frame
   abi
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $home -> [rbp-4] : u32
 
   block ^entry
-    store.u32 [rbp-4], 4294967295
     call @barrier [args=()]
-    load.u32 r8, [rbp-4]
-    ret r8
+    mov rax, 4294967295
+    ret rax
 
 function @main
   abi
@@ -61,13 +59,11 @@ function @main
     preserve rbx r12
 
   block ^entry
-    load.u32 r8, @value
-    mov rbx, r8
+    load.u32 rbx, @value
     call @load_frame [args=()]
     mov r12, rax
     call @return_u32 [args=()]
     zext.i32 rax
-    mov r8, rax
     mov rdx, 4294967295
     cmp.i64 rbx, rdx
     setne rbx
@@ -77,11 +73,10 @@ function @main
     setne r12
     movzx r12, r12
     mov rdx, 4294967295
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
     or rbx, r12
-    or rbx, r8
-    mov rax, rbx
-    sext.i32 rax
-    ret rax
+    or rbx, rax
+    sext.i32 rbx
+    ret rbx

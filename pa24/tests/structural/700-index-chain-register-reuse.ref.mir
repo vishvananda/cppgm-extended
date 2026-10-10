@@ -21,10 +21,7 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, @cells
-    lea r8, [r8+8]
-    load.i64 r9, [r8+8]
-    cmp.i64 r9, 17
+    cmp.i64 @cells+16, 17
     sete rax
     movzx rax, rax
     ret rax

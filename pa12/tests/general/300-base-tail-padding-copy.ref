@@ -11,15 +11,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = const i64 4
     %t2 = convert sext i64 i32 4
     %t3 = cmp ne i64 %t1, %t2
-    branch %t3, ^if_then_1, ^lor_rhs_5
+    branch %t3, ^if_then_1, ^lor_rhs_4
 
-  block ^lor_rhs_5:
+  block ^lor_rhs_4:
     %t4 = const i64 4
     %t5 = convert sext i64 i32 4
     %t6 = cmp ne i64 %t4, %t5
-    branch %t6, ^if_then_1, ^lor_rhs_4
+    branch %t6, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t7 = const i64 8
     %t8 = convert sext i64 i32 8
     %t9 = cmp ne i64 %t7, %t8
@@ -29,9 +29,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_5
 
-  block ^if_end_3:
+  block ^if_end_5:
     %t10 = addr $source
     call void @Tagged__Tagged(%t10)
     %t11 = addr $target
@@ -71,9 +71,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t40 = load i8 %t39
     %t41 = convert sext i32 i8 %t40
     %t42 = cmp ne i32 %t41, 9
-    branch %t42, ^if_then_6, ^lor_rhs_10
+    branch %t42, ^if_then_6, ^lor_rhs_9
 
-  block ^lor_rhs_10:
+  block ^lor_rhs_9:
     %t43 = addr $target
     %t44 = index i8 %t43, 0
     %t45 = index i8 [projection=field] %t44, 0
@@ -82,9 +82,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t48 = convert zext u32 u8 %t47
     %t49 = copy i32 %t48
     %t50 = cmp ne i32 %t49, 0
-    branch %t50, ^if_then_6, ^lor_rhs_9
+    branch %t50, ^if_then_6, ^lor_rhs_8
 
-  block ^lor_rhs_9:
+  block ^lor_rhs_8:
     %t51 = addr $target
     %t52 = index i8 %t51, 0
     %t53 = index i8 [projection=field] %t52, 0
@@ -100,9 +100,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_7:
-    jump ^if_end_8
+    jump ^if_end_10
 
-  block ^if_end_8:
+  block ^if_end_10:
     %t60 = addr $copied
     %t61 = addr $source
     copyobj 2x4 %t61, %t60
@@ -111,9 +111,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t64 = load i8 %t63
     %t65 = convert sext i32 i8 %t64
     %t66 = cmp ne i32 %t65, 3
-    branch %t66, ^if_then_11, ^lor_rhs_15
+    branch %t66, ^if_then_11, ^lor_rhs_14
 
-  block ^lor_rhs_15:
+  block ^lor_rhs_14:
     %t67 = addr $copied
     %t68 = index i8 %t67, 0
     %t69 = index i8 [projection=field] %t68, 0
@@ -122,9 +122,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t72 = convert zext u32 u8 %t71
     %t73 = copy i32 %t72
     %t74 = cmp ne i32 %t73, 0
-    branch %t74, ^if_then_11, ^lor_rhs_14
+    branch %t74, ^if_then_11, ^lor_rhs_13
 
-  block ^lor_rhs_14:
+  block ^lor_rhs_13:
     %t75 = addr $copied
     %t76 = index i8 %t75, 0
     %t77 = index i8 [projection=field] %t76, 0
@@ -140,9 +140,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_else_12:
-    jump ^if_end_13
+    jump ^if_end_15
 
-  block ^if_end_13:
+  block ^if_end_15:
     %t84 = addr $first
     call void @Extended__Extended(%t84)
     %t85 = addr $second
@@ -167,17 +167,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t100 = load i8 %t99
     %t101 = convert sext i32 i8 %t100
     %t102 = cmp ne i32 %t101, 8
-    branch %t102, ^if_then_16, ^lor_rhs_20
+    branch %t102, ^if_then_16, ^lor_rhs_19
 
-  block ^lor_rhs_20:
+  block ^lor_rhs_19:
     %t103 = addr $second
     %t104 = index i8 %t103, 0
     %t105 = index i8 [projection=field] %t104, 0
     %t106 = load typed i32 %t105
     %t107 = cmp ne i32 %t106, 7
-    branch %t107, ^if_then_16, ^lor_rhs_19
+    branch %t107, ^if_then_16, ^lor_rhs_18
 
-  block ^lor_rhs_19:
+  block ^lor_rhs_18:
     %t108 = addr $second
     %t109 = index i8 %t108, 0
     %t110 = index i8 [projection=field] %t109, 4
@@ -190,9 +190,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 4
 
   block ^if_else_17:
-    jump ^if_end_18
+    jump ^if_end_20
 
-  block ^if_end_18:
+  block ^if_end_20:
     %t114 = addr $second
     %t115 = index i8 %t114, 0
     store typed ptr %t115, $alias
@@ -205,9 +205,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t121 = load i8 %t120
     %t122 = convert sext i32 i8 %t121
     %t123 = cmp ne i32 %t122, 8
-    branch %t123, ^if_then_21, ^lor_rhs_24
+    branch %t123, ^if_then_21, ^lor_rhs_23
 
-  block ^lor_rhs_24:
+  block ^lor_rhs_23:
     %t124 = addr $second
     %t125 = index i8 %t124, 0
     %t126 = index i8 [projection=field] %t125, 0
@@ -219,9 +219,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 5
 
   block ^if_else_22:
-    jump ^if_end_23
+    jump ^if_end_24
 
-  block ^if_end_23:
+  block ^if_end_24:
     return i32 0
 }
 function @Tagged__Tagged(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6TaggedC1Ev, inline_hint=yes] {
@@ -286,19 +286,6 @@ function @Pair__Pair__base_entry(%this : ptr [object_bytes=8]) -> void [binding=
     store i8 2, %t4
     return void
 }
-function @Pair__Pair(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN4PairC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store typed i32 1, %t2
-    %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 4
-    store i8 2, %t4
-    return void
-}
 function @Pair__operator___ov2(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [unwind=no, binding=weak, object=_ZN4PairaSEOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
@@ -331,6 +318,19 @@ function @Bits__Bits__base_entry(%this : ptr [object_bytes=4]) -> void [binding=
     %t11 = load typed ptr $this
     %t12 = index i8 [projection=field] %t11, 0
     store u8 %t10, %t12
+    return void
+}
+function @Pair__Pair(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN4PairC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store typed i32 1, %t2
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 4
+    store i8 2, %t4
     return void
 }
 alias object _ZN6TaggedC2Ev = @Tagged__Tagged

@@ -9,10 +9,10 @@ function @make(%a : i32, %b : i32) -> obj<8x4> [binding=strong, object=_Z4makeii
     %t1 = addr $retobj__1
     %t2 = load typed i32 $a
     %t3 = load typed i32 $b
-    call void @__cppgm_class_template_identity_0_0_0__pair__aggregate(%t1, %t2, %t3)
+    call void @pair__pair__aggregate(%t1, %t2, %t3)
     return obj<8x4> $retobj__1
 }
-function @__cppgm_class_template_identity_0_0_0__pair__aggregate(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
+function @pair__pair__aggregate(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $first : i32
   slot $second : i32

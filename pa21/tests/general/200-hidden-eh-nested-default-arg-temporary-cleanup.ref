@@ -120,7 +120,7 @@ function @Target__Target(%this : ptr [object_bytes=4], %__param1 : ptr, %alloc :
     store typed i32 %t3, %t5
     return void
 }
-function @Target___Target(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6TargetD1Ev, inline_hint=yes] {
+function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -134,7 +134,7 @@ function @Alloc___Alloc(%this : ptr [object_bytes=4]) -> void [unwind=no, bindin
     store typed ptr %this, $this
     return void
 }
-function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev, inline_hint=yes] {
+function @Target___Target(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6TargetD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -143,7 +143,7 @@ function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, bindin
 }
 alias object _ZN5GuardC2Ev = @Guard__Guard
 alias object _ZN5AllocC2Ev = @Alloc__Alloc
-alias object _ZN6TargetC2EPKcRK5Alloc = @Target__Target
-alias object _ZN6TargetD2Ev = @Target___Target
-alias object _ZN5AllocD2Ev = @Alloc___Alloc
 alias object _ZN5GuardD2Ev = @Guard___Guard
+alias object _ZN6TargetC2EPKcRK5Alloc = @Target__Target
+alias object _ZN5AllocD2Ev = @Alloc___Alloc
+alias object _ZN6TargetD2Ev = @Target___Target

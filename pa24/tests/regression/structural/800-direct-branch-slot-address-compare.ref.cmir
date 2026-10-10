@@ -17,9 +17,9 @@ function @main
 
   block ^entry
     store.i64 [rbp-<off0>], 0
-    lea rax, [rbp-<off0>]
-    lea rdx, [rbp-<off0>]
-    cmp.ptr rax, rdx
+    lea r8, [rbp-<off0>]
+    lea r9, [rbp-<off0>]
+    cmp.ptr r8, r9
     je ^same
     jmp ^different
 

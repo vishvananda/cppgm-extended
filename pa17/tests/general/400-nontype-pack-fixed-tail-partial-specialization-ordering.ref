@@ -1,3 +1,5 @@
+declare global @bin_literal___cppgm_class_template_identity_1____size : i32 [binding=weak, object=_ZN11bin_literalI5bytesIJLh7EEEJEE4sizeE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

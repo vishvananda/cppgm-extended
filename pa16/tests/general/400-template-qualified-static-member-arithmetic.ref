@@ -1,3 +1,5 @@
+declare global @Limits_unsignedlongint___digits : i32 [binding=weak, object=_ZN6LimitsImE6digitsE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

@@ -10,7 +10,7 @@ function @dynamic_four
     param %seed -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -24,7 +24,7 @@ function @select_smaller
     param %seed -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 32
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -32,18 +32,15 @@ function @select_smaller
     slot $left_value -> [rbp-8] : i64
     slot $right_value -> [rbp-16] : i64
     slot $selected_address -> [rbp-24] : ptr
-    temp %left -> [rbp-32] : ptr
 
   block ^entry
     store.i64 [rbp-8], 8
     lea rbx, [rbp-8]
-    store.ptr [rbp-32], rbx
     call @dynamic_four [args=(rdi)]
     store.i64 [rbp-16], rax
     lea r8, [rbp-16]
     load.i64 r9, [r8]
-    load.ptr rcx, [rbp-32]
-    cmp.i64 r9, [rcx]
+    cmp.i64 r9, [rbx]
     jb ^select_right
     jmp ^select_left
 
@@ -52,8 +49,7 @@ function @select_smaller
     jmp ^selected
 
   block ^select_left
-    load.ptr rax, [rbp-32]
-    store.ptr [rbp-24], rax
+    store.ptr [rbp-24], rbx
     jmp ^selected
 
   block ^selected

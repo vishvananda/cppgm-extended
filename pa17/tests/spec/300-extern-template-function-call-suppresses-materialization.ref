@@ -1,4 +1,4 @@
-declare function @plus_one(%arg0 : i32) -> i32 [binding=strong, object=_Z8plus_oneIiET_S0_]
+declare function @plus_one(%arg0 : i32) -> i32 [binding=weak, object=_Z8plus_oneIiET_S0_]
 
 function @use() -> i32 [binding=strong, object=_Z3usev] {
   block ^entry:

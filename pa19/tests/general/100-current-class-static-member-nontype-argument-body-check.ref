@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = index i8 [projection=field] %t2, 0
     store typed u32 3, %t3
     %t4 = addr $e
-    %t5 = call u32 @engine_unsigned_int__1__0__2___run(%t4)
+    %t5 = call u32 @engine_unsignedint_1_0_2___run(%t4)
     %t6 = cmp eq u32 %t5, 2
     branch %t6, ^cond_then_1, ^cond_else_2
 
@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load typed i32 $cond__1
     return i32 %t7
 }
-function @engine_unsigned_int__1__0__2___run(%this : ptr [object_bytes=4]) -> u32 [binding=weak, object=_ZN6engineIjLj1ELj0ELj2EE3runEv, inline_hint=yes] {
+function @engine_unsignedint_1_0_2___run(%this : ptr [object_bytes=4]) -> u32 [binding=weak, object=_ZN6engineIjLj1ELj0ELj2EE3runEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -33,11 +33,11 @@ function @engine_unsigned_int__1__0__2___run(%this : ptr [object_bytes=4]) -> u3
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed u32 %t2
     %t4 = convert zext i64 u32 %t3
-    %t5 = call i64 @helper_1__0__2__4294967295___next(%t4)
+    %t5 = call i64 @helper_1_0_2_4294967295___next(%t4)
     %t6 = convert trunc u32 i64 %t5
     return u32 %t6
 }
-function @helper_1__0__2__4294967295___next(%x : i64) -> i64 [binding=weak, object=_ZN6helperILy1ELy0ELy2ELy4294967295EE4nextEy, inline_hint=yes] {
+function @helper_1_0_2_4294967295___next(%x : i64) -> i64 [binding=weak, object=_ZN6helperILy1ELy0ELy2ELy4294967295EE4nextEy, inline_hint=yes] {
   slot $x : i64
 
   block ^entry:

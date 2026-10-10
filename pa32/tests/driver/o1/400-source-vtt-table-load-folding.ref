@@ -1,20 +1,16 @@
-declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_Base [binding=weak, object=_ZTS4Base] = {
+global @__typeinfo_name__struct_Leaf [storage=readonly, binding=weak, object=_ZTS4Leaf] = {
   i8 52
-  i8 66
-  i8 97
-  i8 115
+  i8 76
   i8 101
+  i8 97
+  i8 102
   i8 0
 }
-global @__rtti_struct_Base [binding=weak, object=_ZTI4Base] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Base
-}
-global @__typeinfo_name__struct_Middle [binding=weak, object=_ZTS6Middle] = {
+global @__typeinfo_name__struct_Middle [storage=readonly, binding=weak, object=_ZTS6Middle] = {
   i8 54
   i8 77
   i8 105
@@ -24,7 +20,19 @@ global @__typeinfo_name__struct_Middle [binding=weak, object=_ZTS6Middle] = {
   i8 101
   i8 0
 }
-global @__rtti_struct_Middle [binding=weak, object=_ZTI6Middle] = {
+global @__typeinfo_name__struct_Base [storage=readonly, binding=weak, object=_ZTS4Base] = {
+  i8 52
+  i8 66
+  i8 97
+  i8 115
+  i8 101
+  i8 0
+}
+global @__rtti_struct_Base [storage=readonly, binding=weak, object=_ZTI4Base] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Base
+}
+global @__rtti_struct_Middle [storage=readonly, binding=weak, object=_ZTI6Middle] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_Middle
   i32 0
@@ -32,26 +40,10 @@ global @__rtti_struct_Middle [binding=weak, object=_ZTI6Middle] = {
   ptr addr @__rtti_struct_Base
   i64 -6141
 }
-global @__typeinfo_name__struct_Leaf [binding=weak, object=_ZTS4Leaf] = {
-  i8 52
-  i8 76
-  i8 101
-  i8 97
-  i8 102
-  i8 0
-}
-global @__rtti_struct_Leaf [binding=weak, object=_ZTI4Leaf] = {
+global @__rtti_struct_Leaf [storage=readonly, binding=weak, object=_ZTI4Leaf] = {
   ptr addr @__external_rtti_vtable____si_class_type_info + 16
   ptr addr @__typeinfo_name__struct_Leaf
   ptr addr @__rtti_struct_Middle
-}
-global @Middle__vtable [storage=readonly, binding=weak, object=_ZTV6Middle] = {
-  i64 12
-  i64 0
-  ptr addr @__rtti_struct_Middle
-}
-global @Middle____vtt [storage=readonly, binding=weak, object=_ZTT6Middle, object_root=yes] = {
-  ptr addr @Middle__vtable + 24
 }
 global @Leaf__vtable [storage=readonly, binding=weak, object=_ZTV4Leaf] = {
   i64 12
@@ -67,6 +59,14 @@ global @Leaf____vtt [storage=readonly, binding=weak, object=_ZTT4Leaf, object_ro
   ptr addr @Leaf__vtable + 24
   ptr addr @Leaf____construction__Middle__0__s0__vtable + 24
 }
+global @Middle__vtable [storage=readonly, binding=weak, object=_ZTV6Middle] = {
+  i64 12
+  i64 0
+  ptr addr @__rtti_struct_Middle
+}
+global @Middle____vtt [storage=readonly, binding=weak, object=_ZTT6Middle, object_root=yes] = {
+  ptr addr @Middle__vtable + 24
+}
 
 function @use_leaf() -> i32 [binding=strong, object=_Z8use_leafv] {
   block ^entry:
@@ -74,21 +74,19 @@ function @use_leaf() -> i32 [binding=strong, object=_Z8use_leafv] {
 }
 function @Base__Base__base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
   block ^entry:
-    %t1 = copy ptr %this
-    store typed i32 7, %t1
+    store typed i32 7, %this
     return void
 }
 function @Middle__Middle__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN6MiddleC2Ev, object_root=yes, inline_hint=yes] {
   block ^entry:
-    %t1 = copy ptr %this
-    %t2 = load typed ptr %__vtt
-    store typed ptr %t2, %t1
-    %t4 = index i8 %t2, -24
-    %t5 = load typed i64 %t4
-    %t6 = index i8 %this, %t5
-    %t9 = load typed i32 %t6
-    %t10 = binary add nowrap i32 %t9, 1
-    %t12 = index i8 [projection=field] %this, 8
-    store typed i32 %t10, %t12
+    %t1 = load typed ptr %__vtt
+    store typed ptr %t1, %this
+    %t2 = index i8 %t1, -24
+    %t3 = load typed i64 %t2
+    %t4 = index i8 %this, %t3
+    %t5 = load typed i32 %t4
+    %t6 = binary add nowrap i32 %t5, 1
+    %t7 = index i8 [projection=field] %this, 8
+    store typed i32 %t6, %t7
     return void
 }

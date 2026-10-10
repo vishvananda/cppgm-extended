@@ -10,99 +10,76 @@ function @pressure
     param %n -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 128
+    stack_size 80
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    preserve rbx r15 r14 r12 r13
-    temp %t48 -> [rbp-8] : i64
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    param-slot %n -> [rbp-40] : i64
+    temp %t50 -> [rbp-8] : i64
     temp %t51 -> [rbp-16] : i64
     temp %t52 -> [rbp-24] : i64
     temp %t53 -> [rbp-32] : i64
-    temp %t54 -> [rbp-40] : i64
-    temp %t20 -> [rbp-48] : i64
-    temp %t23 -> [rbp-56] : i64
-    temp %t26 -> [rbp-64] : i64
-    temp %t29 -> [rbp-72] : i64
-    temp %t31 -> [rbp-80] : i64
 
   block ^entry
-    mov rbx, rdi
-    mov r15, 1
-    mov r14, 2
-    mov r11, 3
-    store.i64 [rbp-8], r11
-    mov r12, 4
-    mov r13, 5
-    mov r11, 6
-    store.i64 [rbp-16], r11
-    mov r11, 7
-    store.i64 [rbp-24], r11
-    mov r11, 8
-    store.i64 [rbp-32], r11
-    mov r11, 0
-    store.i64 [rbp-40], r11
+    store.i64 [rbp-40], rdi
+    mov r12, 1
+    mov r13, 2
+    mov r14, 3
+    mov r15, 4
+    store.i64 [rbp-8], 5
+    store.i64 [rbp-16], 6
+    store.i64 [rbp-24], 7
+    store.i64 [rbp-32], 8
+    mov rbx, 0
 
   block ^for_cond_1
-    cmp.i64 [rbp-40], rbx
-    jge ^for_end_4
-
-  block ^for_body_2
-    load.i64 rdi, [rbp-40]
-    call @step [args=(rdi)]
-    lea r9, [r15+rax]
-    lea r8, [r14+r9]
-    load.i64 rdi, [rbp-8]
-    add rdi, r8
-    lea rsi, [r12+rdi]
-    lea rax, [r13+rsi]
-    store.i64 [rbp-48], rax
-    load.i64 rax, [rbp-16]
-    add rax, [rbp-48]
-    store.i64 [rbp-56], rax
-    load.i64 rax, [rbp-24]
-    add rax, [rbp-56]
-    store.i64 [rbp-64], rax
-    load.i64 rax, [rbp-32]
-    add rax, [rbp-64]
-    store.i64 [rbp-72], rax
-    load.i64 rax, [rbp-40]
-    add rax, 1
-    store.i64 [rbp-80], rax
-    mov r15, r9
-    mov r14, r8
-    store.i64 [rbp-8], rdi
-    mov r12, rsi
-    load.i64 r13, [rbp-48]
-    load.i64 r11, [rbp-56]
-    store.i64 [rbp-16], r11
-    load.i64 r11, [rbp-64]
-    store.i64 [rbp-24], r11
-    load.i64 r11, [rbp-72]
-    store.i64 [rbp-32], r11
-    load.i64 r11, [rbp-80]
-    store.i64 [rbp-40], r11
-    jmp ^for_cond_1
+    cmp.i64 rbx, rdi
+    jl ^for_body_2
 
   block ^for_end_4
-    lea r9, [r15+r14]
-    add r9, [rbp-8]
-    add r9, r12
-    add r9, r13
+    add r12, r13
+    add r12, r14
+    add r12, r15
+    add r12, [rbp-8]
+    add r12, [rbp-16]
+    add r12, [rbp-24]
+    add r12, [rbp-32]
+    ret r12
+
+  block ^for_body_2
+    mov rdi, rbx
+    call @step [args=(rdi)]
+    add r12, rax
+    add r13, r12
+    add r14, r13
+    add r15, r14
+    mov r8, r15
+    add r8, [rbp-8]
+    mov r9, r8
     add r9, [rbp-16]
-    add r9, [rbp-24]
-    add r9, [rbp-32]
-    ret r9
+    mov rdi, r9
+    add rdi, [rbp-24]
+    mov rsi, rdi
+    add rsi, [rbp-32]
+    add rbx, 1
+    store.i64 [rbp-8], r8
+    store.i64 [rbp-16], r9
+    store.i64 [rbp-24], rdi
+    store.i64 [rbp-32], rsi
+    cmp.i64 rbx, [rbp-40]
+    jl ^for_body_2
+    jmp ^for_end_4
 
 function @step
   abi
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     add rdi, 1
@@ -112,27 +89,23 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 64
+    stack_size 48
     scratch_bytes 48
     frame_pointer keep
-    epilogues direct
-    temp %t0 -> [rbp-4] : i32
+    epilogues duplicated
 
   block ^entry
     mov rdi, 3
     call @pressure [args=(rdi)]
     cmp.i64 rax, 1008
-    jne ^cond_else_2
-
-  block ^cond_then_1
-    mov r11, 0
-    store.i32 [rbp-4], r11
-    jmp ^cond_end_3
+    je ^cond_then_1
 
   block ^cond_else_2
-    mov r11, 1
-    store.i32 [rbp-4], r11
+    mov rax, 1
 
   block ^cond_end_3
-    load.i32 rax, [rbp-4]
     ret rax
+
+  block ^cond_then_1
+    mov rax, 0
+    jmp ^cond_end_3

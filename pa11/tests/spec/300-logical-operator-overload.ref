@@ -16,7 +16,7 @@ function @operator__(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [p
     %t9 = convert trunc u8 i64 %t8
     return u8 %t9
 }
-function @operator____sym2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=strong, object=_ZooRK5LogicS1_] {
+function @operator____2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=strong, object=_ZooRK5LogicS1_] {
   slot $lhs : ptr
   slot $rhs : ptr
 
@@ -62,7 +62,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t13 = addr $one
     %t14 = addr $three
-    %t15 = call u8 @operator____sym2(%t13, %t14)
+    %t15 = call u8 @operator____2(%t13, %t14)
     %t16 = cmp ne i64 %t15, 0
     store typed i64 %t16, $land__2
     jump ^land_end_6

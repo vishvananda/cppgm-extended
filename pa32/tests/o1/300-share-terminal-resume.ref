@@ -19,12 +19,9 @@ function @work(%choose : i64) -> void {
 
   block ^cleanup_left:
     call void @cleanup()
-    jump ^resume_left
+    resume
 
   block ^cleanup_right:
     call void @cleanup()
-    jump ^resume_left
-
-  block ^resume_left:
     resume
 }

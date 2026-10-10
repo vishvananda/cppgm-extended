@@ -12,8 +12,8 @@ function @observe
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     load.i32 rax, [rdi]
@@ -27,12 +27,12 @@ function @probe
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     slot $left -> [rbp-<off0>] : obj<1600x4>
     slot $right -> [rbp-<off0>] : obj<1600x4>
 
   block ^entry
-    test.i64 rdi, rdi
+    cmp.i32 rdi, 0
     je ^right
 
   block ^left
@@ -54,32 +54,30 @@ function @loop_overlap
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    slot $first -> [rbp-<off0>] : obj<1600x4>
-    slot $second -> [rbp-<off1>] : obj<1600x4>
-    slot $saved -> [rbp-<off2>] : ptr
-    slot $iteration -> [rbp-<off3>] : i32
+    epilogues duplicated
+    slot $first -> [rbp-<off1>] : obj<1600x4>
+    slot $second -> [rbp-<off2>] : obj<1600x4>
+    slot $saved -> [rbp-<off3>] : ptr
+    slot $iteration -> [rbp-<off4>] : i32
 
   block ^entry
-    store.i32 [rbp-<off3>], 0
+    store.i32 [rbp-<off4>], 0
 
   block ^dispatch
-    load.i32 r9, [rbp-<off3>]
-    test.i64 r9, r9
+    cmp.i32 [rbp-<off4>], 0
     jne ^second
 
   block ^first
-    store.i32 [rbp-<off0>], 7
-    lea rax, [rbp-<off0>]
-    store.ptr [rbp-<off2>], rax
-    store.i32 [rbp-<off3>], 1
-    jmp ^dispatch
+    lea r8, [rbp-<off1>]
+    store.i32 [r8], 7
+    store.ptr [rbp-<off3>], r8
+    store.i32 [rbp-<off4>], 1
+    cmp.i32 [rbp-<off4>], 0
+    je ^first
 
   block ^second
-    store.i32 [rbp-<off1>], 9
-    load.ptr r8, [rbp-<off2>]
-    load.i32 r9, [r8]
-    cmp.i32 r9, 7
+    load.ptr r8, [rbp-<off3>]
+    cmp.i32 [r8], 7
     setne rax
     movzx rax, rax
     ret rax
@@ -90,31 +88,23 @@ function @main
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
     preserve <gpr0>
 
   block ^entry
     mov rdi, 1
     call @probe [args=(rdi)]
     mov <gpr0>, rax
-    sext.i32 <gpr0>
     mov rdi, 0
     call @probe [args=(rdi)]
-    mov r8, rax
-    sext.i32 r8
-    mov rdx, 7
-    cmp.i32 <gpr0>, rdx
+    cmp.i32 <gpr0>, 7
     setne <gpr0>
     movzx <gpr0>, <gpr0>
-    mov rdx, 9
-    cmp.i32 r8, rdx
-    setne r8
-    movzx r8, r8
-    or <gpr0>, r8
-    sext.i32 <gpr0>
-    call @loop_overlap [args=()]
-    sext.i32 rax
+    cmp.i32 rax, 9
+    setne rax
+    movzx rax, rax
     or <gpr0>, rax
-    sext.i32 <gpr0>
+    call @loop_overlap [args=()]
+    or <gpr0>, rax
     ret <gpr0>

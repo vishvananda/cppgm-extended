@@ -14,7 +14,7 @@ function @produce
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -27,7 +27,7 @@ function @consume
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -66,7 +66,7 @@ function @load_saved
     param %value -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -80,7 +80,7 @@ function @store_result
     param %value -> rdi : i64
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -110,20 +110,18 @@ function @main
     load.i64 rbx, @saved
     call @saved_address [args=()]
     mov r12, rax
-    mov rdi, rax
+    mov rdi, r12
     call @observe_reference [args=(rdi)]
     mov rdi, r12
     call @load_saved [args=(rdi)]
-    mov r8, rax
     mov rdx, 41
     cmp.i64 rbx, rdx
     setne rbx
     movzx rbx, rbx
     mov rdx, 41
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    or rbx, r8
-    mov rax, rbx
-    sext.i32 rax
-    ret rax
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    sext.i32 rbx
+    ret rbx

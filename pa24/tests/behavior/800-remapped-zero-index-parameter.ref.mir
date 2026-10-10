@@ -16,21 +16,18 @@ function @read_fifth
     param %unused6 -> [rbp+16] : i64
     return i64 -> rax
   frame
-    stack_size 64
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %unused6 -> [rbp-8] : i64
-    slot $scratch1 -> [rbp-16] : i64
-    slot $scratch2 -> [rbp-24] : i64
+    slot $scratch1 -> [rbp-8] : i64
+    slot $scratch2 -> [rbp-16] : i64
 
   block ^entry
-    load.i64 rax, [rbp+16]
-    store.i64 [rbp-8], rax
-    load.i64 r9, [r8]
-    store.i64 [rbp-16], 11
-    store.i64 [rbp-24], 22
-    ret r9
+    load.i64 rax, [r8]
+    store.i64 [rbp-8], 11
+    store.i64 [rbp-16], 22
+    ret rax
 
 function @main
   abi
@@ -43,13 +40,13 @@ function @main
     slot $value -> [rbp-8] : i64
 
   block ^entry
-    store.i64 [rbp-8], 77
-    sub rsp, 16
     lea rdi, [rbp-8]
+    store.i64 [rdi], 77
+    sub rsp, 16
     mov rsi, 1
     mov rdx, 2
     mov rcx, 3
-    lea r8, [rbp-8]
+    mov r8, rdi
     mov r9, 5
     mov r11, 6
     store.i64 [rsp], r11

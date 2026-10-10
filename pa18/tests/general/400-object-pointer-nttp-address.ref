@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @reader__boost_like__mark___get()
     return i32 %t1
 }
-function @boost_like__marker__boost_like__mark___marker__boost_like__mark_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN10boost_like6markerIXadL_ZNS_4markEEEEC1Ev, inline_hint=yes] {
+function @boost_like__marker__boost_like__mark___marker(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN10boost_like6markerIXadL_ZNS_4markEEEEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -48,7 +48,7 @@ function @reader__boost_like__mark___get() -> i32 [binding=weak, object=_ZN6read
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
     %t1 = addr @boost_like__instantiated
-    call void @boost_like__marker__boost_like__mark___marker__boost_like__mark_(%t1)
+    call void @boost_like__marker__boost_like__mark___marker(%t1)
     return void
 }
-alias object _ZN10boost_like6markerIXadL_ZNS_4markEEEEC2Ev = @boost_like__marker__boost_like__mark___marker__boost_like__mark_
+alias object _ZN10boost_like6markerIXadL_ZNS_4markEEEEC2Ev = @boost_like__marker__boost_like__mark___marker

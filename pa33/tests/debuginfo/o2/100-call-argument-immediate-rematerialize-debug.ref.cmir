@@ -12,8 +12,8 @@ function @id
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi !dbg(test.cpp, 1, 1)
@@ -24,8 +24,8 @@ function @main
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     mov rdi, 20 !dbg(test.cpp, 6, 1)

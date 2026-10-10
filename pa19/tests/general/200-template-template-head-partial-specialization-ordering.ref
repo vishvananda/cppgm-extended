@@ -1,3 +1,5 @@
+declare global @lambda___cppgm_class_template_identity_1_tag___cppgm_class_template_identity_2___value : i32 [binding=weak, object=_ZN6lambdaI5bind1I9predicateI4itemS2_ES2_E3tag4int_ILi2EEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

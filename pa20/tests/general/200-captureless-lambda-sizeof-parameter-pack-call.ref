@@ -17,11 +17,11 @@ function @g(%args : i32, %args__pack2 : i8) -> i32 [binding=weak, object=_Z1gIJi
     %t2 = addr $f
     %t3 = load typed i32 $args
     %t4 = load i8 $args__pack2
-    %t5 = call i64 @__lambda_g__int__char_t19_24__operator__(%t2, %t3, %t4)
+    %t5 = call i64 @__lambda_g_t19_24__operator__(%t2, %t3, %t4)
     %t6 = convert trunc i32 i64 %t5
     return i32 %t6
 }
-function @__lambda_g__int__char_t19_24__operator__(%this : ptr [object_bytes=1], %args2 : i32, %args2__pack2 : i8) -> i64 [binding=weak, object=_ZZ1gIJicEEiDpT_ENKUlicE_clEic, inline_hint=yes] {
+function @__lambda_g_t19_24__operator__(%this : ptr [object_bytes=1], %args2 : i32, %args2__pack2 : i8) -> i64 [binding=internal, object=_ZZ1gIJicEEiDpT_ENKUlicE_clEic, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $args2 : i32
   slot $args2__pack2 : i8

@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t4 = addr $value
-    %t5 = call i32 @pick__ov3(%t4)
+    %t5 = call i32 @pick__2(%t4)
     %t6 = cmp eq i32 %t5, 2
     %t7 = cmp ne i64 %t6, 0
     store typed i64 %t7, $land__2
@@ -45,7 +45,7 @@ function @pick(%__param0 : i32) -> i32 [binding=weak, object=_Z4pickIiEiT_] {
     store typed i32 %__param0, $__param0
     return i32 1
 }
-function @pick__ov3(%__param0 : ptr) -> i32 [binding=weak, object=_Z4pickIiEiPT_] {
+function @pick__2(%__param0 : ptr) -> i32 [binding=weak, object=_Z4pickIiEiPT_] {
   slot $__param0 : ptr
 
   block ^entry:

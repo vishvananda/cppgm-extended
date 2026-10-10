@@ -1,4 +1,4 @@
-declare function @h(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z1hv]
+declare function @h(%arg0 : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z1hv]
 
 global @which : i32 [binding=strong] = zero
 

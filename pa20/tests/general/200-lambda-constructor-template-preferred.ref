@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $sink
     %t2 = addr $argobj__1
-    call void @Sink__Sink__ov3(%t1, $argobj__1)
+    call void @Sink__Sink(%t1, $argobj__1)
     %t3 = addr $sink
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load typed i32 %t4
@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load typed i32 $cond__2
     return i32 %t7
 }
-function @Sink__Sink__ov3(%this : ptr [object_bytes=4], %f : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_0EET_, object_root=yes, inline_hint=yes] {
+function @Sink__Sink(%this : ptr [object_bytes=4], %f : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_0EET_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $f : obj<1x1>
 
@@ -49,4 +49,4 @@ function @__lambda_main_t66_70__operator__(%this : ptr [object_bytes=1], %x : i3
     %t2 = binary add nowrap i32 %t1, 1
     return i32 %t2
 }
-alias object _ZN4SinkC2IZ4mainE3$_0EET_ = @Sink__Sink__ov3
+alias object _ZN4SinkC2IZ4mainE3$_0EET_ = @Sink__Sink

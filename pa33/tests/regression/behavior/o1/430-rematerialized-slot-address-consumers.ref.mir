@@ -14,10 +14,10 @@ function @identity
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi
@@ -30,33 +30,29 @@ function @copy_and_store_address
     stack_size 32
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    preserve rbx
+    epilogues duplicated
+    preserve rbx r12
     slot $value -> [rbp-8] : i64
     slot $saved -> [rbp-16] : ptr
 
   block ^entry
-    mov rbx, rdi
+    mov r12, rdi
+    lea rbx, [rbp-8]
     mov rdi, 7
     call @identity [args=(rdi), unwind=no]
-    test.i64 rbx, rbx
+    cmp.i64 r12, 0
     je ^direct
 
   block ^copy
-    lea rax, [rbp-8]
-    store.ptr [rbp-16], rax
-    jmp ^done
-
-  block ^direct
-    lea rax, [rbp-8]
-    store.ptr [rbp-16], rax
 
   block ^done
-    load.ptr r9, [rbp-16]
-    test.ptr r9, r9
+    cmp.ptr rbx, 0
     sete rax
     movzx rax, rax
     ret rax
+
+  block ^direct
+    jmp ^done
 
 function @return_slot_address
   abi
@@ -65,14 +61,15 @@ function @return_slot_address
     stack_size 16
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
+    preserve rbx
     slot $value -> [rbp-8] : i64
 
   block ^entry
+    lea rbx, [rbp-8]
     mov rdi, 9
     call @identity [args=(rdi), unwind=no]
-    lea rax, [rbp-8]
-    ret rax
+    ret rbx
 
 function @integer_copy_arithmetic
   abi
@@ -81,17 +78,17 @@ function @integer_copy_arithmetic
     stack_size 16
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     slot $value -> [rbp-8] : i64
 
   block ^entry
-    lea r9, [rbp-8]
-    lea r8, [rbp-7]
-    sub r8, 1
-    cmp.i64 r8, r9
-    setne rax
-    movzx rax, rax
-    ret rax
+    lea r8, [rbp-8]
+    lea r9, [r8+1]
+    sub r9, 1
+    cmp.i64 r9, r8
+    setne r9
+    movzx r9, r9
+    ret r9
 
 function @copy_and_store_global_address
   abi
@@ -100,34 +97,33 @@ function @copy_and_store_global_address
     stack_size 16
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    slot $saved -> [rbp-8] : ptr
+    epilogues duplicated
+    preserve rbx
 
   block ^entry
+    mov rbx, @global_value
     mov rdi, 13
     call @identity [args=(rdi), unwind=no]
-    mov rax, @global_value
-    store.ptr [rbp-8], rax
-    load.ptr r9, [rbp-8]
-    test.ptr r9, r9
-    sete rax
-    movzx rax, rax
-    ret rax
+    cmp.ptr rbx, 0
+    sete rbx
+    movzx rbx, rbx
+    ret rbx
 
 function @return_global_address
   abi
     return ptr -> rax
   frame
-    stack_size 0
+    stack_size 16
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
 
   block ^entry
+    mov rbx, @global_value
     mov rdi, 15
     call @identity [args=(rdi), unwind=no]
-    mov rax, @global_value
-    ret rax
+    ret rbx
 
 function @global_integer_arithmetic
   abi
@@ -135,17 +131,17 @@ function @global_integer_arithmetic
   frame
     stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
-    mov r9, @global_value
-    lea r8, [r9+1]
-    sub r8, 1
-    cmp.i64 r8, r9
-    setne rax
-    movzx rax, rax
-    ret rax
+    mov r8, @global_value
+    lea r9, [r8+1]
+    sub r9, 1
+    cmp.i64 r9, r8
+    setne r9
+    movzx r9, r9
+    ret r9
 
 function @main
   abi
@@ -154,9 +150,9 @@ function @main
     stack_size 48
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     preserve rbx r12 r13 r14 r15
-    temp %global_copy_bad -> [rbp-8] : i64
+    temp %global_return_bad -> [rbp-8] : i64
 
   block ^entry
     mov rdi, 1
@@ -166,8 +162,7 @@ function @main
     call @copy_and_store_address [args=(rdi), unwind=no]
     mov r12, rax
     call @return_slot_address [args=(), unwind=no]
-    mov rdx, 0
-    cmp.ptr rax, rdx
+    cmp.ptr rax, 0
     sete r13
     movzx r13, r13
     call @integer_copy_arithmetic [args=(), unwind=no]
@@ -175,16 +170,15 @@ function @main
     call @copy_and_store_global_address [args=(), unwind=no]
     mov r15, rax
     call @return_global_address [args=(), unwind=no]
-    store.i64 [rbp-8], r15
-    mov rdx, 0
-    cmp.ptr rax, rdx
-    sete r15
-    movzx r15, r15
+    cmp.ptr rax, 0
+    sete r10
+    movzx r10, r10
+    store.i64 [rbp-8], r10
     call @global_integer_arithmetic [args=(), unwind=no]
     or rbx, r12
     or rbx, r13
     or rbx, r14
-    or rbx, [rbp-8]
     or rbx, r15
+    or rbx, [rbp-8]
     or rbx, rax
     ret rbx

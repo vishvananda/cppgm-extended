@@ -102,6 +102,24 @@ sub forwarded_boolean_phi_count
 	return $count;
 }
 
+# A shared Boolean stays one computed value handed to its other use: one
+# observer call with a computed argument, not per-path literal copies.
+sub shared_value_kept
+{
+	my ($body) = @_;
+	my @arguments = $body =~ /\bcall void \@observe\(([^)]*)\)/g;
+	return scalar(@arguments) == 1 && $arguments[0] =~ /^%/;
+}
+
+# Branches that test the u8 truncation of a wider value.
+sub truncated_branch_count
+{
+	my ($body) = @_;
+	my @narrow = $body =~
+		/^\s+%([A-Za-z0-9_]+) = convert trunc u8 i64 %[A-Za-z0-9_]+$/mg;
+	return scalar(grep { $body =~ /^\s+branch %\Q$_\E, /m } @narrow);
+}
+
 if (scalar(@ARGV) != 3)
 {
 	die "Usage: check_lowir_boolean_phi_controls.pl " .
@@ -134,15 +152,16 @@ for my $test (@tests)
 			if direct_phi_branch_count($body) != 1;
 	}
 
-	for my $level_body (['O0', $o0], ['O1', $o1])
-	{
-		my ($level, $output) = @$level_body;
-		my $body = function_body($test, $output,
-			'fold_acyclic_boolean_diamond');
-		die "$test: $level did not preserve the O2 acyclic Boolean diamond\n"
-			if direct_phi_branch_count($body) != 1;
-	}
-	for my $level_body (['O2', $o2], ['O3', $o3])
+	# O1 and up bypass a private acyclic Boolean diamond and thread a
+	# forwarded Boolean decision; O0 keeps both shapes.
+	my $o0_acyclic = function_body($test, $o0,
+		'fold_acyclic_boolean_diamond');
+	die "$test: O0 did not preserve the acyclic Boolean diamond\n"
+		if direct_phi_branch_count($o0_acyclic) != 1;
+	my $o0_forwarded = function_body($test, $o0, 'fold_forwarded_boolean');
+	die "$test: O0 did not preserve the forwarded Boolean chain\n"
+		if forwarded_boolean_phi_count($o0_forwarded) != 1;
+	for my $level_body (['O1', $o1], ['O2', $o2], ['O3', $o3])
 	{
 		my ($level, $output) = @$level_body;
 		my $fold = function_body($test, $output,
@@ -152,36 +171,40 @@ for my $test (@tests)
 		my $shared_body = function_body($test, $output,
 			'retain_shared_acyclic_diamond');
 		die "$test: $level incorrectly bypassed a shared acyclic Boolean value\n"
-			if direct_phi_branch_count($shared_body) != 1;
+			if !shared_value_kept($shared_body);
 		my $effectful_body = function_body($test, $output,
 			'retain_effectful_acyclic_diamond');
 		die "$test: $level discarded work from a Boolean-diamond arm\n"
-			if $effectful_body !~ /\bcall void \@observe\(/;
-	}
+			if $effectful_body !~ /\bcall void \@observe\(41\)/;
 
-	for my $level_body (['O0', $o0], ['O1', $o1], ['O2', $o2])
-	{
-		my ($level, $output) = @$level_body;
-		my $body = function_body($test, $output,
+		my $forwarded = function_body($test, $output,
 			'fold_forwarded_boolean');
-		die "$test: $level did not preserve the forwarded Boolean chain\n"
-			if forwarded_boolean_phi_count($body) != 1;
-	}
-	my $o3_forwarded = function_body($test, $o3,
-		'fold_forwarded_boolean');
-	die "$test: O3 did not thread the forwarded Boolean decision\n"
-		if forwarded_boolean_phi_count($o3_forwarded) != 0;
-	die "$test: O3 discarded incoming-edge work while threading the decision\n"
-		if $o3_forwarded !~ /\bcall void \@observe\(73\)/;
-	die "$test: O3 did not branch on the incoming comparison result\n"
-		if $o3_forwarded !~ /branch %positive, \^hit, \^miss/;
-	for my $retained ('retain_shared_forwarded_boolean',
-		'retain_non_boolean_forwarded', 'retain_successor_phi',
-		'retain_cyclic_forwarded_boolean', 'retain_eh_forwarded_boolean')
-	{
-		my $body = function_body($test, $o3, $retained);
-		die "$test: O3 incorrectly threaded $retained\n"
-			if forwarded_boolean_phi_count($body) != 1;
+		die "$test: $level did not thread the forwarded Boolean decision\n"
+			if forwarded_boolean_phi_count($forwarded) != 0;
+		die "$test: $level discarded incoming-edge work while threading the decision\n"
+			if $forwarded !~ /\bcall void \@observe\(73\)/;
+		die "$test: $level did not branch on the incoming comparison result\n"
+			if $forwarded !~ /branch %positive, \^hit, \^miss/;
+
+		my $shared_forwarded = function_body($test, $output,
+			'retain_shared_forwarded_boolean');
+		die "$test: $level incorrectly threaded retain_shared_forwarded_boolean\n"
+			if !shared_value_kept($shared_forwarded);
+		# 256 truncates to a false u8 decision; the wide value is true.
+		my $non_boolean = function_body($test, $output,
+			'retain_non_boolean_forwarded');
+		die "$test: $level stopped testing the truncated non-Boolean decision\n"
+			if truncated_branch_count($non_boolean) != 1;
+		my $cyclic = function_body($test, $output,
+			'retain_cyclic_forwarded_boolean');
+		die "$test: $level incorrectly threaded retain_cyclic_forwarded_boolean\n"
+			if direct_phi_branch_count($cyclic) != 1;
+		my $eh = function_body($test, $output,
+			'retain_eh_forwarded_boolean');
+		die "$test: $level discarded the throwing call or its EH region in " .
+			"retain_eh_forwarded_boolean\n"
+			if $eh !~ /^\s+call void \@conditionally_throw\(%value\)$/m ||
+			   $eh !~ /^\s+eh_try \^cleanup$/m;
 	}
 
 	for my $behavior (['O0', $o0_path], ['O1', $o1_path],

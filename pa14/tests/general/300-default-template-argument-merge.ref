@@ -1,3 +1,5 @@
+declare global @box_int___value : i32 [binding=weak, object=_ZN3boxIiE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $b : obj<1x1>
   slot $cond__1 : i32

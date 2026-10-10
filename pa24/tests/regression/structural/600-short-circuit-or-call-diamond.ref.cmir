@@ -43,13 +43,14 @@ function @main
   block ^entry
     call @lhs_false [args=()]
     mov r8, rax
-    cmp.i64 rax, 0
+    cmp.i64 r8, 0
     jne ^true
     jmp ^rhs
 
   block ^rhs
     call @rhs_true [args=()]
-    cmp.i64 rax, 0
+    mov r8, rax
+    cmp.i64 r8, 0
     jne ^true
     jmp ^false
 

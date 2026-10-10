@@ -1,25 +1,16 @@
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
-declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
 
-global @__typeinfo_name__struct_shared [binding=weak, object=_ZTS6shared] = {
-  i8 54
-  i8 115
-  i8 104
-  i8 97
-  i8 114
-  i8 101
-  i8 100
-  i8 0
+global @calls : i32 [binding=strong] = 0
+global @destroyed : i32 [binding=strong] = 0
+global @seen : obj<16x8> [binding=strong] = {
+  zero 16
 }
-global @__rtti_struct_shared [binding=weak, object=_ZTI6shared] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_shared
-}
-global @__typeinfo_name__struct_counter [binding=weak, object=_ZTS7counter] = {
+global @__typeinfo_name__struct_counter [storage=readonly, binding=weak, object=_ZTS7counter] = {
   i8 55
   i8 99
   i8 111
@@ -30,7 +21,21 @@ global @__typeinfo_name__struct_counter [binding=weak, object=_ZTS7counter] = {
   i8 114
   i8 0
 }
-global @__rtti_struct_counter [binding=weak, object=_ZTI7counter] = {
+global @__typeinfo_name__struct_shared [storage=readonly, binding=weak, object=_ZTS6shared] = {
+  i8 54
+  i8 115
+  i8 104
+  i8 97
+  i8 114
+  i8 101
+  i8 100
+  i8 0
+}
+global @__rtti_struct_shared [storage=readonly, binding=weak, object=_ZTI6shared] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_shared
+}
+global @__rtti_struct_counter [storage=readonly, binding=weak, object=_ZTI7counter] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_counter
   i32 0
@@ -38,7 +43,15 @@ global @__rtti_struct_counter [binding=weak, object=_ZTI7counter] = {
   ptr addr @__rtti_struct_shared
   i64 -6141
 }
-global @__typeinfo_name__struct_derived [binding=weak, object=_ZTS7derived] = {
+global @counter__vtable [storage=readonly, binding=weak, object=_ZTV7counter] = {
+  i64 12
+  i64 0
+  ptr addr @__rtti_struct_counter
+}
+global @counter____vtt [storage=readonly, binding=weak, object=_ZTT7counter, object_root=yes] = {
+  ptr addr @counter__vtable + 24
+}
+global @__typeinfo_name__struct_derived [storage=readonly, binding=weak, object=_ZTS7derived] = {
   i8 55
   i8 100
   i8 101
@@ -49,18 +62,10 @@ global @__typeinfo_name__struct_derived [binding=weak, object=_ZTS7derived] = {
   i8 100
   i8 0
 }
-global @__rtti_struct_derived [binding=weak, object=_ZTI7derived] = {
+global @__rtti_struct_derived [storage=readonly, binding=weak, object=_ZTI7derived] = {
   ptr addr @__external_rtti_vtable____si_class_type_info + 16
   ptr addr @__typeinfo_name__struct_derived
   ptr addr @__rtti_struct_counter
-}
-global @counter__vtable [storage=readonly, binding=weak, object=_ZTV7counter] = {
-  i64 12
-  i64 0
-  ptr addr @__rtti_struct_counter
-}
-global @counter____vtt [storage=readonly, binding=weak, object=_ZTT7counter, object_root=yes] = {
-  ptr addr @counter__vtable + 24
 }
 global @derived__vtable [storage=readonly, binding=weak, object=_ZTV7derived] = {
   i64 12
@@ -76,18 +81,7 @@ global @derived____vtt [storage=readonly, binding=weak, object=_ZTT7derived, obj
   ptr addr @derived__vtable + 24
   ptr addr @derived____construction__counter__0__s0__vtable + 24
 }
-global @calls : i32 [binding=strong] = 0
-global @destroyed : i32 [binding=strong] = 0
-global @seen : obj<16x8> [binding=strong] = {
-  zero 16
-}
 
-function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
-  block ^entry:
-    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
-    call void @std_terminate()
-    return void
-}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $whole : obj<16x8>
   slot $part : obj<16x8>
@@ -116,9 +110,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = index i8 [projection=field] %t4, 8
     %t6 = load typed i32 %t5
     %t7 = cmp ne i32 %t6, 5
-    branch %t7, ^if_then_4, ^lor_rhs_7
+    branch %t7, ^if_then_4, ^lor_rhs_6
 
-  block ^lor_rhs_7:
+  block ^lor_rhs_6:
     %t8 = addr $part
     %t9 = index i8 %t8, 0
     %t10 = index i8 [projection=field] %t9, 8
@@ -128,25 +122,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_then_4:
     store typed i32 10, $cleanup_return__1
-    jump ^return_cleanup_action_10
-
-  block ^return_cleanup_terminal_8:
-    return i32 $cleanup_return__1
-
-  block ^return_cleanup_action_9:
-    %t13 = addr $whole
-    call void @counter___counter(%t13)
-    jump ^return_cleanup_terminal_8
-
-  block ^return_cleanup_action_10:
-    %t14 = addr $part
-    call void @derived___derived(%t14)
     jump ^return_cleanup_action_9
 
-  block ^if_else_5:
-    jump ^if_end_6
+  block ^return_cleanup_terminal_7:
+    return i32 $cleanup_return__1
 
-  block ^if_end_6:
+  block ^return_cleanup_action_8:
+    %t13 = addr $whole
+    call void @counter___counter(%t13)
+    jump ^return_cleanup_terminal_7
+
+  block ^return_cleanup_action_9:
+    %t14 = addr $part
+    call void @derived___derived(%t14)
+    jump ^return_cleanup_action_8
+
+  block ^if_else_5:
+    jump ^if_end_10
+
+  block ^if_end_10:
     %t15 = addr @seen
     %t16 = index ptr [projection=array_element] %t15, 0
     %t17 = load typed ptr %t16
@@ -158,7 +152,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_then_11:
     store typed i32 11, $cleanup_return__1
-    jump ^return_cleanup_action_10
+    jump ^return_cleanup_action_9
 
   block ^if_else_12:
     jump ^if_end_13
@@ -197,7 +191,7 @@ function @counter__counter__base_entry(%this : ptr [object_bytes=16], %__vtt : p
     %t2 = load typed ptr %__vtt
     store typed ptr %t2, %t1
     %t3 = addr $source
-    %t4 = addr @__lambda_counter__counter_t91_95
+    %t4 = addr @counter____lambda_counter__counter_t91_95___FUN
     store typed ptr %t4, $pointer
     %t5 = load typed ptr $pointer
     %t6 = addr @seen
@@ -206,94 +200,10 @@ function @counter__counter__base_entry(%this : ptr [object_bytes=16], %__vtt : p
     store typed ptr %t5, %t8
     %t9 = addr $source
     %t10 = call i32 @counter____lambda_counter__counter_t91_95__operator__(%t9)
-    %t11 = call i32 @counter__step__next(%t10)
+    %t11 = call i32 @step__next(%t10)
     %t12 = load typed ptr $this
     %t13 = index i8 [projection=field] %t12, 8
     store typed i32 %t11, %t13
-    return void
-}
-function @counter__counter(%this : ptr [object_bytes=16], %slot : i32) -> void [binding=weak, object=_ZN7counterC1Ei, inline_hint=yes] {
-  slot $this : ptr
-  slot $slot : i32
-  slot $source : obj<1x1>
-  slot $pointer : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %slot, $slot
-    %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 12
-    call void @shared__shared__base_entry(%t2)
-    %t3 = load typed ptr $this
-    %t4 = addr @counter__vtable
-    %t5 = index i8 %t4, 24
-    store typed ptr %t5, %t3
-    %t6 = addr $source
-    %t7 = addr @__lambda_counter__counter_t91_95
-    store typed ptr %t7, $pointer
-    %t8 = load typed ptr $pointer
-    %t9 = addr @seen
-    %t10 = load typed i32 $slot
-    %t11 = index ptr [projection=array_element] %t9, %t10
-    store typed ptr %t8, %t11
-    %t12 = addr $source
-    %t13 = call i32 @counter____lambda_counter__counter_t91_95__operator__(%t12)
-    %t14 = call i32 @counter__step__next(%t13)
-    %t15 = load typed ptr $this
-    %t16 = index i8 [projection=field] %t15, 8
-    store typed i32 %t14, %t16
-    return void
-}
-function @counter___counter__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN7counterD2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-  slot $again : obj<1x1>
-  slot $function_exception__1 : ptr
-
-  block ^entry:
-    eh_try ^function_exception_landing_1
-    store typed ptr %this, $this
-    %t1 = addr $again
-    call void @counter__tally__hit()
-    %t2 = addr $again
-    call void @counter____lambda_counter___counter_t158_158__operator__(%t2)
-    eh_end
-    return void
-
-  block ^function_exception_landing_1:
-    eh_catch_all, 1
-    %t3 = exception ptr
-    store typed ptr %t3, $function_exception__1
-    jump ^function_exception_action_2
-
-  block ^function_exception_action_2:
-    %t4 = load typed ptr $function_exception__1
-    call void @cppgm_call_terminate(%t4)
-    return void
-}
-function @counter___counter(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7counterD1Ev, inline_hint=yes] {
-  slot $this : ptr
-  slot $again : obj<1x1>
-  slot $function_exception__1 : ptr
-
-  block ^entry:
-    eh_try ^function_exception_landing_1
-    store typed ptr %this, $this
-    %t1 = addr $again
-    call void @counter__tally__hit()
-    %t2 = addr $again
-    call void @counter____lambda_counter___counter_t158_158__operator__(%t2)
-    eh_end
-    return void
-
-  block ^function_exception_landing_1:
-    eh_catch_all, 1
-    %t3 = exception ptr
-    store typed ptr %t3, $function_exception__1
-    jump ^function_exception_action_2
-
-  block ^function_exception_action_2:
-    %t4 = load typed ptr $function_exception__1
-    call void @cppgm_call_terminate(%t4)
     return void
 }
 function @derived__derived(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7derivedC1Ev, inline_hint=yes] {
@@ -310,23 +220,81 @@ function @derived__derived(%this : ptr [object_bytes=16]) -> void [binding=weak,
     %t6 = index i8 %t5, 8
     call void @counter__counter__base_entry(%t4, %t6, 1)
     eh_cleanup ^constructor_cleanup_1
-    %t11 = load typed ptr $this
-    %t12 = addr @derived__vtable
-    %t13 = index i8 %t12, 24
-    store typed ptr %t13, %t11
+    %t7 = load typed ptr $this
+    %t8 = addr @derived__vtable
+    %t9 = index i8 %t8, 24
+    store typed ptr %t9, %t7
     eh_end
     return void
 
   block ^constructor_cleanup_1:
-    %t7 = load typed ptr $this
-    %t8 = index i8 %t7, 0
-    %t9 = addr @derived____vtt
-    %t10 = index i8 %t9, 8
-    call void @counter___counter__base_entry(%t8, %t10)
+    %t10 = load typed ptr $this
+    %t11 = index i8 %t10, 0
+    %t12 = addr @derived____vtt
+    %t13 = index i8 %t12, 8
+    call void @counter___counter__base_entry(%t11, %t13)
     eh_end
     resume
 }
-function @derived___derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [binding=weak, object=_ZN7derivedD2Ev, object_root=yes, inline_hint=yes] {
+function @counter___counter__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN7counterD2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+  slot $again : obj<1x1>
+  slot $function_exception__1 : ptr
+
+  block ^entry:
+    eh_try ^function_exception_landing_1
+    store typed ptr %this, $this
+    %t1 = addr $again
+    call void @tally__hit()
+    %t2 = addr $again
+    call void @counter____lambda_counter___counter_t158_158__operator__(%t2)
+    eh_end
+    return void
+
+  block ^function_exception_landing_1:
+    eh_catch_all, 1
+    %t3 = exception ptr
+    store typed ptr %t3, $function_exception__1
+    jump ^function_exception_action_2
+
+  block ^function_exception_action_2:
+    %t4 = load typed ptr $function_exception__1
+    call void @cppgm_call_terminate(%t4)
+    return void
+}
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
+    return void
+}
+function @counter___counter(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7counterD1Ev, inline_hint=yes] {
+  slot $this : ptr
+  slot $again : obj<1x1>
+  slot $function_exception__1 : ptr
+
+  block ^entry:
+    eh_try ^function_exception_landing_1
+    store typed ptr %this, $this
+    %t1 = addr $again
+    call void @tally__hit()
+    %t2 = addr $again
+    call void @counter____lambda_counter___counter_t158_158__operator__(%t2)
+    eh_end
+    return void
+
+  block ^function_exception_landing_1:
+    eh_catch_all, 1
+    %t3 = exception ptr
+    store typed ptr %t3, $function_exception__1
+    jump ^function_exception_action_2
+
+  block ^function_exception_action_2:
+    %t4 = load typed ptr $function_exception__1
+    call void @cppgm_call_terminate(%t4)
+    return void
+}
+function @derived___derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN7derivedD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -396,18 +364,18 @@ function @shared__shared(%this : ptr [object_bytes=4]) -> void [binding=weak, ob
     store typed i32 1, %t2
     return void
 }
-function @__lambda_counter__counter_t91_95() -> i32 [binding=weak, object=_ZZN7counterC1EiENUlvE_8__invokeEv, inline_hint=yes] {
+function @counter____lambda_counter__counter_t91_95___FUN() -> i32 [binding=weak, object=_ZZN7counterC1EiENUlvE_8__invokeEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
   block ^entry:
     return i32 4
 }
-function @counter____lambda_counter__counter_t91_95__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZZN7counterC1EiENKUlvE_clEv, inline_hint=yes] {
+function @counter____lambda_counter__counter_t91_95__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZZN7counterC1EiENKUlvE_clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return i32 4
 }
-function @counter__step__next(%v : i32) -> i32 [binding=weak, object=_ZZN7counterC1EiEN4step4nextEi, inline_hint=yes] {
+function @step__next(%v : i32) -> i32 [binding=weak, object=_ZZN7counterC1EiEN4step4nextEi, prefer_local=yes, inline_hint=yes] {
   slot $v : i32
 
   block ^entry:
@@ -420,14 +388,46 @@ function @counter__step__next(%v : i32) -> i32 [binding=weak, object=_ZZN7counte
     %t5 = binary add nowrap i32 %t3, %t4
     return i32 %t5
 }
-function @counter__tally__hit() -> void [binding=weak, object=_ZZN7counterD1EvEN5tally3hitEv, inline_hint=yes] {
+function @counter__counter(%this : ptr [object_bytes=16], %slot : i32) -> void [binding=weak, object=_ZN7counterC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $slot : i32
+  slot $source : obj<1x1>
+  slot $pointer : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %slot, $slot
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 12
+    call void @shared__shared__base_entry(%t2)
+    %t3 = load typed ptr $this
+    %t4 = addr @counter__vtable
+    %t5 = index i8 %t4, 24
+    store typed ptr %t5, %t3
+    %t6 = addr $source
+    %t7 = addr @counter____lambda_counter__counter_t91_95___FUN
+    store typed ptr %t7, $pointer
+    %t8 = load typed ptr $pointer
+    %t9 = addr @seen
+    %t10 = load typed i32 $slot
+    %t11 = index ptr [projection=array_element] %t9, %t10
+    store typed ptr %t8, %t11
+    %t12 = addr $source
+    %t13 = call i32 @counter____lambda_counter__counter_t91_95__operator__(%t12)
+    %t14 = call i32 @step__next(%t13)
+    %t15 = load typed ptr $this
+    %t16 = index i8 [projection=field] %t15, 8
+    store typed i32 %t14, %t16
+    return void
+}
+function @tally__hit() -> void [binding=weak, object=_ZZN7counterD1EvEN5tally3hitEv, prefer_local=yes, inline_hint=yes] {
   block ^entry:
     %t1 = load typed i32 @destroyed
     %t2 = binary add nowrap i32 %t1, 1
     store typed i32 %t2, @destroyed
     return void
 }
-function @counter____lambda_counter___counter_t158_158__operator__(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZZN7counterD1EvENKUlvE_clEv, inline_hint=yes] {
+function @counter____lambda_counter___counter_t158_158__operator__(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZZN7counterD1EvENKUlvE_clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

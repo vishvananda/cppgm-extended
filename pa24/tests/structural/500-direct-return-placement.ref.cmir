@@ -75,9 +75,9 @@ function @return_compare
 
   block ^entry
     cmp.i64 rdi, rsi
-    setb rax
-    movzx rax, rax
-    ret rax
+    setb rdi
+    movzx rdi, rdi
+    ret rdi
 
 function @return_negated
   abi
@@ -90,9 +90,8 @@ function @return_negated
     epilogues shared
 
   block ^entry
-    mov rax, rdi
-    neg rax
-    ret rax
+    neg rdi
+    ret rdi
 
 function @return_converted
   abi
@@ -105,9 +104,8 @@ function @return_converted
     epilogues shared
 
   block ^entry
-    mov rax, rdi
-    sext.i32 rax
-    ret rax
+    sext.i32 rdi
+    ret rdi
 
 function @return_quotient
   abi
@@ -120,10 +118,10 @@ function @return_quotient
     epilogues shared
 
   block ^entry
-    mov rcx, 7
+    mov <gpr0>, 7
     mov rax, rdi
     cqo
-    idiv rcx
+    idiv <gpr0>
     ret rax
 
 function @return_remainder
@@ -137,10 +135,10 @@ function @return_remainder
     epilogues shared
 
   block ^entry
-    mov rcx, 7
+    mov <gpr0>, 7
     mov rax, rdi
     cqo
-    idiv rcx
+    idiv <gpr0>
     ret rdx
 
 function @main
@@ -151,79 +149,75 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
-    temp %negated -> [rbp-<off1>] : i64
-    temp %converted -> [rbp-<off2>] : i32
+    preserve <gpr1> <gpr2> <gpr3> <gpr4> <gpr5>
+    temp %converted -> [rbp-<off0>] : i32
+    temp %quotient -> [rbp-<off1>] : i64
 
   block ^entry
     call @return_constant [args=()]
-    mov <gpr0>, rax
-    sext.i32 <gpr0>
-    call @return_load [args=()]
     mov <gpr1>, rax
     sext.i32 <gpr1>
-    call @return_global_address [args=()]
+    call @return_load [args=()]
     mov <gpr2>, rax
+    sext.i32 <gpr2>
+    call @return_global_address [args=()]
+    mov <gpr3>, rax
     mov rdi, 3
     mov rsi, 5
     call @return_compare [args=(rsi,rdi)]
-    mov <gpr3>, rax
+    mov <gpr4>, rax
     mov rdi, -7
     call @return_negated [args=(rdi)]
-    mov <gpr4>, rax
+    mov <gpr5>, rax
     mov rdi, 4294967297
     call @return_converted [args=(rdi)]
-    store.i64 [rbp-<off1>], <gpr4>
-    mov <gpr4>, rax
-    sext.i32 <gpr4>
+    mov <gpr6>, rax
+    sext.i32 <gpr6>
+    store.i32 [rbp-<off0>], <gpr6>
     mov rdi, 50
     call @return_quotient [args=(rdi)]
-    store.i32 [rbp-<off2>], <gpr4>
-    mov <gpr4>, rax
+    mov <gpr6>, rax
+    store.i64 [rbp-<off1>], <gpr6>
     mov rdi, 50
     call @return_remainder [args=(rdi)]
-    mov r8, rax
-    mov r9, @value
+    mov r8, @value
     mov rdx, 11
-    cmp.i32 <gpr0>, rdx
-    setne <gpr0>
-    movzx <gpr0>, <gpr0>
-    mov rdx, 17
     cmp.i32 <gpr1>, rdx
     setne <gpr1>
     movzx <gpr1>, <gpr1>
-    cmp.ptr <gpr2>, r9
+    mov rdx, 17
+    cmp.i32 <gpr2>, rdx
     setne <gpr2>
     movzx <gpr2>, <gpr2>
-    mov rdx, 1
-    cmp.i64 <gpr3>, rdx
+    cmp.ptr <gpr3>, r8
     setne <gpr3>
     movzx <gpr3>, <gpr3>
-    load.i64 r9, [rbp-<off1>]
-    mov rdx, 7
-    cmp.i64 r9, rdx
-    setne r9
-    movzx r9, r9
-    load.i32 rdi, [rbp-<off2>]
     mov rdx, 1
-    cmp.i32 rdi, rdx
-    setne rdi
-    movzx rdi, rdi
-    mov rdx, 7
     cmp.i64 <gpr4>, rdx
     setne <gpr4>
     movzx <gpr4>, <gpr4>
+    mov rdx, 7
+    cmp.i64 <gpr5>, rdx
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
     mov rdx, 1
-    cmp.i64 r8, rdx
+    cmp.i32 [rbp-<off0>], rdx
     setne r8
     movzx r8, r8
-    or <gpr0>, <gpr1>
-    or <gpr2>, <gpr3>
-    or <gpr2>, r9
-    or <gpr2>, rdi
-    or <gpr4>, r8
-    or <gpr2>, <gpr4>
-    or <gpr0>, <gpr2>
-    mov rax, <gpr0>
-    sext.i32 rax
-    ret rax
+    mov rdx, 7
+    cmp.i64 [rbp-<off1>], rdx
+    setne r9
+    movzx r9, r9
+    mov rdx, 1
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    or <gpr1>, <gpr2>
+    or <gpr3>, <gpr4>
+    or <gpr3>, <gpr5>
+    or <gpr3>, r8
+    or r9, rax
+    or <gpr3>, r9
+    or <gpr1>, <gpr3>
+    sext.i32 <gpr1>
+    ret <gpr1>

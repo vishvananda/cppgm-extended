@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $a
     %t2 = addr $b
     %t3 = addr $a
-    %t4 = call i32 @Use_n__A___size(%t3)
+    %t4 = call i32 @Use_A___size(%t3)
     %t5 = const i64 4
     %t6 = convert sext i64 i32 %t4
     %t7 = cmp eq i64 %t6, %t5
@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t8 = addr $b
-    %t9 = call i32 @Use_n__B___size(%t8)
+    %t9 = call i32 @Use_B___size(%t8)
     %t10 = const i64 8
     %t11 = convert sext i64 i32 %t9
     %t12 = cmp eq i64 %t11, %t10
@@ -44,7 +44,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load typed i32 $cond__1
     return i32 %t15
 }
-function @Use_n__A___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3UseIN1n1AEE4sizeEv, inline_hint=yes] {
+function @Use_A___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3UseIN1n1AEE4sizeEv, inline_hint=yes] {
   slot $this : ptr
   slot $box : obj<4x4>
 
@@ -55,7 +55,7 @@ function @Use_n__A___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, ob
     %t3 = convert trunc i32 i64 %t2
     return i32 %t3
 }
-function @Use_n__B___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3UseIN1n1BEE4sizeEv, inline_hint=yes] {
+function @Use_B___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3UseIN1n1BEE4sizeEv, inline_hint=yes] {
   slot $this : ptr
   slot $box : obj<8x8>
 

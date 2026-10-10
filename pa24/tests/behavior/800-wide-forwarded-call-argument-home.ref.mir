@@ -68,17 +68,14 @@ function @target
     param %g -> [rbp+16] : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %g -> [rbp-8] : ptr
 
   block ^entry
-    load.ptr rax, [rbp+16]
-    store.ptr [rbp-8], rax
-    load.i64 rax, [r9]
-    store.i64 @observed, rax
+    load.i64 r9, [r9]
+    store.i64 @observed, r9
     ret
 
 function @consume
@@ -86,7 +83,7 @@ function @consume
     param %value -> rdi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -105,35 +102,23 @@ function @forward
     param %g -> [rbp+16] : ptr
     return void -> void
   frame
-    stack_size 80
+    stack_size 112
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %a -> [rbp-8] : ptr
-    param-slot %b -> [rbp-16] : ptr
-    param-slot %c -> [rbp-24] : ptr
-    param-slot %d -> [rbp-32] : ptr
-    param-slot %e -> [rbp-40] : ptr
-    param-slot %f -> [rbp-48] : ptr
-    param-slot %g -> [rbp-56] : ptr
-    slot $temporary -> [rbp-64] : i64
-    temp %host-eh-exception -> [rbp-72] : ptr
-    temp %host-eh-selector -> [rbp-80] : i64
+    slot $temporary -> [rbp-8] : i64
+    param-slot %a -> [rbp-16] : ptr
+    param-slot %g -> [rbp-24] : ptr
 
   block ^entry
-    store.ptr [rbp-8], rdi
-    store.ptr [rbp-16], rsi
-    store.ptr [rbp-24], rdx
-    store.ptr [rbp-32], rcx
-    store.ptr [rbp-40], r8
-    store.ptr [rbp-48], r9
     load.ptr rax, [rbp+16]
-    store.ptr [rbp-56], rax
+    store.ptr [rbp-24], rax
+    store.ptr [rbp-16], rdi
     eh_push ^unwind, 0
+    lea rdi, [rbp-8]
     sub rsp, 16
-    load.ptr r11, [rbp-56]
+    load.ptr r11, [rbp-24]
     store.ptr [rsp], r11
-    lea rdi, [rbp-64]
     call @target [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
     eh_pop
@@ -143,7 +128,7 @@ function @forward
     resume
 
   block ^done
-    load.ptr rdi, [rbp-8]
+    load.ptr rdi, [rbp-16]
     call @consume [args=(rdi)]
     ret
 
@@ -157,22 +142,19 @@ function @main
     epilogues shared
 
   block ^entry
-    sub rsp, 16
-    mov r11, @seven
-    store.ptr [rsp], r11
     mov rdi, @one
     mov rsi, @two
     mov rdx, @three
     mov rcx, @four
     mov r8, @five
     mov r9, @six
+    mov rax, @seven
+    sub rsp, 16
+    store.ptr [rsp], rax
     call @forward [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    load.i64 r8, @observed
     mov rdx, 6
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
+    cmp.i64 @observed, rdx
+    setne rax
+    movzx rax, rax
     ret rax

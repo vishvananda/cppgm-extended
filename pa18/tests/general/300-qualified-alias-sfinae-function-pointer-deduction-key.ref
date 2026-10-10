@@ -193,19 +193,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr @__strlit__1
     %t2 = call i32 @boost__detail__test_trait_impl(%t1, 0, 0)
     %t3 = addr @__strlit__2
-    %t4 = call i32 @boost__detail__test_trait_impl__ov2(%t3, 0, 0)
+    %t4 = call i32 @boost__detail__test_trait_impl__2(%t3, 0, 0)
     %t5 = binary add nowrap i32 %t2, %t4
     %t6 = addr @__strlit__3
-    %t7 = call i32 @boost__detail__test_trait_impl__ov3(%t6, 0, 0)
+    %t7 = call i32 @boost__detail__test_trait_impl__3(%t6, 0, 0)
     %t8 = binary add nowrap i32 %t5, %t7
     %t9 = addr @__strlit__4
-    %t10 = call i32 @boost__detail__test_trait_impl__ov4(%t9, 0, 0)
+    %t10 = call i32 @boost__detail__test_trait_impl__4(%t9, 0, 0)
     %t11 = binary add nowrap i32 %t8, %t10
     %t12 = addr @__strlit__5
-    %t13 = call i32 @boost__detail__test_trait_impl__ov5(%t12, 0, 1)
+    %t13 = call i32 @boost__detail__test_trait_impl__5(%t12, 0, 1)
     %t14 = binary add nowrap i32 %t11, %t13
     %t15 = addr @__strlit__6
-    %t16 = call i32 @boost__detail__test_trait_impl__ov6(%t15, 0, 1)
+    %t16 = call i32 @boost__detail__test_trait_impl__6(%t15, 0, 1)
     %t17 = binary add nowrap i32 %t14, %t16
     return i32 %t17
 }
@@ -236,7 +236,7 @@ function @boost__detail__test_trait_impl(%__param0 : ptr, %__param1 : ptr, %expe
     %t4 = load typed i32 $cond__1
     return i32 %t4
 }
-function @boost__detail__test_trait_impl__ov2(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_ZN5boost6detail15test_trait_implIN6traits6detail15has_descriptionIK2E1vEEEEiPKcPFvT_Eb] {
+function @boost__detail__test_trait_impl__2(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_ZN5boost6detail15test_trait_implIN6traits6detail15has_descriptionIK2E1vEEEEiPKcPFvT_Eb] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $expected : u8
@@ -263,7 +263,7 @@ function @boost__detail__test_trait_impl__ov2(%__param0 : ptr, %__param1 : ptr, 
     %t4 = load typed i32 $cond__1
     return i32 %t4
 }
-function @boost__detail__test_trait_impl__ov3(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_ZN5boost6detail15test_trait_implIN6traits6detail15has_descriptionI2E2vEEEEiPKcPFvT_Eb] {
+function @boost__detail__test_trait_impl__3(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_ZN5boost6detail15test_trait_implIN6traits6detail15has_descriptionI2E2vEEEEiPKcPFvT_Eb] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $expected : u8
@@ -290,7 +290,7 @@ function @boost__detail__test_trait_impl__ov3(%__param0 : ptr, %__param1 : ptr, 
     %t4 = load typed i32 $cond__1
     return i32 %t4
 }
-function @boost__detail__test_trait_impl__ov4(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_ZN5boost6detail15test_trait_implIN6traits6detail15has_descriptionIK2E2vEEEEiPKcPFvT_Eb] {
+function @boost__detail__test_trait_impl__4(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_ZN5boost6detail15test_trait_implIN6traits6detail15has_descriptionIK2E2vEEEEiPKcPFvT_Eb] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $expected : u8
@@ -317,7 +317,7 @@ function @boost__detail__test_trait_impl__ov4(%__param0 : ptr, %__param1 : ptr, 
     %t4 = load typed i32 $cond__1
     return i32 %t4
 }
-function @boost__detail__test_trait_impl__ov5(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_ZN5boost6detail15test_trait_implIN6traits12is_pair_likeIN3lib4pairIi2E1EEEEEEiPKcPFvT_Eb] {
+function @boost__detail__test_trait_impl__5(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_ZN5boost6detail15test_trait_implIN6traits12is_pair_likeIN3lib4pairIi2E1EEEEEEiPKcPFvT_Eb] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $expected : u8
@@ -344,7 +344,7 @@ function @boost__detail__test_trait_impl__ov5(%__param0 : ptr, %__param1 : ptr, 
     %t4 = load typed i32 $cond__1
     return i32 %t4
 }
-function @boost__detail__test_trait_impl__ov6(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_ZN5boost6detail15test_trait_implIN6traits12is_pair_likeIKN3lib4pairIi2E1EEEEEEiPKcPFvT_Eb] {
+function @boost__detail__test_trait_impl__6(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_ZN5boost6detail15test_trait_implIN6traits12is_pair_likeIKN3lib4pairIi2E1EEEEEEiPKcPFvT_Eb] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $expected : u8

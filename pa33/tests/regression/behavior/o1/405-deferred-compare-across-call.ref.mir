@@ -14,10 +14,10 @@ function @sink
     param %e -> r8 : i64
     return void -> void
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret
@@ -30,12 +30,12 @@ function @probe
   frame
     stack_size 16
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
-    preserve r13 r12
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12
 
   block ^entry
-    load.i64 r13, [rsi]
+    load.i64 rbx, [rsi]
     load.i64 r12, [rdi+8]
     mov rdi, 0
     mov rsi, 0
@@ -43,7 +43,7 @@ function @probe
     mov rcx, 0
     mov r8, 0
     call @sink [args=(rcx,rdx,rsi,rdi,r8), unwind=no]
-    cmp.i64 r13, r12
+    cmp.i64 rbx, r12
     je ^same
 
   block ^differ
@@ -61,29 +61,27 @@ function @main
     stack_size 32
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     preserve rbx
-    slot $left -> [rbp-16] : obj<16x8>
-    slot $right -> [rbp-24] : i64
+    slot $left -> [rbp-24] : obj<16x8>
+    slot $right -> [rbp-8] : i64
 
   block ^entry
-    store.i64 [rbp-8], 41
-    store.i64 [rbp-24], 7
-    lea rdi, [rbp-16]
-    lea rsi, [rbp-24]
+    store.i64 [rbp-16], 41
+    store.i64 [rbp-8], 7
+    lea rdi, [rbp-24]
+    lea rsi, [rbp-8]
     call @probe [args=(rsi,rdi), unwind=no]
     mov rbx, rax
-    store.i64 [rbp-24], 41
-    lea rdi, [rbp-16]
-    lea rsi, [rbp-24]
+    store.i64 [rbp-8], 41
+    lea rdi, [rbp-24]
+    lea rsi, [rbp-8]
     call @probe [args=(rsi,rdi), unwind=no]
-    mov rdx, 1
-    cmp.i64 rbx, rdx
+    cmp.i64 rbx, 1
     setne rbx
     movzx rbx, rbx
-    mov rdx, 0
-    cmp.i64 rax, rdx
-    setne r8
-    movzx r8, r8
-    or rbx, r8
+    cmp.i64 rax, 0
+    setne rax
+    movzx rax, rax
+    or rbx, rax
     ret rbx

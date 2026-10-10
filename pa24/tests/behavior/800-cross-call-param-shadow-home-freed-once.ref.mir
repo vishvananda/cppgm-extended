@@ -14,7 +14,7 @@ function @touch
     param %p -> rdi : ptr
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -45,17 +45,13 @@ function @victim
     frame_pointer keep
     epilogues shared
     preserve rbx
-    slot $shadow -> [rbp-8] : ptr
 
   block ^entry
-    store.ptr [rbp-8], rdi
-    load.ptr r8, [rbp-8]
-    mov rdi, r8
+    mov rbx, rdi
+    mov rdi, rbx
     call @touch [args=(rdi)]
-    load.ptr rbx, [rbp-8]
     call @cell_ptr [args=()]
-    mov r8, rax
-    store.i64 [r8], 77
+    store.i64 [rax], 77
     mov rdi, rbx
     call @touch [args=(rdi)]
     ret
@@ -72,15 +68,12 @@ function @main
   block ^entry
     mov rdi, @cell
     call @victim [args=(rdi)]
-    load.i64 r8, @cell
     mov rdx, 77
-    cmp.i64 r8, rdx
+    cmp.i64 @cell, rdx
     sete r8
     movzx r8, r8
     mov rdx, 0
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    ret r8

@@ -51,7 +51,7 @@ function @control_target(%mode : i64, %value : i64) -> i64
 }
 
 function @data_target(%bias : i64, %value : i64) -> i64
-    [binding=weak, unwind=no] {
+    [binding=weak, no_inline=yes, unwind=no] {
   block ^entry:
     %d0 = binary add i64 %value, %bias
     %d1 = binary add i64 %d0, %bias

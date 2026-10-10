@@ -35,7 +35,7 @@ function @probe(%args : ptr [pass=by_address, object_bytes=4], %args__pack2 : pt
     %t1 = addr $refs
     %t2 = load typed ptr $args
     %t3 = load typed ptr $args__pack2
-    call void @pair_lvalue_reference_to_const_int__lvalue_reference_to_const_int___pair_lvalue_reference_to_const_int__lvalue_reference_to_const_int_(%t1, %t2, %t3)
+    call void @pair_constint__constint____pair(%t1, %t2, %t3)
     %t4 = addr $refs
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = load typed ptr %t5
@@ -47,7 +47,7 @@ function @probe(%args : ptr [pass=by_address, object_bytes=4], %args__pack2 : pt
     %t12 = binary add nowrap i32 %t7, %t11
     return i32 %t12
 }
-function @pair_lvalue_reference_to_const_int__lvalue_reference_to_const_int___pair_lvalue_reference_to_const_int__lvalue_reference_to_const_int_(%this : ptr [object_bytes=16], %a : ptr [pass=by_address, object_bytes=4], %b : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4pairIRKiS1_EC1ES1_S1_, inline_hint=yes] {
+function @pair_constint__constint____pair(%this : ptr [object_bytes=16], %a : ptr [pass=by_address, object_bytes=4], %b : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4pairIRKiS1_EC1ES1_S1_, inline_hint=yes] {
   slot $this : ptr
   slot $a : ptr
   slot $b : ptr
@@ -66,4 +66,4 @@ function @pair_lvalue_reference_to_const_int__lvalue_reference_to_const_int___pa
     store typed ptr %t4, %t6
     return void
 }
-alias object _ZN4pairIRKiS1_EC2ES1_S1_ = @pair_lvalue_reference_to_const_int__lvalue_reference_to_const_int___pair_lvalue_reference_to_const_int__lvalue_reference_to_const_int_
+alias object _ZN4pairIRKiS1_EC2ES1_S1_ = @pair_constint__constint____pair

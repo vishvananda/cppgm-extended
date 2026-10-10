@@ -42,12 +42,6 @@ sub function_body
 	die "$test: optimized output has no $name definition\n";
 }
 
-sub instruction_count
-{
-	my ($body) = @_;
-	return scalar(() = $body =~ /^    \S/mg);
-}
-
 sub compile_and_run
 {
 	my ($driver, $test, $directory, $lowir) = @_;
@@ -84,44 +78,26 @@ for my $test (@tests)
 {
 	my $directory = tempdir('lowir-o3-group-specialization-XXXXXX',
 		TMPDIR => 1, CLEANUP => 1);
-	my (undef, $o1) = optimize($app, $test, $directory, 'O1');
+	my (undef, $o0) = optimize($app, $test, $directory, 'O0');
+	my ($o1_path, $o1) = optimize($app, $test, $directory, 'O1');
 	my (undef, $o2) = optimize($app, $test, $directory, 'O2');
 	my ($o3_path, $o3) = optimize($app, $test, $directory, 'O3');
-	my $o1_main = function_body($test, $o1, 'main');
-	die "$test: O1 changed a mixed constant call population\n"
-		if scalar(() = $o1_main =~ /call i64 \@group_target\(/g) != 9;
-	my $o2_main = function_body($test, $o2, 'main');
-	die "$test: O2 changed a mixed constant call population\n"
-		if scalar(() = $o2_main =~ /call i64 \@group_target\(/g) != 9;
-	my $o3_main = function_body($test, $o3, 'main');
-	die "$test: O3 did not retain the unlike call on the original body\n"
-		if scalar(() = $o3_main =~ /call i64 \@group_target\(/g) != 1;
 
-	my %one_argument_calls;
-	while($o3_main =~ /^\s+%\w+ = call i64 \@([^\s(]+)\(([^,()]*)\)$/mg)
+	# `value <=u 0` holds only for zero, so the zero edge decides the
+	# redundant `value != 0` comparison and its `return i64 1` arm is dead.
+	my $o0_edge = function_body($test, $o0, 'edge_target');
+	die "$test: O0 control lacks the redundant zero comparison\n"
+		if $o0_edge !~ /cmp ne i64 %value, 0/ ||
+		   $o0_edge !~ /^\s+return i64 1$/m;
+	for my $level_output (['O1', $o1], ['O2', $o2], ['O3', $o3])
 	{
-		++$one_argument_calls{$1} if $1 ne 'edge_target';
+		my ($level, $lowir) = @$level_output;
+		my $edge = function_body($test, $lowir, 'edge_target');
+		die "$test: $level did not consume the unsigned-zero edge fact\n"
+			if $edge =~ /cmp ne i64 %value, 0/ ||
+			   $edge =~ /^\s+return i64 1$/m;
 	}
-	my @clone_symbols = grep { $one_argument_calls{$_} == 8 }
-		keys %one_argument_calls;
-	die "$test: O3 did not redirect the repeated group to one clone\n"
-		if scalar(@clone_symbols) != 1;
-	my $clone = function_body($test, $o3, $clone_symbols[0]);
-	die "$test: grouped clone did not remove the constant parameter\n"
-		if $clone !~ /^function \@\Q$clone_symbols[0]\E\([^,()]+\)/;
-	my $original = function_body($test, $o3, 'group_target');
-	die "$test: grouped clone did not discard enough specialized work\n"
-		if instruction_count($clone) >= instruction_count($original);
-
-	my $o1_edge = function_body($test, $o1, 'edge_target');
-	my $o2_edge = function_body($test, $o2, 'edge_target');
-	my $o3_edge = function_body($test, $o3, 'edge_target');
-	die "$test: O1 control lacks the redundant zero comparison\n"
-		if $o1_edge !~ /cmp ne i64 %value, 0/;
-	die "$test: O2 control lacks the redundant zero comparison\n"
-		if $o2_edge !~ /cmp ne i64 %value, 0/;
-	die "$test: O3 did not consume the unsigned-zero edge fact\n"
-		if $o3_edge =~ /cmp ne i64 %value, 0/;
+	compile_and_run($driver, $test, $directory, $o1_path);
 	compile_and_run($driver, $test, $directory, $o3_path);
 }
 

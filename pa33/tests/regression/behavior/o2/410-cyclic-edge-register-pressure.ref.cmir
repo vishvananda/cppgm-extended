@@ -32,8 +32,8 @@ function @noop
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     mov rax, 0
@@ -46,49 +46,45 @@ function @probe
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
     slot $counter -> [rbp-<off0>] : i64
+    temp %a -> [rbp-<off1>] : i64
 
   block ^entry
-    load.i64 <gpr0>, @a
-    load.i64 <gpr1>, @b
-    load.i64 <gpr2>, @c
-    load.i64 <gpr3>, @d
+    mov <gpr1>, @data
+    load.i64 r8, @a
+    store.i64 [rbp-<off1>], r8
+    load.i64 <gpr4>, @b
+    load.i64 <gpr3>, @c
+    load.i64 <gpr2>, @d
     store.i64 [rbp-<off0>], 0
 
   block ^condition
-    load.i64 <gpr4>, [rbp-<off0>]
-    cmp.i64 <gpr4>, 2
+    load.i64 <gpr0>, [rbp-<off0>]
+    cmp.i64 <gpr0>, 2
     jae ^done
 
   block ^body
-    mov r8, @data
-    mov rdx, <gpr4>
-    imul rdx, 8
-    add r8, rdx
-    store.i64 [r8], <gpr4>
+    store.i64 [<gpr1>+<gpr0>*8], <gpr0>
     call @noop [args=(), unwind=no]
-    lea r9, [<gpr0>+<gpr1>]
-    lea r8, [<gpr2>+<gpr3>]
-    add r9, r8
-    add r9, 7
-    lea r8, [<gpr4>+<off0>]
-    store.i64 [rbp-<off0>], r8
-    cmp.i64 r9, 17
+    mov r8, <gpr4>
+    add r8, [rbp-<off1>]
+    lea r9, [<gpr3>+<gpr2>]
+    lea r8, [r8+r9+<off0>]
+    add <gpr0>, 1
+    store.i64 [rbp-<off0>], <gpr0>
+    cmp.i64 r8, 17
     je ^condition
-    jmp ^failure
-
-  block ^done
-    mov rcx, @data
-    load.i64 r9, [rcx+<off0>]
-    cmp.i64 r9, 1
-    setne rax
-    movzx rax, rax
-    ret rax
 
   block ^failure
     mov rax, 1
+    ret rax
+
+  block ^done
+    cmp.i64 [<gpr1>+<off0>], 1
+    setne rax
+    movzx rax, rax
     ret rax
 
 function @main
@@ -97,8 +93,8 @@ function @main
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     call @probe [args=(), unwind=no]

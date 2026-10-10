@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $impl
     %t2 = addr $impl
-    %t3 = call i32 @channel_service_int___implementation_type_int__void_____value(%t2)
+    %t3 = call i32 @channel_service_int___implementation_type_int_void_____value(%t2)
     %t4 = cmp eq i32 %t3, 7
     branch %t4, ^cond_then_1, ^cond_else_2
 
@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @channel_service_int___implementation_type_int__void_____value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK15channel_serviceIiE19implementation_typeIiJFvvEEE5valueEv, inline_hint=yes] {
+function @channel_service_int___implementation_type_int_void_____value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK15channel_serviceIiE19implementation_typeIiJFvvEEE5valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

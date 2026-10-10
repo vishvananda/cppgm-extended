@@ -17,36 +17,28 @@ function @length
     param %s -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    temp %i -> [rbp-8] : i64
 
   block ^entry
-    mov r11, 0
-    store.i64 [rbp-8], r11
+    mov r8, 0
     jmp ^loop
 
   block ^loop
-    mov r8, rdi
-    load.i64 rdx, [rbp-8]
-    add r8, rdx
-    load.i8 r9, [r8]
-    mov rdx, 0
-    cmp.i8 r9, rdx
+    cmp.i8 [rdi+r8], 0
     je ^done
     jmp ^more
 
   block ^more
-    load.i64 r8, [rbp-8]
-    add r8, 1
-    store.i64 [rbp-8], r8
+    mov r9, r8
+    add r9, 1
+    mov r8, r9
     jmp ^loop
 
   block ^done
-    load.i64 rax, [rbp-8]
-    ret rax
+    ret r8
 
 function @main
   abi

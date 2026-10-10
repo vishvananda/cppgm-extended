@@ -1,10 +1,10 @@
 declare function @__cppgm_runtime_atexit(%arg0 : ptr) -> i32 [linkage=c, binding=strong, object=atexit]
 
+global @destroyed : i32 [binding=strong] = 0
 global @__local_static__get_value__decl0__item : obj<4x4> [binding=internal, object=_ZZ9get_valuevE4item] = {
   zero 4
 }
 global @__local_static__get_value__decl0__item__guard : i64 [binding=internal, object=_ZGVZ9get_valuevE4item] = zero
-global @destroyed : i32 [binding=strong] = 0
 
 function @__cppgm_local_static_destructor____local_static__get_value__decl0__item() -> void [unwind=no, binding=internal] {
   block ^entry:

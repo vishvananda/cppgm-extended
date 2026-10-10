@@ -33,11 +33,10 @@ function @multiply_struct_strides
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12
 
   block ^entry
     mov r8, rdi
@@ -46,14 +45,13 @@ function @multiply_struct_strides
     imul r9, 24
     mov rsi, rdi
     imul rsi, 40
-    mov rbx, rdi
-    imul rbx, 72
-    mov r12, rdi
-    imul r12, 10
+    mov rdx, rdi
+    imul rdx, 72
+    imul rdi, 10
     add r8, r9
-    add rsi, rbx
+    add rsi, rdx
     add r8, rsi
-    add r8, r12
+    add r8, rdi
     ret r8
 
 function @multiply_wraps
@@ -87,7 +85,6 @@ function @main
     call @multiply_struct_strides [args=(rdi)]
     mov r12, rax
     call @multiply_wraps [args=()]
-    mov r8, rax
     mov rdx, 66
     cmp.i64 rbx, rdx
     setne rbx
@@ -97,9 +94,9 @@ function @main
     setne r12
     movzx r12, r12
     mov rdx, 8
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
     or rbx, r12
-    or rbx, r8
+    or rbx, rax
     ret rbx

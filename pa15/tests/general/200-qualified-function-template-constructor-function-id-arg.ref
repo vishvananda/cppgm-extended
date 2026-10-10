@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $argobj__1
     %t4 = addr @qft_ctor_arg__lock_and_sleep
     %t5 = addr $mtx
-    call void @qft_ctor_arg__adapter_mutex_type___adapter_mutex_type_(%t3, %t4, 0, %t5)
+    call void @qft_ctor_arg__adapter_mutex_type___adapter(%t3, %t4, 0, %t5)
     %t6 = call i32 @qft_ctor_arg__launch(%t2, $argobj__1)
     return i32 %t6
 }
@@ -25,7 +25,7 @@ function @qft_ctor_arg__lock_and_sleep(%arg : ptr, %mtx : ptr [pass=by_address, 
     %t2 = load typed ptr $mtx
     return void
 }
-function @qft_ctor_arg__adapter_mutex_type___adapter_mutex_type_(%this : ptr [object_bytes=24], %func : ptr, %arg : ptr, %object : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN12qft_ctor_arg7adapterI10mutex_typeEC1EPFvPvRS1_ES3_S4_, inline_hint=yes] {
+function @qft_ctor_arg__adapter_mutex_type___adapter(%this : ptr [object_bytes=24], %func : ptr, %arg : ptr, %object : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN12qft_ctor_arg7adapterI10mutex_typeEC1EPFvPvRS1_ES3_S4_, inline_hint=yes] {
   slot $this : ptr
   slot $func : ptr
   slot $arg : ptr
@@ -81,4 +81,4 @@ function @qft_ctor_arg__adapter_mutex_type___operator__(%this : ptr [object_byte
     call void %t9(%t3, %t6) as (%arg0 : ptr, %arg1 : ptr [pass=by_address, object_bytes=1]) -> void
     return void
 }
-alias object _ZN12qft_ctor_arg7adapterI10mutex_typeEC2EPFvPvRS1_ES3_S4_ = @qft_ctor_arg__adapter_mutex_type___adapter_mutex_type_
+alias object _ZN12qft_ctor_arg7adapterI10mutex_typeEC2EPFvPvRS1_ES3_S4_ = @qft_ctor_arg__adapter_mutex_type___adapter

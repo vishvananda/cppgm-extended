@@ -28,14 +28,15 @@ function @tree_int___call(%this : ptr [object_bytes=1], %value : ptr [pass=by_ad
     copyobj 16x8 %t4, %t1
     return obj<16x8> $retobj__1
 }
-function @tree_int___get(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> obj<16x8> [binding=weak, object=_ZN4treeIiE3getERKi] {
+function @tree_int___get(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> obj<16x8> [binding=weak, object=_ZN4treeIiE3getERKi] {
   slot $this : ptr
-  slot $value : ptr
+  slot $__param1 : ptr
   slot $retobj__1 : obj<16x8>
 
   block ^entry:
     store typed ptr %this, $this
-    store typed ptr %value, $value
+    store typed ptr %__param1, $__param1
     %t1 = addr $retobj__1
+    zeroinit 16x8 %t1
     return obj<16x8> $retobj__1
 }

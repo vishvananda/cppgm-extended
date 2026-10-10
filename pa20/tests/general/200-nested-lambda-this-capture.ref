@@ -40,7 +40,7 @@ function @Analyzer__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @Analyzer____lambda_Analyzer__f_t24_28__operator__(%this : ptr [object_bytes=8]) -> u8 [binding=weak, object=_ZZN8Analyzer1fEvENKUlvE_clEv, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__f_t24_28__operator__(%this : ptr [object_bytes=8]) -> u8 [binding=weak, object=_ZZN8Analyzer1fEvENKUlvE_clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $inner : obj<8x8>
 
@@ -55,7 +55,7 @@ function @Analyzer____lambda_Analyzer__f_t24_28__operator__(%this : ptr [object_
     %t6 = call u8 @Analyzer____lambda_Analyzer__f_t24_28____lambda_nested_t35_39__operator__(%t5)
     return u8 %t6
 }
-function @Analyzer____lambda_Analyzer__f_t24_28____lambda_nested_t35_39__operator__(%this : ptr [object_bytes=8]) -> u8 [binding=weak, object=_ZZZN8Analyzer1fEvENKUlvE_clEvENKUlvE_clEv, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__f_t24_28____lambda_nested_t35_39__operator__(%this : ptr [object_bytes=8]) -> u8 [binding=weak, object=_ZZZN8Analyzer1fEvENKUlvE_clEvENKUlvE_clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

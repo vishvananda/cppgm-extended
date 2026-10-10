@@ -11,18 +11,15 @@ function @main
   frame
     stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
-    mov rax, 1
-    test.i64 rax, rax
-    jne ^true
-
-  block ^false
-    mov rax, 1
-    ret rax
 
   block ^true
     mov rax, 0
+    ret rax
+
+  block ^false
+    mov rax, 1
     ret rax

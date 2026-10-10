@@ -22,7 +22,7 @@ function @capture
     param %c -> rcx : i64
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -42,25 +42,19 @@ function @run
     param %v -> [rbp+16] : i64
     return i64 -> rax
   frame
-    stack_size 64
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %v -> [rbp-8] : i64
-    slot $p -> [rbp-16] : ptr
+    preserve rbx
 
   block ^entry
-    load.i64 rax, [rbp+16]
-    store.i64 [rbp-8], rax
-    store.ptr [rbp-16], rdi
+    mov rbx, rdi
     jmp ^call
 
   block ^call
-    load.ptr r8, [rbp-16]
-    mov r9, @wrong
-    lea r9, [r9+8]
-    mov rdi, r8
-    mov rsi, r9
+    mov rsi, @wrong+8
+    mov rdi, rbx
     mov rdx, 2
     mov rcx, 3
     call @capture [args=(rcx,rdx,rsi,rdi)]
@@ -76,8 +70,8 @@ function @main
     epilogues shared
 
   block ^entry
-    sub rsp, 16
     mov rdi, @good
+    sub rsp, 16
     mov rsi, 2
     mov rdx, 3
     mov rcx, 4

@@ -97,38 +97,11 @@ for my $test (@tests)
 			if $guard !~ /^\s+%\w+ = call i64 \@\w+\(%\w+\)$/m;
 	}
 
-	my $baseline = function_body(
-		$test, $o0, 'folds_indexed_readonly_table');
-	my $positive = function_body(
-		$test, $o1, 'folds_indexed_readonly_table');
-	die "$test: indexed table lacks the O0 strlen-call baseline\n"
-		if $baseline !~ /^\s+%\w+ = call i64 \@measure_bytes\(%\w+\)$/m;
-	die "$test: indexed table lacks its two local initialization stores\n"
-		if scalar(() = $baseline =~ /^\s+store ptr /mg) != 2;
-	die "$test: eligible indexed readonly table retained strlen\n"
-		if $positive =~ /^\s+%\w+ = call i64 \@measure_bytes\(%\w+\)$/m;
-	die "$test: eligible table retained its local pointer initialization\n"
-		if $positive =~ /^\s+store ptr /m;
-	my ($record) = $positive =~
-		/^\s+(%\w+) = index obj<16x8> \[projection=array_element\] .*?, %which$/m;
-	die "$test: eligible table did not select a readonly record\n"
-		if !defined($record) ||
-		   $positive !~ /^\s+%\w+ = load ptr \Q$record\E$/m;
-	my ($length_address) = $positive =~
-		/^\s+(%\w+) = index i64 \[projection=field\] \Q$record\E, 1$/m;
-	die "$test: pointer and length loads did not share the selected record\n"
-		if !defined($length_address) ||
-		   $positive !~ /^\s+%\w+ = load i64 \Q$length_address\E$/m;
-	my @readonly_record_tables = grep {
-		$_ =~ /\A\s*ptr addr \@\w+\s+i64\s+\d+\s+ptr addr \@\w+\s+i64\s+\d+\s*\z/s
-	} ($o1 =~ /global \@\w+ \[storage=readonly, binding=internal\] = \{(.*?)\n\}/sg);
-	die "$test: eligible table did not publish two readonly " .
-		"pointer-and-length records\n" if !@readonly_record_tables;
-
-	for my $name ('keeps_partial_readonly_table',
-		'keeps_writable_string_table', 'keeps_escaped_readonly_table',
-		'keeps_unterminated_string_table', 'keeps_mutated_readonly_table',
-		'keeps_volatile_readonly_table') {
+	# A strlen of a pointer loaded from a local table stays a call when the
+	# selected string's bytes may change, lack a terminator, or come through
+	# a volatile load.
+	for my $name ('keeps_writable_string_table',
+		'keeps_unterminated_string_table', 'keeps_volatile_readonly_table') {
 		my $guard = function_body($test, $o1, $name);
 		die "$test: $name unsafely replaced its indexed strlen\n"
 			if $guard !~

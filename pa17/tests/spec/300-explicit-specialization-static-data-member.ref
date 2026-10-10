@@ -1,5 +1,5 @@
-global @__cppgm_class_template_identity_0_0_0__value : i32 [storage=readonly, binding=weak, object=_ZN4codeIiE5valueE] = 7
-global @__cppgm_class_template_identity_0_1_0__value : i32 [storage=readonly, binding=weak, object=_ZN4codeIcE5valueE] = 1
+global @code_int___value : i32 [storage=readonly, binding=strong, object=_ZN4codeIiE5valueE] = 7
+global @code_char___value : i32 [storage=readonly, binding=weak, object=_ZN4codeIcE5valueE] = 1
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

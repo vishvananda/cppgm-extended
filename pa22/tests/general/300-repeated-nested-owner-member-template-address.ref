@@ -6,9 +6,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $value
     call void @owner_int___select(%t2)
     %t3 = addr $value
-    call void @owner_int___select__ov2(%t3)
+    call void @owner_int___select__2(%t3)
     %t4 = addr $value
-    call void @owner_int___select__ov3(%t4)
+    call void @owner_int___select__3(%t4)
     return i32 0
 }
 function @owner_int___select(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5ownerIiE6selectIcEEvv, inline_hint=yes] {
@@ -55,7 +55,7 @@ function @owner_int___select(%this : ptr [object_bytes=1]) -> void [binding=weak
     call void %t22(%t16) as (%arg0 : ptr [object_bytes=16]) -> void
     return void
 }
-function @owner_int___select__ov2(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5ownerIiE6selectIsEEvv, inline_hint=yes] {
+function @owner_int___select__2(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5ownerIiE6selectIsEEvv, inline_hint=yes] {
   slot $this : ptr
   slot $value : obj<16x8>
   slot $member_pointer_callee__1 : ptr
@@ -63,7 +63,7 @@ function @owner_int___select__ov2(%this : ptr [object_bytes=1]) -> void [binding
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr $value
-    %t2 = addr @owner_int___nested__function__ov2
+    %t2 = addr @owner_int___nested__function__2
     %t3 = copy i64 %t2
     %t4 = convert zext i128 i64 %t3
     %t5 = addr $value
@@ -99,7 +99,7 @@ function @owner_int___select__ov2(%this : ptr [object_bytes=1]) -> void [binding
     call void %t22(%t16) as (%arg0 : ptr [object_bytes=16]) -> void
     return void
 }
-function @owner_int___select__ov3(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5ownerIiE6selectIlEEvv, inline_hint=yes] {
+function @owner_int___select__3(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5ownerIiE6selectIlEEvv, inline_hint=yes] {
   slot $this : ptr
   slot $value : obj<16x8>
   slot $member_pointer_callee__1 : ptr
@@ -107,7 +107,7 @@ function @owner_int___select__ov3(%this : ptr [object_bytes=1]) -> void [binding
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr $value
-    %t2 = addr @owner_int___nested__function__ov3
+    %t2 = addr @owner_int___nested__function__3
     %t3 = copy i64 %t2
     %t4 = convert zext i128 i64 %t3
     %t5 = addr $value
@@ -150,14 +150,14 @@ function @owner_int___nested__function(%this : ptr [object_bytes=16]) -> void [b
     store typed ptr %this, $this
     return void
 }
-function @owner_int___nested__function__ov2(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIsEEvv] {
+function @owner_int___nested__function__2(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIsEEvv] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return void
 }
-function @owner_int___nested__function__ov3(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIlEEvv] {
+function @owner_int___nested__function__3(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIlEEvv] {
   slot $this : ptr
 
   block ^entry:

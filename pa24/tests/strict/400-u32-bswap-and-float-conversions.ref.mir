@@ -16,15 +16,15 @@ function @main
 
   block ^entry
     mov r8, 305419896
-    bswap r8
+    bswap.u32 r8
     zext.i32 r8
-    mov r9, r8
     mov rdx, 2018915346
-    cmp.u32 r9, rdx
+    cmp.u32 r8, rdx
     sete r9
     movzx r9, r9
-    uitofp.i32.f64 xmm0, r8
-    fptoui.f64.i32 r8, xmm0
+    sitofp.u32.f64 xmm0, r8
+    fptosi.f64.u32 r8, xmm0
+    zext.i32 r8
     mov rdx, 2018915346
     cmp.u32 r8, rdx
     sete r8
@@ -35,6 +35,6 @@ function @main
     sete r9
     movzx r9, r9
     cmp.i64 r9, 0
-    sete rax
-    movzx rax, rax
-    ret rax
+    sete r9
+    movzx r9, r9
+    ret r9

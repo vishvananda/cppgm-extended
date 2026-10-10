@@ -3,10 +3,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $h
-    call void @holder_int___holder_int_(%t1)
+    call void @holder_int___holder(%t1)
     return i32 0
 }
-function @holder_int___holder_int_(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN6holderIiEC1Ev, inline_hint=yes] {
+function @holder_int___holder(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN6holderIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -19,15 +19,6 @@ function @holder_int___holder_int_(%this : ptr [object_bytes=16]) -> void [bindi
     store typed i128 %t3, %t5
     return void
 }
-function @holder_int___bad(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK6holderIiE3badEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = const i64 1
-    %t2 = convert trunc i32 i64 %t1
-    return i32 %t2
-}
 function @holder_int___good(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK6holderIiE4goodEv, inline_hint=yes] {
   slot $this : ptr
 
@@ -35,4 +26,4 @@ function @holder_int___good(%this : ptr [object_bytes=16]) -> i32 [binding=weak,
     store typed ptr %this, $this
     return i32 0
 }
-alias object _ZN6holderIiEC2Ev = @holder_int___holder_int_
+alias object _ZN6holderIiEC2Ev = @holder_int___holder

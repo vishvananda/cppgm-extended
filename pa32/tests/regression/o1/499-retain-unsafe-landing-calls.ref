@@ -65,6 +65,7 @@ function @negative(%indirect : ptr) -> void [binding=strong, no_inline=yes] {
 }
 function @main() -> void [role=entry] {
   block ^entry:
-    call void @negative(@may_unwind)
+    %address = copy ptr @may_unwind
+    call void @negative(%address)
     return void
 }

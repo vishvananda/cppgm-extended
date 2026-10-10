@@ -1,37 +1,37 @@
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__long_int [role=rtti_data, binding=strong, object=_ZTIl]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
-  i8 105
-  i8 0
-}
-global @__rtti_int [binding=weak, object=_ZTIi] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__int
-}
-global @__typeinfo_name__long_int [binding=weak, object=_ZTSl] = {
-  i8 108
-  i8 0
-}
-global @__rtti_long_int [binding=weak, object=_ZTIl] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__long_int
-}
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
-  zero 4
-}
-global @__ehobj_long_int [binding=internal, object=@__ehobj_long_int] = {
-  zero 8
-}
 global @live : i32 [binding=strong] = zero
 global @drops : i32 [binding=strong] = zero
 global @trace : i32 [binding=strong] = zero
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal] = {
+  zero 4
+}
+global @__typeinfo_name__long_int [storage=readonly, binding=weak, object=_ZTSl] = {
+  i8 108
+  i8 0
+}
+global @__rtti_long_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__long_int
+}
+global @__ehobj_long_int [binding=internal] = {
+  zero 8
+}
 
 function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
   slot $mode : i32
@@ -41,9 +41,9 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
   slot $inside : obj<4x4>
   slot $catch__2 : ptr
   slot $value__shadow2 : i32
-  slot $catch__3 : ptr
+  slot $cond__3 : i32
+  slot $catch__4 : ptr
   slot $value__shadow3 : i64
-  slot $cond__4 : i32
 
   block ^entry:
     store typed i32 %mode, $mode
@@ -55,46 +55,47 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     branch %t3, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
-    eh_try ^catch_dispatch_7
+    eh_try ^catch_dispatch_6
     %t4 = call ptr @__external_runtime____cxa_allocate_exception(4)
     store typed i32 7, %t4
     %t5 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t4, %t5, 0)
     eh_end
+    eh_end
     return i32 0
 
-  block ^catch_dispatch_7:
+  block ^catch_dispatch_6:
     eh_catch @__external_rtti__int, 1
     eh_catch @__external_rtti__int, 2
     eh_catch @__external_rtti__long_int, 3
-    jump ^catch_entry_8
+    jump ^catch_entry_7
 
-  block ^catch_entry_8:
+  block ^catch_entry_7:
     %t6 = exception ptr
     %t7 = exception_selector i32
     %t8 = cmp eq i32 %t7, 1
-    branch %t8, ^catch_body_10, ^catch_next_11
+    branch %t8, ^catch_body_9, ^catch_next_10
 
-  block ^catch_body_10:
+  block ^catch_body_9:
     %t9 = call ptr @__external_runtime____cxa_begin_catch(%t6)
     store typed ptr %t9, $catch__1
-    eh_cleanup ^catch_cleanup_12
+    eh_cleanup ^catch_cleanup_11
     %t10 = load typed i32 %t9
     store typed i32 %t10, $value
     %t11 = load typed i32 $value
     %t12 = cmp ne i32 %t11, 7
-    branch %t12, ^if_then_13, ^lor_rhs_17
+    branch %t12, ^if_then_12, ^lor_rhs_15
 
-  block ^lor_rhs_17:
+  block ^lor_rhs_15:
     %t13 = load typed i32 @live
     %t14 = cmp ne i32 %t13, 1
-    branch %t14, ^if_then_13, ^lor_rhs_16
+    branch %t14, ^if_then_12, ^lor_rhs_14
 
-  block ^lor_rhs_16:
+  block ^lor_rhs_14:
     %t15 = load typed i32 @drops
-    branch %t15, ^if_then_13, ^if_else_14
+    branch %t15, ^if_then_12, ^if_else_13
 
-  block ^if_then_13:
+  block ^if_then_12:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     eh_end
@@ -102,15 +103,15 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     call void @Guard___Guard(%t16)
     return i32 1
 
-  block ^if_else_14:
-    jump ^if_end_15
+  block ^if_else_13:
+    jump ^if_end_16
 
-  block ^if_end_15:
+  block ^if_end_16:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^try_end_9
+    jump ^try_end_8
 
-  block ^catch_cleanup_12:
+  block ^catch_cleanup_11:
     eh_catch @__external_rtti__int, 2
     eh_catch @__external_rtti__long_int, 3
     call void @__external_runtime____cxa_end_catch()
@@ -118,12 +119,12 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     eh_end
     jump ^catch_entry_2
 
-  block ^catch_next_11:
+  block ^catch_next_10:
     eh_end
     jump ^catch_entry_2
 
-  block ^try_end_9:
-    jump ^if_end_6
+  block ^try_end_8:
+    jump ^if_end_17
 
   block ^if_else_5:
     %t17 = load typed i32 $mode
@@ -131,29 +132,30 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     branch %t18, ^if_then_18, ^if_else_19
 
   block ^if_then_18:
-    eh_try ^catch_dispatch_21
+    eh_try ^catch_dispatch_20
     %t19 = call ptr @__external_runtime____cxa_allocate_exception(4)
     store typed i32 7, %t19
     %t20 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t19, %t20, 0)
     eh_end
+    eh_end
     return i32 0
 
-  block ^catch_dispatch_21:
+  block ^catch_dispatch_20:
     eh_catch @__external_rtti__long_int, 4
     eh_catch @__external_rtti__int, 2
     eh_catch @__external_rtti__long_int, 3
-    jump ^catch_entry_22
+    jump ^catch_entry_21
 
-  block ^catch_entry_22:
+  block ^catch_entry_21:
     %t21 = exception ptr
     %t22 = exception_selector i32
     %t23 = cmp eq i32 %t22, 4
-    branch %t23, ^catch_body_24, ^catch_next_25
+    branch %t23, ^catch_body_23, ^catch_next_24
 
-  block ^catch_body_24:
+  block ^catch_body_23:
     %t24 = call ptr @__external_runtime____cxa_begin_catch(%t21)
-    eh_cleanup ^catch_cleanup_26
+    eh_cleanup ^catch_cleanup_25
     eh_end
     call void @__external_runtime____cxa_end_catch()
     eh_end
@@ -161,7 +163,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     call void @Guard___Guard(%t25)
     return i32 2
 
-  block ^catch_cleanup_26:
+  block ^catch_cleanup_25:
     eh_catch @__external_rtti__int, 2
     eh_catch @__external_rtti__long_int, 3
     call void @__external_runtime____cxa_end_catch()
@@ -169,12 +171,12 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     eh_end
     jump ^catch_entry_2
 
-  block ^catch_next_25:
+  block ^catch_next_24:
     eh_end
     jump ^catch_entry_2
 
-  block ^try_end_23:
-    jump ^if_end_20
+  block ^try_end_22:
+    jump ^if_end_26
 
   block ^if_else_19:
     %t26 = load typed i32 $mode
@@ -184,31 +186,32 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
   block ^if_then_27:
     %t28 = addr $inside
     call void @Guard__Guard(%t28, 2)
-    eh_try ^catch_dispatch_30
+    eh_try ^catch_dispatch_29
     %t29 = call ptr @__external_runtime____cxa_allocate_exception(4)
     store typed i32 7, %t29
     %t30 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t29, %t30, 0)
     eh_end
+    eh_end
     return i32 0
 
-  block ^catch_dispatch_30:
+  block ^catch_dispatch_29:
     eh_catch @__external_rtti__long_int, 5
     eh_catch @__external_rtti__int, 2
     eh_catch @__external_rtti__long_int, 3
     eh_cleanup
     eh_end
-    jump ^catch_entry_31
+    jump ^catch_entry_30
 
-  block ^catch_entry_31:
+  block ^catch_entry_30:
     %t31 = exception ptr
     %t32 = exception_selector i32
     %t33 = cmp eq i32 %t32, 5
-    branch %t33, ^catch_body_33, ^catch_next_34
+    branch %t33, ^catch_body_32, ^catch_next_33
 
-  block ^catch_body_33:
+  block ^catch_body_32:
     %t34 = call ptr @__external_runtime____cxa_begin_catch(%t31)
-    eh_cleanup ^catch_cleanup_35
+    eh_cleanup ^catch_cleanup_34
     eh_end
     call void @__external_runtime____cxa_end_catch()
     %t35 = addr $inside
@@ -218,7 +221,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     call void @Guard___Guard(%t36)
     return i32 3
 
-  block ^catch_cleanup_35:
+  block ^catch_cleanup_34:
     eh_catch @__external_rtti__int, 2
     eh_catch @__external_rtti__long_int, 3
     call void @__external_runtime____cxa_end_catch()
@@ -228,16 +231,16 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     eh_end
     jump ^catch_entry_2
 
-  block ^catch_next_34:
+  block ^catch_next_33:
     %t38 = addr $inside
     call void @Guard___Guard(%t38)
     eh_end
     jump ^catch_entry_2
 
-  block ^try_end_32:
+  block ^try_end_31:
     %t39 = addr $inside
     call void @Guard___Guard(%t39)
-    jump ^if_end_29
+    jump ^if_end_35
 
   block ^if_else_28:
     eh_try ^catch_dispatch_36
@@ -245,6 +248,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     store typed i32 7, %t40
     %t41 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t40, %t41, 0)
+    eh_end
     eh_end
     return i32 0
 
@@ -282,15 +286,15 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     jump ^catch_entry_2
 
   block ^try_end_38:
-    jump ^if_end_29
+    jump ^if_end_35
 
-  block ^if_end_29:
-    jump ^if_end_20
+  block ^if_end_35:
+    jump ^if_end_26
 
-  block ^if_end_20:
-    jump ^if_end_6
+  block ^if_end_26:
+    jump ^if_end_17
 
-  block ^if_end_6:
+  block ^if_end_17:
     eh_end
     jump ^try_end_3
 
@@ -315,37 +319,37 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     store typed i32 %t52, $value__shadow2
     %t53 = load typed i32 $value__shadow2
     %t54 = cmp ne i32 %t53, 7
-    branch %t54, ^if_then_45, ^lor_rhs_50
-
-  block ^lor_rhs_50:
-    %t55 = load typed i32 @live
-    %t56 = cmp ne i32 %t55, 1
-    branch %t56, ^if_then_45, ^lor_rhs_49
+    branch %t54, ^if_then_45, ^lor_rhs_49
 
   block ^lor_rhs_49:
+    %t55 = load typed i32 @live
+    %t56 = cmp ne i32 %t55, 1
+    branch %t56, ^if_then_45, ^lor_rhs_48
+
+  block ^lor_rhs_48:
     %t57 = load typed i32 @drops
     %t58 = load typed i32 $mode
     %t59 = cmp eq i32 %t58, 2
     %t60 = convert trunc i32 i64 %t59
     %t61 = cmp ne i32 %t57, %t60
-    branch %t61, ^if_then_45, ^lor_rhs_48
+    branch %t61, ^if_then_45, ^lor_rhs_47
 
-  block ^lor_rhs_48:
+  block ^lor_rhs_47:
     %t62 = load typed i32 @trace
     %t63 = load typed i32 $mode
     %t64 = cmp eq i32 %t63, 2
-    branch %t64, ^cond_then_51, ^cond_else_52
+    branch %t64, ^cond_then_50, ^cond_else_51
 
-  block ^cond_then_51:
-    store typed i32 2, $cond__4
-    jump ^cond_end_53
+  block ^cond_then_50:
+    store typed i32 2, $cond__3
+    jump ^cond_end_52
 
-  block ^cond_else_52:
-    store typed i32 0, $cond__4
-    jump ^cond_end_53
+  block ^cond_else_51:
+    store typed i32 0, $cond__3
+    jump ^cond_end_52
 
-  block ^cond_end_53:
-    %t65 = load typed i32 $cond__4
+  block ^cond_end_52:
+    %t65 = load typed i32 $cond__3
     %t66 = cmp ne i32 %t62, %t65
     branch %t66, ^if_then_45, ^if_else_46
 
@@ -357,9 +361,9 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     return i32 4
 
   block ^if_else_46:
-    jump ^if_end_47
+    jump ^if_end_53
 
-  block ^if_end_47:
+  block ^if_end_53:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_3
@@ -379,25 +383,25 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
 
   block ^catch_body_54:
     %t72 = call ptr @__external_runtime____cxa_begin_catch(%t69)
-    store typed ptr %t72, $catch__3
+    store typed ptr %t72, $catch__4
     eh_cleanup ^catch_cleanup_56
     %t73 = load typed i64 %t72
     store typed i64 %t73, $value__shadow3
     %t74 = load typed i32 $mode
     %t75 = cmp ne i32 %t74, 3
-    branch %t75, ^if_then_57, ^lor_rhs_62
-
-  block ^lor_rhs_62:
-    %t76 = load typed i64 $value__shadow3
-    %t77 = cmp ne i64 %t76, 8
-    branch %t77, ^if_then_57, ^lor_rhs_61
+    branch %t75, ^if_then_57, ^lor_rhs_61
 
   block ^lor_rhs_61:
-    %t78 = load typed i32 @live
-    %t79 = cmp ne i32 %t78, 1
-    branch %t79, ^if_then_57, ^lor_rhs_60
+    %t76 = load typed i64 $value__shadow3
+    %t77 = cmp ne i64 %t76, 8
+    branch %t77, ^if_then_57, ^lor_rhs_60
 
   block ^lor_rhs_60:
+    %t78 = load typed i32 @live
+    %t79 = cmp ne i32 %t78, 1
+    branch %t79, ^if_then_57, ^lor_rhs_59
+
+  block ^lor_rhs_59:
     %t80 = load typed i32 @drops
     branch %t80, ^if_then_57, ^if_else_58
 
@@ -409,9 +413,9 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     return i32 5
 
   block ^if_else_58:
-    jump ^if_end_59
+    jump ^if_end_62
 
-  block ^if_end_59:
+  block ^if_end_62:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_3
@@ -455,46 +459,46 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed i32 0, @drops
     %t3 = load typed i32 $mode
     %t4 = call i32 @probe(%t3)
-    branch %t4, ^if_then_5, ^lor_rhs_10
-
-  block ^lor_rhs_10:
-    %t5 = load typed i32 @live
-    branch %t5, ^if_then_5, ^lor_rhs_9
+    branch %t4, ^if_then_5, ^lor_rhs_9
 
   block ^lor_rhs_9:
+    %t5 = load typed i32 @live
+    branch %t5, ^if_then_5, ^lor_rhs_8
+
+  block ^lor_rhs_8:
     %t6 = load typed i32 @drops
     %t7 = load typed i32 $mode
     %t8 = cmp eq i32 %t7, 2
-    branch %t8, ^cond_then_11, ^cond_else_12
+    branch %t8, ^cond_then_10, ^cond_else_11
 
-  block ^cond_then_11:
+  block ^cond_then_10:
     store typed i32 2, $cond__1
-    jump ^cond_end_13
+    jump ^cond_end_12
 
-  block ^cond_else_12:
+  block ^cond_else_11:
     store typed i32 1, $cond__1
-    jump ^cond_end_13
+    jump ^cond_end_12
 
-  block ^cond_end_13:
+  block ^cond_end_12:
     %t9 = load typed i32 $cond__1
     %t10 = cmp ne i32 %t6, %t9
-    branch %t10, ^if_then_5, ^lor_rhs_8
+    branch %t10, ^if_then_5, ^lor_rhs_7
 
-  block ^lor_rhs_8:
+  block ^lor_rhs_7:
     %t11 = load typed i32 @trace
     %t12 = load typed i32 $mode
     %t13 = cmp eq i32 %t12, 2
-    branch %t13, ^cond_then_14, ^cond_else_15
+    branch %t13, ^cond_then_13, ^cond_else_14
 
-  block ^cond_then_14:
+  block ^cond_then_13:
     store typed i32 21, $cond__2
-    jump ^cond_end_16
+    jump ^cond_end_15
 
-  block ^cond_else_15:
+  block ^cond_else_14:
     store typed i32 1, $cond__2
-    jump ^cond_end_16
+    jump ^cond_end_15
 
-  block ^cond_end_16:
+  block ^cond_end_15:
     %t14 = load typed i32 $cond__2
     %t15 = cmp ne i32 %t11, %t14
     branch %t15, ^if_then_5, ^if_else_6
@@ -503,9 +507,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_6:
-    jump ^if_end_7
+    jump ^if_end_16
 
-  block ^if_end_7:
+  block ^if_end_16:
     jump ^for_iter_3
 
   block ^for_iter_3:

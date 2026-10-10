@@ -85,6 +85,16 @@ function @Buffer__end(%ret : ptr [pass=indirect_result, object_bytes=1], %this :
     store typed ptr %this, $this
     return void
 }
+function @Iterator___Iterator(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN8IteratorD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @Iterator__destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @Iterator__destroyed
+    return void
+}
 function @Buffer__assign(%this : ptr [object_bytes=4], %first : ptr [pass=by_address, object_bytes=1], %last : ptr [pass=by_address, object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6Buffer6assignI8IteratorEEvT_S2_, inline_hint=yes] {
   slot $this : ptr
   slot $first : obj<1x1>
@@ -108,25 +118,15 @@ function @Buffer__assign(%this : ptr [object_bytes=4], %first : ptr [pass=by_add
   block ^call_unwind_end_2:
     eh_try ^cleanup_action_3
     call void @Buffer__assign_n(%t1, 1, 1, %t2)
-    call void @AssignRange_Iterator__int____AssignRange(%t2)
+    call void @AssignRange_Iterator_int____AssignRange(%t2)
     eh_end
     jump ^call_unwind_end_4
 
   block ^cleanup_action_3:
-    call void @AssignRange_Iterator__int____AssignRange(%t2)
+    call void @AssignRange_Iterator_int____AssignRange(%t2)
     jump ^cleanup_resume_1
 
   block ^call_unwind_end_4:
-    return void
-}
-function @Iterator___Iterator(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN8IteratorD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @Iterator__destroyed
-    %t2 = binary add nowrap i32 %t1, 1
-    store typed i32 %t2, @Iterator__destroyed
     return void
 }
 function @make_assign_range(%ret : ptr [pass=indirect_result, object_bytes=16], %first : ptr [pass=by_address, object_bytes=1], %last : ptr [pass=by_address, object_bytes=1], %alloc : ptr [pass=by_address, object_bytes=4]) -> void [unwind=no, binding=weak, object=_Z17make_assign_rangeI8IteratoriE11AssignRangeIT_T0_ERKS2_S6_RS3_] {
@@ -141,7 +141,7 @@ function @make_assign_range(%ret : ptr [pass=indirect_result, object_bytes=16], 
     %t1 = load typed ptr $first
     %t2 = load typed ptr $last
     %t3 = load typed ptr $alloc
-    call void @AssignRange_Iterator__int___AssignRange_Iterator__int_(%ret, %t1, %t2, %t3)
+    call void @AssignRange_Iterator_int___AssignRange(%ret, %t1, %t2, %t3)
     return void
 }
 function @Buffer__assign_n(%this : ptr [object_bytes=4], %__param1 : i32, %__param2 : i32, %fnc : ptr [pass=by_address, object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN6Buffer8assign_nI11AssignRangeI8IteratoriEEEviiRKT_, inline_hint=yes] {
@@ -156,10 +156,10 @@ function @Buffer__assign_n(%this : ptr [object_bytes=4], %__param1 : i32, %__par
     store typed i32 %__param2, $__param2
     store typed ptr %fnc, $fnc
     %t1 = load typed ptr $fnc
-    call void @AssignRange_Iterator__int___operator__(%t1, 0)
+    call void @AssignRange_Iterator_int___operator__(%t1, 0)
     return void
 }
-function @AssignRange_Iterator__int____AssignRange(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN11AssignRangeI8IteratoriED1Ev, inline_hint=yes] {
+function @AssignRange_Iterator_int____AssignRange(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN11AssignRangeI8IteratoriED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -199,7 +199,7 @@ function @AssignRange_Iterator__int____AssignRange(%this : ptr [object_bytes=16]
   block ^destructor_end_2:
     return void
 }
-function @AssignRange_Iterator__int___AssignRange_Iterator__int_(%this : ptr [object_bytes=16], %f : ptr [pass=by_address, object_bytes=1], %l : ptr [pass=by_address, object_bytes=1], %a : ptr [pass=by_address, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN11AssignRangeI8IteratoriEC1ERKS0_S3_Ri, inline_hint=yes] {
+function @AssignRange_Iterator_int___AssignRange(%this : ptr [object_bytes=16], %f : ptr [pass=by_address, object_bytes=1], %l : ptr [pass=by_address, object_bytes=1], %a : ptr [pass=by_address, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN11AssignRangeI8IteratoriEC1ERKS0_S3_Ri, inline_hint=yes] {
   slot $this : ptr
   slot $f : ptr
   slot $l : ptr
@@ -214,17 +214,34 @@ function @AssignRange_Iterator__int___AssignRange_Iterator__int_(%this : ptr [ob
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr $f
     call void @Iterator__Iterator(%t2, %t3)
+    eh_cleanup ^constructor_cleanup_1
     %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 1
     %t6 = load typed ptr $l
     call void @Iterator__Iterator(%t5, %t6)
+    eh_end
+    eh_cleanup ^constructor_cleanup_2
     %t7 = load typed ptr $a
     %t8 = load typed ptr $this
     %t9 = index i8 [projection=field] %t8, 8
     store typed ptr %t7, %t9
+    eh_end
     return void
+
+  block ^constructor_cleanup_1:
+    %t10 = load typed ptr $this
+    %t11 = index i8 [projection=field] %t10, 0
+    call void @Iterator___Iterator(%t11)
+    eh_end
+    resume
+
+  block ^constructor_cleanup_2:
+    %t12 = load typed ptr $this
+    %t13 = index i8 [projection=field] %t12, 1
+    call void @Iterator___Iterator(%t13)
+    jump ^constructor_cleanup_1
 }
-function @AssignRange_Iterator__int___operator__(%this : ptr [object_bytes=16], %__param1 : ptr) -> void [unwind=no, binding=weak, object=_ZNK11AssignRangeI8IteratoriEclEPi, inline_hint=yes] {
+function @AssignRange_Iterator_int___operator__(%this : ptr [object_bytes=16], %__param1 : ptr) -> void [unwind=no, binding=weak, object=_ZNK11AssignRangeI8IteratoriEclEPi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -244,6 +261,6 @@ function @Iterator__Iterator(%this : ptr [alias=noalias, object_bytes=1], %other
 }
 alias object _ZN6BufferC2Ev = @Buffer__Buffer
 alias object _ZN8IteratorD2Ev = @Iterator___Iterator
-alias object _ZN11AssignRangeI8IteratoriED2Ev = @AssignRange_Iterator__int____AssignRange
-alias object _ZN11AssignRangeI8IteratoriEC2ERKS0_S3_Ri = @AssignRange_Iterator__int___AssignRange_Iterator__int_
+alias object _ZN11AssignRangeI8IteratoriED2Ev = @AssignRange_Iterator_int____AssignRange
+alias object _ZN11AssignRangeI8IteratoriEC2ERKS0_S3_Ri = @AssignRange_Iterator_int___AssignRange
 alias object _ZN8IteratorC2ERKS_ = @Iterator__Iterator

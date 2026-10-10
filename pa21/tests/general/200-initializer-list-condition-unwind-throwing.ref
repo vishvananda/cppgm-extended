@@ -1,24 +1,24 @@
-declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
+global @live : i32 [binding=strong] = zero
+global @order : i32 [binding=strong] = zero
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
   i8 105
   i8 0
 }
-global @__rtti_int [binding=weak, object=_ZTIi] = {
+global @__rtti_int [storage=readonly, binding=internal] = {
   ptr addr @__external_rtti_vtable____fundamental_type_info + 16
   ptr addr @__typeinfo_name__int
 }
-global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
+global @__ehobj_int [binding=internal] = {
   zero 4
 }
-global @live : i32 [binding=strong] = zero
-global @order : i32 [binding=strong] = zero
 
 function @fail(%n : i64) -> u8 [binding=strong, object=_Z4failm] {
   slot $n : i64
@@ -71,8 +71,8 @@ function @in_if() -> void [binding=strong, object=_Z5in_ifv] {
   slot $g : obj<1x1>
   slot $held : obj<16x8>
   slot $initlist__1 : obj<8x4>
-  slot $call__2 : u8
-  slot $call__3 : i64
+  slot $call__2 : i64
+  slot $call__3 : u8
 
   block ^entry:
     %t1 = addr $g
@@ -122,11 +122,11 @@ function @in_if() -> void [binding=strong, object=_Z5in_ifv] {
     eh_try ^cleanup_action_6
     %t7 = addr $held
     %t8 = call i64 @std__initializer_list_Item___size(%t7)
-    store typed i64 %t8, $call__3
-    %t9 = load typed i64 $call__3
+    store typed i64 %t8, $call__2
+    %t9 = load typed i64 $call__2
     %t10 = call u8 @fail(%t9)
-    store u8 %t10, $call__2
-    %t11 = load u8 $call__2
+    store u8 %t10, $call__3
+    %t11 = load u8 $call__3
     eh_end
     branch %t11, ^if_then_8, ^if_else_9
 
@@ -151,8 +151,8 @@ function @in_while() -> void [binding=strong, object=_Z8in_whilev] {
   slot $g : obj<1x1>
   slot $held : obj<16x8>
   slot $initlist__1 : obj<8x4>
-  slot $call__2 : u8
-  slot $call__3 : i64
+  slot $call__2 : i64
+  slot $call__3 : u8
 
   block ^entry:
     %t1 = addr $g
@@ -205,11 +205,11 @@ function @in_while() -> void [binding=strong, object=_Z8in_whilev] {
     eh_try ^cleanup_action_6
     %t7 = addr $held
     %t8 = call i64 @std__initializer_list_Item___size(%t7)
-    store typed i64 %t8, $call__3
-    %t9 = load typed i64 $call__3
+    store typed i64 %t8, $call__2
+    %t9 = load typed i64 $call__2
     %t10 = call u8 @fail(%t9)
-    store u8 %t10, $call__2
-    %t11 = load u8 $call__2
+    store u8 %t10, $call__3
+    %t11 = load u8 $call__3
     eh_end
     branch %t11, ^while_body_9, ^while_end_10
 
@@ -227,8 +227,8 @@ function @in_for() -> void [binding=strong, object=_Z6in_forv] {
   slot $g : obj<1x1>
   slot $held : obj<16x8>
   slot $initlist__1 : obj<8x4>
-  slot $call__2 : u8
-  slot $call__3 : i64
+  slot $call__2 : i64
+  slot $call__3 : u8
 
   block ^entry:
     %t1 = addr $g
@@ -281,11 +281,11 @@ function @in_for() -> void [binding=strong, object=_Z6in_forv] {
     eh_try ^cleanup_action_6
     %t7 = addr $held
     %t8 = call i64 @std__initializer_list_Item___size(%t7)
-    store typed i64 %t8, $call__3
-    %t9 = load typed i64 $call__3
+    store typed i64 %t8, $call__2
+    %t9 = load typed i64 $call__2
     %t10 = call u8 @fail(%t9)
-    store u8 %t10, $call__2
-    %t11 = load u8 $call__2
+    store u8 %t10, $call__3
+    %t11 = load u8 $call__3
     eh_end
     branch %t11, ^for_body_9, ^for_end_11
 
@@ -357,11 +357,11 @@ function @in_switch() -> void [binding=strong, object=_Z9in_switchv] {
     eh_try ^cleanup_action_6
     %t7 = addr $held
     %t8 = call i64 @std__initializer_list_Item___size(%t7)
-    store typed i64 %t8, $call__3
-    %t9 = load typed i64 $call__3
+    store typed i64 %t8, $call__2
+    %t9 = load typed i64 $call__2
     %t10 = call i64 @pick(%t9)
-    store typed i64 %t10, $call__2
-    %t11 = load typed i64 $call__2
+    store typed i64 %t10, $call__3
+    %t11 = load typed i64 $call__3
     eh_end
     jump ^switch_dispatch_8
 
@@ -381,17 +381,17 @@ function @in_switch() -> void [binding=strong, object=_Z9in_switchv] {
 function @bound() -> void [binding=strong, object=_Z5boundv] {
   slot $g : obj<1x1>
   slot $held : ptr
-  slot $initlist__1 : obj<8x4>
-  slot $call__2 : u8
+  slot $tmpobj__1 : obj<16x8>
+  slot $initlist__2 : obj<8x4>
   slot $call__3 : i64
-  slot $tmpobj__4 : obj<16x8>
+  slot $call__4 : u8
 
   block ^entry:
     %t1 = addr $g
     call void @Guard__Guard(%t1)
-    %t2 = addr $tmpobj__4
+    %t2 = addr $tmpobj__1
     eh_try ^cleanup_action_2
-    %t3 = addr $initlist__1
+    %t3 = addr $initlist__2
     call void @Item__Item(%t3, 4)
     eh_try ^call_unwind_dispatch_3
     %t4 = index i8 [projection=array_element] %t3, 4
@@ -438,8 +438,8 @@ function @bound() -> void [binding=strong, object=_Z5boundv] {
     store typed i64 %t8, $call__3
     %t9 = load typed i64 $call__3
     %t10 = call u8 @fail(%t9)
-    store u8 %t10, $call__2
-    %t11 = load u8 $call__2
+    store u8 %t10, $call__4
+    %t11 = load u8 $call__4
     eh_end
     branch %t11, ^if_then_8, ^if_else_9
 
@@ -564,20 +564,6 @@ function @Guard__Guard(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
     store typed i32 %t2, @live
     return void
 }
-function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed i32 @live
-    %t2 = binary sub nowrap i32 %t1, 1
-    store typed i32 %t2, @live
-    %t3 = load typed i32 @order
-    %t4 = binary mul nowrap i32 %t3, 10
-    %t5 = binary add nowrap i32 %t4, 9
-    store typed i32 %t5, @order
-    return void
-}
 function @Item__Item(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN4ItemC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
@@ -611,6 +597,20 @@ function @Item___Item(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=
     store typed i32 %t8, @order
     return void
 }
+function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @live
+    %t3 = load typed i32 @order
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 9
+    store typed i32 %t5, @order
+    return void
+}
 function @std__initializer_list_Item___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listI4ItemE4sizeEv, inline_hint=yes] {
   slot $this : ptr
 
@@ -622,6 +622,6 @@ function @std__initializer_list_Item___size(%this : ptr [object_bytes=16]) -> i6
     return i64 %t3
 }
 alias object _ZN5GuardC2Ev = @Guard__Guard
-alias object _ZN5GuardD2Ev = @Guard___Guard
 alias object _ZN4ItemC2Ei = @Item__Item
 alias object _ZN4ItemD2Ev = @Item___Item
+alias object _ZN5GuardD2Ev = @Guard___Guard

@@ -7,16 +7,13 @@ function @wrapper(%value : i64) -> void [unwind=no] {
 }
 function @caller(%condition : i64) -> i64 [binding=strong] {
   block ^entry:
-    branch %condition, ^with_call, ^other
+    branch %condition, ^inline_entry_1, ^join
 
-  block ^with_call:
+  block ^inline_entry_1:
     call void @observe(7)
     jump ^join
 
-  block ^other:
-    jump ^join
-
   block ^join:
-    %result = phi i64 [^other: 22, ^with_call: 11]
+    %result = phi i64 [^inline_entry_1: 11, ^entry: 22]
     return i64 %result
 }

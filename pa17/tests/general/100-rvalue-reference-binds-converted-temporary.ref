@@ -1,3 +1,5 @@
+declare global @is_lvalue_reference_shortint___value : u8 [binding=weak, object=_ZN19is_lvalue_referenceIsE5valueE]
+
 function @consume(%value : ptr [pass=by_address, object_bytes=2]) -> i16 [binding=strong, object=_Z7consumeOs] {
   slot $value : ptr
 
@@ -19,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = convert trunc i16 i32 %t1
     store typed i16 %t2, $refarg__1
     %t3 = addr $refarg__1
-    %t4 = call ptr @forward__ov2(%t3)
+    %t4 = call ptr @forward(%t3)
     %t5 = call i16 @consume(%t4)
     store typed i16 %t5, $result
     %t6 = load typed i16 $result
@@ -39,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load typed i32 $cond__2
     return i32 %t9
 }
-function @forward__ov2(%value : ptr [pass=by_address, object_bytes=2]) -> ptr [binding=weak, object=_Z7forwardIsEOT_ON16remove_referenceIS0_E4typeE] {
+function @forward(%value : ptr [pass=by_address, object_bytes=2]) -> ptr [binding=weak, object=_Z7forwardIsEOT_ON16remove_referenceIS0_E4typeE] {
   slot $value : ptr
 
   block ^entry:

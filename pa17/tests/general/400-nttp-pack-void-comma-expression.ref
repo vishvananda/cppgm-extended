@@ -1,3 +1,5 @@
+declare global @Same___cppgm_class_template_identity_1___cppgm_class_template_identity_1___value : u8 [binding=weak, object=_ZN4SameI8AllDummyIJLb1ELb1ELb1EEES1_E5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

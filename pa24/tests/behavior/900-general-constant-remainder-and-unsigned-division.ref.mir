@@ -10,16 +10,16 @@ function @smod3
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 3
+    mov r11, 3
     mov rax, rdi
     cqo
-    idiv rcx
+    idiv r11
     ret rdx
 
 function @smod_negative5
@@ -27,16 +27,16 @@ function @smod_negative5
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, -5
+    mov r11, -5
     mov rax, rdi
     cqo
-    idiv rcx
+    idiv r11
     ret rdx
 
 function @smod_narrow3
@@ -44,17 +44,16 @@ function @smod_narrow3
     param %value -> rdi : i8
     return i8 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 3
+    mov r11, 3
     mov rax, rdi
     cqo
-    idiv rcx
-    sext.i8 rdx
+    idiv r11
     ret rdx
 
 function @sdiv_i16_7
@@ -62,16 +61,16 @@ function @sdiv_i16_7
     param %value -> rdi : i16
     return i16 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 7
+    mov r11, 7
     mov rax, rdi
     cqo
-    idiv rcx
+    idiv r11
     sext.i16 rax
     ret rax
 
@@ -80,17 +79,16 @@ function @smod_i16_7
     param %value -> rdi : i16
     return i16 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 7
+    mov r11, 7
     mov rax, rdi
     cqo
-    idiv rcx
-    sext.i16 rdx
+    idiv r11
     ret rdx
 
 function @sdiv_i32_negative31
@@ -98,16 +96,16 @@ function @sdiv_i32_negative31
     param %value -> rdi : i32
     return i32 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, -31
+    mov r11, -31
     mov rax, rdi
     cqo
-    idiv rcx
+    idiv r11
     sext.i32 rax
     ret rax
 
@@ -116,17 +114,16 @@ function @smod_i32_negative31
     param %value -> rdi : i32
     return i32 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, -31
+    mov r11, -31
     mov rax, rdi
     cqo
-    idiv rcx
-    sext.i32 rdx
+    idiv r11
     ret rdx
 
 function @udiv3
@@ -134,16 +131,16 @@ function @udiv3
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 3
+    mov r11, 3
     mov rax, rdi
     mov rdx, 0
-    div rcx
+    div r11
     ret rax
 
 function @udiv7
@@ -151,16 +148,16 @@ function @udiv7
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 7
+    mov r11, 7
     mov rax, rdi
     mov rdx, 0
-    div rcx
+    div r11
     ret rax
 
 function @umod7
@@ -168,16 +165,16 @@ function @umod7
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 7
+    mov r11, 7
     mov rax, rdi
     mov rdx, 0
-    div rcx
+    div r11
     ret rdx
 
 function @udiv_high
@@ -185,16 +182,16 @@ function @udiv_high
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, -9223372036854775807
+    mov r11, -9223372036854775807
     mov rax, rdi
     mov rdx, 0
-    div rcx
+    div r11
     ret rax
 
 function @umod_max
@@ -202,16 +199,16 @@ function @umod_max
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, -1
+    mov r11, -1
     mov rax, rdi
     mov rdx, 0
-    div rcx
+    div r11
     ret rdx
 
 function @udiv_u8_7
@@ -219,16 +216,16 @@ function @udiv_u8_7
     param %value -> rdi : u8
     return u8 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 7
+    mov r11, 7
     mov rax, rdi
     mov rdx, 0
-    div rcx
+    div r11
     zext.i8 rax
     ret rax
 
@@ -237,17 +234,16 @@ function @umod_u8_7
     param %value -> rdi : u8
     return u8 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 7
+    mov r11, 7
     mov rax, rdi
     mov rdx, 0
-    div rcx
-    zext.i8 rdx
+    div r11
     ret rdx
 
 function @udiv_u16_1000
@@ -255,16 +251,16 @@ function @udiv_u16_1000
     param %value -> rdi : u16
     return u16 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 1000
+    mov r11, 1000
     mov rax, rdi
     mov rdx, 0
-    div rcx
+    div r11
     zext.i16 rax
     ret rax
 
@@ -273,17 +269,16 @@ function @umod_u16_1000
     param %value -> rdi : u16
     return u16 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 1000
+    mov r11, 1000
     mov rax, rdi
     mov rdx, 0
-    div rcx
-    zext.i16 rdx
+    div r11
     ret rdx
 
 function @udiv_u32_31
@@ -291,16 +286,16 @@ function @udiv_u32_31
     param %value -> rdi : u32
     return u32 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 31
+    mov r11, 31
     mov rax, rdi
     mov rdx, 0
-    div rcx
+    div r11
     zext.i32 rax
     ret rax
 
@@ -309,17 +304,16 @@ function @umod_u32_31
     param %value -> rdi : u32
     return u32 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    mov rcx, 31
+    mov r11, 31
     mov rax, rdi
     mov rdx, 0
-    div rcx
-    zext.i32 rdx
+    div r11
     ret rdx
 
 function @main
@@ -331,161 +325,144 @@ function @main
     frame_pointer keep
     epilogues shared
     preserve rbx r12 r13 r14 r15
-    temp %bad_sr16 -> [rbp-8] : i64
-    temp %bad_sq32 -> [rbp-16] : i64
-    temp %bad_sr32 -> [rbp-24] : i64
-    temp %bad_uq3 -> [rbp-32] : i64
-    temp %bad_uq7 -> [rbp-40] : i64
-    temp %bad_ur7 -> [rbp-48] : i64
-    temp %bad_uq_high -> [rbp-56] : i64
-    temp %bad_ur_max -> [rbp-64] : i64
-    temp %bad_uq8 -> [rbp-72] : i64
-    temp %bad_ur8 -> [rbp-80] : i64
-    temp %bad_uq16 -> [rbp-88] : i64
-    temp %bad_ur16 -> [rbp-96] : i64
+    temp %bad_sq32 -> [rbp-8] : i64
+    temp %bad_sr32 -> [rbp-16] : i64
+    temp %bad_uq3 -> [rbp-24] : i64
+    temp %bad_uq7 -> [rbp-32] : i64
+    temp %bad_ur7 -> [rbp-40] : i64
+    temp %bad_uq_high -> [rbp-48] : i64
+    temp %bad_ur_max -> [rbp-56] : i64
+    temp %bad_uq8 -> [rbp-64] : i64
+    temp %bad_ur8 -> [rbp-72] : i64
+    temp %bad_uq16 -> [rbp-80] : i64
+    temp %bad_ur16 -> [rbp-88] : i64
+    temp %bad_uq32 -> [rbp-96] : i64
 
   block ^entry
     mov rdi, -9223372036854775808
     call @smod3 [args=(rdi)]
-    mov rbx, rax
     mov rdx, -2
-    cmp.i64 rbx, rdx
+    cmp.i64 rax, rdx
     setne rbx
     movzx rbx, rbx
     mov rdi, 9223372036854775807
     call @smod_negative5 [args=(rdi)]
-    mov r12, rax
     mov rdx, 2
-    cmp.i64 r12, rdx
+    cmp.i64 rax, rdx
     setne r12
     movzx r12, r12
     mov rdi, -128
     call @smod_narrow3 [args=(rdi)]
     sext.i8 rax
-    mov r13, rax
     mov rdx, -2
-    cmp.i8 r13, rdx
+    cmp.i8 rax, rdx
     setne r13
     movzx r13, r13
     mov rdi, -32768
     call @sdiv_i16_7 [args=(rdi)]
     sext.i16 rax
-    mov r14, rax
     mov rdx, -4681
-    cmp.i16 r14, rdx
+    cmp.i16 rax, rdx
     setne r14
     movzx r14, r14
     mov rdi, -32768
     call @smod_i16_7 [args=(rdi)]
     sext.i16 rax
-    mov r15, rax
     mov rdx, -1
-    cmp.i16 r15, rdx
+    cmp.i16 rax, rdx
     setne r15
     movzx r15, r15
     mov rdi, -2147483648
     call @sdiv_i32_negative31 [args=(rdi)]
     sext.i32 rax
-    store.i64 [rbp-8], r15
-    mov r15, rax
     mov rdx, 69273666
-    cmp.i32 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.i32 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-8], r10
     mov rdi, -2147483648
     call @smod_i32_negative31 [args=(rdi)]
     sext.i32 rax
-    store.i64 [rbp-16], r15
-    mov r15, rax
     mov rdx, -2
-    cmp.i32 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.i32 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-16], r10
     mov rdi, -1
     call @udiv3 [args=(rdi)]
-    store.i64 [rbp-24], r15
-    mov r15, rax
     mov rdx, 6148914691236517205
-    cmp.i64 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.i64 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-24], r10
     mov rdi, -1
     call @udiv7 [args=(rdi)]
-    store.i64 [rbp-32], r15
-    mov r15, rax
     mov rdx, 2635249153387078802
-    cmp.i64 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.i64 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-32], r10
     mov rdi, -1
     call @umod7 [args=(rdi)]
-    store.i64 [rbp-40], r15
-    mov r15, rax
     mov rdx, 1
-    cmp.i64 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.i64 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-40], r10
     mov rdi, -1
     call @udiv_high [args=(rdi)]
-    store.i64 [rbp-48], r15
-    mov r15, rax
     mov rdx, 1
-    cmp.i64 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.i64 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-48], r10
     mov rdi, -2
     call @umod_max [args=(rdi)]
-    store.i64 [rbp-56], r15
-    mov r15, rax
     mov rdx, -2
-    cmp.i64 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.i64 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-56], r10
     mov rdi, 255
     call @udiv_u8_7 [args=(rdi)]
     zext.i8 rax
-    store.i64 [rbp-64], r15
-    mov r15, rax
     mov rdx, 36
-    cmp.u8 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.u8 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-64], r10
     mov rdi, 255
     call @umod_u8_7 [args=(rdi)]
     zext.i8 rax
-    store.i64 [rbp-72], r15
-    mov r15, rax
     mov rdx, 3
-    cmp.u8 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.u8 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-72], r10
     mov rdi, 65535
     call @udiv_u16_1000 [args=(rdi)]
     zext.i16 rax
-    store.i64 [rbp-80], r15
-    mov r15, rax
     mov rdx, 65
-    cmp.u16 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.u16 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-80], r10
     mov rdi, 65535
     call @umod_u16_1000 [args=(rdi)]
     zext.i16 rax
-    store.i64 [rbp-88], r15
-    mov r15, rax
     mov rdx, 535
-    cmp.u16 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.u16 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-88], r10
     mov rdi, 4294967295
     call @udiv_u32_31 [args=(rdi)]
     zext.i32 rax
-    store.i64 [rbp-96], r15
-    mov r15, rax
     mov rdx, 138547332
-    cmp.u32 r15, rdx
-    setne r15
-    movzx r15, r15
+    cmp.u32 rax, rdx
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-96], r10
     mov rdi, 4294967295
     call @umod_u32_31 [args=(rdi)]
     zext.i32 rax
@@ -495,27 +472,25 @@ function @main
     movzx rax, rax
     or rbx, r12
     or r13, r14
-    load.i64 r8, [rbp-8]
-    or r8, [rbp-16]
-    load.i64 r9, [rbp-24]
-    or r9, [rbp-32]
-    load.i64 rdi, [rbp-40]
-    or rdi, [rbp-48]
-    load.i64 rsi, [rbp-56]
-    or rsi, [rbp-64]
-    load.i64 r12, [rbp-72]
-    or r12, [rbp-80]
-    load.i64 r14, [rbp-88]
-    or r14, [rbp-96]
-    or r15, rax
+    or r15, [rbp-8]
+    load.i64 r8, [rbp-16]
+    or r8, [rbp-24]
+    load.i64 r9, [rbp-32]
+    or r9, [rbp-40]
+    load.i64 rdi, [rbp-48]
+    or rdi, [rbp-56]
+    load.i64 rsi, [rbp-64]
+    or rsi, [rbp-72]
+    load.i64 rdx, [rbp-80]
+    or rdx, [rbp-88]
+    or rax, [rbp-96]
     or rbx, r13
-    or r8, r9
-    or rdi, rsi
-    or r12, r14
-    or rbx, r8
-    or rdi, r12
-    or rbx, rdi
+    or r15, r8
+    or r9, rdi
+    or rsi, rdx
     or rbx, r15
-    mov rax, rbx
-    sext.i32 rax
-    ret rax
+    or r9, rsi
+    or rbx, r9
+    or rbx, rax
+    sext.i32 rbx
+    ret rbx

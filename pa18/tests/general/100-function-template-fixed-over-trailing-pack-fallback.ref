@@ -27,7 +27,7 @@ function @count_chars(%first : ptr, %last : ptr, %value : ptr [pass=by_address, 
   block ^for_body_2:
     %t4 = addr $project
     %t5 = load typed ptr $first
-    %t6 = call ptr @invoke__ov2(%t4, %t5)
+    %t6 = call ptr @invoke(%t4, %t5)
     %t7 = load i8 %t6
     %t8 = load typed ptr $value
     %t9 = load i8 %t8
@@ -88,7 +88,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load typed i32 $cond__1
     return i32 %t10
 }
-function @invoke__ov2(%function : ptr [pass=by_address, object_bytes=1], %argument : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z6invokeIR8identityRcEDTclscT_fp_scT0_fp0_EEOS3_OS4_] {
+function @invoke(%function : ptr [pass=by_address, object_bytes=1], %argument : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z6invokeIR8identityRcEDTclscT_fp_scT0_fp0_EEOS3_OS4_] {
   slot $function : ptr
   slot $argument : ptr
 

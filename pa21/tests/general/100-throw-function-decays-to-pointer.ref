@@ -1,23 +1,24 @@
-declare global @__external_rtti_vtable____pointer_type_info [role=rtti_pointer, binding=strong, object=_ZTVN10__cxxabiv119__pointer_type_infoE]
 declare global @__external_rtti_vtable____function_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv120__function_type_infoE]
+declare global @__external_rtti_vtable____pointer_type_info [role=rtti_pointer, binding=strong, object=_ZTVN10__cxxabiv119__pointer_type_infoE]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 
-global @__typeinfo_name_type_FvvE [binding=weak, object=_ZTSFvvE] = {
+global @called : i32 [binding=strong] = zero
+global @__typeinfo_name_type_FvvE [storage=readonly, binding=weak, object=_ZTSFvvE] = {
   i8 70
   i8 118
   i8 118
   i8 69
   i8 0
 }
-global @__rtti_type_FvvE [binding=weak, object=_ZTIFvvE] = {
+global @__rtti_type_FvvE [storage=readonly, binding=weak, object=_ZTIFvvE] = {
   ptr addr @__external_rtti_vtable____function_type_info + 16
   ptr addr @__typeinfo_name_type_FvvE
 }
-global @__typeinfo_name_type_PFvvE [binding=weak, object=_ZTSPFvvE] = {
+global @__typeinfo_name_type_PFvvE [storage=readonly, binding=weak, object=_ZTSPFvvE] = {
   i8 80
   i8 70
   i8 118
@@ -25,16 +26,15 @@ global @__typeinfo_name_type_PFvvE [binding=weak, object=_ZTSPFvvE] = {
   i8 69
   i8 0
 }
-global @__rtti_type_PFvvE [binding=weak, object=_ZTIPFvvE] = {
+global @__rtti_type_PFvvE [storage=readonly, binding=weak, object=_ZTIPFvvE] = {
   ptr addr @__external_rtti_vtable____pointer_type_info + 16
   ptr addr @__typeinfo_name_type_PFvvE
   i32 0
   ptr addr @__rtti_type_FvvE
 }
-global @__ehobj_type_PFvvE [binding=internal, object=@__ehobj_type_PFvvE] = {
+global @__ehobj_type_PFvvE [binding=internal] = {
   zero 8
 }
-global @called : i32 [binding=strong] = zero
 
 function @f() -> void [binding=strong, object=_Z1fv] {
   block ^entry:

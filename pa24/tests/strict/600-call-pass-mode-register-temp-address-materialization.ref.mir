@@ -30,8 +30,8 @@ function @copy_ref
     epilogues shared
 
   block ^entry
-    load.i64 rax, [rsi]
-    store.i64 [rdi], rax
+    load.i64 rsi, [rsi]
+    store.i64 [rdi], rsi
     ret
 
 function @main
@@ -52,12 +52,11 @@ function @main
     lea rdi, [rbp-8]
     lea rsi, [rbp-16]
     call @copy_ref [args=(rsi,rdi)]
-    load.i64 r8, [rbp-8]
     mov rdx, 7
-    cmp.i64 r8, rdx
+    cmp.i64 [rbp-8], rdx
     sete r8
     movzx r8, r8
     cmp.i64 r8, 0
-    sete rax
-    movzx rax, rax
-    ret rax
+    sete r8
+    movzx r8, r8
+    ret r8

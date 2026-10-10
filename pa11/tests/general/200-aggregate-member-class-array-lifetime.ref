@@ -14,21 +14,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = load typed i32 @constructed
     %t2 = cmp ne i32 %t1, 3
-    branch %t2, ^if_then_1, ^lor_rhs_6
-
-  block ^lor_rhs_6:
-    %t3 = load typed i32 @destroyed
-    %t4 = cmp ne i32 %t3, 0
-    branch %t4, ^if_then_1, ^lor_rhs_5
+    branch %t2, ^if_then_1, ^lor_rhs_5
 
   block ^lor_rhs_5:
+    %t3 = load typed i32 @destroyed
+    %t4 = cmp ne i32 %t3, 0
+    branch %t4, ^if_then_1, ^lor_rhs_4
+
+  block ^lor_rhs_4:
     %t5 = addr @global
     %t6 = index i8 [projection=field] %t5, 48
     %t7 = load typed i32 %t6
     %t8 = cmp ne i32 %t7, 0
-    branch %t8, ^if_then_1, ^lor_rhs_4
+    branch %t8, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t9 = addr @global
     %t10 = index i8 [projection=field] %t9, 0
     %t11 = binary mul i64 2, 16
@@ -42,32 +42,32 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_6
 
-  block ^if_end_3:
+  block ^if_end_6:
     %t16 = addr $local
     %t17 = addr $local
     %t18 = index i8 [projection=field] %t17, 0
     call void @Box__Box(%t18)
-    %t19 = index i8 [projection=array_element] %t18, 16
+    %t19 = index i8 %t18, 16
     call void @Box__Box(%t19)
-    %t20 = index i8 [projection=array_element] %t18, 32
+    %t20 = index i8 %t18, 32
     call void @Box__Box(%t20)
     %t21 = addr $local
     %t22 = index i8 [projection=field] %t21, 48
     store typed i32 0, %t22
     %t23 = load typed i32 @constructed
     %t24 = cmp ne i32 %t23, 6
-    branch %t24, ^if_then_7, ^lor_rhs_13
+    branch %t24, ^if_then_7, ^lor_rhs_12
 
-  block ^lor_rhs_13:
+  block ^lor_rhs_12:
     %t25 = addr $local
     %t26 = index i8 [projection=field] %t25, 48
     %t27 = load typed i32 %t26
     %t28 = cmp ne i32 %t27, 0
-    branch %t28, ^if_then_7, ^lor_rhs_12
+    branch %t28, ^if_then_7, ^lor_rhs_11
 
-  block ^lor_rhs_12:
+  block ^lor_rhs_11:
     %t29 = addr $local
     %t30 = index i8 [projection=field] %t29, 0
     %t31 = binary mul i64 0, 16
@@ -75,9 +75,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t33 = index i8 [projection=field] %t32, 8
     %t34 = load typed i32 %t33
     %t35 = cmp ne i32 %t34, 4
-    branch %t35, ^if_then_7, ^lor_rhs_11
+    branch %t35, ^if_then_7, ^lor_rhs_10
 
-  block ^lor_rhs_11:
+  block ^lor_rhs_10:
     %t36 = addr $local
     %t37 = index i8 [projection=field] %t36, 0
     %t38 = binary mul i64 2, 16
@@ -85,9 +85,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t40 = index i8 [projection=field] %t39, 8
     %t41 = load typed i32 %t40
     %t42 = cmp ne i32 %t41, 6
-    branch %t42, ^if_then_7, ^lor_rhs_10
+    branch %t42, ^if_then_7, ^lor_rhs_9
 
-  block ^lor_rhs_10:
+  block ^lor_rhs_9:
     %t43 = addr $local
     %t44 = index i8 [projection=field] %t43, 0
     %t45 = binary mul i64 1, 16
@@ -107,16 +107,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_8:
-    jump ^if_end_9
+    jump ^if_end_13
 
-  block ^if_end_9:
+  block ^if_end_13:
     %t55 = addr $local
     call void @Ext___Ext(%t55)
     %t56 = load typed i32 @destroyed
     %t57 = cmp ne i32 %t56, 3
-    branch %t57, ^if_then_14, ^lor_rhs_17
+    branch %t57, ^if_then_14, ^lor_rhs_16
 
-  block ^lor_rhs_17:
+  block ^lor_rhs_16:
     %t58 = load typed i32 @bad_addresses
     %t59 = cmp ne i32 %t58, 0
     branch %t59, ^if_then_14, ^if_else_15
@@ -125,24 +125,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_else_15:
-    jump ^if_end_16
+    jump ^if_end_17
 
-  block ^if_end_16:
+  block ^if_end_17:
     %t60 = addr $grid
     %t61 = addr $grid
     %t62 = index i8 [projection=field] %t61, 0
     call void @Box__Box(%t62)
-    %t63 = index i8 [projection=array_element] %t62, 16
+    %t63 = index i8 %t62, 16
     call void @Box__Box(%t63)
-    %t64 = index i8 [projection=array_element] %t62, 32
+    %t64 = index i8 %t62, 32
     call void @Box__Box(%t64)
-    %t65 = index i8 [projection=array_element] %t64, 16
+    %t65 = index i8 %t64, 16
     call void @Box__Box(%t65)
     %t66 = load typed i32 @constructed
     %t67 = cmp ne i32 %t66, 10
-    branch %t67, ^if_then_18, ^lor_rhs_22
+    branch %t67, ^if_then_18, ^lor_rhs_21
 
-  block ^lor_rhs_22:
+  block ^lor_rhs_21:
     %t68 = addr $grid
     %t69 = index i8 [projection=field] %t68, 0
     %t70 = binary mul i64 1, 32
@@ -152,9 +152,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t74 = index i8 [projection=field] %t73, 8
     %t75 = load typed i32 %t74
     %t76 = cmp ne i32 %t75, 10
-    branch %t76, ^if_then_18, ^lor_rhs_21
+    branch %t76, ^if_then_18, ^lor_rhs_20
 
-  block ^lor_rhs_21:
+  block ^lor_rhs_20:
     %t77 = addr $grid
     %t78 = index i8 [projection=field] %t77, 0
     %t79 = binary mul i64 1, 32
@@ -178,9 +178,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 4
 
   block ^if_else_19:
-    jump ^if_end_20
+    jump ^if_end_22
 
-  block ^if_end_20:
+  block ^if_end_22:
     %t93 = addr $grid
     call void @Grid___Grid(%t93)
     %t94 = load typed i32 @destroyed
@@ -407,9 +407,9 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     %t1 = addr @global
     %t2 = index i8 [projection=field] %t1, 0
     call void @Box__Box(%t2)
-    %t3 = index i8 [projection=array_element] %t2, 16
+    %t3 = index i8 %t2, 16
     call void @Box__Box(%t3)
-    %t4 = index i8 [projection=array_element] %t2, 32
+    %t4 = index i8 %t2, 32
     call void @Box__Box(%t4)
     %t5 = addr @global
     %t6 = index i8 [projection=field] %t5, 48

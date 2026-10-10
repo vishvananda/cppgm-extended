@@ -42,9 +42,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = unary neg i32 1
     %t2 = call u8 @compare(7, %t1)
-    branch %t2, ^if_then_1, ^lor_rhs_4
+    branch %t2, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t3 = call u8 @compare_call()
     branch %t3, ^if_then_1, ^if_else_2
 
@@ -52,9 +52,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t4 = call u8 @compare(7, 7)
     branch %t4, ^cond_then_5, ^cond_else_6
 

@@ -1,3 +1,5 @@
+declare global @A_int___x : i32 [binding=weak, object=_ZN1AIiE1xE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call i32 @f()

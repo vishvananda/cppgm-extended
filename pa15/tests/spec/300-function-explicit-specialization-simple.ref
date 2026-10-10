@@ -1,3 +1,7 @@
+function @value() -> i32 [binding=strong, object=_Z5valueIiEiv] {
+  block ^entry:
+    return i32 2
+}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
@@ -17,8 +21,4 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^cond_end_3:
     %t3 = load typed i32 $cond__1
     return i32 %t3
-}
-function @value() -> i32 [binding=strong, object=_Z5valueIiEiv] {
-  block ^entry:
-    return i32 2
 }

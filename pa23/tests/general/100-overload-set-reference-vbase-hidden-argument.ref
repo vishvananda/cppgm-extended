@@ -1,22 +1,27 @@
-declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_V [binding=weak, object=_ZTS1V] = {
+global @__typeinfo_name__struct_D [storage=readonly, binding=weak, object=_ZTS1D] = {
   i8 49
-  i8 86
+  i8 68
   i8 0
 }
-global @__rtti_struct_V [binding=weak, object=_ZTI1V] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_V
-}
-global @__typeinfo_name__struct_A [binding=weak, object=_ZTS1A] = {
+global @__typeinfo_name__struct_A [storage=readonly, binding=weak, object=_ZTS1A] = {
   i8 49
   i8 65
   i8 0
 }
-global @__rtti_struct_A [binding=weak, object=_ZTI1A] = {
+global @__typeinfo_name__struct_V [storage=readonly, binding=weak, object=_ZTS1V] = {
+  i8 49
+  i8 86
+  i8 0
+}
+global @__rtti_struct_V [storage=readonly, binding=weak, object=_ZTI1V] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_V
+}
+global @__rtti_struct_A [storage=readonly, binding=weak, object=_ZTI1A] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_A
   i32 0
@@ -24,23 +29,10 @@ global @__rtti_struct_A [binding=weak, object=_ZTI1A] = {
   ptr addr @__rtti_struct_V
   i64 -6141
 }
-global @__typeinfo_name__struct_D [binding=weak, object=_ZTS1D] = {
-  i8 49
-  i8 68
-  i8 0
-}
-global @__rtti_struct_D [binding=weak, object=_ZTI1D] = {
+global @__rtti_struct_D [storage=readonly, binding=weak, object=_ZTI1D] = {
   ptr addr @__external_rtti_vtable____si_class_type_info + 16
   ptr addr @__typeinfo_name__struct_D
   ptr addr @__rtti_struct_A
-}
-global @A__vtable [storage=readonly, binding=weak, object=_ZTV1A] = {
-  i64 8
-  i64 0
-  ptr addr @__rtti_struct_A
-}
-global @A____vtt [storage=readonly, binding=weak, object=_ZTT1A, object_root=yes] = {
-  ptr addr @A__vtable + 24
 }
 global @D__vtable [storage=readonly, binding=weak, object=_ZTV1D] = {
   i64 8
@@ -55,6 +47,14 @@ global @D____construction__A__0__s0__vtable [storage=readonly, binding=internal,
 global @D____vtt [storage=readonly, binding=weak, object=_ZTT1D, object_root=yes] = {
   ptr addr @D__vtable + 24
   ptr addr @D____construction__A__0__s0__vtable + 24
+}
+global @A__vtable [storage=readonly, binding=weak, object=_ZTV1A] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_A
+}
+global @A____vtt [storage=readonly, binding=weak, object=_ZTT1A, object_root=yes] = {
+  ptr addr @A__vtable + 24
 }
 
 function @read(%a : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=strong, object=_Z4readR1A] {

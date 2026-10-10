@@ -21,15 +21,15 @@ function @g
     param %__i -> rsi : i64
     return ptr -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
 
   block ^entry
-    load.ptr r8, [rdi]
-    lea rax, [r8+rsi*8]
-    ret rax
+    load.ptr rdi, [rdi]
+    lea rdi, [rdi+rsi*8]
+    ret rdi
 
 function @main
   abi
@@ -44,8 +44,7 @@ function @main
     mov rdi, @holder
     mov rsi, 2
     call @g [args=(rsi,rdi)]
-    load.i64 r8, [rax]
-    cmp.i64 r8, 33
+    cmp.i64 [rax], 33
     setne rax
     movzx rax, rax
     ret rax

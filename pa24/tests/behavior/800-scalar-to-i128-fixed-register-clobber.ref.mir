@@ -12,31 +12,16 @@ function @preserve_third
     param %third -> rdx : i64
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    temp %first_wide -> [rbp-16] : i128
-    temp %second_wide -> [rbp-16] : i128
     temp %third_wide -> [rbp-16] : i128
 
   block ^entry
-    mov r8, rdx
-    mov rax, rdi
-    cqo
-    store.i64 [rbp-16], rax
-    store.i64 [rbp-8], rdx
-    mov rax, rsi
-    cqo
-    store.i64 [rbp-16], rax
-    store.i64 [rbp-8], rdx
-    mov rax, r8
-    cqo
-    store.i64 [rbp-16], rax
-    store.i64 [rbp-8], rdx
-    lea r11, [rbp-16]
-    load.i64 r9, [r11]
-    ret r9
+    sext.i128 [rbp-16], rdx
+    load.i64 rax, [rbp-16]
+    ret rax
 
 function @main
   abi

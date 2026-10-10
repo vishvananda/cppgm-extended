@@ -26,9 +26,9 @@ function @aligned_call(%a : i32, %b : i32, %c : i32, %d : i32, %e : i32, %f : i3
     %t7 = binary umod i64 %t5, %t6
     %t8 = convert sext i64 i32 0
     %t9 = cmp ne i64 %t7, %t8
-    branch %t9, ^if_then_1, ^lor_rhs_4
+    branch %t9, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t10 = addr $local
     %t11 = index i8 [projection=field] %t10, 0
     %t12 = load i8 %t11
@@ -40,9 +40,9 @@ function @aligned_call(%a : i32, %b : i32, %c : i32, %d : i32, %e : i32, %f : i3
     return i32 0
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t15 = load typed i32 $a
     %t16 = load typed i32 $b
     %t17 = binary add nowrap i32 %t15, %t16
@@ -65,9 +65,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = const i64 16
     %t2 = convert sext i64 i32 16
     %t3 = cmp ne i64 %t1, %t2
-    branch %t3, ^if_then_1, ^lor_rhs_4
+    branch %t3, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t4 = const i64 16
     %t5 = convert sext i64 i32 16
     %t6 = cmp ne i64 %t4, %t5
@@ -77,15 +77,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t7 = const i64 32
     %t8 = convert sext i64 i32 32
     %t9 = cmp ne i64 %t7, %t8
-    branch %t9, ^if_then_5, ^lor_rhs_8
+    branch %t9, ^if_then_5, ^lor_rhs_7
 
-  block ^lor_rhs_8:
+  block ^lor_rhs_7:
     %t10 = const i64 32
     %t11 = convert sext i64 i32 32
     %t12 = cmp ne i64 %t10, %t11
@@ -95,15 +95,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_6:
-    jump ^if_end_7
+    jump ^if_end_8
 
-  block ^if_end_7:
+  block ^if_end_8:
     %t13 = const i64 16
     %t14 = const i64 16
     %t15 = cmp ne i64 %t13, %t14
-    branch %t15, ^if_then_9, ^lor_rhs_12
+    branch %t15, ^if_then_9, ^lor_rhs_11
 
-  block ^lor_rhs_12:
+  block ^lor_rhs_11:
     %t16 = const i64 16
     %t17 = const i64 16
     %t18 = cmp ne i64 %t16, %t17
@@ -113,9 +113,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_else_10:
-    jump ^if_end_11
+    jump ^if_end_12
 
-  block ^if_end_11:
+  block ^if_end_12:
     %t19 = addr $local
     %t20 = addr $local
     %t21 = index i8 [projection=field] %t20, 0
@@ -126,9 +126,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t25 = binary umod i64 %t23, %t24
     %t26 = convert sext i64 i32 0
     %t27 = cmp ne i64 %t25, %t26
-    branch %t27, ^if_then_13, ^lor_rhs_16
+    branch %t27, ^if_then_13, ^lor_rhs_15
 
-  block ^lor_rhs_16:
+  block ^lor_rhs_15:
     %t28 = addr $local
     %t29 = index i8 [projection=field] %t28, 0
     %t30 = load i8 %t29
@@ -140,9 +140,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 4
 
   block ^if_else_14:
-    jump ^if_end_15
+    jump ^if_end_16
 
-  block ^if_end_15:
+  block ^if_end_16:
     %t33 = call i32 @aligned_call(1, 2, 3, 4, 5, 6, 7)
     %t34 = cmp ne i32 %t33, 28
     branch %t34, ^if_then_17, ^if_else_18

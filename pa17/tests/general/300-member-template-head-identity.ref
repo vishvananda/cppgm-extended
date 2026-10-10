@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t5 = addr $value
-    %t6 = call i32 @owner_char___choose__ov2(%t5)
+    %t6 = call i32 @owner_char___choose__2(%t5)
     %t7 = cmp eq i32 %t6, 7
     %t8 = cmp ne i64 %t7, 0
     store typed i64 %t8, $land__2
@@ -45,7 +45,7 @@ function @owner_char___choose(%this : ptr [object_bytes=1]) -> i32 [binding=weak
     store typed ptr %this, $this
     return i32 1
 }
-function @owner_char___choose__ov2(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN5ownerIcE6chooseILi7EEEiv] {
+function @owner_char___choose__2(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN5ownerIcE6chooseILi7EEEiv] {
   slot $this : ptr
 
   block ^entry:

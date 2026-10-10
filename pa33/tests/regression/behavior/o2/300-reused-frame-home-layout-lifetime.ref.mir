@@ -10,10 +10,10 @@ function @make_value
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi
@@ -24,8 +24,8 @@ function @clobber
   frame
     stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     mov rax, 5
@@ -36,19 +36,31 @@ function @probe
     param %take_old_path -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
-    preserve rbx r13
+    epilogues duplicated
+    preserve rbx
     slot $joined -> [rbp-8] : i64
 
   block ^entry
-    test.i64 rdi, rdi
+    cmp.i64 rdi, 0
     jne ^old_value
 
   block ^constant_value
     store.i64 [rbp-8], 7
+
+  block ^merge
+    load.i64 rbx, [rbp-8]
+    cmp.i64 rbx, 0
+    jne ^use_current
+
+  block ^return_zero
+    mov rax, 0
+    ret rax
+
+  block ^store_fallback
+    store.i64 [rbp-8], 3
     jmp ^merge
 
   block ^old_value
@@ -61,24 +73,14 @@ function @probe
 
   block ^store_old
     store.i64 [rbp-8], rbx
-    jmp ^merge
-
-  block ^store_fallback
-    store.i64 [rbp-8], 3
-
-  block ^merge
-    load.i64 r13, [rbp-8]
-    test.i64 r13, r13
+    load.i64 rbx, [rbp-8]
+    cmp.i64 rbx, 0
     je ^return_zero
 
   block ^use_current
     call @clobber [args=()]
-    lea r9, [r13+rax]
-    ret r9
-
-  block ^return_zero
-    mov rax, 0
-    ret rax
+    add rbx, rax
+    ret rbx
 
 function @main
   abi
@@ -87,13 +89,12 @@ function @main
     stack_size 48
     scratch_bytes 48
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
 
   block ^entry
     mov rdi, 0
     call @probe [args=(rdi)]
-    mov rdx, 12
-    cmp.i64 rax, rdx
+    cmp.i64 rax, 12
     setne rax
     movzx rax, rax
     ret rax

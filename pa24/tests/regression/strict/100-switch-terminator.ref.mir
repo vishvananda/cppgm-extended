@@ -15,12 +15,10 @@ function @main
     epilogues shared
 
   block ^entry
-    mov rax, 1
-    mov rcx, 0
-    cmp.i64 rax, rcx
+    mov r10, 1
+    cmp.i64 r10, 0
     je ^zero
-    mov rcx, 1
-    cmp.i64 rax, rcx
+    cmp.i64 r10, 1
     je ^one
     jmp ^miss
 

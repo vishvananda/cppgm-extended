@@ -14,7 +14,7 @@ function @test(%log : ptr, %out : ptr [pass=by_address, object_bytes=1]) -> i32 
     %t5 = load typed ptr $log
     %t6 = addr $argobj__2
     %t7 = load typed ptr $out
-    %t8 = call obj<16x8> @model__bind__ov2(%t4, %t5, 1, $argobj__2)
+    %t8 = call obj<16x8> @model__bind(%t4, %t5, 1, $argobj__2)
     copyobj 16x8 %t8, %t1
     return i32 0
 }
@@ -41,7 +41,7 @@ function @log_t__set_stream(%this : ptr [object_bytes=1], %__param1 : i32, %__pa
     store typed ptr %__param2, $__param2
     return void
 }
-function @model__bind__ov2(%f : i128, %a1 : ptr, %a2 : i32, %a3 : obj<1x1> [classes=none]) -> obj<16x8> [binding=weak, object=_ZN5model4bindIv5log_tiR6streamPS1_iS2_EEDTclsr5modelE4bindclsr5modelE6mem_fnfp_Efp0_fp1_fp2_EEMT0_FT_T1_T2_ET3_T4_T5_] {
+function @model__bind(%f : i128, %a1 : ptr, %a2 : i32, %a3 : obj<1x1> [classes=none]) -> obj<16x8> [binding=weak, object=_ZN5model4bindIv5log_tiR6streamPS1_iS2_EEDTclsr5modelE4bindclsr5modelE6mem_fnfp_Efp0_fp1_fp2_EEMT0_FT_T1_T2_ET3_T4_T5_] {
   slot $f : i128
   slot $a1 : ptr
   slot $a2 : i32
@@ -63,7 +63,7 @@ function @model__bind__ov2(%f : i128, %a1 : ptr, %a2 : i32, %a3 : obj<1x1> [clas
     %t6 = load typed i32 $a2
     %t7 = addr $argobj__3
     %t8 = addr $a3
-    %t9 = call obj<16x8> @model__bind($argobj__2, %t5, %t6, $argobj__3)
+    %t9 = call obj<16x8> @model__bind__2($argobj__2, %t5, %t6, $argobj__3)
     copyobj 16x8 %t9, %t1
     return obj<16x8> $retobj__1
 }
@@ -84,7 +84,7 @@ function @model__mem_fn(%pmf : i128) -> obj<16x8> [binding=weak, object=_ZN5mode
     copyobj 16x8 %t6, %t5
     return obj<16x8> $retobj__1
 }
-function @model__bind(%f : obj<16x8>, %__param1 : ptr, %__param2 : i32, %__param3 : obj<1x1> [classes=none]) -> obj<16x8> [binding=weak, object=_ZN5model4bindINS_16function_wrapperIM5log_tFviR6streamEvS2_JiS4_EEEJPS2_iS3_EEENS_6bind_tINS_11unspecifiedET_NS_7list_avIJDpT0_EE4typeEEESB_SE_] {
+function @model__bind__2(%f : obj<16x8>, %__param1 : ptr, %__param2 : i32, %__param3 : obj<1x1> [classes=none]) -> obj<16x8> [binding=weak, object=_ZN5model4bindINS_16function_wrapperIM5log_tFviR6streamEvS2_JiS4_EEEJPS2_iS3_EEENS_6bind_tINS_11unspecifiedET_NS_7list_avIJDpT0_EE4typeEEESB_SE_] {
   slot $f : obj<16x8>
   slot $__param1 : ptr
   slot $__param2 : i32

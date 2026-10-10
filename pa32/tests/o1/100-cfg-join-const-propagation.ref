@@ -2,7 +2,7 @@ function @ping() -> i64 {
   block ^entry:
     return i64 9
 }
-function @main(%cond : i64) -> i64 {
+function @main(%cond : i64) -> i64 [role=entry] {
   block ^entry:
     return i64 7
 }

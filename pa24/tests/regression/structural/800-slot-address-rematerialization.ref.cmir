@@ -41,13 +41,16 @@ function @f
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
+    preserve <gpr0> <gpr1>
     slot $x -> [rbp-<off0>] : i64
     slot $y -> [rbp-<off1>] : i64
 
   block ^entry
+    lea <gpr0>, [rbp-<off0>]
+    lea <gpr1>, [rbp-<off1>]
     call @mark [args=()]
-    lea rdi, [rbp-<off0>]
-    lea rsi, [rbp-<off1>]
+    mov rdi, <gpr0>
+    mov rsi, <gpr1>
     call @sink [args=(rsi,rdi)]
     load.i64 r8, [rbp-<off0>]
     add r8, [rbp-<off1>]

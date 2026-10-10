@@ -1,3 +1,6 @@
+declare global @hash___cppgm_class_template_identity_1___selected : i32 [binding=weak, object=_ZN4hashI6helperI6holderIicEPiEE8selectedE]
+declare global @bound_kind_char_4____value : i32 [binding=weak, object=_ZN10bound_kindIA4_cE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $status : i32
 

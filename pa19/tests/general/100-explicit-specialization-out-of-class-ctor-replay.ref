@@ -1,26 +1,3 @@
-function @f() -> i32 [binding=strong, object=_Z1fv] {
-  slot $b : obj<4x4>
-  slot $c : obj<4x4>
-
-  block ^entry:
-    %t1 = addr $b
-    call void @S_int___S(%t1)
-    %t2 = addr $c
-    call void @S_int___S__ov2(%t2, 5)
-    %t3 = addr $b
-    %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load typed i32 %t4
-    %t6 = addr $c
-    %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load typed i32 %t7
-    %t9 = binary add nowrap i32 %t5, %t8
-    return i32 %t9
-}
-function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  block ^entry:
-    %t1 = call i32 @f()
-    return i32 %t1
-}
 function @S_int___S__base_entry(%this : ptr [object_bytes=4]) -> void [binding=strong, object=_ZN1SIiEC2Ev, object_root=yes] {
   slot $this : ptr
 
@@ -68,4 +45,27 @@ function @S_int___S__ov2(%this : ptr [object_bytes=4], %x : i32) -> void [bindin
     %t4 = index i8 [projection=field] %t3, 0
     store typed i32 %t2, %t4
     return void
+}
+function @f() -> i32 [binding=strong, object=_Z1fv] {
+  slot $b : obj<4x4>
+  slot $c : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $b
+    call void @S_int___S(%t1)
+    %t2 = addr $c
+    call void @S_int___S__ov2(%t2, 5)
+    %t3 = addr $b
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load typed i32 %t4
+    %t6 = addr $c
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = load typed i32 %t7
+    %t9 = binary add nowrap i32 %t5, %t8
+    return i32 %t9
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @f()
+    return i32 %t1
 }

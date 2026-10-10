@@ -1,7 +1,5 @@
 declare global @O__n [storage=thread_local, binding=strong, object=_ZN1O1nE]
 
-declare function @__cppgm_tls_wrapper__O__n() -> ptr [binding=weak, object=_ZTWN1O1nE, tls_for=@O__n]
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $g : obj<1x1>
 
@@ -16,7 +14,7 @@ function @O__G__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = call ptr @__cppgm_tls_wrapper__O__n()
+    %t1 = addr @O__n
     call void @V__clear(%t1)
     return i32 0
 }

@@ -15,7 +15,7 @@ function @observe
     param %value -> rsi : i64
     return void -> void
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -37,10 +37,9 @@ function @copy_then_use
     slot $copy -> [rbp-16] : obj<16x8>
 
   block ^entry
-    mov r9, rsi
-    copy_bytes 16x8, [rbp-16], rdi
-    lea rdi, [rbp-16]
-    mov rsi, r9
+    lea r8, [rbp-16]
+    copy_bytes 16x8, r8, rdi
+    mov rdi, r8
     call @observe [args=(rsi,rdi)]
     ret
 
@@ -58,11 +57,8 @@ function @main
     lea rdi, [rbp-16]
     mov rsi, 42
     call @copy_then_use [args=(rsi,rdi)]
-    load.i64 r8, @observed
     mov rdx, 42
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
+    cmp.i64 @observed, rdx
+    setne rax
+    movzx rax, rax
     ret rax

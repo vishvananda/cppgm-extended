@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $r
     %t5 = addr $s
     call void @R__R(%t4, %t5)
-    %t6 = copy ptr nullptr
+    %t6 = copy ptr 0
     store typed ptr %t6, $candidate
     %t7 = load typed ptr $candidate
     branch %t7, ^condaddr_then_1, ^condaddr_else_2

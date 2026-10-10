@@ -10,23 +10,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     zeroinit 1x1 %t1
     %t2 = index i8 %t1, 0
     store typed ptr %t2, $value
-    eh_try ^call_unwind_dispatch_4
+    eh_try ^call_unwind_dispatch_3
     %t3 = load typed ptr $value
     %t4 = call u8 @base__operatorbool(%t3)
     store u8 %t4, $call__2
     %t5 = load u8 $call__2
     eh_end
-    jump ^call_unwind_end_5
+    jump ^call_unwind_end_4
 
-  block ^call_unwind_dispatch_4:
+  block ^call_unwind_dispatch_3:
     call void @object___object(%t1)
     resume
 
-  block ^call_unwind_end_5:
+  block ^call_unwind_end_4:
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    jump ^if_end_3
+    jump ^if_end_5
 
   block ^if_else_2:
     %t6 = load typed i32 @destroyed
@@ -40,9 +40,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_8
 
   block ^if_end_8:
-    jump ^if_end_3
+    jump ^if_end_5
 
-  block ^if_end_3:
+  block ^if_end_5:
     call void @object___object(%t1)
     %t7 = load typed i32 @destroyed
     %t8 = cmp ne i32 %t7, 1

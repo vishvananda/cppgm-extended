@@ -2,14 +2,14 @@ global @alive : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $xs : ptr
-  slot $initlist__1 : obj<8x4>
-  slot $lor__2 : i64
-  slot $call__3 : i64
-  slot $tmpobj__4 : obj<16x8>
+  slot $tmpobj__1 : obj<16x8>
+  slot $initlist__2 : obj<8x4>
+  slot $lor__3 : i64
+  slot $call__4 : i64
 
   block ^entry:
-    %t1 = addr $tmpobj__4
-    %t2 = addr $initlist__1
+    %t1 = addr $tmpobj__1
+    %t2 = addr $initlist__2
     call void @S__S(%t2, 1)
     %t3 = index i8 [projection=array_element] %t2, 4
     eh_try ^call_unwind_dispatch_1
@@ -28,38 +28,38 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t1, $xs
     %t5 = load typed i32 @alive
     %t6 = cmp ne i32 %t5, 2
-    branch %t6, ^lor_short_7, ^lor_rhs_6
+    branch %t6, ^lor_short_6, ^lor_rhs_5
 
-  block ^lor_rhs_6:
-    eh_try ^cleanup_action_10
+  block ^lor_rhs_5:
+    eh_try ^cleanup_action_9
     %t7 = load typed ptr $xs
     %t8 = call i64 @std__initializer_list_S___size(%t7)
-    store typed i64 %t8, $call__3
-    %t9 = load typed i64 $call__3
+    store typed i64 %t8, $call__4
+    %t9 = load typed i64 $call__4
     %t10 = convert sext i64 i32 2
     %t11 = cmp ne i64 %t9, %t10
     %t12 = cmp ne i64 %t11, 0
-    store typed i64 %t12, $lor__2
+    store typed i64 %t12, $lor__3
     eh_end
-    jump ^call_unwind_end_11
+    jump ^call_unwind_end_10
 
-  block ^cleanup_resume_9:
+  block ^cleanup_resume_8:
     resume
 
-  block ^cleanup_action_10:
+  block ^cleanup_action_9:
     call void @S___S(%t3)
     call void @S___S(%t2)
-    jump ^cleanup_resume_9
+    jump ^cleanup_resume_8
 
-  block ^call_unwind_end_11:
-    jump ^lor_end_8
+  block ^call_unwind_end_10:
+    jump ^lor_end_7
 
-  block ^lor_short_7:
-    store typed i64 1, $lor__2
-    jump ^lor_end_8
+  block ^lor_short_6:
+    store typed i64 1, $lor__3
+    jump ^lor_end_7
 
-  block ^lor_end_8:
-    %t13 = load typed i64 $lor__2
+  block ^lor_end_7:
+    %t13 = load typed i64 $lor__3
     branch %t13, ^if_then_3, ^if_else_4
 
   block ^if_then_3:
@@ -68,9 +68,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_4:
-    jump ^if_end_5
+    jump ^if_end_11
 
-  block ^if_end_5:
+  block ^if_end_11:
     call void @S___S(%t3)
     call void @S___S(%t2)
     %t14 = load typed i32 @alive

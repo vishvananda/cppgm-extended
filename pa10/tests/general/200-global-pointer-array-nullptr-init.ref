@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr @paths
     %t9 = index ptr [projection=array_element] %t8, 1
     %t10 = load typed ptr %t9
-    %t11 = copy ptr nullptr
+    %t11 = copy ptr 0
     %t12 = cmp eq ptr %t10, %t11
     %t13 = cmp ne i64 %t12, 0
     store typed i64 %t13, $land__2

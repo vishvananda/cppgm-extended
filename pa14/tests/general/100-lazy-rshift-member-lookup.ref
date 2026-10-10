@@ -1,4 +1,4 @@
-declare function @input_base__operator__(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN10input_basersIiEERS_RT_, inline_hint=yes]
+declare function @input_base__operator__(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN10input_basersIiEERS_RT_]
 
 function @use(%stream : ptr [pass=by_address, object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z3useR5inputIiERi] {
   slot $stream : ptr

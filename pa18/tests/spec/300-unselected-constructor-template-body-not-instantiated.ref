@@ -2,6 +2,14 @@ global @stored_target [binding=strong] = {
   zero 1
 }
 
+function @source__operatorconsttarget_(%this : ptr [object_bytes=1]) -> ptr [binding=strong, object=_ZNK6sourcecvRK6targetEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = addr @stored_target
+    return ptr %t1
+}
 function @consume(%__param0 : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z7consumeRK6target] {
   slot $__param0 : ptr
 
@@ -25,14 +33,6 @@ function @target__target(%this : ptr [object_bytes=1]) -> void [binding=weak, ob
   block ^entry:
     store typed ptr %this, $this
     return void
-}
-function @source__operatorconsttarget_(%this : ptr [object_bytes=1]) -> ptr [binding=strong, object=_ZNK6sourcecvRK6targetEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = addr @stored_target
-    return ptr %t1
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:

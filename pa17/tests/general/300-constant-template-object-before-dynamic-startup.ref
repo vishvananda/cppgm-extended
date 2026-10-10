@@ -5,13 +5,13 @@ global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 101
   i8 0
 }
-global @__cppgm_class_template_identity_0_0_0__text [binding=weak, object=_ZN7StorageIiE4textE] = {
+global @Storage_int___text [binding=weak, object=_ZN7StorageIiE4textE] = {
   ptr addr @__strlit__1
 }
 
 function @read() -> i32 [binding=strong, object=_Z4readv] {
   block ^entry:
-    %t1 = addr @__cppgm_class_template_identity_0_0_0__text
+    %t1 = addr @Storage_int___text
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
     %t4 = index i8 [projection=array_element] %t3, 0
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t3 = addr @__cppgm_class_template_identity_0_0_0__text
+    %t3 = addr @Storage_int___text
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load typed ptr %t4
     %t6 = index i8 [projection=array_element] %t5, 2

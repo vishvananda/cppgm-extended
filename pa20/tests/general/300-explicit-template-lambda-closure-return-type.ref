@@ -12,10 +12,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $t
     %t2 = addr $t
     %t3 = addr @__strlit__1
-    %t4 = call i32 @Table___cppgm_class_template_identity_0_0_0___emplace(%t2, %t3)
+    %t4 = call i32 @Table___cppgm_class_template_identity_1___emplace(%t2, %t3)
     return i32 %t4
 }
-function @Table___cppgm_class_template_identity_0_0_0___emplace(%this : ptr [object_bytes=1], %__args : ptr [pass=by_address, object_bytes=2]) -> i32 [binding=weak, object=_ZN5TableI3KeyIiclEE7emplaceIJRA2_KcEEEiDpOT_, inline_hint=yes] {
+function @Table___cppgm_class_template_identity_1___emplace(%this : ptr [object_bytes=1], %__args : ptr [pass=by_address, object_bytes=2]) -> i32 [binding=weak, object=_ZN5TableI3KeyIiclEE7emplaceIJRA2_KcEEEiDpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__args : ptr
   slot $argobj__1 : obj<8x8>
@@ -33,7 +33,7 @@ function @Table___cppgm_class_template_identity_0_0_0___emplace(%this : ptr [obj
     %t6 = call i32 @__try_key_extraction($argobj__1, $argobj__2, %t5)
     return i32 %t6
 }
-function @__try_key_extraction(%__with_key : obj<8x8>, %__without_key : obj<1x1> [classes=none], %__args : ptr [pass=by_address, object_bytes=2]) -> i32 [binding=weak, object=_Z20__try_key_extractionI3KeyIiclEZN5TableIS1_E7emplaceIJRA2_KcEEEiDpOT_SA_EUlRKS1_S7_E_ZNS4_IJS7_EEEiSA_SA_EUlS7_E_JS7_EEDTclclsr3stdE7declvalIT1_EEspclsr3stdE7declvalIT2_EEEET0_SF_DpOSG_] {
+function @__try_key_extraction(%__with_key : obj<8x8>, %__without_key : obj<1x1> [classes=none], %__args : ptr [pass=by_address, object_bytes=2]) -> i32 [binding=internal, object=_Z20__try_key_extractionI3KeyIiclEZN5TableIS1_E7emplaceIJRA2_KcEEEiDpOT_EUlRKS1_S7_E_ZNS4_IJS7_EEEiSA_EUlS7_E_JS7_EEDTclclsr3stdE7declvalIT1_EEspclsr3stdE7declvalIT2_EEEET0_SF_DpOSG_] {
   slot $__with_key : obj<8x8>
   slot $__without_key : obj<1x1>
   slot $__args : ptr
@@ -45,10 +45,10 @@ function @__try_key_extraction(%__with_key : obj<8x8>, %__without_key : obj<1x1>
     %t2 = addr $__without_key
     %t3 = load typed ptr $__args
     %t4 = call ptr @std__forward(%t3)
-    %t5 = call i32 @__cppgm_class_template_identity_1_1_0____lambda___cppgm_class_template_identity_1_1_0__emplace__lvalue_reference_to_array_of_2_const_char_t182_188_n1__operator__(%t2, %t4)
+    %t5 = call i32 @Table___cppgm_class_template_identity_1_____lambda_Table___cppgm_class_template_identity_1___emplace_t182_188__operator__(%t2, %t4)
     return i32 %t5
 }
-function @__cppgm_class_template_identity_1_1_0____lambda___cppgm_class_template_identity_1_1_0__emplace__lvalue_reference_to_array_of_2_const_char_t182_188_n1__operator__(%this : ptr [object_bytes=1], %__args2 : ptr [pass=by_address, object_bytes=2]) -> i32 [binding=weak, object=_ZZN5TableI3KeyIiclEE7emplaceIJRA2_KcEEEiDpOT_S9_ENKUlS6_E_clES6_, inline_hint=yes] {
+function @Table___cppgm_class_template_identity_1_____lambda_Table___cppgm_class_template_identity_1___emplace_t182_188__operator__(%this : ptr [object_bytes=1], %__args2 : ptr [pass=by_address, object_bytes=2]) -> i32 [binding=internal, object=_ZZN5TableI3KeyIiclEE7emplaceIJRA2_KcEEEiDpOT_ENKUlS6_E_clES6_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__args2 : ptr
 

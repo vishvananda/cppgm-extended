@@ -1,12 +1,6 @@
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
 
-function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
-  block ^entry:
-    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
-    call void @std_terminate()
-    return void
-}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $maker : obj<1x1>
   slot $cond__1 : i32
@@ -54,12 +48,12 @@ function @Maker__one(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr $box
-    call void @Box_Maker__Piece___Box_Maker__Piece_(%t1)
+    call void @Box_Piece___Box(%t1)
     %t2 = addr $box
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = addr $box
-    call void @Box_Maker__Piece____Box(%t5)
+    call void @Box_Piece____Box(%t5)
     return i32 %t4
 }
 function @Maker__two(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN5Maker3twoEv, inline_hint=yes] {
@@ -69,15 +63,15 @@ function @Maker__two(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr $box
-    call void @Box_Maker__Piece___Box_Maker__Piece___sym2(%t1)
+    call void @Box_Piece___Box__2(%t1)
     %t2 = addr $box
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = addr $box
-    call void @Box_Maker__Piece____Box__sym2(%t5)
+    call void @Box_Piece____Box__2(%t5)
     return i32 %t4
 }
-function @Box_Maker__Piece___Box_Maker__Piece_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3oneEvE5PieceEC1Ev, inline_hint=yes] {
+function @Box_Piece___Box(%this : ptr [object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceEC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -87,33 +81,39 @@ function @Box_Maker__Piece___Box_Maker__Piece_(%this : ptr [object_bytes=4]) -> 
     store typed i32 0, %t2
     return void
 }
-function @Box_Maker__Piece____Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3BoxIZN5Maker3oneEvE5PieceED1Ev, inline_hint=yes] {
+function @Box_Piece____Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceED1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
-  slot $function_exception__1 : ptr
-  slot $tmpobj__2 : obj<8x8>
+  slot $tmpobj__1 : obj<8x8>
+  slot $function_exception__2 : ptr
 
   block ^entry:
     eh_try ^function_exception_landing_1
     store typed ptr %this, $this
-    %t1 = addr $tmpobj__2
+    %t1 = addr $tmpobj__1
     %t2 = load typed ptr $this
-    call void @Box_Maker__Piece___Guard__Guard(%t1, %t2)
-    call void @Box_Maker__Piece___Guard__operator__(%t1)
+    call void @Box_Piece___Guard__Guard(%t1, %t2)
+    call void @Box_Piece___Guard__operator__(%t1)
     eh_end
     return void
 
   block ^function_exception_landing_1:
     eh_catch_all, 1
     %t3 = exception ptr
-    store typed ptr %t3, $function_exception__1
+    store typed ptr %t3, $function_exception__2
     jump ^function_exception_action_2
 
   block ^function_exception_action_2:
-    %t4 = load typed ptr $function_exception__1
+    %t4 = load typed ptr $function_exception__2
     call void @cppgm_call_terminate(%t4)
     return void
 }
-function @Box_Maker__Piece___Box_Maker__Piece___sym2(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3twoEvE5PieceEC1Ev, inline_hint=yes] {
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
+    return void
+}
+function @Box_Piece___Box__2(%this : ptr [object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceEC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -123,33 +123,33 @@ function @Box_Maker__Piece___Box_Maker__Piece___sym2(%this : ptr [object_bytes=4
     store typed i32 0, %t2
     return void
 }
-function @Box_Maker__Piece____Box__sym2(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3BoxIZN5Maker3twoEvE5PieceED1Ev, inline_hint=yes] {
+function @Box_Piece____Box__2(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceED1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
-  slot $function_exception__1 : ptr
-  slot $tmpobj__2 : obj<8x8>
+  slot $tmpobj__1 : obj<8x8>
+  slot $function_exception__2 : ptr
 
   block ^entry:
     eh_try ^function_exception_landing_1
     store typed ptr %this, $this
-    %t1 = addr $tmpobj__2
+    %t1 = addr $tmpobj__1
     %t2 = load typed ptr $this
-    call void @Box_Maker__Piece___Guard__Guard__sym2(%t1, %t2)
-    call void @Box_Maker__Piece___Guard__operator____sym2(%t1)
+    call void @Box_Piece___Guard__Guard__2(%t1, %t2)
+    call void @Box_Piece___Guard__operator____2(%t1)
     eh_end
     return void
 
   block ^function_exception_landing_1:
     eh_catch_all, 1
     %t3 = exception ptr
-    store typed ptr %t3, $function_exception__1
+    store typed ptr %t3, $function_exception__2
     jump ^function_exception_action_2
 
   block ^function_exception_action_2:
-    %t4 = load typed ptr $function_exception__1
+    %t4 = load typed ptr $function_exception__2
     call void @cppgm_call_terminate(%t4)
     return void
 }
-function @Box_Maker__Piece___Guard__Guard(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3oneEvE5PieceE5GuardC1ERS2_, inline_hint=yes] {
+function @Box_Piece___Guard__Guard(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceE5GuardC1ERS2_, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $owner : ptr
 
@@ -162,7 +162,7 @@ function @Box_Maker__Piece___Guard__Guard(%this : ptr [object_bytes=8], %owner :
     store typed ptr %t1, %t3
     return void
 }
-function @Box_Maker__Piece___Guard__operator__(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3oneEvE5PieceE5GuardclEv, inline_hint=yes] {
+function @Box_Piece___Guard__operator__(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceE5GuardclEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -176,7 +176,7 @@ function @Box_Maker__Piece___Guard__operator__(%this : ptr [object_bytes=8]) -> 
     store typed i32 %t6, %t4
     return void
 }
-function @Box_Maker__Piece___Guard__Guard__sym2(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3twoEvE5PieceE5GuardC1ERS2_, inline_hint=yes] {
+function @Box_Piece___Guard__Guard__2(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceE5GuardC1ERS2_, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $owner : ptr
 
@@ -189,7 +189,7 @@ function @Box_Maker__Piece___Guard__Guard__sym2(%this : ptr [object_bytes=8], %o
     store typed ptr %t1, %t3
     return void
 }
-function @Box_Maker__Piece___Guard__operator____sym2(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3twoEvE5PieceE5GuardclEv, inline_hint=yes] {
+function @Box_Piece___Guard__operator____2(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceE5GuardclEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -203,9 +203,9 @@ function @Box_Maker__Piece___Guard__operator____sym2(%this : ptr [object_bytes=8
     store typed i32 %t6, %t4
     return void
 }
-alias object _ZN3BoxIZN5Maker3oneEvE5PieceEC2Ev = @Box_Maker__Piece___Box_Maker__Piece_
-alias object _ZN3BoxIZN5Maker3oneEvE5PieceED2Ev = @Box_Maker__Piece____Box
-alias object _ZN3BoxIZN5Maker3twoEvE5PieceEC2Ev = @Box_Maker__Piece___Box_Maker__Piece___sym2
-alias object _ZN3BoxIZN5Maker3twoEvE5PieceED2Ev = @Box_Maker__Piece____Box__sym2
-alias object _ZN3BoxIZN5Maker3oneEvE5PieceE5GuardC2ERS2_ = @Box_Maker__Piece___Guard__Guard
-alias object _ZN3BoxIZN5Maker3twoEvE5PieceE5GuardC2ERS2_ = @Box_Maker__Piece___Guard__Guard__sym2
+alias object _ZN3BoxIZN5Maker3oneEvE5PieceEC2Ev = @Box_Piece___Box
+alias object _ZN3BoxIZN5Maker3oneEvE5PieceED2Ev = @Box_Piece____Box
+alias object _ZN3BoxIZN5Maker3twoEvE5PieceEC2Ev = @Box_Piece___Box__2
+alias object _ZN3BoxIZN5Maker3twoEvE5PieceED2Ev = @Box_Piece____Box__2
+alias object _ZN3BoxIZN5Maker3oneEvE5PieceE5GuardC2ERS2_ = @Box_Piece___Guard__Guard
+alias object _ZN3BoxIZN5Maker3twoEvE5PieceE5GuardC2ERS2_ = @Box_Piece___Guard__Guard__2

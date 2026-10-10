@@ -20,23 +20,11 @@ function @accept
   block ^entry
     store.i64 [rbp-16], rdi
     store.i64 [rbp-8], rsi
-    lea r11, [rbp-16]
-    load.i64 rax, [r11]
-    load.i64 rdx, [r11+8]
-    mov rcx, 0
-    mov rsi, 0
-    cmp.i64 rdx, rsi
-    sete r10
-    movzx r10, r10
-    cmp.i64 rax, rcx
-    sete r11
-    movzx r11, r11
-    and r10, r11
-    mov r8, r10
+    set.eq.i128 r8, [rbp-16], 0
     cmp.i64 r8, 0
-    sete rax
-    movzx rax, rax
-    ret rax
+    sete r8
+    movzx r8, r8
+    ret r8
 
 function @main
   abi

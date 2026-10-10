@@ -1,3 +1,5 @@
+declare global @outer__impl__data___cppgm_class_template_identity_1_int_shortint_double___value : i32 [binding=weak, object=_ZN5outer4impl4dataINS_6detail3seqIJLm0ELm1ELm2EEEEJisdEE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

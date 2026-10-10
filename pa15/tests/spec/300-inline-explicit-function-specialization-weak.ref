@@ -1,7 +1,7 @@
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call i32 @digits(4)
-    %t2 = call i32 @digits__ov2(9)
+    %t2 = call i32 @digits__2(9)
     %t3 = binary add nowrap i32 %t1, %t2
     %t4 = binary sub nowrap i32 %t3, 13
     return i32 %t4
@@ -28,7 +28,7 @@ function @digits(%x : u32) -> i32 [binding=weak, object=_Z6digitsIjEiT_, inline_
     %t3 = load typed i32 $cond__1
     return i32 %t3
 }
-function @digits__ov2(%x : i64) -> i32 [binding=weak, object=_Z6digitsIyEiT_, inline_hint=yes] {
+function @digits__2(%x : i64) -> i32 [binding=weak, object=_Z6digitsIyEiT_, inline_hint=yes] {
   slot $x : i64
   slot $cond__1 : i32
 

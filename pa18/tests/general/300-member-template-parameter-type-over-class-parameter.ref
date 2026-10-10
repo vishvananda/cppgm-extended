@@ -3,12 +3,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $made
-    call void @str_char__int___str_char__int___ov3(%t1, 0)
+    call void @str_char_int___str(%t1, 0)
     %t2 = addr $made
-    call void @str_char__int___take(%t2, 0)
+    call void @str_char_int___take(%t2, 0)
     return i32 0
 }
-function @str_char__int___str_char__int___ov3(%this : ptr [object_bytes=1], %__param1 : ptr) -> void [binding=weak, object=_ZN3strIciEC1ITnN9enable_ifIXsr8is_allocIiEE5valueEiE4typeELi0EEEPKc, inline_hint=yes] {
+function @str_char_int___str(%this : ptr [object_bytes=1], %__param1 : ptr) -> void [binding=weak, object=_ZN3strIciEC1ILi0EEEPKc, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -17,7 +17,7 @@ function @str_char__int___str_char__int___ov3(%this : ptr [object_bytes=1], %__p
     store typed ptr %__param1, $__param1
     return void
 }
-function @str_char__int___take(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN3strIciE4takeIiTnN9enable_ifIXsr8is_allocIT_EE5valueEiE4typeELi0EEEvS3_, inline_hint=yes] {
+function @str_char_int___take(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN3strIciE4takeIiTnN9enable_ifIXsr8is_allocIT_EE5valueEiE4typeELi0EEEvS3_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -26,4 +26,4 @@ function @str_char__int___take(%this : ptr [object_bytes=1], %__param1 : i32) ->
     store typed i32 %__param1, $__param1
     return void
 }
-alias object _ZN3strIciEC2ITnN9enable_ifIXsr8is_allocIiEE5valueEiE4typeELi0EEEPKc = @str_char__int___str_char__int___ov3
+alias object _ZN3strIciEC2ILi0EEEPKc = @str_char_int___str

@@ -32,24 +32,3 @@ function @Hidden__create_array() -> ptr [binding=weak, object=_ZN6Hidden12create
   block ^zeroinit_end_3:
     return ptr %t2
 }
-function @Hidden___Hidden(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6HiddenD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @Hidden__Hidden__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
-  slot $this : ptr
-  slot $value : i32
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed i32 %value, $value
-    %t1 = load typed i32 $value
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed i32 %t1, %t3
-    return void
-}
-alias object _ZN6HiddenD2Ev = @Hidden___Hidden

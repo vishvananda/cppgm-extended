@@ -29,12 +29,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $arg__1
     %t2 = addr $arg__2
-    call void @duration_int____cppgm_class_template_identity_0_3_0___duration_int____cppgm_class_template_identity_0_3_0_(%t2, 8)
-    call void @duration_long_int____cppgm_class_template_identity_0_0_0___duration_int____cppgm_class_template_identity_0_3_0___ov4(%t1, %t2)
+    call void @duration_int___cppgm_class_template_identity_1___duration(%t2, 8)
+    call void @duration_longint___cppgm_class_template_identity_2___duration(%t1, %t2)
     %t3 = call i32 @accept(%t1)
     return i32 %t3
 }
-function @duration_int____cppgm_class_template_identity_0_3_0___duration_int____cppgm_class_template_identity_0_3_0_(%this : ptr [object_bytes=4], %r : i32) -> void [binding=weak, object=_ZN8durationIi3tagILi2EEEC1Ei, inline_hint=yes] {
+function @duration_int___cppgm_class_template_identity_1___duration(%this : ptr [object_bytes=4], %r : i32) -> void [binding=weak, object=_ZN8durationIi3tagILi2EEEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $r : i32
 
@@ -47,7 +47,7 @@ function @duration_int____cppgm_class_template_identity_0_3_0___duration_int____
     store typed i32 %t1, %t3
     return void
 }
-function @duration_long_int____cppgm_class_template_identity_0_0_0___duration_int____cppgm_class_template_identity_0_3_0___ov4(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8durationIl3tagILi1EEEC1IiS0_ILi2EEEERKS_IT_T0_E, inline_hint=yes] {
+function @duration_longint___cppgm_class_template_identity_2___duration(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8durationIl3tagILi1EEEC1IiS0_ILi2EEEERKS_IT_T0_E, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -63,5 +63,5 @@ function @duration_long_int____cppgm_class_template_identity_0_0_0___duration_in
     store typed i64 %t4, %t6
     return void
 }
-alias object _ZN8durationIi3tagILi2EEEC2Ei = @duration_int____cppgm_class_template_identity_0_3_0___duration_int____cppgm_class_template_identity_0_3_0_
-alias object _ZN8durationIl3tagILi1EEEC2IiS0_ILi2EEEERKS_IT_T0_E = @duration_long_int____cppgm_class_template_identity_0_0_0___duration_int____cppgm_class_template_identity_0_3_0___ov4
+alias object _ZN8durationIi3tagILi2EEEC2Ei = @duration_int___cppgm_class_template_identity_1___duration
+alias object _ZN8durationIl3tagILi1EEEC2IiS0_ILi2EEEERKS_IT_T0_E = @duration_longint___cppgm_class_template_identity_2___duration

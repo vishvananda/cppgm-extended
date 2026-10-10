@@ -1,4 +1,5 @@
 global @k : u8 [storage=readonly, binding=internal, object=_ZL1k] = 1
+global @IC_bool_true___value : u8 [storage=readonly, binding=weak, object=_ZN2ICIbLb1EE5valueE] = 1
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

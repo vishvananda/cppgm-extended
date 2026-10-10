@@ -1,3 +1,15 @@
+function @get(%kvp : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=strong, object=_Z3getILm0EENSt11conditionalIXeqT_Li0EEK11string_viewRK5valueE4typeERK14key_value_pair] {
+  slot $kvp : ptr
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store typed ptr %kvp, $kvp
+    %t1 = addr $retobj__1
+    %t2 = load typed ptr $kvp
+    %t3 = call obj<4x4> @key_value_pair__key(%t2)
+    copyobj 4x4 %t3, %t1
+    return obj<4x4> $retobj__1
+}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $kvp : obj<1x1>
   slot $x : obj<4x4>
@@ -26,18 +38,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^cond_end_3:
     %t9 = load typed i32 $cond__1
     return i32 %t9
-}
-function @get(%kvp : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=strong, object=_Z3getILm0EENSt11conditionalIXeqT_Li0EEK11string_viewRK5valueE4typeERK14key_value_pair] {
-  slot $kvp : ptr
-  slot $retobj__1 : obj<4x4>
-
-  block ^entry:
-    store typed ptr %kvp, $kvp
-    %t1 = addr $retobj__1
-    %t2 = load typed ptr $kvp
-    %t3 = call obj<4x4> @key_value_pair__key(%t2)
-    copyobj 4x4 %t3, %t1
-    return obj<4x4> $retobj__1
 }
 function @key_value_pair__key(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK14key_value_pair3keyEv, inline_hint=yes] {
   slot $this : ptr

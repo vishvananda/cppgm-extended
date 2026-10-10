@@ -26,13 +26,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 }
 function @U__U(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1UC1Ev, inline_hint=yes] {
   slot $this : ptr
-  slot $refcall__1 : obj<4x4>
+  slot $tmpobj__1 : obj<4x4>
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = addr $refcall__1
+    %t3 = addr $tmpobj__1
     call void @D__D(%t3)
     call void @H__H(%t2, %t3)
     return void

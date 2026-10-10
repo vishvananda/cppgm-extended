@@ -16,7 +16,7 @@ function @run() -> i32 [binding=weak, object=_Z3runI14dependent_baseIiEEiv] {
     %t3 = call i32 @local__call(%t2)
     return i32 %t3
 }
-function @local__call(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZZ3runI14dependent_baseIiEEivEN5local4callEv, inline_hint=yes] {
+function @local__call(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ3runI14dependent_baseIiEEivEN5local4callEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

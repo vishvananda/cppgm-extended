@@ -37,9 +37,9 @@ function @direct_streambuf_int___seek_impl(%this : ptr [object_bytes=16], %off :
     store typed i64 %t1, $next
     %t2 = load typed i64 $next
     %t3 = cmp lt i64 %t2, 0
-    branch %t3, ^if_then_1, ^lor_rhs_4
+    branch %t3, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t4 = load typed i64 $next
     %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 8
@@ -56,8 +56,8 @@ function @direct_streambuf_int___seek_impl(%this : ptr [object_bytes=16], %off :
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     return i32 0
 }

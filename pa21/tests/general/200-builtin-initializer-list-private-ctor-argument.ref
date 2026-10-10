@@ -1,12 +1,6 @@
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
 
-function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
-  block ^entry:
-    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
-    call void @std_terminate()
-    return void
-}
 function @consume(%box : ptr [pass=by_address, object_bytes=8]) -> i32 [unwind=no, binding=strong, object=_Z7consumeRK3Box] {
   slot $box : ptr
 
@@ -42,9 +36,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $argobj__3
     %t2 = addr $initlist__4
     store typed i32 1, %t2
-    %t3 = index i8 %t2, 4
+    %t3 = index i8 [projection=array_element] %t2, 4
     store typed i32 2, %t3
-    %t4 = index i8 %t2, 8
+    %t4 = index i8 [projection=array_element] %t2, 8
     store typed i32 3, %t4
     store typed ptr %t2, %t1
     %t5 = index i8 %t1, 8
@@ -136,6 +130,12 @@ function @Box__Box(%this : ptr [object_bytes=8], %values : obj<16x8>) -> void [u
   block ^function_exception_action_2:
     %t7 = load typed ptr $function_exception__1
     call void @cppgm_call_terminate(%t7)
+    return void
+}
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
     return void
 }
 function @std__initializer_list_Item___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listI4ItemE4sizeEv, inline_hint=yes] {

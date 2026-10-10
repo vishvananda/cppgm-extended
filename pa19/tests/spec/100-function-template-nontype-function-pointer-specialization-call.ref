@@ -31,6 +31,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load typed i32 $cond__1
     return i32 %t4
 }
+function @api__detail__run_test(%__param0 : ptr) -> void [binding=weak, object=_ZN3api6detail8run_testIXadL_Z6sampleIcLi2ELb1EEvvEEEEvPKc] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    %t1 = addr @sample
+    call void %t1() as () -> void
+    return void
+}
 function @sample() -> void [binding=weak, object=_Z6sampleIcLi2ELb1EEvv] {
   slot $cond__1 : i32
 
@@ -54,14 +63,5 @@ function @sample() -> void [binding=weak, object=_Z6sampleIcLi2ELb1EEvv] {
     %t6 = binary add i64 %t3, %t5
     %t7 = convert trunc i32 i64 %t6
     store typed i32 %t7, @calls
-    return void
-}
-function @api__detail__run_test(%__param0 : ptr) -> void [binding=weak, object=_ZN3api6detail8run_testIXadL_Z6samplevEEEEvPKc] {
-  slot $__param0 : ptr
-
-  block ^entry:
-    store typed ptr %__param0, $__param0
-    %t1 = addr @sample
-    call void %t1() as () -> void
     return void
 }

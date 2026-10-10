@@ -1,3 +1,6 @@
+declare global @same_char_char_void___value : u8 [binding=weak, object=_ZN4sameIccvE5valueE]
+declare global @same_int_char_void___value : u8 [binding=weak, object=_ZN4sameIicvE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

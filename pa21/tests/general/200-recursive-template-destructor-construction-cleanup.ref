@@ -49,7 +49,7 @@ function @outer__outer(%this : ptr [object_bytes=8]) -> void [binding=weak, obje
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @box_outer___box_outer_(%t2)
+    call void @box_outer___box(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
     return void
@@ -83,14 +83,14 @@ function @outer___outer(%this : ptr [object_bytes=8]) -> void [unwind=no, bindin
   block ^destructor_end_2:
     return void
 }
-function @box_outer___box_outer_(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN3boxI5outerEC1Ev, inline_hint=yes] {
+function @box_outer___box(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN3boxI5outerEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @owning_outer___owning_outer_(%t2)
+    call void @owning_outer___owning(%t2)
     eh_cleanup ^constructor_cleanup_1
     eh_end
     return void
@@ -124,7 +124,7 @@ function @box_outer____box(%this : ptr [object_bytes=8]) -> void [unwind=no, bin
   block ^destructor_end_2:
     return void
 }
-function @owning_outer___owning_outer_(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6owningI5outerEC1Ev, inline_hint=yes] {
+function @owning_outer___owning(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6owningI5outerEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -150,7 +150,7 @@ function @owning_outer____owning(%this : ptr [object_bytes=8]) -> void [unwind=n
 }
 alias object _ZN5outerC2Ev = @outer__outer
 alias object _ZN5outerD2Ev = @outer___outer
-alias object _ZN3boxI5outerEC2Ev = @box_outer___box_outer_
+alias object _ZN3boxI5outerEC2Ev = @box_outer___box
 alias object _ZN3boxI5outerED2Ev = @box_outer____box
-alias object _ZN6owningI5outerEC2Ev = @owning_outer___owning_outer_
+alias object _ZN6owningI5outerEC2Ev = @owning_outer___owning
 alias object _ZN6owningI5outerED2Ev = @owning_outer____owning

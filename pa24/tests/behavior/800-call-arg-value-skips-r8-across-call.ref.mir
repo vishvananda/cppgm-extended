@@ -30,7 +30,7 @@ function @intervene
     param %wrong -> r8 : ptr
     return void -> void
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -45,7 +45,7 @@ function @relocate
     param %tmp -> rdx : ptr
     return void -> void
   frame
-    stack_size 32
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -63,31 +63,25 @@ function @run
     param %c -> rdx : ptr
     return void -> void
   frame
-    stack_size 96
+    stack_size 64
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx r12 r13
-    slot $a -> [rbp-8] : ptr
-    slot $b -> [rbp-16] : ptr
-    slot $c -> [rbp-24] : ptr
-    slot $scratch -> [rbp-64] : obj<40x8>
+    slot $scratch -> [rbp-40] : obj<40x8>
 
   block ^entry
-    store.ptr [rbp-8], rdi
-    store.ptr [rbp-16], rsi
-    store.ptr [rbp-24], rdx
+    mov rbx, rdi
+    mov r12, rsi
+    mov r13, rdx
     jmp ^loaded
 
   block ^loaded
-    load.ptr rbx, [rbp-8]
-    load.ptr r12, [rbp-16]
-    load.ptr r13, [rbp-24]
-    lea rdi, [rbp-64]
+    lea rdi, [rbp-40]
+    mov r8, @bad
     mov rsi, 1
     mov rdx, 2
     mov rcx, 3
-    mov r8, @bad
     call @intervene [args=(rcx,rdx,rsi,rdi,r8)]
     mov rdi, rbx
     mov rsi, r12
@@ -136,6 +130,4 @@ function @main
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rax, r8
-    sext.i32 rax
-    ret rax
+    ret r8

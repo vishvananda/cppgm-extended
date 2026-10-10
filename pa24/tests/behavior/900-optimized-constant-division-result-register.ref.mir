@@ -18,31 +18,33 @@ function @divide_and_store
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
-    mov rcx, 32
-    mov rax, rdi
-    cqo
-    idiv rcx
-    mov r9, rax
-    store.i64 @saved_power, rax
-    add r9, 1
-    mov rcx, 7
-    mov rax, rdi
-    cqo
-    idiv rcx
-    mov r8, rax
-    store.i64 @saved_magic, rax
+    mov r8, rdi
+    sar r8, 63
+    shr r8, 59
+    add r8, rdi
+    sar r8, 5
+    store.i64 @saved_power, r8
     add r8, 1
-    load.i64 rsi, @saved_power
-    add rsi, @saved_magic
+    mov rax, rdi
+    mov r11, 5270498306774157605
+    imul r11
+    sar rdx, 1
+    mov rax, rdx
+    shr rax, 63
+    add rdx, rax
+    store.i64 @saved_magic, rdx
+    add rdx, 1
+    load.i64 r9, @saved_power
+    add r9, @saved_magic
+    add r8, rdx
     add r9, r8
-    add rsi, r9
-    ret rsi
+    ret r9
 
 function @main
   abi
@@ -51,23 +53,19 @@ function @main
     stack_size 64
     scratch_bytes 48
     frame_pointer keep
-    epilogues direct
-    preserve r13
+    epilogues duplicated
+    preserve rbx
 
   block ^entry
     mov rdi, 224
     call @divide_and_store [args=(rdi)]
-    mov rdx, 80
-    cmp.i64 rax, rdx
-    setne r13
-    movzx r13, r13
+    cmp.i64 rax, 80
+    setne rbx
+    movzx rbx, rbx
     mov rdi, -224
     call @divide_and_store [args=(rdi)]
-    mov rdx, -76
-    cmp.i64 rax, rdx
+    cmp.i64 rax, -76
     setne rax
     movzx rax, rax
-    or r13, rax
-    mov rax, r13
-    sext.i32 rax
-    ret rax
+    or rbx, rax
+    ret rbx

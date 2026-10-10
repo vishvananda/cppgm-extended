@@ -1,8 +1,3 @@
-function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  block ^entry:
-    %t1 = call i32 @value(7)
-    return i32 %t1
-}
 function @value(%renamed : i32) -> i32 [binding=strong, object=_Z5valueIiEiT_] {
   slot $renamed : i32
   slot $cond__1 : i32
@@ -24,4 +19,9 @@ function @value(%renamed : i32) -> i32 [binding=strong, object=_Z5valueIiEiT_] {
   block ^cond_end_3:
     %t3 = load typed i32 $cond__1
     return i32 %t3
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @value(7)
+    return i32 %t1
 }

@@ -15,7 +15,7 @@ global @__strlit__3 [storage=readonly, binding=internal] = {
   i8 0
 }
 
-function @count_underscored(%names : obj<16x8> [classes=none_none]) -> i32 [binding=strong, object=_Z17count_underscoredSt16initializer_listIPKcE] {
+function @count_underscored(%names : obj<16x8>) -> i32 [binding=strong, object=_Z17count_underscoredSt16initializer_listIPKcE] {
   slot $names : obj<16x8>
   slot $count : i32
   slot $__idx1 : i32
@@ -46,9 +46,9 @@ function @count_underscored(%names : obj<16x8> [classes=none_none]) -> i32 [bind
     %t13 = load typed ptr %t12
     store typed ptr %t13, $name
     %t14 = load typed ptr $name
-    branch %t14, ^land_rhs_8, ^if_else_6
+    branch %t14, ^land_rhs_7, ^if_else_6
 
-  block ^land_rhs_8:
+  block ^land_rhs_7:
     %t15 = load typed ptr $name
     %t16 = index i8 [projection=array_element] %t15, 0
     %t17 = load i8 %t16
@@ -60,12 +60,12 @@ function @count_underscored(%names : obj<16x8> [classes=none_none]) -> i32 [bind
     %t20 = load typed i32 $count
     %t21 = binary add nowrap i32 %t20, 1
     store typed i32 %t21, $count
-    jump ^if_end_7
+    jump ^if_end_8
 
   block ^if_else_6:
-    jump ^if_end_7
+    jump ^if_end_8
 
-  block ^if_end_7:
+  block ^if_end_8:
     jump ^for_iter_3
 
   block ^for_iter_3:
@@ -89,10 +89,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr @__strlit__1
     store typed ptr %t3, %t2
     %t4 = addr @__strlit__2
-    %t5 = index i8 %t2, 8
+    %t5 = index i8 [projection=array_element] %t2, 8
     store typed ptr %t4, %t5
     %t6 = addr @__strlit__3
-    %t7 = index i8 %t2, 16
+    %t7 = index i8 [projection=array_element] %t2, 16
     store typed ptr %t6, %t7
     store typed ptr %t2, %t1
     %t8 = index i8 %t1, 8

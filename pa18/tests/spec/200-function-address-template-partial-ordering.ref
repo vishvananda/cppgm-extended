@@ -1,4 +1,4 @@
-global @selected : ptr [binding=strong] = addr @inspect__ov2
+global @selected : ptr [binding=strong] = addr @inspect
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : i32
@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 %t2(%t1) as (%arg0 : ptr) -> i32
     return i32 %t3
 }
-function @inspect__ov2(%__param0 : ptr) -> i32 [binding=weak, object=_Z7inspectIiEiPT_] {
+function @inspect(%__param0 : ptr) -> i32 [binding=weak, object=_Z7inspectIiEiPT_] {
   slot $__param0 : ptr
 
   block ^entry:

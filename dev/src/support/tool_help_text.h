@@ -39,7 +39,6 @@ inline const char * cppgm_help_text()
       "  -l <name> / -l<name>\n"
       "  -O0 / -O1 / -O2 / -O3 (default: -O0)\n"
       "  --inline-limit <name>=<positive-integer>\n"
-      "  --backend-variant <name>  a design variant of the backend\n"
       "  --stats-functions  compile-only per-function native census\n"
       "  -stdlib <name> / -stdlib=<name>\n"
       "  --target <target>\n";
@@ -77,7 +76,6 @@ inline const char * lowir2native_help_text()
       "  -o <outfile>\n"
       "  --target <target>\n"
 	  "  --stats\n"
-      "  --backend-variant <name>  a design variant of the backend\n"
       "  --dump-machine-ir <mirfile>\n"
       "  --dump-native-plan <mirfile>\n";
 }
@@ -99,6 +97,5 @@ inline const char * lowiropt_help_text()
       "\n"
       "diagnostic flags:\n"
       "  --inline-limit <name>=<positive-integer>\n"
-      "  --backend-variant <name>  a design variant of the backend\n"
       "  --stats\n";
 }

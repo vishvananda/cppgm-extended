@@ -1,5 +1,5 @@
-declare function @g(%arg0 : i32) -> i32 [binding=strong, object=_Z1gi]
 declare function @id(%arg0 : i32) -> i32 [binding=weak, object=_Z2idIiET_S0_]
+declare function @g(%arg0 : i32) -> i32 [binding=strong, object=_Z1gi]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

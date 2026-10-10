@@ -11,8 +11,8 @@ function @zero
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     mov rax, 0
@@ -24,18 +24,18 @@ function @main
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     call @zero [args=()]
-    test.i64 rax, rax
-    jne ^false
-
-  block ^true
-    mov rax, 0
-    ret rax
+    cmp.i64 rax, 0
+    je ^true
 
   block ^false
     mov rax, 1
+    ret rax
+
+  block ^true
+    mov rax, 0
     ret rax

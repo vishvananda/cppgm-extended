@@ -1,19 +1,19 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare global @__external_rtti__pointer_to_char [role=rtti_data, binding=strong, object=_ZTIPc]
 declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 declare global @__external_rtti_vtable____pointer_type_info [role=rtti_pointer, binding=strong, object=_ZTVN10__cxxabiv119__pointer_type_infoE]
-declare global @__external_rtti__nullptr_t [role=rtti_data, binding=strong, object=_ZTIDn]
 declare global @__external_rtti__pointer_to_const_char [role=rtti_data, binding=strong, object=_ZTIPKc]
-declare global @__external_rtti__pointer_to_char [role=rtti_data, binding=strong, object=_ZTIPc]
+declare global @__external_rtti__nullptr_t [role=rtti_data, binding=strong, object=_ZTIDn]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
-global @__typeinfo_name__struct_Base [binding=weak, object=_ZTS4Base] = {
+global @__typeinfo_name__struct_Base [storage=readonly, binding=weak, object=_ZTS4Base] = {
   i8 52
   i8 66
   i8 97
@@ -21,225 +21,9 @@ global @__typeinfo_name__struct_Base [binding=weak, object=_ZTS4Base] = {
   i8 101
   i8 0
 }
-global @__rtti_struct_Base [binding=weak, object=_ZTI4Base] = {
+global @__rtti_struct_Base [storage=readonly, binding=weak, object=_ZTI4Base] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_Base
-}
-global @__typeinfo_name__struct_Derived [binding=weak, object=_ZTS7Derived] = {
-  i8 55
-  i8 68
-  i8 101
-  i8 114
-  i8 105
-  i8 118
-  i8 101
-  i8 100
-  i8 0
-}
-global @__rtti_struct_Derived [binding=weak, object=_ZTI7Derived] = {
-  ptr addr @__external_rtti_vtable____si_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Derived
-  ptr addr @__rtti_struct_Base
-}
-global @__typeinfo_name__struct_Private [binding=weak, object=_ZTS7Private] = {
-  i8 55
-  i8 80
-  i8 114
-  i8 105
-  i8 118
-  i8 97
-  i8 116
-  i8 101
-  i8 0
-}
-global @__rtti_struct_Private [binding=weak, object=_ZTI7Private] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Private
-  i32 0
-  i32 1
-  ptr addr @__rtti_struct_Base
-  i64 0
-}
-global @__typeinfo_name__nullptr_t [binding=weak, object=_ZTSDn] = {
-  i8 68
-  i8 110
-  i8 0
-}
-global @__rtti_nullptr_t [binding=weak, object=_ZTIDn] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__nullptr_t
-}
-global @__typeinfo_name__char [binding=weak, object=_ZTSc] = {
-  i8 99
-  i8 0
-}
-global @__rtti_char [binding=weak, object=_ZTIc] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__char
-}
-global @__typeinfo_name_type_PKc [binding=weak, object=_ZTSPKc] = {
-  i8 80
-  i8 75
-  i8 99
-  i8 0
-}
-global @__rtti_type_PKc [binding=weak, object=_ZTIPKc] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_PKc
-  i32 1
-  ptr addr @__rtti_char
-}
-global @__typeinfo_name_type_P4Base [binding=weak, object=_ZTSP4Base] = {
-  i8 80
-  i8 52
-  i8 66
-  i8 97
-  i8 115
-  i8 101
-  i8 0
-}
-global @__rtti_type_P4Base [binding=weak, object=_ZTIP4Base] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_P4Base
-  i32 0
-  ptr addr @__rtti_struct_Base
-}
-global @__typeinfo_name_type_P7Derived [binding=weak, object=_ZTSP7Derived] = {
-  i8 80
-  i8 55
-  i8 68
-  i8 101
-  i8 114
-  i8 105
-  i8 118
-  i8 101
-  i8 100
-  i8 0
-}
-global @__rtti_type_P7Derived [binding=weak, object=_ZTIP7Derived] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_P7Derived
-  i32 0
-  ptr addr @__rtti_struct_Derived
-}
-global @__typeinfo_name_type_P7Private [binding=weak, object=_ZTSP7Private] = {
-  i8 80
-  i8 55
-  i8 80
-  i8 114
-  i8 105
-  i8 118
-  i8 97
-  i8 116
-  i8 101
-  i8 0
-}
-global @__rtti_type_P7Private [binding=weak, object=_ZTIP7Private] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_P7Private
-  i32 0
-  ptr addr @__rtti_struct_Private
-}
-global @__typeinfo_name_type_Pc [binding=weak, object=_ZTSPc] = {
-  i8 80
-  i8 99
-  i8 0
-}
-global @__rtti_type_Pc [binding=weak, object=_ZTIPc] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_Pc
-  i32 0
-  ptr addr @__rtti_char
-}
-global @__typeinfo_name_type_PPc [binding=weak, object=_ZTSPPc] = {
-  i8 80
-  i8 80
-  i8 99
-  i8 0
-}
-global @__rtti_type_PPc [binding=weak, object=_ZTIPPc] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_PPc
-  i32 0
-  ptr addr @__rtti_type_Pc
-}
-global @__typeinfo_name_type_PKPKc [binding=weak, object=_ZTSPKPKc] = {
-  i8 80
-  i8 75
-  i8 80
-  i8 75
-  i8 99
-  i8 0
-}
-global @__rtti_type_PKPKc [binding=weak, object=_ZTIPKPKc] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_PKPKc
-  i32 1
-  ptr addr @__rtti_type_PKc
-}
-global @__typeinfo_name_type_PPKc [binding=weak, object=_ZTSPPKc] = {
-  i8 80
-  i8 80
-  i8 75
-  i8 99
-  i8 0
-}
-global @__rtti_type_PPKc [binding=weak, object=_ZTIPPKc] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_PPKc
-  i32 0
-  ptr addr @__rtti_type_PKc
-}
-global @__typeinfo_name_type_PK4Base [binding=weak, object=_ZTSPK4Base] = {
-  i8 80
-  i8 75
-  i8 52
-  i8 66
-  i8 97
-  i8 115
-  i8 101
-  i8 0
-}
-global @__rtti_type_PK4Base [binding=weak, object=_ZTIPK4Base] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_PK4Base
-  i32 1
-  ptr addr @__rtti_struct_Base
-}
-global @__typeinfo_name_type_PP7Derived [binding=weak, object=_ZTSPP7Derived] = {
-  i8 80
-  i8 80
-  i8 55
-  i8 68
-  i8 101
-  i8 114
-  i8 105
-  i8 118
-  i8 101
-  i8 100
-  i8 0
-}
-global @__rtti_type_PP7Derived [binding=weak, object=_ZTIPP7Derived] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_PP7Derived
-  i32 0
-  ptr addr @__rtti_type_P7Derived
-}
-global @__typeinfo_name_type_PP4Base [binding=weak, object=_ZTSPP4Base] = {
-  i8 80
-  i8 80
-  i8 52
-  i8 66
-  i8 97
-  i8 115
-  i8 101
-  i8 0
-}
-global @__rtti_type_PP4Base [binding=weak, object=_ZTIPP4Base] = {
-  ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name_type_PP4Base
-  i32 0
-  ptr addr @__rtti_type_P4Base
 }
 global @Base__vtable [storage=readonly, binding=weak, object=_ZTV4Base] = {
   i64 0
@@ -247,38 +31,55 @@ global @Base__vtable [storage=readonly, binding=weak, object=_ZTV4Base] = {
   ptr addr @Base___Base
   ptr addr @Base___Base__deleting_entry
 }
+global @__typeinfo_name__struct_Derived [storage=readonly, binding=weak, object=_ZTS7Derived] = {
+  i8 55
+  i8 68
+  i8 101
+  i8 114
+  i8 105
+  i8 118
+  i8 101
+  i8 100
+  i8 0
+}
+global @__rtti_struct_Derived [storage=readonly, binding=weak, object=_ZTI7Derived] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Derived
+  ptr addr @__rtti_struct_Base
+}
 global @Derived__vtable [storage=readonly, binding=weak, object=_ZTV7Derived] = {
   i64 0
   ptr addr @__rtti_struct_Derived
   ptr addr @Derived___Derived
   ptr addr @Derived___Derived__deleting_entry
 }
+global @derived : obj<16x8> [binding=internal, object=_ZL7derived] = {
+  zero 16
+}
+global @__typeinfo_name__struct_Private [storage=readonly, binding=weak, object=_ZTS7Private] = {
+  i8 55
+  i8 80
+  i8 114
+  i8 105
+  i8 118
+  i8 97
+  i8 116
+  i8 101
+  i8 0
+}
+global @__rtti_struct_Private [storage=readonly, binding=weak, object=_ZTI7Private] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Private
+  i32 0
+  i32 1
+  ptr addr @__rtti_struct_Base
+  i64 0
+}
 global @Private__vtable [storage=readonly, binding=weak, object=_ZTV7Private] = {
   i64 0
   ptr addr @__rtti_struct_Private
   ptr addr @Private___Private
   ptr addr @Private___Private__deleting_entry
-}
-global @__ehobj_nullptr_t [binding=internal, object=@__ehobj_nullptr_t] = {
-  zero 8
-}
-global @__ehobj_type_P7Derived [binding=internal, object=@__ehobj_type_P7Derived] = {
-  zero 8
-}
-global @__ehobj_type_P7Private [binding=internal, object=@__ehobj_type_P7Private] = {
-  zero 8
-}
-global @__ehobj_type_Pc [binding=internal, object=@__ehobj_type_Pc] = {
-  zero 8
-}
-global @__ehobj_type_PPc [binding=internal, object=@__ehobj_type_PPc] = {
-  zero 8
-}
-global @__ehobj_type_PP7Derived [binding=internal, object=@__ehobj_type_PP7Derived] = {
-  zero 8
-}
-global @derived : obj<16x8> [binding=internal, object=_ZL7derived] = {
-  zero 16
 }
 global @privately [binding=internal, object=_ZL9privately] = {
   ptr addr @Private__vtable + 16
@@ -288,6 +89,205 @@ global @privately [binding=internal, object=_ZL9privately] = {
 global @text [binding=internal, object=_ZL4text] = {
   i8 120
   i8 0
+}
+global @__typeinfo_name__char [storage=readonly, binding=weak, object=_ZTSc] = {
+  i8 99
+  i8 0
+}
+global @__rtti_char [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__char
+}
+global @__typeinfo_name_type_Pc [storage=readonly, binding=weak, object=_ZTSPc] = {
+  i8 80
+  i8 99
+  i8 0
+}
+global @__rtti_type_Pc [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_Pc
+  i32 0
+  ptr addr @__rtti_char
+}
+global @__ehobj_type_Pc [binding=internal] = {
+  zero 8
+}
+global @__typeinfo_name_type_PKc [storage=readonly, binding=weak, object=_ZTSPKc] = {
+  i8 80
+  i8 75
+  i8 99
+  i8 0
+}
+global @__rtti_type_PKc [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_PKc
+  i32 1
+  ptr addr @__rtti_char
+}
+global @__typeinfo_name_type_PPc [storage=readonly, binding=weak, object=_ZTSPPc] = {
+  i8 80
+  i8 80
+  i8 99
+  i8 0
+}
+global @__rtti_type_PPc [storage=readonly, binding=weak, object=_ZTIPPc] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_PPc
+  i32 0
+  ptr addr @__rtti_type_Pc
+}
+global @__ehobj_type_PPc [binding=internal] = {
+  zero 8
+}
+global @__typeinfo_name_type_PKPKc [storage=readonly, binding=weak, object=_ZTSPKPKc] = {
+  i8 80
+  i8 75
+  i8 80
+  i8 75
+  i8 99
+  i8 0
+}
+global @__rtti_type_PKPKc [storage=readonly, binding=weak, object=_ZTIPKPKc] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_PKPKc
+  i32 1
+  ptr addr @__rtti_type_PKc
+}
+global @__typeinfo_name_type_PPKc [storage=readonly, binding=weak, object=_ZTSPPKc] = {
+  i8 80
+  i8 80
+  i8 75
+  i8 99
+  i8 0
+}
+global @__rtti_type_PPKc [storage=readonly, binding=weak, object=_ZTIPPKc] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_PPKc
+  i32 0
+  ptr addr @__rtti_type_PKc
+}
+global @__typeinfo_name_type_P7Derived [storage=readonly, binding=weak, object=_ZTSP7Derived] = {
+  i8 80
+  i8 55
+  i8 68
+  i8 101
+  i8 114
+  i8 105
+  i8 118
+  i8 101
+  i8 100
+  i8 0
+}
+global @__rtti_type_P7Derived [storage=readonly, binding=weak, object=_ZTIP7Derived] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_P7Derived
+  i32 0
+  ptr addr @__rtti_struct_Derived
+}
+global @__ehobj_type_P7Derived [binding=internal] = {
+  zero 8
+}
+global @__typeinfo_name_type_PK4Base [storage=readonly, binding=weak, object=_ZTSPK4Base] = {
+  i8 80
+  i8 75
+  i8 52
+  i8 66
+  i8 97
+  i8 115
+  i8 101
+  i8 0
+}
+global @__rtti_type_PK4Base [storage=readonly, binding=weak, object=_ZTIPK4Base] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_PK4Base
+  i32 1
+  ptr addr @__rtti_struct_Base
+}
+global @__typeinfo_name_type_P4Base [storage=readonly, binding=weak, object=_ZTSP4Base] = {
+  i8 80
+  i8 52
+  i8 66
+  i8 97
+  i8 115
+  i8 101
+  i8 0
+}
+global @__rtti_type_P4Base [storage=readonly, binding=weak, object=_ZTIP4Base] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_P4Base
+  i32 0
+  ptr addr @__rtti_struct_Base
+}
+global @__typeinfo_name_type_P7Private [storage=readonly, binding=weak, object=_ZTSP7Private] = {
+  i8 80
+  i8 55
+  i8 80
+  i8 114
+  i8 105
+  i8 118
+  i8 97
+  i8 116
+  i8 101
+  i8 0
+}
+global @__rtti_type_P7Private [storage=readonly, binding=weak, object=_ZTIP7Private] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_P7Private
+  i32 0
+  ptr addr @__rtti_struct_Private
+}
+global @__ehobj_type_P7Private [binding=internal] = {
+  zero 8
+}
+global @__typeinfo_name_type_PP7Derived [storage=readonly, binding=weak, object=_ZTSPP7Derived] = {
+  i8 80
+  i8 80
+  i8 55
+  i8 68
+  i8 101
+  i8 114
+  i8 105
+  i8 118
+  i8 101
+  i8 100
+  i8 0
+}
+global @__rtti_type_PP7Derived [storage=readonly, binding=weak, object=_ZTIPP7Derived] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_PP7Derived
+  i32 0
+  ptr addr @__rtti_type_P7Derived
+}
+global @__ehobj_type_PP7Derived [binding=internal] = {
+  zero 8
+}
+global @__typeinfo_name_type_PP4Base [storage=readonly, binding=weak, object=_ZTSPP4Base] = {
+  i8 80
+  i8 80
+  i8 52
+  i8 66
+  i8 97
+  i8 115
+  i8 101
+  i8 0
+}
+global @__rtti_type_PP4Base [storage=readonly, binding=weak, object=_ZTIPP4Base] = {
+  ptr addr @__external_rtti_vtable____pointer_type_info + 16
+  ptr addr @__typeinfo_name_type_PP4Base
+  i32 0
+  ptr addr @__rtti_type_P4Base
+}
+global @__typeinfo_name__nullptr_t [storage=readonly, binding=weak, object=_ZTSDn] = {
+  i8 68
+  i8 110
+  i8 0
+}
+global @__rtti_nullptr_t [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__nullptr_t
+}
+global @__ehobj_nullptr_t [binding=internal] = {
+  zero 8
 }
 
 function @qualification() -> i32 [binding=strong, object=_Z13qualificationv] {
@@ -431,6 +431,7 @@ function @unsafe_multilevel() -> i32 [binding=strong, object=_Z17unsafe_multilev
     store typed ptr %t3, %t2
     %t4 = addr @__rtti_type_PPc
     call void @__external_runtime____cxa_throw(%t2, %t4, 0)
+    eh_end
     eh_end
     return i32 0
 
@@ -664,6 +665,7 @@ function @private_base() -> i32 [binding=strong, object=_Z12private_basev] {
     %t3 = addr @__rtti_type_P7Private
     call void @__external_runtime____cxa_throw(%t1, %t3, 0)
     eh_end
+    eh_end
     return i32 0
 
   block ^catch_dispatch_4:
@@ -741,6 +743,7 @@ function @no_base_at_second_level() -> i32 [binding=strong, object=_Z23no_base_a
     store typed ptr %t3, %t2
     %t4 = addr @__rtti_type_PP7Derived
     call void @__external_runtime____cxa_throw(%t2, %t4, 0)
+    eh_end
     eh_end
     return i32 0
 
@@ -883,7 +886,42 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = binary add nowrap i32 %t13, %t14
     return i32 %t15
 }
-function @Derived___Derived__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN7DerivedD0Ev] {
+function @Base___Base__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4BaseD2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Base__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+function @Base___Base__deleting_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4BaseD0Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    %t1 = load typed ptr $this
+    %t2 = addr @Base__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    eh_end
+    %t4 = load typed ptr $this
+    call void @operatordelete(%t4)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t5 = load typed ptr $this
+    call void @operatordelete(%t5)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @Derived___Derived__deleting_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD0Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -959,24 +997,24 @@ function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [binding=weak,
     %t2 = index i8 %t1, 0
     call void @Base__Base__base_entry(%t2)
     eh_cleanup ^constructor_cleanup_1
-    %t5 = load typed ptr $this
-    %t6 = addr @Derived__vtable
-    %t7 = index i8 %t6, 16
-    store typed ptr %t7, %t5
-    %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 12
-    store typed i32 3, %t9
+    %t3 = load typed ptr $this
+    %t4 = addr @Derived__vtable
+    %t5 = index i8 %t4, 16
+    store typed ptr %t5, %t3
+    %t6 = load typed ptr $this
+    %t7 = index i8 [projection=field] %t6, 12
+    store typed i32 3, %t7
     eh_end
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load typed ptr $this
-    %t4 = index i8 %t3, 0
-    call void @Base___Base__base_entry(%t4)
+    %t8 = load typed ptr $this
+    %t9 = index i8 %t8, 0
+    call void @Base___Base__base_entry(%t9)
     eh_end
     resume
 }
-function @Private___Private__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN7PrivateD0Ev] {
+function @Private___Private__deleting_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7PrivateD0Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -1043,64 +1081,6 @@ function @Private___Private(%this : ptr [object_bytes=16]) -> void [unwind=no, b
   block ^destructor_end_2:
     return void
 }
-function @Private__Private(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7PrivateC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 0
-    call void @Base__Base__base_entry(%t2)
-    eh_cleanup ^constructor_cleanup_1
-    %t5 = load typed ptr $this
-    %t6 = addr @Private__vtable
-    %t7 = index i8 %t6, 16
-    store typed ptr %t7, %t5
-    eh_end
-    return void
-
-  block ^constructor_cleanup_1:
-    %t3 = load typed ptr $this
-    %t4 = index i8 %t3, 0
-    call void @Base___Base__base_entry(%t4)
-    eh_end
-    resume
-}
-function @Base___Base__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4BaseD2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = load typed ptr $this
-    %t2 = addr @Base__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    return void
-}
-function @Base___Base__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN4BaseD0Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    eh_cleanup ^destructor_cleanup_1
-    %t1 = load typed ptr $this
-    %t2 = addr @Base__vtable
-    %t3 = index i8 %t2, 16
-    store typed ptr %t3, %t1
-    eh_end
-    %t4 = load typed ptr $this
-    call void @operatordelete(%t4)
-    jump ^destructor_end_2
-
-  block ^destructor_cleanup_1:
-    %t5 = load typed ptr $this
-    call void @operatordelete(%t5)
-    eh_end
-    resume
-
-  block ^destructor_end_2:
-    return void
-}
 function @Base___Base(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4BaseD1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -1157,4 +1137,3 @@ function @__cppgm_fini() -> void [role=fini, binding=internal] {
 alias object _ZN7DerivedD2Ev = @Derived___Derived
 alias object _ZN7DerivedC2Ev = @Derived__Derived
 alias object _ZN7PrivateD2Ev = @Private___Private
-alias object _ZN7PrivateC2Ev = @Private__Private

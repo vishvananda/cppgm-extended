@@ -54,5 +54,6 @@ function @generate_random_graph(%__param0 : ptr [pass=by_address, object_bytes=1
     store u8 %__param4, $__param4
     store u8 %__param5, $__param5
     %t1 = addr $retobj__1
+    zeroinit 1x1 %t1
     return obj<1x1> $retobj__1
 }

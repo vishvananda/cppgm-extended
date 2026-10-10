@@ -15,8 +15,8 @@ function @List_int___resize(%this : ptr [object_bytes=1]) -> void [binding=weak,
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = copy ptr nullptr
-    %t4 = copy ptr nullptr
+    %t3 = copy ptr 0
+    %t4 = copy ptr 0
     %t5 = call ptr @Base_int___create(%t2, %t3, %t4)
     store typed ptr %t5, $p
     %t6 = load typed ptr $p

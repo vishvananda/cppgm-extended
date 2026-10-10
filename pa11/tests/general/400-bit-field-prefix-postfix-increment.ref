@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t23 = copy u32 %t22
     %t24 = binary shl i32 %t22, 1
     %t25 = load i32 %t21
-    %t26 = binary and i32 %t25, 4294967289
+    %t26 = binary and i32 %t25, -7
     %t27 = binary or i32 %t26, %t24
     store i32 %t27, %t21
     %t28 = addr $bits
@@ -46,7 +46,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t37 = copy u32 %t36
     %t38 = binary shl i32 %t36, 1
     %t39 = load i32 %t29
-    %t40 = binary and i32 %t39, 4294967289
+    %t40 = binary and i32 %t39, -7
     %t41 = binary or i32 %t40, %t38
     store i32 %t41, %t29
     %t42 = addr $bits

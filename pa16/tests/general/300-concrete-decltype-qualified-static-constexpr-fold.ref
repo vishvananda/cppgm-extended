@@ -1,3 +1,5 @@
+declare global @unsigned_constant_1___value : u32 [binding=weak, object=_ZN17unsigned_constantILj1EE5valueE]
+
 global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   u32 3
   u32 7

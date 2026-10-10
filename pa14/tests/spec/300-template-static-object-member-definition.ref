@@ -1,10 +1,10 @@
-global @__cppgm_class_template_identity_0_0_0__value : obj<4x4> [binding=weak, object=_ZN15static_constantI7keywordE5valueE] = {
+global @static_constant_keyword___value : obj<4x4> [binding=weak, object=_ZN15static_constantI7keywordE5valueE] = {
   zero 4
 }
 
 function @use_value() -> ptr [binding=strong, object=_Z9use_valuev] {
   block ^entry:
-    %t1 = addr @__cppgm_class_template_identity_0_0_0__value
+    %t1 = addr @static_constant_keyword___value
     return ptr %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -25,4 +25,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^cond_end_3:
     %t2 = load typed i32 $cond__1
     return i32 %t2
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    return void
 }

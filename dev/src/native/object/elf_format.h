@@ -1,194 +1,96 @@
 #pragma once
 
-#include "native/driver/stats.h"
-#include "native/mir/construction.h"
-#include "native/allocation/registers.h"
-#include "native/object/code_buffer.h"
-#include <chrono>
-
-#include <cstddef>
 #include <cstdint>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
-namespace lowir_native {
-namespace object_elf_detail {
+// ELF64 constants (System V gABI, x86-64 psABI) and little-endian field
+// writers shared by the relocatable object and executable encodings.
+namespace native {
+namespace object {
 
-struct EncodedFixup
+const unsigned kElfHeaderBytes = 64;
+const unsigned kSectionHeaderBytes = 64;
+const unsigned kProgramHeaderBytes = 56;
+const unsigned kSymbolBytes = 24;
+const unsigned kRelaBytes = 24;
+
+const uint16_t kEtRel = 1;
+const uint16_t kEtExec = 2;
+const uint16_t kEmX86_64 = 62;
+
+const uint32_t kShtProgbits = 1;
+const uint32_t kShtSymtab = 2;
+const uint32_t kShtStrtab = 3;
+const uint32_t kShtRela = 4;
+const uint32_t kShtNote = 7;
+const uint32_t kShtNobits = 8;
+const uint32_t kShtRel = 9;
+const uint32_t kShtInitArray = 14;
+const uint32_t kShtFiniArray = 15;
+const uint32_t kShtPreinitArray = 16;
+const uint32_t kShtGroup = 17;
+const uint32_t kShtSymtabShndx = 18;
+
+const uint64_t kShfWrite = 0x1;
+const uint64_t kShfAlloc = 0x2;
+const uint64_t kShfExecinstr = 0x4;
+const uint64_t kShfInfoLink = 0x40;
+const uint64_t kShfGroup = 0x200;
+const uint64_t kShfTls = 0x400;
+
+const uint32_t kShnLoreserve = 0xff00;
+const uint32_t kShnAbs = 0xfff1;
+const uint32_t kShnCommon = 0xfff2;
+const uint32_t kShnXindex = 0xffff;
+
+const uint32_t kGrpComdat = 1;
+
+const uint8_t kStbLocal = 0;
+const uint8_t kStbGlobal = 1;
+const uint8_t kStbWeak = 2;
+const uint8_t kStbGnuUnique = 10;
+
+const uint8_t kSttNotype = 0;
+const uint8_t kSttObject = 1;
+const uint8_t kSttFunc = 2;
+const uint8_t kSttSection = 3;
+const uint8_t kSttFile = 4;
+const uint8_t kSttCommon = 5;
+const uint8_t kSttTls = 6;
+const uint8_t kSttGnuIfunc = 10;
+
+inline void put16(std::vector<uint8_t>& out, uint64_t value)
 {
-  enum Kind { EF_RELATIVE32, EF_ABSOLUTE64, EF_ADDRESS32, EF_TLS_OFFSET32 }
-    kind = EF_RELATIVE32;
-  mir_model::MirOperand::AddressBinding address_binding =
-    mir_model::MirOperand::ADDRESS_LOCAL;
-  std::size_t offset = 0;
-  std::string target;
-  long long addend = 0;
-};
+	out.push_back(static_cast<uint8_t>(value));
+	out.push_back(static_cast<uint8_t>(value >> 8));
+}
 
-struct EncodedSymbolFixup
+inline void put32(std::vector<uint8_t>& out, uint64_t value)
 {
-  EncodedFixup::Kind kind = EncodedFixup::EF_RELATIVE32;
-  mir_model::MirOperand::AddressBinding address_binding =
-    mir_model::MirOperand::ADDRESS_LOCAL;
-  std::size_t offset = 0;
-  lowir_model::SymbolId target;
-  long long addend = 0;
-};
+	for (unsigned k = 0; k < 4; ++k)
+		out.push_back(static_cast<uint8_t>(value >> (8 * k)));
+}
 
-struct EncodedSymbolLabel
+inline void put64(std::vector<uint8_t>& out, uint64_t value)
 {
-  lowir_model::SymbolId symbol;
-  std::size_t offset = 0;
-};
+	for (unsigned k = 0; k < 8; ++k)
+		out.push_back(static_cast<uint8_t>(value >> (8 * k)));
+}
 
-struct EncodedObjectLabel
+// ELFCLASS64, ELFDATA2LSB, EV_CURRENT, ELFOSABI_NONE.
+inline void put_elf_ident(std::vector<uint8_t>& out)
 {
-  lowir_model::StringId symbol;
-  std::size_t offset = 0;
-};
+	const uint8_t ident[16] = { 0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	out.insert(out.end(), ident, ident + 16);
+}
 
-enum SectionKind : std::uint8_t
+inline uint64_t get_le(const uint8_t* bytes, unsigned count)
 {
-  SK_NONE,
-  SK_TEXT,
-  SK_TEXT_COMDAT,
-  SK_DATA,
-  SK_TDATA,
-  SK_CUSTOM,
-  SK_INIT_ARRAY,
-  SK_FINI_ARRAY,
-  SK_GCC_EXCEPT_TABLE,
-  SK_EH_FRAME,
-  SK_NOTE_GNU_STACK,
-  SK_SYMTAB,
-  SK_STRTAB,
-  SK_SHSTRTAB,
-  SK_GROUP
-};
+	uint64_t value = 0;
+	for (unsigned k = 0; k < count; ++k)
+		value |= static_cast<uint64_t>(bytes[k]) << (8 * k);
+	return value;
+}
 
-struct SectionIdentity
-{
-  SectionKind kind = SK_NONE;
-  bool relocation = false;
-  lowir_model::StringId spelling;
-
-  SectionIdentity() {}
-  explicit SectionIdentity(SectionKind section_kind)
-    : kind(section_kind) {}
-  SectionIdentity(SectionKind section_kind,
-                  lowir_model::StringId section_spelling)
-    : kind(section_kind), spelling(section_spelling) {}
-
-  SectionIdentity relocation_identity() const
-  {
-    SectionIdentity result = *this;
-    result.relocation = true;
-    return result;
-  }
-};
-
-static_assert(sizeof(SectionIdentity) <= 8,
-  "ELF section identity must remain compact");
-
-struct EncodedEhTypeRefLabel
-{
-  lowir_model::SymbolId symbol;
-  std::size_t offset = 0;
-};
-
-struct EncodedSection
-{
-  SectionIdentity name;
-  lowir_model::StringId comdat_signature;
-  std::uint64_t flags = 0;
-  std::size_t alignment = 1;
-  std::vector<unsigned char> bytes;
-  std::unordered_map<std::string, std::size_t> labels;
-  std::vector<EncodedSymbolLabel> symbol_labels;
-  std::vector<EncodedObjectLabel> object_labels;
-  std::vector<EncodedEhTypeRefLabel> eh_type_ref_labels;
-  bool has_eh_personality_ref_label = false;
-  std::size_t eh_personality_ref_label_offset = 0;
-  std::vector<EncodedFixup> fixups;
-  std::vector<EncodedSymbolFixup> symbol_fixups;
-};
-
-struct HostFunctionLayout
-{
-  struct UnwindRange
-  {
-    std::size_t start = 0;
-    std::size_t length = 0;
-  };
-
-  struct CallSite
-  {
-    std::size_t start = 0;
-    std::size_t length = 0;
-    lowir_model::LocalLabelId landing_label;
-    std::size_t landing_pad_offset = 0;
-    lowir_model::BlockId action_block;
-  };
-
-  lowir_model::SymbolId program_symbol;
-  lowir_model::StringId object_symbol;
-  std::size_t text_section = 0;
-  std::size_t offset = 0;
-  std::size_t size = 0;
-  std::size_t alignment = 2;
-  bool omit_frame_pointer = false;
-  std::size_t stack_adjustment = 0;
-  std::vector<X64Register> callee_saved_regs;
-  std::vector<std::vector<mir_model::MirHostEhClause> > clauses;
-  std::vector<lowir_model::BlockId> clause_order;
-  std::vector<CallSite> call_sites;
-  std::vector<UnwindRange> unprotected_unwind_ranges;
-  std::size_t lsda_offset = 0;
-};
-
-struct DeclarationObjectSymbol
-{
-  lowir_model::StringId identity;
-  const std::string * spelling = 0;
-};
-
-struct DeclarationObjectSymbols
-{
-  std::vector<DeclarationObjectSymbol> typed;
-
-  const DeclarationObjectSymbol * find(lowir_model::SymbolId symbol) const
-  {
-    const std::uint32_t index = symbol;
-    return symbol.valid() && index < typed.size() && typed[index].spelling ?
-      &typed[index] : 0;
-  }
-};
-
-std::string host_symbol_spelling(const std::string & raw);
-DeclarationObjectSymbols declaration_object_symbols(
-  const lowir_model::LowirProgram & program);
-std::vector<unsigned char> host_external_global_definitions(
-  const lowir_model::LowirProgram & source,
-  const mir_model::MirProgram & program);
-
-std::vector<unsigned char> make_linux_relocatable_image(
-  const lowir_model::LowirProgram & program,
-  DeclarationObjectSymbols declarations,
-  EncodedSection text,
-  std::vector<EncodedSection> data_sections,
-  std::vector<HostFunctionLayout> & functions,
-  std::size_t & relocation_count,
-  Stats * stats = 0);
-
-// The ELF64 executable image header for `content_size` bytes of content,
-// and the write of header plus content to `path` as an executable file.
-std::vector<unsigned char> make_elf_header(std::size_t content_size);
-void finish_native_executable(
-    const std::string & path, elf_detail::CodeBuffer & content, Stats * stats,
-    std::uint64_t encode_nanoseconds,
-    const std::chrono::steady_clock::time_point & encode_started);
-
-}  // namespace object_elf_detail
-}  // namespace lowir_native
+} // namespace object
+} // namespace native

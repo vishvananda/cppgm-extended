@@ -66,37 +66,62 @@ for my $test (@tests)
 			run_optimizer($app, $test, $directory, $level);
 	}
 
-	for my $level ('O0', 'O1', 'O2')
-	{
-		for my $name ('aggregate_swap', 'fieldwise_swap')
-		{
-			my $body = function_body($test, $outputs{$level}, $name);
-			die "$test: $level unexpectedly removed the staged swap in $name\n"
-				if $body !~ /^\s+slot \$\w+ : obj</m ||
-				   $body !~ /^\s+copyobj /m;
-		}
-	}
-
+	# -O0 keeps the staged swap: the stage slot and its object copies.
 	for my $name ('aggregate_swap', 'fieldwise_swap')
 	{
-		my $body = function_body($test, $outputs{O3}, $name);
-		my $loads = () = $body =~ /^\s+%\w+ = load i64 /mg;
-		my $stores = () = $body =~ /^\s+store i64 /mg;
-		die "$test: O3 did not lower the complete staged swap in $name\n"
-			if $body =~ /^\s+slot \$/m || $body =~ /^\s+copyobj /m ||
-			   $loads < 4 || $loads != $stores;
-	}
-
-	for my $name ('retain_incomplete_stage', 'retain_volatile_capture',
-		'retain_escaped_stage', 'retain_nonterminal_swap')
-	{
-		my $body = function_body($test, $outputs{O3}, $name);
-		die "$test: O3 lowered an unproved staged swap in $name\n"
+		my $body = function_body($test, $outputs{O0}, $name);
+		die "$test: O0 unexpectedly removed the staged swap in $name\n"
 			if $body !~ /^\s+slot \$\w+ : obj</m ||
 			   $body !~ /^\s+copyobj /m;
 	}
 
-	for my $level ('O0', 'O3')
+	# From -O1 the stage slot is split into its fields: the swap captures
+	# the first object's fields as scalars, before anything overwrites that
+	# object, and stores each into the second (the copy between the two
+	# objects themselves may stay an object copy).
+	for my $level ('O1', 'O2', 'O3')
+	{
+		for my $name ('aggregate_swap', 'fieldwise_swap')
+		{
+			my $body = function_body($test, $outputs{$level}, $name);
+			my $loads = () = $body =~ /^\s+%\w+ = load i64 /mg;
+			my $stores = () = $body =~ /^\s+store i64 /mg;
+			die "$test: $level did not lower the complete staged swap in $name\n"
+				if $body =~ /^\s+slot \$/m || $loads < 4 || $loads != $stores;
+			my $overwrite = $body =~
+				/^\s+(?:copyobj \S+ %\w+, |zeroinit \S+ |store \S+ [^,\n]+, )%first$/m ?
+				$-[0] : length($body);
+			my $last_load = 0;
+			$last_load = $-[0] while $body =~ /^\s+%\w+ = load i64 /mg;
+			die "$test: $level captured $name after overwriting its first object\n"
+				if $last_load > $overwrite;
+		}
+
+		# A stage whose address escapes stays in memory.
+		my $escaped = function_body($test, $outputs{$level},
+			'retain_escaped_stage');
+		die "$test: $level lowered an unproved staged swap in retain_escaped_stage\n"
+			if $escaped !~ /^\s+slot \$\w+ : obj</m ||
+			   $escaped !~ /^\s+copyobj /m ||
+			   $escaped !~ /^\s+call void \@observe\(%\w+\)$/m;
+
+		# A volatile read of the captured object stays one volatile read.
+		my $volatile = function_body($test, $outputs{$level},
+			'retain_volatile_capture');
+		my $volatile_loads = () = $volatile =~ /^\s+%\w+ = load volatile i64 /mg;
+		die "$test: $level changed the volatile capture in retain_volatile_capture\n"
+			if $volatile_loads != 1;
+
+		# An incomplete stage captures only its 16 bytes: the zeroed rest
+		# must not be read from the first object.
+		my $incomplete = function_body($test, $outputs{$level},
+			'retain_incomplete_stage');
+		die "$test: $level widened the incomplete capture in retain_incomplete_stage\n"
+			if $incomplete =~ /^\s+%\w+ = index \S+ (?:\[[^\]]*\] )?%first, (?:1[6-9]|2\d|3[01])$/m ||
+			   $incomplete =~ /^\s+copyobj 32x8 %first, /m;
+	}
+
+	for my $level ('O0', 'O1', 'O3')
 	{
 		my $executable = "$directory/behavior-$level";
 		my $compile_stderr = "$directory/compile-$level.stderr";
@@ -119,5 +144,5 @@ for my $test (@tests)
 	}
 }
 
-print "O3 terminal staged object swaps: PASS (" . scalar(@tests) . "/" .
+print "terminal staged object swaps: PASS (" . scalar(@tests) . "/" .
 	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

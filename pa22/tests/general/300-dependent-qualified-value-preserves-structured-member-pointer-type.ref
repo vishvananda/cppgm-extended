@@ -1,3 +1,5 @@
+declare global @int__32769___value : i32 [binding=weak, object=_ZN4int_ILi32769EE5valueE]
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 

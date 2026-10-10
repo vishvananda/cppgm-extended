@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $d
-    %t2 = call obj<4x4> @traits__identity_element_lib__date___value()
+    %t2 = call obj<4x4> @traits__identity_element_date___value()
     copyobj 4x4 %t2, %t1
     %t3 = addr $d
     %t4 = index i8 [projection=field] %t3, 0
@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load typed i32 $cond__1
     return i32 %t7
 }
-function @traits__identity_element_lib__date___value() -> obj<4x4> [binding=weak, object=_ZN6traits16identity_elementIN3lib4dateEE5valueEv, inline_hint=yes] {
+function @traits__identity_element_date___value() -> obj<4x4> [binding=weak, object=_ZN6traits16identity_elementIN3lib4dateEE5valueEv, inline_hint=yes] {
   slot $retobj__1 : obj<4x4>
 
   block ^entry:

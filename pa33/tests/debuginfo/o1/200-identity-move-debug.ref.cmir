@@ -12,8 +12,8 @@ function @identity
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi !dbg(test.cpp, 2, 3)
@@ -24,18 +24,17 @@ function @main
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     mov rdi, 42 !dbg(test.cpp, 7, 5)
     call @identity [args=(rdi), unwind=no] !dbg(test.cpp, 7, 5)
-    mov r8, rax !dbg(test.cpp, 7, 5)
-    test.i64 rax, rax !dbg(test.cpp, 8, 5)
+    cmp.i64 rax, 0 !dbg(test.cpp, 8, 5)
     je ^bad !dbg(test.cpp, 8, 5)
 
   block ^done
-    cmp.i64 r8, 42 !dbg(test.cpp, 11, 5)
+    cmp.i64 rax, 42 !dbg(test.cpp, 11, 5)
     setne rax !dbg(test.cpp, 11, 5)
     movzx rax, rax !dbg(test.cpp, 11, 5)
     ret rax !dbg(test.cpp, 12, 5)

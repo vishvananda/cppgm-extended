@@ -68,13 +68,6 @@ function @Item__Item(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=w
     store typed ptr %this, $this
     return void
 }
-function @Item___Item(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN4ItemD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
 function @Item__operatordelete(%storage : ptr) -> void [unwind=no, binding=weak, object=_ZN4ItemdlEPv, inline_hint=yes] {
   slot $storage : ptr
 
@@ -83,6 +76,13 @@ function @Item__operatordelete(%storage : ptr) -> void [unwind=no, binding=weak,
     store typed i32 2, @selected
     %t1 = load typed ptr $storage
     call void @operatordelete(%t1)
+    return void
+}
+function @Item___Item(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN4ItemD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN4ItemC2Ev = @Item__Item

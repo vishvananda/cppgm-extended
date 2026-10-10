@@ -2,6 +2,21 @@ global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   u16 0
 }
 
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lhs : obj<2x2>
+  slot $rhs : obj<2x2>
+
+  block ^entry:
+    %t1 = addr $lhs
+    copyobj 2x2 @__constexpr_template__1, %t1
+    %t2 = addr $rhs
+    copyobj 2x2 @__constexpr_template__1, %t2
+    %t3 = addr $lhs
+    %t4 = addr $rhs
+    %t5 = convert sext i64 i32 1
+    %t6 = call i32 @lib__traits_char16_t___compare(%t3, %t4, %t5)
+    return i32 %t6
+}
 function @lib__traits_char16_t___compare(%lhs : ptr, %rhs : ptr, %n : i64) -> i32 [binding=weak, object=_ZN3lib6traitsIDsE7compareEPKDsS3_m, inline_hint=yes] {
   slot $lhs : ptr
   slot $rhs : ptr
@@ -22,7 +37,7 @@ function @lib__traits_char16_t___compare(%lhs : ptr, %rhs : ptr, %n : i64) -> i3
     %t3 = load typed u16 %t2
     %t4 = load typed ptr $rhs
     %t5 = load typed u16 %t4
-    %t6 = call u8 @lib__traits_base_char16_t__unsigned_short_int__65535___lt(%t3, %t5)
+    %t6 = call u8 @lib__traits_base_char16_t_unsignedshortint_65535___lt(%t3, %t5)
     branch %t6, ^if_then_5, ^if_else_6
 
   block ^if_then_5:
@@ -37,7 +52,7 @@ function @lib__traits_char16_t___compare(%lhs : ptr, %rhs : ptr, %n : i64) -> i3
     %t9 = load typed u16 %t8
     %t10 = load typed ptr $lhs
     %t11 = load typed u16 %t10
-    %t12 = call u8 @lib__traits_base_char16_t__unsigned_short_int__65535___lt(%t9, %t11)
+    %t12 = call u8 @lib__traits_base_char16_t_unsignedshortint_65535___lt(%t9, %t11)
     branch %t12, ^if_then_8, ^if_else_9
 
   block ^if_then_8:
@@ -66,22 +81,7 @@ function @lib__traits_char16_t___compare(%lhs : ptr, %rhs : ptr, %n : i64) -> i3
   block ^for_end_4:
     return i32 0
 }
-function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $lhs : obj<2x2>
-  slot $rhs : obj<2x2>
-
-  block ^entry:
-    %t1 = addr $lhs
-    copyobj 2x2 @__constexpr_template__1, %t1
-    %t2 = addr $rhs
-    copyobj 2x2 @__constexpr_template__1, %t2
-    %t3 = addr $lhs
-    %t4 = addr $rhs
-    %t5 = convert sext i64 i32 1
-    %t6 = call i32 @lib__traits_char16_t___compare(%t3, %t4, %t5)
-    return i32 %t6
-}
-function @lib__traits_base_char16_t__unsigned_short_int__65535___lt(%lhs : u16, %rhs : u16) -> u8 [binding=weak, object=_ZN3lib11traits_baseIDstLt65535EE2ltEDsDs, inline_hint=yes] {
+function @lib__traits_base_char16_t_unsignedshortint_65535___lt(%lhs : u16, %rhs : u16) -> u8 [binding=weak, object=_ZN3lib11traits_baseIDstLt65535EE2ltEDsDs, inline_hint=yes] {
   slot $lhs : u16
   slot $rhs : u16
 

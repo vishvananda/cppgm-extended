@@ -17,7 +17,7 @@ function @make_pair
     param %b -> rdx : i64
     return void -> void
   frame
-    stack_size 32
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared

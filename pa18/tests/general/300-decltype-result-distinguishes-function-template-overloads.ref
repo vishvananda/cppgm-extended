@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_3:
     %t8 = addr $second
-    %t9 = call i64 @pick__ov2(%t8)
+    %t9 = call i64 @pick__2(%t8)
     %t10 = cmp ne i64 %t9, 42
     branch %t10, ^if_then_4, ^if_else_5
 
@@ -43,7 +43,7 @@ function @pick(%object : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=
     %t2 = call i32 @first_kind__value(%t1)
     return i32 %t2
 }
-function @pick__ov2(%object : ptr [pass=by_address, object_bytes=8]) -> i64 [binding=weak, object=_Z4pickI11second_kindvEDtdtcl7declvalIT_EE5countERS1_] {
+function @pick__2(%object : ptr [pass=by_address, object_bytes=8]) -> i64 [binding=weak, object=_Z4pickI11second_kindvEDtdtcl7declvalIT_EE5countERS1_] {
   slot $object : ptr
 
   block ^entry:

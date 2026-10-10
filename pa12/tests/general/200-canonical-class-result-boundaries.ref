@@ -27,13 +27,13 @@ function @make_sixteen(%ret : ptr [pass=indirect_result, object_bytes=16], %x : 
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $small : ptr
-  slot $empty : ptr
-  slot $sixteen : ptr
-  slot $value : obj<16x8>
   slot $tmpobj__1 : obj<4x4>
   slot $tmpobj__2 : obj<4x4>
+  slot $empty : ptr
   slot $discard__3 : obj<1x1>
   slot $discard__4 : obj<1x1>
+  slot $sixteen : ptr
+  slot $value : obj<16x8>
 
   block ^entry:
     %t1 = addr @make_small
@@ -45,9 +45,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = index i8 [projection=field] %t2, 0
     %t6 = load typed i32 %t5
     %t7 = cmp ne i32 %t6, 7
-    branch %t7, ^if_then_1, ^lor_rhs_4
+    branch %t7, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t8 = addr $tmpobj__2
     %t9 = call obj<4x4> @make_small(9)
     copyobj 4x4 %t9, %t8
@@ -60,9 +60,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 1
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t13 = addr @make_empty
     store typed ptr %t13, $empty
     eh_try ^cleanup_resume_5
@@ -131,9 +131,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t25 = index i8 [projection=field] %t24, 0
     %t26 = load typed i64 %t25
     %t27 = cmp ne i64 %t26, 31
-    branch %t27, ^if_then_17, ^lor_rhs_20
+    branch %t27, ^if_then_17, ^lor_rhs_19
 
-  block ^lor_rhs_20:
+  block ^lor_rhs_19:
     %t28 = addr $value
     %t29 = index i8 [projection=field] %t28, 8
     %t30 = load typed i64 %t29
@@ -146,9 +146,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 4
 
   block ^if_else_18:
-    jump ^if_end_19
+    jump ^if_end_20
 
-  block ^if_end_19:
+  block ^if_end_20:
     %t33 = addr $value
     call void @Sixteen___Sixteen(%t33)
     %t34 = load typed i32 @destroyed

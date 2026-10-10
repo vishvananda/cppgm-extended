@@ -27,7 +27,7 @@ LowIR is:
 
 LowIR text is the serialized form of the compiler-owned backend program model.
 Implementations may use a typed in-memory representation, and the starter
-support includes an optional `dev/src/lowir/model/program.h` scaffold for that shape,
+support includes an optional `dev/src/lowir_model.h` scaffold for that shape,
 but the text remains the durable boundary. A backend-visible fact that cannot
 be serialized to LowIR and parsed back is not part of the LowIR contract.
 
@@ -714,6 +714,32 @@ In the current textual format, the source-file field must be a single unquoted
 LowIR token. Relative Unix-style source paths such as `main.cpp`,
 `src/main.cpp`, or `tests/input.t` are valid. The parser rejects zero or
 negative line/column values.
+
+`cppgm++ --emit-lowir` emits these locations at every debug-information
+level except `-g0` (`-g`, `-g1` to `-g3`, `-gline-tables-only`), and none
+without a `-g` option. Each location is the line and column where a source
+construct begins:
+
+- A function definition is located where its definition begins.
+- An instruction is located at the innermost statement or expression whose
+  lowering emits it. In `int y = x + 1;` the addition is located at `x`,
+  where `x + 1` begins, and the store to `y` at `int`, where the declaration
+  begins. A condition's comparison and branch, and the jumps that close the
+  arms, belong to the statement that tests it (`if`, `while`, `for`); the
+  destructor calls at the end of a block belong to the block's `{`.
+- Instructions outside every statement and expression take the function's
+  location: the stores of incoming parameters, and the terminator that ends
+  a function falling off its end (`return void`, or `unreachable` in a
+  function with a result).
+- The optimizer keeps them at `-O1` to `-O3`: an instruction that survives,
+  is moved or is copied (an inlined body, an unrolled loop) keeps its
+  location, and one that replaces another takes that one's location. A
+  `phi` the optimizer creates carries none.
+
+A source file whose name is not a single LowIR token gets no locations. The
+course solution writes an output named `*.lowir` with a stated `-g` level as
+the LowIR half of an object compile (the file `cppgm++ -c` then compiles, as
+PA32's object round trip does), and that file carries no locations either.
 
 This metadata is semantically optional. Backends that do not yet emit
 object-file debug information may ignore it, but PA8 parsing, dumping, and

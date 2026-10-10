@@ -12,7 +12,7 @@ function @main
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     preserve <gpr0>
     slot $box__0 -> [rbp-<off0>] : i64
 
@@ -20,9 +20,8 @@ function @main
     lea rdi, [rbp-<off0>]
     call @Box_int___Box [args=(rdi)]
     store.i32 [rbp-<off0>], 7
-    load.i32 r9, [rbp-<off0>]
-    mov <gpr0>, r9
-    sub <gpr0>, 7
+    load.i32 r8, [rbp-<off0>]
+    lea <gpr0>, [r8-<off0>]
     lea rdi, [rbp-<off0>]
     call @Box_int____Box [args=(rdi)]
     ret <gpr0>
@@ -34,8 +33,8 @@ function @Box_int___Box
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret
@@ -47,8 +46,8 @@ function @Box_int____Box
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret

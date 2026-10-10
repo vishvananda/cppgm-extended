@@ -10,7 +10,7 @@ global @high_byte [storage=readonly, binding=internal] = {
   i8 255
   i8 0
 }
-global @replaceable [storage=readonly, binding=strong] = {
+global @replaceable [storage=readonly, binding=weak, replaceable=yes] = {
   i8 65
   i8 0
 }

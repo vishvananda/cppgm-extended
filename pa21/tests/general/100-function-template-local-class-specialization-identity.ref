@@ -10,12 +10,6 @@ global @__constexpr_template__2 [storage=readonly, binding=internal] = {
   i64 0
 }
 
-function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
-  block ^entry:
-    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
-    call void @std_terminate()
-    return void
-}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $integers : obj<8x4>
   slot $longs : obj<16x8>
@@ -34,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $longs
     %t9 = binary mul i64 2, 8
     %t10 = index i8 %t8, %t9
-    call void @visit__ov2(%t7, %t10)
+    call void @visit__2(%t7, %t10)
     return i32 0
 }
 function @visit(%first : ptr, %last : ptr) -> void [binding=weak, object=_Z5visitIiEvPT_S1_] {
@@ -58,7 +52,7 @@ function @visit(%first : ptr, %last : ptr) -> void [binding=weak, object=_Z5visi
     call void @cleanup___cleanup(%t8)
     return void
 }
-function @visit__ov2(%first : ptr, %last : ptr) -> void [binding=weak, object=_Z5visitIlEvPT_S1_] {
+function @visit__2(%first : ptr, %last : ptr) -> void [binding=weak, object=_Z5visitIlEvPT_S1_] {
   slot $first : ptr
   slot $last : ptr
   slot $value : obj<16x8>
@@ -76,19 +70,19 @@ function @visit__ov2(%first : ptr, %last : ptr) -> void [binding=weak, object=_Z
     %t7 = index i8 [projection=field] %t6, 8
     store typed ptr %t5, %t7
     %t8 = addr $value
-    call void @cleanup___cleanup__sym2(%t8)
+    call void @cleanup___cleanup__2(%t8)
     return void
 }
-function @cleanup___cleanup(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZZ5visitIiEvPT_S1_EN7cleanupD1Ev, inline_hint=yes] {
+function @cleanup___cleanup(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=internal, object=_ZZ5visitIiEvPT_S1_EN7cleanupD1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $function_exception__1 : ptr
 
   block ^entry:
     eh_try ^function_exception_landing_1
     store typed ptr %this, $this
-    jump ^while_cond_3
+    jump ^while_cond_2
 
-  block ^while_cond_3:
+  block ^while_cond_2:
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
@@ -96,9 +90,9 @@ function @cleanup___cleanup(%this : ptr [object_bytes=16]) -> void [unwind=no, b
     %t5 = index i8 [projection=field] %t4, 8
     %t6 = load typed ptr %t5
     %t7 = cmp ne ptr %t3, %t6
-    branch %t7, ^while_body_4, ^while_end_5
+    branch %t7, ^while_body_3, ^while_end_4
 
-  block ^while_body_4:
+  block ^while_body_3:
     %t8 = load typed ptr $this
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load typed ptr %t9
@@ -109,9 +103,9 @@ function @cleanup___cleanup(%this : ptr [object_bytes=16]) -> void [unwind=no, b
     %t14 = binary mul i64 1, 4
     %t15 = index i8 %t13, %t14
     store typed ptr %t15, %t12
-    jump ^while_cond_3
+    jump ^while_cond_2
 
-  block ^while_end_5:
+  block ^while_end_4:
     eh_end
     return void
 
@@ -119,23 +113,29 @@ function @cleanup___cleanup(%this : ptr [object_bytes=16]) -> void [unwind=no, b
     eh_catch_all, 1
     %t16 = exception ptr
     store typed ptr %t16, $function_exception__1
-    jump ^function_exception_action_2
+    jump ^function_exception_action_5
 
-  block ^function_exception_action_2:
+  block ^function_exception_action_5:
     %t17 = load typed ptr $function_exception__1
     call void @cppgm_call_terminate(%t17)
     return void
 }
-function @cleanup___cleanup__sym2(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZZ5visitIlEvPT_S1_EN7cleanupD1Ev, inline_hint=yes] {
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
+    return void
+}
+function @cleanup___cleanup__2(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=internal, object=_ZZ5visitIlEvPT_S1_EN7cleanupD1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $function_exception__1 : ptr
 
   block ^entry:
     eh_try ^function_exception_landing_1
     store typed ptr %this, $this
-    jump ^while_cond_3
+    jump ^while_cond_2
 
-  block ^while_cond_3:
+  block ^while_cond_2:
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load typed ptr %t2
@@ -143,22 +143,22 @@ function @cleanup___cleanup__sym2(%this : ptr [object_bytes=16]) -> void [unwind
     %t5 = index i8 [projection=field] %t4, 8
     %t6 = load typed ptr %t5
     %t7 = cmp ne ptr %t3, %t6
-    branch %t7, ^while_body_4, ^while_end_5
+    branch %t7, ^while_body_3, ^while_end_4
 
-  block ^while_body_4:
+  block ^while_body_3:
     %t8 = load typed ptr $this
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load typed ptr %t9
-    call void @observe__ov2(%t10)
+    call void @observe__2(%t10)
     %t11 = load typed ptr $this
     %t12 = index i8 [projection=field] %t11, 0
     %t13 = load typed ptr %t12
     %t14 = binary mul i64 1, 8
     %t15 = index i8 %t13, %t14
     store typed ptr %t15, %t12
-    jump ^while_cond_3
+    jump ^while_cond_2
 
-  block ^while_end_5:
+  block ^while_end_4:
     eh_end
     return void
 
@@ -166,9 +166,9 @@ function @cleanup___cleanup__sym2(%this : ptr [object_bytes=16]) -> void [unwind
     eh_catch_all, 1
     %t16 = exception ptr
     store typed ptr %t16, $function_exception__1
-    jump ^function_exception_action_2
+    jump ^function_exception_action_5
 
-  block ^function_exception_action_2:
+  block ^function_exception_action_5:
     %t17 = load typed ptr $function_exception__1
     call void @cppgm_call_terminate(%t17)
     return void
@@ -180,7 +180,7 @@ function @observe(%__param0 : ptr) -> void [binding=weak, object=_Z7observeIiEvP
     store typed ptr %__param0, $__param0
     return void
 }
-function @observe__ov2(%__param0 : ptr) -> void [binding=weak, object=_Z7observeIlEvPT_] {
+function @observe__2(%__param0 : ptr) -> void [binding=weak, object=_Z7observeIlEvPT_] {
   slot $__param0 : ptr
 
   block ^entry:
@@ -188,4 +188,4 @@ function @observe__ov2(%__param0 : ptr) -> void [binding=weak, object=_Z7observe
     return void
 }
 alias object _ZZ5visitIiEvPT_S1_EN7cleanupD2Ev = @cleanup___cleanup
-alias object _ZZ5visitIlEvPT_S1_EN7cleanupD2Ev = @cleanup___cleanup__sym2
+alias object _ZZ5visitIlEvPT_S1_EN7cleanupD2Ev = @cleanup___cleanup__2

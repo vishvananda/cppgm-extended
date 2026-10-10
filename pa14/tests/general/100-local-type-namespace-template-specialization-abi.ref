@@ -21,7 +21,7 @@ function @owner__run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=
     %t5 = call i32 @consume(%t4)
     return i32 %t5
 }
-function @consume(%value : ptr) -> i32 [binding=weak, object=_Z7consumeI3boxIZN5owner3runEvE5localEEiPT_] {
+function @consume(%value : ptr) -> i32 [binding=internal, object=_Z7consumeI3boxIZN5owner3runEvE5localEEiPT_] {
   slot $value : ptr
 
   block ^entry:

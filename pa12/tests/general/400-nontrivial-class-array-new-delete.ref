@@ -72,9 +72,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store typed ptr %t2, $items
     %t16 = load typed i32 @constructed
     %t17 = cmp eq i32 %t16, 3
-    branch %t17, ^land_rhs_12, ^land_short_13
+    branch %t17, ^land_rhs_9, ^land_short_10
 
-  block ^land_rhs_12:
+  block ^land_rhs_9:
     %t18 = load typed ptr $items
     %t19 = binary mul i64 0, 4
     %t20 = index i8 [projection=array_element] %t18, %t19
@@ -82,26 +82,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = load typed i32 %t21
     %t23 = cmp eq i32 %t22, 1
     %t24 = cmp ne i64 %t23, 0
-    store typed i64 %t24, $land__4
-    jump ^land_end_14
-
-  block ^land_short_13:
-    store typed i64 0, $land__4
-    jump ^land_end_14
-
-  block ^land_end_14:
-    %t25 = load typed i64 $land__4
-    branch %t25, ^land_rhs_9, ^land_short_10
-
-  block ^land_rhs_9:
-    %t26 = load typed ptr $items
-    %t27 = binary mul i64 2, 4
-    %t28 = index i8 [projection=array_element] %t26, %t27
-    %t29 = index i8 [projection=field] %t28, 0
-    %t30 = load typed i32 %t29
-    %t31 = cmp eq i32 %t30, 3
-    %t32 = cmp ne i64 %t31, 0
-    store typed i64 %t32, $land__3
+    store typed i64 %t24, $land__3
     jump ^land_end_11
 
   block ^land_short_10:
@@ -109,7 +90,26 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_11
 
   block ^land_end_11:
-    %t33 = load typed i64 $land__3
+    %t25 = load typed i64 $land__3
+    branch %t25, ^land_rhs_12, ^land_short_13
+
+  block ^land_rhs_12:
+    %t26 = load typed ptr $items
+    %t27 = binary mul i64 2, 4
+    %t28 = index i8 [projection=array_element] %t26, %t27
+    %t29 = index i8 [projection=field] %t28, 0
+    %t30 = load typed i32 %t29
+    %t31 = cmp eq i32 %t30, 3
+    %t32 = cmp ne i64 %t31, 0
+    store typed i64 %t32, $land__4
+    jump ^land_end_14
+
+  block ^land_short_13:
+    store typed i64 0, $land__4
+    jump ^land_end_14
+
+  block ^land_end_14:
+    %t33 = load typed i64 $land__4
     %t34 = convert trunc i32 i64 %t33
     store typed i32 %t34, $ok
     %t35 = load typed ptr $items
@@ -141,21 +141,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^array_delete_end_16:
     %t44 = load typed i32 $ok
-    branch %t44, ^land_rhs_29, ^land_short_30
+    branch %t44, ^land_rhs_23, ^land_short_24
 
-  block ^land_rhs_29:
+  block ^land_rhs_23:
     %t45 = load typed i32 @fail
     %t46 = cmp eq i32 %t45, 0
     %t47 = cmp ne i64 %t46, 0
-    store typed i64 %t47, $land__9
-    jump ^land_end_31
+    store typed i64 %t47, $land__7
+    jump ^land_end_25
 
-  block ^land_short_30:
-    store typed i64 0, $land__9
-    jump ^land_end_31
+  block ^land_short_24:
+    store typed i64 0, $land__7
+    jump ^land_end_25
 
-  block ^land_end_31:
-    %t48 = load typed i64 $land__9
+  block ^land_end_25:
+    %t48 = load typed i64 $land__7
     branch %t48, ^land_rhs_26, ^land_short_27
 
   block ^land_rhs_26:
@@ -171,21 +171,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_end_28:
     %t52 = load typed i64 $land__8
-    branch %t52, ^land_rhs_23, ^land_short_24
+    branch %t52, ^land_rhs_29, ^land_short_30
 
-  block ^land_rhs_23:
+  block ^land_rhs_29:
     %t53 = load typed i32 @expected
     %t54 = cmp eq i32 %t53, 0
     %t55 = cmp ne i64 %t54, 0
-    store typed i64 %t55, $land__7
-    jump ^land_end_25
+    store typed i64 %t55, $land__9
+    jump ^land_end_31
 
-  block ^land_short_24:
-    store typed i64 0, $land__7
-    jump ^land_end_25
+  block ^land_short_30:
+    store typed i64 0, $land__9
+    jump ^land_end_31
 
-  block ^land_end_25:
-    %t56 = load typed i64 $land__7
+  block ^land_end_31:
+    %t56 = load typed i64 $land__9
     branch %t56, ^cond_then_20, ^cond_else_21
 
   block ^cond_then_20:

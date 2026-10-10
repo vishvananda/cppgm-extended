@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $object
     %t2 = addr $object
-    %t3 = call i32 @YUsingOrderDerived__select__ov2(%t2, 0)
+    %t3 = call i32 @YUsingOrderDerived__select(%t2, 0)
     %t4 = cmp eq i32 %t3, 2
     branch %t4, ^cond_then_1, ^cond_else_2
 
@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @YUsingOrderDerived__select__ov2(%this : ptr [object_bytes=1], %__param1 : i32) -> i32 [binding=weak, object=_ZN18YUsingOrderDerived6selectEi, inline_hint=yes] {
+function @YUsingOrderDerived__select(%this : ptr [object_bytes=1], %__param1 : i32) -> i32 [binding=weak, object=_ZN18YUsingOrderDerived6selectEi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 

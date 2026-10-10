@@ -37,7 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @storage_ptr__storage_ptr(%t6)
     %t7 = addr $opts
     %t8 = addr $parser_buf
-    call void @stream_parser__stream_parser__ov3(%t5, $argobj__1, %t7, %t8)
+    call void @stream_parser__stream_parser(%t5, $argobj__1, %t7, %t8)
     %t9 = addr $p
     %t10 = index i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
@@ -66,7 +66,7 @@ function @storage_ptr__storage_ptr(%this : ptr [object_bytes=4]) -> void [bindin
     store typed i32 5, %t2
     return void
 }
-function @stream_parser__stream_parser__ov3(%this : ptr [object_bytes=4], %sp : obj<4x4>, %__param2 : ptr [pass=by_address, object_bytes=4], %buffer : ptr [pass=by_address, object_bytes=17]) -> void [binding=weak, object=_ZN13stream_parserC1ILm17EEE11storage_ptrRK13parse_optionsRAT__h, inline_hint=yes] {
+function @stream_parser__stream_parser(%this : ptr [object_bytes=4], %sp : obj<4x4>, %__param2 : ptr [pass=by_address, object_bytes=4], %buffer : ptr [pass=by_address, object_bytes=17]) -> void [binding=weak, object=_ZN13stream_parserC1ILm17EEE11storage_ptrRK13parse_optionsRAT__h, inline_hint=yes] {
   slot $this : ptr
   slot $sp : obj<4x4>
   slot $__param2 : ptr
@@ -107,4 +107,4 @@ function @stream_parser__stream_parser__ov3(%this : ptr [object_bytes=4], %sp : 
     return void
 }
 alias object _ZN11storage_ptrC2Ev = @storage_ptr__storage_ptr
-alias object _ZN13stream_parserC2ILm17EEE11storage_ptrRK13parse_optionsRAT__h = @stream_parser__stream_parser__ov3
+alias object _ZN13stream_parserC2ILm17EEE11storage_ptrRK13parse_optionsRAT__h = @stream_parser__stream_parser

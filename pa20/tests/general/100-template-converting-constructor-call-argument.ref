@@ -12,19 +12,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $arg__1
     %t2 = addr $arg__2
-    call void @duration_long_long_int__milli___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1_(%t2)
-    call void @duration_long_long_int__nano___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1___ov4(%t1, %t2)
+    call void @duration_longlongint_milli___duration(%t2)
+    call void @duration_longlongint_nano___duration(%t1, %t2)
     call void @sleep_for(%t1)
     return i32 0
 }
-function @duration_long_long_int__milli___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN8durationIx5milliEC1Ev, inline_hint=yes] {
+function @duration_longlongint_milli___duration(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN8durationIx5milliEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return void
 }
-function @duration_long_long_int__nano___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1___ov4(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8durationIx4nanoEC1Ix5milliEERKS_IT_T0_E, inline_hint=yes] {
+function @duration_longlongint_nano___duration(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8durationIx4nanoEC1Ix5milliEERKS_IT_T0_E, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -33,5 +33,5 @@ function @duration_long_long_int__nano___duration_typename___retained_template_p
     store typed ptr %__param1, $__param1
     return void
 }
-alias object _ZN8durationIx5milliEC2Ev = @duration_long_long_int__milli___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1_
-alias object _ZN8durationIx4nanoEC2Ix5milliEERKS_IT_T0_E = @duration_long_long_int__nano___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1___ov4
+alias object _ZN8durationIx5milliEC2Ev = @duration_longlongint_milli___duration
+alias object _ZN8durationIx4nanoEC2Ix5milliEERKS_IT_T0_E = @duration_longlongint_nano___duration

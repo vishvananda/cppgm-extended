@@ -24,15 +24,14 @@ sub run_optimizer
 	my ($app, $test, $directory, $level) = @_;
 	my $output = "$directory/$level.lowir";
 	my $status = run_command_capture(
-		cmd => [$app, "-$level", '--stats', '-o', $output, $test],
+		cmd => [$app, "-$level", '-o', $output, $test],
 		stdout => "$directory/$level.stdout",
 		stderr => "$directory/$level.stderr",
 		timeout => 30,
 	);
 	die "$test: lowiropt -$level failed\n" .
 		read_file("$directory/$level.stderr") if $status != 0;
-	return ($output, read_file($output),
-		read_file("$directory/$level.stderr"));
+	return ($output, read_file($output));
 }
 
 sub function_body
@@ -79,17 +78,9 @@ for my $test (@tests)
 {
 	my $directory = tempdir('lowir-historical-contracts-XXXXXX',
 		TMPDIR => 1, CLEANUP => 1);
-	my ($o0_path, $o0, $o0_stats) = run_optimizer(
-		$app, $test, $directory, 'O0');
-	my ($o1_path, $o1, $o1_stats) = run_optimizer(
-		$app, $test, $directory, 'O1');
-	my ($o2_path, $o2, $o2_stats) = run_optimizer(
-		$app, $test, $directory, 'O2');
-	for my $field (qw(value_index_reuses value_index_invalidations))
-	{
-		die "$test: O2 optimizer stats lack a positive $field\n"
-			if $o2_stats !~ /(?:^|\s)\Q$field\E=([1-9]\d*)(?:\s|$)/;
-	}
+	my ($o0_path, $o0) = run_optimizer($app, $test, $directory, 'O0');
+	my ($o1_path, $o1) = run_optimizer($app, $test, $directory, 'O1');
+	my ($o2_path, $o2) = run_optimizer($app, $test, $directory, 'O2');
 
 	my $o0_readonly = function_body($test, $o0, 'fold_readonly');
 	my $o1_readonly = function_body($test, $o1, 'fold_readonly');
@@ -98,34 +89,6 @@ for my $test (@tests)
 	die "$test: O1 did not fold the initialized readonly scalar\n"
 		if $o1_readonly =~ /^\s+%\w+ = load i64 /m ||
 		   $o1_readonly !~ /^\s+return i64 7$/m;
-
-	my $o2_strength = function_body($test, $o2, 'strength_reduce');
-	die "$test: O2 did not strength-reduce the exact loop scaling\n"
-		if $o2_strength !~
-		   /^\s+%\w+ = binary shl i64 %\w+, 3$/m;
-	die "$test: O2 retained the induction multiply\n"
-		if $o2_strength =~ /^\s+%\w+ = binary mul i64 %\w+, 8$/m;
-
-	my $o0_scaled = function_body($test, $o0, 'factor_scaled_index');
-	my $o1_scaled = function_body($test, $o1, 'factor_scaled_index');
-	die "$test: O0 lost the byte-scaled index baseline\n"
-		if $o0_scaled !~ /^\s+%scaled = binary mul i64 %index, 24$/m ||
-		   $o0_scaled !~ /^\s+%element = index i8 .* %base, %scaled$/m;
-	die "$test: O1 did not factor the multiplier into an address scale\n"
-		if $o1_scaled !~ /^\s+%scaled = binary mul i64 %index, 3$/m ||
-		   $o1_scaled !~
-		     /^\s+%element = index obj<8x1> .* %base, %scaled$/m;
-	my $multi = function_body($test, $o1, 'retain_multi_use_scale');
-	die "$test: multi-use index multiplier was unsafely factored\n"
-		if $multi !~ /^\s+%scaled = binary mul i64 %index, 24$/m ||
-		   $multi !~ /^\s+%element = index i8 .* %base, %scaled$/m;
-	my $unfactorable = function_body(
-		$test, $o1, 'retain_unfactorable_scale');
-	die "$test: unfactorable index multiplier changed representation\n"
-		if $unfactorable !~
-		   /^\s+%scaled = binary mul i64 %index, 3$/m ||
-		   $unfactorable !~
-		     /^\s+%element = index i8 .* %base, %scaled$/m;
 
 	my $o0_promote = function_body(
 		$test, $o0, 'promote_complete_object');

@@ -46,8 +46,7 @@ function @main
     mov rbx, rax
     zext.i8 rbx
     call @clobber_return_register [args=()]
-    mov rax, rbx
-    cmp.i64 rax, 0
+    cmp.u8 rbx, 0
     jne ^wrong
     jmp ^correct
 

@@ -15,28 +15,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $privileged
     %t6 = call i32 @fixed_base_true___read()
     %t7 = cmp eq i32 %t6, 3
-    branch %t7, ^land_rhs_7, ^land_short_8
+    branch %t7, ^land_rhs_4, ^land_short_5
 
-  block ^land_rhs_7:
+  block ^land_rhs_4:
     %t8 = call i32 @concrete__dependent_read()
     %t9 = cmp eq i32 %t8, 11
     %t10 = cmp ne i64 %t9, 0
-    store typed i64 %t10, $land__3
-    jump ^land_end_9
-
-  block ^land_short_8:
-    store typed i64 0, $land__3
-    jump ^land_end_9
-
-  block ^land_end_9:
-    %t11 = load typed i64 $land__3
-    branch %t11, ^land_rhs_4, ^land_short_5
-
-  block ^land_rhs_4:
-    %t12 = call i32 @relation_base_true___compare()
-    %t13 = cmp eq i32 %t12, 13
-    %t14 = cmp ne i64 %t13, 0
-    store typed i64 %t14, $land__2
+    store typed i64 %t10, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -44,7 +29,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t15 = load typed i64 $land__2
+    %t11 = load typed i64 $land__2
+    branch %t11, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t12 = call i32 @relation_base_true___compare()
+    %t13 = cmp eq i32 %t12, 13
+    %t14 = cmp ne i64 %t13, 0
+    store typed i64 %t14, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store typed i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t15 = load typed i64 $land__3
     branch %t15, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:

@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $s
-    call void @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0_(%t1)
+    call void @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2___basic_string(%t1)
     %t2 = addr $x
     %t3 = addr @__strlit__1
     %t4 = addr $s
@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = addr $x
     return i32 0
 }
-function @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEEC1Ev, inline_hint=yes] {
+function @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2___basic_string(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -41,7 +41,7 @@ function @n__operator_(%lhs : ptr, %rhs : ptr [pass=by_address, object_bytes=1])
     %t2 = call i32 @n__traits_char___length(%t1)
     store typed i32 %t2, $lhs_sz
     %t3 = load typed ptr $rhs
-    %t4 = call i32 @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___size(%t3)
+    %t4 = call i32 @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2___size(%t3)
     store typed i32 %t4, $rhs_sz
     %t5 = addr $r
     %t6 = addr $argobj__1
@@ -51,9 +51,9 @@ function @n__operator_(%lhs : ptr, %rhs : ptr [pass=by_address, object_bytes=1])
     %t10 = addr $arg__2
     %t11 = addr $arg__3
     %t12 = load typed ptr $rhs
-    %t13 = call obj<1x1> @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___get_allocator(%t12)
-    %t14 = call obj<1x1> @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0_____alloc_traits__select_on_container_copy_construction(%t11)
-    call void @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___ov2(%t5, $argobj__1, %t9, %t10)
+    %t13 = call obj<1x1> @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2___get_allocator(%t12)
+    %t14 = call obj<1x1> @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2_____alloc_traits__select_on_container_copy_construction(%t11)
+    call void @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2___basic_string__ov2(%t5, $argobj__1, %t9, %t10)
     %t15 = addr $retobj__4
     %t16 = addr $r
     return obj<1x1> $retobj__4
@@ -65,14 +65,14 @@ function @n__traits_char___length(%__param0 : ptr) -> i32 [binding=weak, object=
     store typed ptr %__param0, $__param0
     return i32 1
 }
-function @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEE4sizeEv, inline_hint=yes] {
+function @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEE4sizeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return i32 1
 }
-function @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___get_allocator(%this : ptr [object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZNK1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEE13get_allocatorEv, inline_hint=yes] {
+function @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2___get_allocator(%this : ptr [object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZNK1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEE13get_allocatorEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<1x1>
 
@@ -81,7 +81,7 @@ function @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____c
     %t1 = addr $retobj__1
     return obj<1x1> $retobj__1
 }
-function @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0_____alloc_traits__select_on_container_copy_construction(%a : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEE14__alloc_traits37select_on_container_copy_constructionERKS4_, inline_hint=yes] {
+function @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2_____alloc_traits__select_on_container_copy_construction(%a : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEE14__alloc_traits37select_on_container_copy_constructionERKS4_, inline_hint=yes] {
   slot $a : ptr
   slot $retobj__1 : obj<1x1>
 
@@ -91,7 +91,7 @@ function @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____c
     %t2 = load typed ptr $a
     return obj<1x1> $retobj__1
 }
-function @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___ov2(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none], %__param2 : i32, %__param3 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEEC1ENS_3tagEiRKS4_, inline_hint=yes] {
+function @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2___basic_string__ov2(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none], %__param2 : i32, %__param3 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEEC1ENS_3tagEiRKS4_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : i32
@@ -103,5 +103,5 @@ function @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____c
     store typed ptr %__param3, $__param3
     return void
 }
-alias object _ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEEC2Ev = @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0_
-alias object _ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEEC2ENS_3tagEiRKS4_ = @n__basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___basic_string_char__n____cppgm_class_template_identity_1_1_0__n____cppgm_class_template_identity_2_1_0___ov2
+alias object _ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEEC2Ev = @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2___basic_string
+alias object _ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEEC2ENS_3tagEiRKS4_ = @n__basic_string_char___cppgm_class_template_identity_1___cppgm_class_template_identity_2___basic_string__ov2

@@ -12,8 +12,8 @@ function @identity
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     ret rdi
@@ -24,18 +24,17 @@ function @main
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     mov rdi, 42
     call @identity [args=(rdi), unwind=no]
-    mov r8, rax
-    test.i64 rax, rax
+    cmp.i64 rax, 0
     je ^bad
 
   block ^done
-    cmp.i64 r8, 42
+    cmp.i64 rax, 42
     setne rax
     movzx rax, rax
     ret rax

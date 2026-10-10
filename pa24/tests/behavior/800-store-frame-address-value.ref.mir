@@ -13,11 +13,11 @@ function @read_local_address
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $value -> [rbp-4] : i32
+    slot $value -> [rbp-8] : i32
     slot $pointer -> [rbp-16] : ptr
 
   block ^entry
-    lea r8, [rbp-4]
+    lea r8, [rbp-8]
     store.i32 [r8], 77
     store.ptr [rbp-16], r8
     load.ptr r8, [rbp-16]
@@ -40,6 +40,4 @@ function @main
     cmp.i32 rax, rdx
     setne rax
     movzx rax, rax
-    zext.i64 rax
-    sext.i32 rax
     ret rax

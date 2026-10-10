@@ -1,3 +1,5 @@
+declare global @alignment_of_int___value : u32 [binding=weak, object=_ZN12alignment_ofIiE5valueE]
+
 global @global_value : obj<16x4> [binding=strong] = {
   zero 16
 }

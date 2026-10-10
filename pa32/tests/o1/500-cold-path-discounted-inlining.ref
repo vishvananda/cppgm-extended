@@ -49,16 +49,13 @@ function @cold_helper(%condition : i64, %value : i64) -> i64 [binding=strong] {
     call void @observe(%value)
     call void @observe(%value)
     call void @fail(%value)
-    return i64 0
+    unreachable
 }
 function @cold_a(%condition : i64, %value : i64) -> i64 [binding=strong] {
   block ^entry:
-    branch %condition, ^__o1inl0__cont, ^__o1inl0__failure
+    branch %condition, ^inline_cont_2, ^failure_1
 
-  block ^__o1inl0__cont:
-    return i64 %value
-
-  block ^__o1inl0__failure:
+  block ^failure_1:
     call void @observe(%value)
     call void @observe(%value)
     call void @observe(%value)
@@ -99,16 +96,16 @@ function @cold_a(%condition : i64, %value : i64) -> i64 [binding=strong] {
     call void @observe(%value)
     call void @observe(%value)
     call void @fail(%value)
-    return i64 0
+    unreachable
+
+  block ^inline_cont_2:
+    return i64 %value
 }
 function @cold_b(%condition : i64, %value : i64) -> i64 [binding=strong] {
   block ^entry:
-    branch %condition, ^__o1inl0__cont, ^__o1inl0__failure
+    branch %condition, ^inline_cont_2, ^failure_1
 
-  block ^__o1inl0__cont:
-    return i64 %value
-
-  block ^__o1inl0__failure:
+  block ^failure_1:
     call void @observe(%value)
     call void @observe(%value)
     call void @observe(%value)
@@ -149,7 +146,10 @@ function @cold_b(%condition : i64, %value : i64) -> i64 [binding=strong] {
     call void @observe(%value)
     call void @observe(%value)
     call void @fail(%value)
-    return i64 0
+    unreachable
+
+  block ^inline_cont_2:
+    return i64 %value
 }
 function @hot_helper(%condition : i64, %value : i64) -> i64 [binding=strong] {
   block ^entry:
@@ -197,7 +197,7 @@ function @hot_helper(%condition : i64, %value : i64) -> i64 [binding=strong] {
 
   block ^failure:
     call void @fail(%value)
-    return i64 0
+    unreachable
 }
 function @hot_a(%condition : i64, %value : i64) -> i64 [binding=strong] {
   block ^entry:

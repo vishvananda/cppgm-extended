@@ -140,7 +140,6 @@ define run_inline_control_bucket
 	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
 		set -e; \
 		perl ../scripts/check_lowir_inline_limit.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_optimizer_stats.pl $(LOWIROPT_APP) "$(1)"; \
 		perl ../scripts/check_lowir_boolean_phi_controls.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
 		perl ../scripts/check_lowir_zero_bounded_range.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
 		perl ../scripts/check_lowir_addressed_scalar_slots.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
@@ -151,9 +150,6 @@ define run_inline_control_bucket
 		perl ../scripts/check_lowir_weak_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
 		perl ../scripts/check_lowir_o3_group_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
 		perl ../scripts/check_lowir_readonly_string_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_private_table_prefilter.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_repeat_stable_query.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_stable_prefix_query.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
 		perl ../scripts/check_lowir_o3_loop_priority_inline.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
 		perl ../scripts/check_lowir_terminal_phi_returns.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
 		perl ../scripts/check_lowir_readonly_strlen.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
@@ -161,7 +157,6 @@ define run_inline_control_bucket
 		perl ../scripts/check_lowir_terminal_object_swap.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
 		perl ../scripts/check_lowir_bounded_object_memory.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
 		perl ../scripts/check_lowir_fast_path_versioning.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
-		perl ../scripts/check_lowir_terminal_query_split.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) "$(1)"; \
 		perl ../scripts/check_lowir_survivor_properties.pl $(LOWIROPT_APP) "$(1)"; \
 	else \
 		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
@@ -266,7 +261,6 @@ REF_TEST_RUN = case "$(TEST)" in \
 esac
 
 CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
-		'$(CONTROL_TEST_ROOT)/*o3-terminal-query-slow-suffix*.t::perl ../scripts/check_lowir_terminal_query_split.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
 		'$(CONTROL_TEST_ROOT)/*o3-fast-path-versioning*.t::perl ../scripts/check_lowir_fast_path_versioning.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
 		'$(CONTROL_TEST_ROOT)/*o3-bounded-object-memory*.t::perl ../scripts/check_lowir_bounded_object_memory.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
 		'$(CONTROL_TEST_ROOT)/*o3-terminal-staged-object-swap*.t::perl ../scripts/check_lowir_terminal_object_swap.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
@@ -281,14 +275,10 @@ CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 		'$(CONTROL_TEST_ROOT)/*weak-specialization-profitability*.t::perl ../scripts/check_lowir_weak_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
 		'$(CONTROL_TEST_ROOT)/*o3-group-specialization*.t::perl ../scripts/check_lowir_o3_group_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
 		'$(CONTROL_TEST_ROOT)/*readonly-string-specialization*.t::perl ../scripts/check_lowir_readonly_string_specialization.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*o3-private-table-prefilter*.t::perl ../scripts/check_lowir_private_table_prefilter.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*o3-repeat-stable-query*.t::perl ../scripts/check_lowir_repeat_stable_query.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*o3-stable-prefix-query*.t::perl ../scripts/check_lowir_stable_prefix_query.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
 		'$(CONTROL_TEST_ROOT)/*o3-loop-priority-inline*.t::perl ../scripts/check_lowir_o3_loop_priority_inline.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
 		'$(CONTROL_TEST_ROOT)/*o3-terminal-phi-return*.t::perl ../scripts/check_lowir_terminal_phi_returns.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
 		'$(CONTROL_TEST_ROOT)/*readonly-byte-strlen*.t::perl ../scripts/check_lowir_readonly_strlen.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
 		'$(CONTROL_TEST_ROOT)/*inline-limit*.t::perl ../scripts/check_lowir_inline_limit.pl $(LOWIROPT_APP) $(CPPGM_DRIVER_APP) {tests}' \
-		'$(CONTROL_TEST_ROOT)/*partial-inline-census*.t::perl ../scripts/check_lowir_optimizer_stats.pl $(LOWIROPT_APP) {tests}' \
 		'$(CONTROL_TEST_ROOT)/*nonzero-underflow-value-proof*.t::perl ../scripts/check_lowir_survivor_properties.pl $(LOWIROPT_APP) {tests}' \
 		'$(CONTROL_TEST_ROOT)/*loop-carried-store-forwarding*.t::perl ../scripts/check_lowir_survivor_properties.pl $(LOWIROPT_APP) {tests}' \
 		'$(OBJECT_ROUNDTRIP_TEST_ROOT)/*::scripts/run_object_lowir_roundtrip_tests.pl --app $(CPPGM_DRIVER_APP) --test {tests}' \

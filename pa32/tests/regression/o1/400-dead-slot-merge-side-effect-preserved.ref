@@ -1,6 +1,6 @@
 declare function @touch() -> void
 
-function @main(%cond : i1) -> void {
+function @main(%cond : i1) -> void [role=entry] {
   block ^entry:
     branch %cond, ^left, ^merge
 

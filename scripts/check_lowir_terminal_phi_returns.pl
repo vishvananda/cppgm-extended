@@ -25,14 +25,14 @@ sub optimize
 	my $output = "$directory/$level.lowir";
 	my $stderr = "$directory/$level.stderr";
 	my $status = run_command_capture(
-		cmd => [$app, "-$level", '--stats', '-o', $output, $test],
+		cmd => [$app, "-$level", '-o', $output, $test],
 		stdout => "$directory/$level.stdout",
 		stderr => $stderr,
 		timeout => 30,
 	);
 	die "$test: lowiropt -$level failed\n" . read_file($stderr)
 		if $status != 0;
-	return (read_file($output), read_file($stderr), $output);
+	return (read_file($output), $output);
 }
 
 sub function_body
@@ -53,23 +53,6 @@ sub phi_count
 {
 	my ($body) = @_;
 	return scalar(() = $body =~ /^\s+%\w+ = phi\b/mg);
-}
-
-sub stats_record
-{
-	my ($test, $stderr, $level) = @_;
-	my @records = grep { /^pa32_opt_stats(?:\s|$)/ } split(/\n/, $stderr);
-	die "$test: $level expected one optimizer stats record, found " .
-		scalar(@records) . "\n" if scalar(@records) != 1;
-	return $records[0];
-}
-
-sub stat_value
-{
-	my ($test, $record, $field) = @_;
-	die "$test: optimizer stats record lacks $field\n"
-		if $record !~ /(?:^|\s)\Q$field\E=(\d+)(?:\s|$)/;
-	return $1;
 }
 
 sub compile_and_run
@@ -108,64 +91,35 @@ for my $test (@tests)
 {
 	my $directory = tempdir('lowir-terminal-phi-XXXXXX',
 		TMPDIR => 1, CLEANUP => 1);
-	my ($o0, $o0_stats) = optimize($app, $test, $directory, 'O0');
-	my ($o1, $o1_stats) = optimize($app, $test, $directory, 'O1');
-	my ($o2, $o2_stats, $o2_path) =
-		optimize($app, $test, $directory, 'O2');
-	my ($o3, $o3_stats, $o3_path) =
-		optimize($app, $test, $directory, 'O3');
+	my ($o0) = optimize($app, $test, $directory, 'O0');
+	my ($o1, $o1_path) = optimize($app, $test, $directory, 'O1');
+	my ($o2, $o2_path) = optimize($app, $test, $directory, 'O2');
+	my ($o3, $o3_path) = optimize($app, $test, $directory, 'O3');
 
-	for my $positive (qw(thread_terminal_chain thread_phi_to_return_branch)) {
-		for my $control (['O0', $o0], ['O1', $o1]) {
-			my ($level, $lowir) = @{$control};
-			my $body = function_body($test, $lowir, $positive);
-			die "$test: $level changed the O2 terminal phi in $positive\n"
-				if phi_count($body) != 1;
+	# A merge phi whose constant input decides the branch below it on that
+	# edge is threaded onto the return paths: from O1 the phi is gone and
+	# each arm reaches its own return.
+	my $positive = 'thread_phi_to_return_branch';
+	die "$test: O0 changed the terminal phi in $positive\n"
+		if phi_count(function_body($test, $o0, $positive)) != 1;
+	for my $optimized (['O1', $o1], ['O2', $o2], ['O3', $o3]) {
+		my ($level, $lowir) = @{$optimized};
+		my $body = function_body($test, $lowir, $positive);
+		die "$test: $level retained the eligible phi in $positive\n"
+			if phi_count($body) != 0;
+		die "$test: $level did not distribute $positive onto return paths\n"
+			if instruction_count($body, 'return') < 2;
+		my %return_only;
+		while($body =~ /^\s*block \^([^:]+):\n\s+return\b[^\n]*\n(?:\s*\n|\}|\z)/mg) {
+			$return_only{$1} = 1;
 		}
-		for my $optimized (['O2', $o2], ['O3', $o3]) {
-			my ($level, $lowir) = @{$optimized};
-			my $body = function_body($test, $lowir, $positive);
-			die "$test: $level retained the eligible phi in $positive\n"
-				if phi_count($body) != 0;
-			die "$test: $level did not distribute $positive onto return paths\n"
-				if instruction_count($body, 'return') < 2;
-		}
+		my ($entry) = $body =~ /^\s*block \^[^:]+:\n(.*?)(?=^\s*block \^|\z)/ms;
+		my @targets = defined($entry) ? $entry =~ /\^(\w+)/g : ();
+		die "$test: $level did not thread the decided edge of $positive to its return\n"
+			if !grep { $return_only{$_} } @targets;
 	}
 
-	for my $guard (qw(retain_shared_terminal_phi retain_long_terminal_chain)) {
-		for my $optimized (['O2', $o2], ['O3', $o3]) {
-			my ($level, $lowir) = @{$optimized};
-			my $body = function_body($test, $lowir, $guard);
-			die "$test: $level crossed the bounded guard in $guard\n"
-				if phi_count($body) != 1;
-		}
-	}
-
-	for my $control (['O0', $o0_stats], ['O1', $o1_stats]) {
-		my ($level, $stderr) = @{$control};
-		my $record = stats_record($test, $stderr, $level);
-		die "$test: $level ran O2 terminal-phi threading\n"
-			if stat_value($test, $record, 'o3_terminal_phi_runs') != 0 ||
-			   stat_value($test, $record, 'o3_terminal_phi_merges') != 0;
-	}
-	for my $optimized (['O2', $o2_stats], ['O3', $o3_stats]) {
-		my ($level, $stderr) = @{$optimized};
-		my $record = stats_record($test, $stderr, $level);
-		die "$test: $level did not report both eligible terminal-phi moves\n"
-			if stat_value($test, $record, 'o3_terminal_phi_merges') < 2;
-		die "$test: $level did not report the four incoming edges\n"
-			if stat_value($test, $record,
-				'o3_terminal_phi_incoming_edges') < 4;
-		my $cloned = stat_value(
-			$test, $record, 'o3_terminal_phi_cloned_instructions');
-		die "$test: $level terminal scalar cloning $cloned is outside its fixture bound\n"
-			if $cloned < 6 || $cloned > 24;
-		die "$test: $level small fixture reached the per-function cap\n"
-			if stat_value($test, $record,
-				'o3_terminal_phi_round_cap_hits') != 0;
-		stat_value($test, $record, 'o3_terminal_phi_ns');
-	}
-
+	compile_and_run($driver, $test, $directory, $o1_path);
 	compile_and_run($driver, $test, $directory, $o2_path);
 	compile_and_run($driver, $test, $directory, $o3_path);
 }

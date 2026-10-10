@@ -1,34 +1,66 @@
 #pragma once
 
-#include <cstddef>
+#include <cstdint>
 
+// Telemetry (spec.md section 9): the work counters, sizes and phase clocks
+// that `--stats` and `cppgm++ --stats-functions` report. They only observe
+// work the compiler does anyway. A build with -DCPPGM_TELEMETRY_ENABLED=0
+// compiles them out: each counter below keeps nothing, the reports are not
+// built, and the tools reject the statistics options ("statistics are
+// unavailable in the telemetry-off build"). Its output is otherwise the
+// default build's.
 #ifndef CPPGM_TELEMETRY_ENABLED
 #define CPPGM_TELEMETRY_ENABLED 1
 #endif
 
-namespace cppgm
-{
+namespace telemetry {
+
+const bool kEnabled = CPPGM_TELEMETRY_ENABLED != 0;
+
+// The message of a statistics option given to a telemetry-off build.
+const char* const kUnavailable = "statistics are unavailable in the telemetry-off build";
 
 #if CPPGM_TELEMETRY_ENABLED
 
-// Keep diagnostic builds byte-for-byte compatible with the original counter
-// representation.  Production telemetry-off builds substitute the no-op type
-// below, so hot paths do not need a runtime statistics branch per update.
-typedef std::size_t ObservationCounter;
+typedef uint64_t Counter;
+typedef uint32_t SmallCounter;
+typedef double Milliseconds;
+
+// Raises a high-water mark to `value`.
+template<typename Peak, typename Value>
+inline void note_peak(Peak& peak, Value value)
+{
+	if (value > peak)
+		peak = value;
+}
 
 #else
 
-class ObservationCounter
+// A counter that counts nothing. It has no value: code that reads one is
+// not telemetry, and does not compile here.
+template<typename T>
+class NullCounter
 {
 public:
-	ObservationCounter(std::size_t = 0) {}
-	ObservationCounter& operator=(std::size_t) { return *this; }
-	ObservationCounter& operator++() { return *this; }
-	void operator++(int) {}
-	ObservationCounter& operator+=(std::size_t) { return *this; }
-	operator std::size_t() const { return 0; }
+	NullCounter() {}
+	NullCounter(T) {}
+	NullCounter& operator=(T) { return *this; }
+	NullCounter& operator++() { return *this; }
+	NullCounter& operator++(int) { return *this; }
+	NullCounter& operator--() { return *this; }
+	NullCounter& operator+=(T) { return *this; }
+	NullCounter& operator+=(const NullCounter&) { return *this; }
+	NullCounter& operator-=(T) { return *this; }
 };
+
+typedef NullCounter<uint64_t> Counter;
+typedef NullCounter<uint32_t> SmallCounter;
+typedef NullCounter<double> Milliseconds;
+
+template<typename T, typename Value>
+inline void note_peak(NullCounter<T>&, Value)
+{}
 
 #endif
 
-}
+} // namespace telemetry

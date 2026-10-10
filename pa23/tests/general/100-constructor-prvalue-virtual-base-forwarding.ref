@@ -1,69 +1,8 @@
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
-declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 
-global @__typeinfo_name__struct_A [binding=weak, object=_ZTS1A] = {
-  i8 49
-  i8 65
-  i8 0
-}
-global @__rtti_struct_A [binding=weak, object=_ZTI1A] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_A
-}
-global @__typeinfo_name__struct_B [binding=weak, object=_ZTS1B] = {
-  i8 49
-  i8 66
-  i8 0
-}
-global @__rtti_struct_B [binding=weak, object=_ZTI1B] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_B
-}
-global @__typeinfo_name__struct_C [binding=weak, object=_ZTS1C] = {
-  i8 49
-  i8 67
-  i8 0
-}
-global @__rtti_struct_C [binding=weak, object=_ZTI1C] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_C
-}
-global @__typeinfo_name__struct_D [binding=weak, object=_ZTS1D] = {
-  i8 49
-  i8 68
-  i8 0
-}
-global @__rtti_struct_D [binding=weak, object=_ZTI1D] = {
-  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
-  ptr addr @__typeinfo_name__struct_D
-  i32 0
-  i32 3
-  ptr addr @__rtti_struct_A
-  i64 -6141
-  ptr addr @__rtti_struct_B
-  i64 -8189
-  ptr addr @__rtti_struct_C
-  i64 -10237
-}
-global @__typeinfo_name__struct_EmptyRoot [binding=weak, object=_ZTS9EmptyRoot] = {
-  i8 57
-  i8 69
-  i8 109
-  i8 112
-  i8 116
-  i8 121
-  i8 82
-  i8 111
-  i8 111
-  i8 116
-  i8 0
-}
-global @__rtti_struct_EmptyRoot [binding=weak, object=_ZTI9EmptyRoot] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_EmptyRoot
-}
-global @__typeinfo_name__struct_EmptyDerived [binding=weak, object=_ZTS12EmptyDerived] = {
+global @__typeinfo_name__struct_EmptyDerived [storage=readonly, binding=weak, object=_ZTS12EmptyDerived] = {
   i8 49
   i8 50
   i8 69
@@ -80,7 +19,24 @@ global @__typeinfo_name__struct_EmptyDerived [binding=weak, object=_ZTS12EmptyDe
   i8 100
   i8 0
 }
-global @__rtti_struct_EmptyDerived [binding=weak, object=_ZTI12EmptyDerived] = {
+global @__typeinfo_name__struct_EmptyRoot [storage=readonly, binding=weak, object=_ZTS9EmptyRoot] = {
+  i8 57
+  i8 69
+  i8 109
+  i8 112
+  i8 116
+  i8 121
+  i8 82
+  i8 111
+  i8 111
+  i8 116
+  i8 0
+}
+global @__rtti_struct_EmptyRoot [storage=readonly, binding=weak, object=_ZTI9EmptyRoot] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_EmptyRoot
+}
+global @__rtti_struct_EmptyDerived [storage=readonly, binding=weak, object=_ZTI12EmptyDerived] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_EmptyDerived
   i32 0
@@ -88,19 +44,57 @@ global @__rtti_struct_EmptyDerived [binding=weak, object=_ZTI12EmptyDerived] = {
   ptr addr @__rtti_struct_EmptyRoot
   i64 -6141
 }
-global @__typeinfo_name__struct___cppgm_class_template_identity_0_1_0 [binding=weak, object=_ZTS1WI1DE] = {
-  i8 49
-  i8 87
-  i8 73
+global @EmptyDerived__vtable [storage=readonly, binding=weak, object=_ZTV12EmptyDerived] = {
+  i64 0
+  i64 0
+  ptr addr @__rtti_struct_EmptyDerived
+}
+global @EmptyDerived____vtt [storage=readonly, binding=weak, object=_ZTT12EmptyDerived, object_root=yes] = {
+  ptr addr @EmptyDerived__vtable + 24
+}
+global @__typeinfo_name__struct_D [storage=readonly, binding=weak, object=_ZTS1D] = {
   i8 49
   i8 68
-  i8 69
   i8 0
 }
-global @__rtti_struct___cppgm_class_template_identity_0_1_0 [binding=weak, object=_ZTI1WI1DE] = {
-  ptr addr @__external_rtti_vtable____si_class_type_info + 16
-  ptr addr @__typeinfo_name__struct___cppgm_class_template_identity_0_1_0
-  ptr addr @__rtti_struct_D
+global @__typeinfo_name__struct_A [storage=readonly, binding=weak, object=_ZTS1A] = {
+  i8 49
+  i8 65
+  i8 0
+}
+global @__rtti_struct_A [storage=readonly, binding=weak, object=_ZTI1A] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_A
+}
+global @__typeinfo_name__struct_B [storage=readonly, binding=weak, object=_ZTS1B] = {
+  i8 49
+  i8 66
+  i8 0
+}
+global @__rtti_struct_B [storage=readonly, binding=weak, object=_ZTI1B] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_B
+}
+global @__typeinfo_name__struct_C [storage=readonly, binding=weak, object=_ZTS1C] = {
+  i8 49
+  i8 67
+  i8 0
+}
+global @__rtti_struct_C [storage=readonly, binding=weak, object=_ZTI1C] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_C
+}
+global @__rtti_struct_D [storage=readonly, binding=weak, object=_ZTI1D] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_D
+  i32 0
+  i32 3
+  ptr addr @__rtti_struct_A
+  i64 -6141
+  ptr addr @__rtti_struct_B
+  i64 -8189
+  ptr addr @__rtti_struct_C
+  i64 -10237
 }
 global @D__vtable [storage=readonly, binding=weak, object=_ZTV1D] = {
   i64 16
@@ -112,31 +106,37 @@ global @D__vtable [storage=readonly, binding=weak, object=_ZTV1D] = {
 global @D____vtt [storage=readonly, binding=weak, object=_ZTT1D, object_root=yes] = {
   ptr addr @D__vtable + 40
 }
-global @EmptyDerived__vtable [storage=readonly, binding=weak, object=_ZTV12EmptyDerived] = {
-  i64 0
-  i64 0
-  ptr addr @__rtti_struct_EmptyDerived
+global @__typeinfo_name__struct_W_D_ [storage=readonly, binding=weak, object=_ZTS1WI1DE] = {
+  i8 49
+  i8 87
+  i8 73
+  i8 49
+  i8 68
+  i8 69
+  i8 0
 }
-global @EmptyDerived____vtt [storage=readonly, binding=weak, object=_ZTT12EmptyDerived, object_root=yes] = {
-  ptr addr @EmptyDerived__vtable + 24
+global @__rtti_struct_W_D_ [storage=readonly, binding=weak, object=_ZTI1WI1DE] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_W_D_
+  ptr addr @__rtti_struct_D
 }
-global @__cppgm_class_template_identity_0_1_0__vtable [storage=readonly, binding=weak, object=_ZTV1WI1DE] = {
+global @W_D___vtable [storage=readonly, binding=weak, object=_ZTV1WI1DE] = {
   i64 16
   i64 12
   i64 8
   i64 0
-  ptr addr @__rtti_struct___cppgm_class_template_identity_0_1_0
+  ptr addr @__rtti_struct_W_D_
 }
-global @__cppgm_class_template_identity_0_1_0____construction__D__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC1WI1DE0_S0_] = {
+global @W_D_____construction__D__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC1WI1DE0_S0_] = {
   i64 16
   i64 12
   i64 8
   i64 0
   ptr addr @__rtti_struct_D
 }
-global @__cppgm_class_template_identity_0_1_0____vtt [storage=readonly, binding=weak, object=_ZTT1WI1DE, object_root=yes] = {
-  ptr addr @__cppgm_class_template_identity_0_1_0__vtable + 40
-  ptr addr @__cppgm_class_template_identity_0_1_0____construction__D__0__s0__vtable + 40
+global @W_D_____vtt [storage=readonly, binding=weak, object=_ZTT1WI1DE, object_root=yes] = {
+  ptr addr @W_D___vtable + 40
+  ptr addr @W_D_____construction__D__0__s0__vtable + 40
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -154,10 +154,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @EmptyDerived__EmptyDerived(%t1)
     %t2 = addr $copy
     %t3 = addr $source
-    call void @EmptyDerived__EmptyDerived__sym2(%t2, %t3)
+    call void @EmptyDerived__EmptyDerived__2(%t2, %t3)
     %t4 = addr $moved
     %t5 = addr $source
-    call void @EmptyDerived__EmptyDerived__ov2(%t4, %t5)
+    call void @EmptyDerived__EmptyDerived__3(%t4, %t5)
     %t6 = addr $copy
     %t7 = load typed ptr %t6
     %t8 = index i8 %t7, -24
@@ -166,9 +166,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = index i8 %t10, 0
     %t12 = call i32 @EmptyRoot__value(%t11)
     %t13 = cmp ne i32 %t12, 7
-    branch %t13, ^if_then_1, ^lor_rhs_4
+    branch %t13, ^if_then_1, ^lor_rhs_3
 
-  block ^lor_rhs_4:
+  block ^lor_rhs_3:
     %t14 = addr $moved
     %t15 = load typed ptr %t14
     %t16 = index i8 %t15, -24
@@ -183,9 +183,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_2:
-    jump ^if_end_3
+    jump ^if_end_4
 
-  block ^if_end_3:
+  block ^if_end_4:
     %t22 = addr $d
     call void @D__D(%t22)
     %t23 = addr $d
@@ -211,34 +211,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t39 = index i8 [projection=field] %t38, 0
     %t40 = load typed i32 %t39
     %t41 = cmp eq i32 %t40, 7
-    branch %t41, ^land_rhs_11, ^land_short_12
+    branch %t41, ^land_rhs_8, ^land_short_9
 
-  block ^land_rhs_11:
+  block ^land_rhs_8:
     %t42 = addr $w
     %t43 = index i8 %t42, 12
     %t44 = index i8 [projection=field] %t43, 0
     %t45 = load typed i32 %t44
     %t46 = cmp eq i32 %t45, 8
     %t47 = cmp ne i64 %t46, 0
-    store typed i64 %t47, $land__3
-    jump ^land_end_13
-
-  block ^land_short_12:
-    store typed i64 0, $land__3
-    jump ^land_end_13
-
-  block ^land_end_13:
-    %t48 = load typed i64 $land__3
-    branch %t48, ^land_rhs_8, ^land_short_9
-
-  block ^land_rhs_8:
-    %t49 = addr $w
-    %t50 = index i8 %t49, 16
-    %t51 = index i8 [projection=field] %t50, 0
-    %t52 = load typed i32 %t51
-    %t53 = cmp eq i32 %t52, 9
-    %t54 = cmp ne i64 %t53, 0
-    store typed i64 %t54, $land__2
+    store typed i64 %t47, $land__2
     jump ^land_end_10
 
   block ^land_short_9:
@@ -246,7 +228,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_10
 
   block ^land_end_10:
-    %t55 = load typed i64 $land__2
+    %t48 = load typed i64 $land__2
+    branch %t48, ^land_rhs_11, ^land_short_12
+
+  block ^land_rhs_11:
+    %t49 = addr $w
+    %t50 = index i8 %t49, 16
+    %t51 = index i8 [projection=field] %t50, 0
+    %t52 = load typed i32 %t51
+    %t53 = cmp eq i32 %t52, 9
+    %t54 = cmp ne i64 %t53, 0
+    store typed i64 %t54, $land__3
+    jump ^land_end_13
+
+  block ^land_short_12:
+    store typed i64 0, $land__3
+    jump ^land_end_13
+
+  block ^land_end_13:
+    %t55 = load typed i64 $land__3
     branch %t55, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
@@ -272,7 +272,7 @@ function @EmptyDerived__EmptyDerived(%this : ptr [object_bytes=8]) -> void [unwi
     store typed ptr %t3, %t1
     return void
 }
-function @EmptyDerived__EmptyDerived__sym2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1ERKS_, inline_hint=yes] {
+function @EmptyDerived__EmptyDerived__2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -285,7 +285,7 @@ function @EmptyDerived__EmptyDerived__sym2(%this : ptr [alias=noalias, object_by
     store typed ptr %t3, %t1
     return void
 }
-function @EmptyDerived__EmptyDerived__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1EOS_, inline_hint=yes] {
+function @EmptyDerived__EmptyDerived__3(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -334,7 +334,7 @@ function @make_wrap(%ret : ptr [pass=indirect_result, object_bytes=24], %e : ptr
     store typed ptr %loc, $loc
     %t1 = load typed ptr $e
     %t2 = load typed ptr $loc
-    call void @W_D___W_D_(%ret, %t1, %t2)
+    call void @W_D___W(%ret, %t1, %t2)
     return void
 }
 function @A__A__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1AC2Ei, object_root=yes, inline_hint=yes] {
@@ -415,7 +415,7 @@ function @C__C(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak
     store typed i32 %t1, %t3
     return void
 }
-function @W_D___W_D_(%this : ptr [object_bytes=24], %e : ptr [pass=by_address, object_bytes=24], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1WI1DEC1ERKS0_RKi, inline_hint=yes] {
+function @W_D___W(%this : ptr [object_bytes=24], %e : ptr [pass=by_address, object_bytes=24], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1WI1DEC1ERKS0_RKi, inline_hint=yes] {
   slot $this : ptr
   slot $e : ptr
   slot $loc : ptr
@@ -453,12 +453,12 @@ function @W_D___W_D_(%this : ptr [object_bytes=24], %e : ptr [pass=by_address, o
     call void @C__C__base_entry(%t16, %t24)
     %t25 = load typed ptr $this
     %t26 = index i8 %t25, 0
-    %t27 = addr @__cppgm_class_template_identity_0_1_0____vtt
+    %t27 = addr @W_D_____vtt
     %t28 = index i8 %t27, 8
     %t29 = load typed ptr $e
     call void @D__D__base_entry(%t26, %t28, %t29)
     %t30 = load typed ptr $this
-    %t31 = addr @__cppgm_class_template_identity_0_1_0__vtable
+    %t31 = addr @W_D___vtable
     %t32 = index i8 %t31, 40
     store typed ptr %t32, %t30
     return void

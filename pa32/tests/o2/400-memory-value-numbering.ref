@@ -54,11 +54,8 @@ function @call_effects() -> i64 {
 }
 function @readonly_across_unknown_call() -> i64 {
   block ^entry:
-    %address = addr @constant_value
-    %before = load i64 %address
     call void @unknown_observer()
-    %sum = binary add i64 %before, %before
-    return i64 %sum
+    return i64 14
 }
 function @branch_store(%choose : i64) -> i64 {
   block ^entry:
@@ -71,7 +68,7 @@ function @branch_store(%choose : i64) -> i64 {
     jump ^join
 
   block ^join:
-    %after = load i64 %address
+    %after = phi i64 [^entry: %before, ^write: 11]
     %sum = binary add i64 %before, %after
     return i64 %sum
 }

@@ -15,7 +15,7 @@ function @clobber
     param %f -> r9 : i64
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -28,7 +28,7 @@ function @size
     param %this -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -50,23 +50,17 @@ function @check
     param %index -> rsi : i64
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx
-    slot $this -> [rbp-8] : ptr
-    slot $index -> [rbp-16] : i64
 
   block ^entry
-    store.ptr [rbp-8], rdi
-    store.i64 [rbp-16], rsi
-    load.i64 rbx, [rbp-16]
-    load.ptr r8, [rbp-8]
-    mov rdi, r8
+    mov rbx, rsi
     call @size [args=(rdi)]
-    mov r9, rax
-    cmp.i64 rbx, r9
+    mov r8, rax
+    cmp.i64 rbx, r8
     jae ^bad
     jmp ^good
 

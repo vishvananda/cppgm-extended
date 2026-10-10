@@ -7,24 +7,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $source
-    call void @lib__ptr_void__long_int__unsigned_long_int__0___ptr_int__long_int__unsigned_long_int__0_(%t1)
+    call void @lib__ptr_void_longint_unsignedlongint_0___ptr(%t1)
     %t2 = addr $target
-    call void @lib__ptr_int__long_int__unsigned_long_int__0___ptr_int__long_int__unsigned_long_int__0_(%t2)
+    call void @lib__ptr_int_longint_unsignedlongint_0___ptr(%t2)
     %t3 = addr $target
     %t4 = addr $arg__1
     %t5 = addr $source
     %t6 = call obj<1x1> @lib__static_pointer_cast(%t5)
-    %t7 = call ptr @lib__ptr_int__long_int__unsigned_long_int__0___operator_(%t3, %t4)
+    %t7 = call ptr @lib__ptr_int_longint_unsignedlongint_0___operator_(%t3, %t4)
     return i32 0
 }
-function @lib__ptr_void__long_int__unsigned_long_int__0___ptr_int__long_int__unsigned_long_int__0_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3lib3ptrIvlmLm0EEC1Ev, inline_hint=yes] {
+function @lib__ptr_void_longint_unsignedlongint_0___ptr(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3lib3ptrIvlmLm0EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return void
 }
-function @lib__ptr_int__long_int__unsigned_long_int__0___ptr_int__long_int__unsigned_long_int__0_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3lib3ptrIilmLm0EEC1Ev, inline_hint=yes] {
+function @lib__ptr_int_longint_unsignedlongint_0___ptr(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3lib3ptrIilmLm0EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -39,10 +39,10 @@ function @lib__static_pointer_cast(%r : ptr [pass=by_address, object_bytes=1]) -
     store typed ptr %r, $r
     %t1 = addr $retobj__1
     %t2 = load typed ptr $r
-    call void @lib__ptr_int__long_int__unsigned_long_int__0___ptr_int__long_int__unsigned_long_int__0___ov3(%t1, %t2)
+    call void @lib__ptr_int_longint_unsignedlongint_0___ptr__2(%t1, %t2)
     return obj<1x1> $retobj__1
 }
-function @lib__ptr_int__long_int__unsigned_long_int__0___operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZN3lib3ptrIilmLm0EEaSERKS1_, inline_hint=yes] {
+function @lib__ptr_int_longint_unsignedlongint_0___operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZN3lib3ptrIilmLm0EEaSERKS1_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -52,7 +52,7 @@ function @lib__ptr_int__long_int__unsigned_long_int__0___operator_(%this : ptr [
     %t1 = load typed ptr $this
     return ptr %t1
 }
-function @lib__ptr_int__long_int__unsigned_long_int__0___ptr_int__long_int__unsigned_long_int__0___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3lib3ptrIilmLm0EEC1IvEERKNS0_IT_lmLm0EEE, inline_hint=yes] {
+function @lib__ptr_int_longint_unsignedlongint_0___ptr__2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3lib3ptrIilmLm0EEC1IvEERKNS0_IT_lmLm0EEE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -61,6 +61,6 @@ function @lib__ptr_int__long_int__unsigned_long_int__0___ptr_int__long_int__unsi
     store typed ptr %__param1, $__param1
     return void
 }
-alias object _ZN3lib3ptrIvlmLm0EEC2Ev = @lib__ptr_void__long_int__unsigned_long_int__0___ptr_int__long_int__unsigned_long_int__0_
-alias object _ZN3lib3ptrIilmLm0EEC2Ev = @lib__ptr_int__long_int__unsigned_long_int__0___ptr_int__long_int__unsigned_long_int__0_
-alias object _ZN3lib3ptrIilmLm0EEC2IvEERKNS0_IT_lmLm0EEE = @lib__ptr_int__long_int__unsigned_long_int__0___ptr_int__long_int__unsigned_long_int__0___ov3
+alias object _ZN3lib3ptrIvlmLm0EEC2Ev = @lib__ptr_void_longint_unsignedlongint_0___ptr
+alias object _ZN3lib3ptrIilmLm0EEC2Ev = @lib__ptr_int_longint_unsignedlongint_0___ptr
+alias object _ZN3lib3ptrIilmLm0EEC2IvEERKNS0_IT_lmLm0EEE = @lib__ptr_int_longint_unsignedlongint_0___ptr__2

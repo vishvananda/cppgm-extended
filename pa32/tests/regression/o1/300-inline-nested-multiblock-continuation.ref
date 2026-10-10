@@ -1,48 +1,39 @@
-function @main(%outer : i64, %inner : i64) -> i64 {
+function @main(%outer : i64, %inner : i64) -> i64 [role=entry] {
   block ^entry:
-    %__o1inl0__is_zero = cmp eq i64 %outer, 0
-    branch %__o1inl0__is_zero, ^__o1inl0____o1inl0__entry, ^__o1inl0__nonzero
+    %is_zero_1 = cmp eq i64 %outer, 0
+    branch %is_zero_1, ^inline_entry_1, ^inline_cont_4
 
-  block ^__o1inl0____o1inl0__entry:
-    %__o1inl0____o1inl0__is_zero = cmp eq i64 %inner, 0
-    branch %__o1inl0____o1inl0__is_zero, ^__o1inl0____o1inl0__zero, ^__o1inl0____o1inl0__nonzero
+  block ^inline_entry_1:
+    %is_zero_2 = cmp eq i64 %inner, 0
+    branch %is_zero_2, ^inline_cont_3, ^inline_copy_2
 
-  block ^__o1inl0____o1inl0__zero:
-    jump ^__o1inl0____o1inl0__cont
+  block ^inline_copy_2:
+    jump ^inline_cont_3
 
-  block ^__o1inl0____o1inl0__nonzero:
-    jump ^__o1inl0____o1inl0__cont
+  block ^inline_cont_3:
+    %from_leaf_3 = phi i64 [^inline_copy_2: 20, ^inline_entry_1: 10]
+    jump ^inline_cont_4
 
-  block ^__o1inl0____o1inl0__cont:
-    %t0 = phi i64 [^__o1inl0____o1inl0__zero: 10, ^__o1inl0____o1inl0__nonzero: 20]
-    jump ^__o1inl0__cont
-
-  block ^__o1inl0__nonzero:
-    jump ^__o1inl0__cont
-
-  block ^__o1inl0__cont:
-    %t2 = phi i64 [^__o1inl0____o1inl0__cont: %t0, ^__o1inl0__nonzero: %outer]
-    %adjusted = binary add i64 %t2, 1
+  block ^inline_cont_4:
+    %result = phi i64 [^inline_cont_3: %from_leaf_3, ^entry: %outer]
+    %adjusted = binary add i64 %result, 1
     return i64 %adjusted
 }
 function @wrapper(%outer : i64, %inner : i64) -> i64 {
   block ^entry:
     %is_zero = cmp eq i64 %outer, 0
-    branch %is_zero, ^__o1inl0__entry, ^nonzero
+    branch %is_zero, ^inline_entry_1, ^nonzero
 
-  block ^__o1inl0__entry:
-    %__o1inl0__is_zero = cmp eq i64 %inner, 0
-    branch %__o1inl0__is_zero, ^__o1inl0__zero, ^__o1inl0__nonzero
+  block ^inline_entry_1:
+    %is_zero_2 = cmp eq i64 %inner, 0
+    branch %is_zero_2, ^inline_cont_3, ^nonzero_2
 
-  block ^__o1inl0__zero:
-    jump ^__o1inl0__cont
+  block ^nonzero_2:
+    jump ^inline_cont_3
 
-  block ^__o1inl0__nonzero:
-    jump ^__o1inl0__cont
-
-  block ^__o1inl0__cont:
-    %t0 = phi i64 [^__o1inl0__zero: 10, ^__o1inl0__nonzero: 20]
-    return i64 %t0
+  block ^inline_cont_3:
+    %from_leaf = phi i64 [^nonzero_2: 20, ^inline_entry_1: 10]
+    return i64 %from_leaf
 
   block ^nonzero:
     return i64 %outer

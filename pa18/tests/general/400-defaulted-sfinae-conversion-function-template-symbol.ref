@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     zeroinit 1x1 %t6
     %t7 = call obj<4x4> @source_int___operatorContainer(%t6)
     copyobj 4x4 %t7, %t5
-    %t8 = call ptr @array_int__2___operator___ov2(%t4, %t5)
+    %t8 = call ptr @array_int_2___operator___ov2(%t4, %t5)
     %t9 = addr $value
     %t10 = index i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
@@ -41,23 +41,10 @@ function @source_int___operatorContainer(%this : ptr [object_bytes=1]) -> obj<4x
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr $retobj__1
-    call void @__cppgm_class_template_identity_2_1_0__array__aggregate(%t1, 2)
+    call void @array__array__aggregate(%t1, 2)
     return obj<4x4> $retobj__1
 }
-function @array_int__2___operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN5arrayIiLm2EEaSEOS0_, inline_hint=yes] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    store typed ptr %other, $other
-    %t1 = load typed ptr $this
-    %t2 = load typed ptr $other
-    copyobj 4x4 %t2, %t1
-    %t3 = load typed ptr $this
-    return ptr %t3
-}
-function @__cppgm_class_template_identity_2_1_0__array__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
+function @array__array__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 
@@ -69,4 +56,17 @@ function @__cppgm_class_template_identity_2_1_0__array__aggregate(%this : ptr, %
     %t3 = index i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
     return void
+}
+function @array_int_2___operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN5arrayIiLm2EEaSEOS0_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
+    copyobj 4x4 %t2, %t1
+    %t3 = load typed ptr $this
+    return ptr %t3
 }

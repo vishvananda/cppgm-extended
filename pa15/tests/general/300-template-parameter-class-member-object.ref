@@ -3,7 +3,7 @@ function @f() -> i64 [binding=strong, object=_Z1fv] {
 
   block ^entry:
     %t1 = addr $x
-    call void @R_Iter_int____R_Iter_int__(%t1)
+    call void @R___cppgm_class_template_identity_1___R(%t1)
     %t2 = addr $x
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
@@ -11,7 +11,7 @@ function @f() -> i64 [binding=strong, object=_Z1fv] {
     %t6 = cmp eq ptr %t5, 0
     return i64 %t6
 }
-function @R_Iter_int____R_Iter_int__(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN1RI4IterIiEEC1Ev, inline_hint=yes] {
+function @R___cppgm_class_template_identity_1___R(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN1RI4IterIiEEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -31,5 +31,5 @@ function @Iter_int___Iter(%this : ptr [object_bytes=8]) -> void [binding=weak, o
     store typed ptr 0, %t2
     return void
 }
-alias object _ZN1RI4IterIiEEC2Ev = @R_Iter_int____R_Iter_int__
+alias object _ZN1RI4IterIiEEC2Ev = @R___cppgm_class_template_identity_1___R
 alias object _ZN4IterIiEC2Ev = @Iter_int___Iter

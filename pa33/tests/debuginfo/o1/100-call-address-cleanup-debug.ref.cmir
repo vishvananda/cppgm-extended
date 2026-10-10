@@ -12,8 +12,8 @@ function @id
   frame
     stack_size N
     scratch_bytes 0
-    frame_pointer omit
-    epilogues direct
+    frame_pointer keep
+    epilogues duplicated
 
   block ^entry
     load.i32 rax, [rdi] !dbg(test.cpp, 1, 1)
@@ -26,7 +26,7 @@ function @main
     stack_size N
     scratch_bytes 0
     frame_pointer keep
-    epilogues direct
+    epilogues duplicated
     slot $x -> [rbp-<off0>] : i64
 
   block ^entry

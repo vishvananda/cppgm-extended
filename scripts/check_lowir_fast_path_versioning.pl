@@ -68,6 +68,20 @@ sub parameter_names
 	return $parameters =~ /(%[A-Za-z0-9_]+)\s*:/g;
 }
 
+sub blocks
+{
+	my ($body) = @_;
+	my @result;
+	while($body =~ /^\s*block\s+\^([^:]+):\n(.*?)(?=^\s*block\s+\^|^\}|\z)/msg) {
+		my ($label, $text) = ($1, $2);
+		my ($terminator) = $text =~ /^\s+((?:jump|branch|switch)\b.*)\z/ms;
+		my @successors = defined($terminator) ? $terminator =~ /\^(\w+)/g : ();
+		push(@result, { label => $label, text => $text,
+			successors => \@successors });
+	}
+	return @result;
+}
+
 sub compile_and_run
 {
 	my ($driver, $test, $directory, $level, $lowir) = @_;
@@ -111,56 +125,99 @@ for my $test (@tests)
 		$records{$level} = functions($test, $outputs{$level});
 		compile_and_run($driver, $test, $directory, $level, $paths{$level});
 	}
+	my $complete_arms = count_calls($records{O0}->{versionable} //
+		die("$test: O0 lost the versionable reducer\n"), 'observe');
+	my $guard_arms = count_calls($records{O0}->{effect_before_bailout} //
+		die("$test: O0 lost the effect-before-bailout guard reducer\n"),
+		'observe');
 
-	for my $level (qw(O0 O1 O2)) {
-		my $body = $records{$level}->{versionable} //
-			die "$test: $level lost the versionable reducer\n";
-		die "$test: $level unexpectedly versioned the fast path\n"
-			if count_calls($body, 'observe') != 4;
+	my @runners = qw(run_versionable run_versionable_again);
+	for my $level (qw(O0 O1)) {
+		for my $runner (@runners) {
+			my $body = $records{$level}->{$runner} //
+				die "$test: $level lost the $runner caller\n";
+			my @calls = call_targets($body);
+			die "$test: $level unexpectedly versioned the fast path in $runner\n"
+				if scalar(@calls) != 1 || $calls[0] ne 'versionable' ||
+				   $body =~ /^\s+(?:branch|switch)\b/m;
+		}
 	}
 
-	my $wrapper = $records{O3}->{versionable} //
-		die "$test: O3 lost the fast wrapper's original identity\n";
-	my @wrapper_calls = call_targets($wrapper);
-	die "$test: O3 wrapper must have one shared slow transfer\n"
-		if scalar(@wrapper_calls) != 1 || $wrapper_calls[0] eq 'observe';
-	my $slow_target = $wrapper_calls[0];
-	die "$test: slow clone collided with the retained global name\n"
-		if $slow_target eq '__o3fastslow0';
-	my $slow = $records{O3}->{$slow_target} //
-		die "$test: O3 wrapper's slow target $slow_target has no definition\n";
-	die "$test: complete slow body did not retain all four observable arms\n"
-		if count_calls($slow, 'observe') != 4;
-	die "$test: fast wrapper retained an observable slow-path call\n"
-		if count_calls($wrapper, 'observe') != 0;
+	# From O2 a call site takes a copy of the callee's fast path whose every
+	# exit ahead of a visible effect calls the complete callee with the same
+	# arguments and returns: the slow arms run only in that callee.
+	for my $level (qw(O2 O3)) {
+		my $complete = $records{$level}->{versionable} //
+			die "$test: $level lost the complete versionable body\n";
+		die "$test: $level complete body did not retain all four observable arms\n"
+			if count_calls($complete, 'observe') != $complete_arms;
+		for my $runner (@runners) {
+			my $body = $records{$level}->{$runner} //
+				die "$test: $level lost the $runner caller\n";
+			die "$test: $level fast copy in $runner retained an observable " .
+				"slow-path call\n" if count_calls($body, 'observe') != 0;
+			my @calls = call_targets($body);
+			die "$test: $level did not copy the fast path into $runner\n"
+				if !@calls || scalar(grep { $_ ne 'versionable' } @calls) ||
+				   $body !~ /^\s+(?:branch|switch)\b/m;
+			my $parameters = join(' ', parameter_names($body));
+			my @blocks = blocks($body);
+			my %return_only = map { $_->{label} => 1 }
+				grep { $_->{text} =~ /\A\s+return void\s*\z/ } @blocks;
+			my %transfer;
+			for my $block (@blocks) {
+				next if $block->{text} !~ /^\s+call\s+void\s+\@versionable\(([^)]*)\)$/m;
+				my @arguments = $1 =~ /(%[A-Za-z0-9_]+)/g;
+				die "$test: $level slow transfer in $runner did not preserve " .
+					"the parameter tuple\n"
+					if join(' ', @arguments) ne $parameters;
+				my $exits_now = $block->{text} =~
+					/\A\s+call\s+void\s+\@versionable\([^)]*\)\n\s+return void\s*\z/;
+				my $exits_after = $block->{text} =~
+					/\A\s+call\s+void\s+\@versionable\([^)]*\)\n\s+jump \^(\w+)\s*\z/ &&
+					$return_only{$1};
+				die "$test: $level slow transfer in $runner is not a call/return block\n"
+					if !$exits_now && !$exits_after;
+				$transfer{$block->{label}} = 1;
+			}
+			my $bailouts = grep { $transfer{$_} }
+				map { @{$_->{successors}} } @blocks;
+			die "$test: $level $runner did not route at least three " .
+				"pre-effect bailouts to the complete body\n" if $bailouts < 3;
+			my %block_of = map { $_->{label} => $_ } @blocks;
+			my @work = ($blocks[0]->{label});
+			my (%seen, $fast);
+			while (@work && !$fast) {
+				my $label = pop(@work);
+				next if $seen{$label}++ || $transfer{$label};
+				my $block = $block_of{$label} // next;
+				$fast = $block->{text} =~ /^\s+return\b/m;
+				push(@work, @{$block->{successors}});
+			}
+			die "$test: $level $runner has no fast path to a return " .
+				"around the complete body\n" if !$fast;
+		}
+	}
 
-	my @parameters = parameter_names($wrapper);
-	my ($arguments) = $wrapper =~
-		/^\s+call\s+void\s+\@\Q$slow_target\E\(([^)]*)\)\s*$/m;
-	die "$test: slow transfer is not a direct scalar-parameter call\n"
-		if !defined($arguments);
-	my @arguments = $arguments =~ /(%[A-Za-z0-9_]+)/g;
-	die "$test: slow transfer did not preserve the wrapper parameter tuple\n"
-		if join(' ', @arguments) ne join(' ', @parameters);
-
-	my ($fallback_label) = $wrapper =~
-		/^\s*block\s+\^([^:]+):\n\s+call\s+void\s+\@\Q$slow_target\E\([^\n]*\)\n\s+return\s+void/m;
-	die "$test: wrapper slow transfer is not a shared call/return block\n"
-		if !defined($fallback_label);
-	my $bailouts = scalar(() = $wrapper =~ /\^\Q$fallback_label\E/g) - 1;
-	die "$test: wrapper did not share at least three pre-effect bailouts\n"
-		if $bailouts < 3;
-	die "$test: fast wrapper retained the short-path merge phi\n"
-		if $wrapper =~ /^\s+%\w+\s*=\s*phi\b/m;
-	die "$test: complete slow body lost the original merge relationship\n"
-		if $slow !~ /^\s+%\w+\s*=\s*phi\b/m;
-
-	my $guard = $records{O3}->{effect_before_bailout} //
-		die "$test: O3 lost the effect-before-bailout guard reducer\n";
-	die "$test: O3 versioned a path after an externally visible store\n"
-		if count_calls($guard, 'observe') != 4 ||
-		   $guard !~ /^\s+store\s+i64\s+%\w+,\s+%\w+/m;
+	# A path that stores before its bailouts cannot restart in the callee:
+	# no level copies any of it into its callers.
+	for my $level (qw(O1 O2 O3)) {
+		my $guard = $records{$level}->{effect_before_bailout} //
+			die "$test: $level lost the effect-before-bailout guard reducer\n";
+		die "$test: $level lost the guard's store or observable arms\n"
+			if count_calls($guard, 'observe') != $guard_arms ||
+			   $guard !~ /^\s+store\s+i64\s+%\w+,\s+%\w+/m;
+		for my $runner (qw(run_effect run_effect_again)) {
+			my $body = $records{$level}->{$runner} //
+				die "$test: $level lost the $runner caller\n";
+			my @calls = call_targets($body);
+			die "$test: $level versioned a path after an externally " .
+				"visible store in $runner\n"
+				if scalar(@calls) != 1 || $calls[0] ne 'effect_before_bailout' ||
+				   $body =~ /^\s+(?:store|branch|switch)\b/m;
+		}
+	}
 }
 
-print "O3 fast-path versioning: PASS (" . scalar(@tests) . "/" .
+print "fast-path versioning: PASS (" . scalar(@tests) . "/" .
 	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

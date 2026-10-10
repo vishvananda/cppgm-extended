@@ -2,16 +2,6 @@ global @buffer : obj<32x16> [binding=strong] = {
   zero 32
 }
 
-function @operatornew__ov2(%__param0 : i64, %place : ptr) -> ptr [unwind=no, binding=weak, object=_ZnwmPv, inline_hint=yes] {
-  slot $__param0 : i64
-  slot $place : ptr
-
-  block ^entry:
-    store typed i64 %__param0, $__param0
-    store typed ptr %place, $place
-    %t1 = load typed ptr $place
-    return ptr %t1
-}
 function @make_plain() -> obj<8x4> [binding=strong, object=_Z10make_plainv] {
   slot $plain : obj<8x4>
   slot $retobj__1 : obj<8x4>
@@ -60,9 +50,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = index i8 [projection=field] %t9, 0
     %t11 = load typed i32 %t10
     %t12 = cmp ne i32 %t11, 6
-    branch %t12, ^if_then_4, ^lor_rhs_7
+    branch %t12, ^if_then_4, ^lor_rhs_6
 
-  block ^lor_rhs_7:
+  block ^lor_rhs_6:
     %t13 = addr $call
     %t14 = index i8 %t13, 0
     %t15 = index i8 [projection=field] %t14, 4
@@ -74,9 +64,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 2
 
   block ^if_else_5:
-    jump ^if_end_6
+    jump ^if_end_7
 
-  block ^if_end_6:
+  block ^if_end_7:
     %t18 = addr $braced
     call void @Braced__Braced(%t18)
     %t19 = addr $braced
@@ -84,9 +74,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t21 = index i8 [projection=field] %t20, 0
     %t22 = load typed i32 %t21
     %t23 = cmp ne i32 %t22, 3
-    branch %t23, ^if_then_8, ^lor_rhs_11
+    branch %t23, ^if_then_8, ^lor_rhs_10
 
-  block ^lor_rhs_11:
+  block ^lor_rhs_10:
     %t24 = addr $braced
     %t25 = index i8 %t24, 0
     %t26 = index i8 [projection=field] %t25, 4
@@ -98,9 +88,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 3
 
   block ^if_else_9:
-    jump ^if_end_10
+    jump ^if_end_11
 
-  block ^if_end_10:
+  block ^if_end_11:
     store typed u32 0, $i
     jump ^for_cond_12
 
@@ -135,9 +125,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t43 = index i8 [projection=field] %t42, 0
     %t44 = load typed i32 %t43
     %t45 = cmp ne i32 %t44, 5
-    branch %t45, ^if_then_16, ^lor_rhs_19
+    branch %t45, ^if_then_16, ^lor_rhs_18
 
-  block ^lor_rhs_19:
+  block ^lor_rhs_18:
     %t46 = load typed ptr $partial
     %t47 = index i8 %t46, 0
     %t48 = index i8 [projection=field] %t47, 4
@@ -149,9 +139,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 4
 
   block ^if_else_17:
-    jump ^if_end_18
+    jump ^if_end_19
 
-  block ^if_end_18:
+  block ^if_end_19:
     return i32 0
 }
 function @FromValue__FromValue(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN9FromValueC1Ev, inline_hint=yes] {
@@ -187,6 +177,16 @@ function @Braced__Braced(%this : ptr [object_bytes=8]) -> void [binding=weak, ob
     %t4 = index i8 [projection=field] %t2, 4
     store typed i32 4, %t4
     return void
+}
+function @operatornew__ov2(%__param0 : i64, %place : ptr) -> ptr [unwind=no, binding=weak, object=_ZnwmPv, inline_hint=yes] {
+  slot $__param0 : i64
+  slot $place : ptr
+
+  block ^entry:
+    store typed i64 %__param0, $__param0
+    store typed ptr %place, $place
+    %t1 = load typed ptr $place
+    return ptr %t1
 }
 function @Partial__Partial(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN7PartialC1Ev, inline_hint=yes] {
   slot $this : ptr

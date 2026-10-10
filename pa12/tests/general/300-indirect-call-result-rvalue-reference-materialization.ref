@@ -47,44 +47,48 @@ function @source__source(%this : ptr [object_bytes=4]) -> void [binding=weak, ob
     eh_end
     resume
 }
-function @source___source(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6sourceD1Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
 function @binder_base__binder_base(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN11binder_baseC1ER6source, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
-  slot $refcall__1 : obj<4x4>
+  slot $tmpobj__1 : obj<4x4>
 
   block ^entry:
     store typed ptr %this, $this
     store typed ptr %other, $other
+    eh_try ^cleanup_resume_1
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = addr $refcall__1
+    %t3 = addr $tmpobj__1
     %t4 = load typed ptr $other
     call void @source__get_executor(%t3, %t4)
+    eh_end
+    jump ^call_unwind_end_2
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^call_unwind_end_2:
+    eh_try ^cleanup_action_3
     call void @executor__executor__ov2(%t2, %t3)
-    eh_cleanup ^constructor_cleanup_1
+    call void @executor___executor(%t3)
+    eh_end
+    jump ^call_unwind_end_4
+
+  block ^cleanup_action_3:
+    call void @executor___executor(%t3)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_4:
+    eh_cleanup ^constructor_cleanup_5
     eh_end
     return void
 
-  block ^constructor_cleanup_1:
+  block ^constructor_cleanup_5:
     %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
     call void @executor___executor(%t6)
     eh_end
     resume
-}
-function @binder_base___binder_base(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN11binder_baseD1Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
 }
 function @executor__executor(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN8executorC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -94,13 +98,6 @@ function @executor__executor(%this : ptr [object_bytes=4]) -> void [binding=weak
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     store typed i32 11, %t2
-    return void
-}
-function @executor___executor(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN8executorD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
     return void
 }
 function @source__get_executor(%ret : ptr [pass=indirect_result, object_bytes=4], %this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZNK6source12get_executorEv, inline_hint=yes] {
@@ -127,6 +124,27 @@ function @executor__executor__ov2(%this : ptr [alias=noalias, object_bytes=4], %
     %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
     store typed i32 %t4, %t6
+    return void
+}
+function @source___source(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6sourceD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @binder_base___binder_base(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN11binder_baseD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @executor___executor(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN8executorD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN6sourceC2Ev = @source__source

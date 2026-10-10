@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t6 = addr $value
     %t7 = load typed i32 $object
-    %t8 = call i64 @selector_void___select__ov2(%t6, %t7)
+    %t8 = call i64 @selector_void___select__2(%t6, %t7)
     %t9 = cmp eq i64 %t8, 22
     %t10 = cmp ne i64 %t9, 0
     store typed i64 %t10, $land__2
@@ -51,7 +51,7 @@ function @selector_void___select(%this : ptr [object_bytes=1], %__param1 : ptr) 
     store typed ptr %__param1, $__param1
     return i32 11
 }
-function @selector_void___select__ov2(%this : ptr [object_bytes=1], %__param1 : i32) -> i64 [binding=weak, object=_ZN8selectorIvE6selectIiEEN9enable_ifIXntsr10is_pointerIT_EE5valueElE4typeES3_] {
+function @selector_void___select__2(%this : ptr [object_bytes=1], %__param1 : i32) -> i64 [binding=weak, object=_ZN8selectorIvE6selectIiEEN9enable_ifIXntsr10is_pointerIT_EE5valueElE4typeES3_] {
   slot $this : ptr
   slot $__param1 : i32
 

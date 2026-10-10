@@ -58,18 +58,7 @@ function @counter__counter__base_entry(%this : ptr [object_bytes=4]) -> void [bi
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = call i32 @counter__step__next(5)
-    %t2 = load typed ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store typed i32 %t1, %t3
-    return void
-}
-function @counter__counter(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7counterC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = call i32 @counter__step__next(5)
+    %t1 = call i32 @step__next(5)
     %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     store typed i32 %t1, %t3
@@ -85,7 +74,7 @@ function @derived__derived(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     call void @counter__counter__base_entry(%t2)
     return void
 }
-function @counter__step__next(%v : i32) -> i32 [binding=weak, object=_ZZN7counterC1EvEN4step4nextEi, inline_hint=yes] {
+function @step__next(%v : i32) -> i32 [binding=weak, object=_ZZN7counterC1EvEN4step4nextEi, prefer_local=yes, inline_hint=yes] {
   slot $v : i32
 
   block ^entry:
@@ -97,5 +86,16 @@ function @counter__step__next(%v : i32) -> i32 [binding=weak, object=_ZZN7counte
     %t4 = load typed i32 @calls
     %t5 = binary add nowrap i32 %t3, %t4
     return i32 %t5
+}
+function @counter__counter(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7counterC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = call i32 @step__next(5)
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    return void
 }
 alias object _ZN7derivedC2Ev = @derived__derived

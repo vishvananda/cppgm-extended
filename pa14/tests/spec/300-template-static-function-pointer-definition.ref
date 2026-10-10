@@ -1,4 +1,4 @@
-global @__cppgm_class_template_identity_0_0_0__p : ptr [binding=weak, object=_ZN1XIiE1pE] = addr @f
+global @X_int___p : ptr [binding=weak, object=_ZN1XIiE1pE] = addr @f
 
 function @f(%n : i32) -> i32 [binding=strong, object=_Z1fi] {
   slot $n : i32
@@ -11,7 +11,7 @@ function @f(%n : i32) -> i32 [binding=strong, object=_Z1fi] {
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    %t1 = load typed ptr @__cppgm_class_template_identity_0_0_0__p
+    %t1 = load typed ptr @X_int___p
     %t2 = call i32 %t1(4) as (%arg0 : i32) -> i32
     %t3 = cmp ne i32 %t2, 7
     %t4 = convert trunc i32 i64 %t3

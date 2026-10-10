@@ -1,32 +1,8 @@
 function @f() -> i32 [binding=strong, object=_Z1fv] {
-  slot $s : obj<24x8>
-  slot $arg__1 : obj<24x8>
-
   block ^entry:
-    %t1 = addr $s
-    %t3 = addr $arg__1
-    zeroinit 24x8 %t3
-    copyobj 16x8 %t3, %t1
-    %t7 = load typed i32 %t1
-    %t9 = index i8 [projection=field] %t1, 8
-    %t10 = load typed i64 %t9
-    %t11 = convert trunc i32 i64 %t10
-    %t12 = binary add nowrap i32 %t7, %t11
-    return i32 %t12
+    return i32 0
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $__o1inl0__s : obj<24x8>
-  slot $__o1inl0__arg__1 : obj<24x8>
-
   block ^entry:
-    %__o1inl0__t1 = addr $__o1inl0__s
-    %__o1inl0__t3 = addr $__o1inl0__arg__1
-    zeroinit 24x8 %__o1inl0__t3
-    copyobj 16x8 %__o1inl0__t3, %__o1inl0__t1
-    %__o1inl0__t7 = load typed i32 %__o1inl0__t1
-    %__o1inl0__t9 = index i8 [projection=field] %__o1inl0__t1, 8
-    %__o1inl0__t10 = load typed i64 %__o1inl0__t9
-    %__o1inl0__t11 = convert trunc i32 i64 %__o1inl0__t10
-    %__o1inl0__t12 = binary add nowrap i32 %__o1inl0__t7, %__o1inl0__t11
-    return i32 %__o1inl0__t12
+    return i32 0
 }

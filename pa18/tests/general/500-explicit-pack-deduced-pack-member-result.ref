@@ -24,7 +24,7 @@ function @boost__fusion__make_map(%arg : ptr [pass=by_address, object_bytes=4], 
     %t1 = addr $retobj__1
     %t2 = load typed ptr $arg
     %t3 = load typed ptr $arg__pack2
-    call void @boost__fusion__map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___ov4(%t1, %t2, %t3)
+    call void @boost__fusion__map___cppgm_class_template_identity_1___cppgm_class_template_identity_2___map(%t1, %t2, %t3)
     return obj<1x1> $retobj__1
 }
 function @test_map(%map_value : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_Z8test_mapIN5boost6fusion3mapIJNS1_4pairI1AiEENS3_I1BcEEEEEEvRKT_] {
@@ -35,7 +35,7 @@ function @test_map(%map_value : ptr [pass=by_address, object_bytes=1]) -> void [
     %t1 = load typed ptr $map_value
     return void
 }
-function @boost__fusion__map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___ov4(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5boost6fusion3mapIJNS0_4pairI1AiEENS2_I1BcEEEEC1IJicEEEDpRKT_, inline_hint=yes] {
+function @boost__fusion__map___cppgm_class_template_identity_1___cppgm_class_template_identity_2___map(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5boost6fusion3mapIJNS0_4pairI1AiEENS2_I1BcEEEEC1IJicEEEDpRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -46,4 +46,4 @@ function @boost__fusion__map_boost__fusion____cppgm_class_template_identity_0_5_
     store typed ptr %__param2, $__param2
     return void
 }
-alias object _ZN5boost6fusion3mapIJNS0_4pairI1AiEENS2_I1BcEEEEC2IJicEEEDpRKT_ = @boost__fusion__map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___ov4
+alias object _ZN5boost6fusion3mapIJNS0_4pairI1AiEENS2_I1BcEEEEC2IJicEEEDpRKT_ = @boost__fusion__map___cppgm_class_template_identity_1___cppgm_class_template_identity_2___map

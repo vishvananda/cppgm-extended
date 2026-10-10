@@ -8,13 +8,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Box__Box(%t1)
     %t2 = addr $b
     %t3 = addr $a
-    call void @Box__Box__sym2(%t2, %t3)
+    call void @Box__Box__2(%t2, %t3)
     %t4 = addr $b
     %t5 = addr $a
     %t6 = call ptr @Box__operator_(%t4, %t5)
     %t7 = addr $c
     %t8 = addr $a
-    call void @Box__Box__ov2(%t7, %t8)
+    call void @Box__Box__3(%t7, %t8)
     %t9 = addr $c
     %t10 = addr $b
     %t11 = call ptr @Box__operator___ov2(%t9, %t10)
@@ -39,14 +39,7 @@ function @Box__Box(%this : ptr [object_bytes=24]) -> void [binding=weak, object=
     eh_end
     resume
 }
-function @Box___Box(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN3BoxD1Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}
-function @Box__Box__sym2(%this : ptr [alias=noalias, object_bytes=24], %other : ptr [pass=by_address, alias=noalias, object_bytes=24]) -> void [binding=weak, object=_ZN3BoxC1ERKS_, inline_hint=yes] {
+function @Box__Box__2(%this : ptr [alias=noalias, object_bytes=24], %other : ptr [pass=by_address, alias=noalias, object_bytes=24]) -> void [binding=weak, object=_ZN3BoxC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -81,7 +74,7 @@ function @Box__operator_(%this : ptr [object_bytes=24], %other : ptr [pass=by_ad
     %t8 = load typed ptr $this
     return ptr %t8
 }
-function @Box__Box__ov2(%this : ptr [alias=noalias, object_bytes=24], %other : ptr [pass=by_address, alias=noalias, object_bytes=24]) -> void [binding=weak, object=_ZN3BoxC1EOS_, inline_hint=yes] {
+function @Box__Box__3(%this : ptr [alias=noalias, object_bytes=24], %other : ptr [pass=by_address, alias=noalias, object_bytes=24]) -> void [binding=weak, object=_ZN3BoxC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -124,13 +117,6 @@ function @Tail__Tail(%this : ptr [object_bytes=4]) -> void [binding=weak, object
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     store typed i32 0, %t2
-    return void
-}
-function @Tail___Tail(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4TailD1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
     return void
 }
 function @Tail__Tail__ov2(%this : ptr [alias=noalias, object_bytes=4], %o : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN4TailC1ERKS_, inline_hint=yes] {
@@ -195,10 +181,24 @@ function @Tail__operator___ov2(%this : ptr [object_bytes=4], %o : ptr [pass=by_a
     %t6 = load typed ptr $this
     return ptr %t6
 }
+function @Box___Box(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN3BoxD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Tail___Tail(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4TailD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
 alias object _ZN3BoxC2Ev = @Box__Box
 alias object _ZN3BoxD2Ev = @Box___Box
-alias object _ZN3BoxC2ERKS_ = @Box__Box__sym2
-alias object _ZN3BoxC2EOS_ = @Box__Box__ov2
+alias object _ZN3BoxC2ERKS_ = @Box__Box__2
+alias object _ZN3BoxC2EOS_ = @Box__Box__3
 alias object _ZN4TailC2Ev = @Tail__Tail
 alias object _ZN4TailD2Ev = @Tail___Tail
 alias object _ZN4TailC2ERKS_ = @Tail__Tail__ov2

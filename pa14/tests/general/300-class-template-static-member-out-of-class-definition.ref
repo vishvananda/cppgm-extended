@@ -1,4 +1,4 @@
-global @__cppgm_class_template_identity_0_0_0__k : i64 [storage=readonly, binding=weak, object=_ZN1DIiE1kE] = 7
+global @D_int___k : i64 [storage=readonly, binding=weak, object=_ZN1DIiE1kE] = 7
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $tmpobj__1 : obj<1x1>

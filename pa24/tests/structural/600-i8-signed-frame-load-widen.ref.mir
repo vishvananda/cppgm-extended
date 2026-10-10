@@ -13,12 +13,12 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    slot $x -> [rbp-1] : i8
+    slot $x -> [rbp-8] : i8
 
   block ^entry
-    store.i8 [rbp-1], -1
-    load.i8 r8, [rbp-1]
+    store.i8 [rbp-8], -1
+    load.i8 r8, [rbp-8]
     cmp.i64 r8, -1
-    sete rax
-    movzx rax, rax
-    ret rax
+    sete r8
+    movzx r8, r8
+    ret r8
