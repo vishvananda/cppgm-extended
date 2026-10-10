@@ -1,7 +1,7 @@
-global @source [binding=internal, object=_ZL6source] = {
+global @source [storage=readonly, binding=internal, object=_ZL6source] = {
   i32 3
 }
-global @negated [binding=internal, object=_ZL7negated] = {
+global @negated [storage=readonly, binding=internal, object=_ZL7negated] = {
   i32 -3
 }
 

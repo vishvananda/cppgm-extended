@@ -205,9 +205,10 @@ struct SourceOutputInvocation
 	string outfile;
 	vector<string> inputs;
 	// `--hosted`: the host environment -c uses (include paths, predefined
-	// macros, builtin declarations, hosted analysis; --emit-lowir also lowers
-	// in host-object mode), so a hosted source's views are those of the
-	// program -c compiles. `-I`, `-D` and `-U` as the driver takes them.
+	// macros, builtin declarations, hosted analysis), so a hosted source's
+	// views are those of the program -c compiles (--emit-lowir's LowIR view
+	// always preprocesses so; its object dialect is the object half's, see
+	// run_emit_lowir_mode). `-I`, `-D` and `-U` as the driver takes them.
 	bool hosted = false;
 	vector<string> include_paths;
 	string command_line;
@@ -872,12 +873,14 @@ int run_emit_lowir_mode(vector<string> args)
 	// The LowIR half of an object compile: a `.lowir` output (the
 	// toolchain's LowIR object input, `-c x.lowir`) with the object
 	// compile's debug-information level stated (-g0, -gline-tables-only)
-	// is the program `-c -o x.o` compiles, lowered in host-object mode as
-	// --hosted asks, so the object it gives is the direct compile's (PA32
-	// object roundtrip). Otherwise the output is the course's LowIR view,
-	// which the LowIR lanes compare and the supplied course back end runs
-	// (PA12 controls: `--emit-lowir -O0 -o x.lowir`), as `.obj` names the
-	// course's object.
+	// is the program `-c -o x.o` compiles, lowered in host-object mode, in
+	// the object dialect, so the object it gives is the direct compile's
+	// (PA32 object roundtrip). Otherwise the output is the course's LowIR
+	// view in the course dialect, --hosted or not (the help text: --hosted
+	// selects the host environment, which this view preprocesses in
+	// anyway), which the LowIR lanes compare, the course's lowir and
+	// lowiropt read and the supplied course back end runs (PA12 controls:
+	// `--emit-lowir -O0 -o x.lowir`), as `.obj` names the course's object.
 	// Both state the instruction facts the lowering proved (lowir.md
 	// "Instruction Facts"), which the object compile reads.
 	const bool object_half = invocation.debug_level && ends_with(invocation.outfile, ".lowir");
@@ -885,8 +888,7 @@ int run_emit_lowir_mode(vector<string> args)
 		invocation.hosted = true;
 	PreprocessorOptions options = source_preprocessor_options(invocation);
 	// The LowIR view preprocesses in the host environment -c uses (PA32: a
-	// source the driver lanes compile includes host headers); --hosted also
-	// lowers in host-object mode.
+	// source the driver lanes compile includes host headers).
 	if (!options.hosted)
 		driver::add_host_environment(options, false);
 	lowir::Program program;
@@ -897,8 +899,8 @@ int run_emit_lowir_mode(vector<string> args)
 	const bool optimizing = invocation.optimizer.level > 0;
 	if (!validate && !optimizing)
 		lowering.set_definition_stream(&definitions);
-	lowering.set_object_mode(invocation.hosted);
-	lowering.set_host_objects(invocation.hosted);
+	lowering.set_object_mode(object_half);
+	lowering.set_host_objects(object_half);
 	// The LowIR view carries the source's debug locations when debug
 	// information is asked for (lowir.md "Debug Locations"; not the
 	// object half, whose object takes none).

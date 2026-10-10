@@ -122,7 +122,6 @@ my %table_for_enum = (
 	CallEffectsMode => 'kEffects',
 	CallUnwindMode => 'kUnwinds',
 	CallReturnMode => 'kReturns',
-	CallQueryMode => 'kQueries',
 	ParamPassingMode => 'kPasses',
 	ParamAliasMode => 'kAliases',
 	IndexProjectionKind => 'kProjections',

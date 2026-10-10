@@ -14,7 +14,7 @@ global @object [binding=internal, object=_ZL6object] = {
   i32 7
 }
 global @number : i32 [binding=internal, object=_ZL6number] = 9
-global @text [binding=internal, object=_ZL4text] = {
+global @text [storage=readonly, binding=internal, object=_ZL4text] = {
   i8 104
   i8 101
   i8 108

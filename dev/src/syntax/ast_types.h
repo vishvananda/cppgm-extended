@@ -52,8 +52,6 @@ enum class AttributeKind : uint8_t
 	Alignas,
 	NoInline,
 	Packed,
-	// GNU cppgm_stable_prefix: a query function's boundary fact.
-	StablePrefix,
 	// A GNU asm label `asm ( string-literal )` after a declarator: the
 	// literal (`expression`) spells the declared entity's symbol name.
 	AsmLabel,

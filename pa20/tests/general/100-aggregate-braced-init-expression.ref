@@ -6,7 +6,7 @@ function @f() -> obj<8x4> [binding=strong, object=_Z1fv] {
     call void @S__S__aggregate(%t1, 1, 2)
     return obj<8x4> $retobj__1
 }
-function @S__S__aggregate(%this : ptr, %a : i32, %b : i32) -> void [unwind=no, binding=internal] {
+function @S__S__aggregate(%this : ptr [object_bytes=8], %a : i32, %b : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $a : i32
   slot $b : i32

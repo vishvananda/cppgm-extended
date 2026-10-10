@@ -862,14 +862,20 @@ FunctionEntity* Analyzer::closure_call(ClassEntity* closure, const syntax::Lambd
 		(expr.has_throw && expr.throw_types.empty());
 	if (expr.has_throw)
 		record_throw_specification(call, &suffix, scope);
-	// GNU noinline and used on the lambda-declarator are the call
-	// operator's.
+	// GNU noinline, used, pure and const on the lambda-declarator are the
+	// call operator's, as GCC reads them (const over pure, see
+	// effect_attributes).
 	for (const syntax::Attribute* attribute = expr.attributes; attribute != nullptr; attribute = attribute->next)
 	{
 		if (attribute->kind == syntax::AttributeKind::NoInline)
 			call->no_inline = true;
 		if (attribute->kind == syntax::AttributeKind::Used)
 			call->used = true;
+		const FunctionEffect effect = attribute->kind == syntax::AttributeKind::Const ? FunctionEffect::ReadNone
+			: attribute->kind == syntax::AttributeKind::Pure                          ? FunctionEffect::ReadOnly
+																					  : FunctionEffect::Default;
+		if (effect > call->effects)
+			call->effects = effect;
 	}
 	// 5.1.2p5, 8.3.6: the parameters' default arguments, which name no
 	// local variable (8.3.6p7).

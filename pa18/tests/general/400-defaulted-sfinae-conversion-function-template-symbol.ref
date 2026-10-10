@@ -44,7 +44,7 @@ function @source_int___operatorContainer(%this : ptr [object_bytes=1]) -> obj<4x
     call void @array__array__aggregate(%t1, 2)
     return obj<4x4> $retobj__1
 }
-function @array__array__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
+function @array__array__aggregate(%this : ptr [object_bytes=4], %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 

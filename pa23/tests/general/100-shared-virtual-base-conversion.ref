@@ -317,7 +317,7 @@ function @Root__Root__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=
     store typed ptr %t3, %t1
     return void
 }
-function @_Top__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%arg0 : ptr [object_bytes=48]) -> i32 [binding=weak, object=_ZTv0_n24_N3Top2idEv] {
+function @_Top__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%arg0 : ptr) -> i32 [binding=weak, object=_ZTv0_n24_N3Top2idEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
     %t2 = index i8 %t1, -24

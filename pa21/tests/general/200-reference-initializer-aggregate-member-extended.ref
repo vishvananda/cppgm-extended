@@ -26,7 +26,7 @@ global @__rtti_int [storage=readonly, binding=internal] = {
 global @__ehobj_int [binding=internal] = {
   zero 4
 }
-global @expected_trace [binding=internal, object=_ZL14expected_trace] = {
+global @expected_trace [storage=readonly, binding=internal, object=_ZL14expected_trace] = {
   i64 3887664670782020
   i64 0
   i64 13200130
@@ -40,7 +40,7 @@ global @expected_trace [binding=internal, object=_ZL14expected_trace] = {
   i64 3887664670782020
   i64 3887664670782020
 }
-global @expected_count [binding=internal, object=_ZL14expected_count] = {
+global @expected_count [storage=readonly, binding=internal, object=_ZL14expected_count] = {
   i32 6
   i32 0
   i32 2

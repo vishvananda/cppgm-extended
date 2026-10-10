@@ -87,6 +87,7 @@ void ProgramLowering::lower_unit(
 	caller_destroyed_types_.clear();
 	element_temporaries_.clear();
 	data_member_pointer_classes_.clear();
+	changeable_classes_.clear();
 	null_piece_spans_.clear();
 	null_spans_.clear();
 	null_piece_store_.clear();
@@ -146,6 +147,7 @@ void ProgramLowering::lower_unit(
 	reference_targets_.clear();
 	overload_ordinals_.clear();
 	call_signatures_.clear();
+	nothrow_call_signatures_.clear();
 	if (string_object_count_ != 0)
 		string_objects_.assign(string_objects_.size(), StringObject{ 0, 0 });
 	string_object_count_ = 0;
@@ -923,6 +925,11 @@ bool ProgramLowering::function_nothrow(const sema::FunctionEntity* function)
 															  : function->nothrow;
 }
 
+bool ProgramLowering::callee_nothrow(const syntax::Expr& callee)
+{
+	return analyzer_ != nullptr && analyzer_->callee_nothrow(callee);
+}
+
 const sema::ConstValue* ProgramLowering::evaluated_value(const sema::VariableEntity* variable) const
 {
 	return analyzer_ != nullptr ? analyzer_->evaluated_value(variable) : nullptr;
@@ -1015,14 +1022,6 @@ void ProgramLowering::root_destructor(const sema::FunctionEntity* destructor)
 	const lowir::SymbolId symbol = function_symbol(destructor);
 	if (program_.symbols[symbol].kind == lowir::SymbolKind::FunctionDefinition)
 		program_.symbols[symbol].metadata.flags |= lowir::SF_OBJECT_ROOT;
-}
-
-void ProgramLowering::demand_trivial_base(const sema::FunctionEntity* constructor)
-{
-	if (queued_base_.find(constructor) != PointerMap::kMissing)
-		return;
-	queued_base_.set(constructor, 1);
-	demanded_.push_back(Demanded{ constructor, EntryVariant::Base });
 }
 
 lowir::SymbolId ProgramLowering::terminate_helper()
@@ -1141,11 +1140,15 @@ lowir::SymbolId ProgramLowering::aggregate_helper(const sema::ClassEntity* entit
 		AggregateHelper{ entity, count, cv, symbol, latest == PointerMap::kMissing ? 0 : latest });
 	helper_index_.set(entity, static_cast<uint32_t>(aggregate_helpers_.size()));
 	// The signature now: calls name it before its definition is emitted.
+	// Its object is a complete object of the class, a member of one or an
+	// element of an array (an aggregate has no base classes, 8.5.1p1), as
+	// a member function's `this` states its class's size.
 	lowir::Signature signature = lowir::Signature();
 	signature.first_parameter = static_cast<uint32_t>(program_.parameters.size());
 	lowir::Parameter self = lowir::Parameter();
 	self.name = this_name_;
 	self.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	self.object_bytes = size_of(entity->type, 0);
 	program_.parameters.push_back(self);
 	signature.parameter_count = 1;
 	uint32_t taken = 0;
@@ -1162,9 +1165,14 @@ lowir::SymbolId ProgramLowering::aggregate_helper(const sema::ClassEntity* entit
 		parameter.type = variable->type->kind == sema::TypeKind::Array || variable->type->is_reference()
 			? lowir::Type::scalar(lowir::TypeKind::Ptr)
 			: storage_type(variable->type);
-		// A reference member's referent is passed by its address.
+		// A reference member's referent is passed by its address, as a
+		// reference parameter's is (with its complete object's size).
 		if (variable->type->is_reference())
-			parameter.pass = ir_model::PPM_BY_ADDRESS;
+		{
+			const lowir::Parameter reference = parameter_for(variable->type, name);
+			parameter.pass = reference.pass;
+			parameter.object_bytes = reference.object_bytes;
+		}
 		program_.parameters.push_back(parameter);
 		++signature.parameter_count;
 	}

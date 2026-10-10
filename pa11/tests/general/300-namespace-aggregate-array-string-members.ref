@@ -31,7 +31,7 @@ global @__strlit__5 [storage=readonly, binding=internal] = {
   i8 116
   i8 0
 }
-global @families [binding=internal, object=_ZL8families] = {
+global @families [storage=readonly, binding=internal, object=_ZL8families] = {
   ptr addr @__strlit__1
   ptr addr @__strlit__2
   ptr addr @__strlit__3

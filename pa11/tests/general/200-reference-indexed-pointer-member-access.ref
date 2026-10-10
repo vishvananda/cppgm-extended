@@ -74,7 +74,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t17 = convert trunc i32 i64 %t16
     return i32 %t17
 }
-function @element__element__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
+function @element__element__aggregate(%this : ptr [object_bytes=4], %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 

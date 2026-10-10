@@ -53,7 +53,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load typed i32 $cond__1
     return i32 %t12
 }
-function @result__result__aggregate(%this : ptr, %ptr : ptr, %ec : i32) -> void [unwind=no, binding=internal] {
+function @result__result__aggregate(%this : ptr [object_bytes=16], %ptr : ptr, %ec : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $ptr : ptr
   slot $ec : i32

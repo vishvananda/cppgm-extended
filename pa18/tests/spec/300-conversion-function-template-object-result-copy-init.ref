@@ -1,7 +1,7 @@
 global @seed [binding=strong] = {
   f32 0f
 }
-global @x [binding=internal, object=_ZL1x] = {
+global @x [storage=readonly, binding=internal, object=_ZL1x] = {
   f32 0f
 }
 

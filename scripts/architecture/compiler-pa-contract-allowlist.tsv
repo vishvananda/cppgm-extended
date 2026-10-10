@@ -42,6 +42,7 @@ comment	dev/src/lower/constant_lowering.cpp	PA16	handout or fixture cross-refere
 comment	dev/src/lower/dispatch_lowering.cpp	PA31	handout or fixture cross-reference in a comment
 comment	dev/src/lower/function_lowering.h	PA34	handout or fixture cross-reference in a comment
 comment	dev/src/lower/global_lowering.cpp	PA11	handout or fixture cross-reference in a comment
+comment	dev/src/lower/global_lowering.cpp	PA12	handout or fixture cross-reference in a comment
 comment	dev/src/lower/local_mangling.cpp	pa27	handout or fixture cross-reference in a comment
 comment	dev/src/lower/local_static_lowering.cpp	PA16	handout or fixture cross-reference in a comment
 comment	dev/src/lower/object_lowering.cpp	PA31	handout or fixture cross-reference in a comment

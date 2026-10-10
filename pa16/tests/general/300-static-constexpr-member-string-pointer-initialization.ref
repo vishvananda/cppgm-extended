@@ -4,7 +4,7 @@ global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 101
   i8 0
 }
-global @table_int___row [binding=weak, object=_ZN5tableIiE3rowE] = {
+global @table_int___row [storage=readonly, binding=weak, object=_ZN5tableIiE3rowE] = {
   ptr addr @__strlit__1
 }
 

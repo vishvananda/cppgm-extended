@@ -1,7 +1,7 @@
 global @_GLOBAL__N_1__readonly_scalar : u32 [storage=readonly, binding=internal, object=_ZN12_GLOBAL__N_115readonly_scalarE] = 9
 global @_GLOBAL__N_1__volatile_scalar : u32 [binding=internal, object=_ZN12_GLOBAL__N_115volatile_scalarE] = 7
 global @_GLOBAL__N_1__thread_scalar : u32 [storage=thread_local, binding=internal, object=_ZN12_GLOBAL__N_113thread_scalarE] = 5
-global @_GLOBAL__N_1__class_object [binding=internal, object=_ZN12_GLOBAL__N_112class_objectE] = {
+global @_GLOBAL__N_1__class_object [storage=readonly, binding=internal, object=_ZN12_GLOBAL__N_112class_objectE] = {
   u32 3
 }
 

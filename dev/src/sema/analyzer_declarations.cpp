@@ -413,10 +413,7 @@ void Analyzer::simple_declaration(const syntax::SimpleDecl& decl, Scope* scope)
 			(StandardNoReturn(decl.attributes) || StandardNoReturn(init.declarator)))
 			error(decl.location, "noreturn attribute requires a function");
 		if (entity != nullptr && entity->kind == EntityKind::Function)
-		{
-			stable_prefix_attribute(static_cast<FunctionEntity*>(entity), decl.attributes, init.declarator);
 			effect_attributes(static_cast<FunctionEntity*>(entity), decl.attributes, init.declarator);
-		}
 		if (entity != nullptr)
 			symbol_attributes(entity, decl.attributes, init.declarator);
 	}
@@ -685,34 +682,6 @@ void Analyzer::agree_language_linkage(bool c_linkage, uint32_t location)
 		error(location, "declarations of an entity with different language linkages");
 }
 
-void Analyzer::stable_prefix_attribute(
-	FunctionEntity* function, const syntax::Attribute* leading, const syntax::Declarator* declarator)
-{
-	// GNU cppgm_stable_prefix (before the declaration or after its
-	// declarator-id): valid on a function of fixed arity with a scalar
-	// result whose last parameter has an integer type (the README).
-	const syntax::Attribute* found = nullptr;
-	for (const syntax::Attribute* attribute = leading; attribute != nullptr && found == nullptr;
-		attribute = attribute->next)
-		found = attribute->kind == syntax::AttributeKind::StablePrefix ? attribute : nullptr;
-	for (const syntax::Declarator* part = declarator; part != nullptr && found == nullptr; part = part->nested)
-	{
-		for (const syntax::Attribute* attribute = part->attributes; attribute != nullptr && found == nullptr;
-			attribute = attribute->next)
-			found = attribute->kind == syntax::AttributeKind::StablePrefix ? attribute : nullptr;
-	}
-	if (found == nullptr)
-		return;
-	const Type* type = function->type->canonical;
-	const Type* result = type->element;
-	if (type->variadic || type->param_count == 0 || result->is_reference() || !IsScalar(result) ||
-		!IsIntegralType(type->params[type->param_count - 1]->unqualified))
-		error(found->location,
-			"cppgm_stable_prefix requires a fixed-arity function with a scalar result and a final integer "
-			"parameter");
-	function->stable_prefix = true;
-}
-
 void Analyzer::reject_noreturn(const syntax::Attribute* list, const char* message) const
 {
 	// 7.6.3p1: the standard noreturn appertains only to the declarator-id
@@ -928,7 +897,7 @@ void Analyzer::declare_declarator(
 	}
 	if (!semantic())
 		return;
-	note_nothrow_target(init.declared->entity, info.type, init.declarator);
+	note_nothrow_target(init.declared->entity, info.type, init.declarator, scope);
 	if (init.initializer != nullptr && template_depth_ == 0 &&
 		nothrow_targets_.find(init.declared->entity) != PointerMap::kMissing)
 		check_nothrow_initializer(*init.initializer);
@@ -2237,7 +2206,6 @@ void Analyzer::function_definition(const syntax::FunctionDecl& decl, Scope* scop
 	attribute_alignment(decl.attributes, scope, packed, no_inline);
 	static_cast<FunctionEntity*>(binding->entity)->no_inline =
 		static_cast<FunctionEntity*>(binding->entity)->no_inline || no_inline;
-	stable_prefix_attribute(static_cast<FunctionEntity*>(binding->entity), decl.attributes, decl.declarator);
 	effect_attributes(static_cast<FunctionEntity*>(binding->entity), decl.attributes, decl.declarator);
 	symbol_attributes(binding->entity, decl.attributes, decl.declarator);
 	// The function scope sits where the definition does: in its class or

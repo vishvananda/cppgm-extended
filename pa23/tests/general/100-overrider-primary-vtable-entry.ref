@@ -237,7 +237,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^member_pointer_end_16:
     %t49 = load typed ptr $member_pointer_callee__1
-    %t50 = call i32 %t49(%t43) as (%arg0 : ptr [object_bytes=48]) -> i32
+    %t50 = call i32 %t49(%t43) as (%arg0 : ptr) -> i32
     %t51 = cmp ne i32 %t50, 10
     branch %t51, ^if_then_12, ^if_else_13
 
@@ -275,7 +275,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^member_pointer_end_22:
     %t66 = load typed ptr $member_pointer_callee__2
-    %t67 = call i32 %t66(%t60) as (%arg0 : ptr [object_bytes=32]) -> i32
+    %t67 = call i32 %t66(%t60) as (%arg0 : ptr) -> i32
     %t68 = cmp ne i32 %t67, 20
     branch %t68, ^if_then_18, ^if_else_19
 
@@ -413,7 +413,7 @@ function @Right__Right__base_entry(%this : ptr [object_bytes=16]) -> void [unwin
     store typed ptr %t3, %t1
     return void
 }
-function @_Derived__x__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%arg0 : ptr [object_bytes=48]) -> i32 [binding=weak, object=_ZTv0_n24_N7Derived1xEv] {
+function @_Derived__x__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%arg0 : ptr) -> i32 [binding=weak, object=_ZTv0_n24_N7Derived1xEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
     %t2 = index i8 %t1, -24
@@ -422,7 +422,7 @@ function @_Derived__x__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%
     %t5 = call i32 @Derived__x(%t4)
     return i32 %t5
 }
-function @_Pair__y__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr [object_bytes=32]) -> i32 [binding=weak, object=_ZThn16_N4Pair1yEv] {
+function @_Pair__y__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn16_N4Pair1yEv] {
   block ^entry:
     %t1 = index i8 %arg0, -16
     %t2 = call i32 @Pair__y(%t1)

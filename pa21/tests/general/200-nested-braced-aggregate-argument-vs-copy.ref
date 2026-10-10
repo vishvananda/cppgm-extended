@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 4x4 %t5, %t4
     return i32 0
 }
-function @params__params__aggregate(%this : ptr, %value : ptr) -> void [unwind=no, binding=internal] {
+function @params__params__aggregate(%this : ptr [object_bytes=8], %value : ptr) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : ptr
 

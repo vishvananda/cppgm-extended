@@ -101,7 +101,7 @@ function @Impl__destroy(%this : ptr [object_bytes=8]) -> void [binding=weak, obj
     %t3 = load typed ptr %t1
     %t4 = index i8 %t3, 16
     %t5 = load typed ptr %t4
-    call void %t5(%t1) as (%arg0 : ptr) -> void
+    call void %t5(%t1) as (%arg0 : ptr [object_bytes=8]) -> void [unwind=no]
     jump ^delete_end_2
 
   block ^delete_end_2:

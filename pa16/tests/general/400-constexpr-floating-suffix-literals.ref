@@ -1,7 +1,7 @@
 global @f : f32 [storage=readonly, binding=internal, object=_ZL1f] = 1f
 global @d : f64 [storage=readonly, binding=internal, object=_ZL1d] = 2
 global @ld : f80 [storage=readonly, binding=internal, object=_ZL2ld] = 3L
-global @arr [binding=internal, object=_ZL3arr] = {
+global @arr [storage=readonly, binding=internal, object=_ZL3arr] = {
   f80 1L
   f80 10L
 }

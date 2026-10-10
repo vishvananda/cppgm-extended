@@ -81,7 +81,7 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 			if (name == nullptr)
 				continue;
 			if (semantic())
-				note_nothrow_target(parameter, type->params[i], parameters->parameters[i]->declarator);
+				note_nothrow_target(parameter, type->params[i], parameters->parameters[i]->declarator, scope);
 			if (names_.find(scope, name) != nullptr)
 				error(id->location, "duplicate parameter name");
 			declare_in(scope, binding);

@@ -1,4 +1,4 @@
-global @tables_true___data [binding=weak, object=_ZN6tablesILb1EE4dataE] = {
+global @tables_true___data [storage=readonly, binding=weak, object=_ZN6tablesILb1EE4dataE] = {
   u16 0
   u16 0
   u16 171

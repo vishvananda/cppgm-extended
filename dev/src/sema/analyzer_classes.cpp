@@ -351,7 +351,6 @@ uint64_t Analyzer::attribute_alignment(
 		case syntax::AttributeKind::Packed:
 			packed = true;
 			break;
-		case syntax::AttributeKind::StablePrefix:
 		case syntax::AttributeKind::AsmLabel:
 		case syntax::AttributeKind::Weak:
 		case syntax::AttributeKind::Section:

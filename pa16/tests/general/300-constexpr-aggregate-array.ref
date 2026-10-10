@@ -1,11 +1,11 @@
-global @p [binding=internal, object=_ZL1p] = {
+global @p [storage=readonly, binding=internal, object=_ZL1p] = {
   i32 3
   i32 4
 }
-global @bits [binding=internal, object=_ZL4bits] = {
+global @bits [storage=readonly, binding=internal, object=_ZL4bits] = {
   u32 61
 }
-global @arr [binding=internal, object=_ZL3arr] = {
+global @arr [storage=readonly, binding=internal, object=_ZL3arr] = {
   i32 10
   i32 20
   i32 30

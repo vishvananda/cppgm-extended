@@ -177,7 +177,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t41 = load typed ptr %t39
     %t42 = index i8 %t41, 8
     %t43 = load typed ptr %t42
-    call void %t43(%t39) as (%arg0 : ptr) -> void
+    call void %t43(%t39) as (%arg0 : ptr [object_bytes=8]) -> void [unwind=no]
     jump ^delete_end_6
 
   block ^delete_end_6:
@@ -189,7 +189,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t46 = load typed ptr %t44
     %t47 = index i8 %t46, 8
     %t48 = load typed ptr %t47
-    call void %t48(%t44) as (%arg0 : ptr) -> void
+    call void %t48(%t44) as (%arg0 : ptr [object_bytes=8]) -> void [unwind=no]
     jump ^delete_end_8
 
   block ^delete_end_8:

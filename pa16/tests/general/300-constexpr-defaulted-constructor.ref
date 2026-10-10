@@ -1,7 +1,7 @@
-global @z [binding=internal, object=_ZL1z] = {
+global @z [storage=readonly, binding=internal, object=_ZL1z] = {
   i32 0
 }
-global @e [binding=internal, object=_ZL1e] = {
+global @e [storage=readonly, binding=internal, object=_ZL1e] = {
   zero 1
 }
 

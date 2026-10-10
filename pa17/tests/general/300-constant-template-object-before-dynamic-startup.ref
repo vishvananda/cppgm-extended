@@ -5,7 +5,7 @@ global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 101
   i8 0
 }
-global @Storage_int___text [binding=weak, object=_ZN7StorageIiE4textE] = {
+global @Storage_int___text [storage=readonly, binding=weak, object=_ZN7StorageIiE4textE] = {
   ptr addr @__strlit__1
 }
 

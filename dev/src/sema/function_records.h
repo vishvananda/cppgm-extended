@@ -367,10 +367,6 @@ struct FunctionEntity : Entity
 	// A C-linkage function whose first declaration, non-throwing, is in a
 	// system header (see Analyzer::check_redeclared_exceptions).
 	bool system_nothrow : 1;
-	// GNU cppgm_stable_prefix: a query whose normally returning
-	// call at an index keeps the results at lower indexes for the same
-	// earlier arguments.
-	bool stable_prefix;
 	// A noexcept-specification's constant expression waits for its first
 	// need (Analyzer::function_nothrow, which holds it; `nothrow` is false
 	// until then).

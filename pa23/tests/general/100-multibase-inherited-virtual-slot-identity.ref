@@ -224,7 +224,7 @@ function @right__right__base_entry(%this : ptr [object_bytes=8]) -> void [unwind
     store typed ptr %t3, %t1
     return void
 }
-function @_implementation__second__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZThn8_N14implementation6secondEv] {
+function @_implementation__second__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn8_N14implementation6secondEv] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     %t2 = call i32 @implementation__second(%t1)

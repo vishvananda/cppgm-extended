@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = binary sub nowrap i32 %t13, 5
     return i32 %t14
 }
-function @Payload__Payload__aggregate(%this : ptr, %code : i32, %detail : i32) -> void [unwind=no, binding=internal] {
+function @Payload__Payload__aggregate(%this : ptr [object_bytes=8], %code : i32, %detail : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $code : i32
   slot $detail : i32

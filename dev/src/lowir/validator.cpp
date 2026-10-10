@@ -440,8 +440,7 @@ bool Validator::check_links()
 		const BoundaryMetadata& boundary = signature.boundary;
 		if (static_cast<uint64_t>(signature.first_parameter) + signature.parameter_count > program_.parameters.size() ||
 			boundary.arity >= ir_model::kCallArityModeCount || boundary.effects >= ir_model::kCallEffectsModeCount ||
-			boundary.unwind >= ir_model::kCallUnwindModeCount || boundary.returns >= ir_model::kCallReturnModeCount ||
-			boundary.query >= ir_model::kCallQueryModeCount)
+			boundary.unwind >= ir_model::kCallUnwindModeCount || boundary.returns >= ir_model::kCallReturnModeCount)
 			return fail("invalid signature");
 		const Parameter* parameters = program_.parameters_of(signature);
 		for (uint32_t i = 0; i < signature.parameter_count; ++i)

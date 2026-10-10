@@ -314,9 +314,9 @@ discardable function definitions are removed.
 
 After the waves, an internal function that is called, has parameters, no
 reference other than direct calls (no address, data reference, lifecycle
-role or object root), no recursion, fixed arity and no `query=` boundary
-fact takes a parameter's value when every call passes the same literal or
-symbol for it, then runs the pipeline again. Parameters its body does not
+role or object root), no recursion and fixed arity takes a parameter's
+value when every call passes the same literal or symbol for it, then runs
+the pipeline again. Parameters its body does not
 read leave the signature and every call, whose callers run the pipeline
 again; the boundary is internal, so no other unit sees the change. A call
 with a stated signature or another argument count disqualifies the

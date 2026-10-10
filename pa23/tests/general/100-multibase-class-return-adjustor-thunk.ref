@@ -149,7 +149,7 @@ function @B2__B2__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, b
     store typed ptr %t3, %t1
     return void
 }
-function @_D__current__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr [object_bytes=16]) -> obj<4x4> [binding=weak, object=_ZThn8_NK1D7currentEv] {
+function @_D__current__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> obj<4x4> [binding=weak, object=_ZThn8_NK1D7currentEv] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     %t2 = call obj<4x4> @D__current(%t1)

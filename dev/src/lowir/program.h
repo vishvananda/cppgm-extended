@@ -79,7 +79,9 @@ inline NameId own_name(const Slot& slot)
 // the classification (ObjectClassBits, below) of an object argument that
 // call `call` passes as argument `argument` beyond its boundary's
 // parameters (to `...`), or of the object the va_arg instruction `call`
-// reads (argument 0), as an object-mode lowering states it.
+// reads (argument 0), as an object-mode lowering states it. A body's
+// table is ordered by `call` (the selector searches it so); a pass that
+// copies such an instruction gives the copy its own entries.
 struct ArgumentClasses
 {
 	InstId call;

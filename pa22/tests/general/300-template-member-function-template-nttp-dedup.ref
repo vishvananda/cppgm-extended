@@ -19,7 +19,7 @@ function @machine_f___row_0_int_0__f__on___execute(%d : ptr [pass=by_address, ob
     %t1 = load typed ptr $d
     %t2 = load i8 $event
     %t3 = addr @f__on
-    call void %t3(%t1, %t2) as (%arg0 : ptr [object_bytes=1], %arg1 : i8) -> void
+    call void %t3(%t1, %t2) as (%arg0 : ptr, %arg1 : i8) -> void
     return void
 }
 function @machine_f___row_0_int_0__f__push___execute(%d : ptr [pass=by_address, object_bytes=1], %event : i8) -> void [binding=weak, object=_ZN7machineI1fE3rowILi0EiLi0EXadL_ZNS0_4pushIcEEvT_EEE7executeERS0_c, inline_hint=yes] {
@@ -32,7 +32,7 @@ function @machine_f___row_0_int_0__f__push___execute(%d : ptr [pass=by_address, 
     %t1 = load typed ptr $d
     %t2 = load i8 $event
     %t3 = addr @f__push
-    call void %t3(%t1, %t2) as (%arg0 : ptr [object_bytes=1], %arg1 : i8) -> void
+    call void %t3(%t1, %t2) as (%arg0 : ptr, %arg1 : i8) -> void
     return void
 }
 function @f__push(%this : ptr [object_bytes=1], %c : i8) -> void [binding=weak, object=_ZN1f4pushIcEEvT_, inline_hint=yes] {

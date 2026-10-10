@@ -182,7 +182,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t76 = load typed i32 $cond__4
     return i32 %t76
 }
-function @level__level__aggregate(%this : ptr, %operators : ptr, %count : i32) -> void [unwind=no, binding=internal] {
+function @level__level__aggregate(%this : ptr [object_bytes=20], %operators : ptr, %count : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $operators : ptr
   slot $count : i32

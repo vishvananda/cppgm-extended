@@ -35,7 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @run(%t2, 1)
     return i32 %t3
 }
-function @Item__Item__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
+function @Item__Item__aggregate(%this : ptr [object_bytes=4], %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 

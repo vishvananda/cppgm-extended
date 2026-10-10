@@ -2,7 +2,7 @@ declare global @api__detail__query_free_trait_constexec__constprop__void___is_va
 declare global @is_same_int_int___value : u8 [binding=weak, object=_ZN7is_sameIiiE5valueE]
 declare global @api__detail__query_free_trait_constexec__constprop__void___is_noexcept : u8 [binding=weak, object=_ZN3api6detail16query_free_traitIRK4execRK4propvE11is_noexceptE]
 
-global @api___GLOBAL__N_1__query [binding=internal, object=_ZN3api12_GLOBAL__N_15queryE] = {
+global @api___GLOBAL__N_1__query [storage=readonly, binding=internal, object=_ZN3api12_GLOBAL__N_15queryE] = {
   zero 1
 }
 

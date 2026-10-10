@@ -1,4 +1,4 @@
-global @tables_void___data [binding=weak, object=_ZN6tablesIvE4dataE] = {
+global @tables_void___data [storage=readonly, binding=weak, object=_ZN6tablesIvE4dataE] = {
   i32 4
   i32 10
   i32 3

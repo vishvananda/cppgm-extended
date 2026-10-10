@@ -63,8 +63,7 @@ bool Specializer::candidate(uint32_t f) const
 	const Symbol& symbol = program.symbols[graph.functions[f]];
 	const Signature& sig = signature_of(f);
 	return symbol.metadata.binding == ir_model::SBM_INTERNAL && !graph.observed[f] && graph.calls_in[f] > 0 &&
-		!graph.recursive[f] && sig.boundary.arity == ir_model::CAM_FIXED && sig.parameter_count > 0 &&
-		sig.boundary.query == ir_model::CQM_DEFAULT;
+		!graph.recursive[f] && sig.boundary.arity == ir_model::CAM_FIXED && sig.parameter_count > 0;
 }
 
 void Specializer::record(uint32_t g, bool agreeing)

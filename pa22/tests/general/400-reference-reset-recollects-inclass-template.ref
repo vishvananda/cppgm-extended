@@ -1,4 +1,4 @@
-global @interface_x__holder_target___table [binding=weak, object=_ZN11interface_x6holderI6targetE5tableE] = {
+global @interface_x__holder_target___table [storage=readonly, binding=weak, object=_ZN11interface_x6holderI6targetE5tableE] = {
   ptr addr @example__member___cppgm_class_template_identity_1___wrap
 }
 

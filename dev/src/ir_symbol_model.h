@@ -162,14 +162,6 @@ enum CallReturnMode : std::uint8_t
 
 const unsigned kCallReturnModeCount = CRM_NORETURN + 1;
 
-enum CallQueryMode : std::uint8_t
-{
-  CQM_DEFAULT,
-  CQM_STABLE_PREFIX
-};
-
-const unsigned kCallQueryModeCount = CQM_STABLE_PREFIX + 1;
-
 // ---------------------------------------------------------------------------
 // Parameter and instruction metadata
 
@@ -246,7 +238,6 @@ enum class MetadataKey : std::uint8_t
   Effects,
   Unwind,
   Return,
-  Query,
   ResultClasses,
   // Symbol metadata.
   Storage,
@@ -371,12 +362,6 @@ inline const char * spelling(CallReturnMode value)
   return kReturns[value];
 }
 
-inline const char * spelling(CallQueryMode value)
-{
-  static const char * const kQueries[kCallQueryModeCount] = { "", "stable_prefix" };
-  return kQueries[value];
-}
-
 inline const char * spelling(ParamPassingMode value)
 {
   static const char * const kPasses[kParamPassingModeCount] = { "", "indirect_result", "by_address" };
@@ -406,10 +391,9 @@ inline const char * spelling(EightbyteClass value)
 inline const char * spelling(MetadataKey key)
 {
   static const char * const kKeys[kMetadataKeyCount] = { "arity", "effects", "unwind", "return",
-    "query", "result_classes", "storage", "section", "role", "linkage", "binding", "object",
-    "tls_for", "keep_alias", "prefer_local", "object_root", "force_inline", "inline_hint",
-    "no_inline", "replaceable", "pass", "alias", "object_bytes", "classes", "elision",
-    "projection" };
+    "result_classes", "storage", "section", "role", "linkage", "binding", "object", "tls_for",
+    "keep_alias", "prefer_local", "object_root", "force_inline", "inline_hint", "no_inline",
+    "replaceable", "pass", "alias", "object_bytes", "classes", "elision", "projection" };
   return kKeys[static_cast<unsigned>(key)];
 }
 
@@ -454,11 +438,6 @@ inline bool from_spelling(const char * text, std::size_t length, CallUnwindMode 
 inline bool from_spelling(const char * text, std::size_t length, CallReturnMode * value)
 {
   return detail::find_spelling(text, length, 1, kCallReturnModeCount, value);
-}
-
-inline bool from_spelling(const char * text, std::size_t length, CallQueryMode * value)
-{
-  return detail::find_spelling(text, length, 1, kCallQueryModeCount, value);
 }
 
 inline bool from_spelling(const char * text, std::size_t length, ParamPassingMode * value)
@@ -588,7 +567,6 @@ struct FunctionBoundaryMetadata
   CallEffectsMode effects = CFXM_DEFAULT;
   CallUnwindMode unwind = CUM_DEFAULT;
   CallReturnMode returns = CRM_DEFAULT;
-  CallQueryMode query = CQM_DEFAULT;
   std::uint8_t result_classes = 0;  // ObjectClassBits of a direct object result
 };
 

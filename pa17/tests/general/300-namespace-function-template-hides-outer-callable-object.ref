@@ -1,4 +1,4 @@
-global @outer__static_const_printer___value [binding=weak, object=_ZN5outer12static_constINS_4impl7printerEE5valueE] = {
+global @outer__static_const_printer___value [storage=readonly, binding=weak, object=_ZN5outer12static_constINS_4impl7printerEE5valueE] = {
   zero 1
 }
 global @outer___GLOBAL__N_1__print : ptr [binding=internal, object=_ZN5outer12_GLOBAL__N_15printE] = addr @outer__static_const_printer___value

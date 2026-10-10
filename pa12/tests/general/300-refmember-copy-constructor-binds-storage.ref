@@ -44,7 +44,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @f()
     return i32 %t1
 }
-function @RefWrap__RefWrap__aggregate(%this : ptr, %second : ptr [pass=by_address]) -> void [unwind=no, binding=internal] {
+function @RefWrap__RefWrap__aggregate(%this : ptr [object_bytes=8], %second : ptr [pass=by_address, object_bytes=4]) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $second : ptr
 

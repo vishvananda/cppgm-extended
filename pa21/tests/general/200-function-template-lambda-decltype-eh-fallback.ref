@@ -119,7 +119,7 @@ function @__lambda_instantiate_value_t71_75__operator__(%this : ptr [object_byte
     call void @Parsed__Parsed__aggregate(%t1, %t5)
     return obj<4x4> $retobj__1
 }
-function @Parsed__Parsed__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
+function @Parsed__Parsed__aggregate(%this : ptr [object_bytes=4], %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 

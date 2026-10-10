@@ -21,7 +21,7 @@ global @__rtti_int [storage=readonly, binding=internal] = {
 global @__ehobj_int [binding=internal] = {
   zero 4
 }
-global @expected [binding=internal, object=_ZL8expected] = {
+global @expected [storage=readonly, binding=internal, object=_ZL8expected] = {
   u32 4083490624
   u32 0
   u32 32

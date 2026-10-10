@@ -147,9 +147,12 @@ void FunctionLowering::call_special(const sema::FunctionEntity* function, EntryV
 
 bool FunctionLowering::elidable_source(const syntax::Expr& expr, const sema::FunctionEntity* constructor)
 {
+	// 12.8p31: a temporary of the object's own class (cv aside), not a
+	// derived class's the copy slices.
 	const syntax::Expr* e = WithoutParentheses(&expr);
 	return constructor != nullptr && !copies_storage(constructor) && e->kind == syntax::ExprKind::Conditional &&
-		e->facts->category == sema::ValueCategory::PRValue && constructor->copy_kind != sema::CopyKind::None;
+		e->facts->category == sema::ValueCategory::PRValue && constructor->copy_kind != sema::CopyKind::None &&
+		sema::ClassOf(e->facts->type) == sema::ClassOf(constructor->owner->entity->type);
 }
 
 bool FunctionLowering::copy_called(const sema::FunctionEntity* function)

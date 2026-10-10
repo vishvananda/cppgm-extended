@@ -380,12 +380,10 @@ ProgramLowering::StaticOutcome ProgramLowering::static_global(lowir::SymbolId sy
 				: initialization_value(variable, initializer);
 			dynamic = value == nullptr || !constant_global(type, *value, global, location);
 		}
-		// The README's readonly storage: a const scalar that is neither
-		// volatile nor thread-local, its bytes fixed before any code runs.
-		if (!dynamic && (type->cv & sema::kConst) != 0 && (type->cv & sema::kVolatile) == 0 &&
-			!variable->is_thread_local)
-			metadata.storage = ir_model::GSM_READONLY;
 	}
+	// A statically initialized object no code writes (readonly_object).
+	if (!dynamic && !variable->is_thread_local && readonly_object(type))
+		metadata.storage = ir_model::GSM_READONLY;
 	// The object's alignment: its type's, an alignment-specifier's (7.6.2),
 	// and in a host object at least 16 for an array of 16 bytes or more (the
 	// psABI's 3.1.2 rule, which host compilers' code assumes of another
@@ -400,6 +398,60 @@ ProgramLowering::StaticOutcome ProgramLowering::static_global(lowir::SymbolId sy
 	program_.declare_global(symbol, lowir::SymbolKind::GlobalDefinition, global);
 	program_.symbols[symbol].metadata = metadata;
 	return StaticOutcome{ dynamic, table_only, evaluated };
+}
+
+bool ProgramLowering::readonly_object(const sema::Type* type)
+{
+	// lowir.md's readonly storage, of a statically initialized object: one
+	// of a const type that is not volatile (an array's qualifiers are its
+	// element type's, 3.9.3p5), whose class (an element's) has no mutable or
+	// volatile member at any depth (7.1.6.1p4: a mutable member of a const
+	// object may change) and a trivial destructor (12.4p2: a destructor
+	// may write a const object).
+	type = type->canonical;
+	if (type->is_reference())
+		return false;
+	unsigned cv = type->cv;
+	while (type->kind == sema::TypeKind::Array)
+	{
+		type = type->element;
+		cv |= type->cv;
+	}
+	if ((cv & sema::kConst) == 0 || (cv & sema::kVolatile) != 0 || FunctionLowering::needs_destruction(type))
+		return false;
+	const sema::ClassEntity* cls = sema::ClassOf(type);
+	return cls == nullptr || !changeable_class(cls);
+}
+
+bool ProgramLowering::changeable_class(const sema::ClassEntity* cls)
+{
+	// A mutable or volatile non-static data member, of the class, of a base
+	// or of a member's (an element's) class. Memoized per class.
+	const uint32_t known = changeable_classes_.find(cls);
+	if (known != PointerMap::kMissing)
+		return known == 2;
+	bool changeable = false;
+	for (const sema::BaseClass* base = cls->bases; base != nullptr && !changeable; base = base->next)
+		changeable = changeable_class(static_cast<const sema::ClassEntity*>(base->base));
+	for (const sema::DataMember* member = cls->members; member != nullptr && !changeable; member = member->next)
+	{
+		const sema::Entity* variable = member->variable;
+		changeable = variable->kind == sema::EntityKind::Variable &&
+			static_cast<const sema::VariableEntity*>(variable)->is_mutable;
+		const sema::Type* type = variable->type->canonical;
+		if (changeable || type->is_reference())
+			continue;
+		unsigned cv = type->cv;
+		while (type->kind == sema::TypeKind::Array)
+		{
+			type = type->element;
+			cv |= type->cv;
+		}
+		const sema::ClassEntity* inner = sema::ClassOf(type);
+		changeable = (cv & sema::kVolatile) != 0 || (inner != nullptr && changeable_class(inner));
+	}
+	changeable_classes_.set(cls, changeable ? 2 : 1);
+	return changeable;
 }
 
 void ProgramLowering::state_storage_type(lowir::Global& global, uint64_t size, uint64_t alignment)
@@ -539,19 +591,19 @@ void ProgramLowering::define_global(lowir::SymbolId symbol, const sema::Variable
 	}
 	else if (initializer == nullptr && variable->constructor != nullptr && !type->is_reference() && !table_only)
 	{
-		// Default-initialization by a trivial constructor: the course keeps
-		// the (empty) initialization step for a class with members; a class
-		// of internal linkage (3.5p4) defines the constructor's base entry
-		// instead.
+		// Default-initialization by a trivial constructor runs no code, and
+		// nothing requires the constructor: it is neither emitted nor an
+		// object root (PA11/PA12 emit only the helpers the program needs).
+		// The course keeps the (empty) initialization step for a class with
+		// members of external linkage; one of internal linkage (3.5p4) has
+		// none.
 		const sema::ClassEntity* cls = FunctionLowering::object_class(type);
 		const sema::Scope* owner = cls->owner;
 		while (owner != nullptr && owner->kind == sema::ScopeKind::Class)
 			owner = owner->entity->owner;
 		const bool internal = owner != nullptr && owner->kind == sema::ScopeKind::Namespace &&
 			owner->entity != nullptr && static_cast<const sema::NamespaceEntity*>(owner->entity)->internal;
-		if (internal)
-			demand_trivial_base(variable->constructor);
-		else if (cls->members != nullptr)
+		if (!internal && cls->members != nullptr)
 			initializer_function();
 	}
 	// A constant initialization's evaluation runs the constructors its
@@ -1136,6 +1188,8 @@ bool ProgramLowering::define_reference(lowir::Global& global, const sema::Variab
 			storage.constant = item.constant;
 			program_.declare_global(temporary, lowir::SymbolKind::GlobalDefinition, storage);
 			program_.symbols[temporary].metadata.binding = ir_model::SBM_INTERNAL;
+			if (storage.init == lowir::GlobalInit::Constant && readonly_object(object))
+				program_.symbols[temporary].metadata.storage = ir_model::GSM_READONLY;
 			name_temporary(temporary);
 			if (extended != nullptr)
 				constant_temporaries_.set(extended, temporary);

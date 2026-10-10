@@ -1,4 +1,4 @@
-global @__local_static__table__decl0__value [binding=internal, object=_ZZ5tablevE5value] = {
+global @__local_static__table__decl0__value [storage=readonly, binding=internal, object=_ZZ5tablevE5value] = {
   ptr addr @x__f
   i64 0
 }

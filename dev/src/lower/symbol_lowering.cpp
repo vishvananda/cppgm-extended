@@ -3135,15 +3135,14 @@ lowir::SignatureId ProgramLowering::function_signature(
 	// GNU const (pa28).
 	if (function->effects == sema::FunctionEffect::ReadNone)
 		signature.boundary.effects = ir_model::CFXM_READNONE;
-	if (function->stable_prefix)
-		signature.boundary.query = ir_model::CQM_STABLE_PREFIX;
 	return program_.add_signature(signature);
 }
 
-lowir::SignatureId ProgramLowering::member_call_signature(const sema::Type* member_pointer)
+lowir::SignatureId ProgramLowering::member_call_signature(const sema::Type* member_pointer, bool nothrow)
 {
 	member_pointer = member_pointer->canonical->unqualified;
-	const uint32_t known = call_signatures_.find(member_pointer);
+	PointerMap& signatures = nothrow ? nothrow_call_signatures_ : call_signatures_;
+	const uint32_t known = signatures.find(member_pointer);
 	if (known != PointerMap::kMissing)
 		return known;
 	const sema::Type* type = member_pointer->element->canonical;
@@ -3158,10 +3157,16 @@ lowir::SignatureId ProgramLowering::member_call_signature(const sema::Type* memb
 		push_result_parameter(result, false, signature);
 		program_.parameters.back().name = argument_name(0);
 	}
+	// The object: one of the pointer's class, whose size it states, when
+	// that class has no base class; otherwise the pointer may adjust it to
+	// a base subobject (5.5p6) of a class its type does not name, and it
+	// states none.
 	lowir::Parameter self = lowir::Parameter();
 	self.name = argument_name(signature.parameter_count - type->param_count);
 	self.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
-	self.object_bytes = size_of(member_pointer->owner, 0);
+	const sema::ClassEntity* owner = sema::ClassOf(member_pointer->owner);
+	if (owner != nullptr && owner->bases == nullptr)
+		self.object_bytes = size_of(member_pointer->owner, 0);
 	program_.parameters.push_back(self);
 	++signature.parameter_count;
 	for (uint32_t i = 0; i < type->param_count; ++i)
@@ -3173,18 +3178,23 @@ lowir::SignatureId ProgramLowering::member_call_signature(const sema::Type* memb
 	signature.boundary.result_classes = indirect ? 0 : result_classes(result);
 	if (type->variadic)
 		signature.boundary.arity = ir_model::CAM_VARIADIC;
+	if (nothrow)
+		signature.boundary.unwind = ir_model::CUM_NO;
 	const lowir::SignatureId id = program_.add_signature(signature);
-	call_signatures_.set(member_pointer, id);
+	signatures.set(member_pointer, id);
 	return id;
 }
 
-lowir::SignatureId ProgramLowering::call_signature(const sema::Type* function)
+lowir::SignatureId ProgramLowering::call_signature(const sema::Type* function, bool nothrow)
 {
 	// An indirect call's `as (...) -> T` boundary, parameters named argN:
-	// one per function type, unless a reference parameter's class is still
-	// incomplete (its object size may be stated by a later call).
+	// one per function type (and callee non-throwing or not, 15.4p2: the
+	// pointer's or reference's declaration says), unless a reference
+	// parameter's class is still incomplete (its object size may be stated
+	// by a later call).
 	const sema::Type* type = function->canonical;
-	const uint32_t known = call_signatures_.find(type);
+	PointerMap& signatures = nothrow ? nothrow_call_signatures_ : call_signatures_;
+	const uint32_t known = signatures.find(type);
 	if (known != PointerMap::kMissing)
 		return known;
 	lowir::Signature signature = lowir::Signature();
@@ -3213,9 +3223,11 @@ lowir::SignatureId ProgramLowering::call_signature(const sema::Type* function)
 	signature.boundary.result_classes = indirect ? 0 : result_classes(result);
 	if (type->variadic)
 		signature.boundary.arity = ir_model::CAM_VARIADIC;
+	if (nothrow)
+		signature.boundary.unwind = ir_model::CUM_NO;
 	const lowir::SignatureId id = program_.add_signature(signature);
 	if (complete)
-		call_signatures_.set(type, id);
+		signatures.set(type, id);
 	return id;
 }
 

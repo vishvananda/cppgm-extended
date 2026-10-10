@@ -204,7 +204,8 @@ void FunctionLowering::virtual_deletion(const sema::ClassEntity* entity, const R
 	const size_t base = arguments_.size();
 	arguments_.push_back(pointer.value);
 	const lowir::Value callee = virtual_callee(pointer.value, destructor->vtable_slot + 1);
-	emit_call(lowir::Type::scalar(lowir::TypeKind::Void), callee, base, lowering_.deleting_call_signature(), throws);
+	emit_call(
+		lowir::Type::scalar(lowir::TypeKind::Void), callee, base, lowering_.virtual_call_signature(destructor), throws);
 	end_call(throws);
 }
 

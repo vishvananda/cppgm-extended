@@ -77,6 +77,7 @@ private:
 	bool count_to_pointer(uint32_t loop);
 	bool hoist_stored_load(uint32_t loop);
 	bool hoist_from(uint32_t loop, bool apply);
+	bool entry_objects_kept(uint32_t loop, uint32_t parameter);
 	bool innermost(uint32_t loop) const
 	{
 		for (const Loop& l : forest_.loops)
@@ -90,6 +91,10 @@ private:
 	Cfg& cfg_;
 	LoopForest forest_;
 	std::vector<uint32_t> hoist_uses_; // use counts for hoist_from (empty: not counted)
+	// Per block of cfg_: the by-address parameters (bit k: parameter k)
+	// whose objects are known live at its end (entry_objects_kept; empty:
+	// not computed for this graph).
+	std::vector<uint64_t> live_objects_;
 };
 
 bool LoopPass::invariant(uint32_t loop, Value v) const
@@ -1622,7 +1627,7 @@ bool LoopPass::try_unroll(uint32_t loop)
 				extra.push_back(mapped(body_.operands[inst.extra_first + k]));
 			inst.extra_first = inst.extra_count != 0 ? append_operands(body_, extra.data(), inst.extra_count) : 0;
 			const TempId old_result = inst.result;
-			const InstId id = append_instruction(body_, inst);
+			const InstId id = append_copy(body_, body_, i, inst);
 			if (old_result != kNoId)
 			{
 				const TempId fresh = append_temp(body_, body_.temps[old_result].type, id);
@@ -2120,7 +2125,7 @@ bool LoopPass::try_unroll_search(uint32_t loop)
 				}
 				inst.extra_first = inst.extra_count != 0 ? append_operands(body_, extra.data(), inst.extra_count) : 0;
 				const TempId old_result = inst.result;
-				const InstId id = append_instruction(body_, inst);
+				const InstId id = append_copy(body_, body_, i, inst);
 				if (old_result != kNoId)
 				{
 					const TempId fresh = append_temp(body_, body_.temps[old_result].type, id);
@@ -2411,7 +2416,8 @@ bool LoopPass::hoist_stored_load(uint32_t loop)
 		const Function& function = c_.program.functions[c_.program.symbols[c_.symbol].detail];
 		const Signature& sig = c_.program.signatures[function.signature];
 		const Parameter& param = c_.program.parameters_of(sig)[a.index];
-		readable = param.pass == ir_model::PPM_BY_ADDRESS && offset + storage_bytes(ld.type) <= param.object_bytes;
+		readable = param.pass == ir_model::PPM_BY_ADDRESS && offset + storage_bytes(ld.type) <= param.object_bytes &&
+			entry_objects_kept(loop, a.index);
 	}
 	if (!readable)
 		return false;
@@ -2570,6 +2576,77 @@ struct LoopWrite
 
 } // namespace
 
+// Whether by-address parameter `parameter`'s object, readable on entry,
+// is still readable where `loop` is entered: on every path from the entry
+// to the loop's entry edges, no call that may write memory (and so free
+// it: munmap, operator delete) runs after the entry or after the last
+// access through the parameter (a load or store within its object_bytes:
+// the object was live then, as a whole). Handlers count as reached after
+// such a call. A forward dataflow over cfg_ of the first 64 parameters'
+// facts, once per graph.
+bool LoopPass::entry_objects_kept(uint32_t loop, uint32_t parameter)
+{
+	if (parameter >= 64)
+		return false;
+	const uint32_t n = cfg_.block_count;
+	if (live_objects_.size() != n)
+	{
+		const Function& function = c_.program.functions[c_.program.symbols[c_.symbol].detail];
+		const Signature& sig = c_.program.signatures[function.signature];
+		const uint32_t count = std::min<uint32_t>(std::min(body_.parameter_count, sig.parameter_count), 64);
+		// Per block: whether it calls (its input then counts for nothing),
+		// and the parameters it accesses after its last call.
+		std::vector<uint8_t> calls(n, 0);
+		std::vector<uint64_t> accessed(n, 0);
+		for (BlockId b : cfg_.rpo)
+			for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+			{
+				const Instruction& inst = body_.instructions[i];
+				if (inst.op == Opcode::Call && call_may_write_memory(c_.program, inst))
+				{
+					calls[b] = 1;
+					accessed[b] = 0;
+					continue;
+				}
+				if (inst.op != Opcode::Load && inst.op != Opcode::Store)
+					continue;
+				const Located at = locate(body_, inst.ops[inst.op == Opcode::Load ? 0 : 1]);
+				if (!at.root.is(ValueKind::Temp) || at.root.index >= count || !at.known || at.offset < 0)
+					continue;
+				const Parameter& param = c_.program.parameters_of(sig)[at.root.index];
+				if (param.pass == ir_model::PPM_BY_ADDRESS && static_cast<uint64_t>(at.offset) < param.object_bytes)
+					accessed[b] |= uint64_t(1) << at.root.index;
+			}
+		const uint64_t all = count == 64 ? ~uint64_t(0) : (uint64_t(1) << count) - 1;
+		live_objects_.assign(n, all);
+		const BlockId entry = cfg_.rpo.empty() ? kNoId : cfg_.rpo[0];
+		for (bool changed = true; changed;)
+		{
+			changed = false;
+			for (BlockId b : cfg_.rpo)
+			{
+				uint64_t in = b == entry || ((cfg_.flags[b] & BF_HANDLER) == 0 && cfg_.pred_count(b) != 0) ? all : 0;
+				for (uint32_t k = cfg_.pred_first[b]; k < cfg_.pred_first[b + 1] && in != 0; ++k)
+					in &= live_objects_[cfg_.preds[k]];
+				const uint64_t out = (calls[b] ? 0 : in) | accessed[b];
+				if (out != live_objects_[b])
+				{
+					live_objects_[b] = out;
+					changed = true;
+				}
+			}
+		}
+	}
+	const Loop& l = forest_.loops[loop];
+	for (uint32_t k = cfg_.pred_first[l.header]; k < cfg_.pred_first[l.header + 1]; ++k)
+	{
+		const BlockId p = cfg_.preds[k];
+		if (!in_loop(forest_, loop, p) && !(live_objects_[p] >> parameter & 1))
+			return false;
+	}
+	return true;
+}
+
 // Whether a load at `at` (bytes, type, typed) may read what `w` writes.
 static bool may_overlap(const LoopWrite& w, const Located& at, uint64_t bytes, Type type, bool typed)
 {
@@ -2697,7 +2774,8 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 				{
 					const Parameter& param = c_.program.parameters_of(sig)[at.root.index];
 					readable = param.object_bytes != 0 &&
-						static_cast<uint64_t>(at.offset) + bytes <= param.object_bytes;
+						static_cast<uint64_t>(at.offset) + bytes <= param.object_bytes &&
+						entry_objects_kept(loop, at.root.index);
 				}
 				if (clobbered || !readable || moved >= limit)
 				{
@@ -2811,6 +2889,7 @@ bool LoopPass::hoist_loads()
 		made = true;
 		c_.invalidate_cfg();
 		c_.ensure_cfg();
+		live_objects_.clear();
 		find_loops(body_, cfg_, forest_);
 		map_instruction_blocks(body_, c_.block_of);
 		c_.invalidate_block_of();

@@ -72,25 +72,13 @@ if(scalar(@ARGV) != 3)
 
 my ($app, $native_reference, $root) = @ARGV;
 my @tests = collect_tests($root,
-	qr/(?:constructor-alias-boundaries|enclosing-temporary-lifetime|out-of-class-move-assignment-boundary|conditional-copy-elision-permission|stable-prefix-query-boundary|parameter-object-extent-boundary|parameter-object-identity|parameter-destruction-full-expression|array-new-size-width|array-new-cookie-layout|array-new-length-check|array-new-braced-list|array-new-class-braced-list|named-return-object-identity|static-reference-lifetime|conditional-transfer-selection|empty-value-initialization|rejected-stable-prefix-query-[^.]+)\.cpp$/);
+	qr/(?:constructor-alias-boundaries|enclosing-temporary-lifetime|out-of-class-move-assignment-boundary|conditional-copy-elision-permission|parameter-object-extent-boundary|parameter-object-identity|parameter-destruction-full-expression|array-new-size-width|array-new-cookie-layout|array-new-length-check|array-new-braced-list|array-new-class-braced-list|named-return-object-identity|static-reference-lifetime|conditional-transfer-selection|empty-value-initialization)\.cpp$/);
 die "No PA12 survivor-property tests found under $root\n" if !@tests;
 
 for my $test (@tests)
 {
 	my $directory = tempdir('pa12-survivor-property-XXXXXX',
 		TMPDIR => 1, CLEANUP => 1);
-	if($test =~ /rejected-stable-prefix-query/) {
-		my $output = "$directory/rejected.lowir";
-		my $status = run_command_capture(
-			cmd => [$app, '--emit-lowir', '-O0', '-o', $output, $test],
-			stdout => "$directory/source.stdout",
-			stderr => "$directory/source.stderr",
-			timeout => 60,
-		);
-		die "$test: frontend accepted an invalid stable-prefix query\n"
-			if $status == 0;
-		next;
-	}
 	my ($path, $lowir) = compile_source($app, $test, $directory);
 	if($test =~ /(?:static-reference-lifetime|conditional-transfer-selection|empty-value-initialization|array-new-size-width|array-new-cookie-layout|array-new-class-braced-list|named-return-object-identity)/) {
 		compile_and_run($native_reference, $test, $directory, $path);
@@ -163,18 +151,6 @@ for my $test (@tests)
 			if $incoming < 2 || $producers < 2;
 		die "$test: O0 permission removed the ordinary source cleanup\n"
 			if $after !~ /^\s+call void \@\w+\(\Q$source\E\)$/m;
-		compile_and_run($native_reference, $test, $directory, $path);
-		next;
-	}
-	if($test =~ /stable-prefix-query-boundary/) {
-		my ($header) = $lowir =~
-			/^(function \@stable_prefix_query\([^\n]+\)[^\n]+\{)$/m;
-		die "$test: generated LowIR has no stable-prefix query boundary\n"
-			if !defined($header);
-		die "$test: source attribute did not emit query=stable_prefix\n"
-			if $header !~ /\bquery=stable_prefix\b/;
-		die "$test: query boundary lacks its final integer index or scalar result\n"
-			if $header !~ /%\w+\s*:\s*(?:i|u)(?:8|16|32|64)\)\s*->\s*(?:i|u)(?:8|16|32|64)\b/;
 		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}

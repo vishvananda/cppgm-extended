@@ -116,7 +116,7 @@ function @Range__begin(%this : ptr [object_bytes=8]) -> obj<8x8> [binding=weak, 
     call void @Iterator__Iterator__aggregate(%t1, %t3)
     return obj<8x8> $retobj__1
 }
-function @Iterator__Iterator__aggregate(%this : ptr, %current : ptr) -> void [unwind=no, binding=internal] {
+function @Iterator__Iterator__aggregate(%this : ptr [object_bytes=8], %current : ptr) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $current : ptr
 

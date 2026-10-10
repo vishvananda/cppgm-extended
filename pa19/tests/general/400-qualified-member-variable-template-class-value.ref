@@ -1,4 +1,4 @@
-global @prop_0___static_query_v [binding=weak, object=_ZN4propILi0EE14static_query_vI2exS0_EE] = {
+global @prop_0___static_query_v [storage=readonly, binding=weak, object=_ZN4propILi0EE14static_query_vI2exS0_EE] = {
   zero 1
 }
 

@@ -57,7 +57,6 @@ void check_metadata()
   round_trip<CallEffectsMode>("CallEffectsMode", kCallEffectsModeCount, 1);
   round_trip<CallUnwindMode>("CallUnwindMode", kCallUnwindModeCount, 1);
   round_trip<CallReturnMode>("CallReturnMode", kCallReturnModeCount, 1);
-  round_trip<CallQueryMode>("CallQueryMode", kCallQueryModeCount, 1);
   round_trip<ParamPassingMode>("ParamPassingMode", kParamPassingModeCount, 1);
   round_trip<ParamAliasMode>("ParamAliasMode", kParamAliasModeCount, 1);
   round_trip<IndexProjectionKind>("IndexProjectionKind", kIndexProjectionKindCount, 1);

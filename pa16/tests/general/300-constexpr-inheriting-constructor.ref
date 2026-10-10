@@ -1,29 +1,29 @@
 declare global @Size_4___value : i32 [binding=weak, object=_ZN4SizeILi4EE5valueE]
 
 global @calls : i32 [binding=strong] = zero
-global @plain [binding=internal, object=_ZL5plain] = {
+global @plain [storage=readonly, binding=internal, object=_ZL5plain] = {
   i32 1
 }
 global @bound : obj<12x4> [binding=strong] = {
   zero 12
 }
-global @members [binding=internal, object=_ZL7members] = {
+global @members [storage=readonly, binding=internal, object=_ZL7members] = {
   i32 1
   i32 10
   i32 11
   i32 7
 }
-global @shorter [binding=internal, object=_ZL7shorter] = {
+global @shorter [storage=readonly, binding=internal, object=_ZL7shorter] = {
   i32 21
 }
-global @longer [binding=internal, object=_ZL6longer] = {
+global @longer [storage=readonly, binding=internal, object=_ZL6longer] = {
   i32 3
 }
-global @wrapped [binding=internal, object=_ZL7wrapped] = {
+global @wrapped [storage=readonly, binding=internal, object=_ZL7wrapped] = {
   i32 5
   i32 3
 }
-global @chained [binding=internal, object=_ZL7chained] = {
+global @chained [storage=readonly, binding=internal, object=_ZL7chained] = {
   i32 6
   i32 10
   i32 16

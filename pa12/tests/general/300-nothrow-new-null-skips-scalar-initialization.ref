@@ -1,4 +1,4 @@
-global @std__nothrow [binding=strong, object=_ZSt7nothrow] = {
+global @std__nothrow [storage=readonly, binding=strong, object=_ZSt7nothrow] = {
   zero 1
 }
 

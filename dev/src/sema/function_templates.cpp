@@ -1473,6 +1473,8 @@ FunctionEntity* Analyzer::specialize(FunctionEntity* primary, const TypeList& gi
 	function->internal_linkage = primary->internal_linkage;
 	function->no_inline = primary->no_inline;
 	function->effects = primary->effects;
+	// [[noreturn]] or GNU noreturn on the template (7.6.3p1).
+	function->noreturn = primary->noreturn;
 	function->signature = signature_of(type);
 	function->parameters = primary->parameters;
 	// Its own default arguments, instantiated as calls use them: the

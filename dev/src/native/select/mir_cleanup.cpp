@@ -602,7 +602,9 @@ private:
 	std::vector<int32_t> homes_;
 	// Distinct successors and predecessors (CSR, by block).
 	std::vector<uint32_t> succ_first_, succs_, pred_first_, preds_;
-	std::vector<uint8_t> cut_;    // no inflow: the entry, landings, course handlers
+	// No inflow: the entry, landings, course handlers, and the joins of a
+	// block only a host landing reaches (see edges).
+	std::vector<uint8_t> cut_;
 	std::vector<uint32_t> order_; // reverse postorder from the entry
 	uint32_t removed_ = 0;
 };
@@ -678,6 +680,16 @@ void HomeForwarding::edges()
 		stack.pop_back();
 	}
 	std::reverse(order_.begin(), order_.end());
+	// A block no branch from the entry reaches is reached only through a
+	// host landing pad (calls name their pads, no branch does), or not at
+	// all: it is never evaluated, so a block it jumps to (a catch rejoining
+	// the code after its try) holds nothing at its start.
+	if (f_.eh.landings.empty())
+		return;
+	for (uint32_t b = 0; b < n_; ++b)
+		if (!seen[b])
+			for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
+				cut_[succs_[k]] = cut_[succs_[k]] | seen[succs_[k]];
 }
 
 // A copy of a holder into a scratch register (r10, r11) at insts[i]: its
@@ -996,7 +1008,8 @@ uint32_t HomeForwarding::run()
 // or a reload of it, neither written since; also of a slot, unwritten
 // through a pointer and no call between (available-value dataflow over
 // the blocks' branches to a fixed point; nothing flows into the entry, a
-// landing or a course handler) -- goes when that register is its
+// landing, a course handler or a join with a block only a host landing
+// reaches) -- goes when that register is its
 // destination, else becomes a register copy; a copy into a scratch
 // register (r10, r11: dead at block ends) then feeds its readers directly and
 // goes. Calls drop the caller-saved holders, anything not simple drops

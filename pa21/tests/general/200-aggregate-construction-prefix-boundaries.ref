@@ -21,7 +21,7 @@ global @__rtti_int [storage=readonly, binding=internal] = {
 global @__ehobj_int [binding=internal] = {
   zero 4
 }
-global @case_0__expected [binding=internal, object=_ZN6case_0L8expectedE] = {
+global @case_0__expected [storage=readonly, binding=internal, object=_ZN6case_0L8expectedE] = {
   u32 1988700000
   u32 0
   u32 32
@@ -30,7 +30,7 @@ global @case_0__expected [binding=internal, object=_ZN6case_0L8expectedE] = {
   u32 2373708736
   u32 4043241184
 }
-global @case_1__expected [binding=internal, object=_ZN6case_1L8expectedE] = {
+global @case_1__expected [storage=readonly, binding=internal, object=_ZN6case_1L8expectedE] = {
   u32 1988700000
   u32 0
   u32 32
@@ -39,7 +39,7 @@ global @case_1__expected [binding=internal, object=_ZN6case_1L8expectedE] = {
   u32 2373708736
   u32 4043241184
 }
-global @case_2__expected [binding=internal, object=_ZN6case_2L8expectedE] = {
+global @case_2__expected [storage=readonly, binding=internal, object=_ZN6case_2L8expectedE] = {
   u32 1378408384
   u32 0
   u32 32
@@ -71,7 +71,7 @@ global @case_2__expected [binding=internal, object=_ZN6case_2L8expectedE] = {
   u32 404769344
   u32 151618624
 }
-global @case_3__expected [binding=internal, object=_ZN6case_3L8expectedE] = {
+global @case_3__expected [storage=readonly, binding=internal, object=_ZN6case_3L8expectedE] = {
   u32 4043241184
   u32 0
   u32 32
@@ -79,7 +79,7 @@ global @case_3__expected [binding=internal, object=_ZN6case_3L8expectedE] = {
   u32 41611712
   u32 2373708736
 }
-global @case_4__expected [binding=internal, object=_ZN6case_4L8expectedE] = {
+global @case_4__expected [storage=readonly, binding=internal, object=_ZN6case_4L8expectedE] = {
   u32 1988700000
   u32 0
   u32 32
@@ -88,7 +88,7 @@ global @case_4__expected [binding=internal, object=_ZN6case_4L8expectedE] = {
   u32 2373708736
   u32 4043241184
 }
-global @case_5__expected [binding=internal, object=_ZN6case_5L8expectedE] = {
+global @case_5__expected [storage=readonly, binding=internal, object=_ZN6case_5L8expectedE] = {
   u32 4083490624
   u32 0
   u32 32
@@ -98,7 +98,7 @@ global @case_5__expected [binding=internal, object=_ZN6case_5L8expectedE] = {
   u32 2373708736
   u32 4083490624
 }
-global @case_6__expected [binding=internal, object=_ZN6case_6L8expectedE] = {
+global @case_6__expected [storage=readonly, binding=internal, object=_ZN6case_6L8expectedE] = {
   u32 4083490624
   u32 0
   u32 32

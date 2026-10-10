@@ -274,13 +274,16 @@ const Type* Analyzer::AdjustedThrowType(TypeTable& types, const Type* type)
 	return type->is_reference() ? type : type->unqualified;
 }
 
-void Analyzer::note_nothrow_target(const Entity* entity, const Type* type, const syntax::Declarator* declarator)
+void Analyzer::note_nothrow_target(
+	const Entity* entity, const Type* type, const syntax::Declarator* declarator, Scope* scope)
 {
 	// 15.4p2, 15.4p12: a pointer, reference or pointer to member to a
 	// function type (or a parameter of function type) whose declarator's
-	// exception-specification is `throw()`, `noexcept` or `noexcept(true)`:
-	// a call through it does not throw (5.3.7p3). Only the declarators of
-	// such types are walked.
+	// exception-specification is `throw()`, `noexcept` or a
+	// noexcept(constant-expression) whose value is true (evaluated where
+	// declared, outside templates: an instance's own declaration evaluates
+	// its own): a call through it does not throw (5.3.7p3). Only the
+	// declarators of such types are walked.
 	if (type->is_reference() || type->kind == TypeKind::Pointer || type->kind == TypeKind::MemberPointer)
 		type = type->element;
 	if (type->kind != TypeKind::Function)
@@ -297,7 +300,11 @@ void Analyzer::note_nothrow_target(const Entity* entity, const Type* type, const
 			derivations = 0;
 		}
 	}
-	if (function != nullptr && derivations <= 1 && NonThrowingSpecification(function))
+	if (function == nullptr || derivations > 1)
+		return;
+	const syntax::Expr* operand = NoexceptOperand(function);
+	if (NonThrowingSpecification(function) ||
+		(operand != nullptr && template_depth_ == 0 && scope != nullptr && noexcept_value(nullptr, operand, scope)))
 		nothrow_targets_.set(entity, 1);
 }
 
@@ -663,8 +670,10 @@ bool Analyzer::noexcept_value(const FunctionEntity* function, const syntax::Expr
 	Scope* saved_expression = expression_scope_;
 	BodyContext context = BodyContext();
 	// A non-static member function's `this` (5.1.1p3), qualified by its
-	// cv-qualifiers.
-	if (function->member && !function->is_static && !function->constructor && function->owner != nullptr &&
+	// cv-qualifiers (none for a pointer's or reference's declaration).
+	if (function == nullptr)
+		;
+	else if (function->member && !function->is_static && !function->constructor && function->owner != nullptr &&
 		function->owner->kind == ScopeKind::Class)
 		context.this_type = types_.pointer(types_.qualified(function->owner->entity->type, function->type->cv));
 	else if (function->constructor && function->owner != nullptr && function->owner->kind == ScopeKind::Class)

@@ -58,7 +58,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = load typed i32 $cond__1
     return i32 %t19
 }
-function @Pair__Pair__aggregate(%this : ptr, %prefix : ptr, %kind : i32) -> void [unwind=no, binding=internal] {
+function @Pair__Pair__aggregate(%this : ptr [object_bytes=16], %prefix : ptr, %kind : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $prefix : ptr
   slot $kind : i32

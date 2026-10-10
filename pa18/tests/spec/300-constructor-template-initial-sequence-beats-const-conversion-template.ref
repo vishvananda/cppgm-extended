@@ -35,7 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load typed i32 $cond__1
     return i32 %t7
 }
-function @error_id__error_id__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
+function @error_id__error_id__aggregate(%this : ptr [object_bytes=4], %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 

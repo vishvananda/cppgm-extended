@@ -32,9 +32,8 @@ bool IsIdentifierLikeOperator(const PPToken& token)
 
 // __has_cpp_attribute and (gnu) __has_attribute: the attributes this
 // implementation reports, as the course reference does (value 1): the
-// standard attribute no_unique_address; the GNU attributes
-// cppgm_stable_prefix and Clang's using_if_exists. `__name__`
-// spells the same attribute.
+// standard attribute no_unique_address; the GNU attribute Clang's
+// using_if_exists. `__name__` spells the same attribute.
 bool IsReportedAttribute(const char* spelling, uint32_t length, bool gnu)
 {
 	if (length > 4 && std::memcmp(spelling, "__", 2) == 0 && std::memcmp(spelling + length - 2, "__", 2) == 0)
@@ -42,8 +41,8 @@ bool IsReportedAttribute(const char* spelling, uint32_t length, bool gnu)
 		spelling += 2;
 		length -= 4;
 	}
-	static const char* const kReported[] = { "no_unique_address", "cppgm_stable_prefix", "using_if_exists" };
-	for (unsigned i = gnu ? 1 : 0; i < (gnu ? 3u : 1u); ++i)
+	static const char* const kReported[] = { "no_unique_address", "using_if_exists" };
+	for (unsigned i = gnu ? 1 : 0; i < (gnu ? 2u : 1u); ++i)
 	{
 		if (std::strlen(kReported[i]) == length && std::memcmp(spelling, kReported[i], length) == 0)
 			return true;

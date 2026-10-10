@@ -1,4 +1,4 @@
-global @static_storage___cppgm_class_template_identity_1___value [binding=weak, object=_ZN14static_storageI7wrapperI12callable_tagEE5valueE] = {
+global @static_storage___cppgm_class_template_identity_1___value [storage=readonly, binding=weak, object=_ZN14static_storageI7wrapperI12callable_tagEE5valueE] = {
   i32 11
 }
 global @selected : ptr [binding=internal, object=_ZL8selected] = addr @static_storage___cppgm_class_template_identity_1___value

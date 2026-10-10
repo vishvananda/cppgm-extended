@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load typed i32 $cond__1
     return i32 %t4
 }
-function @known_digits__known_digits__aggregate(%this : ptr, %value : i64) -> void [unwind=no, binding=internal] {
+function @known_digits__known_digits__aggregate(%this : ptr [object_bytes=8], %value : i64) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i64
 

@@ -666,8 +666,6 @@ void Parser::parse_metadata_item(
 	{
 		if (on_global)
 			fail("function metadata on non-function");
-		if (key == MetadataKey::Query && context == MetadataContext::CallSignature)
-			fail("query metadata requires a direct function");
 		if (key == MetadataKey::ResultClasses)
 		{
 			if (result_classes_ == nullptr)
@@ -704,13 +702,9 @@ void Parser::parse_boundary_value(MetadataKey key, BoundaryMetadata& boundary)
 		if (!word || !ir_model::from_spelling(text, length, &boundary.unwind))
 			fail("invalid unwind metadata");
 		break;
-	case MetadataKey::Return:
+	default:
 		if (!word || !ir_model::from_spelling(text, length, &boundary.returns))
 			fail("invalid return metadata");
-		break;
-	default:
-		if (!word || !ir_model::from_spelling(text, length, &boundary.query))
-			fail("invalid query metadata");
 		break;
 	}
 	advance();
@@ -905,14 +899,6 @@ void Parser::check_signature(const Signature& signature, Position position)
 	{
 		if (parameters[i].pass == ir_model::PPM_INDIRECT_RESULT && (i != 0 || !signature.result.is_void()))
 			fail_at(position, "invalid indirect result parameter");
-	}
-	if (signature.boundary.query == ir_model::CQM_STABLE_PREFIX)
-	{
-		const bool scalar_result = signature.result.is_integer() || signature.result.is_float() ||
-			signature.result.is_pointer();
-		if (signature.boundary.arity != ir_model::CAM_FIXED || signature.parameter_count == 0 ||
-			!parameters[signature.parameter_count - 1].type.is_integer() || !scalar_result)
-			fail_at(position, "stable-prefix query requires a fixed scalar boundary with a final integer parameter");
 	}
 }
 

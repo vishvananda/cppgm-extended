@@ -400,13 +400,13 @@ function @YB___YB(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak
     store typed ptr %t3, %t1
     return void
 }
-function @_YC___YC__deleting_entry__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N2YCD0Ev] {
+function @_YC___YC__deleting_entry__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [unwind=no, binding=weak, object=_ZThn8_N2YCD0Ev] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     call void @YC___YC__deleting_entry(%t1)
     return void
 }
-function @_YC___YC__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZThn8_N2YCD1Ev] {
+function @_YC___YC__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [unwind=no, binding=weak, object=_ZThn8_N2YCD1Ev] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     call void @YC___YC(%t1)

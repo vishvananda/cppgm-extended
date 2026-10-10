@@ -208,6 +208,7 @@ Binding* Analyzer::explicit_function_specialization(const Specifiers& specifiers
 	// member template of the class template specialization, its arguments
 	// deduced (14.7.3p14: `template<> template<> void A<int>::g1(int,
 	// char)`, X1 deduced as char).
+	const bool of_template = function == nullptr;
 	if (function == nullptr)
 	{
 		key = specialization_key(*info.name);
@@ -236,6 +237,16 @@ Binding* Analyzer::explicit_function_specialization(const Specifiers& specifiers
 	// Deleted as its own declarations say (8.4.3p4), not as the template
 	// or the member it replaces is.
 	function->deleted = (function->explicit_specialization && function->deleted) || deleted;
+	// A function template's explicit specialization is a function of its
+	// own: its attributes are its declarations' (as GCC reads them, warning
+	// of one missing its template's), not the template's its entity was
+	// made with (a member's redeclares the member).
+	if (of_template && !function->explicit_specialization)
+	{
+		function->noreturn = false;
+		function->effects = FunctionEffect::Default;
+		function->no_inline = false;
+	}
 	function->explicit_specialization = true;
 	function->instantiated = false;
 	function->is_inline = specifiers.is_inline || specifiers.is_constexpr;

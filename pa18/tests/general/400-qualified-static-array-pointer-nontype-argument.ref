@@ -1,4 +1,4 @@
-global @holder_int___value [binding=weak, object=_ZN6holderIiE5valueE] = {
+global @holder_int___value [storage=readonly, binding=weak, object=_ZN6holderIiE5valueE] = {
   i8 0
 }
 

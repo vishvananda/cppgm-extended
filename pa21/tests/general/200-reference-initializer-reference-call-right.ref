@@ -26,7 +26,7 @@ global @count : i32 [binding=internal, object=_ZL5count] = zero
 global @trace : obj<16384x4> [binding=internal, object=_ZL5trace] = {
   zero 16384
 }
-global @expected_trace [binding=internal, object=_ZL14expected_trace] = {
+global @expected_trace [storage=readonly, binding=internal, object=_ZL14expected_trace] = {
   i64 13200130
   i64 0
   i64 13200130
@@ -38,7 +38,7 @@ global @expected_trace [binding=internal, object=_ZL14expected_trace] = {
   i64 13200130
   i64 13200130
 }
-global @expected_count [binding=internal, object=_ZL14expected_count] = {
+global @expected_count [storage=readonly, binding=internal, object=_ZL14expected_count] = {
   i32 2
   i32 0
   i32 2

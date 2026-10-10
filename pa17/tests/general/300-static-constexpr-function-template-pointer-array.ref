@@ -1,15 +1,15 @@
 declare global @table_void___inv_sizes32_len : i64 [binding=weak, object=_ZN5tableIvE15inv_sizes32_lenE]
 
-global @table_void___inv_sizes32 [binding=weak, object=_ZN5tableIvE11inv_sizes32E] = {
+global @table_void___inv_sizes32 [storage=readonly, binding=weak, object=_ZN5tableIvE11inv_sizes32E] = {
   i64 1
   i64 2
 }
-global @table_void___sizes [binding=weak, object=_ZN5tableIvE5sizesE] = {
+global @table_void___sizes [storage=readonly, binding=weak, object=_ZN5tableIvE5sizesE] = {
   i64 13
   i64 29
   i64 53
 }
-global @table_void___positions [binding=weak, object=_ZN5tableIvE9positionsE] = {
+global @table_void___positions [storage=readonly, binding=weak, object=_ZN5tableIvE9positionsE] = {
   ptr addr @table_void___position
 }
 

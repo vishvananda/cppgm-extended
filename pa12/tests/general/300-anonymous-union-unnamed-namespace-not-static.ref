@@ -31,10 +31,3 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load typed i32 $cond__1
     return i32 %t10
 }
-function @_GLOBAL__N_1____anonymous_union_type__162_175____anonymous_union_type__162_175__base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_13$_0C2Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}

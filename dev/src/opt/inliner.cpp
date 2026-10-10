@@ -628,7 +628,7 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 			const std::vector<Value> args(
 				cb.operands.begin() + call.extra_first, cb.operands.begin() + call.extra_first + call.extra_count);
 			again.extra_first = args.empty() ? 0 : append_operands(cb, args.data(), call.extra_count);
-			const InstId id = append_instruction(cb, again);
+			const InstId id = append_copy(cb, cb, call_id, again);
 			if (call.result != kNoId)
 			{
 				cb.instructions[id].result = append_temp(cb, cb.temps[call.result].type, id);
@@ -637,13 +637,6 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 			else
 				returns.push_back(std::make_pair(nb, Value::none()));
 			insert_after(cb, nb, kNoId, id);
-			for (size_t k = 0, count = cb.argument_classes.size(); k < count; ++k)
-				if (cb.argument_classes[k].call == call_id)
-				{
-					ArgumentClasses copy = cb.argument_classes[k];
-					copy.call = id;
-					cb.argument_classes.push_back(copy);
-				}
 			Instruction leave = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
 			leave.ops[0] = Value::block(cont);
 			leave.location = call.location;
@@ -687,17 +680,10 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 			}
 			if (inst.result != kNoId)
 				inst.result = temps[inst.result].index;
-			const InstId id = append_instruction(cb, inst);
+			const InstId id = append_copy(cb, kb, i, inst);
 			if (inst.result != kNoId)
 				cb.temps[inst.result].def = id;
 			insert_after(cb, nb, cb.blocks[nb].last, id);
-			for (const ArgumentClasses& classes : kb.argument_classes)
-				if (classes.call == i)
-				{
-					ArgumentClasses copy = classes;
-					copy.call = id;
-					cb.argument_classes.push_back(copy);
-				}
 		}
 	}
 	// The call becomes a jump into the copy.

@@ -1,4 +1,4 @@
-global @constants_void___data [binding=weak, object=_ZN9constantsIvE4dataE] = {
+global @constants_void___data [storage=readonly, binding=weak, object=_ZN9constantsIvE4dataE] = {
   u32 11
   u32 22
   u32 33

@@ -1,4 +1,4 @@
-global @literal___cppgm_class_template_identity_1___data [binding=weak, object=_ZN7literalI5bytesIJLh4ELh7EEEE4dataE] = {
+global @literal___cppgm_class_template_identity_1___data [storage=readonly, binding=weak, object=_ZN7literalI5bytesIJLh4ELh7EEEE4dataE] = {
   u8 4
   u8 7
 }

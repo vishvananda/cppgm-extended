@@ -252,7 +252,7 @@ function @Source__operatorT(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=w
     call void @Value__Value__aggregate(%t1, %t4)
     return obj<4x4> $retobj__1
 }
-function @Value__Value__aggregate(%this : ptr, %number : i32) -> void [unwind=no, binding=internal] {
+function @Value__Value__aggregate(%this : ptr [object_bytes=4], %number : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $number : i32
 

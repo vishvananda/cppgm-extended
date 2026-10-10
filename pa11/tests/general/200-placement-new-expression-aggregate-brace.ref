@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @table__table__aggregate(%t3, 1)
     return i32 0
 }
-function @table__table__aggregate(%this : ptr, %size : u32) -> void [unwind=no, binding=internal] {
+function @table__table__aggregate(%this : ptr [object_bytes=4], %size : u32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $size : u32
 

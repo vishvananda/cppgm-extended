@@ -1,4 +1,4 @@
-global @__local_static__get_table__decl0__table [binding=internal, object=_ZZ9get_tablevE5table] = {
+global @__local_static__get_table__decl0__table [storage=readonly, binding=internal, object=_ZZ9get_tablevE5table] = {
   i32 1
   i32 2
 }

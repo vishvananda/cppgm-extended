@@ -1,4 +1,4 @@
-global @__local_static__digits__decl0__arr [binding=internal, object=_ZZ6digitsvE3arr] = {
+global @__local_static__digits__decl0__arr [storage=readonly, binding=internal, object=_ZZ6digitsvE3arr] = {
   i8 48
   i8 49
   i8 50

@@ -1,4 +1,4 @@
-global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__decl0__stored [binding=weak, object=_ZZN10function_nIvE9assign_toI11log_functorEEiT_bE6stored] = {
+global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e4976453961737369676e5f746f4931316c6f675f66756e63746f72454569545f62__decl0__stored [storage=readonly, binding=weak, object=_ZZN10function_nIvE9assign_toI11log_functorEEiT_bE6stored] = {
   ptr addr @manager_log_functor___call
   ptr addr @invoker_log_functor___call
 }

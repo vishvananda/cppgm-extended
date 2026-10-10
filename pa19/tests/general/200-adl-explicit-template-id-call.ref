@@ -21,7 +21,7 @@ function @holder__key_extractors(%this : ptr [object_bytes=1]) -> obj<8x4> [bind
     call void @tuples__tuple__tuple__aggregate(%t1, 1, 2)
     return obj<8x4> $retobj__1
 }
-function @tuples__tuple__tuple__aggregate(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
+function @tuples__tuple__tuple__aggregate(%this : ptr [object_bytes=8], %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $first : i32
   slot $second : i32

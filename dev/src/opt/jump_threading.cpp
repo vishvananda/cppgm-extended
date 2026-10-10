@@ -655,7 +655,7 @@ bool JumpThreading::copy_branch(BlockId m, BlockId p, const Value* inputs, std::
 		Instruction copy = inst;
 		for (Value& v : copy.ops)
 			v = value(v);
-		const InstId id = append_instruction(body_, copy);
+		const InstId id = append_copy(body_, body_, i, copy);
 		const TempId result = append_temp(body_, body_.temps[inst.result].type, id);
 		body_.instructions[id].result = result;
 		insert_after(body_, p, at, id);
@@ -1295,7 +1295,7 @@ BlockId JumpThreading::copy_merge(BlockId p, BlockId q, BlockId s)
 		inst.extra_first = extra.empty() ? 0 : append_operands(body_, extra.data(), inst.extra_count);
 		inst.next = kNoId;
 		const TempId old = inst.result;
-		const InstId id = append_instruction(body_, inst);
+		const InstId id = append_copy(body_, body_, i, inst);
 		if (old != kNoId)
 		{
 			const TempId fresh = append_temp(body_, body_.temps[old].type, id);
@@ -1548,7 +1548,7 @@ bool JumpThreading::copy_thread(BlockId s, InstId tail, std::vector<std::pair<Bl
 			inst.extra_first = extra.empty() ? 0 : append_operands(body_, extra.data(), inst.extra_count);
 			inst.next = kNoId;
 			const TempId old = inst.result;
-			const InstId id = append_instruction(body_, inst);
+			const InstId id = append_copy(body_, body_, i, inst);
 			if (old != kNoId)
 			{
 				const TempId fresh = append_temp(body_, body_.temps[old].type, id);

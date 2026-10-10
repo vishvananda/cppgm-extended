@@ -579,7 +579,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_36:
     return i32 0
 }
-function @case_0__S__S__aggregate(%this : ptr, %x : i32) -> void [unwind=no, binding=internal] {
+function @case_0__S__S__aggregate(%this : ptr [object_bytes=4], %x : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $x : i32
 
@@ -592,7 +592,7 @@ function @case_0__S__S__aggregate(%this : ptr, %x : i32) -> void [unwind=no, bin
     store typed i32 %t1, %t3
     return void
 }
-function @case_4__S__S__aggregate(%this : ptr, %x : i32) -> void [unwind=no, binding=internal] {
+function @case_4__S__S__aggregate(%this : ptr [object_bytes=4], %x : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $x : i32
 

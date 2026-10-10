@@ -207,7 +207,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^member_pointer_end_8:
     %t25 = load typed ptr $member_pointer_callee__1
-    %t26 = call ptr %t25(%t19) as (%arg0 : ptr [object_bytes=32]) -> ptr
+    %t26 = call ptr %t25(%t19) as (%arg0 : ptr) -> ptr
     %t27 = addr $leaf
     %t28 = cmp ne ptr %t26, %t27
     branch %t28, ^if_then_4, ^if_else_5
@@ -409,7 +409,7 @@ function @Left__Left__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) ->
     store typed ptr %t8, %t6
     return void
 }
-function @_Leaf__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n32(%arg0 : ptr [object_bytes=32]) -> ptr [binding=weak, object=_ZTcv0_n24_v0_n32_N4Leaf4selfEv] {
+function @_Leaf__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n32(%arg0 : ptr) -> ptr [binding=weak, object=_ZTcv0_n24_v0_n32_N4Leaf4selfEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
     %t2 = index i8 %t1, -24
@@ -429,7 +429,7 @@ function @_Leaf__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__
     %t10 = index i8 %t5, %t9
     return ptr %t10
 }
-function @_Leaf__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n40(%arg0 : ptr [object_bytes=32]) -> ptr [binding=weak, object=_ZTcv0_n24_v0_n40_N4Leaf4selfEv] {
+function @_Leaf__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n40(%arg0 : ptr) -> ptr [binding=weak, object=_ZTcv0_n24_v0_n40_N4Leaf4selfEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
     %t2 = index i8 %t1, -24
@@ -449,7 +449,7 @@ function @_Leaf__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__
     %t10 = index i8 %t5, %t9
     return ptr %t10
 }
-function @_Left__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n32(%arg0 : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZTcv0_n24_v0_n32_N4Left4selfEv] {
+function @_Left__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n32(%arg0 : ptr) -> ptr [binding=weak, object=_ZTcv0_n24_v0_n32_N4Left4selfEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
     %t2 = index i8 %t1, -24
@@ -469,7 +469,7 @@ function @_Left__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__
     %t10 = index i8 %t5, %t9
     return ptr %t10
 }
-function @_Right__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n32(%arg0 : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZTcv0_n24_v0_n32_N5Right4selfEv] {
+function @_Right__self__vtable_return_adjust__this_pos0__return_pos0__vcall_n24__virtual_n32(%arg0 : ptr) -> ptr [binding=weak, object=_ZTcv0_n24_v0_n32_N5Right4selfEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
     %t2 = index i8 %t1, -24

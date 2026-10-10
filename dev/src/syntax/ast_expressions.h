@@ -224,8 +224,8 @@ struct LambdaExpr : Expr
 	Slice<TypeId*> throw_types;
 	TypeId* trailing;
 	CompoundStmt* body;
-	// GNU attributes of the lambda-declarator (noinline, used: the call
-	// operator's).
+	// GNU attributes of the lambda-declarator (noinline, used, pure, const:
+	// the call operator's).
 	Attribute* attributes = nullptr;
 	// The unit token ordinals of the parameter clause's `(` (the body's
 	// when there is none) and of the body's `{`: the closure's LowIR name

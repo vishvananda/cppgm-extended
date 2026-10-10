@@ -397,6 +397,21 @@ InstId append_instruction(FunctionBody& body, const Instruction& inst)
 	return static_cast<InstId>(body.instructions.size() - 1);
 }
 
+void copy_argument_classes(FunctionBody& body, const FunctionBody& from, InstId source, InstId copy)
+{
+	// (Indexes: `from` may be `body`.)
+	const std::vector<ArgumentClasses>& table = from.argument_classes;
+	size_t k = static_cast<size_t>(std::lower_bound(table.begin(), table.end(), source,
+									   [](const ArgumentClasses& entry, InstId call) { return entry.call < call; }) -
+		table.begin());
+	for (; k < from.argument_classes.size() && from.argument_classes[k].call == source; ++k)
+	{
+		ArgumentClasses entry = from.argument_classes[k];
+		entry.call = copy;
+		body.argument_classes.push_back(entry);
+	}
+}
+
 TempId append_temp(FunctionBody& body, Type type, InstId def)
 {
 	Temp temp;
@@ -687,6 +702,10 @@ void compact_body(Program& program, FunctionBody& body)
 	for (const ArgumentClasses& classes : out.argument_classes)
 		if (classes.call != kNoId)
 			kept.push_back(classes);
+	// Renumbered in layout order (an inlined or cloned call may now come
+	// before older ones): back in instruction order.
+	std::stable_sort(
+		kept.begin(), kept.end(), [](const ArgumentClasses& a, const ArgumentClasses& b) { return a.call < b.call; });
 	out.argument_classes.swap(kept);
 	// Slots nothing names any more are dropped; their storage was unused.
 	FlatMap<NameId, uint8_t, NameHash> marks;

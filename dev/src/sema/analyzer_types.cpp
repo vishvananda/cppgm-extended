@@ -1377,7 +1377,7 @@ void Analyzer::declare_parameter(
 	if (name != nullptr)
 		declare_in(prototype, binding);
 	if (name != nullptr && semantic())
-		note_nothrow_target(parameter, type, clause.parameters[index]->declarator);
+		note_nothrow_target(parameter, type, clause.parameters[index]->declarator, prototype);
 }
 
 const Type* Analyzer::parameter_type(const syntax::ParameterDeclaration& parameter, Scope* scope)

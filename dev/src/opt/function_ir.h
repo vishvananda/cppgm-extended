@@ -223,6 +223,25 @@ void count_uses(const lowir::FunctionBody& body, std::vector<uint32_t>& uses);
 
 // New instructions, temporaries and literals (appended; ids stay dense).
 lowir::InstId append_instruction(lowir::FunctionBody& body, const lowir::Instruction& inst);
+// The stated argument classes (FunctionBody::argument_classes) of `from`'s
+// call or va_arg `source`, appended to `body`'s for its copy `copy` (the
+// newest instruction: the table stays in instruction order). `from` may
+// be `body`.
+void copy_argument_classes(
+	lowir::FunctionBody& body, const lowir::FunctionBody& from, lowir::InstId source, lowir::InstId copy);
+// A copy `inst` (its operands already mapped) of instruction `source` of
+// `from` (may be `body`), appended to `body` with its argument classes.
+// Every pass that clones instructions appends them so.
+inline lowir::InstId append_copy(
+	lowir::FunctionBody& body, const lowir::FunctionBody& from, lowir::InstId source, const lowir::Instruction& inst)
+{
+	const bool classes = !from.argument_classes.empty() &&
+		(inst.op == lowir::Opcode::Call || inst.op == lowir::Opcode::VaArg);
+	const lowir::InstId id = append_instruction(body, inst);
+	if (classes)
+		copy_argument_classes(body, from, source, id);
+	return id;
+}
 lowir::TempId append_temp(lowir::FunctionBody& body, lowir::Type type, lowir::InstId def);
 lowir::Value integer_value(lowir::FunctionBody& body, lowir::Literal bits);
 lowir::Value literal_value(

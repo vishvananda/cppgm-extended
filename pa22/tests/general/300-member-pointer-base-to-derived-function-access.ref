@@ -116,7 +116,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^member_pointer_end_9:
     %t50 = load typed ptr $member_pointer_callee__3
-    %t51 = call i32 %t50(%t44) as (%arg0 : ptr [object_bytes=8]) -> i32
+    %t51 = call i32 %t50(%t44) as (%arg0 : ptr) -> i32
     %t52 = cmp eq i32 %t51, 5
     branch %t52, ^land_rhs_4, ^land_short_5
 

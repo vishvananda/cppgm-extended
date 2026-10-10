@@ -811,6 +811,8 @@ lowir::SymbolId ProgramLowering::constant_temporary(const sema::ConstValue* temp
 	const lowir::SymbolId symbol = new_symbol("__ref_tmp__" + std::to_string(++static_temporaries_));
 	program_.declare_global(symbol, lowir::SymbolKind::GlobalDefinition, global);
 	program_.symbols[symbol].metadata.binding = ir_model::SBM_INTERNAL;
+	if (readonly_object(type))
+		program_.symbols[symbol].metadata.storage = ir_model::GSM_READONLY;
 	name_temporary(symbol);
 	++counters_.globals;
 	constant_temporaries_.set(temporary, symbol);

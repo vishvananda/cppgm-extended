@@ -37,10 +37,10 @@ TypeKind move_type(Type type)
 	return type.kind();
 }
 
-// A host object's result classes (argument_classes).
-uint8_t result_classes(EhModel model, const lowir::Signature* sig)
+// A boundary's result classes (argument_classes).
+uint8_t result_classes(const lowir::Signature* sig)
 {
-	return model == EhModel::Host && sig != nullptr ? sig->boundary.result_classes : 0;
+	return sig != nullptr ? sig->boundary.result_classes : 0;
 }
 
 } // namespace
@@ -53,20 +53,19 @@ void FunctionSelector::classify_signature(const lowir::Signature& sig, CallLayou
 	for (uint32_t i = 0; i < sig.parameter_count; ++i)
 	{
 		arg_types_.push_back(params[i].type);
-		arg_classes_.push_back(eh_model_ == EhModel::Host ? params[i].classes : 0);
+		arg_classes_.push_back(params[i].classes);
 	}
-	classify_call(arg_types_.data(), arg_classes_.data(), sig.parameter_count, sig.result,
-		result_classes(eh_model_, &sig), layout);
+	classify_call(
+		arg_types_.data(), arg_classes_.data(), sig.parameter_count, sig.result, result_classes(&sig), layout);
 }
 
-// A host object's boundary follows the psABI classes (3.2.3) its lowering
-// states for object parameters, results and variadic arguments (the
-// body's table, in call order: InstIds grow as calls are made); course
-// objects and executables keep the course's boundary.
+// Every boundary follows the classes (psABI 3.2.3, lowir.md "Object ABI
+// Conventions") its LowIR states for object parameters, results and
+// variadic arguments (the body's table, in call order: InstIds grow as
+// calls are made), in host and course objects and executables alike; an
+// object without them is INTEGER throughout.
 uint8_t FunctionSelector::argument_classes(uint32_t inst, uint32_t argument, const lowir::Signature* sig) const
 {
-	if (eh_model_ != EhModel::Host)
-		return 0;
 	if (sig != nullptr && argument < sig->parameter_count)
 		return program_.parameters_of(*sig)[argument].classes;
 	const std::vector<lowir::ArgumentClasses>& table = body_->argument_classes;
@@ -81,18 +80,14 @@ uint8_t FunctionSelector::argument_classes(uint32_t inst, uint32_t argument, con
 // The layout of call `inst` with argument types arg_types_.
 void FunctionSelector::classify_arguments(uint32_t inst, const lowir::Signature* sig, CallLayout& layout)
 {
-	// (Course objects state no classes.)
 	const uint32_t count = static_cast<uint32_t>(arg_types_.size());
-	if (eh_model_ == EhModel::Host)
-	{
-		arg_classes_.resize(count);
-		for (uint32_t a = 0; a < count; ++a)
-			arg_classes_[a] = arg_types_[a].is_object() || arg_types_[a].kind() == TypeKind::I128
-				? argument_classes(inst, a, sig)
-				: 0;
-	}
-	classify_call(arg_types_.data(), eh_model_ == EhModel::Host ? arg_classes_.data() : nullptr, count,
-		body_->instructions[inst].type, result_classes(eh_model_, sig), layout);
+	arg_classes_.resize(count);
+	for (uint32_t a = 0; a < count; ++a)
+		arg_classes_[a] = arg_types_[a].is_object() || arg_types_[a].kind() == TypeKind::I128
+			? argument_classes(inst, a, sig)
+			: 0;
+	classify_call(
+		arg_types_.data(), arg_classes_.data(), count, body_->instructions[inst].type, result_classes(sig), layout);
 }
 
 // The layout of call `inst` (boundary `sig`) for its emission-time

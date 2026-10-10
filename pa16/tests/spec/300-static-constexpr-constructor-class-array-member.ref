@@ -1,4 +1,4 @@
-global @cache_holder_true___cache [binding=weak, object=_ZN12cache_holderILb1EE5cacheE] = {
+global @cache_holder_true___cache [storage=readonly, binding=weak, object=_ZN12cache_holderILb1EE5cacheE] = {
   i64 1
   i64 2
   i64 3

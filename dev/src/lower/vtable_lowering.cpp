@@ -920,9 +920,11 @@ lowir::SymbolId ProgramLowering::thunk_symbol(const sema::FunctionEntity* functi
 	}
 	else
 		symbol = external_symbol(object, spelling);
-	const lowir::SignatureId signature = variant == EntryVariant::Deleting ? deleting_call_signature()
-																		   : argument_signature(function);
+	// The target's boundary (a deleting entry's is its destructor's), its
+	// `this` adjusted into the object: no object_bytes there.
+	const lowir::SignatureId signature = argument_signature(function);
 	const uint32_t this_index = variant == EntryVariant::Complete && indirect_result(function) ? 1 : 0;
+	program_.parameters[program_.signatures[signature].first_parameter + this_index].object_bytes = 0;
 	// Object mode: a jump thunk (lowir::JumpThunk, no body: the object
 	// compiler writes its adjustment and jump) leaves the arguments where
 	// the caller put them: a variadic function's (a covariant one would have
@@ -1153,22 +1155,6 @@ lowir::SignatureId ProgramLowering::argument_signature(const sema::FunctionEntit
 	for (uint32_t i = 0; i < boundary.parameter_count; ++i)
 		program_.parameters[boundary.first_parameter + i].name = argument_name(i);
 	return signature;
-}
-
-lowir::SignatureId ProgramLowering::deleting_call_signature()
-{
-	if (deleting_signature_ != lowir::kNoId)
-		return deleting_signature_;
-	lowir::Signature signature = lowir::Signature();
-	signature.first_parameter = static_cast<uint32_t>(program_.parameters.size());
-	lowir::Parameter object = lowir::Parameter();
-	object.name = argument_name(0);
-	object.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
-	program_.parameters.push_back(object);
-	signature.parameter_count = 1;
-	signature.result = lowir::Type::scalar(lowir::TypeKind::Void);
-	deleting_signature_ = program_.add_signature(signature);
-	return deleting_signature_;
 }
 
 uint32_t ProgramLowering::data_item(const lowir::DataItem& item)

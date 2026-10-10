@@ -97,7 +97,7 @@ global @Middle__vtable [storage=readonly, binding=weak, object=_ZTV6Middle] = {
 global @Middle____vtt [storage=readonly, binding=weak, object=_ZTT6Middle, object_root=yes] = {
   ptr addr @Middle__vtable + 24
 }
-global @__local_static__main__decl0__explicit_order [binding=internal, object=_ZZ4mainE14explicit_order] = {
+global @__local_static__main__decl0__explicit_order [storage=readonly, binding=internal, object=_ZZ4mainE14explicit_order] = {
   i32 1
   i32 2
   i32 3
@@ -143,7 +143,7 @@ global @Implicit____vtt [storage=readonly, binding=weak, object=_ZTT8Implicit, o
   ptr addr @Implicit__vtable + 32
   ptr addr @Implicit____construction__Middle__0__s0__vtable + 24
 }
-global @__local_static__main__decl1__implicit_order [binding=internal, object=_ZZ4mainE14implicit_order] = {
+global @__local_static__main__decl1__implicit_order [storage=readonly, binding=internal, object=_ZZ4mainE14implicit_order] = {
   i32 1
   i32 2
   i32 11

@@ -110,7 +110,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = load typed i32 $cond__1
     return i32 %t27
 }
-function @cell__cell__aggregate(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
+function @cell__cell__aggregate(%this : ptr [object_bytes=8], %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $first : i32
   slot $second : i32

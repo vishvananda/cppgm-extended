@@ -1,7 +1,7 @@
-global @payload [binding=internal, object=_ZL7payload] = {
+global @payload [storage=readonly, binding=internal, object=_ZL7payload] = {
   i32 7
 }
-global @adapted [binding=internal, object=_ZL7adapted] = {
+global @adapted [storage=readonly, binding=internal, object=_ZL7adapted] = {
   i32 7
 }
 

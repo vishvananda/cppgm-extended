@@ -596,7 +596,9 @@ void FunctionSelector::resolve_aliases()
 	// bits -- an add, sub or mul of its type, a store or compare of its
 	// type or narrower, a narrower truncation -- stands for its source
 	// (whose upper bits those ignore). Not one a phi, branch, extension or
-	// any other instruction reads.
+	// any other instruction reads, nor the stored value of a promoted slot
+	// (its store emits nothing; the slot's loads stand for the value, read
+	// in full by their own readers).
 	std::vector<uint8_t> low_only(level_ >= 1 ? temps_.size() : 0, 0);
 	if (level_ >= 1)
 	{
@@ -611,6 +613,10 @@ void FunctionSelector::resolve_aliases()
 			if (!(marks_[id] & IM_DEAD) && inst.result != kNoId && narrows(inst) && inst.ops[0].kind == ValueKind::Temp)
 				low_only[inst.result] = 1;
 		});
+		for (uint32_t s = 0; s < slot_state_.size(); ++s)
+			if (slot_state_[s] == SS_PROMOTED && slot_value_[s].kind == ValueKind::Temp &&
+				slot_value_[s].index < low_only.size() && low_only[slot_value_[s].index] == 1)
+				low_only[slot_value_[s].index] = 2;
 		for_each_inst([&](uint32_t id, uint32_t) {
 			const Instruction& inst = body.instructions[id];
 			if (marks_[id] & IM_DEAD)

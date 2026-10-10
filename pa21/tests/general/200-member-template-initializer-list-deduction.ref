@@ -42,7 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load typed i32 $cond__4
     return i32 %t13
 }
-function @item__item__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
+function @item__item__aggregate(%this : ptr [object_bytes=4], %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 

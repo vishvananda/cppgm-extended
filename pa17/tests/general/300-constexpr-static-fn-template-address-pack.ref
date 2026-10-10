@@ -1,4 +1,4 @@
-global @table_instance_int_void_____value [binding=weak, object=_ZN14table_instanceIiJFvvEEE5valueE] = {
+global @table_instance_int_void_____value [storage=readonly, binding=weak, object=_ZN14table_instanceIiJFvvEEE5valueE] = {
   ptr addr @slot_void_____impl
 }
 

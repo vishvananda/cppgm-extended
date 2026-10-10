@@ -1,4 +1,4 @@
-global @box [binding=internal, object=_ZL3box] = {
+global @box [storage=readonly, binding=internal, object=_ZL3box] = {
   i32 0
 }
 

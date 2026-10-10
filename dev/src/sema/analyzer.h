@@ -119,6 +119,10 @@ public:
 	// (15.4p12), a noexcept-specification's expression evaluated on first
 	// need.
 	bool function_nothrow(const FunctionEntity* function);
+	// Whether a call's callee designates its function through a pointer,
+	// reference or pointer to member declared non-throwing (15.4p2, p12:
+	// see note_nothrow_target): such a call does not throw (5.3.7p3).
+	bool callee_nothrow(const syntax::Expr& callee) { return nothrow_target(callee); }
 	// The value constant evaluation gave a variable's initialization (PA16:
 	// a constexpr object's complete value, a reference's referent, a const
 	// integral object's value, published on first request), in the
@@ -377,8 +381,6 @@ private:
 	void effect_attributes(
 		FunctionEntity* function, const syntax::Attribute* leading, const syntax::Declarator* declarator);
 	void reject_noreturn(const syntax::Attribute* list, const char* message) const;
-	void stable_prefix_attribute(
-		FunctionEntity* function, const syntax::Attribute* leading, const syntax::Declarator* declarator);
 	void function_definition(const syntax::FunctionDecl& decl, Scope* scope);
 	void special_member(const syntax::SpecialMemberDecl& decl, Scope* scope);
 	void default_definition(FunctionEntity* function, bool first, uint32_t location);
@@ -1378,7 +1380,8 @@ private:
 	void substitute_throw_specification(FunctionEntity* function);
 	static const Type* AdjustedThrowType(TypeTable& types, const Type* type);
 	static bool DeclaratorSpecifiesExceptions(const syntax::Declarator* declarator);
-	void note_nothrow_target(const Entity* entity, const Type* type, const syntax::Declarator* declarator);
+	void note_nothrow_target(
+		const Entity* entity, const Type* type, const syntax::Declarator* declarator, Scope* scope);
 	void check_nothrow_initializer(const syntax::Initializer& initializer);
 	bool nothrow_target(const syntax::Expr& callee);
 	void check_redeclared_exceptions(

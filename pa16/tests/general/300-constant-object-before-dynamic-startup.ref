@@ -2,16 +2,16 @@ global @late_calls : i32 [binding=strong] = 0
 global @observer [binding=strong] = {
   zero 1
 }
-global @point [binding=strong] = {
+global @point [storage=readonly, binding=strong] = {
   i32 9
 }
-global @negative [binding=strong] = {
+global @negative [storage=readonly, binding=strong] = {
   i32 -9
 }
-global @derived [binding=strong] = {
+global @derived [storage=readonly, binding=strong] = {
   i32 9
 }
-global @elements [binding=strong] = {
+global @elements [storage=readonly, binding=strong] = {
   i32 3
   i32 5
 }

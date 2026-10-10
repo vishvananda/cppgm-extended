@@ -1,4 +1,4 @@
-global @pointer [binding=internal, object=_ZL7pointer] = {
+global @pointer [storage=readonly, binding=internal, object=_ZL7pointer] = {
   i32 17
 }
 

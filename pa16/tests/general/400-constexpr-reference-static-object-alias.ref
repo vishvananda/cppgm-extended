@@ -1,7 +1,7 @@
 global @object : i32 [binding=strong] = zero
 global @reference : ptr [binding=strong] = addr @object
 global @second : ptr [binding=strong] = addr @object
-global @__ref_tmp__temporary : i32 [binding=internal, object=_ZGR9temporary_] = 3
+global @__ref_tmp__temporary : i32 [storage=readonly, binding=internal, object=_ZGR9temporary_] = 3
 global @temporary : ptr [binding=strong] = addr @__ref_tmp__temporary
 global @alias : ptr [binding=strong] = addr @__ref_tmp__temporary
 

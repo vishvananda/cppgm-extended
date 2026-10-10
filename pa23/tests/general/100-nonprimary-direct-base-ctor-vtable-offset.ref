@@ -149,7 +149,7 @@ function @Right__Right__base_entry(%this : ptr [object_bytes=8]) -> void [unwind
     store typed ptr %t3, %t1
     return void
 }
-function @_Derived__g__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZThn8_NK7Derived1gEv] {
+function @_Derived__g__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn8_NK7Derived1gEv] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     %t2 = call i32 @Derived__g(%t1)

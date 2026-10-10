@@ -490,13 +490,13 @@ function @Left__Left__base_entry(%this : ptr [object_bytes=40], %__vtt : ptr) ->
     store typed ptr %t16, %t14
     return void
 }
-function @_Outer__id__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr [object_bytes=56]) -> i32 [binding=weak, object=_ZThn16_N5Outer2idEv] {
+function @_Outer__id__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn16_N5Outer2idEv] {
   block ^entry:
     %t1 = index i8 %arg0, -16
     %t2 = call i32 @Outer__id(%t1)
     return i32 %t2
 }
-function @_Outer__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n32(%arg0 : ptr [object_bytes=56]) -> i32 [binding=weak, object=_ZTv0_n32_N5Outer2idEv] {
+function @_Outer__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n32(%arg0 : ptr) -> i32 [binding=weak, object=_ZTv0_n32_N5Outer2idEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
     %t2 = index i8 %t1, -32
@@ -505,7 +505,7 @@ function @_Outer__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n32(%a
     %t5 = call i32 @Outer__id(%t4)
     return i32 %t5
 }
-function @_Outer__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%arg0 : ptr [object_bytes=56]) -> i32 [binding=weak, object=_ZTv0_n24_N5Outer2idEv] {
+function @_Outer__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%arg0 : ptr) -> i32 [binding=weak, object=_ZTv0_n24_N5Outer2idEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
     %t2 = index i8 %t1, -24
@@ -514,7 +514,7 @@ function @_Outer__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%a
     %t5 = call i32 @Outer__id(%t4)
     return i32 %t5
 }
-function @_Inner__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%arg0 : ptr [object_bytes=24]) -> i32 [binding=weak, object=_ZTv0_n24_N5Inner2idEv] {
+function @_Inner__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%arg0 : ptr) -> i32 [binding=weak, object=_ZTv0_n24_N5Inner2idEv] {
   block ^entry:
     %t1 = load typed ptr %arg0
     %t2 = index i8 %t1, -24

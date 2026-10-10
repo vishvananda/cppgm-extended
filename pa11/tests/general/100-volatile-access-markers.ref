@@ -134,7 +134,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t51 = binary sub nowrap i32 %t50, 14
     return i32 %t51
 }
-function @Device__Device__aggregate(%this : ptr, %status : i32, %data : i32) -> void [unwind=no, binding=internal] {
+function @Device__Device__aggregate(%this : ptr [object_bytes=8], %status : i32, %data : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $status : i32
   slot $data : i32

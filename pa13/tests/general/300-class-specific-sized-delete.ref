@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = load typed ptr 0
     %t3 = index i8 %t2, 8
     %t4 = load typed ptr %t3
-    call void %t4(0) as (%arg0 : ptr) -> void
+    call void %t4(0) as (%arg0 : ptr [object_bytes=8]) -> void [unwind=no]
     jump ^delete_end_2
 
   block ^delete_end_2:

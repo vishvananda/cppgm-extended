@@ -2277,7 +2277,7 @@ RValue FunctionLowering::call(const syntax::CallExpr& expr, lowir::Value destina
 			arguments(expr.arguments, invoker->type->canonical, function, expr.location);
 			callee = function_address(invoker, expr.location);
 			result = result_type(invoker);
-			signature = lowering_.call_signature(invoker->type);
+			signature = lowering_.call_signature(invoker->type, lowering_.function_nothrow(function));
 		}
 		else if (function->member && !function->is_static)
 		{
@@ -2324,7 +2324,7 @@ RValue FunctionLowering::call(const syntax::CallExpr& expr, lowir::Value destina
 		callee = member_pointer_callee(access, object_argument);
 		result = result_type(returned, function);
 		if (callee.kind != lowir::ValueKind::Symbol)
-			signature = lowering_.member_call_signature(member_pointer);
+			signature = lowering_.member_call_signature(member_pointer, lowering_.callee_nothrow(*expr.callee));
 	}
 	else if (WithoutParentheses(expr.callee)->facts->type->unqualified->kind == sema::TypeKind::BlockPointer)
 		callee = block_call(expr, destination, throws, result, signature);
@@ -2354,7 +2354,7 @@ RValue FunctionLowering::call(const syntax::CallExpr& expr, lowir::Value destina
 			callee = constant(lowir::Type::scalar(lowir::TypeKind::Ptr), null_bits).value;
 		}
 		result = result_type(returned, function);
-		signature = lowering_.call_signature(function);
+		signature = lowering_.call_signature(function, lowering_.callee_nothrow(*expr.callee));
 	}
 	RValue value;
 	value.type = result;

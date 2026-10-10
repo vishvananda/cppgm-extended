@@ -1,11 +1,3 @@
 global @_GLOBAL__N_1__x [binding=internal, object=_ZN12_GLOBAL__N_11xE] = {
   zero 1
 }
-
-function @_GLOBAL__N_1__X__X__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_11XC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
-}

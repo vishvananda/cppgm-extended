@@ -9,7 +9,7 @@ function @make_pair(%a : i32) -> obj<8x4> [binding=strong, object=_Z9make_pairi]
     call void @Pair__Pair__aggregate(%t1, %t2)
     return obj<8x4> $retobj__1
 }
-function @Pair__Pair__aggregate(%this : ptr, %first : i32) -> void [unwind=no, binding=internal] {
+function @Pair__Pair__aggregate(%this : ptr [object_bytes=8], %first : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $first : i32
 

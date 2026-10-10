@@ -1,4 +1,4 @@
-global @v [binding=internal, object=_ZL1v] = {
+global @v [storage=readonly, binding=internal, object=_ZL1v] = {
   i32 1
   i32 2
 }

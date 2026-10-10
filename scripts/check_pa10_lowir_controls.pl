@@ -93,8 +93,8 @@ for my $test (@tests)
 			/^(global \@[^\n]+ \[[^\n]*\] = \{\n\s+u32 3\n\})/m;
 		die "$test: const class object definition is missing\n"
 			if !defined($object);
-		die "$test: const class object was incorrectly given scalar readonly storage\n"
-			if $object =~ /\bstorage=readonly\b/;
+		die "$test: statically initialized const class object is not marked readonly\n"
+			if $object !~ /\bstorage=readonly\b/;
 		next;
 	}
 	if ($test =~ /volatile-access-markers/) {

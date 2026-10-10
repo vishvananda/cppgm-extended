@@ -424,6 +424,12 @@ public:
 	// `base` (its virtual bases' too when `complete`); a static object's
 	// data with its zero bytes' null values.
 	bool holds_data_member_pointer(const sema::Type* type);
+	// lowir.md's readonly storage: whether a statically initialized object
+	// of `type` (of static storage duration, not thread-local) is never
+	// written; whether a class has a mutable or volatile member at any
+	// depth.
+	bool readonly_object(const sema::Type* type);
+	bool changeable_class(const sema::ClassEntity* cls);
 	void null_fill(const sema::Type* type, uint64_t base, uint64_t lo, uint64_t hi, bool complete, StaticData& out);
 	NullSpan null_pieces(const sema::ClassEntity* cls, bool complete);
 	void null_member_pointers(const sema::Type* type, StaticData& data);
@@ -570,10 +576,9 @@ public:
 	uint32_t vtt_base_index(const sema::ClassEntity* cls, const sema::BaseClass* direct);
 	uint32_t vtt_segment_index(const sema::ClassEntity* cls, uint32_t segment);
 	uint32_t vtt_virtual_index(const sema::ClassEntity* cls, const sema::ClassEntity* base);
-	// A virtual call's `as` boundary: the called function's own; a
-	// deleting entry's (the object's address).
+	// A virtual call's `as` boundary: the called function's own (a
+	// deleting entry's is its destructor's).
 	lowir::SignatureId virtual_call_signature(const sema::FunctionEntity* function);
-	lowir::SignatureId deleting_call_signature();
 	// A string literal's read-only array (one per literal occurrence).
 	// `element`: a user-defined literal's code unit type (null: the
 	// literal's own array type's).
@@ -588,11 +593,15 @@ public:
 	std::string source_file(uint32_t location) const;
 	lowir::SymbolId string_object(lowir::Type unit, const std::vector<uint64_t>& units);
 	bool same_string_object(lowir::SymbolId symbol, lowir::Type unit, const std::vector<uint64_t>& units) const;
-	// The call boundary of a function type (an indirect call's `as`).
-	lowir::SignatureId call_signature(const sema::Type* function);
+	// The call boundary of a function type (an indirect call's `as`),
+	// `unwind=no` when the callee is declared non-throwing.
+	lowir::SignatureId call_signature(const sema::Type* function, bool nothrow = false);
 	// A call through a pointer to member function: the function type's
-	// boundary with the object (of the pointer's class) first.
-	lowir::SignatureId member_call_signature(const sema::Type* member_pointer);
+	// boundary with the object first.
+	lowir::SignatureId member_call_signature(const sema::Type* member_pointer, bool nothrow = false);
+	// Whether a call through this callee does not throw (see
+	// sema::Analyzer::callee_nothrow).
+	bool callee_nothrow(const syntax::Expr& callee);
 	// The initialization helper of a class aggregate (the course's form for
 	// an aggregate object at a computed address): internal, emitted once per
 	// unit after the definitions that use it.
@@ -752,9 +761,6 @@ public:
 	bool indirect_result(const sema::Type* result, const sema::Type* function);
 	bool indirect_result(const sema::FunctionEntity* function);
 	const sema::FunctionEntity* closure_call(const sema::ClassEntity* entity) const;
-	// A trivial implicit constructor's base entry, emitted for a
-	// namespace-scope object of an internal class it default-initializes.
-	void demand_trivial_base(const sema::FunctionEntity* constructor);
 	// Whether a class's destructor has no effect: an empty body (or an
 	// implicit one) and subobjects whose destructors have none. Such a
 	// destructor is emitted empty; an automatic object's call of it is
@@ -1445,6 +1451,8 @@ private:
 	PointerMap element_temporaries_;
 	// holds_data_member_pointer's classes (unit-scoped: 1 none, 2 some).
 	PointerMap data_member_pointer_classes_;
+	// changeable_class's classes (unit-scoped: 1 no, 2 yes).
+	PointerMap changeable_classes_;
 	// null_pieces' spans by (class, completeness) (unit-scoped).
 	PointerMap null_piece_spans_;
 	std::vector<NullSpan> null_spans_;
@@ -1478,7 +1486,6 @@ private:
 	};
 	std::vector<HintStep> hint_stack_;
 	lowir::SymbolId pure_virtual_ = lowir::kNoId;
-	lowir::SignatureId deleting_signature_ = lowir::kNoId;
 	// Class aggregates' initialization helpers (unit-scoped): one per
 	// class and number of leading members taken as parameters; those from
 	// `pending_helper_` on wait for their definitions.
@@ -1912,8 +1919,10 @@ private:
 	// Overload ordinals of the functions whose (scope, name) sets were
 	// numbered (unit-scoped).
 	PointerMap overload_ordinals_;
-	// Indirect call boundaries by canonical function type (unit-scoped).
+	// Indirect call boundaries by canonical function type (unit-scoped),
+	// those of callees declared non-throwing apart.
 	PointerMap call_signatures_;
+	PointerMap nothrow_call_signatures_;
 	// Slot names in use by the bodies being lowered: a mark per NameId set
 	// to the claiming body's slot scope, so no body clears or sizes a table
 	// of its own (the bodies that interleave with others claim no names).
