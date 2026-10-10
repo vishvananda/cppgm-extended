@@ -1003,6 +1003,8 @@ void FunctionLowering::asm_statement(const syntax::AsmStmt& stmt)
 	const sema::AsmProgram* program = stmt.program;
 	if (program == nullptr)
 		throw LoweringError(stmt.location, "an asm statement the analysis did not lift");
+	if (program->unlifted != nullptr)
+		throw LoweringError(stmt.location, program->unlifted);
 	const uint32_t count = stmt.outputs.size + stmt.inputs.size;
 	std::vector<lowir::Value> addresses(count);
 	std::vector<lowir::Value> homes(count);

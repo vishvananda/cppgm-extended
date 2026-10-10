@@ -78,7 +78,9 @@ struct AsmInstruction
 // clobber) a compiler barrier. Bit i of `registers`: operand i is bound to
 // a register (a copy of its value, which an output's object receives after
 // the template). `tied` (null when no input is): for each output, the
-// input whose value its register starts with, or 0xff.
+// input whose value its register starts with, or 0xff. `unlifted` (null
+// when lifted): why the template is outside the set, in a function emitted
+// only where odr-used, whose emission reports it (Analyzer::asm_statement).
 struct AsmProgram
 {
 	const AsmInstruction* instructions;
@@ -86,6 +88,7 @@ struct AsmProgram
 	uint32_t registers;
 	const uint8_t* tied;
 	bool barrier;
+	const char* unlifted;
 };
 
 // Lifts `text` (the template's characters) over the operands; false, with

@@ -687,6 +687,7 @@ ExprFacts* Analyzer::vector_lane_builtin(const syntax::CallExpr& expr, uint8_t v
 			false);
 	}
 	uint64_t selected = 0;
+	bool run_time = false;
 	if (operation.kind != 'i')
 	{
 		Constant value;
@@ -698,14 +699,22 @@ ExprFacts* Analyzer::vector_lane_builtin(const syntax::CallExpr& expr, uint8_t v
 			selected = value.bits;
 		}
 		else if (template_depth_ == 0)
-			error(selector.location, "a vector lane selector that is no integral constant expression");
+		{
+			// GCC's intrinsic wrappers at -O1 and above (<xmmintrin.h>'s
+			// _mm_extract_pi16) pass their own parameter, which GCC's
+			// mandatory inlining of an always_inline function makes a
+			// constant: in such a body the selector is read at run time.
+			if (body_ == nullptr || body_->function == nullptr || !body_->function->always_inline)
+				error(selector.location, "a vector lane selector that is no integral constant expression");
+			run_time = true;
+		}
 	}
 	ExprFacts* facts = new_facts(expr, operation.kind == 'e' ? lane : vector, ValueCategory::PRValue);
 	facts->flags |= kIntrinsic;
 	const Intrinsic kind = operation.kind == 'i' ? Intrinsic::VectorInit
 		: operation.kind == 'e'                  ? Intrinsic::VectorExtract
 												 : Intrinsic::VectorInsert;
-	facts->value = static_cast<uint64_t>(kind) | selected << 8;
+	facts->value = static_cast<uint64_t>(kind) | selected << 8 | (run_time ? uint64_t(1) << 16 : 0);
 	return facts;
 }
 

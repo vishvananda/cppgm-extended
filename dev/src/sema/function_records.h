@@ -172,7 +172,8 @@ enum class Intrinsic : uint8_t
 	// GCC's __builtin_ia32_vec_init/ext/set (kGnuVectorLaneOperations):
 	// the vector of the operands as its lanes; the lane the constant
 	// selector (bits 8-15 of the facts' value) designates, and the vector
-	// with that lane replaced.
+	// with that lane replaced. Bit 16: the selector is read at run time
+	// (an always_inline function's parameter).
 	VectorInit,
 	VectorExtract,
 	VectorInsert,

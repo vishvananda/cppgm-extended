@@ -2399,11 +2399,18 @@ lowir::SymbolMetadata ProgramLowering::function_metadata(const sema::FunctionEnt
 	if (function->c_linkage &&
 		(function->builtin == sema::BuiltinFunction::None || function->builtin == sema::BuiltinFunction::Library))
 		metadata.linkage = ir_model::LLM_C;
-	// In object mode the array forms are references to their own names
-	// (see resolve_singleton_roles): the scalar forms own the roles alone.
+	// The scalar forms own allocate_memory and free_memory (pa8/lowir.md:
+	// one owner per role, and no array role). In object mode the array
+	// forms are references to their own names (see
+	// resolve_singleton_roles); the program's replacement of one
+	// (17.6.4.6p2) owns no role either, since its definition can complete
+	// before a scalar form is first named.
 	const bool array_form = function->allocation == sema::AllocationRole::NewArray ||
 		function->allocation == sema::AllocationRole::DeleteArray;
-	if (array_form && object_mode_)
+	if (array_form &&
+		(object_mode_ ||
+			(symbol < program_.symbols.size() &&
+				program_.symbols[symbol].kind == lowir::SymbolKind::FunctionDefinition)))
 		;
 	else if (function->allocation == sema::AllocationRole::New ||
 		function->allocation == sema::AllocationRole::NewArray)

@@ -395,8 +395,9 @@ void ProgramLowering::resolve_singleton_roles()
 	// allocate_memory and free_memory, std::terminate owns terminate; an
 	// array form (18.6.1.2p4, p13: by default the scalar one's behavior)
 	// or __builtin_abort (the default terminate handler aborts) still
-	// undefined becomes an internal body calling the owner, a defined one
-	// loses the role. In object mode a unit is not the program: another
+	// undefined becomes an internal body calling the owner, and owns the
+	// role only without one (a replaced array form never has it:
+	// function_metadata). In object mode a unit is not the program: another
 	// unit may replace the array forms (17.6.4.6p3, 18.6.1.2), so they stay
 	// references to their own names, whose link-time defaults call the
 	// scalar forms (18.6.1.2p4, p13), without the roles (function_metadata:

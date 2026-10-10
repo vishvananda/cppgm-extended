@@ -422,7 +422,10 @@ RValue FunctionLowering::vector_lanes(const syntax::CallExpr& expr, sema::Intrin
 	// GCC's lane builtins: init stores each operand in its lane; ext reads
 	// the lane the analysis's constant selector names (bits 8-15 of the
 	// facts' value) from the operand's storage, set replaces it in a copy.
-	const uint64_t selected = expr.facts->value >> 8;
+	// A selector read at run time (bit 16) names the lane of its low bits,
+	// as the instructions' immediates do (the lane counts are powers of 2).
+	const uint64_t selected = expr.facts->value >> 8 & 0xff;
+	const bool run_time = (expr.facts->value >> 16 & 1) != 0;
 	if (kind == sema::Intrinsic::VectorInit)
 	{
 		const sema::Type* vector = expr.facts->type->unqualified;
@@ -437,14 +440,33 @@ RValue FunctionLowering::vector_lanes(const syntax::CallExpr& expr, sema::Intrin
 	}
 	const sema::Type* vector = WithoutParentheses(expr.arguments[0])->facts->type->unqualified;
 	const lowir::Value source = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const sema::Type* element = vector->element;
+	const auto lane_at = [&](const syntax::Expr& selector) {
+		const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+		const RValue n = convert_op(lowir::ConvertOp::SExt, i64,
+			fit(operand(selector, ConversionContext::Argument),
+				lowering_.graph().types.fundamental(FundamentalType::Int)));
+		Place lane = Place();
+		lane.storage = index(lowering_.storage_type(element), ir_model::IPK_ARRAY_ELEMENT, source,
+			binary(lowir::BinaryOp::And, i64, n, integer(i64, vector->bound - 1)))
+						   .value;
+		return lane;
+	};
 	if (kind == sema::Intrinsic::VectorExtract)
 	{
+		if (run_time)
+			return load(lowering_.storage_type(element), lane_at(*expr.arguments[1]));
 		discard(*expr.arguments[1]);
 		return vector_lane(source, vector, selected);
 	}
-	const RValue value = fit(operand(*expr.arguments[1], ConversionContext::Argument), vector->element);
-	discard(*expr.arguments[2]);
-	set_vector_lane(source, vector, selected, value);
+	const RValue value = fit(operand(*expr.arguments[1], ConversionContext::Argument), element);
+	if (run_time)
+		store(lowering_.storage_type(element), value, lane_at(*expr.arguments[2]));
+	else
+	{
+		discard(*expr.arguments[2]);
+		set_vector_lane(source, vector, selected, value);
+	}
 	Place place = Place();
 	place.storage = source;
 	return load(lowering_.storage_type(vector), place);

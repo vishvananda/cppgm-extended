@@ -134,9 +134,22 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 	}
 	std::vector<AsmInstruction> instructions;
 	std::string message;
-	if (!LiftAsmTemplate(text, operands.data(), count, instructions, message))
-		error(stmt.location, copy_label(message.data(), message.size()));
 	AsmProgram* program = static_cast<AsmProgram*>(arena_.allocate(sizeof(AsmProgram), alignof(AsmProgram)));
+	program->unlifted = nullptr;
+	if (!LiftAsmTemplate(text, operands.data(), count, instructions, message))
+	{
+		// A template outside the lifted set is this compiler's limit, not
+		// an error in the program. Only emitted code reaches an assembler,
+		// so in a function emitted only where odr-used (an inline one, as
+		// GCC's gnu_inline intrinsic wrappers are, or an internal
+		// always_inline one: ProgramLowering::emitted_at_definition) the
+		// lowering reports it if it emits the statement.
+		const FunctionEntity* function = body_->function;
+		if (function == nullptr || !(function->is_inline || (function->internal_linkage && function->always_inline)))
+			error(stmt.location, copy_label(message.data(), message.size()));
+		program->unlifted = copy_label(message.data(), message.size());
+		instructions.clear();
+	}
 	program->count = static_cast<uint32_t>(instructions.size());
 	program->instructions = instructions.empty() ? nullptr
 												 : arena_.copy_array(instructions.data(), instructions.size());
