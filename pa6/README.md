@@ -178,6 +178,19 @@ declarations are emitted through the resulting `function`, `variable`,
 Namespace aliases and using directives affect lookup. They have no output
 line of their own.
 
+Unnamed types have generated names. An unnamed class or enumeration that a
+typedef declares takes the typedef name (7.1.3p9) and is dumped under it,
+with both its `type` binding and the `type-alias` (`type C class C`,
+`type-alias C class C`). Otherwise an unnamed enumeration is
+`__anonymous_enum<N>`, N counting from 1 in order of definition within the
+translation unit, and an anonymous union is
+`__anonymous_union_type__<k>_<e>`, where k and e are positions in the
+translation unit's token sequence after preprocessing, counted from 0: k is
+the `union` keyword's, and e is the token's after the closing brace, or the
+token's after the `;` when the declaration begins with the keyword itself
+(`union { ... };`; `static union { ... };` begins with `static`). PA7 shows
+the union's unnamed object as `__anonymous_union_storage__<k>_<e>`.
+
 Standard output and standard error are ignored by the automated PA6 tests.
 
 ### Error Handling

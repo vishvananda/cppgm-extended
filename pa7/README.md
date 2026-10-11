@@ -134,53 +134,88 @@ Between those wrapper lines, write a deterministic semantic dump rooted at:
 translation-unit
 ```
 
-Top-level nodes include:
+The dump's lines are the kinds below and no others. `<type>` is PA6's
+canonical type spelling; `<vc>` is a value category, `lvalue`, `prvalue`
+or `xvalue` (the PA7 tests primarily exercise the first two); `<token>` is
+a token's kind and spelling joined by a colon, as in PA5 (`OP_PLUS:+`).
+
+Declarations:
 
 ```text
+namespace-definition <name>
 type-alias <name> <type>
 variable <name> <type>
 function-declaration <name> <type>
 function-definition <name> <type>
-namespace-definition <name>
+parameter <name> <type>
+constructor-action <class>::<class>
 ```
 
-Function definitions contain resolved statement and expression nodes such as:
+A variable of class type is followed by its `constructor-action`, whose
+child is the `call-expression` of the constructor; that call's `callee` is
+`<class>::<class>`, a function whose first parameter is the object pointer.
+
+Statements, without payload:
 
 ```text
-parameter <name> <type>
 compound-statement
 simple-declaration
+expression-statement
 return-statement
 if-statement
-while-statement
-for-statement
-break-statement
-continue-statement
 condition
 condition-declaration
-call-expression <value-category> <type>
-callee <name> <type>
-id-expression <value-category> <type> <name>
-literal <value-category> <type> <token>
-unary-expression <value-category> <type> <operator>
-binary-expression <value-category> <type> <operator>
-subscript-expression <value-category> <type>
-conditional-expression <value-category> <type>
-sizeof-expression <value-category> <type>
-assignment-expression <value-category> <type> OP_ASS:=
-constructor-action <name>
+then
+else
+while-statement
+do-statement
+for-statement
+for-init-statement
+iteration
+switch-statement
+case-statement
+default-statement
+break-statement
+continue-statement
 ```
 
-`<type>` uses the canonical type spelling from PA6. `<value-category>` is one
-of:
+Expressions:
 
 ```text
-lvalue
-prvalue
-xvalue
+id-expression <vc> <type> <name>
+literal <vc> <type> <spelling>
+call-expression <vc> <type>
+callee <name> <type>
+unary-expression <vc> <type> <token>
+postfix-expression <vc> <type> <token>
+binary-expression <vc> <type> <token>
+assignment-expression <vc> <type> <token>
+member-expression <vc> <type> <token-kind>:<member>
+conditional-expression <vc> <type>
+subscript-expression <vc> <type>
+sizeof-expression <vc> <type>
+cast-expression <vc> <type> [<token>]
+braced-init-list <vc> <type>
 ```
 
-The PA7 tests primarily exercise `lvalue` and `prvalue`.
+`callee` is a `call-expression`'s first child and names the function
+overload resolution selected, qualified by its class or namespace (`A::g`);
+it carries no value category. A `member-expression` ends with the
+operator's kind and the member's name, `OP_DOT:value` or `OP_ARROW:right`;
+an anonymous union's member, reached without an operator, ends with the
+member's name alone. A `cast-expression` with a payload is a cast keyword
+or, for a C-style cast, `OP_LPAREN:`; one without is a functional-notation
+cast or a conversion the analysis inserted, such as a derived-to-base
+conversion.
+
+Unnamed entities have generated names. An unnamed class declared with a
+declarator (`struct { int value; } first;`) is `__local_type<N>`, N
+counting from 1 in order of definition within the translation unit; an
+anonymous union is `__anonymous_union_type__<k>_<e>` as PA6 defines, and
+its unnamed object (9.5p5), through which its members are reached, is the
+variable `__anonymous_union_storage__<k>_<e>` of that type; an unnamed
+enumeration is `__anonymous_enum<N>`. Only the dump is compared: the
+semantic graph in memory may take any shape that produces it.
 
 Namespace aliases, using directives, and using declarations affect lookup, but
 they do not necessarily have dedicated output lines. Their effect is visible in
