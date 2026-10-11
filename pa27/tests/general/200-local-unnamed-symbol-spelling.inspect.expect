@@ -1,3 +1,1 @@
 local_defined_symbol_pattern 1 ^_ZZ13unnamed_localvENK.*3getEv$
-local_defined_symbol_pattern 1 ^_ZZ7invokervEN.*(?:8__invokeEv|4_FUNEv)$
-local_defined_symbol_pattern 1 ^_ZZZ6nestedvENK.*clEvEN.*(?:8__invokeEv|4_FUNEv)$

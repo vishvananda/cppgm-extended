@@ -204,7 +204,9 @@ Where Itanium leaves a name to the implementation, the reference follows
 clang. The object-inspection tests check the spelling of a symbol another
 unit can name (external and weak symbols); a unit-local symbol they check
 only by its binding and by a pattern that admits clang's and GCC's
-spellings, so the forms below for local entities (`$_<n>`, `__invoke`, the
+spellings, and only when the program needs it (a private helper such as the
+thunk behind a closure's function-pointer conversion is not required under
+any name), so the forms below for local entities (`$_<n>`, `__invoke`, the
 `_ZGR` numbering) describe the reference and are not required:
 
 - a namespace-scope variable or function of internal linkage carries the `L`
