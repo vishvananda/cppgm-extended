@@ -48,10 +48,10 @@ that paid there in the course solution:
   body.
 
 When a change does less than expected, look for a constraint stricter than
-emission needs before tuning a heuristic. One of the largest single steps in
-the course solution's later tuning removed one such constraint: a phi
-transfer modeled at the predecessor instead of on its edge. Raising
-thresholds and caps usually nets little.
+emission needs before tuning a heuristic. A phi transfer modeled at the
+predecessor instead of on its edge is one such constraint, and removing it
+is worth more than any threshold. Raising thresholds and caps usually nets
+little.
 
 The course solution meets the bounds with a liveness-based allocator of this
 kind for values that cross blocks. It is computed before instruction

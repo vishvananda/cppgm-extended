@@ -278,7 +278,7 @@ Plan for ambiguity. Some C++ syntax cannot be classified fully until later
 semantic passes exist. PA5 should still preserve the required structure in the
 tree so later assignments can classify it without reparsing source text.
 
-### Handoff
+### Handoff (non-normative)
 
 The next assignment builds scopes, bindings, and canonical types on this AST.
 Keep declarations, declarators, names, expressions, and source locations
@@ -302,6 +302,6 @@ when it writes the dump, and no later stage compares those strings.
 
 For a root `name.t`, companions such as `name.t2` are additional primary
 source files in the same invocation, in lexical order. They remain separate
-translation units; the harness counts the group once. Both batch and ordinary
-execution use this file interface. Headers and other support files stay with
+translation units; the harness counts the group once. Headers and other
+support files stay with
 the owning case and are not concatenated into one source file.

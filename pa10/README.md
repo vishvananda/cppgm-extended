@@ -109,16 +109,13 @@ in `../pa8/lowir.md`: `declare global`, `declare function`, `global`, then
 before comparison. Your output must still be repeatable for the same
 inputs; `../pa8/lowir.md` defines the canonical reference presentation and
 notes where internal LowIR symbol names are only a presentation tie-breaker.
-Externally meaningful C++ symbols must be produced through PA9's shared typed
-ABI encoder. Build the encoder target from resolved declarations and types;
-the ABI fact-file parser is a standalone-tool adapter and is not part of the
-source-to-LowIR path.
-
-Give each top-level symbol of the in-memory program one compact identity,
-keep its presentation spelling once, and use that identity in declarations,
-definitions, operands, structured-global addresses, and alias targets.
-Render the spelling only when writing LowIR text or a diagnostic; do not copy
-an owning symbol name into each record or reference.
+Externally meaningful C++ symbols carry their Itanium ABI names (PA9's
+rules): what `abimangle` produces for the same facts. Reusing PA9's encoder
+from resolved declarations and types is the direct way; converting semantic
+state to fact text and parsing it back is a slow path to avoid. One compact
+identity per top-level symbol, with its spelling kept once and rendered only
+when LowIR text or a diagnostic is written, keeps symbol handling cheap; no
+test observes it.
 
 Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
 blocks, item order inside structured globals, vtable slot order, and action
@@ -380,10 +377,10 @@ canonical comparison result directly.
 
 Compiler-generated slots and helper names must remain distinct from source
 identifiers so a source declaration cannot redirect an internal temporary.
-The source lowering path should carry compact value, slot, block, and symbol
-identities into the typed LowIR model you built in PA8. Keep each required
-display spelling once, and give generated temporaries a numeric ordinal; do
-not construct or hash a presentation string for every operand reference.
+(Carrying compact value, slot, block and symbol identities into the typed
+LowIR model, with each spelling kept once and generated temporaries numbered,
+avoids building or hashing a presentation string per operand; no test
+observes it.)
 
 The generated LowIR for this supported subset is intended to be accepted by the
 later PA24 `lowir2native` backend.

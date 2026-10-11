@@ -158,7 +158,7 @@ We suggest keeping with each identifier token, a blacklist of nested macro names
 
 Once you have identified a new potential macro invocation, check to see if the heads name is contained in its own blacklist, if it is flag it as noninvokable.  If the head token is flagged as noninvokable, abort the invocation.
 
-### Blue painting guidance
+### Blue painting guidance (optional)
 
 The usual way to implement the recursion rule is called _blue painting_.  The
 important idea is that recursion state belongs to individual tokens, not to the
@@ -175,10 +175,10 @@ expanded.  They should also preserve any unavailable names already carried by
 the macro-name token that caused this expansion.  This is what makes direct and
 indirect recursive macros stop without using a global recursion cutoff.
 
-Expansion should still be a rescan process.  Replacement tokens are put back
-into the input stream and examined again before later source tokens are emitted.
-This matters because a replacement list can create a new macro invocation using
-tokens that follow it in the original source.
+The result must be as if the replacement tokens were rescanned together with
+the source tokens that follow them, before anything later is emitted: a
+replacement list can create a new macro invocation using tokens that follow it
+in the original source.
 
 Function-like macro arguments need one extra distinction:
 
@@ -192,8 +192,8 @@ when they are substituted.  However, those substituted tokens should not be
 treated as if they were written directly in the current macro's replacement
 list; parameter substitution breaks the nesting relationship described above.
 
-For `##`, paste the raw token spellings, retokenize the result, and rescan the
-new token.  Do not simply append the pasted spelling to the final output.  A
-pasted identifier may name a macro, and the next rescan is what decides whether
-it expands.  The pasted spelling must form exactly one preprocessing token;
-otherwise reject the source file.
+For `##`, the result of pasting the raw spellings is retokenized and rescanned
+(simply appending the pasted spelling to the output is wrong): a pasted
+identifier may name a macro, and the rescan is what decides whether it
+expands.  The pasted spelling must form exactly one preprocessing token;
+otherwise the source file is rejected (a course rule; see above).

@@ -29,7 +29,9 @@ Replace N with the assignment number. For PA1–PA33, pass the root through
 report before advancing. `perl scripts/cppgm_file_audit.pl --paths dev`
 checks the implementation's shape: file and function size limits, counted in
 lines of code, and shortcuts such as reading the environment or running other
-programs from the compiler. The shipped files pass it. PA34 ends with `make inception`, PA35 with
+programs from the compiler. It is advisory: no exit criterion runs it, the
+shipped files pass it, and a tree that fails it usually has a shortcut or a
+file too large to review. PA34 ends with `make inception`, PA35 with
 `make -C pa35 test`. Use the debug and inspection targets required by the
 owning handout when changing those surfaces.
 

@@ -61,7 +61,7 @@ Behaviour specified below.
     #define __DATE__ "Mmm dd yyyy"         // build date from asctime
     #define __TIME__ "hh:mm:ss"            // build time from asctime
 
-Use the `std::asctime` function to implement `__DATE__` and `__TIME__`.  Call it once at the entry of main, and use the same build date and time for all srcfiles.
+`__DATE__` is `"Mmm dd yyyy"` and `__TIME__` is `"hh:mm:ss"`, the fields `asctime` prints.  Take the time once per run, so that every source file of one invocation sees the same values.
 
 You may conditionally-implement any other pre-defined macros provided they start with an underscore and then a capital (`_Foo`) or another underscore (`__foo`).
 
@@ -85,7 +85,7 @@ The course-defined treatment of the _Pragma operator is as follows:
 
 The course-defined handling of source file inclusion in the default case shall be as follows:
 
-The current file shall be tracked by a string variable `__FILE__`.  Initially `__FILE__` shall be the same as the command-line argument.
+Below, `__FILE__` denotes the presumed name of the current file, however you represent it.  Initially it is the command-line argument.
 
 When a `#include` directive is encountered it will match this form:
 
@@ -140,32 +140,22 @@ The integer shall set the current value of `__LINE__`, the string shall set the 
 
 The course-defined `#pragma once` handling is specified as follows:
 
-The preprocessor scaffold supplies a function called `GetPreprocessorFileId`:
+A file that has executed `#pragma once` is not entered again in the same
+translation unit, however its path is spelled: a file's identity is the
+host's (device and inode), so distinct path spellings of one file share the
+once state. Reset that state for each primary source file.
+
+The preprocessor scaffold supplies a helper for that identity, which uses the
+host `stat` interface and which you may use without implementing system calls:
 
     bool GetPreprocessorFileId(const string& path, PreprocessorFileId& out_fileid)
 
-It takes a file `path` as input and an out parameter of type `PreprocessorFileId`.  It returns `true` on success (or `false` on failure, such as because the file does not exist).
-
-So it should be used as follows:
-
-    string filepath = "foo/bar/baz";
-    PreprocessorFileId fileid;
-    bool ok = GetPreprocessorFileId(filepath, fileid);
-    if (ok)
-        // use fileid
-    else
-        // file not found or unaccessible
-
-For each srcfile maintain an (initially empty) set of fileids of headers that have been pragma onced (eg with a `std::set<PreprocessorFileId>`)
-
-When you process a `#pragma once`, add the file id of `__FILE__` to that set.
-
-Each time you encounter an `#include` directive, lookup the file id and check if it is in that set.  If it is ignore the `#include` directive.
-
-The supplied helper uses the host `stat` interface to compare device and inode
-identities. You may use it without implementing system calls. Distinct path
-spellings for the same file must share the once state. Reset that state for
-each primary source file.
+It takes a file `path` and an out parameter of type `PreprocessorFileId`, and
+returns `true` on success (or `false` when the file does not exist or cannot
+be read).  One way to use it: keep, per primary source file, a set of the ids
+of the files that have executed `#pragma once`; add the current file's id when
+you process the directive; and before entering an included file, look up its
+id and skip the inclusion when the id is in the set.
 
 ### Reading
 

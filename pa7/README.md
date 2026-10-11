@@ -263,9 +263,9 @@ PA7 must support:
   multiplication
 - deterministic resolved-expression output
 
-The PA7 output should preserve enough information for later assignments to add
-class-aware conversion ranking and richer overload resolution without reparsing
-the source.
+Your semantic model should retain enough information for later assignments to
+add class-aware conversion ranking and richer overload resolution without
+reparsing the source.
 
 ### Out Of Scope
 
@@ -349,6 +349,6 @@ decided instead of classifying the conversion again.
 
 For a root `name.t`, companions such as `name.t2` are additional primary
 source files in the same invocation, in lexical order. They remain separate
-translation units; the harness counts the group once. Both batch and ordinary
-execution use this file interface. Headers and other support files stay with
+translation units; the harness counts the group once. Headers and other
+support files stay with
 the owning case and are not concatenated into one source file.

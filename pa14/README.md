@@ -240,10 +240,11 @@ PA14 supports the following in addition to the PA13 subset:
 - basic template argument deduction for direct supported function-template calls
   from ordinary argument types, without function-template partial ordering or
   SFINAE
-- on-demand instantiation of the supported class-template and function-template cases,
-  including deferring unused conversion-function bodies and dependent defaulted
-  special-member dependencies, and waiting until an out-of-line owning destructor
-  is defined before demanding a completeness-dependent member destructor
+- on-demand instantiation of the supported class-template and function-template cases:
+  a member's body is instantiated only when it is odr-used (14.7.1p1-p2), so an
+  unused conversion function's body and a dependent defaulted special member
+  stay uninstantiated, and a program whose out-of-line destructor follows the
+  class-template use that needs it is accepted
 - a static data member named only in an unevaluated operand, such as the operand
   of `sizeof`, does not demand storage or instantiate its out-of-class definition;
   an evaluated value use or address use continues to demand the required definition
@@ -273,9 +274,9 @@ PA14 supports the following in addition to the PA13 subset:
 - a template's `noexcept(e)` is evaluated for each specialization, which states
   `unwind=no` when its `e` is true (`f<int>` of
   `template<class X> int f(X) noexcept(sizeof(X) == 4)`, not `f<char>`)
-- dependent-base lookup provenance attached to the particular base-specifier,
-  so a nested class with a fixed base keeps ordinary base lookup and a local
-  class in a function template independently classifies its own dependent base
+- a nested class with a fixed base does ordinary base lookup, and a local
+  class in a function template classifies its own base as dependent or not on
+  its own, whatever the enclosing template's bases are
 - out-of-class definitions of nested classes declared inside the supported class templates,
   when those nested classes stay within the already supported PA11-PA13 class/value/
   polymorphic machinery

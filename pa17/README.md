@@ -210,8 +210,9 @@ implemented language surface, including:
 - an explicit definition of a member template for a concrete class-template
   specialization replaces the definition instantiated from the primary and may
   not itself be defined more than once
-- an out-of-class member-template definition attaches to specializations selected
-  by earlier calls in the translation unit and remains available for their demand
+- a member template called before its out-of-class definition is still
+  instantiated from that definition (14.6.4.1), whatever the order of the call
+  and the definition
 - a block-scope static in a function-template or member-template
   specialization whose substituted initializer is a constant expression is
   constant-initialized data with no guard, as in an ordinary function (PA16),
@@ -226,8 +227,7 @@ The following are explicitly out of scope for PA17:
 - full function-template deduction over the intended language surface
 - function-template partial ordering
 - SFINAE and substitution-failure completion
-- the remaining no-eager-instantiation / dependent-call timing work that is
-  better framed as substitution behavior
+- dependent-call and instantiation-timing behavior (PA18)
 - initializer-list template behavior
 - hosted/vendor-only extensions that happen to use templates
 - post-C++11 template-language features other than the variable templates above

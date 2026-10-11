@@ -166,8 +166,10 @@ preprocess and compile hosted source/header inputs successfully through the
 Hosted compatibility should use the same source-to-LowIR-to-object pipeline as
 ordinary compilation. Hosted include search, predefined macros, and builtin
 probes can affect the source program being compiled, but `--emit-lowir` should
-remain representative of the LowIR that object emission consumes. Do not add a
-hosted-only lowering path that carries backend facts outside serialized LowIR.
+remain representative of the LowIR that object emission consumes: the object
+`cppgm++ -c` writes must be the object the serialized LowIR produces (PA32's
+object round trip checks it), so the facts hosted code needs in the backend
+are LowIR facts; how they travel in memory is yours.
 
 ### Error Handling
 

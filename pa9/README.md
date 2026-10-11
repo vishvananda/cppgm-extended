@@ -20,9 +20,7 @@ Complete PA8 before starting this assignment.
 
 You will want to reuse:
 
-- the shared tool and batch-driver structure from the earlier assignments
-- the PA6-PA7 typed scope, declaration, and semantic models
-- the PA8 compiler/backend boundary
+- the shared tool structure from the earlier assignments
 - the Itanium C++ ABI mangling rules in `../doc/itanium-mangling.txt`
 
 The normalized facts intentionally describe language features that later
@@ -31,7 +29,7 @@ for the encoder; the corresponding source-language milestones are not
 prerequisites.
 
 The tests assume a POSIX-like shell environment with `make`, `bash`, `perl`,
-and a working host C++ compiler for building the test executable.
+and a working host C++ compiler for building `abimangle`.
 
 ### Starter Kit
 
@@ -53,11 +51,12 @@ Corrections to reference outputs follow the
 [reference policy](../TESTING_AND_REFERENCES.md).
 
 `abi_mangle.h` gives the vocabulary; the typed ABI model, the fact reader and
-the encoder are yours. Keep the reusable typed ABI model and encoder under
-`dev/src/`; keep the line-oriented fact reader at the `abimangle` tool
-boundary. Later compiler stages must construct typed ABI targets and call the
-same encoder directly. They must not serialize semantic state to fact text and
-parse it back.
+the encoder are yours. From PA10 on, the compiler's symbols must equal what
+`abimangle` produces for the same facts; how the compiler reaches its encoder
+is yours. One encoder under `dev/src/` serving both, with the line-oriented
+fact reader kept at the `abimangle` tool boundary, is the direct way to keep
+them equal; converting semantic state to fact text and parsing it back is a
+slow path to avoid.
 
 The code tables in `abi_mangle.h` cover builtin types, standard substitutions,
 terminals and operators. Substitution, the structure of each encoding,
@@ -119,8 +118,8 @@ to parse `__float128` as C++ source in PA9.
 
 The normalized builtin words `complex-float`, `complex-double`, and
 `complex-longdouble` denote GNU complex floating types and use the Itanium type
-encodings `Cf`, `Cd`, and `Ce`. These are typed ABI facts; consumers must not
-construct them by appending raw mangled fragments.
+encodings `Cf`, `Cd`, and `Ce`. These are typed ABI facts: the fact file never
+spells a mangled fragment, and the encoder produces the encoding.
 
 Integral `value` facts are interpreted according to their typed value. Signed
 negative values use the Itanium `n`-plus-magnitude spelling, including the
@@ -216,9 +215,9 @@ fixed covariant-result adjustment.  A covariant result reached through a
 virtual base uses the typed form
 `thunk <this-adjust> virtual-result <fixed-adjust> <vcall-offset> function ...`.
 The fixed component is applied after loading the dynamic adjustment from the
-returned object's vtable at the supplied vcall-offset slot.  Production ABI
-symbol construction and fact-file mangling must use the same typed thunk
-target; the text form is its public scaffold serialization.
+returned object's vtable at the supplied vcall-offset slot.  The compiler's
+thunk symbols must equal what `abimangle` produces for the same facts; the
+text form is the fact file's spelling of the target.
 
 Function operator terminals use semantic names, not raw Itanium terminal
 fragments:
@@ -450,7 +449,7 @@ it when the symbol is emitted, not as a key for finding entities.
 ### Stage Handoff
 
 The next stage is PA10, where `cppgm++ --emit-lowir` first emits compiler-owned
-symbols. PA10 must lower resolved semantic entities into the typed ABI targets
-introduced here and call the shared encoder directly. Later class, template,
-native-object, exception, and hosted-runtime assignments extend those typed
-targets rather than introducing a second mangling path.
+symbols. From then on the compiler's symbols must equal what `abimangle`
+produces for the same entities; one encoder serving both is the direct way to
+keep them equal, and later class, template, native-object, exception, and
+hosted-runtime assignments extend the same facts.

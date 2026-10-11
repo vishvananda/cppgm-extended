@@ -339,9 +339,10 @@ In particular:
   solution. PA26/PA27 replace the internal compiler-object contract with a
   host-linker-compatible object contract.
 - A compiler object needs what linking needs: code, data, symbols and
-  relocations. Do not put a serialized copy of the program in it for link
-  mode to compile again; the host objects of PA26 onward carry nothing of the
-  kind.
+  relocations, and the course solution's holds those and nothing else. A
+  design that keeps a serialized program in the object for link mode to
+  compile again is acceptable if the parity checks pass; the host objects of
+  PA26 onward carry nothing of the kind.
 - A handler-record runtime, like the course solution's, is the simpler way
   to meet goal 8. A record restores the callee-saved registers as they were
   when its region was entered, so a function with regions keeps in memory

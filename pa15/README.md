@@ -219,8 +219,9 @@ PA15 supports the following in addition to the PA14 subset:
   specialization of a function template states `inline_hint=yes` only when it
   is itself declared `inline` or `constexpr`, whatever the template's
   declaration says (14.7.3p12)
-- late explicit-specialization visibility and stale-primary refresh in the
-  supported class/function template cases
+- an explicit specialization declared after uses of its primary template
+  takes effect for the uses that follow it (14.7.3p6), in the supported class
+  and function template cases
 - constant-valued template bindings over the supported subset, including class-scope
   `static const` / `static constexpr` members and other ordinary metaprogramming helper
   bindings that feed lookup, template arguments, or `static_assert`

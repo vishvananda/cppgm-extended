@@ -117,7 +117,7 @@ For example:
 
 And `<hexdump>` is the hexadecimal representation of the data in memory in the Linux x86-64 ABI (defined below).
 
-> Important: When scanning `floating-literals` for output, please use the functions from the starter code `PA2Decode_float`, `PA2Decode_double` and `PA2Decode_long_double`.  You may also implement scanning yourself but please pass the literal through these functions for PA2 output for bit-perfect compatibility with test harness and reference implementation.
+> Important: the hexdump of a `floating-literal` is the IEEE-754 value the C library's decimal conversion produces (`strtof`, `strtod` and `strtold` semantics: round to nearest, ties to even).  The `PA2Decode_float`, `PA2Decode_double` and `PA2Decode_long_double` helpers in the starter code give exactly that; a decoder of your own must agree with them bit for bit on the fixtures.
 
 For example, for an input of:
 
@@ -233,7 +233,7 @@ In the case of `integer-literal` and `floating-literal` you will then need to ca
 
 Once the appropriate type is found you will then scan it into that type.
 
-For `floating-literals` once you have confirmed that they match the appropriate grammar, use the method shown in `PA2Decode_float`, `PA2Decode_double` and `PA2Decode_long_double` in the starter code to scan them for output.  (This is just for testing so the hexdump is binary identical to the reference implementation.)
+For `floating-literals`, once you have confirmed that they match the appropriate grammar, scan them to the value the C library's decimal conversion gives (as `PA2Decode_float`, `PA2Decode_double` and `PA2Decode_long_double` in the starter code do), so that the hexdump matches the references bit for bit.
 
 You may _optionally_ check that `floating-literals` are in the range of their types:
 
@@ -536,8 +536,9 @@ The course mapping for simple tokens is given below, and this has also been tran
 
 These design tips are optional, and only suggest one way to complete this assignment.
 
-The tips below connect your PA1 code to the PA2 output. The compiler that
-later assignments build reads post-tokens on a different path: classify an
+The tips below connect your PA1 code to the PA2 output. One design that
+scales, and the one the course solution uses, reads post-tokens on a
+different path: classify an
 identifier as a keyword once, on its interned entry, and produce post-tokens
 on demand as small records that refer to their spellings rather than copy
 them. The `PA2Decode_*` helpers exist so that floating hexdumps match the

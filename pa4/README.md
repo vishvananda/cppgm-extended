@@ -117,14 +117,15 @@ reference policy. You may run the tool directly with temporary files while
 developing; no separate stdin implementation or macro-only executable is
 required. Finish with the cumulative through-PA4 report from the root.
 
-## Later scale
+## Later scale (optional)
 
 The macro and directive guides describe the clearest way to get every rule
 right, and it is a fine way to finish PA4. Later assignments preprocess the
 host's standard library headers for every translation unit, and PA34
 compiles the compiler itself: hundreds of thousands of tokens per compile,
 most of them from macros, include guards and groups that are skipped. At
-that scale the representation decides the cost, not the rules:
+that scale the representation decides the cost, not the rules. One representation
+that scales, and the one the course solution uses:
 
 - Find a macro through the identifier's interned entry (a field that says
   whether, and as what, the name is defined), not by probing a table keyed by
@@ -146,7 +147,8 @@ that scale the representation decides the cost, not the rules:
   its identifiers or looking up macros.
 
 None of this changes PA4's output, so it can come later, but it is easier
-to leave room for it now.
+to leave room for it now. Any design that meets the output here and the
+speed gates later is acceptable.
 
 ## What carries forward
 

@@ -165,9 +165,9 @@ the implemented surface, including:
 - dependent-call, dependent-alias, and no-eager-instantiation behavior when the
   primary assertion is a single PA18-owned feature rather than a broad
   multi-feature composition
-- dozens of distinct dependent function-template result types may coexist in
-  one translation unit, and equivalent redeclarations retain the same result
-  meaning after all of those declarations have been processed
+- equivalent redeclarations of a function template with a dependent result
+  type name the same template, however many such templates a translation unit
+  declares (14.5.6.1)
 
 ### Out Of Scope
 

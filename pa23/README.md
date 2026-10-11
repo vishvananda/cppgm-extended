@@ -288,8 +288,8 @@ The same monotonic-extension rule applies here:
 
 For Itanium-layout vtable segments, emit any vcall-offset rows before the
 virtual-base-offset rows, followed by offset-to-top, RTTI, and the function
-slots. Track each segment's address point from the rows actually emitted for
-that segment instead of using one class-wide negative-row count. The
+slots. Each segment's address point follows that segment's own negative rows;
+segments of one group may have different numbers of them. The
 virtual-base-offset rows follow the Itanium ABI (2.5.2): the first virtual
 base in inheritance graph order sits nearest the address point, after the rows
 a primary base already places there, and a VMI descriptor's `__offset_flags`
@@ -352,10 +352,9 @@ place there gets its own table. The entries are the base's own; g++ instead
 keeps a lost primary base's entries there and adds no vcall offsets to the
 base's own table. A destructor's entries are null.
 
-Keep a synthesized constructor or destructor base entry's ABI identity
-separate from inlining policy. The entry may need its own object symbol or
-retained definition, but it gains `no_inline=yes` only when the source-level
-function has the corresponding prohibition.
+A synthesized constructor or destructor entry states `no_inline=yes` only
+when the source function carries GNU `noinline`, whether or not the entry has
+its own object symbol or a retained definition.
 
 Find a virtual base where the object says it is: its vbase-offset row in the
 object's vtable, or a static offset when the object is a complete object of a
@@ -369,6 +368,7 @@ constructor or member function built here would hand it no such arguments.
 Within a base-object constructor or destructor, read the rows from the
 construction vtable that the VTT names, not from the object's vptr, which may
 still hold a base's table. The VTT never changes, so one load of the table and
-of each row serves a block. Vtables, construction vtables and VTTs are
+of each row serves a block (the references do this, and the comparison does
+not absorb a reload). Vtables, construction vtables and VTTs are
 `storage=readonly` data, which the optimizer reads through once the VTT is
 known.

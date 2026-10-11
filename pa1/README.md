@@ -74,8 +74,9 @@ Internally you may throw an exception and put a catch handler in `main` that the
 ### Development Environment
 
 Use Linux x86-64 and the toolchain described in the root [README](../README.md).
-Implement the tokenizer using your own reusable C++ code and the supplied
-support interfaces.
+Implement the tokenizer using your own reusable C++ code; the supplied
+`IPPTokenStream` and its debug implementation are a convenience for writing
+the dump, not a required interface.
 
 ### Output Format
 
@@ -99,7 +100,7 @@ In the remaining cases, it is up to each participant to choose for themselves.
 
 ### Features
 
-Several transformations will need to be applied in a pipeline as described in section 2.2.{1,2,3} of the standard.  The following summary is given as a rough reference:
+The following transformations apply, as if in sequence, as section 2.2.{1,2,3} of the standard describes.  The following summary is given as a rough reference:
 
 Decode each UTF-8 code unit sequence from the input file to its unicode code point.
 
@@ -480,10 +481,12 @@ Usually you will need to match the longest token (some exceptions are comments, 
 
 To emit a token there is an interface provided in the skeleton code called `IPPTokenStream`.  It has one function for each token type.  In most cases you will need to store and then UTF-8 encode the code point sequence corresponding to the token to pass to the data argument.  The token data is expected to have the translation tasks applied (for one example _line splicing_), but not the literal tasks (for example decoding `simple-escape-sequences` is not required at this stage) (which occur later in translation phase 7 and is not part of this assignment).
 
-#### Later scale
+#### Later scale (optional)
 
 The pipeline above is the clearest way to get every translation rule right,
-and it is a fine way to finish PA1. Later assignments lex all of the host's
+and it is a fine way to finish PA1. What follows is one representation that
+scales, and the one the course solution uses; any design that meets the
+output here and the speed gates later is acceptable. Later assignments lex all of the host's
 standard library headers for every translation unit, and PA34 compiles the
 compiler itself: millions of bytes per compile. There, a pipeline that
 handles one code point at a time through several state machines, or stores
@@ -496,7 +499,8 @@ each identifier's spelling once, as it is lexed. None of this changes PA1's
 output, so it can come later, but it is easier to leave room for now.
 
 Two more choices matter at that scale. `IPPTokenStream` and its debug
-implementation are how `pptoken` reports tokens to the test harness. They
+implementation are how the scaffold's `pptoken` writes the dump; the harness
+reads only standard output. They
 pass each token's text as a `std::string`, which suits a dump but not the
 compiler's own token path, where later stages read compact token records
 from the lexer directly. And a token's position can be one offset in a

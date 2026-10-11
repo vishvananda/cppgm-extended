@@ -19,16 +19,18 @@ from C++, and PA24 will compile it to native code. Keep the model, reader,
 validator and writer in reusable modules under `dev/src/` so those assignments
 extend your work.
 
-Design the in-memory model for the optimizer that will edit it. PA32 rewrites
-one function at a time, many times over: it inserts, removes and replaces
-instructions and blocks, renames uses, and asks how many uses a value has. A
-model in which a function owns its instructions and blocks, where an edit
-touches only that function and use counts are cheap to keep current, serves
-all of that. A model that packs a whole program into flat append-only pools,
-or that can only be rebuilt from text, makes every later rewrite a rebuild.
-`dev/src/lowir_model.h` gives the format's vocabulary and no containers: the
-model's shape is yours, under the requirements above. Store its enums, not
-words.
+No test observes your model: the graded interfaces are the reader, the
+validator, the writer and the construction exercises. Design the model all
+the same for the optimizer that will edit it. PA32 rewrites one function at
+a time, many times over: it inserts, removes and replaces instructions and
+blocks, renames uses, and asks how many uses a value has. A model in which a
+function owns its instructions and blocks, where an edit touches only that
+function and use counts are cheap to keep current, serves all of that; one
+that packs a whole program into flat append-only pools, or that can only be
+rebuilt from text, makes every later rewrite a rebuild.
+`dev/src/lowir_model.h` gives the format's vocabulary and no containers. The
+model's shape is yours, using the header is optional, and storing its enums
+rather than words is advice.
 
 ### Prerequisites and starter kit
 
@@ -178,10 +180,9 @@ that later work costs.
   analysis keeps its facts in arrays indexed by those numbers rather than in
   maps keyed by names. Keep each value's use count, or its list of uses,
   current as instructions change: the optimizer asks how a value is used
-  constantly. The course solution recounts a function's uses each time its
-  body has changed, a cost that later showed up as a noticeable share of its
-  optimizer's work. Removed instructions can leave holes; compact a function
-  after a pipeline rather than after every edit.
+  constantly, and recounting every use after each edit is measurably
+  expensive in an optimizer. Removed instructions can leave holes; compact a
+  function after a pipeline rather than after every edit.
 
 ### Testing
 

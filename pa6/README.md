@@ -175,8 +175,8 @@ declarations are emitted through the resulting `function`, `variable`,
 `parameter`, or `enumerator` binding rather than through a separate
 `using-declaration` line.
 
-Namespace aliases and using directives affect lookup. They do not need their
-own output line unless the checked-in reference format for a test requires one.
+Namespace aliases and using directives affect lookup. They have no output
+line of their own.
 
 Standard output and standard error are ignored by the automated PA6 tests.
 
@@ -246,7 +246,10 @@ PA6 must support:
   another enumeration's enumerator (7.2p5)
 - `constexpr` object declarations treated as `const` objects for PA6 type and
   constant-value purposes
-- the supported `decltype(...)` forms listed in the tests and reference output
+- the supported `decltype(...)` forms: an unparenthesized id-expression
+  naming a variable, function, enumerator or static data member (the
+  entity's declared type, 7.1.6.2p4), and a parenthesized lvalue such as
+  `decltype((x))` (an lvalue reference to its type)
 - deterministic scope-tree output
 
 PA6 also rejects the following declaration forms:
@@ -355,6 +358,6 @@ expression.
 
 For a root `name.t`, companions such as `name.t2` are additional primary
 source files in the same invocation, in lexical order. They remain separate
-translation units; the harness counts the group once. Both batch and ordinary
-execution use this file interface. Headers and other support files stay with
+translation units; the harness counts the group once. Headers and other
+support files stay with
 the owning case and are not concatenated into one source file.

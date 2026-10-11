@@ -84,8 +84,8 @@ simply that the heavy hosted header compiles cleanly to an object without error.
 
 The hosted header path should still lower through the same LowIR representation
 used by `cppgm++ --emit-lowir`. Performance work may avoid unnecessary file
-I/O, but it must not create a separate hosted-only backend route that depends
-on facts unavailable in serialized LowIR.
+I/O; the object must remain the one serialized LowIR produces (PA32's object
+round trip), so the facts the backend needs for hosted code are LowIR facts.
 
 ### Error Handling
 

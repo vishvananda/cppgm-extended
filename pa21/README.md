@@ -211,12 +211,12 @@ To complete PA21, implement these goals:
 5. Full-expression cleanup through condition control flow.
    Temporary-owning call arguments inside nested `&&` and `||` expressions
    should be destroyed exactly on evaluated paths, and every nested logical
-   result used by an outer condition should retain a valid LowIR result slot.
+   result used by an outer condition yields a value the outer condition tests.
    Guarded local-static initialization should destroy initializer temporaries
    on the initialization edge before that edge joins the already-initialized path.
-   EH-bearing aggregate construction should invoke nontrivial member constructors
-   instead of representation-copying those members, so cleanup state describes
-   the subobjects that were constructed.
+   An aggregate whose initialization may throw constructs each nontrivial
+   member by a constructor call (not a representation copy), and the cleanup
+   region after each call destroys exactly the members constructed so far.
    Synthesized copy/move constructors destroy completed bases, members and
    array elements if a later construction step throws. Representation-copy
    prefixes still establish subobject lifetimes. A partial member-array
@@ -244,9 +244,10 @@ To complete PA21, implement these goals:
    not throw. A definition in which nothing can unwind opens no guard.
    Function-template instantiation retains function-try bodies and handlers,
    including constructor mem-initializers within the function-try block.
-   Construction and destruction cleanup dependencies on class-template
-   destructors should be demanded only after a recursively containing type is
-   complete, and should retain that concrete owner in emitted cleanup calls.
+   A cleanup call names the destructor of the concrete specialization that
+   owns the subobject; instantiating that destructor must not require the
+   enclosing class to be complete earlier than the standard allows (14.7.1),
+   so a recursively containing type is accepted.
    A class return value built in the caller's destination by a constructor,
    copy or call that may throw unwinds the function's automatic objects
    first; each arm of a class conditional does so too, and a completed result
@@ -258,7 +259,7 @@ To complete PA21, implement these goals:
    never destroys its parameter, and an inheriting constructor forwards the
    parameter's address unchanged.
    Once an exception object has been initialized, destroy the throw operand's
-   temporaries and remove them from later unwind snapshots. A temporary from an
+   temporaries; no later cleanup region destroys them again. A temporary from an
    untaken throw branch must not appear in a sibling call's cleanup path.
    A pointer exception is caught by value (the runtime's begin-catch result is
    the thrown pointer, converted to the handler's type), so a handler declared
@@ -302,9 +303,10 @@ To complete PA21, implement these goals:
    Initializer temporaries participate in that completion order and remain live
    through the full expression. A conditional join must retain the guarded
    temporaries from whichever arm was evaluated.
-   Equal unwind cleanup suffixes may share LowIR blocks only when their complete
-   active try/handler context, handler-exit operations, cleanup-region exits,
-   and terminal continuation are identical.
+   Two unwind paths whose remaining cleanup sequence and handler context are
+   identical share one block, the later path jumping into the earlier block
+   where the sequences coincide (the references share them so, and the
+   comparison does not absorb the alternative).
 
 ### Out Of Scope
 

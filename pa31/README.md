@@ -88,9 +88,9 @@ objects are host-linked.
 
 Hosted objects should still be generated from the same LowIR facts exposed by
 `cppgm++ --emit-lowir`. If hosted header emission needs symbol ownership,
-object symbol spellings, TLS wrapper facts, or runtime hooks, those facts
-should be represented in LowIR metadata, declarations, definitions, or object
-aliases rather than in a hosted-only side channel.
+object symbol spellings, TLS wrapper facts, or runtime hooks, those facts are
+LowIR facts (metadata, declarations, definitions, object aliases), so that the
+object serialized LowIR produces equals the direct one.
 
 The PA31 tests observe:
 
@@ -134,8 +134,9 @@ including `<functional>`, using `std::forward`, using placement `new`, or
 instantiating an `unordered_set` should not by itself cause unrelated libc++ or
 libstdc++ helper definitions to appear as defined symbols in the output object.
 
-The required-definition closure starts from the definitions the translation
-unit owns (its non-inline functions and variables with external linkage, and
+The course solution decides what to emit by the closure below; a different
+closure whose objects link and run is acceptable. The closure starts from the
+definitions the translation unit owns (its non-inline functions and variables with external linkage, and
 the vtable of each class whose key function it defines, as the Itanium ABI
 decides) and adds, until nothing new appears, every vague-linkage definition
 that something already in it refers to:

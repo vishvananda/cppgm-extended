@@ -45,13 +45,12 @@ it. These seams cost little to leave in place now and much to cut in later:
 - **Each machine instruction states the registers it defines, uses and
   clobbers**, fixed registers (division, variable shifts, calls, string
   operations) and tied operands included, so that liveness, allocation and
-  later cleanups read one description. The course solution predicts each
-  LowIR operation's clobbers apart from emitting it; the two must agree, and
-  each disagreement later work found was wrong code.
+  later cleanups read one description. If clobbers are predicted apart from
+  emission, the two must agree: a disagreement is wrong code.
 - **Keep back only the registers an encoding needs.** A register set aside
-  as the selector's scratch is unavailable to every value of every function.
-  The course solution keeps two general and two vector registers back, which
-  later work pays for in spills and in longer encodings.
+  as the selector's scratch is unavailable to every value of every function,
+  and is paid for in spills and in longer encodings. The course solution keeps
+  two general and two vector registers back.
 - **Finish the frame last.** Assign frame offsets after placement and
   selection, so that a later pass can drop unused slots, share slots whose
   lives do not overlap, and put the most used objects within an 8-bit

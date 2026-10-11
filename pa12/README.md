@@ -174,9 +174,6 @@ implicit object used by LowIR lowering is not part of that declared parameter li
 particular, an out-of-class move-assignment definition retains its rvalue-reference parameter
 in the ABI identity.
 
-Nested operand and overload analysis must preserve the identity of the
-enclosing binary operator and the lifetime of its full expression.
-
 Temporaries and by-value arguments whose destructors are not trivial are
 destroyed on the exceptional path as well as the normal one, inside cleanup
 regions. The course solution places those regions by the shape of the
