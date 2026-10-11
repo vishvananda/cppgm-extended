@@ -113,6 +113,7 @@ verify output equality.
 - `docs/student-export-root/`: documents installed at the student repo root.
 - `docs/v4/`: historical migration records; their original
   paths and numbers are historical evidence, not current workflow instructions.
+- `docs/v5/`: the v5 release's review records, likewise historical.
 - `benchmarks/`: fixed performance inputs; `obj/`: generated artifacts.
 
 The nine tools are `pptoken`, `posttoken`, `ppexpr`, `preproc`, `cppgm++`,
