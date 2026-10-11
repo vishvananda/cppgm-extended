@@ -222,13 +222,35 @@ B`), so they also run against the reference tools: for example
 `perl pa35/scripts/kernels.pl --compiler reference-binaries/cppgm++` after
 `make reference-binaries`.
 
+`freeze.pl`, `build_with.pl` and the codegen checks take the seed's compile
+and link lines from a dry run of `make build`: keep a `make build` that
+compiles each `dev/src` object with `-c` and links `cppgm++` (or
+`cppgm++.tmp`, which the shipped Makefile then moves into place) from those
+objects, so the self build can repeat the same lines with another compiler
+and the same host link. An `OBJ=` override or another object root is fine.
+
+### Comparing with the reference
+
+The gates are floors. To see where you stand against the course solution on
+your own machine, `make -C pa35 parity` (after `make reference-binaries`)
+measures the reference compiler and yours side by side: compile time and
+memory on the workload as ratios to the host, and generated code at
+constant work, since both compilers build this repository's own source and
+the two builds run the workload (`ab.pl reference-binaries/cppgm++`). It
+prints the reference's figure, yours and the ratio; nothing in it is a gate.
+`calibration.tsv` records the same figures for the solution on the machine
+it was measured on.
+
 ## Boundaries
 
-- **Codegen work changes the optimizer and backend, not the compiler's own
-  hot code.** The generated-code gates compare two builds of the same
-  source; rewriting the compiler's hot paths to avoid a code-generation
-  weakness changes both and proves nothing. Improve the optimizer (PA32), the
-  backend (PA24/PA33) and the lowering facts they consume.
+- **Attribute a codegen gain to the optimizer and backend.** The
+  generated-code gates compare two builds of the same source, so rewriting
+  the compiler's hot paths to avoid a code-generation weakness changes both
+  and proves nothing about the code generator; `ab.pl` (one source built by
+  an old and a new compiler) shows what a change did to the generated code
+  alone, and `identity` whether a compiler-speed change left it untouched.
+  A change may improve both compile time and generated code; measure each
+  effect on its own.
 - **No profile feedback, link-time optimization or ISA extensions.** The self
   build may use only what one `cppgm++ -O3 -c` of one translation unit can
   know, as the seed's `g++ -O3` does.

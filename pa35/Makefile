@@ -11,6 +11,7 @@
 #   make identity OLD=A NEW=B   generated output identical, compiler work A -> B
 #   make kernels | behavior | generated | speed | scaling   one gate family, dev/cppgm++
 #   make profile [LEVEL=-O0] [INPUT=file.cpp] [SECONDS=30]   where dev/cppgm++ spends its time
+#   make parity [REFERENCE=compiler]   this compiler beside the reference on this machine (scripts/parity.pl)
 
 PERL ?= perl
 S := scripts
@@ -22,7 +23,7 @@ LEVELS ?= O0,O3
 SECONDS ?= 30
 SMOKE_SEEDS ?= 5
 
-.PHONY: test check test-correctness test-speed test-codegen test-progress test-smoke quick freeze measure abba identity kernels behavior generated speed scaling profile clean
+.PHONY: test check test-correctness test-speed test-codegen test-progress test-smoke quick freeze measure abba identity kernels behavior generated speed scaling profile parity clean
 
 test check:
 	$(PERL) $(S)/check.pl --seeds $(SEEDS)
@@ -75,6 +76,9 @@ PROFILE_LEVEL = $(if $(filter file,$(origin LEVEL)),-O0,$(LEVEL))
 
 profile:
 	$(PERL) $(S)/profile.pl --level $(if $(filter -O%,$(PROFILE_LEVEL)),$(PROFILE_LEVEL),-O0) --seconds $(SECONDS) $(if $(INPUT),--input $(INPUT))
+
+parity:
+	$(PERL) $(S)/parity.pl $(if $(REFERENCE),--reference $(REFERENCE))
 
 clean:
 	rm -rf obj
