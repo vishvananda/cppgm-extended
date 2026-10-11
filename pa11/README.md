@@ -91,8 +91,9 @@ States") for every function it emits, and the comparison checks each one:
   an implicitly declared or first-declaration-defaulted special member
   function; a member defined outside its class without `inline` states none.
 - `no_inline=yes` on a function any declaration of which carries GNU
-  `noinline` (PA27 owns that attribute; PA32's `-O0` driver lane compares the
-  fact), and on the lowering's own `cppgm_call_terminate` helper.
+  `noinline` (the attribute arrives with PA27's host-object attributes and
+  PA28 states its rules; PA32's `-O0` driver lane compares the fact), and on
+  the lowering's own `cppgm_call_terminate` helper.
 - `object_bytes=N` on `this`, `N` its class's size, in every member function
   and every constructor and destructor entry, and on the `this` and
   reference-member parameters of an aggregate's initialization helper.
@@ -303,8 +304,8 @@ PA11 supports the following in addition to the PA10 procedural subset:
   Any other is emitted and called, even when its body is empty, with one
   exception: a destructor with no effect, whose body is empty or implicit and
   whose subobjects' destructors have none, is not called to destroy a single
-  automatic object. It is still emitted, and temporaries, array elements and
-  allocated objects call it
+  automatic object, nor a base or member from another destructor. It is still
+  emitted, and temporaries, array elements and allocated objects call it
 - a constructor protects each base and member it has constructed whose
   destructor is not trivial with a cleanup region (`eh_cleanup` in
   `../pa8/lowir.md`) that destroys it, open over the rest of the constructor,

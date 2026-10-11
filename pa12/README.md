@@ -135,14 +135,17 @@ copy or move constructor with further defaulted parameters too (12.8p2). A
 constructor template, a converting constructor and an assignment operator,
 whose operands may be one object, state none.
 
-Focused course controls validate these boundary facts and temporary-lifetime
-relationships without comparing a complete LowIR module. They inspect only
-the two constructor parameters versus the assignment-operator control, or the
-ordering and identity of construction, selected use, and destruction within
-one full expression. The lifetime reducer is also compiled and executed.
-These controls run your `cppgm++ --emit-lowir -O0` frontend, then use the
-supplied `lowir2native-ref` backend to execute its output. Native code emission
-and the compile/link driver remain PA24 and PA25 work.
+Focused course controls (the controls in `tests/controls/` that state no
+outcome, checked by `../scripts/check_pa12_survivor_properties.pl`) validate
+these boundary facts and object identity and lifetime relationships without
+comparing a complete LowIR module: the two constructor parameters versus an
+assignment operator's, the ordering and identity of construction, selected
+use and destruction within one full expression, a parameter object's extent
+and identity, the size, cookie and length check of an array new, and a named
+return object. Most also compile and execute the program. These controls run
+your `cppgm++ --emit-lowir -O0` frontend, then use the supplied
+`lowir2native-ref` backend to execute its output. Native code emission and
+the compile/link driver remain PA24 and PA25 work.
 
 When a same-type conditional class prvalue is materialized in a private
 temporary and then selected for copy or move construction into its final
@@ -156,10 +159,11 @@ distinct temporary, transfer call, and normal/exceptional destruction.  The
 focused control checks those relationships and executes the O0 behavior
 without prescribing complete generated LowIR text.
 
-For supported indirect return-by-value cases, PA12 may also lower an eligible top-level
-named local directly in `%ret` instead of building a separate local object and then
-copying or moving it into the return destination. That direct return-slot form is part of
-the accepted PA12 output contract.
+For supported indirect return-by-value cases, PA12 lowers an eligible top-level named
+local directly in `%ret` instead of building a separate local object and then copying or
+moving it into the return destination. The references use that direct return-slot form,
+and the comparison does not absorb the alternative (`../pa8/lowir.md`, "What The
+Comparison Absorbs And What It Enforces").
 
 Ref-qualified member functions extend the PA11 member-call model: overload resolution still
 uses the implicit object argument, and the object expression's value category participates in
@@ -180,12 +184,13 @@ full-expression, not by whether its calls can throw, so the references have
 regions around calls that cannot throw, and the comparison checks them like
 any other region. A temporary's destructor is called even when its body is
 empty: PA11's exception for a destructor with no effect covers only a single
-automatic object.
+automatic object and a base or member destroyed by another destructor.
 
-For supported synthesized copy/move special members, PA12 may lower a leading trivially
+For supported synthesized copy/move special members, PA12 lowers a leading trivially
 copyable storage prefix directly as `copyobj <span> <src>, <dst>` instead of spelling that
 prefix as separate field operations or a `__builtin_memcpy` helper call in the emitted
-LowIR. That direct storage-copy form is also part of the accepted PA12 output contract.
+LowIR. The references use that direct storage-copy form, and the comparison does not
+absorb the alternative.
 
 When a synthesized copy/move constructor or assignment body handles adjacent
 nonvolatile bit-fields in one supported 8-, 16-, 32-, or 64-bit allocation
@@ -211,10 +216,10 @@ constructed from that object: the constructor taking the base binds to the
 object's base subobject with the object's value category, so an lvalue is
 copied and a prvalue moved.
 
-For supported trivially copy-constructible class value transfers, PA12 may also lower the
+For supported trivially copy-constructible class value transfers, PA12 lowers the
 copy/move construction step itself directly as `copyobj <span> <src>, <dst>` instead of
-spelling a call to a synthesized trivial copy/move constructor helper. That direct
-value-transfer form is part of the accepted PA12 output contract.
+spelling a call to a synthesized trivial copy/move constructor helper. The references use
+that direct value-transfer form, and the comparison does not absorb the alternative.
 
 A synthesized constructor, destructor or copy/move assignment operator, and
 one defaulted on its first declaration, states `unwind=no` when every function

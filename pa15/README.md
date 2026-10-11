@@ -211,7 +211,10 @@ PA15 supports the following in addition to the PA14 subset:
   - `sizeof(type-id)` and `alignof(type-id)`
   - supported cast expressions that fold to integral constant values
 - explicit specialization of supported class templates
-- explicit specialization of supported function templates
+- explicit specialization of supported function templates; an explicit
+  specialization of a function template states `inline_hint=yes` only when it
+  is itself declared `inline` or `constexpr`, whatever the template's
+  declaration says (14.7.3p12)
 - late explicit-specialization visibility and stale-primary refresh in the
   supported class/function template cases
 - constant-valued template bindings over the supported subset, including class-scope

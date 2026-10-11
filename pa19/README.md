@@ -128,18 +128,12 @@ When working through PA19 failures, keep the earlier template assignments
 passing. A PA19 fix should not relax, special-case, or regress the basic
 functionality already covered by PA14, PA15, PA17, and PA18. Before treating an
 integration fix as complete, run the earlier template PAs and PA19 through the
-report harness:
+report harness from the repository root:
 
     $ make test-report ACTIVE_TEST_REPORT_PAS='pa14 pa15 pa17 pa18 pa19'
 
-Self-checking controls in `tests/controls/` state their expected outcome in
-their leading comment (`expect exit N` or `expect reject`) or in an
-`x.expect` sidecar. `make test` compiles each with your
-`cppgm++ --emit-lowir -O0`, builds the LowIR with the supplied
-`lowir2native-ref -O0` and requires the stated exit status (and the output in
-`x.stdout`, when present), or requires your frontend to reject the program.
-The LowIR text of a control is not compared. `make test-controls` runs only
-the controls; `make check TEST=tests/controls/<name>.cpp` runs one.
+PA19 ships no self-checking controls: unlike PA10–PA18 and PA20–PA23 it has
+no `tests/controls/`, and every PA19 case is graded by its LowIR.
 
 ### PA19 Syntax Boundary
 

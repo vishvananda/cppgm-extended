@@ -77,6 +77,10 @@ The generated LowIR must be well-formed and must match the checked-in `.ref` fil
 the relaxed LowIR comparison used by the harness. That comparison still checks the
 semantic LowIR shape and required IR facts, but it does not make helper metadata
 presentation or other non-semantic text details part of the student contract.
+The instruction facts and the boundary facts the lowering states (`unwind`,
+`inline_hint`, `object_bytes`, `storage=readonly` and the others) are compared
+exactly; `../pa8/lowir.md` ("What The Comparison Absorbs And What It
+Enforces") lists both sides.
 
 ### Error Handling
 

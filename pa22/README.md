@@ -79,6 +79,10 @@ The generated LowIR must be well-formed and must match the checked-in `.ref` fil
 the relaxed LowIR comparison used by the harness. That comparison still checks the
 semantic LowIR shape and required IR facts, but it does not make helper metadata
 presentation or other non-semantic text details part of the student contract.
+The instruction facts and the boundary facts the lowering states (`unwind`,
+`inline_hint`, `object_bytes`, `storage=readonly` and the others) are compared
+exactly; `../pa8/lowir.md` ("What The Comparison Absorbs And What It
+Enforces") lists both sides.
 
 ### Error Handling
 
@@ -103,8 +107,9 @@ comparison described in [the format guide](../pa8/lowir.md). The `Makefile` invo
 The local checked-in tests live in `tests/general/`. That directory contains
 PA22 source-to-LowIR tests over non-virtual multiple inheritance, multi-base
 generated members, member pointers, `dynamic_cast<void*>`, and ambiguity
-rejection. PA22 has no `tests/spec/` directory because these tests focus on the
-combined language-to-LowIR contract.
+rejection. `tests/spec/` holds tests anchored to specific clauses, most of
+them member pointers in templates; the harness runs them like the general
+suite.
 
 For each test case `x`:
 
