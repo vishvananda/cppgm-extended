@@ -926,16 +926,20 @@ previous iteration.
 
 The result and every incoming value have the same directly representable
 scalar type: `i1`, `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`, `f32`,
-`f64`, or `ptr`. A block reached as an exception handler target may not contain
-`phi`; exception state remains represented by the explicit exception/runtime
-instructions.
+`f64`, or `ptr`. `i128` and `f80` are not `phi` types: a value of either
+type that must survive a merge stays in a slot. A block reached as an
+exception handler target may not contain `phi`; exception state remains
+represented by the explicit exception/runtime instructions.
 
 A conditional scalar choice is represented with ordinary control flow: branch
 to the blocks that produce the alternative values, jump from those blocks to
-a merge block, and select the incoming value there with `phi`. The C++
-lowering produces this form for every conditional the source writes. An
-optimizer may turn a choice whose arms only compute values into a `select`
-(Unary and Binary Operations below).
+a merge block, and take the chosen value there. The C++ lowering produces
+this form for every conditional value the source writes (`?:`, and `&&` or
+`||` used as a value) and carries the value through memory: each arm stores
+its value into one slot, and the merge block loads it. The lowering emits no
+`phi`; `phi` is the optimizer's form, which slot promotion (PA32) makes from
+such a slot. An optimizer may also turn a choice whose arms only compute
+values into a `select` (Unary and Binary Operations below).
 
 ### Memory and Addressing
 
@@ -1692,8 +1696,8 @@ only generated-program outcomes using `lowir2native-ref`. Neither mode
 uses the C++-lowering presentation rules below. The maintainer byte-exact
 mode skips roundtrip normalization to check checked-in reference stability.
 
-The source-to-LowIR assignments (PA10 through PA23) and the optimizer's
-regression lane (PA32) judge an output by comparing it with the course
+The source-to-LowIR assignments (PA10 through PA23), PA32's `-O0` driver
+lane and its regression lane judge an output by comparing it with the course
 solution's LowIR after a presentation canonicalization: the relaxed LowIR
 comparison of `scripts/compare_results_common.pl`. PA8's debug-information
 lanes for `cppgm++ --emit-lowir` (`tests/debuginfo/source` and `source-g0`)
@@ -1702,10 +1706,10 @@ Locations above): each one, as often as the reference carries it, and no
 other. This section is the whole
 list of what that canonicalization absorbs, and of the conventions it
 enforces instead. A difference the comparison accepts is on the first list;
-a difference it rejects is on the second. `make test-seams` in PA11
-(`scripts/check_lowir_seams.py`) rewrites the course solution's own outputs
-along every line of both lists and fails when the lists and the comparison
-disagree.
+a difference it rejects is on the second. In the course repository,
+`make -C pa11 test-seams` (`scripts/check_lowir_seams.py`, which the student
+export does not ship) rewrites the course solution's own outputs along every
+line of both lists and fails when the lists and the comparison disagree.
 
 The rule behind the split: a normalization is worth having only when a
 student can hold it as one sentence and predict, reading their own output,
