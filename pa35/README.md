@@ -65,8 +65,8 @@ reported as not run. `make -C pa35 test-correctness`, `test-speed` and
 | correctness | `workload-compiles` | the seed compiles the workload at `-O0` and `-O3` | required |
 | correctness | `behavior` | each `tests/behavior/*.cpp`, compiled by `cppgm++` at `-O0` to `-O3` and linked by the host, prints what the host build prints; its `-O3` LowIR lowers through `lowir2native` with a MIR dump | all pass |
 | correctness | `generated` | seeded programs exercising narrow values, Booleans, returned objects, frames and unwinding, at `-O0` to `-O3`, against the host build | all pass |
-| speed | `compile-O0-time` | seed `-O0` user time on the workload / host `-O0` | <= 0.80 |
-| speed | `compile-O3-time` | seed `-O3` user time / host `-O2` | <= 0.80 |
+| speed | `compile-O0-time` | seed `-O0` user time on the workload / host `-O0` | <= 0.25 |
+| speed | `compile-O3-time` | seed `-O3` user time / host `-O2` | <= 0.25 |
 | speed | `compile-O3-memory` | seed `-O3` peak RSS / host `-O2` | <= 1.00 |
 | speed | `compile-scaling` | largest growth of the seed's compile time per doubling of input size, over the synthetic families of `scaling.pl` | <= 3.0 |
 | codegen | `workload-identical` | seed and self (frozen with `scripts/freeze.pl --label check`) write byte-identical objects for the workload at `-O0` and `-O3` | required |
@@ -87,6 +87,12 @@ kernel limit. `scaling.pl` compiles generated inputs of growing size (many
 scopes and lookups, a class with many members, many template
 instantiations, many macros, one long function, many small functions):
 linear work grows by about 2 per doubling, quadratic work by about 4.
+
+The compile-time limits sit near the course solution's own ratios (about
+0.14 of the host's time, [below](#the-course-solution-and-calibration)),
+not near the host's: a compiler that merely matches `g++` has not met the
+bar, and a gate is a floor the course may lower further, not the target.
+The generated-code limits leave a wider margin above the course solution.
 
 Most limits are far from where a compiler starts, so a gate alone shows no
 progress until it passes. `make -C pa35 test-progress` reports how far each
