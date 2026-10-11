@@ -27,6 +27,40 @@ sub function_body
 	die "$test: generated LowIR has no $name definition\n";
 }
 
+# The headers of the definitions of the C++ entities whose Itanium names
+# match $re: the function's own name, or its `object=` metadata (the
+# comparison pairs internal symbols by the latter).
+sub definition_headers_of_entities
+{
+	my ($lowir, $re) = @_;
+	my @headers;
+	for my $line (split(/\n/, $lowir))
+	{
+		next if $line !~ /^function \@([A-Za-z0-9_]+)\(/;
+		my $symbol = $1;
+		my ($object) = $line =~ /\[[^\]]*\bobject=([^,\]\s]+)/;
+		push @headers, $line
+			if $symbol =~ $re || (defined($object) && $object =~ $re);
+	}
+	return @headers;
+}
+
+# The symbols of the allocation functions (role=allocate_memory) and the
+# position of the first call of one of them in $body, or -1.
+sub first_allocation_index
+{
+	my ($lowir, $body) = @_;
+	my @allocators = $lowir =~
+		/^declare function \@([A-Za-z0-9_]+)\([^\n]*\brole=allocate_memory\b/mg;
+	my $at = -1;
+	for my $allocator (@allocators)
+	{
+		my $index = index($body, "call ptr \@$allocator(");
+		$at = $index if $index >= 0 && ($at < 0 || $index < $at);
+	}
+	return $at;
+}
+
 sub compile_source
 {
 	my ($app, $test, $directory) = @_;
@@ -86,17 +120,15 @@ for my $test (@tests)
 	}
 
 	if($test =~ /constructor-alias-boundaries/) {
-		my @constructors = $lowir =~
-			/^(function \@[^\n]+\([^\n]+\)[^\n]*\bobject=_[^\n]*(?:C1ERKS_|C1EOS_)[^\n]*\{)/mg;
+		my @constructors = definition_headers_of_entities($lowir, qr/C1E(?:RKS_|OS_)/);
 		die "$test: copy/move constructor definitions are missing\n"
 			if scalar(@constructors) != 2;
 		for my $header (@constructors) {
-			my @noalias = $header =~ /\bptr \[[^\]]*alias=noalias[^\]]*\]/g;
+			my @noalias = $header =~ /\bptr \[[^\]]*\balias=noalias\b[^\]]*\]/g;
 			die "$test: constructor destination/source are not both noalias\n"
 				if scalar(@noalias) != 2;
 		}
-		my ($assignment) = $lowir =~
-			/^(function \@[^\n]+\([^\n]+\)[^\n]*\bobject=_[^\n]*aSERKS_[^\n]*\{)/m;
+		my ($assignment) = definition_headers_of_entities($lowir, qr/aSERKS_/);
 		die "$test: copy-assignment control definition is missing\n"
 			if !defined($assignment);
 		die "$test: assignment operator incorrectly received constructor noalias facts\n"
@@ -105,27 +137,44 @@ for my $test (@tests)
 		next;
 	}
 	if($test =~ /enclosing-temporary-lifetime/) {
+		# Temporaries are destroyed in the reverse order of construction
+		# (12.2p5): after the operator's call, the inner operand first and
+		# the enclosing temporary second; and a failing inner construction
+		# destroys the enclosing temporary on its cleanup path.  Objects
+		# are known by the slots their address temporaries name, however
+		# often an address is taken.
 		my $main = function_body($test, $lowir, 'main');
-		my ($outer, $inner, $operator) = $main =~
-			/^\s+(%\w+) = addr \$\w+.*?^\s+(%\w+) = addr \$\w+.*?^\s+%\w+ = call i32 \@(\w+)\(\1, \2\)$/ms;
+		my %slot_of;
+		while ($main =~ /^\s+(%\w+) = addr (\$\w+)$/mg) { $slot_of{$1} = $2; }
+		my ($operator, $outer, $inner) = $main =~
+			/^\s+%\w+ = call i32 \@(\w+)\((%\w+), (%\w+)\)$/m;
 		die "$test: nested temporary/operator relationship is missing\n"
-			if !defined($operator);
+			if !defined($operator) || !defined($slot_of{$outer}) || !defined($slot_of{$inner});
 		my $use = index($main, "call i32 \@$operator($outer, $inner)");
-		my ($destructor) = substr($main, $use) =~
-			/^\s+call void \@(\w+)\(\Q$inner\E\)\n\s+call void \@\1\(\Q$outer\E\)$/m;
+		my @destructions = substr($main, $use) =~ /^\s+call void \@(\w+)\((%\w+)\)$/mg;
+		my $ordered = scalar(@destructions) >= 4 && $destructions[0] eq $destructions[2] &&
+			defined($slot_of{$destructions[1]}) && defined($slot_of{$destructions[3]}) &&
+			$slot_of{$destructions[1]} eq $slot_of{$inner} &&
+			$slot_of{$destructions[3]} eq $slot_of{$outer};
 		die "$test: selected operand and enclosing temporary were not " .
 			"destroyed after use in reverse order\n"
-			if !defined($destructor);
-		my $cleanup = $main =~
-			/^\s+block \^\w+:\n(?:\s+.*\n)*?\s+call void \@\Q$destructor\E\(\Q$outer\E\)\n\s+jump \^/m;
+			if !$ordered;
+		my $destructor = $destructions[0];
+		my $cleanup = 0;
+		for my $block (split(/(?=^\s+block \^)/m, $main))
+		{
+			next if $block !~ /^\s+call void \@\Q$destructor\E\((%\w+)\)\n\s+jump \^/m;
+			next if !defined($slot_of{$1}) || $slot_of{$1} ne $slot_of{$outer};
+			$cleanup = 1;
+			last;
+		}
 		die "$test: inner-construction failure does not clean the enclosing temporary\n"
 			if !$cleanup;
 		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}
 	if($test =~ /out-of-class-move-assignment-boundary/) {
-		my ($assignment) = $lowir =~
-			/^(function \@[^\n]+\bobject=_ZN7MoveBoxaSEOS_[^\n]*\{)$/m;
+		my ($assignment) = definition_headers_of_entities($lowir, qr/^_ZN7MoveBoxaSEOS_$/);
 		die "$test: out-of-class move assignment did not retain its " .
 			"declared rvalue-reference ABI identity\n"
 			if !defined($assignment);
@@ -135,10 +184,10 @@ for my $test (@tests)
 	if($test =~ /conditional-copy-elision-permission/) {
 		my $main = function_body($test, $lowir, 'main');
 		my ($callee, $destination, $source) = $main =~
-			/^\s+call void \@(\w+)\((%\w+), (%\w+)\) \[elision=copy\]$/m;
+			/^\s+call void \@(\w+)\((%\w+), (%\w+)\) \[[^\]]*\belision=copy\b[^\]]*\]$/m;
 		die "$test: conditional class prvalue did not emit copy-elision permission\n"
 			if !defined($source) || $destination eq $source;
-		my $marker = index($main, "[elision=copy]");
+		my $marker = index($main, "elision=copy");
 		my $before = substr($main, 0, $marker);
 		my $after = substr($main, $marker);
 		my @blocks = $before =~ /^\s*block \^(\w+):/mg;
@@ -158,19 +207,22 @@ for my $test (@tests)
 		for my $name (qw(take_derived take_mixed take_moved)) {
 			die "$test: \@$name does not receive its class by address\n"
 				if function_body($test, $lowir, $name) !~
-					/\A[^\n]*\(%\w+ : ptr \[pass=by_address\b/;
+					/\A[^\n]*\(%\w+ : ptr \[[^\]]*\bpass=by_address\b/;
 		}
 		for my $name (qw(make_mixed copy_mixed)) {
 			die "$test: \@$name does not return through caller storage\n"
 				if function_body($test, $lowir, $name) !~
-					/\A[^\n]*\(%\w+ : ptr \[pass=indirect_result\b/;
+					/\A[^\n]*\(%\w+ : ptr \[[^\]]*\bpass=indirect_result\b/;
 		}
 		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}
 	if($test =~ /parameter-destruction-full-expression/) {
+		my $take = function_body($test, $lowir, 'take');
+		my ($parameter) = $take =~ /\A[^\n]*\((%\w+)/;
+		die "$test: \@take has no parameter\n" if !defined($parameter);
 		die "$test: \@take destroys its by-address parameter\n"
-			if function_body($test, $lowir, 'take') =~ /^\s+call void \@\w+\(%value\)$/m;
+			if $take =~ /^\s+call void \@\w+\(\Q$parameter\E\)$/m;
 		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}
@@ -182,7 +234,7 @@ for my $test (@tests)
 		for my $name (qw(make_signed make_sized make_class)) {
 			my $body = function_body($test, $lowir, $name);
 			my $check = index($body, "call void \@$runtime()");
-			my $allocation = index($body, "call ptr \@operatornew__(");
+			my $allocation = first_allocation_index($lowir, $body);
 			die "$test: \@$name does not check its count before allocating\n"
 				if $check < 0 || $allocation < 0 || $check > $allocation;
 		}
@@ -196,24 +248,26 @@ for my $test (@tests)
 			/^declare function \@(\w+)\([^\n]*\brole=bad_array_new_length\b/m;
 		my $body = function_body($test, $lowir, 'listed');
 		my $check = defined($runtime) ? index($body, "call void \@$runtime()") : -1;
-		my $allocation = index($body, 'call ptr @operatornew__(');
+		my $allocation = first_allocation_index($lowir, $body);
 		die "$test: \@listed does not check its count against the 3 clauses before allocating\n"
-			if $body !~ /^\s+%\w+ = binary sub i64 %\w+, 3$/m || $check < 0 ||
+			if $body !~ /^\s+%\w+ = (?:binary sub i64 %\w+, 3|cmp \w+ i64 %\w+, 3)$/m || $check < 0 ||
 				$allocation < 0 || $check > $allocation;
 		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}
 	if($test =~ /parameter-object-extent-boundary/) {
-		my @headers = $lowir =~ /^(?:declare )?function \@[^\n]+$/mg;
-		my @indirect = $lowir =~
-			/\bptr\s+\[[^\]]*pass=indirect_result[^\]]*object_bytes=([1-9][0-9]*)[^\]]*\]/g;
-		my @by_address = $lowir =~
-			/\bptr\s+\[[^\]]*pass=by_address[^\]]*object_bytes=([1-9][0-9]*)[^\]]*\]/g;
-		my @object_parameters = $lowir =~
-			/\bptr\s+\[object_bytes=([1-9][0-9]*)\]/g;
+		# Every pointer parameter's metadata group, whatever the order of
+		# its keys.
+		my @groups = $lowir =~ /\bptr\s+\[([^\]]*)\]/g;
+		my @indirect = map { /\bobject_bytes=([1-9][0-9]*)/ ? $1 : () }
+			grep { /\bpass=indirect_result\b/ } @groups;
+		my @by_address = map { /\bobject_bytes=([1-9][0-9]*)/ ? $1 : () }
+			grep { /\bpass=by_address\b/ } @groups;
+		my @object_parameters = map { /\bobject_bytes=([1-9][0-9]*)/ ? $1 : () }
+			grep { !/\bpass=/ } @groups;
 		my @indirect_call_extents = $lowir =~
 			/^\s+%[A-Za-z0-9_]+\s+=\s+call\s+i64\s+%[A-Za-z0-9_]+\([^\n]*
-			 \bptr\s+\[object_bytes=([1-9][0-9]*)\]/mgx;
+			 \bptr\s+\[[^\]]*\bobject_bytes=([1-9][0-9]*)/mgx;
 		die "$test: O0 LowIR lacks an indirect-result object extent\n"
 			if !@indirect;
 		die "$test: O0 LowIR lacks a by-address object extent\n"
@@ -227,12 +281,12 @@ for my $test (@tests)
 			(@by_address, @object_parameters));
 		die "$test: related class boundaries disagree on their semantic extent\n"
 			if !$shared_extent;
-		my $ordinary_pointer = scalar(grep {
-			/\blinkage=c\b/ && /\([^)]*:\s*ptr\)/ &&
-				!/[\[][^\]]*object_bytes=/
-		} @headers);
-		die "$test: an ordinary source pointer incorrectly requires object metadata\n"
-			if !$ordinary_pointer;
+		# The C function taking a pointer to a scalar states no extent.
+		my ($pointer_value) = $lowir =~ /^(function \@pointer_value\([^\n]*)$/m;
+		die "$test: the extern \"C\" pointer_value definition is missing\n"
+			if !defined($pointer_value);
+		die "$test: pointer_value's scalar pointer parameter states an object extent\n"
+			if $pointer_value =~ /\(%\w+ : ptr \[[^\]]*\bobject_bytes=/;
 		die "$test: source lowering attached object_bytes to a non-pointer\n"
 			if $lowir =~ /\b(?:i1|i8|u8|i16|u16|i32|u32|i64|f32|f64|f80)\s+\[[^\]]*object_bytes=/;
 		compile_and_run($native_reference, $test, $directory, $path);

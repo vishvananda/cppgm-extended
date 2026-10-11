@@ -306,9 +306,11 @@ This PA10 milestone supports the following:
   pointer-indirect, and class-member access; the marker belongs to the access,
   while an adjacent nonvolatile member access remains ordinary
 - recognized memory builtins use ordinary pointer parameters and preserve the
-  function-level runtime identity and effects needed by later stages;
-  non-overlapping `memcpy` boundaries carry `alias=noalias`, while potentially
-  overlapping `memmove` boundaries do not
+  function-level runtime identity and effects needed by later stages: their
+  declarations carry `object=cppgm_builtin_memcpy` and
+  `object=cppgm_builtin_memmove` with `unwind=no` (`../pa8/lowir.md`, "Facts
+  The C++ Lowering States"); non-overlapping `memcpy` boundaries carry
+  `alias=noalias`, while potentially overlapping `memmove` boundaries do not
 - block-scope function declarations and `extern` variable declarations, which
   name members of the innermost enclosing namespace (3.5p6) and have no
   automatic storage

@@ -91,8 +91,8 @@ States") for every function it emits, and the comparison checks each one:
   an implicitly declared or first-declaration-defaulted special member
   function; a member defined outside its class without `inline` states none.
 - `no_inline=yes` on a function any declaration of which carries GNU
-  `noinline` (the attribute arrives with PA27's host-object attributes and
-  PA28 states its rules; PA32's `-O0` driver lane compares the fact), and on
+  `noinline` (required from this assignment on: the `lifecycle-inline-policy`
+  control checks it, and PA32's `-O0` driver lane compares the fact), and on
   the lowering's own `cppgm_call_terminate` helper.
 - `object_bytes=N` on `this`, `N` its class's size, in every member function
   and every constructor and destructor entry, and on the `this` and

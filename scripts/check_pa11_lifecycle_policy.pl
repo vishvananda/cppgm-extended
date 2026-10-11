@@ -27,6 +27,22 @@ sub function_body
 	die "$test: generated LowIR has no $name definition\n";
 }
 
+# The header and symbol of the definition of the C++ entity with the
+# Itanium name `mangled`: either the function's own name or its `object=`
+# metadata (the comparison pairs internal symbols by the latter).
+sub definition_of_entity
+{
+	my ($lowir, $mangled) = @_;
+	for my $line (split(/\n/, $lowir))
+	{
+		next if $line !~ /^function \@([A-Za-z0-9_]+)\(/;
+		my $symbol = $1;
+		return ($line, $symbol)
+			if $symbol eq $mangled || $line =~ /\[[^\]]*\bobject=\Q$mangled\E(?:,|\])/;
+	}
+	return (undef, undef);
+}
+
 if (scalar(@ARGV) != 2)
 {
 	die "Usage: check_pa11_lifecycle_policy.pl " .
@@ -51,21 +67,24 @@ for my $test (@tests)
 	die "$test: source-to-LowIR compile failed\n" .
 		read_file("$directory/compiler.stderr") if $status != 0;
 	my $lowir = read_file($output);
-	die "$test: removed trivial_lifecycle classification escaped into LowIR\n"
+	die "$test: generated LowIR states a symbol key the format does not define (trivial_lifecycle=)\n"
 		if $lowir =~ /\btrivial_lifecycle\s*=/;
-	die "$test: semantically trivial Mandatory constructor was retained\n"
-		if $lowir =~ /\bobject=_ZN9MandatoryC[12]Ev\b/;
+	for my $entry (qw(_ZN9MandatoryC1Ev _ZN9MandatoryC2Ev))
+	{
+		my ($header) = definition_of_entity($lowir, $entry);
+		die "$test: the trivial Mandatory constructor was emitted ($entry)\n"
+			if defined($header);
+	}
 
-	my ($header, $guarded) = $lowir =~
-		/^(function \@([A-Za-z0-9_]+)\([^\n]*\)[^\n]*\bobject=_ZN7GuardedC1Ev\b[^\n]*\{)$/m;
+	my ($header, $guarded) = definition_of_entity($lowir, '_ZN7GuardedC1Ev');
 	die "$test: nontrivial Guarded constructor definition is missing\n"
-		if !defined($header) || !defined($guarded);
-	die "$test: Guarded constructor lost no_inline policy\n"
+		if !defined($header);
+	die "$test: Guarded constructor does not state no_inline=yes (GNU noinline)\n"
 		if $header !~ /\bno_inline=yes\b/;
-	die "$test: Guarded constructor incorrectly became mandatory inline\n"
+	die "$test: Guarded constructor states force_inline=yes\n"
 		if $header =~ /\bforce_inline=yes\b/;
 	my $main = function_body($test, $lowir, 'main');
-	die "$test: no_inline Guarded constructor call was removed\n"
+	die "$test: the call of the noinline Guarded constructor is missing from main\n"
 		if $main !~ /^\s+call void \@\Q$guarded\E\(/m;
 }
 

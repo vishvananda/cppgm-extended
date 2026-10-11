@@ -19,6 +19,21 @@ sub read_file
 	return defined($data) ? $data : '';
 }
 
+# The definition of the C++ entity with the Itanium name `mangled`: either
+# the function's own name or its `object=` metadata.
+sub definition_of_entity
+{
+	my ($lowir, $mangled) = @_;
+	for my $function (split(/(?=^function \@)/m, $lowir))
+	{
+		next if $function !~ /^function \@([A-Za-z0-9_]+)\(([^\n]*)/;
+		my ($symbol, $rest) = ($1, $2);
+		return $function
+			if $symbol eq $mangled || $rest =~ /\[[^\]]*\bobject=\Q$mangled\E(?:,|\])/;
+	}
+	return undef;
+}
+
 if (scalar(@ARGV) != 2)
 {
 	die "Usage: check_pa11_unreachable_terminator.pl " .
@@ -43,12 +58,11 @@ for my $test (@tests)
 	die "$test: source-to-LowIR compile failed\n" .
 		read_file("$directory/compiler.stderr") if $status != 0;
 	my $lowir = read_file($output);
-	die "$test: source builtin did not lower to an unreachable terminator\n"
+	die "$test: __builtin_unreachable did not lower to the `unreachable` terminator\n"
 		if $lowir !~ /^\s+unreachable\s*$/m;
-	die "$test: source builtin retained a synthetic declaration or call\n"
+	die "$test: __builtin_unreachable was lowered as a declaration or a call instead of the `unreachable` terminator\n"
 		if $lowir =~ /\brole=unreachable\b|^declare function \@[^\n]*unreachable|^\s+call\s+void\s+\@[^\n]*unreachable/m;
-	my ($guarded) = $lowir =~
-		/(function \@[A-Za-z0-9_]+\([^\n]*\)[^\n]*\bobject=_Z13guarded_valueb\b.*?)(?=\nfunction \@|\z)/s;
+	my $guarded = definition_of_entity($lowir, '_Z13guarded_valueb');
 	die "$test: guarded source function is missing\n" if !defined($guarded);
 	die "$test: unreachable did not terminate its source block\n"
 		if $guarded !~ /^\s+block \^[A-Za-z0-9_]+:\n\s+unreachable\s*(?:\n\s*)?(?=block \^|\})/m;

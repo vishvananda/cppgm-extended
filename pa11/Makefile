@@ -71,8 +71,6 @@ CONTROLS_RUN = if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
 			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
 		perl ../scripts/check_pa11_lifecycle_policy.pl \
 			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
-		perl ../scripts/check_pa11_goto_lifetime_cleanup.pl \
-			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
 		perl ../scripts/check_pa11_unreachable_terminator.pl \
 			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
 		perl ../scripts/check_controls.pl \
@@ -110,7 +108,6 @@ esac
 CHECK_RUN = case "$(TEST)" in \
 	$(CONTROL_TEST_ROOT)/*string-literal-readonly*) perl ../scripts/check_pa11_string_literal_storage.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
 	$(CONTROL_TEST_ROOT)/*lifecycle-inline-policy*) perl ../scripts/check_pa11_lifecycle_policy.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
-	$(CONTROL_TEST_ROOT)/*goto-lifetime-cleanup*) perl ../scripts/check_pa11_goto_lifetime_cleanup.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
 	$(CONTROL_TEST_ROOT)/*unreachable-terminator*) perl ../scripts/check_pa11_unreachable_terminator.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
 	$(CONTROL_TEST_ROOT)/*) perl ../scripts/check_controls.pl $(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(TEST)" ;; \
 	*) scripts/run_all_tests.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \

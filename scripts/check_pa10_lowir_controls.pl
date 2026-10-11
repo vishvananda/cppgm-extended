@@ -27,6 +27,19 @@ sub function_body
 	die "$test: generated LowIR has no $name definition\n";
 }
 
+# The declaration whose metadata names the runtime identity `object`, in
+# whatever order its metadata is written.
+sub declaration_with_object
+{
+	my ($lowir, $object) = @_;
+	for my $line (split(/\n/, $lowir))
+	{
+		next if $line !~ /^declare function \@/;
+		return $line if $line =~ /\[[^\]]*\bobject=\Q$object\E(?:,|\])/;
+	}
+	return undef;
+}
+
 if (scalar(@ARGV) != 2)
 {
 	die "Usage: check_pa10_lowir_controls.pl <cppgm++> <test-or-directory>\n";
@@ -53,17 +66,19 @@ for my $test (@tests)
 
 	my $lowir = read_file($output);
 	if ($test =~ /pointer-difference-strength-reduction/) {
+		# The difference of two pointers into one array is a multiple of
+		# the element size (5.7p6), stated as `exact`: an exact right shift
+		# by 3 and an exact division by 8 are the same division.
 		my $power_two = function_body(
 			$test, $lowir, 'power_two_difference');
-		die "$test: power-of-two pointer difference did not use an " .
-			"arithmetic right shift\n"
-			if $power_two !~ /^\s+%\w+ = binary shr exact i64 %\w+, 3$/m;
-		die "$test: power-of-two pointer difference retained division\n"
-			if $power_two =~ /^\s+%\w+ = binary div(?: exact)? i64 /m;
+		die "$test: power-of-two pointer difference did not divide the " .
+			"byte difference exactly by the element size (shr exact by 3 " .
+			"or div exact by 8)\n"
+			if $power_two !~ /^\s+%\w+ = binary (?:shr exact i64 %\w+, 3|div exact i64 %\w+, 8)$/m;
 
 		my $general = function_body($test, $lowir, 'general_difference');
-		die "$test: non-power-of-two pointer difference did not retain " .
-			"signed division by its element size\n"
+		die "$test: non-power-of-two pointer difference did not divide " .
+			"the byte difference exactly by its element size\n"
 			if $general !~ /^\s+%\w+ = binary div exact i64 %\w+, 3$/m;
 		next;
 	}
@@ -114,14 +129,25 @@ for my $test (@tests)
 		next;
 	}
 	if ($test =~ /builtin-memory-alias-boundaries/) {
-		die "$test: generated LowIR has no ordinary three-parameter memcpy declaration\n"
-			if $lowir !~
-				/^declare function \@\S+\(%\S+ : ptr \[alias=noalias\], %\S+ : ptr \[alias=noalias\], %\S+ : i64\) -> ptr \[[^\n]*\bunwind=no\b[^\n]*\bobject=cppgm_builtin_memcpy\b[^\n]*\]$/m;
-		my ($memmove) = $lowir =~
-			/^(declare function \@\S+\(%\S+ : ptr, %\S+ : ptr, %\S+ : i64\) -> ptr \[[^\n]*\bunwind=no\b[^\n]*\bobject=cppgm_builtin_memmove\b[^\n]*\])$/m;
-		die "$test: generated LowIR has no ordinary three-parameter memmove declaration\n"
+		# The memory builtins are declared with their runtime identities
+		# (pa8/lowir.md, "Facts The C++ Lowering States"): three ordinary
+		# pointer and size parameters, non-throwing, and `alias=noalias` on
+		# memcpy's pointers alone.
+		my $memcpy = declaration_with_object($lowir, 'cppgm_builtin_memcpy');
+		die "$test: generated LowIR has no declaration with object=cppgm_builtin_memcpy\n"
+			if !defined($memcpy);
+		die "$test: memcpy declaration is not (ptr [alias=noalias], ptr [alias=noalias], i64) -> ptr\n"
+			if $memcpy !~ /\(%\S+ : ptr \[[^\]]*\balias=noalias\b[^\]]*\], %\S+ : ptr \[[^\]]*\balias=noalias\b[^\]]*\], %\S+ : i64\) -> ptr\b/;
+		die "$test: memcpy declaration does not state unwind=no\n"
+			if $memcpy !~ /\bunwind=no\b/;
+		my $memmove = declaration_with_object($lowir, 'cppgm_builtin_memmove');
+		die "$test: generated LowIR has no declaration with object=cppgm_builtin_memmove\n"
 			if !defined($memmove);
-		die "$test: generated memmove boundary retained removed pointer promises\n"
+		die "$test: memmove declaration is not (ptr, ptr, i64) -> ptr\n"
+			if $memmove !~ /\(%\S+ : ptr(?: \[[^\]]*\])?, %\S+ : ptr(?: \[[^\]]*\])?, %\S+ : i64\) -> ptr\b/;
+		die "$test: memmove declaration does not state unwind=no\n"
+			if $memmove !~ /\bunwind=no\b/;
+		die "$test: generated LowIR states a parameter key the format does not define (capture= or access=)\n"
 			if $lowir =~ /\b(?:capture|access)=/;
 		die "$test: potentially overlapping memmove was marked noalias\n"
 			if $memmove =~ /\balias=noalias\b/;
@@ -136,7 +162,7 @@ for my $test (@tests)
 		next;
 	}
 	if ($test =~ /ordinary-pointer-decay/) {
-		die "$test: generated LowIR retained removed decay syntax\n"
+		die "$test: generated LowIR states a decay operation the format does not define\n"
 			if $lowir =~ /\bunary\s+decay\b|\bpass=decay\b/;
 		my $array = function_body($test, $lowir, 'array_decay');
 		die "$test: array decay did not produce an ordinary pointer address\n"
