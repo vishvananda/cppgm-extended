@@ -276,7 +276,8 @@ void local_pressure(SelectorState& state)
 	for (uint32_t temp = 0; temp < state.temps_.size(); ++temp)
 	{
 		const TempInfo& t = state.temps_[temp];
-		if ((t.flags & (TF_GLOBAL | TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_RMW)) ||
+		if ((t.flags &
+				(TF_GLOBAL | TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_ROTATED | TF_RMW)) ||
 			t.block == kNoId || t.uses == 0 || (t.cls != VClass::Gpr && t.cls != VClass::Xmm) ||
 			!state.blocks_[t.block].reachable)
 			continue;
@@ -1357,7 +1358,7 @@ void FunctionSelector::emission_facts()
 	for (uint32_t temp = 0; temp < temps_.size(); ++temp)
 	{
 		TempInfo& t = temps_[temp];
-		if ((t.flags & (TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_RMW)) ||
+		if ((t.flags & (TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_ROTATED | TF_RMW)) ||
 			(t.greg != kNoReg && !homes[temp]) || t.block == kNoId || (t.cls != VClass::Gpr && t.cls != VClass::Xmm) ||
 			first[t.block] == first[t.block + 1])
 			continue;
@@ -1423,7 +1424,8 @@ void FunctionSelector::hint_chain(Value v, uint32_t b, Reg reg)
 	for (unsigned step = 0; step < 8 && v.kind == ValueKind::Temp; ++step)
 	{
 		TempInfo& t = temps_[v.index];
-		if ((t.flags & (TF_GLOBAL | TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_RMW)) ||
+		if ((t.flags &
+				(TF_GLOBAL | TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_ROTATED | TF_RMW)) ||
 			t.block != b || t.hint != kNoReg || v.index < body.parameter_count || (t.cls == VClass::Xmm) != is_xmm(reg))
 			return;
 		t.hint = reg;

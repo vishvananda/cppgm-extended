@@ -148,20 +148,38 @@ void add_host_environment(PreprocessorOptions& options, bool nostdinc)
 
 bool host_stdlib_selected(const std::string& name)
 {
-	// The build's flags, word by word.
+	// The build's flags, word by word: the last -stdlib= is its selection.
 	const std::string flags = cppgm_builtin_host_config::kStdlibFlags;
-	const std::string wanted = "-stdlib=" + name;
+	const std::string option = "-stdlib=";
+	std::string selected;
 	size_t begin = 0;
 	while (begin < flags.size())
 	{
 		size_t end = flags.find(' ', begin);
 		if (end == std::string::npos)
 			end = flags.size();
-		if (flags.compare(begin, end - begin, wanted) == 0)
-			return true;
+		if (flags.compare(begin, option.size(), option) == 0 && end - begin >= option.size())
+			selected = flags.substr(begin + option.size(), end - begin - option.size());
 		begin = end + 1;
 	}
-	return false;
+	if (!selected.empty())
+		return name == selected;
+	// None: the host compiler's default library, the one whose headers the
+	// build found (libc++'s directory is c++/v1, libstdc++'s c++/<version>).
+	bool libcxx = false;
+	bool libstdcxx = false;
+	for (const char* const* path = cppgm_builtin_host_config::kStandardIncludePaths; *path != nullptr; ++path)
+	{
+		const std::string directory = *path;
+		const size_t at = directory.find("/c++/");
+		if (at == std::string::npos)
+			continue;
+		if (directory.compare(at, std::string::npos, "/c++/v1") == 0)
+			libcxx = true;
+		else
+			libstdcxx = true;
+	}
+	return name == "libc++" ? libcxx : name == "libstdc++" && libstdcxx && !libcxx;
 }
 
 std::string host_query(const std::string& flag)

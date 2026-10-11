@@ -169,6 +169,7 @@ struct SelectorState
 	std::vector<uint64_t> narrow_from_;    // host: per temp, the parameters its upper bits come from
 	std::vector<uint8_t> byte_only_;       // O1+: per Boolean temp, every reader reads its low byte only
 	std::vector<uint8_t> scale_of_;        // O1+: per byte offset, the scale its indexes apply (find_scaled_offsets)
+	std::vector<uint8_t> rotate_;          // O1+: per or/xor/add result, its rotation's left count (find_rmw; 0: none)
 	std::vector<uint32_t> handler_first_;  // per block: the landings its eh_try/eh_cleanup name
 	std::vector<uint32_t> handlers_;
 	std::vector<uint32_t> global_temps_;        // values with a hull register

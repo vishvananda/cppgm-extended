@@ -58,7 +58,8 @@ enum TempFlag : uint16_t
 	TF_HOMED = 1 << 10,    // currently lives only in its home
 	TF_STORED = 1 << 11,   // an object call result stored straight into its copy's destination
 	TF_TESTED = 1 << 12,   // and/shl folded into its compare-and-branch's test or bt (O1+)
-	TF_RMW = 1 << 13       // operation on a folded load its only use stores back there: done in memory (O1+)
+	TF_RMW = 1 << 13,      // operation on a folded load its only use stores back there: done in memory (O1+)
+	TF_ROTATED = 1 << 14   // shl/ushr of a rotation its only use (an or) performs (O1+)
 };
 
 // A lazily formed address: base (frame slot, symbol, temp register, or
@@ -114,7 +115,8 @@ struct BlockInfo
 // values per target and at most one bit-test window, in value order;
 // with four or more, a decision tree whose subtrees' blocks follow the
 // function's (SwitchNode: the tests [first, past) knowing lo <= selector
-// <= hi, in MIR block `mir`).
+// <= hi, in MIR block `mir`). A window covering more values than the runs
+// may go first, the runs in such a block.
 struct SwitchTest
 {
 	int64_t lo;
@@ -131,6 +133,7 @@ struct SwitchTree
 	lowir::TypeKind kind;
 	bool sign;
 	bool tree;
+	bool window_first; // the window before the runs, which a deferred block tests
 	uint32_t fallback;
 	uint32_t location;
 };
@@ -143,6 +146,7 @@ struct SwitchNode
 	int64_t lo;
 	int64_t hi;
 	uint32_t mir;
+	bool outside_window; // the selector is outside the window: its runs only
 };
 
 // A function's switches lowered as tests and their deferred subtrees (in

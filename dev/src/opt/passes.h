@@ -181,6 +181,11 @@ bool mark_no_wrap_counters(FunctionContext& context);
 // loop may write, moves to the preheader with its address steps.
 bool hoist_loop_loads(FunctionContext& context);
 
+// Loop rotation (O3, last, opt/loop_rotation.cpp): a header that only tests
+// is copied into the latches and stays as the guard; its values go
+// through slots for promote_slots to join again.
+bool rotate_loops(FunctionContext& context);
+
 // Fill loops of a run-time value whose bytes repeat call memset for long
 // runs (O2+, after all inlining: opt/loop_passes.cpp).
 bool version_fill_loops(FunctionContext& context);

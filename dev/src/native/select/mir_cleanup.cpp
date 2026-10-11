@@ -114,6 +114,8 @@ bool rotatable(const Function& f, uint32_t b)
 		case Op::Shl:
 		case Op::Shr:
 		case Op::Sar:
+		case Op::Rol:
+		case Op::Ror:
 		case Op::Cmp:
 		case Op::Test:
 		case Op::Bt:
@@ -181,6 +183,11 @@ bool flags_dead_after(const std::vector<Inst>& insts, uint32_t i, uint32_t end)
 				return true;
 			if (inst.ops[1].kind == OperandKind::Imm)
 				return false;
+			break;
+		case Op::Rol:
+		case Op::Ror:
+			// A rotation writes CF and OF only, reading none: the scan
+			// goes on.
 			break;
 		default:
 			return false;
@@ -414,6 +421,8 @@ bool reads_or_writes(const Inst& inst, Reg r)
 	case Op::Shl:
 	case Op::Shr:
 	case Op::Sar:
+	case Op::Rol:
+	case Op::Ror:
 		if (inst.ops[1].kind != OperandKind::Imm && r == RCX)
 			return true;
 		break;
@@ -461,6 +470,8 @@ bool zeroes_upper(const Inst& inst, uint32_t known)
 		return inst.type == lowir::TypeKind::I32;
 	case Op::Shl:
 	case Op::Sar:
+	case Op::Rol:
+	case Op::Ror:
 		return inst.type == lowir::TypeKind::U32;
 	case Op::Shr:
 		return inst.type == lowir::TypeKind::U32 || (src.kind == OperandKind::Imm && (src.imm & 63) >= 32);
@@ -493,6 +504,8 @@ bool simple_inst(const Inst& inst)
 	case Op::Shl:
 	case Op::Shr:
 	case Op::Sar:
+	case Op::Rol:
+	case Op::Ror:
 	case Op::Setcc:
 	case Op::Cmov:
 	case Op::Movzx:
@@ -1566,6 +1579,8 @@ uint32_t fuse_adds_and_extensions(Function& function)
 			case Op::Shl:
 			case Op::Shr:
 			case Op::Sar:
+			case Op::Rol:
+			case Op::Ror:
 			case Op::Movzx:
 			case Op::Sext:
 			case Op::Zext:
@@ -2003,6 +2018,8 @@ bool drop_unused_frame(Function& function)
 		case Op::Shl:
 		case Op::Shr:
 		case Op::Sar:
+		case Op::Rol:
+		case Op::Ror:
 		case Op::Cmp:
 		case Op::Test:
 		case Op::Bt:

@@ -211,7 +211,7 @@ void FunctionSelector::emit_blocks()
 		if (out_->blocks.size() - 1 != node.mir)
 			throw InternalError("switch subtree block out of order");
 		location_ = switches_.trees[node.tree].location;
-		emit_switch_tests(node.tree, node.first, node.past, node.lo, node.hi);
+		emit_switch_tests(node.tree, node.first, node.past, node.lo, node.hi, node.outside_window);
 		end_mir_block();
 	}
 	for (const std::pair<uint32_t, Reg>& cleared : split_homes_.cleared)
@@ -1036,6 +1036,16 @@ bool FunctionSelector::emit_clustered_switch(
 		gaps += tree.tests[i].lo > tree.tests[i - 1].hi + 1 ? 1 : 0;
 	tree.tree = level_ >= 2 && tree.tests.size() >= 4 && gaps >= 2 && selector.kind == OperandKind::Reg &&
 		selector.reg < 16 && selector.reg != kSelectScratch && selector.reg != kEmitScratch;
+	// A window covering more values than the runs outside it goes first
+	// (taken as the likelier, with no profile), the runs in a deferred
+	// block its bounds check jumps to: a selector the window takes skips
+	// their tests. (The selector must survive into that block.)
+	int64_t outside = 0;
+	for (const SwitchTest& c : tree.tests)
+		outside += c.window ? 0 : c.hi - c.lo + 1;
+	tree.window_first = !tree.tree && wfirst < wpast && outside != 0 && best_cover > outside &&
+		selector.kind == OperandKind::Reg && selector.reg < 16 && selector.reg != kSelectScratch &&
+		selector.reg != kEmitScratch;
 	switches_.trees.push_back(tree);
 	emit_switch_tests(
 		static_cast<uint32_t>(switches_.trees.size() - 1), 0, static_cast<uint32_t>(tree.tests.size()), tmin, tmax);
@@ -1048,7 +1058,8 @@ bool FunctionSelector::emit_clustered_switch(
 // half; fewer test each run (one compare when a known bound meets it, a
 // subtract and an unsigned compare otherwise), the window last (a bounds
 // check unless known, then a bit test per target), then the fallback.
-void FunctionSelector::emit_switch_tests(uint32_t index, uint32_t first, uint32_t past, int64_t lo, int64_t hi)
+void FunctionSelector::emit_switch_tests(
+	uint32_t index, uint32_t first, uint32_t past, int64_t lo, int64_t hi, bool outside_window)
 {
 	const SwitchTree& t = switches_.trees[index];
 	const Operand selector = Operand::make_reg(t.selector);
@@ -1071,7 +1082,7 @@ void FunctionSelector::emit_switch_tests(uint32_t index, uint32_t first, uint32_
 	{
 		const uint32_t middle = (first + past) / 2;
 		const int64_t pivot = t.tests[middle].lo;
-		const SwitchNode node = { index, first, middle, lo, pivot - 1, switches_.extra_mir++ };
+		const SwitchNode node = { index, first, middle, lo, pivot - 1, switches_.extra_mir++, outside_window };
 		switches_.nodes.push_back(node);
 		emit2(Op::Cmp, t.kind, selector, imm(pivot));
 		jump(t.sign ? CC_L : CC_B, node.mir);
@@ -1083,12 +1094,35 @@ void FunctionSelector::emit_switch_tests(uint32_t index, uint32_t first, uint32_
 	bool flags = t.tree && first != 0 && past == static_cast<uint32_t>(t.tests.size()) && lo == t.tests[first].lo &&
 		out_->insts.size() >= 2 && out_->insts.back().op == Op::Jcc;
 	const SwitchTest* window = nullptr;
+	if (t.window_first && !outside_window)
+	{
+		// The window first; a selector outside it tests the runs in a
+		// deferred block.
+		const SwitchTest* w = nullptr;
+		for (uint32_t i = first; i < past && w == nullptr; ++i)
+			w = t.tests[i].window ? &t.tests[i] : nullptr;
+		const Reg r = offset(w->lo, false);
+		const SwitchNode node = { index, first, past, lo, hi, switches_.extra_mir++, true };
+		switches_.nodes.push_back(node);
+		emit2(Op::Cmp, TypeKind::I64, Operand::make_reg(r), imm(w->hi - w->lo));
+		jump(CC_A, node.mir);
+		for (const std::pair<uint64_t, uint32_t>& m : t.masks)
+		{
+			emit2(Op::Mov, TypeKind::I64, Operand::make_reg(kEmitScratch),
+				Operand::make_imm(static_cast<int64_t>(m.first), static_cast<int64_t>(m.first) < 0 ? -1 : 0));
+			emit2(Op::Bt, TypeKind::I64, Operand::make_reg(kEmitScratch), Operand::make_reg(r));
+			jump(CC_B, m.second);
+		}
+		emit1(Op::Jmp, TypeKind::Void, Operand::make_label(t.fallback));
+		return;
+	}
 	for (uint32_t i = first; i < past; ++i)
 	{
 		const SwitchTest& c = t.tests[i];
 		if (c.window)
 		{
-			window = &c;
+			if (!outside_window)
+				window = &c;
 			continue;
 		}
 		if (c.lo <= lo && c.hi >= hi)

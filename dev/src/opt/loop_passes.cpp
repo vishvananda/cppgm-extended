@@ -2685,42 +2685,6 @@ bool LoopPass::run(bool fresh)
 // before).
 namespace {
 
-// An address as its root (a slot, a global, or the temporary or parameter
-// it steps from) and a constant byte offset when known, through literal
-// `index` steps, `addr` and pointer copies.
-struct Located
-{
-	Value root;
-	int64_t offset = 0;
-	bool known = true; // offset known
-};
-
-Located locate(const FunctionBody& body, Value v)
-{
-	Located out;
-	for (unsigned step = 0; step < 8; ++step)
-	{
-		if (!v.is(ValueKind::Temp) || v.index < body.parameter_count || body.temps[v.index].def == kNoId)
-			break;
-		const Instruction& def = body.instructions[body.temps[v.index].def];
-		if (def.op == Opcode::Addr || (def.op == Opcode::Copy && def.type.is_pointer()))
-			v = def.ops[0];
-		else if (def.op == Opcode::Index)
-		{
-			if (def.ops[1].is(ValueKind::Integer))
-				out.offset += static_cast<int64_t>(body.literals[def.ops[1].index].low) *
-					static_cast<int64_t>(storage_bytes(def.type));
-			else
-				out.known = false;
-			v = def.ops[0];
-		}
-		else
-			break;
-	}
-	out.root = v;
-	return out;
-}
-
 // A typed access (IF_TYPED) of a pointer and one of a non-pointer wider
 // than a byte name different objects unless their addresses agree (as in
 // memory forwarding).

@@ -52,6 +52,8 @@ enum class Op : std::uint8_t
   Shl,
   Shr,
   Sar,    // dst, imm or rcx
+  Rol,    // rol/ror dst, imm or rcx: rotate left/right
+  Ror,
   Cmp,    // cmp.T a, b
   Test,   // test.T a, b: the flags of a & b
   Bt,     // bt.T a, b: CF = bit b of a
@@ -126,13 +128,14 @@ const unsigned kOpCount = static_cast<unsigned>(Op::Nop) + 1;
 inline const char * spelling(Op op)
 {
   static const char * const kOps[kOpCount] = { "mov", "load", "store", "lea", "add", "sub", "and",
-    "or", "xor", "imul", "neg", "not", "bswap", "bsf", "bsr", "shl", "shr", "sar", "cmp", "test",
-    "bt", "set", "cmov", "movzx", "sext", "zext", "cqo", "idiv", "div", "j", "jmp", "call",
-    "tail_jump", "copy_bytes", "zero_bytes", "ret", "fmov", "fadd", "fsub", "fmul", "fdiv", "fneg",
-    "fcmp", "f", "", "fret", "fstp", "", "set", "cmp_branch", "lock_xadd", "xchg", "lock_cmpxchg",
-    "lock_cmpxchg16b", "mfence", "va_start", "va_arg", "stack_alloc", "eh_push", "eh_pop", "throw",
-    "resume", "load_exception", "eh_mark", "eh_catch", "load_selector", "landing", "eh_select",
-    "catch_all", "tls_addr", "exit", "trap", "jump_table", "mul", "imul", "prologue", "" };
+    "or", "xor", "imul", "neg", "not", "bswap", "bsf", "bsr", "shl", "shr", "sar", "rol", "ror",
+    "cmp", "test", "bt", "set", "cmov", "movzx", "sext", "zext", "cqo", "idiv", "div", "j", "jmp",
+    "call", "tail_jump", "copy_bytes", "zero_bytes", "ret", "fmov", "fadd", "fsub", "fmul", "fdiv",
+    "fneg", "fcmp", "f", "", "fret", "fstp", "", "set", "cmp_branch", "lock_xadd", "xchg",
+    "lock_cmpxchg", "lock_cmpxchg16b", "mfence", "va_start", "va_arg", "stack_alloc", "eh_push",
+    "eh_pop", "throw", "resume", "load_exception", "eh_mark", "eh_catch", "load_selector",
+    "landing", "eh_select", "catch_all", "tls_addr", "exit", "trap", "jump_table", "mul", "imul",
+    "prologue", "" };
   return kOps[static_cast<unsigned>(op)];
 }
 

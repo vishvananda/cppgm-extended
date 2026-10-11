@@ -1063,9 +1063,13 @@ const Type* Analyzer::alias_specialization(const AliasTemplateEntity* alias, Typ
 	// at their positions, as in a chain of alias templates each naming the
 	// previous) substitute nothing: the aliased type as it is, without
 	// walking it.
+	const uint32_t enclosing_location = substitution_location_;
+	if (location != 0)
+		substitution_location_ = location;
 	const Type* type = own_arguments(head, canonical.data(), static_cast<uint32_t>(canonical.size()))
 		? alias->type
 		: substitute(alias->type, substitution_of(head, canonical.data()));
+	substitution_location_ = enclosing_location;
 	if (type == nullptr)
 		return nullptr;
 	// CWG 1558: a dependent argument the aliased type drops is still

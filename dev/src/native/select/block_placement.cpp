@@ -386,6 +386,8 @@ bool Placement::copyable_test(uint32_t b) const
 		case Op::Shl:
 		case Op::Shr:
 		case Op::Sar:
+		case Op::Rol:
+		case Op::Ror:
 		case Op::Cmp:
 		case Op::Test:
 		case Op::Bt:

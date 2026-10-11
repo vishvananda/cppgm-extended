@@ -1611,12 +1611,18 @@ void FunctionSelector::find_folds()
 // operand extended from the store's width, is the narrow operation (the
 // low bits depend on the low bits only). The load folds; the extension,
 // the operation and the truncation emit nothing; x is read at the store.
+// And `(x << k) | (x >> (w - k))` of a 64-bit or u32 x (w its width, 0 < k
+// < w; the shifts in either order, or an xor or add, whose operands' bits
+// are disjoint too), each shift used once, by the or in its block, is a
+// rotation of x: the shifts emit nothing (TF_ROTATED, read at the or) and
+// the or rotates x (emit_binary).
 void FunctionSelector::find_rmw()
 {
 	const lowir::FunctionBody& body = *body_;
+	rotate_.assign(level_ >= 1 ? temps_.size() : 0, 0);
 	if (level_ < 1)
 		return;
-	const uint16_t taken = TF_GLOBAL | TF_ALIAS | TF_DEAD | TF_LAZY | TF_FUSED | TF_TESTED | TF_RMW;
+	const uint16_t taken = TF_GLOBAL | TF_ALIAS | TF_DEAD | TF_LAZY | TF_FUSED | TF_TESTED | TF_ROTATED | TF_RMW;
 	// The definition of v, a value of block b used once, free to fold.
 	auto single = [&](Value v, uint32_t b, uint16_t also) -> lowir::InstId {
 		if (v.kind != ValueKind::Temp || v.index < body.parameter_count)
@@ -1757,6 +1763,59 @@ void FunctionSelector::find_rmw()
 				x.last = pos_[id];
 		}
 	});
+	// Rotations.
+	const uint16_t folded = taken | TF_FOLDED;
+	// The count of `x op k` defining v, used once, by `user` in block b, a
+	// constant below the width; 0 otherwise.
+	auto shift = [&](Value v, uint32_t user, uint32_t b, Type type, lowir::BinaryOp op, Value& x) -> uint64_t {
+		if (v.kind != ValueKind::Temp || v.index < body.parameter_count)
+			return 0;
+		const lowir::InstId def = body.temps[v.index].def;
+		const TempInfo& t = temps_[v.index];
+		if (def == kNoId || (marks_[def] & IM_DEAD) || inst_block_[def] != b || t.uses != 1 || t.user != user ||
+			(t.flags & folded) || t.cls != VClass::Gpr)
+			return 0;
+		const Instruction& d = body.instructions[def];
+		if (d.op != Opcode::Binary || static_cast<lowir::BinaryOp>(d.sub) != op || d.type != type)
+			return 0;
+		const Value k = resolve(d.ops[1]);
+		if (k.kind != ValueKind::Integer || literal(k).high != 0 || literal(k).low >= value_bytes(type) * 8)
+			return 0;
+		x = resolve(d.ops[0]);
+		return literal(k).low;
+	};
+	for_each_inst([&](uint32_t id, uint32_t b) {
+		const Instruction& inst = body.instructions[id];
+		if ((marks_[id] & IM_DEAD) || inst.op != Opcode::Binary || inst.result == kNoId ||
+			(temps_[inst.result].flags & (TF_ALIAS | TF_DEAD)))
+			return;
+		const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);
+		const TypeKind kind = inst.type.kind();
+		if ((op != lowir::BinaryOp::Or && op != lowir::BinaryOp::Xor && op != lowir::BinaryOp::Add) ||
+			(kind != TypeKind::I64 && kind != TypeKind::U32))
+			return;
+		const uint64_t width = value_bytes(inst.type) * 8;
+		for (unsigned k = 0; k < 2; ++k)
+		{
+			const Value l = resolve(inst.ops[k]);
+			const Value r = resolve(inst.ops[1 - k]);
+			Value xl, xr;
+			const uint64_t left = shift(l, id, b, inst.type, lowir::BinaryOp::Shl, xl);
+			const uint64_t right = left != 0 ? shift(r, id, b, inst.type, lowir::BinaryOp::UShr, xr) : 0;
+			if (right == 0 || left + right != width || !(xl == xr))
+				continue;
+			temps_[l.index].flags |= TF_ROTATED;
+			temps_[r.index].flags |= TF_ROTATED;
+			rotate_[inst.result] = static_cast<uint8_t>(left);
+			if (xl.kind == ValueKind::Temp)
+			{
+				TempInfo& c = temps_[xl.index];
+				if (c.block == b && !(c.flags & TF_GLOBAL) && c.last < pos_[id])
+					c.last = pos_[id];
+			}
+			return;
+		}
+	});
 }
 
 // An integer compare or logical not whose only use is the condition of the
@@ -1781,14 +1840,15 @@ bool FunctionSelector::sunk_compare(uint32_t id) const
 }
 
 // Where an instruction reads its operands: a folded load at its consumer,
-// a fused compare at its branch, a tested and/shl at its compare's.
+// a fused compare at its branch, a tested and/shl at its compare's, a
+// rotation's shift at its or.
 int32_t FunctionSelector::read_pos(uint32_t id) const
 {
 	const Instruction& inst = body_->instructions[id];
 	if (inst.result != kNoId)
 	{
 		const TempInfo& t = temps_[inst.result];
-		if ((t.flags & (TF_FOLDED | TF_FUSED | TF_TESTED | TF_RMW)) && t.user != kNoId &&
+		if ((t.flags & (TF_FOLDED | TF_FUSED | TF_TESTED | TF_ROTATED | TF_RMW)) && t.user != kNoId &&
 			inst_block_[t.user] == inst_block_[id])
 			return read_pos(t.user);
 	}

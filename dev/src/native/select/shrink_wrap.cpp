@@ -61,6 +61,8 @@ bool frameless_inst(const Inst& inst)
 	case Op::Shl:
 	case Op::Shr:
 	case Op::Sar:
+	case Op::Rol:
+	case Op::Ror:
 	case Op::Setcc:
 	case Op::Cmov:
 	case Op::Movzx:

@@ -16,8 +16,8 @@ namespace driver {
 void add_host_environment(PreprocessorOptions& options, bool nostdinc);
 
 // Whether `-stdlib=<name>` agrees with the standard library selection
-// cppgm++ was built with (CPPGM_STDLIB_FLAGS): only a selection made then
-// can be named; a build for the host's default library names none.
+// cppgm++ was built with (CPPGM_STDLIB_FLAGS), or, for a build that made
+// none, with the host's default library whose headers it found.
 bool host_stdlib_selected(const std::string& name);
 
 // The direct driver queries (--version, -v, -dumpmachine, -dumpversion,

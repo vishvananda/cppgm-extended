@@ -349,7 +349,7 @@ void MirWriter::instruction(const Function& function, const Inst& inst)
 		if (typed(inst.op) ||
 			((inst.op == Op::Add || inst.op == Op::Sub || inst.op == Op::And || inst.op == Op::Or ||
 				 inst.op == Op::Xor || inst.op == Op::Imul || inst.op == Op::Shl || inst.op == Op::Shr ||
-				 inst.op == Op::Sar || inst.op == Op::Lea) &&
+				 inst.op == Op::Sar || inst.op == Op::Rol || inst.op == Op::Ror || inst.op == Op::Lea) &&
 				inst.type != TypeKind::I64 && inst.type != TypeKind::Ptr && inst.type != TypeKind::Void) ||
 			((inst.op == Op::Bswap || inst.op == Op::Bsf || inst.op == Op::Bsr) && inst.type != TypeKind::I64))
 		{

@@ -867,8 +867,8 @@ const Type* Analyzer::template_default(
 	// depend on a template parameter that is an instantiation: the analysis
 	// it interrupts (a template-id, an overload resolution deducing a
 	// candidate, 14.8.2p5) keeps its state and scratch from the default's
-	// own calls, and a value's expression is copied (its facts are the
-	// instantiation's). A dependent one (in a template definition) stays
+	// own calls, and the default's expressions are copied (their facts are
+	// the instantiation's). A dependent one (in a template definition) stays
 	// dependent. `substitution`: a deduction's, whose failure is a result
 	// (14.8.2p5): null then. `named_in`: a template template-parameter's own
 	// list's, the scope where the parameter's name was found (its template's
@@ -972,7 +972,18 @@ const Type* Analyzer::template_default(
 	syntax::SyntaxCloner cloner(arena_, true, expander.get());
 	if (type != nullptr)
 	{
-		const syntax::TypeId* copy = expander.get() != nullptr ? cloner.type_id(type) : type;
+		// A type's expressions (a template argument's value, a decltype
+		// operand) are copied too: the default is shared by every instance
+		// of a member template's class (a class's copy keeps its members'
+		// template-heads), whose own analysis of it must not read this
+		// one's facts (`enable_if_t<!is_same<U, It>::value>` evaluated
+		// with U = It is no value in rev<rev<It>>'s copy, where U is
+		// unknown). One without them is its own copy, known from its first.
+		const bool expands = expander.get() != nullptr;
+		const bool fact_free = !expands && fact_free_defaults_.find(type) != PointerMap::kMissing;
+		const syntax::TypeId* copy = fact_free ? type : cloner.type_id(type);
+		if (!expands && !fact_free && copy == type)
+			fact_free_defaults_.set(type, 1);
 		return failed() ? nullptr : type_id(*copy, frame);
 	}
 	const syntax::Expr* copy = cloner.expr(value);

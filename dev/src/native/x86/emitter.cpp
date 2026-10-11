@@ -260,6 +260,8 @@ bool plain_inst(const Inst& inst)
 	case Op::Shl:
 	case Op::Shr:
 	case Op::Sar:
+	case Op::Rol:
+	case Op::Ror:
 	case Op::Setcc:
 	case Op::Movzx:
 	case Op::Sext:
@@ -719,8 +721,12 @@ void FunctionEmitter::shift(const Inst& inst)
 {
 	const Operand& a = inst.ops[0];
 	const Operand& b = inst.ops[1];
-	const unsigned digit = inst.op == Op::Shl ? 4 : (inst.op == Op::Shr ? 5 : 7);
-	// A u32 shift is its 32-bit form (zero-extending; count below 32).
+	// The group-2 opcode extension of Shl, Shr, Sar, Rol, Ror (consecutive
+	// in mir_model::Op): /4, /5, /7, /0, /1.
+	static const unsigned kDigits[] = { 4, 5, 7, 0, 1 };
+	const unsigned digit = kDigits[static_cast<unsigned>(inst.op) - static_cast<unsigned>(Op::Shl)];
+	// A u32 shift or rotation is its 32-bit form (zero-extending; count
+	// below 32).
 	const unsigned w = inst.type == TypeKind::U32 ? 4 : 8;
 	if (b.kind == OperandKind::Imm)
 	{
@@ -976,6 +982,8 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	case Op::Shl:
 	case Op::Shr:
 	case Op::Sar:
+	case Op::Rol:
+	case Op::Ror:
 		shift(inst);
 		break;
 	case Op::Setcc:

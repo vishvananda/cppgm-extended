@@ -198,7 +198,8 @@ void FunctionSelector::emit_inst(uint32_t id)
 	if (!live(id))
 		return;
 	if (inst.result != kNoId &&
-		(temps_[inst.result].flags & (TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_RMW)))
+		(temps_[inst.result].flags &
+			(TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_ROTATED | TF_RMW)))
 		return;
 	switch (inst.op)
 	{
@@ -650,6 +651,26 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 	if (op == BinaryOp::Shl || op == BinaryOp::Shr || op == BinaryOp::UShr)
 	{
 		emit_shift(inst);
+		return;
+	}
+	if (level_ >= 1 && rotate_[inst.result] != 0)
+	{
+		// A rotation (find_rmw): x, the value both shifts read, into the
+		// result's register, then rol by the left shift's count, or ror by
+		// the right one's when it is the smaller.
+		const unsigned width = static_cast<unsigned>(value_bytes(inst.type) * 8);
+		const unsigned left = rotate_[inst.result];
+		const Value x = resolve(body_->instructions[body_->temps[resolve(inst.ops[0]).index].def].ops[0]);
+		const Operand a = rm_operand(x, inst.type, kSelectScratch);
+		const Reg d = result_reg(inst, dying_reg(x));
+		if (a.kind == OperandKind::Mem)
+			emit2(Op::Load, kind, Operand::make_reg(d), a);
+		else
+			load_into(d, a, TypeKind::I64);
+		const bool rol = left * 2 <= width;
+		emit2(rol ? Op::Rol : Op::Ror, kind == TypeKind::U32 ? TypeKind::U32 : TypeKind::I64, Operand::make_reg(d),
+			Operand::make_imm(rol ? left : width - left));
+		finish_result(inst, d);
 		return;
 	}
 	const bool commutative = op != BinaryOp::Sub;

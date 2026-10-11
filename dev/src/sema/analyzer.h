@@ -1919,6 +1919,10 @@ private:
 		bool transient;
 	};
 	SubstitutionFailure failure_ = SubstitutionFailure();
+	// The alias template-id whose aliased type is being substituted: where
+	// an error found in types, with no syntax at hand, is reported (see
+	// error).
+	uint32_t substitution_location_ = 0;
 	// How many times require_complete has found a class incomplete: a
 	// substitution that saw it happen is not memoized (see
 	// substitute_decltype).
@@ -2465,6 +2469,9 @@ private:
 	// Default template arguments analyzed in their templates' own parameter
 	// scopes (see qualifier_arguments).
 	FlatMap<DefaultKey, const Type*, DefaultKeyHash> unbound_defaults_;
+	// The default type-ids that bear no facts (no expression), which a
+	// deduction analyzes without a copy (see template_default).
+	PointerMap fact_free_defaults_;
 	const Binding* named_binding_ = nullptr;
 	uint32_t type_id_alignment_ = 0;
 	// The alias stand-ins' facts (see ClassTemplateFacts::alias_stand_in):

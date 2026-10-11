@@ -276,7 +276,8 @@ const Identifier* Analyzer::special_key(const char* spelling)
 
 void Analyzer::error(uint32_t location, const char* message) const
 {
-	throw SemanticError(location, message);
+	// One found in types (a substitution's) has no location of its own.
+	throw SemanticError(location != 0 ? location : substitution_location_, message);
 }
 
 const char Analyzer::kDeferredCall[] = "a deferred call of a reserved builtin";

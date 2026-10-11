@@ -1563,22 +1563,55 @@ bool MemoryForwarding::pre_load(BlockId block, InstId prev, InstId id)
 				cfg_.dominates(c_.block_of[def], block));
 	};
 	InstId step = kNoId;
+	// Or a constant step from one of the join's phis: each predecessor
+	// answers for (and recomputes) the location at that step from its own
+	// input.
+	InstId base_phi = kNoId;
 	if (!available(address))
 	{
 		if (!address.is(ValueKind::Temp))
 			return false;
 		step = body_.temps[address.index].def;
 		const Instruction& def = body_.instructions[step];
-		if (!((def.op == Opcode::Index && def.ops[1].is(ValueKind::Integer)) || def.op == Opcode::Addr) ||
-			!available(def.ops[0]))
+		if (!((def.op == Opcode::Index && def.ops[1].is(ValueKind::Integer)) || def.op == Opcode::Addr))
 			return false;
+		if (!available(def.ops[0]))
+		{
+			const InstId bd = def.op == Opcode::Index && def.ops[0].is(ValueKind::Temp) &&
+					def.ops[0].index >= body_.parameter_count
+				? body_.temps[def.ops[0].index].def
+				: kNoId;
+			if (bd == kNoId || body_.instructions[bd].op != Opcode::Phi || bd >= c_.block_of.size() ||
+				c_.block_of[bd] != block)
+				return false;
+			base_phi = bd;
+		}
 	}
+	const AddressFacts want = facts_of(address);
+	if (base_phi != kNoId && (want.base != ValueKind::Temp || want.index != body_.instructions[base_phi].result))
+		return false;
 	std::vector<Value> pairs;
 	std::vector<BlockId> missing;
 	for (uint32_t k = cfg_.pred_first[block]; k < cfg_.pred_first[block + 1]; ++k)
 	{
 		const BlockId pred = cfg_.preds[k];
-		const Value v = value_at_end(pred, address, load.type, (load.flags & IF_TYPED) != 0);
+		Value v = Value::none();
+		if (base_phi == kNoId)
+			v = value_at_end(pred, address, load.type, (load.flags & IF_TYPED) != 0);
+		else
+		{
+			const Value in = phi_incoming(body_, body_.instructions[base_phi], pred);
+			AddressFacts f = facts_of(in);
+			if (f.base == ValueKind::None)
+			{
+				if (!in.is(ValueKind::Temp))
+					return false;
+				f.base = ValueKind::Temp;
+				f.index = in.index;
+			}
+			f.offset += want.offset;
+			v = value_at_end(pred, key_of(f, in, load.type), f, load.type, (load.flags & IF_TYPED) != 0);
+		}
 		if (v.is(ValueKind::None))
 		{
 			const InstId last = body_.blocks[pred].last;
@@ -1605,7 +1638,12 @@ bool MemoryForwarding::pre_load(BlockId block, InstId prev, InstId id)
 		const BlockId pred = pairs[k - 1].index;
 		Value at_address = address;
 		if (step != kNoId)
-			at_address = append_before_jump(pred, body_.instructions[step]);
+		{
+			Instruction recompute = body_.instructions[step];
+			if (base_phi != kNoId)
+				recompute.ops[0] = phi_incoming(body_, body_.instructions[base_phi], pred);
+			at_address = append_before_jump(pred, recompute);
+		}
 		Instruction copy = load;
 		copy.ops[0] = at_address;
 		if (speculates)

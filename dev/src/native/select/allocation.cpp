@@ -359,7 +359,7 @@ void FunctionSelector::prepass_block(uint32_t b)
 		if (inst.result != kNoId)
 		{
 			TempInfo& t = temps_[inst.result];
-			if (!(t.flags & (TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_RMW)))
+			if (!(t.flags & (TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_ROTATED | TF_RMW)))
 			{
 				t.forbid = mask_for(t);
 				for (const std::pair<uint32_t, int32_t>& c : counts)

@@ -376,6 +376,16 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	changed = RUN_PASS(version_fill_loops) || changed;
 	// (Last: the counters' facts hold for the instructions as they stand.)
 	changed = RUN_PASS(mark_no_wrap_counters) || changed;
+	// O3: rotated loops, what each pass loads anew and what the latch just
+	// read meeting at the new header, where the preheader may load it once.
+	if (options.level >= 3 && RUN_PASS(rotate_loops))
+	{
+		RUN_PASS(promote_slots);
+		RUN_PASS(forward_memory);
+		RUN_PASS(remove_dead_code);
+		RUN_PASS(hoist_loop_loads);
+		changed = true;
+	}
 	if (!changed)
 		return;
 	RUN_PASS(split_branch_compares);

@@ -121,4 +121,30 @@ bool in_loop(const LoopForest& forest, uint32_t l, BlockId b)
 	return x != kNoId && forest.enter[l] <= forest.enter[x] && forest.enter[x] < forest.leave[l];
 }
 
+Located locate(const FunctionBody& body, Value v)
+{
+	Located out;
+	for (unsigned step = 0; step < 8; ++step)
+	{
+		if (!v.is(ValueKind::Temp) || v.index < body.parameter_count || body.temps[v.index].def == kNoId)
+			break;
+		const Instruction& def = body.instructions[body.temps[v.index].def];
+		if (def.op == Opcode::Addr || (def.op == Opcode::Copy && def.type.is_pointer()))
+			v = def.ops[0];
+		else if (def.op == Opcode::Index)
+		{
+			if (def.ops[1].is(ValueKind::Integer))
+				out.offset += static_cast<int64_t>(body.literals[def.ops[1].index].low) *
+					static_cast<int64_t>(storage_bytes(def.type));
+			else
+				out.known = false;
+			v = def.ops[0];
+		}
+		else
+			break;
+	}
+	out.root = v;
+	return out;
+}
+
 } // namespace opt
