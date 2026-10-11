@@ -118,25 +118,21 @@ The course solution passes every gate. [`calibration.tsv`](calibration.tsv)
 records its value for each gate and the margin to each limit, with the
 machine, toolchain and commit they were measured on, built the way your
 Makefile builds the seed (plain `-O3`, the C library's `malloc`), which is
-what your gates compare: own-binary instruction ratios of about
-1.02 / 1.05 (`-O0` / `-O3`), cycle proxies of 1.05 / 1.05, text 1.11,
-kernels of 1.00 / 1.00 / 1.19 / 1.21 (distinct, alias, lookup, exceptions),
-and compile times of about 0.14 / 0.13 of the host's. A backend that has
-no register allocation yet starts near 2 to 2.5 own-binary instructions. A
-compiler whose front end is slow may instead start by failing the speed
-gates, and then the codegen group reports its simulated gates as not
-measured until compile time is fixed.
+what your gates compare; the file is the current figure for each gate. A
+backend that has no register allocation yet starts near 2 to 2.5
+own-binary instructions. A compiler whose front end is slow may instead
+start by failing the speed gates, and then the codegen group reports its
+simulated gates as not measured until compile time is fixed.
 
 The values belong to one machine and toolchain: another `g++`, libstdc++ or
 `malloc` changes the seed, and `g++` and libstdc++ also change the workload's
 preprocessed text and the kernel yardstick. The course re-measures them at
-each release, and whenever the solution's optimizer, backend or front end
-changes, by running every gate on the course solution. That release check
-requires the solution to clear each limit by a margin that covers the noise
-measured for its kind: 2% for instruction counts, 1.5% for the cycle proxy
-(which moves with code layout), 1% for text size, and 25% for compile time,
-memory and scaling. The limits themselves do not move with the
-calibration.
+each release and whenever the solution's optimizer, backend or front end
+changes, and requires the solution to clear each limit by more than the
+measurement noise of the gate's kind: about 2% for instruction counts,
+1.5% for the cycle proxy (which moves with code layout), 1% for text size,
+and 25% for compile time, memory and scaling. The limits themselves do not
+move with the calibration.
 
 ## Work loop
 

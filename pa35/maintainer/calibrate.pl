@@ -221,8 +221,8 @@ my %BUILD_META = (
 my %HEAD = (
 	student => "# PA35 calibration: the course solution's value for every gate in gates.txt, built\n"
 		. "# as the student export's dev/Makefile builds a seed (the configuration a student's\n"
-		. "# gates compare), on the machine and toolchain below; written by `make -C pa35 ref-test`\n"
-		. "# (the release check), do not edit by hand. Each gate must clear its limit by the\n"
+		. "# gates compare), on the machine and toolchain below; written by the course's\n"
+		. "# release check, do not edit by hand. Each gate must clear its limit by the\n"
 		. "# release margin of its kind: margin = limit / value - 1. The limits do not depend on\n"
 		. "# this file.\n",
 	course => "# PA35 calibration of the course build (this repository's dev/Makefile), for the\n"
