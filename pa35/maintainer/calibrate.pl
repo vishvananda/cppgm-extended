@@ -60,8 +60,8 @@ my %KIND = (
 );
 $KIND{$_} = 'count' for map { "kernel-$_" } qw(accessor-distinct accessor-alias lookup exceptions);
 # The student export's dev/Makefile flags (scripts/export_student_repo.sh):
-# no -fno-strict-aliasing and no HOST_ALLOC_LIBS.
-our @STUDENT_MAKE = ('CC_FLAGS=-std=gnu++11 -Wall -O3', 'HOST_ALLOC_LIBS=');
+# no -fno-strict-aliasing.
+our @STUDENT_MAKE = ('CC_FLAGS=-std=gnu++11 -Wall -O3');
 
 my %o = (seeds => 100, out => "$PA35::PA35/calibration.tsv", 'course-out' => "$PA35::PA35/maintainer/calibration-course.tsv");
 GetOptions(\%o, 'seeds=i', 'from=s', 'out=s', 'course-out=s')
@@ -201,7 +201,6 @@ for my $cg (glob("$PA35::PA35/obj/cache/*-O3-sim/run.cg")) {
 }
 my ($flags) = PA35::slurp("$PA35::ROOT/dev/Makefile") =~ /^CC_FLAGS \?= (.*?)\s*$/m;
 $flags //= 'unknown';
-my $malloc = (`ldd '$PA35::ROOT/dev/cppgm++' 2>/dev/null` // '') =~ /jemalloc/ ? 'jemalloc' : 'the C library malloc';
 my @meta = (
 	['date', strftime('%Y-%m-%dT%H:%M:%SZ', gmtime)],
 	['source', $commit . ($dirty =~ /\S/ ? ' with the compiler source modified' : '')],
@@ -217,7 +216,7 @@ my @meta = (
 );
 my %BUILD_META = (
 	student => join(' ', @STUDENT_MAKE) . ' (the student export\'s dev/Makefile)',
-	course => "dev/Makefile: CC_FLAGS $flags; $malloc",
+	course => "dev/Makefile: CC_FLAGS $flags",
 );
 my %HEAD = (
 	student => "# PA35 calibration: the course solution's value for every gate in gates.txt, built\n"

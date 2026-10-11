@@ -168,10 +168,6 @@ class CalibrateTests(unittest.TestCase):
         # package strings, and the course build's flags only in its own file.
         self.assertNotRegex(text, r"(?m)^meta\tkernel\t.*-\w+\d+-")
         self.assertNotIn("jemalloc", text)
-        # The course file names the allocator its binary links (calibrate
-        # reads ldd), which the Makefile's intent does not decide.
-        linked = subprocess.run(["ldd", str(REPO_ROOT / "dev/cppgm++")], capture_output=True, text=True).stdout
-        self.assertIn("jemalloc" if "jemalloc" in linked else "the C library malloc", self.course_out.read_text())
 
     def test_a_value_inside_the_limit_but_not_the_margin_is_short(self):
         values = passing_values(self.gates)
@@ -217,7 +213,7 @@ class CalibrateTests(unittest.TestCase):
         exported = re.search(r"^CC_FLAGS \?= (.*?) \$\(CPPGM_STDLIB_FLAGS\)$", heredoc, re.M).group(1)
         self.assertNotIn("HOST_ALLOC_LIBS", heredoc[:heredoc.index("\nEOF\n")])
         calibrate = CALIBRATE.read_text()
-        self.assertIn(f"'CC_FLAGS={exported}', 'HOST_ALLOC_LIBS='", calibrate)
+        self.assertIn(f"'CC_FLAGS={exported}'", calibrate)
 
     def test_a_failing_or_missing_gate_fails(self):
         values = passing_values(self.gates)

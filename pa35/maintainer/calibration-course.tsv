@@ -1,8 +1,8 @@
 # PA35 calibration of the course build (this repository's dev/Makefile), for the
 # release check; written by `make -C pa35 ref-test`, do not edit by hand. The
 # student build's values are in pa35/calibration.tsv.
-meta	date	2026-10-11T16:02:25Z
-meta	source	ad4f8a249cec999d9defe7587d9c580f93a32cb8
+meta	date	2026-10-11T16:27:30Z
+meta	source	de66c75f9e8f23419288eacaa821f36cd8a78f6d
 meta	cpu	Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz
 meta	processors	88
 meta	kernel	Linux 7.0
@@ -12,21 +12,21 @@ meta	libc	glibc 2.43
 meta	valgrind	valgrind 3.26.0
 meta	cache simulation	I1 cache: 32768 B, 64 B, 8-way associative; D1 cache: 32768 B, 64 B, 8-way associative; LL cache: 58720256 B, 64 B, 28-way associative
 meta	generated seeds	100
-meta	build	dev/Makefile: CC_FLAGS -std=gnu++11 -Wall -O3 -fno-strict-aliasing $(CPPGM_STDLIB_FLAGS); jemalloc
+meta	build	dev/Makefile: CC_FLAGS -std=gnu++11 -Wall -O3 -fno-strict-aliasing $(CPPGM_STDLIB_FLAGS)
 #
 # gate	op	limit	release margin	value	margin	status
 gate	workload-compiles	==	1	-	1	-	pass
 gate	behavior	==	0	-	0	-	pass
 gate	generated	==	0	-	0	-	pass
-gate	compile-O0-time	<=	0.25	25.0% (time)	0.1458	71.42%	pass
-gate	compile-O3-time	<=	0.25	25.0% (time)	0.1128	121.59%	pass
-gate	compile-O3-memory	<=	1.00	25.0% (memory)	0.4300	132.57%	pass
-gate	compile-scaling	<=	3.00	25.0% (time)	1.7900	67.60%	pass
+gate	compile-O0-time	<=	0.25	25.0% (time)	0.1349	85.38%	pass
+gate	compile-O3-time	<=	0.25	25.0% (time)	0.1254	99.33%	pass
+gate	compile-O3-memory	<=	1.00	25.0% (memory)	0.4219	137.01%	pass
+gate	compile-scaling	<=	3.00	25.0% (time)	2.0700	44.93%	pass
 gate	workload-identical	==	1	-	1	-	pass
-gate	codegen-O0-instructions	<=	1.08	2.0% (count)	0.9614	12.34%	pass
+gate	codegen-O0-instructions	<=	1.08	2.0% (count)	0.9612	12.36%	pass
 gate	codegen-O3-instructions	<=	1.12	2.0% (count)	1.0020	11.78%	pass
-gate	codegen-O0-cycle-proxy	<=	1.09	1.5% (proxy)	0.9742	11.89%	pass
-gate	codegen-O3-cycle-proxy	<=	1.10	1.5% (proxy)	1.0088	9.04%	pass
+gate	codegen-O0-cycle-proxy	<=	1.09	1.5% (proxy)	0.9729	12.04%	pass
+gate	codegen-O3-cycle-proxy	<=	1.10	1.5% (proxy)	1.0055	9.39%	pass
 gate	text-size	<=	1.15	1.0% (text)	1.0480	9.73%	pass
 gate	kernel-accessor-distinct	<=	1.30	2.0% (count)	1.0000	30.00%	pass
 gate	kernel-accessor-alias	<=	1.30	2.0% (count)	1.0000	30.00%	pass
@@ -34,27 +34,27 @@ gate	kernel-lookup	<=	1.30	2.0% (count)	1.1917	9.09%	pass
 gate	kernel-exceptions	<=	1.30	2.0% (count)	1.2066	7.74%	pass
 #
 # measurement	seed or cppgm++	self or host	ratio
-detail	O0-own	3105690841	2985713446	0.961369
-detail	O0-total	3230621894	3106150267	0.961471
+detail	O0-own	3106237498	2985694532	0.961193
+detail	O0-total	3242893860	3117664524	0.961383
 detail	O0-calls	48637045	50629942	1.040975
-detail	O0-proxy	2700315239.66667	2630680947.33333	0.974213
-detail	O3-own	7546909908	7561856738	1.001981
-detail	O3-total	7977088173	8025120239	1.006021
+detail	O0-proxy	2715976205	2642338258	0.972887
+detail	O3-own	7546695194	7561803253	1.002002
+detail	O3-total	8032371705	8080631451	1.006008
 detail	O3-calls	68222895	68760136	1.007875
-detail	O3-proxy	6582740506	6640394974.66667	1.008758
+detail	O3-proxy	6667774360	6704683287	1.005535
 detail	text-bytes	4872630	5104466	1.047579
-detail	time-E	0.125539	0.122984	1.020775
-detail	rss-E	13524	17424	0.776171
-detail	time-O0	0.947976	6.499997	0.145843
-detail	rss-O0	213524	488924	0.436722
-detail	time-O3	1.953146	17.311703	0.112822
-detail	rss-O3	216212	502836	0.429985
-detail	scaling-functions	flat	0.00 0.02 0.03 0.05 0.09	
-detail	scaling-macros	flat	0.00 0.01 0.02 0.04 0.08	
-detail	scaling-members	flat	0.00 0.01 0.02 0.04 0.08	
-detail	scaling-scopes	1.79	0.04 0.09 0.17 0.30 0.51	
-detail	scaling-statements	flat	0.00 0.01 0.01 0.04 0.08	
-detail	scaling-templates	flat	0.00 0.01 0.02 0.04 0.07	
-detail	scaling-worst	1.79		
+detail	time-E	0.117710	0.122676	0.959519
+detail	rss-E	12104	17308	0.699330
+detail	time-O0	0.844833	6.264652	0.134857
+detail	rss-O0	209868	489752	0.428519
+detail	time-O3	2.013500	16.053672	0.125423
+detail	rss-O3	212848	504472	0.421922
+detail	scaling-functions	2.05	0.00 0.02 0.03 0.05 0.11	
+detail	scaling-macros	flat	0.00 0.01 0.02 0.05 0.09	
+detail	scaling-members	flat	0.00 0.01 0.02 0.05 0.10	
+detail	scaling-scopes	2.07	0.04 0.12 0.20 0.33 0.63	
+detail	scaling-statements	flat	0.00 0.01 0.01 0.03 0.06	
+detail	scaling-templates	flat	0.00 0.01 0.02 0.04 0.10	
+detail	scaling-worst	2.07		
 detail	behavior	behavior: 93/93 tests pass at O0 O1 O2 O3		
 detail	generated	generated: 302/302 programs pass at O0 O1 O2 O3		

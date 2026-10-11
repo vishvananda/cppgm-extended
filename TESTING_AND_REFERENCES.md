@@ -181,17 +181,17 @@ The margins cover noise; the limits in `gates.txt` stay what they are. A
 flat 2% for every kind would have failed `text-size` (1.75% at entry) and
 left the `-O0` proxy (2.16% at entry) within the layout spread of failing;
 the deterministic text ratio needs less. The student build's codegen
-margins are the thinner ones: its seed is built with strict aliasing and
-without jemalloc, so the seed does less work for the same self.
+margins are the thinner ones: its seed is built with strict aliasing, so
+the seed does less work for the same self.
 
 Re-calibrate:
 
 - at each release, on the release machine;
 - after a `dev/src` sync that changes code generation, the optimizer or the
   front end's hot paths;
-- after the host compiler, libstdc++, glibc, valgrind or the jemalloc package
-  changes: whether `dev/Makefile` links jemalloc alone moved the course
-  build's proxies from 1.0376 / 1.0292 to 1.0427 / 1.0424 at entry;
+- after the host compiler, libstdc++, glibc or valgrind changes (the C
+  library's allocator is part of the seed: linking another one once moved
+  the course build's proxies from 1.0376 / 1.0292 to 1.0427 / 1.0424);
 - after changing the workload (and its `MANIFEST.sha256`), the kernels or the
   generators.
 

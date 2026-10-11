@@ -329,8 +329,7 @@ asan-build: require-clang
 		CXX=$(CLANG_CXX) \
 		CPPGM_HOST_CXX=$(CLANG_CXX) \
 		OBJ=../$(ASAN_CELL_OBJ) \
-		CC_FLAGS="$(ASAN_CC_FLAGS)" \
-		HOST_ALLOC_LIBS=
+		CC_FLAGS="$(ASAN_CC_FLAGS)"
 
 require-clang:
 	@command -v $(CLANG_CXX) >/dev/null 2>&1 || { \

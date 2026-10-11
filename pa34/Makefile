@@ -98,7 +98,6 @@ INCEPTION_LINKER_DETERMINISM_FLAGS =
 ifeq ($(HOST_UNAME_S),Darwin)
 INCEPTION_LINKER_DETERMINISM_FLAGS += -Wl,-reproducible
 endif
-INCEPTION_HOST_ALLOC_LIBS ?= $(if $(wildcard /usr/lib/x86_64-linux-gnu/libjemalloc.so.2),-l:libjemalloc.so.2,)
 INCEPTION_LINK_FLAGS = -std=gnu++11 $(CPPGM_STDLIB_FLAGS) $(INCEPTION_LINKER_DETERMINISM_FLAGS)
 include ../dev/frontend_source_sets.mk
 
@@ -489,7 +488,7 @@ probe-self-link:
 	fi; \
 	echo "PROBE link target: $(PROBE_TARGET)"; \
 	echo "PROBE binary: $(PROBE_LINK_OUTPUT)"; \
-	$(CPPGM_HOST_CXX) $(INCEPTION_LINK_FLAGS) -I$(INCEPTION_SOURCE_ROOT) -o "$(PROBE_LINK_OUTPUT)" $$inputs $(INCEPTION_HOST_ALLOC_LIBS)
+	$(CPPGM_HOST_CXX) $(INCEPTION_LINK_FLAGS) -I$(INCEPTION_SOURCE_ROOT) -o "$(PROBE_LINK_OUTPUT)" $$inputs
 
 $(INCEPTION_BUILTIN_HOST_CONFIG): FORCE
 	@mkdir -p $(dir $@)
@@ -564,7 +563,7 @@ $(call inception_binary_path,$(1)): FORCE | $(INCEPTION_BIN_ROOT)
 		env MAKEFLAGS= $$(MAKE) -j$(INCEPTION_OBJECT_BUILD_JOBS) $(call inception_link_inputs,$(1)); \
 	fi
 	@rm -f "$(call inception_link_output_path,$(1)).tmp"
-	$(CPPGM_HOST_CXX) $(INCEPTION_LINK_FLAGS) -I$(INCEPTION_SOURCE_ROOT) -o "$(call inception_link_output_path,$(1)).tmp" $(call inception_link_inputs,$(1)) $(INCEPTION_HOST_ALLOC_LIBS)
+	$(CPPGM_HOST_CXX) $(INCEPTION_LINK_FLAGS) -I$(INCEPTION_SOURCE_ROOT) -o "$(call inception_link_output_path,$(1)).tmp" $(call inception_link_inputs,$(1))
 	@if ! cmp -s "$(call inception_link_output_path,$(1)).tmp" "$$@" 2>/dev/null; then \
 		mv -f "$(call inception_link_output_path,$(1)).tmp" "$$@"; \
 	else \

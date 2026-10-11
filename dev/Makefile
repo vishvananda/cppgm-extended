@@ -41,10 +41,6 @@ CPPGM_STDLIB_FLAGS ?=
 CC_FLAGS ?= -std=gnu++11 -Wall -O3 -fno-strict-aliasing $(CPPGM_STDLIB_FLAGS)
 TELEMETRY_OFF_OBJ ?= ../obj/dev-telemetry-off
 TELEMETRY_OFF_CC_FLAGS ?= $(CC_FLAGS) -DCPPGM_TELEMETRY_ENABLED=0
-# Hosted compiler workloads create and release many translation-unit-lifetime
-# objects. Use the lower-overhead allocator when the Linux runtime package is
-# available, while keeping the handout build portable to hosts without it.
-HOST_ALLOC_LIBS ?= $(if $(wildcard /usr/lib/x86_64-linux-gnu/libjemalloc.so.2),-l:libjemalloc.so.2,)
 TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)
 TEST_RUNNER_ENTRY_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
 ENTRY_CC_FLAGS = $(CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
@@ -94,7 +90,7 @@ cppgm++-telemetry-off:
 cppgm++-telemetry-off-build: $(call link_objs,cppgm++) $(RUNNER_STATE_STAMP) | $(OBJDIR)
 	$(call quiet,LINK,cppgm++-telemetry-off)
 	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o cppgm++-telemetry-off.tmp \
-		$(call link_objs,cppgm++) $(HOST_ALLOC_LIBS)
+		$(call link_objs,cppgm++)
 	@if ! cmp -s cppgm++-telemetry-off.tmp cppgm++-telemetry-off 2>/dev/null; then \
 		mv -f cppgm++-telemetry-off.tmp cppgm++-telemetry-off; \
 	else rm -f cppgm++-telemetry-off.tmp; fi
@@ -102,7 +98,7 @@ cppgm++-telemetry-off-build: $(call link_objs,cppgm++) $(RUNNER_STATE_STAMP) | $
 define FRONTEND_RULES
 $(1): $(call link_objs,$(1)) $(RUNNER_STATE_STAMP) $(TOOLCHAIN_STAMP) | $(OBJDIR)
 	$(call quiet,LINK,$$@)
-	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o $$@.tmp $(call link_objs,$(1)) $(HOST_ALLOC_LIBS)
+	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o $$@.tmp $(call link_objs,$(1))
 	@if ! cmp -s $$@.tmp $$@ 2>/dev/null; then mv -f $$@.tmp $$@; else rm -f $$@.tmp; fi
 
 $(call entry_obj,$(1)): $(1).cpp $(COMPILE_CONFIG_STAMP)
