@@ -24,8 +24,13 @@ from typing import Iterable
 
 
 DEFAULT_TRACKER = Path("scripts/architecture/pa-feature-placement.md")
+COURSE_PA_COUNT = 35
+COURSE_PAS = tuple(f"pa{i}" for i in range(1, COURSE_PA_COUNT + 1))
+# Self-hosting (PA34) and optimizing the compiler (PA35) add no language
+# feature, so no feature table row may name either as its owner.
+NO_FEATURE_PAS = frozenset({"pa34", "pa35"})
 DEFAULT_PAS = tuple(f"pa{i}" for i in range(10, 24))
-LOCAL_TEST_HYGIENE_PAS = tuple(f"pa{i}" for i in range(1, 35))
+LOCAL_TEST_HYGIENE_PAS = COURSE_PAS
 STRICT_TEMPLATE_PAS = ("pa14", "pa15", "pa17", "pa18", "pa19")
 SEMANTIC_ONLY_PA_MAX = 7
 PRE_LOWIR_SEMANTIC_PA_MIN = 5
@@ -621,6 +626,22 @@ def load_feature_table(path: Path) -> dict[str, FeatureMeta]:
     if not features:
         raise ValueError(f"no feature table found in {path}")
     return features
+
+
+def feature_owner_errors(features: dict[str, FeatureMeta]) -> list[str]:
+    errors: list[str] = []
+    for feature_id, meta in sorted(features.items()):
+        if meta.owner_pa not in COURSE_PAS:
+            errors.append(
+                f"feature {feature_id} names owner {meta.owner_pa}, "
+                f"which is not one of the course's {COURSE_PA_COUNT} assignments"
+            )
+        elif meta.owner_pa in NO_FEATURE_PAS:
+            errors.append(
+                f"feature {feature_id} names owner {meta.owner_pa}, "
+                "which adds no language feature"
+            )
+    return errors
 
 
 def strip_comments(source: str) -> str:
@@ -2856,7 +2877,7 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--tracker", type=Path, default=DEFAULT_TRACKER)
-    parser.add_argument("--pa", action="append", choices=[f"pa{i}" for i in range(1, 35)])
+    parser.add_argument("--pa", action="append", choices=COURSE_PAS)
     parser.add_argument("--feature", action="append", help="only report tests matching this feature id")
     parser.add_argument(
         "--include-ok",
@@ -2899,6 +2920,11 @@ def main(argv: list[str]) -> int:
         print(f"error: tracker not found: {tracker}", file=sys.stderr)
         return 2
     features = load_feature_table(tracker)
+    owner_errors = feature_owner_errors(features)
+    if owner_errors:
+        for error in owner_errors:
+            print(f"error: {tracker}: {error}", file=sys.stderr)
+        return 2
     rule_ids = {rule.feature_id for rule in RULES}
     missing_rules = sorted(set(features) - rule_ids)
 

@@ -1019,6 +1019,51 @@ function @main() -> i32 {
         )
         self.assertIn("exception.throw_operand_cleanup", hits)
 
+    def test_course_has_thirty_five_assignments(self) -> None:
+        self.assertEqual(audit.COURSE_PAS[0], "pa1")
+        self.assertEqual(audit.COURSE_PAS[-1], "pa35")
+        self.assertEqual(len(audit.COURSE_PAS), 35)
+        self.assertEqual(audit.LOCAL_TEST_HYGIENE_PAS, audit.COURSE_PAS)
+
+    def test_feature_owners_exclude_assignments_without_language_features(self) -> None:
+        def table(*owners: str) -> dict[str, object]:
+            return {
+                f"feature.{owner}": audit.FeatureMeta(
+                    feature_id=f"feature.{owner}",
+                    owner_pa=owner,
+                    owner_cluster=100,
+                    n3485_ref="",
+                    required_detections="",
+                )
+                for owner in owners
+            }
+
+        self.assertEqual(audit.feature_owner_errors(table("pa1", "pa29", "pa33")), [])
+        errors = audit.feature_owner_errors(table("pa34", "pa35", "pa36"))
+        self.assertEqual(len(errors), 3)
+        self.assertIn("feature feature.pa34 names owner pa34, which adds no language feature", errors)
+        self.assertIn("feature feature.pa35 names owner pa35, which adds no language feature", errors)
+        self.assertTrue(any("pa36" in error and "35 assignments" in error for error in errors))
+
+    def test_live_feature_table_names_only_feature_owning_assignments(self) -> None:
+        features = audit.load_feature_table(REPO_ROOT / audit.DEFAULT_TRACKER)
+        self.assertEqual(audit.feature_owner_errors(features), [])
+
+    def test_pa35_selection_scans_its_tests_without_findings(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
+            root = Path(temp_dir)
+            write(root / "pa35" / "tests" / "behavior" / "narrow_ops.cpp", "int main() { return 0; }\n")
+            out = root / "report.md"
+            status = audit.main([
+                "--root", str(root),
+                "--tracker", str(REPO_ROOT / audit.DEFAULT_TRACKER),
+                "--pa", "pa35",
+                "--fail-on-early",
+                "--markdown-out", str(out),
+            ])
+            self.assertEqual(status, 0)
+            self.assertIn("- tests scanned: 0", out.read_text())
+
 
 if __name__ == "__main__":
     unittest.main()

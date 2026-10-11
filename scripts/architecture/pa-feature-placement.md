@@ -1,7 +1,9 @@
 # Assignment feature owners
 
 This is the live feature table read by `scripts/audit_pa_feature_placement.py`.
-Owners and clusters use the current 34-assignment sequence. N3485 references
+Owners and clusters use the current 35-assignment sequence. PA34 (self-hosting)
+and PA35 (optimizing the compiler) add no language feature, so no row names
+either as its owner; the auditor rejects a table that does. N3485 references
 refer to `../../doc/n3485.txt`.
 
 | Feature Family | Canonical Owner PA | Owner Cluster | N3485 Reference | Auditor Status | Required Detections |
@@ -34,7 +36,7 @@ refer to `../../doc/n3485.txt`.
 | `function.default_argument` | `pa7` | 300 | 8.3.6 `[dcl.fct.default]` | pending | default arguments on namespace/member functions and constructor calls. LowIR tests using plain procedural default arguments need a PA10-or-later LowIR owner; class/template interactions inherit their later feature owners. |
 | `function.noexcept` | `pa6` | 300 | 5.3.7 `[expr.unary.noexcept]`, 15.4 `[except.spec]` | pending | `noexcept` declarations, redeclarations, and metadata. LowIR tests should treat declaration-only `noexcept` as support syntax; constant-expression evaluation belongs to `constexpr.noexcept`. |
 | `function.dynamic_exception_spec` | `pa6` | 300 | 15.4 `[except.spec]` | pending | Function-suffix `throw(...)` declarations are typed exception metadata. They do not establish source-to-LowIR EH control; throw expressions, handlers and checked EH instructions retain their PA21 owner. Overrides inherit the owning polymorphic/template/hierarchy milestone. |
-| `exception.try_catch` | `pa21` | 100 | 15 `[except]`, 15.1 `[except.throw]`, 15.3 `[except.handle]` | pending | source-level `try`/`catch`/`throw`, exception handlers, catch matching, and source-to-LowIR EH control flow. NOTE: EH also appears legitimately in non-LowIR tool-PAs — `pa5` (`--emit-ast`) parses the syntax, `pa8` (`lowir2cy86`) consumes EH LowIR; those are not source→LowIR placements and the source-pattern match over-flags them. |
+| `exception.try_catch` | `pa21` | 100 | 15 `[except]`, 15.1 `[except.throw]`, 15.3 `[except.handle]` | pending | source-level `try`/`catch`/`throw`, exception handlers, catch matching, and source-to-LowIR EH control flow. NOTE: EH also appears legitimately in non-LowIR tool-PAs — `pa5` (`--emit-ast`) parses the syntax, `pa8` (`lowir`) reads and writes EH LowIR; those are not source→LowIR placements and the source-pattern match over-flags them. |
 | `exception.guarded_static_cleanup` | `pa21` | 200 | 3.7.1 `[basic.stc.static]`, 6.7 `[stmt.dcl]`, 12.2 `[class.temporary]`, 15 `[except]` | pending | A function-local dynamic class static whose checked LowIR contains EH control. The initialization edge must finish initializer-temporary cleanup before joining the already-initialized edge. |
 | `exception.aggregate_cleanup` | `pa21` | 200 | 8.5.1 `[dcl.init.aggr]`, 12.2 `[class.temporary]`, 15 `[except]` | pending | An aggregate return over destructible class members whose checked LowIR contains EH control. Nontrivial members use constructor actions, and cleanup tracks the constructed subobjects. |
 | `exception.class_value_argument_cleanup` | `pa21` | 200 | 5.2.2 `[expr.call]`, 12.2 `[class.temporary]`, 12.4 `[class.dtor]`, 15 `[except]` | pending | A destructible class value parameter whose checked LowIR contains EH control. The caller transfers the materialized argument to the callee and must not retain a second normal-path cleanup for that object. |
