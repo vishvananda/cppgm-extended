@@ -2297,23 +2297,23 @@ sub validate_lowir_text
 
 	my $source_text = getrawdata($source_file);
 	my @errors;
-	push @errors, "removed trivial_lifecycle metadata in generated LowIR"
+	push @errors, "the symbol key trivial_lifecycle= is not defined by the LowIR format"
 		if !$options->{allow_legacy_trivial_lifecycle} &&
 		   $data =~ /\btrivial_lifecycle\s*=/;
-	push @errors, "removed unreachable role in generated LowIR"
+	push @errors, "the function role unreachable is not defined by the LowIR format"
 		if !$options->{allow_legacy_unreachable_role} &&
 		   $data =~ /\brole\s*=\s*unreachable\b/;
-	push @errors, "removed decay surface in generated LowIR"
+	push @errors, "a decay operation or pass=decay is not defined by the LowIR format"
 		if !$options->{allow_legacy_decay_surface} &&
 		   ($data =~ /\bpass\s*=\s*decay\b/ ||
 		    $data =~ /^\s*%[A-Za-z0-9_]+\s*=\s*unary\s+decay\s+ptr\b/m);
-	push @errors, "removed reference passing label in generated LowIR"
+	push @errors, "the parameter label pass=reference is not defined by the LowIR format"
 		if !$options->{allow_legacy_reference_pass} &&
 		   $data =~ /\bpass\s*=\s*reference\b/;
-	push @errors, "removed capture/access parameter metadata in generated LowIR"
+	push @errors, "the parameter keys capture= and access= are not defined by the LowIR format"
 		if !$options->{allow_legacy_capture_access} &&
 		   $data =~ /\b(?:capture|access)\s*=/;
-	push @errors, "removed source-origin index projection in generated LowIR"
+	push @errors, "the index projections base_subobject and reference_field are not defined by the LowIR format"
 		if !$options->{allow_legacy_source_origin_projection} &&
 		   $data =~ /\bprojection\s*=\s*(?:base_subobject|reference_field)\b/;
 

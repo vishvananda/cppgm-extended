@@ -416,8 +416,8 @@ sub disassemble {
 	return \%dis;
 }
 
-# Instruction class of one objdump (AT&T) line; the same classes the
-# previous campaign used, so its numbers stay comparable.
+# Instruction class of one objdump (AT&T) line: the classes measure.pl's
+# mix tables report.
 sub classify {
 	my ($t) = @_;
 	$t =~ s/\s+#.*$//;

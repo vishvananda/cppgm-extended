@@ -1,6 +1,6 @@
-// Byte loads shifted into place and or-ed together (7.46 combined them
-// into one wider load; 7.50 dropped that: bytes stored one by one just
-// before stall a wide load): flag bytes packed into a word, two, four and
+// Byte loads shifted into place and or-ed together (combining them into
+// one wider load is legal but stalls when the bytes were stored one by one
+// just before): flag bytes packed into a word, two, four and
 // eight bytes, u16 halves, a byte stored between the loads, a reversed
 // order, three bytes, bytes of two objects, a narrowing back through an
 // extension.

@@ -1,9 +1,8 @@
 # Building the parser you will keep
 
-This guide accompanies [the parser/AST assignment](README.md). It adapts
-parsing explanations from the CPPGM Foundation's 2013 recognition handout to
-the compiler's structured AST. The assignment grammar and AST contract are
-in the main handout.
+This guide accompanies [the parser/AST assignment](README.md) and explains
+the parsing approach for the compiler's structured AST. The assignment
+grammar and AST contract are in the main handout.
 
 ## Work in useful groups
 
@@ -166,8 +165,5 @@ boundary without relying on an unresolved mock name.
 ## What syntax acceptance means
 
 Syntax fixtures may use unresolved names or omit semantic definitions because
-type checking is a later stage. That does not justify importing arbitrary
-invalid syntax from an old recognizer. The shared grammar and handout define
-the supported boundary; a few useful rejection cases test it. There is no
-requirement to reproduce old recognizer traces, permissive declarations
-without types, or diagnostics tied only to mock identifier spelling.
+type checking is a later stage. The shared grammar and handout define the
+supported boundary; a few rejection cases test it.

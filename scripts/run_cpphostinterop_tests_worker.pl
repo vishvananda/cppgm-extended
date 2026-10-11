@@ -148,11 +148,10 @@ sub build_test_context
 		defined($ENV{CC}) && $ENV{CC} ne '' ? $ENV{CC} :
 		'';
 	my @host_cxx = resolve_host_command($host_cxx_str,
-	                                   'clang++-22',
-	                                   'clang++',
 	                                   'g++',
-	                                   'c++');
-	my @host_cc = resolve_host_command($host_cc_str, 'clang-22', 'clang', 'gcc', 'cc', 'c++');
+	                                   'c++',
+	                                   'clang++');
+	my @host_cc = resolve_host_command($host_cc_str, 'gcc', 'cc', 'clang');
 	die "Unable to resolve host C++ compiler\n" if scalar(@host_cxx) == 0;
 	die "Unable to resolve host C compiler\n" if scalar(@host_cc) == 0;
 	my @stdlib_flags = shellwords($ENV{CPPGM_STDLIB_FLAGS} || '');

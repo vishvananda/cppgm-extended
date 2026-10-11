@@ -162,9 +162,10 @@ course build (`check.pl` with 100 generated seeds), then builds the same
 source as the student export's Makefile does (plain `-O3`, the C library's
 `malloc`; the seed by g++, self by that seed) and measures its speed and
 codegen groups, the configuration students' gates compare. It writes
-`pa35/calibration.tsv`: each gate's value and margin in both builds, the
-measurements behind them, and the machine, toolchain and commit. Commit the
-file. The check fails when a gate fails in either build, or when a value
+`pa35/calibration.tsv` (the student build's value and margin for each gate,
+the measurements behind them, and the machine, toolchain and commit, named
+generically) and `pa35/maintainer/calibration-course.tsv` (the course
+build's). Commit both. The check fails when a gate fails in either build, or when a value
 in either build does not clear its limit by the release margin of its kind
 (margin = limit / value - 1):
 

@@ -62,7 +62,7 @@ export CPPGM_BEHAVIOR_CHECK_APP := $(abspath $(CPPGM_DRIVER_APP))
 # exit and print as the input's does (check_lowir_behavior).
 export CPPGM_LOWIR_BEHAVIOR_APP := $(abspath ../dev/lowir2native-ref)
 # Our own exact references live in the regression lane, outside the course
-# contract (tests/regression; see docs/student-export-root/TESTING_AND_REFERENCES.md).
+# contract (tests/regression; see TESTING_AND_REFERENCES.md).
 REGRESSION_O0_TEST_ROOT ?= tests/regression/o0
 REGRESSION_O1_TEST_ROOT ?= tests/regression/o1
 REGRESSION_O2_TEST_ROOT ?= tests/regression/o2

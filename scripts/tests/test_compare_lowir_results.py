@@ -206,7 +206,7 @@ function @empty_ctor(%this : ptr) -> void [binding=weak, trivial_lifecycle=yes] 
         )
         result = self.compare(REFERENCE, generated)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("removed trivial_lifecycle metadata", result.stdout)
+        self.assertIn("trivial_lifecycle= is not defined", result.stdout)
 
     def test_relaxed_compare_normalizes_legacy_unreachable_call(self):
         reference = """declare function @impossible() -> void [role=unreachable, effects=readnone, unwind=no, return=noreturn]
@@ -231,7 +231,7 @@ function @trap() -> void {
         )
         result = self.compare(REFERENCE, generated)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("removed unreachable role", result.stdout)
+        self.assertIn("function role unreachable is not defined", result.stdout)
 
     def test_lowir_sanity_rejects_removed_access_none(self):
         generated = REFERENCE.replace(
@@ -247,7 +247,7 @@ function @trap() -> void {
         )
         result = self.compare(REFERENCE, generated)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("removed decay surface", result.stdout)
+        self.assertIn("not defined by the LowIR format", result.stdout)
 
     def test_relaxed_compare_rejects_generated_capture_metadata(self):
         generated = REFERENCE.replace(
@@ -255,7 +255,7 @@ function @trap() -> void {
         )
         result = self.compare(REFERENCE, generated)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("removed capture/access parameter metadata", result.stdout)
+        self.assertIn("capture= and access= are not defined", result.stdout)
 
     def test_relaxed_compare_rejects_generated_access_metadata(self):
         generated = REFERENCE.replace(
@@ -263,7 +263,7 @@ function @trap() -> void {
         )
         result = self.compare(REFERENCE, generated)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("removed capture/access parameter metadata", result.stdout)
+        self.assertIn("capture= and access= are not defined", result.stdout)
 
     def test_relaxed_compare_rejects_generated_source_origin_projection(self):
         generated = REFERENCE.replace(
@@ -273,7 +273,7 @@ function @trap() -> void {
         )
         result = self.compare(REFERENCE, generated)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("removed source-origin index projection", result.stdout)
+        self.assertIn("index projections base_subobject and reference_field are not defined", result.stdout)
 
     def test_relaxed_compare_accepts_legacy_source_origin_projection_reference(self):
         reference = REFERENCE.replace(
@@ -339,7 +339,7 @@ function @main() -> i32 [role=entry] {
         )
         result = self.compare(REFERENCE, generated)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("removed decay surface", result.stdout)
+        self.assertIn("not defined by the LowIR format", result.stdout)
 
     def test_lowir_sanity_rejects_removed_reference_pass(self):
         generated = REFERENCE.replace(
@@ -347,7 +347,7 @@ function @main() -> i32 [role=entry] {
         )
         result = self.compare(REFERENCE, generated)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("removed reference passing label", result.stdout)
+        self.assertIn("pass=reference is not defined", result.stdout)
 
     def test_relaxed_compare_maps_legacy_reference_to_by_address(self):
         reference = REFERENCE.replace(

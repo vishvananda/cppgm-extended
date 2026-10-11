@@ -1,8 +1,7 @@
 # Scopes, declarations, and types
 
-This guide accompanies [the first semantic assignment](README.md). It
-retains useful namespace/type teaching from the CPPGM Foundation's 2013
-handout while building directly on the compiler AST.
+This guide accompanies [the first semantic assignment](README.md) and
+builds directly on the compiler AST.
 
 ## Implementation order
 
@@ -143,9 +142,7 @@ namespace target in a namespace-only context.
 A straightforward lookup walk can be correct without caching. If you add a
 cache, changes to declarations or using relationships must invalidate affected
 results. `200-lookup-after-using-graph-change.t` asserts the lookup results;
-it does not require a cache or any particular search algorithm. The course
-uses representative nesting examples without making the old extreme stress
-inputs a required implementation limit.
+it does not require a cache or any particular search algorithm.
 
 Class scopes add complete-class contexts: a member function body can see a
 member type declared later in that class. Keep that syntax/lookup interaction
@@ -161,10 +158,8 @@ type of a constant object does not test its initialized value.
 
 Implement only this slice now. Full floating and pointer constant evaluation,
 initialized storage bytes, runtime object identity, and cross-file definition
-resolution arrive at their owning later assignments. In particular, no mock
-memory image or fabricated function size is an output of this lesson.
+resolution arrive at their owning later assignments.
 
 Useful standard reading is N3485 3.4 (lookup), 7.1.6 (type specifiers and cv
 qualification), 7.3 (namespaces), and 8.3 (declarators), alongside the concrete
-course subset. The handout and shipped guide supply the prerequisites; no
-separate historical reading-assignment download is required.
+course subset. The handout and this guide supply the prerequisites.

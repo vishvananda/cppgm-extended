@@ -115,12 +115,11 @@ sub process_one_test
 		defined($ENV{CPPGM_HOST_CXX}) && $ENV{CPPGM_HOST_CXX} ne '' ? $ENV{CPPGM_HOST_CXX} :
 		defined($ENV{CXX}) && $ENV{CXX} ne '' ? $ENV{CXX} :
 		'';
-	my @host_cc = resolve_host_command($host_cc_str, 'clang-22', 'clang', 'gcc', 'cc', 'c++');
+	my @host_cc = resolve_host_command($host_cc_str, 'gcc', 'cc', 'clang');
 	my @host_cxx = resolve_host_command($host_cxx_str,
-	                                   'clang++-22',
-	                                   'clang++',
 	                                   'g++',
-	                                   'c++');
+	                                   'c++',
+	                                   'clang++');
 	die "Unable to resolve host C compiler\n" if scalar(@host_cc) == 0;
 	die "Unable to resolve host C++ compiler\n" if scalar(@host_cxx) == 0;
 

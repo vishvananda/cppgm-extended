@@ -1,5 +1,5 @@
-// Counted loops of a few passes with branching bodies (fully unrolled at
-// -O3 since 8.6): conditional stores, early exits, internal joins with
+// Counted loops of a few passes with branching bodies (a full unroll at
+// -O3 copies them pass by pass): conditional stores, early exits, internal joins with
 // phis, values read after the loop, nested fixed loops, and a body that
 // leaves from several blocks.
 #include <cstdio>

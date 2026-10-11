@@ -138,7 +138,7 @@ int main(int argc, char** argv)
 
 		PreprocessorOptions options;
 		SetBuildTime(options);
-		options.author = "Vish Abrams";
+		options.author = "Course Solution";
 
 		vector<string> args;
 		for (int i = 1; i < argc; i++)

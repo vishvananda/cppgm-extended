@@ -14,7 +14,7 @@ RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
 CONTROL_TEST_ROOT ?= tests/controls
 # Our own shape references live in the regression lane, outside the course
-# contract (tests/regression; see docs/student-export-root/TESTING_AND_REFERENCES.md).
+# contract (tests/regression; see TESTING_AND_REFERENCES.md).
 REGRESSION_ORACLE_TEST_ROOTS = $(wildcard tests/regression/strict tests/regression/structural tests/regression/behavior)
 PERF_TOLERANCE_PERCENT ?= 10
 

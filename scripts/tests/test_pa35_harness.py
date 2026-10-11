@@ -130,6 +130,7 @@ class CalibrateTests(unittest.TestCase):
         self.dir = Path(temp.name)
         self.gates = read_gates()
         self.out = self.dir / "calibration.tsv"
+        self.course_out = self.dir / "calibration-course.tsv"
 
     def calibrate(self, values, student=None, student_groups=("correctness", "speed", "codegen")):
         """Runs calibrate.pl on a course build with `values` and a student
@@ -139,17 +140,19 @@ class CalibrateTests(unittest.TestCase):
             (self.dir / build).mkdir(exist_ok=True)
             groups = ("correctness", "speed", "codegen") if build == "course" else student_groups
             write_values(self.dir / build, given, self.gates, groups)
-        return subprocess.run(["perl", str(CALIBRATE), "--from", str(self.dir), "--out", str(self.out)],
+        return subprocess.run(["perl", str(CALIBRATE), "--from", str(self.dir), "--out", str(self.out),
+                               "--course-out", str(self.course_out)],
                               capture_output=True, text=True)
 
     def gate_rows(self):
-        """gate name -> (course status, student status)."""
+        """gate name -> (course status, student status), from the two files."""
         rows = {}
-        for line in self.out.read_text().splitlines():
-            if line.startswith("gate\t"):
-                fields = line.split("\t")
-                rows[fields[1]] = (fields[7], fields[10])
-        return rows
+        for build, path in (("course", self.course_out), ("student", self.out)):
+            for line in path.read_text().splitlines():
+                if line.startswith("gate\t"):
+                    fields = line.split("\t")
+                    rows.setdefault(fields[1], {})[build] = fields[7]
+        return {name: (status["course"], status["student"]) for name, status in rows.items()}
 
     def test_values_well_inside_the_limits_pass(self):
         result = self.calibrate(passing_values(self.gates))
@@ -159,8 +162,13 @@ class CalibrateTests(unittest.TestCase):
         self.assertTrue(all(row == ("pass", "pass") for row in rows.values()), rows)
         self.assertIn("RELEASE CHECK PASSED (17/17)", result.stdout)
         text = self.out.read_text()
-        for key in ("date", "source", "host compiler", "libstdc++"):
+        for key in ("date", "source", "host compiler", "libstdc++", "build"):
             self.assertRegex(text, rf"(?m)^meta\t{re.escape(key)}\t\S")
+        # The shipped file names the machine generically: no distribution
+        # package strings, and the course build's flags only in its own file.
+        self.assertNotRegex(text, r"(?m)^meta\tkernel\t.*-\w+\d+-")
+        self.assertNotIn("jemalloc", text)
+        self.assertIn("jemalloc", self.course_out.read_text()) if "jemalloc" in (REPO_ROOT / "dev/Makefile").read_text() else None
 
     def test_a_value_inside_the_limit_but_not_the_margin_is_short(self):
         values = passing_values(self.gates)
