@@ -90,11 +90,11 @@ but optimized LowIR output is not part of PA10.
 The authoritative LowIR definition is `../pa8/lowir.md`. PA10 only needs the procedural
 subset of that IR, but it must emit valid PA8 LowIR.
 
-Example:
+Example, for `int main() { return 0; }`:
 
-    function @main() -> i64 {
+    function @main() -> i32 [role=entry] {
       block ^entry:
-        return i64 0
+        return i32 0
     }
 
 PA10 writes a single concatenated LowIR program consisting of:
@@ -114,12 +114,11 @@ ABI encoder. Build the encoder target from resolved declarations and types;
 the ABI fact-file parser is a standalone-tool adapter and is not part of the
 source-to-LowIR path.
 
-The in-memory LowIR program uses compact semantic identity. Assign each
-top-level symbol one `SymbolId`, store its presentation spelling once through a
-program `StringId`, and use that `SymbolId` in declarations, definitions,
-operands, structured-global addresses, and alias targets. Render the spelling
-only when writing LowIR text or a diagnostic; do not copy an owning symbol name
-into each record or reference.
+Give each top-level symbol of the in-memory program one compact identity,
+keep its presentation spelling once, and use that identity in declarations,
+definitions, operands, structured-global addresses, and alias targets.
+Render the spelling only when writing LowIR text or a diagnostic; do not copy
+an owning symbol name into each record or reference.
 
 Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
 blocks, item order inside structured globals, vtable slot order, and action
@@ -291,9 +290,12 @@ This PA10 milestone supports the following:
   compatible declarations
 - a required `main` definition
 - functions returning integral, pointer, or `bool` results from the supported PA7 subset
-- up to four parameters in the supported PA7 procedural type subset
+- up to five parameters in the supported PA7 procedural type subset
 - global integral/pointer/function-pointer objects with constant initializers or zero-init,
   including object addresses and constant array-element addresses
+- narrow string literals used as pointer values, such as call arguments and
+  pointer or pointer-array initializers: each literal's backing array is an
+  internal structured global with `storage=readonly`
 - `storage=readonly` on every statically initialized global definition of a
   const, non-volatile type that is not `thread_local`: a scalar, a pointer,
   or an array of them (an array's qualifiers are its element type's,
@@ -375,10 +377,9 @@ canonical comparison result directly.
 Compiler-generated slots and helper names must remain distinct from source
 identifiers so a source declaration cannot redirect an internal temporary.
 The source lowering path should carry compact value, slot, block, and symbol
-identities into the shared typed LowIR model. Store required display spellings
-once in the program string pool, and retain a numeric ordinal for generated
-temporaries; do not construct or hash a presentation string for every operand
-reference.
+identities into the typed LowIR model you built in PA8. Keep each required
+display spelling once, and give generated temporaries a numeric ordinal; do
+not construct or hash a presentation string for every operand reference.
 
 The generated LowIR for this supported subset is intended to be accepted by the
 later PA24 `lowir2native` backend.
@@ -386,7 +387,8 @@ later PA24 `lowir2native` backend.
 
 The following are explicitly out of scope for this PA10 milestone:
 
-- string literals and string-literal-backed object initialization
+- object initialization backed by a string literal, such as a character array
+  initialized from one
 - global or local initialization forms that require a richer constant-evaluation or aggregate
   initialization layer than PA7 currently provides
 - function-local static objects and guard variables
