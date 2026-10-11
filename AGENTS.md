@@ -14,8 +14,9 @@ attribution and consult [NOTICE](NOTICE), not historical PA numbers, for origins
 - Treat `pa1/` through `pa35/` as handouts, tests, references and wrappers.
   Read the owning handout before changing a milestone's behavior.
 - Required fixtures live in the earliest owning `paN/tests/`, in the cluster
-  of the latest feature they exercise. `student.tests/` is for personal tests
-  run explicitly; default suites do not discover it.
+  of the latest feature they exercise, inside a lane that assignment's
+  Makefile runs (`make test-harness` checks). `student.tests/` is for
+  personal tests run explicitly; default suites do not discover it.
 - Keep reusable logic in the existing compiler modules. Prefer typed parser
   and semantic data over reparsing source or rendered output.
 - Never hand-edit generated references, `.my*` outputs, logs or `obj/`.

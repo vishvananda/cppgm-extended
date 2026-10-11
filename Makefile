@@ -275,6 +275,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_dev_makefile_obj_isolation.py \
 	scripts/tests/test_dump_host_eh_object_facts_pl.py \
 	scripts/tests/test_exported_dev_makefile.py \
+	scripts/tests/test_fixture_lanes.py \
 	scripts/tests/test_lowir_program_harness.py \
 	scripts/tests/test_cppgm_file_audit.py \
 	scripts/tests/test_machine_object_host_eh_roundtrip.py \

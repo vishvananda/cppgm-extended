@@ -22,6 +22,9 @@
 # Usage: check_controls.pl <cppgm++> <native-reference> <test-or-directory>
 #        check_controls.pl --owns <test> [<test> ...]
 #            exits 0 when every named file states an expected outcome.
+#        check_controls.pl --list <test-or-directory> [...]
+#            prints the controls a run over those paths grades, one a line
+#            (scripts/check_fixture_lanes.py).
 
 use strict;
 use warnings;
@@ -179,6 +182,17 @@ if (@ARGV && $ARGV[0] eq '--owns')
 	{
 		my ($kind) = expectation($test);
 		exit 1 if $kind eq '';
+	}
+	exit 0;
+}
+
+if (@ARGV && $ARGV[0] eq '--list')
+{
+	shift @ARGV;
+	die "Usage: check_controls.pl --list <test-or-directory> [...]\n" if !@ARGV;
+	for my $test (map { collect_tests($_, qr/\.cpp$/) } @ARGV)
+	{
+		print "$test\n" if (expectation($test))[0] ne '';
 	}
 	exit 0;
 }

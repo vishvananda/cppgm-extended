@@ -45,6 +45,15 @@ used; put a reducer in the earliest assignment that owns all its requirements.
 `controls/` contains focused property checks. Personal inputs and scratch
 harnesses belong in `student.tests/` and are run explicitly.
 
+A fixture must also sit where a lane runs it: a fixture beside the roots its
+Makefile names ships to students and is never graded. `make test-harness`
+runs `scripts/check_fixture_lanes.py`, which derives each assignment's lanes
+from the recipes of its `test*` and `ref-test*` targets and fails on an input
+no `test*` lane selects, or on a file under `tests/` that is neither an
+input, a companion named after one (`x.ref*`, `x.t.N`, `x.lib.*`, ...), nor
+a header or note that a fixture uses. Lanes a Makefile cannot show, such as
+PA35's, are listed in the script with their reason.
+
 In the LowIR-graded assignments (PA10–PA23), a control that states its
 expected outcome is a self-checking program: `expect exit N` or
 `expect reject` in its leading comment, or an `x.expect` sidecar (`exit N`
