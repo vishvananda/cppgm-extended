@@ -173,6 +173,62 @@ class DumpHostEhObjectFactsPlTests(unittest.TestCase):
         self.assertIn("object 1 lsda call_site_has_cleanup", lines)
         self.assertNotIn("object 1 lsda type_table", lines)
 
+    def test_elf_lsda_with_fixed_width_call_site_entries_decodes(self) -> None:
+        # udata4 entries (encoding 0x03) after a uleb128 table length.
+        readelf_script = textwrap.dedent(
+            """\
+            #!/usr/bin/env python3
+            import sys
+            args = sys.argv[1:]
+            if args[:1] == ["-SW"]:
+                sys.stdout.write('''
+                  [ 1] .text             PROGBITS         0000000000000000  00000040
+                  [ 2] .gcc_except_table PROGBITS         0000000000000000  00000080
+                  [ 3] .eh_frame         X86_64_UNWIND    0000000000000000  000000b0
+                ''')
+            elif args[:1] == ["-rW"]:
+                sys.stdout.write('''
+                Relocation section '.rela.text' at offset 0x1f0 contains 1 entries:
+                    Offset             Info             Type               Symbol's Value  Symbol's Name + Addend
+                0000000000000018  0000000400000004 R_X86_64_PLT32         0000000000000000 _Unwind_Resume - 4
+                Relocation section '.rela.gcc_except_table' at offset 0x220 contains 1 entry:
+                    Offset             Info             Type               Symbol's Value  Symbol's Name + Addend
+                0000000000000010  0000000500000002 R_X86_64_PC32          0000000000000000 .text + 0
+                Relocation section '.rela.eh_frame' at offset 0x250 contains 2 entries:
+                    Offset             Info             Type               Symbol's Value  Symbol's Name + Addend
+                0000000000000020  0000000200000002 R_X86_64_PC32          0000000000000000 .text + 0
+                0000000000000053  0000000600000009 R_X86_64_GOTPCREL      0000000000000000 __gxx_personality_v0 + 0
+                ''')
+            elif args[:1] == ["-x"]:
+                sys.stdout.write('''
+                Hex dump of section '.gcc_except_table':
+                  0x00000000 ffff030d 00000000 05000000 0a000000
+                  0x00000010 00
+                ''')
+            """
+        )
+        result = self.run_helper(
+            magic=b"\x7fELF",
+            nm_output=textwrap.dedent(
+                """\
+                0000000000000000 T main
+                                 U _Unwind_Resume
+                                 U __gxx_personality_v0
+                """
+            ),
+            readelf_script=readelf_script,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        lines = set(result.stdout.splitlines())
+        self.assertIn("object 1 undef _Unwind_Resume", lines)
+        self.assertIn("object 1 section host_lsda", lines)
+        self.assertIn("object 1 section host_unwind", lines)
+        self.assertIn("object 1 reloc_call _Unwind_Resume", lines)
+        self.assertIn("object 1 reloc_ref __gxx_personality_v0", lines)
+        self.assertIn("object 1 reloc_section_ref text", lines)
+        self.assertIn("object 1 lsda call_site_has_cleanup", lines)
+        self.assertNotIn("object 1 lsda type_table", lines)
+
     def test_plan_selects_objects_and_reports_private_symbols(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-host-eh-plan.") as temp_dir:
             temp = Path(temp_dir)

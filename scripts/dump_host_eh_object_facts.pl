@@ -503,7 +503,8 @@ sub parse_lsda_candidate
 	my $rest_start = $pos;
 	return if $pos >= $size;
 	my $call_site_encoding = $bytes->[$pos++];
-	my @call_site_length = read_encoded($bytes, $pos, $call_site_encoding);
+	# The table's length is a uleb128 whatever encoding its entries use.
+	my @call_site_length = read_uleb128($bytes, $pos);
 	return if scalar(@call_site_length) != 2;
 	my $call_site_table_length = $call_site_length[0];
 	$pos = $call_site_length[1];
