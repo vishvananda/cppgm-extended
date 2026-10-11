@@ -45,7 +45,7 @@ The PA18 invocation is the unoptimized LowIR mode:
 
 Behaviour is undefined unless the command-line arguments match that shape, with
 the same source-file ordering and `-o` relaxations as the earlier source-to-LowIR
-milestones. Preserve the earlier dump modes. Native driver behavior and optimized
+milestones. Preserve PA7's dump mode. Native driver behavior and optimized
 LowIR output are not required in PA18.
 
 ### Output Format
@@ -94,9 +94,8 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 PA18 tests live under `tests/`. The suite is split by test role:
 
 - `tests/spec/` contains N3485/spec-anchored deduction, substitution, and
-  SFINAE tests. Each provided C++ language test in this directory starts with a
-  leading comment of the form `// N3485 focus: 14.x.y [clause.name] ...` so a
-  reviewer can find the governing text in `../doc/n3485.txt`.
+  SFINAE tests. Most carry a `// N3485 focus: 14.x.y [clause.name] ...`
+  comment near the top, naming the governing text in `../doc/n3485.txt`.
 - `tests/general/` contains broader generic-program examples that are useful
   for PA18 but are not one-rule spec probes.
 

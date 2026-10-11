@@ -93,12 +93,15 @@ New in PA25:
 - include search: `-I <dir>` and `-I<dir>`
 - library search: `-L <dir>`, `-L<dir>`, `-l <name>`, and `-l<name>`
 - target selection: `--target <target>` or `--target=<target>`
+- flags the fixtures pass, accepted and applied as the host compiler applies
+  them: `-D<name>` and `-D<name>=<value>`, `-pedantic` and `-pedantic-errors`,
+  `-fvisibility=hidden` and `-fvisibility-inlines-hidden`, `-O<n>` (PA32
+  gives the levels their meaning; until then they are accepted) and `-g0`
 
 Not yet required here:
 
 - hosted preprocess mode `-E`
-- hosted preprocessor-control flags such as `-D`, `-U`, `-include`, and
-  `-isystem`
+- hosted preprocessor-control flags such as `-U`, `-include`, and `-isystem`
 - driver query flags such as `--version`, `-v`, `-dumpmachine`,
   `-dumpversion`, and `-print-search-dirs`
 - static archives and shared libraries as link inputs

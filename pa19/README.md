@@ -51,7 +51,7 @@ The PA19 invocation is the unoptimized LowIR mode:
 
 Behaviour is undefined unless the command-line arguments match that shape, with
 the same source-file ordering and `-o` relaxations as the earlier source-to-LowIR
-milestones. Preserve the earlier dump modes. Native driver behavior and optimized
+milestones. Preserve PA7's dump mode. Native driver behavior and optimized
 LowIR output are not required in PA19.
 
 ### Output Format

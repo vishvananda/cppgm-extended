@@ -233,4 +233,6 @@ your implementation of `lowir2native`.
 
 Finish the assignment with the root cumulative `make test-report-through-pa8`.
 DWARF, debugger integration, optimization, object linking and native code
-emission belong to later assignments.
+emission belong to later assignments; `tests/debuginfo/` and
+`make test-debuginfo` in this directory are the debug-location lanes that
+PA24, PA32 and PA33 run, not part of PA8.

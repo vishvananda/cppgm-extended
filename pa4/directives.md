@@ -51,7 +51,7 @@ The above are fixed values.
 
     #define __CPPGM_AUTHOR__ "Your Name"   // A chosen author label
 
-Choose an author string; its spelling is normalized by the comparator.
+Choose any author string; no fixture prints it.
 
     #define __FILE__ "foo"                 // current presumed source file name
     #define __LINE__ 123                   // current presumed source line number

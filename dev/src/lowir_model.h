@@ -174,8 +174,8 @@ inline unsigned data_alignment(Type type)
 }
 
 // ---------------------------------------------------------------------------
-// Instructions (pa8/lowir.md "Required PA8 Instructions", "PA17
-// Exception/Runtime Instructions")
+// Instructions (pa8/lowir.md "Required PA8 Instructions", "Exception
+// Instructions")
 //
 // The order is part of the vocabulary: value-producing operations first,
 // then effects, then terminators.

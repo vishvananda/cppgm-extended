@@ -49,6 +49,8 @@ Each `text-sequence` must be macro replaced using the currently defined set of m
 
 The rules for macro replacement are described in section _16.3 Macro Replacement_ of the standard.
 
+Course-defined: when the result of a `##` operator is not a single valid preprocessing token (16.3.3p3 leaves the behavior undefined), the source file is rejected with `EXIT_FAILURE`.
+
 > If the name of the macro being replaced is found during this scan of the replacement list (not including the
 rest of the source file’s preprocessing tokens), it is not replaced. Furthermore, if any nested replacements
 encounter the name of the macro being replaced, it is not replaced. These nonreplaced macro name preprocessing

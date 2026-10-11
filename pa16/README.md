@@ -37,6 +37,8 @@ The starter kit contains:
 - a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
   in `../dev/cppgm++.cpp`
 - the standard assignment `Makefile` and harness scripts
+- the grammar for this assignment, `pa16.gram` (no HTML explorer ships for
+  PA16)
 - a checked-in local test suite under `tests/`
 
 Extend the `cppgm++` implementation you built in earlier assignments; the

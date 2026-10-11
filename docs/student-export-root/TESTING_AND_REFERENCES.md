@@ -49,6 +49,15 @@ From PA5 onward, filenames use a three-digit feature-cluster prefix
 regressions follow their own local naming. Required rejection cases are in the
 owning suite; unspecified inputs do not add requirements.
 
+A graded input is an `x.t` file in the tool's input language (companions
+`x.t2`, `x.t.1`, ... as the handout describes); its reference outputs are
+`x.ref` and `x.ref.*`; a control is a `.cpp` program. A leading
+`// VALIDATION: ...` or `// N3485 focus: ...` comment in a fixture is
+informational. `CPPGM_BATCH_TESTS=1` runs an assignment's cases through a
+worker linked into each tool (`dev/src/support/testing/test_runner.cpp`),
+which requires each tool's `main` to live in `dev/<tool>.cpp`; the ordinary
+path runs the tool once per case.
+
 ## References
 
 Use the oracle named by the handout: output, exit status, a focused property,

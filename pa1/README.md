@@ -206,7 +206,8 @@ investigate behavior. A clean root through report completes this assignment.
 
 See [Testing and references](../TESTING_AND_REFERENCES.md) for comparison and
 reference policy. Report suspected reference bugs to this project's maintainers
-with a reduced input and the reference bundle or source revision.
+with a reduced input and the reference bundle revision
+(`reference-binaries/manifest.tsv`).
 
 ## Preprocessing Token Grammar Summary
 
@@ -228,7 +229,7 @@ The grammar for `preprocessing-token` is as follows with some notes added.  It i
                 not fit into another preprocessing token
                 except `'` and `"`
 
-This is used so that garbage will still tokenize in some cases because the section it contains may be removed later anyway during preprocessing (by exclusion from an `#if 0` or similar).  The test suite (as is the standard) is quite forgiving about whether a malformed token causes an error or gets parsed using `non-whitespace-character`.
+This is used so that garbage will still tokenize in some cases because the section it contains may be removed later anyway during preprocessing (by exclusion from an `#if 0` or similar).  The test suite (as is the standard) is quite forgiving about whether a malformed token causes an error or gets parsed using `non-whitespace-character`; the freedom applies to inputs the suite does not pin.  The `-bad` fixtures (an unterminated comment or literal, an invalid universal-character-name value, an invalid raw-string delimiter, an invalid escape inside a literal, invalid UTF-8) require `EXIT_FAILURE`.
 
 It is _course defined_ that `'` and `"` do not match `non-whitespace-character`. This is a standard-compliant feature (see 2.5.2).
 

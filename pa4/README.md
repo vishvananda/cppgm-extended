@@ -109,8 +109,9 @@ make run INPUT='tests/directives/400-multiple-source-files.t*'
 both groups. The wrappers arrange the working directory needed for relative
 includes. For a case named `name.t`, any numbered companions such as `name.t2`
 are additional primary source files for that invocation, in lexical order.
-References compare the output file and exit status, with the existing
-normalization for date, time, and author macros. Diagnostic text is not graded.
+References compare the output file and exit status exactly; no fixture
+prints the values of `__DATE__`, `__TIME__` or `__CPPGM_AUTHOR__`, and the
+comparator does not normalize them. Diagnostic text is not graded.
 
 Use `../dev/preproc-ref` to investigate a test and the root testing guide for
 reference policy. You may run the tool directly with temporary files while
