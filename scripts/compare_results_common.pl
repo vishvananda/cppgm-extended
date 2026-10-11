@@ -470,6 +470,93 @@ sub check_lowir_lowers
 		"To reproduce:\n\n    \$ $app -c -O0 -o /dev/null " . rooted_path($input) . "\n\n");
 }
 
+# With CPPGM_LOWIR_BEHAVIOR_APP naming a `lowir2native` (PA32's lanes name
+# the reference backend), a handwritten LowIR fixture with an entry function
+# is also run before and after optimization: the input and the optimized
+# output are each built through that backend at -O0 and executed, and the
+# optimized program must exit the way the input's does and print what it
+# prints.  An input the backend does not build, or whose program does not
+# finish, has no behaviour to preserve and is skipped; an output that does
+# not build, or whose program ends or prints differently, fails.  The size
+# budgets of a sidecar say nothing about results, so without this an
+# optimizer that changed a program's answer passed.
+sub lowir_has_entry
+{
+	# An entry function the startup can call: one without parameters.  The
+	# startup passes none, so a parameter would hold whatever its register
+	# held and the program's result would mean nothing.
+	my ($data) = @_;
+	return 0 if !defined($data);
+	return 1 if $data =~ /^function\s+\@main\(\s*\)/m;
+	return $data =~ /^function\s+\@[^\s(]+\(\s*\)[^\n]*\[[^\]\n]*\brole=entry\b/m ? 1 : 0;
+}
+
+sub process_ending
+{
+	my ($status) = @_;
+	return 'could not run' if $status == -1;
+	return 'was killed by signal ' . ($status & 127) if $status & 127;
+	return 'exited with status ' . ($status >> 8);
+}
+
+# Builds a LowIR file through $app at -O0 and runs the program; returns
+# {built, timed_out, status, ending, stdout}.
+sub lowir_program_outcome
+{
+	my ($app, $lowir, $program, $stdout_path, $log) = @_;
+	my $build_timeout = CppgmBatchWorker::get_timeout_from_env('CPPGM_BUILD_TEST_TIMEOUT_SEC', 30);
+	my $built = system("timeout $build_timeout \"$app\" -O0 -o \"$program\" \"$lowir\" > /dev/null 2> \"$log\"");
+	return { built => 0 } if $built != 0;
+	my $timeout = CppgmBatchWorker::get_timeout_from_env('CPPGM_PROGRAM_TEST_TIMEOUT_SEC', 10);
+	my $status = system("timeout $timeout \"$program\" < /dev/null > \"$stdout_path\" 2>/dev/null");
+	return { built => 1, timed_out => 1 } if $status != -1 && ($status >> 8) == 124 && !($status & 127);
+	my $stdout = getdata($stdout_path);
+	return { built => 1, timed_out => 0, status => $status, ending => process_ending($status),
+		stdout => defined($stdout) ? $stdout : '' };
+}
+
+sub check_lowir_behavior
+{
+	my ($my, $source_file) = @_;
+	my $app = $ENV{CPPGM_LOWIR_BEHAVIOR_APP};
+	return (1, undef, undef) if !defined($app) || $app eq '' || !defined($source_file);
+	return (1, undef, undef) if !-f $source_file || !source_is_lowir($source_file);
+	return (1, undef, undef) if !lowir_has_entry(getdata($source_file));
+	return (0, "ERROR: missing output file ($my)", undef) if !-f $my;
+	my $base = "$my.behavior";
+	my @artifacts = map { "$base.$_" }
+		qw(input.program input.stdout input.stderr output.program output.stdout output.stderr);
+	unlink(@artifacts);
+	my $before = lowir_program_outcome($app, $source_file,
+		"$base.input.program", "$base.input.stdout", "$base.input.stderr");
+	if (!$before->{built} || $before->{timed_out})
+	{
+		unlink(@artifacts);
+		return (1, undef, undef);
+	}
+	my $after = lowir_program_outcome($app, $my,
+		"$base.output.program", "$base.output.stdout", "$base.output.stderr");
+	my $hint = "To reproduce (the reference backend builds the input and the optimized output at -O0):\n\n"
+		. "    \$ $app -O0 -o input.program " . rooted_path($source_file) . " && ./input.program; echo \$?\n"
+		. "    \$ $app -O0 -o output.program " . rooted_path($my) . " && ./output.program; echo \$?\n\n";
+	if (!$after->{built})
+	{
+		my $reason = getdata("$base.output.stderr");
+		$reason = '' if !defined($reason);
+		$reason =~ s/\s+/ /g;
+		return (0, "ERROR: optimized LowIR does not build through the reference backend ($reason)", $hint);
+	}
+	return (0, "ERROR: the optimized program did not finish; the input's program $before->{ending}", $hint)
+		if $after->{timed_out};
+	return (0, "ERROR: the optimized program $after->{ending}; the input's program $before->{ending}", $hint)
+		if $before->{status} != $after->{status};
+	return (0, "ERROR: the optimized program's output differs from the input program's "
+		. "(see $base.input.stdout and $base.output.stdout)", $hint)
+		if $before->{stdout} ne $after->{stdout};
+	unlink(@artifacts);
+	return (1, undef, undef);
+}
+
 # With CPPGM_BEHAVIOR_CHECK_APP naming a `cppgm++`, a source fixture whose
 # optimized LowIR the driver emitted is also built and run two ways: the
 # source at the lane's level, and the emitted LowIR through the object
@@ -4103,6 +4190,8 @@ sub compare_lowir_text
 		return ($lowers, $lower_message, $lower_hint) if !$lowers;
 		my ($behaves, $behave_message, $behave_hint) = check_source_behavior($my, $source_file);
 		return ($behaves, $behave_message, $behave_hint) if !$behaves;
+		my ($runs, $run_message, $run_hint) = check_lowir_behavior($my, $source_file);
+		return ($runs, $run_message, $run_hint) if !$runs;
 		return evaluate_expectations($expect_path, $my);
 	}
 

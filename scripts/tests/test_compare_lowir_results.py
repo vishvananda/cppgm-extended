@@ -1046,3 +1046,110 @@ DEBUG_RENAMED = """function @add1(%a : i32) -> i32 !dbg(main.cpp, 1, 1) {
 
 if __name__ == "__main__":
     unittest.main()
+
+
+LOWIR2NATIVE = REPO_ROOT / "dev" / "lowir2native"
+
+
+@unittest.skipUnless(LOWIR2NATIVE.exists(), "needs the built dev/lowir2native")
+class OptimizedLowIrBehaviorTest(unittest.TestCase):
+    """PA32's optimized lanes run a handwritten fixture with an entry
+    function before and after optimization through the reference backend:
+    an optimizer that changes the program's answer fails its budgets."""
+
+    FOLD = """function @main() -> i64 [role=entry] {
+  block ^entry:
+    %a = binary add i64 3, 4
+    return i64 %a
+}
+"""
+    FOLDED = """function @main() -> i64 [role=entry] {
+  block ^entry:
+    return i64 7
+}
+"""
+    STORE = """global @g : i64 = 0
+
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    store i64 5, @g
+    %v = load i64 @g
+    return i64 %v
+}
+"""
+    STORED = """global @g : i64 = 0
+
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    store i64 5, @g
+    return i64 5
+}
+"""
+    BRANCH = """function @main() -> i64 [role=entry] {
+  block ^entry:
+    %c = cmp eq i64 1, 1
+    branch %c, ^yes, ^no
+  block ^yes:
+    return i64 3
+  block ^no:
+    return i64 4
+}
+"""
+    HELPER = """function @add(%x : i64) -> i64 {
+  block ^entry:
+    %a = binary add i64 %x, 0
+    return i64 %a
+}
+"""
+
+    def compare(self, source, reference, generated):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "case.t").write_text(source, encoding="utf-8")
+            (root / "case.ref").write_text(reference, encoding="utf-8")
+            (root / "case.my").write_text(generated, encoding="utf-8")
+            (root / "case.ref.expect").write_text("instructions <= 20\n", encoding="utf-8")
+            for suffix in ("ref", "my"):
+                (root / f"case.{suffix}.exit_status").write_text("EXIT_SUCCESS\n", encoding="utf-8")
+            environment = os.environ.copy()
+            for name in ("KEEP_GOING", "CPPGM_CHECK_AUTO_KEEP_GOING", "CPPGM_BATCH_TESTS",
+                         "WRAPPED_BATCH_STDIN", "CPPGM_TEST_COUNTS_FILE", "CPPGM_LOWER_CHECK_APP",
+                         "CPPGM_BEHAVIOR_CHECK_APP", "CPPGM_LOWIR_DIRECT_TEXT_COMPARE"):
+                environment.pop(name, None)
+            environment["CPPGM_LOWIR_BEHAVIOR_APP"] = str(LOWIR2NATIVE)
+            return subprocess.run(
+                ["perl", str(COMPARE), "lowir_optimized_t", "ref", "my", str(root / "case.t")],
+                cwd=root, env=environment, capture_output=True, text=True)
+
+    def test_a_correct_optimization_passes(self):
+        result = self.compare(self.FOLD, self.FOLDED, self.FOLDED)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_a_changed_result_fails(self):
+        result = self.compare(self.FOLD, self.FOLDED, self.FOLDED.replace("return i64 7", "return i64 0"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("the optimized program exited with status 0; the input's program exited with status 7",
+                      result.stdout)
+
+    def test_a_deleted_observable_store_fails(self):
+        result = self.compare(self.STORE, self.STORED, self.STORED)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result = self.compare(self.STORE, self.STORED,
+                              self.STORED.replace("    store i64 5, @g\n    return i64 5", "    return i64 0"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exited with status 0; the input's program exited with status 5", result.stdout)
+
+    def test_an_inverted_branch_fails(self):
+        result = self.compare(self.BRANCH, self.BRANCH, self.BRANCH)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result = self.compare(self.BRANCH, self.BRANCH, self.BRANCH.replace("^yes, ^no", "^no, ^yes"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exited with status 4; the input's program exited with status 3", result.stdout)
+
+    def test_an_output_the_backend_rejects_fails(self):
+        result = self.compare(self.FOLD, self.FOLDED, self.FOLDED.replace("return i64 7", "return i64 %gone"))
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_a_fixture_without_an_entry_is_not_run(self):
+        result = self.compare(self.HELPER, self.HELPER, self.HELPER.replace("%x, 0", "%x, 1"))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

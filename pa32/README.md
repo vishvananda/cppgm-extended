@@ -173,7 +173,14 @@ What the course fixtures then check, for each `x.t`:
 - the output lowers through the object path at `-O0`
   (`cppgm++ -c -O0 x.lowir`) whenever the input does.  `make test` sets
   `CPPGM_LOWER_CHECK_APP` so the harness runs that floor; an optimizer's
-  output is not correct until the backend accepts it.
+  output is not correct until the backend accepts it;
+- when the input has an entry function, the optimized program behaves as
+  the input's: both are built through the reference backend
+  (`lowir2native-ref -O0`) and run, and the optimized one must exit the
+  same way and print the same output.  `make test` sets
+  `CPPGM_LOWIR_BEHAVIOR_APP`; an input the reference backend does not
+  build, or whose program does not finish, is not run.  A fixture without
+  an entry function is checked by its budgets and outcomes alone.
 
 An `x.ref.expect` sidecar has two kinds of line.  Outcome lines state what
 the fixture is about in terms of the LowIR it reads and writes:
@@ -248,9 +255,11 @@ implementation choices. They are a worked example, not additional requirements.
 ### Validation Modes
 
 Successful outputs must pass the LowIR structural validator, the fixture’s
-`.ref.expect` predicates, and the object-lowering check. Source-driver cases
-also compare execution before and after LowIR serialization. Failed cases
-are checked by exit status. See Quality Bar for the sidecar syntax.
+`.ref.expect` predicates, the object-lowering check and, for inputs with
+an entry function, the execution check through the reference backend.
+Source-driver cases also compare execution before and after LowIR
+serialization. Failed cases are checked by exit status. See Quality Bar
+for the sidecar syntax.
 
 ### Testing
 

@@ -57,6 +57,10 @@ export CPPGM_LOWER_CHECK_APP := $(abspath $(CPPGM_DRIVER_APP))
 # A source fixture's optimized LowIR must also build into a program that
 # behaves like the source built at -O0 (check_source_behavior).
 export CPPGM_BEHAVIOR_CHECK_APP := $(abspath $(CPPGM_DRIVER_APP))
+# A handwritten fixture with an entry function is run before and after
+# optimization through the reference backend; the optimized program must
+# exit and print as the input's does (check_lowir_behavior).
+export CPPGM_LOWIR_BEHAVIOR_APP := $(abspath ../dev/lowir2native-ref)
 # Our own exact references live in the regression lane, outside the course
 # contract (tests/regression; see docs/student-export-root/TESTING_AND_REFERENCES.md).
 REGRESSION_O0_TEST_ROOT ?= tests/regression/o0
