@@ -74,6 +74,8 @@ reformatted: their text and line numbers are inputs.
 The file audit enforces file/function limits, counting lines of code (blank
 and comment-only lines are not counted; a dispatch switch may run longer), and
 forbids environment reads in `dev/src/`; it skips the shipped scaffold files.
+The student export ships the audit, where those files are the student's own
+code and are audited (they must pass; only the batch test runner is skipped).
 Run `make test-harness` after changing harnesses or export logic. Validate a
 student export after changing shipped files or their discovery.
 Student documents are listed in `scripts/student_export_documents.txt`;

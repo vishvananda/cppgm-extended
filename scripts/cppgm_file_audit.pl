@@ -301,7 +301,10 @@ sub is_source_file {
 # (dev_support_files in scripts/export_student_repo.sh) are the students'
 # starting points, not the implementation: not audited.  A tree without the
 # export script (the implementation's own repository) lists the same files
-# in scripts/scaffold_headers.sha256, the course copies' checksums.
+# in scripts/scaffold_headers.sha256, the course copies' checksums.  The
+# student export has neither: there the shipped files are the student's own
+# code and are audited like it (they pass), except the batch test runner,
+# which forks, execs and reads the environment by design.
 sub read_shipped_scaffold_files {
     my ($root) = @_;
     my $export = File::Spec->catfile($root, 'scripts', 'export_student_repo.sh');
@@ -324,8 +327,7 @@ sub is_exempt_file {
     my ($rel) = @_;
     return $shipped_scaffold{$rel} ||
         $rel =~ m{^dev/[^/]+-scaffold\.cpp$} ||
-        $rel =~ m{^dev/src/support/testing/test_runner\.cpp$} ||
-        $rel =~ m{^dev/src/support/tool_help_text\.h$};
+        $rel =~ m{^dev/src/support/testing/test_runner\.cpp$};
 }
 
 sub is_top_level_dev_tool {

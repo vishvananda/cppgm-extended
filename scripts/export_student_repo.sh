@@ -375,6 +375,7 @@ shared_scripts=(
   scripts/canonicalize_lowir_native_refs.pl
   scripts/compare_results_common.pl
   scripts/cppgm-cmake-wrapper.sh
+  scripts/cppgm_file_audit.pl
   scripts/dump_host_eh_object_facts.pl
   scripts/ensure_reference_binaries.pl
   scripts/pa_run_check_targets.mk
@@ -855,5 +856,17 @@ check_exported_tool_scaffolds() {
   fi
 }
 check_exported_tool_scaffolds
+
+# The file audit ships, and student runs call it on dev/src from the first
+# assignment.  The export has no export script or scaffold manifest, so the
+# audit treats the shipped headers and tool scaffolds as the student's code:
+# they must pass it as shipped, warnings included.
+check_exported_file_audit() {
+  if ! (cd "$dest" && perl scripts/cppgm_file_audit.pl --warnings-fail --paths dev); then
+    echo "export: the exported dev/ does not pass the shipped file audit" >&2
+    exit 1
+  fi
+}
+check_exported_file_audit
 
 echo "==> Exported student repo to $dest"

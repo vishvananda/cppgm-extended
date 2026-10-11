@@ -67,5 +67,38 @@ private:
         self.assertIn("member is 243 lines", result.stdout)
 
 
+class FileAuditShippedFiles(unittest.TestCase):
+    READS_ENVIRONMENT = '#include <cstdlib>\nconst char* home() { return std::getenv("HOME"); }\n'
+
+    def audit(self, export_script):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            for relative in ("dev/src/lowir_model.h", "dev/src/support/testing/test_runner.cpp"):
+                (root / relative).parent.mkdir(parents=True, exist_ok=True)
+                (root / relative).write_text(self.READS_ENVIRONMENT)
+            if export_script:
+                (root / "scripts").mkdir()
+                (root / "scripts/export_student_repo.sh").write_text(
+                    "dev_support_files=(\n  dev/src/lowir_model.h\n)\n")
+            return subprocess.run(
+                ["perl", str(AUDIT), "--root", str(root), "--paths", "dev/src"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+    def test_course_skips_the_shipped_files(self):
+        result = self.audit(export_script=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_export_audits_shipped_headers_but_not_the_test_runner(self):
+        # The student export has no export script: its shipped headers are
+        # the student's code, and only the batch test runner stays exempt.
+        result = self.audit(export_script=False)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("dev/src/lowir_model.h", result.stdout)
+        self.assertNotIn("test_runner.cpp", result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
