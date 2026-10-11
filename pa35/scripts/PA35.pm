@@ -381,8 +381,9 @@ sub parse_perf_instructions {
 
 # What a measurement depends on besides the binary, the level and the
 # counter: the hosted headers the frozen workload includes (libstdc++'s
-# release and the C library) and the tool that counts (valgrind's version).
-# The workload itself is frozen and verified.
+# release and the C library), the tool that counts (valgrind's version),
+# and the processor with its cache geometry, which the simulator takes as
+# its defaults.  The workload itself is frozen and verified.
 my $toolchain_key;
 sub toolchain_key {
 	return $toolchain_key if defined $toolchain_key;
@@ -390,7 +391,10 @@ sub toolchain_key {
 	my ($glibcxx) = $macros =~ /#define __GLIBCXX__ (\d+)/;
 	my ($libc) = (`ldd --version 2>/dev/null` // '') =~ /^(.*)$/m;
 	my ($valgrind) = (`valgrind --version 2>/dev/null` // '') =~ /^(.*)$/m;
-	$toolchain_key = substr(Digest::SHA::sha256_hex(join("\n", $glibcxx // '', $libc // '', $valgrind // '')), 0, 8);
+	my ($cpu) = (`grep -m1 'model name' /proc/cpuinfo 2>/dev/null` // '') =~ /:\s*(.*)$/m;
+	my $caches = join(' ', map { /^(\S+)\s+(\d+)/ ? "$1=$2" : () }
+		grep { /CACHE_(?:SIZE|ASSOC|LINESIZE)/ } split(/\n/, `getconf -a 2>/dev/null` // ''));
+	$toolchain_key = substr(Digest::SHA::sha256_hex(join("\n", $glibcxx // '', $libc // '', $valgrind // '', $cpu // '', $caches)), 0, 8);
 	return $toolchain_key;
 }
 

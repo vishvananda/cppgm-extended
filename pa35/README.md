@@ -230,12 +230,13 @@ and the same host link. An `OBJ=` override or another object root is fine.
 The gates are floors. To see where you stand against the course solution on
 your own machine, `make -C pa35 parity` (after `make reference-binaries`)
 measures the reference compiler and yours side by side: compile time and
-memory on the workload as ratios to the host, and generated code at
-constant work, since both compilers build this repository's own source and
-the two builds run the workload (`ab.pl reference-binaries/cppgm++`). It
-prints the reference's figure, yours and the ratio; nothing in it is a gate.
-`calibration.tsv` records the same figures for the solution on the machine
-it was measured on.
+memory on the workload (the figures themselves, with each compiler's ratio
+to the host beside them), and generated code at constant work, since both
+compilers build this repository's own source and the two builds run the
+workload (`ab.pl reference-binaries/cppgm++`; `SIM=1` adds callgrind's
+cycle proxy). It prints the reference's figure, yours and the ratio, and
+says when a figure is missing; nothing in it is a gate. `calibration.tsv`
+records the solution's gate values on the machine it was measured on.
 
 ## Boundaries
 

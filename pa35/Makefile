@@ -11,7 +11,7 @@
 #   make identity OLD=A NEW=B   generated output identical, compiler work A -> B
 #   make kernels | behavior | generated | speed | scaling   one gate family, dev/cppgm++
 #   make profile [LEVEL=-O0] [INPUT=file.cpp] [SECONDS=30]   where dev/cppgm++ spends its time
-#   make parity [REFERENCE=compiler]   this compiler beside the reference on this machine (scripts/parity.pl)
+#   make parity [REFERENCE=compiler] [SIM=1] [NO_CACHE=1]   this compiler beside the reference on this machine (scripts/parity.pl)
 
 PERL ?= perl
 S := scripts
@@ -78,7 +78,7 @@ profile:
 	$(PERL) $(S)/profile.pl --level $(if $(filter -O%,$(PROFILE_LEVEL)),$(PROFILE_LEVEL),-O0) --seconds $(SECONDS) $(if $(INPUT),--input $(INPUT))
 
 parity:
-	$(PERL) $(S)/parity.pl $(if $(REFERENCE),--reference $(REFERENCE))
+	$(PERL) $(S)/parity.pl $(if $(REFERENCE),--reference $(REFERENCE)) $(if $(SIM),--sim) $(if $(NO_CACHE),--no-cache)
 
 clean:
 	rm -rf obj

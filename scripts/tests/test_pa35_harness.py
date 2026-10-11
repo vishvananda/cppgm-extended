@@ -323,3 +323,57 @@ class WorkloadAndRunnerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ParityReportTests(unittest.TestCase):
+    """parity.pl --from renders the report from a run's measurements: the
+    direct ratio of each compiler's own figure, the host-relative figures
+    beside it, and an explicit, nonzero-status row for a missing figure."""
+
+    def report(self, reference_speed, our_speed, summary_tsv, summary_txt):
+        temp = tempfile.TemporaryDirectory(prefix="pa35-parity.")
+        self.addCleanup(temp.cleanup)
+        root = Path(temp.name)
+        (root / "ab" / "measure").mkdir(parents=True)
+        (root / "speed-reference.tsv").write_text("metric\tcppgm\thost\tratio\n" + reference_speed)
+        (root / "speed-yours.tsv").write_text("metric\tcppgm\thost\tratio\n" + our_speed)
+        (root / "ab" / "measure" / "summary.tsv").write_text("level\tmetric\tseed\tself\tratio\n" + summary_tsv)
+        (root / "ab" / "measure" / "summary.txt").write_text(summary_txt)
+        result = subprocess.run(["perl", str(PA35 / "scripts/parity.pl"), "--from", str(root)],
+                                capture_output=True, text=True)
+        rows = {}
+        for line in (root / "parity.tsv").read_text().splitlines()[1:]:
+            name, a, b, ratio = line.split("\t")
+            rows[name] = (a, b, ratio)
+        return result, rows
+
+    SUMMARY = "O0\ttotal\t1000\t1100\t1.100000\nO0\tidentical\t1\t1\t1\n"
+    TEXT = "text bytes: old 5000, new 5500 (1.100x)\n"
+
+    def test_equal_compile_times_are_a_ratio_of_one_whatever_the_host_ran(self):
+        result, rows = self.report(
+            "time-O0\t1.000000\t10.000000\t0.100000\nrss-O0\t100\t200\t0.5\n"
+            "time-O3\t2.000000\t20.000000\t0.100000\nrss-O3\t100\t400\t0.25\n",
+            "time-O0\t1.000000\t5.000000\t0.200000\nrss-O0\t100\t200\t0.5\n"
+            "time-O3\t2.000000\t10.000000\t0.200000\nrss-O3\t100\t400\t0.25\n",
+            self.SUMMARY, self.TEXT)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(rows["time-O0 seconds"][2], "1.000")
+        self.assertEqual(rows["time-O3 seconds"][2], "1.000")
+        self.assertEqual(rows["time-O0 (to host)"][:2], ("0.100000", "0.200000"))
+        self.assertEqual(rows["rss-O3 KB"][2], "1.000")
+        self.assertEqual(rows["O0 total instructions"][2], "1.100")
+        self.assertEqual(rows["text bytes"][2], "1.100")
+
+    def test_a_failed_or_timed_out_compile_is_reported_and_fails(self):
+        result, rows = self.report(
+            "time-O0\t1.000000\t10.000000\t0.100000\nrss-O0\t100\t200\t0.5\n"
+            "time-O3\t2.000000\t20.000000\t0.100000\nrss-O3\t100\t400\t0.25\n",
+            "time-O0\ttimeout\t5.000000\ttimeout\nrss-O0\ttimeout\t200\ttimeout\n"
+            "time-O3\tfailed\t10.000000\tfailed\nrss-O3\tfailed\t400\tfailed\n",
+            self.SUMMARY, self.TEXT)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("incomplete:", result.stdout)
+        self.assertEqual(rows["time-O0 seconds"], ("1.000000", "timeout", "-"))
+        self.assertEqual(rows["time-O3 seconds"], ("2.000000", "failed", "-"))
+        self.assertIn("timeout", result.stdout)

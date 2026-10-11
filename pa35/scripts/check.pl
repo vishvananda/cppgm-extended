@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # check.pl [--group correctness|speed|codegen|all] [--seed A --self B [--tools C]]
-#          [--lowir2native L] [--out DIR] [--seeds N]
+#          [--lowir2native L] [--out DIR] [--seeds N] [--no-cache]
 #
 # Runs the PA35 gates in pa35/gates.txt and prints one line per gate with the
 # measured value, the limit and PASS/FAIL, then the summary line the course
@@ -33,9 +33,9 @@ use Getopt::Long;
 use PA35;
 
 my %o = (out => "$PA35::PA35/obj/check", seeds => 20, group => 'all');
-GetOptions(\%o, 'group=s', 'seed=s', 'self=s', 'tools=s', 'lowir2native=s', 'out=s', 'seeds=i')
+GetOptions(\%o, 'group=s', 'seed=s', 'self=s', 'tools=s', 'lowir2native=s', 'out=s', 'seeds=i', 'no-cache')
 	&& $o{group} =~ /^(correctness|speed|codegen|all)$/
-	or die "usage: check.pl [--group correctness|speed|codegen|all] [--seed A --self B [--tools C]] [--lowir2native L] [--out DIR] [--seeds N]\n";
+	or die "usage: check.pl [--group correctness|speed|codegen|all] [--seed A --self B [--tools C]] [--lowir2native L] [--out DIR] [--seeds N] [--no-cache]\n";
 make_path($o{out});
 my $out = abs_path($o{out});
 my $S = $FindBin::Bin;
@@ -156,7 +156,8 @@ my %RUN = (
 			$value{identical} = 0;
 			$note{identical} = "not measured: $too_slow; fix compiler speed first";
 		} else {
-			step('measure', $^X, "$S/measure.pl", '--seed', $seed, '--self', $self, '--out', "$out/measure", '--sim');
+			step('measure', $^X, "$S/measure.pl", '--seed', $seed, '--self', $self, '--out', "$out/measure", '--sim',
+				($o{'no-cache'} ? '--no-cache' : ()));
 			if (-f "$out/measure/summary.tsv") {
 				my $identical = 1;
 				for my $line (split /\n/, PA35::slurp("$out/measure/summary.tsv")) {
