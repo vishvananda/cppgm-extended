@@ -28,7 +28,7 @@ namespace {
 
 const int kDefaultTextBatchTimeoutMs = 10000;
 const int kDefaultBuildBatchTimeoutMs = 30000;
-typedef std::vector<std::pair<std::string, std::string> > EnvOverrides;
+typedef std::vector<std::pair<std::string, std::string>> EnvOverrides;
 
 int parse_positive_int_value(const char* value, int default_value)
 {
@@ -52,15 +52,13 @@ int parse_positive_int_env(const char* name, int default_value)
 
 int get_text_batch_timeout_ms()
 {
-	const int seconds = parse_positive_int_env("CPPGM_TEXT_TEST_TIMEOUT_SEC",
-	                                           kDefaultTextBatchTimeoutMs / 1000);
+	const int seconds = parse_positive_int_env("CPPGM_TEXT_TEST_TIMEOUT_SEC", kDefaultTextBatchTimeoutMs / 1000);
 	return seconds > INT_MAX / 1000 ? INT_MAX : seconds * 1000;
 }
 
 int get_build_batch_timeout_ms()
 {
-	const int seconds = parse_positive_int_env("CPPGM_BUILD_TEST_TIMEOUT_SEC",
-	                                           kDefaultBuildBatchTimeoutMs / 1000);
+	const int seconds = parse_positive_int_env("CPPGM_BUILD_TEST_TIMEOUT_SEC", kDefaultBuildBatchTimeoutMs / 1000);
 	return seconds > INT_MAX / 1000 ? INT_MAX : seconds * 1000;
 }
 
@@ -70,8 +68,7 @@ int get_batch_timeout_override_ms(const EnvOverrides& env_overrides, int default
 	{
 		if (env_overrides[i].first == "CPPGM_BATCH_TIMEOUT_SEC")
 		{
-			const int seconds = parse_positive_int_value(env_overrides[i].second.c_str(),
-			                                             default_timeout_ms / 1000);
+			const int seconds = parse_positive_int_value(env_overrides[i].second.c_str(), default_timeout_ms / 1000);
 			return seconds > INT_MAX / 1000 ? INT_MAX : seconds * 1000;
 		}
 	}
@@ -182,8 +179,7 @@ void reset_caught_signal_dispositions()
 		{
 			continue;
 		}
-		if ((current.sa_flags & SA_SIGINFO) == 0 &&
-		    (current.sa_handler == SIG_DFL || current.sa_handler == SIG_IGN))
+		if ((current.sa_flags & SA_SIGINFO) == 0 && (current.sa_handler == SIG_DFL || current.sa_handler == SIG_IGN))
 		{
 			continue;
 		}
@@ -207,21 +203,14 @@ bool batch_force_exec()
 	return strcmp(value, "0") != 0;
 }
 
-int execute_child(
-	int argc,
-	char** argv,
-	const std::string& stdin_file,
-	const std::string& stdout_file,
-	const std::string& stderr_file,
-	bool use_real_main,
-	const EnvOverrides& env_overrides)
+int execute_child(int argc, char** argv, const std::string& stdin_file, const std::string& stdout_file,
+	const std::string& stderr_file, bool use_real_main, const EnvOverrides& env_overrides)
 {
 	if (open_redirect_fd(STDIN_FILENO, stdin_file, O_RDONLY, 0) < 0)
 	{
 		_exit(EXIT_FAILURE);
 	}
-	if (stdout_file != "-" && !stdout_file.empty() &&
-	    stdout_file == stderr_file)
+	if (stdout_file != "-" && !stdout_file.empty() && stdout_file == stderr_file)
 	{
 		int fd = open(stdout_file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
 		if (fd < 0)
@@ -240,7 +229,7 @@ int execute_child(
 	else
 	{
 		if (open_redirect_fd(STDOUT_FILENO, stdout_file, O_WRONLY | O_CREAT | O_TRUNC, 0666) < 0 ||
-		    open_redirect_fd(STDERR_FILENO, stderr_file, O_WRONLY | O_CREAT | O_TRUNC, 0666) < 0)
+			open_redirect_fd(STDERR_FILENO, stderr_file, O_WRONLY | O_CREAT | O_TRUNC, 0666) < 0)
 		{
 			_exit(EXIT_FAILURE);
 		}
@@ -266,14 +255,8 @@ int execute_child(
 	_exit(errno == ENOENT ? 127 : EXIT_FAILURE);
 }
 
-int run_with_timeout(
-	int argc,
-	char** argv,
-	const std::string& stdin_file,
-	const std::string& stdout_file,
-	const std::string& stderr_file,
-	int timeout_ms,
-	bool use_real_main,
+int run_with_timeout(int argc, char** argv, const std::string& stdin_file, const std::string& stdout_file,
+	const std::string& stderr_file, int timeout_ms, bool use_real_main,
 	const EnvOverrides& env_overrides = EnvOverrides())
 {
 	// Drain buffered parent output before forking. A child that inherits a
@@ -467,9 +450,7 @@ EnvOverrides parse_env_overrides(const std::string& encoded)
 	while (start < encoded.size())
 	{
 		size_t end = encoded.find(';', start);
-		std::string entry = encoded.substr(
-			start,
-			end == std::string::npos ? std::string::npos : end - start);
+		std::string entry = encoded.substr(start, end == std::string::npos ? std::string::npos : end - start);
 		size_t eq = entry.find('=');
 		if (eq != std::string::npos && eq != 0)
 		{
@@ -531,14 +512,8 @@ int run_batch_stdin(int argc, char** argv)
 			}
 			argv.push_back(NULL);
 
-				status = run_with_timeout(
-					static_cast<int>(args.size()),
-					argv.data(),
-					"-",
-					fields[1],
-					fields[1],
-					get_text_batch_timeout_ms(),
-					true);
+			status = run_with_timeout(static_cast<int>(args.size()), argv.data(), "-", fields[1], fields[1],
+				get_text_batch_timeout_ms(), true);
 		}
 		else if (fields.size() >= 5)
 		{
@@ -577,15 +552,9 @@ int run_batch_stdin(int argc, char** argv)
 				// captured once in the worker. Adding a static-init-time getenv
 				// would break that invariant.
 				// Set CPPGM_BATCH_EXEC=1 to force the execvp path back.
-				status = run_with_timeout(
-					static_cast<int>(argv.size()) - 1,
-					argv.data(),
-					fields[2],
-					fields[0],
-					fields[1],
-					get_batch_timeout_override_ms(env_overrides, get_build_batch_timeout_ms()),
-					run_wrapped_in_process,
-					env_overrides);
+				status = run_with_timeout(static_cast<int>(argv.size()) - 1, argv.data(), fields[2], fields[0],
+					fields[1], get_batch_timeout_override_ms(env_overrides, get_build_batch_timeout_ms()),
+					run_wrapped_in_process, env_overrides);
 			}
 		}
 		else if (fields.size() == 4)
@@ -597,15 +566,8 @@ int run_batch_stdin(int argc, char** argv)
 				argv.push_back(const_cast<char*>(base_args[i].c_str()));
 			}
 			argv.push_back(NULL);
-				status = run_with_timeout(
-					static_cast<int>(argv.size()) - 1,
-					argv.data(),
-					fields[2],
-					fields[0],
-					fields[1],
-					get_batch_timeout_override_ms(env_overrides, get_text_batch_timeout_ms()),
-					true,
-					env_overrides);
+			status = run_with_timeout(static_cast<int>(argv.size()) - 1, argv.data(), fields[2], fields[0], fields[1],
+				get_batch_timeout_override_ms(env_overrides, get_text_batch_timeout_ms()), true, env_overrides);
 		}
 
 		std::cout << status << std::endl;

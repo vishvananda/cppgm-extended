@@ -63,6 +63,17 @@ jobs:
       - name: Run the file audit
         run: perl scripts/cppgm_file_audit.pl --paths dev
 
+      # The runner's clang-format 18 lays out this tree differently from
+      # clang-format 19 and newer, which agree; the check uses one pinned
+      # version.
+      - name: Install clang-format 21.1.8
+        run: |
+          python3 -m venv "$RUNNER_TEMP/clang-format"
+          "$RUNNER_TEMP/clang-format/bin/pip" install --quiet clang-format==21.1.8
+
+      - name: Check the C++ formatting
+        run: make audit-clang-format CLANG_FORMAT="$RUNNER_TEMP/clang-format/bin/clang-format"
+
       - name: Run the harness unit tests
         run: make test-harness
 

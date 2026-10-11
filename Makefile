@@ -86,7 +86,7 @@ SUBMAKE_OBJ_ARG = $(if $(strip $(OBJ)),OBJ=$(OBJ))
 SUBMAKE_GENERATED_ARG = $(if $(strip $(GENERATED)),GENERATED=$(GENERATED))
 SUBMAKE_CC_FLAGS_ARG = $(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)")
 
-.PHONY: all build build-telemetry-off test test-telemetry-off audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-usage audit-scaffold-spellings ref-test ref-test-debuginfo \
+.PHONY: all build build-telemetry-off test test-telemetry-off audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-usage audit-scaffold-spellings audit-clang-format ref-test ref-test-debuginfo \
 	test-debuginfo test-debuginfo-nobuild require-clang require-clang-libcxx asan-build test-cells \
 	test-report inception clean run-cppgm run-cppgm-nobuild \
 	test-report-nobuild test-report-through-% test-report-through-%-nobuild \
@@ -119,6 +119,11 @@ audit-scaffold-usage: build
 
 audit-scaffold-spellings:
 	@perl scripts/audit_scaffold_spellings.pl
+
+# The C++ sources under dev/ and scripts/ follow .clang-format (clang-format
+# 19 or newer; CI installs 21.1.8; CLANG_FORMAT selects the binary).
+audit-clang-format:
+	@perl scripts/audit_clang_format.pl
 
 build:
 	@mkdir -p obj

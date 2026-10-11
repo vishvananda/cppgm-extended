@@ -18,12 +18,11 @@ typedef pair<unsigned long long, unsigned long long> PreprocessorFileId;
 
 bool GetPreprocessorFileId(const string& path, PreprocessorFileId& fileid)
 {
-    struct stat info;
-    if (stat(path.c_str(), &info) != 0)
-        return false;
-    fileid = make_pair(static_cast<unsigned long long>(info.st_dev),
-                      static_cast<unsigned long long>(info.st_ino));
-    return true;
+	struct stat info;
+	if (stat(path.c_str(), &info) != 0)
+		return false;
+	fileid = make_pair(static_cast<unsigned long long>(info.st_dev), static_cast<unsigned long long>(info.st_ino));
+	return true;
 }
 
 bool HasBatchStdinArg(int argc, char** argv)
@@ -73,7 +72,7 @@ int main(int argc, char** argv)
 
 		for (size_t i = 0; i < nsrcfiles; i++)
 		{
-			string srcfile = args[i+2];
+			string srcfile = args[i + 2];
 
 			out << "sof " << srcfile << endl;
 
@@ -81,9 +80,8 @@ int main(int argc, char** argv)
 
 			// TODO: implement `preproc` as described in the complete preprocessor assignment
 			out << "not yet implemented" << endl;
-	
-			out << "eof" << endl;
 
+			out << "eof" << endl;
 		}
 	}
 	catch (const NotImplementedException& e)

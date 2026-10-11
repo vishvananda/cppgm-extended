@@ -59,10 +59,17 @@ does not run them:
 ```sh
 make audit-lowir-contract audit-compiler-layout audit-compiler-exceptions \
   audit-frontend-source-sets audit-builtin-registry-tables \
-  audit-scaffold-usage audit-scaffold-spellings
+  audit-scaffold-usage audit-scaffold-spellings audit-clang-format
 perl scripts/cppgm_file_audit.pl --paths dev
 python3 scripts/audit_pa_feature_placement.py --fail-on-early
 ```
+
+`audit-clang-format` checks every C++ source under `dev/` (the scaffolds
+included) and `scripts/` against the root `.clang-format`; format with
+`clang-format -i`. It needs clang-format 19 or newer, since 18 formats this
+tree differently; CI pins 21.1.8 (`pip install clang-format==21.1.8`), and
+`CLANG_FORMAT` selects the binary. Test fixtures and `benchmarks/` are never
+reformatted: their text and line numbers are inputs.
 
 The file audit enforces file/function limits, counting lines of code (blank
 and comment-only lines are not counted; a dispatch switch may run longer), and
