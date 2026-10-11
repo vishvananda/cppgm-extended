@@ -49,7 +49,7 @@ The starter kit supplies:
 
 - `pa32/Makefile`
 - `pa32/lowiropt.cpp`, linked to the editable `dev/lowiropt.cpp`
-- a `dev/lowiropt.cpp` scaffold based on `dev/lowiropt-scaffold.cpp`
+- a student-editable `dev/lowiropt.cpp` starter scaffold
 - shared compiler support under `dev/src/`
 - test directories under `pa32/tests/`
 - harness scripts under `pa32/scripts/`

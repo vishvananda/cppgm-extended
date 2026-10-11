@@ -81,6 +81,8 @@ The starter kit contains:
 - `tests/controls/` for focused property checks that inspect only the
   documented MIR or native relationship and generated behavior, never a
   complete MIR dump or executable image
+- `tests/regression/`, which pins the course solution's own MIR shapes; it is
+  outside your exit criteria, and `make test-regression` runs it on request
 
 Students should implement the assignment in `dev/lowir2native.cpp` and any reusable
 student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,

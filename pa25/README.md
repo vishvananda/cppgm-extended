@@ -318,8 +318,8 @@ The following are out of scope for PA25:
 - dependency generation flags
 - precompiled headers
 - build-system conveniences such as depfiles or compilation databases
-- hosted preprocessor and hosted-header compatibility, which belong in PA29
-  and PA31
+- hosted preprocessor and hosted-header compatibility, which belong in
+  PA29-PA31
 - standalone ABI name construction, which belongs in PA9
 - host-linker-compatible object output, which belongs in PA26/PA27
 

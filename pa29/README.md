@@ -348,8 +348,9 @@ To complete PA29, implement hosted compatibility for:
   (where it would appertain to the function type) are rejected. Leading
   attributes of a block item appertain to the declaration it introduces
 - a function declared `[[noreturn]]` or GNU `noreturn` on any declaration
-  states `return=noreturn` on its declarations, definition and direct and
-  virtual calls (`../pa8/lowir.md`, "Facts The C++ Lowering States"), and so
+  states `return=noreturn` on its declarations and definition and on the
+  call signature of a virtual call (`../pa8/lowir.md`, "Facts The C++
+  Lowering States"; a direct call has no signature to carry it), and so
   do a function template's specializations, while an explicit specialization
   keeps only its own declarations'; a call through a pointer states none, and
   a call of such a function does not end its block. PA32's `-O0` driver lane

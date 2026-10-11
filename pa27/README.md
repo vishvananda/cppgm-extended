@@ -62,6 +62,7 @@ The starter kit provides:
 - `pa27/Makefile`
 - `pa27/scripts/`, the host-interoperability test harness
 - `pa27/tests/general/`, the PA27 tests and checked-in reference files
+- `pa27/tests/controls/`, focused checks of the GNU `section` attribute
 
 Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
 shared implementation files it calls. Do not edit generated `.my` files. Preserve supplied test inputs.
@@ -135,6 +136,12 @@ The local tests live in `tests/general/`. They cover host object
 interoperability, host final-link behavior, symbol spelling/coalescing, and
 object inspection where the object surface is directly checked. They are
 not direct N3485 clause tests.
+
+`make test` also runs the `section-*.cpp` controls in `tests/controls/`
+(`../scripts/check_pa27_section_contract.pl`): a section name that is a safe
+token must reach the LowIR as `section=` and the object as a section of that
+name, and an unsafe or conflicting section attribute must be rejected.
+`make check TEST=tests/controls/<name>.cpp` runs one.
 
 For each test anchor `x.t`, companion C++ sources are named:
 

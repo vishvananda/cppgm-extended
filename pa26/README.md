@@ -150,9 +150,10 @@ surface:
 - call-site coalescing safety across unprotected unwind barriers and distinct
   cleanup or catch continuations
 
-One case, `300-host-eh-nested-catch-forward-at-o1`, compiles at `-O1`, so
-its tables describe a function after optimization; the others compile at
-`-O0`.
+The cases compile at `-O0`. `make test` then builds one of them,
+`300-host-eh-nested-catch-forward-at-o1`, again at `-O1`, where its handler
+tables describe a function after optimization, and compares the program's
+output and exit status again; `make check` runs only the `-O0` build.
 
 For each test anchor `x.t`, companion C++ sources are named:
 

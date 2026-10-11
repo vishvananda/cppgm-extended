@@ -203,8 +203,9 @@ the supported subset:
 - GNU `pure` and `const` attributes on ordinary functions and function
   templates, preserved on the canonical callable as read-only-memory and
   no-memory-access effects, respectively: `effects=readonly` and
-  `effects=readnone` on its declarations, definition and calls
-  (`../pa8/lowir.md`, "Facts The C++ Lowering States"). A later declaration
+  `effects=readnone` on its declarations and definition and on the call
+  signature of a virtual call (`../pa8/lowir.md`, "Facts The C++ Lowering
+  States"). A later declaration
   adds the attribute, one on a lambda-declarator is the call operator's, and
   a function template's reaches its specializations, while an explicit
   specialization takes only its own declarations' attributes, as GCC reads
