@@ -399,7 +399,7 @@ function @main() -> i32 [role=entry] {
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("does not match reference", result.stdout)
 
-    def test_relaxed_compare_allows_later_generated_function_refinement(self):
+    def test_relaxed_compare_rejects_an_inserted_call_and_its_definition(self):
         generated = REFERENCE.replace(
             "%sum = binary add i64 %left, %right",
             "call void @later_helper()\n    %sum = binary add i64 %left, %right",
@@ -409,7 +409,7 @@ function @main() -> i32 [role=entry] {
 }
 """
         result = self.compare(REFERENCE, generated)
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotEqual(result.returncode, 0)
 
     def test_relaxed_compare_allows_declaration_to_definition_refinement(self):
         reference = "declare function @helper() -> i64\n"
@@ -483,7 +483,9 @@ function @needed() -> void [binding=weak] {
         result = self.compare(reference, REFERENCE)
         self.assertNotEqual(result.returncode, 0)
 
-    def test_relaxed_projection_alpha_renames_inserted_locals(self):
+    def test_relaxed_compare_rejects_inserted_locals_and_blocks(self):
+        # Every line of a body is compared: an output that holds the
+        # reference's instructions plus others differs, as a leaner one does.
         generated = RENAMED.replace(
             "slot $__o1inl0__saved : i64",
             "slot $inserted : ptr\n  slot $__o1inl0__saved : i64",
@@ -493,7 +495,21 @@ function @needed() -> void [binding=weak] {
             "  block ^__o1inl0__entry:",
         )
         result = self.compare(REFERENCE, generated)
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_relaxed_compare_rejects_an_extra_instruction(self):
+        generated = RENAMED.replace(
+            "    store i64 %__o1inl0__sum, $__o1inl0__saved\n",
+            "    store i64 %__o1inl0__sum, $__o1inl0__saved\n"
+            "    %__o1inl0__again = load i64 $__o1inl0__saved\n",
+        )
+        result = self.compare(REFERENCE, generated)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_relaxed_compare_rejects_an_extra_definition(self):
+        generated = RENAMED + "\nfunction @extra() -> void [binding=internal] {\n  block ^entry:\n    return void\n}\n"
+        result = self.compare(REFERENCE, generated)
+        self.assertNotEqual(result.returncode, 0)
 
     def test_relaxed_compare_allows_registered_static_finalizer(self):
         reference = """declare function @destroy(%value : ptr) -> void
@@ -654,7 +670,10 @@ function @fini() -> void [role=fini] {
         result = self.compare(reference, generated)
         self.assertNotEqual(result.returncode, 0)
 
-    def test_relaxed_compare_allows_complete_nothrow_termination_path(self):
+    def test_relaxed_compare_rejects_an_explicit_termination_path_in_a_nothrow_function(self):
+        # In a non-throwing function a cleanup handler ends in `resume`
+        # (the comparison drops the resume itself); a handler that spells
+        # the termination out has lines the reference does not.
         reference = """function @work() -> void [unwind=no] {
   block ^entry:
     eh_try ^cleanup
@@ -681,7 +700,7 @@ function @fini() -> void [role=fini] {
 declare function @terminate() -> void
 """
         result = self.compare(reference, generated)
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotEqual(result.returncode, 0)
 
     LITERALS = """declare function @sink(%a : i32, %b : i64, %c : f64) -> void
 
@@ -955,12 +974,16 @@ function @worker(%first : ptr, %count : i64) -> void {
     return void
 }
 """
-        generated = reference.replace("%first : ptr, %count : i64", "%p0 : ptr, %p1 : i64").replace(
+        generated = reference.replace("%first : ptr, %count : i64", "%p0 : ptr, %p1 : i64")
+        result = self.compare(reference, generated)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        # A second definition of that shape is an entry the reference lacks.
+        generated = generated.replace(
             "function @main() -> i64 {",
             "function @helper(%p0 : ptr, %p1 : i64) -> void {\n  block ^entry:\n    return void\n}\n\nfunction @main() -> i64 {",
         )
         result = self.compare(reference, generated)
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotEqual(result.returncode, 0)
 
     def test_debuginfo_compare_relaxes_names_and_keeps_locations(self):
         result = self.compare(DEBUG_REFERENCE, DEBUG_RENAMED, mode="lowir_debuginfo_t")

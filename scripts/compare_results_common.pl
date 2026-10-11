@@ -3801,9 +3801,22 @@ sub lowir_projection_line_matches
 	return 1;
 }
 
+# Whether the reference entry's lines appear, in order and with a
+# consistent renaming, in the generated entry.  Every generated line the
+# match skips must satisfy $inserted_ok (a regex, or a code reference
+# applied to the line); without it no line may be skipped, so the entries
+# must correspond line for line.
+sub lowir_inserted_line_ok
+{
+	my ($inserted_ok, $line) = @_;
+	return 0 if !defined($inserted_ok);
+	return $inserted_ok->($line) ? 1 : 0 if ref($inserted_ok) eq 'CODE';
+	return $line =~ $inserted_ok ? 1 : 0;
+}
+
 sub lowir_reference_entry_is_projection
 {
-	my ($ref_entry, $my_entry) = @_;
+	my ($ref_entry, $my_entry, $inserted_ok) = @_;
 	return $ref_entry eq $my_entry if $ref_entry !~ /^(?:declare\s+)?function /;
 	my @ref_lines = lowir_nonempty_trimmed_lines($ref_entry);
 	my @my_lines = lowir_nonempty_trimmed_lines($my_entry);
@@ -3834,10 +3847,15 @@ sub lowir_reference_entry_is_projection
 				%reverse = %candidate_reverse;
 				last;
 			}
+			return 0 if !lowir_inserted_line_ok($inserted_ok, $my_lines[$cursor]);
 			++$cursor;
 		}
 		return 0 if $cursor == @my_lines;
 		++$cursor;
+	}
+	for (; $cursor < @my_lines; ++$cursor)
+	{
+		return 0 if !lowir_inserted_line_ok($inserted_ok, $my_lines[$cursor]);
 	}
 	return 1;
 }
@@ -3912,47 +3930,97 @@ sub lowir_static_finalizer_action_is_projection
 	return $my_entry =~ /return void/;
 }
 
-sub lowir_reference_is_generated_projection
+# When the canonical texts differ, the generated output still matches the
+# reference in exactly these cases, each on pa8/lowir.md's list of what the
+# comparison absorbs:
+#
+# - a declaration the reference makes is a definition in the output (the
+#   entity was emitted; its body is not compared), and a declaration the
+#   output makes beyond the reference's is ignored;
+# - where static destruction happens: the reference's `fini` function may
+#   instead be a function registered to run at exit.  Then the fini entry
+#   is matched by its destructor actions against the registered function
+#   (lowir_static_finalizer_action_is_projection), the function that
+#   registers it differs from the reference's only by the inserted
+#   registration calls (a call of a function the output declares beyond
+#   the reference, passing the registered function), and nothing else.
+#
+# Every other entry must equal the reference's line for line.  An earlier
+# form of this fallback accepted any output in which the reference's lines
+# appeared in order, which passed extra instructions and extra definitions
+# while rejecting a leaner output; the comparison is symmetric again.
+sub lowir_reference_matches_after_canonicalization
 {
 	my ($ref_data, $my_data) = @_;
+	my @ref_entries = split_lowir_top_level_entries($ref_data);
+	my @my_entries = split_lowir_top_level_entries($my_data);
+	my %ref_identity = map { lowir_compare_entry_identity($_) => 1 } @ref_entries;
 	my %my_entries;
-	for my $entry (split_lowir_top_level_entries($my_data))
+	for my $entry (@my_entries)
 	{
 		push @{$my_entries{lowir_compare_entry_identity($entry)}}, $entry;
 	}
-	for my $ref_entry (split_lowir_top_level_entries($ref_data))
+
+	# The registered-finalizer form: the reference's one fini function
+	# against a generated definition that is not one of the reference's
+	# entries and whose destructor actions are the fini's.
+	my @ref_fini = grep { /^function / && /\[[^\]]*\brole=fini\b/ } @ref_entries;
+	my %ref_text = map { $_ => 1 } @ref_entries;
+	my ($registered, $registered_name);
+	if (@ref_fini == 1)
+	{
+		($registered) = grep {
+			/^function / && !$ref_text{$_} &&
+			lowir_static_finalizer_action_is_projection($ref_fini[0], $_)
+		} @my_entries;
+		($registered_name) = $registered =~ /^function\s+(\@[^\s(]+)/ if defined($registered);
+	}
+	my %extra_declaration = map { /^declare\s+function\s+\@([^\s(]+)/ ? ($1 => 1) : () }
+		grep { /^declare\s+function / && !$ref_identity{lowir_compare_entry_identity($_)} } @my_entries;
+	my $inserted_ok = sub {
+		my ($line) = @_;
+		return 0 if !defined($registered_name);
+		return $line =~ /^\s*(?:%\S+\s*=\s*)?call\s+\S+\s+\@([^\s(]+)\(\Q$registered_name\E\)\s*$/ &&
+			exists($extra_declaration{$1});
+	};
+
+	for my $ref_entry (@ref_entries)
 	{
 		my $identity = lowir_compare_entry_identity($ref_entry);
 		my $matched = 0;
-		if (exists($my_entries{$identity}))
-		{
-			for (my $i = 0; $i < @{$my_entries{$identity}}; ++$i)
-			{
-				next if !lowir_reference_entry_is_projection(
-					$ref_entry, $my_entries{$identity}[$i]);
-				splice(@{$my_entries{$identity}}, $i, 1);
-				$matched = 1;
-				last;
-			}
-		}
-		if (!$matched && $ref_entry =~ /^function /)
+		if (defined($registered) && $ref_entry eq $ref_fini[0])
 		{
 			for my $candidate_identity (keys(%my_entries))
 			{
-				next if $candidate_identity !~ /^function:/;
-				for (my $i = 0;
-					$i < @{$my_entries{$candidate_identity}}; ++$i)
+				my $list = $my_entries{$candidate_identity};
+				for (my $i = 0; $i < @$list; ++$i)
 				{
-					next if !lowir_static_finalizer_action_is_projection(
-						$ref_entry, $my_entries{$candidate_identity}[$i]);
-					splice(@{$my_entries{$candidate_identity}}, $i, 1);
+					next if $list->[$i] ne $registered;
+					splice(@$list, $i, 1);
 					$matched = 1;
 					last;
 				}
 				last if $matched;
 			}
 		}
+		elsif (exists($my_entries{$identity}))
+		{
+			my $list = $my_entries{$identity};
+			for (my $i = 0; $i < @$list; ++$i)
+			{
+				next if $ref_entry ne $list->[$i] &&
+					!lowir_reference_entry_is_projection($ref_entry, $list->[$i], $inserted_ok);
+				splice(@$list, $i, 1);
+				$matched = 1;
+				last;
+			}
+		}
 		return 0 if !$matched;
+	}
+	# What the output has beyond the reference may only be declarations.
+	for my $leftover (map { @{$_} } values(%my_entries))
+	{
+		return 0 if $leftover !~ /^declare\s+/;
 	}
 	return 1;
 }
@@ -4082,7 +4150,7 @@ sub compare_lowir_text
 
 	return (1, undef, undef) if $ref_compare_data eq $my_compare_data;
 	return (1, undef, undef)
-		if lowir_reference_is_generated_projection(
+		if lowir_reference_matches_after_canonicalization(
 			$ref_compare_data, $my_compare_data);
 
 	my ($ref_compare, $my_compare, $diff_path) =
