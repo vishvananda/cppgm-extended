@@ -168,7 +168,10 @@ class CalibrateTests(unittest.TestCase):
         # package strings, and the course build's flags only in its own file.
         self.assertNotRegex(text, r"(?m)^meta\tkernel\t.*-\w+\d+-")
         self.assertNotIn("jemalloc", text)
-        self.assertIn("jemalloc", self.course_out.read_text()) if "jemalloc" in (REPO_ROOT / "dev/Makefile").read_text() else None
+        # The course file names the allocator its binary links (calibrate
+        # reads ldd), which the Makefile's intent does not decide.
+        linked = subprocess.run(["ldd", str(REPO_ROOT / "dev/cppgm++")], capture_output=True, text=True).stdout
+        self.assertIn("jemalloc" if "jemalloc" in linked else "the C library malloc", self.course_out.read_text())
 
     def test_a_value_inside_the_limit_but_not_the_margin_is_short(self):
         values = passing_values(self.gates)
