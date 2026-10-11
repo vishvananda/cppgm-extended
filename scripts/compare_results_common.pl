@@ -490,10 +490,13 @@ sub source_is_lowir
 	return 1;
 }
 
+# A program is bounded like the runners' program runs
+# (CPPGM_PROGRAM_TEST_TIMEOUT_SEC, 10 seconds by default).
 sub run_program_capture
 {
 	my ($program, $stdout_path) = @_;
-	my $status = system("timeout 10 \"$program\" < /dev/null > \"$stdout_path\" 2>/dev/null");
+	my $timeout = CppgmBatchWorker::get_timeout_from_env('CPPGM_PROGRAM_TEST_TIMEOUT_SEC', 10);
+	my $status = system("timeout $timeout \"$program\" < /dev/null > \"$stdout_path\" 2>/dev/null");
 	return $status == -1 ? undef : ($status >> 8);
 }
 
