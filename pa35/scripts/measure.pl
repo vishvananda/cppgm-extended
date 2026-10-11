@@ -14,9 +14,11 @@
 # --counter callgrind (default) gives exact counts and the attribution files.
 # --counter perf uses user-mode hardware counters (mean of three runs): near
 # native speed, total instructions only, no attribution. auto picks perf when
-# the machine has counters. Results are cached by binary hash, level and
-# counter in pa35/obj/cache, so an unchanged binary is never measured twice.
-# Each run is stopped after --timeout seconds (default 3600).
+# the machine has counters. Results are cached by binary hash, toolchain
+# (libstdc++, libc and valgrind versions), level and counter in
+# pa35/obj/cache, so an unchanged binary is never measured twice; --no-cache
+# measures again and replaces the cached result. Each run is stopped after
+# --timeout seconds (default 3600).
 #
 # A and B are normally seed-L and self-L from freeze.pl, but any two
 # compilers that produce identical objects work, for example two builds of
@@ -33,9 +35,9 @@ use Getopt::Long;
 use PA35;
 
 my %a = (levels => 'O0,O3', top => 40, counter => 'callgrind', labels => 'seed,self', timeout => 3600);
-GetOptions(\%a, 'seed=s', 'self=s', 'out=s', 'levels=s', 'sim', 'top=i', 'counter=s', 'labels=s', 'timeout=i')
+GetOptions(\%a, 'seed=s', 'self=s', 'out=s', 'levels=s', 'sim', 'top=i', 'counter=s', 'labels=s', 'timeout=i', 'no-cache')
 	&& $a{seed} && $a{self} && $a{out} && $a{counter} =~ /^(callgrind|perf|auto)$/
-	or die "usage: measure.pl --seed A --self B --out DIR [--levels O0,O3] [--sim] [--counter callgrind|perf|auto]\n";
+	or die "usage: measure.pl --seed A --self B --out DIR [--levels O0,O3] [--sim] [--counter callgrind|perf|auto] [--no-cache]\n";
 $a{counter} = PA35::perf_available() ? 'perf' : 'callgrind' if $a{counter} eq 'auto';
 die "--sim needs --counter callgrind\n" if $a{sim} && $a{counter} ne 'callgrind';
 PA35::verify_workload();
@@ -53,6 +55,7 @@ for my $level (@levels) {
 	for my $side (qw(seed self)) {
 		my $dir = PA35::cache_dir($bin{$side}, $level, $kind);
 		$cache{$level}{$side} = $dir;
+		unlink "$dir/done" if $a{'no-cache'};
 		next if -f "$dir/done";
 		# Run a copy kept in the cache entry, so the profile names a path
 		# that stays valid wherever the binary is later found.

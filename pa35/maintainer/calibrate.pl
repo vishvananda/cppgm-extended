@@ -8,10 +8,11 @@
 #    it, into DIR/course.
 # 2. The student build: the same source built as the student export's
 #    dev/Makefile builds it (%STUDENT_MAKE: plain -O3, the C library's
-#    malloc), seed by the host and self by that seed, measured by the speed
-#    and codegen groups into DIR/student. These are the values a student's
-#    gates compare with; the correctness group does not depend on the build
-#    and is taken from the course build.
+#    malloc), seed by the host and self by that seed, checked by all three
+#    groups into DIR/student. These are the values a student's gates
+#    compare with. The correctness group runs on each build: a compiler
+#    built with other flags or another allocator is another binary, and a
+#    gate that was not measured in a build fails.
 #
 # In both builds every gate must pass, and every measured gate must clear its
 # limit by the release margin of its kind (below): the value times
@@ -77,9 +78,10 @@ if (!$o{from}) {
 	remove_tree("$dir/student-seed", "$dir/student-self");
 	my ($seed) = PA35::build_with(compiler => $host, out => "$dir/student-seed", make_vars => \@STUDENT_MAKE);
 	my ($self) = PA35::build_with(compiler => $seed, out => "$dir/student-self", make_vars => \@STUDENT_MAKE);
-	for my $group (qw(speed codegen)) {
+	for my $group (qw(correctness speed codegen)) {
 		print "student build: check.pl --group $group ...\n";
-		system($^X, $check, '--group', $group, '--seed', $seed, '--self', $self, '--out', "$dir/student");
+		system($^X, $check, '--group', $group, '--seed', $seed, '--self', $self, '--seeds', $o{seeds},
+			'--lowir2native', "$PA35::ROOT/dev/lowir2native", '--out', "$dir/student");
 	}
 }
 $dir = abs_path($dir) // die "no calibration directory $dir\n";
@@ -104,9 +106,6 @@ sub values_in {
 	return \%value;
 }
 my %build = (course => values_in("$dir/course"), student => values_in("$dir/student"));
-# The correctness group does not depend on how the compiler was built; the
-# student build takes the course build's results.
-$build{student}{ $_->{metric} } //= $build{course}{ $_->{metric} } for grep { $_->{group} eq 'correctness' } @GATES;
 
 # One gate in one build: (shown value, margin, status).
 sub judge {
@@ -158,10 +157,12 @@ for my $b (qw(course student)) {
 		}
 	}
 }
-for my $suite (qw(behavior generated)) {
-	my $log = "$dir/course/$suite.log";
-	my ($line) = grep { /\d+\/\d+ \w+ pass/ } split /\n/, (-f $log ? PA35::slurp($log) : '');
-	push @detail, join("\t", 'course', $suite, $line // 'not run', '', '');
+for my $b (qw(course student)) {
+	for my $suite (qw(behavior generated)) {
+		my $log = "$dir/$b/$suite.log";
+		my ($line) = grep { /\d+\/\d+ \w+ pass/ } split /\n/, (-f $log ? PA35::slurp($log) : '');
+		push @detail, join("\t", $b, $suite, $line // 'not run', '', '');
+	}
 }
 
 # The machine, the toolchain and the source.

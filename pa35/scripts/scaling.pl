@@ -9,10 +9,13 @@
 # compiler: many scopes and lookups, a class with many members, many template
 # instantiations, many macros, one long function (at -O3) and many small
 # functions (at -O3). Each figure is the minimum user time of three runs;
-# each run is bounded (30 s, 8 GB), and a family stops after a size that
-# takes more than 10 s or exceeds the bound. --keep DIR writes the generated sources there, for profiling
-# the slowest one. Writes FILE (default pa35/obj/scaling.tsv); the largest
-# growth over the families is the `scaling` gate's value.
+# each run is bounded (30 s, 8 GB). A family stops after a size that takes
+# more than 10 s, and its growth is the last doubling's; a size that exceeds
+# the bound or fails makes the family's growth unbounded (`inf` or
+# `failed`), whatever the earlier sizes showed. --keep DIR writes the
+# generated sources there, for profiling the slowest one. Writes FILE
+# (default pa35/obj/scaling.tsv); the largest growth over the families is
+# the `scaling` gate's value.
 use strict;
 use warnings;
 use FindBin;
@@ -121,19 +124,7 @@ for my $f (@families) {
 			if ($t !~ /^[\d.]+$/) { $stop = $t; last; }
 			last if $t > $ENOUGH;
 		}
-		# Growth over the last doubling measured, above the base cost.
-		my @ok = grep { $times[$_] =~ /^[\d.]+$/ } 1 .. $#times;
-		my $g;
-		if ($times[0] !~ /^[\d.]+$/) {
-			$g = "base $times[0]";
-		} elsif (@ok >= 2) {
-			my ($a, $b) = map { $times[$_] - $times[0] } @ok[-2, -1];
-			$g = $b < $NOISE ? 'flat' : $a <= 0 ? 'inf' : sprintf('%.2f', $b / $a);
-		} elsif ($stop) {
-			$g = $stop eq 'timeout' ? 'inf' : 'failed';
-		} else {
-			$g = 'flat';
-		}
+		my $g = PA35::scaling_growth(\@times, $NOISE);
 		$growth{$label} = $g;
 		my $shown = join(' ', map { /^[\d.]+$/ ? sprintf('%.2f', $_) : $_ } @times);
 		printf "%-11s %-6s %-5s growth %-8s times (n = %s): %s\n", $f, $label, $level, $g,

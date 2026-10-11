@@ -1,11 +1,13 @@
 #!/usr/bin/env perl
-# behavior.pl [--compiler C] [--host g++] [--levels O0,O1,O2,O3] [--jobs N] [TEST...]
+# behavior.pl [--compiler C] [--host g++] [--levels O0,O1,O2,O3] [--jobs N]
+#             [--lowir2native L] [TEST...]
 #
 # Each pa35/tests/behavior/*.cpp is built by the host compiler (reference)
 # and by C at every level (C compiles, the host links), and each build must
 # print exactly what the reference prints. At -O3 the program's LowIR must
-# also lower through lowir2native with a machine-IR dump. Prints one line per
-# failure and a summary; exits nonzero on any failure.
+# also lower through lowir2native (L, default the one beside C) with a
+# machine-IR dump. Prints one line per failure and a summary; exits nonzero
+# on any failure.
 use strict;
 use warnings;
 use FindBin;
@@ -17,9 +19,10 @@ use Getopt::Long;
 use PA35;
 
 my %a = (compiler => "$PA35::ROOT/dev/cppgm++", host => 'g++', levels => 'O0,O1,O2,O3', jobs => PA35::default_jobs());
-GetOptions(\%a, 'compiler=s', 'host=s', 'levels=s', 'jobs=i') or die "usage: behavior.pl [--compiler C] [--levels ...] [TEST...]\n";
+GetOptions(\%a, 'compiler=s', 'host=s', 'levels=s', 'jobs=i', 'lowir2native=s')
+	or die "usage: behavior.pl [--compiler C] [--levels ...] [--lowir2native L] [TEST...]\n";
 my $compiler = abs_path($a{compiler}) // die "no compiler $a{compiler}\n";
-my $lowir2native = dirname($compiler) . '/lowir2native';
+my $lowir2native = $a{lowir2native} // dirname($compiler) . '/lowir2native';
 my @tests = @ARGV ? map { abs_path($_) } @ARGV : sort glob("$PA35::PA35/tests/behavior/*.cpp");
 my @levels = split /,/, $a{levels};
 my $tmp = tempdir('pa35-behavior-XXXXXX', TMPDIR => 1, CLEANUP => 1);

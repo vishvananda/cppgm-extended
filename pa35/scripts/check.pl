@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # check.pl [--group correctness|speed|codegen|all] [--seed A --self B [--tools C]]
-#          [--out DIR] [--seeds N]
+#          [--lowir2native L] [--out DIR] [--seeds N]
 #
 # Runs the PA35 gates in pa35/gates.txt and prints one line per gate with the
 # measured value, the limit and PASS/FAIL, then the summary line the course
@@ -16,24 +16,26 @@
 #
 # The seed is dev/cppgm++ after `make build`. The codegen group freezes the
 # current tree first (freeze.pl --label check: self = the same source built by
-# the seed, linked the same way) unless --seed and --self are given. Results
-# and logs go to DIR (default pa35/obj/check); DIR/report-<group>.txt holds
-# each table and DIR/values-<group>.tsv each group's measurements, which
-# progress.pl reads.
+# the seed, linked the same way) unless --seed and --self are given. The
+# behavior suite's MIR dump uses the lowir2native beside the compiler it
+# runs, or L. Results and logs go to DIR (default pa35/obj/check);
+# DIR/report-<group>.txt holds each table and DIR/values-<group>.tsv each
+# group's measurements, which progress.pl reads.
 use strict;
 use warnings;
 use FindBin;
 use lib $FindBin::Bin;
 use Cwd qw(abs_path);
+use File::Basename qw(dirname);
 use File::Copy qw(copy);
 use File::Path qw(make_path);
 use Getopt::Long;
 use PA35;
 
 my %o = (out => "$PA35::PA35/obj/check", seeds => 20, group => 'all');
-GetOptions(\%o, 'group=s', 'seed=s', 'self=s', 'tools=s', 'out=s', 'seeds=i')
+GetOptions(\%o, 'group=s', 'seed=s', 'self=s', 'tools=s', 'lowir2native=s', 'out=s', 'seeds=i')
 	&& $o{group} =~ /^(correctness|speed|codegen|all)$/
-	or die "usage: check.pl [--group correctness|speed|codegen|all] [--seed A --self B [--tools C]] [--out DIR] [--seeds N]\n";
+	or die "usage: check.pl [--group correctness|speed|codegen|all] [--seed A --self B [--tools C]] [--lowir2native L] [--out DIR] [--seeds N]\n";
 make_path($o{out});
 my $out = abs_path($o{out});
 my $S = $FindBin::Bin;
@@ -62,9 +64,11 @@ if ($o{seed}) {
 	copy("$PA35::ROOT/dev/cppgm++", $seed) or die "copy: $!\n";
 	chmod 0755, $seed;
 }
-# behavior.pl and generated.pl also use the lowir2native beside the compiler,
-# so they run dev/cppgm++ unless --tools names another compiler.
+# behavior.pl and generated.pl run dev/cppgm++ unless --tools names another
+# compiler; the behavior suite's MIR dump runs the lowir2native beside it
+# unless --lowir2native names one (a seed built elsewhere has none beside it).
 my $tools = abs_path($o{tools} // ($o{seed} ? $seed : "$PA35::ROOT/dev/cppgm++"));
+my $lowir2native = $o{lowir2native} ? abs_path($o{lowir2native}) : dirname($tools) . '/lowir2native';
 
 my (%value, %note);
 sub step {
@@ -102,7 +106,7 @@ my %RUN = (
 		}
 		$value{'workload-compiles'} = $ok;
 		for my $suite (qw(behavior generated)) {
-			my @extra = $suite eq 'generated' ? ('--seeds', $o{seeds}) : ();
+			my @extra = $suite eq 'generated' ? ('--seeds', $o{seeds}) : ('--lowir2native', $lowir2native);
 			suite_failures($suite, step($suite, $^X, "$S/$suite.pl", '--compiler', $tools, @extra));
 		}
 	},

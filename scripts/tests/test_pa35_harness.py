@@ -131,12 +131,13 @@ class CalibrateTests(unittest.TestCase):
         self.gates = read_gates()
         self.out = self.dir / "calibration.tsv"
 
-    def calibrate(self, values, student=None):
+    def calibrate(self, values, student=None, student_groups=("correctness", "speed", "codegen")):
         """Runs calibrate.pl on a course build with `values` and a student
-        build (speed and codegen groups) with `student` (default: the same)."""
+        build with `student` (default: the same), both measured in every
+        group unless `student_groups` leaves some out."""
         for build, given in (("course", values), ("student", student or values)):
             (self.dir / build).mkdir(exist_ok=True)
-            groups = ("correctness", "speed", "codegen") if build == "course" else ("speed", "codegen")
+            groups = ("correctness", "speed", "codegen") if build == "course" else student_groups
             write_values(self.dir / build, given, self.gates, groups)
         return subprocess.run(["perl", str(CALIBRATE), "--from", str(self.dir), "--out", str(self.out)],
                               capture_output=True, text=True)
@@ -217,6 +218,15 @@ class CalibrateTests(unittest.TestCase):
         self.assertEqual(rows["behavior"][0], "FAIL")
         self.assertEqual(rows["text-size"][0], "FAIL")
 
+    def test_the_student_build_measures_its_own_correctness(self):
+        values = passing_values(self.gates)
+        result = self.calibrate(values, student_groups=("speed", "codegen"))
+        self.assertEqual(result.returncode, 1)
+        rows = self.gate_rows()
+        for gate in ("workload-compiles", "behavior", "generated"):
+            self.assertEqual(rows[gate], ("pass", "FAIL"), gate)
+        self.assertIn("RELEASE CHECK FAILED: 3 of 17 gates", result.stdout)
+
 
 class ReadmeTests(unittest.TestCase):
     """The handout states the limits and ladder steps gates.txt holds."""
@@ -242,6 +252,38 @@ class ReadmeTests(unittest.TestCase):
         self.assertIsNotNone(paragraph)
         stated = {float(p) / 100 for p in re.findall(r"([\d.]+)%", paragraph.group(1))}
         self.assertEqual(stated, {g["step"] for g in self.gates if g["step"]})
+
+
+class MeasurementHelperTests(unittest.TestCase):
+    """PA35.pm's helpers, driven from perl one-liners."""
+
+    def perl(self, code):
+        result = subprocess.run(["perl", f"-I{SCRIPTS}", "-MPA35", "-e", code], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout
+
+    def test_a_child_ended_by_a_signal_is_not_a_success(self):
+        out = self.perl('my ($st) = PA35::run_capture("sh", "-c", "kill -9 \\$\\$"); print $st')
+        self.assertEqual(out, "137")
+        out = self.perl('my ($st) = PA35::run_capture("sh", "-c", "exit 3"); print $st')
+        self.assertEqual(out, "3")
+        out = self.perl('my ($st) = PA35::run_capture("sh", "-c", "true"); print $st')
+        self.assertEqual(out, "0")
+
+    def test_a_size_that_timed_out_is_unbounded_growth(self):
+        growth = lambda times: self.perl(
+            'print PA35::scaling_growth([' + ",".join(f'"{t}"' for t in times) + '], 0.1)')
+        self.assertEqual(growth([0.01, 0.20, 0.40, "timeout"]), "inf")
+        self.assertEqual(growth([0.01, 0.20, "failed"]), "failed")
+        self.assertEqual(growth([0.01, 0.20, 0.40]), "2.05")
+        self.assertEqual(growth([0.01, 0.02, 0.03]), "flat")
+        self.assertEqual(growth(["timeout"]), "base timeout")
+
+    def test_the_self_build_keeps_the_objects_layout_below_their_common_directory(self):
+        out = self.perl('print PA35::common_directory("../obj/dev/a.o", "../obj/dev/sub/b.o", "../obj/dev/c.o")')
+        self.assertEqual(out, "../obj/dev/")
+        out = self.perl('print PA35::common_directory("../obj/alt/dev/a.o", "../obj/alt/dev/sub/b.o")')
+        self.assertEqual(out, "../obj/alt/dev/")
 
 
 class WorkloadAndRunnerTests(unittest.TestCase):

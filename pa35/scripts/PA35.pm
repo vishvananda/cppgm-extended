@@ -124,7 +124,17 @@ sub run_capture {
 	local $/;
 	my $out = <$fh> // '';
 	close $fh;
-	return ($? >> 8, $out);
+	return (exit_status($?), $out);
+}
+
+# The exit status of a wait status: the code of a process that exited, 128
+# plus the signal of one a signal ended (as the shell reports it), 127 when
+# the command could not run.  `$? >> 8` alone reports a killed child as 0.
+sub exit_status {
+	my ($wait) = @_;
+	return 127 if $wait == -1;
+	return 128 + ($wait & 127) if $wait & 127;
+	return $wait >> 8;
 }
 
 sub run_or_die {
@@ -193,14 +203,24 @@ sub build_with {
 	make_path("$out/objs");
 	$out = abs_path($out);
 	my $jobs = $a{jobs} // default_jobs();
+	# The build's own command lines, from a dry run of the same `make build`
+	# (an OBJ= in the environment reaches it like any other make variable).
 	my ($status, $dry) = run_capture('make', '-C', $repo, '-n', '-B', 'build', @{ $a{make_vars} // [] });
 	my @lines = split /\n/, $dry;
-	my ($link) = grep { / -o cppgm\+\+\.tmp / && !/ -c / } @lines;
-	die "no cppgm++ link line in `make -n -B build` output\n" unless $link;
-	my %linked = map { $_ => 1 } ($link =~ /(\.\.\/obj\/dev\/\S+\.o)/g);
+	# The link is the line that writes cppgm++ (the Makefile links a .tmp it
+	# then moves into place) and compiles nothing.
+	my ($link) = grep { / -o (?:\S*\/)?cppgm\+\+(?:\.tmp)?(?: |$)/ && !/(?:^| )-c(?: |$)/ } @lines;
+	die "no cppgm++ link line in `make -n -B build` output: the self build takes the g++ build's own link line, which must name cppgm++ (or cppgm++.tmp) as its -o output\n"
+		unless $link;
+	my @linked = $link =~ /(?:^| )(\S+\.o)(?= |$)/g;
+	my %linked = map { $_ => 1 } @linked;
+	die "the cppgm++ link line names no object files\n" unless @linked;
+	# The objects keep their layout below the directory they share, whatever
+	# object root the build uses.
+	my $root = common_directory(@linked);
 	my @jobs;
-	for my $line (grep { / -c / && !/^printf/ } @lines) {
-		my ($obj) = $line =~ / -o (\S+\.o)/ or next;
+	for my $line (grep { /(?:^| )-c(?: |$)/ && !/^printf/ } @lines) {
+		my ($obj) = $line =~ / -o (\S+\.o)(?: |$)/ or next;
 		next unless $linked{$obj};
 		my @words = split ' ', $line;
 		my @keep;
@@ -210,19 +230,33 @@ sub build_with {
 			next if $w eq '-MMD' || $w eq '-MP';
 			push @keep, $w;
 		}
-		(my $rel = $obj) =~ s{^\.\./obj/dev/}{};
-		my $dest = "$out/objs/$rel";
+		my $dest = "$out/objs/" . substr($obj, length($root));
 		make_path(dirname($dest));
 		push @jobs, "cd '$repo/dev' && '$compiler' @keep -o '$dest'";
 	}
-	die "found no compile lines for cppgm++\n" unless @jobs;
+	die "found no compile lines for the objects the cppgm++ link names\n" unless @jobs;
 	my $failures = run_parallel($jobs, @jobs);
 	die "$failures of " . scalar(@jobs) . " compiles failed\n" if $failures;
-	(my $relinked = $link) =~ s{\.\./obj/dev/}{$out/objs/}g;
-	$relinked =~ s{-o cppgm\+\+\.tmp}{-o '$out/cppgm++'};
+	(my $relinked = $link) =~ s{(?:^| )\K(\S+\.o)(?= |$)}{ $linked{$1} ? "'$out/objs/" . substr($1, length($root)) . "'" : $1 }ge;
+	$relinked =~ s{-o (?:\S*\/)?cppgm\+\+(?:\.tmp)?(?= |$)}{-o '$out/cppgm++'};
 	my ($ls, $lout) = run_capture('/bin/sh', '-c', "cd '$repo/dev' && $relinked");
 	die "link failed:\n$lout" if $ls;
 	return ("$out/cppgm++", scalar @jobs);
+}
+
+# The longest directory prefix (with its trailing slash) the paths share.
+sub common_directory {
+	my (@paths) = @_;
+	my @common = split m{/}, $paths[0], -1;
+	pop @common;
+	for my $path (@paths[1 .. $#paths]) {
+		my @parts = split m{/}, $path, -1;
+		pop @parts;
+		my $n = 0;
+		$n++ while $n < @common && $n < @parts && $common[$n] eq $parts[$n];
+		splice(@common, $n);
+	}
+	return @common ? join('/', @common) . '/' : '';
 }
 
 # ---------------------------------------------------------------- callgrind
@@ -345,12 +379,26 @@ sub parse_perf_instructions {
 	die "no instruction count in $path (try --counter callgrind)\n";
 }
 
-# Cache directory for one measurement of a binary: results depend only on
-# the binary's bytes, the level and the counter, since the workload is
-# frozen and verified.
+# What a measurement depends on besides the binary, the level and the
+# counter: the hosted headers the frozen workload includes (libstdc++'s
+# release and the C library) and the tool that counts (valgrind's version).
+# The workload itself is frozen and verified.
+my $toolchain_key;
+sub toolchain_key {
+	return $toolchain_key if defined $toolchain_key;
+	my $macros = `printf '#include <cstddef>\\n' | g++ -std=gnu++11 -x c++ -E -dM - 2>/dev/null` // '';
+	my ($glibcxx) = $macros =~ /#define __GLIBCXX__ (\d+)/;
+	my ($libc) = (`ldd --version 2>/dev/null` // '') =~ /^(.*)$/m;
+	my ($valgrind) = (`valgrind --version 2>/dev/null` // '') =~ /^(.*)$/m;
+	$toolchain_key = substr(Digest::SHA::sha256_hex(join("\n", $glibcxx // '', $libc // '', $valgrind // '')), 0, 8);
+	return $toolchain_key;
+}
+
+# Cache directory for one measurement of a binary, keyed by the binary's
+# bytes, the toolchain key, the level and the counter.
 sub cache_dir {
 	my ($binary, $level, $kind) = @_;
-	my $dir = "$PA35/obj/cache/" . substr(sha256_file($binary), 0, 20) . "-$level-$kind";
+	my $dir = "$PA35/obj/cache/" . substr(sha256_file($binary), 0, 20) . '-' . toolchain_key() . "-$level-$kind";
 	make_path($dir);
 	return $dir;
 }
@@ -466,6 +514,24 @@ sub timed_run {
 	my ($user, $sys, $wall, $rss, $status) = split ' ', $lines[-1];
 	die "command failed ($status): @cmd\n$out" if $status ne '0' && !$opt->{allow_fail};
 	return { user => $user, sys => $sys, wall => $wall, rss_kb => $rss, status => $status, output => $out };
+}
+
+# The growth of a scaling family from its times at the base size and the
+# sizes n, 2n, 4n, ... (scaling.pl): the ratio of the last two measured
+# sizes' times above the base cost. A time that is not a number is the
+# status of a run that exceeded its bound ("timeout") or failed, which is
+# unbounded growth ("inf" or "failed") whatever the sizes before it showed;
+# a last doubling under $noise seconds is "flat".
+sub scaling_growth {
+	my ($times, $noise) = @_;
+	my @times = @$times;
+	return "base $times[0]" if $times[0] !~ /^[\d.]+$/;
+	for my $t (@times[1 .. $#times]) {
+		return $t eq 'timeout' ? 'inf' : 'failed' if $t !~ /^[\d.]+$/;
+	}
+	return 'flat' if @times < 3;
+	my ($a, $b) = map { $_ - $times[0] } @times[-2, -1];
+	return $b < $noise ? 'flat' : $a <= 0 ? 'inf' : sprintf('%.2f', $b / $a);
 }
 
 sub median {
