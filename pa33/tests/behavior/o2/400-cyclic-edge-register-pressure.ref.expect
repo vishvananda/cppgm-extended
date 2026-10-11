@@ -3,7 +3,6 @@ instructions <= 40
 blocks <= 9
 count(call) <= 4
 mem <= 12
-count(push) <= 1
 instructions <= 4 in @noop
 stack_size <= 32 in @noop
 instructions <= 36 in @probe

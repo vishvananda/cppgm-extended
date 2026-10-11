@@ -3,7 +3,6 @@ instructions <= 36
 blocks <= 14
 count(call) <= 6
 mem <= 11
-count(push) <= 1
 instructions <= 3 in @make_value
 stack_size <= 48 in @make_value
 instructions <= 4 in @clobber

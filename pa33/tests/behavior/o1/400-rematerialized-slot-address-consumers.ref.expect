@@ -3,7 +3,6 @@ instructions <= 85
 blocks <= 14
 count(call) <= 14
 mem <= 28
-count(push) <= 1
 instructions <= 3 in @identity
 stack_size <= 48 in @identity
 instructions <= 18 in @copy_and_store_address

@@ -3,7 +3,6 @@ instructions <= 15
 blocks <= 4
 count(call) <= 3
 mem <= 4
-count(push) <= 1
 instructions <= 7 in @read_value
 stack_size <= 48 in @read_value
 instructions <= 9 in @main

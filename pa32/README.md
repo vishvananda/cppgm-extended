@@ -238,14 +238,13 @@ pass:
   at `-O3` with this optimizer; [the design notes](design-notes.md) describe
   how the course solution avoids repeating work.
 
-A few fixtures pin one policy at the level they test:
-`o1/500-shared-loop-inline-policy` (a loop callee with several callers stays a
-call at `-O1`), `o1/400-inline-discardable-size-cap` (the `-O1` single-call
-cap), `o3/500-late-inline-complex-size-cap` (a small callee made mostly of
-calls stays out of line) and `o3/500-full-unroll-small-constant-loops`
-(general full unrolling stays small). A broader policy later must leave those
-cases alone, by applying from a level the fixture does not test or by
-triggering only on the shapes it is meant for.
+No course fixture pins a cap: a sidecar states what must be simplified
+(outcome lines) and how large the output may be (budgets with room above
+the course solution's counts), and an upper bound on a function the
+optimizer removed holds. The course solution's own caps (which loop callees
+stay calls, what a single-call callee may cost, when a small callee made of
+calls stays out of line, how far a loop unrolls) are pinned only in
+`tests/regression`, outside your exit criteria.
 
 ### Design example
 

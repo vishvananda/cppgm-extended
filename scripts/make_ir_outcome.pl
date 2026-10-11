@@ -71,5 +71,5 @@ for my $function (sort keys %{$in->{functions}})
 	push @lines, "absent(\@$function)" if !exists($out->{functions}{$function});
 }
 exit(0) if !@lines;
-print "# outcome lines derived by scripts/make_ir_outcome.pl: what the course solution removed stays removed\n";
+print "# outcomes from $name: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)\n";
 print "$_\n" for @lines;

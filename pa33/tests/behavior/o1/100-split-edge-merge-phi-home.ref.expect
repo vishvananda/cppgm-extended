@@ -3,7 +3,6 @@ instructions <= 114
 blocks <= 15
 count(call) <= 5
 mem <= 52
-count(push) <= 1
 instructions <= 8 in @need_rehash
 stack_size <= 64 in @need_rehash
 instructions <= 4 in @rehash

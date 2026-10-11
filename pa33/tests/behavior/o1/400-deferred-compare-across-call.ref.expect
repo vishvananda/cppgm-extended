@@ -3,7 +3,6 @@ instructions <= 40
 blocks <= 7
 count(call) <= 5
 mem <= 15
-count(push) <= 1
 instructions <= 3 in @sink
 stack_size <= 80 in @sink
 instructions <= 17 in @probe

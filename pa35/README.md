@@ -326,9 +326,11 @@ Useful directions, in the order the measurements usually point:
 
 Prefer fixing an over-conservative model (a constraint stricter than emission
 needs) to tuning heuristics, which usually nets little. Re-measure a dropped
-idea after related changes land. Some PA32 and PA33 fixtures pin inlining,
-unrolling and memory-operand policies; when a broad change breaks one, apply
-it from a level the fixture does not test instead of weakening the fixture.
+idea after related changes land. PA32 and PA33's course fixtures state
+outcomes and upper bounds with room above the course solution's counts;
+when a broad change breaks one, the output grew past that room or lost a
+required simplification on that fixture's shape, which is worth
+understanding before the change is adjusted.
 
 Compile time that grows faster than its input usually comes from per-query
 work proportional to the whole translation unit: a lookup, overload check or

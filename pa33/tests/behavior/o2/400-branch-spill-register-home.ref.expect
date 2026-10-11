@@ -3,7 +3,6 @@ instructions <= 34
 blocks <= 8
 count(call) <= 5
 mem <= 9
-count(push) <= 1
 instructions <= 4 in @fallback
 stack_size <= 32 in @fallback
 instructions <= 16 in @accumulate

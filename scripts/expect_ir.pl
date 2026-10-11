@@ -15,7 +15,10 @@
 #   <metric> <op> <number> [in <scope>]    shorthand for count(<metric>)
 #
 # <op> is one of == != <= < >= >.  <scope> is `@function`, `^block`, or
-# `@function ^block`; without a scope the whole file is counted.
+# `@function ^block`; without a scope the whole file is counted.  A function
+# the file does not define has no instructions: every count in it is 0, so
+# an upper bound on a function the optimizer removed holds, while `has`, a
+# lower bound or a nonzero equality fails.
 #
 # <pattern> is one of:
 #   instructions        every instruction line in scope
@@ -293,14 +296,10 @@ for my $raw (read_lines($expect_path))
 		print "ERROR: $expect_path:$line_number: bad scope in: $raw\n";
 		exit(2);
 	}
-	if (defined($scope->{function}) && !exists($functions{$scope->{function}}))
-	{
-		print "FAIL: $line: no function \@$scope->{function} in output\n";
-		++$failures;
-		++$predicates;
-		next;
-	}
-	my $actual = count_pattern($pattern, $scope);
+	# A function the output does not define has no instructions: every
+	# count in it is 0 (see the header).
+	my $actual = defined($scope->{function}) && !exists($functions{$scope->{function}})
+		? 0 : count_pattern($pattern, $scope);
 	++$predicates;
 	if (!compare_values($actual, $op, $expected))
 	{

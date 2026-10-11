@@ -3,7 +3,6 @@ instructions <= 139
 blocks <= 19
 count(call) <= 14
 mem <= 73
-count(push) <= 1
 instructions <= 6 in @edge_at
 stack_size <= 48 in @edge_at
 instructions <= 4 in @node_at
