@@ -10,6 +10,8 @@ use Text::ParseWords qw(shellwords);
 use FindBin;
 use lib $FindBin::Bin;
 use CppgmBatchWorker ();
+use POSIX qw(WNOHANG);
+use Time::HiRes ();
 
 sub collect_tests
 {
@@ -480,15 +482,228 @@ sub check_lowir_lowers
 # not build, or whose program ends or prints differently, fails.  The size
 # budgets of a sidecar say nothing about results, so without this an
 # optimizer that changed a program's answer passed.
-sub lowir_has_entry
+# ----------------------------------------------------------------------
+# The LowIR behaviour check (CPPGM_LOWIR_BEHAVIOR_APP, PA32): the fixture
+# and the optimized output are each built into a program through the
+# reference backend and run, and the two programs must end the same way
+# and print the same output.
+#
+# What runs.  The fixture's entry (`@main`, else a `role=entry` function)
+# runs as written when it takes no parameters.  Otherwise a generated
+# driver is the entry: it calls a parameterized entry with fixed scalar
+# arguments, or, in a fixture without an entry, every function of
+# external binding whose parameters and result are scalars, in definition
+# order, and returns the sum of their results.  A helper the fixture
+# declares and nothing defines gets a provider that returns zero; when its
+# declaration allows unwinding, both programs also run with a provider
+# that throws, so the handlers run too.  An `x.driver.lowir` beside the
+# fixture replaces the generated driver and providers: it is appended as
+# written, its `@main` is the entry and the fixture's own `@main` is
+# renamed `@__behavior_entry`.  The lane's summary says how many inputs
+# ran, how, and why the others did not.
+our %lowir_behavior_tally;
+
+sub lowir_scalar_type
 {
-	# An entry function the startup can call: one without parameters.  The
-	# startup passes none, so a parameter would hold whatever its register
-	# held and the program's result would mean nothing.
+	my ($type) = @_;
+	return defined($type) && $type =~ /^[iu](?:1|8|16|32|64)$/ ? 1 : 0;
+}
+
+# The function headers of a LowIR text: name, parameters [[name, type, text]...],
+# result type, metadata (key => value), the raw bracket text and whether
+# the header is a declaration.
+sub lowir_function_headers
+{
 	my ($data) = @_;
-	return 0 if !defined($data);
-	return 1 if $data =~ /^function\s+\@main\(\s*\)/m;
-	return $data =~ /^function\s+\@[^\s(]+\(\s*\)[^\n]*\[[^\]\n]*\brole=entry\b/m ? 1 : 0;
+	my @headers;
+	return @headers if !defined($data);
+	while ($data =~ /^(declare[ \t]+)?function[ \t]+\@([^\s(]+)\(([^)]*)\)[ \t]*->[ \t]*(\S+)(\s*\[[^\]\n]*\])?/mg)
+	{
+		my ($declared, $name, $params, $result, $bracket) = ($1, $2, $3, $4, $5);
+		# A parameter: its name, its type, and its text with any metadata.
+		my @params;
+		while ($params =~ /(%\S+)\s*:\s*([^\s,\[]+)(\s*\[[^\]]*\])?/g)
+		{
+			push @params, [$1, $2, "$1 : $2" . (defined($3) ? $3 : '')];
+		}
+		my %meta;
+		if (defined($bracket) && $bracket =~ /\[([^\]]*)\]/)
+		{
+			for my $item (split(/\s*,\s*/, $1))
+			{
+				my ($key, $value) = split(/=/, $item, 2);
+				$meta{$key} = defined($value) ? $value : 1;
+			}
+		}
+		push @headers, { declared => defined($declared) ? 1 : 0, name => $name, params => \@params,
+			result => $result, meta => \%meta, bracket => defined($bracket) ? $bracket : '' };
+	}
+	return @headers;
+}
+
+sub lowir_all_scalar_params
+{
+	my ($header) = @_;
+	for my $param (@{ $header->{params} })
+	{
+		return 0 if !lowir_scalar_type($param->[1]);
+	}
+	return 1;
+}
+
+# A driver entry that calls each of @functions with fixed arguments and
+# returns the sum of their integer results.
+sub lowir_behavior_driver
+{
+	my (@functions) = @_;
+	my @values = (3, 5, 7, 11, 13, 17, 19, 23);
+	my @body = ('    %sum0 = const i64 0');
+	my $sum = '%sum0';
+	my $n = 0;
+	for my $function (@functions)
+	{
+		my @arguments;
+		for my $i (0 .. $#{ $function->{params} })
+		{
+			my $type = $function->{params}[$i][1];
+			push @body, "    %arg${n}_$i = const $type " . ($type eq 'i1' ? 1 : $values[$i % @values]);
+			push @arguments, "%arg${n}_$i";
+		}
+		my $call = "call $function->{result} \@$function->{name}(" . join(', ', @arguments) . ")";
+		if ($function->{result} eq 'void')
+		{
+			push @body, "    $call";
+		}
+		else
+		{
+			push @body, "    %result$n = $call";
+			my $wide = "%result$n";
+			if ($function->{result} ne 'i64')
+			{
+				my $extend = $function->{result} =~ /^i(?:8|16|32)$/ ? 'sext' : 'zext';
+				push @body, "    %wide$n = convert $extend i64 $function->{result} %result$n";
+				$wide = "%wide$n";
+			}
+			push @body, "    %sum" . ($n + 1) . " = binary add i64 $sum, $wide";
+			$sum = '%sum' . ($n + 1);
+		}
+		++$n;
+	}
+	push @body, "    return i64 $sum";
+	return "function \@main() -> i64 [role=entry] {\n  block ^entry:\n" . join("\n", @body) . "\n}\n";
+}
+
+sub lowir_provider_may_unwind
+{
+	my ($header) = @_;
+	return ($header->{meta}{unwind} || '') ne 'no' && ($header->{meta}{return} || '') ne 'noreturn';
+}
+
+# A provider for a declared helper nothing defines: it returns zero, never
+# returns when declared noreturn, or throws when $throwing and it may
+# unwind.  Undefined when no generated provider can define the helper.
+sub lowir_behavior_provider
+{
+	my ($header, $throwing) = @_;
+	return undef if exists($header->{meta}{arity});
+	my $body;
+	if (($header->{meta}{return} || '') eq 'noreturn')
+	{
+		$body = '    unreachable';
+	}
+	elsif ($throwing && lowir_provider_may_unwind($header))
+	{
+		$body = "    %thrown = const i64 7\n    throw i64 %thrown";
+	}
+	elsif ($header->{result} eq 'void')
+	{
+		$body = '    return void';
+	}
+	elsif (lowir_scalar_type($header->{result}))
+	{
+		$body = "    return $header->{result} 0";
+	}
+	else
+	{
+		return undef;
+	}
+	my $params = join(', ', map { $_->[2] } @{ $header->{params} });
+	return "function \@$header->{name}($params) -> $header->{result}$header->{bracket} {\n  block ^entry:\n$body\n}\n";
+}
+
+# How a fixture's programs are assembled (rename its `@main`, the function
+# whose entry role to drop, the driver text, the names the driver defines,
+# how to describe it), or `skip` with why it cannot run.
+sub lowir_behavior_plan
+{
+	my ($data, $sidecar) = @_;
+	my @defined = grep { !$_->{declared} } lowir_function_headers($data);
+	my %plan = (rename => 0, strip_role => undef, driver => '', provided => [], how => 'as written');
+	my ($main) = grep { $_->{name} eq 'main' } @defined;
+	my ($entry) = $main ? ($main) : grep { ($_->{meta}{role} || '') eq 'entry' } @defined;
+	if (defined($sidecar))
+	{
+		my @provided = map { $_->{name} } grep { !$_->{declared} } lowir_function_headers($sidecar);
+		if (grep { $_ eq 'main' } @provided)
+		{
+			$plan{rename} = 1 if $main;
+			$plan{strip_role} = $main ? '__behavior_entry' : $entry->{name} if $entry;
+		}
+		@plan{qw(driver provided how)} = ($sidecar, [grep { $_ ne 'main' } @provided], 'with its driver sidecar');
+		return \%plan;
+	}
+	if ($entry)
+	{
+		return \%plan if !@{ $entry->{params} };
+		return { skip => 'an entry parameter that is not a scalar' } if !lowir_all_scalar_params($entry);
+		return { skip => 'an entry result that is not a scalar' }
+			if $entry->{result} ne 'void' && !lowir_scalar_type($entry->{result});
+		my %target = %$entry;
+		if ($entry->{name} eq 'main')
+		{
+			$plan{rename} = 1;
+			$target{name} = '__behavior_entry';
+		}
+		$plan{strip_role} = $target{name};
+		$plan{driver} = lowir_behavior_driver(\%target);
+		$plan{how} = 'through a generated driver';
+		return \%plan;
+	}
+	my @callable = grep {
+		($_->{meta}{binding} || 'strong') ne 'internal' && !exists($_->{meta}{role}) &&
+			($_->{meta}{return} || '') ne 'noreturn' && !exists($_->{meta}{arity}) &&
+			($_->{result} eq 'void' || lowir_scalar_type($_->{result})) && lowir_all_scalar_params($_)
+	} @defined;
+	return { skip => 'no function a driver can call' } if !@callable;
+	$plan{driver} = lowir_behavior_driver(@callable);
+	$plan{how} = 'through a generated driver';
+	return \%plan;
+}
+
+# The text of one program: the fixture (or its output) with its `@main`
+# renamed and the entry role dropped as the plan says, the declarations
+# of the provided names removed, then the driver and the providers.
+sub lowir_behavior_program_text
+{
+	my ($data, $plan, $providers) = @_;
+	my $text = $data;
+	$text =~ s/(?<![\w\@.])\@main\b/\@__behavior_entry/g if $plan->{rename};
+	if (defined($plan->{strip_role}))
+	{
+		my $name = $plan->{strip_role};
+		$text =~ s{^(function[ \t]+\@\Q$name\E\([^)]*\)[ \t]*->[ \t]*\S+)\s*\[([^\]\n]*)\]}{
+			my ($head, $items) = ($1, $2);
+			my @kept = grep { !/^role=entry$/ } split(/\s*,\s*/, $items);
+			$head . (@kept ? ' [' . join(', ', @kept) . ']' : '')
+		}me;
+	}
+	for my $name (@{ $plan->{provided} }, keys %$providers)
+	{
+		$text =~ s/^declare[ \t]+function[ \t]+\@\Q$name\E\([^\n]*\n(?:[ \t]*\[[^\]\n]*\][ \t]*\n)?//mg;
+	}
+	my $tail = $plan->{driver};
+	$tail .= $providers->{$_} for sort keys %$providers;
+	return "$text\n$tail";
 }
 
 sub process_ending
@@ -499,20 +714,99 @@ sub process_ending
 	return 'exited with status ' . ($status >> 8);
 }
 
-# Builds a LowIR file through $app at -O0 and runs the program; returns
-# {built, timed_out, status, ending, stdout}.
-sub lowir_program_outcome
+# Runs a program with no input and its output to a file, under the
+# program time bound.  A program that exits with status 124 is not taken
+# for a timeout, as GNU timeout's own status would have it.
+sub run_lowir_program
 {
-	my ($app, $lowir, $program, $stdout_path, $log) = @_;
-	my $build_timeout = CppgmBatchWorker::get_timeout_from_env('CPPGM_BUILD_TEST_TIMEOUT_SEC', 30);
-	my $built = system("timeout $build_timeout \"$app\" -O0 -o \"$program\" \"$lowir\" > /dev/null 2> \"$log\"");
-	return { built => 0 } if $built != 0;
+	my ($program, $stdout_path) = @_;
 	my $timeout = CppgmBatchWorker::get_timeout_from_env('CPPGM_PROGRAM_TEST_TIMEOUT_SEC', 10);
-	my $status = system("timeout $timeout \"$program\" < /dev/null > \"$stdout_path\" 2>/dev/null");
-	return { built => 1, timed_out => 1 } if $status != -1 && ($status >> 8) == 124 && !($status & 127);
+	my $pid = fork();
+	return { status => -1, timed_out => 0 } if !defined($pid);
+	if ($pid == 0)
+	{
+		setpgrp(0, 0);
+		open(STDIN, '<', '/dev/null');
+		open(STDOUT, '>', $stdout_path);
+		open(STDERR, '>', '/dev/null');
+		exec { $program } $program;
+		exit(127);
+	}
+	my $deadline = Time::HiRes::time() + $timeout;
+	while (1)
+	{
+		my $reaped = waitpid($pid, WNOHANG);
+		return { status => $?, timed_out => 0 } if $reaped == $pid;
+		return { status => -1, timed_out => 0 } if $reaped == -1;
+		if (Time::HiRes::time() >= $deadline)
+		{
+			kill('KILL', -$pid);
+			kill('KILL', $pid);
+			waitpid($pid, 0);
+			return { timed_out => 1 };
+		}
+		Time::HiRes::sleep(0.01);
+	}
+}
+
+sub build_lowir_program
+{
+	my ($app, $lowir, $program, $log) = @_;
+	my $build_timeout = CppgmBatchWorker::get_timeout_from_env('CPPGM_BUILD_TEST_TIMEOUT_SEC', 30);
+	return system("timeout $build_timeout \"$app\" -O0 -o \"$program\" \"$lowir\" > /dev/null 2> \"$log\"") == 0;
+}
+
+sub lowir_undefined_symbols
+{
+	my ($log) = @_;
+	my $text = getdata($log);
+	return () if !defined($text) || $text !~ /undefined symbols?: (.*)/;
+	my $list = $1;
+	return $list =~ /(\S+) \(referenced from/g;
+}
+
+sub lowir_behavior_skip
+{
+	my ($reason) = @_;
+	++$lowir_behavior_tally{'not run'}{$reason};
+	return (1, undef, undef);
+}
+
+# Assembles, builds and runs one program (the input's or the output's),
+# generating providers for the helpers the link reports undefined when
+# %$providers has none for them.  Returns {built, timed_out, status,
+# ending, stdout, providers} or, when no generated provider can define a
+# helper the input declares, {skip => reason}.
+sub lowir_behavior_outcome
+{
+	my ($app, $data, $plan, $providers, $throwing, $base, $headers) = @_;
+	my ($lowir, $program, $stdout_path, $log) = map { "$base.$_" } qw(lowir program stdout stderr);
+	my %providers = %$providers;
+	for my $attempt (1, 2)
+	{
+		putrawdata($lowir, lowir_behavior_program_text($data, $plan, \%providers));
+		last if build_lowir_program($app, $lowir, $program, $log);
+		return { built => 0, log => $log } if $attempt == 2;
+		my @undefined = lowir_undefined_symbols($log);
+		return { built => 0, log => $log } if !@undefined;
+		for my $name (@undefined)
+		{
+			# The link names the symbol, which is the declaration's `object=`
+			# when it has one.
+			my ($header) = grep { $_->{declared} && ($_->{name} eq $name || ($_->{meta}{object} || '') eq $name) } @$headers;
+			return { skip => "a declared \@$name no generated provider can define" }
+				if !defined($header) || exists($providers{ $header->{name} });
+			my $provider = lowir_behavior_provider($header, $throwing);
+			return { skip => "a declared \@$header->{name} returning $header->{result}, which no generated provider can define" }
+				if !defined($provider);
+			$providers{ $header->{name} } = $provider;
+		}
+	}
+	my $run = run_lowir_program($program, $stdout_path);
+	return { built => 1, timed_out => 1, providers => \%providers } if $run->{timed_out};
 	my $stdout = getdata($stdout_path);
-	return { built => 1, timed_out => 0, status => $status, ending => process_ending($status),
-		stdout => defined($stdout) ? $stdout : '' };
+	return { built => 1, timed_out => 0, status => $run->{status}, ending => process_ending($run->{status}),
+		stdout => defined($stdout) ? $stdout : '', providers => \%providers };
 }
 
 sub check_lowir_behavior
@@ -521,40 +815,96 @@ sub check_lowir_behavior
 	my $app = $ENV{CPPGM_LOWIR_BEHAVIOR_APP};
 	return (1, undef, undef) if !defined($app) || $app eq '' || !defined($source_file);
 	return (1, undef, undef) if !-f $source_file || !source_is_lowir($source_file);
-	return (1, undef, undef) if !lowir_has_entry(getdata($source_file));
-	return (0, "ERROR: missing output file ($my)", undef) if !-f $my;
+	my $data = getdata($source_file);
+	return (1, undef, undef) if !defined($data);
+	(my $sidecar_path = $source_file) =~ s/\.t$/.driver.lowir/;
+	my $sidecar = $sidecar_path ne $source_file && -f $sidecar_path ? getdata($sidecar_path) : undef;
+	my $plan = lowir_behavior_plan($data, $sidecar);
+	return lowir_behavior_skip($plan->{skip}) if defined($plan->{skip});
+	my $output = getdata($my);
+	return (0, "ERROR: missing output file ($my)", undef) if !defined($output);
+	my @headers = lowir_function_headers($data);
 	my $base = "$my.behavior";
-	my @artifacts = map { "$base.$_" }
-		qw(input.program input.stdout input.stderr output.program output.stdout output.stderr);
+	my @variants = ('input', 'output', 'input.throwing', 'output.throwing');
+	my @artifacts = map { my $v = $_; map { "$base.$v.$_" } qw(lowir program stdout stderr) } @variants;
 	unlink(@artifacts);
-	my $before = lowir_program_outcome($app, $source_file,
-		"$base.input.program", "$base.input.stdout", "$base.input.stderr");
-	if (!$before->{built} || $before->{timed_out})
+	my $hint = "To reproduce (the reference backend builds the assembled input and output at -O0; "
+		. "the assembled programs stay beside the output):\n\n"
+		. "    \$ $app -O0 -o input.program " . rooted_path("$base.input.lowir") . " && ./input.program; echo \$?\n"
+		. "    \$ $app -O0 -o output.program " . rooted_path("$base.output.lowir") . " && ./output.program; echo \$?\n\n";
+	my %providers;
+	for my $throwing (0, 1)
 	{
-		unlink(@artifacts);
-		return (1, undef, undef);
+		my $suffix = $throwing ? '.throwing' : '';
+		my $before = lowir_behavior_outcome($app, $data, $plan, {}, $throwing, "$base.input$suffix", \@headers);
+		if (defined($before->{skip}))
+		{
+			unlink(@artifacts);
+			return lowir_behavior_skip($before->{skip});
+		}
+		if (!$before->{built})
+		{
+			my $reason = getdata($before->{log});
+			$reason = '' if !defined($reason);
+			$reason =~ s/\s+/ /g;
+			return (0, "ERROR: the input does not build through the reference backend ($reason)", $hint);
+		}
+		%providers = %{ $before->{providers} } if !$throwing;
+		if ($before->{timed_out})
+		{
+			unlink(@artifacts);
+			return lowir_behavior_skip('a program that does not finish');
+		}
+		# A trap, fault or arithmetic signal in the input program is undefined
+		# behaviour the driver's arguments reached (an `unreachable`, a null
+		# dereference), which the output need not reproduce; an abort is the
+		# runtime's defined ending of an uncaught exception and is compared.
+		if ($before->{status} != -1 && ($before->{status} & 127) && grep { ($before->{status} & 127) == $_ } (4, 7, 8, 11))
+		{
+			unlink(@artifacts);
+			return lowir_behavior_skip('a program the driver\'s arguments crash');
+		}
+		my $with = $throwing ? ' (with a provider that throws)' : '';
+		my $after = lowir_behavior_outcome($app, $output, $plan, $before->{providers}, $throwing,
+			"$base.output$suffix", \@headers);
+		return (0, "ERROR: missing output file ($my)", undef) if defined($after->{skip});
+		if (!$after->{built})
+		{
+			my $reason = getdata($after->{log});
+			$reason = '' if !defined($reason);
+			$reason =~ s/\s+/ /g;
+			return (0, "ERROR: optimized LowIR does not build through the reference backend ($reason)$with", $hint);
+		}
+		return (0, "ERROR: the optimized program did not finish; the input's program $before->{ending}$with", $hint)
+			if $after->{timed_out};
+		return (0, "ERROR: the optimized program $after->{ending}; the input's program $before->{ending}$with", $hint)
+			if $before->{status} != $after->{status};
+		return (0, "ERROR: the optimized program's output differs from the input program's$with "
+			. "(see $base.input$suffix.stdout and $base.output$suffix.stdout)", $hint)
+			if $before->{stdout} ne $after->{stdout};
+		++$lowir_behavior_tally{'with a provider that throws'} if $throwing;
+		last if !grep { lowir_provider_may_unwind($_) } grep { $_->{declared} && exists($providers{ $_->{name} }) } @headers;
 	}
-	my $after = lowir_program_outcome($app, $my,
-		"$base.output.program", "$base.output.stdout", "$base.output.stderr");
-	my $hint = "To reproduce (the reference backend builds the input and the optimized output at -O0):\n\n"
-		. "    \$ $app -O0 -o input.program " . rooted_path($source_file) . " && ./input.program; echo \$?\n"
-		. "    \$ $app -O0 -o output.program " . rooted_path($my) . " && ./output.program; echo \$?\n\n";
-	if (!$after->{built})
-	{
-		my $reason = getdata("$base.output.stderr");
-		$reason = '' if !defined($reason);
-		$reason =~ s/\s+/ /g;
-		return (0, "ERROR: optimized LowIR does not build through the reference backend ($reason)", $hint);
-	}
-	return (0, "ERROR: the optimized program did not finish; the input's program $before->{ending}", $hint)
-		if $after->{timed_out};
-	return (0, "ERROR: the optimized program $after->{ending}; the input's program $before->{ending}", $hint)
-		if $before->{status} != $after->{status};
-	return (0, "ERROR: the optimized program's output differs from the input program's "
-		. "(see $base.input.stdout and $base.output.stdout)", $hint)
-		if $before->{stdout} ne $after->{stdout};
+	++$lowir_behavior_tally{run};
+	++$lowir_behavior_tally{how}{ $plan->{how} };
+	++$lowir_behavior_tally{'with generated providers'} if %providers;
 	unlink(@artifacts);
 	return (1, undef, undef);
+}
+
+# One line for the lane: how many inputs the behaviour check ran, how,
+# and why it did not run the others.
+sub lowir_behavior_summary
+{
+	my %tally = %lowir_behavior_tally;
+	return '' if !%tally;
+	my $run = $tally{run} || 0;
+	my @how = map { "$tally{how}{$_} $_" } sort keys %{ $tally{how} || {} };
+	push @how, "$tally{$_} $_" for grep { $tally{$_} } ('with generated providers', 'with a provider that throws');
+	my $line = "behaviour: ran $run input" . ($run == 1 ? '' : 's') . (@how ? ' (' . join('; ', @how) . ')' : '');
+	my $not = $tally{'not run'} || {};
+	$line .= '; not run: ' . join(', ', map { "$not->{$_} with $_" } sort keys %$not) if %$not;
+	return "$line\n";
 }
 
 # With CPPGM_BEHAVIOR_CHECK_APP naming a `cppgm++`, a source fixture whose
@@ -4208,6 +4558,8 @@ sub compare_lowir_text
 		return ($lowers, $lower_message, $lower_hint) if !$lowers;
 		my ($behaves, $behave_message, $behave_hint) = check_source_behavior($my, $source_file);
 		return ($behaves, $behave_message, $behave_hint) if !$behaves;
+		my ($runs, $run_message, $run_hint) = check_lowir_behavior($my, $source_file);
+		return ($runs, $run_message, $run_hint) if !$runs;
 	}
 
 	my $direct_compare = env_flag_enabled('CPPGM_LOWIR_DIRECT_TEXT_COMPARE');
@@ -4896,10 +5248,12 @@ for my $test (@tests)
 
 if ($keep_going && $check_mode)
 {
+	print lowir_behavior_summary();
 	print compare_label() . ": " . ($failed ? "FAIL" : "PASS") . " ($npass/$suite_total)\n";
 }
 elsif (!$keep_going)
 {
+	print lowir_behavior_summary();
 	print compare_label() . ": PASS ($npass/$suite_total)\n";
 }
 append_keep_going_summary($repo_root, $cwd, $npass, $suite_total, $failed)

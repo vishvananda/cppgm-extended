@@ -1102,10 +1102,12 @@ function @main() -> i64 [role=entry] {
 }
 """
 
-    def compare(self, source, reference, generated):
+    def compare(self, source, reference, generated, driver=None):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "case.t").write_text(source, encoding="utf-8")
+            if driver is not None:
+                (root / "case.driver.lowir").write_text(driver, encoding="utf-8")
             (root / "case.ref").write_text(reference, encoding="utf-8")
             (root / "case.my").write_text(generated, encoding="utf-8")
             (root / "case.ref.expect").write_text("instructions <= 20\n", encoding="utf-8")
@@ -1150,6 +1152,90 @@ function @main() -> i64 [role=entry] {
         result = self.compare(self.FOLD, self.FOLDED, self.FOLDED.replace("return i64 7", "return i64 %gone"))
         self.assertNotEqual(result.returncode, 0)
 
-    def test_a_fixture_without_an_entry_is_not_run(self):
-        result = self.compare(self.HELPER, self.HELPER, self.HELPER.replace("%x, 0", "%x, 1"))
+    RETURNS_124 = """function @main() -> i64 [role=entry] {
+  block ^entry:
+    return i64 124
+}
+"""
+    PARAMETERIZED = """function @main(%x : i64, %flag : i1) -> i64 [role=entry] {
+  block ^entry:
+    return i64 %x
+}
+"""
+    CATCHES = """declare function @may_throw() -> void
+function @main() -> i64 {
+  block ^entry:
+    eh_try ^handler
+    call void @may_throw()
+    eh_end
+    return i64 1
+
+  block ^handler:
+    %e = exception i64
+    return i64 2
+}
+"""
+    NEEDS_POINTER = """declare function @source() -> ptr
+function @main() -> i64 {
+  block ^entry:
+    %p = call ptr @source()
+    return i64 0
+}
+"""
+    DRIVER = """function @main() -> i64 [role=entry] {
+  block ^entry:
+    %five = const i64 5
+    %r = call i64 @add(%five)
+    return i64 %r
+}
+"""
+
+    def test_a_helper_only_fixture_is_driven(self):
+        result = self.compare(self.HELPER, self.HELPER, self.HELPER)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("behaviour: ran 1 input (1 through a generated driver)", result.stdout)
+        result = self.compare(self.HELPER, self.HELPER, self.HELPER.replace("%x, 0", "%x, 1"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exited with status 4; the input's program exited with status 3", result.stdout)
+
+    def test_a_parameterized_entry_is_driven(self):
+        result = self.compare(self.PARAMETERIZED, self.PARAMETERIZED, self.PARAMETERIZED)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result = self.compare(self.PARAMETERIZED, self.PARAMETERIZED,
+                              self.PARAMETERIZED.replace("return i64 %x", "return i64 0"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exited with status 0; the input's program exited with status 3", result.stdout)
+
+    def test_an_exit_status_of_124_is_not_a_timeout(self):
+        result = self.compare(self.RETURNS_124, self.RETURNS_124, self.RETURNS_124.replace("i64 124", "i64 0"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exited with status 0; the input's program exited with status 124", result.stdout)
+
+    def test_a_declared_helper_gets_quiet_and_throwing_providers(self):
+        result = self.compare(self.CATCHES, self.CATCHES, self.CATCHES)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("1 with generated providers; 1 with a provider that throws", result.stdout)
+        result = self.compare(self.CATCHES, self.CATCHES, self.CATCHES.replace("return i64 2", "return i64 3"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exited with status 3; the input's program exited with status 2 (with a provider that throws)",
+                      result.stdout)
+
+    def test_a_helper_no_provider_can_define_is_reported(self):
+        result = self.compare(self.NEEDS_POINTER, self.NEEDS_POINTER, self.NEEDS_POINTER)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("not run: 1 with a declared @source returning ptr, which no generated provider can define",
+                      result.stdout)
+
+    def test_a_driver_sidecar_replaces_the_generated_driver(self):
+        result = self.compare(self.HELPER, self.HELPER, self.HELPER, driver=self.DRIVER)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("behaviour: ran 1 input (1 with its driver sidecar)", result.stdout)
+        result = self.compare(self.HELPER, self.HELPER, self.HELPER.replace("%x, 0", "%x, 1"), driver=self.DRIVER)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("exited with status 6; the input's program exited with status 5", result.stdout)
+
+    def test_an_input_the_backend_rejects_fails_the_lane(self):
+        broken = self.RETURNS_124.replace("return i64 124", "return i32 124")
+        result = self.compare(broken, self.RETURNS_124, self.RETURNS_124)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("the input does not build through the reference backend", result.stdout)

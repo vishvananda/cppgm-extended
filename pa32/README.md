@@ -174,13 +174,23 @@ What the course fixtures then check, for each `x.t`:
   (`cppgm++ -c -O0 x.lowir`) whenever the input does.  `make test` sets
   `CPPGM_LOWER_CHECK_APP` so the harness runs that floor; an optimizer's
   output is not correct until the backend accepts it;
-- when the input has an entry function, the optimized program behaves as
-  the input's: both are built through the reference backend
-  (`lowir2native-ref -O0`) and run, and the optimized one must exit the
-  same way and print the same output.  `make test` sets
-  `CPPGM_LOWIR_BEHAVIOR_APP`; an input the reference backend does not
-  build, or whose program does not finish, is not run.  A fixture without
-  an entry function is checked by its budgets and outcomes alone.
+- the optimized program behaves as the input's: both are built through the
+  reference backend (`lowir2native-ref -O0`) and run, and the optimized one
+  must exit the same way and print the same output (`make test` sets
+  `CPPGM_LOWIR_BEHAVIOR_APP`).  An entry without parameters runs as
+  written.  Otherwise a generated driver is the entry: it calls a
+  parameterized entry with fixed scalar arguments or, when the fixture has
+  no entry, every function of external binding whose parameters and result
+  are scalars, and returns the sum of their results.  A helper the fixture
+  declares and nothing defines gets a generated provider that returns zero,
+  and when its declaration allows unwinding both programs also run with a
+  provider that throws, so the handlers run too.  An `x.driver.lowir` beside
+  a fixture replaces the generated driver and providers: it is appended as
+  written, its `@main` is the entry, and the fixture's own `@main` is renamed
+  `@__behavior_entry`.  The lane's summary line says how many inputs ran,
+  how, and why the others did not (a pointer parameter or result, a helper
+  no provider can define, a program that does not finish); an input the
+  reference backend cannot build fails the lane.
 
 An `x.ref.expect` sidecar has two kinds of line.  Outcome lines state what
 the fixture is about in terms of the LowIR it reads and writes:
