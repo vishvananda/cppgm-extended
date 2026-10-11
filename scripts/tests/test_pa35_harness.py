@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Check the PA35 harness without the course compiler: the gate table, the
-progress ladder (progress.pl), the release check's margins (calibrate.pl
+"""Check the PA35 harness without the course compiler: the gate table and
+the README's statement of its limits and ladder steps, the progress ladder
+(progress.pl), the release check's margins in both builds (calibrate.pl
 --from), the frozen workload's manifest, and the behavior and generated
 runners driven with the host compiler standing in for cppgm++."""
 
@@ -166,21 +167,37 @@ class CalibrateTests(unittest.TestCase):
         values["O0-proxy"] = gate["limit"] / 1.001
         result = self.calibrate(values)
         self.assertEqual(result.returncode, 1)
-        self.assertEqual(self.gate_rows()[gate["name"]], ("SHORT", "short"))
+        self.assertEqual(self.gate_rows()[gate["name"]], ("SHORT", "SHORT"))
         self.assertIn("RELEASE CHECK FAILED: 1 of 17 gates", result.stdout)
 
-    def test_the_student_build_reports_its_margins_and_fails_only_a_gate(self):
+    def test_the_student_build_must_clear_the_margins_too(self):
         values = passing_values(self.gates)
         student = dict(values)
         gate = next(g for g in self.gates if g["metric"] == "O3-proxy")
         student["O3-proxy"] = gate["limit"] / 1.001
         result = self.calibrate(values, student)
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(self.gate_rows()[gate["name"]], ("pass", "short"))
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(self.gate_rows()[gate["name"]], ("pass", "SHORT"))
+        self.assertIn("RELEASE CHECK FAILED: 1 of 17 gates", result.stdout)
         student["O3-proxy"] = gate["limit"] * 1.001
         result = self.calibrate(values, student)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(self.gate_rows()[gate["name"]], ("pass", "FAIL"))
+
+    def test_each_kind_needs_its_margin_in_either_build(self):
+        margins = {"O0-own": 0.02, "kernel-lookup": 0.02, "O3-proxy": 0.015, "text": 0.01,
+                   "rss-O3": 0.25, "time-O0": 0.25, "scaling": 0.25}
+        for metric, margin in margins.items():
+            gate = next(g for g in self.gates if g["metric"] == metric)
+            for build in ("course", "student"):
+                for factor, status in ((1.001, "pass"), (0.999, "SHORT")):
+                    values = passing_values(self.gates)
+                    student = dict(values)
+                    (values if build == "course" else student)[metric] = gate["limit"] / (1 + margin * factor)
+                    result = self.calibrate(values, student)
+                    row = self.gate_rows()[gate["name"]]
+                    self.assertEqual(row[0 if build == "course" else 1], status, (metric, build, factor))
+                    self.assertEqual(result.returncode, 0 if status == "pass" else 1, (metric, build, factor))
 
     def test_the_student_build_uses_the_exported_makefile_flags(self):
         export = (REPO_ROOT / "scripts/export_student_repo.sh").read_text()
@@ -199,6 +216,32 @@ class CalibrateTests(unittest.TestCase):
         rows = self.gate_rows()
         self.assertEqual(rows["behavior"][0], "FAIL")
         self.assertEqual(rows["text-size"][0], "FAIL")
+
+
+class ReadmeTests(unittest.TestCase):
+    """The handout states the limits and ladder steps gates.txt holds."""
+
+    def setUp(self):
+        self.readme = (PA35 / "README.md").read_text()
+        self.gates = read_gates()
+
+    def test_the_gate_table_states_each_limit(self):
+        stated = {}
+        for name, limit in re.findall(r"^\| \w+ \| `([\w*-]+)`(?: \(\d+\))? \|.*\| <= ([\d.]+)(?: each)? \|$",
+                                      self.readme, re.M):
+            stated[name] = float(limit)
+        for gate in self.gates:
+            if gate["op"] != "<=":
+                continue
+            name = "kernel-*" if gate["name"].startswith("kernel-") else gate["name"]
+            self.assertIn(name, stated, gate["name"])
+            self.assertEqual(stated[name], gate["limit"], gate["name"])
+
+    def test_the_ladder_steps_are_the_ones_in_gates_txt(self):
+        paragraph = re.search(r"steps follow measurement noise \(([^)]*)\)", " ".join(self.readme.split()))
+        self.assertIsNotNone(paragraph)
+        stated = {float(p) / 100 for p in re.findall(r"([\d.]+)%", paragraph.group(1))}
+        self.assertEqual(stated, {g["step"] for g in self.gates if g["step"]})
 
 
 class WorkloadAndRunnerTests(unittest.TestCase):

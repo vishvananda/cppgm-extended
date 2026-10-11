@@ -5,21 +5,24 @@
 #
 # 1. The course build: every gate (check.pl, all three groups, N generated
 #    seeds, default 100) on dev/cppgm++ as this repository's Makefile builds
-#    it, into DIR/course. Every gate must pass, and every measured gate must
-#    clear its limit by the release margin of its kind (below): the value
-#    times (1 + margin) must still be within the limit.
+#    it, into DIR/course.
 # 2. The student build: the same source built as the student export's
 #    dev/Makefile builds it (%STUDENT_MAKE: plain -O3, the C library's
 #    malloc), seed by the host and self by that seed, measured by the speed
 #    and codegen groups into DIR/student. These are the values a student's
-#    gates compare with. Every gate must pass; its margins are reported, not
-#    enforced.
+#    gates compare with; the correctness group does not depend on the build
+#    and is taken from the course build.
+#
+# In both builds every gate must pass, and every measured gate must clear its
+# limit by the release margin of its kind (below): the value times
+# (1 + margin) must still be within the limit.
 #
 # DIR is pa35/obj/calibrate; --from DIR reads finished runs there instead of
 # measuring. It writes FILE (default pa35/calibration.tsv): each gate's value
 # and margin in both builds, the raw measurements behind the ratios, and the
 # machine, toolchain and commit they come from. Exits nonzero when a gate
-# fails or a course-build margin falls short; the file is written either way.
+# fails or a margin falls short in either build; the file is written either
+# way.
 #
 # Release margins, by kind of measurement (TESTING_AND_REFERENCES.md, "PA35
 # release check", has the measurements behind them):
@@ -107,7 +110,7 @@ $build{student}{ $_->{metric} } //= $build{course}{ $_->{metric} } for grep { $_
 
 # One gate in one build: (shown value, margin, status).
 sub judge {
-	my ($g, $v, $enforce) = @_;
+	my ($g, $v) = @_;
 	my $numeric = defined $v && $v =~ /^-?\d+(\.\d+)?(e-?\d+)?$/;
 	my $pass = $numeric && ($g->{op} eq '<=' ? $v <= $g->{limit} : $g->{op} eq '==' ? $v == $g->{limit} : $v >= $g->{limit});
 	my ($margin, $status) = ('-', $pass ? 'pass' : 'FAIL');
@@ -115,17 +118,17 @@ sub judge {
 		my $kind = $KIND{ $g->{metric} } // die "no release margin kind for $g->{metric}\n";
 		my $m = $v > 0 ? $g->{limit} / $v - 1 : 9.99;
 		$margin = sprintf('%.2f%%', 100 * $m);
-		$status = $m + 1e-12 >= $MARGIN{$kind} ? 'pass' : $enforce ? 'SHORT' : 'short';
+		$status = $m + 1e-12 >= $MARGIN{$kind} ? 'pass' : 'SHORT';
 	}
 	my $shown = !defined $v ? 'not measured' : $v =~ /^\d+\.\d+$/ ? sprintf('%.4f', $v) : $v;
 	return ($shown, $margin, $status);
 }
 my ($bad, @rows) = (0);
 for my $g (@GATES) {
-	my @c = judge($g, $build{course}{ $g->{metric} }, 1);
-	my @s = judge($g, $build{student}{ $g->{metric} }, 0);
+	my @c = judge($g, $build{course}{ $g->{metric} });
+	my @s = judge($g, $build{student}{ $g->{metric} });
 	my $need = $g->{op} eq '<=' ? sprintf('%.1f%% (%s)', 100 * $MARGIN{ $KIND{ $g->{metric} } }, $KIND{ $g->{metric} }) : '-';
-	$bad++ if $c[2] ne 'pass' || $s[2] eq 'FAIL';
+	$bad++ if $c[2] ne 'pass' || $s[2] ne 'pass';
 	push @rows, [$g->{name}, $g->{op}, $g->{limit}, $need, @c, @s];
 }
 
@@ -204,9 +207,9 @@ my @meta = (
 
 my $text = "# PA35 calibration: the course solution's value for every gate in gates.txt on the\n"
 	. "# machine and toolchain below, written by `make -C pa35 ref-test` (the release check);\n"
-	. "# do not edit by hand. Course build: this repository's Makefile; it must clear every\n"
-	. "# limit by the release margin of the gate's kind. Student build: the student export's\n"
-	. "# Makefile, the configuration students' gates compare; its margins are reported.\n"
+	. "# do not edit by hand. Course build: this repository's Makefile. Student build: the\n"
+	. "# student export's Makefile, the configuration students' gates compare. Each build must\n"
+	. "# clear every limit by the release margin of the gate's kind.\n"
 	. "# margin = limit / value - 1. The gate limits do not depend on this file.\n";
 $text .= join('', map { "meta\t$_->[0]\t$_->[1]\n" } @meta);
 $text .= "#\n# gate\top\tlimit\trelease margin\tcourse build\tmargin\tstatus\tstudent build\tmargin\tstatus\n";

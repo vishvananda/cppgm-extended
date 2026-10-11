@@ -1,11 +1,11 @@
 # PA35 calibration: the course solution's value for every gate in gates.txt on the
 # machine and toolchain below, written by `make -C pa35 ref-test` (the release check);
-# do not edit by hand. Course build: this repository's Makefile; it must clear every
-# limit by the release margin of the gate's kind. Student build: the student export's
-# Makefile, the configuration students' gates compare; its margins are reported.
+# do not edit by hand. Course build: this repository's Makefile. Student build: the
+# student export's Makefile, the configuration students' gates compare. Each build must
+# clear every limit by the release margin of the gate's kind.
 # margin = limit / value - 1. The gate limits do not depend on this file.
-meta	date	2026-10-10T21:32:37Z
-meta	source	c765a9762d351243e5b1ad43ad00e0f864c8b51d
+meta	date	2026-10-11T06:50:11Z
+meta	source	bdc68804e9a92a893bb3d6e3236541daa0b2fcb9
 meta	cpu	Intel(R) Xeon(R) CPU @ 2.60GHz
 meta	processors	48
 meta	kernel	Linux 7.1.6-1rodete1-amd64
@@ -22,65 +22,65 @@ meta	generated seeds	100
 gate	workload-compiles	==	1	-	1	-	pass	1	-	pass
 gate	behavior	==	0	-	0	-	pass	0	-	pass
 gate	generated	==	0	-	0	-	pass	0	-	pass
-gate	compile-O0-time	<=	0.80	25.0% (time)	0.1428	460.37%	pass	0.1519	426.77%	pass
-gate	compile-O3-time	<=	0.80	25.0% (time)	0.1345	494.95%	pass	0.1331	501.25%	pass
-gate	compile-O3-memory	<=	1.00	25.0% (memory)	0.4803	108.18%	pass	0.4262	134.65%	pass
-gate	compile-scaling	<=	3.00	25.0% (time)	2.0700	44.93%	pass	2.3000	30.43%	pass
+gate	compile-O0-time	<=	0.80	25.0% (time)	0.1500	433.40%	pass	0.1423	462.08%	pass
+gate	compile-O3-time	<=	0.80	25.0% (time)	0.1357	489.74%	pass	0.1290	520.22%	pass
+gate	compile-O3-memory	<=	1.00	25.0% (memory)	0.4385	128.07%	pass	0.4233	136.22%	pass
+gate	compile-scaling	<=	3.00	25.0% (time)	1.7700	69.49%	pass	2.1800	37.61%	pass
 gate	workload-identical	==	1	-	1	-	pass	1	-	pass
-gate	codegen-O0-instructions	<=	1.05	2.0% (count)	1.0241	2.53%	pass	1.0300	1.94%	short
-gate	codegen-O3-instructions	<=	1.08	2.0% (count)	1.0384	4.00%	pass	1.0590	1.98%	short
-gate	codegen-O0-cycle-proxy	<=	1.06	1.5% (proxy)	1.0372	2.20%	pass	1.0496	0.99%	short
-gate	codegen-O3-cycle-proxy	<=	1.07	1.5% (proxy)	1.0293	3.95%	pass	1.0545	1.47%	short
-gate	text-size	<=	1.12	1.0% (text)	1.1010	1.73%	pass	1.1030	1.54%	pass
-gate	kernel-accessor-distinct	<=	1.25	2.0% (count)	1.0000	25.00%	pass	1.0000	25.00%	pass
-gate	kernel-accessor-alias	<=	1.25	2.0% (count)	1.0000	25.00%	pass	1.0000	25.00%	pass
-gate	kernel-lookup	<=	1.25	2.0% (count)	1.1917	4.89%	pass	1.1917	4.89%	pass
-gate	kernel-exceptions	<=	1.25	2.0% (count)	1.2140	2.97%	pass	1.2140	2.97%	pass
+gate	codegen-O0-instructions	<=	1.08	2.0% (count)	1.0144	6.47%	pass	1.0201	5.88%	pass
+gate	codegen-O3-instructions	<=	1.12	2.0% (count)	1.0304	8.69%	pass	1.0508	6.58%	pass
+gate	codegen-O0-cycle-proxy	<=	1.09	1.5% (proxy)	1.0363	5.18%	pass	1.0455	4.26%	pass
+gate	codegen-O3-cycle-proxy	<=	1.10	1.5% (proxy)	1.0288	6.92%	pass	1.0520	4.56%	pass
+gate	text-size	<=	1.15	1.0% (text)	1.1040	4.17%	pass	1.1050	4.07%	pass
+gate	kernel-accessor-distinct	<=	1.30	2.0% (count)	1.0000	30.00%	pass	1.0000	30.00%	pass
+gate	kernel-accessor-alias	<=	1.30	2.0% (count)	1.0000	30.00%	pass	1.0000	30.00%	pass
+gate	kernel-lookup	<=	1.30	2.0% (count)	1.1917	9.09%	pass	1.1917	9.09%	pass
+gate	kernel-exceptions	<=	1.30	2.0% (count)	1.2140	7.08%	pass	1.2140	7.08%	pass
 #
 # build	measurement	seed or cppgm++	self or host	ratio
-detail	course	O0-own	2943788380	3014772967	1.024113
-detail	course	O0-total	3058675877	3131614875	1.023847
-detail	course	O0-calls	48675375	50649267	1.040552
-detail	course	O0-proxy	2505970915.66667	2599165150	1.037189
-detail	course	O3-own	7331661340	7613405164	1.038428
-detail	course	O3-total	7738610023	8072831625	1.043189
-detail	course	O3-calls	68273244	68725365	1.006622
-detail	course	O3-proxy	6334587969.33333	6520298460	1.029317
-detail	course	text-bytes	4602594	5066046	1.100694
-detail	course	time-E	0.081492	0.092192	0.883938
-detail	course	rss-E	17548	20112	0.872514
-detail	course	time-O0	0.635873	4.454037	0.142763
-detail	course	rss-O0	233556	480292	0.486279
-detail	course	time-O3	1.603126	11.922177	0.134466
-detail	course	rss-O3	242540	504924	0.480350
+detail	course	O0-own	2945032431	2987337854	1.014365
+detail	course	O0-total	3060009250	3104357492	1.014493
+detail	course	O0-calls	48688557	50664281	1.040579
+detail	course	O0-proxy	2501140673.33333	2591931315.66667	1.036300
+detail	course	O3-own	7341490987	7564720141	1.030407
+detail	course	O3-total	7749897589	8024426470	1.035424
+detail	course	O3-calls	68288123	68797090	1.007453
+detail	course	O3-proxy	6339155421.33333	6521488628.33333	1.028763
+detail	course	text-bytes	4625122	5104350	1.103614
+detail	course	time-E	0.080571	0.081823	0.984699
+detail	course	rss-E	13872	18252	0.760026
+detail	course	time-O0	0.690423	4.603433	0.149980
+detail	course	rss-O0	213264	479224	0.445019
+detail	course	time-O3	1.660989	12.244381	0.135653
+detail	course	rss-O3	220400	502668	0.438460
 detail	course	scaling-functions	flat	0.00 0.01 0.02 0.03 0.06	
-detail	course	scaling-macros	flat	0.00 0.01 0.01 0.03 0.05	
-detail	course	scaling-members	flat	0.00 0.01 0.01 0.02 0.06	
-detail	course	scaling-scopes	2.07	0.02 0.06 0.11 0.21 0.41	
-detail	course	scaling-statements	flat	0.00 0.00 0.01 0.01 0.04	
-detail	course	scaling-templates	flat	0.00 0.00 0.01 0.03 0.06	
-detail	course	scaling-worst	2.07		
-detail	student	O0-own	2927031233	3014865287	1.030008
-detail	student	O0-total	3052221028	3139797392	1.028693
-detail	student	O0-calls	48668934	50649267	1.040690
-detail	student	O0-proxy	2482522864.33333	2605672545.66667	1.049607
-detail	student	O3-own	7189164323	7613347337	1.059003
-detail	student	O3-total	7637256878	8111007129	1.062031
-detail	student	O3-calls	68288632	68725365	1.006395
-detail	student	O3-proxy	6245265057.66667	6585428458	1.054467
-detail	student	text-bytes	4594818	5066046	1.102556
-detail	student	time-E	0.091555	0.093909	0.974933
-detail	student	rss-E	12316	20044	0.614448
-detail	student	time-O0	0.663539	4.369183	0.151868
-detail	student	rss-O0	211756	482780	0.438618
-detail	student	time-O3	1.577719	11.857583	0.133056
-detail	student	rss-O3	215348	505320	0.426162
-detail	student	scaling-functions	flat	0.00 0.01 0.02 0.03 0.07	
-detail	student	scaling-macros	flat	0.00 0.00 0.01 0.02 0.05	
-detail	student	scaling-members	flat	0.00 0.01 0.01 0.02 0.06	
-detail	student	scaling-scopes	2.30	0.02 0.07 0.11 0.19 0.40	
-detail	student	scaling-statements	flat	0.00 0.00 0.01 0.02 0.03	
-detail	student	scaling-templates	flat	0.00 0.01 0.01 0.03 0.05	
-detail	student	scaling-worst	2.30		
+detail	course	scaling-macros	flat	0.00 0.00 0.01 0.02 0.04	
+detail	course	scaling-members	flat	0.00 0.01 0.01 0.03 0.06	
+detail	course	scaling-scopes	1.77	0.02 0.07 0.11 0.21 0.35	
+detail	course	scaling-statements	flat	0.00 0.00 0.00 0.01 0.03	
+detail	course	scaling-templates	flat	0.00 0.00 0.01 0.02 0.06	
+detail	course	scaling-worst	1.77		
+detail	student	O0-own	2928591360	2987359656	1.020067
+detail	student	O0-total	3053849981	3112281894	1.019134
+detail	student	O0-calls	48682113	50664281	1.040717
+detail	student	O0-proxy	2484108768.66667	2597120473	1.045494
+detail	student	O3-own	7198774476	7564773556	1.050842
+detail	student	O3-total	7647838775	8063654044	1.054370
+detail	student	O3-calls	68309214	68797090	1.007142
+detail	student	O3-proxy	6253993491.66667	6579133286.33333	1.051989
+detail	student	text-bytes	4617474	5104350	1.105442
+detail	student	time-E	0.075102	0.069680	1.077813
+detail	student	rss-E	12280	19488	0.630131
+detail	student	time-O0	0.657204	4.617523	0.142328
+detail	student	rss-O0	209884	481156	0.436208
+detail	student	time-O3	1.613345	12.507944	0.128986
+detail	student	rss-O3	212652	502328	0.423333
+detail	student	scaling-functions	flat	0.00 0.01 0.02 0.04 0.06	
+detail	student	scaling-macros	flat	0.00 0.00 0.02 0.02 0.05	
+detail	student	scaling-members	flat	0.00 0.01 0.02 0.02 0.06	
+detail	student	scaling-scopes	2.18	0.02 0.07 0.12 0.19 0.40	
+detail	student	scaling-statements	flat	0.00 0.00 0.01 0.01 0.03	
+detail	student	scaling-templates	flat	0.00 0.00 0.01 0.02 0.06	
+detail	student	scaling-worst	2.18		
 detail	course	behavior	behavior: 93/93 tests pass at O0 O1 O2 O3		
 detail	course	generated	generated: 302/302 programs pass at O0 O1 O2 O3		

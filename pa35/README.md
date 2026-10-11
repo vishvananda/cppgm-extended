@@ -70,12 +70,12 @@ reported as not run. `make -C pa35 test-correctness`, `test-speed` and
 | speed | `compile-O3-memory` | seed `-O3` peak RSS / host `-O2` | <= 1.00 |
 | speed | `compile-scaling` | largest growth of the seed's compile time per doubling of input size, over the synthetic families of `scaling.pl` | <= 3.0 |
 | codegen | `workload-identical` | seed and self (frozen with `scripts/freeze.pl --label check`) write byte-identical objects for the workload at `-O0` and `-O3` | required |
-| codegen | `codegen-O0-instructions` | self / seed instructions executed in the compiler binary's own code (callgrind), workload at `-O0` | <= 1.05 |
-| codegen | `codegen-O3-instructions` | the same at `-O3` | <= 1.08 |
-| codegen | `codegen-O0-cycle-proxy` | self / seed cycle proxy for the whole process at `-O0` | <= 1.06 |
-| codegen | `codegen-O3-cycle-proxy` | the same at `-O3` | <= 1.07 |
-| codegen | `text-size` | self / seed `.text` bytes | <= 1.12 |
-| codegen | `kernel-*` (4) | each kernel in `kernels/`, compiled by `cppgm++` and by GCC and linked against one GCC-built driver: instructions for the measured input relative to GCC | <= 1.25 each |
+| codegen | `codegen-O0-instructions` | self / seed instructions executed in the compiler binary's own code (callgrind), workload at `-O0` | <= 1.08 |
+| codegen | `codegen-O3-instructions` | the same at `-O3` | <= 1.12 |
+| codegen | `codegen-O0-cycle-proxy` | self / seed cycle proxy for the whole process at `-O0` | <= 1.09 |
+| codegen | `codegen-O3-cycle-proxy` | the same at `-O3` | <= 1.10 |
+| codegen | `text-size` | self / seed `.text` bytes | <= 1.15 |
+| codegen | `kernel-*` (4) | each kernel in `kernels/`, compiled by `cppgm++` and by GCC and linked against one GCC-built driver: instructions for the measured input relative to GCC | <= 1.30 each |
 
 The cycle proxy is `Ir/3 + 15 Bcm + 20 Bim + 10 I1mr + 10 (D1mr + D1mw)` from
 callgrind's cache and branch simulation: deterministic, and closer to time
@@ -93,8 +93,9 @@ progress until it passes. `make -C pa35 test-progress` reports how far each
 gate is as rungs of a ladder: `gates.txt` gives a measured gate a `from`
 value and a step, and the rungs sit at the limit times `(1 + step)^k` up to
 `from`. A measurement passes every rung at or above it, the last rung is the
-gate itself, and steps follow measurement noise (0.5% for instruction and
-cache-simulation counts, 5% for timed runs). The command runs nothing: it
+gate itself, and steps follow measurement noise (0.5% for the workload's
+instruction and cache-simulation counts, 1% for the kernels and text size,
+2% for memory, 5% for timed runs). The command runs nothing: it
 reads the measurements the last `test-correctness`, `test-speed` and
 `test-codegen` (or `make -C pa35 test`) left in `pa35/obj/check`, counting a
 group only when it was measured after the groups before it, and prints one
@@ -112,12 +113,12 @@ records its value for each gate and the margin to each limit, with the
 machine, toolchain and commit they were measured on, for two builds of the
 same source. Built the way your Makefile builds the seed (plain `-O3`, the C
 library's `malloc`), which is what your gates compare, it measures own-binary
-instruction ratios of 1.030 / 1.059 (`-O0` / `-O3`), cycle proxies of
-1.050 / 1.054, text 1.103, kernels of 1.00 / 1.00 / 1.19 / 1.21 (distinct,
-alias, lookup, exceptions), and compile times of about 0.15 / 0.13 of the
+instruction ratios of 1.020 / 1.051 (`-O0` / `-O3`), cycle proxies of
+1.045 / 1.052, text 1.105, kernels of 1.00 / 1.00 / 1.19 / 1.21 (distinct,
+alias, lookup, exceptions), and compile times of about 0.14 / 0.13 of the
 host's. The course repository's own build adds `-fno-strict-aliasing` and
 links jemalloc; its seed runs slower, and the same compiler measures
-1.024 / 1.038, 1.037 / 1.029 and 1.101 there. One earlier implementation of
+1.014 / 1.030, 1.036 / 1.029 and 1.104 there. One earlier implementation of
 this course started PA35 at 2.12 / 2.51 own-binary instructions. A compiler
 whose front end is slow may instead start by failing the speed gates, and
 then the codegen group reports its simulated gates as not measured until
@@ -129,10 +130,10 @@ preprocessed text and the kernel yardstick. The course re-measures them at
 each release, and whenever the solution's optimizer, backend or front end
 changes, by running every gate on the course solution on the release machine
 (`make -C pa35 ref-test` in the course repository). That release check
-requires the course build to clear each limit by a margin that covers the
-noise measured for its kind: 2% for instruction counts, 1.5% for the cycle
-proxy (which moves with code layout), 1% for text size, and 25% for compile
-time, memory and scaling. The limits themselves do not move with the
+requires both builds to clear each limit by a margin that covers the noise
+measured for its kind: 2% for instruction counts, 1.5% for the cycle proxy
+(which moves with code layout), 1% for text size, and 25% for compile time,
+memory and scaling. The limits themselves do not move with the
 calibration.
 
 ## Work loop

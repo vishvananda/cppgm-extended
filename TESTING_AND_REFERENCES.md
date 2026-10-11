@@ -150,12 +150,12 @@ MIR dump, and generated programs from five seeds, in seconds (8 at twelve
 jobs here). Run it
 with the other checks in [AGENTS.md](AGENTS.md) after a change to the
 optimizer, the backend or the lowering. `make test-harness` includes
-`scripts/tests/test_pa35_harness.py`, which checks the gate table, the
-progress ladder, the release check's margins and the runners without the
-course compiler. Neither `make test` nor `make test-report` runs PA35: like
-PA34 it is outside the report, its speed gates time real compiles, and its
-cycle proxy runs the workload under cache simulation, so a full run takes
-minutes.
+`scripts/tests/test_pa35_harness.py`, which checks the gate table and the
+handout's limits and ladder steps, the progress ladder, the release check's
+margins in both builds and the runners without the course compiler. Neither
+`make test` nor `make test-report` runs PA35: like PA34 it is outside the
+report, its speed gates time real compiles, and its cycle proxy runs the
+workload under cache simulation, so a full run takes minutes.
 
 `make -C pa35 ref-test` is the release check. It runs every gate on the
 course build (`check.pl` with 100 generated seeds), then builds the same
@@ -164,8 +164,8 @@ source as the student export's Makefile does (plain `-O3`, the C library's
 codegen groups, the configuration students' gates compare. It writes
 `pa35/calibration.tsv`: each gate's value and margin in both builds, the
 measurements behind them, and the machine, toolchain and commit. Commit the
-file. The check fails when a gate fails in either build, or when a course
-build value does not clear its limit by the release margin of its kind
+file. The check fails when a gate fails in either build, or when a value
+in either build does not clear its limit by the release margin of its kind
 (margin = limit / value - 1):
 
 | Kind | Gates | Release margin | Spread measured when PA35 entered |
@@ -177,11 +177,11 @@ build value does not clear its limit by the release margin of its kind
 | time | `-O0` and `-O3` time ratios, scaling growth | 25% | 15% (`-O0`) and 2.5% (`-O3`) over nine runs of the course build; scaling 8% there, and 24% (1.86 to 2.30) across the course, student and reference seeds |
 
 The margins cover noise; the limits in `gates.txt` stay what they are. A
-flat 2% for every kind would fail `text-size` (1.75% at entry) and leave the
-`-O0` proxy (2.16% at entry) within the layout spread of failing; the
-deterministic text ratio needs less. The student build's margins are
-reported and not enforced; they are thinner, because its seed is built with
-strict aliasing and without jemalloc.
+flat 2% for every kind would have failed `text-size` (1.75% at entry) and
+left the `-O0` proxy (2.16% at entry) within the layout spread of failing;
+the deterministic text ratio needs less. The student build's codegen
+margins are the thinner ones: its seed is built with strict aliasing and
+without jemalloc, so the seed does less work for the same self.
 
 Re-calibrate:
 
@@ -194,7 +194,7 @@ Re-calibrate:
 - after changing the workload (and its `MANIFEST.sha256`), the kernels or the
   generators.
 
-When the course build falls short, improve the solution and re-sync it;
+When either build falls short, improve the solution and re-sync it;
 never move a limit to fit it. The export ships `calibration.tsv` and drops
 `pa35/maintainer/`.
 
