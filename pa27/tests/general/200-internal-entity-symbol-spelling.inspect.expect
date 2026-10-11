@@ -2,7 +2,7 @@ local_defined_symbol_canonical 1 _ZL4data
 local_defined_symbol_canonical 1 _ZN2nsL1vE
 local_defined_symbol_canonical 1 _ZL4text
 local_defined_symbol_canonical 1 _Z2ua
-local_defined_symbol_canonical 1 _ZNK3$_03getEv
+local_defined_symbol_pattern 1 ^_ZNK.*3getEv$
 local_defined_symbol_canonical 1 _ZZ3getvE5local
 local_defined_symbol_canonical 1 _ZGVZ3getvE5local
 local_defined_symbol_canonical 1 _ZZL4sfunvE1k

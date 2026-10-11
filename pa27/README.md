@@ -201,7 +201,11 @@ names:
   part of the ABI name
 
 Where Itanium leaves a name to the implementation, the reference follows
-clang, and the object-inspection tests check its spelling:
+clang. The object-inspection tests check the spelling of a symbol another
+unit can name (external and weak symbols); a unit-local symbol they check
+only by its binding and by a pattern that admits clang's and GCC's
+spellings, so the forms below for local entities (`$_<n>`, `__invoke`, the
+`_ZGR` numbering) describe the reference and are not required:
 
 - a namespace-scope variable or function of internal linkage carries the `L`
   marker (`_ZL4data`, `_ZN2nsL1vE`, `_ZL4sfunv`), except inside an unnamed
@@ -270,20 +274,22 @@ Reference:
 To complete PA27, implement ordinary host-toolchain interoperability of emitted
 object files within the supported subset:
 
-1. Emit host-linker-compatible relocatable objects, including PIE-safe GOT
-   materialization for the addresses of imported data and functions.
+1. Emit host-linker-compatible relocatable objects. The course links them
+   without PIE; an imported object's address may be materialized through
+   the GOT (as the reference does, which a default-PIE link also accepts)
+   or by a PC-relative or absolute reference the host linker resolves.
 2. Expose a hosted entrypoint through the host CRT.
 3. Preserve cross-translation-unit behavior under host link.
 4. Emit target-correct duplicate-definition semantics for header and template
    code.
 5. Interoperate with host-built objects, archives, shared libraries, and tested
    `thread_local` variables through practical function/global boundaries.
-6. Preserve the earlier class-value semantics in host-object mode. Compiler-object
-   metadata must not append a whole-object representation copy after a nontrivial
-   memberwise copy or move body.
-7. Omit an unreferenced translation-unit-local function definition from the
-   native object while retaining local functions whose addresses or bodies are
-   required by emitted runtime code.
+6. Preserve the earlier class-value semantics in host-object mode: a
+   nontrivial copy or move constructor or assignment runs its memberwise
+   body exactly once, with no whole-object copy after it.
+7. Retain every local function whose address or body emitted code requires.
+   Omitting an unreferenced translation-unit-local function is the course
+   solution's choice and is not graded.
 8. Retain a reachable constructor or destructor base-entry definition needed
    at the object boundary even when optimization removes its last direct call.
    Retention does not by itself prohibit inlining that entry at other call

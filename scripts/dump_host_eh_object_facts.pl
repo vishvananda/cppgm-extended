@@ -277,15 +277,41 @@ sub normalize_elf_reloc_type
 		R_X86_64_PLT32 => 'branch32',
 		R_X86_64_64 => 'abs64',
 		R_X86_64_REX_GOTPCRELX => 'gotpcrel',
-		R_X86_64_GOTPCRELX => 'gotpcrel',
+		# Without the REX prefix: the form `call *sym@GOTPCREL(%rip)` of a
+		# -fno-plt call (a 64-bit address load carries REX.W).
+		R_X86_64_GOTPCRELX => 'gotpcrelx',
 		R_X86_64_GOTPCREL => 'gotpcrel',
 	);
 	return exists($mapping{$reloc_type}) ? $mapping{$reloc_type} : lc($reloc_type);
 }
 
+# The sections of an ELF object's local symbols, by symbol name: a
+# relocation against a local symbol of .gcc_except_table or .eh_frame means
+# the same as one against the section symbol, which is how the course
+# solution spells it.
+sub parse_elf_local_symbol_sections
+{
+	my ($section_text, $symbol_text) = @_;
+	my %name_of_index;
+	for my $raw_line (split(/\n/, $section_text))
+	{
+		$name_of_index{$1} = $2 if $raw_line =~ /^\s*\[\s*(\d+)\]\s+(\S+)\s+/;
+	}
+	my %section_of;
+	for my $raw_line (split(/\n/, $symbol_text))
+	{
+		my @parts = split(/\s+/, $raw_line =~ s/^\s+//r);
+		next if scalar(@parts) < 8 || $parts[4] ne 'LOCAL' || $parts[6] !~ /^\d+$/;
+		next if !exists($name_of_index{$parts[6]});
+		$section_of{$parts[7]} = classify_section($name_of_index{$parts[6]});
+	}
+	return \%section_of;
+}
+
 sub parse_elf_relocations
 {
-	my ($text) = @_;
+	my ($text, $local_sections) = @_;
+	$local_sections = {} if !defined($local_sections);
 	my @relocs;
 	my $current_section;
 	for my $raw_line (split(/\n/, $text))
@@ -312,10 +338,14 @@ sub parse_elf_relocations
 		next if $line eq '' || $line =~ /^Offset/;
 		my @parts = split(/\s+/, $line);
 		next if scalar(@parts) < 5;
+		my $target = exists($local_sections->{$parts[4]}) &&
+			$local_sections->{$parts[4]} =~ /^(?:host_unwind|host_lsda|text)$/
+			? 'section:' . $local_sections->{$parts[4]}
+			: classify_target('elf', $parts[4]);
 		push @relocs, join(' ',
 			$current_section,
 			normalize_elf_reloc_type($parts[2]),
-			classify_target('elf', $parts[4]));
+			$target);
 	}
 	return unique_sorted(@relocs);
 }
@@ -340,7 +370,9 @@ sub relocation_contract_facts
 	}
 	if(is_host_eh_symbol($target))
 	{
-		if($section eq 'text' && $kind eq 'branch32')
+		# A call through the PLT, or through the GOT (`-fno-plt`), is a call;
+		# an address loaded through the GOT is a reference.
+		if($section eq 'text' && ($kind eq 'branch32' || $kind eq 'gotpcrelx'))
 		{
 			push @facts, "reloc_call $target";
 		}
@@ -430,6 +462,26 @@ sub read_sleb128
 	return ($result, $pos);
 }
 
+# A value in one of the DW_EH_PE encodings a call-site table may use:
+# uleb128, sleb128, or a 2-, 4- or 8-byte little-endian datum.
+sub read_encoded
+{
+	my ($bytes, $pos, $encoding) = @_;
+	my $format = $encoding & 0x0f;
+	return read_uleb128($bytes, $pos) if $format == 0x01;
+	return read_sleb128($bytes, $pos) if $format == 0x09;
+	my %width = (0x02 => 2, 0x03 => 4, 0x04 => 8, 0x0a => 2, 0x0b => 4, 0x0c => 8);
+	return if !exists($width{$format});
+	my $n = $width{$format};
+	return if $pos + $n > scalar(@{$bytes});
+	my $value = 0;
+	for(my $i = $n - 1; $i >= 0; --$i)
+	{
+		$value = ($value << 8) | $bytes->[$pos + $i];
+	}
+	return ($value, $pos + $n);
+}
+
 sub parse_lsda_candidate
 {
 	my ($bytes, $start) = @_;
@@ -437,8 +489,10 @@ sub parse_lsda_candidate
 	return if $start + 4 > $size;
 	my $pos = $start;
 	return if $bytes->[$pos++] != 0xff;
+	# The type-table encoding is the writer's choice (0x9b for the course
+	# solution and clang, 0x03 for g++ without PIE); its base offset is a
+	# uleb128 either way.
 	my $ttype_encoding = $bytes->[$pos++];
-	return if $ttype_encoding != 0xff && $ttype_encoding != 0x9b;
 	my $has_type_table = $ttype_encoding != 0xff;
 	if($has_type_table)
 	{
@@ -447,8 +501,9 @@ sub parse_lsda_candidate
 		$pos = $ttbase[1];
 	}
 	my $rest_start = $pos;
-	return if $pos >= $size || $bytes->[$pos++] != 0x01;
-	my @call_site_length = read_uleb128($bytes, $pos);
+	return if $pos >= $size;
+	my $call_site_encoding = $bytes->[$pos++];
+	my @call_site_length = read_encoded($bytes, $pos, $call_site_encoding);
 	return if scalar(@call_site_length) != 2;
 	my $call_site_table_length = $call_site_length[0];
 	$pos = $call_site_length[1];
@@ -461,24 +516,20 @@ sub parse_lsda_candidate
 	$facts{'lsda type_table'} = 1 if $has_type_table;
 	my @action_offsets;
 	my $call_site_count = 0;
-	my $covered_end = 0;
+	# The table's layout (whether entries cover every instruction or only
+	# the calls, where the first one starts) is the writer's choice and no
+	# fact; what the entries say is.
 	while($pos < $call_site_end)
 	{
-		my @start_value = read_uleb128($bytes, $pos);
+		my @start_value = read_encoded($bytes, $pos, $call_site_encoding);
 		return if scalar(@start_value) != 2;
-		my @length_value = read_uleb128($bytes, $start_value[1]);
+		my @length_value = read_encoded($bytes, $start_value[1], $call_site_encoding);
 		return if scalar(@length_value) != 2;
-		my @landing_value = read_uleb128($bytes, $length_value[1]);
+		my @landing_value = read_encoded($bytes, $length_value[1], $call_site_encoding);
 		return if scalar(@landing_value) != 2;
 		my @action_value = read_uleb128($bytes, $landing_value[1]);
 		return if scalar(@action_value) != 2;
 		$pos = $action_value[1];
-		$facts{'lsda call_site_has_sparse_gap'} = 1
-			if $start_value[0] > $covered_end;
-		my $entry_end = $start_value[0] + $length_value[0];
-		$covered_end = $entry_end if $entry_end > $covered_end;
-		$facts{'lsda call_site_starts_at_zero'} = 1
-			if $call_site_count == 0 && $start_value[0] == 0;
 		$facts{'lsda call_site_has_landingpad'} = 1 if $landing_value[0] != 0;
 		$facts{'lsda call_site_has_no_landingpad'} = 1 if $landing_value[0] == 0;
 		$facts{'lsda call_site_has_cleanup'} = 1
@@ -562,8 +613,11 @@ sub dump_object_facts
 	}
 	else
 	{
-		@sections = parse_elf_sections(join('', read_command_lines('readelf', '-SW', $obj)));
-		@relocs = parse_elf_relocations(join('', read_command_lines('readelf', '-rW', $obj)));
+		my $section_text = join('', read_command_lines('readelf', '-SW', $obj));
+		@sections = parse_elf_sections($section_text);
+		@relocs = parse_elf_relocations(join('', read_command_lines('readelf', '-rW', $obj)),
+			parse_elf_local_symbol_sections($section_text,
+				join('', read_command_lines('readelf', '-Ws', $obj))));
 	}
 
 	for my $section (@sections)

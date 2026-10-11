@@ -205,16 +205,18 @@ sub count_macos_relocation_class
 {
 	my ($obj, $class, $needle) = @_;
 	my %kind_for = (
-		data_pcrel => 'SIGNED',
-		branch_call => 'BRANCH',
-		imported_data_got => 'GOT_LD',
+		data_pcrel => qr/SIGNED/,
+		branch_call => qr/BRANCH/,
+		imported_data_got => qr/GOT_LD/,
+		# Any reference to data: direct, through the GOT, or absolute.
+		data_any => qr/SIGNED|GOT_LD|GOT\b|UNSIGN/,
 	);
 	die "Unsupported Mach-O relocation class '$class'\n"
 		if !exists($kind_for{$class});
 	my $count = 0;
 	for my $line (read_command_lines('otool', '-rv', $obj))
 	{
-		next if index($line, $kind_for{$class}) < 0;
+		next if $line !~ $kind_for{$class};
 		++$count if line_has_macos_canonical_symbol($line, $needle);
 	}
 	return $count;
@@ -227,6 +229,9 @@ sub count_linux_relocation_class
 		data_pcrel => qr/\bR_X86_64_PC32\b/,
 		branch_call => qr/\bR_X86_64_PLT32\b/,
 		imported_data_got => qr/\bR_X86_64_(?:REX_)?GOTPCREL(?:X)?\b/,
+		# Any reference to data: PC-relative, through the GOT, or absolute
+		# (a non-PIE object's); which one a design uses is its choice.
+		data_any => qr/\bR_X86_64_(?:PC32|32S?|64|(?:REX_)?GOTPCREL(?:X)?)\b/,
 	);
 	die "Unsupported ELF relocation class '$class'\n"
 		if !exists($type_re{$class});
@@ -383,11 +388,14 @@ sub validate_thread_local_export_surface_canonical
 	}
 	if($os eq 'linux')
 	{
-		return 0 if count_defined_symbols_canonical($obj, $canonical_wrapper) == 0;
+		# The variable is a TLS definition in a TLS section and the object
+		# reaches it through some TLS access model; the wrapper is weak and
+		# may be emitted by whichever unit uses the variable.
 		return 0 if count_linux_defined_tls_symbols($obj, $canonical_linux_global) == 0;
-		return 0 if !has_section_named($os, $obj, '.tdata');
+		return 0 if !has_section_named($os, $obj, '.tdata') && !has_section_named($os, $obj, '.tbss');
 		return 0 if count_linux_relocation_type_symbol(
-			$obj, qr/\bR_X86_64_TPOFF32\b/, $canonical_linux_global) == 0;
+			$obj, qr/\bR_X86_64_(?:TPOFF32|TPOFF64|GOTTPOFF|TLSGD|TLSLD|DTPOFF32|DTPOFF64|GOTPC32_TLSDESC|TLSDESC_CALL)\b/,
+			$canonical_linux_global) == 0;
 		return 1;
 	}
 	die "Unsupported host OS for TLS export validation: $os\n";
@@ -742,6 +750,29 @@ while (my $line = <$spec>)
 		die "Expected at least $min_count function-and-relocation COMDATs for '$needle' in object $obj_index; got $count\n"
 			if $count < $min_count;
 		print "comdat_relocated_definition $obj_index $needle $min_count\n";
+		next;
+	}
+
+	if ($kind eq 'local_defined_symbol_pattern')
+	{
+		# A local entity's symbol, by a pattern that admits every
+		# implementation's spelling where the Itanium ABI leaves the name
+		# to the implementation: some local symbol matches, and no global or
+		# weak one does.
+		my ($pattern) = @fields;
+		die "Invalid local_defined_symbol_pattern expectation in $spec_file: $line\n"
+			if !defined($pattern);
+		my $re = eval { qr/$pattern/ };
+		die "Invalid local_defined_symbol_pattern in $spec_file: $line\n" if !defined($re);
+		my ($local, $exported) = (0, 0);
+		for my $entry (read_nm_symbol_entries($obj, 'defined'))
+		{
+			next if $entry->{raw_symbol} !~ $re;
+			if ($entry->{type} =~ /^[a-z]$/) { ++$local; } else { ++$exported; }
+		}
+		die "Expected a local defined symbol matching /$pattern/ in object $obj_index and no global or weak one; got $local local and $exported exported\n"
+			if $local == 0 || $exported != 0;
+		print "local_defined_symbol_pattern $obj_index $pattern 1\n";
 		next;
 	}
 

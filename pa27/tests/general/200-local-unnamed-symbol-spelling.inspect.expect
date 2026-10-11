@@ -1,3 +1,3 @@
-local_defined_symbol_canonical 1 _ZZ13unnamed_localvENK3$_03getEv
-local_defined_symbol_canonical 1 _ZZ7invokervEN3$_08__invokeEv
-local_defined_symbol_canonical 1 _ZZZ6nestedvENK3$_0clEvENUlvE_8__invokeEv
+local_defined_symbol_pattern 1 ^_ZZ13unnamed_localvENK.*3getEv$
+local_defined_symbol_pattern 1 ^_ZZ7invokervEN.*(?:8__invokeEv|4_FUNEv)$
+local_defined_symbol_pattern 1 ^_ZZZ6nestedvENK.*clEvEN.*(?:8__invokeEv|4_FUNEv)$

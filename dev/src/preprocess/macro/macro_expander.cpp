@@ -30,10 +30,13 @@ bool IsIdentifierLikeOperator(const PPToken& token)
 		token.spelling[0] <= 'z';
 }
 
-// __has_cpp_attribute and (gnu) __has_attribute: the attributes this
-// implementation reports, as the course reference does (value 1): the
-// standard attribute no_unique_address; the GNU attribute Clang's
-// using_if_exists. `__name__` spells the same attribute.
+// __has_cpp_attribute and (gnu) __has_attribute answer 1 for the attributes
+// this implementation implements and 0 for every other name: the standard
+// attribute no_unique_address, and the GNU and Clang attributes the parser
+// accepts and applies (syntax/parser_specifiers.cpp). A header that probes
+// for an attribute then uses it, so claiming not to have one that is
+// implemented sends the header down a fallback path instead. `__name__`
+// spells the same attribute.
 bool IsReportedAttribute(const char* spelling, uint32_t length, bool gnu)
 {
 	if (length > 4 && std::memcmp(spelling, "__", 2) == 0 && std::memcmp(spelling + length - 2, "__", 2) == 0)
@@ -41,10 +44,15 @@ bool IsReportedAttribute(const char* spelling, uint32_t length, bool gnu)
 		spelling += 2;
 		length -= 4;
 	}
-	static const char* const kReported[] = { "no_unique_address", "using_if_exists" };
-	for (unsigned i = gnu ? 1 : 0; i < (gnu ? 2u : 1u); ++i)
+	static const char* const kStandard[] = { "no_unique_address" };
+	static const char* const kGnu[] = { "always_inline", "noinline", "noreturn", "pure", "const", "used", "weak",
+		"packed", "aligned", "section", "vector_size", "gnu_inline", "abi_tag", "using_if_exists",
+		"exclude_from_explicit_instantiation" };
+	const char* const* reported = gnu ? kGnu : kStandard;
+	const unsigned count = gnu ? sizeof(kGnu) / sizeof(kGnu[0]) : sizeof(kStandard) / sizeof(kStandard[0]);
+	for (unsigned i = 0; i < count; ++i)
 	{
-		if (std::strlen(kReported[i]) == length && std::memcmp(spelling, kReported[i], length) == 0)
+		if (std::strlen(reported[i]) == length && std::memcmp(spelling, reported[i], length) == 0)
 			return true;
 	}
 	return false;

@@ -115,7 +115,7 @@ class DumpHostEhObjectFactsPlTests(unittest.TestCase):
         self.assertIn("object 1 reloc_call __cxa_throw", lines)
         self.assertIn("object 1 reloc_ref __gxx_personality_v0", lines)
         self.assertIn("object 1 reloc_section_ref host_lsda", lines)
-        self.assertIn("object 1 lsda call_site_starts_at_zero", lines)
+        self.assertNotIn("object 1 lsda call_site_starts_at_zero", lines)
         self.assertIn("object 1 lsda action_has_catch", lines)
         self.assertIn("object 1 lsda type_table", lines)
 

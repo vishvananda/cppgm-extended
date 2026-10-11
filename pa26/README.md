@@ -199,28 +199,27 @@ runtime-helper object surface for `cppgm++ -c` within the supported subset:
 6. Keep private course-only exception runtime symbols out of host-EH objects,
    and encode the host personality without a direct PC-relative data relocation
    that would make a default-PIE host link unsafe.
-7. Close full-expression EH regions before control-flow joins and require
-   matching protected-call state at statement, conditional, short-circuit, and
-   loop merges (the PA21 lowering rule; see its design notes).
+7. Enter every landing pad with one set of active regions: a path into a
+   block carries the same protected-call state as every other path into it
+   (`../pa8/lowir.md`, "Structural Rules").
 8. Preserve translation-unit-local object binding for generated functions in a
    non-ODR-mergeable local context; do not export a local lambda call operator
    as a weak or global host symbol.
 9. If adjacent LSDA call-site ranges are coalesced, keep an unprotected
    potentially-throwing range as a barrier and never combine ranges with
    different landing pads or action continuations.
-10. Share one translation-unit-local terminate action across function exception
-    boundaries. It receives the active exception object, calls
-    `__cxa_begin_catch`, and then calls `std::terminate`; individual landings
-    shall not repeat the begin-catch call.
-11. Within one function, route semantic resume operations through one physical
-    `_Unwind_Resume` terminal that reloads the active exception from the
-    function's host-EH slot. Keep the source cleanup paths distinct in LowIR
-    and MIR.
-12. Keep the LSDA call-site table sparse. In an LSDA-bearing function, a
-    potentially throwing call outside a protected region still needs an
-    explicit null-landing entry so unwinding continues through the function,
-    but ordinary instruction gaps need no entry. Adjacent unprotected calls
-    between the same protected regions may share one null-landing range.
+10. Reach `std::terminate` through the host runtime when an exception
+    leaves a non-throwing function: a landing that calls `__cxa_begin_catch`
+    and then `std::terminate`, or the runtime's `__cxa_call_terminate`. How
+    many landings or helpers do it, and what they are named, is not graded;
+    the program's behavior is.
+11. End every cleanup landing by calling `_Unwind_Resume` with the exception
+    object it received. How many resume sites a function has is your choice.
+12. Cover every potentially throwing call in an LSDA-bearing function with a
+    call-site entry, a null landing pad where nothing handles it, so that
+    unwinding continues through the function. Whether entries also cover the
+    instructions between calls, and whether adjacent unprotected calls share
+    an entry, is the table's layout and is not graded.
 
 If object inspection shows missing or malformed host EH metadata for a basic
 throw/catch/cleanup case, fix the host-EH lowering or object-emission path.

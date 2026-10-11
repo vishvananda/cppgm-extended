@@ -268,7 +268,13 @@ To complete PA29, implement hosted compatibility for:
   `__has_warning` takes a string literal; the rest take a single identifier.
   `__has_cpp_attribute` answers nonzero only for an attribute the compiler
   implements, here the standard `no_unique_address`, also spelled
-  `__no_unique_address__`, and `0` for any other name, scoped ones included.
+  `__no_unique_address__`, and `0` for any other name, scoped ones included;
+  `__has_attribute` likewise answers nonzero for the GNU and Clang
+  attributes the compiler implements (`always_inline`, `noinline`,
+  `noreturn`, `pure`, `const`, `used`, `weak`, `packed`, `aligned`,
+  `section`, `vector_size`, `gnu_inline`, `abi_tag`, `using_if_exists` and
+  `exclude_from_explicit_instantiation`, each also spelled `__name__`) and
+  `0` for any other.
   `__has_builtin` answers from the registries that hold the builtins rather
   than from a list beside them: claiming not to have one that is implemented is
   worse than lacking it, because the header then takes a fallback written in

@@ -9,9 +9,9 @@ bad
 blocks_off
 #endif
 #if __has_attribute(always_inline)
-bad
+attr_on
 #else
-attr_off
+bad
 #endif
 #if __has_cpp_attribute(nodiscard)
 bad

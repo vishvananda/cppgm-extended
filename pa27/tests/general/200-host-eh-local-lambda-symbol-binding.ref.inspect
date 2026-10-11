@@ -1,1 +1,1 @@
-local_defined_symbol_canonical 1 _ZZ4mainENK3$_0clEv 1
+local_defined_symbol_pattern 1 ^_ZZ4mainENK.*clEv$ 1
