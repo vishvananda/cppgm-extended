@@ -10,3 +10,5 @@ for current instructions; keep these recorded snapshots unchanged.
   tests that pinned the course solution's choices, its evaluation of the
   second review (section 0) and the consolidated fix list (section 0.1).
 - `second-review.md`: the independent second review it evaluates.
+- `follow-up-review.md`: the review of the fix series, whose recommendations
+  the commits after it take up.
