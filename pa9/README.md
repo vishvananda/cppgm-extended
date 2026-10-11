@@ -196,12 +196,19 @@ Target forms:
 - `function ...` with optional following terminal and `param ...` lines
 - `variable ...`
 - `typeinfo ...`
+- `typeinfo-name ...`
 - `vtable ...`
 - `vtt ...`
 - `construction-vtable ...`
 - `tls-wrapper variable ...`
 - `thunk ... function ...`
 - `virtual-base-thunk ... function ...`
+
+The records that describe a function (terminals, `function-qualifier`,
+`result`, `param` and the other component lines) follow only a target that
+names a function: `function ...`, or the `function ...` of a thunk. After any
+other target they make the fact file invalid. A `function-qualifier` record
+names at most one of `lvalue-ref` and `rvalue-ref`.
 
 The thunk target uses `thunk <this-adjust> function ...` when only `this`
 needs adjustment and `thunk <this-adjust> <result-adjust> function ...` for a
@@ -305,10 +312,11 @@ The checked-in tests are numbered from simpler names toward more complete ABI
 situations:
 
 - `100-*`: basic functions, variables, named types, builtin types, pointers,
-  arrays, member pointers, typeinfo, vtables, VTTs, and variadic forms
+  arrays, member pointers, typeinfo, vtables, VTTs, variadic forms, and
+  malformed fact files
 - `200-*`: ABI tags, local entities, local and namespace-scope lambdas,
-  ABI-tagged special type names, operators, conversion terminals, TLS wrappers,
-  and thunks
+  ABI-tagged special type names, member-function qualifiers, operators,
+  conversion terminals, TLS wrappers, and thunks
 - `300-*`: entity-valued template arguments, template-template arguments,
   standard substitutions, construction vtables, and dependent integral values
 - `400-*`: dependent aliases and dependent member/owner types
