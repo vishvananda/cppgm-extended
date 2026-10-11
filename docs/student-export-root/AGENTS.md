@@ -46,8 +46,9 @@ PA8's harness uses `lowir-ref` to compare roundtrips and `lowir2native-ref` to
 execute student-constructed LowIR. Implement the LowIR machinery and later
 C++ lowering yourself.
 
-PA12’s behavioral controls also execute your source-generated LowIR through
-the supplied native backend. Your own native backend is introduced in PA24.
+The self-checking controls of PA10–PA23 also execute your source-generated
+LowIR through the supplied native backend. Your own native backend is
+introduced in PA24.
 
 Preserve inherited attribution. [NOTICE](NOTICE) explains how this extensively
 revised course derives from the original CPPGM material.

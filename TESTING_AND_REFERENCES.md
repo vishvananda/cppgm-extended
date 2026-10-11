@@ -54,8 +54,8 @@ builds the LowIR with `lowir2native-ref -O0`, runs it and checks the status
 and output, or that the frontend rejects it; the LowIR text is not compared.
 A program killed by a signal fails whatever status it states (SIGABRT is not
 `exit 134`), and a frontend killed by one does not reject.
-`make test` runs controls after the LowIR suite, `make test-controls` runs
-them alone, and controls need no references. Use this lane for a runtime
+`make test` runs controls after the LowIR suite, `make -C paN test-controls`
+runs one assignment's controls alone, and controls need no references. Use this lane for a runtime
 reducer whose features the assignment owns. Host-linked, multi-unit,
 optimized or g++-output-compared programs belong to PA25 and later. Controls
 without a stated outcome stay with PA10–PA12's focused checkers.

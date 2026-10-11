@@ -72,8 +72,8 @@ is a sequence of checks, not a sequence of partial implementations of your
 compiler.
 
 PA8 still uses the supplied native backend to execute the LowIR constructed
-by `lowir-self`; PA12 uses it for the behavioral controls on C++ lowering.
-PA24 and PA33 test your self-built native backend.
+by `lowir-self`; PA10–PA23 use it for their self-checking controls on C++
+lowering. PA24 and PA33 test your self-built native backend.
 
 The source sets come from `dev/frontend_source_sets.mk`, including the files
 you added during earlier assignments. Keep those lists current for every tool
