@@ -182,6 +182,49 @@ class ExportedDevMakefileTests(unittest.TestCase):
                         )
                         self.assertEqual(result.stdout.strip(), expected)
 
+    def test_student_root_makefile_drops_maintainer_targets(self):
+        # test-cells walks the course's toolchain cells and test-harness runs
+        # scripts that never ship: both are maintainer-only.  The export's
+        # own check greps for the names in this list, so neither may leave it.
+        script = EXPORT_SCRIPT.read_text()
+        match = re.search(r"^STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS='([^']*)'$", script, re.M)
+        self.assertIsNotNone(match, "missing STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS")
+        dropped = match.group(1).split()
+        for target in ("test-cells", "test-harness"):
+            self.assertIn(target, dropped)
+        self.assertIn('for target in $STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS; do', script)
+        start = script.index("sanitize_student_root_makefile() {")
+        end = script.index("\n}\n", start) + len("\n}\n")
+        maintainer = (REPO_ROOT / "Makefile").read_text()
+        for target in ("test-cells", "test-harness"):
+            self.assertRegex(maintainer, rf"(?m)^{target}:")
+        with tempfile.TemporaryDirectory(prefix="exported-root-makefile.") as temp:
+            makefile = Path(temp) / "Makefile"
+            shutil.copy(REPO_ROOT / "Makefile", makefile)
+            subprocess.run(
+                ["bash", "-euc", script[start:end] +
+                 '\nsanitize_student_root_makefile "$1"', "bash", str(makefile)],
+                check=True,
+            )
+            exported = makefile.read_text()
+            for target in dropped:
+                self.assertFalse(target in exported,
+                                 f"the exported root Makefile still names {target}")
+            # A student still picks a toolchain by prefixing one target.
+            self.assertRegex(exported, r"(?m)^with-clang-%: require-clang$")
+            self.assertRegex(exported, r"(?m)^with-clang-libcxx-%: require-clang-libcxx$")
+            # Only the per-assignment test-% rule is left to match the names,
+            # and it stops at once: there is no such assignment.  (Not make
+            # -n: test-% runs its $(MAKE) lines even then.)
+            for target in ("test-cells", "test-harness"):
+                result = subprocess.run(
+                    ["make", "-s", "-C", temp, target],
+                    capture_output=True, text=True, timeout=60,
+                )
+                self.assertEqual(result.returncode, 2, target + result.stdout + result.stderr)
+                self.assertIn("unknown assignment: " + target.removeprefix("test-"),
+                              result.stderr)
+
     def test_identical_relink_preserves_frontend_mtime(self):
         with tempfile.TemporaryDirectory(prefix="exported-dev-makefile.") as temp:
             root = Path(temp)

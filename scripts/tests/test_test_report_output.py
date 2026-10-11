@@ -31,6 +31,7 @@ class TestReportOutputTests(unittest.TestCase):
                 self.assertNotIn("scripts/audit_", makefile)
                 self.assertNotIn("test-seams", makefile)
                 self.assertNotIn("test-harness", makefile)
+                self.assertNotIn("test-cells", makefile)
             (root / "scripts").mkdir()
             audit = root / "scripts/audit_compiler_exceptions.pl"
             audit.write_text(

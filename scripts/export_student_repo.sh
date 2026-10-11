@@ -278,19 +278,23 @@ sanitize_student_makefile_defaults() {
   ' "$@"
 }
 
-# The root Makefile carries maintainer-only targets whose scripts never ship:
-# the architecture audits (scripts/audit_*.pl), the harness unit tests and the
-# telemetry-off build check (scripts/tests/*.py).  Drop those targets with
-# their comments, the audit prerequisite of test-report-nobuild, and their
-# .PHONY names.
+# The root Makefile carries maintainer-only targets: the architecture audits
+# (scripts/audit_*.pl), the harness unit tests and the telemetry-off build
+# check (scripts/tests/*.py), whose scripts never ship, and test-cells, which
+# walks the course's three toolchain cells.  Drop those targets with their
+# comments, the audit prerequisite of test-report-nobuild, and their .PHONY
+# names.  The with-clang-% and with-clang-libcxx-% prefixes stay: they run
+# one target with a chosen toolchain.
+STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS='test-cells test-harness test-seams build-telemetry-off test-telemetry-off'
 sanitize_student_root_makefile() {
   perl -0pi -e '
     s/^test-report-nobuild: audit-compiler-exceptions$/test-report-nobuild:/m;
     s/(?:^#[^\n]*\n)*^audit-[a-z-]+:[^\n]*\n\t\@perl scripts\/audit_[a-z_]+\.pl[^\n]*\n\n?//mg;
     s/^build-telemetry-off:\n(?:\t[^\n]*\n)+\n?//m;
     s/^test-telemetry-off: build build-telemetry-off\n(?:\t[^\n]*\n)+\n?//m;
+    s/(?:^#[^\n]*\n)*^test-cells:\n(?:\t[^\n]*\n)+\n?//m;
     s/(?:^#[^\n]*\n)*^HARNESS_TESTS = \\\n(?:\t[^\n]*\n)+\n?^test-harness:\n(?:\t[^\n]*\n)+\n?//m;
-    s/\b(?:audit-[a-z-]+|build-telemetry-off|test-telemetry-off|test-harness) //g;
+    s/\b(?:audit-[a-z-]+|build-telemetry-off|test-telemetry-off|test-harness|test-cells) //g;
     s/^\tif \[ -d pa11\/tests\/general \]; then \\\n(?:\t[^\n]*\n)*?\tfi; \\\n//m;
   ' "$@"
 }
@@ -781,11 +785,14 @@ finalize_reference_binaries
 # `make test` runs from a script the export forgot fails for every student.
 check_exported_script_references() {
   local missing=0 makefile dir ref path
-  # A target the export strips must leave no caller behind.
-  if grep -q 'test-seams' "$dest/Makefile" 2>/dev/null; then
-    echo "export: the root Makefile still calls test-seams" >&2
-    exit 1
-  fi
+  # A target the export strips must leave no caller and no name behind.
+  local target
+  for target in $STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS; do
+    if grep -q -e "$target" "$dest/Makefile" 2>/dev/null; then
+      echo "export: the root Makefile still names the maintainer target $target" >&2
+      exit 1
+    fi
+  done
   for makefile in "$dest/Makefile" "$dest"/pa*/Makefile; do
     [ -f "$makefile" ] || continue
     dir=$(dirname "$makefile")
