@@ -208,7 +208,7 @@ scripts build). Each starts with a usage comment.
 | Command | Purpose |
 |---|---|
 | `make -C pa35 freeze LABEL=L` | freeze `pa35/obj/bin/{seed,self}-L` from the current tree |
-| `make -C pa35 measure LABEL=L [SIM=1]` | callgrind on seed-L and self-L at `-O0` and `-O3`: own-binary instructions, mix by instruction class, call and function excess, in `pa35/obj/results/L` |
+| `make -C pa35 measure LABEL=L [SIM=1]` | callgrind on seed-L and self-L at `-O0` and `-O3`: own-binary instructions, mix by instruction class, call and function excess, in `pa35/obj/results/L` (`L-sim` with `SIM=1`) |
 | `make -C pa35 abba LABEL=L [LEVEL=-O3]` | paired timing of seed-L and self-L |
 | `perl pa35/scripts/build_with.pl --compiler C --out DIR` | build `cppgm++` from this source with any compiler |
 | `make -C pa35 identity OLD=A NEW=B` | whether two compilers generate identical code for every `cppgm++` object and the workload, and their compiler work |
@@ -321,7 +321,7 @@ Prefer fixing an over-conservative model (a constraint stricter than emission
 needs) to tuning heuristics, which usually nets little. Re-measure a dropped
 idea after related changes land. Some PA32 and PA33 fixtures pin inlining,
 unrolling and memory-operand policies; when a broad change breaks one, apply
-it from `-O2` instead of weakening the fixture.
+it from a level the fixture does not test instead of weakening the fixture.
 
 Compile time that grows faster than its input usually comes from per-query
 work proportional to the whole translation unit: a lookup, overload check or

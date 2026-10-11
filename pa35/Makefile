@@ -70,8 +70,11 @@ speed:
 scaling:
 	$(PERL) $(S)/scaling.pl --keep obj/scaling-sources
 
+# LEVEL's default above is abba's; profile defaults to -O0, as profile.pl does.
+PROFILE_LEVEL = $(if $(filter file,$(origin LEVEL)),-O0,$(LEVEL))
+
 profile:
-	$(PERL) $(S)/profile.pl --level $(if $(filter -O%,$(LEVEL)),$(LEVEL),-O0) --seconds $(SECONDS) $(if $(INPUT),--input $(INPUT))
+	$(PERL) $(S)/profile.pl --level $(if $(filter -O%,$(PROFILE_LEVEL)),$(PROFILE_LEVEL),-O0) --seconds $(SECONDS) $(if $(INPUT),--input $(INPUT))
 
 clean:
 	rm -rf obj
