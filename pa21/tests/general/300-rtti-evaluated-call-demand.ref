@@ -1,7 +1,5 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-declare function @__external_runtime____cxa_bad_typeid() -> void [return=noreturn, role=bad_typeid, linkage=c, binding=strong, object=__cxa_bad_typeid]
-
 global @__typeinfo_name__struct_base [storage=readonly, binding=weak, object=_ZTS4base] = {
   i8 52
   i8 98
@@ -30,21 +28,13 @@ function @probe(%value : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=
     call void @argument__argument(%t1)
     %t2 = load typed ptr $value
     %t3 = call ptr @select($argobj__1, %t2)
-    %t4 = cmp eq ptr %t3, 0
-    branch %t4, ^typeid_fail_1, ^typeid_scan_2
-
-  block ^typeid_fail_1:
-    call void @__external_runtime____cxa_bad_typeid()
-    return i32 0
-
-  block ^typeid_scan_2:
-    %t5 = load typed ptr %t3
-    %t6 = index i8 %t5, -8
-    %t7 = load typed ptr %t6
-    %t8 = addr @__rtti_struct_base
-    %t9 = cmp eq ptr %t7, %t8
-    %t10 = convert trunc i32 i64 %t9
-    return i32 %t10
+    %t4 = load typed ptr %t3
+    %t5 = index i8 %t4, -8
+    %t6 = load typed ptr %t5
+    %t7 = addr @__rtti_struct_base
+    %t8 = cmp eq ptr %t6, %t7
+    %t9 = convert trunc i32 i64 %t8
+    return i32 %t9
 }
 function @argument__argument(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN8argumentC1Ev, inline_hint=yes] {
   slot $this : ptr

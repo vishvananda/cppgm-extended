@@ -196,9 +196,10 @@ To complete PA21, implement these goals:
 3. RTTI and `typeid`.
    The compiler should emit deterministic RTTI globals and lower both static and dynamic
    `typeid` queries into ordinary LowIR address/load/branch operations. A dynamic
-   `typeid` tests the object's address first: when it is null it calls the runtime's
-   `bad_typeid` function, which throws `std::bad_typeid` and does not return (5.2.8p2).
-   The course solution makes the same test for a reference operand.
+   `typeid` whose operand applies unary `*` to a pointer tests the pointer first:
+   when it is null it calls the runtime's `bad_typeid` function, which throws
+   `std::bad_typeid` and does not return (5.2.8p2). A reference or a named object
+   cannot be null and is not tested.
 
 4. Pointer- and reference-form `dynamic_cast`.
    The compiler should lower supported polymorphic single-inheritance pointer and
@@ -237,9 +238,10 @@ To complete PA21, implement these goals:
    non-throwing function, such a destructor included, whose definition may
    throw runs its whole definition under a terminate guard: one region whose
    handler calls `std::terminate` (15.5.1). A definition may throw when it
-   calls a function that may throw, has a throw-expression, initializes or
-   destroys a subobject in a way that may throw, or has a delete-expression,
-   which counts even though its deallocation function does not throw.
+   calls a function that may throw, has a throw-expression, or initializes
+   or destroys a subobject in a way that may throw; a delete-expression
+   counts as its destructor call does, since the deallocation functions do
+   not throw. A definition in which nothing can unwind opens no guard.
    Function-template instantiation retains function-try bodies and handlers,
    including constructor mem-initializers within the function-try block.
    Construction and destruction cleanup dependencies on class-template

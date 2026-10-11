@@ -7,9 +7,11 @@
 // table (Itanium 2.5.2: the slot before the function addresses); a
 // comparison of two typeid results compares the objects' addresses; a
 // checked dynamic_cast (5.2.7p8) calls the runtime's __dynamic_cast. The
-// course's forms: every dynamic query tests its object's address for null
-// first (a null one calls the runtime's failure, which does not return),
-// and a cast's result goes through a slot of its own.
+// course's forms: a dynamic query of an object reached through a pointer
+// tests the address for null first (a null one calls the runtime's
+// failure, which does not return); a reference operand is not tested,
+// since a reference cannot be null; and a cast's result goes through a
+// slot of its own.
 namespace lower {
 
 namespace {
@@ -150,19 +152,23 @@ int64_t ProgramLowering::walked_hint(const sema::ClassEntity* base) const
 	return HintOf(facts.public_count, facts.virtual_path, facts.offset);
 }
 
-lowir::Value FunctionLowering::dynamic_type_information(lowir::Value object, RuntimeFunction failure)
+lowir::Value FunctionLowering::dynamic_type_information(lowir::Value object, RuntimeFunction failure, bool test_null)
 {
-	// A null address fails; otherwise the table's type information pointer.
+	// A null address fails (when the operand can be null); otherwise the
+	// table's type information pointer.
 	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
-	RValue address;
-	address.value = object;
-	address.type = pointer;
-	const lowir::BlockId fail = new_block(lowir::BlockKind::TypeidFail);
-	const lowir::BlockId scan = new_block(lowir::BlockKind::TypeidScan);
-	branch(compare(lowir::ComparePredicate::Eq, pointer, address, integer(pointer, 0)), fail, scan);
-	place(fail);
-	runtime_failure(failure);
-	place(scan);
+	if (test_null)
+	{
+		RValue address;
+		address.value = object;
+		address.type = pointer;
+		const lowir::BlockId fail = new_block(lowir::BlockKind::TypeidFail);
+		const lowir::BlockId scan = new_block(lowir::BlockKind::TypeidScan);
+		branch(compare(lowir::ComparePredicate::Eq, pointer, address, integer(pointer, 0)), fail, scan);
+		place(fail);
+		runtime_failure(failure);
+		place(scan);
+	}
 	Place vptr = Place();
 	vptr.storage = object;
 	const RValue table = load(pointer, vptr);
@@ -185,18 +191,24 @@ void FunctionLowering::runtime_failure(RuntimeFunction failure)
 
 Place FunctionLowering::typeid_place(const syntax::TypeTraitExpr& expr)
 {
-	// 5.2.8p2: an evaluated operand's object's dynamic type (its address
-	// tested, p2's null pointer through *); else the static type's object.
+	// 5.2.8p2: an evaluated operand's object's dynamic type; else the
+	// static type's object. The address is tested for null only when the
+	// operand applies unary * to a pointer, the one form p2 makes throw
+	// bad_typeid; a reference or a named object cannot be null.
 	Place place = Place();
 	if ((expr.facts->flags & sema::kDynamicType) == 0)
 	{
 		place.storage = lowir::Value::symbol(lowering_.type_information(expr.facts->target));
 		return place;
 	}
+	const syntax::Expr* operand = WithoutParentheses(expr.operand);
+	const bool through_pointer = operand->kind == syntax::ExprKind::Unary &&
+		static_cast<const syntax::UnaryExpr*>(operand)->op == TokenKind::OP_STAR &&
+		(operand->facts == nullptr || (operand->facts->flags & sema::kOperatorCall) == 0);
 	const lowir::Value object = address(*expr.operand);
 	if (!lowering_.host_objects())
-		lowering_.class_table(sema::ClassOf(WithoutParentheses(expr.operand)->facts->type));
-	place.storage = dynamic_type_information(object, RuntimeFunction::BadTypeid);
+		lowering_.class_table(sema::ClassOf(operand->facts->type));
+	place.storage = dynamic_type_information(object, RuntimeFunction::BadTypeid, through_pointer);
 	return place;
 }
 

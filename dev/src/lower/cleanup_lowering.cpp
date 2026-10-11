@@ -219,11 +219,11 @@ bool FunctionLowering::may_throw(const syntax::Expr* root)
 			break;
 		case syntax::ExprKind::Delete:
 		{
-			// The destructor (the deallocation functions do not throw).
+			// The destructor (the deallocation functions do not throw,
+			// 18.6.1.1).
 			const sema::ClassEntity* entity = facts != nullptr ? sema::ClassOf(facts->target) : nullptr;
-			found = guard_scan_ ||
-				(entity != nullptr && entity->destructor != nullptr && !entity->destructor->trivial &&
-					call_may_throw(entity->destructor));
+			found = entity != nullptr && entity->destructor != nullptr && !entity->destructor->trivial &&
+				call_may_throw(entity->destructor);
 			work.push_back(static_cast<const syntax::DeleteExpr*>(e)->operand);
 			break;
 		}
@@ -1941,13 +1941,10 @@ bool FunctionLowering::declarator_may_throw(const syntax::InitDeclarator& init)
 
 bool FunctionLowering::definition_may_throw()
 {
-	// The body's statements and a constructor's subobject initializations;
-	// a delete-expression counts (the course's guard, behavior-neutral: its
-	// deallocation function does not throw, 18.6.1.1).
-	guard_scan_ = true;
-	const bool found = definition_statements_may_throw();
-	guard_scan_ = false;
-	return found;
+	// The body's statements and a constructor's subobject initializations.
+	// A delete-expression counts as its destructor does: a terminate guard
+	// is opened only where something in the definition can unwind.
+	return definition_statements_may_throw();
 }
 
 bool FunctionLowering::definition_statements_may_throw()

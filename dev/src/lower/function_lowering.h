@@ -1704,7 +1704,7 @@ private:
 	RValue dynamic_cast_pointer(const syntax::CastExpr& expr);
 	lowir::Value most_derived_object(lowir::Value object, const sema::ClassEntity* from);
 	Place dynamic_cast_reference(const syntax::CastExpr& expr);
-	lowir::Value dynamic_type_information(lowir::Value object, RuntimeFunction failure);
+	lowir::Value dynamic_type_information(lowir::Value object, RuntimeFunction failure, bool test_null = true);
 	lowir::Value runtime_cast(lowir::Value object, const sema::ClassEntity* from, const sema::ClassEntity* to,
 		bool reference, uint32_t location);
 	void runtime_failure(RuntimeFunction failure);
@@ -2041,8 +2041,6 @@ private:
 	// The segment's full-expression makes temporaries (its region may open
 	// at its start, covering the calls before them).
 	bool segment_temporaries_ = false;
-	// definition_may_throw's scan: a delete-expression counts.
-	bool guard_scan_ = false;
 	// The course's hidden regions: a full-expression making temporaries in
 	// a return or condition (`hidden_context_`, read by the next
 	// begin_full_expression), or in a conditional branch, treats every call

@@ -1,7 +1,6 @@
 declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-declare function @__external_runtime____cxa_bad_typeid() -> void [return=noreturn, role=bad_typeid, linkage=c, binding=strong, object=__cxa_bad_typeid]
 declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
 global @__typeinfo_name__class_YD [storage=readonly, binding=weak, object=_ZTS2YD] = {
@@ -52,39 +51,31 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = index i8 %t2, 0
     store typed ptr %t3, $b
     %t4 = load typed ptr $b
-    %t5 = cmp eq ptr %t4, 0
-    branch %t5, ^typeid_fail_3, ^typeid_scan_4
-
-  block ^typeid_fail_3:
-    call void @__external_runtime____cxa_bad_typeid()
-    return i32 0
-
-  block ^typeid_scan_4:
-    %t6 = load typed ptr %t4
-    %t7 = index i8 %t6, -8
-    %t8 = load typed ptr %t7
-    %t9 = addr @__rtti_class_YD
-    %t10 = cmp eq ptr %t8, %t9
-    branch %t10, ^if_then_1, ^if_else_2
+    %t5 = load typed ptr %t4
+    %t6 = index i8 %t5, -8
+    %t7 = load typed ptr %t6
+    %t8 = addr @__rtti_class_YD
+    %t9 = cmp eq ptr %t7, %t8
+    branch %t9, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     store typed i32 1, $cleanup_return__1
-    jump ^return_cleanup_action_6
+    jump ^return_cleanup_action_4
 
-  block ^return_cleanup_terminal_5:
+  block ^return_cleanup_terminal_3:
     return i32 $cleanup_return__1
 
-  block ^return_cleanup_action_6:
-    %t11 = addr $d
-    call void @YD___YD(%t11)
-    jump ^return_cleanup_terminal_5
+  block ^return_cleanup_action_4:
+    %t10 = addr $d
+    call void @YD___YD(%t10)
+    jump ^return_cleanup_terminal_3
 
   block ^if_else_2:
-    jump ^if_end_7
+    jump ^if_end_5
 
-  block ^if_end_7:
+  block ^if_end_5:
     store typed i32 0, $cleanup_return__1
-    jump ^return_cleanup_action_6
+    jump ^return_cleanup_action_4
 }
 function @YD__YD(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YDC1Ev, inline_hint=yes] {
   slot $this : ptr

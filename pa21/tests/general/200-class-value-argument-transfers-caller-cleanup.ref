@@ -1,5 +1,3 @@
-declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
-declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
 declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
 declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
@@ -147,10 +145,8 @@ function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=8], %other 
 }
 function @Value___Value(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5ValueD1Ev, inline_hint=yes] {
   slot $this : ptr
-  slot $function_exception__1 : ptr
 
   block ^entry:
-    eh_try ^function_exception_landing_1
     store typed ptr %this, $this
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
@@ -159,24 +155,6 @@ function @Value___Value(%this : ptr [object_bytes=8]) -> void [unwind=no, bindin
     %t4 = load typed i32 @Value__live
     %t5 = binary sub nowrap i32 %t4, 1
     store typed i32 %t5, @Value__live
-    eh_end
-    return void
-
-  block ^function_exception_landing_1:
-    eh_catch_all, 1
-    %t6 = exception ptr
-    store typed ptr %t6, $function_exception__1
-    jump ^function_exception_action_2
-
-  block ^function_exception_action_2:
-    %t7 = load typed ptr $function_exception__1
-    call void @cppgm_call_terminate(%t7)
-    return void
-}
-function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
-  block ^entry:
-    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
-    call void @std_terminate()
     return void
 }
 alias object _ZN5ValueC2Ev = @Value__Value
