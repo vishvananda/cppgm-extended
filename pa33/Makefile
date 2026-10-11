@@ -32,7 +32,6 @@ endif
 export CPPGM_HOST_CXX
 CPPGM_STDLIB_FLAGS ?=
 REPORT_EMPTY_OPTIONAL_TEST_ROOTS ?= 0
-NATIVE_CONTROL_TEST_ROOT ?= tests/controls/native
 O1_TEST_ROOT ?= tests/o1
 O2_TEST_ROOT ?= tests/o2
 O3_TEST_ROOT ?= tests/o3
@@ -86,9 +85,6 @@ test-course: $(TEST_DEPS)
 	$(call run_native_bucket,$(BEHAVIOR_O2_TEST_ROOT),-O2)
 	$(call run_native_bucket,$(BEHAVIOR_O3_TEST_ROOT),-O3)
 	@perl ../scripts/check_cppgm_native_programs.pl $(CPPGM_DRIVER_APP) "$(DRIVER_TEST_ROOT)" $(LOWIR2NATIVE_APP)
-	@if [ -d "$(NATIVE_CONTROL_TEST_ROOT)" ]; then \
-		perl ../scripts/check_pa24_native_contracts.pl $(LOWIR2NATIVE_APP) "$(NATIVE_CONTROL_TEST_ROOT)"; \
-	fi
 
 test-debuginfo: $(TEST_DEPS)
 	$(call run_native_bucket,$(DEBUGINFO_O1_TEST_ROOT),-O1)
@@ -117,7 +113,6 @@ REF_TEST_RUN = case "$(TEST)" in \
 	$(BEHAVIOR_O1_TEST_ROOT)/*) CPPGM_NATIVE_BEHAVIOR_ONLY=1 CPPGM_APP_ARGS='-O1' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" ;; \
 	$(BEHAVIOR_O2_TEST_ROOT)/*) CPPGM_NATIVE_BEHAVIOR_ONLY=1 CPPGM_APP_ARGS='-O2' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" ;; \
 	$(BEHAVIOR_O3_TEST_ROOT)/*) CPPGM_NATIVE_BEHAVIOR_ONLY=1 CPPGM_APP_ARGS='-O3' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" ;; \
-	$(NATIVE_CONTROL_TEST_ROOT)/*) echo "$(TEST): native property check has no reference sidecar" ;; \
 	$(O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*|$(BEHAVIOR_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='-O1' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" && perl ../scripts/canonicalize_lowir_native_refs.pl "$(TEST)" ;; \
 	$(O2_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*|$(BEHAVIOR_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='-O2' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" && perl ../scripts/canonicalize_lowir_native_refs.pl "$(TEST)" ;; \
 	$(O3_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*|$(BEHAVIOR_O3_TEST_ROOT)/*) CPPGM_APP_ARGS='-O3' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" && perl ../scripts/canonicalize_lowir_native_refs.pl "$(TEST)" ;; \
@@ -127,13 +122,11 @@ esac
 
 CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 	'$(DRIVER_TEST_ROOT)/*::perl ../scripts/check_cppgm_native_programs.pl $(CPPGM_DRIVER_APP) {tests} $(LOWIR2NATIVE_APP)' \
-	'$(NATIVE_CONTROL_TEST_ROOT)/*::perl ../scripts/check_pa24_native_contracts.pl $(LOWIR2NATIVE_APP) {tests}' \
 	'$(O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*|$(BEHAVIOR_O1_TEST_ROOT)/*::CPPGM_APP_ARGS=-O1 scripts/run_all_tests.pl $(LOWIR2NATIVE_APP) check {tests}' \
 	'$(O2_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*|$(BEHAVIOR_O2_TEST_ROOT)/*::CPPGM_APP_ARGS=-O2 scripts/run_all_tests.pl $(LOWIR2NATIVE_APP) check {tests}' \
 	'$(O3_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*|$(BEHAVIOR_O3_TEST_ROOT)/*::CPPGM_APP_ARGS=-O3 scripts/run_all_tests.pl $(LOWIR2NATIVE_APP) check {tests}'
 CHECK_COMPARE = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 	'$(DRIVER_TEST_ROOT)/*::true' \
-	'$(NATIVE_CONTROL_TEST_ROOT)/*::true' \
 	'$(O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*|$(BEHAVIOR_O1_TEST_ROOT)/*|$(O2_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*|$(BEHAVIOR_O2_TEST_ROOT)/*|$(O3_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*|$(BEHAVIOR_O3_TEST_ROOT)/*::scripts/compare_results.pl ref check {tests}'
 include ../scripts/pa_run_check_targets.mk
 

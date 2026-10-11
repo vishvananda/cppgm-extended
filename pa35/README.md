@@ -236,7 +236,8 @@ B`), so they also run against the reference tools: for example
 - **No profile feedback, link-time optimization or ISA extensions.** The self
   build may use only what one `cppgm++ -O3 -c` of one translation unit can
   know, as the seed's `g++ -O3` does.
-- **Earlier contracts stay intact.** `-O0` output remains PA24's. PA32 and
+- **Earlier contracts stay intact.** `-O0` output still meets PA24's
+  contract. PA32 and
   PA33 fixture budgets, MIR dumps that describe what is encoded, debug
   locations and the LowIR boundary keep their meaning. Seed, self and
   inception emit identical bytes.

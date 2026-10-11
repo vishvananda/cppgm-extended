@@ -65,6 +65,9 @@ size, and state focused requirements for effects such as volatile accesses
 and exception operations. The numbers in the sidecar are the actual limits;
 you do not need to reproduce the reference registers, offsets, instruction
 order or block layout. A missing expectation means execution alone is checked.
+The predicates count mnemonics as the PA24 dump spells them (`load.*` and
+`store.*` for memory accesses, `eh_push` and `eh_pop` for regions, an
+implicit prologue; see PA24's machine-IR text).
 The `.ref.mir` and `.ref.cmir` files are examples, not optimized-output oracles.
 
 These bounds provide a deterministic, lightweight code-quality bar. They are
@@ -97,8 +100,8 @@ make test-debuginfo
 make check TEST='tests/o1/100-return-copy-coalesce.t'
 ```
 
-`make test` runs the O1, O2 and O3 MIR and behavior buckets, the native
-correctness controls, and self-checking C++ programs under `tests/driver/`.
+`make test` runs the O1, O2 and O3 MIR and behavior buckets and the
+self-checking C++ programs under `tests/driver/`.
 The driver programs must exit zero and write no stdout at all three levels,
 when built directly, through PA25 compiler objects (`.obj`), and through PA26
 native objects (`.o`) linked with `CPPGM_HOST_CXX`, and through the compiler's
