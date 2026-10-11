@@ -233,7 +233,7 @@ In the case of `integer-literal` and `floating-literal` you will then need to ca
 
 Once the appropriate type is found you will then scan it into that type.
 
-For `floating-literals` once you have confirmed that they match the appropriate grammar, use the method shown in `Decode_float`, `Decode_double` and `Decode_long_double` in the starter code to scan them for output.  (This is just for testing so the hexdump is binary identical to the reference implementation.)
+For `floating-literals` once you have confirmed that they match the appropriate grammar, use the method shown in `PA2Decode_float`, `PA2Decode_double` and `PA2Decode_long_double` in the starter code to scan them for output.  (This is just for testing so the hexdump is binary identical to the reference implementation.)
 
 You may _optionally_ check that `floating-literals` are in the range of their types:
 

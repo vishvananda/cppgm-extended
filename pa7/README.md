@@ -169,7 +169,6 @@ conditional-expression <value-category> <type>
 sizeof-expression <value-category> <type>
 assignment-expression <value-category> <type> OP_ASS:=
 constructor-action <name>
-destructor-action <name>
 ```
 
 `<type>` uses the canonical type spelling from PA6. `<value-category>` is one

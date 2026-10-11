@@ -168,8 +168,9 @@ function forms. Canonical signatures separately apply parameter adjustment;
 PA7's call tests observe that identity. The source view is deliberate and
 does not require using unadjusted parameter types for function matching.
 
-Using declarations that introduce a visible type name are emitted as
-`type-alias` bindings in the current scope. Supported value-name using
+A using declaration that introduces a type name emits the binding the name
+already has, in the current scope: `type` for a class or enumeration and
+`type-alias` for a typedef name. Supported value-name using
 declarations are emitted through the resulting `function`, `variable`,
 `parameter`, or `enumerator` binding rather than through a separate
 `using-declaration` line.
@@ -305,8 +306,8 @@ Comparison rules:
 The local suite is split by role:
 
 - `tests/spec/` contains small tests tied to specific C++11 scope, declaration,
-  lookup, or type-formation clauses. These files begin with an `N3485 focus`
-  comment.
+  lookup, or type-formation clauses. Most begin with an `N3485 focus` comment
+  naming the clause.
 - `tests/general/` contains broader PA6 scope/type tests, cross-feature
   semantic combinations, and useful intake cases that are not a single-clause
   oracle.
