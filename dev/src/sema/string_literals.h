@@ -12,6 +12,12 @@ struct Expr;
 
 namespace sema {
 
+struct Type;
+
+// Whether an array of this element type is a character array, one a
+// string literal initializes by its code units (8.5.2p1).
+bool IsCharacterArrayElement(const Type* type);
+
 // The array a string literal denotes (2.14.5p8, p13-p15): its element type
 // from the encoding prefix, and its length in code units of that encoding
 // with the terminating null. A literal of concatenated pieces is spelled

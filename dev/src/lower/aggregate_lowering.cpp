@@ -566,7 +566,7 @@ void FunctionLowering::aggregate_array(
 	{
 		list = static_cast<const syntax::BracedInitList*>(literal);
 		const syntax::Expr* single = list->elements.size == 1 ? WithoutParentheses(list->elements[0]) : nullptr;
-		if (single != nullptr && single->kind == syntax::ExprKind::Literal && element->kind != sema::TypeKind::Array &&
+		if (single != nullptr && single->kind == syntax::ExprKind::Literal && sema::IsCharacterArrayElement(element) &&
 			single->facts->type->kind == sema::TypeKind::Array)
 		{
 			literal = WithoutParentheses(list->elements[0]);

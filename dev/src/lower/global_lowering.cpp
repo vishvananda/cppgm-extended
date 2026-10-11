@@ -1460,10 +1460,12 @@ bool ProgramLowering::static_element(const sema::Type* type, const syntax::Expr&
 		const syntax::BracedInitList& list = static_cast<const syntax::BracedInitList&>(element);
 		// `{"..."}` for a character array itself (8.5.2p1); an array of
 		// such arrays takes its first element from the literal (8.5.1p11).
+		// A pointer array's one element is the literal's address, as any
+		// element of its list (8.5.1p2).
 		if (list.elements.size == 1 && list.elements[0]->kind != syntax::ExprKind::BracedInit &&
 			WithoutParentheses(list.elements[0])->kind == syntax::ExprKind::Literal &&
 			list.elements[0]->facts->type->kind == sema::TypeKind::Array &&
-			type->element->kind != sema::TypeKind::Array)
+			sema::IsCharacterArrayElement(type->element))
 			return static_string(type, *list.elements[0], out);
 		uint32_t next = 0;
 		return static_aggregate(type, &list, next, out);
@@ -1671,7 +1673,7 @@ bool ProgramLowering::static_string(const sema::Type* type, const syntax::Expr& 
 	// null, the rest of the array zero.
 	const syntax::Expr* literal = WithoutParentheses(&element);
 	if (literal->kind != syntax::ExprKind::Literal || type->kind != sema::TypeKind::Array ||
-		literal->facts->type->kind != sema::TypeKind::Array)
+		literal->facts->type->kind != sema::TypeKind::Array || !sema::IsCharacterArrayElement(type->element))
 		return false;
 	sema::StringLiteralFacts facts;
 	std::vector<uint64_t> units;

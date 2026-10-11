@@ -3,11 +3,31 @@
 #include "lex/text_literal.h"
 #include "support/unicode/utf8.h"
 #include "syntax/ast.h"
+#include "sema/semantic_types.h"
 
 #include <cstring>
 #include <string>
 
 namespace sema {
+
+bool IsCharacterArrayElement(const Type* type)
+{
+	type = type->unqualified;
+	if (type->kind != TypeKind::Fundamental)
+		return false;
+	switch (type->fundamental)
+	{
+	case FundamentalType::Char:
+	case FundamentalType::SignedChar:
+	case FundamentalType::UnsignedChar:
+	case FundamentalType::Char16T:
+	case FundamentalType::Char32T:
+	case FundamentalType::WcharT:
+		return true;
+	default:
+		return false;
+	}
+}
 
 namespace {
 

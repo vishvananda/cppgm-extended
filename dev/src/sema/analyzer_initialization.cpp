@@ -18,25 +18,6 @@ namespace sema {
 
 namespace {
 
-bool IsCharacterArrayElement(const Type* type)
-{
-	type = type->unqualified;
-	if (type->kind != TypeKind::Fundamental)
-		return false;
-	switch (type->fundamental)
-	{
-	case FundamentalType::Char:
-	case FundamentalType::SignedChar:
-	case FundamentalType::UnsignedChar:
-	case FundamentalType::Char16T:
-	case FundamentalType::Char32T:
-	case FundamentalType::WcharT:
-		return true;
-	default:
-		return false;
-	}
-}
-
 // An anonymous struct's or union's member object (9.5p5; the unnamed
 // member of its enclosing class).
 const ClassEntity* AnonymousMemberClass(const DataMember* member)
