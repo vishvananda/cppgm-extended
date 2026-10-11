@@ -138,7 +138,7 @@ class TestReportOutputTests(unittest.TestCase):
     def test_real_control_failure_remains_visible_in_quiet_mode(self):
         result = self.report(failure="control", real_control=True)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("source builtin did not lower to an unreachable terminator",
+        self.assertIn("__builtin_unreachable did not lower to the `unreachable` terminator",
                       result.stdout + result.stderr)
         self.assertNotIn("properties: PASS", result.stdout + result.stderr)
 
