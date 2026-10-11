@@ -95,6 +95,9 @@ copy_tracked_paths() {
         next if m{\.py$} && !m{^scripts/(?:check_lowir_seams|lowir_seam_rewrite)\.py$};
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
+        # Tests-first audit controls run only under the maintainer
+        # scripts/check_pending_audit_regressions.py, which does not ship.
+        next if m{^pa[0-9]+/tests/controls/[^/]*-audit-[^/]*$};
         print "$_\0";
       ' "$script_dir/student_export_documents.txt"
   ) | rsync -a --from0 --files-from=- "$repo_root/" "$dest/"
