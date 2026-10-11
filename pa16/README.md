@@ -79,8 +79,12 @@ and cleanup bodies.
 
 The test harness checks that the generated LowIR is well formed and matches the
 checked-in `.ref` files after canonicalizing presentation details that are not
-part of the assignment contract. Exact textual LowIR matching is not a PA16
-grading requirement.
+part of the assignment contract: the names of temporaries, slots, blocks and
+parameters, the order of slot declarations and of top-level entries, and the
+spelling of literals (`../pa8/lowir.md`, "What The Comparison Absorbs And What
+It Enforces", is the one list). Exact textual LowIR matching is not a PA16
+grading requirement, but every instruction of a body must match the
+reference's after that canonicalization, in its order.
 
 ### Error Handling
 

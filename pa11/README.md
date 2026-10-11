@@ -154,7 +154,12 @@ future native path is not the PA11 grading contract.
 The checked-in `.ref` files define the required LowIR facts for the tests. The
 test harness checks exit status, LowIR well-formedness, and the
 course-defined normalized LowIR output rather than requiring students to match every
-non-semantic helper spelling or presentation choice.
+non-semantic helper spelling or presentation choice. The normalization renames
+temporaries, slots, blocks and parameters, ignores the order of slot
+declarations and of top-level entries, and reads a literal by its value;
+every instruction of a body must otherwise match the reference's, in its
+order. `../pa8/lowir.md` ("What The Comparison Absorbs And What It Enforces")
+is the one list of what it absorbs and of the conventions it enforces.
 
 ### Error Handling
 

@@ -136,10 +136,12 @@ course-defined normalized LowIR output rather than requiring students to match e
 non-semantic helper spelling or presentation choice. What that normalization
 absorbs, and what it does not, is one list in `../pa8/lowir.md` ("What The
 Comparison Absorbs And What It Enforces"). Read it before the first failing
-fixture. In short, the comparison ignores names, order and layout, reads a
-literal by its value, and lets the operands of a commutative operation
-appear in either order; and it enforces the conventions the course fixes
-in words rather than absorbing, chief among them:
+fixture. In short, the comparison renames temporaries, slots, blocks and
+parameters, ignores the order of slot declarations and of top-level entries,
+reads a literal by its value, and lets the operands of a commutative
+operation appear in either order; every instruction of a body must
+otherwise match the reference's, in its order. It enforces the conventions
+the course fixes in words rather than absorbing, chief among them:
 
 - Branch sense follows the source: a conditional branch tests the value the
   source wrote, in the source's sense (`!=` is `cmp ne`, `!x` is

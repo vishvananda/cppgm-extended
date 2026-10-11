@@ -32,6 +32,17 @@ the format's fixed words as enums, with their spellings and readers. The text
 remains the durable boundary. A backend-visible fact that cannot be serialized
 to LowIR and parsed back is not part of the LowIR contract.
 
+Sentences below that say what *the C++ lowering* does (where it keeps a
+local, how it writes a conditional value or a bit scan, how it numbers
+handlers) are conventions, not descriptions. The source-to-LowIR
+assignments (PA10 through PA23) compare an output with the course solution's
+instruction for instruction, so an output that does otherwise differs from
+the reference; [What The Comparison Absorbs And What It
+Enforces](#what-the-comparison-absorbs-and-what-it-enforces) collects them,
+and each assignment's handout states the ones its fixtures add. Sentences
+about the optimizer and the backend are informative: what those stages may
+do, not what they must.
+
 The following naming conventions are used:
 
 - globals: `@name`
@@ -107,9 +118,10 @@ top-level entries before comparison, and implementations should not make host
 ABI mangling, `object=...` metadata, or backend symbol spelling the owner of
 semantic ordering facts.
 
-For C++ source-to-LowIR reference output, the following generated-definition
-ordering is the canonical presentation even when another top-level order would
-have the same execution behavior:
+For C++ source-to-LowIR reference output, the course solution writes
+generated definitions in the following order. The comparison canonicalizes
+top-level order (What The Comparison Absorbs below), so an output in another
+order compares equal; the list describes the reference's presentation:
 
 - Source-owned non-mergeable function definitions appear in command-line
   translation-unit order and then source/declaration order.
@@ -143,8 +155,8 @@ have the same execution behavior:
 
 Top-level definitions and declarations may refer to symbols that are emitted
 later in the same LowIR program. The canonical top-level order is a stable
-presentation convention, not a dependency sort. Later source-to-LowIR
-assignment harnesses may canonicalize top-level entries before comparison, but
+presentation convention, not a dependency sort. The source-to-LowIR
+assignment harnesses canonicalize top-level entries before comparison, and
 they still preserve and check order-sensitive LowIR regions: instruction order
 inside blocks, item order inside structured globals, vtable slot order, and
 action order inside generated initialization, finalization, constructor,
@@ -536,9 +548,9 @@ global @coeffs = {
 }
 ```
 
-For compatibility, the parser still accepts the bare `readonly` and `thread_local`
-keywords on global declarations and definitions. Printed LowIR normalizes both forms to
-`[storage=...]`.
+A reader also accepts the bare `readonly` and `thread_local` keywords on global
+declarations and definitions, as the `[storage=...]` forms; a writer prints the
+bracketed form.
 
 This form is intended to describe final data layout directly. It does not imply any
 source-language construction semantics by itself. When translated through PA8, multi-byte
@@ -714,10 +726,7 @@ construct begins:
   location, and one that replaces another takes that one's location. A
   `phi` the optimizer creates carries none.
 
-A source file whose name is not a single LowIR token gets no locations. The
-course solution writes an output named `*.lowir` with a stated `-g` level as
-the LowIR half of an object compile (the file `cppgm++ -c` then compiles, as
-PA32's object round trip does), and that file carries no locations either.
+A source file whose name is not a single LowIR token gets no locations.
 
 This metadata is semantically optional. Backends that do not yet emit
 object-file debug information may ignore it, but PA8 parsing, dumping, and
@@ -867,10 +876,8 @@ LowIR programs express exception flow through the EH operations below.
 The native/runtime assignments implement unwinding and exception storage;
 PA8 does not implement an exception runtime.
 
-For compatibility with earlier handwritten LowIR and pre-role test cases, the legacy
-spellings `@main`, `@__cppgm_init`, and `@__cppgm_fini` are still accepted when no explicit
-role metadata is present. New LowIR should prefer explicit roles over those special
-spellings.
+When no role is stated, the spellings `@main`, `@__cppgm_init` and `@__cppgm_fini`
+imply the `entry`, `init` and `fini` roles. New LowIR states the role.
 
 ## Operands
 
@@ -900,16 +907,11 @@ null pointer constant and is valid with `ptr`. `inf` and `nan` are the floating 
 and quiet NaN, and `snan` is the signalling NaN; each may also be written
 in uppercase as `INFINITY`, `NAN`, or `SNAN`, and `inf` may carry a leading `-`.
 
-When adapting this IR to a runnable backend that lacks direct 80-bit registers, a practical
-representation is:
-
-- `f80` object storage remains 16 bytes in memory
-- the first 10 bytes carry the executable float80 payload
-- the trailing 6 bytes are treated as zero padding
-
-That keeps `index f80`, structured global layout, and later native/object lowering aligned
-with the same LowIR storage model while still allowing PA8-style execution through a
-different internal calling convention if needed.
+`f80` storage is 16 bytes at 16-byte alignment wherever LowIR lays it out: a
+slot, a structured global's item, the stride of `index f80`. The first 10 bytes
+carry the x87 extended value and the trailing 6 bytes are zero padding. The
+vocabulary header states the same width and alignment, so every layout the
+backends compute agrees with the one the text describes.
 
 ### Control-Flow Value Merges
 
@@ -933,13 +935,14 @@ represented by the explicit exception/runtime instructions.
 
 A conditional scalar choice is represented with ordinary control flow: branch
 to the blocks that produce the alternative values, jump from those blocks to
-a merge block, and take the chosen value there. The C++ lowering produces
-this form for every conditional value the source writes (`?:`, and `&&` or
-`||` used as a value) and carries the value through memory: each arm stores
-its value into one slot, and the merge block loads it. The lowering emits no
-`phi`; `phi` is the optimizer's form, which slot promotion (PA32) makes from
-such a slot. An optimizer may also turn a choice whose arms only compute
-values into a `select` (Unary and Binary Operations below).
+a merge block, and take the chosen value there. Convention of the C++
+lowering (enforced): every conditional value the source writes (`?:`, and
+`&&` or `||` used as a value) takes this form and carries the value through
+memory, each arm storing its value into one slot and the merge block loading
+it; the lowering emits no `phi`. `phi` is the optimizer's form, which slot
+promotion (PA32) makes from such a slot. An optimizer may also turn a choice
+whose arms only compute values into a `select` (Unary and Binary Operations
+below).
 
 ### Memory and Addressing
 
@@ -1103,20 +1106,20 @@ Required PA8 comparison predicates:
 For `cmp`, `<type>` is the comparison operand type, not the result type. The
 destination temporary is a canonical integer truth value and is materialized as
 `i64` `0` or `1`. This is true for floating comparisons such as
-`%ok = cmp eq f80 %a, %b`, pointer comparisons, and narrow integer comparisons;
-do not allocate or propagate the destination temporary as `f80`, `ptr`, `i16`,
-or the other operand type.
+`%ok = cmp eq f80 %a, %b`, pointer comparisons, and narrow integer comparisons:
+the result's type is `i64` whatever the operand type.
 
 `nowrap` and `exact` are instruction facts (see Instruction Facts below).
 
 `select` is `<a>` when the integer `<cond>` is nonzero and `<b>` otherwise.
 `<type>` is the type of `<a>`, `<b>` and the result: an integer type no wider
 than 64 bits, or `ptr`. Both values are computed before the `select`, so it
-has no effect beyond its result. The C++ lowering produces it only to pick
-the fallback of GCC's `__builtin_clzg` and `__builtin_ctzg` for a zero
-operand. An optimizer may form it from a branch to arms that only compute
-values (if-conversion), and a backend may lower it to a conditional move
-(`cmov` on x86-64) or to branches.
+has no effect beyond its result. Convention of the C++ lowering (enforced):
+it produces `select` only to pick the fallback of GCC's `__builtin_clzg` and
+`__builtin_ctzg` for a zero operand; every other choice the source writes is
+branched (Control-Flow Value Merges above). An optimizer may form it from a
+branch to arms that only compute values (if-conversion), and a backend may
+lower it to a conditional move (`cmov` on x86-64) or to branches.
 
 For integer operations where signedness changes the result, the plain forms remain the signed
 operations:
@@ -1155,12 +1158,13 @@ above the highest set bit, at the operand's width and in the operand's type
 (`ctz i32 8` is `3`, `clz i64 1` is `63`). For a zero operand the result is
 an unspecified value of the type, as GCC's `__builtin_ctz` and
 `__builtin_clz` are undefined there; the instruction has no other effect.
-The C++ lowering uses them for the GCC bit-scan builtins (`__builtin_ctz`,
-`__builtin_clzll`, `__builtin_ctzg` and the rest), widening an operand
-narrower than 32 bits to `u32` first and, for `clz`, subtracting the bits
-the widening added; `__builtin_clzg` and `__builtin_ctzg` then `select` their
-second operand for a zero operand. x86-64 lowers them to `bsf`, and to `bsr`
-followed by an `xor` with the width less one.
+Convention of the C++ lowering (enforced): the GCC bit-scan builtins
+(`__builtin_ctz`, `__builtin_clzll`, `__builtin_ctzg` and the rest) lower to
+them, an operand narrower than 32 bits widened to `u32` first and, for
+`clz`, the bits the widening added subtracted; `__builtin_clzg` and
+`__builtin_ctzg` then `select` their second operand for a zero operand.
+x86-64 lowers them to `bsf`, and to `bsr` followed by an `xor` with the
+width less one.
 
 Array-to-pointer and function-to-pointer decay use the ordinary pointer value
 produced by `addr`, `index`, a parameter, or `copy ptr`. There is no decay-specific
@@ -1396,9 +1400,9 @@ reaches its record, whatever its clauses; its code tests the selector to
 choose a catch body, or runs its cleanups and `resume`s when the selector is
 0.
 
-The C++ lowering numbers a function's handlers from 1, each keeping its
-number at every landing that lists it, and gives a specification's filter
--1. A landing inside a `try` block also lists the clauses of every enclosing
+Convention of the C++ lowering (enforced): a function's handlers are
+numbered from 1, each keeping its number at every landing that lists it,
+and a specification's filter is -1. A landing inside a `try` block also lists the clauses of every enclosing
 `try` statement the exception can reach before it leaves the function, up to
 the first `catch (...)`, so the selector names the handler however deeply the
 throwing region is nested. A clause after the handler has removed its own
@@ -1505,9 +1509,12 @@ function's exception-specification allows no exception (15.4p12).
 - The GNU builtins (`__builtin_memcpy`, `__builtin_strlen`, ...) and the
   functions the lowering declares for itself: `std::terminate`
   (`role=terminate`), `__cxa_pure_virtual`, `abort` for `__builtin_abort`,
-  `cppgm_builtin_trap`, `cppgm_builtin_memset`, the internal
-  `cppgm_call_terminate`, local-static destructor helpers, the `__aggregate`
-  helpers, and the soft-float and complex helpers.
+  `cppgm_builtin_trap`, `cppgm_builtin_memset`, the memory builtins declared
+  with the runtime identities `object=cppgm_builtin_memcpy` and
+  `object=cppgm_builtin_memmove` (three parameters, the two pointers of
+  memcpy `alias=noalias`), the internal `cppgm_call_terminate`,
+  local-static destructor helpers, the `__aggregate` helpers, and the
+  soft-float and complex helpers.
 - A C-linkage function first declared non-throwing in a system header and
   redeclared without an exception-specification (glibc's `__THROW`).
 
@@ -1686,6 +1693,11 @@ optional, has no consumer and is not compared.
 - Only terminators may transfer control.
 - Stack slots represent addressable local storage.
 - Serialization must be deterministic for the same model.
+- Every block has one stack of active exception regions: a full-expression's
+  region closes before any control-flow join, and every path into a block
+  enters it with the same regions open. PA21's lowering keeps this, PA32's
+  region removal and slot promotion rely on it, and PA26 requires it of host
+  objects.
 
 ## What The Comparison Absorbs And What It Enforces
 
@@ -1693,8 +1705,7 @@ PA8 uses a separate roundtrip comparator: it reads both outputs with the
 supplied `lowir-ref` and compares their canonical serialization, preserving
 declarations and required model data. Its construction exercises compare
 only generated-program outcomes using `lowir2native-ref`. Neither mode
-uses the C++-lowering presentation rules below. The maintainer byte-exact
-mode skips roundtrip normalization to check checked-in reference stability.
+uses the C++-lowering presentation rules below.
 
 The source-to-LowIR assignments (PA10 through PA23), PA32's `-O0` driver
 lane and its regression lane judge an output by comparing it with the course
@@ -1706,10 +1717,7 @@ Locations above): each one, as often as the reference carries it, and no
 other. This section is the whole
 list of what that canonicalization absorbs, and of the conventions it
 enforces instead. A difference the comparison accepts is on the first list;
-a difference it rejects is on the second. In the course repository,
-`make -C pa11 test-seams` (`scripts/check_lowir_seams.py`, which the student
-export does not ship) rewrites the course solution's own outputs along every
-line of both lists and fails when the lists and the comparison disagree.
+a difference it rejects is on the second.
 
 The rule behind the split: a normalization is worth having only when a
 student can hold it as one sentence and predict, reading their own output,
@@ -1726,7 +1734,19 @@ diff of code they did not write.
 - The order of slot declarations.
 - The order of top-level entries: Program Structure above defines the
   canonical presentation, and the comparison canonicalizes it.
-- A declaration nothing uses.
+- A declaration nothing uses, and a declaration the output makes that the
+  reference does not.
+- A definition of a function the reference only declares: the entity was
+  emitted, and its body is not compared.
+- What the output does not emit: a reference declaration, or a weak or
+  internal reference definition, that nothing else in the reference names
+  and that the output has no function of the same name or `object` for.
+  Emission is demand-driven, and an output that emits less of what nothing
+  needs compares equal; it may not emit a definition the reference lacks.
+- `alias object` lines.
+- The `resume` of a function stated `unwind=no`: the comparison drops the
+  instruction from both sides, since the backend ends such a function's
+  unwinding in termination either way.
 - Internal symbol names: functions and globals that are not externally
   visible are paired by their `role` and `object` metadata, then by shape,
   then by position.
@@ -1749,7 +1769,10 @@ diff of code they did not write.
 - Where static destruction happens: a `fini` function may instead be a
   function registered to run at exit, provided it makes the same destructor
   calls, on the same objects and the same elements of each (a destruction
-  loop stands for any element count), in the same order.
+  loop stands for any element count), in the same order. The function that
+  registers it may then differ from the reference's only by the inserted
+  registration calls (calls of a function the output declares beyond the
+  reference, passing the registered function).
 
 ### The comparison enforces
 
@@ -1789,6 +1812,38 @@ follows them, and so must yours.
   to right: the operands of a binary operator, the arguments of a call, and
   the loads each operand needs are evaluated in source order, and two
   independent instructions are not exchanged.
+- Locals live in slots. Every parameter is stored to a slot of its own at
+  entry (an indirect result's destination and `this` included), every
+  automatic object has a slot, and every use loads it; a conditional value
+  goes through a slot (Control-Flow Value Merges above). The lowering emits
+  no `phi`, and `select` only for the bit-scan fallback. PA32 promotes
+  slots to values; the lowering does not, so that its output is the
+  optimizer's input in one form.
+- A cleanup handler of a non-throwing function ends in `resume`:
+  termination belongs to the terminate guard (PA21) or to the backend, and
+  the handler does not call `std::terminate` itself. (The comparison drops
+  the `resume`, so a handler that otherwise matches compares equal.)
+- The conventions the assignments add. Each source-to-LowIR handout states
+  the further conventions its fixtures fix, and they are enforced like the
+  ones here: PA10 (short-circuit conditions branch directly, with no
+  boolean slot; an array with a known initializer copies from readonly
+  constant data), PA11 (which trivial and no-effect destructors are not
+  called; a constructor's cleanup region per constructed subobject, open
+  whether or not anything in it can throw; shared cleanup continuations for
+  equal lexical destructor suffixes; one `zeroinit` per contiguous
+  value-initialized span), PA12 (a named local returned in `%ret`; cleanup
+  regions placed by the shape of the full-expression; `copyobj` for a
+  trivially copyable prefix and for a trivial value transfer; one transfer
+  per bit-field allocation unit), PA16 (constant arrays from readonly
+  data), PA21 (the terminate guard and when a definition may throw; shared
+  unwind suffixes), PA23 (virtual bases found through one VTT load per
+  block, or a static offset for a complete object).
+- Metadata of earlier forms is rejected by the validator rather than
+  absorbed: the parameter keys `capture=` and `access=`, the `index`
+  projections `base_subobject` and `reference_field`, the symbol key
+  `trivial_lifecycle=`, the function role `unreachable`, a decay operation
+  spelled as an instruction, and a reference-passing label on a parameter.
+  None of them is defined above; an output must not state them.
 
 Why these are conventions rather than normalizations: absorbing branch
 sense needs a rewrite with a precondition (the compare's only use is the
