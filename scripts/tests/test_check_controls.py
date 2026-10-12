@@ -15,7 +15,8 @@ CHECKER = REPO_ROOT / "scripts/check_controls.pl"
 
 # The stand-in frontend "lowers" a source to the status its main returns and
 # the text a `// prints:` line names; `REJECTED` in the source is an error,
-# `CRASHES` makes the frontend abort and `ABORTS` makes the program abort.
+# `INTERNAL_ERROR` stops the frontend with an internal compiler error (status
+# 70), `CRASHES` makes the frontend abort and `ABORTS` makes the program abort.
 FRONTEND = textwrap.dedent("""\
     #!/usr/bin/env python3
     import os, pathlib, re, sys
@@ -24,6 +25,8 @@ FRONTEND = textwrap.dedent("""\
     source = pathlib.Path(args[-1]).read_text()
     if 'REJECTED' in source:
         sys.exit(1)
+    if 'INTERNAL_ERROR' in source:
+        sys.exit(70)
     if 'CRASHES' in source:
         os.abort()
     status = 'abort' if 'ABORTS' in source else re.search(r'return (\\d+);', source).group(1)
@@ -110,6 +113,13 @@ class CheckControlsTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("100-crash.cpp: FAIL: frontend was killed by signal 6 (SIGABRT) "
                       "instead of rejecting", result.stderr)
+
+    def test_an_internal_compiler_error_does_not_reject(self):
+        self.control("100-internal.cpp", "// expect reject\nINTERNAL_ERROR\n")
+        result = self.run_checker(self.controls)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("100-internal.cpp: FAIL: frontend stopped with an internal compiler "
+                      "error (status 70) instead of rejecting", result.stderr)
 
     def test_sidecar_states_status_and_exact_output(self):
         self.control("100-printed.cpp", "// prints: hello\nint main() { return 3; }\n",

@@ -4720,6 +4720,14 @@ sub status_mismatch_message
 	{
 		return "ERROR: $label did not run out of memory as expected (expected $expected_text, got $got_text)";
 	}
+	if (defined($got) && $got eq 'EXIT_INTERNAL_ERROR')
+	{
+		return "ERROR: $label stopped with an internal compiler error (expected $expected_text, got $got_text)";
+	}
+	if (defined($got) && $got eq 'EXIT_SIGNAL')
+	{
+		return "ERROR: $label was killed by a signal (expected $expected_text, got $got_text)";
+	}
 	return "ERROR: $label exit status mismatch (expected $expected_text, got $got_text)";
 }
 

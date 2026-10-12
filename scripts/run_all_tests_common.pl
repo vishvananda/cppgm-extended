@@ -149,6 +149,16 @@ sub write_named_status_code
 	{
 		print $fh "EXIT_NOT_IMPLEMENTED\n";
 	}
+	elsif ($status == 70)
+	{
+		# An internal compiler error (CPPGM_EXIT_INTERNAL_ERROR) or a crash
+		# is never the rejection a negative test expects.
+		print $fh "EXIT_INTERNAL_ERROR\n";
+	}
+	elsif ($status >= 128)
+	{
+		print $fh "EXIT_SIGNAL\n";
+	}
 	else
 	{
 		print $fh "EXIT_FAILURE\n";
@@ -329,6 +339,8 @@ sub submit_wrapped_request
 	return 124 if $status eq 'EXIT_TIMEOUT';
 	return 125 if $status eq 'EXIT_OOM';
 	return 86 if $status eq 'EXIT_NOT_IMPLEMENTED';
+	return 70 if $status eq 'EXIT_INTERNAL_ERROR';
+	return 128 if $status eq 'EXIT_SIGNAL';
 	return 1 if $status eq 'EXIT_FAILURE';
 	return $status if $status =~ m/^\d+$/;
 	die "Unexpected worker status '$status'\n";

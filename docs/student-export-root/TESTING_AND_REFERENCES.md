@@ -63,6 +63,9 @@ path runs the tool once per case.
 Use the oracle named by the handout: output, exit status, a focused property,
 or a code-quality envelope. Diagnostic text is not compared. Informational
 LowIR/MIR sidecars do not become grading requirements merely because they ship.
+An expected `EXIT_FAILURE` is a rejection: a tool that crashes, or exits with
+status 70 (an internal compiler error), records `EXIT_SIGNAL` or
+`EXIT_INTERNAL_ERROR` and fails the case.
 
 PA8 requires a LowIR model, reader/validator, writer and three construction
 exercises. The harness uses `lowir-ref` for roundtrips and `lowir2native-ref`
@@ -77,9 +80,9 @@ that executes your source-generated LowIR through the supplied native backend.
 with `lowir2native-ref -O0` and requires that exit status (and the output in
 `x.stdout`, when present), or requires your frontend to reject it. A program
 killed by a signal never has the stated status, and a frontend that crashes
-does not reject. Any LowIR with the right behavior passes. Run one
-assignment's controls alone with `make -C paN test-controls`. Your own native
-backend is introduced in PA24.
+or exits with status 70 does not reject. Any LowIR with the right behavior
+passes. Run one assignment's controls alone with `make -C paN test-controls`.
+Your own native backend is introduced in PA24.
 
 Reference wrappers download and verify a pinned bundle built from the current
 cppgm-extended solution. They provide examples of the required behavior and
