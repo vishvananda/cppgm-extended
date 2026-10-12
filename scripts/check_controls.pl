@@ -8,7 +8,8 @@
 # output when one is given.  A control that states a rejection must make the
 # frontend fail.  The LowIR text itself is not compared, so any LowIR whose
 # behaviour is right passes.  A program or frontend killed by a signal fails:
-# SIGABRT is not `exit 134`, nor a crashing frontend a rejection.
+# SIGABRT is not `exit 134`, nor a crashing frontend a rejection, nor a
+# frontend's internal compiler error (status 70, CPPGM_EXIT_INTERNAL_ERROR).
 #
 # The expected outcome comes from, in order:
 #   NAME.expect  one line, `exit N` or `reject`; NAME.stdout, when present,
@@ -137,6 +138,8 @@ sub grade
 	{
 		return 'frontend ' . ending(\%compile) . ' instead of rejecting'
 			if $compile{timed_out} || $compile{signal};
+		return 'frontend stopped with an internal compiler error (status 70) instead of rejecting'
+			if $compile{exit} == 70;
 		return $compile{exit} != 0 ? undef : 'frontend accepted an ill-formed program';
 	}
 	return 'frontend ' . ending(\%compile) . ': ' . tail_of("$directory/frontend.stderr")

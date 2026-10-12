@@ -62,7 +62,8 @@ or `reject`, with optional exact output in `x.stdout`).
 builds the LowIR with `lowir2native-ref -O0`, runs it and checks the status
 and output, or that the frontend rejects it; the LowIR text is not compared.
 A program killed by a signal fails whatever status it states (SIGABRT is not
-`exit 134`), and a frontend killed by one does not reject.
+`exit 134`), and a frontend killed by one, or stopped by an internal compiler
+error (status 70), does not reject.
 `make test` runs controls after the LowIR suite, `make -C paN test-controls`
 runs one assignment's controls alone, and controls need no references. Use this lane for a runtime
 reducer whose features the assignment owns. Host-linked, multi-unit,
@@ -83,6 +84,10 @@ Choose the oracle required by the handout: output, exit status, a focused
 property, or a code-quality envelope. Diagnostic text is not graded. PA8's
 three construction exercises grade program outcomes through `lowir2native-ref`,
 allowing alternative valid LowIR. Informational IR/MIR sidecars are not oracles.
+
+An expected `EXIT_FAILURE` is a rejection: a tool stopped by an internal
+compiler error (status 70) or killed by a signal records `EXIT_INTERNAL_ERROR`
+or `EXIT_SIGNAL` instead, and fails the case.
 
 Regenerate references from the built solution:
 
