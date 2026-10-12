@@ -228,12 +228,13 @@ protected:
 	telemetry::Counter peak_run_bytes_;
 	// A speculative template argument list: its `<` (absolute token
 	// position) and what its parse depends on besides the tokens, the names
-	// visible and the scope they are looked up from.
+	// visible, the scope they are looked up from and the reading's context.
 	struct TemplateListKey
 	{
 		uint64_t position;
 		uint64_t environment;
 		uint32_t scope;
+		uint32_t context;
 
 		bool operator<(const TemplateListKey& other) const
 		{
@@ -241,15 +242,23 @@ protected:
 				return position < other.position;
 			if (environment != other.environment)
 				return environment < other.environment;
-			return scope < other.scope;
+			if (scope != other.scope)
+				return scope < other.scope;
+			return context < other.context;
 		}
 	};
-	TemplateListKey template_list_key() const
+	TemplateListKey template_list_key(bool call_follows) const
 	{
-		return TemplateListKey{ tokens_.absolute_position(), scopes_.environment(), scopes_.current()->id };
+		// A statement's alternative readings change guessed name categories
+		// without changing the scope environment. A member template-id also
+		// requires a following call (or qualifier), unlike an ordinary one.
+		// The incoming angle mode is immaterial: arguments set it to true.
+		const uint32_t context = static_cast<uint32_t>(conflicts_.take) |
+			(static_cast<uint32_t>(alternatives_active_) << 8) | (static_cast<uint32_t>(call_follows) << 9);
+		return TemplateListKey{ tokens_.absolute_position(), scopes_.environment(), scopes_.current()->id, context };
 	}
 	// Speculative template argument lists that failed (sorted): each is
-	// tried once, so nested undeclared names cannot make parsing
+	// tried once per context, so nested undeclared names cannot make parsing
 	// exponential.
 	std::vector<TemplateListKey> failed_template_lists_;
 	// skip_balanced's closer stack.

@@ -502,9 +502,9 @@ bool Parser::parse_name_component(NameMode mode, ListFrame<NameComponent>& compo
 			}
 			else if (choice == TemplateIdChoice::Maybe || choice == TemplateIdChoice::MaybeCall)
 			{
-				// Tried once per position (see try_outermost_template_arguments).
+				// Tried once per context (see try_outermost_template_arguments).
 				const bool call_follows = choice == TemplateIdChoice::MaybeCall;
-				const TemplateListKey key = template_list_key();
+				const TemplateListKey key = template_list_key(call_follows);
 				if (!abandoning_lists_ && !template_list_failed_before(key) && closing_angle_ahead())
 				{
 					if (open_lists_.size() == open_lists_base_)
@@ -769,7 +769,7 @@ void Parser::abandon_template_lists()
 bool Parser::try_outermost_template_arguments(
 	Slice<TemplateArgument>& arguments, bool call_follows, const TemplateListKey& key)
 {
-	// An undeclared name's `<` is tried as a template argument list once. A
+	// An undeclared name's `<` is tried once per reading's context. A
 	// list that fails inside another's arguments fails every enclosing
 	// speculative list with it (abandon_template_lists): read as a value,
 	// the inner name leaves the same tokens to the enclosing argument, which
