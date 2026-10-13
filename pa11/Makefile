@@ -67,6 +67,8 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 # program graded by ../scripts/check_controls.pl (see TESTING_AND_REFERENCES.md).
 CONTROLS_RUN = if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
 		status=0; \
+		perl ../scripts/check_scalar_lowir_properties.pl \
+			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
 		perl ../scripts/check_pa11_string_literal_storage.pl \
 			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
 		perl ../scripts/check_pa11_lifecycle_policy.pl \
@@ -106,6 +108,7 @@ REF_TEST_RUN = case "$(TEST)" in \
 esac
 
 CHECK_RUN = case "$(TEST)" in \
+	$(CONTROL_TEST_ROOT)/*readonly-scalar-storage*|$(CONTROL_TEST_ROOT)/*volatile-access-markers*) perl ../scripts/check_scalar_lowir_properties.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
 	$(CONTROL_TEST_ROOT)/*string-literal-readonly*) perl ../scripts/check_pa11_string_literal_storage.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
 	$(CONTROL_TEST_ROOT)/*lifecycle-inline-policy*) perl ../scripts/check_pa11_lifecycle_policy.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
 	$(CONTROL_TEST_ROOT)/*unreachable-terminator*) perl ../scripts/check_pa11_unreachable_terminator.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \

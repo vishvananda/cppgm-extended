@@ -165,7 +165,49 @@ class CheckControlsTests(unittest.TestCase):
         (pa12 / "100-unstated.cpp").write_text("int main() { return 7; }\n")
         focused = self.make("pa12", "check", "TEST=tests/controls/100-unstated.cpp")
         self.assertNotEqual(focused.returncode, 0)
-        self.assertIn("No PA12 survivor-property tests found", focused.stderr)
+        self.assertIn("No value survivor-property tests found", focused.stderr)
+
+    def test_object_extents_keep_direct_and_indirect_requirements_in_their_owners(self):
+        # The stand-ins isolate checker predicates; the course controls also
+        # execute through the real frontend/backend in test-controls.
+        self.frontend.write_text(textwrap.dedent("""\
+            #!/usr/bin/env python3
+            import pathlib, sys
+            args = sys.argv[1:]
+            pathlib.Path(args[args.index('-o') + 1]).write_text(pathlib.Path(args[-1]).read_text())
+            """))
+        self.backend.write_text(textwrap.dedent("""\
+            #!/usr/bin/env python3
+            import pathlib, sys
+            args = sys.argv[1:]
+            program = pathlib.Path(args[args.index('-o') + 1])
+            program.write_text('#!/bin/sh\\nexit 0\\n')
+            program.chmod(0o755)
+            """))
+        lowir = (
+            "function @result(%out : ptr [pass=indirect_result, object_bytes=24]) -> void {}\n"
+            "function @reference(%value : ptr [pass=by_address, object_bytes=24]) -> i64 {}\n"
+            "function @member(%this : ptr [object_bytes=24]) -> i64 {}\n"
+            "function @unused(%this : ptr [object_bytes=24]) -> i64 {}\n"
+            "function @pointer_value(%value : ptr) -> i64 {}\n"
+            "function @main() -> i32 {\n  %answer = call i64 @member(%object)\n}\n"
+        )
+        direct = self.root / "pa12/tests/controls/200-parameter-object-extent-boundary.cpp"
+        indirect = self.root / "pa22/tests/controls/300-member-pointer-object-extent-boundary.cpp"
+        for pa, control in [("pa12", direct), ("pa22", indirect)]:
+            control.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(REPO_ROOT / pa / "Makefile", self.root / pa / "Makefile")
+            control.write_text(lowir)
+        self.assertEqual(self.make("pa12", "check", f"TEST=tests/controls/{direct.name}").returncode, 0)
+        missing = self.make("pa22", "check", f"TEST=tests/controls/{indirect.name}")
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("indirect member call lost its object extent", missing.stderr)
+        indirect.write_text(lowir.replace("  %answer", "  %indirect = call i64 %callee(ptr [object_bytes=24] %object)\n  %answer"))
+        self.assertEqual(self.make("pa22", "check", f"TEST=tests/controls/{indirect.name}").returncode, 0)
+        direct.write_text(lowir.replace("@member(%this : ptr [object_bytes=24])", "@member(%this : ptr)"))
+        missing = self.make("pa12", "check", f"TEST=tests/controls/{direct.name}")
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("direct member call lost its object extent", missing.stderr)
 
 
 if __name__ == "__main__":
