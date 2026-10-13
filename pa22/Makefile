@@ -66,8 +66,12 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 # tests/controls: a control that states its expected outcome is a self-checking
 # program graded by ../scripts/check_controls.pl (see TESTING_AND_REFERENCES.md).
 CONTROLS_RUN = if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
+		status=0; \
+		perl ../scripts/check_value_survivor_properties.pl \
+			$(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
 		perl ../scripts/check_controls.pl \
-			$(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(CONTROL_TEST_ROOT)"; \
+			$(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
+		exit $$status; \
 	fi
 
 test: $(TEST_DEPS)
@@ -87,6 +91,7 @@ REF_TEST_RUN = case "$(TEST)" in \
 esac
 
 CHECK_RUN = case "$(TEST)" in \
+	$(CONTROL_TEST_ROOT)/*member-pointer-object-extent-boundary*) perl ../scripts/check_value_survivor_properties.pl $(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(TEST)" ;; \
 	$(CONTROL_TEST_ROOT)/*) perl ../scripts/check_controls.pl $(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(TEST)" ;; \
 	*) scripts/run_all_tests.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
 esac

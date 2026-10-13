@@ -45,8 +45,10 @@ PA33 checks executable behavior, declared MIR bounds and debug locations.
 It requires no profiler, allocator statistics or exact optimized MIR match.
 
 From PA5 onward, filenames use a three-digit feature-cluster prefix
-(`100-`, `200-`, ...); PA1–PA4 use finer subgroups. Controls and solution
-regressions follow their own local naming. Required rejection cases are in the
+(`100-`, `200-`, ...); PA1–PA4 use finer subgroups. Required controls follow
+the same prefixes and belong in the earliest assignment owning every feature
+their source and checker require. Solution regressions have local naming.
+Required rejection cases are in the
 owning suite; unspecified inputs do not add requirements.
 
 A graded input is an `x.t` file in the tool's input language (companions

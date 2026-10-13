@@ -42,7 +42,10 @@ Every required fixture lives under its owning `paN/tests/`. From PA5 onward,
 the three-digit prefix identifies a feature cluster (`100-`, `200-`, ...).
 PA1–PA4 use finer subgroups. The placement auditor checks the latest feature
 used; put a reducer in the earliest assignment that owns all its requirements.
-`controls/` contains focused property checks. Personal inputs and scratch
+Required `controls/` inputs follow the same feature-cluster prefixes and
+earliest-owner rule. A control grades behavior or LowIR properties instead of
+a complete reference module; its source and checker must stay within the
+owning handout's requirements. Personal inputs and scratch
 harnesses belong in `student.tests/` and are run explicitly.
 
 A fixture must also sit where a lane runs it: a fixture beside the roots its

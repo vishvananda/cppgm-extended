@@ -67,7 +67,7 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 # program graded by ../scripts/check_controls.pl (see TESTING_AND_REFERENCES.md).
 CONTROLS_RUN = if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
 		status=0; \
-		perl ../scripts/check_pa12_survivor_properties.pl \
+		perl ../scripts/check_value_survivor_properties.pl \
 			$(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
 		perl ../scripts/check_controls.pl \
 			$(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
@@ -93,7 +93,7 @@ esac
 CHECK_RUN = case "$(TEST)" in \
 	$(CONTROL_TEST_ROOT)/*) if perl ../scripts/check_controls.pl --owns "$(TEST)"; then \
 		perl ../scripts/check_controls.pl $(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(TEST)"; \
-	else perl ../scripts/check_pa12_survivor_properties.pl $(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(TEST)"; fi ;; \
+	else perl ../scripts/check_value_survivor_properties.pl $(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(TEST)"; fi ;; \
 	*) scripts/run_all_tests.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
 esac
 CHECK_COMPARE = case "$(TEST)" in \

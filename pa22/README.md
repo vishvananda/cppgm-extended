@@ -133,6 +133,12 @@ their leading comment (`expect exit N` or `expect reject`) or in an
 The LowIR text of a control is not compared. `make test-controls` runs only
 the controls; `make check TEST=tests/controls/<name>.cpp` runs one.
 
+The focused `300-member-pointer-object-extent-boundary.cpp` control checks
+complete-object extents on class references, result storage and indirect
+member-function calls, then executes the program. It uses the shared
+`check_value_survivor_properties.pl` property checker; no complete LowIR
+module is compared. PA12 checks the earlier direct-call boundaries separately.
+
 ### PA22 Syntax Spec
 
 The authoritative source syntax is the shared `cppgm++` source grammar, exposed
