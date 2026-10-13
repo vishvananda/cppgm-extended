@@ -96,6 +96,13 @@ void Analyzer::class_builtin_candidates(TokenKind op, const syntax::Slice<syntax
 	{
 		begin[i] = operand_options_.size();
 		const ExprFacts* facts = operands[i]->facts;
+		// An unresolved overload set needs a function parameter's target
+		// type; it cannot supply a built-in operator's operand type.
+		if (facts->type == nullptr)
+		{
+			operand_options_.resize(base);
+			return;
+		}
 		const ClassEntity* cls = ClassOf(facts->type);
 		if (cls == nullptr)
 		{
@@ -253,7 +260,10 @@ void Analyzer::operator_candidates(
 	// non-members, 13.5p6) the non-member candidates, each function once.
 	std::vector<FunctionEntity*>& set = operator_set_;
 	set.clear();
-	const ClassEntity* cls = ClassOf(operands[0]->facts->type);
+	// An overloaded function operand has no type until a candidate's
+	// parameter resolves it, so it contributes no member candidates.
+	const Type* left_type = operands[0]->facts->type;
+	const ClassEntity* cls = left_type != nullptr ? ClassOf(left_type) : nullptr;
 	if (key == assign_key_ && cls != nullptr && require_complete(cls) && cls->scope != nullptr)
 	{
 		// The class's own operator= members and its implicit copy and move
@@ -595,13 +605,11 @@ ExprFacts* Analyzer::overloaded_operator(
 		// tying, wins as a non-template, 13.3.3p1).
 		if (!class_operand)
 		{
-			if (left == nullptr)
-				continue;
-			if (!EnumerationParameter(type->params[0], left) &&
+			if ((left == nullptr || !EnumerationParameter(type->params[0], left)) &&
 				(right == nullptr || !EnumerationParameter(type->params[1], right)))
 				continue;
 			same_enumeration_list = same_enumeration_list ||
-				(!candidate->templated && right != nullptr && type->params[0] == left->unqualified &&
+				(!candidate->templated && left != nullptr && right != nullptr && type->params[0] == left->unqualified &&
 					type->params[1] == right->unqualified);
 		}
 		const uint32_t first = static_cast<uint32_t>(sequences_.size());
@@ -634,7 +642,7 @@ ExprFacts* Analyzer::overloaded_operator(
 	// 13.3.1.2p3 bullet 3: operands of enumeration but no class type also
 	// have the built-in candidates (13.6), the best of which competes as a
 	// candidate of no function.
-	if (!class_operand)
+	if (!class_operand && left != nullptr && (count == 1 || right != nullptr))
 	{
 		const Type* parameters[2] = { nullptr, nullptr };
 		if (builtin_operator(op, operands, postfix, same_enumeration_list, parameters) == count)
