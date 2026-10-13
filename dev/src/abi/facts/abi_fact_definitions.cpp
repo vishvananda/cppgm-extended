@@ -575,8 +575,15 @@ AbiNode CaseReader::read_expression_definition(std::uint32_t line, const FactWor
 	case ABI_FACT_EXPRESSION_MEMBER:
 	{
 		if (n != 3)
-			break;
-		// (Operands in order: see the member-pointer type form.)
+		{
+			if (n < 3)
+				break;
+			const AbiNode scope = compact_type(line, operands[0].text, operands[0].length);
+			const bool flag = flag_value(line, operands[1]);
+			const AbiNode member = string(operands[2]);
+			argument_list(operands + 3, n - 3, scratch_);
+			return graph_.scoped_member(scope, member, flag, scratch_.data(), scratch_.size());
+		}
 		const AbiNode scope = compact_type(line, operands[0].text, operands[0].length);
 		const bool flag = flag_value(line, operands[1]);
 		return graph_.scoped_member(scope, string(operands[2]), flag);
