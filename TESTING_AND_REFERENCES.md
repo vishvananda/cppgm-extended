@@ -57,6 +57,12 @@ input, a companion named after one (`x.ref*`, `x.t.N`, `x.lib.*`, ...), nor
 a header or note that a fixture uses. Lanes a Makefile cannot show, such as
 PA35's, are listed in the script with their reason.
 
+Controls are `.t` cases in `tests/controls/`, run as the `control_t` shape by
+`run_all_tests_common.pl` and `compare_results_common.pl`. They use the ordinary
+run/check commands, result files, per-lane counts and failure reporting. Their
+oracle is the stated behavior or focused predicate, so a complete `.ref` text
+output is unnecessary. They contribute to assignment and cumulative totals.
+
 In the LowIR-graded assignments (PA10–PA23), a control that states its
 expected outcome is a self-checking program: `expect exit N` or
 `expect reject` in its leading comment, or an `x.expect` sidecar (`exit N`

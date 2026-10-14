@@ -98,6 +98,14 @@ sub compile_and_run
 		if $status != 0;
 }
 
+my $selection = qr/(?:constructor-alias-boundaries|enclosing-temporary-lifetime|out-of-class-move-assignment-boundary|conditional-copy-elision-permission|(?:parameter|member-pointer)-object-extent-boundary|parameter-object-identity|parameter-destruction-full-expression|array-new-size-width|array-new-cookie-layout|array-new-length-check|array-new-braced-list|array-new-class-braced-list|named-return-object-identity|static-reference-lifetime|conditional-transfer-selection|empty-value-initialization)\.(?:cpp|t)$/;
+if (@ARGV && $ARGV[0] eq '--list')
+{
+	shift @ARGV;
+	print "$_\n" for map { collect_tests($_, $selection) } @ARGV;
+	exit 0;
+}
+
 if(scalar(@ARGV) != 3)
 {
 	die "Usage: check_value_survivor_properties.pl " .
@@ -105,8 +113,7 @@ if(scalar(@ARGV) != 3)
 }
 
 my ($app, $native_reference, $root) = @ARGV;
-my @tests = collect_tests($root,
-	qr/(?:constructor-alias-boundaries|enclosing-temporary-lifetime|out-of-class-move-assignment-boundary|conditional-copy-elision-permission|(?:parameter|member-pointer)-object-extent-boundary|parameter-object-identity|parameter-destruction-full-expression|array-new-size-width|array-new-cookie-layout|array-new-length-check|array-new-braced-list|array-new-class-braced-list|named-return-object-identity|static-reference-lifetime|conditional-transfer-selection|empty-value-initialization)\.cpp$/);
+my @tests = collect_tests($root, $selection);
 die "No value survivor-property tests found under $root\n" if !@tests;
 
 for my $test (@tests)

@@ -40,14 +40,21 @@ sub declaration_with_object
 	return undef;
 }
 
+my $selection = qr/(?:pointer-difference-strength-reduction|readonly-scalar-storage|volatile-access-markers|builtin-memory-alias-boundaries|ordinary-pointer-decay).*\.(?:cpp|t)$/;
+if (@ARGV && $ARGV[0] eq '--list')
+{
+	shift @ARGV;
+	print "$_\n" for map { collect_tests($_, $selection) } @ARGV;
+	exit 0;
+}
+
 if (scalar(@ARGV) != 2)
 {
 	die "Usage: check_scalar_lowir_properties.pl <cppgm++> <test-or-directory>\n";
 }
 
 my ($app, $root) = @ARGV;
-my @tests = collect_tests(
-	$root, qr/(?:pointer-difference-strength-reduction|readonly-scalar-storage|volatile-access-markers|builtin-memory-alias-boundaries|ordinary-pointer-decay).*\.cpp$/);
+my @tests = collect_tests($root, $selection);
 die "No scalar LowIR properties found under $root\n" if !@tests;
 
 for my $test (@tests)

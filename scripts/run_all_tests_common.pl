@@ -8,6 +8,11 @@ use File::Basename qw(basename);
 use File::Find;
 use Fcntl qw(F_GETFD F_SETFD FD_CLOEXEC);
 use IPC::Open2;
+use FindBin;
+use lib $FindBin::Bin;
+use CppgmBatchWorker ();
+
+my %control_owners;
 use POSIX qw(setpgid WNOHANG);
 use Text::ParseWords qw(shellwords);
 
@@ -676,6 +681,26 @@ sub run_batch
 	die "Unsupported wrapped batch mode $mode";
 }
 
+sub run_single_control
+{
+	my ($app, $suffix, $test) = @_;
+	(my $output = $test) =~ s/\.t$/.$suffix/;
+	my $checker = $control_owners{$test};
+	if (!defined($checker))
+	{
+		write_file("$output.stdout", "No control predicate owns $test\n");
+		write_numeric_status("$output.exit_status", 1);
+		return;
+	}
+	my @args = ($app);
+	push @args, $ENV{CPPGM_CONTROL_NATIVE_APP} // '../dev/lowir2native-ref'
+		if $checker eq 'check_controls.pl' || $checker eq 'check_value_survivor_properties.pl';
+	my $status = CppgmBatchWorker::run_command_capture(
+		cmd => [$^X, "$FindBin::Bin/$checker", @args, $test],
+		stdout => "$output.stdout", stderr => "$output.stderr", timeout => 180);
+	write_numeric_status("$output.exit_status", $status);
+}
+
 sub run_single
 {
 	my ($mode, $app, $suffix, $tests, $jobs, $verbose, $assignment) = @_;
@@ -684,6 +709,11 @@ sub run_single
 		if ($mode eq "text_t" || $mode eq "text_t1")
 		{
 			run_single_wrapped_text($mode, $app, $suffix, $test, $assignment);
+			return;
+		}
+		if ($mode eq 'control_t')
+		{
+			run_single_control($app, $suffix, $test);
 			return;
 		}
 		die "Unsupported run_all_tests mode $mode";
@@ -707,6 +737,7 @@ my $assignment = basename(getcwd());
 
 my %patterns = (
 	text_t => qr/\.t$/,
+	control_t => qr/\.t$/,
 	text_t1 => qr/\.t\.1$/,
 );
 die "Unsupported run_all_tests mode $mode" if !exists($patterns{$mode});
@@ -714,7 +745,26 @@ die "Unsupported run_all_tests mode $mode" if !exists($patterns{$mode});
 ensure_test_app_available($app, $suffix, $tests);
 
 my @tests = collect_tests($tests, $patterns{$mode});
+if ($mode eq 'control_t')
+{
+	for my $checker (qw(check_controls.pl check_scalar_lowir_properties.pl
+		check_value_survivor_properties.pl check_pa11_string_literal_storage.pl
+		check_pa11_lifecycle_policy.pl check_pa11_unreachable_terminator.pl
+		check_pa27_section_contract.pl))
+	{
+		open(my $listing, '-|', $^X, "$FindBin::Bin/$checker", '--list', $tests)
+			or die "Unable to list $checker controls: $!";
+		while (my $test = <$listing>)
+		{
+			chomp($test);
+			die "Multiple control predicates own $test\n" if exists($control_owners{$test});
+			$control_owners{$test} = $checker;
+		}
+		close($listing) or die "$checker control discovery failed\n";
+	}
+}
 my $ntests = scalar(@tests);
+die "No control_t tests found under $tests\n" if $mode eq 'control_t' && !$ntests;
 if (!$verbose && !$keep_going)
 {
 	if ($check_mode)
@@ -730,7 +780,7 @@ if (!$verbose && !$keep_going)
 	print "\n";
 }
 
-if ($ENV{CPPGM_BATCH_TESTS})
+if ($ENV{CPPGM_BATCH_TESTS} && $mode ne 'control_t')
 {
 	run_batch($mode, $app, $suffix, \@tests, $jobs, $verbose, $assignment);
 }
