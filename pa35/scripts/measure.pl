@@ -50,13 +50,16 @@ my $kind = $a{counter} eq 'perf' ? 'perf' : $a{sim} ? 'sim' : 'cg';
 my ($LA, $LB) = split /,/, $a{labels};
 
 # One run per (level, side), skipped when the cache already holds it.
-my (%cache, @commands);
+my (%cache, %scheduled, @commands);
 for my $level (@levels) {
 	for my $side (qw(seed self)) {
 		my $dir = PA35::cache_dir($bin{$side}, $level, $kind);
 		$cache{$level}{$side} = $dir;
 		unlink "$dir/done" if $a{'no-cache'};
 		next if -f "$dir/done";
+		# An A/A control (or two identical builds) shares one cache entry.
+		# Schedule it once so parallel counters cannot overwrite each other.
+		next if $scheduled{$dir}++;
 		# Run a copy kept in the cache entry, so the profile names a path
 		# that stays valid wherever the binary is later found.
 		copy($bin{$side}, "$dir/bin") or die "copy: $!\n";

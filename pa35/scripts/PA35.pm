@@ -102,7 +102,8 @@ sub reference_identity {
 		grep { -f $_ } glob("$PA35/scripts/*"));
 	verify_workload();
 	my ($affinity) = -f '/proc/self/status' ? slurp('/proc/self/status') =~ /^(Cpus_allowed_list:.*)$/m : '';
-	return Digest::SHA::sha256_hex($id . ($affinity // '') . toolchain_key() . join('', map { sha256_file($_) } @inputs));
+	return Digest::SHA::sha256_hex($id . $PA35 . join('\n', workload_args('-O3', 'OUTPUT'))
+		. ($affinity // '') . toolchain_key() . join('', map { sha256_file($_) } @inputs));
 }
 
 # Dies unless the workload matches MANIFEST.sha256 exactly.

@@ -190,6 +190,49 @@ all:
 
 
 class ReferenceGateTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == "linux" and shutil.which("g++"), "Linux GCC fixture")
+    def test_identical_measurement_pair_runs_one_cached_job(self):
+        with tempfile.TemporaryDirectory(prefix="reference-aa.") as temp:
+            root = Path(temp)
+            scripts = root / "pa35/scripts"
+            scripts.mkdir(parents=True)
+            for name in ("PA35.pm", "measure.pl"):
+                shutil.copyfile(ROOT / "pa35/scripts" / name, scripts / name)
+            (root / "pa35/workload").symlink_to(ROOT / "pa35/workload")
+            source = root / "compiler.cpp"
+            source.write_text('''#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+int main(int argc, char **argv) {
+  FILE *trace = fopen(getenv("FIXTURE_TRACE"), "a"); fputs("compile\\n", trace); fclose(trace);
+  for (int i=1; i+1<argc; ++i) if (!strcmp(argv[i], "-o")) {
+    FILE *out=fopen(argv[i+1], "w"); fputs("identical object\\n", out); fclose(out); return 0;
+  }
+  return 1;
+}''')
+            binary = root / "compiler"
+            subprocess.run(["g++", str(source), "-o", str(binary)], check=True, capture_output=True)
+            (root / "bin").mkdir()
+            perf = root / "bin/perf"
+            perf.write_text('''#!/usr/bin/env python3
+import pathlib, subprocess, sys
+args=sys.argv[1:]
+status=subprocess.run(args[args.index('--')+1:]).returncode
+pathlib.Path(args[args.index('-o')+1]).write_text('100,,instructions:u,100,100.00\\n')
+sys.exit(status)
+''')
+            perf.chmod(0o755)
+            trace = root / "trace"
+            env = dict(os.environ, PATH=str(root / "bin") + os.pathsep + os.environ["PATH"], FIXTURE_TRACE=str(trace))
+            command = ["perl", str(scripts / "measure.pl"), "--seed", str(binary), "--self", str(binary),
+                       "--out", str(root / "results"), "--levels", "O0", "--counter", "perf"]
+            result = subprocess.run(command, capture_output=True, text=True, env=env)
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            self.assertEqual(trace.read_text().splitlines(), ["compile"])
+            cached = subprocess.run(command, capture_output=True, text=True, env=env)
+            self.assertEqual(cached.returncode, 0, cached.stderr)
+            self.assertEqual(trace.read_text().splitlines(), ["compile"])
+
     def test_check_routes_candidate_and_codegen_separately(self):
         # Execute check.pl with a recording PA35 module, avoiding slow simulation.
         with tempfile.TemporaryDirectory(prefix="reference-gates.") as temp:
