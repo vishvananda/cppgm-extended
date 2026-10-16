@@ -31,9 +31,10 @@ use File::Copy qw(copy);
 use File::Path qw(make_path);
 use Getopt::Long;
 use PA35;
+use JSON::PP;
 
 my %o = (out => "$PA35::PA35/obj/check", seeds => 20, group => 'all');
-GetOptions(\%o, 'group=s', 'seed=s', 'self=s', 'tools=s', 'lowir2native=s', 'out=s', 'seeds=i', 'no-cache')
+GetOptions(\%o, 'group=s', 'seed=s', 'self=s', 'tools=s', 'out=s', 'seeds=i', 'no-cache', PA35::reference_options())
 	&& $o{group} =~ /^(correctness|speed|codegen|all)$/
 	or die "usage: check.pl [--group correctness|speed|codegen|all] [--seed A --self B [--tools C]] [--lowir2native L] [--out DIR] [--seeds N] [--no-cache]\n";
 make_path($o{out});
@@ -41,6 +42,9 @@ my $out = abs_path($o{out});
 my $S = $FindBin::Bin;
 # Above this compile-time ratio to the host, the simulated runs are skipped.
 my $SIM_LIMIT = 1.0;
+die "reference track uses --compiler, not --seed/--self/--tools\n"
+	if $o{'reference-bundle'} && ($o{seed} || $o{self} || $o{tools});
+my $identity = $o{'reference-bundle'} ? PA35::reference_identity(\%o) : undef;
 
 my @GATES;
 for my $line (split /\n/, PA35::slurp("$PA35::PA35/gates.txt")) {
@@ -52,7 +56,9 @@ my @GROUPS = $o{group} eq 'all' ? qw(correctness speed codegen) : ($o{group});
 
 # The compiler under test: an explicit seed, or dev/cppgm++ built now.
 my $seed;
-if ($o{seed}) {
+if ($o{'reference-bundle'}) {
+	$seed = abs_path($o{compiler});
+} elsif ($o{seed}) {
 	$seed = abs_path($o{seed});
 } else {
 	print "make build ...\n";
@@ -67,7 +73,7 @@ if ($o{seed}) {
 # behavior.pl and generated.pl run dev/cppgm++ unless --tools names another
 # compiler; the behavior suite's MIR dump runs the lowir2native beside it
 # unless --lowir2native names one (a seed built elsewhere has none beside it).
-my $tools = abs_path($o{tools} // ($o{seed} ? $seed : "$PA35::ROOT/dev/cppgm++"));
+my $tools = abs_path($o{tools} // (($o{seed} || $o{'reference-bundle'}) ? $seed : "$PA35::ROOT/dev/cppgm++"));
 my $lowir2native = $o{lowir2native} ? abs_path($o{lowir2native}) : dirname($tools) . '/lowir2native';
 
 my (%value, %note);
@@ -81,7 +87,7 @@ sub step {
 sub suite_failures {
 	my ($suite, $st, $log) = @_;
 	my ($pass, $total) = $log =~ /(\d+)\/(\d+) \w+ pass/;
-	$value{"$suite-failures"} = defined $total ? $total - $pass : 'error';
+	$value{"$suite-failures"} = defined $total && !$st ? $total - $pass : 'error';
 	my @fails = grep { /^(DIFF|MIR FAIL|REF FAIL)/ } split /\n/, $log;
 	my $more = @fails > 6 ? sprintf('; %d more in %s/%s.log', @fails - 6, $out, $suite) : '';
 	splice(@fails, 6) if @fails > 6;
@@ -112,15 +118,15 @@ my %RUN = (
 	},
 	speed => sub {
 		unlink "$out/speed.tsv", "$out/scaling.tsv";
-		step('speed', $^X, "$S/speed.pl", '--compiler', $seed, '--out', "$out/speed.tsv");
-		if (-f "$out/speed.tsv") {
+		my ($speed_status) = step('speed', $^X, "$S/speed.pl", '--compiler', $seed, '--out', "$out/speed.tsv");
+		if (!$speed_status && -f "$out/speed.tsv") {
 			for my $line (split /\n/, PA35::slurp("$out/speed.tsv")) {
 				my ($metric, $c, $h, $ratio) = split /\t/, $line;
 				$value{$metric} = $ratio if $metric ne 'metric';
 			}
 		}
-		step('scaling', $^X, "$S/scaling.pl", '--compiler', $seed, '--no-host', '--out', "$out/scaling.tsv");
-		if (-f "$out/scaling.tsv") {
+		my ($scaling_status) = step('scaling', $^X, "$S/scaling.pl", '--compiler', $seed, '--no-host', '--out', "$out/scaling.tsv");
+		if (!$scaling_status && -f "$out/scaling.tsv") {
 			my @bad;
 			for my $line (split /\n/, PA35::slurp("$out/scaling.tsv")) {
 				my ($family, $who, $growth) = split /\t/, $line;
@@ -132,8 +138,11 @@ my %RUN = (
 		}
 	},
 	codegen => sub {
-		my $self;
-		if ($o{self}) {
+		my ($self, $codegen_seed);
+		$codegen_seed = $seed;
+		if ($o{'reference-bundle'}) {
+			# Build the large reference program only after the cheap speed probe.
+		} elsif ($o{self}) {
 			$self = abs_path($o{self});
 		} else {
 			print "self build (freeze.pl --label check) ...\n";
@@ -141,13 +150,15 @@ my %RUN = (
 			PA35::spit("$out/freeze.log", $log);
 			die "freeze failed (see $out/freeze.log):\n$log" if $st;
 			($seed, $self) = ("$PA35::PA35/obj/bin/seed-check", "$PA35::PA35/obj/bin/self-check");
+			$codegen_seed = $seed;
 		}
 		# The simulated runs cost about 100 times a native compile: measure
 		# only a compiler that is already faster than the host.
 		unlink "$out/measure/summary.tsv", "$out/measure/summary.txt";
 		my $t0 = PA35::timed_run({ timeout => 120, allow_fail => 1 }, $seed, PA35::workload_args('-O3', "$out/probe.o"));
 		my $h0 = PA35::timed_run({ allow_fail => 1 }, 'g++', '-std=gnu++11', PA35::workload_args('-O2', "$out/probe-host.o"));
-		my $too_slow = $t0->{status} eq 'timeout' ? 'the seed takes over 120 s at -O3'
+		my $too_slow = $h0->{status} ne '0' || !$h0->{user} ? 'the host probe failed or was unmeasurable'
+			: $t0->{status} eq 'timeout' ? 'the seed takes over 120 s at -O3'
 			: $t0->{status} ne '0' ? 'the seed does not compile the workload at -O3'
 			: $t0->{user} > $SIM_LIMIT * $h0->{user} ? sprintf('the seed takes %.2f of the host time at -O3', $t0->{user} / $h0->{user})
 			: undef;
@@ -156,17 +167,18 @@ my %RUN = (
 			$value{identical} = 0;
 			$note{identical} = "not measured: $too_slow; fix compiler speed first";
 		} else {
-			step('measure', $^X, "$S/measure.pl", '--seed', $seed, '--self', $self, '--out', "$out/measure", '--sim',
+			($codegen_seed, $self) = PA35::reference_pair(\%o) if $o{'reference-bundle'};
+			my ($measure_status) = step('measure', $^X, "$S/measure.pl", '--seed', $codegen_seed, '--self', $self, '--out', "$out/measure", '--sim',
 				($o{'no-cache'} ? '--no-cache' : ()));
-			if (-f "$out/measure/summary.tsv") {
-				my $identical = 1;
+			if (!$measure_status && -f "$out/measure/summary.tsv") {
+				my %identical;
 				for my $line (split /\n/, PA35::slurp("$out/measure/summary.tsv")) {
 					my ($level, $metric, $a, $b, $ratio) = split /\t/, $line;
 					next if $level eq 'level';
-					if ($metric eq 'identical') { $identical &&= $a; next; }
+					if ($metric eq 'identical') { $identical{$level} = defined $a && $a eq '1' ? 1 : 0; next; }
 					$value{"$level-$metric"} = $ratio;
 				}
-				$value{identical} = $identical ? 1 : 0;
+				$value{identical} = $identical{O0} && $identical{O3} ? 1 : 0;
 				($value{text}) = PA35::slurp("$out/measure/summary.txt") =~ /text bytes: .*\(([\d.]+)x\)/;
 			} else {
 				$value{identical} = 0;
@@ -191,8 +203,16 @@ for my $group (@GROUPS) {
 		next;
 	}
 	$RUN{$group}->();
+	die "reference measurement inputs changed while checking $group\n"
+		if defined $identity && PA35::reference_identity(\%o) ne $identity;
 	# This group's measurements, for progress.pl.
 	PA35::spit("$out/values-$group.tsv", join('', map { "$_->{metric}\t" . ($value{ $_->{metric} } // 'missing') . "\n" } @gates));
+	if (defined $identity) {
+		PA35::spit("$out/receipt-$group.json", encode_json({ identity => $identity,
+			values => PA35::sha256_file("$out/values-$group.tsv"), seeds => $o{seeds} }));
+	} else {
+		unlink "$out/receipt-$group.json";
+	}
 	my $group_ok = 1;
 	for my $g (@gates) {
 		my $v = $value{ $g->{metric} };

@@ -286,6 +286,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_machine_object_host_eh_roundtrip.py \
 	scripts/tests/test_pa24_mir_modes.py \
 	scripts/tests/test_pa33_course.py \
+	scripts/tests/test_reference_bootstrap.py \
 	scripts/tests/test_pa35_harness.py \
 	scripts/tests/test_pending_audit_regressions.py \
 	scripts/tests/test_report_elf_code_shape.py \

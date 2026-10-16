@@ -17,11 +17,26 @@ use Getopt::Long;
 use PA35;
 
 my %a;
-GetOptions(\%a, 'label=s', 'jobs=i') && $a{label} && $a{label} =~ /^[\w.+-]+$/
+GetOptions(\%a, 'label=s', 'jobs=i', PA35::reference_options()) && $a{label} && $a{label} =~ /^[\w.+-]+$/
 	or die "usage: freeze.pl --label L [--jobs N]\n";
 my $root = $PA35::ROOT;
 my $bin = "$PA35::PA35/obj/bin";
 make_path($bin);
+if ($a{'reference-bundle'}) {
+	my ($baseline, $candidate) = PA35::reference_pair(\%a);
+	for my $pair (['seed', $baseline], ['self', $candidate]) {
+		my $dest = "$bin/$pair->[0]-$a{label}";
+		die "frozen label already contains different binaries: $a{label}\n"
+			if -f $dest && PA35::sha256_file($dest) ne PA35::sha256_file($pair->[1]);
+		copy($pair->[1], $dest) or die "copy: $!\n";
+		chmod 0755, $dest;
+	}
+	my $info = "reference bundle $a{'reference-bundle'}\nRust compiler $a{compiler}\n"
+		. "seed (host-built reference) $baseline\nself (Rust-built reference) $candidate\n";
+	PA35::spit("$bin/$a{label}.txt", $info);
+	print $info;
+	exit 0;
+}
 print STDERR "make build ...\n";
 PA35::run_or_die('make', '-C', $root, 'build');
 my $seed = "$bin/seed-$a{label}";

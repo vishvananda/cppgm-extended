@@ -22,9 +22,11 @@ use FindBin;
 use lib $FindBin::Bin;
 use Getopt::Long;
 use PA35;
+use JSON::PP;
 
 my %o = (out => "$PA35::PA35/obj/check");
-GetOptions(\%o, 'out=s') or die "usage: progress.pl [--out DIR]\n";
+GetOptions(\%o, 'out=s', PA35::reference_options()) or die "usage: progress.pl [--out DIR] [--reference-bundle S --compiler R --lowir2native L]\n";
+my $identity = $o{'reference-bundle'} ? PA35::reference_identity(\%o) : undef;
 
 my (@GATES, @GROUPS, %seen);
 for my $line (split /\n/, PA35::slurp("$PA35::PA35/gates.txt")) {
@@ -38,14 +40,28 @@ for my $line (split /\n/, PA35::slurp("$PA35::PA35/gates.txt")) {
 # The groups whose measurements count, and their values.
 my (%value, %counted, %why);
 my $newest_earlier;
+my $reference_ready = 1;
 for my $group (@GROUPS) {
 	my $file = "$o{out}/values-$group.tsv";
+	if (defined $identity && !$reference_ready) {
+		$why{$group} = 'earlier groups missing, stale or failing';
+		next;
+	}
 	if (!-f $file) {
 		$why{$group} = 'not measured';
+		$reference_ready = 0;
 		next;
 	}
 	my $mtime = (stat $file)[9];
-	if (defined $newest_earlier && $mtime < $newest_earlier) {
+	if (defined $identity) {
+		my $receipt = eval { decode_json(PA35::slurp("$o{out}/receipt-$group.json")) };
+		if (!$receipt || $receipt->{identity} ne $identity || $receipt->{values} ne PA35::sha256_file($file)) {
+			$why{$group} = 'stale or missing reference provenance';
+			$reference_ready = 0;
+			next;
+		}
+	}
+	if (!defined $identity && defined $newest_earlier && $mtime < $newest_earlier) {
 		$why{$group} = 'measured before the earlier groups';
 		next;
 	}
@@ -54,6 +70,13 @@ for my $group (@GROUPS) {
 	for my $line (split /\n/, PA35::slurp($file)) {
 		my ($metric, $v) = split /\t/, $line;
 		$value{$metric} = $v if defined $v && $v =~ /^-?[\d.]+$/;
+	}
+	if (defined $identity) {
+		for my $g (grep { $_->{group} eq $group } @GATES) {
+			my $v = $value{$g->{metric}};
+			$reference_ready = 0 unless defined $v && ($g->{op} eq '<=' ? $v <= $g->{limit}
+				: $g->{op} eq '==' ? $v == $g->{limit} : $v >= $g->{limit});
+		}
 	}
 }
 

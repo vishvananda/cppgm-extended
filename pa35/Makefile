@@ -22,28 +22,31 @@ SEEDS ?= 20
 LEVELS ?= O0,O3
 SECONDS ?= 30
 SMOKE_SEEDS ?= 5
+# Optional reference-bootstrap track. COMPILER is the actual release binary;
+# REFERENCE_BUNDLE is an immutable snapshot, never the candidate's source tree.
+REFERENCE_ARGS = $(if $(REFERENCE_BUNDLE),--reference-bundle '$(REFERENCE_BUNDLE)' --compiler '$(COMPILER)' $(if $(REFERENCE_OUT),--reference-out '$(REFERENCE_OUT)') $(if $(LOWIR2NATIVE),--lowir2native '$(LOWIR2NATIVE)'))
 
 .PHONY: test check test-correctness test-speed test-codegen test-progress test-smoke quick freeze measure abba identity kernels behavior generated speed scaling profile parity clean
 
 test check:
-	$(PERL) $(S)/check.pl --seeds $(SEEDS)
+	$(PERL) $(S)/check.pl --seeds $(SEEDS) $(REFERENCE_ARGS)
 
 test-correctness test-speed test-codegen:
-	$(PERL) $(S)/check.pl --group $(patsubst test-%,%,$@) --seeds $(SEEDS)
+	$(PERL) $(S)/check.pl --group $(patsubst test-%,%,$@) --seeds $(SEEDS) $(REFERENCE_ARGS)
 
 test-progress:
-	$(PERL) $(S)/progress.pl
+	$(PERL) $(S)/progress.pl $(REFERENCE_ARGS)
 
 # The correctness group (workload compiles, behavior, generated) with fewer
 # generated seeds, written apart from obj/check so test-progress is unaffected.
 test-smoke:
-	$(PERL) $(S)/check.pl --group correctness --seeds $(SMOKE_SEEDS) --out obj/smoke
+	$(PERL) $(S)/check.pl --group correctness --seeds $(SMOKE_SEEDS) --out obj/smoke $(REFERENCE_ARGS)
 
 quick:
-	$(PERL) $(S)/quick.pl --levels $(LEVELS)
+	$(PERL) $(S)/quick.pl --levels $(LEVELS) $(REFERENCE_ARGS)
 
 freeze:
-	$(PERL) $(S)/freeze.pl --label $(LABEL)
+	$(PERL) $(S)/freeze.pl --label $(LABEL) $(REFERENCE_ARGS)
 
 measure:
 	$(PERL) $(S)/measure.pl --seed obj/bin/seed-$(LABEL) --self obj/bin/self-$(LABEL) \

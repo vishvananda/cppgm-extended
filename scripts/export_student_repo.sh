@@ -92,7 +92,7 @@ copy_tracked_paths() {
         # Export reviewed student documents only, including public doc/ texts.
         next if (m{\.md$}i || m{^doc/}) && !$documents{$_};
         next if m{(^|/)[^/]+-ref$};
-        next if m{\.py$} && !m{^scripts/(?:check_lowir_seams|lowir_seam_rewrite)\.py$};
+        next if m{\.py$} && !m{^scripts/(?:check_lowir_seams|lowir_seam_rewrite|reference_bootstrap)\.py$};
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
         # Tests-first audit controls run only under the maintainer
@@ -383,6 +383,7 @@ shared_scripts=(
   scripts/dump_host_eh_object_facts.pl
   scripts/ensure_reference_binaries.pl
   scripts/pa_run_check_targets.mk
+  scripts/reference_bootstrap.py
   scripts/run_all_tests_common.pl
   scripts/run_cpphostcompat_compile_worker.pl
   scripts/run_cpphostcompat_preproc_worker.pl

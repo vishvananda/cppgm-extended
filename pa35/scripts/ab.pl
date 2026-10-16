@@ -23,7 +23,7 @@ use Getopt::Long;
 use PA35;
 
 my %o = (levels => 'O0,O3', counter => 'auto', out => "$PA35::PA35/obj/ab");
-GetOptions(\%o, 'levels=s', 'counter=s', 'sim', 'no-cache', 'out=s') && (@ARGV == 1 || @ARGV == 2)
+GetOptions(\%o, 'levels=s', 'counter=s', 'sim', 'no-cache', 'out=s', 'reference-bundle=s', 'reference-out=s') && (@ARGV == 1 || @ARGV == 2)
 	or die "usage: ab.pl OLD [NEW] [--levels O0,O3] [--counter auto|callgrind|perf] [--sim] [--no-cache] [--out DIR]\n";
 $o{counter} = 'callgrind' if $o{sim};
 my ($old, $new) = (abs_path($ARGV[0]), abs_path($ARGV[1] // "$PA35::ROOT/dev/cppgm++"));
@@ -31,6 +31,11 @@ my ($old, $new) = (abs_path($ARGV[0]), abs_path($ARGV[1] // "$PA35::ROOT/dev/cpp
 -x $new or die "not executable: $new\n";
 my %built;
 for my $k (['old', $old], ['new', $new]) {
+	if ($o{'reference-bundle'}) {
+		my %reference = (%o, compiler => $k->[1]);
+		(undef, $built{ $k->[0] }) = PA35::reference_pair(\%reference);
+		next;
+	}
 	remove_tree("$o{out}/$k->[0]-build");
 	print "building the current source with $k->[1] ...\n";
 	($built{ $k->[0] }) = PA35::build_with(compiler => $k->[1], out => "$o{out}/$k->[0]-build");

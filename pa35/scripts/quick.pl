@@ -18,23 +18,32 @@ use Getopt::Long;
 use PA35;
 
 my %o = (levels => 'O0,O3', counter => 'auto');
-GetOptions(\%o, 'levels=s', 'counter=s', 'no-kernels', 'no-behavior')
+GetOptions(\%o, 'levels=s', 'counter=s', 'no-kernels', 'no-behavior', PA35::reference_options())
 	or die "usage: quick.pl [--levels O0,O3] [--counter auto|callgrind|perf] [--no-kernels] [--no-behavior]\n";
 my $Q = "$PA35::PA35/obj/quick";
 make_path($Q);
 my $S = $FindBin::Bin;
 my $t0 = time;
 
-print "make build ...\n";
-PA35::run_or_die('make', '-C', $PA35::ROOT, 'build');
-copy("$PA35::ROOT/dev/cppgm++", "$Q/seed") or die "copy: $!\n";
-chmod 0755, "$Q/seed";
-print "self build ...\n";
-my ($self) = PA35::build_with(compiler => "$Q/seed", out => "$Q/self-build");
+my ($seed, $self, $compiler, $backend);
+if ($o{'reference-bundle'}) {
+	($seed, $self) = PA35::reference_pair(\%o);
+	$compiler = $o{compiler};
+	$backend = $o{lowir2native};
+} else {
+	print "make build ...\n";
+	PA35::run_or_die('make', '-C', $PA35::ROOT, 'build');
+	copy("$PA35::ROOT/dev/cppgm++", "$Q/seed") or die "copy: $!\n";
+	chmod 0755, "$Q/seed";
+	print "self build ...\n";
+	($self) = PA35::build_with(compiler => "$Q/seed", out => "$Q/self-build");
+	$seed = "$Q/seed";
+	$compiler = "$PA35::ROOT/dev/cppgm++";
+}
 
 my %now;
 print "measure ($o{counter}) ...\n";
-my ($st, $log) = PA35::run_capture($^X, "$S/measure.pl", '--seed', "$Q/seed", '--self', $self,
+my ($st, $log) = PA35::run_capture($^X, "$S/measure.pl", '--seed', $seed, '--self', $self,
 	'--out', "$Q/measure", '--levels', $o{levels}, '--counter', $o{counter});
 die "measure failed:\n$log" if $st;
 for my $line (split /\n/, PA35::slurp("$Q/measure/summary.tsv")) {
@@ -46,7 +55,7 @@ for my $line (split /\n/, PA35::slurp("$Q/measure/summary.tsv")) {
 }
 unless ($o{'no-kernels'}) {
 	print "kernels ...\n";
-	(undef, $log) = PA35::run_capture($^X, "$S/kernels.pl", '--compiler', "$Q/seed", '--out', "$Q/kernels", '--scale', 16);
+	(undef, $log) = PA35::run_capture($^X, "$S/kernels.pl", '--compiler', $compiler, '--out', "$Q/kernels", '--scale', 16);
 	for my $line (split /\n/, $log) {
 		$now{"kernel $1"} = $2 if $line =~ /^(\S+)\s+([\d.]+)x GCC/;
 		$now{"kernel $1"} = 'ERROR' if $line =~ /^(\S+)\s+ERROR/;
@@ -54,7 +63,8 @@ unless ($o{'no-kernels'}) {
 }
 unless ($o{'no-behavior'}) {
 	print "behavior ...\n";
-	(undef, $log) = PA35::run_capture($^X, "$S/behavior.pl");
+	(undef, $log) = PA35::run_capture($^X, "$S/behavior.pl", '--compiler', $compiler,
+		($backend ? ('--lowir2native', $backend) : ()));
 	my ($pass, $total) = $log =~ /(\d+)\/(\d+) tests pass/;
 	$now{'behavior failures'} = defined $total ? $total - $pass : 'ERROR';
 	print grep { /^(DIFF|MIR FAIL|REF FAIL)/ } map { "$_\n" } split /\n/, $log;

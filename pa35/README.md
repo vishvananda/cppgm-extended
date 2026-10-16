@@ -1,5 +1,8 @@
 # CPPGM Programming Assignment 35: Optimizing the compiler
 
+Implementations in another language use the reference track below. The
+ordinary C++ self-hosting commands and all 17 acceptance limits remain valid.
+
 Complete PA34, then make the compiler you built fast in two senses: the code
 it generates, judged by compiling `cppgm++` with itself and running the
 result, and the work `cppgm++` itself does, judged against the host compiler
@@ -362,3 +365,70 @@ for passes that report changes they did not make, analyses recomputed for
 unchanged functions and structures rebuilt after local edits. Keep
 compiler-speed changes free of any effect on generated code, and check that
 with `make -C pa35 identity`, so speed and codegen effects stay separable.
+
+## Reference track (implementations in other languages)
+
+Complete PA34's reference bootstrap first and retain its frozen source bundle
+S. R is your actual release C++ compiler executable. B=host(S) and A=R(S)
+are C++ implementations of the same algorithm, built at the same flags,
+generated configuration and host-link/allocator recipe. PA35 optimizes R;
+never change S, its source list, or the workload to improve a ratio.
+
+| Gate family | Compiler being measured |
+| --- | --- |
+| Correctness, generated programs and kernels | R and its own backend |
+| Compile time, RSS and scaling | R compiling the frozen C++ inputs |
+| Workload identity, codegen instructions/proxy and text | A relative to B |
+
+The first Rust-built executable A measures R's generated code. The later
+fixed-point generations C and D use the reference's backend and are not
+codegen performance candidates. B and A must emit identical workload objects
+because they execute the same frozen C++ algorithm; R's own objects need not
+match B's objects. Cargo/rustc build time is outside these measurements.
+
+From the repository root, after building the Rust release tools:
+
+```sh
+make -C pa35 test-smoke REFERENCE_BUNDLE=/path/to/reference-source \
+  COMPILER=/path/to/release/cppgm LOWIR2NATIVE=/path/to/release/lowir2native
+make -C pa35 test-speed REFERENCE_BUNDLE=/path/to/reference-source \
+  COMPILER=/path/to/release/cppgm LOWIR2NATIVE=/path/to/release/lowir2native
+make -C pa35 test REFERENCE_BUNDLE=/path/to/reference-source \
+  COMPILER=/path/to/release/cppgm LOWIR2NATIVE=/path/to/release/lowir2native
+```
+
+`test-correctness`, `test-codegen`, `test-progress`, `quick` and `freeze` accept
+the same variables. `REFERENCE_OUT` optionally selects the reference-build
+store (default `pa35/obj/reference`). Successful B/A builds are reused only
+after validating all saved objects/tools and their inputs. R is never
+replaced with B for a correctness or throughput check. A missing candidate
+backend is an error, not permission to skip its MIR smoke test.
+
+For a codegen change, retain the old R executable and compare two builds of
+the same S; no full bootstrap is needed during this inner loop:
+
+```sh
+perl pa35/scripts/ab.pl /path/to/old-R /path/to/new-R \
+  --reference-bundle /path/to/reference-source --counter auto
+```
+
+Use the cheap fixed workload and kernels during iteration. Hardware
+instructions/cycles diagnose focused native changes; the final codegen gates
+still use callgrind's own-binary instructions and whole-process cache/branch
+proxy. These scopes are different; do not apply the own-binary limits to
+whole-process perf counts. Confirm small speed claims with paired observations
+and noise calibration rather than multiplying timing campaigns by default.
+
+Reference-track progress receipts bind gate-group values to R, its backend,
+S, the harness, workload and toolchain. Rebuilding R invalidates old groups;
+documentation alone does not. `test-progress` reads saved measurements and
+never measures or certifies changed binaries. Missing, failed and skipped
+measurements cannot pass. Run the complete PA34 proof and all PA35 gates on
+the final candidate, in addition to the earlier course and Rust quality checks.
+
+An exact port retains its PA34 byte-equality proof as a historical milestone.
+At PA35, explicitly transition to the ordinary course's language, ABI, output
+and quality contracts before optimizing: internal work counters and valid
+optimization/register-allocation choices may change. Preserve required ABI
+and IR facts and the course's actual comparison rules; do not silently weaken
+the old clone checker or demand that optimized code preserve clone-only bytes.

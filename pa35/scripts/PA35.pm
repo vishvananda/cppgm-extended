@@ -14,6 +14,7 @@ use File::Spec;
 use POSIX qw(:sys_wait_h);
 use Fcntl qw(F_SETFD);
 use IO::Handle;
+use JSON::PP;
 
 our $PA35 = abs_path(dirname(__FILE__) . '/..');
 our $ROOT = abs_path("$PA35/..");
@@ -68,6 +69,40 @@ sub sha256_file {
 	my $sha = Digest::SHA->new(256);
 	$sha->addfile($path, 'b');
 	return $sha->hexdigest;
+}
+
+# Reference track: R remains the compiler under test; B=host(S), A=R(S)
+# are used only for constant-source generated-code measurements.
+sub reference_options { return ('reference-bundle=s', 'reference-out=s', 'compiler=s', 'lowir2native=s'); }
+
+sub reference_args {
+	my ($o) = @_;
+	die "--reference-bundle requires --compiler (the actual executable, not a build wrapper)\n"
+		unless $o->{'reference-bundle'} && $o->{compiler} && -x $o->{compiler};
+	return ('--bundle', abs_path($o->{'reference-bundle'}), '--compiler', abs_path($o->{compiler}),
+		'--out', $o->{'reference-out'} // "$PA35/obj/reference");
+}
+
+sub reference_pair {
+	my ($o) = @_;
+	my @args = reference_args($o);
+	run_or_die('python3', "$ROOT/scripts/reference_bootstrap.py", 'pair', @args);
+	my $out = $o->{'reference-out'} // "$PA35/obj/reference";
+	my $pair = decode_json(slurp("$out/pair.json"));
+	die "incomplete reference pair\n" unless $pair->{complete};
+	return ($pair->{baseline}, $pair->{candidate});
+}
+
+sub reference_identity {
+	my ($o) = @_;
+	my $id = run_or_die('python3', "$ROOT/scripts/reference_bootstrap.py", 'identity', reference_args($o));
+	my $backend = $o->{lowir2native} // dirname(abs_path($o->{compiler})) . '/lowir2native';
+	die "missing candidate lowir2native: $backend\n" unless -x $backend;
+	my @inputs = ("$PA35/gates.txt", "$PA35/workload/MANIFEST.sha256", $backend,
+		grep { -f $_ } glob("$PA35/scripts/*"));
+	verify_workload();
+	my ($affinity) = -f '/proc/self/status' ? slurp('/proc/self/status') =~ /^(Cpus_allowed_list:.*)$/m : '';
+	return Digest::SHA::sha256_hex($id . ($affinity // '') . toolchain_key() . join('', map { sha256_file($_) } @inputs));
 }
 
 # Dies unless the workload matches MANIFEST.sha256 exactly.
@@ -402,7 +437,11 @@ sub toolchain_key {
 # bytes, the toolchain key, the level and the counter.
 sub cache_dir {
 	my ($binary, $level, $kind) = @_;
-	my $dir = "$PA35/obj/cache/" . substr(sha256_file($binary), 0, 20) . '-' . toolchain_key() . "-$level-$kind";
+	my ($affinity) = -f '/proc/self/status' ? slurp('/proc/self/status') =~ /^(Cpus_allowed_list:.*)$/m : '';
+	my $protocol = substr(Digest::SHA::sha256_hex(join("\n", sha256_file(__FILE__),
+		sha256_file("$PA35/scripts/measure.pl"), sha256_file("$PA35/workload/MANIFEST.sha256"),
+		workload_args("-$level", 'OUTPUT'), $affinity // '')), 0, 12);
+	my $dir = "$PA35/obj/cache/" . substr(sha256_file($binary), 0, 20) . '-' . toolchain_key() . "-$protocol-$level-$kind";
 	make_path($dir);
 	return $dir;
 }
