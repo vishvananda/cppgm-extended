@@ -384,6 +384,7 @@ shared_scripts=(
   scripts/ensure_reference_binaries.pl
   scripts/pa_run_check_targets.mk
   scripts/reference_bootstrap.py
+  scripts/rust_course.json
   scripts/run_all_tests_common.pl
   scripts/run_cpphostcompat_compile_worker.pl
   scripts/run_cpphostcompat_preproc_worker.pl

@@ -1,14 +1,13 @@
 # Agent instructions
 
-Build one cumulative C++11 compiler for Linux x86-64, working through PA1–PA35.
+Build one cumulative C++11 compiler in safe Rust for Linux x86-64, working through PA1–PA35.
 Read the current `paN/README.md` and [Testing and references](TESTING_AND_REFERENCES.md)
 before changing code. [Project layout](PROJECT_LAYOUT.md) gives the assignment map.
 
 ## Implementation
 
 - Work in `dev/` and `dev/src/`; extend earlier work at each milestone.
-- Register new implementation sources, without `.cpp`, in the appropriate
-  tool lists in `dev/frontend_source_sets.mk`.
+- Organize Rust modules by phase and build release tools with Cargo.
 - Treat `paN/` as handouts, fixtures, references, harnesses and wrappers.
 - Use real language and compiler logic; do not hardcode fixture answers.
 - Implement required output yourself. Do not delegate it to reference binaries,
@@ -31,8 +30,8 @@ checks the implementation's shape: file and function size limits, counted in
 lines of code, and shortcuts such as reading the environment or running other
 programs from the compiler. It is advisory: no exit criterion runs it, the
 shipped files pass it, and a tree that fails it usually has a shortcut or a
-file too large to review. PA34 ends with `make inception`, PA35 with
-`make -C pa35 test`. Use the debug and inspection targets required by the
+file too large to review. PA34 ends with the reference-bootstrap proof in its handout; PA35 ends with
+`make -C pa35 test` using the frozen source bundle and Rust release tools. Use the debug and inspection targets required by the
 owning handout when changing those surfaces.
 
 Default tests run the course contract. PA24 and PA32's `tests/regression/`

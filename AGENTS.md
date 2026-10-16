@@ -2,6 +2,10 @@
 
 This is the complete cppgm-extended compiler solution and the source of its
 student export. The course has 35 cumulative assignments; see [ROADMAP.md](ROADMAP.md).
+The long-lived `rust-course` branch publishes Rust-specific PA34/PA35 handouts
+and student guides. Keep those instructions as the sole procedure in this
+branch; the ordinary C++ self-hosting handouts belong on `main`. The C++
+implementation here remains the frozen workload and maintainer validation tool.
 Follow [spec.md](spec.md) for the compiler architecture, including parsing
 source once, consuming typed facts and avoiding speculative work on hot paths.
 The original CPPGM material has been substantially adapted; preserve inherited

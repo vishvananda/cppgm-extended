@@ -8,12 +8,12 @@ make build
 make test-paN
 make test-report-through-paN
 make test-report
-make inception
 ```
 
 For PA1–PA33, a clean through-milestone report is the exit criterion. PA34
-ends with inception. PA35 ends with `make -C pa35 test`, which is not part of
-the report: its gates compare your compiler with the host and its own seed.
+ends with the reference-bootstrap proof in its handout. PA35 ends with
+`make -C pa35 test` configured for the frozen C++ bundle and Rust tools.
+Throughput measures Rust; codegen compares host/Rust builds of the same C++ source.
 `make test` builds once and runs all assignment suites; `make test-report`
 keeps going and summarizes failures. Use `ACTIVE_TEST_REPORT_PAS='pa8 pa10'`
 to narrow a report.
@@ -28,8 +28,9 @@ make CXX=g++ CPPGM_HOST_CXX=g++
 
 `TEST=` accepts a path, quoted glob or quoted list; mixed-input assignments
 route each fixture to its runner. Finish with the root through target.
-Keep a real host compiler in `CPPGM_HOST_CXX` when PA34 uses
-`CXX=../dev/cppgm++`. Use a separate object root for different toolchains.
+Keep a real host compiler for hosted configuration and linking; the Rust
+compiler must produce its own objects. Bootstrap generations use isolated
+stores and identical logical paths, as described in PA34.
 
 ## Test locations and requirements
 

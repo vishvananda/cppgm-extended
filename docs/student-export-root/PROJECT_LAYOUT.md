@@ -5,7 +5,7 @@ assignment harnesses.
 
 ## Repository Layout
 
-- `Makefile`: root build, test, report, reference, and inception targets
+- `Makefile`: root build, test, report, reference, and reference-bootstrap runner
 - `dev/`: compiler entry points
 - `dev/src/`: shared compiler implementation files and support headers
 - `dev/frontend_source_sets.mk`: per-tool lists of `dev/src/*.cpp` files to
@@ -40,7 +40,7 @@ path without `.cpp`; for example, `dev/src/syntax/foo.cpp` is listed as
 - PA25-PA26: compile/link driver integration and host exception metadata
 - PA27-PA31: host ABI and hosted compatibility
 - PA32-PA33: LowIR and machine-backend optimization
-- PA34: inception, rebuilding `cppgm++` with `cppgm++`
+- PA34: Rust compilation of the frozen C++ reference
 - PA35: optimizing the compiler, its generated code and its own speed
 
 ## Assignment Map
@@ -80,20 +80,17 @@ path without `.cpp`; for example, `dev/src/syntax/foo.cpp` is listed as
 | PA31 | `cppgm++ -c` | hosted header-emitted link/runtime compatibility |
 | PA32 | `lowiropt` | LowIR optimization |
 | PA33 | `lowir2native -O1/-O2/-O3` | machine/backend optimization |
-| PA34 | inception targets | rebuild `cppgm++` with `cppgm++` |
-| PA35 | `make -C pa35 test` | generated code against the seed and GCC, compile speed against the host |
+| PA34 | reference-bootstrap runner | compile frozen C++ sources and check the rebuilt fixed point |
+| PA35 | `make -C pa35 test` | generated C++ code against the host and GCC, compile speed against the host |
 
 ## PA34
 
-PA34 rebuilds your compiler with itself. The host-built `dev/cppgm++` produces
-`cppgm++-self`, which produces `cppgm++-inception`. Completion requires the
-last two binaries to match byte for byte. The `test-through-paN` ladder runs
-earlier assignment tests with self-built tools while you work toward that
-comparison; see [PA34](pa34/README.md) for the commands.
+PA34 uses the Rust compiler to build a frozen complete C++ reference source
+bundle. The rebuilt implementation must reach a fixed point and pass the
+course/debug suites with its own helper tools. See [PA34](pa34/README.md).
 
 ## PA35
 
-PA35 makes the compiler you finished in PA34 fast. Its gates compare the
-self-built compiler with the host-built seed on a frozen workload, a few
-generated-code kernels with GCC, and the seed's compile time and memory with
-the host compiler's. `make -C pa35 test` runs them; see [PA35](pa35/README.md).
+PA35 measures Rust C++ compilation throughput and the generated-code quality
+of the Rust-built reference relative to the host-built reference. Both execute
+the same frozen C++ algorithm. See [PA35](pa35/README.md) for all 17 gates.

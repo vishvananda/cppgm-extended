@@ -1,287 +1,154 @@
-# CPPGM Programming Assignment 35: Optimizing the compiler
+# CPPGM Programming Assignment 35: Optimizing the Rust compiler
 
-Implementations in another language use the reference track below. The
-ordinary C++ self-hosting commands and all 17 acceptance limits remain valid.
+Complete PA34, then optimize your Rust C++ compiler in two separate senses:
+its time and memory compiling C++, and the quality of the machine code it
+emits. PA35 adds no language feature or output format. Use the same immutable
+C++ source bundle S accepted in PA34; never rewrite it to improve a ratio.
 
-Complete PA34, then make the compiler you built fast in two senses: the code
-it generates, judged by compiling `cppgm++` with itself and running the
-result, and the work `cppgm++` itself does, judged against the host compiler
-on the same input. PA35 adds no language feature or output format.
+R is the actual Cargo release C++ compiler executable. B=host(S) and A=R(S)
+are C++ implementations of the same algorithm, built with identical flags,
+configuration, libraries, allocator and host-link recipe. A measures R's
+code generation; the later fixed-point generations C and D do not. Cargo's
+Rust build time is outside the throughput measurements.
 
-The yardstick for generated code is the host compiler. The **seed** is
-`dev/cppgm++` built by the host (`make build`, `g++ -O3`). The **self**
-compiler is the same source compiled by the seed with the same flags and
-linked by the host exactly like the seed. Seed and self compile the frozen
-workload to identical objects, so any difference in the work they execute
-comes from your compiler's code generation and optimization.
+| Gate family | Compiler being measured |
+| --- | --- |
+| Correctness, generated programs and kernels | R and its own backend |
+| Compile time, RSS and scaling | R compiling the frozen C++ workload |
+| Identity, codegen instructions/proxy and text | A relative to B |
+
+B and A must emit identical workload objects because they execute the same
+frozen algorithm. R's own generated objects may differ from B's. Required
+language, ABI, IR facts, course output contracts and Rust quality remain
+mandatory; valid optimization/register-allocation choices and internal work
+counters may change. An exact port's completed PA34 proof remains a historical
+milestone, not a byte-equality constraint on PA35 optimizations.
 
 ## Completion criterion
 
-From the repository root:
+Build the release Rust tools, then run from the repository root:
 
 ```sh
-make -C pa35 test
+make -C pa35 test REFERENCE_BUNDLE=/path/to/reference-source \
+  COMPILER=/path/to/release/cppgm LOWIR2NATIVE=/path/to/release/lowir2native
 ```
 
-The command passes every gate in [`gates.txt`](gates.txt) and prints
-`===== ALL TESTS PASSED SUCCESSFULLY! (17/17) =====`. Optimization must keep
-the correctness established by earlier assignments:
-`make test-report-through-pa33` and `make inception` continue to pass.
+All commands below use these same variables. The prepared run installs them
+in `pa35/reference.mk`, so its ordinary `make -C pa35 test` is equivalent.
+`REFERENCE_OUT` optionally selects the build store, default `pa35/obj/reference`.
+The command must print `===== ALL TESTS PASSED SUCCESSFULLY! (17/17) =====`.
+Final acceptance also requires PA34's complete bootstrap with the student
+profile, earlier course/debug correctness and Rust quality/file audits.
 
-PA35 is not part of `make test-report`. Its gates compare your compiler with
-the host and with its own seed, the speed gates time real compiles, and the
-codegen gates run the workload under cache simulation, so a full check takes
-minutes rather than seconds.
+## Frozen workload
 
-## The workload
-
-`pa35/workload/` holds the frozen compile workload: `semantic_overload.cpp`
-(about 9,300 lines of C++11 from a semantic analyzer) and the 51 project
-headers it includes (about 16,000 lines). With libstdc++ it preprocesses to
-roughly 100,000 lines. `MANIFEST.sha256` records every file, and the scripts
-refuse to measure a modified workload. The host's standard-library headers
-belong to the machine, so compare measurements only on one machine and
-toolchain. Every measurement compiles it the same way:
-
-```sh
-cppgm++ -O<n> -c pa35/workload/semantic_overload.cpp -I pa35/workload/include \
-  -U__LDBL_MAX__ -D__LDBL_MAX__=1.0e300L -U__LDBL_MIN__ -D__LDBL_MIN__=1.0e-300L \
-  -U__LDBL_DENORM_MIN__ -D__LDBL_DENORM_MIN__=1.0e-310L \
-  -U__LDBL_NORM_MAX__ -D__LDBL_NORM_MAX__=1.0e300L -o out.o
-```
-
-Valgrind emulates x87 arithmetic with 64-bit doubles, so the extreme
-`long double` limits would overflow under it; the four macros are replaced by
-representable values for every compiler and every run. The workload is
-ordinary C++11: if your compiler rejects or miscompiles it, fix the compiler
-first, with a reduced reproducer under `student.tests/`.
+`pa35/workload/semantic_overload.cpp` and its 51 project headers are fixed by
+`MANIFEST.sha256`. They preprocess to roughly 100,000 lines with libstdc++.
+The scripts refuse changed files. Compare only on one host/toolchain; its
+headers and libraries affect the work. All compilers use the same representable
+long-double macro replacements because Valgrind emulates x87 with doubles.
+If R rejects or miscompiles the input, reduce it under `student.tests/` and
+fix R before measuring. Keep the full S build for bootstrap/final acceptance
+and this workload plus the existing kernels for the optimization inner loop.
 
 ## Gates
 
-`make -C pa35 test` runs `scripts/check.pl`. The gates form three groups,
-checked in order; a failing group stops the check and the later groups are
-reported as not run. `make -C pa35 test-correctness`, `test-speed` and
-`test-codegen` check one group.
+The groups run in order: correctness, compiler speed, generated code. Failure
+stops later groups, which remain unmeasured. `test-correctness`, `test-speed`
+and `test-codegen` run an individual group. All 17 published limits apply.
 
 | Group | Gate | Measurement | Limit |
 |---|---|---|---|
-| correctness | `workload-compiles` | the seed compiles the workload at `-O0` and `-O3` | required |
-| correctness | `behavior` | each `tests/behavior/*.cpp`, compiled by `cppgm++` at `-O0` to `-O3` and linked by the host, prints what the host build prints; its `-O3` LowIR lowers through `lowir2native` with a MIR dump | all pass |
+| correctness | `workload-compiles` | R compiles the workload at `-O0` and `-O3` | required |
+| correctness | `behavior` | each `tests/behavior/*.cpp`, compiled by R at `-O0` to `-O3` and linked by the host, prints what the host build prints; its `-O3` LowIR lowers through `lowir2native` with a MIR dump | all pass |
 | correctness | `generated` | seeded programs exercising narrow values, Booleans, returned objects, frames and unwinding, at `-O0` to `-O3`, against the host build | all pass |
-| speed | `compile-O0-time` | seed `-O0` user time on the workload / host `-O0` | <= 0.25 |
-| speed | `compile-O3-time` | seed `-O3` user time / host `-O2` | <= 0.25 |
-| speed | `compile-O3-memory` | seed `-O3` peak RSS / host `-O2` | <= 1.00 |
-| speed | `compile-scaling` | largest growth of the seed's compile time per doubling of input size, over the synthetic families of `scaling.pl` | <= 3.0 |
-| codegen | `workload-identical` | seed and self (frozen with `scripts/freeze.pl --label check`) write byte-identical objects for the workload at `-O0` and `-O3` | required |
-| codegen | `codegen-O0-instructions` | self / seed instructions executed in the compiler binary's own code (callgrind), workload at `-O0` | <= 1.08 |
+| speed | `compile-O0-time` | R `-O0` user time on the workload / host `-O0` | <= 0.25 |
+| speed | `compile-O3-time` | R `-O3` user time / host `-O2` | <= 0.25 |
+| speed | `compile-O3-memory` | R `-O3` peak RSS / host `-O2` | <= 1.00 |
+| speed | `compile-scaling` | largest growth of R's compile time per doubling of input size, over the synthetic families of `scaling.pl` | <= 3.0 |
+| codegen | `workload-identical` | B and A write byte-identical objects for the workload at `-O0` and `-O3` | required |
+| codegen | `codegen-O0-instructions` | A / B instructions executed in the compiler binary's own code (callgrind), workload at `-O0` | <= 1.08 |
 | codegen | `codegen-O3-instructions` | the same at `-O3` | <= 1.12 |
-| codegen | `codegen-O0-cycle-proxy` | self / seed cycle proxy for the whole process at `-O0` | <= 1.09 |
+| codegen | `codegen-O0-cycle-proxy` | A / B cycle proxy for the whole process at `-O0` | <= 1.09 |
 | codegen | `codegen-O3-cycle-proxy` | the same at `-O3` | <= 1.10 |
-| codegen | `text-size` | self / seed `.text` bytes | <= 1.15 |
-| codegen | `kernel-*` (4) | each kernel in `kernels/`, compiled by `cppgm++` and by GCC and linked against one GCC-built driver: instructions for the measured input relative to GCC | <= 1.30 each |
+| codegen | `text-size` | A / B `.text` bytes | <= 1.15 |
+| codegen | `kernel-*` (4) | each kernel in `kernels/`, compiled by R and by GCC and linked against one GCC-built driver: instructions for the measured input relative to GCC | <= 1.30 each |
 
-The cycle proxy is `Ir/3 + 15 Bcm + 20 Bim + 10 I1mr + 10 (D1mr + D1mw)` from
-callgrind's cache and branch simulation: deterministic, and closer to time
-than instruction counts. The kernels isolate common weaknesses: an accessor
-chain 64 calls deep around an opaque call in a loop (`-O2`, distinct and
-aliasing pointers), an open-addressed hash lookup (`-O3`), and loop state
-carried across calls and a `try` region (`-O3`). GCC and clang pass every
-kernel limit. `scaling.pl` compiles generated inputs of growing size (many
-scopes and lookups, a class with many members, many template
-instantiations, many macros, one long function, many small functions):
-linear work grows by about 2 per doubling, quadratic work by about 4.
+The cycle proxy is `Ir/3 + 15 Bcm + 20 Bim + 10 I1mr + 10 (D1mr + D1mw)`.
+Callgrind counts instructions in each executable's own code for the instruction
+gates and whole-process events for the proxy. Hardware perf counts are
+whole-process diagnostics; do not apply the own-binary limits to them.
+The four kernels cover accessor chains (distinct/alias pointers), hash lookup
+and exception-bearing loops. Scaling families cover scopes, members,
+templates, macros, long functions and many functions: linear growth is about
+2 per doubling, quadratic about 4.
 
-The compile-time limits sit near the course solution's own ratios (about
-0.14 of the host's time, [below](#the-course-solution-and-calibration)),
-not near the host's: a compiler that merely matches `g++` has not met the
-bar, and a gate is a floor the course may lower further, not the target.
-The generated-code limits leave a wider margin above the course solution.
-
-Most limits are far from where a compiler starts, so a gate alone shows no
-progress until it passes. `make -C pa35 test-progress` reports how far each
-gate is as rungs of a ladder: `gates.txt` gives a measured gate a `from`
-value and a step, and the rungs sit at the limit times `(1 + step)^k` up to
-`from`. A measurement passes every rung at or above it, the last rung is the
-gate itself, and steps follow measurement noise (0.5% for the workload's
-instruction and cache-simulation counts, 1% for the kernels and text size,
-2% for memory, 5% for timed runs). The command runs nothing: it
-reads the measurements the last `test-correctness`, `test-speed` and
-`test-codegen` (or `make -C pa35 test`) left in `pa35/obj/check`, counting a
-group only when it was measured after the groups before it, and prints one
-`<gate>: PASS|FAIL (n/m)` line per gate and the summary line over all rungs.
-
-The gates use deterministic counts because wall time on a shared machine
-moves by several percent between identical runs. Time remains the objective:
-`make -C pa35 abba` compares self and seed with paired timing, and a seed
-against a copy of itself calibrates the noise.
-
-### The course solution and calibration
-
-The course solution passes every gate. [`calibration.tsv`](calibration.tsv)
-records its value for each gate and the margin to each limit, with the
-machine, toolchain and commit they were measured on, built the way your
-Makefile builds the seed (plain `-O3`, the C library's `malloc`), which is
-what your gates compare; the file is the current figure for each gate. A
-backend that has no register allocation yet starts near 2 to 2.5
-own-binary instructions. A compiler whose front end is slow may instead
-start by failing the speed gates, and then the codegen group reports its
-simulated gates as not measured until compile time is fixed.
-
-The values belong to one machine and toolchain: another `g++`, libstdc++ or
-`malloc` changes the seed, and `g++` and libstdc++ also change the workload's
-preprocessed text and the kernel yardstick. The course re-measures them at
-each release and whenever the solution's optimizer, backend or front end
-changes, and requires the solution to clear each limit by more than the
-measurement noise of the gate's kind: about 2% for instruction counts,
-1.5% for the cycle proxy (which moves with code layout), 1% for text size,
-and 25% for compile time, memory and scaling. The limits themselves do not
-move with the calibration.
+`test-progress` reports saved rung counts without measuring. Rungs are the
+limit times `(1 + step)^k`; steps follow measurement noise (0.5% for instruction
+and simulation counts, 1% for kernels/text, 2% for memory, 5% for timing).
+Receipts bind each group to current binaries, backend, S, workload, harness,
+paths and toolchain. Missing, stale, failed or skipped observations cannot
+pass. Rechecking unchanged correctness does not invalidate valid later groups.
+The existing calibration documents the C++ solution on its recorded machine;
+keep the published limits fixed rather than adapting them to the candidate.
 
 ## Work loop
 
-A full `make -C pa35 test` takes several minutes, because the cycle proxy
-runs the workload under cache simulation at about 100 times its native
-cost. Use the cheaper checks while working:
+Work in order: workload correctness, bounded speed/scaling, generated code,
+then speed-only changes preserving output. Run focused correctness and two
+useful scales for a demonstrated mechanism; do not expand benchmark matrices
+or repeatedly requalify unchanged inputs and host baselines.
 
 ```sh
-make -C pa35 quick                       # one change: seed, self, both levels
-perl pa35/scripts/ab.pl pa35/obj/bin/seed-before   # one codegen change at constant work
-make -C pa35 test-smoke                  # correctness: behavior, five generated seeds
-make -C pa35 test                        # all gates
-make -C pa35 test-progress               # rungs passed toward each gate, from the last gate runs
+make -C pa35 test-smoke                  # correctness with five generated seeds
+make -C pa35 test-speed                  # compiler throughput, RSS and scaling
+make -C pa35 quick LEVELS=O3             # cached hardware counts when available
+make -C pa35 test-codegen                # expensive simulation and kernel gates
+make -C pa35 test                        # final 17-gate acceptance
+make -C pa35 test-progress               # reads current saved group receipts
 ```
 
-`make -C pa35 quick` rebuilds the seed, builds self from the same source,
-counts both on the workload at `-O0` and `-O3` (instructions only), runs the
-kernels at reduced iteration counts and the behavior tests, and prints the
-results beside those of the previous quick run. `LEVELS=O3` limits it to one
-level. On a machine with user-mode hardware counters (`perf stat -e
-instructions:u`) the counts come from them at nearly native speed; otherwise
-callgrind runs at about 30 times native speed. Results are cached by binary
-hash in `pa35/obj/cache`, so an unchanged binary is never measured twice.
+Use the configured reference variables for each command. `quick` builds B/A
+only when their complete cached inventories/dependencies are invalid, counts
+the selected workload levels and checks kernels/behavior with R. Hardware
+instructions are counted at native speed when available; callgrind is the
+fallback. Full simulation belongs to final acceptance or a stated unresolved
+question. Missing candidate `lowir2native` is an error, not a skipped MIR check.
 
-`make -C pa35 test-smoke` runs the correctness group alone, with five
-generated seeds, into `pa35/obj/smoke` (it leaves the measurements that
-`test-progress` reads alone). It runs no simulation and takes seconds once
-your compiler is fast; run it after every optimizer or backend change.
-
-`ab.pl OLD [NEW]` builds the current source with compiler `OLD` and with
-`NEW` (default `dev/cppgm++`) and compares the two builds on the workload.
-Both run the same source and do the same work, so the difference is the
-generated code alone. Use it for optimizer changes: they also change the
-work the workload's compile does, for the seed and self alike, so a fresh
-seed/self ratio mixes two effects. Freeze a reference first
-(`make -C pa35 freeze LABEL=before`).
-
-Every measurement scales with the work your compiler does. Each compile in
-`speed.pl` and `scaling.pl` is bounded in time and memory, and while the seed
-is slower than the host the codegen group skips the simulated runs and
-reports those gates as not measured. The scripts run as many jobs as the
-machine has processors (at most 32); set `PA35_JOBS` to use fewer on a
-shared machine.
-
-## Compiler speed
-
-Work in this order: the workload compiles; no input family grows faster than
-linearly and compile time is within reach of its gates; then generated code;
-last, a compiler-speed pass that leaves generated code unchanged. Front-end
-changes rewrite the code the codegen gates measure, so codegen numbers taken
-before them are spent twice, and a fast compiler makes every later
-measurement cheaper.
+Retain the old R before a codegen change. This builds the same S with old/new
+compilers and compares the resulting executables on constant work:
 
 ```sh
-make -C pa35 speed                       # -E, -O0 and -O3 against the host
-make -C pa35 scaling                     # growth per doubling, against the host
-make -C pa35 profile [LEVEL=-O0] [INPUT=file.cpp]   # where the time goes
+perl pa35/scripts/ab.pl /path/to/old-R /path/to/new-R \
+  --reference-bundle /path/to/reference-source --counter auto
 ```
 
-`speed.pl` reports preprocessing (`-E`) separately from whole compiles, which
-separates the preprocessor from the rest of the front end. `scaling.pl --keep
-DIR` keeps its generated sources; profile the smallest one that is already
-slow. `profile.pl` samples at native speed and stops after a time limit, so a
-compile that blows up still shows where its time goes; `--exact` uses
-callgrind for exact costs and allocation counts.
+`make -C pa35 freeze LABEL=before` preserves a host/candidate-built pair;
+`measure LABEL=before SIM=1` measures it, and `abba LABEL=before` provides
+paired timing when a claim needs confirmation. Use a binary's comparison
+with itself to calibrate noise. Do not multiply timing campaigns by default.
+For compiler-speed changes compare R's outputs directly on fixed supported
+inputs; codegen attribution always uses the same frozen S. Keep every failure
+and raw observation. Avoid full S rebuilds for unrelated evidence updates.
 
-## Focused builds and checks
+`speed.pl --compiler R`, `scaling.pl --compiler R` and bounded
+`profile.pl --compiler R` diagnose the Rust compiler itself. Select the
+smallest input exposing repeated work. Commands are time/memory bounded;
+reference builds use at most eight jobs. Set `PA35_JOBS` lower on a shared host.
 
-All scripts live in `pa35/scripts/` (Perl, plus a small C timing helper the
-scripts build). Each starts with a usage comment.
+## Correctness and boundaries
 
-| Command | Purpose |
-|---|---|
-| `make -C pa35 freeze LABEL=L` | freeze `pa35/obj/bin/{seed,self}-L` from the current tree |
-| `make -C pa35 measure LABEL=L [SIM=1]` | callgrind on seed-L and self-L at `-O0` and `-O3`: own-binary instructions, mix by instruction class, call and function excess, in `pa35/obj/results/L` (`L-sim` with `SIM=1`) |
-| `make -C pa35 abba LABEL=L [LEVEL=-O3]` | paired timing of seed-L and self-L |
-| `perl pa35/scripts/build_with.pl --compiler C --out DIR` | build `cppgm++` from this source with any compiler |
-| `make -C pa35 identity OLD=A NEW=B` | whether two compilers generate identical code for every `cppgm++` object and the workload, and their compiler work |
-| `make -C pa35 kernels` / `behavior` / `generated` / `speed` / `scaling` | one gate family, using `dev/cppgm++` |
+Preserve earlier PA contracts and required debug/MIR/ABI facts. Do not
+recognize benchmark filenames, symbols or source spellings. No profile
+feedback, LTO, whole-program optimization or new ISA extensions: compare
+translation-unit `-O3` builds with the same ordinary allocator and host link.
+Never copy reference compiler logic into Rust or delegate a production phase.
 
-The gate scripts take `--compiler C` (and `check.pl` takes `--seed A --self
-B`), so they also run against the reference tools: for example
-`perl pa35/scripts/kernels.pl --compiler reference-binaries/cppgm++` after
-`make reference-binaries`.
-
-`freeze.pl`, `build_with.pl` and the codegen checks take the seed's compile
-and link lines from a dry run of `make build`: keep a `make build` that
-compiles each `dev/src` object with `-c` and links `cppgm++` (or
-`cppgm++.tmp`, which the shipped Makefile then moves into place) from those
-objects, so the self build can repeat the same lines with another compiler
-and the same host link. An `OBJ=` override or another object root is fine.
-
-### Comparing with the reference
-
-The gates are floors. To see where you stand against the course solution on
-your own machine, `make -C pa35 parity` (after `make reference-binaries`)
-measures the reference compiler and yours side by side: compile time and
-memory on the workload (the figures themselves, with each compiler's ratio
-to the host beside them), and generated code at constant work, since both
-compilers build this repository's own source and the two builds run the
-workload (`ab.pl reference-binaries/cppgm++`; `SIM=1` adds callgrind's
-cycle proxy). It prints the reference's figure, yours and the ratio, and
-says when a figure is missing; nothing in it is a gate. `calibration.tsv`
-records the solution's gate values on the machine it was measured on.
-
-## Boundaries
-
-- **Attribute a codegen gain to the optimizer and backend.** The
-  generated-code gates compare two builds of the same source, so rewriting
-  the compiler's hot paths to avoid a code-generation weakness changes both
-  and proves nothing about the code generator; `ab.pl` (one source built by
-  an old and a new compiler) shows what a change did to the generated code
-  alone, and `identity` whether a compiler-speed change left it untouched.
-  A change may improve both compile time and generated code; measure each
-  effect on its own.
-- **No profile feedback, link-time optimization or ISA extensions.** The self
-  build may use only what one `cppgm++ -O3 -c` of one translation unit can
-  know, as the seed's `g++ -O3` does.
-- **Earlier contracts stay intact.** `-O0` output still meets PA24's
-  contract. PA32 and
-  PA33 fixture budgets, MIR dumps that describe what is encoded, debug
-  locations and the LowIR boundary keep their meaning. Seed, self and
-  inception emit identical bytes.
-- **No special cases.** Do not recognize the workload, kernel or test
-  sources, file names, symbol names or library type spellings.
-- **Same allocator.** `freeze.pl` and `build_with.pl` link self like the seed;
-  PA34's `cppgm++-self` may link a different `malloc` and is not comparable.
-
-PA35 does not require vectorization, profile feedback, link-time or
-whole-program optimization, a new IR, or any particular allocator, pass
-order or inliner.
-
-## Correctness
-
-The `behavior` programs come from legality reviews of transformations like
-the ones this assignment invites: narrow values, object words, loop loads
-across calls that may free, zero-trip loops, unrolled exits, variadic
-arguments through inlining, unions and type-based aliasing, `setjmp`,
-shrink-wrapped frames and their unwinding. Each was a real miscompile in
-some compiler. Every program is free of undefined behavior (GCC and clang
-builds under UBSan and ASan run clean and agree), so a difference is a
-compiler bug. Add a reduced program under `student.tests/` for each new
-transformation, run `perl pa35/scripts/generated.pl --seeds 2000` after any
-allocator or machine-IR change, and run `make test-report-through-pa33` and
-the inception build regularly, not only at the end: a miscompile that the
-gates do not reach can otherwise live for many steps.
+Run reduced behavior controls after transformations and the supplied generated
+program suite after allocator/MIR changes (`generated.pl --compiler R --seeds
+2000`). Refresh earlier correctness and the bootstrap after coherent fixes;
+complete the full proof and gates on final code. A fixed point alone cannot
+rule out wrong code, so retain all rebuilt suites and Rust audits.
 
 ## Design notes (non-normative)
 
@@ -310,7 +177,7 @@ names the mechanism: frame loads and stores point at allocation, callee-saved
 saves at callee-saved policy and shrink-wrapping, register moves at
 coalescing, jumps and compares at block placement and switch lowering,
 extensions at narrow-value handling, calls at inlining. Compare functions one
-by one only when their call counts match in seed and self; otherwise inlining
+by one only when their call counts match in B and A; otherwise inlining
 has moved cost between them.
 
 Incremental work depends on a few foundations. Check them first:
@@ -365,70 +232,3 @@ for passes that report changes they did not make, analyses recomputed for
 unchanged functions and structures rebuilt after local edits. Keep
 compiler-speed changes free of any effect on generated code, and check that
 with `make -C pa35 identity`, so speed and codegen effects stay separable.
-
-## Reference track (implementations in other languages)
-
-Complete PA34's reference bootstrap first and retain its frozen source bundle
-S. R is your actual release C++ compiler executable. B=host(S) and A=R(S)
-are C++ implementations of the same algorithm, built at the same flags,
-generated configuration and host-link/allocator recipe. PA35 optimizes R;
-never change S, its source list, or the workload to improve a ratio.
-
-| Gate family | Compiler being measured |
-| --- | --- |
-| Correctness, generated programs and kernels | R and its own backend |
-| Compile time, RSS and scaling | R compiling the frozen C++ inputs |
-| Workload identity, codegen instructions/proxy and text | A relative to B |
-
-The first Rust-built executable A measures R's generated code. The later
-fixed-point generations C and D use the reference's backend and are not
-codegen performance candidates. B and A must emit identical workload objects
-because they execute the same frozen C++ algorithm; R's own objects need not
-match B's objects. Cargo/rustc build time is outside these measurements.
-
-From the repository root, after building the Rust release tools:
-
-```sh
-make -C pa35 test-smoke REFERENCE_BUNDLE=/path/to/reference-source \
-  COMPILER=/path/to/release/cppgm LOWIR2NATIVE=/path/to/release/lowir2native
-make -C pa35 test-speed REFERENCE_BUNDLE=/path/to/reference-source \
-  COMPILER=/path/to/release/cppgm LOWIR2NATIVE=/path/to/release/lowir2native
-make -C pa35 test REFERENCE_BUNDLE=/path/to/reference-source \
-  COMPILER=/path/to/release/cppgm LOWIR2NATIVE=/path/to/release/lowir2native
-```
-
-`test-correctness`, `test-codegen`, `test-progress`, `quick` and `freeze` accept
-the same variables. `REFERENCE_OUT` optionally selects the reference-build
-store (default `pa35/obj/reference`). Successful B/A builds are reused only
-after validating all saved objects/tools and their inputs. R is never
-replaced with B for a correctness or throughput check. A missing candidate
-backend is an error, not permission to skip its MIR smoke test.
-
-For a codegen change, retain the old R executable and compare two builds of
-the same S; no full bootstrap is needed during this inner loop:
-
-```sh
-perl pa35/scripts/ab.pl /path/to/old-R /path/to/new-R \
-  --reference-bundle /path/to/reference-source --counter auto
-```
-
-Use the cheap fixed workload and kernels during iteration. Hardware
-instructions/cycles diagnose focused native changes; the final codegen gates
-still use callgrind's own-binary instructions and whole-process cache/branch
-proxy. These scopes are different; do not apply the own-binary limits to
-whole-process perf counts. Confirm small speed claims with paired observations
-and noise calibration rather than multiplying timing campaigns by default.
-
-Reference-track progress receipts bind gate-group values to R, its backend,
-S, the harness, workload and toolchain. Rebuilding R invalidates old groups;
-documentation alone does not. `test-progress` reads saved measurements and
-never measures or certifies changed binaries. Missing, failed and skipped
-measurements cannot pass. Run the complete PA34 proof and all PA35 gates on
-the final candidate, in addition to the earlier course and Rust quality checks.
-
-An exact port retains its PA34 byte-equality proof as a historical milestone.
-At PA35, explicitly transition to the ordinary course's language, ABI, output
-and quality contracts before optimizing: internal work counters and valid
-optimization/register-allocation choices may change. Preserve required ABI
-and IR facts and the course's actual comparison rules; do not silently weaken
-the old clone checker or demand that optimized code preserve clone-only bytes.

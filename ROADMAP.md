@@ -19,8 +19,8 @@ under `dev/` and `dev/src/`.
 | PA27-PA28 | host-linkable objects and host C++ ABI/runtime interoperation |
 | PA29-PA31 | hosted source/header compatibility and hosted link/runtime behavior |
 | PA32-PA33 | LowIR and machine/backend optimization |
-| PA34 | staged self-host ladder and inception |
-| PA35 | optimizing the compiler: generated code against its own host-built seed and GCC, compile speed against the host |
+| PA34 | Rust compiler reference bootstrap, all tools and rebuilt suites |
+| PA35 | optimizing the compiler: generated code for frozen C++ reference sources against the host and GCC, compile speed against the host |
 
 ## PA9 ABI Boundary
 

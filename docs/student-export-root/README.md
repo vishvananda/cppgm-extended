@@ -1,7 +1,7 @@
 # cppgm assignments
 
 Build a C++11 compiler in 35 cumulative assignments, from preprocessing to
-native code, optimization and self-hosting. Later handouts identify the
+native code, optimization and reference bootstrap. Later handouts identify the
 additional language and hosted-library extensions they require. Start with
 [PA1](pa1/README.md) and extend the same implementation in `dev/` and
 `dev/src/` throughout.
@@ -12,7 +12,7 @@ is maintained in [cppgm-extended](https://github.com/vishvananda/cppgm-extended)
 
 ## Environment and workflow
 
-Use Linux x86-64 with a C++11 compiler (normally `g++`), GNU make, Bash, Perl,
+Use Linux x86-64 with Rust/Cargo and a host C++ compiler (normally `g++`), GNU make, Bash, Perl,
 Python 3, `curl` or `wget`, and standard archive/checksum tools. Later native
 and debug checks need binutils and a debugger. Generated programs execute
 locally; use an isolated environment for autonomous agents.
@@ -26,8 +26,8 @@ make test-report-through-paN
 ```
 
 Replace N with the assignment number. A clean through-milestone report is the
-exit criterion for PA1–PA33. [PA34](pa34/README.md) runs the self-host ladder
-and ends with `make inception`, comparing the self and inception generations.
+exit criterion for PA1–PA33. [PA34](pa34/README.md) compiles a frozen C++ reference implementation with
+your Rust compiler, checks its fixed point and runs rebuilt course/debug suites.
 [PA35](pa35/README.md) makes the compiler fast and ends with
 `make -C pa35 test`, its own gates on generated code and compile speed.
 Later milestones extend your existing compiler; do not reset to the initial
