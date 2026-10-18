@@ -1497,7 +1497,8 @@ void FunctionLowering::leave_scope(size_t depth)
 // ------------------------------------------------------- local class objects
 
 void FunctionLowering::local_object(const sema::VariableEntity* variable, const Place& place,
-	const syntax::Initializer* initializer, uint32_t location, const sema::Type* object_type)
+	const syntax::Initializer* initializer, uint32_t location, const sema::Type* object_type,
+	const StaticInitialization* initialization)
 {
 	// A class object (or array of them) of automatic storage: constructed
 	// where declared, destroyed when its scope ends.
@@ -1537,7 +1538,7 @@ void FunctionLowering::local_object(const sema::VariableEntity* variable, const 
 		: initializer->kind == syntax::InitializerKind::Parenthesized
 		? (initializer->arguments.size == 1 ? initializer->arguments[0] : nullptr)
 		: initializer->expression;
-	const size_t first = cleanups_.size();
+	size_t first = cleanups_.size();
 	bool region = false;
 	// An object its constructor or a prvalue initializes: its address is
 	// taken before its initializer's full-expression begins (the course's
@@ -1662,6 +1663,8 @@ void FunctionLowering::local_object(const sema::VariableEntity* variable, const 
 		++regions_opened_;
 		open_serial_ = regions_opened_;
 	}
+	if (initialization != nullptr)
+		complete_static_initialization(*initialization, first);
 	destroy_temporaries(first, true, destroyed ? &completed : nullptr);
 	completed_landing_ = false;
 	if (region)

@@ -384,8 +384,9 @@ void FunctionLowering::local_static_variable(const sema::VariableEntity* variabl
 	// though the static's is a global.
 	if (listed != nullptr && !listed->elements.empty() && !lowering_.object_mode())
 		generated_slot(lowir::SlotKind::Initlist, lowering_.storage_type(listed->facts->target));
+	const StaticInitialization initialization{ variable, global, guard, location, aborting, thread_safe, temporaries };
 	if (!local.reference && object_class(type) != nullptr)
-		local_object(variable, object, init.initializer, location);
+		local_object(variable, object, init.initializer, location, nullptr, &initialization);
 	else if (init.initializer != nullptr)
 	{
 		// A reference's temporaries persist with it (12.2p5); the
@@ -394,7 +395,7 @@ void FunctionLowering::local_static_variable(const sema::VariableEntity* variabl
 		const syntax::Expr* single = written->kind == syntax::InitializerKind::Parenthesized
 			? (written->arguments.size == 1 ? written->arguments[0] : nullptr)
 			: written->expression;
-		const size_t first = cleanups_.size();
+		size_t first = cleanups_.size();
 		const bool region = begin_full_expression(single);
 		const syntax::Expr* saved_root = full_root(single);
 		if (local.reference)
@@ -410,34 +411,61 @@ void FunctionLowering::local_static_variable(const sema::VariableEntity* variabl
 		else
 			initialize_storage(type, object, written, location);
 		choice_root_ = saved_root;
+		complete_static_initialization(initialization, first);
 		destroy_temporaries(first);
 		end_full_expression(region);
+	}
+	else
+	{
+		size_t first = cleanups_.size();
+		complete_static_initialization(initialization, first);
 	}
 	lowering_.end_temporary_names(names);
 	static_local_ = saved;
 	static_temporaries_ = saved_temporaries;
-	register_static_temporaries(global, temporaries);
+	jump(ready);
+	place(ready);
+}
+
+void FunctionLowering::complete_static_initialization(const StaticInitialization& initialization, size_t& first)
+{
+	// 6.7p4: the variable is initialized before its initializer's temporary
+	// destructors run (12.2p3). Their failure must neither retry construction
+	// nor abort a released host guard; destruction is already registered.
+	if (tracked_.active)
+		finish_tracking();
+	const size_t aborting = initialization.aborting;
 	if (aborting != SIZE_MAX)
 	{
-		// Initialized: the guard's cleanup leaves the chain (the region
-		// holding it ends; any object above it unwinds to those below).
-		if (region_open_)
-			close_region();
+		close_region();
 		cleanups_.erase(cleanups_.begin() + static_cast<std::ptrdiff_t>(aborting));
+		--first;
+		if (tracked_.active && tracked_.floor > aborting)
+			--tracked_.floor;
+		if (construction_depth_ > aborting)
+			--construction_depth_;
+		if (segment_floor_ > aborting)
+			--segment_floor_;
 		for (size_t i = aborting; i < cleanups_.size(); ++i)
 		{
 			cleanups_[i].unwind = cleanups_[i].shared_return = cleanups_[i].conditional = lowir::kNoId;
 			cleanups_[i].eh_marked = cleanups_[i].eh_unmarked = 0;
 		}
 	}
-	if (needs_destruction(type) && !local.reference)
-		register_destruction(global, type, location, variable->is_thread_local && lowering_.object_mode());
-	if (thread_safe)
-		guard_call(ProgramLowering::GuardCall::Release, guard);
+	register_static_temporaries(initialization.global, initialization.temporaries);
+	const sema::VariableEntity* variable = initialization.variable;
+	if (needs_destruction(variable->type) && !variable->type->is_reference())
+		register_destruction(initialization.global, variable->type, initialization.location,
+			variable->is_thread_local && lowering_.object_mode());
+	if (initialization.thread_safe)
+		guard_call(ProgramLowering::GuardCall::Release, initialization.guard);
 	else
+	{
+		const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+		Place flag = Place();
+		flag.storage = lowir::Value::symbol(initialization.guard);
 		store(i64, integer(i64, 1), flag);
-	jump(ready);
-	place(ready);
+	}
 }
 
 RValue FunctionLowering::guard_call(ProgramLowering::GuardCall call, lowir::SymbolId guard)

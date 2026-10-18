@@ -681,6 +681,8 @@ private:
 	void local_variable(const syntax::InitDeclarator& init);
 	void local_object_variable(const sema::VariableEntity* variable, const syntax::InitDeclarator& init);
 	// A function-local static object (lower/local_static_lowering.cpp).
+	struct StaticInitialization;
+	void complete_static_initialization(const StaticInitialization& initialization, size_t& first);
 	void local_static_variable(const sema::VariableEntity* variable, const syntax::InitDeclarator& init);
 	bool initializer_temporaries(const sema::VariableEntity* variable, const syntax::Initializer* init);
 	// A call of Itanium's one-time construction API with a guard's address.
@@ -1145,7 +1147,7 @@ private:
 	// `type`: the object's, when not the variable's (a range-based for's
 	// __range bound to a class prvalue, see range_variable).
 	void local_object(const sema::VariableEntity* variable, const Place& place, const syntax::Initializer* initializer,
-		uint32_t location, const sema::Type* type = nullptr);
+		uint32_t location, const sema::Type* type = nullptr, const StaticInitialization* initialization = nullptr);
 	void construct_array(const sema::Type* type, const Place& place, const syntax::Initializer* init,
 		const sema::VariableEntity* variable, uint32_t location);
 	lowir::Value subobject_address(const sema::BaseClass* base, const sema::DataMember* member, uint32_t location);
@@ -1902,6 +1904,16 @@ private:
 	{
 		bool reference;
 		std::vector<Finalizer> made;
+	};
+	struct StaticInitialization
+	{
+		const sema::VariableEntity* variable;
+		lowir::SymbolId global;
+		lowir::SymbolId guard;
+		uint32_t location;
+		size_t aborting;
+		bool thread_safe;
+		const StaticTemporaries& temporaries;
 	};
 	StaticTemporaries* static_temporaries_ = nullptr;
 	bool static_temporary(lowir::SymbolId storage, const sema::Type* type, uint32_t location);
