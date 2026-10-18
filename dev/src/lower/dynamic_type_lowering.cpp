@@ -280,11 +280,11 @@ lowir::Value FunctionLowering::address_of_symbol(lowir::SymbolId symbol)
 	return address_of(place);
 }
 
-lowir::Value FunctionLowering::most_derived_object(lowir::Value object, const sema::ClassEntity* from)
+lowir::Value FunctionLowering::most_derived_object(lowir::Value object)
 {
 	// 5.2.7p7: null stays null, else the object's address moved by its
-	// table's offset-to-top (Itanium 2.5.2), kept in the cast's slot; the
-	// course's runtime search for void follows it, unreachable.
+	// table's offset-to-top (Itanium 2.5.2), kept in the cast's slot.
+	// This operation needs no RTTI search or void type-information object.
 	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	Place result = Place();
@@ -305,34 +305,20 @@ lowir::Value FunctionLowering::most_derived_object(lowir::Value object, const se
 					  .value;
 	store(pointer, index(lowir::Type::scalar(lowir::TypeKind::I8), 0, object, load(i64, top)), result);
 	jump(end);
-	place(new_block(lowir::BlockKind::Block));
-	lowir::Value arguments[4];
-	arguments[0] = object;
-	arguments[1] = address_of_symbol(lowering_.class_information(from, true));
-	arguments[2] = address_of_symbol(
-		lowering_.type_information(lowering_.graph().types.fundamental(FundamentalType::Void)));
-	arguments[3] = integer(i64, static_cast<uint64_t>(-2)).value;
-	++lowering_.counters().instructions;
-	RValue found;
-	found.value = lowir::Value::temp(builder_.call(pointer,
-		lowir::Value::symbol(lowering_.runtime_function(RuntimeFunction::DynamicCast)), arguments, 4, lowir::kNoId, 0));
-	found.type = pointer;
-	store(pointer, found, result);
-	jump(end);
 	place(end);
 	return load(pointer, result).value;
 }
 
 RValue FunctionLowering::dynamic_cast_pointer(const syntax::CastExpr& expr)
 {
-	const sema::ClassEntity* from = sema::ClassOf(WithoutParentheses(expr.operand)->facts->type->unqualified->element);
 	RValue value;
 	value.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
 	if (sema::IsVoid(expr.facts->type->element))
 	{
-		value.value = most_derived_object(operand(*expr.operand, ConversionContext::Cast).value, from);
+		value.value = most_derived_object(operand(*expr.operand, ConversionContext::Cast).value);
 		return value;
 	}
+	const sema::ClassEntity* from = sema::ClassOf(WithoutParentheses(expr.operand)->facts->type->unqualified->element);
 	const sema::ClassEntity* to = sema::ClassOf(expr.facts->type->element);
 	value.value = runtime_cast(operand(*expr.operand, ConversionContext::Cast).value, from, to, false, expr.location);
 	return value;

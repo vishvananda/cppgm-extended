@@ -1704,7 +1704,7 @@ private:
 	Place typeid_place(const syntax::TypeTraitExpr& expr);
 	RValue type_identity(const syntax::BinaryExpr& expr);
 	RValue dynamic_cast_pointer(const syntax::CastExpr& expr);
-	lowir::Value most_derived_object(lowir::Value object, const sema::ClassEntity* from);
+	lowir::Value most_derived_object(lowir::Value object);
 	Place dynamic_cast_reference(const syntax::CastExpr& expr);
 	lowir::Value dynamic_type_information(lowir::Value object, RuntimeFunction failure, bool test_null = true);
 	lowir::Value runtime_cast(lowir::Value object, const sema::ClassEntity* from, const sema::ClassEntity* to,
