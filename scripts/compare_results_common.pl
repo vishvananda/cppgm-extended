@@ -2885,7 +2885,6 @@ sub canonicalize_lowir_function_locals_for_compare
 	return $entry if $entry !~ /^(?:declare\s+)?function /;
 
 	my (%values, %slots, %blocks, %declared_slots);
-	my @declared_slot_order;
 	my ($next_value, $next_slot, $next_block) = (0, 0, 0);
 	my @lines = split(/\n/, $entry, -1);
 	if (scalar(@lines) != 0)
@@ -2901,7 +2900,6 @@ sub canonicalize_lowir_function_locals_for_compare
 		if ($line =~ /^\s*slot \$([A-Za-z0-9_]+)\s*:/)
 		{
 			$declared_slots{$1} = 1;
-			push @declared_slot_order, $1;
 		}
 		if ($line =~ /^\s*block \^([A-Za-z0-9_]+):/)
 		{
@@ -2924,12 +2922,13 @@ sub canonicalize_lowir_function_locals_for_compare
 			++$next_slot;
 		}
 	}
-	for my $name (@declared_slot_order)
-	{
-		next if exists($slots{$name});
-		$slots{$name} = '<slot' . $next_slot . '>';
-		++$next_slot;
-	}
+	# A local declaration with no use in this function is presentation only.
+	# Validation runs before comparison, so duplicate or malformed declarations
+	# cannot disappear here to make an invalid program compare equal.
+	@lines = grep {
+		!/^\s*slot \$([A-Za-z0-9_]+)\s*:/ || exists($slots{$1})
+	} @lines;
+	$entry = join("\n", @lines);
 
 	$entry =~ s/%([A-Za-z0-9_]+)\b/
 		exists($values{$1}) ? '%' . $values{$1} : '%' . $1/gex;

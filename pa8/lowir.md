@@ -1732,6 +1732,8 @@ diff of code they did not write.
 - Names of temporaries, slots, blocks and parameters: each is renamed
   positionally within its function.
 - The order of slot declarations.
+- A slot declaration with no use in its function. Referenced slots, their
+  types, and every instruction that accesses them still compare exactly.
 - The order of top-level entries: Program Structure above defines the
   canonical presentation, and the comparison canonicalizes it.
 - A declaration nothing uses, and a declaration the output makes that the
