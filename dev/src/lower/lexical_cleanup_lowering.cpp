@@ -40,18 +40,27 @@ lowir::BlockId FunctionLowering::lexical_handler(size_t depth, size_t contexts)
 	if (depth > floor || eh_contexts_.size() > first_handler || body_unwind_target() != lowir::kNoId || returned)
 	{
 		const lowir::BlockId entry = lexical_entry(depth);
-		dispatch = new_block(lowir::BlockKind::LexicalCleanupDispatch);
-		ChainBlock block = ChainBlock();
-		block.block = dispatch;
-		block.unwinding = true;
-		block.action = ChainAction::LexicalDispatch;
-		block.tail = entry;
-		block.statement = attempt != nullptr ? attempt->statement : nullptr;
-		block.chain_first = attempt != nullptr ? attempt->chain_first : 0;
-		block.chain_count = attempt != nullptr ? attempt->chain_count : 0;
-		if (returned)
-			block.cleanup = returned_result_;
-		lexical_pending_.push_back(block);
+		const size_t key = static_cast<size_t>(entry) * 2 + (returned ? 1 : 0);
+		if (lexical_dispatch_.size() <= key)
+			lexical_dispatch_.resize(key + 1, 0);
+		if (lexical_dispatch_[key] != 0)
+			dispatch = lexical_dispatch_[key] - 1;
+		else
+		{
+			dispatch = new_block(lowir::BlockKind::LexicalCleanupDispatch);
+			lexical_dispatch_[key] = dispatch + 1;
+			ChainBlock block = ChainBlock();
+			block.block = dispatch;
+			block.unwinding = true;
+			block.action = ChainAction::LexicalDispatch;
+			block.tail = entry;
+			block.statement = attempt != nullptr ? attempt->statement : nullptr;
+			block.chain_first = attempt != nullptr ? attempt->chain_first : 0;
+			block.chain_count = attempt != nullptr ? attempt->chain_count : 0;
+			if (returned)
+				block.cleanup = returned_result_;
+			lexical_pending_.push_back(block);
+		}
 	}
 	if (!inner.empty())
 	{
@@ -175,7 +184,10 @@ lowir::BlockId FunctionLowering::lexical_entry(size_t count)
 		made.tail = tail;
 		made.below = lowir::kNoId;
 		if (element.context != SIZE_MAX)
+		{
 			made.action = ChainAction::LexicalHandlerExit;
+			made.catch_unwind_throws = eh_contexts_[element.context].catch_unwind_throws;
+		}
 		else
 			made.cleanup = cleanups_[element.object];
 		lexical_pending_.push_back(made);
@@ -416,7 +428,7 @@ void FunctionLowering::place_lexical_block(const ChainBlock& block)
 	{
 	case ChainAction::LexicalHandlerExit:
 		emit_marker(lowir::Opcode::EhEnd, lowir::kNoId);
-		call_end_catch();
+		call_end_catch(block.catch_unwind_throws);
 		jump(block.tail);
 		return;
 	case ChainAction::LexicalTryEntry:

@@ -673,10 +673,22 @@ bool ProgramLowering::constant_placements(const sema::Type* type, const sema::Co
 				bits[byte] |= static_cast<uint8_t>((word & 1u) << ((bit + k) % 8));
 			}
 			// The field's storage unit, as one unsigned item of its width
-			// (its value assembled from `bits`, see constant_data); a shared
-			// or split unit is written at run time.
+			// (its value assembled from `bits`, see constant_data). A shared
+			// or split unit contributes just the bytes its value occupies,
+			// keeping neighboring ordinary members out of the placement.
 			if (member->unit_shared || member->unit_split != 0 || member->unit_bytes > 8)
-				return false;
+			{
+				const uint64_t end = (bit + std::min<uint64_t>(member->width, 128) + 7) / 8;
+				for (uint64_t byte = bit / 8; byte < end; ++byte)
+				{
+					lowir::DataItem item = lowir::DataItem();
+					item.kind = lowir::DataItemKind::Scalar;
+					item.type = lowir::Type::scalar(lowir::TypeKind::U8);
+					item.amount = -1;
+					out.push_back(StaticPlacement{ byte, 1, item });
+				}
+				continue;
+			}
 			lowir::DataItem unit = lowir::DataItem();
 			unit.kind = lowir::DataItemKind::Scalar;
 			unit.type = lowir::Type::scalar(member->unit_bytes == 1 ? lowir::TypeKind::U8

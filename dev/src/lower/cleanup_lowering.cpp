@@ -704,7 +704,7 @@ void FunctionLowering::before_throwing_call()
 	stale_region_ = false;
 	// (Its region opened where it began, paused at its operands' branch.)
 	if (!region_open_ && !call_marks_.empty() && call_marks_.back().regioned)
-		return;
+		return open_region(false, true);
 	if (nothrow_segment_ && segment_floor_ != 0)
 	{
 		drop_segment_floor();
@@ -1543,7 +1543,7 @@ lowir::BlockId FunctionLowering::chain_entry(ChainKind kind, lowir::BlockId& ter
 	if (terminal == lowir::kNoId)
 	{
 		terminal = new_block(chain_terminal_kind(kind));
-		pending.push_back(ChainBlock{ terminal, true, unwinding,
+		pending.push_back(ChainBlock{ terminal, true, unwinding, false,
 			Cleanup{ lowir::Value(), nullptr, nullptr, lowir::kNoId, lowir::kNoId, lowir::kNoId, false }, lowir::kNoId,
 			lowir::kNoId });
 	}
@@ -1571,7 +1571,7 @@ lowir::BlockId FunctionLowering::chain_entry(ChainKind kind, lowir::BlockId& ter
 				: kind == ChainKind::Conditional                         ? lowir::BlockKind::ConditionalCleanupDispatch
 																		 : unwind_block_kind(cleanups_[i]));
 		const lowir::BlockId below = unwinding ? lowir::kNoId : destruction_handler(i);
-		pending.push_back(ChainBlock{ block, false, unwinding, cleanups_[i], tail, below });
+		pending.push_back(ChainBlock{ block, false, unwinding, false, cleanups_[i], tail, below });
 		node(cleanups_[i]) = block;
 		tail = block;
 	}
@@ -2039,7 +2039,10 @@ void FunctionLowering::emit_resume(bool outside_tries)
 	// std::terminate: the exception is the guard's unless a try statement
 	// encloses the landing (15.3p2: its handlers come first, 15.5.1p1). A
 	// specification's guard is unwound to (its filter decides).
-	if (terminate_landing_ == lowir::kNoId || unexpected_specification_ != nullptr ||
+	// The assignment's serialized LowIR resumes into its outer guard.
+	// Native objects retain direct termination, avoiding extra EH graph
+	// optimization work while preserving the same exception semantics.
+	if (!lowering_.object_mode() || terminate_landing_ == lowir::kNoId || unexpected_specification_ != nullptr ||
 		(!outside_tries && innermost_try() != nullptr))
 	{
 		terminate(lowir::make_instruction(lowir::Opcode::Resume, lowir::Type::scalar(lowir::TypeKind::Void)));

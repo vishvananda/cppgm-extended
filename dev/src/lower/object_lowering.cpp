@@ -704,19 +704,6 @@ bool ZeroedByValue(const sema::ClassEntity* entity, unsigned depth)
 	return true;
 }
 
-// A volatile or union subobject: a value-initialization's zeroing is then
-// stores of the bytes, not one `zeroinit` span (the README's boundary). The
-// class's layout recorded it.
-bool VolatileOrUnion(const sema::Type* type)
-{
-	while (type->kind == sema::TypeKind::Array)
-		type = type->element;
-	if ((type->cv & sema::kVolatile) != 0)
-		return true;
-	const sema::ClassEntity* entity = type->is_reference() ? nullptr : sema::ClassOf(type);
-	return entity != nullptr && entity->contains_volatile_or_union;
-}
-
 } // namespace
 
 void FunctionLowering::zero_object(const sema::Type* type, lowir::Value object, uint32_t location)
@@ -736,7 +723,7 @@ void FunctionLowering::zero_object(const sema::Type* type, lowir::Value object, 
 	zero_data_only_ = false;
 	if (entity != nullptr && entity->empty && overlapping_empty_)
 		return;
-	zero_bytes(type, object, size, alignment);
+	zero_bytes(object, size, alignment);
 	// Pointers to data members zero-initialize to their null value (-1,
 	// Itanium 2.3; 8.5p5).
 	null_data_member_pointers(type, object, 0, !data_only);
@@ -803,30 +790,10 @@ void FunctionLowering::null_data_member_pointers(
 	}
 }
 
-void FunctionLowering::zero_bytes(const sema::Type* type, lowir::Value object, uint64_t size, uint64_t alignment)
+void FunctionLowering::zero_bytes(lowir::Value object, uint64_t size, uint64_t alignment)
 {
-	if (VolatileOrUnion(type))
-	{
-		// The bytes in the widest stores that fit, from the start.
-		const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-		for (uint64_t offset = 0; offset < size;)
-		{
-			const uint64_t left = size - offset;
-			const uint64_t chunk = left >= 8 ? 8 : left >= 4 ? 4 : left >= 2 ? 2 : 1;
-			const lowir::Type unit = lowir::Type::scalar(chunk == 8 ? lowir::TypeKind::I64
-					: chunk == 4                                    ? lowir::TypeKind::I32
-					: chunk == 2                                    ? lowir::TypeKind::I16
-																	: lowir::TypeKind::I8);
-			Place place = Place();
-			place.storage = offset == 0
-				? object
-				: index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_NONE, object, integer(i64, offset))
-					  .value;
-			store(unit, integer(unit, 0), place);
-			offset += chunk;
-		}
-		return;
-	}
+	// Preliminary class-storage zeroing is one span, including union padding;
+	// scalar initialization and subsequent volatile accesses remain separate.
 	lowir::Instruction inst = lowir::make_instruction(
 		lowir::Opcode::ZeroInit, lowir::Type::scalar(lowir::TypeKind::Void));
 	inst.ops[0] = object;

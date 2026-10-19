@@ -200,11 +200,13 @@ bool PostTokenizer::split_literal_operator_suffix(const PPToken& first)
 	// A literal-operator-id is `operator "" identifier` ([over.literal]
 	// 13.5.8p1), but phase 3 lexes `""identifier` as one
 	// user-defined-string-literal by maximal munch. Directly after
-	// `operator` it is split back into the empty string literal and the
-	// identifier. The identifier's source range starts at the earliest
+	// `operator` the compiler dialect splits it back into the empty string and the
+	// identifier. Standalone posttoken mode keeps the maximal-munch token
+	// and validates its suffix.
+	// The identifier's source range starts at the earliest
 	// offset it can have; splices may lie in between.
-	if (!after_operator_ || first.kind != PPTokenKind::UserDefinedStringLiteral || first.length < 3 ||
-		first.spelling[0] != '"' || first.spelling[1] != '"')
+	if (literals_ != NumberDialect::Gnu || !after_operator_ || first.kind != PPTokenKind::UserDefinedStringLiteral ||
+		first.length < 3 || first.spelling[0] != '"' || first.spelling[1] != '"')
 	{
 		return false;
 	}

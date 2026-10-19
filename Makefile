@@ -276,6 +276,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_check_object_expectations.py \
 	scripts/tests/test_compare_lowir_results.py \
 	scripts/tests/test_lowir_finalizer_contract.py \
+	scripts/tests/test_lowir_emission_contract.py \
 	scripts/tests/test_compare_results_common.py \
 	scripts/tests/test_cppgm_cmake_wrapper.py \
 	scripts/tests/test_dev_makefile_obj_isolation.py \

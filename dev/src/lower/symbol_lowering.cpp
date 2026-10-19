@@ -2471,6 +2471,8 @@ lowir::SymbolMetadata ProgramLowering::function_metadata(const sema::FunctionEnt
 lowir::SymbolMetadata ProgramLowering::variable_metadata(const sema::VariableEntity* variable, lowir::SymbolId symbol)
 {
 	lowir::SymbolMetadata metadata;
+	if (variable->templ != nullptr && variable->templ->explicit_definition)
+		metadata.flags |= lowir::SF_OBJECT_ROOT;
 	if (variable->c_linkage)
 		metadata.linkage = ir_model::LLM_C;
 	metadata.binding = unit_local(variable) ? ir_model::SBM_INTERNAL

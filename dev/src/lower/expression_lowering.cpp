@@ -1203,7 +1203,7 @@ Place FunctionLowering::member_place(lowir::Value object, const sema::ClassEntit
 		integer(lowir::Type::scalar(lowir::TypeKind::I64), anonymous + lowering_.member_offset(member, location)))
 						.value;
 	// Named in a union, or in a union object (lowir.md "Instruction Facts").
-	if ((holder != nullptr && holder->key == TokenKind::KW_UNION) ||
+	if (union_member(member) || (holder != nullptr && holder->key == TokenKind::KW_UNION) ||
 		(from != nullptr && from->key == TokenKind::KW_UNION))
 		mark_untyped(place.storage);
 	if (member->type->is_reference())

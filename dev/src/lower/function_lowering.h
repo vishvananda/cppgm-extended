@@ -282,6 +282,9 @@ private:
 	struct EhContext
 	{
 		bool is_try;
+		// A class or unknown exception may destroy a throwing dynamic object
+		// at retirement. Scalar catches need no second-throw guard.
+		bool catch_unwind_throws;
 		size_t floor;
 		const syntax::TryStmt* statement;
 		lowir::BlockId dispatch;
@@ -538,6 +541,7 @@ private:
 		lowir::BlockId block;
 		bool terminal;
 		bool unwinding;
+		bool catch_unwind_throws;
 		Cleanup cleanup;
 		lowir::BlockId tail;
 		lowir::BlockId below;
@@ -768,7 +772,7 @@ private:
 		const sema::FunctionEntity* constructor, EntryVariant variant, uint32_t location);
 	void value_initialize(const sema::Type* type, lowir::Value object, const sema::FunctionEntity* constructor,
 		EntryVariant variant, uint32_t location);
-	void zero_bytes(const sema::Type* type, lowir::Value object, uint64_t size, uint64_t alignment);
+	void zero_bytes(lowir::Value object, uint64_t size, uint64_t alignment);
 	void zero_object(const sema::Type* type, lowir::Value object, uint32_t location);
 	void null_data_member_pointers(const sema::Type* type, lowir::Value object, uint64_t offset, bool complete);
 	void materialize(const syntax::Expr& expr, lowir::Value object, uint32_t location);
@@ -999,6 +1003,9 @@ private:
 	// An element handler's end (see construct_elements).
 	void element_exit();
 	std::vector<ChainBlock> lexical_pending_;
+	// A lexical entry identifies the complete context stack. Returned-result
+	// destruction adds one distinct dispatch for that same entry.
+	std::vector<lowir::BlockId> lexical_dispatch_;
 	bool lexical_placing_ = false;
 	// A constructor's or destructor's body detached from its subobjects'
 	// cleanup (a try, a local whose destructor may throw, a statement that
@@ -1651,7 +1658,7 @@ private:
 		lowir::BlockId landing, const EhContext& attempt);
 	void catch_variable(
 		const sema::VariableEntity* variable, const RValue& caught, const Place& record, uint32_t location);
-	void call_end_catch();
+	void call_end_catch(bool unwinding = false);
 	// The end of a catch whose exception object's destructor may throw, a
 	// handler's exit to the first `count` objects inside the first
 	// `contexts` exception-handling contexts.

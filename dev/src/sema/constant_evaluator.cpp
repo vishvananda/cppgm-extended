@@ -916,9 +916,15 @@ void Analyzer::set_evaluated(const VariableEntity* variable, const ConstValue* v
 
 bool Analyzer::constexpr_definition(const FunctionEntity* function)
 {
+	// An in-class member body is a complete-class context (9.2p2), but
+	// a static data member's initializer is not. It cannot evaluate that
+	// body before the owning class has completed.
+	if (!function->instantiated && function->owner != nullptr && function->owner->kind == ScopeKind::Class &&
+		!static_cast<const ClassEntity*>(function->owner->entity)->complete)
+		return false;
 	// The definition a constant evaluation runs: instantiated on first
-	// demand (14.7.1p3), or a member function's body analyzed ahead of its
-	// class's completion when a constant expression in the class calls it.
+	// demand (14.7.1p3), or a deferred member body analyzed once its owning
+	// class is complete.
 	if (function->implicit || ((function->defaulted || function->synthesized) && function->inits != nullptr))
 		return true;
 	if (function->instantiated)

@@ -3717,6 +3717,33 @@ sub paired_lowir_global_symbol_maps
 			$ref_by_shape{$shape}[0], $my_by_shape{$shape}[0], \$next);
 	}
 
+	# Follow the ordered references of already paired anchors before the
+	# positional tail. A top-level permutation must not swap two identical
+	# secondary construction tables that point at different RTTI objects.
+	# This only chooses a bijective symbol renaming; all data and references
+	# still pass the ordinary exact canonical comparison below.
+	my $ref_entries = lowir_top_level_entry_map($ref_data);
+	my $my_entries = lowir_top_level_entry_map($my_data);
+	my %my_by_placeholder = reverse(%my_map);
+	my @queue = map { [$_, $my_by_placeholder{$ref_map{$_}}] }
+		sort { lowir_placeholder_index($ref_map{$a}) <=> lowir_placeholder_index($ref_map{$b}) }
+		keys(%ref_map);
+	for (my $cursor = 0; $cursor < scalar(@queue); ++$cursor)
+	{
+		my ($ref_anchor, $my_anchor) = @{$queue[$cursor]};
+		my @ref_refs = lowir_entry_function_references($ref_entries->{$ref_anchor}, $ref_records);
+		my @my_refs = lowir_entry_function_references($my_entries->{$my_anchor}, $my_records);
+		my $count = scalar(@ref_refs) < scalar(@my_refs) ? scalar(@ref_refs) : scalar(@my_refs);
+		for (my $i = 0; $i < $count; ++$i)
+		{
+			next if exists($ref_map{$ref_refs[$i]}) || exists($my_map{$my_refs[$i]});
+			assign_lowir_global_symbol_pair(\%ref_map, \%my_map,
+				$ref_refs[$i], $my_refs[$i], \$next);
+			push @queue, [$ref_refs[$i], $my_refs[$i]];
+		}
+	}
+
+
 	my @remaining_ref = grep { !exists($ref_map{$_}) } @$ref_order;
 	my @remaining_my = grep { !exists($my_map{$_}) } @$my_order;
 	my $pairs = scalar(@remaining_ref) < scalar(@remaining_my) ?
@@ -4000,6 +4027,9 @@ sub canonicalize_lowir_pair_for_compare
 	$ref_data =~ s/\bpass\s*=\s*reference\b/pass=by_address/g;
 	$ref_data = canonicalize_lowir_tls_accesses_for_compare($ref_data);
 	$my_data = canonicalize_lowir_tls_accesses_for_compare($my_data);
+	# Reference declarations must survive for declaration-to-definition
+	# refinement; TLS metadata must be consumed before pruning either side.
+	$my_data = canonicalize_lowir_unused_declarations_for_compare($my_data);
 	($ref_data, $my_data) = canonicalize_lowir_pair_nothrow_resume_for_compare(
 		$ref_data, $my_data);
 	$ref_data = canonicalize_lowir_reference_liveness_for_compare(
@@ -4024,6 +4054,35 @@ sub canonicalize_lowir_pair_for_compare
 		canonicalize_lowir_top_level_order_for_compare(
 			canonicalize_lowir_for_compare($my_data, \%my_symbols));
 	return ($ref_compare_data, $my_compare_data);
+}
+
+sub canonicalize_lowir_unused_declarations_for_compare
+{
+	my ($data) = @_;
+	my @entries = split_lowir_top_level_entries($data);
+	my $mentions = lowir_symbol_reference_counts(\@entries);
+	# LowIR's comparison contract absorbs a declaration nothing uses, for
+	# globals as well as functions. Do this before pairing anonymous symbols:
+	# an unused declaration must not consume a live definition's pairing.
+	@entries = grep {
+		!/^declare\s+(?:global|function)\s+\@([A-Za-z0-9_]+)\b/ ||
+		$mentions->{$1} != 1
+	} @entries;
+	return join("\n\n", @entries) . (scalar(@entries) ? "\n" : "");
+}
+
+sub lowir_symbol_reference_counts
+{
+	my ($entries) = @_;
+	my %counts;
+	for my $entry (@$entries)
+	{
+		next if $entry =~ /^alias object /;
+		my %seen;
+		$seen{$1} = 1 while $entry =~ /\@([A-Za-z0-9_]+)\b/g;
+		++$counts{$_} for keys(%seen);
+	}
+	return \%counts;
 }
 
 sub canonicalize_lowir_tls_accesses_for_compare
@@ -4107,16 +4166,32 @@ sub lowir_function_entry_object
 	return undef;
 }
 
+sub lowir_emission_entry_name
+{
+	my ($entry) = @_;
+	return $1 if $entry =~ /^(?:declare\s+)?(?:function|global) \@([A-Za-z0-9_]+)\b/;
+	return undef;
+}
+
+sub lowir_emission_entry_object
+{
+	my ($entry) = @_;
+	return $1 if $entry =~ /^(?:declare\s+)?(?:function|global) \@[^\n]*\[[^\]\n]*\bobject=([^,\]\s]+)[^\]\n]*\]/;
+	return undef;
+}
+
 sub canonicalize_lowir_reference_liveness_for_compare
 {
 	my ($ref_data, $my_data) = @_;
+	my ($ref_globals, $my_globals) = paired_lowir_global_symbol_maps($ref_data, $my_data);
+	my %present_globals = map { $_ => 1 } values(%$my_globals);
 	my (%my_names, %my_objects);
 	for my $entry (split_lowir_top_level_entries($my_data))
 	{
-		my $name = lowir_function_entry_name($entry);
+		my $name = lowir_emission_entry_name($entry);
 		next if !defined($name);
 		$my_names{$name} = 1;
-		my $object = lowir_function_entry_object($entry);
+		my $object = lowir_emission_entry_object($entry);
 		$my_objects{$object} = 1 if defined($object);
 	}
 	# Mark from retained entries rather than dropping leaves once. Optional
@@ -4126,17 +4201,20 @@ sub canonicalize_lowir_reference_liveness_for_compare
 	for my $i (0 .. $#entries)
 	{
 		my $entry = $entries[$i];
-		my $name = lowir_function_entry_name($entry);
+		my $name = lowir_emission_entry_name($entry);
 		$by_name{$name} = $i if defined($name);
-		my $object = lowir_function_entry_object($entry);
+		my $object = lowir_emission_entry_object($entry);
 		my $optional = defined($name) &&
-			($entry =~ /^declare\s+function / ||
-			 ($entry =~ /^function / &&
+			($entry =~ /^declare\s+(?:function|global) / ||
+			 ($entry =~ /^(?:function|global) / &&
 			  $entry =~ /\[[^\]\n]*\bbinding=(?:weak|internal)\b[^\]\n]*\]/ &&
+			  $entry !~ /\[[^\]\n]*\breplaceable=yes\b[^\]\n]*\]/ &&
 			  $entry !~ /\[[^\]\n]*\bobject_root=yes\b[^\]\n]*\]/ &&
 			  $entry !~ /\[[^\]\n]*\brole=(?:entry|init|fini)\b[^\]\n]*\]/));
 		if (!$optional || exists($my_names{$name // ''}) ||
-			(defined($object) && exists($my_objects{$object})))
+			(defined($object) && exists($my_objects{$object})) ||
+			(defined($name) && exists($ref_globals->{$name}) &&
+			 exists($present_globals{$ref_globals->{$name}})))
 		{
 			$live{$i} = 1;
 			push @pending, $i;

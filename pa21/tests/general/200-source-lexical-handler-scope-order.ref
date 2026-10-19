@@ -5,8 +5,8 @@ declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data,
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
-declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
 declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
+declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
 
 global @case_0__live : i32 [binding=strong, object=_ZN6case_04liveE] = zero
 global @case_0__drops : i32 [binding=strong, object=_ZN6case_05dropsE] = zero
@@ -269,21 +269,29 @@ function @case_0__f() -> void [binding=strong, object=_ZN6case_01fEv] {
 
   block ^cleanup_action_8:
     eh_end
+    eh_try ^lexical_cleanup_terminate_12
     call void @__external_runtime____cxa_end_catch()
+    eh_end
     eh_end
     jump ^cleanup_resume_7
 
+  block ^lexical_cleanup_terminate_12:
+    eh_catch_all, 2
+    %t10 = exception ptr
+    call void @cppgm_call_terminate(%t10)
+    unreachable
+
   block ^cleanup_action_9:
-    eh_try ^lexical_cleanup_terminate_12
-    %t10 = addr $a
-    call void @case_0__G___G(%t10)
+    eh_try ^lexical_cleanup_terminate_13
+    %t11 = addr $a
+    call void @case_0__G___G(%t11)
     eh_end
     jump ^cleanup_action_8
 
-  block ^lexical_cleanup_terminate_12:
-    eh_catch_all, 2
-    %t11 = exception ptr
-    call void @cppgm_call_terminate(%t11)
+  block ^lexical_cleanup_terminate_13:
+    eh_catch_all, 3
+    %t12 = exception ptr
+    call void @cppgm_call_terminate(%t12)
     unreachable
 
   block ^call_unwind_dispatch_10:
@@ -291,48 +299,44 @@ function @case_0__f() -> void [binding=strong, object=_ZN6case_01fEv] {
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
-    eh_try ^lexical_cleanup_dispatch_16
-    %t12 = addr $b
-    call void @case_0__G___G(%t12)
-    eh_end
     eh_try ^lexical_cleanup_dispatch_17
-    %t13 = addr $a
+    %t13 = addr $b
     call void @case_0__G___G(%t13)
+    eh_end
+    eh_try ^lexical_cleanup_dispatch_18
+    %t14 = addr $a
+    call void @case_0__G___G(%t14)
     eh_end
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_3
 
-  block ^lexical_unwind_13:
+  block ^lexical_unwind_14:
     resume
 
-  block ^lexical_unwind_14:
-    eh_end
-    call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_13
-
   block ^lexical_unwind_15:
-    eh_try ^lexical_cleanup_terminate_18
-    %t14 = addr $a
-    call void @case_0__G___G(%t14)
+    eh_end
+    eh_try ^lexical_cleanup_terminate_12
+    call void @__external_runtime____cxa_end_catch()
     eh_end
     jump ^lexical_unwind_14
 
-  block ^lexical_cleanup_terminate_18:
-    eh_catch_all, 3
-    %t15 = exception ptr
-    call void @cppgm_call_terminate(%t15)
-    unreachable
-
-  block ^lexical_cleanup_dispatch_16:
-    eh_cleanup
+  block ^lexical_unwind_16:
+    eh_try ^lexical_cleanup_terminate_12
+    %t15 = addr $a
+    call void @case_0__G___G(%t15)
     eh_end
     jump ^lexical_unwind_15
 
   block ^lexical_cleanup_dispatch_17:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_14
+    jump ^lexical_unwind_16
+
+  block ^lexical_cleanup_dispatch_18:
+    eh_cleanup
+    eh_end
+    jump ^lexical_unwind_15
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()
@@ -492,21 +496,29 @@ function @case_1__f() -> void [binding=strong, object=_ZN6case_11fEv] {
 
   block ^cleanup_action_8:
     eh_end
+    eh_try ^lexical_cleanup_terminate_12
     call void @__external_runtime____cxa_end_catch()
+    eh_end
     eh_end
     jump ^cleanup_resume_7
 
+  block ^lexical_cleanup_terminate_12:
+    eh_catch_all, 2
+    %t10 = exception ptr
+    call void @cppgm_call_terminate(%t10)
+    unreachable
+
   block ^cleanup_action_9:
-    eh_try ^lexical_cleanup_terminate_12
-    %t10 = addr $a
-    call void @case_1__G___G(%t10)
+    eh_try ^lexical_cleanup_terminate_13
+    %t11 = addr $a
+    call void @case_1__G___G(%t11)
     eh_end
     jump ^cleanup_action_8
 
-  block ^lexical_cleanup_terminate_12:
-    eh_catch_all, 2
-    %t11 = exception ptr
-    call void @cppgm_call_terminate(%t11)
+  block ^lexical_cleanup_terminate_13:
+    eh_catch_all, 3
+    %t12 = exception ptr
+    call void @cppgm_call_terminate(%t12)
     unreachable
 
   block ^call_unwind_dispatch_10:
@@ -514,48 +526,44 @@ function @case_1__f() -> void [binding=strong, object=_ZN6case_11fEv] {
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
-    eh_try ^lexical_cleanup_dispatch_16
-    %t12 = addr $b
-    call void @case_1__G___G(%t12)
-    eh_end
     eh_try ^lexical_cleanup_dispatch_17
-    %t13 = addr $a
+    %t13 = addr $b
     call void @case_1__G___G(%t13)
+    eh_end
+    eh_try ^lexical_cleanup_dispatch_18
+    %t14 = addr $a
+    call void @case_1__G___G(%t14)
     eh_end
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_3
 
-  block ^lexical_unwind_13:
+  block ^lexical_unwind_14:
     resume
 
-  block ^lexical_unwind_14:
-    eh_end
-    call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_13
-
   block ^lexical_unwind_15:
-    eh_try ^lexical_cleanup_terminate_18
-    %t14 = addr $a
-    call void @case_1__G___G(%t14)
+    eh_end
+    eh_try ^lexical_cleanup_terminate_12
+    call void @__external_runtime____cxa_end_catch()
     eh_end
     jump ^lexical_unwind_14
 
-  block ^lexical_cleanup_terminate_18:
-    eh_catch_all, 3
-    %t15 = exception ptr
-    call void @cppgm_call_terminate(%t15)
-    unreachable
-
-  block ^lexical_cleanup_dispatch_16:
-    eh_cleanup
+  block ^lexical_unwind_16:
+    eh_try ^lexical_cleanup_terminate_12
+    %t15 = addr $a
+    call void @case_1__G___G(%t15)
     eh_end
     jump ^lexical_unwind_15
 
   block ^lexical_cleanup_dispatch_17:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_14
+    jump ^lexical_unwind_16
+
+  block ^lexical_cleanup_dispatch_18:
+    eh_cleanup
+    eh_end
+    jump ^lexical_unwind_15
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()
@@ -718,21 +726,29 @@ function @case_2__f() -> void [binding=strong, object=_ZN6case_21fEv] {
 
   block ^cleanup_action_11:
     eh_end
+    eh_try ^lexical_cleanup_terminate_15
     call void @__external_runtime____cxa_end_catch()
+    eh_end
     eh_end
     jump ^cleanup_resume_10
 
+  block ^lexical_cleanup_terminate_15:
+    eh_catch_all, 2
+    %t10 = exception ptr
+    call void @cppgm_call_terminate(%t10)
+    unreachable
+
   block ^cleanup_action_12:
-    eh_try ^lexical_cleanup_terminate_15
-    %t10 = addr $a
-    call void @case_2__G___G(%t10)
+    eh_try ^lexical_cleanup_terminate_16
+    %t11 = addr $a
+    call void @case_2__G___G(%t11)
     eh_end
     jump ^cleanup_action_11
 
-  block ^lexical_cleanup_terminate_15:
-    eh_catch_all, 2
-    %t11 = exception ptr
-    call void @cppgm_call_terminate(%t11)
+  block ^lexical_cleanup_terminate_16:
+    eh_catch_all, 3
+    %t12 = exception ptr
+    call void @cppgm_call_terminate(%t12)
     unreachable
 
   block ^call_unwind_dispatch_13:
@@ -740,48 +756,44 @@ function @case_2__f() -> void [binding=strong, object=_ZN6case_21fEv] {
     jump ^cleanup_action_12
 
   block ^call_unwind_end_14:
-    eh_try ^lexical_cleanup_dispatch_19
-    %t12 = addr $b
-    call void @case_2__G___G(%t12)
-    eh_end
     eh_try ^lexical_cleanup_dispatch_20
-    %t13 = addr $a
+    %t13 = addr $b
     call void @case_2__G___G(%t13)
+    eh_end
+    eh_try ^lexical_cleanup_dispatch_21
+    %t14 = addr $a
+    call void @case_2__G___G(%t14)
     eh_end
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^do_end_3
 
-  block ^lexical_unwind_16:
+  block ^lexical_unwind_17:
     resume
 
-  block ^lexical_unwind_17:
-    eh_end
-    call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_16
-
   block ^lexical_unwind_18:
-    eh_try ^lexical_cleanup_terminate_21
-    %t14 = addr $a
-    call void @case_2__G___G(%t14)
+    eh_end
+    eh_try ^lexical_cleanup_terminate_15
+    call void @__external_runtime____cxa_end_catch()
     eh_end
     jump ^lexical_unwind_17
 
-  block ^lexical_cleanup_terminate_21:
-    eh_catch_all, 3
-    %t15 = exception ptr
-    call void @cppgm_call_terminate(%t15)
-    unreachable
-
-  block ^lexical_cleanup_dispatch_19:
-    eh_cleanup
+  block ^lexical_unwind_19:
+    eh_try ^lexical_cleanup_terminate_15
+    %t15 = addr $a
+    call void @case_2__G___G(%t15)
     eh_end
     jump ^lexical_unwind_18
 
   block ^lexical_cleanup_dispatch_20:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_17
+    jump ^lexical_unwind_19
+
+  block ^lexical_cleanup_dispatch_21:
+    eh_cleanup
+    eh_end
+    jump ^lexical_unwind_18
 
   block ^catch_cleanup_9:
     call void @__external_runtime____cxa_end_catch()
@@ -957,21 +969,29 @@ function @case_3__f() -> void [binding=strong, object=_ZN6case_31fEv] {
 
   block ^cleanup_action_12:
     eh_end
+    eh_try ^lexical_cleanup_terminate_16
     call void @__external_runtime____cxa_end_catch()
+    eh_end
     eh_end
     jump ^cleanup_resume_11
 
+  block ^lexical_cleanup_terminate_16:
+    eh_catch_all, 2
+    %t12 = exception ptr
+    call void @cppgm_call_terminate(%t12)
+    unreachable
+
   block ^cleanup_action_13:
-    eh_try ^lexical_cleanup_terminate_16
-    %t12 = addr $a
-    call void @case_3__G___G(%t12)
+    eh_try ^lexical_cleanup_terminate_17
+    %t13 = addr $a
+    call void @case_3__G___G(%t13)
     eh_end
     jump ^cleanup_action_12
 
-  block ^lexical_cleanup_terminate_16:
-    eh_catch_all, 2
-    %t13 = exception ptr
-    call void @cppgm_call_terminate(%t13)
+  block ^lexical_cleanup_terminate_17:
+    eh_catch_all, 3
+    %t14 = exception ptr
+    call void @cppgm_call_terminate(%t14)
     unreachable
 
   block ^call_unwind_dispatch_14:
@@ -979,48 +999,44 @@ function @case_3__f() -> void [binding=strong, object=_ZN6case_31fEv] {
     jump ^cleanup_action_13
 
   block ^call_unwind_end_15:
-    eh_try ^lexical_cleanup_dispatch_20
-    %t14 = addr $b
-    call void @case_3__G___G(%t14)
-    eh_end
     eh_try ^lexical_cleanup_dispatch_21
-    %t15 = addr $a
+    %t15 = addr $b
     call void @case_3__G___G(%t15)
+    eh_end
+    eh_try ^lexical_cleanup_dispatch_22
+    %t16 = addr $a
+    call void @case_3__G___G(%t16)
     eh_end
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^for_iter_3
 
-  block ^lexical_unwind_17:
+  block ^lexical_unwind_18:
     resume
 
-  block ^lexical_unwind_18:
-    eh_end
-    call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_17
-
   block ^lexical_unwind_19:
-    eh_try ^lexical_cleanup_terminate_22
-    %t16 = addr $a
-    call void @case_3__G___G(%t16)
+    eh_end
+    eh_try ^lexical_cleanup_terminate_16
+    call void @__external_runtime____cxa_end_catch()
     eh_end
     jump ^lexical_unwind_18
 
-  block ^lexical_cleanup_terminate_22:
-    eh_catch_all, 3
-    %t17 = exception ptr
-    call void @cppgm_call_terminate(%t17)
-    unreachable
-
-  block ^lexical_cleanup_dispatch_20:
-    eh_cleanup
+  block ^lexical_unwind_20:
+    eh_try ^lexical_cleanup_terminate_16
+    %t17 = addr $a
+    call void @case_3__G___G(%t17)
     eh_end
     jump ^lexical_unwind_19
 
   block ^lexical_cleanup_dispatch_21:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_18
+    jump ^lexical_unwind_20
+
+  block ^lexical_cleanup_dispatch_22:
+    eh_cleanup
+    eh_end
+    jump ^lexical_unwind_19
 
   block ^catch_cleanup_10:
     call void @__external_runtime____cxa_end_catch()
@@ -1189,21 +1205,29 @@ function @case_4__f() -> void [binding=strong, object=_ZN6case_41fEv] {
 
   block ^cleanup_action_8:
     eh_end
+    eh_try ^lexical_cleanup_terminate_12
     call void @__external_runtime____cxa_end_catch()
+    eh_end
     eh_end
     jump ^cleanup_resume_7
 
+  block ^lexical_cleanup_terminate_12:
+    eh_catch_all, 2
+    %t10 = exception ptr
+    call void @cppgm_call_terminate(%t10)
+    unreachable
+
   block ^cleanup_action_9:
-    eh_try ^lexical_cleanup_terminate_12
-    %t10 = addr $a
-    call void @case_4__G___G(%t10)
+    eh_try ^lexical_cleanup_terminate_13
+    %t11 = addr $a
+    call void @case_4__G___G(%t11)
     eh_end
     jump ^cleanup_action_8
 
-  block ^lexical_cleanup_terminate_12:
-    eh_catch_all, 2
-    %t11 = exception ptr
-    call void @cppgm_call_terminate(%t11)
+  block ^lexical_cleanup_terminate_13:
+    eh_catch_all, 3
+    %t12 = exception ptr
+    call void @cppgm_call_terminate(%t12)
     unreachable
 
   block ^call_unwind_dispatch_10:
@@ -1211,48 +1235,44 @@ function @case_4__f() -> void [binding=strong, object=_ZN6case_41fEv] {
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
-    eh_try ^lexical_cleanup_dispatch_16
-    %t12 = addr $b
-    call void @case_4__G___G(%t12)
-    eh_end
     eh_try ^lexical_cleanup_dispatch_17
-    %t13 = addr $a
+    %t13 = addr $b
     call void @case_4__G___G(%t13)
     eh_end
-    eh_end
-    call void @__external_runtime____cxa_end_catch()
-    jump ^goto_18
-
-  block ^lexical_unwind_13:
-    resume
-
-  block ^lexical_unwind_14:
-    eh_end
-    call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_13
-
-  block ^lexical_unwind_15:
-    eh_try ^lexical_cleanup_terminate_19
+    eh_try ^lexical_cleanup_dispatch_18
     %t14 = addr $a
     call void @case_4__G___G(%t14)
     eh_end
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    jump ^goto_19
+
+  block ^lexical_unwind_14:
+    resume
+
+  block ^lexical_unwind_15:
+    eh_end
+    eh_try ^lexical_cleanup_terminate_12
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
     jump ^lexical_unwind_14
 
-  block ^lexical_cleanup_terminate_19:
-    eh_catch_all, 3
-    %t15 = exception ptr
-    call void @cppgm_call_terminate(%t15)
-    unreachable
-
-  block ^lexical_cleanup_dispatch_16:
-    eh_cleanup
+  block ^lexical_unwind_16:
+    eh_try ^lexical_cleanup_terminate_12
+    %t15 = addr $a
+    call void @case_4__G___G(%t15)
     eh_end
     jump ^lexical_unwind_15
 
   block ^lexical_cleanup_dispatch_17:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_14
+    jump ^lexical_unwind_16
+
+  block ^lexical_cleanup_dispatch_18:
+    eh_cleanup
+    eh_end
+    jump ^lexical_unwind_15
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()
@@ -1263,9 +1283,9 @@ function @case_4__f() -> void [binding=strong, object=_ZN6case_41fEv] {
     resume
 
   block ^try_end_3:
-    jump ^goto_18
+    jump ^goto_19
 
-  block ^goto_18:
+  block ^goto_19:
     return void
 }
 function @case_4__check() -> i32 [binding=strong, object=_ZN6case_45checkEv] {
@@ -1418,21 +1438,29 @@ function @case_5__f() -> void [binding=strong, object=_ZN6case_51fEv] {
 
   block ^cleanup_action_11:
     eh_end
+    eh_try ^lexical_cleanup_terminate_15
     call void @__external_runtime____cxa_end_catch()
+    eh_end
     eh_end
     jump ^cleanup_resume_10
 
+  block ^lexical_cleanup_terminate_15:
+    eh_catch_all, 2
+    %t10 = exception ptr
+    call void @cppgm_call_terminate(%t10)
+    unreachable
+
   block ^cleanup_action_12:
-    eh_try ^lexical_cleanup_terminate_15
-    %t10 = addr $a
-    call void @case_5__G___G(%t10)
+    eh_try ^lexical_cleanup_terminate_16
+    %t11 = addr $a
+    call void @case_5__G___G(%t11)
     eh_end
     jump ^cleanup_action_11
 
-  block ^lexical_cleanup_terminate_15:
-    eh_catch_all, 2
-    %t11 = exception ptr
-    call void @cppgm_call_terminate(%t11)
+  block ^lexical_cleanup_terminate_16:
+    eh_catch_all, 3
+    %t12 = exception ptr
+    call void @cppgm_call_terminate(%t12)
     unreachable
 
   block ^call_unwind_dispatch_13:
@@ -1440,37 +1468,33 @@ function @case_5__f() -> void [binding=strong, object=_ZN6case_51fEv] {
     jump ^cleanup_action_12
 
   block ^call_unwind_end_14:
-    eh_try ^lexical_cleanup_dispatch_19
-    %t12 = addr $b
-    call void @case_5__G___G(%t12)
+    eh_try ^lexical_cleanup_dispatch_20
+    %t13 = addr $b
+    call void @case_5__G___G(%t13)
     eh_end
     jump ^do_end_9
 
-  block ^lexical_unwind_16:
+  block ^lexical_unwind_17:
     resume
 
-  block ^lexical_unwind_17:
-    eh_end
-    call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_16
-
   block ^lexical_unwind_18:
-    eh_try ^lexical_cleanup_terminate_20
-    %t13 = addr $a
-    call void @case_5__G___G(%t13)
+    eh_end
+    eh_try ^lexical_cleanup_terminate_15
+    call void @__external_runtime____cxa_end_catch()
     eh_end
     jump ^lexical_unwind_17
 
-  block ^lexical_cleanup_terminate_20:
-    eh_catch_all, 3
-    %t14 = exception ptr
-    call void @cppgm_call_terminate(%t14)
-    unreachable
-
-  block ^lexical_cleanup_dispatch_19:
-    eh_cleanup
+  block ^lexical_unwind_19:
+    eh_try ^lexical_cleanup_terminate_15
+    %t14 = addr $a
+    call void @case_5__G___G(%t14)
     eh_end
     jump ^lexical_unwind_18
+
+  block ^lexical_cleanup_dispatch_20:
+    eh_cleanup
+    eh_end
+    jump ^lexical_unwind_19
 
   block ^do_cond_8:
     branch 0, ^do_body_7, ^do_end_9
@@ -1487,7 +1511,7 @@ function @case_5__f() -> void [binding=strong, object=_ZN6case_51fEv] {
   block ^lexical_cleanup_dispatch_21:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_17
+    jump ^lexical_unwind_18
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()
@@ -1657,21 +1681,29 @@ function @case_6__f() -> void [binding=strong, object=_ZN6case_61fEv] {
 
   block ^cleanup_action_12:
     eh_end
+    eh_try ^lexical_cleanup_terminate_16
     call void @__external_runtime____cxa_end_catch()
+    eh_end
     eh_end
     jump ^cleanup_resume_11
 
+  block ^lexical_cleanup_terminate_16:
+    eh_catch_all, 2
+    %t12 = exception ptr
+    call void @cppgm_call_terminate(%t12)
+    unreachable
+
   block ^cleanup_action_13:
-    eh_try ^lexical_cleanup_terminate_16
-    %t12 = addr $a
-    call void @case_6__G___G(%t12)
+    eh_try ^lexical_cleanup_terminate_17
+    %t13 = addr $a
+    call void @case_6__G___G(%t13)
     eh_end
     jump ^cleanup_action_12
 
-  block ^lexical_cleanup_terminate_16:
-    eh_catch_all, 2
-    %t13 = exception ptr
-    call void @cppgm_call_terminate(%t13)
+  block ^lexical_cleanup_terminate_17:
+    eh_catch_all, 3
+    %t14 = exception ptr
+    call void @cppgm_call_terminate(%t14)
     unreachable
 
   block ^call_unwind_dispatch_14:
@@ -1679,37 +1711,33 @@ function @case_6__f() -> void [binding=strong, object=_ZN6case_61fEv] {
     jump ^cleanup_action_13
 
   block ^call_unwind_end_15:
-    eh_try ^lexical_cleanup_dispatch_20
-    %t14 = addr $b
-    call void @case_6__G___G(%t14)
+    eh_try ^lexical_cleanup_dispatch_21
+    %t15 = addr $b
+    call void @case_6__G___G(%t15)
     eh_end
     jump ^for_iter_9
 
-  block ^lexical_unwind_17:
+  block ^lexical_unwind_18:
     resume
 
-  block ^lexical_unwind_18:
-    eh_end
-    call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_17
-
   block ^lexical_unwind_19:
-    eh_try ^lexical_cleanup_terminate_21
-    %t15 = addr $a
-    call void @case_6__G___G(%t15)
+    eh_end
+    eh_try ^lexical_cleanup_terminate_16
+    call void @__external_runtime____cxa_end_catch()
     eh_end
     jump ^lexical_unwind_18
 
-  block ^lexical_cleanup_terminate_21:
-    eh_catch_all, 3
-    %t16 = exception ptr
-    call void @cppgm_call_terminate(%t16)
-    unreachable
-
-  block ^lexical_cleanup_dispatch_20:
-    eh_cleanup
+  block ^lexical_unwind_20:
+    eh_try ^lexical_cleanup_terminate_16
+    %t16 = addr $a
+    call void @case_6__G___G(%t16)
     eh_end
     jump ^lexical_unwind_19
+
+  block ^lexical_cleanup_dispatch_21:
+    eh_cleanup
+    eh_end
+    jump ^lexical_unwind_20
 
   block ^for_iter_9:
     %t17 = load typed i32 $i
@@ -1729,7 +1757,7 @@ function @case_6__f() -> void [binding=strong, object=_ZN6case_61fEv] {
   block ^lexical_cleanup_dispatch_22:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_18
+    jump ^lexical_unwind_19
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()
@@ -1889,21 +1917,29 @@ function @case_7__f() -> void [binding=strong, object=_ZN6case_71fEv] {
 
   block ^cleanup_action_8:
     eh_end
+    eh_try ^lexical_cleanup_terminate_12
     call void @__external_runtime____cxa_end_catch()
+    eh_end
     eh_end
     jump ^cleanup_resume_7
 
+  block ^lexical_cleanup_terminate_12:
+    eh_catch_all, 2
+    %t10 = exception ptr
+    call void @cppgm_call_terminate(%t10)
+    unreachable
+
   block ^cleanup_action_9:
-    eh_try ^lexical_cleanup_terminate_12
-    %t10 = addr $a
-    call void @case_7__G___G(%t10)
+    eh_try ^lexical_cleanup_terminate_13
+    %t11 = addr $a
+    call void @case_7__G___G(%t11)
     eh_end
     jump ^cleanup_action_8
 
-  block ^lexical_cleanup_terminate_12:
-    eh_catch_all, 2
-    %t11 = exception ptr
-    call void @cppgm_call_terminate(%t11)
+  block ^lexical_cleanup_terminate_13:
+    eh_catch_all, 3
+    %t12 = exception ptr
+    call void @cppgm_call_terminate(%t12)
     unreachable
 
   block ^call_unwind_dispatch_10:
@@ -1911,39 +1947,35 @@ function @case_7__f() -> void [binding=strong, object=_ZN6case_71fEv] {
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
-    eh_try ^lexical_cleanup_dispatch_16
-    %t12 = addr $b
-    call void @case_7__G___G(%t12)
+    eh_try ^lexical_cleanup_dispatch_17
+    %t13 = addr $b
+    call void @case_7__G___G(%t13)
     eh_end
-    jump ^goto_17
-
-  block ^lexical_unwind_13:
-    resume
+    jump ^goto_18
 
   block ^lexical_unwind_14:
-    eh_end
-    call void @__external_runtime____cxa_end_catch()
-    jump ^lexical_unwind_13
+    resume
 
   block ^lexical_unwind_15:
-    eh_try ^lexical_cleanup_terminate_18
-    %t13 = addr $a
-    call void @case_7__G___G(%t13)
+    eh_end
+    eh_try ^lexical_cleanup_terminate_12
+    call void @__external_runtime____cxa_end_catch()
     eh_end
     jump ^lexical_unwind_14
 
-  block ^lexical_cleanup_terminate_18:
-    eh_catch_all, 3
-    %t14 = exception ptr
-    call void @cppgm_call_terminate(%t14)
-    unreachable
-
-  block ^lexical_cleanup_dispatch_16:
-    eh_cleanup
+  block ^lexical_unwind_16:
+    eh_try ^lexical_cleanup_terminate_12
+    %t14 = addr $a
+    call void @case_7__G___G(%t14)
     eh_end
     jump ^lexical_unwind_15
 
-  block ^goto_17:
+  block ^lexical_cleanup_dispatch_17:
+    eh_cleanup
+    eh_end
+    jump ^lexical_unwind_16
+
+  block ^goto_18:
     eh_try ^lexical_cleanup_dispatch_19
     %t15 = addr $a
     call void @case_7__G___G(%t15)
@@ -1955,7 +1987,7 @@ function @case_7__f() -> void [binding=strong, object=_ZN6case_71fEv] {
   block ^lexical_cleanup_dispatch_19:
     eh_cleanup
     eh_end
-    jump ^lexical_unwind_14
+    jump ^lexical_unwind_15
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()

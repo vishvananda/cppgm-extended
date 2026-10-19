@@ -171,6 +171,7 @@ lowir::SymbolId ProgramLowering::atexit_function()
 	program_.parameters.push_back(function);
 	signature.parameter_count = 1;
 	signature.result = lowir::Type::scalar(lowir::TypeKind::I32);
+	signature.boundary.unwind = ir_model::CUM_NO;
 	program_.declare_function(atexit_, lowir::SymbolKind::FunctionDeclaration, program_.add_signature(signature));
 	lowir::SymbolMetadata& metadata = program_.symbols[atexit_].metadata;
 	metadata.linkage = ir_model::LLM_C;

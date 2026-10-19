@@ -271,6 +271,7 @@ void FunctionLowering::handler(const syntax::TryStmt& stmt, const syntax::Handle
 		: declaration.type->is_reference()                                       ? declaration.type->element
 																				 : declaration.type;
 	context.end_throws = type != nullptr && destructor_may_throw(type);
+	context.catch_unwind_throws = type == nullptr || sema::ClassOf(type) != nullptr;
 	if (type != nullptr)
 		lowering_.caught_type(type);
 	save_chain_memos();
@@ -441,11 +442,17 @@ void FunctionLowering::catch_variable(
 	locals_[index].depth = cleanups_.size();
 }
 
-void FunctionLowering::call_end_catch()
+void FunctionLowering::call_end_catch(bool unwinding)
 {
+	// Ending a catch can destroy its exception object. If that throws while
+	// another exception is unwinding, terminate instead of replacing it.
+	if (unwinding)
+		emit_marker(lowir::Opcode::EhTry, cleanup_terminate(true));
 	++lowering_.counters().instructions;
 	builder_.call(lowir::Type::scalar(lowir::TypeKind::Void),
 		lowir::Value::symbol(lowering_.runtime_function(RuntimeFunction::EndCatch)), nullptr, 0, lowir::kNoId, 0);
+	if (unwinding)
+		emit_marker(lowir::Opcode::EhEnd, lowir::kNoId);
 }
 
 void FunctionLowering::throwing_end_catch(size_t contexts, size_t count)
@@ -485,7 +492,6 @@ void FunctionLowering::handler_landing(const EhContext& attempt)
 	// An exception leaving the handler's own code (outside every region):
 	// the enclosing statements' clauses, the catch ended and the handler's
 	// record popped, then the path out.
-	(void)attempt;
 	const EhContext* outer = innermost_try();
 	if (outer != nullptr)
 		emit_try_clauses(*outer->statement, outer->chain_first, outer->chain_count);
@@ -493,7 +499,7 @@ void FunctionLowering::handler_landing(const EhContext& attempt)
 	// the cleanup entry), inside its tries too.
 	if (body_target_ != lowir::kNoId)
 		emit_marker(lowir::Opcode::EhCleanup, lowir::kNoId);
-	call_end_catch();
+	call_end_catch(attempt.catch_unwind_throws);
 	emit_marker(lowir::Opcode::EhEnd, lowir::kNoId);
 	leave_contexts(0);
 }
@@ -533,7 +539,7 @@ void FunctionLowering::leave_contexts(uint32_t extra)
 		top = context.floor;
 		for (; extra > 0; --extra)
 			emit_marker(lowir::Opcode::EhEnd, lowir::kNoId);
-		call_end_catch();
+		call_end_catch(context.catch_unwind_throws);
 		emit_marker(lowir::Opcode::EhEnd, lowir::kNoId);
 	}
 	const size_t floor = c > 0 ? eh_contexts_[c - 1].floor : 0;
@@ -736,6 +742,7 @@ lowir::BlockId FunctionLowering::eh_unwind_entry(size_t count)
 		if (element.context != SIZE_MAX)
 		{
 			made.action = ChainAction::HandlerExit;
+			made.catch_unwind_throws = eh_contexts_[element.context].catch_unwind_throws;
 			made.pops = (element.key != 0 ? 1 : 0) + 1;
 		}
 		else
@@ -819,7 +826,7 @@ void FunctionLowering::place_eh_block(const ChainBlock& block)
 		// handler's record.
 		for (uint32_t i = 1; i < block.pops; ++i)
 			emit_marker(lowir::Opcode::EhEnd, lowir::kNoId);
-		call_end_catch();
+		call_end_catch(block.catch_unwind_throws);
 		emit_marker(lowir::Opcode::EhEnd, lowir::kNoId);
 		jump(block.tail);
 		return;

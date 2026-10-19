@@ -237,6 +237,13 @@ To complete PA21, implement these goals:
    may catch the exception before that cleanup; a function-try handler runs
    after it. A delegating constructor destroys its completed target when its
    own body fails. A second exception during unwind destruction terminates.
+   Ending a catch can destroy its exception object, too. If retirement of a
+   class or unknown (`catch (...)`) exception occurs while another exception
+   unwinds, its `__cxa_end_catch` call runs under the cleanup terminate guard;
+   a second throw must not replace the active exception or reach an outer catch.
+   Scalar catches need no such guard. In assignment LowIR output, cleanup
+   handlers end in `resume`, leaving
+   a non-throwing definition's enclosing guard responsible for termination.
    A destructor declared without an exception specification has the one its
    implicit declaration would have (12.4p3, 15.4p14), normally non-throwing,
    and states `unwind=no` exactly when that one is non-throwing; a base's or

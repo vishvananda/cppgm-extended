@@ -725,7 +725,8 @@ void ProgramLowering::emit_definition(
 		program_.symbols[symbol].metadata.binding = ir_model::SBM_INTERNAL;
 	// An explicit instantiation definition roots what it instantiates
 	// (14.7.2p5: a prior explicit specialization is not instantiated).
-	if (variant == EntryVariant::Base || rooted_destructors_.find(function) != PointerMap::kMissing ||
+	if ((variant == EntryVariant::Base && !function->is_constexpr) ||
+		rooted_destructors_.find(function) != PointerMap::kMissing ||
 		(!copy && function->explicit_instantiation && (function->instantiated || !function->is_inline)))
 		program_.symbols[symbol].metadata.flags |= lowir::SF_OBJECT_ROOT;
 	// An internal virtual function is referenced by its class's table,
@@ -740,7 +741,7 @@ void ProgramLowering::emit_definition(
 		!HiddenBaseParameters(function, EntryVariant::Base))
 	{
 		// An internal complete entry is its base entry's root too.
-		if (program_.symbols[symbol].metadata.binding == ir_model::SBM_INTERNAL)
+		if (program_.symbols[symbol].metadata.binding == ir_model::SBM_INTERNAL && !function->is_constexpr)
 			program_.symbols[symbol].metadata.flags |= lowir::SF_OBJECT_ROOT;
 		const std::string base = function_object(function, EntryVariant::Base);
 		base_object = intern(base.data(), static_cast<uint32_t>(base.size()));

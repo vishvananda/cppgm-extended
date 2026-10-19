@@ -882,7 +882,11 @@ bool FunctionLowering::union_member(const sema::VariableEntity* member)
 {
 	const sema::ClassEntity* cls = sema::ClassOf(member->owner->entity->type);
 	while (cls->anonymous && cls->storage != nullptr && cls->storage->entity->owner->kind == sema::ScopeKind::Class)
+	{
+		if (cls->key == TokenKind::KW_UNION)
+			return true;
 		cls = sema::ClassOf(cls->storage->entity->owner->entity->type);
+	}
 	return cls->key == TokenKind::KW_UNION;
 }
 
