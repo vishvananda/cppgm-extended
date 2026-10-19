@@ -121,6 +121,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     jump ^cleanup_resume_9
 
   block ^call_unwind_dispatch_11:
+    eh_cleanup
     jump ^cleanup_action_10
 
   block ^call_unwind_end_12:
@@ -137,6 +138,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     jump ^cleanup_action_10
 
   block ^call_unwind_dispatch_14:
+    eh_cleanup
     jump ^cleanup_action_13
 
   block ^call_unwind_end_15:
@@ -170,6 +172,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     jump ^cleanup_action_10
 
   block ^call_unwind_dispatch_20:
+    eh_cleanup
     jump ^cleanup_action_19
 
   block ^call_unwind_end_21:
@@ -204,6 +207,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     jump ^cleanup_action_10
 
   block ^call_unwind_dispatch_26:
+    eh_cleanup
     jump ^cleanup_action_25
 
   block ^call_unwind_end_27:
@@ -237,6 +241,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     jump ^cleanup_action_10
 
   block ^call_unwind_dispatch_34:
+    eh_cleanup
     jump ^cleanup_action_33
 
   block ^call_unwind_end_37:
@@ -284,6 +289,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     jump ^cleanup_action_10
 
   block ^call_unwind_dispatch_41:
+    eh_cleanup
     jump ^cleanup_action_40
 
   block ^call_unwind_end_42:

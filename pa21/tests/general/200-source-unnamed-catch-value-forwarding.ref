@@ -117,6 +117,7 @@ function @single(%mode : i32) -> void [binding=strong, object=_Z6singlei] {
     jump ^cleanup_action_8
 
   block ^call_unwind_dispatch_10:
+    eh_cleanup
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
@@ -283,6 +284,7 @@ function @single(%mode : i32) -> void [binding=strong, object=_Z6singlei] {
     jump ^cleanup_action_39
 
   block ^call_unwind_dispatch_41:
+    eh_cleanup
     jump ^cleanup_action_40
 
   block ^throw_alloc_unwind_end_42:
@@ -432,6 +434,7 @@ function @nested() -> void [binding=strong, object=_Z6nestedv] {
     jump ^cleanup_action_16
 
   block ^call_unwind_dispatch_18:
+    eh_cleanup
     jump ^cleanup_action_17
 
   block ^call_unwind_end_19:

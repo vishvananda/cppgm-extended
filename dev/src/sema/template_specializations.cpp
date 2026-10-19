@@ -373,16 +373,10 @@ void Analyzer::explicit_function_instantiation(const syntax::ExplicitInstantiati
 	// 13.5p6 for the specialization's parameters.
 	if (semantic())
 		check_operator_declaration(function, inner.location);
-	// p5: an explicitly specialized one is not instantiated. A definition
-	// naming it only marks it: lowering makes a non-inline definition an
-	// object root, which its linkage requires anyway (lowir.md's
-	// object_root), whether or not it is declared inline later.
+	// 14.7.2p5: an explicit instantiation after an explicit specialization
+	// has no effect, including no additional emission demand.
 	if (function->explicit_specialization)
-	{
-		if (!decl.is_extern)
-			function->explicit_instantiation = true;
 		return;
-	}
 	if (decl.is_extern)
 	{
 		if (function->explicit_instantiation)

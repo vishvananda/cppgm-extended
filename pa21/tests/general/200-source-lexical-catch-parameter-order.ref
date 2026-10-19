@@ -149,6 +149,7 @@ function @case_0__check() -> i32 [binding=strong, object=_ZN6case_05checkEv] {
     jump ^cleanup_action_8
 
   block ^call_unwind_dispatch_10:
+    eh_cleanup
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
@@ -194,7 +195,7 @@ function @case_0__check() -> i32 [binding=strong, object=_ZN6case_05checkEv] {
 
   block ^lor_rhs_16:
     %t15 = load typed i32 @case_0__bad
-    %t16 = cmp ne i64 %t15, 0
+    %t16 = cmp ne i32 %t15, 0
     store typed i64 %t16, $lor__2
     jump ^lor_end_18
 
@@ -336,7 +337,7 @@ function @case_1__check() -> i32 [binding=strong, object=_ZN6case_15checkEv] {
 
   block ^lor_rhs_16:
     %t17 = load typed i32 @case_1__live
-    %t18 = cmp ne i64 %t17, 0
+    %t18 = cmp ne i32 %t17, 0
     store typed i64 %t18, $lor__3
     jump ^lor_end_18
 
@@ -491,7 +492,7 @@ function @case_2__check() -> i32 [binding=strong, object=_ZN6case_25checkEv] {
 
   block ^lor_rhs_16:
     %t17 = load typed i32 @case_2__live
-    %t18 = cmp ne i64 %t17, 0
+    %t18 = cmp ne i32 %t17, 0
     store typed i64 %t18, $lor__3
     jump ^lor_end_18
 

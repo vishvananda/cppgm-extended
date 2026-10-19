@@ -2186,14 +2186,9 @@ void Analyzer::link_member(const Binding* pattern, const Binding* instance)
 		// learns the pattern's, whose definition outside the class template
 		// its specializations instantiate.
 		FunctionEntity* function = static_cast<FunctionEntity*>(instance->entity);
-		// Clang declares an instance's member from the pattern member's
-		// latest declaration, which its definition outside the class is
-		// (one that may not add ABI tags): defined there by now, the
-		// member's in-class ABI tags are not the instance's (the hosts
-		// differ, GCC keeps them; the fixtures pin Clang's names).
-		const FunctionEntity* source = static_cast<const FunctionEntity*>(pattern->entity);
-		if (graph_.has_abi_tags() && source->defined && !source->inline_member && graph_.abi_tags(function) != nullptr)
-			graph_.set_abi_tags(function, SemanticGraph::AbiTags{ nullptr, 0 });
+		// The instance retains the ABI tags of the member's declaration;
+		// an out-of-class definition does not remove them.
+
 		if (function->templated && PatternOf(function) == nullptr && function->owner->kind == ScopeKind::Class &&
 			static_cast<const FunctionEntity*>(pattern->entity)->templated)
 		{

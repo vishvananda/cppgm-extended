@@ -138,6 +138,7 @@ function @probe(%nested_handler : u8) -> i32 [binding=strong, object=_Z5probeb] 
     jump ^cleanup_action_16
 
   block ^call_unwind_dispatch_18:
+    eh_cleanup
     jump ^cleanup_action_17
 
   block ^call_unwind_end_19:
@@ -154,6 +155,7 @@ function @probe(%nested_handler : u8) -> i32 [binding=strong, object=_Z5probeb] 
     jump ^cleanup_action_17
 
   block ^call_unwind_dispatch_21:
+    eh_cleanup
     jump ^cleanup_action_20
 
   block ^call_unwind_end_22:

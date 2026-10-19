@@ -973,6 +973,7 @@ lowir::SymbolId ProgramLowering::static_temporary(const sema::Type* type)
 		storage.type = storage_type(type);
 		storage.init = lowir::GlobalInit::Zero;
 	}
+	state_storage_type(storage, size_of(type, 0), alignment_of(type, 0));
 	program_.declare_global(temporary, lowir::SymbolKind::GlobalDefinition, storage);
 	program_.symbols[temporary].metadata.binding = ir_model::SBM_INTERNAL;
 	name_temporary(temporary);
@@ -2375,11 +2376,9 @@ bool ProgramLowering::static_lvalue(const syntax::Expr& expr, StaticValue& out)
 		}
 		if (entity->kind != sema::EntityKind::Variable)
 			return false;
-		// A host object's thread-local object neither: its address is each
-		// thread's own (3.7.2), no address constant (5.19p3), and no
-		// relocation states it as data. (The LowIR contract's `addr` of a
-		// thread-local global in a global's initializer, PA11's fixture,
-		// is the course runtime's to resolve.)
+		// A thread-local address is each thread's own (3.7.2), not an
+		// address constant (5.19p3). Obtain it in dynamic initialization
+		// in both the textual LowIR and host-object paths.
 		const sema::VariableEntity* variable = static_cast<const sema::VariableEntity*>(entity);
 		if (variable->is_static && !variable->is_thread_local && !variable->type->is_reference() &&
 			variable->owner != nullptr &&
@@ -2395,7 +2394,7 @@ bool ProgramLowering::static_lvalue(const syntax::Expr& expr, StaticValue& out)
 			return true;
 		}
 		if (variable->member || variable->owner == nullptr || variable->owner->kind != sema::ScopeKind::Namespace ||
-			(variable->is_thread_local && host_objects_))
+			variable->is_thread_local)
 			return false;
 		if (variable->type->is_reference())
 		{

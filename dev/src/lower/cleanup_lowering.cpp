@@ -1590,7 +1590,23 @@ lowir::BlockId FunctionLowering::unwind_entry(size_t count)
 	if (body_unwind_target() != lowir::kNoId)
 	{
 		lowir::BlockId terminal = body_terminal(1);
-		return chain_entry(count > 8 ? ChainKind::Conditional : ChainKind::Unwind, terminal, count);
+		const lowir::BlockId entry = chain_entry(
+			count > 8 ? ChainKind::Conditional : ChainKind::Unwind, terminal, count);
+		// This suffix retires both the call's record and the detached
+		// body's record. Retain the former explicitly at its landing.
+		if (landing_dispatch_.size() <= entry)
+			landing_dispatch_.resize(entry + 1, 0);
+		if (landing_dispatch_[entry] == 0)
+		{
+			ChainBlock dispatch = ChainBlock();
+			dispatch.block = new_block(lowir::BlockKind::CallUnwindDispatch);
+			dispatch.unwinding = true;
+			dispatch.action = ChainAction::Dispatch;
+			dispatch.tail = entry;
+			chain_blocks_.push_back(dispatch);
+			landing_dispatch_[entry] = dispatch.block + 1;
+		}
+		return landing_dispatch_[entry] - 1;
 	}
 	if (count > 8)
 		return chain_entry(ChainKind::Conditional, conditional_resume_, count);
@@ -2386,7 +2402,7 @@ void FunctionLowering::construct_elements(const sema::Type* element, const Array
 			}
 			const lowir::BlockId dispatch = new_block(lowir::BlockKind::CallUnwindDispatch);
 			const lowir::BlockId next = new_block(lowir::BlockKind::CallUnwindEnd);
-			emit_marker(lowir::Opcode::EhTry, dispatch);
+			emit_marker(lowir::Opcode::EhCleanup, dispatch);
 			const ElementScope scope = begin_element_temporaries(temporaries);
 			construct(element, element_address(array_base(where, location), i, size), nullptr, constructor,
 				EntryVariant::Complete, location);
@@ -2423,7 +2439,7 @@ void FunctionLowering::construct_elements(const sema::Type* element, const Array
 	if (guarded)
 	{
 		cleanup = new_block(lowir::BlockKind::ConstructorArrayCleanup);
-		emit_marker(lowir::Opcode::EhTry, cleanup);
+		emit_marker(lowir::Opcode::EhCleanup, cleanup);
 	}
 	{
 		RValue offset = current;

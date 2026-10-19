@@ -125,6 +125,7 @@ function @choose(%first : u8) -> i32 [binding=strong, object=_Z6chooseb] {
     jump ^cleanup_resume_19
 
   block ^call_unwind_dispatch_21:
+    eh_cleanup
     jump ^cleanup_action_20
 
   block ^call_unwind_end_22:
@@ -141,6 +142,7 @@ function @choose(%first : u8) -> i32 [binding=strong, object=_Z6chooseb] {
     jump ^cleanup_action_20
 
   block ^call_unwind_dispatch_24:
+    eh_cleanup
     jump ^cleanup_action_23
 
   block ^call_unwind_end_25:

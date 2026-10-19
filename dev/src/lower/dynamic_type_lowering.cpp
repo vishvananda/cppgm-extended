@@ -181,12 +181,23 @@ lowir::Value FunctionLowering::dynamic_type_information(lowir::Value object, Run
 
 void FunctionLowering::runtime_failure(RuntimeFunction failure)
 {
-	// The runtime's bad_typeid or bad_cast throw, which does not return:
-	// the course ends the block with the function's (zero) return.
+	// These nonreturning throws obey the same lifetime region rules as
+	// source calls. A conditional operand may have suspended its region;
+	// opening one here must not affect the sibling success path's state.
+	if (!region_open_ && !chain_empty() && !static_initializer_ && explicit_regions_ == 0)
+	{
+		const lowir::BlockId target = tracked_region() ? tracked_target()
+			: eh_contexts_.empty()                     ? unwind_entry(cleanups_.size())
+													   : region_landing(cleanups_.size());
+		lowir::Instruction marker = lowir::make_instruction(
+			lowir::Opcode::EhTry, lowir::Type::scalar(lowir::TypeKind::Void));
+		marker.ops[0] = lowir::Value::block(target);
+		note_region(emit(marker));
+	}
 	++lowering_.counters().instructions;
 	builder_.call(lowir::Type::scalar(lowir::TypeKind::Void), lowir::Value::symbol(lowering_.runtime_function(failure)),
 		nullptr, 0, lowir::kNoId, 0);
-	zero_return();
+	terminate(lowir::make_instruction(lowir::Opcode::Unreachable, lowir::Type::scalar(lowir::TypeKind::Void)));
 }
 
 Place FunctionLowering::typeid_place(const syntax::TypeTraitExpr& expr)

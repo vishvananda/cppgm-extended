@@ -334,11 +334,18 @@ void FunctionLowering::discard_to_void(const syntax::Expr& expr)
 	// neutral for non-volatile objects): a named object or reference
 	// designates its storage (a scalar is read, a class object addressed);
 	// so does another scalar glvalue (a subscript, member, indirection,
-	// reference result, cast, conditional or comma's right operand is
+	// cast, conditional or comma's right operand is
 	// read), but an assignment's or prefix increment's, which designates the
 	// object it just wrote; other operands are evaluated for their effects.
 	const syntax::Expr* e = WithoutParentheses(&expr);
 	const sema::ExprFacts* facts = e->facts;
+	// A call is not one of 5p11's forms that read a discarded volatile
+	// glvalue. Evaluate its effects without loading a returned reference.
+	if (e->kind == syntax::ExprKind::Call)
+	{
+		discard(*e);
+		return;
+	}
 	if (facts != nullptr && facts->type != nullptr && (facts->type->cv & sema::kVolatile) != 0 &&
 		facts->type->unqualified->kind != sema::TypeKind::Class && facts->type->kind != sema::TypeKind::Array)
 	{

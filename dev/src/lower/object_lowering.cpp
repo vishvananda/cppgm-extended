@@ -585,7 +585,7 @@ void FunctionLowering::copy_captured_elements(const sema::Type* type, const sema
 			enclose_element_region(covered);
 			const lowir::BlockId dispatch = new_block(lowir::BlockKind::CallUnwindDispatch);
 			const lowir::BlockId next = new_block(lowir::BlockKind::CallUnwindEnd);
-			emit_marker(lowir::Opcode::EhTry, dispatch);
+			emit_marker(lowir::Opcode::EhCleanup, dispatch);
 			++explicit_regions_;
 			const ElementScope scope = begin_element_temporaries(temporaries);
 			const lowir::Value from = element_address(source, i, size);
@@ -632,7 +632,7 @@ void FunctionLowering::copy_captured_elements(const sema::Type* type, const sema
 	if (guarded)
 	{
 		cleanup = new_block(lowir::BlockKind::CopyArrayCleanup);
-		emit_marker(lowir::Opcode::EhTry, cleanup);
+		emit_marker(lowir::Opcode::EhCleanup, cleanup);
 		++explicit_regions_;
 	}
 	const RValue offset = size != 1 ? binary(lowir::BinaryOp::Mul, i64, current, integer(i64, size)) : current;
@@ -721,10 +721,9 @@ bool VolatileOrUnion(const sema::Type* type)
 
 void FunctionLowering::zero_object(const sema::Type* type, lowir::Value object, uint32_t location)
 {
-	// The size first: it lays the class out. An empty class's temporary
-	// only passed or bound is not zeroed (the course's form); a base
-	// subobject sharing its tail padding zeroes its data (8.5p5), placed
-	// by its non-virtual alignment.
+	// The size first: it lays the class out. A complete empty object's
+	// byte is padding and is zero-initialized too (8.5p6). An overlapping
+	// empty subobject must not overwrite another subobject's bytes.
 	uint64_t size = lowering_.size_of(type, location);
 	const sema::ClassEntity* entity = type->kind == sema::TypeKind::Array ? nullptr : sema::ClassOf(type);
 	uint64_t alignment = lowering_.alignment_of(type, location);
@@ -735,7 +734,7 @@ void FunctionLowering::zero_object(const sema::Type* type, lowir::Value object, 
 		alignment = sema::NonVirtualAlignment(entity);
 	}
 	zero_data_only_ = false;
-	if (entity != nullptr && entity->empty && (passing_empty_ || overlapping_empty_))
+	if (entity != nullptr && entity->empty && overlapping_empty_)
 		return;
 	zero_bytes(type, object, size, alignment);
 	// Pointers to data members zero-initialize to their null value (-1,

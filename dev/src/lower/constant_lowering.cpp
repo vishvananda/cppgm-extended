@@ -221,6 +221,10 @@ bool ProgramLowering::constant_item(
 			// A block-scope static is its function's global (6.7p4), made
 			// where its declaration was lowered.
 			const sema::VariableEntity* variable = static_cast<const sema::VariableEntity*>(value.address.entity);
+			// A thread's address must be obtained at runtime, not relocated
+			// into process-wide static data (3.7.2).
+			if (variable->is_thread_local)
+				return false;
 			if (variable->is_static && variable->owner != nullptr &&
 				(variable->owner->kind == sema::ScopeKind::Block || variable->owner->kind == sema::ScopeKind::Function))
 			{
@@ -808,6 +812,7 @@ lowir::SymbolId ProgramLowering::constant_temporary(const sema::ConstValue* temp
 		if (!constant_global(type, *temporary, global, location))
 			return lowir::kNoId;
 	}
+	state_storage_type(global, size_of(type, location), alignment_of(type, location));
 	const lowir::SymbolId symbol = new_symbol("__ref_tmp__" + std::to_string(++static_temporaries_));
 	program_.declare_global(symbol, lowir::SymbolKind::GlobalDefinition, global);
 	program_.symbols[symbol].metadata.binding = ir_model::SBM_INTERNAL;

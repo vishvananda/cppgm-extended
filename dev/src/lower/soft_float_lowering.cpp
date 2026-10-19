@@ -912,23 +912,19 @@ RValue FunctionLowering::bfloat_promoted(const syntax::Expr& expr)
 	return value;
 }
 
-bool FunctionLowering::bfloat_compound(
-	const syntax::BinaryExpr& expr, TokenKind op, const sema::Type* left_type, const RValue& old, RValue& result)
+RValue FunctionLowering::bfloat_compound(
+	const syntax::BinaryExpr& expr, TokenKind op, const sema::Type* left_type, const RValue& old, const RValue& right)
 {
 	// Clang's E1 op= E2 in bfloat16 (5.17p7): E2 in float (bfloat_promoted),
 	// E1's value converted to bfloat16 and widened, the operation in float,
 	// and its result converted from float to E1's type (rounded once).
 	const sema::Type* operation = expr.facts->target;
-	if (operation == nullptr || SoftFloatOf(operation) != SoftFloat::BFloat || !ArithmeticToken(op))
-		return false;
 	const lowir::Type f32 = lowir::Type::scalar(lowir::TypeKind::F32);
-	const RValue right = bfloat_promoted(*expr.right);
 	const RValue left = bfloat_widened(convert(old, left_type, operation, ConversionContext::CompoundAssignment));
 	const sema::Type* single = lowering_.graph().types.fundamental(FundamentalType::Float);
-	result = fit(
+	return fit(
 		convert(binary(ArithmeticCode(op), f32, left, right), single, left_type, ConversionContext::CompoundAssignment),
 		left_type);
-	return true;
 }
 
 RValue FunctionLowering::soft_arithmetic(lowir::BinaryOp op, SoftFloat kind, const RValue& left, const RValue& right)

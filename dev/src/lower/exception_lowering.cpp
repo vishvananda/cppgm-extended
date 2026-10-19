@@ -835,10 +835,8 @@ void FunctionLowering::place_eh_block(const ChainBlock& block)
 		return;
 	case ChainAction::Dispatch:
 		if (block.statement != nullptr)
-		{
 			emit_try_clauses(*block.statement, block.chain_first, block.chain_count);
-			emit_marker(lowir::Opcode::EhCleanup, lowir::kNoId);
-		}
+		emit_marker(lowir::Opcode::EhCleanup, lowir::kNoId);
 		jump(block.tail);
 		return;
 	default:

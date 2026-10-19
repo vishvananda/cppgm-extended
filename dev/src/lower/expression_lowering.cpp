@@ -1789,37 +1789,27 @@ Place FunctionLowering::assignment(const syntax::BinaryExpr& expr)
 Place FunctionLowering::compound_assignment(const syntax::BinaryExpr& expr)
 {
 	// 5.17p7: E1 op= E2 is E1 = E1 op E2 with E1 evaluated once: its
-	// value read, then E2 evaluated; E2 is converted before E1 (the course
-	// order), and the result converted back to E1's type.
+	// RHS evaluated and converted before the LHS address and read (the
+	// course order), and the result converted back to E1's type.
 	const sema::ExprFacts* left_facts = WithoutParentheses(expr.left)->facts;
 	const sema::ExprFacts* right_facts = WithoutParentheses(expr.right)->facts;
 	const sema::Type* left_type = left_facts->type->unqualified;
 	const lowir::Type storage = lowering_.storage_type(left_type);
 	const TokenKind op = CompoundOperator(expr.op);
-	Place place = glvalue(*expr.left);
-	// An atomic integer's += -= &= |= ^= in its own type: one atomic
-	// read-modify-write (C11 6.5.16.2p3).
-	if (place.is_atomic && storage.is_integer() && !IsBoolType(left_type) && expr.facts->target == left_type &&
-		(op == TokenKind::OP_PLUS || op == TokenKind::OP_MINUS || op == TokenKind::OP_AMP || op == TokenKind::OP_BOR ||
-			op == TokenKind::OP_XOR))
-	{
-		const RValue right = apply_conversion(*expr.right, rvalue(*expr.right), ConversionContext::CompoundAssignment);
-		const sema::Intrinsic update = op == TokenKind::OP_PLUS ? sema::Intrinsic::AtomicAddFetch
-			: op == TokenKind::OP_MINUS                         ? sema::Intrinsic::AtomicSubFetch
-			: op == TokenKind::OP_AMP                           ? sema::Intrinsic::AtomicAndFetch
-			: op == TokenKind::OP_BOR                           ? sema::Intrinsic::AtomicOrFetch
-																: sema::Intrinsic::AtomicXorFetch;
-		place.known = atomic_update(update, storage, place.storage, right, lowir::MemoryOrder::SeqCst);
-		place.has_known = true;
-		return place;
-	}
 	// E2's value (a pointer offset's count, a bool's pointer, an operand
 	// in the operation's type), then E1's combined with it.
 	const bool pointer = IsPointerType(left_type);
 	const bool bool_pointer = !pointer && IsPointerType(expr.facts->target);
 	const sema::Type* operation = expr.facts->target;
+	const bool bfloat = operation != nullptr && SoftFloatOf(operation) == SoftFloat::BFloat &&
+		(op == TokenKind::OP_PLUS || op == TokenKind::OP_MINUS || op == TokenKind::OP_STAR || op == TokenKind::OP_DIV);
 	RValue right;
 	const auto evaluate_right = [&]() {
+		if (bfloat)
+		{
+			right = bfloat_promoted(*expr.right);
+			return;
+		}
 		if (pointer)
 		{
 			right = rvalue(*expr.right);
@@ -1842,6 +1832,23 @@ Place FunctionLowering::compound_assignment(const syntax::BinaryExpr& expr)
 			right = convert_integer(right, common, lowering_.storage_type(operation),
 				ConversionContext::CompoundAssignment, IsSigned(operation), IsLiteralExpression(*expr.right));
 	};
+	evaluate_right();
+	Place place = glvalue(*expr.left);
+	// An atomic integer's += -= &= |= ^= in its own type: one atomic
+	// read-modify-write (C11 6.5.16.2p3).
+	if (place.is_atomic && storage.is_integer() && !IsBoolType(left_type) && expr.facts->target == left_type &&
+		(op == TokenKind::OP_PLUS || op == TokenKind::OP_MINUS || op == TokenKind::OP_AMP || op == TokenKind::OP_BOR ||
+			op == TokenKind::OP_XOR))
+	{
+		const sema::Intrinsic update = op == TokenKind::OP_PLUS ? sema::Intrinsic::AtomicAddFetch
+			: op == TokenKind::OP_MINUS                         ? sema::Intrinsic::AtomicSubFetch
+			: op == TokenKind::OP_AMP                           ? sema::Intrinsic::AtomicAndFetch
+			: op == TokenKind::OP_BOR                           ? sema::Intrinsic::AtomicOrFetch
+																: sema::Intrinsic::AtomicXorFetch;
+		place.known = atomic_update(update, storage, place.storage, right, lowir::MemoryOrder::SeqCst);
+		place.has_known = true;
+		return place;
+	}
 	const auto combined = [&](const RValue& old) {
 		if (pointer)
 			return pointer_offset(old, right, DecayedType(lowering_.graph().types, right_facts->type), left_type,
@@ -1869,19 +1876,13 @@ Place FunctionLowering::compound_assignment(const syntax::BinaryExpr& expr)
 	AtomicLoop loop;
 	if (place.is_atomic && atomic_bits(storage, loop.bits))
 	{
-		evaluate_right();
 		place.known = combined(begin_atomic_loop(place, storage, loop));
 		end_atomic_loop(place, storage, loop, place.known);
 		place.has_known = true;
 		return place;
 	}
 	const RValue old = load(storage, place);
-	RValue result;
-	if (!bfloat_compound(expr, op, left_type, old, result))
-	{
-		evaluate_right();
-		result = combined(old);
-	}
+	const RValue result = bfloat ? bfloat_compound(expr, op, left_type, old, right) : combined(old);
 	store(storage, result, place);
 	place.has_known = !place.is_volatile && !place.is_atomic;
 	place.known = result;

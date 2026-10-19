@@ -723,9 +723,8 @@ void ProgramLowering::emit_definition(
 	const bool copy = inline_copies_.find(function) == symbol;
 	if (copy)
 		program_.symbols[symbol].metadata.binding = ir_model::SBM_INTERNAL;
-	// An explicit instantiation definition roots what it instantiates, and
-	// of an explicit specialization it names only a non-inline definition
-	// (14.7.2p5: no effect).
+	// An explicit instantiation definition roots what it instantiates
+	// (14.7.2p5: a prior explicit specialization is not instantiated).
 	if (variant == EntryVariant::Base || rooted_destructors_.find(function) != PointerMap::kMissing ||
 		(!copy && function->explicit_instantiation && (function->instantiated || !function->is_inline)))
 		program_.symbols[symbol].metadata.flags |= lowir::SF_OBJECT_ROOT;

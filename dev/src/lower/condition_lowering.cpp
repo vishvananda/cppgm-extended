@@ -186,10 +186,8 @@ RValue FunctionLowering::truth_operand(const syntax::Expr& expr)
 RValue FunctionLowering::normalized_truth(const syntax::Expr& expr)
 {
 	// The canonical 0 or 1 an operand of a value `&&`/`||` contributes:
-	// a pointer's comparison with null, otherwise `cmp ne i64 v, 0` on its
-	// truth (the course spelling, which compares at i64).
+	// compare in the operand's type; the comparison's result is i64.
 	const RValue value = truth_operand(expr);
-	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	if (value.type.is_pointer())
 		return compare(lowir::ComparePredicate::Ne, value.type, value, integer(value.type, 0));
 	// A pointer to member by its truth (an i128 is no operand of an i64
@@ -202,7 +200,7 @@ RValue FunctionLowering::normalized_truth(const syntax::Expr& expr)
 	if (value.type.is_float())
 		truth_value = compare(lowir::ComparePredicate::Ne, value.type, value,
 			floating(value.type, lowir::float_literal(value.type.kind(), 0.0L)));
-	return compare(lowir::ComparePredicate::Ne, i64, truth_value, integer(i64, 0));
+	return compare(lowir::ComparePredicate::Ne, truth_value.type, truth_value, integer(truth_value.type, 0));
 }
 
 RValue FunctionLowering::logical_value(const syntax::BinaryExpr& expr)

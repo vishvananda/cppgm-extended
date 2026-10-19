@@ -287,6 +287,7 @@ function @case_0__f() -> void [binding=strong, object=_ZN6case_01fEv] {
     unreachable
 
   block ^call_unwind_dispatch_10:
+    eh_cleanup
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
@@ -380,7 +381,7 @@ function @case_0__check() -> i32 [binding=strong, object=_ZN6case_05checkEv] {
 
   block ^lor_rhs_7:
     %t8 = load typed i32 @case_0__live
-    %t9 = cmp ne i64 %t8, 0
+    %t9 = cmp ne i32 %t8, 0
     store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
@@ -394,7 +395,7 @@ function @case_0__check() -> i32 [binding=strong, object=_ZN6case_05checkEv] {
 
   block ^lor_rhs_10:
     %t11 = load typed i32 @case_0__bad
-    %t12 = cmp ne i64 %t11, 0
+    %t12 = cmp ne i32 %t11, 0
     store typed i64 %t12, $lor__3
     jump ^lor_end_12
 
@@ -509,6 +510,7 @@ function @case_1__f() -> void [binding=strong, object=_ZN6case_11fEv] {
     unreachable
 
   block ^call_unwind_dispatch_10:
+    eh_cleanup
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
@@ -602,7 +604,7 @@ function @case_1__check() -> i32 [binding=strong, object=_ZN6case_15checkEv] {
 
   block ^lor_rhs_7:
     %t8 = load typed i32 @case_1__live
-    %t9 = cmp ne i64 %t8, 0
+    %t9 = cmp ne i32 %t8, 0
     store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
@@ -616,7 +618,7 @@ function @case_1__check() -> i32 [binding=strong, object=_ZN6case_15checkEv] {
 
   block ^lor_rhs_10:
     %t11 = load typed i32 @case_1__bad
-    %t12 = cmp ne i64 %t11, 0
+    %t12 = cmp ne i32 %t11, 0
     store typed i64 %t12, $lor__3
     jump ^lor_end_12
 
@@ -734,6 +736,7 @@ function @case_2__f() -> void [binding=strong, object=_ZN6case_21fEv] {
     unreachable
 
   block ^call_unwind_dispatch_13:
+    eh_cleanup
     jump ^cleanup_action_12
 
   block ^call_unwind_end_14:
@@ -833,7 +836,7 @@ function @case_2__check() -> i32 [binding=strong, object=_ZN6case_25checkEv] {
 
   block ^lor_rhs_7:
     %t8 = load typed i32 @case_2__live
-    %t9 = cmp ne i64 %t8, 0
+    %t9 = cmp ne i32 %t8, 0
     store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
@@ -847,7 +850,7 @@ function @case_2__check() -> i32 [binding=strong, object=_ZN6case_25checkEv] {
 
   block ^lor_rhs_10:
     %t11 = load typed i32 @case_2__bad
-    %t12 = cmp ne i64 %t11, 0
+    %t12 = cmp ne i32 %t11, 0
     store typed i64 %t12, $lor__3
     jump ^lor_end_12
 
@@ -972,6 +975,7 @@ function @case_3__f() -> void [binding=strong, object=_ZN6case_31fEv] {
     unreachable
 
   block ^call_unwind_dispatch_14:
+    eh_cleanup
     jump ^cleanup_action_13
 
   block ^call_unwind_end_15:
@@ -1074,7 +1078,7 @@ function @case_3__check() -> i32 [binding=strong, object=_ZN6case_35checkEv] {
 
   block ^lor_rhs_7:
     %t8 = load typed i32 @case_3__live
-    %t9 = cmp ne i64 %t8, 0
+    %t9 = cmp ne i32 %t8, 0
     store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
@@ -1088,7 +1092,7 @@ function @case_3__check() -> i32 [binding=strong, object=_ZN6case_35checkEv] {
 
   block ^lor_rhs_10:
     %t11 = load typed i32 @case_3__bad
-    %t12 = cmp ne i64 %t11, 0
+    %t12 = cmp ne i32 %t11, 0
     store typed i64 %t12, $lor__3
     jump ^lor_end_12
 
@@ -1203,6 +1207,7 @@ function @case_4__f() -> void [binding=strong, object=_ZN6case_41fEv] {
     unreachable
 
   block ^call_unwind_dispatch_10:
+    eh_cleanup
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
@@ -1299,7 +1304,7 @@ function @case_4__check() -> i32 [binding=strong, object=_ZN6case_45checkEv] {
 
   block ^lor_rhs_7:
     %t8 = load typed i32 @case_4__live
-    %t9 = cmp ne i64 %t8, 0
+    %t9 = cmp ne i32 %t8, 0
     store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
@@ -1313,7 +1318,7 @@ function @case_4__check() -> i32 [binding=strong, object=_ZN6case_45checkEv] {
 
   block ^lor_rhs_10:
     %t11 = load typed i32 @case_4__bad
-    %t12 = cmp ne i64 %t11, 0
+    %t12 = cmp ne i32 %t11, 0
     store typed i64 %t12, $lor__3
     jump ^lor_end_12
 
@@ -1431,6 +1436,7 @@ function @case_5__f() -> void [binding=strong, object=_ZN6case_51fEv] {
     unreachable
 
   block ^call_unwind_dispatch_13:
+    eh_cleanup
     jump ^cleanup_action_12
 
   block ^call_unwind_end_14:
@@ -1530,7 +1536,7 @@ function @case_5__check() -> i32 [binding=strong, object=_ZN6case_55checkEv] {
 
   block ^lor_rhs_7:
     %t8 = load typed i32 @case_5__live
-    %t9 = cmp ne i64 %t8, 0
+    %t9 = cmp ne i32 %t8, 0
     store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
@@ -1544,7 +1550,7 @@ function @case_5__check() -> i32 [binding=strong, object=_ZN6case_55checkEv] {
 
   block ^lor_rhs_10:
     %t11 = load typed i32 @case_5__bad
-    %t12 = cmp ne i64 %t11, 0
+    %t12 = cmp ne i32 %t11, 0
     store typed i64 %t12, $lor__3
     jump ^lor_end_12
 
@@ -1669,6 +1675,7 @@ function @case_6__f() -> void [binding=strong, object=_ZN6case_61fEv] {
     unreachable
 
   block ^call_unwind_dispatch_14:
+    eh_cleanup
     jump ^cleanup_action_13
 
   block ^call_unwind_end_15:
@@ -1771,7 +1778,7 @@ function @case_6__check() -> i32 [binding=strong, object=_ZN6case_65checkEv] {
 
   block ^lor_rhs_7:
     %t8 = load typed i32 @case_6__live
-    %t9 = cmp ne i64 %t8, 0
+    %t9 = cmp ne i32 %t8, 0
     store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
@@ -1785,7 +1792,7 @@ function @case_6__check() -> i32 [binding=strong, object=_ZN6case_65checkEv] {
 
   block ^lor_rhs_10:
     %t11 = load typed i32 @case_6__bad
-    %t12 = cmp ne i64 %t11, 0
+    %t12 = cmp ne i32 %t11, 0
     store typed i64 %t12, $lor__3
     jump ^lor_end_12
 
@@ -1900,6 +1907,7 @@ function @case_7__f() -> void [binding=strong, object=_ZN6case_71fEv] {
     unreachable
 
   block ^call_unwind_dispatch_10:
+    eh_cleanup
     jump ^cleanup_action_9
 
   block ^call_unwind_end_11:
@@ -1996,7 +2004,7 @@ function @case_7__check() -> i32 [binding=strong, object=_ZN6case_75checkEv] {
 
   block ^lor_rhs_7:
     %t8 = load typed i32 @case_7__live
-    %t9 = cmp ne i64 %t8, 0
+    %t9 = cmp ne i32 %t8, 0
     store typed i64 %t9, $lor__2
     jump ^lor_end_9
 
@@ -2010,7 +2018,7 @@ function @case_7__check() -> i32 [binding=strong, object=_ZN6case_75checkEv] {
 
   block ^lor_rhs_10:
     %t11 = load typed i32 @case_7__bad
-    %t12 = cmp ne i64 %t11, 0
+    %t12 = cmp ne i32 %t11, 0
     store typed i64 %t12, $lor__3
     jump ^lor_end_12
 

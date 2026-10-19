@@ -1252,8 +1252,8 @@ private:
 	RValue bfloat_float(const syntax::Expr& expr, const RValue& value);
 	RValue bfloat_arithmetic(const syntax::Expr& expr);
 	RValue bfloat_promoted(const syntax::Expr& expr);
-	bool bfloat_compound(
-		const syntax::BinaryExpr& expr, TokenKind op, const sema::Type* left_type, const RValue& old, RValue& result);
+	RValue bfloat_compound(const syntax::BinaryExpr& expr, TokenKind op, const sema::Type* left_type, const RValue& old,
+		const RValue& right);
 	RValue soft_arithmetic(lowir::BinaryOp op, SoftFloat kind, const RValue& left, const RValue& right);
 	RValue soft_negate(SoftFloat kind, const RValue& value);
 	RValue soft_compare(lowir::ComparePredicate predicate, SoftFloat kind, const RValue& left, const RValue& right);
