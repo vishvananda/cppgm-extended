@@ -72,6 +72,19 @@ Harness tests cover split/single registration, constant-initialized objects,
 skipped destruction, loop cardinality/order and transitive optional definitions.
 Existing strict golden fixtures exercise the remaining producer changes.
 
-The pointer-reference binding in PA10's cv-qualified boundary fixture and the
-successful PA19 dependent partial-specialization/SFINAE expectation are unchanged.
-Their N3485-versus-later-CWG policy questions are separate from these fixes.
+Two explicit course compatibility decisions preserve existing expectations:
+
+- PA10 includes CWG2352: similar, reference-compatible pointer types bind directly
+  to the existing lvalue. In the cv-qualified boundary fixture's case 2, `r`
+  denotes `pp`, not a converted pointer temporary. The rule is stated in the
+  [handout](../pa10/README.md) and beside that case.
+- PA19 includes CWG1315: a dependent non-type partial-specialization argument is
+  permitted when its parameters are deducible outside non-deduced contexts.
+  In `300-incomplete-sizeof-partial-specialization-sfinae`, `T` is deducible;
+  the invalid `sizeof` removes the specialization through substitution failure.
+  The program remains valid and its fallback returns zero. The
+  [handout](../pa19/README.md) and fixture comment state this expectation.
+
+These selected resolutions supplement literal N3485; they do not require all
+later language changes. The student-facing text contains the rules themselves,
+so their meaning does not depend on an external issue page or audit discussion.
