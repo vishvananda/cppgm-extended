@@ -31,7 +31,9 @@ symbol-store probes that previously succeeded with unstable values now reject.
 Local validation includes the strict course report (7,072/7,072 before the
 additional passing frame-resident-size regression), debug-info lanes,
 self-hosted PA1–PA5, PA35 smoke, architecture/file/format audits, and test
-placement. The four existing header-body file-audit warnings are unchanged.
+placement. The file audit passes with five header-body warnings: the four existing
+warnings plus the selector header, whose added declaration crosses the audit
+weight threshold. The operand implementation remains in its `.cpp` owner.
 The upstream PR runs the complete compiler/toolchain and inception matrices.
 
 Performance uses immutable GCC-built binaries from main `b6ebdf57` and this
