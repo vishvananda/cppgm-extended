@@ -294,6 +294,51 @@ uint64_t DataItemBytes(const lowir::DataItem& item, uint64_t& align)
 
 } // namespace
 
+void PreserveStaticOffsets(StaticData& data)
+{
+	// C++ layout builders state explicit padding. LowIR aligns typed items
+	// naturally, so spell an unaligned scalar's representation as bytes.
+	uint64_t offset = 0;
+	size_t first = data.items.size();
+	for (size_t i = 0; i < data.items.size(); ++i)
+	{
+		uint64_t align = 1;
+		const uint64_t size = DataItemBytes(data.items[i], align);
+		if (data.items[i].kind == lowir::DataItemKind::Scalar && (offset & (align - 1)) != 0)
+		{
+			first = i;
+			break;
+		}
+		offset += size;
+	}
+	if (first == data.items.size())
+		return;
+	std::vector<lowir::DataItem> items(data.items.begin(), data.items.begin() + first);
+	items.reserve(data.items.size() + 16);
+	for (size_t i = first; i < data.items.size(); ++i)
+	{
+		const lowir::DataItem& item = data.items[i];
+		uint64_t align = 1;
+		const uint64_t size = DataItemBytes(item, align);
+		if (item.kind == lowir::DataItemKind::Scalar && (offset & (align - 1)) != 0)
+		{
+			lowir::DataItem byte = lowir::DataItem();
+			byte.kind = lowir::DataItemKind::Scalar;
+			byte.type = lowir::Type::scalar(lowir::TypeKind::U8);
+			for (uint64_t k = 0; k < size; ++k)
+			{
+				const uint64_t word = k < 8 ? item.constant.bits.low : k < 16 ? item.constant.bits.high : 0;
+				byte.constant = IntegerItem((word >> ((k % 8) * 8)) & 255u);
+				items.push_back(byte);
+			}
+		}
+		else
+			items.push_back(item);
+		offset += size;
+	}
+	data.items.swap(items);
+}
+
 bool ProgramLowering::holds_data_member_pointer(const sema::Type* type)
 {
 	// A pointer to data member, an array of them, or a class with one in a
@@ -812,6 +857,7 @@ lowir::SymbolId ProgramLowering::constant_temporary(const sema::ConstValue* temp
 		StaticData data;
 		if (!constant_data(type, *temporary, data, location))
 			return lowir::kNoId;
+		PreserveStaticOffsets(data);
 		global.init = lowir::GlobalInit::Data;
 		global.first_item = static_cast<uint32_t>(program_.data_items.size());
 		global.item_count = static_cast<uint32_t>(data.items.size());

@@ -349,6 +349,8 @@ Operand FunctionSelector::rm_operand(Value value, Type type, Reg scratch)
 	case ValueKind::Symbol:
 		if (type.is_float())
 			throw BackendError("floating value requires a numeric value or storage operand");
+		if (type.kind() == TypeKind::I128)
+			throw BackendError("i128 value requires numeric bits or stored contents, not a symbol address");
 		return symbol_operand(value.index, 0);
 	case ValueKind::Slot:
 		// A slot in a value position reads the value stored there (call

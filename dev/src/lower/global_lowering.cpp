@@ -233,6 +233,7 @@ ProgramLowering::StaticOutcome ProgramLowering::static_global(lowir::SymbolId sy
 		}
 		// Null pointers to data members are -1 (8.5p5, Itanium 2.3).
 		null_member_pointers(type, data);
+		PreserveStaticOffsets(data);
 		global.typed = false;
 		global.init = lowir::GlobalInit::Data;
 		global.first_item = static_cast<uint32_t>(program_.data_items.size());

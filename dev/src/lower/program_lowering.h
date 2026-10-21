@@ -106,6 +106,8 @@ struct StaticData
 	std::vector<lowir::DataItem> items;
 };
 
+void PreserveStaticOffsets(StaticData& data);
+
 // A subobject null_fill visits: its offset in its class, type, whether it
 // is a complete object (its virtual bases are its own), its end and the
 // largest end of the class's pieces up to it.
