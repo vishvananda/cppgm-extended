@@ -106,6 +106,24 @@ void FunctionSelector::end_mir_block()
 // ---------------------------------------------------------------------------
 // Values
 
+Operand FunctionSelector::memory_value_operand(Value value, Type type)
+{
+	// Memory-class values can be stored contents or numeric bits. A symbol
+	// is an address; its ID must never be used to index the literal pool.
+	switch (value.kind)
+	{
+	case ValueKind::Slot:
+		return Operand::make_frame(slot_offset_[value.index]);
+	case ValueKind::Temp:
+		return temp_location(value.index);
+	case ValueKind::Integer:
+	case ValueKind::Float:
+		return imm_for(value, type);
+	default:
+		throw BackendError("operand requires a numeric literal, not a storage location or symbol");
+	}
+}
+
 Operand FunctionSelector::imm_for(Value value, Type type) const
 {
 	const Literal& bits = literal(value);
@@ -329,6 +347,8 @@ Operand FunctionSelector::rm_operand(Value value, Type type, Reg scratch)
 		return loc;
 	}
 	case ValueKind::Symbol:
+		if (type.is_float())
+			throw BackendError("floating value requires a numeric value or storage operand");
 		return symbol_operand(value.index, 0);
 	case ValueKind::Slot:
 		// A slot in a value position reads the value stored there (call

@@ -289,7 +289,14 @@ void FunctionSelector::emit_inst(uint32_t id)
 	}
 	case Opcode::StackAlloc:
 	{
-		const Operand size = rm_operand(inst.ops[0], Type::scalar(TypeKind::I64), kSelectScratch);
+		Operand size = rm_operand(inst.ops[0], Type::scalar(TypeKind::I64), kSelectScratch);
+		if (size.kind == OperandKind::Imm && (size.imm < 0 || size.imm > 0x7ffffff0ll))
+			throw BackendError("constant stack_alloc size exceeds the native stack adjustment range");
+		if (size.kind != OperandKind::Imm && size.kind != OperandKind::Reg)
+		{
+			load_into(kSelectScratch, size, TypeKind::I64);
+			size = Operand::make_reg(kSelectScratch);
+		}
 		// stack_alloc reads its size before writing the result: they may
 		// share a scratch register.
 		const Reg d = result_reg(inst, kNoReg, kNoReg, mem_regs(size) & kAllocatableGprs);
@@ -347,17 +354,26 @@ void FunctionSelector::emit_copy(const Instruction& inst)
 	if (t.cls == VClass::Memory)
 	{
 		const Value src = resolve(inst.ops[0]);
-		Operand from = src.kind == ValueKind::Temp ? temp_location(src.index) : imm_for(src, inst.type);
-		if (src.kind == ValueKind::Slot)
-			from = Operand::make_frame(slot_offset_[src.index]);
+		const Operand from = memory_value_operand(src, inst.type);
+		if (inst.type.is_object() && from.kind != OperandKind::Mem && from.kind != OperandKind::Reg)
+			throw BackendError("object copy requires a storage operand");
 		store_result_memory(inst, from, kind);
 		return;
 	}
 	const Operand src = rm_operand(inst.ops[0], type_of(inst.ops[0]), kSelectScratch);
 	if (t.cls == VClass::Xmm)
 	{
+		if (src.kind == OperandKind::Symbol)
+			throw BackendError("floating copy requires a numeric value or storage operand");
 		const Reg d = result_reg(inst, dying_reg(inst.ops[0]));
-		load_into(d, src, kind);
+		if (src.kind == OperandKind::Imm)
+		{
+			// An integer carrier is copied by representation, not converted.
+			load_into(kSelectScratch, src, TypeKind::I64);
+			emit2(Op::FMov, kind, Operand::make_reg(d), Operand::make_reg(kSelectScratch));
+		}
+		else
+			load_into(d, src, kind);
 		finish_result(inst, d);
 		return;
 	}
@@ -477,9 +493,9 @@ void FunctionSelector::emit_store(const Instruction& inst)
 	}
 	if (kind == TypeKind::F80 || kind == TypeKind::I128 || type.is_object())
 	{
-		Operand src = value.kind == ValueKind::Temp ? temp_location(value.index) : imm_for(value, type);
-		if (value.kind == ValueKind::Slot)
-			src = Operand::make_frame(slot_offset_[value.index]);
+		const Operand src = memory_value_operand(value, type);
+		if (type.is_object() && src.kind != OperandKind::Mem && src.kind != OperandKind::Reg)
+			throw BackendError("object store requires a storage operand");
 		const Operand mem = address_operand(inst.ops[1], kSelectScratch);
 		if (kind == TypeKind::F80)
 			emit2(Op::FMov, kind, mem, src);

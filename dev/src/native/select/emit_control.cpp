@@ -766,6 +766,8 @@ void FunctionSelector::emit_switch(const Instruction& inst)
 	const Value sel = resolve(inst.ops[0]);
 	const bool typed = inst.ops[0].kind == ValueKind::Temp;
 	const Type type = typed ? type_of(inst.ops[0]) : Type::scalar(TypeKind::I64);
+	if (sel.kind == ValueKind::Float || type.is_float())
+		throw BackendError("switch requires an integer selector");
 	const TypeKind kind = type.is_pointer() ? TypeKind::Ptr : type.kind();
 	const uint32_t fallback = edge_target(inst.ops[1].index);
 	if (kind == TypeKind::I128)

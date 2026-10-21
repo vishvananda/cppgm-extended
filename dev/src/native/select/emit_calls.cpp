@@ -579,12 +579,7 @@ void FunctionSelector::stage_call_arguments(const Instruction& inst, const lowir
 		TypeKind src_type = TypeKind::Void;
 		if (memory_value)
 		{
-			if (v.kind == ValueKind::Slot)
-				src = Operand::make_frame(slot_offset_[v.index]);
-			else if (v.kind == ValueKind::Temp)
-				src = temp_location(v.index);
-			else
-				src = imm_for(v, type);
+			src = memory_value_operand(v, type);
 		}
 		else if (v.kind == ValueKind::Slot)
 		{
@@ -1072,13 +1067,7 @@ void FunctionSelector::emit_return(const Instruction& inst)
 	}
 	if (type.is_object() || kind == TypeKind::I128)
 	{
-		Operand src;
-		if (v.kind == ValueKind::Slot)
-			src = Operand::make_frame(slot_offset_[v.index]);
-		else if (v.kind == ValueKind::Temp)
-			src = temp_location(v.index);
-		else
-			src = imm_for(v, type);
+		const Operand src = memory_value_operand(v, type);
 		const uint32_t bytes = value_bytes(type);
 		const CallLayout& layout = entry_layout_;
 		if (type.is_object() && layout.result == ArgClass::X87Pair)

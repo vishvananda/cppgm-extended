@@ -98,7 +98,7 @@ void FunctionEmitter::float_move(const Inst& inst)
 				asm_.sse(prefix, 0x10, dst.reg, constant_rm(src));
 		}
 		else if (src.kind == OperandKind::Reg)
-			throw InternalError("floating move from a general register");
+			asm_.sse(0x66, 0x6e, dst.reg, RM::r(src.reg), kind != TypeKind::F32); // movd/movq
 		else
 			asm_.sse(prefix, 0x10, dst.reg, rm(src));
 		return;

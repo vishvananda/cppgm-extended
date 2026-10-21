@@ -121,6 +121,7 @@ public:
 	Reg temp_reg_or_load(uint32_t temp, Reg scratch);
 	Operand temp_location(uint32_t temp, Reg scratch = kSelectScratch);
 	Operand imm_for(lowir::Value value, lowir::Type type) const;
+	Operand memory_value_operand(lowir::Value value, lowir::Type type);
 	bool fits_imm32(const Operand& op) const;
 	void load_into(Reg dst, const Operand& src, lowir::TypeKind type);
 	void materialize_address(Reg dst, const AddrExpr& expr, bool exclusive = false);
