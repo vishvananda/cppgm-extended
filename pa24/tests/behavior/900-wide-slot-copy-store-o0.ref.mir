@@ -5,6 +5,29 @@ startup
     mov rdi, rax
     exit
 
+function @copy_wide
+  abi
+    param %value -> rdi : i64
+    param %value -> rsi : i64
+    return i128 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $source -> [rbp-16] : i128
+    param-slot %value -> [rbp-32] : i128
+    temp %copy -> [rbp-48] : i128
+
+  block ^entry
+    store.i64 [rbp-32], rdi
+    store.i64 [rbp-24], rsi
+    mov.i128 [rbp-16], [rbp-32]
+    mov.i128 [rbp-48], [rbp-16]
+    load.i64 rax, [rbp-48]
+    load.i64 rdx, [rbp-40]
+    ret
+
 function @main
   abi
     return i64 -> rax
@@ -27,7 +50,11 @@ function @main
 
   block ^entry
     mov.i128 [rbp-16], 0x00000000000000010000000000000029
-    mov.i128 [rbp-96], [rbp-16]
+    mov rdi, 41
+    mov rsi, 1
+    call @copy_wide [args=(rsi,rdi)]
+    store.i64 [rbp-96], rax
+    store.i64 [rbp-88], rdx
     mov.i128 [rbp-32], [rbp-16]
     mov.i128 [rbp-112], [rbp-32]
     set.ne.i128 r8, [rbp-96], 0x00000000000000010000000000000029

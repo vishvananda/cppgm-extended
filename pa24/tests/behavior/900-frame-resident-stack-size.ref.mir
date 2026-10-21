@@ -20,16 +20,28 @@ function @allocate
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %bytes -> [rbp-8] : i64
+    slot $size -> [rbp-8] : i64
+    param-slot %bytes -> [rbp-16] : i64
 
   block ^entry
     load.i64 rax, [rbp+16]
-    store.i64 [rbp-8], rax
+    store.i64 [rbp-16], rax
+    load.i64 r11, [rbp-16]
+    store.i64 [rbp-8], r11
+    stack_alloc r8, 16
     load.i64 r10, [rbp-8]
-    stack_alloc r8, r10
-    store.i64 [r8], 73
-    load.i64 rax, [r8]
-    ret rax
+    stack_alloc r9, r10
+    sub r8, r9
+    cmp.i64 r8, [rbp-16]
+    setne r8
+    movzx r8, r8
+    store.i64 [r9], 73
+    mov rdx, 73
+    cmp.i64 [r9], rdx
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    ret r8
 
 function @main
   abi
@@ -52,7 +64,7 @@ function @main
     store.i64 [rsp], r11
     call @allocate [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    cmp.i64 rax, 73
+    cmp.i64 rax, 0
     setne rax
     movzx rax, rax
     ret rax

@@ -1,3 +1,11 @@
+function @copy_wide(%value : i128) -> i128 {
+  slot $source : i128
+  block ^entry:
+    store volatile i128 %value, $source
+    %copy = copy i128 $source
+    return i128 %copy
+}
+
 function @main() -> i64 [role=entry] {
   slot $wide_source : i128
   slot $wide_target : i128
@@ -8,7 +16,7 @@ function @main() -> i64 [role=entry] {
   block ^entry:
     %unused = const i128 99
     store volatile i128 18446744073709551657, $wide_source
-    %wide = copy i128 $wide_source
+    %wide = call i128 @copy_wide(18446744073709551657)
     store volatile i128 $wide_source, $wide_target
     %wide_again = load i128 $wide_target
     %bad_wide = cmp ne i128 %wide, 18446744073709551657
