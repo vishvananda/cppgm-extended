@@ -89,9 +89,8 @@ instantiations, many macros, one long function, many small functions):
 linear work grows by about 2 per doubling, quadratic work by about 4.
 
 The compile-time gates require at most half the host's user time at matching
-optimization levels. The dated course-solution measurements are discussed
-[below](#the-course-solution-and-calibration). The acceptance gates are a
-minimum; further compile-time and generated-code improvements remain useful.
+optimization levels. Continue improving compile time and generated code after
+meeting the acceptance limits.
 
 Most limits are far from where a compiler starts, so a gate alone shows no
 progress until it passes. `make -C pa35 test-progress` reports how far each
@@ -109,35 +108,7 @@ group only when it was measured after the groups before it, and prints one
 The gates use deterministic counts because wall time on a shared machine
 moves by several percent between identical runs. Time remains the objective:
 `make -C pa35 abba` compares self and seed with paired timing, and a seed
-against a copy of itself calibrates the noise.
-
-### The course solution and calibration
-
-The checked-in calibration is a dated snapshot from before the current 0.50
-compile-time limits and matching optimized levels. Its O3 compile-time and
-memory ratios used host `-O2`; new speed measurements use `-O3` on both sides.
-Rerun the speed group when updating an existing run; historical timing ratios
-do not measure the new baseline.
-
-The course solution passes every gate. [`calibration.tsv`](calibration.tsv)
-records its value for each gate and the margin to each limit, with the
-machine, toolchain and commit they were measured on, built the way your
-Makefile builds the seed (plain `-O3`, the C library's `malloc`), which is
-what your gates compare; retain the recorded protocol when reading its figures. A
-backend that has no register allocation yet starts near 2 to 2.5
-own-binary instructions. A compiler whose front end is slow may instead
-start by failing the speed gates, and then the codegen group reports its
-simulated gates as not measured until compile time is fixed.
-
-The values belong to one machine and toolchain: another `g++`, libstdc++ or
-`malloc` changes the seed, and `g++` and libstdc++ also change the workload's
-preprocessed text and the kernel yardstick. The course re-measures them at
-each release and whenever the solution's optimizer, backend or front end
-changes, and requires the solution to clear each limit by more than the
-measurement noise of the gate's kind: about 2% for instruction counts,
-1.5% for the cycle proxy (which moves with code layout), 1% for text size,
-and 25% for compile time, memory and scaling. The limits themselves do not
-move with the calibration.
+against a copy of itself measures run-to-run noise.
 
 ## Work loop
 
@@ -233,16 +204,16 @@ and the same host link. An `OBJ=` override or another object root is fine.
 
 ### Comparing with the reference
 
-The gates are floors. To see where you stand against the course solution on
-your own machine, `make -C pa35 parity` (after `make reference-binaries`)
-measures the reference compiler and yours side by side: compile time and
+Run `make -C pa35 parity` after `make reference-binaries` to compare your
+compiler with the provided reference on your own machine. It measures both
+side by side: compile time and
 memory on the workload (the figures themselves, with each compiler's ratio
 to the host beside them), and generated code at constant work, since both
 compilers build this repository's own source and the two builds run the
 workload (`ab.pl reference-binaries/cppgm++`; `SIM=1` adds callgrind's
 cycle proxy). It prints the reference's figure, yours and the ratio, and
-says when a figure is missing; nothing in it is a gate. `calibration.tsv`
-records the solution's gate values on the machine it was measured on.
+says when a figure is missing. Use the limits in `gates.txt` to determine
+whether your implementation meets the assignment requirements.
 
 ## Boundaries
 
@@ -348,11 +319,9 @@ Useful directions, in the order the measurements usually point:
 
 Prefer fixing an over-conservative model (a constraint stricter than emission
 needs) to tuning heuristics, which usually nets little. Re-measure a dropped
-idea after related changes land. PA32 and PA33's course fixtures state
-outcomes and upper bounds with room above the course solution's counts;
-when a broad change breaks one, the output grew past that room or lost a
-required simplification on that fixture's shape, which is worth
-understanding before the change is adjusted.
+idea after related changes land. PA32 and PA33's fixtures require specific
+outcomes and upper bounds. If a broad change breaks one, investigate the
+extra work or lost simplification before adjusting the change.
 
 Compile time that grows faster than its input usually comes from per-query
 work proportional to the whole translation unit: a lookup, overload check or
