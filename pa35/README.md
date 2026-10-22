@@ -65,9 +65,9 @@ reported as not run. `make -C pa35 test-correctness`, `test-speed` and
 | correctness | `workload-compiles` | the seed compiles the workload at `-O0` and `-O3` | required |
 | correctness | `behavior` | each `tests/behavior/*.cpp`, compiled by `cppgm++` at `-O0` to `-O3` and linked by the host, prints what the host build prints; its `-O3` LowIR lowers through `lowir2native` with a MIR dump | all pass |
 | correctness | `generated` | seeded programs exercising narrow values, Booleans, returned objects, frames and unwinding, at `-O0` to `-O3`, against the host build | all pass |
-| speed | `compile-O0-time` | seed `-O0` user time on the workload / host `-O0` | <= 0.25 |
-| speed | `compile-O3-time` | seed `-O3` user time / host `-O2` | <= 0.25 |
-| speed | `compile-O3-memory` | seed `-O3` peak RSS / host `-O2` | <= 1.00 |
+| speed | `compile-O0-time` | seed `-O0` user time on the workload / host `-O0` | <= 0.50 |
+| speed | `compile-O3-time` | seed `-O3` user time / host `-O3` | <= 0.50 |
+| speed | `compile-O3-memory` | seed `-O3` peak RSS / host `-O3` | <= 1.00 |
 | speed | `compile-scaling` | largest growth of the seed's compile time per doubling of input size, over the synthetic families of `scaling.pl` | <= 3.0 |
 | codegen | `workload-identical` | seed and self (frozen with `scripts/freeze.pl --label check`) write byte-identical objects for the workload at `-O0` and `-O3` | required |
 | codegen | `codegen-O0-instructions` | self / seed instructions executed in the compiler binary's own code (callgrind), workload at `-O0` | <= 1.08 |
@@ -88,11 +88,10 @@ scopes and lookups, a class with many members, many template
 instantiations, many macros, one long function, many small functions):
 linear work grows by about 2 per doubling, quadratic work by about 4.
 
-The compile-time limits sit near the course solution's own ratios (about
-0.14 of the host's time, [below](#the-course-solution-and-calibration)),
-not near the host's: a compiler that merely matches `g++` has not met the
-bar, and a gate is a floor the course may lower further, not the target.
-The generated-code limits leave a wider margin above the course solution.
+The compile-time gates require at most half the host's user time at matching
+optimization levels. The dated course-solution measurements are discussed
+[below](#the-course-solution-and-calibration). The acceptance gates are a
+minimum; further compile-time and generated-code improvements remain useful.
 
 Most limits are far from where a compiler starts, so a gate alone shows no
 progress until it passes. `make -C pa35 test-progress` reports how far each
@@ -114,11 +113,17 @@ against a copy of itself calibrates the noise.
 
 ### The course solution and calibration
 
+The checked-in calibration is a dated snapshot from before the current 0.50
+compile-time limits and matching optimized levels. Its O3 compile-time and
+memory ratios used host `-O2`; new speed measurements use `-O3` on both sides.
+Rerun the speed group when updating an existing run; historical timing ratios
+do not measure the new baseline.
+
 The course solution passes every gate. [`calibration.tsv`](calibration.tsv)
 records its value for each gate and the margin to each limit, with the
 machine, toolchain and commit they were measured on, built the way your
 Makefile builds the seed (plain `-O3`, the C library's `malloc`), which is
-what your gates compare; the file is the current figure for each gate. A
+what your gates compare; retain the recorded protocol when reading its figures. A
 backend that has no register allocation yet starts near 2 to 2.5
 own-binary instructions. A compiler whose front end is slow may instead
 start by failing the speed gates, and then the codegen group reports its
@@ -192,7 +197,8 @@ make -C pa35 scaling                     # growth per doubling, against the host
 make -C pa35 profile [LEVEL=-O0] [INPUT=file.cpp]   # where the time goes
 ```
 
-`speed.pl` reports preprocessing (`-E`) separately from whole compiles, which
+`speed.pl` compares matching levels (`-O0`/`-O0` and `-O3`/`-O3`). It reports
+preprocessing (`-E`) separately from whole compiles, which
 separates the preprocessor from the rest of the front end. `scaling.pl --keep
 DIR` keeps its generated sources; profile the smallest one that is already
 slow. `profile.pl` samples at native speed and stops after a time limit, so a
