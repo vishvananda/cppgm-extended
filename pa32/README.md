@@ -244,6 +244,9 @@ pass:
   solution inlines such a callee only when constant arguments fold its
   exception instructions away; an optimizer that tracks the handler stack can
   admit a callee whose regions leave it balanced.
+  An `eh_try` landing that pops its own record with `eh_end` needs a
+  targetless `eh_cleanup` to retain that record on entry, as specified in
+  [LowIR's exception-handling contract](../pa8/lowir.md#exception-instructions).
 - Keep the optimizer's own work bounded. PA34 compiles the whole compiler
   at `-O3` with this optimizer; [the design notes](design-notes.md) describe
   how the course solution avoids repeating work.

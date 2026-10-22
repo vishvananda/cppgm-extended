@@ -284,10 +284,10 @@ NumberLiteral ClassifyFloating(const char* text, uint32_t length, uint32_t value
 	else if (suffix_length == 1 && (text[value_end] == 'q' || text[value_end] == 'Q') &&
 		dialect != NumberDialect::Cxx11)
 	{
-		// GNU's `q` and `Q`: __float128 (GCC's); long double in the course's
-		// preprocessor stream (pa29's preprocessor fixture pins it).
+		// GNU's `q` and `Q` name __float128 in both compilation and the
+		// typed preprocessor stream; `l` and `L` name long double.
 		result.kind = NumberLiteralKind::Floating;
-		result.type = dialect == NumberDialect::Gnu ? FundamentalType::GnuFloat128 : FundamentalType::LongDouble;
+		result.type = FundamentalType::GnuFloat128;
 	}
 	else if (dialect != NumberDialect::Cxx11 && ExtendedFloatingSuffix(text + value_end, suffix_length, result.type))
 	{
