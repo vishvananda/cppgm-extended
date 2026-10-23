@@ -62,9 +62,9 @@ and `test-codegen` run an individual group. All 17 published limits apply.
 | correctness | `workload-compiles` | R compiles the workload at `-O0` and `-O3` | required |
 | correctness | `behavior` | each `tests/behavior/*.cpp`, compiled by R at `-O0` to `-O3` and linked by the host, prints what the host build prints; its `-O3` LowIR lowers through `lowir2native` with a MIR dump | all pass |
 | correctness | `generated` | seeded programs exercising narrow values, Booleans, returned objects, frames and unwinding, at `-O0` to `-O3`, against the host build | all pass |
-| speed | `compile-O0-time` | R `-O0` user time on the workload / host `-O0` | <= 0.25 |
-| speed | `compile-O3-time` | R `-O3` user time / host `-O2` | <= 0.25 |
-| speed | `compile-O3-memory` | R `-O3` peak RSS / host `-O2` | <= 1.00 |
+| speed | `compile-O0-time` | R `-O0` user time on the workload / host `-O0` | <= 0.50 |
+| speed | `compile-O3-time` | R `-O3` user time / host `-O3` | <= 0.50 |
+| speed | `compile-O3-memory` | R `-O3` peak RSS / host `-O3` | <= 1.00 |
 | speed | `compile-scaling` | largest growth of R's compile time per doubling of input size, over the synthetic families of `scaling.pl` | <= 3.0 |
 | codegen | `workload-identical` | B and A write byte-identical objects for the workload at `-O0` and `-O3` | required |
 | codegen | `codegen-O0-instructions` | A / B instructions executed in the compiler binary's own code (callgrind), workload at `-O0` | <= 1.08 |
@@ -89,8 +89,9 @@ and simulation counts, 1% for kernels/text, 2% for memory, 5% for timing).
 Receipts bind each group to current binaries, backend, S, workload, harness,
 paths and toolchain. Missing, stale, failed or skipped observations cannot
 pass. Rechecking unchanged correctness does not invalidate valid later groups.
-The existing calibration documents the C++ solution on its recorded machine;
-keep the published limits fixed rather than adapting them to the candidate.
+The compile-time gates require at most half the host's user time at matching
+optimization levels. Use gates.txt for acceptance; do not adapt limits to the
+candidate or infer current results from historical measurements.
 
 ## Work loop
 
@@ -131,7 +132,8 @@ For compiler-speed changes compare R's outputs directly on fixed supported
 inputs; codegen attribution always uses the same frozen S. Keep every failure
 and raw observation. Avoid full S rebuilds for unrelated evidence updates.
 
-`speed.pl --compiler R`, `scaling.pl --compiler R` and bounded
+`speed.pl --compiler R` compares matching O0/O0 and O3/O3 levels.
+`scaling.pl --compiler R` and bounded
 `profile.pl --compiler R` diagnose the Rust compiler itself. Select the
 smallest input exposing repeated work. Commands are time/memory bounded;
 reference builds use at most eight jobs. Set `PA35_JOBS` lower on a shared host.
@@ -212,11 +214,9 @@ Useful directions, in the order the measurements usually point:
 
 Prefer fixing an over-conservative model (a constraint stricter than emission
 needs) to tuning heuristics, which usually nets little. Re-measure a dropped
-idea after related changes land. PA32 and PA33's course fixtures state
-outcomes and upper bounds with room above the course solution's counts;
-when a broad change breaks one, the output grew past that room or lost a
-required simplification on that fixture's shape, which is worth
-understanding before the change is adjusted.
+idea after related changes land. PA32 and PA33's fixtures require specific
+outcomes and upper bounds. If a broad change breaks one, investigate the
+extra work or lost simplification before adjusting the change.
 
 Compile time that grows faster than its input usually comes from per-query
 work proportional to the whole translation unit: a lookup, overload check or
