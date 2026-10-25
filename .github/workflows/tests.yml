@@ -208,7 +208,7 @@ jobs:
           - id: ubuntu-24.04-gcc
             name: gcc + libstdc++ (ubuntu 24.04)
             image: ubuntu:24.04
-            host_packages: build-essential
+            host_packages: build-essential valgrind
             cxx: g++
             host_cxx: g++
             stdlib_flags: ""
@@ -216,7 +216,7 @@ jobs:
           - id: ubuntu-24.04-clang-libcxx
             name: clang + libc++ (ubuntu 24.04)
             image: ubuntu:24.04
-            host_packages: build-essential clang libc++-dev libc++abi-dev
+            host_packages: build-essential clang libc++-dev libc++abi-dev valgrind
             cxx: clang++
             host_cxx: clang++
             stdlib_flags: -stdlib=libc++
@@ -224,7 +224,7 @@ jobs:
           - id: ubuntu-26.04-gcc
             name: gcc + libstdc++ (ubuntu 26.04)
             image: ubuntu:26.04
-            host_packages: build-essential
+            host_packages: build-essential valgrind
             cxx: g++
             host_cxx: g++
             stdlib_flags: ""
@@ -232,7 +232,7 @@ jobs:
           - id: ubuntu-26.04-clang-libcxx
             name: clang + libc++ (ubuntu 26.04)
             image: ubuntu:26.04
-            host_packages: build-essential clang libc++-dev libc++abi-dev
+            host_packages: build-essential clang libc++-dev libc++abi-dev valgrind
             cxx: clang++
             host_cxx: clang++
             stdlib_flags: -stdlib=libc++
