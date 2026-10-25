@@ -438,7 +438,10 @@ RValue FunctionLowering::vector_lanes(const syntax::CallExpr& expr, sema::Intrin
 		place.storage = lowir::Value::slot(slot);
 		return load(lowering_.storage_type(vector), place);
 	}
-	const sema::Type* vector = WithoutParentheses(expr.arguments[0])->facts->type->unqualified;
+	const sema::ExprFacts* argument = WithoutParentheses(expr.arguments[0])->facts;
+	// Lane builtins consume the converted vector, including a class conversion.
+	const sema::Type* vector =
+		(argument->conversion != nullptr ? argument->conversion->result : argument->type)->unqualified;
 	const lowir::Value source = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
 	const sema::Type* element = vector->element;
 	const auto lane_at = [&](const syntax::Expr& selector) {
