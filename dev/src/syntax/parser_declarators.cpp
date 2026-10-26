@@ -83,22 +83,39 @@ bool Parser::member_pointer_ahead(uint32_t ahead)
 		++i;
 		if (at(TokenKind::OP_LT, i))
 		{
-			// Skip a balanced template argument list.
+			// Bracketed expressions isolate relational and shift operators
+			// from the surrounding template argument list's angle brackets.
 			int depth = 0;
+			closers_.clear();
 			for (;; ++i)
 			{
 				const ParseToken token = tok(i);
-				if (token.is_end() || token.is(TokenKind::OP_SEMICOLON) || token.is(TokenKind::OP_LBRACE))
+				if (token.is_end() || token.is(TokenKind::OP_SEMICOLON))
 					return false;
-				if (token.is(TokenKind::OP_LT) || token.is(TokenKind::OP_LPAREN) || token.is(TokenKind::OP_LSQUARE))
-					++depth;
-				else if (token.is(TokenKind::OP_GT) || token.is(TokenKind::OP_RPAREN) ||
-					token.is(TokenKind::OP_RSQUARE))
-					--depth;
-				if (depth == 0)
+				if (token.is(TokenKind::OP_LPAREN))
+					closers_.push_back(TokenKind::OP_RPAREN);
+				else if (token.is(TokenKind::OP_LSQUARE))
+					closers_.push_back(TokenKind::OP_RSQUARE);
+				else if (token.is(TokenKind::OP_LBRACE))
+					closers_.push_back(TokenKind::OP_RBRACE);
+				else if (token.is(TokenKind::OP_RPAREN) || token.is(TokenKind::OP_RSQUARE) ||
+					token.is(TokenKind::OP_RBRACE))
 				{
-					++i;
-					break;
+					if (closers_.empty() || !token.is(closers_.back()))
+						return false;
+					closers_.pop_back();
+				}
+				else if (closers_.empty())
+				{
+					if (token.is(TokenKind::OP_LT))
+						++depth;
+					else if (token.is(TokenKind::OP_GT))
+						--depth;
+					if (depth == 0)
+					{
+						++i;
+						break;
+					}
 				}
 			}
 		}

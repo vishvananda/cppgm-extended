@@ -1,0 +1,88 @@
+1 translation units
+start translation unit 1
+translation-unit
+  class-specifier result
+    class-key KW_STRUCT:struct
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        non-type-template-parameter
+          decl-specifier-seq
+            decl-specifier KW_INT:int
+          declarator
+            identifier A
+        non-type-template-parameter
+          decl-specifier-seq
+            decl-specifier KW_INT:int
+          declarator
+            identifier B
+        non-type-template-parameter
+          decl-specifier-seq
+            decl-specifier KW_INT:int
+          declarator
+            identifier C
+    class-specifier relation
+      class-key KW_STRUCT:struct
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier N
+    class-specifier Check
+      class-key KW_STRUCT:struct
+      simple-declaration
+        decl-specifier-seq
+          enum-specifier
+            enumerator greater
+              sizeof-expression
+                cast-expression OP_LPAREN:
+                  type-id
+                    type-specifier-seq
+                      type-name result
+                    abstract-declarator
+                      ptr-operator OP_STAR:*
+                      nested-declarator
+                        abstract-declarator
+                          ptr-operator relation<int(sizeof(1>0)),N::value,0>::*
+                  literal 0
+      simple-declaration
+        decl-specifier-seq
+          enum-specifier
+            enumerator less
+              sizeof-expression
+                cast-expression OP_LPAREN:
+                  type-id
+                    type-specifier-seq
+                      type-name result
+                    abstract-declarator
+                      ptr-operator OP_STAR:*
+                      nested-declarator
+                        abstract-declarator
+                          ptr-operator relation<int(sizeof(1<2)),N::value,0>::*
+                  literal 0
+      simple-declaration
+        decl-specifier-seq
+          enum-specifier
+            enumerator shift
+              sizeof-expression
+                cast-expression OP_LPAREN:
+                  type-id
+                    type-specifier-seq
+                      type-name result
+                    abstract-declarator
+                      ptr-operator OP_STAR:*
+                      nested-declarator
+                        abstract-declarator
+                          ptr-operator relation<(16>>2),N::value,0>::*
+                  literal 0
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier main
+      parameter-clause
+    compound-statement
+      return-statement
+        literal 0
+end translation unit
