@@ -355,11 +355,11 @@ void MacroExpander::begin_invocation(
 	arguments.token_mark = static_cast<uint32_t>(argument_tokens_.size());
 	arguments.expanded_mark = static_cast<uint32_t>(expanded_tokens_.size());
 	// While an argument is replaced, the names inherited where the name token
-	// was read stay disabled, and so do those of its set if the invocation is
-	// nested or the name is an argument token.
+	// was read stay disabled, along with the chain of an invocation nested
+	// there. A substituted function name's set applies to its replacement,
+	// not to the arguments it collects after that expansion has ended.
 	const Nesting nesting = nesting_of(head, from_argument, true);
-	arguments.disabled = hide_sets_.merge(
-		nesting.parent != 0 || (head.flags & kArgument) != 0 ? head.hide_set : 0, inherited);
+	arguments.disabled = hide_sets_.merge(nesting.parent != 0 ? head.hide_set : 0, inherited);
 	arguments.outer = arguments.disabled;
 	arguments.disabled_top = 0;
 	arguments.disabled_root = 0;

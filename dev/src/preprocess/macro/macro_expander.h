@@ -85,8 +85,8 @@ struct MacroExpansionCounters
 // argument drops the macro it was substituted into.
 //
 // While an invocation's argument is macro-replaced, more names are
-// disabled: those of its name token's set if the invocation is nested or the
-// name is an argument token, and those inherited where the name token was
+// disabled: those of its name token's set if the invocation is nested,
+// and those inherited where the name token was
 // read. They apply to every token of the argument, and to the
 // replacement-list tokens of an expansion named by a token of the argument
 // or of such a list, to any depth, if the name came from the source text or

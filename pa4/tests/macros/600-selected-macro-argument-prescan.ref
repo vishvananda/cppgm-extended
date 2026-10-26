@@ -1,0 +1,4 @@
+preproc 1
+sof tests/macros/600-selected-macro-argument-prescan.t
+identifier chosen
+eof
