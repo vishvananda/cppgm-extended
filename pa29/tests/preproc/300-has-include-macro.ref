@@ -1,0 +1,12 @@
+preproc 1
+sof tests/preproc/300-has-include-macro.t
+identifier macro_present
+identifier nested_present
+identifier macro_absent
+identifier argument_present
+identifier replacement_present
+identifier angle_present
+identifier direct_angle_preserved
+identifier next_present
+identifier next_absent
+eof

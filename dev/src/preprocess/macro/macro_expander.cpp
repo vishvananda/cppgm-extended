@@ -988,14 +988,18 @@ void MacroExpander::replace_has_cpp_attribute(bool gnu)
 void MacroExpander::replace_has_include(bool next)
 {
 	// `__has_include ( header-name )` (GNU, C++17's 16.1p1): a string
-	// literal, or the tokens `<` ... `>` spelled as #include combines them,
-	// read without replacement.
+	// literal, or the tokens `<` ... `>` spelled as #include combines them.
+	// A directly written header is not replaced; other operands are rescanned
+	// with the ordinary macro machinery, as for a computed #include.
 	const PPToken operator_token = current_;
 	PPToken token;
 	read(token);
 	if (!IsPunctuatorToken(token, TokenKind::OP_LPAREN))
 		throw PreprocessError(operator_token.begin, "expected `(` after __has_include");
 	read(token);
+	const bool expand = token.kind != PPTokenKind::StringLiteral && !IsPunctuatorToken(token, TokenKind::OP_LT);
+	if (expand)
+		token = expand_include_token(token);
 	std::string name;
 	bool angle = false;
 	TextLiteralParts parts;
@@ -1008,8 +1012,12 @@ void MacroExpander::replace_has_include(bool next)
 	{
 		angle = true;
 		bool first = true;
-		for (read(token); !IsPunctuatorToken(token, TokenKind::OP_GT); read(token), first = false)
+		for (read(token);; read(token), first = false)
 		{
+			if (expand)
+				token = expand_include_token(token);
+			if (IsPunctuatorToken(token, TokenKind::OP_GT))
+				break;
 			if (token.kind == PPTokenKind::EndOfFile || token.kind == PPTokenKind::NewLine)
 				throw PreprocessError(operator_token.begin, "missing `>` in __has_include");
 			if (!first && (token.flags & kLeadingSpace) != 0)
@@ -1022,11 +1030,40 @@ void MacroExpander::replace_has_include(bool next)
 		throw PreprocessError(operator_token.begin, "expected a header name after __has_include");
 	}
 	read(token);
+	if (expand)
+		token = expand_include_token(token);
 	if (!IsPunctuatorToken(token, TokenKind::OP_RPAREN))
 		throw PreprocessError(operator_token.begin, "expected `)` after the header name");
 	const bool found = environment_.can_include(name, angle, next);
 	current_ = operator_token;
 	set_number(found ? "1" : "0", 1);
+}
+
+PPToken MacroExpander::expand_include_token(PPToken token)
+{
+	const std::size_t depth = invocations_.size();
+	for (;;)
+	{
+		current_ = token;
+		if (current_.kind == PPTokenKind::Identifier && start_expansion())
+		{
+			// Continue rescanning the expansion it opened.
+		}
+		else if (invocations_.size() == depth)
+		{
+			return current_;
+		}
+		else
+		{
+			expanded_tokens_.push_back(current_);
+		}
+		while (!read(token))
+		{
+			if (invocations_.size() == depth)
+				return token;
+			finish_argument();
+		}
+	}
 }
 
 void MacroExpander::replace_has_builtin()

@@ -266,6 +266,9 @@ private:
 	void replace_defined();
 	void replace_has_cpp_attribute(bool gnu);
 	void replace_has_include(bool next);
+	// Rescan an already-read probe operand without consuming an enclosing
+	// invocation's argument. Uses the ordinary expansion contexts and hides.
+	PPToken expand_include_token(PPToken token);
 	void replace_has_builtin();
 	// The probes of one identifier (`__is_identifier`: one token) and
 	// `__has_warning ( string-literal )`.
