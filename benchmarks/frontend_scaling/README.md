@@ -16,3 +16,14 @@ to separate base bookkeeping from the ordinary cost of reading declarations.
 Instruction counts should grow approximately linearly; use calibrated paired
 blocks for wall-time claims. Retain every observation and check output equality
 when comparing compile or AST output.
+
+`independent-defaults` declares a class template with `size` default type
+arguments, all `int`, and demands its complete specialization with no explicit
+arguments. `chained-defaults` instead makes each default name the previous
+parameter. Compare sizes 256, 512 and 1024: forming the defaults must not copy
+every earlier argument's binding for each omitted parameter. Check both
+instruction counts and peak memory.
+
+`nested-chained-defaults` demands that specialization inside another template
+definition. It also checks that dependence of the preceding argument prefix
+is accumulated once, rather than scanning the prefix for every default.

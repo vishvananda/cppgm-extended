@@ -767,6 +767,8 @@ bool Analyzer::complete_deduction(FunctionEntity* primary, TypeList& arguments)
 	// parameter's position; a parameter pack not otherwise deduced is an
 	// empty pack (14.8.1p3).
 	const TemplateHead* head = HeadOf(primary);
+	bool arguments_dependent = false;
+	uint32_t checked = 0;
 	for (uint32_t i = 0; i < arguments.size(); ++i)
 	{
 		if (arguments[i] != nullptr)
@@ -787,7 +789,11 @@ bool Analyzer::complete_deduction(FunctionEntity* primary, TypeList& arguments)
 			arguments[i] = *found;
 			continue;
 		}
-		const Type* argument = template_default(head, arguments.data(), i, true);
+		// Extend the dependence of the prefix only when a default needs it;
+		// repeated defaults must not rescan all earlier arguments.
+		for (; template_depth_ != 0 && checked < i && !arguments_dependent; ++checked)
+			arguments_dependent = dependent_type(arguments[checked]);
+		const Type* argument = template_default(head, arguments.data(), i, arguments_dependent, true);
 		if (argument == nullptr || failed())
 			return false;
 		argument = argument->canonical;

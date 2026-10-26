@@ -707,7 +707,7 @@ private:
 	Binding* value_binding(
 		const TemplateParameterEntity* parameter, const Type* argument, Scope* frame, const Identifier* name = nullptr);
 	const Type* template_default(const TemplateHead* head, const Type* const* arguments, uint32_t index,
-		bool substitution = false, Scope* named_in = nullptr);
+		bool arguments_dependent, bool substitution = false, Scope* named_in = nullptr);
 	void default_template_arguments(
 		const TemplateHead* head, TypeList& arguments, uint32_t location, Scope* named_in = nullptr);
 	bool own_arguments(const TemplateHead* head, const Type* const* canonical, uint32_t count);
@@ -2476,11 +2476,9 @@ private:
 	// required before insertion, so these facts never need invalidation.
 	PointerMap representation_index_;
 	std::vector<uint64_t> representation_bits_;
-	// A member template's non-dependent default template arguments, the
-	// types they name where they appear (see default_template_argument_names).
-	FlatMap<DefaultKey, const Type*, DefaultKeyHash> bound_defaults_;
-	// Default template arguments analyzed in their templates' own parameter
-	// scopes (see qualifier_arguments).
+	// Default type arguments analyzed where declared, in their own parameter
+	// scopes. Uses substitute these facts instead of rebuilding a scope of
+	// every preceding argument (see default_template_argument_names).
 	FlatMap<DefaultKey, const Type*, DefaultKeyHash> unbound_defaults_;
 	// The default type-ids that bear no facts (no expression), which a
 	// deduction analyzes without a copy (see template_default).

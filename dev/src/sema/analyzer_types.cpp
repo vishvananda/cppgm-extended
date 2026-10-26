@@ -1425,18 +1425,16 @@ void Analyzer::default_template_argument_names(const syntax::TypeId& type, Scope
 	// argument (14.1p9), but its non-dependent names are bound where it
 	// appears (14.6p10): with the parameters before its own in scope, not
 	// its own or later ones (3.3.9p1, 3.3.2p9), nor the template's name
-	// (declared after its template-head). A member template's that names
-	// no template parameter is the type it names here, kept for its uses:
-	// it is no complete-class context (9.2p2), so a member the class
-	// declares later is not found (3.4.1p7; `decltype(h(0))` before a
-	// better h).
+	// (declared after its template-head). Keep that typed fact for later
+	// substitution, including a dependent default. A member template's
+	// default is no complete-class context (9.2p2), so a member declared
+	// later is not found (3.4.1p7; `decltype(h(0))` before a better h).
 	++template_depth_;
 	const Type* bound = type_id(type, scope);
 	--template_depth_;
 	const DefaultKey key = DefaultKey{ &type, scope };
-	if (bound != nullptr && !failed() && scope->parent != nullptr && scope->parent->kind == ScopeKind::Class &&
-		!dependent_type(bound) && bound_defaults_.find(key) == nullptr)
-		bound_defaults_.insert(key, bound);
+	if (bound != nullptr && !failed() && unbound_defaults_.find(key) == nullptr)
+		unbound_defaults_.insert(key, bound);
 }
 
 uint64_t Analyzer::array_bound(const syntax::Expr& bound, Scope* scope)

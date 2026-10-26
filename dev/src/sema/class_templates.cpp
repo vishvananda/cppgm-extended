@@ -858,8 +858,8 @@ const Type* Analyzer::converted_value(const TemplateParameterEntity* parameter, 
 	return types_.value(target, ConvertIntegral(argument->bound, kind));
 }
 
-const Type* Analyzer::template_default(
-	const TemplateHead* head, const Type* const* arguments, uint32_t index, bool substitution, Scope* named_in)
+const Type* Analyzer::template_default(const TemplateHead* head, const Type* const* arguments, uint32_t index,
+	bool arguments_dependent, bool substitution, Scope* named_in)
 {
 	// 14.1p9: parameter `index`'s default argument, analyzed with the
 	// earlier parameters bound to their arguments (14.1p14), in the context
@@ -914,15 +914,17 @@ const Type* Analyzer::template_default(
 			error(head->defaults[index]->location, "a template template-parameter's default names no template");
 		return templ;
 	}
-	// A member template's non-dependent default: the type it named where it
-	// appeared (in the scope of the declaration that gave it).
-	if (const Type** bound = head->defaults[index] != nullptr
-			? bound_defaults_.find(DefaultKey{ head->defaults[index], parameters })
+	// The default's typed fact was formed where it appeared, before its
+	// own and later parameters were declared. A non-dependent type needs
+	// no instantiation frame; a dependent one substitutes its actual uses.
+	const Type* analyzed = nullptr;
+	if (const Type* const* fact = head->defaults[index] != nullptr
+			? unbound_defaults_.find(DefaultKey{ head->defaults[index], parameters })
 			: nullptr)
-		return *bound;
-	bool dependent = named_in != nullptr && template_depth_ != 0;
-	for (uint32_t i = 0; i < index && template_depth_ != 0 && !dependent; ++i)
-		dependent = dependent_type(arguments[i]);
+		analyzed = *fact;
+	if (analyzed != nullptr && !dependent_type(analyzed))
+		return analyzed;
+	bool dependent = template_depth_ != 0 && (named_in != nullptr || arguments_dependent);
 	// A member template of a templated class, named in a template
 	// definition (its class's own, say `Q<>` in it): the default can name
 	// the enclosing templates' parameters, still unbound there (14.6.2.3).
@@ -934,6 +936,24 @@ const Type* Analyzer::template_default(
 	// A value is its parameter's argument, as one written is (a reference
 	// parameter's object, 14.3.2p1).
 	const Type* target = value != nullptr ? argument_target(head, index, arguments) : nullptr;
+	if (analyzed != nullptr && named_in == nullptr)
+	{
+		uint32_t depth = head->parameters[0]->depth;
+		for (const Binding* binding = parameters->bindings; binding != nullptr; binding = binding->next)
+		{
+			if (DeclaresParameter(binding))
+			{
+				depth = static_cast<const TemplateParameterEntity*>(binding->entity)->depth;
+				break;
+			}
+		}
+		const Substitution bound = Substitution{ depth, arguments, index, nullptr };
+		if (dependent)
+			return substitute(analyzed, bound);
+		InstantiationContext context(
+			*this, enter_instantiation(instantiation_depth_ + 1, type->location), substitution, ordinal);
+		return substitute(analyzed, bound);
+	}
 	if (dependent && named_in == nullptr)
 	{
 		// Analyzed in the template's own parameter scope, then substituted: a
@@ -1050,10 +1070,15 @@ void Analyzer::default_template_arguments(
 	// pack takes the arguments left, none for an empty pack. A pack
 	// expansion among the arguments leaves their positions unknown until
 	// substituted. `named_in`: see template_default.
+	bool arguments_dependent = false;
+	const bool track_dependence = template_depth_ != 0 && arguments.size() < head->count &&
+		!head->parameters[arguments.size()]->pack;
 	for (const Type* argument : arguments)
 	{
 		if (argument->kind == TypeKind::Expansion)
 			return;
+		if (track_dependence)
+			arguments_dependent = arguments_dependent || dependent_type(argument);
 	}
 	// A substitution's template-id with too many or too few is its failure
 	// (14.8.2p8).
@@ -1075,10 +1100,12 @@ void Analyzer::default_template_arguments(
 		// failure (14.8.2p8; std::function's _Callable<F> of the function
 		// itself, as the hosts take it).
 		const Type* argument = template_default(
-			head, arguments.data(), static_cast<uint32_t>(i), soft_substitution_ != 0, named_in);
+			head, arguments.data(), static_cast<uint32_t>(i), arguments_dependent, soft_substitution_ != 0, named_in);
 		if (argument == nullptr)
 			return;
 		arguments.push_back(argument);
+		if (track_dependence)
+			arguments_dependent = arguments_dependent || dependent_type(argument);
 	}
 }
 
