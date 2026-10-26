@@ -213,6 +213,7 @@ enum class GnuTrait : uint8_t
 	IsAggregate,
 	IsTrivial,
 	IsTriviallyCopyable,
+	HasUniqueObjectRepresentations,
 	IsStandardLayout,
 	IsPod,
 	IsLiteralType,

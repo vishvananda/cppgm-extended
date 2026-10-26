@@ -490,6 +490,9 @@ bool Analyzer::trait_value(
 	case GnuTrait::IsTriviallyCopyable:
 		value = trivially_copyable(type);
 		break;
+	case GnuTrait::HasUniqueObjectRepresentations:
+		value = unique_object_representations(type);
+		break;
 	case GnuTrait::IsStandardLayout:
 		value = standard_layout(type);
 		break;
@@ -1017,6 +1020,101 @@ bool Analyzer::trivially_copyable(const Type* type)
 	{
 		if (!copy_member_trivial(function, entity))
 			return false;
+	}
+	return true;
+}
+
+bool Analyzer::unique_object_representations(const Type* type)
+{
+	// [meta.unary.prop]: arrays have their element's property, including
+	// arrays of unknown bound. Every bit of a trivially copyable object
+	// must contribute to its value; floating and reference types do not
+	// provide that guarantee in the GCC-compatible x86-64 environment.
+	type = WithoutArrays(type);
+	uint64_t bits = 0, size = 0, alignment = 0;
+	return representation_bits(type, bits) && object_layout(type, size, alignment) && size <= UINT64_MAX / 8 &&
+		bits == size * 8;
+}
+
+bool Analyzer::representation_bits(const Type* type, uint64_t& bits)
+{
+	check_stack(0);
+	type = type->unqualified;
+	if (ClassEntity* entity = ClassType(type))
+	{
+		uint64_t size = 0, alignment = 0;
+		if (!object_layout(type, size, alignment))
+			return false;
+		const uint32_t known = representation_index_.find(entity);
+		if (known != PointerMap::kMissing)
+		{
+			bits = representation_bits_[known];
+			return bits != UINT64_MAX;
+		}
+		bits = 0;
+		if (!trivially_copyable(type) || !class_representation_bits(entity, bits))
+			bits = UINT64_MAX;
+		representation_index_.set(entity, static_cast<uint32_t>(representation_bits_.size()));
+		representation_bits_.push_back(bits);
+		return bits != UINT64_MAX;
+	}
+	if (type->kind == TypeKind::Array)
+	{
+		if (type->bound == 0 || !unique_object_representations(type->element))
+			return false;
+	}
+	else if (type->kind == TypeKind::Vector)
+	{
+		if (!IsIntegralType(type->element))
+			return false;
+	}
+	else if (!IsIntegralType(type) && type->kind != TypeKind::Enum && type->kind != TypeKind::Pointer &&
+		type->kind != TypeKind::MemberPointer && type->kind != TypeKind::BlockPointer)
+	{
+		return false;
+	}
+	uint64_t size = 0, alignment = 0;
+	if (!object_layout(type, size, alignment) || size > UINT64_MAX / 8)
+		return false;
+	bits = size * 8;
+	return true;
+}
+
+bool Analyzer::class_representation_bits(ClassEntity* entity, uint64_t& bits)
+{
+	// Base tail padding may be reused by later subobjects. Count value
+	// bits, rather than sizeof(base), using the completed typed layout.
+	// A member's own padding cannot establish its unique representation.
+	bits = 0;
+	for (const BaseClass* base = entity->bases; base != nullptr; base = base->next)
+	{
+		uint64_t payload = 0;
+		if (!representation_bits(base->base->type, payload) || payload > UINT64_MAX - bits)
+			return false;
+		bits += payload;
+	}
+	for (const DataMember* member = entity->members; member != nullptr; member = member->next)
+	{
+		if (member->bit_field && member->variable->name == nullptr)
+			continue;
+		const Type* type = member->variable->type;
+		uint64_t payload = 0;
+		if (!unique_object_representations(type) || !representation_bits(type, payload))
+			return false;
+		if (member->bit_field)
+			payload = std::min(payload, member->width);
+		if (IsUnion(entity))
+		{
+			if (entity->size > UINT64_MAX / 8 || payload != entity->size * 8)
+				return false;
+			bits = payload;
+		}
+		else
+		{
+			if (payload > UINT64_MAX - bits)
+				return false;
+			bits += payload;
+		}
 	}
 	return true;
 }

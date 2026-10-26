@@ -1416,6 +1416,9 @@ private:
 		GnuTrait trait, const Type* target, const Type* source, uint32_t location, Scope* scope);
 	bool trait_invocable(const Type* const* types, uint32_t count, uint32_t location, Scope* scope, bool& nothrow);
 	bool trivially_copyable(const Type* type);
+	bool unique_object_representations(const Type* type);
+	bool representation_bits(const Type* type, uint64_t& bits);
+	bool class_representation_bits(ClassEntity* entity, uint64_t& bits);
 	bool subobjects_copy_trivially(ClassEntity* entity);
 	bool subobjects_default_trivially(ClassEntity* entity);
 	bool gnu_trivial_default_constructor(ClassEntity* entity);
@@ -2468,6 +2471,11 @@ private:
 	// type_id's typedef alignment.
 	PointerMap alias_alignments_;
 	PointerMap aligned_variables_;
+	// Complete classes' representation payloads, computed on first trait
+	// demand. UINT64_MAX denotes non-unique values. Layout/completion is
+	// required before insertion, so these facts never need invalidation.
+	PointerMap representation_index_;
+	std::vector<uint64_t> representation_bits_;
 	// A member template's non-dependent default template arguments, the
 	// types they name where they appear (see default_template_argument_names).
 	FlatMap<DefaultKey, const Type*, DefaultKeyHash> bound_defaults_;

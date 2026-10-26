@@ -221,19 +221,19 @@ const char* const kTraitNames[] = { "__is_class", "__is_enum", "__is_union", "__
 	"__is_member_function_pointer", "__is_member_pointer", "__is_function", "__is_arithmetic", "__is_fundamental",
 	"__is_object", "__is_scalar", "__is_compound", "__is_const", "__is_volatile", "__is_signed", "__is_unsigned",
 	"__is_referenceable", "__is_scoped_enum", "__is_empty", "__is_polymorphic", "__is_abstract", "__is_final",
-	"__is_aggregate", "__is_trivial", "__is_trivially_copyable", "__is_standard_layout", "__is_pod",
-	"__is_literal_type", "__has_trivial_destructor", "__has_virtual_destructor", "__is_destructible",
-	"__is_nothrow_destructible", "__is_trivially_destructible", "__has_trivial_constructor", "__has_trivial_copy",
-	"__has_trivial_assign", "__has_nothrow_constructor", "__has_nothrow_copy", "__has_nothrow_assign", "__array_rank",
-	"__builtin_offsetof", "__is_same", "__is_base_of", "__is_assignable", "__is_nothrow_assignable",
-	"__is_trivially_assignable", "__is_convertible", "__is_convertible_to", "__is_nothrow_convertible",
-	"__reference_binds_to_temporary", "__reference_constructs_from_temporary", "__reference_converts_from_temporary",
-	"__is_constructible", "__is_nothrow_constructible", "__is_trivially_constructible", "__is_invocable",
-	"__is_nothrow_invocable", "__underlying_type", "__add_lvalue_reference", "__add_pointer", "__add_rvalue_reference",
-	"__decay", "__make_signed", "__make_unsigned", "__remove_all_extents", "__remove_const", "__remove_cv",
-	"__remove_cvref", "__remove_extent", "__remove_pointer", "__remove_reference_t", "__remove_reference",
-	"__remove_restrict", "__remove_volatile", "_Atomic", "_BitInt", "__integer_pack", "__builtin_va_arg",
-	"__builtin_convertvector", "__builtin_bit_cast" };
+	"__is_aggregate", "__is_trivial", "__is_trivially_copyable", "__has_unique_object_representations",
+	"__is_standard_layout", "__is_pod", "__is_literal_type", "__has_trivial_destructor", "__has_virtual_destructor",
+	"__is_destructible", "__is_nothrow_destructible", "__is_trivially_destructible", "__has_trivial_constructor",
+	"__has_trivial_copy", "__has_trivial_assign", "__has_nothrow_constructor", "__has_nothrow_copy",
+	"__has_nothrow_assign", "__array_rank", "__builtin_offsetof", "__is_same", "__is_base_of", "__is_assignable",
+	"__is_nothrow_assignable", "__is_trivially_assignable", "__is_convertible", "__is_convertible_to",
+	"__is_nothrow_convertible", "__reference_binds_to_temporary", "__reference_constructs_from_temporary",
+	"__reference_converts_from_temporary", "__is_constructible", "__is_nothrow_constructible",
+	"__is_trivially_constructible", "__is_invocable", "__is_nothrow_invocable", "__underlying_type",
+	"__add_lvalue_reference", "__add_pointer", "__add_rvalue_reference", "__decay", "__make_signed", "__make_unsigned",
+	"__remove_all_extents", "__remove_const", "__remove_cv", "__remove_cvref", "__remove_extent", "__remove_pointer",
+	"__remove_reference_t", "__remove_reference", "__remove_restrict", "__remove_volatile", "_Atomic", "_BitInt",
+	"__integer_pack", "__builtin_va_arg", "__builtin_convertvector", "__builtin_bit_cast" };
 
 const unsigned kSpelledTraits = sizeof kTraitNames / sizeof kTraitNames[0];
 static_assert(kSpelledTraits == static_cast<unsigned>(GnuTrait::Declval), "one name per spelled trait");
