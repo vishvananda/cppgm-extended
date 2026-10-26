@@ -45,6 +45,9 @@ public:
 	// Whether the language feature is provided (`__has_feature` and
 	// `__has_extension`, preprocess/macro/feature_probes.h).
 	virtual bool has_feature(const char* spelling, uint32_t length) = 0;
+	// Hosted extension: execute a directive encountered while collecting
+	// function-macro arguments. False at a genuine input boundary.
+	virtual bool continue_macro_arguments() = 0;
 
 protected:
 	~ExpansionEnvironment() {}
@@ -65,6 +68,16 @@ struct MacroExpansionCounters
 	telemetry::Counter peak_contexts = 0;
 	telemetry::Counter peak_context_tokens = 0;
 	telemetry::Counter peak_invocations = 0;
+};
+
+// Translation-unit state shared by ordinary expansion and a directive
+// processed while a function-like macro's argument collection is paused.
+// Each expander keeps its own contexts, arguments and hide sets.
+struct MacroExpansionState
+{
+	MacroExpansionCounters counters;
+	uint64_t counter = 0;
+	uint32_t serial = 0;
 };
 
 // Macro replacement ([cpp.replace] 16.3) as a pull cursor over an input.
@@ -108,8 +121,8 @@ struct MacroExpansionCounters
 class MacroExpander
 {
 public:
-	MacroExpander(
-		Arena& arena, IdentifierTable& identifiers, const PreprocessorNames& names, ExpansionEnvironment& environment);
+	MacroExpander(Arena& arena, IdentifierTable& identifiers, const PreprocessorNames& names,
+		ExpansionEnvironment& environment, MacroExpansionState& state);
 
 	void set_input(ExpansionInput* input) { input_ = input; }
 	// In a controlling expression, `defined` and __has_cpp_attribute are
@@ -123,7 +136,7 @@ public:
 	// at its end. Valid until the next call. Throws PreprocessError.
 	const PPToken& next();
 
-	const MacroExpansionCounters& counters() const { return counters_; }
+	const MacroExpansionCounters& counters() const { return state_.counters; }
 
 private:
 	// An expansion, reading [begin, end) of context_tokens_, or the barrier
@@ -289,8 +302,6 @@ private:
 	// An expansion that produced nothing had white space before its name;
 	// the next token read inherits it.
 	bool pending_space_;
-	uint64_t counter_;
-	uint32_t next_serial_;
 	// The expansion being built: its name token, serial and chain.
 	PPToken building_head_;
 	uint32_t building_serial_;
@@ -315,5 +326,5 @@ private:
 	std::vector<PPToken> expanded_tokens_;
 	std::vector<uint32_t> expanded_bounds_;
 	std::string scratch_;
-	MacroExpansionCounters counters_;
+	MacroExpansionState& state_;
 };

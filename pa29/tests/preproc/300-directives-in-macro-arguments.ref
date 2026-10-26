@@ -1,0 +1,14 @@
+preproc 1
+sof tests/preproc/300-directives-in-macro-arguments.t
+literal 0 int 00000000
+identifier start
+identifier selected
+identifier elif_selected
+identifier replacement
+literal 2 int 02000000
+literal 3 int 03000000
+identifier before
+identifier changed
+identifier inner
+identifier after
+eof

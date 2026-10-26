@@ -179,6 +179,7 @@ private:
 	TokenSpelling presumed_file_literal(uint32_t location) override;
 	bool can_include(const std::string& name, bool angle, bool next) override;
 	bool has_feature(const char* spelling, uint32_t length) override;
+	bool continue_macro_arguments() override;
 	// SourceFrameObserver.
 	void leaving_file(const SourceFrame& frame) override;
 
@@ -218,7 +219,9 @@ private:
 	PreprocessorNames names_;
 	SourceFiles files_;
 	SourceStack source_;
+	MacroExpansionState macro_state_;
 	MacroExpander expander_;
+	MacroExpander* directive_expander_;
 	MacroQuery macro_query_;
 	ControllingExpressionEvaluator evaluator_;
 	MacroDefinitionParser definition_parser_;

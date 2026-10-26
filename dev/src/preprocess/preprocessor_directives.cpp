@@ -329,10 +329,10 @@ bool Preprocessor::evaluate_condition(const PPToken& directive)
 	};
 
 	source_.begin_line_input(nullptr);
-	expander_.set_controlling_expression(true);
-	ReplacedLine line(expander_);
+	directive_expander_->set_controlling_expression(true);
+	ReplacedLine line(*directive_expander_);
 	const ControllingExpressionResult result = evaluator_.evaluate(line);
-	expander_.set_controlling_expression(false);
+	directive_expander_->set_controlling_expression(false);
 	source_.end_line_input();
 	if (result.status == ControllingExpressionStatus::Empty)
 		throw PreprocessError(directive.begin, "missing controlling expression");
@@ -652,12 +652,33 @@ void Preprocessor::apply_pack_pragma(const std::vector<PPToken>& operands)
 		pack_ = value;
 }
 
+bool Preprocessor::continue_macro_arguments()
+{
+	if (!hosted_ || !source_.at_directive())
+		return false;
+	// The text expander is still collecting raw arguments. A directive's
+	// controlling expression or computed include needs independent rescan
+	// contexts, with the same definitions and translation-unit state.
+	MacroExpander directive(arena_, identifiers_, names_, *this, macro_state_);
+	directive.set_input(&source_);
+	directive.set_binary_exponents(hosted_);
+	struct Restore
+	{
+		MacroExpander*& slot;
+		MacroExpander* previous;
+		~Restore() { slot = previous; }
+	} restore{ directive_expander_, directive_expander_ };
+	directive_expander_ = &directive;
+	run_directive();
+	return true;
+}
+
 void Preprocessor::read_replaced_line(std::vector<PPToken>& tokens)
 {
 	tokens.clear();
 	for (;;)
 	{
-		const PPToken& token = expander_.next();
+		const PPToken& token = directive_expander_->next();
 		if (token.kind == PPTokenKind::EndOfFile)
 			return;
 		tokens.push_back(token);

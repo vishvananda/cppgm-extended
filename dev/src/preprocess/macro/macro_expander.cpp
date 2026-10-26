@@ -68,12 +68,12 @@ PPToken EndToken()
 
 } // namespace
 
-MacroExpander::MacroExpander(
-	Arena& arena, IdentifierTable& identifiers, const PreprocessorNames& names, ExpansionEnvironment& environment)
+MacroExpander::MacroExpander(Arena& arena, IdentifierTable& identifiers, const PreprocessorNames& names,
+	ExpansionEnvironment& environment, MacroExpansionState& state)
 	: arena_(arena), identifiers_(identifiers), names_(names), environment_(environment), input_(nullptr),
-	  controlling_expression_(false), binary_exponents_(false), pending_space_(false), counter_(0), next_serial_(0),
-	  building_head_(EndToken()), building_serial_(0), building_chain_(0), read_serial_(0), read_chain_(0),
-	  read_root_(0), read_disabled_(0), current_(EndToken())
+	  controlling_expression_(false), binary_exponents_(false), pending_space_(false), building_head_(EndToken()),
+	  building_serial_(0), building_chain_(0), read_serial_(0), read_chain_(0), read_root_(0), read_disabled_(0),
+	  current_(EndToken()), state_(state)
 {}
 
 // ---- rescanning ---------------------------------------------------------------
@@ -118,7 +118,7 @@ bool MacroExpander::start_expansion()
 	if (hidden_by_set || (disabled != 0 && disabled_here(*macro, disabled)))
 	{
 		if (hidden_by_set && (current_.flags & (kArgument | kReplacedArgument)) == kArgument)
-			++counters_.raw_operands_hidden;
+			++state_.counters.raw_operands_hidden;
 		current_.flags |= kPainted;
 		return false;
 	}
@@ -384,7 +384,7 @@ void MacroExpander::begin_invocation(
 	invocations_.push_back(
 		Invocation{ &macro, head, nesting, passes_disabled(head, nesting.parent) ? context_disabled : 0,
 			passes_disabled(head, nesting.parent) ? inherited : 0, arguments, 0, pending_space_ });
-	telemetry::note_peak(counters_.peak_invocations, invocations_.size());
+	telemetry::note_peak(state_.counters.peak_invocations, invocations_.size());
 	advance_arguments();
 }
 
@@ -405,7 +405,14 @@ void MacroExpander::collect_arguments(const MacroDefinition& macro, const PPToke
 	for (;;)
 	{
 		if (!read(token) || token.kind == PPTokenKind::EndOfFile)
+		{
+			if (token.kind == PPTokenKind::EndOfFile && environment_.continue_macro_arguments())
+			{
+				previous_serial = 0;
+				continue;
+			}
 			throw PreprocessError(head.begin, "unterminated macro invocation");
+		}
 		if (read_serial_ != 0 && read_serial_ == previous_serial)
 			token.flags |= kFollowsInContext;
 		previous_serial = read_serial_;
@@ -455,7 +462,7 @@ void MacroExpander::collect_arguments(const MacroDefinition& macro, const PPToke
 	argument_bounds_.push_back(start);
 	argument_bounds_.push_back(static_cast<uint32_t>(argument_tokens_.size()));
 	arguments.count = index + 1;
-	counters_.argument_tokens += argument_tokens_.size() - arguments.token_mark;
+	state_.counters.argument_tokens += argument_tokens_.size() - arguments.token_mark;
 }
 
 bool MacroExpander::collect_nested_arguments(const MacroDefinition& macro, Arguments& arguments)
@@ -469,7 +476,7 @@ bool MacroExpander::collect_nested_arguments(const MacroDefinition& macro, Argum
 	Context& context = contexts_.back();
 	if (context.macro != nullptr)
 		return false;
-	++counters_.nested_collections;
+	++state_.counters.nested_collections;
 	arguments.outer = hide_sets_.merge(arguments.disabled, context.barrier.outer);
 	const uint32_t variable = macro.variadic ? macro.parameter_count - 1u : UINT32_MAX;
 	const uint32_t open = context.cursor;
@@ -531,7 +538,7 @@ void MacroExpander::advance_arguments()
 		const uint32_t i = invocation.argument;
 		if ((invocation.macro->parameter_uses[i] & kParameterExpanded) != 0)
 		{
-			++counters_.argument_expansions;
+			++state_.counters.argument_expansions;
 			expanded_bounds_.push_back(static_cast<uint32_t>(expanded_tokens_.size()));
 			const uint32_t begin = argument_bounds_[arguments.bounds + 2 * i];
 			const uint32_t end = argument_bounds_[arguments.bounds + 2 * i + 1];
@@ -552,7 +559,7 @@ void MacroExpander::push_barrier(const Arguments& arguments, uint32_t begin, uin
 	context.begin = begin;
 	context.cursor = begin;
 	context.end = end;
-	context.serial = next_serial_;
+	context.serial = state_.serial;
 	context.macro = nullptr;
 	context.disabled = arguments.disabled;
 	context.inherited = arguments.disabled;
@@ -593,7 +600,7 @@ void MacroExpander::complete_invocation()
 void MacroExpander::push_expansion(MacroDefinition& macro, const PPToken& head, const Nesting& nesting,
 	uint32_t disabled, uint32_t inherited, const Arguments* arguments)
 {
-	++counters_.invocations;
+	++state_.counters.invocations;
 	const uint32_t begin = static_cast<uint32_t>(context_tokens_.size());
 	// The arguments are hidden from the name token's set if the name is an
 	// argument token.
@@ -602,10 +609,10 @@ void MacroExpander::push_expansion(MacroDefinition& macro, const PPToken& head, 
 		: 0;
 	// Serials are not reused, so they order contexts and name each one for
 	// the translation unit.
-	if (next_serial_ == UINT32_MAX)
+	if (state_.serial == UINT32_MAX)
 		throw PreprocessError(head.begin, "too many macro invocations in one translation unit");
 	building_head_ = head;
-	building_serial_ = ++next_serial_;
+	building_serial_ = ++state_.serial;
 	building_chain_ = hide_sets_.add(nesting.chain, macro.name);
 	bool paste = false;
 	bool comma_paste = false;
@@ -682,7 +689,7 @@ void MacroExpander::push_expansion(MacroDefinition& macro, const PPToken& head, 
 	remove_placemarkers(begin);
 
 	const uint32_t end = static_cast<uint32_t>(context_tokens_.size());
-	counters_.produced_tokens += end - begin;
+	state_.counters.produced_tokens += end - begin;
 	if (begin == end)
 	{
 		if ((head.flags & kLeadingSpace) != 0)
@@ -709,8 +716,8 @@ void MacroExpander::push_expansion(MacroDefinition& macro, const PPToken& head, 
 	context.expansion.previous_open = macro.open_serial;
 	contexts_.push_back(context);
 	macro.open_serial = building_serial_;
-	telemetry::note_peak(counters_.peak_contexts, contexts_.size());
-	telemetry::note_peak(counters_.peak_context_tokens, context_tokens_.size());
+	telemetry::note_peak(state_.counters.peak_contexts, contexts_.size());
+	telemetry::note_peak(state_.counters.peak_context_tokens, context_tokens_.size());
 }
 
 void MacroExpander::substitute(const std::vector<PPToken>& source, uint32_t begin, uint32_t end,
@@ -757,7 +764,7 @@ PPToken MacroExpander::stringize(
 {
 	// White space between the argument's tokens becomes one space; `"` and
 	// `\` in character and string literals are escaped (16.3.2p2).
-	++counters_.stringizes;
+	++state_.counters.stringizes;
 	scratch_.assign(1, '"');
 	for (uint32_t i = begin; i < end; ++i)
 	{
@@ -807,7 +814,7 @@ PPToken MacroExpander::paste_tokens(const PPToken& left, const PPToken& right)
 
 	// The spellings are joined and lexed again; they shall form exactly one
 	// preprocessing token (16.3.3p3; an error under the course rules).
-	++counters_.pastes;
+	++state_.counters.pastes;
 	scratch_.assign(left.spelling, left.length);
 	scratch_.append(right.spelling, right.length);
 	const SourceBuffer text = SourceBuffer::ForTokenText(scratch_);
@@ -880,7 +887,8 @@ void MacroExpander::replace_builtin(const MacroDefinition& macro)
 	case BuiltinMacro::Counter:
 	{
 		char digits[24];
-		const int length = std::snprintf(digits, sizeof digits, "%llu", static_cast<unsigned long long>(counter_++));
+		const int length = std::snprintf(
+			digits, sizeof digits, "%llu", static_cast<unsigned long long>(state_.counter++));
 		set_number(arena_.copy_string(digits, static_cast<std::size_t>(length)), static_cast<uint32_t>(length));
 		return;
 	}

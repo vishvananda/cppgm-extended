@@ -85,11 +85,12 @@ bool Preprocessor::MacroQuery::is_defined(const char* spelling, uint32_t length)
 
 Preprocessor::Preprocessor(const PreprocessorOptions& options, const std::string& path)
 	: identifiers_(arena_), names_(identifiers_), source_(files_, identifiers_, arena_, names_, *this),
-	  expander_(arena_, identifiers_, names_, *this), macro_query_(identifiers_),
-	  evaluator_(macro_query_, options.literals), definition_parser_(arena_, names_.va_args, options.hosted),
-	  predefined_(nullptr), command_line_begin_(0), command_line_end_(0), host_predefines_begin_(0),
-	  host_predefines_end_(0), builtin_begin_(0), builtin_end_(0), hosted_(options.hosted), modes_(options.modes),
-	  directives_(0), skipped_directives_(0), includes_(0), guarded_skips_(0), finished_(false), pack_(0)
+	  expander_(arena_, identifiers_, names_, *this, macro_state_), directive_expander_(&expander_),
+	  macro_query_(identifiers_), evaluator_(macro_query_, options.literals),
+	  definition_parser_(arena_, names_.va_args, options.hosted), predefined_(nullptr), command_line_begin_(0),
+	  command_line_end_(0), host_predefines_begin_(0), host_predefines_end_(0), builtin_begin_(0), builtin_end_(0),
+	  hosted_(options.hosted), modes_(options.modes), directives_(0), skipped_directives_(0), includes_(0),
+	  guarded_skips_(0), finished_(false), pack_(0)
 {
 	expander_.set_input(&source_);
 	source_.set_binary_exponents(hosted_);

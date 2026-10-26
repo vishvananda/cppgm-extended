@@ -259,7 +259,12 @@ To complete PA29, implement hosted compatibility for:
 
 - predefined macro import, `__COUNTER__`, the GNU comma paste, `_Pragma`,
   `__has_*`, `#include_next`, `#warning`, ignored unknown pragmas, and hosted
-  hex-float preprocessing forms such as `0x1p+4`.  `#warning` lets
+  hex-float preprocessing forms such as `0x1p+4`. Hosted preprocessing also
+  executes conditional and macro-definition directives encountered while
+  collecting a function-like macro's arguments, as GNU CPP does. A redefinition
+  affects argument prescan, while the open call retains its original
+  replacement list; `__COUNTER__` remains one sequence per translation unit.
+  PA4's non-hosted text-sequence boundaries are unchanged. `#warning` lets
   translation continue, like an ignored pragma; anything it prints goes to
   standard error, which the tests do not check.  `__COUNTER__` expands to
   `0` at its first use in a translation unit and to one more at each later
