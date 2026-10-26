@@ -187,15 +187,10 @@ NameBinding ParserState::parameter_base_lookup(const Scope* templ, const Slice<T
 	// argument from its position on). Searched after the template's own
 	// members and other bases, as the semantic lookup's order allows when
 	// the name is found once.
-	const std::vector<uint32_t>* bases = nullptr;
-	for (const auto& entry : parameter_bases_)
-	{
-		if (entry.first == templ)
-			bases = &entry.second;
-	}
-	if (bases == nullptr || depth > 8)
+	if (templ->parameter_bases == 0 || depth > 8)
 		return NameBinding();
-	for (const uint32_t base : *bases)
+	const std::vector<uint32_t>& bases = parameter_bases_[templ->parameter_bases - 1];
+	for (const uint32_t base : bases)
 	{
 		const uint32_t index = base & ~kPackBase;
 		const uint32_t end = (base & kPackBase) != 0 ? arguments.size : index + 1;
@@ -286,20 +281,14 @@ void ParserState::record_parameter_base(Scope* class_scope, const Identifier* na
 		if (parameter->pack != pack)
 			return;
 		const uint32_t base = pack ? (i | kPackBase) : i;
-		std::vector<uint32_t>* bases = nullptr;
-		for (auto& entry : parameter_bases_)
+		if (class_scope->parameter_bases == 0)
 		{
-			if (entry.first == class_scope)
-				bases = &entry.second;
+			parameter_bases_.push_back(std::vector<uint32_t>());
+			class_scope->parameter_bases = static_cast<uint32_t>(parameter_bases_.size());
 		}
-		if (bases == nullptr)
-		{
-			parameter_bases_.push_back(std::make_pair(class_scope, std::vector<uint32_t>()));
-			bases = &parameter_bases_.back().second;
-		}
-		if (std::find(bases->begin(), bases->end(), base) == bases->end())
-			bases->push_back(base);
-		class_scope->parameter_bases = true;
+		std::vector<uint32_t>& bases = parameter_bases_[class_scope->parameter_bases - 1];
+		if (std::find(bases.begin(), bases.end(), base) == bases.end())
+			bases.push_back(base);
 		return;
 	}
 }

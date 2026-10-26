@@ -67,10 +67,10 @@ struct Scope
 	// A class template's partial or explicit specialization, whose members
 	// its primary template's scope shares (see add_specialization).
 	bool specialization;
-	// A class template some of whose bases name its template parameters
-	// (`template<class T> struct W : T`): a specialization's members include
-	// its arguments' (see Parser::parameter_base_lookup).
-	bool parameter_bases;
+	// The parser's base-parameter record (index + 1), or zero. A
+	// specialization's members include its arguments' members when its
+	// template inherits a parameter (see Parser::parameter_base_lookup).
+	uint32_t parameter_bases;
 	uint32_t id;
 	Scope* parent;
 	const Identifier* name;

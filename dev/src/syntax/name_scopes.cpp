@@ -112,7 +112,7 @@ Scope* NameScopes::push(ScopeKind kind, const Identifier* name)
 	scope->kind = kind;
 	scope->memo = false;
 	scope->specialization = false;
-	scope->parameter_bases = false;
+	scope->parameter_bases = 0;
 	scope->id = next_scope_id_++;
 	scope->parent = current_;
 	scope->depth = current_ != nullptr ? current_->depth + 1 : 0;

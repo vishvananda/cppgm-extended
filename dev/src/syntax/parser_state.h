@@ -298,7 +298,7 @@ protected:
 	// (kPackBase marks a parameter pack's expansion, every argument from
 	// the index on).
 	static const uint32_t kPackBase = 0x80000000u;
-	std::vector<std::pair<const Scope*, std::vector<uint32_t>>> parameter_bases_;
+	std::vector<std::vector<uint32_t>> parameter_bases_;
 	// The specializations of templates whose bases name their parameters
 	// that typedefs and aliases name (NameBinding::specialization_record -
 	// 1): the template-id's arguments.
