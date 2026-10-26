@@ -277,7 +277,13 @@ const Type* Analyzer::substitute(const Type* type, const Substitution& substitut
 		const Type* argument = substitution.arguments[parameter->index];
 		if (parameter->pack && argument->kind == TypeKind::Pack && substitution.elements != nullptr &&
 			substitution.elements[parameter->index] >= 0)
+		{
 			argument = argument->params[substitution.elements[parameter->index]];
+			// A partially bound pack's remaining expansion supplies its
+			// pattern here; substitute_list retains the enclosing expansion.
+			if (argument->kind == TypeKind::Expansion)
+				argument = argument->element;
+		}
 		return types_.qualified(argument, type->cv);
 	}
 	case TypeKind::TemplateTemplateParameter:
@@ -419,10 +425,16 @@ const Type* Analyzer::substitute(const Type* type, const Substitution& substitut
 		return pattern != nullptr ? types_.expansion(pattern) : nullptr;
 	}
 	case TypeKind::BoundPack:
-		// The element of the expansion being substituted.
+	{
+		// The element of the expansion being substituted, or the pattern
+		// of the unbound expansion left in a partially bound pack.
 		if (substitution.bound_element == nullptr || *substitution.bound_element >= type->element->param_count)
 			return type;
-		return types_.qualified(type->element->params[*substitution.bound_element], type->cv);
+		const Type* argument = type->element->params[*substitution.bound_element];
+		if (argument->kind == TypeKind::Expansion)
+			argument = argument->element;
+		return types_.qualified(argument, type->cv);
+	}
 	default:
 		return type;
 	}

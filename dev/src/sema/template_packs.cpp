@@ -494,10 +494,20 @@ void Analyzer::substitute_list(
 		element.bound_element = bound.empty() ? nullptr : &position;
 		for (int32_t j = 0; j < length; ++j)
 		{
+			// A pack can be only partially supplied (`Head, Tail...`). Its
+			// residual expansion substitutes patterns elementwise and stays
+			// around the complete result, rather than inside a nested type-id.
+			bool residual = false;
 			for (uint32_t index : packs)
+			{
 				elements[index] = j;
+				residual = residual || substitution.arguments[index]->params[j]->kind == TypeKind::Expansion;
+			}
 			position = static_cast<uint32_t>(j);
-			out.push_back(substitute(type->element, element));
+			for (const Type* pack : bound)
+				residual = residual || pack->element->params[j]->kind == TypeKind::Expansion;
+			const Type* result = substitute(type->element, element);
+			out.push_back(residual && result != nullptr ? types_.expansion(result) : result);
 		}
 	}
 }
