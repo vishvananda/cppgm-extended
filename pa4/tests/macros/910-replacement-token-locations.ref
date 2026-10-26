@@ -1,0 +1,28 @@
+preproc 1
+sof tests/macros/910-replacement-token-locations.t
+literal "head 12 tail 200" array of 17 char 68656164203132207461696C2032303000
+identifier head
+identifier tail
+literal 201 int C9000000
+identifier head
+identifier head
+literal 3 int 03000000
+identifier tail
+literal 202 int CA000000
+identifier tail
+literal 202 int CA000000
+identifier REENTER
+simple ( OP_LPAREN
+literal 4 int 04000000
+simple ) OP_RPAREN
+identifier head
+literal 5 int 05000000
+identifier tail
+literal 204 int CC000000
+identifier prefix
+identifier head
+literal 6 int 06000000
+identifier tail
+literal 206 int CE000000
+identifier suffix
+eof

@@ -601,6 +601,12 @@ void MacroExpander::push_expansion(MacroDefinition& macro, const PPToken& head, 
 	uint32_t disabled, uint32_t inherited, const Arguments* arguments)
 {
 	++state_.counters.invocations;
+	// No context or hide set can be observed when the replacement is empty.
+	if (macro.body_size == 0)
+	{
+		pending_space_ = pending_space_ || (head.flags & kLeadingSpace) != 0;
+		return;
+	}
 	const uint32_t begin = static_cast<uint32_t>(context_tokens_.size());
 	// The arguments are hidden from the name token's set if the name is an
 	// argument token.
@@ -615,6 +621,7 @@ void MacroExpander::push_expansion(MacroDefinition& macro, const PPToken& head, 
 	building_serial_ = ++state_.serial;
 	building_chain_ = hide_sets_.add(nesting.chain, macro.name);
 	bool paste = false;
+	bool has_placemarkers = false;
 	bool comma_paste = false;
 	bool first_item_emitted = false;
 	for (uint32_t i = 0; i < macro.body_size; ++i)
@@ -653,6 +660,7 @@ void MacroExpander::push_expansion(MacroDefinition& macro, const PPToken& head, 
 			}
 			if (raw_begin == raw_end)
 			{
+				has_placemarkers = true;
 				PPToken placemarker = PPToken();
 				placemarker.kind = PPTokenKind::Placemarker;
 				placemarker.spelling = "";
@@ -686,7 +694,10 @@ void MacroExpander::push_expansion(MacroDefinition& macro, const PPToken& head, 
 	// The first item's token, with the ones pasted to it, stands where the
 	// macro name stood.
 	first_item_emitted = first_item_emitted && context_tokens_[begin].kind != PPTokenKind::Placemarker;
-	remove_placemarkers(begin);
+	// Only an empty raw operand of ## emits a placemarker. Ordinary
+	// substitution and nonempty pastes need no second pass over the tokens.
+	if (has_placemarkers)
+		remove_placemarkers(begin);
 
 	const uint32_t end = static_cast<uint32_t>(context_tokens_.size());
 	state_.counters.produced_tokens += end - begin;
@@ -862,7 +873,11 @@ PPToken MacroExpander::paste_tokens(const PPToken& left, const PPToken& right)
 void MacroExpander::remove_placemarkers(uint32_t begin)
 {
 	uint32_t out = begin;
-	for (uint32_t i = begin; i < context_tokens_.size(); ++i)
+	while (out < context_tokens_.size() && context_tokens_[out].kind != PPTokenKind::Placemarker)
+		++out;
+	if (out == context_tokens_.size())
+		return;
+	for (uint32_t i = out + 1; i < context_tokens_.size(); ++i)
 	{
 		if (context_tokens_[i].kind != PPTokenKind::Placemarker)
 			context_tokens_[out++] = context_tokens_[i];

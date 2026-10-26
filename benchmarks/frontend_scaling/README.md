@@ -27,3 +27,10 @@ instruction counts and peak memory.
 `nested-chained-defaults` demands that specialization inside another template
 definition. It also checks that dependence of the preceding argument prefix
 is accumulated once, rather than scanning the prefix for every default.
+
+`macro-replacements` exercises nested function macros, ordinary replacement
+tokens, argument prescan, concatenation and empty replacements. Each generated
+conditional checks its expansion's value. The final C++ declaration is tiny,
+so a full compile measures the macro workload without a large parser, semantic
+or backend workload obscuring it. Use sizes 8000, 16000 and 32000; compare GCC
+on exactly the same generated input as well as comparing compiler snapshots.
