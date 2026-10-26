@@ -1888,12 +1888,7 @@ void FunctionLowering::initialize_subobjects(uint32_t location)
 	// default-initialization.
 	bit_unit_ = 0;
 	bit_high_ = 0;
-	// The course's other bit-field order serves a class whose implicit
-	// copy or move assignment operator the unit odr-uses (the analysis's
-	// demand record, independent of the order bodies are emitted in).
 	const sema::ClassEntity* entity = sema::ClassOf(function_->owner->entity->type);
-	bit_order_alternate_ = (entity->copy_assignment != nullptr && entity->copy_assignment->demand_mark != 0) ||
-		(entity->move_assignment != nullptr && entity->move_assignment->demand_mark != 0);
 	if (function_->delegation != nullptr)
 	{
 		// 12.6.2p6: the target constructor's entry of this entry's kind on

@@ -1782,7 +1782,6 @@ private:
 	bool allocation_copy_ = false;
 	// A constructor of a class whose implicit assignment operator the unit
 	// odr-uses initializes bit-fields in the course's other order.
-	bool bit_order_alternate_ = false;
 	// Regions opened so far (a conditional's second operand reopens one
 	// its first opened).
 	uint32_t regions_opened_ = 0;

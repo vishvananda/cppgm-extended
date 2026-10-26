@@ -1989,21 +1989,13 @@ void FunctionLowering::initialize_bit_field(const sema::DataMember* member, cons
 	RValue value;
 	if (value_first)
 		value = element != nullptr ? fit(member_operand(*element), type) : zero_value(type);
-	// The course's other form (a constructor of a class whose implicit
-	// assignment operator is used): a whole unit's value before its
-	// address; a merge reads and clears the unit first and addresses it
-	// again for the store.
-	const bool alternate = bit_order_alternate_ && value_first;
 	Place unit = Place();
 	// (A shared unit holds another unit's or subobject's bytes too.)
 	const bool whole = !field.shared && bit_unit_ != field.unit_offset + 1 && field.unit_offset * 8 >= bit_high_ &&
 		(field.unit_offset * 8 + lowir::integer_bits(field.unit.kind())) <= bit_limit_;
-	if (!alternate || !whole)
-	{
-		path_steps_.push_back(PathStep{ PathStep::Kind::Field, field.unit_offset, lowir::Type(), 0 });
-		unit.storage = path_address(path);
-		path_steps_.pop_back();
-	}
+	path_steps_.push_back(PathStep{ PathStep::Kind::Field, field.unit_offset, lowir::Type(), 0 });
+	unit.storage = path_address(path);
+	path_steps_.pop_back();
 	if (!value_first)
 		value = element != nullptr ? fit(member_operand(*element), type) : zero_value(type);
 	// A volatile object's bit-field is volatile too (3.9.3p3), its unit
@@ -2017,32 +2009,6 @@ void FunctionLowering::initialize_bit_field(const sema::DataMember* member, cons
 	{
 		storage = field.unit;
 		value = to_unit(field, value, type);
-	}
-	if (alternate)
-	{
-		bit_unit_ = field.unit_offset + 1;
-		RValue merged;
-		if (!whole)
-		{
-			const RValue old = load_unit(field, storage, unit);
-			const RValue cleared = binary(lowir::BinaryOp::And, storage, old,
-				integer(storage, FieldMask(storage, field.width, field.shift, true)));
-			merged = cleared;
-		}
-		RValue positioned = binary(
-			lowir::BinaryOp::And, storage, integer(storage, FieldMask(storage, field.width, 0, false)), value);
-		if (field.shift != 0)
-			positioned = binary(lowir::BinaryOp::Shl, storage, positioned, integer(storage, field.shift));
-		if (!whole)
-			positioned = binary(lowir::BinaryOp::Or, storage, merged, positioned);
-		path_steps_.push_back(PathStep{ PathStep::Kind::Field, field.unit_offset, lowir::Type(), 0 });
-		Place target = Place();
-		target.storage = path_address(path);
-		target.is_volatile = unit.is_volatile;
-		target.untyped = true;
-		path_steps_.pop_back();
-		store_unit(field, storage, positioned, target);
-		return;
 	}
 	const RValue masked = binary(
 		lowir::BinaryOp::And, storage, integer(storage, FieldMask(storage, field.width, 0, false)), value);
