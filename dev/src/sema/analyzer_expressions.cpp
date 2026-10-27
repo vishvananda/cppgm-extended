@@ -2701,7 +2701,10 @@ ExprFacts* Analyzer::functional_cast(const syntax::FunctionalCastExpr& expr, Sco
 	else if (expr.arguments.size == 1)
 		return explicit_conversion(expr, target, expr.arguments[0], TokenKind::OP_LPAREN, scope);
 	else if (expr.arguments.size > 1)
-		error(expr.location, "functional cast with several arguments is not supported");
+	{
+		substitution_error(expr.location, "functional cast of a non-class type from several values");
+		return nullptr;
+	}
 	// 8.5p7: a value-initialized scalar is zero-initialized; a class
 	// object's default constructor runs.
 	if (target->unqualified->kind == TypeKind::Class)
