@@ -618,11 +618,13 @@ ExprFacts* Analyzer::overloaded_operator(
 		for (uint32_t i = 0; viable && i < count; ++i)
 		{
 			Conversion& slot = sequences_[first + i];
-			// Beside non-member candidates a member's implicit object
-			// parameter names its own class (a derived object's binding
-			// is a derived-to-base Conversion, 13.3.3.1.4).
+			// Assignment candidates are declared or introduced in the
+			// left operand's class: a using-declaration makes that class
+			// the implicit object's owner for ranking (13.3.1p4). The
+			// selected call still converts to the declaring base. Other
+			// operators compete with non-members using their own class.
 			if (i == 0 && member)
-				viable = object_sequence(operands[0]->facts, function, false, slot);
+				viable = object_sequence(operands[0]->facts, function, op == TokenKind::OP_ASS, slot);
 			else
 				viable = implicit_sequence(*operands[i], type->params[i - (member ? 1 : 0)], slot);
 		}

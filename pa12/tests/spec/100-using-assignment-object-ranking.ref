@@ -1,0 +1,227 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $v : obj<4x4>
+  slot $w : obj<4x4>
+  slot $n : i16
+  slot $base : ptr
+  slot $hidden : obj<4x4>
+  slot $arg__1 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $v
+    call void @Value__Value(%t1, 1)
+    %t2 = addr $w
+    call void @Value__Value(%t2, 1)
+    %t3 = addr $v
+    %t4 = index i8 %t3, 0
+    %t5 = call u32 @Base__operator_(%t4, 2)
+    %t6 = cmp ne u32 %t5, 12
+    branch %t6, ^if_then_1, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t7 = addr $v
+    %t8 = index i8 %t7, 0
+    %t9 = call u32 @Base__operator_(%t8, 3)
+    %t10 = cmp ne u32 %t9, 13
+    branch %t10, ^if_then_1, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t11 = addr $v
+    %t12 = index i8 %t11, 0
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = load typed u32 %t13
+    %t15 = cmp ne u32 %t14, 3
+    branch %t15, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_5
+
+  block ^if_end_5:
+    %t16 = addr $w
+    %t17 = index i8 %t16, 0
+    %t18 = call u32 @Base__operator___ov2(%t17, 4)
+    %t19 = cmp ne u32 %t18, 24
+    branch %t19, ^if_then_6, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t20 = addr $w
+    %t21 = index i8 %t20, 0
+    %t22 = index i8 [projection=field] %t21, 0
+    %t23 = load volatile u32 %t22
+    %t24 = cmp ne u32 %t23, 4
+    branch %t24, ^if_then_6, ^if_else_7
+
+  block ^if_then_6:
+    return i32 2
+
+  block ^if_else_7:
+    jump ^if_end_9
+
+  block ^if_end_9:
+    store typed i16 5, $n
+    %t25 = addr $v
+    %t26 = index i8 %t25, 0
+    %t27 = load typed i16 $n
+    %t28 = convert sext u32 i16 %t27
+    %t29 = call u32 @Base__operator_(%t26, %t28)
+    %t30 = cmp ne u32 %t29, 15
+    branch %t30, ^if_then_10, ^lor_rhs_12
+
+  block ^lor_rhs_12:
+    %t31 = addr $v
+    %t32 = index i8 %t31, 0
+    %t33 = index i8 [projection=field] %t32, 0
+    %t34 = load typed u32 %t33
+    %t35 = cmp ne u32 %t34, 5
+    branch %t35, ^if_then_10, ^if_else_11
+
+  block ^if_then_10:
+    return i32 3
+
+  block ^if_else_11:
+    jump ^if_end_13
+
+  block ^if_end_13:
+    %t36 = addr $v
+    %t37 = index i8 %t36, 0
+    store typed ptr %t37, $base
+    %t38 = load typed ptr $base
+    %t39 = call u32 @Base__operator_(%t38, 6)
+    %t40 = cmp ne u32 %t39, 16
+    branch %t40, ^if_then_14, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t41 = addr $v
+    %t42 = index i8 %t41, 0
+    %t43 = index i8 [projection=field] %t42, 0
+    %t44 = load typed u32 %t43
+    %t45 = cmp ne u32 %t44, 6
+    branch %t45, ^if_then_14, ^if_else_15
+
+  block ^if_then_14:
+    return i32 4
+
+  block ^if_else_15:
+    jump ^if_end_17
+
+  block ^if_end_17:
+    %t46 = addr $hidden
+    call void @Hidden__Hidden(%t46, 0)
+    %t47 = addr $hidden
+    %t48 = addr $arg__1
+    call void @Hidden__Hidden(%t48, 7)
+    %t49 = call ptr @Hidden__operator___ov2(%t47, %t48)
+    %t50 = addr $hidden
+    %t51 = index i8 %t50, 0
+    %t52 = index i8 [projection=field] %t51, 0
+    %t53 = load typed u32 %t52
+    %t54 = cmp ne u32 %t53, 7
+    %t55 = convert trunc i32 i64 %t54
+    return i32 %t55
+}
+function @Value__Value(%this : ptr [object_bytes=4], %n : u32) -> void [binding=weak, object=_ZN5ValueC1Ej, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : u32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed u32 %n, $n
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    call void @Base__Base__base_entry(%t2)
+    %t3 = load typed u32 $n
+    %t4 = load typed ptr $this
+    %t5 = index i8 %t4, 0
+    %t6 = index i8 [projection=field] %t5, 0
+    store typed u32 %t3, %t6
+    return void
+}
+function @Base__operator_(%this : ptr [object_bytes=4], %n : u32) -> u32 [binding=weak, object=_ZN4BaseaSEj, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : u32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed u32 %n, $n
+    %t1 = load typed u32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed u32 %t1, %t3
+    %t4 = load typed u32 $n
+    %t5 = binary add u32 %t4, 10
+    return u32 %t5
+}
+function @Base__operator___ov2(%this : ptr [object_bytes=4], %n : u32) -> u32 [binding=weak, object=_ZNV4BaseaSEj, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : u32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed u32 %n, $n
+    %t1 = load typed u32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store volatile u32 %t1, %t3
+    %t4 = load typed u32 $n
+    %t5 = binary add u32 %t4, 20
+    return u32 %t5
+}
+function @Hidden__Hidden(%this : ptr [object_bytes=4], %n : u32) -> void [binding=weak, object=_ZN6HiddenC1Ej, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : u32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed u32 %n, $n
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    call void @Base__Base__base_entry(%t2)
+    %t3 = load typed u32 $n
+    %t4 = load typed ptr $this
+    %t5 = index i8 %t4, 0
+    %t6 = index i8 [projection=field] %t5, 0
+    store typed u32 %t3, %t6
+    return void
+}
+function @Hidden__operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN6HiddenaSEOS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    %t3 = load typed ptr $other
+    %t4 = index i8 %t3, 0
+    %t5 = call ptr @Base__operator___ov4(%t2, %t4)
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Base__Base__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store typed u32 0, %t2
+    return void
+}
+function @Base__operator___ov4(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN4BaseaSEOS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
+    copyobj 4x4 %t2, %t1
+    %t3 = load typed ptr $this
+    return ptr %t3
+}
+alias object _ZN5ValueC2Ej = @Value__Value
+alias object _ZN6HiddenC2Ej = @Hidden__Hidden
