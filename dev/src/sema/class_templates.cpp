@@ -522,8 +522,10 @@ const Type* Analyzer::template_argument(
 		// value.
 		if (kind == BindingKind::TemplateValue)
 			return result.binding->entity->type;
-		const bool dependent = name.qualified() && !name.last().template_keyword &&
-			(last_prefix_.dependent != nullptr || IsDependentMember(result.binding));
+		// A dependent using-declaration also introduces an unqualified
+		// value name unless the parser recorded a type-id with `typename`.
+		const bool dependent = !name.last().template_keyword &&
+			((name.qualified() && last_prefix_.dependent != nullptr) || IsDependentMember(result.binding));
 		// 14.6p6: a name the definition assumed to name no type (a copy of
 		// the name keeps the fact) names none in its instantiations.
 		if (dependent)
