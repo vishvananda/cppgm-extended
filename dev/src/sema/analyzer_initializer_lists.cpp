@@ -371,14 +371,18 @@ const Type* Analyzer::list_deduced_type(const Specifiers& specifiers, const Type
 bool Analyzer::deduce_list_elements(
 	const Type* p, const syntax::BracedInitList& list, uint32_t depth, TypeList& arguments)
 {
-	// 14.8.2.1p1: P, references and cv-qualifiers removed, is
-	// std::initializer_list<P'>: each element deduces from P' (a braced
-	// element so too, recursively: a braced element of another P' deduces
-	// nothing); true when P is another type (the list a non-deduced
-	// context).
-	const Type* element = initializer_list_element(p);
+	// 14.8.2.1p1, CWG 1591: a nonempty list deduces each element of an
+	// initializer_list<P'> or P'[N], and a named bound from its length.
+	// Other types and empty lists remain non-deduced contexts.
+	if (list.elements.size == 0)
+		return true;
+	const Type* object = p->is_reference() ? p->element : p;
+	const Type* array = object->unqualified->kind == TypeKind::Array ? object : nullptr;
+	const Type* element = array != nullptr ? array->element : initializer_list_element(p);
 	if (element == nullptr)
 		return true;
+	if (array != nullptr && array->owner != nullptr && !deduce_array_bound(array, list.elements.size, depth, arguments))
+		return false;
 	for (const syntax::Expr* item : list.elements)
 	{
 		if (item->kind == syntax::ExprKind::BracedInit)

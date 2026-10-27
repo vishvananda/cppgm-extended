@@ -153,6 +153,8 @@ the implemented surface, including:
 - constructor template deduction and overload participation
 - non-deduced contexts and explicit template-id deduction edge cases
 - braced-init deduction in the supported template-call subset
+  includes CWG 1591: a nonempty braced list deduces array element types and
+  named bounds, as GCC and Clang apply the resolution in C++11 mode
 - pointer, reference, enum, and static-member non-type template argument values
   over the supported constant-expression subset
 - template deduction from arguments whose types come from already-resolved

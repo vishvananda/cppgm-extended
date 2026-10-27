@@ -557,6 +557,22 @@ bool Analyzer::deduce_class(const Type* p, const Type* a, uint32_t depth, TypeLi
 	return true;
 }
 
+bool Analyzer::deduce_array_bound(const Type* array, uint64_t count, uint32_t depth, TypeList& arguments)
+{
+	// 14.8.2.5p8, p17: a dependent bound that names a non-type parameter
+	// deduces from an array's size, of any integral type. Other dependent
+	// bounds remain non-deduced contexts (p5).
+	const TemplateParameterEntity* bound = static_cast<const TemplateParameterEntity*>(array->owner->entity)->named;
+	if (bound == nullptr || bound->depth != depth || bound->index >= arguments.size() || count == 0)
+		return true;
+	const Type* value = types_.value(types_.fundamental(FundamentalType::UnsignedLongInt), count);
+	if (arguments[bound->index] == nullptr)
+		arguments[bound->index] = value;
+	else if (!SameValue(arguments[bound->index], value))
+		return false;
+	return true;
+}
+
 bool Analyzer::deduce_type(const Type* p, const Type* a, uint32_t depth, TypeList& arguments, bool extra_cv)
 {
 	// 14.8.2.5: P and A match structurally, each template parameter of P
@@ -643,16 +659,8 @@ bool Analyzer::deduce_type(const Type* p, const Type* a, uint32_t depth, TypeLis
 		// is a non-deduced context (p5).
 		if (p->owner != nullptr)
 		{
-			const TemplateParameterEntity* bound = static_cast<const TemplateParameterEntity*>(p->owner->entity)->named;
-			if (bound != nullptr && bound->depth == depth && bound->index < arguments.size() && a->owner == nullptr &&
-				a->bound != 0)
-			{
-				const Type* value = types_.value(types_.fundamental(FundamentalType::UnsignedLongInt), a->bound);
-				if (arguments[bound->index] == nullptr)
-					arguments[bound->index] = value;
-				else if (!SameValue(arguments[bound->index], value))
-					return false;
-			}
+			if (a->owner == nullptr && !deduce_array_bound(p, a->bound, depth, arguments))
+				return false;
 		}
 		else if (p->bound != a->bound)
 			return false;

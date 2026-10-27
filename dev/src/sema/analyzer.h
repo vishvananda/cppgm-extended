@@ -876,6 +876,7 @@ private:
 	const Type* substitute_function(const Type* type, const Substitution& substitution, bool leading);
 	const Type* without_cv(const Type* type, uint8_t cv);
 	bool deduce_type(const Type* p, const Type* a, uint32_t depth, TypeList& arguments, bool extra_cv);
+	bool deduce_array_bound(const Type* array, uint64_t count, uint32_t depth, TypeList& arguments);
 	bool deduce_class(const Type* p, const Type* a, uint32_t depth, TypeList& arguments);
 	bool deduce_from_base(const Type* p, const Type* a, uint32_t depth, TypeList& arguments);
 	bool complete_deduction(FunctionEntity* primary, TypeList& arguments);
