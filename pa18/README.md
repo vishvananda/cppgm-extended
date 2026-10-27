@@ -152,6 +152,8 @@ the implemented surface, including:
   explicit specializations and cv/reference target arguments
 - constructor template deduction and overload participation
 - non-deduced contexts and explicit template-id deduction edge cases
+- CWG 1391: after deduction and defaults, conversions to originally
+  nondependent call parameters are checked before signature substitution
 - braced-init deduction in the supported template-call subset
   includes CWG 1591: a nonempty braced list deduces array element types and
   named bounds, as GCC and Clang apply the resolution in C++11 mode

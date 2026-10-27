@@ -889,7 +889,10 @@ private:
 	const Type* without_level_cv(const Type* type);
 	FunctionEntity* deduce_for_operand(FunctionEntity* primary, const ExprFacts* from);
 	FunctionEntity* specialize(FunctionEntity* primary, const TypeList& arguments);
-	FunctionEntity* deduced_specialization(FunctionEntity* primary, TypeList& arguments);
+	FunctionEntity* deduced_specialization(
+		FunctionEntity* primary, TypeList& arguments, const syntax::Slice<syntax::Expr*>* call_arguments = nullptr);
+	bool fixed_call_arguments(
+		const FunctionEntity* primary, const TypeList& arguments, const syntax::Slice<syntax::Expr*>& call_arguments);
 	bool deduced_values_typed(const FunctionEntity* primary, const TypeList& arguments);
 	const Type* synthesized_type(uint32_t index);
 	bool at_least_as_specialized(

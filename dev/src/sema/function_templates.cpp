@@ -1041,7 +1041,7 @@ FunctionEntity* Analyzer::deduce_for_call(
 			flattened_arguments(&arguments[index], 1, elements);
 		arguments[index] = types_.pack(elements.data(), static_cast<uint32_t>(elements.size()));
 	}
-	return deduced_specialization(primary, arguments);
+	return deduced_specialization(primary, arguments, &call_arguments);
 }
 
 FunctionEntity* Analyzer::deduce_for_target(FunctionEntity* primary, const Type* function, const Type* given)
@@ -1137,7 +1137,54 @@ const Type* Analyzer::without_level_cv(const Type* type)
 	return type;
 }
 
-FunctionEntity* Analyzer::deduced_specialization(FunctionEntity* primary, TypeList& arguments)
+bool Analyzer::fixed_call_arguments(
+	const FunctionEntity* primary, const TypeList& arguments, const syntax::Slice<syntax::Expr*>& call_arguments)
+{
+	// CWG 1391: after deduction and defaults, an impossible conversion to
+	// an originally nondependent parameter fails before signature
+	// substitution. Parameters made nondependent by explicit arguments
+	// still wait for overload resolution. A pack's bound length locates
+	// the next fixed parameter without substituting the pack's types.
+	const Type* type = primary->type->canonical;
+	const TemplateHead* head = HeadOf(primary);
+	const uint32_t depth = head->count != 0 ? head->parameters[0]->depth : 0;
+	uint32_t argument = 0;
+	for (uint32_t i = 0; i < type->param_count && argument < call_arguments.size; ++i)
+	{
+		const Type* parameter = type->params[i];
+		if (parameter->kind == TypeKind::Expansion)
+		{
+			PackList packs;
+			TypeList bound;
+			unexpanded_packs(parameter->element, depth, packs, &bound);
+			int32_t length = BoundLength(bound);
+			for (uint32_t index : packs)
+			{
+				const Type* pack = arguments[index];
+				if (pack == nullptr || pack->kind != TypeKind::Pack)
+					return true;
+				if (length >= 0 && static_cast<uint32_t>(length) != pack->param_count)
+					return false;
+				length = static_cast<int32_t>(pack->param_count);
+			}
+			if (length < 0)
+				return true;
+			argument += static_cast<uint32_t>(length);
+			continue;
+		}
+		if (!dependent_type(parameter))
+		{
+			Conversion conversion = Conversion();
+			if (!implicit_sequence(*call_arguments[argument], parameter, conversion))
+				return false;
+		}
+		++argument;
+	}
+	return true;
+}
+
+FunctionEntity* Analyzer::deduced_specialization(
+	FunctionEntity* primary, TypeList& arguments, const syntax::Slice<syntax::Expr*>* call_arguments)
 {
 	// 14.8.2p5-p8: the deduced arguments completed by the defaults and
 	// substituted into the function type; an invalid type or expression
@@ -1147,7 +1194,10 @@ FunctionEntity* Analyzer::deduced_specialization(FunctionEntity* primary, TypeLi
 	const Entity* saved = substitution_context_;
 	substitution_context_ = primary;
 	SoftSubstitution soft(*this);
-	FunctionEntity* function = complete_deduction(primary, arguments) ? specialize(primary, arguments) : nullptr;
+	FunctionEntity* function = nullptr;
+	if (complete_deduction(primary, arguments) &&
+		(call_arguments == nullptr || fixed_call_arguments(primary, arguments, *call_arguments)))
+		function = specialize(primary, arguments);
 	substitution_context_ = saved;
 	return soft.failed() ? nullptr : function;
 }
