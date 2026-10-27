@@ -205,6 +205,8 @@ ExprFacts* Analyzer::builtin_operation(const syntax::CallExpr& expr, const Funct
 		return overflow_builtin(expr, variant, scope);
 	case GnuBuiltin::VectorLanes:
 		return vector_lane_builtin(expr, variant, scope);
+	case GnuBuiltin::VectorShiftBytes:
+		return vector_shift_builtin(expr, variant, scope);
 	case GnuBuiltin::OperatorNew:
 	case GnuBuiltin::OperatorDelete:
 		return allocation_builtin(expr, builtin->gnu_builtin == GnuBuiltin::OperatorNew, scope);
@@ -735,6 +737,31 @@ ExprFacts* Analyzer::vector_lane_builtin(const syntax::CallExpr& expr, uint8_t v
 		: operation.kind == 'e'                  ? Intrinsic::VectorExtract
 												 : Intrinsic::VectorInsert;
 	facts->value = static_cast<uint64_t>(kind) | selected << 8 | (run_time ? uint64_t(1) << 16 : 0);
+	return facts;
+}
+
+ExprFacts* Analyzer::vector_shift_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope)
+{
+	if (expr.arguments.size != 2)
+		error(expr.location, "wrong number of arguments to a whole-register byte shift");
+	const Type* vector = types_.vector(types_.fundamental(FundamentalType::LongLongInt), 2);
+	for (uint32_t i = 0; i < 2; ++i)
+	{
+		if (typed_value(*expr.arguments[i], scope) == nullptr)
+			return nullptr;
+		convert(*expr.arguments[i], i == 0 ? vector : types_.fundamental(FundamentalType::Int), false);
+	}
+	Constant count;
+	const bool constant = constant_value(*expr.arguments[1], scope, count, false);
+	if (constant && (count.bits > 2040 || count.bits % 8 != 0))
+		error(expr.arguments[1]->location, "a byte-shift bit count must be eight times an 8-bit immediate");
+	if (!constant && template_depth_ == 0 &&
+		(body_ == nullptr || body_->function == nullptr || !body_->function->always_inline))
+		error(expr.arguments[1]->location, "a byte-shift count that is no integral constant expression");
+	ExprFacts* facts = new_facts(expr, vector, ValueCategory::PRValue);
+	facts->flags |= kIntrinsic;
+	const Intrinsic kind = variant == 0 ? Intrinsic::VectorShiftLeftBytes : Intrinsic::VectorShiftRightBytes;
+	facts->value = static_cast<uint64_t>(kind) | (constant ? count.bits / 8 << 8 : uint64_t(1) << 16);
 	return facts;
 }
 

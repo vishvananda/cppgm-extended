@@ -179,6 +179,10 @@ enum class Intrinsic : uint8_t
 	VectorInit,
 	VectorExtract,
 	VectorInsert,
+	// SSE2 whole-register byte shifts: bits 8-15 hold the constant byte
+	// count, bit 16 a selector in an always_inline wrapper or template.
+	VectorShiftLeftBytes,
+	VectorShiftRightBytes,
 	// __builtin_add/sub/mul_overflow(a, b, result): the infinitely precise
 	// a op b stored through `result` modulo its type, and whether that
 	// changed it.

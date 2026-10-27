@@ -1,0 +1,34 @@
+#include <emmintrin.h>
+#include <cstdio>
+
+static int evaluations;
+__attribute__((noinline)) __m128i input(const unsigned char* bytes) {
+  ++evaluations;
+  return _mm_loadu_si128(reinterpret_cast<const __m128i*>(bytes));
+}
+template<int Count> int check(unsigned& checksum) {
+  const unsigned char original[16] = {1, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53};
+  __m128i left = _mm_slli_si128(input(original), Count);
+  __m128i right = _mm_srli_si128(input(original), Count);
+  unsigned char a[16], b[16];
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(a), left);
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(b), right);
+  for (int i = 0; i != 16; ++i) {
+    const int want_a = i >= Count ? original[i - Count] : 0;
+    const int want_b = i + Count < 16 ? original[i + Count] : 0;
+    if (a[i] != want_a || b[i] != want_b) return 1;
+    checksum = checksum * 33 + a[i] * 3 + b[i];
+  }
+  return 0;
+}
+int main() {
+  unsigned checksum = 0;
+#define CHECK(n) if (check<n>(checksum)) return n + 1
+  CHECK(0); CHECK(1); CHECK(2); CHECK(3); CHECK(4); CHECK(5); CHECK(6); CHECK(7);
+  CHECK(8); CHECK(9); CHECK(10); CHECK(11); CHECK(12); CHECK(13); CHECK(14); CHECK(15);
+  CHECK(16); CHECK(17); CHECK(31); CHECK(32); CHECK(127); CHECK(255);
+#undef CHECK
+  if (evaluations != 44) return 100;
+  std::printf("byte shifts %d checksum %u\n", evaluations, checksum);
+  return 0;
+}

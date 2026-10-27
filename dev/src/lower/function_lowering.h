@@ -1338,6 +1338,7 @@ private:
 	RValue convert_vector(const syntax::BuiltinTraitExpr& expr);
 	RValue reduce_vector(const syntax::CallExpr& expr, sema::Intrinsic kind);
 	RValue vector_lanes(const syntax::CallExpr& expr, sema::Intrinsic kind);
+	RValue shift_vector_bytes(const syntax::CallExpr& expr, sema::Intrinsic kind);
 	RValue reinterpret_bytes(const RValue& value, const sema::Type* to);
 	RValue bit_cast(const syntax::BuiltinTraitExpr& expr);
 	// A builtin's value: __builtin_va_arg's argument, a complex part, a

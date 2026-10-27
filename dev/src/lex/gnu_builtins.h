@@ -62,6 +62,8 @@ enum class GnuBuiltin : uint8_t
 	// GCC's x86 lane builtins __builtin_ia32_vec_init/ext/set_<mode>: an
 	// index of kGnuVectorLaneOperations.
 	VectorLanes,
+	// GCC's SSE2 whole-register shifts; variant 0 left, 1 right.
+	VectorShiftBytes,
 	Overflow,
 	OperatorNew,
 	OperatorDelete,

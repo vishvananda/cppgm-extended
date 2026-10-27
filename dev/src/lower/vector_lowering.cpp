@@ -346,6 +346,55 @@ RValue FunctionLowering::convert_vector(const syntax::BuiltinTraitExpr& expr)
 	return load(lowering_.storage_type(to), place);
 }
 
+RValue FunctionLowering::shift_vector_bytes(const syntax::CallExpr& expr, sema::Intrinsic kind)
+{
+	// The complete vector moves by bytes, across its original lane
+	// boundaries. The sixteen byte reads are bounded even for a wrapper's
+	// still-variable immediate: an out-of-range position selects zero.
+	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
+	const sema::Type* vector = expr.facts->type;
+	const lowir::Value source = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const bool runtime = (expr.facts->value >> 16 & 1) != 0;
+	const uint64_t bytes = expr.facts->value >> 8 & 0xff;
+	const bool left = kind == sema::Intrinsic::VectorShiftLeftBytes;
+	RValue count;
+	if (runtime)
+	{
+		const RValue bits = operand(*expr.arguments[1], ConversionContext::Argument);
+		count = convert_op(
+			lowir::ConvertOp::ZExt, i64, binary(lowir::BinaryOp::UShr, bits.type, bits, integer(bits.type, 3)));
+	}
+	else
+		discard(*expr.arguments[1]);
+	lowir::SlotId slot = lowir::kNoId;
+	const lowir::Value out = zeroed_vector(vector, slot);
+	for (uint64_t i = 0; i < 16; ++i)
+	{
+		if (!runtime && (left ? i < bytes : i + bytes >= 16))
+			continue;
+		RValue offset = integer(i64, left ? i - bytes : i + bytes);
+		RValue valid;
+		if (runtime)
+		{
+			valid = compare(left ? lowir::ComparePredicate::Ule : lowir::ComparePredicate::Ult, i64, count,
+				integer(i64, left ? i : 16 - i));
+			offset = binary(left ? lowir::BinaryOp::Sub : lowir::BinaryOp::Add, i64, integer(i64, i), count);
+			offset = binary(lowir::BinaryOp::And, i64, offset, integer(i64, 15));
+		}
+		Place byte = Place();
+		byte.storage = index(i8, ir_model::IPK_FIELD, source, offset).value;
+		RValue value = load(i8, byte);
+		if (runtime)
+			value = binary(lowir::BinaryOp::Mul, i8, value, convert_op(lowir::ConvertOp::Trunc, i8, valid));
+		byte.storage = index(i8, ir_model::IPK_FIELD, out, integer(i64, i)).value;
+		store(i8, value, byte);
+	}
+	Place place = Place();
+	place.storage = lowir::Value::slot(slot);
+	return load(lowering_.storage_type(vector), place);
+}
+
 RValue FunctionLowering::reduce_vector(const syntax::CallExpr& expr, sema::Intrinsic kind)
 {
 	// The lanes combined in order: bitwise, sums and products in the lane
