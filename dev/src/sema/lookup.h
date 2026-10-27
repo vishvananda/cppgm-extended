@@ -109,6 +109,9 @@ public:
 	// earlier declarations an instantiation's copy repeats).
 	LookupResult own(const Scope* scope, const Identifier* name, LookupFilter filter) const;
 	LookupResult declared(const Scope* scope, const Identifier* name, LookupFilter filter);
+	// Type aliases may be distinct declarations designating one canonical
+	// type, or namespace aliases one namespace. Template names stay distinct.
+	static bool designates_one(const Binding* a, const Binding* b);
 	// A class scope as unqualified lookup searches it: its members and those
 	// of its bases that do not depend on a template parameter (14.6.2p3).
 	LookupResult members(Scope* scope, const Identifier* name, LookupFilter filter);

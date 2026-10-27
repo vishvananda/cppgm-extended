@@ -455,6 +455,11 @@ LookupResult NameLookup::declared(const Scope* scope, const Identifier* name, Lo
 	return result;
 }
 
+bool NameLookup::designates_one(const Binding* a, const Binding* b)
+{
+	return DesignateOne(a, b);
+}
+
 FunctionList* NameLookup::functions(const NameEntry& entry) const
 {
 	return limit_ == kNoLimit || entry.functions == nullptr || entry.functions->binding->ordinal <= limit_

@@ -1,0 +1,36 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type-alias Count unsigned long int
+    type-alias Constant const int
+    type-alias Callback function of (const int) returning int
+    type-alias Buffer array of 3 int
+    type-alias Reference lvalue-reference to int
+    type Value struct Value
+    type-alias Count unsigned long int
+    type-alias Count unsigned long int
+    type-alias Constant const int
+    type-alias Callback function of (int) returning int
+    type-alias Buffer array of 3 int
+    type-alias Reference lvalue-reference to int
+    type-alias Value struct Value
+    variable count unsigned long int
+    function callback function of (int) returning int
+    variable buffer array of 3 int
+    variable reference lvalue-reference to int
+    function block function of () returning void
+    scope class Value
+    scope namespace library
+      type-alias Count unsigned long int
+      type-alias Constant const int
+      type-alias Callback function of (int) returning int
+      type-alias Buffer array of 3 int
+      type-alias Reference lvalue-reference to int
+      type-alias Value struct Value
+    scope function block
+      scope block
+        type-alias Count unsigned long int
+        type-alias Count unsigned long int
+        variable local unsigned long int
+end translation unit

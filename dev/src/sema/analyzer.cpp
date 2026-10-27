@@ -762,7 +762,11 @@ void Analyzer::introduce(Binding* target, Scope* scope, uint32_t location)
 		}
 		else if (target->kind == BindingKind::Type || target->kind == BindingKind::TypeAlias)
 		{
-			if (!same_type && entry->type != nullptr)
+			// 7.1.3p3: outside a class, typedef-names may redeclare the
+			// same type even when their declarations are distinct.
+			if (!same_type && entry->type != nullptr &&
+				(where->kind == ScopeKind::Class || (value != nullptr && !value->invisible) ||
+					!NameLookup::designates_one(entry->type, target)))
 				error(location, "using-declaration conflicts with an earlier declaration");
 		}
 		else if (!same_value && value != nullptr)
