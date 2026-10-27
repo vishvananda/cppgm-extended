@@ -1654,21 +1654,32 @@ ExprFacts* Analyzer::assignment(const syntax::BinaryExpr& expr, Scope* scope)
 	if (expr.right->kind == syntax::ExprKind::BracedInit)
 	{
 		// 5.17p9: `x = {v}` of a scalar is `x = T{v}`, `x = {}` is `x = T{}`;
-		// of a class object, x.operator=({...}).
-		if (expr.op == TokenKind::OP_ASS && left->type != nullptr && left->type->unqualified->kind == TypeKind::Class)
+		// Overloaded assignments take the list as their right argument.
+		if (left->type != nullptr &&
+			(left->type->unqualified->kind == TypeKind::Class ||
+				(expr.op != TokenKind::OP_ASS && left->type->unqualified->kind == TypeKind::Enum)))
 		{
 			braced_argument(static_cast<const syntax::BracedInitList&>(*expr.right), scope);
 			if (ExprFacts* overloaded = failed() ? nullptr : binary_operator(expr, scope))
 				return overloaded;
 			if (failed())
 				return nullptr;
-			error(expr.location, "no viable assignment operator for the braced-init-list");
+			substitution_error(expr.location, "no viable assignment operator for the braced-init-list");
+			return nullptr;
 		}
 		if (expr.op != TokenKind::OP_ASS || !(IsScalar(left->type) || IsComplex(left->type)))
-			error(expr.right->location, "assignment from a braced-init-list is not supported");
+		{
+			substitution_error(expr.right->location, "assignment from a braced-init-list is not supported");
+			return nullptr;
+		}
 		if (!modifiable_lvalue(left))
-			error(expr.location, "assignment to something that is not a modifiable lvalue");
+		{
+			substitution_error(expr.location, "assignment to something that is not a modifiable lvalue");
+			return nullptr;
+		}
 		list_initialize(static_cast<const syntax::BracedInitList&>(*expr.right), left->type->unqualified, scope);
+		if (failed())
+			return nullptr;
 		ExprFacts* facts = new_facts(expr, left->type, ValueCategory::LValue);
 		facts->flags = left->flags & kBitField;
 		return facts;

@@ -1,0 +1,351 @@
+global @lhs_calls : i32 [binding=strong] = zero
+global @rhs_calls : i32 [binding=strong] = zero
+
+function @left(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z4leftR4Sink] {
+  slot $value : ptr
+
+  block ^entry:
+    store typed ptr %value, $value
+    %t1 = load typed i32 @lhs_calls
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @lhs_calls
+    %t3 = load typed ptr $value
+    return ptr %t3
+}
+function @right() -> i32 [binding=strong, object=_Z5rightv] {
+  block ^entry:
+    %t1 = load typed i32 @rhs_calls
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @rhs_calls
+    return i32 2
+}
+function @adl__operator__(%value : ptr [pass=by_address, object_bytes=4], %n : i32) -> ptr [binding=strong, object=_ZN3adlpLERNS_4ItemEi] {
+  slot $value : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %value, $value
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $value
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary add nowrap i32 %t4, %t1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $value
+    return ptr %t6
+}
+function @adl__operator____ov2(%value : ptr [pass=by_address, object_bytes=4], %n : i32) -> ptr [binding=strong, object=_ZN3adlpLERNS_4BitsEi] {
+  slot $value : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %value, $value
+    store typed i32 %n, $n
+    %t1 = load typed ptr $value
+    %t2 = load typed i32 %t1
+    %t3 = load typed i32 $n
+    %t4 = binary add nowrap i32 %t2, %t3
+    %t5 = load typed ptr $value
+    store typed i32 %t4, %t5
+    %t6 = load typed ptr $value
+    return ptr %t6
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $sink : obj<4x4>
+  slot $same : ptr
+  slot $item : obj<4x4>
+  slot $bits : i32
+  slot $n : i32
+  slot $constant : obj<8x8>
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+
+  block ^entry:
+    %t1 = addr $sink
+    %t2 = addr $sink
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 10, %t3
+    %t4 = addr $sink
+    %t5 = call ptr @left(%t4)
+    %t6 = call i32 @right()
+    %t7 = call ptr @Sink__operator__(%t5, %t6)
+    store typed ptr %t7, $same
+    %t8 = addr $sink
+    %t9 = call ptr @Sink__operator____2(%t8, 3)
+    %t10 = addr $sink
+    %t11 = call ptr @Sink__operator____3(%t10, 4)
+    %t12 = addr $sink
+    %t13 = call ptr @Sink__operator____4(%t12, 3)
+    %t14 = addr $sink
+    %t15 = call ptr @Sink__operator____5(%t14, 5)
+    %t16 = addr $sink
+    %t17 = call ptr @Sink__operator___(%t16, 2)
+    %t18 = addr $sink
+    %t19 = call ptr @Sink__operator_____2(%t18, 1)
+    %t20 = addr $sink
+    %t21 = call ptr @Sink__operator____6(%t20, 6)
+    %t22 = addr $sink
+    %t23 = call ptr @Sink__operator____7(%t22, 3)
+    %t24 = addr $sink
+    %t25 = call ptr @Sink__operator____8(%t24, 8)
+    %t26 = addr $sink
+    %t27 = index i8 [projection=field] %t26, 0
+    %t28 = load typed i32 %t27
+    %t29 = cmp ne i32 %t28, 15
+    branch %t29, ^if_then_1, ^lor_rhs_5
+
+  block ^lor_rhs_5:
+    %t30 = load typed ptr $same
+    %t31 = addr $sink
+    %t32 = cmp ne ptr %t30, %t31
+    branch %t32, ^if_then_1, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t33 = load typed i32 @lhs_calls
+    %t34 = cmp ne i32 %t33, 1
+    branch %t34, ^if_then_1, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t35 = load typed i32 @rhs_calls
+    %t36 = cmp ne i32 %t35, 1
+    branch %t36, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t37 = addr $item
+    %t38 = addr $item
+    %t39 = index i8 [projection=field] %t38, 0
+    store typed i32 1, %t39
+    %t40 = addr $item
+    %t41 = call ptr @adl__operator__(%t40, 2)
+    store typed i32 0, $bits
+    %t42 = addr $bits
+    %t43 = call ptr @adl__operator____ov2(%t42, 1)
+    store typed i32 0, $n
+    %t44 = addr $constant
+    %t45 = addr $n
+    %t46 = addr $constant
+    %t47 = index i8 [projection=field] %t46, 0
+    store typed ptr %t45, %t47
+    %t48 = addr $constant
+    %t49 = call ptr @Constant__operator__(%t48, 3)
+    %t50 = addr $item
+    %t51 = index i8 [projection=field] %t50, 0
+    %t52 = load typed i32 %t51
+    %t53 = cmp ne i32 %t52, 3
+    branch %t53, ^lor_short_8, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t54 = load typed i32 $bits
+    %t55 = cmp ne i32 %t54, 1
+    %t56 = cmp ne i64 %t55, 0
+    store typed i64 %t56, $lor__1
+    jump ^lor_end_9
+
+  block ^lor_short_8:
+    store typed i64 1, $lor__1
+    jump ^lor_end_9
+
+  block ^lor_end_9:
+    %t57 = load typed i64 $lor__1
+    branch %t57, ^lor_short_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t58 = load typed i32 $n
+    %t59 = cmp ne i32 %t58, 3
+    %t60 = cmp ne i64 %t59, 0
+    store typed i64 %t60, $lor__2
+    jump ^lor_end_12
+
+  block ^lor_short_11:
+    store typed i64 1, $lor__2
+    jump ^lor_end_12
+
+  block ^lor_end_12:
+    %t61 = load typed i64 $lor__2
+    %t62 = convert trunc i32 i64 %t61
+    return i32 %t62
+}
+function @Sink__operator__(%this : ptr [object_bytes=4], %n : i32) -> ptr [binding=weak, object=_ZN4SinkpLEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary add nowrap i32 %t4, %t1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Sink__operator____2(%this : ptr [object_bytes=4], %n : i32) -> ptr [binding=weak, object=_ZN4SinkmIEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary sub nowrap i32 %t4, %t1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Sink__operator____3(%this : ptr [object_bytes=4], %n : i32) -> ptr [binding=weak, object=_ZN4SinkmLEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary mul nowrap i32 %t4, %t1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Sink__operator____4(%this : ptr [object_bytes=4], %n : i32) -> ptr [binding=weak, object=_ZN4SinkdVEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary div i32 %t4, %t1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Sink__operator____5(%this : ptr [object_bytes=4], %n : i32) -> ptr [binding=weak, object=_ZN4SinkrMEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary mod i32 %t4, %t1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Sink__operator___(%this : ptr [object_bytes=4], %n : i32) -> ptr [binding=weak, object=_ZN4SinklSEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary shl i32 %t4, %t1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Sink__operator_____2(%this : ptr [object_bytes=4], %n : i32) -> ptr [binding=weak, object=_ZN4SinkrSEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary shr i32 %t4, %t1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Sink__operator____6(%this : ptr [object_bytes=4], %n : i32) -> ptr [binding=weak, object=_ZN4SinkaNEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary and i32 %t4, %t1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Sink__operator____7(%this : ptr [object_bytes=4], %n : i32) -> ptr [binding=weak, object=_ZN4SinkeOEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary xor i32 %t4, %t1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Sink__operator____8(%this : ptr [object_bytes=4], %n : i32) -> ptr [binding=weak, object=_ZN4SinkoREi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = binary or i32 %t4, %t1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $this
+    return ptr %t6
+}
+function @Constant__operator__(%this : ptr [object_bytes=8], %n : i32) -> ptr [binding=weak, object=_ZNK8ConstantpLEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed ptr %t3
+    %t5 = load typed i32 %t4
+    %t6 = binary add nowrap i32 %t5, %t1
+    store typed i32 %t6, %t4
+    %t7 = load typed ptr $this
+    return ptr %t7
+}
