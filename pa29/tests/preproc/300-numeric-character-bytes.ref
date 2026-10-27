@@ -1,0 +1,4 @@
+preproc 1
+sof tests/preproc/300-numeric-character-bytes.t
+identifier byte_character_values_ok
+eof

@@ -1,0 +1,7 @@
+literal '\x7f' char 7F
+literal '\x80' int 80000000
+literal '\xff' int FF000000
+literal '\200' int 80000000
+literal '\377' int FF000000
+literal '\x3c0' int C0030000
+eof

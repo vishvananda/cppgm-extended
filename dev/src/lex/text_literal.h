@@ -61,6 +61,12 @@ bool DecodeLiteralCharacter(const char* text, uint32_t end, uint32_t& pos, Liter
 unsigned CodeUnitWidth(EncodingPrefix prefix);
 FundamentalType StringElementType(EncodingPrefix prefix);
 
+enum class CharacterDialect : uint8_t
+{
+	Course,
+	Gnu
+};
+
 // A character literal ([lex.ccon] 2.14.3) under the course rules: exactly
 // one c-char designating a Unicode scalar value. An unprefixed literal is a
 // char when that value is ASCII and an int otherwise; `u` literals need a
@@ -79,4 +85,7 @@ struct CharacterLiteralValue
 	uint32_t suffix_begin;
 };
 
-CharacterLiteralValue EvaluateCharacterLiteral(const char* spelling, uint32_t length);
+// GNU mode also gives ordinary numeric byte escapes type char. PA2's
+// post-token contract keeps its Unicode-code-point classification.
+CharacterLiteralValue EvaluateCharacterLiteral(
+	const char* spelling, uint32_t length, CharacterDialect dialect = CharacterDialect::Gnu);

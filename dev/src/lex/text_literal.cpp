@@ -284,7 +284,7 @@ CharacterLiteralValue EvaluateMulticharacterLiteral(
 
 } // namespace
 
-CharacterLiteralValue EvaluateCharacterLiteral(const char* text, uint32_t length)
+CharacterLiteralValue EvaluateCharacterLiteral(const char* text, uint32_t length, CharacterDialect dialect)
 {
 	CharacterLiteralValue result = { false, false, FundamentalType::Int, 0, length };
 	TextLiteralParts parts;
@@ -308,7 +308,10 @@ CharacterLiteralValue EvaluateCharacterLiteral(const char* text, uint32_t length
 	switch (parts.prefix)
 	{
 	case EncodingPrefix::None:
-		result.type = result.code_point <= 0x7F ? FundamentalType::Char : FundamentalType::Int;
+		result.type = result.code_point <= 0x7F ||
+				(dialect == CharacterDialect::Gnu && c.numeric && result.code_point <= 0xFF)
+			? FundamentalType::Char
+			: FundamentalType::Int;
 		break;
 	case EncodingPrefix::Utf16:
 		if (result.code_point > 0xFFFF)

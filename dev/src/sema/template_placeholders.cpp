@@ -6,6 +6,7 @@
 
 #include "lex/number_literal.h"
 #include "lex/text_literal.h"
+#include "sema/integral_arithmetic.h"
 #include "sema/placeholder_words.h"
 #include "syntax/ast_clone.h"
 
@@ -126,7 +127,9 @@ bool LiteralValue(const TokenSpelling& spelling, FundamentalType& type, uint64_t
 		if (!character.valid || character.multicharacter || character.suffix_begin != spelling.length)
 			return false;
 		type = character.type;
-		bits = character.code_point;
+		bits = type == FundamentalType::Char
+			? ConvertIntegral(character.code_point, IntegralKind{ FundamentalTypeSize(type) * 8, true })
+			: character.code_point;
 		return true;
 	}
 	if (spelling.length == 0 || ((spelling.text[0] < '0' || spelling.text[0] > '9') && spelling.text[0] != '.'))

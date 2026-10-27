@@ -235,11 +235,17 @@ void ControllingExpressionEvaluator::classify_character(const PPToken& pp)
 	// include its code point.
 	// Multicharacter literals stay outside the course's controlling
 	// expressions.
-	const CharacterLiteralValue character = EvaluateCharacterLiteral(pp.spelling, pp.length);
+	const CharacterLiteralValue character = EvaluateCharacterLiteral(
+		pp.spelling, pp.length, literals_ == NumberDialect::Cxx11 ? CharacterDialect::Course : CharacterDialect::Gnu);
 	if (!character.valid || character.multicharacter || character.suffix_begin != pp.length)
 		return;
 	token_.kind = TokenClass::Operand;
-	token_.value = PPValue{ character.code_point, IsUnsignedLiteralType(character.type) };
+	uint64_t bits = character.code_point;
+	// GNU numeric byte escapes have the target ABI's signed char value,
+	// promoted to intmax_t in a controlling expression.
+	if (character.type == FundamentalType::Char && bits >= 0x80)
+		bits |= ~static_cast<uint64_t>(0xFF);
+	token_.value = PPValue{ bits, IsUnsignedLiteralType(character.type) };
 }
 
 // `defined identifier` or `defined ( identifier )` (16.1p1); the identifier
