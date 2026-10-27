@@ -1,0 +1,44 @@
+global @calls : i32 [binding=strong] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    call void @invoke(0)
+    %t1 = load typed i32 @calls
+    %t2 = cmp eq i32 %t1, 1
+    branch %t2, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t3 = load typed i32 $cond__1
+    return i32 %t3
+}
+function @invoke(%__param0 : ptr) -> void [binding=weak, object=_Z6invokeI4GoodEvP3TagIN2FnIT_E4typeEXadsrS3_4callEE] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    call void @Tag_void_____Good__call___run()
+    return void
+}
+function @Good__call() -> void [binding=weak, object=_ZN4Good4callEv, inline_hint=yes] {
+  block ^entry:
+    %t1 = load typed i32 @calls
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @calls
+    return void
+}
+function @Tag_void_____Good__call___run() -> void [binding=weak, object=_ZN3TagIPFvvEXadL_ZN4Good4callEvEEE3runEv, inline_hint=yes] {
+  block ^entry:
+    %t1 = addr @Good__call
+    call void %t1() as () -> void
+    return void
+}

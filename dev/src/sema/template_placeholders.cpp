@@ -1032,7 +1032,8 @@ const Type* Analyzer::dependent_expression(
 	entity->packs = expression_packs(operand, scope, &entity->nested_packs);
 	entity->sizeof_packs = sizeof_packs || entity->nested_packs != nullptr;
 	entity->friend_keyed = namespace_friend_class_ != nullptr;
-	entity->fixed = value && fixed && keyed && (key.words[0] & 1) == 0 && !type_dependent(&operand, scope);
+	entity->fixed = value && fixed && keyed && (key.words[0] & 1) == 0 && !type_dependent(&operand, scope) &&
+		(target == nullptr || !dependent_type(target));
 	const syntax::Expr* inner = &operand;
 	while (inner->kind == syntax::ExprKind::Paren)
 		inner = static_cast<const syntax::ParenExpr*>(inner)->inner;
@@ -1474,7 +1475,18 @@ const Type* Analyzer::substituted_value(const TemplateParameterEntity* keyed,
 		}
 		else if (!open)
 		{
-			result = template_value(*copy, scope, placeholder->value_type);
+			const Type* target = placeholder->value_type;
+			const bool has_target = target != nullptr;
+			for (const PendingSubstitution* level = earlier; target != nullptr && level != nullptr;
+				level = level->earlier)
+				target = substitute(target,
+					Substitution{ level->depth, level->arguments->params, level->arguments->param_count, nullptr });
+			if (target != nullptr)
+				target = substitute(target, substitution);
+			if (failed() || (has_target && target == nullptr))
+				return nullptr;
+			if (target == nullptr || !dependent_type(target))
+				result = template_value(*copy, scope, target);
 			++graph_.value_substitutions;
 		}
 		else

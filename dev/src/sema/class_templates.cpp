@@ -552,6 +552,10 @@ const Type* Analyzer::template_value(const syntax::Expr& expr, Scope* scope, con
 	// calls in unevaluated operands, constexpr calls); an object of class
 	// type converts to the parameter's type `target`, when known, by its
 	// constexpr conversion function (5.19p3).
+	// An argument's conversion can remain dependent after its expression's
+	// parameters were bound: keep the target until its own substitution.
+	if (template_depth_ == 0 && target != nullptr && dependent_type(target))
+		return dependent_expression(expr, scope, true, target, semantic());
 	if (semantic() && template_depth_ == 0)
 	{
 		// A pointer or reference parameter's argument (14.3.2p1), a
@@ -633,8 +637,8 @@ const Type* Analyzer::template_value(const syntax::Expr& expr, Scope* scope, con
 	// 14.6p8, p10: an argument that names nothing dependent and is not
 	// type-dependent is evaluated where it appears (see
 	// dependent_expression).
-	const Type* type = dependent_expression(
-		expr, scope, true, target != nullptr && AddressParameterType(target) ? target : nullptr, semantic());
+	const Type* type = dependent_expression(expr, scope, true,
+		target != nullptr && (AddressParameterType(target) || dependent_type(target)) ? target : nullptr, semantic());
 	if (type == nullptr || type->kind != TypeKind::TemplateParameter)
 		return type;
 	TemplateParameterEntity* placeholder = static_cast<TemplateParameterEntity*>(const_cast<Entity*>(type->entity));
@@ -659,19 +663,19 @@ const Type* Analyzer::argument_target(const TemplateHead* head, uint32_t index, 
 	// The type non-type parameter `index`'s argument converts to (14.3.2p5)
 	// where it is known: its declared type, or one naming earlier
 	// parameters (`template<class T, T& R>`) substituted by their
-	// arguments `earlier` when none follows a pack or is an expansion or
-	// dependent; else null.
+	// arguments `earlier` when none follows a pack or is an expansion;
+	// a still-dependent result is retained for the value's substitution.
 	const TemplateParameterEntity* parameter = head->parameters[index];
 	const Type* type = parameter->value_type;
 	if (type == nullptr || !dependent_type(type))
 		return type;
 	for (uint32_t i = 0; i < index; ++i)
 	{
-		if (head->parameters[i]->pack || earlier[i]->kind == TypeKind::Expansion || dependent_type(earlier[i]))
+		if (head->parameters[i]->pack || earlier[i]->kind == TypeKind::Expansion)
 			return nullptr;
 	}
 	type = substitute(type, Substitution{ parameter->depth, earlier, index });
-	return type != nullptr && !dependent_type(type) ? type : nullptr;
+	return type;
 }
 
 bool Analyzer::value_argument(const Type* argument)

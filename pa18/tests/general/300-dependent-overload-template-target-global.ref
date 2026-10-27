@@ -1,0 +1,66 @@
+global @calls : i32 [binding=strong] = zero
+
+function @function() -> void [binding=strong, object=_Z8functionv] {
+  block ^entry:
+    %t1 = load typed i32 @calls
+    %t2 = binary add nowrap i32 %t1, 2
+    store typed i32 %t2, @calls
+    return void
+}
+function @function__ov2(%__param0 : i32) -> void [binding=strong, object=_Z8functioni] {
+  slot $__param0 : i32
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    store typed i32 100, @calls
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    call void @invoke_pointer(0)
+    call void @invoke_reference(0)
+    %t1 = load typed i32 @calls
+    %t2 = cmp eq i32 %t1, 4
+    branch %t2, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t3 = load typed i32 $cond__1
+    return i32 %t3
+}
+function @invoke_pointer(%__param0 : ptr) -> void [binding=weak, object=_Z14invoke_pointerIiEvP3TagIPFvvEXadL_Z8functionvEEE] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    call void @Tag_void_____function___run()
+    return void
+}
+function @invoke_reference(%__param0 : ptr) -> void [binding=weak, object=_Z16invoke_referenceIiEvP3TagIRFvvEL_Z8functionvEE] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    call void @Tag_void____function___run()
+    return void
+}
+function @Tag_void_____function___run() -> void [binding=weak, object=_ZN3TagIPFvvEXadL_Z8functionvEEE3runEv, inline_hint=yes] {
+  block ^entry:
+    %t1 = addr @function
+    call void %t1() as () -> void
+    return void
+}
+function @Tag_void____function___run() -> void [binding=weak, object=_ZN3TagIRFvvEL_Z8functionvEE3runEv, inline_hint=yes] {
+  block ^entry:
+    call void @function()
+    return void
+}
