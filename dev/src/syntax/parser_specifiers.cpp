@@ -733,7 +733,7 @@ bool Parser::parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, Speci
 		return false;
 	Name* name = nullptr;
 	NameInfo name_info = NameInfo{ NameCategory::None, PrefixState::Unqualified, false, false, false, false, false,
-		false, false, 0, nullptr, nullptr, nullptr };
+		false, false, false, 0, nullptr, nullptr, nullptr };
 	if (at_identifier() || at(TokenKind::OP_COLON2))
 	{
 		const bool saved_declared = naming_declared_;

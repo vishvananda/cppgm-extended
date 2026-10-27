@@ -97,6 +97,8 @@ private:
 		// last component's binding's (NameBinding::approximate, dependent;
 		// the latter where unqualified lookup found it).
 		bool prefix_approximate, prefix_uncertain, approximate, dependent;
+		// The named type itself is a specialization, directly or by alias.
+		bool specialization;
 		// A known specialization prefix of a template whose bases name its
 		// parameters (Scope::parameter_bases): its template arguments (a
 		// template-id's or a typedef's record), for parameter_base_lookup;

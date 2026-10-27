@@ -361,6 +361,8 @@ Decl* Parser::parse_using()
 	if (last.kind == NameComponentKind::Identifier)
 	{
 		NameBinding binding{ info.category, false, info.scope };
+		if (info.specialization && binding.scope != nullptr)
+			binding.flags |= NameBinding::kSpecialization;
 		if (declaration->typename_keyword && binding.category == NameCategory::None)
 			binding.category = NameCategory::Type;
 		if (binding.category != NameCategory::None)
@@ -698,7 +700,7 @@ Decl* Parser::parse_special_member(
 		Name prefix = *name;
 		prefix.components.size -= 1;
 		NameInfo info = NameInfo{ NameCategory::None, PrefixState::Unqualified, false, false, false, false, false,
-			false, false, 0, nullptr, nullptr, nullptr };
+			false, false, false, 0, nullptr, nullptr, nullptr };
 		if (prefix.global)
 		{
 			info.prefix = PrefixState::Known;

@@ -1,0 +1,185 @@
+1 translation units
+start translation unit 1
+translation-unit
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier T
+    class-specifier Base
+      class-key KW_STRUCT:struct
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_TYPEDEF:typedef
+          decl-specifier TT_IDENTIFIER:T
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier type
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier T
+    class-specifier Derived
+      class-key KW_STRUCT:struct
+      base-clause
+        base-specifier
+          base-name Base<T>
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_TYPEDEF:typedef
+          decl-specifier KW_INT:int
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier own
+  class-specifier Protocol
+    class-key KW_STRUCT:struct
+    simple-declaration
+      decl-specifier-seq
+        decl-specifier KW_TYPEDEF:typedef
+        decl-specifier Derived<int>
+      init-declarator-list
+        init-declarator
+          declarator
+            identifier Alias
+  alias-declaration First
+    type-id
+      type-specifier-seq
+        type-name Protocol::Alias
+  simple-declaration
+    decl-specifier-seq
+      decl-specifier KW_TYPEDEF:typedef
+      decl-specifier TT_IDENTIFIER:First
+    init-declarator-list
+      init-declarator
+        declarator
+          identifier Second
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier T
+    class-specifier Wrapper
+      class-key KW_STRUCT:struct
+      base-clause
+        base-specifier
+          base-name T
+  alias-declaration Wrapped
+    type-id
+      type-specifier-seq
+        type-name Wrapper<Second>
+  namespace-definition names
+    alias-declaration Export
+      type-id
+        type-specifier-seq
+          type-name Second
+  using-declaration
+    target names::Export
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier main
+      parameter-clause
+    compound-statement
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier Protocol::Alias::own
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier direct
+            initializer
+              literal 1
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier Protocol::Alias::type
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier value
+            initializer
+              literal 2
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_CONST:const
+          decl-specifier Protocol::Alias::type
+        init-declarator-list
+          init-declarator
+            declarator
+              ptr-operator OP_AMP:&
+              identifier qualified
+            initializer
+              id-expression value
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier First::type
+        init-declarator-list
+          init-declarator
+            declarator
+              ptr-operator OP_AMP:&
+              identifier reference
+            initializer
+              id-expression value
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_CONST:const
+          decl-specifier Second::type
+        init-declarator-list
+          init-declarator
+            declarator
+              ptr-operator OP_STAR:*
+              identifier pointer
+            initializer
+              unary-expression OP_AMP:&
+                id-expression reference
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_CONST:const
+          decl-specifier Wrapped::type
+        init-declarator-list
+          init-declarator
+            declarator
+              ptr-operator OP_AMP:&
+              identifier wrapped
+            initializer
+              id-expression value
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier Export::type
+        init-declarator-list
+          init-declarator
+            declarator
+              ptr-operator OP_AMP:&
+              identifier exported
+            initializer
+              id-expression value
+      return-statement
+        binary-expression OP_LOR:||
+          binary-expression OP_LOR:||
+            binary-expression OP_LOR:||
+              binary-expression OP_LOR:||
+                binary-expression OP_NE:!=
+                  id-expression direct
+                  literal 1
+                binary-expression OP_NE:!=
+                  id-expression value
+                  literal 2
+              binary-expression OP_NE:!=
+                unary-expression OP_AMP:&
+                  id-expression qualified
+                id-expression pointer
+            binary-expression OP_NE:!=
+              unary-expression OP_AMP:&
+                id-expression wrapped
+              id-expression pointer
+          binary-expression OP_NE:!=
+            unary-expression OP_AMP:&
+              id-expression exported
+            id-expression pointer
+end translation unit

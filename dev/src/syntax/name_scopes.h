@@ -121,9 +121,13 @@ struct NameBinding
 	// serves the lookups through a template-id's members.
 	static const uint8_t kApproximate = 1;
 	static const uint8_t kDependent = 2;
+	// A non-template alias naming a class-template specialization, even
+	// when no argument record is needed for parameter bases.
+	static const uint8_t kSpecialization = 4;
 	uint8_t flags;
 	bool approximate() const { return (flags & kApproximate) != 0; }
 	bool dependent() const { return (flags & kDependent) != 0; }
+	bool specialization() const { return (flags & kSpecialization) != 0 || specialization_record() != 0; }
 	// A typedef's or alias's record of the specialization it names, of a
 	// template whose bases name its parameters (from 1, Parser::
 	// specialization_records_; 0: none): a lookup in its members searches

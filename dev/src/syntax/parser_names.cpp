@@ -199,16 +199,18 @@ NameBinding ParserState::parameter_base_lookup(const Scope* templ, const Slice<T
 			// A lone class name (its arguments name no template parameter:
 			// the specialization's do not).
 			const TemplateArgument& argument = arguments[i];
-			Scope* const named = argument_class(argument);
+			const NameBinding argument_binding = argument_class(argument);
+			Scope* const named = argument_binding.scope;
 			if (named == nullptr)
 				continue;
 			const Name& name = *argument.type->specifiers[0].name;
 			const NameComponent& last = name.last();
 			// A typedef of such a specialization keeps its arguments.
 			const uint8_t record = !last.has_arguments && named->parameter_bases ? specialization_record(name) : 0;
-			const bool specialization = last.has_arguments || record != 0;
+			const bool specialization = last.has_arguments || argument_binding.specialization();
 			NameBinding binding = scopes_.lookup_in(named, identifier, prefix_only, specialization);
-			if (binding.category == NameCategory::None && specialization && named->parameter_bases)
+			if (binding.category == NameCategory::None && specialization && named->parameter_bases &&
+				(last.has_arguments || record != 0))
 				binding = parameter_base_lookup(named,
 					last.has_arguments ? last.arguments : specialization_records_[record - 1u], identifier, prefix_only,
 					depth + 1);
@@ -219,30 +221,33 @@ NameBinding ParserState::parameter_base_lookup(const Scope* templ, const Slice<T
 	return NameBinding();
 }
 
-Scope* ParserState::argument_class(const TemplateArgument& argument)
+NameBinding ParserState::argument_class(const TemplateArgument& argument)
 {
 	// The class a template argument that is a lone class name (a type-id
 	// of one name specifier, without a declarator or pack expansion) names,
 	// its name looked up again by its components (the argument keeps no
-	// scope); null for another argument or an unknown class.
+	// scope); an empty binding for another argument or an unknown class.
 	if (argument.type == nullptr || argument.pack || argument.type->declarator != nullptr ||
 		argument.type->specifiers.size != 1 || argument.type->specifiers[0].kind != DeclSpecKind::Name)
-		return nullptr;
+		return NameBinding();
 	const Name& name = *argument.type->specifiers[0].name;
 	Scope* scope = name.global ? scopes_.global() : nullptr;
+	NameBinding binding;
+	bool specialization = false;
 	for (uint32_t i = 0; i < name.components.size; ++i)
 	{
 		const NameComponent& component = name.components[i];
 		if (component.kind != NameComponentKind::Identifier)
-			return nullptr;
+			return NameBinding();
 		const bool prefix = i + 1 < name.components.size;
-		const NameBinding binding = scope == nullptr ? scopes_.lookup(component.identifier, prefix)
-													 : scopes_.lookup_in(scope, component.identifier, prefix, false);
+		binding = scope == nullptr ? scopes_.lookup(component.identifier, prefix)
+								   : scopes_.lookup_in(scope, component.identifier, prefix, specialization);
 		if (binding.scope == nullptr || scope_pending(binding.scope))
-			return nullptr;
+			return NameBinding();
 		scope = binding.scope;
+		specialization = component.has_arguments || binding.specialization();
 	}
-	return scope != nullptr && scope->kind == ScopeKind::Class ? scope : nullptr;
+	return scope != nullptr && scope->kind == ScopeKind::Class ? binding : NameBinding();
 }
 
 uint8_t ParserState::typedef_record(const Name* name, Scope* scope, NameCategory category, bool mentions)
@@ -317,7 +322,7 @@ void Parser::advance_prefix(const NameComponent& component, NameInfo& info, bool
 	// prefix_guesses): only through a template-id or a guess.
 	uint8_t guesses = 0;
 	if (binding.scope != nullptr &&
-		(binding.flags != 0 ||
+		((binding.flags & (NameBinding::kApproximate | NameBinding::kDependent)) != 0 ||
 			(info.prefix == PrefixState::Known &&
 				(info.prefix_dependent || info.prefix_approximate || info.prefix_specialization))))
 		guesses = prefix_guesses(component, info, binding, declared);
@@ -326,6 +331,8 @@ void Parser::advance_prefix(const NameComponent& component, NameInfo& info, bool
 	info.prefix_specialization = false;
 	info.prefix_dependent = false;
 	info.prefix_approximate = false;
+	info.prefix_arguments = nullptr;
+	info.prefix_argument_count = 0;
 	if (binding.scope != nullptr && !scope_pending(binding.scope) && !dependent)
 	{
 		info.prefix = PrefixState::Known;
@@ -335,11 +342,11 @@ void Parser::advance_prefix(const NameComponent& component, NameInfo& info, bool
 		const uint8_t record = component.has_arguments ? 0 : binding.specialization_record();
 		info.prefix_specialization = component.has_arguments
 			? !dependent_arguments && binding.category == NameCategory::TypeTemplate
-			: record != 0;
+			: binding.specialization();
 		info.prefix_dependent = component.has_arguments && dependent_arguments &&
 			binding.category == NameCategory::TypeTemplate;
 		info.prefix_approximate = (guesses & NameBinding::kApproximate) != 0;
-		if (info.prefix_specialization && binding.scope->parameter_bases)
+		if (info.prefix_specialization && binding.scope->parameter_bases && (component.has_arguments || record != 0))
 		{
 			const Slice<TemplateArgument> arguments = component.has_arguments ? component.arguments
 																			  : specialization_records_[record - 1u];
@@ -434,8 +441,8 @@ Name* Parser::parse_name(NameMode mode, NameInfo& info)
 
 Name* Parser::parse_name_components(NameMode mode, NameInfo& info)
 {
-	info = NameInfo{ NameCategory::None, PrefixState::Unqualified, false, false, false, false, false, false, false, 0,
-		nullptr, nullptr, nullptr };
+	info = NameInfo{ NameCategory::None, PrefixState::Unqualified, false, false, false, false, false, false, false,
+		false, 0, nullptr, nullptr, nullptr };
 	Name* name = make<Name>();
 	name->global = false;
 	name->typename_keyword = false;
@@ -541,6 +548,9 @@ bool Parser::parse_name_component(NameMode mode, ListFrame<NameComponent>& compo
 			(info.prefix_specialization || info.prefix_dependent);
 		info.approximate = binding.approximate();
 		info.dependent = binding.dependent() && info.prefix == PrefixState::Unqualified;
+		info.specialization = binding.specialization() ||
+			(component.has_arguments && binding.category == NameCategory::TypeTemplate &&
+				template_parameter_mentions_ == mentions);
 		if (binding.pack && mode != NameMode::Member)
 			++pack_mentions_;
 		if (binding.parameter && mode != NameMode::Member)
@@ -881,6 +891,10 @@ void Parser::note_type_name(const SpecifierInfo& info, NameBinding& binding, boo
 	if (name == nullptr)
 		return;
 	const NameInfo& name_info = info.type_name_info;
+	const uint8_t specialization = binding.scope != nullptr && !alias_template && name_info.specialization
+		? NameBinding::kSpecialization
+		: 0;
+	binding.flags = specialization;
 	if (binding.scope != nullptr && name->last().kind == NameComponentKind::Identifier)
 	{
 		const bool known = name_info.prefix == PrefixState::Known;
@@ -898,7 +912,7 @@ void Parser::note_type_name(const SpecifierInfo& info, NameBinding& binding, boo
 			name_info.category == NameCategory::TypeTemplate)
 			dependent = !current_instantiation(name_info.scope);
 		binding.flags = static_cast<uint8_t>((approximate ? NameBinding::kApproximate : 0) |
-			(dependent && !alias_template ? NameBinding::kDependent : 0));
+			(dependent && !alias_template ? NameBinding::kDependent : 0) | specialization);
 		if (!approximate)
 			return;
 	}

@@ -1,0 +1,104 @@
+1 translation units
+start translation unit 1
+translation-unit
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier T
+    class-specifier CategoryBase
+      class-key KW_STRUCT:struct
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_TYPEDEF:typedef
+          decl-specifier KW_INT:int
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier slot
+  template-declaration
+    template-parameter-clause
+    class-specifier CategoryBase<char>
+      class-key KW_STRUCT:struct
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_STATIC:static
+          decl-specifier KW_INT:int
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier slot
+  simple-declaration
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    init-declarator-list
+      init-declarator
+        declarator
+          identifier CategoryBase<char>::slot
+        initializer
+          literal 3
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier T
+    class-specifier Current
+      class-key KW_STRUCT:struct
+      base-clause
+        base-specifier
+          base-name CategoryBase<T>
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_TYPEDEF:typedef
+          decl-specifier Current<T>
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier self
+      function-definition
+        decl-specifier-seq
+          decl-specifier KW_INT:int
+        declarator
+          identifier eval
+          parameter-clause
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier KW_INT:int
+              declarator
+                identifier n
+        compound-statement
+          expression-statement
+            binary-expression OP_STAR:*
+              id-expression self::slot
+              id-expression n
+          return-statement
+            id-expression n
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier main
+      parameter-clause
+    compound-statement
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier Current<char>
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier value
+      return-statement
+        conditional-expression
+          binary-expression OP_EQ:==
+            call-expression
+              member-expression OP_DOT:.
+                id-expression value
+                identifier eval
+              argument-list
+                literal 2
+            literal 2
+          literal 0
+          literal 1
+end translation unit

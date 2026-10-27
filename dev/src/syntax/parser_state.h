@@ -169,7 +169,7 @@ protected:
 	// (argument_class: a lone class name's, looked up again).
 	NameBinding parameter_base_lookup(const Scope* templ, const Slice<TemplateArgument>& arguments,
 		const Identifier* identifier, bool prefix_only, uint32_t depth);
-	Scope* argument_class(const TemplateArgument& argument);
+	NameBinding argument_class(const TemplateArgument& argument);
 	// The specialization record (NameBinding::specialization_record) of a
 	// named specialization of a template whose bases name its parameters: a
 	// template-id's, made (0 when the records are exhausted), or an
