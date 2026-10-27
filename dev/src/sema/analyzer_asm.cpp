@@ -60,6 +60,18 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 			if (operands[j].name != nullptr && std::strcmp(operands[j].name, info.name) == 0)
 				error(operand.location, "a duplicate asm operand name");
 		info.output = output;
+		info.fixed = 0;
+		uint32_t classes = 0;
+		for (char c : constraint)
+		{
+			if (c == '=' || c == '+' || c == '&' || c == '%')
+				continue;
+			++classes;
+			if (c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'S' || c == 'D')
+				info.fixed = c;
+		}
+		if (classes != 1)
+			info.fixed = 0;
 		info.tied = 0xff;
 		// An input's matching constraint (digits, or an output's [name]):
 		// it starts in that output's register, which is then read too.
@@ -154,9 +166,13 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 	program->instructions = instructions.empty() ? nullptr
 												 : arena_.copy_array(instructions.data(), instructions.size());
 	program->registers = 0;
+	program->reads = 0;
+	program->immediates = 0;
 	uint8_t* tied = nullptr;
 	for (uint32_t i = 0; i < count; ++i)
 	{
+		program->immediates |= operands[i].binding == AsmOperandClass::Immediate ? 1u << i : 0u;
+		program->reads |= operands[i].read ? 1u << i : 0u;
 		program->registers |= operands[i].binding == AsmOperandClass::Register ? 1u << i : 0u;
 		if (operands[i].tied == 0xff)
 			continue;

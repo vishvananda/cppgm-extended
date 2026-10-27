@@ -37,6 +37,8 @@ struct AsmOperandInfo
 	// whose register it starts that output in (0xff: none). The template
 	// names that register by either operand.
 	uint8_t tied;
+	// A single fixed GPR constraint (a, b, c, d, S, D), or zero.
+	char fixed;
 };
 
 enum class AsmOperation : uint8_t
@@ -54,7 +56,11 @@ enum class AsmOperation : uint8_t
 	// atomically).
 	Exchange,
 	// bswap of a register operand.
-	ByteSwap
+	ByteSwap,
+	Move,
+	CompareExchange,
+	JumpZero,
+	JumpNotZero
 };
 
 const uint8_t kAsmImmediateSource = 0xff;
@@ -71,6 +77,8 @@ struct AsmInstruction
 	uint8_t source;
 	// The operation's size in bytes: 1, 2, 4 or 8.
 	uint8_t bytes;
+	uint8_t source_bytes;
+	uint8_t accumulator;
 	uint64_t immediate;
 };
 
@@ -86,6 +94,8 @@ struct AsmProgram
 	const AsmInstruction* instructions;
 	uint32_t count;
 	uint32_t registers;
+	uint32_t reads;
+	uint32_t immediates;
 	const uint8_t* tied;
 	bool barrier;
 	const char* unlifted;

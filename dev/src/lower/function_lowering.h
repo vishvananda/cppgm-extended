@@ -13,6 +13,10 @@
 // storage is a slot or global used directly as a load/store operand, or a
 // pointer temporary. Generated temporaries, slots and blocks are unnamed
 // (printed by ordinal), so no source name can redirect them.
+namespace sema {
+struct AsmInstruction;
+}
+
 namespace lower {
 
 // A prvalue: its operand and the LowIR type it has. A truth value from
@@ -700,6 +704,23 @@ private:
 	void flatten_initializer(const sema::Type* type, const syntax::Expr* init, uint64_t offset, uint32_t location,
 		std::vector<InitElement>& out);
 	void if_statement(const syntax::IfStmt& stmt);
+	struct AsmState
+	{
+		std::vector<lowir::Value> addresses;
+		std::vector<lowir::Value> homes;
+		std::vector<RValue> values;
+		std::vector<lowir::Type> types;
+		std::vector<uint32_t> widths;
+		std::vector<bool> volatiles;
+		uint32_t outputs;
+		uint32_t registers;
+		RValue zero;
+	};
+	void asm_bind_operands(const syntax::AsmStmt& stmt, AsmState& state);
+	Place asm_place(const AsmState& state, uint32_t index);
+	void asm_store(const AsmState& state, uint32_t index, RValue value);
+	RValue asm_source(const AsmState& state, const sema::AsmInstruction& instruction);
+	void asm_instruction(const sema::AsmInstruction& instruction, AsmState& state);
 	// A GNU asm statement's lifted operations (sema/asm_statements.h).
 	void asm_statement(const syntax::AsmStmt& stmt);
 	void condition_branch(

@@ -1,0 +1,57 @@
+unsigned char negate(unsigned char& storage) {
+  unsigned char old = 0;
+  unsigned result;
+  asm volatile(".align 16\n1: movzbl %[old], %[result]\nnegb %b[result]\nlock; cmpxchgb %b[result], %[storage]\njne 1b"
+    : [old] "+a"(old), [storage] "+m"(storage), [result] "=&q"(result) : : "cc", "memory");
+  return old;
+}
+unsigned char combine(unsigned char& storage, unsigned argument) {
+  unsigned char old = 0;
+  unsigned result;
+  asm volatile("1: mov %[arg], %2\nandb %%al, %b2\nlock; cmpxchgb %b2, %[mem]\njnz 1b"
+    : "+a"(old), [mem] "+m"(storage), "=&q"(result) : [arg] "ir"(argument) : "cc", "memory");
+  return old;
+}
+template<class T> T complement(T& storage) {
+  T old = 0, result;
+  asm volatile("1: mov %[old], %[next]\nnot %[next]\nlock; cmpxchg %[next], %[mem]\njne 1b"
+    : [old] "+a"(old), [mem] "+m"(storage), [next] "=&r"(result) : : "cc", "memory");
+  return old;
+}
+int effects = 0;
+unsigned memory_value = 9;
+unsigned& memory() { ++effects; return memory_value; }
+int main() {
+  unsigned char small = 9;
+  if (negate(small) != 9 || small != 247) return 1;
+  small = 0xa5;
+  if (combine(small, 0x3f) != 0xa5 || small != 0x25) return 2;
+  unsigned short word = 19;
+  unsigned integer = 37;
+  unsigned long long wide = 53;
+  if (complement(word) != 19 || word != static_cast<unsigned short>(~19u)) return 3;
+  if (complement(integer) != 37 || integer != ~37u) return 4;
+  if (complement(wide) != 53 || wide != ~53ull) return 5;
+  unsigned value = 3, copied;
+  asm volatile("1: subl $1, %0\nmovl %0, %1\njnz 1b" : "+r"(value), "=r"(copied) : : "cc");
+  if (value != 0 || copied != 0) return 6;
+  value = 1;
+  asm volatile("1: subl $1, %0\nje 1b" : "+r"(value) : : "cc");
+  if (value != ~0u) return 7;
+  unsigned partial = 0x12345678;
+  asm volatile("movb $0xaa, %b0" : "+r"(partial));
+  if (partial != 0x123456aa) return 8;
+  unsigned long long cleared = 0x1234567812345678ull;
+  asm volatile("movl $7, %k0" : "+r"(cleared));
+  if (cleared != 7) return 9;
+  unsigned a = 1, b = 2;
+  asm volatile("1: subl $1, %0\njne 1b\n1: subl $1, %1\njne 1b" : "+r"(a), "+r"(b) : : "cc");
+  if (a != 0 || b != 0) return 10;
+  unsigned read;
+  asm volatile("movl %1, %0" : "=r"(read) : "m"(memory()));
+  if (read != 9 || effects != 1) return 11;
+  constexpr unsigned constant = 31;
+  asm volatile("movl %1, %0" : "=r"(read) : "m"(constant));
+  if (read != 31) return 12;
+  return 0;
+}
