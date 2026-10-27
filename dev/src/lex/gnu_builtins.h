@@ -52,6 +52,7 @@ enum class GnuBuiltin : uint8_t
 	VaList,
 	Prefetch,
 	AssumeAligned,
+	Launder,
 	FltRounds,
 	// GCC's __builtin_complex(re, im).
 	Complex,

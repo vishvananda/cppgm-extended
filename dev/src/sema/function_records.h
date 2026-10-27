@@ -148,6 +148,8 @@ enum class Intrinsic : uint8_t
 	// __builtin_assume_aligned(pointer, alignment[, offset]): the pointer
 	// (as void*).
 	AssumeAligned,
+	// __builtin_launder(T*): an object pointer to the current object.
+	Launder,
 	// __builtin_flt_rounds(): FLT_ROUNDS (18.3.2.3) of the current
 	// rounding mode.
 	FltRounds,

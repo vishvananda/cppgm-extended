@@ -77,6 +77,7 @@ const struct
 	{ "__builtin_issignaling", { GnuBuiltin::FloatClassify, 7, nullptr, 0 } },
 	{ "__builtin_isunordered", { GnuBuiltin::FloatCompare, 5, nullptr, 0 } },
 	{ "__builtin_labs", { GnuBuiltin::Library, 0, "ll", 0 } },
+	{ "__builtin_launder", { GnuBuiltin::Launder, 0, nullptr, 0 } },
 	{ "__builtin_llabs", { GnuBuiltin::Library, 0, "xx", 0 } },
 	{ "__builtin_malloc", { GnuBuiltin::Library, 0, "v*z", 0 } },
 	{ "__builtin_memchr", { GnuBuiltin::Library, 0, "v*Cv*iz", 0 } },

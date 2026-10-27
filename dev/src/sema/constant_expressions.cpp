@@ -1640,6 +1640,8 @@ bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, Con
 									: std::numeric_limits<long double>::infinity());
 		return true;
 	}
+	if (which == Intrinsic::Launder)
+		return operand(*call_expr.arguments[0], out);
 	// __builtin_addressof (std::addressof): the lvalue's address, never
 	// an operator& (5.3.1p3).
 	if (which == Intrinsic::AddressOf)

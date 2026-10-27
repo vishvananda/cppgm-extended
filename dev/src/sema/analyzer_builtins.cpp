@@ -562,6 +562,26 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		facts->value = static_cast<uint64_t>(Intrinsic::Prefetch);
 		break;
 	}
+	case GnuBuiltin::Launder:
+	{
+		if (count != 1)
+			error(expr.location, "__builtin_launder takes one argument");
+		ExprFacts* operand = typed_value(*expr.arguments[0], scope);
+		if (operand == nullptr)
+			return nullptr;
+		const Type* type = decayed(operand);
+		if (!dependent_type(type) &&
+			(type->kind != TypeKind::Pointer || IsVoid(type->element) ||
+				type->element->unqualified->kind == TypeKind::Function))
+		{
+			substitution_error(expr.location, "__builtin_launder requires a pointer to an object type");
+			return nullptr;
+		}
+		convert(*expr.arguments[0], type, false);
+		facts = new_facts(expr, type, ValueCategory::PRValue);
+		facts->value = static_cast<uint64_t>(Intrinsic::Launder);
+		break;
+	}
 	case GnuBuiltin::AssumeAligned:
 	{
 		// (const void* pointer, size_t alignment[, size_t offset]): the

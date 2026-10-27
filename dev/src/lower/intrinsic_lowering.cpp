@@ -210,6 +210,10 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		for (const syntax::Expr* argument : expr.arguments)
 			discard(*argument);
 		return RValue();
+	case sema::Intrinsic::Launder:
+		// The pointer's bits are unchanged. LowIR memory effects and object
+		// lifetime events determine the loads through the returned pointer.
+		return operand(*expr.arguments[0], ConversionContext::Argument);
 	case sema::Intrinsic::AssumeAligned:
 	{
 		const RValue value = operand(*expr.arguments[0], ConversionContext::Argument);

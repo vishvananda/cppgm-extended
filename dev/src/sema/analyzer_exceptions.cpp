@@ -793,6 +793,8 @@ bool Analyzer::may_throw(const syntax::Expr& expr, uint32_t depth)
 	case syntax::ExprKind::Call:
 	{
 		const syntax::CallExpr& call = static_cast<const syntax::CallExpr&>(*e);
+		if ((facts->flags & kIntrinsic) != 0 && facts->value == static_cast<uint64_t>(Intrinsic::Launder))
+			return may_throw(*call.arguments[0], depth + 1);
 		if ((facts->flags & (kIntrinsic | kPseudoDestructor)) != 0)
 			return may_throw(*call.callee, depth + 1);
 		const FunctionEntity* function = (facts->flags & kDirectCall) != 0
