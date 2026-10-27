@@ -153,9 +153,11 @@ private:
 	// False if the declaration is not a special member (nothing consumed);
 	// otherwise `decl` is the declaration, or null after a syntax error.
 	bool try_special_member(DeclContext context, Decl*& decl);
-	Decl* parse_special_member(
-		DeclContext context, Slice<DeclSpecifier> specifiers, Name* name, uint32_t start, Tentative& tentative);
-	bool special_member_ahead(DeclContext context, Name*& name);
+	Decl* parse_special_member(DeclContext context, Slice<DeclSpecifier> specifiers, Name* name, Declarator* declarator,
+		uint32_t start, Tentative& tentative);
+	bool special_member_ahead(DeclContext context, Name*& name, bool parenthesized = false);
+	Declarator* parse_special_member_declarator(Name* name, Scope*& member_of);
+	Declarator* parse_parenthesized_special_member(DeclContext context, Name*& name, Scope*& member_of);
 	Decl* finish_simple_declaration(
 		DeclContext context, Slice<DeclSpecifier> specifiers, const SpecifierInfo& info, uint32_t start);
 	Decl* parse_bit_field_rest(Slice<DeclSpecifier> specifiers, Declarator* first, uint32_t start);

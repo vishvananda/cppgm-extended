@@ -1,0 +1,191 @@
+1 translation units
+start translation unit 1
+translation-unit
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier Signature
+    class-specifier Callable
+      class-key KW_STRUCT:struct
+      special-member-declaration Callable
+        declarator
+          identifier Callable
+          parameter-clause
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier KW_CONST:const
+                decl-specifier KW_CHAR:char
+              declarator
+                ptr-operator OP_STAR:*
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier T
+    class-specifier Clamp
+      class-key KW_STRUCT:struct
+      base-clause
+        base-specifier
+          base-name Callable<T(T,T,T)>
+      special-member-definition Clamp
+        declarator
+          nested-declarator
+            declarator
+              identifier Clamp
+          parameter-clause
+        ctor-initializer
+          mem-initializer
+            mem-initializer-id Callable<T(T,T,T)>
+            paren-argument-list
+              literal "clamp"
+        compound-statement
+  class-specifier C
+    class-key KW_STRUCT:struct
+    simple-declaration
+      decl-specifier-seq
+        decl-specifier KW_TYPEDEF:typedef
+        decl-specifier KW_INT:int
+      init-declarator-list
+        init-declarator
+          declarator
+            identifier argument
+    simple-declaration
+      decl-specifier-seq
+        decl-specifier KW_INT:int
+      init-declarator-list
+        init-declarator
+          declarator
+            identifier value
+    special-member-definition C
+      declarator
+        nested-declarator
+          declarator
+            nested-declarator
+              declarator
+                identifier C
+        parameter-clause
+      ctor-initializer
+        mem-initializer
+          mem-initializer-id value
+          paren-argument-list
+            literal 7
+      compound-statement
+    special-member-declaration C
+      declarator
+        nested-declarator
+          declarator
+            identifier C
+            parameter-clause
+              parameter-declaration
+                decl-specifier-seq
+                  decl-specifier TT_IDENTIFIER:argument
+    special-member-definition ~C
+      declarator
+        nested-declarator
+          declarator
+            nested-declarator
+              declarator
+                identifier ~C
+                parameter-clause
+      compound-statement
+    special-member-definition operatorint
+      declarator
+        nested-declarator
+          declarator
+            nested-declarator
+              declarator
+                identifier operatorint
+        parameter-clause
+        cv-qualifier KW_CONST:const
+      compound-statement
+        return-statement
+          id-expression value
+    function-definition
+      decl-specifier-seq
+        decl-specifier KW_INT:int
+      declarator
+        nested-declarator
+          declarator
+            identifier ordinary
+        parameter-clause
+          parameter-declaration
+            decl-specifier-seq
+              decl-specifier KW_INT:int
+            declarator
+              identifier n
+      compound-statement
+        return-statement
+          id-expression n
+  special-member-definition C::C
+    declarator
+      nested-declarator
+        declarator
+          nested-declarator
+            declarator
+              identifier C::C
+      parameter-clause
+        parameter-declaration
+          decl-specifier-seq
+            decl-specifier TT_IDENTIFIER:argument
+          declarator
+            identifier n
+    ctor-initializer
+      mem-initializer
+        mem-initializer-id value
+        paren-argument-list
+          id-expression n
+    compound-statement
+  class-specifier D
+    class-key KW_STRUCT:struct
+    simple-declaration
+      decl-specifier-seq
+        decl-specifier KW_TYPEDEF:typedef
+        decl-specifier KW_INT:int
+      init-declarator-list
+        init-declarator
+          declarator
+            identifier argument
+    special-member-declaration D
+      declarator
+        nested-declarator
+          declarator
+            identifier D
+            parameter-clause
+              parameter-declaration
+                decl-specifier-seq
+                  decl-specifier TT_IDENTIFIER:argument
+    special-member-declaration operatorint
+      declarator
+        nested-declarator
+          declarator
+            identifier operatorint
+        parameter-clause
+        cv-qualifier KW_CONST:const
+  special-member-definition D::D
+    declarator
+      nested-declarator
+        declarator
+          nested-declarator
+            declarator
+              identifier D::D
+              parameter-clause
+                parameter-declaration
+                  decl-specifier-seq
+                    decl-specifier TT_IDENTIFIER:argument
+                  declarator
+                    identifier n
+    compound-statement
+  special-member-definition D::operator int
+    declarator
+      nested-declarator
+        declarator
+          identifier D::operator int
+      parameter-clause
+      cv-qualifier KW_CONST:const
+    compound-statement
+      return-statement
+        literal 3
+end translation unit

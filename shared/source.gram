@@ -137,11 +137,19 @@ access-specifier:
 	KW_PROTECTED
 
 special-member-declaration:
-	member-function-specifier* special-member-name parameter-clause function-suffix* special-member-initializer? OP_SEMICOLON
+	member-function-specifier* special-member-declarator special-member-initializer? OP_SEMICOLON
 
 special-member-definition:
-	member-function-specifier* special-member-name parameter-clause function-suffix* ctor-initializer? compound-statement
-	member-function-specifier* qualified-special-member-name parameter-clause function-suffix* ctor-initializer? compound-statement
+	member-function-specifier* special-member-declarator ctor-initializer? compound-statement
+
+special-member-declarator:
+	special-member-id parameter-clause function-suffix*
+	OP_LPAREN special-member-declarator OP_RPAREN
+
+special-member-id:
+	special-member-name
+	qualified-special-member-name
+	OP_LPAREN special-member-id OP_RPAREN
 
 member-function-specifier:
 	KW_INLINE

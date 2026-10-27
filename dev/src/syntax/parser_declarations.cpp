@@ -607,16 +607,19 @@ TemplateParameter* Parser::parse_template_parameter()
 
 // ------------------------------------------------------------ special members
 
-bool Parser::special_member_ahead(DeclContext context, Name*& name)
+bool Parser::special_member_ahead(DeclContext context, Name*& name, bool parenthesized)
 {
 	// A constructor, destructor or conversion function declared without a
 	// type: `C(`, `~C(`, `operator T(` in a class; `X::X(`, `X::~X(`,
 	// `X::operator T(` anywhere.
 	name = nullptr;
+	const auto follows_name = [&](uint32_t ahead) {
+		return at(TokenKind::OP_LPAREN, ahead) || (parenthesized && at(TokenKind::OP_RPAREN, ahead));
+	};
 	if (context == DeclContext::Class)
 	{
 		const Identifier* class_name = class_names_.empty() ? nullptr : class_names_.back();
-		if (at_identifier() && class_name != nullptr && tok().identifier == class_name && at(TokenKind::OP_LPAREN, 1))
+		if (at_identifier() && class_name != nullptr && tok().identifier == class_name && follows_name(1))
 		{
 			name = make_simple_name(class_name, location());
 			next();
@@ -626,7 +629,7 @@ bool Parser::special_member_ahead(DeclContext context, Name*& name)
 		{
 			NameInfo info;
 			name = parse_name(NameMode::Declarator, info);
-			if (name == nullptr || !at(TokenKind::OP_LPAREN))
+			if (name == nullptr || !follows_name(0))
 				return false;
 			const NameComponentKind kind = name->last().kind;
 			return kind == NameComponentKind::Destructor || kind == NameComponentKind::Conversion;
@@ -636,7 +639,7 @@ bool Parser::special_member_ahead(DeclContext context, Name*& name)
 		return false;
 	NameInfo info;
 	name = parse_name(NameMode::Declarator, info);
-	if (name == nullptr || !name->qualified() || name->components.size < 2 || !at(TokenKind::OP_LPAREN))
+	if (name == nullptr || !name->qualified() || name->components.size < 2 || !follows_name(0))
 		return false;
 	const NameComponent& last = name->last();
 	if (last.kind == NameComponentKind::Destructor || last.kind == NameComponentKind::Conversion)
@@ -674,33 +677,58 @@ bool Parser::try_special_member(DeclContext context, Decl*& decl)
 		specifiers.push(specifier);
 	}
 	Name* name = nullptr;
-	if (!special_member_ahead(context, name))
+	Declarator* declarator = nullptr;
+	if (at(TokenKind::OP_LPAREN))
+	{
+		Scope* member_of = nullptr;
+		Attribute* attributes = pending_attributes_;
+		pending_attributes_ = nullptr;
+		declarator = parse_parenthesized_special_member(context, name, member_of);
+		pending_attributes_ = attributes;
+		if (declarator == nullptr)
+			return false;
+	}
+	else if (!special_member_ahead(context, name))
+	{
 		return false;
-	decl = parse_special_member(context, specifiers.take(arena_), name, start, tentative);
+	}
+	decl = parse_special_member(context, specifiers.take(arena_), name, declarator, start, tentative);
 	if (decl == nullptr)
 		return tentative.committed();
 	tentative.commit();
 	return true;
 }
 
-Decl* Parser::parse_special_member(
-	DeclContext context, Slice<DeclSpecifier> specifiers, Name* name, uint32_t start, Tentative& tentative)
+Declarator* Parser::parse_parenthesized_special_member(DeclContext context, Name*& name, Scope*& member_of)
 {
-	SpecialMemberDecl* decl = make<SpecialMemberDecl>(DeclKind::SpecialMember, start);
-	decl->definition = false;
-	decl->specifiers = specifiers;
-	decl->attributes = pending_attributes_;
-	pending_attributes_ = nullptr;
-	decl->name = name;
-	decl->initializer = nullptr;
-	decl->body = FunctionBody();
-	pending_template_ = false;
+	NestingGuard nesting(*this);
+	const uint32_t start = location();
+	next();
+	Declarator* nested = nullptr;
+	if (at(TokenKind::OP_LPAREN))
+		nested = parse_parenthesized_special_member(context, name, member_of);
+	else if (special_member_ahead(context, name, true))
+		nested = parse_special_member_declarator(name, member_of);
+	if (nested == nullptr || !expect(TokenKind::OP_RPAREN))
+		return nullptr;
+	Declarator* declarator = make<Declarator>();
+	*declarator = Declarator();
+	declarator->location = start;
+	declarator->nested = nested;
+	special_member_clause_ = true;
+	const bool parsed = parse_declarator_suffixes(DeclaratorMode::Named, declarator, true, member_of);
+	special_member_clause_ = false;
+	return parsed ? declarator : nullptr;
+}
 
+Declarator* Parser::parse_special_member_declarator(Name* name, Scope*& member_of)
+{
+	pending_template_ = false;
 	Declarator* declarator = make<Declarator>();
 	*declarator = Declarator();
 	declarator->name = name;
 	declarator->location = name->location;
-	Scope* member_of = nullptr;
+	member_of = nullptr;
 	if (name->qualified())
 	{
 		// The class the member belongs to, for lookups in its body.
@@ -722,9 +750,28 @@ Decl* Parser::parse_special_member(
 	special_member_clause_ = true;
 	const bool suffixes = parse_declarator_suffixes(DeclaratorMode::Named, declarator, true, member_of);
 	special_member_clause_ = false;
-	if (!suffixes)
+	return suffixes ? declarator : nullptr;
+}
+
+Decl* Parser::parse_special_member(DeclContext context, Slice<DeclSpecifier> specifiers, Name* name,
+	Declarator* declarator, uint32_t start, Tentative& tentative)
+{
+	SpecialMemberDecl* decl = make<SpecialMemberDecl>(DeclKind::SpecialMember, start);
+	decl->definition = false;
+	decl->specifiers = specifiers;
+	decl->attributes = pending_attributes_;
+	pending_attributes_ = nullptr;
+	decl->name = name;
+	decl->initializer = nullptr;
+	decl->body = FunctionBody();
+	if (declarator == nullptr)
+	{
+		Scope* member_of = nullptr;
+		declarator = parse_special_member_declarator(name, member_of);
+	}
+	if (declarator == nullptr)
 		return nullptr;
-	if (declarator->suffixes.empty() || declarator->suffixes[0].kind != DeclaratorSuffixKind::Function)
+	if (!is_function_declarator(declarator))
 	{
 		fail();
 		return nullptr;
