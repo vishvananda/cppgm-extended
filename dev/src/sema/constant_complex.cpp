@@ -216,6 +216,24 @@ bool BytesScalar(const uint8_t* bytes, const Type* type, uint64_t size, ConstVal
 
 } // namespace
 
+bool ConstantInterpreter::bit_cast(const syntax::BuiltinTraitExpr& expr, ConstValue& out)
+{
+	// Reuse the target's scalar encodings, never a numeric conversion.
+	// Pointer representations and class subobjects are not scalar constants.
+	if (!operand(*expr.operand, out))
+		return false;
+	const Type* to = expr.facts->type->unqualified;
+	const uint64_t size = size_of(to, expr.location);
+	const Type* representation = to->kind == TypeKind::Enum ? static_cast<const EnumEntity*>(to->entity)->underlying
+															: to;
+	uint8_t bytes[16];
+	if (size == 0 || size > sizeof bytes || size != size_of(out.type, expr.location) ||
+		!ScalarBytes(out, out.type->unqualified, size, bytes) ||
+		(LaneIs(representation, FundamentalType::Bool) && bytes[0] > 1) || !BytesScalar(bytes, to, size, out))
+		return fail(expr.location, "a bit cast outside supported constant representations");
+	return true;
+}
+
 bool ConstantInterpreter::vector_reinterpretation(ConstValue& value, const Type* to, uint32_t location)
 {
 	// GCC's vector casts (see Analyzer::vector_reinterpretation): the bytes

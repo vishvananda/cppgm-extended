@@ -195,6 +195,7 @@ private:
 	// reinterpreted as another vector type of its size.
 	bool vector_value(
 		const Type* type, const ConstValue* lanes, uint32_t count, const ConstValue& fill, ConstValue& out);
+	bool bit_cast(const syntax::BuiltinTraitExpr& expr, ConstValue& out);
 	bool vector_reinterpretation(ConstValue& value, const Type* to, uint32_t location);
 	bool vector_lane(const syntax::SubscriptExpr& expr, ConstPlace* place, ConstValue* value);
 	bool lane_list(const syntax::Slice<syntax::Expr*>& lanes, const Type* type, ConstValue& out, uint32_t location);

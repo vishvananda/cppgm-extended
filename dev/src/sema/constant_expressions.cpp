@@ -402,9 +402,11 @@ bool ConstantInterpreter::rvalue(const syntax::Expr& expr, ConstValue& out)
 	{
 		// A trait's bool or std::size_t value; GNU __real__ of a real operand
 		// its value, __imag__ zero (the operand still a constant). Reading a
-		// variadic argument, a complex part, a vector conversion and a bit
-		// cast are never constants here.
+		// variadic argument, a complex part and a vector conversion require their own
+		// evaluation. A bit cast reads the operand's representation.
 		const syntax::BuiltinTraitExpr& trait = static_cast<const syntax::BuiltinTraitExpr&>(*e);
+		if (trait.trait == GnuTrait::BitCast)
+			return bit_cast(trait, out);
 		const bool any_part = trait.trait == GnuTrait::RealPart || trait.trait == GnuTrait::ImagPart;
 		const bool part = any_part && !IsComplex(WithoutParentheses(trait.operand)->facts->type);
 		if (any_part && !part)
