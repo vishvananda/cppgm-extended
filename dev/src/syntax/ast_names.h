@@ -11,6 +11,7 @@ struct Identifier;
 // sema/semantic_graph.h); the tree itself does not use them.
 namespace sema {
 struct AsmProgram;
+struct AsmDataSection;
 struct Binding;
 struct Conversion;
 struct DataMember;

@@ -357,6 +357,8 @@ void Analyzer::declaration(const syntax::Decl& decl, Scope* scope)
 	{
 	case syntax::DeclKind::Empty:
 		return;
+	case syntax::DeclKind::Asm:
+		return asm_declaration(static_cast<const syntax::AsmDecl&>(decl), scope);
 	case syntax::DeclKind::Access:
 		current_access_ = static_cast<const syntax::AccessDecl&>(decl).access;
 		return;

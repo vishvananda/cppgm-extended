@@ -195,7 +195,8 @@ bool Linker::add_object(uint32_t index)
 	std::vector<uint8_t>& kept = kept_[index];
 	kept.assign(file.sections.size(), 0);
 	for (size_t s = 1; s < file.sections.size(); ++s)
-		kept[s] = file.sections[s].kind != SectionKind::Null;
+		kept[s] = file.sections[s].kind != SectionKind::Null && file.sections[s].kind != SectionKind::Metadata &&
+			file.sections[s].kind != SectionKind::MetadataStrings;
 	for (const object::Group& group : file.groups)
 	{
 		const NameKey key = key_of(group_signature(file, group));

@@ -1500,6 +1500,7 @@ Decl* SyntaxCloner::decl(const Decl* decl)
 	switch (decl->kind)
 	{
 	case DeclKind::Empty:
+	case DeclKind::Asm:
 	case DeclKind::Access:
 	case DeclKind::NamespaceAlias:
 	case DeclKind::UsingDirective:

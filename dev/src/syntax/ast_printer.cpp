@@ -157,6 +157,9 @@ void AstDumper::declaration(const Decl& decl)
 	case DeclKind::Empty:
 		line("empty-declaration");
 		break;
+	case DeclKind::Asm:
+		line("asm-definition");
+		break;
 	case DeclKind::Namespace:
 	{
 		const NamespaceDecl& ns = static_cast<const NamespaceDecl&>(decl);

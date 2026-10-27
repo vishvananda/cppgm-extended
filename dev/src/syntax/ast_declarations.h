@@ -23,13 +23,24 @@ enum class DeclKind : uint8_t
 	Simple,
 	Linkage,
 	BitField,
-	Access
+	Access,
+	Asm
 };
 
 struct Decl
 {
 	DeclKind kind;
 	uint32_t location;
+};
+
+// A namespace-scope basic asm definition. Its data directives are lifted
+// once by analysis; lowering consumes the resulting section bytes.
+struct AsmDecl : Decl
+{
+	TokenSpelling text;
+	// Non-null after analysis, including an empty definition.
+	mutable const sema::AsmDataSection* sections = nullptr;
+	mutable uint32_t section_count = 0;
 };
 
 struct NamespaceDecl : Decl

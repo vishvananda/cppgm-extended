@@ -109,10 +109,12 @@ enum GlobalStorageMode : std::uint8_t
 {
 	GSM_DEFAULT,
 	GSM_READONLY,
-	GSM_THREAD_LOCAL
+	GSM_THREAD_LOCAL,
+	GSM_METADATA,
+	GSM_METADATA_STRINGS
 };
 
-const unsigned kGlobalStorageModeCount = GSM_THREAD_LOCAL + 1;
+const unsigned kGlobalStorageModeCount = GSM_METADATA_STRINGS + 1;
 
 // The yes-valued symbol flags (`keep_alias=yes`, ...), as bits.
 // SF_REPLACEABLE (`replaceable=yes`) marks a GNU weak definition and
@@ -341,7 +343,8 @@ inline const char* spelling(SymbolBindingMode value)
 
 inline const char* spelling(GlobalStorageMode value)
 {
-	static const char* const kStorages[kGlobalStorageModeCount] = { "", "readonly", "thread_local" };
+	static const char* const kStorages[kGlobalStorageModeCount] = { "", "readonly", "thread_local", "metadata",
+		"metadata_strings" };
 	return kStorages[value];
 }
 

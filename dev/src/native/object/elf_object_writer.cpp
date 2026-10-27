@@ -52,7 +52,10 @@ uint64_t section_flags(SectionKind kind)
 	case SectionKind::Rodata:
 		return kShfAlloc;
 	case SectionKind::Null:
+	case SectionKind::Metadata:
 		return 0;
+	case SectionKind::MetadataStrings:
+		return kShfMerge | kShfStrings;
 	case SectionKind::TlsData:
 	case SectionKind::TlsBss:
 		return kShfAlloc | kShfWrite | kShfTls;
@@ -220,6 +223,8 @@ void Encoder::add_contents()
 		section.size = nobits ? from.size : from.bytes.size();
 		section.align = from.align;
 		section.entry_size = from.kind == SectionKind::InitArray || from.kind == SectionKind::FiniArray ? 8 : 0;
+		if (from.kind == SectionKind::MetadataStrings)
+			section.entry_size = 1;
 		section.bytes = nobits ? nullptr : &from.bytes;
 		sections_.push_back(std::move(section));
 	}

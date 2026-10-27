@@ -301,6 +301,7 @@ private:
 	Stmt* parse_value_statement(Attribute* attributes);
 	// A selection or iteration statement (read whole, see read_statement).
 	Stmt* parse_asm();
+	Decl* parse_asm_declaration();
 	bool at_structured_binding();
 	Declarator* binding_declarator(const Identifier* name, TokenKind ref, uint32_t location);
 	bool parse_binding_names(TokenKind& ref, const Identifier*& hidden, std::vector<Declarator*>& names);

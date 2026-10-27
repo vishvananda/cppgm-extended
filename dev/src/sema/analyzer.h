@@ -234,6 +234,7 @@ private:
 	// ------------------------------------------------ declarations
 	void declarations(const syntax::Slice<syntax::Decl*>& list, Scope* scope);
 	void declaration(const syntax::Decl& decl, Scope* scope);
+	void asm_declaration(const syntax::AsmDecl& decl, Scope* scope);
 	void namespace_definition(const syntax::NamespaceDecl& decl, Scope* scope);
 	NamespaceEntity* namespace_target(const syntax::Name& name, Scope* scope);
 	void namespace_alias(const syntax::NamespaceAliasDecl& decl, Scope* scope);

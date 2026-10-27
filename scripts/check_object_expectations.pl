@@ -279,6 +279,43 @@ sub has_section_named
 	die "Unsupported host OS for section checks: $os\n";
 }
 
+sub elf_section_contents
+{
+	my ($obj, $name) = @_;
+	open(my $file, '<:raw', $obj) or die "Unable to open object $obj\n";
+	local $/;
+	my $data = <$file>;
+	close($file);
+	die "Expected an ELF64 little-endian object: $obj\n"
+		if length($data) < 64 || substr($data, 0, 6) ne "\x7fELF\x02\x01";
+	my $offset = unpack('Q<', substr($data, 40, 8));
+	my ($stride, $count, $names) = unpack('S<S<S<', substr($data, 58, 6));
+	die "Invalid ELF section table in $obj\n"
+		if $stride < 64 || $count == 0 || $names >= $count || $offset > length($data) ||
+		$count > (length($data) - $offset) / $stride;
+	my @table;
+	for my $index (0 .. $count - 1)
+	{
+		push(@table, [unpack('L<L<Q<Q<Q<Q<L<L<Q<Q<', substr($data, $offset + $index * $stride, 64))]);
+	}
+	my $strings = $table[$names];
+	die "Invalid ELF section names in $obj\n"
+		if $strings->[4] > length($data) || $strings->[5] > length($data) - $strings->[4];
+	my $text = substr($data, $strings->[4], $strings->[5]);
+	for my $section (@table)
+	{
+		next if $section->[0] >= length($text);
+		my $end = index($text, "\0", $section->[0]);
+		next if $end < 0 || substr($text, $section->[0], $end - $section->[0]) ne $name;
+		die "Expected bounded PROGBITS section '$name' in $obj\n"
+			if $section->[1] != 1 || $section->[4] > length($data) ||
+			$section->[5] > length($data) - $section->[4];
+		return (sprintf('%x', $section->[2]), $section->[9],
+			unpack('H*', substr($data, $section->[4], $section->[5])));
+	}
+	die "Expected ELF section '$name' in $obj\n";
+}
+
 sub validate_host_unwind_section
 {
 	my ($os, $obj) = @_;
@@ -941,6 +978,20 @@ while (my $line = <$spec>)
 		my $ok = validate_host_unwind_section($os, $obj);
 		die "Expected host unwind section in object $obj_index\n" if !$ok;
 		print "host_unwind_section $obj_index 1\n";
+		next;
+	}
+
+	if ($kind eq 'elf_section')
+	{
+		my ($name, $flags, $entry, $bytes) = @fields;
+		die "Invalid elf_section expectation in $spec_file: $line\n"
+			if scalar(@fields) != 4 || $flags !~ /^[0-9a-f]+$/ || $entry !~ /^\d+$/ ||
+			($bytes ne '-' && $bytes !~ /^(?:[0-9a-f]{2})+$/);
+		my ($actual_flags, $actual_entry, $actual_bytes) = elf_section_contents($obj, $name);
+		my $expected_bytes = $bytes eq '-' ? '' : $bytes;
+		die "ELF section '$name' flags, entry size or bytes differ in object $obj_index\n"
+			if $actual_flags ne $flags || $actual_entry != $entry || $actual_bytes ne $expected_bytes;
+		print "elf_section $obj_index $name $flags $entry $bytes\n";
 		next;
 	}
 

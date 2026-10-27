@@ -1117,6 +1117,11 @@ void SyntaxRenderer::declaration(const Decl& decl)
 		text(";");
 		break;
 	}
+	case DeclKind::Asm:
+		text("asm(");
+		text(static_cast<const AsmDecl&>(decl).text);
+		text(");");
+		break;
 	case DeclKind::Linkage:
 	{
 		const LinkageDecl& linkage = static_cast<const LinkageDecl&>(decl);

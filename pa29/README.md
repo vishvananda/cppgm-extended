@@ -306,6 +306,20 @@ To complete PA29, implement hosted compatibility for:
   takes part in copy initialization, so a parse that accepts the form and
   discards the condition silently mis-ranks overloads.  Attributes interleave
   with the specifiers around it rather than preceding them all
+- namespace basic asm data definitions: lift `.pushsection`, `.section`,
+  `.popsection`, `.ascii`, `.asciz` / `.string`, and `.byte` to nonloaded
+  PROGBITS section bytes. Custom section names use the token-safe LowIR subset
+  and begin with a letter, `_` or `.`; predefined loader, unwind, comment and
+  `.gnu.` sections are outside this form. String escapes include octal and
+  hexadecimal bytes, `\b`, `\f`, `\n`, `\r`, `\t`, quotes and backslashes;
+  supported explicit flags are empty or `MS` (mergeable byte strings, entry
+  size 1). Decode ordinary C++ literals and GAS string escapes once during
+  analysis, retain typed section facts, and emit their bytes and flags directly
+  through LowIR `storage=metadata` / `metadata_strings`. Executable section
+  flags, instruction templates and other directives are diagnosed, never
+  silently discarded or passed to an external assembler. Each definition must
+  restore its incoming section with balanced push/pop directives; a `.section`
+  switch is supported inside such a balanced definition
 - builtin traits, transforms, intrinsics, and builtin families used during
   hosted compile acceptance, including lowering `__builtin_abort` as a
   non-returning call to the host C runtime; fixed-arity hosted integer

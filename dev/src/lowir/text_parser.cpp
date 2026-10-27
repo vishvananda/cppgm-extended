@@ -323,6 +323,9 @@ void Parser::parse_global_definition()
 			fail("scalar global requires type");
 		parse_global_data(global);
 	}
+	if (global.init == GlobalInit::Data && global.item_count == 0 && metadata.storage != ir_model::GSM_METADATA &&
+		metadata.storage != ir_model::GSM_METADATA_STRINGS)
+		fail("structured global must contain data");
 	program_.declare_global(symbol, SymbolKind::GlobalDefinition, global);
 	program_.symbols[symbol].metadata = metadata;
 }
@@ -369,8 +372,6 @@ void Parser::parse_global_data(Global& global)
 		program_.data_items.push_back(item);
 	}
 	global.item_count = static_cast<uint32_t>(program_.data_items.size()) - global.first_item;
-	if (global.item_count == 0)
-		fail("structured global must contain data");
 }
 
 void Parser::parse_function(bool definition)

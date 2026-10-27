@@ -201,7 +201,7 @@ private:
 	uint32_t relro_ = 0;
 	uint32_t tdata_ = 0;
 	uint32_t tbss_ = 0;
-	uint32_t section_names_[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // by SectionKind
+	uint32_t section_names_[11] = {}; // by SectionKind
 	uint32_t relro_name_ = 0;
 	// Sections named by globals' section= metadata (name -> section, 0
 	// none; sized on the first).
@@ -279,6 +279,11 @@ uint32_t ObjectCompiler::named_section(lowir::NameId name, SectionKind kind)
 	uint32_t& index = named_sections_[name];
 	if (index == 0)
 		index = out_->add_section(program_.spelling(name), kind, 1);
+	else if (kind != out_->sections[index].kind &&
+		(kind == SectionKind::Metadata || kind == SectionKind::MetadataStrings ||
+			out_->sections[index].kind == SectionKind::Metadata ||
+			out_->sections[index].kind == SectionKind::MetadataStrings))
+		throw BackendError("incompatible properties for a named data section");
 	else if (kind == SectionKind::Data)
 		out_->sections[index].kind = SectionKind::Data;
 	return index;
@@ -541,6 +546,8 @@ void ObjectCompiler::place_globals()
 			continue;
 		const lowir::Global& global = program_.globals[symbol.detail];
 		const bool readonly = symbol.metadata.storage == ir_model::GSM_READONLY;
+		const bool metadata = symbol.metadata.storage == ir_model::GSM_METADATA ||
+			symbol.metadata.storage == ir_model::GSM_METADATA_STRINGS;
 		// A host object's read-only data holding addresses (vtables, type
 		// information) is relocated by the loader: .data.rel.ro, which a
 		// position-independent link makes read-only after relocation (no
@@ -553,8 +560,15 @@ void ObjectCompiler::place_globals()
 		// bytes in .tdata (.tbss when zero), offsets in the TLS block.
 		if (eh_model_ == EhModel::Host && symbol.metadata.storage == ir_model::GSM_THREAD_LOCAL)
 			kind = kind == SectionKind::Bss ? SectionKind::TlsBss : SectionKind::TlsData;
-		static const char* const shared_names[] = { "", ".text", ".rodata", ".data", ".bss", "", "", ".tdata",
-			".tbss" };
+		if (metadata)
+		{
+			if (symbol.metadata.section == 0)
+				throw BackendError("metadata storage requires a named section");
+			kind = symbol.metadata.storage == ir_model::GSM_METADATA_STRINGS ? SectionKind::MetadataStrings
+																			 : SectionKind::Metadata;
+		}
+		static const char* const shared_names[] = { "", ".text", ".rodata", ".data", ".bss", "", "", ".tdata", ".tbss",
+			"", "" };
 		const unsigned k = static_cast<unsigned>(kind);
 		const char* name = relro ? ".data.rel.ro" : shared_names[k];
 		uint32_t index;
@@ -562,8 +576,10 @@ void ObjectCompiler::place_globals()
 		{
 			// A named section holds its globals' bytes (no COMDAT group: a
 			// weak one is a plain weak symbol there).
-			index = named_section(
-				symbol.metadata.section, readonly && !relro ? SectionKind::Rodata : SectionKind::Data);
+			index = named_section(symbol.metadata.section,
+				metadata                 ? kind
+					: readonly && !relro ? SectionKind::Rodata
+										 : SectionKind::Data);
 			kind = out_->sections[index].kind;
 		}
 		else if (relro)
@@ -572,7 +588,14 @@ void ObjectCompiler::place_globals()
 			index = comdat_definition(s) ? own_section(name, s, kind, section_names_[k]) : shared_section(name, kind);
 		object::Section& section = out_->sections[index];
 		uint32_t align = 1;
-		const uint64_t size = global_size(program_, global, align);
+		uint64_t size = global_size(program_, global, align);
+		// An empty section contribution is not a C++ object: no minimum
+		// byte or implicit object alignment may separate its neighbours.
+		if (metadata && !global.typed && global.init == lowir::GlobalInit::Data && global.item_count == 0)
+		{
+			size = 0;
+			align = 1;
+		}
 		if (align > section.align)
 			section.align = align;
 		const uint64_t offset = align_up(section.size, align);

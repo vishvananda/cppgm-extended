@@ -17,15 +17,17 @@ namespace object {
 // What a section contributes to an executable.
 enum class SectionKind : uint8_t
 {
-	Null,      // section 0, and sections that are not loaded
-	Text,      // SHF_ALLOC | SHF_EXECINSTR
-	Rodata,    // SHF_ALLOC
-	Data,      // SHF_ALLOC | SHF_WRITE
-	Bss,       // SHT_NOBITS
-	InitArray, // SHT_INIT_ARRAY: startup function pointers, in order
-	FiniArray, // SHT_FINI_ARRAY: shutdown function pointers, run last to first
-	TlsData,   // SHF_TLS PROGBITS: a thread's initial thread-local bytes (host objects)
-	TlsBss     // SHF_TLS NOBITS: zero-initialized thread-local storage
+	Null,           // section 0, and sections that are not loaded
+	Text,           // SHF_ALLOC | SHF_EXECINSTR
+	Rodata,         // SHF_ALLOC
+	Data,           // SHF_ALLOC | SHF_WRITE
+	Bss,            // SHT_NOBITS
+	InitArray,      // SHT_INIT_ARRAY: startup function pointers, in order
+	FiniArray,      // SHT_FINI_ARRAY: shutdown function pointers, run last to first
+	TlsData,        // SHF_TLS PROGBITS: a thread's initial thread-local bytes (host objects)
+	TlsBss,         // SHF_TLS NOBITS: zero-initialized thread-local storage
+	Metadata,       // nonloaded PROGBITS bytes
+	MetadataStrings // nonloaded SHF_MERGE | SHF_STRINGS, byte-sized entries
 };
 
 enum class Binding : uint8_t

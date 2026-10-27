@@ -178,6 +178,20 @@ Stmt* Parser::parse_statement()
 	}
 }
 
+Decl* Parser::parse_asm_declaration()
+{
+	AsmDecl* decl = make<AsmDecl>(DeclKind::Asm, location());
+	next();
+	if (!expect(TokenKind::OP_LPAREN) || !tok().is_literal() || (tok().flags & kStringLiteral) == 0)
+	{
+		fail();
+		return nullptr;
+	}
+	decl->text = tok().spelling;
+	next();
+	return expect(TokenKind::OP_RPAREN) && expect(TokenKind::OP_SEMICOLON) ? decl : nullptr;
+}
+
 Stmt* Parser::parse_asm()
 {
 	// asm volatile? inline? ( string-literal [: outputs [: inputs

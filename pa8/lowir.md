@@ -206,6 +206,15 @@ The currently defined global `storage` values are:
 
 - `readonly`
 - `thread_local`
+- `metadata` (PA29's nonloaded PROGBITS data, with a required `section=`)
+- `metadata_strings` (the same, with ELF `SHF_MERGE | SHF_STRINGS` and entry size 1)
+
+The metadata storage forms carry section bytes, rather than addressable C++
+objects. Namespace basic asm in PA29 produces them with internal names and
+`object_root=yes`, so optimization retains their data. The native static
+linker's loadable image excludes them; host object emission preserves them.
+An untyped empty structured initializer is permitted for these forms and
+contributes zero bytes with byte alignment, rather than a minimum-sized object.
 
 `storage=readonly` means that no code writes the object once it is statically
 initialized; a program that writes it has undefined behavior. A back end may

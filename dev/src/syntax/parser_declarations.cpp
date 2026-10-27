@@ -47,6 +47,13 @@ Decl* Parser::parse_declaration(DeclContext context, Attribute* leading)
 	{
 		switch (token.simple)
 		{
+		case TokenKind::KW_ASM:
+			if (context == DeclContext::Class)
+			{
+				fail();
+				return nullptr;
+			}
+			return parse_asm_declaration();
 		case TokenKind::OP_SEMICOLON:
 			next();
 			return make<Decl>(DeclKind::Empty, start);

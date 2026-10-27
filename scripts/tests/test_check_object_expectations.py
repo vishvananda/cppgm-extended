@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import os
+import shutil
+import sys
 from pathlib import Path
 import subprocess
 import tempfile
@@ -276,6 +278,30 @@ class CheckObjectExpectationsTests(unittest.TestCase):
             "thread_local_export_surface_canonical 1 _ZTW4extv _Z4extv extv 1",
             result.stdout,
         )
+
+
+class ElfSectionExpectationsTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform.startswith("linux") and shutil.which("gcc"), "ELF host compiler required")
+    def test_section_bytes_flags_and_entry_size(self):
+        with tempfile.TemporaryDirectory(prefix="cppgm-elf-section.") as directory:
+            root = Path(directory)
+            source = root / "probe.c"
+            source.write_text('__asm__(".pushsection .cppgm_note,\\\"MS\\\",@progbits,1\\n'
+                              '.asciz \\\"probe\\\"\\n.popsection\\n");\n')
+            obj = root / "probe.o"
+            subprocess.run(["gcc", "-c", str(source), "-o", str(obj)], check=True, capture_output=True)
+            spec = root / "probe.expect"
+            for flags, entry, payload, valid in [
+                ("30", "1", "70726f626500", True),
+                ("2", "1", "70726f626500", False),
+                ("30", "2", "70726f626500", False),
+                ("30", "1", "00", False),
+            ]:
+                with self.subTest(flags=flags, entry=entry, payload=payload):
+                    spec.write_text(f"elf_section 1 .cppgm_note {flags} {entry} {payload}\n")
+                    result = subprocess.run(["perl", str(SCRIPT), str(spec), str(obj)],
+                                            capture_output=True, text=True)
+                    self.assertEqual(result.returncode == 0, valid, result.stderr)
 
 
 if __name__ == "__main__":

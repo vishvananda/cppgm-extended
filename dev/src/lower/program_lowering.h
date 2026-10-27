@@ -860,6 +860,7 @@ private:
 	// Declarations and definitions of one unit.
 	void declarations(const syntax::Slice<syntax::Decl*>& list);
 	void declaration(const syntax::Decl& decl);
+	void asm_declaration(const syntax::AsmDecl& decl);
 	void name_deferred_members(const syntax::Decl& decl);
 	void name_member_classes(const syntax::ClassSpecifier& specifier);
 	void name_local_classes(const sema::FunctionEntity* function);

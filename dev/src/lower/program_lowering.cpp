@@ -517,6 +517,8 @@ void ProgramLowering::declaration(const syntax::Decl& decl)
 {
 	switch (decl.kind)
 	{
+	case syntax::DeclKind::Asm:
+		return asm_declaration(static_cast<const syntax::AsmDecl&>(decl));
 	case syntax::DeclKind::Namespace:
 		declarations(static_cast<const syntax::NamespaceDecl&>(decl).declarations);
 		return;

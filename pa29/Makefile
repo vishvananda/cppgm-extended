@@ -219,6 +219,7 @@ ref-test-batch:
 REF_TEST_RUN = case "$(TEST)" in \
 	$(PREPROC_TEST_ROOT)/*) perl ../scripts/run_cpphostcompat_preproc_worker.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
 	$(COMPILE_TEST_ROOT)/*) perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
+	$(RUN_TEST_ROOT)/*) perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
 	*) echo "Usage: make ref-test TEST=$(PREPROC_TEST_ROOT)/<file>.t, $(COMPILE_TEST_ROOT)/<file>.t, or $(RUN_TEST_ROOT)/<file>.t"; exit 1 ;; \
 esac
 
