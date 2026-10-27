@@ -1,0 +1,16 @@
+declare global @HasSetup_Missing___value : u8 [binding=weak, object=_ZN8HasSetupI7MissingE5valueE]
+declare global @HasSetup_setup___value : u8 [binding=weak, object=_ZN8HasSetupI5setupE5valueE]
+declare global @HasSetup_Derived___value : u8 [binding=weak, object=_ZN8HasSetupI7DerivedE5valueE]
+declare global @HasSetup_Alias___value : u8 [binding=weak, object=_ZN8HasSetupI5AliasE5valueE]
+declare global @HasSetup_Nested___value : u8 [binding=weak, object=_ZN8HasSetupI6NestedE5valueE]
+declare global @HasSetup_Enumeration___value : u8 [binding=weak, object=_ZN8HasSetupI11EnumerationE5valueE]
+declare global @HasSetup_ClassTemplate___value : u8 [binding=weak, object=_ZN8HasSetupI13ClassTemplateE5valueE]
+declare global @HasSetup_AliasTemplate___value : u8 [binding=weak, object=_ZN8HasSetupI13AliasTemplateE5valueE]
+declare global @HasSetup_Data___value : u8 [binding=weak, object=_ZN8HasSetupI4DataE5valueE]
+declare global @HasSetup_Function___value : u8 [binding=weak, object=_ZN8HasSetupI8FunctionE5valueE]
+declare global @HasSetup_StaticFunction___value : u8 [binding=weak, object=_ZN8HasSetupI14StaticFunctionE5valueE]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

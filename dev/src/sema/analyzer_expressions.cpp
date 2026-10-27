@@ -2608,7 +2608,8 @@ ExprFacts* Analyzer::member_of_object(const syntax::Expr& expr, ExprFacts* objec
 		return facts;
 	}
 	default:
-		error(expr.location, "member name does not denote a data member or member function");
+		substitution_error(expr.location, "member name does not denote a data member or member function");
+		return nullptr;
 	}
 }
 
