@@ -241,6 +241,7 @@ private:
 	void using_directive(const syntax::UsingDecl& decl, Scope* scope);
 	void using_declaration(const syntax::UsingDecl& decl, Scope* scope);
 	void introduce(Binding* target, Scope* scope, uint32_t location);
+	void introduce_functions(const std::vector<Binding*>& functions, Scope* scope, uint32_t location);
 	void check_template_parameter_name(Scope* scope, const Identifier* name, uint32_t location);
 	void alias_declaration(const syntax::AliasDecl& decl, Scope* scope);
 	void template_declaration(const syntax::TemplateDecl& decl, Scope* scope);

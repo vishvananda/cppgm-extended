@@ -11,6 +11,23 @@ namespace sema {
 
 namespace {
 
+struct MemberTemplateKey
+{
+	const Type* signature;
+	const Type* head;
+	bool operator==(const MemberTemplateKey& other) const { return signature == other.signature && head == other.head; }
+};
+
+struct MemberTemplateHash
+{
+	size_t operator()(const MemberTemplateKey& key) const
+	{
+		const uint64_t hash = reinterpret_cast<uintptr_t>(key.signature) * 0x9e3779b97f4a7c15ull ^
+			reinterpret_cast<uintptr_t>(key.head);
+		return static_cast<size_t>(hash ^ (hash >> 32));
+	}
+};
+
 bool IsNamespaceBinding(const Binding* binding)
 {
 	return binding != nullptr &&
@@ -637,8 +654,45 @@ void Analyzer::using_declaration(const syntax::UsingDecl& decl, Scope* scope)
 		error(decl.location, "undeclared name in a using-declaration");
 	for (const Binding* function : functions)
 		check_access(function, naming, nullptr, scope, decl.location);
+	introduce_functions(functions, scope, decl.location);
+}
+
+void Analyzer::introduce_functions(const std::vector<Binding*>& functions, Scope* scope, uint32_t location)
+{
+	// 7.3.3p15: a derived member hides a base member with the same
+	// parameter list and qualifiers, independently of its return type.
+	// Index the class's own member templates once for this using-declaration,
+	// rather than searching its overload set for each imported template.
+	Scope* where = declaration_scope(scope);
+	FlatMap<MemberTemplateKey, bool, MemberTemplateHash> hidden;
+	bool templates = false;
+	if (where->kind == ScopeKind::Class)
+		for (const Binding* binding : functions)
+			templates = templates || static_cast<const FunctionEntity*>(binding->entity)->templated;
+	const NameEntry* entry = templates && where->kind == ScopeKind::Class ? names_.find(where, functions.front()->name)
+																		  : nullptr;
+	for (const FunctionList* node = entry != nullptr ? entry->functions : nullptr; node != nullptr; node = node->next)
+	{
+		const FunctionEntity* function = static_cast<const FunctionEntity*>(node->binding->entity);
+		if (function->owner != where || !function->templated || HeadOf(function) == nullptr)
+			continue;
+		// A conversion target is part of the function's name (12.3.2p1).
+		const Type* signature = function->conversion ? function->signature : signature_of(function->signature);
+		const MemberTemplateKey key = { signature, HeadOf(function)->shape };
+		if (hidden.find(key) == nullptr)
+			hidden.insert(key, true);
+	}
 	for (size_t i = functions.size(); i-- > 0;)
-		introduce(functions[i], scope, decl.location);
+	{
+		const FunctionEntity* function = static_cast<const FunctionEntity*>(functions[i]->entity);
+		if (hidden.size() != 0 && function->templated && function->owner != where && HeadOf(function) != nullptr)
+		{
+			const Type* signature = function->conversion ? function->signature : signature_of(function->signature);
+			if (hidden.find({ signature, HeadOf(function)->shape }) != nullptr)
+				continue;
+		}
+		introduce(functions[i], scope, location);
+	}
 }
 
 void Analyzer::check_template_parameter_name(Scope* scope, const Identifier* name, uint32_t location)
