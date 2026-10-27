@@ -46,6 +46,10 @@ bool Analyzer::type_dependent(const syntax::Expr* expr, Scope* scope)
 		// A trait is a bool; a type transform's operand is of the type it
 		// names, typeof's of its expression's or type-id's.
 		const syntax::BuiltinTraitExpr& trait = *static_cast<const syntax::BuiltinTraitExpr*>(expr);
+		// _BitInt has a width expression rather than a type operand. Its
+		// resulting type depends on that expression's value.
+		if (trait.trait == GnuTrait::BitInt)
+			return trait.operand == nullptr || instantiation_dependent(*trait.operand, scope);
 		if ((trait.trait == GnuTrait::TypeofOperand || trait.trait == GnuTrait::RealPart ||
 				trait.trait == GnuTrait::ImagPart) &&
 			trait.operand != nullptr)
@@ -129,8 +133,10 @@ bool Analyzer::type_dependent(const syntax::Expr* expr, Scope* scope)
 		const syntax::FunctionalCastExpr* cast = static_cast<const syntax::FunctionalCastExpr*>(expr);
 		Specifiers specifiers;
 		this->specifiers(cast->type, scope, specifiers, false);
-		if (specifiers.type == nullptr || dependent_type(specifiers.type) || cast->braced != nullptr)
+		if (specifiers.type == nullptr || dependent_type(specifiers.type))
 			return true;
+		if (cast->braced != nullptr)
+			return type_dependent(cast->braced, scope);
 		for (const syntax::Expr* argument : cast->arguments)
 		{
 			if (type_dependent(argument, scope))

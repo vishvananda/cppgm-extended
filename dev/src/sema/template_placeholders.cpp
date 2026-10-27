@@ -962,7 +962,17 @@ const Type* Analyzer::dependent_expression(
 	// signature has its result type at definition time (14.5.6.1p5, p6:
 	// redeclarations then compare types, not the spellings of fixed
 	// operands).
-	if (fixed && !value && keyed && (key.words[0] & 1) == 0 && !type_dependent(&operand, scope))
+	// Body-local operands deliberately have no shared structural key. Their
+	// dependence is still determined from the names and types they use.
+	bool independent = false;
+	if (fixed && !value && (!keyed || (key.words[0] & 1) == 0))
+	{
+		const bool precise = precise_dependence_;
+		precise_dependence_ = precise || !keyed;
+		independent = (keyed || !instantiation_dependent(operand, scope)) && !type_dependent(&operand, scope);
+		precise_dependence_ = precise;
+	}
+	if (independent)
 	{
 		decltype_words_.resize(base);
 		if (enclosing != nullptr)

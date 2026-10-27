@@ -151,6 +151,12 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 		context.first_label = labels_.size();
 		context.first_goto = gotos_.size();
 		context.pattern = true;
+		// A member template's nondependent local initializers may be typed
+		// in its definition. They have the same implicit object type as its
+		// instantiated body; a closure's this is handled by its captures.
+		if (function->member && !function->is_static && function->owner->entity != nullptr &&
+			graph_.closure_call(static_cast<const ClassEntity*>(function->owner->entity)) != function)
+			context.this_type = types_.pointer(types_.qualified(function->owner->entity->type, type->function_cv));
 		body_ = &context;
 	}
 	const uint32_t body_location = body.body != nullptr ? body.body->location : 0;
