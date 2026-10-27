@@ -825,8 +825,22 @@ ParameterClause* SyntaxCloner::parameter_clause(const ParameterClause* clause)
 {
 	if (clause == nullptr)
 		return nullptr;
+	if (collecting_ != nullptr)
+	{
+		// 14.5.3p5: a function parameter pack expands the packs in its
+		// declaration, including one inside a type-id of an expression.
+		for (const ParameterDeclaration* parameter : clause->parameters)
+		{
+			const Declarator* declarator = parameter->declarator;
+			if (declarator != nullptr && declarator->pack != PackPosition::None)
+				nested_expansion([&]() { this->parameter(parameter); });
+			else
+				this->parameter(parameter);
+		}
+		return const_cast<ParameterClause*>(clause);
+	}
 	bool packs = false;
-	for (uint32_t i = 0; expander_ != nullptr && collecting_ == nullptr && i < clause->parameters.size; ++i)
+	for (uint32_t i = 0; expander_ != nullptr && i < clause->parameters.size; ++i)
 	{
 		const Declarator* declarator = clause->parameters[i]->declarator;
 		packs = packs || (declarator != nullptr && declarator->pack != PackPosition::None);
