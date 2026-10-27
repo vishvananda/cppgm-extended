@@ -340,6 +340,15 @@ const Type* Analyzer::substitute(const Type* type, const Substitution& substitut
 			return type;
 		if (AnyNull(arguments))
 			return nullptr;
+		// An expansion left the pattern's remaining argument positions
+		// unknown. Once substituted, complete its defaults before forming
+		// the canonical specialization and its instantiation frame.
+		if (!IsStandIn(templ) && !templ->templ->alias_stand_in && arguments.size() < templ->templ->head->count)
+		{
+			default_template_arguments(templ->templ->head, arguments, 0);
+			if (failed())
+				return nullptr;
+		}
 		// Arguments of the wrong kinds (a template template-argument whose
 		// parameters do not match, 14.3.3) fail a substitution whose failure
 		// is a result (14.8.2p8).
