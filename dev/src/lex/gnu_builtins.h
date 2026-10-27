@@ -66,6 +66,8 @@ enum class GnuBuiltin : uint8_t
 	VectorShiftBytes,
 	// SSE2's four float lanes truncated to signed 32-bit integers.
 	VectorTruncate,
+	// SSE2's sign bit of each byte packed into an int.
+	VectorByteMask,
 	Overflow,
 	OperatorNew,
 	OperatorDelete,

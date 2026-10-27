@@ -416,6 +416,23 @@ RValue FunctionLowering::truncate_vector(const syntax::CallExpr& expr)
 	return load(lowering_.storage_type(to), place);
 }
 
+RValue FunctionLowering::vector_byte_mask(const syntax::CallExpr& expr)
+{
+	const sema::ExprFacts* argument = WithoutParentheses(expr.arguments[0])->facts;
+	const sema::Type* vector =
+		(argument->conversion != nullptr ? argument->conversion->result : argument->type)->unqualified;
+	const lowir::Value source = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const lowir::Type i32 = lowir::Type::scalar(lowir::TypeKind::I32);
+	RValue result = integer(i32, 0);
+	for (uint64_t i = 0; i < 16; ++i)
+	{
+		const RValue byte = convert_op(lowir::ConvertOp::ZExt, i32, vector_lane(source, vector, i));
+		const RValue sign = binary(lowir::BinaryOp::UShr, i32, byte, integer(i32, 7));
+		result = binary(lowir::BinaryOp::Or, i32, result, binary(lowir::BinaryOp::Shl, i32, sign, integer(i32, i)));
+	}
+	return result;
+}
+
 RValue FunctionLowering::reduce_vector(const syntax::CallExpr& expr, sema::Intrinsic kind)
 {
 	// The lanes combined in order: bitwise, sums and products in the lane

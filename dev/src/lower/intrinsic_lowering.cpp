@@ -245,6 +245,8 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		return shift_vector_bytes(expr, kind);
 	case sema::Intrinsic::VectorTruncate:
 		return truncate_vector(expr);
+	case sema::Intrinsic::VectorByteMask:
+		return vector_byte_mask(expr);
 	case sema::Intrinsic::SourceFile:
 	case sema::Intrinsic::SourceLine:
 	case sema::Intrinsic::SourceFunction:

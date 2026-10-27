@@ -1,0 +1,22 @@
+#include <emmintrin.h>
+#include <cstdio>
+static int evaluations;
+__attribute__((noinline)) __m128i input(const unsigned char* data) {
+  ++evaluations;
+  return _mm_loadu_si128(reinterpret_cast<const __m128i*>(data));
+}
+int main() {
+  unsigned checksum = 0;
+  for (unsigned mask = 0; mask != 65536; ++mask) {
+    unsigned char bytes[16];
+    for (unsigned i = 0; i != 16; ++i)
+      bytes[i] = static_cast<unsigned char>(((mask >> i) & 1) * 128 | ((mask * 17 + i * 31) & 127));
+    int a = _mm_movemask_epi8(input(bytes));
+    int b = __builtin_ia32_pmovmskb128((__v16qi)input(bytes));
+    if (a != static_cast<int>(mask) || b != static_cast<int>(mask)) return 1;
+    checksum = checksum * 33 + a + b;
+  }
+  if (evaluations != 131072) return 2;
+  std::printf("byte masks %d checksum %u\n", evaluations, checksum);
+  return 0;
+}
