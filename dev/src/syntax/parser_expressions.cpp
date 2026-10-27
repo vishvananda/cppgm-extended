@@ -1141,11 +1141,13 @@ Expr* Parser::primary_from_name(Name* name, NameInfo& info, uint32_t start)
 	const bool typename_keyword = name->typename_keyword;
 	const bool lone_decltype = !name->global && name->components.size == 1 &&
 		name->last().kind == NameComponentKind::Decltype;
-	// A function-style cast of a type the parser knows (5.2.3); other calls
-	// stay calls until semantic analysis.
+	// Parentheses need a known type to distinguish a cast from a call.
+	// A name followed by braces can only be a type construction (5.2.3):
+	// retain it even before lookup knows its type, as in a member initializer
+	// using an alias declared later in its complete-class context.
 	const bool known_type = typename_keyword || lone_decltype || info.category == NameCategory::Type ||
 		info.category == NameCategory::TypeTemplate;
-	if ((at(TokenKind::OP_LPAREN) && known_type) || (at(TokenKind::OP_LBRACE) && (known_type || is_type(name, info))))
+	if ((at(TokenKind::OP_LPAREN) && known_type) || at(TokenKind::OP_LBRACE))
 	{
 		FunctionalCastExpr* cast = make<FunctionalCastExpr>(ExprKind::FunctionalCast, start);
 		DeclSpecifier* type = make<DeclSpecifier>();

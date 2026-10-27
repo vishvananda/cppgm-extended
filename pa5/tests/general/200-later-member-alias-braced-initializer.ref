@@ -1,0 +1,68 @@
+1 translation units
+start translation unit 1
+translation-unit
+  class-specifier token
+    class-key KW_STRUCT:struct
+  simple-declaration
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    init-declarator-list
+      init-declarator
+        declarator
+          identifier marker
+        initializer
+          literal 0
+  class-specifier Packet
+    class-key KW_STRUCT:struct
+    simple-declaration
+      decl-specifier-seq
+        decl-specifier KW_INT:int
+      init-declarator-list
+        init-declarator
+          declarator
+            identifier count
+          initializer
+            call-expression
+              id-expression evaluate
+              argument-list
+                call-expression
+                  id-expression marker
+                  braced-init-list
+    alias-declaration marker
+      type-id
+        type-specifier-seq
+          type-name token
+    function-definition
+      decl-specifier-seq
+        decl-specifier KW_STATIC:static
+        decl-specifier KW_INT:int
+      declarator
+        identifier evaluate
+        parameter-clause
+          parameter-declaration
+            decl-specifier-seq
+              decl-specifier TT_IDENTIFIER:token
+      compound-statement
+        return-statement
+          literal 7
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier main
+      parameter-clause
+    compound-statement
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier TT_IDENTIFIER:Packet
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier value
+      return-statement
+        binary-expression OP_NE:!=
+          member-expression OP_DOT:.
+            id-expression value
+            identifier count
+          literal 7
+end translation unit
