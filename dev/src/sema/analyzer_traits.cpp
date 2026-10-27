@@ -163,7 +163,9 @@ ExprFacts* Analyzer::builtin_trait(const syntax::BuiltinTraitExpr& expr, Scope* 
 				expr.location, "__builtin_bit_cast between types of different sizes or not trivially copyable");
 			return nullptr;
 		}
-		convert(*expr.operand, from, false);
+		// An array contributes its object bytes; it does not decay.
+		if (from->kind != TypeKind::Array)
+			convert(*expr.operand, from, false);
 		return new_facts(expr, to, ValueCategory::PRValue);
 	}
 	if (expr.trait == GnuTrait::VaArg)

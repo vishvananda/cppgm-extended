@@ -196,6 +196,10 @@ private:
 	bool vector_value(
 		const Type* type, const ConstValue* lanes, uint32_t count, const ConstValue& fill, ConstValue& out);
 	bool bit_cast(const syntax::BuiltinTraitExpr& expr, ConstValue& out);
+	bool object_representation(const Type* type, ConstValue& value, uint8_t* bytes, uint8_t* known, uint64_t capacity,
+		bool encode, uint32_t location, uint32_t depth);
+	bool bit_field_representation(const DataMember& field, ConstValue& value, uint8_t* bytes, uint8_t* known,
+		uint64_t capacity, bool encode, uint32_t location);
 	bool vector_reinterpretation(ConstValue& value, const Type* to, uint32_t location);
 	bool vector_lane(const syntax::SubscriptExpr& expr, ConstPlace* place, ConstValue* value);
 	bool lane_list(const syntax::Slice<syntax::Expr*>& lanes, const Type* type, ConstValue& out, uint32_t location);

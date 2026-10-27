@@ -1,0 +1,27 @@
+struct Word { unsigned value; };
+constexpr Word word = { 37 };
+constexpr unsigned raw = __builtin_bit_cast(unsigned, (word));
+static_assert(raw == 37, "class source");
+constexpr Word copy = __builtin_bit_cast(Word, raw);
+static_assert(copy.value == 37, "class destination");
+struct Nested { unsigned short a[2]; unsigned b; };
+constexpr Nested nested = {{0x1122, 0x3344}, 0x55667788};
+static_assert(__builtin_bit_cast(unsigned long long, nested) == 0x5566778833441122ull, "array members");
+constexpr Nested recovered = __builtin_bit_cast(Nested, 0x5566778833441122ull);
+static_assert(recovered.a[0] == 0x1122 && recovered.a[1] == 0x3344 && recovered.b == 0x55667788, "nested result");
+constexpr unsigned char bytes[4] = {4, 3, 2, 1};
+static_assert(__builtin_bit_cast(unsigned, bytes) == 0x01020304u, "array source");
+struct Base { unsigned x; };
+struct Derived : Base { unsigned y; constexpr Derived(unsigned a, unsigned b) : Base{a}, y(b) {} };
+constexpr Derived derived(3, 5);
+static_assert(__builtin_bit_cast(unsigned long long, derived) == 0x500000003ull, "base layout");
+constexpr Derived derived_copy = __builtin_bit_cast(Derived, 0x500000003ull);
+static_assert(derived_copy.x == 3 && derived_copy.y == 5, "base result");
+struct DeletedDefault { DeletedDefault() = delete; unsigned x; };
+constexpr DeletedDefault no_default = __builtin_bit_cast(DeletedDefault, 23u);
+static_assert(no_default.x == 23, "no constructor invoked");
+struct Padded { char first; unsigned second; };
+constexpr Padded padded = {'a', 19};
+constexpr Padded padded_copy = __builtin_bit_cast(Padded, padded);
+static_assert(padded_copy.first == 'a' && padded_copy.second == 19, "destination padding ignored");
+int main() { return 0; }

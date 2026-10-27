@@ -1,0 +1,24 @@
+struct Word { unsigned value; };
+struct DeletedDefault { DeletedDefault() = delete; unsigned value; };
+struct Triple { unsigned long long a, b, c; };
+struct Bytes { unsigned char data[24]; };
+__attribute__((noinline)) Word word(unsigned value) { return __builtin_bit_cast(Word, value); }
+__attribute__((noinline)) unsigned raw(Word value) { return __builtin_bit_cast(unsigned, value); }
+__attribute__((noinline)) DeletedDefault deleted_default(unsigned value) { return __builtin_bit_cast(DeletedDefault, value); }
+__attribute__((noinline)) Bytes bytes(Triple const& value) { return __builtin_bit_cast(Bytes, value); }
+__attribute__((noinline)) Triple triple(Bytes const& value) { return __builtin_bit_cast(Triple, value); }
+__attribute__((noinline)) Word array_word(unsigned char const (&value)[4]) { return __builtin_bit_cast(Word, value); }
+int effects = 0;
+__attribute__((noinline)) unsigned effect() { ++effects; return 19; }
+int main() {
+  if (word(37).value != 37 || raw(Word{23}) != 23 || deleted_default(43).value != 43) return 1;
+  Triple source = {0x0102030405060708ull, 0x1112131415161718ull, 0x2122232425262728ull};
+  Bytes representation = bytes(source);
+  if (representation.data[0] != 8 || representation.data[7] != 1 || representation.data[23] != 0x21) return 2;
+  Triple copy = triple(representation);
+  if (copy.a != source.a || copy.b != source.b || copy.c != source.c) return 3;
+  unsigned char array[4] = {4, 3, 2, 1};
+  if (array_word(array).value != 0x01020304u) return 4;
+  if (__builtin_bit_cast(Word, effect()).value != 19 || effects != 1) return 5;
+  return 0;
+}

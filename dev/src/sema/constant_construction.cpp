@@ -152,6 +152,16 @@ bool ConstantInterpreter::materialize(const syntax::Expr& expr, const ConstPlace
 		result.target = &target;
 		return call(call_expr, result);
 	}
+	case syntax::ExprKind::BuiltinTrait:
+	{
+		const syntax::BuiltinTraitExpr& trait = static_cast<const syntax::BuiltinTraitExpr&>(*e);
+		if (trait.trait == GnuTrait::BitCast)
+		{
+			ConstValue value;
+			return bit_cast(trait, value) && write(target, value, e->location);
+		}
+		break;
+	}
 	case syntax::ExprKind::Conditional:
 	{
 		// 5.16p6: the selected operand copy-initializes the object.

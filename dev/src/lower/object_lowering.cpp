@@ -931,13 +931,15 @@ void FunctionLowering::materialize_prvalue(const syntax::Expr& expr, lowir::Valu
 		store(bytes.type, bytes, target);
 		return;
 	}
-	// So is __builtin_va_arg's class object.
+	// So are the class bytes read by __builtin_va_arg and __builtin_bit_cast.
 	if (e->kind == syntax::ExprKind::BuiltinTrait &&
-		static_cast<const syntax::BuiltinTraitExpr*>(e)->trait == GnuTrait::VaArg)
+		(static_cast<const syntax::BuiltinTraitExpr*>(e)->trait == GnuTrait::VaArg ||
+			static_cast<const syntax::BuiltinTraitExpr*>(e)->trait == GnuTrait::BitCast))
 	{
 		const RValue bytes = builtin_trait_value(static_cast<const syntax::BuiltinTraitExpr&>(*e));
 		Place target = Place();
 		target.storage = object;
+		target.untyped = static_cast<const syntax::BuiltinTraitExpr*>(e)->trait == GnuTrait::BitCast;
 		store(bytes.type, bytes, target);
 		return;
 	}

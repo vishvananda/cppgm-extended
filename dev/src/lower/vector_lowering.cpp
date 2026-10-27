@@ -478,8 +478,13 @@ RValue FunctionLowering::vector_lanes(const syntax::CallExpr& expr, sema::Intrin
 RValue FunctionLowering::bit_cast(const syntax::BuiltinTraitExpr& expr)
 {
 	const sema::Type* to = expr.facts->type->unqualified;
-	if (to->kind == sema::TypeKind::Class)
-		throw LoweringError(expr.location, "a __builtin_bit_cast to a class type");
+	const sema::Type* from = WithoutParentheses(expr.operand)->facts->type;
+	if (from->unqualified->kind == sema::TypeKind::Array)
+	{
+		Place source = glvalue(*expr.operand);
+		source.untyped = true;
+		return reinterpret_bytes(load(lowering_.storage_type(from), source), to);
+	}
 	return reinterpret_bytes(
 		fit(operand(*expr.operand, ConversionContext::Operand), WithoutParentheses(expr.operand)->facts->type), to);
 }

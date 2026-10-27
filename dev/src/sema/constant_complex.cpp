@@ -216,22 +216,151 @@ bool BytesScalar(const uint8_t* bytes, const Type* type, uint64_t size, ConstVal
 
 } // namespace
 
+bool ConstantInterpreter::bit_field_representation(const DataMember& field, ConstValue& value, uint8_t* bytes,
+	uint8_t* known, uint64_t capacity, bool encode, uint32_t location)
+{
+	IntegralKind kind;
+	if (!IntegralKindOf(field.variable->type, kind) || (encode && value.kind != ValueKind::Integer))
+		return fail(location, "a bit cast of an indeterminate bit-field");
+	const uint64_t width = field.width < kind.bits ? field.width : kind.bits;
+	WideBits bits = encode ? WideOf(value) : 0;
+	for (uint64_t k = 0; k < width; ++k)
+	{
+		const uint64_t bit = field.offset + k;
+		const uint64_t byte = bit / 8;
+		const uint8_t mask = static_cast<uint8_t>(1u << (bit % 8));
+		if (byte >= capacity)
+			return fail(location, "a bit cast beyond the object's representation");
+		if (encode)
+		{
+			bytes[byte] = static_cast<uint8_t>((bytes[byte] & ~mask) | (((bits >> k) & 1u) != 0 ? mask : 0));
+			known[byte] |= mask;
+		}
+		else
+		{
+			if ((known[byte] & mask) == 0)
+				return fail(location, "a bit cast reads indeterminate padding bits");
+			if ((bytes[byte] & mask) != 0)
+				bits |= static_cast<WideBits>(1) << k;
+		}
+	}
+	if (!encode)
+	{
+		if (kind.is_signed && width != 0 && width < 128 && ((bits >> (width - 1)) & 1u) != 0)
+			bits |= ~((static_cast<WideBits>(1) << width) - 1);
+		value = kind.bits > 64
+			? WideValue(field.variable->type->unqualified, bits)
+			: IntegerValue(field.variable->type->unqualified, ConvertIntegral(static_cast<uint64_t>(bits), kind));
+	}
+	return true;
+}
+
+bool ConstantInterpreter::object_representation(const Type* type, ConstValue& value, uint8_t* bytes, uint8_t* known,
+	uint64_t capacity, bool encode, uint32_t location, uint32_t depth)
+{
+	if (!step(location) || subobjects_too_deep(depth))
+		return fail(location, "a bit cast exceeds constant evaluation limits");
+	if ((type->cv & kVolatile) != 0 || type->is_reference())
+		return fail(location, "a bit cast of a volatile or reference subobject");
+	type = type->unqualified;
+	if (type->kind == TypeKind::Array)
+	{
+		const uint64_t stride = size_of(type->element, location);
+		if (value.kind != ValueKind::Array || value.count != type->bound || stride == 0 ||
+			type->bound > capacity / stride)
+			return fail(location, "an array outside the bit cast's representation");
+		for (uint32_t i = 0; i < value.count; ++i)
+		{
+			const uint64_t offset = i * stride;
+			if (!object_representation(type->element, value.elements[i], bytes + offset, known + offset,
+					capacity - offset, encode, location, depth + 1))
+				return false;
+		}
+		return true;
+	}
+	if (const ClassEntity* cls = ClassOf(type))
+	{
+		if (cls->key == TokenKind::KW_UNION || value.kind != ValueKind::Class ||
+			value.count != cls->base_count + cls->member_count)
+			return fail(location, "a bit cast of a union or invalid class representation");
+		uint32_t index = 0;
+		for (const BaseClass* base = cls->bases; base != nullptr; base = base->next, ++index)
+		{
+			if (base->is_virtual || base->offset > capacity ||
+				!object_representation(base->base->type, value.elements[index], bytes + base->offset,
+					known + base->offset, capacity - base->offset, encode, location, depth + 1))
+				return false;
+		}
+		for (const DataMember* member = cls->members; member != nullptr; member = member->next)
+		{
+			if (member->variable->kind != EntityKind::Variable ||
+				(member->bit_field && member->variable->name == nullptr))
+				continue;
+			ConstValue& element = value.elements[index + member->ordinal];
+			if ((member->variable->type->cv & kVolatile) != 0)
+				return fail(location, "a bit cast of a volatile subobject");
+			if (member->bit_field)
+			{
+				if (!bit_field_representation(*member, element, bytes, known, capacity, encode, location))
+					return false;
+				continue;
+			}
+			const uint64_t offset = member->offset / 8;
+			if (offset > capacity ||
+				!object_representation(member->variable->type, element, bytes + offset, known + offset,
+					capacity - offset, encode, location, depth + 1))
+				return false;
+		}
+		return true;
+	}
+	const uint64_t size = size_of(type, location);
+	if (size == 0 || size > capacity || size > 16)
+		return fail(location, "a bit cast outside supported scalar representations");
+	if (encode)
+	{
+		if (!ScalarBytes(value, type, size, bytes))
+			return fail(location, "a bit cast outside supported scalar representations");
+		std::memset(known, 255, static_cast<size_t>(size));
+		return true;
+	}
+	for (uint64_t i = 0; i < size; ++i)
+	{
+		if (known[i] != 255)
+			return fail(location, "a bit cast reads indeterminate padding bits");
+	}
+	const Type* representation = type->kind == TypeKind::Enum ? static_cast<const EnumEntity*>(type->entity)->underlying
+															  : type;
+	if ((LaneIs(representation, FundamentalType::Bool) && bytes[0] > 1) || !BytesScalar(bytes, type, size, value))
+		return fail(location, "a bit cast outside supported scalar representations");
+	return true;
+}
+
 bool ConstantInterpreter::bit_cast(const syntax::BuiltinTraitExpr& expr, ConstValue& out)
 {
-	// Reuse the target's scalar encodings, never a numeric conversion.
-	// Pointer representations and class subobjects are not scalar constants.
-	if (!operand(*expr.operand, out))
+	// Transfer typed subobjects through their layout once. The bitmap marks
+	// value bits, so destination padding is ignored and source padding is never
+	// invented. No constructor runs when a class result is materialized.
+	const Type* from = WithoutParentheses(expr.operand)->facts->type;
+	if (from->unqualified->kind == TypeKind::Array)
+	{
+		ConstPlace place;
+		if (!glvalue(*expr.operand, place) || !read(place, out, expr.location))
+			return false;
+	}
+	else if (!operand(*expr.operand, out))
 		return false;
 	const Type* to = expr.facts->type->unqualified;
 	const uint64_t size = size_of(to, expr.location);
-	const Type* representation = to->kind == TypeKind::Enum ? static_cast<const EnumEntity*>(to->entity)->underlying
-															: to;
-	uint8_t bytes[16];
-	if (size == 0 || size > sizeof bytes || size != size_of(out.type, expr.location) ||
-		!ScalarBytes(out, out.type->unqualified, size, bytes) ||
-		(LaneIs(representation, FundamentalType::Bool) && bytes[0] > 1) || !BytesScalar(bytes, to, size, out))
-		return fail(expr.location, "a bit cast outside supported constant representations");
-	return true;
+	if (size == 0 || size > (uint64_t(1) << 22) || size != size_of(from, expr.location))
+		return fail(expr.location, "a bit cast exceeds constant evaluation storage limits");
+	uint8_t* bytes = arena_.allocate_array<uint8_t>(static_cast<size_t>(size));
+	uint8_t* known = arena_.allocate_array<uint8_t>(static_cast<size_t>(size));
+	std::memset(bytes, 0, static_cast<size_t>(size));
+	std::memset(known, 0, static_cast<size_t>(size));
+	if (!object_representation(from, out, bytes, known, size, true, expr.location, 0))
+		return false;
+	out = skeleton(to);
+	return object_representation(to, out, bytes, known, size, false, expr.location, 0);
 }
 
 bool ConstantInterpreter::vector_reinterpretation(ConstValue& value, const Type* to, uint32_t location)
