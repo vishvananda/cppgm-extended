@@ -37,6 +37,15 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 	// A body is not part of an enclosing class's member-specification: a
 	// local class in it completes on its own. False when the result it
 	// deduces (a lambda's) is undeducible (see BodyContext::undeduced).
+	// Claim this body's lambda frame before parameter/type completion can
+	// reenter another function body. Other bodies do not consume it.
+	LambdaFrame* lambda = pending_lambda_ != nullptr &&
+			(pending_lambda_->facts->call == function ||
+				(pending_lambda_->sealed && function->primary == pending_lambda_->facts->call))
+		? pending_lambda_
+		: nullptr;
+	if (lambda != nullptr)
+		pending_lambda_ = nullptr;
 	const uint32_t saved_depth = class_depth_;
 	class_depth_ = 0;
 	Scope* scope = new_scope(ScopeKind::Function, parent, print, function, function->label);
@@ -109,12 +118,7 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 		// A templated lambda's call operator specialization's (its template
 		// the closure's call) has its closure's captures; `this` the captured
 		// one's type.
-		context.lambda = pending_lambda_ != nullptr &&
-				(pending_lambda_->facts->call == function ||
-					(pending_lambda_->sealed && function->primary == pending_lambda_->facts->call))
-			? pending_lambda_
-			: nullptr;
-		pending_lambda_ = nullptr;
+		context.lambda = lambda;
 		if (context.lambda != nullptr && context.lambda->sealed)
 		{
 			if (context.lambda->facts->this_member != nullptr)
