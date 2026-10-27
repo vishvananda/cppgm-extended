@@ -1025,8 +1025,9 @@ void ProgramLowering::set_pending(lowir::SymbolId symbol, const PendingDeclarati
 	pending_.push_back(pending);
 	pending_index_[symbol] = static_cast<uint32_t>(pending_.size());
 	// A back end selecting code before finish declares the global knows
-	// how the declaration will bind (a host object's GOT access).
-	if (!pending.function)
+	// how the declaration will bind (a host object's GOT access). An
+	// internal function stays direct before its definition arrives too.
+	if (!pending.function || pending.metadata.binding == ir_model::SBM_INTERNAL)
 		program_.set_forward_global(symbol, pending.metadata.binding, pending.metadata.storage, pending.defined_here);
 }
 

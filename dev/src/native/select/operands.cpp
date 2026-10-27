@@ -282,7 +282,7 @@ SymbolAccess host_symbol_access(const lowir::Program& program, lowir::SymbolId s
 		// the unit defines it (then addressed as the definition will be,
 		// as a whole-program compile of the LowIR addresses it); one left
 		// unstated is a function's, whose address forms directly (the
-		// object compiler loads an undefined one's from the GOT instead).
+		// object compiler loads a non-local one's from the GOT instead).
 		binding = program.forward_binding(symbol);
 		storage = program.forward_storage(symbol);
 		defined = program.forward_defined(symbol);
@@ -303,6 +303,19 @@ Operand FunctionSelector::symbol_operand(uint32_t symbol, int32_t addend) const
 {
 	Operand op = Operand::make_symbol(symbol, addend);
 	op.access = symbol_access(symbol);
+	// Object emission can turn a zero-addend function LEA into a GOT load
+	// without changing instruction width. An offset needs the GOT load
+	// before its separate address adjustment, using the existing MOV path.
+	if (addend != 0 && eh_model_ == EhModel::Host && op.access == SymbolAccess::Direct)
+	{
+		const lowir::Symbol& target = program_.symbols[symbol];
+		const bool pending = target.kind == lowir::SymbolKind::Unresolved &&
+			program_.forward_binding(symbol) == ir_model::SBM_DEFAULT;
+		if (pending ||
+			(lowir::is_function_kind(target.kind) && target.metadata.binding != ir_model::SBM_INTERNAL &&
+				target.metadata.tls_for == lowir::kNoId))
+			op.access = SymbolAccess::Got;
+	}
 	return op;
 }
 

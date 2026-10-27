@@ -1,0 +1,13 @@
+typedef int (*Function)(int);
+extern "C" int public_target(int value) { return value + 7; }
+inline int inline_target(int value) { return value + 8; }
+template<class T> int template_target(T value) { return value + 9; }
+static int local_target(int value) { return value + 10; }
+extern "C" Function public_address() { return &public_target; }
+extern "C" Function inline_address() { return &inline_target; }
+extern "C" Function template_address() { return &template_target<int>; }
+extern "C" Function local_address() { return &local_target; }
+int main() {
+  return public_address()(1) != 8 || inline_address()(1) != 9 ||
+         template_address()(1) != 10 || local_address()(1) != 11;
+}

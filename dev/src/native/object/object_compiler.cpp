@@ -134,8 +134,8 @@ private:
 	void add_relocations();
 	void add_groups();
 	uint32_t object_symbol(uint32_t image_symbol);
-	// A function symbol of the program this object does not define.
-	bool external_function(uint32_t image_symbol);
+	// A function another object may define or interpose.
+	bool nonlocal_function(uint32_t image_symbol);
 	uint32_t shared_section(const char* name, SectionKind kind);
 	uint32_t own_section(const char* name, lowir::SymbolId symbol, SectionKind kind, uint32_t& spelling);
 	uint32_t shared_relro_section();
@@ -789,10 +789,10 @@ void ObjectCompiler::add_unwind_relocations()
 	}
 }
 
-bool ObjectCompiler::external_function(uint32_t image_symbol)
+bool ObjectCompiler::nonlocal_function(uint32_t image_symbol)
 {
-	return image_symbol < Image::kLocalSymbols && placement_[slot(image_symbol)].section == 0 &&
-		lowir::is_function_kind(program_.symbols[image_symbol].kind);
+	return image_symbol < Image::kLocalSymbols && lowir::is_function_kind(program_.symbols[image_symbol].kind) &&
+		(placement_[slot(image_symbol)].section == 0 || !local_function(image_symbol));
 }
 
 uint32_t ObjectCompiler::object_symbol(uint32_t image_symbol)
@@ -942,9 +942,8 @@ void ObjectCompiler::add_relocations()
 	// Code references: PC-relative from the field (the image's fixups are
 	// relative to the instruction's end); calls and jumps take the PLT
 	// form, addresses and operands PC32 (psABI 4.4). A host object takes
-	// an undefined function's address from its GOT entry, as position-
-	// independent code must (another module defines it, and a PIE link
-	// makes no canonical PLT entry for a PC32 reference): its `lea` becomes
+	// a non-local function's address from its GOT entry, including a
+	// definition another module may interpose: its `lea` becomes
 	// the `mov` load of the slot, R_X86_64_REX_GOTPCRELX (psABI 4.4.1),
 	// which the linker relaxes back when the function is local.
 	const std::vector<CodeFixup>& fixups = image_.code_fixups();
@@ -980,7 +979,7 @@ void ObjectCompiler::add_relocations()
 			std::vector<uint8_t>& bytes = out_->sections[range.section].bytes;
 			const uint64_t at = relocation.offset;
 			if (fixup.addend == 0 && fixup.target < Image::kLocalSymbols &&
-				placement_[slot(fixup.target)].section != 0 &&
+				placement_[slot(fixup.target)].section != 0 && !nonlocal_function(fixup.target) &&
 				host_symbol_access(program_, fixup.target) == SymbolAccess::Direct && at >= 3 &&
 				(bytes[at - 3] & 0xf8) == 0x48 && bytes[at - 2] == 0x8b && (bytes[at - 1] & 0xc7) == 0x05)
 			{
@@ -1002,14 +1001,14 @@ void ObjectCompiler::add_relocations()
 		{
 			relocation.type = fixup.branch ? object::R_X86_64_PLT32 : object::R_X86_64_PC32;
 			relocation.addend = static_cast<int64_t>(fixup.addend) - fixup.end;
-			if (!fixup.branch && eh_model_ == EhModel::Host && external_function(fixup.target))
+			if (!fixup.branch && eh_model_ == EhModel::Host && nonlocal_function(fixup.target))
 			{
 				std::vector<uint8_t>& bytes = out_->sections[range.section].bytes;
 				const uint64_t at = relocation.offset;
 				// REX.W 8D /r with a RIP-relative ModRM (mod 00, r/m 101).
 				if (at < 3 || (bytes[at - 3] & 0xf8) != 0x48 || bytes[at - 2] != 0x8d ||
 					(bytes[at - 1] & 0xc7) != 0x05 || fixup.addend != 0)
-					throw InternalError("an external function's address outside a lea");
+					throw InternalError("a non-local function's address outside a lea");
 				bytes[at - 2] = 0x8b;
 				relocation.type = object::R_X86_64_REX_GOTPCRELX;
 			}
