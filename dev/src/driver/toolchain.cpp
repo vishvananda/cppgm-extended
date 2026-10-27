@@ -50,6 +50,7 @@ struct Input
 struct Invocation
 {
 	bool compile_only = false;
+	bool position_independent = false;
 	bool preprocess_only = false;
 	// -fsyntax-only: each source analyzed, nothing lowered or written.
 	bool syntax_only = false;
@@ -266,6 +267,10 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 		const std::string& arg = args[i];
 		if (arg == "-c")
 			invocation.compile_only = true;
+		else if (arg == "-fPIC" || arg == "-fpic")
+			invocation.position_independent = true;
+		else if (arg == "-fno-PIC" || arg == "-fno-pic")
+			invocation.position_independent = false;
 		else if (arg == "-pthread")
 			pthread = true;
 		else if (arg == "-E")
@@ -462,7 +467,8 @@ bool compile_unit(
 	native::ObjectStats stats;
 	stats.clocks = invocation.stats;
 	stats.census = invocation.function_census;
-	native::ObjectBuilder builder(program, stats, eh_model, invocation.optimizer.level);
+	native::ObjectBuilder builder(
+		program, stats, eh_model, invocation.optimizer.level, invocation.position_independent);
 	// At -O0 each definition is encoded as the lowering completes it; an
 	// optimizing level keeps the program until the optimizer has run.
 	if (invocation.optimizer.level == 0)
@@ -574,7 +580,8 @@ bool compile_lowir_unit(
 	stats.clocks = invocation.stats;
 	stats.census = invocation.function_census;
 	object.path = path;
-	if (!native::compile_object(program, object, error, &stats, eh_model, invocation.optimizer.level))
+	if (!native::compile_object(
+			program, object, error, &stats, eh_model, invocation.optimizer.level, invocation.position_independent))
 	{
 		std::cerr << "ERROR: " << path << ": " << error << std::endl;
 		return false;

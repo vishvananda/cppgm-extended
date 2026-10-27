@@ -1,0 +1,23 @@
+extern int forward_data;
+extern "C" int *forward_address() { return &forward_data; }
+int forward_data = 5;
+int external_data = 7;
+thread_local int tls_data = 59;
+extern "C" int *tls_address() { return &tls_data; }
+static int internal_data = 11;
+int array_data[3] = { 17, 19, 23 };
+template<class T> struct Holder { static int data; };
+template<class T> int Holder<T>::data = 13;
+extern "C" int *external_address() { return &external_data; }
+extern "C" int *internal_address() { return &internal_data; }
+extern "C" int *template_address() { return &Holder<int>::data; }
+extern "C" int *array_address() { return &array_data[1]; }
+extern "C" int external_value() { return external_data; }
+extern "C" int template_value() { return Holder<int>::data; }
+extern "C" int array_value() { return array_data[1]; }
+extern "C" void store_values(int value) { external_data = value; Holder<int>::data = value + 1; }
+int main() {
+  return *tls_address()!=59 || *forward_address()!=5 || *external_address()!=7 || *internal_address()!=11 ||
+         *template_address()!=13 || *array_address()!=19 || external_value()!=7 ||
+         template_value()!=13 || array_value()!=19;
+}

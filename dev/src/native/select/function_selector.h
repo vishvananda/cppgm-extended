@@ -35,6 +35,7 @@ public:
 
 	void select(lowir::SymbolId symbol, Function& out);
 	void set_eh_model(EhModel model) { eh_model_ = model; }
+	void set_position_independent(bool enabled) { position_independent_ = enabled; }
 	void set_optimization_level(int level) { level_ = level; }
 
 	// ---- analysis.cpp

@@ -17,6 +17,10 @@ and writes the resulting names into real object files:
   here.
 - Header-emitted inline/template definitions must use host-correct symbol
   spelling and duplicate-definition/coalescing rules.
+- `-fPIC` / `-fpic` must produce position-independent host objects: references
+  to non-local data definitions, including vague-linkage definitions, use the
+  GOT so a shared library links and observes interposed definitions.
+  `-fno-PIC` / `-fno-pic` restore ordinary defined-data access; the last option wins.
 
 The PA27 harness does not normally use `cppgm++` as the final linker. It runs:
 

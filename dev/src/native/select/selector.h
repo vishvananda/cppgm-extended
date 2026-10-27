@@ -61,7 +61,8 @@ class FunctionSelector;
 // (pc-relative), through its GOT entry, or a thread-local form; from the
 // symbol's facts, or from the binding a streaming producer states for a
 // global referenced before it is declared.
-SymbolAccess host_symbol_access(const lowir::Program& program, lowir::SymbolId symbol);
+SymbolAccess host_symbol_access(
+	const lowir::Program& program, lowir::SymbolId symbol, bool position_independent = false);
 
 class Selector
 {
@@ -79,6 +80,7 @@ public:
 	// The exception model of the functions selected from now on (the
 	// course's runtime ABI unless set).
 	void set_eh_model(EhModel model);
+	void set_position_independent(bool enabled);
 	// The optimization level of the functions selected from now on (0
 	// unless set): O1 and above lay out branches in the MIR itself
 	// (branch_layout.cpp), select the builtin strlen call prefix

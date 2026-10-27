@@ -105,6 +105,7 @@ struct SelectorState
 	// index) or a resume's local target (1 + layout block), and per
 	// landing block its pad's MIR block.
 	EhModel eh_model_ = EhModel::Course;
+	bool position_independent_ = false;
 	int level_ = 0; // the optimization level
 	struct EhNode
 	{

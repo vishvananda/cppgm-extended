@@ -255,22 +255,18 @@ SymbolAccess FunctionSelector::symbol_access(uint32_t symbol) const
 	// Course objects and executables address every symbol directly.
 	if (eh_model_ != EhModel::Host)
 		return SymbolAccess::Direct;
-	return host_symbol_access(program_, symbol);
+	return host_symbol_access(program_, symbol, position_independent_);
 }
 
-SymbolAccess host_symbol_access(const lowir::Program& program, lowir::SymbolId symbol)
+SymbolAccess host_symbol_access(const lowir::Program& program, lowir::SymbolId symbol, bool position_independent)
 {
-	// Host objects (pa27 README 1, 5): data another module may define --
-	// an object declared here (imported, or one a streamed unit defines
-	// after this function: the object compiler relaxes that GOT load once
-	// the definition follows), or a GNU weak definition another object's
-	// may replace -- is reached through its GOT entry, which the linker
-	// relaxes where the definition ends up local. A vague-linkage
-	// definition is addressed directly, as GCC and Clang do: its copies
-	// are the same, and references bind to the one the link keeps. A
-	// thread-local object's address is the executing thread's: local exec
-	// for one this object defines (the executable holds it), initial exec
-	// through its GOT entry otherwise.
+	// Host objects (pa27 README 1, 5): imported data and replaceable weak
+	// definitions use the GOT. Position-independent code also reaches
+	// non-local definitions through the GOT: vague linkage coalesces
+	// definitions but does not bind a shared object's references locally.
+	// The linker relaxes GOT loads when definitions end up local.
+	// Thread-local data uses local exec for executable definitions,
+	// initial exec otherwise (including position-independent objects).
 	const lowir::Symbol& s = program.symbols[symbol];
 	uint8_t binding = s.metadata.binding;
 	uint8_t storage = s.metadata.storage;
@@ -292,8 +288,9 @@ SymbolAccess host_symbol_access(const lowir::Program& program, lowir::SymbolId s
 	else if (!lowir::is_global_kind(s.kind))
 		return SymbolAccess::Direct;
 	if (storage == ir_model::GSM_THREAD_LOCAL)
-		return defined ? SymbolAccess::TlsLocal : SymbolAccess::TlsInitial;
-	if (defined ? binding == ir_model::SBM_WEAK && (s.metadata.flags & lowir::SF_REPLACEABLE) != 0
+		return defined && !position_independent ? SymbolAccess::TlsLocal : SymbolAccess::TlsInitial;
+	if (defined ? (position_independent && binding != ir_model::SBM_INTERNAL) ||
+				(binding == ir_model::SBM_WEAK && (s.metadata.flags & lowir::SF_REPLACEABLE) != 0)
 				: binding != ir_model::SBM_INTERNAL)
 		return SymbolAccess::Got;
 	return SymbolAccess::Direct;

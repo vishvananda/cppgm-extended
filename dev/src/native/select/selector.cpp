@@ -22,6 +22,11 @@ void Selector::set_eh_model(EhModel model)
 	state_->set_eh_model(model);
 }
 
+void Selector::set_position_independent(bool enabled)
+{
+	state_->set_position_independent(enabled);
+}
+
 void Selector::set_optimization_level(int level)
 {
 	state_->set_optimization_level(level);

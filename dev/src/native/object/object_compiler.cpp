@@ -107,7 +107,8 @@ const char* const kHostBuiltins[kHostBuiltinCount][2] = { { "cppgm_builtin_strle
 class ObjectCompiler
 {
 public:
-	ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level);
+	ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level,
+		bool position_independent);
 
 	// Selects and encodes one function definition.
 	void function(lowir::SymbolId symbol);
@@ -175,6 +176,7 @@ private:
 	// relocations awaiting symbols, each section's symbol and the extra
 	// members of COMDAT groups (image symbol, section).
 	EhModel eh_model_;
+	bool position_independent_;
 	std::vector<UnwindEntry> unwind_;
 	std::vector<uint8_t> cfi_pool_;
 	std::vector<uint8_t> lsda_pool_;
@@ -208,10 +210,13 @@ private:
 	std::vector<uint32_t> named_sections_;
 };
 
-ObjectCompiler::ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level)
-	: program_(program), stats_(stats), selector_(program), emitter_(image_, runtime_, stats.emit), eh_model_(eh_model)
+ObjectCompiler::ObjectCompiler(
+	lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level, bool position_independent)
+	: program_(program), stats_(stats), selector_(program), emitter_(image_, runtime_, stats.emit), eh_model_(eh_model),
+	  position_independent_(position_independent)
 {
 	selector_.set_eh_model(eh_model);
+	selector_.set_position_independent(position_independent);
 	selector_.set_optimization_level(optimization_level);
 	emitter_.set_eh_model(eh_model);
 	for (unsigned k = 0; k < kHostBuiltinCount; ++k)
@@ -980,7 +985,7 @@ void ObjectCompiler::add_relocations()
 			const uint64_t at = relocation.offset;
 			if (fixup.addend == 0 && fixup.target < Image::kLocalSymbols &&
 				placement_[slot(fixup.target)].section != 0 && !nonlocal_function(fixup.target) &&
-				host_symbol_access(program_, fixup.target) == SymbolAccess::Direct && at >= 3 &&
+				host_symbol_access(program_, fixup.target, position_independent_) == SymbolAccess::Direct && at >= 3 &&
 				(bytes[at - 3] & 0xf8) == 0x48 && bytes[at - 2] == 0x8b && (bytes[at - 1] & 0xc7) == 0x05)
 			{
 				bytes[at - 2] = 0x8d;
@@ -1069,8 +1074,9 @@ void ObjectCompiler::finish(ObjectFile& out)
 		stats_.relocations += section.relocations.size();
 }
 
-ObjectBuilder::ObjectBuilder(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level)
-	: compiler_(new ObjectCompiler(program, stats, eh_model, optimization_level))
+ObjectBuilder::ObjectBuilder(
+	lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level, bool position_independent)
+	: compiler_(new ObjectCompiler(program, stats, eh_model, optimization_level, position_independent))
 {}
 
 ObjectBuilder::~ObjectBuilder()
@@ -1202,12 +1208,13 @@ void recover_jump_thunks(lowir::Program& program, EhModel eh_model)
 }
 
 bool compile_object(lowir::Program& program, object::ObjectFile& out, std::string& error, ObjectStats* stats,
-	EhModel eh_model, int optimization_level)
+	EhModel eh_model, int optimization_level, bool position_independent)
 {
 	ObjectStats local;
 	try
 	{
-		ObjectBuilder builder(program, stats != nullptr ? *stats : local, eh_model, optimization_level);
+		ObjectBuilder builder(
+			program, stats != nullptr ? *stats : local, eh_model, optimization_level, position_independent);
 		builder.finish(out);
 	}
 	catch (const BackendError& e)

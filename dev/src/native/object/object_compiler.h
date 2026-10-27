@@ -84,8 +84,8 @@ class ObjectCompiler;
 class ObjectBuilder : public lowir::DefinitionSink
 {
 public:
-	ObjectBuilder(
-		lowir::Program& program, ObjectStats& stats, EhModel eh_model = EhModel::Course, int optimization_level = 0);
+	ObjectBuilder(lowir::Program& program, ObjectStats& stats, EhModel eh_model = EhModel::Course,
+		int optimization_level = 0, bool position_independent = false);
 	~ObjectBuilder();
 
 	ObjectBuilder(const ObjectBuilder&) = delete;
@@ -113,6 +113,6 @@ void recover_jump_thunks(lowir::Program& program, EhModel eh_model);
 // with `error` set for LowIR outside the native subset; an InternalError
 // propagates.
 bool compile_object(lowir::Program& program, object::ObjectFile& out, std::string& error, ObjectStats* stats,
-	EhModel eh_model = EhModel::Course, int optimization_level = 0);
+	EhModel eh_model = EhModel::Course, int optimization_level = 0, bool position_independent = false);
 
 } // namespace native
