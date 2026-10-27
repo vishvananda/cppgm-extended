@@ -1,0 +1,12 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    variable c_reference lvalue-reference to int
+    variable c_rvalue_reference rvalue-reference to int
+    variable cpp_reference lvalue-reference to int
+    variable cpp_rvalue_reference rvalue-reference to int
+    scope namespace library
+      variable const_reference lvalue-reference to const int
+      variable explicit_reference lvalue-reference to int
+end translation unit

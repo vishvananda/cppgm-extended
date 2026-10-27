@@ -1384,9 +1384,10 @@ void Analyzer::check_variable_specifiers(const Specifiers& specifiers, const Typ
 	// has no initializer.
 	if (specifiers.is_extern && initialized && where->kind == ScopeKind::Block)
 		error(location, "an initializer on a block-scope extern declaration");
-	// 8.3.2p5: a reference needs an initializer except where extern is
-	// explicit, for a class member, a parameter or a return type.
-	if (type->is_reference() && !initialized && !specifiers.is_extern && where->kind != ScopeKind::Class)
+	// 8.3.2p5: a reference definition outside a class needs an initializer.
+	// A single linkage declaration is extern as well (7.5p7), already
+	// accounted for by the computed definition state.
+	if (type->is_reference() && !initialized && definition && where->kind != ScopeKind::Class)
 		error(location, "reference declared without an initializer");
 	// 7.1.5p1: constexpr applies to a variable's definition (`extern
 	// constexpr int n;` is none) or a static data member's declaration,
