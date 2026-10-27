@@ -160,8 +160,13 @@ void FunctionLowering::discard(const syntax::Expr& expr)
 		return;
 	case syntax::ExprKind::FunctionalCast:
 	{
-		// `A{...}` of an array type: a temporary array its list initializes.
 		const syntax::FunctionalCastExpr& functional = static_cast<const syntax::FunctionalCastExpr&>(*e);
+		if (facts != nullptr && sema::IsVoid(facts->type) && functional.arguments.size == 1)
+		{
+			discard_to_void(*functional.arguments[0]);
+			return;
+		}
+		// `A{...}` of an array type: a temporary array its list initializes.
 		if (functional.braced == nullptr || facts == nullptr || facts->type->kind != sema::TypeKind::Array)
 			break;
 		array_temporary(functional, false, lowir::SlotKind::Discardarr);
