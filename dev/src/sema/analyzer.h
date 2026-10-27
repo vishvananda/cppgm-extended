@@ -757,7 +757,7 @@ private:
 	static bool DeclaresDepth(const Scope* scope, uint32_t depth);
 	bool placeholder_words(
 		const syntax::Expr& operand, Scope* scope, const Scope* home, bool value, const Type* target);
-	bool instantiation_dependent(const syntax::Expr& expr, Scope* scope);
+	bool instantiation_dependent(const syntax::Expr& expr, Scope* scope, bool contextual_access = false);
 	const Type* pending_value(const TemplateParameterEntity* placeholder, uint32_t depth, const Type* const* canonical,
 		uint32_t count, const PendingSubstitution* earlier);
 	const Type* substitute_pending(const Type* type, const Substitution& substitution);

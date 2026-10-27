@@ -1546,6 +1546,9 @@ Decl* SyntaxCloner::decl(const Decl* decl)
 	}
 	case DeclKind::StaticAssert:
 	{
+		const StaticAssertDecl* assertion = static_cast<const StaticAssertDecl*>(decl);
+		if (assertion->independent_condition)
+			return const_cast<StaticAssertDecl*>(assertion);
 		StaticAssertDecl* result = copy(static_cast<const StaticAssertDecl*>(decl));
 		result->condition = expr(result->condition);
 		return result;

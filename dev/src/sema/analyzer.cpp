@@ -993,6 +993,8 @@ const Type* Analyzer::non_type_parameter_type(const syntax::TemplateParameter& p
 
 void Analyzer::static_assertion(const syntax::StaticAssertDecl& decl, Scope* scope)
 {
+	if (semantic() && decl.independent_condition && decl.condition_checked)
+		return;
 	// 7p1: the message is a string-literal, which a user-defined string
 	// literal (2.14.8, its token's kind) is not.
 	if (decl.has_message && decl.user_defined_message)
@@ -1002,6 +1004,9 @@ void Analyzer::static_assertion(const syntax::StaticAssertDecl& decl, Scope* sco
 	if (template_depth_ != 0)
 	{
 		expression_walk(decl.condition, scope);
+		if (semantic() && !failed())
+			decl.independent_condition = !instantiation_dependent(*decl.condition, scope, true) &&
+				fixed_expression(*decl.condition, scope);
 		return;
 	}
 	// Semantics mode types the condition first (overloaded calls in
@@ -1033,6 +1038,8 @@ void Analyzer::static_assertion(const syntax::StaticAssertDecl& decl, Scope* sco
 		error(decl.condition->location, "a scoped enumeration value does not convert to bool");
 	if (value.bits == 0)
 		error(decl.location, "static assertion failed");
+	if (semantic() && decl.independent_condition)
+		decl.condition_checked = true;
 }
 
 } // namespace sema

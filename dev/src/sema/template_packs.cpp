@@ -104,7 +104,7 @@ private:
 
 } // namespace
 
-bool Analyzer::instantiation_dependent(const syntax::Expr& expr, Scope* scope)
+bool Analyzer::instantiation_dependent(const syntax::Expr& expr, Scope* scope, bool contextual_access)
 {
 	// Whether a template definition's expression is value-dependent
 	// (14.6.2.3p1-p2, conservatively instantiation-dependent): it names a
@@ -127,6 +127,13 @@ bool Analyzer::instantiation_dependent(const syntax::Expr& expr, Scope* scope)
 	{
 		if (binding == nullptr ||
 			(binding->entity != nullptr && binding->entity->kind == EntityKind::TemplateParameter))
+			return true;
+		// Class names and members can carry access obligations whose answer
+		// differs between specializations (for example friendship granted to
+		// just one). A reusable assertion must not share those checks.
+		if (contextual_access &&
+			((binding->declared_in != nullptr && binding->declared_in->kind == ScopeKind::Class) ||
+				(binding->type != nullptr && binding->type->unqualified->kind == TypeKind::Class)))
 			return true;
 		const bool member = binding->declared_in != nullptr && binding->declared_in->kind == ScopeKind::Class &&
 			TemplatedClassScope(binding->declared_in);

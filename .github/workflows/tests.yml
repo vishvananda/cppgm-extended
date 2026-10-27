@@ -307,6 +307,10 @@ jobs:
           printf 'CPPGM_STDLIB_FLAGS=%s\n' "$CPPGM_STDLIB_FLAGS"
           cat /etc/os-release
 
+      - name: Check shared template assertion work
+        if: matrix.suite.id == 'test-report'
+        run: python3 scripts/tests/test_template_assert_reuse.py
+
       - name: Run ${{ matrix.suite.name }}
         run: ${{ matrix.suite.command }}
 

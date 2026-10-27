@@ -95,6 +95,11 @@ struct StaticAssertDecl : Decl
 	bool has_message;
 	// The message token is a user-defined string literal (2.14.8).
 	bool user_defined_message;
+	// A condition independent of its template arguments can share its
+	// successful semantic check across instantiations. Failed or dependent
+	// conditions retain the ordinary instantiation-time checks.
+	mutable bool independent_condition = false;
+	mutable bool condition_checked = false;
 	TokenSpelling message;
 };
 
