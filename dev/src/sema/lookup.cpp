@@ -962,18 +962,21 @@ LookupResult NameLookup::unqualified(Scope* scope, const Identifier* name, Looku
 	// parameter scope is searched there.
 	bool bridged = false;
 	bool outside = false;
+	bool concrete_members = false;
 	for (Scope* current = scope; current != nullptr; current = current->parent)
 	{
 		if (current->kind == ScopeKind::TemplateParameters)
 		{
+			concrete_members = concrete_members || current->concrete_members;
 			if (outside)
 				continue;
 			bridged = bridged || current->bridge;
 		}
 		else
 			outside = bridged;
-		LookupResult result = current->kind == ScopeKind::Class ? class_members(current, name, filter, true)
-																: own(current, name, filter);
+		LookupResult result = current->kind == ScopeKind::Class
+			? class_members(current, name, filter, !concrete_members)
+			: own(current, name, filter);
 		const Binding* declared_here = result.binding;
 		for (const NamespaceList* directive = directives(current); directive != nullptr; directive = directive->next)
 			nominate(current, directive->scope);

@@ -145,6 +145,10 @@ struct Scope
 	// no template parameter scope beyond it (the class definitions' are
 	// not in scope, 14.5.1p3, 14.6.1p7).
 	bool bridge : 1;
+	// A qualified member declaration without a template-head looks into
+	// its concrete class, including bases dependent in the original
+	// template (an explicit member specialization, 14.7.3p16).
+	bool concrete_members : 1;
 	// A template parameter scope: the template parameter lists it stands
 	// for in the depth of template parameters declared below it (1 for a
 	// template-head's; none for an instantiation frame's, whose parameters

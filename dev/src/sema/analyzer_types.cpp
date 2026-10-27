@@ -1060,6 +1060,7 @@ Scope* Analyzer::qualified_lookup_scope(Scope* qualifier, Scope* scope)
 		empty->dumped = false;
 		empty->lists = 0;
 		empty->bridge = true;
+		empty->concrete_members = qualifier->kind == ScopeKind::Class;
 		return empty;
 	}
 	Scope* bridge = new_scope(ScopeKind::TemplateParameters, qualifier, nullptr, nullptr, nullptr);
