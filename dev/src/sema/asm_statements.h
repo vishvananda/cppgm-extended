@@ -19,7 +19,17 @@ enum class AsmOperandClass : uint8_t
 {
 	Memory,
 	Register,
-	Immediate
+	Immediate,
+	Flag
+};
+
+enum class AsmFlag : uint8_t
+{
+	None,
+	Carry,
+	NotCarry,
+	Zero,
+	NotZero
 };
 
 // One asm operand as its constraint and type give it: outputs first, then
@@ -39,6 +49,7 @@ struct AsmOperandInfo
 	uint8_t tied;
 	// A single fixed GPR constraint (a, b, c, d, S, D), or zero.
 	char fixed;
+	AsmFlag flag;
 };
 
 enum class AsmOperation : uint8_t
@@ -60,10 +71,19 @@ enum class AsmOperation : uint8_t
 	Move,
 	CompareExchange,
 	JumpZero,
-	JumpNotZero
+	JumpNotZero,
+	BitSet,
+	BitReset,
+	BitComplement,
+	SetCarry,
+	SetNotCarry,
+	SetZero,
+	SetNotZero
 };
 
 const uint8_t kAsmImmediateSource = 0xff;
+const uint8_t kAsmCaptureZero = 1;
+const uint8_t kAsmCaptureCarry = 2;
 
 // One lifted instruction, on the low `bytes` of its operands (an integer
 // of that size whatever their types: GAS and the CPU see bits).
@@ -79,6 +99,7 @@ struct AsmInstruction
 	uint8_t bytes;
 	uint8_t source_bytes;
 	uint8_t accumulator;
+	uint8_t flags;
 	uint64_t immediate;
 };
 

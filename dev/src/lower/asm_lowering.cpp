@@ -9,10 +9,11 @@ namespace lower {
 namespace {
 lowir::Type AsmType(uint32_t bytes)
 {
-	return lowir::Type::scalar(bytes == 1 ? lowir::TypeKind::I8
-			: bytes == 2                  ? lowir::TypeKind::I16
-			: bytes == 4                  ? lowir::TypeKind::I32
-										  : lowir::TypeKind::I64);
+	return lowir::Type::scalar(bytes == 16 ? lowir::TypeKind::I128
+			: bytes == 1                   ? lowir::TypeKind::I8
+			: bytes == 2                   ? lowir::TypeKind::I16
+			: bytes == 4                   ? lowir::TypeKind::I32
+										   : lowir::TypeKind::I64);
 }
 }
 
@@ -114,11 +115,105 @@ RValue FunctionLowering::asm_source(const AsmState& state, const sema::AsmInstru
 	return load(type, bits);
 }
 
+void FunctionLowering::asm_capture_flags(const sema::AsmInstruction& instruction, AsmState& state, const RValue& before,
+	const RValue& after, const RValue& source)
+{
+	// Analysis marks only flags with a consumer. Arithmetic flags are facts
+	// about these values, independent of the native instruction selection.
+	if ((instruction.flags & sema::kAsmCaptureZero) != 0)
+		state.zero = compare(lowir::ComparePredicate::Eq, after.type, after, integer(after.type, 0));
+	if ((instruction.flags & sema::kAsmCaptureCarry) == 0)
+		return;
+	if (instruction.operation == sema::AsmOperation::Add)
+		state.carry = compare(lowir::ComparePredicate::Ult, after.type, after, before);
+	else if (instruction.operation == sema::AsmOperation::Sub)
+		state.carry = compare(lowir::ComparePredicate::Ult, before.type, before, source);
+	else if (instruction.operation == sema::AsmOperation::Neg)
+		state.carry = compare(lowir::ComparePredicate::Ne, before.type, before, integer(before.type, 0));
+	else
+		state.carry = integer(lowir::Type::scalar(lowir::TypeKind::I64), 0);
+}
+
+void FunctionLowering::asm_set_flag(const sema::AsmInstruction& instruction, AsmState& state)
+{
+	const bool carry = instruction.operation == sema::AsmOperation::SetCarry ||
+		instruction.operation == sema::AsmOperation::SetNotCarry;
+	RValue value = carry ? state.carry : state.zero;
+	if (value.value.kind == lowir::ValueKind::None)
+		throw InternalError("an asm condition without a lowered producer");
+	if (instruction.operation == sema::AsmOperation::SetNotCarry ||
+		instruction.operation == sema::AsmOperation::SetNotZero)
+		value = compare(lowir::ComparePredicate::Eq, value.type, value, integer(value.type, 0));
+	const lowir::Type type = AsmType(instruction.bytes);
+	if (type != value.type)
+		value = convert_op(instruction.bytes > 8 ? lowir::ConvertOp::ZExt : lowir::ConvertOp::Trunc, type, value);
+	asm_store(state, instruction.destination, value);
+}
+
+void FunctionLowering::asm_bit_instruction(
+	const sema::AsmInstruction& instruction, AsmState& state, const RValue& source)
+{
+	const lowir::Type type = AsmType(instruction.bytes);
+	Place target = asm_place(state, instruction.destination);
+	const bool memory = (state.registers & (1u << instruction.destination)) == 0;
+	const uint32_t bits = instruction.bytes * 8;
+	if (memory && instruction.source != sema::kAsmImmediateSource)
+	{
+		// Register indices address a signed bit string. An immediate instead
+		// selects a bit in this word. No C++ in-bounds fact is asserted here.
+		const lowir::Type i64 = AsmType(8);
+		const RValue signed_index = source.type == i64 ? source : convert_op(lowir::ConvertOp::SExt, i64, source);
+		const uint32_t shift = instruction.bytes == 2 ? 4 : instruction.bytes == 4 ? 5 : 6;
+		const RValue word = binary(lowir::BinaryOp::Shr, i64, signed_index, integer(i64, shift));
+		target.storage = index(type, ir_model::IPK_NONE, target.storage, word).value;
+	}
+	const RValue bit = binary(lowir::BinaryOp::And, type, source, integer(type, bits - 1));
+	const RValue mask = binary(lowir::BinaryOp::Shl, type, integer(type, 1), bit);
+	const bool reset = instruction.operation == sema::AsmOperation::BitReset;
+	const RValue update = reset ? unary(lowir::UnaryOp::BitNot, mask) : mask;
+	RValue previous;
+	if (instruction.locked)
+	{
+		const sema::Intrinsic kind = instruction.operation == sema::AsmOperation::BitSet
+			? sema::Intrinsic::AtomicFetchOr
+			: reset ? sema::Intrinsic::AtomicFetchAnd
+					: sema::Intrinsic::AtomicFetchXor;
+		previous = atomic_update(kind, type, target.storage, update, lowir::MemoryOrder::SeqCst);
+	}
+	else
+	{
+		previous = load(type, target);
+		const lowir::BinaryOp op = instruction.operation == sema::AsmOperation::BitSet ? lowir::BinaryOp::Or
+			: reset                                                                    ? lowir::BinaryOp::And
+																					   : lowir::BinaryOp::Xor;
+		const RValue updated = binary(op, type, previous, update);
+		if (memory)
+			store(type, updated, target);
+		else
+			asm_store(state, instruction.destination, updated);
+	}
+	if ((instruction.flags & sema::kAsmCaptureCarry) != 0)
+		state.carry = compare(
+			lowir::ComparePredicate::Ne, type, binary(lowir::BinaryOp::And, type, previous, mask), integer(type, 0));
+}
+
 void FunctionLowering::asm_instruction(const sema::AsmInstruction& instruction, AsmState& state)
 {
+	if (instruction.operation >= sema::AsmOperation::SetCarry &&
+		instruction.operation <= sema::AsmOperation::SetNotZero)
+	{
+		asm_set_flag(instruction, state);
+		return;
+	}
 	const lowir::Type type = AsmType(instruction.bytes);
 	const Place target = asm_place(state, instruction.destination);
 	RValue source = asm_source(state, instruction);
+	if (instruction.operation == sema::AsmOperation::BitSet || instruction.operation == sema::AsmOperation::BitReset ||
+		instruction.operation == sema::AsmOperation::BitComplement)
+	{
+		asm_bit_instruction(instruction, state, source);
+		return;
+	}
 	if (instruction.operation == sema::AsmOperation::Move)
 	{
 		if (source.type != type)
@@ -128,14 +223,23 @@ void FunctionLowering::asm_instruction(const sema::AsmInstruction& instruction, 
 	}
 	if (instruction.operation == sema::AsmOperation::CompareExchange)
 	{
+		RValue expected = RValue();
+		if ((instruction.flags & sema::kAsmCaptureCarry) != 0)
+			expected = load(type, asm_place(state, instruction.accumulator));
 		lowir::Instruction inst = lowir::make_instruction(lowir::Opcode::AtomicCompareExchange, type);
 		inst.ops[0] = state.addresses[instruction.destination];
 		inst.ops[1] = state.homes[instruction.accumulator];
 		inst.ops[2] = source.value;
 		inst.order = lowir::MemoryOrder::SeqCst;
 		inst.sub = static_cast<uint8_t>(lowir::MemoryOrder::SeqCst);
-		state.zero.type = lowir::Type::scalar(lowir::TypeKind::I64);
-		state.zero.value = emit_value(inst, state.zero.type);
+		RValue exchanged;
+		exchanged.type = lowir::Type::scalar(lowir::TypeKind::I64);
+		exchanged.value = emit_value(inst, exchanged.type);
+		if ((instruction.flags & sema::kAsmCaptureZero) != 0)
+			state.zero = exchanged;
+		if ((instruction.flags & sema::kAsmCaptureCarry) != 0)
+			state.carry = compare(
+				lowir::ComparePredicate::Ult, type, expected, load(type, asm_place(state, instruction.accumulator)));
 		return;
 	}
 	if (instruction.operation == sema::AsmOperation::Not)
@@ -167,7 +271,9 @@ void FunctionLowering::asm_instruction(const sema::AsmInstruction& instruction, 
 		AtomicLoop loop;
 		loop.bits = type;
 		const RValue old = begin_atomic_loop(target, type, loop);
-		end_atomic_loop(target, type, loop, unary(lowir::UnaryOp::Neg, old));
+		const RValue updated = unary(lowir::UnaryOp::Neg, old);
+		end_atomic_loop(target, type, loop, updated);
+		asm_capture_flags(instruction, state, old, updated, source);
 		return;
 	}
 	if (instruction.locked)
@@ -175,9 +281,16 @@ void FunctionLowering::asm_instruction(const sema::AsmInstruction& instruction, 
 		static const sema::Intrinsic kUpdates[] = { sema::Intrinsic::AtomicAddFetch, sema::Intrinsic::AtomicSubFetch,
 			sema::Intrinsic::AtomicAndFetch, sema::Intrinsic::AtomicOrFetch, sema::Intrinsic::AtomicXorFetch,
 			sema::Intrinsic::AtomicXorFetch };
-		atomic_update(
+		const RValue updated = atomic_update(
 			kUpdates[static_cast<uint8_t>(instruction.operation) - static_cast<uint8_t>(sema::AsmOperation::Add)], type,
 			state.addresses[instruction.destination], source, lowir::MemoryOrder::SeqCst);
+		RValue before = updated;
+		if ((instruction.flags & sema::kAsmCaptureCarry) != 0 &&
+			(instruction.operation == sema::AsmOperation::Add || instruction.operation == sema::AsmOperation::Sub))
+			before = binary(
+				instruction.operation == sema::AsmOperation::Add ? lowir::BinaryOp::Sub : lowir::BinaryOp::Add, type,
+				updated, source);
+		asm_capture_flags(instruction, state, before, updated, source);
 		return;
 	}
 	const RValue value = load(type, target);
@@ -208,8 +321,7 @@ void FunctionLowering::asm_instruction(const sema::AsmInstruction& instruction, 
 		break;
 	}
 	asm_store(state, instruction.destination, result);
-	if (instruction.operation != sema::AsmOperation::Not && instruction.operation != sema::AsmOperation::ByteSwap)
-		state.zero = compare(lowir::ComparePredicate::Eq, type, result, integer(type, 0));
+	asm_capture_flags(instruction, state, value, result, source);
 }
 
 void FunctionLowering::asm_statement(const syntax::AsmStmt& stmt)

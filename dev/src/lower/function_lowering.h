@@ -715,12 +715,17 @@ private:
 		uint32_t outputs;
 		uint32_t registers;
 		RValue zero;
+		RValue carry;
 	};
 	void asm_bind_operands(const syntax::AsmStmt& stmt, AsmState& state);
 	Place asm_place(const AsmState& state, uint32_t index);
 	void asm_store(const AsmState& state, uint32_t index, RValue value);
 	RValue asm_source(const AsmState& state, const sema::AsmInstruction& instruction);
 	void asm_instruction(const sema::AsmInstruction& instruction, AsmState& state);
+	void asm_bit_instruction(const sema::AsmInstruction& instruction, AsmState& state, const RValue& source);
+	void asm_capture_flags(const sema::AsmInstruction& instruction, AsmState& state, const RValue& before,
+		const RValue& after, const RValue& source);
+	void asm_set_flag(const sema::AsmInstruction& instruction, AsmState& state);
 	// A GNU asm statement's lifted operations (sema/asm_statements.h).
 	void asm_statement(const syntax::AsmStmt& stmt);
 	void condition_branch(

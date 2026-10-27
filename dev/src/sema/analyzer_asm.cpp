@@ -61,6 +61,17 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 				error(operand.location, "a duplicate asm operand name");
 		info.output = output;
 		info.fixed = 0;
+		info.flag = AsmFlag::None;
+		const bool flag_output = output && constraint.compare(0, 4, "=@cc") == 0;
+		if (flag_output)
+		{
+			const std::string condition = constraint.substr(4);
+			info.flag = condition == "c" || condition == "b" || condition == "nae" ? AsmFlag::Carry
+				: condition == "nc" || condition == "ae" || condition == "nb"      ? AsmFlag::NotCarry
+				: condition == "z" || condition == "e"                             ? AsmFlag::Zero
+				: condition == "nz" || condition == "ne"                           ? AsmFlag::NotZero
+																				   : AsmFlag::None;
+		}
 		uint32_t classes = 0;
 		for (char c : constraint)
 		{
@@ -112,6 +123,8 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 		info.binding = memory && !any && !immediate ? AsmOperandClass::Memory
 			: immediate && !any && !memory          ? AsmOperandClass::Immediate
 													: AsmOperandClass::Register;
+		if (flag_output)
+			info.binding = AsmOperandClass::Flag;
 		if (output && (constraint.empty() || (constraint[0] != '=' && constraint[0] != '+')))
 			error(operand.location, "an asm output whose constraint is no `=` or `+` one");
 		const ExprFacts* facts = typed(*operand.expression, scope);
@@ -130,6 +143,9 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 		if (output && !modifiable_lvalue(facts))
 			error(operand.location, "an asm output operand that is no modifiable lvalue");
 		const Type* type = facts->type->unqualified;
+		IntegralKind flag_kind;
+		if (flag_output && !IntegralKindOf(type, flag_kind))
+			error(operand.location, "an asm flag output of no integer type");
 		uint64_t size = 0, alignment = 0;
 		if (!type_size(type, size, alignment, operand.location))
 			error(operand.location, "an asm operand of incomplete type");
@@ -173,7 +189,9 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 	{
 		program->immediates |= operands[i].binding == AsmOperandClass::Immediate ? 1u << i : 0u;
 		program->reads |= operands[i].read ? 1u << i : 0u;
-		program->registers |= operands[i].binding == AsmOperandClass::Register ? 1u << i : 0u;
+		program->registers |=
+			(operands[i].binding == AsmOperandClass::Register || operands[i].binding == AsmOperandClass::Flag) ? 1u << i
+																											   : 0u;
 		if (operands[i].tied == 0xff)
 			continue;
 		if (tied == nullptr)

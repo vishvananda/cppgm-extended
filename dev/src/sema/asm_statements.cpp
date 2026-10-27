@@ -33,7 +33,9 @@ const Mnemonic kMnemonics[] = { { "mfence", AsmOperation::Fence, 0, false },
 	{ "inc", AsmOperation::Add, 1, true }, { "dec", AsmOperation::Sub, 1, true }, { "not", AsmOperation::Not, 1, true },
 	{ "neg", AsmOperation::Neg, 1, true }, { "add", AsmOperation::Add, 2, true }, { "sub", AsmOperation::Sub, 2, true },
 	{ "and", AsmOperation::And, 2, true }, { "or", AsmOperation::Or, 2, true }, { "xor", AsmOperation::Xor, 2, true },
-	{ "xchg", AsmOperation::Exchange, 2, true }, { "bswap", AsmOperation::ByteSwap, 1, true } };
+	{ "xchg", AsmOperation::Exchange, 2, true }, { "bswap", AsmOperation::ByteSwap, 1, true },
+	{ "bts", AsmOperation::BitSet, 2, true }, { "btr", AsmOperation::BitReset, 2, true },
+	{ "btc", AsmOperation::BitComplement, 2, true } };
 
 // A parsed instruction operand: an asm operand, or an immediate.
 struct Operand
@@ -82,6 +84,19 @@ public:
 		if (lock_ || rep_)
 			return fail("a prefix without its instruction");
 		for (uint32_t i = 0; i < count_; ++i)
+		{
+			if (operands_[i].binding != AsmOperandClass::Flag)
+				continue;
+			if (!capture(operands_[i].flag))
+				return false;
+			AsmInstruction instruction = AsmInstruction();
+			instruction.operation = set_operation(operands_[i].flag);
+			instruction.destination = static_cast<uint8_t>(i);
+			instruction.bytes = static_cast<uint8_t>(operands_[i].bytes);
+			out_.push_back(instruction);
+			written(i, operands_[i].bytes);
+		}
+		for (uint32_t i = 0; i < count_; ++i)
 			if (operands_[i].output && operands_[i].binding == AsmOperandClass::Register &&
 				(initialized_[i] & ByteMask(operands_[i].bytes)) != ByteMask(operands_[i].bytes))
 				return fail("a register output with unwritten bytes");
@@ -105,6 +120,23 @@ private:
 	bool operand(const std::string& text, size_t& at, Operand& out);
 	bool control(const std::string& mnemonic, const std::string& text, size_t at);
 	bool transfer(const std::string& mnemonic, const std::string& text, size_t at);
+	bool set_flag(AsmFlag flag, const std::string& text, size_t at);
+	bool capture(AsmFlag flag)
+	{
+		const bool carry = flag == AsmFlag::Carry || flag == AsmFlag::NotCarry;
+		const uint32_t producer = carry ? carry_source_ : zero_source_;
+		if (flag == AsmFlag::None || producer == ~uint32_t(0))
+			return fail("a condition flag without a supported producer");
+		out_[producer].flags |= carry ? kAsmCaptureCarry : kAsmCaptureZero;
+		return true;
+	}
+	static AsmOperation set_operation(AsmFlag flag)
+	{
+		return flag == AsmFlag::Carry   ? AsmOperation::SetCarry
+			: flag == AsmFlag::NotCarry ? AsmOperation::SetNotCarry
+			: flag == AsmFlag::Zero     ? AsmOperation::SetZero
+										: AsmOperation::SetNotZero;
+	}
 	bool read(const Operand& operand, uint32_t bytes)
 	{
 		return operand.immediate || operands_[operand.index].binding == AsmOperandClass::Immediate ||
@@ -124,7 +156,8 @@ private:
 	std::string& error_;
 	bool lock_ = false;
 	bool rep_ = false;
-	bool flags_ = false;
+	uint32_t zero_source_ = ~uint32_t(0);
+	uint32_t carry_source_ = ~uint32_t(0);
 	uint32_t initialized_[30] = {};
 	std::unordered_map<uint32_t, uint32_t> labels_;
 };
@@ -183,6 +216,14 @@ bool Lifter::line(const std::string& text)
 	if (mnemonic == ".align" || mnemonic == ".p2align" || mnemonic == "jne" || mnemonic == "jnz" || mnemonic == "je" ||
 		mnemonic == "jz")
 		return control(mnemonic, text, at);
+	if (mnemonic == "setc" || mnemonic == "setb" || mnemonic == "setnae")
+		return set_flag(AsmFlag::Carry, text, at);
+	if (mnemonic == "setnc" || mnemonic == "setae" || mnemonic == "setnb")
+		return set_flag(AsmFlag::NotCarry, text, at);
+	if (mnemonic == "setz" || mnemonic == "sete")
+		return set_flag(AsmFlag::Zero, text, at);
+	if (mnemonic == "setnz" || mnemonic == "setne")
+		return set_flag(AsmFlag::NotZero, text, at);
 	if (mnemonic.compare(0, 3, "mov") == 0 || mnemonic.compare(0, 7, "cmpxchg") == 0)
 		return transfer(mnemonic, text, at);
 	const Mnemonic* found = nullptr;
@@ -297,14 +338,24 @@ bool Lifter::line(const std::string& text)
 			return fail("an exchange of no two read-write operands");
 		instruction.locked = memory;
 	}
+	const bool bit = instruction.operation == AsmOperation::BitSet || instruction.operation == AsmOperation::BitReset ||
+		instruction.operation == AsmOperation::BitComplement;
+	if (bit && bytes == 1)
+		return fail("a bit-test instruction of byte size");
 	if (instruction.operation == AsmOperation::ByteSwap && (memory || (bytes != 4 && bytes != 8)))
 		return fail("a byte swap of no 32- or 64-bit register");
 	if (instruction.locked && !memory)
 		return fail("a locked instruction of no memory destination");
 	written(destination.index, bytes);
-	if (instruction.operation != AsmOperation::Not && instruction.operation != AsmOperation::Exchange &&
+	if (bit)
+		carry_source_ = static_cast<uint32_t>(out_.size());
+	else if (instruction.operation != AsmOperation::Not && instruction.operation != AsmOperation::Exchange &&
 		instruction.operation != AsmOperation::ByteSwap)
-		flags_ = !instruction.locked;
+	{
+		zero_source_ = static_cast<uint32_t>(out_.size());
+		if (mnemonic.compare(0, 3, "inc") != 0 && mnemonic.compare(0, 3, "dec") != 0)
+			carry_source_ = static_cast<uint32_t>(out_.size());
+	}
 	out_.push_back(instruction);
 	return true;
 }
@@ -336,9 +387,9 @@ bool Lifter::control(const std::string& mnemonic, const std::string& text, size_
 		return rest_empty(text, at);
 	}
 	const auto found = labels_.find(number);
-	if (at >= text.size() || text[at++] != 'b' || found == labels_.end() || !flags_)
+	if (at >= text.size() || text[at++] != 'b' || found == labels_.end())
 		return fail("a branch without a backward label or supported condition flags");
-	if (!rest_empty(text, at))
+	if (!rest_empty(text, at) || !capture(AsmFlag::Zero))
 		return false;
 	AsmInstruction instruction = AsmInstruction();
 	instruction.operation = mnemonic == "je" || mnemonic == "jz" ? AsmOperation::JumpZero : AsmOperation::JumpNotZero;
@@ -431,11 +482,32 @@ bool Lifter::transfer(const std::string& mnemonic, const std::string& text, size
 			return false;
 		instruction.accumulator = expected.index;
 		written(accumulator, bytes);
-		flags_ = true;
+		zero_source_ = static_cast<uint32_t>(out_.size());
+		carry_source_ = static_cast<uint32_t>(out_.size());
 	}
 	else if (instruction.locked)
 		return fail("a locked move");
 	written(target.index, bytes);
+	out_.push_back(instruction);
+	return true;
+}
+
+bool Lifter::set_flag(AsmFlag flag, const std::string& text, size_t at)
+{
+	if (lock_ || rep_ || !capture(flag))
+		return fail("an invalid flag-setting instruction");
+	Operand destination;
+	if (!operand(text, at, destination) || !rest_empty(text, at))
+		return false;
+	if (destination.immediate || !operands_[destination.index].output ||
+		(operands_[destination.index].binding == AsmOperandClass::Register &&
+			RegisterBytes(operands_[destination.index], destination) != 1))
+		return fail("a setcc without a writable byte operand");
+	AsmInstruction instruction = AsmInstruction();
+	instruction.operation = set_operation(flag);
+	instruction.destination = destination.index;
+	instruction.bytes = 1;
+	written(destination.index, 1);
 	out_.push_back(instruction);
 	return true;
 }
@@ -544,6 +616,8 @@ bool Lifter::operand(const std::string& text, size_t& at, Operand& out)
 			if (operands_[i].name != nullptr && name == operands_[i].name)
 			{
 				// A matching input names its output's register.
+				if (operands_[i].binding == AsmOperandClass::Flag)
+					return fail("a flag output referenced as an asm operand");
 				out.index = static_cast<uint8_t>(operands_[i].tied != 0xff ? operands_[i].tied : i);
 				return true;
 			}
@@ -557,6 +631,8 @@ bool Lifter::operand(const std::string& text, size_t& at, Operand& out)
 		index = index * 10 + static_cast<uint32_t>(text[at++] - '0');
 	if (index >= count_)
 		return fail("an operand number beyond the operands");
+	if (operands_[index].binding == AsmOperandClass::Flag)
+		return fail("a flag output referenced as an asm operand");
 	out.index = static_cast<uint8_t>(operands_[index].tied != 0xff ? operands_[index].tied : index);
 	return true;
 }
