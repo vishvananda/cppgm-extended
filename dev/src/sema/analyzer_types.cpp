@@ -1365,6 +1365,26 @@ Scope* Analyzer::prototype_scope(
 	return prototype;
 }
 
+void Analyzer::prototype_dependence(Scope* scope, const Type* pattern, const syntax::ParameterClause& clause,
+	const std::pair<const Identifier*, uint32_t>* packs, size_t count)
+{
+	// The original parameter types retain lookup dependence after
+	// substitution. Expand only the pack's own parameters, using the
+	// cloner's arities, so fixed parameters beside it stay fixed.
+	Binding* binding = scope->bindings;
+	size_t next = 0;
+	for (uint32_t i = 0; i < pattern->param_count && binding != nullptr; ++i)
+	{
+		const syntax::Declarator* declarator = clause.parameters[i]->declarator;
+		const uint32_t arity = declarator != nullptr && declarator->pack != syntax::PackPosition::None && next < count
+			? packs[next++].second
+			: 1;
+		const bool dependent = dependent_type(pattern->params[i]);
+		for (uint32_t k = 0; k < arity && binding != nullptr; ++k, binding = binding->next)
+			binding->dependent = dependent;
+	}
+}
+
 void Analyzer::declare_parameter(
 	Scope* prototype, const syntax::ParameterClause& clause, uint32_t index, const Type* type)
 {

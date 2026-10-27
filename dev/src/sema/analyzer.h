@@ -418,6 +418,8 @@ private:
 	// A parameter's object type: an array's or function's adjusted to a
 	// pointer (8.3.5p5).
 	const Type* parameter_object_type(const Type* type);
+	void prototype_dependence(Scope* scope, const Type* pattern, const syntax::ParameterClause& clause,
+		const std::pair<const Identifier*, uint32_t>* packs, size_t count);
 	void declare_parameter(Scope* prototype, const syntax::ParameterClause& clause, uint32_t index, const Type* type);
 	Scope* qualified_lookup_scope(Scope* qualifier, Scope* scope);
 	bool member_hides_parameter(Scope* qualifier, const Identifier* name);

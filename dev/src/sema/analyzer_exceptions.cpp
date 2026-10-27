@@ -637,6 +637,8 @@ bool Analyzer::function_nothrow(const FunctionEntity* entity)
 			Scope* packs = function_pack_scope(
 				scope, *parameters, cloner.parameter_packs().data(), cloner.parameter_packs().size(), function->type);
 			scope = prototype_scope(*copy, function->type->params, function->type->param_count, packs);
+			prototype_dependence(
+				scope, primary->type, *parameters, cloner.parameter_packs().data(), cloner.parameter_packs().size());
 		}
 	}
 	// Evaluated when first needed, its names looked up where it is
