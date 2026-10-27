@@ -2524,7 +2524,17 @@ ExprFacts* Analyzer::destructor_access(const syntax::MemberExpr& expr, const Typ
 		if (named == nullptr)
 			error(expr.location, "the destructor name's template-id names no class template");
 	}
-	if (binding_type(named, expr.location)->unqualified != (qualified ? cls->type : object->unqualified))
+	const Type* target = qualified ? cls->type : object->unqualified;
+	if (!qualified && !last.has_arguments && binding_type(named, expr.location)->unqualified != target)
+	{
+		// 3.4.5p3: either lookup may name the object's type. A member
+		// typedef need not agree with a type parameter in the context.
+		const LookupResult context = names_.unqualified(scope, last.identifier, LookupFilter::Elaborated);
+		if (context.found() &&
+			(context.binding->kind == BindingKind::Type || context.binding->kind == BindingKind::TypeAlias))
+			named = context.binding;
+	}
+	if (binding_type(named, expr.location)->unqualified != target)
 	{
 		substitution_error(expr.location, "the destructor name does not name the object's type");
 		return nullptr;

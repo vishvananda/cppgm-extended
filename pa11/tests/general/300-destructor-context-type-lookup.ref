@@ -1,0 +1,12 @@
+function @from_context(%p : ptr) -> void [binding=strong, object=_Z12from_contextP6Object] {
+  slot $p : ptr
+
+  block ^entry:
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

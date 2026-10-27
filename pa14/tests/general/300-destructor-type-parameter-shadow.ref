@@ -1,0 +1,29 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $object : obj<1x1>
+  slot $node : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $object
+    %t2 = addr $node
+    %t3 = addr $object
+    call void @destroy(%t3)
+    %t4 = addr $node
+    call void @destroy__2(%t4)
+    return i32 0
+}
+function @destroy(%p : ptr) -> void [binding=weak, object=_Z7destroyI6ObjectEvPT_] {
+  slot $p : ptr
+
+  block ^entry:
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    return void
+}
+function @destroy__2(%p : ptr) -> void [binding=weak, object=_Z7destroyI4NodeIiEEvPT_] {
+  slot $p : ptr
+
+  block ^entry:
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    return void
+}
