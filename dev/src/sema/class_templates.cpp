@@ -1950,7 +1950,10 @@ void Analyzer::instantiate_class(ClassEntity* entity)
 			facts->pattern->owner->kind == ScopeKind::Class
 		? static_cast<const ClassEntity*>(facts->pattern->owner->entity)
 		: nullptr;
-	ClassEntity* member = partial == nullptr && instance != nullptr ? pattern_member_template(facts->pattern) : nullptr;
+	ClassEntity* declared_partial = partial;
+	ClassEntity* member = (partial == nullptr || partial->templ->definition == nullptr) && instance != nullptr
+		? pattern_member_template(facts->pattern)
+		: nullptr;
 	// A member template of an instance's member template: the class
 	// template's member template's (original_member_template), where
 	// partial specializations declared outside the class templates are.
@@ -2015,6 +2018,10 @@ void Analyzer::instantiate_class(ClassEntity* entity)
 	else if (outside != nullptr)
 		parent = outside_frames(pattern->definition_parameters, facts->arguments, facts->argument_count, instance,
 			facts->pattern->owner, outside->scope->parent);
+	else if (outside_partial && declared_partial != nullptr && pattern->definition->name != nullptr &&
+		!pattern->definition->name->qualified())
+		parent = instantiation_frame(declared_partial->templ->definition_parameters, deduced.data(),
+			static_cast<uint32_t>(deduced.size()), facts->pattern->owner);
 	else if (outside_partial)
 		parent = outside_frames(pattern->definition_parameters, deduced.data(), static_cast<uint32_t>(deduced.size()),
 			instance, facts->pattern->owner, partial->scope != nullptr ? partial->scope->parent : nullptr);

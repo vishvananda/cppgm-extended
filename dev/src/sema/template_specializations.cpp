@@ -1064,6 +1064,14 @@ Entity* Analyzer::class_partial_specialization(const syntax::ClassSpecifier& spe
 	// class or namespace it names, its template parameters bridged over it
 	// (3.4.3p3).
 	const Scope* owner = entity->templ->pattern->owner;
+	// Instantiating an enclosing class instantiates the member partial's
+	// declaration and argument pattern, not its body (14.7.1p1). Its
+	// specialization uses the original analyzed definition on demand.
+	if (!specifier.name->qualified() && WithinInstance(owner))
+	{
+		entity->templ->definition = nullptr;
+		return entity;
+	}
 	Scope* parent = specifier.name->qualified() ? qualified_lookup_scope(const_cast<Scope*>(owner), scope) : scope;
 	class_body(entity, specifier, parent, scope);
 	// Its definition context ends with it, as a primary template's (14.6.4.2).
