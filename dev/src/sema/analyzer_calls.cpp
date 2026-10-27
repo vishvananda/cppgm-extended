@@ -839,7 +839,12 @@ ExprFacts* Analyzer::resolved_call(const syntax::CallExpr& expr, const FunctionL
 		return nullptr;
 	// 9.3.1p1, 5.1.1p13: a non-static member function needs an object.
 	if (object == nullptr && selected->member && !selected->is_static)
-		evaluated_error(expr.location, "non-static member function called without an object");
+	{
+		// A call needs it in an unevaluated operand too. In an immediate
+		// substitution context this invalid expression rejects the candidate.
+		substitution_error(expr.location, "non-static member function called without an object");
+		return nullptr;
+	}
 	if (!require_deduced(selected, expr.location))
 		return nullptr;
 	// 5.1.2p10: a lambda's implicit member call captures `this`.
