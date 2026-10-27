@@ -172,11 +172,14 @@ bool Analyzer::literal_type(const Type* type)
 		for (const FunctionList* node = entry != nullptr ? entry->functions : nullptr;
 			node != nullptr && !has_constexpr; node = node->next)
 		{
-			// An inheriting constructor is one as 12.9p6 makes it.
+			// Inheriting and first-declaration-defaulted constructors can
+			// be constexpr without the keyword (12.9p6, 8.4.2p2). The latter
+			// needs its implicit initialization plan before the query.
 			const FunctionEntity* constructor = static_cast<const FunctionEntity*>(node->binding->entity);
 			has_constexpr = constructor->copy_kind == CopyKind::None &&
 				(constructor->is_constexpr ||
-					(constructor->inherited != nullptr && constexpr_constructor(constructor, 0)));
+					(constructor->inherited != nullptr && constexpr_constructor(constructor, 0)) ||
+					(constructor->defaulted && constexpr_constructor(queried_default_constructor(cls), 0)));
 		}
 		if (!has_constexpr && !cls->user_declared_constructor)
 			has_constexpr = constexpr_constructor(queried_default_constructor(cls), 0);
@@ -220,11 +223,47 @@ struct ConstexprQuery
 bool Analyzer::remember_constexpr(const FunctionEntity* function, bool result)
 {
 	constexpr_members_.set(function, result ? 1 : 0);
+	if (result && function->constructor && function->copy_kind == CopyKind::None &&
+		static_cast<const ClassEntity*>(function->owner->entity)->complete &&
+		settled_constructor_inits(function->inits, function->init_count, function->inherited != nullptr))
+		constexpr_constructor_facts_.set(function, 1);
 	return result;
+}
+
+bool Analyzer::settled_constructor_inits(const SubobjectInit* inits, uint32_t count, bool initializers)
+{
+	// A default plan depends on the presence of a member initializer, not
+	// its value. An inheriting plan also evaluates such initializers: an
+	// untyped one can change its answer, so that query stays provisional.
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		const SubobjectInit& init = inits[i];
+		if (init.inner != nullptr)
+		{
+			if (!settled_constructor_inits(init.inner, init.inner_count, initializers))
+				return false;
+			continue;
+		}
+		if (init.default_initializer != nullptr)
+		{
+			if (!initializers)
+				continue;
+			if (!static_cast<const VariableEntity*>(init.member->variable)->initializer_typed)
+				return false;
+		}
+		const FunctionEntity* selected = init.constructor;
+		if (selected != nullptr &&
+			!(UserProvidedMember(selected) ? selected->is_constexpr
+										   : constexpr_constructor_facts_.find(selected) != PointerMap::kMissing))
+			return false;
+	}
+	return true;
 }
 
 bool Analyzer::constexpr_default(const FunctionEntity* constructor, uint32_t depth)
 {
+	if (!constructor->deleted && constexpr_constructor_facts_.find(constructor) != PointerMap::kMissing)
+		return true;
 	const ConstexprQuery query(*this);
 	const uint32_t known = constexpr_members_.find(constructor);
 	return known != PointerMap::kMissing ? known != 0
@@ -233,6 +272,8 @@ bool Analyzer::constexpr_default(const FunctionEntity* constructor, uint32_t dep
 
 bool Analyzer::constexpr_inheriting(const FunctionEntity* constructor, uint32_t depth)
 {
+	if (!constructor->deleted && constexpr_constructor_facts_.find(constructor) != PointerMap::kMissing)
+		return true;
 	const ConstexprQuery query(*this);
 	const uint32_t known = constexpr_members_.find(constructor);
 	return known != PointerMap::kMissing

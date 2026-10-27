@@ -1462,6 +1462,7 @@ private:
 	bool constexpr_assignment(const FunctionEntity* assignment, uint32_t depth);
 	bool constexpr_assignment_plan(const FunctionEntity* assignment, uint32_t depth);
 	bool remember_constexpr(const FunctionEntity* function, bool result);
+	bool settled_constructor_inits(const SubobjectInit* inits, uint32_t count, bool initializers);
 	void check_defaulted_constexpr(FunctionEntity* function, uint32_t location);
 	void check_defaulted_constexprs();
 	static const ClassEntity* ObjectClassOf(const Type* type);
@@ -1610,6 +1611,10 @@ private:
 	// constexpr_default/copy/assignment's answers (1 or 0) within one
 	// outermost query (constexpr_queries_ deep, see ConstexprQuery).
 	PointerMap constexpr_members_;
+	// Positive default/inheriting-constructor facts whose complete class's
+	// plan and queried subconstructors are settled. Other queries retain
+	// the per-outer-query memo above while declarations are still changing.
+	PointerMap constexpr_constructor_facts_;
 	uint32_t constexpr_queries_ = 0;
 	friend struct ConstexprQuery;
 	uint32_t class_depth_;
