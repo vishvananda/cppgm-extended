@@ -973,6 +973,9 @@ private:
 	// constructor makes (12.8p31, 8.5p16): that object is no temporary.
 	bool creates_temporaries(const syntax::Expr* expr, CallTemporaries* calls = nullptr, bool reachable = false,
 		const sema::Type* object = nullptr);
+	void scan_default_temporaries(
+		const sema::FunctionEntity* function, uint32_t written, const syntax::Expr* parameter_object);
+	void scan_constructor_temporaries(const syntax::Expr& expr, const syntax::Expr* parameter_object);
 	static bool CallResult(const syntax::Expr& e, const sema::ExprFacts* facts);
 	bool destroyed_temporary(const sema::Type* type);
 	// False for one made in a conditional's operand that is never

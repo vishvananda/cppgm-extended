@@ -1,0 +1,23 @@
+#include "300-constructor-default-temporary-list.helper.h"
+extern "C" int printf(const char*, ...);
+void test(int kind) {
+ switch(kind) {
+ case 0: consume({1,2,3,4,5,6,7,8,9}); break;
+ case 1: consume({Value(1),Value(2),Value(3),Value(4),Value(5),Value(6),Value(7),Value(8),Value(9)}); break;
+ case 2: consume({Value{1},Value{2},Value{3},Value{4},Value{5},Value{6},Value{7},Value{8},Value{9}}); break;
+ case 3: consume({{1},{2},{3},{4},{5},{6},{7},{8},{9}}); break;
+ case 4: consume({static_cast<Value>(1),static_cast<Value>(2),static_cast<Value>(3),static_cast<Value>(4),static_cast<Value>(5),static_cast<Value>(6),static_cast<Value>(7),static_cast<Value>(8),static_cast<Value>(9)}); break;
+ }
+}
+int main() {
+ for(int kind = 0; kind != 5; ++kind) {
+  for (int failure = 0; failure <= 19; ++failure) {
+   attempts = live_alloc = live_value = made_alloc = made_value = 0;
+   trace = 0; fail_at = failure;
+   int caught = 0;
+   try { test(kind); } catch (int n) { caught = n; }
+   if (live_alloc || live_value || caught != failure) return 1;
+   printf("%d %d %d %d %d %llu\n", kind, failure, attempts, made_alloc, made_value, trace);
+  }
+ }
+}

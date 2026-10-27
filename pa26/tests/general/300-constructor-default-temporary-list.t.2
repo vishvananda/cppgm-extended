@@ -1,0 +1,13 @@
+#include "300-constructor-default-temporary-list.helper.h"
+int attempts, fail_at, live_alloc, live_value, made_alloc, made_value;
+unsigned long long trace;
+void event(unsigned x) { trace = trace * 131 + x; }
+void attempt(unsigned x) { event(x); if (++attempts == fail_at) throw attempts; }
+Alloc::Alloc() : id(made_alloc + 1) { attempt(100 + id); ++made_alloc; ++live_alloc; }
+Alloc::~Alloc() { event(300 + id); --live_alloc; }
+Value::Value(int n, const Alloc&) : id(n) { attempt(200 + id); ++made_value; ++live_value; }
+Value::~Value() { event(400 + id); --live_value; }
+void consume(std::initializer_list<Value> values) {
+ event(500); if (values.size() != 9 || live_value != 9 || live_alloc != 9) throw 99;
+ if (++attempts == fail_at) throw attempts;
+}

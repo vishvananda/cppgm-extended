@@ -1023,6 +1023,50 @@ bool FunctionLowering::destroyed_temporary(const sema::Type* type)
 	return needs_destruction(type);
 }
 
+void FunctionLowering::scan_default_temporaries(
+	const sema::FunctionEntity* function, uint32_t written, const syntax::Expr* parameter_object)
+{
+	if (function == nullptr || function->default_arguments == nullptr)
+		return;
+	const sema::Type* type = function->type->canonical;
+	for (uint32_t i = written; i < type->param_count; ++i)
+	{
+		if (function->default_arguments[i] == nullptr)
+			continue;
+		throw_scan_.push_back(lowering_.default_argument(function, i));
+		if (!type->params[i]->is_reference() && sema::ClassOf(type->params[i]) != nullptr)
+			throw_scan_.push_back(parameter_object);
+	}
+}
+
+void FunctionLowering::scan_constructor_temporaries(const syntax::Expr& expr, const syntax::Expr* parameter_object)
+{
+	const sema::ExprFacts* facts = expr.facts;
+	const sema::FunctionEntity* constructor = facts->entity != nullptr &&
+			facts->entity->kind == sema::EntityKind::Function
+		? static_cast<const sema::FunctionEntity*>(facts->entity)
+		: nullptr;
+	if (constructor == nullptr || !constructor->constructor || constructor->default_arguments == nullptr)
+		return;
+	const syntax::BracedInitList* list = nullptr;
+	uint32_t written = 1;
+	if (expr.kind == syntax::ExprKind::FunctionalCast)
+	{
+		const syntax::FunctionalCastExpr& cast = static_cast<const syntax::FunctionalCastExpr&>(expr);
+		// A braced construction's list carries its own selected constructor.
+		if (cast.braced != nullptr)
+			return;
+		written = cast.arguments.size;
+	}
+	else if (expr.kind == syntax::ExprKind::BracedInit)
+		list = &static_cast<const syntax::BracedInitList&>(expr);
+	else if (expr.kind != syntax::ExprKind::Cast)
+		return;
+	if (list != nullptr)
+		written = (list->facts->flags & sema::kInitializerList) != 0 ? 1 : list->elements.size;
+	scan_default_temporaries(constructor, written, parameter_object);
+}
+
 bool FunctionLowering::creates_temporaries(
 	const syntax::Expr* root, CallTemporaries* calls, bool reachable, const sema::Type* object)
 {
@@ -1060,6 +1104,11 @@ bool FunctionLowering::creates_temporaries(
 		const sema::ExprFacts* facts = e->facts;
 		if (facts == nullptr || (facts->flags & sema::kFolded) != 0)
 			continue;
+		scan_constructor_temporaries(*e, &parameter_object);
+		// A converting constructor consumes its source as its first argument;
+		// its remaining arguments are evaluated in this full-expression too.
+		for (const sema::Conversion* c = facts->conversion; c != nullptr; c = c->after)
+			scan_default_temporaries(c->constructor, 1, &parameter_object);
 		// A call, operator call, constructor call or converting
 		// constructor with a parameter the caller destroys makes that
 		// temporary.
@@ -1182,13 +1231,10 @@ bool FunctionLowering::creates_temporaries(
 			}
 			// 8.3.6p9: default arguments are evaluated at each call, their
 			// temporaries the call's full-expression's (12.2p3).
-			const uint32_t count = function != nullptr && callee->default_arguments != nullptr &&
-					function->param_count > call->arguments.size
-				? function->param_count
-				: call->arguments.size;
-			for (uint32_t i = 0; i < count; ++i)
+			scan_default_temporaries(callee, call->arguments.size, &parameter_object);
+			for (uint32_t i = 0; i < call->arguments.size; ++i)
 			{
-				work.push_back(i < call->arguments.size ? call->arguments[i] : lowering_.default_argument(callee, i));
+				work.push_back(call->arguments[i]);
 				if (function != nullptr && i < function->param_count && !function->params[i]->is_reference() &&
 					sema::ClassOf(function->params[i]) != nullptr)
 					work.push_back(&parameter_object);
