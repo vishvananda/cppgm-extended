@@ -1174,6 +1174,30 @@ const Type* Analyzer::synthesized_type(uint32_t index)
 bool Analyzer::at_least_as_specialized(
 	const FunctionEntity* first, const FunctionEntity* second, uint32_t arguments, Ordering form)
 {
+	const TemplateHead* head = HeadOf(first);
+	const TemplateHead* other = HeadOf(second);
+	if (head == nullptr || other == nullptr || other->count == 0)
+		return false;
+	const FunctionOrderKey key{ first, second, first->type, second->type, head, other,
+		soft_substitution_ != 0 ? substitution_context_ : nullptr, arguments, deduced_element_,
+		static_cast<uint8_t>(form) };
+	if (const bool* known = function_orderings_.find(key))
+	{
+		++graph_.function_order_reuses;
+		return *known;
+	}
+	++graph_.function_order_builds;
+	const uint32_t incomplete = incomplete_classes_seen_;
+	const bool result = compute_function_order(first, second, arguments, form);
+	// An incomplete or rejected substitution is not an ordering fact.
+	if (!failed() && incomplete_classes_seen_ == incomplete && function_orderings_.find(key) == nullptr)
+		function_orderings_.insert(key, result);
+	return result;
+}
+
+bool Analyzer::compute_function_order(
+	const FunctionEntity* first, const FunctionEntity* second, uint32_t arguments, Ordering form)
+{
 	// 14.8.2.4: the second template's parameters deduced from the first's
 	// function parameter types (its template parameters unique types; a
 	// pack's one unique type standing for all its elements), references

@@ -668,6 +668,10 @@ void report_types_stats(const string& path, const syntax::SyntaxUnit& unit, cons
 		 << " member_cache=" << graph.names.cached_member_lookups()
 		 << " parser_kept_searches=" << unit.counters().kept_searches
 		 << " constant_evaluations=" << graph.constant_evaluations << " constant_steps=" << graph.constant_steps
+		 << " constant_call_builds=" << graph.constant_call_builds
+		 << " constant_call_reuses=" << graph.constant_call_reuses
+		 << " function_order_builds=" << graph.function_order_builds
+		 << " function_order_reuses=" << graph.function_order_reuses
 		 << " syntax_arena_bytes=" << unit.counters().arena_bytes
 		 << " semantic_arena_bytes=" << graph.arena.bytes_reserved() << " parse_ms=" << parse_ms
 		 << " analyze_ms=" << analyze_ms << " print_ms=" << print_ms << " peak_rss_kb=" << usage.ru_maxrss << endl;
@@ -854,9 +858,13 @@ void report_lowir_stats(const lower::LoweringCounters& counters, const lowir::Pr
 		 << " substitution_failures=" << counters.substitution_failures
 		 << " limited_lookups=" << counters.limited_lookups << " constant_evaluations=" << counters.constant_evaluations
 		 << " constant_steps=" << counters.constant_steps << " base_steps=" << counters.base_steps
-		 << " symbols=" << program.symbols.size() << " names=" << program.names.size()
-		 << " lowir_arena_bytes=" << program.arena.bytes_reserved() << " front_ms=" << front_ms
-		 << " lower_ms=" << lower_ms << " write_ms=" << write_ms << " peak_rss_kb=" << usage.ru_maxrss << endl;
+		 << " constant_call_builds=" << counters.constant_call_builds
+		 << " constant_call_reuses=" << counters.constant_call_reuses
+		 << " function_order_builds=" << counters.function_order_builds
+		 << " function_order_reuses=" << counters.function_order_reuses << " symbols=" << program.symbols.size()
+		 << " names=" << program.names.size() << " lowir_arena_bytes=" << program.arena.bytes_reserved()
+		 << " front_ms=" << front_ms << " lower_ms=" << lower_ms << " write_ms=" << write_ms
+		 << " peak_rss_kb=" << usage.ru_maxrss << endl;
 #endif
 }
 
@@ -968,6 +976,10 @@ int run_emit_lowir_mode(vector<string> args)
 			lowering.counters().limited_lookups += graph.names.limited_lookups();
 			lowering.counters().constant_evaluations += graph.constant_evaluations;
 			lowering.counters().constant_steps += graph.constant_steps;
+			lowering.counters().constant_call_builds += graph.constant_call_builds;
+			lowering.counters().constant_call_reuses += graph.constant_call_reuses;
+			lowering.counters().function_order_builds += graph.function_order_builds;
+			lowering.counters().function_order_reuses += graph.function_order_reuses;
 			lowering.counters().base_steps += graph.base_steps;
 			lower_ms += milliseconds_since(lower_start);
 		}

@@ -7,6 +7,7 @@
 #include "lex/number_literal.h"
 #include "lex/text_literal.h"
 #include "sema/analyzer.h"
+#include "sema/constant_memo.h"
 #include "sema/integral_arithmetic.h"
 #include "sema/statement_facts.h"
 #include "support/small_list.h"
@@ -459,21 +460,68 @@ bool ConstantInterpreter::invoke(const FunctionEntity* function, const ConstPlac
 	result.held = held != 0 ? arena_.allocate_array<ConstValue>(held) : nullptr;
 	Region callee = region();
 	callee.locals = locals;
+	const bool done = invoke_body(function, object, locals, result, location);
+	end_parameters(function, locals);
+	release(callee);
+	return done && valid_pointer(result.value, location);
+}
+
+bool ConstantInterpreter::invoke_body(
+	const FunctionEntity* function, const ConstPlace* object, size_t first_local, Result& result, uint32_t location)
+{
+	const bool scalar = object == nullptr && ConstantMemo::scalar_signature(function);
+	if (scalar && !memo_)
+		memo_.reset(new ConstantMemo);
+	const bool eligible = scalar && memo_->eligible(function);
+	SmallList<uint64_t, 8> arguments;
+	if (eligible)
+	{
+		for (uint32_t i = 0; i < function->type->canonical->param_count; ++i)
+		{
+			// A by-value integral parameter is initialized storage of this
+			// call. Reading its key is bookkeeping, not an interpreter step.
+			const ConstPlace& parameter = locals_[first_local + i].place;
+			const ConstValue& value = *objects_[parameter.object].value;
+			arguments.push_back(value.bits);
+			arguments.push_back(value.high);
+		}
+	}
+	const ConstantCallKey key{ function, arguments.data(), static_cast<uint32_t>(arguments.size()) };
+	if (eligible)
+	{
+		if (const auto* known = memo_->calls.find(key))
+		{
+			if (!reuse_call(known->steps, known->depth, location))
+				return false;
+			result.value = known->value;
+			++analyzer_.graph_.constant_call_reuses;
+			return true;
+		}
+	}
 	Frame frame = Frame();
 	frame.function = function;
 	frame.has_this = object != nullptr;
 	if (object != nullptr)
 		frame.self = *object;
-	frame.first_local = locals;
+	frame.first_local = first_local;
 	frame.result = &result;
+	frame.peak_depth = frames_.size() + 1;
+	const size_t parent_depth = frames_.size();
+	const uint64_t first_step = steps_;
 	frames_.push_back(frame);
 	const size_t swaps = suspend_swaps();
 	const bool done = body(function, result, location);
 	resume_swaps(swaps);
+	const size_t peak = frames_.back().peak_depth;
 	frames_.pop_back();
-	end_parameters(function, locals);
-	release(callee);
-	return done && valid_pointer(result.value, location);
+	if (frames_.size() > first_frame_)
+		frames_.back().peak_depth = std::max(frames_.back().peak_depth, peak);
+	if (eligible && done && !incomplete_class_ && result.value.kind == ValueKind::Integer)
+	{
+		if (memo_->remember(key, ConstantCallResult{ result.value, steps_ - first_step, peak - parent_depth }))
+			++analyzer_.graph_.constant_call_builds;
+	}
+	return done;
 }
 
 bool ConstantInterpreter::builtin(

@@ -88,6 +88,40 @@ struct EntityPairHash
 	size_t operator()(const EntityPair& key) const;
 };
 
+struct FunctionOrderKey
+{
+	const FunctionEntity* first;
+	const FunctionEntity* second;
+	const Type* first_type;
+	const Type* second_type;
+	const void* first_head;
+	const void* second_head;
+	const Entity* access;
+	uint32_t arguments;
+	int32_t element;
+	uint8_t form;
+	bool operator==(const FunctionOrderKey& other) const
+	{
+		return first == other.first && second == other.second && first_type == other.first_type &&
+			second_type == other.second_type && first_head == other.first_head && second_head == other.second_head &&
+			access == other.access && arguments == other.arguments && element == other.element && form == other.form;
+	}
+};
+
+struct FunctionOrderHash
+{
+	size_t operator()(const FunctionOrderKey& key) const
+	{
+		uint64_t hash = reinterpret_cast<uintptr_t>(key.first);
+		const void* identities[] = { key.second, key.first_type, key.second_type, key.first_head, key.second_head,
+			key.access };
+		for (const void* identity : identities)
+			hash = (hash ^ reinterpret_cast<uintptr_t>(identity)) * 0x9e3779b97f4a7c15ull;
+		return static_cast<size_t>(
+			hash ^ (uint64_t(key.arguments) << 32) ^ (uint64_t(uint32_t(key.element)) << 8) ^ key.form);
+	}
+};
+
 struct ChainKey
 {
 	const ClassEntity* cls;

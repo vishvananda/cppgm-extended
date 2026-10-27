@@ -5,6 +5,7 @@
 
 #include "lex/number_literal.h"
 #include "sema/analyzer.h"
+#include "sema/constant_memo.h"
 #include "sema/integral_arithmetic.h"
 #include "sema/string_literals.h"
 #include "support/small_list.h"
@@ -70,6 +71,18 @@ bool ConstantInterpreter::step(uint32_t location)
 	if (++steps_ > kStepBudget)
 		return fail(location, "constant evaluation exceeds its step budget");
 	return stack_left(location);
+}
+
+bool ConstantInterpreter::reuse_call(uint64_t steps, size_t depth, uint32_t location)
+{
+	if (steps > kStepBudget - steps_)
+		return fail(location, "constant evaluation exceeds its step budget");
+	if (depth > kCallDepth - (frames_.size() - first_frame_))
+		return fail(location, "constexpr calls nested too deeply");
+	steps_ += steps;
+	if (frames_.size() > first_frame_)
+		frames_.back().peak_depth = std::max(frames_.back().peak_depth, frames_.size() + depth);
+	return true;
 }
 
 bool ConstantInterpreter::stack_left(uint32_t location)

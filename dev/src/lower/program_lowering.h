@@ -93,6 +93,10 @@ struct LoweringCounters
 	// evaluations and the interpreter's steps.
 	telemetry::Counter constant_evaluations = 0;
 	telemetry::Counter constant_steps = 0;
+	telemetry::Counter constant_call_builds = 0;
+	telemetry::Counter constant_call_reuses = 0;
+	telemetry::Counter function_order_builds = 0;
+	telemetry::Counter function_order_reuses = 0;
 	// The base walks' steps: the units' semantic graphs' and the
 	// lowering's base offset searches.
 	telemetry::Counter base_steps = 0;

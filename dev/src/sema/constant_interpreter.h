@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 #include "sema/constant_frames.h"
@@ -13,6 +14,7 @@
 namespace sema {
 
 class Analyzer;
+class ConstantMemo;
 struct Conversion;
 
 // The constant evaluator of semantics mode (5.19, 7.1.5): it
@@ -254,6 +256,9 @@ private:
 	bool bind_parameters(const FunctionEntity* function, const Argument* arguments, uint32_t count, uint32_t location);
 	bool evaluable(const FunctionEntity* function, uint32_t location);
 	bool body(const FunctionEntity* function, Result& result, uint32_t location);
+	bool invoke_body(const FunctionEntity* function, const ConstPlace* object, size_t first_local, Result& result,
+		uint32_t location);
+	bool reuse_call(uint64_t steps, size_t depth, uint32_t location);
 	size_t suspend_swaps();
 	void resume_swaps(size_t active);
 	void end_parameters(const FunctionEntity* function, size_t first);
@@ -288,6 +293,7 @@ private:
 	// The swaps an enclosing evaluation had applied (resumed at the end).
 	const size_t enclosing_swaps_;
 	uint64_t steps_;
+	std::unique_ptr<ConstantMemo> memo_;
 	uint32_t failure_location_;
 	const char* failure_;
 	// The variable whose initialization is being evaluated, and the value

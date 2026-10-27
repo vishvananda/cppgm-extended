@@ -893,6 +893,8 @@ private:
 	const Type* synthesized_type(uint32_t index);
 	bool at_least_as_specialized(
 		const FunctionEntity* first, const FunctionEntity* second, uint32_t arguments, Ordering form = Ordering::Call);
+	bool compute_function_order(
+		const FunctionEntity* first, const FunctionEntity* second, uint32_t arguments, Ordering form);
 	bool function_type_at_least_as_specialized(
 		const FunctionEntity* first, const FunctionEntity* second, const Substitution& substitution);
 	const Type* ordering_parameter(const FunctionEntity* function, uint32_t index, bool inserted);
@@ -2436,6 +2438,9 @@ private:
 	FlatMap<SpecializationKey, Entity*, SpecializationHash> partial_index_;
 	FlatMap<SpecializationKey, ClassEntity*, SpecializationHash> partial_arguments_;
 	FlatMap<EntityPair, bool, EntityPairHash> partial_orderings_;
+	// Function-template ordering is structural. Declaration/type identities,
+	// compared arity and call/address form distinguish its complete input.
+	FlatMap<FunctionOrderKey, bool, FunctionOrderHash> function_orderings_;
 	// Template template-parameters' positional entities by (depth, index,
 	// pack, the shape of their own parameter lists) (see
 	// positional_template_parameter); dependent member template-names by

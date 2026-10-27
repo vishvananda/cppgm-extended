@@ -37,6 +37,10 @@ struct SemanticGraph
 	// value elements).
 	telemetry::Counter constant_evaluations;
 	telemetry::Counter constant_steps;
+	telemetry::Counter constant_call_builds = 0;
+	telemetry::Counter constant_call_reuses = 0;
+	telemetry::Counter function_order_builds = 0;
+	telemetry::Counter function_order_reuses = 0;
 	// Semantics-mode work: expressions typed, conversions recorded,
 	// overload resolutions and the candidates they considered, function
 	// template specializations declared, demand edges recorded.

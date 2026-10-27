@@ -60,6 +60,8 @@ struct ConstFrame
 	ConstPlace self;
 	size_t first_local;
 	ConstResult* result;
+	// Highest logical call depth below this frame, including memo hits.
+	size_t peak_depth;
 };
 
 // An argument of a call: an expression initializing its parameter as its
