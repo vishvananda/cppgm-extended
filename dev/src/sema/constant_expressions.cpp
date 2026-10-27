@@ -991,6 +991,16 @@ bool ConstantInterpreter::discard(const syntax::Expr& expr)
 	}
 	if (IsVoid(facts->type) && e->kind == syntax::ExprKind::Cast)
 		return discard(*static_cast<const syntax::CastExpr*>(e)->operand);
+	if (IsVoid(facts->type) && e->kind == syntax::ExprKind::FunctionalCast)
+	{
+		// 5.2.3: void() has no effect; void(e) evaluates and discards e.
+		const syntax::FunctionalCastExpr& cast = static_cast<const syntax::FunctionalCastExpr&>(*e);
+		const syntax::Slice<syntax::Expr*>& operands = cast.braced != nullptr ? cast.braced->elements : cast.arguments;
+		for (const syntax::Expr* operand : operands)
+			if (!discard(*operand))
+				return false;
+		return true;
+	}
 	if (IsVoid(facts->type) && e->kind == syntax::ExprKind::Conditional)
 	{
 		const syntax::ConditionalExpr& choice = static_cast<const syntax::ConditionalExpr&>(*e);
