@@ -647,6 +647,17 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		facts = new_facts(expr, int_type, ValueCategory::PRValue);
 		facts->value = static_cast<uint64_t>(Intrinsic::FltRounds);
 		break;
+	case GnuBuiltin::VectorTruncate:
+	{
+		if (count != 1)
+			error(expr.location, "wrong number of arguments to a packed truncating conversion");
+		if (typed_value(*expr.arguments[0], scope) == nullptr)
+			return nullptr;
+		convert(*expr.arguments[0], types_.vector(types_.fundamental(FundamentalType::Float), 4), false);
+		facts = new_facts(expr, types_.vector(int_type, 4), ValueCategory::PRValue);
+		facts->value = static_cast<uint64_t>(Intrinsic::VectorTruncate);
+		break;
+	}
 	case GnuBuiltin::IsConstantEvaluated:
 		if (count != 0)
 			error(expr.location, "__builtin_is_constant_evaluated takes no arguments");

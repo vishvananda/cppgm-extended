@@ -1,0 +1,58 @@
+#include <emmintrin.h>
+#include <cfenv>
+#include <cstdint>
+#include <cstdio>
+
+static int evaluations;
+__attribute__((noinline)) __m128 input(const float* values) {
+  ++evaluations;
+  return _mm_loadu_ps(values);
+}
+__m128i wrapped(__m128 value);
+__v4si direct(__v4sf value);
+
+int main() {
+  const unsigned bits[][4] = {
+    {0x3ff33333u, 0xbff33333u, 0x00000000u, 0x80000000u},
+    {0x4effffffu, 0xcf000000u, 0x4f000000u, 0xcf000001u},
+    {0x4f800000u, 0xcf800000u, 0x7f800000u, 0xff800000u},
+    {0x7fc00000u, 0x7f800001u, 0x7f7fffffu, 0xff7fffffu},
+    {0x3f000000u, 0xbf000000u, 0x00000001u, 0x80000001u},
+    {0x3f800000u, 0xc0000000u, 0x40000000u, 0xc0800000u}
+  };
+  const int low = (-2147483647 - 1);
+  const int expected[][4] = {
+    {1, -1, 0, 0}, {2147483520, low, low, low},
+    {low, low, low, low}, {low, low, low, low}, {0, 0, 0, 0}, {1, -2, 2, -4}
+  };
+  const int rounding[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+  const int saved = std::fegetround();
+  unsigned checksum = 0;
+  for (int mode : rounding) {
+    if (std::fesetround(mode)) return 1;
+    for (unsigned row = 0; row != 6; ++row) {
+      float values[4];
+      __builtin_memcpy(values, bits[row], sizeof(values));
+      for (int form = 0; form != 2; ++form) {
+        std::feclearexcept(FE_ALL_EXCEPT);
+        std::feraiseexcept(FE_DIVBYZERO);
+        __m128 source = input(values);
+        __m128i result = form ? (__m128i)direct((__v4sf)source) : wrapped(source);
+        int actual[4];
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(actual), result);
+        const int flags = std::fetestexcept(FE_INVALID | FE_INEXACT | FE_DIVBYZERO);
+        const int wanted = FE_DIVBYZERO | (row >= 1 && row <= 3 ? FE_INVALID : 0) |
+            (row == 0 || row == 4 ? FE_INEXACT : 0);
+        if (flags != wanted) return 2;
+        for (int lane = 0; lane != 4; ++lane) {
+          if (actual[lane] != expected[row][lane]) return 3;
+          checksum = checksum * 33 + static_cast<unsigned>(actual[lane]);
+        }
+      }
+    }
+  }
+  std::fesetround(saved);
+  if (evaluations != 48) return 4;
+  std::printf("conversions %d checksum %u\n", evaluations, checksum);
+  return 0;
+}

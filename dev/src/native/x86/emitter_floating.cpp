@@ -420,7 +420,7 @@ void FunctionEmitter::convert(const Inst& inst)
 			asm_.mov_load(d.reg, scratch_rm(), 8, false);
 			return;
 		}
-		asm_.sse(sse_prefix(from), 0x2c, d.reg, source(s), true);
+		asm_.sse(sse_prefix(from), 0x2c, d.reg, source(s), to != TypeKind::I32);
 		return;
 	case ConvKind::FPToUI:
 	{

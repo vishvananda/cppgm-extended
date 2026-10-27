@@ -1,0 +1,4 @@
+#include <emmintrin.h>
+
+__m128i wrapped(__m128 value) { return _mm_cvttps_epi32(value); }
+__v4si direct(__v4sf value) { return __builtin_ia32_cvttps2dq(value); }

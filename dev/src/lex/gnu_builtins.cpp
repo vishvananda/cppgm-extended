@@ -45,6 +45,7 @@ const struct
 	{ "__builtin_huge_val", { GnuBuiltin::FloatConstant, 6, nullptr, 0 } },
 	{ "__builtin_huge_valf", { GnuBuiltin::FloatConstant, 7, nullptr, 0 } },
 	{ "__builtin_huge_vall", { GnuBuiltin::FloatConstant, 8, nullptr, 0 } },
+	{ "__builtin_ia32_cvttps2dq", { GnuBuiltin::VectorTruncate, 0, nullptr, 0 } },
 	{ "__builtin_ia32_pslldqi128", { GnuBuiltin::VectorShiftBytes, 0, nullptr, 0 } },
 	{ "__builtin_ia32_psrldqi128", { GnuBuiltin::VectorShiftBytes, 1, nullptr, 0 } },
 	{ "__builtin_ia32_vec_ext_v16qi", { GnuBuiltin::VectorLanes, 0, nullptr, 0 } },

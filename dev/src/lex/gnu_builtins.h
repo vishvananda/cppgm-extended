@@ -64,6 +64,8 @@ enum class GnuBuiltin : uint8_t
 	VectorLanes,
 	// GCC's SSE2 whole-register shifts; variant 0 left, 1 right.
 	VectorShiftBytes,
+	// SSE2's four float lanes truncated to signed 32-bit integers.
+	VectorTruncate,
 	Overflow,
 	OperatorNew,
 	OperatorDelete,

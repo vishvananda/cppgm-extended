@@ -395,6 +395,27 @@ RValue FunctionLowering::shift_vector_bytes(const syntax::CallExpr& expr, sema::
 	return load(lowering_.storage_type(vector), place);
 }
 
+RValue FunctionLowering::truncate_vector(const syntax::CallExpr& expr)
+{
+	// SSE2's cvttps2dq, lane by lane through fptosi i32. Native selection
+	// uses the destination width so masked invalid conversions yield the
+	// same integer-indefinite value, including NaNs and infinities.
+	const sema::ExprFacts* argument = WithoutParentheses(expr.arguments[0])->facts;
+	const sema::Type* from =
+		(argument->conversion != nullptr ? argument->conversion->result : argument->type)->unqualified;
+	const sema::Type* to = expr.facts->type;
+	const lowir::Value source = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	lowir::SlotId slot = lowir::kNoId;
+	const lowir::Value out = zeroed_vector(to, slot);
+	for (uint64_t i = 0; i < 4; ++i)
+		set_vector_lane(out, to, i,
+			convert_op(
+				lowir::ConvertOp::FPToSI, lowir::Type::scalar(lowir::TypeKind::I32), vector_lane(source, from, i)));
+	Place place = Place();
+	place.storage = lowir::Value::slot(slot);
+	return load(lowering_.storage_type(to), place);
+}
+
 RValue FunctionLowering::reduce_vector(const syntax::CallExpr& expr, sema::Intrinsic kind)
 {
 	// The lanes combined in order: bitwise, sums and products in the lane
