@@ -2004,7 +2004,15 @@ void Analyzer::instantiate_class(ClassEntity* entity)
 		partial_deduced_.push_back(arena_.copy_array(deduced.data(), deduced.size()));
 	}
 	Scope* parent = nullptr;
-	if (outside != nullptr)
+	if (outside != nullptr && pattern->definition->name != nullptr && !pattern->definition->name->qualified())
+	{
+		// An inline member definition is shared with its analyzed original.
+		// The instance's own parameter scope already captures its enclosing
+		// specialization (including partial-specialization pack bindings).
+		parent = instantiation_frame(facts->pattern->templ->definition_parameters, facts->arguments,
+			facts->argument_count, facts->pattern->owner);
+	}
+	else if (outside != nullptr)
 		parent = outside_frames(pattern->definition_parameters, facts->arguments, facts->argument_count, instance,
 			facts->pattern->owner, outside->scope->parent);
 	else if (outside_partial)

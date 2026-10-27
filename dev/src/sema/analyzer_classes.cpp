@@ -220,7 +220,13 @@ Entity* Analyzer::class_specifier(const syntax::ClassSpecifier& specifier, Scope
 	declare_in(where, binding);
 	out.declared_binding = binding;
 	class_abi_tags(entity, specifier.attributes, false, existed || name->qualified(), name->location);
-	class_body(entity, specifier, parent, print);
+	// An outer specialization declares its member class templates. Their
+	// own specializations use the original analyzed member definition via
+	// outside_member_template, with both argument sets bound (14.7.1p1).
+	if (under_head && !name->qualified() && WithinInstance(where))
+		entity->templ->definition = nullptr;
+	else
+		class_body(entity, specifier, parent, print);
 	// A templated class's definition context is where it ends: its own name
 	// and what its member-specification declared in enclosing namespaces
 	// are in it (14.6.4.2).
