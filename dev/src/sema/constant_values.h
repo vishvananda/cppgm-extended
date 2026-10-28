@@ -64,7 +64,11 @@ enum class RootKind : uint8_t
 	// The std::type_info object a typeid of a static type designates
 	// (5.2.8p4-p5, an address constant expression, 5.19p3): `entity` is the
 	// type, canonical and cv-unqualified. It is never read here.
-	TypeInfo
+	TypeInfo,
+	// A by-value parameter outside the evaluation: its object can be
+	// designated without reading its unknown value (5.19p2). Its address
+	// cannot be published as an address constant expression (5.19p3).
+	Parameter
 };
 
 // ConstValue::flags.

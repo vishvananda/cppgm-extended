@@ -338,6 +338,8 @@ bool ConstantInterpreter::root_storage(
 		storage = objects_[place.object].value;
 		type = objects_[place.object].type;
 		return true;
+	case RootKind::Parameter:
+		return fail(location, "a parameter is not usable in a constant expression");
 	case RootKind::Variable:
 	{
 		const VariableEntity* variable = static_cast<const VariableEntity*>(place.entity);
@@ -405,6 +407,9 @@ bool ConstantInterpreter::root_type(const ConstPlace& place, const Type*& type, 
 		return true;
 	case RootKind::Variable:
 		type = static_cast<const VariableEntity*>(place.entity)->type;
+		return true;
+	case RootKind::Parameter:
+		type = static_cast<const Entity*>(place.entity)->type;
 		return true;
 	case RootKind::Temporary:
 		type = static_cast<const ConstValue*>(place.entity)->type;
@@ -1457,7 +1462,7 @@ bool ConstantInterpreter::publishable(const ConstValue& value) const
 	// a thread-local object's address is each thread's own, 3.7.2).
 	if (value.kind == ValueKind::Pointer)
 	{
-		if (value.root == RootKind::Object)
+		if (value.root == RootKind::Object || value.root == RootKind::Parameter)
 			return false;
 		if (value.root == RootKind::Variable)
 		{

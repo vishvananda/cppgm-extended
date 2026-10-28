@@ -885,7 +885,16 @@ bool ConstantInterpreter::entity_place(const Entity* entity, const Type* type, C
 		out.type = entity->type;
 		return true;
 	case EntityKind::Parameter:
-		return fail(location, "a parameter is not usable in a constant expression");
+		// Naming a by-value parameter's object is not an lvalue-to-rvalue
+		// conversion. A constexpr member may return a value without reading
+		// the object; an unknown reference parameter still needs its value.
+		if (entity->type->is_reference())
+			return fail(location, "a parameter is not usable in a constant expression");
+		out = ConstPlace();
+		out.root = RootKind::Parameter;
+		out.entity = entity;
+		out.type = entity->type;
+		return true;
 	case EntityKind::Variable:
 	{
 		const VariableEntity* variable = static_cast<const VariableEntity*>(entity);
