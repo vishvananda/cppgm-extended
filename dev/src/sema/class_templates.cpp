@@ -1915,6 +1915,101 @@ Binding* Analyzer::value_binding(
 	return new_binding(BindingKind::TemplateValue, name, entity, parameter->value_type);
 }
 
+const Type* Analyzer::substitute_class(const Type* type, const Substitution& substitution)
+{
+	ClassEntity* entity = static_cast<ClassEntity*>(type->entity);
+	const ClassTemplateFacts* facts = entity->templ;
+	if (facts == nullptr)
+		return dependent_type(type) ? substitute_member(type, substitution) : type;
+	if (facts->template_name != nullptr)
+		return type;
+	if (facts->role == TemplateRole::Specialization && facts->dependent && IsStandIn(facts->pattern))
+		return substitute_stand_in(type, substitution);
+	// An alias template-id that drops dependent arguments (CWG 1558):
+	// formed again from the substituted arguments.
+	if (facts->role == TemplateRole::Specialization && facts->pattern->templ->alias_stand_in)
+	{
+		TypeList given;
+		TypeList arguments;
+		flattened_arguments(facts->arguments, facts->argument_count, given);
+		substitute_list(given.data(), static_cast<uint32_t>(given.size()), substitution, arguments);
+		if (AnyNull(arguments))
+			return nullptr;
+		const Type* result = alias_specialization(stand_in_alias(facts->pattern), arguments, 0);
+		return result != nullptr ? types_.qualified(result, type->cv) : nullptr;
+	}
+	// The arguments as a template-id gives them (argument packs'
+	// elements in their place, pack expansions expanded), formed into a
+	// specialization again.
+	TypeList given;
+	TypeList arguments;
+	ClassEntity* templ = nullptr;
+	if (facts->role == TemplateRole::Template)
+	{
+		// The current instantiation: the template's own parameters.
+		templ = entity;
+		for (uint32_t i = 0; i < facts->head->count; ++i)
+		{
+			const Type* parameter = facts->head->parameters[i]->type;
+			given.push_back(facts->head->parameters[i]->pack ? types_.expansion(parameter) : parameter);
+		}
+		substitute_list(given.data(), static_cast<uint32_t>(given.size()), substitution, arguments);
+	}
+	else if (facts->role == TemplateRole::Specialization && facts->dependent)
+	{
+		templ = facts->pattern;
+		flattened_arguments(facts->arguments, facts->argument_count, given);
+		substitute_list(given.data(), static_cast<uint32_t>(given.size()), substitution, arguments);
+	}
+	else if (facts->role == TemplateRole::Pattern)
+		return substitute_member(type, substitution);
+	else
+		return type;
+	if (AnyNull(arguments))
+		return nullptr;
+	// A member template belongs to the substituted enclosing class too:
+	// O<T>::I<U> becomes O<int>::I<U> when only T is substituted.
+	// Its own arguments may still depend on an inner template's parameters.
+	// Its own or deeper parameter depth cannot change that enclosing class.
+	if (templ->owner != nullptr && templ->owner->kind == ScopeKind::Class &&
+		(templ->templ->head->count == 0 || substitution.depth < templ->templ->head->parameters[0]->depth) &&
+		dependent_type(templ->owner->entity->type))
+	{
+		const Type* member = substitute_member(templ->type, substitution);
+		if (member == nullptr)
+			return nullptr;
+		templ = class_template_of(member->entity);
+		if (templ == nullptr)
+		{
+			substitution_error(0, "a substituted member template names no class template");
+			return nullptr;
+		}
+	}
+	// An expansion left the pattern's remaining argument positions
+	// unknown. Once substituted, complete its defaults before forming
+	// the canonical specialization and its instantiation frame.
+	if (!IsStandIn(templ) && !templ->templ->alias_stand_in && arguments.size() < templ->templ->head->count)
+	{
+		default_template_arguments(templ->templ->head, arguments, 0);
+		if (failed())
+			return nullptr;
+	}
+	// Arguments of the wrong kinds (a template template-argument whose
+	// parameters do not match, 14.3.3) fail a substitution whose failure
+	// is a result (14.8.2p8).
+	ClassEntity* specialization = class_specialization(templ, arguments, 0, soft_substitution_ == 0);
+	if (specialization == nullptr)
+	{
+		substitution_error(0, "template arguments that do not match their template's parameters");
+		return nullptr;
+	}
+	// The current instantiation substituted by its own parameters stays
+	// itself.
+	if (facts->role == TemplateRole::Template && specialization->templ->primary_arguments)
+		return type;
+	return types_.qualified(specialization->type, type->cv);
+}
+
 bool Analyzer::complete_class(const ClassEntity* entity)
 {
 	// (require_complete's case of an incomplete class.)

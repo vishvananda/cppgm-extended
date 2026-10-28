@@ -1,0 +1,32 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lor__1 : i64
+
+  block ^entry:
+    %t1 = call i32 @Owner_int___Member__Iterator_void_0___Dereference___cppgm_class_template_identity_1___value()
+    %t2 = cmp ne i32 %t1, 7
+    branch %t2, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t3 = call i64 @Owner_longint___Member__Iterator_char_0___Dereference_const__cppgm_class_template_identity_2___value()
+    %t4 = cmp ne i64 %t3, 9
+    %t5 = cmp ne i64 %t4, 0
+    store typed i64 %t5, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t6 = load typed i64 $lor__1
+    %t7 = convert trunc i32 i64 %t6
+    return i32 %t7
+}
+function @Owner_int___Member__Iterator_void_0___Dereference___cppgm_class_template_identity_1___value() -> i32 [binding=weak, object=_ZN5OwnerIiE6Member8IteratorIvLi0EE11DereferenceIS3_E5valueEv, inline_hint=yes] {
+  block ^entry:
+    return i32 7
+}
+function @Owner_longint___Member__Iterator_char_0___Dereference_const__cppgm_class_template_identity_2___value() -> i64 [binding=weak, object=_ZN5OwnerIlE6Member8IteratorIcLi0EE11DereferenceIKS3_E5valueEv, inline_hint=yes] {
+  block ^entry:
+    return i64 9
+}

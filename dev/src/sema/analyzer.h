@@ -875,6 +875,7 @@ private:
 	// ------------------------------------------- function templates
 	static Substitution substitution_of(const TemplateHead* head, const Type* const* arguments);
 	const Type* substitute(const Type* type, const Substitution& substitution);
+	const Type* substitute_class(const Type* type, const Substitution& substitution);
 	static bool AnyNull(const TypeList& types);
 	const Type* substitute_member(const Type* type, const Substitution& substitution);
 	const Type* substitute_function(const Type* type, const Substitution& substitution, bool leading);
