@@ -405,7 +405,12 @@ private:
 		const syntax::Slice<syntax::DeclSpecifier>& list, Scope* scope, Specifiers& out, bool lone_declaration);
 	const Type* keyword_type(const syntax::Slice<syntax::DeclSpecifier>& list, uint32_t location);
 	const Type* int128_type(const syntax::Slice<syntax::DeclSpecifier>& list, uint32_t location);
-	const Type* named_type(const syntax::Name& name, Scope* scope);
+	enum class NameTypeUse : uint8_t
+	{
+		Type,
+		TemplateArgument
+	};
+	const Type* named_type(const syntax::Name& name, Scope* scope, NameTypeUse use = NameTypeUse::Type);
 	void check_template_name_type(const Binding* binding, uint32_t location);
 	const Type* binding_type(const Binding* binding, uint32_t location);
 	DeclaratorInfo declarator(const syntax::Declarator* declarator, const Type* type, Scope* scope, uint32_t location,

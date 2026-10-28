@@ -243,12 +243,18 @@ bool Analyzer::dependent_name_expression(const syntax::Name& name, Scope* scope)
 
 bool Analyzer::fixed_template_arguments(const syntax::NameComponent& component, Scope* scope)
 {
-	// A template argument list of types alone, none dependent.
+	// A template argument list of types or template names, none dependent.
+	// Template names are arguments in their own right, not ordinary types.
 	for (const syntax::TemplateArgument& argument : component.arguments)
 	{
 		if (argument.type == nullptr || argument.pack)
 			return false;
-		const Type* type = type_id(*argument.type, scope);
+		bool expansion = false;
+		const syntax::Name* name = PlainTemplateName(argument, &expansion);
+		if (expansion)
+			return false;
+		const Type* type = name != nullptr ? named_type(*name, scope, NameTypeUse::TemplateArgument)
+										   : type_id(*argument.type, scope);
 		if (failed() || type == nullptr || dependent_type(type))
 			return false;
 	}

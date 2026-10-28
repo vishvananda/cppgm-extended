@@ -523,7 +523,7 @@ const Type* Analyzer::int128_type(const syntax::Slice<syntax::DeclSpecifier>& li
 	return types_.fundamental(is_unsigned ? FundamentalType::UnsignedInt128 : FundamentalType::Int128);
 }
 
-const Type* Analyzer::named_type(const syntax::Name& name, Scope* scope)
+const Type* Analyzer::named_type(const syntax::Name& name, Scope* scope, NameTypeUse use)
 {
 	// 14.6p5: typename applies to qualified names only.
 	if (name.typename_keyword && !name.qualified())
@@ -531,6 +531,26 @@ const Type* Analyzer::named_type(const syntax::Name& name, Scope* scope)
 	LookupResult result = lookup_name(name, scope, LookupFilter::Ordinary);
 	if (failed())
 		return nullptr;
+	if (use == NameTypeUse::TemplateArgument)
+	{
+		const bool dependent = name.qualified() && last_prefix_.dependent != nullptr;
+		const Type* templ = dependent && name.last().template_keyword
+			? dependent_template_name(last_prefix_.dependent, name.last().identifier)
+			: template_name_type(result.binding, result.injected_template);
+		if (templ != nullptr)
+		{
+			if (!dependent && semantic() && template_depth_ == 0)
+			{
+				if (name.qualified() && last_prefix_.scope != nullptr && last_prefix_.scope->kind == ScopeKind::Class)
+					check_access(result.binding, static_cast<const ClassEntity*>(last_prefix_.scope->entity), nullptr,
+						scope, name.location);
+				else if (!name.qualified())
+					check_unqualified_access(result.binding, scope, name.location);
+			}
+			named_binding_ = result.binding;
+			return templ;
+		}
+	}
 	if (name.qualified() && !name.typename_keyword)
 	{
 		// 14.6p2-p3: a name qualified by a dependent type, or naming a
