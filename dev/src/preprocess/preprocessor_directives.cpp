@@ -388,7 +388,14 @@ void Preprocessor::run_define(const PPToken& directive)
 			return;
 		}
 		if (!SameDefinition(*identifier->macro, *macro))
-			throw PreprocessError(directive.begin, "macro redefined differently");
+		{
+			// GNU system headers may replace a source's fallback definition;
+			// their macro-redefinition diagnostic is suppressed. Keep the
+			// ordinary source and non-hosted rules strict (16.3p2).
+			if (!hosted_ || !in_system_header(directive.begin))
+				throw PreprocessError(directive.begin, "macro redefined differently");
+			identifier->macro = macro;
+		}
 		return;
 	}
 	identifier->macro = macro;

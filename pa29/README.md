@@ -267,6 +267,9 @@ To complete PA29, implement hosted compatibility for:
   collecting a function-like macro's arguments, as GNU CPP does. A redefinition
   affects argument prescan, while the open call retains its original
   replacement list; `__COUNTER__` remains one sequence per translation unit.
+  A system header may replace a macro's previous definition, as GNU CPP does
+  with system-header redefinition diagnostics suppressed; ordinary source
+  redefinitions still require identical definitions.
   PA4's non-hosted text-sequence boundaries are unchanged. `#warning` lets
   translation continue, like an ignored pragma; anything it prints goes to
   standard error, which the tests do not check.  `__COUNTER__` expands to
