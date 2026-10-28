@@ -16,6 +16,12 @@ if [ -n "${CPPGM_APP_ARGS:-}" ]; then
 fi
 
 test_args=()
+if [ -f "${2%.t}.system-includes" ]; then
+  while IFS= read -r -d '' system_include_dir; do
+    test_args+=("-isystem" "$system_include_dir")
+  done < <(perl -I../scripts -MCppgmBatchWorker=read_word_list -e \
+    'print "$_\0" for read_word_list($ARGV[0]);' "${2%.t}.system-includes")
+fi
 if [ -f "${2%.t}.no-exceptions" ]; then
   test_args+=("-fno-exceptions")
 fi

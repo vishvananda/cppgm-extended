@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import errno
+import json
 import os
 import shutil
 from pathlib import Path
@@ -56,6 +57,37 @@ def wait_for_pid_exit(pid: int, timeout_sec: float) -> None:
 
 
 class BatchTimeoutHarnessTests(unittest.TestCase):
+    def test_pa29_legacy_compile_preserves_system_include_arguments(self):
+        with tempfile.TemporaryDirectory(prefix="pa29-system-includes.") as temp_dir:
+            root = Path(temp_dir)
+            pa = root / "pa29"
+            pa.mkdir()
+            (root / "scripts").mkdir()
+            shutil.copyfile(
+                REPO_ROOT / "scripts/CppgmBatchWorker.pm",
+                root / "scripts/CppgmBatchWorker.pm",
+            )
+            app = pa / "tool.py"
+            app.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, pathlib, sys\n"
+                "pathlib.Path('arguments.json').write_text(json.dumps(sys.argv[1:]))\n"
+            )
+            app.chmod(0o755)
+            (pa / "input.t").write_text("int value;\n")
+            (pa / "input.system-includes").write_text('first "second directory"\n')
+            env = os.environ.copy()
+            env.pop("CPPGM_APP_ARGS", None)
+            run(
+                "bash", str(REPO_ROOT / "pa29/scripts/run_one_compile_test.sh"),
+                "tool.py", "input.t", "input.my", cwd=pa, env=env,
+            )
+            self.assertEqual(
+                json.loads((pa / "arguments.json").read_text()),
+                ["-isystem", "first", "-isystem", "second directory",
+                 "-c", "-o", "input.my.o", "input.t"],
+            )
+
     def test_text_input_contract_is_independent_of_assignment_number(self):
         profiles = [
             ("pa5", None, "first\n"),
