@@ -75,6 +75,12 @@ qualified-id without `typename` does not name a type, a declarator whose
 parenthesized operand is only such a name declares a variable with a
 direct-initializer rather than a function with an unnamed parameter.
 
+A concrete alias template-id can name a class the parser does not yet know,
+through a specialization's member alias. Its qualified member is still
+nondependent, including inside another template definition. It may name a member
+template without the `template` introducer; semantic lookup determines whether
+the resulting template-id denotes a type or an expression.
+
 ### Qualified template-name hiding
 
 Function and variable templates declared directly in a class participate in

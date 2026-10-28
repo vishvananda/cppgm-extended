@@ -88,8 +88,9 @@ private:
 		// prefix_approximate: a known prefix whose class is a guess (a
 		// member a template-id reaches that a specialization declares too,
 		// or a name through one, NameBinding::approximate): the category of
-		// a member found in it is a guess too. prefix_uncertain: a dependent
-		// prefix outside every template definition, a type whose class the
+		// a member found in it is a guess too. prefix_uncertain: an unknown
+		// prefix known not to depend on template parameters (outside a
+		// template definition, or a fixed template-id), whose class the
 		// parser does not know (a typedef of a template parameter reached
 		// through a template-id, an alias template of a member, a
 		// decltype), so a member's category is unknown rather than a value

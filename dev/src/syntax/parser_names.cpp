@@ -328,6 +328,7 @@ void Parser::advance_prefix(const NameComponent& component, NameInfo& info, bool
 		guesses = prefix_guesses(component, info, binding, declared);
 	const bool dependent = (guesses & NameBinding::kDependent) != 0;
 	const bool was_dependent = info.prefix == PrefixState::Dependent;
+	const bool dependent_prefix = info.prefix_dependent;
 	info.prefix_specialization = false;
 	info.prefix_dependent = false;
 	info.prefix_approximate = false;
@@ -358,7 +359,9 @@ void Parser::advance_prefix(const NameComponent& component, NameInfo& info, bool
 		was_dependent || dependent)
 	{
 		if (!was_dependent)
-			info.prefix_uncertain = !in_template_definition();
+			info.prefix_uncertain = !in_template_definition() ||
+				(component.has_arguments && !dependent_arguments && !dependent_prefix &&
+					binding.category == NameCategory::TypeTemplate);
 		info.prefix = PrefixState::Dependent;
 		info.prefix_scope = nullptr;
 	}
@@ -413,8 +416,12 @@ Parser::TemplateIdChoice Parser::template_id_follows(
 	if (binding.category != NameCategory::None)
 		return TemplateIdChoice::No;
 	// A dependent qualified name is not a template without `template`
-	// (14.2p4); an undeclared one is tried as a template-id.
-	if (info.prefix == PrefixState::Dependent)
+	// (14.2p4). A nondependent prefix may name an unknown class: its
+	// member may be a template, as through an alias of a
+	// specialization's member. The memoized unknown-name path decides
+	// whether a template argument list follows; analysis resolves the name.
+	// As after an object, a name never declared as a template compares.
+	if (info.prefix == PrefixState::Dependent && (!info.prefix_uncertain || !scopes_.ever_template(identifier)))
 		return TemplateIdChoice::No;
 	return TemplateIdChoice::Maybe;
 }
