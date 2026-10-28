@@ -240,6 +240,7 @@ private:
 	bool parse_operator_name(NameComponent& component, Scope* member_of = nullptr);
 	bool parse_template_arguments(Slice<TemplateArgument>& arguments);
 	bool parse_template_argument(ListFrame<TemplateArgument>& arguments);
+	bool template_argument_declarator_ahead();
 	enum class TemplateIdChoice : uint8_t
 	{
 		No,

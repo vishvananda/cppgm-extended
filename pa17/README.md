@@ -54,6 +54,15 @@ the same source-file ordering and `-o` relaxations as the earlier source-to-LowI
 milestones. Preserve PA7's dump mode. Native driver behavior and optimized
 LowIR output are not required in PA17.
 
+### Inherited member types in template arguments
+
+A concrete specialization can inherit a member type through a base selected by
+another template. A pointer or reference type-id naming that member remains a
+type argument even when the parser cannot resolve the selected base. Preserve
+the parsed qualified name for semantic lookup and continue its declarator.
+A following operator with an operand remains an expression; a genuinely
+dependent qualified type still requires `typename`.
+
 ### Dependent qualified types
 
 Within a retained template definition, a qualified member type whose qualifier

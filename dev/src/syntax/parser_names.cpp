@@ -828,6 +828,43 @@ bool Parser::member_template_arguments_plausible(const Slice<TemplateArgument>& 
 	return true;
 }
 
+bool Parser::template_argument_declarator_ahead()
+{
+	if (at(TokenKind::KW_CONST) || at(TokenKind::KW_VOLATILE))
+		return true;
+	if (!ptr_operator_ahead(0))
+		return false;
+	// A nested-name-specifier followed by * is already a member pointer.
+	if (at_identifier() || at(TokenKind::OP_COLON2))
+		return true;
+	// The token after *, & or && must continue an abstract declarator.
+	// An expression operand needs no tentative type-id or arena records.
+	const ParseToken next = tok(1);
+	if (next.is_identifier() || next.is(TokenKind::OP_COLON2))
+		return ptr_operator_ahead(1) || at_attribute(1);
+	if (next.kind != ParseTokenKind::Simple)
+		return false;
+	switch (next.simple)
+	{
+	case TokenKind::OP_STAR:
+	case TokenKind::OP_AMP:
+	case TokenKind::OP_LAND:
+	case TokenKind::KW_CONST:
+	case TokenKind::KW_VOLATILE:
+	case TokenKind::KW_ALIGNAS:
+	case TokenKind::OP_LPAREN:
+	case TokenKind::OP_LSQUARE:
+	case TokenKind::OP_COMMA:
+	case TokenKind::OP_GT:
+	case TokenKind::OP_DOTS:
+		return true;
+	case TokenKind::OP_XOR:
+		return hosted_;
+	default:
+		return false;
+	}
+}
+
 bool Parser::parse_template_argument(ListFrame<TemplateArgument>& arguments)
 {
 	NestingGuard nesting(*this);
@@ -845,7 +882,17 @@ bool Parser::parse_template_argument(ListFrame<TemplateArgument>& arguments)
 		Name* name = parse_name(NameMode::Expression, info);
 		if (name == nullptr)
 			return false;
-		if (is_type(name, info))
+		// A concrete class may inherit through a base whose scope parsing
+		// cannot resolve. Its unknown member can still begin a pointer or
+		// reference type-id. Reuse the parsed name and the bounded declarator
+		// continuation; an operator with a right operand falls back below.
+		// Bare unknown names keep their shared id-expression representation.
+		bool type_name = is_type(name, info);
+		if (!type_name && info.category == NameCategory::None &&
+			((info.prefix == PrefixState::Known && !info.prefix_dependent) ||
+				(info.prefix == PrefixState::Dependent && info.prefix_uncertain)))
+			type_name = template_argument_declarator_ahead();
+		if (type_name)
 		{
 			Tentative tentative(*this);
 			TypeId* type = parse_type_id_from_name(name, info, start);
