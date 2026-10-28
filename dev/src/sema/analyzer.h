@@ -413,7 +413,7 @@ private:
 		TemplateArgument
 	};
 	const Type* named_type(const syntax::Name& name, Scope* scope, NameTypeUse use = NameTypeUse::Type);
-	void check_template_name_type(const Binding* binding, uint32_t location);
+	bool check_template_name_type(const Binding* binding, uint32_t location);
 	const Type* binding_type(const Binding* binding, uint32_t location);
 	DeclaratorInfo declarator(const syntax::Declarator* declarator, const Type* type, Scope* scope, uint32_t location,
 		const Specifiers* specifiers = nullptr);

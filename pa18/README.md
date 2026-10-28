@@ -48,6 +48,14 @@ the same source-file ordering and `-o` relaxations as the earlier source-to-LowI
 milestones. Preserve PA7's dump mode. Native driver behavior and optimized
 LowIR output are not required in PA18.
 
+### Substituted member types
+
+A substituted `typename T::member` must denote a type. A member class or alias
+template without template arguments rejects an overload in the immediate
+substitution context. An actual nested class remains a type even when incomplete;
+a template-template argument still denotes its template. Rejection uses the
+substitution result and does not instantiate an unused member-template body.
+
 ### Output Format
 
 On success, `cppgm++` shall write LowIR text to `<outfile>` and exit

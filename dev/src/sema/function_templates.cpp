@@ -241,6 +241,11 @@ const Type* Analyzer::substitute_member(const Type* type, const Substitution& su
 							: "a dependent name does not name a type in its instantiated qualifier");
 		return nullptr;
 	}
+	// A substituted typename still needs a type: a member class or alias
+	// template without arguments is no type (14.6.1, 14.5.7). Already-formed
+	// class/enum member types keep their instantiated-owner mapping.
+	if (type->kind == TypeKind::TemplateParameter && !check_template_name_type(found.binding, 0))
+		return nullptr;
 	// Access is checked as part of a deduction's substitution (14.8.2p8), in
 	// the context of the template deduced (11p4: as its class's member or a
 	// friend; not its caller's).

@@ -579,8 +579,8 @@ const Type* Analyzer::named_type(const syntax::Name& name, Scope* scope, NameTyp
 			return nullptr;
 		}
 	}
-	if (!name.last().has_arguments)
-		check_template_name_type(result.binding, name.location);
+	if (!name.last().has_arguments && !check_template_name_type(result.binding, name.location))
+		return nullptr;
 	named_binding_ = result.binding;
 	const Type* type = binding_type(result.binding, name.location);
 	// A template-name is no type (14.3.3p1: only a template argument).
@@ -589,7 +589,7 @@ const Type* Analyzer::named_type(const syntax::Name& name, Scope* scope, NameTyp
 	return type;
 }
 
-void Analyzer::check_template_name_type(const Binding* binding, uint32_t location)
+bool Analyzer::check_template_name_type(const Binding* binding, uint32_t location)
 {
 	// 14.6.1p1, p5: only a class template's injected-class-name (declared in
 	// its own scope) names a type without a template argument list; its
@@ -597,12 +597,10 @@ void Analyzer::check_template_name_type(const Binding* binding, uint32_t locatio
 	// name lookup does not see (14.6.2p3), names the template itself.
 	if (binding->kind == BindingKind::TypeAlias && binding->entity != nullptr &&
 		binding->entity->kind == EntityKind::AliasTemplate)
-		error(location, "an alias template name without a template argument list");
-	if (binding->kind != BindingKind::Type || binding->entity == nullptr || binding->entity->kind != EntityKind::Class)
-		return;
-	const ClassEntity* cls = static_cast<const ClassEntity*>(binding->entity);
-	if (cls->templ != nullptr && cls->templ->role == TemplateRole::Template && binding->declared_in != cls->scope)
-		error(location, "a class template name without a template argument list");
+		return substitution_error(location, "an alias template name without a template argument list");
+	if (ClassTemplateNameAlone(binding))
+		return substitution_error(location, "a class template name without a template argument list");
+	return true;
 }
 
 const Type* Analyzer::binding_type(const Binding* binding, uint32_t location)
