@@ -901,6 +901,8 @@ private:
 	const Type* synthesized_type(uint32_t index);
 	bool at_least_as_specialized(
 		const FunctionEntity* first, const FunctionEntity* second, uint32_t arguments, Ordering form = Ordering::Call);
+	int function_template_order(
+		const FunctionEntity* first, const FunctionEntity* second, uint32_t arguments, Ordering form = Ordering::Call);
 	bool compute_function_order(
 		const FunctionEntity* first, const FunctionEntity* second, uint32_t arguments, Ordering form);
 	bool function_type_at_least_as_specialized(

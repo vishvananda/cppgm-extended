@@ -779,14 +779,7 @@ int Analyzer::user_candidate_order(const FunctionEntity* a, const Conversion& a_
 	{
 		if (!a->constructor)
 			return conversion_template_order(a->primary, b->primary);
-		const bool forward = at_least_as_specialized(a->primary, b->primary, 1);
-		const bool backward = at_least_as_specialized(b->primary, a->primary, 1);
-		if (forward != backward)
-			order = forward ? 1 : -1;
-		else if (forward)
-			// 14.8.2.4p9-p10: equally deducible reference parameters are
-			// ordered by reference kind and qualification, as in a call.
-			order = reference_ordering(a->primary, b->primary, 1);
+		return function_template_order(a->primary, b->primary, 1);
 	}
 	return order;
 }

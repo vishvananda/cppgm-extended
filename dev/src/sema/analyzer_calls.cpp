@@ -979,6 +979,28 @@ bool Analyzer::object_sequence(const ExprFacts* object, const FunctionEntity* fu
 	return true;
 }
 
+int Analyzer::function_template_order(
+	const FunctionEntity* first, const FunctionEntity* second, uint32_t arguments, Ordering form)
+{
+	const bool forward = at_least_as_specialized(first, second, arguments, form);
+	const bool backward = at_least_as_specialized(second, first, arguments, form);
+	if (forward != backward)
+		return forward ? 1 : -1;
+	if (!forward)
+		return 0;
+	const int references = reference_ordering(first, second, arguments, form);
+	if (references != 0)
+		return references;
+	// CWG 1395 applies equally to ordinary calls and converting constructors:
+	// an unused trailing pack is less specialized unless the other template
+	// has a corresponding parameter (including one with a default argument).
+	if (trailing_pack_unused(second, first, arguments))
+		return 1;
+	if (trailing_pack_unused(first, second, arguments))
+		return -1;
+	return 0;
+}
+
 int Analyzer::compare_candidates(const Candidate& a, const Candidate& b, uint32_t count, bool object)
 {
 	// 13.3.3p1: no conversion sequence worse and at least one better. The
@@ -1010,24 +1032,7 @@ int Analyzer::compare_candidates(const Candidate& a, const Candidate& b, uint32_
 	{
 		const uint32_t arguments = count - (object ? 1 : 0);
 		const Ordering form = object ? Ordering::Call : Ordering::CallInserting;
-		const bool forward = at_least_as_specialized(a.function->primary, b.function->primary, arguments, form);
-		const bool backward = at_least_as_specialized(b.function->primary, a.function->primary, arguments, form);
-		if (forward != backward)
-			return forward ? 1 : -1;
-		// CWG 1395 (as GCC and Clang apply it to C++11): of two templates
-		// each at least as specialized, one whose trailing function
-		// parameter pack takes no argument is less specialized than one
-		// without a trailing pack or a parameter corresponding to it.
-		if (forward && backward)
-		{
-			const int references = reference_ordering(a.function->primary, b.function->primary, arguments, form);
-			if (references != 0)
-				return references;
-			if (trailing_pack_unused(b.function->primary, a.function->primary, arguments))
-				return 1;
-			if (trailing_pack_unused(a.function->primary, b.function->primary, arguments))
-				return -1;
-		}
+		return function_template_order(a.function->primary, b.function->primary, arguments, form);
 	}
 	return 0;
 }
