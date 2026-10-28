@@ -1,0 +1,49 @@
+preproc 1
+sof tests/preproc/300-hosted-active-macro-recursion.t
+identifier ID
+simple ( OP_LPAREN
+literal 9 int 09000000
+simple ) OP_RPAREN
+identifier ID
+simple ( OP_LPAREN
+literal 9 int 09000000
+simple ) OP_RPAREN
+literal 9 int 09000000
+literal 9 int 09000000
+identifier ID
+simple ( OP_LPAREN
+literal 9 int 09000000
+simple ) OP_RPAREN
+identifier ID
+simple ( OP_LPAREN
+literal 9 int 09000000
+simple ) OP_RPAREN
+identifier ID
+simple ( OP_LPAREN
+literal 9 int 09000000
+simple ) OP_RPAREN
+identifier AN_ACTIVE
+simple ( OP_LPAREN
+literal 9 int 09000000
+simple ) OP_RPAREN
+identifier ID
+simple ( OP_LPAREN
+literal 9 int 09000000
+simple ) OP_RPAREN
+literal 2 int 02000000
+literal 1 int 01000000
+literal 2 int 02000000
+literal 3 int 03000000
+identifier tag
+identifier HOST_LAST
+simple ( OP_LPAREN
+literal 2 int 02000000
+simple ) OP_RPAREN
+literal 77 int 4D000000
+identifier HOST_SELF
+simple ( OP_LPAREN
+literal 7 int 07000000
+simple ) OP_RPAREN
+identifier changed
+literal 8 int 08000000
+eof

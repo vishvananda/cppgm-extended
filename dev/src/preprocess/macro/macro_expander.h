@@ -63,7 +63,7 @@ struct MacroExpansionCounters
 	telemetry::Counter nested_collections = 0;
 	telemetry::Counter pastes = 0;
 	telemetry::Counter stringizes = 0;
-	// ## operands used as written that their own hide set hides.
+	// Course-mode raw ## operands hidden by their token set.
 	telemetry::Counter raw_operands_hidden = 0;
 	telemetry::Counter peak_contexts = 0;
 	telemetry::Counter peak_context_tokens = 0;
@@ -131,6 +131,9 @@ public:
 	// Pasted spellings are lexed as hosted pp-numbers
 	// (PPLexerOptions::binary_exponents).
 	void set_binary_exponents(bool enabled) { binary_exponents_ = enabled; }
+	// GNU recursion suppression follows active replacement contexts; the
+	// course-defined token nesting remains the default.
+	void set_hosted_recursion(bool enabled) { hosted_recursion_ = enabled; }
 
 	// The next token of the macro-replaced input, with the input's EndOfFile
 	// at its end. Valid until the next call. Throws PreprocessError.
@@ -247,7 +250,7 @@ private:
 	}
 	bool in_open_chain(const MacroDefinition& macro, uint32_t root) const
 	{
-		return macro.open_serial != 0 && macro.open_serial >= root;
+		return macro.name->macro_open_serial != 0 && macro.name->macro_open_serial >= root;
 	}
 	bool start_expansion();
 	bool hidden(const PPToken& token, const MacroDefinition& macro) const;
@@ -299,6 +302,7 @@ private:
 	HideSets hide_sets_;
 	bool controlling_expression_;
 	bool binary_exponents_;
+	bool hosted_recursion_;
 	// An expansion that produced nothing had white space before its name;
 	// the next token read inherits it.
 	bool pending_space_;

@@ -72,7 +72,6 @@ MacroDefinition* MakeBuiltinMacro(Arena& arena, const Identifier* name, BuiltinM
 	macro->function_like = false;
 	macro->variadic = false;
 	macro->builtin = builtin;
-	macro->open_serial = 0;
 	return macro;
 }
 
@@ -258,6 +257,5 @@ MacroDefinition* MacroDefinitionParser::finish(const PPToken& name, bool functio
 	macro->function_like = function_like;
 	macro->variadic = variadic_;
 	macro->builtin = BuiltinMacro::None;
-	macro->open_serial = 0;
 	return macro;
 }

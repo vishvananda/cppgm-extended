@@ -47,6 +47,7 @@ Identifier* IdentifierTable::intern(const char* spelling, uint32_t length)
 	identifier->hash = hash;
 	identifier->id = count_;
 	identifier->macro = nullptr;
+	identifier->macro_open_serial = 0;
 	identifier->parameter_slot = 0;
 	identifier->role = 0;
 	TokenKind kind;

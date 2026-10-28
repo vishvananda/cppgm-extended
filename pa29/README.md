@@ -270,6 +270,10 @@ To complete PA29, implement hosted compatibility for:
   A system header may replace a macro's previous definition, as GNU CPP does
   with system-header redefinition diagnostics suppressed; ordinary source
   redefinitions still require identical definitions.
+  Hosted rescanning follows GNU CPP's active replacement contexts: a macro
+  stays disabled while its replacement is read, and tokens rejected for
+  that reason remain unavailable on later rescans. PA4's non-hosted interface
+  retains the course-defined nesting rules in [PA4's macro guide](../pa4/macros.md).
   PA4's non-hosted text-sequence boundaries are unchanged. `#warning` lets
   translation continue, like an ignored pragma; anything it prints goes to
   standard error, which the tests do not check.  `__COUNTER__` expands to

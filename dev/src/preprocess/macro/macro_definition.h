@@ -91,9 +91,6 @@ struct MacroDefinition
 	bool function_like;
 	bool variadic;
 	BuiltinMacro builtin;
-	// The serial of this definition's most recent open expansion context,
-	// zero if none; contexts link the previous ones (macro_expander.h).
-	uint32_t open_serial;
 };
 
 // Whether a redefinition is allowed: same form, parameters and replacement

@@ -28,6 +28,9 @@ struct Identifier
 	// Dense, in order of interning, below 2^31 (for tables keyed by
 	// identifier).
 	uint32_t id;
+	// The name's newest open macro replacement context, or zero. Replacing
+	// a definition during argument collection must not re-enable its name.
+	mutable uint32_t macro_open_serial;
 
 	bool simple_token(TokenKind& kind) const
 	{

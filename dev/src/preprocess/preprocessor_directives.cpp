@@ -669,6 +669,7 @@ bool Preprocessor::continue_macro_arguments()
 	MacroExpander directive(arena_, identifiers_, names_, *this, macro_state_);
 	directive.set_input(&source_);
 	directive.set_binary_exponents(hosted_);
+	directive.set_hosted_recursion(hosted_);
 	struct Restore
 	{
 		MacroExpander*& slot;

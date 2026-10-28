@@ -71,9 +71,9 @@ PPToken EndToken()
 MacroExpander::MacroExpander(Arena& arena, IdentifierTable& identifiers, const PreprocessorNames& names,
 	ExpansionEnvironment& environment, MacroExpansionState& state)
 	: arena_(arena), identifiers_(identifiers), names_(names), environment_(environment), input_(nullptr),
-	  controlling_expression_(false), binary_exponents_(false), pending_space_(false), building_head_(EndToken()),
-	  building_serial_(0), building_chain_(0), read_serial_(0), read_chain_(0), read_root_(0), read_disabled_(0),
-	  current_(EndToken()), state_(state)
+	  controlling_expression_(false), binary_exponents_(false), hosted_recursion_(false), pending_space_(false),
+	  building_head_(EndToken()), building_serial_(0), building_chain_(0), read_serial_(0), read_chain_(0),
+	  read_root_(0), read_disabled_(0), current_(EndToken()), state_(state)
 {}
 
 // ---- rescanning ---------------------------------------------------------------
@@ -113,11 +113,15 @@ bool MacroExpander::start_expansion()
 	// The names disabled where the token was read apply to every token of an
 	// argument being replaced, but in an expansion only to its own tokens:
 	// substituted ones carry just their sets.
-	const uint32_t disabled = read_serial_ != 0 && (current_.flags & kArgument) != 0 ? 0 : read_disabled_;
-	const bool hidden_by_set = hidden(current_, *macro);
+	// GNU scanning checks the active name before looking for `(`,
+	// while the final token's replacement context is still open.
+	const uint32_t disabled = hosted_recursion_ || (read_serial_ != 0 && (current_.flags & kArgument) != 0)
+		? 0
+		: read_disabled_;
+	const bool hidden_by_set = hosted_recursion_ ? macro->name->macro_open_serial != 0 : hidden(current_, *macro);
 	if (hidden_by_set || (disabled != 0 && disabled_here(*macro, disabled)))
 	{
-		if (hidden_by_set && (current_.flags & (kArgument | kReplacedArgument)) == kArgument)
+		if (!hosted_recursion_ && hidden_by_set && (current_.flags & (kArgument | kReplacedArgument)) == kArgument)
 			++state_.counters.raw_operands_hidden;
 		current_.flags |= kPainted;
 		return false;
@@ -162,7 +166,7 @@ bool MacroExpander::hidden(const PPToken& token, const MacroDefinition& macro) c
 	if (read_serial_ != 0 && read_root_ != 0 && token.origin == read_serial_ && token.hide_set == read_chain_)
 		return in_open_chain(macro, read_root_);
 	const Context* origin = token.origin != 0 && token.hide_set != 0 ? find_open_context(token.origin) : nullptr;
-	if (origin != nullptr && origin->expansion.root != 0 && macro.open_serial <= origin->serial &&
+	if (origin != nullptr && origin->expansion.root != 0 && macro.name->macro_open_serial <= origin->serial &&
 		origin->expansion.chain == token.hide_set)
 	{
 		return in_open_chain(macro, origin->expansion.root);
@@ -180,7 +184,7 @@ bool MacroExpander::disabled_here(const MacroDefinition& macro, uint32_t disable
 	// opened inside the argument leaves the set to decide.
 	const Context& from = contexts_.back();
 	if (from.macro == nullptr && from.barrier.disabled_top != 0 && disabled == from.disabled &&
-		macro.open_serial <= from.barrier.disabled_top)
+		macro.name->macro_open_serial <= from.barrier.disabled_top)
 	{
 		return in_open_chain(macro, from.barrier.disabled_root);
 	}
@@ -254,7 +258,7 @@ void MacroExpander::pop_context()
 	Context& context = contexts_.back();
 	if (context.macro != nullptr)
 	{
-		context.macro->open_serial = context.expansion.previous_open;
+		context.macro->name->macro_open_serial = context.expansion.previous_open;
 		context_tokens_.resize(context.begin);
 	}
 	contexts_.pop_back();
@@ -285,6 +289,8 @@ const MacroExpander::Context* MacroExpander::find_open_context(uint32_t serial) 
 
 MacroExpander::Nesting MacroExpander::nesting_of(const PPToken& head, bool from_argument, bool function_like) const
 {
+	if (hosted_recursion_)
+		return Nesting{ 0, 0 };
 	// An invocation is nested in the context that produced its name token if
 	// it begins there: the name is an object-like macro's or its `(` comes
 	// from that context. That is whether the context is still open (for a
@@ -311,6 +317,8 @@ MacroExpander::Nesting MacroExpander::nesting_of(const PPToken& head, bool from_
 
 uint32_t MacroExpander::begin_inherited(const PPToken& head, uint32_t head_serial, bool from_argument) const
 {
+	if (hosted_recursion_)
+		return 0;
 	// What an invocation inherits comes from the context it begins in, the
 	// top of the stack once its `(` is found; a name substituted as written
 	// into that expansion inherits nothing, and one collected into the
@@ -413,6 +421,11 @@ void MacroExpander::collect_arguments(const MacroDefinition& macro, const PPToke
 			}
 			throw PreprocessError(head.begin, "unterminated macro invocation");
 		}
+		// A raw operand can outlive the replacement that supplied it. Retain
+		// its disablement before collecting the rest pops that context.
+		if (hosted_recursion_ && token.kind == PPTokenKind::Identifier && token.identifier->macro != nullptr &&
+			token.identifier->macro_open_serial != 0)
+			token.flags |= kPainted;
 		if (read_serial_ != 0 && read_serial_ == previous_serial)
 			token.flags |= kFollowsInContext;
 		previous_serial = read_serial_;
@@ -610,7 +623,7 @@ void MacroExpander::push_expansion(MacroDefinition& macro, const PPToken& head, 
 	const uint32_t begin = static_cast<uint32_t>(context_tokens_.size());
 	// The arguments are hidden from the name token's set if the name is an
 	// argument token.
-	const uint32_t argument_hide_set = arguments != nullptr
+	const uint32_t argument_hide_set = arguments != nullptr && !hosted_recursion_
 		? hide_sets_.add((head.flags & kArgument) != 0 ? head.hide_set : 0, macro.name)
 		: 0;
 	// Serials are not reused, so they order contexts and name each one for
@@ -619,7 +632,7 @@ void MacroExpander::push_expansion(MacroDefinition& macro, const PPToken& head, 
 		throw PreprocessError(head.begin, "too many macro invocations in one translation unit");
 	building_head_ = head;
 	building_serial_ = ++state_.serial;
-	building_chain_ = hide_sets_.add(nesting.chain, macro.name);
+	building_chain_ = hosted_recursion_ ? 0 : hide_sets_.add(nesting.chain, macro.name);
 	bool paste = false;
 	bool has_placemarkers = false;
 	bool comma_paste = false;
@@ -724,9 +737,9 @@ void MacroExpander::push_expansion(MacroDefinition& macro, const PPToken& head, 
 	context.inherited = inherited;
 	context.expansion.chain = building_chain_;
 	context.expansion.root = chain_root(nesting.parent);
-	context.expansion.previous_open = macro.open_serial;
+	context.expansion.previous_open = macro.name->macro_open_serial;
 	contexts_.push_back(context);
-	macro.open_serial = building_serial_;
+	macro.name->macro_open_serial = building_serial_;
 	telemetry::note_peak(state_.counters.peak_contexts, contexts_.size());
 	telemetry::note_peak(state_.counters.peak_context_tokens, context_tokens_.size());
 }
