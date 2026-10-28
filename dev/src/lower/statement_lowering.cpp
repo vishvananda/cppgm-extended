@@ -649,6 +649,12 @@ void FunctionLowering::local_object_variable(const sema::VariableEntity* variabl
 		const uint64_t size = lowering_.size_of(type, location);
 		slot_type = lowir::Type::object((size + requested - 1) / requested * requested, log2);
 	}
+	// AMD64 psABI 3.1.2: an array variable of at least 16 bytes gets
+	// at least 16-byte placement alignment. This is a storage fact; its
+	// source type, member layout and alignof remain unchanged.
+	if (lowering_.object_mode() && type->kind == sema::TypeKind::Array && slot_type.bytes >= 16 &&
+		slot_type.align_log2 < 4)
+		slot_type.align_log2 = 4;
 	const char* spelling = variable->name != nullptr ? variable->name->spelling : nullptr;
 	Place place = Place();
 	if (variable == returned_local_)

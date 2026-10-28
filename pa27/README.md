@@ -177,6 +177,8 @@ The checked-in PA27 tests cover:
   `-O0` and `-Og -g` preserve named source storage for debugging; optimized
   builds can report unavailable variables as optimized out.
 - hosted `main(argc, argv)` behavior through the host CRT
+- at least 16-byte placement of local array variables spanning 16 bytes or
+  more, as the AMD64 psABI requires, while preserving the source type alignment
 - host linking across multiple `cppgm++`-generated objects
 - host linking against host-built objects
 - host linking against static archives and shared libraries

@@ -1,0 +1,9 @@
+extern "C" int host_alignment(const void*, int);
+template<int N> int check() {
+ volatile long pad=1;
+ char data[N];
+ static_assert(alignof(decltype(data))==1,"array type alignment stays natural");
+ int result=host_alignment(data,N);
+ return result+(pad!=1);
+}
+int main(){return check<1>()+check<8>()+check<15>()+check<16>()+check<17>()+check<31>()+check<32>()+check<1024>();}
