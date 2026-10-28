@@ -1,0 +1,1 @@
+-O0 -g -funsigned-char -fno-signed-char -fsigned-char -fno-unsigned-char -DEXPECT_UNSIGNED=0

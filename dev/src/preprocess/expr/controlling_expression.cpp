@@ -41,9 +41,9 @@ bool IsPunctuator(const PPToken& pp, char c)
 } // namespace
 
 ControllingExpressionEvaluator::ControllingExpressionEvaluator(
-	const MacroDefinitionQuery& macros, NumberDialect literals)
-	: macros_(macros), literals_(literals), tokens_(nullptr), token_(), at_line_end_(false), end_of_file_(false),
-	  failed_(false), unevaluated_(0)
+	const MacroDefinitionQuery& macros, NumberDialect literals, bool plain_char_unsigned)
+	: macros_(macros), literals_(literals), plain_char_unsigned_(plain_char_unsigned), tokens_(nullptr), token_(),
+	  at_line_end_(false), end_of_file_(false), failed_(false), unevaluated_(0)
 {}
 
 ControllingExpressionResult ControllingExpressionEvaluator::evaluate(PPTokenCursor& tokens)
@@ -241,11 +241,12 @@ void ControllingExpressionEvaluator::classify_character(const PPToken& pp)
 		return;
 	token_.kind = TokenClass::Operand;
 	uint64_t bits = character.code_point;
-	// GNU numeric byte escapes have the target ABI's signed char value,
-	// promoted to intmax_t in a controlling expression.
-	if (character.type == FundamentalType::Char && bits >= 0x80)
+	// Plain char's representation decides its intmax_t/uintmax_t value,
+	// including GNU numeric byte escapes above the signed-char range.
+	const bool unsigned_char = character.type == FundamentalType::Char && plain_char_unsigned_;
+	if (character.type == FundamentalType::Char && !unsigned_char && bits >= 0x80)
 		bits |= ~static_cast<uint64_t>(0xFF);
-	token_.value = PPValue{ bits, IsUnsignedLiteralType(character.type) };
+	token_.value = PPValue{ bits, unsigned_char || IsUnsignedLiteralType(character.type) };
 }
 
 // `defined identifier` or `defined ( identifier )` (16.1p1); the identifier

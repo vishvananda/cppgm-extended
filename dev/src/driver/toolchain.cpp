@@ -165,10 +165,10 @@ void check_target(const std::string& target)
 // harmless).
 bool refused_flag(const std::string& arg)
 {
-	static const char* const kRefused[] = { "-funsigned-char", "-fno-signed-char", "-fshort-wchar", "-fshort-enums",
-		"-fpack-struct", "-funsigned-bitfields", "-fno-signed-bitfields", "-fno-elide-constructors", "-ffreestanding",
-		"-fno-hosted", "-m32", "-mx32", "-m16", "-mlong-double-64", "-mlong-double-128", "-msoft-float", "-mno-sse",
-		"-mno-sse2", "-mno-80387", "-mno-fp-ret-in-387", "-mfpmath=387" };
+	static const char* const kRefused[] = { "-fshort-wchar", "-fshort-enums", "-fpack-struct", "-funsigned-bitfields",
+		"-fno-signed-bitfields", "-fno-elide-constructors", "-ffreestanding", "-fno-hosted", "-m32", "-mx32", "-m16",
+		"-mlong-double-64", "-mlong-double-128", "-msoft-float", "-mno-sse", "-mno-sse2", "-mno-80387",
+		"-mno-fp-ret-in-387", "-mfpmath=387" };
 	for (const char* refused : kRefused)
 	{
 		if (arg == refused)
@@ -307,6 +307,9 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 			invocation.preprocessor.modes.exceptions = arg == "-fexceptions";
 		else if (arg == "-fno-rtti" || arg == "-frtti")
 			invocation.preprocessor.modes.rtti = arg == "-frtti";
+		else if (arg == "-funsigned-char" || arg == "-fno-signed-char" || arg == "-fsigned-char" ||
+			arg == "-fno-unsigned-char")
+			invocation.preprocessor.plain_char_unsigned = arg == "-funsigned-char" || arg == "-fno-signed-char";
 		else if (arg == "-Wno-narrowing" || arg == "-Wnarrowing" || arg == "-Werror=narrowing")
 			invocation.ignore_narrowing = arg == "-Wno-narrowing";
 		else if (arg == "--stats")
@@ -510,7 +513,7 @@ bool compile_unit(
 				std::cerr << "ERROR: " << unit.error() << std::endl;
 				return false;
 			}
-			sema::SemanticGraph graph;
+			sema::SemanticGraph graph(invocation.preprocessor.plain_char_unsigned);
 			graph.names.reserve(unit.counters().bindings);
 			sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
 			analyzer.set_hosted(invocation.preprocessor.hosted);

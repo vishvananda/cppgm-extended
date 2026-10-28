@@ -1267,6 +1267,7 @@ lowir::Type ProgramLowering::storage_type(const sema::Type* type)
 		case FundamentalType::UnsignedChar:
 			return Type::scalar(TypeKind::U8);
 		case FundamentalType::Char:
+			return Type::scalar(type->plain_char_unsigned ? TypeKind::U8 : TypeKind::I8);
 		case FundamentalType::SignedChar:
 			return Type::scalar(TypeKind::I8);
 		case FundamentalType::ShortInt:

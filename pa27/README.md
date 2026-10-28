@@ -21,6 +21,12 @@ and writes the resulting names into real object files:
   to non-local data definitions, including vague-linkage definitions, use the
   GOT so a shared library links and observes interposed definitions.
   `-fno-PIC` / `-fno-pic` restore ordinary defined-data access; the last option wins.
+- `-funsigned-char` / `-fno-signed-char` select unsigned plain `char`;
+  `-fsigned-char` / `-fno-unsigned-char` restore signed plain `char`. The last
+  option wins. Plain `char` remains distinct from both explicitly signed
+  character types, including at the host object boundary. Preprocessing
+  character values, `__CHAR_UNSIGNED__`, constants and debug types follow
+  the selected representation.
 
 The PA27 harness does not normally use `cppgm++` as the final linker. It runs:
 

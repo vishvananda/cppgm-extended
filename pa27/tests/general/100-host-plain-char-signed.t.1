@@ -1,0 +1,56 @@
+#ifndef EXPECT_UNSIGNED
+#define EXPECT_UNSIGNED 0
+#endif
+#if EXPECT_UNSIGNED
+#ifndef __CHAR_UNSIGNED__
+#error missing target macro
+#endif
+#if !('\xff' < -1) || !('\xff' - 256 > 0) || !('a' < -1)
+#error unsigned preprocessing character values
+#endif
+#else
+#ifdef __CHAR_UNSIGNED__
+#error signed target macro
+#endif
+#if '\xff' != -1 || 'a' < -1
+#error signed preprocessing character values
+#endif
+#endif
+template<class A, class B> struct Same { static const bool value = false; };
+template<class A> struct Same<A, A> { static const bool value = true; };
+static_assert(!Same<char, signed char>::value, "distinct signed char");
+static_assert(!Same<char, unsigned char>::value, "distinct unsigned char");
+static_assert(Same<decltype('\xff'), char>::value, "literal type");
+static_assert(Same<decltype(+char()), int>::value, "integral promotion");
+static_assert(char(-1) == (EXPECT_UNSIGNED ? 255 : -1), "conversion");
+static_assert('\xff' == (EXPECT_UNSIGNED ? 255 : -1), "literal value");
+static_assert((signed char)(-1) < 0, "explicit signed char");
+static_assert((unsigned char)(-1) == 255, "explicit unsigned char");
+constexpr char bytes[] = "\xff";
+static_assert(bytes[0] == (EXPECT_UNSIGNED ? 255 : -1), "string element");
+template<char V> struct Byte { static const int value = V; };
+static_assert(Byte<'\xff'>::value == (EXPECT_UNSIGNED ? 255 : -1), "template argument");
+template<class T> constexpr auto literal_key(T) -> Byte<'\xff'> { return {}; }
+static_assert(literal_key(0).value == (EXPECT_UNSIGNED ? 255 : -1), "dependent literal key");
+struct Bits { char c : 8; unsigned char u : 8; signed char s : 8; };
+char identity(char c) { return c; }
+int select(char) { return 1; }
+int select(signed char) { return 2; }
+int select(unsigned char) { return 3; }
+int host_byte(char);
+char host_identity(char);
+int host_callback(char (*)(char));
+extern "C" int printf(const char*, ...);
+int main() {
+  volatile char value = '\xff';
+  const char copy = identity(value);
+  Bits bits = { '\xff', 255, -1 };
+  if (copy != (EXPECT_UNSIGNED ? 255 : -1) || bits.c != copy || bits.u != 255 || bits.s != -1) return 1;
+  if (select(value) != 1 || select((signed char)value) != 2 || select((unsigned char)value) != 3) return 2;
+  if (value + 1 != (EXPECT_UNSIGNED ? 256 : 0) || (value >> 1) != (EXPECT_UNSIGNED ? 127 : -1)) return 3;
+  if ((value < 0) == bool(EXPECT_UNSIGNED)) return 4;
+  if (host_byte(value) != 255 || host_identity(value) != copy || host_callback(identity) != 255) return 5;
+  char array[2] = { value, 0 };
+  printf("%d %d %d\n", value, array[0], identity(value));
+  return 0;
+}

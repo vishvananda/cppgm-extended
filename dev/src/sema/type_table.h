@@ -20,7 +20,7 @@ namespace sema {
 class TypeTable
 {
 public:
-	explicit TypeTable(Arena& arena);
+	explicit TypeTable(Arena& arena, bool plain_char_unsigned = false);
 
 	const Type* fundamental(FundamentalType type) const { return fundamentals_[static_cast<unsigned>(type)]; }
 	// (Adding no qualifier it lacks is the type itself, without a call.)

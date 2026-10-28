@@ -103,7 +103,10 @@ bool IntegralKindOf(const Type* type, IntegralKind& kind)
 			return false;
 		type = entity->underlying;
 	}
-	return type->kind == TypeKind::Fundamental && FundamentalKind(type->fundamental, kind);
+	if (type->kind != TypeKind::Fundamental || !FundamentalKind(type->fundamental, kind))
+		return false;
+	kind.is_signed = kind.is_signed && !type->plain_char_unsigned;
+	return true;
 }
 
 bool IsIntegralType(const Type* type)

@@ -45,6 +45,8 @@ std::string PredefinedText(const PreprocessorOptions& options)
 	text += "\n#define __TIME__ ";
 	AppendQuoted(text, options.time);
 	text += "\n";
+	if (options.plain_char_unsigned)
+		text += "#define __CHAR_UNSIGNED__ 1\n";
 	return text;
 }
 
@@ -86,7 +88,7 @@ bool Preprocessor::MacroQuery::is_defined(const char* spelling, uint32_t length)
 Preprocessor::Preprocessor(const PreprocessorOptions& options, const std::string& path)
 	: identifiers_(arena_), names_(identifiers_), source_(files_, identifiers_, arena_, names_, *this),
 	  expander_(arena_, identifiers_, names_, *this, macro_state_), directive_expander_(&expander_),
-	  macro_query_(identifiers_), evaluator_(macro_query_, options.literals),
+	  macro_query_(identifiers_), evaluator_(macro_query_, options.literals, options.plain_char_unsigned),
 	  definition_parser_(arena_, names_.va_args, options.hosted), predefined_(nullptr), command_line_begin_(0),
 	  command_line_end_(0), host_predefines_begin_(0), host_predefines_end_(0), builtin_begin_(0), builtin_end_(0),
 	  hosted_(options.hosted), modes_(options.modes), directives_(0), skipped_directives_(0), includes_(0),

@@ -197,6 +197,7 @@ struct SourceOutputInvocation
 	// always preprocesses so; its object dialect is the object half's, see
 	// run_emit_lowir_mode). `-I`, `-D` and `-U` as the driver takes them.
 	bool hosted = false;
+	bool plain_char_unsigned = false;
 	vector<string> include_paths;
 	string command_line;
 	// --emit-lowir -O<n>: the optimizer's level and limits.
@@ -258,6 +259,12 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 		if (args[i] == "--hosted")
 		{
 			invocation.hosted = true;
+			continue;
+		}
+		if (args[i] == "-funsigned-char" || args[i] == "-fno-signed-char" || args[i] == "-fsigned-char" ||
+			args[i] == "-fno-unsigned-char")
+		{
+			invocation.plain_char_unsigned = args[i] == "-funsigned-char" || args[i] == "-fno-signed-char";
 			continue;
 		}
 		const size_t option = i;
@@ -552,6 +559,7 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 	PreprocessorOptions options = source_preprocessor_options();
 	options.include_paths = invocation.include_paths;
 	options.command_line = invocation.command_line;
+	options.plain_char_unsigned = invocation.plain_char_unsigned;
 	if (invocation.hosted)
 		driver::add_host_environment(options, false);
 	return options;
@@ -697,7 +705,7 @@ int run_emit_types_mode(vector<string> args)
 			}
 			const double parse_ms = milliseconds_since(parse_start);
 			const chrono::steady_clock::time_point analyze_start = chrono::steady_clock::now();
-			sema::SemanticGraph graph;
+			sema::SemanticGraph graph(options.plain_char_unsigned);
 			// The parser's name bindings estimate the unit's (scope, name) pairs.
 			graph.names.reserve(unit.counters().bindings);
 			try
@@ -778,7 +786,7 @@ int run_emit_semantics_mode(vector<string> args)
 			}
 			const double parse_ms = milliseconds_since(parse_start);
 			const chrono::steady_clock::time_point analyze_start = chrono::steady_clock::now();
-			sema::SemanticGraph graph;
+			sema::SemanticGraph graph(options.plain_char_unsigned);
 			graph.names.reserve(unit.counters().bindings);
 			try
 			{
@@ -920,7 +928,7 @@ int run_emit_lowir_mode(vector<string> args)
 				cerr << "ERROR: " << unit.error() << endl;
 				return EXIT_FAILURE;
 			}
-			sema::SemanticGraph graph;
+			sema::SemanticGraph graph(options.plain_char_unsigned);
 			graph.names.reserve(unit.counters().bindings);
 			sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
 			analyzer.set_hosted(options.hosted);

@@ -14,7 +14,7 @@ namespace {
 bool OwnMacro(const char* name, size_t length)
 {
 	static const char* const kOwn[] = { "__cplusplus", "__STDC_HOSTED__", "__DATE__", "__TIME__", "__FILE__",
-		"__LINE__", "__CPPGM__", "__CPPGM_AUTHOR__", "__STDC__" };
+		"__LINE__", "__CPPGM__", "__CPPGM_AUTHOR__", "__STDC__", "__CHAR_UNSIGNED__" };
 	for (const char* own : kOwn)
 	{
 		if (std::strlen(own) == length && std::memcmp(own, name, length) == 0)

@@ -28,12 +28,13 @@ Type Key(TypeKind kind)
 
 } // namespace
 
-TypeTable::TypeTable(Arena& arena) : arena_(arena), slots_(256), count_(0)
+TypeTable::TypeTable(Arena& arena, bool plain_char_unsigned) : arena_(arena), slots_(256), count_(0)
 {
 	for (unsigned i = 0; i < kFundamentalTypeCount; ++i)
 	{
 		Type key = Key(TypeKind::Fundamental);
 		key.fundamental = static_cast<FundamentalType>(i);
+		key.plain_char_unsigned = plain_char_unsigned && key.fundamental == FundamentalType::Char;
 		fundamentals_[i] = intern(key);
 	}
 }
@@ -45,7 +46,8 @@ uint32_t TypeTable::hash_of(const Type& type)
 	// from the byte stores callers just made building the key.
 	uint64_t wide = static_cast<uint64_t>(type.kind) | static_cast<uint64_t>(type.cv) << 9 |
 		static_cast<uint64_t>(type.function_cv) << 18 | static_cast<uint64_t>(type.ref) << 27 |
-		static_cast<uint64_t>(type.variadic) << 36 | static_cast<uint64_t>(type.fundamental) << 45;
+		static_cast<uint64_t>(type.variadic) << 36 | static_cast<uint64_t>(type.fundamental) << 45 |
+		static_cast<uint64_t>(type.plain_char_unsigned) << 54;
 	wide = Mix(wide, type.bound);
 	wide = Mix(wide, Bits(type.element));
 	wide = Mix(wide, Bits(type.owner));
@@ -64,8 +66,9 @@ uint32_t TypeTable::hash_of(const Type& type)
 bool TypeTable::same(const Type& a, const Type& b)
 {
 	if (a.kind != b.kind || a.cv != b.cv || a.function_cv != b.function_cv || a.ref != b.ref ||
-		a.variadic != b.variadic || a.fundamental != b.fundamental || a.bound != b.bound || a.element != b.element ||
-		a.owner != b.owner || a.entity != b.entity || a.param_count != b.param_count)
+		a.variadic != b.variadic || a.fundamental != b.fundamental || a.plain_char_unsigned != b.plain_char_unsigned ||
+		a.bound != b.bound || a.element != b.element || a.owner != b.owner || a.entity != b.entity ||
+		a.param_count != b.param_count)
 		return false;
 	for (uint32_t i = 0; i < a.param_count; ++i)
 	{

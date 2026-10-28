@@ -56,8 +56,8 @@ class ControllingExpressionEvaluator
 {
 public:
 	// `literals`: the integer literal forms read (see ClassifyNumber).
-	explicit ControllingExpressionEvaluator(
-		const MacroDefinitionQuery& macros, NumberDialect literals = NumberDialect::Cxx11);
+	explicit ControllingExpressionEvaluator(const MacroDefinitionQuery& macros,
+		NumberDialect literals = NumberDialect::Cxx11, bool plain_char_unsigned = false);
 
 	// Evaluates the pp-tokens from `tokens` up to and including the next
 	// new-line or end-of-file. Propagates the cursor's exceptions.
@@ -125,6 +125,7 @@ private:
 
 	const MacroDefinitionQuery& macros_;
 	NumberDialect literals_;
+	bool plain_char_unsigned_;
 	PPTokenCursor* tokens_;
 	Token token_;
 	// The new-line or end-of-file ending the expression has been read.

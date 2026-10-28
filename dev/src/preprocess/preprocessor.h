@@ -42,6 +42,9 @@ struct PreprocessorOptions
 	// The literal forms read (see ClassifyNumber): the compiler's GCC
 	// dialect, or C++11's alone (the standalone PA2-PA4 tools).
 	NumberDialect literals = NumberDialect::Cxx11;
+	// The target's plain-char representation (-funsigned-char); distinct
+	// from the explicitly signed and unsigned character types.
+	bool plain_char_unsigned = false;
 	std::vector<std::string> system_include_paths;
 	std::string host_predefines;
 	// The builtin declarations a hosted translation unit is compiled with

@@ -123,9 +123,10 @@ uint32_t DebugInfo::type(const sema::Type* source)
 				: fundamental == FundamentalType::NullptrT            ? lowir::DebugEncoding::Address
 				: sema::IsSignedConstant(sema::Constant{ 0, source }) ? lowir::DebugEncoding::Signed
 																	  : lowir::DebugEncoding::Unsigned;
-			if (fundamental == FundamentalType::Char || fundamental == FundamentalType::SignedChar)
+			if ((fundamental == FundamentalType::Char && !source->plain_char_unsigned) ||
+				fundamental == FundamentalType::SignedChar)
 				record.encoding = lowir::DebugEncoding::SignedChar;
-			if (fundamental == FundamentalType::UnsignedChar)
+			if (fundamental == FundamentalType::UnsignedChar || source->plain_char_unsigned)
 				record.encoding = lowir::DebugEncoding::UnsignedChar;
 			if (fundamental == FundamentalType::Void)
 				record.kind = lowir::DebugKind::Unspecified;

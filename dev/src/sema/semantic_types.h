@@ -116,6 +116,9 @@ struct Type
 	// Function: the parameter list ends with `...`.
 	bool variadic;
 	FundamentalType fundamental;
+	// Plain char keeps its own identity when -funsigned-char selects its
+	// unsigned representation. Fixed when the type table is constructed.
+	bool plain_char_unsigned;
 	// A compound type's dependence on a template parameter, once computed
 	// (0 unknown, 1 no, 2 yes; see Analyzer::dependent_type): a property of
 	// its components, fixed once they exist.

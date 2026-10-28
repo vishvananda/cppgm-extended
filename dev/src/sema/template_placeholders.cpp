@@ -555,7 +555,10 @@ bool Analyzer::decltype_words(const syntax::Expr* expr, Scope* scope)
 		const bool typed = LiteralValue(spelling, type, bits, integral);
 		if (typed && integral)
 		{
-			ConstantWords(words, Constant{ bits, types_.fundamental(type) });
+			const Type* literal_type = types_.fundamental(type);
+			if (literal_type->plain_char_unsigned)
+				bits &= 0xFF;
+			ConstantWords(words, Constant{ bits, literal_type });
 			return true;
 		}
 		words.push_back(Word(kWordLiteral, spelling.length));
