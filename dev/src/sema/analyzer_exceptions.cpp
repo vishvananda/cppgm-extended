@@ -355,6 +355,12 @@ bool Analyzer::nothrow_target(const syntax::Expr& callee)
 		(static_cast<const syntax::BinaryExpr*>(e)->op == TokenKind::OP_DOTSTAR ||
 			static_cast<const syntax::BinaryExpr*>(e)->op == TokenKind::OP_ARROWSTAR))
 		e = WithoutParentheses(static_cast<const syntax::BinaryExpr*>(e)->right);
+	// A direct member-function address retains that declaration's exception
+	// specification (5.3.7p3), unlike an ordinary pointer variable or cast.
+	if (e->kind == syntax::ExprKind::Unary && static_cast<const syntax::UnaryExpr*>(e)->op == TokenKind::OP_AMP &&
+		e->facts != nullptr && (e->facts->flags & kOperatorCall) == 0 && e->facts->entity != nullptr &&
+		e->facts->entity->kind == EntityKind::Function)
+		return function_nothrow(static_cast<const FunctionEntity*>(e->facts->entity));
 	return e->facts != nullptr && e->facts->entity != nullptr &&
 		nothrow_targets_.find(e->facts->entity) != PointerMap::kMissing;
 }
