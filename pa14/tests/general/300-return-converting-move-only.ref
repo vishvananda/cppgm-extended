@@ -1,0 +1,133 @@
+function @local(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [binding=strong, object=_Z5localv] {
+  slot $value : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $value
+    call void @Value__Value(%t1, 42)
+    %t2 = addr $value
+    call void @Box_Value___Box__ov2(%ret, %t2)
+    return void
+}
+function @parameter(%ret : ptr [pass=indirect_result, object_bytes=4], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z9parameter5Value] {
+  slot $value : obj<4x4>
+
+  block ^entry:
+    call void @Box_Value___Box__ov2(%ret, %value)
+    return void
+}
+function @parenthesized(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [binding=strong, object=_Z13parenthesizedv] {
+  slot $value : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $value
+    call void @Value__Value(%t1, 43)
+    %t2 = addr $value
+    call void @Box_Value___Box__ov2(%ret, %t2)
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lor__1 : i64
+  slot $tmpobj__2 : obj<4x4>
+  slot $tmpobj__3 : obj<4x4>
+  slot $arg__4 : obj<4x4>
+  slot $lor__5 : i64
+  slot $tmpobj__6 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $tmpobj__2
+    call void @local(%t1)
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = cmp ne i32 %t4, 42
+    branch %t5, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t6 = addr $tmpobj__3
+    %t7 = addr $arg__4
+    call void @Value__Value(%t7, 44)
+    call void @parameter(%t6, %t7)
+    %t8 = index i8 [projection=field] %t6, 0
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load typed i32 %t9
+    %t11 = cmp ne i32 %t10, 44
+    %t12 = cmp ne i64 %t11, 0
+    store typed i64 %t12, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t13 = load typed i64 $lor__1
+    branch %t13, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t14 = addr $tmpobj__6
+    call void @parenthesized(%t14)
+    %t15 = index i8 [projection=field] %t14, 0
+    %t16 = index i8 [projection=field] %t15, 0
+    %t17 = load typed i32 %t16
+    %t18 = cmp ne i32 %t17, 43
+    %t19 = cmp ne i64 %t18, 0
+    store typed i64 %t19, $lor__5
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__5
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t20 = load typed i64 $lor__5
+    %t21 = convert trunc i32 i64 %t20
+    return i32 %t21
+}
+function @Value__Value(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN5ValueC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $v : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    return void
+}
+function @Box_Value___Box__ov2(%this : ptr [object_bytes=4], %v : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN3BoxI5ValueEC1EOS0_, inline_hint=yes] {
+  slot $this : ptr
+  slot $v : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %v, $v
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed ptr $v
+    call void @Value__Value__ov3(%t2, %t3)
+    return void
+}
+function @Value__Value__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN5ValueC1EOS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store typed i32 %t3, %t5
+    %t6 = unary neg i32 1
+    %t7 = load typed ptr $other
+    %t8 = index i8 [projection=field] %t7, 0
+    store typed i32 %t6, %t8
+    return void
+}
+alias object _ZN5ValueC2Ei = @Value__Value
+alias object _ZN3BoxI5ValueEC2EOS0_ = @Box_Value___Box__ov2
+alias object _ZN5ValueC2EOS_ = @Value__Value__ov3

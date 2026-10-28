@@ -982,7 +982,11 @@ void Analyzer::return_statement(const syntax::ValueStmt& stmt, Scope* scope)
 		expression_scope_ = scope;
 		if (!same_class_source(cls, *stmt.value))
 		{
-			convert(*stmt.value, result, false);
+			// CWG 1579: an eligible local can initialize a different result
+			// class through its converting constructor. Keep the selected
+			// typed conversion; successful rvalue selection is not repeated.
+			if (!names_automatic_object(*stmt.value) || !move_return_conversion(*stmt.value, result))
+				convert(*stmt.value, result, false);
 			return;
 		}
 		// 12.8p32: a non-volatile automatic object (or parameter) named
@@ -999,6 +1003,27 @@ void Analyzer::return_statement(const syntax::ValueStmt& stmt, Scope* scope)
 		return;
 	}
 	convert(*stmt.value, result, false);
+}
+
+bool Analyzer::move_return_conversion(const syntax::Expr& source, const Type* result)
+{
+	ExprFacts* facts = facts_of(source);
+	ExprFacts view = *facts;
+	view.category = ValueCategory::XValue;
+	Conversion conversion = Conversion();
+	if (!user_conversion(&view, result, conversion, false))
+		return false;
+	const FunctionEntity* selected = conversion.constructor;
+	if (selected == nullptr || !selected->constructor || selected->type->canonical->param_count == 0)
+		return false;
+	const Type* parameter = selected->type->canonical->params[0];
+	if (parameter->kind != TypeKind::RValueReference || parameter->element->unqualified != facts->type->unqualified)
+		return false;
+	const ValueCategory category = facts->category;
+	facts->category = ValueCategory::XValue;
+	finish_conversion(source, conversion, false);
+	facts->category = category;
+	return true;
 }
 
 bool Analyzer::names_automatic_object(const syntax::Expr& expr) const

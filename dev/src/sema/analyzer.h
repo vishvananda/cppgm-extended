@@ -1161,6 +1161,8 @@ private:
 	void return_statement(const syntax::ValueStmt& stmt, Scope* scope);
 	bool names_automatic_object(const syntax::Expr& expr) const;
 	bool moves_from(ClassEntity* entity, const syntax::Expr& source);
+	bool move_return_conversion(const syntax::Expr& source, const Type* result);
+	const Conversion* finish_conversion(const syntax::Expr& expr, Conversion& conversion, bool operand);
 	void label_statement(const syntax::LabeledStmt& stmt, Scope* scope);
 	void check_gotos(const BodyContext& body);
 	bool bypasses_initialization(const PendingGoto& jump, const PendingLabel& label);

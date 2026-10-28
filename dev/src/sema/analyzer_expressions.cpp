@@ -1041,6 +1041,12 @@ const Conversion* Analyzer::convert(const syntax::Expr& expr, const Type* target
 		substitution_error(expr.location, "invalid implicit conversion");
 		return nullptr;
 	}
+	return finish_conversion(expr, conversion, operand);
+}
+
+const Conversion* Analyzer::finish_conversion(const syntax::Expr& expr, Conversion& conversion, bool operand)
+{
+	ExprFacts* facts = facts_of(expr);
 	conversion.initialization = !operand;
 	// 8.5.3p5: only a const (non-volatile) lvalue reference binds a
 	// bit-field, to a temporary copy of its value.

@@ -9,6 +9,8 @@ paths:
 - copy construction/assignment and the common move-construction/move-assignment cases
   needed by those same value paths
 - pass-by-value and return-by-value of class objects
+- implicit move of eligible named locals and value parameters through converting
+  constructors of a different result class (CWG 1579)
 - temporary materialization in the common call/return/initialization paths
 - delegating constructors
 - out-of-class constructor and destructor definitions
