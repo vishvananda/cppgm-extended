@@ -346,34 +346,70 @@ uint32_t Analyzer::access_chain(const ClassEntity* top, const ClassEntity* decla
 	return ChainMember(top, cls, path, declared, access) ? static_cast<uint32_t>(access) : kNoAccess;
 }
 
-const ClassEntity* Analyzer::derived_context(
-	const ClassEntity* naming, const ClassEntity* declaring, Access declared, const Scope* scope)
+const ClassEntity* Analyzer::derived_context(const ClassEntity* naming, const ClassEntity* declaring, Access declared,
+	const Scope* scope, const ClassEntity* object, const ClassEntity** via, bool public_path, bool& object_context)
 {
 	// 11.2p5: a class P derived from the naming class whose member or
 	// friend the point is, the member being a member of P (the query's
 	// member: its bases' accesses in member_paths_).
+	object_context = object == nullptr ||
+		(declaration_class_ != nullptr && scope != nullptr && scope->kind == ScopeKind::Namespace);
+	// A public chain allows a privilege in any class below to be used at
+	// once. A restricted chain still needs its individual base accesses.
+	public_path = public_path && object != nullptr;
+	auto permits = [&](const ClassEntity* candidate) {
+		if (candidate == nullptr)
+			return false;
+		const bool derived = public_path || conversions_.is_base_of(naming, candidate);
+		if (!derived && object == nullptr)
+			return false;
+		Access access = Access::Public;
+		if (!access_walk(candidate, declaring, declared, access, member_paths_) ||
+			!access_object(candidate, object, derived ? via : nullptr))
+			return false;
+		object_context = true;
+		return derived;
+	};
 	for (const Scope* s = scope; s != nullptr; s = s->parent)
 	{
 		const ClassList* candidates[2];
 		const ClassEntity* direct = Befriending(s, candidates);
-		Access access = Access::Public;
-		if (direct != nullptr && conversions_.is_base_of(naming, direct) &&
-			access_walk(direct, declaring, declared, access, member_paths_))
+		if (permits(direct))
 			return direct;
 		for (const ClassList* list : candidates)
 		{
 			for (const ClassList* node = list; node != nullptr; node = node->next)
 			{
-				if (conversions_.is_base_of(naming, node->entity) &&
-					access_walk(node->entity, declaring, declared, access, member_paths_))
+				if (permits(node->entity))
 					return node->entity;
 			}
+		}
+		// A member instance's pattern has a separate friendship path in
+		// member_or_friend_of; retain the full walk when it could apply.
+		if (object != nullptr && s->kind == ScopeKind::Function && s->entity != nullptr &&
+			s->entity->kind == EntityKind::Function)
+		{
+			const FunctionEntity* pattern = PatternOf(static_cast<const FunctionEntity*>(s->entity));
+			if (pattern != nullptr && pattern->befriending != nullptr)
+				object_context = true;
 		}
 	}
 	return nullptr;
 }
 
-bool Analyzer::base_accessible(const ClassEntity* derived, const BaseClass* base, const Scope* scope)
+bool Analyzer::access_object(const ClassEntity* privilege, const ClassEntity* object, const ClassEntity** via)
+{
+	// 11.4: try another privilege or base path when this derived-class
+	// privilege cannot access a non-static member through the object.
+	if (object == nullptr || object == privilege || conversions_.is_base_of(privilege, object))
+		return true;
+	if (via != nullptr)
+		*via = privilege;
+	return false;
+}
+
+bool Analyzer::base_accessible(const ClassEntity* derived, const BaseClass* base, const Scope* scope,
+	const ClassEntity* object, const ClassEntity** via)
 {
 	// 11.2p4: an invented public member of the base would be a public
 	// member of the derived class N, or the point is in a member or friend
@@ -388,13 +424,15 @@ bool Analyzer::base_accessible(const ClassEntity* derived, const BaseClass* base
 	{
 		const ClassList* befriending[2];
 		const ClassEntity* cls = Befriending(s, befriending);
-		if (cls != nullptr && access_as_member(cls, derived, Access::Protected, access))
+		if (cls != nullptr && access_as_member(cls, derived, Access::Protected, access) &&
+			access_object(cls, object, via))
 			return true;
 		for (const ClassList* list : befriending)
 		{
 			for (const ClassList* node = list; node != nullptr; node = node->next)
 			{
-				if (access_as_member(node->entity, derived, Access::Protected, access))
+				if (access_as_member(node->entity, derived, Access::Protected, access) &&
+					access_object(node->entity, object, via))
 					return true;
 			}
 		}
@@ -403,7 +441,7 @@ bool Analyzer::base_accessible(const ClassEntity* derived, const BaseClass* base
 }
 
 bool Analyzer::accessible(const ClassEntity* naming, const ClassEntity* declaring, Access declared, const Scope* scope,
-	const ClassEntity** via, uint32_t location)
+	const ClassEntity** via, uint32_t location, const ClassEntity* object)
 {
 	// One query: its member's accesses as a member of the classes below
 	// and the classes bullet 4 found no access through are kept until the
@@ -413,11 +451,11 @@ bool Analyzer::accessible(const ClassEntity* naming, const ClassEntity* declarin
 	access_unreached_.clear();
 	base_leads_.clear();
 	base_leads_target_ = declaring;
-	return accessible_below(naming, declaring, declared, scope, via);
+	return accessible_below(naming, declaring, declared, scope, via, object);
 }
 
 bool Analyzer::accessible_below(const ClassEntity* naming, const ClassEntity* declaring, Access declared,
-	const Scope* scope, const ClassEntity** via)
+	const Scope* scope, const ClassEntity** via, const ClassEntity* object)
 {
 	// 11.2p5 down the base path from the naming class: the member's access
 	// as a member of each class on it (p1) decides bullets 1-3 there;
@@ -460,16 +498,22 @@ bool Analyzer::accessible_below(const ClassEntity* naming, const ClassEntity* de
 			return true;
 		if (member && access == Access::Protected)
 		{
-			if (const ClassEntity* derived = derived_context(cls, declaring, declared, scope))
+			bool object_context = false;
+			if (const ClassEntity* derived = derived_context(cls, declaring, declared, scope, object, via,
+					bottom == declaring && deepest_restricted == 0, object_context))
 			{
 				if (via != nullptr)
 					*via = derived;
 				return true;
 			}
+			// Without any privilege compatible with this object, searching
+			// more bases would only repeat the same unsuccessful scope walk.
+			if (!object_context)
+				return false;
 		}
 		if (level == edges)
 			break;
-		if (!base_accessible(cls, cls->bases, scope))
+		if (!base_accessible(cls, cls->bases, scope, object, via))
 			return false;
 		cls = static_cast<const ClassEntity*>(cls->bases->base);
 	}
@@ -485,10 +529,10 @@ bool Analyzer::accessible_below(const ClassEntity* naming, const ClassEntity* de
 			(access_blocked(inner, declaring) || access_unreached_.find(inner) != PointerMap::kMissing ||
 				!leads_to_base(inner, declaring)))
 			continue;
-		if (!base_accessible(bottom, base, scope))
+		if (!base_accessible(bottom, base, scope, object, via))
 			continue;
 		check_stack(access_location_);
-		if (accessible_below(inner, declaring, declared, scope, via))
+		if (accessible_below(inner, declaring, declared, scope, via, object))
 			return true;
 		if (inner != declaring)
 			access_unreached_.set(inner, 1);
@@ -496,8 +540,8 @@ bool Analyzer::accessible_below(const ClassEntity* naming, const ClassEntity* de
 	return false;
 }
 
-bool Analyzer::accessible_declarations(
-	const Binding* binding, const ClassEntity* naming, const Scope* scope, const ClassEntity** via, uint32_t location)
+bool Analyzer::accessible_declarations(const Binding* binding, const ClassEntity* naming, const Scope* scope,
+	const ClassEntity** via, uint32_t location, const ClassEntity* object)
 {
 	// A member of a name some using-declaration introduces a member of:
 	// the lookup in the naming class finds, on each path down from it, the
@@ -509,11 +553,11 @@ bool Analyzer::accessible_declarations(
 	// through another's class ending there (access_blocked).
 	const ClassEntity* home = static_cast<const ClassEntity*>(binding->declared_in->entity);
 	if (naming->scope == nullptr)
-		return accessible(naming, home, binding->access, scope, via, location);
+		return accessible(naming, home, binding->access, scope, via, location, object);
 	const LookupResult found = names_.qualified(naming->scope, binding->name, LookupFilter::Ordinary);
 	if (found.found() && !found.redeclared &&
 		(found.binding->kind == BindingKind::Function || found.binding->entity == binding->entity))
-		return accessible(naming, home, binding->access, scope, via, location);
+		return accessible(naming, home, binding->access, scope, via, location, object);
 	// The classes declaring the entity: those using-declarations introduce
 	// members into, and its own class (a member of an anonymous class may
 	// be declared in the enclosing one too, 9.5p5: then every class is
@@ -574,13 +618,14 @@ bool Analyzer::accessible_declarations(
 		const bool one = !access_declarations_.empty();
 		const ClassEntity* declaring = one ? access_declarations_[0].first : home;
 		const Access declared = one ? access_declarations_[0].second->access : binding->access;
-		return accessible(naming, declaring, declared, scope, via, location);
+		return accessible(naming, declaring, declared, scope, via, location, object);
 	}
 	bool reached = false;
 	for (size_t i = 0; i < access_declarations_.size() && !reached; ++i)
 	{
 		access_target_ = access_declarations_[i].first;
-		reached = accessible(naming, access_target_, access_declarations_[i].second->access, scope, via, location);
+		reached = accessible(
+			naming, access_target_, access_declarations_[i].second->access, scope, via, location, object);
 	}
 	access_target_ = nullptr;
 	return reached;
@@ -633,20 +678,19 @@ void Analyzer::check_access(
 	// violation is its failure, recorded while the analysis goes on to the
 	// boundary (never deferred to a declaration's end).
 	const ClassEntity* via = nullptr;
+	const ClassEntity* receiver = binding->entity != nullptr && NonStaticMember(binding->entity) ? object : nullptr;
 	const bool reached = binding->entity != nullptr && binding->name != nullptr &&
 			binding->name->id < using_names_.size() && using_names_[binding->name->id]
-		? accessible_declarations(binding, naming, scope, &via, location)
-		: accessible(naming, declaring, binding->access, scope, &via, location);
+		? accessible_declarations(binding, naming, scope, &via, location, receiver)
+		: accessible(naming, declaring, binding->access, scope, &via, location, receiver);
 	if (!reached)
 	{
-		if (soft_substitution_ == 0 && defer_access(binding, naming, object, scope, location))
+		if (via == nullptr && soft_substitution_ == 0 && defer_access(binding, naming, object, scope, location))
 			return;
-		substitution_error(location, "inaccessible member");
+		substitution_error(location,
+			via != nullptr ? "protected member accessed through an object of another class" : "inaccessible member");
 		return;
 	}
-	if (via != nullptr && object != nullptr && binding->entity != nullptr && NonStaticMember(binding->entity) &&
-		object != via && !conversions_.is_base_of(via, object))
-		substitution_error(location, "protected member accessed through an object of another class");
 }
 
 void Analyzer::check_unqualified_access(const Binding* binding, const Scope* scope, uint32_t location)

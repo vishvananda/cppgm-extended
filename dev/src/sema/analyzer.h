@@ -1346,18 +1346,20 @@ private:
 	bool access_walk(
 		const ClassEntity* naming, const ClassEntity* declaring, Access declared, Access& out, PointerMap& paths);
 	uint32_t access_chain(const ClassEntity* top, const ClassEntity* declaring, Access declared);
-	const ClassEntity* derived_context(
-		const ClassEntity* naming, const ClassEntity* declaring, Access declared, const Scope* scope);
-	bool base_accessible(const ClassEntity* derived, const BaseClass* base, const Scope* scope);
+	const ClassEntity* derived_context(const ClassEntity* naming, const ClassEntity* declaring, Access declared,
+		const Scope* scope, const ClassEntity* object, const ClassEntity** via, bool public_path, bool& object_context);
+	bool access_object(const ClassEntity* privilege, const ClassEntity* object, const ClassEntity** via);
+	bool base_accessible(const ClassEntity* derived, const BaseClass* base, const Scope* scope,
+		const ClassEntity* object = nullptr, const ClassEntity** via = nullptr);
 	// 11.2p5 for a member of `declaring` with access `declared` named in
 	// `naming`; `location` is the use's (a hierarchy too deep to search
 	// is an error there).
 	bool accessible(const ClassEntity* naming, const ClassEntity* declaring, Access declared, const Scope* scope,
-		const ClassEntity** via, uint32_t location);
+		const ClassEntity** via, uint32_t location, const ClassEntity* object = nullptr);
 	bool accessible_below(const ClassEntity* naming, const ClassEntity* declaring, Access declared, const Scope* scope,
-		const ClassEntity** via);
+		const ClassEntity** via, const ClassEntity* object);
 	bool accessible_declarations(const Binding* binding, const ClassEntity* naming, const Scope* scope,
-		const ClassEntity** via, uint32_t location);
+		const ClassEntity** via, uint32_t location, const ClassEntity* object);
 	const Binding* member_declaration(const ClassEntity* cls, const Binding* binding) const;
 	bool access_blocked(const ClassEntity* cls, const ClassEntity* declaring) const;
 	// Errors unless the member is accessible at `scope` (11.2, 11.4).

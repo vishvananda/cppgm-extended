@@ -1,0 +1,55 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $object : obj<1x1>
+  slot $lor__1 : i64
+
+  block ^entry:
+    %t1 = addr $object
+    %t2 = addr $object
+    %t3 = call i32 @Friend__get(%t2)
+    %t4 = cmp ne i32 %t3, 7
+    branch %t4, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t5 = addr $object
+    %t6 = call i32 @Friend__Nested__get(%t5)
+    %t7 = cmp ne i32 %t6, 7
+    %t8 = cmp ne i64 %t7, 0
+    store typed i64 %t8, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t9 = load typed i64 $lor__1
+    %t10 = convert trunc i32 i64 %t9
+    return i32 %t10
+}
+function @Friend__get(%object : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN6Friend3getER7Derived, inline_hint=yes] {
+  slot $object : ptr
+
+  block ^entry:
+    store typed ptr %object, $object
+    %t1 = load typed ptr $object
+    %t2 = index i8 %t1, 0
+    %t3 = call i32 @Base__value(%t2)
+    return i32 %t3
+}
+function @Friend__Nested__get(%object : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN6Friend6Nested3getER7Derived, inline_hint=yes] {
+  slot $object : ptr
+
+  block ^entry:
+    store typed ptr %object, $object
+    %t1 = load typed ptr $object
+    %t2 = index i8 %t1, 0
+    %t3 = call i32 @Base__value(%t2)
+    return i32 %t3
+}
+function @Base__value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK4Base5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 7
+}
