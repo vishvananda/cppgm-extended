@@ -7,11 +7,11 @@
 
 namespace lower {
 
-void ProgramLowering::debug_local(
-	lowir::SymbolId function, lowir::SlotId slot, const sema::VariableEntity* variable, uint32_t location)
+void ProgramLowering::debug_local(lowir::SymbolId function, lowir::SlotId slot, const sema::VariableEntity* variable,
+	uint32_t location, uint32_t lexical_scope)
 {
 	if (source_debug_)
-		source_debug_->local(function, slot, variable, location);
+		source_debug_->local(function, slot, variable, location, lexical_scope);
 }
 
 void ProgramLowering::debug_function(const sema::FunctionEntity* function)
@@ -56,16 +56,16 @@ uint32_t DebugInfo::scope(const sema::Scope* owner)
 	return id;
 }
 
-void DebugInfo::local(
-	lowir::SymbolId function, lowir::SlotId slot, const sema::VariableEntity* variable, uint32_t location)
+void DebugInfo::local(lowir::SymbolId function, lowir::SlotId slot, const sema::VariableEntity* variable,
+	uint32_t location, uint32_t lexical_scope)
 {
 	if (slot == lowir::kNoId || variable->name == nullptr)
 		return;
 	const uint32_t id = type(variable->type);
 	if (function >= info_.functions.size())
 		info_.functions.resize(function + 1);
-	info_.functions[function].locals.push_back(
-		lowir::DebugLocal{ slot, id, intern(variable->name->spelling), lowering_.debug_location(location) });
+	info_.functions[function].locals.push_back(lowir::DebugLocal{
+		slot, id, intern(variable->name->spelling), lowering_.debug_location(location), lexical_scope });
 }
 
 uint32_t DebugInfo::type(const sema::Type* source)

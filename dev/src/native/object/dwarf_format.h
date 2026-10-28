@@ -9,6 +9,7 @@ namespace dwarf {
 enum Tag : uint32_t
 {
 	ArrayType = 0x01,
+	LexicalBlock = 0x0b,
 	EnumerationType = 0x04,
 	FormalParameter = 0x05,
 	Member = 0x0d,

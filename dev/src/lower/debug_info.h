@@ -20,7 +20,8 @@ class DebugInfo
 {
 public:
 	explicit DebugInfo(ProgramLowering& lowering);
-	void local(lowir::SymbolId function, lowir::SlotId slot, const sema::VariableEntity* variable, uint32_t location);
+	void local(lowir::SymbolId function, lowir::SlotId slot, const sema::VariableEntity* variable, uint32_t location,
+		uint32_t lexical_scope);
 	uint32_t type(const sema::Type* type);
 	void finish(const sema::Scope* root);
 

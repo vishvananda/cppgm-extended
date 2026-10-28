@@ -69,7 +69,8 @@ public:
 	// unless they have one (an absent one: none).
 	void set_current_location(DebugLocation location)
 	{
-		if (location.file != current_.file || location.line != current_.line || location.column != current_.column)
+		if (location.file != current_.file || location.line != current_.line || location.column != current_.column ||
+			location.scope != current_.scope)
 		{
 			current_ = location;
 			current_index_ = 0;

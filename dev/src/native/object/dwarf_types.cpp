@@ -300,41 +300,21 @@ void DwarfTypes::finish(DwarfBytes& out)
 		out.patch32(reference.offset, offsets_[reference.type]);
 }
 
-void DwarfTypes::locals(DwarfBytes& out, lowir::SymbolId function, const std::vector<DwarfLines::Variable>& variables,
-	uint32_t first, uint32_t count)
+void DwarfTypes::local(DwarfBytes& out, const lowir::DebugLocal& local, const DwarfLines::Variable* variable)
 {
-	if (function >= debug_.functions.size())
-		return;
-	const std::vector<lowir::DebugLocal>& locals = debug_.functions[function].locals;
-	// Dense slot ids are source identities. Do not match a variable by its
-	// display name: shadowing declarations may have identical spellings.
-	uint32_t maximum = 0;
-	for (const lowir::DebugLocal& local : locals)
-		maximum = std::max(maximum, local.slot + 1);
-	std::vector<const DwarfLines::Variable*> locations(maximum, nullptr);
-	for (uint32_t i = 0; i < count; ++i)
+	out.uleb((local.type != 0 ? 3 : 5) + (variable != nullptr ? 0 : 1));
+	name(out, local.name);
+	if (local.type != 0)
+		reference(out, local.type);
+	if (variable != nullptr)
 	{
-		const DwarfLines::Variable& variable = variables[first + i];
-		if (variable.slot < maximum)
-			locations[variable.slot] = &variable;
-	}
-	for (const lowir::DebugLocal& local : locals)
-	{
-		const DwarfLines::Variable* variable = locations[local.slot];
-		out.uleb((local.type != 0 ? 3 : 5) + (variable != nullptr ? 0 : 1));
-		name(out, local.name);
-		if (local.type != 0)
-			reference(out, local.type);
-		if (variable != nullptr)
-		{
-			std::vector<uint8_t> expression;
-			DwarfBytes bytes(expression);
-			bytes.fixed(variable->aligned ? 0x7c : 0x91, 1); // DW_OP_breg12 or DW_OP_fbreg
-			bytes.sleb(variable->offset);
-			out.uleb(expression.size());
-			for (uint8_t byte : expression)
-				out.fixed(byte, 1);
-		}
+		std::vector<uint8_t> expression;
+		DwarfBytes bytes(expression);
+		bytes.fixed(variable->aligned ? 0x7c : 0x91, 1); // DW_OP_breg12 or DW_OP_fbreg
+		bytes.sleb(variable->offset);
+		out.uleb(expression.size());
+		for (uint8_t byte : expression)
+			out.fixed(byte, 1);
 	}
 }
 

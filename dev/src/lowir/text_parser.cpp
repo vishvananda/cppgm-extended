@@ -195,6 +195,7 @@ void Parser::fail_at(Position position, const std::string& message) const
 void Parser::parse(const char* begin, const char* end, const std::string& source)
 {
 	debug_base_ = program_.debug ? static_cast<uint32_t>(program_.debug->types.size() - 1) : 0;
+	scope_base_ = program_.debug ? static_cast<uint32_t>(program_.debug->scopes.size() - 1) : 0;
 	source_ = static_cast<uint32_t>(sources_.size());
 	sources_.push_back(source);
 	Lexer lexer(program_.names, begin, end);
@@ -223,6 +224,8 @@ void Parser::parse_top_level_item()
 		parse_alias();
 	else if (accept_keyword(Keyword::DebugType))
 		parse_debug_type();
+	else if (accept_keyword(Keyword::DebugScope))
+		parse_debug_scope();
 	else if (accept_keyword(Keyword::DebugLocal))
 		parse_debug_local();
 	else
@@ -598,8 +601,13 @@ DebugLocation Parser::parse_debug_location()
 		fail("invalid positive integer: line of " + spelling(debug));
 	if (debug.debug_column == 0 || debug.debug_column > 0xffffffffu)
 		fail("invalid positive integer: column of " + spelling(debug));
+	if (debug.debug_scope + scope_base_ > 0xffffffffu || debug.debug_scope > 0xffffffffu)
+		fail("debug scope is out of range");
+	if (debug.debug_scope != 0 && !program_.debug)
+		program_.debug.reset(new DebugInfo());
 	const DebugLocation location = { debug.debug_file, static_cast<uint32_t>(debug.debug_line),
-		static_cast<uint32_t>(debug.debug_column) };
+		static_cast<uint32_t>(debug.debug_column),
+		debug.debug_scope != 0 ? static_cast<uint32_t>(debug.debug_scope) + scope_base_ : 0 };
 	advance();
 	return location;
 }

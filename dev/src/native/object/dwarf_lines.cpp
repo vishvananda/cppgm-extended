@@ -3,6 +3,7 @@
 #include "native/object/dwarf_bytes.h"
 #include "native/mir/mir.h"
 #include "native/object/dwarf_types.h"
+#include "native/object/dwarf_scopes.h"
 #include "native/object/dwarf_format.h"
 #include "support/flat_map.h"
 
@@ -97,7 +98,7 @@ void LineEncoder::abbreviations()
 	DwarfBytes out(object_.sections[abbreviation_].bytes);
 	const uint32_t unit[][2] = { { dwarf::Name, dwarf::StringPointer }, { dwarf::Producer, dwarf::StringPointer },
 		{ dwarf::Language, dwarf::Data2 }, { dwarf::StatementList, dwarf::SectionOffset },
-		{ dwarf::Ranges, dwarf::SectionOffset } };
+		{ dwarf::Ranges, dwarf::SectionOffset }, { dwarf::LowPc, dwarf::Address } };
 	const uint32_t function[][2] = { { dwarf::Name, dwarf::StringPointer },
 		{ dwarf::LinkageName, dwarf::StringPointer }, { dwarf::LowPc, dwarf::Address }, { dwarf::HighPc, dwarf::Data8 },
 		{ dwarf::DeclFile, dwarf::Unsigned }, { dwarf::DeclLine, dwarf::Unsigned }, { dwarf::External, dwarf::Flag },
@@ -117,7 +118,11 @@ void LineEncoder::abbreviations()
 	entry(1, dwarf::CompileUnit, true, unit, sizeof(unit) / sizeof(unit[0]));
 	entry(2, dwarf::Subprogram, true, function, sizeof(function) / sizeof(function[0]));
 	if (types_)
+	{
 		types_->abbreviations(out);
+		const uint32_t lexical[][2] = { { dwarf::Ranges, dwarf::SectionOffset } };
+		entry(8, dwarf::LexicalBlock, true, lexical, 1);
+	}
 	out.uleb(0);
 }
 
@@ -214,11 +219,11 @@ void LineEncoder::function_info(DwarfBytes& out, const DwarfLines::Function& fun
 	out.fixed(object_.symbols[symbol].binding != object::Binding::Local ? 1 : 0, 1);
 	out.uleb(1);
 	out.fixed(0x9c, 1); // DW_OP_call_frame_cfa
-	if (types_)
-		types_->locals(out, function.symbol, variables_, function.first_variable, function.variable_count);
+	if (types_ && function.symbol < program_.debug->functions.size() &&
+		!program_.debug->functions[function.symbol].locals.empty())
+		DwarfScopes(program_, function, variables_, locations_)
+			.write(out, *types_, object_, info_, ranges_, ranges_symbol_, symbol);
 	out.uleb(0);
-	reference(ranges_, symbol, 8);
-	reference(ranges_, symbol, 8, function.size);
 }
 
 void LineEncoder::information()
@@ -238,6 +243,17 @@ void LineEncoder::information()
 	out.fixed(4, 2); // DW_LANG_C_plus_plus
 	reference(info_, line_symbol_, 4);
 	reference(info_, ranges_symbol_, 4);
+	// Absolute relocated range entries use an explicit zero CU base.
+	out.fixed(0, 8);
+	// Complete the CU list before appending any lexical block lists.
+	for (const DwarfLines::Function& function : functions_)
+		if (symbols_[function.symbol] != lowir::kNoId)
+		{
+			reference(ranges_, symbols_[function.symbol], 8);
+			reference(ranges_, symbols_[function.symbol], 8, function.size);
+		}
+	DwarfBytes(object_.sections[ranges_].bytes).fixed(0, 8);
+	DwarfBytes(object_.sections[ranges_].bytes).fixed(0, 8);
 	for (const DwarfLines::Function& function : functions_)
 		if (symbols_[function.symbol] != lowir::kNoId)
 			function_info(out, function);
@@ -248,8 +264,6 @@ void LineEncoder::information()
 	}
 	out.uleb(0); // end compilation-unit children
 	out.patch32(0, out.size() - 4);
-	DwarfBytes(object_.sections[ranges_].bytes).fixed(0, 8);
-	DwarfBytes(object_.sections[ranges_].bytes).fixed(0, 8);
 }
 
 void LineEncoder::encode()

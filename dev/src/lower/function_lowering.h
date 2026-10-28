@@ -152,7 +152,8 @@ private:
 			if (!active_)
 				return;
 			saved_ = lowering.builder_.current_location();
-			const lowir::DebugLocation here = lowering.lowering_.debug_location(location);
+			lowir::DebugLocation here = lowering.lowering_.debug_location(location);
+			here.scope = lowering.debug_scope_;
 			if (here.present())
 				lowering.builder_.set_current_location(here);
 		}
@@ -170,6 +171,19 @@ private:
 		lowir::DebugLocation saved_ = lowir::DebugLocation{ 0, 0, 0 };
 	};
 	friend class DebugScope;
+	class LexicalScope
+	{
+	public:
+		LexicalScope(FunctionLowering& lowering, bool enter = true);
+		~LexicalScope();
+		LexicalScope(const LexicalScope&) = delete;
+		LexicalScope& operator=(const LexicalScope&) = delete;
+
+	private:
+		FunctionLowering& lowering_;
+		uint32_t saved_;
+		bool active_;
+	};
 
 	struct Local
 	{
@@ -1861,6 +1875,7 @@ private:
 	// The program takes debug locations (DebugScope).
 	const bool debug_;
 	lowir::SymbolId debug_function_ = lowir::kNoId;
+	uint32_t debug_scope_ = 0;
 	// By temporary: 1 for an address reached through a union member
 	// (mark_untyped); empty until the first.
 	std::vector<uint8_t> untyped_addresses_;

@@ -76,17 +76,29 @@ struct DebugLocal
 	uint32_t type;
 	NameId name;
 	DebugLocation declaration;
+	uint32_t scope;
+};
+
+struct DebugLexicalScope
+{
+	NameId owner;
+	uint32_t parent;
+	uint32_t next;
 };
 
 struct DebugFunction
 {
 	std::vector<DebugLocal> locals;
+	uint32_t first_scope = 0;
+	uint32_t last_scope = 0;
 };
 
 struct DebugInfo
 {
-	DebugInfo() : types(1) {}
+	DebugInfo() : types(1), scopes(1) {}
 	std::vector<DebugType> types;
+	// Global ids survive optimizer body copies and removed definitions.
+	std::vector<DebugLexicalScope> scopes;
 	// Indexed by the program's SymbolId, including declaration-only symbols.
 	std::vector<DebugFunction> functions;
 };

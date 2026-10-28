@@ -751,7 +751,8 @@ LowIR execution. Each record is a separate top-level item:
 
 ```text
 debug_type <id> <kind> <encoding> <parent> <type> <flags> <bytes> <bit-offset> <count> <constant-bits> "<name>"
-debug_local @function <slot-id> <type-id> "<name>" !dbg(file, line, column)
+debug_scope <id> @function <parent-scope-id>
+debug_local @function <slot-id> <type-id> [<scope-id>] "<name>" !dbg(file, line, column)
 ```
 
 Type ids are consecutive from one, with zero meaning absent. References can
@@ -1941,3 +1942,14 @@ the backend boundary to be in place before they start:
 
 Those later operations should be added as new instruction/data forms in the same IR family,
 not by replacing LowIR with a new backend boundary.
+
+Hosted source scopes use optional positive `debug_scope` ids, consecutive from
+one, with parent zero for function scope. A parent must precede its child and
+have the same function identity. An optional fourth `!dbg` operand names the
+lexical scope containing an instruction; the three-operand form has scope zero.
+A `debug_local` scope defaults to zero for older inputs. Scope identities are
+global within the program and rebased when combining LowIR files; source
+coordinates and display names do not identify scopes. Optimizers may retain
+scope origins after removing their function, and inlined instructions use the
+caller's scope. Native DWARF uses the recorded transitions to emit possibly
+discontiguous lexical block ranges and nests source locals under their block.

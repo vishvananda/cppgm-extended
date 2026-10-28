@@ -13,8 +13,7 @@ public:
 	DwarfTypes(object::ObjectFile& object, const lowir::Program& program, uint32_t information, uint32_t strings,
 		uint32_t strings_symbol);
 	void abbreviations(DwarfBytes& out);
-	void locals(DwarfBytes& out, lowir::SymbolId function, const std::vector<DwarfLines::Variable>& variables,
-		uint32_t first, uint32_t count);
+	void local(DwarfBytes& out, const lowir::DebugLocal& local, const DwarfLines::Variable* variable);
 	void entries(DwarfBytes& out);
 	void finish(DwarfBytes& out);
 

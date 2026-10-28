@@ -298,6 +298,7 @@ void FunctionLowering::leave_scope(size_t depth, const syntax::CompoundStmt& blo
 
 void FunctionLowering::compound(const syntax::CompoundStmt& stmt)
 {
+	LexicalScope lexical(*this);
 	// 6.3: the block's automatic objects are destroyed when control leaves
 	// its end.
 	const size_t depth = cleanups_.size();
@@ -468,6 +469,7 @@ struct FunctionLowering::ExpressionScope
 
 RValue FunctionLowering::statement_expression(const syntax::StatementExpr& expr, lowir::Value object)
 {
+	LexicalScope lexical(*this);
 	// The block's statements are lowered as statements, each a
 	// full-expression of its own, the last expression statement's value
 	// copied out before its temporaries and the block's objects are
@@ -530,6 +532,7 @@ RValue FunctionLowering::statement_expression(const syntax::StatementExpr& expr,
 
 void FunctionLowering::substatement(const syntax::Stmt& stmt)
 {
+	LexicalScope lexical(*this, stmt.kind != syntax::StmtKind::Compound);
 	// 6.4p1, 6.5p2: a selection or iteration statement's substatement is a
 	// block scope of its own, left each time through a loop.
 	const size_t depth = cleanups_.size();
@@ -673,7 +676,7 @@ void FunctionLowering::local_object_variable(const sema::VariableEntity* variabl
 		place.storage = lowir::Value::slot(local.slot);
 	}
 	if (debug_)
-		lowering_.debug_local(debug_function_, local.slot, variable, location);
+		lowering_.debug_local(debug_function_, local.slot, variable, location, debug_scope_);
 	local_index_.set(variable, static_cast<uint32_t>(locals_.size()));
 	locals_.push_back(local);
 	qualify(place, type);
@@ -943,6 +946,7 @@ void FunctionLowering::flatten_initializer(
 
 void FunctionLowering::if_statement(const syntax::IfStmt& stmt)
 {
+	LexicalScope lexical(*this);
 	// 6.4.1: the condition branches to the then block, else to the else
 	// block (present even without an else, jumping to the end); the end
 	// block exists only if control reaches it. An `if constexpr` is its
@@ -1057,6 +1061,7 @@ void FunctionLowering::condition_branch(
 
 void FunctionLowering::switch_statement(const syntax::ConditionalLoopStmt& stmt)
 {
+	LexicalScope lexical(*this);
 	// 6.4.2: the promoted condition goes to a dispatch block whose switch
 	// names each case label's block in source order (default: the default
 	// label's, else the end); break leaves to the end block.
@@ -1181,6 +1186,7 @@ lowir::BlockId FunctionLowering::switch_label(const syntax::Stmt& stmt)
 
 void FunctionLowering::while_statement(const syntax::ConditionalLoopStmt& stmt)
 {
+	LexicalScope lexical(*this);
 	// 6.5.1: condition block, body, end; continue re-tests the condition.
 	const lowir::BlockId condition = new_block(lowir::BlockKind::WhileCond);
 	const lowir::BlockId body = new_block(lowir::BlockKind::WhileBody);
@@ -1242,6 +1248,7 @@ void FunctionLowering::do_statement(const syntax::DoStmt& stmt)
 
 void FunctionLowering::for_statement(const syntax::ForStmt& stmt)
 {
+	LexicalScope lexical(*this);
 	// 6.5.3: init; condition block (jumping to the body when there is no
 	// condition), body, iteration block; continue goes to the iteration.
 	// The init-statement's objects end with the loop.
@@ -1311,6 +1318,7 @@ void FunctionLowering::for_statement(const syntax::ForStmt& stmt)
 
 void FunctionLowering::range_for_statement(const syntax::RangeForStmt& stmt)
 {
+	LexicalScope lexical(*this);
 	// 6.5.4p1: the equivalent's variables, then its for loop: condition,
 	// body (the for-range-declaration, destroyed with each iteration, then
 	// the statement), increment; its variables end with the statement.

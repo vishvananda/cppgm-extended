@@ -84,6 +84,8 @@ struct DebugLocation
 	NameId file;
 	uint32_t line;
 	uint32_t column;
+	// Global optional DebugInfo lexical scope id; zero is function scope.
+	uint32_t scope;
 
 	bool present() const { return file != 0; }
 };

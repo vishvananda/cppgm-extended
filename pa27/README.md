@@ -176,6 +176,8 @@ The checked-in PA27 tests cover:
   `-gline-tables-only` and `-g1` retain only source-line information.
   `-O0` and `-Og -g` preserve named source storage for debugging; optimized
   builds can report unavailable variables as optimized out.
+- native DWARF lexical block ranges distinguish nested and sibling source
+  locals, including repeated display names and macro expansion coordinates
 - hosted `main(argc, argv)` behavior through the host CRT
 - at least 16-byte placement of local array variables spanning 16 bytes or
   more, as the AMD64 psABI requires, while preserving the source type alignment

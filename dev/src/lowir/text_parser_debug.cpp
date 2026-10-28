@@ -57,6 +57,14 @@ void Parser::parse_debug_local()
 	const int64_t type = parse_small_integer("debug local type");
 	if (slot < 0 || uint64_t(slot) >= kNoId || type < 0 || uint64_t(type) + debug_base_ >= kNoId)
 		fail("debug local index is out of range");
+	uint32_t scope = 0;
+	if (!at(TokenKind::String))
+	{
+		const int64_t value = parse_small_integer("debug local scope");
+		if (value < 0 || uint64_t(value) + scope_base_ > 0xffffffffu)
+			fail("debug local scope is out of range");
+		scope = value != 0 ? static_cast<uint32_t>(value) + scope_base_ : 0;
+	}
 	if (!at(TokenKind::String))
 		fail("expected quoted debug local name");
 	const NameId name = token().name;
@@ -65,13 +73,14 @@ void Parser::parse_debug_local()
 	if (function >= program_.debug->functions.size())
 		program_.debug->functions.resize(function + 1);
 	program_.debug->functions[function].locals.push_back(DebugLocal{
-		static_cast<SlotId>(slot), type != 0 ? static_cast<uint32_t>(type) + debug_base_ : 0, name, location });
+		static_cast<SlotId>(slot), type != 0 ? static_cast<uint32_t>(type) + debug_base_ : 0, name, location, scope });
 }
 
 void Parser::finish_debug()
 {
 	if (!program_.debug)
 		return;
+	finish_debug_scopes();
 	const DebugInfo& debug = *program_.debug;
 	std::vector<uint8_t> visited(debug.types.size(), 0);
 	visited[0] = 2;

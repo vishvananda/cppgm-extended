@@ -261,6 +261,14 @@ void Lexer::scan_debug(Token& token)
 			return;
 	}
 	skip_space();
+	token.debug_scope = 0;
+	if (position_ != end_ && *position_ == ',')
+	{
+		++position_;
+		if (!scan_decimal(token.debug_scope))
+			return;
+		skip_space();
+	}
 	if (position_ == end_ || *position_ != ')')
 		return;
 	++position_;

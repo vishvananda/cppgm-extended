@@ -440,7 +440,8 @@ void FunctionEmitter::code_location(const Function& function, const Inst& inst)
 			last.location = here;
 			return;
 		}
-		if (last.location.file == here.file && last.location.line == here.line && last.location.column == here.column)
+		if (last.location.file == here.file && last.location.line == here.line && last.location.column == here.column &&
+			last.location.scope == here.scope)
 			return;
 	}
 	locations_.push_back(CodeLocation{ offset, here });

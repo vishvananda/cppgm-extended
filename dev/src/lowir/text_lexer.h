@@ -46,6 +46,7 @@ struct Token
 	NameId debug_file;
 	uint64_t debug_line;
 	uint64_t debug_column;
+	uint64_t debug_scope;
 	// Invalid tokens: what is wrong.
 	const char* problem;
 };

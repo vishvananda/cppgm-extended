@@ -1,5 +1,8 @@
 dwarf-facts 1
 object native
-debug_info absent
-debug_line absent
+debug_info present
+debug_line present
 debug_loc not-requested
+compile_unit tests/debuginfo/object/100-cppgm-line-tables.t
+subprogram _Z4add1i line 1
+line 2

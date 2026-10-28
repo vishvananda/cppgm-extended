@@ -372,6 +372,11 @@ void Writer::location(const DebugLocation& location)
 	number(location.line);
 	text(", ");
 	number(location.column);
+	if (location.scope != 0)
+	{
+		text(", ");
+		number(location.scope);
+	}
 	out_.push_back(')');
 }
 
@@ -485,6 +490,16 @@ void Writer::debug_info()
 		debug_name(type.name);
 		out_.push_back('\n');
 	}
+	for (uint32_t id = 1; id < debug.scopes.size(); ++id)
+	{
+		word(spelling(Keyword::DebugScope));
+		number(id);
+		out_.push_back(' ');
+		name('@', debug.scopes[id].owner, 0);
+		out_.push_back(' ');
+		number(debug.scopes[id].parent);
+		out_.push_back('\n');
+	}
 	for (SymbolId function = 0; function < debug.functions.size(); ++function)
 	{
 		if (function >= program_.symbols.size() || program_.symbols[function].kind != SymbolKind::FunctionDefinition)
@@ -497,6 +512,8 @@ void Writer::debug_info()
 			number(local.slot);
 			out_.push_back(' ');
 			number(local.type);
+			out_.push_back(' ');
+			number(local.scope);
 			out_.push_back(' ');
 			debug_name(local.name);
 			location(local.declaration);

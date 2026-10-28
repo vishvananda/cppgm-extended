@@ -701,7 +701,10 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 			{
 				if (locations[inst.location] == 0)
 				{
-					cb.locations.push_back(kb.locations[inst.location - 1]);
+					lowir::DebugLocation location = kb.locations[inst.location - 1];
+					// Inlined instructions remain inside the caller's lexical scope.
+					location.scope = call.location != 0 ? cb.locations[call.location - 1].scope : 0;
+					cb.locations.push_back(location);
 					locations[inst.location] = static_cast<uint32_t>(cb.locations.size());
 				}
 				inst.location = locations[inst.location];

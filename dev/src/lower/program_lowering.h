@@ -401,8 +401,8 @@ public:
 	// A unit location's debug location (absent without debug locations, or
 	// for a file name that is not one LowIR token).
 	lowir::DebugLocation debug_location(uint32_t location);
-	void debug_local(
-		lowir::SymbolId function, lowir::SlotId slot, const sema::VariableEntity* variable, uint32_t location);
+	void debug_local(lowir::SymbolId function, lowir::SlotId slot, const sema::VariableEntity* variable,
+		uint32_t location, uint32_t lexical_scope);
 	void debug_function(const sema::FunctionEntity* function);
 	void order_completed_definitions();
 	bool streaming() const { return stream_ != nullptr; }
