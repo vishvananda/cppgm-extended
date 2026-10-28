@@ -647,6 +647,24 @@ bool Analyzer::function_nothrow(const FunctionEntity* entity)
 				scope, primary->type, *parameters, cloner.parameter_packs().data(), cloner.parameter_packs().size());
 		}
 	}
+	else if (const FunctionEntity* pattern = PatternOf(function))
+	{
+		// A non-template member or friend of an instantiated class already
+		// has its concrete prototype. Its original, unexpanded parameter
+		// types still decide dependent lookup, just as a function template's
+		// do above. Do not map an expanded parameter list by position.
+		const syntax::ParameterClause* parameters = noexcepts_[index].parameters;
+		const Type* source = pattern->type->canonical;
+		if (parameters != nullptr && parameters->parameters.size == source->param_count &&
+			source->param_count == function->type->param_count)
+		{
+			bool expanded = false;
+			for (uint32_t i = 0; i < source->param_count; ++i)
+				expanded = expanded || source->params[i]->kind == TypeKind::Expansion;
+			if (!expanded)
+				prototype_dependence(scope, source, *parameters, nullptr, 0);
+		}
+	}
 	// Evaluated when first needed, its names looked up where it is
 	// declared (a template's in its definition's context, 14.6p10,
 	// 14.6.4.2, as the instance member's class template's).
