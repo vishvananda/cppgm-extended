@@ -278,6 +278,8 @@ struct ExprFacts
 		const FunctionList* functions;
 		// kFolded, a literal or sizeof: the value's bits in `type` (as a
 		// Constant keeps them).
+		// Conditional: whether its builtin condition permits hosted reference
+		// folding, recorded once when typed, independent of the selected arm.
 		uint64_t value;
 		// kReferenceCast: the cast's reference or member pointer type; a
 		// compound assignment: the type its operation is performed in

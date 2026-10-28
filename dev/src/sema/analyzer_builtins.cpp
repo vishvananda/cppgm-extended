@@ -192,7 +192,12 @@ ExprFacts* Analyzer::builtin_operation(const syntax::CallExpr& expr, const Funct
 	switch (builtin->gnu_builtin)
 	{
 	case GnuBuiltin::ConstantP:
-		return constant_p_call(expr, scope);
+	{
+		ExprFacts* facts = constant_p_call(expr, scope);
+		if (facts != nullptr)
+			facts->entity = builtin;
+		return facts;
+	}
 	case GnuBuiltin::ObjectSize:
 		return object_size_call(expr, scope);
 	case GnuBuiltin::Invoke:

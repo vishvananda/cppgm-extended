@@ -170,6 +170,11 @@ bool ConstantInterpreter::materialize(const syntax::Expr& expr, const ConstPlace
 		if (!truth(*choice.condition, selected))
 			return false;
 		const syntax::Expr& chosen = selected ? *choice.then_expr : *choice.else_expr;
+		if (choice.facts->value != 0)
+		{
+			Folding folding(folding_, true);
+			return initialize_from(chosen, WithoutParentheses(&chosen)->facts->conversion, target);
+		}
 		return initialize_from(chosen, WithoutParentheses(&chosen)->facts->conversion, target);
 	}
 	case syntax::ExprKind::Binary:
@@ -680,6 +685,7 @@ bool ConstantInterpreter::run_constructor(const FunctionEntity* constructor, con
 	const size_t locals = locals_.size();
 	if (!bind_parameters(constructor, arguments, count, location))
 		return false;
+	Folding folding(folding_, false);
 	Region callee = region();
 	callee.locals = locals;
 	Frame frame = Frame();

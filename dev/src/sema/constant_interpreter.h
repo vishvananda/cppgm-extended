@@ -328,6 +328,16 @@ private:
 		const uint32_t saved_;
 	};
 	bool incomplete_class_;
+	// GNU constant_p conditionals permit foldable reference casts in the
+	// selected expression. A called function starts its own strict context.
+	bool folding_ = false;
+	struct Folding
+	{
+		Folding(bool& current, bool enabled) : current_(current), saved_(current) { current_ = enabled; }
+		~Folding() { current_ = saved_; }
+		bool& current_;
+		const bool saved_;
+	};
 	// base_search's classes found not to lead to the base sought (per
 	// query).
 	PointerMap base_misses_;

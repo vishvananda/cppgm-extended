@@ -81,7 +81,10 @@ enum : uint8_t
 	// A pointer one past the end of its array (or of an object as an array
 	// of one, 5.7p4): no object is there to read (its address may be
 	// another's); arithmetic moves within the array before it.
-	kPastEnd = 2
+	kPastEnd = 2,
+	// An address folded through an unrelated reference type. It may be
+	// bound or compared, but does not designate readable storage of that type.
+	kInvalidView = 4
 };
 
 // A glvalue's designation: the root storage, the byte offset of the
@@ -93,8 +96,9 @@ enum : uint8_t
 struct ConstPlace
 {
 	RootKind root;
-	// One past the end of an array (kPastEnd).
-	bool past_end;
+	// kPastEnd and kInvalidView, shared with pointer values so transferring
+	// a designation preserves its address state without boolean conversions.
+	uint8_t flags;
 	uint32_t object;
 	uint32_t generation;
 	// The innermost union member a member access named on the way (null
@@ -144,7 +148,7 @@ inline ConstPlace PlaceOf(const ConstValue& pointer, const Type* designated)
 {
 	ConstPlace place = ConstPlace();
 	place.root = pointer.root;
-	place.past_end = (pointer.flags & kPastEnd) != 0;
+	place.flags = pointer.flags & (kPastEnd | kInvalidView);
 	place.object = pointer.count;
 	place.generation = pointer.extra;
 	place.entity = pointer.address.entity;
@@ -158,7 +162,7 @@ inline ConstValue PointerTo(const ConstPlace& place, const Type* type)
 	ConstValue value = ConstValue();
 	value.kind = ValueKind::Pointer;
 	value.root = place.root;
-	value.flags = place.past_end ? kPastEnd : 0;
+	value.flags = place.flags;
 	value.count = place.object;
 	value.extra = place.generation;
 	value.type = type;

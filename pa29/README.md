@@ -296,6 +296,12 @@ To complete PA29, implement hosted compatibility for:
   `section`, `vector_size`, `gnu_inline`, `abi_tag`, `using_if_exists` and
   `exclude_from_explicit_instantiation`, each also spelled `__name__`) and
   `0` for any other.
+  A conditional whose condition is `__builtin_constant_p`, optionally
+  parenthesized or explicitly converted, permits folding reference
+  reinterpretations in its selected expression. The reference retains the
+  original storage identity: an unrelated view cannot read that storage.
+  Called function bodies use their own constant-expression rules; ordinary
+  conditionals and the non-hosted query keep their existing rules.
   `__has_builtin` answers from the registries that hold the builtins rather
   than from a list beside them: claiming not to have one that is implemented is
   worse than lacking it, because the header then takes a fallback written in

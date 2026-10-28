@@ -548,6 +548,7 @@ private:
 	ExprFacts* member_pointer_access(const syntax::BinaryExpr& expr, ExprFacts* left, ExprFacts* right);
 	ExprFacts* assignment(const syntax::BinaryExpr& expr, Scope* scope);
 	ExprFacts* conditional(const syntax::ConditionalExpr& expr, Scope* scope);
+	bool folding_condition(const syntax::Expr& expr) const;
 	ExprFacts* converted_conditional(const syntax::ConditionalExpr& expr, Scope* scope);
 	ExprFacts* builtin_conditional(const syntax::ConditionalExpr& expr);
 	uint8_t conditional_match(const syntax::Expr& operand, const ExprFacts* other, Conversion& out);

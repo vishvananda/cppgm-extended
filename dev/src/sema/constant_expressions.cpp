@@ -301,7 +301,7 @@ bool ConstantInterpreter::rvalue(const syntax::Expr& expr, ConstValue& out)
 			ConstPlace place;
 			if (!glvalue(*e, place))
 				return false;
-			if (type->kind == TypeKind::Array && place.past_end)
+			if (type->kind == TypeKind::Array && (place.flags & kPastEnd) != 0)
 				return fail(e->location, "an array one past the end of an array");
 			if (type->kind == TypeKind::Array)
 				place.type = type->element;
@@ -819,6 +819,11 @@ bool ConstantInterpreter::glvalue(const syntax::Expr& expr, ConstPlace& out)
 		bool selected = false;
 		if (!truth(*choice.condition, selected))
 			return false;
+		if (choice.facts->value != 0)
+		{
+			Folding folding(folding_, true);
+			return glvalue(selected ? *choice.then_expr : *choice.else_expr, out);
+		}
 		return glvalue(selected ? *choice.then_expr : *choice.else_expr, out);
 	}
 	case syntax::ExprKind::Call:
@@ -1016,7 +1021,14 @@ bool ConstantInterpreter::discard(const syntax::Expr& expr)
 	{
 		const syntax::ConditionalExpr& choice = static_cast<const syntax::ConditionalExpr&>(*e);
 		bool selected = false;
-		return truth(*choice.condition, selected) && discard(selected ? *choice.then_expr : *choice.else_expr);
+		if (!truth(*choice.condition, selected))
+			return false;
+		if (choice.facts->value != 0)
+		{
+			Folding folding(folding_, true);
+			return discard(selected ? *choice.then_expr : *choice.else_expr);
+		}
+		return discard(selected ? *choice.then_expr : *choice.else_expr);
 	}
 	if (e->kind == syntax::ExprKind::Binary && static_cast<const syntax::BinaryExpr*>(e)->op == TokenKind::OP_COMMA &&
 		(facts->flags & kOperatorCall) == 0)
@@ -2013,13 +2025,21 @@ bool ConstantInterpreter::conditional_value(const syntax::ConditionalExpr& expr,
 	if (!truth(*expr.condition, selected))
 		return false;
 	const syntax::Expr& chosen = selected ? *expr.then_expr : *expr.else_expr;
-	if (IsVoid(expr.facts->type))
+	const auto evaluate = [&]() {
+		if (IsVoid(expr.facts->type))
+		{
+			out = ConstValue();
+			out.type = expr.facts->type;
+			return discard(chosen);
+		}
+		return operand(chosen, out) && convert_scalar(out, expr.facts->type, expr.location);
+	};
+	if (expr.facts->value != 0)
 	{
-		out = ConstValue();
-		out.type = expr.facts->type;
-		return discard(chosen);
+		Folding folding(folding_, true);
+		return evaluate();
 	}
-	return operand(chosen, out) && convert_scalar(out, expr.facts->type, expr.location);
+	return evaluate();
 }
 
 bool ConstantInterpreter::cast(const syntax::Expr& expr, const syntax::Expr& operand_expr, ConstValue& out)
@@ -2223,8 +2243,8 @@ bool ConstantInterpreter::reference_cast(const syntax::Expr& expr, const syntax:
 	// operand's object (a base subobject, or the derived object holding
 	// it), or a temporary its binding makes.
 	const ExprFacts* facts = expr.facts;
-	if (static_cast<const syntax::CastExpr&>(expr).cast == TokenKind::KW_REINTERPET_CAST ||
-		static_cast<const syntax::CastExpr&>(expr).cast == TokenKind::KW_DYNAMIC_CAST)
+	const TokenKind form = static_cast<const syntax::CastExpr&>(expr).cast;
+	if ((form == TokenKind::KW_REINTERPET_CAST && !folding_) || form == TokenKind::KW_DYNAMIC_CAST)
 		return fail(expr.location, "a reinterpret_cast or dynamic_cast in a constant expression");
 	const ExprFacts* operand_facts = WithoutParentheses(&operand_expr)->facts;
 	const Conversion* binding = operand_facts->conversion;
@@ -2233,6 +2253,15 @@ bool ConstantInterpreter::reference_cast(const syntax::Expr& expr, const syntax:
 		return bind(operand_expr, binding, facts->target, out);
 	if (!object_place(operand_expr, out))
 		return false;
+	if (form == TokenKind::KW_REINTERPET_CAST &&
+		((out.flags & kInvalidView) != 0 || out.type->unqualified != facts->type->unqualified))
+	{
+		const Type* root = nullptr;
+		if (!root_type(out, root, expr.location))
+			return false;
+		out.flags = static_cast<uint8_t>(
+			holds(root, out.offset, facts->type, 0) ? out.flags & ~kInvalidView : out.flags | kInvalidView);
+	}
 	if ((facts->flags & kBaseCast) != 0)
 	{
 		if (!to_base(out, ClassOf(facts->type), expr.location))

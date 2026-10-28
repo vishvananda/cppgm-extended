@@ -1,0 +1,4 @@
+global @source [storage=readonly, binding=internal, object=_ZL6source] = {
+  zero 1
+}
+global @target : ptr [binding=strong] = addr @source

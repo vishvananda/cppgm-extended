@@ -310,7 +310,13 @@ ExprFacts* Analyzer::typed_form(const syntax::Expr& expr, Scope* scope)
 	case syntax::ExprKind::Assign:
 		return assignment(static_cast<const syntax::BinaryExpr&>(expr), scope);
 	case syntax::ExprKind::Conditional:
-		return conditional(static_cast<const syntax::ConditionalExpr&>(expr), scope);
+	{
+		const syntax::ConditionalExpr& choice = static_cast<const syntax::ConditionalExpr&>(expr);
+		ExprFacts* facts = conditional(choice, scope);
+		if (facts != nullptr)
+			facts->value = folding_condition(*choice.condition) ? 1u : 0u;
+		return facts;
+	}
 	case syntax::ExprKind::Unary:
 		return unary(static_cast<const syntax::UnaryExpr&>(expr), scope);
 	case syntax::ExprKind::Postfix:

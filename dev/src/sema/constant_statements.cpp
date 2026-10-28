@@ -460,7 +460,14 @@ bool ConstantInterpreter::invoke(const FunctionEntity* function, const ConstPlac
 	result.held = held != 0 ? arena_.allocate_array<ConstValue>(held) : nullptr;
 	Region callee = region();
 	callee.locals = locals;
-	const bool done = invoke_body(function, object, locals, result, location);
+	bool done;
+	if (folding_)
+	{
+		Folding folding(folding_, false);
+		done = invoke_body(function, object, locals, result, location);
+	}
+	else
+		done = invoke_body(function, object, locals, result, location);
 	end_parameters(function, locals);
 	release(callee);
 	return done && valid_pointer(result.value, location);

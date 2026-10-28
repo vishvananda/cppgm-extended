@@ -832,8 +832,10 @@ uint64_t ConstantInterpreter::leaves(const Type* type, uint32_t depth)
 
 bool ConstantInterpreter::locate(const ConstPlace& place, bool write, ConstValue*& out, uint32_t location)
 {
-	if (place.past_end)
-		return fail(location, "an access one past the end of an array");
+	if (place.flags != 0)
+		return fail(location,
+			(place.flags & kPastEnd) != 0 ? "an access one past the end of an array"
+										  : "an access through an unrelated reference type");
 	ConstValue* storage = nullptr;
 	const Type* type = nullptr;
 	if (!root_storage(place, write, storage, type, location))
@@ -1041,7 +1043,7 @@ bool ConstantInterpreter::to_base(ConstPlace& place, const ClassEntity* base, ui
 {
 	const ClassEntity* derived = ClassOf(place.type);
 	int64_t offset = 0;
-	if (place.past_end)
+	if ((place.flags & kPastEnd) != 0)
 		return fail(location, "a base class of an object one past the end of an array");
 	if (derived == nullptr || !base_offset(derived, base, offset, location))
 		return fail(location, "a conversion to a base class outside constant evaluation");
@@ -1141,7 +1143,7 @@ bool ConstantInterpreter::member_slot(
 	// struct objects holding it (9.5p5) unless `object` is one, from the
 	// object's class converted to the named class holding it.
 	// One past the end of an array there is no object to have members.
-	if (object.past_end)
+	if ((object.flags & kPastEnd) != 0)
 		return fail(location, "a member of an object one past the end of an array");
 	const ClassEntity* home = static_cast<const ClassEntity*>(member->owner->entity);
 	const ClassEntity* designated = ClassOf(object.type);
@@ -1316,9 +1318,9 @@ bool ConstantInterpreter::array_of(
 {
 	// The array a pointer's place is an element of, or one past the end of.
 	ConstPlace element = place;
-	if (place.past_end)
+	if ((place.flags & kPastEnd) != 0)
 		element.offset -= size;
-	element.past_end = false;
+	element.flags &= ~kPastEnd;
 	if (!element_bounds(element, first, bound, location))
 		return fail(location, "pointer arithmetic outside an array");
 	return true;

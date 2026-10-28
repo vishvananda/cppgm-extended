@@ -808,6 +808,28 @@ ExprFacts* Analyzer::convert_class_operand(const syntax::Expr& expr, const Funct
 	return facts;
 }
 
+bool Analyzer::folding_condition(const syntax::Expr& expr) const
+{
+	if (!hosted_)
+		return false;
+	const syntax::Expr* condition = WithoutParentheses(&expr);
+	// Parentheses and explicit scalar conversions preserve the builtin
+	// condition's identity, unlike a variable initialized from its result.
+	for (;;)
+	{
+		if (condition->kind == syntax::ExprKind::Cast)
+			condition = WithoutParentheses(static_cast<const syntax::CastExpr*>(condition)->operand);
+		else if (condition->kind == syntax::ExprKind::FunctionalCast &&
+			static_cast<const syntax::FunctionalCastExpr*>(condition)->arguments.size == 1)
+			condition = WithoutParentheses(static_cast<const syntax::FunctionalCastExpr*>(condition)->arguments[0]);
+		else
+			break;
+	}
+	const Entity* entity = condition->facts != nullptr ? condition->facts->entity : nullptr;
+	return condition->kind == syntax::ExprKind::Call && entity != nullptr && entity->kind == EntityKind::Function &&
+		static_cast<const FunctionEntity*>(entity)->gnu_builtin == GnuBuiltin::ConstantP;
+}
+
 ExprFacts* Analyzer::conditional(const syntax::ConditionalExpr& expr, Scope* scope)
 {
 	// 5.16 for the scalar slice.
