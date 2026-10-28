@@ -224,6 +224,7 @@ Optional sidecars include:
 - `x.no-exceptions`: compile a `tests/compile` input with `-fno-exceptions`
 - `x.cxx-standard`: compile in the named `c++11`, `c++14`, or `c++17`
   language mode
+- `x.flags`: additional compiler flags for a `tests/run` input
 - `x.ref.impl.exit_status`, `x.ref.program.exit_status`, and
   `x.ref.program.stdout`: implementation and program-result references for
   `tests/run` host-link/run smokes
@@ -237,6 +238,13 @@ GNU `q`/`Q` floating suffixes denote `__float128`, as specified in
 in both normal compilation and the typed `cppgm++ -E` stream. Emit binary128
 bytes for these literals; `l`/`L` still denote `long double`. This PA29
 extension does not change the strict C++11 literal grammar of PA2–PA4.
+
+Hosted `-Wno-narrowing` suppresses list-initialization narrowing diagnostics,
+as described in [GCC's C++ dialect options](https://gcc.gnu.org/onlinedocs/gcc/C_002b_002b-Dialect-Options.html).
+The actual scalar conversions still occur, and narrowing remains a failure in
+SFINAE contexts. `-Wnarrowing` or `-Werror=narrowing` restores the diagnostic;
+the last of these specific options wins. Without suppression, the compiler
+continues to reject narrowing conversions.
 
 ### Hosted ABI Name Guidance
 

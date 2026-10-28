@@ -757,7 +757,7 @@ bool Analyzer::check_narrowing(
 			narrowing = !narrowing_constant(element, before, scope, &value, nullptr) || !Representable(value, to);
 		}
 	}
-	if (narrowing)
+	if (narrowing && (!ignore_narrowing_ || soft_substitution_ != 0))
 		return substitution_error(element.location, "narrowing conversion in list-initialization");
 	return true;
 }

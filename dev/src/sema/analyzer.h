@@ -65,6 +65,8 @@ public:
 	// -fno-exceptions (hosted -c): allocation and deallocation functions'
 	// redeclarations are not compared (check_redeclared_exceptions).
 	void set_exceptions(bool on) { exceptions_ = on; }
+	// Hosted -Wno-narrowing suppresses the diagnostic outside SFINAE.
+	void set_ignore_narrowing(bool on) { ignore_narrowing_ = on; }
 	// Where the source-location builtins find the presumed file and line
 	// of a location (none: an empty name and line 0).
 	void set_source_positions(const SourcePositions* positions) { positions_ = positions; }
@@ -1612,6 +1614,7 @@ private:
 	bool hosted_ = false;
 	bool cxx14_ = false;
 	bool exceptions_ = true;
+	bool ignore_narrowing_ = false;
 	const SourcePositions* positions_ = nullptr;
 	TypeTable& types_;
 	NameLookup& names_;

@@ -1,0 +1,16 @@
+template<class T> auto select(T value, int) -> decltype(char{value}, int()) { return 1; }
+template<class T> int select(T, ...) { return 0; }
+struct Real { operator double() const { return 7.75; } };
+struct Aggregate { unsigned char byte; int whole; float real; };
+int main(int argc, char**) {
+  int value = argc + 2;
+  unsigned char bytes[] = {value, value + 256};
+  int whole{3.75};
+  float real{double(value) + 0.5};
+  bool flag{value};
+  Aggregate aggregate{value, 5.75, double(value) + 0.25};
+  int converted{Real{}};
+  return bytes[0] != 3 || bytes[1] != 3 || whole != 3 || real != 3.5f || !flag ||
+    aggregate.byte != 3 || aggregate.whole != 5 || aggregate.real != 3.25f ||
+    converted != 7 || select(value, 0) != 0;
+}

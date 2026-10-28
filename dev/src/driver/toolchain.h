@@ -23,7 +23,9 @@
 // c++NN the strict ISO dialect's host macros, __STRICT_ANSI__),
 // -stdlib=<the build's selection>, -f(no-)exceptions and -f(no-)rtti (the
 // hosted predefined macros and feature probes), -fPIC/-fpic (host objects),
-// -fno-PIC/-fno-pic (direct access to defined data), --stats; -O*, -g*, -W*,
+// -fno-PIC/-fno-pic (direct access to defined data), --stats,
+// -Wno-narrowing (suppress list-narrowing diagnostics outside SFINAE;
+// -Wnarrowing/-Werror=narrowing restore them); -O*, -g*, other -W*,
 // other -f* and -m*, -pedantic(-errors), -w, -pipe and dependency-file
 // options are accepted and do not change the output.
 //

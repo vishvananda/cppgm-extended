@@ -54,6 +54,7 @@ struct Invocation
 	bool preprocess_only = false;
 	// -fsyntax-only: each source analyzed, nothing lowered or written.
 	bool syntax_only = false;
+	bool ignore_narrowing = false;
 	bool stats = false;
 	// --stats-functions: the object back end's per-function census
 	// (native/object/function_census.h), after each unit's compilation.
@@ -303,6 +304,8 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 			invocation.preprocessor.modes.exceptions = arg == "-fexceptions";
 		else if (arg == "-fno-rtti" || arg == "-frtti")
 			invocation.preprocessor.modes.rtti = arg == "-frtti";
+		else if (arg == "-Wno-narrowing" || arg == "-Wnarrowing" || arg == "-Werror=narrowing")
+			invocation.ignore_narrowing = arg == "-Wno-narrowing";
 		else if (arg == "--stats")
 			invocation.stats = true;
 		else if (arg == "--stats-functions")
@@ -492,6 +495,7 @@ bool compile_unit(
 			analyzer.set_hosted(invocation.preprocessor.hosted);
 			analyzer.set_cxx14(invocation.preprocessor.cplusplus != "201103L");
 			analyzer.set_exceptions(invocation.preprocessor.modes.exceptions);
+			analyzer.set_ignore_narrowing(invocation.ignore_narrowing);
 			analyzer.set_source_positions(&unit.positions());
 			try
 			{
