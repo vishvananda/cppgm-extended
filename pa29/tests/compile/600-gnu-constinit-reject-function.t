@@ -1,0 +1,1 @@
+__constinit int f();

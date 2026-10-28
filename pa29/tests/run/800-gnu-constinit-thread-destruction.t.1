@@ -1,0 +1,21 @@
+#include <pthread.h>
+int destroyed;
+struct Value {
+  int number;
+  constexpr Value() : number(7) {}
+  ~Value() { ++destroyed; }
+};
+__constinit thread_local Value value;
+void* observe(void* output) {
+  *static_cast<int*>(output) = ++value.number;
+  return nullptr;
+}
+int main() {
+  int observed = 0;
+  pthread_t worker;
+  if (pthread_create(&worker, nullptr, observe, &observed) != 0)
+    return 1;
+  if (pthread_join(worker, nullptr) != 0)
+    return 2;
+  return observed != 8 || destroyed != 1;
+}

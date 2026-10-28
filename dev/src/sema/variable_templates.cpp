@@ -119,6 +119,7 @@ VariableEntity* Analyzer::variable_specialization(
 	// constexpr is the declaration's own (7.1.5p9): the partial
 	// specialization's, an explicit specialization's (set by its caller).
 	variable->is_constexpr = (partial != nullptr ? partial : templ)->is_constexpr;
+	variable->is_constinit = (partial != nullptr ? partial : templ)->is_constinit;
 	variable->is_thread_local = templ->is_thread_local;
 	variable->internal_linkage = templ->internal_linkage;
 	VariableTemplateFacts* facts = variable_template_facts(variable);
@@ -213,6 +214,7 @@ void Analyzer::variable_partial_specialization(const Specifiers& specifiers, con
 	VariableEntity* partial = new_entity<VariableEntity>(EntityKind::Variable, templ->name, templ->owner, type);
 	partial->defined = initializer != nullptr;
 	partial->is_constexpr = specifiers.is_constexpr;
+	partial->is_constinit = specifiers.is_constinit;
 	VariableTemplateFacts* facts = variable_template_facts(partial);
 	facts->head = template_head(*template_list_, template_scope_, template_entities_);
 	check_partial_arguments(head, facts->head, arguments.data(), static_cast<uint32_t>(arguments.size()), location);
@@ -269,6 +271,8 @@ void Analyzer::variable_explicit_specialization(const Specifiers& specifiers, co
 	// and whether it is constexpr (not the template's).
 	if (variable->type == nullptr)
 		variable->is_constexpr = specifiers.is_constexpr;
+	if (variable->type == nullptr)
+		variable->is_constinit = specifiers.is_constinit;
 	if (variable->type == nullptr && holds_auto(info.type))
 		variable->type = auto_variable_type(variable, specifiers, info.type, initializer, scope, location);
 	else if (variable->type == nullptr)
@@ -407,7 +411,11 @@ bool Analyzer::instantiate_variable_specialization(VariableEntity* variable)
 		if (initializer != nullptr)
 			initialize_specialization(variable, initializer, frame, source->location);
 		else
+		{
 			default_initialize(variable, variable->type, source->location);
+			if (variable->is_constinit)
+				record_constant_initializer(variable, nullptr, frame);
+		}
 		check_destruction(variable->type, frame, source->location);
 	}
 	facts->initializer = initializer;

@@ -2513,7 +2513,11 @@ bool Analyzer::instantiate_variable(const VariableEntity* entity)
 		// in-class initializer, typed where the instance declared it.
 		else if (variable->constant != ConstantState::Value && !variable->is_constexpr &&
 			variable->member_initializer == nullptr)
+		{
 			default_initialize(variable, variable->type, pattern->location);
+			if (variable->is_constinit)
+				record_constant_initializer(variable, nullptr, scope);
+		}
 		check_destruction(variable->type, scope, pattern->location);
 	}
 	facts->initializer = initializer;

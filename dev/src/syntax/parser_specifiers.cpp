@@ -461,6 +461,15 @@ bool Parser::parse_decl_specifiers(ListFrame<DeclSpecifier>& list, SpecifierInfo
 			}
 			break;
 		}
+		if (token.is_identifier() && gnu_names_.kind(token.identifier) == GnuNames::kConstinit)
+		{
+			DeclSpecifier specifier = DeclSpecifier();
+			specifier.kind = DeclSpecKind::Constinit;
+			specifier.location = token.location;
+			list.push(specifier);
+			next();
+			continue;
+		}
 		if (token.is_identifier() && !info.has_type && at_typeof())
 		{
 			if (!parse_typeof_specifier(list, info))

@@ -989,7 +989,7 @@ const ConstValue* Analyzer::constant_initialization(
 	// constexpr one, 12.1p6, gives a constant).
 	ConstantInterpreter interpreter(*this);
 	const ConstValue* value = nullptr;
-	return interpreter.initialize(variable, initializer, value) ? value : nullptr;
+	return interpreter.initialize(variable, initializer, value, false, variable->is_constinit) ? value : nullptr;
 }
 
 void Analyzer::record_constant_initializer(
@@ -1008,6 +1008,17 @@ void Analyzer::record_constant_initializer(
 	// constant (5.19p2), or names no object.
 	if (variable->member)
 		return;
+	const ConstValue* initialized = nullptr;
+	if (variable->is_constinit && semantic())
+	{
+		initialized = constant_initialization(variable, initializer);
+		if (initialized == nullptr)
+			error(initializer != nullptr ? initializer->location : 0,
+				"a __constinit variable is not constant-initialized");
+		// Initialization bytes are available to lowering, while the mutable
+		// variable remains unusable as a constant expression.
+		set_evaluated(variable, initialized);
+	}
 	const Type* type = variable->type;
 	const bool reference = type->is_reference();
 	const Type* object = reference ? type->element : type;
@@ -1053,7 +1064,9 @@ void Analyzer::record_constant_initializer(
 	variable->constant = ConstantState::Evaluating;
 	ConstantInterpreter interpreter(*this);
 	const ConstValue* value = nullptr;
-	const bool constant = interpreter.initialize(variable, initializer, value, true);
+	const bool constant = initialized != nullptr || interpreter.initialize(variable, initializer, value, true);
+	if (initialized != nullptr)
+		value = initialized;
 	variable->constant = ConstantState::None;
 	// The course reads a constexpr reference whose referent a conditional
 	// selects through its storage, its initializer's functions defined as

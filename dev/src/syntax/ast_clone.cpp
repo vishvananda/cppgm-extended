@@ -728,6 +728,8 @@ bool SyntaxCloner::specifier(const DeclSpecifier& in, DeclSpecifier& out)
 	out = in;
 	switch (in.kind)
 	{
+	case DeclSpecKind::Constinit:
+		return false;
 	case DeclSpecKind::Keyword:
 		out.operand = expr(in.operand);
 		return out.operand != in.operand;

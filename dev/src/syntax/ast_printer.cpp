@@ -440,6 +440,9 @@ void AstDumper::owned_specifier(const DeclSpecifier& specifier)
 {
 	switch (specifier.kind)
 	{
+	case DeclSpecKind::Constinit:
+		line("decl-specifier", "__constinit");
+		break;
 	case DeclSpecKind::Class:
 		class_specifier(*specifier.class_specifier);
 		break;

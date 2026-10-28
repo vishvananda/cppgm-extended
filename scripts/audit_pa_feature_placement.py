@@ -401,6 +401,7 @@ RULES: tuple[FeatureRule, ...] = (
                 (rx(r"\boperator\s+(?!new\b|delete\b)(?:const\s+)?[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s*\("),),
                 use_raw=True),
     FeatureRule("function.trailing_return", (rx(r"\)\s*->\s*[A-Za-z_][A-Za-z0-9_:<>*&\s]*"),)),
+    FeatureRule("support.constinit", (rx(r"\b__constinit\b"),)),
     FeatureRule("support.attribute", (rx(r"\[\[[^]]+\]\]|__attribute__\s*\("),)),
     FeatureRule("lifetime.ctor_dtor",
                 (rx(r"\b~[A-Za-z_][A-Za-z0-9_]*\s*\("),),

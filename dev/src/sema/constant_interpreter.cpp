@@ -1554,8 +1554,8 @@ bool ConstantInterpreter::extend_temporary(ConstPlace& place, uint32_t location)
 	return true;
 }
 
-bool ConstantInterpreter::initialize(
-	const VariableEntity* variable, const syntax::Initializer* initializer, const ConstValue*& out, bool transient)
+bool ConstantInterpreter::initialize(const VariableEntity* variable, const syntax::Initializer* initializer,
+	const ConstValue*& out, bool transient, bool static_zero)
 {
 	++analyzer_.graph_.constant_evaluations;
 	const Type* type = variable->type;
@@ -1595,6 +1595,11 @@ bool ConstantInterpreter::initialize(
 		return fail(location, "constant evaluation exceeds its storage budget");
 	ConstValue* storage = static_cast<ConstValue*>(arena_.allocate(sizeof(ConstValue), alignof(ConstValue)));
 	*storage = skeleton(type);
+	// Static storage is already zero when trivial default-initialization
+	// does nothing. An initializer still cannot read an uninitialized
+	// subobject during constant evaluation.
+	if (static_zero && initializer == nullptr && (variable->constructor == nullptr || variable->constructor->trivial))
+		zero_into(*storage);
 	if (steps_ >= kStepBudget)
 		return fail(location, "constant evaluation exceeds its storage budget");
 	constructing_ = variable;

@@ -160,7 +160,9 @@ ProgramLowering::StaticOutcome ProgramLowering::static_global(lowir::SymbolId sy
 	// The analysis's facts of the initialization: the value its constant
 	// evaluation recorded (a constexpr, const integral or reference
 	// variable's), or that it found none.
-	const sema::ConstValue* recorded = variable->is_thread_local ? nullptr : analyzer_->evaluated_value(variable);
+	const sema::ConstValue* recorded = variable->is_thread_local && !variable->is_constinit
+		? nullptr
+		: analyzer_->evaluated_value(variable);
 	const bool nonconstant = variable->constant == sema::ConstantState::None;
 	StaticData parts;
 	if (type->is_reference())

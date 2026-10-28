@@ -160,6 +160,13 @@ void Analyzer::specifiers(
 	out.uses = names_.dependent_uses();
 	for (const syntax::DeclSpecifier& specifier : list)
 	{
+		if (specifier.kind == syntax::DeclSpecKind::Constinit)
+		{
+			if (out.is_constinit)
+				error(specifier.location, "__constinit repeated in a decl-specifier-seq");
+			out.is_constinit = true;
+			continue;
+		}
 		if (specifier.kind != syntax::DeclSpecKind::Keyword)
 			continue;
 		switch (specifier.keyword)
@@ -220,6 +227,8 @@ void Analyzer::specifiers(
 			break;
 		}
 	}
+	if (out.is_constinit && (lone_declaration || out.is_constexpr || out.is_typedef || out.is_friend))
+		error(out.location, "__constinit requires a variable declaration without constexpr, typedef or friend");
 	const Type* type = nullptr;
 	bool int128 = false, complex = false;
 	for (const syntax::DeclSpecifier& specifier : list)
@@ -228,6 +237,7 @@ void Analyzer::specifiers(
 		switch (specifier.kind)
 		{
 		case syntax::DeclSpecKind::Keyword:
+		case syntax::DeclSpecKind::Constinit:
 		case syntax::DeclSpecKind::Vector:
 			continue;
 		case syntax::DeclSpecKind::Name:
@@ -1405,6 +1415,8 @@ const Type* Analyzer::parameter_type(const syntax::ParameterDeclaration& paramet
 {
 	Specifiers specifiers;
 	this->specifiers(parameter.specifiers, scope, specifiers, false);
+	if (specifiers.is_constinit)
+		error(parameter.location, "__constinit in a parameter declaration");
 	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_)
 		error(parameter.location, "parameter without a type");
 	// 7.1.2p1: function-specifiers only in function declarations; 9.2p9:
@@ -1425,6 +1437,8 @@ const Type* Analyzer::type_id(const syntax::TypeId& type, Scope* scope)
 {
 	Specifiers specifiers;
 	this->specifiers(type.specifiers, scope, specifiers, false);
+	if (specifiers.is_constinit)
+		error(type.location, "__constinit in a type-id");
 	if (failed())
 		return nullptr;
 	if (specifiers.type == nullptr)

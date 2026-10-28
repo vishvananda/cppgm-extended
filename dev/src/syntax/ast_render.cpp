@@ -136,6 +136,9 @@ void SyntaxRenderer::specifier(const DeclSpecifier& specifier)
 	case DeclSpecKind::Name:
 		name(*specifier.name, true);
 		break;
+	case DeclSpecKind::Constinit:
+		text("__constinit ");
+		break;
 	case DeclSpecKind::Decltype:
 		text("decltype(");
 		expression(*specifier.operand);

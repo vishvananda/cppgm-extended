@@ -11,6 +11,8 @@ enum class DeclSpecKind : uint8_t
 	// A keyword: storage class, function specifier, typedef, friend,
 	// constexpr, cv-qualifier or simple type keyword.
 	Keyword,
+	// GCC's __constinit declaration specifier, independent of the type.
+	Constinit,
 	// A named type: type-name, qualified type name or typename-specifier.
 	Name,
 	Decltype,

@@ -1144,6 +1144,10 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	const bool member = where->kind == ScopeKind::Class && !specifiers.is_static;
 	// A declaration directly in a linkage-specification is extern (7.5p7).
 	const bool is_extern = specifiers.is_extern || (linkage_extern_ && where->kind == ScopeKind::Namespace);
+	if (specifiers.is_constinit &&
+		(member ||
+			(where->kind == ScopeKind::Block && !specifiers.is_static && !specifiers.is_thread_local && !is_extern)))
+		error(location, "__constinit requires a variable with static or thread storage duration");
 	// A static data member's declaration in its class is not a definition;
 	// its qualified namespace-scope one is (9.4.2p2). One declared inline in
 	// its class is (C++17's 9.4.2p3, accepted in hosted compilations as an
@@ -1225,6 +1229,7 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	}
 	variable->defined = variable->defined || definition;
 	variable->is_constexpr = variable->is_constexpr || specifiers.is_constexpr;
+	variable->is_constinit = variable->is_constinit || specifiers.is_constinit;
 	variable->is_mutable = variable->is_mutable || specifiers.is_mutable;
 	// A namespace-scope variable or static data member under a
 	// template-head is a variable template; a static data member template's
@@ -1326,7 +1331,7 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 		default_initialize(variable, type, location);
 		// 7.1.5p9: a constexpr object default-initialized by a constexpr
 		// constructor.
-		if (variable->is_constexpr)
+		if (variable->is_constexpr || variable->is_constinit)
 			record_constant_initializer(variable, nullptr, lookup);
 	}
 	// 12.4p11: the object's destruction where its storage duration ends.
@@ -1574,6 +1579,8 @@ void Analyzer::note_user_provided(const FunctionEntity* function, const syntax::
 Binding* Analyzer::declare_function(const Specifiers& specifiers, const DeclaratorInfo& info, Scope* scope,
 	bool definition, uint32_t location, bool deleted)
 {
+	if (specifiers.is_constinit)
+		error(location, "__constinit on a function declaration");
 	// 7.1.5p8 (C++11): a constexpr non-static member function other than a
 	// constructor is const (not under -std=c++14, see set_cxx14).
 	if (specifiers.is_constexpr && !cxx14_ && !specifiers.is_static && !specifiers.is_friend &&

@@ -48,8 +48,10 @@ public:
 	// arena; with `transient`, a non-reference's integer value that is not a
 	// value-initialization's zero stays in the evaluation's storage (valid
 	// while the interpreter lives).
+	// With static_zero, trivial default-initialization preserves the zero
+	// value provided by static storage.
 	bool initialize(const VariableEntity* variable, const syntax::Initializer* initializer, const ConstValue*& out,
-		bool transient = false);
+		bool transient = false, bool static_zero = false);
 
 	uint32_t failure_location() const { return failure_location_; }
 	const char* failure() const { return failure_; }

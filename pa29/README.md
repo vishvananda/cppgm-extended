@@ -46,6 +46,9 @@ hosted headers depend on:
 - a hosted type specifier such as `__uint128_t` or `__float128` spells itself as
   an identifier rather than a keyword, and introduces a functional cast the same
   way a fundamental type keyword does
+- GCC's `__constinit` requires static or thread storage and static
+  initialization, without adding `const` or requiring a literal class type;
+  dependent definitions are checked when instantiated
 - `_Atomic` is not `volatile`: a class with an `_Atomic` member is still a
   literal type and may have a `constexpr` constructor
 

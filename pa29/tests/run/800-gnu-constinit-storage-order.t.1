@@ -1,0 +1,31 @@
+struct Category {
+  int value;
+  constexpr Category() : value(7) {}
+  virtual ~Category() {}
+};
+extern Category category;
+int observed;
+struct Reader {
+  Reader() { observed = category.value; }
+} reader;
+__constinit Category category;
+
+struct ThreadValue {
+  int value;
+  constexpr ThreadValue() : value(9) {}
+};
+extern thread_local ThreadValue thread_value;
+thread_local int observed_thread = thread_value.value;
+__constinit thread_local ThreadValue thread_value;
+__constinit int number;
+
+int main() {
+  static __constinit int block = 2;
+  if (observed != 7 || observed_thread != 9 || number != 0)
+    return 1;
+  ++category.value;
+  ++thread_value.value;
+  ++number;
+  ++block;
+  return category.value != 8 || thread_value.value != 10 || number != 1 || block != 3;
+}

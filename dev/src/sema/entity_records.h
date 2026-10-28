@@ -348,6 +348,8 @@ struct VariableEntity : Entity
 	// const, one object however many units define it (a weak definition
 	// in each, initialized once, as a template's static data member is).
 	bool is_inline : 1;
+	// GCC's __constinit: constant initialization, without const qualification.
+	bool is_constinit : 1;
 	// A non-static data member's brace-or-equal-initializer may throw (it
 	// calls a function or constructor that is not non-throwing, 15.4p14).
 	bool throwing_initializer : 1;

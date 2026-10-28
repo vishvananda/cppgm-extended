@@ -10,7 +10,8 @@
 namespace syntax {
 
 // The GNU names the grammar treats specially (type traits, `__typeof__`
-// and `__attribute__`), by identifier id: one table lookup per identifier.
+// `__attribute__` and `__constinit`), by identifier id: one table lookup
+// per identifier.
 class GnuNames
 {
 public:
@@ -23,7 +24,8 @@ public:
 	static const uint8_t kComplex = 0xfd;
 	static const uint8_t kRealPart = 0xfc;
 	static const uint8_t kImagPart = 0xfb;
-	static const uint8_t kFirstSpecial = 0xfb;
+	static const uint8_t kConstinit = 0xfa;
+	static const uint8_t kFirstSpecial = 0xfa;
 
 	explicit GnuNames(IdentifierTable& identifiers)
 	{
@@ -39,6 +41,7 @@ public:
 		mark(identifiers, "__real", kRealPart);
 		mark(identifiers, "__imag__", kImagPart);
 		mark(identifiers, "__imag", kImagPart);
+		mark(identifiers, "__constinit", kConstinit);
 	}
 
 	// 0 for an identifier of no special GNU name.
