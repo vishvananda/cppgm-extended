@@ -1064,19 +1064,52 @@ Entity* Analyzer::class_partial_specialization(const syntax::ClassSpecifier& spe
 	// class or namespace it names, its template parameters bridged over it
 	// (3.4.3p3).
 	const Scope* owner = entity->templ->pattern->owner;
-	// Instantiating an enclosing class instantiates the member partial's
-	// declaration and argument pattern, not its body (14.7.1p1). Its
-	// specialization uses the original analyzed definition on demand.
+	// Keep the selected declaration's analyzed definition origin. Matching
+	// it again in the original class would lose instance-local aliases.
 	if (!specifier.name->qualified() && WithinInstance(owner))
 	{
+		entity->templ->partial = member_partial_pattern(specifier);
 		entity->templ->definition = nullptr;
 		return entity;
+	}
+	if (owner != nullptr && owner->kind == ScopeKind::Class)
+	{
+		member_partial_definitions_.set(&specifier, static_cast<uint32_t>(member_partial_patterns_.size()));
+		member_partial_patterns_.push_back(entity);
 	}
 	Scope* parent = specifier.name->qualified() ? qualified_lookup_scope(const_cast<Scope*>(owner), scope) : scope;
 	class_body(entity, specifier, parent, scope);
 	// Its definition context ends with it, as a primary template's (14.6.4.2).
 	entity->templ->definition_ordinal = definition_point();
 	return entity;
+}
+
+ClassEntity* Analyzer::member_partial_pattern(const syntax::ClassSpecifier& specifier)
+{
+	// A class instantiation pairs source and copy members by declaration
+	// position (as link_member_patterns does), never by names or locations.
+	if (class_instantiations_.empty())
+		return nullptr;
+	const ClassInstantiation& active = class_instantiations_.back();
+	if (active.declared >= active.pattern->members.size)
+		return nullptr;
+	const syntax::Decl* declaration = active.pattern->members[active.declared];
+	const syntax::Decl* copy = active.copy->members[active.declared];
+	while (declaration->kind == syntax::DeclKind::Template && copy->kind == syntax::DeclKind::Template)
+	{
+		declaration = static_cast<const syntax::TemplateDecl*>(declaration)->declaration;
+		copy = static_cast<const syntax::TemplateDecl*>(copy)->declaration;
+	}
+	if (declaration->kind != syntax::DeclKind::Class || copy->kind != syntax::DeclKind::Class ||
+		static_cast<const syntax::ClassDecl*>(copy)->specifier.class_specifier != &specifier)
+		return nullptr;
+	const syntax::ClassSpecifier* source =
+		static_cast<const syntax::ClassDecl*>(declaration)->specifier.class_specifier;
+	const uint32_t index = member_partial_definitions_.find(source);
+	if (index == PointerMap::kMissing)
+		return nullptr;
+	member_partial_definitions_.set(&specifier, index);
+	return member_partial_patterns_[index];
 }
 
 ClassEntity* Analyzer::matching_partial(

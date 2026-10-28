@@ -2054,6 +2054,11 @@ void Analyzer::instantiate_class(ClassEntity* entity)
 		? static_cast<const ClassEntity*>(facts->pattern->owner->entity)
 		: nullptr;
 	ClassEntity* declared_partial = partial;
+	ClassEntity* deferred_partial = partial != nullptr && partial->templ->definition == nullptr
+		? partial->templ->partial
+		: nullptr;
+	if (deferred_partial != nullptr)
+		partial = deferred_partial;
 	ClassEntity* member = (partial == nullptr || partial->templ->definition == nullptr) && instance != nullptr
 		? pattern_member_template(facts->pattern)
 		: nullptr;
@@ -2067,9 +2072,10 @@ void Analyzer::instantiate_class(ClassEntity* entity)
 		ClassEntity* outer = const_cast<ClassEntity*>(original_member_template(member));
 		member = outer != member ? outer : nullptr;
 	}
-	const bool outside_partial = member != nullptr &&
-		(member->templ->partials != nullptr || member->templ->partial_positions != 0) &&
-		(partial = matching_partial(member, facts->arguments, facts->argument_count, deduced, instance)) != nullptr;
+	const bool outside_partial = deferred_partial != nullptr ||
+		(member != nullptr && (member->templ->partials != nullptr || member->templ->partial_positions != 0) &&
+			(partial = matching_partial(member, facts->arguments, facts->argument_count, deduced, instance)) !=
+				nullptr);
 	if (partial != nullptr)
 		pattern = partial->templ;
 	// An instance's member template defined outside the class template:

@@ -274,5 +274,9 @@ an argument from its result.
 
 Use canonical argument keys, PA16 constant values and template-entity bindings.
 Keep specialization selection separate from the demanded declaration,
-initializer or body. Retain deterministic partial-specialization selection and
+initializer or body. An instantiated member partial retains its selected
+argument pattern and instance context together with a link to the original
+analyzed definition. Do not select the partial again through the original
+class's aliases merely to obtain its deferred body. Unselected member partial
+bodies remain uninstantiated. Retain deterministic partial-specialization selection and
 explicit links to the class or namespace owning each generated entity.

@@ -141,6 +141,8 @@ struct ClassTemplateFacts
 	// matched partial specialization, or the member template of the class
 	// template whose definition outside it an instance's member template's
 	// specialization instantiated (null for the primary's own definition).
+	// An instance's member-partial declaration also uses partial to name
+	// the original analyzed definition, whose body remains deferred.
 	ClassEntity* partials;
 	ClassEntity* next_partial;
 	uint64_t partial_positions;

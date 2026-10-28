@@ -286,6 +286,7 @@ private:
 		SmallList<Entity*, 4>& lists);
 	ClassEntity* partial_of_arguments(ClassEntity* templ, const Type* const* arguments, uint32_t count);
 	Entity* class_partial_specialization(const syntax::ClassSpecifier& specifier, Scope* scope, Specifiers& out);
+	ClassEntity* member_partial_pattern(const syntax::ClassSpecifier& specifier);
 	ClassEntity* matching_partial(ClassEntity* templ, const Type* const* arguments, uint32_t count, TypeList& deduced,
 		const ClassEntity* instance = nullptr);
 	bool deduce_partial(const ClassEntity* partial, const Type* const* arguments, uint32_t count, TypeList& deduced,
@@ -1712,6 +1713,11 @@ private:
 	// arguments deduced for its parameters (14.5.5.1p2), which the frames of
 	// its members' definitions outside it bind (14.5.5.3p1; see
 	// enclosing_arguments): facts -> index in partial_deduced_.
+	// Member partial definitions and their copies share a typed origin;
+	// definitions -> index in member_partial_patterns_. The selected copy
+	// keeps the origin in ClassTemplateFacts::partial, without rematching.
+	PointerMap member_partial_definitions_;
+	std::vector<ClassEntity*> member_partial_patterns_;
 	PointerMap partial_deduced_index_;
 	std::vector<const Type* const*> partial_deduced_;
 	// Prototype scopes' parameters' positions (see parameter_word).
