@@ -53,6 +53,7 @@ private:
 	Analyzer& a_;
 	uint32_t limit_;
 	uint64_t dependent_uses_;
+	uint64_t value_parameter_uses_;
 	uint32_t instantiation_depth_;
 	BodyContext* body_;
 	uint32_t class_depth_;

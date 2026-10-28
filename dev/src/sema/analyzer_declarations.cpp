@@ -1278,6 +1278,7 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	}
 	if (initializer != nullptr)
 	{
+		const uint64_t values = names_.value_parameter_uses();
 		bool deferred = false;
 		if (typed_initialization)
 		{
@@ -1315,6 +1316,11 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 		}
 		else
 			initializer_names(initializer, lookup, IsClassObjectType(type));
+		const ExprFacts* initial = initializer->expression != nullptr ? initializer->expression->facts : nullptr;
+		if (variable->is_constexpr ||
+			((type->cv & kConst) != 0 && (IsIntegralType(type) || type->kind == TypeKind::Enum)))
+			binding->value_dependent = names_.value_parameter_uses() != values ||
+				(initial != nullptr && (initial->flags & kValueDependentUse) != 0);
 		if (template_depth_ == 0 && !deferred)
 			record_constant_initializer(variable, initializer, lookup);
 		// 9.4.2p3: a const static data member's in-class initializer is a

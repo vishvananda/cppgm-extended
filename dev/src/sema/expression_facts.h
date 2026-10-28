@@ -195,6 +195,10 @@ enum : uint32_t
 	// parameters (NameLookup::dependent_uses): in an instantiation, it may
 	// be type-dependent in its template (14.6.2.2).
 	kDependentUse = 1048576,
+	// Value dependence retained after instantiation (14.6.2.3), distinct
+	// from type dependence: an integral parameter or sizeof(T) has a fixed
+	// result type, but makes an array bound's declared type dependent.
+	kValueDependentUse = 2147483648u,
 	// An operand of an implied construct the analysis made (6.5.4p1's
 	// equivalent of a range-based for): typed when made, its facts are
 	// returned as they are when it is typed again.

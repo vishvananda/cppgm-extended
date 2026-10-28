@@ -31,6 +31,7 @@ Analyzer::~Analyzer()
 Analyzer::InstantiationContext::InstantiationContext(
 	Analyzer& analyzer, uint32_t depth, bool substitution, uint32_t limit)
 	: a_(analyzer), limit_(analyzer.names_.limit()), dependent_uses_(analyzer.names_.dependent_uses()),
+	  value_parameter_uses_(analyzer.names_.value_parameter_uses()),
 	  instantiation_depth_(analyzer.instantiation_depth_), body_(analyzer.body_), class_depth_(analyzer.class_depth_),
 	  template_depth_(analyzer.template_depth_), template_list_(analyzer.template_list_),
 	  template_scope_(analyzer.template_scope_), template_owner_(analyzer.template_owner_),
@@ -143,6 +144,7 @@ Analyzer::InstantiationContext::~InstantiationContext()
 	a_.lexical_limit_ = lexical_limit_;
 	a_.names_.set_limit(limit_);
 	a_.names_.set_dependent_uses(dependent_uses_);
+	a_.names_.set_value_parameter_uses(value_parameter_uses_);
 }
 
 void Analyzer::InstantiationContext::swap_scratch()

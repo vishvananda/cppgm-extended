@@ -72,7 +72,9 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 					break;
 				source = next;
 			}
-			pattern = source != function ? source->type : nullptr;
+			// Parameter adjustment removes an array bound's dependence when
+			// the declared array parameter becomes a pointer (8.3.5p5).
+			pattern = source != function ? source->type->canonical : nullptr;
 			all_dependent = pattern == nullptr || pattern->param_count != type->param_count;
 			for (uint32_t i = 0; i < type->param_count && !all_dependent; ++i)
 				all_dependent = pattern->params[i]->kind == TypeKind::Expansion;

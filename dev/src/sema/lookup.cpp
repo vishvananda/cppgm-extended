@@ -1010,7 +1010,8 @@ LookupResult NameLookup::unqualified(Scope* scope, const Identifier* name, Looku
 			if ((current->kind == ScopeKind::TemplateParameters && result.binding->kind != BindingKind::Enumerator) ||
 				result.binding->dependent || (current->kind == ScopeKind::Class && DependentClassScope(current)))
 				++dependent_uses_;
-			else if (current->kind == ScopeKind::TemplateParameters)
+			if ((current->kind == ScopeKind::TemplateParameters && result.binding->kind == BindingKind::Enumerator) ||
+				result.binding->value_dependent)
 				++value_parameter_uses_;
 			return result;
 		}

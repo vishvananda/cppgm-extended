@@ -1,0 +1,147 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i8 0
+  i8 0
+  i8 0
+  i8 0
+}
+
+function @operator__(%out : ptr [pass=by_address, object_bytes=4], %__param1 : ptr) -> ptr [binding=strong, object=_ZlsR6StreamPKc] {
+  slot $out : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store typed ptr %out, $out
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $out
+    %t2 = index i8 [projection=field] %t1, 0
+    store typed i32 2, %t2
+    %t3 = load typed ptr $out
+    return ptr %t3
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $out : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $out
+    %t2 = addr $out
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 0, %t3
+    %t4 = addr $out
+    call void @bytes(%t4)
+    %t5 = addr $out
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load typed i32 %t6
+    %t8 = cmp ne i32 %t7, 2
+    branch %t8, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t9 = addr $out
+    call void @alignment(%t9)
+    %t10 = addr $out
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load typed i32 %t11
+    %t13 = cmp ne i32 %t12, 2
+    branch %t13, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    return i32 2
+
+  block ^if_else_5:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t14 = addr $out
+    call void @alias(%t14)
+    %t15 = addr $out
+    %t16 = index i8 [projection=field] %t15, 0
+    %t17 = load typed i32 %t16
+    %t18 = cmp ne i32 %t17, 2
+    branch %t18, ^if_then_7, ^if_else_8
+
+  block ^if_then_7:
+    return i32 3
+
+  block ^if_else_8:
+    jump ^if_end_9
+
+  block ^if_end_9:
+    %t19 = addr $out
+    call void @fixed(%t19)
+    %t20 = addr $out
+    %t21 = index i8 [projection=field] %t20, 0
+    %t22 = load typed i32 %t21
+    %t23 = cmp ne i32 %t22, 1
+    %t24 = convert trunc i32 i64 %t23
+    return i32 %t24
+}
+function @bytes(%out : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z5bytesIiEvR6Stream] {
+  slot $out : ptr
+  slot $text : obj<4x1>
+
+  block ^entry:
+    store typed ptr %out, $out
+    %t1 = addr $text
+    copyobj 4x1 @__constexpr_template__1, %t1
+    %t2 = load typed ptr $out
+    %t3 = addr $text
+    %t4 = call ptr @operator__(%t2, %t3)
+    return void
+}
+function @alignment(%out : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z9alignmentIiEvR6Stream] {
+  slot $out : ptr
+  slot $text : obj<4x1>
+
+  block ^entry:
+    store typed ptr %out, $out
+    %t1 = addr $text
+    copyobj 4x1 @__constexpr_template__1, %t1
+    %t2 = load typed ptr $out
+    %t3 = addr $text
+    %t4 = call ptr @operator__(%t2, %t3)
+    return void
+}
+function @alias(%out : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z5aliasIiEvR6Stream] {
+  slot $out : ptr
+  slot $text : obj<4x1>
+
+  block ^entry:
+    store typed ptr %out, $out
+    %t1 = addr $text
+    copyobj 4x1 @__constexpr_template__1, %t1
+    %t2 = load typed ptr $out
+    %t3 = addr $text
+    %t4 = call ptr @operator__(%t2, %t3)
+    return void
+}
+function @fixed(%out : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z5fixedIiEvR6Stream] {
+  slot $out : ptr
+  slot $text : obj<4x1>
+
+  block ^entry:
+    store typed ptr %out, $out
+    %t1 = addr $text
+    copyobj 4x1 @__constexpr_template__1, %t1
+    %t2 = load typed ptr $out
+    %t3 = addr $text
+    %t4 = call ptr @Stream__operator__(%t2, %t3)
+    return void
+}
+function @Stream__operator__(%this : ptr [object_bytes=4], %__param1 : ptr) -> ptr [binding=weak, object=_ZN6StreamlsEPKv, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store typed i32 1, %t2
+    %t3 = load typed ptr $this
+    return ptr %t3
+}

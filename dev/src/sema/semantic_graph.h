@@ -76,6 +76,9 @@ struct Binding
 	// type-dependent in its template (14.6.2.2p3; see
 	// NameLookup::dependent_uses).
 	bool dependent : 1;
+	// A constant's initializer was value-dependent in its template.
+	// Naming it preserves value dependence without changing its fixed type.
+	bool value_dependent : 1;
 	// A typedef with a GNU alignment (in Analyzer::alias_alignments_).
 	bool aligned_alias : 1;
 	// Type lines: the class-key or enum-key this declaration wrote (and

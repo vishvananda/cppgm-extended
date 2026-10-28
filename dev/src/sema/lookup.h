@@ -143,10 +143,12 @@ public:
 	void set_dependent_uses(uint64_t uses) { dependent_uses_ = uses; }
 	void note_dependent_use() { ++dependent_uses_; }
 	// A count of the unqualified lookups that found a non-type template
-	// parameter an instantiation frame binds (an enumerator there, see
-	// dependent_uses): a template argument naming one makes its
-	// template-id a dependent type in its template (14.6.2.1p7).
+	// parameter an instantiation frame binds, or a value-dependent constant
+	// or query. An array bound or template argument using one makes its
+	// containing type dependent (14.6.2.1p7, 14.6.2.3).
 	uint64_t value_parameter_uses() const { return value_parameter_uses_; }
+	void set_value_parameter_uses(uint64_t uses) { value_parameter_uses_ = uses; }
+	void note_value_parameter_use() { ++value_parameter_uses_; }
 
 	telemetry::Counter lookups() const { return lookups_; }
 	telemetry::Counter limited_lookups() const { return limited_lookups_; }

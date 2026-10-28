@@ -241,26 +241,44 @@ ExprFacts* Analyzer::typed(const syntax::Expr& expr, Scope* scope)
 	// argument-dependent lookup of an operator applied to it (14.6p10,
 	// 14.6.4.2).
 	const uint64_t uses = names_.dependent_uses();
+	const uint64_t values = names_.value_parameter_uses();
 	ExprFacts* facts = typed_form(expr, scope);
 	switch (expr.kind)
 	{
 	case syntax::ExprKind::Sizeof:
-	case syntax::ExprKind::SizeofPack:
 	case syntax::ExprKind::TypeTrait:
+		// Fixed result type, but a dependent queried type makes the value
+		// dependent. A fixed-type parameter in sizeof(N) does not (14.6.2.3).
+		names_.set_value_parameter_uses(values + (names_.dependent_uses() != uses));
+		names_.set_dependent_uses(uses);
+		break;
+	case syntax::ExprKind::SizeofPack:
+		names_.set_value_parameter_uses(values + 1);
+		names_.set_dependent_uses(uses);
+		break;
 	case syntax::ExprKind::Delete:
 	case syntax::ExprKind::Throw:
 		// Never type-dependent (14.6.2.2p4).
 		names_.set_dependent_uses(uses);
+		names_.set_value_parameter_uses(values);
 		break;
 	case syntax::ExprKind::BuiltinTrait:
 		if (static_cast<const syntax::BuiltinTraitExpr&>(expr).trait < GnuTrait::UnderlyingType)
+		{
+			names_.set_value_parameter_uses(values + (names_.dependent_uses() != uses));
 			names_.set_dependent_uses(uses);
+		}
 		break;
 	default:
 		break;
 	}
 	if (facts != nullptr && names_.dependent_uses() != uses)
+	{
 		facts->flags |= kDependentUse;
+		names_.note_value_parameter_use();
+	}
+	if (facts != nullptr && names_.value_parameter_uses() != values)
+		facts->flags |= kValueDependentUse;
 	return facts;
 }
 

@@ -1381,6 +1381,7 @@ void Analyzer::prototype_dependence(Scope* scope, const Type* pattern, const syn
 	// The original parameter types retain lookup dependence after
 	// substitution. Expand only the pack's own parameters, using the
 	// cloner's arities, so fixed parameters beside it stay fixed.
+	pattern = pattern->canonical;
 	Binding* binding = scope->bindings;
 	size_t next = 0;
 	for (uint32_t i = 0; i < pattern->param_count && binding != nullptr; ++i)
@@ -1485,6 +1486,10 @@ uint64_t Analyzer::array_bound(const syntax::Expr& bound, Scope* scope)
 		validate_fixed_expression(bound, scope);
 	if (failed())
 		return 1;
+	// The bound has a fixed integral type, but its value can depend on the
+	// template. Keep that provenance in the declaration's type dependence.
+	if (bound.facts != nullptr && (bound.facts->flags & kValueDependentUse) != 0)
+		names_.note_dependent_use();
 	// A bound in a template may depend on its parameters: evaluated when
 	// it can be, otherwise left unknown for instantiation.
 	if (!constant_value(bound, scope, value, template_depth_ == 0 && soft_substitution_ == 0))
