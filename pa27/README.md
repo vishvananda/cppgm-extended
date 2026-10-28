@@ -157,6 +157,7 @@ x.t.2
 
 Optional sidecars control or check the host flow:
 
+- `x.flags`: extra compiler flags for each source
 - `x.system-includes`: system include search directories passed to `cppgm++`
   as `-isystem <dir>`
 - `x.link.flags`: extra flags passed to the host link driver
@@ -167,6 +168,10 @@ Optional sidecars control or check the host flow:
 
 The checked-in PA27 tests cover:
 
+- DWARF 4 source-line tables and function ranges in hosted objects requested
+  with `-g`, and their suppression by a later `-g0`; serialized LowIR preserves
+  the same locations. Local variables and source type layouts are separate
+  debug-information features.
 - hosted `main(argc, argv)` behavior through the host CRT
 - host linking across multiple `cppgm++`-generated objects
 - host linking against host-built objects

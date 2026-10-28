@@ -67,7 +67,7 @@ FRONTEND_OBJ_BASENAMES_lowir2native := $(FRONTEND_PHASE_BASENAMES_lowir) lowir/t
 # PA25's compile and link modes: the relocatable object model, its ELF
 # encoding and the object back end (native/object), the linker and its
 # runtime library (native/link), and the driver that runs them.
-FRONTEND_PHASE_BASENAMES_object := native/object/object_file native/object/elf_object_writer native/object/elf_object_reader native/object/host_unwind native/object/function_census native/object/object_compiler
+FRONTEND_PHASE_BASENAMES_object := native/object/object_file native/object/elf_object_writer native/object/elf_object_reader native/object/host_unwind native/object/function_census native/object/dwarf_bytes native/object/dwarf_lines native/object/object_compiler
 FRONTEND_PHASE_BASENAMES_link := native/link/routine_builder native/link/runtime_support native/link/runtime_library native/link/linker
 # lowir2native links an executable needing link mode's runtime library.
 FRONTEND_OBJ_BASENAMES_lowir2native += $(FRONTEND_PHASE_BASENAMES_object) $(FRONTEND_PHASE_BASENAMES_link)

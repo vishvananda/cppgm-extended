@@ -1,5 +1,7 @@
 #pragma once
 
+#include "native/x86/code_location.h"
+
 #include <cstdint>
 #include <vector>
 
@@ -122,8 +124,11 @@ public:
 	// model records each function's unwind facts.
 	void set_eh_model(EhModel model) { eh_model_ = model; }
 	const UnwindFacts& unwind() const { return unwind_; }
+	const std::vector<CodeLocation>& locations() const { return locations_; }
 
 private:
+	std::vector<CodeLocation> locations_;
+	void code_location(const Function& function, const Inst& inst);
 	void encode(const Function& function);
 	void prologue(const Function& function);
 	void frame_reserve(const Function& function);

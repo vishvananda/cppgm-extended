@@ -55,6 +55,7 @@ struct Invocation
 	// -fsyntax-only: each source analyzed, nothing lowered or written.
 	bool syntax_only = false;
 	bool ignore_narrowing = false;
+	bool debug_info = false;
 	bool stats = false;
 	// --stats-functions: the object back end's per-function census
 	// (native/object/function_census.h), after each unit's compilation.
@@ -310,6 +311,12 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 			invocation.stats = true;
 		else if (arg == "--stats-functions")
 			invocation.function_census = true;
+		else if (starts_with(arg, "-g"))
+		{
+			const int request = debug_info_request(arg);
+			if (request >= 0)
+				invocation.debug_info = request != 0;
+		}
 		else if (optimization_level(arg) >= 0)
 			invocation.optimizer.level = optimization_level(arg);
 		else if (arg == "--inline-limit")
@@ -477,6 +484,7 @@ bool compile_unit(
 	if (invocation.optimizer.level == 0)
 		lowering.set_definition_stream(&builder);
 	lowering.set_object_mode(true);
+	lowering.set_debug_locations(invocation.debug_info);
 	lowering.set_host_objects(eh_model == native::EhModel::Host);
 	double front_ms = 0;
 	UnitWork work;
@@ -809,6 +817,16 @@ int preprocess_mode(const Invocation& invocation)
 }
 
 } // namespace
+
+int debug_info_request(const std::string& arg)
+{
+	if (arg == "-g0" || arg == "-ggdb0")
+		return 0;
+	if (starts_with(arg, "-gno-") || starts_with(arg, "-gz") || arg == "-gcolumn-info" || arg == "-gpubnames" ||
+		arg == "-gsplit-dwarf" || starts_with(arg, "-gstrict-dwarf") || arg == "-grecord-gcc-switches")
+		return -1;
+	return 1;
+}
 
 int run_toolchain(const std::vector<std::string>& args, const PreprocessorOptions& base)
 {

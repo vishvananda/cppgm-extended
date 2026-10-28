@@ -428,8 +428,27 @@ void FunctionEmitter::track_carries(const Function& function, uint32_t index, ui
 	}
 }
 
+void FunctionEmitter::code_location(const Function& function, const Inst& inst)
+{
+	const lowir::DebugLocation& here = function.locations[inst.location - 1];
+	const uint32_t offset = static_cast<uint32_t>(asm_.size() - base_);
+	if (!locations_.empty())
+	{
+		CodeLocation& last = locations_.back();
+		if (last.offset == offset)
+		{
+			last.location = here;
+			return;
+		}
+		if (last.location.file == here.file && last.location.line == here.line && last.location.column == here.column)
+			return;
+	}
+	locations_.push_back(CodeLocation{ offset, here });
+}
+
 void FunctionEmitter::encode(const Function& function)
 {
+	locations_.clear();
 	asm_.reset_labels();
 	labels_.assign(function.blocks.size(), 0);
 	for (size_t b = 0; b < function.blocks.size(); ++b)
@@ -532,6 +551,8 @@ void FunctionEmitter::encode(const Function& function)
 		{
 			const uint32_t index = block.first + i;
 			const Inst& inst = function.insts[index];
+			if (inst.location != 0)
+				code_location(function, inst);
 			const uint32_t end = block.first + block.count;
 			if (carried_reload(inst))
 			{

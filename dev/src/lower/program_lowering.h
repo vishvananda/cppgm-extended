@@ -392,7 +392,7 @@ public:
 	// The LowIR view's debug locations (a stated debug-information level
 	// other than -g0): each emitted function and instruction carries the
 	// source location it comes from, `!dbg(file, line, column)`
-	// (lowir.md "Debug Locations"). An object's code takes none.
+	// (lowir.md "Debug Locations"). The native encoder maps them to PCs.
 	void set_debug_locations(bool on) { debug_locations_ = on; }
 	bool debug_locations() const { return positions_ != nullptr; }
 	// A unit location's debug location (absent without debug locations, or

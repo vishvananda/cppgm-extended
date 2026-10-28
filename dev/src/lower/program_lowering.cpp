@@ -60,7 +60,7 @@ void ProgramLowering::lower_unit(
 	stack_base_ = reinterpret_cast<std::uintptr_t>(&marker);
 	graph_ = &graph;
 	analyzer_ = &analyzer;
-	positions_ = debug_locations_ && !object_mode_ ? analyzer.source_positions() : nullptr;
+	positions_ = debug_locations_ ? analyzer.source_positions() : nullptr;
 	debug_file_.clear();
 	debug_file_name_ = 0;
 	symbols_.clear();

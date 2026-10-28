@@ -107,19 +107,6 @@ bool is_debug_info_flag(const string& arg)
 	return arg == "-g0" || arg == "-gline-tables-only" || arg == "-g" || starts_with(arg, "-g");
 }
 
-// What a debug-information flag asks for, as GCC and Clang read it: none
-// (-g0, 0), some (-g, -g1..3, -ggdb, -gdwarf-N, -gline-tables-only, 1), or
-// the level unchanged (a modifier: -gcolumn-info, -gno-*, -gz, -1).
-int debug_info_request(const string& arg)
-{
-	if (arg == "-g0" || arg == "-ggdb0")
-		return 0;
-	if (starts_with(arg, "-gno-") || starts_with(arg, "-gz") || arg == "-gcolumn-info" || arg == "-gpubnames" ||
-		arg == "-gsplit-dwarf" || starts_with(arg, "-gstrict-dwarf") || arg == "-grecord-gcc-switches")
-		return -1;
-	return 1;
-}
-
 bool is_benign_driver_flag(const string& arg)
 {
 	return arg == "-Wall" || arg == "-Winvalid-offsetof" || arg == "-pipe" || arg == "-w" || arg == "-pg" ||
@@ -308,7 +295,7 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 		if (allow_lowir_options && is_debug_info_flag(args[i]))
 		{
 			invocation.debug_level = true;
-			const int request = debug_info_request(args[i]);
+			const int request = driver::debug_info_request(args[i]);
 			if (request >= 0)
 				invocation.debug_info = request != 0;
 			continue;
@@ -910,9 +897,8 @@ int run_emit_lowir_mode(vector<string> args)
 	lowering.set_object_mode(object_half);
 	lowering.set_host_objects(object_half);
 	// The LowIR view carries the source's debug locations when debug
-	// information is asked for (lowir.md "Debug Locations"; not the
-	// object half, whose object takes none).
-	lowering.set_debug_locations(invocation.debug_info && !object_half);
+	// information is asked for, including the object roundtrip's view.
+	lowering.set_debug_locations(invocation.debug_info);
 	double front_ms = 0, lower_ms = 0;
 	for (size_t i = 0; i < invocation.inputs.size(); ++i)
 	{

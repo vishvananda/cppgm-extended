@@ -7,6 +7,7 @@
 #include "native/image/global_data.h"
 #include "native/image/image.h"
 #include "native/object/function_census.h"
+#include "native/object/dwarf_lines.h"
 #include "native/object/host_unwind.h"
 #include "native/runtime/runtime.h"
 #include "support/flat_map.h"
@@ -134,6 +135,7 @@ private:
 	void add_aliases();
 	void add_relocations();
 	void add_groups();
+	void place_debug();
 	uint32_t object_symbol(uint32_t image_symbol);
 	// A function another object may define or interpose.
 	bool nonlocal_function(uint32_t image_symbol);
@@ -155,6 +157,7 @@ private:
 	lowir::Program& program_;
 	ObjectFile* out_ = nullptr;
 	ObjectStats& stats_;
+	std::unique_ptr<DwarfLines> debug_;
 	Image image_;
 	RuntimeSymbols runtime_;
 	Selector selector_;
@@ -370,6 +373,14 @@ void ObjectCompiler::function(lowir::SymbolId symbol)
 		stats_.encode_ms += milliseconds_since(phase);
 	}
 	ranges_.push_back(CodeRange{ symbol, image_.symbol(symbol).offset, image_.text().size(), 0, 0, false });
+	if (!emitter_.locations().empty())
+	{
+		if (!debug_)
+			debug_.reset(new DwarfLines());
+		const lowir::Function& function = program_.functions[program_.symbols[symbol].detail];
+		debug_->append(symbol, static_cast<uint32_t>(ranges_.back().end - ranges_.back().start), function.location,
+			emitter_.locations());
+	}
 	if (symbol >= emitted_.size())
 		emitted_.resize(std::max<size_t>(symbol + 1, emitted_.size() * 2), 0);
 	emitted_[symbol] = 1;
@@ -1055,6 +1066,17 @@ void ObjectCompiler::add_groups()
 	}
 }
 
+void ObjectCompiler::place_debug()
+{
+	if (!debug_)
+		return;
+	std::vector<uint32_t> symbols(program_.symbols.size(), lowir::kNoId);
+	for (const CodeRange& range : ranges_)
+		if (!range.dropped)
+			symbols[range.symbol] = object_symbol(range.symbol);
+	debug_->write(*out_, program_, symbols);
+}
+
 void ObjectCompiler::finish(ObjectFile& out)
 {
 	out_ = &out;
@@ -1068,6 +1090,7 @@ void ObjectCompiler::finish(ObjectFile& out)
 	add_relocations();
 	add_unwind_relocations();
 	add_groups();
+	place_debug();
 	stats_.sections = out.sections.size() - 1;
 	stats_.symbols = out.symbols.size() - 1;
 	for (const object::Section& section : out.sections)
