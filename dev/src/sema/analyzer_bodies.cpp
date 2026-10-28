@@ -960,12 +960,13 @@ void Analyzer::return_statement(const syntax::ValueStmt& stmt, Scope* scope)
 		return;
 	if (body_->deduce_result)
 	{
-		check_resolved(*stmt.value);
+		if (!check_resolved(*stmt.value))
+			return;
 		result = deduced_result(facts, stmt.location);
 		void_result = IsVoid(result);
 	}
-	if (void_result || result->unqualified->kind == TypeKind::Class)
-		check_resolved(*stmt.value);
+	if ((void_result || result->unqualified->kind == TypeKind::Class) && !check_resolved(*stmt.value))
+		return;
 	if (void_result)
 	{
 		if (!IsVoid(facts->type))

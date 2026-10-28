@@ -975,7 +975,8 @@ const Type* Analyzer::deduced_type(const Specifiers& specifiers, const Type* dec
 			deduce_overloaded(p, facts->functions, 0, deduced);
 		else
 		{
-			check_resolved(*expression);
+			if (!check_resolved(*expression))
+				return declared;
 			type = facts->type;
 			category = facts->category;
 		}

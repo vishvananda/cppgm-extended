@@ -896,7 +896,6 @@ ExprFacts* Analyzer::deletion(const syntax::DeleteExpr& expr, Scope* scope)
 	ExprFacts* operand = typed_value(*expr.operand, scope);
 	if (operand == nullptr)
 		return nullptr;
-	check_resolved(*expr.operand);
 	if (const ClassEntity* cls = ClassOf(operand->type))
 	{
 		const FunctionEntity* converter = unique_conversion(cls, IsObjectPointerType);
@@ -1147,7 +1146,8 @@ FunctionEntity* Analyzer::initialize_class(
 	const syntax::Expr& single = *init.expression;
 	if (typed(single, scope) == nullptr)
 		return nullptr;
-	check_resolved(single);
+	if (!check_resolved(single))
+		return nullptr;
 	if (same_class_source(entity, single))
 		return copy_initialization(entity, single, ConstructionKind::Copy, location);
 	const ClassEntity* source = ClassOf(single.facts->type);

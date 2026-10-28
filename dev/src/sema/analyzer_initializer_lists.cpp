@@ -338,7 +338,6 @@ const Type* Analyzer::list_deduced_type(const Specifiers& specifiers, const Type
 				return declared;
 			if (saved != nullptr && (facts->flags & kOverloadSet) == 0)
 				facts->flags |= kImplicit;
-			check_resolved(*item);
 			type = facts->type;
 			category = facts->category;
 		}

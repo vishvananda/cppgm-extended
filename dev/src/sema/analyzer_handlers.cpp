@@ -34,7 +34,8 @@ const Type* Analyzer::throw_operand(const syntax::Expr& operand, Scope* scope, u
 	ExprFacts* facts = typed(operand, scope);
 	if (facts == nullptr)
 		return nullptr;
-	check_resolved(operand);
+	if (!check_resolved(operand))
+		return nullptr;
 	if (facts->type == nullptr || (facts->flags & (kOverloadSet | kBoundMember)) != 0)
 		error(location, "a throw operand that is not a value");
 	const Type* type = facts->type;

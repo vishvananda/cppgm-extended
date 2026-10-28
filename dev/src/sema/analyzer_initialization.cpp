@@ -599,7 +599,8 @@ void Analyzer::aggregate_element(const syntax::BracedInitList& list, uint32_t& n
 		// initializes it; another operand converts by a converting
 		// constructor (copy-initialization, 8.5p16).
 		ClassEntity* cls = static_cast<ClassEntity*>(object->unqualified->entity);
-		check_resolved(element);
+		if (!check_resolved(element))
+			return;
 		if (same_class_source(cls, element))
 		{
 			record_copy(cls, object, element, element.location);

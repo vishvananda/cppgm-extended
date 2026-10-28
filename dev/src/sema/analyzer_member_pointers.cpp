@@ -41,7 +41,8 @@ ExprFacts* Analyzer::member_pointer_access(const syntax::BinaryExpr& expr, ExprF
 	// 5.5: `.*` takes a class object, `->*` a pointer to one; the right
 	// operand is a pointer to a member of that class or of a base. Invalid
 	// operands fail a substitution (14.8.2p8).
-	check_resolved(*expr.left);
+	if (!check_resolved(*expr.left))
+		return nullptr;
 	const Type* member_pointer = decayed(right);
 	if (!IsMemberPointer(member_pointer))
 	{

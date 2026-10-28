@@ -622,7 +622,8 @@ ExprFacts* Analyzer::indirect_call(const syntax::CallExpr& expr, ExprFacts* call
 	// A call through a function lvalue, a reference to a function or a
 	// pointer to a function (5.2.2p1): the arguments convert to the
 	// parameters of its type.
-	check_resolved(*expr.callee);
+	if (!check_resolved(*expr.callee))
+		return nullptr;
 	const Type* function = nullptr;
 	if (callee->type->kind == TypeKind::Function)
 		function = callee->type;
@@ -686,7 +687,8 @@ ExprFacts* Analyzer::member_pointer_call(
 
 ExprFacts* Analyzer::call_operator(const syntax::CallExpr& expr, ExprFacts* callee)
 {
-	check_resolved(*expr.callee);
+	if (!check_resolved(*expr.callee))
+		return nullptr;
 	const ClassEntity* cls = ClassOf(callee->type);
 	// (A substitution's failure, 14.8.2p8: __is_invocable of an incomplete
 	// class object answers false, as GCC's does.)
@@ -1304,7 +1306,11 @@ void Analyzer::convert_arguments(
 		// std::nullptr_t to void*.
 		if (argument.kind == syntax::ExprKind::BracedInit)
 			error(argument.location, "a braced-init-list argument matched by the ellipsis");
-		check_resolved(argument);
+		if (!check_resolved(argument))
+		{
+			argument_scratch_.resize(first);
+			return;
+		}
 		ExprFacts* facts = facts_of(argument);
 		if (IsVoid(facts->type))
 			error(argument.location, "argument of type void");

@@ -427,21 +427,21 @@ ExprFacts* Analyzer::typed_value(const syntax::Expr& expr, Scope* scope)
 	ExprFacts* facts = typed(expr, scope);
 	if (facts == nullptr)
 		return nullptr;
-	check_resolved(expr);
-	return facts;
+	return check_resolved(expr) ? facts : nullptr;
 }
 
-void Analyzer::check_resolved(const syntax::Expr& expr)
+bool Analyzer::check_resolved(const syntax::Expr& expr)
 {
 	const ExprFacts* facts = expr.facts;
 	if ((facts->flags & kOverloadSet) != 0)
 	{
 		if (resolve_lone_function(expr))
-			return;
-		error(expr.location, "overloaded function name without a target type");
+			return !failed();
+		return substitution_error(expr.location, "overloaded function name without a target type");
 	}
 	if ((facts->flags & kBoundMember) != 0)
-		error(expr.location, "a member function must be called");
+		return substitution_error(expr.location, "a member function must be called");
+	return true;
 }
 
 bool Analyzer::resolve_lone_function(const syntax::Expr& expr)
@@ -1025,11 +1025,13 @@ const Conversion* Analyzer::convert(const syntax::Expr& expr, const Type* target
 	{
 		FunctionEntity* function = select_overloaded(facts, target);
 		if (function == nullptr)
-			error(expr.location, "no overloaded function matches the target type");
+			return substitution_error(expr.location, "no overloaded function matches the target type"), nullptr;
 		resolve_overloaded(expr, function);
+		if (failed())
+			return nullptr;
 	}
 	if ((facts->flags & kBoundMember) != 0)
-		error(expr.location, "a member function must be called");
+		return substitution_error(expr.location, "a member function must be called"), nullptr;
 	Conversion conversion = Conversion();
 	conversions_.set_arithmetic_operand(operand);
 	const bool converts = !IsVoid(facts->type) && conversions_.implicit(operand_of(facts), target, direct, conversion);
@@ -1250,8 +1252,10 @@ ExprFacts* Analyzer::combine(const syntax::BinaryExpr& expr, Scope* scope)
 	{
 		// 5.18p1: the left operand is a discarded-value expression (a
 		// class prvalue a temporary, 12.2p1).
-		check_resolved(*expr.left);
-		check_resolved(*expr.right);
+		if (!check_resolved(*expr.left))
+			return nullptr;
+		if (!check_resolved(*expr.right))
+			return nullptr;
 		check_temporary_destruction(left, expr.left->location);
 		ExprFacts* right = facts_of(*expr.right);
 		ExprFacts* facts = new_facts(expr, right->type, right->category);
@@ -1261,19 +1265,24 @@ ExprFacts* Analyzer::combine(const syntax::BinaryExpr& expr, Scope* scope)
 	case TokenKind::OP_LAND:
 	case TokenKind::OP_LOR:
 		// 5.14, 5.15.
-		check_resolved(*expr.left);
+		if (!check_resolved(*expr.left))
+			return nullptr;
 		convert_to_bool(*expr.left);
-		check_resolved(*expr.right);
+		if (!check_resolved(*expr.right))
+			return nullptr;
 		convert_to_bool(*expr.right);
 		return new_facts(expr, types_.fundamental(FundamentalType::Bool), ValueCategory::PRValue);
 	case TokenKind::OP_ARROWSTAR:
-		check_resolved(*expr.right);
+		if (!check_resolved(*expr.right))
+			return nullptr;
 		return member_pointer_access(expr, left, facts_of(*expr.right));
 	default:
 		break;
 	}
-	check_resolved(*expr.left);
-	check_resolved(*expr.right);
+	if (!check_resolved(*expr.left))
+		return nullptr;
+	if (!check_resolved(*expr.right))
+		return nullptr;
 	ExprFacts* right = facts_of(*expr.right);
 	if (IsComparison(expr.op))
 		return comparison(expr, left, right);
@@ -1740,7 +1749,8 @@ ExprFacts* Analyzer::assignment(const syntax::BinaryExpr& expr, Scope* scope)
 		facts->flags = left->flags & kBitField;
 		return facts;
 	}
-	check_resolved(*expr.right);
+	if (!check_resolved(*expr.right))
+		return nullptr;
 	ExprFacts* right = facts_of(*expr.right);
 	const TokenKind op = CompoundOperator(expr.op);
 	const Type* rt = decayed(right);
@@ -1849,7 +1859,8 @@ ExprFacts* Analyzer::unary(const syntax::UnaryExpr& expr, Scope* scope)
 		facts->entity = operand->entity;
 		return facts;
 	}
-	check_resolved(*expr.operand);
+	if (!check_resolved(*expr.operand))
+		return nullptr;
 	if (ExprFacts* overloaded = MayOverload(expr.operand) ? unary_operator(expr, false, scope) : nullptr)
 		return overloaded;
 	if (failed())
@@ -2088,7 +2099,8 @@ ExprFacts* Analyzer::address_of(const syntax::UnaryExpr& expr, Scope* scope)
 		facts->entity = inner->entity;
 		return facts;
 	}
-	check_resolved(*operand);
+	if (!check_resolved(*operand))
+		return nullptr;
 	if (ExprFacts* overloaded = MayOverload(expr.operand) ? unary_operator(expr, false, scope) : nullptr)
 		return overloaded;
 	if (failed())
@@ -2796,10 +2808,13 @@ ExprFacts* Analyzer::explicit_conversion(
 		FunctionEntity* function = select_overloaded(
 			source, target, cast != TokenKind::KW_CONST_CAST && cast != TokenKind::KW_REINTERPET_CAST);
 		if (function == nullptr)
-			error(expr.location, "no overloaded function matches the cast's type");
+			return substitution_error(expr.location, "no overloaded function matches the cast's type"), nullptr;
 		resolve_overloaded(*operand, function);
+		if (failed())
+			return nullptr;
 	}
-	check_resolved(*operand);
+	if (!check_resolved(*operand))
+		return nullptr;
 	if (target->is_reference())
 	{
 		// A glvalue of the referenced type: lvalue for an lvalue reference
