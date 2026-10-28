@@ -181,6 +181,8 @@ The checked-in PA27 tests cover:
 - hosted `main(argc, argv)` behavior through the host CRT
 - at least 16-byte placement of local array variables spanning 16 bytes or
   more, as the AMD64 psABI requires, while preserving the source type alignment
+- functions named only as non-type template arguments remain semantically checked;
+  native objects emit their bodies when code or data actually needs them
 - host linking across multiple `cppgm++`-generated objects
 - host linking against host-built objects
 - host linking against static archives and shared libraries

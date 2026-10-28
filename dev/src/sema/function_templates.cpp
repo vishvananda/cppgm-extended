@@ -1511,6 +1511,8 @@ FunctionEntity* Analyzer::specialize(FunctionEntity* primary, const TypeList& gi
 	function->noexcept_pending = primary->noexcept_pending;
 	function->internal_linkage = primary->internal_linkage;
 	function->no_inline = primary->no_inline;
+	// GNU used keeps instantiated definitions as emission roots.
+	function->used = primary->used;
 	function->effects = primary->effects;
 	// [[noreturn]] or GNU noreturn on the template (7.6.3p1).
 	function->noreturn = primary->noreturn;

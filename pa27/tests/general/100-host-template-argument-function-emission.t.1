@@ -1,0 +1,9 @@
+struct Concept {
+ static const int& value;
+ ~Concept(){consume(value);}
+ void consume(int){}
+};
+template<void(*)()>struct Requirement{};
+template<class T> void check(){((T*)0)->~T();}
+typedef Requirement<&check<Concept>> Test;
+int main(){return 0;}

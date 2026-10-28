@@ -1,0 +1,7 @@
+template<class T> __attribute__((used)) int retained(){return 7;}
+template<> inline int retained<long>(){return 9;}
+template<int(*)()>struct Requirement{};
+typedef Requirement<&retained<int>> Check;
+typedef Requirement<&retained<long>> ExplicitCheck;
+extern "C" int call_retained();
+int main(){return call_retained()!=16;}

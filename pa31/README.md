@@ -125,6 +125,9 @@ The emitted object should be demand-driven:
 - keep ordinary declarations, overload candidates, template patterns, and
   unused inline/header helpers available for semantic analysis without turning
   them into defined object symbols
+- check function bodies required by non-type template arguments without emitting
+  their code solely for a type-level use; actual runtime references, explicit
+  instantiation definitions, and GNU `used` attributes still require emission
 - allow unresolved references for externally owned hosted library symbols, using
   the host ABI spelling expected by the configured toolchain
 

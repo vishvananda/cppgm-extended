@@ -200,9 +200,13 @@ void ProgramLowering::lower_unit(
 		if (node->function->constructor && node->function->delegation != nullptr)
 			demand(node->function);
 	}
-	// So is a function a template argument outside a body designates.
+	// The course view includes functions named only as template arguments.
+	// Object emission follows actual code/data references; semantic analysis
+	// already instantiated and checked these argument-only definitions.
+	// Explicit GNU used attributes still require a physical definition.
 	for (uint32_t i = analyzer.argument_demand_head(nullptr); i != 0; i = analyzer.argument_demand(i).previous)
-		demand(analyzer.argument_demand(i).function);
+		if (!object_mode_ || analyzer.argument_demand(i).function->used)
+			demand(analyzer.argument_demand(i).function);
 	emit_demanded();
 	// Members of explicitly instantiated classes (14.7.2p8, object roots),
 	// with the entries the units seeing an explicit instantiation
@@ -769,9 +773,11 @@ void ProgramLowering::emit_definition(
 	}
 	if (function->is_virtual && variant == EntryVariant::Complete)
 		definition_thunks(function, program_.symbols[symbol].metadata.binding);
-	// The functions its body's template arguments designate (3.2p2).
+	// Preserve the course view's argument-only definitions. In object mode
+	// only an actual runtime reference demands their code (see lower_unit).
 	for (uint32_t i = analyzer_->argument_demand_head(function); i != 0; i = analyzer_->argument_demand(i).previous)
-		demand(analyzer_->argument_demand(i).function);
+		if (!object_mode_ || analyzer_->argument_demand(i).function->used)
+			demand(analyzer_->argument_demand(i).function);
 	// An inert destructor's complete entry is written at the unit's end: a
 	// later body omitting a call of it makes it an object root (only
 	// inert ones are omitted). A program kept whole completes it there too.
