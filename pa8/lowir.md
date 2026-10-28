@@ -725,7 +725,9 @@ construct begins:
   where `x + 1` begins, and the store to `y` at `int`, where the declaration
   begins. A condition's comparison and branch, and the jumps that close the
   arms, belong to the statement that tests it (`if`, `while`, `for`); the
-  destructor calls at the end of a block belong to the block's `{`.
+  destructor calls at the end of a source block belong to its closing `}`,
+  whose location the parser retains and template instantiation copies.
+  Synthetic blocks retain the enclosing construct's location.
 - Instructions outside every statement and expression take the function's
   location: the stores of incoming parameters, and the terminator that ends
   a function falling off its end (`return void`, or `unreachable` in a

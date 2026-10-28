@@ -285,6 +285,17 @@ bool FunctionLowering::reachable_label(const syntax::Stmt& stmt)
 	}
 }
 
+void FunctionLowering::leave_scope(size_t depth, const syntax::CompoundStmt& block)
+{
+	if (debug_ && !terminated_ && cleanups_.size() > depth && block.items.closing_location != 0)
+	{
+		const DebugScope end(*this, block.items.closing_location);
+		leave_scope(depth);
+	}
+	else
+		leave_scope(depth);
+}
+
 void FunctionLowering::compound(const syntax::CompoundStmt& stmt)
 {
 	// 6.3: the block's automatic objects are destroyed when control leaves
@@ -292,7 +303,7 @@ void FunctionLowering::compound(const syntax::CompoundStmt& stmt)
 	const size_t depth = cleanups_.size();
 	for (const syntax::Stmt* item : stmt.items)
 		statement(*item);
-	leave_scope(depth);
+	leave_scope(depth, stmt);
 }
 
 // The state of the expression enclosing a statement expression: its
@@ -505,7 +516,7 @@ RValue FunctionLowering::statement_expression(const syntax::StatementExpr& expr,
 		destroy_temporaries(first);
 		end_full_expression(region);
 	}
-	leave_scope(depth);
+	leave_scope(depth, block);
 	close_region();
 	if (terminated_)
 	{

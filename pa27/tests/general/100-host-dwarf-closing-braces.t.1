@@ -1,0 +1,21 @@
+struct Guard {
+ int* value;
+ Guard(int* p):value(p){}
+ ~Guard(){++*value;}
+};
+template<class T> int scoped(T initial) {
+ int count=initial;
+ {
+  Guard guard(&count);
+  count+=2;
+ }
+ return count;
+}
+int main() {
+ int count=0;
+ {
+  Guard guard(&count);
+  count+=2;
+ }
+ return count!=3 || scoped(0)!=3;
+}

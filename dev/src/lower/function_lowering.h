@@ -1180,6 +1180,7 @@ private:
 	// `returning`: a return, which leaves the result's local constructed.
 	void destroy_cleanups(size_t depth, bool returning = false, size_t contexts = SIZE_MAX);
 	void leave_scope(size_t depth);
+	void leave_scope(size_t depth, const syntax::CompoundStmt& block);
 	// `type`: the object's, when not the variable's (a range-based for's
 	// __range bound to a class prvalue, see range_variable).
 	void local_object(const sema::VariableEntity* variable, const Place& place, const syntax::Initializer* initializer,

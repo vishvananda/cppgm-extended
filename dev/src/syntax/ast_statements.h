@@ -40,10 +40,32 @@ struct Stmt
 	uint32_t location;
 };
 
+// A compound's statement view and closing delimiter share one 16-byte
+// record: the delimiter occupies the padding after the ordinary slice's
+// count. Assignment of a new view keeps that immutable parsed location.
+struct CompoundItems
+{
+	Stmt** data;
+	uint32_t size;
+	uint32_t closing_location = 0; // zero for a synthetic block
+	Stmt** begin() const { return data; }
+	Stmt** end() const { return data + size; }
+	Stmt*& operator[](uint32_t index) const { return data[index]; }
+	bool empty() const { return size == 0; }
+	operator Slice<Stmt*>() const { return Slice<Stmt*>{ data, size }; }
+	CompoundItems& operator=(Slice<Stmt*> view)
+	{
+		data = view.data;
+		size = view.size;
+		return *this;
+	}
+};
+
 struct CompoundStmt : Stmt
 {
-	Slice<Stmt*> items;
+	CompoundItems items;
 };
+static_assert(sizeof(CompoundItems) == sizeof(Slice<Stmt*>), "compound locations reuse slice padding");
 
 struct ExpressionStmt : Stmt
 {

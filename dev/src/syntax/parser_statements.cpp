@@ -41,7 +41,10 @@ CompoundStmt* Parser::parse_compound_statement(bool new_scope)
 		items.push(item);
 	}
 	scopes_.set_current(saved);
-	if (!parsed || !expect(TokenKind::OP_RBRACE))
+	if (!parsed)
+		return nullptr;
+	stmt->items.closing_location = location();
+	if (!expect(TokenKind::OP_RBRACE))
 		return nullptr;
 	stmt->items = items.take(arena_);
 	return stmt;
