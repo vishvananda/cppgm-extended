@@ -194,6 +194,7 @@ void Parser::fail_at(Position position, const std::string& message) const
 
 void Parser::parse(const char* begin, const char* end, const std::string& source)
 {
+	debug_base_ = program_.debug ? static_cast<uint32_t>(program_.debug->types.size() - 1) : 0;
 	source_ = static_cast<uint32_t>(sources_.size());
 	sources_.push_back(source);
 	Lexer lexer(program_.names, begin, end);
@@ -220,6 +221,10 @@ void Parser::parse_top_level_item()
 		parse_function(true);
 	else if (accept_keyword(Keyword::Alias))
 		parse_alias();
+	else if (accept_keyword(Keyword::DebugType))
+		parse_debug_type();
+	else if (accept_keyword(Keyword::DebugLocal))
+		parse_debug_local();
 	else
 		fail("expected top-level LowIR item");
 }
@@ -908,6 +913,7 @@ void Parser::check_signature(const Signature& signature, Position position)
 
 void Parser::finish()
 {
+	finish_debug();
 	for (SymbolId symbol = 0; symbol < program_.symbols.size(); ++symbol)
 	{
 		if (program_.symbols[symbol].kind == SymbolKind::Unresolved)

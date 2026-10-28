@@ -7,6 +7,7 @@
 
 #include "lex/identifier_table.h"
 #include "lower/function_lowering.h"
+#include "lower/debug_info.h"
 #include "preprocess/preprocessor.h"
 #include "sema/aggregates.h"
 #include "sema/analyzer.h"
@@ -61,6 +62,12 @@ void ProgramLowering::lower_unit(
 	graph_ = &graph;
 	analyzer_ = &analyzer;
 	positions_ = debug_locations_ ? analyzer.source_positions() : nullptr;
+	if (positions_ != nullptr && debug_types_)
+	{
+		if (!program_.debug)
+			program_.debug.reset(new lowir::DebugInfo());
+		source_debug_.reset(new DebugInfo(*this));
+	}
 	debug_file_.clear();
 	debug_file_name_ = 0;
 	symbols_.clear();
@@ -235,6 +242,9 @@ void ProgramLowering::lower_unit(
 		release_definition(symbol);
 	held_definitions_.clear();
 	state_pending_signatures(first_pending);
+	if (source_debug_)
+		source_debug_->finish(graph.global);
+	source_debug_.reset();
 	graph_ = nullptr;
 	analyzer_ = nullptr;
 	positions_ = nullptr;

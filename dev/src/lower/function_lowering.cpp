@@ -36,6 +36,11 @@ FunctionLowering::FunctionLowering(
 		definition.location = lowering.debug_location(function->definition_location - 1);
 		builder_.set_current_location(definition.location);
 	}
+	if (debug_)
+	{
+		debug_function_ = symbol;
+		lowering.debug_function(function);
+	}
 	place(builder_.add_block(lowering.entry_name()));
 }
 

@@ -33,6 +33,8 @@ struct ConstValue;
 // (lower/function_lowering.h) lowers one body.
 namespace lower {
 
+class DebugInfo;
+
 // A construct outside the supported lowering slice, at a unit location.
 class LoweringError : public std::runtime_error
 {
@@ -394,10 +396,14 @@ public:
 	// source location it comes from, `!dbg(file, line, column)`
 	// (lowir.md "Debug Locations"). The native encoder maps them to PCs.
 	void set_debug_locations(bool on) { debug_locations_ = on; }
+	void set_debug_types(bool on) { debug_types_ = on; }
 	bool debug_locations() const { return positions_ != nullptr; }
 	// A unit location's debug location (absent without debug locations, or
 	// for a file name that is not one LowIR token).
 	lowir::DebugLocation debug_location(uint32_t location);
+	void debug_local(
+		lowir::SymbolId function, lowir::SlotId slot, const sema::VariableEntity* variable, uint32_t location);
+	void debug_function(const sema::FunctionEntity* function);
 	void order_completed_definitions();
 	bool streaming() const { return stream_ != nullptr; }
 	// Object mode (the toolchain's units): an object of static storage
@@ -1344,6 +1350,7 @@ private:
 	// The unit being lowered.
 	sema::SemanticGraph* graph_;
 	sema::Analyzer* analyzer_;
+	std::unique_ptr<DebugInfo> source_debug_;
 	// Unit-scoped identities: entity -> symbol.
 	PointerMap symbols_;
 	// Functions emitted where odr-used, waiting (unit-scoped), and the
@@ -1937,6 +1944,7 @@ private:
 	uint32_t slot_epoch_;
 	lowir::DefinitionSink* stream_;
 	bool debug_locations_ = false;
+	bool debug_types_ = false;
 	// The unit's source positions when it takes debug locations, and the
 	// last file name looked up.
 	const SourcePositions* positions_ = nullptr;

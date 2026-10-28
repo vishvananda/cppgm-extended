@@ -334,6 +334,9 @@ bool order_frame(Function& f, const std::vector<FrameObject>& objects)
 	for (FrameBinding& binding : f.bindings)
 		if (binding.offset < 0)
 			relocate(binding.offset);
+	for (DebugSlot& binding : f.debug_slots)
+		if (binding.offset < 0)
+			relocate(binding.offset);
 	if (f.scratch_bytes != 0)
 		relocate(f.scratch_offset);
 	if (f.eh.slot < 0)

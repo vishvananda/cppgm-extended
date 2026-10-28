@@ -655,6 +655,8 @@ void FunctionLowering::local_object_variable(const sema::VariableEntity* variabl
 			: generated_slot(lowir::SlotKind::AnonymousUnionStorage, slot_type);
 		place.storage = lowir::Value::slot(local.slot);
 	}
+	if (debug_)
+		lowering_.debug_local(debug_function_, local.slot, variable, location);
 	local_index_.set(variable, static_cast<uint32_t>(locals_.size()));
 	locals_.push_back(local);
 	qualify(place, type);

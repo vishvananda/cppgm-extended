@@ -379,7 +379,7 @@ void ObjectCompiler::function(lowir::SymbolId symbol)
 			debug_.reset(new DwarfLines());
 		const lowir::Function& function = program_.functions[program_.symbols[symbol].detail];
 		debug_->append(symbol, static_cast<uint32_t>(ranges_.back().end - ranges_.back().start), function.location,
-			emitter_.locations());
+			emitter_.locations(), mir_);
 	}
 	if (symbol >= emitted_.size())
 		emitted_.resize(std::max<size_t>(symbol + 1, emitted_.size() * 2), 0);

@@ -75,6 +75,12 @@ struct Block
 	bool landing; // a host landing pad (named by its landing block)
 };
 
+struct DebugSlot
+{
+	lowir::SlotId slot;
+	int32_t offset;
+};
+
 struct Function
 {
 	lowir::SymbolId symbol = lowir::kNoId;
@@ -89,6 +95,7 @@ struct Function
 	uint32_t preserve_mask = 0;  // callee-saved GPRs used
 	int32_t preserve_offset = 0; // save area start (negative; -stack_size: the frame's bottom)
 	std::vector<FrameBinding> bindings;
+	std::vector<DebugSlot> debug_slots;
 	std::vector<Block> blocks;
 	// The blocks' instruction ranges, ascending (laid-out MIR leaves the
 	// branches it dropped between them).
@@ -147,6 +154,7 @@ struct Function
 		preserve_mask = 0;
 		preserve_offset = 0;
 		bindings.clear();
+		debug_slots.clear();
 		blocks.clear();
 		insts.clear();
 		locations.clear();

@@ -6,6 +6,7 @@
 
 #include "ir_symbol_model.h"
 #include "lowir/instruction.h"
+#include "lowir/debug_info.h"
 #include "lowir/local_kinds.h"
 #include "lowir/name_table.h"
 #include "lowir/types.h"
@@ -308,6 +309,7 @@ struct Program
 	// __builtin_trap), which the back end encodes as a trap instruction.
 	bool trap_function(SymbolId symbol) const;
 
+	std::unique_ptr<DebugInfo> debug;
 	Arena arena;
 	NameTable names;
 	std::vector<Symbol> symbols;

@@ -170,8 +170,12 @@ The checked-in PA27 tests cover:
 
 - DWARF 4 source-line tables and function ranges in hosted objects requested
   with `-g`, and their suppression by a later `-g0`; serialized LowIR preserves
-  the same locations. Local variables and source type layouts are separate
-  debug-information features.
+  the same locations. Full `-g` additionally records named local stack objects,
+  canonical source types, class members, arrays, enums, typedefs, ordinary base
+  offsets, and virtual method declarations for dynamic type inspection.
+  `-gline-tables-only` and `-g1` retain only source-line information.
+  `-O0` and `-Og -g` preserve named source storage for debugging; optimized
+  builds can report unavailable variables as optimized out.
 - hosted `main(argc, argv)` behavior through the host CRT
 - host linking across multiple `cppgm++`-generated objects
 - host linking against host-built objects

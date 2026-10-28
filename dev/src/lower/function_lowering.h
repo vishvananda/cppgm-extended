@@ -1859,6 +1859,7 @@ private:
 	lowir::FunctionBuilder builder_;
 	// The program takes debug locations (DebugScope).
 	const bool debug_;
+	lowir::SymbolId debug_function_ = lowir::kNoId;
 	// By temporary: 1 for an address reached through a union member
 	// (mark_untyped); empty until the first.
 	std::vector<uint8_t> untyped_addresses_;

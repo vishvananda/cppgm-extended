@@ -205,6 +205,8 @@ struct SourceOutputInvocation
 	// and the last asks for debug information.
 	bool debug_level = false;
 	bool debug_info = false;
+	bool debug_types = false;
+	bool debug_optimization = false;
 };
 
 // -O<level> as GCC reads it (see driver/toolchain.cpp); -1 for another
@@ -281,6 +283,7 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 		if (allow_lowir_options && is_optimization_flag(args[i]))
 		{
 			invocation.optimizer.level = optimization_level(args[i]);
+			invocation.debug_optimization = args[i] == "-Og";
 			continue;
 		}
 		if (allow_lowir_options && args[i] == "--inline-limit")
@@ -297,7 +300,10 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 			invocation.debug_level = true;
 			const int request = driver::debug_info_request(args[i]);
 			if (request >= 0)
+			{
 				invocation.debug_info = request != 0;
+				invocation.debug_types = driver::debug_type_request(args[i]) != 0;
+			}
 			continue;
 		}
 		if (allow_lowir_options && (args[i] == "--witness" || args[i] == "--witness-debug"))
@@ -325,6 +331,8 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 	{
 		invocation.command_line.insert(0, "#define __OPTIMIZE__ 1\n");
 	}
+	if (invocation.debug_optimization && invocation.debug_types)
+		invocation.optimizer.level = 0;
 	return invocation;
 }
 
@@ -899,6 +907,7 @@ int run_emit_lowir_mode(vector<string> args)
 	// The LowIR view carries the source's debug locations when debug
 	// information is asked for, including the object roundtrip's view.
 	lowering.set_debug_locations(invocation.debug_info);
+	lowering.set_debug_types(invocation.debug_types);
 	double front_ms = 0, lower_ms = 0;
 	for (size_t i = 0; i < invocation.inputs.size(); ++i)
 	{

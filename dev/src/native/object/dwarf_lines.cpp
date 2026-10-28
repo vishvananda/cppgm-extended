@@ -1,6 +1,8 @@
 #include "native/object/dwarf_lines.h"
 
 #include "native/object/dwarf_bytes.h"
+#include "native/mir/mir.h"
+#include "native/object/dwarf_types.h"
 #include "native/object/dwarf_format.h"
 #include "support/flat_map.h"
 
@@ -18,8 +20,9 @@ class LineEncoder
 public:
 	LineEncoder(object::ObjectFile& object, const lowir::Program& program,
 		const std::vector<DwarfLines::Function>& functions, const std::vector<CodeLocation>& locations,
-		const std::vector<uint32_t>& symbols)
-		: object_(object), program_(program), functions_(functions), locations_(locations), symbols_(symbols)
+		const std::vector<uint32_t>& symbols, const std::vector<DwarfLines::Variable>& variables)
+		: object_(object), program_(program), functions_(functions), locations_(locations), symbols_(symbols),
+		  variables_(variables)
 	{}
 	void encode();
 
@@ -33,11 +36,13 @@ private:
 	void sequence(DwarfBytes& out, const DwarfLines::Function& function);
 	void information();
 	void function_info(DwarfBytes& out, const DwarfLines::Function& function);
+	std::unique_ptr<DwarfTypes> types_;
 	object::ObjectFile& object_;
 	const lowir::Program& program_;
 	const std::vector<DwarfLines::Function>& functions_;
 	const std::vector<CodeLocation>& locations_;
 	const std::vector<uint32_t>& symbols_;
+	const std::vector<DwarfLines::Variable>& variables_;
 	FlatMap<lowir::NameId, uint32_t, FileHash> files_index_;
 	std::vector<lowir::NameId> files_;
 	uint32_t line_, info_, strings_, abbreviation_, ranges_;
@@ -95,7 +100,8 @@ void LineEncoder::abbreviations()
 		{ dwarf::Ranges, dwarf::SectionOffset } };
 	const uint32_t function[][2] = { { dwarf::Name, dwarf::StringPointer },
 		{ dwarf::LinkageName, dwarf::StringPointer }, { dwarf::LowPc, dwarf::Address }, { dwarf::HighPc, dwarf::Data8 },
-		{ dwarf::DeclFile, dwarf::Unsigned }, { dwarf::DeclLine, dwarf::Unsigned }, { dwarf::External, dwarf::Flag } };
+		{ dwarf::DeclFile, dwarf::Unsigned }, { dwarf::DeclLine, dwarf::Unsigned }, { dwarf::External, dwarf::Flag },
+		{ dwarf::FrameBase, dwarf::ExpressionLocation } };
 	auto entry = [&](uint32_t code, uint32_t tag, bool children, const uint32_t (*attributes)[2], size_t count) {
 		out.uleb(code);
 		out.uleb(tag);
@@ -109,7 +115,9 @@ void LineEncoder::abbreviations()
 		out.uleb(0);
 	};
 	entry(1, dwarf::CompileUnit, true, unit, sizeof(unit) / sizeof(unit[0]));
-	entry(2, dwarf::Subprogram, false, function, sizeof(function) / sizeof(function[0]));
+	entry(2, dwarf::Subprogram, true, function, sizeof(function) / sizeof(function[0]));
+	if (types_)
+		types_->abbreviations(out);
 	out.uleb(0);
 }
 
@@ -204,6 +212,11 @@ void LineEncoder::function_info(DwarfBytes& out, const DwarfLines::Function& fun
 	out.uleb(file(declared.file));
 	out.uleb(declared.line);
 	out.fixed(object_.symbols[symbol].binding != object::Binding::Local ? 1 : 0, 1);
+	out.uleb(1);
+	out.fixed(0x9c, 1); // DW_OP_call_frame_cfa
+	if (types_)
+		types_->locals(out, function.symbol, variables_, function.first_variable, function.variable_count);
+	out.uleb(0);
 	reference(ranges_, symbol, 8);
 	reference(ranges_, symbol, 8, function.size);
 }
@@ -228,6 +241,11 @@ void LineEncoder::information()
 	for (const DwarfLines::Function& function : functions_)
 		if (symbols_[function.symbol] != lowir::kNoId)
 			function_info(out, function);
+	if (types_)
+	{
+		types_->entries(out);
+		types_->finish(out);
+	}
 	out.uleb(0); // end compilation-unit children
 	out.patch32(0, out.size() - 4);
 	DwarfBytes(object_.sections[ranges_].bytes).fixed(0, 8);
@@ -244,6 +262,8 @@ void LineEncoder::encode()
 	strings_ = section(".debug_str", strings_symbol_);
 	abbreviation_ = section(".debug_abbrev", abbreviation_symbol_);
 	ranges_ = section(".debug_ranges", ranges_symbol_);
+	if (program_.debug)
+		types_.reset(new DwarfTypes(object_, program_, info_, strings_, strings_symbol_));
 	abbreviations();
 	line_table();
 	information();
@@ -253,8 +273,8 @@ void LineEncoder::encode()
 
 } // namespace
 
-void DwarfLines::append(
-	lowir::SymbolId symbol, uint32_t size, lowir::DebugLocation declaration, const std::vector<CodeLocation>& locations)
+void DwarfLines::append(lowir::SymbolId symbol, uint32_t size, lowir::DebugLocation declaration,
+	const std::vector<CodeLocation>& locations, const native::Function& machine)
 {
 	const uint32_t first = static_cast<uint32_t>(locations_.size());
 	for (const CodeLocation& row : locations)
@@ -262,13 +282,23 @@ void DwarfLines::append(
 			locations_.push_back(row);
 	const uint32_t count = static_cast<uint32_t>(locations_.size()) - first;
 	if (count != 0)
-		functions_.push_back(Function{ symbol, size, declaration, first, count });
+	{
+		const uint32_t first_variable = static_cast<uint32_t>(variables_.size());
+		for (const DebugSlot& slot : machine.debug_slots)
+		{
+			const bool aligned = in_aligned_region(machine, slot.offset);
+			variables_.push_back(
+				Variable{ slot.slot, aligned ? slot.offset - machine.aligned_disp : slot.offset - 16, aligned });
+		}
+		functions_.push_back(Function{ symbol, size, declaration, first, count, first_variable,
+			static_cast<uint32_t>(variables_.size()) - first_variable });
+	}
 }
 
 void DwarfLines::write(
 	object::ObjectFile& object, const lowir::Program& program, const std::vector<uint32_t>& object_symbols) const
 {
-	LineEncoder(object, program, functions_, locations_, object_symbols).encode();
+	LineEncoder(object, program, functions_, locations_, object_symbols, variables_).encode();
 }
 
 } // namespace native

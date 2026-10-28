@@ -42,6 +42,7 @@ int run_toolchain(const std::vector<std::string>& args, const PreprocessorOption
 // A -g option's request: 0 disables debug information, 1 enables it,
 // -1 is a modifier that leaves the current request unchanged.
 int debug_info_request(const std::string& arg);
+int debug_type_request(const std::string& arg);
 
 // A direct driver query (--version, -v, -dumpmachine, -dumpversion,
 // -print-search-dirs, PA29), answered on standard output.

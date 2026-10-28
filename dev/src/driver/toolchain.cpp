@@ -56,6 +56,8 @@ struct Invocation
 	bool syntax_only = false;
 	bool ignore_narrowing = false;
 	bool debug_info = false;
+	bool debug_types = false;
+	bool debug_optimization = false;
 	bool stats = false;
 	// --stats-functions: the object back end's per-function census
 	// (native/object/function_census.h), after each unit's compilation.
@@ -315,10 +317,16 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 		{
 			const int request = debug_info_request(arg);
 			if (request >= 0)
+			{
 				invocation.debug_info = request != 0;
+				invocation.debug_types = debug_type_request(arg) != 0;
+			}
 		}
 		else if (optimization_level(arg) >= 0)
+		{
 			invocation.optimizer.level = optimization_level(arg);
+			invocation.debug_optimization = arg == "-Og";
+		}
 		else if (arg == "--inline-limit")
 		{
 			if (i + 1 >= args.size() || !opt::parse_inline_limit(args[++i], invocation.optimizer.limits))
@@ -391,6 +399,10 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 	// LowIR emission with -D__OPTIMIZE__ preprocesses the same).
 	if (invocation.optimizer.level > 0)
 		invocation.preprocessor.command_line.insert(0, "#define __OPTIMIZE__ 1\n");
+	// Preserve named objects and statement boundaries in the debugging level.
+	// Preprocessing still observes GCC's __OPTIMIZE__ for -Og.
+	if (invocation.debug_optimization && invocation.debug_types)
+		invocation.optimizer.level = 0;
 	add_host_environment(invocation.preprocessor, nostdinc);
 	prune_include_paths(invocation.preprocessor);
 	if (invocation.preprocess_only)
@@ -485,6 +497,7 @@ bool compile_unit(
 		lowering.set_definition_stream(&builder);
 	lowering.set_object_mode(true);
 	lowering.set_debug_locations(invocation.debug_info);
+	lowering.set_debug_types(invocation.debug_types);
 	lowering.set_host_objects(eh_model == native::EhModel::Host);
 	double front_ms = 0;
 	UnitWork work;
@@ -826,6 +839,14 @@ int debug_info_request(const std::string& arg)
 		arg == "-gsplit-dwarf" || starts_with(arg, "-gstrict-dwarf") || arg == "-grecord-gcc-switches")
 		return -1;
 	return 1;
+}
+
+int debug_type_request(const std::string& arg)
+{
+	const int level = debug_info_request(arg);
+	if (level <= 0)
+		return level;
+	return arg == "-gline-tables-only" || arg == "-g1" || arg == "-ggdb1" ? 0 : 1;
 }
 
 int run_toolchain(const std::vector<std::string>& args, const PreprocessorOptions& base)

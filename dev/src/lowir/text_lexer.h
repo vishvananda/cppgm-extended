@@ -10,6 +10,7 @@ enum class TokenKind : uint8_t
 {
 	End,
 	Word,   // keyword, type, identifier (`obj<16x8>` is one word)
+	String, // quoted presentation name in optional debug records
 	Number, // starts with a digit, or '.' and a digit
 	Temp,   // %name
 	Slot,   // $name
@@ -65,6 +66,7 @@ private:
 	void skip_space();
 	void scan_word(Token& token, TokenKind kind, const char* start);
 	void scan_number(Token& token);
+	void scan_string(Token& token);
 	void scan_debug(Token& token);
 	bool scan_decimal(uint64_t& value);
 

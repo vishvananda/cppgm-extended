@@ -76,6 +76,7 @@ private:
 		uint32_t source;
 		uint32_t line;
 	};
+	std::vector<Position> debug_positions_;
 
 	// Per-function name bindings, valid when `epoch` is the current body's.
 	struct LocalName
@@ -113,6 +114,10 @@ private:
 
 	// Top level (text_parser.cpp).
 	void parse_top_level_item();
+	void parse_debug_type();
+	void parse_debug_local();
+	void finish_debug();
+	uint32_t debug_base_ = 0;
 	SymbolId begin_symbol(NameId name, Position position);
 	SymbolId reference_symbol(NameId name);
 	void parse_global_declaration();

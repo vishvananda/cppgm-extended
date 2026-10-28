@@ -594,6 +594,10 @@ void FunctionSelector::layout_slots()
 			slot_offset_[s] = frame_alloc(bytes == 0 ? 8 : bytes, align);
 		add_binding(BindingKind::Slot, lowir::own_name(body.slots[s]), slot_offset_[s], type);
 	}
+	if (program_.debug && out_->symbol < program_.debug->functions.size())
+		for (const lowir::DebugLocal& local : program_.debug->functions[out_->symbol].locals)
+			if (local.slot < slot_state_.size() && slot_state_[local.slot] == SS_NORMAL)
+				out_->debug_slots.push_back(DebugSlot{ local.slot, slot_offset_[local.slot] });
 	// O1+: an object parameter whose one reader copies it whole into a slot
 	// in the entry block (no predecessor), before anything else there
 	// touches the slot, keeps its home in the slot: the copy vanishes

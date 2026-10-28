@@ -71,6 +71,8 @@ public:
 
 private:
 	void text(const char* s) { out_ += s; }
+	void debug_info();
+	void debug_name(NameId name);
 	// A word of the vocabulary and the space after it.
 	void word(const char* s)
 	{
@@ -424,6 +426,7 @@ void Writer::write()
 		}
 		written = written || phase_written;
 	}
+	debug_info();
 	for (const ObjectAlias& alias : program_.aliases)
 	{
 		word(spelling(Keyword::Alias));
@@ -447,6 +450,59 @@ void Writer::global_declaration(const Symbol& symbol)
 	}
 	metadata(&symbol.metadata, nullptr);
 	out_.push_back('\n');
+}
+
+void Writer::debug_name(NameId id)
+{
+	out_.push_back('"');
+	const char* name = id != 0 ? program_.spelling(id) : "";
+	for (const char* p = name; *p != 0; ++p)
+	{
+		if (*p == '\\' || *p == '"' || *p == '\n' || *p == '\r' || *p == '\t')
+			out_.push_back('\\');
+		out_.push_back(*p == '\n' ? 'n' : *p == '\r' ? 'r' : *p == '\t' ? 't' : *p);
+	}
+	out_.push_back('"');
+}
+
+void Writer::debug_info()
+{
+	if (!program_.debug)
+		return;
+	const DebugInfo& debug = *program_.debug;
+	for (uint32_t id = 1; id < debug.types.size(); ++id)
+	{
+		const DebugType& type = debug.types[id];
+		word(spelling(Keyword::DebugType));
+		for (uint64_t value : { uint64_t(id), uint64_t(type.kind), uint64_t(type.encoding), uint64_t(type.parent),
+				 uint64_t(type.type), uint64_t(type.flags), type.bytes, type.bit_offset, type.count })
+		{
+			number(value);
+			out_.push_back(' ');
+		}
+		signed_number(static_cast<int64_t>(type.constant));
+		out_.push_back(' ');
+		debug_name(type.name);
+		out_.push_back('\n');
+	}
+	for (SymbolId function = 0; function < debug.functions.size(); ++function)
+	{
+		if (function >= program_.symbols.size() || program_.symbols[function].kind != SymbolKind::FunctionDefinition)
+			continue;
+		for (const DebugLocal& local : debug.functions[function].locals)
+		{
+			word(spelling(Keyword::DebugLocal));
+			symbol(function);
+			out_.push_back(' ');
+			number(local.slot);
+			out_.push_back(' ');
+			number(local.type);
+			out_.push_back(' ');
+			debug_name(local.name);
+			location(local.declaration);
+			out_.push_back('\n');
+		}
+	}
 }
 
 void Writer::function_declaration(const Symbol& symbol)

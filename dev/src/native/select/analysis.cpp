@@ -296,6 +296,15 @@ void FunctionSelector::analyze_slots()
 			}
 		});
 	});
+	// Unoptimized source debugging keeps named objects in their actual slots.
+	// Generated slots and optimized compilations retain the usual promotion.
+	if (level_ == 0 && program_.debug && symbol_ < program_.debug->functions.size())
+		for (const lowir::DebugLocal& local : program_.debug->functions[symbol_].locals)
+			if (local.slot < count)
+			{
+				escaped[local.slot] = 1;
+				slot_state_[local.slot] = SS_NORMAL;
+			}
 	for (uint32_t s = 0; s < count; ++s)
 	{
 		if (slot_state_[s] == SS_UNUSED || escaped[s] == 1)

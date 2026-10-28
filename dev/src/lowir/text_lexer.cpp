@@ -1,6 +1,7 @@
 #include "lowir/text_lexer.h"
 
 #include <cstring>
+#include <string>
 
 namespace lowir {
 
@@ -120,6 +121,11 @@ void Lexer::scan(Token& token)
 		return;
 	}
 	const char c = *position_;
+	if (c == '"')
+	{
+		scan_string(token);
+		return;
+	}
 	const TokenKind name_kind = sigil(c);
 	if (name_kind != TokenKind::Invalid)
 	{
@@ -260,6 +266,45 @@ void Lexer::scan_debug(Token& token)
 	++position_;
 	token.kind = TokenKind::Debug;
 	token.problem = nullptr;
+}
+
+void Lexer::scan_string(Token& token)
+{
+	++position_;
+	std::string decoded;
+	while (position_ < end_ && *position_ != '"' && *position_ != '\n')
+	{
+		char c = *position_++;
+		if (c == '\\')
+		{
+			if (position_ == end_)
+				break;
+			c = *position_++;
+			if (c == 'n')
+				c = '\n';
+			else if (c == 't')
+				c = '\t';
+			else if (c == 'r')
+				c = '\r';
+			else if (c != '\\' && c != '"')
+			{
+				token.kind = TokenKind::Invalid;
+				token.problem = "invalid escape in debug name";
+				return;
+			}
+		}
+		decoded += c;
+	}
+	if (position_ == end_ || *position_ != '"')
+	{
+		token.kind = TokenKind::Invalid;
+		token.problem = "unterminated debug name";
+		return;
+	}
+	++position_;
+	token.kind = TokenKind::String;
+	token.length = static_cast<uint32_t>(position_ - token.text);
+	token.name = decoded.empty() ? 0 : names_.intern(decoded.data(), static_cast<uint32_t>(decoded.size()));
 }
 
 } // namespace lowir

@@ -1,0 +1,17 @@
+namespace example {
+struct Node { int value; Node* next; };
+struct Base { virtual ~Base(){}; int a; };
+struct Derived : Base { int b; };
+enum class Color : unsigned char { Red=3, Green=5 };
+}
+int main() {
+ int scalar=7;
+ double number=2.5;
+ example::Node object{11,0};
+ int array[3]={2,3,5};
+ example::Derived derived;
+ derived.a=13;derived.b=17;
+ example::Base* pointer=&derived;
+ example::Color color=example::Color::Green;
+ return scalar!=7 || number!=2.5 || object.value!=11 || array[2]!=5 || pointer->a!=13 || int(color)!=5;
+}

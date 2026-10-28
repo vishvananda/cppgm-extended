@@ -741,6 +741,47 @@ This metadata is semantically optional. Backends that do not yet emit
 object-file debug information may ignore it, but PA8 parsing, dumping, and
 `lowiropt` transport are expected to preserve it when present.
 
+### Source type and local metadata in hosted objects
+
+The compiler's hosted debug view additionally carries optional source-type
+facts requested by `-g` (not `-gline-tables-only` or `-g1`). They do not affect
+LowIR execution. Each record is a separate top-level item:
+
+```text
+debug_type <id> <kind> <encoding> <parent> <type> <flags> <bytes> <bit-offset> <count> <constant-bits> "<name>"
+debug_local @function <slot-id> <type-id> "<name>" !dbg(file, line, column)
+```
+
+Type ids are consecutive from one, with zero meaning absent. References can
+point forward; parents form a tree rooted at zero. Slot ids are positions in
+the function's slot declarations, independent of display names. The local's
+location may be absent. Names are presentation strings, quoted with `\\`,
+`\"`, `\n`, `\r`, and `\t` escapes; type and variable identity never use them.
+The constant field is a signed decimal preserving its 64-bit representation.
+
+Kind numbers are: 0 unspecified, 1 fundamental, 2 pointer, 3 lvalue reference,
+4 rvalue reference, 5 array, 6 const, 7 volatile, 8 structure, 9 union,
+10 enumeration, 11 enumerator, 12 member, 13 inheritance, 14 namespace,
+15 typedef, 16 subroutine type, 17 formal parameter type, 18 static constant,
+and 19 method declaration. The referenced type is the underlying, element,
+member, base, or return type as appropriate. `bytes` describes a fundamental
+or object type, `bit-offset` a member or base, `count` an array's element count
+or bit-field width, and `constant-bits` an enumerator/static constant.
+
+Encoding numbers are 0 absent, 1 boolean, 2 signed integer, 3 signed character,
+4 unsigned integer, 5 unsigned character, 6 floating point, 7 complex, and
+8 address. Flag bits are 1 declaration, 2 bit-field, 4 polymorphic class,
+8 virtual base, 16 artificial member, 32 virtual method, and 64 scoped enum.
+The native writer consumes the supported layout facts directly, including
+bit offsets and ordinary base offsets. The current producer omits virtual-base
+entries whose location needs an additional dynamic layout expression.
+
+The reader, writer, and optimizer preserve these facts. The native backend
+maps remaining source slots to actual frame locations; optimized-away slots
+have no location. At `-O0`, and the conservative `-Og -g` debugging level,
+named source objects retain their slots and statement boundaries. `-Og`
+still publishes `__OPTIMIZE__` before command-line macro overrides.
+
 ## Structural Well-Formedness
 
 A LowIR unit is structurally well formed only if all of the following hold:
