@@ -1411,6 +1411,7 @@ private:
 	RValue to_bool_truth(const RValue& value, const sema::Type* from);
 	RValue zero_value(const sema::Type* type);
 	Place glvalue(const syntax::Expr& expr);
+	Place reference_cast(const syntax::Expr& expr, const syntax::Expr& operand);
 	Place variable_place(const sema::Entity* entity, const sema::Type* type, uint32_t location);
 	lowir::Value address(const syntax::Expr& expr);
 	bool constant_address(const sema::ConstValue& value, lowir::Value& out, uint32_t location);

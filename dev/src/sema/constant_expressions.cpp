@@ -830,7 +830,7 @@ bool ConstantInterpreter::glvalue(const syntax::Expr& expr, ConstPlace& out)
 	{
 		const syntax::CallExpr& call_expr = static_cast<const syntax::CallExpr&>(*e);
 		if (call_expr.callee->facts == nullptr && call_expr.arguments.size == 1)
-			return glvalue(*call_expr.arguments[0], out);
+			return reference_cast(*e, *call_expr.arguments[0], out);
 		return call_place(*e, out);
 	}
 	case syntax::ExprKind::Cast:
@@ -839,7 +839,7 @@ bool ConstantInterpreter::glvalue(const syntax::Expr& expr, ConstPlace& out)
 	{
 		const syntax::FunctionalCastExpr& functional = static_cast<const syntax::FunctionalCastExpr&>(*e);
 		if (functional.arguments.size == 1)
-			return glvalue(*functional.arguments[0], out);
+			return reference_cast(*e, *functional.arguments[0], out);
 		break;
 	}
 	case syntax::ExprKind::TypeTrait:
@@ -2243,7 +2243,8 @@ bool ConstantInterpreter::reference_cast(const syntax::Expr& expr, const syntax:
 	// operand's object (a base subobject, or the derived object holding
 	// it), or a temporary its binding makes.
 	const ExprFacts* facts = expr.facts;
-	const TokenKind form = static_cast<const syntax::CastExpr&>(expr).cast;
+	const TokenKind form = expr.kind == syntax::ExprKind::Cast ? static_cast<const syntax::CastExpr&>(expr).cast
+															   : TokenKind::OP_LPAREN;
 	if ((form == TokenKind::KW_REINTERPET_CAST && !folding_) || form == TokenKind::KW_DYNAMIC_CAST)
 		return fail(expr.location, "a reinterpret_cast or dynamic_cast in a constant expression");
 	const ExprFacts* operand_facts = WithoutParentheses(&operand_expr)->facts;

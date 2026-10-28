@@ -1,0 +1,116 @@
+global @alive : i32 [binding=strong] = zero
+global @conversions : i32 [binding=strong] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $proxy : obj<1x1>
+  slot $target : ptr
+  slot $arg__1 : obj<4x4>
+  slot $lor__2 : i64
+
+  block ^entry:
+    %t1 = addr $proxy
+    eh_try ^cleanup_resume_1
+    %t2 = addr $arg__1
+    %t3 = addr $proxy
+    call void @Proxy__operatorTarget(%t2, %t3)
+    eh_end
+    jump ^call_unwind_end_2
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^call_unwind_end_2:
+    eh_try ^cleanup_action_3
+    store typed ptr %t2, $target
+    eh_end
+    jump ^call_unwind_end_4
+
+  block ^cleanup_action_3:
+    call void @Target___Target(%t2)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_4:
+    %t4 = load typed ptr $target
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = load typed i32 %t5
+    %t7 = cmp ne i32 %t6, 7
+    branch %t7, ^if_then_5, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t8 = load typed i32 @alive
+    %t9 = cmp ne i32 %t8, 1
+    branch %t9, ^if_then_5, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t10 = load typed i32 @conversions
+    %t11 = cmp ne i32 %t10, 1
+    branch %t11, ^if_then_5, ^if_else_6
+
+  block ^if_then_5:
+    call void @Target___Target(%t2)
+    return i32 1
+
+  block ^if_else_6:
+    jump ^if_end_9
+
+  block ^if_end_9:
+    call void @Target___Target(%t2)
+    %t12 = load typed i32 @alive
+    %t13 = cmp ne i32 %t12, 0
+    branch %t13, ^lor_short_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t14 = load typed i32 @conversions
+    %t15 = cmp ne i32 %t14, 1
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $lor__2
+    jump ^lor_end_12
+
+  block ^lor_short_11:
+    store typed i64 1, $lor__2
+    jump ^lor_end_12
+
+  block ^lor_end_12:
+    %t17 = load typed i64 $lor__2
+    %t18 = convert trunc i32 i64 %t17
+    return i32 %t18
+}
+function @Proxy__operatorTarget(%ret : ptr [pass=indirect_result, object_bytes=4], %this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZNK5Proxycv6TargetEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @conversions
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @conversions
+    call void @Target__Target(%ret, 7)
+    return void
+}
+function @Target___Target(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6TargetD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @alive
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @alive
+    return void
+}
+function @Target__Target(%this : ptr [object_bytes=4], %n : i32) -> void [binding=weak, object=_ZN6TargetC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 @alive
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @alive
+    return void
+}
+alias object _ZN6TargetD2Ev = @Target___Target
+alias object _ZN6TargetC2Ei = @Target__Target

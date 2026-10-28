@@ -1,0 +1,77 @@
+global @global_source : f64 [binding=strong] = 7.5
+global @global_reference : ptr [binding=strong] = zero
+global @__cppgm_ref_temporary__global_reference_0 : i32 [binding=internal, object=_ZGR16global_reference_] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $source : f64
+  slot $integer : ptr
+  slot $tmpref__1 : i32
+  slot $number : i32
+  slot $real : ptr
+  slot $tmpref__2 : f64
+  slot $lor__3 : i64
+  slot $lor__4 : i64
+
+  block ^entry:
+    store typed f64 7.5, $source
+    %t1 = load typed f64 $source
+    %t2 = convert fptosi i32 f64 %t1
+    store typed i32 %t2, $tmpref__1
+    %t3 = addr $tmpref__1
+    store typed ptr %t3, $integer
+    store typed f64 9.5, $source
+    store typed i32 3, $number
+    %t4 = load typed i32 $number
+    %t5 = convert sitofp f64 i32 %t4
+    store typed f64 %t5, $tmpref__2
+    %t6 = addr $tmpref__2
+    store typed ptr %t6, $real
+    store typed i32 5, $number
+    store typed f64 9.5, @global_source
+    %t7 = load typed ptr $integer
+    %t8 = load typed i32 %t7
+    %t9 = cmp ne i32 %t8, 7
+    branch %t9, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t10 = load typed ptr $real
+    %t11 = load typed f64 %t10
+    %t12 = cmp ne f64 %t11, 3
+    %t13 = cmp ne i64 %t12, 0
+    store typed i64 %t13, $lor__3
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__3
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t14 = load typed i64 $lor__3
+    branch %t14, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t15 = load typed ptr @global_reference
+    %t16 = load typed i32 %t15
+    %t17 = cmp ne i32 %t16, 7
+    %t18 = cmp ne i64 %t17, 0
+    store typed i64 %t18, $lor__4
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__4
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t19 = load typed i64 $lor__4
+    %t20 = convert trunc i32 i64 %t19
+    return i32 %t20
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = load typed f64 @global_source
+    %t2 = convert fptosi i32 f64 %t1
+    store typed i32 %t2, @__cppgm_ref_temporary__global_reference_0
+    %t3 = addr @__cppgm_ref_temporary__global_reference_0
+    store typed ptr %t3, @global_reference
+    return void
+}

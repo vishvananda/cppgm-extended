@@ -58,16 +58,36 @@ bool BindsDirectly(const syntax::Expr* operand)
 			conversion->constructor == nullptr);
 }
 
+// The operand of a cast already classified by semantic analysis, including
+// functional syntax parsed as a call before its type name was known.
+const syntax::Expr* ReferenceCastOperand(const syntax::Expr* expr)
+{
+	if (expr->kind == syntax::ExprKind::Cast)
+		return static_cast<const syntax::CastExpr*>(expr)->operand;
+	if (expr->kind == syntax::ExprKind::FunctionalCast)
+	{
+		const syntax::FunctionalCastExpr* cast = static_cast<const syntax::FunctionalCastExpr*>(expr);
+		return cast->arguments.size == 1 ? cast->arguments[0] : nullptr;
+	}
+	if (expr->kind == syntax::ExprKind::Call)
+	{
+		const syntax::CallExpr* call = static_cast<const syntax::CallExpr*>(expr);
+		return call->callee->facts == nullptr && call->arguments.size == 1 ? call->arguments[0] : nullptr;
+	}
+	return nullptr;
+}
+
 // A cast to a reference type whose result is the temporary its operand's
 // binding makes (5.2.9p4, 5.4p4: `T t(e);` through a converting
 // constructor, a conversion function or a converted scalar, 8.5.3p5): the
 // operand, else null.
 const syntax::Expr* CastTemporaryOperand(const syntax::Expr* e)
 {
-	if (e->kind != syntax::ExprKind::Cast ||
-		(e->facts->flags & (sema::kReferenceCast | sema::kRuntimeCheck)) != sema::kReferenceCast)
+	if ((e->facts->flags & (sema::kReferenceCast | sema::kRuntimeCheck)) != sema::kReferenceCast)
 		return nullptr;
-	const syntax::Expr* operand = static_cast<const syntax::CastExpr*>(e)->operand;
+	const syntax::Expr* operand = ReferenceCastOperand(e);
+	if (operand == nullptr)
+		return nullptr;
 	const sema::Conversion* binding = WithoutParentheses(operand)->facts->conversion;
 	return binding != nullptr && binding->form == sema::ConversionForm::Reference &&
 			(binding->constructor != nullptr || binding->temporary)
@@ -668,7 +688,7 @@ Place FunctionLowering::glvalue(const syntax::Expr& expr)
 	{
 		const syntax::CallExpr& call_expr = static_cast<const syntax::CallExpr&>(*e);
 		if (call_expr.callee->facts == nullptr && call_expr.arguments.size == 1)
-			return glvalue(*call_expr.arguments[0]);
+			return reference_cast(*e, *call_expr.arguments[0]);
 		// 5.2.2p10: a call returning a reference designates its referent.
 		place.storage = call(call_expr).value;
 		qualify(place, facts->type);
@@ -682,53 +702,13 @@ Place FunctionLowering::glvalue(const syntax::Expr& expr)
 	{
 		if ((facts->flags & sema::kRuntimeCheck) != 0)
 			return dynamic_cast_reference(static_cast<const syntax::CastExpr&>(*e));
-		// 5.2.9p2, 5.2.11, 5.4: a cast to a reference type designates the
-		// operand's object; 5.2.9p4: or the temporary its binding makes.
-		const syntax::Expr& operand_expr = *static_cast<const syntax::CastExpr&>(*e).operand;
-		const sema::Conversion* binding = WithoutParentheses(&operand_expr)->facts->conversion;
-		if ((facts->flags & sema::kReferenceCast) != 0 && binding != nullptr &&
-			binding->form == sema::ConversionForm::Reference &&
-			(binding->constructor != nullptr || binding->temporary ||
-				binding->second == sema::ValueConversion::DerivedToBase))
-		{
-			place.storage = bind_reference(operand_expr, facts->target, ConversionContext::Cast);
-			return place;
-		}
-		// A class prvalue operand: the temporary it initializes (12.2p1).
-		const sema::ExprFacts* operand_facts = WithoutParentheses(&operand_expr)->facts;
-		if (operand_facts->category == sema::ValueCategory::PRValue && sema::ClassOf(operand_facts->type) != nullptr)
-			place.storage = temporary_object(operand_expr);
-		else
-			place = glvalue(operand_expr);
-		// 5.2.9p2: a base class subobject (indexed even at offset zero, the
-		// course's form of a reference upcast), or the derived object
-		// holding it (adjusted past the table pointer the derived class put
-		// before its base).
-		if ((facts->flags & (sema::kBaseCast | sema::kDerivedCast)) != 0)
-		{
-			const sema::ClassEntity* from = sema::ClassOf(operand_facts->type);
-			const sema::ClassEntity* to = sema::ClassOf(facts->type);
-			const bool upcast = (facts->flags & sema::kBaseCast) != 0;
-			if (upcast || lowering_.base_offset(to, from, e->location) != 0)
-			{
-				const lowir::Value object = address_of(place);
-				const bool is_volatile = place.is_volatile;
-				place = Place();
-				place.is_volatile = is_volatile;
-				// (A complete object's virtual base at its offset there.)
-				place.storage = upcast
-					? to_base(object, from, to, e->location,
-						  VirtualBaseCount(from) != 0 ? member_base_access(operand_expr, false) : BaseAccess::Table)
-					: to_derived(object, from, to, e->location);
-			}
-		}
-		return place;
+		return reference_cast(*e, *static_cast<const syntax::CastExpr*>(e)->operand);
 	}
 	case syntax::ExprKind::FunctionalCast:
 	{
 		const syntax::FunctionalCastExpr& functional = static_cast<const syntax::FunctionalCastExpr&>(*e);
 		if (functional.arguments.size == 1)
-			return glvalue(*functional.arguments[0]);
+			return reference_cast(*e, *functional.arguments[0]);
 		// An array prvalue: the temporary array (12.2p1).
 		if (functional.braced != nullptr && facts->type->kind == sema::TypeKind::Array)
 		{
@@ -754,6 +734,52 @@ Place FunctionLowering::glvalue(const syntax::Expr& expr)
 		break;
 	}
 	throw LoweringError(e->location, "a glvalue outside the procedural lowering slice");
+}
+
+Place FunctionLowering::reference_cast(const syntax::Expr& expr, const syntax::Expr& operand_expr)
+{
+	const sema::ExprFacts* facts = expr.facts;
+	Place place = Place();
+	// 5.2.9p2, 5.2.11, 5.4: a cast to a reference type designates the
+	// operand's object; 5.2.9p4: or the temporary its binding makes.
+	const sema::Conversion* binding = WithoutParentheses(&operand_expr)->facts->conversion;
+	if ((facts->flags & sema::kReferenceCast) != 0 && binding != nullptr &&
+		binding->form == sema::ConversionForm::Reference &&
+		(binding->constructor != nullptr || binding->temporary ||
+			binding->second == sema::ValueConversion::DerivedToBase))
+	{
+		place.storage = bind_reference(operand_expr, facts->target, ConversionContext::Cast);
+		return place;
+	}
+	// A class prvalue operand: the temporary it initializes (12.2p1).
+	const sema::ExprFacts* operand_facts = WithoutParentheses(&operand_expr)->facts;
+	if (operand_facts->category == sema::ValueCategory::PRValue && sema::ClassOf(operand_facts->type) != nullptr)
+		place.storage = temporary_object(operand_expr);
+	else
+		place = glvalue(operand_expr);
+	// 5.2.9p2: a base class subobject (indexed even at offset zero, the
+	// course's form of a reference upcast), or the derived object
+	// holding it (adjusted past the table pointer the derived class put
+	// before its base).
+	if ((facts->flags & (sema::kBaseCast | sema::kDerivedCast)) != 0)
+	{
+		const sema::ClassEntity* from = sema::ClassOf(operand_facts->type);
+		const sema::ClassEntity* to = sema::ClassOf(facts->type);
+		const bool upcast = (facts->flags & sema::kBaseCast) != 0;
+		if (upcast || lowering_.base_offset(to, from, expr.location) != 0)
+		{
+			const lowir::Value object = address_of(place);
+			const bool is_volatile = place.is_volatile;
+			place = Place();
+			place.is_volatile = is_volatile;
+			// (A complete object's virtual base at its offset there.)
+			place.storage = upcast
+				? to_base(object, from, to, expr.location,
+					  VirtualBaseCount(from) != 0 ? member_base_access(operand_expr, false) : BaseAccess::Table)
+				: to_derived(object, from, to, expr.location);
+		}
+	}
+	return place;
 }
 
 Place FunctionLowering::variable_place(const sema::Entity* entity, const sema::Type* type, uint32_t location)
@@ -2751,10 +2777,10 @@ void FunctionLowering::extension_path(const syntax::Expr* expr)
 		else if (e->kind == syntax::ExprKind::Subscript && (facts->flags & sema::kOperatorCall) == 0 &&
 			ArrayOperand(static_cast<const syntax::SubscriptExpr*>(e)) != nullptr)
 			expr = ArrayOperand(static_cast<const syntax::SubscriptExpr*>(e));
-		else if (e->kind == syntax::ExprKind::Cast && (facts->flags & sema::kReferenceCast) != 0 &&
-			facts->target != nullptr && facts->target->is_reference() &&
-			BindsDirectly(WithoutParentheses(static_cast<const syntax::CastExpr*>(e)->operand)))
-			expr = static_cast<const syntax::CastExpr*>(e)->operand;
+		else if ((facts->flags & sema::kReferenceCast) != 0 && facts->target != nullptr &&
+			facts->target->is_reference() && ReferenceCastOperand(e) != nullptr &&
+			BindsDirectly(WithoutParentheses(ReferenceCastOperand(e))))
+			expr = ReferenceCastOperand(e);
 		else if (e->kind == syntax::ExprKind::Conditional && facts->category != sema::ValueCategory::PRValue)
 		{
 			extension_path(static_cast<const syntax::ConditionalExpr*>(e)->then_expr);

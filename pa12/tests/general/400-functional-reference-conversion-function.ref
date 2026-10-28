@@ -1,0 +1,94 @@
+global @conversions : i32 [binding=strong] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $no : obj<2x1>
+  slot $first : ptr
+  slot $tmpref__1 : u8
+  slot $yes : obj<2x1>
+  slot $second : ptr
+  slot $tmpref__2 : u8
+  slot $lor__3 : i64
+
+  block ^entry:
+    %t1 = addr $no
+    %t2 = convert trunc u8 i32 64
+    %t3 = addr $no
+    %t4 = index i8 [projection=field] %t3, 0
+    store u8 %t2, %t4
+    %t5 = addr $no
+    %t6 = index i8 [projection=field] %t5, 1
+    store u8 0, %t6
+    %t7 = addr $no
+    %t8 = call u8 @Proxy__operatorbool(%t7)
+    store u8 %t8, $tmpref__1
+    %t9 = addr $tmpref__1
+    store typed ptr %t9, $first
+    %t10 = addr $no
+    %t11 = index i8 [projection=field] %t10, 1
+    store u8 1, %t11
+    %t12 = load typed ptr $first
+    %t13 = load u8 %t12
+    branch %t13, ^if_then_1, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t14 = load typed i32 @conversions
+    %t15 = cmp ne i32 %t14, 1
+    branch %t15, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_4
+
+  block ^if_end_4:
+    %t16 = addr $yes
+    %t17 = convert trunc u8 i32 0
+    %t18 = addr $yes
+    %t19 = index i8 [projection=field] %t18, 0
+    store u8 %t17, %t19
+    %t20 = addr $yes
+    %t21 = index i8 [projection=field] %t20, 1
+    store u8 1, %t21
+    %t22 = addr $yes
+    %t23 = call u8 @Proxy__operatorbool(%t22)
+    store u8 %t23, $tmpref__2
+    %t24 = addr $tmpref__2
+    store typed ptr %t24, $second
+    %t25 = addr $yes
+    %t26 = index i8 [projection=field] %t25, 1
+    store u8 0, %t26
+    %t27 = load typed ptr $second
+    %t28 = load u8 %t27
+    %t29 = cmp eq u8 %t28, 0
+    branch %t29, ^lor_short_6, ^lor_rhs_5
+
+  block ^lor_rhs_5:
+    %t30 = load typed i32 @conversions
+    %t31 = cmp ne i32 %t30, 2
+    %t32 = cmp ne i64 %t31, 0
+    store typed i64 %t32, $lor__3
+    jump ^lor_end_7
+
+  block ^lor_short_6:
+    store typed i64 1, $lor__3
+    jump ^lor_end_7
+
+  block ^lor_end_7:
+    %t33 = load typed i64 $lor__3
+    %t34 = convert trunc i32 i64 %t33
+    return i32 %t34
+}
+function @Proxy__operatorbool(%this : ptr [object_bytes=2]) -> u8 [binding=weak, object=_ZNK5ProxycvbEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @conversions
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @conversions
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 1
+    %t5 = load u8 %t4
+    return u8 %t5
+}

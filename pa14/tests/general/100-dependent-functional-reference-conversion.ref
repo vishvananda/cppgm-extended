@@ -1,0 +1,69 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $no : obj<2x1>
+  slot $yes : obj<2x1>
+  slot $lor__1 : i64
+
+  block ^entry:
+    %t1 = addr $no
+    %t2 = convert trunc u8 i32 64
+    %t3 = addr $no
+    %t4 = index i8 [projection=field] %t3, 0
+    store u8 %t2, %t4
+    %t5 = addr $no
+    %t6 = index i8 [projection=field] %t5, 1
+    store u8 0, %t6
+    %t7 = addr $yes
+    %t8 = convert trunc u8 i32 0
+    %t9 = addr $yes
+    %t10 = index i8 [projection=field] %t9, 0
+    store u8 %t8, %t10
+    %t11 = addr $yes
+    %t12 = index i8 [projection=field] %t11, 1
+    store u8 1, %t12
+    %t13 = addr $no
+    %t14 = call u8 @convert(%t13)
+    branch %t14, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t15 = addr $yes
+    %t16 = call u8 @convert(%t15)
+    %t17 = cmp eq u8 %t16, 0
+    %t18 = cmp ne i64 %t17, 0
+    store typed i64 %t18, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t19 = load typed i64 $lor__1
+    %t20 = convert trunc i32 i64 %t19
+    return i32 %t20
+}
+function @convert(%proxy : ptr [pass=by_address, object_bytes=2]) -> u8 [binding=weak, object=_Z7convertIObEbR5Proxy] {
+  slot $proxy : ptr
+  slot $value : ptr
+  slot $tmpref__1 : u8
+
+  block ^entry:
+    store typed ptr %proxy, $proxy
+    %t1 = load typed ptr $proxy
+    %t2 = call u8 @Proxy__operatorbool(%t1)
+    store u8 %t2, $tmpref__1
+    %t3 = addr $tmpref__1
+    store typed ptr %t3, $value
+    %t4 = load typed ptr $value
+    %t5 = load u8 %t4
+    return u8 %t5
+}
+function @Proxy__operatorbool(%this : ptr [object_bytes=2]) -> u8 [binding=weak, object=_ZNK5ProxycvbEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 1
+    %t3 = load u8 %t2
+    return u8 %t3
+}
