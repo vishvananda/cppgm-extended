@@ -1325,7 +1325,11 @@ bool Analyzer::compute_function_order(
 			break;
 		const bool a_from_pack = i >= from_fixed;
 		const Type* parameter = ordering_parameter(first, a_from_pack ? from_fixed : i, from_inserted);
-		const Type* given = substitute(a_from_pack ? parameter->element : parameter, substitution)->canonical;
+		// Function parameters are adjusted before ordering (8.3.5p5).
+		// In particular, const T[] is a pointer to const T: dropping the
+		// array's top-level cv first would erase its element qualifier.
+		const Type* given = types_.adjusted_parameter(
+			substitute(a_from_pack ? parameter->element : parameter, substitution));
 		const Type* a = given->is_reference() ? given->element : given;
 		if (i >= to_fixed)
 		{
@@ -1334,14 +1338,14 @@ bool Analyzer::compute_function_order(
 		}
 		if (a_from_pack)
 			return false;
-		const Type* p = ordering_parameter(second, i, to_inserted)->canonical;
+		const Type* p = types_.adjusted_parameter(ordering_parameter(second, i, to_inserted));
 		p = p->is_reference() ? p->element : p;
 		if (!deduce_type(ordering_type(p), ordering_type(a), depth, deduced, false))
 			return false;
 	}
 	if (packed.empty())
 		return true;
-	const Type* pattern = to->params[to->param_count - 1]->element;
+	const Type* pattern = types_.adjusted_parameter(to->params[to->param_count - 1]->element);
 	if (pattern->is_reference())
 		pattern = pattern->element;
 	return deduce_pack_types(
