@@ -365,6 +365,20 @@ RValue FunctionLowering::bit_count(sema::Intrinsic kind, RValue x)
 	const uint32_t width = type.kind() == lowir::TypeKind::I64 ? 64 : 32;
 	const lowir::Type i32 = lowir::Type::scalar(lowir::TypeKind::I32);
 	RValue count = integer(type, 0);
+	if (kind == sema::Intrinsic::FindFirstSet)
+	{
+		// As for the generic zero-count builtins, Select masks the unused
+		// undefined scan result for zero (lowir.md, Unary and Binary Operations).
+		count = binary(lowir::BinaryOp::Add, i32, bit_count(sema::Intrinsic::CountTrailingZeros, x), integer(i32, 1));
+		const RValue nonzero = compare(lowir::ComparePredicate::Ne, type, x, integer(type, 0));
+		lowir::Instruction choice = lowir::make_instruction(lowir::Opcode::Select, i32);
+		choice.ops[0] = nonzero.value;
+		choice.ops[1] = count.value;
+		choice.ops[2] = integer(i32, 0).value;
+		count.value = emit_value(choice, i32);
+		count.type = i32;
+		return count;
+	}
 	if (kind == sema::Intrinsic::PopCount)
 	{
 		// Bits summed in parallel (pairs, nibbles, bytes), the byte sums

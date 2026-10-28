@@ -1660,7 +1660,7 @@ bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, Con
 		out = IntegerValue(types.fundamental(FundamentalType::Bool), 1);
 		return true;
 	}
-	if ((which >= Intrinsic::ByteSwap && which <= Intrinsic::PopCount) ||
+	if ((which >= Intrinsic::ByteSwap && which <= Intrinsic::FindFirstSet) ||
 		(which >= Intrinsic::GenericCountLeadingZeros && which <= Intrinsic::GenericPopCount))
 		return bit_builtin(call_expr, out);
 	if (which >= Intrinsic::AddOverflow && which <= Intrinsic::MulOverflow)
@@ -1829,6 +1829,11 @@ bool ConstantInterpreter::bit_builtin(const syntax::CallExpr& expr, ConstValue& 
 		out = IntegerValue(expr.facts->type->unqualified, result);
 		return true;
 	}
+	if (which == Intrinsic::FindFirstSet && v == 0)
+	{
+		out = IntegerValue(analyzer_.types_.fundamental(FundamentalType::Int), 0);
+		return true;
+	}
 	if (which != Intrinsic::PopCount && v == 0)
 		return fail(expr.location, "__builtin_clz or __builtin_ctz of zero");
 	if (which == Intrinsic::PopCount)
@@ -1844,6 +1849,8 @@ bool ConstantInterpreter::bit_builtin(const syntax::CallExpr& expr, ConstValue& 
 	else
 	{
 		while (((v >> result) & 1) == 0)
+			++result;
+		if (which == Intrinsic::FindFirstSet)
 			++result;
 	}
 	out = IntegerValue(analyzer_.types_.fundamental(FundamentalType::Int), result);

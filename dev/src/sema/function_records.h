@@ -130,6 +130,8 @@ enum class Intrinsic : uint8_t
 	CountLeadingZeros,
 	CountTrailingZeros,
 	PopCount,
+	// __builtin_ffs[l|ll](x): first set bit, numbered from 1; zero for 0.
+	FindFirstSet,
 	// __builtin_clzg/ctzg/popcountg (x[, zero]): an int, of x's own
 	// unsigned type; clzg and ctzg give `zero` for 0 when it is given.
 	GenericCountLeadingZeros,

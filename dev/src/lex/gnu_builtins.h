@@ -36,8 +36,8 @@ enum class GnuBuiltin : uint8_t
 	// signbit, isinf_sign, issignaling; FloatCompare isgreater, isgreaterequal, isless,
 	// islessequal, islessgreater, isunordered; FloatConstant 3 * (nan,
 	// nans, inf) + (double, float, long double); BitCount 3 * (bswap, clz,
-	// ctz, popcount) + the operand type by suffix (16/32/64, or unsigned,
-	// long, long long); GenericBitCount clzg, ctzg, popcountg; VaList
+	// ctz, popcount, ffs) + the operand type by suffix (16/32/64, or int,
+	// long, long long; unsigned except ffs); GenericBitCount clzg, ctzg, popcountg; VaList
 	// start, end, copy; Overflow add, sub, mul; Atomic an index of
 	// kGnuAtomicOperations; Sync an index of kGnuSyncOperations; C11Atomic
 	// an index of kGnuC11Operations; SourceLocation FILE, LINE, FUNCTION,

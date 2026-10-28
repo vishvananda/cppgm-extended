@@ -1,0 +1,42 @@
+int calls;
+int next_zero() { ++calls; return 0; }
+int first(int value) { return __builtin_ffs(value); }
+int first_long(long value) { return __builtin_ffsl(value); }
+int first_long_long(long long value) { return __builtin_ffsll(value); }
+int reference(unsigned long long value) {
+  int position = 0;
+  while (value != 0) {
+    ++position;
+    if ((value & 1) != 0)
+      break;
+    value >>= 1;
+  }
+  return position;
+}
+int check(unsigned long long value) {
+  const int narrow = static_cast<int>(value);
+  const long wide = static_cast<long>(value);
+  return first(narrow) != reference(static_cast<unsigned int>(narrow))
+      || first_long(wide) != reference(static_cast<unsigned long>(wide))
+      || first_long_long(static_cast<long long>(value)) != reference(value);
+}
+int main() {
+  volatile unsigned long long value = 0;
+  if (check(value))
+    return 1;
+  for (int bit = 0; bit != 64; ++bit) {
+    value = 1ULL << bit;
+    if (check(value))
+      return 2;
+  }
+  value = ~0ULL;
+  if (check(value))
+    return 3;
+  value = ~7ULL;
+  if (check(value))
+    return 4;
+  value = 0xffffffff00000000ULL;
+  if (check(value))
+    return 5;
+  return __builtin_ffs(next_zero()) != 0 || calls != 1;
+}
