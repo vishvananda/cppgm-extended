@@ -1,0 +1,34 @@
+using Bytes = char __attribute__((vector_size(16)));
+int calls;
+Bytes values(int seed) {
+  ++calls;
+  Bytes result{};
+  for (int i = 0; i < 16; ++i)
+    result[i] = static_cast<char>(seed + i);
+  return result;
+}
+Bytes minimum(Bytes a, Bytes b) { return __builtin_ia32_pminub128(a, b); }
+int main() {
+  for (int x = 0; x < 256; ++x) {
+    for (int batch = 0; batch < 16; ++batch) {
+      Bytes a{}, b{};
+      for (int i = 0; i < 16; ++i) {
+        a[i] = static_cast<char>(x);
+        b[i] = static_cast<char>(batch * 16 + i);
+      }
+      const Bytes result = minimum(a, b);
+      for (int i = 0; i < 16; ++i) {
+        const int y = batch * 16 + i;
+        if (static_cast<unsigned char>(result[i]) != (x < y ? x : y))
+          return 1;
+      }
+    }
+  }
+  const Bytes result = __builtin_ia32_pminub128(values(17), values(223));
+  if (calls != 2)
+    return 2;
+  for (int i = 0; i < 16; ++i)
+    if (static_cast<unsigned char>(result[i]) != 17 + i)
+      return 3;
+  return 0;
+}

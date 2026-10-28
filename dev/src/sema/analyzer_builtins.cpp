@@ -672,6 +672,21 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		facts->value = static_cast<uint64_t>(Intrinsic::VectorByteMask);
 		break;
 	}
+	case GnuBuiltin::VectorByteMinimum:
+	{
+		if (count != 2)
+			error(expr.location, "wrong number of arguments to a packed byte minimum");
+		const Type* type = types_.vector(types_.fundamental(FundamentalType::Char), 16);
+		for (const syntax::Expr* argument : expr.arguments)
+		{
+			if (typed_value(*argument, scope) == nullptr)
+				return nullptr;
+			convert(*argument, type, false);
+		}
+		facts = new_facts(expr, type, ValueCategory::PRValue);
+		facts->value = static_cast<uint64_t>(Intrinsic::VectorByteMinimum);
+		break;
+	}
 	case GnuBuiltin::IsConstantEvaluated:
 		if (count != 0)
 			error(expr.location, "__builtin_is_constant_evaluated takes no arguments");

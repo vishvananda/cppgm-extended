@@ -190,6 +190,8 @@ enum class Intrinsic : uint8_t
 	VectorTruncate,
 	// __builtin_ia32_pmovmskb128: byte i's sign bit is result bit i.
 	VectorByteMask,
+	// __builtin_ia32_pminub128: the unsigned minimum in each byte lane.
+	VectorByteMinimum,
 	// __builtin_add/sub/mul_overflow(a, b, result): the infinitely precise
 	// a op b stored through `result` modulo its type, and whether that
 	// changed it.
