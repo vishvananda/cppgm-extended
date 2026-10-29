@@ -109,6 +109,13 @@ replace any previous category associated with its spelling. Explicit
 Later semantic lookup replaces lexical fallback while preserving the parser
 and its AST.
 
+When unqualified namespace lookup combines ordinary function overloads with a
+function template introduced by a using-directive, keep the template-name
+category so `f<T>(args)` forms a call. Inner block or namespace declarations
+still hide candidates that would only appear in an enclosing scope; qualified
+lookup retains its own namespace hiding rules. Semantic lookup decides the
+overload and diagnoses invalid mixtures or ambiguity.
+
 ## Declaration versus expression
 
 When both parses are possible in the required C++11 grammar, apply the

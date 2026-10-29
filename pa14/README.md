@@ -237,6 +237,9 @@ PA14 supports the following in addition to the PA13 subset:
   share its name, and replay of a dependent-base using-declaration that names an
   enumerator used by another enumerator; ordinary lookup must retain ambiguity
   when distinct declarations are introduced by using-directives
+  and recognize explicit template calls when ordinary function overloads in the
+  same namespace lookup set share their name with a template introduced by a
+  using-directive, including transitive directives
 - basic template argument deduction for direct supported function-template calls
   from ordinary argument types, without function-template partial ordering or
   SFINAE

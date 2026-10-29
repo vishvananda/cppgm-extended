@@ -1,0 +1,91 @@
+function @select(%__param0 : i32) -> i32 [binding=strong, object=_Z6selecti] {
+  slot $__param0 : i32
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    return i32 1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @select(1)
+    %t2 = cmp ne i32 %t1, 1
+    branch %t2, ^if_then_1, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t3 = call i32 @Candidates__select(1, 2)
+    %t4 = cmp ne i32 %t3, 7
+    branch %t4, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_4
+
+  block ^if_end_4:
+    %t5 = call i32 @Candidates__select__2(1, 2, 0)
+    %t6 = cmp ne i32 %t5, 42
+    branch %t6, ^if_then_5, ^if_else_6
+
+  block ^if_then_5:
+    return i32 2
+
+  block ^if_else_6:
+    jump ^if_end_7
+
+  block ^if_end_7:
+    %t7 = call i32 @Candidates__select__3(1, 2, 0)
+    %t8 = cmp ne i32 %t7, 42
+    branch %t8, ^if_then_8, ^if_else_9
+
+  block ^if_then_8:
+    return i32 3
+
+  block ^if_else_9:
+    jump ^if_end_10
+
+  block ^if_end_10:
+    %t9 = call i32 @Candidates__select__3(1, 2, 0)
+    %t10 = cmp ne i32 %t9, 42
+    branch %t10, ^if_then_11, ^if_else_12
+
+  block ^if_then_11:
+    return i32 4
+
+  block ^if_else_12:
+    jump ^if_end_13
+
+  block ^if_end_13:
+    return i32 0
+}
+function @Candidates__select(%__param0 : i32, %__param1 : i32) -> i32 [binding=weak, object=_ZN10Candidates6selectIiEEiT_S1_] {
+  slot $__param0 : i32
+  slot $__param1 : i32
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    store typed i32 %__param1, $__param1
+    return i32 7
+}
+function @Candidates__select__2(%__param0 : i32, %__param1 : i32, %__param2 : ptr) -> i32 [binding=weak, object=_ZN10Candidates6selectI5PlainiEEiT0_S2_PT_] {
+  slot $__param0 : i32
+  slot $__param1 : i32
+  slot $__param2 : ptr
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    store typed i32 %__param1, $__param1
+    store typed ptr %__param2, $__param2
+    return i32 42
+}
+function @Candidates__select__3(%__param0 : i32, %__param1 : i32, %__param2 : ptr) -> i32 [binding=weak, object=_ZN10Candidates6selectI6PolicyIiEiEEiT0_S3_PT_] {
+  slot $__param0 : i32
+  slot $__param1 : i32
+  slot $__param2 : ptr
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    store typed i32 %__param1, $__param1
+    store typed ptr %__param2, $__param2
+    return i32 42
+}

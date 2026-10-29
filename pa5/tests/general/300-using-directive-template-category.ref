@@ -1,0 +1,146 @@
+1 translation units
+start translation unit 1
+translation-unit
+  namespace-definition Candidates
+    template-declaration
+      template-parameter-clause
+        template-parameter-list
+          type-parameter
+            parameter-key KW_CLASS:class
+            identifier T
+      function-definition
+        decl-specifier-seq
+          decl-specifier KW_INT:int
+        declarator
+          identifier select
+          parameter-clause
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier TT_IDENTIFIER:T
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier TT_IDENTIFIER:T
+        compound-statement
+          return-statement
+            literal 7
+    template-declaration
+      template-parameter-clause
+        template-parameter-list
+          type-parameter
+            parameter-key KW_CLASS:class
+            identifier Policy
+          type-parameter
+            parameter-key KW_CLASS:class
+            identifier T
+      function-definition
+        decl-specifier-seq
+          decl-specifier KW_INT:int
+        declarator
+          identifier select
+          parameter-clause
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier TT_IDENTIFIER:T
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier TT_IDENTIFIER:T
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier TT_IDENTIFIER:Policy
+              declarator
+                ptr-operator OP_STAR:*
+              default-argument
+                initializer
+                  literal 0
+        compound-statement
+          return-statement
+            literal 42
+  using-directive
+    target Candidates
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier select
+      parameter-clause
+        parameter-declaration
+          decl-specifier-seq
+            decl-specifier KW_INT:int
+    compound-statement
+      return-statement
+        literal 1
+  class-specifier Plain
+    class-key KW_STRUCT:struct
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier T
+    class-specifier Policy
+      class-key KW_STRUCT:struct
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier main
+      parameter-clause
+    compound-statement
+      if-statement
+        condition
+          binary-expression OP_LOR:||
+            binary-expression OP_NE:!=
+              call-expression
+                id-expression select
+                argument-list
+                  literal 1
+              literal 1
+            binary-expression OP_NE:!=
+              call-expression
+                id-expression select
+                argument-list
+                  literal 1
+                  literal 2
+              literal 7
+        then
+          return-statement
+            literal 1
+      if-statement
+        condition
+          binary-expression OP_NE:!=
+            call-expression
+              id-expression select<Plain>
+              argument-list
+                literal 1
+                literal 2
+            literal 42
+        then
+          return-statement
+            literal 2
+      if-statement
+        condition
+          binary-expression OP_NE:!=
+            call-expression
+              id-expression select<Policy<int>>
+              argument-list
+                literal 1
+                literal 2
+            literal 42
+        then
+          return-statement
+            literal 3
+      if-statement
+        condition
+          binary-expression OP_NE:!=
+            call-expression
+              id-expression Candidates::select<Policy<int>>
+              argument-list
+                literal 1
+                literal 2
+            literal 42
+        then
+          return-statement
+            literal 4
+      return-statement
+        literal 0
+end translation unit

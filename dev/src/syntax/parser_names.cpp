@@ -413,6 +413,9 @@ Parser::TemplateIdChoice Parser::template_id_follows(
 	const NameBinding binding = resolve_component(identifier, info, false);
 	if (IsTemplateCategory(binding.category))
 		return TemplateIdChoice::Yes;
+	if (binding.category == NameCategory::Value && info.prefix == PrefixState::Unqualified &&
+		scopes_.unqualified_template(identifier))
+		return TemplateIdChoice::Yes;
 	if (binding.category != NameCategory::None)
 		return TemplateIdChoice::No;
 	// A dependent qualified name is not a template without `template`

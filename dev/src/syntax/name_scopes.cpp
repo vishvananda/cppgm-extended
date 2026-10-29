@@ -34,6 +34,9 @@ const uint8_t kMemberConflicts = 32;
 // categories without a recorded conflict (a based specialization, a
 // primary defined after a specialization; see lookup_in).
 const uint8_t kCompareMembers = 64;
+// A namespace has declared a value template of this name. Unqualified
+// namespace lookup may combine it with an ordinary function overload.
+const uint8_t kNamespaceTemplateValue = 128;
 
 bool Found(const NameBinding& binding, bool prefix_only)
 {
@@ -160,6 +163,8 @@ void NameScopes::declare(Scope* scope, const Identifier* name, NameBinding bindi
 	if (binding.category == NameCategory::TypeTemplate ||
 		(binding.category == NameCategory::FunctionTemplate && member))
 		marks_[name->id] |= kTemplate;
+	if (binding.category == NameCategory::FunctionTemplate && scope->kind == ScopeKind::Namespace)
+		marks_[name->id] |= kNamespaceTemplateValue;
 	if (member)
 		touch_name(name->id);
 	const uint64_t key = key_of(scope, name);
@@ -734,6 +739,138 @@ NameBinding NameScopes::lookup_in(Scope* scope, const Identifier* name, bool pre
 		}
 	}
 	return result;
+}
+
+[[gnu::cold]] NameBinding NameScopes::namespace_overloads(Scope* scope, Query& query, uint32_t depth)
+{
+	// Using-directives are transitive for unqualified lookup (7.3.4p4).
+	// Preserve a function-template category in the combined overload set;
+	// semantic lookup diagnoses any invalid mixture with a non-function.
+	if (scope->visit == query.visit)
+		return NameBinding();
+	scope->visit = query.visit;
+	NameBinding binding = own(scope, query.name);
+	for (ScopeEdge* edge = scope->edges;
+		edge != nullptr && (binding.category == NameCategory::None || binding.category == NameCategory::Value);
+		edge = edge->next)
+	{
+		if (edge->at != nullptr && edge->at->depth < depth)
+		{
+			pending_.push_back(edge);
+			std::push_heap(pending_.begin(), pending_.end(), Shallower);
+			continue;
+		}
+		const NameBinding found = namespace_overloads(edge->target, query, depth);
+		if (binding.category == NameCategory::None || found.category == NameCategory::FunctionTemplate)
+			binding = found;
+	}
+	return binding;
+}
+
+[[gnu::cold]] NameBinding NameScopes::search_template_level(Scope* scope, Query& query)
+{
+	// One scope on an unqualified lookup's way out: its own names and owned
+	// edges, then the using-directives whose names appear at its depth.
+	NameBinding binding{ NameCategory::None, false, nullptr };
+	const bool overloads = scope->kind == ScopeKind::Namespace;
+	if (scope->kind == ScopeKind::Class)
+	{
+		// Its members and bases (all its edges).
+		binding = search(scope, query);
+		if (binding.category != NameCategory::None)
+			return binding;
+	}
+	else if (scope->visit != query.visit)
+	{
+		scope->visit = query.visit;
+		binding = own(scope, query.name);
+		if (Found(binding, query.prefix_only) && !(overloads && binding.category == NameCategory::Value))
+			return binding;
+		if (!Found(binding, query.prefix_only))
+			binding = NameBinding{ NameCategory::None, false, nullptr };
+		for (ScopeEdge* edge = scope->edges; edge != nullptr &&
+			(binding.category == NameCategory::None || (overloads && binding.category == NameCategory::Value));
+			edge = edge->next)
+		{
+			if (edge->at == nullptr)
+			{
+				const NameBinding found = overloads ? namespace_overloads(edge->target, query, scope->depth)
+													: search(edge->target, query);
+				if (binding.category == NameCategory::None || found.category == NameCategory::FunctionTemplate)
+					binding = found;
+			}
+			else
+			{
+				pending_.push_back(edge);
+				std::push_heap(pending_.begin(), pending_.end(), Shallower);
+			}
+		}
+		if (binding.category != NameCategory::None && !(overloads && binding.category == NameCategory::Value))
+			return binding;
+	}
+	while (!pending_.empty() && pending_.front()->at->depth == scope->depth)
+	{
+		std::pop_heap(pending_.begin(), pending_.end(), Shallower);
+		const ScopeEdge* edge = pending_.back();
+		pending_.pop_back();
+		const NameBinding found = overloads ? namespace_overloads(edge->target, query, scope->depth)
+											: search(edge->target, query);
+		if (binding.category == NameCategory::None || found.category == NameCategory::FunctionTemplate)
+			binding = found;
+		if (binding.category != NameCategory::None && !(overloads && binding.category == NameCategory::Value))
+			return binding;
+	}
+	return binding;
+}
+
+[[gnu::cold]] NameBinding NameScopes::lookup_template(const Identifier* name)
+{
+	// Each scope's own names and owned edges, then the using-directives
+	// whose names appear at this scope, then an out-of-class member's class.
+	++lookups_;
+	if ((marks(name) & kDeclared) == 0)
+		return NameBinding{ NameCategory::None, false, nullptr };
+	Query query = this->query(name, false);
+	pending_.clear();
+	// The namespace of an out-of-class member's class (or a namespace
+	// member's namespace) once its class context is searched: it and the
+	// namespaces enclosing it are searched before the definition's own
+	// namespace, which encloses them (3.4.1p6, p8, p13).
+	Scope* home = nullptr;
+	for (Scope* scope = current_; scope != nullptr; scope = scope->parent)
+	{
+		NameBinding binding;
+		if (home != nullptr && scope->kind == ScopeKind::Namespace)
+		{
+			Scope* inner = home;
+			home = nullptr;
+			Scope* outer = inner;
+			while (outer != nullptr && outer->depth > scope->depth)
+				outer = outer->parent;
+			for (; outer == scope && inner != scope; inner = inner->parent)
+			{
+				binding = search_template_level(inner, query);
+				if (binding.category != NameCategory::None)
+					return binding;
+			}
+		}
+		binding = search_template_level(scope, query);
+		if (binding.category != NameCategory::None)
+			return binding;
+		if (scope->member_of != nullptr)
+		{
+			binding = search_class_context(scope->member_of, query, home);
+			if (binding.category != NameCategory::None)
+				return binding;
+		}
+	}
+	return NameBinding{ NameCategory::None, false, nullptr };
+}
+
+bool NameScopes::unqualified_template(const Identifier* name)
+{
+	return (marks(name) & kNamespaceTemplateValue) != 0 &&
+		lookup_template(name).category == NameCategory::FunctionTemplate;
 }
 
 } // namespace syntax

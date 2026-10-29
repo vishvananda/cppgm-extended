@@ -220,6 +220,9 @@ public:
 	// Unqualified lookup from the current scope. With `prefix_only`, only
 	// types, templates and namespaces are found (a name before `::`).
 	NameBinding lookup(const Identifier* name, bool prefix_only);
+	// A value before `<` may share its namespace lookup set with an
+	// imported function template. Other lookups keep their first category.
+	bool unqualified_template(const Identifier* name);
 	// Qualified lookup in a class, enumeration or namespace scope; with
 	// `specialization`, in a class template specialization's (a
 	// template-id's), whose dependent bases are searched too.
@@ -319,9 +322,12 @@ private:
 	Query query(const Identifier* name, bool prefix_only);
 	static uint64_t memo_key(const Scope* scope, const Query& query);
 	NameBinding search(Scope* scope, Query& query);
+	NameBinding namespace_overloads(Scope* scope, Query& query, uint32_t depth);
 	void add_edge_at(Scope* from, Scope* to, Scope* at, bool fresh = false, bool dependent = false);
 	NameBinding search_class_context(Scope* scope, Query& query, Scope*& home);
 	NameBinding search_level(Scope* scope, Query& query);
+	NameBinding search_template_level(Scope* scope, Query& query);
+	NameBinding lookup_template(const Identifier* name);
 
 	Arena& arena_;
 	std::vector<Slot> slots_;

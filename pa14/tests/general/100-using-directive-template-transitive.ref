@@ -1,0 +1,151 @@
+global @InnerValue__choose : i32 [binding=strong, object=_ZN10InnerValue6chooseE] = 1
+global @InlineValue__choose : i32 [binding=strong, object=_ZN11InlineValue6chooseE] = 1
+global @QualifiedValue__choose : i32 [binding=strong, object=_ZN14QualifiedValue6chooseE] = 1
+
+function @Bridge__choose(%__param0 : i32, %__param1 : i32) -> i32 [binding=strong, object=_ZN6Bridge6chooseEii] {
+  slot $__param0 : i32
+  slot $__param1 : i32
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    store typed i32 %__param1, $__param1
+    return i32 7
+}
+function @choose() -> i32 [binding=strong, object=_Z6choosev] {
+  block ^entry:
+    return i32 1
+}
+function @InnerValue__check() -> i32 [binding=strong, object=_ZN10InnerValue5checkEv] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 2, $x
+    %t1 = load typed i32 @InnerValue__choose
+    %t2 = load typed i32 $x
+    %t3 = cmp lt i32 %t1, %t2
+    %t4 = convert trunc i32 i64 %t3
+    %t5 = cmp gt i32 %t4, 1
+    %t6 = convert trunc i32 i64 %t5
+    return i32 %t6
+}
+function @InlineValue__check() -> i32 [binding=strong, object=_ZN11InlineValue5checkEv] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 2, $x
+    %t1 = load typed i32 @InlineValue__choose
+    %t2 = load typed i32 $x
+    %t3 = cmp lt i32 %t1, %t2
+    %t4 = convert trunc i32 i64 %t3
+    %t5 = cmp gt i32 %t4, 1
+    %t6 = convert trunc i32 i64 %t5
+    return i32 %t6
+}
+function @check_qualified() -> i32 [binding=strong, object=_Z15check_qualifiedv] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 2, $x
+    %t1 = load typed i32 @QualifiedValue__choose
+    %t2 = load typed i32 $x
+    %t3 = cmp lt i32 %t1, %t2
+    %t4 = convert trunc i32 i64 %t3
+    %t5 = cmp gt i32 %t4, 1
+    %t6 = convert trunc i32 i64 %t5
+    return i32 %t6
+}
+function @check_local() -> i32 [binding=strong, object=_Z11check_localv] {
+  slot $choose : i32
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 1, $choose
+    store typed i32 2, $x
+    %t1 = load typed i32 $choose
+    %t2 = load typed i32 $x
+    %t3 = cmp lt i32 %t1, %t2
+    %t4 = convert trunc i32 i64 %t3
+    %t5 = cmp gt i32 %t4, 1
+    %t6 = convert trunc i32 i64 %t5
+    return i32 %t6
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+  slot $lor__3 : i64
+
+  block ^entry:
+    %t1 = call i32 @choose()
+    %t2 = cmp ne i32 %t1, 1
+    branch %t2, ^if_then_1, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t3 = call i32 @Bridge__choose(1, 2)
+    %t4 = cmp ne i32 %t3, 7
+    branch %t4, ^if_then_1, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t5 = call i32 @Candidates__choose(0)
+    %t6 = cmp ne i32 %t5, 42
+    branch %t6, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_5
+
+  block ^if_end_5:
+    %t7 = call i32 @InnerValue__check()
+    branch %t7, ^lor_short_7, ^lor_rhs_6
+
+  block ^lor_rhs_6:
+    %t8 = call i32 @InlineValue__check()
+    %t9 = cmp ne i32 %t8, 0
+    store typed i64 %t9, $lor__1
+    jump ^lor_end_8
+
+  block ^lor_short_7:
+    store typed i64 1, $lor__1
+    jump ^lor_end_8
+
+  block ^lor_end_8:
+    %t10 = load typed i64 $lor__1
+    branch %t10, ^lor_short_10, ^lor_rhs_9
+
+  block ^lor_rhs_9:
+    %t11 = call i32 @check_qualified()
+    %t12 = cmp ne i32 %t11, 0
+    store typed i64 %t12, $lor__2
+    jump ^lor_end_11
+
+  block ^lor_short_10:
+    store typed i64 1, $lor__2
+    jump ^lor_end_11
+
+  block ^lor_end_11:
+    %t13 = load typed i64 $lor__2
+    branch %t13, ^lor_short_13, ^lor_rhs_12
+
+  block ^lor_rhs_12:
+    %t14 = call i32 @check_local()
+    %t15 = cmp ne i32 %t14, 0
+    store typed i64 %t15, $lor__3
+    jump ^lor_end_14
+
+  block ^lor_short_13:
+    store typed i64 1, $lor__3
+    jump ^lor_end_14
+
+  block ^lor_end_14:
+    %t16 = load typed i64 $lor__3
+    %t17 = convert trunc i32 i64 %t16
+    return i32 %t17
+}
+function @Candidates__choose(%__param0 : i32) -> i32 [binding=weak, object=_ZN10Candidates6chooseIiEEii] {
+  slot $__param0 : i32
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    return i32 42
+}
