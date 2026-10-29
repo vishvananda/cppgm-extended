@@ -278,5 +278,8 @@ initializer or body. An instantiated member partial retains its selected
 argument pattern and instance context together with a link to the original
 analyzed definition. Do not select the partial again through the original
 class's aliases merely to obtain its deferred body. Unselected member partial
-bodies remain uninstantiated. Retain deterministic partial-specialization selection and
+bodies remain uninstantiated. The fallback to original declarations considers
+only partials declared outside the class: inline declarations were already
+matched in the instance. Keep a selected incomplete partial when that lookup
+finds no definition, instead of reverting to the primary. Retain deterministic partial-specialization selection and
 explicit links to the class or namespace owning each generated entity.

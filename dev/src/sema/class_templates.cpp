@@ -2072,10 +2072,13 @@ void Analyzer::instantiate_class(ClassEntity* entity)
 		ClassEntity* outer = const_cast<ClassEntity*>(original_member_template(member));
 		member = outer != member ? outer : nullptr;
 	}
-	const bool outside_partial = deferred_partial != nullptr ||
-		(member != nullptr && (member->templ->partials != nullptr || member->templ->partial_positions != 0) &&
-			(partial = matching_partial(member, facts->arguments, facts->argument_count, deduced, instance)) !=
-				nullptr);
+	ClassEntity* outside_match = member != nullptr &&
+			(member->templ->partials != nullptr || member->templ->partial_positions != 0)
+		? matching_partial(member, facts->arguments, facts->argument_count, deduced, instance)
+		: nullptr;
+	const bool outside_partial = deferred_partial != nullptr || outside_match != nullptr;
+	if (outside_match != nullptr)
+		partial = outside_match;
 	if (partial != nullptr)
 		pattern = partial->templ;
 	// An instance's member template defined outside the class template:

@@ -1,0 +1,62 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $end : obj<1x1>
+  slot $outside : obj<1x1>
+  slot $incomplete : ptr
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+
+  block ^entry:
+    %t1 = addr $end
+    %t2 = addr $outside
+    store typed ptr 0, $incomplete
+    %t3 = addr $end
+    %t4 = call i32 @Outer___cppgm_class_template_identity_1___Step___cppgm_class_template_identity_1_0___read(%t3)
+    %t5 = cmp ne i32 %t4, 3
+    branch %t5, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t6 = addr $outside
+    %t7 = call i32 @DefinedOutside_int___Inner_int__char___read(%t6)
+    %t8 = cmp ne i32 %t7, 5
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t10 = load typed i64 $lor__1
+    branch %t10, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t11 = load typed ptr $incomplete
+    %t12 = cmp ne ptr %t11, 0
+    %t13 = cmp ne i64 %t12, 0
+    store typed i64 %t13, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t14 = load typed i64 $lor__2
+    %t15 = convert trunc i32 i64 %t14
+    return i32 %t15
+}
+function @Outer___cppgm_class_template_identity_1___Step___cppgm_class_template_identity_1_0___read(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK5OuterI6NumberILi3EEE4StepIS1_Li0EE4readEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 3
+}
+function @DefinedOutside_int___Inner_int__char___read(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK14DefinedOutsideIiE5InnerIPicE4readEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 5
+}

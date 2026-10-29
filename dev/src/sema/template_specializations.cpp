@@ -1136,6 +1136,12 @@ ClassEntity* Analyzer::matching_partial(
 		for (ClassEntity* partial = static_cast<ClassEntity*>(first); partial != nullptr;
 			partial = partial->templ->next_partial)
 		{
+			// An instance already owns the declarations of inline member
+			// partials. This fallback searches only declarations outside the
+			// class; their instantiated counterparts were already considered.
+			if (instance != nullptr && partial->templ->definition_parameters != nullptr &&
+				declaration_scope(partial->templ->definition_parameters)->kind == ScopeKind::Class)
+				continue;
 			TypeList trial;
 			if (!deduce_partial(partial, arguments, count, trial, instance))
 				continue;
