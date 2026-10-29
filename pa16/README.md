@@ -66,6 +66,14 @@ for that specialization is nondependent, so its member types do not require
 `typename`. Body-local expressions need no shared expression key to establish
 this fact; arguments that name template parameters remain dependent.
 
+### Constant initialization of nonliteral objects
+
+A static object's constexpr constructor can initialize nonliteral base and
+member subobjects, including array elements, before dynamic initialization.
+The subobjects share the initialized variable's storage identity. This does
+not permit nonliteral initializer temporaries in constant expressions or
+constexpr variables of nonliteral type.
+
 ### Output Format
 
 On success, `cppgm++` shall write LowIR text to `<outfile>` and exit

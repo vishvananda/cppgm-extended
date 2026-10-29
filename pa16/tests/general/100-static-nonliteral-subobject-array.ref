@@ -1,0 +1,122 @@
+global @observed : i32 [binding=strong] = zero
+global @early [binding=strong] = {
+  zero 1
+}
+global @counts [binding=strong] = {
+  i32 1
+  i32 2
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+
+  block ^entry:
+    %t1 = load typed i32 @observed
+    %t2 = cmp ne i32 %t1, 3
+    branch %t2, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t3 = addr @counts
+    %t4 = binary mul i64 0, 4
+    %t5 = index i8 [projection=array_element] %t3, %t4
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load typed i32 %t6
+    %t8 = cmp ne i32 %t7, 1
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t10 = load typed i64 $lor__1
+    branch %t10, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t11 = addr @counts
+    %t12 = binary mul i64 1, 4
+    %t13 = index i8 [projection=array_element] %t11, %t12
+    %t14 = index i8 [projection=field] %t13, 0
+    %t15 = load typed i32 %t14
+    %t16 = cmp ne i32 %t15, 7
+    %t17 = cmp ne i64 %t16, 0
+    store typed i64 %t17, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t18 = load typed i64 $lor__2
+    %t19 = convert trunc i32 i64 %t18
+    return i32 %t19
+}
+function @Count__Count(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN5CountC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $v : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    return void
+}
+function @Early__Early(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5EarlyC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = addr @counts
+    %t2 = binary mul i64 0, 4
+    %t3 = index i8 [projection=array_element] %t1, %t2
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load typed i32 %t4
+    %t6 = addr @counts
+    %t7 = binary mul i64 1, 4
+    %t8 = index i8 [projection=array_element] %t6, %t7
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load typed i32 %t9
+    %t11 = binary add nowrap i32 %t5, %t10
+    store typed i32 %t11, @observed
+    %t12 = addr @counts
+    %t13 = binary mul i64 1, 4
+    %t14 = index i8 [projection=array_element] %t12, %t13
+    %t15 = index i8 [projection=field] %t14, 0
+    store typed i32 7, %t15
+    return void
+}
+function @Count___Count(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5CountD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @early
+    call void @Early__Early(%t1)
+    return void
+}
+function @__cppgm_fini() -> void [role=fini, binding=internal] {
+  block ^entry:
+    %t1 = addr @counts
+    %t2 = binary mul i64 1, 4
+    %t3 = index i8 [projection=array_element] %t1, %t2
+    call void @Count___Count(%t3)
+    %t4 = addr @counts
+    %t5 = binary mul i64 0, 4
+    %t6 = index i8 [projection=array_element] %t4, %t5
+    call void @Count___Count(%t6)
+    return void
+}
+alias object _ZN5CountC2Ei = @Count__Count
+alias object _ZN5EarlyC2Ev = @Early__Early
+alias object _ZN5CountD2Ev = @Count___Count

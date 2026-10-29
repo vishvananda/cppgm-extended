@@ -1,0 +1,187 @@
+global @observed : i32 [binding=strong] = zero
+global @early [binding=strong] = {
+  zero 1
+}
+global @holder [binding=strong] = {
+  i32 3
+  i32 2
+  i32 1
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+  slot $lor__3 : i64
+
+  block ^entry:
+    %t1 = load typed i32 @observed
+    %t2 = cmp ne i32 %t1, 1
+    branch %t2, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t3 = addr @holder
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load typed i32 %t4
+    %t6 = cmp ne i32 %t5, 3
+    %t7 = cmp ne i64 %t6, 0
+    store typed i64 %t7, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t8 = load typed i64 $lor__1
+    branch %t8, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t9 = addr @holder
+    %t10 = index i8 [projection=field] %t9, 4
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load typed i32 %t11
+    %t13 = cmp ne i32 %t12, 2
+    %t14 = cmp ne i64 %t13, 0
+    store typed i64 %t14, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t15 = load typed i64 $lor__2
+    branch %t15, ^lor_short_8, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t16 = addr @holder
+    %t17 = index i8 [projection=field] %t16, 4
+    %t18 = index i8 [projection=field] %t17, 4
+    %t19 = index i8 [projection=field] %t18, 0
+    %t20 = load typed i32 %t19
+    %t21 = cmp ne i32 %t20, 7
+    %t22 = cmp ne i64 %t21, 0
+    store typed i64 %t22, $lor__3
+    jump ^lor_end_9
+
+  block ^lor_short_8:
+    store typed i64 1, $lor__3
+    jump ^lor_end_9
+
+  block ^lor_end_9:
+    %t23 = load typed i64 $lor__3
+    %t24 = convert trunc i32 i64 %t23
+    return i32 %t24
+}
+function @Early__Early(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5EarlyC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = addr @holder
+    %t2 = index i8 [projection=field] %t1, 4
+    %t3 = index i8 [projection=field] %t2, 4
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load typed i32 %t4
+    store typed i32 %t5, @observed
+    %t6 = addr @holder
+    %t7 = index i8 [projection=field] %t6, 4
+    %t8 = index i8 [projection=field] %t7, 4
+    %t9 = index i8 [projection=field] %t8, 0
+    store typed i32 7, %t9
+    return void
+}
+function @Holder__Holder(%this : ptr [object_bytes=12]) -> void [binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store typed i32 3, %t2
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 4
+    call void @Inner__Inner(%t4)
+    eh_cleanup ^constructor_cleanup_1
+    eh_end
+    return void
+
+  block ^constructor_cleanup_1:
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    call void @Inner___Inner(%t6)
+    eh_end
+    resume
+}
+function @Inner__Inner(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5InnerC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store typed i32 2, %t2
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 4
+    call void @Count__Count(%t4)
+    eh_cleanup ^constructor_cleanup_1
+    eh_end
+    return void
+
+  block ^constructor_cleanup_1:
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    call void @Count___Count(%t6)
+    eh_end
+    resume
+}
+function @Count__Count(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5CountC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store typed i32 1, %t2
+    return void
+}
+function @Holder___Holder(%this : ptr [object_bytes=12]) -> void [unwind=no, binding=weak, object=_ZN6HolderD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Inner___Inner(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5InnerD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @Count___Count(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5CountD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @early
+    call void @Early__Early(%t1)
+    return void
+}
+function @__cppgm_fini() -> void [role=fini, binding=internal] {
+  block ^entry:
+    %t1 = addr @holder
+    call void @Holder___Holder(%t1)
+    return void
+}
+alias object _ZN5EarlyC2Ev = @Early__Early
+alias object _ZN6HolderC2Ev = @Holder__Holder
+alias object _ZN6HolderD2Ev = @Holder___Holder
+alias object _ZN5InnerC2Ev = @Inner__Inner
+alias object _ZN5InnerD2Ev = @Inner___Inner
+alias object _ZN5CountC2Ev = @Count__Count
+alias object _ZN5CountD2Ev = @Count___Count

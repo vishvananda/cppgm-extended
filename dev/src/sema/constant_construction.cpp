@@ -673,10 +673,11 @@ bool ConstantInterpreter::run_constructor(const FunctionEntity* constructor, con
 	if (!evaluable(constructor, location))
 		return false;
 	// 5.19p2: a constexpr constructor for a literal class; the object a
-	// constant initialization initializes may be of any class (3.6.2p2).
+	// constant initialization initializes, including its base and member
+	// subobjects, may be of any class (3.6.2p2). Temporaries in the
+	// initializer have their own root and still require a literal class.
 	const ClassEntity* home = ClassOf(constructor->owner->entity->type);
-	const bool initialized = target.root == RootKind::Variable && target.entity == constructing_ &&
-		target.offset == 0 && ClassOf(target.type) == home;
+	const bool initialized = target.root == RootKind::Variable && target.entity == constructing_;
 	if (!initialized && !analyzer_.literal_type(home->type))
 		return fail(location, "a constructor of a class that is not a literal type in a constant expression");
 	// The arguments' temporaries end with the caller's full-expression,
