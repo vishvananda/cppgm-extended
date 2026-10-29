@@ -96,6 +96,14 @@ combined computations may use a contributing location. Preserve meaningful
 locations on surviving operations and do not invent locations from another
 function or source statement.
 
+### Full-width XMM frame accesses
+
+A whole-register floating move uses sixteen bytes for an SSE/SSEUP value.
+Frame-byte liveness must account for the upper eight bytes as well as the
+lower ones, including incoming vector and binary128 argument spills. An access
+to only the upper half keeps the full incoming store; ordinary integer register
+widths remain unchanged.
+
 ### Testing
 
 From this directory:
