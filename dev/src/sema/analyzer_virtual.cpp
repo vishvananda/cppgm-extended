@@ -289,7 +289,7 @@ void Analyzer::check_override_result(
 		error(location, "a covariant return type more cv-qualified than the overridden function's");
 	if (derived == base)
 		return;
-	if (!derived->complete && derived != cls)
+	if (derived != cls && !require_complete(derived))
 		error(location, "a covariant return type of an incomplete class");
 	if (!conversions_.is_base_of(base, derived))
 		error(location, "a covariant return type whose class is not derived from the overridden function's");

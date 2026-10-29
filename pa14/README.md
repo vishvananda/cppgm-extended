@@ -254,6 +254,9 @@ PA14 supports the following in addition to the PA13 subset:
 - instantiated specializations reuse supported PA12 rvalue-reference return
   paths and PA13 virtual-destructor lifetime without changing their value
   category or object-lifetime behavior
+- checking a covariant virtual return instantiates the required class-template
+  definition before checking its base relationship, while identical incomplete
+  returns, the current class, and unused member bodies remain undemanded
 - distinct local-class identities for separate function-template
   specializations
 - declaration-owned template-parameter scopes across nested instantiations and

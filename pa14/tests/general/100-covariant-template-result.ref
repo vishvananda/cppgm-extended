@@ -1,0 +1,316 @@
+declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+
+declare function @__cxa_pure_virtual(%arg0 : ptr [object_bytes=8]) -> ptr [unwind=no, return=noreturn, role=pure_virtual, binding=strong]
+
+global @__typeinfo_name__struct_PointerImpl_int_ [storage=readonly, binding=weak, object=_ZTS11PointerImplIiE] = {
+  i8 49
+  i8 49
+  i8 80
+  i8 111
+  i8 105
+  i8 110
+  i8 116
+  i8 101
+  i8 114
+  i8 73
+  i8 109
+  i8 112
+  i8 108
+  i8 73
+  i8 105
+  i8 69
+  i8 0
+}
+global @__typeinfo_name__struct_Pointer [storage=readonly, binding=weak, object=_ZTS7Pointer] = {
+  i8 55
+  i8 80
+  i8 111
+  i8 105
+  i8 110
+  i8 116
+  i8 101
+  i8 114
+  i8 0
+}
+global @__rtti_struct_Pointer [storage=readonly, binding=weak, object=_ZTI7Pointer] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Pointer
+}
+global @__rtti_struct_PointerImpl_int_ [storage=readonly, binding=weak, object=_ZTI11PointerImplIiE] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_PointerImpl_int_
+  ptr addr @__rtti_struct_Pointer
+}
+global @PointerImpl_int___vtable [storage=readonly, binding=weak, object=_ZTV11PointerImplIiE] = {
+  i64 0
+  ptr addr @__rtti_struct_PointerImpl_int_
+  ptr addr @PointerImpl_int___get
+}
+global @__typeinfo_name__struct_LvalueImpl_longint_ [storage=readonly, binding=weak, object=_ZTS10LvalueImplIlE] = {
+  i8 49
+  i8 48
+  i8 76
+  i8 118
+  i8 97
+  i8 108
+  i8 117
+  i8 101
+  i8 73
+  i8 109
+  i8 112
+  i8 108
+  i8 73
+  i8 108
+  i8 69
+  i8 0
+}
+global @__typeinfo_name__struct_Lvalue [storage=readonly, binding=weak, object=_ZTS6Lvalue] = {
+  i8 54
+  i8 76
+  i8 118
+  i8 97
+  i8 108
+  i8 117
+  i8 101
+  i8 0
+}
+global @__rtti_struct_Lvalue [storage=readonly, binding=weak, object=_ZTI6Lvalue] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Lvalue
+}
+global @__rtti_struct_LvalueImpl_longint_ [storage=readonly, binding=weak, object=_ZTI10LvalueImplIlE] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_LvalueImpl_longint_
+  ptr addr @__rtti_struct_Lvalue
+}
+global @LvalueImpl_longint___vtable [storage=readonly, binding=weak, object=_ZTV10LvalueImplIlE] = {
+  i64 0
+  ptr addr @__rtti_struct_LvalueImpl_longint_
+  ptr addr @LvalueImpl_longint___get
+}
+global @__typeinfo_name__struct_RvalueImpl_shortint_ [storage=readonly, binding=weak, object=_ZTS10RvalueImplIsE] = {
+  i8 49
+  i8 48
+  i8 82
+  i8 118
+  i8 97
+  i8 108
+  i8 117
+  i8 101
+  i8 73
+  i8 109
+  i8 112
+  i8 108
+  i8 73
+  i8 115
+  i8 69
+  i8 0
+}
+global @__typeinfo_name__struct_Rvalue [storage=readonly, binding=weak, object=_ZTS6Rvalue] = {
+  i8 54
+  i8 82
+  i8 118
+  i8 97
+  i8 108
+  i8 117
+  i8 101
+  i8 0
+}
+global @__rtti_struct_Rvalue [storage=readonly, binding=weak, object=_ZTI6Rvalue] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Rvalue
+}
+global @__rtti_struct_RvalueImpl_shortint_ [storage=readonly, binding=weak, object=_ZTI10RvalueImplIsE] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_RvalueImpl_shortint_
+  ptr addr @__rtti_struct_Rvalue
+}
+global @RvalueImpl_shortint___vtable [storage=readonly, binding=weak, object=_ZTV10RvalueImplIsE] = {
+  i64 0
+  ptr addr @__rtti_struct_RvalueImpl_shortint_
+  ptr addr @RvalueImpl_shortint___get
+}
+global @Pointer__vtable [storage=readonly, binding=weak, object=_ZTV7Pointer] = {
+  i64 0
+  ptr addr @__rtti_struct_Pointer
+  ptr addr @__cxa_pure_virtual
+}
+global @Lvalue__vtable [storage=readonly, binding=weak, object=_ZTV6Lvalue] = {
+  i64 0
+  ptr addr @__rtti_struct_Lvalue
+  ptr addr @__cxa_pure_virtual
+}
+global @Rvalue__vtable [storage=readonly, binding=weak, object=_ZTV6Rvalue] = {
+  i64 0
+  ptr addr @__rtti_struct_Rvalue
+  ptr addr @__cxa_pure_virtual
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $p : obj<16x8>
+  slot $l : obj<24x8>
+  slot $r : obj<16x8>
+  slot $a : ptr
+  slot $b : ptr
+  slot $c : ptr
+
+  block ^entry:
+    %t1 = addr $p
+    call void @PointerImpl_int___PointerImpl(%t1)
+    %t2 = addr $l
+    call void @LvalueImpl_longint___LvalueImpl(%t2)
+    %t3 = addr $r
+    call void @RvalueImpl_shortint___RvalueImpl(%t3)
+    %t4 = addr $p
+    %t5 = index i8 [projection=field] %t4, 8
+    %t6 = index i8 %t5, 0
+    %t7 = index i8 [projection=field] %t6, 0
+    store typed i32 17, %t7
+    %t8 = addr $l
+    %t9 = index i8 [projection=field] %t8, 8
+    %t10 = index i8 %t9, 0
+    %t11 = index i8 [projection=field] %t10, 0
+    store typed i32 23, %t11
+    %t12 = addr $r
+    %t13 = index i8 [projection=field] %t12, 8
+    %t14 = index i8 %t13, 0
+    %t15 = index i8 [projection=field] %t14, 0
+    store typed i32 31, %t15
+    %t16 = addr $p
+    %t17 = index i8 %t16, 0
+    store typed ptr %t17, $a
+    %t18 = addr $l
+    %t19 = index i8 %t18, 0
+    store typed ptr %t19, $b
+    %t20 = addr $r
+    %t21 = index i8 %t20, 0
+    store typed ptr %t21, $c
+    %t22 = load typed ptr $a
+    %t23 = load typed ptr %t22
+    %t24 = load typed ptr %t23
+    %t25 = call ptr %t24(%t22) as (%arg0 : ptr [object_bytes=8]) -> ptr
+    %t26 = index i8 [projection=field] %t25, 0
+    %t27 = load typed i32 %t26
+    %t28 = load typed ptr $b
+    %t29 = load typed ptr %t28
+    %t30 = load typed ptr %t29
+    %t31 = call ptr %t30(%t28) as (%arg0 : ptr [object_bytes=8]) -> ptr
+    %t32 = index i8 [projection=field] %t31, 0
+    %t33 = load typed i32 %t32
+    %t34 = binary add nowrap i32 %t27, %t33
+    %t35 = load typed ptr $c
+    %t36 = load typed ptr %t35
+    %t37 = load typed ptr %t36
+    %t38 = call ptr %t37(%t35) as (%arg0 : ptr [object_bytes=8]) -> ptr
+    %t39 = index i8 [projection=field] %t38, 0
+    %t40 = load typed i32 %t39
+    %t41 = binary add nowrap i32 %t34, %t40
+    %t42 = binary sub nowrap i32 %t41, 71
+    return i32 %t42
+}
+function @PointerImpl_int___PointerImpl(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN11PointerImplIiEC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    call void @Pointer__Pointer__base_entry(%t2)
+    %t3 = load typed ptr $this
+    %t4 = addr @PointerImpl_int___vtable
+    %t5 = index i8 %t4, 16
+    store typed ptr %t5, %t3
+    return void
+}
+function @PointerImpl_int___get(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZN11PointerImplIiE3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    return ptr %t2
+}
+function @LvalueImpl_longint___LvalueImpl(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN10LvalueImplIlEC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    call void @Lvalue__Lvalue__base_entry(%t2)
+    %t3 = load typed ptr $this
+    %t4 = addr @LvalueImpl_longint___vtable
+    %t5 = index i8 %t4, 16
+    store typed ptr %t5, %t3
+    return void
+}
+function @LvalueImpl_longint___get(%this : ptr [object_bytes=24]) -> ptr [binding=weak, object=_ZN10LvalueImplIlE3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    return ptr %t2
+}
+function @RvalueImpl_shortint___RvalueImpl(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN10RvalueImplIsEC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 %t1, 0
+    call void @Rvalue__Rvalue__base_entry(%t2)
+    %t3 = load typed ptr $this
+    %t4 = addr @RvalueImpl_shortint___vtable
+    %t5 = index i8 %t4, 16
+    store typed ptr %t5, %t3
+    return void
+}
+function @RvalueImpl_shortint___get(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZN10RvalueImplIsE3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    return ptr %t2
+}
+function @Pointer__Pointer__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7PointerC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Pointer__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+function @Lvalue__Lvalue__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6LvalueC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Lvalue__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+function @Rvalue__Rvalue__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6RvalueC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = addr @Rvalue__vtable
+    %t3 = index i8 %t2, 16
+    store typed ptr %t3, %t1
+    return void
+}
+alias object _ZN11PointerImplIiEC2Ev = @PointerImpl_int___PointerImpl
+alias object _ZN10LvalueImplIlEC2Ev = @LvalueImpl_longint___LvalueImpl
+alias object _ZN10RvalueImplIsEC2Ev = @RvalueImpl_shortint___RvalueImpl
