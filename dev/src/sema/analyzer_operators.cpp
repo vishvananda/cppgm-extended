@@ -410,6 +410,17 @@ uint32_t Analyzer::builtin_operator(TokenKind op, const syntax::Slice<syntax::Ex
 			parameters[0] = parameters[1] = p1;
 			return 2;
 		}
+		// 13.6p16: member pointers have equality candidates. Use the
+		// same composite type as a direct member-pointer comparison.
+		if ((op == TokenKind::OP_EQ || op == TokenKind::OP_NE) &&
+			(p1->kind == TypeKind::MemberPointer || p2->kind == TypeKind::MemberPointer))
+		{
+			const Type* common = composite_pointer(operands[0]->facts, operands[1]->facts, true);
+			if (common == nullptr || common->kind != TypeKind::MemberPointer)
+				return 0;
+			parameters[0] = parameters[1] = common;
+			return 2;
+		}
 		// 13.6p15: bool operator<(T*, T*) for the composite pointer type.
 		if ((IsPointerLikeOperand(p1) || (null1 && p2->kind == TypeKind::Pointer)) &&
 			(IsPointerLikeOperand(p2) || (null2 && p1->kind == TypeKind::Pointer)) &&

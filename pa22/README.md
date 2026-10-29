@@ -204,6 +204,10 @@ To complete PA22, implement these goals:
 4. Member pointer lowering over non-virtual layouts.
    Member pointer values should preserve the selected member target and supported base
    adjustment so `.*` and `->*` lower through the correct object address.
+   Implicit class conversions to member pointers participate in built-in `==` and
+   `!=` overload resolution, including null literals and compatible base/derived
+   and cv-qualified composite types. Explicit conversions do not participate, and
+   member pointers have no built-in ordering operators.
    Their contextual conversion to `bool` must distinguish a non-null target from a null
    member pointer without treating the adjustment word as an independent truth value.
    A data member pointer uses the Itanium C++ ABI representation (2.3), so its values

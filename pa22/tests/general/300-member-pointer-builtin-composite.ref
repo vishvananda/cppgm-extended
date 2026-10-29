@@ -1,0 +1,486 @@
+function @operator__(%__param0 : obj<1x1> [classes=none], %__param1 : i32) -> u8 [binding=strong, object=_Zeq8Overridei] {
+  slot $__param0 : obj<1x1>
+  slot $__param1 : i32
+
+  block ^entry:
+    store typed i32 %__param1, $__param1
+    return u8 0
+}
+function @operator____2(%__param0 : i32, %__param1 : obj<1x1> [classes=none]) -> u8 [binding=strong, object=_Znei8Override] {
+  slot $__param0 : i32
+  slot $__param1 : obj<1x1>
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    return u8 0
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $b : obj<8x8>
+  slot $bn : obj<8x8>
+  slot $d : obj<8x8>
+  slot $dn : obj<8x8>
+  slot $f : obj<16x8>
+  slot $fn : obj<16x8>
+  slot $g : obj<16x8>
+  slot $gn : obj<16x8>
+  slot $r : obj<8x8>
+  slot $rn : obj<8x8>
+  slot $argobj__1 : obj<1x1>
+  slot $argobj__2 : obj<1x1>
+  slot $object : obj<12x4>
+  slot $member_pointer_callee__3 : ptr
+
+  block ^entry:
+    %t1 = addr $b
+    %t2 = const i64 0
+    %t3 = addr $b
+    %t4 = index i8 [projection=field] %t3, 0
+    store typed i64 %t2, %t4
+    %t5 = addr $bn
+    %t6 = addr $bn
+    %t7 = index i8 [projection=field] %t6, 0
+    store typed i64 -1, %t7
+    %t8 = addr $d
+    %t9 = const i64 4
+    %t10 = addr $d
+    %t11 = index i8 [projection=field] %t10, 0
+    store typed i64 %t9, %t11
+    %t12 = addr $dn
+    %t13 = addr $dn
+    %t14 = index i8 [projection=field] %t13, 0
+    store typed i64 -1, %t14
+    %t15 = addr $f
+    %t16 = addr @Base__get
+    %t17 = copy i64 %t16
+    %t18 = convert zext i128 i64 %t17
+    %t19 = addr $f
+    %t20 = index i8 [projection=field] %t19, 0
+    store typed i128 %t18, %t20
+    %t21 = addr $fn
+    %t22 = addr $fn
+    %t23 = index i8 [projection=field] %t22, 0
+    store typed i128 0, %t23
+    %t24 = addr $g
+    %t25 = addr @Base__get
+    %t26 = copy i64 %t25
+    %t27 = convert zext i128 i64 %t26
+    %t28 = binary shl i128 4, 64
+    %t29 = binary add i128 %t27, %t28
+    %t30 = addr $g
+    %t31 = index i8 [projection=field] %t30, 0
+    store typed i128 %t29, %t31
+    %t32 = addr $gn
+    %t33 = addr $gn
+    %t34 = index i8 [projection=field] %t33, 0
+    store typed i128 0, %t34
+    %t35 = addr $r
+    %t36 = const i64 0
+    %t37 = addr $r
+    %t38 = index i8 [projection=field] %t37, 0
+    store typed i64 %t36, %t38
+    %t39 = addr $rn
+    %t40 = addr $rn
+    %t41 = index i8 [projection=field] %t40, 0
+    store typed i64 -1, %t41
+    %t42 = addr $b
+    %t43 = call i64 @DataBase__operatorPointer(%t42)
+    %t44 = addr $d
+    %t45 = call i64 @DataDerived__operatorPointer(%t44)
+    %t46 = cmp ne i64 %t43, -1
+    %t47 = binary mul i64 %t46, 4
+    %t48 = binary add i64 %t43, %t47
+    %t49 = cmp eq i64 %t48, %t45
+    %t50 = cmp eq i64 %t49, 0
+    branch %t50, ^if_then_1, ^lor_rhs_5
+
+  block ^lor_rhs_5:
+    %t51 = addr $d
+    %t52 = call i64 @DataDerived__operatorPointer(%t51)
+    %t53 = addr $b
+    %t54 = call i64 @DataBase__operatorPointer(%t53)
+    %t55 = cmp ne i64 %t54, -1
+    %t56 = binary mul i64 %t55, 4
+    %t57 = binary add i64 %t54, %t56
+    %t58 = cmp eq i64 %t52, %t57
+    %t59 = cmp eq i64 %t58, 0
+    branch %t59, ^if_then_1, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t60 = addr $b
+    %t61 = call i64 @DataBase__operatorPointer(%t60)
+    %t62 = addr $d
+    %t63 = call i64 @DataDerived__operatorPointer(%t62)
+    %t64 = cmp ne i64 %t61, -1
+    %t65 = binary mul i64 %t64, 4
+    %t66 = binary add i64 %t61, %t65
+    %t67 = cmp ne i64 %t66, %t63
+    branch %t67, ^if_then_1, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t68 = addr $d
+    %t69 = call i64 @DataDerived__operatorPointer(%t68)
+    %t70 = addr $b
+    %t71 = call i64 @DataBase__operatorPointer(%t70)
+    %t72 = cmp ne i64 %t71, -1
+    %t73 = binary mul i64 %t72, 4
+    %t74 = binary add i64 %t71, %t73
+    %t75 = cmp ne i64 %t69, %t74
+    branch %t75, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t76 = addr $bn
+    %t77 = call i64 @DataBase__operatorPointer(%t76)
+    %t78 = addr $dn
+    %t79 = call i64 @DataDerived__operatorPointer(%t78)
+    %t80 = cmp ne i64 %t77, -1
+    %t81 = binary mul i64 %t80, 4
+    %t82 = binary add i64 %t77, %t81
+    %t83 = cmp eq i64 %t82, %t79
+    %t84 = cmp eq i64 %t83, 0
+    branch %t84, ^if_then_7, ^lor_rhs_11
+
+  block ^lor_rhs_11:
+    %t85 = addr $dn
+    %t86 = call i64 @DataDerived__operatorPointer(%t85)
+    %t87 = addr $bn
+    %t88 = call i64 @DataBase__operatorPointer(%t87)
+    %t89 = cmp ne i64 %t88, -1
+    %t90 = binary mul i64 %t89, 4
+    %t91 = binary add i64 %t88, %t90
+    %t92 = cmp eq i64 %t86, %t91
+    %t93 = cmp eq i64 %t92, 0
+    branch %t93, ^if_then_7, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t94 = addr $b
+    %t95 = call i64 @DataBase__operatorPointer(%t94)
+    %t96 = addr $dn
+    %t97 = call i64 @DataDerived__operatorPointer(%t96)
+    %t98 = cmp ne i64 %t95, -1
+    %t99 = binary mul i64 %t98, 4
+    %t100 = binary add i64 %t95, %t99
+    %t101 = cmp eq i64 %t100, %t97
+    branch %t101, ^if_then_7, ^lor_rhs_9
+
+  block ^lor_rhs_9:
+    %t102 = addr $dn
+    %t103 = call i64 @DataDerived__operatorPointer(%t102)
+    %t104 = addr $b
+    %t105 = call i64 @DataBase__operatorPointer(%t104)
+    %t106 = cmp ne i64 %t105, -1
+    %t107 = binary mul i64 %t106, 4
+    %t108 = binary add i64 %t105, %t107
+    %t109 = cmp ne i64 %t103, %t108
+    %t110 = cmp eq i64 %t109, 0
+    branch %t110, ^if_then_7, ^if_else_8
+
+  block ^if_then_7:
+    return i32 2
+
+  block ^if_else_8:
+    jump ^if_end_12
+
+  block ^if_end_12:
+    %t111 = addr $f
+    %t112 = call i128 @FunctionBase__operatorPointer(%t111)
+    %t113 = addr $g
+    %t114 = call i128 @FunctionDerived__operatorPointer(%t113)
+    %t115 = convert trunc i64 i128 %t112
+    %t116 = cmp ne i64 %t115, 0
+    %t117 = binary mul i64 %t116, 4
+    %t118 = convert sext i128 i64 %t117
+    %t119 = binary shl i128 %t118, 64
+    %t120 = binary add i128 %t112, %t119
+    %t121 = cmp eq i128 %t120, %t114
+    %t122 = cmp eq i64 %t121, 0
+    branch %t122, ^if_then_13, ^lor_rhs_17
+
+  block ^lor_rhs_17:
+    %t123 = addr $g
+    %t124 = call i128 @FunctionDerived__operatorPointer(%t123)
+    %t125 = addr $f
+    %t126 = call i128 @FunctionBase__operatorPointer(%t125)
+    %t127 = convert trunc i64 i128 %t126
+    %t128 = cmp ne i64 %t127, 0
+    %t129 = binary mul i64 %t128, 4
+    %t130 = convert sext i128 i64 %t129
+    %t131 = binary shl i128 %t130, 64
+    %t132 = binary add i128 %t126, %t131
+    %t133 = cmp eq i128 %t124, %t132
+    %t134 = cmp eq i64 %t133, 0
+    branch %t134, ^if_then_13, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t135 = addr $f
+    %t136 = call i128 @FunctionBase__operatorPointer(%t135)
+    %t137 = addr $g
+    %t138 = call i128 @FunctionDerived__operatorPointer(%t137)
+    %t139 = convert trunc i64 i128 %t136
+    %t140 = cmp ne i64 %t139, 0
+    %t141 = binary mul i64 %t140, 4
+    %t142 = convert sext i128 i64 %t141
+    %t143 = binary shl i128 %t142, 64
+    %t144 = binary add i128 %t136, %t143
+    %t145 = cmp ne i128 %t144, %t138
+    branch %t145, ^if_then_13, ^lor_rhs_15
+
+  block ^lor_rhs_15:
+    %t146 = addr $g
+    %t147 = call i128 @FunctionDerived__operatorPointer(%t146)
+    %t148 = addr $f
+    %t149 = call i128 @FunctionBase__operatorPointer(%t148)
+    %t150 = convert trunc i64 i128 %t149
+    %t151 = cmp ne i64 %t150, 0
+    %t152 = binary mul i64 %t151, 4
+    %t153 = convert sext i128 i64 %t152
+    %t154 = binary shl i128 %t153, 64
+    %t155 = binary add i128 %t149, %t154
+    %t156 = cmp ne i128 %t147, %t155
+    branch %t156, ^if_then_13, ^if_else_14
+
+  block ^if_then_13:
+    return i32 3
+
+  block ^if_else_14:
+    jump ^if_end_18
+
+  block ^if_end_18:
+    %t157 = addr $fn
+    %t158 = call i128 @FunctionBase__operatorPointer(%t157)
+    %t159 = addr $gn
+    %t160 = call i128 @FunctionDerived__operatorPointer(%t159)
+    %t161 = convert trunc i64 i128 %t158
+    %t162 = cmp ne i64 %t161, 0
+    %t163 = binary mul i64 %t162, 4
+    %t164 = convert sext i128 i64 %t163
+    %t165 = binary shl i128 %t164, 64
+    %t166 = binary add i128 %t158, %t165
+    %t167 = cmp eq i128 %t166, %t160
+    %t168 = cmp eq i64 %t167, 0
+    branch %t168, ^if_then_19, ^lor_rhs_23
+
+  block ^lor_rhs_23:
+    %t169 = addr $gn
+    %t170 = call i128 @FunctionDerived__operatorPointer(%t169)
+    %t171 = addr $fn
+    %t172 = call i128 @FunctionBase__operatorPointer(%t171)
+    %t173 = convert trunc i64 i128 %t172
+    %t174 = cmp ne i64 %t173, 0
+    %t175 = binary mul i64 %t174, 4
+    %t176 = convert sext i128 i64 %t175
+    %t177 = binary shl i128 %t176, 64
+    %t178 = binary add i128 %t172, %t177
+    %t179 = cmp eq i128 %t170, %t178
+    %t180 = cmp eq i64 %t179, 0
+    branch %t180, ^if_then_19, ^lor_rhs_22
+
+  block ^lor_rhs_22:
+    %t181 = addr $f
+    %t182 = call i128 @FunctionBase__operatorPointer(%t181)
+    %t183 = addr $gn
+    %t184 = call i128 @FunctionDerived__operatorPointer(%t183)
+    %t185 = convert trunc i64 i128 %t182
+    %t186 = cmp ne i64 %t185, 0
+    %t187 = binary mul i64 %t186, 4
+    %t188 = convert sext i128 i64 %t187
+    %t189 = binary shl i128 %t188, 64
+    %t190 = binary add i128 %t182, %t189
+    %t191 = cmp eq i128 %t190, %t184
+    branch %t191, ^if_then_19, ^lor_rhs_21
+
+  block ^lor_rhs_21:
+    %t192 = addr $gn
+    %t193 = call i128 @FunctionDerived__operatorPointer(%t192)
+    %t194 = addr $f
+    %t195 = call i128 @FunctionBase__operatorPointer(%t194)
+    %t196 = convert trunc i64 i128 %t195
+    %t197 = cmp ne i64 %t196, 0
+    %t198 = binary mul i64 %t197, 4
+    %t199 = convert sext i128 i64 %t198
+    %t200 = binary shl i128 %t199, 64
+    %t201 = binary add i128 %t195, %t200
+    %t202 = cmp ne i128 %t193, %t201
+    %t203 = cmp eq i64 %t202, 0
+    branch %t203, ^if_then_19, ^if_else_20
+
+  block ^if_then_19:
+    return i32 4
+
+  block ^if_else_20:
+    jump ^if_end_24
+
+  block ^if_end_24:
+    %t204 = addr $r
+    %t205 = call ptr @Reference__operatorPointer_(%t204)
+    %t206 = load typed i64 %t205
+    %t207 = cmp ne i64 %t206, -1
+    %t208 = cmp eq i64 %t207, 0
+    branch %t208, ^if_then_25, ^lor_rhs_29
+
+  block ^lor_rhs_29:
+    %t209 = addr $r
+    %t210 = call ptr @Reference__operatorPointer_(%t209)
+    %t211 = load typed i64 %t210
+    %t212 = cmp ne i64 -1, %t211
+    %t213 = cmp eq i64 %t212, 0
+    branch %t213, ^if_then_25, ^lor_rhs_28
+
+  block ^lor_rhs_28:
+    %t214 = addr $rn
+    %t215 = call ptr @Reference__operatorPointer_(%t214)
+    %t216 = load typed i64 %t215
+    %t217 = cmp eq i64 %t216, -1
+    %t218 = cmp eq i64 %t217, 0
+    branch %t218, ^if_then_25, ^lor_rhs_27
+
+  block ^lor_rhs_27:
+    %t219 = addr $rn
+    %t220 = call ptr @Reference__operatorPointer_(%t219)
+    %t221 = load typed i64 %t220
+    %t222 = cmp eq i64 -1, %t221
+    %t223 = cmp eq i64 %t222, 0
+    branch %t223, ^if_then_25, ^if_else_26
+
+  block ^if_then_25:
+    return i32 5
+
+  block ^if_else_26:
+    jump ^if_end_30
+
+  block ^if_end_30:
+    %t224 = addr $argobj__1
+    %t225 = call u8 @operator__($argobj__1, 0)
+    branch %t225, ^if_then_31, ^lor_rhs_33
+
+  block ^lor_rhs_33:
+    %t226 = addr $argobj__2
+    %t227 = call u8 @operator____2(0, $argobj__2)
+    branch %t227, ^if_then_31, ^if_else_32
+
+  block ^if_then_31:
+    return i32 6
+
+  block ^if_else_32:
+    jump ^if_end_34
+
+  block ^if_end_34:
+    %t228 = addr $object
+    %t229 = addr $object
+    %t230 = index i8 %t229, 4
+    %t231 = index i8 [projection=field] %t230, 0
+    store typed i32 42, %t231
+    %t232 = addr $object
+    %t233 = addr $d
+    %t234 = index i8 [projection=field] %t233, 0
+    %t235 = load typed i64 %t234
+    %t236 = index i8 [projection=field] %t232, %t235
+    %t237 = load typed i32 %t236
+    %t238 = cmp ne i32 %t237, 42
+    branch %t238, ^if_then_35, ^lor_rhs_37
+
+  block ^lor_rhs_37:
+    %t239 = addr $object
+    %t240 = addr $g
+    %t241 = index i8 [projection=field] %t240, 0
+    %t242 = load typed i128 %t241
+    %t243 = binary shr i128 %t242, 64
+    %t244 = convert trunc i64 i128 %t243
+    %t245 = convert trunc i64 i128 %t242
+    %t246 = binary and i64 %t245, 1
+    %t247 = cmp ne i64 %t246, 0
+    %t248 = index i8 %t239, %t244
+    branch %t247, ^member_pointer_virtual_38, ^member_pointer_direct_39
+
+  block ^member_pointer_virtual_38:
+    %t249 = load typed ptr %t248
+    %t250 = binary sub i64 %t245, 1
+    %t251 = index i8 %t249, %t250
+    %t252 = load typed ptr %t251
+    store typed ptr %t252, $member_pointer_callee__3
+    jump ^member_pointer_end_40
+
+  block ^member_pointer_direct_39:
+    %t253 = copy ptr %t245
+    store typed ptr %t253, $member_pointer_callee__3
+    jump ^member_pointer_end_40
+
+  block ^member_pointer_end_40:
+    %t254 = load typed ptr $member_pointer_callee__3
+    %t255 = call i32 %t254(%t248) as (%arg0 : ptr) -> i32
+    %t256 = cmp ne i32 %t255, 42
+    branch %t256, ^if_then_35, ^if_else_36
+
+  block ^if_then_35:
+    return i32 7
+
+  block ^if_else_36:
+    jump ^if_end_41
+
+  block ^if_end_41:
+    return i32 0
+}
+function @Base__get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZNK4Base3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    return i32 %t3
+}
+function @DataBase__operatorPointer(%this : ptr [object_bytes=8]) -> i64 [binding=weak, object=_ZNK8DataBasecvM4BaseiEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i64 %t2
+    return i64 %t3
+}
+function @DataDerived__operatorPointer(%this : ptr [object_bytes=8]) -> i64 [binding=weak, object=_ZNK11DataDerivedcvM7DerivedKiEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i64 %t2
+    return i64 %t3
+}
+function @FunctionBase__operatorPointer(%this : ptr [object_bytes=16]) -> i128 [binding=weak, object=_ZNK12FunctionBasecvM4BaseKFivEEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i128 %t2
+    return i128 %t3
+}
+function @FunctionDerived__operatorPointer(%this : ptr [object_bytes=16]) -> i128 [binding=weak, object=_ZNK15FunctionDerivedcvM7DerivedKFivEEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i128 %t2
+    return i128 %t3
+}
+function @Reference__operatorPointer_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN9ReferencecvRM4BaseiEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}

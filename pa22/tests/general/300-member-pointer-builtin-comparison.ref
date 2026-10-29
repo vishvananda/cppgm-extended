@@ -1,0 +1,421 @@
+global @calls : i32 [binding=strong] = zero
+
+function @make(%n : i32) -> obj<4x4> [binding=strong, object=_Z4makei] {
+  slot $n : i32
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store typed i32 %n, $n
+    %t1 = load typed i32 @calls
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @calls
+    %t3 = addr $retobj__1
+    %t4 = load typed i32 $n
+    call void @Value__Value__aggregate(%t3, %t4)
+    return obj<4x4> $retobj__1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $empty : obj<4x4>
+  slot $full : obj<4x4>
+  slot $zero : obj<4x4>
+  slot $first : obj<4x4>
+  slot $tmpobj__1 : obj<4x4>
+  slot $tmpobj__2 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $empty
+    %t2 = addr $empty
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 0, %t3
+    %t4 = addr $full
+    %t5 = addr $full
+    %t6 = index i8 [projection=field] %t5, 0
+    store typed i32 42, %t6
+    %t7 = addr $zero
+    %t8 = addr $zero
+    %t9 = index i8 [projection=field] %t8, 0
+    store typed i32 0, %t9
+    %t10 = addr $first
+    %t11 = addr $first
+    %t12 = index i8 [projection=field] %t11, 0
+    store typed i32 42, %t12
+    %t13 = addr $empty
+    %t14 = call i128 @Value__operatorPointer(%t13)
+    %t15 = cmp eq i128 %t14, 0
+    %t16 = cmp eq i64 %t15, 0
+    branch %t16, ^if_then_1, ^lor_rhs_5
+
+  block ^lor_rhs_5:
+    %t17 = addr $empty
+    %t18 = call i128 @Value__operatorPointer(%t17)
+    %t19 = cmp eq i128 0, %t18
+    %t20 = cmp eq i64 %t19, 0
+    branch %t20, ^if_then_1, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t21 = addr $empty
+    %t22 = call i128 @Value__operatorPointer(%t21)
+    %t23 = cmp ne i128 %t22, 0
+    branch %t23, ^if_then_1, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t24 = addr $empty
+    %t25 = call i128 @Value__operatorPointer(%t24)
+    %t26 = cmp ne i128 0, %t25
+    branch %t26, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t27 = addr $full
+    %t28 = call i128 @Value__operatorPointer(%t27)
+    %t29 = cmp eq i128 %t28, 0
+    branch %t29, ^if_then_7, ^lor_rhs_11
+
+  block ^lor_rhs_11:
+    %t30 = addr $full
+    %t31 = call i128 @Value__operatorPointer(%t30)
+    %t32 = cmp eq i128 0, %t31
+    branch %t32, ^if_then_7, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t33 = addr $full
+    %t34 = call i128 @Value__operatorPointer(%t33)
+    %t35 = cmp ne i128 %t34, 0
+    %t36 = cmp eq i64 %t35, 0
+    branch %t36, ^if_then_7, ^lor_rhs_9
+
+  block ^lor_rhs_9:
+    %t37 = addr $full
+    %t38 = call i128 @Value__operatorPointer(%t37)
+    %t39 = cmp ne i128 0, %t38
+    %t40 = cmp eq i64 %t39, 0
+    branch %t40, ^if_then_7, ^if_else_8
+
+  block ^if_then_7:
+    return i32 2
+
+  block ^if_else_8:
+    jump ^if_end_12
+
+  block ^if_end_12:
+    %t41 = addr $empty
+    %t42 = call i128 @Value__operatorPointer(%t41)
+    %t43 = cmp eq i128 %t42, 0
+    %t44 = cmp eq i64 %t43, 0
+    branch %t44, ^if_then_13, ^lor_rhs_17
+
+  block ^lor_rhs_17:
+    %t45 = addr $empty
+    %t46 = call i128 @Value__operatorPointer(%t45)
+    %t47 = cmp eq i128 0, %t46
+    %t48 = cmp eq i64 %t47, 0
+    branch %t48, ^if_then_13, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t49 = addr $empty
+    %t50 = call i128 @Value__operatorPointer(%t49)
+    %t51 = cmp ne i128 %t50, 0
+    branch %t51, ^if_then_13, ^lor_rhs_15
+
+  block ^lor_rhs_15:
+    %t52 = addr $empty
+    %t53 = call i128 @Value__operatorPointer(%t52)
+    %t54 = cmp ne i128 0, %t53
+    branch %t54, ^if_then_13, ^if_else_14
+
+  block ^if_then_13:
+    return i32 3
+
+  block ^if_else_14:
+    jump ^if_end_18
+
+  block ^if_end_18:
+    %t55 = addr $full
+    %t56 = call i128 @Value__operatorPointer(%t55)
+    %t57 = cmp eq i128 %t56, 0
+    branch %t57, ^if_then_19, ^lor_rhs_23
+
+  block ^lor_rhs_23:
+    %t58 = addr $full
+    %t59 = call i128 @Value__operatorPointer(%t58)
+    %t60 = cmp eq i128 0, %t59
+    branch %t60, ^if_then_19, ^lor_rhs_22
+
+  block ^lor_rhs_22:
+    %t61 = addr $full
+    %t62 = call i128 @Value__operatorPointer(%t61)
+    %t63 = cmp ne i128 %t62, 0
+    %t64 = cmp eq i64 %t63, 0
+    branch %t64, ^if_then_19, ^lor_rhs_21
+
+  block ^lor_rhs_21:
+    %t65 = addr $full
+    %t66 = call i128 @Value__operatorPointer(%t65)
+    %t67 = cmp ne i128 0, %t66
+    %t68 = cmp eq i64 %t67, 0
+    branch %t68, ^if_then_19, ^if_else_20
+
+  block ^if_then_19:
+    return i32 4
+
+  block ^if_else_20:
+    jump ^if_end_24
+
+  block ^if_end_24:
+    %t69 = addr $zero
+    %t70 = call i64 @Data__operatorPointer(%t69)
+    %t71 = cmp eq i64 %t70, -1
+    %t72 = cmp eq i64 %t71, 0
+    branch %t72, ^if_then_25, ^lor_rhs_29
+
+  block ^lor_rhs_29:
+    %t73 = addr $zero
+    %t74 = call i64 @Data__operatorPointer(%t73)
+    %t75 = cmp eq i64 -1, %t74
+    %t76 = cmp eq i64 %t75, 0
+    branch %t76, ^if_then_25, ^lor_rhs_28
+
+  block ^lor_rhs_28:
+    %t77 = addr $zero
+    %t78 = call i64 @Data__operatorPointer(%t77)
+    %t79 = cmp ne i64 %t78, -1
+    branch %t79, ^if_then_25, ^lor_rhs_27
+
+  block ^lor_rhs_27:
+    %t80 = addr $zero
+    %t81 = call i64 @Data__operatorPointer(%t80)
+    %t82 = cmp ne i64 -1, %t81
+    branch %t82, ^if_then_25, ^if_else_26
+
+  block ^if_then_25:
+    return i32 5
+
+  block ^if_else_26:
+    jump ^if_end_30
+
+  block ^if_end_30:
+    %t83 = addr $first
+    %t84 = call i64 @Data__operatorPointer(%t83)
+    %t85 = cmp eq i64 %t84, -1
+    branch %t85, ^if_then_31, ^lor_rhs_35
+
+  block ^lor_rhs_35:
+    %t86 = addr $first
+    %t87 = call i64 @Data__operatorPointer(%t86)
+    %t88 = cmp eq i64 -1, %t87
+    branch %t88, ^if_then_31, ^lor_rhs_34
+
+  block ^lor_rhs_34:
+    %t89 = addr $first
+    %t90 = call i64 @Data__operatorPointer(%t89)
+    %t91 = cmp ne i64 %t90, -1
+    %t92 = cmp eq i64 %t91, 0
+    branch %t92, ^if_then_31, ^lor_rhs_33
+
+  block ^lor_rhs_33:
+    %t93 = addr $first
+    %t94 = call i64 @Data__operatorPointer(%t93)
+    %t95 = cmp ne i64 -1, %t94
+    %t96 = cmp eq i64 %t95, 0
+    branch %t96, ^if_then_31, ^if_else_32
+
+  block ^if_then_31:
+    return i32 6
+
+  block ^if_else_32:
+    jump ^if_end_36
+
+  block ^if_end_36:
+    %t97 = addr $empty
+    %t98 = call i128 @Value__operatorPointer(%t97)
+    %t99 = addr $empty
+    %t100 = call i128 @Value__operatorPointer(%t99)
+    %t101 = cmp eq i128 %t98, %t100
+    %t102 = cmp eq i64 %t101, 0
+    branch %t102, ^if_then_37, ^lor_rhs_41
+
+  block ^lor_rhs_41:
+    %t103 = addr $full
+    %t104 = call i128 @Value__operatorPointer(%t103)
+    %t105 = addr $full
+    %t106 = call i128 @Value__operatorPointer(%t105)
+    %t107 = cmp eq i128 %t104, %t106
+    %t108 = cmp eq i64 %t107, 0
+    branch %t108, ^if_then_37, ^lor_rhs_40
+
+  block ^lor_rhs_40:
+    %t109 = addr $full
+    %t110 = call i128 @Value__operatorPointer(%t109)
+    %t111 = addr $empty
+    %t112 = call i128 @Value__operatorPointer(%t111)
+    %t113 = cmp eq i128 %t110, %t112
+    branch %t113, ^if_then_37, ^lor_rhs_39
+
+  block ^lor_rhs_39:
+    %t114 = addr $empty
+    %t115 = call i128 @Value__operatorPointer(%t114)
+    %t116 = addr $full
+    %t117 = call i128 @Value__operatorPointer(%t116)
+    %t118 = cmp ne i128 %t115, %t117
+    %t119 = cmp eq i64 %t118, 0
+    branch %t119, ^if_then_37, ^if_else_38
+
+  block ^if_then_37:
+    return i32 7
+
+  block ^if_else_38:
+    jump ^if_end_42
+
+  block ^if_end_42:
+    %t120 = addr $first
+    %t121 = call i64 @Data__operatorPointer(%t120)
+    %t122 = addr $first
+    %t123 = call i64 @Data__operatorPointer(%t122)
+    %t124 = cmp eq i64 %t121, %t123
+    %t125 = cmp eq i64 %t124, 0
+    branch %t125, ^if_then_43, ^lor_rhs_46
+
+  block ^lor_rhs_46:
+    %t126 = addr $first
+    %t127 = call i64 @Data__operatorPointer(%t126)
+    %t128 = addr $zero
+    %t129 = call i64 @Data__operatorPointer(%t128)
+    %t130 = cmp eq i64 %t127, %t129
+    branch %t130, ^if_then_43, ^lor_rhs_45
+
+  block ^lor_rhs_45:
+    %t131 = addr $zero
+    %t132 = call i64 @Data__operatorPointer(%t131)
+    %t133 = addr $first
+    %t134 = call i64 @Data__operatorPointer(%t133)
+    %t135 = cmp ne i64 %t132, %t134
+    %t136 = cmp eq i64 %t135, 0
+    branch %t136, ^if_then_43, ^if_else_44
+
+  block ^if_then_43:
+    return i32 8
+
+  block ^if_else_44:
+    jump ^if_end_47
+
+  block ^if_end_47:
+    %t137 = addr $tmpobj__1
+    %t138 = call obj<4x4> @make(0)
+    copyobj 4x4 %t138, %t137
+    %t139 = call i128 @Value__operatorPointer(%t137)
+    %t140 = cmp eq i128 %t139, 0
+    %t141 = cmp eq i64 %t140, 0
+    branch %t141, ^if_then_48, ^lor_rhs_50
+
+  block ^lor_rhs_50:
+    %t142 = load typed i32 @calls
+    %t143 = cmp ne i32 %t142, 1
+    branch %t143, ^if_then_48, ^if_else_49
+
+  block ^if_then_48:
+    return i32 9
+
+  block ^if_else_49:
+    jump ^if_end_51
+
+  block ^if_end_51:
+    %t144 = addr $tmpobj__2
+    %t145 = call obj<4x4> @make(42)
+    copyobj 4x4 %t145, %t144
+    %t146 = call i128 @Value__operatorPointer(%t144)
+    %t147 = cmp ne i128 0, %t146
+    %t148 = cmp eq i64 %t147, 0
+    branch %t148, ^if_then_52, ^lor_rhs_54
+
+  block ^lor_rhs_54:
+    %t149 = load typed i32 @calls
+    %t150 = cmp ne i32 %t149, 2
+    branch %t150, ^if_then_52, ^if_else_53
+
+  block ^if_then_52:
+    return i32 10
+
+  block ^if_else_53:
+    jump ^if_end_55
+
+  block ^if_end_55:
+    return i32 0
+}
+function @Value__Value__aggregate(%this : ptr [object_bytes=4], %n : i32) -> void [unwind=no, binding=internal] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    return void
+}
+function @Value__operatorPointer(%this : ptr [object_bytes=4]) -> i128 [binding=weak, object=_ZNK5ValuecvMS_KFivEEv, inline_hint=yes] {
+  slot $this : ptr
+  slot $cond__1 : i128
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    branch %t3, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    %t4 = addr @Value__get
+    %t5 = copy i64 %t4
+    %t6 = convert zext i128 i64 %t5
+    store typed i128 %t6, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i128 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t7 = load typed i128 $cond__1
+    return i128 %t7
+}
+function @Data__operatorPointer(%this : ptr [object_bytes=4]) -> i64 [binding=weak, object=_ZNK4DatacvMS_iEv, inline_hint=yes] {
+  slot $this : ptr
+  slot $cond__1 : i64
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    branch %t3, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    %t4 = const i64 0
+    store typed i64 %t4, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i64 -1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t5 = load typed i64 $cond__1
+    return i64 %t5
+}
+function @Value__get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZNK5Value3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    return i32 %t3
+}
