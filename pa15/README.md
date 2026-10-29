@@ -213,6 +213,9 @@ PA15 supports the following in addition to the PA14 subset:
   - conditional `?:`
   - `sizeof...(parameter-pack)`
   - `sizeof(type-id)` and `alignof(type-id)`
+  - body-local `sizeof(expression)` arguments retain dependence on their
+    operand's type until substitution, while fixed invalid operands and
+    nonconstant arguments are diagnosed when the template is defined
   - supported cast expressions that fold to integral constant values
 - explicit specialization of supported class templates
 - explicit specialization of supported function templates; an explicit

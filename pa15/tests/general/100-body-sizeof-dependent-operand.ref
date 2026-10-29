@@ -1,0 +1,49 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $c : i8
+  slot $l : i64
+  slot $i : obj<8x8>
+  slot $argobj__1 : obj<8x8>
+
+  block ^entry:
+    store i8 0, $c
+    store typed i64 0, $l
+    %t1 = addr $i
+    %t2 = addr $l
+    %t3 = addr $i
+    %t4 = index i8 [projection=field] %t3, 0
+    store typed ptr %t2, %t4
+    %t5 = addr $c
+    %t6 = call i32 @width(%t5)
+    %t7 = addr $l
+    %t8 = call i32 @width__2(%t7)
+    %t9 = binary add nowrap i32 %t6, %t8
+    %t10 = addr $argobj__1
+    %t11 = addr $i
+    copyobj 8x8 %t11, %t10
+    %t12 = call i32 @width__3($argobj__1)
+    %t13 = binary add nowrap i32 %t9, %t12
+    %t14 = binary sub nowrap i32 %t13, 17
+    return i32 %t14
+}
+function @width(%i : ptr) -> i32 [binding=weak, object=_Z5widthIPcEiT_] {
+  slot $i : ptr
+
+  block ^entry:
+    store typed ptr %i, $i
+    return i32 1
+}
+function @width__2(%i : ptr) -> i32 [binding=weak, object=_Z5widthIPlEiT_] {
+  slot $i : ptr
+
+  block ^entry:
+    store typed ptr %i, $i
+    return i32 8
+}
+function @width__3(%i : obj<8x8>) -> i32 [binding=weak, object=_Z5widthI8IteratorIlEEiT_] {
+  slot $i : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $i
+    copyobj 8x8 %i, %t1
+    return i32 8
+}

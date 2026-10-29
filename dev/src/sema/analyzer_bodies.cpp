@@ -53,7 +53,8 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 	function->body = &body;
 	if (parameters != nullptr)
 	{
-		// The parameters of the definition, with their declared types; an
+		// The parameters of the definition, with their declared types and
+		// dependence; an
 		// instantiation's parameter is dependent if its pattern's type is
 		// (see Binding::dependent), any local function's in an
 		// instantiation (a lambda's, a local class member's) is taken as
@@ -87,7 +88,9 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 			const Identifier* name = id != nullptr ? id->last().identifier : nullptr;
 			Entity* parameter = new_entity<Entity>(EntityKind::Parameter, name, scope, type->params[i]);
 			Binding* binding = new_binding(BindingKind::Parameter, name, parameter, type->params[i]);
-			binding->dependent = all_dependent || (pattern != nullptr && dependent_type(pattern->params[i]));
+			binding->dependent = all_dependent ||
+				(pattern != nullptr ? dependent_type(pattern->params[i])
+									: template_depth_ != 0 && dependent_type(type->params[i]));
 			print_in(scope, binding);
 			if (name == nullptr)
 				continue;
