@@ -909,8 +909,8 @@ const Type* Analyzer::dependent_decltype(const syntax::Expr& operand, Scope* sco
 	return dependent_expression(operand, scope, false);
 }
 
-const Type* Analyzer::dependent_expression(
-	const syntax::Expr& operand, Scope* scope, bool value, const Type* target, bool fixed)
+const Type* Analyzer::dependent_expression(const syntax::Expr& operand, Scope* scope, bool value, const Type* target,
+	bool fixed, const Type* evaluation_target, bool unknown)
 {
 	// A decltype-specifier of a template definition, or a value-dependent
 	// template argument (`value`): one placeholder per equivalent operand
@@ -920,8 +920,11 @@ const Type* Analyzer::dependent_expression(
 	// decltype_words); an operand of a form the key does not cover has its
 	// own. Its non-dependent names are bound where it appears (14.6p10,
 	// 14.6.3), as a template body's are.
+	const uint64_t uses = names_.dependent_uses();
+	const uint64_t values = names_.value_parameter_uses();
 	if (template_depth_ != 0)
 		expression_walk(&operand, scope, !value);
+	const bool named_dependent = names_.dependent_uses() != uses || names_.value_parameter_uses() != values;
 	const size_t base = decltype_words_.size();
 	// The decl-specifiers and a member template's own template-head of an
 	// out-of-class member declaration (before its declarator-id) redeclare
@@ -966,23 +969,29 @@ const Type* Analyzer::dependent_expression(
 	// redeclarations then compare types, not the spellings of fixed
 	// operands).
 	// Body-local operands deliberately have no shared structural key. Their
-	// dependence is still determined from the names and types they use.
+	// dependence is still determined from the names and types they use,
+	// including value arguments. A fixed local value needs no placeholder:
+	// evaluate it directly, preserving its parameter's conversion context.
 	bool independent = false;
-	if (fixed && !value && (!keyed || (key.words[0] & 1) == 0))
+	if (fixed && value && !keyed)
+		independent = !named_dependent && !type_dependent(&operand, scope);
+	else if (fixed && !value && (!keyed || (key.words[0] & 1) == 0))
 	{
 		const bool precise = precise_dependence_;
 		precise_dependence_ = precise || !keyed;
 		independent = (keyed || !instantiation_dependent(operand, scope)) && !type_dependent(&operand, scope);
 		precise_dependence_ = precise;
 	}
-	if (independent)
+	if (independent && (!value || target == nullptr || !dependent_type(target)))
 	{
 		decltype_words_.resize(base);
 		if (enclosing != nullptr)
 			*enclosing |= named;
 		const uint32_t depth = template_depth_;
 		template_depth_ = 0;
-		const Type* type = decltype_type(operand, scope);
+		const Type* type = value
+			? template_value(operand, scope, evaluation_target != nullptr ? evaluation_target : target, unknown)
+			: decltype_type(operand, scope);
 		template_depth_ = depth;
 		return type;
 	}

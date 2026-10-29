@@ -109,6 +109,7 @@ bool Analyzer::instantiation_dependent(const syntax::Expr& expr, Scope* scope, b
 	// Whether a template definition's expression is value-dependent
 	// (14.6.2.3p1-p2, conservatively instantiation-dependent): it names a
 	// template parameter, a type, variable or parameter of dependent type,
+	// a local declaration whose initializer depends on a template parameter,
 	// a const variable or non-static data member of a templated class (its
 	// value may depend on its initializer, `this->m` on the class), a
 	// member function or enumerator of one, nests a pack expansion, applies
@@ -125,7 +126,7 @@ bool Analyzer::instantiation_dependent(const syntax::Expr& expr, Scope* scope, b
 		return true;
 	for (const Binding* binding : named)
 	{
-		if (binding == nullptr ||
+		if (binding == nullptr || binding->dependent || binding->value_dependent ||
 			(binding->entity != nullptr && binding->entity->kind == EntityKind::TemplateParameter))
 			return true;
 		// Class names and members can carry access obligations whose answer

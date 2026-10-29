@@ -90,6 +90,14 @@ nondependent, including inside another template definition. It may name a member
 template without the `template` introducer; semantic lookup determines whether
 the resulting template-id denotes a type or an expression.
 
+### Fixed arguments and access context
+
+A retained body's fixed template argument can reuse its value when the body is
+instantiated, provided its conversion and access obligations are unchanged.
+Private or protected access, including an inherited declaration's access path,
+can depend on specialization-specific friendship. Preserve these checks for the
+actual specialization; a value computed in another context grants no access.
+
 ### Qualified template-name hiding
 
 Function and variable templates declared directly in a class participate in

@@ -535,14 +535,35 @@ const Type* Analyzer::template_argument(
 		else if (name.dependent_qualifier && (kind == BindingKind::Type || kind == BindingKind::TypeAlias))
 			error(name.location, "a dependent qualified name names a type only with typename");
 		if ((kind != BindingKind::Type && kind != BindingKind::TypeAlias) || dependent)
-			return template_value(*argument.expression, scope, target, unknown);
+			return fixed_template_value(argument, scope, target, unknown);
 		type = binding_type(result.binding, name.location);
 	}
 	else
-		return template_value(*argument.expression, scope, target, unknown);
+		return fixed_template_value(argument, scope, target, unknown);
 	if (type == auto_placeholder_)
 		error(location, "auto as a template argument");
 	return type;
+}
+
+const Type* Analyzer::fixed_template_value(
+	const syntax::TemplateArgument& argument, Scope* scope, const Type* target, bool unknown)
+{
+	if (argument.fixed_value != 0)
+	{
+		const FixedTemplateValue& fixed = fixed_template_values_[argument.fixed_value - 1];
+		if (fixed.target == target && fixed.unknown == unknown)
+			return fixed.value;
+	}
+	const uint64_t uses = names_.dependent_uses();
+	const uint64_t values = names_.value_parameter_uses();
+	const Type* value = template_value(*argument.expression, scope, target, unknown);
+	if (value != nullptr && value->kind == TypeKind::Value && template_depth_ != 0 && body_ != nullptr &&
+		body_->pattern && !argument.pack && names_.dependent_uses() == uses && names_.value_parameter_uses() == values)
+	{
+		fixed_template_values_.push_back(FixedTemplateValue{ value, target, unknown });
+		argument.fixed_value = static_cast<uint32_t>(fixed_template_values_.size());
+	}
+	return value;
 }
 
 const Type* Analyzer::template_value(const syntax::Expr& expr, Scope* scope, const Type* target, bool unknown)
@@ -640,7 +661,8 @@ const Type* Analyzer::template_value(const syntax::Expr& expr, Scope* scope, con
 	// type-dependent is evaluated where it appears (see
 	// dependent_expression).
 	const Type* type = dependent_expression(expr, scope, true,
-		target != nullptr && (AddressParameterType(target) || dependent_type(target)) ? target : nullptr, semantic());
+		target != nullptr && (AddressParameterType(target) || dependent_type(target)) ? target : nullptr, semantic(),
+		target, unknown);
 	if (type == nullptr || type->kind != TypeKind::TemplateParameter)
 		return type;
 	TemplateParameterEntity* placeholder = static_cast<TemplateParameterEntity*>(const_cast<Entity*>(type->entity));

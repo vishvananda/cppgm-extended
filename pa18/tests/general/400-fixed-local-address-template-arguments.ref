@@ -1,0 +1,229 @@
+global @object : i32 [binding=strong] = 7
+global @owner__member : i32 [binding=strong, object=_ZN5owner6memberE] = 11
+global @private_owner__value : i32 [binding=strong, object=_ZN13private_owner5valueE] = 23
+
+function @read_value() -> i32 [binding=strong, object=_Z10read_valuev] {
+  block ^entry:
+    return i32 19
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @check_addresses()
+    %t2 = call i32 @check_addresses__2()
+    %t3 = binary add nowrap i32 %t1, %t2
+    %t4 = call i32 @private_reader_int___read()
+    %t5 = binary add nowrap i32 %t3, %t4
+    return i32 %t5
+}
+function @check_addresses() -> i32 [binding=weak, object=_Z15check_addressesIvEiv] {
+  slot $a : i32
+  slot $b : i32
+  slot $c : i32
+  slot $d : i32
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+  slot $land__4 : i64
+
+  block ^entry:
+    %t1 = call i32 @pointer_holder__object___read()
+    store typed i32 %t1, $a
+    %t2 = call i32 @pointer_holder__owner__member___read()
+    store typed i32 %t2, $b
+    %t3 = call i32 @reference_holder_object___read()
+    store typed i32 %t3, $c
+    %t4 = call i32 @function_holder__read_value___read()
+    store typed i32 %t4, $d
+    %t5 = load typed i32 $a
+    %t6 = cmp eq i32 %t5, 7
+    branch %t6, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t7 = load typed i32 $b
+    %t8 = cmp eq i32 %t7, 11
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t10 = load typed i64 $land__2
+    branch %t10, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t11 = load typed i32 $c
+    %t12 = cmp eq i32 %t11, 7
+    %t13 = cmp ne i64 %t12, 0
+    store typed i64 %t13, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store typed i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t14 = load typed i64 $land__3
+    branch %t14, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t15 = load typed i32 $d
+    %t16 = cmp eq i32 %t15, 19
+    %t17 = cmp ne i64 %t16, 0
+    store typed i64 %t17, $land__4
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store typed i64 0, $land__4
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t18 = load typed i64 $land__4
+    branch %t18, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t19 = load typed i32 $cond__1
+    return i32 %t19
+}
+function @check_addresses__2() -> i32 [binding=weak, object=_Z15check_addressesIlEiv] {
+  slot $a : i32
+  slot $b : i32
+  slot $c : i32
+  slot $d : i32
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+  slot $land__4 : i64
+
+  block ^entry:
+    %t1 = call i32 @pointer_holder__object___read()
+    store typed i32 %t1, $a
+    %t2 = call i32 @pointer_holder__owner__member___read()
+    store typed i32 %t2, $b
+    %t3 = call i32 @reference_holder_object___read()
+    store typed i32 %t3, $c
+    %t4 = call i32 @function_holder__read_value___read()
+    store typed i32 %t4, $d
+    %t5 = load typed i32 $a
+    %t6 = cmp eq i32 %t5, 7
+    branch %t6, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t7 = load typed i32 $b
+    %t8 = cmp eq i32 %t7, 11
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t10 = load typed i64 $land__2
+    branch %t10, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t11 = load typed i32 $c
+    %t12 = cmp eq i32 %t11, 7
+    %t13 = cmp ne i64 %t12, 0
+    store typed i64 %t13, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store typed i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t14 = load typed i64 $land__3
+    branch %t14, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t15 = load typed i32 $d
+    %t16 = cmp eq i32 %t15, 19
+    %t17 = cmp ne i64 %t16, 0
+    store typed i64 %t17, $land__4
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store typed i64 0, $land__4
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t18 = load typed i64 $land__4
+    branch %t18, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t19 = load typed i32 $cond__1
+    return i32 %t19
+}
+function @private_reader_int___read() -> i32 [binding=weak, object=_ZN14private_readerIiE4readEv, inline_hint=yes] {
+  slot $value : i32
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = call i32 @pointer_holder__private_owner__value___read()
+    store typed i32 %t1, $value
+    %t2 = load typed i32 $value
+    %t3 = cmp eq i32 %t2, 23
+    branch %t3, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t4 = load typed i32 $cond__1
+    return i32 %t4
+}
+function @pointer_holder__object___read() -> i32 [binding=weak, object=_ZN14pointer_holderIXadL_Z6objectEEE4readEv, inline_hint=yes] {
+  block ^entry:
+    %t1 = addr @object
+    %t2 = load typed i32 %t1
+    return i32 %t2
+}
+function @pointer_holder__owner__member___read() -> i32 [binding=weak, object=_ZN14pointer_holderIXadL_ZN5owner6memberEEEE4readEv, inline_hint=yes] {
+  block ^entry:
+    %t1 = addr @owner__member
+    %t2 = load typed i32 %t1
+    return i32 %t2
+}
+function @reference_holder_object___read() -> i32 [binding=weak, object=_ZN16reference_holderIL_Z6objectEE4readEv, inline_hint=yes] {
+  block ^entry:
+    %t1 = load typed i32 @object
+    return i32 %t1
+}
+function @function_holder__read_value___read() -> i32 [binding=weak, object=_ZN15function_holderIXadL_Z10read_valuevEEE4readEv, inline_hint=yes] {
+  block ^entry:
+    %t1 = addr @read_value
+    %t2 = call i32 %t1() as () -> i32
+    return i32 %t2
+}
+function @pointer_holder__private_owner__value___read() -> i32 [binding=weak, object=_ZN14pointer_holderIXadL_ZN13private_owner5valueEEEE4readEv, inline_hint=yes] {
+  block ^entry:
+    %t1 = addr @private_owner__value
+    %t2 = load typed i32 %t1
+    return i32 %t2
+}

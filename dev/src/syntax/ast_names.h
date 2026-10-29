@@ -56,6 +56,9 @@ struct TemplateArgument
 	TypeId* type;
 	Expr* expression;
 	bool pack;
+	// A body-local value proven fixed by analysis: its typed argument fact
+	// (one-based index), retained when an instantiation copies this syntax.
+	mutable uint32_t fixed_value;
 };
 
 enum class NameComponentKind : uint8_t

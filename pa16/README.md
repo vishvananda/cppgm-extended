@@ -58,6 +58,14 @@ the same source-file ordering and `-o` relaxations as the earlier source-to-LowI
 milestones. Preserve the earlier dump modes. Native driver behavior and optimized
 LowIR output are not required in PA16.
 
+### Fixed template arguments in function bodies
+
+A nondependent constant expression used as a template argument in a retained
+function-template body has its fixed value at definition time. A local alias
+for that specialization is nondependent, so its member types do not require
+`typename`. Body-local expressions need no shared expression key to establish
+this fact; arguments that name template parameters remain dependent.
+
 ### Output Format
 
 On success, `cppgm++` shall write LowIR text to `<outfile>` and exit

@@ -1280,6 +1280,7 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	if (initializer != nullptr)
 	{
 		const uint64_t values = names_.value_parameter_uses();
+		const uint64_t uses = names_.dependent_uses();
 		bool deferred = false;
 		if (typed_initialization)
 		{
@@ -1320,8 +1321,29 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 		const ExprFacts* initial = initializer->expression != nullptr ? initializer->expression->facts : nullptr;
 		if (variable->is_constexpr ||
 			((type->cv & kConst) != 0 && (IsIntegralType(type) || type->kind == TypeKind::Enum)))
-			binding->value_dependent = names_.value_parameter_uses() != values ||
+			binding->value_dependent = names_.value_parameter_uses() != values || names_.dependent_uses() != uses ||
 				(initial != nullptr && (initial->flags & kValueDependentUse) != 0);
+		// A fixed local integral constant can be a template argument in this
+		// retained body. Publish its value now; dependent initializers still
+		// wait for instantiation, even when their result type is fixed.
+		if (semantic() && template_depth_ != 0 && pattern_body && where->kind == ScopeKind::Block &&
+			(type->cv & kConst) != 0 && (IsIntegralType(type) || type->kind == TypeKind::Enum) && !binding->dependent &&
+			!binding->value_dependent)
+		{
+			const syntax::Expr* operand = initializer->kind == syntax::InitializerKind::Parenthesized
+				? (initializer->arguments.size == 1 ? initializer->arguments[0] : nullptr)
+				: initializer->expression;
+			if (operand != nullptr)
+				binding->value_dependent = instantiation_dependent(*operand, lookup);
+			if (!binding->value_dependent && operand != nullptr)
+			{
+				const uint32_t depth = template_depth_;
+				template_depth_ = 0;
+				initialize_variable(variable, type, initializer, lookup, location);
+				record_constant_initializer(variable, initializer, lookup);
+				template_depth_ = depth;
+			}
+		}
 		if (template_depth_ == 0 && !deferred)
 			record_constant_initializer(variable, initializer, lookup);
 		// 9.4.2p3: a const static data member's in-class initializer is a

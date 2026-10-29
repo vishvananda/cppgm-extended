@@ -737,8 +737,11 @@ private:
 	Binding* dependent_member_binding(const Type* qualifier, const Identifier* name);
 	const Type* dependent_member(const Type* qualifier, const Identifier* name);
 	const Type* dependent_decltype(const syntax::Expr& operand, Scope* scope);
-	const Type* dependent_expression(
-		const syntax::Expr& operand, Scope* scope, bool value, const Type* target = nullptr, bool fixed = false);
+	const Type* dependent_expression(const syntax::Expr& operand, Scope* scope, bool value,
+		const Type* target = nullptr, bool fixed = false, const Type* evaluation_target = nullptr,
+		bool unknown = false);
+	const Type* fixed_template_value(
+		const syntax::TemplateArgument& argument, Scope* scope, const Type* target, bool unknown);
 	bool decltype_words(const syntax::Expr* expr, Scope* scope);
 	bool trait_words(const syntax::BuiltinTraitExpr& trait, Scope* scope);
 	bool size_words(const syntax::Expr& expr, Scope* scope);
@@ -1675,6 +1678,15 @@ private:
 	// while explicit_specialization_ holds, see explicit_function_specialization).
 	uint32_t specialization_levels_ = 0;
 	std::vector<TemplateParameterEntity*> template_entities_;
+	struct FixedTemplateValue
+	{
+		const Type* value;
+		const Type* target;
+		bool unknown;
+	};
+	// Fixed body-local argument facts live for this analysis and remain valid
+	// in copies of their syntax. The conversion context is part of the key.
+	std::vector<FixedTemplateValue> fixed_template_values_;
 	// The nesting of the instantiation being analyzed (0 outside any).
 	uint32_t instantiation_depth_ = 0;
 	// Positional template parameters by depth, kind and index (see

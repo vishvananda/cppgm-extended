@@ -657,6 +657,14 @@ LookupResult Analyzer::lookup_name(const syntax::Name& name, Scope* scope, Looku
 	// So is one a member template's declaration in an instance names
 	// through a class the instantiation made known (14.7.1p1: the member
 	// template's declaration is instantiated with its class).
+	// A retained body's access through friendship or inheritance can differ
+	// between specializations. Keep that obligation when classifying values.
+	if (template_depth_ != 0 && body_ != nullptr && body_->pattern && result.binding->declared_in != nullptr &&
+		result.binding->declared_in->kind == ScopeKind::Class &&
+		(result.binding->access != Access::Public ||
+			(last_prefix_.scope != nullptr && last_prefix_.scope->kind == ScopeKind::Class &&
+				last_prefix_.scope != result.binding->declared_in)))
+		names_.note_dependent_use();
 	if (semantic() && last_prefix_.scope != nullptr && last_prefix_.scope->kind == ScopeKind::Class &&
 		result.binding->kind != BindingKind::Function && (template_depth_ == 0 || InstanceMemberTemplate(scope)))
 		check_access(
@@ -761,6 +769,12 @@ NamePrefix Analyzer::name_prefix(const syntax::Name& name, Scope* scope, bool de
 			return NamePrefix{ nullptr, nullptr, nullptr };
 		}
 		const Binding* binding = result.binding;
+		if (template_depth_ != 0 && body_ != nullptr && body_->pattern && binding->declared_in != nullptr &&
+			binding->declared_in->kind == ScopeKind::Class &&
+			(binding->access != Access::Public ||
+				(prefix.scope != nullptr && prefix.scope->kind == ScopeKind::Class &&
+					prefix.scope != binding->declared_in)))
+			names_.note_dependent_use();
 		// 11p4: access control applies to every name, a nested-name-
 		// specifier's too: a member named through its class, or found by
 		// unqualified lookup in the innermost class that has it (11.2p5).

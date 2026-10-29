@@ -180,6 +180,11 @@ the implemented surface, including:
   type name the same template, however many such templates a translation unit
   declares (14.5.6.1)
 
+A fixed pointer, reference, or function-address argument in a function-template
+body also forms a nondependent specialization. Its local alias can name member
+types without `typename`; an argument using a dependent qualifier retains the
+usual disambiguation and substitution rules.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA18:
