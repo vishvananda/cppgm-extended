@@ -296,6 +296,16 @@ Within this milestone, PA14 should produce valid LowIR for ordinary generic code
 supported PA13 subset. That LowIR is intended to be accepted by the later PA24
 `lowir2native` backend for the supported cases.
 
+### Dependent aliases in expression/type disambiguation
+
+A typedef or alias of a template parameter retains its dependence even when
+parsing cannot associate it with a known class scope. Qualified value calls
+through that alias remain expressions in constructor arguments; they must not
+be mistaken for function-parameter types in a tentative cast. Unknown concrete
+aliases, including nondependent decltype aliases inside templates, retain their
+ordinary type-context behavior. The parser carries this role from the alias
+declaration using its existing name facts, without reparsing its definition.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA14:

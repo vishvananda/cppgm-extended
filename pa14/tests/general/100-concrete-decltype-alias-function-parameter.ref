@@ -1,0 +1,26 @@
+function @target(%n : i32) -> i32 [binding=strong, object=_Z6targeti] {
+  slot $n : i32
+
+  block ^entry:
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = binary add nowrap i32 %t1, 1
+    return i32 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @call(41)
+    %t2 = cmp ne i32 %t1, 42
+    %t3 = convert trunc i32 i64 %t2
+    return i32 %t3
+}
+function @call(%n : i32) -> i32 [binding=weak, object=_Z4callIvEii] {
+  slot $n : i32
+
+  block ^entry:
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = addr @target
+    %t3 = call i32 %t2(%t1) as (%arg0 : i32) -> i32
+    return i32 %t3
+}

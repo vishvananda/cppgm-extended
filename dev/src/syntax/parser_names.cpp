@@ -316,7 +316,7 @@ void Parser::advance_prefix(const NameComponent& component, NameInfo& info, bool
 	const NameBinding binding = resolve_component(component.identifier, info, true);
 	if (binding.pack)
 		++pack_mentions_;
-	if (binding.parameter)
+	if (binding.parameter || binding.dependent())
 		++template_parameter_mentions_;
 	// Whether the component's type is dependent or its class a guess (see
 	// prefix_guesses): only through a template-id or a guess.
@@ -949,6 +949,11 @@ void Parser::note_type_name(const SpecifierInfo& info, NameBinding& binding, boo
 		? NameBinding::kSpecialization
 		: 0;
 	binding.flags = specialization;
+	// An alias of a parameter (or another dependent alias) can have no
+	// class scope. Preserve that dependence for later qualified names;
+	// an unknown concrete alias, such as decltype(make()), stays uncertain.
+	if (!alias_template && binding.scope == nullptr && (info.type_mentions || name_info.dependent))
+		binding.flags = NameBinding::kDependent;
 	if (binding.scope != nullptr && name->last().kind == NameComponentKind::Identifier)
 	{
 		const bool known = name_info.prefix == PrefixState::Known;
