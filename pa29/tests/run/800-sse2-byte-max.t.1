@@ -1,0 +1,16 @@
+using Bytes=char __attribute__((vector_size(16)));
+int calls;
+Bytes input(Bytes a){++calls;return a;}
+Bytes smallest(Bytes a,Bytes b){return __builtin_ia32_pminub128(a,b);}
+Bytes largest(Bytes a,Bytes b){return __builtin_ia32_pmaxub128(a,b);}
+int main(){
+ for(unsigned x=0;x<256;++x)for(unsigned y=0;y<256;++y){
+  Bytes a{},b{};
+  for(int i=0;i<16;++i){a[i]=static_cast<char>((x+i*37)^(i*4));b[i]=static_cast<char>((y+i*73)^(i*3));}
+  Bytes lo=smallest(input(a),input(b)),hi=largest(input(a),input(b));
+  for(int i=0;i<16;++i){unsigned aa=static_cast<unsigned char>(a[i]),bb=static_cast<unsigned char>(b[i]);
+   if(static_cast<unsigned char>(lo[i])!=(aa<bb?aa:bb)||static_cast<unsigned char>(hi[i])!=(aa>bb?aa:bb))return 1;
+  }
+ }
+ return calls==262144?0:2;
+}

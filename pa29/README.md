@@ -468,6 +468,13 @@ widths, including negative values. Preserve every lane bit, including NaN payloa
 zero, and evaluate operands once. Record selector/type facts during analysis;
 a selector in an always-inline wrapper or template can remain deferred.
 
+### SSE2 unsigned byte maximum
+
+`__builtin_ia32_pmaxub128` chooses the unsigned maximum in each of sixteen
+byte lanes. It shares the byte-minimum signature and typed lane lowering;
+evaluate both operands once and compare byte bits as unsigned regardless
+of the vector element type's signedness.
+
 ### Design Notes (Non-Normative)
 
 Hosted compatibility is easiest to approach as a sequence of small compatibility

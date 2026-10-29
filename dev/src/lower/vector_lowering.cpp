@@ -433,22 +433,24 @@ RValue FunctionLowering::vector_byte_mask(const syntax::CallExpr& expr)
 	return result;
 }
 
-RValue FunctionLowering::vector_byte_minimum(const syntax::CallExpr& expr)
+RValue FunctionLowering::vector_byte_minmax(const syntax::CallExpr& expr)
 {
 	// The interface uses char lanes (__v16qi); PMINUB orders their byte
-	// bits as unsigned values. Both operands are evaluated once, before
+	// bits as unsigned values, as does PMAXUB. Both operands are evaluated once, before
 	// the fixed sixteen lane operations, using the usual vector storage.
 	const sema::Type* vector = expr.facts->type;
 	const lowir::Value first = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
 	const lowir::Value second = vector_storage(operand(*expr.arguments[1], ConversionContext::Argument));
+	const bool maximum = (expr.facts->value >> 8 & 1) != 0;
 	lowir::SlotId slot = lowir::kNoId;
 	const lowir::Value out = zeroed_vector(vector, slot);
 	for (uint64_t i = 0; i < 16; ++i)
 	{
 		const RValue a = vector_lane(first, vector, i), b = vector_lane(second, vector, i);
-		const RValue less = compare(lowir::ComparePredicate::Ult, a.type, a, b);
+		const RValue first_wins = compare(
+			maximum ? lowir::ComparePredicate::Ugt : lowir::ComparePredicate::Ult, a.type, a, b);
 		lowir::Instruction choice = lowir::make_instruction(lowir::Opcode::Select, a.type);
-		choice.ops[0] = less.value;
+		choice.ops[0] = first_wins.value;
 		choice.ops[1] = a.value;
 		choice.ops[2] = b.value;
 		RValue selected = a;

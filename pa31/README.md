@@ -174,6 +174,11 @@ The `<emmintrin.h>` integer and double lane shuffle wrappers preserve immediate
 selection, all lane bits, and the host vector calling convention at each
 optimization level.
 
+### SSE2 unsigned byte minimum and maximum wrappers
+
+The `<emmintrin.h>` byte minimum and maximum wrappers preserve the host vector
+ABI and compare all sixteen lanes as unsigned bytes, including values above127.
+
 ### Hosted ABI Names
 
 PA31 uses the ordinary host C++ ABI spelling for every hosted symbol that is

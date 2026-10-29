@@ -679,10 +679,10 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		facts->value = static_cast<uint64_t>(Intrinsic::VectorByteMask);
 		break;
 	}
-	case GnuBuiltin::VectorByteMinimum:
+	case GnuBuiltin::VectorByteMinMax:
 	{
 		if (count != 2)
-			error(expr.location, "wrong number of arguments to a packed byte minimum");
+			error(expr.location, "wrong number of arguments to a packed byte minimum or maximum");
 		const Type* type = types_.vector(types_.fundamental(FundamentalType::Char), 16);
 		for (const syntax::Expr* argument : expr.arguments)
 		{
@@ -691,7 +691,7 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 			convert(*argument, type, false);
 		}
 		facts = new_facts(expr, type, ValueCategory::PRValue);
-		facts->value = static_cast<uint64_t>(Intrinsic::VectorByteMinimum);
+		facts->value = static_cast<uint64_t>(Intrinsic::VectorByteMinMax) | (static_cast<uint64_t>(variant) << 8);
 		break;
 	}
 	case GnuBuiltin::VectorUnpack:

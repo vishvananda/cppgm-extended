@@ -1356,7 +1356,7 @@ private:
 	RValue shift_vector_bytes(const syntax::CallExpr& expr, sema::Intrinsic kind);
 	RValue truncate_vector(const syntax::CallExpr& expr);
 	RValue vector_byte_mask(const syntax::CallExpr& expr);
-	RValue vector_byte_minimum(const syntax::CallExpr& expr);
+	RValue vector_byte_minmax(const syntax::CallExpr& expr);
 	RValue unpack_vector(const syntax::CallExpr& expr);
 	RValue shift_vector_lanes(const syntax::CallExpr& expr);
 	RValue shuffle_vector(const syntax::CallExpr& expr);

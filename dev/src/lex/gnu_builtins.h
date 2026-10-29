@@ -68,8 +68,8 @@ enum class GnuBuiltin : uint8_t
 	VectorTruncate,
 	// SSE2's sign bit of each byte packed into an int.
 	VectorByteMask,
-	// SSE2's unsigned minimum of two vectors of sixteen bytes.
-	VectorByteMinimum,
+	// SSE2 unsigned byte minimum/maximum, variants 0/1.
+	VectorByteMinMax,
 	// SSE2 interleaves the low/high halves of 8/16/32/64-bit lanes;
 	// variant is twice the lane-width index plus the high-half bit.
 	VectorUnpack,

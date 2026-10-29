@@ -190,8 +190,8 @@ enum class Intrinsic : uint8_t
 	VectorTruncate,
 	// __builtin_ia32_pmovmskb128: byte i's sign bit is result bit i.
 	VectorByteMask,
-	// __builtin_ia32_pminub128: the unsigned minimum in each byte lane.
-	VectorByteMinimum,
+	// SSE2 unsigned byte minimum/maximum; bit 8 selects maximum.
+	VectorByteMinMax,
 	// SSE2 interleaves two vectors' low/high halves. Bits 8-15 hold
 	// twice the lane-width index (8/16/32/64 bits) plus the high-half bit.
 	VectorUnpack,
