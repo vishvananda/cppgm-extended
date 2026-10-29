@@ -89,6 +89,10 @@ through a specialization's member alias. Its qualified member is still
 nondependent, including inside another template definition. It may name a member
 template without the `template` introducer; semantic lookup determines whether
 the resulting template-id denotes a type or an expression.
+The same rule applies to a qualified return type before an operator-function-id.
+A fixed member alias template can select that return type through another
+template specialization; a value member still cannot serve as a type, and a
+genuinely dependent return type still requires `typename`.
 
 ### Fixed arguments and access context
 

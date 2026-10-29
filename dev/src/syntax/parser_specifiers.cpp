@@ -667,8 +667,8 @@ bool Parser::parse_named_type_specifier(ListFrame<DeclSpecifier>& list, Specifie
 	{
 		name->typename_keyword = typename_keyword;
 		bool type = is_type(name, name_info);
-		// An undeclared name directly followed by an identifier can only be a
-		// type (the identifier is the declarator-id). Where a type is
+		// An undeclared name directly followed by an identifier or `operator`
+		// can only be a type (the next name is the declarator-id). Where a type is
 		// expected, an undeclared name is one too, but not a dependent
 		// qualified name (its prefix naming a template parameter, as in
 		// `wrap<T>::value`): without `typename` that names no type (14.6p2).
@@ -678,7 +678,7 @@ bool Parser::parse_named_type_specifier(ListFrame<DeclSpecifier>& list, Specifie
 			template_parameter_mentions_ != parameters;
 		if (!type && name_info.category == NameCategory::None &&
 			((definite_type_ && !dependent) ||
-				(at_identifier() && !at_identifier(final_) && !at_identifier(override_))))
+				(at_identifier() && !at_identifier(final_) && !at_identifier(override_)) || at(TokenKind::KW_OPERATOR)))
 		{
 			const uint8_t gnu = !name->global && name->components.size == 1 &&
 					name->last().kind == NameComponentKind::Identifier

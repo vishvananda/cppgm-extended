@@ -289,6 +289,8 @@ PA11 supports the following in addition to the PA10 procedural subset:
   object argument described above
 - ordinary non-template operator overloading over the supported object-model subset, including:
   - member operators such as `operator[]`
+  - nondependent qualified return types through aliases before operator-function-ids,
+    including when the aliased class is resolved during semantic lookup
   - hidden-friend and namespace-scope non-member operators found through ordinary lookup / ADL
   - chained reference-returning operators such as `operator<<`
   - rejection of a non-member overloaded operator unless at least one operand has class or

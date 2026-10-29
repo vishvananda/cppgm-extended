@@ -1,0 +1,76 @@
+function @operator_(%call : ptr [pass=by_address, object_bytes=1], %n : i32) -> i32 [binding=strong, object=_ZplRK4Calli] {
+  slot $call : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %call, $call
+    store typed i32 %n, $n
+    %t1 = load typed ptr $call
+    %t2 = call i32 @Call__operator__(%t1)
+    %t3 = load typed i32 $n
+    %t4 = binary add nowrap i32 %t2, %t3
+    return i32 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $call : obj<1x1>
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+
+  block ^entry:
+    %t1 = addr $call
+    %t2 = addr $call
+    %t3 = call i32 @Call__operator__(%t2)
+    %t4 = cmp ne i32 %t3, 42
+    branch %t4, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t5 = addr $call
+    %t6 = call i32 @Call__operator____2(%t5, 41)
+    %t7 = cmp ne i32 %t6, 42
+    %t8 = cmp ne i64 %t7, 0
+    store typed i64 %t8, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t9 = load typed i64 $lor__1
+    branch %t9, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t10 = addr $call
+    %t11 = call i32 @operator_(%t10, 1)
+    %t12 = cmp ne i32 %t11, 43
+    %t13 = cmp ne i64 %t12, 0
+    store typed i64 %t13, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t14 = load typed i64 $lor__2
+    %t15 = convert trunc i32 i64 %t14
+    return i32 %t15
+}
+function @Call__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK4CallclEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 42
+}
+function @Call__operator____2(%this : ptr [object_bytes=1], %n : i32) -> i32 [binding=weak, object=_ZNK4CallixEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = binary add nowrap i32 %t1, 1
+    return i32 %t2
+}
