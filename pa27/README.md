@@ -195,6 +195,10 @@ The checked-in PA27 tests cover:
 - import/export of host-built `thread_local` variables in the tested subset
 - GNU `section` attributes on global objects whose nonempty ELF section name
   contains only ASCII letters, digits, `_`, and `.`
+- explicit GNU weak function/global declarations remain weak undefined ELF
+  references: absent definitions have a null address, while host definitions
+  satisfy the same references. Ordinary vague-linkage declarations still
+  require a definition from another object
 - duplicate-definition/coalescing behavior for inline and template output
 - host symbol spelling for user-defined entities and selected template cases
 

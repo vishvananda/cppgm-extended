@@ -1,0 +1,9 @@
+extern "C" int optional_function() noexcept __attribute__((weak));
+namespace hooks {
+extern long optional_variable __attribute__((weak));
+bool& enabled() noexcept __attribute__((weak));
+}
+int main(){
+  if(!optional_function || !hooks::enabled || !&hooks::optional_variable) return 1;
+  return optional_function()!=23 || hooks::optional_variable!=0x123456789L || !hooks::enabled();
+}

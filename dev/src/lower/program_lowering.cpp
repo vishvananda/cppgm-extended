@@ -308,14 +308,15 @@ void ProgramLowering::finish()
 	// vague-linkage entity's (binding=weak in the course's LowIR) is a
 	// reference some unit must define, a global undefined symbol (a weak
 	// one would link as address 0); only the references Itanium makes weak
-	// stay so (thread-local entries, weak_references_).
+	// stay so (thread-local entries, weak_references_), as do explicit
+	// GNU weak declarations, distinguished by their replaceable flag.
 	if (object_mode_)
 	{
 		for (lowir::Symbol& symbol : program_.symbols)
 		{
 			if ((symbol.kind == lowir::SymbolKind::FunctionDeclaration ||
 					symbol.kind == lowir::SymbolKind::GlobalDeclaration) &&
-				symbol.metadata.binding == ir_model::SBM_WEAK)
+				symbol.metadata.binding == ir_model::SBM_WEAK && (symbol.metadata.flags & lowir::SF_REPLACEABLE) == 0)
 				symbol.metadata.binding = ir_model::SBM_STRONG;
 		}
 		for (const lowir::SymbolId symbol : weak_references_)

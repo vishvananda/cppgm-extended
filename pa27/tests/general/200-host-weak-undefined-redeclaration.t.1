@@ -1,0 +1,6 @@
+namespace hooks {
+bool& enabled() noexcept;
+__attribute__((weak,noinline)) bool& enabled() noexcept;
+bool& enabled() noexcept;
+}
+int main(){return hooks::enabled ? (hooks::enabled()?1:2) : 0;}

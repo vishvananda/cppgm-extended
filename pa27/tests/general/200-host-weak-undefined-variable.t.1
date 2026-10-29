@@ -1,0 +1,5 @@
+extern long optional_variable __attribute__((weak));
+int main(){
+  long* pointer=&optional_variable;
+  return pointer ? *pointer!=0x123456789L : 0;
+}

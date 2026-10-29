@@ -1,0 +1,6 @@
+extern int optional_function() __attribute__((weak));
+int main(){
+  if(optional_function) return optional_function()!=17;
+  int(*volatile pointer)()=optional_function;
+  return pointer!=0;
+}
