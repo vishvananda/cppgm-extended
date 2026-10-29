@@ -451,6 +451,14 @@ all lane bits and evaluate each operand once. The provided-builtin registry
 reports the implemented family, and semantic facts retain the selected half
 and lane type for the existing vector lowering path.
 
+### SSE2 packed integer lane shifts
+
+The GNU SSE2 `psll*`, `psrl*` and `psra*` immediate-form builtins shift
+16-, 32- and 64-bit lanes (arithmetic right for 16 and 32 bits). Their int
+count may be a runtime value. Oversized and negative counts yield zero for
+left/logical right and sign-fill for arithmetic right. Evaluate both operands
+once and bound the count before forming a LowIR shift.
+
 ### Design Notes (Non-Normative)
 
 Hosted compatibility is easiest to approach as a sequence of small compatibility

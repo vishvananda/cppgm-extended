@@ -162,6 +162,12 @@ The `<emmintrin.h>` low/high unpack wrappers for all four integer lane widths
 must emit, link and run with the host vector ABI. The builtin and wrapper paths
 preserve lane bits, including sign bits, and evaluate both operands once.
 
+### SSE2 packed lane shift wrappers
+
+The `<emmintrin.h>` left, logical-right and arithmetic-right lane shift
+wrappers accept runtime int counts and preserve the host vector ABI, including
+negative and oversized counts and all upper-lane bits.
+
 ### Hosted ABI Names
 
 PA31 uses the ordinary host C++ ABI spelling for every hosted symbol that is

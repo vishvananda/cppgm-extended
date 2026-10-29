@@ -1358,6 +1358,7 @@ private:
 	RValue vector_byte_mask(const syntax::CallExpr& expr);
 	RValue vector_byte_minimum(const syntax::CallExpr& expr);
 	RValue unpack_vector(const syntax::CallExpr& expr);
+	RValue shift_vector_lanes(const syntax::CallExpr& expr);
 	RValue reinterpret_bytes(const RValue& value, const sema::Type* to);
 	RValue bit_cast(const syntax::BuiltinTraitExpr& expr);
 	// A builtin's value: __builtin_va_arg's argument, a complex part, a

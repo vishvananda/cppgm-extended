@@ -73,6 +73,9 @@ enum class GnuBuiltin : uint8_t
 	// SSE2 interleaves the low/high halves of 8/16/32/64-bit lanes;
 	// variant is twice the lane-width index plus the high-half bit.
 	VectorUnpack,
+	// SSE2 16/32/64-bit lane shifts by an int count; variant is three
+	// times the lane-width index plus left/logical-right/arithmetic-right.
+	VectorShiftLanes,
 	Overflow,
 	OperatorNew,
 	OperatorDelete,

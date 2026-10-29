@@ -195,6 +195,9 @@ enum class Intrinsic : uint8_t
 	// SSE2 interleaves two vectors' low/high halves. Bits 8-15 hold
 	// twice the lane-width index (8/16/32/64 bits) plus the high-half bit.
 	VectorUnpack,
+	// Packed integer lane shifts; bits 8-15 select lane width/direction
+	// in the same order as GnuBuiltin::VectorShiftLanes.
+	VectorShiftLanes,
 	// __builtin_add/sub/mul_overflow(a, b, result): the infinitely precise
 	// a op b stored through `result` modulo its type, and whether that
 	// changed it.

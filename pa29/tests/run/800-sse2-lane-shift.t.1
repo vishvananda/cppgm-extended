@@ -1,0 +1,38 @@
+using Shorts = short __attribute__((vector_size(16)));
+using Ints = int __attribute__((vector_size(16)));
+using Longs = long long __attribute__((vector_size(16)));
+Shorts f16_0(Shorts a,int n){return __builtin_ia32_psllwi128(a,n);}
+Shorts f16_1(Shorts a,int n){return __builtin_ia32_psrlwi128(a,n);}
+Shorts f16_2(Shorts a,int n){return __builtin_ia32_psrawi128(a,n);}
+Ints f32_0(Ints a,int n){return __builtin_ia32_pslldi128(a,n);}
+Ints f32_1(Ints a,int n){return __builtin_ia32_psrldi128(a,n);}
+Ints f32_2(Ints a,int n){return __builtin_ia32_psradi128(a,n);}
+Longs f64_0(Longs a,int n){return __builtin_ia32_psllqi128(a,n);}
+Longs f64_1(Longs a,int n){return __builtin_ia32_psrlqi128(a,n);}
+int calls;
+template<class V> V input(V value){++calls;return value;}
+int count(int n){++calls;return n;}
+template<class V> int check(V(*left)(V,int),V(*right)(V,int),V(*arithmetic)(V,int),int bits,int lanes){
+ int counts[]={0,1,7,15,16,17,31,32,33,63,64,65,127,255,256,257,-1,-2147483647};
+ unsigned long long mask=bits==64?~0ULL:((1ULL<<bits)-1);
+ for(unsigned seed=0;seed<16;++seed){
+  V a{};for(int i=0;i<lanes;++i)a[i]=0xfedcba9876543210ULL^(0x1122334455667788ULL*i)^seed;
+  for(int n:counts){
+   V lo=left(input(a),count(n)),hi=right(input(a),count(n));
+   V ar=arithmetic?arithmetic(input(a),count(n)):V{};
+   for(int i=0;i<lanes;++i){
+    unsigned long long x=static_cast<unsigned long long>(a[i])&mask;
+    unsigned u=static_cast<unsigned>(n);
+    unsigned long long l=u>=static_cast<unsigned>(bits)?0:((x<<u)&mask);
+    unsigned long long r=u>=static_cast<unsigned>(bits)?0:(x>>u);
+    unsigned long long s;
+    if(u>=static_cast<unsigned>(bits))s=(x>>(bits-1))?mask:0;
+    else {s=x>>u;if(u&&(x>>(bits-1)))s|=mask^(mask>>u);}
+    if((static_cast<unsigned long long>(lo[i])&mask)!=l || (static_cast<unsigned long long>(hi[i])&mask)!=r ||
+       (arithmetic&&(static_cast<unsigned long long>(ar[i])&mask)!=s))return 1;
+   }
+  }
+ }
+ return 0;
+}
+int main(){if(check(f16_0,f16_1,f16_2,16,8)||check(f32_0,f32_1,f32_2,32,4)||check(f64_0,f64_1,static_cast<Longs(*)(Longs,int)>(0),64,2))return 1;return calls==4608?0:2;}

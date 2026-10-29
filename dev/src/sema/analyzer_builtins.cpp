@@ -709,6 +709,22 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		facts->value = static_cast<uint64_t>(Intrinsic::VectorUnpack) | (static_cast<uint64_t>(variant) << 8);
 		break;
 	}
+	case GnuBuiltin::VectorShiftLanes:
+	{
+		if (count != 2)
+			error(expr.location, "wrong number of arguments to a packed lane shift");
+		const FundamentalType lanes[] = { FundamentalType::ShortInt, FundamentalType::Int,
+			FundamentalType::LongLongInt };
+		const Type* type = types_.vector(types_.fundamental(lanes[variant / 3]), 8 >> (variant / 3));
+		for (const syntax::Expr* argument : expr.arguments)
+			if (typed_value(*argument, scope) == nullptr)
+				return nullptr;
+		convert(*expr.arguments[0], type, false);
+		convert(*expr.arguments[1], int_type, false);
+		facts = new_facts(expr, type, ValueCategory::PRValue);
+		facts->value = static_cast<uint64_t>(Intrinsic::VectorShiftLanes) | (static_cast<uint64_t>(variant) << 8);
+		break;
+	}
 	case GnuBuiltin::IsConstantEvaluated:
 		if (count != 0)
 			error(expr.location, "__builtin_is_constant_evaluated takes no arguments");

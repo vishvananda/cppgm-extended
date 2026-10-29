@@ -481,6 +481,49 @@ RValue FunctionLowering::unpack_vector(const syntax::CallExpr& expr)
 	return load(lowering_.storage_type(vector), place);
 }
 
+RValue FunctionLowering::shift_vector_lanes(const syntax::CallExpr& expr)
+{
+	// GCC accepts a runtime int count. Clamp it before shifting: LowIR
+	// shifts must never receive an out-of-range count. Negative int
+	// counts are oversized too, when compared as unsigned.
+	const sema::Type* vector = expr.facts->type;
+	const lowir::Value source = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const RValue count = operand(*expr.arguments[1], ConversionContext::Argument);
+	const uint64_t bits = 128 / vector->bound;
+	const unsigned operation = (expr.facts->value >> 8 & 0xff) % 3;
+	const RValue valid = compare(lowir::ComparePredicate::Ult, count.type, count, integer(count.type, bits));
+	lowir::Instruction choice = lowir::make_instruction(lowir::Opcode::Select, count.type);
+	choice.ops[0] = valid.value;
+	choice.ops[1] = count.value;
+	choice.ops[2] = integer(count.type, bits - 1).value;
+	RValue safe = count;
+	safe.value = emit_value(choice, count.type);
+	lowir::SlotId slot = lowir::kNoId;
+	const lowir::Value out = zeroed_vector(vector, slot);
+	for (uint64_t i = 0; i < vector->bound; ++i)
+	{
+		RValue lane = vector_lane(source, vector, i);
+		const RValue shift = bits == 32
+			? safe
+			: convert_op(bits == 16 ? lowir::ConvertOp::Trunc : lowir::ConvertOp::ZExt, lane.type, safe);
+		lane = binary(
+			operation == 0 ? lowir::BinaryOp::Shl : (operation == 1 ? lowir::BinaryOp::UShr : lowir::BinaryOp::Shr),
+			lane.type, lane, shift);
+		if (operation != 2)
+		{
+			choice = lowir::make_instruction(lowir::Opcode::Select, lane.type);
+			choice.ops[0] = valid.value;
+			choice.ops[1] = lane.value;
+			choice.ops[2] = integer(lane.type, 0).value;
+			lane.value = emit_value(choice, lane.type);
+		}
+		set_vector_lane(out, vector, i, lane);
+	}
+	Place place = Place();
+	place.storage = lowir::Value::slot(slot);
+	return load(lowering_.storage_type(vector), place);
+}
+
 RValue FunctionLowering::reduce_vector(const syntax::CallExpr& expr, sema::Intrinsic kind)
 {
 	// The lanes combined in order: bitwise, sums and products in the lane
