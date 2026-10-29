@@ -344,16 +344,9 @@ bool Analyzer::templated_class(const Scope* scope)
 
 bool Analyzer::has_dependent_bases(const Scope* scope)
 {
-	// A templated class whose definition names a dependent base.
-	if (!templated_class(scope))
-		return false;
-	const syntax::ClassSpecifier* definition = static_cast<const ClassEntity*>(scope->entity)->templ->definition;
-	for (uint32_t i = 0; definition != nullptr && i < definition->bases.size; ++i)
-	{
-		if (definition->bases[i].dependent)
-			return true;
-	}
-	return false;
+	// The analyzed base-list fact also covers local classes in templates.
+	return scope != nullptr && scope->kind == ScopeKind::Class && scope->entity != nullptr &&
+		static_cast<const ClassEntity*>(scope->entity)->dependent_bases;
 }
 
 bool Analyzer::instance_class(const Scope* scope)

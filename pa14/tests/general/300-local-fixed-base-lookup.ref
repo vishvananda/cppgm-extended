@@ -1,0 +1,31 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @fixed(7)
+    %t2 = call i32 @fixed__2(9)
+    %t3 = binary add nowrap i32 %t1, %t2
+    %t4 = binary sub nowrap i32 %t3, 16
+    return i32 %t4
+}
+function @fixed(%value : i32) -> i32 [binding=weak, object=_Z5fixedIiEiT_] {
+  slot $value : i32
+  slot $copy : i32
+
+  block ^entry:
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    store typed i32 %t1, $copy
+    %t2 = load typed i32 $copy
+    return i32 %t2
+}
+function @fixed__2(%value : i64) -> i32 [binding=weak, object=_Z5fixedIlEiT_] {
+  slot $value : i64
+  slot $copy : i32
+
+  block ^entry:
+    store typed i64 %value, $value
+    %t1 = load typed i64 $value
+    %t2 = convert trunc i32 i64 %t1
+    store typed i32 %t2, $copy
+    %t3 = load typed i32 $copy
+    return i32 %t3
+}

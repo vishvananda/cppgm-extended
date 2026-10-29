@@ -259,6 +259,9 @@ PA14 supports the following in addition to the PA13 subset:
   returns, the current class, and unused member bodies remain undemanded
 - distinct local-class identities for separate function-template
   specializations
+- qualified member lookup through a local class in a function template
+  retains dependent bases, including inherited local base hierarchies and
+  decltype base specifiers, until the enclosing template is instantiated
 - declaration-owned template-parameter scopes across nested instantiations and
   out-of-class member-definition bodies, including definition-time rejection
   of a declaration that redeclares an active template parameter even when the

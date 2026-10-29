@@ -189,6 +189,9 @@ struct ClassEntity : Entity
 	// initializer (directly or as an anonymous member's): its member
 	// object is a variant member with one (9.5p8); known once complete.
 	bool members_initialized;
+	// This definition has a dependent base in its hierarchy, including a
+	// local class in a function template. Set while analyzing its bases.
+	bool dependent_bases;
 	// An unnamed class's presentation name (for a typedef-named or
 	// declarator-named class this is also `name`).
 	const char* label;

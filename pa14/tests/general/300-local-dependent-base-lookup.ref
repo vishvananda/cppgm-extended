@@ -1,0 +1,58 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @direct(7)
+    %t2 = call i32 @direct__2(9)
+    %t3 = binary add nowrap i32 %t1, %t2
+    %t4 = call i32 @chain(11)
+    %t5 = binary add nowrap i32 %t3, %t4
+    %t6 = call i32 @chain__2(13)
+    %t7 = binary add nowrap i32 %t5, %t6
+    %t8 = binary sub nowrap i32 %t7, 40
+    return i32 %t8
+}
+function @direct(%value : i32) -> i32 [binding=weak, object=_Z6directIiEiT_] {
+  slot $value : i32
+  slot $copy : i32
+
+  block ^entry:
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    store typed i32 %t1, $copy
+    %t2 = load typed i32 $copy
+    return i32 %t2
+}
+function @direct__2(%value : i64) -> i32 [binding=weak, object=_Z6directIlEiT_] {
+  slot $value : i64
+  slot $copy : i64
+
+  block ^entry:
+    store typed i64 %value, $value
+    %t1 = load typed i64 $value
+    store typed i64 %t1, $copy
+    %t2 = load typed i64 $copy
+    %t3 = convert trunc i32 i64 %t2
+    return i32 %t3
+}
+function @chain(%value : i32) -> i32 [binding=weak, object=_Z5chainIiEiT_] {
+  slot $value : i32
+  slot $copy : i32
+
+  block ^entry:
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    store typed i32 %t1, $copy
+    %t2 = load typed i32 $copy
+    return i32 %t2
+}
+function @chain__2(%value : i64) -> i32 [binding=weak, object=_Z5chainIlEiT_] {
+  slot $value : i64
+  slot $copy : i64
+
+  block ^entry:
+    store typed i64 %value, $value
+    %t1 = load typed i64 $value
+    store typed i64 %t1, $copy
+    %t2 = load typed i64 $copy
+    %t3 = convert trunc i32 i64 %t2
+    return i32 %t3
+}

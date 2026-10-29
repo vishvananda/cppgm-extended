@@ -567,6 +567,7 @@ void Analyzer::base_classes(ClassEntity* entity, const syntax::ClassSpecifier& s
 		if (base.pack)
 		{
 			base.dependent = true;
+			entity->dependent_bases = true;
 			continue;
 		}
 		const Type* type = decltype_base ? decltype_base_type(*base.name->last().decltype_operand, scope)
@@ -579,6 +580,7 @@ void Analyzer::base_classes(ClassEntity* entity, const syntax::ClassSpecifier& s
 		if (template_depth_ != 0 && dependent_type(type))
 		{
 			base.dependent = true;
+			entity->dependent_bases = true;
 			continue;
 		}
 		if (type->kind != TypeKind::Class)
@@ -586,6 +588,7 @@ void Analyzer::base_classes(ClassEntity* entity, const syntax::ClassSpecifier& s
 		ClassEntity* base_class = static_cast<ClassEntity*>(type->entity);
 		if (!require_complete(base_class))
 			error(base.location, "base class is incomplete");
+		entity->dependent_bases = entity->dependent_bases || base_class->dependent_bases;
 		// 9p3: a final class is no base. A nondependent base of a template
 		// is validated where the template is defined, its access included
 		// (the README; 11p4 names it from the class-head).
