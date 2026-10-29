@@ -117,6 +117,7 @@ Scope* NameScopes::push(ScopeKind kind, const Identifier* name)
 	scope->specialization = false;
 	scope->parameter_bases = 0;
 	scope->id = next_scope_id_++;
+	scope->specialization_visit = 0;
 	scope->parent = current_;
 	scope->depth = current_ != nullptr ? current_->depth + 1 : 0;
 	scope->name = name;
@@ -346,7 +347,7 @@ void NameScopes::add_using_directive(Scope* from, Scope* nominated)
 	add_edge_at(from, nominated, at);
 }
 
-void NameScopes::add_base_edge(Scope* from, Scope* to, bool dependent, PointerMap& reached)
+void NameScopes::add_base_edge(Scope* from, Scope* to, bool dependent, bool specialization, PointerMap& reached)
 {
 	// add_edge_at's repeat test: its scan while the class scope has few
 	// edges (no map is made for most base clauses), then by the targets'
@@ -359,29 +360,32 @@ void NameScopes::add_base_edge(Scope* from, Scope* to, bool dependent, PointerMa
 			++edges;
 		if (edges < kScannedEdges)
 		{
-			add_edge_at(from, to, nullptr, false, dependent);
+			add_edge_at(from, to, nullptr, false, dependent, specialization);
 			return;
 		}
 		for (const ScopeEdge* edge = from->edges; edge != nullptr; edge = edge->next)
 		{
-			if (!edge->dependent || reached.find(edge->target) == PointerMap::kMissing)
-				reached.set(edge->target, edge->dependent ? 1 : 2);
+			const uint32_t old = reached.find(edge->target);
+			const uint32_t kind = 1u << ((edge->dependent ? 0 : 1) | (edge->specialization ? 2 : 0));
+			reached.set(edge->target, (old == PointerMap::kMissing ? 0 : old) | kind);
 		}
 	}
 	const uint32_t known = reached.find(to);
-	if (known != PointerMap::kMissing && (dependent || known == 2))
+	const uint32_t sufficient = (dependent ? 0xf : 0xa) & (specialization ? 0xc : 0xf);
+	if (known != PointerMap::kMissing && (known & sufficient) != 0)
 		return;
-	add_edge_at(from, to, nullptr, true, dependent);
-	reached.set(to, dependent ? 1 : 2);
+	add_edge_at(from, to, nullptr, true, dependent, specialization);
+	const uint32_t kind = 1u << ((dependent ? 0 : 1) | (specialization ? 2 : 0));
+	reached.set(to, (known == PointerMap::kMissing ? 0 : known) | kind);
 }
 
-void NameScopes::add_edge_at(Scope* from, Scope* to, Scope* at, bool fresh, bool dependent)
+void NameScopes::add_edge_at(Scope* from, Scope* to, Scope* at, bool fresh, bool dependent, bool specialization)
 {
-	// A dependent base repeats any edge to its scope; another edge repeats
-	// only one that is searched as it is.
+	// Omit an edge only when an existing edge searches at least its bases
+	// with the required specialization context.
 	for (ScopeEdge* edge = fresh ? nullptr : from->edges; edge != nullptr; edge = edge->next)
 	{
-		if (edge->target == to && (dependent || !edge->dependent))
+		if (edge->target == to && (dependent || !edge->dependent) && (!specialization || edge->specialization))
 			return;
 	}
 	if (logging_ != 0)
@@ -392,6 +396,7 @@ void NameScopes::add_edge_at(Scope* from, Scope* to, Scope* at, bool fresh, bool
 	edge->target = to;
 	edge->at = at;
 	edge->dependent = dependent;
+	edge->specialization = specialization;
 	edge->next = from->edges;
 	from->edges = edge;
 	environment_ = ++epoch_;
@@ -545,9 +550,11 @@ NameScopes::Query NameScopes::query(const Identifier* name, bool prefix_only)
 
 NameBinding NameScopes::search(Scope* scope, Query& query)
 {
-	if (scope->visit == query.visit)
+	if (scope->visit == query.visit && (!query.specialization || scope->specialization_visit == query.visit))
 		return NameBinding{ NameCategory::None, false, nullptr };
 	scope->visit = query.visit;
+	if (query.specialization)
+		scope->specialization_visit = query.visit;
 	const NameBinding binding = own(scope, query.name);
 	if (Found(binding, query.prefix_only))
 		return binding;
@@ -568,7 +575,12 @@ NameBinding NameScopes::search(Scope* scope, Query& query)
 	for (ScopeEdge* edge = scope->edges; edge != nullptr && result.category == NameCategory::None; edge = edge->next)
 	{
 		if (!edge->dependent || query.specialization)
+		{
+			const bool saved = query.specialization;
+			query.specialization = saved || edge->specialization;
 			result = search(edge->target, query);
+			query.specialization = saved;
+		}
 	}
 	// A full memo only renews the searches it keeps.
 	if (scope->memo && (kept || memo_count_ < memo_limit()))

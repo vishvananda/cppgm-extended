@@ -55,6 +55,8 @@ struct ScopeEdge
 	// searched only by a lookup in a specialization's members (14.6.2p3
 	// keeps it out of unqualified lookup in the template).
 	bool dependent;
+	// The target is named as a class-template specialization, directly or by alias.
+	bool specialization;
 };
 
 struct Scope
@@ -72,6 +74,8 @@ struct Scope
 	// template inherits a parameter (see Parser::parameter_base_lookup).
 	uint32_t parameter_bases;
 	uint32_t id;
+	// A second visit is needed when a lookup first missed without dependent bases.
+	uint32_t specialization_visit;
 	Scope* parent;
 	const Identifier* name;
 	// Namespace: nominated namespaces (using-directives, inline and unnamed
@@ -171,12 +175,12 @@ public:
 	// An edge to a scope just made, which no edge reaches yet (no scan for
 	// a repeat).
 	void add_new_edge(Scope* from, Scope* to);
-	// A base clause's edge (a dependent base's repeats any edge to its
-	// scope; another repeats only one searched as it is), the repeat found
-	// in `reached`, which the caller keeps over the clause: the targets of
-	// the class scope's edges (taken once they are several), 2 when one is
-	// searched as it is, else 1. So a class of many bases costs each once.
-	void add_base_edge(Scope* from, Scope* to, bool dependent, PointerMap& reached);
+	// A base clause's edge, keeping the dependent/specialization context.
+	// A repeated edge is omitted only when the old context covers the new.
+	// The caller keeps `reached` over the clause: after several bases it
+	// records a four-bit context mask per target, avoiding repeated scans.
+	// Small clauses keep the existing allocation-free scan.
+	void add_base_edge(Scope* from, Scope* to, bool dependent, bool specialization, PointerMap& reached);
 	void add_using_directive(Scope* from, Scope* nominated);
 	// A specialization's scope just made, linked from its primary
 	// template's: the categories its members take are recorded by (template
@@ -323,7 +327,8 @@ private:
 	static uint64_t memo_key(const Scope* scope, const Query& query);
 	NameBinding search(Scope* scope, Query& query);
 	NameBinding namespace_overloads(Scope* scope, Query& query, uint32_t depth);
-	void add_edge_at(Scope* from, Scope* to, Scope* at, bool fresh = false, bool dependent = false);
+	void add_edge_at(
+		Scope* from, Scope* to, Scope* at, bool fresh = false, bool dependent = false, bool specialization = false);
 	NameBinding search_class_context(Scope* scope, Query& query, Scope*& home);
 	NameBinding search_level(Scope* scope, Query& query);
 	NameBinding search_template_level(Scope* scope, Query& query);

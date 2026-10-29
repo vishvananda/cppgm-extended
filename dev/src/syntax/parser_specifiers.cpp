@@ -1115,7 +1115,8 @@ bool Parser::parse_base_clause(ListFrame<BaseSpecifier>& bases, Scope* class_sco
 			pack_mentions_ = mentions;
 		if (info.scope != nullptr)
 		{
-			scopes_.add_base_edge(class_scope, info.scope, template_parameter_mentions_ != parameters, reached);
+			scopes_.add_base_edge(class_scope, info.scope, template_parameter_mentions_ != parameters,
+				info.specialization || base.name->last().has_arguments, reached);
 			if (class_scope->specialization)
 				scopes_.note_specialization_base(class_scope);
 		}

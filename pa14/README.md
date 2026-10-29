@@ -307,6 +307,11 @@ Within this milestone, PA14 should produce valid LowIR for ordinary generic code
 supported PA13 subset. That LowIR is intended to be accepted by the later PA24
 `lowir2native` backend for the supported cases.
 
+A fixed base specialization retains that context through its inherited template
+bases when classifying local declarations and expressions, including reference
+declarations and inherited values hiding outer typedef names. Unresolved dependent
+bases remain excluded from unqualified lookup while defining a template.
+
 ### Dependent aliases in expression/type disambiguation
 
 A typedef or alias of a template parameter retains its dependence even when
