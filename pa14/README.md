@@ -297,7 +297,9 @@ PA14 supports the following in addition to the PA13 subset:
 - instantiated specialization names that then participate in the ordinary PA11-PA13
   class/method/codegen machinery
 - template-backed overload participation where the non-template PA7-PA13 machinery already
-  exists, including function-template operator overloads
+  exists, including function-template operator overloads; operator candidates with
+  a fixed wrong parameter count are rejected before substituting return types,
+  keeping prefix and postfix increment/decrement distinct
 - ordinary member typedef hiding and injected-name lookup during re-entrant
   class-template instantiation
 

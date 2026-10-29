@@ -1,0 +1,118 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $i : obj<4x4>
+  slot $old : obj<4x4>
+  slot $next : obj<4x4>
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+
+  block ^entry:
+    %t1 = addr $i
+    %t2 = addr $i
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 4, %t3
+    %t4 = addr $old
+    %t5 = addr $i
+    %t6 = call obj<4x4> @Iterator__operator__(%t5, 0)
+    copyobj 4x4 %t6, %t4
+    %t7 = addr $next
+    %t8 = addr $i
+    %t9 = call obj<4x4> @Iterator__operator____2(%t8, 0)
+    copyobj 4x4 %t9, %t7
+    %t10 = addr $old
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load typed i32 %t11
+    %t13 = cmp ne i32 %t12, 4
+    branch %t13, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t14 = addr $next
+    %t15 = index i8 [projection=field] %t14, 0
+    %t16 = load typed i32 %t15
+    %t17 = cmp ne i32 %t16, 5
+    %t18 = cmp ne i64 %t17, 0
+    store typed i64 %t18, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t19 = load typed i64 $lor__1
+    branch %t19, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t20 = addr $i
+    %t21 = call i32 @Iterator__operator_(%t20, 2)
+    %t22 = cmp ne i32 %t21, 6
+    %t23 = cmp ne i64 %t22, 0
+    store typed i64 %t23, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t24 = load typed i64 $lor__2
+    %t25 = convert trunc i32 i64 %t24
+    return i32 %t25
+}
+function @Iterator__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> obj<4x4> [binding=weak, object=_ZN8IteratorppEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : i32
+  slot $old : obj<4x4>
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = addr $old
+    %t2 = load typed ptr $this
+    copyobj 4x4 %t2, %t1
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load typed i32 %t4
+    %t6 = binary add nowrap i32 %t5, 1
+    store typed i32 %t6, %t4
+    %t7 = addr $retobj__1
+    %t8 = addr $old
+    copyobj 4x4 %t8, %t7
+    return obj<4x4> $retobj__1
+}
+function @Iterator__operator____2(%this : ptr [object_bytes=4], %__param1 : i32) -> obj<4x4> [binding=weak, object=_ZN8IteratormmEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : i32
+  slot $old : obj<4x4>
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = addr $old
+    %t2 = load typed ptr $this
+    copyobj 4x4 %t2, %t1
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load typed i32 %t4
+    %t6 = binary sub nowrap i32 %t5, 1
+    store typed i32 %t6, %t4
+    %t7 = addr $retobj__1
+    %t8 = addr $old
+    copyobj 4x4 %t8, %t7
+    return obj<4x4> $retobj__1
+}
+function @Iterator__operator_(%this : ptr [object_bytes=4], %rhs : i32) -> i32 [binding=weak, object=_ZNK8IteratorplEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $rhs : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %rhs, $rhs
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    %t4 = load typed i32 $rhs
+    %t5 = binary add nowrap i32 %t3, %t4
+    return i32 %t5
+}

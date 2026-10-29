@@ -28,6 +28,18 @@ bool IsIntType(const Type* type)
 	return type->kind == TypeKind::Fundamental && type->fundamental == FundamentalType::Int;
 }
 
+bool PossibleOperatorArity(const Type* type, uint32_t expected)
+{
+	if (type->variadic)
+		return false;
+	if (type->param_count == expected)
+		return true;
+	for (uint32_t i = 0; i < type->param_count; ++i)
+		if (type->params[i]->kind == TypeKind::Expansion)
+			return true;
+	return false;
+}
+
 // 13.3.1.2p3: with no operand of class type, a non-member candidate has a
 // first parameter of type T1 or reference to cv T1, T1 the left operand's
 // enumeration type, or a second one of T2 (the right operand's).
@@ -583,6 +595,13 @@ ExprFacts* Analyzer::overloaded_operator(
 	{
 		if (IgnoredByOverloadResolution(candidate))
 			continue;
+		// Filter a fixed parameter count before deduction can instantiate an
+		// unusable candidate's return type (13.3.2p2). In particular, prefix
+		// and postfix increment/decrement have different arities (13.5.7).
+		const bool member = candidate->member && !candidate->is_static;
+		const uint32_t expected = count - (member ? 1 : 0) + (postfix ? 1 : 0);
+		if (!PossibleOperatorArity(candidate->type->canonical, expected))
+			continue;
 		// A function template's candidate is the specialization its operands
 		// deduce (13.3.1p7, 14.8.2.1; a member's from those after the
 		// object).
@@ -600,9 +619,7 @@ ExprFacts* Analyzer::overloaded_operator(
 				continue;
 		}
 		const Type* type = function->type->canonical;
-		const bool member = function->member && !function->is_static;
 		const uint32_t parameters = type->param_count;
-		const uint32_t expected = count - (member ? 1 : 0) + (postfix ? 1 : 0);
 		if (parameters != expected || type->variadic)
 			continue;
 		if (postfix && !IsIntType(type->params[parameters - 1]))

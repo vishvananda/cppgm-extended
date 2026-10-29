@@ -1,0 +1,69 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : obj<4x4>
+  slot $lor__1 : i64
+  slot $argobj__2 : obj<4x4>
+  slot $argobj__3 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $x
+    %t2 = addr $x
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 3, %t3
+    %t4 = addr $argobj__2
+    %t5 = addr $x
+    copyobj 4x4 %t5, %t4
+    %t6 = call i32 @operator_($argobj__2)
+    %t7 = cmp ne i32 %t6, 3
+    branch %t7, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t8 = addr $argobj__3
+    %t9 = addr $x
+    copyobj 4x4 %t9, %t8
+    %t10 = call i32 @operator___2($argobj__3, 1)
+    %t11 = cmp ne i32 %t10, 4
+    %t12 = cmp ne i64 %t11, 0
+    store typed i64 %t12, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t13 = load typed i64 $lor__1
+    %t14 = convert trunc i32 i64 %t13
+    return i32 %t14
+}
+function @operator_(%x : obj<4x4>) -> i32 [binding=weak, object=_ZplIiJEEi3BoxIT_EDpT0_] {
+  slot $x : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $x
+    copyobj 4x4 %x, %t1
+    %t2 = addr $x
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = const i64 0
+    %t6 = convert sext i64 i32 %t4
+    %t7 = binary add i64 %t6, %t5
+    %t8 = convert trunc i32 i64 %t7
+    return i32 %t8
+}
+function @operator___2(%x : obj<4x4>, %values : i32) -> i32 [binding=weak, object=_ZplIiJiEEi3BoxIT_EDpT0_] {
+  slot $x : obj<4x4>
+  slot $values : i32
+
+  block ^entry:
+    %t1 = addr $x
+    copyobj 4x4 %x, %t1
+    store typed i32 %values, $values
+    %t2 = addr $x
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed i32 %t3
+    %t5 = const i64 1
+    %t6 = convert sext i64 i32 %t4
+    %t7 = binary add i64 %t6, %t5
+    %t8 = convert trunc i32 i64 %t7
+    return i32 %t8
+}
