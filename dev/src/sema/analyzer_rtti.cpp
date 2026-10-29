@@ -81,24 +81,9 @@ ExprFacts* Analyzer::typeid_expression(const syntax::TypeTraitExpr& expr, Scope*
 		}
 	}
 	else
-	{
-		const ExprFacts* operand = typeid_operand(*expr.operand, scope, dynamic);
-		if (operand == nullptr)
-			return nullptr;
-		if (resolve_lone_function(*expr.operand))
-			operand = expr.operand->facts;
-		// A member access naming one static member function is an lvalue of
-		// its function type (5.2.5p4), a non-static one's is no expression.
-		const bool static_member = (operand->flags & kOverloadSet) == 0 && operand->entity != nullptr &&
-			operand->entity->kind == EntityKind::Function &&
-			static_cast<const FunctionEntity*>(operand->entity)->is_static;
-		if ((operand->flags & kOverloadSet) != 0 || ((operand->flags & kBoundMember) != 0 && !static_member))
-		{
-			substitution_error(expr.location, "typeid of a function name that is not an object");
-			return nullptr;
-		}
-		queried = operand->type;
-	}
+		queried = typeid_operand(*expr.operand, scope, dynamic);
+	if (queried == nullptr)
+		return nullptr;
 	// p5: the cv-unqualified type.
 	ExprFacts* facts = new_facts(expr, types_.qualified(type_info->type, kConst), ValueCategory::LValue);
 	facts->target = Unqualified(types_, queried);
@@ -107,7 +92,7 @@ ExprFacts* Analyzer::typeid_expression(const syntax::TypeTraitExpr& expr, Scope*
 	return facts;
 }
 
-ExprFacts* Analyzer::typeid_operand(const syntax::Expr& operand, Scope* scope, bool& dynamic)
+const Type* Analyzer::typeid_operand(const syntax::Expr& operand, Scope* scope, bool& dynamic)
 {
 	// p2-p3: an operand that is a glvalue of polymorphic class type is
 	// evaluated, any other one is not; which it is shows once it is typed.
@@ -117,23 +102,73 @@ ExprFacts* Analyzer::typeid_operand(const syntax::Expr& operand, Scope* scope, b
 	const uint32_t saved = deferring_;
 	++unevaluated_;
 	deferring_ = unevaluated_;
-	ExprFacts* facts = typed(operand, scope);
+	const Type* named = nullptr;
+	ExprFacts* facts = nullptr;
+	const syntax::Name* name = operand.kind == syntax::ExprKind::Id ? static_cast<const syntax::IdExpr&>(operand).name
+																	: nullptr;
+	bool classified = name != nullptr && name->qualified() &&
+		name->last().kind == syntax::NameComponentKind::Identifier && !name->last().has_arguments;
+	if (classified)
+	{
+		// A concrete alias can hide the name's category from the parser.
+		// The type-id reading wins (8.2p2); a value reuses this lookup.
+		const uint64_t uses = names_.dependent_uses();
+		const uint64_t values = names_.value_parameter_uses();
+		const LookupResult found = lookup_name(*name, scope, LookupFilter::Ordinary);
+		if (!failed())
+		{
+			if (!name->dependent_qualifier &&
+				(found.binding->kind == BindingKind::Type || found.binding->kind == BindingKind::TypeAlias))
+				named = named_type(*name, scope);
+			else if (variable_template_of(found.binding) != nullptr)
+				classified = false;
+			else
+			{
+				facts = binding_expression(operand, name, found, scope);
+				if (facts != nullptr && names_.dependent_uses() != uses)
+				{
+					facts->flags |= kDependentUse;
+					names_.note_value_parameter_use();
+				}
+				if (facts != nullptr && names_.value_parameter_uses() != values)
+					facts->flags |= kValueDependentUse;
+			}
+		}
+	}
+	if (!classified)
+		facts = typed(operand, scope);
 	deferring_ = saved;
 	--unevaluated_;
-	// p3: an operand of class type names a completely-defined class (an
-	// instance's defined, 14.7.1p1), polymorphic or not.
-	const ClassEntity* cls = facts != nullptr && facts->type != nullptr ? ClassOf(facts->type) : nullptr;
+	if (named != nullptr && named->is_reference())
+		named = named->element;
+	const Type* queried = named != nullptr ? named : facts != nullptr ? facts->type : nullptr;
+	// p3-p4: a class type must be complete, whether named as a type or
+	// as an expression (an instance's defined, 14.7.1p1).
+	const ClassEntity* cls = queried != nullptr ? ClassOf(queried) : nullptr;
 	if (cls != nullptr && !require_complete(cls))
 	{
 		deferred_uses_.resize(first);
-		substitution_error(operand.location, "typeid of an expression of incomplete class type", true);
+		substitution_error(operand.location, "typeid of an incomplete class type", true);
 		return nullptr;
 	}
-	dynamic = cls != nullptr && facts->category != ValueCategory::PRValue && cls->polymorphic;
+	dynamic = named == nullptr && cls != nullptr && facts->category != ValueCategory::PRValue && cls->polymorphic;
 	if (dynamic)
 		replay_uses(first);
 	deferred_uses_.resize(first);
-	return facts;
+	if (named != nullptr || facts == nullptr)
+		return named;
+	if (resolve_lone_function(operand))
+		facts = facts_of(operand);
+	// A member access naming one static member function is an lvalue of
+	// its function type (5.2.5p4), a non-static one's is no expression.
+	const bool static_member = (facts->flags & kOverloadSet) == 0 && facts->entity != nullptr &&
+		facts->entity->kind == EntityKind::Function && static_cast<const FunctionEntity*>(facts->entity)->is_static;
+	if ((facts->flags & kOverloadSet) != 0 || ((facts->flags & kBoundMember) != 0 && !static_member))
+	{
+		substitution_error(operand.location, "typeid of a function name that is not an object");
+		return nullptr;
+	}
+	return facts->type;
 }
 
 void Analyzer::defer_use(const DeferredUse& use)

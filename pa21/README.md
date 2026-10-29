@@ -173,7 +173,9 @@ PA21 supports the following in addition to the PA20 subset:
 - `std::initializer_list<T>` interoperation for supported scalar elements and
   class elements whose construction, copy, and destruction stay within the
   PA11/PA12/PA19 object and template subset
-- `typeid(type-id)`
+- `typeid(type-id)`, including a bare member type reached through a concrete alias
+  whose scope the parser cannot classify; semantic lookup determines whether that
+  name denotes a type or an expression
 - `typeid(expr)` for supported polymorphic lvalue expressions
 - `dynamic_cast<T*>(expr)` and `dynamic_cast<T&>(expr)` for supported polymorphic
   single-inheritance conversions

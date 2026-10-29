@@ -972,7 +972,7 @@ private:
 	// ------------------------------------- run-time types (analyzer_rtti.cpp)
 	const ClassEntity* type_info_class(uint32_t location);
 	ExprFacts* typeid_expression(const syntax::TypeTraitExpr& expr, Scope* scope);
-	ExprFacts* typeid_operand(const syntax::Expr& operand, Scope* scope, bool& dynamic);
+	const Type* typeid_operand(const syntax::Expr& operand, Scope* scope, bool& dynamic);
 	ExprFacts* type_identity(const syntax::Expr& expr, TokenKind op, const syntax::Slice<syntax::Expr*>& operands,
 		const FunctionEntity* selected);
 	ExprFacts* dynamic_cast_expression(const syntax::CastExpr& expr, const Type* target, Scope* scope);
