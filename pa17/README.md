@@ -176,6 +176,8 @@ template completion:
 - class partial specialization and specialization selection
 - alias and variable template entity modeling
 - explicit specialization and explicit-instantiation ownership
+  (a member-template specialization retains its own earlier `inline`
+  declaration across a later definition without that specifier)
 - the declaration/instantiation behavior required to make that model coherent
 
 Self-checking controls in `tests/controls/` state their expected outcome in

@@ -1,0 +1,66 @@
+function @primary(%value : i32) -> i32 [binding=strong, object=_Z7primaryIiEiT_] {
+  slot $value : i32
+
+  block ^entry:
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    return i32 %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $b : obj<1x1>
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+
+  block ^entry:
+    %t1 = addr $b
+    %t2 = call i32 @primary(42)
+    %t3 = cmp ne i32 %t2, 42
+    branch %t3, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t4 = call i32 @retained(42)
+    %t5 = cmp ne i32 %t4, 42
+    %t6 = cmp ne i64 %t5, 0
+    store typed i64 %t6, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t7 = load typed i64 $lor__1
+    branch %t7, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t8 = addr $b
+    %t9 = call i32 @Box_int___get(%t8)
+    %t10 = cmp ne i32 %t9, 42
+    %t11 = cmp ne i64 %t10, 0
+    store typed i64 %t11, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t12 = load typed i64 $lor__2
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
+}
+function @retained(%value : i32) -> i32 [binding=weak, object=_Z8retainedIiEiT_, inline_hint=yes] {
+  slot $value : i32
+
+  block ^entry:
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    return i32 %t1
+}
+function @Box_int___get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK3BoxIiE3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 42
+}

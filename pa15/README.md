@@ -218,7 +218,8 @@ PA15 supports the following in addition to the PA14 subset:
 - explicit specialization of supported function templates; an explicit
   specialization of a function template states `inline_hint=yes` only when it
   is itself declared `inline` or `constexpr`, whatever the template's
-  declaration says (14.7.3p12)
+  declaration says (14.7.3p12); later declarations or definitions without
+  `inline` retain an earlier inline declaration of that same specialization
 - an explicit specialization declared after uses of its primary template
   takes effect for the uses that follow it (14.7.3p6), in the supported class
   and function template cases

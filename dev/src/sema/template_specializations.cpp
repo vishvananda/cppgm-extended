@@ -177,7 +177,7 @@ Binding* Analyzer::explicit_function_specialization(const Specifiers& specifiers
 	// deduced from the declaration's type, 14.8.2.6) or a member function
 	// of a class template specialization (14.7.3p16): the function the key
 	// names is defined here, not instantiated. It is inline or constexpr
-	// only as this declaration says (14.7.3p12); it has no default
+	// only as its own declarations say (14.7.3p12); it has no default
 	// arguments (p21).
 	explicit_specialization_ = false;
 	const syntax::NameComponent& last = info.name->last();
@@ -247,9 +247,12 @@ Binding* Analyzer::explicit_function_specialization(const Specifiers& specifiers
 		function->effects = FunctionEffect::Default;
 		function->no_inline = false;
 	}
+	// Retain inline from an earlier declaration of this specialization,
+	// while discarding the primary template's independent inline state.
+	function->is_inline = (function->explicit_specialization && function->is_inline) || specifiers.is_inline ||
+		specifiers.is_constexpr;
 	function->explicit_specialization = true;
 	function->instantiated = false;
-	function->is_inline = specifiers.is_inline || specifiers.is_constexpr;
 	function->is_constexpr = specifiers.is_constexpr;
 	function->defined = function->defined || definition || deleted;
 	if (info.parameters != nullptr)
