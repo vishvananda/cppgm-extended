@@ -1085,6 +1085,7 @@ private:
 	ExprFacts* gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin builtin, uint8_t variant, Scope* scope);
 	ExprFacts* vector_lane_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
 	ExprFacts* vector_shift_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
+	ExprFacts* vector_shuffle_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
 	ExprFacts* overflow_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
 	ExprFacts* allocation_builtin(const syntax::CallExpr& expr, bool allocate, Scope* scope);
 	// The C library's nan, nanf or nanl (by `variant`) called as

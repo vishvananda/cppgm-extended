@@ -212,6 +212,8 @@ ExprFacts* Analyzer::builtin_operation(const syntax::CallExpr& expr, const Funct
 		return vector_lane_builtin(expr, variant, scope);
 	case GnuBuiltin::VectorShiftBytes:
 		return vector_shift_builtin(expr, variant, scope);
+	case GnuBuiltin::VectorShuffle:
+		return vector_shuffle_builtin(expr, variant, scope);
 	case GnuBuiltin::OperatorNew:
 	case GnuBuiltin::OperatorDelete:
 		return allocation_builtin(expr, builtin->gnu_builtin == GnuBuiltin::OperatorNew, scope);
@@ -840,6 +842,32 @@ ExprFacts* Analyzer::vector_shift_builtin(const syntax::CallExpr& expr, uint8_t 
 	facts->flags |= kIntrinsic;
 	const Intrinsic kind = variant == 0 ? Intrinsic::VectorShiftLeftBytes : Intrinsic::VectorShiftRightBytes;
 	facts->value = static_cast<uint64_t>(kind) | (constant ? count.bits / 8 << 8 : uint64_t(1) << 16);
+	return facts;
+}
+
+ExprFacts* Analyzer::vector_shuffle_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope)
+{
+	const uint32_t count = variant == 0 ? 2 : 3;
+	if (expr.arguments.size != count)
+		error(expr.location, "wrong number of arguments to a packed lane shuffle");
+	const Type* vector = types_.vector(
+		types_.fundamental(variant == 0 ? FundamentalType::Int : FundamentalType::Double), variant == 0 ? 4 : 2);
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		if (typed_value(*expr.arguments[i], scope) == nullptr)
+			return nullptr;
+		convert(*expr.arguments[i], i == count - 1 ? types_.fundamental(FundamentalType::Int) : vector, false);
+	}
+	Constant selector;
+	const bool constant = constant_value(*expr.arguments[count - 1], scope, selector, false);
+	if (!constant && template_depth_ == 0 &&
+		(body_ == nullptr || body_->function == nullptr || !body_->function->always_inline))
+		error(expr.arguments[count - 1]->location,
+			"a packed lane shuffle selector that is no integral constant expression");
+	ExprFacts* facts = new_facts(expr, vector, ValueCategory::PRValue);
+	facts->flags |= kIntrinsic;
+	facts->value = static_cast<uint64_t>(Intrinsic::VectorShuffle) |
+		(constant ? (selector.bits & (variant == 0 ? 255U : 3U)) << 8 : uint64_t(1) << 16);
 	return facts;
 }
 

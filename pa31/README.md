@@ -168,6 +168,12 @@ The `<emmintrin.h>` left, logical-right and arithmetic-right lane shift
 wrappers accept runtime int counts and preserve the host vector ABI, including
 negative and oversized counts and all upper-lane bits.
 
+### SSE2 immediate shuffle wrappers
+
+The `<emmintrin.h>` integer and double lane shuffle wrappers preserve immediate
+selection, all lane bits, and the host vector calling convention at each
+optimization level.
+
 ### Hosted ABI Names
 
 PA31 uses the ordinary host C++ ABI spelling for every hosted symbol that is

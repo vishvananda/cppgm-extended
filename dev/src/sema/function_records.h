@@ -198,6 +198,9 @@ enum class Intrinsic : uint8_t
 	// Packed integer lane shifts; bits 8-15 select lane width/direction
 	// in the same order as GnuBuiltin::VectorShiftLanes.
 	VectorShiftLanes,
+	// SSE2 pshufd/shufpd: selector in bits 8-15; bit 16 denotes a
+	// selector deferred in an always_inline wrapper or template.
+	VectorShuffle,
 	// __builtin_add/sub/mul_overflow(a, b, result): the infinitely precise
 	// a op b stored through `result` modulo its type, and whether that
 	// changed it.

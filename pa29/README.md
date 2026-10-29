@@ -459,6 +459,15 @@ count may be a runtime value. Oversized and negative counts yield zero for
 left/logical right and sign-fill for arithmetic right. Evaluate both operands
 once and bound the count before forming a LowIR shift.
 
+### SSE2 immediate lane shuffles
+
+`__builtin_ia32_pshufd` selects four 32-bit lanes using the low 8 bits of a constant int;
+`__builtin_ia32_shufpd` selects one double lane from each of two sources using
+the low 2 bits of a constant int. GCC masks constant selectors to those
+widths, including negative values. Preserve every lane bit, including NaN payloads and signed
+zero, and evaluate operands once. Record selector/type facts during analysis;
+a selector in an always-inline wrapper or template can remain deferred.
+
 ### Design Notes (Non-Normative)
 
 Hosted compatibility is easiest to approach as a sequence of small compatibility

@@ -1,0 +1,18 @@
+using Ints=int __attribute__((vector_size(16)));
+using Doubles=double __attribute__((vector_size(16)));
+using Longs=long long __attribute__((vector_size(16)));
+int calls;
+template<class V> V input(V a){++calls;return a;}
+template<int N> Ints rearrange(Ints a){return __builtin_ia32_pshufd(a,N);}
+template<int N> Doubles pair(Doubles a,Doubles b){return __builtin_ia32_shufpd(a,b,N);}
+template<int N> int check(){
+ Ints a{static_cast<int>(0xfedcba98U),0x12345678,-1,static_cast<int>(0x80000000U)};
+ Ints r=rearrange<N>(input(a));
+ for(int i=0;i<4;++i)if(r[i]!=a[(N>>(i*2))&3])return 1;
+ Longs x{static_cast<long long>(0x8000000000000000ULL),static_cast<long long>(0x7ff0000000000042ULL)};
+ Longs y{static_cast<long long>(0xfff8000012345678ULL),0x0123456789abcdefLL};
+ Longs d=(Longs)pair<N&3>(input((Doubles)x),input((Doubles)y));
+ if(d[0]!=x[N&1]||d[1]!=y[(N>>1)&1])return 2;
+ return 0;
+}
+int main(){if(check<0>()||check<1>()||check<27>()||check<85>()||check<170>()||check<228>()||check<255>())return 1;return calls==21?0:2;}
