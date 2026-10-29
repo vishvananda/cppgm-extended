@@ -47,7 +47,7 @@ void mark_data_references(const Program& program, Mark mark)
 
 } // namespace
 
-void build_call_graph(const Program& program, CallGraph& graph)
+void build_call_graph(const Program& program, CallGraph& graph, bool forced_calls_only)
 {
 	graph.functions.clear();
 	graph.index_of.assign(program.symbols.size(), kNoId);
@@ -78,6 +78,18 @@ void build_call_graph(const Program& program, CallGraph& graph)
 			for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
 			{
 				const Instruction& inst = body.instructions[i];
+				if (forced_calls_only)
+				{
+					if (inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol) &&
+						(program.symbols[inst.ops[0].index].metadata.flags & SF_FORCE_INLINE) != 0 &&
+						graph.index_of[inst.ops[0].index] != kNoId)
+					{
+						const uint32_t callee = graph.index_of[inst.ops[0].index];
+						graph.callees.push_back(callee);
+						++graph.calls_in[callee];
+					}
+					continue;
+				}
 				uint32_t position = 0;
 				for_each_operand(body, inst, [&](const Value& v) {
 					const uint32_t at = position++;
@@ -106,7 +118,8 @@ void build_call_graph(const Program& program, CallGraph& graph)
 					++graph.callers_in[graph.callees[k]];
 				}
 	}
-	mark_data_references(program, observe);
+	if (!forced_calls_only)
+		mark_data_references(program, observe);
 	// Tarjan's SCCs, iteratively; components finish callees first.
 	graph.component.assign(n, kNoId);
 	graph.recursive.assign(n, 0);

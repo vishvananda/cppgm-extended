@@ -1,0 +1,27 @@
+extern "C" void* read_pc();
+volatile int effects;
+inline __attribute__((always_inline)) void nothing(int) {}
+inline __attribute__((always_inline)) int identity(int x) { return x; }
+inline __attribute__((always_inline)) int constant() { return 9; }
+inline __attribute__((always_inline)) int* pointer(int* p) { return p; }
+inline __attribute__((always_inline)) void touch() { ++effects; }
+inline __attribute__((always_inline)) void* capture() { return read_pc(); }
+__attribute__((noinline)) void* indirect() { return capture(); }
+__attribute__((noinline)) int first() {
+  nothing(++effects);
+  nothing(++effects);
+  return identity(constant());
+}
+int main() {
+  int x = 3;
+  nothing(effects++);
+  if (first() != 9 || effects != 3 || identity(x) != 3 || pointer(&x) != &x)
+    return 2;
+  touch();
+  touch();
+  if (effects != 5)
+    return 3;
+  void* a = indirect();
+  void* b = capture();
+  return a == b;
+}

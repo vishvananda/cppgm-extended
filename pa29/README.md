@@ -323,6 +323,12 @@ To complete PA29, implement hosted compatibility for:
   already there.
   Probes for guarantees the compiler does not make, such as
   `__has_declspec_attribute`, answer no rather than failing
+- GNU `always_inline` direct calls in host objects substitute the available
+  body at every optimization level, including constructors and destructors.
+  Substitution preserves cleanup, noexcept termination, local-static identity
+  and source locations. An ineligible required call is diagnosed. The course
+  LowIR view and its optional `force_inline` profitability flag retain their
+  existing contract; the object LowIR view includes source-required substitution.
 - GNU/Clang parser concessions commonly exercised by the selected hosted
   headers, including dependent nested-angle disambiguation, nested qualified
   template-ids used as outer template arguments, builtin-trait identifiers

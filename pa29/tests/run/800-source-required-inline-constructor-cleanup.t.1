@@ -1,0 +1,1 @@
+extern "C" void* read_pc();int alive;struct M{M(){++alive;}M(const M&){++alive;}~M(){--alive;}};struct Trace{M member;void* pc;__attribute__((always_inline)) Trace() noexcept:member(),pc(read_pc()){}};__attribute__((noinline)) Trace indirect(){return Trace();}int main(){int result;{Trace a=indirect();Trace b;result=a.pc==b.pc;}return result||alive;}

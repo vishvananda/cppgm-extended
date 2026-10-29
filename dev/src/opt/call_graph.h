@@ -27,7 +27,7 @@ struct CallGraph
 	std::vector<uint32_t> bottom_up;             // callees before callers; ties in program order
 };
 
-void build_call_graph(const lowir::Program& program, CallGraph& graph);
+void build_call_graph(const lowir::Program& program, CallGraph& graph, bool forced_calls_only = false);
 
 // Whether a definition may disappear when nothing calls or names it: weak
 // or internal, no role, not an object root, not GNU-replaceable and not a

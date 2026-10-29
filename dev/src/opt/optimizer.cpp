@@ -47,50 +47,19 @@ void scalar_rounds(FunctionContext& context);
 // the pointer itself, so before any pass each such argument becomes the
 // storage it stands for: a slot of the temporary's type, stored just
 // before the call, whose address the call passes.
+void materialize_storage_arguments(Program& program, FunctionBody& body)
+{
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first, prev = kNoId; i != kNoId; prev = i, i = body.instructions[i].next)
+			if (body.instructions[i].op == Opcode::Call)
+				materialize_call_arguments(program, body, b, prev, i);
+}
+
 void materialize_storage_arguments(Program& program)
 {
 	for (const Function& function : program.functions)
-	{
-		if (function.body == nullptr)
-			continue;
-		FunctionBody& body = *function.body;
-		for (BlockId b : body.layout)
-			for (InstId i = body.blocks[b].first, prev = kNoId; i != kNoId; prev = i, i = body.instructions[i].next)
-			{
-				if (body.instructions[i].op != Opcode::Call)
-					continue;
-				const Signature* sig = program.call_boundary(body.instructions[i]);
-				if (sig == nullptr)
-					continue;
-				const Parameter* params = program.parameters_of(*sig);
-				for (uint32_t k = 0; k < body.instructions[i].extra_count && k < sig->parameter_count; ++k)
-				{
-					const Value v = body.operands[body.instructions[i].extra_first + k];
-					if (params[k].pass == ir_model::PPM_DIRECT || !v.is(ValueKind::Temp))
-						continue;
-					const Type type = body.temps[v.index].type;
-					if (type.is_pointer() || type.is_object())
-						continue;
-					const uint32_t location = body.instructions[i].location;
-					const SlotId slot = static_cast<SlotId>(body.slots.size());
-					body.slots.push_back(Slot{ 0, SlotKind::Refarg, 0, 0, type });
-					Instruction addr = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
-					addr.ops[0] = Value::slot(slot);
-					addr.location = location;
-					const InstId a = append_instruction(body, addr);
-					body.instructions[a].result = append_temp(body, Type::scalar(TypeKind::Ptr), a);
-					insert_after(body, b, prev, a);
-					Instruction store = make_instruction(Opcode::Store, type);
-					store.ops[0] = v;
-					store.ops[1] = Value::temp(body.instructions[a].result);
-					store.location = location;
-					const InstId st = append_instruction(body, store);
-					insert_after(body, b, a, st);
-					prev = st;
-					body.operands[body.instructions[i].extra_first + k] = Value::temp(body.instructions[a].result);
-				}
-			}
-	}
+		if (function.body != nullptr)
+			materialize_storage_arguments(program, *function.body);
 }
 
 // A switch compares its cases at its selector's type (the back end's
@@ -434,6 +403,61 @@ void scalar_rounds(FunctionContext& context)
 }
 
 } // namespace
+
+void materialize_call_arguments(Program& program, FunctionBody& body, BlockId b, InstId& prev, InstId call_id)
+{
+	const Signature* sig = program.call_boundary(body.instructions[call_id]);
+	if (sig == nullptr)
+		return;
+	const Parameter* params = program.parameters_of(*sig);
+	for (uint32_t k = 0; k < body.instructions[call_id].extra_count && k < sig->parameter_count; ++k)
+	{
+		const Value v = body.operands[body.instructions[call_id].extra_first + k];
+		if (params[k].pass == ir_model::PPM_DIRECT || !v.is(ValueKind::Temp))
+			continue;
+		const Type type = body.temps[v.index].type;
+		if (type.is_pointer() || type.is_object())
+			continue;
+		const uint32_t location = body.instructions[call_id].location;
+		const SlotId slot = static_cast<SlotId>(body.slots.size());
+		body.slots.push_back(Slot{ 0, SlotKind::Refarg, 0, 0, type });
+		Instruction addr = make_instruction(Opcode::Addr, Type::scalar(TypeKind::Ptr));
+		addr.ops[0] = Value::slot(slot);
+		addr.location = location;
+		const InstId a = append_instruction(body, addr);
+		body.instructions[a].result = append_temp(body, Type::scalar(TypeKind::Ptr), a);
+		insert_after(body, b, prev, a);
+		Instruction store = make_instruction(Opcode::Store, type);
+		store.ops[0] = v;
+		store.ops[1] = Value::temp(body.instructions[a].result);
+		store.location = location;
+		const InstId st = append_instruction(body, store);
+		insert_after(body, b, a, st);
+		prev = st;
+		body.operands[body.instructions[call_id].extra_first + k] = Value::temp(body.instructions[a].result);
+	}
+}
+
+void inline_source_required(Program& program)
+{
+	OptimizerStats stats;
+	const std::function<void(SymbolId)> simplify = [&](SymbolId symbol) {
+		FunctionContext context(program, symbol, stats, 0);
+		const PooledContext pooled(context, context_pool());
+		// Preserve named storage in full debug bodies.
+		if (program.debug == nullptr && (program.symbols[symbol].metadata.flags & SF_FORCE_INLINE) != 0)
+		{
+			materialize_storage_arguments(program, context.body);
+			promote_slots(context);
+			remove_dead_code(context);
+			strip_dead_regions(context);
+		}
+		// Inlining turns a return after a noreturn call into a spurious
+		// continuation edge. Remove it before EH stacks meet at that join.
+		cleanup_cfg(context);
+	};
+	run_source_inline_wave(program, simplify);
+}
 
 bool parse_inline_limit(const std::string& text, InlineLimits& limits)
 {

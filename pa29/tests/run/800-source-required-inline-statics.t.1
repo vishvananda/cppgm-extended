@@ -1,0 +1,1 @@
+int calls;int init(){++calls;return 3;}template<class T>inline __attribute__((always_inline)) int& storage(){static int value=init();return value;}__attribute__((noinline)) int* indirect(){return &storage<int>();}int main(){int* p=indirect();int&(*address)()=&storage<int>;return p!=&storage<int>()||p!=&address()||*p!=3||calls!=1;}

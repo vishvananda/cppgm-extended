@@ -43,4 +43,14 @@ void run_inline_wave(lowir::Program& program, const OptimizerOptions& options, O
 	InlineBudgets& budgets, const std::vector<uint32_t>& original_size, const std::vector<uint8_t>& nounwind,
 	const std::function<void(lowir::SymbolId)>& simplify);
 
+// Materialize a call's by-address scalar arguments before substituting it.
+void materialize_call_arguments(
+	lowir::Program& program, lowir::FunctionBody& body, lowir::BlockId block, lowir::InstId& prev, lowir::InstId call);
+
+// Source-required calls use temporary force flags supplied by the lowering.
+// Their exception regions remain nested in the caller. This is separate from
+// the optional, budgeted LowIR force_inline optimization contract.
+void inline_source_required(lowir::Program& program);
+void run_source_inline_wave(lowir::Program& program, const std::function<void(lowir::SymbolId)>& simplify);
+
 } // namespace opt

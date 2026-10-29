@@ -564,6 +564,11 @@ bool compile_unit(
 		std::cerr << "ERROR: " << path << ": " << e.what() << std::endl;
 		return false;
 	}
+	catch (const lower::LoweringError& e)
+	{
+		std::cerr << "ERROR: " << path << ": " << e.what() << std::endl;
+		return false;
+	}
 	catch (const native::BackendError& e)
 	{
 		std::cerr << "ERROR: " << path << ": " << e.what() << std::endl;

@@ -1,0 +1,1 @@
+extern "C" void* read_pc();struct B{void* pc;__attribute__((always_inline)) B():pc(read_pc()){}__attribute__((always_inline)) B(const B&):pc(read_pc()){}};struct D:B{__attribute__((always_inline)) D():B(){}__attribute__((always_inline)) D(const D& x):B(x){}};int main(){D seed;D a(seed);D b(a);return a.pc==b.pc;}

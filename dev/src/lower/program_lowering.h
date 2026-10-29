@@ -33,6 +33,8 @@ struct ConstValue;
 // (lower/function_lowering.h) lowers one body.
 namespace lower {
 
+class SourceInlining;
+
 class DebugInfo;
 
 // A construct outside the supported lowering slice, at a unit location.
@@ -1107,6 +1109,8 @@ private:
 	void resolve_singleton_roles();
 	bool emitted_at_definition(const sema::FunctionEntity* function) const;
 	void release_definition(lowir::SymbolId symbol);
+	void mark_source_inline(const sema::FunctionEntity* function, lowir::SymbolId symbol);
+	void finish_source_inlining();
 	// Special-member families (lower/definition_order.cpp): a definition's
 	// memberships (`base_object`: its base entry's object name if known),
 	// the identities they share, and the families' order among the
@@ -1368,6 +1372,7 @@ private:
 	std::vector<std::pair<const sema::FunctionEntity*, lowir::SymbolId>> pending_copies_;
 	// Destructor definitions whose writing waits for the unit's end.
 	std::vector<lowir::SymbolId> held_definitions_;
+	std::unique_ptr<SourceInlining> source_inlining_;
 	PointerMap queued_;
 	PointerMap queued_base_;
 	PointerMap queued_deleting_;

@@ -2460,6 +2460,7 @@ lowir::SymbolMetadata ProgramLowering::function_metadata(const sema::FunctionEnt
 	const lowir::NameId object = symbol_objects_[symbol];
 	if (object != 0 && object != program_.symbols[symbol].name)
 		metadata.object = object;
+	mark_source_inline(function, symbol);
 	if (function->is_inline)
 		metadata.flags |= lowir::SF_INLINE_HINT;
 	if (function->no_inline)

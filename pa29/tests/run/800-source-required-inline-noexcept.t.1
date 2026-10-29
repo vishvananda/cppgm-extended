@@ -1,0 +1,1 @@
+using Handler=void(*)();namespace std{Handler set_terminate(Handler) noexcept;}extern "C" void _Exit(int) noexcept __attribute__((noreturn));void terminate_ok(){_Exit(0);}struct G{~G()noexcept(false){throw 2;}};inline __attribute__((always_inline)) void f() noexcept{G g;throw 1;}int main(){std::set_terminate(terminate_ok);f();return 1;}

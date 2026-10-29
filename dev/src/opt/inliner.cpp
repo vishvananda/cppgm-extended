@@ -148,6 +148,7 @@ bool phi_type(Type type)
 		(type.is_integer() && type.kind() != TypeKind::I128);
 }
 
+template<bool source_required = false>
 Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_t>& nounwind)
 {
 	Shape shape;
@@ -168,8 +169,10 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 			shape.calls += inst.op == Opcode::Call ? 1 : 0;
 			shape.returns += inst.op == Opcode::Return ? 1 : 0;
 			unwinding = unwinding ||
-				(may_unwind(program, inst) &&
-					!(inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol) && nounwind[inst.ops[0].index]));
+				(!source_required &&
+					(may_unwind(program, inst) &&
+						!(inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol) &&
+							nounwind[inst.ops[0].index])));
 			if (inst.op == Opcode::VaStart || inst.op == Opcode::VaArg || inst.op == Opcode::StackAlloc ||
 				(b == body.layout[0] && inst.op == Opcode::Phi))
 				shape.unsafe = true;
@@ -178,6 +181,10 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 	shape.unwinds = unwinding && sig.boundary.unwind != ir_model::CUM_NO && !nounwind[symbol];
 	shape.hot = shape.size;
 	shape.hot_call = shape.call;
+	// Required substitution has no profitability policy: loops, cold paths
+	// and dominators cannot change its admission. Keep only cloning safety.
+	if (source_required)
+		return shape;
 	if (shape.blocks > 1)
 	{
 		static Cfg scratch; // (reused for its capacity: every build overwrites what it fills)
@@ -521,29 +528,87 @@ bool partial_cut(const Program& program, const FunctionBody& kb, PartialCut& out
 	return out.cuts != 0 && returns && out.size <= cap;
 }
 
+// An already-simplified body that only returns has no frame or local work
+// to clone. Arguments were evaluated before the call; keep their effects.
+bool inline_return(
+	FunctionBody& body, BlockId block, InstId prev, InstId call_id, const FunctionBody& callee, InstId& tail)
+{
+	if (callee.layout.size() != 1)
+		return false;
+	const Instruction& returned = callee.instructions[callee.blocks[callee.layout[0]].first];
+	if (returned.op != Opcode::Return)
+		return false;
+	const Instruction call = body.instructions[call_id];
+	if (call.result == kNoId)
+	{
+		unlink_after(body, block, prev, call_id);
+		tail = prev;
+		return true;
+	}
+	Value value = returned.ops[0];
+	if (!phi_type(call.type))
+		return false;
+	if (value.is(ValueKind::Temp))
+	{
+		if (value.index >= callee.parameter_count || callee.temps[value.index].type != call.type)
+			return false;
+		value = body.operands[call.extra_first + value.index];
+		if (!value.is(ValueKind::Temp) && !value.is(ValueKind::Integer) && !value.is(ValueKind::Float))
+			return false;
+	}
+	else if (value.is(ValueKind::Integer) || value.is(ValueKind::Float))
+		value = literal_value(body, value.kind, value.float_kind, callee.literals[value.index]);
+	else
+		return false;
+	Instruction copy = make_instruction(Opcode::Copy, call.type);
+	copy.ops[0] = value;
+	copy.result = call.result;
+	copy.location = call.location;
+	copy.next = call.next;
+	body.instructions[call_id] = copy;
+	tail = call_id;
+	return true;
+}
+
 // Copies callee `kb` into `cb` in place of the call `call_id` (in `block`,
 // after `prev`): the block is split at the call, the callee's blocks go
 // between the two halves (in `layout_next`, the caller's layout as a
 // list by block), returns jump to the continuation and merge the result in
 // a phi there (or, for a value phis cannot carry, its one return's value
 // replaces the result: recorded in `repl`, applied once per caller).
-void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, InstId call_id, const FunctionBody& kb,
-	std::vector<BlockId>& layout_next, std::vector<Value>& repl, const PartialCut* partial = nullptr)
+InstId clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, InstId call_id,
+	const FunctionBody& kb, std::vector<BlockId>& layout_next, std::vector<Value>& repl,
+	const PartialCut* partial = nullptr, bool straight = false)
 {
 	const Instruction call = cb.instructions[call_id];
-	const BlockId cont = append_block(cb, BlockKind::InlineCont);
-	cb.blocks[cont].first = call.next;
-	cb.blocks[cont].last = call.next == kNoId ? kNoId : cb.blocks[block].last;
+	const Instruction& last = kb.instructions[kb.blocks[kb.layout.back()].last];
+	const bool flat = straight && partial == nullptr && kb.layout.size() == 1 && last.op == Opcode::Return &&
+		(call.result == kNoId ||
+			(phi_type(call.type) && !last.ops[0].is(ValueKind::Slot) && !last.ops[0].is(ValueKind::Symbol) &&
+				(!last.ops[0].is(ValueKind::Temp) || kb.temps[last.ops[0].index].type == call.type)));
+	if (!flat && layout_next.empty())
+	{
+		layout_next.assign(cb.blocks.size(), kNoId);
+		for (size_t k = 0; k + 1 < cb.layout.size(); ++k)
+			layout_next[cb.layout[k]] = cb.layout[k + 1];
+	}
+	const InstId old_last = cb.blocks[block].last;
+	const BlockId cont = flat ? block : append_block(cb, BlockKind::InlineCont);
+	if (!flat)
+	{
+		cb.blocks[cont].first = call.next;
+		cb.blocks[cont].last = call.next == kNoId ? kNoId : cb.blocks[block].last;
+	}
 	cb.blocks[block].last = prev;
 	if (prev == kNoId)
 		cb.blocks[block].first = kNoId;
 	else
 		cb.instructions[prev].next = kNoId;
 	cb.instructions[call_id].next = kNoId;
-	if (cb.blocks[cont].last != kNoId)
+	if (!flat && cb.blocks[cont].last != kNoId)
 		for_each_successor(
 			cb, cb.instructions[cb.blocks[cont].last], [&](BlockId s) { rename_phi_incoming(cb, s, block, cont); });
-	else
+	else if (!flat)
 	{
 		const Instruction unreachable = make_instruction(Opcode::Unreachable, Type::scalar(TypeKind::Void));
 		const InstId id = append_instruction(cb, unreachable);
@@ -552,7 +617,8 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 	// Temporaries, slots and blocks of the copy; an argument of another
 	// type than its parameter (compatible: the same width) is retyped at
 	// the end of the call's block.
-	std::vector<Value> temps(kb.temps.size(), Value::none());
+	static std::vector<Value> temps;
+	temps.assign(kb.temps.size(), Value::none());
 	for (TempId t = 0; t < kb.parameter_count; ++t)
 	{
 		temps[t] = cb.operands[call.extra_first + t];
@@ -577,22 +643,24 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 		cb.temps[made].kind = copied.name != 0 ? TempKind::Inlined : TempKind::Plain;
 		temps[t] = Value::temp(made);
 	};
-	if (partial == nullptr)
+	if (partial == nullptr && !straight)
 		for (TempId t = kb.parameter_count; t < kb.temps.size(); ++t)
 			copy_temp(t);
 	else
 		for (BlockId b : kb.layout)
-			if (partial->copy[b])
+			if (partial == nullptr || partial->copy[b])
 				for (InstId i = kb.blocks[b].first; i != kNoId; i = kb.instructions[i].next)
 					if (kb.instructions[i].result != kNoId)
 						copy_temp(kb.instructions[i].result);
-	std::vector<uint32_t> slots(kb.slots.size(), kNoId);
-	std::vector<uint8_t> named;
-	if (partial != nullptr)
+	static std::vector<uint32_t> slots;
+	slots.assign(kb.slots.size(), kNoId);
+	static std::vector<uint8_t> named;
+	named.clear();
+	if (partial != nullptr || straight)
 	{
 		named.assign(kb.slots.size(), 0);
 		for (BlockId b : kb.layout)
-			if (partial->copy[b])
+			if (partial == nullptr || partial->copy[b])
 				for (InstId i = kb.blocks[b].first; i != kNoId; i = kb.instructions[i].next)
 					for_each_operand(kb, kb.instructions[i], [&](const Value& v) {
 						if (v.is(ValueKind::Slot))
@@ -601,7 +669,7 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 	}
 	for (SlotId s = 0; s < kb.slots.size(); ++s)
 	{
-		if (partial != nullptr && !named[s])
+		if ((partial != nullptr || straight) && !named[s])
 			continue;
 		slots[s] = static_cast<uint32_t>(cb.slots.size());
 		// A copy keeps a generated name's kind (a shadow's or range-for
@@ -617,21 +685,24 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 		}
 		cb.slots.push_back(slot);
 	}
-	std::vector<BlockId> blocks(kb.blocks.size(), kNoId);
+	static std::vector<BlockId> blocks;
+	blocks.assign(kb.blocks.size(), kNoId);
 	for (BlockId b : kb.layout)
 		if (partial == nullptr || partial->copy[b] || partial->cut[b])
 		{
 			// A copy keeps a generated block's kind; the entry's prints as
 			// the inlined entry, a named block's as a copy of that name.
 			const Block copied = kb.blocks[b]; // (kb may be cb: appending moves it)
-			blocks[b] = append_block(cb,
-				copied.kind != BlockKind::Plain ? copied.kind
-					: b == kb.layout[0]         ? BlockKind::InlineEntry
-												: BlockKind::InlineCopy);
+			blocks[b] = flat ? block
+							 : append_block(cb,
+								   copied.kind != BlockKind::Plain ? copied.kind
+									   : b == kb.layout[0]         ? BlockKind::InlineEntry
+																   : BlockKind::InlineCopy);
 			if (copied.kind == BlockKind::Plain && b != kb.layout[0])
 				cb.blocks[blocks[b]].name = copied.name;
 		}
-	std::vector<uint32_t> locations(kb.locations.size() + 1, 0);
+	static std::vector<uint32_t> locations;
+	locations.assign(kb.locations.size() + 1, 0);
 	auto map_value = [&](Value v) {
 		switch (v.kind)
 		{
@@ -648,8 +719,10 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 			return v;
 		}
 	};
-	std::vector<std::pair<BlockId, Value>> returns;
-	std::vector<Value> extra;
+	static std::vector<std::pair<BlockId, Value>> returns;
+	returns.clear();
+	static std::vector<Value> extra;
+	extra.clear();
 	for (BlockId b : kb.layout)
 	{
 		const BlockId nb = blocks[b];
@@ -709,6 +782,19 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 				}
 				inst.location = locations[inst.location];
 			}
+			if (flat && inst.op == Opcode::Return)
+			{
+				if (call.result == kNoId)
+					break;
+				inst.op = Opcode::Copy;
+				inst.type = call.type;
+				inst.result = kNoId;
+				const InstId id = append_copy(cb, kb, i, inst);
+				cb.instructions[id].result = call.result;
+				cb.temps[call.result].def = id;
+				insert_after(cb, nb, cb.blocks[nb].last, id);
+				break;
+			}
 			if (inst.op == Opcode::Return)
 			{
 				returns.push_back(std::make_pair(nb, inst.ops[0]));
@@ -723,6 +809,16 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 				cb.temps[inst.result].def = id;
 			insert_after(cb, nb, cb.blocks[nb].last, id);
 		}
+	}
+	if (flat)
+	{
+		const InstId tail = cb.blocks[block].last;
+		if (tail == kNoId)
+			cb.blocks[block].first = call.next;
+		else
+			cb.instructions[tail].next = call.next;
+		cb.blocks[block].last = call.next == kNoId ? tail : old_last;
+		return tail;
 	}
 	// The call becomes a jump into the copy.
 	Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
@@ -803,6 +899,7 @@ void clone_call(Program& program, FunctionBody& cb, BlockId block, InstId prev, 
 			merge_returns(cb, call.result, type, returns, repl);
 	}
 	(void)program;
+	return kNoId;
 }
 
 class InlineWaveRunner
@@ -810,9 +907,9 @@ class InlineWaveRunner
 public:
 	InlineWaveRunner(Program& program, const OptimizerOptions& options, OptimizerStats& stats, InlineWave wave,
 		InlineBudgets& budgets, const std::vector<uint32_t>& original_size, const std::vector<uint8_t>& nounwind,
-		const std::function<void(SymbolId)>& simplify)
+		const std::function<void(SymbolId)>& simplify, bool source_required = false)
 		: program_(program), options_(options), stats_(stats), wave_(wave), budgets_(budgets),
-		  original_size_(original_size), nounwind_(nounwind), simplify_(simplify)
+		  original_size_(original_size), nounwind_(nounwind), simplify_(simplify), source_required_(source_required)
 	{}
 
 	void run();
@@ -842,6 +939,8 @@ private:
 	const std::vector<uint32_t>& original_size_;
 	const std::vector<uint8_t>& nounwind_;
 	const std::function<void(SymbolId)>& simplify_;
+	bool source_required_;
+	bool caller_cfg_changed_ = false;
 	CallGraph graph_;
 	std::vector<Shape> shapes_;
 	std::vector<Shape> input_shapes_;     // the ordinary wave's input (every function before its own copies)
@@ -979,20 +1078,22 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 	const SymbolMetadata& m = program_.symbols[callee].metadata;
 	const Shape& shape = shapes_[g];
 	once = false;
-	if (graph_.recursive[g] || g == caller_ || (m.flags & (SF_NO_INLINE | SF_REPLACEABLE)) != 0 || shape.unsafe ||
-		shape.eh || (handler_code && shape.unwinds))
+	if (source_required_ && (m.flags & SF_FORCE_INLINE) == 0)
 		return false;
+	if (graph_.recursive[g] || g == caller_ || (m.flags & SF_NO_INLINE) != 0 || shape.unsafe ||
+		(!source_required_ && ((m.flags & SF_REPLACEABLE) != 0 || shape.eh || (handler_code && shape.unwinds))))
+		return false;
+	if ((m.flags & SF_FORCE_INLINE) != 0)
+	{
+		charge = 0;
+		return true;
+	}
 	const bool hint = (m.flags & (SF_INLINE_HINT | SF_FORCE_INLINE)) != 0;
 	// Cold code is copied but priced as free: it runs at most once, on the
 	// way to a noreturn call.
 	const uint32_t size = shape.hot;
 	const uint32_t original = callee < original_size_.size() ? original_size_[callee] : size;
 	const bool single = discardable(program_, callee) && graph_.calls_in[g] == 1 && !graph_.observed[g];
-	if ((m.flags & SF_FORCE_INLINE) != 0)
-	{
-		charge = 0;
-		return true;
-	}
 	if (shape.loop && !loop_welcome(shape))
 		return false;
 	// A loop calling through a pointer the site passes as a known function
@@ -1324,6 +1425,7 @@ bool InlineWaveRunner::leaf_return_path(const FunctionBody& body, const Cfg& cfg
 bool InlineWaveRunner::process(SymbolId caller)
 {
 	caller_ = graph_.index_of[caller];
+	caller_cfg_changed_ = false;
 	caller_loop_ = shapes_[caller_].loop;
 	caller_eh_ = shapes_[caller_].eh;
 	caller_wrapper_ = shapes_[caller_].fast_return && shapes_[caller_].hot <= kWrapperCap;
@@ -1344,21 +1446,23 @@ bool InlineWaveRunner::process(SymbolId caller)
 	static Cfg scratch; // (reused for its capacity: every build overwrites what it fills)
 	Cfg& cfg = scratch;
 	// Dominators only for handler code and the loops (find_loops).
-	build_cfg_light(program_, body, cfg);
-	if (!cfg.handlers.empty() || caller_loop_)
+	if (!source_required_)
+		build_cfg_light(program_, body, cfg);
+	if (!source_required_ && (!cfg.handlers.empty() || caller_loop_))
 		complete_cfg(cfg);
 	caller_leaf_wrapper_ = !caller_wrapper_ && options_.level >= 2 && shapes_[caller_].hot <= kLeafWrapperCap &&
 		discardable(program_, caller) && leaf_return_path(body, cfg);
 	// Handler code: blocks dominated by a handler target (new blocks
 	// inherit their split block's answer); none without a handler.
-	std::vector<uint8_t> handler(body.blocks.size(), 0);
-	if (!cfg.handlers.empty())
+	const size_t policy_blocks = source_required_ ? 0 : body.blocks.size();
+	std::vector<uint8_t> handler(policy_blocks, 0);
+	if (!source_required_ && !cfg.handlers.empty())
 		for (BlockId b : cfg.rpo)
 			handler[b] = (cfg.flags[b] & BF_HANDLER) != 0 || (cfg.idom[b] != kNoId && handler[cfg.idom[b]]);
 	// Cold blocks: every path from them ends in a noreturn call or an
 	// unreachable (O2+: only trivial and forced callees go inline there;
 	// new blocks inherit their split block's answer).
-	std::vector<uint8_t> cold(body.blocks.size(), 0);
+	std::vector<uint8_t> cold(policy_blocks, 0);
 	if (options_.level >= 2)
 		for (uint32_t r = static_cast<uint32_t>(cfg.rpo.size()); r-- > 0;)
 		{
@@ -1373,7 +1477,7 @@ bool InlineWaveRunner::process(SymbolId caller)
 			cold[b] = (ends || all) && b != body.layout[0];
 		}
 	// Loop blocks (new blocks inherit their split block's answer).
-	std::vector<uint8_t> in_loop(body.blocks.size(), 0);
+	std::vector<uint8_t> in_loop(policy_blocks, 0);
 	if (caller_loop_)
 	{
 		LoopForest forest;
@@ -1382,9 +1486,10 @@ bool InlineWaveRunner::process(SymbolId caller)
 			in_loop[b] = forest.innermost[b] != kNoId;
 	}
 	std::vector<BlockId> work(body.layout.rbegin(), body.layout.rend());
-	std::vector<BlockId> layout_next(body.blocks.size(), kNoId);
-	for (size_t k = 0; k + 1 < body.layout.size(); ++k)
-		layout_next[body.layout[k]] = body.layout[k + 1];
+	std::vector<BlockId> layout_next(source_required_ ? 0 : body.blocks.size(), kNoId);
+	if (!source_required_)
+		for (size_t k = 0; k + 1 < body.layout.size(); ++k)
+			layout_next[body.layout[k]] = body.layout[k + 1];
 	std::vector<Value> repl;
 	bool changed = false;
 	// Recursive inlining (kRecursiveCap): the body before any copy, and the
@@ -1418,14 +1523,17 @@ bool InlineWaveRunner::process(SymbolId caller)
 	}
 	// A block's recursive copy level (new blocks are one deeper than their
 	// split block; the continuation stays).
-	std::vector<uint8_t> depth(body.blocks.size(), 0);
+	std::vector<uint8_t> depth(policy_blocks, 0);
 	while (!work.empty())
 	{
 		const BlockId b = work.back();
 		work.pop_back();
 		InstId prev = kNoId;
-		for (InstId i = body.blocks[b].first; i != kNoId; prev = i, i = body.instructions[i].next)
+		for (InstId i = body.blocks[b].first, next = kNoId; i != kNoId; i = next)
 		{
+			next = body.instructions[i].next;
+			InstId before_call = prev;
+			prev = i;
 			const Instruction& inst = body.instructions[i];
 			if (inst.op != Opcode::Call || !inst.ops[0].is(ValueKind::Symbol))
 				continue;
@@ -1436,19 +1544,27 @@ bool InlineWaveRunner::process(SymbolId caller)
 						v = repl[v.index];
 				});
 			const SymbolId callee = inst.ops[0].index;
+			if (source_required_ && (program_.symbols[callee].metadata.flags & SF_FORCE_INLINE) == 0)
+				continue;
+			if (source_required_)
+				materialize_call_arguments(program_, body, b, before_call, i);
 			const uint32_t g = graph_.index_of[callee];
 			uint32_t charge = 0;
 			bool once = false;
-			if (g == kNoId || !compatible(inst, callee))
+			if (g == kNoId || !compatible(body.instructions[i], callee))
 				continue;
 			SymbolId copy = kNoId;
 			PartialCut partial;
 			bool partly = false, fully = false;
-			const bool dispatch = shapes_[g].loop_dispatch && known_target(inst);
-			const bool cold_site = cold[b] != 0 && shapes_[g].size > kTrivialLeaf &&
+			const bool dispatch = shapes_[g].loop_dispatch && known_target(body.instructions[i]);
+			const bool cold_site = !source_required_ && cold[b] != 0 && shapes_[g].size > kTrivialLeaf &&
 				(program_.symbols[callee].metadata.flags & SF_FORCE_INLINE) == 0;
-			if (cold_site || !admit(g, handler[b] != 0, in_loop[b] != 0, charge, once, dispatch))
+			if (cold_site ||
+				!admit(g, !source_required_ && handler[b] != 0, !source_required_ && in_loop[b] != 0, charge, once,
+					dispatch))
 			{
+				if (source_required_)
+					continue;
 				// Recursive inlining: a call of the caller to itself takes a
 				// copy of the original to the admitted depth; below it, the
 				// late wave copies the callee's call-free part (from the
@@ -1511,14 +1627,21 @@ bool InlineWaveRunner::process(SymbolId caller)
 			if (!once)
 				unit -= size;
 			const bool loop = copy != kNoId ? shape_of(program_, copy, nounwind_).loop : shapes_[g].loop;
-			clone_call(program_, body, b, prev, i, kb, layout_next, repl, partly ? &partial : nullptr);
+			InstId tail = kNoId;
+			if (!source_required_ || !inline_return(body, b, before_call, i, kb, tail))
+				tail = clone_call(program_, body, b, before_call, i, kb, layout_next, repl, partly ? &partial : nullptr,
+					source_required_);
 			if (copy != kNoId)
 				release(copy);
-			handler.resize(body.blocks.size(), handler[b]);
-			in_loop.resize(body.blocks.size(), in_loop[b]);
-			cold.resize(body.blocks.size(), cold[b]);
-			depth.resize(body.blocks.size(), static_cast<uint8_t>(depth[b] + 1));
-			depth[before] = depth[b];
+			if (!source_required_)
+			{
+				handler.resize(body.blocks.size(), handler[b]);
+				in_loop.resize(body.blocks.size(), in_loop[b]);
+				cold.resize(body.blocks.size(), cold[b]);
+				depth.resize(body.blocks.size(), static_cast<uint8_t>(depth[b] + 1));
+				if (body.blocks.size() != before)
+					depth[before] = depth[b];
+			}
 			if (once)
 			{
 				once_budget_ -= charge;
@@ -1534,6 +1657,12 @@ bool InlineWaveRunner::process(SymbolId caller)
 			++stats_.calls_inlined;
 			stats_.inlined_instructions += size;
 			changed = true;
+			if (body.blocks.size() == before)
+			{
+				prev = tail;
+				continue;
+			}
+			caller_cfg_changed_ = true;
 			// Continue in the continuation (created first by clone_call); a
 			// recursive copy's own blocks first, for the next level.
 			work.push_back(static_cast<BlockId>(before));
@@ -1545,7 +1674,8 @@ bool InlineWaveRunner::process(SymbolId caller)
 	}
 	if (!changed)
 		return false;
-	settle(body, layout_next, repl);
+	if (!source_required_ || caller_cfg_changed_)
+		settle(body, layout_next, repl);
 	return true;
 }
 
@@ -1574,18 +1704,29 @@ void InlineWaveRunner::settle(
 
 void InlineWaveRunner::run()
 {
-	build_call_graph(program_, graph_);
+	build_call_graph(program_, graph_, source_required_);
 	shapes_.resize(graph_.functions.size());
-	folded_failures_.assign(graph_.functions.size(), 0);
-	grown_copies_.assign(graph_.functions.size(), 0);
+	if (!source_required_)
+	{
+		folded_failures_.assign(graph_.functions.size(), 0);
+		grown_copies_.assign(graph_.functions.size(), 0);
+	}
 	grown_touched_.clear();
 	for (uint32_t f = 0; f < graph_.functions.size(); ++f)
-		shapes_[f] = shape_of(program_, graph_.functions[f], nounwind_);
-	if (wave_ == InlineWave::Ordinary)
+		if (!source_required_ || graph_.calls_in[f] != 0)
+		{
+			if (source_required_)
+				simplify_(graph_.functions[f]);
+			shapes_[f] = source_required_ ? shape_of<true>(program_, graph_.functions[f], nounwind_)
+										  : shape_of(program_, graph_.functions[f], nounwind_);
+		}
+	if (!source_required_ && wave_ == InlineWave::Ordinary)
 		input_shapes_ = shapes_;
 	for (uint32_t f : graph_.bottom_up)
 	{
 		const SymbolId caller = graph_.functions[f];
+		if (source_required_ && graph_.callee_first[f] == graph_.callee_first[f + 1])
+			continue;
 		// A this-adjusting thunk is kept as lowered, so its body keeps the
 		// forwarding shape the object back end encodes as `this` adjusted
 		// and a jump (every one in a host object, as GCC emits them,
@@ -1600,10 +1741,15 @@ void InlineWaveRunner::run()
 					ir_model::CAM_VARIADIC))
 			continue;
 		const bool changed = process(caller);
-		if (changed || wave_ == InlineWave::Ordinary)
+		if (changed || (!source_required_ && wave_ == InlineWave::Ordinary))
 		{
-			simplify_(caller);
-			shapes_[f] = shape_of(program_, caller, nounwind_);
+			// Straight-line copies preserve the prepared body's CFG and slot
+			// facts. Only a block-splicing copy needs cleanup again.
+			if (!source_required_ || caller_cfg_changed_)
+				simplify_(caller);
+			if (!source_required_ || (program_.symbols[caller].metadata.flags & SF_FORCE_INLINE) != 0)
+				shapes_[f] = source_required_ ? shape_of<true>(program_, caller, nounwind_)
+											  : shape_of(program_, caller, nounwind_);
 		}
 	}
 }
@@ -1615,6 +1761,20 @@ void run_inline_wave(Program& program, const OptimizerOptions& options, Optimize
 	const std::function<void(SymbolId)>& simplify)
 {
 	InlineWaveRunner runner(program, options, stats, wave, budgets, original_size, nounwind, simplify);
+	runner.run();
+}
+
+void run_source_inline_wave(Program& program, const std::function<void(SymbolId)>& simplify)
+{
+	OptimizerOptions options;
+	options.level = 0;
+	OptimizerStats stats;
+	InlineBudgets budgets;
+	budgets.force_unit = UINT64_MAX;
+	std::vector<uint32_t> original;
+	std::vector<uint8_t> nounwind(program.symbols.size(), 0);
+
+	InlineWaveRunner runner(program, options, stats, InlineWave::Ordinary, budgets, original, nounwind, simplify, true);
 	runner.run();
 }
 

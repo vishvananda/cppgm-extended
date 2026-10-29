@@ -1,0 +1,1 @@
+extern "C" void* read_pc();struct Trace{void* pc;__attribute__((always_inline)) Trace():pc(read_pc()){}};__attribute__((noinline)) Trace indirect(){return Trace();}int main(){Trace a=indirect();Trace b;return a.pc==b.pc;}

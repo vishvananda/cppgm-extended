@@ -7,6 +7,7 @@
 
 #include "lex/identifier_table.h"
 #include "lower/function_lowering.h"
+#include "lower/source_inlining.h"
 #include "lower/debug_info.h"
 #include "preprocess/preprocessor.h"
 #include "sema/aggregates.h"
@@ -351,6 +352,8 @@ void ProgramLowering::finish()
 		release_definition(init_symbol_);
 	}
 	finalizer_function();
+	if (source_inlining_)
+		finish_source_inlining();
 	order_completed_definitions();
 }
 
@@ -485,6 +488,8 @@ void ProgramLowering::release_definition(lowir::SymbolId symbol)
 {
 	// The order of completion; a stream's appends are ordered again at the
 	// program's end (order_completed_definitions).
+	if (source_inlining_ && source_inlining_->defer(symbol))
+		return;
 	if (stream_ == nullptr || !object_mode_)
 		completed_.push_back(symbol);
 	if (stream_ == nullptr)
