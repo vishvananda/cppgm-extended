@@ -1,0 +1,206 @@
+declare function @operatornew__(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new_array]
+declare function @operatordelete__(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete_array]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $p : ptr
+  slot $zeroinit_offset__1 : i64
+  slot $q : ptr
+  slot $zeroinit_offset__2 : i64
+  slot $matrix : ptr
+  slot $explicit_count : ptr
+  slot $zeroinit_offset__3 : i64
+
+  block ^entry:
+    %t1 = call ptr @operatornew__(12)
+    store typed i64 0, $zeroinit_offset__1
+    jump ^zeroinit_cond_1
+
+  block ^zeroinit_cond_1:
+    %t2 = load typed i64 $zeroinit_offset__1
+    %t3 = cmp ult i64 %t2, 12
+    branch %t3, ^zeroinit_body_2, ^zeroinit_end_3
+
+  block ^zeroinit_body_2:
+    %t4 = index i8 %t1, %t2
+    store i8 0, %t4
+    %t5 = binary add i64 %t2, 1
+    store typed i64 %t5, $zeroinit_offset__1
+    jump ^zeroinit_cond_1
+
+  block ^zeroinit_end_3:
+    store typed ptr %t1, $p
+    %t6 = load typed ptr $p
+    %t7 = index i32 [projection=array_element] %t6, 0
+    %t8 = load typed i32 %t7
+    branch %t8, ^if_then_4, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t9 = load typed ptr $p
+    %t10 = index i32 [projection=array_element] %t9, 1
+    %t11 = load typed i32 %t10
+    branch %t11, ^if_then_4, ^lor_rhs_6
+
+  block ^lor_rhs_6:
+    %t12 = load typed ptr $p
+    %t13 = index i32 [projection=array_element] %t12, 2
+    %t14 = load typed i32 %t13
+    branch %t14, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    return i32 1
+
+  block ^if_else_5:
+    jump ^if_end_8
+
+  block ^if_end_8:
+    %t15 = load typed ptr $p
+    call void @operatordelete__(%t15)
+    %t16 = call ptr @operatornew__(12)
+    %t17 = index i32 [projection=array_element] %t16, 0
+    store typed i32 4, %t17
+    %t18 = index i32 [projection=array_element] %t16, 1
+    store typed i32 5, %t18
+    %t19 = index i8 %t16, 8
+    %t20 = binary sub i64 12, 8
+    store typed i64 0, $zeroinit_offset__2
+    jump ^zeroinit_cond_9
+
+  block ^zeroinit_cond_9:
+    %t21 = load typed i64 $zeroinit_offset__2
+    %t22 = cmp ult i64 %t21, %t20
+    branch %t22, ^zeroinit_body_10, ^zeroinit_end_11
+
+  block ^zeroinit_body_10:
+    %t23 = index i8 %t19, %t21
+    store i8 0, %t23
+    %t24 = binary add i64 %t21, 1
+    store typed i64 %t24, $zeroinit_offset__2
+    jump ^zeroinit_cond_9
+
+  block ^zeroinit_end_11:
+    store typed ptr %t16, $q
+    %t25 = load typed ptr $q
+    %t26 = index i32 [projection=array_element] %t25, 0
+    %t27 = load typed i32 %t26
+    %t28 = cmp ne i32 %t27, 4
+    branch %t28, ^if_then_12, ^lor_rhs_15
+
+  block ^lor_rhs_15:
+    %t29 = load typed ptr $q
+    %t30 = index i32 [projection=array_element] %t29, 1
+    %t31 = load typed i32 %t30
+    %t32 = cmp ne i32 %t31, 5
+    branch %t32, ^if_then_12, ^lor_rhs_14
+
+  block ^lor_rhs_14:
+    %t33 = load typed ptr $q
+    %t34 = index i32 [projection=array_element] %t33, 2
+    %t35 = load typed i32 %t34
+    branch %t35, ^if_then_12, ^if_else_13
+
+  block ^if_then_12:
+    return i32 2
+
+  block ^if_else_13:
+    jump ^if_end_16
+
+  block ^if_end_16:
+    %t36 = load typed ptr $q
+    call void @operatordelete__(%t36)
+    %t37 = call ptr @operatornew__(24)
+    %t38 = index obj<12x4> [projection=array_element] %t37, 0
+    %t39 = index i32 [projection=array_element] %t38, 0
+    store typed i32 1, %t39
+    %t40 = index obj<12x4> [projection=array_element] %t37, 0
+    %t41 = index i32 [projection=array_element] %t40, 1
+    store typed i32 2, %t41
+    %t42 = index obj<12x4> [projection=array_element] %t37, 0
+    %t43 = index i32 [projection=array_element] %t42, 2
+    store typed i32 3, %t43
+    %t44 = index obj<12x4> [projection=array_element] %t37, 1
+    %t45 = index i32 [projection=array_element] %t44, 0
+    store typed i32 4, %t45
+    %t46 = index obj<12x4> [projection=array_element] %t37, 1
+    %t47 = index i32 [projection=array_element] %t46, 1
+    store typed i32 5, %t47
+    %t48 = index obj<12x4> [projection=array_element] %t37, 1
+    %t49 = index i32 [projection=array_element] %t48, 2
+    store typed i32 6, %t49
+    %t50 = index i8 %t37, 24
+    store typed ptr %t37, $matrix
+    %t51 = load typed ptr $matrix
+    %t52 = binary mul i64 0, 12
+    %t53 = index i8 [projection=array_element] %t51, %t52
+    %t54 = index i32 [projection=array_element] %t53, 2
+    %t55 = load typed i32 %t54
+    %t56 = cmp ne i32 %t55, 3
+    branch %t56, ^if_then_17, ^lor_rhs_19
+
+  block ^lor_rhs_19:
+    %t57 = load typed ptr $matrix
+    %t58 = binary mul i64 1, 12
+    %t59 = index i8 [projection=array_element] %t57, %t58
+    %t60 = index i32 [projection=array_element] %t59, 2
+    %t61 = load typed i32 %t60
+    %t62 = cmp ne i32 %t61, 6
+    branch %t62, ^if_then_17, ^if_else_18
+
+  block ^if_then_17:
+    return i32 3
+
+  block ^if_else_18:
+    jump ^if_end_20
+
+  block ^if_end_20:
+    %t63 = load typed ptr $matrix
+    call void @operatordelete__(%t63)
+    %t64 = call ptr @operatornew__(24)
+    store typed i64 0, $zeroinit_offset__3
+    jump ^zeroinit_cond_21
+
+  block ^zeroinit_cond_21:
+    %t65 = load typed i64 $zeroinit_offset__3
+    %t66 = cmp ult i64 %t65, 24
+    branch %t66, ^zeroinit_body_22, ^zeroinit_end_23
+
+  block ^zeroinit_body_22:
+    %t67 = index i8 %t64, %t65
+    store i8 0, %t67
+    %t68 = binary add i64 %t65, 1
+    store typed i64 %t68, $zeroinit_offset__3
+    jump ^zeroinit_cond_21
+
+  block ^zeroinit_end_23:
+    store typed ptr %t64, $explicit_count
+    %t69 = load typed ptr $explicit_count
+    %t70 = binary mul i64 1, 12
+    %t71 = index i8 [projection=array_element] %t69, %t70
+    %t72 = index i32 [projection=array_element] %t71, 2
+    store typed i32 42, %t72
+    %t73 = load typed ptr $explicit_count
+    %t74 = binary mul i64 0, 12
+    %t75 = index i8 [projection=array_element] %t73, %t74
+    %t76 = index i32 [projection=array_element] %t75, 2
+    %t77 = load typed i32 %t76
+    branch %t77, ^if_then_24, ^lor_rhs_26
+
+  block ^lor_rhs_26:
+    %t78 = load typed ptr $explicit_count
+    %t79 = binary mul i64 1, 12
+    %t80 = index i8 [projection=array_element] %t78, %t79
+    %t81 = index i32 [projection=array_element] %t80, 2
+    %t82 = load typed i32 %t81
+    %t83 = cmp ne i32 %t82, 42
+    branch %t83, ^if_then_24, ^if_else_25
+
+  block ^if_then_24:
+    return i32 4
+
+  block ^if_else_25:
+    jump ^if_end_27
+
+  block ^if_end_27:
+    %t84 = load typed ptr $explicit_count
+    call void @operatordelete__(%t84)
+    return i32 0
+}

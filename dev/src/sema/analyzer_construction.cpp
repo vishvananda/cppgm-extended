@@ -606,6 +606,29 @@ ExprFacts* Analyzer::allocation(const syntax::NewExpr& expr, Scope* scope)
 													: type_id(type_syntax, scope);
 	if (type == nullptr)
 		return nullptr;
+	if (count == nullptr && type->kind == TypeKind::Array)
+	{
+		// 5.3.4p5: an array type-id allocates its outer bound, even
+		// when an alias supplies it. Keep the same typed count and
+		// element type as an explicitly written array new-expression.
+		if (type->bound == 0)
+		{
+			substitution_error(expr.location, "an array new-expression without a bound");
+			return nullptr;
+		}
+		syntax::LiteralExpr* bound = static_cast<syntax::LiteralExpr*>(
+			arena_.allocate(sizeof(syntax::LiteralExpr), alignof(syntax::LiteralExpr)));
+		*bound = syntax::LiteralExpr();
+		bound->kind = syntax::ExprKind::Literal;
+		bound->location = expr.location;
+		ExprFacts* facts = new_facts(
+			*bound, types_.fundamental(FundamentalType::UnsignedLongInt), ValueCategory::PRValue);
+		facts->value = type->bound;
+		count = bound;
+		count_value = facts->constant();
+		constant_count = true;
+		type = type->element;
+	}
 	if (type->kind == TypeKind::Function || type->is_reference() ||
 		type->unqualified == types_.fundamental(FundamentalType::Void))
 	{
@@ -623,8 +646,6 @@ ExprFacts* Analyzer::allocation(const syntax::NewExpr& expr, Scope* scope)
 	}
 	if (!check_abstract_object(element, expr.location))
 		return nullptr;
-	if (type->kind == TypeKind::Array && count == nullptr)
-		error(expr.location, "array new-expressions are not supported here");
 	// The implementation's limit on the array's size is PTRDIFF_MAX bytes,
 	// as g++ and Clang take it (an array cookie that only then exceeds it
 	// throws at run time, see the lowering's array_allocation).

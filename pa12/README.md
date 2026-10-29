@@ -137,6 +137,11 @@ copy or move constructor with further defaulted parameters too (12.8p2). A
 constructor template, a converting constructor and an assignment operator,
 whose operands may be one object, state none.
 
+An array type supplied by a typedef or alias in `new` uses its outer bound as
+the allocation count and yields a pointer to its first element. It follows the
+same array allocation, initialization, cookie and destruction paths as an
+explicitly written bound, including multidimensional array types.
+
 Focused course controls (the controls in `tests/controls/` that state no
 outcome, checked by `../scripts/check_value_survivor_properties.pl`) validate
 these boundary facts and object identity and lifetime relationships without

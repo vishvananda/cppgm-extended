@@ -1,0 +1,281 @@
+declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
+
+declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
+declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
+declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
+
+global @made : i32 [binding=strong] = zero
+global @destroyed : i32 [binding=strong] = zero
+global @released : i32 [binding=strong] = zero
+global @order : obj<8x4> [binding=strong] = {
+  zero 8
+}
+global @storage : obj<128x16> [binding=strong] = {
+  zero 128
+}
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal] = {
+  zero 4
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $caught : i32
+  slot $array_new_index__1 : i64
+  slot $array_dtor_index__2 : i64
+  slot $catch__3 : ptr
+  slot $n : i32
+  slot $lor__4 : i64
+  slot $lor__5 : i64
+  slot $lor__6 : i64
+  slot $lor__7 : i64
+  slot $lor__8 : i64
+
+  block ^entry:
+    store typed i32 0, $caught
+    eh_try ^catch_dispatch_1
+    %t1 = call ptr @Item__operatornew__(24)
+    %t2 = index i8 %t1, 8
+    %t3 = const i64 4
+    store typed i64 %t3, %t1
+    %t4 = const i64 4
+    store typed i64 0, $array_new_index__1
+    jump ^array_new_ctor_cond_4
+
+  block ^array_new_ctor_cond_4:
+    %t5 = load typed i64 $array_new_index__1
+    %t6 = cmp ult i64 %t5, %t4
+    branch %t6, ^array_new_ctor_body_5, ^array_new_ctor_end_6
+
+  block ^array_new_ctor_body_5:
+    %t7 = binary mul i64 %t5, 4
+    %t8 = index i8 %t2, %t7
+    eh_try ^array_new_ctor_cleanup_7
+    call void @Item__Item(%t8)
+    eh_end
+    %t9 = binary add i64 %t5, 1
+    store typed i64 %t9, $array_new_index__1
+    jump ^array_new_ctor_cond_4
+
+  block ^array_new_ctor_end_6:
+    jump ^array_new_ctor_cont_8
+
+  block ^array_new_ctor_cleanup_7:
+    eh_catch @__external_rtti__int, 1
+    eh_cleanup
+    %t10 = load typed i64 $array_new_index__1
+    store typed i64 %t10, $array_dtor_index__2
+    jump ^array_dtor_cond_9
+
+  block ^array_dtor_cond_9:
+    %t11 = load typed i64 $array_dtor_index__2
+    %t12 = cmp ne i64 %t11, 0
+    branch %t12, ^array_dtor_body_10, ^array_dtor_end_11
+
+  block ^array_dtor_body_10:
+    %t13 = binary sub i64 %t11, 1
+    store typed i64 %t13, $array_dtor_index__2
+    %t14 = binary mul i64 %t13, 4
+    %t15 = index i8 %t2, %t14
+    call void @Item___Item(%t15)
+    jump ^array_dtor_cond_9
+
+  block ^array_dtor_end_11:
+    call void @Item__operatordelete__(%t1)
+    eh_end
+    eh_end
+    jump ^catch_entry_2
+
+  block ^array_new_ctor_cont_8:
+    eh_end
+    return i32 1
+
+  block ^catch_dispatch_1:
+    eh_catch @__external_rtti__int, 1
+    jump ^catch_entry_2
+
+  block ^catch_entry_2:
+    %t16 = exception ptr
+    %t17 = exception_selector i32
+    %t18 = cmp eq i32 %t17, 1
+    branch %t18, ^catch_body_12, ^catch_next_13
+
+  block ^catch_body_12:
+    %t19 = call ptr @__external_runtime____cxa_begin_catch(%t16)
+    store typed ptr %t19, $catch__3
+    eh_cleanup ^catch_cleanup_14
+    %t20 = load typed i32 %t19
+    store typed i32 %t20, $n
+    %t21 = load typed i32 $n
+    store typed i32 %t21, $caught
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    jump ^try_end_3
+
+  block ^catch_cleanup_14:
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
+
+  block ^catch_next_13:
+    resume
+
+  block ^try_end_3:
+    %t22 = load typed i32 $caught
+    %t23 = cmp ne i32 %t22, 42
+    branch %t23, ^lor_short_16, ^lor_rhs_15
+
+  block ^lor_rhs_15:
+    %t24 = load typed i32 @made
+    %t25 = cmp ne i32 %t24, 3
+    %t26 = cmp ne i64 %t25, 0
+    store typed i64 %t26, $lor__4
+    jump ^lor_end_17
+
+  block ^lor_short_16:
+    store typed i64 1, $lor__4
+    jump ^lor_end_17
+
+  block ^lor_end_17:
+    %t27 = load typed i64 $lor__4
+    branch %t27, ^lor_short_19, ^lor_rhs_18
+
+  block ^lor_rhs_18:
+    %t28 = load typed i32 @destroyed
+    %t29 = cmp ne i32 %t28, 2
+    %t30 = cmp ne i64 %t29, 0
+    store typed i64 %t30, $lor__5
+    jump ^lor_end_20
+
+  block ^lor_short_19:
+    store typed i64 1, $lor__5
+    jump ^lor_end_20
+
+  block ^lor_end_20:
+    %t31 = load typed i64 $lor__5
+    branch %t31, ^lor_short_22, ^lor_rhs_21
+
+  block ^lor_rhs_21:
+    %t32 = load typed i32 @released
+    %t33 = cmp ne i32 %t32, 1
+    %t34 = cmp ne i64 %t33, 0
+    store typed i64 %t34, $lor__6
+    jump ^lor_end_23
+
+  block ^lor_short_22:
+    store typed i64 1, $lor__6
+    jump ^lor_end_23
+
+  block ^lor_end_23:
+    %t35 = load typed i64 $lor__6
+    branch %t35, ^lor_short_25, ^lor_rhs_24
+
+  block ^lor_rhs_24:
+    %t36 = addr @order
+    %t37 = index i32 [projection=array_element] %t36, 0
+    %t38 = load typed i32 %t37
+    %t39 = cmp ne i32 %t38, 2
+    %t40 = cmp ne i64 %t39, 0
+    store typed i64 %t40, $lor__7
+    jump ^lor_end_26
+
+  block ^lor_short_25:
+    store typed i64 1, $lor__7
+    jump ^lor_end_26
+
+  block ^lor_end_26:
+    %t41 = load typed i64 $lor__7
+    branch %t41, ^lor_short_28, ^lor_rhs_27
+
+  block ^lor_rhs_27:
+    %t42 = addr @order
+    %t43 = index i32 [projection=array_element] %t42, 1
+    %t44 = load typed i32 %t43
+    %t45 = cmp ne i32 %t44, 1
+    %t46 = cmp ne i64 %t45, 0
+    store typed i64 %t46, $lor__8
+    jump ^lor_end_29
+
+  block ^lor_short_28:
+    store typed i64 1, $lor__8
+    jump ^lor_end_29
+
+  block ^lor_end_29:
+    %t47 = load typed i64 $lor__8
+    %t48 = convert trunc i32 i64 %t47
+    return i32 %t48
+}
+function @Item__operatornew__(%__param0 : i64) -> ptr [binding=weak, object=_ZN4ItemnaEm, inline_hint=yes] {
+  slot $__param0 : i64
+
+  block ^entry:
+    store typed i64 %__param0, $__param0
+    %t1 = addr @storage
+    return ptr %t1
+}
+function @Item__Item(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4ItemC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @made
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @made
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store typed i32 %t2, %t4
+    %t5 = load typed ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load typed i32 %t6
+    %t8 = cmp eq i32 %t7, 3
+    branch %t8, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t9 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store typed i32 42, %t9
+    %t10 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t9, %t10, 0)
+    return void
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    return void
+}
+function @Item___Item(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4ItemD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 %t2
+    %t4 = addr @order
+    %t5 = load typed i32 @destroyed
+    %t6 = binary add nowrap i32 %t5, 1
+    store typed i32 %t6, @destroyed
+    %t7 = index i32 [projection=array_element] %t4, %t5
+    store typed i32 %t3, %t7
+    return void
+}
+function @Item__operatordelete__(%__param0 : ptr) -> void [unwind=no, binding=weak, object=_ZN4ItemdaEPv, inline_hint=yes] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    %t1 = load typed i32 @released
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @released
+    return void
+}
+alias object _ZN4ItemC2Ev = @Item__Item
+alias object _ZN4ItemD2Ev = @Item___Item
