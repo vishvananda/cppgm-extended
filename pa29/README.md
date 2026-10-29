@@ -46,6 +46,12 @@ hosted headers depend on:
 - a hosted type specifier such as `__uint128_t` or `__float128` spells itself as
   an identifier rather than a keyword, and introduces a functional cast the same
   way a fundamental type keyword does
+- GNU `mode(identifier)` selects the complete declared scalar's machine
+  representation, including the 64-bit `word`, `pointer` and `unwind_word`
+  modes used by the hosted unwinder; it preserves qualifiers and signedness
+  and validates the declaration's category. Dependent declared modes retain
+  an interned type transform until substitution; GNU ignores an unassociated
+  dependent alias RHS's mode, while an alias-name attribute still applies
 - GCC's `__constinit` requires static or thread storage and static
   initialization, without adding `const` or requiring a literal class type;
   dependent definitions are checked when instantiated
@@ -301,7 +307,7 @@ To complete PA29, implement hosted compatibility for:
   `__has_attribute` likewise answers nonzero for the GNU and Clang
   attributes the compiler implements (`always_inline`, `noinline`,
   `noreturn`, `pure`, `const`, `used`, `weak`, `packed`, `aligned`,
-  `section`, `vector_size`, `gnu_inline`, `abi_tag`, `using_if_exists` and
+  `section`, `vector_size`, `mode`, `gnu_inline`, `abi_tag`, `using_if_exists` and
   `exclude_from_explicit_instantiation`, each also spelled `__name__`) and
   `0` for any other.
   A conditional whose condition is `__builtin_constant_p`, optionally

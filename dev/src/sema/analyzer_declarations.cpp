@@ -2425,9 +2425,9 @@ void Analyzer::bit_field_declaration(const syntax::BitFieldDecl& decl, Scope* sc
 					error(attribute->location, "an alignment-specifier on a bit-field");
 			}
 		}
-		if (field.declarator != nullptr)
+		if (field.declarator != nullptr || !specifiers.mode_specifiers.empty())
 		{
-			info = declarator(field.declarator, type, scope, decl.location);
+			info = declarator(field.declarator, type, scope, decl.location, &specifiers);
 			type = info.type;
 		}
 		// 9.6p3: an integral or enumeration type and a non-negative width,

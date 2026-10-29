@@ -336,9 +336,14 @@ Decl* Parser::parse_using()
 			for (const DeclSpecifier& specifier : alias->type->specifiers)
 				specifiers.push(specifier);
 			const size_t written = specifiers.size();
-			vector_specifiers(attributes, specifiers);
+			type_attributes(attributes, specifiers);
 			if (specifiers.size() != written)
+			{
 				alias->type->specifiers = specifiers.take(arena_);
+				for (uint32_t i = static_cast<uint32_t>(written); i < alias->type->specifiers.size; ++i)
+					if (alias->type->specifiers[i].kind == DeclSpecKind::Mode)
+						alias->type->specifiers[i].keyword = TokenKind::KW_USING;
+			}
 		}
 		// An alias template of a member a template-id reaches (`typename
 		// traits<T>::type`) has no known class: a specialization, declared
@@ -817,7 +822,7 @@ Decl* Parser::parse_simple_or_function(DeclContext context)
 	SpecifierInfo info;
 	ListFrame<DeclSpecifier> list(specs_);
 	pending_attributes_ = leading_attributes_;
-	leading_vector_specifiers(leading_attributes_, list);
+	leading_type_attributes(leading_attributes_, list);
 	if (!parse_decl_specifier_seq(list, info))
 		return nullptr;
 	if (list.size() == 0)

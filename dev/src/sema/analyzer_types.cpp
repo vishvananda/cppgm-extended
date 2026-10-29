@@ -236,6 +236,9 @@ void Analyzer::specifiers(
 		const Type* named = nullptr;
 		switch (specifier.kind)
 		{
+		case syntax::DeclSpecKind::Mode:
+			out.mode_specifiers = list;
+			continue;
 		case syntax::DeclSpecKind::Keyword:
 		case syntax::DeclSpecKind::Constinit:
 		case syntax::DeclSpecKind::Vector:
@@ -1040,6 +1043,13 @@ DeclaratorInfo Analyzer::declarator(const syntax::Declarator* declarator, const 
 			derivations = 0;
 		}
 	}
+	const syntax::Attribute* attributes = declarator != nullptr ? declarator->attributes : nullptr;
+	if ((specifiers != nullptr && !specifiers->mode_specifiers.empty()) || attributes != nullptr)
+	{
+		type = declaration_mode_type(type, specifiers, attributes);
+		if (failed())
+			return info;
+	}
 	// A declarator's pack ellipsis (8p4, 8.3.5p14): a function parameter
 	// pack, whose type is a pack expansion of its pattern.
 	if (declarator != nullptr && declarator->pack != syntax::PackPosition::None)
@@ -1460,7 +1470,8 @@ const Type* Analyzer::parameter_type(const syntax::ParameterDeclaration& paramet
 	// constexpr.
 	if (specifiers.is_constexpr)
 		error(parameter.location, "constexpr in a parameter declaration");
-	const DeclaratorInfo info = declarator(parameter.declarator, specifiers.type, scope, parameter.location);
+	const DeclaratorInfo info = declarator(parameter.declarator, specifiers.type, scope, parameter.location,
+		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
 	if (info.virt_suffix != nullptr)
 		error(parameter.location, "a virt-specifier in a parameter declaration");
 	return info.type;
@@ -1476,7 +1487,12 @@ const Type* Analyzer::type_id(const syntax::TypeId& type, Scope* scope)
 		return nullptr;
 	if (specifiers.type == nullptr)
 		error(type.location, "type-id without a type");
-	const DeclaratorInfo info = declarator(type.declarator, specifiers.type, scope, type.location);
+	// GNU ignores attributes on an unassociated dependent type-id (an
+	// alias template RHS), unlike a declared parameter or typedef.
+	if (!specifiers.mode_specifiers.empty())
+		filter_mode_alias(specifiers);
+	const DeclaratorInfo info = declarator(type.declarator, specifiers.type, scope, type.location,
+		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
 	if (failed())
 		return nullptr;
 	if (info.type == auto_placeholder_)

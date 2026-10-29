@@ -916,6 +916,7 @@ void Analyzer::deduced_parameters(const Type* type, uint32_t depth, SmallList<ui
 		case TypeKind::LValueReference:
 		case TypeKind::RValueReference:
 		case TypeKind::Expansion:
+		case TypeKind::Mode:
 			type = type->element;
 			continue;
 		case TypeKind::Function:

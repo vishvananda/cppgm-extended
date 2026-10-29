@@ -1,0 +1,10 @@
+// Scalar floating modes change the floating representation, not its category.
+typedef float Single __attribute__((mode(SF)));
+typedef float Double __attribute__((mode(DF)));
+typedef double Extended __attribute__((mode(XF)));
+typedef float Half __attribute__((mode(HF)));
+typedef float Quad __attribute__((mode(TF)));
+static_assert(sizeof(Single)==4 && sizeof(Double)==8 && sizeof(Extended)==16,"floating widths");
+static_assert(sizeof(Half)==2 && sizeof(Quad)==16,"extended widths");
+Double twice(Double x){return x+x;}
+int main(){volatile Double x=1.25;volatile Extended y=2.5L;return twice(x)!=2.5||y!=2.5L;}

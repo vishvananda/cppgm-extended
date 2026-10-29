@@ -1,0 +1,22 @@
+#if !__has_attribute(mode) || !__has_attribute(__mode__)
+#error scalar machine mode attribute unavailable
+#endif
+// GNU scalar machine modes select canonical System V AMD64 widths and ranks.
+template<class A,class B>struct Same{static const bool value=false;};
+template<class A>struct Same<A,A>{static const bool value=true;};
+typedef signed int S8 __attribute__((mode(QI)));
+typedef unsigned int U16 __attribute__((__mode__(__HI__)));
+typedef long S32 __attribute__((mode(SI)));
+typedef unsigned int Word __attribute__((mode(word)));
+typedef unsigned int Pointer __attribute__((mode(__pointer__)));
+typedef unsigned int Unwind __attribute__((mode(__unwind_word__)));
+typedef int Wide __attribute__((mode(TI)));
+static_assert(Same<S8,signed char>::value,"QI rank");
+static_assert(Same<U16,unsigned short>::value,"HI rank");
+static_assert(Same<S32,int>::value,"SI rank");
+static_assert(Same<Word,unsigned long>::value,"word rank");
+static_assert(Same<Pointer,unsigned long>::value,"pointer rank");
+static_assert(Same<Unwind,unsigned long>::value,"unwind rank");
+static_assert(sizeof(Wide)==16,"TI width");
+extern "C" Pointer address_bits(){return 0xfedcba9876543210ULL;}
+int main(){volatile Pointer n=address_bits();return n!=0xfedcba9876543210ULL;}

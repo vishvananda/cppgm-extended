@@ -769,6 +769,9 @@ void ProgramLowering::append_type_label(const sema::Type* type, std::string& out
 		append_type_label(type->element, out, limit);
 		out += '[' + std::to_string(type->bound) + ']';
 		break;
+	case sema::TypeKind::Mode:
+		append_type_label(type->element, out, limit);
+		break;
 	case sema::TypeKind::Vector:
 		append_type_label(type->element, out, limit);
 		out += " vector[" + std::to_string(type->bound) + ']';
@@ -1561,6 +1564,10 @@ AbiNode ProgramLowering::abi_type_node(const sema::Type* type)
 		break;
 	case sema::TypeKind::MemberPointer:
 		node = abi_graph_.member_pointer(abi_type(bare->owner), abi_type(bare->element));
+		break;
+	case sema::TypeKind::Mode:
+		// GNU attributes do not change the dependent pattern's mangling.
+		node = abi_type(bare->element);
 		break;
 	case sema::TypeKind::Vector:
 		// Dv <lanes> _ <lane type> (Itanium 5.1.5, GCC's and Clang's).

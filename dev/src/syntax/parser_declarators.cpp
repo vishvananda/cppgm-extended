@@ -478,7 +478,7 @@ ParameterDeclaration* Parser::parse_parameter_declaration(bool definite)
 	{
 		ListFrame<DeclSpecifier> specifiers(specs_);
 		SpecifierInfo info;
-		leading_vector_specifiers(leading, specifiers);
+		leading_type_attributes(leading, specifiers);
 		if (!parse_decl_specifier_seq(specifiers, info, definite))
 			return nullptr;
 		if (specifiers.size() == 0)

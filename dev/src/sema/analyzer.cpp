@@ -812,7 +812,10 @@ void Analyzer::alias_declaration(const syntax::AliasDecl& decl, Scope* scope)
 		return;
 	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_)
 		error(decl.location, "alias-declaration without a type");
-	const DeclaratorInfo info = declarator(decl.type->declarator, specifiers.type, scope, decl.location);
+	if (!specifiers.mode_specifiers.empty())
+		filter_mode_alias(specifiers);
+	const DeclaratorInfo info = declarator(decl.type->declarator, specifiers.type, scope, decl.location,
+		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
 	const Type* type = info.type;
 	// 9.2p9, 7.1.2p1: no virt-specifier or function-specifier here.
 	if (info.virt_suffix != nullptr || specifiers.is_virtual)

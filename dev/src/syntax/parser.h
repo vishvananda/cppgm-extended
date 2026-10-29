@@ -164,8 +164,8 @@ private:
 	Decl* parse_bit_field_rest(Slice<DeclSpecifier> specifiers, Declarator* first, uint32_t start);
 	bool parse_decl_specifier_seq(ListFrame<DeclSpecifier>& list, SpecifierInfo& info, bool definite = false);
 	bool parse_decl_specifiers(ListFrame<DeclSpecifier>& list, SpecifierInfo& info);
-	void vector_specifiers(Attribute*& attributes, ListFrame<DeclSpecifier>& list);
-	void leading_vector_specifiers(const Attribute* attributes, ListFrame<DeclSpecifier>& list);
+	void type_attributes(Attribute*& attributes, ListFrame<DeclSpecifier>& list);
+	void leading_type_attributes(const Attribute* attributes, ListFrame<DeclSpecifier>& list);
 	// An attribute-specifier-seq, alignas and GNU __attribute__, keeping
 	// the attributes later stages use on `list` (the rest are dropped).
 	bool gnu_attribute(const char* spelling, Attribute& attribute, bool& kept);

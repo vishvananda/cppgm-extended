@@ -70,7 +70,10 @@ enum class TypeKind : uint8_t
 	// headers): `element` the block's function type; a pointer to the
 	// block literal, whose invoke function (at offset 16, taking the
 	// literal first) a call runs.
-	BlockPointer
+	BlockPointer,
+	// GNU scalar mode of a dependent element; fundamental is the target
+	// signed integer or floating representation. Resolved at substitution.
+	Mode
 };
 
 // A class member's access (clause 11), as a declaration gives it.

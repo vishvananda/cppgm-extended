@@ -141,6 +141,16 @@ bool Parser::gnu_attribute(const char* spelling, Attribute& attribute, bool& kep
 		kept = true;
 		return attribute.expression != nullptr && expect(TokenKind::OP_RPAREN);
 	}
+	if (std::strcmp(spelling, "mode") == 0 || std::strcmp(spelling, "__mode__") == 0)
+	{
+		attribute.kind = AttributeKind::Mode;
+		if (!expect(TokenKind::OP_LPAREN) || !at_identifier())
+			return fail();
+		attribute.mode = tok().identifier;
+		next();
+		kept = true;
+		return expect(TokenKind::OP_RPAREN);
+	}
 	if (std::strcmp(spelling, "aligned") == 0 || std::strcmp(spelling, "__aligned__") == 0)
 	{
 		// aligned(N), or aligned alone (no expression: the target's
@@ -413,7 +423,8 @@ bool Parser::parse_decl_specifiers(ListFrame<DeclSpecifier>& list, SpecifierInfo
 			return false;
 		for (Attribute* attribute = *added; attribute != nullptr && list.size() != 0; attribute = attribute->next)
 			attribute->on_type = true;
-		vector_specifiers(*added, list);
+		if (*added != nullptr)
+			type_attributes(*added, list);
 		const ParseToken token = tok();
 		if (token.kind == ParseTokenKind::Simple)
 		{
@@ -498,7 +509,7 @@ bool Parser::parse_decl_specifiers(ListFrame<DeclSpecifier>& list, SpecifierInfo
 	return true;
 }
 
-void Parser::vector_specifiers(Attribute*& attributes, ListFrame<DeclSpecifier>& list)
+void Parser::type_attributes(Attribute*& attributes, ListFrame<DeclSpecifier>& list)
 {
 	// A vector attribute among a decl-specifier-seq's makes the type a
 	// vector: a specifier of its own, wherever the specifiers go (type-ids
@@ -507,22 +518,26 @@ void Parser::vector_specifiers(Attribute*& attributes, ListFrame<DeclSpecifier>&
 	while (*link != nullptr)
 	{
 		Attribute* attribute = *link;
-		if (attribute->kind != AttributeKind::VectorSize && attribute->kind != AttributeKind::ExtVectorType)
+		if (attribute->kind != AttributeKind::VectorSize && attribute->kind != AttributeKind::ExtVectorType &&
+			attribute->kind != AttributeKind::Mode)
 		{
 			link = &attribute->next;
 			continue;
 		}
 		DeclSpecifier vector = DeclSpecifier();
-		vector.kind = DeclSpecKind::Vector;
+		vector.kind = attribute->kind == AttributeKind::Mode ? DeclSpecKind::Mode : DeclSpecKind::Vector;
 		vector.keyword = attribute->kind == AttributeKind::VectorSize ? TokenKind::KW_SIZEOF : TokenKind::OP_LSQUARE;
 		vector.location = attribute->location;
-		vector.operand = attribute->expression;
+		if (attribute->kind == AttributeKind::Mode)
+			vector.mode = attribute->mode;
+		else
+			vector.operand = attribute->expression;
 		list.push(vector);
 		*link = attribute->next;
 	}
 }
 
-void Parser::leading_vector_specifiers(const Attribute* attributes, ListFrame<DeclSpecifier>& list)
+void Parser::leading_type_attributes(const Attribute* attributes, ListFrame<DeclSpecifier>& list)
 {
 	// A vector attribute before a declaration's decl-specifiers makes their
 	// type a vector too (GCC and Clang): its specifier, the attribute left
@@ -530,13 +545,17 @@ void Parser::leading_vector_specifiers(const Attribute* attributes, ListFrame<De
 	// starts from; the analysis skips vector attributes there).
 	for (const Attribute* attribute = attributes; attribute != nullptr; attribute = attribute->next)
 	{
-		if (attribute->kind != AttributeKind::VectorSize && attribute->kind != AttributeKind::ExtVectorType)
+		if (attribute->kind != AttributeKind::VectorSize && attribute->kind != AttributeKind::ExtVectorType &&
+			attribute->kind != AttributeKind::Mode)
 			continue;
 		DeclSpecifier vector = DeclSpecifier();
-		vector.kind = DeclSpecKind::Vector;
+		vector.kind = attribute->kind == AttributeKind::Mode ? DeclSpecKind::Mode : DeclSpecKind::Vector;
 		vector.keyword = attribute->kind == AttributeKind::VectorSize ? TokenKind::KW_SIZEOF : TokenKind::OP_LSQUARE;
 		vector.location = attribute->location;
-		vector.operand = attribute->expression;
+		if (attribute->kind == AttributeKind::Mode)
+			vector.mode = attribute->mode;
+		else
+			vector.operand = attribute->expression;
 		list.push(vector);
 	}
 }
@@ -555,7 +574,8 @@ bool Parser::continue_type_specifier_seq(ListFrame<DeclSpecifier>& list, Specifi
 		Attribute* attributes = nullptr;
 		if (!collect_attributes(attributes))
 			return false;
-		vector_specifiers(attributes, list);
+		if (attributes != nullptr)
+			type_attributes(attributes, list);
 		const ParseToken token = tok();
 		if (token.kind == ParseTokenKind::Simple)
 		{

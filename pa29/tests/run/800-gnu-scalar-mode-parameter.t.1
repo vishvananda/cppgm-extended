@@ -1,0 +1,3 @@
+// GCC deduces T before applying a parameter's declared machine mode.
+template<class T>unsigned long check(T __attribute__((mode(DI))) value){static_assert(sizeof(value)==8,"parameter mode");return value;}
+int main(){return check(7)!=7||check<unsigned>(9)!=9;}

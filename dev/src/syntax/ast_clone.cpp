@@ -729,6 +729,7 @@ bool SyntaxCloner::specifier(const DeclSpecifier& in, DeclSpecifier& out)
 	switch (in.kind)
 	{
 	case DeclSpecKind::Constinit:
+	case DeclSpecKind::Mode:
 		return false;
 	case DeclSpecKind::Keyword:
 		out.operand = expr(in.operand);
@@ -774,12 +775,13 @@ Slice<DeclSpecifier> SyntaxCloner::specifiers(const Slice<DeclSpecifier>& list)
 Attribute* SyntaxCloner::attribute_list(const Attribute* list)
 {
 	Attribute* next = attributes(list->next);
-	TypeId* type = type_id(list->type);
-	if (next == list->next && type == list->type && list->expression == nullptr)
+	TypeId* type = list->kind == AttributeKind::Mode ? nullptr : type_id(list->type);
+	if (next == list->next && (list->kind == AttributeKind::Mode || type == list->type) && list->expression == nullptr)
 		return const_cast<Attribute*>(list);
 	Attribute* result = copy(list);
 	result->next = next;
-	result->type = type;
+	if (list->kind != AttributeKind::Mode)
+		result->type = type;
 	result->expression = expr(list->expression);
 	return result;
 }

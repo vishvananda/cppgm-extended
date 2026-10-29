@@ -29,9 +29,16 @@ struct Specifiers
 	bool is_thread_local;
 	bool is_mutable;
 	bool is_explicit;
+	// A class-specifier or an enum-specifier with a body.
+	bool defines;
+	// Another decl-specifier precedes the class or enum specifier.
+	bool leading_specifiers;
+	// An elaborated-type-specifier or opaque-enum-declaration.
+	bool elaborated;
 	// The GNU alignment of the typedef-name naming the type (0: none; see
 	// Analyzer::alias_alignments_).
 	uint32_t alias_alignment;
+	uint32_t location;
 	// explicit(constant-expression) (C++20's, which the course's grammar
 	// accepts): its condition.
 	const syntax::Expr* explicit_condition;
@@ -40,18 +47,13 @@ struct Specifiers
 	// declaration printed (an unnamed class's waits for a declarator).
 	Entity* declared;
 	Binding* declared_binding;
-	// A class-specifier or an enum-specifier with a body.
-	bool defines;
-	// Another decl-specifier precedes the class or enum specifier.
-	bool leading_specifiers;
-	// An elaborated-type-specifier or opaque-enum-declaration.
-	bool elaborated;
 	const syntax::DeclSpecifier* type_specifier;
-	uint32_t location;
 	// NameLookup::dependent_uses before the sequence was analyzed: a
 	// block-scope declaration whose analysis changed it declares a
 	// dependent binding (see Binding::dependent).
 	uint64_t uses;
+	// Only present when the sequence contains GNU mode attributes.
+	syntax::Slice<syntax::DeclSpecifier> mode_specifiers;
 };
 
 // A declarator's type and declarator-id.

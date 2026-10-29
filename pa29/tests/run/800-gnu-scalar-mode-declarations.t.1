@@ -1,0 +1,15 @@
+// Modes apply to the complete declared type and preserve cv and signedness.
+__attribute__((mode(DI))) typedef const unsigned Leading;
+typedef unsigned __attribute__((mode(HI))) Middle;
+using Named __attribute__((mode(DI)))=unsigned;
+using Rhs=unsigned __attribute__((mode(DI)));
+typedef int __attribute__((mode(DI))) *IntPointer;
+template<class A,class B>struct Same{static const bool value=false;};
+template<class A>struct Same<A,A>{static const bool value=true;};
+static_assert(Same<Leading,const unsigned long>::value,"cv");
+static_assert(Same<IntPointer,int*>::value,"pointee unchanged");
+static_assert(sizeof(Middle)==2 && sizeof(Named)==8 && sizeof(Rhs)==8,"placements");
+struct Record{unsigned __attribute__((mode(DI))) bits:50;unsigned value __attribute__((mode(DI)));};
+static_assert(sizeof(Record)==16,"member layout");
+unsigned long param(unsigned __attribute__((mode(DI))) value){return value;}
+int main(){Record r;r.bits=0x123456789abcdULL;r.value=0xfedcba9876543210ULL;return r.bits!=0x123456789abcdULL||param(r.value)!=0xfedcba9876543210ULL;}

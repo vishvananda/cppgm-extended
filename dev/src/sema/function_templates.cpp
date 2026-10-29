@@ -51,6 +51,7 @@ bool BoundNames(const Type* type, uint32_t depth, uint32_t index, uint32_t level
 	case TypeKind::LValueReference:
 	case TypeKind::RValueReference:
 	case TypeKind::Expansion:
+	case TypeKind::Mode:
 		return BoundNames(type->element, depth, index, level + 1);
 	case TypeKind::Array:
 	case TypeKind::Vector:
@@ -111,6 +112,7 @@ bool Deducible(const Type* type, uint32_t depth, uint32_t level)
 	case TypeKind::LValueReference:
 	case TypeKind::RValueReference:
 	case TypeKind::Expansion:
+	case TypeKind::Mode:
 		return Deducible(type->element, depth, level + 1);
 	case TypeKind::Array:
 	case TypeKind::Vector:
@@ -341,6 +343,11 @@ const Type* Analyzer::substitute(const Type* type, const Substitution& substitut
 		const Type* element = substitute(type->element, substitution);
 		return element != nullptr ? checked_array(element, type->bound, 0) : nullptr;
 	}
+	case TypeKind::Mode:
+	{
+		const Type* element = substitute(type->element, substitution);
+		return element != nullptr ? types_.qualified(apply_mode(element, type->fundamental, 0), type->cv) : nullptr;
+	}
 	case TypeKind::Vector:
 	{
 		if (type->owner == nullptr)
@@ -532,6 +539,8 @@ bool Analyzer::deduce_type(const Type* p, const Type* a, uint32_t depth, TypeLis
 			return p == a;
 		return deduce_type(types_.qualified(pack->params[deduced_element_], p->cv), a, depth, arguments, extra_cv);
 	}
+	if (p->kind == TypeKind::Mode)
+		return deduce_type(p->element, a->kind == TypeKind::Mode ? a->element : a, depth, arguments, extra_cv);
 	if (p->kind == TypeKind::TemplateTemplateParameter)
 	{
 		// A template template-parameter deduces a template-name (14.8.2.5p8:

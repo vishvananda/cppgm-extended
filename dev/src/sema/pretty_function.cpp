@@ -334,6 +334,9 @@ void AppendType(const Type* type, std::string inner, std::string& out)
 			if (!inner.empty())
 				out += " " + inner;
 			return;
+		case TypeKind::Mode:
+			type = type->element;
+			continue;
 		case TypeKind::Vector:
 			// Clang's spelling.
 			AppendCv(type->cv, out);

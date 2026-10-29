@@ -155,6 +155,11 @@ void SyntaxRenderer::specifier(const DeclSpecifier& specifier)
 	case DeclSpecKind::Enum:
 		enum_specifier(*specifier.enum_specifier);
 		break;
+	case DeclSpecKind::Mode:
+		text("__attribute__((__mode__(");
+		identifier(specifier.mode);
+		text(")))");
+		break;
 	case DeclSpecKind::Vector:
 		text(specifier.keyword == TokenKind::KW_SIZEOF ? "__attribute__((__vector_size__("
 													   : "__attribute__((__ext_vector_type__(");

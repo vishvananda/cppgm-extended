@@ -26,7 +26,9 @@ enum class DeclSpecKind : uint8_t
 	// GNU vector_size(N) or Clang ext_vector_type(N) in a decl-specifier-seq
 	// (hosted compilations): the type the others give is a vector's lane
 	// type; `operand` counts bytes (keyword KW_SIZEOF) or lanes (any other).
-	Vector
+	Vector,
+	// GNU mode(identifier), applied to the complete declared type.
+	Mode
 };
 
 struct DeclSpecifier
@@ -39,6 +41,7 @@ struct DeclSpecifier
 	{
 		// Name, Elaborated.
 		Name* name;
+		const Identifier* mode;
 		// Decltype; Keyword: the condition of C++20 explicit(bool), or null.
 		Expr* operand;
 		ClassSpecifier* class_specifier;
@@ -90,7 +93,9 @@ enum class AttributeKind : uint8_t
 	// in the unit refers to it.
 	Used,
 	// [[noreturn]] and GNU noreturn: calls of the function do not return.
-	NoReturn
+	NoReturn,
+	// GNU mode(identifier): its machine-mode keyword, never an expression.
+	Mode
 };
 
 struct TypeId;
@@ -111,7 +116,11 @@ struct Attribute
 	// AbiTag: an argument after the first of its attribute.
 	bool continued;
 	Expr* expression;
-	TypeId* type;
+	union
+	{
+		TypeId* type;
+		const Identifier* mode;
+	};
 	uint32_t location;
 	Attribute* next;
 };

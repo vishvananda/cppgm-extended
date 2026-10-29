@@ -1,0 +1,8 @@
+// Declared dependent modes resolve once; an unassociated alias RHS is ignored.
+template<class T>struct Holder{typedef T Word __attribute__((mode(DI)));};
+template<class T>using Associated __attribute__((mode(DI)))=T;
+template<class T>using Unassociated=T __attribute__((mode(DI)));
+static_assert(sizeof(Holder<unsigned>::Word)==8,"member");
+static_assert(sizeof(Associated<unsigned>)==8,"associated alias");
+static_assert(sizeof(Unassociated<unsigned>)==sizeof(unsigned),"unassociated RHS");
+int main(){Holder<unsigned>::Word n=0xfedcba9876543210ULL;Associated<int> v=-0x123456789L;return n!=0xfedcba9876543210ULL||v!=-0x123456789L;}

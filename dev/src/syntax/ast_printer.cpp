@@ -454,6 +454,9 @@ void AstDumper::owned_specifier(const DeclSpecifier& specifier)
 	case DeclSpecKind::Enum:
 		enum_specifier(*specifier.enum_specifier);
 		break;
+	case DeclSpecKind::Mode:
+		line("mode-attribute", specifier.mode->spelling);
+		break;
 	case DeclSpecKind::Vector:
 		open("vector-attribute", RenderExpression(*specifier.operand));
 		expression(*specifier.operand);

@@ -411,6 +411,8 @@ const Type* Analyzer::without_stand_ins(const Type* type)
 													: nullptr;
 		return specialization != nullptr ? types_.qualified(specialization->type, type->cv) : type;
 	}
+	case TypeKind::Mode:
+		return types_.qualified(apply_mode(without_stand_ins(type->element), type->fundamental, 0), type->cv);
 	case TypeKind::Pointer:
 	case TypeKind::LValueReference:
 	case TypeKind::RValueReference:
@@ -525,6 +527,7 @@ void Analyzer::named_parameters(const Type* type, uint32_t depth, uint64_t& name
 	case TypeKind::LValueReference:
 	case TypeKind::RValueReference:
 	case TypeKind::Expansion:
+	case TypeKind::Mode:
 		named_parameters(type->element, depth, named, opaque, level + 1);
 		return;
 	case TypeKind::Function:
@@ -966,7 +969,10 @@ void Analyzer::declare_alias_template(const syntax::AliasDecl& decl, Scope* scop
 		error(decl.location, "alias-declaration without a type");
 	if (specifiers.declared != nullptr && specifiers.defines)
 		error(decl.location, "a class or enumeration defined in an alias template");
-	const DeclaratorInfo info = declarator(decl.type->declarator, specifiers.type, scope, decl.location);
+	if (!specifiers.mode_specifiers.empty())
+		filter_mode_alias(specifiers);
+	const DeclaratorInfo info = declarator(decl.type->declarator, specifiers.type, scope, decl.location,
+		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
 	if (info.virt_suffix != nullptr || specifiers.is_virtual)
 		error(decl.location, "a virt-specifier or virtual in an alias-declaration");
 	if (DeclaratorSpecifiesExceptions(decl.type->declarator))
