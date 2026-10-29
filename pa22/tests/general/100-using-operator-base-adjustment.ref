@@ -1,0 +1,168 @@
+global @fallback [binding=strong] = {
+  i32 7
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $f : obj<40x8>
+  slot $c : ptr
+  slot $r : ptr
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+  slot $lor__3 : i64
+
+  block ^entry:
+    %t1 = addr $f
+    %t2 = convert sext i64 i32 5
+    %t3 = addr $f
+    %t4 = index i8 %t3, 0
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = index i64 [projection=array_element] %t5, 0
+    store typed i64 %t2, %t6
+    %t7 = convert sext i64 i32 6
+    %t8 = addr $f
+    %t9 = index i8 %t8, 0
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = index i64 [projection=array_element] %t10, 1
+    store typed i64 %t7, %t11
+    %t12 = convert sext i64 i32 7
+    %t13 = addr $f
+    %t14 = index i8 %t13, 16
+    %t15 = index i8 [projection=field] %t14, 0
+    store typed i64 %t12, %t15
+    %t16 = convert sext i64 i32 8
+    %t17 = addr $f
+    %t18 = index i8 %t17, 16
+    %t19 = index i8 [projection=field] %t18, 8
+    store typed i64 %t16, %t19
+    %t20 = addr $f
+    %t21 = index i8 %t20, 32
+    %t22 = index i8 [projection=field] %t21, 0
+    %t23 = index i8 [projection=field] %t22, 0
+    store typed i32 42, %t23
+    %t24 = addr $f
+    %t25 = index i8 %t24, 32
+    %t26 = addr $f
+    %t27 = cmp eq ptr %t25, %t26
+    branch %t27, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 2
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t28 = addr $f
+    store typed ptr %t28, $c
+    %t29 = addr $f
+    %t30 = index i8 %t29, 32
+    %t31 = call ptr @Base__operator__(%t30, 1)
+    store typed ptr %t31, $r
+    %t32 = load typed ptr $r
+    store typed i32 43, %t32
+    %t33 = addr $f
+    %t34 = index i8 %t33, 32
+    %t35 = call ptr @Base__operator__(%t34, 1)
+    %t36 = load typed i32 %t35
+    %t37 = cmp ne i32 %t36, 43
+    branch %t37, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t38 = load typed ptr $c
+    %t39 = index i8 %t38, 32
+    %t40 = call ptr @Base__operator____ov2(%t39, 1)
+    %t41 = load typed i32 %t40
+    %t42 = cmp ne i32 %t41, 43
+    %t43 = cmp ne i64 %t42, 0
+    store typed i64 %t43, $lor__1
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__1
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t44 = load typed i64 $lor__1
+    branch %t44, ^lor_short_8, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t45 = addr $f
+    %t46 = index i8 %t45, 32
+    %t47 = call ptr @Base__operator____2(%t46)
+    %t48 = index i8 [projection=field] %t47, 0
+    %t49 = load typed i32 %t48
+    %t50 = cmp ne i32 %t49, 43
+    %t51 = cmp ne i64 %t50, 0
+    store typed i64 %t51, $lor__2
+    jump ^lor_end_9
+
+  block ^lor_short_8:
+    store typed i64 1, $lor__2
+    jump ^lor_end_9
+
+  block ^lor_end_9:
+    %t52 = load typed i64 $lor__2
+    branch %t52, ^lor_short_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t53 = load typed ptr $c
+    %t54 = index i8 %t53, 32
+    %t55 = call ptr @Base__operator____ov2__2(%t54)
+    %t56 = index i8 [projection=field] %t55, 0
+    %t57 = load typed i32 %t56
+    %t58 = cmp ne i32 %t57, 43
+    %t59 = cmp ne i64 %t58, 0
+    store typed i64 %t59, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_short_11:
+    store typed i64 1, $lor__3
+    jump ^lor_end_12
+
+  block ^lor_end_12:
+    %t60 = load typed i64 $lor__3
+    %t61 = convert trunc i32 i64 %t60
+    return i32 %t61
+}
+function @Base__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZN4BaseixEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    return ptr %t3
+}
+function @Base__operator____ov2(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZNK4BaseixEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    return ptr %t3
+}
+function @Base__operator____2(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN4BaseptEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}
+function @Base__operator____ov2__2(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZNK4BaseptEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}

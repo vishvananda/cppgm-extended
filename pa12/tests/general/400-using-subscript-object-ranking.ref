@@ -1,0 +1,234 @@
+global @any_calls : i32 [binding=strong] = zero
+global @key_calls : i32 [binding=strong] = zero
+global @receivers : i32 [binding=strong] = zero
+global @indices : i32 [binding=strong] = zero
+global @object : obj<8x4> [binding=strong] = {
+  zero 8
+}
+global @__strlit__1 [storage=readonly, binding=internal] = {
+  i8 120
+  i8 0
+}
+
+function @receiver() -> ptr [binding=strong, object=_Z8receiverv] {
+  block ^entry:
+    %t1 = load typed i32 @receivers
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @receivers
+    %t3 = addr @object
+    return ptr %t3
+}
+function @index() -> i32 [binding=strong, object=_Z5indexv] {
+  block ^entry:
+    %t1 = load typed i32 @indices
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @indices
+    return i32 1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $r : ptr
+  slot $c : ptr
+  slot $arg__1 : obj<8x8>
+  slot $arg__2 : obj<8x8>
+  slot $f : obj<8x4>
+  slot $lor__3 : i64
+
+  block ^entry:
+    %t1 = addr @object
+    %t2 = index i8 %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = index i32 [projection=array_element] %t3, 0
+    store typed i32 7, %t4
+    %t5 = addr @object
+    %t6 = index i8 %t5, 0
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = index i32 [projection=array_element] %t7, 1
+    store typed i32 42, %t8
+    %t9 = call ptr @receiver()
+    %t10 = index i8 %t9, 0
+    %t11 = call i32 @index()
+    %t12 = call ptr @Base__operator__(%t10, %t11)
+    store typed ptr %t12, $r
+    %t13 = load typed ptr $r
+    %t14 = load typed i32 %t13
+    %t15 = cmp ne i32 %t14, 42
+    branch %t15, ^if_then_1, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t16 = load typed i32 @receivers
+    %t17 = cmp ne i32 %t16, 1
+    branch %t17, ^if_then_1, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t18 = load typed i32 @indices
+    %t19 = cmp ne i32 %t18, 1
+    branch %t19, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_5
+
+  block ^if_end_5:
+    %t20 = load typed ptr $r
+    store typed i32 43, %t20
+    %t21 = addr @object
+    store typed ptr %t21, $c
+    %t22 = load typed ptr $c
+    %t23 = index i8 %t22, 0
+    %t24 = call ptr @Base__operator____ov2(%t23, 1)
+    %t25 = load typed i32 %t24
+    %t26 = cmp ne i32 %t25, 43
+    branch %t26, ^if_then_6, ^lor_rhs_9
+
+  block ^lor_rhs_9:
+    %t27 = addr @object
+    %t28 = index i8 %t27, 0
+    %t29 = addr $arg__1
+    %t30 = addr @__strlit__1
+    call void @Key__Key(%t29, %t30)
+    %t31 = call ptr @Base__operator____ov3(%t28, %t29)
+    %t32 = load typed i32 %t31
+    %t33 = cmp ne i32 %t32, 43
+    branch %t33, ^if_then_6, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t34 = load typed ptr $c
+    %t35 = index i8 %t34, 0
+    %t36 = addr $arg__2
+    %t37 = addr @__strlit__1
+    call void @Key__Key(%t36, %t37)
+    %t38 = call ptr @Base__operator____ov4(%t35, %t36)
+    %t39 = load typed i32 %t38
+    %t40 = cmp ne i32 %t39, 43
+    branch %t40, ^if_then_6, ^if_else_7
+
+  block ^if_then_6:
+    return i32 2
+
+  block ^if_else_7:
+    jump ^if_end_10
+
+  block ^if_end_10:
+    %t41 = addr $f
+    %t42 = addr $f
+    %t43 = index i8 %t42, 0
+    %t44 = index i8 [projection=field] %t43, 0
+    %t45 = index i32 [projection=array_element] %t44, 1
+    store typed i32 42, %t45
+    %t46 = addr $f
+    %t47 = index i8 %t46, 0
+    %t48 = call ptr @Base__operator__(%t47, 1)
+    %t49 = load typed i32 %t48
+    %t50 = cmp ne i32 %t49, 42
+    branch %t50, ^if_then_11, ^if_else_12
+
+  block ^if_then_11:
+    return i32 3
+
+  block ^if_else_12:
+    jump ^if_end_13
+
+  block ^if_end_13:
+    %t51 = load typed i32 @any_calls
+    %t52 = cmp ne i32 %t51, 0
+    branch %t52, ^lor_short_15, ^lor_rhs_14
+
+  block ^lor_rhs_14:
+    %t53 = load typed i32 @key_calls
+    %t54 = cmp ne i32 %t53, 2
+    %t55 = cmp ne i64 %t54, 0
+    store typed i64 %t55, $lor__3
+    jump ^lor_end_16
+
+  block ^lor_short_15:
+    store typed i64 1, $lor__3
+    jump ^lor_end_16
+
+  block ^lor_end_16:
+    %t56 = load typed i64 $lor__3
+    %t57 = convert trunc i32 i64 %t56
+    return i32 %t57
+}
+function @Base__operator__(%this : ptr [object_bytes=8], %n : i32) -> ptr [binding=weak, object=_ZN4BaseixEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 $n
+    %t4 = index i32 [projection=array_element] %t2, %t3
+    return ptr %t4
+}
+function @Base__operator____ov2(%this : ptr [object_bytes=8], %n : i32) -> ptr [binding=weak, object=_ZNK4BaseixEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed i32 $n
+    %t4 = index i32 [projection=array_element] %t2, %t3
+    return ptr %t4
+}
+function @Key__Key(%this : ptr [object_bytes=8], %s : ptr) -> void [binding=weak, object=_ZN3KeyC1EPKc, inline_hint=yes] {
+  slot $this : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %s, $s
+    %t1 = load typed ptr $s
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed ptr %t1, %t3
+    %t4 = load typed i32 @key_calls
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @key_calls
+    return void
+}
+function @Base__operator____ov3(%this : ptr [object_bytes=8], %k : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN4BaseixERK3Key, inline_hint=yes] {
+  slot $this : ptr
+  slot $k : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %k, $k
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed ptr $k
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load typed ptr %t4
+    %t6 = index i8 [projection=array_element] %t5, 0
+    %t7 = load i8 %t6
+    %t8 = convert sext i32 i8 %t7
+    %t9 = cmp eq i32 %t8, 120
+    %t10 = index i32 [projection=array_element] %t2, %t9
+    return ptr %t10
+}
+function @Base__operator____ov4(%this : ptr [object_bytes=8], %k : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZNK4BaseixERK3Key, inline_hint=yes] {
+  slot $this : ptr
+  slot $k : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %k, $k
+    %t1 = load typed ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed ptr $k
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load typed ptr %t4
+    %t6 = index i8 [projection=array_element] %t5, 0
+    %t7 = load i8 %t6
+    %t8 = convert sext i32 i8 %t7
+    %t9 = cmp eq i32 %t8, 120
+    %t10 = index i32 [projection=array_element] %t2, %t9
+    return ptr %t10
+}
+alias object _ZN3KeyC2EPKc = @Key__Key

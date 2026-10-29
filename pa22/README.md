@@ -194,6 +194,8 @@ To complete PA22, implement these goals:
 2. Base-method lookup and `this` adjustment.
    Calling a method inherited from a later base must lower the implicit object argument to the
    correct base-subobject address.
+   This also applies to inherited operators introduced by using-declarations: ranking
+   in the lookup class must not remove the selected call's base adjustment.
 
 3. Generated special members across multiple bases.
    Synthesized construction, copy, assignment, and destruction should sequence the supported
