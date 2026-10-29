@@ -1,0 +1,47 @@
+#include <emmintrin.h>
+#include <cstdio>
+int calls;
+__attribute__((noinline)) __m128i input(const unsigned char* value) {
+  ++calls;
+  return _mm_loadu_si128(reinterpret_cast<const __m128i*>(value));
+}
+__m128i unpack(int width, int high, __m128i a, __m128i b) {
+  switch (width*2+high) {
+    case 2: return _mm_unpacklo_epi8(a,b);
+    case 3: return _mm_unpackhi_epi8(a,b);
+    case 4: return _mm_unpacklo_epi16(a,b);
+    case 5: return _mm_unpackhi_epi16(a,b);
+    case 8: return _mm_unpacklo_epi32(a,b);
+    case 9: return _mm_unpackhi_epi32(a,b);
+    case 16: return _mm_unpacklo_epi64(a,b);
+    default: return _mm_unpackhi_epi64(a,b);
+  }
+}
+int main() {
+  unsigned checksum=0;
+  for (unsigned seed=0; seed<256; ++seed) {
+    unsigned char a[16], b[16], result[16];
+    for (unsigned i=0; i<16; ++i) {
+      a[i]=static_cast<unsigned char>(seed+i*37);
+      b[i]=static_cast<unsigned char>((255-seed)^i*73);
+    }
+    for (int width=1; width<=8; width*=2) {
+      for (int high=0; high<2; ++high) {
+        __m128i value=unpack(width,high,input(a),input(b));
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(result),value);
+        int half=8/width;
+        for (int i=0; i<half; ++i) {
+          for (int byte=0; byte<width; ++byte) {
+            int source=(high*half+i)*width+byte;
+            if (result[(i*2)*width+byte]!=a[source] ||
+                result[(i*2+1)*width+byte]!=b[source]) return 1;
+          }
+        }
+        for (unsigned i=0; i<16; ++i) checksum=checksum*33+result[i];
+      }
+    }
+  }
+  if (calls!=4096) return 2;
+  std::printf("unpack evaluations %d checksum %u\n",calls,checksum);
+  return 0;
+}

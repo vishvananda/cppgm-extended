@@ -443,6 +443,14 @@ The PA29 tests do not require:
 - recursive hosted-header coverage reporting
 - bootstrap or self-host builds
 
+### SSE2 unpack builtins
+
+The GNU `__builtin_ia32_punpck*128` family interleaves the low or high
+half of two 128-bit vectors with 8-, 16-, 32-, or 64-bit lanes. Preserve
+all lane bits and evaluate each operand once. The provided-builtin registry
+reports the implemented family, and semantic facts retain the selected half
+and lane type for the existing vector lowering path.
+
 ### Design Notes (Non-Normative)
 
 Hosted compatibility is easiest to approach as a sequence of small compatibility

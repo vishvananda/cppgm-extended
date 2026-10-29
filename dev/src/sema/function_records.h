@@ -192,6 +192,9 @@ enum class Intrinsic : uint8_t
 	VectorByteMask,
 	// __builtin_ia32_pminub128: the unsigned minimum in each byte lane.
 	VectorByteMinimum,
+	// SSE2 interleaves two vectors' low/high halves. Bits 8-15 hold
+	// twice the lane-width index (8/16/32/64 bits) plus the high-half bit.
+	VectorUnpack,
 	// __builtin_add/sub/mul_overflow(a, b, result): the infinitely precise
 	// a op b stored through `result` modulo its type, and whether that
 	// changed it.

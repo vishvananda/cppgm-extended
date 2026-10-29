@@ -1,0 +1,34 @@
+using Bytes = char __attribute__((vector_size(16)));
+using Shorts = short __attribute__((vector_size(16)));
+using Ints = int __attribute__((vector_size(16)));
+using Longs = long long __attribute__((vector_size(16)));
+Bytes low8(Bytes a, Bytes b) { return __builtin_ia32_punpcklbw128(a,b); }
+Bytes high8(Bytes a, Bytes b) { return __builtin_ia32_punpckhbw128(a,b); }
+Shorts low16(Shorts a, Shorts b) { return __builtin_ia32_punpcklwd128(a,b); }
+Shorts high16(Shorts a, Shorts b) { return __builtin_ia32_punpckhwd128(a,b); }
+Ints low32(Ints a, Ints b) { return __builtin_ia32_punpckldq128(a,b); }
+Ints high32(Ints a, Ints b) { return __builtin_ia32_punpckhdq128(a,b); }
+Longs low64(Longs a, Longs b) { return __builtin_ia32_punpcklqdq128(a,b); }
+Longs high64(Longs a, Longs b) { return __builtin_ia32_punpckhqdq128(a,b); }
+int calls;
+template<class V> V input(V value) { ++calls; return value; }
+template<class V> int check(V(*low)(V,V), V(*high)(V,V), int lanes) {
+  for (unsigned seed=0; seed<256; ++seed) {
+    V a{}, b{};
+    for (int i=0; i<lanes; ++i) {
+      a[i] = 0xfedcba9876543210ULL ^ (0x1122334455667788ULL*i) ^ seed;
+      b[i] = 0x89abcdef01234567ULL ^ (0x8877665544332211ULL*i) ^ seed;
+    }
+    V lo=low(input(a),input(b));
+    V hi=high(input(a),input(b));
+    for (int i=0; i<lanes/2; ++i)
+      if (lo[i*2]!=a[i] || lo[i*2+1]!=b[i] ||
+          hi[i*2]!=a[i+lanes/2] || hi[i*2+1]!=b[i+lanes/2]) return 1;
+  }
+  return 0;
+}
+int main() {
+  if (check(low8,high8,16) || check(low16,high16,8) ||
+      check(low32,high32,4) || check(low64,high64,2)) return 1;
+  return calls==4096 ? 0 : 2;
+}

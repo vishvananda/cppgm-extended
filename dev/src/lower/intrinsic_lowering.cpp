@@ -249,6 +249,8 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		return vector_byte_mask(expr);
 	case sema::Intrinsic::VectorByteMinimum:
 		return vector_byte_minimum(expr);
+	case sema::Intrinsic::VectorUnpack:
+		return unpack_vector(expr);
 	case sema::Intrinsic::SourceFile:
 	case sema::Intrinsic::SourceLine:
 	case sema::Intrinsic::SourceFunction:

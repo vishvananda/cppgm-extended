@@ -460,6 +460,27 @@ RValue FunctionLowering::vector_byte_minimum(const syntax::CallExpr& expr)
 	return load(lowering_.storage_type(vector), place);
 }
 
+RValue FunctionLowering::unpack_vector(const syntax::CallExpr& expr)
+{
+	// Each operand is evaluated once. Copy the selected half's lane bits
+	// into alternating result lanes, using the existing vector storage.
+	const sema::Type* vector = expr.facts->type;
+	const lowir::Value first = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const lowir::Value second = vector_storage(operand(*expr.arguments[1], ConversionContext::Argument));
+	const uint64_t half = vector->unqualified->bound / 2;
+	const uint64_t start = ((expr.facts->value >> 8) & 1) != 0 ? half : 0;
+	lowir::SlotId slot = lowir::kNoId;
+	const lowir::Value out = zeroed_vector(vector, slot);
+	for (uint64_t i = 0; i < half; ++i)
+	{
+		set_vector_lane(out, vector, i * 2, vector_lane(first, vector, start + i));
+		set_vector_lane(out, vector, i * 2 + 1, vector_lane(second, vector, start + i));
+	}
+	Place place = Place();
+	place.storage = lowir::Value::slot(slot);
+	return load(lowering_.storage_type(vector), place);
+}
+
 RValue FunctionLowering::reduce_vector(const syntax::CallExpr& expr, sema::Intrinsic kind)
 {
 	// The lanes combined in order: bitwise, sums and products in the lane

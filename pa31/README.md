@@ -156,6 +156,12 @@ PA32 on, it is computed after inlining and pruning: an inline function whose
 every call has been inlined is no longer referenced and is not emitted, so an
 optimized object defines far fewer symbols than the `-O0` one.
 
+### SSE2 unpack wrappers
+
+The `<emmintrin.h>` low/high unpack wrappers for all four integer lane widths
+must emit, link and run with the host vector ABI. The builtin and wrapper paths
+preserve lane bits, including sign bits, and evaluate both operands once.
+
 ### Hosted ABI Names
 
 PA31 uses the ordinary host C++ ABI spelling for every hosted symbol that is
