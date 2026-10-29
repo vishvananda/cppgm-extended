@@ -218,6 +218,20 @@ bool ConversionFunction(const Conversion* conversion)
 
 // ------------------------------------------------------------- prvalues
 
+bool ConstantInterpreter::decay_reference(ConstPlace place, const Type* type, ConstValue& out, uint32_t location)
+{
+	// 4.2, 4.3: preserve the designated object/function address instead
+	// of reading through it. An array points to its first element.
+	if (type->kind == TypeKind::Array)
+	{
+		if ((place.flags & kPastEnd) != 0)
+			return fail(location, "an array one past the end of an array");
+		place.type = type->element;
+	}
+	out = PointerTo(place, Decayed(analyzer_.types_, type));
+	return true;
+}
+
 bool ConstantInterpreter::rvalue(const syntax::Expr& expr, ConstValue& out)
 {
 	const syntax::Expr* e = WithoutParentheses(&expr);
@@ -237,6 +251,8 @@ bool ConstantInterpreter::rvalue(const syntax::Expr& expr, ConstValue& out)
 			out = result.value;
 			return true;
 		}
+		if (facts->type->kind == TypeKind::Array || facts->type->kind == TypeKind::Function)
+			return decay_reference(result.place, facts->type, out, e->location);
 		return read(result.place, out, e->location);
 	}
 	if ((facts->flags & (kFolded | kStaticConstant)) != 0 && e->kind == syntax::ExprKind::Member &&
@@ -296,17 +312,8 @@ bool ConstantInterpreter::rvalue(const syntax::Expr& expr, ConstValue& out)
 		const Type* type = facts->type;
 		if (type->kind == TypeKind::Array || type->kind == TypeKind::Function)
 		{
-			// 4.2, 4.3: the address of the array's first element, or of the
-			// function.
 			ConstPlace place;
-			if (!glvalue(*e, place))
-				return false;
-			if (type->kind == TypeKind::Array && (place.flags & kPastEnd) != 0)
-				return fail(e->location, "an array one past the end of an array");
-			if (type->kind == TypeKind::Array)
-				place.type = type->element;
-			out = PointerTo(place, Decayed(types, type));
-			return true;
+			return glvalue(*e, place) && decay_reference(place, type, out, e->location);
 		}
 		if (e->kind == syntax::ExprKind::Conditional)
 			return conditional_value(static_cast<const syntax::ConditionalExpr&>(*e), out);
@@ -509,8 +516,15 @@ bool ConstantInterpreter::converted(const syntax::Expr& expr, const Conversion* 
 			return false;
 		const Type* returned = function->type->canonical->element;
 		out = result.value;
-		if (returned->is_reference() && !read(result.place, out, e->location))
-			return false;
+		if (returned->is_reference())
+		{
+			const Conversion* after = conversion->after;
+			const bool decays = after != nullptr &&
+				(after->first == LvalueTransform::ArrayToPointer || after->first == LvalueTransform::FunctionToPointer);
+			if (decays ? !decay_reference(result.place, returned->element, out, e->location)
+					   : !read(result.place, out, e->location))
+				return false;
+		}
 		// The second standard conversion as recorded (4.10p3's subobject,
 		// 4.11p2's offset).
 		return apply_standard(*e, conversion->after, out);

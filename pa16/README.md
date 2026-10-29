@@ -265,6 +265,13 @@ expression: a context that requires one is rejected, and a namespace object
 falls back to dynamic initialization as above. Runaway recursion must end in
 a clean rejection, not a crash or a hang.
 
+### Constant reference-conversion decay
+
+Constant evaluation preserves the designated array or function address when
+a user-defined reference conversion is followed by decay. Apply the recorded
+standard suffix to that pointer, and retain ordinary pointer lifetime and
+one-past-array checks; a pointer to a destroyed temporary is not publishable.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA16:

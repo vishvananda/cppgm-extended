@@ -1,0 +1,61 @@
+global @b [storage=readonly, binding=internal, object=_ZL1b] = {
+  i32 1
+  i32 2
+  i32 3
+  i32 4
+}
+global @pointer : ptr [storage=readonly, binding=internal, object=_ZL7pointer] = addr @b
+global @present : u8 [storage=readonly, binding=internal, object=_ZL7present] = 1
+global @f [storage=readonly, binding=internal, object=_ZL1f] = {
+  zero 1
+}
+global @fp : ptr [storage=readonly, binding=internal, object=_ZL2fp] = addr @target
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+  slot $land__2 : i64
+
+  block ^entry:
+    %t1 = addr @b
+    %t2 = index i32 [projection=array_element] %t1, 3
+    %t3 = load typed i32 %t2
+    %t4 = cmp eq i32 %t3, 4
+    branch %t4, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t5 = addr @target
+    %t6 = call i32 %t5(1) as (%arg0 : i32) -> i32
+    %t7 = cmp eq i32 %t6, 8
+    %t8 = cmp ne i64 %t7, 0
+    store typed i64 %t8, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t9 = load typed i64 $land__2
+    branch %t9, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t10 = load typed i32 $cond__1
+    return i32 %t10
+}
+function @target(%x : i32) -> i32 [binding=weak, object=_Z6targeti, inline_hint=yes] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = binary add nowrap i32 %t1, 7
+    return i32 %t2
+}

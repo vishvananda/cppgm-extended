@@ -136,6 +136,7 @@ private:
 	bool extend_temporary(ConstPlace& place, uint32_t location);
 
 	// ---------------------------------------------------- expressions
+	bool decay_reference(ConstPlace place, const Type* type, ConstValue& out, uint32_t location);
 	bool rvalue(const syntax::Expr& expr, ConstValue& out);
 	bool operand(const syntax::Expr& expr, ConstValue& out);
 	bool converted(const syntax::Expr& expr, const Conversion* conversion, ConstValue& out);

@@ -341,7 +341,8 @@ RValue FunctionLowering::converted_operand(const syntax::Expr& expr)
 	const sema::ExprFacts* facts = WithoutParentheses(&expr)->facts;
 	const sema::FunctionEntity* function = static_cast<const sema::FunctionEntity*>(facts->entity);
 	const RValue value = call_conversion(expr, facts->original, function, lowir::Value());
-	if (facts->category == sema::ValueCategory::PRValue)
+	if (facts->category == sema::ValueCategory::PRValue || facts->type->kind == sema::TypeKind::Array ||
+		facts->type->kind == sema::TypeKind::Function)
 		return value;
 	Place place = Place();
 	place.storage = value.value;
@@ -353,20 +354,26 @@ RValue FunctionLowering::converted_value(
 	const syntax::Expr& expr, const sema::Conversion* conversion, ConversionContext context)
 {
 	// An operand converted by a conversion function to a scalar: the
-	// result (read through a reference result), then the second standard
-	// conversion.
+	// result (read through a scalar reference, or decayed through an array
+	// or function reference), then the second standard conversion.
 	const sema::ExprFacts* facts = WithoutParentheses(&expr)->facts;
 	const sema::FunctionEntity* function = conversion->constructor;
 	RValue value = call_conversion(expr, facts, function, lowir::Value());
 	const sema::Type* returned = function->type->canonical->element;
 	const sema::Type* result = returned->is_reference() ? returned->element : returned;
-	if (returned->is_reference())
+	const sema::Conversion* after = conversion->after;
+	const bool decays = after != nullptr &&
+		(after->first == sema::LvalueTransform::ArrayToPointer ||
+			after->first == sema::LvalueTransform::FunctionToPointer);
+	if (decays)
+		result = lowering_.graph().types.pointer(
+			after->first == sema::LvalueTransform::ArrayToPointer ? result->element : result);
+	else if (returned->is_reference())
 	{
 		Place place = Place();
 		place.storage = value.value;
 		value = load(lowering_.storage_type(result), place);
 	}
-	const sema::Conversion* after = conversion->after;
 	if (after == nullptr || after->result == nullptr || after->form == sema::ConversionForm::Reference)
 		return value;
 	return convert_implicit(value, result, after->result, context, expr.location);

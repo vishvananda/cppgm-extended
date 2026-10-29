@@ -1,0 +1,354 @@
+global @calls : i32 [binding=strong] = zero
+
+function @returned(%b : ptr [pass=by_address, object_bytes=20]) -> ptr [binding=strong, object=_Z8returnedR6Buffer] {
+  slot $b : ptr
+
+  block ^entry:
+    store typed ptr %b, $b
+    %t1 = load typed ptr $b
+    %t2 = call ptr @Buffer__operatorArray_(%t1)
+    return ptr %t2
+}
+function @returned__ov2(%b : ptr [pass=by_address, object_bytes=20]) -> ptr [binding=strong, object=_Z8returnedRK6Buffer] {
+  slot $b : ptr
+
+  block ^entry:
+    store typed ptr %b, $b
+    %t1 = load typed ptr $b
+    %t2 = call ptr @Buffer__operatorconstArray___ov2(%t1)
+    return ptr %t2
+}
+function @argument(%p : ptr, %expected : ptr) -> i32 [binding=strong, object=_Z8argumentPiS_] {
+  slot $p : ptr
+  slot $expected : ptr
+  slot $cond__1 : i32
+
+  block ^entry:
+    store typed ptr %p, $p
+    store typed ptr %expected, $expected
+    %t1 = load typed ptr $p
+    %t2 = load typed ptr $expected
+    %t3 = cmp eq ptr %t1, %t2
+    branch %t3, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t4 = load typed i32 $cond__1
+    return i32 %t4
+}
+function @target(%x : i32) -> i32 [binding=strong, object=_Z6targeti] {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = binary add nowrap i32 %t1, 7
+    return i32 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $b : obj<20x4>
+  slot $c : ptr
+  slot $p : ptr
+  slot $cp : ptr
+  slot $vp : ptr
+  slot $present : u8
+  slot $reference : ptr
+  slot $fn : obj<1x1>
+  slot $fp : ptr
+  slot $callable : u8
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $b
+    %t2 = addr $b
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 123, %t3
+    %t4 = addr $b
+    %t5 = index i8 [projection=field] %t4, 4
+    %t6 = index i32 [projection=array_element] %t5, 0
+    store typed i32 1, %t6
+    %t7 = addr $b
+    %t8 = index i8 [projection=field] %t7, 4
+    %t9 = index i32 [projection=array_element] %t8, 1
+    store typed i32 2, %t9
+    %t10 = addr $b
+    %t11 = index i8 [projection=field] %t10, 4
+    %t12 = index i32 [projection=array_element] %t11, 2
+    store typed i32 3, %t12
+    %t13 = addr $b
+    %t14 = index i8 [projection=field] %t13, 4
+    %t15 = index i32 [projection=array_element] %t14, 3
+    store typed i32 4, %t15
+    %t16 = addr $b
+    store typed ptr %t16, $c
+    %t17 = addr $b
+    %t18 = call ptr @Buffer__operatorArray_(%t17)
+    store typed ptr %t18, $p
+    %t19 = load typed ptr $p
+    %t20 = addr $b
+    %t21 = index i8 [projection=field] %t20, 4
+    %t22 = cmp ne ptr %t19, %t21
+    branch %t22, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    store typed ptr 0, $p
+    %t23 = addr $b
+    %t24 = call ptr @Buffer__operatorArray_(%t23)
+    store typed ptr %t24, $p
+    %t25 = load typed ptr $p
+    %t26 = addr $b
+    %t27 = index i8 [projection=field] %t26, 4
+    %t28 = cmp ne ptr %t25, %t27
+    branch %t28, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    return i32 2
+
+  block ^if_else_5:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t29 = addr $b
+    %t30 = call ptr @returned(%t29)
+    %t31 = addr $b
+    %t32 = index i8 [projection=field] %t31, 4
+    %t33 = cmp ne ptr %t30, %t32
+    branch %t33, ^if_then_7, ^lor_rhs_9
+
+  block ^lor_rhs_9:
+    %t34 = load typed ptr $c
+    %t35 = call ptr @returned__ov2(%t34)
+    %t36 = addr $b
+    %t37 = index i8 [projection=field] %t36, 4
+    %t38 = cmp ne ptr %t35, %t37
+    branch %t38, ^if_then_7, ^if_else_8
+
+  block ^if_then_7:
+    return i32 3
+
+  block ^if_else_8:
+    jump ^if_end_10
+
+  block ^if_end_10:
+    %t39 = addr $b
+    %t40 = call ptr @Buffer__operatorArray_(%t39)
+    %t41 = addr $b
+    %t42 = index i8 [projection=field] %t41, 4
+    %t43 = call i32 @argument(%t40, %t42)
+    branch %t43, ^if_then_11, ^if_else_12
+
+  block ^if_then_11:
+    return i32 4
+
+  block ^if_else_12:
+    jump ^if_end_13
+
+  block ^if_end_13:
+    %t44 = load typed ptr $c
+    %t45 = call ptr @Buffer__operatorconstArray___ov2(%t44)
+    store typed ptr %t45, $cp
+    %t46 = load typed ptr $cp
+    %t47 = addr $b
+    %t48 = index i8 [projection=field] %t47, 4
+    %t49 = cmp ne ptr %t46, %t48
+    branch %t49, ^if_then_14, ^if_else_15
+
+  block ^if_then_14:
+    return i32 5
+
+  block ^if_else_15:
+    jump ^if_end_16
+
+  block ^if_end_16:
+    %t50 = addr $b
+    %t51 = call ptr @Buffer__operatorArray_(%t50)
+    store typed ptr %t51, $vp
+    %t52 = load typed ptr $vp
+    %t53 = addr $b
+    %t54 = index i8 [projection=field] %t53, 4
+    %t55 = cmp ne ptr %t52, %t54
+    branch %t55, ^if_then_17, ^if_else_18
+
+  block ^if_then_17:
+    return i32 6
+
+  block ^if_else_18:
+    jump ^if_end_19
+
+  block ^if_end_19:
+    %t56 = addr $b
+    %t57 = call ptr @Buffer__operatorArray_(%t56)
+    %t58 = cmp ne ptr %t57, 0
+    %t59 = convert trunc u8 i64 %t58
+    store u8 %t59, $present
+    %t60 = load u8 $present
+    %t61 = cmp eq u8 %t60, 0
+    branch %t61, ^if_then_20, ^if_else_21
+
+  block ^if_then_20:
+    return i32 7
+
+  block ^if_else_21:
+    jump ^if_end_22
+
+  block ^if_end_22:
+    %t62 = addr $b
+    %t63 = call ptr @Buffer__operatorArray_(%t62)
+    %t64 = binary mul i64 2, 4
+    %t65 = index i8 %t63, %t64
+    %t66 = addr $b
+    %t67 = index i8 [projection=field] %t66, 4
+    %t68 = binary mul i64 2, 4
+    %t69 = index i8 %t67, %t68
+    %t70 = cmp ne ptr %t65, %t69
+    branch %t70, ^if_then_23, ^lor_rhs_26
+
+  block ^lor_rhs_26:
+    %t71 = addr $b
+    %t72 = call ptr @Buffer__operatorArray_(%t71)
+    %t73 = addr $b
+    %t74 = index i8 [projection=field] %t73, 4
+    %t75 = cmp ne ptr %t72, %t74
+    branch %t75, ^if_then_23, ^lor_rhs_25
+
+  block ^lor_rhs_25:
+    %t76 = load typed ptr $c
+    %t77 = call ptr @Buffer__operatorconstArray___ov2(%t76)
+    %t78 = binary mul i64 3, 4
+    %t79 = index i8 %t77, %t78
+    %t80 = addr $b
+    %t81 = index i8 [projection=field] %t80, 4
+    %t82 = binary mul i64 3, 4
+    %t83 = index i8 %t81, %t82
+    %t84 = cmp ne ptr %t79, %t83
+    branch %t84, ^if_then_23, ^if_else_24
+
+  block ^if_then_23:
+    return i32 8
+
+  block ^if_else_24:
+    jump ^if_end_27
+
+  block ^if_end_27:
+    %t85 = addr $b
+    %t86 = call ptr @Buffer__operatorArray_(%t85)
+    store typed ptr %t86, $reference
+    %t87 = load typed ptr $reference
+    %t88 = index i32 [projection=array_element] %t87, 1
+    store typed i32 42, %t88
+    %t89 = addr $b
+    %t90 = index i8 [projection=field] %t89, 4
+    %t91 = index i32 [projection=array_element] %t90, 1
+    %t92 = load typed i32 %t91
+    %t93 = cmp ne i32 %t92, 42
+    branch %t93, ^if_then_28, ^if_else_29
+
+  block ^if_then_28:
+    return i32 9
+
+  block ^if_else_29:
+    jump ^if_end_30
+
+  block ^if_end_30:
+    %t94 = addr $fn
+    %t95 = addr $fn
+    %t96 = call ptr @Callable__operatorFunction_(%t95)
+    store typed ptr %t96, $fp
+    %t97 = load typed ptr $fp
+    %t98 = addr @target
+    %t99 = cmp ne ptr %t97, %t98
+    branch %t99, ^if_then_31, ^lor_rhs_33
+
+  block ^lor_rhs_33:
+    %t100 = load typed ptr $fp
+    %t101 = call i32 %t100(5) as (%arg0 : i32) -> i32
+    %t102 = cmp ne i32 %t101, 12
+    branch %t102, ^if_then_31, ^if_else_32
+
+  block ^if_then_31:
+    return i32 10
+
+  block ^if_else_32:
+    jump ^if_end_34
+
+  block ^if_end_34:
+    %t103 = addr $fn
+    %t104 = call ptr @Callable__operatorFunction_(%t103)
+    %t105 = cmp ne ptr %t104, 0
+    %t106 = convert trunc u8 i64 %t105
+    store u8 %t106, $callable
+    %t107 = load u8 $callable
+    %t108 = cmp eq u8 %t107, 0
+    branch %t108, ^if_then_35, ^if_else_36
+
+  block ^if_then_35:
+    return i32 11
+
+  block ^if_else_36:
+    jump ^if_end_37
+
+  block ^if_end_37:
+    %t109 = load typed i32 @calls
+    %t110 = cmp eq i32 %t109, 14
+    branch %t110, ^cond_then_38, ^cond_else_39
+
+  block ^cond_then_38:
+    store typed i32 0, $cond__1
+    jump ^cond_end_40
+
+  block ^cond_else_39:
+    store typed i32 13, $cond__1
+    jump ^cond_end_40
+
+  block ^cond_end_40:
+    %t111 = load typed i32 $cond__1
+    return i32 %t111
+}
+function @Buffer__operatorArray_(%this : ptr [object_bytes=20]) -> ptr [binding=weak, object=_ZN6BuffercvRA4_iEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @calls
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @calls
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 4
+    return ptr %t4
+}
+function @Buffer__operatorconstArray___ov2(%this : ptr [object_bytes=20]) -> ptr [binding=weak, object=_ZNK6BuffercvRA4_KiEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @calls
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @calls
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 4
+    return ptr %t4
+}
+function @Callable__operatorFunction_(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK8CallablecvRFiiEEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @calls
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @calls
+    %t3 = addr @target
+    return ptr %t3
+}

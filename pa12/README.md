@@ -438,6 +438,14 @@ Within this milestone, PA12 should produce valid LowIR for ordinary non-polymorp
 types over the supported PA11 procedural/class subset. That LowIR is intended
 to be accepted by the later PA24 `lowir2native` backend for the supported
 cases.
+### Conversion functions returning array and function references
+
+A conversion function returning an array or function reference designates
+storage or a function. Its following standard conversion decays that address;
+it must not read array bytes or function instructions as a pointer. Preserve
+that distinction for initialization, return, arguments, assignment and builtin
+operands, while ordinary scalar reference conversions still load their values.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA12:
