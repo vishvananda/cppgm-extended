@@ -304,3 +304,8 @@ only partials declared outside the class: inline declarations were already
 matched in the instance. Keep a selected incomplete partial when that lookup
 finds no definition, instead of reverting to the primary. Retain deterministic partial-specialization selection and
 explicit links to the class or namespace owning each generated entity.
+
+During partial ordering, a direct array-bound parameter retains its synthesized
+non-type value in the transformed type. Deduction relates those typed values,
+including repeated bounds and arrays nested under pointers or references; a
+compound bound expression remains a non-deduced context.

@@ -138,7 +138,8 @@ struct Type
 	// type of a pointer to member.
 	const Type* element;
 	// MemberPointer: the class. Array: a bound that depends on template
-	// parameters, as the placeholder of its expression (see
+	// parameters, as its expression placeholder or synthesized non-type
+	// parameter during partial ordering (see
 	// Analyzer::apply_suffix; null for a known or omitted bound). Vector:
 	// likewise its size (see Analyzer::vector_type).
 	const Type* owner;

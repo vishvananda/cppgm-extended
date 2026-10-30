@@ -57,8 +57,7 @@ bool BoundNames(const Type* type, uint32_t depth, uint32_t index, uint32_t level
 	case TypeKind::Vector:
 		if (type->owner != nullptr)
 		{
-			const TemplateParameterEntity* bound =
-				static_cast<const TemplateParameterEntity*>(type->owner->entity)->named;
+			const TemplateParameterEntity* bound = DirectBoundParameter(type->owner);
 			if (bound != nullptr && bound->depth == depth && bound->index == index)
 				return true;
 		}
@@ -118,8 +117,7 @@ bool Deducible(const Type* type, uint32_t depth, uint32_t level)
 	case TypeKind::Vector:
 		if (type->owner != nullptr)
 		{
-			const TemplateParameterEntity* bound =
-				static_cast<const TemplateParameterEntity*>(type->owner->entity)->named;
+			const TemplateParameterEntity* bound = DirectBoundParameter(type->owner);
 			if (bound != nullptr && bound->depth == depth)
 				return true;
 		}
@@ -511,7 +509,7 @@ bool Analyzer::deduce_array_bound(const Type* array, uint64_t count, uint32_t de
 	// 14.8.2.5p8, p17: a dependent bound that names a non-type parameter
 	// deduces from an array's size, of any integral type. Other dependent
 	// bounds remain non-deduced contexts (p5).
-	const TemplateParameterEntity* bound = static_cast<const TemplateParameterEntity*>(array->owner->entity)->named;
+	const TemplateParameterEntity* bound = DirectBoundParameter(array->owner);
 	if (bound == nullptr || bound->depth != depth || bound->index >= arguments.size() || count == 0)
 		return true;
 	const Type* value = types_.value(types_.fundamental(FundamentalType::UnsignedLongInt), count);
@@ -612,6 +610,15 @@ bool Analyzer::deduce_type(const Type* p, const Type* a, uint32_t depth, TypeLis
 		{
 			if (a->owner == nullptr && !deduce_array_bound(p, a->bound, depth, arguments))
 				return false;
+			if (a->owner != nullptr)
+			{
+				const TemplateParameterEntity* parameter = DirectBoundParameter(p->owner);
+				const TemplateParameterEntity* argument = DirectBoundParameter(a->owner);
+				if (parameter != nullptr && parameter->depth == depth &&
+					!deduce_type(
+						parameter->type, argument != nullptr ? argument->type : a->owner, depth, arguments, false))
+					return false;
+			}
 		}
 		else if (p->bound != a->bound)
 			return false;
@@ -623,7 +630,7 @@ bool Analyzer::deduce_type(const Type* p, const Type* a, uint32_t depth, TypeLis
 		// lane type deduces from A's.
 		if (p->owner == nullptr || a->owner != nullptr)
 			return p->unqualified == a->unqualified;
-		if (const TemplateParameterEntity* size = static_cast<const TemplateParameterEntity*>(p->owner->entity)->named)
+		if (const TemplateParameterEntity* size = DirectBoundParameter(p->owner))
 		{
 			if (size->depth == depth && size->index < arguments.size())
 			{

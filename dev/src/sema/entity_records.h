@@ -518,4 +518,13 @@ inline bool IsPlaceholder(const TemplateParameterEntity* parameter)
 	return parameter->qualifier != nullptr || parameter->expression != nullptr;
 }
 
+// A dependent array/vector bound is an expression placeholder, or partial
+// ordering's synthesized non-type parameter. Only a direct parameter name
+// deduces a bound; a compound expression remains a non-deduced context.
+inline const TemplateParameterEntity* DirectBoundParameter(const Type* bound)
+{
+	const TemplateParameterEntity* parameter = static_cast<const TemplateParameterEntity*>(bound->entity);
+	return IsPlaceholder(parameter) ? parameter->named : parameter;
+}
+
 } // namespace sema

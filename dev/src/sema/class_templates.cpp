@@ -1791,6 +1791,20 @@ const Type* Analyzer::substitute_bound(const Type* array, const Substitution& gi
 	const Type* element = substitute(array->element, substitution);
 	if (element == nullptr)
 		return nullptr;
+	// Keep partial ordering's unique non-type value in the typed bound.
+	// Retaining the source placeholder would compare declaration-local
+	// names instead of the transformed value when checking constraints.
+	const TemplateParameterEntity* named = DirectBoundParameter(array->owner);
+	if (named != nullptr && named->depth == given.depth && named->index < substitution.count)
+	{
+		const Type* argument = substitution.arguments[named->index];
+		if (argument != nullptr && argument->kind == TypeKind::TemplateParameter &&
+			static_cast<const TemplateParameterEntity*>(argument->entity)->non_type &&
+			!IsPlaceholder(static_cast<const TemplateParameterEntity*>(argument->entity)))
+			return types_.array(element, 0, argument);
+	}
+	if (!IsPlaceholder(static_cast<const TemplateParameterEntity*>(array->owner->entity)))
+		return types_.array(element, 0, array->owner);
 	for (uint32_t i = 0; i < substitution.count; ++i)
 	{
 		if (substitution.arguments[i] == nullptr || dependent_type(substitution.arguments[i]))

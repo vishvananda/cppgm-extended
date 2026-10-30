@@ -905,7 +905,7 @@ void Analyzer::deduced_parameters(const Type* type, uint32_t depth, SmallList<ui
 			// A dependent bound's (or vector size's) placeholder: the
 			// parameter it names alone.
 			if (type->owner != nullptr)
-				MarkDeduced(static_cast<const TemplateParameterEntity*>(type->owner->entity)->named, depth, deduced);
+				MarkDeduced(DirectBoundParameter(type->owner), depth, deduced);
 			type = type->element;
 			continue;
 		case TypeKind::MemberPointer:
