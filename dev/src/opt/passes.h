@@ -14,6 +14,10 @@ struct FunctionContext
 		: program(p), symbol(s), body(*p.functions[p.symbols[s].detail].body), stats(st), level(l)
 	{}
 
+	FunctionContext(lowir::Program& p, lowir::SymbolId s, lowir::FunctionBody& b, OptimizerStats& st, int l)
+		: program(p), symbol(s), body(b), stats(st), level(l)
+	{}
+
 	lowir::Program& program;
 	lowir::SymbolId symbol;
 	lowir::FunctionBody& body;

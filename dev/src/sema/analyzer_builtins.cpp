@@ -847,11 +847,19 @@ ExprFacts* Analyzer::vector_shift_builtin(const syntax::CallExpr& expr, uint8_t 
 
 ExprFacts* Analyzer::vector_shuffle_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope)
 {
-	const uint32_t count = variant == 0 ? 2 : 3;
+	const bool doubles = variant == 1;
+	const bool words = variant == 2 || variant == 3;
+	const bool floats = variant == 4;
+	const uint32_t count = doubles || floats ? 3 : 2;
 	if (expr.arguments.size != count)
 		error(expr.location, "wrong number of arguments to a packed lane shuffle");
-	const Type* vector = types_.vector(
-		types_.fundamental(variant == 0 ? FundamentalType::Int : FundamentalType::Double), variant == 0 ? 4 : 2);
+	const Type* vector = types_.vector(types_.fundamental(words ? FundamentalType::ShortInt
+											   : doubles        ? FundamentalType::Double
+											   : floats         ? FundamentalType::Float
+																: FundamentalType::Int),
+		words         ? 8
+			: doubles ? 2
+					  : 4);
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		if (typed_value(*expr.arguments[i], scope) == nullptr)
@@ -867,7 +875,8 @@ ExprFacts* Analyzer::vector_shuffle_builtin(const syntax::CallExpr& expr, uint8_
 	ExprFacts* facts = new_facts(expr, vector, ValueCategory::PRValue);
 	facts->flags |= kIntrinsic;
 	facts->value = static_cast<uint64_t>(Intrinsic::VectorShuffle) |
-		(constant ? (selector.bits & (variant == 0 ? 255U : 3U)) << 8 : uint64_t(1) << 16);
+		(constant ? (selector.bits & (doubles ? 3U : 255U)) << 8 : uint64_t(1) << 16) |
+		(variant == 3 ? uint64_t(1) << 17 : 0);
 	return facts;
 }
 

@@ -76,7 +76,7 @@ enum class GnuBuiltin : uint8_t
 	// SSE2 16/32/64-bit lane shifts by an int count; variant is three
 	// times the lane-width index plus left/logical-right/arithmetic-right.
 	VectorShiftLanes,
-	// SSE2 immediate lane shuffles: variant 0 pshufd, 1 shufpd.
+	// SSE immediate lane shuffles: 0 pshufd, 1 shufpd, 2 pshuflw, 3 pshufhw, 4 shufps.
 	VectorShuffle,
 	Overflow,
 	OperatorNew,

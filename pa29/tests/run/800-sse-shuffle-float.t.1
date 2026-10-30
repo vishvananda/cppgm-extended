@@ -1,0 +1,14 @@
+#include <emmintrin.h>
+int calls;
+__m128 input(__m128 value){++calls;return value;}
+template<int N>int check(){
+ unsigned int a[4]={0x80000000U,0x7f800042U,0xffc01234U,0x12345678U};
+ unsigned int b[4]={0x7fc0cafeU,0,0xffffffffU,0x80000001U},out[4];
+ __m128 first=_mm_castsi128_ps(_mm_loadu_si128(reinterpret_cast<const __m128i*>(a)));
+ __m128 second=_mm_castsi128_ps(_mm_loadu_si128(reinterpret_cast<const __m128i*>(b)));
+ __m128 result=_mm_shuffle_ps(input(first),input(second),N);
+ _mm_storeu_si128(reinterpret_cast<__m128i*>(out),_mm_castps_si128(result));
+ for(int i=0;i<4;++i)if(out[i]!=(i<2?a:b)[(N>>(i*2))&3])return 1;
+ return 0;
+}
+int main(){if(check<0>()||check<27>()||check<85>()||check<170>()||check<228>()||check<255>())return 1;return calls==12?0:2;}

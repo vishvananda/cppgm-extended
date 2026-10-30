@@ -1,0 +1,16 @@
+#include <emmintrin.h>
+int calls;
+__m128i input(__m128i value){++calls;return value;}
+template<int N>int check(){
+ short data[8]={static_cast<short>(0x8001),2,-3,static_cast<short>(0xffff),5,-6,7,static_cast<short>(0x7fff)};
+ __m128i value=_mm_loadu_si128(reinterpret_cast<const __m128i*>(data));
+ short low[8],high[8];
+ _mm_storeu_si128(reinterpret_cast<__m128i*>(low),_mm_shufflelo_epi16(input(value),N));
+ _mm_storeu_si128(reinterpret_cast<__m128i*>(high),_mm_shufflehi_epi16(input(value),N));
+ for(int i=0;i<8;++i){
+  if(low[i]!=data[i<4?((N>>(2*i))&3):i])return 1;
+  if(high[i]!=data[i>=4?4+((N>>(2*(i-4)))&3):i])return 2;
+ }
+ return 0;
+}
+int main(){if(check<0>()||check<27>()||check<85>()||check<170>()||check<228>()||check<255>())return 1;return calls==12?0:3;}

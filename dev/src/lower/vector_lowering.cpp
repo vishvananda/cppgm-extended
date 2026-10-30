@@ -529,18 +529,28 @@ RValue FunctionLowering::shift_vector_lanes(const syntax::CallExpr& expr)
 RValue FunctionLowering::shuffle_vector(const syntax::CallExpr& expr)
 {
 	// SHUFPD selects one lane from each source; PSHUFD selects all four
-	// lanes from its only source. The recorded type fixes that distinction.
+	// lanes from its only source. Word shuffles replace four lanes of one
+	// half and preserve the other half. The recorded type and half fix this.
 	const sema::Type* vector = expr.facts->type;
 	const bool doubles = vector->bound == 2;
+	const bool paired = expr.arguments.size == 3;
+	const bool words = vector->bound == 8;
+	const uint64_t start = words && (expr.facts->value >> 17 & 1) != 0 ? 4 : 0;
+	const uint64_t mask = words ? 3 : vector->bound - 1;
 	const lowir::Value first = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
-	const lowir::Value second = doubles ? vector_storage(operand(*expr.arguments[1], ConversionContext::Argument))
-										: first;
-	const syntax::Expr& selector = *expr.arguments[doubles ? 2 : 1];
+	const lowir::Value second = paired ? vector_storage(operand(*expr.arguments[1], ConversionContext::Argument))
+									   : first;
+	const syntax::Expr& selector = *expr.arguments[paired ? 2 : 1];
 	const bool runtime = (expr.facts->value >> 16 & 1) != 0;
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	RValue count;
 	if (runtime)
-		count = convert_op(lowir::ConvertOp::ZExt, i64, operand(selector, ConversionContext::Argument));
+	{
+		const RValue given = operand(selector, ConversionContext::Argument);
+		builder_.call(lowir::Type::scalar(lowir::TypeKind::Void),
+			lowir::Value::symbol(lowering_.source_immediate_guard()), &given.value, 1, lowir::kNoId, 0);
+		count = convert_op(lowir::ConvertOp::ZExt, i64, given);
+	}
 	else
 		discard(selector);
 	const uint64_t immediate = expr.facts->value >> 8 & 0xff;
@@ -548,20 +558,27 @@ RValue FunctionLowering::shuffle_vector(const syntax::CallExpr& expr)
 	const lowir::Value out = zeroed_vector(vector, slot);
 	for (uint64_t i = 0; i < vector->bound; ++i)
 	{
-		const uint64_t shift = i * (doubles ? 1 : 2);
-		const lowir::Value source = doubles && i == 1 ? second : first;
+		if (words && (i < start || i >= start + 4))
+		{
+			set_vector_lane(out, vector, i, vector_lane(first, vector, i));
+			continue;
+		}
+		const uint64_t shift = (i - start) * (doubles ? 1 : 2);
+		const lowir::Value source = paired && i >= vector->bound / 2 ? second : first;
 		RValue lane;
 		if (runtime)
 		{
 			RValue offset = binary(lowir::BinaryOp::UShr, i64, count, integer(i64, shift));
-			offset = binary(lowir::BinaryOp::And, i64, offset, integer(i64, vector->bound - 1));
-			offset = binary(lowir::BinaryOp::Mul, i64, offset, integer(i64, doubles ? 8 : 4));
+			offset = binary(lowir::BinaryOp::And, i64, offset, integer(i64, mask));
+			if (start != 0)
+				offset = binary(lowir::BinaryOp::Add, i64, offset, integer(i64, start));
+			offset = binary(lowir::BinaryOp::Mul, i64, offset, integer(i64, 16 / vector->bound));
 			Place place = Place();
 			place.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, source, offset).value;
 			lane = load(lowering_.storage_type(vector->element), place);
 		}
 		else
-			lane = vector_lane(source, vector, immediate >> shift & (vector->bound - 1));
+			lane = vector_lane(source, vector, start + (immediate >> shift & mask));
 		set_vector_lane(out, vector, i, lane);
 	}
 	Place place = Place();

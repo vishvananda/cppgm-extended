@@ -485,6 +485,19 @@ widths, including negative values. Preserve every lane bit, including NaN payloa
 zero, and evaluate operands once. Record selector/type facts during analysis;
 a selector in an always-inline wrapper or template can remain deferred.
 
+`__builtin_ia32_shufps` selects two float lanes from each of two sources
+using an 8-bit immediate, preserving all payload bits.
+
+`__builtin_ia32_pshuflw` and `__builtin_ia32_pshufhw` select four 16-bit
+lanes within the low or high 64-bit half using an 8-bit immediate. Preserve
+the other four lanes bit for bit, and retain the same single-evaluation and
+deferred-selector rules.
+
+After mandatory inlining substitutes a wrapper call, a deferred shuffle
+selector must be constant. A runtime selector through the public intrinsic
+wrapper remains an error. This check uses typed LowIR facts and leaves
+ordinary generated code and named debug storage unchanged.
+
 ### SSE2 unsigned byte maximum
 
 `__builtin_ia32_pmaxub128` chooses the unsigned maximum in each of sixteen
