@@ -298,6 +298,7 @@ private:
 		const Entity* second, const TemplateHead* other, const Type* const* other_pattern, uint32_t other_count);
 	bool arguments_at_least_as_specialized(const TemplateHead* head, const Type* const* pattern, uint32_t count,
 		const TemplateHead* other, const Type* const* other_pattern, uint32_t other_count);
+	bool same_ordering_type(const Type* first, const Type* second);
 
 	// ----------------------------- variable templates (variable_templates.cpp)
 	static VariableEntity* variable_template_of(const Binding* binding);

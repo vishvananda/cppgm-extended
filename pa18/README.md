@@ -61,6 +61,12 @@ identity of the class template they name, including when a later declaration
 adds namespace qualification or uses a namespace alias. Different templates or
 template arguments remain distinct. The first declaration retains its ABI spelling.
 
+Non-deduced constraints compare their substituted typed operands during partial
+ordering. A pending expression can retain unused template parameters, including
+an empty pack; those bookkeeping arguments do not distinguish otherwise
+equivalent operands. Preserve different member names and argument positions,
+even when a concrete specialization gives them equal values.
+
 A qualified member function template-id that names no function template is a
 substitution failure in an immediate context, including an address used as a
 non-type template argument. Outside substitution, the same invalid name remains

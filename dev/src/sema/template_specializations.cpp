@@ -1299,10 +1299,84 @@ bool Analyzer::arguments_at_least_as_specialized(const TemplateHead* head, const
 		SoftSubstitution soft(*this);
 		const Type* checked = substitute(other_pattern[i], check);
 		const Type* given = substitute(pattern[i], substitution);
-		if (soft.failed() || checked == nullptr || given == nullptr || checked->canonical != given->canonical)
+		if (soft.failed() || checked == nullptr || given == nullptr || !same_ordering_type(checked, given))
 			return false;
 	}
 	return true;
+}
+
+bool Analyzer::same_ordering_type(const Type* first, const Type* second)
+{
+	// A pending expression retains its complete substitution, including
+	// unused parameters. Ordering compares its typed operand instead: the
+	// fixed and empty-pack forms may retain different argument lists even
+	// though the existing structural keys describe the same operand.
+	if (first == second)
+		return true;
+	if (first == nullptr || second == nullptr)
+		return false;
+	first = first->canonical;
+	second = second->canonical;
+	if (first == second)
+		return true;
+	if (first->kind != second->kind || first->cv != second->cv || first->function_cv != second->function_cv ||
+		first->ref != second->ref || first->variadic != second->variadic || first->bound != second->bound ||
+		first->param_count != second->param_count)
+		return false;
+	check_stack(0);
+	switch (first->kind)
+	{
+	case TypeKind::TemplateParameter:
+	{
+		const TemplateParameterEntity* a = static_cast<const TemplateParameterEntity*>(first->entity);
+		const TemplateParameterEntity* b = static_cast<const TemplateParameterEntity*>(second->entity);
+		if (a->qualifier != nullptr && b->qualifier != nullptr)
+			return a->name == b->name && same_ordering_type(a->qualifier, b->qualifier);
+		// Only a key computed for the substituted operand is comparable.
+		// Arguments containing further placeholders may use a context's key
+		// rather than the final operand's, and must retain their identity.
+		if (a->key == nullptr || b->key == nullptr || a->pending == nullptr || b->pending == nullptr ||
+			a->pending->earlier != nullptr || b->pending->earlier != nullptr || a->non_type != b->non_type ||
+			names_placeholder(a->pending->arguments, 0) || names_placeholder(b->pending->arguments, 0))
+			return false;
+		return DecltypeKey{ a->key + 1, static_cast<uint32_t>(a->key[0]) } ==
+			DecltypeKey{ b->key + 1, static_cast<uint32_t>(b->key[0]) };
+	}
+	case TypeKind::Class:
+	{
+		const ClassTemplateFacts* a = static_cast<const ClassEntity*>(first->entity)->templ;
+		const ClassTemplateFacts* b = static_cast<const ClassEntity*>(second->entity)->templ;
+		if (a == nullptr || b == nullptr || a->role != TemplateRole::Specialization ||
+			b->role != TemplateRole::Specialization || a->pattern != b->pattern || a->enclosing != b->enclosing ||
+			a->argument_count != b->argument_count)
+			return false;
+		for (uint32_t i = 0; i < a->argument_count; ++i)
+		{
+			if (!same_ordering_type(a->arguments[i], b->arguments[i]))
+				return false;
+		}
+		return true;
+	}
+	case TypeKind::Pointer:
+	case TypeKind::LValueReference:
+	case TypeKind::RValueReference:
+	case TypeKind::Expansion:
+	case TypeKind::Array:
+	case TypeKind::Vector:
+	case TypeKind::MemberPointer:
+	case TypeKind::Function:
+	case TypeKind::Pack:
+		if (!same_ordering_type(first->element, second->element) || !same_ordering_type(first->owner, second->owner))
+			return false;
+		for (uint32_t i = 0; i < first->param_count; ++i)
+		{
+			if (!same_ordering_type(first->params[i], second->params[i]))
+				return false;
+		}
+		return true;
+	default:
+		return false;
+	}
 }
 
 bool Analyzer::explicit_variable_specialization(VariableEntity* variable, bool has_initializer, uint32_t location)
