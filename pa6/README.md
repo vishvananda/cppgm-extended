@@ -356,6 +356,19 @@ hashed on each lookup repeats that work millions of times on real headers.
 The same holds for types: give each canonical type a compact identity so
 that type equality is an identity comparison.
 
+Keep the common entity, scope and type records small as the language grows.
+Store kind-specific payloads separately: a parameter should not reserve space
+for a class's members or a function's body. Keep rare metadata out of every
+record, and allocate variable-length data only when present. Translation-unit
+arenas or bulk arrays with stable identities reduce allocation overhead;
+they do not reduce the size of an oversized record.
+
+Check storage early on a larger input: record object counts, record sizes,
+container capacities and peak resident memory. Include separately allocated
+payloads and indexes; `sizeof` alone misses them. Repeat when adding fields,
+and check that processing another translation unit releases the previous unit's
+semantic storage.
+
 Keep the cost of one lookup proportional to the scopes it actually
 searches. A table per scope, or one table keyed by scope and interned name,
 answers each step in one probe. A lookup that allocates or clears a
