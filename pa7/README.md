@@ -375,10 +375,18 @@ that are re-parsed or inserted into the source identifier namespace.
 Overload resolution runs for every call, operator and initialization, which
 is thousands of times per translation unit once the standard library headers
 are in it. Keep an expression's analysis result small: the node, its type's
-identity and its value category, never a copy of a subtree. Record the
-selected function and each operand's conversion on the operands, as small
-records over type identities, so that later assignments lower what PA7
-decided instead of classifying the conversion again.
+identity and its value category, never a copy of a subtree or semantic context.
+Put facts shared by every expression directly on the node or in a densely
+indexed array. Keep call candidates, conversion sequences and other
+kind-specific payloads out of unrelated expressions; an empty container still
+occupies space in every record that embeds it.
+
+Retain the selected function and each operand's conversion as compact typed
+facts for later lowering. Reuse or release candidate-ranking scratch after
+the call is resolved, preserving the chosen result. Give retained facts clear
+translation-unit ownership and use identities to reference existing syntax,
+types and entities. Recheck the PA6 storage measurements after adding expression
+facts: small per-expression costs multiply across the whole input.
 
 ### Multi-file test groups
 
