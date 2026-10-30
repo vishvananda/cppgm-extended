@@ -1013,7 +1013,7 @@ FunctionEntity* Analyzer::select_constructor(ClassEntity* entity, const syntax::
 	const bool saved_standard = standard_only_;
 	direct_class_ = kind == ConstructionKind::Direct && arguments.size == 1 ? entity : nullptr;
 	standard_only_ = kind == ConstructionKind::Converting;
-	const Candidate chosen = best_viable(arguments, location, set, nullptr, true);
+	const Candidate chosen = best_viable(arguments, location, set, nullptr, true, entity);
 	direct_class_ = saved_direct;
 	standard_only_ = saved_standard;
 	FunctionEntity* selected = inherited_specialization(entity, chosen.function, arguments.size, location);
@@ -1306,7 +1306,7 @@ bool Analyzer::parenthesized_aggregate(ClassEntity* entity, const syntax::Slice<
 	direct_class_ = entity;
 	standard_only_ = false;
 	Candidate chosen = Candidate();
-	const Resolution resolution = resolve(arguments, set, nullptr, chosen);
+	const Resolution resolution = resolve(arguments, set, nullptr, chosen, entity);
 	direct_class_ = saved_direct;
 	standard_only_ = saved_standard;
 	return resolution == Resolution::NoViable;
@@ -1491,6 +1491,23 @@ void Analyzer::declare_inherited_constructors(ClassEntity* entity)
 				planned_inheriting_constructor(inheriting, entity, 0);
 		}
 	}
+}
+
+bool Analyzer::excluded_inherited_constructor(const FunctionEntity* function, const ClassEntity* constructed)
+{
+	// P0136/CWG 2356: an inherited constructor cannot supply a copy/move
+	// through a reference-related parameter, including a deduced one.
+	const Type* type = function->type->canonical;
+	if (type->param_count == 0 || !type->params[0]->is_reference())
+		return false;
+	const ClassEntity* parameter = ClassOf(type->params[0]->element);
+	if (parameter == nullptr || (parameter != constructed && !conversions_.is_base_of(parameter, constructed)))
+		return false;
+	const FunctionEntity* root = graph_.inherited_root(function);
+	if (root == nullptr)
+		root = function;
+	const ClassEntity* base = static_cast<const ClassEntity*>(root->owner->entity);
+	return base == parameter || conversions_.is_base_of(base, parameter);
 }
 
 void Analyzer::record_inherited_constructor(FunctionEntity* inheriting)

@@ -1040,12 +1040,12 @@ int Analyzer::compare_candidates(const Candidate& a, const Candidate& b, uint32_
 }
 
 Candidate Analyzer::best_viable(const syntax::Slice<syntax::Expr*>& call_arguments, uint32_t location,
-	std::vector<FunctionEntity*>& set, ExprFacts* object, bool substitution)
+	std::vector<FunctionEntity*>& set, ExprFacts* object, bool substitution, const ClassEntity* constructed)
 {
 	// `substitution`: a failure may be a substitution's (see
 	// soft_substitution_), a candidate of no function then.
 	Candidate chosen = Candidate();
-	switch (resolve(call_arguments, set, object, chosen))
+	switch (resolve(call_arguments, set, object, chosen, constructed))
 	{
 	case Resolution::NoViable:
 		if (!substitution)
@@ -1096,7 +1096,7 @@ bool Analyzer::default_argument_visible(const FunctionEntity* function, uint32_t
 }
 
 Resolution Analyzer::resolve(const syntax::Slice<syntax::Expr*>& call_arguments, std::vector<FunctionEntity*>& set,
-	ExprFacts* object, Candidate& chosen)
+	ExprFacts* object, Candidate& chosen, const ClassEntity* constructed)
 {
 	// 13.3.2-13.3.3: the viable candidates, then the one better than every
 	// other; a failure is a result, not an error.
@@ -1166,6 +1166,10 @@ Resolution Analyzer::resolve(const syntax::Slice<syntax::Expr*>& call_arguments,
 				if (function == nullptr || (converting && function->is_explicit))
 					continue;
 			}
+			if (constructed != nullptr && arguments == 1 && function->constructor &&
+				(function->owner != constructed->scope || function->inherited != nullptr) &&
+				excluded_inherited_constructor(function, constructed))
+				continue;
 			const Type* type = function->type->canonical;
 			parameters = type->param_count;
 			if (arguments > parameters && !type->variadic)

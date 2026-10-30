@@ -267,7 +267,7 @@ FunctionEntity* Analyzer::list_constructor_phase(
 	set.resize(kept);
 	if (set.empty())
 		return nullptr;
-	const Resolution resolution = resolve(arguments, set, nullptr, chosen);
+	const Resolution resolution = resolve(arguments, set, nullptr, chosen, entity);
 	if (resolution == Resolution::Ambiguous)
 		error(list.location, "an ambiguous initializer-list constructor (13.3.1.7)");
 	return resolution == Resolution::Selected ? chosen.function : nullptr;

@@ -362,7 +362,11 @@ PA11 supports the following in addition to the PA10 procedural subset:
 - standard `alignas` and `alignof`, including rejection of a requested class
   alignment weaker than its natural alignment; an alignment-specifier on a
   block-scope object gives its automatic storage the requested alignment
-- inheriting constructors through `using Base::Base`
+- inheriting constructors through `using Base::Base`; inherited constructors cannot replace
+  copy/move construction through reference-related single arguments, including
+  specializations of inherited constructor templates (P0136/CWG 2356);
+  constructors declared in the class and multi-argument calls keep their usual
+  overload behavior
 - use of complete class types in:
   - `sizeof(type-id)`
   - `sizeof(expr)`

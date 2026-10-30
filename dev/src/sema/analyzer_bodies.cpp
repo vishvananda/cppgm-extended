@@ -1069,7 +1069,7 @@ bool Analyzer::moves_from(ClassEntity* entity, const syntax::Expr& source)
 	set.clear();
 	constructor_candidates(entity, arguments, ConstructionKind::Copy, set);
 	Candidate chosen = Candidate();
-	if (set.empty() || resolve(arguments, set, nullptr, chosen) != Resolution::Selected)
+	if (set.empty() || resolve(arguments, set, nullptr, chosen, entity) != Resolution::Selected)
 		return false;
 	const Type* parameter = chosen.function->type->canonical->params[0];
 	return parameter->kind == TypeKind::RValueReference && parameter->element->unqualified == view.type->unqualified;

@@ -1126,11 +1126,12 @@ private:
 	void associate_enclosing(const Entity* entity);
 	void renew_association();
 	Candidate best_viable(const syntax::Slice<syntax::Expr*>& arguments, uint32_t location,
-		std::vector<FunctionEntity*>& set, ExprFacts* object, bool substitution = false);
+		std::vector<FunctionEntity*>& set, ExprFacts* object, bool substitution = false,
+		const ClassEntity* constructed = nullptr);
 	void note_added_default_arguments(const FunctionEntity* function, const syntax::ParameterClause& clause);
 	bool default_argument_visible(const FunctionEntity* function, uint32_t index) const;
 	Resolution resolve(const syntax::Slice<syntax::Expr*>& arguments, std::vector<FunctionEntity*>& set,
-		ExprFacts* object, Candidate& chosen);
+		ExprFacts* object, Candidate& chosen, const ClassEntity* constructed = nullptr);
 	static bool PerfectSequence(const Conversion& conversion, const ExprFacts* argument);
 	bool implicit_sequence(const syntax::Expr& argument, const Type* parameter, Conversion& out);
 	bool object_sequence(const ExprFacts* object, const FunctionEntity* function, bool ranking, Conversion& out);
@@ -1200,6 +1201,7 @@ private:
 	bool destructor_deleted(const ClassEntity* entity);
 	void declare_inherited_constructors(ClassEntity* entity);
 	void record_inherited_constructor(FunctionEntity* inheriting);
+	bool excluded_inherited_constructor(const FunctionEntity* function, const ClassEntity* constructed);
 	void implicit_default_facts(ClassEntity* entity, FunctionEntity* constructor);
 	FunctionEntity* default_constructor(ClassEntity* entity, uint32_t location);
 	// 5.3.4 (a single object): the allocation function's call and the

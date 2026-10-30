@@ -642,7 +642,7 @@ FunctionEntity* Analyzer::operand_constructor(ClassEntity* entity, const Type* t
 	const bool saved = standard_only_;
 	standard_only_ = true;
 	Candidate chosen = Candidate();
-	const Resolution resolution = resolve(arguments, set, nullptr, chosen);
+	const Resolution resolution = resolve(arguments, set, nullptr, chosen, entity);
 	standard_only_ = saved;
 	// A substitution's failure (14.8.2p8; a trait's operand, 20.9.4.3).
 	if (resolution != Resolution::Selected)
@@ -691,7 +691,7 @@ void Analyzer::check_final_copy(ClassEntity* entity, uint32_t location)
 	const bool saved = standard_only_;
 	standard_only_ = true;
 	Candidate chosen = Candidate();
-	const Resolution resolution = resolve(arguments, set, nullptr, chosen);
+	const Resolution resolution = resolve(arguments, set, nullptr, chosen, entity);
 	standard_only_ = saved;
 	if (resolution != Resolution::Selected)
 	{

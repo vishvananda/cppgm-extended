@@ -483,7 +483,9 @@ FunctionEntity* Analyzer::subobject_copy(ClassEntity* cls, CopyKind kind, uint8_
 	else
 		constructor_candidates(cls, arguments, construction, set);
 	Candidate chosen = Candidate();
-	if (set.empty() || resolve(arguments, set, assignment ? &object : nullptr, chosen) != Resolution::Selected ||
+	if (set.empty() ||
+		resolve(arguments, set, assignment ? &object : nullptr, chosen, assignment ? nullptr : cls) !=
+			Resolution::Selected ||
 		chosen.function->deleted)
 	{
 		deleted = true;
