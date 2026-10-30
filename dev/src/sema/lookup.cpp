@@ -194,6 +194,7 @@ void NameLookup::reserve(uint32_t names)
 
 NameEntry* NameLookup::entry(const Scope* scope, const Identifier* name)
 {
+	scope->indexed_names = true;
 	if ((count_ + 1) * 2 > slots_.size())
 		grow();
 	const uint64_t key = key_of(scope, name);
@@ -214,6 +215,8 @@ NameEntry* NameLookup::entry(const Scope* scope, const Identifier* name)
 
 const NameEntry* NameLookup::find(const Scope* scope, const Identifier* name) const
 {
+	if (!scope->indexed_names)
+		return nullptr;
 	const uint64_t key = key_of(scope, name);
 	const uint64_t mask = slot_mask_;
 	uint64_t index = Mix64(key) & mask;

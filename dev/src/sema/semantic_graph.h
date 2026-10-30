@@ -152,6 +152,10 @@ struct Scope
 	// its concrete class, including bases dependent in the original
 	// template (an explicit member specialization, 14.7.3p16).
 	bool concrete_members : 1;
+	// Monotonic membership hint for the name index. Setting it through a
+	// const scope records an index entry, independently of name visibility
+	// and the printed bindings list (which can omit indexed declarations).
+	mutable bool indexed_names : 1;
 	// A template parameter scope: the template parameter lists it stands
 	// for in the depth of template parameters declared below it (1 for a
 	// template-head's; none for an instantiation frame's, whose parameters
