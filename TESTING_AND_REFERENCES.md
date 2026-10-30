@@ -40,9 +40,12 @@ route each selected fixture to its owning runner.
 
 The independent **Boost advisory** workflow runs on every push, with a
 20-minute budget. It builds the compiler and compiles/runs the original
-Boost 1.92 Accumulators, Container, JSON, TypeErasure, TypeTraits, UUID and
-Variant2 suites: 630 declared tests. JSON includes the actual GDB pretty-printer
-integration. This supplements the required compiler checks; advisory
+Boost 1.92 Accumulators, Container, Function, Fusion, JSON, MP11, MPL,
+Optional, Proto, TypeErasure, TypeTraits, UUID, Variant2 and Xpressive suites:
+1,381 declared tests. The added template and callable suites cover ordering,
+substitution, constructor and overload regressions from the compatibility
+campaign; Optional adds compile-fail and run-fail coverage. JSON includes the
+actual GDB pretty-printer integration. This supplements the required compiler checks; advisory
 failures remain visible in the job steps, summary and retained artifacts.
 
 The archive is pinned by SHA-256. Every C++ compilation uses `cppgm++`;

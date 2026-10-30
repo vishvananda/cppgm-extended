@@ -18,11 +18,18 @@ import xml.etree.ElementTree as ET
 SUITES = {
     'libs/accumulators/test': 49,
     'libs/container/test': 89,
+    'libs/function/test': 49,
+    'libs/fusion/test': 221,
     'libs/json/test': 50,
+    'libs/mp11/test': 234,
+    'libs/mpl/test': 99,
+    'libs/optional/test': 74,
+    'libs/proto/test': 23,
     'libs/type_erasure/test': 60,
     'libs/type_traits/test': 218,
     'libs/uuid/test': 80,
     'libs/variant2/test': 84,
+    'libs/xpressive/test': 51,
 }
 ARCHIVE_SHA256 = '5c1d40cb8e19adbf740a4ec2da35b3e58f3f5804b1dce44deb53df72193cbc6c'
 
