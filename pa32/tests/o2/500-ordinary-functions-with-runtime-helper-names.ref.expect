@@ -1,0 +1,2 @@
+# Behavior preservation is the oracle; retaining the input meets this envelope.
+instructions <= 100

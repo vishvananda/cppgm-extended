@@ -231,8 +231,8 @@ lowir::NameId ObjectCompiler::object_name(lowir::SymbolId symbol) const
 {
 	const lowir::Symbol& s = program_.symbols[symbol];
 	const lowir::NameId name = s.metadata.object != 0 ? s.metadata.object : s.name;
-	for (unsigned k = 0; k < kHostBuiltinCount; ++k)
-		if (host_builtins_[k].first == name && name != 0)
+	for (unsigned k = 0; s.metadata.object != 0 && k < kHostBuiltinCount; ++k)
+		if (host_builtins_[k].first == name)
 			return host_builtins_[k].second;
 	return name;
 }

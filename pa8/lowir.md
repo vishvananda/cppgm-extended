@@ -443,7 +443,9 @@ Later backend lowering may also introduce internal compiler builtin helper symbo
 operations that are still first-class in LowIR but are not emitted directly on the
 current target. Those helpers should stay in the `cppgm_builtin_*` namespace inside the
 compiler pipeline; later object emission may remap them to the host runtime's concrete
-symbol spellings.
+symbol spellings. Runtime helper recognition uses explicit `object=cppgm_builtin_*`
+metadata; an ordinary function whose IR name merely has that spelling does not
+acquire builtin semantics or host-runtime remapping.
 
 Definitions keep the existing `global` and `function` forms.
 

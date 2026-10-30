@@ -107,7 +107,7 @@ bool Program::strlen_function(SymbolId symbol) const
 	if (!is_function_kind(callee.kind))
 		return false;
 	const char* spelling = this->spelling(callee.metadata.object != 0 ? callee.metadata.object : callee.name);
-	return std::strcmp(spelling, "cppgm_builtin_strlen") == 0 ||
+	return (callee.metadata.object != 0 && std::strcmp(spelling, "cppgm_builtin_strlen") == 0) ||
 		(callee.metadata.linkage == ir_model::LLM_C && std::strcmp(spelling, "strlen") == 0);
 }
 
@@ -131,7 +131,7 @@ bool Program::memset_function(SymbolId symbol) const
 	if (!is_function_kind(callee.kind))
 		return false;
 	const char* spelling = this->spelling(callee.metadata.object != 0 ? callee.metadata.object : callee.name);
-	return std::strcmp(spelling, "cppgm_builtin_memset") == 0 ||
+	return (callee.metadata.object != 0 && std::strcmp(spelling, "cppgm_builtin_memset") == 0) ||
 		(callee.metadata.linkage == ir_model::LLM_C && std::strcmp(spelling, "memset") == 0);
 }
 
@@ -141,7 +141,7 @@ bool Program::memcpy_function(SymbolId symbol) const
 	if (!is_function_kind(callee.kind))
 		return false;
 	const char* spelling = this->spelling(callee.metadata.object != 0 ? callee.metadata.object : callee.name);
-	return std::strcmp(spelling, "cppgm_builtin_memcpy") == 0 ||
+	return (callee.metadata.object != 0 && std::strcmp(spelling, "cppgm_builtin_memcpy") == 0) ||
 		(callee.metadata.linkage == ir_model::LLM_C && std::strcmp(spelling, "memcpy") == 0);
 }
 
@@ -151,7 +151,7 @@ bool Program::memcmp_function(SymbolId symbol) const
 	if (!is_function_kind(callee.kind))
 		return false;
 	const char* spelling = this->spelling(callee.metadata.object != 0 ? callee.metadata.object : callee.name);
-	return std::strcmp(spelling, "cppgm_builtin_memcmp") == 0 ||
+	return (callee.metadata.object != 0 && std::strcmp(spelling, "cppgm_builtin_memcmp") == 0) ||
 		(callee.metadata.linkage == ir_model::LLM_C && std::strcmp(spelling, "memcmp") == 0);
 }
 

@@ -1,0 +1,32 @@
+int fills, copies;
+extern "C" void* cppgm_builtin_memset(void* p, int, unsigned long)
+{
+  ++fills;
+  return p;
+}
+extern "C" void* cppgm_builtin_memmove(void*, const void*, unsigned long);
+char buffer[64], target[64];
+__attribute__((noinline)) void fill(char* p, char* end)
+{
+  for (char* q = p; q != end; ++q) *q = 7;
+}
+__attribute__((noinline)) void copy(char* to, const char* p, const char* end)
+{
+  for (const char* q = p; q != end; ++q) *to++ = *q;
+}
+int main()
+{
+  fill(buffer, buffer + 20);
+  copy(target, buffer, buffer + 20);
+  for (int i = 0; i < 64; ++i)
+    if (buffer[i] != (i < 20 ? 7 : 0) || target[i] != buffer[i]) return 1;
+  if (fills || copies) return 2;
+  if (cppgm_builtin_memset(buffer, 0, 1) != buffer || fills != 1) return 3;
+  if (cppgm_builtin_memmove(target, buffer, 1) != target || copies != 1) return 4;
+  return buffer[0] != 7 || target[0] != 7;
+}
+extern "C" void* cppgm_builtin_memmove(void* p, const void*, unsigned long)
+{
+  ++copies;
+  return p;
+}

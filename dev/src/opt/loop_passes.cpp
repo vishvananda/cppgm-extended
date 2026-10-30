@@ -63,7 +63,7 @@ private:
 	bool used_outside_only(uint32_t loop, const Value& a, const Value& b) const;
 	void emit_copy(uint32_t loop, const Induction& src, const Induction& dst, const ExitTest& test);
 	SymbolId builtin_symbol(const char* name, const char* object, const Type* types, uint32_t count);
-	bool builtin_available(const char* name) const;
+	bool builtin_available(const char* name, const char* object) const;
 	bool private_values(uint32_t loop, const ExitTest& test, const std::vector<Induction>& ivs) const;
 	bool final_values(uint32_t loop, const ExitTest& test, const std::vector<Induction>& ivs);
 	bool bypass(uint32_t loop, const ExitTest& test);
@@ -605,33 +605,8 @@ bool LoopPass::bypass(uint32_t loop, const ExitTest& test)
 
 SymbolId LoopPass::fill_symbol()
 {
-	static const char kName[] = "__cppgm_builtin_memset";
-	Program& program = c_.program;
-	const NameId name = program.names.intern(kName, sizeof kName - 1);
-	const SymbolId symbol = program.symbol_for(name);
-	if (program.symbols[symbol].kind != SymbolKind::Unresolved)
-		return is_function_kind(program.symbols[symbol].kind) ? symbol : kNoId;
-	Signature sig;
-	sig.first_parameter = static_cast<uint32_t>(program.parameters.size());
-	sig.parameter_count = 3;
-	sig.result = Type::scalar(TypeKind::Ptr);
-	sig.boundary.unwind = ir_model::CUM_NO;
 	const Type types[3] = { Type::scalar(TypeKind::Ptr), Type::scalar(TypeKind::I32), Type::scalar(TypeKind::I64) };
-	for (const Type& t : types)
-	{
-		Parameter p = Parameter();
-		p.name = 0;
-		p.type = t;
-		p.pass = ir_model::PPM_DIRECT;
-		p.object_bytes = 0;
-		program.parameters.push_back(p);
-	}
-	program.declare_function(symbol, SymbolKind::FunctionDeclaration, program.add_signature(sig));
-	SymbolMetadata& m = program.symbols[symbol].metadata;
-	m.binding = ir_model::SBM_STRONG;
-	static const char kObject[] = "cppgm_builtin_memset";
-	m.object = program.names.intern(kObject, sizeof kObject - 1);
-	return symbol;
+	return builtin_symbol("__cppgm_builtin_memset", "cppgm_builtin_memset", types, 3);
 }
 
 // A runtime builtin `name` (the back end's `object`) taking `types` and
@@ -639,6 +614,8 @@ SymbolId LoopPass::fill_symbol()
 // by something else).
 SymbolId LoopPass::builtin_symbol(const char* name, const char* object, const Type* types, uint32_t count)
 {
+	if (!builtin_available(name, object))
+		return kNoId;
 	Program& program = c_.program;
 	const NameId id = program.names.intern(name, static_cast<uint32_t>(std::strlen(name)));
 	const SymbolId symbol = program.symbol_for(id);
@@ -1395,7 +1372,8 @@ bool LoopPass::try_loop(uint32_t loop)
 		// A copy loop's destination may be read after it.
 		uint32_t src, dst;
 		if (c_.level >= 2 && l.preheader != kNoId && test.exiting == l.header &&
-			builtin_available("__cppgm_builtin_memmove") && copy_pattern(loop, ivs, test, src, dst) &&
+			builtin_available("__cppgm_builtin_memmove", "cppgm_builtin_memmove") &&
+			copy_pattern(loop, ivs, test, src, dst) &&
 			used_outside_only(loop, Value::temp(ivs[src].value), Value::temp(ivs[dst].value)))
 		{
 			emit_copy(loop, ivs[src], ivs[dst], test);
@@ -1442,7 +1420,8 @@ bool LoopPass::try_loop(uint32_t loop)
 			return true;
 		}
 	uint32_t src, dst;
-	if (c_.level >= 2 && builtin_available("__cppgm_builtin_memmove") && copy_pattern(loop, ivs, test, src, dst))
+	if (c_.level >= 2 && builtin_available("__cppgm_builtin_memmove", "cppgm_builtin_memmove") &&
+		copy_pattern(loop, ivs, test, src, dst))
 	{
 		emit_copy(loop, ivs[src], ivs[dst], test);
 		++c_.stats.loops_removed;
@@ -1707,21 +1686,22 @@ bool LoopPass::make_preheader(uint32_t loop)
 	return true;
 }
 
-bool LoopPass::builtin_available(const char* name) const
+bool LoopPass::builtin_available(const char* name, const char* object) const
 {
-	const NameId id = c_.program.names.find(name, static_cast<uint32_t>(std::strlen(name)));
-	const SymbolId symbol = id != 0 ? c_.program.find_symbol(id) : kNoId;
-	return symbol == kNoId || c_.program.symbols[symbol].kind == SymbolKind::Unresolved ||
-		is_function_kind(c_.program.symbols[symbol].kind);
+	const Program& program = c_.program;
+	const NameId id = program.names.find(name, static_cast<uint32_t>(std::strlen(name)));
+	const NameId runtime = program.names.find(object, static_cast<uint32_t>(std::strlen(object)));
+	const SymbolId symbol = id != 0 ? program.find_symbol(id) : kNoId;
+	if (symbol != kNoId && program.symbols[symbol].kind != SymbolKind::Unresolved &&
+		(!is_function_kind(program.symbols[symbol].kind) || runtime == 0 ||
+			program.symbols[symbol].metadata.object != runtime))
+		return false;
+	return true;
 }
 
 bool LoopPass::fill_available() const
 {
-	static const char kName[] = "__cppgm_builtin_memset";
-	const NameId name = c_.program.names.find(kName, sizeof kName - 1);
-	const SymbolId symbol = name != 0 ? c_.program.find_symbol(name) : kNoId;
-	return symbol == kNoId || c_.program.symbols[symbol].kind == SymbolKind::Unresolved ||
-		is_function_kind(c_.program.symbols[symbol].kind);
+	return builtin_available("__cppgm_builtin_memset", "cppgm_builtin_memset");
 }
 
 // O3 full unrolling, within the budgets below: a counted loop tested at its

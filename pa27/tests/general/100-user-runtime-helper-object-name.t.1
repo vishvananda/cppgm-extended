@@ -1,0 +1,15 @@
+extern "C" unsigned long cppgm_builtin_strlen(const char*);
+extern "C" void* cppgm_builtin_memset(void*, int, unsigned long);
+extern "C" int host_check();
+extern "C" void* cppgm_builtin_memcpy(void* to, const void*, unsigned long)
+{
+  return to;
+}
+int main()
+{
+  char value = 9;
+  const char text[] = "abc";
+  if (cppgm_builtin_strlen(text) != 117) return 1;
+  if (cppgm_builtin_memset(&value, 0, 1) != &value || value != 9) return 2;
+  return host_check();
+}
