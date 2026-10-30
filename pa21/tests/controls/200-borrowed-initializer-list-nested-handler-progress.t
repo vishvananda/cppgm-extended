@@ -26,22 +26,22 @@ struct S {
 };
 using IL = std::initializer_list<S>;
 unsigned long borrow(const IL& list) { return list.size(); }
-unsigned long short_list() { return borrow({1, 2, 3}); }
+unsigned long short_list() { return borrow({{1}, {2}, {3}}); }
 unsigned long long_list()
 {
-  return borrow({1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-                 11, 12, 13, 14, 15, 16, 17, 18, 19, 20});
+  return borrow({{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10},
+                 {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}});
 }
 unsigned long short_in_try()
 {
-  try { return borrow({1, 2, 3}); }
+  try { return borrow({{1}, {2}, {3}}); }
   catch (double) { return 1000; }
 }
 unsigned long long_in_try()
 {
   try {
-    return borrow({1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-                   11, 12, 13, 14, 15, 16, 17, 18, 19, 20});
+    return borrow({{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10},
+                   {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}});
   } catch (double) { return 1000; }
 }
 int main()
