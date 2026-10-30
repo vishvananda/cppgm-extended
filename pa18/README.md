@@ -66,6 +66,11 @@ substitution failure in an immediate context, including an address used as a
 non-type template argument. Outside substitution, the same invalid name remains
 a hard error; errors in instantiated function bodies remain hard errors too.
 
+Invalid value-initialization of a function type, excess aggregate initializer
+elements, and nonempty parenthesized array-new initializers fail substitution
+when they occur in an immediate context. The same invalid initializers remain
+hard errors in ordinary expressions and instantiated function bodies.
+
 ### Output Format
 
 On success, `cppgm++` shall write LowIR text to `<outfile>` and exit

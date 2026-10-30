@@ -481,7 +481,7 @@ void Analyzer::aggregate_initialize(const syntax::BracedInitList& list, ClassEnt
 	uint32_t next = 0;
 	aggregate_members(list, next, entity, scope);
 	if (next < list.elements.size)
-		error(list.elements[next]->location, "too many initializers for the aggregate");
+		substitution_error(list.elements[next]->location, "too many initializers for the aggregate");
 }
 
 void Analyzer::aggregate_members(const syntax::BracedInitList& list, uint32_t& next, ClassEntity* entity, Scope* scope)

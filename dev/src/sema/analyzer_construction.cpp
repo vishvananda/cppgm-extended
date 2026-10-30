@@ -749,7 +749,10 @@ ExprFacts* Analyzer::allocation(const syntax::NewExpr& expr, Scope* scope)
 		// from the empty lists of the elements a list leaves.
 		if (expr.initializer != nullptr && list == nullptr &&
 			(expr.initializer->kind != syntax::InitializerKind::Parenthesized || !expr.initializer->arguments.empty()))
-			error(expr.location, "an array new-expression with this initializer is not supported");
+		{
+			substitution_error(expr.location, "an array new-expression with this initializer is not supported");
+			return nullptr;
+		}
 		FunctionEntity* selected = default_constructor(entity, expr.location);
 		if (selected == nullptr)
 			return nullptr;
@@ -764,7 +767,10 @@ ExprFacts* Analyzer::allocation(const syntax::NewExpr& expr, Scope* scope)
 	{
 		if (expr.initializer != nullptr && list == nullptr &&
 			(expr.initializer->kind != syntax::InitializerKind::Parenthesized || !expr.initializer->arguments.empty()))
-			error(expr.location, "an array new-expression with this initializer is not supported");
+		{
+			substitution_error(expr.location, "an array new-expression with this initializer is not supported");
+			return nullptr;
+		}
 		if ((element->cv & kConst) != 0 && expr.initializer == nullptr)
 			error(expr.location, "a const object needs an initializer");
 		// The list's elements may throw: the storage is freed (5.3.4p18).

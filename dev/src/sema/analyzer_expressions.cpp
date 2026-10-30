@@ -2792,7 +2792,10 @@ ExprFacts* Analyzer::functional_cast(const syntax::FunctionalCastExpr& expr, Sco
 	if (IsComplex(target) || target->unqualified->kind == TypeKind::Vector)
 		return new_facts(expr, target->unqualified, ValueCategory::PRValue);
 	if (!IsScalar(target))
-		error(expr.location, "value-initialization of this type is not supported");
+	{
+		substitution_error(expr.location, "value-initialization of this type is not supported");
+		return nullptr;
+	}
 	ExprFacts* facts = new_facts(expr, target->unqualified, ValueCategory::PRValue);
 	facts->flags |= kFolded;
 	facts->value = 0;
