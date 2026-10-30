@@ -180,6 +180,7 @@ bool Analyzer::name_words(
 	// resolution_words). Names of dependent entities and types mark the key
 	// dependent (see placeholder_words).
 	std::vector<uint64_t>& words = decltype_words_;
+	const size_t name_start = words.size();
 	words.push_back(Word(kWordName, (name.components.size << 1) | (name.global ? 1 : 0)));
 	// A callee whose explicit template arguments may resolve it (see
 	// resolved_specialization): its function template and the position of
@@ -187,6 +188,7 @@ bool Analyzer::name_words(
 	FunctionEntity* pending = nullptr;
 	size_t pending_at = 0;
 	size_t last_arguments = 0;
+	size_t qualifier_arguments = 0;
 	bool dependent_arguments = false;
 	for (uint32_t i = 0; i < name.components.size; ++i)
 	{
@@ -294,6 +296,8 @@ bool Analyzer::name_words(
 		}
 		if (!component.has_arguments)
 			continue;
+		if (i + 2 == name.components.size && call == nullptr)
+			qualifier_arguments = words.size();
 		words.push_back(Word(kWordArguments, component.arguments.size));
 		last_arguments = words.size();
 		dependent_arguments = false;
@@ -341,7 +345,8 @@ bool Analyzer::name_words(
 		}
 	}
 	return !resolve || !name.qualified() ||
-		resolution_words(name, scope, name.last().has_arguments ? last_arguments : 0, dependent_arguments);
+		resolution_words(name, scope, name.last().has_arguments ? last_arguments : 0, dependent_arguments, name_start,
+			qualifier_arguments);
 }
 
 uint64_t Analyzer::parameter_word(const Binding* binding, const Scope* scope) const
@@ -411,7 +416,8 @@ bool Analyzer::unnamed_parameter(const TemplateParameterEntity* operand, const B
 	return index < 63 && (operand->named_parameters & 1ull << index) == 0;
 }
 
-bool Analyzer::resolution_words(const syntax::Name& name, Scope* scope, size_t last_arguments, bool dependent_arguments)
+bool Analyzer::resolution_words(const syntax::Name& name, Scope* scope, size_t last_arguments, bool dependent_arguments,
+	size_t name_start, size_t qualifier_arguments)
 {
 	// What a qualified name denotes where the placeholder is made, which its
 	// mangling names (5.1.6): its dependent qualifier (an unresolved name),
@@ -433,6 +439,7 @@ bool Analyzer::resolution_words(const syntax::Name& name, Scope* scope, size_t l
 		return false;
 	if (prefix.dependent != nullptr)
 	{
+		qualified_name_words(name, prefix.dependent->canonical, name_start, qualifier_arguments);
 		words.push_back(kWordType);
 		words.push_back(PointerWord(prefix.dependent->canonical));
 		keyed_dependent_ = true;
@@ -474,6 +481,22 @@ bool Analyzer::resolution_words(const syntax::Name& name, Scope* scope, size_t l
 		words.push_back(PointerWord(found.binding->entity));
 	}
 	return true;
+}
+
+void Analyzer::qualified_name_words(const syntax::Name& name, const Type* qualifier, size_t start, size_t arguments)
+{
+	// An alternate lookup key for namespace-qualified X<T>::member. Keep
+	// the original words for ABI spelling; only a raw-key miss builds this
+	// alias. The resolved class identity prevents merging shadowed templates.
+	if (arguments == 0 || equivalence_keying_ || (name.components.size <= 2 && !name.global) ||
+		name.last().has_arguments || qualifier->kind != TypeKind::Class)
+		return;
+	const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(qualifier->entity)->templ;
+	if (facts == nullptr || facts->role != TemplateRole::Specialization || facts->pattern == nullptr)
+		return;
+	qualified_names_.push_back(QualifiedNameWords{ static_cast<uint32_t>(start),
+		static_cast<uint32_t>(decltype_words_.size()), static_cast<uint32_t>(arguments),
+		name.components[name.components.size - 2].arguments.size + 1, facts->pattern });
 }
 
 FunctionEntity* Analyzer::SoleFunction(const LookupResult& found)
@@ -912,6 +935,7 @@ const Type* Analyzer::dependent_decltype(const syntax::Expr& operand, Scope* sco
 const Type* Analyzer::dependent_expression(const syntax::Expr& operand, Scope* scope, bool value, const Type* target,
 	bool fixed, const Type* evaluation_target, bool unknown)
 {
+	const QualifiedNameFrame qualified(qualified_names_);
 	// A decltype-specifier of a template definition, or a value-dependent
 	// template argument (`value`): one placeholder per equivalent operand
 	// (14.5.6.1p5-p6: an equivalent redeclaration has the same type, and
@@ -1013,17 +1037,27 @@ const Type* Analyzer::dependent_expression(const syntax::Expr& operand, Scope* s
 		check_fixed_operands(operand, scope, 0);
 		key = DecltypeKey{ decltype_words_.data() + base, static_cast<uint32_t>(decltype_words_.size() - base) };
 	}
+	DecltypeKey alias{ nullptr, 0 };
 	if (keyed)
 	{
-		if (TemplateParameterEntity** found = decltype_placeholders_.find(key))
+		TemplateParameterEntity** raw = decltype_placeholders_.find(key);
+		TemplateParameterEntity* found = raw != nullptr ? *raw : nullptr;
+		if (found == nullptr && qualified_names_.size() != qualified.first)
+		{
+			found = qualified_placeholder(key, qualified.first, alias);
+			key.words = decltype_words_.data() + base;
+			if (found != nullptr)
+				decltype_placeholders_.insert(kept_key(key), found);
+		}
+		if (found != nullptr)
 		{
 			decltype_words_.resize(base);
-			keyed_sizeof_pack_ = enclosing_sizeof || (*found)->sizeof_packs;
+			keyed_sizeof_pack_ = enclosing_sizeof || found->sizeof_packs;
 			if (enclosing != nullptr)
-				*enclosing |= ((*found)->named_parameters & kNamedParametersKnown) != 0
-					? (*found)->named_parameters & ~kNamedParametersKnown
+				*enclosing |= (found->named_parameters & kNamedParametersKnown) != 0
+					? found->named_parameters & ~kNamedParametersKnown
 					: kNamedParametersKnown;
-			return (*found)->type;
+			return found->type;
 		}
 	}
 	// Bit 63 of `named` (some unknown) or an operand the key does not cover
@@ -1065,11 +1099,48 @@ const Type* Analyzer::dependent_expression(const syntax::Expr& operand, Scope* s
 		key = kept_key(key);
 		entity->key = key.words - 1;
 		decltype_placeholders_.insert(key, entity);
+		if (alias.count != 0)
+			decltype_placeholders_.insert(alias, entity);
 		if (callee)
 			equivalent_representative(entity, operand, scope, value, target, callee_lookup);
 	}
 	decltype_words_.resize(base);
 	return entity->type;
+}
+
+TemplateParameterEntity* Analyzer::qualified_placeholder(const DecltypeKey& raw, size_t first, DecltypeKey& alias)
+{
+	// Build the alternate key from disjoint, already-resolved name spans.
+	// There is no second expression walk, lookup or template substitution.
+	const size_t base = decltype_words_.size();
+	const size_t begin = static_cast<size_t>(raw.words - decltype_words_.data());
+	const size_t end = begin + raw.count;
+	const size_t needed = base + raw.count + qualified_names_.size() - first;
+	if (needed > decltype_words_.capacity())
+		decltype_words_.reserve(std::max(needed, decltype_words_.capacity() * 2));
+	size_t cursor = begin;
+	for (size_t i = first; i < qualified_names_.size(); ++i)
+	{
+		const QualifiedNameWords& name = qualified_names_[i];
+		for (; cursor < name.first; ++cursor)
+			decltype_words_.push_back(decltype_words_[cursor]);
+		decltype_words_.push_back(Word(kWordName, 4));
+		decltype_words_.push_back(kWordEntity);
+		decltype_words_.push_back(PointerWord(name.pattern));
+		for (uint32_t j = 0; j < name.count; ++j)
+			decltype_words_.push_back(decltype_words_[name.arguments + j]);
+		decltype_words_.push_back(decltype_words_[name.end - 1]);
+		cursor = name.end;
+	}
+	for (; cursor < end; ++cursor)
+		decltype_words_.push_back(decltype_words_[cursor]);
+	DecltypeKey key{ decltype_words_.data() + base, static_cast<uint32_t>(decltype_words_.size() - base) };
+	TemplateParameterEntity** existing = decltype_placeholders_.find(key);
+	TemplateParameterEntity* found = existing != nullptr ? *existing : nullptr;
+	if (found == nullptr)
+		alias = kept_key(key);
+	decltype_words_.resize(base);
+	return found;
 }
 
 void Analyzer::equivalent_representative(TemplateParameterEntity* entity, const syntax::Expr& operand, Scope* scope,
@@ -1168,6 +1239,7 @@ bool Analyzer::placeholder_words(
 const Type* Analyzer::equivalent_placeholder(const TemplateParameterEntity* placeholder, uint32_t depth,
 	const Type* const* canonical, uint32_t count, DecltypeKey& key, bool& shared)
 {
+	const QualifiedNameFrame qualified(qualified_names_);
 	// A placeholder substituted with dependent arguments is equivalent to
 	// the operand written with them (14.5.6.1p5-p6: an alias template's
 	// `__and_<Cond...>::value` with Cond known is the operand

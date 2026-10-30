@@ -56,6 +56,11 @@ substitution context. An actual nested class remains a type even when incomplete
 a template-template argument still denotes its template. Rejection uses the
 substitution result and does not instantiate an unused member-template body.
 
+Equivalent dependent expressions in function-template declarations retain the
+identity of the class template they name, including when a later declaration
+adds namespace qualification or uses a namespace alias. Different templates or
+template arguments remain distinct. The first declaration retains its ABI spelling.
+
 ### Output Format
 
 On success, `cppgm++` shall write LowIR text to `<outfile>` and exit

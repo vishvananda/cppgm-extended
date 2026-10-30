@@ -152,6 +152,7 @@ bool Analyzer::type_dependent(const syntax::Expr* expr, Scope* scope)
 
 bool Analyzer::fixed_expression(const syntax::Expr& operand, Scope* scope)
 {
+	const QualifiedNameFrame qualified(qualified_names_);
 	// An expression of a template definition that names no dependent
 	// entity or type (its placeholder key carries no dependent mark, see
 	// placeholder_words) and is not type-dependent: the same in every

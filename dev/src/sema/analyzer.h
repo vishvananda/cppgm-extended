@@ -751,7 +751,10 @@ private:
 	uint64_t parameter_word(const Binding* binding, const Scope* scope) const;
 	void note_named_parameter(uint64_t word);
 	bool unnamed_parameter(const TemplateParameterEntity* operand, const Binding* binding);
-	bool resolution_words(const syntax::Name& name, Scope* scope, size_t last_arguments, bool dependent_arguments);
+	bool resolution_words(const syntax::Name& name, Scope* scope, size_t last_arguments, bool dependent_arguments,
+		size_t name_start, size_t qualifier_arguments);
+	void qualified_name_words(const syntax::Name& name, const Type* qualifier, size_t start, size_t arguments);
+	TemplateParameterEntity* qualified_placeholder(const DecltypeKey& raw, size_t first, DecltypeKey& alias);
 	static FunctionEntity* SoleFunction(const LookupResult& found);
 	const FunctionEntity* resolved_specialization(
 		FunctionEntity* function, const uint64_t* arguments, uint32_t count, uint32_t location);
@@ -1743,6 +1746,7 @@ private:
 	PointerMap placeholder_representatives_;
 	std::vector<const TemplateParameterEntity*> representatives_;
 	std::vector<uint64_t> decltype_words_;
+	std::vector<QualifiedNameWords> qualified_names_;
 	// The declarator parameters the operand whose key is being built names
 	// (TemplateParameterEntity::named_parameters' form; bit 63: some are
 	// unknown), null outside one.

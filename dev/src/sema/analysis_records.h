@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #include "sema/declaration_records.h"
 #include "sema/semantic_unit.h"
@@ -15,6 +16,25 @@
 // hosted wrapper's missing builtin.
 
 namespace sema {
+
+// A qualified class-template member's already-keyed name and argument span.
+// These scratch records let its alternate key reuse typed facts, not lookup.
+struct QualifiedNameWords
+{
+	uint32_t first;
+	uint32_t end;
+	uint32_t arguments;
+	uint32_t count;
+	const ClassEntity* pattern;
+};
+
+struct QualifiedNameFrame
+{
+	explicit QualifiedNameFrame(std::vector<QualifiedNameWords>& records) : records(records), first(records.size()) {}
+	~QualifiedNameFrame() { records.resize(first); }
+	std::vector<QualifiedNameWords>& records;
+	size_t first;
+};
 
 // A lambda-expression whose body is being analyzed (analyzer_lambdas.cpp):
 // its closure and the closure's facts, and what it has captured so far
