@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Outer_int___Ref__Ref(%t1, %t2)
     %t3 = addr $second
     %t4 = addr $first
-    copyobj 8x8 %t4, %t3
+    call void @Outer_int___Ref__Ref__ov2(%t3, %t4)
     %t5 = addr $iter
     %t6 = addr $iter
     %t7 = index i8 [projection=field] %t6, 0
@@ -66,6 +66,21 @@ function @Outer_int___Ref__Ref(%this : ptr [object_bytes=8], %input : ptr [pass=
     store typed ptr %t1, %t3
     return void
 }
+function @Outer_int___Ref__Ref__ov2(%this : ptr [alias=noalias, object_bytes=8], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN5OuterIiE3RefC1ERKS1_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $__param1
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load typed ptr %t2
+    %t4 = load typed ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store typed ptr %t3, %t5
+    return void
+}
 function @Iter_int___operator__(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN4IterIiEppEv] {
   slot $this : ptr
 
@@ -93,3 +108,4 @@ function @Outer_int___Ref__operatorbool(%this : ptr [object_bytes=8]) -> u8 [bin
     return u8 %t6
 }
 alias object _ZN5OuterIiE3RefC2ERi = @Outer_int___Ref__Ref
+alias object _ZN5OuterIiE3RefC2ERKS1_ = @Outer_int___Ref__Ref__ov2

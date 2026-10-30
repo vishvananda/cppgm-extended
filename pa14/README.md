@@ -289,6 +289,11 @@ PA14 supports the following in addition to the PA13 subset:
 - out-of-class definitions of nested classes declared inside the supported class templates,
   when those nested classes stay within the already supported PA11-PA13 class/value/
   polymorphic machinery
+- a copy or move constructor defaulted after its first declaration is
+  user-provided and nontrivial, including in a class template. Its use calls
+  and emits that constructor; PA12's direct storage transfer applies to
+  trivial construction, while a synthesized constructor body can copy its
+  trivial subobjects with `copyobj`
 - distinct nested types from different class-template specializations remain distinct in
   overload resolution, and a dependent local type alias used by `new` resolves to the
   concrete specialization before constructor selection

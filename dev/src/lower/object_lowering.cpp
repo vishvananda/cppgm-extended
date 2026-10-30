@@ -173,23 +173,7 @@ bool FunctionLowering::copies_storage(const sema::FunctionEntity* function)
 	if (function->copy_kind != sema::CopyKind::CopyConstructor &&
 		function->copy_kind != sema::CopyKind::MoveConstructor)
 		return false;
-	if (function->trivial)
-		return true;
-	// So is a class template instance's one explicitly defaulted out of
-	// the template (user-provided, 8.4.2p4, so passed as not trivial) whose
-	// subobject copies are all trivial: the course performs it as the bytes
-	// (as-if, 1.9p1).
-	const sema::FunctionEntity* pattern = sema::PatternOf(function);
-	if (!function->instantiated || pattern == nullptr || !pattern->synthesized || pattern->defaulted ||
-		!lowering_.instantiate_definition(function))
-		return false;
-	for (uint32_t i = 0; i < function->init_count; ++i)
-	{
-		const sema::FunctionEntity* copy = function->inits[i].constructor;
-		if (copy != nullptr && !copy->trivial)
-			return false;
-	}
-	return true;
+	return function->trivial;
 }
 
 void FunctionLowering::call_constructor(const sema::FunctionEntity* constructor, lowir::Value object,

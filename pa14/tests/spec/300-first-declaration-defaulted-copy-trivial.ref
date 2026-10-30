@@ -1,0 +1,48 @@
+function @take(%value : obj<8x8>) -> i32 [binding=strong, object=_Z4take1RIiE] {
+  slot $value : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $value
+    copyobj 8x8 %value, %t1
+    %t2 = addr $value
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load typed ptr %t3
+    %t5 = load typed i32 %t4
+    return i32 %t5
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : i32
+  slot $first : obj<8x8>
+  slot $second : obj<8x8>
+  slot $argobj__1 : obj<8x8>
+
+  block ^entry:
+    store typed i32 7, $value
+    %t1 = addr $first
+    %t2 = addr $value
+    call void @R_int___R(%t1, %t2)
+    %t3 = addr $second
+    %t4 = addr $first
+    copyobj 8x8 %t4, %t3
+    %t5 = addr $argobj__1
+    %t6 = addr $second
+    copyobj 8x8 %t6, %t5
+    %t7 = call i32 @take($argobj__1)
+    %t8 = cmp ne i32 %t7, 7
+    %t9 = convert trunc i32 i64 %t8
+    return i32 %t9
+}
+function @R_int___R(%this : ptr [object_bytes=8], %input : ptr) -> void [binding=weak, object=_ZN1RIiEC1EPi, inline_hint=yes] {
+  slot $this : ptr
+  slot $input : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed ptr %input, $input
+    %t1 = load typed ptr $input
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed ptr %t1, %t3
+    return void
+}
+alias object _ZN1RIiEC2EPi = @R_int___R
