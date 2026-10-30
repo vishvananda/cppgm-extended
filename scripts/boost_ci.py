@@ -173,6 +173,13 @@ def main():
         report.pop('current_suite', None)
     except Exception as error:
         report.update(status='failed', error=str(error))
+        log = output / report.get('current_suite', '').replace('/', '-') / 'b2.log'
+        if log.is_file():
+            print('Failure log: ' + str(log), file=sys.stderr)
+            lines = log.read_text(errors='replace').splitlines()
+            for index, line in enumerate(lines):
+                if re.search(r'ERROR:|error:|Traceback|failed testing|failed gcc|failed updating', line):
+                    print('\n'.join(lines[max(0, index - 2):index + 8]), file=sys.stderr)
         raise
     finally:
         save()

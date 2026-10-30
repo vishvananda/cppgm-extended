@@ -98,7 +98,9 @@ jobs:
           path: |
             ${{ runner.temp }}/boost-advisory/results.json
             ${{ runner.temp }}/boost-advisory/bootstrap.log
-            ${{ runner.temp }}/boost-advisory/config/
-            ${{ runner.temp }}/boost-advisory/libs-*/
+            ${{ runner.temp }}/boost-advisory/config/**
+            ${{ runner.temp }}/boost-advisory/libs-*/b2.log
+            ${{ runner.temp }}/boost-advisory/libs-*/b2.xml
+            ${{ runner.temp }}/boost-advisory/libs-*/invocations.jsonl
           if-no-files-found: warn
           retention-days: 14
