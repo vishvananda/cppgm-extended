@@ -50,6 +50,7 @@ public:
 	void place_uses();
 	void find_addresses();
 	void find_folds();
+	bool fold_mask_load(lowir::Value value, lowir::Value mask, uint32_t and_id);
 	void find_rmw();
 	void find_byte_booleans();
 	void extend_lifetimes();

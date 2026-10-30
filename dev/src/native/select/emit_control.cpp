@@ -594,7 +594,13 @@ void FunctionSelector::emit_compare_jump(const Instruction& compare, uint32_t on
 	auto emit_test_jump = [&](const Instruction& conj, bool set) {
 		const Type type = conj.type;
 		const TypeKind kind = type.is_pointer() ? TypeKind::Ptr : type.kind();
+		Type test_type = type;
 		Value x = resolve(conj.ops[0]), y = resolve(conj.ops[1]);
+		// A promoted narrow load folded by fold_mask_load still reads its
+		// original bytes: the mask was proved to ignore the promoted bits.
+		for (Value v : { x, y })
+			if (v.kind == ValueKind::Temp && (temps_[v.index].flags & TF_FOLDED))
+				test_type = body_->instructions[body_->temps[v.index].def].type;
 		const auto tested = [&](Value v) { return v.kind == ValueKind::Temp && (temps_[v.index].flags & TF_TESTED); };
 		if (tested(x))
 			std::swap(x, y);
@@ -621,8 +627,8 @@ void FunctionSelector::emit_compare_jump(const Instruction& compare, uint32_t on
 		}
 		else
 		{
-			Operand a = rm_operand(x, type, kSelectScratch);
-			Operand b = rm_operand(y, type, kEmitScratch);
+			Operand a = rm_operand(x, test_type, kSelectScratch);
+			Operand b = rm_operand(y, test_type, kEmitScratch);
 			if (a.kind == OperandKind::Imm || (a.kind != OperandKind::Reg && b.kind == OperandKind::Reg))
 				std::swap(a, b);
 			if (a.kind == OperandKind::Imm || a.kind == OperandKind::Symbol)
@@ -635,7 +641,7 @@ void FunctionSelector::emit_compare_jump(const Instruction& compare, uint32_t on
 				load_into(kEmitScratch, b, kind);
 				b = Operand::make_reg(kEmitScratch);
 			}
-			emit2(Op::Test, kind, a, b);
+			emit2(Op::Test, test_type.kind(), a, b);
 		}
 		Inst& j = emit1(Op::Jcc, TypeKind::Void, Operand::make_label(on_true));
 		j.sub = cond;

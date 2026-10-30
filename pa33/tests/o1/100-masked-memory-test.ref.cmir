@@ -1,0 +1,282 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @byte_test
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.u8 [rdi], 128
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @half_test
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.u16 [rdi], 32768
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @signed_promotion
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i8 rdi, [rdi]
+    test.i32 rdi, 256
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @before_store
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i32 r8, [rdi]
+    and r8, 16
+    store.i32 [rdi], 0
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @volatile_test
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u8 rdi, [rdi]
+    test.i32 rdi, 128
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @clear
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    store.i32 [rdi], 0
+    mov rax, 0
+    ret rax
+
+function @before_call
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0>
+
+  block ^entry
+    load.i32 <gpr0>, [rdi]
+    and <gpr0>, 16
+    call @clear [args=(rdi)]
+    cmp.i32 <gpr0>, 0
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @wide_mask
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, [rdi]
+    and r8, 4294967296
+    je ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @two_readers
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i32 rax, [rdi]
+    test.i32 rax, 16
+    je ^no
+
+  block ^yes
+    ret rax
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    slot $data -> [rbp-<off0>] : i64
+    temp %bad_full -> [rbp-<off1>] : i64
+    temp %e -> [rbp-<off2>] : i32
+    temp %f -> [rbp-<off3>] : i32
+    temp %zero_byte -> [rbp-<off4>] : i32
+
+  block ^entry
+    store.i64 [rbp-<off0>], 4295000208
+    lea rdi, [rbp-<off0>]
+    call @byte_test [args=(rdi)]
+    mov <gpr0>, rax
+    lea rdi, [rbp-<off0>]
+    call @half_test [args=(rdi)]
+    mov <gpr1>, rax
+    lea rdi, [rbp-<off0>]
+    call @signed_promotion [args=(rdi)]
+    mov <gpr2>, rax
+    lea rdi, [rbp-<off0>]
+    call @volatile_test [args=(rdi)]
+    mov <gpr3>, rax
+    lea rdi, [rbp-<off0>]
+    call @wide_mask [args=(rdi)]
+    mov <gpr4>, rax
+    lea rdi, [rbp-<off0>]
+    call @two_readers [args=(rdi)]
+    cmp.i32 rax, 32912
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off1>], <gpr5>
+    lea rdi, [rbp-<off0>]
+    call @before_store [args=(rdi)]
+    mov <gpr5>, rax
+    store.i32 [rbp-<off2>], <gpr5>
+    store.i32 [rbp-<off0>], 32912
+    lea rdi, [rbp-<off0>]
+    call @before_call [args=(rdi)]
+    mov <gpr5>, rax
+    store.i32 [rbp-<off3>], <gpr5>
+    lea rdi, [rbp-<off0>]
+    call @byte_test [args=(rdi)]
+    mov <gpr5>, rax
+    store.i32 [rbp-<off4>], <gpr5>
+    lea rdi, [rbp-<off0>]
+    call @half_test [args=(rdi)]
+    or.i32 rax, [rbp-<off4>]
+    sext.i32 rax
+    add <gpr0>, <gpr1>
+    sext.i32 <gpr0>
+    add <gpr2>, <gpr3>
+    sext.i32 <gpr2>
+    load.i32 r8, [rbp-<off2>]
+    add.i32 r8, [rbp-<off3>]
+    sext.i32 r8
+    add <gpr0>, <gpr2>
+    sext.i32 <gpr0>
+    add <gpr0>, r8
+    sext.i32 <gpr0>
+    add <gpr0>, <gpr4>
+    sext.i32 <gpr0>
+    cmp.i32 <gpr0>, 7
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    load.i64 <gpr6>, [rbp-<off1>]
+    or <gpr0>, <gpr6>
+    or <gpr0>, rax
+    ret <gpr0>

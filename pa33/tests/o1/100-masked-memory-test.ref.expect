@@ -1,0 +1,8 @@
+# A load, mask and zero test fit one access/test and a branch; allow any
+# selection/allocation that meets this local instruction budget.
+instructions <= 6 in @byte_test
+instructions <= 6 in @half_test
+# These are observable accesses, including a volatile read and a write
+# between computing the mask and branching on it.
+count(load) >= 1 in @volatile_test
+count(store) >= 1 in @before_store

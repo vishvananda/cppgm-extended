@@ -1418,6 +1418,44 @@ const int32_t kFoldDistance = 8;
 
 } // namespace
 
+// A load used only by an and can become a memory TEST of its original
+// width. A narrow load promoted to the and's type is safe only when the
+// mask ignores every promoted bit. Never fold volatile/atomic accesses or
+// move a read past anything except aliases and constants.
+bool FunctionSelector::fold_mask_load(Value v, Value mask, uint32_t and_id)
+{
+	if (mask.kind != ValueKind::Integer || literal(mask).high != 0 || literal(mask).low > INT32_MAX ||
+		v.index < body_->parameter_count || body_->temps[v.index].def == kNoId)
+		return false;
+	TempInfo& t = temps_[v.index];
+	const uint32_t id = body_->temps[v.index].def;
+	const Instruction& load = body_->instructions[id];
+	if (load.op != Opcode::Load || (load.flags & lowir::IF_VOLATILE) || !load.type.is_integer() ||
+		load.type.kind() == TypeKind::I1 || load.type.kind() == TypeKind::I128 ||
+		(t.flags & (TF_GLOBAL | TF_ALIAS | TF_LAZY)) || t.uses != 1 || t.user != and_id ||
+		inst_block_[id] != inst_block_[and_id])
+		return false;
+	const unsigned bits = lowir::integer_bits(load.type.kind());
+	if (bits < 64 && literal(mask).low >= (uint64_t(1) << bits))
+		return false;
+	if (t.flags & TF_FOLDED)
+		return true;
+	if (pos_[and_id] <= pos_[id] || pos_[and_id] - pos_[id] > kFoldDistance)
+		return false;
+	for (uint32_t i = load.next; i != and_id; i = body_->instructions[i].next)
+	{
+		if (i == kNoId)
+			return false;
+		const Instruction& between = body_->instructions[i];
+		if (!(marks_[i] & IM_DEAD) && between.op != Opcode::Const &&
+			(between.result == kNoId || !(temps_[between.result].flags & TF_ALIAS)))
+			return false;
+	}
+	t.flags |= TF_FOLDED;
+	++stats_.folded_loads;
+	return true;
+}
+
 void FunctionSelector::find_folds()
 {
 	const lowir::FunctionBody& body = *body_;
@@ -1445,12 +1483,25 @@ void FunctionSelector::find_folds()
 		const Instruction* conj = single(x, lowir::BinaryOp::And);
 		if (conj == nullptr)
 			return;
-		// No operand a folded load (its read would move past the
-		// instructions between the and and the branch).
+		// Folding through the and may move a load only past its comparison.
+		const uint32_t next = conj->next;
+		const bool adjacent = next == branch_id ||
+			(next != kNoId && body.instructions[next].op == Opcode::Compare &&
+				body.instructions[next].next == branch_id);
 		for (unsigned k = 0; k < 2; ++k)
 		{
 			const Value v = resolve(conj->ops[k]);
-			if (v.kind == ValueKind::Temp && (temps_[v.index].flags & TF_FOLDED))
+			if (v.kind != ValueKind::Temp)
+				continue;
+			const bool folded = (temps_[v.index].flags & TF_FOLDED) != 0;
+			if (!adjacent)
+			{
+				if (folded)
+					return;
+				continue;
+			}
+			const bool memory = fold_mask_load(v, resolve(conj->ops[1 - k]), body.temps[x.index].def);
+			if (folded && !memory)
 				return;
 		}
 		temps_[x.index].flags |= TF_TESTED;
@@ -1462,6 +1513,17 @@ void FunctionSelector::find_folds()
 			TempInfo& c = temps_[v.index];
 			if (c.block == inst_block_[branch_id] && !(c.flags & TF_GLOBAL) && c.last < at)
 				c.last = at;
+			if (c.flags & TF_FOLDED)
+			{
+				const Instruction& load = body.instructions[body.temps[v.index].def];
+				const Value address = resolve(load.ops[0]);
+				if (address.kind == ValueKind::Temp)
+				{
+					TempInfo& a = temps_[address.index];
+					if (a.block == inst_block_[branch_id] && a.last < at)
+						a.last = at;
+				}
+			}
 		};
 		for (unsigned k = 0; k < 2; ++k)
 		{
