@@ -67,6 +67,13 @@ an empty pack; those bookkeeping arguments do not distinguish otherwise
 equivalent operands. Preserve different member names and argument positions,
 even when a concrete specialization gives them equal values.
 
+A transformed ordering operand can become independent even while unrelated
+synthesized arguments remain dependent. Evaluate that proven independent
+operand in its ordinary substitution context, preserving access checks and
+immediate substitution failures. Source declarations retain the dependent
+spellings required by the ABI; operands that still depend on arguments remain
+deferred.
+
 A qualified member function template-id that names no function template is a
 substitution failure in an immediate context, including an address used as a
 non-type template argument. Outside substitution, the same invalid name remains

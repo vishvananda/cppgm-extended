@@ -1762,8 +1762,13 @@ private:
 	bool keyed_dependent_ = false;
 	bool keyed_sizeof_pack_ = false;
 	const Type* equivalent_placeholder(const TemplateParameterEntity* placeholder, uint32_t depth,
-		const Type* const* canonical, uint32_t count, DecltypeKey& key, bool& shared);
+		const Type* const* canonical, uint32_t count, DecltypeKey& key, bool& shared, bool& independent);
 	bool names_placeholder(const Type* type, uint32_t level) const;
+	bool names_ordering_argument(const Type* type) const;
+	bool ordering_argument_components(const Type* type) const;
+	// The synthesized-argument property of immutable typed argument graphs.
+	// Shared subgraphs are visited once, including negative answers.
+	mutable PointerMap ordering_argument_memo_;
 	FlatMap<SubstitutionKey, const Type*, SubstitutionHash> decltype_substitutions_;
 	uint32_t anonymous_enums_;
 	// Inside a class object's initializer (see initializer_names).

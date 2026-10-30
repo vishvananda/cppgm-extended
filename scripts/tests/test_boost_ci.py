@@ -77,6 +77,19 @@ class ReviewTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'expected 1 declarations'):
             self.check()
 
+    def test_nested_project_declarations_are_reviewed(self):
+        self.project = 'libs/asio/test/execution'
+        self.fixture()
+        self.project = 'libs/asio/test'
+        self.assertEqual(self.check()['passed'], 1)
+
+    def test_similarly_named_sibling_is_not_included(self):
+        self.project = 'libs/asio/testing'
+        self.fixture()
+        self.project = 'libs/asio/test'
+        with self.assertRaisesRegex(ValueError, 'expected 1 declarations'):
+            self.check()
+
     def test_missing_or_duplicate_expectation(self):
         self.fixture()
         self.tree.remove(self.tree.find('action'))

@@ -17,6 +17,7 @@ import xml.etree.ElementTree as ET
 
 SUITES = {
     'libs/accumulators/test': 49,
+    'libs/asio/test': 295,
     'libs/container/test': 89,
     'libs/function/test': 49,
     'libs/fusion/test': 221,
@@ -51,7 +52,8 @@ def review(xml_path, log_path, calls_path, project, expected):
         target = test.findtext('target')
         if target.startswith(str(boost) + '/'):
             target = target[len(str(boost)) + 1:]
-        if target.split('//')[0] == project:
+        directory = target.split('//')[0]
+        if directory == project or directory.startswith(project + '/'):
             declarations.append((test, target))
     require(len(declarations) == expected, f'{project}: expected {expected} declarations, got {len(declarations)}')
     require(not re.search(r'^\.\.\.failed updating \d+ targets?\.\.\.$', log_path.read_text(), re.M), 'B2 reported failed targets')

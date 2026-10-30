@@ -1237,7 +1237,7 @@ bool Analyzer::placeholder_words(
 }
 
 const Type* Analyzer::equivalent_placeholder(const TemplateParameterEntity* placeholder, uint32_t depth,
-	const Type* const* canonical, uint32_t count, DecltypeKey& key, bool& shared)
+	const Type* const* canonical, uint32_t count, DecltypeKey& key, bool& shared, bool& independent)
 {
 	const QualifiedNameFrame qualified(qualified_names_);
 	// A placeholder substituted with dependent arguments is equivalent to
@@ -1288,6 +1288,14 @@ const Type* Analyzer::equivalent_placeholder(const TemplateParameterEntity* plac
 	{
 		DecltypeKey probe = DecltypeKey{ decltype_words_.data() + base,
 			static_cast<uint32_t>(decltype_words_.size() - base) };
+		// Transformed ordering operands can be independent despite unused
+		// unique arguments. Ordinary declaration operands retain their
+		// dependent spelling, which the ABI mangles (5.1.6).
+		if (placeholder->non_type && (probe.words[0] & 1) == 0)
+		{
+			for (uint32_t i = 0; i < count && !independent; ++i)
+				independent = names_ordering_argument(canonical[i]);
+		}
 		if (TemplateParameterEntity** entry = decltype_placeholders_.find(probe))
 		{
 			// An operand's own placeholder, which a substitution in this
@@ -1361,6 +1369,71 @@ bool Analyzer::names_placeholder(const Type* type, uint32_t level) const
 	default:
 		return false;
 	}
+}
+
+bool Analyzer::names_ordering_argument(const Type* type) const
+{
+	// Synthesized arguments belong to no source template's depth. Look
+	// through typed compound arguments too, such as tag<unique-type>;
+	// source template parameters must keep their declaration identity.
+	if (type == nullptr || !dependent_type(type))
+		return false;
+	if (type->kind == TypeKind::TemplateParameter || type->kind == TypeKind::TemplateTemplateParameter)
+	{
+		const TemplateParameterEntity* parameter = static_cast<const TemplateParameterEntity*>(type->entity);
+		if (!IsPlaceholder(parameter))
+			return parameter->depth == 0x7fff;
+	}
+	const uint32_t known = ordering_argument_memo_.find(type);
+	if (known != PointerMap::kMissing)
+		return known != 0;
+	const bool result = ordering_argument_components(type);
+	ordering_argument_memo_.set(type, result ? 1 : 0);
+	return result;
+}
+
+bool Analyzer::ordering_argument_components(const Type* type) const
+{
+	check_stack(0);
+	if (type->kind == TypeKind::TemplateParameter || type->kind == TypeKind::TemplateTemplateParameter)
+	{
+		const TemplateParameterEntity* parameter = static_cast<const TemplateParameterEntity*>(type->entity);
+		if (!IsPlaceholder(parameter))
+			return parameter->depth == 0x7fff;
+		if (names_ordering_argument(parameter->qualifier))
+			return true;
+		for (const PendingSubstitution* p = parameter->pending; p != nullptr; p = p->earlier)
+		{
+			if (names_ordering_argument(p->arguments))
+				return true;
+		}
+		return false;
+	}
+	if (type->kind == TypeKind::Class)
+	{
+		const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(type->entity)->templ;
+		if (facts == nullptr)
+			return false;
+		const ClassTemplateFacts* pattern = facts->pattern != nullptr ? facts->pattern->templ : facts;
+		if (pattern->template_name != nullptr && names_ordering_argument(pattern->template_name->type))
+			return true;
+		if (facts->enclosing != nullptr && names_ordering_argument(facts->enclosing->type))
+			return true;
+		for (uint32_t i = 0; i < facts->argument_count; ++i)
+		{
+			if (names_ordering_argument(facts->arguments[i]))
+				return true;
+		}
+		return false;
+	}
+	if (names_ordering_argument(type->element) || names_ordering_argument(type->owner))
+		return true;
+	for (uint32_t i = 0; i < type->param_count; ++i)
+	{
+		if (names_ordering_argument(type->params[i]))
+			return true;
+	}
+	return false;
 }
 
 const Type* Analyzer::substitute_decltype(const Type* type, const Substitution& given)
@@ -1602,8 +1675,14 @@ const Type* Analyzer::substituted_value(const TemplateParameterEntity* keyed,
 	{
 		DecltypeKey key = DecltypeKey{ nullptr, 0 };
 		bool shared = false;
+		bool independent = false;
 		if (dependent && earlier == nullptr)
-			result = equivalent_placeholder(placeholder, depth, canonical, count, key, shared);
+			result = equivalent_placeholder(placeholder, depth, canonical, count, key, shared, independent);
+		// Evaluate a proven independent operand through the ordinary path,
+		// with its deduction access and instantiation context. That path
+		// owns the memo entry, including a genuine substitution failure.
+		if (independent)
+			return substituted_value(keyed, placeholder, earlier, depth, canonical, count, false, elements);
 		if (result == nullptr)
 		{
 			result = pending_value(placeholder, depth, canonical, count, earlier);
