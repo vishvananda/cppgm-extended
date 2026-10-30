@@ -843,65 +843,6 @@ bool Analyzer::read_through_storage(const VariableEntity* variable) const
 	return stored_references_.find(variable) != PointerMap::kMissing;
 }
 
-bool Analyzer::constant_conversion(const syntax::Expr& condition, bool& value) const
-{
-	// A condition naming an object, or value-initializing a temporary
-	// (`T()`, `T{}`) whose construction and destruction do nothing (a
-	// trivial default constructor and destructor, 12.1p5, 12.4p5: a
-	// user-provided one, or a base's run by an implicit one, has effects
-	// the full-expression must keep, 12.2p3, 1.9p14), of an empty class
-	// whose non-explicit conversion function to bool returns a static data
-	// member's constant or a non-type template parameter's value named alone
-	// (its body's one statement) has that value (the course's form: the
-	// reference presents std::integral_constant's conversion so; the object
-	// has no side effects to evaluate, nor has the call, which the lowering
-	// then does not make).
-	const syntax::Expr* e = &condition;
-	while (e->kind == syntax::ExprKind::Paren)
-		e = static_cast<const syntax::ParenExpr*>(e)->inner;
-	const ExprFacts* facts = e->facts;
-	if (facts == nullptr || (facts->flags & kUserConverted) == 0 || facts->original == nullptr ||
-		facts->entity == nullptr || facts->entity->kind != EntityKind::Function)
-		return false;
-	const ExprFacts* object = facts->original;
-	const ClassEntity* cls = ClassOf(object->type);
-	const FunctionEntity* function = static_cast<const FunctionEntity*>(facts->entity);
-	const Type* result = function->type->canonical->element;
-	bool temporary = false;
-	if (e->kind == syntax::ExprKind::FunctionalCast)
-	{
-		const syntax::FunctionalCastExpr* cast = static_cast<const syntax::FunctionalCastExpr*>(e);
-		const FunctionEntity* constructor = object->entity != nullptr && object->entity->kind == EntityKind::Function
-			? static_cast<const FunctionEntity*>(object->entity)
-			: nullptr;
-		temporary = cast->arguments.size == 0 && (cast->braced == nullptr || cast->braced->elements.size == 0) &&
-			(constructor == nullptr || constructor->trivial) && cls != nullptr &&
-			(cls->destructor == nullptr || cls->destructor->trivial);
-	}
-	if ((e->kind != syntax::ExprKind::Id && !temporary) || cls == nullptr || !cls->empty || !function->conversion ||
-		function->is_explicit || function->body == nullptr || function->body->try_block ||
-		function->body->body->items.size != 1 || result->kind != TypeKind::Fundamental ||
-		result->fundamental != FundamentalType::Bool)
-		return false;
-	const syntax::Stmt* statement = function->body->body->items[0];
-	if (statement->kind != syntax::StmtKind::Return ||
-		static_cast<const syntax::ValueStmt*>(statement)->value == nullptr)
-		return false;
-	const syntax::Expr* returned = static_cast<const syntax::ValueStmt*>(statement)->value;
-	while (returned->kind == syntax::ExprKind::Paren)
-		returned = static_cast<const syntax::ParenExpr*>(returned)->inner;
-	const ExprFacts* constant = returned->facts;
-	const bool parameter = constant != nullptr && (constant->flags & kFolded) != 0 && constant->entity != nullptr &&
-		constant->entity->kind == EntityKind::Enumerator &&
-		static_cast<const EnumeratorEntity*>(constant->entity)->enumeration == nullptr;
-	if (returned->kind != syntax::ExprKind::Id || constant == nullptr ||
-		((constant->flags & kStaticConstant) == 0 && !parameter) || constant->type == nullptr ||
-		constant->type->unqualified != result)
-		return false;
-	value = constant->value != 0;
-	return true;
-}
-
 void Analyzer::set_evaluated(const VariableEntity* variable, const ConstValue* value)
 {
 	const uint32_t index = evaluated_index_.find(variable);

@@ -139,10 +139,6 @@ bool FunctionLowering::guarded_temporaries(const syntax::Expr* expr, bool root, 
 			return guarded_temporaries(choice->condition, false, depth + 1) ||
 				guarded_temporaries(choice->then_expr, true, depth + 1) ||
 				guarded_temporaries(choice->else_expr, true, depth + 1);
-		bool selected = false;
-		if (prvalue && object == nullptr && !sema::IsVoid(facts->type) &&
-			lowering_.constant_conversion(*choice->condition, selected))
-			return guarded_temporaries(selected ? choice->then_expr : choice->else_expr, root, depth + 1);
 		const bool guarded = !prvalue || object != nullptr || !root;
 		if (guarded &&
 			(operand_temporaries(choice->then_expr, object) || operand_temporaries(choice->else_expr, object)))

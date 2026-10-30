@@ -462,9 +462,6 @@ public:
 	// initialization, or null (sema::Analyzer::evaluated_value).
 	const sema::ConstValue* evaluated_value(const sema::VariableEntity* variable) const;
 	bool read_through_storage(const sema::VariableEntity* variable) const;
-	// Whether a condition converted by a conversion function has a value
-	// known without evaluating it (sema::Analyzer::constant_conversion).
-	bool constant_conversion(const syntax::Expr& condition, bool& value) const;
 	// A template instance's function definition, instantiated on this
 	// demand (false when its template has none).
 	bool instantiate_definition(const sema::FunctionEntity* function);

@@ -964,11 +964,6 @@ bool ProgramLowering::read_through_storage(const sema::VariableEntity* variable)
 	return analyzer_ != nullptr && analyzer_->read_through_storage(variable);
 }
 
-bool ProgramLowering::constant_conversion(const syntax::Expr& condition, bool& value) const
-{
-	return analyzer_ != nullptr && analyzer_->constant_conversion(condition, value);
-}
-
 bool ProgramLowering::instantiate_definition(const sema::FunctionEntity* function)
 {
 	return analyzer_->instantiate_definition(function);

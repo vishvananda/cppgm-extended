@@ -1,0 +1,112 @@
+global @constructions : i32 [binding=strong] = zero
+global @destructions : i32 [binding=strong] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $selected : i32
+  slot $cond__1 : i32
+  slot $tmpobj__2 : obj<1x1>
+  slot $call__3 : u8
+  slot $lor__4 : i64
+  slot $lor__5 : i64
+
+  block ^entry:
+    eh_try ^cleanup_resume_4
+    %t1 = addr $tmpobj__2
+    call void @flag__flag(%t1)
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^cleanup_resume_4:
+    resume
+
+  block ^call_unwind_end_5:
+    eh_try ^cleanup_action_6
+    %t2 = call u8 @flag__operatorbool(%t1)
+    store u8 %t2, $call__3
+    %t3 = load u8 $call__3
+    eh_end
+    jump ^call_unwind_end_7
+
+  block ^cleanup_action_6:
+    call void @flag___flag(%t1)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_7:
+    branch %t3, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 7, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 9, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t4 = load typed i32 $cond__1
+    store typed i32 %t4, $selected
+    call void @flag___flag(%t1)
+    %t5 = load typed i32 $selected
+    %t6 = cmp ne i32 %t5, 9
+    branch %t6, ^lor_short_9, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t7 = load typed i32 @constructions
+    %t8 = cmp ne i32 %t7, 1
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__4
+    jump ^lor_end_10
+
+  block ^lor_short_9:
+    store typed i64 1, $lor__4
+    jump ^lor_end_10
+
+  block ^lor_end_10:
+    %t10 = load typed i64 $lor__4
+    branch %t10, ^lor_short_12, ^lor_rhs_11
+
+  block ^lor_rhs_11:
+    %t11 = load typed i32 @destructions
+    %t12 = cmp ne i32 %t11, 1
+    %t13 = cmp ne i64 %t12, 0
+    store typed i64 %t13, $lor__5
+    jump ^lor_end_13
+
+  block ^lor_short_12:
+    store typed i64 1, $lor__5
+    jump ^lor_end_13
+
+  block ^lor_end_13:
+    %t14 = load typed i64 $lor__5
+    %t15 = convert trunc i32 i64 %t14
+    return i32 %t15
+}
+function @flag__flag(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4flagC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @constructions
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @constructions
+    return void
+}
+function @flag__operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK4flagcvbEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return u8 0
+}
+function @flag___flag(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN4flagD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destructions
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destructions
+    return void
+}
+alias object _ZN4flagC2Ev = @flag__flag
+alias object _ZN4flagD2Ev = @flag___flag

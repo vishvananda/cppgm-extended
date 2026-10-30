@@ -55,16 +55,6 @@ bool FunctionLowering::literal_truth(const syntax::Expr& expr, bool& value) cons
 		value = keyword == TokenKind::KW_TRUE;
 		return true;
 	}
-	// So does a conditional selecting such an operand at compile time (the
-	// course's integral_constant form, sema::Analyzer::constant_conversion).
-	bool selected = false;
-	if (e->kind == syntax::ExprKind::Conditional && e->facts != nullptr && e->facts->type != nullptr &&
-		sema::ClassOf(e->facts->type) == nullptr)
-	{
-		const syntax::ConditionalExpr* choice = static_cast<const syntax::ConditionalExpr*>(e);
-		return lowering_.constant_conversion(*choice->condition, selected) &&
-			literal_truth(selected ? *choice->then_expr : *choice->else_expr, value);
-	}
 	// So does a static data member's constant named alone (9.4.2p3: a
 	// value read without odr-use), and an enumerator (or a non-type
 	// template parameter's integral value) named alone.
@@ -314,9 +304,6 @@ RValue FunctionLowering::conditional_value(const syntax::ConditionalExpr& expr)
 	// descends into its nested operand's block, and the levels finish
 	// innermost first, each storing its value into the enclosing level's
 	// slot, in the block order of a recursive walk.
-	bool selected = false;
-	if (sema::ClassOf(expr.facts->type) == nullptr && lowering_.constant_conversion(*expr.condition, selected))
-		return fit(operand(selected ? *expr.then_expr : *expr.else_expr, ConversionContext::Operand), expr.facts->type);
 	const size_t base = choices_.size();
 	const syntax::ConditionalExpr* current = &expr;
 	const bool local = branch_local(expr);

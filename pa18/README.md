@@ -110,6 +110,11 @@ checked-in `.ref` files after canonicalizing presentation details that are not
 part of the assignment contract. Exact textual LowIR matching is not a PA18
 grading requirement.
 
+A runtime user-defined conversion in a conditional remains a call in unoptimized
+LowIR, including a conversion that returns a named static constant or template
+argument. Scalar conditional values retain the branch, store and merge form
+from PA8. Constant-expression evaluation still uses the PA16 semantic engine.
+
 ### Error Handling
 
 If an error occurs during preprocessing, tokenization, parsing, semantic

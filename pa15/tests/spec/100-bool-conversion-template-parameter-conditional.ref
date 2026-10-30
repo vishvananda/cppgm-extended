@@ -1,0 +1,70 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $yes : obj<1x1>
+  slot $no : obj<1x1>
+  slot $lor__1 : i64
+  slot $cond__2 : i32
+  slot $cond__3 : i32
+
+  block ^entry:
+    %t1 = addr $yes
+    %t2 = addr $no
+    %t3 = addr $yes
+    %t4 = call u8 @flag_true___operatorbool(%t3)
+    branch %t4, ^cond_then_4, ^cond_else_5
+
+  block ^cond_then_4:
+    store typed i32 3, $cond__2
+    jump ^cond_end_6
+
+  block ^cond_else_5:
+    store typed i32 5, $cond__2
+    jump ^cond_end_6
+
+  block ^cond_end_6:
+    %t5 = load typed i32 $cond__2
+    %t6 = cmp ne i32 %t5, 3
+    branch %t6, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t7 = addr $no
+    %t8 = call u8 @flag_false___operatorbool(%t7)
+    branch %t8, ^cond_then_7, ^cond_else_8
+
+  block ^cond_then_7:
+    store typed i32 7, $cond__3
+    jump ^cond_end_9
+
+  block ^cond_else_8:
+    store typed i32 9, $cond__3
+    jump ^cond_end_9
+
+  block ^cond_end_9:
+    %t9 = load typed i32 $cond__3
+    %t10 = cmp ne i32 %t9, 9
+    %t11 = cmp ne i64 %t10, 0
+    store typed i64 %t11, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t12 = load typed i64 $lor__1
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
+}
+function @flag_true___operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK4flagILb1EEcvbEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return u8 1
+}
+function @flag_false___operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK4flagILb0EEcvbEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return u8 0
+}
