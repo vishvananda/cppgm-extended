@@ -668,15 +668,17 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		facts->value = static_cast<uint64_t>(Intrinsic::VectorTruncate);
 		break;
 	}
-	case GnuBuiltin::VectorByteMask:
+	case GnuBuiltin::VectorSignMask:
 	{
 		if (count != 1)
-			error(expr.location, "wrong number of arguments to a packed byte sign mask");
+			error(expr.location, "wrong number of arguments to a packed sign mask");
 		if (typed_value(*expr.arguments[0], scope) == nullptr)
 			return nullptr;
-		convert(*expr.arguments[0], types_.vector(types_.fundamental(FundamentalType::Char), 16), false);
+		const FundamentalType lanes[] = { FundamentalType::Char, FundamentalType::Float, FundamentalType::Double };
+		const uint64_t counts[] = { 16, 4, 2 };
+		convert(*expr.arguments[0], types_.vector(types_.fundamental(lanes[variant]), counts[variant]), false);
 		facts = new_facts(expr, int_type, ValueCategory::PRValue);
-		facts->value = static_cast<uint64_t>(Intrinsic::VectorByteMask);
+		facts->value = static_cast<uint64_t>(Intrinsic::VectorSignMask);
 		break;
 	}
 	case GnuBuiltin::VectorByteMinMax:

@@ -1,0 +1,12 @@
+#include <emmintrin.h>
+#include <cfenv>
+int main(){std::feclearexcept(FE_ALL_EXCEPT);
+ unsigned long long double_patterns[4]={0ULL,0x7ff0000000000000ULL,0x7ff8000000000001ULL,0x7ff0000000000001ULL};
+ unsigned float_patterns[4]={0U,0x7f800000U,0x7fc00001U,0x7f800001U};
+ for(int pattern=0;pattern<4;++pattern){
+  for(unsigned mask=0;mask<4;++mask){unsigned long long bits[2];for(int i=0;i<2;++i)bits[i]=double_patterns[pattern]|((static_cast<unsigned long long>(mask>>i)&1)<<63);if(_mm_movemask_pd(_mm_castsi128_pd(_mm_loadu_si128(reinterpret_cast<const __m128i*>(bits))))!=static_cast<int>(mask))return 1;}
+  for(unsigned mask=0;mask<16;++mask){unsigned bits[4];for(int i=0;i<4;++i)bits[i]=float_patterns[pattern]|(((mask>>i)&1)<<31);if(_mm_movemask_ps(_mm_castsi128_ps(_mm_loadu_si128(reinterpret_cast<const __m128i*>(bits))))!=static_cast<int>(mask))return 2;}
+ }
+ for(unsigned mask=0;mask<65536;++mask){unsigned char bytes[16];for(int i=0;i<16;++i)bytes[i]=static_cast<unsigned char>(1|(((mask>>i)&1)<<7));if(_mm_movemask_epi8(_mm_loadu_si128(reinterpret_cast<const __m128i*>(bytes)))!=static_cast<int>(mask))return 3;}
+ return std::fetestexcept(FE_INVALID)!=0;
+}

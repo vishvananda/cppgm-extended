@@ -189,7 +189,7 @@ enum class Intrinsic : uint8_t
 	// x86's integer-indefinite result on a masked invalid conversion.
 	VectorTruncate,
 	// __builtin_ia32_pmovmskb128: byte i's sign bit is result bit i.
-	VectorByteMask,
+	VectorSignMask,
 	// SSE2 unsigned byte minimum/maximum; bit 8 selects maximum.
 	VectorByteMinMax,
 	VectorAndNot,

@@ -498,6 +498,14 @@ selector must be constant. A runtime selector through the public intrinsic
 wrapper remains an error. This check uses typed LowIR facts and leaves
 ordinary generated code and named debug storage unchanged.
 
+### SSE lane sign masks
+
+`__builtin_ia32_pmovmskb128`, `__builtin_ia32_movmskps` and
+`__builtin_ia32_movmskpd` collect the sign bits of 16 byte, 4 float or
+2 double lanes into the low bits of an int. Read floating representations
+as integer bits, preserving signed zero and NaN signs without floating
+exceptions. Evaluate the input once and leave unused result bits zero.
+
 ### Generic GNU atomic runtime operations
 
 The pointer-based `__atomic_load`, `__atomic_store`, `__atomic_exchange` and
