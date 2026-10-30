@@ -270,6 +270,7 @@ test-cells:
 # The harness unit tests: the comparison, the workers, the audits and the
 # export, each a self-contained python unittest file under scripts/tests.
 HARNESS_TESTS = \
+	scripts/tests/test_boost_ci.py \
 	scripts/tests/test_audit_pa_feature_placement.py \
 	scripts/tests/test_batch_timeout_harness.py \
 	scripts/tests/test_check_controls.py \

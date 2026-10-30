@@ -1,0 +1,104 @@
+name: Boost advisory
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: boost-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  boost:
+    name: representative Boost suites (advisory)
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    # Independent of the required Tests workflow. Preserve a visible failed
+    # step and its artifacts while keeping this additional campaign advisory.
+    continue-on-error: true
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_STDLIB_FLAGS: ""
+
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential ca-certificates curl git python3 bzip2 gdb
+
+      - uses: actions/checkout@v6
+
+      - name: Build compiler
+        run: make -C dev cppgm++
+
+      - name: Cache pinned Boost archive
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/boost_1_92_0.tar.bz2
+          key: boost-1.92.0-5c1d40cb8e19adbf740a4ec2da35b3e58f3f5804b1dce44deb53df72193cbc6c
+
+      - name: Verify and extract Boost
+        run: |
+          archive="$RUNNER_TEMP/boost_1_92_0.tar.bz2"
+          if [ ! -f "$archive" ]; then
+            curl --fail --location --retry 3 \
+              https://archives.boost.io/release/1.92.0/source/boost_1_92_0.tar.bz2 \
+              --output "$archive.tmp"
+            echo "5c1d40cb8e19adbf740a4ec2da35b3e58f3f5804b1dce44deb53df72193cbc6c  $archive.tmp" | sha256sum --check
+            mv "$archive.tmp" "$archive"
+          fi
+          echo "5c1d40cb8e19adbf740a4ec2da35b3e58f3f5804b1dce44deb53df72193cbc6c  $archive" | sha256sum --check
+          tar -xjf "$archive" -C "$RUNNER_TEMP"
+
+      - name: Compile and run representative suites
+        run: |
+          python3 scripts/boost_ci.py \
+            --boost-root "$RUNNER_TEMP/boost_1_92_0" \
+            --archive "$RUNNER_TEMP/boost_1_92_0.tar.bz2" \
+            --compiler dev/cppgm++ \
+            --output "$RUNNER_TEMP/boost-advisory" \
+            --jobs "$(nproc)"
+
+      - name: Write advisory summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          results = Path(os.environ['RUNNER_TEMP']) / 'boost-advisory/results.json'
+          with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as summary:
+              summary.write('### Boost 1.92 advisory\n\n')
+              if results.exists():
+                  report = json.loads(results.read_text())
+                  summary.write(f"Result: **{report['status']}**; Boost runner: {report['seconds']:.1f}s.\n\n")
+                  summary.write('| Suite | Passed variants | Seconds |\n|---|---:|---:|\n')
+                  for suite in report['suites']:
+                      summary.write(f"| {suite['project']} | {suite['passed']} | {suite['seconds']:.1f} |\n")
+                  if report.get('error'):
+                      summary.write('\nFailure: ' + report['error'] + '\n')
+              else:
+                  summary.write('Setup or build failed before the Boost runner produced results.\n')
+              summary.write('\nThis independent push workflow is advisory; required CI runs separately.\n')
+          PY
+
+      - name: Retain diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: boost-advisory-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/boost-advisory/results.json
+            ${{ runner.temp }}/boost-advisory/bootstrap.log
+            ${{ runner.temp }}/boost-advisory/config/
+            ${{ runner.temp }}/boost-advisory/libs-*/
+          if-no-files-found: warn
+          retention-days: 14

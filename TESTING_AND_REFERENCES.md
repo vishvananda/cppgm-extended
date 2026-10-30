@@ -36,6 +36,35 @@ make -C pa8 check TEST='tests/spec/100-*.t'
 `TEST=` accepts a path, quoted glob or quoted list. Mixed-input assignments
 route each selected fixture to its owning runner.
 
+## Boost advisory CI
+
+The independent **Boost advisory** workflow runs on every push, with a
+20-minute budget. It builds the compiler and compiles/runs the original
+Boost 1.92 Accumulators, Container, JSON, TypeErasure, TypeTraits, UUID and
+Variant2 suites: 630 declared tests. JSON includes the actual GDB pretty-printer
+integration. This supplements the required compiler checks; advisory
+failures remain visible in the job steps, summary and retained artifacts.
+
+The archive is pinned by SHA-256. Every C++ compilation uses `cppgm++`;
+the host handles C, assembler and linking. The runner checks declarations,
+expected-failure actions, compiler results and actual execution results,
+including GDB invocation. Missing tests and compiler crashes fail the
+review. Each run uses a fresh build directory and executes its runtime tests.
+
+With the verified archive and extracted release available locally:
+
+```sh
+python3 scripts/boost_ci.py \
+  --archive /path/to/boost_1_92_0.tar.bz2 \
+  --boost-root /path/to/boost_1_92_0 \
+  --compiler dev/cppgm++ --output obj/boost-advisory --jobs 4
+```
+
+Use a new output directory for each run. `results.json` records per-suite
+timings and reviewed results; raw B2 XML, logs and compiler invocations
+remain alongside it. The workflow retains these diagnostics for 14 days.
+The runner's failure controls are part of `make test-harness`.
+
 ## Fixture ownership
 
 Every required fixture lives under its owning `paN/tests/`. From PA5 onward,
