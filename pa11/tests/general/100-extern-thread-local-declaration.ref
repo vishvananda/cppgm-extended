@@ -1,14 +1,29 @@
 declare global @value : i32 [storage=thread_local, binding=strong]
 
+declare function @__cppgm_tls_init__value() -> void [binding=weak, object=_ZTH5value]
+
 global @address : ptr [binding=strong] = zero
 
+function @__cppgm_tls_wrapper__value() -> ptr [binding=weak, object=_ZTW5value, tls_for=@value] {
+  block ^entry:
+    %t1 = cmp ne ptr @__cppgm_tls_init__value, 0
+    branch %t1, ^local_static_ctor_run_1, ^local_static_ctor_done_2
+
+  block ^local_static_ctor_run_1:
+    call void @__cppgm_tls_init__value()
+    jump ^local_static_ctor_done_2
+
+  block ^local_static_ctor_done_2:
+    %t2 = addr @value
+    return ptr %t2
+}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
-    %t1 = addr @value
+    %t1 = call ptr @__cppgm_tls_wrapper__value()
     store typed ptr %t1, @address
     return void
 }

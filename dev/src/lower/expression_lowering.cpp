@@ -918,10 +918,10 @@ Place FunctionLowering::variable_place(const sema::Entity* entity, const sema::T
 			if (wrapper == PointerMap::kMissing && variable->defined &&
 				lowering_.program().symbols[place.storage.index].kind == lowir::SymbolKind::Unresolved)
 				wrapper = lowering_.thread_local_wrapper_symbol(place.storage.index, variable);
-			// Object mode: one another unit defines, through a wrapper running
-			// that unit's initialization for the thread first.
-			else if (wrapper == PointerMap::kMissing && lowering_.object_mode() && !variable->defined &&
-				!lowering_.unit_local(variable))
+			// One another unit defines, through a wrapper running that unit's
+			// initialization for the thread first. The serialized LowIR carries
+			// the same ABI call as direct object compilation.
+			else if (wrapper == PointerMap::kMissing && !variable->defined && !lowering_.unit_local(variable))
 				wrapper = lowering_.external_thread_local_wrapper(place.storage.index, variable);
 			if (wrapper != PointerMap::kMissing)
 				place.storage = emit_call(lowir::Type::scalar(lowir::TypeKind::Ptr), lowir::Value::symbol(wrapper),
