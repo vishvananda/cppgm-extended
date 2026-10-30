@@ -202,7 +202,9 @@ PA15 supports the following in addition to the PA14 subset:
   for a function template with multiple parameter packs; every partition keeps
   its own argument-to-pack boundaries when specializations are reused
 - pack expansions in supported declarations, direct calls, and instantiated
-  body shapes
+  body shapes; an empty expanded parenthesized local initializer
+  value-initializes its object, including zero initialization of scalars and
+  array elements. A written function declaration remains a declaration
 - integral constant-expression template arguments over the supported subset:
   - literals, including ordinary character literals
   - keyword literals `true` / `false`

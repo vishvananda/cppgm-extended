@@ -790,7 +790,18 @@ void FunctionLowering::initialize_storage(
 		? (initializer->arguments.size == 1 ? initializer->arguments[0] : nullptr)
 		: initializer->expression;
 	if (expr == nullptr)
-		throw LoweringError(location, "an initializer outside the procedural lowering slice");
+	{
+		if (initializer->kind != syntax::InitializerKind::Parenthesized || !initializer->arguments.empty())
+			throw LoweringError(location, "an initializer outside the procedural lowering slice");
+		// 8.5p16: an empty expansion in T value(args...) value-initializes.
+		// Analysis retains the variable declaration and the empty argument list.
+		if (type->kind == sema::TypeKind::Array)
+			aggregate_array(type, AddressPath{ AddressPath::Root::Value, address_of(place), path_steps_.size() },
+				nullptr, location);
+		else
+			store(lowering_.storage_type(type), zero_value(type), place);
+		return;
+	}
 	if (type->kind == sema::TypeKind::Array && type->element->kind == sema::TypeKind::Array)
 	{
 		// A multidimensional array's elements, each address derived from
