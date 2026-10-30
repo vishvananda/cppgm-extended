@@ -159,6 +159,10 @@ def main():
                        'toolset=gcc-cppgm', 'cxxstd=11', 'variant=debug', 'link=static', 'runtime-link=shared',
                        'threading=multi', '--build-dir=' + str(output / 'build'), '--reconfigure', '-a', '-d2',
                        project, '--out-xml=' + str(case / 'b2.xml'), '--dump-tests']
+            # The original JSON Jamfile declares this target explicit; the
+            # project alone builds its 49 ordinary tests but omits GDB.
+            if project == 'libs/json/test':
+                command.append('libs/json/test//gdb-printers')
             suite_start = time.monotonic()
             with (case / 'b2.log').open('w') as log:
                 log.write(shlex.join(command) + '\n'); log.flush()
