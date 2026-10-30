@@ -1,0 +1,1 @@
+int main(){unsigned a,b,c,d;asm volatile("cpuid" : "=a"(a),"=b"(b),"=c"(c),"=d"(d):"0"(0u),"2"(0u));if(!a||!b||!c||!d)return 1;unsigned e,f,g,h;asm volatile("cpuid" : [a]"=a"(e),[b]"=b"(f),[c]"=c"(g),[d]"=d"(h):"[a]"(0u),"[c]"(0u));return a!=e||b!=f||c!=g||d!=h;}

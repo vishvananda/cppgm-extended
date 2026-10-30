@@ -80,7 +80,9 @@ enum class AsmOperation : uint8_t
 	SetZero,
 	SetNotZero,
 	// pand: all 128 bits of two XMM operands, preserving condition flags.
-	PackedAnd
+	PackedAnd,
+	// cpuid: immediate holds the a,b,c,d output indices in successive bytes.
+	CpuId
 };
 
 const uint8_t kAsmImmediateSource = 0xff;

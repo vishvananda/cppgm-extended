@@ -82,10 +82,11 @@ enum SymbolRole : std::uint8_t
 	SR_RTTI_VMI,
 	SR_RTTI_DATA,
 	SR_BAD_ARRAY_NEW_LENGTH,
-	SR_RTTI_POINTER
+	SR_RTTI_POINTER,
+	SR_CPU_QUERY
 };
 
-const unsigned kSymbolRoleCount = SR_RTTI_POINTER + 1;
+const unsigned kSymbolRoleCount = SR_CPU_QUERY + 1;
 
 enum LanguageLinkageMode : std::uint8_t
 {
@@ -325,7 +326,7 @@ inline const char* spelling(SymbolRole value)
 	static const char* const kRoles[kSymbolRoleCount] = { "", "entry", "init", "fini", "eh_allocate_exception",
 		"eh_begin_catch", "eh_end_catch", "eh_rethrow", "eh_throw", "eh_personality", "eh_resume", "allocate_memory",
 		"free_memory", "terminate", "pure_virtual", "dynamic_cast", "bad_cast", "bad_typeid", "rtti_class", "rtti_si",
-		"rtti_vmi", "rtti_data", "bad_array_new_length", "rtti_pointer" };
+		"rtti_vmi", "rtti_data", "bad_array_new_length", "rtti_pointer", "cpu_query" };
 	return kRoles[value];
 }
 

@@ -348,6 +348,12 @@ uint32_t emit_runtime(
 		const lowir::Symbol& symbol = program.symbols[s];
 		if (symbol.kind != lowir::SymbolKind::FunctionDeclaration)
 			continue;
+		if (symbol.metadata.role == ir_model::SR_CPU_QUERY)
+		{
+			UnwindFacts facts;
+			emit_cpu_query(image, s, facts);
+			continue;
+		}
 		if (symbol.metadata.tls_for != lowir::kNoId)
 		{
 			emit_tls_wrapper(image, s, symbol.metadata.tls_for);

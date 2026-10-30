@@ -347,6 +347,11 @@ To complete PA29, implement hosted compatibility for:
   takes part in copy initialization, so a parse that accepts the form and
   discards the condition silently mis-ranks overloads.  Attributes interleave
   with the specifiers around it rather than preceding them all
+- GNU `cpuid` statements with fixed `a`, `b`, `c`, `d` register outputs
+  and read/write or matching inputs for the leaf and subleaf. Execute the
+  real CPU instruction through the typed LowIR `cpu_query` runtime role;
+  retain all four results, 32-bit writes clearing wider register halves,
+  operand evaluation once, condition flags and the native callee-save ABI
 - GNU register-only `pand` statements over two 128-bit `x` vector operands,
   including matching constraints. Lift all operand bits to integer AND,
   evaluate each operand once, and preserve preceding condition flags

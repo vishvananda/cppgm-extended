@@ -1,0 +1,4 @@
+extern "C" void cpuid_oracle(unsigned,unsigned,unsigned*);
+extern "C" int cpuid_preserve(int(*)(void));
+int check(){const unsigned leaves[]={0,7,0x80000000U,0x80000002U,0x80000003U,0x80000004U};for(unsigned n=0;n<6;++n){unsigned expected[4];cpuid_oracle(leaves[n],0,expected);unsigned a=leaves[n],b=~0U,c=0,d=~0U;asm volatile("cpuid":"+a"(a),"+b"(b),"+c"(c),"+d"(d));if(a!=expected[0]||b!=expected[1]||c!=expected[2]||d!=expected[3])return 1;unsigned long long x=(0xabcdef01ULL<<32)|leaves[n],y=~0ULL,z=0xabcdef0100000000ULL,w=~0ULL;asm volatile("cpuid":"+a"(x),"+b"(y),"+c"(z),"+d"(w));if(x!=expected[0]||y!=expected[1]||z!=expected[2]||w!=expected[3])return 2;}return 0;}
+int main(){return cpuid_preserve(check);}

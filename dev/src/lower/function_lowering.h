@@ -736,6 +736,7 @@ private:
 	void asm_store(const AsmState& state, uint32_t index, RValue value);
 	RValue asm_source(const AsmState& state, const sema::AsmInstruction& instruction);
 	void asm_instruction(const sema::AsmInstruction& instruction, AsmState& state);
+	void asm_cpu_query(const sema::AsmInstruction& instruction, AsmState& state);
 	void asm_bit_instruction(const sema::AsmInstruction& instruction, AsmState& state, const RValue& source);
 	void asm_capture_flags(const sema::AsmInstruction& instruction, AsmState& state, const RValue& before,
 		const RValue& after, const RValue& source);

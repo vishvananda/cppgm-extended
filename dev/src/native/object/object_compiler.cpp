@@ -126,7 +126,7 @@ private:
 	void place_text();
 	void place_globals();
 	void place_startup();
-	void record_unwind(uint32_t range, bool encoded);
+	void record_unwind(uint32_t range, bool encoded, const UnwindFacts* generated = nullptr);
 	void place_unwind();
 	uint32_t cell(uint32_t image_symbol);
 	void add_unwind_relocations();
@@ -390,7 +390,7 @@ void ObjectCompiler::function(lowir::SymbolId symbol)
 
 // Host EH: the function just encoded (or, without MIR, a TLS wrapper: a
 // leaf the CIE's rule describes) gets its FDE instructions and LSDA.
-void ObjectCompiler::record_unwind(uint32_t range, bool encoded)
+void ObjectCompiler::record_unwind(uint32_t range, bool encoded, const UnwindFacts* generated)
 {
 	UnwindEntry entry = UnwindEntry();
 	entry.range = range;
@@ -408,6 +408,8 @@ void ObjectCompiler::record_unwind(uint32_t range, bool encoded)
 		stats_.landings += mir_.eh.landings.size();
 		stats_.lsdas += lsda ? 1 : 0;
 	}
+	else if (generated != nullptr)
+		encode_frame_instructions(*generated, false, cfi_pool_);
 	entry.cfi_count = static_cast<uint32_t>(cfi_pool_.size()) - entry.cfi_first;
 	entry.types_count = static_cast<uint32_t>(type_fields_.size()) - entry.types_first;
 	unwind_.push_back(entry);
@@ -431,6 +433,15 @@ void ObjectCompiler::emit_remaining()
 	for (lowir::SymbolId s = 0; s < program_.symbols.size(); ++s)
 	{
 		const lowir::Symbol& symbol = program_.symbols[s];
+		if (symbol.kind == lowir::SymbolKind::FunctionDeclaration && symbol.metadata.role == ir_model::SR_CPU_QUERY)
+		{
+			UnwindFacts facts;
+			emit_cpu_query(image_, s, facts);
+			ranges_.push_back(CodeRange{ s, image_.symbol(s).offset, image_.text().size(), 0, 0, false });
+			if (eh_model_ == EhModel::Host)
+				record_unwind(static_cast<uint32_t>(ranges_.size() - 1), false, &facts);
+			continue;
+		}
 		if (symbol.kind != lowir::SymbolKind::FunctionDeclaration || symbol.metadata.tls_for == lowir::kNoId)
 			continue;
 		emit_tls_wrapper(image_, s, symbol.metadata.tls_for);
@@ -445,7 +456,8 @@ bool ObjectCompiler::local_function(uint32_t image_symbol) const
 	// A function no other object can name (a local symbol, object_symbol):
 	// internal, or a thread-local wrapper the unit defines for itself.
 	const lowir::Symbol& s = program_.symbols[image_symbol];
-	if (s.metadata.role != ir_model::SR_NONE || (s.metadata.flags & lowir::SF_OBJECT_ROOT) != 0)
+	if ((s.metadata.role != ir_model::SR_NONE && s.metadata.role != ir_model::SR_CPU_QUERY) ||
+		(s.metadata.flags & lowir::SF_OBJECT_ROOT) != 0)
 		return false;
 	return s.metadata.binding == ir_model::SBM_INTERNAL || s.kind == lowir::SymbolKind::FunctionDeclaration;
 }

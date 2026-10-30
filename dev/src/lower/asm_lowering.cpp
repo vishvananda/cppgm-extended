@@ -199,6 +199,11 @@ void FunctionLowering::asm_bit_instruction(
 
 void FunctionLowering::asm_instruction(const sema::AsmInstruction& instruction, AsmState& state)
 {
+	if (instruction.operation == sema::AsmOperation::CpuId)
+	{
+		asm_cpu_query(instruction, state);
+		return;
+	}
 	if (instruction.operation >= sema::AsmOperation::SetCarry &&
 		instruction.operation <= sema::AsmOperation::SetNotZero)
 	{

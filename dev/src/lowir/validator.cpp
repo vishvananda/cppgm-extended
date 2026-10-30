@@ -11,6 +11,23 @@ namespace {
 const uint32_t kPlacedBlock = 1;
 const uint32_t kHandlerBlock = 2;
 
+bool cpu_query_declaration(const Program& program, const Symbol& symbol)
+{
+	if (symbol.kind != SymbolKind::FunctionDeclaration || symbol.metadata.tls_for != kNoId)
+		return false;
+	const Signature& signature = program.signatures[program.functions[symbol.detail].signature];
+	if (signature.result.kind() != TypeKind::Void || signature.parameter_count != 3 ||
+		signature.boundary.arity != ir_model::CAM_FIXED || signature.boundary.effects != ir_model::CFXM_DEFAULT ||
+		signature.boundary.returns != ir_model::CRM_DEFAULT || signature.boundary.result_classes != 0)
+		return false;
+	const Parameter* parameters = program.parameters_of(signature);
+	for (uint32_t i = 0; i < 3; ++i)
+		if (parameters[i].type.kind() != (i == 2 ? TypeKind::Ptr : TypeKind::I32) ||
+			parameters[i].pass != ir_model::PPM_DIRECT || parameters[i].classes != 0 || parameters[i].object_bytes != 0)
+			return false;
+	return true;
+}
+
 // Phi and its incoming values have a directly representable scalar type.
 bool is_phi_type(Type type)
 {
@@ -326,7 +343,7 @@ bool Validator::run()
 
 bool Validator::check_symbols()
 {
-	std::vector<SymbolId> role_owner(ir_model::SR_RTTI_POINTER + 1, kNoId);
+	std::vector<SymbolId> role_owner(ir_model::kSymbolRoleCount, kNoId);
 	std::vector<bool> wrapped(program_.symbols.size(), false);
 	for (SymbolId id = 0; id < program_.symbols.size(); ++id)
 	{
@@ -344,6 +361,8 @@ bool Validator::check_symbols()
 			role_owner[metadata.role] = id;
 			if (metadata.role == ir_model::SR_ENTRY && symbol.kind != SymbolKind::FunctionDefinition)
 				return fail("entry role requires a function definition", symbol.name);
+			if (metadata.role == ir_model::SR_CPU_QUERY && !cpu_query_declaration(program_, symbol))
+				return fail("cpu_query role requires an effectful void (i32, i32, ptr) declaration", symbol.name);
 		}
 		if (function && (metadata.storage != ir_model::GSM_DEFAULT || metadata.section != 0))
 			return fail("storage metadata on non-global", symbol.name);

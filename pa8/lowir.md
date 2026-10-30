@@ -258,6 +258,7 @@ The currently defined role values are:
   - `bad_cast`
   - `bad_typeid`
   - `bad_array_new_length`
+  - `cpu_query`
 - global roles:
   - `rtti_class`
   - `rtti_si`
@@ -270,6 +271,13 @@ listed above are singleton roles except `rtti_data`, which may describe each
 distinct runtime type-information object or category helper used by the
 program. A role must also appear on the correct top-level kind: function roles
 on functions and global roles on globals.
+
+The `cpu_query` function role identifies a compiler-owned native CPU query
+helper, declared as `void (i32, i32, ptr)` with fixed arity. Its arguments
+are the CPUID leaf, subleaf and writable storage for four consecutive
+32-bit results in EAX, EBX, ECX, EDX order. It executes the actual instruction
+and preserves callee-saved registers. PA29 uses this role for GNU CPUID
+statements; its body is supplied directly by the native backend.
 
 The `rtti_pointer` role identifies the vtable of the runtime's pointer
 type-information class. A pointer exception is caught by value: a standalone
