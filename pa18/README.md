@@ -61,6 +61,11 @@ identity of the class template they name, including when a later declaration
 adds namespace qualification or uses a namespace alias. Different templates or
 template arguments remain distinct. The first declaration retains its ABI spelling.
 
+A qualified member function template-id that names no function template is a
+substitution failure in an immediate context, including an address used as a
+non-type template argument. Outside substitution, the same invalid name remains
+a hard error; errors in instantiated function bodies remain hard errors too.
+
 ### Output Format
 
 On success, `cppgm++` shall write LowIR text to `<outfile>` and exit

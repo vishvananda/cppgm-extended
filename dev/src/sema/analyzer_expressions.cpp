@@ -498,7 +498,10 @@ ExprFacts* Analyzer::id_expression(const syntax::IdExpr& expr, Scope* scope)
 			return binding_expression(expr, &name, LookupResult{ specialization, nullptr, false, false }, scope);
 		}
 		if (!result.found() || result.binding->kind != BindingKind::Function)
-			error(name.location, "template-id does not name a function template");
+		{
+			substitution_error(name.location, "template-id does not name a function template");
+			return nullptr;
+		}
 		const FunctionList* set = explicit_specializations(last, result.functions, scope);
 		if (set == nullptr)
 			return nullptr;
