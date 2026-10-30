@@ -694,6 +694,8 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		facts->value = static_cast<uint64_t>(Intrinsic::VectorByteMinMax) | (static_cast<uint64_t>(variant) << 8);
 		break;
 	}
+	case GnuBuiltin::VectorPermute:
+		return vector_permute_builtin(expr, variant, scope);
 	case GnuBuiltin::VectorPack:
 	{
 		if (count != 2)
@@ -877,6 +879,76 @@ ExprFacts* Analyzer::vector_shift_builtin(const syntax::CallExpr& expr, uint8_t 
 	facts->flags |= kIntrinsic;
 	const Intrinsic kind = variant == 0 ? Intrinsic::VectorShiftLeftBytes : Intrinsic::VectorShiftRightBytes;
 	facts->value = static_cast<uint64_t>(kind) | (constant ? count.bits / 8 << 8 : uint64_t(1) << 16);
+	return facts;
+}
+
+ExprFacts* Analyzer::vector_permute_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope)
+{
+	if (variant != 0)
+		return vector_index_shuffle_builtin(expr, scope);
+	const uint32_t count = expr.arguments.size;
+	if (count != 2 && count != 3)
+		error(expr.location, "a vector permutation takes one or two vectors and a mask");
+	const Type* arguments[3] = {};
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		const ExprFacts* value = typed_value(*expr.arguments[i], scope);
+		if (value == nullptr)
+			return nullptr;
+		arguments[i] = value->type->unqualified;
+	}
+	const Type* vector = arguments[0];
+	const Type* mask = arguments[count - 1];
+	if (vector->kind != TypeKind::Vector || vector->element->unqualified->fundamental == FundamentalType::Bool ||
+		(vector->bound & (vector->bound - 1)) != 0 || (count == 3 && vector->canonical != arguments[1]->canonical) ||
+		mask->kind != TypeKind::Vector || mask->bound != vector->bound || !IsIntegralOrUnscopedEnum(mask->element))
+		error(expr.location, "a vector permutation requires matching vectors and an integral lane mask");
+	uint64_t bytes = 0, mask_bytes = 0, alignment = 0;
+	if (!type_size(vector, bytes, alignment, expr.location) || !type_size(mask, mask_bytes, alignment, expr.location) ||
+		bytes != mask_bytes)
+		error(expr.location, "a vector permutation mask has another width than its input");
+	for (uint32_t i = 0; i < count; ++i)
+		convert(*expr.arguments[i], arguments[i], false);
+	ExprFacts* facts = new_facts(expr, vector, ValueCategory::PRValue);
+	facts->value = static_cast<uint64_t>(Intrinsic::VectorPermute);
+	facts->flags |= kIntrinsic;
+	return facts;
+}
+
+ExprFacts* Analyzer::vector_index_shuffle_builtin(const syntax::CallExpr& expr, Scope* scope)
+{
+	if (expr.arguments.size < 3)
+		error(expr.location, "an indexed vector shuffle takes two vectors and constant indexes");
+	const ExprFacts* first = typed_value(*expr.arguments[0], scope);
+	const ExprFacts* second = typed_value(*expr.arguments[1], scope);
+	if (first == nullptr || second == nullptr)
+		return nullptr;
+	const Type* input = first->type->unqualified;
+	if (input->kind != TypeKind::Vector || input->canonical != second->type->unqualified->canonical ||
+		input->element->unqualified->fundamental == FundamentalType::Bool)
+		error(expr.location, "an indexed vector shuffle requires two matching vectors");
+	for (uint32_t i = 2; i < expr.arguments.size; ++i)
+	{
+		if (typed_value(*expr.arguments[i], scope) == nullptr)
+			return nullptr;
+		Constant index;
+		if (!integral_constant(*expr.arguments[i], scope, index) ||
+			(index.bits >= 2 * input->bound && !(IsSignedConstant(index) && index.bits == ~uint64_t(0))))
+			error(expr.arguments[i]->location, "an indexed vector shuffle selector is no constant index or -1");
+		// Keep each proven constant on its existing typed expression. The
+		// lowering consumes it directly, without re-evaluating the source.
+		ExprFacts* selected = facts_of(*expr.arguments[i]);
+		selected->flags |= kFolded;
+		selected->value = index.bits;
+	}
+	convert(*expr.arguments[0], input, false);
+	convert(*expr.arguments[1], input, false);
+	const Type* output = checked_vector(input->element, expr.arguments.size - 2, false, expr.location);
+	if (output == nullptr)
+		return nullptr;
+	ExprFacts* facts = new_facts(expr, output, ValueCategory::PRValue);
+	facts->flags |= kIntrinsic;
+	facts->value = static_cast<uint64_t>(Intrinsic::VectorPermute) | uint64_t(1) << 8;
 	return facts;
 }
 

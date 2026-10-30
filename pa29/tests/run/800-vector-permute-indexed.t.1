@@ -1,0 +1,9 @@
+using V=int __attribute__((vector_size(16)));
+using S=int __attribute__((vector_size(8)));
+using D=double __attribute__((vector_size(16)));
+int calls;
+V input(V v){++calls;return v;}
+int main(){V a={1,2,3,4},b={5,6,7,8};V x=__builtin_shufflevector(input(a),input(b),7,0,5,2);if(x[0]!=8||x[1]!=1||x[2]!=6||x[3]!=3||calls!=2)return 1;
+ S s=__builtin_shufflevector(a,b,6,1);static_assert(sizeof(s)==8,"shorter result");if(s[0]!=7||s[1]!=2)return 2;
+ V unspecified=__builtin_shufflevector(a,b,-1,4,3,0);if(unspecified[1]!=5||unspecified[2]!=4||unspecified[3]!=1)return 3;
+ D p={1.5,-0.0},q={3.5,4.5};D d=__builtin_shufflevector(p,q,3,0);return d[0]!=4.5||d[1]!=1.5;}

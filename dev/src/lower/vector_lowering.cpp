@@ -462,6 +462,63 @@ RValue FunctionLowering::vector_byte_minmax(const syntax::CallExpr& expr)
 	return load(lowering_.storage_type(vector), place);
 }
 
+RValue FunctionLowering::permute_vector(const syntax::CallExpr& expr)
+{
+	// GNU shuffle masks select lanes modulo N (one input) or 2N (two).
+	// Capture all operands once; each output lane takes one indexed load.
+	const sema::Type* result = expr.facts->type;
+	const sema::Type* vector = WithoutParentheses(expr.arguments[0])->facts->type->unqualified;
+	const bool indexed = (expr.facts->value >> 8) != 0;
+	const bool paired = indexed || expr.arguments.size == 3;
+	const sema::Type* mask_type = indexed
+		? nullptr
+		: WithoutParentheses(expr.arguments[paired ? 2 : 1])->facts->type->unqualified;
+	const lowir::Value first = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const lowir::Value second = paired ? vector_storage(operand(*expr.arguments[1], ConversionContext::Argument))
+									   : first;
+	const lowir::Value mask = indexed
+		? lowir::Value::none()
+		: vector_storage(operand(*expr.arguments[paired ? 2 : 1], ConversionContext::Argument));
+	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
+	const sema::Type* index_type = lowering_.graph().types.fundamental(FundamentalType::LongInt);
+	lowir::SlotId slot = lowir::kNoId;
+	const lowir::Value out = zeroed_vector(result, slot);
+	for (uint64_t i = 0; i < result->bound; ++i)
+	{
+		if (indexed)
+		{
+			const uint64_t lane = expr.arguments[i + 2]->facts->value;
+			// -1 is an unspecified lane; the zeroed result is a valid choice.
+			if (lane != ~uint64_t(0))
+				set_vector_lane(
+					out, result, i, vector_lane(lane < vector->bound ? first : second, vector, lane % vector->bound));
+			continue;
+		}
+		RValue selected = convert(
+			vector_lane(mask, mask_type, i), mask_type->element, index_type, ConversionContext::Cast);
+		selected = binary(lowir::BinaryOp::And, i64, selected, integer(i64, vector->bound * (paired ? 2 : 1) - 1));
+		lowir::Value source = first;
+		if (paired)
+		{
+			lowir::Instruction choice = lowir::make_instruction(
+				lowir::Opcode::Select, lowir::Type::scalar(lowir::TypeKind::Ptr));
+			choice.ops[0] = compare(lowir::ComparePredicate::Ult, i64, selected, integer(i64, vector->bound)).value;
+			choice.ops[1] = first;
+			choice.ops[2] = second;
+			source = emit_value(choice, choice.type);
+		}
+		selected = binary(lowir::BinaryOp::And, i64, selected, integer(i64, vector->bound - 1));
+		const RValue offset = binary(
+			lowir::BinaryOp::Mul, i64, selected, integer(i64, lowering_.size_of(vector->element, 0)));
+		Place lane = Place();
+		lane.storage = index(lowir::Type::scalar(lowir::TypeKind::I8), ir_model::IPK_FIELD, source, offset).value;
+		set_vector_lane(out, result, i, load(lowering_.storage_type(vector->element), lane));
+	}
+	Place place = Place();
+	place.storage = lowir::Value::slot(slot);
+	return load(lowering_.storage_type(result), place);
+}
+
 RValue FunctionLowering::pack_vector(const syntax::CallExpr& expr)
 {
 	// Signed input lanes saturate before narrowing. The first input fills

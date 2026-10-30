@@ -253,6 +253,8 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		return vector_andnot(expr);
 	case sema::Intrinsic::VectorPack:
 		return pack_vector(expr);
+	case sema::Intrinsic::VectorPermute:
+		return permute_vector(expr);
 	case sema::Intrinsic::VectorUnpack:
 		return unpack_vector(expr);
 	case sema::Intrinsic::VectorShiftLanes:

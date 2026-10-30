@@ -1,0 +1,12 @@
+#include <emmintrin.h>
+#include <cfenv>
+int calls;
+__m128d input(__m128d x){++calls;return x;}
+int main(){unsigned long long a[2]={0x8000000000000000ULL,0x7ff8000012345678ULL},b[2]={0x7ff0000087654321ULL,0},out[2];std::feclearexcept(FE_ALL_EXCEPT);
+ _mm_storeu_si128(reinterpret_cast<__m128i*>(out),_mm_castpd_si128(_mm_move_sd(input(_mm_castsi128_pd(_mm_loadu_si128(reinterpret_cast<const __m128i*>(a)))),input(_mm_castsi128_pd(_mm_loadu_si128(reinterpret_cast<const __m128i*>(b)))))));
+ if(out[0]!=b[0]||out[1]!=a[1]||calls!=2||std::fetestexcept(FE_INVALID))return 1;
+ short x[8]={1,2,3,4,5,6,7,8},y[8]={9,10,11,12,13,14,15,16},z[8];
+ _mm_storeu_si128(reinterpret_cast<__m128i*>(z),_mm_unpacklo_epi16(_mm_loadu_si128(reinterpret_cast<const __m128i*>(x)),_mm_loadu_si128(reinterpret_cast<const __m128i*>(y))));
+ for(int i=0;i<8;++i)if(z[i]!=(i&1?y[i/2]:x[i/2]))return 2;
+ return 0;
+}

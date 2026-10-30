@@ -142,6 +142,8 @@ const struct
 	{ "__builtin_reduce_or", { GnuBuiltin::Reduce, 1, nullptr, 0 } },
 	{ "__builtin_reduce_xor", { GnuBuiltin::Reduce, 2, nullptr, 0 } },
 	{ "__builtin_rindex", { GnuBuiltin::Library, 0, "c*Cc*i", 0 } },
+	{ "__builtin_shuffle", { GnuBuiltin::VectorPermute, 0, nullptr, 0 } },
+	{ "__builtin_shufflevector", { GnuBuiltin::VectorPermute, 1, nullptr, 0 } },
 	{ "__builtin_signbit", { GnuBuiltin::FloatClassify, 5, nullptr, 0 } },
 	{ "__builtin_strchr", { GnuBuiltin::Library, 0, "c*Cc*i", 0 } },
 	{ "__builtin_strcmp", { GnuBuiltin::Library, 0, "iCc*Cc*", 0 } },

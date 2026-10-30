@@ -498,6 +498,22 @@ selector must be constant. A runtime selector through the public intrinsic
 wrapper remains an error. This check uses typed LowIR facts and leaves
 ordinary generated code and named debug storage unchanged.
 
+### GNU vector permutations
+
+`__builtin_shuffle(vector, mask)` and `__builtin_shuffle(first, second, mask)`
+permute lanes of one or two matching vectors. The integral mask has the
+same width and lane count. Mask lanes select modulo N or 2N, including
+negative and runtime values; the second input follows the first in memory
+lane order. Preserve all lane bits, including floating NaNs and signed zero,
+and evaluate each operand once. Use typed vector/mask facts and linear lane
+lowering. The existing limit of 64 lanes also applies here.
+
+The GCC/Clang `__builtin_shufflevector(first, second, index...)` form uses
+constant indexes into two matching inputs. Its result has one lane per
+index. An index of -1 leaves that lane unspecified; choosing zero is valid.
+Validate and retain these constants in typed facts. Both public GCC and
+Clang SSE wrappers can then use the same permutation lowering.
+
 ### SSE2 saturating packed conversions
 
 `__builtin_ia32_packuswb128` clamps signed 16-bit lanes to [0,255], then
