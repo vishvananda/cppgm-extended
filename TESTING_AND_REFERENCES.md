@@ -41,8 +41,8 @@ route each selected fixture to its owning runner.
 The independent **Boost advisory** workflow runs on every push, with a
 20-minute budget. It builds the compiler and compiles/runs the original
 Boost 1.92 Accumulators, Asio, Container, Function, Fusion, JSON, MP11, MPL,
-Optional, Proto, TypeErasure, TypeTraits, UUID, Variant2 and Xpressive suites:
-1,676 declared tests. Asio includes both original spawn variants and exercises
+Optional, Proto, QVM, TypeErasure, TypeTraits, UUID, Variant2 and Xpressive suites:
+1,810 declared tests. QVM covers fixed and deduced array-bound specialization ordering. Asio includes both original spawn variants and exercises
 recursive constraints and partial ordering. The template and callable suites cover ordering,
 substitution, constructor and overload regressions from the compatibility
 campaign; Optional adds compile-fail and run-fail coverage. JSON includes the

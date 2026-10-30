@@ -1795,7 +1795,8 @@ const Type* Analyzer::substitute_bound(const Type* array, const Substitution& gi
 	// Retaining the source placeholder would compare declaration-local
 	// names instead of the transformed value when checking constraints.
 	const TemplateParameterEntity* named = DirectBoundParameter(array->owner);
-	if (named != nullptr && named->depth == given.depth && named->index < substitution.count)
+	const bool direct = named != nullptr && named->depth == given.depth && named->index < substitution.count;
+	if (direct)
 	{
 		const Type* argument = substitution.arguments[named->index];
 		if (argument != nullptr && argument->kind == TypeKind::TemplateParameter &&
@@ -1805,7 +1806,12 @@ const Type* Analyzer::substitute_bound(const Type* array, const Substitution& gi
 	}
 	if (!IsPlaceholder(static_cast<const TemplateParameterEntity*>(array->owner->entity)))
 		return types_.array(element, 0, array->owner);
-	for (uint32_t i = 0; i < substitution.count; ++i)
+	// A bound naming one parameter needs only that argument. Unrelated
+	// synthesized element types must not keep a known bound dependent:
+	// ordering T[N] against T[4] needs the concrete 4 after deduction.
+	const uint32_t first = direct ? named->index : 0;
+	const uint32_t past = direct ? first + 1 : substitution.count;
+	for (uint32_t i = first; i < past; ++i)
 	{
 		if (substitution.arguments[i] == nullptr || dependent_type(substitution.arguments[i]))
 			return types_.array(element, 0, array->owner);
