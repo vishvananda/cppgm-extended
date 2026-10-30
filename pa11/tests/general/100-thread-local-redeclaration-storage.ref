@@ -1,2 +1,21 @@
 global @x : i32 [storage=thread_local, binding=strong] = zero
 global @y : i32 [storage=thread_local, binding=strong] = 7
+
+function @__cppgm_tls_init__x() -> void [binding=strong, object=_ZTH1x] {
+  block ^entry:
+    return void
+}
+function @__cppgm_tls_wrapper__x() -> ptr [binding=weak, object=_ZTW1x, tls_for=@x] {
+  block ^entry:
+    %t1 = addr @x
+    return ptr %t1
+}
+function @__cppgm_tls_init__y() -> void [binding=strong, object=_ZTH1y] {
+  block ^entry:
+    return void
+}
+function @__cppgm_tls_wrapper__y() -> ptr [binding=weak, object=_ZTW1y, tls_for=@y] {
+  block ^entry:
+    %t1 = addr @y
+    return ptr %t1
+}

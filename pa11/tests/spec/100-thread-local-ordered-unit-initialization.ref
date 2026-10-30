@@ -1,0 +1,119 @@
+global @sequence : i32 [binding=strong] = zero
+global @a : i32 [storage=thread_local, binding=strong] = zero
+global @__cppgm_tls_guard : i8 [storage=thread_local, binding=internal] = zero
+global @b : i32 [storage=thread_local, binding=strong] = zero
+
+function @first() -> i32 [binding=strong, object=_Z5firstv] {
+  block ^entry:
+    %t1 = load typed i32 @sequence
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = binary add nowrap i32 %t2, 1
+    store typed i32 %t3, @sequence
+    return i32 7
+}
+function @second() -> i32 [binding=strong, object=_Z6secondv] {
+  block ^entry:
+    %t1 = load typed i32 @sequence
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = binary add nowrap i32 %t2, 2
+    store typed i32 %t3, @sequence
+    return i32 9
+}
+function @__cppgm_tls_init__a() -> void [binding=internal] {
+  block ^entry:
+    %t1 = call i32 @first()
+    store typed i32 %t1, @a
+    jump ^local_static_ctor_done_1
+
+  block ^local_static_ctor_done_1:
+    return void
+}
+function @__cppgm_tls_init__a__2() -> void [binding=strong, object=_ZTH1a] {
+  block ^entry:
+    call void @__cppgm_tls_init()
+    return void
+}
+function @__cppgm_tls_wrapper__a() -> ptr [binding=weak, object=_ZTW1a, tls_for=@a] {
+  block ^entry:
+    call void @__cppgm_tls_init()
+    %t1 = addr @a
+    return ptr %t1
+}
+function @__cppgm_tls_init__b() -> void [binding=internal] {
+  block ^entry:
+    %t1 = call i32 @second()
+    store typed i32 %t1, @b
+    jump ^local_static_ctor_done_1
+
+  block ^local_static_ctor_done_1:
+    return void
+}
+function @__cppgm_tls_init__b__2() -> void [binding=strong, object=_ZTH1b] {
+  block ^entry:
+    call void @__cppgm_tls_init()
+    return void
+}
+function @__cppgm_tls_wrapper__b() -> ptr [binding=weak, object=_ZTW1b, tls_for=@b] {
+  block ^entry:
+    call void @__cppgm_tls_init()
+    %t1 = addr @b
+    return ptr %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+
+  block ^entry:
+    %t1 = call ptr @__cppgm_tls_wrapper__b()
+    %t2 = load typed i32 %t1
+    %t3 = cmp ne i32 %t2, 9
+    branch %t3, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t4 = call ptr @__cppgm_tls_wrapper__a()
+    %t5 = load typed i32 %t4
+    %t6 = cmp ne i32 %t5, 7
+    %t7 = cmp ne i64 %t6, 0
+    store typed i64 %t7, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t8 = load typed i64 $lor__1
+    branch %t8, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t9 = load typed i32 @sequence
+    %t10 = cmp ne i32 %t9, 12
+    %t11 = cmp ne i64 %t10, 0
+    store typed i64 %t11, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t12 = load typed i64 $lor__2
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
+}
+function @__cppgm_tls_init() -> void [binding=internal] {
+  block ^entry:
+    %t1 = addr @__cppgm_tls_guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ctor_done_2, ^local_static_ctor_run_1
+
+  block ^local_static_ctor_run_1:
+    store i8 1, @__cppgm_tls_guard
+    call void @__cppgm_tls_init__a()
+    call void @__cppgm_tls_init__b()
+    jump ^local_static_ctor_done_2
+
+  block ^local_static_ctor_done_2:
+    return void
+}

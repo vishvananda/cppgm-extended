@@ -1,0 +1,95 @@
+declare global @__cppgm_runtime_dso_handle [linkage=c, binding=strong, object=__dso_handle]
+
+declare function @__cppgm_runtime_cxa_thread_atexit(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> i32 [linkage=c, binding=strong, object=__cxa_thread_atexit]
+declare function @abort() -> void [unwind=no, linkage=c, binding=strong]
+
+global @destroyed : i32 [binding=strong] = zero
+global @item [storage=thread_local, binding=strong] = {
+  zero 1
+}
+global @__cppgm_tls_guard : i8 [storage=thread_local, binding=internal] = zero
+global @check [binding=strong] = {
+  zero 1
+}
+
+function @__cppgm_local_static_destructor__item() -> void [unwind=no, binding=internal] {
+  block ^entry:
+    %t1 = addr @item
+    call void @Item___Item(%t1)
+    return void
+}
+function @__cppgm_tls_init__item() -> void [binding=internal] {
+  block ^entry:
+    %t1 = call i32 @__cppgm_runtime_cxa_thread_atexit(@__cppgm_local_static_destructor__item, 0, @__cppgm_runtime_dso_handle)
+    jump ^local_static_ctor_done_1
+
+  block ^local_static_ctor_done_1:
+    return void
+}
+function @__cppgm_tls_init__item__2() -> void [binding=strong, object=_ZTH4item] {
+  block ^entry:
+    call void @__cppgm_tls_init()
+    return void
+}
+function @__cppgm_tls_wrapper__item() -> ptr [binding=weak, object=_ZTW4item, tls_for=@item] {
+  block ^entry:
+    call void @__cppgm_tls_init()
+    %t1 = addr @item
+    return ptr %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call ptr @__cppgm_tls_wrapper__item()
+    %t2 = load typed i32 @destroyed
+    return i32 %t2
+}
+function @Item___Item(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN4ItemD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 1, @destroyed
+    return void
+}
+function @Check___Check(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5CheckD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destroyed
+    %t2 = cmp ne i32 %t1, 1
+    branch %t2, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    call void @abort()
+    jump ^if_end_3
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    return void
+}
+function @__cppgm_tls_init() -> void [binding=internal] {
+  block ^entry:
+    %t1 = addr @__cppgm_tls_guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ctor_done_2, ^local_static_ctor_run_1
+
+  block ^local_static_ctor_run_1:
+    store i8 1, @__cppgm_tls_guard
+    call void @__cppgm_tls_init__item()
+    jump ^local_static_ctor_done_2
+
+  block ^local_static_ctor_done_2:
+    return void
+}
+function @__cppgm_fini() -> void [role=fini, binding=internal] {
+  block ^entry:
+    %t1 = addr @check
+    call void @Check___Check(%t1)
+    return void
+}
+alias object _ZN4ItemD2Ev = @Item___Item
+alias object _ZN5CheckD2Ev = @Check___Check

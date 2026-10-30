@@ -1,28 +1,26 @@
 global @tls [storage=thread_local, binding=strong] = {
   zero 1
 }
-global @__cppgm_tls_guard__tls : i64 [storage=thread_local, binding=internal] = zero
+global @__cppgm_tls_guard : i8 [storage=thread_local, binding=internal] = zero
 global @tls__tls_guard : i32 [binding=strong] = 7
 
 function @__cppgm_tls_init__tls() -> void [binding=internal] {
   block ^entry:
-    %t1 = addr @__cppgm_tls_guard__tls
-    %t2 = load typed i64 %t1
-    %t3 = cmp ne i64 %t2, 0
-    branch %t3, ^local_static_ctor_done_2, ^local_static_ctor_run_1
+    %t1 = addr @tls
+    call void @Item__Item(%t1)
+    jump ^local_static_ctor_done_1
 
-  block ^local_static_ctor_run_1:
-    %t4 = addr @tls
-    call void @Item__Item(%t4)
-    store typed i64 1, @__cppgm_tls_guard__tls
-    jump ^local_static_ctor_done_2
-
-  block ^local_static_ctor_done_2:
+  block ^local_static_ctor_done_1:
+    return void
+}
+function @__cppgm_tls_init__tls__2() -> void [binding=strong, object=_ZTH3tls] {
+  block ^entry:
+    call void @__cppgm_tls_init()
     return void
 }
 function @__cppgm_tls_wrapper__tls() -> ptr [binding=weak, object=_ZTW3tls, tls_for=@tls] {
   block ^entry:
-    call void @__cppgm_tls_init__tls()
+    call void @__cppgm_tls_init()
     %t1 = addr @tls
     return ptr %t1
 }
@@ -41,6 +39,21 @@ function @Item__Item(%this : ptr [object_bytes=1]) -> void [binding=weak, object
 
   block ^entry:
     store typed ptr %this, $this
+    return void
+}
+function @__cppgm_tls_init() -> void [binding=internal] {
+  block ^entry:
+    %t1 = addr @__cppgm_tls_guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ctor_done_2, ^local_static_ctor_run_1
+
+  block ^local_static_ctor_run_1:
+    store i8 1, @__cppgm_tls_guard
+    call void @__cppgm_tls_init__tls()
+    jump ^local_static_ctor_done_2
+
+  block ^local_static_ctor_done_2:
     return void
 }
 alias object _ZN4ItemC2Ev = @Item__Item

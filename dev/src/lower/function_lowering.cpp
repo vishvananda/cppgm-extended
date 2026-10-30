@@ -540,7 +540,7 @@ void FunctionLowering::lower_thread_local_initializer(lowir::SymbolId global, lo
 {
 	// Once per thread: the guard tested, the object initialized (unless its
 	// initialization is static), the guard set. Without a guard of its own
-	// (an ordered variable in object mode), the unit's initialization
+	// (an ordered variable), the unit's initialization
 	// function guards it.
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	Place flag = Place();
@@ -561,9 +561,9 @@ void FunctionLowering::lower_thread_local_initializer(lowir::SymbolId global, lo
 		construct_global(global, variable, initializer, location);
 	else
 		lower_dynamic_initializer(global, variable, initializer, location);
-	// Object mode: its destruction registered with the thread's exit list
+	// Its destruction is registered with the thread's exit list
 	// now its initialization is complete (3.6.3p1).
-	if (lowering_.object_mode() && needs_destruction(variable->type))
+	if (needs_destruction(variable->type))
 		register_destruction(global, variable->type, location, true);
 	if (guard != lowir::kNoId)
 		store(i64, integer(i64, 1), flag);

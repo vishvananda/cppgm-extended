@@ -413,7 +413,8 @@ public:
 	// initialization completes (3.6.3p1, p3; Itanium 3.3.6's scheme), so
 	// it interleaves with function-local statics' and atexit's; the LowIR
 	// contract's units destroy namespace-scope objects in a `role=fini`
-	// function instead. Thread-local objects keep that function.
+	// function instead. Thread-local destruction always uses the thread's
+	// exit registration, including serialized LowIR.
 	void set_object_mode(bool on)
 	{
 		object_mode_ = on;

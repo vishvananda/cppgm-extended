@@ -526,12 +526,12 @@ void ProgramLowering::define_global(lowir::SymbolId symbol, const sema::Variable
 	const bool evaluated = outcome.evaluated;
 	lowir::SymbolId guard = lowir::kNoId;
 	lowir::SymbolId constructed = lowir::kNoId;
-	// Object mode: its destruction registered with atexit where its
+	// In object mode, destruction is registered with atexit where its
 	// initialization completes (see set_object_mode); a thread-local
 	// object's with the thread's exit list, by its per-thread
 	// initialization (thread_local_initialization).
-	const bool registered = object_mode_ && FunctionLowering::needs_destruction(type);
-	// Object mode: a thread-local object whose destruction is registered
+	const bool registered = (object_mode_ || variable->is_thread_local) && FunctionLowering::needs_destruction(type);
+	// A thread-local object whose destruction is registered
 	// is initialized per thread, as a dynamically initialized one is: each
 	// thread's object is destroyed at that thread's exit (3.6.3p1), and
 	// only once some use initialized it (3.6.2p4).
@@ -623,10 +623,10 @@ void ProgramLowering::define_global(lowir::SymbolId symbol, const sema::Variable
 	// would be); a class template specialization's member's (a weak
 	// definition in every unit instantiating it) by the one unit that sets
 	// the guard they share (Itanium 2.8).
-	// Object mode: an external thread-local variable initialized statically
+	// An external thread-local variable initialized statically
 	// still defines its initialization entry (empty), which the wrappers of
 	// the units using it call.
-	if (object_mode_ && variable->is_thread_local && !per_thread && !unit_local(variable))
+	if (variable->is_thread_local && !per_thread && !unit_local(variable))
 	{
 		const lowir::SymbolId entry = thread_local_init_entry(symbol, variable, true);
 		{
@@ -696,7 +696,7 @@ lowir::SymbolId ProgramLowering::thread_local_initialization(lowir::SymbolId glo
 	// before its first use through the object's wrapper (`_ZTW`), guarded
 	// by a thread-local flag; the synthesized symbols form their own
 	// `__cppgm_tls_*` family, apart from source names.
-	// Object mode (Itanium 3.7, as g++ and Clang): the unit's ordered
+	// Itanium 3.7 (as g++ and Clang): the unit's ordered
 	// variables are initialized together by its thread-local
 	// initialization function (unit_thread_local_init), in definition
 	// order before the first odr-use of any (3.6.2p4), their destruction
@@ -707,22 +707,10 @@ lowir::SymbolId ProgramLowering::thread_local_initialization(lowir::SymbolId glo
 	// `_ZTH` initialization; it and a GNU weak variable have the guard the
 	// units share (Itanium 2.8), so a thread initializes it once.
 	const std::string base = program_.spelling(program_.symbols[global].name);
-	const bool unordered = object_mode_ && variable->templ != nullptr && variable->templ->pattern != nullptr &&
-		!unit_local(variable);
+	const bool unordered = variable->templ != nullptr && variable->templ->pattern != nullptr && !unit_local(variable);
 	lowir::SymbolId guard = lowir::kNoId;
-	if (object_mode_ && program_.symbols[global].metadata.binding == ir_model::SBM_WEAK)
+	if (program_.symbols[global].metadata.binding == ir_model::SBM_WEAK)
 		guard = unordered_guard(global, variable);
-	else if (!object_mode_)
-	{
-		guard = new_symbol("__cppgm_tls_guard__" + base);
-		lowir::Global flag = lowir::Global();
-		flag.typed = true;
-		flag.type = lowir::Type::scalar(lowir::TypeKind::I64);
-		flag.init = lowir::GlobalInit::Zero;
-		program_.declare_global(guard, lowir::SymbolKind::GlobalDefinition, flag);
-		program_.symbols[guard].metadata.binding = ir_model::SBM_INTERNAL;
-		++counters_.globals;
-	}
 	if (guard != lowir::kNoId)
 		program_.symbols[guard].metadata.storage = ir_model::GSM_THREAD_LOCAL;
 	lowir::SymbolId init = lowir::kNoId;
@@ -744,10 +732,10 @@ lowir::SymbolId ProgramLowering::thread_local_initialization(lowir::SymbolId glo
 	release_definition(init);
 	++counters_.functions;
 	// What the wrappers call: the unit's initialization for an ordered
-	// variable in object mode; a GNU weak one's `_ZTH`, which the link
+	// variable; a GNU weak one's `_ZTH`, which the link
 	// resolves to the selected definition's unit (its initializer, once).
 	lowir::SymbolId entry = init;
-	if (object_mode_ && !unordered)
+	if (!unordered)
 	{
 		thread_local_inits_.push_back(init);
 		entry = unit_thread_local_init();
@@ -776,7 +764,7 @@ lowir::SymbolId ProgramLowering::thread_local_initialization(lowir::SymbolId glo
 
 lowir::SymbolId ProgramLowering::unit_thread_local_init()
 {
-	// Object mode: the unit's thread-local initialization (g++'s and
+	// The unit's thread-local initialization (g++'s and
 	// Clang's `__tls_init`), internal, with its per-thread guard; declared
 	// by the first ordered variable, defined at the unit's end
 	// (define_unit_thread_local_init).
@@ -819,7 +807,7 @@ void ProgramLowering::define_unit_thread_local_init()
 lowir::SymbolId ProgramLowering::thread_local_init_entry(
 	lowir::SymbolId global, const sema::VariableEntity* variable, bool define)
 {
-	// Object mode: an external thread-local variable's initialization entry
+	// An external thread-local variable's initialization entry
 	// (Itanium's `_ZTH` <name>), defined by the unit defining the variable
 	// (empty for a static initialization without destruction), weak for a
 	// weak variable (a class template's member or a GNU weak one, which

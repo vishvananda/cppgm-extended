@@ -1,5 +1,14 @@
 global @X__n : i32 [storage=thread_local, binding=strong, object=_ZN1X1nE] = 1
 
+function @__cppgm_tls_init__X__n() -> void [binding=strong, object=_ZTHN1X1nE] {
+  block ^entry:
+    return void
+}
+function @__cppgm_tls_wrapper__X__n() -> ptr [binding=weak, object=_ZTWN1X1nE, tls_for=@X__n] {
+  block ^entry:
+    %t1 = addr @X__n
+    return ptr %t1
+}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @X__n

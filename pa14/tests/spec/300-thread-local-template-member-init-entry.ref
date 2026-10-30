@@ -1,0 +1,81 @@
+global @calls : i32 [binding=strong] = zero
+global @Box_int___value : i32 [storage=thread_local, binding=weak, object=_ZN3BoxIiE5valueE] = zero
+global @__cppgm_guard__Box_int___value : i64 [storage=thread_local, binding=weak, object=_ZGVN3BoxIiE5valueE] = zero
+
+function @seed() -> i32 [binding=strong, object=_Z4seedv] {
+  block ^entry:
+    %t1 = load typed i32 @calls
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @calls
+    return i32 9
+}
+function @__cppgm_tls_init__Box_int___value() -> void [binding=weak, object=_ZTHN3BoxIiE5valueE] {
+  block ^entry:
+    %t1 = addr @__cppgm_guard__Box_int___value
+    %t2 = load typed i64 %t1
+    %t3 = cmp ne i64 %t2, 0
+    branch %t3, ^local_static_ctor_done_2, ^local_static_ctor_run_1
+
+  block ^local_static_ctor_run_1:
+    %t4 = call i32 @seed()
+    store typed i32 %t4, @Box_int___value
+    store typed i64 1, @__cppgm_guard__Box_int___value
+    jump ^local_static_ctor_done_2
+
+  block ^local_static_ctor_done_2:
+    return void
+}
+function @__cppgm_tls_wrapper__Box_int___value() -> ptr [binding=weak, object=_ZTWN3BoxIiE5valueE, tls_for=@Box_int___value] {
+  block ^entry:
+    call void @__cppgm_tls_init__Box_int___value()
+    %t1 = addr @Box_int___value
+    return ptr %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $first : i32
+  slot $second : i32
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+
+  block ^entry:
+    %t1 = call ptr @__cppgm_tls_wrapper__Box_int___value()
+    %t2 = load typed i32 %t1
+    store typed i32 %t2, $first
+    %t3 = call ptr @__cppgm_tls_wrapper__Box_int___value()
+    %t4 = load typed i32 %t3
+    store typed i32 %t4, $second
+    %t5 = load typed i32 $first
+    %t6 = cmp ne i32 %t5, 9
+    branch %t6, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t7 = load typed i32 $second
+    %t8 = cmp ne i32 %t7, 9
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store typed i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t10 = load typed i64 $lor__1
+    branch %t10, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t11 = load typed i32 @calls
+    %t12 = cmp ne i32 %t11, 1
+    %t13 = cmp ne i64 %t12, 0
+    store typed i64 %t13, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store typed i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t14 = load typed i64 $lor__2
+    %t15 = convert trunc i32 i64 %t14
+    return i32 %t15
+}
