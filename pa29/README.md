@@ -56,7 +56,10 @@ hosted headers depend on:
   modes used by the hosted unwinder; it preserves qualifiers and signedness
   and validates the declaration's category. Dependent declared modes retain
   an interned type transform until substitution; GNU ignores an unassociated
-  dependent alias RHS's mode, while an alias-name attribute still applies
+  dependent alias RHS's mode, while an alias-name attribute still applies.
+  The complex modes `SC`, `DC`, `XC` and `TC` select float, double,
+  extended and binary128 complex representations while retaining the
+  complex category, qualifiers and dependent transform identity
 - GCC's `__constinit` requires static or thread storage and static
   initialization, without adding `const` or requiring a literal class type;
   dependent definitions are checked when instantiated

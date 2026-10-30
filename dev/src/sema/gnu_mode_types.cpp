@@ -39,22 +39,26 @@ const Type* Analyzer::mode_type(const Type* type, const Identifier& mode, uint32
 		const char* name;
 		FundamentalType signed_type;
 		FundamentalType unsigned_type;
-		bool integral;
+		bool complex;
 	};
-	static const Mode modes[] = { { "QI", FundamentalType::SignedChar, FundamentalType::UnsignedChar, true },
-		{ "HI", FundamentalType::ShortInt, FundamentalType::UnsignedShortInt, true },
-		{ "SI", FundamentalType::Int, FundamentalType::UnsignedInt, true },
-		{ "DI", FundamentalType::LongInt, FundamentalType::UnsignedLongInt, true },
-		{ "TI", FundamentalType::Int128, FundamentalType::UnsignedInt128, true },
-		{ "byte", FundamentalType::SignedChar, FundamentalType::UnsignedChar, true },
-		{ "word", FundamentalType::LongInt, FundamentalType::UnsignedLongInt, true },
-		{ "pointer", FundamentalType::LongInt, FundamentalType::UnsignedLongInt, true },
-		{ "unwind_word", FundamentalType::LongInt, FundamentalType::UnsignedLongInt, true },
+	static const Mode modes[] = { { "QI", FundamentalType::SignedChar, FundamentalType::UnsignedChar, false },
+		{ "HI", FundamentalType::ShortInt, FundamentalType::UnsignedShortInt, false },
+		{ "SI", FundamentalType::Int, FundamentalType::UnsignedInt, false },
+		{ "DI", FundamentalType::LongInt, FundamentalType::UnsignedLongInt, false },
+		{ "TI", FundamentalType::Int128, FundamentalType::UnsignedInt128, false },
+		{ "byte", FundamentalType::SignedChar, FundamentalType::UnsignedChar, false },
+		{ "word", FundamentalType::LongInt, FundamentalType::UnsignedLongInt, false },
+		{ "pointer", FundamentalType::LongInt, FundamentalType::UnsignedLongInt, false },
+		{ "unwind_word", FundamentalType::LongInt, FundamentalType::UnsignedLongInt, false },
 		{ "HF", FundamentalType::Float16, FundamentalType::Float16, false },
 		{ "SF", FundamentalType::Float, FundamentalType::Float, false },
 		{ "DF", FundamentalType::Double, FundamentalType::Double, false },
 		{ "XF", FundamentalType::LongDouble, FundamentalType::LongDouble, false },
-		{ "TF", FundamentalType::Float128, FundamentalType::Float128, false } };
+		{ "TF", FundamentalType::Float128, FundamentalType::Float128, false },
+		{ "SC", FundamentalType::Float, FundamentalType::Float, true },
+		{ "DC", FundamentalType::Double, FundamentalType::Double, true },
+		{ "XC", FundamentalType::LongDouble, FundamentalType::LongDouble, true },
+		{ "TC", FundamentalType::Float128, FundamentalType::Float128, true } };
 	const Mode* selected = nullptr;
 	for (const Mode& candidate : modes)
 	{
@@ -66,7 +70,7 @@ const Type* Analyzer::mode_type(const Type* type, const Identifier& mode, uint32
 	}
 	if (selected == nullptr)
 		error(location, "an unknown or unsupported scalar machine mode");
-	return apply_mode(type, selected->signed_type, location);
+	return apply_mode(type, selected->signed_type, location, selected->complex);
 }
 
 void Analyzer::filter_mode_alias(Specifiers& specifiers)
@@ -87,14 +91,20 @@ void Analyzer::filter_mode_alias(Specifiers& specifiers)
 	specifiers.mode_specifiers = syntax::Slice<syntax::DeclSpecifier>{ nullptr, 0 };
 }
 
-const Type* Analyzer::apply_mode(const Type* type, FundamentalType target, uint32_t location)
+const Type* Analyzer::apply_mode(const Type* type, FundamentalType target, uint32_t location, bool complex_mode)
 {
 	const Type* base = type->unqualified;
 	const bool integer_mode = !IsFloatingFundamental(target);
 	if (base->kind == TypeKind::Pointer && integer_mode && FundamentalTypeSize(target) == 8)
 		return type;
 	if (base->kind == TypeKind::TemplateParameter && dependent_type(base))
-		return types_.qualified(types_.mode(base, target), type->cv);
+		return types_.qualified(types_.mode(base, target, complex_mode), type->cv);
+	if (complex_mode)
+	{
+		if (base->kind != TypeKind::Complex)
+			error(location, "a complex machine mode applied to an inappropriate type");
+		base = base->element->unqualified;
+	}
 	IntegralKind integer = IntegralKind();
 	const bool integral = base->kind == TypeKind::Fundamental && base->fundamental != FundamentalType::Bool &&
 		IntegralKindOf(base, integer);
@@ -125,7 +135,8 @@ const Type* Analyzer::apply_mode(const Type* type, FundamentalType target, uint3
 			break;
 		}
 	}
-	return types_.qualified(types_.fundamental(result), type->cv);
+	const Type* representation = types_.fundamental(result);
+	return types_.qualified(complex_mode ? types_.complex(representation) : representation, type->cv);
 }
 
 } // namespace sema

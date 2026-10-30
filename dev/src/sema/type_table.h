@@ -38,7 +38,7 @@ public:
 	// `dependent_size`: the placeholder of a lane type or size that depends
 	// on template parameters (`lanes` 0), a byte size if `bytes`.
 	const Type* vector(const Type* lane, uint64_t lanes, const Type* dependent_size = nullptr, bool bytes = false);
-	const Type* mode(const Type* element, FundamentalType target);
+	const Type* mode(const Type* element, FundamentalType target, bool complex_mode = false);
 	const Type* complex(const Type* element);
 	const Type* block_pointer(const Type* function);
 	const Type* function(

@@ -1,0 +1,6 @@
+typedef _Complex float C;
+typedef C SC __attribute__((mode(SC)));
+typedef C DC __attribute__((mode(DC)));
+typedef C XC __attribute__((mode(XC)));
+typedef C TC __attribute__((mode(__TC__)));
+int main(){SC a;DC b;XC c;TC d;__real__ a=1.25f;__imag__ a=-2.5f;__real__ b=2.5;__imag__ b=-5;__real__ c=3.75L;__imag__ c=-7.5L;__real__ d=4;__imag__ d=-8;return __real__ a!=1.25f||__imag__ a!=-2.5f||__real__ b!=2.5||__imag__ b!=-5||__real__ c!=3.75L||__imag__ c!=-7.5L||__real__ d!=4||__imag__ d!=-8;}

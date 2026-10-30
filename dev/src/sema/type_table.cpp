@@ -289,11 +289,12 @@ const Type* TypeTable::block_pointer(const Type* function)
 	return intern(key);
 }
 
-const Type* TypeTable::mode(const Type* element, FundamentalType target)
+const Type* TypeTable::mode(const Type* element, FundamentalType target, bool complex_mode)
 {
 	Type key = Key(TypeKind::Mode);
 	key.element = element;
 	key.fundamental = target;
+	key.bound = complex_mode ? 1 : 0;
 	// Only unresolved template types use this node. The ordinary
 	// dependence query needs no new walk or kind test.
 	key.dependence = 2;

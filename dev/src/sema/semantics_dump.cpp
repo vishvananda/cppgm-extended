@@ -248,7 +248,7 @@ void AppendType(const Type* type, std::string& out)
 			out += "block-pointer to ";
 			break;
 		case TypeKind::Mode:
-			out += "mode of ";
+			out += type->bound != 0 ? "complex mode of " : "mode of ";
 			break;
 		case TypeKind::Vector:
 			out += "vector of ";

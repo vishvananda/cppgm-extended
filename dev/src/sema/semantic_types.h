@@ -129,6 +129,7 @@ struct Type
 	uint32_t param_count;
 	uint32_t hash;
 	// Array: the bound, 0 when unknown (or dependent, see `owner`).
+	// Mode: 1 for a complex machine mode, 0 for a scalar one.
 	uint64_t bound;
 	const Type* canonical;
 	// The type without its top-level cv-qualifiers.

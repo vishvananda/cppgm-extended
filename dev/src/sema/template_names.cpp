@@ -412,7 +412,8 @@ const Type* Analyzer::without_stand_ins(const Type* type)
 		return specialization != nullptr ? types_.qualified(specialization->type, type->cv) : type;
 	}
 	case TypeKind::Mode:
-		return types_.qualified(apply_mode(without_stand_ins(type->element), type->fundamental, 0), type->cv);
+		return types_.qualified(
+			apply_mode(without_stand_ins(type->element), type->fundamental, 0, type->bound != 0), type->cv);
 	case TypeKind::Pointer:
 	case TypeKind::LValueReference:
 	case TypeKind::RValueReference:

@@ -1525,7 +1525,7 @@ private:
 	uint64_t declared_alignment(const void* declared, uint64_t natural) const;
 	uint64_t declared_alignment(const DataMember* member, uint64_t natural) const;
 	void filter_mode_alias(Specifiers& specifiers);
-	const Type* apply_mode(const Type* type, FundamentalType target, uint32_t location);
+	const Type* apply_mode(const Type* type, FundamentalType target, uint32_t location, bool complex_mode = false);
 	const Type* declaration_mode_type(
 		const Type* type, const Specifiers* specifiers, const syntax::Attribute* attributes);
 	const Type* mode_type(const Type* type, const Identifier& mode, uint32_t location);

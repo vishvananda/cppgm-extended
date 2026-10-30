@@ -1,0 +1,6 @@
+typedef _Complex float C;
+typedef C SC __attribute__((mode(SC)));
+typedef C DC __attribute__((mode(DC)));
+typedef C XC __attribute__((mode(XC)));
+typedef C TC __attribute__((mode(__TC__)));
+int calls;TC value(){++calls;TC x;__real__ x=3;__imag__ x=7;return x;}template<class T>struct A{typedef T Wide __attribute__((mode(TC)));};int main(){A<C>::Wide x=value();return calls!=1||__real__ x!=3||__imag__ x!=7;}

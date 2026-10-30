@@ -346,7 +346,9 @@ const Type* Analyzer::substitute(const Type* type, const Substitution& substitut
 	case TypeKind::Mode:
 	{
 		const Type* element = substitute(type->element, substitution);
-		return element != nullptr ? types_.qualified(apply_mode(element, type->fundamental, 0), type->cv) : nullptr;
+		return element != nullptr
+			? types_.qualified(apply_mode(element, type->fundamental, 0, type->bound != 0), type->cv)
+			: nullptr;
 	}
 	case TypeKind::Vector:
 	{
