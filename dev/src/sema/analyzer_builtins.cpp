@@ -696,6 +696,26 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		facts->value = static_cast<uint64_t>(Intrinsic::VectorByteMinMax) | (static_cast<uint64_t>(variant) << 8);
 		break;
 	}
+	case GnuBuiltin::ElementwiseMinMax:
+	{
+		if (count != 2)
+			error(expr.location, "wrong number of arguments to an elementwise minimum or maximum");
+		const ExprFacts* left = typed_value(*expr.arguments[0], scope);
+		const ExprFacts* right = left != nullptr ? typed_value(*expr.arguments[1], scope) : nullptr;
+		if (right == nullptr)
+			return nullptr;
+		const Type* type = left->type->unqualified;
+		const Type* lane = type->kind == TypeKind::Vector ? type->element->unqualified : type;
+		if (right->type->unqualified != type || lane->kind != TypeKind::Fundamental ||
+			lane->fundamental == FundamentalType::Bool || !IsArithmetic(lane) ||
+			(type->kind == TypeKind::Vector && type->owner != nullptr))
+			error(expr.location, "an elementwise minimum or maximum requires matching arithmetic types");
+		for (const syntax::Expr* argument : expr.arguments)
+			convert(*argument, type, false);
+		facts = new_facts(expr, type, ValueCategory::PRValue);
+		facts->value = static_cast<uint64_t>(Intrinsic::ElementwiseMinMax) | (static_cast<uint64_t>(variant) << 8);
+		break;
+	}
 	case GnuBuiltin::VectorPermute:
 		return vector_permute_builtin(expr, variant, scope);
 	case GnuBuiltin::VectorPack:

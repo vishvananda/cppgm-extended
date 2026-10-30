@@ -38,6 +38,8 @@ const struct
 	{ "__builtin_ctzl", { GnuBuiltin::BitCount, 7, nullptr, 0 } },
 	{ "__builtin_ctzll", { GnuBuiltin::BitCount, 8, nullptr, 0 } },
 	{ "__builtin_dynamic_object_size", { GnuBuiltin::ObjectSize, 1, nullptr, 0 } },
+	{ "__builtin_elementwise_max", { GnuBuiltin::ElementwiseMinMax, 1, nullptr, 0 } },
+	{ "__builtin_elementwise_min", { GnuBuiltin::ElementwiseMinMax, 0, nullptr, 0 } },
 	{ "__builtin_expect", { GnuBuiltin::Expect, 0, "lll", 0 } },
 	{ "__builtin_ffs", { GnuBuiltin::BitCount, 12, nullptr, 0 } },
 	{ "__builtin_ffsl", { GnuBuiltin::BitCount, 13, nullptr, 0 } },

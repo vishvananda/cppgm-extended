@@ -603,3 +603,13 @@ Normalize their constant count into the existing typed whole-register shift
 facts. Counts of 16 or more produce zero; these Clang forms require a constant
 immediate even in an `always_inline` function, while template arguments defer
 until instantiation. The GNU forms retain their bit-count interface.
+
+### Clang elementwise minimum and maximum
+
+`__builtin_elementwise_min` and `__builtin_elementwise_max` operate on two
+matching arithmetic scalars or vectors. Preserve the operand type without
+integer promotions, order signed and unsigned lanes correctly, and evaluate
+each operand once. Floating operations follow LLVM maxNum/minNum: one NaN
+yields the numeric operand, two NaNs yield NaN, and equal zeros may retain
+either sign. Consume typed operands and lower through existing scalar
+comparisons and selection; integer scalar constant evaluation uses the same operation.

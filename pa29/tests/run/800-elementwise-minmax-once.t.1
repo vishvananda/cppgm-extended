@@ -1,0 +1,15 @@
+int calls;template<class T>T input(T a){++calls;return a;}
+using V=unsigned char __attribute__((vector_size(16)));
+#if __has_builtin(__builtin_elementwise_max)
+#define MAX(a,b) __builtin_elementwise_max(a,b)
+#define MIN(a,b) __builtin_elementwise_min(a,b)
+#else
+template<class T>T maximum(T a,T b){return a>b?a:b;}
+template<class T>T minimum(T a,T b){return a<b?a:b;}
+float minimum(float a,float b){return __builtin_isnan(a)?b:__builtin_isnan(b)?a:a<b?a:b;}
+float maximum(float a,float b){return __builtin_isnan(a)?b:__builtin_isnan(b)?a:a>b?a:b;}
+V maximum(V a,V b){V out{};for(int i=0;i<16;++i)out[i]=a[i]>b[i]?a[i]:b[i];return out;}
+#define MAX(a,b) maximum(a,b)
+#define MIN(a,b) minimum(a,b)
+#endif
+int main(){int a=MIN(input(-2),input(3));V x{},y{};for(int i=0;i<16;++i){x[i]=i;y[i]=31-i;}V b=MAX(input(x),input(y));float q=__builtin_nanf("");float c=MIN(input(q),input(2.f));float d=MAX(input(q),input(q));if(calls!=8||a!=-2||c!=2.f||!__builtin_isnan(d))return 1;for(int i=0;i<16;++i)if(b[i]!=(31-i))return 2;return 0;}

@@ -575,6 +575,77 @@ RValue FunctionLowering::pack_vector(const syntax::CallExpr& expr)
 	return load(lowering_.storage_type(result), place);
 }
 
+RValue FunctionLowering::numeric_minmax(const sema::Type* lane, const RValue& first, const RValue& second, bool maximum)
+{
+	const bool signed_lane = SignedLane(lane);
+	const lowir::ComparePredicate predicate = maximum
+		? (signed_lane ? lowir::ComparePredicate::Gt : lowir::ComparePredicate::Ugt)
+		: (signed_lane ? lowir::ComparePredicate::Lt : lowir::ComparePredicate::Ult);
+	const SoftFloat soft = SoftFloatOf(lane);
+	const auto ordered = [&](lowir::ComparePredicate relation, const RValue& x, const RValue& y) {
+		return soft != SoftFloat::None ? soft_compare(relation, soft, x, y) : compare(relation, x.type, x, y);
+	};
+	if (!sema::IsFloating(lane) && first.type.kind() != lowir::TypeKind::I128)
+	{
+		lowir::Instruction choice = lowir::make_instruction(lowir::Opcode::Select, first.type);
+		choice.ops[0] = ordered(predicate, first, second).value;
+		choice.ops[1] = first.value;
+		choice.ops[2] = second.value;
+		RValue result = first;
+		result.value = emit_value(choice, first.type);
+		return result;
+	}
+	// IEEE maxNum/minNum: one NaN yields the number; two NaNs yield a
+	// quiet NaN. Equal zeros may retain either sign. Operands are values
+	// already evaluated once; the ordinary path performs no arithmetic.
+	Place best = Place();
+	best.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::Vector, first.type));
+	store(first.type, first, best);
+	const lowir::BlockId take = new_block(lowir::BlockKind::VectorTake);
+	const lowir::BlockId join = new_block(lowir::BlockKind::VectorJoin);
+	if (sema::IsFloating(lane))
+	{
+		const lowir::BlockId unordered = new_block(lowir::BlockKind::VectorUnordered);
+		const lowir::BlockId compare_values = new_block(lowir::BlockKind::VectorTake);
+		const lowir::BlockId quiet = new_block(lowir::BlockKind::VectorUnordered);
+		branch(ordered(lowir::ComparePredicate::Ne, first, first), unordered, compare_values);
+		place(unordered);
+		branch(ordered(lowir::ComparePredicate::Ne, second, second), quiet, take);
+		place(quiet);
+		store(first.type, arithmetic_op(static_cast<uint32_t>(TokenKind::OP_PLUS), lane, first, second), best);
+		jump(join);
+		place(compare_values);
+	}
+	branch(ordered(predicate, second, first), take, join);
+	place(take);
+	store(first.type, second, best);
+	jump(join);
+	place(join);
+	return load(first.type, best);
+}
+
+RValue FunctionLowering::elementwise_minmax(const syntax::CallExpr& expr)
+{
+	const sema::Type* type = expr.facts->type->unqualified;
+	const bool vector = type->kind == sema::TypeKind::Vector;
+	const sema::Type* lane = vector ? type->element->unqualified : type;
+	if (vector && type->bound > kMaxUnrolledLanes)
+		throw LoweringError(expr.location, "a vector operation on more than 64 lanes");
+	const RValue first = operand(*expr.arguments[0], ConversionContext::Argument);
+	const RValue second = operand(*expr.arguments[1], ConversionContext::Argument);
+	const bool maximum = (expr.facts->value >> 8 & 1) != 0;
+	if (!vector)
+		return numeric_minmax(lane, first, second, maximum);
+	const lowir::Value a = vector_storage(first), b = vector_storage(second);
+	lowir::SlotId slot = lowir::kNoId;
+	const lowir::Value out = zeroed_vector(type, slot);
+	for (uint64_t i = 0; i < type->bound; ++i)
+		set_vector_lane(out, type, i, numeric_minmax(lane, vector_lane(a, type, i), vector_lane(b, type, i), maximum));
+	Place result = Place();
+	result.storage = lowir::Value::slot(slot);
+	return load(lowering_.storage_type(type), result);
+}
+
 RValue FunctionLowering::vector_andnot(const syntax::CallExpr& expr)
 {
 	// PANDN complements the first input and masks it by the second. The

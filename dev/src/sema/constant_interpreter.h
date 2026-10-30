@@ -165,6 +165,7 @@ private:
 	// GCC's __builtin_bswap16/32/64 and clz/ctz/popcount[l|ll] of a
 	// constant operand.
 	bool bit_builtin(const syntax::CallExpr& expr, ConstValue& out);
+	bool elementwise_minmax(const syntax::CallExpr& expr, ConstValue& out);
 	// GCC's __builtin_add/sub/mul_overflow of constant operands, the
 	// result stored through the third.
 	bool overflow_builtin(const syntax::CallExpr& expr, ConstValue& out);

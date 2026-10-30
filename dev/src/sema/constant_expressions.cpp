@@ -1646,6 +1646,24 @@ bool ConstantInterpreter::increment(const syntax::UnaryExpr& expr, bool postfix,
 	return write(place, stepped, expr.location);
 }
 
+bool ConstantInterpreter::elementwise_minmax(const syntax::CallExpr& expr, ConstValue& out)
+{
+	ConstValue first, second;
+	if (!operand(*expr.arguments[0], first) || !operand(*expr.arguments[1], second) ||
+		first.kind != ValueKind::Integer || second.kind != ValueKind::Integer)
+		return false;
+	const Type* type = expr.facts->type->unqualified;
+	const bool maximum = (expr.facts->value >> 8 & 1) != 0;
+	const TokenKind comparison = maximum ? TokenKind::OP_GT : TokenKind::OP_LT;
+	const bool signed_type = KindOf(type).is_signed;
+	const bool take_first = IsWideIntegral(type)
+		? WideCompare(comparison, signed_type, WideInteger(first), WideInteger(second))
+		: IntegralCompare(comparison, signed_type, first.bits, second.bits);
+	out = take_first ? first : second;
+	out.type = type;
+	return true;
+}
+
 bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, ConstValue& out)
 {
 	// A builtin the analysis expanded (sema::Intrinsic) with constant
@@ -1666,6 +1684,8 @@ bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, Con
 		out = FloatingValue(facts->type, BuiltinSignalingNan(representation, *call_expr.arguments[0]));
 		return true;
 	}
+	if (which == Intrinsic::ElementwiseMinMax)
+		return elementwise_minmax(call_expr, out);
 	if (which == Intrinsic::MakeComplex)
 		return part_list(call_expr.arguments, facts->type, out, call_expr.location);
 	if (which == Intrinsic::Nan || which == Intrinsic::Inf)

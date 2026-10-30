@@ -1,0 +1,35 @@
+template<class T>T maximum(T a,T b){
+#if __has_builtin(__builtin_elementwise_max)
+return __builtin_elementwise_max(a,b);
+#else
+if(__builtin_isnan(a))return __builtin_isnan(b)?(T)__builtin_nan(""):b;if(__builtin_isnan(b))return a;return a>b?a:b;
+#endif
+}
+template<class T>T minimum(T a,T b){
+#if __has_builtin(__builtin_elementwise_min)
+return __builtin_elementwise_min(a,b);
+#else
+if(__builtin_isnan(a))return __builtin_isnan(b)?(T)__builtin_nan(""):b;if(__builtin_isnan(b))return a;return a<b?a:b;
+#endif
+}
+template<class T,class Bits>bool valid(T a,T b,T lo,T hi,Bits mask){bool an=__builtin_isnan(a),bn=__builtin_isnan(b);if(an&&bn)return __builtin_isnan(lo)&&__builtin_isnan(hi);if(an)return lo==b&&hi==b;if(bn)return lo==a&&hi==a;return lo<=a&&lo<=b&&hi>=a&&hi>=b&&(lo==a||lo==b)&&(hi==a||hi==b);}
+template<class T,class Bits>int scalars(Bits infbits,Bits mask,Bits largest=0){if(largest==0)largest=infbits-1;T inf=__builtin_bit_cast(T,infbits),tiny=__builtin_bit_cast(T,(Bits)1),large=__builtin_bit_cast(T,largest),q=__builtin_bit_cast(T,(Bits)(infbits|mask|1));T values[]={-inf,-large,(T)-4,-tiny,(T)-0.L,(T)0.L,tiny,(T)1,(T)4,large,inf,q};for(unsigned i=0;i<12;++i)for(unsigned j=0;j<12;++j)if(!valid(values[i],values[j],minimum(values[i],values[j]),maximum(values[i],values[j]),mask))return 1;return 0;}
+template<class V>V vmax(V a,V b){
+#if __has_builtin(__builtin_elementwise_max)
+return __builtin_elementwise_max(a,b);
+#else
+V out{};for(unsigned i=0;i<sizeof(V)/sizeof(a[0]);++i)out[i]=maximum(a[i],b[i]);return out;
+#endif
+}
+template<class V>V vmin(V a,V b){
+#if __has_builtin(__builtin_elementwise_min)
+return __builtin_elementwise_min(a,b);
+#else
+V out{};for(unsigned i=0;i<sizeof(V)/sizeof(a[0]);++i)out[i]=minimum(a[i],b[i]);return out;
+#endif
+}
+template<class V,class T,class Bits>int vectors(Bits mask){T data[]={(T)-4,(T)0,(T)7,(T)__builtin_inf(),(T)__builtin_nan("")};for(int k=0;k<5;++k){V a{},b{};for(unsigned i=0;i<sizeof(V)/sizeof(a[0]);++i){a[i]=data[(i+k)%5];b[i]=data[(i+2*k+1)%5];}V hi=vmax(a,b),lo=vmin(a,b);for(unsigned i=0;i<sizeof(V)/sizeof(a[0]);++i)if(!valid((T)a[i],(T)b[i],(T)lo[i],(T)hi[i],mask))return 1;}return 0;}
+using U128=unsigned __int128;
+using F=float __attribute__((vector_size(16)));
+using D=double __attribute__((vector_size(16)));
+int main(){if(scalars<float,unsigned>(0x7f800000u,0x400000u))return 1;if(scalars<double,unsigned long long>(0x7ff0000000000000ULL,0x8000000000000ULL))return 2;if(scalars<long double,U128>(((U128)0x7fff<<64)|((U128)1<<63),(U128)1<<62,((U128)0x7ffe<<64)|(((U128)1<<64)-1)))return 3;if(scalars<_Float16,unsigned short>(0x7c00,0x200))return 4;if(scalars<__bf16,unsigned short>(0x7f80,0x40))return 5;if(scalars<__float128,U128>((U128)0x7fff<<112,(U128)1<<111))return 6;if(vectors<F,float,unsigned>(0x400000u))return 7;if(vectors<D,double,unsigned long long>(0x8000000000000ULL))return 8;return 0;}

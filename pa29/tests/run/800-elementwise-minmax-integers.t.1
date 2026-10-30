@@ -1,0 +1,38 @@
+int calls;
+template<class T>T input(T a){++calls;return a;}
+template<class T>T maximum(T a,T b){
+#if __has_builtin(__builtin_elementwise_max)
+return __builtin_elementwise_max(a,b);
+#else
+return a>b?a:b;
+#endif
+}
+template<class T>T minimum(T a,T b){
+#if __has_builtin(__builtin_elementwise_min)
+return __builtin_elementwise_min(a,b);
+#else
+return a<b?a:b;
+#endif
+}
+template<class V>V vmax(V a,V b){
+#if __has_builtin(__builtin_elementwise_max)
+return __builtin_elementwise_max(a,b);
+#else
+V out{};for(unsigned i=0;i<sizeof(V)/sizeof(a[0]);++i)out[i]=maximum(a[i],b[i]);return out;
+#endif
+}
+template<class V>V vmin(V a,V b){
+#if __has_builtin(__builtin_elementwise_min)
+return __builtin_elementwise_min(a,b);
+#else
+V out{};for(unsigned i=0;i<sizeof(V)/sizeof(a[0]);++i)out[i]=minimum(a[i],b[i]);return out;
+#endif
+}
+template<class T>int scalars(T a,T b){T hi=maximum(a,b),lo=minimum(a,b);return !(hi>=a&&hi>=b&&lo<=a&&lo<=b&&(hi==a||hi==b)&&(lo==a||lo==b));}
+template<class V>int vectors(){for(unsigned x=0;x<256;++x)for(unsigned y=0;y<256;++y){V a{},b{};for(int i=0;i<16;++i){a[i]=(x+i*37)^(i*4);b[i]=(y+i*73)^(i*3);}V hi=vmax(input(a),input(b)),lo=vmin(input(a),input(b));for(int i=0;i<16;++i)if(!(hi[i]>=a[i]&&hi[i]>=b[i]&&lo[i]<=a[i]&&lo[i]<=b[i]&&(hi[i]==a[i]||hi[i]==b[i])&&(lo[i]==a[i]||lo[i]==b[i])))return 1;}return 0;}
+using U=unsigned char __attribute__((vector_size(16)));
+using S=signed char __attribute__((vector_size(16)));
+using C=char __attribute__((vector_size(16)));
+int main(){if(vectors<U>()||vectors<S>()||vectors<C>()||calls!=3*262144)return 1;
+volatile unsigned seed=1;__int128 wide=(__int128)seed<<100;unsigned __int128 high=(unsigned __int128)seed<<127;
+return scalars<signed char>(-128,127)||scalars<unsigned char>(0,255)||scalars<short>(-32768,32767)||scalars<unsigned short>(0,65535)||scalars<int>(-2147483647-1,2147483647)||scalars<unsigned>(0,~0u)||scalars<long>(-9223372036854775807L-1,9223372036854775807L)||scalars<unsigned long>(0,~0UL)||scalars<__int128>(-wide,wide)||scalars<__int128>(-wide,-1)||scalars<unsigned __int128>(high,high-1)||scalars<unsigned __int128>(high,~(unsigned __int128)0);}

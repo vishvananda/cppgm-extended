@@ -258,7 +258,9 @@ enum class Intrinsic : uint8_t
 	// __sync_bool_compare_and_swap and __sync_val_compare_and_swap (p,
 	// old, new): whether *p held old (and now holds new), or what it held.
 	SyncBoolCompareSwap,
-	SyncValCompareSwap
+	SyncValCompareSwap,
+	// Clang scalar/vector min/max; bit 8 selects maximum.
+	ElementwiseMinMax
 };
 
 // Generic GNU atomics whose object needs the size-prefixed runtime ABI.

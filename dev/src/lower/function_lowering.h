@@ -1358,6 +1358,8 @@ private:
 	RValue truncate_vector(const syntax::CallExpr& expr);
 	RValue vector_sign_mask(const syntax::CallExpr& expr);
 	RValue vector_byte_minmax(const syntax::CallExpr& expr);
+	RValue elementwise_minmax(const syntax::CallExpr& expr);
+	RValue numeric_minmax(const sema::Type* lane, const RValue& first, const RValue& second, bool maximum);
 	RValue vector_andnot(const syntax::CallExpr& expr);
 	RValue pack_vector(const syntax::CallExpr& expr);
 	RValue permute_vector(const syntax::CallExpr& expr);

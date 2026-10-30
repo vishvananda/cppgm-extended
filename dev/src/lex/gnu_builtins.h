@@ -94,7 +94,9 @@ enum class GnuBuiltin : uint8_t
 	ObjectSize,
 	Invoke,
 	IsConstantEvaluated,
-	SourceLocation
+	SourceLocation,
+	// Clang scalar/vector min/max, variants 0/1.
+	ElementwiseMinMax
 };
 
 struct GnuBuiltinEntry

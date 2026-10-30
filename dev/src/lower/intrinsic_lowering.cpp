@@ -158,7 +158,7 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 	// stack storage directly, the variadic argument list through LowIR's
 	// va_start, byte swaps by LowIR's bswap, and the bit counts as
 	// straight-line arithmetic (LowIR has no such operation).
-	if (kind >= sema::Intrinsic::AtomicLoadN)
+	if (kind >= sema::Intrinsic::AtomicLoadN && kind <= sema::Intrinsic::SyncValCompareSwap)
 		return atomic_intrinsic(expr, kind);
 	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
 	const auto list_tag = [this](const syntax::Expr& list) { return va_list_tag(list); };
@@ -249,6 +249,8 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		return vector_sign_mask(expr);
 	case sema::Intrinsic::VectorByteMinMax:
 		return vector_byte_minmax(expr);
+	case sema::Intrinsic::ElementwiseMinMax:
+		return elementwise_minmax(expr);
 	case sema::Intrinsic::VectorAndNot:
 		return vector_andnot(expr);
 	case sema::Intrinsic::VectorPack:
