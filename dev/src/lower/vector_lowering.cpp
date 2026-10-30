@@ -462,6 +462,44 @@ RValue FunctionLowering::vector_byte_minmax(const syntax::CallExpr& expr)
 	return load(lowering_.storage_type(vector), place);
 }
 
+RValue FunctionLowering::pack_vector(const syntax::CallExpr& expr)
+{
+	// Signed input lanes saturate before narrowing. The first input fills
+	// the low half; the second fills the high half, each evaluated once.
+	const sema::Type* result = expr.facts->type;
+	const sema::ExprFacts* argument = WithoutParentheses(expr.arguments[0])->facts;
+	const sema::Type* input =
+		(argument->conversion != nullptr ? argument->conversion->result : argument->type)->unqualified;
+	const lowir::Value a = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const lowir::Value b = vector_storage(operand(*expr.arguments[1], ConversionContext::Argument));
+	const uint64_t variant = expr.facts->value >> 8;
+	const int64_t minimum = variant == 0 ? 0 : variant == 1 ? -128 : -32768;
+	const int64_t maximum = variant == 0 ? 255 : variant == 1 ? 127 : 32767;
+	const lowir::Type lane = lowering_.storage_type(input->element);
+	const lowir::Type narrowed = lowering_.storage_type(result->element);
+	lowir::SlotId slot = lowir::kNoId;
+	const lowir::Value out = zeroed_vector(result, slot);
+	for (uint64_t i = 0; i < result->bound; ++i)
+	{
+		RValue value = vector_lane(i < input->bound ? a : b, input, i % input->bound);
+		for (uint32_t side = 0; side < 2; ++side)
+		{
+			const RValue bound = integer(lane, side == 0 ? minimum : maximum);
+			const RValue outside = compare(
+				side == 0 ? lowir::ComparePredicate::Lt : lowir::ComparePredicate::Gt, lane, value, bound);
+			lowir::Instruction choice = lowir::make_instruction(lowir::Opcode::Select, lane);
+			choice.ops[0] = outside.value;
+			choice.ops[1] = bound.value;
+			choice.ops[2] = value.value;
+			value.value = emit_value(choice, lane);
+		}
+		set_vector_lane(out, result, i, convert_op(lowir::ConvertOp::Trunc, narrowed, value));
+	}
+	Place place = Place();
+	place.storage = lowir::Value::slot(slot);
+	return load(lowering_.storage_type(result), place);
+}
+
 RValue FunctionLowering::vector_andnot(const syntax::CallExpr& expr)
 {
 	// PANDN complements the first input and masks it by the second. The

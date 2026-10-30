@@ -1,0 +1,10 @@
+#include <emmintrin.h>
+int main(){
+ for(int base=-32768;base<=32760;base+=8){
+  short a[8],b[8];signed char out[16];
+  for(int j=0;j<8;++j){a[j]=static_cast<short>(base+j);b[j]=static_cast<short>(-1-base-j);}
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(out),_mm_packs_epi16(_mm_loadu_si128(reinterpret_cast<const __m128i*>(a)),_mm_loadu_si128(reinterpret_cast<const __m128i*>(b))));
+  for(int j=0;j<16;++j){int x=j<8?a[j]:b[j-8];int want=x<-128?-128:x>127?127:x;if(out[j]!=want)return 1;}
+ }
+ return 0;
+}

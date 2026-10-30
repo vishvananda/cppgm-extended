@@ -1358,6 +1358,7 @@ private:
 	RValue vector_byte_mask(const syntax::CallExpr& expr);
 	RValue vector_byte_minmax(const syntax::CallExpr& expr);
 	RValue vector_andnot(const syntax::CallExpr& expr);
+	RValue pack_vector(const syntax::CallExpr& expr);
 	RValue unpack_vector(const syntax::CallExpr& expr);
 	RValue shift_vector_lanes(const syntax::CallExpr& expr);
 	RValue shuffle_vector(const syntax::CallExpr& expr);

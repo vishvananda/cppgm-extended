@@ -498,6 +498,16 @@ selector must be constant. A runtime selector through the public intrinsic
 wrapper remains an error. This check uses typed LowIR facts and leaves
 ordinary generated code and named debug storage unchanged.
 
+### SSE2 saturating packed conversions
+
+`__builtin_ia32_packuswb128` clamps signed 16-bit lanes to [0,255], then
+packs them into bytes. `__builtin_ia32_packsswb128` clamps to [-128,127];
+`__builtin_ia32_packssdw128` clamps signed 32-bit lanes to [-32768,32767]
+and packs them into words. The first input fills the low half of the
+128-bit result and the second fills the high half. Evaluate both once.
+Use the recorded input/output lane types and signed comparisons before
+narrowing; truncating first loses the saturation behavior.
+
 ### SSE2 packed bitwise and-not
 
 `__builtin_ia32_pandn128` takes two vectors of two signed 64-bit lanes and

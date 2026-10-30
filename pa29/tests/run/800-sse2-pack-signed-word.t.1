@@ -1,0 +1,10 @@
+#include <emmintrin.h>
+int main(){
+ int values[12]={(-2147483647-1),-65536,-32769,-32768,-32767,-1,0,1,32766,32767,32768,2147483647};
+ for(int start=0;start<12;++start){
+  int a[4],b[4];short out[8];for(int j=0;j<4;++j){a[j]=values[(start+j)%12];b[j]=values[(start+7+j)%12];}
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(out),_mm_packs_epi32(_mm_loadu_si128(reinterpret_cast<const __m128i*>(a)),_mm_loadu_si128(reinterpret_cast<const __m128i*>(b))));
+  for(int j=0;j<8;++j){int x=j<4?a[j]:b[j-4];int want=x<-32768?-32768:x>32767?32767:x;if(out[j]!=want)return 1;}
+ }
+ return 0;
+}

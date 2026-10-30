@@ -694,6 +694,26 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		facts->value = static_cast<uint64_t>(Intrinsic::VectorByteMinMax) | (static_cast<uint64_t>(variant) << 8);
 		break;
 	}
+	case GnuBuiltin::VectorPack:
+	{
+		if (count != 2)
+			error(expr.location, "wrong number of arguments to a packed saturating conversion");
+		const bool words = variant == 2;
+		const Type* input = types_.vector(
+			types_.fundamental(words ? FundamentalType::Int : FundamentalType::ShortInt), words ? 4 : 8);
+		for (const syntax::Expr* argument : expr.arguments)
+		{
+			if (typed_value(*argument, scope) == nullptr)
+				return nullptr;
+			convert(*argument, input, false);
+		}
+		facts = new_facts(expr,
+			types_.vector(
+				types_.fundamental(words ? FundamentalType::ShortInt : FundamentalType::Char), words ? 8 : 16),
+			ValueCategory::PRValue);
+		facts->value = static_cast<uint64_t>(Intrinsic::VectorPack) | (static_cast<uint64_t>(variant) << 8);
+		break;
+	}
 	case GnuBuiltin::VectorAndNot:
 	{
 		if (count != 2)

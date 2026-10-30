@@ -71,6 +71,7 @@ enum class GnuBuiltin : uint8_t
 	// SSE2 unsigned byte minimum/maximum, variants 0/1.
 	VectorByteMinMax,
 	VectorAndNot,
+	VectorPack,
 	// SSE2 interleaves the low/high halves of 8/16/32/64-bit lanes;
 	// variant is twice the lane-width index plus the high-half bit.
 	VectorUnpack,

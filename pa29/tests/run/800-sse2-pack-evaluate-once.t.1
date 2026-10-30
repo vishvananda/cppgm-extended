@@ -1,0 +1,13 @@
+#include <emmintrin.h>
+int first_calls,second_calls;
+__m128i first(){++first_calls;return _mm_setzero_si128();}
+__m128i second(){++second_calls;return _mm_set1_epi32(-1);}
+int main(){char bytes[16];short words[8];
+ _mm_storeu_si128(reinterpret_cast<__m128i*>(bytes),_mm_packus_epi16(first(),second()));
+ if(bytes[0]!=0||bytes[15]!=0)return 1;
+ _mm_storeu_si128(reinterpret_cast<__m128i*>(bytes),_mm_packs_epi16(first(),second()));
+ if(bytes[0]!=0||bytes[15]!=-1)return 2;
+ _mm_storeu_si128(reinterpret_cast<__m128i*>(words),_mm_packs_epi32(first(),second()));
+ if(words[0]!=0||words[7]!=-1)return 3;
+ return first_calls!=3||second_calls!=3;
+}
