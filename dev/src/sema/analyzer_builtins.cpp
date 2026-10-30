@@ -872,15 +872,19 @@ ExprFacts* Analyzer::vector_shift_builtin(const syntax::CallExpr& expr, uint8_t 
 	}
 	Constant count;
 	const bool constant = constant_value(*expr.arguments[1], scope, count, false);
-	if (constant && (count.bits > 2040 || count.bits % 8 != 0))
-		error(expr.arguments[1]->location, "a byte-shift bit count must be eight times an 8-bit immediate");
+	const bool byte_count = (variant & 2) != 0;
+	if (constant && (count.bits > (byte_count ? 255u : 2040u) || (!byte_count && count.bits % 8 != 0)))
+		error(expr.arguments[1]->location,
+			byte_count ? "a byte-shift count must be an 8-bit immediate"
+					   : "a byte-shift bit count must be eight times an 8-bit immediate");
 	if (!constant && template_depth_ == 0 &&
-		(body_ == nullptr || body_->function == nullptr || !body_->function->always_inline))
+		(byte_count || body_ == nullptr || body_->function == nullptr || !body_->function->always_inline))
 		error(expr.arguments[1]->location, "a byte-shift count that is no integral constant expression");
 	ExprFacts* facts = new_facts(expr, vector, ValueCategory::PRValue);
 	facts->flags |= kIntrinsic;
-	const Intrinsic kind = variant == 0 ? Intrinsic::VectorShiftLeftBytes : Intrinsic::VectorShiftRightBytes;
-	facts->value = static_cast<uint64_t>(kind) | (constant ? count.bits / 8 << 8 : uint64_t(1) << 16);
+	const Intrinsic kind = (variant & 1) == 0 ? Intrinsic::VectorShiftLeftBytes : Intrinsic::VectorShiftRightBytes;
+	facts->value = static_cast<uint64_t>(kind) |
+		(constant ? (byte_count ? count.bits : count.bits / 8) << 8 : uint64_t(1) << 16);
 	return facts;
 }
 

@@ -1,0 +1,10 @@
+using V=long long __attribute__((vector_size(16)));
+#if __has_builtin(__builtin_ia32_pslldqi128_byteshift)
+#define LEFT(a,n) __builtin_ia32_pslldqi128_byteshift(a,n)
+#define RIGHT(a,n) __builtin_ia32_psrldqi128_byteshift(a,n)
+#else
+#define LEFT(a,n) __builtin_ia32_pslldqi128(a,(n)*8)
+#define RIGHT(a,n) __builtin_ia32_psrldqi128(a,(n)*8)
+#endif
+int calls;V input(){++calls;V a={1,2};return a;}
+int main(){V a=LEFT(input(),8),b=RIGHT(input(),8);return calls!=2||a[0]!=0||a[1]!=1||b[0]!=2||b[1]!=0;}

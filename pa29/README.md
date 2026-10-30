@@ -596,3 +596,10 @@ to create fragile library-version-specific behavior.
 Later hosted tests keep the same hosted source/header environment while adding
 larger template-heavy standard-library headers and then link/run behavior for
 code emitted from hosted headers.
+
+Clang's `__builtin_ia32_pslldqi128_byteshift` and
+`__builtin_ia32_psrldqi128_byteshift` take a byte count in `[0,255]`.
+Normalize their constant count into the existing typed whole-register shift
+facts. Counts of 16 or more produce zero; these Clang forms require a constant
+immediate even in an `always_inline` function, while template arguments defer
+until instantiation. The GNU forms retain their bit-count interface.
