@@ -1,0 +1,2 @@
+typedef unsigned long long V __attribute__((vector_size(16)));
+int outputs,inputs;V result={15,240};V& output(){++outputs;return result;}V input(){++inputs;return V{5,160};}int main(){asm("pand %1,%0":"+x"(output()):"x"(input()));return outputs!=1||inputs!=1||result[0]!=5||result[1]!=160;}

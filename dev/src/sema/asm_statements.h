@@ -47,7 +47,7 @@ struct AsmOperandInfo
 	// whose register it starts that output in (0xff: none). The template
 	// names that register by either operand.
 	uint8_t tied;
-	// A single fixed GPR constraint (a, b, c, d, S, D), or zero.
+	// A single fixed GPR constraint (a, b, c, d, S, D), XMM class x, or zero.
 	char fixed;
 	AsmFlag flag;
 };
@@ -78,7 +78,9 @@ enum class AsmOperation : uint8_t
 	SetCarry,
 	SetNotCarry,
 	SetZero,
-	SetNotZero
+	SetNotZero,
+	// pand: all 128 bits of two XMM operands, preserving condition flags.
+	PackedAnd
 };
 
 const uint8_t kAsmImmediateSource = 0xff;
@@ -95,7 +97,7 @@ struct AsmInstruction
 	uint8_t destination;
 	// An operand index, or kAsmImmediateSource for `immediate`.
 	uint8_t source;
-	// The operation's size in bytes: 1, 2, 4 or 8.
+	// The operation's size in bytes: 1, 2, 4, 8, or 16 for PackedAnd.
 	uint8_t bytes;
 	uint8_t source_bytes;
 	uint8_t accumulator;

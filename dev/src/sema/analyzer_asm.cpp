@@ -78,7 +78,7 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 			if (c == '=' || c == '+' || c == '&' || c == '%')
 				continue;
 			++classes;
-			if (c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'S' || c == 'D')
+			if (c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'S' || c == 'D' || c == 'x')
 				info.fixed = c;
 		}
 		if (classes != 1)
@@ -103,6 +103,8 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 				error(
 					operand.location, "an asm matching constraint of no `=` register output (or of one matched twice)");
 			info.tied = static_cast<uint8_t>(tie);
+			if (operands[tie].fixed == 'x')
+				info.fixed = 'x';
 			operands[tie].read = true;
 		}
 		// Modifiers (= + &) and then the operand's classes: m (memory), r
@@ -151,7 +153,7 @@ void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 			error(operand.location, "an asm operand of incomplete type");
 		if (info.binding == AsmOperandClass::Register && !output)
 		{
-			if (!IsScalar(type))
+			if (!IsScalar(type) && !(type->kind == TypeKind::Vector && size == 16 && info.fixed == 'x'))
 				error(operand.location, "an asm register operand of no scalar type");
 			convert_operand(*operand.expression, type);
 		}

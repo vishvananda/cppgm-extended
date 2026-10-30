@@ -35,7 +35,7 @@ const Mnemonic kMnemonics[] = { { "mfence", AsmOperation::Fence, 0, false },
 	{ "and", AsmOperation::And, 2, true }, { "or", AsmOperation::Or, 2, true }, { "xor", AsmOperation::Xor, 2, true },
 	{ "xchg", AsmOperation::Exchange, 2, true }, { "bswap", AsmOperation::ByteSwap, 1, true },
 	{ "bts", AsmOperation::BitSet, 2, true }, { "btr", AsmOperation::BitReset, 2, true },
-	{ "btc", AsmOperation::BitComplement, 2, true } };
+	{ "btc", AsmOperation::BitComplement, 2, true }, { "pand", AsmOperation::PackedAnd, 2, false } };
 
 // A parsed instruction operand: an asm operand, or an immediate.
 struct Operand
@@ -50,7 +50,7 @@ struct Operand
 // type's (the low register of a 16-byte pair).
 uint32_t RegisterBytes(const AsmOperandInfo& operand, const Operand& parsed)
 {
-	return parsed.bytes != 0 ? parsed.bytes : operand.bytes == 16 ? 8 : operand.bytes;
+	return parsed.bytes != 0 ? parsed.bytes : operand.bytes == 16 && operand.fixed != 'x' ? 8 : operand.bytes;
 }
 
 uint32_t ByteMask(uint32_t bytes)
@@ -308,7 +308,13 @@ bool Lifter::line(const std::string& text)
 		return fail("an instruction of no size (no suffix and no register operand)");
 	if (bytes == 0)
 		bytes = register_bytes;
-	if ((register_bytes != 0 && bytes != register_bytes) || (bytes != 1 && bytes != 2 && bytes != 4 && bytes != 8))
+	const bool packed = instruction.operation == AsmOperation::PackedAnd;
+	if (packed &&
+		(instruction.locked || memory || target.fixed != 'x' || !source_register ||
+			operands_[source->index].fixed != 'x'))
+		return fail("a packed AND without two unlocked XMM register operands");
+	if ((register_bytes != 0 && bytes != register_bytes) ||
+		(packed ? bytes != 16 : (bytes != 1 && bytes != 2 && bytes != 4 && bytes != 8)))
 		return fail("an operand size that disagrees with its instruction");
 	if (source_register && RegisterBytes(operands_[source->index], *source) != bytes)
 		return fail("a source operand that is no register of the instruction's size");
@@ -350,7 +356,7 @@ bool Lifter::line(const std::string& text)
 	if (bit)
 		carry_source_ = static_cast<uint32_t>(out_.size());
 	else if (instruction.operation != AsmOperation::Not && instruction.operation != AsmOperation::Exchange &&
-		instruction.operation != AsmOperation::ByteSwap)
+		instruction.operation != AsmOperation::ByteSwap && !packed)
 	{
 		zero_source_ = static_cast<uint32_t>(out_.size());
 		if (mnemonic.compare(0, 3, "inc") != 0 && mnemonic.compare(0, 3, "dec") != 0)

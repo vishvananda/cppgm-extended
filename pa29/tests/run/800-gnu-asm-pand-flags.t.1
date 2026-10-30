@@ -1,0 +1,2 @@
+typedef unsigned long long V __attribute__((vector_size(16)));
+int main(){unsigned sum=~0U,one=1;unsigned char zero=0,carry=0;V a={3,12},b={5,10};asm("addl %5,%0; pand %4,%1; setz %2; setc %3":"+r"(sum),"+x"(a),"=qm"(zero),"=qm"(carry):"x"(b),"r"(one):"cc");return sum!=0||zero!=1||carry!=1||a[0]!=1||a[1]!=8;}

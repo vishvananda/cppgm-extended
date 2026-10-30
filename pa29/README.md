@@ -347,6 +347,9 @@ To complete PA29, implement hosted compatibility for:
   takes part in copy initialization, so a parse that accepts the form and
   discards the condition silently mis-ranks overloads.  Attributes interleave
   with the specifiers around it rather than preceding them all
+- GNU register-only `pand` statements over two 128-bit `x` vector operands,
+  including matching constraints. Lift all operand bits to integer AND,
+  evaluate each operand once, and preserve preceding condition flags
 - namespace basic asm data definitions: lift `.pushsection`, `.section`,
   `.popsection`, `.ascii`, `.asciz` / `.string`, and `.byte` to nonloaded
   PROGBITS section bytes. Custom section names use the token-safe LowIR subset

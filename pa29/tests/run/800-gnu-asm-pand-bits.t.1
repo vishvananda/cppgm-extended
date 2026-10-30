@@ -1,0 +1,2 @@
+typedef unsigned long long V __attribute__((vector_size(16)));
+int main(){for(unsigned bit=0;bit<128;++bit){V a={~0ULL,~0ULL},b={0,0};b[bit/64]=1ULL<<(bit%64);asm("pand %1,%0":"+x"(a):"x"(b));if(a[0]!=b[0]||a[1]!=b[1])return 1;}for(unsigned n=0;n<1024;++n){V a={0x0123456789abcdefULL*n,0xfedcba9876543210ULL+n},b={~(0x13579bdf2468ace0ULL*n),0xaaaaaaaa55555555ULL-n},expected=a&b;asm("pand %1,%0":"+x"(a):"x"(b));if(a[0]!=expected[0]||a[1]!=expected[1])return 2;}return 0;}

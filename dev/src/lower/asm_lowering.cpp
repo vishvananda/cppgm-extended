@@ -304,6 +304,7 @@ void FunctionLowering::asm_instruction(const sema::AsmInstruction& instruction, 
 		result = binary(lowir::BinaryOp::Sub, type, value, source);
 		break;
 	case sema::AsmOperation::And:
+	case sema::AsmOperation::PackedAnd:
 		result = binary(lowir::BinaryOp::And, type, value, source);
 		break;
 	case sema::AsmOperation::Or:
