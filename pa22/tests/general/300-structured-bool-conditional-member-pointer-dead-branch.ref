@@ -8,16 +8,53 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 }
 function @holder_int___holder(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN6holderIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
+  slot $cond__1 : i128
+  slot $tmpobj__2 : obj<1x1>
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = addr @holder_int___good
-    %t2 = copy i64 %t1
-    %t3 = convert zext i128 i64 %t2
-    %t4 = load typed ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
-    store typed i128 %t3, %t5
+    %t1 = addr $tmpobj__2
+    zeroinit 1x1 %t1
+    %t2 = index i8 %t1, 0
+    %t3 = call u8 @bool__false___operatorbool(%t2)
+    branch %t3, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    %t4 = addr @holder_int___bad
+    %t5 = copy i64 %t4
+    %t6 = convert zext i128 i64 %t5
+    store typed i128 %t6, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    %t7 = addr @holder_int___good
+    %t8 = copy i64 %t7
+    %t9 = convert zext i128 i64 %t8
+    store typed i128 %t9, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t10 = load typed i128 $cond__1
+    %t11 = load typed ptr $this
+    %t12 = index i8 [projection=field] %t11, 0
+    store typed i128 %t10, %t12
     return void
+}
+function @bool__false___operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK5bool_ILb0EEcvbEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return u8 0
+}
+function @holder_int___bad(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK6holderIiE3badEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = const i64 1
+    %t2 = convert trunc i32 i64 %t1
+    return i32 %t2
 }
 function @holder_int___good(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK6holderIiE4goodEv, inline_hint=yes] {
   slot $this : ptr

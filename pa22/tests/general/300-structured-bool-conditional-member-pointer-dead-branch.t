@@ -1,6 +1,6 @@
-// Reduced from Boost.Xpressive `has_fold_case` selecting between member
-// function pointers. A structured-bool false condition must not materialize
-// output for the non-selected conditional branch.
+// Reduced from Boost.Xpressive has_fold_case selecting member-function pointers.
+// Unoptimized LowIR retains the structured-bool conversion and both arms through
+// a result slot, even when the constexpr conversion has a fixed value.
 
 template<bool B>
 struct bool_
