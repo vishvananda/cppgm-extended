@@ -1,0 +1,2 @@
+/* legacy Ô */
+int Ôvalue;

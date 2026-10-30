@@ -9,6 +9,7 @@ PPLexer::PPLexer(const SourceBuffer& source, const PPLexerOptions& options)
 	: source_(source), reader_(source, !options.token_text), cur_(reader_.logical(source.begin_offset())), token_(),
 	  token_begin_(0), clean_end_(0), token_end_(0), base_(options.location_base), dirty_(false),
 	  header_names_on_request_(options.header_names_on_request), binary_exponents_(options.binary_exponents),
+	  legacy_comment_bytes_(options.legacy_comment_bytes),
 	  context_(options.header_names_on_request ? DirectiveContext::Other : DirectiveContext::LineStart)
 {}
 
@@ -23,9 +24,8 @@ const PPToken& PPLexer::next()
 		skip(cur_);
 		return finish_empty(PPTokenKind::NewLine);
 	}
-	if (IsHorizontalWhitespace(c) || at_comment_start())
+	if ((IsHorizontalWhitespace(c) || c == '/') && skip_whitespace_sequence())
 	{
-		skip_whitespace_sequence();
 		return finish_empty(PPTokenKind::WhitespaceSequence);
 	}
 	if (context_ == DirectiveContext::AfterInclude && (c == '<' || c == '"') && try_lex_header_name())
@@ -158,15 +158,7 @@ void PPLexer::update_directive_context(PPTokenKind kind)
 
 // ---- whitespace and comments ------------------------------------------------
 
-bool PPLexer::at_comment_start() const
-{
-	if (cur_.code_point != '/')
-		return false;
-	const int32_t next = peek_after(cur_).code_point;
-	return next == '/' || next == '*';
-}
-
-void PPLexer::skip_whitespace_sequence()
+bool PPLexer::skip_whitespace_sequence()
 {
 	// A maximal run of non-new-line whitespace and comments.
 	for (;;)
@@ -177,23 +169,22 @@ void PPLexer::skip_whitespace_sequence()
 			continue;
 		}
 		if (cur_.code_point != '/')
-			return;
+			return token_end_ != token_begin_;
 		const SourceChar second = peek_after(cur_);
 		if (second.code_point == '/')
 		{
-			// A line comment runs up to, not including, the new-line.
-			skip(second);
+			skip_comment(second);
 			while (cur_.code_point != '\n' && cur_.code_point != kEndOfSource)
-				skip(cur_);
+				skip_comment(cur_);
 		}
 		else if (second.code_point == '*')
 		{
-			skip(second);
+			skip_comment(second);
 			skip_block_comment();
 		}
 		else
 		{
-			return;
+			return token_end_ != token_begin_;
 		}
 	}
 }
@@ -205,7 +196,7 @@ void PPLexer::skip_block_comment()
 		if (cur_.code_point == kEndOfSource)
 			throw SourceError(token_begin_, "unterminated block comment");
 		const bool star = cur_.code_point == '*';
-		skip(cur_);
+		skip_comment(cur_);
 		if (star && cur_.code_point == '/')
 		{
 			skip(cur_);

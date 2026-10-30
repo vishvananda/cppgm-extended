@@ -107,9 +107,9 @@ public:
 	void end_line_input();
 	void request_header_name() { frames_.back()->lexer->request_header_name(); }
 	void allow_va_args(bool allow) { allow_va_args_ = allow; }
-	// Hosted pp-numbers (PPLexerOptions::binary_exponents) in the files
-	// entered from now on.
-	void set_binary_exponents(bool enabled) { binary_exponents_ = enabled; }
+	// Hosted lexical extensions (hexadecimal pp-numbers and opaque comment
+	// bytes) in the files entered from now on.
+	void set_hosted(bool enabled) { hosted_ = enabled; }
 
 	// Skipped groups ([cpp.cond] 16.1p6): reads to the `#` of the next
 	// directive in the current file; false at the file's end.
@@ -138,7 +138,7 @@ private:
 	bool at_directive_;
 	bool at_end_;
 	bool allow_va_args_;
-	bool binary_exponents_;
+	bool hosted_;
 	uint32_t directive_location_;
 	telemetry::Counter tokens_read_;
 };

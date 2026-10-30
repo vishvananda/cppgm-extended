@@ -1,0 +1,2 @@
+preproc 1
+sof tests/preproc/400-host-legacy-comment-unterminated-bad.t

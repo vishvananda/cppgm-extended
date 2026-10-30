@@ -95,7 +95,7 @@ Preprocessor::Preprocessor(const PreprocessorOptions& options, const std::string
 	  guarded_skips_(0), finished_(false), pack_(0)
 {
 	expander_.set_input(&source_);
-	source_.set_binary_exponents(hosted_);
+	source_.set_hosted(hosted_);
 	expander_.set_binary_exponents(hosted_);
 	expander_.set_hosted_recursion(hosted_);
 	SourceFile* primary = files_.open(path);

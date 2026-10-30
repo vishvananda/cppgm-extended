@@ -25,6 +25,8 @@ struct PPLexerOptions
 	// A pp-number continues with `p` or `P` and a sign, as in C++17 (hosted
 	// hexadecimal floating literals such as `0x1p+4`).
 	bool binary_exponents = false;
+	// Hosted source comments may contain legacy bytes, never token spellings.
+	bool legacy_comment_bytes = false;
 };
 
 // Streaming preprocessing tokenizer: translation phase 3 over the phase 1-2
@@ -93,6 +95,11 @@ private:
 		token_end_ = c.end;
 		cur_ = reader_.logical(c.end);
 	}
+	void skip_comment(const SourceChar& c)
+	{
+		token_end_ = c.end;
+		cur_ = reader_.logical(c.end, legacy_comment_bytes_);
+	}
 	SourceChar peek_after(const SourceChar& c) const { return reader_.logical(c.end); }
 	bool spelling_is(const char* text) const;
 	const PPToken& finish(PPTokenKind kind, uint8_t punctuator = kNoPunctuator);
@@ -100,8 +107,7 @@ private:
 	void update_directive_context(PPTokenKind kind);
 
 	// Whitespace, identifiers and numbers (pp_lexer.cpp).
-	bool at_comment_start() const;
-	void skip_whitespace_sequence();
+	bool skip_whitespace_sequence();
 	void skip_block_comment();
 	bool read_universal_character_name(const SourceChar& backslash, UniversalCharacterName& ucn) const;
 	SourceChar ucn_outside_literal(const UniversalCharacterName& ucn) const;
@@ -141,5 +147,6 @@ private:
 	bool dirty_;
 	bool header_names_on_request_;
 	bool binary_exponents_;
+	bool legacy_comment_bytes_;
 	DirectiveContext context_;
 };

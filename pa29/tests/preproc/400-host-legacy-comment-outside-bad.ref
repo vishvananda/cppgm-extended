@@ -1,0 +1,3 @@
+preproc 1
+sof tests/preproc/400-host-legacy-comment-outside-bad.t
+simple int KW_INT

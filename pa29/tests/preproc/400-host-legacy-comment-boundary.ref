@@ -1,0 +1,7 @@
+preproc 1
+sof tests/preproc/400-host-legacy-comment-boundary.t
+simple int KW_INT
+identifier value
+simple ; OP_SEMICOLON
+literal "a b" array of 4 char 61206200
+eof

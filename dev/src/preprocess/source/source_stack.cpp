@@ -20,7 +20,7 @@ SourceStack::SourceStack(SourceFiles& files, IdentifierTable& identifiers, Arena
 	SourceFrameObserver& observer)
 	: files_(files), identifiers_(identifiers), arena_(arena), names_(names), observer_(observer), token_(EndToken(0)),
 	  peeked_(EndToken(0)), has_peeked_(false), line_mode_(false), line_ended_(false), at_directive_(false),
-	  at_end_(false), allow_va_args_(false), binary_exponents_(false), directive_location_(0), tokens_read_(0)
+	  at_end_(false), allow_va_args_(false), hosted_(false), directive_location_(0), tokens_read_(0)
 {}
 
 SourceStack::~SourceStack() = default;
@@ -36,7 +36,8 @@ void SourceStack::enter(SourceFile* file, std::string presumed_name, std::size_t
 	PPLexerOptions options;
 	options.location_base = frame->base;
 	options.header_names_on_request = true;
-	options.binary_exponents = binary_exponents_;
+	options.binary_exponents = hosted_;
+	options.legacy_comment_bytes = hosted_;
 	frame->lexer.reset(new PPLexer(file->buffer(), options));
 	frame->conditional_depth = conditional_depth;
 	frame->search_index = search_index;

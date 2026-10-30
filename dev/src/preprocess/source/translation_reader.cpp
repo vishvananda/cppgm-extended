@@ -69,7 +69,7 @@ uint32_t TranslationReader::skip_line_splices(uint32_t offset) const
 	}
 }
 
-SourceChar TranslationReader::logical_slow(uint32_t offset) const
+SourceChar TranslationReader::logical_slow(uint32_t offset, bool comment) const
 {
 	if (!translate_)
 		return raw(offset);
@@ -83,7 +83,7 @@ SourceChar TranslationReader::logical_slow(uint32_t offset) const
 		if (int replacement = TrigraphReplacement(bytes_[offset + 2]))
 			return SourceChar{ replacement, offset, offset + 3 };
 	}
-	if (byte < 0x80)
+	if (byte < 0x80 || comment)
 		return SourceChar{ byte, offset, offset + 1 };
 	return decode_multibyte(offset);
 }

@@ -1,0 +1,7 @@
+preproc 1
+sof tests/preproc/400-host-legacy-comment-string-bad.t
+simple const KW_CONST
+simple char KW_CHAR
+simple * OP_STAR
+identifier value
+simple = OP_ASS

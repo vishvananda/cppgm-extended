@@ -33,15 +33,17 @@ public:
 	// The next character at or after `offset` with physical characters
 	// mapped (UTF-8, or Windows-1252 for a stray continuation byte),
 	// trigraphs replaced and backslash-new-line splices deleted.
-	SourceChar logical(uint32_t offset) const
+	// `comment` is the hosted lexer's opaque comment-byte view. It keeps
+	// ASCII delimiters and phase 1-2 translation while ignoring byte encoding.
+	SourceChar logical(uint32_t offset, bool comment = false) const
 	{
 		if (offset < size_)
 		{
 			const unsigned char byte = bytes_[offset];
-			if (byte < 0x80 && byte != '\\' && byte != '?')
+			if ((byte < 0x80 && byte != '\\' && byte != '?') || (comment && byte >= 0x80))
 				return SourceChar{ byte, offset, offset + 1 };
 		}
-		return logical_slow(offset);
+		return logical_slow(offset, comment);
 	}
 
 	// The character at `offset` with only the physical character mapping
@@ -55,7 +57,7 @@ public:
 	}
 
 private:
-	SourceChar logical_slow(uint32_t offset) const;
+	SourceChar logical_slow(uint32_t offset, bool comment) const;
 	SourceChar raw_slow(uint32_t offset) const;
 	SourceChar decode_multibyte(uint32_t offset) const;
 	uint32_t skip_line_splices(uint32_t offset) const;
