@@ -90,17 +90,34 @@ jobs:
               summary.write('\nThis independent push workflow is advisory; required CI runs separately.\n')
           PY
 
+      - name: Collect diagnostic evidence
+        if: always()
+        run: |
+          python3 - <<'PYTHON'
+          import os, shutil
+          from pathlib import Path
+          temporary = Path(os.environ['RUNNER_TEMP'])
+          source = temporary / 'boost-advisory'
+          destination = temporary / 'boost-advisory-diagnostics'
+          destination.mkdir(exist_ok=True)
+          files = [source / 'results.json', source / 'bootstrap.log']
+          files += list((source / 'config').glob('*'))
+          for pattern in ['libs-*/b2.log', 'libs-*/b2.xml', 'libs-*/invocations.jsonl']:
+              files += list(source.glob(pattern))
+          for path in files:
+              if path.is_file():
+                  target = destination / path.relative_to(source)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  shutil.copyfile(path, target)
+          PYTHON
+
       - name: Retain diagnostic evidence
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: boost-advisory-${{ github.sha }}
-          path: |
-            ${{ runner.temp }}/boost-advisory/results.json
-            ${{ runner.temp }}/boost-advisory/bootstrap.log
-            ${{ runner.temp }}/boost-advisory/config/**
-            ${{ runner.temp }}/boost-advisory/libs-*/b2.log
-            ${{ runner.temp }}/boost-advisory/libs-*/b2.xml
-            ${{ runner.temp }}/boost-advisory/libs-*/invocations.jsonl
+          # One directory lets the runner translate its host temporary path
+          # into the job container consistently for every retained file.
+          path: ${{ runner.temp }}/boost-advisory-diagnostics/
           if-no-files-found: warn
           retention-days: 14
