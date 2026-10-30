@@ -1,0 +1,25 @@
+struct Value { unsigned char bytes[17]; };
+extern "C" int atomic_runtime_calls(int);
+extern "C" int atomic_runtime_protocol_ok();
+int pointer_calls,source_calls,output_calls,expected_calls,weak_calls,order_calls;
+Value* pointer(Value& v){++pointer_calls;return &v;}
+Value* source(Value& v){++source_calls;return &v;}
+Value* output(Value& v){++output_calls;return &v;}
+Value* expected(Value& v){++expected_calls;return &v;}
+bool weak(){++weak_calls;return false;}
+int order(int value){++order_calls;return value;}
+int main(){Value object={},out={},desired={},old={},want={};for(int i=0;i<17;++i){object.bytes[i]=static_cast<unsigned char>(i+1);desired.bytes[i]=static_cast<unsigned char>(100+i);}
+ __atomic_load(pointer(object),output(out),order(__ATOMIC_ACQUIRE));
+ for(int i=0;i<17;++i)if(out.bytes[i]!=i+1)return 1;
+ __atomic_store(pointer(object),source(desired),order(__ATOMIC_RELEASE));
+ __atomic_exchange(pointer(object),source(out),output(old),order(__ATOMIC_ACQ_REL));
+ for(int i=0;i<17;++i)if(old.bytes[i]!=100+i)return 2;
+ bool weak_value=weak();
+ if(__atomic_compare_exchange(pointer(object),expected(want),source(old),weak_value,order(__ATOMIC_SEQ_CST),order(__ATOMIC_RELAXED)))return 3;
+ for(int i=0;i<17;++i)if(want.bytes[i]!=i+1)return 4;
+ weak_value=weak();
+ if(!__atomic_compare_exchange(pointer(object),expected(want),source(old),weak_value,order(__ATOMIC_SEQ_CST),order(__ATOMIC_RELAXED)))return 5;
+ for(int i=0;i<17;++i)if(object.bytes[i]!=100+i)return 6;
+ if(pointer_calls!=5||source_calls!=4||output_calls!=2||expected_calls!=2||weak_calls!=2||order_calls!=7)return 7;
+ return !atomic_runtime_protocol_ok()||atomic_runtime_calls(0)!=1||atomic_runtime_calls(1)!=1||atomic_runtime_calls(2)!=1||atomic_runtime_calls(3)!=2;
+}

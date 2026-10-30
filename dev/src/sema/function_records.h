@@ -261,6 +261,10 @@ enum class Intrinsic : uint8_t
 	SyncValCompareSwap
 };
 
+// Generic GNU atomics whose object needs the size-prefixed runtime ABI.
+// Kept in ExprFacts::value above the intrinsic and implied-order bytes.
+const uint64_t kAtomicRuntimeCall = uint64_t(1) << 16;
+
 // One base or non-static data member initialization of a constructor, in
 // initialization order (12.6.2p10): by its mem-initializer, else by the
 // member's brace-or-equal-initializer, else default-initialization

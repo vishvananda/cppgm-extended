@@ -446,6 +446,8 @@ RValue FunctionLowering::atomic_intrinsic(const syntax::CallExpr& expr, sema::In
 	// never converted). Adds and subtracts are atomic_add_fetch; the
 	// bitwise updates are compare-exchange loops (lowir.md).
 	using sema::Intrinsic;
+	if ((expr.facts->value & sema::kAtomicRuntimeCall) != 0)
+		return atomic_runtime_call(expr, kind);
 	const syntax::Slice<syntax::Expr*>& arguments = expr.arguments;
 	const lowir::Type void_type = lowir::Type::scalar(lowir::TypeKind::Void);
 	// A __sync builtin's implied order (+ 1 above the kind), else the

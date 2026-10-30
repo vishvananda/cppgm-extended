@@ -704,6 +704,7 @@ public:
 	// A soft-float routine, declared on first reference (its binary16 and
 	// binary128 operands' classes stated in object mode).
 	lowir::SymbolId soft_float_helper(SoftFloatHelper which);
+	lowir::SymbolId atomic_runtime_function(sema::Intrinsic kind);
 	// Object mode: the psABI classes of a binary16 or binary128 value (an
 	// SSE eightbyte; binary128's SSEUP upper half shares its register).
 	uint8_t soft_float_classes(SoftFloat kind) const;

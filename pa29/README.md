@@ -498,6 +498,23 @@ selector must be constant. A runtime selector through the public intrinsic
 wrapper remains an error. This check uses typed LowIR facts and leaves
 ordinary generated code and named debug storage unchanged.
 
+### Generic GNU atomic runtime operations
+
+The pointer-based `__atomic_load`, `__atomic_store`, `__atomic_exchange` and
+`__atomic_compare_exchange` support complete objects beyond the inline
+1-, 2-, 4- and 8-byte forms. Record this requirement in the existing typed
+call facts and use the generic runtime ABI in host object mode: prepend
+the object byte size; pass pointers and integer memory orders; omit the
+compare-exchange weak parameter while evaluating its expression once.
+Keep const-destination and operand-size checks. Other builtin forms retain
+their existing size restrictions. Linking needs a compatible runtime
+provider (`libatomic` on Linux, supplied by the host link command).
+
+The weak argument's value does not change the runtime ABI. cppgm preserves
+its expression's side effects once, as Clang does; GCC 15 discards that
+expression in the generic form. The required evaluation control records
+this host-oracle difference separately from the common ABI protocol.
+
 ### GNU vector permutations
 
 `__builtin_shuffle(vector, mask)` and `__builtin_shuffle(first, second, mask)`

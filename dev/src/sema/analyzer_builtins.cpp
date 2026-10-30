@@ -1148,8 +1148,8 @@ ExprFacts* Analyzer::atomic_builtin(const syntax::CallExpr& expr, const AtomicFo
 	// address (an integral or pointer type of 1, 2, 4 or 8 bytes,
 	// arithmetic on a pointer unscaled; for the generic load, store,
 	// exchange and compare_exchange any object type of those sizes, its
-	// bytes as the integer of that size, as GCC's inline forms;
-	// libatomic's calls for other sizes are outside PA27), v a value of its
+	// bytes as the integer of that size, as PA27's inline forms;
+	// other sizes use the generic runtime ABI), v a value of its
 	// type, r a pointer to one (the generic forms: of the object's size;
 	// compare_exchange_n's expected), b bool (weak), o a memory order
 	// (int), s a size; the result is the object's type (T), void (-), bool
@@ -1168,9 +1168,10 @@ ExprFacts* Analyzer::atomic_builtin(const syntax::CallExpr& expr, const AtomicFo
 	}
 	const bool byte = kind == Intrinsic::AtomicTestAndSet || kind == Intrinsic::AtomicClear;
 	const bool arithmetic_kind = kind >= Intrinsic::AtomicAddFetch && kind <= Intrinsic::AtomicFetchNand;
-	const bool generic = kind == Intrinsic::AtomicLoad || kind == Intrinsic::AtomicStore ||
-		kind == Intrinsic::AtomicExchange || kind == Intrinsic::AtomicCompareExchange ||
-		(form.any_object && !arithmetic_kind);
+	const bool indirect_generic = kind == Intrinsic::AtomicLoad || kind == Intrinsic::AtomicStore ||
+		kind == Intrinsic::AtomicExchange || kind == Intrinsic::AtomicCompareExchange;
+	const bool generic = indirect_generic || (form.any_object && !arithmetic_kind);
+	bool runtime_object = false;
 	const bool loads = kind == Intrinsic::AtomicLoadN || kind == Intrinsic::AtomicLoad;
 	const Type* object = nullptr;
 	uint64_t size = 0, alignment = 0;
@@ -1224,17 +1225,18 @@ ExprFacts* Analyzer::atomic_builtin(const syntax::CallExpr& expr, const AtomicFo
 					return nullptr;
 				}
 				object = pointer->element->unqualified;
-				if (!type_size(object, size, alignment, expr.location) ||
-					(size != 1 && size != 2 && size != 4 && size != 8) ||
+				const bool sized = type_size(object, size, alignment, expr.location);
+				const bool scalar_size = size == 1 || size == 2 || size == 4 || size == 8;
+				if (!sized || (!scalar_size && !indirect_generic) ||
 					(!generic && !(IsIntegralOrUnscopedEnum(object) || object->kind == TypeKind::Pointer)))
 				{
 					substitution_error(expr.location,
 						generic
-							? "a generic atomic builtin on an object of no 1, 2, 4 or 8 bytes (libatomic's calls are "
-							  "not supported)"
+							? "a generic atomic builtin on an incomplete or unsupported object type"
 							: "an atomic builtin on an object of no integral or pointer type of 1, 2, 4 or 8 bytes");
 					return nullptr;
 				}
+				runtime_object = !scalar_size;
 			}
 			// The generic forms' other objects are of the object's size.
 			uint64_t other = 0, other_alignment = 0;
@@ -1306,7 +1308,8 @@ ExprFacts* Analyzer::atomic_builtin(const syntax::CallExpr& expr, const AtomicFo
 	}
 	ExprFacts* facts = new_facts(expr, result, ValueCategory::PRValue);
 	facts->flags |= kIntrinsic;
-	facts->value = static_cast<uint64_t>(kind) | static_cast<uint64_t>(form.implied) << 8;
+	facts->value = static_cast<uint64_t>(kind) | static_cast<uint64_t>(form.implied) << 8 |
+		(runtime_object ? kAtomicRuntimeCall : 0);
 	return facts;
 }
 

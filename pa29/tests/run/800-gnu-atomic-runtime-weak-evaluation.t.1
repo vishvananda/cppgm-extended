@@ -1,0 +1,4 @@
+struct Value { unsigned char bytes[17]; };
+int calls;
+bool weak(){++calls;return false;}
+int main(){Value object={},expected={},desired={};bool matched=__atomic_compare_exchange(&object,&expected,&desired,weak(),__ATOMIC_SEQ_CST,__ATOMIC_RELAXED);return !matched||calls!=1;}
