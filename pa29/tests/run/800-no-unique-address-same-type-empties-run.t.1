@@ -6,4 +6,21 @@
 struct E {};
 struct B { [[no_unique_address]] E e1; [[no_unique_address]] E e2; int x; };
 struct C { [[no_unique_address]] E m0[2]; [[no_unique_address]] E m1; };
-int main() { return sizeof(B) == 4 && offsetof(B, e2) == 1 && offsetof(B, x) == 0 && sizeof(C) == 3 && offsetof(C, m1) == 2 ? 0 : 1; }
+// A wrapper's empty leaf still conflicts with an ordinary member or array
+// element of that leaf's type. An aligned search must restart for each member.
+struct H { [[no_unique_address]] E e; };
+struct Nested { [[no_unique_address]] H h; [[no_unique_address]] E e; int x; };
+struct Array { E e[2]; [[no_unique_address]] H h; };
+struct Aligned {
+  [[no_unique_address]] E a;
+  alignas(8) [[no_unique_address]] E b;
+  [[no_unique_address]] E c;
+};
+int main()
+{
+  if (sizeof(B) != 4 || offsetof(B, e2) != 1 || offsetof(B, x) != 0) return 1;
+  if (sizeof(C) != 3 || offsetof(C, m1) != 2) return 2;
+  if (sizeof(Nested) != 4 || offsetof(Nested, e) != 1) return 3;
+  if (sizeof(Array) != 3 || offsetof(Array, h) != 2) return 4;
+  return offsetof(Aligned, c) != 1;
+}

@@ -1,0 +1,32 @@
+struct P {
+  int value;
+  char byte;
+  P() : value(1), byte(2) {}
+};
+struct Tail { [[no_unique_address]] P member; char tail; };
+int copies;
+struct Effect {
+  int value;
+  Effect() : value(0) {}
+  Effect(const Effect& other) : value(other.value) { ++copies; }
+  Effect& operator=(const Effect& other) { value = other.value; ++copies; return *this; }
+};
+struct Mixed { [[no_unique_address]] P member; char tail; Effect effect; };
+int main()
+{
+  Tail a;
+  a.tail = 77;
+  Tail b = a;
+  if (b.tail != 77 || b.member.value != 1 || b.member.byte != 2) return 1;
+  Mixed m;
+  m.tail = 31;
+  m.effect.value = 71;
+  Mixed n = m;
+  if (copies != 1 || n.tail != 31 || n.member.value != 1 ||
+      n.member.byte != 2 || n.effect.value != 71) return 2;
+  n.tail = 39;
+  n.member = m.member;
+  if (n.tail != 39) return 3;
+  n = m;
+  return copies != 2 || n.tail != 31 || n.effect.value != 71;
+}

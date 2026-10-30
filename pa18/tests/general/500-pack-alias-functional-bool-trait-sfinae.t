@@ -36,6 +36,11 @@ struct A {};
 struct B {};
 
 static_assert(and_<is_good<A>, is_good<B> >::value, "");
+// An unused alias pack must still substitute each enable_if. Check rejection
+// as well as success: the ellipsis fallback is the only viable false case.
+static_assert(and_<>::value, "empty conjunction");
+static_assert(!and_<false_type>::value, "erased alias argument still substitutes");
+static_assert(!and_<true_type, false_type>::value, "later pack failure");
 
 int main()
 {
