@@ -498,6 +498,13 @@ selector must be constant. A runtime selector through the public intrinsic
 wrapper remains an error. This check uses typed LowIR facts and leaves
 ordinary generated code and named debug storage unchanged.
 
+### SSE2 packed bitwise and-not
+
+`__builtin_ia32_pandn128` takes two vectors of two signed 64-bit lanes and
+returns the bitwise complement of the first input masked by the second.
+Preserve all 128 bits and evaluate each operand once. The public
+`_mm_andnot_si128` wrapper has the same behavior.
+
 ### SSE2 unsigned byte maximum
 
 `__builtin_ia32_pmaxub128` chooses the unsigned maximum in each of sixteen

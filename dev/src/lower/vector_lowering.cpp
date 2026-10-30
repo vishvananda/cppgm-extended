@@ -462,6 +462,25 @@ RValue FunctionLowering::vector_byte_minmax(const syntax::CallExpr& expr)
 	return load(lowering_.storage_type(vector), place);
 }
 
+RValue FunctionLowering::vector_andnot(const syntax::CallExpr& expr)
+{
+	// PANDN complements the first input and masks it by the second. The
+	// recorded two integer lanes cover every bit without signed arithmetic.
+	const sema::Type* vector = expr.facts->type;
+	const lowir::Value a = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const lowir::Value b = vector_storage(operand(*expr.arguments[1], ConversionContext::Argument));
+	lowir::SlotId slot = lowir::kNoId;
+	const lowir::Value out = zeroed_vector(vector, slot);
+	for (uint64_t i = 0; i < vector->bound; ++i)
+	{
+		const RValue x = unary(lowir::UnaryOp::BitNot, vector_lane(a, vector, i));
+		set_vector_lane(out, vector, i, binary(lowir::BinaryOp::And, x.type, x, vector_lane(b, vector, i)));
+	}
+	Place place = Place();
+	place.storage = lowir::Value::slot(slot);
+	return load(lowering_.storage_type(vector), place);
+}
+
 RValue FunctionLowering::unpack_vector(const syntax::CallExpr& expr)
 {
 	// Each operand is evaluated once. Copy the selected half's lane bits

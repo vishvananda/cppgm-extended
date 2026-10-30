@@ -49,6 +49,7 @@ const struct
 	{ "__builtin_huge_valf", { GnuBuiltin::FloatConstant, 7, nullptr, 0 } },
 	{ "__builtin_huge_vall", { GnuBuiltin::FloatConstant, 8, nullptr, 0 } },
 	{ "__builtin_ia32_cvttps2dq", { GnuBuiltin::VectorTruncate, 0, nullptr, 0 } },
+	{ "__builtin_ia32_pandn128", { GnuBuiltin::VectorAndNot, 0, nullptr, 0 } },
 	{ "__builtin_ia32_pmaxub128", { GnuBuiltin::VectorByteMinMax, 1, nullptr, 0 } },
 	{ "__builtin_ia32_pminub128", { GnuBuiltin::VectorByteMinMax, 0, nullptr, 0 } },
 	{ "__builtin_ia32_pmovmskb128", { GnuBuiltin::VectorByteMask, 0, nullptr, 0 } },

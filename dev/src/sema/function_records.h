@@ -192,6 +192,7 @@ enum class Intrinsic : uint8_t
 	VectorByteMask,
 	// SSE2 unsigned byte minimum/maximum; bit 8 selects maximum.
 	VectorByteMinMax,
+	VectorAndNot,
 	// SSE2 interleaves two vectors' low/high halves. Bits 8-15 hold
 	// twice the lane-width index (8/16/32/64 bits) plus the high-half bit.
 	VectorUnpack,
