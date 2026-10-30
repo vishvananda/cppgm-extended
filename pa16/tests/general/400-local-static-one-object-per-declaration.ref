@@ -1,3 +1,6 @@
+declare function @__cppgm_runtime_cxa_guard_acquire(%arg0 : ptr) -> i32 [linkage=c, binding=strong, object=__cxa_guard_acquire]
+declare function @__cppgm_runtime_cxa_guard_release(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_release]
+
 global @__local_static__walker__up__decl0__first : i32 [binding=internal, object=_ZZNK6walker2upEiE5first] = zero
 global @__local_static__walker__up__decl0__first__guard : i64 [binding=internal, object=_ZGVZNK6walker2upEiE5first] = zero
 global @__local_static__counted__counted__decl0__count : i32 [binding=weak, object=_ZZN7countedC1EvE5count] = 0
@@ -22,35 +25,43 @@ function @walker__up(%this : ptr [object_bytes=1], %depth : i32) -> i32 [binding
   block ^entry:
     store typed ptr %this, $this
     store typed i32 %depth, $depth
-    %t1 = load typed i64 @__local_static__walker__up__decl0__first__guard
-    %t2 = cmp ne i64 %t1, 0
-    branch %t2, ^local_static_ready_1, ^local_static_init_2
+    %t1 = addr @__local_static__walker__up__decl0__first__guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ready_1, ^local_static_ctor_run_3
+
+  block ^local_static_ctor_run_3:
+    %t4 = addr @__local_static__walker__up__decl0__first__guard
+    %t5 = call i32 @__cppgm_runtime_cxa_guard_acquire(%t4)
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^local_static_init_2, ^local_static_ready_1
 
   block ^local_static_init_2:
-    %t3 = addr @__local_static__walker__up__decl0__first
-    %t4 = load typed i32 $depth
-    %t5 = binary add nowrap i32 %t4, 5
-    store typed i32 %t5, %t3
-    store typed i64 1, @__local_static__walker__up__decl0__first__guard
+    %t7 = addr @__local_static__walker__up__decl0__first
+    %t8 = load typed i32 $depth
+    %t9 = binary add nowrap i32 %t8, 5
+    store typed i32 %t9, %t7
+    %t10 = addr @__local_static__walker__up__decl0__first__guard
+    call void @__cppgm_runtime_cxa_guard_release(%t10)
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t6 = load typed i32 $depth
-    %t7 = cmp gt i32 %t6, 2
-    branch %t7, ^if_then_3, ^if_else_4
+    %t11 = load typed i32 $depth
+    %t12 = cmp gt i32 %t11, 2
+    branch %t12, ^if_then_4, ^if_else_5
 
-  block ^if_then_3:
-    %t8 = load typed i32 @__local_static__walker__up__decl0__first
-    return i32 %t8
+  block ^if_then_4:
+    %t13 = load typed i32 @__local_static__walker__up__decl0__first
+    return i32 %t13
 
-  block ^if_else_4:
-    jump ^if_end_5
+  block ^if_else_5:
+    jump ^if_end_6
 
-  block ^if_end_5:
-    %t9 = load typed ptr $this
-    %t10 = load typed i32 $depth
-    %t11 = call i32 @walker__down(%t9, %t10)
-    return i32 %t11
+  block ^if_end_6:
+    %t14 = load typed ptr $this
+    %t15 = load typed i32 $depth
+    %t16 = call i32 @walker__down(%t14, %t15)
+    return i32 %t16
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $whole : obj<4x4>

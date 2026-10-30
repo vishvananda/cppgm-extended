@@ -1191,6 +1191,86 @@ def has_function_local_dynamic_class_static(code: str) -> bool:
     )
 
 
+def guard_only_eh(ref_text: str) -> bool:
+    """Recognize only ABI guard-abort cleanup, not initializer-temporary EH."""
+    if "__cxa_guard_abort" not in ref_text:
+        return False
+    symbols = {}
+    for match in re.finditer(r"^declare function @([^\s(]+)[^\n]*", ref_text, re.MULTILINE):
+        object_name = re.search(r"\bobject=([^,\]\s]+)", match[0])
+        identity = object_name[1] if object_name else match[1]
+        for operation in ("acquire", "release", "abort"):
+            if identity == "__cxa_guard_" + operation:
+                symbols[operation] = match[1]
+    if len(symbols) != 3:
+        return False
+    abort_call = re.compile(r"call void @" + re.escape(symbols["abort"]) + r"\([^\n]*\)\Z")
+    saw_control = False
+    for function in re.finditer(r"^function\b[^\n]*\{\n(.*?)^\}", ref_text, re.MULTILINE | re.DOTALL):
+        body = function[1]
+        if not LOWIR_EH_CONTROL_RE.search(body):
+            continue
+        saw_control = True
+        targets = re.findall(r"^\s*eh_(?:try|cleanup)\s+\^([^\s,]+)", body, re.MULTILINE)
+        if (not targets or re.search(r"\b(?:throw|exception|exception_selector|eh_catch|eh_catch_all)\b", body)
+                or any(not re.search(r"\bcall \w+ @" + re.escape(symbols[operation]) + r"\(", body)
+                       for operation in ("acquire", "release"))):
+            return False
+        headers = list(re.finditer(r"^\s*block \^([^\s:]+):\n", body, re.MULTILINE))
+        blocks = {header[1]: body[header.end():headers[i + 1].start() if i + 1 < len(headers) else len(body)]
+                  for i, header in enumerate(headers)}
+        # A jump-only cleanup suffix is checked once even when handlers share it.
+        memo: dict[str, bool | None] = {}
+        for target in targets:
+            path = []
+            seen = set()
+            current = target
+            suffix: bool | None = False
+            while current not in memo:
+                if current in seen or current not in blocks:
+                    suffix = None
+                    break
+                seen.add(current)
+                aborted = False
+                following = None
+                terminal = False
+                valid = True
+                for line in blocks[current].splitlines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if terminal:
+                        valid = False
+                        break
+                    if re.fullmatch(r"%[^\s=]+\s*=\s*addr @[^\s]+", line):
+                        continue
+                    if abort_call.fullmatch(line):
+                        aborted = True
+                    elif line == "resume":
+                        terminal = True
+                    elif re.fullmatch(r"jump \^[^\s]+", line):
+                        following = line.split("^", 1)[1]
+                        terminal = True
+                    else:
+                        valid = False
+                        break
+                path.append((current, aborted))
+                if not valid or not terminal:
+                    suffix = None
+                    break
+                if following is None:
+                    break
+                current = following
+            else:
+                suffix = memo[current]
+            for block, aborted in reversed(path):
+                suffix = None if suffix is None else suffix or aborted
+                memo[block] = suffix
+            if memo.get(target) is not True:
+                return False
+    return saw_control
+
+
 def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dict[str, FeatureHit]:
     if "/pa9/tests/abi/" in test_path or test_path.startswith("pa9/tests/abi/"):
         # PA9 consumes normalized ABI facts, not C++ source or LowIR. Words
@@ -1321,6 +1401,7 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
     if (
         re.search(r"__local_static__|local_static_(?:init|ready)", ref_text)
         and LOWIR_EH_CONTROL_RE.search(ref_text)
+        and not guard_only_eh(ref_text)
     ):
         hits["exception.guarded_static_cleanup"] = FeatureHit(
             "exception.guarded_static_cleanup",
@@ -1541,7 +1622,7 @@ def polymorphic_cleanup_lowir_evidence(source: str, ref_text: str) -> str:
     has_polymorphic_source = re.search(r"\bvirtual\b", strip_string_literals(strip_comments(source)))
     polymorphic_ref = LOWIR_POLYMORPHIC_RE.search(ref_text)
     cleanup_ref = LOWIR_CLEANUP_EH_RE.search(ref_text)
-    if (has_polymorphic_source or polymorphic_ref) and cleanup_ref:
+    if (has_polymorphic_source or polymorphic_ref) and cleanup_ref and not guard_only_eh(ref_text):
         evidence = []
         if has_polymorphic_source:
             evidence.append("source:virtual")
@@ -1555,7 +1636,7 @@ def polymorphic_cleanup_lowir_evidence(source: str, ref_text: str) -> str:
 def hidden_eh_lowir_evidence(source: str, ref_text: str) -> str:
     stripped_source = strip_dynamic_exception_specifications(
         strip_string_literals(strip_comments(source)))
-    if SOURCE_EXCEPTION_RE.search(stripped_source):
+    if SOURCE_EXCEPTION_RE.search(stripped_source) or guard_only_eh(ref_text):
         return ""
     cleanup_ref = LOWIR_CLEANUP_EH_RE.search(ref_text)
     if cleanup_ref:

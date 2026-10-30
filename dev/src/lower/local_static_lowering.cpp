@@ -335,13 +335,14 @@ void FunctionLowering::local_static_variable(const sema::VariableEntity* variabl
 	flag.storage = lowir::Value::symbol(guard);
 	const lowir::BlockId ready = new_block(lowir::BlockKind::LocalStaticReady);
 	const lowir::BlockId initialize = new_block(lowir::BlockKind::LocalStaticInit);
-	// Host objects: thread-safe (6.7p4), the guard's first byte tested
-	// first as g++'s units do (the other bytes are __cxa_guard_acquire's),
-	// then acquired; an exception leaving the initialization aborts it
-	// (the guard's cleanup, under the initializer's temporaries).
-	const bool thread_safe = lowering_.host_objects() && !variable->is_thread_local;
+	// The Itanium guard protocol (6.7p4): test the first byte, then acquire;
+	// an exception leaving initialization aborts it, under the initializer's
+	// temporary cleanups. Serialized LowIR carries the same calls. The host
+	// runtime synchronizes them; the standalone runtime is single-threaded.
+	// A thread-local object's guard is already private to its thread.
+	const bool guard_api = !variable->is_thread_local;
 	size_t aborting = SIZE_MAX;
-	if (thread_safe)
+	if (guard_api)
 	{
 		const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 		const lowir::Type i32 = lowir::Type::scalar(lowir::TypeKind::I32);
@@ -385,7 +386,7 @@ void FunctionLowering::local_static_variable(const sema::VariableEntity* variabl
 	// though the static's is a global.
 	if (listed != nullptr && !listed->elements.empty() && !lowering_.object_mode())
 		generated_slot(lowir::SlotKind::Initlist, lowering_.storage_type(listed->facts->target));
-	const StaticInitialization initialization{ variable, global, guard, location, aborting, thread_safe, temporaries };
+	const StaticInitialization initialization{ variable, global, guard, location, aborting, guard_api, temporaries };
 	if (!local.reference && object_class(type) != nullptr)
 		local_object(variable, object, init.initializer, location, nullptr, &initialization);
 	else if (init.initializer != nullptr)
@@ -458,7 +459,7 @@ void FunctionLowering::complete_static_initialization(const StaticInitialization
 	if (needs_destruction(variable->type) && !variable->type->is_reference())
 		register_destruction(initialization.global, variable->type, initialization.location,
 			variable->is_thread_local && lowering_.object_mode());
-	if (initialization.thread_safe)
+	if (initialization.guard_api)
 		guard_call(ProgramLowering::GuardCall::Release, initialization.guard);
 	else
 	{

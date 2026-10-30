@@ -1,0 +1,122 @@
+declare function @__cppgm_runtime_cxa_guard_acquire(%arg0 : ptr) -> i32 [linkage=c, binding=strong, object=__cxa_guard_acquire]
+declare function @__cppgm_runtime_cxa_guard_abort(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_abort]
+declare function @__cppgm_runtime_cxa_guard_release(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_release]
+
+global @calls : i32 [binding=strong] = zero
+global @__local_static__shared__decl0__value : i32 [binding=internal, object=_ZZ6sharedvE5value] = zero
+global @__local_static__shared__decl0__value__guard : i64 [binding=internal, object=_ZGVZ6sharedvE5value] = zero
+global @__local_static__local__decl0__value : i32 [storage=thread_local, binding=internal, object=_ZZ5localvE5value] = zero
+global @__local_static__local__decl0__value__guard : i64 [storage=thread_local, binding=internal, object=_ZGVZ5localvE5value] = zero
+
+function @next() -> i32 [binding=strong, object=_Z4nextv] {
+  block ^entry:
+    %t1 = load typed i32 @calls
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @calls
+    return i32 7
+}
+function @shared() -> i32 [binding=strong, object=_Z6sharedv] {
+  slot $call__1 : i32
+
+  block ^entry:
+    %t1 = addr @__local_static__shared__decl0__value__guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ready_1, ^local_static_ctor_run_3
+
+  block ^local_static_ctor_run_3:
+    %t4 = addr @__local_static__shared__decl0__value__guard
+    %t5 = call i32 @__cppgm_runtime_cxa_guard_acquire(%t4)
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^local_static_init_2, ^local_static_ready_1
+
+  block ^local_static_init_2:
+    %t7 = addr @__local_static__shared__decl0__value
+    eh_try ^cleanup_action_5
+    %t8 = call i32 @next()
+    store typed i32 %t8, $call__1
+    %t9 = load typed i32 $call__1
+    store typed i32 %t9, %t7
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^cleanup_resume_4:
+    resume
+
+  block ^cleanup_action_5:
+    %t10 = addr @__local_static__shared__decl0__value__guard
+    call void @__cppgm_runtime_cxa_guard_abort(%t10)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_6:
+    %t11 = addr @__local_static__shared__decl0__value__guard
+    call void @__cppgm_runtime_cxa_guard_release(%t11)
+    jump ^local_static_ready_1
+
+  block ^local_static_ready_1:
+    %t12 = load typed i32 @__local_static__shared__decl0__value
+    return i32 %t12
+}
+function @local() -> i32 [binding=strong, object=_Z5localv] {
+  block ^entry:
+    %t1 = load typed i64 @__local_static__local__decl0__value__guard
+    %t2 = cmp ne i64 %t1, 0
+    branch %t2, ^local_static_ready_1, ^local_static_init_2
+
+  block ^local_static_init_2:
+    %t3 = addr @__local_static__local__decl0__value
+    %t4 = call i32 @next()
+    store typed i32 %t4, %t3
+    store typed i64 1, @__local_static__local__decl0__value__guard
+    jump ^local_static_ready_1
+
+  block ^local_static_ready_1:
+    %t5 = load typed i32 @__local_static__local__decl0__value
+    return i32 %t5
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @shared()
+    %t2 = cmp ne i32 %t1, 7
+    branch %t2, ^if_then_1, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t3 = call i32 @shared()
+    %t4 = cmp ne i32 %t3, 7
+    branch %t4, ^if_then_1, ^lor_rhs_3
+
+  block ^lor_rhs_3:
+    %t5 = load typed i32 @calls
+    %t6 = cmp ne i32 %t5, 1
+    branch %t6, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_5
+
+  block ^if_end_5:
+    %t7 = call i32 @local()
+    %t8 = cmp ne i32 %t7, 7
+    branch %t8, ^if_then_6, ^lor_rhs_9
+
+  block ^lor_rhs_9:
+    %t9 = call i32 @local()
+    %t10 = cmp ne i32 %t9, 7
+    branch %t10, ^if_then_6, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t11 = load typed i32 @calls
+    %t12 = cmp ne i32 %t11, 2
+    branch %t12, ^if_then_6, ^if_else_7
+
+  block ^if_then_6:
+    return i32 2
+
+  block ^if_else_7:
+    jump ^if_end_10
+
+  block ^if_end_10:
+    return i32 0
+}

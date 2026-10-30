@@ -421,9 +421,9 @@ public:
 		program_.object_facts = on;
 	}
 	bool object_mode() const { return object_mode_; }
-	// Host objects (object mode for the host toolchain, not the course's
-	// `.obj` and runtime): a block-scope static's initialization is
-	// thread-safe (6.7p4), through Itanium's one-time construction API.
+	// Objects for the host toolchain, rather than the course's `.obj`
+	// runtime: exception-aware list initialization retains the host's
+	// landing-pad entry and resume boundaries.
 	void set_host_objects(bool on) { host_objects_ = on; }
 	bool host_objects() const { return host_objects_; }
 	// Whether a function type has a class parameter its caller destroys

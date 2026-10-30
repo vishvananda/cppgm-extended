@@ -1,0 +1,1 @@
+__LIBDIR__/libguard.o -pthread -Wl,--wrap=__cxa_guard_acquire

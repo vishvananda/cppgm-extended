@@ -1,3 +1,7 @@
+declare function @__cppgm_runtime_cxa_guard_acquire(%arg0 : ptr) -> i32 [linkage=c, binding=strong, object=__cxa_guard_acquire]
+declare function @__cppgm_runtime_cxa_guard_abort(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_abort]
+declare function @__cppgm_runtime_cxa_guard_release(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_release]
+
 global @factory_calls : i32 [binding=strong] = 0
 global @__local_static__read_cached__decl0__cached : obj<24x8> [binding=internal, object=_ZZ11read_cachedlE6cached] = {
   zero 24
@@ -30,26 +34,47 @@ function @read_cached(%seed : i64) -> i64 [binding=strong, object=_Z11read_cache
 
   block ^entry:
     store typed i64 %seed, $seed
-    %t1 = load typed i64 @__local_static__read_cached__decl0__cached__guard
-    %t2 = cmp ne i64 %t1, 0
-    branch %t2, ^local_static_ready_1, ^local_static_init_2
+    %t1 = addr @__local_static__read_cached__decl0__cached__guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ready_1, ^local_static_ctor_run_3
+
+  block ^local_static_ctor_run_3:
+    %t4 = addr @__local_static__read_cached__decl0__cached__guard
+    %t5 = call i32 @__cppgm_runtime_cxa_guard_acquire(%t4)
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^local_static_init_2, ^local_static_ready_1
 
   block ^local_static_init_2:
-    %t3 = addr @__local_static__read_cached__decl0__cached
-    %t4 = load typed i64 $seed
-    call void @make_wide(%t3, %t4)
-    store typed i64 1, @__local_static__read_cached__decl0__cached__guard
+    %t7 = addr @__local_static__read_cached__decl0__cached
+    %t8 = load typed i64 $seed
+    eh_try ^cleanup_action_5
+    call void @make_wide(%t7, %t8)
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^cleanup_resume_4:
+    resume
+
+  block ^cleanup_action_5:
+    %t9 = addr @__local_static__read_cached__decl0__cached__guard
+    call void @__cppgm_runtime_cxa_guard_abort(%t9)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_6:
+    %t10 = addr @__local_static__read_cached__decl0__cached__guard
+    call void @__cppgm_runtime_cxa_guard_release(%t10)
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t5 = addr @__local_static__read_cached__decl0__cached
-    %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load typed i64 %t6
-    %t8 = addr @__local_static__read_cached__decl0__cached
-    %t9 = index i8 [projection=field] %t8, 16
-    %t10 = load typed i64 %t9
-    %t11 = binary add nowrap i64 %t7, %t10
-    return i64 %t11
+    %t11 = addr @__local_static__read_cached__decl0__cached
+    %t12 = index i8 [projection=field] %t11, 0
+    %t13 = load typed i64 %t12
+    %t14 = addr @__local_static__read_cached__decl0__cached
+    %t15 = index i8 [projection=field] %t14, 16
+    %t16 = load typed i64 %t15
+    %t17 = binary add nowrap i64 %t13, %t16
+    return i64 %t17
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

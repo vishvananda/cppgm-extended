@@ -1,3 +1,7 @@
+declare function @__cppgm_runtime_cxa_guard_acquire(%arg0 : ptr) -> i32 [linkage=c, binding=strong, object=__cxa_guard_acquire]
+declare function @__cppgm_runtime_cxa_guard_abort(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_abort]
+declare function @__cppgm_runtime_cxa_guard_release(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_release]
+
 global @source : i32 [binding=strong] = 7
 global @observed : i32 [binding=strong] = zero
 global @__local_static__read_constant_reference__decl0__reference : ptr [binding=internal, object=_ZZ23read_constant_referencevE9reference] = addr @source
@@ -21,21 +25,46 @@ function @choose() -> ptr [binding=strong, object=_Z6choosev] {
     return ptr %t3
 }
 function @read_dynamic_reference() -> ptr [binding=strong, object=_Z22read_dynamic_referencev] {
+  slot $call__1 : ptr
+
   block ^entry:
-    %t1 = load typed i64 @__local_static__read_dynamic_reference__decl0__reference__guard
-    %t2 = cmp ne i64 %t1, 0
-    branch %t2, ^local_static_ready_1, ^local_static_init_2
+    %t1 = addr @__local_static__read_dynamic_reference__decl0__reference__guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ready_1, ^local_static_ctor_run_3
+
+  block ^local_static_ctor_run_3:
+    %t4 = addr @__local_static__read_dynamic_reference__decl0__reference__guard
+    %t5 = call i32 @__cppgm_runtime_cxa_guard_acquire(%t4)
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^local_static_init_2, ^local_static_ready_1
 
   block ^local_static_init_2:
-    %t3 = addr @__local_static__read_dynamic_reference__decl0__reference
-    %t4 = call ptr @choose()
-    store typed ptr %t4, %t3
-    store typed i64 1, @__local_static__read_dynamic_reference__decl0__reference__guard
+    %t7 = addr @__local_static__read_dynamic_reference__decl0__reference
+    eh_try ^cleanup_action_5
+    %t8 = call ptr @choose()
+    store typed ptr %t8, $call__1
+    %t9 = load typed ptr $call__1
+    store typed ptr %t9, %t7
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^cleanup_resume_4:
+    resume
+
+  block ^cleanup_action_5:
+    %t10 = addr @__local_static__read_dynamic_reference__decl0__reference__guard
+    call void @__cppgm_runtime_cxa_guard_abort(%t10)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_6:
+    %t11 = addr @__local_static__read_dynamic_reference__decl0__reference__guard
+    call void @__cppgm_runtime_cxa_guard_release(%t11)
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t5 = load typed ptr @__local_static__read_dynamic_reference__decl0__reference
-    return ptr %t5
+    %t12 = load typed ptr @__local_static__read_dynamic_reference__decl0__reference
+    return ptr %t12
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

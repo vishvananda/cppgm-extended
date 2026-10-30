@@ -1,3 +1,7 @@
+declare function @__cppgm_runtime_cxa_guard_acquire(%arg0 : ptr) -> i32 [linkage=c, binding=strong, object=__cxa_guard_acquire]
+declare function @__cppgm_runtime_cxa_guard_abort(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_abort]
+declare function @__cppgm_runtime_cxa_guard_release(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_release]
+
 global @case_1__alive : i32 [binding=strong, object=_ZN6case_15aliveE] = zero
 global @case_2__alive : i32 [binding=strong, object=_ZN6case_25aliveE] = zero
 global @case_3__alive : i32 [binding=strong, object=_ZN6case_35aliveE] = zero
@@ -393,21 +397,42 @@ function @case_10__check_case() -> i32 [binding=strong, object=_ZN7case_1010chec
 }
 function @case_11__get() -> ptr [binding=strong, object=_ZN7case_113getEv] {
   block ^entry:
-    %t1 = load typed i64 @__local_static__case_11__get__s__tokens713_720__guard
-    %t2 = cmp ne i64 %t1, 0
-    branch %t2, ^local_static_ready_1, ^local_static_init_2
+    %t1 = addr @__local_static__case_11__get__s__tokens713_720__guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ready_1, ^local_static_ctor_run_3
+
+  block ^local_static_ctor_run_3:
+    %t4 = addr @__local_static__case_11__get__s__tokens713_720__guard
+    %t5 = call i32 @__cppgm_runtime_cxa_guard_acquire(%t4)
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^local_static_init_2, ^local_static_ready_1
 
   block ^local_static_init_2:
-    %t3 = addr @__local_static__case_11__get__s__tokens713_720
-    %t4 = addr @__cppgm_ref_temporary____local_static__case_11__get__s__tokens713_720_0
-    call void @case_11__S__S(%t4, 3)
-    store typed ptr %t4, %t3
-    store typed i64 1, @__local_static__case_11__get__s__tokens713_720__guard
+    %t7 = addr @__local_static__case_11__get__s__tokens713_720
+    %t8 = addr @__cppgm_ref_temporary____local_static__case_11__get__s__tokens713_720_0
+    eh_try ^cleanup_action_5
+    call void @case_11__S__S(%t8, 3)
+    store typed ptr %t8, %t7
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^cleanup_resume_4:
+    resume
+
+  block ^cleanup_action_5:
+    %t9 = addr @__local_static__case_11__get__s__tokens713_720__guard
+    call void @__cppgm_runtime_cxa_guard_abort(%t9)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_6:
+    %t10 = addr @__local_static__case_11__get__s__tokens713_720__guard
+    call void @__cppgm_runtime_cxa_guard_release(%t10)
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t5 = load typed ptr @__local_static__case_11__get__s__tokens713_720
-    return ptr %t5
+    %t11 = load typed ptr @__local_static__case_11__get__s__tokens713_720
+    return ptr %t11
 }
 function @case_11__check_case() -> i32 [binding=strong, object=_ZN7case_1110check_caseEv] {
   slot $s : ptr

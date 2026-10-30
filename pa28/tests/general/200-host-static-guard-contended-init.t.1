@@ -1,0 +1,3 @@
+// Both threads reach the guard protocol while the first initializer is pending.
+int next();
+int read() { static int values[] = {next()}; return values[0]; }

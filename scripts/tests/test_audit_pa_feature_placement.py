@@ -1120,6 +1120,84 @@ function @main() -> i32 {
         )
         self.assertIn("exception.guarded_static_cleanup", hits)
 
+    @staticmethod
+    def guard_protocol_reference() -> str:
+        return textwrap.dedent("""\
+            declare function @acquire(%flag : ptr) -> i32 [object=__cxa_guard_acquire]
+            declare function @release(%flag : ptr) -> void [object=__cxa_guard_release]
+            declare function @abort_guard(%flag : ptr) -> void [object=__cxa_guard_abort]
+            declare function @next() -> i32
+            global @guard : i64 = zero
+            global @__local_static__read__value : i32 = zero
+            function @read() -> i32 {
+              block ^entry:
+                %acquired = call i32 @acquire(@guard)
+                branch %acquired, ^init, ^ready
+              block ^init:
+                eh_try ^abort
+                %value = call i32 @next()
+                store i32 %value, @__local_static__read__value
+                eh_end
+                call void @release(@guard)
+                jump ^ready
+              block ^abort:
+                call void @abort_guard(@guard)
+                jump ^resume
+              block ^resume:
+                resume
+              block ^ready:
+                %result = load i32 @__local_static__read__value
+                return i32 %result
+            }
+            """)
+
+    def test_guard_abort_protocol_keeps_pa16_owner(self) -> None:
+        reference = self.guard_protocol_reference()
+        source = "int next(); int read(){static int value=next();return value;}"
+        self.assertTrue(audit.guard_only_eh(reference))
+        hits = audit.detect_features(source, reference, "pa16/tests/general/300-static.t")
+        self.assertNotIn("exception.guarded_static_cleanup", hits)
+        self.assertFalse(audit.hidden_eh_lowir_evidence(source, reference))
+        self.assertFalse(audit.polymorphic_cleanup_lowir_evidence(
+            "struct Base {virtual ~Base();};" + source, reference))
+
+    def test_guard_protocol_preserves_initializer_temporary_cleanup_owner(self) -> None:
+        reference = self.guard_protocol_reference().replace(
+            "declare function @next()", "declare function @destroy_temporary(%arg : ptr) -> void\n"
+            "declare function @next()").replace(
+            "    call void @abort_guard(@guard)",
+            "    call void @destroy_temporary(@guard)\n"
+            "    call void @abort_guard(@guard)")
+        self.assertFalse(audit.guard_only_eh(reference))
+        hits = audit.detect_features("int read();", reference, "pa21/tests/general/200-static.t")
+        self.assertIn("exception.guarded_static_cleanup", hits)
+        self.assertTrue(audit.hidden_eh_lowir_evidence("int read();", reference))
+
+    def test_guard_declarations_do_not_hide_another_functions_cleanup(self) -> None:
+        reference = self.guard_protocol_reference() + textwrap.dedent("""\
+            function @another() -> void {
+              block ^entry:
+                eh_try ^cleanup
+                %value = call i32 @next()
+                eh_end
+                return void
+              block ^cleanup:
+                resume
+            }
+            """)
+        self.assertFalse(audit.guard_only_eh(reference))
+        hits = audit.detect_features("int read();", reference, "pa21/tests/general/200-static.t")
+        self.assertIn("exception.guarded_static_cleanup", hits)
+
+    def test_guard_only_classification_requires_actual_runtime_identity(self) -> None:
+        reference = self.guard_protocol_reference().replace(
+            "object=__cxa_guard_abort", "object=unrelated_abort")
+        self.assertFalse(audit.guard_only_eh(reference))
+
+    def test_guard_cleanup_cycle_is_not_accepted_as_abort_protocol(self) -> None:
+        reference = self.guard_protocol_reference().replace("jump ^resume", "jump ^abort")
+        self.assertFalse(audit.guard_only_eh(reference))
+
     def test_aggregate_return_with_eh_has_aggregate_cleanup_feature(self) -> None:
         source = textwrap.dedent(
             """\

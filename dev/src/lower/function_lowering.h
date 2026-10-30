@@ -1979,7 +1979,7 @@ private:
 		lowir::SymbolId guard;
 		uint32_t location;
 		size_t aborting;
-		bool thread_safe;
+		bool guard_api;
 		const StaticTemporaries& temporaries;
 	};
 	StaticTemporaries* static_temporaries_ = nullptr;

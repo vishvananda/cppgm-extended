@@ -1,3 +1,7 @@
+declare function @__cppgm_runtime_cxa_guard_acquire(%arg0 : ptr) -> i32 [linkage=c, binding=strong, object=__cxa_guard_acquire]
+declare function @__cppgm_runtime_cxa_guard_abort(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_abort]
+declare function @__cppgm_runtime_cxa_guard_release(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_release]
+
 global @calls : i32 [binding=strong] = zero
 global @__local_static__whole__held__tokens66_73 : ptr [binding=internal, object=_ZZ5wholevE4held] = zero
 global @__local_static__whole__held__tokens66_73__guard : i64 [binding=internal, object=_ZGVZ5wholevE4held] = zero
@@ -35,88 +39,184 @@ function @first() -> u8 [binding=strong, object=_Z5firstv] {
 }
 function @whole() -> ptr [binding=strong, object=_Z5wholev] {
   block ^entry:
-    %t1 = load typed i64 @__local_static__whole__held__tokens66_73__guard
-    %t2 = cmp ne i64 %t1, 0
-    branch %t2, ^local_static_ready_1, ^local_static_init_2
+    %t1 = addr @__local_static__whole__held__tokens66_73__guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ready_1, ^local_static_ctor_run_3
+
+  block ^local_static_ctor_run_3:
+    %t4 = addr @__local_static__whole__held__tokens66_73__guard
+    %t5 = call i32 @__cppgm_runtime_cxa_guard_acquire(%t4)
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^local_static_init_2, ^local_static_ready_1
 
   block ^local_static_init_2:
-    %t3 = addr @__local_static__whole__held__tokens66_73
-    %t4 = addr @__cppgm_ref_temporary____local_static__whole__held__tokens66_73_0
-    call void @Value__Value(%t4, 1)
-    store typed ptr %t4, %t3
-    store typed i64 1, @__local_static__whole__held__tokens66_73__guard
+    %t7 = addr @__local_static__whole__held__tokens66_73
+    %t8 = addr @__cppgm_ref_temporary____local_static__whole__held__tokens66_73_0
+    eh_try ^cleanup_action_5
+    call void @Value__Value(%t8, 1)
+    store typed ptr %t8, %t7
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^cleanup_resume_4:
+    resume
+
+  block ^cleanup_action_5:
+    %t9 = addr @__local_static__whole__held__tokens66_73__guard
+    call void @__cppgm_runtime_cxa_guard_abort(%t9)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_6:
+    %t10 = addr @__local_static__whole__held__tokens66_73__guard
+    call void @__cppgm_runtime_cxa_guard_release(%t10)
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t5 = load typed ptr @__local_static__whole__held__tokens66_73
-    return ptr %t5
+    %t11 = load typed ptr @__local_static__whole__held__tokens66_73
+    return ptr %t11
 }
 function @member() -> ptr [binding=strong, object=_Z6memberv] {
   block ^entry:
-    %t1 = load typed i64 @__local_static__member__decl0__held__guard
-    %t2 = cmp ne i64 %t1, 0
-    branch %t2, ^local_static_ready_1, ^local_static_init_2
+    %t1 = addr @__local_static__member__decl0__held__guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ready_1, ^local_static_ctor_run_3
+
+  block ^local_static_ctor_run_3:
+    %t4 = addr @__local_static__member__decl0__held__guard
+    %t5 = call i32 @__cppgm_runtime_cxa_guard_acquire(%t4)
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^local_static_init_2, ^local_static_ready_1
 
   block ^local_static_init_2:
-    %t3 = addr @__local_static__member__decl0__held
-    %t4 = addr @__cppgm_ref_temporary____local_static__member__decl0__held_0
-    call void @Value__Value(%t4, 2)
-    %t5 = index i8 [projection=field] %t4, 8
-    store typed ptr %t5, %t3
-    store typed i64 1, @__local_static__member__decl0__held__guard
+    %t7 = addr @__local_static__member__decl0__held
+    %t8 = addr @__cppgm_ref_temporary____local_static__member__decl0__held_0
+    eh_try ^cleanup_action_5
+    call void @Value__Value(%t8, 2)
+    %t9 = index i8 [projection=field] %t8, 8
+    store typed ptr %t9, %t7
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^cleanup_resume_4:
+    resume
+
+  block ^cleanup_action_5:
+    %t10 = addr @__local_static__member__decl0__held__guard
+    call void @__cppgm_runtime_cxa_guard_abort(%t10)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_6:
+    %t11 = addr @__local_static__member__decl0__held__guard
+    call void @__cppgm_runtime_cxa_guard_release(%t11)
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t6 = load typed ptr @__local_static__member__decl0__held
-    return ptr %t6
+    %t12 = load typed ptr @__local_static__member__decl0__held
+    return ptr %t12
 }
 function @chosen() -> ptr [binding=strong, object=_Z6chosenv] {
+  slot $call__1 : u8
+
   block ^entry:
-    %t1 = load typed i64 @__local_static__chosen__held__tokens112_128__guard
-    %t2 = cmp ne i64 %t1, 0
-    branch %t2, ^local_static_ready_1, ^local_static_init_2
+    %t1 = addr @__local_static__chosen__held__tokens112_128__guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ready_1, ^local_static_ctor_run_3
+
+  block ^local_static_ctor_run_3:
+    %t4 = addr @__local_static__chosen__held__tokens112_128__guard
+    %t5 = call i32 @__cppgm_runtime_cxa_guard_acquire(%t4)
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^local_static_init_2, ^local_static_ready_1
 
   block ^local_static_init_2:
-    %t3 = addr @__local_static__chosen__held__tokens112_128
-    %t4 = addr @__cppgm_ref_temporary____local_static__chosen__held__tokens112_128_0
-    %t5 = call u8 @first()
-    branch %t5, ^condobj_then_3, ^condobj_else_4
+    %t7 = addr @__local_static__chosen__held__tokens112_128
+    %t8 = addr @__cppgm_ref_temporary____local_static__chosen__held__tokens112_128_0
+    eh_try ^cleanup_action_8
+    %t9 = call u8 @first()
+    store u8 %t9, $call__1
+    %t10 = load u8 $call__1
+    eh_end
+    jump ^call_unwind_end_9
 
-  block ^condobj_then_3:
-    call void @Value__Value(%t4, 3)
-    jump ^condobj_end_5
+  block ^cleanup_resume_7:
+    resume
 
-  block ^condobj_else_4:
-    call void @Value__Value(%t4, 4)
-    jump ^condobj_end_5
+  block ^cleanup_action_8:
+    %t11 = addr @__local_static__chosen__held__tokens112_128__guard
+    call void @__cppgm_runtime_cxa_guard_abort(%t11)
+    jump ^cleanup_resume_7
 
-  block ^condobj_end_5:
-    store typed ptr %t4, %t3
-    store typed i64 1, @__local_static__chosen__held__tokens112_128__guard
+  block ^call_unwind_end_9:
+    branch %t10, ^condobj_then_4, ^condobj_else_5
+
+  block ^condobj_then_4:
+    eh_try ^cleanup_action_8
+    call void @Value__Value(%t8, 3)
+    eh_end
+    jump ^condobj_end_6
+
+  block ^condobj_else_5:
+    eh_try ^cleanup_action_8
+    call void @Value__Value(%t8, 4)
+    eh_end
+    jump ^condobj_end_6
+
+  block ^condobj_end_6:
+    store typed ptr %t8, %t7
+    %t12 = addr @__local_static__chosen__held__tokens112_128__guard
+    call void @__cppgm_runtime_cxa_guard_release(%t12)
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t6 = load typed ptr @__local_static__chosen__held__tokens112_128
-    return ptr %t6
+    %t13 = load typed ptr @__local_static__chosen__held__tokens112_128
+    return ptr %t13
 }
 function @scalar() -> ptr [binding=strong, object=_Z6scalarv] {
+  slot $call__1 : i32
+
   block ^entry:
-    %t1 = load typed i64 @__local_static__scalar__held__tokens143_149__guard
-    %t2 = cmp ne i64 %t1, 0
-    branch %t2, ^local_static_ready_1, ^local_static_init_2
+    %t1 = addr @__local_static__scalar__held__tokens143_149__guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ready_1, ^local_static_ctor_run_3
+
+  block ^local_static_ctor_run_3:
+    %t4 = addr @__local_static__scalar__held__tokens143_149__guard
+    %t5 = call i32 @__cppgm_runtime_cxa_guard_acquire(%t4)
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^local_static_init_2, ^local_static_ready_1
 
   block ^local_static_init_2:
-    %t3 = addr @__local_static__scalar__held__tokens143_149
-    %t4 = call i32 @next()
-    store typed i32 %t4, @__cppgm_ref_temporary____local_static__scalar__held__tokens143_149_0
-    %t5 = addr @__cppgm_ref_temporary____local_static__scalar__held__tokens143_149_0
-    store typed ptr %t5, %t3
-    store typed i64 1, @__local_static__scalar__held__tokens143_149__guard
+    %t7 = addr @__local_static__scalar__held__tokens143_149
+    eh_try ^cleanup_action_5
+    %t8 = call i32 @next()
+    store typed i32 %t8, $call__1
+    %t9 = load typed i32 $call__1
+    store typed i32 %t9, @__cppgm_ref_temporary____local_static__scalar__held__tokens143_149_0
+    %t10 = addr @__cppgm_ref_temporary____local_static__scalar__held__tokens143_149_0
+    store typed ptr %t10, %t7
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^cleanup_resume_4:
+    resume
+
+  block ^cleanup_action_5:
+    %t11 = addr @__local_static__scalar__held__tokens143_149__guard
+    call void @__cppgm_runtime_cxa_guard_abort(%t11)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_6:
+    %t12 = addr @__local_static__scalar__held__tokens143_149__guard
+    call void @__cppgm_runtime_cxa_guard_release(%t12)
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t6 = load typed ptr @__local_static__scalar__held__tokens143_149
-    return ptr %t6
+    %t13 = load typed ptr @__local_static__scalar__held__tokens143_149
+    return ptr %t13
 }
 function @clobber() -> i32 [binding=strong, object=_Z7clobberv] {
   slot $frame : obj<128x8>

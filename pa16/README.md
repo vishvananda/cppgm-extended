@@ -212,10 +212,12 @@ C++11 `constexpr` forms that later template and library code expect:
 - lookup and reuse of previously computed constant values, including qualified lookup and
   static data members
 - function-local static objects over the supported LowIR subset:
-  - the standalone LowIR/native runtime uses single-threaded guards; concurrent
-    initialization is outside that execution boundary. Host-object compilation
-    uses the host's thread-safe `__cxa_guard_*` API. ABI guard calls alone do
-    not make the standalone runtime concurrent
+  - serialized LowIR and direct object compilation use the same
+    `__cxa_guard_acquire`, `__cxa_guard_release` and exception-abort protocol
+    for dynamic initialization. The host runtime makes it thread-safe;
+    the standalone LowIR/native runtime supplies single-threaded guards,
+    so concurrent initialization remains outside that execution boundary.
+    A function-local thread-local object keeps its per-thread guard
   - constant initialization when the initializer is a constant expression
   - dynamic class-object local statics with the required guard/check behavior, including
     direct initialization from a class-prvalue factory call

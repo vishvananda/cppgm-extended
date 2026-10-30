@@ -1,3 +1,7 @@
+declare function @__cppgm_runtime_cxa_guard_acquire(%arg0 : ptr) -> i32 [linkage=c, binding=strong, object=__cxa_guard_acquire]
+declare function @__cppgm_runtime_cxa_guard_abort(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_abort]
+declare function @__cppgm_runtime_cxa_guard_release(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_release]
+
 global @__local_static__get_table__decl0__table [storage=readonly, binding=internal, object=_ZZ9get_tablevE5table] = {
   i32 1
   i32 2
@@ -11,24 +15,49 @@ function @get_table() -> ptr [binding=strong, object=_Z9get_tablev] {
     return ptr %t1
 }
 function @read_table() -> i32 [binding=strong, object=_Z10read_tablev] {
+  slot $call__1 : ptr
+
   block ^entry:
-    %t1 = load typed i64 @__local_static__read_table__decl0__table__guard
-    %t2 = cmp ne i64 %t1, 0
-    branch %t2, ^local_static_ready_1, ^local_static_init_2
+    %t1 = addr @__local_static__read_table__decl0__table__guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ready_1, ^local_static_ctor_run_3
+
+  block ^local_static_ctor_run_3:
+    %t4 = addr @__local_static__read_table__decl0__table__guard
+    %t5 = call i32 @__cppgm_runtime_cxa_guard_acquire(%t4)
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^local_static_init_2, ^local_static_ready_1
 
   block ^local_static_init_2:
-    %t3 = addr @__local_static__read_table__decl0__table
-    %t4 = call ptr @get_table()
-    store typed ptr %t4, %t3
-    store typed i64 1, @__local_static__read_table__decl0__table__guard
+    %t7 = addr @__local_static__read_table__decl0__table
+    eh_try ^cleanup_action_5
+    %t8 = call ptr @get_table()
+    store typed ptr %t8, $call__1
+    %t9 = load typed ptr $call__1
+    store typed ptr %t9, %t7
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^cleanup_resume_4:
+    resume
+
+  block ^cleanup_action_5:
+    %t10 = addr @__local_static__read_table__decl0__table__guard
+    call void @__cppgm_runtime_cxa_guard_abort(%t10)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_6:
+    %t11 = addr @__local_static__read_table__decl0__table__guard
+    call void @__cppgm_runtime_cxa_guard_release(%t11)
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t5 = load typed ptr @__local_static__read_table__decl0__table
-    %t6 = index i8 [projection=field] %t5, 0
-    %t7 = index i32 [projection=array_element] %t6, 1
-    %t8 = load typed i32 %t7
-    return i32 %t8
+    %t12 = load typed ptr @__local_static__read_table__decl0__table
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = index i32 [projection=array_element] %t13, 1
+    %t15 = load typed i32 %t14
+    return i32 %t15
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

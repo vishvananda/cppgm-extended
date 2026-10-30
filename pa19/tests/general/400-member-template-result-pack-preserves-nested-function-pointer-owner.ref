@@ -1,3 +1,7 @@
+declare function @__cppgm_runtime_cxa_guard_acquire(%arg0 : ptr) -> i32 [linkage=c, binding=strong, object=__cxa_guard_acquire]
+declare function @__cppgm_runtime_cxa_guard_abort(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_abort]
+declare function @__cppgm_runtime_cxa_guard_release(%arg0 : ptr) -> void [linkage=c, binding=strong, object=__cxa_guard_release]
+
 global @__local_static__function_symbol_5f5a4e34736c6f7437656d706c616365494e326f70493962696e645f6c696b65495046765069524b31306572726f725f636f6465455253335f69453574696d65724a467653345f4545453570726f7879454a5053445f45454552545f44704f54305f__decl0__h [binding=weak, object=_ZZN4slot7emplaceIN2opI9bind_likeIPFvPiRK10error_codeERS3_iE5timerJFvS4_EEE5proxyEJPSD_EEERT_DpOT0_E1h] = {
   zero 1
 }
@@ -42,19 +46,40 @@ function @slot__emplace(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_a
   block ^entry:
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
-    %t1 = load typed i64 @__local_static__function_symbol_5f5a4e34736c6f7437656d706c616365494e326f70493962696e645f6c696b65495046765069524b31306572726f725f636f6465455253335f69453574696d65724a467653345f4545453570726f7879454a5053445f45454552545f44704f54305f__decl0__h__guard
-    %t2 = cmp ne i64 %t1, 0
-    branch %t2, ^local_static_ready_1, ^local_static_init_2
+    %t1 = addr @__local_static__function_symbol_5f5a4e34736c6f7437656d706c616365494e326f70493962696e645f6c696b65495046765069524b31306572726f725f636f6465455253335f69453574696d65724a467653345f4545453570726f7879454a5053445f45454552545f44704f54305f__decl0__h__guard
+    %t2 = load i8 %t1
+    %t3 = cmp ne i8 %t2, 0
+    branch %t3, ^local_static_ready_1, ^local_static_ctor_run_3
+
+  block ^local_static_ctor_run_3:
+    %t4 = addr @__local_static__function_symbol_5f5a4e34736c6f7437656d706c616365494e326f70493962696e645f6c696b65495046765069524b31306572726f725f636f6465455253335f69453574696d65724a467653345f4545453570726f7879454a5053445f45454552545f44704f54305f__decl0__h__guard
+    %t5 = call i32 @__cppgm_runtime_cxa_guard_acquire(%t4)
+    %t6 = cmp ne i32 %t5, 0
+    branch %t6, ^local_static_init_2, ^local_static_ready_1
 
   block ^local_static_init_2:
-    %t3 = addr @__local_static__function_symbol_5f5a4e34736c6f7437656d706c616365494e326f70493962696e645f6c696b65495046765069524b31306572726f725f636f6465455253335f69453574696d65724a467653345f4545453570726f7879454a5053445f45454552545f44704f54305f__decl0__h
-    call void @op___cppgm_class_template_identity_1_timer_void_error_code____proxy__proxy(%t3)
-    store typed i64 1, @__local_static__function_symbol_5f5a4e34736c6f7437656d706c616365494e326f70493962696e645f6c696b65495046765069524b31306572726f725f636f6465455253335f69453574696d65724a467653345f4545453570726f7879454a5053445f45454552545f44704f54305f__decl0__h__guard
+    %t7 = addr @__local_static__function_symbol_5f5a4e34736c6f7437656d706c616365494e326f70493962696e645f6c696b65495046765069524b31306572726f725f636f6465455253335f69453574696d65724a467653345f4545453570726f7879454a5053445f45454552545f44704f54305f__decl0__h
+    eh_try ^cleanup_action_5
+    call void @op___cppgm_class_template_identity_1_timer_void_error_code____proxy__proxy(%t7)
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^cleanup_resume_4:
+    resume
+
+  block ^cleanup_action_5:
+    %t8 = addr @__local_static__function_symbol_5f5a4e34736c6f7437656d706c616365494e326f70493962696e645f6c696b65495046765069524b31306572726f725f636f6465455253335f69453574696d65724a467653345f4545453570726f7879454a5053445f45454552545f44704f54305f__decl0__h__guard
+    call void @__cppgm_runtime_cxa_guard_abort(%t8)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_6:
+    %t9 = addr @__local_static__function_symbol_5f5a4e34736c6f7437656d706c616365494e326f70493962696e645f6c696b65495046765069524b31306572726f725f636f6465455253335f69453574696d65724a467653345f4545453570726f7879454a5053445f45454552545f44704f54305f__decl0__h__guard
+    call void @__cppgm_runtime_cxa_guard_release(%t9)
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t4 = addr @__local_static__function_symbol_5f5a4e34736c6f7437656d706c616365494e326f70493962696e645f6c696b65495046765069524b31306572726f725f636f6465455253335f69453574696d65724a467653345f4545453570726f7879454a5053445f45454552545f44704f54305f__decl0__h
-    return ptr %t4
+    %t10 = addr @__local_static__function_symbol_5f5a4e34736c6f7437656d706c616365494e326f70493962696e645f6c696b65495046765069524b31306572726f725f636f6465455253335f69453574696d65724a467653345f4545453570726f7879454a5053445f45454552545f44704f54305f__decl0__h
+    return ptr %t10
 }
 function @op___cppgm_class_template_identity_1_timer_void_error_code____proxy__proxy(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN2opI9bind_likeIPFvPiRK10error_codeERS1_iE5timerJFvS2_EEE5proxyC1Ev, inline_hint=yes] {
   slot $this : ptr
