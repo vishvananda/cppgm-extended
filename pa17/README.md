@@ -112,6 +112,13 @@ declaration has no concrete binding until template deduction.  Naming a
 variable template without its required template arguments is invalid; lookup
 does not fall through to a hidden base data member.
 
+### Partial-specialization ordering
+
+When deduction skips a dependent member type or expression, ordering still
+checks its substituted type against the transformed argument. A dependent
+member constraint can make a partial more specialized than an unconstrained
+parameter; distinct constraints remain ambiguous when neither orders the other.
+
 ### Output Format
 
 On success, `cppgm++` shall write LowIR text to `<outfile>` and exit

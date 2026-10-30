@@ -1289,6 +1289,19 @@ bool Analyzer::arguments_at_least_as_specialized(const TemplateHead* head, const
 		if (!deduce_type(other_pattern[i], substitute(pattern[i], substitution)->canonical, depth, deduced, false))
 			return false;
 	}
+	// Deduction skips dependent names and expressions. Their substituted
+	// types must still agree; otherwise two different constraints look equal.
+	const Substitution check = substitution_of(other, deduced.data());
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		if (!names_placeholder(other_pattern[i], 0))
+			continue;
+		SoftSubstitution soft(*this);
+		const Type* checked = substitute(other_pattern[i], check);
+		const Type* given = substitute(pattern[i], substitution);
+		if (soft.failed() || checked == nullptr || given == nullptr || checked->canonical != given->canonical)
+			return false;
+	}
 	return true;
 }
 
