@@ -37,7 +37,8 @@ can use the same fixtures concurrently: their files are named
 `x.my.<run-id>`, `x.check.<run-id>` or `x.pp.<run-id>`, with sidecars sharing
 the prefix. Report totals and failure markers are isolated too. For predictable filenames, pass
 `CPPGM_TEST_RUN_ID=debug`; an explicit empty value keeps the plain `.my` and
-`.check` names for manual workflows. Reference filenames stay fixed.
+`.check` names for manual workflows. Reference filenames stay fixed. Report workers inherit the caller's environment
+without running shell login scripts.
 
 ## Test locations and requirements
 

@@ -126,6 +126,45 @@ class ReportIsolationTests(unittest.TestCase):
             self.assertEqual((pa / "tests/sample.my").exists(), not isolated)
             self.assertEqual((pa / "tests/sample.ref").read_text(), "correct\n")
 
+    @unittest.skipUnless(shutil.which("g++") and shutil.which("bash"), "needs a host C++ compiler and bash")
+    def test_host_inspection_preserves_caller_environment(self):
+        with tempfile.TemporaryDirectory(prefix="report-inspect.") as directory:
+            root = Path(directory)
+            compiler = root / "compiler"
+            compiler.write_text(
+                "#!/usr/bin/env python3\nimport subprocess, sys\n"
+                "for line in sys.stdin:\n"
+                " out, err, inp, env, *args = line.rstrip('\\n').split('\\t')\n"
+                " with open(out, 'ab') as stdout, open(err, 'ab') as stderr:\n"
+                "  q = subprocess.run([" + repr(shutil.which("g++")) +
+                ", '-x', 'c++', *args], stdout=stdout, stderr=stderr)\n"
+                " print('EXIT_SUCCESS' if q.returncode == 0 else 'EXIT_FAILURE', flush=True)\n"
+            )
+            compiler.chmod(0o755)
+            shell = root / "bash"
+            shell.write_text(
+                "#!/usr/bin/env python3\nimport os, sys\n"
+                "if sys.argv[1] == '-lc':\n"
+                " os.environ['INSPECTION_CALLER_VALUE'] = 'startup-overrode'\n"
+                "os.execv(" + repr(shutil.which("bash")) + ", ['bash', '-c', sys.argv[2]])\n"
+            )
+            shell.chmod(0o755)
+            (root / "sample.t").write_text("host inspection\n")
+            (root / "sample.t.1").write_text("int main() { return 0; }\n")
+            (root / "sample.inspect.cmd").write_text(
+                'test "$INSPECTION_CALLER_VALUE" = inherited && printf preserved\n'
+            )
+            env = dict(self.environment(), PATH=str(root) + os.pathsep + os.environ["PATH"],
+                       CPPGM_BATCH_TESTS="1", CPPGM_HOST_CXX=shutil.which("g++"),
+                       INSPECTION_CALLER_VALUE="inherited")
+            q = subprocess.run(["perl", str(ROOT / "scripts/run_cpphostinterop_tests_worker.pl"),
+                                str(compiler), "my", str(root / "sample.t")],
+                               cwd=root, env=env, capture_output=True, text=True, timeout=20)
+            self.assertEqual(q.returncode, 0, q.stdout + q.stderr)
+            self.assertEqual((root / "sample.my.impl.exit_status").read_text(), "0\n")
+            self.assertEqual((root / "sample.my.program.exit_status").read_text(), "0\n")
+            self.assertEqual((root / "sample.my.inspect").read_text(), "preserved")
+
     def test_explicit_suffix_and_fixed_references(self):
         def suffix(value, run_id):
             return subprocess.run(

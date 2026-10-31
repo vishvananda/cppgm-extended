@@ -549,7 +549,7 @@ sub finish_one_test
 			                                  '__LIBDIR__',
 			                                  $ctx->{libdir}) if $ctx->{libdir} ne '';
 			$impl_status = run_command_capture(
-				cmd => ['bash', '-lc', $inspect_cmd],
+				cmd => ['bash', '-c', $inspect_cmd],
 				stdout => $inspect_file,
 				stderr => $ctx->{impl_stderr},
 				env => $ctx->{env},
