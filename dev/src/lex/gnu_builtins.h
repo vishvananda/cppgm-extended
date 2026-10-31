@@ -96,7 +96,9 @@ enum class GnuBuiltin : uint8_t
 	IsConstantEvaluated,
 	SourceLocation,
 	// Clang scalar/vector min/max, variants 0/1.
-	ElementwiseMinMax
+	ElementwiseMinMax,
+	// Libm fabs family: inline sign clearing for f32/f64, a call for f80.
+	FloatAbs
 };
 
 struct GnuBuiltinEntry

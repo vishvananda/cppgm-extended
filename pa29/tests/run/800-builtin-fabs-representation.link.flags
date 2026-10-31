@@ -1,0 +1,2 @@
+__LIBDIR__/liboracle.o
+-lm

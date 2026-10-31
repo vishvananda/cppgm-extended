@@ -394,8 +394,11 @@ To complete PA29, implement hosted compatibility for:
   taking one in (`ldexp`, `scalbn`, `scalbln`), writing a whole part
   (`modf`), writing a quotient (`remquo`), taking a `long double` second
   operand (`nexttoward`), or returning an integral type rather than the
-  operand's (`ilogb`, `lrint`, `lround`, `llrint`, `llround`).  All of them
-  lower to a call to the C function of the same name.  A builtin is a
+  operand's (`ilogb`, `lrint`, `lround`, `llrint`, `llround`).  They lower
+  to a call to the C function of the same name, except `__builtin_fabsf`
+  and `__builtin_fabs`, which clear only the sign bit inline, preserving
+  NaN payloads and evaluating the converted argument once.
+  `__builtin_fabsl` retains the C-library call.  A builtin is a
   global-namespace name, so `::__builtin_x` names the same one as
   `__builtin_x`, which is how a hosted library keeps a user's macro from
   intercepting the call; any deeper qualification names something else.  It

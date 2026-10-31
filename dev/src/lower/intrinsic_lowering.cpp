@@ -887,6 +887,25 @@ RValue FunctionLowering::wide_overflow(sema::Intrinsic kind, const RValue& a, co
 	return compare(lowir::ComparePredicate::Eq, i128, fits, zero);
 }
 
+RValue FunctionLowering::absolute_float(const RValue& value)
+{
+	// A representation operation preserves signed-zero magnitudes and every
+	// NaN payload bit without comparing or performing floating arithmetic.
+	const bool single = value.type.kind() == lowir::TypeKind::F32;
+	const lowir::Type word = lowir::Type::scalar(single ? lowir::TypeKind::I32 : lowir::TypeKind::I64);
+	lowir::Instruction copy = lowir::make_instruction(lowir::Opcode::Copy, word);
+	copy.ops[0] = value.value;
+	RValue bits;
+	bits.type = word;
+	bits.value = emit_value(copy, word);
+	bits = binary(lowir::BinaryOp::And, word, bits, integer(word, single ? 0x7fffffffULL : 0x7fffffffffffffffULL));
+	copy = lowir::make_instruction(lowir::Opcode::Copy, value.type);
+	copy.ops[0] = bits.value;
+	RValue result = value;
+	result.value = emit_value(copy, value.type);
+	return result;
+}
+
 RValue FunctionLowering::sign_bit(const RValue& x)
 {
 	// The operand's representation through memory: its sign is the top

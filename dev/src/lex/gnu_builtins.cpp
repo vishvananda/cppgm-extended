@@ -436,7 +436,9 @@ bool FindGnuBuiltin(const char* spelling, uint32_t length, GnuBuiltinEntry& entr
 		{
 			if (Compare(function.name, name, size - trim) == 0)
 			{
-				entry = GnuBuiltinEntry{ GnuBuiltin::Library, 0, function.signature, suffix };
+				entry = GnuBuiltinEntry{ Compare(function.name, "fabs", 4) == 0 ? GnuBuiltin::FloatAbs
+																				: GnuBuiltin::Library,
+					0, function.signature, suffix };
 				return true;
 			}
 		}

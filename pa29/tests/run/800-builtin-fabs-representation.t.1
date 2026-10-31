@@ -1,0 +1,18 @@
+extern "C" float fabs_single(float x) { return __builtin_fabsf(x); }
+extern "C" double fabs_double(double x) { return ::__builtin_fabs(x); }
+extern "C" float fabs_derived_single(float x) { return __builtin_fabsf(x * 2.0f); }
+extern "C" double fabs_derived_double(double x) { return __builtin_fabs(x * 2.0); }
+extern "C" long double fabs_extended(long double x) { return __builtin_fabsl(x); }
+extern "C" double next_argument();
+extern "C" double fabs_once() { return __builtin_fabs(next_argument()); }
+extern "C" double fabs_indirect(double x) {
+  double (*operation)(double) = __builtin_fabs;
+  return operation(x);
+}
+struct Argument {
+  int* count;
+  operator double() { ++*count; return -3.5; }
+};
+extern "C" double fabs_converted(int* count) { return __builtin_fabs(Argument{count}); }
+namespace user { double fabs(double x) { return x; } }
+extern "C" double ordinary_fabs(double x) { return user::fabs(x); }

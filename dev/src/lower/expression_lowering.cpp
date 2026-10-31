@@ -2235,6 +2235,13 @@ RValue FunctionLowering::call(const syntax::CallExpr& expr, lowir::Value destina
 	if ((facts->flags & sema::kDirectCall) != 0)
 	{
 		const sema::FunctionEntity* function = static_cast<const sema::FunctionEntity*>(facts->entity);
+		if (function->gnu_builtin == GnuBuiltin::FloatAbs)
+		{
+			const lowir::Type type = lowering_.storage_type(facts->type);
+			if (type.kind() == lowir::TypeKind::F32 || type.kind() == lowir::TypeKind::F64)
+				return absolute_float(fit(
+					operand(*expr.arguments[0], ConversionContext::Argument), function->type->canonical->params[0]));
+		}
 		if (function->destructor && function->trivial)
 		{
 			// 12.4p13: a trivial destructor's explicit call has no effect

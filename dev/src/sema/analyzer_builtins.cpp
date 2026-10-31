@@ -41,6 +41,7 @@ BuiltinFunction FunctionKindOf(GnuBuiltin builtin)
 	case GnuBuiltin::Trap:
 		return BuiltinFunction::Trap;
 	case GnuBuiltin::Library:
+	case GnuBuiltin::FloatAbs:
 		return BuiltinFunction::Library;
 	default:
 		return BuiltinFunction::Intrinsic;
