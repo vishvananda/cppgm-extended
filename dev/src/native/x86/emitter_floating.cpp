@@ -102,6 +102,11 @@ void FunctionEmitter::float_move(const Inst& inst)
 			asm_.sse(prefix, 0x10, dst.reg, rm(src));
 		return;
 	}
+	if (dst.kind == OperandKind::Reg && is_gpr(dst.reg) && is_xmm_reg(src))
+	{
+		asm_.sse(0x66, 0x7e, src.reg, RM::r(dst.reg), kind != TypeKind::F32); // movd/movq
+		return;
+	}
 	const RM to = rm(dst);
 	if (is_xmm_reg(src))
 	{

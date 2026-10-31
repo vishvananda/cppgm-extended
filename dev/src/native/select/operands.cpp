@@ -231,7 +231,10 @@ void FunctionSelector::load_into(Reg dst, const Operand& src, TypeKind type)
 	{
 	case OperandKind::Reg:
 		if (src.reg != dst)
-			emit2(xmm ? Op::FMov : Op::Mov, xmm ? type : TypeKind::Void, Operand::make_reg(dst), src);
+		{
+			const bool floating = xmm || is_xmm(src.reg);
+			emit2(floating ? Op::FMov : Op::Mov, floating ? type : TypeKind::Void, Operand::make_reg(dst), src);
+		}
 		break;
 	case OperandKind::Imm:
 		emit2(Op::Mov, TypeKind::Void, Operand::make_reg(dst), src);

@@ -385,7 +385,10 @@ void FunctionSelector::emit_copy(const Instruction& inst)
 	}
 	else
 	{
-		load_into(d, src, TypeKind::I64);
+		// A raw copy from an XMM register keeps the source width for movd/movq.
+		const TypeKind source_kind = src.kind == OperandKind::Reg && is_xmm(src.reg) ? type_of(inst.ops[0]).kind()
+																					 : TypeKind::I64;
+		load_into(d, src, source_kind);
 		normalize(d, kind);
 	}
 	finish_result(inst, d);
