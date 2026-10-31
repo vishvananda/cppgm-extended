@@ -120,53 +120,39 @@ long double round_to(TypeKind kind, long double value)
 	return value;
 }
 
-bool fold_float_binary(BinaryOp op, TypeKind kind, long double a, long double b, Constant& out)
+template<typename T>
+bool fold_float_binary_in_precision(BinaryOp op, TypeKind kind, long double a, long double b, Constant& out)
 {
-	if (kind == TypeKind::F32)
-	{
-		const float x = static_cast<float>(a), y = static_cast<float>(b);
-		volatile float r;
-		switch (op)
-		{
-		case BinaryOp::Add:
-			r = x + y;
-			break;
-		case BinaryOp::Sub:
-			r = x - y;
-			break;
-		case BinaryOp::Mul:
-			r = x * y;
-			break;
-		case BinaryOp::Div:
-			r = x / y;
-			break;
-		default:
-			return false;
-		}
-		out = float_constant(kind, r);
-		return true;
-	}
-	// f64 is evaluated in x87 extended precision and rounded by the store.
-	long double r;
+	const T x = static_cast<T>(a), y = static_cast<T>(b);
+	volatile T r;
 	switch (op)
 	{
 	case BinaryOp::Add:
-		r = a + b;
+		r = x + y;
 		break;
 	case BinaryOp::Sub:
-		r = a - b;
+		r = x - y;
 		break;
 	case BinaryOp::Mul:
-		r = a * b;
+		r = x * y;
 		break;
 	case BinaryOp::Div:
-		r = a / b;
+		r = x / y;
 		break;
 	default:
 		return false;
 	}
-	out = float_constant(kind, round_to(kind, r));
+	out = float_constant(kind, r);
 	return true;
+}
+
+bool fold_float_binary(BinaryOp op, TypeKind kind, long double a, long double b, Constant& out)
+{
+	if (kind == TypeKind::F32)
+		return fold_float_binary_in_precision<float>(op, kind, a, b, out);
+	if (kind == TypeKind::F64)
+		return fold_float_binary_in_precision<double>(op, kind, a, b, out);
+	return fold_float_binary_in_precision<long double>(op, kind, a, b, out);
 }
 
 u128 byte_swap(u128 value, unsigned width)

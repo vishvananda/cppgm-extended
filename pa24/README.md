@@ -472,6 +472,11 @@ To complete PA24, implement these goals:
    division, and shifts, must preserve still-live frame addresses and incoming parameters
    before reusing those registers.
 
+   Each `f32` or `f64` arithmetic operation rounds directly to its IEEE binary32
+   or binary64 format, matching the LowIR contract and constant evaluation.
+   Use the extended-precision path for `f80`; double rounding through extended
+   precision is not the `f64` arithmetic policy.
+
    A numeric immediate written without a decimal point still follows the declared LowIR
    type in a floating store or return. It must be materialized as the requested floating
    value rather than routed through an integer-only move path.

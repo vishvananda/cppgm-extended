@@ -6,8 +6,8 @@
 // native back end computes them (opt/optimizer.h): integers wrap to their
 // type's width (i* signed, u* and i1 unsigned, ptr as i64); division,
 // remainder and shifts fold only where they cannot trap or depend on an
-// out-of-range count; f32 is IEEE single, f64 arithmetic is x87 extended
-// rounded to double (the back end's evaluation), f80 is x87 extended.
+// out-of-range count; f32 and f64 arithmetic round in their IEEE single
+// and double formats, and f80 is x87 extended, matching native evaluation.
 namespace opt {
 
 // The constant an operand denotes when it is a literal.

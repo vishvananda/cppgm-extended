@@ -965,6 +965,12 @@ The PA8 subset uses:
 valid with `f32`, `f64`, and `f80` types. `f80` literals use the usual `L` suffix, for
 example `1.25L`.
 
+Arithmetic on `f32` and `f64` rounds each operation directly to its IEEE
+binary32 or binary64 format. `f80` uses the x87 extended format. Constant
+folding and native execution use the same precision; evaluating `f64` in
+extended precision and then rounding to binary64 can produce a different
+last bit and is not this target's evaluation policy.
+
 Three values have no digit spelling and are written as words instead. `nullptr` is the
 null pointer constant and is valid with `ptr`. `inf` and `nan` are the floating infinity
 and quiet NaN, and `snan` is the signalling NaN; each may also be written

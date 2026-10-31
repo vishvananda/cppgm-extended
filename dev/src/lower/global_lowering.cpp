@@ -107,10 +107,8 @@ bool IsPointerLike(const sema::Type* type)
 		(type->kind == sema::TypeKind::Fundamental && type->fundamental == FundamentalType::NullptrT);
 }
 
-// 5.6, 5.7 as the executed operation rounds: f32 once in float; f64 in
-// x87 extended precision, then rounded to double, as the native back end
-// evaluates it ([expr]p11 allows the extra precision), which can differ
-// in the last place from one rounding.
+// 5.6, 5.7 in the executed operation's own precision: f32 in float,
+// f64 in double, and f80 in long double, matching the native back end.
 template<typename T>
 long double FloatingArithmetic(TokenKind op, long double left, long double right)
 {
@@ -2205,8 +2203,7 @@ bool ProgramLowering::static_value(const syntax::Expr& expr, StaticValue& out, b
 			out.floating = FloatingArithmetic<float>(binary->op, left.floating, right.floating);
 			break;
 		case lowir::TypeKind::F64:
-			out.floating = static_cast<double>(
-				FloatingArithmetic<long double>(binary->op, left.floating, right.floating));
+			out.floating = static_cast<double>(FloatingArithmetic<double>(binary->op, left.floating, right.floating));
 			break;
 		default:
 			out.floating = FloatingArithmetic<long double>(binary->op, left.floating, right.floating);

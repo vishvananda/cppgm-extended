@@ -1,0 +1,97 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @arithmetic
+  abi
+    param %one -> xmm0 : f64
+    param %small -> xmm1 : f64
+    param %negative_small -> xmm2 : f64
+    param %a -> xmm3 : f64
+    param %b -> xmm4 : f64
+    param %c -> xmm5 : f64
+    param %d -> xmm6 : f64
+    return i64 -> rax
+  frame
+    stack_size 112
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    param-slot %one -> [rbp-8] : f64
+    param-slot %small -> [rbp-16] : f64
+    param-slot %negative_small -> [rbp-24] : f64
+    param-slot %a -> [rbp-32] : f64
+    param-slot %b -> [rbp-40] : f64
+    param-slot %c -> [rbp-48] : f64
+    param-slot %d -> [rbp-56] : f64
+
+  block ^entry
+    fmov.f64 [rbp-8], xmm0
+    fmov.f64 [rbp-16], xmm1
+    fmov.f64 [rbp-24], xmm2
+    fmov.f64 [rbp-32], xmm3
+    fmov.f64 [rbp-40], xmm4
+    fmov.f64 [rbp-48], xmm5
+    fmov.f64 [rbp-56], xmm6
+    fadd.f64 xmm0, [rbp-8], [rbp-16]
+    fsub.f64 xmm1, [rbp-8], [rbp-24]
+    fmul.f64 xmm2, [rbp-32], [rbp-40]
+    fdiv.f64 xmm3, [rbp-48], [rbp-56]
+    fne.f64 r8, xmm0, 1.0000000000000002
+    fne.f64 r9, xmm1, 1.0000000000000002
+    fne.f64 rdi, xmm2, 1.3618711226611643e+121
+    fne.f64 rsi, xmm3, 4.92000810399293e-226
+    or r8, r9
+    or rdi, rsi
+    or r8, rdi
+    ret r8
+
+function @extended
+  abi
+    param %one -> [rbp+16] : f80
+    param %small -> [rbp+32] : f80
+    return i64 -> rax
+  frame
+    stack_size 80
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    temp %sum -> [rbp-16] : f80
+    temp %difference -> [rbp-32] : f80
+
+  block ^entry
+    fadd.f80 [rbp-16], [rbp+16], [rbp+32]
+    fsub.f80 [rbp-32], [rbp-16], [rbp+16]
+    fne.f80 rax, [rbp-32], [rbp+32]
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+
+  block ^entry
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 1.110494075168278e-16
+    fmov.f64 xmm2, -1.110494075168278e-16
+    fmov.f64 xmm3, -1.3290626730907361e+20
+    fmov.f64 xmm4, -1.0246854044092082e+101
+    fmov.f64 xmm5, 1.3608547793652755e-308
+    fmov.f64 xmm6, 2.765960442749773e-83
+    call @arithmetic [args=(xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6)]
+    mov rbx, rax
+    sub rsp, 32
+    fmov.f80 [rsp], 1.0L
+    fmov.f80 [rsp+16], 8.673617379884035472e-19L
+    call @extended [args=(), stack=32]
+    add rsp, 32
+    or rbx, rax
+    ret rbx

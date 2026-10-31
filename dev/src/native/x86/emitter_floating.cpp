@@ -5,9 +5,8 @@
 #include "support/internal_error.h"
 
 // Floating-point emission: f32/f64 on SSE scalar forms (memory and
-// literal operands read from the read-only constant pool) except f64
-// arithmetic, which, like f80, runs on the x87 stack through memory; and
-// the integer/floating conversions.
+// literal operands read from the read-only constant pool), f80 on the
+// x87 stack, and the integer/floating conversions.
 namespace native {
 
 using lowir::ComparePredicate;
@@ -157,30 +156,6 @@ void FunctionEmitter::float_arith(const Inst& inst)
 	}
 	const uint8_t prefix = sse_prefix(kind);
 	auto source = [&](const Operand& op) { return op.kind == OperandKind::FImm ? constant_rm(op) : rm(op); };
-	if (kind == TypeKind::F64 && inst.op != Op::FNeg)
-	{
-		// f64 arithmetic runs in x87 extended precision and is rounded to
-		// double by the store, as the reference backend evaluates it (a
-		// greater precision [expr]p11 allows; the PA25 fixtures pin it): a
-		// in st0, b a memory operand, registers through the red zone.
-		auto memory = [&](const Operand& op, int32_t below) {
-			if (!is_xmm_reg(op))
-				return source(op);
-			asm_.sse_store(prefix, 0x11, RM::m(RSP, below), op.reg);
-			return RM::m(RSP, below);
-		};
-		asm_.x87(0xdd, 0, memory(a, -8)); // fld qword
-		const unsigned digit = inst.op == Op::FAdd ? 0 : (inst.op == Op::FMul ? 1 : (inst.op == Op::FSub ? 4 : 6));
-		asm_.x87(0xdc, digit, memory(b, -16)); // fadd/fmul/fsub/fdiv qword
-		if (is_xmm_reg(d))
-		{
-			asm_.x87(0xdd, 3, RM::m(RSP, -8)); // fstp qword
-			asm_.sse(prefix, 0x10, d.reg, RM::m(RSP, -8));
-		}
-		else
-			asm_.x87(0xdd, 3, rm(d));
-		return;
-	}
 	if (inst.op == Op::FNeg)
 	{
 		uint8_t mask[16];

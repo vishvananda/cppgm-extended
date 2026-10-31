@@ -68,7 +68,6 @@ comment	dev/src/native/select/operands.cpp	pa27	handout or fixture cross-referen
 comment	dev/src/native/select/register_allocation.cpp	PA24	handout or fixture cross-reference in a comment
 comment	dev/src/native/select/selector.h	pa27	handout or fixture cross-reference in a comment
 comment	dev/src/native/x86/emitter.cpp	pa26	handout or fixture cross-reference in a comment
-comment	dev/src/native/x86/emitter_floating.cpp	PA25	handout or fixture cross-reference in a comment
 comment	dev/src/opt/call_graph.h	PA32	handout or fixture cross-reference in a comment
 comment	dev/src/opt/function_ir.h	pa10	handout or fixture cross-reference in a comment
 comment	dev/src/opt/inliner.cpp	pa32	handout or fixture cross-reference in a comment

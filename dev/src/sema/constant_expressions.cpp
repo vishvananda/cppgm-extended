@@ -1117,8 +1117,7 @@ bool ConstantInterpreter::floating_operation(
 	TokenKind op, const Type* type, long double left, long double right, long double& out, uint32_t location)
 {
 	// 5.6, 5.7 in the operation's own precision, as the native back end
-	// evaluates it: a double operation in x87 extended precision, then
-	// rounded to double ([expr]p11 allows the extra precision); a zero
+	// evaluates it: float and double use their IEEE precision; a zero
 	// divisor or a result outside the type's range is undefined (5p4,
 	// 5.6p4).
 	bool defined = false;
@@ -1128,7 +1127,7 @@ bool ConstantInterpreter::floating_operation(
 		defined = FloatingStep<float>(op, left, right, out);
 		break;
 	case FundamentalType::Double:
-		defined = FloatingStep<long double>(op, left, right, out);
+		defined = FloatingStep<double>(op, left, right, out);
 		out = static_cast<double>(out);
 		defined = defined && !std::isinf(out);
 		break;

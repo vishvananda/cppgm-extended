@@ -175,6 +175,11 @@ surface inherited from PA15, including:
 - reuse of the constant evaluator for ordinary language semantics, template arguments, and
   `static_assert`
 
+Floating constant evaluation uses the target precision of each operation:
+binary32 for `float`, binary64 for `double`, and x87 extended for `long double`.
+Static initialization and runtime arithmetic use the same precision, as defined
+for their LowIR types in [the LowIR contract](../pa8/lowir.md).
+
 The intent is no longer a pragmatic subset. By the end of PA16, `constexpr` should be a
 complete compiler-owned semantic layer for the supported C++11 language surface, not a
 collection of special cases.
