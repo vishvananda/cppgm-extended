@@ -341,7 +341,10 @@ them changed it, branch compares are computed again beside their branches:
   slot, a global, or a parameter's `object_bytes` extent; a loop moves at
   most 10 loads less the values already live through it (its header phis
   and the outside values it uses). Invariant integer arithmetic, one of
-  whose operands is used nowhere else, moves too.
+  whose operands is used nowhere else, moves too. So does an invariant
+  conversion of an integer other than `i128` to `f32` or `f64`, whatever else
+  reads its operand: it cannot trap, and its result costs less to keep than
+  to convert again.
 - A fill loop of a run-time value whose bytes all repeat calls `memset`
   for runs of at least 128 bytes.
 - Narrow loop counters that cannot pass their bound are marked `nowrap`.

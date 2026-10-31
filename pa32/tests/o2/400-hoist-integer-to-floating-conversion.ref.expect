@@ -1,0 +1,19 @@
+# budget from 400-hoist-integer-to-floating-conversion.ref: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 128
+blocks <= 29
+count(call) <= 12
+count(load) <= 9
+count(store) <= 7
+count(phi) <= 15
+instructions <= 16 in @signed_scale
+instructions <= 16 in @unsigned_scale
+instructions <= 16 in @narrow_scale
+instructions <= 16 in @wide_source
+instructions <= 17 in @operand_read_again
+instructions <= 16 in @varying_source
+instructions <= 41 in @main
+
+# An invariant conversion reads nothing that changes and cannot trap.
+none(convert) in @signed_scale ^body
+none(convert) in @unsigned_scale ^body
+none(convert) in @narrow_scale ^body

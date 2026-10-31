@@ -2929,8 +2929,10 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 	// truncation, whose operands are all invariant moves to the preheader
 	// when one of its operand temps is read nowhere else. That operand no
 	// longer lives through the loop and the result does instead (a
-	// `size()` bound's subtraction and shift). Compares and address steps
-	// stay: they fuse with their branch or access.
+	// `size()` bound's subtraction and shift). An integer conversion to f32
+	// or f64 moves whatever else reads its operand: it cannot trap, and even
+	// spilled its result is cheaper to reload than to convert. Compares and
+	// address steps stay: they fuse with their branch or access.
 	// (Counted once per function: moving instructions changes no count.)
 	if (hoist_uses_.empty())
 		count_uses(body_, hoist_uses_);
@@ -2951,7 +2953,11 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 						 bop != BinaryOp::UDiv && bop != BinaryOp::UMod) ||
 						(inst.op == Opcode::Convert && convert_source_type(inst).is_integer() &&
 							(cop == ConvertOp::ZExt || cop == ConvertOp::SExt || cop == ConvertOp::Trunc)));
-				bool all = arithmetic, dying = false;
+				const bool to_float = inst.op == Opcode::Convert &&
+					(cop == ConvertOp::SIToFP || cop == ConvertOp::UIToFP) &&
+					(inst.type.kind() == TypeKind::F32 || inst.type.kind() == TypeKind::F64) &&
+					convert_source_type(inst).kind() != TypeKind::I128;
+				bool all = arithmetic || to_float, dying = to_float;
 				for (unsigned k = 0; k < 3 && all; ++k)
 				{
 					const Value v = inst.ops[k];

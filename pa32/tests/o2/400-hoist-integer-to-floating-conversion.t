@@ -1,0 +1,178 @@
+# An integer conversion to f32 or f64 cannot trap, so an invariant one may leave
+# its loop, including one whose loop runs zero times. The results must be exact
+# for negative values and for unsigned values with the high bit set.
+function @signed_scale(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes] {
+  block ^entry:
+    jump ^cond
+
+  block ^cond:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %sum = phi f64 [^entry: 0.0, ^body: %total]
+    %more = cmp ult i64 %i, %n
+    branch %more, ^body, ^done
+
+  block ^body:
+    %scale = convert sitofp f64 i64 %k
+    %at = index f64 %p, %i
+    %x = load f64 %at
+    %scaled = binary mul f64 %x, %scale
+    %total = binary add f64 %sum, %scaled
+    %next = binary add i64 %i, 1
+    jump ^cond
+
+  block ^done:
+    return f64 %sum
+}
+function @unsigned_scale(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes] {
+  block ^entry:
+    jump ^cond
+
+  block ^cond:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %sum = phi f64 [^entry: 0.0, ^body: %total]
+    %more = cmp ult i64 %i, %n
+    branch %more, ^body, ^done
+
+  block ^body:
+    %scale = convert uitofp f64 i64 %k
+    %at = index f64 %p, %i
+    %x = load f64 %at
+    %scaled = binary mul f64 %x, %scale
+    %total = binary add f64 %sum, %scaled
+    %next = binary add i64 %i, 1
+    jump ^cond
+
+  block ^done:
+    return f64 %sum
+}
+function @narrow_scale(%p : ptr, %n : i64, %k : i32) -> f32 [no_inline=yes] {
+  block ^entry:
+    jump ^cond
+
+  block ^cond:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %sum = phi f32 [^entry: 0.0, ^body: %total]
+    %more = cmp ult i64 %i, %n
+    branch %more, ^body, ^done
+
+  block ^body:
+    %scale = convert sitofp f32 i32 %k
+    %at = index f32 %p, %i
+    %x = load f32 %at
+    %scaled = binary mul f32 %x, %scale
+    %total = binary add f32 %sum, %scaled
+    %next = binary add i64 %i, 1
+    jump ^cond
+
+  block ^done:
+    return f32 %sum
+}
+function @wide_source(%p : ptr, %n : i64, %k : i128) -> f64 [no_inline=yes] {
+  block ^entry:
+    jump ^cond
+
+  block ^cond:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %sum = phi f64 [^entry: 0.0, ^body: %total]
+    %more = cmp ult i64 %i, %n
+    branch %more, ^body, ^done
+
+  block ^body:
+    %scale = convert sitofp f64 i128 %k
+    %at = index f64 %p, %i
+    %x = load f64 %at
+    %scaled = binary mul f64 %x, %scale
+    %total = binary add f64 %sum, %scaled
+    %next = binary add i64 %i, 1
+    jump ^cond
+
+  block ^done:
+    return f64 %sum
+}
+function @operand_read_again(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes] {
+  block ^entry:
+    jump ^cond
+
+  block ^cond:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %sum = phi f64 [^entry: 0.0, ^body: %total]
+    %more = cmp ult i64 %i, %n
+    branch %more, ^body, ^done
+
+  block ^body:
+    %scale = convert sitofp f64 i64 %k
+    %offset = binary add i64 %i, %k
+    %at = index f64 %p, %offset
+    %x = load f64 %at
+    %scaled = binary mul f64 %x, %scale
+    %total = binary add f64 %sum, %scaled
+    %next = binary add i64 %i, 1
+    jump ^cond
+
+  block ^done:
+    return f64 %sum
+}
+function @varying_source(%p : ptr, %n : i64) -> f64 [no_inline=yes] {
+  block ^entry:
+    jump ^cond
+
+  block ^cond:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %sum = phi f64 [^entry: 0.0, ^body: %total]
+    %more = cmp ult i64 %i, %n
+    branch %more, ^body, ^done
+
+  block ^body:
+    %scale = convert uitofp f64 i64 %i
+    %at = index f64 %p, %i
+    %x = load f64 %at
+    %scaled = binary mul f64 %x, %scale
+    %total = binary add f64 %sum, %scaled
+    %next = binary add i64 %i, 1
+    jump ^cond
+
+  block ^done:
+    return f64 %sum
+}
+function @main() -> i64 [role=entry] {
+  slot $doubles : obj<16x8>
+  slot $floats : obj<8x4>
+  block ^entry:
+    %doubles = addr $doubles
+    %second = index f64 %doubles, 1
+    store f64 1.5, %doubles
+    store f64 2.5, %second
+    %floats = addr $floats
+    %next_float = index f32 %floats, 1
+    store f32 1.5, %floats
+    store f32 2.5, %next_float
+    %a = call f64 @signed_scale(%doubles, 2, -3)
+    %bad_a = cmp ne f64 %a, -12.0
+    %b = call f64 @signed_scale(%doubles, 0, -3)
+    %bad_b = cmp ne f64 %b, 0.0
+    %c = call f64 @unsigned_scale(%doubles, 2, 3)
+    %bad_c = cmp ne f64 %c, 12.0
+    %d = call f64 @unsigned_scale(%doubles, 2, -1)
+    %bad_d = cmp ne f64 %d, 73786976294838206464.0
+    %e = call f64 @unsigned_scale(%doubles, 2, -9223372036854775807)
+    %bad_e = cmp ne f64 %e, 36893488147419103232.0
+    %f = call f32 @narrow_scale(%floats, 2, -2)
+    %bad_f = cmp ne f32 %f, -8.0
+    %wide = convert sext i128 i64 -5
+    %g = call f64 @wide_source(%doubles, 2, %wide)
+    %bad_g = cmp ne f64 %g, -20.0
+    %h = call f64 @operand_read_again(%doubles, 1, 1)
+    %bad_h = cmp ne f64 %h, 2.5
+    %i = call f64 @varying_source(%doubles, 2)
+    %bad_i = cmp ne f64 %i, 2.5
+    %ab = binary or i64 %bad_a, %bad_b
+    %cd = binary or i64 %bad_c, %bad_d
+    %ef = binary or i64 %bad_e, %bad_f
+    %gh = binary or i64 %bad_g, %bad_h
+    %first = binary or i64 %ab, %cd
+    %second_half = binary or i64 %ef, %gh
+    %all = binary or i64 %first, %second_half
+    %failed = binary or i64 %all, %bad_i
+    %status = convert trunc i32 i64 %failed
+    return i64 %status
+}
