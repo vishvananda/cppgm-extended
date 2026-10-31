@@ -1,0 +1,286 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @negative_nan
+  storage scalar i64
+  init i64 -2251799813685247
+
+global @negative_nan32
+  storage scalar i32
+  init i32 -4194303
+
+function @clobber
+  abi
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    ret
+
+function @magnitude64
+  abi
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-<off0>] : f64
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    fabs.f64 xmm0, [rbp-<off0>]
+    ret xmm0
+
+function @magnitude32
+  abi
+    param %x -> xmm0 : f32
+    return f32 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-<off0>] : f32
+
+  block ^entry
+    fmov.f32 [rbp-<off0>], xmm0
+    fabs.f32 xmm0, [rbp-<off0>]
+    ret xmm0
+
+function @mask_first
+  abi
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-<off0>] : f64
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    fabs.f64 xmm0, [rbp-<off0>]
+    ret xmm0
+
+function @from_memory
+  abi
+    param %p -> rdi : ptr
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.f64 xmm0, [rdi]
+    fabs.f64 xmm0, xmm0
+    ret xmm0
+
+function @source_lives_on
+  abi
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-<off0>] : f64
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    fabs.f64 xmm0, [rbp-<off0>]
+    fdiv.f64 xmm1, [rbp-<off0>], xmm0
+    fadd.f64 xmm1, xmm1, [rbp-<off0>]
+    ret xmm1
+
+function @across_call
+  abi
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-<off0>] : f64
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    call @clobber [args=()]
+    fabs.f64 xmm0, [rbp-<off0>]
+    ret xmm0
+
+function @mask_read_again
+  abi
+    param %x -> xmm0 : f64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-<off0>] : f64
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    load.i64 r8, [rbp-<off0>]
+    and r8, 9223372036854775807
+    fmov.f64 xmm0, r8
+    fmul.f64 xmm0, xmm0, 0.5
+    fmov.f64 r9, xmm0
+    sub r8, r9
+    ret r8
+
+function @other_mask
+  abi
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-<off0>] : f64
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    load.i64 r8, [rbp-<off0>]
+    and r8, 9223372036854775806
+    fmov.f64 xmm0, r8
+    ret xmm0
+
+function @integer_source
+  abi
+    param %x -> rdi : i64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    and rdi, 9223372036854775807
+    fmov.f64 xmm0, rdi
+    ret xmm0
+
+function @narrower_source
+  abi
+    param %x -> xmm0 : f32
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-<off0>] : f32
+
+  block ^entry
+    fmov.f32 [rbp-<off0>], xmm0
+    fadd.f32 xmm0, [rbp-<off0>], 1.0f
+    fmov.f32 r8, xmm0
+    and r8, 9223372036854775807
+    fmov.f64 xmm0, r8
+    ret xmm0
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    slot $cell -> [rbp-<off0>] : f64
+    temp %bad_f -> [rbp-<off1>] : i64
+    temp %bad_g -> [rbp-<off2>] : i64
+    temp %bad_h -> [rbp-<off3>] : i64
+    temp %bad_i -> [rbp-<off4>] : i64
+    temp %bad_j -> [rbp-<off5>] : i64
+
+  block ^entry
+    fmov.f64 xmm0, @negative_nan
+    call @magnitude64 [args=(xmm0)]
+    fmov.f64 r8, xmm0
+    cmp.i64 r8, 9221120237041090561
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    fmov.f64 xmm0, -0.0
+    call @magnitude64 [args=(xmm0)]
+    fmov.f64 r8, xmm0
+    cmp.i64 r8, 0
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    fmov.f32 xmm0, @negative_nan32
+    call @magnitude32 [args=(xmm0)]
+    fmov.f32 r8, xmm0
+    sext.i32 r8
+    cmp.i32 r8, 2143289345
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    fmov.f64 xmm0, -2.5
+    call @mask_first [args=(xmm0)]
+    fne.f64 <gpr3>, xmm0, 2.5
+    fmov.f64 [rbp-<off0>], -7.5
+    lea rdi, [rbp-<off0>]
+    call @from_memory [args=(rdi)]
+    fne.f64 <gpr4>, xmm0, 7.5
+    fmov.f64 xmm0, -8.0
+    call @source_lives_on [args=(xmm0)]
+    fne.f64 <gpr5>, xmm0, -9.0
+    store.i64 [rbp-<off1>], <gpr5>
+    fmov.f64 xmm0, -3.25
+    call @across_call [args=(xmm0)]
+    fne.f64 <gpr5>, xmm0, 3.25
+    store.i64 [rbp-<off2>], <gpr5>
+    fmov.f64 xmm0, -1.0
+    call @mask_read_again [args=(xmm0)]
+    cmp.i64 rax, 4503599627370496
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off3>], <gpr5>
+    fmov.f64 xmm0, -1.0000000000000002
+    call @other_mask [args=(xmm0)]
+    fmov.f64 r8, xmm0
+    cmp.i64 r8, 4607182418800017408
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off4>], <gpr5>
+    mov rdi, -4616189618054758400
+    call @integer_source [args=(rdi)]
+    fne.f64 <gpr5>, xmm0, 1.0
+    store.i64 [rbp-<off5>], <gpr5>
+    fmov.f32 xmm0, 0.5f
+    call @narrower_source [args=(xmm0)]
+    fmov.f64 r8, xmm0
+    cmp.i64 r8, 1069547520
+    setne r8
+    movzx r8, r8
+    or <gpr0>, <gpr1>
+    or <gpr2>, <gpr3>
+    or <gpr4>, [rbp-<off1>]
+    load.i64 r9, [rbp-<off2>]
+    or r9, [rbp-<off3>]
+    load.i64 rdi, [rbp-<off4>]
+    or rdi, [rbp-<off5>]
+    or <gpr0>, <gpr2>
+    or <gpr4>, r9
+    or <gpr0>, <gpr4>
+    or <gpr0>, rdi
+    or <gpr0>, r8
+    sext.i32 <gpr0>
+    ret <gpr0>

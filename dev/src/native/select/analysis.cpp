@@ -475,6 +475,41 @@ unsigned width_bits(TypeKind kind)
 
 } // namespace
 
+// O1+: the floating value whose representation `copy` takes with the sign
+// bit cleared (`copy i64 x`, `and` with the mask, `copy f64`: fabs as
+// lowered), or kNoId; `masked` is the mask's result.
+uint32_t FunctionSelector::magnitude_source(const Instruction& copy, uint32_t& masked) const
+{
+	const lowir::FunctionBody& body = *body_;
+	const TypeKind kind = copy.type.kind();
+	if (kind != TypeKind::F32 && kind != TypeKind::F64)
+		return kNoId;
+	const Value bits = resolve(copy.ops[0]);
+	auto defined_by = [&](Value v, Opcode op) -> const Instruction* {
+		if (v.kind != ValueKind::Temp || v.index < body.parameter_count || body.temps[v.index].def == kNoId)
+			return nullptr;
+		const Instruction& def = body.instructions[body.temps[v.index].def];
+		return def.op == op ? &def : nullptr;
+	};
+	const Instruction* mask = defined_by(bits, Opcode::Binary);
+	if (mask == nullptr || static_cast<lowir::BinaryOp>(mask->sub) != lowir::BinaryOp::And ||
+		!mask->type.is_integer() || width_bits(mask->type.kind()) != (kind == TypeKind::F32 ? 32u : 64u))
+		return kNoId;
+	const unsigned constant = mask->ops[0].kind == ValueKind::Integer ? 0 : 1;
+	const Value limit = resolve(mask->ops[constant]);
+	const uint64_t below_sign = kind == TypeKind::F32 ? 0x7fffffffull : 0x7fffffffffffffffull;
+	if (limit.kind != ValueKind::Integer || literal(limit).high != 0 || literal(limit).low != below_sign)
+		return kNoId;
+	const Instruction* carrier = defined_by(resolve(mask->ops[1 - constant]), Opcode::Copy);
+	if (carrier == nullptr)
+		return kNoId;
+	const Value source = resolve(carrier->ops[0]);
+	if (source.kind != ValueKind::Temp || body.temps[source.index].type.kind() != kind)
+		return kNoId;
+	masked = bits.index;
+	return source.index;
+}
+
 void FunctionSelector::resolve_aliases()
 {
 	const lowir::FunctionBody& body = *body_;
@@ -676,6 +711,33 @@ void FunctionSelector::resolve_aliases()
 			for_each_operand(body, inst, [&](Value v, OperandRole) { visit(v); });
 		});
 	}
+	// Whether one operand reads the temporary, counted the first time it is
+	// asked (only a function with the magnitude idiom asks).
+	std::vector<uint32_t> reads;
+	auto read_once = [&](uint32_t temp) {
+		if (reads.empty())
+		{
+			reads.assign(temps_.size(), 0);
+			for_each_inst([&](uint32_t id, uint32_t) {
+				const Instruction& inst = body.instructions[id];
+				auto count = [&](Value v) {
+					if (v.kind == ValueKind::Temp)
+						++reads[v.index];
+				};
+				if (marks_[id] & IM_DEAD)
+					return;
+				if (inst.op == Opcode::Phi)
+					for (uint32_t k = 1; k < inst.extra_count; k += 2)
+						count(body.operands[inst.extra_first + k]);
+				else
+					for_each_operand(body, inst, [&](Value v, OperandRole) { count(v); });
+			});
+			for (uint32_t s = 0; s < slot_state_.size(); ++s)
+				if (slot_state_[s] == SS_PROMOTED && slot_value_[s].kind == ValueKind::Temp)
+					++reads[slot_value_[s].index];
+		}
+		return reads[temp] == 1;
+	};
 	for_each_inst([&](uint32_t id, uint32_t) {
 		const Instruction& inst = body.instructions[id];
 		if ((marks_[id] & IM_DEAD) || inst.result == kNoId)
@@ -695,6 +757,18 @@ void FunctionSelector::resolve_aliases()
 		}
 		else if (inst.op == Opcode::Copy)
 		{
+			// The representation of a floating value with its sign cleared, as
+			// a floating value of that type: the mask stands for the source,
+			// and the copy clears the sign in XMM registers.
+			uint32_t masked = kNoId;
+			const uint32_t magnitude = level_ >= 1 ? magnitude_source(inst, masked) : kNoId;
+			if (magnitude != kNoId && read_once(masked))
+			{
+				alias_[masked] = Value::temp(magnitude);
+				temps_[masked].flags |= TF_ALIAS;
+				temps_[r].flags |= TF_MAGNITUDE;
+				return;
+			}
 			const Value src = resolve(inst.ops[0]);
 			if (src.kind == ValueKind::Integer && (inst.type.is_integer() || inst.type.is_pointer()) &&
 				inst.type.kind() != TypeKind::I128)

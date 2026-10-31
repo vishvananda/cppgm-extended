@@ -161,14 +161,16 @@ void FunctionEmitter::float_arith(const Inst& inst)
 	}
 	const uint8_t prefix = sse_prefix(kind);
 	auto source = [&](const Operand& op) { return op.kind == OperandKind::FImm ? constant_rm(op) : rm(op); };
-	if (inst.op == Op::FNeg)
+	if (inst.op == Op::FNeg || inst.op == Op::FAbs)
 	{
+		// xorps with the sign bit, or andps with every bit below it (a scalar
+		// leaves the rest of the register unspecified).
 		uint8_t mask[16];
 		std::memset(mask, 0, sizeof mask);
-		if (kind == TypeKind::F32)
-			mask[3] = 0x80;
-		else
-			mask[7] = 0x80;
+		const unsigned bytes = kind == TypeKind::F32 ? 4 : 8;
+		if (inst.op == Op::FAbs)
+			std::memset(mask, 0xff, bytes);
+		mask[bytes - 1] = inst.op == Op::FAbs ? 0x7f : 0x80;
 		if (!(is_xmm_reg(a) && a.reg == d.reg))
 		{
 			if (is_xmm_reg(a))
@@ -176,7 +178,7 @@ void FunctionEmitter::float_arith(const Inst& inst)
 			else
 				asm_.sse(prefix, 0x10, d.reg, source(a));
 		}
-		asm_.sse(0, 0x57, d.reg, RM::rip(image_.constant(mask, 16, 16), 0));
+		asm_.sse(0, inst.op == Op::FAbs ? 0x54 : 0x57, d.reg, RM::rip(image_.constant(mask, 16, 16), 0));
 		return;
 	}
 	const uint8_t opcode = inst.op == Op::FAdd ? 0x58
@@ -359,10 +361,10 @@ void FunctionEmitter::convert(const Inst& inst)
 			asm_.x87(0xdb, 7, rm(d));
 			return;
 		}
-		const uint8_t prefix = sse_prefix(to);
-		const uint32_t direct = asm_.new_label();
 		// The common value below 2^63 takes the one branch, past the halving
 		// path, and converts directly.
+		const uint8_t prefix = sse_prefix(to);
+		const uint32_t direct = asm_.new_label();
 		const uint32_t done = asm_.new_label();
 		asm_.op(0, true, 0x85, 1, s.reg, RM::r(s.reg));
 		asm_.jcc_short(CC_NS, direct);
@@ -387,12 +389,12 @@ void FunctionEmitter::convert(const Inst& inst)
 		asm_.sse(0, 0x57, d.reg, RM::r(d.reg));
 		asm_.sse(prefix, 0x2a, d.reg, RM::r(t1), true);
 		asm_.sse(prefix, 0x58, d.reg, RM::r(d.reg));
-		asm_.bind(done);
-		return;
 		asm_.jmp_short(done);
 		asm_.bind(direct);
 		asm_.sse(0, 0x57, d.reg, RM::r(d.reg));
 		asm_.sse(prefix, 0x2a, d.reg, RM::r(s.reg), true);
+		asm_.bind(done);
+		return;
 	}
 	case ConvKind::FPToSI:
 		if (from == TypeKind::F80)

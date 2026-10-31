@@ -55,6 +55,7 @@ public:
 	void find_byte_booleans();
 	void extend_lifetimes();
 	lowir::Value resolve(lowir::Value value) const;
+	uint32_t magnitude_source(const lowir::Instruction& copy, uint32_t& masked) const;
 	lowir::Type type_of(lowir::Value value) const;
 	const lowir::Literal& literal(lowir::Value value) const;
 	lowir::Value add_literal(const lowir::Literal& bits);

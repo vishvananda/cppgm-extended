@@ -372,6 +372,8 @@ void FunctionSelector::emit_copy(const Instruction& inst)
 			load_into(kSelectScratch, src, TypeKind::I64);
 			emit2(Op::FMov, kind, Operand::make_reg(d), Operand::make_reg(kSelectScratch));
 		}
+		else if (t.flags & TF_MAGNITUDE)
+			emit2(Op::FAbs, kind, Operand::make_reg(d), src);
 		else
 			load_into(d, src, kind);
 		finish_result(inst, d);

@@ -16,6 +16,11 @@ jump to the next block. Stop propagation at a conflicting definition or
 clobber. Preserve volatile effects, exception boundaries and debug locations
 when replacing instructions.
 
+Recognize what the lowering leaves behind. PA29's `__builtin_fabs` reaches the
+backend as a copy to an integer, a mask and a copy back; the course solution
+selects `fabs` instead when nothing else reads the mask, clearing the sign in
+the XMM register.
+
 For O2, compute liveness across blocks and calls, and give registers to the
 values that live across blocks. The bounds can be met by a small allocator,
 but PA34 runs this backend on the whole compiler, where functions are large,

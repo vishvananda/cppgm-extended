@@ -1086,6 +1086,7 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	case Op::FMul:
 	case Op::FDiv:
 	case Op::FNeg:
+	case Op::FAbs:
 		float_arith(inst);
 		break;
 	case Op::FCmp:

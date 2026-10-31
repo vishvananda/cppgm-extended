@@ -59,7 +59,8 @@ enum TempFlag : uint16_t
 	TF_STORED = 1 << 11,   // an object call result stored straight into its copy's destination
 	TF_TESTED = 1 << 12,   // and/shl folded into its compare-and-branch's test or bt (O1+)
 	TF_RMW = 1 << 13,      // operation on a folded load its only use stores back there: done in memory (O1+)
-	TF_ROTATED = 1 << 14   // shl/ushr of a rotation its only use (an or) performs (O1+)
+	TF_ROTATED = 1 << 14,  // shl/ushr of a rotation its only use (an or) performs (O1+)
+	TF_MAGNITUDE = 1 << 15 // f32/f64 copy of its source with the sign cleared (O1+, magnitude_source)
 };
 
 // A lazily formed address: base (frame slot, symbol, temp register, or

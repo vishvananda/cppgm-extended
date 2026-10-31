@@ -2041,6 +2041,7 @@ bool drop_unused_frame(Function& function)
 		case Op::FMul:
 		case Op::FDiv:
 		case Op::FNeg:
+		case Op::FAbs:
 		case Op::FCmp:
 		case Op::FSetcc:
 		case Op::Convert:
