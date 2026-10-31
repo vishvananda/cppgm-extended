@@ -82,7 +82,7 @@ test-controls: $(TEST_DEPS)
 # The LowIR comparison seams: the harness's own unit tests, then every
 # rewrite of this lane's outputs that ../pa8/lowir.md says the comparison
 # absorbs must pass, and every rewrite it says the course enforces as a
-# convention must fail.  Needs the `.my` outputs `test` produces.
+# convention must fail. Needs the outputs `test` produces for this run.
 # Maintainer lane: the invariant is about the comparison harness and the
 # contract text in ../pa8/lowir.md, not about an implementation, so the
 # repository-root report runs it rather than `make test`.

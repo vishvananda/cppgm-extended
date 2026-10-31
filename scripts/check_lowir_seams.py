@@ -52,13 +52,21 @@ def parse_arguments(argv):
     return positional[0], positional[1], modes, results
 
 
+def run_result_name(name):
+    return subprocess.check_output(
+        ['perl', '-I' + SCRIPTS, '-MCppgmBatchWorker=run_result_name',
+         '-e', 'print run_result_name($ARGV[0])', name], text=True,
+    )
+
+
 def run_mode(assignment, lane, mode, scratch):
     """(passed, total, changed, first failure line) for one rewrite of the lane."""
     copy = os.path.join(scratch, mode)
     shutil.copytree(os.path.join(assignment, lane), copy, symlinks=False)
     changed = 0
+    suffix = '.' + run_result_name('my')
     for name in sorted(os.listdir(copy)):
-        if not name.endswith('.my'):
+        if not name.endswith(suffix):
             continue
         path = os.path.join(copy, name)
         with open(path) as f:
@@ -71,7 +79,7 @@ def run_mode(assignment, lane, mode, scratch):
         # Only an output the harness compares with a reference counts as
         # changed: a fixture judged by an `x.ref.expect` sidecar, or whose
         # reference run did not succeed, never reaches the comparison.
-        base = path[:-len('.my')]
+        base = path[:-len(suffix)]
         if not os.path.exists(base + '.ref') or os.path.exists(base + '.ref.expect'):
             continue
         status = base + '.ref.exit_status'
@@ -89,7 +97,7 @@ def run_mode(assignment, lane, mode, scratch):
     # <assignment>/.test_failed, which test-report reads as the assignment
     # failing.  A convention rewrite is expected to fail, so a marker this
     # run creates is removed; one that was already there is left alone.
-    marker = os.path.join(assignment, '.test_failed')
+    marker = os.path.join(assignment, run_result_name('.test_failed'))
     marker_was_present = os.path.exists(marker)
     run = subprocess.run(['scripts/compare_results.pl', 'ref', 'my', copy],
                          cwd=assignment, env=environment, text=True,

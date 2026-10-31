@@ -206,6 +206,8 @@ class ExportedDevMakefileTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exported-root-makefile.") as temp:
             makefile = Path(temp) / "Makefile"
             shutil.copy(REPO_ROOT / "Makefile", makefile)
+            (Path(temp) / "scripts").mkdir()
+            shutil.copy(REPO_ROOT / "scripts/test_run_id.mk", Path(temp) / "scripts/test_run_id.mk")
             subprocess.run(
                 ["bash", "-euc", script[start:end] +
                  '\nsanitize_student_root_makefile "$1"', "bash", str(makefile)],

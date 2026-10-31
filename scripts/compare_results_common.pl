@@ -391,7 +391,7 @@ sub append_keep_going_summary
 	# A tool that runs the harness many times (scripts/check_lowir_seams.py)
 	# names its own counts file so concurrent runs do not mix their lines.
 	my $counts_path = defined($ENV{CPPGM_TEST_COUNTS_FILE}) && $ENV{CPPGM_TEST_COUNTS_FILE} ne ''
-		? $ENV{CPPGM_TEST_COUNTS_FILE} : "$repo_root/.test_counts";
+		? $ENV{CPPGM_TEST_COUNTS_FILE} : "$repo_root/" . CppgmBatchWorker::run_result_name('.test_counts');
 	if (open(my $fh, '>>', $counts_path))
 	{
 		print $fh "$npass $suite_total\n";
@@ -399,7 +399,7 @@ sub append_keep_going_summary
 	}
 	if ($failed)
 	{
-		system('touch', "$cwd/.test_failed");
+		system('touch', "$cwd/" . CppgmBatchWorker::run_result_name('.test_failed'));
 	}
 }
 
@@ -5069,8 +5069,8 @@ if (scalar(@ARGV) != 4)
 
 my $mode = shift(@ARGV);
 $LOWIR_COMPARE_SOURCE_FACTS = $mode eq 'lowir_optimized_t' ? 0 : 1;
-my $ref_suffix = $ARGV[0];
-my $my_suffix = $ARGV[1];
+my $ref_suffix = CppgmBatchWorker::result_suffix($ARGV[0]);
+my $my_suffix = CppgmBatchWorker::result_suffix($ARGV[1]);
 my $tests = $ARGV[2];
 my $verbose = $ENV{VERBOSE} || $ENV{CPGM_TEST_VERBOSE};
 my $requested_keep_going = $ENV{KEEP_GOING};
@@ -5278,7 +5278,7 @@ for my $test (@tests)
 				elsif (!-f "$my.mir")
 				{
 					($ok, $message) = (0,
-						"ERROR: missing generated machine IR dump (.my.mir)");
+						"ERROR: missing generated machine IR dump (.$my_suffix.mir)");
 				}
 				else
 				{

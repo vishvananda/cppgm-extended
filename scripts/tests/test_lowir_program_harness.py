@@ -97,7 +97,9 @@ class LowirProgramHarnessTests(unittest.TestCase):
         env = os.environ.copy()
         for name in ("KEEP_GOING", "CPPGM_APP_ARGS", "CPPGM_CHECK_MODE", "MAKEFLAGS"):
             env.pop(name, None)
-        env.update(CPPGM_BATCH_TESTS="0", CPPGM_TEST_RUNNER="0", CPPGM_TEST_JOBS="1",
+        # These fixtures inspect explicit legacy basenames; concurrent makes
+        # with automatic namespaces are covered by test_report_isolation.py.
+        env.update(CPPGM_TEST_RUN_ID="", CPPGM_BATCH_TESTS="0", CPPGM_TEST_RUNNER="0", CPPGM_TEST_JOBS="1",
                    CPPGM_LOWIR_DIRECT_TEXT_COMPARE="1" if direct else "0",
                    VARIANT=variant, SPEC_VARIANT=spec_variant)
         return subprocess.run(

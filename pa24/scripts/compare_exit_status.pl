@@ -2,14 +2,17 @@
 
 use strict;
 use warnings;
+use FindBin;
+use lib "$FindBin::Bin/../../scripts";
+use CppgmBatchWorker qw(result_suffix);
 
 if (scalar(@ARGV) != 2)
 {
 	die "Usage: compare_exit_status.pl <ref_suffix> <my_suffix>";
 }
 
-my $ref_suffix = $ARGV[0];
-my $my_suffix = $ARGV[1];
+my $ref_suffix = result_suffix($ARGV[0]);
+my $my_suffix = result_suffix($ARGV[1]);
 
 my @tests = split(/\s+/, `find tests -type f`);
 

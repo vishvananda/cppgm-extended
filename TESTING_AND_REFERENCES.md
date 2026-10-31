@@ -36,6 +36,14 @@ make -C pa8 check TEST='tests/spec/100-*.t'
 `TEST=` accepts a path, quoted glob or quoted list. Mixed-input assignments
 route each selected fixture to its owning runner.
 
+Each `make` test invocation gives fixture results a unique run ID, inherited by
+its recursive makes, runners and comparers. A full report and a focused check
+can use the same fixtures concurrently: their files are named
+`x.my.<run-id>`, `x.check.<run-id>` or `x.pp.<run-id>`, with sidecars sharing
+the prefix. Report totals and failure markers are isolated too. For predictable filenames, pass
+`CPPGM_TEST_RUN_ID=debug`; an explicit empty value keeps the plain `.my` and
+`.check` names for manual workflows. Reference filenames stay fixed.
+
 ## Boost advisory CI
 
 The independent **Boost advisory** workflow runs on every push, with a

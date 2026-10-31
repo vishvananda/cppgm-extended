@@ -1,3 +1,5 @@
+include $(dir $(lastword $(MAKEFILE_LIST)))test_run_id.mk
+
 .PHONY: run check
 
 RUN_CHECK_DEPS ?= dev-shared-target

@@ -126,6 +126,7 @@ if (scalar(@ARGV) != 4)
 }
 
 my ($app, $backend, $suffix, $tests_root) = @ARGV;
+$suffix = CppgmBatchWorker::result_suffix($suffix);
 ensure_test_app_available($app, $suffix, $tests_root);
 ensure_test_app_available($backend, $suffix, $tests_root);
 my @tests = collect_tests($tests_root, qr/\.t$/);

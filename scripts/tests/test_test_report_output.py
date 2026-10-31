@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class TestReportOutputTests(unittest.TestCase):
     def report(self, *, failure=None, ordered=True, target="test-report-nobuild",
-               exported=False, low_jobs=False, real_control=False, later_lane=False):
+               exported=False, low_jobs=False, real_control=False, later_lane=False, active_pa="pa11"):
         with tempfile.TemporaryDirectory(prefix="test-report-output.") as directory:
             root = Path(directory)
             shutil.copy(ROOT / "Makefile", root / "Makefile")
@@ -33,6 +33,7 @@ class TestReportOutputTests(unittest.TestCase):
                 self.assertNotIn("test-harness", makefile)
                 self.assertNotIn("test-cells", makefile)
             (root / "scripts").mkdir()
+            shutil.copy(ROOT / "scripts/test_run_id.mk", root / "scripts/test_run_id.mk")
             audit = root / "scripts/audit_compiler_exceptions.pl"
             audit.write_text(
                 'if ("' + str(failure) + '" eq "audit") { '
@@ -67,16 +68,19 @@ class TestReportOutputTests(unittest.TestCase):
                 "test:\n"
                 "\t@if [ \"$$CPPGM_REPORT_QUIET\" != 1 ]; then echo suite success detail; "
                 "echo maintainer success detail >&2; fi\n" +
-                control_recipe + "\t@echo '2 2' >> ../.test_counts\n" +
+                control_recipe + "\t@echo '2 2' >> \"$$CPPGM_TEST_COUNTS_FILE\"\n" +
                 ("\t@echo suite failure diagnostic; exit 1\n" if failure == "suite" else "") +
-                ("\t@echo later lane diagnostic; echo '3 3' >> ../.test_counts; "
-                 "touch .test_failed\n" if later_lane else "") +
-                ("\t@echo comparison failure diagnostic; touch .test_failed\n"
+                ("\t@echo later lane diagnostic; echo '3 3' >> \"$$CPPGM_TEST_COUNTS_FILE\"; "
+                 "touch \"$$CPPGM_TEST_FAILURE_MARKER\"\n" if later_lane else "") +
+                ("\t@echo comparison failure diagnostic; touch \"$$CPPGM_TEST_FAILURE_MARKER\"\n"
                  if failure == "comparison" else "") +
                 "test-seams:\n"
                 "\t@echo 'expected rewrite ERROR: intentionally rejected'\n" +
                 ("\t@echo seams failure diagnostic >&2; exit 1\n" if failure == "seams" else "")
             )
+            if active_pa != "pa11":
+                (root / active_pa).mkdir()
+                shutil.copy(root / "pa11/Makefile", root / active_pa / "Makefile")
             environment = os.environ.copy()
             # Each scratch report starts a fresh top-level make, even when
             # the harness itself was launched by make.
@@ -85,7 +89,7 @@ class TestReportOutputTests(unittest.TestCase):
             result = subprocess.run(
                 ["make", *(["-j1"] if low_jobs else []), target,
                  "DEFAULT_BUILD_JOBS=" + ("2" if low_jobs else "1"),
-                 "ACTIVE_TEST_REPORT_PAS=pa11",
+                 "ACTIVE_TEST_REPORT_PAS=" + active_pa,
                  "TEST_REPORT_ASSIGNMENT_JOBS=1", "TEST_REPORT_STALL_SEC=0",
                  "ORDERED=" + ("true" if ordered else "false")],
                 cwd=root, env=environment, capture_output=True, text=True, timeout=30,
@@ -100,6 +104,12 @@ class TestReportOutputTests(unittest.TestCase):
                 self.assertEqual(result.stdout,
                                  "===== ALL TESTS PASSED SUCCESSFULLY! (2 / 2) =====\n")
                 self.assertEqual(result.stderr, "")
+
+    def test_selected_assignment_does_not_run_an_unrelated_seams_lane(self):
+        result = self.report(failure="seams", active_pa="pa13")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, "===== ALL TESTS PASSED SUCCESSFULLY! (2 / 2) =====\n")
+        self.assertNotIn("seams failure", result.stdout + result.stderr)
 
     def test_report_build_is_quiet_on_success(self):
         for target in ("test-report", "test-report-through-pa11"):

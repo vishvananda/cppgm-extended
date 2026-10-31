@@ -31,6 +31,9 @@ pa*/tests/*.check.*
 !pa*/tests/*.ref.program.exit_status
 .tmp-bsc*.cpp
 .test_counts
+.test_counts.*
+.test_failed
+.test_failed.*
 scratch/
 
 # Toolchain identity stamp; forces a relink when the active cell changes.

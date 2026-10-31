@@ -142,7 +142,7 @@ class CheckControlsTests(unittest.TestCase):
 
     def make(self, pa, *args):
         return subprocess.run(
-            ["make", "-s", "-C", str(self.root / pa), *args, "RUN_CHECK_DEPS=", "TEST_DEPS=",
+            ["make", "-s", "-C", str(self.root / pa), *args, "RUN_CHECK_DEPS=", "TEST_DEPS=", "CPPGM_TEST_RUN_ID=",
              f"CPPGM_TEST_APP={self.frontend}", f"NATIVE_REFERENCE_APP={self.backend}"],
             capture_output=True, text=True)
 

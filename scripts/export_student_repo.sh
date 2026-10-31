@@ -295,7 +295,7 @@ sanitize_student_root_makefile() {
     s/(?:^#[^\n]*\n)*^test-cells:\n(?:\t[^\n]*\n)+\n?//m;
     s/(?:^#[^\n]*\n)*^HARNESS_TESTS = \\\n(?:\t[^\n]*\n)+\n?^test-harness:\n(?:\t[^\n]*\n)+\n?//m;
     s/\b(?:audit-[a-z-]+|build-telemetry-off|test-telemetry-off|test-harness|test-cells) //g;
-    s/^\tif \[ -d pa11\/tests\/general \]; then \\\n(?:\t[^\n]*\n)*?\tfi; \\\n//m;
+    s/^\tif \[ -d pa11\/tests\/general \][^\n]*; then \\\n(?:\t[^\n]*\n)*?\tfi; \\\n//m;
   ' "$@"
 }
 
@@ -383,6 +383,7 @@ shared_scripts=(
   scripts/dump_host_eh_object_facts.pl
   scripts/ensure_reference_binaries.pl
   scripts/pa_run_check_targets.mk
+  scripts/test_run_id.mk
   scripts/run_all_tests_common.pl
   scripts/run_cpphostcompat_compile_worker.pl
   scripts/run_cpphostcompat_preproc_worker.pl
@@ -756,7 +757,7 @@ CPPGM_KEEP_FAILED_REFERENCE_STDOUT=1 make -s -C "$dest" ref-test \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
   CPPGM_TEST_RUNNER=1
-find "$dest" -type f \( -name '*.my' -o -name '*.my.*' -o -name '.test_counts' -o -name '.test_failed' \) -delete
+find "$dest" -type f \( -name '*.my' -o -name '*.my.*' -o -name '.test_counts' -o -name '.test_failed' -o -name '.test_counts.*' -o -name '.test_failed.*' \) -delete
 make -s -C "$dest" ref-test-debuginfo \
   CXX="${CXX:-g++}" \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \

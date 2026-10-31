@@ -26,6 +26,8 @@ our @EXPORT_OK = qw(
   read_env_file
   read_word_list
   resolve_host_command
+  result_suffix
+  run_result_name
   run_command_capture
   submit_cli_request
   write_file
@@ -36,6 +38,25 @@ our @EXPORT_OK = qw(
 );
 
 my %worker_has_process_group;
+
+# Producer and comparer share a make invocation's inherited run ID. Plain
+# script invocations retain their explicit suffix, and references are fixed.
+sub result_suffix
+{
+	my ($suffix) = @_;
+	return $suffix unless $suffix eq 'my' || $suffix eq 'check' || $suffix eq 'pp';
+	return run_result_name($suffix);
+}
+
+sub run_result_name
+{
+	my ($suffix) = @_;
+	my $id = $ENV{CPPGM_TEST_RUN_ID};
+	return $suffix unless defined($id) && $id ne '';
+	die "Invalid CPPGM_TEST_RUN_ID (use letters, digits, underscore or hyphen)\n"
+		unless $id =~ /\A[A-Za-z0-9][A-Za-z0-9_-]{0,79}\z/;
+	return "$suffix.$id";
+}
 
 sub progress_file_path
 {

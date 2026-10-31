@@ -1,5 +1,7 @@
 # cppgm starter makefile
 
+include scripts/test_run_id.mk
+
 GNUMAKE = $(firstword $(wildcard /opt/homebrew/opt/make/libexec/gnubin/make /usr/local/opt/make/libexec/gnubin/make))
 ifneq ($(GNUMAKE),)
 MAKE := $(GNUMAKE)
@@ -294,11 +296,12 @@ HARNESS_TESTS = \
 	scripts/tests/test_report_elf_code_shape.py \
 	scripts/tests/test_scaffold_audits.py \
 	scripts/tests/test_test_report_output.py \
+	scripts/tests/test_report_isolation.py \
 	scripts/tests/test_run_ab_compile_benchmark.py \
 	scripts/tests/test_validate_perf_regression.py
 
 test-harness:
-	@set -e; for test in $(HARNESS_TESTS); do echo "== $$test"; python3 $$test; done
+	@set -e; for test in $(HARNESS_TESTS); do echo "== $$test"; env -u CPPGM_TEST_RUN_ID python3 $$test; done
 
 # GNU make prefers the pattern rule that yields the shortest stem, so
 # `with-clang-libcxx-<target>` selects the libc++ cell rather than the
@@ -405,7 +408,9 @@ test-report-nobuild: audit-compiler-exceptions
 	export CPPGM_BUILD_TEST_TIMEOUT_SEC=$(TEST_REPORT_BUILD_TIMEOUT_SEC); \
 	ordered="$(ORDERED)"; \
 	tmpdir=$$(mktemp -d); \
-	cleanup() { rm -f pa*/.test_failed .test_counts; rm -rf "$$tmpdir"; }; \
+	parent_counts_file="$${CPPGM_TEST_COUNTS_FILE-}"; \
+	export CPPGM_TEST_COUNTS_FILE="$$tmpdir/counts"; \
+	cleanup() { rm -f pa*/"$$CPPGM_TEST_FAILURE_MARKER"; rm -rf "$$tmpdir"; }; \
 	interrupt() { \
 		if [ -n "$$output_pid" ]; then \
 			kill -TERM "$$output_pid" 2>/dev/null || true; \
@@ -421,7 +426,7 @@ test-report-nobuild: audit-compiler-exceptions
 	}; \
 	trap 'cleanup' EXIT; \
 	trap 'interrupt' INT TERM; \
-	rm -f pa*/.test_failed .test_counts; \
+	rm -f pa*/"$$CPPGM_TEST_FAILURE_MARKER"; \
 	printf '%s\n' $(ACTIVE_TEST_REPORT_PAS) > "$$tmpdir/pas.list"; \
 	xargs -P$(TEST_REPORT_ASSIGNMENT_JOBS) -I{} /bin/bash -lc '\
 		dir="$$1"; \
@@ -449,7 +454,7 @@ test-report-nobuild: audit-compiler-exceptions
 		if [ -f "$$tmpdir/$$dir.out" ] && [ ! -f "$$tmpdir/$$dir.printed" ]; then \
 			if [ ! -f "$$tmpdir/$$dir.status" ] || \
 				[ "$$(cat "$$tmpdir/$$dir.status")" -ne 0 ] || \
-				[ -f "$$dir/.test_failed" ]; then \
+				[ -f "$$dir/$$CPPGM_TEST_FAILURE_MARKER" ]; then \
 				cat "$$tmpdir/$$dir.out"; \
 			fi; \
 			: > "$$tmpdir/$$dir.printed"; \
@@ -481,15 +486,18 @@ test-report-nobuild: audit-compiler-exceptions
 	for dir in $(ACTIVE_TEST_REPORT_PAS); do \
 		emit_completed_output "$$dir"; \
 	done; \
-	if [ -d pa11/tests/general ]; then \
+	if [ -d pa11/tests/general ] && grep -qx pa11 "$$tmpdir/pas.list"; then \
 		if ! $(MAKE) -s -C pa11 test-seams > "$$tmpdir/seams.out" 2>&1; then \
 			cat "$$tmpdir/seams.out"; \
-			touch pa11/.test_failed; \
+			touch "pa11/$$CPPGM_TEST_FAILURE_MARKER"; \
 		fi; \
 	fi; \
-	passed=$$(awk '{s+=$$1} END {print s}' .test_counts 2>/dev/null || echo 0); \
-	total=$$(awk '{s+=$$2} END {print s}' .test_counts 2>/dev/null || echo 0); \
-	if ls pa*/.test_failed 1>/dev/null 2>&1; then \
+	passed=$$(awk '{s+=$$1} END {print s}' "$$CPPGM_TEST_COUNTS_FILE" 2>/dev/null || echo 0); \
+	total=$$(awk '{s+=$$2} END {print s}' "$$CPPGM_TEST_COUNTS_FILE" 2>/dev/null || echo 0); \
+	if [ -n "$$parent_counts_file" ]; then \
+		printf '%s %s\n' "$$passed" "$$total" >> "$$parent_counts_file"; \
+	fi; \
+	if [ "$$passed" -ne "$$total" ] || ls pa*/"$$CPPGM_TEST_FAILURE_MARKER" 1>/dev/null 2>&1; then \
 		echo "===== TEST SUMMARY: $$passed / $$total TESTS PASSED ====="; \
 		exit 1; \
 	elif [ "$$xargs_status" -ne 0 ]; then \
@@ -519,7 +527,7 @@ clean:
 	@for dir in $(sort $(ALL_PAS)); do \
 		$(MAKE) -C $$dir clean || exit 1; \
 	done
-	-rm -f pa*/.test_failed .test_counts
+	-rm -f pa*/.test_failed* .test_counts*
 	-rmdir $(DEV_BUILD_LOCK) 2>/dev/null || true
 
 $(ALL_PAS):

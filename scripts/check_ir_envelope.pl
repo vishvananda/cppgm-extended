@@ -15,6 +15,9 @@
 use strict;
 use warnings;
 use File::Find;
+use FindBin;
+use lib $FindBin::Bin;
+use CppgmBatchWorker qw(result_suffix);
 use POSIX qw(ceil);
 
 my $usage = "usage: check_ir_envelope.pl [--write | --require-sidecars] <tolerance-percent> <test-root>...\n";
@@ -40,10 +43,9 @@ if ($valgrind eq '')
 
 sub instruction_count
 {
-	my ($program) = @_;
+	my ($program, $base) = @_;
 	my $args = '';
-	my $args_file = $program;
-	$args_file =~ s/\.my\.program$/.args/;
+	my $args_file = "$base.args";
 	if (-f $args_file)
 	{
 		open(my $fh, '<', $args_file) or die "Unable to read $args_file: $!\n";
@@ -71,10 +73,11 @@ for my $root (@roots)
 	{
 		my $base = $test;
 		$base =~ s/\.t$//;
-		my $program = "$base.my.program";
+		my $suffix = result_suffix("my");
+		my $program = "$base.$suffix.program";
 		my $sidecar = "$base.ref.ir";
 		if (!-x $program) { ++$skipped; next; }
-		my $count = instruction_count($program);
+		my $count = instruction_count($program, $base);
 		if (!defined($count)) { ++$skipped; next; }
 		if ($write)
 		{

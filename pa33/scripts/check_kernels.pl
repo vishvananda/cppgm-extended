@@ -13,13 +13,15 @@
 use strict;
 use warnings;
 use FindBin;
+use lib "$FindBin::Bin/../../scripts";
+use CppgmBatchWorker qw(run_result_name);
 use File::Basename qw(dirname);
 use File::Path qw(make_path);
 use Getopt::Long;
 
 my $pa33 = dirname($FindBin::Bin);
 my $root = dirname($pa33);
-my %o = (compiler => "$root/dev/cppgm++", limit => 1.50, scale => 16, out => "$pa33/obj/kernels");
+my %o = (compiler => "$root/dev/cppgm++", limit => 1.50, scale => 16, out => "$pa33/obj/" . run_result_name('kernels'));
 GetOptions(\%o, 'compiler=s', 'limit=f', 'scale=i', 'out=s') && $o{limit} > 0 && $o{scale} >= 1
 	or die "usage: check_kernels.pl [--compiler C] [--limit L] [--scale N] [--out DIR]\n";
 my $kernels = "$root/pa35/scripts/kernels.pl";
@@ -77,12 +79,12 @@ print $output if $passed != $total && !%ratio;
 if ($ENV{KEEP_GOING})
 {
 	my $counts = defined($ENV{CPPGM_TEST_COUNTS_FILE}) && $ENV{CPPGM_TEST_COUNTS_FILE} ne ''
-		? $ENV{CPPGM_TEST_COUNTS_FILE} : "$root/.test_counts";
+		? $ENV{CPPGM_TEST_COUNTS_FILE} : "$root/" . run_result_name('.test_counts');
 	if (open(my $fh, '>>', $counts))
 	{
 		print $fh "$passed $total\n";
 		close($fh);
 	}
-	if ($passed != $total && open(my $failed, '>>', "$pa33/.test_failed")) { close($failed); }
+	if ($passed != $total && open(my $failed, '>>', "$pa33/" . run_result_name('.test_failed'))) { close($failed); }
 }
 exit($passed == $total ? 0 : 1);

@@ -114,7 +114,7 @@ debuginfo-lowir2native-target:
 	@if [ "$(CPPGM_SKIP_DEV_REBUILD)" = "1" ] && [ -x ../dev/lowir2native ]; then true; else $(MAKE) -C ../dev lowir2native CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX); fi
 
 test-debuginfo: debuginfo-lowiropt-target debuginfo-cppgm-target debuginfo-lowir2native-target
-	@rm -f .test_failed
+	@rm -f "$$CPPGM_TEST_FAILURE_MARKER"
 	@scripts/run_all_tests.pl scripts/lowiropt-o0.sh my $(DEBUGINFO_TEST_ROOT)/o0
 	@KEEP_GOING=1 scripts/compare_results.pl ref my $(DEBUGINFO_TEST_ROOT)/o0
 	@scripts/run_all_tests.pl scripts/cppgm-emit-lowir-g0.sh my $(DEBUGINFO_SOURCE_G0_TEST_ROOT)
@@ -141,7 +141,7 @@ test-debuginfo: debuginfo-lowiropt-target debuginfo-cppgm-target debuginfo-lowir
 	@KEEP_GOING=1 scripts/compare_results.pl ref my $(DEBUGINFO_EXECUTABLE_O1_TEST_ROOT)
 	@scripts/run_all_tests.pl scripts/cppgm-lldb-line-o2.sh my $(DEBUGINFO_EXECUTABLE_O2_TEST_ROOT)
 	@KEEP_GOING=1 scripts/compare_results.pl ref my $(DEBUGINFO_EXECUTABLE_O2_TEST_ROOT)
-	@test ! -f .test_failed
+	@test ! -f "$$CPPGM_TEST_FAILURE_MARKER"
 
 clean:
 	-rm -f $(TARGET) $(TARGET)-debug $(OBJ)/release/*.o $(OBJ)/debug/*.o

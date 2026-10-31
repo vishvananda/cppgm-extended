@@ -5,6 +5,8 @@ use warnings;
 use Cwd qw(abs_path);
 use File::Find qw(find);
 use FindBin qw($Bin);
+use lib "$Bin/../../scripts";
+use CppgmBatchWorker qw(run_result_name);
 use File::Temp qw(tempdir);
 use POSIX ();
 
@@ -265,12 +267,13 @@ sub check_mode {
 
 sub append_keep_going_summary {
   my ($passed, $total, $failed) = @_;
-  if(open(my $fh, '>>', "$repo_root/.test_counts")) {
+  my $counts = $ENV{CPPGM_TEST_COUNTS_FILE} || "$repo_root/" . run_result_name('.test_counts');
+  if(open(my $fh, '>>', $counts)) {
     print $fh "$passed $total\n";
     close($fh);
   }
   if($failed) {
-    system('touch', "$cwd/.test_failed");
+    system('touch', "$cwd/" . run_result_name('.test_failed'));
   }
 }
 

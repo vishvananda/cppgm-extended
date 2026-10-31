@@ -99,6 +99,7 @@ if (scalar(@ARGV) != 3)
 }
 
 my ($app, $suffix, $tests_root) = @ARGV;
+$suffix = CppgmBatchWorker::result_suffix($suffix);
 ensure_test_app_available($app, $suffix, $tests_root);
 my @tests = collect_tests($tests_root, qr/\.t$/);
 my $verbose = $ENV{VERBOSE} || $ENV{CPGM_TEST_VERBOSE};

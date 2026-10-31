@@ -510,7 +510,7 @@ sub build_wrapped_text_request
 		# only source (which has no main). Mirrors the batch worker
 		# (run_cpphostcompat_preproc_worker.pl) so the bucket behaves identically
 		# with and without CPPGM_BATCH_TESTS.
-		my @mode_args = ($suffix eq 'pp') ? ('-E') : ();
+		my @mode_args = ($suffix eq CppgmBatchWorker::result_suffix('pp')) ? ('-E') : ();
 		my $test_base = $test;
 		$test_base =~ s/\.t$//;
 		my $env = read_env_file("$test_base.env");
@@ -727,7 +727,7 @@ if (scalar(@ARGV) != 4)
 
 my $mode = shift(@ARGV);
 my $app = $ARGV[0];
-my $suffix = $ARGV[1];
+my $suffix = CppgmBatchWorker::result_suffix($ARGV[1]);
 my $tests = $ARGV[2];
 my $verbose = $ENV{VERBOSE} || $ENV{CPGM_TEST_VERBOSE};
 my $keep_going = $ENV{KEEP_GOING};

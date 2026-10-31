@@ -2,6 +2,9 @@
 
 use strict;
 use warnings;
+use FindBin;
+use lib "$FindBin::Bin/../../scripts";
+use CppgmBatchWorker qw(result_suffix);
 use File::Find;
 
 sub detect_jobs
@@ -152,7 +155,7 @@ if (scalar(@ARGV) != 3)
 }
 
 my $app = $ARGV[0];
-my $suffix = $ARGV[1];
+my $suffix = result_suffix($ARGV[1]);
 my $tests = $ARGV[2];
 my $jobs = detect_jobs();
 

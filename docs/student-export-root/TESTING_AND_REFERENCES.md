@@ -31,6 +31,14 @@ route each fixture to its runner. Finish with the root through target.
 Keep a real host compiler in `CPPGM_HOST_CXX` when PA34 uses
 `CXX=../dev/cppgm++`. Use a separate object root for different toolchains.
 
+Each `make` test invocation gives fixture results a unique run ID, inherited by
+its recursive makes, runners and comparers. A full report and a focused check
+can use the same fixtures concurrently: their files are named
+`x.my.<run-id>`, `x.check.<run-id>` or `x.pp.<run-id>`, with sidecars sharing
+the prefix. Report totals and failure markers are isolated too. For predictable filenames, pass
+`CPPGM_TEST_RUN_ID=debug`; an explicit empty value keeps the plain `.my` and
+`.check` names for manual workflows. Reference filenames stay fixed.
+
 ## Test locations and requirements
 
 - Required fixtures live in `paN/tests/`, in the buckets named by the handout.

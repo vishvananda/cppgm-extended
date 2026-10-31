@@ -64,6 +64,7 @@ class LowIrComparisonTest(unittest.TestCase):
                 "CPPGM_BATCH_TESTS",
                 "WRAPPED_BATCH_STDIN",
                 "CPPGM_TEST_COUNTS_FILE",
+                "CPPGM_TEST_RUN_ID",
                 "CPPGM_LOWER_CHECK_APP",
                 "CPPGM_BEHAVIOR_CHECK_APP",
                 "CPPGM_LOWIR_DIRECT_TEXT_COMPARE",
@@ -1151,7 +1152,7 @@ function @main() -> i64 [role=entry] {
                 (root / f"case.{suffix}.exit_status").write_text("EXIT_SUCCESS\n", encoding="utf-8")
             environment = os.environ.copy()
             for name in ("KEEP_GOING", "CPPGM_CHECK_AUTO_KEEP_GOING", "CPPGM_BATCH_TESTS",
-                         "WRAPPED_BATCH_STDIN", "CPPGM_TEST_COUNTS_FILE", "CPPGM_LOWER_CHECK_APP",
+                         "WRAPPED_BATCH_STDIN", "CPPGM_TEST_COUNTS_FILE", "CPPGM_TEST_RUN_ID", "CPPGM_LOWER_CHECK_APP",
                          "CPPGM_BEHAVIOR_CHECK_APP", "CPPGM_LOWIR_DIRECT_TEXT_COMPARE"):
                 environment.pop(name, None)
             environment["CPPGM_LOWIR_BEHAVIOR_APP"] = str(LOWIR2NATIVE)
