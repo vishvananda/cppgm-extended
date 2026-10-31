@@ -222,6 +222,8 @@ void FunctionLowering::lower_definition()
 		// A defaulted copy or move member: its subobjects' copies.
 		copy_members(location);
 		finish_body();
+		place_late_blocks();
+		place_terminate_landing();
 		if (!lowering_.streaming())
 			builder_.finish();
 		return;

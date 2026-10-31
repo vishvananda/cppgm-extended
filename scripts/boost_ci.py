@@ -27,6 +27,7 @@ SUITES = {
     'libs/optional/test': 74,
     'libs/proto/test': 23,
     'libs/qvm/test': 134,
+    'libs/spirit/repository/test': 8,
     'libs/type_erasure/test': 60,
     'libs/type_traits/test': 218,
     'libs/uuid/test': 80,

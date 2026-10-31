@@ -1,0 +1,36 @@
+#define AI __attribute__((always_inline))
+int destroyed;
+struct Small { long a, b; };
+struct Large { long a, b, c, d; };
+struct Token {
+  int value;
+  Token(int v) : value(v) {}
+  ~Token() { destroyed += value; }
+};
+struct ScalarCell { int value; AI int operator=(ScalarCell const& x) { value=x.value; return 19; } };
+struct VoidCell { int value; AI void operator=(VoidCell const& x) { value=x.value; } };
+struct RefCell { int value; AI RefCell& operator=(RefCell const& x) { value=x.value; return *this; } };
+struct SmallCell { int value; AI Small operator=(SmallCell const& x) { value=x.value; return Small{value,19}; } };
+struct LargeCell { int value; AI Large operator=(LargeCell const& x) { value=x.value; return Large{value,2,3,4}; } };
+struct TokenCell { int value; AI Token operator=(TokenCell const& x) { value=x.value; return Token(3); } };
+template<class T> struct Box { T member; };
+template<class T> bool check() { Box<T> a,b; a.member.value=1; b.member.value=7; a=b; return a.member.value==7; }
+struct Derived : SmallCell {};
+struct Few { TokenCell member[3]; };
+struct Many { TokenCell member[10]; };
+struct MoveCell { int value; AI Small operator=(MoveCell&& x) { value=x.value; x.value=0; return Small{value,19}; } };
+struct NativeCell { int value; __attribute__((noinline)) Large operator=(NativeCell const& x) { value=x.value; return Large{value,2,3,4}; } };
+int main() {
+  if (!check<ScalarCell>() || !check<VoidCell>() || !check<RefCell>() || !check<SmallCell>() || !check<LargeCell>() || !check<TokenCell>()) return 1;
+  if (destroyed != 3) return 2;
+  Derived a,b; a.value=1; b.value=9; a=b; if (a.value!=9) return 3;
+  Many x,y; for(int i=0;i<10;++i) { x.member[i].value=0; y.member[i].value=i; }
+  x=y; for(int i=0;i<10;++i) if(x.member[i].value!=i) return 4;
+  if (destroyed != 33) return 5;
+  Few f,g; for(int i=0;i<3;++i) { f.member[i].value=0; g.member[i].value=i+1; }
+  f=g; for(int i=0;i<3;++i) if(f.member[i].value!=i+1) return 6;
+  if (destroyed != 42) return 7;
+  Box<MoveCell> m,n; n.member.value=11; m=static_cast<Box<MoveCell>&&>(n);
+  if (m.member.value!=11 || n.member.value!=0) return 8;
+  return !check<NativeCell>();
+}

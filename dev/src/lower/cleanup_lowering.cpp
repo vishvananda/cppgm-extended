@@ -2011,7 +2011,10 @@ bool FunctionLowering::definition_may_throw()
 
 bool FunctionLowering::definition_statements_may_throw()
 {
-	if (function_->constructor && plan_may_throw(function_->inits, function_->init_count))
+	const bool assignment = (function_->implicit || function_->synthesized) &&
+		(function_->copy_kind == sema::CopyKind::CopyAssignment ||
+			function_->copy_kind == sema::CopyKind::MoveAssignment);
+	if ((function_->constructor || assignment) && plan_may_throw(function_->inits, function_->init_count))
 		return true;
 	if (const syntax::MemInitializer* written = function_->delegation)
 	{
@@ -2062,6 +2065,14 @@ bool FunctionLowering::plan_may_throw(const sema::SubobjectInit* inits, uint32_t
 				(init.constructor != nullptr && !init.constructor->trivial) || init.forwards;
 			if (runs && call_may_throw(init.constructor))
 				return true;
+			// A synthesized assignment discards each operator's result. Its
+			// destructor still runs inside the assignment's exception guard.
+			if (runs && init.constructor != nullptr && !init.constructor->constructor)
+			{
+				const sema::Type* returned = init.constructor->type->canonical->element;
+				if (!returned->is_reference() && destroyed_temporary(returned) && destructor_may_throw(returned))
+					return true;
+			}
 			if (written != nullptr)
 			{
 				for (const syntax::Expr* argument : written->arguments)

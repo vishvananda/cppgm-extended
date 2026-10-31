@@ -1,0 +1,23 @@
+extern "C" void _Exit(int);
+namespace std { typedef void (*terminate_handler)(); terminate_handler set_terminate(terminate_handler); }
+void expected_terminate();
+int destroyed;
+void expected_terminate() { _Exit(destroyed == 1 ? 0 : 3); }
+struct Token {
+  ~Token() noexcept(false) { ++destroyed; throw 17; }
+};
+struct Cell {
+  int value;
+  __attribute__((always_inline)) Token operator=(Cell const& rhs) noexcept {
+    value=rhs.value;
+    return Token{};
+  }
+};
+struct Box { Cell member; };
+int main() {
+  std::set_terminate(expected_terminate);
+  Box a,b; b.member.value=9;
+
+  try { a=b; } catch(int e) { return 2; }
+  return 1;
+}

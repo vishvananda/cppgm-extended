@@ -444,7 +444,11 @@ void FunctionLowering::call_copy(const sema::FunctionEntity* function, EntryVari
 	// default arguments (8.3.6, 12.8p2-p3), a full-expression with the
 	// call whose temporaries end with it.
 	const sema::Type* type = function->type->canonical;
-	bool temporaries = !cleanups_.empty(), defaults_throw = false;
+	const sema::Type* returned = type->element;
+	const bool indirect = !function->constructor && lowering_.indirect_result(function);
+	const bool destroyed = !function->constructor && !returned->is_reference() && destroyed_temporary(returned);
+	const bool result_throws = destroyed && destructor_may_throw(returned);
+	bool temporaries = !cleanups_.empty() || destroyed, defaults_throw = false;
 	for (uint32_t i = 1; i < type->param_count; ++i)
 	{
 		if (function->default_arguments == nullptr || function->default_arguments[i] == nullptr)
@@ -465,10 +469,21 @@ void FunctionLowering::call_copy(const sema::FunctionEntity* function, EntryVari
 	if (defaults)
 		emit_marker(lowir::Opcode::EhTry, construction_handler());
 	const ElementScope scope = begin_element_temporaries(defaults && element_temporaries(function));
-	const bool region = type->param_count > 1 && !full_expression_ && temporaries && (throws || defaults_throw) &&
-		begin_segment();
+	const bool region = (type->param_count > 1 || destroyed) && !full_expression_ && temporaries &&
+		(throws || defaults_throw || result_throws) && begin_segment();
 	const size_t first = cleanups_.size();
+	lowir::Value discarded;
+	if (indirect || destroyed)
+	{
+		if (destroyed)
+			temporary_region();
+		Place storage = Place();
+		storage.storage = temporary_storage(returned, false, lowir::SlotKind::Arg);
+		discarded = address_of(storage);
+	}
 	const size_t base = arguments_.size();
+	if (indirect)
+		arguments_.push_back(discarded);
 	arguments_.push_back(destination);
 	arguments_.push_back(source);
 	for (uint32_t i = 1; i < type->param_count; ++i)
@@ -477,11 +492,19 @@ void FunctionLowering::call_copy(const sema::FunctionEntity* function, EntryVari
 		hidden_base_arguments(base, location);
 	lowering_.demand(function, variant);
 	const lowir::Value callee = lowir::Value::symbol(lowering_.entry_symbol(function, variant));
-	const lowir::Type result = function->constructor ? lowir::Type::scalar(lowir::TypeKind::Void)
-													 : lowir::Type::scalar(lowir::TypeKind::Ptr);
+	// An assignment operator may return any type. Even when its value is
+	// discarded, its real result convention and temporary lifetime apply.
+	RValue result;
+	result.type = function->constructor ? lowir::Type::scalar(lowir::TypeKind::Void) : result_type(function);
 	if (chained && !defaults)
 		emit_marker(lowir::Opcode::EhTry, construction_handler());
-	emit_call(result, callee, base, lowir::kNoId, throws);
+	result.value = emit_call(result.type, callee, base, lowir::kNoId, throws);
+	if (destroyed)
+	{
+		if (result.type.kind() == lowir::TypeKind::Obj)
+			copy_result(result, returned, discarded, location);
+		temporary_alive(discarded, returned);
+	}
 	// (An array element's temporaries end with its scope, after their
 	// regions: end_element_temporaries.)
 	if (cleanups_.size() > first && element_scopes_ == 0)
