@@ -360,14 +360,12 @@ void FunctionEmitter::convert(const Inst& inst)
 			return;
 		}
 		const uint8_t prefix = sse_prefix(to);
-		const uint32_t negative = asm_.new_label();
+		const uint32_t direct = asm_.new_label();
+		// The common value below 2^63 takes the one branch, past the halving
+		// path, and converts directly.
 		const uint32_t done = asm_.new_label();
 		asm_.op(0, true, 0x85, 1, s.reg, RM::r(s.reg));
-		asm_.jcc_short(CC_S, negative);
-		asm_.sse(0, 0x57, d.reg, RM::r(d.reg));
-		asm_.sse(prefix, 0x2a, d.reg, RM::r(s.reg), true);
-		asm_.jmp_short(done);
-		asm_.bind(negative);
+		asm_.jcc_short(CC_NS, direct);
 		Reg t1 = R11;
 		Reg t2 = R10;
 		if (s.reg == R11)
@@ -391,6 +389,10 @@ void FunctionEmitter::convert(const Inst& inst)
 		asm_.sse(prefix, 0x58, d.reg, RM::r(d.reg));
 		asm_.bind(done);
 		return;
+		asm_.jmp_short(done);
+		asm_.bind(direct);
+		asm_.sse(0, 0x57, d.reg, RM::r(d.reg));
+		asm_.sse(prefix, 0x2a, d.reg, RM::r(s.reg), true);
 	}
 	case ConvKind::FPToSI:
 		if (from == TypeKind::F80)
