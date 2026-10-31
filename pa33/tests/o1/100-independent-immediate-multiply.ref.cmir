@@ -1,0 +1,189 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @packed
+  storage scalar i64
+  init i64 528280977415
+
+function @narrow_memory
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i32 r8, [rdi]
+    imul r8, 37
+    ret r8
+
+function @imul_register
+  abi
+    param %x -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    imul r8, rdi, 37
+    sub r8, rdi
+    ret r8
+
+function @imul_memory
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    imul r8, [rdi], -37
+    ret r8
+
+function @imul_word
+  abi
+    param %x -> rdi : u32
+    return u32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    imul.u32 r8, rdi, 0x0000000000000000ffffffff9e3779b9
+    xor r8, rdi
+    ret r8
+
+function @volatile_multiply
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 rdi, [rdi]
+    imul rdi, -37
+    ret rdi
+
+function @before_store
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, [rdi]
+    store.i64 [rdi], 0
+    imul r8, -37
+    ret r8
+
+function @wide_constant
+  abi
+    param %x -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov <gpr0>, 4294967297
+    mov r8, rdi
+    imul r8, <gpr0>
+    sub r8, rdi
+    ret r8
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr1> <gpr2> <gpr3> <gpr4> <gpr5>
+    slot $cell -> [rbp-<off0>] : i64
+    temp %wide -> [rbp-<off1>] : i64
+    temp %zero -> [rbp-<off2>] : i64
+
+  block ^entry
+    store.i64 [rbp-<off0>], -5
+    lea rdi, @packed
+    call @narrow_memory [args=(rdi)]
+    cmp.i64 rax, 259
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    mov rdi, -7
+    call @imul_register [args=(rdi)]
+    mov <gpr2>, rax
+    lea rdi, [rbp-<off0>]
+    call @imul_memory [args=(rdi)]
+    mov <gpr3>, rax
+    lea rdi, [rbp-<off0>]
+    call @volatile_multiply [args=(rdi)]
+    mov <gpr4>, rax
+    lea rdi, [rbp-<off0>]
+    call @before_store [args=(rdi)]
+    mov <gpr5>, rax
+    mov rdi, 3
+    call @wide_constant [args=(rdi)]
+    mov <gpr6>, rax
+    store.i64 [rbp-<off1>], <gpr6>
+    lea rdi, [rbp-<off0>]
+    call @imul_memory [args=(rdi)]
+    mov <gpr6>, rax
+    store.i64 [rbp-<off2>], <gpr6>
+    mov rdi, 4294967295
+    call @imul_word [args=(rdi)]
+    cmp.i64 <gpr2>, -252
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    cmp.i64 <gpr3>, 185
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    cmp.u32 rax, 2654435768
+    setne rax
+    movzx rax, rax
+    or <gpr2>, <gpr3>
+    or <gpr2>, rax
+    cmp.i64 <gpr4>, 185
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    cmp.i64 <gpr5>, 185
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    cmp.i64 [rbp-<off1>], 12884901888
+    setne r8
+    movzx r8, r8
+    cmp.i64 [rbp-<off2>], 0
+    setne r9
+    movzx r9, r9
+    or <gpr4>, <gpr5>
+    or r8, r9
+    or <gpr4>, r8
+    or <gpr2>, <gpr4>
+    or <gpr2>, <gpr1>
+    ret <gpr2>

@@ -1300,6 +1300,11 @@ void FunctionEmitter::multiply(const Inst& inst)
 	const Reg dst = inst.ops[0].reg;
 	const Operand& src = inst.ops[1];
 	const unsigned w = (inst.type == TypeKind::Void || inst.type == TypeKind::Ptr) ? 8 : register_bytes(inst.type);
+	if (inst.nops == 3)
+	{
+		asm_.imul_rri(dst, rm(src), static_cast<int32_t>(narrowed(inst.ops[2].imm, w)), w);
+		return;
+	}
 	if (src.kind != OperandKind::Imm)
 	{
 		asm_.imul_rr(dst, rm(src), w);

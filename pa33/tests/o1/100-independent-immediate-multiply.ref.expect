@@ -1,0 +1,5 @@
+# Allow any allocation meeting these local budgets; copies are avoidable.
+instructions <= 3 in @imul_register
+instructions <= 2 in @imul_memory
+# The program checks load widths and snapshots across intervening writes.
+count(store) >= 1 in @before_store

@@ -775,11 +775,28 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 		emit2(mop, width, dst, a);
 	else
 	{
-		if (a.kind == OperandKind::Mem)
-			emit2(Op::Load, kind == TypeKind::Ptr ? TypeKind::Ptr : kind, dst, a);
+		// IMUL's immediate form reads a distinct source before writing d.
+		// Preserve the existing LEA/shift choices for their cheap factors.
+		bool independent = level_ >= 1 && mop == Op::Imul && b.kind == OperandKind::Imm && fits_imm32(b) &&
+			(a.kind == OperandKind::Reg || (a.kind == OperandKind::Mem && width == kind));
+		if (independent)
+		{
+			int64_t odd = b.imm > 0 ? b.imm : 0;
+			while (odd != 0 && (odd & 1) == 0)
+				odd >>= 1;
+			independent = !((width == TypeKind::I64 && (odd == 1 || odd == 3 || odd == 5 || odd == 9)) ||
+				((width == TypeKind::U32 || width == TypeKind::I32) && odd == 1));
+		}
+		if (independent)
+			emit3(Op::Imul, width, dst, a, b);
 		else
-			load_into(d, a, TypeKind::I64);
-		emit2(mop, width, dst, b);
+		{
+			if (a.kind == OperandKind::Mem)
+				emit2(Op::Load, kind == TypeKind::Ptr ? TypeKind::Ptr : kind, dst, a);
+			else
+				load_into(d, a, TypeKind::I64);
+			emit2(mop, width, dst, b);
+		}
 	}
 	// A result known to fit its type non-negatively (fits_; an unsigned one
 	// below its width, which a wrapped result would claim), or one computed
