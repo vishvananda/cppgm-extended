@@ -239,7 +239,7 @@ const int32_t kGprCapacity = 12;
 // executions in a loop, one outside loops.
 const uint64_t kOpenWeight = 2 * kWeightScale;
 const uint64_t kOpenWeightStraight = 2 * kWeightScale;
-const int32_t kXmmCapacity = 8;
+const int32_t kXmmCapacity = 14;
 // The loop discovery's work budget per block, plus a fixed allowance.
 const uint64_t kLoopStepsPerBlock = 16;
 const uint64_t kLoopSlack = 4096;
@@ -259,10 +259,11 @@ inline int32_t write_slot(int32_t base, int32_t pos)
 	return base + 3 + 2 * pos;
 }
 
-// An integer Binary or Unary computes its result from its first operand.
+// An integer, f32 or f64 Binary or Unary computes its result from its first
+// operand.
 bool ties_first_operand(const Instruction& inst)
 {
-	return (inst.op == Opcode::Binary || inst.op == Opcode::Unary) && !inst.type.is_float() &&
+	return (inst.op == Opcode::Binary || inst.op == Opcode::Unary) && inst.type.kind() != TypeKind::F80 &&
 		inst.type.kind() != TypeKind::I128;
 }
 
@@ -1386,8 +1387,8 @@ void FunctionSelector::emission_facts()
 }
 
 // Whether value g's definition computes it in its own register from its
-// first operand `from`, which it reads nowhere else: an integer
-// Binary/Unary (not a division) or an integer extension or truncation.
+// first operand `from`, which it reads nowhere else: a Binary/Unary (not an
+// integer division) or an integer extension or truncation.
 bool FunctionSelector::computed_from(uint32_t g, uint32_t from) const
 {
 	const lowir::FunctionBody& body = *body_;
@@ -1408,14 +1409,16 @@ bool FunctionSelector::computed_from(uint32_t g, uint32_t from) const
 	{
 		const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);
 		const Value second = resolve(inst.ops[1]);
-		if (op == lowir::BinaryOp::Div || op == lowir::BinaryOp::Mod || op == lowir::BinaryOp::UDiv ||
-			op == lowir::BinaryOp::UMod || (second.kind == ValueKind::Temp && second.index == from))
+		if ((!inst.type.is_float() &&
+				(op == lowir::BinaryOp::Div || op == lowir::BinaryOp::Mod || op == lowir::BinaryOp::UDiv ||
+					op == lowir::BinaryOp::UMod)) ||
+			(second.kind == ValueKind::Temp && second.index == from))
 			return false;
 	}
 	return true;
 }
 
-// Hints `reg` to block-local value v of block b and, through each integer
+// Hints `reg` to block-local value v of block b and, through each
 // Binary/Unary first operand that dies at its use, to the values it is
 // computed from (a bounded chain).
 void FunctionSelector::hint_chain(Value v, uint32_t b, Reg reg)

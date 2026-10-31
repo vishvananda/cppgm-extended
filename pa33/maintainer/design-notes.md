@@ -67,7 +67,7 @@ entry; blocks that only lead to a throw, resume or noreturn call weigh
 nothing). A candidate takes one register for all its ranges: one that no
 instruction inside them clobbers and no assigned range overlaps, and that
 leaves room at every point for the block-local values live there (12 GPRs;
-`xmm0` to `xmm7`). It prefers its phi web's register (a web whose ranges
+`xmm0` to `xmm13`). It prefers its phi web's register (a web whose ranges
 are disjoint shares one register, so its edge transfers move nothing), its
 tied first operand's, a parameter's incoming register, `rax` or `xmm0` for
 a call result, a return or argument register it will be moved to, then

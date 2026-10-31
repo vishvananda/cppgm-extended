@@ -23,7 +23,7 @@ const Reg kFrame = 0xfd;
 const Reg kSelectScratch = R10;
 const Reg kEmitScratch = R11;
 const uint32_t kAllocatableGprs = (kCallerSavedGprs | kCalleeSavedGprs) & ~((1u << R10) | (1u << R11));
-const uint32_t kAllocatableXmms = 0x00ff0000u; // xmm0-xmm7
+const uint32_t kAllocatableXmms = 0x3fff0000u; // xmm0-xmm13 (xmm14 and xmm15 are the emission scratch)
 
 // A memory operand. With `symbol` set the address is PC-relative to that
 // symbol (base and index absent); otherwise base is a GPR (RBP for frame

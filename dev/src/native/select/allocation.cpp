@@ -683,7 +683,7 @@ Reg FunctionSelector::allocate(uint32_t temp, uint32_t exclude, Reg prefer0, Reg
 			return prefs[k];
 	if (t.cls == VClass::Xmm)
 	{
-		for (Reg r = XMM0; r < XMM0 + 8; ++r)
+		for (Reg r = XMM0; r < XMM0 + 14; ++r)
 			if (allowed & (1u << r))
 				return r;
 		return kNoReg;

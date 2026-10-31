@@ -30,6 +30,13 @@ that paid there in the course solution:
   fails, split it: keep the register outside a loop it crosses without a use,
   or outside just the blocks that clobber or crowd it, rather than giving the
   value a frame home everywhere.
+- Allocate floating values as carefully as integers. Every XMM register except
+  your scratch can hold one, though none survives a call. SSE arithmetic
+  overwrites its first operand, so a result that takes the register of a first
+  operand dying there needs no copy. A subtraction or division cannot do that
+  with its second operand, which copying the first would destroy. In the
+  floating-point loops profiled for this, reloads and copies were the largest
+  difference from GCC's code.
 - Let a phi's sources and result share a register when their ranges do not
   overlap, so its edge transfers move nothing. A transfer on a conditional
   edge is executed in that edge's block, not at the end of the predecessor.

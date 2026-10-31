@@ -834,7 +834,12 @@ void FunctionSelector::emit_float_binary(const Instruction& inst)
 		emit3(ops[sub], kind, memory_result(inst), a, b);
 		return;
 	}
-	const Reg d = result_reg(inst, dying_reg(inst.ops[0]), sub == 0 || sub == 2 ? dying_reg(inst.ops[1]) : kNoReg);
+	// Add and multiply commute. A subtraction or division reads its second
+	// operand after the copy of the first, so the result takes another
+	// register.
+	const bool commutes = sub == 0 || sub == 2;
+	const uint32_t second = !commutes && b.kind == OperandKind::Reg ? 1u << b.reg : 0;
+	const Reg d = result_reg(inst, dying_reg(inst.ops[0]), commutes ? dying_reg(inst.ops[1]) : kNoReg, second);
 	emit3(ops[sub], kind, Operand::make_reg(d), a, b);
 	finish_result(inst, d);
 }

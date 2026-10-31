@@ -1,0 +1,3 @@
+# Fourteen live values and a chain of in-place results need no memory; allow
+# any allocation that meets this local instruction budget.
+instructions <= 48 in @pressure

@@ -1,0 +1,271 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @opaque
+  abi
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-<off0>] : f64
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    fmul.f64 xmm0, [rbp-<off0>], 0.25
+    ret xmm0
+
+function @pressure
+  abi
+    param %p -> rdi : ptr
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.f64 xmm0, [rdi]
+    fmov.f64 xmm1, [rdi+<off0>]
+    fmov.f64 <xmm0>, [rdi+<off1>]
+    fmov.f64 <xmm1>, [rdi+<off2>]
+    fmov.f64 <xmm2>, [rdi+<off3>]
+    fmov.f64 <xmm3>, [rdi+<off4>]
+    fmov.f64 <xmm4>, [rdi+<off5>]
+    fmov.f64 <xmm5>, [rdi+<off6>]
+    fmov.f64 xmm8, [rdi+<off7>]
+    fmov.f64 xmm9, [rdi+<off8>]
+    fmov.f64 xmm10, [rdi+<off9>]
+    fmov.f64 xmm11, [rdi+<off10>]
+    fmov.f64 xmm12, [rdi+<off11>]
+    fmov.f64 xmm13, [rdi+<off12>]
+    fsub.f64 xmm13, xmm13, xmm12
+    fsub.f64 xmm13, xmm13, xmm11
+    fsub.f64 xmm13, xmm13, xmm10
+    fsub.f64 xmm13, xmm13, xmm9
+    fsub.f64 xmm13, xmm13, xmm8
+    fsub.f64 xmm13, xmm13, <xmm5>
+    fsub.f64 xmm13, xmm13, <xmm4>
+    fsub.f64 xmm13, xmm13, <xmm3>
+    fsub.f64 xmm13, xmm13, <xmm2>
+    fsub.f64 xmm13, xmm13, <xmm1>
+    fsub.f64 xmm13, xmm13, <xmm0>
+    fsub.f64 xmm13, xmm13, xmm1
+    fsub.f64 xmm13, xmm13, xmm0
+    fdiv.f64 xmm0, xmm0, xmm1
+    fdiv.f64 xmm0, xmm0, <xmm0>
+    fdiv.f64 xmm0, xmm0, <xmm1>
+    fdiv.f64 xmm0, xmm0, <xmm2>
+    fdiv.f64 xmm0, xmm0, <xmm3>
+    fdiv.f64 xmm0, xmm0, <xmm4>
+    fdiv.f64 xmm0, xmm0, <xmm5>
+    fdiv.f64 xmm0, xmm0, xmm8
+    fdiv.f64 xmm0, xmm0, xmm9
+    fdiv.f64 xmm0, xmm0, xmm10
+    fdiv.f64 xmm0, xmm0, xmm11
+    fdiv.f64 xmm0, xmm0, xmm12
+    fmul.f64 xmm0, xmm0, 3.022314549036573e+23
+    fadd.f64 xmm0, xmm13, xmm0
+    ret xmm0
+
+function @across_call
+  abi
+    param %p -> rdi : ptr
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    temp %x0 -> [rbp-<off0>] : f64
+    temp %x1 -> [rbp-<off1>] : f64
+    temp %x2 -> [rbp-<off2>] : f64
+    temp %x3 -> [rbp-<off3>] : f64
+    temp %x4 -> [rbp-<off4>] : f64
+    temp %x5 -> [rbp-<off5>] : f64
+    temp %x6 -> [rbp-<off6>] : f64
+    temp %x7 -> [rbp-<off7>] : f64
+    temp %x8 -> [rbp-<off8>] : f64
+    temp %x9 -> [rbp-<off9>] : f64
+    temp %x10 -> [rbp-<off10>] : f64
+    temp %x11 -> [rbp-<off11>] : f64
+    temp %x12 -> [rbp-<off12>] : f64
+    temp %x13 -> [rbp-<off13>] : f64
+
+  block ^entry
+    fmov.f64 xmm14, [rdi]
+    fmov.f64 [rbp-<off0>], xmm14
+    fmov.f64 xmm14, [rdi+<off0>]
+    fmov.f64 [rbp-<off1>], xmm14
+    fmov.f64 xmm14, [rdi+<off1>]
+    fmov.f64 [rbp-<off2>], xmm14
+    fmov.f64 xmm14, [rdi+<off2>]
+    fmov.f64 [rbp-<off3>], xmm14
+    fmov.f64 xmm14, [rdi+<off3>]
+    fmov.f64 [rbp-<off4>], xmm14
+    fmov.f64 xmm14, [rdi+<off4>]
+    fmov.f64 [rbp-<off5>], xmm14
+    fmov.f64 xmm14, [rdi+<off5>]
+    fmov.f64 [rbp-<off6>], xmm14
+    fmov.f64 xmm14, [rdi+<off6>]
+    fmov.f64 [rbp-<off7>], xmm14
+    fmov.f64 xmm14, [rdi+<off7>]
+    fmov.f64 [rbp-<off8>], xmm14
+    fmov.f64 xmm14, [rdi+<off8>]
+    fmov.f64 [rbp-<off9>], xmm14
+    fmov.f64 xmm14, [rdi+<off9>]
+    fmov.f64 [rbp-<off10>], xmm14
+    fmov.f64 xmm14, [rdi+<off10>]
+    fmov.f64 [rbp-<off11>], xmm14
+    fmov.f64 xmm14, [rdi+<off11>]
+    fmov.f64 [rbp-<off12>], xmm14
+    fmov.f64 xmm14, [rdi+<off12>]
+    fmov.f64 [rbp-<off13>], xmm14
+    fmov.f64 xmm0, [rbp-<off0>]
+    call @opaque [args=(xmm0)]
+    fsub.f64 xmm1, [rbp-<off13>], [rbp-<off12>]
+    fsub.f64 xmm1, xmm1, [rbp-<off11>]
+    fsub.f64 xmm1, xmm1, [rbp-<off10>]
+    fsub.f64 xmm1, xmm1, [rbp-<off9>]
+    fsub.f64 xmm1, xmm1, [rbp-<off8>]
+    fsub.f64 xmm1, xmm1, [rbp-<off7>]
+    fsub.f64 xmm1, xmm1, [rbp-<off6>]
+    fsub.f64 xmm1, xmm1, [rbp-<off5>]
+    fsub.f64 xmm1, xmm1, [rbp-<off4>]
+    fsub.f64 xmm1, xmm1, [rbp-<off3>]
+    fsub.f64 xmm1, xmm1, [rbp-<off2>]
+    fsub.f64 xmm1, xmm1, [rbp-<off1>]
+    fsub.f64 xmm1, xmm1, [rbp-<off0>]
+    fdiv.f64 <xmm0>, [rbp-<off0>], [rbp-<off1>]
+    fdiv.f64 <xmm0>, <xmm0>, [rbp-<off2>]
+    fdiv.f64 <xmm0>, <xmm0>, [rbp-<off3>]
+    fdiv.f64 <xmm0>, <xmm0>, [rbp-<off4>]
+    fdiv.f64 <xmm0>, <xmm0>, [rbp-<off5>]
+    fdiv.f64 <xmm0>, <xmm0>, [rbp-<off6>]
+    fdiv.f64 <xmm0>, <xmm0>, [rbp-<off7>]
+    fdiv.f64 <xmm0>, <xmm0>, [rbp-<off8>]
+    fdiv.f64 <xmm0>, <xmm0>, [rbp-<off9>]
+    fdiv.f64 <xmm0>, <xmm0>, [rbp-<off10>]
+    fdiv.f64 <xmm0>, <xmm0>, [rbp-<off11>]
+    fdiv.f64 <xmm0>, <xmm0>, [rbp-<off12>]
+    fmul.f64 <xmm0>, <xmm0>, 3.022314549036573e+23
+    fadd.f64 xmm1, xmm1, <xmm0>
+    fadd.f64 xmm0, xmm1, xmm0
+    ret xmm0
+
+function @in_place
+  abi
+    param %p -> rdi : ptr
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-<off0>] : f64
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    fmov.f64 xmm0, [rdi]
+    fsub.f64 xmm0, xmm0, [rbp-<off0>]
+    fdiv.f64 xmm0, xmm0, [rbp-<off0>]
+    fmul.f64 xmm0, xmm0, [rbp-<off0>]
+    ret xmm0
+
+function @keeps_numerator
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %a -> [rbp-<off0>] : f64
+    param-slot %b -> [rbp-<off1>] : f64
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    fmov.f64 [rbp-<off1>], xmm1
+    fadd.f64 xmm0, [rbp-<off1>], 1.0
+    fdiv.f64 xmm1, [rbp-<off0>], xmm0
+    fadd.f64 xmm1, xmm1, [rbp-<off0>]
+    ret xmm1
+
+function @keeps_minuend
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    return f32 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %a -> [rbp-<off0>] : f32
+    param-slot %b -> [rbp-<off1>] : f32
+
+  block ^entry
+    fmov.f32 [rbp-<off0>], xmm0
+    fmov.f32 [rbp-<off1>], xmm1
+    fadd.f32 xmm0, [rbp-<off1>], 1.0f
+    fsub.f32 xmm1, [rbp-<off0>], xmm0
+    fmul.f32 xmm1, xmm1, [rbp-<off0>]
+    ret xmm1
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3>
+    slot $cells -> [rbp-<off13>] : obj<112x8>
+
+  block ^entry
+    mov r8, 0
+    fmov.f64 xmm0, 1.0
+
+  block ^fill
+    fmov.f64 [rbp+r8*8-<off0>], xmm0
+    fmul.f64 xmm0, xmm0, 2.0
+    add r8, 1
+    cmp.i64 r8, 14
+    jb ^fill
+
+  block ^check
+    lea rdi, [rbp-<off13>]
+    call @pressure [args=(rdi)]
+    fne.f64 <gpr0>, xmm0, 2.0
+    lea rdi, [rbp-<off13>]
+    call @across_call [args=(rdi)]
+    fne.f64 <gpr1>, xmm0, 2.25
+    lea rdi, [rbp-<off13>]
+    fmov.f64 xmm0, 4.0
+    call @in_place [args=(rdi,xmm0)]
+    fne.f64 <gpr2>, xmm0, -3.0
+    fmov.f64 xmm0, 6.0
+    fmov.f64 xmm1, 2.0
+    call @keeps_numerator [args=(xmm0,xmm1)]
+    fne.f64 <gpr3>, xmm0, 8.0
+    fmov.f32 xmm0, 5.0f
+    fmov.f32 xmm1, 2.0f
+    call @keeps_minuend [args=(xmm0,xmm1)]
+    fne.f32 r8, xmm0, 1e+01f
+    or <gpr0>, <gpr1>
+    or <gpr2>, <gpr3>
+    or <gpr0>, <gpr2>
+    or <gpr0>, r8
+    sext.i32 <gpr0>
+    ret <gpr0>

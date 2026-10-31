@@ -1,0 +1,271 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @opaque
+  abi
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 64
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-8] : f64
+
+  block ^entry
+    fmov.f64 [rbp-8], xmm0
+    fmul.f64 xmm0, [rbp-8], 0.25
+    ret xmm0
+
+function @pressure
+  abi
+    param %p -> rdi : ptr
+    return f64 -> xmm0
+  frame
+    stack_size 48
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.f64 xmm0, [rdi]
+    fmov.f64 xmm1, [rdi+8]
+    fmov.f64 xmm2, [rdi+16]
+    fmov.f64 xmm3, [rdi+24]
+    fmov.f64 xmm4, [rdi+32]
+    fmov.f64 xmm5, [rdi+40]
+    fmov.f64 xmm6, [rdi+48]
+    fmov.f64 xmm7, [rdi+56]
+    fmov.f64 xmm8, [rdi+64]
+    fmov.f64 xmm9, [rdi+72]
+    fmov.f64 xmm10, [rdi+80]
+    fmov.f64 xmm11, [rdi+88]
+    fmov.f64 xmm12, [rdi+96]
+    fmov.f64 xmm13, [rdi+104]
+    fsub.f64 xmm13, xmm13, xmm12
+    fsub.f64 xmm13, xmm13, xmm11
+    fsub.f64 xmm13, xmm13, xmm10
+    fsub.f64 xmm13, xmm13, xmm9
+    fsub.f64 xmm13, xmm13, xmm8
+    fsub.f64 xmm13, xmm13, xmm7
+    fsub.f64 xmm13, xmm13, xmm6
+    fsub.f64 xmm13, xmm13, xmm5
+    fsub.f64 xmm13, xmm13, xmm4
+    fsub.f64 xmm13, xmm13, xmm3
+    fsub.f64 xmm13, xmm13, xmm2
+    fsub.f64 xmm13, xmm13, xmm1
+    fsub.f64 xmm13, xmm13, xmm0
+    fdiv.f64 xmm0, xmm0, xmm1
+    fdiv.f64 xmm0, xmm0, xmm2
+    fdiv.f64 xmm0, xmm0, xmm3
+    fdiv.f64 xmm0, xmm0, xmm4
+    fdiv.f64 xmm0, xmm0, xmm5
+    fdiv.f64 xmm0, xmm0, xmm6
+    fdiv.f64 xmm0, xmm0, xmm7
+    fdiv.f64 xmm0, xmm0, xmm8
+    fdiv.f64 xmm0, xmm0, xmm9
+    fdiv.f64 xmm0, xmm0, xmm10
+    fdiv.f64 xmm0, xmm0, xmm11
+    fdiv.f64 xmm0, xmm0, xmm12
+    fmul.f64 xmm0, xmm0, 3.022314549036573e+23
+    fadd.f64 xmm0, xmm13, xmm0
+    ret xmm0
+
+function @across_call
+  abi
+    param %p -> rdi : ptr
+    return f64 -> xmm0
+  frame
+    stack_size 160
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    temp %x0 -> [rbp-8] : f64
+    temp %x1 -> [rbp-16] : f64
+    temp %x2 -> [rbp-24] : f64
+    temp %x3 -> [rbp-32] : f64
+    temp %x4 -> [rbp-40] : f64
+    temp %x5 -> [rbp-48] : f64
+    temp %x6 -> [rbp-56] : f64
+    temp %x7 -> [rbp-64] : f64
+    temp %x8 -> [rbp-72] : f64
+    temp %x9 -> [rbp-80] : f64
+    temp %x10 -> [rbp-88] : f64
+    temp %x11 -> [rbp-96] : f64
+    temp %x12 -> [rbp-104] : f64
+    temp %x13 -> [rbp-112] : f64
+
+  block ^entry
+    fmov.f64 xmm14, [rdi]
+    fmov.f64 [rbp-8], xmm14
+    fmov.f64 xmm14, [rdi+8]
+    fmov.f64 [rbp-16], xmm14
+    fmov.f64 xmm14, [rdi+16]
+    fmov.f64 [rbp-24], xmm14
+    fmov.f64 xmm14, [rdi+24]
+    fmov.f64 [rbp-32], xmm14
+    fmov.f64 xmm14, [rdi+32]
+    fmov.f64 [rbp-40], xmm14
+    fmov.f64 xmm14, [rdi+40]
+    fmov.f64 [rbp-48], xmm14
+    fmov.f64 xmm14, [rdi+48]
+    fmov.f64 [rbp-56], xmm14
+    fmov.f64 xmm14, [rdi+56]
+    fmov.f64 [rbp-64], xmm14
+    fmov.f64 xmm14, [rdi+64]
+    fmov.f64 [rbp-72], xmm14
+    fmov.f64 xmm14, [rdi+72]
+    fmov.f64 [rbp-80], xmm14
+    fmov.f64 xmm14, [rdi+80]
+    fmov.f64 [rbp-88], xmm14
+    fmov.f64 xmm14, [rdi+88]
+    fmov.f64 [rbp-96], xmm14
+    fmov.f64 xmm14, [rdi+96]
+    fmov.f64 [rbp-104], xmm14
+    fmov.f64 xmm14, [rdi+104]
+    fmov.f64 [rbp-112], xmm14
+    fmov.f64 xmm0, [rbp-8]
+    call @opaque [args=(xmm0)]
+    fsub.f64 xmm1, [rbp-112], [rbp-104]
+    fsub.f64 xmm1, xmm1, [rbp-96]
+    fsub.f64 xmm1, xmm1, [rbp-88]
+    fsub.f64 xmm1, xmm1, [rbp-80]
+    fsub.f64 xmm1, xmm1, [rbp-72]
+    fsub.f64 xmm1, xmm1, [rbp-64]
+    fsub.f64 xmm1, xmm1, [rbp-56]
+    fsub.f64 xmm1, xmm1, [rbp-48]
+    fsub.f64 xmm1, xmm1, [rbp-40]
+    fsub.f64 xmm1, xmm1, [rbp-32]
+    fsub.f64 xmm1, xmm1, [rbp-24]
+    fsub.f64 xmm1, xmm1, [rbp-16]
+    fsub.f64 xmm1, xmm1, [rbp-8]
+    fdiv.f64 xmm2, [rbp-8], [rbp-16]
+    fdiv.f64 xmm2, xmm2, [rbp-24]
+    fdiv.f64 xmm2, xmm2, [rbp-32]
+    fdiv.f64 xmm2, xmm2, [rbp-40]
+    fdiv.f64 xmm2, xmm2, [rbp-48]
+    fdiv.f64 xmm2, xmm2, [rbp-56]
+    fdiv.f64 xmm2, xmm2, [rbp-64]
+    fdiv.f64 xmm2, xmm2, [rbp-72]
+    fdiv.f64 xmm2, xmm2, [rbp-80]
+    fdiv.f64 xmm2, xmm2, [rbp-88]
+    fdiv.f64 xmm2, xmm2, [rbp-96]
+    fdiv.f64 xmm2, xmm2, [rbp-104]
+    fmul.f64 xmm2, xmm2, 3.022314549036573e+23
+    fadd.f64 xmm1, xmm1, xmm2
+    fadd.f64 xmm0, xmm1, xmm0
+    ret xmm0
+
+function @in_place
+  abi
+    param %p -> rdi : ptr
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 64
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %x -> [rbp-8] : f64
+
+  block ^entry
+    fmov.f64 [rbp-8], xmm0
+    fmov.f64 xmm0, [rdi]
+    fsub.f64 xmm0, xmm0, [rbp-8]
+    fdiv.f64 xmm0, xmm0, [rbp-8]
+    fmul.f64 xmm0, xmm0, [rbp-8]
+    ret xmm0
+
+function @keeps_numerator
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 64
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %a -> [rbp-8] : f64
+    param-slot %b -> [rbp-16] : f64
+
+  block ^entry
+    fmov.f64 [rbp-8], xmm0
+    fmov.f64 [rbp-16], xmm1
+    fadd.f64 xmm0, [rbp-16], 1.0
+    fdiv.f64 xmm1, [rbp-8], xmm0
+    fadd.f64 xmm1, xmm1, [rbp-8]
+    ret xmm1
+
+function @keeps_minuend
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    return f32 -> xmm0
+  frame
+    stack_size 64
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %a -> [rbp-8] : f32
+    param-slot %b -> [rbp-16] : f32
+
+  block ^entry
+    fmov.f32 [rbp-8], xmm0
+    fmov.f32 [rbp-16], xmm1
+    fadd.f32 xmm0, [rbp-16], 1.0f
+    fsub.f32 xmm1, [rbp-8], xmm0
+    fmul.f32 xmm1, xmm1, [rbp-8]
+    ret xmm1
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 192
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14
+    slot $cells -> [rbp-112] : obj<112x8>
+
+  block ^entry
+    mov r8, 0
+    fmov.f64 xmm0, 1.0
+
+  block ^fill
+    fmov.f64 [rbp+r8*8-112], xmm0
+    fmul.f64 xmm0, xmm0, 2.0
+    add r8, 1
+    cmp.i64 r8, 14
+    jb ^fill
+
+  block ^check
+    lea rdi, [rbp-112]
+    call @pressure [args=(rdi)]
+    fne.f64 rbx, xmm0, 2.0
+    lea rdi, [rbp-112]
+    call @across_call [args=(rdi)]
+    fne.f64 r12, xmm0, 2.25
+    lea rdi, [rbp-112]
+    fmov.f64 xmm0, 4.0
+    call @in_place [args=(rdi,xmm0)]
+    fne.f64 r13, xmm0, -3.0
+    fmov.f64 xmm0, 6.0
+    fmov.f64 xmm1, 2.0
+    call @keeps_numerator [args=(xmm0,xmm1)]
+    fne.f64 r14, xmm0, 8.0
+    fmov.f32 xmm0, 5.0f
+    fmov.f32 xmm1, 2.0f
+    call @keeps_minuend [args=(xmm0,xmm1)]
+    fne.f32 r8, xmm0, 1e+01f
+    or rbx, r12
+    or r13, r14
+    or rbx, r13
+    or rbx, r8
+    sext.i32 rbx
+    ret rbx
