@@ -434,6 +434,8 @@ void FunctionSelector::emit_index(const Instruction& inst)
 	// value_bytes bounds element sizes below 2^31: an imm32 multiplier.
 	if (size != 1)
 		emit2(Op::Imul, TypeKind::I64, Operand::make_reg(d), Operand::make_imm(size));
+	if (const int32_t shift = index_shift(inst))
+		emit2(Op::Add, TypeKind::I64, Operand::make_reg(d), Operand::make_imm(static_cast<int64_t>(shift) * size));
 	if (base.kind == OperandKind::Symbol)
 	{
 		// The symbol's address forms in the scratch register the result

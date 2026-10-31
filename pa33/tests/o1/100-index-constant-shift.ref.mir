@@ -1,0 +1,345 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @table
+  storage data
+  item i64 10
+  item i64 20
+  item i64 30
+  item i64 40
+
+function @neighbors
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, [rdi+rsi*8+8]
+    sub r8, [rdi+rsi*8-8]
+    ret r8
+
+function @byte_scaled
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 rax, [rdi+rsi*8-8]
+    ret rax
+
+function @shifted_bytes
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 rax, [rdi+rsi*8+16]
+    ret rax
+
+function @negative_literal
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i32 rax, [rdi+rsi*4-8]
+    ret rax
+
+function @literal_first
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u16 rax, [rdi+rsi*2+2]
+    ret rax
+
+function @other_block
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    param %which -> rdx : i1
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea r8, [rdi+rsi*8+8]
+    cmp.i1 rdx, 0
+    jne ^read
+
+  block ^done
+    sub r8, rdi
+    ret r8
+
+  block ^read
+    load.i64 rax, [r8]
+    ret rax
+
+function @read_as_value
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add rsi, 1
+    mov r8, rsi
+    add r8, [rdi+rsi*8]
+    ret r8
+
+function @scale_kept
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add rsi, 1
+    imul rsi, 3
+    lea rsi, [rdi+rsi*8]
+    sub rsi, rdi
+    ret rsi
+
+function @narrow_wraps
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add rsi, 1
+    sext.i32 rsi
+    lea rsi, [rdi+rsi]
+    sub rsi, rdi
+    ret rsi
+
+function @wide_element
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add rsi, 1
+    imul rsi, 12
+    add rsi, rdi
+    sub rsi, rdi
+    ret rsi
+
+function @symbol_base
+  abi
+    param %i -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r8, @table
+    load.i64 rax, [r8+rdi*8+8]
+    ret rax
+
+function @frame_base
+  abi
+    param %i -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $cells -> [rbp-32] : obj<32x8>
+
+  block ^entry
+    store.i64 [rbp-32], 5
+    store.i64 [rbp-24], 6
+    store.i64 [rbp-16], 7
+    store.i64 [rbp-8], 8
+    load.i64 rax, [rbp+rdi*8-16]
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 112
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    temp %bad_f -> [rbp-8] : i64
+    temp %bad_g -> [rbp-16] : i64
+    temp %bad_h -> [rbp-24] : i64
+    temp %bad_i -> [rbp-32] : i64
+    temp %bad_j -> [rbp-40] : i64
+    temp %bad_k -> [rbp-48] : i64
+    temp %bad_l -> [rbp-56] : i64
+    temp %bad_m -> [rbp-64] : i64
+
+  block ^entry
+    lea rdi, @table
+    mov rsi, 1
+    call @neighbors [args=(rsi,rdi)]
+    cmp.i64 rax, 20
+    setne rbx
+    movzx rbx, rbx
+    lea rdi, @table
+    mov rsi, 3
+    call @byte_scaled [args=(rsi,rdi)]
+    cmp.i64 rax, 30
+    setne r12
+    movzx r12, r12
+    lea rdi, @table
+    mov rsi, 1
+    call @shifted_bytes [args=(rsi,rdi)]
+    cmp.i64 rax, 40
+    setne r13
+    movzx r13, r13
+    lea rdi, @table
+    mov rsi, 6
+    call @negative_literal [args=(rsi,rdi)]
+    cmp.i64 rax, 30
+    setne r14
+    movzx r14, r14
+    lea rdi, @table
+    mov rsi, 7
+    call @literal_first [args=(rsi,rdi)]
+    cmp.i64 rax, 30
+    setne r15
+    movzx r15, r15
+    lea rdi, @table
+    mov rsi, 1
+    mov rdx, 1
+    call @other_block [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 30
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-8], r10
+    lea rdi, @table
+    mov rsi, 1
+    mov rdx, 0
+    call @other_block [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 16
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-16], r10
+    lea rdi, @table
+    mov rsi, 0
+    call @read_as_value [args=(rsi,rdi)]
+    cmp.i64 rax, 21
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-24], r10
+    lea rdi, @table
+    mov rsi, 2
+    call @scale_kept [args=(rsi,rdi)]
+    cmp.i64 rax, 72
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-32], r10
+    lea rdi, @table
+    mov rsi, 2147483647
+    call @narrow_wraps [args=(rsi,rdi)]
+    cmp.i64 rax, -2147483648
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-40], r10
+    lea rdi, @table
+    mov rsi, 2
+    call @wide_element [args=(rsi,rdi)]
+    cmp.i64 rax, 36
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-48], r10
+    mov rdi, 1
+    call @symbol_base [args=(rdi)]
+    cmp.i64 rax, 30
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-56], r10
+    mov rdi, 1
+    call @frame_base [args=(rdi)]
+    cmp.i64 rax, 8
+    setne r10
+    movzx r10, r10
+    store.i64 [rbp-64], r10
+    lea rdi, @table+16
+    mov rsi, -1
+    call @neighbors [args=(rsi,rdi)]
+    cmp.i64 rax, 20
+    setne rax
+    movzx rax, rax
+    or rbx, r12
+    or rbx, r13
+    or rbx, r14
+    or rbx, r15
+    or rbx, [rbp-8]
+    or rbx, [rbp-16]
+    or rbx, [rbp-24]
+    or rbx, [rbp-32]
+    or rbx, [rbp-40]
+    or rbx, [rbp-48]
+    or rbx, [rbp-56]
+    or rbx, [rbp-64]
+    or rbx, rax
+    ret rbx

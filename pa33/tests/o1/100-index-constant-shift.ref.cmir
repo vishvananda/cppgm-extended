@@ -1,0 +1,345 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @table
+  storage data
+  item i64 10
+  item i64 20
+  item i64 30
+  item i64 40
+
+function @neighbors
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, [rdi+rsi*8+<off0>]
+    sub r8, [rdi+rsi*8-<off0>]
+    ret r8
+
+function @byte_scaled
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 rax, [rdi+rsi*8-<off0>]
+    ret rax
+
+function @shifted_bytes
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 rax, [rdi+rsi*8+<off1>]
+    ret rax
+
+function @negative_literal
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i32 rax, [rdi+rsi*4-<off0>]
+    ret rax
+
+function @literal_first
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.u16 rax, [rdi+rsi*2+<off0>]
+    ret rax
+
+function @other_block
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    param %which -> rdx : i1
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea r8, [rdi+rsi*8+<off0>]
+    cmp.i1 rdx, 0
+    jne ^read
+
+  block ^done
+    sub r8, rdi
+    ret r8
+
+  block ^read
+    load.i64 rax, [r8]
+    ret rax
+
+function @read_as_value
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add rsi, 1
+    mov r8, rsi
+    add r8, [rdi+rsi*8]
+    ret r8
+
+function @scale_kept
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add rsi, 1
+    imul rsi, 3
+    lea rsi, [rdi+rsi*8]
+    sub rsi, rdi
+    ret rsi
+
+function @narrow_wraps
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i32
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add rsi, 1
+    sext.i32 rsi
+    lea rsi, [rdi+rsi]
+    sub rsi, rdi
+    ret rsi
+
+function @wide_element
+  abi
+    param %p -> rdi : ptr
+    param %i -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add rsi, 1
+    imul rsi, 12
+    add rsi, rdi
+    sub rsi, rdi
+    ret rsi
+
+function @symbol_base
+  abi
+    param %i -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r8, @table
+    load.i64 rax, [r8+rdi*8+<off0>]
+    ret rax
+
+function @frame_base
+  abi
+    param %i -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $cells -> [rbp-<off0>] : obj<32x8>
+
+  block ^entry
+    store.i64 [rbp-<off0>], 5
+    store.i64 [rbp-<off1>], 6
+    store.i64 [rbp-<off2>], 7
+    store.i64 [rbp-<off3>], 8
+    load.i64 rax, [rbp+rdi*8-<off0>]
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    temp %bad_f -> [rbp-<off3>] : i64
+    temp %bad_g -> [rbp-<off2>] : i64
+    temp %bad_h -> [rbp-<off1>] : i64
+    temp %bad_i -> [rbp-<off0>] : i64
+    temp %bad_j -> [rbp-<off4>] : i64
+    temp %bad_k -> [rbp-<off5>] : i64
+    temp %bad_l -> [rbp-<off6>] : i64
+    temp %bad_m -> [rbp-<off7>] : i64
+
+  block ^entry
+    lea rdi, @table
+    mov rsi, 1
+    call @neighbors [args=(rsi,rdi)]
+    cmp.i64 rax, 20
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    lea rdi, @table
+    mov rsi, 3
+    call @byte_scaled [args=(rsi,rdi)]
+    cmp.i64 rax, 30
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    lea rdi, @table
+    mov rsi, 1
+    call @shifted_bytes [args=(rsi,rdi)]
+    cmp.i64 rax, 40
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    lea rdi, @table
+    mov rsi, 6
+    call @negative_literal [args=(rsi,rdi)]
+    cmp.i64 rax, 30
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    lea rdi, @table
+    mov rsi, 7
+    call @literal_first [args=(rsi,rdi)]
+    cmp.i64 rax, 30
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    lea rdi, @table
+    mov rsi, 1
+    mov rdx, 1
+    call @other_block [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 30
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off3>], <gpr5>
+    lea rdi, @table
+    mov rsi, 1
+    mov rdx, 0
+    call @other_block [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 16
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off2>], <gpr5>
+    lea rdi, @table
+    mov rsi, 0
+    call @read_as_value [args=(rsi,rdi)]
+    cmp.i64 rax, 21
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off1>], <gpr5>
+    lea rdi, @table
+    mov rsi, 2
+    call @scale_kept [args=(rsi,rdi)]
+    cmp.i64 rax, 72
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off0>], <gpr5>
+    lea rdi, @table
+    mov rsi, 2147483647
+    call @narrow_wraps [args=(rsi,rdi)]
+    cmp.i64 rax, -2147483648
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off4>], <gpr5>
+    lea rdi, @table
+    mov rsi, 2
+    call @wide_element [args=(rsi,rdi)]
+    cmp.i64 rax, 36
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off5>], <gpr5>
+    mov rdi, 1
+    call @symbol_base [args=(rdi)]
+    cmp.i64 rax, 30
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off6>], <gpr5>
+    mov rdi, 1
+    call @frame_base [args=(rdi)]
+    cmp.i64 rax, 8
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    store.i64 [rbp-<off7>], <gpr5>
+    lea rdi, @table+16
+    mov rsi, -1
+    call @neighbors [args=(rsi,rdi)]
+    cmp.i64 rax, 20
+    setne rax
+    movzx rax, rax
+    or <gpr0>, <gpr1>
+    or <gpr0>, <gpr2>
+    or <gpr0>, <gpr3>
+    or <gpr0>, <gpr4>
+    or <gpr0>, [rbp-<off3>]
+    or <gpr0>, [rbp-<off2>]
+    or <gpr0>, [rbp-<off1>]
+    or <gpr0>, [rbp-<off0>]
+    or <gpr0>, [rbp-<off4>]
+    or <gpr0>, [rbp-<off5>]
+    or <gpr0>, [rbp-<off6>]
+    or <gpr0>, [rbp-<off7>]
+    or <gpr0>, rax
+    ret <gpr0>

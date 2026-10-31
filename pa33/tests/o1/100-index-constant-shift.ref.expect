@@ -1,0 +1,7 @@
+# Each read fits one addressing mode with no arithmetic on the index; allow any
+# selection or allocation that meets these local instruction budgets.
+instructions <= 4 in @neighbors
+instructions <= 2 in @byte_scaled
+instructions <= 2 in @shifted_bytes
+instructions <= 2 in @negative_literal
+instructions <= 2 in @literal_first

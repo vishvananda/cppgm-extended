@@ -850,22 +850,33 @@ void FunctionSelector::resolve_aliases()
 	});
 }
 
+namespace {
+
+// The largest shift an index moves into its displacement.
+const int64_t kShiftLimit = int64_t(1) << 20;
+
+} // namespace
+
 // O1+: a byte offset `x * K` (a multiply, or a shift left) only indexes
 // read: K = c * s with s in {2, 4, 8} the addresses' scale and c one lea
 // (or a copy and a short shift, which fuse into one) or nothing -- the
 // offset holds x * c (an alias of x when c is 1). Every
 // reader an index of bytes from a base other than a symbol (whose
-// address takes the offset as its index, find_addresses).
+// address takes the offset as its index, find_addresses). Likewise an
+// offset `x + c` or `x - c` only indexes of 1, 2, 4 or 8 byte elements, or
+// such a byte offset that is its alias, read is an alias of x, each address
+// taking c in its displacement: the wrapping sum of the address is the same.
 void FunctionSelector::find_scaled_offsets()
 {
 	const lowir::FunctionBody& body = *body_;
+	shift_of_.clear();
 	if (level_ < 1)
 	{
 		scale_of_.clear();
 		return;
 	}
 	scale_of_.assign(temps_.size(), 0);
-	// Candidates: the offset temps, with x and the scale.
+	// Candidates: the offset temps, with x and the scale (0: a shift).
 	std::vector<uint32_t> candidates;
 	std::vector<uint8_t> state(temps_.size(), 0); // 1 candidate, 2 disqualified
 	std::vector<Value> source(temps_.size());
@@ -878,10 +889,21 @@ void FunctionSelector::find_scaled_offsets()
 			return;
 		const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);
 		Value x = resolve(inst.ops[0]), k = resolve(inst.ops[1]);
-		if (op == lowir::BinaryOp::Mul && x.kind == ValueKind::Integer)
+		if ((op == lowir::BinaryOp::Mul || op == lowir::BinaryOp::Add) && x.kind == ValueKind::Integer)
 			std::swap(x, k);
-		if ((op != lowir::BinaryOp::Mul && op != lowir::BinaryOp::Shl) || x.kind != ValueKind::Temp ||
-			k.kind != ValueKind::Integer || literal(k).high != 0)
+		if (x.kind != ValueKind::Temp || k.kind != ValueKind::Integer)
+			return;
+		if (op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Sub)
+		{
+			const int64_t c = static_cast<int64_t>(literal(k).low);
+			if (c < -kShiftLimit || c > kShiftLimit)
+				return;
+			state[inst.result] = 1;
+			source[inst.result] = x;
+			candidates.push_back(inst.result);
+			return;
+		}
+		if ((op != lowir::BinaryOp::Mul && op != lowir::BinaryOp::Shl) || literal(k).high != 0)
 			return;
 		const uint64_t K = op == lowir::BinaryOp::Shl ? (literal(k).low < 7 ? uint64_t(1) << literal(k).low : 0)
 													  : literal(k).low;
@@ -908,12 +930,16 @@ void FunctionSelector::find_scaled_offsets()
 		const Instruction& inst = body.instructions[id];
 		if ((marks_[id] & IM_DEAD) || (inst.result != kNoId && (temps_[inst.result].flags & TF_ALIAS)))
 			return;
-		const bool index = inst.op == Opcode::Index && value_bytes(inst.type) == 1 &&
-			resolve(inst.ops[0]).kind != ValueKind::Symbol;
+		const bool index = inst.op == Opcode::Index && resolve(inst.ops[0]).kind != ValueKind::Symbol;
+		const uint32_t bytes = index ? value_bytes(inst.type) : 0;
 		auto check = [&](Value v, unsigned position) {
 			const Value r = resolve(v);
-			if (r.kind == ValueKind::Temp && state[r.index] == 1 &&
-				!(index && position == 1 && v.kind == ValueKind::Temp && v.index == r.index))
+			if (r.kind != ValueKind::Temp || state[r.index] != 1)
+				return;
+			const bool width = factor[r.index] != 0 ? bytes == 1 : bytes == 1 || bytes == 2 || bytes == 4 || bytes == 8;
+			const bool scaling = factor[r.index] == 0 && inst.op == Opcode::Binary && factor[inst.result] != 0 &&
+				source[inst.result] == r;
+			if (!scaling && !(width && position == 1 && v.kind == ValueKind::Temp && v.index == r.index))
 				state[r.index] = 2;
 		};
 		if (inst.op == Opcode::Phi)
@@ -930,22 +956,47 @@ void FunctionSelector::find_scaled_offsets()
 		}
 		for_each_operand(body, inst, [&](Value v, OperandRole) { check(v, 0); });
 	});
+	auto constant = [&](uint32_t m) {
+		const Instruction& def = body.instructions[body.temps[m].def];
+		const Value k = resolve(def.ops[1]);
+		return k.kind == ValueKind::Integer ? k : resolve(def.ops[0]);
+	};
+	auto multiplier = [&](uint32_t m) {
+		const Value k = constant(m);
+		return static_cast<lowir::BinaryOp>(body.instructions[body.temps[m].def].sub) == lowir::BinaryOp::Shl
+			? uint64_t(1) << literal(k).low
+			: literal(k).low;
+	};
+	// A shift read by a multiple that holds no alias of it is computed.
+	for (uint32_t m : candidates)
+		if (factor[m] != 0 && state[source[m].index] == 1 && factor[source[m].index] == 0 &&
+			(state[m] != 1 || multiplier(m) != factor[m]))
+			state[source[m].index] = 2;
 	for (uint32_t m : candidates)
 	{
-		if (state[m] != 1)
+		if (state[m] != 1 || factor[m] != 0)
 			continue;
-		const Instruction& def = body.instructions[body.temps[m].def];
-		const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(def.sub);
-		Value k = resolve(def.ops[1]);
-		if (k.kind != ValueKind::Integer)
-			k = resolve(def.ops[0]);
-		const uint64_t K = op == lowir::BinaryOp::Shl ? uint64_t(1) << literal(k).low : literal(k).low;
+		const int32_t c = static_cast<int32_t>(static_cast<int64_t>(literal(constant(m)).low));
+		if (shift_of_.empty())
+			shift_of_.assign(temps_.size(), 0);
+		shift_of_[m] = static_cast<lowir::BinaryOp>(body.instructions[body.temps[m].def].sub) == lowir::BinaryOp::Sub
+			? -c
+			: c;
+		alias_[m] = source[m];
+		temps_[m].flags |= TF_ALIAS;
+	}
+	for (uint32_t m : candidates)
+	{
+		if (state[m] != 1 || factor[m] == 0)
+			continue;
 		scale_of_[m] = static_cast<uint8_t>(factor[m]);
-		if (K == factor[m])
-		{
-			alias_[m] = source[m];
-			temps_[m].flags |= TF_ALIAS;
-		}
+		if (multiplier(m) != factor[m])
+			continue;
+		alias_[m] = source[m];
+		temps_[m].flags |= TF_ALIAS;
+		// The byte offset's own shift, in bytes.
+		if (!shift_of_.empty() && temps_[source[m].index].flags & TF_ALIAS)
+			shift_of_[m] = shift_of_[source[m].index] * static_cast<int32_t>(factor[m]);
 	}
 }
 
@@ -1125,6 +1176,14 @@ void FunctionSelector::place_uses()
 // ---------------------------------------------------------------------------
 // Addresses and folds
 
+// The elements an index adds beyond its offset's register, in the address's
+// displacement (find_scaled_offsets).
+int32_t FunctionSelector::index_shift(const Instruction& index) const
+{
+	const Value raw = index.ops[1];
+	return raw.kind == ValueKind::Temp && raw.index < shift_of_.size() ? shift_of_[raw.index] : 0;
+}
+
 bool FunctionSelector::address_expr(uint32_t id, AddrExpr& expr) const
 {
 	const Instruction& inst = body_->instructions[id];
@@ -1202,10 +1261,12 @@ bool FunctionSelector::address_expr(uint32_t id, AddrExpr& expr) const
 		return false;
 	expr.index = off.index;
 	expr.scale = static_cast<uint8_t>(size);
-	// A scaled byte offset (find_scaled_offsets).
+	// A scaled byte offset, or one shifted into the displacement
+	// (find_scaled_offsets).
 	const Value raw = inst.ops[1];
 	if (size == 1 && raw.kind == ValueKind::Temp && raw.index < scale_of_.size() && scale_of_[raw.index] != 0)
 		expr.scale = scale_of_[raw.index];
+	expr.disp += index_shift(inst) * static_cast<int64_t>(size);
 	return true;
 }
 
