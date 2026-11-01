@@ -1,12 +1,14 @@
 // The SSE family of GCC's x86 builtins (lex/gnu_builtins.h's VectorLanewise).
-// LowIR has no vector type, so each operation is unrolled over the lanes of
-// the slots its operands are evaluated into, once each and in order. A lane
+// An operation with a `vector` instruction (lower/sse_instructions.cpp) is that
+// instruction. Any other is unrolled over the lanes of the slots its operands
+// are evaluated into, once each and in order. A lane
 // is read and written as bits wherever the operation does not compute on its
 // value, so a signaling NaN moves unchanged and masks stay whole. The
 // reciprocal estimates are exact: any value within the hardware's error
 // bound is a valid estimate.
 
 #include "lower/function_lowering.h"
+#include "lower/sse_instructions.h"
 
 #include "sema/conversions.h"
 #include "sema/expression_facts.h"
@@ -87,6 +89,81 @@ RValue FunctionLowering::finish_lanes(const sema::Type* vector, lowir::SlotId sl
 	return load(lowering_.storage_type(vector), place);
 }
 
+RValue FunctionLowering::vector_instruction(
+	lowir::VectorOp op, const RValue* a, const RValue* b, const RValue* c, int32_t immediate, lowir::Type result)
+{
+	lowir::Instruction inst = lowir::make_instruction(lowir::Opcode::Vector, result);
+	inst.sub = static_cast<uint8_t>(op);
+	if (a != nullptr)
+		inst.ops[0] = a->value;
+	if (b != nullptr)
+		inst.ops[1] = b->value;
+	if (c != nullptr)
+		inst.ops[2] = c->value;
+	else if (immediate >= 0)
+		inst.ops[2] = integer(kI32, static_cast<uint64_t>(immediate)).value;
+	RValue value = RValue();
+	value.type = result;
+	value.value = emit_value(inst, result);
+	return value;
+}
+
+bool FunctionLowering::direct_vector_call(LanewiseCall& call, const syntax::CallExpr& expr, RValue& result)
+{
+	using lowir::VectorShape;
+	static_cast<void>(expr);
+	const sema::Type* shape = call.result->unqualified;
+	SseForm form;
+	form.scalar = call.scalar;
+	form.vector_result = shape->kind == sema::TypeKind::Vector;
+	if (form.vector_result && !lowering_.register_vector(shape))
+		return false;
+	for (uint32_t i = 0; i < call.count; ++i)
+		if (call.types[i]->kind == sema::TypeKind::Vector && !lowering_.register_vector(call.types[i]))
+			return false;
+	if (form.vector_result)
+	{
+		form.floating = sema::IsFloating(shape->element->unqualified);
+		form.lane_bytes = static_cast<uint32_t>(lowering_.size_of(shape->element, 0));
+	}
+	// The source lanes of a conversion: the last vector operand.
+	for (uint32_t i = 0; i < call.count; ++i)
+		if (call.types[i]->kind == sema::TypeKind::Vector)
+		{
+			form.source_floating = sema::IsFloating(call.types[i]->element->unqualified);
+			form.source_bytes = static_cast<uint32_t>(lowering_.size_of(call.types[i]->element, 0));
+		}
+	if (call.count == 0 || call.types[0]->kind != sema::TypeKind::Vector)
+		return false;
+	form.second_vector = call.count > 1 && call.types[1]->kind == sema::TypeKind::Vector;
+	SseInstruction use;
+	if (!SseInstructionOf(call.operation, form, use))
+		return false;
+	int32_t immediate = use.immediate;
+	if (use.literal_operand >= 0)
+	{
+		uint64_t bits = 0;
+		if (!is_integer_literal(call.values[use.literal_operand], bits))
+			return false;
+		// GCC's palignr count is in bits, on 64-bit lanes.
+		const uint64_t count = use.op == lowir::VectorOp::Palignr && call.types[0]->bound != 16 ? bits >> 3 : bits;
+		if (count > 255)
+			return false;
+		immediate = static_cast<int32_t>(count);
+	}
+	const lowir::Type type = form.vector_result ? lowir::Type::scalar(lowir::TypeKind::V128)
+												: lowering_.storage_type(call.result);
+	const RValue* first = &call.values[use.swapped ? 1 : 0];
+	const RValue* second = call.count > 1 && call.types[1]->kind == sema::TypeKind::Vector
+		? &call.values[use.swapped ? 0 : 1]
+		: nullptr;
+	if (use.repeated)
+		second = first;
+	const RValue* third = lowir::shape_of(use.op) == VectorShape::Blend ? &call.values[2] : nullptr;
+	result = vector_instruction(use.op, first, second, third, immediate, type);
+	return true;
+}
+
 RValue FunctionLowering::lanewise_vector(const syntax::CallExpr& expr)
 {
 	LanewiseCall call = LanewiseCall();
@@ -99,9 +176,13 @@ RValue FunctionLowering::lanewise_vector(const syntax::CallExpr& expr)
 		const sema::ExprFacts* argument = WithoutParentheses(expr.arguments[i])->facts;
 		call.types[i] = (argument->conversion != nullptr ? argument->conversion->result : argument->type)->unqualified;
 		call.values[i] = operand(*expr.arguments[i], ConversionContext::Argument);
+	}
+	RValue direct;
+	if (direct_vector_call(call, expr, direct))
+		return direct;
+	for (uint32_t i = 0; i < call.count; ++i)
 		if (call.types[i]->kind == sema::TypeKind::Vector)
 			call.addresses[i] = vector_storage(call.values[i]);
-	}
 	switch (call.operation)
 	{
 	case VectorLanewiseOp::Add:

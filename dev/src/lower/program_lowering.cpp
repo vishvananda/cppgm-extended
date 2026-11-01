@@ -1334,7 +1334,10 @@ lowir::Type ProgramLowering::storage_type(const sema::Type* type)
 		// null), a member function's address and this-adjustment (i128).
 		return Type::scalar(type->element->kind == sema::TypeKind::Function ? TypeKind::I128 : TypeKind::I64);
 	case sema::TypeKind::Vector:
-		// Its lanes' bytes (lower/vector_lowering.cpp).
+		// One XMM register, or its lanes' bytes (lower/vector_lowering.cpp).
+		if (register_vector(type))
+			return Type::scalar(TypeKind::V128);
+		[[fallthrough]];
 	case sema::TypeKind::Complex:
 		// Its two parts' bytes (lower/complex_lowering.cpp).
 	case sema::TypeKind::Array:

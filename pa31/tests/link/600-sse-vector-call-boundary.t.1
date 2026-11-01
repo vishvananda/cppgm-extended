@@ -1,0 +1,19 @@
+#define P(n) ab_##n
+#include "600-sse-vector-call-boundary.shared.h"
+void ps(__m128 v){float u[4];_mm_storeu_ps(u,v);printf("%g %g %g %g\n",u[0],u[1],u[2],u[3]);}
+void pd(__m128d v){double u[2];_mm_storeu_pd(u,v);printf("%g %g\n",u[0],u[1]);}
+void pi(__m128i v){int u[4];_mm_storeu_si128((__m128i*)u,v);printf("%d %d %d %d\n",u[0],u[1],u[2],u[3]);}
+int ab_addr(__m128* p){ *p=_mm_set_ps(4,3,2,1); return 1; }
+int main(){
+ __m128 a=_mm_set_ps(4,3,2,1),b=_mm_set_ps(.5f,.25f,.125f,1); ps(ba_ret(a,b));
+ __m128d d[10]; for(int i=0;i<10;++i)d[i]=_mm_set_pd(i*2,i+1);
+ pd(ba_many(d[0],d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9],7.5,9));
+ pi(ba_mix(1,_mm_set1_epi32(5),2,3.0,_mm_set_epi32(9,8,7,6)));
+ Wrap w;w.v=a; ps(ba_wrap(w).v);
+ Pair p;p.a=d[1];p.b=d[2]; Pair q=ba_pair(p,d[3]); pd(q.a); pd(q.b);
+ Mixed m;m.i=4;m.d=2.5;m.v=_mm_set_epi32(1,2,3,4); Mixed n=ba_mixed(m); printf("%d %g\n",n.i,n.d); pi(n.v);
+ printf("%g\n",ba_var(3,d[1],1,d[2],2,d[3],3));
+ printf("%g\n",ba_var(9,d[0],1,d[1],2,d[2],3,d[3],4,d[4],5,d[5],6,d[6],7,d[7],8,d[8],9));
+ __m128 s; ab_addr(&s); ps(s);
+ host_calls();
+ return 0; }

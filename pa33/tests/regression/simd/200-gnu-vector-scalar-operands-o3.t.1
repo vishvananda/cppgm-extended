@@ -1,0 +1,23 @@
+// Each expression's bytes against g++'s.
+#include <stdio.h>
+#include <string.h>
+typedef float v4sf __attribute__((vector_size(16)));
+typedef double v2df __attribute__((vector_size(16)));
+typedef int v4si __attribute__((vector_size(16)));
+typedef unsigned v4su __attribute__((vector_size(16)));
+typedef short v8hi __attribute__((vector_size(16)));
+typedef unsigned short v8hu __attribute__((vector_size(16)));
+typedef signed char v16qi __attribute__((vector_size(16)));
+typedef long long v2di __attribute__((vector_size(16)));
+typedef unsigned long long v2du __attribute__((vector_size(16)));
+template <class T> static void show(const char* n, T v){unsigned char b[16];memcpy(b,&v,16);printf("%s",n);for(int i=0;i<16;i++)printf(" %02x",b[i]);puts("");}
+#define T(e) show(#e, e)
+int main(int argc,char**){
+  int n=argc+1; float f=argc*1.5f; double d=argc*2.25; int k=argc+6;long long l=argc+100; short h=argc+1; signed char c=argc+1;
+  v4sf a={1.5f,-2,3.25f,1e10f}; v2df b={-1.5,4e100}; v4si i={1,-2,1<<30,-1}; v4su u={1,0x80000000u,3,4}; v8hi w={1,-2,3,-4,5,-6,7,-8}; v8hu x={1,0x8000,3,4,5,6,7,8}; v16qi q={1,-2,3,-4,5,-6,7,-8,9,10,11,12,13,14,15,16}; v2di j={1,-1}; v2du m={1,0x8000000000000000ull};
+  T(a+f);T(f+a);T(a*2.0f);T(a/f);T(f-a);T(b+d);T(d*b);T(b/2.0);T(1.0-b);T(i+k);T(k-i);T(i+5);T(j+l);T(l-j);T(u+1u);T(w+h);T(q+c);T(i&k);T(i|7);T(i^k);T(j&l);
+  T(i*k);T(w*h);
+  T(i<<3);T(i>>3);T(u>>3);T(u<<3);T(w<<n);T(w>>n);T(x>>n);T(x<<3);T(i<<n);T(i>>n);T(u>>n);T(j<<n);T(j>>n);T(m>>n);T(m<<3);T(j>>3);T(q<<n);T(q>>1);
+  T(a<f);T(a>f);T(a<=f);T(a>=f);T(a==f);T(a!=f);T(f<a);T(b<d);T(d>b);T(b==d);T(i<k);T(k<i);T(i>k);T(i==k);T(i!=k);T(i<=k);T(i>=k);T(j==l);T(u<5u);T(w<h);T(q>c);T(i>0);
+  a+=f;T(a);i<<=n;T(i);w>>=2;T(w);b*=d;T(b);
+  return 0;}

@@ -43,6 +43,13 @@ bool SignedLane(const sema::Type* lane)
 
 } // namespace
 
+bool ProgramLowering::register_vector(const sema::Type* type)
+{
+	const sema::Type* vector = type->unqualified;
+	return size_of(vector, 0) == 16 && !BoolLanes(vector) &&
+		!(vector->bound == 1 && sema::IsFloating(vector->element->unqualified));
+}
+
 uint8_t ProgramLowering::vector_classes(const sema::Type* type)
 {
 	if (!object_mode_)
@@ -125,8 +132,8 @@ lowir::Value FunctionLowering::zeroed_vector(const sema::Type* vector, lowir::Sl
 	lowir::Instruction zero = lowir::make_instruction(
 		lowir::Opcode::ZeroInit, lowir::Type::scalar(lowir::TypeKind::Void));
 	zero.ops[0] = lowir::Value::slot(slot);
-	zero.immediate = static_cast<int64_t>(type.bytes);
-	zero.sub = static_cast<uint8_t>(type.align_log2);
+	zero.immediate = type.is_vector() ? 16 : static_cast<int64_t>(type.bytes);
+	zero.sub = static_cast<uint8_t>(type.is_vector() ? 4 : type.align_log2);
 	emit(zero);
 	Place place = Place();
 	place.storage = lowir::Value::slot(slot);
@@ -153,6 +160,9 @@ RValue FunctionLowering::vector_lane_value(const syntax::SubscriptExpr& expr)
 {
 	// A vector prvalue's lane, from the slot holding it; a bool vector's
 	// lane, its bit (the index's byte shifted by its bit position).
+	RValue direct;
+	if (direct_vector_lane(expr, direct))
+		return direct;
 	const syntax::Expr& base = *WithoutParentheses(expr.base);
 	const sema::Type* vector = base.facts->type;
 	if (!BoolLanes(vector))
@@ -189,6 +199,9 @@ RValue FunctionLowering::vector_list(const sema::Type* vector, const syntax::Bra
 {
 	// Each element converted to its lane (as the analysis recorded), the
 	// lanes after them zero (GNU's list-initialization).
+	RValue direct;
+	if (direct_vector_list(vector, list, direct))
+		return direct;
 	lowir::SlotId slot = lowir::kNoId;
 	const lowir::Value out = zeroed_vector(vector, slot);
 	const sema::Type* lane = vector->unqualified->element;
@@ -236,6 +249,9 @@ RValue FunctionLowering::vector_compare(const syntax::BinaryExpr& expr, const RV
 		predicate = is_signed ? lowir::ComparePredicate::Ge : lowir::ComparePredicate::Uge;
 		break;
 	}
+	RValue direct;
+	if (direct_vector_compare(op, vector, left, left_vector, right, right_vector, direct))
+		return direct;
 	const lowir::Value a = left_vector ? vector_storage(left) : lowir::Value::none();
 	const lowir::Value b = right_vector ? vector_storage(right) : lowir::Value::none();
 	lowir::SlotId slot = lowir::kNoId;
@@ -277,6 +293,11 @@ RValue FunctionLowering::vector_operation(TokenKind op, const sema::Type* vector
 	// to it, in every lane), unpromoted, as GCC and Clang compute vector
 	// operations: integral lanes wrap at their width.
 	const sema::Type* lane = vector->unqualified->element->unqualified;
+	RValue direct;
+	if (left_vector && !right_vector && direct_vector_shift(op, vector, left, right, direct))
+		return direct;
+	if (direct_vector_operation(op, vector, left, left_vector, right, right_vector, direct))
+		return direct;
 	const lowir::Value a = left_vector ? vector_storage(left) : lowir::Value::none();
 	const lowir::Value b = right_vector ? vector_storage(right) : lowir::Value::none();
 	lowir::SlotId slot = lowir::kNoId;
@@ -354,10 +375,17 @@ RValue FunctionLowering::shift_vector_bytes(const syntax::CallExpr& expr, sema::
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	const lowir::Type i8 = lowir::Type::scalar(lowir::TypeKind::I8);
 	const sema::Type* vector = expr.facts->type;
-	const lowir::Value source = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const RValue operand_value = operand(*expr.arguments[0], ConversionContext::Argument);
 	const bool runtime = (expr.facts->value >> 16 & 1) != 0;
 	const uint64_t bytes = expr.facts->value >> 8 & 0xff;
 	const bool left = kind == sema::Intrinsic::VectorShiftLeftBytes;
+	if (!runtime && operand_value.type.is_vector())
+	{
+		discard(*expr.arguments[1]);
+		return vector_instruction(left ? lowir::VectorOp::Pslldq : lowir::VectorOp::Psrldq, &operand_value, nullptr,
+			nullptr, static_cast<int32_t>(bytes));
+	}
+	const lowir::Value source = vector_storage(operand_value);
 	RValue count;
 	if (runtime)
 	{
@@ -404,7 +432,10 @@ RValue FunctionLowering::truncate_vector(const syntax::CallExpr& expr)
 	const sema::Type* from =
 		(argument->conversion != nullptr ? argument->conversion->result : argument->type)->unqualified;
 	const sema::Type* to = expr.facts->type;
-	const lowir::Value source = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const RValue value = operand(*expr.arguments[0], ConversionContext::Argument);
+	if (value.type.is_vector())
+		return vector_instruction(lowir::VectorOp::Cvttps2dq, &value);
+	const lowir::Value source = vector_storage(value);
 	lowir::SlotId slot = lowir::kNoId;
 	const lowir::Value out = zeroed_vector(to, slot);
 	for (uint64_t i = 0; i < 4; ++i)
@@ -421,8 +452,14 @@ RValue FunctionLowering::vector_sign_mask(const syntax::CallExpr& expr)
 	const sema::ExprFacts* argument = WithoutParentheses(expr.arguments[0])->facts;
 	const sema::Type* vector =
 		(argument->conversion != nullptr ? argument->conversion->result : argument->type)->unqualified;
-	const lowir::Value source = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const RValue value = operand(*expr.arguments[0], ConversionContext::Argument);
 	const lowir::Type i32 = lowir::Type::scalar(lowir::TypeKind::I32);
+	if (value.type.is_vector())
+		return vector_instruction(vector->bound == 16 ? lowir::VectorOp::Pmovmskb
+				: vector->bound == 4                  ? lowir::VectorOp::Movmskps
+													  : lowir::VectorOp::Movmskpd,
+			&value, nullptr, nullptr, -1, i32);
+	const lowir::Value source = vector_storage(value);
 	const bool bytes = vector->bound == 16;
 	const uint64_t lane_bytes = bytes ? 1 : vector->bound == 4 ? 4 : 8;
 	const lowir::Type bits_type = lowir::Type::scalar(lane_bytes == 8 ? lowir::TypeKind::I64 : lowir::TypeKind::I32);
@@ -457,9 +494,14 @@ RValue FunctionLowering::vector_byte_minmax(const syntax::CallExpr& expr)
 	// bits as unsigned values, as does PMAXUB. Both operands are evaluated once, before
 	// the fixed sixteen lane operations, using the usual vector storage.
 	const sema::Type* vector = expr.facts->type;
-	const lowir::Value first = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
-	const lowir::Value second = vector_storage(operand(*expr.arguments[1], ConversionContext::Argument));
+	const RValue first_value = operand(*expr.arguments[0], ConversionContext::Argument);
+	const RValue second_value = operand(*expr.arguments[1], ConversionContext::Argument);
 	const bool maximum = (expr.facts->value >> 8 & 1) != 0;
+	if (first_value.type.is_vector())
+		return vector_instruction(
+			maximum ? lowir::VectorOp::Pmaxub : lowir::VectorOp::Pminub, &first_value, &second_value);
+	const lowir::Value first = vector_storage(first_value);
+	const lowir::Value second = vector_storage(second_value);
 	lowir::SlotId slot = lowir::kNoId;
 	const lowir::Value out = zeroed_vector(vector, slot);
 	for (uint64_t i = 0; i < 16; ++i)
@@ -545,9 +587,16 @@ RValue FunctionLowering::pack_vector(const syntax::CallExpr& expr)
 	const sema::ExprFacts* argument = WithoutParentheses(expr.arguments[0])->facts;
 	const sema::Type* input =
 		(argument->conversion != nullptr ? argument->conversion->result : argument->type)->unqualified;
-	const lowir::Value a = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
-	const lowir::Value b = vector_storage(operand(*expr.arguments[1], ConversionContext::Argument));
+	const RValue a_value = operand(*expr.arguments[0], ConversionContext::Argument);
+	const RValue b_value = operand(*expr.arguments[1], ConversionContext::Argument);
 	const uint64_t variant = expr.facts->value >> 8;
+	if (a_value.type.is_vector())
+		return vector_instruction(variant == 0 ? lowir::VectorOp::Packuswb
+				: variant == 1                 ? lowir::VectorOp::Packsswb
+											   : lowir::VectorOp::Packssdw,
+			&a_value, &b_value);
+	const lowir::Value a = vector_storage(a_value);
+	const lowir::Value b = vector_storage(b_value);
 	const int64_t minimum = variant == 0 ? 0 : variant == 1 ? -128 : -32768;
 	const int64_t maximum = variant == 0 ? 255 : variant == 1 ? 127 : 32767;
 	const lowir::Type lane = lowering_.storage_type(input->element);
@@ -651,8 +700,12 @@ RValue FunctionLowering::vector_andnot(const syntax::CallExpr& expr)
 	// PANDN complements the first input and masks it by the second. The
 	// recorded two integer lanes cover every bit without signed arithmetic.
 	const sema::Type* vector = expr.facts->type;
-	const lowir::Value a = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
-	const lowir::Value b = vector_storage(operand(*expr.arguments[1], ConversionContext::Argument));
+	const RValue a_value = operand(*expr.arguments[0], ConversionContext::Argument);
+	const RValue b_value = operand(*expr.arguments[1], ConversionContext::Argument);
+	if (a_value.type.is_vector())
+		return vector_instruction(lowir::VectorOp::Pandn, &a_value, &b_value);
+	const lowir::Value a = vector_storage(a_value);
+	const lowir::Value b = vector_storage(b_value);
 	lowir::SlotId slot = lowir::kNoId;
 	const lowir::Value out = zeroed_vector(vector, slot);
 	for (uint64_t i = 0; i < vector->bound; ++i)
@@ -670,10 +723,19 @@ RValue FunctionLowering::unpack_vector(const syntax::CallExpr& expr)
 	// Each operand is evaluated once. Copy the selected half's lane bits
 	// into alternating result lanes, using the existing vector storage.
 	const sema::Type* vector = expr.facts->type;
-	const lowir::Value first = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
-	const lowir::Value second = vector_storage(operand(*expr.arguments[1], ConversionContext::Argument));
+	const RValue first_value = operand(*expr.arguments[0], ConversionContext::Argument);
+	const RValue second_value = operand(*expr.arguments[1], ConversionContext::Argument);
 	const uint64_t half = vector->unqualified->bound / 2;
 	const uint64_t start = ((expr.facts->value >> 8) & 1) != 0 ? half : 0;
+	if (first_value.type.is_vector())
+	{
+		const unsigned width = half == 8 ? 0 : half == 4 ? 1 : half == 2 ? 2 : 3;
+		const lowir::VectorOp base = start != 0 ? lowir::VectorOp::Punpckhbw : lowir::VectorOp::Punpcklbw;
+		return vector_instruction(
+			static_cast<lowir::VectorOp>(static_cast<unsigned>(base) + width), &first_value, &second_value);
+	}
+	const lowir::Value first = vector_storage(first_value);
+	const lowir::Value second = vector_storage(second_value);
 	lowir::SlotId slot = lowir::kNoId;
 	const lowir::Value out = zeroed_vector(vector, slot);
 	for (uint64_t i = 0; i < half; ++i)
@@ -692,10 +754,27 @@ RValue FunctionLowering::shift_vector_lanes(const syntax::CallExpr& expr)
 	// shifts must never receive an out-of-range count. Negative int
 	// counts are oversized too, when compared as unsigned.
 	const sema::Type* vector = expr.facts->type;
-	const lowir::Value source = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
+	const RValue value = operand(*expr.arguments[0], ConversionContext::Argument);
 	const RValue count = operand(*expr.arguments[1], ConversionContext::Argument);
 	const uint64_t bits = 128 / vector->bound;
 	const unsigned operation = (expr.facts->value >> 8 & 0xff) % 3;
+	if (value.type.is_vector() && !(bits == 64 && operation == 2))
+	{
+		// The width index, then left, logical right, arithmetic right.
+		const unsigned width = bits == 16 ? 0 : bits == 32 ? 1 : 2;
+		const unsigned kinds[3] = { static_cast<unsigned>(lowir::VectorOp::Psllw),
+			static_cast<unsigned>(lowir::VectorOp::Psrlw), static_cast<unsigned>(lowir::VectorOp::Psraw) };
+		const unsigned immediates[3] = { static_cast<unsigned>(lowir::VectorOp::Psllwi),
+			static_cast<unsigned>(lowir::VectorOp::Psrlwi), static_cast<unsigned>(lowir::VectorOp::Psrawi) };
+		uint64_t literal = 0;
+		if (is_integer_literal(count, literal) && literal <= 255)
+			return vector_instruction(static_cast<lowir::VectorOp>(immediates[operation] + width), &value, nullptr,
+				nullptr, static_cast<int32_t>(literal));
+		// The hardware's count is 64 bits: a negative int is oversized.
+		const RValue wide = vector_instruction(lowir::VectorOp::Fromi32, &count);
+		return vector_instruction(static_cast<lowir::VectorOp>(kinds[operation] + width), &value, &wide);
+	}
+	const lowir::Value source = vector_storage(value);
 	const RValue valid = compare(lowir::ComparePredicate::Ult, count.type, count, integer(count.type, bits));
 	lowir::Instruction choice = lowir::make_instruction(lowir::Opcode::Select, count.type);
 	choice.ops[0] = valid.value;
@@ -740,11 +819,21 @@ RValue FunctionLowering::shuffle_vector(const syntax::CallExpr& expr)
 	const bool words = vector->bound == 8;
 	const uint64_t start = words && (expr.facts->value >> 17 & 1) != 0 ? 4 : 0;
 	const uint64_t mask = words ? 3 : vector->bound - 1;
-	const lowir::Value first = vector_storage(operand(*expr.arguments[0], ConversionContext::Argument));
-	const lowir::Value second = paired ? vector_storage(operand(*expr.arguments[1], ConversionContext::Argument))
-									   : first;
+	const RValue first_value = operand(*expr.arguments[0], ConversionContext::Argument);
+	const RValue second_value = paired ? operand(*expr.arguments[1], ConversionContext::Argument) : first_value;
 	const syntax::Expr& selector = *expr.arguments[paired ? 2 : 1];
 	const bool runtime = (expr.facts->value >> 16 & 1) != 0;
+	if (!runtime && first_value.type.is_vector())
+	{
+		discard(selector);
+		const lowir::VectorOp op = paired ? (doubles ? lowir::VectorOp::Shufpd : lowir::VectorOp::Shufps)
+			: words                       ? (start != 0 ? lowir::VectorOp::Pshufhw : lowir::VectorOp::Pshuflw)
+										  : lowir::VectorOp::Pshufd;
+		return vector_instruction(op, &first_value, paired ? &second_value : nullptr, nullptr,
+			static_cast<int32_t>(expr.facts->value >> 8 & 0xff));
+	}
+	const lowir::Value first = vector_storage(first_value);
+	const lowir::Value second = paired ? vector_storage(second_value) : first;
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	RValue count;
 	if (runtime)
@@ -937,6 +1026,9 @@ RValue FunctionLowering::reinterpret_bytes(const RValue& value, const sema::Type
 	// The value stored in a slot of its type, its bytes read as `to`'s (of
 	// their size: a bit cast, a vector cast); neither access is `typed`
 	// (lowir.md "Instruction Facts": the bytes are read as another type).
+	// A v128 value is the same bits as any other.
+	if (value.type.is_vector() && lowering_.storage_type(to->unqualified).is_vector())
+		return value;
 	Place storage = Place();
 	storage.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::Vector, value.type));
 	storage.untyped = true;
@@ -945,6 +1037,274 @@ RValue FunctionLowering::reinterpret_bytes(const RValue& value, const sema::Type
 	bytes.storage = address_of(storage);
 	bytes.untyped = true;
 	return load(lowering_.storage_type(to->unqualified), bytes);
+}
+
+bool FunctionLowering::direct_vector_operation(TokenKind op, const sema::Type* vector, const RValue& left,
+	bool left_vector, const RValue& right, bool right_vector, RValue& result)
+{
+	using lowir::VectorOp;
+	if (!lowering_.register_vector(vector))
+		return false;
+	const sema::Type* lane = vector->unqualified->element->unqualified;
+	const uint32_t bytes = static_cast<uint32_t>(lowering_.size_of(lane, 0));
+	const bool floating = sema::IsFloating(lane);
+	if (floating && SoftFloatOf(lane) != SoftFloat::None)
+		return false;
+	const unsigned width = bytes == 1 ? 0 : bytes == 2 ? 1 : bytes == 4 ? 2 : 3;
+	const unsigned double_lane = bytes == 8 ? 1 : 0;
+	auto offset = [](VectorOp base, unsigned step) {
+		return static_cast<VectorOp>(static_cast<unsigned>(base) + step);
+	};
+	VectorOp form;
+	switch (op)
+	{
+	case TokenKind::OP_PLUS:
+		form = floating ? offset(VectorOp::Addps, double_lane) : offset(VectorOp::Paddb, width);
+		break;
+	case TokenKind::OP_MINUS:
+		form = floating ? offset(VectorOp::Subps, double_lane) : offset(VectorOp::Psubb, width);
+		break;
+	case TokenKind::OP_STAR:
+		// pmulld is SSE4.1, past the x86-64 baseline.
+		if (!floating && bytes != 2)
+			return false;
+		form = floating ? offset(VectorOp::Mulps, double_lane) : VectorOp::Pmullw;
+		break;
+	case TokenKind::OP_DIV:
+		if (!floating)
+			return false;
+		form = offset(VectorOp::Divps, double_lane);
+		break;
+	case TokenKind::OP_AMP:
+		form = VectorOp::Pand;
+		break;
+	case TokenKind::OP_BOR:
+		form = VectorOp::Por;
+		break;
+	case TokenKind::OP_XOR:
+		form = VectorOp::Pxor;
+		break;
+	default:
+		return false;
+	}
+	RValue a;
+	RValue b;
+	if (!whole_vectors(vector, left, left_vector, right, right_vector, a, b))
+		return false;
+	result = vector_instruction(form, &a, &b);
+	return true;
+}
+
+bool FunctionLowering::direct_vector_compare(TokenKind op, const sema::Type* vector, const RValue& left,
+	bool left_vector, const RValue& right, bool right_vector, RValue& result)
+{
+	using lowir::VectorOp;
+	if (!lowering_.register_vector(vector))
+		return false;
+	const sema::Type* lane = vector->unqualified->element->unqualified;
+	const uint32_t bytes = static_cast<uint32_t>(lowering_.size_of(lane, 0));
+	VectorOp form;
+	bool swapped = op == TokenKind::OP_LT;
+	int32_t predicate = -1;
+	if (sema::IsFloating(lane))
+	{
+		if (SoftFloatOf(lane) != SoftFloat::None)
+			return false;
+		form = bytes == 8 ? VectorOp::Cmppd : VectorOp::Cmpps;
+		// cmpps's predicates: eq 0, lt 1, le 2, neq 4.
+		swapped = op == TokenKind::OP_GT || op == TokenKind::OP_GE;
+		predicate = op == TokenKind::OP_EQ                     ? 0
+			: op == TokenKind::OP_NE                           ? 4
+			: op == TokenKind::OP_LT || op == TokenKind::OP_GT ? 1
+															   : 2;
+	}
+	else
+	{
+		// pcmpeqq and pcmpgtq are past the baseline; pcmpgt is signed.
+		const bool ordered = (op == TokenKind::OP_GT || op == TokenKind::OP_LT) && SignedLane(lane);
+		if (bytes == 8 || (op != TokenKind::OP_EQ && !ordered))
+			return false;
+		const unsigned width = bytes == 1 ? 0 : bytes == 2 ? 1 : 2;
+		const VectorOp base = op == TokenKind::OP_EQ ? VectorOp::Pcmpeqb : VectorOp::Pcmpgtb;
+		form = static_cast<VectorOp>(static_cast<unsigned>(base) + width);
+	}
+	RValue a;
+	RValue b;
+	if (!whole_vectors(vector, left, left_vector, right, right_vector, a, b))
+		return false;
+	result = predicate < 0 ? vector_instruction(form, swapped ? &b : &a, swapped ? &a : &b)
+						   : vector_instruction(form, swapped ? &b : &a, swapped ? &a : &b, nullptr, predicate);
+	return true;
+}
+
+bool FunctionLowering::vector_scalar_form(const sema::Type* vector, lowir::VectorOp& from)
+{
+	using lowir::VectorOp;
+	if (!lowering_.register_vector(vector))
+		return false;
+	switch (lowering_.storage_type(vector->unqualified->element).kind())
+	{
+	case lowir::TypeKind::F32:
+		from = VectorOp::Fromf32;
+		return true;
+	case lowir::TypeKind::F64:
+		from = VectorOp::Fromf64;
+		return true;
+	case lowir::TypeKind::I32:
+		from = VectorOp::Fromi32;
+		return true;
+	case lowir::TypeKind::I64:
+		from = VectorOp::Fromi64;
+		return true;
+	default:
+		return false;
+	}
+}
+
+// A scalar in every lane.
+RValue FunctionLowering::spread_vector(const sema::Type* vector, lowir::VectorOp from, const RValue& scalar)
+{
+	using lowir::VectorOp;
+	const RValue value = fit(scalar, vector->unqualified->element);
+	const RValue low = vector_instruction(from, &value);
+	switch (from)
+	{
+	case VectorOp::Fromf32:
+		return vector_instruction(VectorOp::Shufps, &low, &low, nullptr, 0);
+	case VectorOp::Fromf64:
+		return vector_instruction(VectorOp::Unpcklpd, &low, &low);
+	case VectorOp::Fromi32:
+		return vector_instruction(VectorOp::Pshufd, &low, nullptr, nullptr, 0);
+	default:
+		return vector_instruction(VectorOp::Punpcklqdq, &low, &low);
+	}
+}
+
+// Both operands of an operation as whole vectors. A lane type with no scalar
+// form leaves a scalar operand to go lane by lane.
+bool FunctionLowering::whole_vectors(const sema::Type* vector, const RValue& left, bool left_vector,
+	const RValue& right, bool right_vector, RValue& a, RValue& b)
+{
+	lowir::VectorOp from = lowir::VectorOp::Pzero;
+	if (!(left_vector && right_vector) && !vector_scalar_form(vector, from))
+		return false;
+	a = left_vector ? left : spread_vector(vector, from, left);
+	b = right_vector ? right : spread_vector(vector, from, right);
+	return true;
+}
+
+// A vector shifted by one count. SSE has no shift of byte lanes or arithmetic
+// shift of 64-bit lanes, and a count past the lane is undefined in the source.
+bool FunctionLowering::direct_vector_shift(
+	TokenKind op, const sema::Type* vector, const RValue& value, const RValue& count, RValue& result)
+{
+	using lowir::VectorOp;
+	if (!value.type.is_vector() || (op != TokenKind::OP_LSHIFT && op != TokenKind::OP_RSHIFT))
+		return false;
+	const sema::Type* lane = vector->unqualified->element->unqualified;
+	const uint64_t bytes = lowering_.size_of(lane, 0);
+	const bool arithmetic = op == TokenKind::OP_RSHIFT && SignedLane(lane);
+	if (bytes == 1 || (bytes == 8 && arithmetic))
+		return false;
+	const unsigned width = bytes == 2 ? 0 : bytes == 4 ? 1 : 2;
+	const VectorOp immediate = op == TokenKind::OP_LSHIFT ? VectorOp::Psllwi
+		: arithmetic                                      ? VectorOp::Psrawi
+														  : VectorOp::Psrlwi;
+	const VectorOp general = op == TokenKind::OP_LSHIFT ? VectorOp::Psllw
+		: arithmetic                                    ? VectorOp::Psraw
+														: VectorOp::Psrlw;
+	uint64_t literal = 0;
+	if (is_integer_literal(count, literal))
+	{
+		if (literal > 255)
+			return false;
+		result = vector_instruction(static_cast<VectorOp>(static_cast<unsigned>(immediate) + width), &value, nullptr,
+			nullptr, static_cast<int32_t>(literal));
+		return true;
+	}
+	// The count was converted to the lane type, which holds any valid count.
+	const lowir::Type i32 = lowir::Type::scalar(lowir::TypeKind::I32);
+	RValue amount = count;
+	switch (count.type.kind())
+	{
+	case lowir::TypeKind::I32:
+		break;
+	case lowir::TypeKind::I16:
+	case lowir::TypeKind::U16:
+		amount = convert_op(lowir::ConvertOp::ZExt, i32, count);
+		break;
+	case lowir::TypeKind::I64:
+		amount = convert_op(lowir::ConvertOp::Trunc, i32, count);
+		break;
+	default:
+		return false;
+	}
+	const RValue wide = vector_instruction(VectorOp::Fromi32, &amount);
+	result = vector_instruction(static_cast<VectorOp>(static_cast<unsigned>(general) + width), &value, &wide);
+	return true;
+}
+
+bool FunctionLowering::direct_vector_list(const sema::Type* vector, const syntax::BracedInitList& list, RValue& result)
+{
+	using lowir::VectorOp;
+	const sema::Type* lane = vector->unqualified->element;
+	VectorOp from = VectorOp::Pzero;
+	if (list.elements.size != vector->unqualified->bound || !vector_scalar_form(vector, from))
+		return false;
+	const bool floating = from == VectorOp::Fromf32 || from == VectorOp::Fromf64;
+	RValue lanes[4];
+	for (uint32_t i = 0; i < list.elements.size; ++i)
+	{
+		const RValue value = fit(operand(*list.elements[i], ConversionContext::Initialization), lane);
+		lanes[i] = vector_instruction(from, &value);
+	}
+	if (list.elements.size == 2)
+	{
+		result = vector_instruction(floating ? VectorOp::Unpcklpd : VectorOp::Punpcklqdq, &lanes[0], &lanes[1]);
+		return true;
+	}
+	const VectorOp pairs = floating ? VectorOp::Unpcklps : VectorOp::Punpckldq;
+	const RValue low = vector_instruction(pairs, &lanes[0], &lanes[1]);
+	const RValue high = vector_instruction(pairs, &lanes[2], &lanes[3]);
+	result = vector_instruction(floating ? VectorOp::Movlhps : VectorOp::Punpcklqdq, &low, &high);
+	return true;
+}
+
+bool FunctionLowering::direct_vector_lane(const syntax::SubscriptExpr& expr, RValue& result)
+{
+	using lowir::VectorOp;
+	const syntax::Expr& base = *WithoutParentheses(expr.base);
+	const sema::Type* vector = base.facts->type;
+	if (!lowering_.register_vector(vector) || (vector->cv & sema::kVolatile) != 0)
+		return false;
+	const syntax::Expr& position = *WithoutParentheses(expr.index);
+	if (position.kind != syntax::ExprKind::Literal)
+		return false;
+	const lowir::Type lane = lowering_.storage_type(expr.facts->type);
+	const lowir::TypeKind kind = lane.kind();
+	const uint64_t bound = vector->unqualified->bound;
+	const uint64_t bytes = lowering_.size_of(expr.facts->type, 0);
+	if (bytes < 4 || kind == lowir::TypeKind::U32)
+		return false;
+	uint64_t index = 0;
+	if (!is_integer_literal(rvalue(position), index) || index >= bound)
+		return false;
+	const int32_t at = static_cast<int32_t>(index);
+	const bool lanes_floating = kind == lowir::TypeKind::F64;
+	RValue value = rvalue(base);
+	if (at != 0)
+	{
+		if (bytes == 4)
+			value = vector_instruction(VectorOp::Pshufd, &value, nullptr, nullptr, at);
+		else
+			value = vector_instruction(lanes_floating ? VectorOp::Unpckhpd : VectorOp::Punpckhqdq, &value, &value);
+	}
+	const VectorOp to = kind == lowir::TypeKind::F32 ? VectorOp::Tof32
+		: kind == lowir::TypeKind::F64               ? VectorOp::Tof64
+		: bytes == 4                                 ? VectorOp::Toi32
+													 : VectorOp::Toi64;
+	result = vector_instruction(to, &value, nullptr, nullptr, -1, lane);
+	return true;
 }
 
 } // namespace lower

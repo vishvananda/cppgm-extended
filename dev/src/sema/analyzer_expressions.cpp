@@ -1412,7 +1412,10 @@ ExprFacts* Analyzer::vector_arithmetic(
 		substitution_error(expr.location, "invalid operands to a binary operator");
 		return nullptr;
 	}
-	if (other != vector && !scalar_splats(left_vector ? *expr.right : *expr.left, other, lane))
+	// A vector's shift count may be wider than its lanes: GCC checks only a
+	// scalar that is shifted.
+	const bool count = left_vector && (expr.op == TokenKind::OP_LSHIFT || expr.op == TokenKind::OP_RSHIFT);
+	if (other != vector && !count && !scalar_splats(left_vector ? *expr.right : *expr.left, other, lane))
 	{
 		substitution_error(
 			expr.location, "a scalar operand that does not convert to the vector's lanes without truncation");
@@ -1834,7 +1837,8 @@ ExprFacts* Analyzer::assignment(const syntax::BinaryExpr& expr, Scope* scope)
 			(lane->kind == TypeKind::Fundamental && lane->fundamental == FundamentalType::Bool) ||
 			(other != lt &&
 				(other->kind == TypeKind::Vector || !(IsArithmetic(other) || IsIntegralOrUnscopedEnum(other)) ||
-					!scalar_splats(*expr.right, other, lane))))
+					(op != TokenKind::OP_LSHIFT && op != TokenKind::OP_RSHIFT &&
+						!scalar_splats(*expr.right, other, lane)))))
 		{
 			substitution_error(expr.location, "invalid operands to a compound assignment");
 			return nullptr;

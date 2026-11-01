@@ -582,6 +582,16 @@ byte lanes. It shares the byte-minimum signature and typed lane lowering;
 evaluate both operands once and compare byte bits as unsigned regardless
 of the vector element type's signedness.
 
+### SSE instructions
+
+A GNU vector of 16 bytes is a LowIR `v128` value, and an SSE builtin with an SSE
+instruction is a LowIR `vector` instruction. This applies at every optimization
+level. [lowir.md](../pa8/lowir.md#vector-operations) defines `v128`, `vector`, the
+list of operations and the call boundary. Extend the LowIR reader, writer and
+validator and `lowir2native` to match. Each operation encodes as its legacy SSE
+form. A vector of another size, a vector of `bool` lanes and an operation with no
+`vector` form stay lane by lane.
+
 ### Design Notes (Non-Normative)
 
 Hosted compatibility is easiest to approach as a sequence of small compatibility

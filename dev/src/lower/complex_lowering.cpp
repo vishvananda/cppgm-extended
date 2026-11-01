@@ -60,6 +60,15 @@ uint8_t ProgramLowering::complex_classes(const sema::Type* type)
 
 RValue FunctionLowering::zero_object_value(lowir::Type type)
 {
+	if (type.is_vector())
+	{
+		lowir::Instruction zero = lowir::make_instruction(lowir::Opcode::Vector, type);
+		zero.sub = static_cast<uint8_t>(lowir::VectorOp::Pzero);
+		RValue value = RValue();
+		value.type = type;
+		value.value = emit_value(zero, type);
+		return value;
+	}
 	Place storage = Place();
 	storage.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::Complex, type));
 	lowir::Instruction zero = lowir::make_instruction(

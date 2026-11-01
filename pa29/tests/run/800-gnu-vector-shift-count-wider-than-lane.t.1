@@ -1,0 +1,18 @@
+#include <stdio.h>
+
+typedef short v8hi __attribute__((vector_size(16)));
+typedef signed char v16qi __attribute__((vector_size(16)));
+
+int main(int argc, char**)
+{
+	int count = argc + 1;
+	long long wide = argc;
+	v8hi words = {1, -2, 3, -4, 5, -6, 7, -8};
+	v16qi bytes = {1, 2, 3, 4, 5, 6, 7, -8, 1, 2, 3, 4, 5, 6, 7, 8};
+	v8hi left = words << count;
+	v8hi right = words >> wide;
+	v16qi byte = bytes >> count;
+	words <<= wide;
+	printf("%d %d %d %d\n", left[1], right[1], byte[7], words[3]);
+	return 0;
+}

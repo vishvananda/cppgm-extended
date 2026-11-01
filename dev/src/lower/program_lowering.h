@@ -772,6 +772,8 @@ public:
 	lowir::SymbolId complex_helper(bool divide, const sema::Type* part);
 	// A vector's (lower/vector_lowering.cpp), as GCC and Clang pass them.
 	uint8_t vector_classes(const sema::Type* type);
+	// Whether a vector is a v128 value: sixteen bytes in one SSE class.
+	bool register_vector(const sema::Type* type);
 	void classify_eightbytes(const sema::Type* type, uint64_t offset, uint8_t* classes);
 	// A class result's convention, decided by its completed class alone
 	// (`function`: the function type of the call or definition).

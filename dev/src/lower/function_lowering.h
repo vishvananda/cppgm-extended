@@ -1365,6 +1365,24 @@ private:
 	RValue vector_andnot(const syntax::CallExpr& expr);
 	// sse_lowering.cpp: the SSE family computed lane by lane.
 	struct LanewiseCall;
+	// One `vector` instruction: `immediate` when not negative; the operands
+	// the operation's shape reads (lowir_model.h).
+	RValue vector_instruction(lowir::VectorOp op, const RValue* a = nullptr, const RValue* b = nullptr,
+		const RValue* c = nullptr, int32_t immediate = -1,
+		lowir::Type result = lowir::Type::scalar(lowir::TypeKind::V128));
+	bool direct_vector_call(LanewiseCall& call, const syntax::CallExpr& expr, RValue& result);
+	bool direct_vector_operation(TokenKind op, const sema::Type* vector, const RValue& left, bool left_vector,
+		const RValue& right, bool right_vector, RValue& result);
+	bool direct_vector_compare(TokenKind op, const sema::Type* vector, const RValue& left, bool left_vector,
+		const RValue& right, bool right_vector, RValue& result);
+	bool direct_vector_list(const sema::Type* vector, const syntax::BracedInitList& list, RValue& result);
+	bool vector_scalar_form(const sema::Type* vector, lowir::VectorOp& from);
+	RValue spread_vector(const sema::Type* vector, lowir::VectorOp from, const RValue& scalar);
+	bool whole_vectors(const sema::Type* vector, const RValue& left, bool left_vector, const RValue& right,
+		bool right_vector, RValue& a, RValue& b);
+	bool direct_vector_shift(
+		TokenKind op, const sema::Type* vector, const RValue& value, const RValue& count, RValue& result);
+	bool direct_vector_lane(const syntax::SubscriptExpr& expr, RValue& result);
 	RValue lanewise_vector(const syntax::CallExpr& expr);
 	RValue select_value(const RValue& condition, const RValue& first, const RValue& second);
 	RValue lane_bits(lowir::Value address, uint64_t bytes, uint64_t lane);
