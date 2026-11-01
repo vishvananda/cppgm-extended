@@ -93,7 +93,9 @@ an identifier containing `C`, `Y`, or `E` can stand for a type; `T` marks a
 potential template/type name. These are fallback hints. A known value or
 non-type parameter overrides them. Namespace components and dependent names
 remain structured names for later lookup, rather than requiring an invented
-naming restriction for every identifier.
+naming restriction for every identifier. A member of a template-id whose
+arguments name a template parameter is such a dependent name: it is a value
+unless `typename` says otherwise, so the hints do not apply to it.
 
 Prefer real declarations in new examples. For example:
 

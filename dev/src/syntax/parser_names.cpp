@@ -1006,8 +1006,10 @@ bool Parser::is_type(const Name* name, const NameInfo& info)
 	case NameCategory::None:
 		break;
 	}
-	// 14.6p2: a dependent qualified name is a value unless `typename`.
-	if (info.prefix == PrefixState::Dependent)
+	// 14.6p2: a dependent qualified name is a value unless `typename`, and
+	// a template-id depending on template parameters names a dependent type
+	// though its primary's class is known (14.6.2.1p7).
+	if (info.prefix == PrefixState::Dependent || info.prefix_dependent)
 		return false;
 	return names_type_hint(last.identifier);
 }
