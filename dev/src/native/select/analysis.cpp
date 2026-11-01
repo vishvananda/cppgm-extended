@@ -1744,10 +1744,15 @@ void FunctionSelector::find_folds()
 		const bool logical_not = inst.op == Opcode::Unary &&
 			static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::Not &&
 			(inst.type.is_integer() || inst.type.is_pointer()) && inst.type.kind() != TypeKind::I128;
-		// O2+: an integer compare the next instruction's select reads.
+		// O2+: a compare the next instruction's select reads. A floating
+		// equality takes two conditions, which one cmov cannot test.
+		const bool one_condition = inst.type.is_integer() || inst.type.is_pointer() ||
+			(inst.op == Opcode::Compare && inst.type.is_float() && inst.type.kind() != TypeKind::F80 &&
+				static_cast<lowir::ComparePredicate>(inst.sub) != lowir::ComparePredicate::Eq &&
+				static_cast<lowir::ComparePredicate>(inst.sub) != lowir::ComparePredicate::Ne);
 		if ((inst.op == Opcode::Compare || logical_not) && user.op == Opcode::Select && left &&
 			!(resolve(user.ops[1]) == self) && !(resolve(user.ops[2]) == self) && inst.type.kind() != TypeKind::I128 &&
-			(inst.type.is_integer() || inst.type.is_pointer()))
+			one_condition)
 		{
 			t.flags |= TF_FUSED;
 			++stats_.fused_compares;

@@ -57,6 +57,9 @@ that paid there in the course solution:
   short zero, and it clears the flags: a scan that stops at the first instruction
   it does not recognize, such as a sign extension, lets a zero through as an
   `xor` and the select quietly stops selecting. Only spilled operands reach this.
+- A `cmov` tests one condition. `ucomisd` reports a NaN as unordered, so `lt`, `le`,
+  `gt`, `ge` and their `u` forms each map to one condition, but `eq` and `ne` need
+  parity as well and stay materialized.
 - Let a phi's sources and result share a register when their ranges do not
   overlap, so its edge transfers move nothing. A transfer on a conditional
   edge is executed in that edge's block, not at the end of the predecessor.

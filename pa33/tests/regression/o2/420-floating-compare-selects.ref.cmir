@@ -1,0 +1,1580 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @nan_bits
+  storage scalar i64
+  init i64 9221120237041090560
+
+function @lt_f80
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    temp %p -> [rbp-<off0>] : f80
+    temp %q -> [rbp-<off1>] : f80
+
+  block ^entry
+    fpext.f64.f80 [rbp-<off0>], xmm0
+    fpext.f64.f80 [rbp-<off1>], xmm1
+    flt.f80 r9, [rbp-<off0>], [rbp-<off1>]
+    test.u8 r9, r9
+    mov rax, rsi
+    cmovne rax, rdi
+    ret rax
+
+function @ult_f80
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    temp %p -> [rbp-<off0>] : f80
+    temp %q -> [rbp-<off1>] : f80
+
+  block ^entry
+    fpext.f64.f80 [rbp-<off0>], xmm0
+    fpext.f64.f80 [rbp-<off1>], xmm1
+    fult.f80 r9, [rbp-<off0>], [rbp-<off1>]
+    test.u8 r9, r9
+    mov rax, rsi
+    cmovne rax, rdi
+    ret rax
+
+function @lt_f64
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm1, xmm0
+    mov rax, rsi
+    cmova rax, rdi
+    ret rax
+
+function @le_f64
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm1, xmm0
+    mov rax, rsi
+    cmovae rax, rdi
+    ret rax
+
+function @gt_f64
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm0, xmm1
+    mov rax, rsi
+    cmova rax, rdi
+    ret rax
+
+function @ge_f64
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm0, xmm1
+    mov rax, rsi
+    cmovae rax, rdi
+    ret rax
+
+function @ult_f64
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm0, xmm1
+    mov rax, rsi
+    cmovb rax, rdi
+    ret rax
+
+function @ule_f64
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm0, xmm1
+    mov rax, rsi
+    cmovbe rax, rdi
+    ret rax
+
+function @ugt_f64
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm1, xmm0
+    mov rax, rsi
+    cmovb rax, rdi
+    ret rax
+
+function @uge_f64
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm1, xmm0
+    mov rax, rsi
+    cmovbe rax, rdi
+    ret rax
+
+function @eq_f64
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    feq.f64 r9, xmm0, xmm1
+    test.u8 r9, r9
+    mov rax, rsi
+    cmovne rax, rdi
+    ret rax
+
+function @ne_f64
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fne.f64 r9, xmm0, xmm1
+    test.u8 r9, r9
+    mov rax, rsi
+    cmovne rax, rdi
+    ret rax
+
+function @lt_f32
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f32 xmm1, xmm0
+    mov rax, rsi
+    cmova rax, rdi
+    ret rax
+
+function @le_f32
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f32 xmm1, xmm0
+    mov rax, rsi
+    cmovae rax, rdi
+    ret rax
+
+function @gt_f32
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f32 xmm0, xmm1
+    mov rax, rsi
+    cmova rax, rdi
+    ret rax
+
+function @ge_f32
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f32 xmm0, xmm1
+    mov rax, rsi
+    cmovae rax, rdi
+    ret rax
+
+function @ult_f32
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f32 xmm0, xmm1
+    mov rax, rsi
+    cmovb rax, rdi
+    ret rax
+
+function @ule_f32
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f32 xmm0, xmm1
+    mov rax, rsi
+    cmovbe rax, rdi
+    ret rax
+
+function @ugt_f32
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f32 xmm1, xmm0
+    mov rax, rsi
+    cmovb rax, rdi
+    ret rax
+
+function @uge_f32
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f32 xmm1, xmm0
+    mov rax, rsi
+    cmovbe rax, rdi
+    ret rax
+
+function @eq_f32
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    feq.f32 r9, xmm0, xmm1
+    test.u8 r9, r9
+    mov rax, rsi
+    cmovne rax, rdi
+    ret rax
+
+function @ne_f32
+  abi
+    param %a -> xmm0 : f32
+    param %b -> xmm1 : f32
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fne.f32 r9, xmm0, xmm1
+    test.u8 r9, r9
+    mov rax, rsi
+    cmovne rax, rdi
+    ret rax
+
+function @same_register
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %x -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm0, xmm1
+    mov rax, 7
+    cmova rax, rdi
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2>
+    temp %nan -> [rbp-<off2>] : f64
+    temp %nan32 -> [rbp-<off0>] : f32
+
+  block ^entry
+    fmov.f64 xmm0, @nan_bits
+    fmov.f64 [rbp-<off2>], xmm0
+    fptrunc.f64.f32 xmm0, xmm0
+    fmov.f32 [rbp-<off0>], xmm0
+
+  block ^b0
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @lt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b1
+
+  block ^bad0
+    mov rax, 2
+    ret rax
+
+  block ^b1
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @lt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b2
+
+  block ^bad1
+    mov rax, 3
+    ret rax
+
+  block ^b2
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 1.0
+    call @lt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b3
+
+  block ^bad2
+    mov rax, 4
+    ret rax
+
+  block ^b3
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @lt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b4
+
+  block ^bad3
+    mov rax, 5
+    ret rax
+
+  block ^b4
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @le_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b5
+
+  block ^bad4
+    mov rax, 6
+    ret rax
+
+  block ^b5
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @le_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b6
+
+  block ^bad5
+    mov rax, 7
+    ret rax
+
+  block ^b6
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 1.0
+    call @le_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b7
+
+  block ^bad6
+    mov rax, 8
+    ret rax
+
+  block ^b7
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @le_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b8
+
+  block ^bad7
+    mov rax, 9
+    ret rax
+
+  block ^b8
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @gt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b9
+
+  block ^bad8
+    mov rax, 10
+    ret rax
+
+  block ^b9
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @gt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b10
+
+  block ^bad9
+    mov rax, 11
+    ret rax
+
+  block ^b10
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 1.0
+    call @gt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b11
+
+  block ^bad10
+    mov rax, 12
+    ret rax
+
+  block ^b11
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @gt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b12
+
+  block ^bad11
+    mov rax, 13
+    ret rax
+
+  block ^b12
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @ge_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b13
+
+  block ^bad12
+    mov rax, 14
+    ret rax
+
+  block ^b13
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @ge_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b14
+
+  block ^bad13
+    mov rax, 15
+    ret rax
+
+  block ^b14
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 1.0
+    call @ge_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b15
+
+  block ^bad14
+    mov rax, 16
+    ret rax
+
+  block ^b15
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @ge_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b16
+
+  block ^bad15
+    mov rax, 17
+    ret rax
+
+  block ^b16
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @ult_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b17
+
+  block ^bad16
+    mov rax, 18
+    ret rax
+
+  block ^b17
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @ult_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b18
+
+  block ^bad17
+    mov rax, 19
+    ret rax
+
+  block ^b18
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 1.0
+    call @ult_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b19
+
+  block ^bad18
+    mov rax, 20
+    ret rax
+
+  block ^b19
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @ult_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b20
+
+  block ^bad19
+    mov rax, 21
+    ret rax
+
+  block ^b20
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @ule_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b21
+
+  block ^bad20
+    mov rax, 22
+    ret rax
+
+  block ^b21
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @ule_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b22
+
+  block ^bad21
+    mov rax, 23
+    ret rax
+
+  block ^b22
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 1.0
+    call @ule_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b23
+
+  block ^bad22
+    mov rax, 24
+    ret rax
+
+  block ^b23
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @ule_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b24
+
+  block ^bad23
+    mov rax, 25
+    ret rax
+
+  block ^b24
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @ugt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b25
+
+  block ^bad24
+    mov rax, 26
+    ret rax
+
+  block ^b25
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @ugt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b26
+
+  block ^bad25
+    mov rax, 27
+    ret rax
+
+  block ^b26
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 1.0
+    call @ugt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b27
+
+  block ^bad26
+    mov rax, 28
+    ret rax
+
+  block ^b27
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @ugt_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b28
+
+  block ^bad27
+    mov rax, 29
+    ret rax
+
+  block ^b28
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @uge_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b29
+
+  block ^bad28
+    mov rax, 30
+    ret rax
+
+  block ^b29
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @uge_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b30
+
+  block ^bad29
+    mov rax, 31
+    ret rax
+
+  block ^b30
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 1.0
+    call @uge_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b31
+
+  block ^bad30
+    mov rax, 32
+    ret rax
+
+  block ^b31
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @uge_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b32
+
+  block ^bad31
+    mov rax, 33
+    ret rax
+
+  block ^b32
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @eq_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b33
+
+  block ^bad32
+    mov rax, 34
+    ret rax
+
+  block ^b33
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @eq_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b34
+
+  block ^bad33
+    mov rax, 35
+    ret rax
+
+  block ^b34
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 1.0
+    call @eq_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b35
+
+  block ^bad34
+    mov rax, 36
+    ret rax
+
+  block ^b35
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @eq_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b36
+
+  block ^bad35
+    mov rax, 37
+    ret rax
+
+  block ^b36
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @ne_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b37
+
+  block ^bad36
+    mov rax, 38
+    ret rax
+
+  block ^b37
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @ne_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b38
+
+  block ^bad37
+    mov rax, 39
+    ret rax
+
+  block ^b38
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 1.0
+    call @ne_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b39
+
+  block ^bad38
+    mov rax, 40
+    ret rax
+
+  block ^b39
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @ne_f64 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b40
+
+  block ^bad39
+    mov rax, 41
+    ret rax
+
+  block ^b40
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 2.0f
+    call @lt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b41
+
+  block ^bad40
+    mov rax, 42
+    ret rax
+
+  block ^b41
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 2.0f
+    fmov.f32 xmm1, 1.0f
+    call @lt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b42
+
+  block ^bad41
+    mov rax, 43
+    ret rax
+
+  block ^b42
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 1.0f
+    call @lt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b43
+
+  block ^bad42
+    mov rax, 44
+    ret rax
+
+  block ^b43
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, [rbp-<off0>]
+    fmov.f32 xmm1, 1.0f
+    call @lt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b44
+
+  block ^bad43
+    mov rax, 45
+    ret rax
+
+  block ^b44
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 2.0f
+    call @le_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b45
+
+  block ^bad44
+    mov rax, 46
+    ret rax
+
+  block ^b45
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 2.0f
+    fmov.f32 xmm1, 1.0f
+    call @le_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b46
+
+  block ^bad45
+    mov rax, 47
+    ret rax
+
+  block ^b46
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 1.0f
+    call @le_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b47
+
+  block ^bad46
+    mov rax, 48
+    ret rax
+
+  block ^b47
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, [rbp-<off0>]
+    fmov.f32 xmm1, 1.0f
+    call @le_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b48
+
+  block ^bad47
+    mov rax, 49
+    ret rax
+
+  block ^b48
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 2.0f
+    call @gt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b49
+
+  block ^bad48
+    mov rax, 50
+    ret rax
+
+  block ^b49
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 2.0f
+    fmov.f32 xmm1, 1.0f
+    call @gt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b50
+
+  block ^bad49
+    mov rax, 51
+    ret rax
+
+  block ^b50
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 1.0f
+    call @gt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b51
+
+  block ^bad50
+    mov rax, 52
+    ret rax
+
+  block ^b51
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, [rbp-<off0>]
+    fmov.f32 xmm1, 1.0f
+    call @gt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b52
+
+  block ^bad51
+    mov rax, 53
+    ret rax
+
+  block ^b52
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 2.0f
+    call @ge_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b53
+
+  block ^bad52
+    mov rax, 54
+    ret rax
+
+  block ^b53
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 2.0f
+    fmov.f32 xmm1, 1.0f
+    call @ge_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b54
+
+  block ^bad53
+    mov rax, 55
+    ret rax
+
+  block ^b54
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 1.0f
+    call @ge_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b55
+
+  block ^bad54
+    mov rax, 56
+    ret rax
+
+  block ^b55
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, [rbp-<off0>]
+    fmov.f32 xmm1, 1.0f
+    call @ge_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b56
+
+  block ^bad55
+    mov rax, 57
+    ret rax
+
+  block ^b56
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 2.0f
+    call @ult_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b57
+
+  block ^bad56
+    mov rax, 58
+    ret rax
+
+  block ^b57
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 2.0f
+    fmov.f32 xmm1, 1.0f
+    call @ult_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b58
+
+  block ^bad57
+    mov rax, 59
+    ret rax
+
+  block ^b58
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 1.0f
+    call @ult_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b59
+
+  block ^bad58
+    mov rax, 60
+    ret rax
+
+  block ^b59
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, [rbp-<off0>]
+    fmov.f32 xmm1, 1.0f
+    call @ult_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b60
+
+  block ^bad59
+    mov rax, 61
+    ret rax
+
+  block ^b60
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 2.0f
+    call @ule_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b61
+
+  block ^bad60
+    mov rax, 62
+    ret rax
+
+  block ^b61
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 2.0f
+    fmov.f32 xmm1, 1.0f
+    call @ule_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b62
+
+  block ^bad61
+    mov rax, 63
+    ret rax
+
+  block ^b62
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 1.0f
+    call @ule_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b63
+
+  block ^bad62
+    mov rax, 64
+    ret rax
+
+  block ^b63
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, [rbp-<off0>]
+    fmov.f32 xmm1, 1.0f
+    call @ule_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b64
+
+  block ^bad63
+    mov rax, 65
+    ret rax
+
+  block ^b64
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 2.0f
+    call @ugt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b65
+
+  block ^bad64
+    mov rax, 66
+    ret rax
+
+  block ^b65
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 2.0f
+    fmov.f32 xmm1, 1.0f
+    call @ugt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b66
+
+  block ^bad65
+    mov rax, 67
+    ret rax
+
+  block ^b66
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 1.0f
+    call @ugt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b67
+
+  block ^bad66
+    mov rax, 68
+    ret rax
+
+  block ^b67
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, [rbp-<off0>]
+    fmov.f32 xmm1, 1.0f
+    call @ugt_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b68
+
+  block ^bad67
+    mov rax, 69
+    ret rax
+
+  block ^b68
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 2.0f
+    call @uge_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b69
+
+  block ^bad68
+    mov rax, 70
+    ret rax
+
+  block ^b69
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 2.0f
+    fmov.f32 xmm1, 1.0f
+    call @uge_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b70
+
+  block ^bad69
+    mov rax, 71
+    ret rax
+
+  block ^b70
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 1.0f
+    call @uge_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b71
+
+  block ^bad70
+    mov rax, 72
+    ret rax
+
+  block ^b71
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, [rbp-<off0>]
+    fmov.f32 xmm1, 1.0f
+    call @uge_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b72
+
+  block ^bad71
+    mov rax, 73
+    ret rax
+
+  block ^b72
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 2.0f
+    call @eq_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b73
+
+  block ^bad72
+    mov rax, 74
+    ret rax
+
+  block ^b73
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 2.0f
+    fmov.f32 xmm1, 1.0f
+    call @eq_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b74
+
+  block ^bad73
+    mov rax, 75
+    ret rax
+
+  block ^b74
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 1.0f
+    call @eq_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b75
+
+  block ^bad74
+    mov rax, 76
+    ret rax
+
+  block ^b75
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, [rbp-<off0>]
+    fmov.f32 xmm1, 1.0f
+    call @eq_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b76
+
+  block ^bad75
+    mov rax, 77
+    ret rax
+
+  block ^b76
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 2.0f
+    call @ne_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b77
+
+  block ^bad76
+    mov rax, 78
+    ret rax
+
+  block ^b77
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 2.0f
+    fmov.f32 xmm1, 1.0f
+    call @ne_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b78
+
+  block ^bad77
+    mov rax, 79
+    ret rax
+
+  block ^b78
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, 1.0f
+    fmov.f32 xmm1, 1.0f
+    call @ne_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 22
+    je ^b79
+
+  block ^bad78
+    mov rax, 80
+    ret rax
+
+  block ^b79
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f32 xmm0, [rbp-<off0>]
+    fmov.f32 xmm1, 1.0f
+    call @ne_f32 [args=(rsi,rdi,xmm0,xmm1)]
+    cmp.i64 rax, 11
+    je ^b80
+
+  block ^bad79
+    mov rax, 81
+    ret rax
+
+  block ^b80
+    mov rdi, 40
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @same_register [args=(rdi,xmm0,xmm1)]
+    mov <gpr0>, rax
+    mov rdi, 40
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @same_register [args=(rdi,xmm0,xmm1)]
+    mov <gpr1>, rax
+    mov rdi, 40
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @same_register [args=(rdi,xmm0,xmm1)]
+    add <gpr0>, <gpr1>
+    add <gpr0>, rax
+    cmp.i64 <gpr0>, 54
+    je ^pass
+
+  block ^fail
+    mov rax, 121
+    ret rax
+
+  block ^pass
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @lt_f80 [args=(rsi,rdi,xmm0,xmm1)]
+    mov <gpr0>, rax
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @lt_f80 [args=(rsi,rdi,xmm0,xmm1)]
+    mov <gpr1>, rax
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @lt_f80 [args=(rsi,rdi,xmm0,xmm1)]
+    mov <gpr2>, rax
+    mov rdi, 11
+    mov rsi, 22
+    fmov.f64 xmm0, [rbp-<off2>]
+    fmov.f64 xmm1, 1.0
+    call @ult_f80 [args=(rsi,rdi,xmm0,xmm1)]
+    add <gpr0>, <gpr1>
+    add <gpr2>, rax
+    add <gpr0>, <gpr2>
+    cmp.i64 <gpr0>, 66
+    je ^done
+
+  block ^fail80
+    mov rax, 122
+    ret rax
+
+  block ^done
+    mov rax, 0
+    ret rax

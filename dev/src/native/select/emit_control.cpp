@@ -730,8 +730,9 @@ void FunctionSelector::emit_compare_jump(const Instruction& compare, uint32_t on
 	}
 }
 
-// The flags of an integer compare (or logical not: its operand against
-// zero) fused into its reader, and the condition that holds when it does.
+// The flags of a compare (or logical not: its operand against zero) fused
+// into its reader, and the condition that holds when it does. A floating
+// compare is not an equality.
 Cond FunctionSelector::compare_flags(const Instruction& compare)
 {
 	const Type type = compare.type;
@@ -739,6 +740,30 @@ Cond FunctionSelector::compare_flags(const Instruction& compare)
 	const bool logical_not = compare.op == Opcode::Unary;
 	ComparePredicate pred = logical_not ? ComparePredicate::Eq : static_cast<ComparePredicate>(compare.sub);
 	Operand a = rm_operand(compare.ops[0], type, kSelectScratch);
+	if (type.is_float())
+	{
+		// As float_setcc: the same swaps, and the same conditions.
+		Operand right = rm_operand(compare.ops[1], type, kEmitScratch);
+		const bool swap = pred == ComparePredicate::Lt || pred == ComparePredicate::Le ||
+			pred == ComparePredicate::Ugt || pred == ComparePredicate::Uge;
+		if (swap)
+			std::swap(a, right);
+		emit2(Op::FCmp, kind, a, right);
+		switch (pred)
+		{
+		case ComparePredicate::Gt:
+		case ComparePredicate::Lt:
+			return CC_A;
+		case ComparePredicate::Ge:
+		case ComparePredicate::Le:
+			return CC_AE;
+		case ComparePredicate::Ult:
+		case ComparePredicate::Ugt:
+			return CC_B;
+		default:
+			return CC_BE;
+		}
+	}
 	Operand b = logical_not ? Operand::make_imm(0) : rm_operand(compare.ops[1], type, kEmitScratch);
 	if (b.kind == OperandKind::Symbol)
 	{
