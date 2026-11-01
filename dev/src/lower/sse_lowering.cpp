@@ -197,6 +197,7 @@ RValue FunctionLowering::lanewise_vector(const syntax::CallExpr& expr)
 	case VectorLanewiseOp::BlendVariable:
 		return lanewise_blend(call);
 	case VectorLanewiseOp::Store:
+	case VectorLanewiseOp::StoreValue:
 	case VectorLanewiseOp::Load:
 	case VectorLanewiseOp::LoadHigh:
 	case VectorLanewiseOp::LoadLow:
@@ -737,7 +738,8 @@ RValue FunctionLowering::lanewise_bytes(const LanewiseCall& call)
 		return finish_lanes(vector, slot);
 	}
 	// palignr: the pair's 32 bytes, the first operand high, shifted right
-	// by the count, which GCC's interface states in bits.
+	// by the count, which GCC's interface states in bits on __v2di and
+	// Clang's in bytes on __v16qi.
 	const lowir::Type pair = lowir::Type::object(32, 4);
 	Place storage = Place();
 	storage.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::Vector, pair));
@@ -747,7 +749,9 @@ RValue FunctionLowering::lanewise_bytes(const LanewiseCall& call)
 		set_lane_bits(joined, 8, i, lane_bits(call.addresses[1], 8, i));
 		set_lane_bits(joined, 8, i + 2, lane_bits(call.addresses[0], 8, i));
 	}
-	const RValue shift = binary(lowir::BinaryOp::UShr, kI32, call.values[2], integer(kI32, 3));
+	const bool in_bytes = call.types[0]->bound == 16;
+	const RValue shift = in_bytes ? call.values[2]
+								  : binary(lowir::BinaryOp::UShr, kI32, call.values[2], integer(kI32, 3));
 	const RValue start = convert_op(lowir::ConvertOp::ZExt, kI64, shift);
 	for (uint64_t i = 0; i < 16; ++i)
 	{
@@ -843,6 +847,14 @@ RValue FunctionLowering::lanewise_memory(const LanewiseCall& call)
 		place.storage = call.values[0].value;
 		place.untyped = true;
 		store(lowering_.storage_type(call.types[1]), call.values[1], place);
+		return RValue();
+	}
+	case VectorLanewiseOp::StoreValue:
+	{
+		Place place = Place();
+		place.storage = call.values[1].value;
+		place.untyped = true;
+		store(lowering_.storage_type(call.types[0]), call.values[0], place);
 		return RValue();
 	}
 	case VectorLanewiseOp::Load:

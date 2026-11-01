@@ -101,14 +101,18 @@ enum class GnuBuiltin : uint8_t
 	SourceLocation,
 	// Clang scalar/vector min/max, variants 0/1.
 	ElementwiseMinMax,
+	// Clang's spellings of lanewise operations, typed by their operands: the
+	// variant is a VectorLanewiseOp.
+	VectorElementwise,
 	// Libm fabs family: inline sign clearing for f32/f64, a call for f80.
 	FloatAbs
 };
 
 // A VectorLanewise builtin's operation. Its signature is the result and then
 // the operands, one letter each: F, D, G __v4sf, __v2df, __v2sf; B, H, W, Q
-// __v16qi, __v8hi, __v4si, __v2di; f d c i x v float, double, char, int,
-// long long, void; `*` after a letter a pointer to it.
+// __v16qi, __v8hi, __v4si, __v2di; R __v2di or any other 128-bit integer
+// lanes; f d c i x v float, double, char, int, long long, void; `*` after a
+// letter a pointer to it.
 enum class VectorLanewiseOp : uint8_t
 {
 	Add,
@@ -190,6 +194,8 @@ enum class VectorLanewiseOp : uint8_t
 	TestCarry,
 	TestMixed,
 	Store,
+	// Clang's order: the value, then the address.
+	StoreValue,
 	Load,
 	LoadHigh,
 	LoadLow,

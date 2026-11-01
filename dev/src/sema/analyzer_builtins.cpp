@@ -219,6 +219,8 @@ ExprFacts* Analyzer::builtin_operation(const syntax::CallExpr& expr, const Funct
 		return vector_shuffle_builtin(expr, variant, scope);
 	case GnuBuiltin::VectorLanewise:
 		return vector_lanewise_builtin(expr, builtin, scope);
+	case GnuBuiltin::VectorElementwise:
+		return vector_elementwise_builtin(expr, variant, scope);
 	case GnuBuiltin::OperatorNew:
 	case GnuBuiltin::OperatorDelete:
 		return allocation_builtin(expr, builtin->gnu_builtin == GnuBuiltin::OperatorNew, scope);
@@ -891,9 +893,15 @@ ExprFacts* Analyzer::vector_shift_builtin(const syntax::CallExpr& expr, uint8_t 
 	const Type* vector = types_.vector(types_.fundamental(FundamentalType::LongLongInt), 2);
 	for (uint32_t i = 0; i < 2; ++i)
 	{
-		if (typed_value(*expr.arguments[i], scope) == nullptr)
+		const ExprFacts* operand = typed_value(*expr.arguments[i], scope);
+		if (operand == nullptr)
 			return nullptr;
-		convert(*expr.arguments[i], i == 0 ? vector : types_.fundamental(FundamentalType::Int), false);
+		// The bytes are read by position, whatever lanes the operand spells:
+		// GCC and older Clang say __v2di, newer Clang __v16qi.
+		const Type* parameter = i != 0        ? types_.fundamental(FundamentalType::Int)
+			: integer_register(operand->type) ? operand->type
+											  : vector;
+		convert(*expr.arguments[i], parameter, false);
 	}
 	Constant count;
 	const bool constant = constant_value(*expr.arguments[1], scope, count, false);
@@ -1018,6 +1026,15 @@ ExprFacts* Analyzer::vector_shuffle_builtin(const syntax::CallExpr& expr, uint8_
 	return facts;
 }
 
+bool Analyzer::integer_register(const Type* type)
+{
+	type = type->unqualified;
+	uint64_t size = 0;
+	uint64_t alignment = 0;
+	return type->kind == TypeKind::Vector && IsIntegralType(type->element->unqualified) &&
+		type_size(type, size, alignment, 0) && size == 16;
+}
+
 const Type* Analyzer::vector_shape(const char*& shape, bool const_pointee)
 {
 	// A letter of a VectorLanewise signature (lex/gnu_builtins.h).
@@ -1049,6 +1066,7 @@ const Type* Analyzer::vector_shape(const char*& shape, bool const_pointee)
 		type = types_.vector(word, 4);
 		break;
 	case 'Q':
+	case 'R':
 		type = types_.vector(quad, 2);
 		break;
 	case 'f':
@@ -1081,7 +1099,9 @@ const Type* Analyzer::vector_shape(const char*& shape, bool const_pointee)
 ExprFacts* Analyzer::vector_lanewise_builtin(const syntax::CallExpr& expr, const FunctionEntity* builtin, Scope* scope)
 {
 	// The registry's shapes type the call; a vector operand of another
-	// shape converts as any operand does (GCC's casts spell this out).
+	// shape converts as any operand does (GCC's casts spell this out). GCC
+	// and Clang declare some of these on opposite lane signedness (__v8hi,
+	// __v8hu), which does not matter as lanes are read by width.
 	const VectorLanewiseOp operation = static_cast<VectorLanewiseOp>(builtin->builtin_variant);
 	const bool reads = operation == VectorLanewiseOp::Load || operation == VectorLanewiseOp::LoadHigh ||
 		operation == VectorLanewiseOp::LoadLow || operation == VectorLanewiseOp::Hint;
@@ -1091,16 +1111,65 @@ ExprFacts* Analyzer::vector_lanewise_builtin(const syntax::CallExpr& expr, const
 	{
 		if (*shape == '\0')
 			error(expr.location, "too many arguments to a packed operation");
+		const bool whole = *shape == 'R';
 		const Type* parameter = vector_shape(shape, reads);
-		if (typed_value(*argument, scope) == nullptr)
+		const ExprFacts* operand = typed_value(*argument, scope);
+		if (operand == nullptr)
 			return nullptr;
-		convert(*argument, parameter, false);
+		const bool same_lanes = integer_register(parameter) && operand->type->unqualified->kind == TypeKind::Vector &&
+			operand->type->unqualified->bound == parameter->bound;
+		const bool kept = (whole || same_lanes) && integer_register(operand->type);
+		convert(*argument, kept ? operand->type : parameter, false);
 	}
 	if (*shape != '\0')
 		error(expr.location, "too few arguments to a packed operation");
 	ExprFacts* facts = new_facts(expr, result, ValueCategory::PRValue);
 	facts->value = static_cast<uint64_t>(Intrinsic::VectorLanewise) | (static_cast<uint64_t>(operation) << 8) |
 		(builtin->builtin_scalar ? uint64_t(1) << 16 : 0);
+	facts->flags |= kIntrinsic;
+	return facts;
+}
+
+ExprFacts* Analyzer::vector_elementwise_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope)
+{
+	VectorLanewiseOp operation = static_cast<VectorLanewiseOp>(variant);
+	const bool saturates = operation == VectorLanewiseOp::AddSaturate || operation == VectorLanewiseOp::SubSaturate;
+	const bool store = operation == VectorLanewiseOp::StoreValue;
+	if (expr.arguments.size != (saturates || store ? 2u : 1u))
+		error(expr.location, "wrong number of arguments to a packed operation");
+	for (const syntax::Expr* argument : expr.arguments)
+		if (typed_value(*argument, scope) == nullptr)
+			return nullptr;
+	const Type* first = facts_of(*expr.arguments[0])->type->unqualified;
+	const Type* last = facts_of(*expr.arguments[expr.arguments.size - 1])->type->unqualified;
+	const Type* result = first;
+	bool typed = first->kind == TypeKind::Vector;
+	IntegralKind lane = IntegralKind();
+	if (operation == VectorLanewiseOp::Load)
+	{
+		typed = first->kind == TypeKind::Pointer;
+		result = typed ? first->element->unqualified : first;
+	}
+	else if (store)
+	{
+		typed = typed && last->kind == TypeKind::Pointer;
+		result = types_.fundamental(FundamentalType::Void);
+	}
+	else if (operation == VectorLanewiseOp::Sqrt)
+		typed = typed && IsFloating(first->element->unqualified);
+	else
+		typed = typed && first == last && IntegralKindOf(first->element->unqualified, lane) &&
+			(!saturates || lane.bits <= 16);
+	if (!typed)
+		error(expr.location, "invalid operands to a packed operation");
+	for (const syntax::Expr* argument : expr.arguments)
+		convert(*argument, facts_of(*argument)->type->unqualified, false);
+	// Clang picks the saturation from the lanes' type.
+	if (saturates && !lane.is_signed)
+		operation = operation == VectorLanewiseOp::AddSaturate ? VectorLanewiseOp::AddSaturateUnsigned
+															   : VectorLanewiseOp::SubSaturateUnsigned;
+	ExprFacts* facts = new_facts(expr, result, ValueCategory::PRValue);
+	facts->value = static_cast<uint64_t>(Intrinsic::VectorLanewise) | (static_cast<uint64_t>(operation) << 8);
 	facts->flags |= kIntrinsic;
 	return facts;
 }
@@ -1156,6 +1225,22 @@ ExprFacts* Analyzer::allocation_builtin(const syntax::CallExpr& expr, bool alloc
 	expression_scope_ = scope;
 	adl_functions_.clear();
 	return resolved_call(expr, entry != nullptr ? entry->functions : nullptr, nullptr, false, nullptr, false);
+}
+
+const FunctionEntity* Analyzer::header_builtin(const FunctionEntity* function)
+{
+	// Clang's headers only declare these, which its front end expands; GCC's
+	// define them, over the builtins named here.
+	static const char* const kExpanded[][2] = { { "_mm_clflush", "__builtin_ia32_clflush" },
+		{ "_mm_lfence", "__builtin_ia32_lfence" }, { "_mm_mfence", "__builtin_ia32_mfence" },
+		{ "_mm_pause", "__builtin_ia32_pause" }, { "_mm_sfence", "__builtin_ia32_sfence" } };
+	const char* spelling = function->name->spelling;
+	if (!function->c_linkage || function->defined || std::strncmp(spelling, "_mm_", 4) != 0)
+		return function;
+	for (const auto& expanded : kExpanded)
+		if (std::strcmp(spelling, expanded[0]) == 0)
+			return builtin_function(special_key(expanded[1]));
+	return function;
 }
 
 ExprFacts* Analyzer::library_nan_call(const syntax::CallExpr& expr, uint8_t variant, Scope* scope)

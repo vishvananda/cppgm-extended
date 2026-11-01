@@ -260,9 +260,12 @@ ExprFacts* Analyzer::call(const syntax::CallExpr& expr, Scope* scope)
 			return nullptr;
 		// A builtin function of an intrinsic or query form (lex/gnu_builtins.h;
 		// lookup declares one when first named, as `::__builtin_x` too).
-		if (result.found() && result.binding->kind == BindingKind::Function &&
-			static_cast<const FunctionEntity*>(result.binding->entity)->builtin == BuiltinFunction::Intrinsic)
-			return builtin_operation(expr, static_cast<const FunctionEntity*>(result.binding->entity), scope);
+		if (result.found() && result.binding->kind == BindingKind::Function)
+		{
+			const FunctionEntity* function = header_builtin(static_cast<const FunctionEntity*>(result.binding->entity));
+			if (function->builtin == BuiltinFunction::Intrinsic)
+				return builtin_operation(expr, function, scope);
+		}
 		if (!result.found())
 		{
 			if (!unqualified_name)

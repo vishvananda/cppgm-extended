@@ -1,0 +1,15 @@
+pmulhuw ee 13 81 35 8b 56 0c 77 04 97 73 b6 59 d5 c4 02
+palignr-bytes fc fb fa f9 f8 f7 f6 f5 f4 f3 f2 f1 f0 03 14 25
+palignr-bits fc fb fa f9 f8 f7 f6 f5 f4 f3 f2 f1 f0 03 14 25
+shift-left 00 00 00 00 00 03 14 25 36 47 58 69 7a 8b 9c ad
+shift-right 58 69 7a 8b 9c ad be cf e0 f1 02 00 00 00 00 00
+add-sat 02 12 22 32 42 52 62 72 82 92 a2 b2 c2 d2 e2 f2
+add-sat-u ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff f2
+sub-sat 04 16 28 3a 4c 5e 70 7f 94 a6 b8 ca dc ee 00 12
+sub-sat-u 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+add-sat-w 02 13 22 33 42 53 62 73 82 93 a2 b3 c2 d3 e2 f3
+sub-sat-wu 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+abs 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 10
+abs-w 01 01 02 03 05 05 06 07 09 09 0a 0b 0d 0d 0e 0f
+cvtpd2dq 02 00 00 00 fe ff ff ff 00 00 00 00 00 00 00 00
+nontemporal 03 14 25 36 47 58 69 7a 8b 9c ad be cf e0 f1 02

@@ -1,0 +1,12 @@
+// Clang's generic saturating forms take 8- and 16-bit lanes here; 32-bit ones
+// would need arithmetic wider than the lanewise lowering's, so they are refused
+// rather than computed wrongly.
+typedef int v4si __attribute__((vector_size(16)));
+v4si wide(v4si a, v4si b)
+{
+	return __builtin_elementwise_add_sat(a, b);
+}
+int main()
+{
+	return 0;
+}

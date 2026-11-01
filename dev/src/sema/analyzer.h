@@ -1083,8 +1083,12 @@ private:
 	ExprFacts* object_size_call(const syntax::CallExpr& expr, Scope* scope);
 	ExprFacts* floating_builtin(const syntax::CallExpr& expr, GnuBuiltin builtin, uint8_t variant, Scope* scope);
 	ExprFacts* gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin builtin, uint8_t variant, Scope* scope);
+	const FunctionEntity* header_builtin(const FunctionEntity* function);
+	bool integer_register(const Type* type);
+	bool lanewise_result(const ExprFacts* facts, const Type* target, Conversion& conversion);
 	const Type* vector_shape(const char*& shape, bool const_pointee);
 	ExprFacts* vector_lanewise_builtin(const syntax::CallExpr& expr, const FunctionEntity* builtin, Scope* scope);
+	ExprFacts* vector_elementwise_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
 	ExprFacts* vector_lane_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
 	ExprFacts* vector_shift_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
 	ExprFacts* vector_shuffle_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);

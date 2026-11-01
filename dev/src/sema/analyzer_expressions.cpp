@@ -1039,12 +1039,27 @@ const Conversion* Analyzer::convert(const syntax::Expr& expr, const Type* target
 	conversions_.set_arithmetic_operand(operand);
 	const bool converts = !IsVoid(facts->type) && conversions_.implicit(operand_of(facts), target, direct, conversion);
 	conversions_.set_arithmetic_operand(false);
-	if (!converts && (IsVoid(facts->type) || operand || !user_conversion(facts, target, conversion, direct)))
+	if (!converts && (IsVoid(facts->type) || operand || !lanewise_result(facts, target, conversion)) &&
+		(IsVoid(facts->type) || operand || !user_conversion(facts, target, conversion, direct)))
 	{
 		substitution_error(expr.location, "invalid implicit conversion");
 		return nullptr;
 	}
 	return finish_conversion(expr, conversion, operand);
+}
+
+bool Analyzer::lanewise_result(const ExprFacts* facts, const Type* target, Conversion& conversion)
+{
+	// GCC and Clang declare some lanewise builtins' results on different
+	// lanes (cvtpd2dq: __v4si, __v2di), and Clang's headers return them
+	// uncast: the register's bits convert to other integer lanes.
+	if ((facts->flags & kIntrinsic) == 0 || static_cast<Intrinsic>(facts->value & 0xff) != Intrinsic::VectorLanewise ||
+		!integer_register(facts->type) || !integer_register(target) ||
+		!conversions_.implicit(operand_of(facts), facts->type, false, conversion))
+		return false;
+	conversion.target = target;
+	conversion.result = target;
+	return true;
 }
 
 const Conversion* Analyzer::finish_conversion(const syntax::Expr& expr, Conversion& conversion, bool operand)
