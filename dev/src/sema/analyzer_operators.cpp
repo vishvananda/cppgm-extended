@@ -561,7 +561,7 @@ ExprFacts* Analyzer::overloaded_operator(
 		// An overloaded function name converts to a candidate's parameter
 		// (13.4) beside a class or enumeration operand.
 		const ExprFacts* facts = operand->facts;
-		if ((facts->flags & kBoundMember) != 0)
+		if (NonstaticMemberName(facts))
 			return nullptr;
 		if (facts->type == nullptr || (facts->flags & kOverloadSet) != 0)
 			continue;

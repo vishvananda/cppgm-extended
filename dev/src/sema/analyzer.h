@@ -639,6 +639,7 @@ private:
 	// derived class's member to a base's pointer).
 	FunctionEntity* select_overloaded(const ExprFacts* facts, const Type* target, bool explicit_cast = false);
 	void resolve_overloaded(const syntax::Expr& expr, FunctionEntity* function);
+	static bool NonstaticMemberName(const ExprFacts* facts);
 	bool check_resolved(const syntax::Expr& expr);
 	bool resolve_lone_function(const syntax::Expr& expr);
 	void odr_use(FunctionEntity* function, bool call = false);

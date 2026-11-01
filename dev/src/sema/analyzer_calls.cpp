@@ -918,18 +918,28 @@ ExprFacts* Analyzer::resolved_call(const syntax::CallExpr& expr, const FunctionL
 	return facts;
 }
 
+bool Analyzer::NonstaticMemberName(const ExprFacts* facts)
+{
+	// 5.2.5p4: naming a non-static member function through an object is
+	// only the callee of a call; a static one is the function itself. An
+	// overloaded name is what overload resolution selects, so it is decided
+	// there.
+	return (facts->flags & kBoundMember) != 0 && (facts->flags & kOverloadSet) == 0 && !IsStaticMemberFunction(facts);
+}
+
 bool Analyzer::implicit_sequence(const syntax::Expr& argument, const Type* parameter, Conversion& out)
 {
 	if (argument.kind == syntax::ExprKind::BracedInit)
 		return list_sequence(static_cast<const syntax::BracedInitList&>(argument), parameter, out);
 	const ExprFacts* facts = argument.facts;
-	if ((facts->flags & kBoundMember) != 0 && !IsStaticMemberFunction(facts))
+	if (NonstaticMemberName(facts))
 		return false;
 	if ((facts->flags & kOverloadSet) != 0)
 	{
 		// 13.3.3.1p? via 13.4: the argument resolves to the function the
 		// parameter's type selects, an exact match.
-		if (select_overloaded(facts, parameter) == nullptr)
+		const FunctionEntity* selected = select_overloaded(facts, parameter);
+		if (selected == nullptr || ((facts->flags & kBoundMember) != 0 && !selected->is_static))
 			return false;
 		out = Conversion();
 		out.target = parameter;
@@ -1198,8 +1208,8 @@ Resolution Analyzer::resolve(const syntax::Slice<syntax::Expr*>& call_arguments,
 					slot.form = ConversionForm::Ellipsis;
 					slot.rank = ConversionRank::Ellipsis;
 					const ExprFacts* facts = call_arguments[i]->facts;
-					viable = facts->type != nullptr && (facts->flags & (kOverloadSet | kBoundMember)) == 0 &&
-						!IsVoid(facts->type);
+					viable = facts->type != nullptr && (facts->flags & kOverloadSet) == 0 &&
+						!NonstaticMemberName(facts) && !IsVoid(facts->type);
 				}
 			}
 			if (!viable)

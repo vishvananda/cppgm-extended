@@ -1,0 +1,109 @@
+global @count : i32 [binding=strong] = 0
+global @object [binding=strong] = {
+  zero 1
+}
+
+function @side() -> ptr [binding=strong, object=_Z4sidev] {
+  block ^entry:
+    %t1 = load typed i32 @count
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @count
+    %t3 = addr @object
+    return ptr %t3
+}
+function @call(%f : ptr) -> i32 [binding=strong, object=_Z4callPFicE] {
+  slot $f : ptr
+
+  block ^entry:
+    store typed ptr %f, $f
+    %t1 = load typed ptr $f
+    %t2 = call i32 %t1(97) as (%arg0 : i8) -> i32
+    return i32 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $s : obj<1x1>
+  slot $p : ptr
+  slot $r : ptr
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+  slot $land__4 : i64
+
+  block ^entry:
+    %t1 = addr $s
+    %t2 = call ptr @side()
+    %t3 = addr @S__m__ov2
+    store typed ptr %t3, $p
+    %t4 = addr @S__m__ov2
+    store typed ptr %t4, $r
+    %t5 = load typed ptr $p
+    %t6 = call i32 %t5(97) as (%arg0 : i8) -> i32
+    %t7 = cmp eq i32 %t6, 3
+    branch %t7, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t8 = load typed ptr $r
+    %t9 = call i32 %t8(98) as (%arg0 : i8) -> i32
+    %t10 = cmp eq i32 %t9, 3
+    %t11 = cmp ne i64 %t10, 0
+    store typed i64 %t11, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t12 = load typed i64 $land__2
+    branch %t12, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t13 = addr @S__m__ov2
+    %t14 = call i32 @call(%t13)
+    %t15 = cmp eq i32 %t14, 3
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store typed i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t17 = load typed i64 $land__3
+    branch %t17, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t18 = load typed i32 @count
+    %t19 = cmp eq i32 %t18, 1
+    %t20 = cmp ne i64 %t19, 0
+    store typed i64 %t20, $land__4
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store typed i64 0, $land__4
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t21 = load typed i64 $land__4
+    branch %t21, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t22 = load typed i32 $cond__1
+    return i32 %t22
+}
+function @S__m__ov2(%__param0 : i8) -> i32 [binding=weak, object=_ZN1S1mEc, inline_hint=yes] {
+  slot $__param0 : i8
+
+  block ^entry:
+    store i8 %__param0, $__param0
+    return i32 3
+}

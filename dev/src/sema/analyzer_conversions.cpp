@@ -377,7 +377,7 @@ bool Analyzer::user_conversion(const ExprFacts* from, const Type* target, Conver
 	// initialization, 12.3.2p2). Candidates rank by the operand's
 	// conversion, then two conversion functions by their second standard
 	// conversions (13.3.3p1); none or several best: false.
-	if (from->type == nullptr || (from->flags & (kOverloadSet | kBoundMember)) != 0 || IsVoid(from->type))
+	if (from->type == nullptr || (from->flags & kOverloadSet) != 0 || NonstaticMemberName(from) || IsVoid(from->type))
 		return false;
 	const bool reference = target->is_reference();
 	const Type* object = reference ? target->element : target;

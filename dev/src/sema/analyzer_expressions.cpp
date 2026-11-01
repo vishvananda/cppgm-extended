@@ -439,7 +439,7 @@ bool Analyzer::check_resolved(const syntax::Expr& expr)
 			return !failed();
 		return substitution_error(expr.location, "overloaded function name without a target type");
 	}
-	if ((facts->flags & kBoundMember) != 0)
+	if (NonstaticMemberName(facts))
 		return substitution_error(expr.location, "a member function must be called");
 	return true;
 }
@@ -1033,7 +1033,7 @@ const Conversion* Analyzer::convert(const syntax::Expr& expr, const Type* target
 		if (failed())
 			return nullptr;
 	}
-	if ((facts->flags & kBoundMember) != 0)
+	if (NonstaticMemberName(facts))
 		return substitution_error(expr.location, "a member function must be called"), nullptr;
 	Conversion conversion = Conversion();
 	conversions_.set_arithmetic_operand(operand);
@@ -1203,7 +1203,13 @@ void Analyzer::resolve_overloaded(const syntax::Expr& expr, FunctionEntity* func
 		}
 	}
 	else
+	{
 		facts->type = function->type->canonical;
+		// 5.2.5p4: a static member function named through an object is an
+		// lvalue once selected.
+		if (function->is_static)
+			facts->category = ValueCategory::LValue;
+	}
 	facts->entity = function;
 	facts->flags &= static_cast<uint32_t>(~kOverloadSet);
 	odr_use(function);

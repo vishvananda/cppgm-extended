@@ -978,7 +978,7 @@ FunctionEntity* Analyzer::deduce_for_call(
 			continue;
 		}
 		const ExprFacts* facts = call_arguments[i]->facts;
-		if ((facts->flags & kBoundMember) != 0)
+		if (NonstaticMemberName(facts))
 			return nullptr;
 		if ((facts->flags & kOverloadSet) != 0)
 			deduce_overloaded(p, facts->functions, depth, arguments);

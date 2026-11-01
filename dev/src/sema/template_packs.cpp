@@ -744,7 +744,7 @@ bool Analyzer::deduce_call_pack(const Type* pattern, const syntax::Slice<syntax:
 			if (argument->kind == syntax::ExprKind::BracedInit)
 				return true;
 			const ExprFacts* facts = argument->facts;
-			if ((facts->flags & kBoundMember) != 0)
+			if (NonstaticMemberName(facts))
 				return false;
 			if ((facts->flags & kOverloadSet) != 0)
 			{
