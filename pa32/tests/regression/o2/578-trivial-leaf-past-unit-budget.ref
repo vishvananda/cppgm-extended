@@ -1,0 +1,499 @@
+function @leaf(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 %x
+}
+function @work(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %v0 = binary add i64 %x, %x
+    %v1 = binary xor i64 %x, %v0
+    %v2 = binary mul i64 %x, %v1
+    %v3 = binary add i64 %x, %v2
+    %v4 = binary xor i64 %x, %v3
+    %v5 = binary mul i64 %x, %v4
+    %v6 = binary add i64 %x, %v5
+    %v7 = binary xor i64 %x, %v6
+    %v8 = binary mul i64 %x, %v7
+    %v9 = binary add i64 %x, %v8
+    %v10 = binary xor i64 %x, %v9
+    %v11 = binary mul i64 %x, %v10
+    %v12 = binary add i64 %x, %v11
+    %v13 = binary xor i64 %x, %v12
+    %v14 = binary mul i64 %x, %v13
+    %v15 = binary add i64 %x, %v14
+    %v16 = binary xor i64 %x, %v15
+    %v17 = binary mul i64 %x, %v16
+    %v18 = binary add i64 %x, %v17
+    %v19 = binary xor i64 %x, %v18
+    %v20 = binary mul i64 %x, %v19
+    %v21 = binary add i64 %x, %v20
+    %v22 = binary xor i64 %x, %v21
+    %v23 = binary mul i64 %x, %v22
+    %v24 = binary add i64 %x, %v23
+    %v25 = binary xor i64 %x, %v24
+    %v26 = binary mul i64 %x, %v25
+    %v27 = binary add i64 %x, %v26
+    %v28 = binary xor i64 %x, %v27
+    %v29 = binary mul i64 %x, %v28
+    %v30 = binary add i64 %x, %v29
+    %v31 = binary xor i64 %x, %v30
+    %v32 = binary mul i64 %x, %v31
+    %v33 = binary add i64 %x, %v32
+    %v34 = binary xor i64 %x, %v33
+    %v35 = binary mul i64 %x, %v34
+    %v36 = binary add i64 %x, %v35
+    %v37 = binary xor i64 %x, %v36
+    %v38 = binary mul i64 %x, %v37
+    return i64 %v38
+}
+function @caller0(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller1(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller2(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller3(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller4(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller5(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller6(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller7(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller8(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller9(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller10(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller11(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller12(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller13(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller14(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller15(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller16(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller17(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller18(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller19(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller20(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller21(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller22(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller23(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller24(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller25(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller26(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller27(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller28(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller29(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller30(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller31(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller32(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller33(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller34(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller35(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller36(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller37(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller38(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller39(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller40(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller41(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller42(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller43(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller44(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller45(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller46(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller47(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller48(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller49(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller50(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller51(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller52(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller53(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller54(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller55(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller56(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller57(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller58(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller59(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller60(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller61(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller62(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller63(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 0
+}
+function @caller64(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller65(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller66(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller67(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller68(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller69(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller70(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller71(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller72(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller73(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller74(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller75(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller76(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller77(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller78(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @caller79(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %r0 = call i64 @work(%x)
+    %r1 = call i64 @work(%x)
+    %r2 = call i64 @work(%x)
+    %r3 = call i64 @work(%x)
+    %r4 = call i64 @work(%x)
+    %r5 = call i64 @work(%x)
+    %r6 = call i64 @work(%x)
+    %r7 = call i64 @work(%x)
+    return i64 0
+}
+function @last(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 %x
+}

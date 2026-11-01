@@ -1618,13 +1618,15 @@ bool InlineWaveRunner::process(SymbolId caller)
 			// The unit's growth budgets (the single-call policy has its own).
 			const bool forced = copy == kNoId && (program_.symbols[callee].metadata.flags & SF_FORCE_INLINE) != 0;
 			uint64_t& unit = forced ? budgets_.force_unit : budgets_.growth_unit;
-			if (!once && size > unit)
+			// (A trivial leaf takes no more room than its call.)
+			const bool free_leaf = !partly && copy == kNoId && shapes_[g].size <= kTrivialLeaf && !shapes_[g].call;
+			if (!once && !free_leaf && size > unit)
 			{
 				if (copy != kNoId)
 					release(copy);
 				continue;
 			}
-			if (!once)
+			if (!once && !free_leaf)
 				unit -= size;
 			const bool loop = copy != kNoId ? shape_of(program_, copy, nounwind_).loop : shapes_[g].loop;
 			InstId tail = kNoId;

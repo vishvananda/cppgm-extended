@@ -512,10 +512,14 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 			simplify_function(program, s, stats, options, nounwind, unwritten);
 		};
 		// Pipeline-wide growth: each inlining policy copies at most the
-		// unit's input size (at least 10,240 instructions) in total.
+		// unit's input size (at least 10,240 instructions) in total, the
+		// ordinary policies twice that (template layers, as in tramp3d, are
+		// mostly small accessors: past the budget each stays a call, and a
+		// unit that runs out spends five times the instructions).
 		InlineBudgets budgets;
 		budgets.once_unit = stats.instructions_in > 10240 ? stats.instructions_in : 10240;
-		budgets.growth_unit = budgets.force_unit = budgets.once_unit;
+		budgets.force_unit = budgets.once_unit;
+		budgets.growth_unit = 2 * budgets.once_unit;
 		materialize_storage_arguments(program);
 		run_inline_wave(program, options, stats, InlineWave::Ordinary, budgets, original, nounwind, simplify);
 		prune_unreachable(program, stats);
