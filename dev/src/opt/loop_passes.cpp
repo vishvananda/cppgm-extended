@@ -55,6 +55,7 @@ private:
 	void add_exit_phis(const std::vector<uint8_t>& member, const std::vector<uint8_t>& owned, BlockId exit);
 	bool invariant(uint32_t loop, Value v) const;
 	bool induction(uint32_t loop, InstId phi, Induction& out) const;
+	void add_narrow_accumulators(uint32_t loop, std::vector<Induction>& ivs) const;
 	bool exit_test(uint32_t loop, ExitTest& out, std::vector<Induction>& ivs) const;
 	bool effect_free(uint32_t loop) const;
 	bool fill_pattern(uint32_t loop, const Induction& iv, InstId& store, InstId& load) const;
@@ -146,6 +147,56 @@ bool LoopPass::induction(uint32_t loop, InstId id, Induction& out) const
 		return out.step_bytes != 0;
 	}
 	return false;
+}
+
+// A narrow accumulator stepping through its promotion, `next = trunc T (add
+// (ext r), c)`, steps by c in T whichever extension it took. For the exit
+// values only: it may wrap, which the other readers of an induction exclude.
+void LoopPass::add_narrow_accumulators(uint32_t loop, std::vector<Induction>& ivs) const
+{
+	const Loop& l = forest_.loops[loop];
+	if (l.latches.size() != 1)
+		return;
+	const auto convert_of = [&](Value v, bool trunc) -> const Instruction* {
+		if (!v.is(ValueKind::Temp) || body_.temps[v.index].def == kNoId)
+			return nullptr;
+		const Instruction& def = body_.instructions[body_.temps[v.index].def];
+		if (def.op != Opcode::Convert)
+			return nullptr;
+		const ConvertOp op = static_cast<ConvertOp>(def.sub);
+		return (trunc ? op == ConvertOp::Trunc : op == ConvertOp::SExt || op == ConvertOp::ZExt) ? &def : nullptr;
+	};
+	for (InstId i = body_.blocks[l.header].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
+		i = body_.instructions[i].next)
+	{
+		const Instruction& phi = body_.instructions[i];
+		if (phi.extra_count != 4 || !phi.type.is_integer())
+			continue;
+		Induction iv;
+		iv.phi = i;
+		iv.value = phi.result;
+		const Value next = phi_incoming(body_, phi, l.latches[0]);
+		for (uint32_t k = 0; k < 4; k += 2)
+			if (body_.operands[phi.extra_first + k].index != l.latches[0])
+				iv.init = body_.operands[phi.extra_first + k + 1];
+		const Instruction* narrow = convert_of(next, true);
+		if (narrow == nullptr || narrow->type != phi.type || !invariant(loop, iv.init) ||
+			!narrow->ops[0].is(ValueKind::Temp))
+			continue;
+		const Instruction& sum = body_.instructions[body_.temps[narrow->ops[0].index].def];
+		if (sum.op != Opcode::Binary || !sum.ops[1].is(ValueKind::Integer) ||
+			(static_cast<BinaryOp>(sum.sub) != BinaryOp::Add && static_cast<BinaryOp>(sum.sub) != BinaryOp::Sub))
+			continue;
+		const Instruction* wide = convert_of(sum.ops[0], false);
+		if (wide == nullptr || convert_source_type(*wide) != phi.type || !wide->ops[0].is(ValueKind::Temp) ||
+			wide->ops[0].index != phi.result)
+			continue;
+		const int64_t c = static_cast<int64_t>(normalize_integer(phi.type, body_.literals[sum.ops[1].index]).low);
+		iv.next = next.index;
+		iv.step_bytes = static_cast<BinaryOp>(sum.sub) == BinaryOp::Add ? c : -c;
+		if (iv.step_bytes != 0)
+			ivs.push_back(iv);
+	}
 }
 
 // The test number (0-based) at which a counted loop leaves: the induction
@@ -1362,12 +1413,17 @@ bool LoopPass::try_loop(uint32_t loop)
 	{
 		// An effect-free loop whose header inductions are read after it:
 		// their exit values from the trip count.
-		if (effect_free(loop) && final_values(loop, test, ivs))
+		if (effect_free(loop))
 		{
-			if (!bypass(loop, test))
-				return false;
-			++c_.stats.loops_removed;
-			return true;
+			std::vector<Induction> read = ivs;
+			add_narrow_accumulators(loop, read);
+			if (final_values(loop, test, read))
+			{
+				if (!bypass(loop, test))
+					return false;
+				++c_.stats.loops_removed;
+				return true;
+			}
 		}
 		// A copy loop's destination may be read after it.
 		uint32_t src, dst;

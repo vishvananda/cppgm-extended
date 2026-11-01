@@ -1,0 +1,8 @@
+function @unsigned_sum() -> u8 [binding=strong] {
+  block ^entry:
+    return u8 192
+}
+function @signed_difference() -> i16 [binding=strong] {
+  block ^entry:
+    return i16 11079
+}
