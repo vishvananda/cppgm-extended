@@ -8,7 +8,7 @@ function @shared_loop(%limit : i64) -> i64 [binding=strong] {
     branch %more, ^body, ^done
 
   block ^body:
-    %next = binary add i64 %index, 1
+    %next = binary add i64 %index, 2
     jump ^loop
 
   block ^done:
@@ -37,7 +37,7 @@ function @single_loop(%limit : i64) -> i64 [binding=internal] {
     branch %more, ^body, ^done
 
   block ^body:
-    %next = binary add i64 %index, 1
+    %next = binary add i64 %index, 2
     jump ^loop
 
   block ^done:
@@ -61,7 +61,7 @@ function @hinted_loop(%limit : i64) -> i64
     branch %more, ^body, ^done
 
   block ^body:
-    %next = binary add i64 %index, 1
+    %next = binary add i64 %index, 2
     jump ^loop
 
   block ^done:

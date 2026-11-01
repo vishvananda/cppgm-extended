@@ -1,0 +1,81 @@
+function @upward(%n : i32) -> i32 [binding=strong] {
+  block ^entry:
+    %t1 = cmp gt i32 %n, 0
+    %t2 = select i32 %t1, %n, 0
+    %t3 = binary mul i32 %t2, 3
+    %t4 = binary add i32 %t3, 7
+    return i32 %t4
+}
+function @tested_read(%from : i32, %to : i32) -> i32 [binding=strong] {
+  block ^entry:
+    %t1 = cmp lt i32 %from, %to
+    %t2 = select i32 %t1, %to, %from
+    return i32 %t2
+}
+function @downward(%from : i32, %to : i32) -> i32 [binding=strong] {
+  block ^entry:
+    %t1 = binary sub i32 %from, %to
+    %t2 = cmp gt i32 %from, %to
+    %t3 = select i32 %t2, %t1, 0
+    %t4 = binary mul i32 %t3, 5
+    return i32 %t4
+}
+function @unsigned_bound(%n : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %t1 = binary sub i64 %n, 2
+    %t2 = cmp ugt i64 %n, 2
+    %t3 = select i64 %t2, %t1, 0
+    %t4 = binary mul i64 %t3, 4
+    return i64 %t4
+}
+function @leaves_on_true(%flag : i64, %n : i32) -> i8 [binding=strong] {
+  block ^entry:
+    branch %flag, ^loop_preheader_1, ^other
+
+  block ^loop_preheader_1:
+    %t1 = cmp gt i32 %n, 0
+    %t2 = select i32 %t1, %n, 0
+    %t3 = convert zext i64 i32 %t2
+    %t4 = convert trunc i8 i64 %t3
+    %t5 = binary mul i8 %t4, 3
+    return i8 %t5
+
+  block ^other:
+    return i8 1
+}
+function @inclusive_bound(%n : i32) -> i32 [binding=strong] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %i = phi i32 [^entry: 0, ^body: %next]
+    %sum = phi i32 [^entry: 0, ^body: %added]
+    %more = cmp le i32 %i, %n
+    branch %more, ^body, ^done
+
+  block ^body:
+    %added = binary add i32 %sum, 3
+    %next = binary add i32 %i, 1
+    jump ^loop
+
+  block ^done:
+    return i32 %sum
+}
+function @step_of_two(%n : i32) -> i32 [binding=strong] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %i = phi i32 [^entry: 0, ^body: %next]
+    %sum = phi i32 [^entry: 0, ^body: %added]
+    %more = cmp lt i32 %i, %n
+    branch %more, ^body, ^done
+
+  block ^body:
+    %added = binary add i32 %sum, 3
+    %next = binary add i32 %i, 2
+    jump ^loop
+
+  block ^done:
+    return i32 %sum
+}

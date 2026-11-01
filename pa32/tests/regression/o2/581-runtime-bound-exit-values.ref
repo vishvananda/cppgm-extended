@@ -1,0 +1,123 @@
+function @count_up(%from : i32, %to : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub i32 %to, %from
+    %t2 = cmp lt i32 %from, %to
+    %t3 = select i32 %t2, %t1, 0
+    %t4 = cmp lt i32 %from, %to
+    %t5 = select i32 %t4, %to, %from
+    %t6 = binary mul i32 %t3, 3
+    %t7 = binary add i32 %t6, 7
+    %scaled = binary mul i32 %t5, 100
+    %r = binary add i32 %scaled, %t7
+    return i32 %r
+}
+function @narrow(%n : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %t1 = cmp gt i32 %n, 0
+    %t2 = select i32 %t1, %n, 0
+    %t3 = convert zext i64 i32 %t2
+    %t4 = convert trunc i8 i64 %t3
+    %t5 = binary mul i8 %t4, 3
+    %r = convert sext i32 i8 %t5
+    return i32 %r
+}
+function @count_down(%from : i32, %to : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub i32 %from, %to
+    %t2 = cmp gt i32 %from, %to
+    %t3 = select i32 %t2, %t1, 0
+    %t4 = binary mul i32 %t3, 6
+    return i32 %t4
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    %r0 = call i32 @count_up(0, 5)
+    %ok0 = cmp eq i32 %r0, 522
+    branch %ok0, ^c1, ^bad0
+
+  block ^bad0:
+    return i64 1
+
+  block ^c1:
+    %r1 = call i32 @count_up(5, 0)
+    %ok1 = cmp eq i32 %r1, 507
+    branch %ok1, ^c2, ^bad1
+
+  block ^bad1:
+    return i64 2
+
+  block ^c2:
+    %r2 = call i32 @count_up(0, 0)
+    %ok2 = cmp eq i32 %r2, 7
+    branch %ok2, ^c3, ^bad2
+
+  block ^bad2:
+    return i64 3
+
+  block ^c3:
+    %r3 = call i32 @count_up(-3, 2)
+    %ok3 = cmp eq i32 %r3, 222
+    branch %ok3, ^c4, ^bad3
+
+  block ^bad3:
+    return i64 4
+
+  block ^c4:
+    %r4 = call i32 @count_up(2147483646, 2147483647)
+    %ok4 = cmp eq i32 %r4, -90
+    branch %ok4, ^c5, ^bad4
+
+  block ^bad4:
+    return i64 5
+
+  block ^c5:
+    %r5 = call i32 @narrow(100)
+    %ok5 = cmp eq i32 %r5, 44
+    branch %ok5, ^c6, ^bad5
+
+  block ^bad5:
+    return i64 6
+
+  block ^c6:
+    %r6 = call i32 @narrow(0)
+    %ok6 = cmp eq i32 %r6, 0
+    branch %ok6, ^c7, ^bad6
+
+  block ^bad6:
+    return i64 7
+
+  block ^c7:
+    %r7 = call i32 @narrow(-1)
+    %ok7 = cmp eq i32 %r7, 0
+    branch %ok7, ^c8, ^bad7
+
+  block ^bad7:
+    return i64 8
+
+  block ^c8:
+    %r8 = call i32 @narrow(43)
+    %ok8 = cmp eq i32 %r8, -127
+    branch %ok8, ^c9, ^bad8
+
+  block ^bad8:
+    return i64 9
+
+  block ^c9:
+    %r9 = call i32 @count_down(5, 0)
+    %ok9 = cmp eq i32 %r9, 30
+    branch %ok9, ^c10, ^bad9
+
+  block ^bad9:
+    return i64 10
+
+  block ^c10:
+    %r10 = call i32 @count_down(0, 5)
+    %ok10 = cmp eq i32 %r10, 0
+    branch %ok10, ^pass, ^bad10
+
+  block ^bad10:
+    return i64 11
+
+  block ^pass:
+    return i64 0
+}

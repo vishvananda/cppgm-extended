@@ -1,0 +1,5 @@
+function @many(%n : i32) -> i32 [binding=strong] {
+  block ^entry:
+    %r = binary add i32 %n, 78000
+    return i32 %r
+}

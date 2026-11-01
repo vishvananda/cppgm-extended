@@ -24,18 +24,6 @@ function @hoist_disjoint_global(%limit : i64) -> i64 [no_inline=yes] {
 }
 function @keep_aliased_global(%limit : i64) -> i64 [no_inline=yes] {
   block ^entry:
-    jump ^header
-
-  block ^header:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %more = cmp lt i64 %i, %limit
-    branch %more, ^body, ^exit
-
-  block ^body:
-    %next = binary add i64 %i, 1
-    jump ^header
-
-  block ^exit:
     return i64 0
 }
 function @keep_across_unknown_call(%limit : i64) -> i64 [no_inline=yes] {

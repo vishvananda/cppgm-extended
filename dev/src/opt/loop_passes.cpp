@@ -34,6 +34,10 @@ struct ExitTest
 	Value bound;
 	Value exit_value;   // the tested value when the loop leaves (the bound, or a counted literal)
 	int64_t trips = -1; // exits at the trips-th test (0-based) of a counted loop; -1 unknown
+	// The induction stops at a runtime bound by order, `i < n`, and only
+	// final_values handles that: the loop may not run at all.
+	bool ordered = false;
+	ComparePredicate entered = ComparePredicate::Lt; // `init entered bound`: the loop runs
 };
 
 class LoopPass
@@ -66,7 +70,10 @@ private:
 	SymbolId builtin_symbol(const char* name, const char* object, const Type* types, uint32_t count);
 	bool builtin_available(const char* name, const char* object) const;
 	bool private_values(uint32_t loop, const ExitTest& test, const std::vector<Induction>& ivs) const;
-	bool final_values(uint32_t loop, const ExitTest& test, const std::vector<Induction>& ivs);
+	bool exit_reads(uint32_t loop, const ExitTest& test, const std::vector<Induction>& ivs, std::vector<uint8_t>& read,
+		const Induction*& tested) const;
+	bool final_values(uint32_t loop, ExitTest& test, const std::vector<Induction>& ivs);
+	bool fold_exit_values(uint32_t loop, ExitTest& test, const std::vector<Induction>& ivs);
 	bool bypass(uint32_t loop, const ExitTest& test);
 	void emit_fill(uint32_t loop, const Induction& iv, const ExitTest& test, InstId store, InstId load);
 	SymbolId fill_symbol();
@@ -324,6 +331,8 @@ bool LoopPass::exit_test(uint32_t loop, ExitTest& out, std::vector<Induction>& i
 		return false;
 	const Instruction& cmp = body_.instructions[def];
 	const bool leave_on_true = term.ops[1].index == out.exit;
+	bool ordered = false;
+	Value ordered_compared, ordered_bound;
 	for (const Induction& iv : ivs)
 		for (unsigned side = 0; side < 2; ++side)
 		{
@@ -369,7 +378,28 @@ bool LoopPass::exit_test(uint32_t loop, ExitTest& out, std::vector<Induction>& i
 				(pred == ComparePredicate::Eq && leave_on_true);
 			if (equality && (iv.pointer || iv.step_bytes == 1 || iv.step_bytes == -1))
 				return true;
+			// A runtime bound it approaches by one and stops at: every value
+			// is met, so it leaves on the bound unless it starts past it.
+			const ComparePredicate stays = leave_on_true ? inverted(pred) : pred;
+			const bool towards = iv.step_bytes == 1 ? stays == ComparePredicate::Lt || stays == ComparePredicate::Ult
+													: stays == ComparePredicate::Gt || stays == ComparePredicate::Ugt;
+			if (!iv.pointer && v.index == iv.value && (iv.step_bytes == 1 || iv.step_bytes == -1) && towards &&
+				cmp.type.is_integer())
+			{
+				ordered = true;
+				out.entered = stays;
+				ordered_compared = v;
+				ordered_bound = other;
+			}
 		}
+	if (ordered)
+	{
+		out.compared = ordered_compared;
+		out.bound = ordered_bound;
+		out.exit_value = ordered_bound;
+		out.trips = -1;
+		out.ordered = true;
+	}
 	return false;
 }
 
@@ -418,20 +448,14 @@ bool LoopPass::private_values(uint32_t loop, const ExitTest& test, const std::ve
 	return ok;
 }
 
-// A loop tested at its header on an induction phi it leaves when the phi
-// meets the bound (a counted trip number, an integer stepping by one, or a
-// pointer, which moves within its object until it meets the bound), whose
-// values read after it are header inductions: the preheader computes the
-// trip count N and each such induction's exit value init + N * step (in
-// its own type's arithmetic, as the loop's steps wrap), and the reads
-// after the loop take them. Then only the tested value is read after it
-// (bypass gives it the bound).
-bool LoopPass::final_values(uint32_t loop, const ExitTest& test, const std::vector<Induction>& ivs)
+// Whether final_values can give the exit value of everything read after the
+// loop: it is tested at its header, and what it reads are inductions of a
+// type the arithmetic fits. `read` marks those, the tested one included.
+bool LoopPass::exit_reads(uint32_t loop, const ExitTest& test, const std::vector<Induction>& ivs,
+	std::vector<uint8_t>& read, const Induction*& tested) const
 {
-	const Loop& l = forest_.loops[loop];
-	if (l.preheader == kNoId || test.exiting != l.header || !test.compared.is(ValueKind::Temp))
+	if (test.exiting != forest_.loops[loop].header || !test.compared.is(ValueKind::Temp))
 		return false;
-	const Induction* tested = nullptr;
 	for (const Induction& iv : ivs)
 		if (iv.value == test.compared.index)
 			tested = &iv;
@@ -443,8 +467,7 @@ bool LoopPass::final_values(uint32_t loop, const ExitTest& test, const std::vect
 	};
 	if (!fits(body_.temps[tested->value].type))
 		return false;
-	// The inductions read after the loop (the tested one included).
-	std::vector<uint8_t> read(ivs.size(), 0);
+	read.assign(ivs.size(), 0);
 	bool ok = true;
 	for (BlockId b : body_.layout)
 	{
@@ -469,6 +492,24 @@ bool LoopPass::final_values(uint32_t loop, const ExitTest& test, const std::vect
 	for (size_t k = 0; k < ivs.size(); ++k)
 		if (read[k] && !fits(body_.temps[ivs[k].value].type))
 			return false;
+	return true;
+}
+
+// A loop tested at its header on an induction phi it leaves when the phi
+// meets the bound (a counted trip number, an integer stepping by one, or a
+// pointer, which moves within its object until it meets the bound), whose
+// values read after it are header inductions: the preheader computes the
+// trip count N and each such induction's exit value init + N * step (in
+// its own type's arithmetic, as the loop's steps wrap), and the reads
+// after the loop take them. Then only the tested value is read after it
+// (bypass gives it the bound).
+bool LoopPass::final_values(uint32_t loop, ExitTest& test, const std::vector<Induction>& ivs)
+{
+	const Loop& l = forest_.loops[loop];
+	std::vector<uint8_t> read;
+	const Induction* tested = nullptr;
+	if (l.preheader == kNoId || !exit_reads(loop, test, ivs, read, tested))
+		return false;
 	// The trip count, as i64, in the preheader.
 	const BlockId pre = l.preheader;
 	const InstId term = body_.blocks[pre].last;
@@ -507,8 +548,32 @@ bool LoopPass::final_values(uint32_t loop, const ExitTest& test, const std::vect
 	else
 	{
 		const Type type = body_.temps[tested->value].type;
-		const Value diff = tested->step_bytes == 1 ? binary(BinaryOp::Sub, type, test.bound, tested->init)
-												   : binary(BinaryOp::Sub, type, tested->init, test.bound);
+		Value diff = tested->step_bytes == 1 ? binary(BinaryOp::Sub, type, test.bound, tested->init)
+											 : binary(BinaryOp::Sub, type, tested->init, test.bound);
+		if (test.ordered)
+		{
+			// It runs only from before the bound; otherwise it leaves at once
+			// with the start.
+			Instruction entered = make_instruction(Opcode::Compare, type);
+			entered.sub = static_cast<uint8_t>(test.entered);
+			entered.ops[0] = tested->init;
+			entered.ops[1] = test.bound;
+			entered.location = location;
+			const InstId id = append_instruction(body_, entered);
+			body_.instructions[id].result = append_temp(body_, i64, id);
+			insert_after(body_, pre, at, id);
+			at = id;
+			const Value runs = Value::temp(body_.instructions[id].result);
+			auto choose = [&](Value first, Value second) {
+				Instruction inst = make_instruction(Opcode::Select, type);
+				inst.ops[0] = runs;
+				inst.ops[1] = first;
+				inst.ops[2] = second;
+				return emit(inst);
+			};
+			diff = choose(diff, literal(0));
+			test.exit_value = choose(test.bound, tested->init);
+		}
 		trips = diff;
 		if (type.kind() != TypeKind::I64)
 		{
@@ -1400,6 +1465,24 @@ bool LoopPass::version_fills()
 	return changed;
 }
 
+// An effect-free loop goes, its reads taking their exit values. A loop entered
+// from a branching block gets a preheader first; the next round rewrites it.
+bool LoopPass::fold_exit_values(uint32_t loop, ExitTest& test, const std::vector<Induction>& ivs)
+{
+	std::vector<Induction> read = ivs;
+	add_narrow_accumulators(loop, read);
+	if (forest_.loops[loop].preheader == kNoId)
+	{
+		std::vector<uint8_t> reads;
+		const Induction* tested = nullptr;
+		return exit_reads(loop, test, read, reads, tested) && make_preheader(loop);
+	}
+	if (!final_values(loop, test, read) || !bypass(loop, test))
+		return false;
+	++c_.stats.loops_removed;
+	return true;
+}
+
 bool LoopPass::try_loop(uint32_t loop)
 {
 	const Loop& l = forest_.loops[loop];
@@ -1408,23 +1491,13 @@ bool LoopPass::try_loop(uint32_t loop)
 	ExitTest test;
 	std::vector<Induction> ivs;
 	if (!exit_test(loop, test, ivs))
-		return false;
+		return test.ordered && effect_free(loop) && fold_exit_values(loop, test, ivs);
 	if (!private_values(loop, test, ivs))
 	{
 		// An effect-free loop whose header inductions are read after it:
 		// their exit values from the trip count.
-		if (effect_free(loop))
-		{
-			std::vector<Induction> read = ivs;
-			add_narrow_accumulators(loop, read);
-			if (final_values(loop, test, read))
-			{
-				if (!bypass(loop, test))
-					return false;
-				++c_.stats.loops_removed;
-				return true;
-			}
-		}
+		if (effect_free(loop) && fold_exit_values(loop, test, ivs))
+			return true;
 		// A copy loop's destination may be read after it.
 		uint32_t src, dst;
 		if (c_.level >= 2 && l.preheader != kNoId && test.exiting == l.header &&
@@ -3193,10 +3266,14 @@ bool unroll_loops(FunctionContext& context)
 	return changed;
 }
 
+// One rewrite per run, and a run costs a walk of the function: a bound for a
+// function of very many loops. A preheader takes a run of its own.
+const unsigned kRemovalRounds = 1024;
+
 bool remove_loops(FunctionContext& context)
 {
 	bool any = false;
-	for (unsigned round = 0; round < 8; ++round)
+	for (unsigned round = 0; round < kRemovalRounds; ++round)
 	{
 		LoopPass pass(context);
 		if (!pass.run(round == 0))

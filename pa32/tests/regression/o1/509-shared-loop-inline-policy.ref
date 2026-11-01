@@ -8,7 +8,7 @@ function @shared_loop(%limit : i64) -> i64 [binding=strong] {
     branch %more, ^body, ^done
 
   block ^body:
-    %next = binary add i64 %index, 1
+    %next = binary add i64 %index, 2
     jump ^loop
 
   block ^done:
@@ -34,7 +34,7 @@ function @single_caller(%limit : i64) -> i64 [binding=strong] {
     branch %more_2, ^body_2, ^done_3
 
   block ^body_2:
-    %next_3 = binary add i64 %index_1, 1
+    %next_3 = binary add i64 %index_1, 2
     jump ^loop_1
 
   block ^done_3:
@@ -50,7 +50,7 @@ function @hinted_loop(%limit : i64) -> i64 [binding=strong, inline_hint=yes] {
     branch %more, ^body, ^done
 
   block ^body:
-    %next = binary add i64 %index, 1
+    %next = binary add i64 %index, 2
     jump ^loop
 
   block ^done:
@@ -66,7 +66,7 @@ function @hinted_a(%limit : i64) -> i64 [binding=strong] {
     branch %more_2, ^body_2, ^done_3
 
   block ^body_2:
-    %next_3 = binary add i64 %index_1, 1
+    %next_3 = binary add i64 %index_1, 2
     jump ^loop_1
 
   block ^done_3:
@@ -82,7 +82,7 @@ function @hinted_b(%limit : i64) -> i64 [binding=strong] {
     branch %more_2, ^body_2, ^done_3
 
   block ^body_2:
-    %next_3 = binary add i64 %index_1, 1
+    %next_3 = binary add i64 %index_1, 2
     jump ^loop_1
 
   block ^done_3:
