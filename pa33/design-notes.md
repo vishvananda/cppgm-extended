@@ -53,6 +53,10 @@ that paid there in the course solution:
   its source's register is sound for a reader of the low bits only, and keeping
   a `nowrap` add computed at 64 bits is sound for canonical operands only. Each
   is correct alone, and together they turn `(int)wide + y` into a wrong index.
+- Know what sits between a compare and the `cmov` reading it. `xor r, r` is the
+  short zero, and it clears the flags: a scan that stops at the first instruction
+  it does not recognize, such as a sign extension, lets a zero through as an
+  `xor` and the select quietly stops selecting. Only spilled operands reach this.
 - Let a phi's sources and result share a register when their ranges do not
   overlap, so its edge transfers move nothing. A transfer on a conditional
   edge is executed in that edge's block, not at the end of the predecessor.

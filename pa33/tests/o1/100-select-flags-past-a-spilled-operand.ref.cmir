@@ -1,0 +1,406 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @clamp
+  abi
+    param %a -> rdi : ptr
+    param %b -> rsi : ptr
+    param %out -> rdx : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    temp %y4 -> [rbp-<off0>] : i32
+    temp %x5 -> [rbp-<off1>] : i32
+    temp %y5 -> [rbp-<off2>] : i32
+    temp %x6 -> [rbp-<off3>] : i32
+    temp %y6 -> [rbp-<off4>] : i32
+    temp %x7 -> [rbp-<off5>] : i32
+    temp %y7 -> [rbp-<off6>] : i32
+    temp %x8 -> [rbp-<off7>] : i32
+    temp %y8 -> [rbp-<off8>] : i32
+    temp %x9 -> [rbp-<off9>] : i32
+    temp %y9 -> [rbp-<off10>] : i32
+    temp %x10 -> [rbp-<off11>] : i32
+    temp %y10 -> [rbp-<off12>] : i32
+    temp %x11 -> [rbp-<off13>] : i32
+    temp %y11 -> [rbp-<off14>] : i32
+    temp %x12 -> [rbp-<off15>] : i32
+    temp %y12 -> [rbp-<off16>] : i32
+    temp %x13 -> [rbp-<off17>] : i32
+    temp %y13 -> [rbp-<off18>] : i32
+    temp %x14 -> [rbp-<off19>] : i32
+    temp %y14 -> [rbp-<off20>] : i32
+    temp %d9 -> [rbp-<off21>] : i32
+    temp %l9 -> [rbp-<off22>] : i32
+    temp %c9 -> [rbp-<off23>] : i32
+    temp %d10 -> [rbp-<off24>] : i32
+    temp %l10 -> [rbp-<off25>] : i32
+    temp %c10 -> [rbp-<off26>] : i32
+    temp %d11 -> [rbp-<off27>] : i32
+    temp %l11 -> [rbp-<off28>] : i32
+    temp %c11 -> [rbp-<off29>] : i32
+    temp %d12 -> [rbp-<off30>] : i32
+    temp %l12 -> [rbp-<off31>] : i32
+    temp %c12 -> [rbp-<off32>] : i32
+    temp %d13 -> [rbp-<off33>] : i32
+    temp %l13 -> [rbp-<off34>] : i32
+    temp %c13 -> [rbp-<off35>] : i32
+    temp %d14 -> [rbp-<off36>] : i32
+    temp %l14 -> [rbp-<off37>] : i32
+    temp %c14 -> [rbp-<off38>] : i32
+
+  block ^entry
+    load.i32 r8, [rdi]
+    load.i32 r9, [rsi]
+    load.i32 rcx, [rdi+<off0>]
+    load.i32 rax, [rsi+<off0>]
+    load.i32 <gpr0>, [rdi+<off1>]
+    load.i32 <gpr1>, [rsi+<off1>]
+    load.i32 <gpr2>, [rdi+<off2>]
+    load.i32 <gpr3>, [rsi+<off2>]
+    load.i32 <gpr4>, [rdi+<off3>]
+    load.i32 <gpr5>, [rsi+<off3>]
+    store.i32 [rbp-<off0>], <gpr5>
+    load.i32 <gpr5>, [rdi+<off4>]
+    store.i32 [rbp-<off1>], <gpr5>
+    load.i32 <gpr5>, [rsi+<off4>]
+    store.i32 [rbp-<off2>], <gpr5>
+    load.i32 <gpr5>, [rdi+<off5>]
+    store.i32 [rbp-<off3>], <gpr5>
+    load.i32 <gpr5>, [rsi+<off5>]
+    store.i32 [rbp-<off4>], <gpr5>
+    load.i32 <gpr5>, [rdi+<off6>]
+    store.i32 [rbp-<off5>], <gpr5>
+    load.i32 <gpr5>, [rsi+<off6>]
+    store.i32 [rbp-<off6>], <gpr5>
+    load.i32 <gpr5>, [rdi+<off7>]
+    store.i32 [rbp-<off7>], <gpr5>
+    load.i32 <gpr5>, [rsi+<off7>]
+    store.i32 [rbp-<off8>], <gpr5>
+    load.i32 <gpr5>, [rdi+<off8>]
+    store.i32 [rbp-<off9>], <gpr5>
+    load.i32 <gpr5>, [rsi+<off8>]
+    store.i32 [rbp-<off10>], <gpr5>
+    load.i32 <gpr5>, [rdi+<off9>]
+    store.i32 [rbp-<off11>], <gpr5>
+    load.i32 <gpr5>, [rsi+<off9>]
+    store.i32 [rbp-<off12>], <gpr5>
+    load.i32 <gpr5>, [rdi+<off10>]
+    store.i32 [rbp-<off13>], <gpr5>
+    load.i32 <gpr5>, [rsi+<off10>]
+    store.i32 [rbp-<off14>], <gpr5>
+    load.i32 <gpr5>, [rdi+<off11>]
+    store.i32 [rbp-<off15>], <gpr5>
+    load.i32 <gpr5>, [rsi+<off11>]
+    store.i32 [rbp-<off16>], <gpr5>
+    load.i32 <gpr5>, [rdi+<off12>]
+    store.i32 [rbp-<off17>], <gpr5>
+    load.i32 <gpr5>, [rsi+<off12>]
+    store.i32 [rbp-<off18>], <gpr5>
+    load.i32 <gpr5>, [rdi+<off13>]
+    store.i32 [rbp-<off19>], <gpr5>
+    load.i32 <gpr5>, [rsi+<off13>]
+    store.i32 [rbp-<off20>], <gpr5>
+    load.i32 rdi, [rdi+<off14>]
+    load.i32 rsi, [rsi+<off14>]
+    sub r8, r9
+    sext.i32 r8
+    cmp.i32 r8, 0
+    mov <gpr6>, 0
+    cmovl r8, <gpr6>
+    cmp.i32 r8, 255
+    mov <gpr6>, 255
+    cmovg r8, <gpr6>
+    sub rcx, rax
+    sext.i32 rcx
+    cmp.i32 rcx, 0
+    mov <gpr6>, 0
+    cmovl rcx, <gpr6>
+    cmp.i32 rcx, 255
+    mov <gpr6>, 255
+    cmovg rcx, <gpr6>
+    sub <gpr0>, <gpr1>
+    sext.i32 <gpr0>
+    cmp.i32 <gpr0>, 0
+    mov <gpr6>, 0
+    cmovl <gpr0>, <gpr6>
+    cmp.i32 <gpr0>, 255
+    mov <gpr6>, 255
+    cmovg <gpr0>, <gpr6>
+    sub <gpr2>, <gpr3>
+    sext.i32 <gpr2>
+    cmp.i32 <gpr2>, 0
+    mov <gpr6>, 0
+    cmovl <gpr2>, <gpr6>
+    cmp.i32 <gpr2>, 255
+    mov <gpr6>, 255
+    cmovg <gpr2>, <gpr6>
+    sub.i32 <gpr4>, [rbp-<off0>]
+    sext.i32 <gpr4>
+    cmp.i32 <gpr4>, 0
+    mov <gpr6>, 0
+    cmovl <gpr4>, <gpr6>
+    cmp.i32 <gpr4>, 255
+    mov <gpr6>, 255
+    cmovg <gpr4>, <gpr6>
+    load.i32 r9, [rbp-<off1>]
+    sub.i32 r9, [rbp-<off2>]
+    sext.i32 r9
+    cmp.i32 r9, 0
+    mov <gpr6>, 0
+    cmovl r9, <gpr6>
+    cmp.i32 r9, 255
+    mov <gpr6>, 255
+    cmovg r9, <gpr6>
+    load.i32 rax, [rbp-<off3>]
+    sub.i32 rax, [rbp-<off4>]
+    sext.i32 rax
+    cmp.i32 rax, 0
+    mov <gpr6>, 0
+    cmovl rax, <gpr6>
+    cmp.i32 rax, 255
+    mov <gpr6>, 255
+    cmovg rax, <gpr6>
+    load.i32 <gpr1>, [rbp-<off5>]
+    sub.i32 <gpr1>, [rbp-<off6>]
+    sext.i32 <gpr1>
+    cmp.i32 <gpr1>, 0
+    mov <gpr6>, 0
+    cmovl <gpr1>, <gpr6>
+    cmp.i32 <gpr1>, 255
+    mov <gpr6>, 255
+    cmovg <gpr1>, <gpr6>
+    load.i32 <gpr3>, [rbp-<off7>]
+    sub.i32 <gpr3>, [rbp-<off8>]
+    sext.i32 <gpr3>
+    cmp.i32 <gpr3>, 0
+    mov <gpr6>, 0
+    cmovl <gpr3>, <gpr6>
+    cmp.i32 <gpr3>, 255
+    mov <gpr6>, 255
+    cmovg <gpr3>, <gpr6>
+    load.i32 <gpr5>, [rbp-<off9>]
+    sub.i32 <gpr5>, [rbp-<off10>]
+    sext.i32 <gpr5>
+    cmp.i32 <gpr5>, 0
+    mov <gpr6>, 0
+    sext.i32 <gpr5>, <gpr5>
+    cmovl <gpr5>, <gpr6>
+    cmp.i32 <gpr5>, 255
+    mov <gpr6>, 255
+    sext.i32 <gpr5>, <gpr5>
+    cmovg <gpr5>, <gpr6>
+    store.i32 [rbp-<off23>], <gpr5>
+    load.i32 <gpr5>, [rbp-<off11>]
+    sub.i32 <gpr5>, [rbp-<off12>]
+    sext.i32 <gpr5>
+    cmp.i32 <gpr5>, 0
+    mov <gpr6>, 0
+    sext.i32 <gpr5>, <gpr5>
+    cmovl <gpr5>, <gpr6>
+    cmp.i32 <gpr5>, 255
+    mov <gpr6>, 255
+    sext.i32 <gpr5>, <gpr5>
+    cmovg <gpr5>, <gpr6>
+    store.i32 [rbp-<off26>], <gpr5>
+    load.i32 <gpr5>, [rbp-<off13>]
+    sub.i32 <gpr5>, [rbp-<off14>]
+    sext.i32 <gpr5>
+    cmp.i32 <gpr5>, 0
+    mov <gpr6>, 0
+    sext.i32 <gpr5>, <gpr5>
+    cmovl <gpr5>, <gpr6>
+    cmp.i32 <gpr5>, 255
+    mov <gpr6>, 255
+    sext.i32 <gpr5>, <gpr5>
+    cmovg <gpr5>, <gpr6>
+    store.i32 [rbp-<off29>], <gpr5>
+    load.i32 <gpr5>, [rbp-<off15>]
+    sub.i32 <gpr5>, [rbp-<off16>]
+    sext.i32 <gpr5>
+    cmp.i32 <gpr5>, 0
+    mov <gpr6>, 0
+    sext.i32 <gpr5>, <gpr5>
+    cmovl <gpr5>, <gpr6>
+    cmp.i32 <gpr5>, 255
+    mov <gpr6>, 255
+    sext.i32 <gpr5>, <gpr5>
+    cmovg <gpr5>, <gpr6>
+    store.i32 [rbp-<off32>], <gpr5>
+    load.i32 <gpr5>, [rbp-<off17>]
+    sub.i32 <gpr5>, [rbp-<off18>]
+    sext.i32 <gpr5>
+    cmp.i32 <gpr5>, 0
+    mov <gpr6>, 0
+    sext.i32 <gpr5>, <gpr5>
+    cmovl <gpr5>, <gpr6>
+    cmp.i32 <gpr5>, 255
+    mov <gpr6>, 255
+    sext.i32 <gpr5>, <gpr5>
+    cmovg <gpr5>, <gpr6>
+    store.i32 [rbp-<off35>], <gpr5>
+    load.i32 <gpr5>, [rbp-<off19>]
+    sub.i32 <gpr5>, [rbp-<off20>]
+    sext.i32 <gpr5>
+    cmp.i32 <gpr5>, 0
+    mov <gpr6>, 0
+    sext.i32 <gpr5>, <gpr5>
+    cmovl <gpr5>, <gpr6>
+    cmp.i32 <gpr5>, 255
+    mov <gpr6>, 255
+    sext.i32 <gpr5>, <gpr5>
+    cmovg <gpr5>, <gpr6>
+    sub rdi, rsi
+    sext.i32 rdi
+    cmp.i32 rdi, 0
+    mov <gpr6>, 0
+    cmovl rdi, <gpr6>
+    cmp.i32 rdi, 255
+    mov <gpr6>, 255
+    cmovg rdi, <gpr6>
+    store.i32 [rdx], r8
+    store.i32 [rdx+<off0>], rcx
+    store.i32 [rdx+<off1>], <gpr0>
+    store.i32 [rdx+<off2>], <gpr2>
+    store.i32 [rdx+<off3>], <gpr4>
+    store.i32 [rdx+<off4>], r9
+    store.i32 [rdx+<off5>], rax
+    store.i32 [rdx+<off6>], <gpr1>
+    store.i32 [rdx+<off7>], <gpr3>
+    load.i32 <gpr6>, [rbp-<off23>]
+    store.i32 [rdx+<off8>], <gpr6>
+    load.i32 <gpr6>, [rbp-<off26>]
+    store.i32 [rdx+<off9>], <gpr6>
+    load.i32 <gpr6>, [rbp-<off29>]
+    store.i32 [rdx+<off10>], <gpr6>
+    load.i32 <gpr6>, [rbp-<off32>]
+    store.i32 [rdx+<off11>], <gpr6>
+    load.i32 <gpr6>, [rbp-<off35>]
+    store.i32 [rdx+<off12>], <gpr6>
+    sext.i32 <gpr6>, <gpr5>
+    store.i32 [rdx+<off13>], <gpr6>
+    store.i32 [rdx+<off14>], rdi
+    cmp.i32 r8, 0
+    setne r8
+    movzx r8, r8
+    add r8, 0
+    cmp.i32 rcx, 0
+    setne rcx
+    movzx rcx, rcx
+    add r8, rcx
+    cmp.i32 <gpr0>, 0
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    add r8, <gpr0>
+    cmp.i32 <gpr2>, 0
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    add r8, <gpr2>
+    cmp.i32 <gpr4>, 0
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    add r8, <gpr4>
+    cmp.i32 r9, 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 rax, 0
+    setne rax
+    movzx rax, rax
+    add r8, rax
+    cmp.i32 <gpr1>, 0
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    add r8, <gpr1>
+    cmp.i32 <gpr3>, 0
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    add r8, <gpr3>
+    cmp.i32 [rbp-<off23>], 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 [rbp-<off26>], 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 [rbp-<off29>], 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 [rbp-<off32>], 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 [rbp-<off35>], 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 <gpr5>, 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 rdi, 0
+    setne rdi
+    movzx rdi, rdi
+    add r8, rdi
+    ret r8
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $a -> [rbp-<off2>] : obj<64x4>
+    slot $b -> [rbp-<off10>] : obj<64x4>
+    slot $out -> [rbp-<off18>] : obj<64x4>
+
+  block ^entry
+    store.i32 [rbp-<off2>], 1
+    store.i32 [rbp-<off10>], 100
+    store.i32 [rbp-<off39>], 2
+    store.i32 [rbp-<off40>], 103
+    store.i32 [rbp-<off1>], 3
+    store.i32 [rbp-<off9>], 106
+    store.i32 [rbp-<off41>], 4
+    store.i32 [rbp-<off42>], 109
+    store.i32 [rbp-<off0>], 5
+    store.i32 [rbp-<off8>], 112
+    store.i32 [rbp-<off43>], 6
+    store.i32 [rbp-<off44>], 115
+    store.i32 [rbp-<off35>], 7
+    store.i32 [rbp-<off7>], 118
+    store.i32 [rbp-<off45>], 8
+    store.i32 [rbp-<off46>], 121
+    store.i32 [rbp-<off32>], 9
+    store.i32 [rbp-<off6>], 124
+    store.i32 [rbp-<off47>], 10
+    store.i32 [rbp-<off48>], 127
+    store.i32 [rbp-<off29>], 11
+    store.i32 [rbp-<off5>], 130
+    store.i32 [rbp-<off49>], 12
+    store.i32 [rbp-<off50>], 133
+    store.i32 [rbp-<off26>], 13
+    store.i32 [rbp-<off4>], 136
+    store.i32 [rbp-<off51>], 14
+    store.i32 [rbp-<off52>], 139
+    store.i32 [rbp-<off23>], 15
+    store.i32 [rbp-<off3>], 142
+    store.i32 [rbp-<off53>], 16
+    store.i32 [rbp-<off54>], 145
+    lea rdi, [rbp-<off2>]
+    lea rsi, [rbp-<off10>]
+    lea rdx, [rbp-<off18>]
+    call @clamp [args=(rdx,rsi,rdi)]
+    ret rax

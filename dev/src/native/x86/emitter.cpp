@@ -221,7 +221,7 @@ namespace {
 const unsigned kCarryWindow = 64;
 
 // Whether an instruction past insts[index] reads the flags before any
-// sets them (moves and loads between a compare and its cmov).
+// sets them (moves, extensions and loads between a compare and its cmov).
 bool flags_read_after(const Function& function, uint32_t index)
 {
 	for (uint32_t k = index + 1; k < function.insts.size(); ++k)
@@ -229,8 +229,16 @@ bool flags_read_after(const Function& function, uint32_t index)
 		{
 		case Op::Mov:
 		case Op::Load:
+		case Op::Store:
 		case Op::Lea:
+		case Op::Movzx:
+		case Op::Sext:
 		case Op::Nop:
+			break;
+		case Op::Zext:
+			// A bit's is an `and`, which sets them.
+			if (function.insts[k].type == TypeKind::I1)
+				return false;
 			break;
 		case Op::Cmov:
 		case Op::Setcc:

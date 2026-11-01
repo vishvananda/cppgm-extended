@@ -1,0 +1,12 @@
+# budget from 100-select-flags-past-a-spilled-operand.ref.mir: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 367
+blocks <= 5
+count(call) <= 4
+mem <= 157
+instructions <= 326 in @clamp
+stack_size <= 420 in @clamp
+instructions <= 42 in @main
+stack_size <= 244 in @main
+
+# contract from 100-select-flags-past-a-spilled-operand.ref.mir: the exception regions, calls, callee-saved registers and memory accesses the fixture requires
+count(call @clamp) == 1 in @main

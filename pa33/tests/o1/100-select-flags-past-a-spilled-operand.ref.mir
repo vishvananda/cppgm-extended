@@ -1,0 +1,406 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @clamp
+  abi
+    param %a -> rdi : ptr
+    param %b -> rsi : ptr
+    param %out -> rdx : ptr
+    return i32 -> rax
+  frame
+    stack_size 352
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    temp %y4 -> [rbp-48] : i32
+    temp %x5 -> [rbp-56] : i32
+    temp %y5 -> [rbp-64] : i32
+    temp %x6 -> [rbp-72] : i32
+    temp %y6 -> [rbp-80] : i32
+    temp %x7 -> [rbp-88] : i32
+    temp %y7 -> [rbp-96] : i32
+    temp %x8 -> [rbp-104] : i32
+    temp %y8 -> [rbp-112] : i32
+    temp %x9 -> [rbp-120] : i32
+    temp %y9 -> [rbp-128] : i32
+    temp %x10 -> [rbp-136] : i32
+    temp %y10 -> [rbp-144] : i32
+    temp %x11 -> [rbp-152] : i32
+    temp %y11 -> [rbp-160] : i32
+    temp %x12 -> [rbp-168] : i32
+    temp %y12 -> [rbp-176] : i32
+    temp %x13 -> [rbp-184] : i32
+    temp %y13 -> [rbp-192] : i32
+    temp %x14 -> [rbp-200] : i32
+    temp %y14 -> [rbp-208] : i32
+    temp %d9 -> [rbp-216] : i32
+    temp %l9 -> [rbp-224] : i32
+    temp %c9 -> [rbp-8] : i32
+    temp %d10 -> [rbp-232] : i32
+    temp %l10 -> [rbp-240] : i32
+    temp %c10 -> [rbp-16] : i32
+    temp %d11 -> [rbp-248] : i32
+    temp %l11 -> [rbp-256] : i32
+    temp %c11 -> [rbp-24] : i32
+    temp %d12 -> [rbp-264] : i32
+    temp %l12 -> [rbp-272] : i32
+    temp %c12 -> [rbp-32] : i32
+    temp %d13 -> [rbp-280] : i32
+    temp %l13 -> [rbp-288] : i32
+    temp %c13 -> [rbp-40] : i32
+    temp %d14 -> [rbp-296] : i32
+    temp %l14 -> [rbp-304] : i32
+    temp %c14 -> [rbp-312] : i32
+
+  block ^entry
+    load.i32 r8, [rdi]
+    load.i32 r9, [rsi]
+    load.i32 rcx, [rdi+4]
+    load.i32 rax, [rsi+4]
+    load.i32 rbx, [rdi+8]
+    load.i32 r12, [rsi+8]
+    load.i32 r13, [rdi+12]
+    load.i32 r14, [rsi+12]
+    load.i32 r15, [rdi+16]
+    load.i32 r10, [rsi+16]
+    store.i32 [rbp-48], r10
+    load.i32 r10, [rdi+20]
+    store.i32 [rbp-56], r10
+    load.i32 r10, [rsi+20]
+    store.i32 [rbp-64], r10
+    load.i32 r10, [rdi+24]
+    store.i32 [rbp-72], r10
+    load.i32 r10, [rsi+24]
+    store.i32 [rbp-80], r10
+    load.i32 r10, [rdi+28]
+    store.i32 [rbp-88], r10
+    load.i32 r10, [rsi+28]
+    store.i32 [rbp-96], r10
+    load.i32 r10, [rdi+32]
+    store.i32 [rbp-104], r10
+    load.i32 r10, [rsi+32]
+    store.i32 [rbp-112], r10
+    load.i32 r10, [rdi+36]
+    store.i32 [rbp-120], r10
+    load.i32 r10, [rsi+36]
+    store.i32 [rbp-128], r10
+    load.i32 r10, [rdi+40]
+    store.i32 [rbp-136], r10
+    load.i32 r10, [rsi+40]
+    store.i32 [rbp-144], r10
+    load.i32 r10, [rdi+44]
+    store.i32 [rbp-152], r10
+    load.i32 r10, [rsi+44]
+    store.i32 [rbp-160], r10
+    load.i32 r10, [rdi+48]
+    store.i32 [rbp-168], r10
+    load.i32 r10, [rsi+48]
+    store.i32 [rbp-176], r10
+    load.i32 r10, [rdi+52]
+    store.i32 [rbp-184], r10
+    load.i32 r10, [rsi+52]
+    store.i32 [rbp-192], r10
+    load.i32 r10, [rdi+56]
+    store.i32 [rbp-200], r10
+    load.i32 r10, [rsi+56]
+    store.i32 [rbp-208], r10
+    load.i32 rdi, [rdi+60]
+    load.i32 rsi, [rsi+60]
+    sub r8, r9
+    sext.i32 r8
+    cmp.i32 r8, 0
+    mov r11, 0
+    cmovl r8, r11
+    cmp.i32 r8, 255
+    mov r11, 255
+    cmovg r8, r11
+    sub rcx, rax
+    sext.i32 rcx
+    cmp.i32 rcx, 0
+    mov r11, 0
+    cmovl rcx, r11
+    cmp.i32 rcx, 255
+    mov r11, 255
+    cmovg rcx, r11
+    sub rbx, r12
+    sext.i32 rbx
+    cmp.i32 rbx, 0
+    mov r11, 0
+    cmovl rbx, r11
+    cmp.i32 rbx, 255
+    mov r11, 255
+    cmovg rbx, r11
+    sub r13, r14
+    sext.i32 r13
+    cmp.i32 r13, 0
+    mov r11, 0
+    cmovl r13, r11
+    cmp.i32 r13, 255
+    mov r11, 255
+    cmovg r13, r11
+    sub.i32 r15, [rbp-48]
+    sext.i32 r15
+    cmp.i32 r15, 0
+    mov r11, 0
+    cmovl r15, r11
+    cmp.i32 r15, 255
+    mov r11, 255
+    cmovg r15, r11
+    load.i32 r9, [rbp-56]
+    sub.i32 r9, [rbp-64]
+    sext.i32 r9
+    cmp.i32 r9, 0
+    mov r11, 0
+    cmovl r9, r11
+    cmp.i32 r9, 255
+    mov r11, 255
+    cmovg r9, r11
+    load.i32 rax, [rbp-72]
+    sub.i32 rax, [rbp-80]
+    sext.i32 rax
+    cmp.i32 rax, 0
+    mov r11, 0
+    cmovl rax, r11
+    cmp.i32 rax, 255
+    mov r11, 255
+    cmovg rax, r11
+    load.i32 r12, [rbp-88]
+    sub.i32 r12, [rbp-96]
+    sext.i32 r12
+    cmp.i32 r12, 0
+    mov r11, 0
+    cmovl r12, r11
+    cmp.i32 r12, 255
+    mov r11, 255
+    cmovg r12, r11
+    load.i32 r14, [rbp-104]
+    sub.i32 r14, [rbp-112]
+    sext.i32 r14
+    cmp.i32 r14, 0
+    mov r11, 0
+    cmovl r14, r11
+    cmp.i32 r14, 255
+    mov r11, 255
+    cmovg r14, r11
+    load.i32 r10, [rbp-120]
+    sub.i32 r10, [rbp-128]
+    sext.i32 r10
+    cmp.i32 r10, 0
+    mov r11, 0
+    sext.i32 r10, r10
+    cmovl r10, r11
+    cmp.i32 r10, 255
+    mov r11, 255
+    sext.i32 r10, r10
+    cmovg r10, r11
+    store.i32 [rbp-8], r10
+    load.i32 r10, [rbp-136]
+    sub.i32 r10, [rbp-144]
+    sext.i32 r10
+    cmp.i32 r10, 0
+    mov r11, 0
+    sext.i32 r10, r10
+    cmovl r10, r11
+    cmp.i32 r10, 255
+    mov r11, 255
+    sext.i32 r10, r10
+    cmovg r10, r11
+    store.i32 [rbp-16], r10
+    load.i32 r10, [rbp-152]
+    sub.i32 r10, [rbp-160]
+    sext.i32 r10
+    cmp.i32 r10, 0
+    mov r11, 0
+    sext.i32 r10, r10
+    cmovl r10, r11
+    cmp.i32 r10, 255
+    mov r11, 255
+    sext.i32 r10, r10
+    cmovg r10, r11
+    store.i32 [rbp-24], r10
+    load.i32 r10, [rbp-168]
+    sub.i32 r10, [rbp-176]
+    sext.i32 r10
+    cmp.i32 r10, 0
+    mov r11, 0
+    sext.i32 r10, r10
+    cmovl r10, r11
+    cmp.i32 r10, 255
+    mov r11, 255
+    sext.i32 r10, r10
+    cmovg r10, r11
+    store.i32 [rbp-32], r10
+    load.i32 r10, [rbp-184]
+    sub.i32 r10, [rbp-192]
+    sext.i32 r10
+    cmp.i32 r10, 0
+    mov r11, 0
+    sext.i32 r10, r10
+    cmovl r10, r11
+    cmp.i32 r10, 255
+    mov r11, 255
+    sext.i32 r10, r10
+    cmovg r10, r11
+    store.i32 [rbp-40], r10
+    load.i32 r10, [rbp-200]
+    sub.i32 r10, [rbp-208]
+    sext.i32 r10
+    cmp.i32 r10, 0
+    mov r11, 0
+    sext.i32 r10, r10
+    cmovl r10, r11
+    cmp.i32 r10, 255
+    mov r11, 255
+    sext.i32 r10, r10
+    cmovg r10, r11
+    sub rdi, rsi
+    sext.i32 rdi
+    cmp.i32 rdi, 0
+    mov r11, 0
+    cmovl rdi, r11
+    cmp.i32 rdi, 255
+    mov r11, 255
+    cmovg rdi, r11
+    store.i32 [rdx], r8
+    store.i32 [rdx+4], rcx
+    store.i32 [rdx+8], rbx
+    store.i32 [rdx+12], r13
+    store.i32 [rdx+16], r15
+    store.i32 [rdx+20], r9
+    store.i32 [rdx+24], rax
+    store.i32 [rdx+28], r12
+    store.i32 [rdx+32], r14
+    load.i32 r11, [rbp-8]
+    store.i32 [rdx+36], r11
+    load.i32 r11, [rbp-16]
+    store.i32 [rdx+40], r11
+    load.i32 r11, [rbp-24]
+    store.i32 [rdx+44], r11
+    load.i32 r11, [rbp-32]
+    store.i32 [rdx+48], r11
+    load.i32 r11, [rbp-40]
+    store.i32 [rdx+52], r11
+    sext.i32 r11, r10
+    store.i32 [rdx+56], r11
+    store.i32 [rdx+60], rdi
+    cmp.i32 r8, 0
+    setne r8
+    movzx r8, r8
+    add r8, 0
+    cmp.i32 rcx, 0
+    setne rcx
+    movzx rcx, rcx
+    add r8, rcx
+    cmp.i32 rbx, 0
+    setne rbx
+    movzx rbx, rbx
+    add r8, rbx
+    cmp.i32 r13, 0
+    setne r13
+    movzx r13, r13
+    add r8, r13
+    cmp.i32 r15, 0
+    setne r15
+    movzx r15, r15
+    add r8, r15
+    cmp.i32 r9, 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 rax, 0
+    setne rax
+    movzx rax, rax
+    add r8, rax
+    cmp.i32 r12, 0
+    setne r12
+    movzx r12, r12
+    add r8, r12
+    cmp.i32 r14, 0
+    setne r14
+    movzx r14, r14
+    add r8, r14
+    cmp.i32 [rbp-8], 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 [rbp-16], 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 [rbp-24], 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 [rbp-32], 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 [rbp-40], 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 r10, 0
+    setne r9
+    movzx r9, r9
+    add r8, r9
+    cmp.i32 rdi, 0
+    setne rdi
+    movzx rdi, rdi
+    add r8, rdi
+    ret r8
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 192
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $a -> [rbp-64] : obj<64x4>
+    slot $b -> [rbp-128] : obj<64x4>
+    slot $out -> [rbp-192] : obj<64x4>
+
+  block ^entry
+    store.i32 [rbp-64], 1
+    store.i32 [rbp-128], 100
+    store.i32 [rbp-60], 2
+    store.i32 [rbp-124], 103
+    store.i32 [rbp-56], 3
+    store.i32 [rbp-120], 106
+    store.i32 [rbp-52], 4
+    store.i32 [rbp-116], 109
+    store.i32 [rbp-48], 5
+    store.i32 [rbp-112], 112
+    store.i32 [rbp-44], 6
+    store.i32 [rbp-108], 115
+    store.i32 [rbp-40], 7
+    store.i32 [rbp-104], 118
+    store.i32 [rbp-36], 8
+    store.i32 [rbp-100], 121
+    store.i32 [rbp-32], 9
+    store.i32 [rbp-96], 124
+    store.i32 [rbp-28], 10
+    store.i32 [rbp-92], 127
+    store.i32 [rbp-24], 11
+    store.i32 [rbp-88], 130
+    store.i32 [rbp-20], 12
+    store.i32 [rbp-84], 133
+    store.i32 [rbp-16], 13
+    store.i32 [rbp-80], 136
+    store.i32 [rbp-12], 14
+    store.i32 [rbp-76], 139
+    store.i32 [rbp-8], 15
+    store.i32 [rbp-72], 142
+    store.i32 [rbp-4], 16
+    store.i32 [rbp-68], 145
+    lea rdi, [rbp-64]
+    lea rsi, [rbp-128]
+    lea rdx, [rbp-192]
+    call @clamp [args=(rdx,rsi,rdi)]
+    ret rax
