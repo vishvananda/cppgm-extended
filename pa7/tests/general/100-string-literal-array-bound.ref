@@ -1,0 +1,82 @@
+1 translation units
+start translation unit 1
+translation-unit
+  variable plain array of 3 char
+    braced-init-list lvalue array of 3 char
+      literal prvalue char -61
+      literal prvalue char -87
+      literal prvalue char 0
+  variable braced array of 3 char
+    braced-init-list lvalue array of 3 char
+      literal prvalue char -61
+      literal prvalue char -87
+      literal prvalue char 0
+  variable universal array of 3 char
+    braced-init-list lvalue array of 3 char
+      literal prvalue char -61
+      literal prvalue char -87
+      literal prvalue char 0
+  variable astral array of 5 char
+    braced-init-list lvalue array of 5 char
+      literal prvalue char -16
+      literal prvalue char -97
+      literal prvalue char -104
+      literal prvalue char -128
+      literal prvalue char 0
+  variable joined array of 4 char
+    braced-init-list lvalue array of 4 char
+      literal prvalue char 97
+      literal prvalue char -61
+      literal prvalue char -87
+      literal prvalue char 0
+  variable raw array of 3 char
+    braced-init-list lvalue array of 3 char
+      literal prvalue char -61
+      literal prvalue char -87
+      literal prvalue char 0
+  variable utf8 array of 3 char
+    braced-init-list lvalue array of 3 char
+      literal prvalue char -61
+      literal prvalue char -87
+      literal prvalue char 0
+  variable escaped array of 3 char
+    braced-init-list lvalue array of 3 char
+      literal prvalue char -1
+      literal prvalue char 10
+      literal prvalue char 0
+  variable bmp16 array of 2 char16_t
+    braced-init-list lvalue array of 2 char16_t
+      literal prvalue char16_t 233
+      literal prvalue char16_t 0
+  variable astral16 array of 3 char16_t
+    braced-init-list lvalue array of 3 char16_t
+      literal prvalue char16_t 55357
+      literal prvalue char16_t 56832
+      literal prvalue char16_t 0
+  variable raw16 array of 3 char16_t
+    braced-init-list lvalue array of 3 char16_t
+      literal prvalue char16_t 55357
+      literal prvalue char16_t 56832
+      literal prvalue char16_t 0
+  variable astral32 array of 2 char32_t
+    braced-init-list lvalue array of 2 char32_t
+      literal prvalue char32_t 128512
+      literal prvalue char32_t 0
+  variable wide array of 2 wchar_t
+    braced-init-list lvalue array of 2 wchar_t
+      literal prvalue wchar_t 233
+      literal prvalue wchar_t 0
+  variable a int
+  variable b int
+  variable c int
+  variable d int
+  variable e int
+  variable f int
+  variable g int
+  variable h int
+  variable i int
+  variable j int
+  variable k int
+  variable l int
+  variable m int
+end translation unit

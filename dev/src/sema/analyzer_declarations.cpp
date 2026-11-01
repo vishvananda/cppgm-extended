@@ -6,8 +6,8 @@
 #include <string>
 
 #include "lex/identifier_table.h"
-#include "lex/text_literal.h"
 #include "preprocess/preprocessor.h"
+#include "sema/string_literals.h"
 #include "support/internal_error.h"
 #include "syntax/ast_render.h"
 
@@ -107,38 +107,6 @@ bool IsClassObjectType(const Type* type)
 	while (type->kind == TypeKind::Array)
 		type = type->element;
 	return type->unqualified->kind == TypeKind::Class;
-}
-
-// The number of code units of a string literal's value with its null.
-uint64_t StringLiteralLength(const TokenSpelling& spelling)
-{
-	uint64_t total = 1;
-	const char* text = spelling.text;
-	uint32_t length = spelling.length;
-	// Concatenated pieces are separated by single spaces.
-	uint32_t begin = 0;
-	while (begin < length)
-	{
-		const uint32_t end = TextLiteralPieceEnd(text, length, begin);
-		TextLiteralParts parts;
-		if (!SplitTextLiteral(text + begin, end - begin, parts))
-			return 0;
-		if (parts.raw)
-			total += parts.body_end - parts.body_begin;
-		else
-		{
-			uint32_t position = parts.body_begin;
-			while (position < parts.body_end)
-			{
-				LiteralCharacter character;
-				if (!DecodeLiteralCharacter(text + begin, parts.body_end, position, character))
-					return 0;
-				++total;
-			}
-		}
-		begin = end + 1;
-	}
-	return total;
 }
 
 } // namespace
@@ -1097,13 +1065,17 @@ const Type* Analyzer::complete_array_from_initializer(
 			IsIntegralType(type->element) && type->element->unqualified->fundamental != FundamentalType::Bool)
 		{
 			const syntax::LiteralExpr* literal = static_cast<const syntax::LiteralExpr*>(list->elements[0]);
-			TextLiteralParts parts;
-			if (SplitTextLiteral(literal->spelling.text, literal->spelling.length, parts) && parts.quote == '"')
-				bound = StringLiteralLength(literal->spelling);
+			StringLiteralFacts string;
+			if (AnalyzeStringLiteral(literal->spelling, string))
+				bound = string.units;
 		}
 	}
 	else if (expr->kind == syntax::ExprKind::Literal)
-		bound = StringLiteralLength(static_cast<const syntax::LiteralExpr*>(expr)->spelling);
+	{
+		StringLiteralFacts string;
+		if (AnalyzeStringLiteral(static_cast<const syntax::LiteralExpr*>(expr)->spelling, string))
+			bound = string.units;
+	}
 	if (bound == 0)
 		return type;
 	return types_.array(type->element, bound);
