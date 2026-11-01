@@ -1,0 +1,371 @@
+declare function @may_throw(%x : i64) -> i64
+
+global @table : obj<64x8> = {
+  zero 64
+}
+
+function @opaque(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %r = binary add i64 %x, 1
+    return i64 %r
+}
+function @chain(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %m = binary mul i64 %a, %b
+    %q = binary add i64 %m, 7
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %s = phi i64 [^entry: 0, ^body: %t]
+    %c = cmp ult i64 %i, %n
+    branch %c, ^body, ^done
+
+  block ^body:
+    %t = binary add i64 %s, %q
+    %next = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return i64 %s
+}
+function @varying(%n : i64, %a : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^tail: %next]
+    %s = phi i64 [^entry: 0, ^tail: %t]
+    %c = cmp ult i64 %i, %n
+    branch %c, ^tail, ^done
+
+  block ^tail:
+    %m = binary mul i64 %a, %i
+    %t = binary add i64 %s, %m
+    %next = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return i64 %s
+}
+function @nested(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %m = binary mul i64 %a, %b
+    jump ^outer
+
+  block ^outer:
+    %i = phi i64 [^entry: 0, ^outer_tail: %i_next]
+    %s = phi i64 [^entry: 0, ^outer_tail: %u]
+    %c = cmp ult i64 %i, %n
+    branch %c, ^loop_preheader_2, ^done
+
+  block ^loop_preheader_2:
+    jump ^inner
+
+  block ^inner:
+    %j = phi i64 [^inner_tail: %j_next, ^loop_preheader_2: 0]
+    %u = phi i64 [^inner_tail: %v, ^loop_preheader_2: %s]
+    %d = cmp ult i64 %j, %i
+    branch %d, ^inner_tail, ^outer_tail
+
+  block ^inner_tail:
+    %v = binary add i64 %u, %m
+    %j_next = binary add i64 %j, 1
+    jump ^inner
+
+  block ^outer_tail:
+    %i_next = binary add i64 %i, 1
+    jump ^outer
+
+  block ^done:
+    return i64 %s
+}
+function @entered_from_branch(%n : i64, %a : i64, %b : i64, %f : i64, %p : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %z = cmp eq i64 %f, 0
+    branch %z, ^loop_preheader_2, ^other
+
+  block ^other:
+    %r = call i64 @opaque(%a)
+    %v = binary add i64 %b, %r
+    return i64 %v
+
+  block ^loop_preheader_2:
+    %m = binary mul i64 %a, %b
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^loop_preheader_2: 0, ^tail: %next]
+    %s = phi i64 [^loop_preheader_2: 0, ^tail: %t]
+    %c = cmp ult i64 %i, %n
+    branch %c, ^body, ^done
+
+  block ^body:
+    %y = cmp ugt i64 %i, %m
+    branch %y, ^note, ^tail
+
+  block ^note:
+    store i64 %i, %p
+    jump ^tail
+
+  block ^tail:
+    %t = binary add i64 %s, %m
+    %next = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return i64 %s
+}
+function @chain_across_blocks(%n : i64, %a : i64, %b : i64, %f : i64, %p : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    %m = binary mul i64 %a, %b
+    %q = binary add i64 %m, 7
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^second: %next]
+    %c = cmp ult i64 %i, %n
+    branch %c, ^first, ^done
+
+  block ^first:
+    %z = cmp eq i64 %f, %i
+    branch %z, ^done, ^second
+
+  block ^second:
+    store i64 %q, %p
+    %next = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    %e = binary add i64 %a, %b
+    %w = binary add i64 %m, %e
+    store i64 %w, %p
+    return void
+}
+function @nested_certain_division(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %q = binary div i64 %a, %b
+    jump ^outer
+
+  block ^outer:
+    %i = phi i64 [^entry: 0, ^latch: %i_next]
+    %s = phi i64 [^entry: 0, ^latch: %t]
+    jump ^inner
+
+  block ^inner:
+    %j = phi i64 [^outer: 0, ^inner: %j_next]
+    %u = phi i64 [^outer: %s, ^inner: %t]
+    %t = binary add i64 %u, %q
+    %j_next = binary add i64 %j, 1
+    %d = cmp ult i64 %j_next, %i
+    branch %d, ^inner, ^latch
+
+  block ^latch:
+    %i_next = binary add i64 %i, 1
+    %c = cmp ult i64 %i_next, %n
+    branch %c, ^outer, ^done
+
+  block ^done:
+    return i64 %t
+}
+function @guarded_division(%n : i64, %a : i64, %b : i64, %f : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %q5 = binary div i64 %a, 3
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^tail: %next]
+    %s = phi i64 [^entry: 0, ^tail: %t]
+    %c = cmp ult i64 %i, %n
+    branch %c, ^body, ^done
+
+  block ^body:
+    %z = cmp eq i64 %f, %i
+    branch %z, ^divide, ^tail
+
+  block ^divide:
+    %q1 = binary div i64 %a, %b
+    %q2 = binary udiv i64 %a, %b
+    %q3 = binary mod i64 %a, %b
+    %q4 = binary umod i64 %a, %b
+    %q6 = binary div i64 %a, -1
+    %q7 = binary udiv i64 %a, 0
+    %q8 = binary mod i64 %a, -1
+    %x1 = binary add i64 %q1, %q2
+    %x2 = binary add i64 %q3, %x1
+    %x3 = binary add i64 %q4, %x2
+    %x4 = binary add i64 %q5, %x3
+    %x5 = binary add i64 %q6, %x4
+    %x6 = binary add i64 %q7, %x5
+    %x7 = binary add i64 %q8, %x6
+    jump ^tail
+
+  block ^tail:
+    %t = phi i64 [^body: %s, ^divide: %x7]
+    %next = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return i64 %s
+}
+function @certain_division(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %q = binary div i64 %a, %b
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^head: %next]
+    %s = phi i64 [^entry: 0, ^head: %t]
+    %t = binary add i64 %s, %q
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return i64 %t
+}
+function @division_after_call(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^head: %next]
+    %s = phi i64 [^entry: 0, ^head: %t]
+    %r = call i64 @opaque(%i)
+    %q = binary div i64 %a, %b
+    %w = binary add i64 %r, %q
+    %t = binary add i64 %s, %w
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return i64 %t
+}
+function @costly_across_calls(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %m = binary mul i64 %a, %b
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^tail: %next]
+    %s = phi i64 [^entry: 0, ^tail: %t]
+    %c = cmp ult i64 %i, %n
+    branch %c, ^tail, ^done
+
+  block ^tail:
+    %r = call i64 @opaque(%i)
+    %p = binary add i64 %a, %b
+    %x = binary add i64 %m, %p
+    %y = binary add i64 %r, %x
+    %t = binary add i64 %s, %y
+    %next = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return i64 %s
+}
+function @addresses(%n : i64, %p : ptr, %k : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %q = index i8 %p, %k
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^tail: %next]
+    %s = phi i64 [^entry: 0, ^tail: %t]
+    %c = cmp ult i64 %i, %n
+    branch %c, ^tail, ^done
+
+  block ^tail:
+    %g = index i8 @table, 8
+    store i64 %i, %g
+    %w = load i64 %q
+    %t = binary add i64 %s, %w
+    %next = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return i64 %s
+}
+function @slot_addresses(%n : i64) -> i64 [no_inline=yes] {
+  slot $v : obj<64x8>
+  slot $w : obj<64x8>
+  slot $s : obj<64x8>
+
+  block ^entry:
+    %q = addr $v
+    %r = addr $w
+    %f = index i8 %r, 8
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^tail: %next]
+    %c = cmp ult i64 %i, %n
+    branch %c, ^tail, ^done
+
+  block ^tail:
+    %p = addr $s
+    store volatile i64 %i, %p
+    %e = binary and i64 %i, 7
+    %x = index i64 %q, %e
+    store volatile i64 %i, %x
+    %g = binary and i64 %i, 3
+    %y = index i64 %f, %g
+    store volatile i64 %i, %y
+    %next = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return i64 %i
+}
+function @extended(%n : i64, %a : f64, %b : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %x = convert fpext f80 f64 %a
+    %y = convert fpext f80 f64 %b
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^tail: %next]
+    %s = phi f64 [^entry: 0, ^tail: %t]
+    %c = cmp ult i64 %i, %n
+    branch %c, ^tail, ^done
+
+  block ^tail:
+    %m = binary mul f80 %x, %y
+    %u = convert fptrunc f64 f80 %m
+    %t = binary add f64 %s, %u
+    %next = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return f64 %s
+}
+function @handler_stays(%n : i64, %a : i64, %b : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^tail: %next]
+    %s = phi i64 [^entry: 0, ^tail: %u]
+    %c = cmp ult i64 %i, %n
+    branch %c, ^body, ^done
+
+  block ^body:
+    eh_try ^caught
+    %r = call i64 @may_throw(%i)
+    eh_end
+    jump ^tail
+
+  block ^caught:
+    %m = binary mul i64 %a, %b
+    jump ^tail
+
+  block ^tail:
+    %t = phi i64 [^body: %r, ^caught: %m]
+    %u = binary add i64 %s, %t
+    %next = binary add i64 %i, 1
+    jump ^head
+
+  block ^done:
+    return i64 %s
+}

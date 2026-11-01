@@ -1,6 +1,7 @@
 function @hash_bytes(%text : ptr, %first : i64, %count : i64) -> i64 {
   block ^entry:
     %end = binary add i64 %first, %count
+    %data_short = index i8 %text, 1
     jump ^cond
 
   block ^cond:
@@ -20,7 +21,6 @@ function @hash_bytes(%text : ptr, %first : i64, %count : i64) -> i64 {
     jump ^join
 
   block ^short:
-    %data_short = index i8 %text, 1
     jump ^join
 
   block ^join:

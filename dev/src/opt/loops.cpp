@@ -1,5 +1,7 @@
 #include "opt/loops.h"
 
+#include "lowir/builder.h"
+
 #include <utility>
 
 namespace opt {
@@ -145,6 +147,41 @@ Located locate(const FunctionBody& body, Value v)
 	}
 	out.root = v;
 	return out;
+}
+
+bool make_loop_preheader(FunctionBody& body, const Cfg& cfg, const LoopForest& forest, uint32_t loop)
+{
+	const Loop& l = forest.loops[loop];
+	BlockId entry = kNoId;
+	for (uint32_t k = cfg.pred_first[l.header]; k < cfg.pred_first[l.header + 1]; ++k)
+	{
+		const BlockId p = cfg.preds[k];
+		if (in_loop(forest, loop, p))
+			continue;
+		if (entry != kNoId && entry != p)
+			return false;
+		entry = p;
+	}
+	if (entry == kNoId || (cfg.flags[entry] & BF_HANDLER) != 0)
+		return false;
+	const BlockId pre = append_block(body, BlockKind::LoopPreheader);
+	Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
+	jump.ops[0] = Value::block(l.header);
+	insert_after(body, pre, kNoId, append_instruction(body, jump));
+	std::vector<BlockId> layout;
+	for (BlockId b : body.layout)
+	{
+		if (b == l.header)
+			layout.push_back(pre);
+		layout.push_back(b);
+	}
+	body.layout.swap(layout);
+	for_each_successor(body, body.instructions[body.blocks[entry].last], [&](BlockId& t) {
+		if (t == l.header)
+			t = pre;
+	});
+	rename_phi_incoming(body, l.header, entry, pre);
+	return true;
 }
 
 } // namespace opt

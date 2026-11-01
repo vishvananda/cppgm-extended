@@ -1782,37 +1782,7 @@ bool LoopPass::indexed_stores(uint32_t loop, const ExitTest& test, const std::ve
 // blocks outside enter it).
 bool LoopPass::make_preheader(uint32_t loop)
 {
-	const Loop& l = forest_.loops[loop];
-	BlockId entry = kNoId;
-	for (uint32_t k = cfg_.pred_first[l.header]; k < cfg_.pred_first[l.header + 1]; ++k)
-	{
-		const BlockId p = cfg_.preds[k];
-		if (in_loop(forest_, loop, p))
-			continue;
-		if (entry != kNoId && entry != p)
-			return false;
-		entry = p;
-	}
-	if (entry == kNoId || (cfg_.flags[entry] & BF_HANDLER) != 0)
-		return false;
-	const BlockId pre = append_block(body_, BlockKind::LoopPreheader);
-	Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
-	jump.ops[0] = Value::block(l.header);
-	insert_after(body_, pre, kNoId, append_instruction(body_, jump));
-	std::vector<BlockId> layout;
-	for (BlockId b : body_.layout)
-	{
-		if (b == l.header)
-			layout.push_back(pre);
-		layout.push_back(b);
-	}
-	body_.layout.swap(layout);
-	for_each_successor(body_, body_.instructions[body_.blocks[entry].last], [&](BlockId& t) {
-		if (t == l.header)
-			t = pre;
-	});
-	rename_phi_incoming(body_, l.header, entry, pre);
-	return true;
+	return make_loop_preheader(body_, cfg_, forest_, loop);
 }
 
 bool LoopPass::builtin_available(const char* name, const char* object) const

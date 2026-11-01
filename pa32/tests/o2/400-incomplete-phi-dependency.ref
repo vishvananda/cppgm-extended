@@ -13,13 +13,13 @@ function @main() -> i64 [role=entry] {
     %take = load i64 @take_path
     %again = load i64 @repeat_inner
     %right = load i64 @take_right
+    %t5 = select i64 %right, 9, 7
     jump ^inner_header
 
   block ^inner_header:
     branch %take, ^choose, ^inner_merge
 
   block ^choose:
-    %t5 = select i64 %right, 9, 7
     store i64 %t5, @result
     jump ^inner_merge
 

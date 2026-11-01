@@ -34,6 +34,11 @@ void find_loops(const lowir::FunctionBody& body, const Cfg& cfg, LoopForest& for
 // Whether block `b` belongs to loop `l` (including nested loops). O(1).
 bool in_loop(const LoopForest& forest, uint32_t l, lowir::BlockId b);
 
+// Gives loop `loop` a preheader: a new block of one jump to its header, between
+// its one predecessor outside the loop and the header. False when it has
+// several or that one is a handler. The graph changes.
+bool make_loop_preheader(lowir::FunctionBody& body, const Cfg& cfg, const LoopForest& forest, uint32_t loop);
+
 // An address as its root (a slot, a global, or the temporary or parameter
 // it steps from) and a constant byte offset when known, through literal
 // `index` steps, `addr` and pointer copies.

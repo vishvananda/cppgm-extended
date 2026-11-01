@@ -168,6 +168,12 @@ bool name_returned_slot(FunctionContext& context);
 // decided successor. O(blocks + edges) plus bounded per-edge evaluation.
 bool thread_jumps(FunctionContext& context);
 
+// Loop-invariant code motion (opt/loop_motion.cpp), O2+: pure instructions
+// whose operands a loop does not compute move to its preheader, innermost
+// loops first. An integer division that may trap moves only when the
+// preheader's entry always reaches it. O(loops x blocks x instructions).
+bool hoist_loop_invariants(FunctionContext& context);
+
 // Loop removal (opt/loop_passes.cpp): a loop with one exit, tested as
 // `iv != bound` on an induction variable, is bypassed when its body has
 // no effect and nothing outside reads its values but the tested one (the

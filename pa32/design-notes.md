@@ -347,6 +347,15 @@ them changed it, branch compares are computed again beside their branches:
   conversion of an integer other than `i128` to `f32` or `f64`, whatever else
   reads its operand: it cannot trap, and its result costs less to keep than
   to convert again.
+- Pure instructions whose operands a loop does not compute then move to its
+  preheader, a phi or a compare excepted. An integer division needs a
+  literal divisor other than 0 and, signed, other than -1, unless it runs on
+  every entry to the loop (in the header, before anything that may leave).
+  In a loop with a call only multiplication and division move, since the
+  result would have to survive the calls. An address that reaches only loads
+  and stores, through literal steps, stays: it fits in their operands. `f80`
+  values and objects stay in memory, and `i128` operations are runtime calls
+  at this stage, so they stay in the loop.
 - A fill loop of a run-time value whose bytes all repeat calls `memset`
   for runs of at least 128 bytes.
 - Narrow loop counters that cannot pass their bound are marked `nowrap`.
@@ -462,6 +471,6 @@ fields `functions` (definitions optimized; 0 at `-O0`), `instructions_in`,
 `reused`, `dead`, `branches_folded`, `blocks_removed`, `blocks_merged`,
 `slots_promoted`, `phis_inserted`, `calls_inlined`, `inlined_instructions`,
 `functions_pruned`, `loads_reused`, `stores_removed`, `loops_removed`,
-`loops_unrolled`, `specialized` and `optimize_ms`; `lowiropt` appends
+`loops_unrolled`, `invariants_hoisted`, `specialized` and `optimize_ms`; `lowiropt` appends
 `parse_ms`, `validate_ms`, `write_ms` and `peak_rss_kb`. The counts are
 observational only.

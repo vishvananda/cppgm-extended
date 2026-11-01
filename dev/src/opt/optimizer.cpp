@@ -342,6 +342,7 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		changed = true;
 	}
 	changed = RUN_PASS(hoist_loop_loads) || changed;
+	changed = RUN_PASS(hoist_loop_invariants) || changed;
 	changed = RUN_PASS(version_fill_loops) || changed;
 	// (Last: the counters' facts hold for the instructions as they stand.)
 	changed = RUN_PASS(mark_no_wrap_counters) || changed;
@@ -353,6 +354,7 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		RUN_PASS(forward_memory);
 		RUN_PASS(remove_dead_code);
 		RUN_PASS(hoist_loop_loads);
+		RUN_PASS(hoist_loop_invariants);
 		changed = true;
 	}
 	if (!changed)
@@ -550,7 +552,7 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " phis_inserted=" << s.phis_inserted << " calls_inlined=" << s.calls_inlined
 		<< " inlined_instructions=" << s.inlined_instructions << " functions_pruned=" << s.functions_pruned
 		<< " loads_reused=" << s.loads_reused << " stores_removed=" << s.stores_removed
-		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled
+		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled << " invariants_hoisted=" << s.invariants_hoisted
 		<< " specialized=" << s.specialized << " optimize_ms=" << s.optimize_ms;
 #else
 	(void)s;
