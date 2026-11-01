@@ -72,19 +72,20 @@ a `cppgm++` count differs from `baseline.json`:
 
 ## Badges
 
-The root README has six badges. Each badge gives `cppgm++` speed as a multiple
-of `g++` speed. Higher is better.
+The root README has a table of six badges. Each badge gives `cppgm++` speed as
+a multiple of `g++` speed. Higher is better.
 
-| Badge | Measure |
-| --- | --- |
-| `-O0 compile speed vs gcc` | geometric mean of compile CPU time at `-O0` |
-| `-O0 generated speed vs gcc` | geometric mean of run CPU time at `-O0` |
-| `-O3 compile speed vs gcc` | geometric mean of compile CPU time at `-O3` |
-| `-O3 generated speed vs gcc` | geometric mean of run CPU time at `-O3` |
-| `self compile speed vs gcc` | CPU time of the `-O3` build of `cppgm++` by `dev/cppgm++` |
-| `inception speed vs gcc` | CPU time of the `-O3` build of `cppgm++` by the self-hosted `cppgm++` |
+| Row | Column | Label | Measure |
+| --- | --- | --- | --- |
+| `-O0` | compile speed | `-O0 compile speed vs gcc` | geometric mean of compile CPU time at `-O0` |
+| `-O0` | generated code speed | `-O0 generated speed vs gcc` | geometric mean of run CPU time at `-O0` |
+| `-O3` | compile speed | `-O3 compile speed vs gcc` | geometric mean of compile CPU time at `-O3` |
+| `-O3` | generated code speed | `-O3 generated speed vs gcc` | geometric mean of run CPU time at `-O3` |
+| Building `cppgm++` | compile speed | `self compile speed vs gcc` | CPU time of the `-O3` build of `cppgm++` by the `g++`-built `cppgm++`, against the same build by `g++` |
+| Building `cppgm++` | generated code speed | `self-built speed vs gcc` | CPU time of the `-O3` build of `cppgm++` by the self-built `cppgm++`, against the same build by the `g++`-built `cppgm++` |
 
-The last two compare with the CPU time of the `-O3` build of `cppgm++` by `g++`.
+The badge JSON holds the label. The table hides it with `&label=` in the URL.
+
 The three builds use the same job count.
 
 The job summary uses the same format. It gives the reference over `cppgm++` for

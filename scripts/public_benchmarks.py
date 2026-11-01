@@ -65,10 +65,12 @@ BADGES = (
     ('o3-compile', '-O3 compile speed vs gcc', 'compile_cpu_O3', 1),
     ('o3-generated', '-O3 generated speed vs gcc', 'run_cpu_O3', 2),
 )
-# The self-hosted builds: key, file name, label and summary title.
+# The builds of cppgm++: build, reference build, file name, label, decimal
+# places and summary title. The second compares the same compile, done by the
+# self-built and by the g++-built compiler.
 BUILDS = (
-    ('self', 'self-compile', 'self compile speed vs gcc', 'Self compile CPU'),
-    ('inception', 'inception', 'inception speed vs gcc', 'Inception CPU'),
+    ('self', 'gcc', 'self-compile', 'self compile speed vs gcc', 1, 'Self compile CPU'),
+    ('inception', 'self', 'self-built', 'self-built speed vs gcc', 2, 'Self-built compiler CPU'),
 )
 REFERENCES = (('gcc', 'g++'), ('clang', 'clang++'))
 
@@ -513,16 +515,16 @@ def badge(results, label, metric, digits):
     return speed_badge(label, mean_ratio(results, metric, 'gcc')[0], digits, failures)
 
 
-def build_ratio(builds, key):
-    """Return the CPU of a self-hosted build over the g++ build."""
-    if not builds or builds.get('status') != 'ok' or not builds.get('gcc'):
+def build_ratio(builds, key, reference):
+    """Return the CPU of a build over the CPU of its reference build."""
+    if not builds or builds.get('status') != 'ok' or not builds.get(reference):
         return None
-    return builds[key] / builds['gcc']
+    return builds[key] / builds[reference]
 
 
-def build_badge(builds, key, label):
+def build_badge(builds, key, reference, label, digits):
     failed = 1 if builds and builds.get('status') != 'ok' else 0
-    return speed_badge(label, build_ratio(builds, key), 1, failed)
+    return speed_badge(label, build_ratio(builds, key, reference), digits, failed)
 
 
 def compare_baseline(results, baseline):
@@ -578,8 +580,8 @@ def summary(document, changes, builds=None):
             cells += [speed_text(mean), str(count)]
         if cells[1] != '0' or cells[3] != '0':
             lines.append(f'| {title} | {" | ".join(cells)} |')
-    for key, _, _, title in BUILDS:
-        mean = build_ratio(builds, key)
+    for key, reference, _, _, _, title in BUILDS:
+        mean = build_ratio(builds, key, reference)
         if mean:
             lines.append(f'| {title} | {speed_text(mean)} | - | - | - |')
     if builds and builds.get('status') != 'ok':
@@ -631,8 +633,8 @@ def main_report(results_path, summary_path=None, baseline_path=None, write_basel
         Path(badges).mkdir(parents=True, exist_ok=True)
         documents = {name: badge(results, label, metric, digits)
                      for name, label, metric, digits in BADGES}
-        for key, name, label, _ in BUILDS:
-            documents[name] = build_badge(builds, key, label)
+        for key, reference, name, label, digits, _ in BUILDS:
+            documents[name] = build_badge(builds, key, reference, label, digits)
         for name, content in documents.items():
             (Path(badges) / f'{name}.json').write_text(json.dumps(content, indent=1) + '\n')
     baseline = {}
