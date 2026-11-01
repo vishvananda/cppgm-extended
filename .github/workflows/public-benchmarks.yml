@@ -13,11 +13,10 @@ concurrency:
 
 jobs:
   benchmarks:
-    name: public benchmarks (advisory)
+    name: public benchmarks
     runs-on: ubuntu-24.04
     container: ubuntu:26.04
-    # Advisory. This job is not part of the required Tests workflow.
-    continue-on-error: true
+    # A wrong output or a build failure fails this job. A changed count warns.
     timeout-minutes: 75
     defaults:
       run:

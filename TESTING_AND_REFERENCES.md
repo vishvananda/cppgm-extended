@@ -80,9 +80,10 @@ The runner's failure controls are part of `make test-harness`.
 
 ## Public benchmarks CI
 
-The **Public benchmarks** workflow runs on every push. It is advisory. It builds
-pinned third-party programs with `cppgm++`, `g++` and `clang++` at `-O0` and
-`-O3`. The output of each `cppgm++` binary must match `g++`. See
+The **Public benchmarks** workflow runs on every push. It builds pinned third-party
+programs with `cppgm++`, `g++` and `clang++` at `-O0` and `-O3`. The output of
+each `cppgm++` binary must match `g++`, or the job fails. A count that differs
+from `benchmarks/public/baseline.json` only warns. See
 [benchmarks/public/README.md](benchmarks/public/README.md). The runner tests are
 part of `make test-harness`.
 

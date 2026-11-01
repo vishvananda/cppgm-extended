@@ -1,0 +1,398 @@
+{
+ "programs": {
+  "Adobe-C++/stepanov_vector": {
+   "cppgm": {
+    "compile_instructions": 590166664,
+    "frontend_instructions": 392502147
+   }
+  },
+  "CoyoteBench/fftbench": {
+   "cppgm": {
+    "run_instructions": 2123761360
+   },
+   "gcc": {
+    "run_instructions": 1442810743
+   }
+  },
+  "DOE/HPCCG": {
+   "cppgm": {
+    "run_instructions": 5039328444
+   },
+   "gcc": {
+    "run_instructions": 4112346390
+   }
+  },
+  "DOE/PENNANT": {
+   "cppgm": {
+    "compile_instructions": 9848773404,
+    "frontend_instructions": 8485852214,
+    "run_instructions": 4092626222
+   },
+   "gcc": {
+    "run_instructions": 2947077045
+   }
+  },
+  "Misc-C++-EH/spirit": {
+   "cppgm": {
+    "compile_instructions": 3068278442,
+    "frontend_instructions": 1545982505
+   }
+  },
+  "Misc-C++/bigfib": {
+   "cppgm": {
+    "run_instructions": 1234835310
+   },
+   "gcc": {
+    "run_instructions": 1003300271
+   }
+  },
+  "Misc-C++/oopack_v1p8": {
+   "cppgm": {
+    "compile_instructions": 208606957,
+    "frontend_instructions": 191017001,
+    "run_instructions": 1258433224
+   },
+   "gcc": {
+    "run_instructions": 611001415
+   }
+  },
+  "PAQ8p": {
+   "cppgm": {
+    "compile_instructions": 1139921638,
+    "frontend_instructions": 275292366,
+    "run_instructions": 800503982
+   },
+   "gcc": {
+    "run_instructions": 300120289
+   }
+  },
+  "Prolangs-C++/ocean": {
+   "cppgm": {
+    "run_instructions": 233551209
+   },
+   "gcc": {
+    "run_instructions": 217402456
+   }
+  },
+  "Prolangs-C++/primes": {
+   "cppgm": {
+    "run_instructions": 797255660
+   },
+   "gcc": {
+    "run_instructions": 704393981
+   }
+  },
+  "Shootout-C++-EH/except": {
+   "cppgm": {
+    "run_instructions": 1019661224
+   },
+   "gcc": {
+    "run_instructions": 1199908800
+   }
+  },
+  "Shootout-C++/ackermann": {
+   "cppgm": {
+    "run_instructions": 5607887291
+   },
+   "gcc": {
+    "run_instructions": 4613887276
+   }
+  },
+  "Shootout-C++/hash": {
+   "cppgm": {
+    "run_instructions": 1913187680
+   },
+   "gcc": {
+    "run_instructions": 1905577704
+   }
+  },
+  "Shootout-C++/heapsort": {
+   "cppgm": {
+    "run_instructions": 3757120356
+   },
+   "gcc": {
+    "run_instructions": 3977446462
+   }
+  },
+  "Shootout-C++/lists1": {
+   "cppgm": {
+    "run_instructions": 1562737621
+   },
+   "gcc": {
+    "run_instructions": 1519738057
+   }
+  },
+  "Shootout-C++/moments": {
+   "cppgm": {
+    "run_instructions": 316927022
+   },
+   "gcc": {
+    "run_instructions": 224423760
+   }
+  },
+  "Shootout-C++/sieve": {
+   "cppgm": {
+    "run_instructions": 4452150713
+   },
+   "gcc": {
+    "run_instructions": 4135919202
+   }
+  },
+  "Stanford/Bubblesort": {
+   "cppgm": {
+    "run_instructions": 151796922
+   },
+   "gcc": {
+    "run_instructions": 126269045
+   }
+  },
+  "Stanford/FloatMM": {
+   "cppgm": {
+    "run_instructions": 4003542023
+   },
+   "gcc": {
+    "run_instructions": 1015757278
+   }
+  },
+  "Stanford/Puzzle": {
+   "cppgm": {
+    "run_instructions": 944979102
+   },
+   "gcc": {
+    "run_instructions": 563853995
+   }
+  },
+  "Stanford/Treesort": {
+   "cppgm": {
+    "run_instructions": 175990344
+   },
+   "gcc": {
+    "run_instructions": 157882862
+   }
+  },
+  "bg/binarytrees/2": {
+   "cppgm": {
+    "run_instructions": 5795555686
+   },
+   "gcc": {
+    "run_instructions": 6002130860
+   }
+  },
+  "bg/fannkuchredux/3": {
+   "cppgm": {
+    "run_instructions": 1050803382
+   },
+   "gcc": {
+    "run_instructions": 1138761704
+   }
+  },
+  "bg/fasta/1": {
+   "cppgm": {
+    "run_instructions": 2549235863
+   },
+   "gcc": {
+    "run_instructions": 1607581382
+   }
+  },
+  "bg/fasta/2": {
+   "cppgm": {
+    "run_instructions": 2549235809
+   },
+   "gcc": {
+    "run_instructions": 1635248054
+   }
+  },
+  "bg/fasta/3": {
+   "cppgm": {
+    "run_instructions": 1053846469
+   },
+   "gcc": {
+    "run_instructions": 986087767
+   }
+  },
+  "bg/fasta/4": {
+   "cppgm": {
+    "run_instructions": 889561739
+   },
+   "gcc": {
+    "run_instructions": 871808938
+   }
+  },
+  "bg/mandelbrot/0": {
+   "cppgm": {
+    "run_instructions": 2140529636
+   },
+   "gcc": {
+    "run_instructions": 1234980900
+   }
+  },
+  "bg/mandelbrot/2": {
+   "cppgm": {
+    "run_instructions": 4455769865
+   },
+   "gcc": {
+    "run_instructions": 1923137759
+   }
+  },
+  "bg/mandelbrot/3": {
+   "cppgm": {
+    "run_instructions": 2753035483
+   },
+   "gcc": {
+    "run_instructions": 1721758299
+   }
+  },
+  "bg/mandelbrot/5": {
+   "cppgm": {
+    "run_instructions": 3737802094
+   },
+   "gcc": {
+    "run_instructions": 1888717429
+   }
+  },
+  "bg/mandelbrot/7": {
+   "cppgm": {
+    "run_instructions": 2981714397
+   },
+   "gcc": {
+    "run_instructions": 1798408432
+   }
+  },
+  "bg/mandelbrot/9": {
+   "cppgm": {
+    "run_instructions": 2959701410
+   },
+   "gcc": {
+    "run_instructions": 1798410180
+   }
+  },
+  "bg/nbody/1": {
+   "cppgm": {
+    "run_instructions": 1586173648
+   },
+   "gcc": {
+    "run_instructions": 1016140903
+   }
+  },
+  "bg/nbody/2": {
+   "cppgm": {
+    "run_instructions": 2926173281
+   },
+   "gcc": {
+    "run_instructions": 1210141301
+   }
+  },
+  "bg/nbody/3": {
+   "cppgm": {
+    "run_instructions": 2140173231
+   },
+   "gcc": {
+    "run_instructions": 1110141089
+   }
+  },
+  "bg/nbody/6": {
+   "cppgm": {
+    "run_instructions": 1606173648
+   },
+   "gcc": {
+    "run_instructions": 1200140900
+   }
+  },
+  "bg/pidigits/4": {
+   "cppgm": {
+    "run_instructions": 924855986
+   },
+   "gcc": {
+    "run_instructions": 930014993
+   }
+  },
+  "bg/pidigits/5": {
+   "cppgm": {
+    "run_instructions": 853932628
+   },
+   "gcc": {
+    "run_instructions": 853348201
+   }
+  },
+  "bg/revcomp/1": {
+   "cppgm": {
+    "run_instructions": 461200985
+   },
+   "gcc": {
+    "run_instructions": 438198430
+   }
+  },
+  "bg/revcomp/5": {
+   "cppgm": {
+    "run_instructions": 2224013522
+   },
+   "gcc": {
+    "run_instructions": 2236247611
+   }
+  },
+  "bg/spectralnorm/1": {
+   "cppgm": {
+    "compile_instructions": 695475555,
+    "frontend_instructions": 671142661,
+    "run_instructions": 882313687
+   },
+   "gcc": {
+    "run_instructions": 377755257
+   }
+  },
+  "box2d": {
+   "cppgm": {
+    "compile_instructions": 9933617863,
+    "frontend_instructions": 8752705322
+   }
+  },
+  "fmt": {
+   "cppgm": {
+    "compile_instructions": 4860025585,
+    "frontend_instructions": 2558235692
+   }
+  },
+  "nlohmann-json": {
+   "cppgm": {
+    "compile_instructions": 3139758537,
+    "frontend_instructions": 1698358978
+   }
+  },
+  "pugixml": {
+   "cppgm": {
+    "compile_instructions": 2919773988,
+    "frontend_instructions": 1234301203,
+    "run_instructions": 4754036992
+   },
+   "gcc": {
+    "run_instructions": 4904380468
+   }
+  },
+  "rapidjson": {
+   "cppgm": {
+    "compile_instructions": 994245122,
+    "frontend_instructions": 550537151
+   }
+  },
+  "re2": {
+   "cppgm": {
+    "compile_instructions": 20354326932,
+    "frontend_instructions": 16566241950,
+    "run_instructions": 2230428775
+   },
+   "gcc": {
+    "run_instructions": 2006172998
+   }
+  },
+  "tramp3d-v4": {
+   "cppgm": {
+    "compile_instructions": 11448164403,
+    "frontend_instructions": 2713086691,
+    "run_instructions": 4156173976
+   },
+   "gcc": {
+    "run_instructions": 668740404
+   }
+  }
+ }
+}
