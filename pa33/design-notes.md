@@ -44,6 +44,11 @@ that paid there in the course solution:
   with its second operand, which copying the first would destroy. In the
   floating-point loops profiled for this, reloads and copies were the largest
   difference from GCC's code.
+- Divide at the width of the type. A 64-bit `idiv` of two `int`s gives the
+  right answer, but on many x86 cores it costs several times what the 32-bit
+  one does, and an instruction count will not show it. The 32-bit form traps
+  on `INT_MIN / -1`, which a program may not write but a 64-bit divide
+  forgives, so keep a divisor you can see is `-1` out of it.
 - Let a phi's sources and result share a register when their ranges do not
   overlap, so its edge transfers move nothing. A transfer on a conditional
   edge is executed in that edge's block, not at the end of the predecessor.

@@ -69,6 +69,12 @@ bool typed(Op op)
 	}
 }
 
+// A division's width, where it is not the 64-bit default.
+bool word_divide(const Inst& inst)
+{
+	return (inst.op == Op::Cqo || inst.op == Op::Idiv || inst.op == Op::Div) && inst.type == TypeKind::I32;
+}
+
 } // namespace
 
 void append_mir_float(std::string& out, TypeKind kind, uint64_t low, uint64_t high)
@@ -347,7 +353,7 @@ void MirWriter::instruction(const Function& function, const Inst& inst)
 		break;
 	default:
 		text_ += spelling(inst.op);
-		if (typed(inst.op) ||
+		if (typed(inst.op) || word_divide(inst) ||
 			((inst.op == Op::Add || inst.op == Op::Sub || inst.op == Op::And || inst.op == Op::Or ||
 				 inst.op == Op::Xor || inst.op == Op::Imul || inst.op == Op::Shl || inst.op == Op::Shr ||
 				 inst.op == Op::Sar || inst.op == Op::Rol || inst.op == Op::Ror || inst.op == Op::Lea) &&

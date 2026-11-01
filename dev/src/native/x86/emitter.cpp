@@ -1024,14 +1024,15 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 			asm_.mov_load(a.reg, RM::r(inst.nops == 2 ? b.reg : a.reg), register_bytes(inst.type), false);
 		break;
 	case Op::Cqo:
-		asm_.byte(0x48);
+		if (inst.type != TypeKind::I32)
+			asm_.byte(0x48);
 		asm_.byte(0x99);
 		break;
 	case Op::Idiv:
-		asm_.unary(7, rm(a), 8);
+		asm_.unary(7, rm(a), inst.type == TypeKind::I32 ? 4 : 8);
 		break;
 	case Op::Div:
-		asm_.unary(6, rm(a), 8);
+		asm_.unary(6, rm(a), inst.type == TypeKind::I32 ? 4 : 8);
 		break;
 	case Op::MulWide:
 		asm_.unary(4, rm(a), 8);

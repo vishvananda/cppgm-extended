@@ -3,8 +3,13 @@
 #include "native/mir/type_kinds.h"
 
 // Integer division and remainder. A divisor that is not a constant uses
-// the hardware divide (cqo/idiv or a zeroed rdx and div: rax and rdx). An
-// unsigned power of two is a shift or a mask at every level. At O1 and
+// the hardware divide (cqo/idiv or a zeroed rdx and div: rax and rdx). At
+// O1 and above that is 32 bits wide for a 32-bit type: the 64-bit divide
+// costs far more on x86 cores before Ice Lake and Zen 3, and a 32-bit one
+// reads only the low halves, so neither operand needs a conversion. (A
+// constant divisor keeps the 64-bit divide, as does O0, where -1 is not yet
+// a constant: x / -1 of INT_MIN does not trap there, as GCC's negation does
+// not.) An unsigned power of two is a shift or a mask at every level. At O1 and
 // above the other constants avoid the divide (14-18 cycles on current x86
 // against 3-4 for a multiply; T. Granlund and P. Montgomery, "Division by
 // Invariant Integers using Multiplication", PLDI 1994; H. Warren, Hacker's
@@ -274,11 +279,13 @@ void FunctionSelector::emit_divide_hardware(const Instruction& inst)
 	const BinaryOp op = static_cast<BinaryOp>(inst.sub);
 	const bool unsigned_op = is_unsigned_op(op);
 	const bool remainder = is_remainder(op);
+	const bool word = level_ >= 1 && (kind == TypeKind::I32 || kind == TypeKind::U32) &&
+		resolve(inst.ops[1]).kind != ValueKind::Integer;
 	const Operand a = rm_operand(inst.ops[0], inst.type, kSelectScratch);
 	Operand b = rm_operand(inst.ops[1], inst.type, kEmitScratch);
-	const bool convert_a = narrow_integer(kind) && (unsigned_op == signed_integer(kind));
+	const bool convert_a = !word && narrow_integer(kind) && (unsigned_op == signed_integer(kind));
 	if (b.kind == OperandKind::Imm || b.kind == OperandKind::Symbol ||
-		(b.kind == OperandKind::Mem && (narrow_integer(kind) || convert_a)) ||
+		(b.kind == OperandKind::Mem && !word && (narrow_integer(kind) || convert_a)) ||
 		(convert_a && b.kind == OperandKind::Reg))
 	{
 		load_into(kEmitScratch, b, kind == TypeKind::Ptr ? TypeKind::Ptr : kind);
@@ -293,20 +300,22 @@ void FunctionSelector::emit_divide_hardware(const Instruction& inst)
 		load_into(RAX, a, TypeKind::I64);
 	if (convert_a)
 		normalize(RAX, unsigned_op ? unsigned_of(kind) : signed_of(kind));
+	const TypeKind width = word ? TypeKind::I32 : TypeKind::I64;
 	if (unsigned_op)
 	{
 		emit2(Op::Mov, TypeKind::Void, reg(RDX), Operand::make_imm(0));
-		emit1(Op::Div, TypeKind::I64, b);
+		emit1(Op::Div, width, b);
 	}
 	else
 	{
-		emit(Op::Cqo, TypeKind::I64);
-		emit1(Op::Idiv, TypeKind::I64, b);
+		emit(Op::Cqo, width);
+		emit1(Op::Idiv, width, b);
 	}
 	const Reg from = remainder ? RDX : RAX;
 	const Reg d = result_reg(inst, from);
 	load_into(d, reg(from), TypeKind::I64);
-	if (narrow_integer(kind) && (convert_a || !remainder))
+	// A 32-bit divide zero-extends both results.
+	if (word ? kind == TypeKind::I32 : narrow_integer(kind) && (convert_a || !remainder))
 		normalize(d, kind);
 	finish_result(inst, d);
 }
