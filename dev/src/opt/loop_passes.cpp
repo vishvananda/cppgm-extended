@@ -1688,7 +1688,9 @@ bool LoopPass::indexed_stores(uint32_t loop, const ExitTest& test, const std::ve
 			return false;
 		for (const Fill& g : fills)
 		{
-			if (&f != &g && f.base == g.base)
+			// (Two fills run one after the other: their pointers must not
+			// reach one object.)
+			if (&f != &g && (object_of(f.base).is(ValueKind::None) || object_of(f.base) == object_of(g.base)))
 				return false;
 			if (!g.source.is(ValueKind::None))
 			{
