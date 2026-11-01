@@ -1912,7 +1912,9 @@ SubobjectInit* Analyzer::mem_initializer_target(
 	uint32_t looked_up = 0;
 	if (!name.qualified() && name.last().kind == syntax::NameComponentKind::Identifier && !name.last().has_arguments)
 	{
-		result = names_.qualified(entity->scope, name.last().identifier, LookupFilter::Ordinary);
+		// 14.6.2p3: a dependent base is not searched, so a template parameter
+		// is not hidden by a name an instantiation's base happens to declare.
+		result = names_.members(entity->scope, name.last().identifier, LookupFilter::Ordinary);
 		looked_up = 1;
 		if (!result.found())
 		{
