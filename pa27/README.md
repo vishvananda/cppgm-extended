@@ -27,6 +27,8 @@ and writes the resulting names into real object files:
   character types, including at the host object boundary. Preprocessing
   character values, `__CHAR_UNSIGNED__`, constants and debug types follow
   the selected representation.
+- `-fno-strict-aliasing` lets accesses of different types read one object;
+  `-fstrict-aliasing` restores the default. The last option wins.
 
 The PA27 harness does not normally use `cppgm++` as the final linker. It runs:
 

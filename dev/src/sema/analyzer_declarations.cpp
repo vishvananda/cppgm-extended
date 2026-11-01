@@ -380,6 +380,9 @@ void Analyzer::simple_declaration(const syntax::SimpleDecl& decl, Scope* scope)
 		if ((specifiers.is_typedef || (entity != nullptr && entity->kind == EntityKind::Variable)) &&
 			(StandardNoReturn(decl.attributes) || StandardNoReturn(init.declarator)))
 			error(decl.location, "noreturn attribute requires a function");
+		if (specifiers.is_typedef && init.declared != nullptr &&
+			(has_may_alias(decl.attributes) || has_may_alias(init.declarator)))
+			note_may_alias(init.declared->type);
 		if (entity != nullptr && entity->kind == EntityKind::Function)
 			effect_attributes(static_cast<FunctionEntity*>(entity), decl.attributes, init.declarator);
 		if (entity != nullptr)

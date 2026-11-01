@@ -68,6 +68,8 @@ enum class AttributeKind : uint8_t
 	// GNU abi_tag ( string-literal, ... ): one node per argument, its
 	// literal in `expression` (pa28).
 	AbiTag,
+	// GNU may_alias on a type: accesses through it may read any object.
+	MayAlias,
 	// GNU pure and const (pa28): the declared function reads memory only,
 	// or accesses none (its call effects).
 	Pure,

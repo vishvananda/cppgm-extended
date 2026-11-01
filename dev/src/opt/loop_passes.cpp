@@ -2776,18 +2776,6 @@ bool LoopPass::run(bool fresh)
 // before).
 namespace {
 
-// A typed access (IF_TYPED) of a pointer and one of a non-pointer wider
-// than a byte name different objects unless their addresses agree (as in
-// memory forwarding).
-bool typed_kinds_apart(Type a, Type b)
-{
-	auto wide = [](Type t) {
-		const TypeKind k = t.kind();
-		return k != TypeKind::I1 && k != TypeKind::I8 && k != TypeKind::U8 && k != TypeKind::Void && !t.is_object();
-	};
-	return a.is_pointer() != b.is_pointer() && wide(a) && wide(b);
-}
-
 // The registers values live across a loop may take before a hoisted load
 // (which holds one across the loop) would push one into the frame: the
 // loop's live-in values and header phis count against it.
@@ -2886,7 +2874,7 @@ static bool may_overlap(const LoopWrite& w, const Located& at, uint64_t bytes, T
 				at.offset < w.at.offset + static_cast<int64_t>(w.bytes));
 	if (named_a && named_b)
 		return false; // distinct slots and globals
-	return !(w.typed && typed && typed_kinds_apart(w.type, type));
+	return !(w.typed && typed && typed_types_apart(w.type, type));
 }
 
 // Moves the loads of `loop` that read loop-invariant memory to its

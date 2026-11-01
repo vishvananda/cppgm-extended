@@ -361,6 +361,7 @@ uint64_t Analyzer::attribute_alignment(
 		case syntax::AttributeKind::Weak:
 		case syntax::AttributeKind::Section:
 		case syntax::AttributeKind::AbiTag:
+		case syntax::AttributeKind::MayAlias:
 		case syntax::AttributeKind::Pure:
 		case syntax::AttributeKind::Const:
 		case syntax::AttributeKind::UsingIfExists:
@@ -369,6 +370,38 @@ uint64_t Analyzer::attribute_alignment(
 		}
 	}
 	return alignment;
+}
+
+bool Analyzer::has_may_alias(const syntax::Attribute* list)
+{
+	for (; list != nullptr; list = list->next)
+		if (list->kind == syntax::AttributeKind::MayAlias)
+			return true;
+	return false;
+}
+
+bool Analyzer::has_may_alias(const syntax::Declarator* declarator)
+{
+	for (; declarator != nullptr; declarator = declarator->nested)
+		if (has_may_alias(declarator->attributes))
+			return true;
+	return false;
+}
+
+// A GNU may_alias typedef does not make a new type: its class stops stating
+// member types, and the scalar it names stops stating its type anywhere in
+// the unit.
+void Analyzer::note_may_alias(const Type* type)
+{
+	if (template_depth_ != 0)
+		return;
+	type = type->unqualified;
+	while (type->kind == TypeKind::Array)
+		type = type->element->unqualified;
+	if (ClassEntity* cls = const_cast<ClassEntity*>(ClassOf(type)))
+		cls->may_alias = true;
+	else if (type->kind != TypeKind::Function && type->kind != TypeKind::Vector)
+		graph_.may_alias_types.push_back(type);
 }
 
 void Analyzer::class_body(ClassEntity* entity, const syntax::ClassSpecifier& specifier, Scope* parent, Scope* print)
@@ -393,6 +426,8 @@ void Analyzer::class_body(ClassEntity* entity, const syntax::ClassSpecifier& spe
 	}
 	entity->pack = specifier.pack;
 	entity->packed = packed;
+	if (has_may_alias(specifier.attributes))
+		entity->may_alias = true;
 	if (entity->name != nullptr)
 	{
 		// The injected-class-name (9p2).

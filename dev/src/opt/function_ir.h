@@ -53,6 +53,16 @@ void for_each_successor(lowir::FunctionBody& body, lowir::Instruction& term, F f
 	}
 }
 
+// Whether typed accesses (IF_TYPED) of these types name different objects
+// unless their addresses agree (strict aliasing): pointers go together, one
+// floating type with itself, and integers by width.
+inline bool typed_types_apart(lowir::Type a, lowir::Type b)
+{
+	if (a.is_integer() && b.is_integer())
+		return lowir::integer_bits(a.kind()) != lowir::integer_bits(b.kind());
+	return a.kind() != b.kind();
+}
+
 // Whether an instruction has no effect beyond its result: removable when
 // unused, and (except Load) reusable for an equal computation.
 inline bool is_pure(const lowir::Instruction& inst)

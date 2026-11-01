@@ -624,6 +624,7 @@ private:
 	// members, not pointers into one (a pointer stored and loaded again is
 	// an ordinary one).
 	void mark_untyped(lowir::Value address);
+	bool typed_access(lowir::Type type) const;
 	bool untyped_address(lowir::Value address) const
 	{
 		return address.kind == lowir::ValueKind::Temp && address.index < untyped_addresses_.size() &&

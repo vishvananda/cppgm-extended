@@ -198,6 +198,7 @@ struct SourceOutputInvocation
 	// run_emit_lowir_mode). `-I`, `-D` and `-U` as the driver takes them.
 	bool hosted = false;
 	bool plain_char_unsigned = false;
+	bool strict_aliasing = true;
 	vector<string> include_paths;
 	string command_line;
 	// --emit-lowir -O<n>: the optimizer's level and limits.
@@ -259,6 +260,11 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 		if (args[i] == "--hosted")
 		{
 			invocation.hosted = true;
+			continue;
+		}
+		if (args[i] == "-fno-strict-aliasing" || args[i] == "-fstrict-aliasing")
+		{
+			invocation.strict_aliasing = args[i] == "-fstrict-aliasing";
 			continue;
 		}
 		if (args[i] == "-funsigned-char" || args[i] == "-fno-signed-char" || args[i] == "-fsigned-char" ||
@@ -912,6 +918,7 @@ int run_emit_lowir_mode(vector<string> args)
 		lowering.set_definition_stream(&definitions);
 	lowering.set_object_mode(object_half);
 	lowering.set_host_objects(object_half);
+	lowering.set_strict_aliasing(invocation.strict_aliasing);
 	// The LowIR view carries the source's debug locations when debug
 	// information is asked for, including the object roundtrip's view.
 	lowering.set_debug_locations(invocation.debug_info);

@@ -113,7 +113,8 @@ bool Parser::gnu_attribute(const char* spelling, Attribute& attribute, bool& kep
 		AttributeKind kind;
 	} kSimple[] = { { "noinline", "__noinline__", AttributeKind::NoInline },
 		{ "packed", "__packed__", AttributeKind::Packed }, { "weak", "__weak__", AttributeKind::Weak },
-		{ "pure", "__pure__", AttributeKind::Pure }, { "const", "__const__", AttributeKind::Const },
+		{ "may_alias", "__may_alias__", AttributeKind::MayAlias }, { "pure", "__pure__", AttributeKind::Pure },
+		{ "const", "__const__", AttributeKind::Const },
 		{ "using_if_exists", "__using_if_exists__", AttributeKind::UsingIfExists },
 		{ "exclude_from_explicit_instantiation", "__exclude_from_explicit_instantiation__",
 			AttributeKind::ExcludeFromExplicitInstantiation },

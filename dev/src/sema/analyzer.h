@@ -370,6 +370,9 @@ private:
 	void list_argument(const syntax::BracedInitList& list, const Type* parameter, Scope* scope, uint32_t location);
 	ExprFacts* member_pointer_call(
 		const syntax::CallExpr& expr, const ExprFacts* callee, const syntax::BinaryExpr& access);
+	static bool has_may_alias(const syntax::Attribute* list);
+	static bool has_may_alias(const syntax::Declarator* declarator);
+	void note_may_alias(const Type* type);
 	void symbol_attributes(Entity* entity, const syntax::Attribute* leading, const syntax::Declarator* declarator);
 	void collect_abi_tags(const syntax::Attribute* list, bool on_class, std::vector<std::string>& tags,
 		const Identifier* implied = nullptr);

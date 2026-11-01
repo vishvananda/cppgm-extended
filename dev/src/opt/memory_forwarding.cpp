@@ -61,16 +61,9 @@ bool region_marker(Opcode op)
 	return op == Opcode::EhTry || op == Opcode::EhCleanup || op == Opcode::EhEnd;
 }
 
-// Two typed accesses (IF_TYPED) that name different objects unless their
-// addresses agree: one of a pointer, the other of a non-pointer type wider
-// than a byte (strict aliasing; a byte access may be a character type's).
 bool typed_apart(bool typed_a, Type a, bool typed_b, Type b)
 {
-	auto wide = [](Type t) {
-		const TypeKind k = t.kind();
-		return k != TypeKind::I1 && k != TypeKind::I8 && k != TypeKind::U8 && k != TypeKind::Void && !t.is_object();
-	};
-	return typed_a && typed_b && a.is_pointer() != b.is_pointer() && wide(a) && wide(b);
+	return typed_a && typed_b && typed_types_apart(a, b);
 }
 
 // Bytes [start, end) of a slot, global or opaque pointer base known to

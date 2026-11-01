@@ -1597,7 +1597,10 @@ comparison checks them as part of the instruction:
   every `index` or `copy` of such an address. A pointer to a union member
   that is stored and loaded again is an ordinary pointer, and accesses
   through it are typed: GCC and clang allow punning through a union, not
-  through pointers into one.
+  through pointers into one. A member of a class with GNU `may_alias` is
+  treated as a union member. A `may_alias` typedef of a scalar names no new
+  type, so no access of that scalar's LowIR type in the unit is typed. With
+  `-fno-strict-aliasing` no access is typed.
 - `nowrap` on the `add`, `sub` and `mul` that compute the source's `+`, `-`
   and `*`, the compound assignments `+=`, `-=` and `*=`, and the steps of
   `++` and `--`, when the operation's type after the usual arithmetic

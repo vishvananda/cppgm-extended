@@ -1,0 +1,16 @@
+#include <stdio.h>
+
+__attribute__((noinline)) float punned(float* f, int* i)
+{
+	float a = *f;
+	*i = 0x40000000;
+	return a + *f;
+}
+
+int main()
+{
+	union { int i; float f; } u;
+	u.f = 1;
+	printf("%g\n", punned(&u.f, &u.i));
+	return 0;
+}

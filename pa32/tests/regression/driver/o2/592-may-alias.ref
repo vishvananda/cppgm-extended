@@ -1,0 +1,61 @@
+function @through_typedef(%f : ptr, %i : ptr) -> f32 [binding=strong, object=_Z15through_typedefPfPi, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed f32 %f
+    store i32 1, %i
+    %t2 = load typed f32 %f
+    %t3 = binary add f32 %t1, %t2
+    return f32 %t3
+}
+function @through_declarator_typedef(%f : ptr, %i : ptr) -> f64 [binding=strong, object=_Z26through_declarator_typedefPdPl, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed f64 %f
+    store i64 1, %i
+    %t2 = load typed f64 %f
+    %t3 = binary add f64 %t1, %t2
+    return f64 %t3
+}
+function @through_leading(%f : ptr, %i : ptr) -> f32 [binding=strong, object=_Z15through_leadingPfP7Leading, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed f32 %f
+    store i32 1, %i
+    %t2 = load typed f32 %f
+    %t3 = binary add f32 %t1, %t2
+    return f32 %t3
+}
+function @through_trailing(%f : ptr, %i : ptr) -> f32 [binding=strong, object=_Z16through_trailingPfP8Trailing, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed f32 %f
+    store i32 1, %i
+    %t2 = load typed f32 %f
+    %t3 = binary add f32 %t1, %t2
+    return f32 %t3
+}
+function @through_named(%f : ptr, %i : ptr) -> f32 [binding=strong, object=_Z13through_namedPfP5Named, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed f32 %f
+    store i32 1, %i
+    %t2 = load typed f32 %f
+    %t3 = binary add f32 %t1, %t2
+    return f32 %t3
+}
+function @through_later_typedef(%f : ptr, %i : ptr) -> f32 [binding=strong, object=_Z21through_later_typedefPfP5Plain, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed f32 %f
+    store i32 1, %i
+    %t2 = load typed f32 %f
+    %t3 = binary add f32 %t1, %t2
+    return f32 %t3
+}
+function @plain(%f : ptr, %i : ptr) -> i16 [binding=strong, object=_Z5plainPsPf, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed i16 %f
+    store typed f32 1f, %i
+    %t2 = convert sext i32 i16 %t1
+    %t3 = binary add nowrap i32 %t2, %t2
+    %t4 = convert trunc i16 i32 %t3
+    return i16 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

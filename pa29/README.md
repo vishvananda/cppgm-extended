@@ -320,7 +320,7 @@ To complete PA29, implement hosted compatibility for:
   `__has_attribute` likewise answers nonzero for the GNU and Clang
   attributes the compiler implements (`always_inline`, `noinline`,
   `noreturn`, `pure`, `const`, `used`, `weak`, `packed`, `aligned`,
-  `section`, `vector_size`, `mode`, `gnu_inline`, `abi_tag`, `using_if_exists` and
+  `section`, `vector_size`, `mode`, `gnu_inline`, `abi_tag`, `may_alias`, `using_if_exists` and
   `exclude_from_explicit_instantiation`, each also spelled `__name__`) and
   `0` for any other.
   A conditional whose condition is `__builtin_constant_p`, optionally

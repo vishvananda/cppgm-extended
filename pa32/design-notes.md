@@ -103,8 +103,8 @@ copy); a load in a known-zero range reads zero.
   Distinct slots and globals never overlap, nor do disjoint ranges of one.
   A private slot, whose address reaches only loads, stores, pointer copies,
   constant `index` steps, `copyobj` and `zeroinit`, is reached by no other
-  pointer. Two `typed` accesses, one of a pointer and one of a non-pointer
-  wider than a byte, name different objects unless they share a base.
+  pointer. Two `typed` accesses of incompatible types, neither of a byte
+  type, name different objects unless they share a base.
 - A write ends every fact it may alias. A call that may write memory, an
   atomic operation, `va_start` or `va_arg` ends every fact except those of
   private slots. At most 64 facts and 16 zero ranges are live.

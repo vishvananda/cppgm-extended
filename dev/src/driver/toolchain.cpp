@@ -59,6 +59,7 @@ struct Invocation
 	bool debug_types = false;
 	bool debug_optimization = false;
 	bool stats = false;
+	bool strict_aliasing = true;
 	// --stats-functions: the object back end's per-function census
 	// (native/object/function_census.h), after each unit's compilation.
 	bool function_census = false;
@@ -305,6 +306,8 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 		}
 		else if (arg == "-fno-exceptions" || arg == "-fexceptions")
 			invocation.preprocessor.modes.exceptions = arg == "-fexceptions";
+		else if (arg == "-fno-strict-aliasing" || arg == "-fstrict-aliasing")
+			invocation.strict_aliasing = arg == "-fstrict-aliasing";
 		else if (arg == "-fno-rtti" || arg == "-frtti")
 			invocation.preprocessor.modes.rtti = arg == "-frtti";
 		else if (arg == "-funsigned-char" || arg == "-fno-signed-char" || arg == "-fsigned-char" ||
@@ -502,6 +505,7 @@ bool compile_unit(
 	lowering.set_debug_locations(invocation.debug_info);
 	lowering.set_debug_types(invocation.debug_types);
 	lowering.set_host_objects(eh_model == native::EhModel::Host);
+	lowering.set_strict_aliasing(invocation.strict_aliasing);
 	double front_ms = 0;
 	UnitWork work;
 	try

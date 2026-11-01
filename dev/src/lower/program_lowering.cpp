@@ -62,6 +62,9 @@ void ProgramLowering::lower_unit(
 	stack_base_ = reinterpret_cast<std::uintptr_t>(&marker);
 	graph_ = &graph;
 	analyzer_ = &analyzer;
+	may_alias_kinds_ = 0;
+	for (const sema::Type* type : graph.may_alias_types)
+		may_alias_kinds_ |= uint64_t(1) << static_cast<unsigned>(storage_type(type).kind());
 	positions_ = debug_locations_ ? analyzer.source_positions() : nullptr;
 	if (positions_ != nullptr && debug_types_)
 	{

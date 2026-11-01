@@ -890,18 +890,18 @@ bool FunctionLowering::union_member(const sema::VariableEntity* member)
 	const sema::ClassEntity* cls = sema::ClassOf(member->owner->entity->type);
 	while (cls->anonymous && cls->storage != nullptr && cls->storage->entity->owner->kind == sema::ScopeKind::Class)
 	{
-		if (cls->key == TokenKind::KW_UNION)
+		if (cls->key == TokenKind::KW_UNION || cls->may_alias)
 			return true;
 		cls = sema::ClassOf(cls->storage->entity->owner->entity->type);
 	}
-	return cls->key == TokenKind::KW_UNION;
+	return cls->key == TokenKind::KW_UNION || cls->may_alias;
 }
 
 bool FunctionLowering::through_union(const sema::VariableEntity* member, const sema::ClassEntity* holder)
 {
 	for (const sema::ClassEntity* cls = sema::ClassOf(member->owner->entity->type); cls != nullptr;)
 	{
-		if (cls->key == TokenKind::KW_UNION)
+		if (cls->key == TokenKind::KW_UNION || cls->may_alias)
 			return true;
 		if (cls == holder || !cls->anonymous || cls->storage == nullptr ||
 			cls->storage->entity->owner->kind != sema::ScopeKind::Class)
@@ -1016,12 +1016,13 @@ void FunctionLowering::qualify(Place& place, const sema::Type* type)
 // An access the optimizer may tell apart by its type (IF_TYPED): a pointer,
 // or an integer or floating type wider than a byte (a byte type may be a
 // character type, which accesses any object).
-static bool typed_access(lowir::Type type)
+bool FunctionLowering::typed_access(lowir::Type type) const
 {
 	const lowir::TypeKind k = type.kind();
-	return type.is_pointer() ||
-		((type.is_integer() || type.is_float()) && k != lowir::TypeKind::I1 && k != lowir::TypeKind::I8 &&
-			k != lowir::TypeKind::U8);
+	return (type.is_pointer() ||
+			   ((type.is_integer() || type.is_float()) && k != lowir::TypeKind::I1 && k != lowir::TypeKind::I8 &&
+				   k != lowir::TypeKind::U8)) &&
+		lowering_.states_type(k);
 }
 
 RValue FunctionLowering::load(lowir::Type type, const Place& place)

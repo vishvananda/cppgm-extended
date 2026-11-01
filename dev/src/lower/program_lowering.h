@@ -429,6 +429,12 @@ public:
 	// runtime: exception-aware list initialization retains the host's
 	// landing-pad entry and resume boundaries.
 	void set_host_objects(bool on) { host_objects_ = on; }
+	// -fno-strict-aliasing: no access states its type.
+	void set_strict_aliasing(bool on) { strict_aliasing_ = on; }
+	bool states_type(lowir::TypeKind kind) const
+	{
+		return strict_aliasing_ && (may_alias_kinds_ >> static_cast<unsigned>(kind) & 1) == 0;
+	}
 	bool host_objects() const { return host_objects_; }
 	// Whether a function type has a class parameter its caller destroys
 	// (unit-scoped: function type -> 0 or 1, see
@@ -1964,6 +1970,8 @@ private:
 	lowir::NameId debug_file_name_ = 0;
 	bool object_mode_ = false;
 	bool host_objects_ = false;
+	bool strict_aliasing_ = true;
+	uint64_t may_alias_kinds_ = 0; // bit per TypeKind: a may_alias typedef of the unit names it
 	std::uintptr_t stack_base_;
 	std::uintptr_t stack_budget_;
 };

@@ -27,6 +27,8 @@ struct SemanticGraph
 	// roots of the demand graph), and the unnamed classes named so far.
 	DemandList* root_demands;
 	DemandList* last_root_demand;
+	// The scalar types a GNU may_alias typedef names.
+	std::vector<const Type*> may_alias_types;
 	uint32_t local_types;
 	uint32_t scopes;
 	uint32_t bindings;

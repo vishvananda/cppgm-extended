@@ -237,6 +237,8 @@ struct ClassEntity : Entity
 	// when a member of a non-POD class stays unpacked (as GCC does), so no
 	// class containing this one packs it either.
 	bool packed;
+	// GNU may_alias: accesses to its members may read any object.
+	bool may_alias = false;
 	// A const object of the class may be default-initialized (8.5p6, CWG
 	// 253), once established (see check_const_default).
 	bool const_default_constructible;
