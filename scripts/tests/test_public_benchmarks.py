@@ -9,6 +9,7 @@ import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import public_benchmarks as pb
@@ -218,17 +219,19 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(list(baseline['programs']), ['good'])
         self.assertEqual(baseline['programs']['good']['clang']['run_instructions'], 3)
 
-    def test_badge_gives_speeds_against_gcc(self):
+    def test_badge_gives_one_speed_against_gcc(self):
         results = [outcome('p', dict(compile_cpu_O3=5.0, run_cpu_O3=1.0),
                            dict(compile_cpu_O3=1.0, run_cpu_O3=1.25))]
-        badge = pb.badge(results, 'O3')
+        badge = pb.badge(results, '-O3 generated speed vs gcc', 'run_cpu_O3', 2)
         self.assertEqual(badge['schemaVersion'], 1)
-        self.assertEqual(badge['label'], '-O3')
-        self.assertEqual(badge['message'],
-                         'compile speed 5.0× gcc // generated 0.80× gcc')
+        self.assertEqual(badge['label'], '-O3 generated speed vs gcc')
+        self.assertEqual(badge['message'], '0.80×')
         self.assertEqual(badge['color'], 'green')
+        badge = pb.badge(results, '-O3 compile speed vs gcc', 'compile_cpu_O3', 1)
+        self.assertEqual(badge['message'], '5.0×')
+        self.assertEqual(badge['color'], 'brightgreen')
 
-    def test_badge_is_colored_by_the_slower_speed(self):
+    def test_badge_color_follows_the_speed(self):
         self.assertEqual(pb.badge_color(1.0), 'brightgreen')
         self.assertEqual(pb.badge_color(0.7), 'yellow')
         self.assertEqual(pb.badge_color(0.5), 'orange')
@@ -237,23 +240,77 @@ class ReportTests(unittest.TestCase):
         results = [outcome('p', dict(compile_cpu_O0=1.0, run_cpu_O0=1.0),
                            dict(compile_cpu_O0=1.0, run_cpu_O0=1.0)),
                    outcome('bad', {}, {}, status='output-mismatch')]
-        badge = pb.badge(results, 'O0')
+        badge = pb.badge(results, 'label', 'run_cpu_O0', 2)
         self.assertEqual(badge['color'], 'red')
-        self.assertTrue(badge['message'].endswith(' // 1 failing'))
+        self.assertEqual(badge['message'], '1 failing')
 
     def test_badge_without_numbers_says_so(self):
-        badge = pb.badge([], 'O3')
+        badge = pb.badge([], 'label', 'run_cpu_O3', 2)
         self.assertEqual((badge['message'], badge['color']), ('no data', 'lightgrey'))
 
-    def test_report_writes_a_badge_for_each_level(self):
+    def test_build_badge_gives_the_speed_of_a_self_hosted_build(self):
+        builds = dict(status='ok', gcc=500.0, self=125.0, inception=200.0)
+        badge = pb.build_badge(builds, 'self', 'self compile speed vs gcc')
+        self.assertEqual((badge['message'], badge['color']), ('4.0×', 'brightgreen'))
+        self.assertEqual(pb.build_badge(builds, 'inception', 'label')['message'], '2.5×')
+
+    def test_build_badge_without_a_run_says_so(self):
+        self.assertEqual(pb.build_badge(None, 'self', 'label')['message'], 'no data')
+
+    def test_build_badge_turns_red_on_a_failed_build(self):
+        badge = pb.build_badge(dict(status='self build failed', gcc=1.0), 'self', 'label')
+        self.assertEqual((badge['message'], badge['color']), ('1 failing', 'red'))
+
+    def test_report_writes_every_badge(self):
         path = self.root / 'results.json'
         facts = dict(compile_cpu_O0=1.0, run_cpu_O0=1.0, compile_cpu_O3=1.0, run_cpu_O3=1.0)
         path.write_text(json.dumps(dict(programs=[outcome('p', facts, facts)])))
+        builds = self.root / 'selfhost.json'
+        builds.write_text(json.dumps(dict(status='ok', gcc=4.0, self=1.0, inception=2.0)))
         with contextlib.redirect_stdout(io.StringIO()):
-            pb.main_report(path, badges=self.root / 'badges')
-        written = json.loads((self.root / 'badges/o3.json').read_text())
-        self.assertEqual(written['label'], '-O3')
-        self.assertTrue((self.root / 'badges/o0.json').is_file())
+            pb.main_report(path, badges=self.root / 'badges', selfhost_path=builds)
+        names = sorted(item.stem for item in (self.root / 'badges').iterdir())
+        self.assertEqual(names, ['inception', 'o0-compile', 'o0-generated', 'o3-compile',
+                                 'o3-generated', 'self-compile'])
+        written = json.loads((self.root / 'badges/inception.json').read_text())
+        self.assertEqual((written['label'], written['message']),
+                         ('inception speed vs gcc', '2.0×'))
+
+    def test_report_fails_when_a_self_hosted_build_fails(self):
+        path = self.root / 'results.json'
+        path.write_text(json.dumps(dict(programs=[])))
+        builds = self.root / 'selfhost.json'
+        builds.write_text(json.dumps(dict(status='self build failed', gcc=4.0, self=None)))
+        with contextlib.redirect_stdout(io.StringIO()) as output:
+            code = pb.main_report(path, selfhost_path=builds)
+        self.assertEqual(code, 1)
+        self.assertIn('The self-hosted builds failed: self build failed.', output.getvalue())
+
+    def test_summary_gives_speeds_like_the_badges(self):
+        facts = dict(compile_cpu_O3=4.0, run_cpu_O3=2.0)
+        reference = dict(compile_cpu_O3=1.0, run_cpu_O3=1.5)
+        document = dict(programs=[outcome('p', reference, facts)])
+        text = pb.summary(document, [], dict(status='ok', gcc=4.0, self=1.0, inception=2.0))
+        self.assertIn('| Compile CPU, `-O3` | 0.25× | 1 |', text)
+        self.assertIn('| Run CPU, `-O3` | 0.75× | 1 |', text)
+        self.assertIn('| Self compile CPU | 4.00× |', text)
+        self.assertIn('| Inception CPU | 2.00× |', text)
+
+    def test_selfhost_builds_use_one_job_count(self):
+        commands = dict(pb.selfhost_commands('/work', 3))
+        self.assertEqual(sorted(commands), ['gcc', 'inception', 'self'])
+        for command in commands.values():
+            self.assertIn('-j3', command)
+        self.assertIn('INCEPTION_OBJECT_BUILD_JOBS=3', commands['inception'])
+        self.assertEqual(commands['self'][-1], 'cppgm++-self')
+
+    def test_selfhost_records_the_failed_build(self):
+        output = self.root / 'selfhost.json'
+        arguments = SimpleNamespace(work=self.root, output=output, jobs=1)
+        with mock.patch.object(pb, 'build_cpu', side_effect=[3.0, None]):
+            self.assertEqual(pb.selfhost(arguments), 0)
+        written = json.loads(output.read_text())
+        self.assertEqual(written['status'], 'self build failed')
 
     def report(self, results):
         path = self.root / 'results.json'
@@ -273,7 +330,7 @@ class ReportTests(unittest.TestCase):
                                           clang_error='compile: no')])
         self.assertEqual(code, 0)
         self.assertIn('| p | `compile: no` |', text)
-        self.assertIn('| Executable size, `-O3` | 0.500 | 1 | - | 0 |', text)
+        self.assertIn('| Executable size, `-O3` | 2.00× | 1 | - | 0 |', text)
 
 
 if __name__ == '__main__':

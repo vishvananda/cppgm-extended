@@ -15,6 +15,7 @@ import math
 import os
 from pathlib import Path
 import re
+import resource
 import shutil
 import signal
 import subprocess
@@ -57,8 +58,18 @@ METRICS = (
     ('run_cpu_O3', 'Run CPU, `-O3`'),
     ('run_instructions', 'Run instructions, `-O3`'),
 )
-# The README badges, one for each level.
-BADGE_LEVELS = ('O0', 'O3')
+# The README badges: file name, label, metric and decimal places.
+BADGES = (
+    ('o0-compile', '-O0 compile speed vs gcc', 'compile_cpu_O0', 1),
+    ('o0-generated', '-O0 generated speed vs gcc', 'run_cpu_O0', 2),
+    ('o3-compile', '-O3 compile speed vs gcc', 'compile_cpu_O3', 1),
+    ('o3-generated', '-O3 generated speed vs gcc', 'run_cpu_O3', 2),
+)
+# The self-hosted builds: key, file name, label and summary title.
+BUILDS = (
+    ('self', 'self-compile', 'self compile speed vs gcc', 'Self compile CPU'),
+    ('inception', 'inception', 'inception speed vs gcc', 'Inception CPU'),
+)
 REFERENCES = (('gcc', 'g++'), ('clang', 'clang++'))
 
 
@@ -474,30 +485,44 @@ def mean_ratio(results, metric, reference):
     return geomean(ratios), len(ratios)
 
 
-def badge_color(slowest):
+def badge_color(speed):
     for limit, color in ((1.0, 'brightgreen'), (0.8, 'green'), (0.67, 'yellow')):
-        if slowest >= limit:
+        if speed >= limit:
             return color
     return 'orange'
 
 
-def badge(results, level):
-    """Return the shields.io endpoint document for level."""
-    compile_ratio = mean_ratio(results, f'compile_cpu_{level}', 'gcc')[0]
-    run_ratio = mean_ratio(results, f'run_cpu_{level}', 'gcc')[0]
-    failures = sum(r['status'] != 'ok' for r in results)
-    if compile_ratio and run_ratio:
-        compile_speed = 1 / compile_ratio
-        run_speed = 1 / run_ratio
-        message = f'compile speed {compile_speed:.1f}× gcc // generated {run_speed:.2f}× gcc'
-        color = badge_color(min(compile_speed, run_speed))
-    else:
-        message = 'no data'
-        color = 'lightgrey'
+def speed_text(mean, digits=2):
+    """Return the speed of a cppgm++ over reference ratio, in the badge format."""
+    return f'{1 / mean:.{digits}f}×' if mean else '-'
+
+
+def speed_badge(label, mean, digits, failures):
+    """Return the shields.io endpoint document for one speed."""
     if failures:
-        message += f' // {failures} failing'
-        color = 'red'
-    return dict(schemaVersion=1, label=f'-{level}', message=message, color=color)
+        message, color = f'{failures} failing', 'red'
+    elif mean:
+        message, color = speed_text(mean, digits), badge_color(1 / mean)
+    else:
+        message, color = 'no data', 'lightgrey'
+    return dict(schemaVersion=1, label=label, message=message, color=color)
+
+
+def badge(results, label, metric, digits):
+    failures = sum(r['status'] != 'ok' for r in results)
+    return speed_badge(label, mean_ratio(results, metric, 'gcc')[0], digits, failures)
+
+
+def build_ratio(builds, key):
+    """Return the CPU of a self-hosted build over the g++ build."""
+    if not builds or builds.get('status') != 'ok' or not builds.get('gcc'):
+        return None
+    return builds[key] / builds['gcc']
+
+
+def build_badge(builds, key, label):
+    failed = 1 if builds and builds.get('status') != 'ok' else 0
+    return speed_badge(label, build_ratio(builds, key), 1, failed)
 
 
 def compare_baseline(results, baseline):
@@ -537,22 +562,28 @@ def baseline_of(results):
     return dict(programs=programs)
 
 
-def summary(document, changes):
+def summary(document, changes, builds=None):
     results = document['programs']
     failures = [r for r in results if r['status'] != 'ok']
     lines = ['# Public benchmarks', '',
              f'{len(results) - len(failures)} of {len(results)} programs built '
-             'with cppgm++ and g++ and agreed. Ratios are cppgm++ over the reference, '
-             'so below 1 means cppgm++ is smaller or faster.', '',
+             'with cppgm++ and g++ and agreed. Each number is the reference over '
+             'cppgm++, so above 1× means cppgm++ is smaller or faster.', '',
              '| Measure | vs g++ | Programs | vs clang++ | Programs |',
              '| --- | ---: | ---: | ---: | ---: |']
     for metric, title in METRICS:
         cells = []
         for reference, _ in REFERENCES:
             mean, count = mean_ratio(results, metric, reference)
-            cells += [f'{mean:.3f}' if mean else '-', str(count)]
+            cells += [speed_text(mean), str(count)]
         if cells[1] != '0' or cells[3] != '0':
             lines.append(f'| {title} | {" | ".join(cells)} |')
+    for key, _, _, title in BUILDS:
+        mean = build_ratio(builds, key)
+        if mean:
+            lines.append(f'| {title} | {speed_text(mean)} | - | - | - |')
+    if builds and builds.get('status') != 'ok':
+        lines += ['', f'The self-hosted builds failed: {builds.get("status")}.']
     if failures:
         lines += ['', '## Failures', '', '| Program | Status | Detail |',
                   '| --- | --- | --- |']
@@ -575,34 +606,40 @@ def summary(document, changes):
     worst = [(ratio(r, 'run_instructions'), r['name']) for r in results if r['status'] == 'ok']
     worst = sorted(((value, name) for value, name in worst if value), reverse=True)[:10]
     if worst:
-        lines += ['', '## Largest run-time instruction ratios', '',
-                  '| Program | Ratio |', '| --- | ---: |']
-        lines += [f'| {name} | {value:.2f} |' for value, name in worst]
+        lines += ['', '## Slowest generated code, by run-time instructions', '',
+                  '| Program | vs g++ |', '| --- | ---: |']
+        lines += [f'| {name} | {speed_text(value)} |' for value, name in worst]
     return '\n'.join(lines) + '\n'
 
 
 def report(arguments):
     return main_report(arguments.results, arguments.summary, arguments.baseline,
-                       arguments.write_baseline, arguments.badges)
+                       arguments.write_baseline, arguments.badges, arguments.selfhost)
 
 
 def main_report(results_path, summary_path=None, baseline_path=None, write_baseline=None,
-                badges=None):
+                badges=None, selfhost_path=None):
     document = json.loads(Path(results_path).read_text())
     results = document['programs']
+    builds = None
+    if selfhost_path and Path(selfhost_path).is_file():
+        builds = json.loads(Path(selfhost_path).read_text())
     if write_baseline:
         Path(write_baseline).write_text(
             json.dumps(baseline_of(results), indent=1, sort_keys=True) + '\n')
     if badges:
         Path(badges).mkdir(parents=True, exist_ok=True)
-        for level in BADGE_LEVELS:
-            (Path(badges) / f'{level.lower()}.json').write_text(
-                json.dumps(badge(results, level), indent=1) + '\n')
+        documents = {name: badge(results, label, metric, digits)
+                     for name, label, metric, digits in BADGES}
+        for key, name, label, _ in BUILDS:
+            documents[name] = build_badge(builds, key, label)
+        for name, content in documents.items():
+            (Path(badges) / f'{name}.json').write_text(json.dumps(content, indent=1) + '\n')
     baseline = {}
     if baseline_path and Path(baseline_path).is_file():
         baseline = json.loads(Path(baseline_path).read_text())
     changes = compare_baseline(results, baseline)
-    text = summary(document, changes)
+    text = summary(document, changes, builds)
     if summary_path:
         with open(summary_path, 'a') as stream:
             stream.write(text)
@@ -611,7 +648,45 @@ def main_report(results_path, summary_path=None, baseline_path=None, write_basel
         if change['change'] > 0 and not change['drift']:
             print(f'::warning::{change["name"]}: {change["metric"]} '
                   f'{change["change"]:+.2%} from the baseline')
-    return 1 if any(r['status'] != 'ok' for r in results) else 0
+    failed = any(r['status'] != 'ok' for r in results)
+    return 1 if failed or (builds and builds.get('status') != 'ok') else 0
+
+
+def build_cpu(command):
+    """Return the CPU seconds of command and its children, or None if it fails."""
+    def spent():
+        usage = resource.getrusage(resource.RUSAGE_CHILDREN)
+        return usage.ru_utime + usage.ru_stime
+
+    before = spent()
+    completed = subprocess.run(command, cwd=ROOT, stdout=subprocess.DEVNULL,
+                               stderr=subprocess.PIPE, text=True, check=False)
+    if completed.returncode != 0:
+        print(completed.stderr[-2000:], file=sys.stderr)
+        return None
+    return round(spent() - before, 2)
+
+
+def selfhost_commands(work, jobs):
+    """Return the three builds of cppgm++, each at -O3 with the same job count."""
+    work = Path(work).resolve()
+    pa34 = ['make', '-C', 'pa34', f'-j{jobs}', 'CXX=../dev/cppgm++', 'CPPGM_HOST_CXX=g++',
+            f'INCEPTION_OBJ_ROOT_BASE={work}/pa34', f'INCEPTION_BUILD_JOBS={jobs}',
+            f'INCEPTION_OBJECT_BUILD_JOBS={jobs}']
+    return (('gcc', ['make', '-C', 'dev', f'-j{jobs}', 'cppgm++', f'OBJ={work}/gcc']),
+            ('self', pa34 + ['cppgm++-self']),
+            ('inception', pa34 + ['cppgm++-inception']))
+
+
+def selfhost(arguments):
+    builds = dict(status='ok')
+    for key, command in selfhost_commands(arguments.work, arguments.jobs):
+        builds[key] = build_cpu(command)
+        if builds[key] is None:
+            builds['status'] = f'{key} build failed'
+            break
+    Path(arguments.output).write_text(json.dumps(builds, indent=1) + '\n')
+    return 0
 
 
 def main():
@@ -646,7 +721,14 @@ def main():
     command.add_argument('--summary', help='a file to append the summary to')
     command.add_argument('--write-baseline', help='record these results as the baseline')
     command.add_argument('--badges', help='a directory to write the README badges to')
+    command.add_argument('--selfhost', help='the output of the selfhost command')
     command.set_defaults(handler=report)
+
+    command = commands.add_parser('selfhost')
+    command.add_argument('--work', required=True)
+    command.add_argument('--output', required=True)
+    command.add_argument('-j', '--jobs', type=int, default=os.cpu_count())
+    command.set_defaults(handler=selfhost)
 
     arguments = parser.parse_args()
     return arguments.handler(arguments)

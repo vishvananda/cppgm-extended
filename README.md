@@ -1,8 +1,12 @@
 # cppgm-extended
 
 [![Tests](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml/badge.svg)](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml)
-[![-O0 compile speed and generated code speed](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvishvananda%2Fcppgm-extended%2Fbenchmark-badges%2Fo0.json)](benchmarks/public/README.md)
-[![-O3 compile speed and generated code speed](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvishvananda%2Fcppgm-extended%2Fbenchmark-badges%2Fo3.json)](benchmarks/public/README.md)
+[![-O0 compile speed vs gcc](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvishvananda%2Fcppgm-extended%2Fbenchmark-badges%2Fo0-compile.json)](benchmarks/public/README.md)
+[![-O0 generated speed vs gcc](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvishvananda%2Fcppgm-extended%2Fbenchmark-badges%2Fo0-generated.json)](benchmarks/public/README.md)
+[![-O3 compile speed vs gcc](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvishvananda%2Fcppgm-extended%2Fbenchmark-badges%2Fo3-compile.json)](benchmarks/public/README.md)
+[![-O3 generated speed vs gcc](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvishvananda%2Fcppgm-extended%2Fbenchmark-badges%2Fo3-generated.json)](benchmarks/public/README.md)
+[![self compile speed vs gcc](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvishvananda%2Fcppgm-extended%2Fbenchmark-badges%2Fself-compile.json)](benchmarks/public/README.md)
+[![inception speed vs gcc](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fvishvananda%2Fcppgm-extended%2Fbenchmark-badges%2Finception.json)](benchmarks/public/README.md)
 
 A C++11 compiler course in 35 cumulative assignments, from preprocessing to
 native code, optimization and self-hosting. This repository contains the

@@ -72,15 +72,27 @@ a `cppgm++` count differs from `baseline.json`:
 
 ## Badges
 
-The root README has one badge for `-O0` and one for `-O3`. Each badge gives
-`cppgm++` speed as a multiple of `g++` speed. Higher is better.
+The root README has six badges. Each badge gives `cppgm++` speed as a multiple
+of `g++` speed. Higher is better.
 
-- Compile speed: the geometric mean of compile CPU time.
-- Generated speed: the geometric mean of run CPU time.
+| Badge | Measure |
+| --- | --- |
+| `-O0 compile speed vs gcc` | geometric mean of compile CPU time at `-O0` |
+| `-O0 generated speed vs gcc` | geometric mean of run CPU time at `-O0` |
+| `-O3 compile speed vs gcc` | geometric mean of compile CPU time at `-O3` |
+| `-O3 generated speed vs gcc` | geometric mean of run CPU time at `-O3` |
+| `self compile speed vs gcc` | CPU time of the `-O3` build of `cppgm++` by `dev/cppgm++` |
+| `inception speed vs gcc` | CPU time of the `-O3` build of `cppgm++` by the self-hosted `cppgm++` |
+
+The last two compare with the CPU time of the `-O3` build of `cppgm++` by `g++`.
+The three builds use the same job count.
+
+The job summary uses the same format. It gives the reference over `cppgm++` for
+each measure, so above 1× means `cppgm++` is smaller or faster.
 
 Each push to `main` writes the badges to the `benchmark-badges` branch. If a
-program fails, the badge is red and gives the number of failures. `clang++`
-results are in the job summary.
+program or a self-hosted build fails, the badges it affects are red and give the
+number of failures. `clang++` results are in the job summary.
 
 ## Update the baseline
 

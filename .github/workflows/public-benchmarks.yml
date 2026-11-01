@@ -55,11 +55,19 @@ jobs:
             --output obj/public-benchmarks/results.json \
             --jobs "$(nproc)"
 
+      - name: Time the g++, self-hosted and inception builds
+        run: |
+          python3 scripts/public_benchmarks.py selfhost \
+            --work obj/public-benchmarks/selfhost \
+            --output obj/public-benchmarks/selfhost.json \
+            --jobs "$(nproc)"
+
       - name: Report
         run: |
           python3 scripts/public_benchmarks.py report obj/public-benchmarks/results.json \
             --summary "$GITHUB_STEP_SUMMARY" \
-            --badges obj/public-benchmarks/badges
+            --badges obj/public-benchmarks/badges \
+            --selfhost obj/public-benchmarks/selfhost.json
 
       - name: Retain results
         if: always()
@@ -68,6 +76,7 @@ jobs:
           name: public-benchmarks-${{ github.sha }}
           path: |
             obj/public-benchmarks/results.json
+            obj/public-benchmarks/selfhost.json
             obj/public-benchmarks/badges/
           if-no-files-found: warn
           retention-days: 14
