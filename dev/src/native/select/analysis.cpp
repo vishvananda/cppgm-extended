@@ -677,9 +677,11 @@ void FunctionSelector::resolve_aliases()
 				case Opcode::Binary:
 				{
 					const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);
+					// (Not a `nowrap` one: it may keep what 64 bits compute,
+					// which needs canonical operands.)
 					ok = k < 2 &&
 						(op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Sub || op == lowir::BinaryOp::Mul) &&
-						inst.type.kind() == body.temps[v.index].type.kind();
+						inst.type.kind() == body.temps[v.index].type.kind() && !(inst.flags & lowir::IF_NO_WRAP);
 					break;
 				}
 				case Opcode::Store:

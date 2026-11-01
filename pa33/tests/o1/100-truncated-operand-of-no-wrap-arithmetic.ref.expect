@@ -1,0 +1,21 @@
+# budget from 100-truncated-operand-of-no-wrap-arithmetic.ref.mir: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 54
+blocks <= 8
+count(call) <= 7
+mem <= 12
+instructions <= 6 in @add
+stack_size <= 32 in @add
+instructions <= 6 in @sub
+stack_size <= 32 in @sub
+instructions <= 6 in @mul
+stack_size <= 32 in @mul
+instructions <= 7 in @element
+stack_size <= 32 in @element
+instructions <= 40 in @main
+stack_size <= 85 in @main
+
+# contract from 100-truncated-operand-of-no-wrap-arithmetic.ref.mir: the exception regions, calls, callee-saved registers and memory accesses the fixture requires
+count(call @add) == 1 in @main
+count(call @element) == 1 in @main
+count(call @mul) == 1 in @main
+count(call @sub) == 1 in @main

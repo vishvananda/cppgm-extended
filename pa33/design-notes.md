@@ -49,6 +49,10 @@ that paid there in the course solution:
   one does, and an instruction count will not show it. The 32-bit form traps
   on `INT_MIN / -1`, which a program may not write but a 64-bit divide
   forgives, so keep a divisor you can see is `-1` out of it.
+- Check what each shortcut assumes of its operands. Letting a truncation share
+  its source's register is sound for a reader of the low bits only, and keeping
+  a `nowrap` add computed at 64 bits is sound for canonical operands only. Each
+  is correct alone, and together they turn `(int)wide + y` into a wrong index.
 - Let a phi's sources and result share a register when their ranges do not
   overlap, so its edge transfers move nothing. A transfer on a conditional
   edge is executed in that edge's block, not at the end of the predecessor.

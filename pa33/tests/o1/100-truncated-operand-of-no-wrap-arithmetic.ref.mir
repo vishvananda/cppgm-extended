@@ -1,0 +1,120 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @add
+  abi
+    param %wide -> rdi : i64
+    param %other -> rsi : i32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    sext.i32 rdi
+    add rdi, rsi
+    ret rdi
+
+function @sub
+  abi
+    param %wide -> rdi : i64
+    param %other -> rsi : i32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    sext.i32 rdi
+    sub rdi, rsi
+    ret rdi
+
+function @mul
+  abi
+    param %wide -> rdi : i64
+    param %other -> rsi : i32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    sext.i32 rdi
+    imul rdi, rsi
+    ret rdi
+
+function @element
+  abi
+    param %base -> rdi : ptr
+    param %wide -> rsi : i64
+    param %other -> rdx : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    sext.i32 rsi
+    add rsi, rdx
+    load.i32 rax, [rdi+rsi*4]
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13
+    slot $values -> [rbp-16] : obj<12x4>
+
+  block ^entry
+    store.i32 [rbp-16], 10
+    store.i32 [rbp-12], 20
+    store.i32 [rbp-8], 30
+    mov rdi, 4294967297
+    mov rsi, 2
+    call @add [args=(rsi,rdi)]
+    mov rbx, rax
+    mov rdi, 8589934597
+    mov rsi, 7
+    call @sub [args=(rsi,rdi)]
+    mov r12, rax
+    mov rdi, -4294967293
+    mov rsi, -5
+    call @mul [args=(rsi,rdi)]
+    mov r13, rax
+    lea rdi, [rbp-16]
+    mov rsi, 4294967297
+    mov rdx, 1
+    call @element [args=(rdx,rsi,rdi)]
+    cmp.i64 rbx, 3
+    setne rbx
+    movzx rbx, rbx
+    cmp.i64 r12, -2
+    setne r12
+    movzx r12, r12
+    cmp.i64 r13, -15
+    setne r13
+    movzx r13, r13
+    cmp.i32 rax, 30
+    setne rax
+    movzx rax, rax
+    or rbx, r12
+    or r13, rax
+    or rbx, r13
+    ret rbx
