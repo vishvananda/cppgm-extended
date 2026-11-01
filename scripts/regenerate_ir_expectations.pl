@@ -2,7 +2,8 @@
 # Rewrite the generated blocks of expectation sidecars from the current
 # references, keeping their hand-written lines.
 #
-#   regenerate_ir_expectations.pl [--tolerance N] [--add-budgets] [--write] <root>...
+#   regenerate_ir_expectations.pl [--tolerance N] [--add-budgets] [--backend TOOL]
+#                                 [--write] <root>...
 #
 # For every x.t under the roots with an x.ref.expect sidecar and a reference
 # output (x.ref.mir for machine IR, else x.ref for LowIR):
@@ -17,18 +18,23 @@
 # A block is the lines up to a blank line; a block that begins with
 # `# budget`, `# outcome` or `# contract` is generated, every other block is
 # hand-written and kept after the generated ones.  A sidecar with no budget
-# block keeps having none unless --add-budgets is given.  Without --write
-# the changed sidecars are listed; with it they are rewritten.
+# block keeps having none unless --add-budgets is given.  A fixture with no
+# reference output is skipped, unless --backend names a lowir2native: then a
+# fixture under an oN directory is compiled at -ON for its machine IR, which
+# is not kept.  Without --write the changed sidecars are listed and the exit
+# status is 1 if there are any; with --write they are rewritten.
 use strict;
 use warnings;
 use File::Basename qw(dirname basename);
 use File::Find;
+use File::Temp qw(tempdir);
 use FindBin;
 use Getopt::Long;
 
 my %o = (tolerance => 10);
-GetOptions(\%o, 'tolerance=i', 'add-budgets', 'write') && @ARGV
-	or die "usage: regenerate_ir_expectations.pl [--tolerance N] [--add-budgets] [--write] <root>...\n";
+GetOptions(\%o, 'tolerance=i', 'add-budgets', 'backend=s', 'write') && @ARGV
+	or die "usage: regenerate_ir_expectations.pl [--tolerance N] [--add-budgets] [--backend TOOL] [--write] <root>...\n";
+my $scratch = defined($o{backend}) ? tempdir(CLEANUP => 1) : undef;
 
 sub slurp
 {
@@ -83,6 +89,21 @@ sub budget_key
 	return ($line =~ /^(.*?)(<=|<)\s*(\d+)(.*)$/) ? ("$1$2 N$4", $3) : (undef, undef);
 }
 
+# The machine IR the backend makes of a fixture, under the name the fixture's
+# reference would have, or undef if the backend does not apply to it.
+sub backend_reference
+{
+	my ($base) = @_;
+	return undef if !defined($o{backend}) || !-f "$base.t" || $base !~ m{/o(\d)/};
+	my $level = $1;
+	my @flags = -f "$base.flags" ? split(' ', slurp("$base.flags")) : ();
+	my $dump = "$scratch/" . basename($base) . ".ref.mir";
+	system($o{backend}, "-O$level", @flags, '--dump-machine-ir', $dump,
+		'-o', "$scratch/program", "$base.t") == 0
+		or die "$o{backend} failed on $base.t\n";
+	return $dump;
+}
+
 my @sidecars;
 find({ no_chdir => 1, wanted => sub { push @sidecars, $_ if /\.ref\.expect$/ && -f $_ } }, @ARGV);
 my $changed = 0;
@@ -93,6 +114,7 @@ for my $sidecar (sort @sidecars)
 	my ($reference, $machine);
 	if (-f "$base.ref.mir") { ($reference, $machine) = ("$base.ref.mir", 1); }
 	elsif (-f "$base.ref") { ($reference, $machine) = ("$base.ref", 0); }
+	elsif (my $dump = backend_reference($base)) { ($reference, $machine) = ($dump, 1); }
 	else { print "no reference output for $sidecar\n"; next; }
 
 	my $old = slurp($sidecar);
@@ -150,3 +172,4 @@ for my $sidecar (sort @sidecars)
 	}
 }
 print "$changed of " . scalar(@sidecars) . " sidecars " . ($o{write} ? 'rewritten' : 'would change') . "\n";
+exit(1) if $changed && !$o{write};

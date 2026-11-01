@@ -157,6 +157,10 @@ jobs:
       - name: Check that the build uses the shipped scaffold files
         run: make audit-scaffold-usage
 
+      # Compiles the behavior fixtures with this build's backend.
+      - name: Check the expectation sidecars
+        run: make audit-ir-expectations
+
       - name: Upload host compiler build
         run: |
           set -euo pipefail

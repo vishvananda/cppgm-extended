@@ -59,7 +59,8 @@ does not run them:
 ```sh
 make audit-lowir-contract audit-compiler-layout audit-compiler-exceptions \
   audit-frontend-source-sets audit-builtin-registry-tables \
-  audit-scaffold-usage audit-scaffold-spellings audit-clang-format
+  audit-scaffold-usage audit-scaffold-spellings audit-ir-expectations \
+  audit-clang-format
 perl scripts/cppgm_file_audit.pl --paths dev
 python3 scripts/audit_pa_feature_placement.py --fail-on-early
 ```

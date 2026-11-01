@@ -168,6 +168,16 @@ CI enables byte-exact LowIR comparison. Regeneration on an unchanged compiler
 must leave tracked references unchanged. Never change a fixture or reference
 merely to hide an implementation failure.
 
+The budgets, outcomes and contracts in `x.ref.expect` sidecars are generated
+from the references. After regenerating references, regenerate them:
+
+```sh
+perl scripts/audit_ir_expectations.pl --backend dev/lowir2native-ref --write
+```
+
+Regeneration never tightens a bound and keeps hand-written lines. `make
+audit-ir-expectations` and export validation fail on a stale sidecar.
+
 Failed-case stdout is an informational diagnostic example, generated on Linux
 by the export and untracked here. Successful stdout and required exit-status
 sidecars remain tracked. Export validation regenerates and verifies every

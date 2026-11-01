@@ -278,6 +278,14 @@ sanitize_student_makefile_defaults() {
   ' "$@"
 }
 
+# The sidecars ship as they stand in source: check them against the references
+# just regenerated, with the backend that made those.
+verify_expectation_sidecars() {
+  echo "==> Verifying expectation sidecars match the regenerated references"
+  perl "$repo_root/scripts/audit_ir_expectations.pl" --root "$dest" \
+    --backend "$dest/dev/lowir2native-ref"
+}
+
 # The root Makefile carries maintainer-only targets: the architecture audits
 # (scripts/audit_*.pl), the harness unit tests and the telemetry-off build
 # check (scripts/tests/*.py), whose scripts never ship, and test-cells, which
@@ -765,6 +773,7 @@ make -s -C "$dest" ref-test-debuginfo \
   CPPGM_TEST_RUNNER=1
 
 verify_regenerated_reference_outputs
+verify_expectation_sidecars
 
 prune_student_pa33
 prune_student_pa35
