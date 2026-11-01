@@ -36,12 +36,16 @@ PA24's fixtures are small functions at `-O0`. PA33 adds register allocation
 and machine-IR passes to this backend, and PA34 compiles the compiler with
 it. These seams cost little to leave in place now and much to cut in later:
 
-- **Placement is a policy.** Decide where cross-block values live from the
-  whole function, apart from choosing instructions, so that PA33 replaces
-  the policy and not the selector. The course solution replaced its `-O0`
-  scan with a liveness-based allocator at `-O1` and above in this way.
-  Selecting into virtual registers and assigning physical ones afterwards is
-  the more general form of the same seam.
+- **Keep values distinct from their locations.** Prefer selecting into typed
+  virtual registers, with fixed ABI operands and instruction constraints
+  explicit, then assigning physical registers or frame homes over the selected
+  instructions. A simple scan suffices at `-O0`; PA33 should replace the
+  placement policy without rewriting selection. Early placement, as in the
+  example above, is another option, but retain value identities and keep its
+  predicted uses, definitions and clobbers consistent with emission. Later
+  passes should not have to reconstruct value identity from reused physical
+  registers or frame bytes. The required MIR dump still describes the final
+  physical placement, not this optional internal virtual form.
 - **Each machine instruction states the registers it defines, uses and
   clobbers**, fixed registers (division, variable shifts, calls, string
   operations) and tied operands included, so that liveness, allocation and
@@ -68,6 +72,12 @@ it. These seams cost little to leave in place now and much to cut in later:
   know.
 - **Keep each operand's width**, so that a later pass can remove an extension
   whose upper bits nothing reads.
+
+Before finishing PA24, trace a value across a call, a fixed-register operation
+and a control-flow join. Check that changing its placement needs neither a
+second selector nor an analysis that recovers its identity from emitted moves.
+Keep the allocator's input faithful when selection folds an operation or
+introduces a temporary; LowIR liveness alone does not describe those changes.
 
 #### Shapes the fixtures check
 

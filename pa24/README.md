@@ -785,11 +785,12 @@ So PA24 should leave behind:
 
 - a stable `LowIR -> native` lowering boundary
 - a stable `LowIR -> machine IR` boundary that later optimization passes can target:
-  a machine IR whose instructions state the registers they define, use and clobber,
-  and the placement of values that live across blocks decided apart from
-  instruction selection, so that PA33 can replace PA24's placement with a
-  liveness-based allocator, and add machine-IR passes, without rewriting the
-  selector. The conservative placement PA24 uses is one policy over that IR
+  keep value identity separate from physical location, with instruction uses,
+  definitions, clobbers and fixed-register constraints explicit. Prefer selecting
+  into virtual registers and allocating over the selected instructions, so PA33
+  can replace a simple placement policy without rewriting the selector or
+  recovering values from physical-register traffic. This is design guidance,
+  not a required allocation algorithm or a change to the final MIR dump
   ([the design notes](design-notes.md) describe these seams)
 - reusable target-specific code/data emission layers
 - a backend test corpus that already catches the basic execution-level
