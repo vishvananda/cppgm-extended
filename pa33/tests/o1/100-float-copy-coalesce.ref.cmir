@@ -10,7 +10,7 @@ function @main
     return i64 -> rax
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
 

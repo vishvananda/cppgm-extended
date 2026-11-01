@@ -1455,10 +1455,10 @@ void FunctionSelector::allocate_globals_precise()
 	for (uint32_t t = 0; t < temps_.size(); ++t)
 	{
 		const TempInfo& info = temps_[t];
-		// Vector parameters keep their parameter slots.
+		// -O0: vector parameters keep their parameter slots.
 		if ((info.flags & TF_GLOBAL) && (info.flags & TF_DEFINED) && !(info.flags & (TF_ALIAS | TF_DEAD | TF_LAZY)) &&
 			(info.cls == VClass::Gpr || info.cls == VClass::Xmm) && info.block != kNoId && info.uses != 0 &&
-			!(t < body.parameter_count && info.cls == VClass::Xmm))
+			!(level_ == 0 && t < body.parameter_count && info.cls == VClass::Xmm))
 		{
 			index[t] = static_cast<int32_t>(ra_candidates_.size());
 			ra_candidates_.push_back(t);

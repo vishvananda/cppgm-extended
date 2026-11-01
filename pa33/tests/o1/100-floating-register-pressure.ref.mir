@@ -10,15 +10,13 @@ function @opaque
     param %x -> xmm0 : f64
     return f64 -> xmm0
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %x -> [rbp-8] : f64
 
   block ^entry
-    fmov.f64 [rbp-8], xmm0
-    fmul.f64 xmm0, [rbp-8], 0.25
+    fmul.f64 xmm0, xmm0, 0.25
     ret xmm0
 
 function @pressure
@@ -26,8 +24,8 @@ function @pressure
     param %p -> rdi : ptr
     return f64 -> xmm0
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
 
@@ -80,8 +78,8 @@ function @across_call
     param %p -> rdi : ptr
     return f64 -> xmm0
   frame
-    stack_size 160
-    scratch_bytes 48
+    stack_size 112
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
     temp %x0 -> [rbp-8] : f64
@@ -166,18 +164,16 @@ function @in_place
     param %x -> xmm0 : f64
     return f64 -> xmm0
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %x -> [rbp-8] : f64
 
   block ^entry
-    fmov.f64 [rbp-8], xmm0
-    fmov.f64 xmm0, [rdi]
-    fsub.f64 xmm0, xmm0, [rbp-8]
-    fdiv.f64 xmm0, xmm0, [rbp-8]
-    fmul.f64 xmm0, xmm0, [rbp-8]
+    fmov.f64 xmm1, [rdi]
+    fsub.f64 xmm1, xmm1, xmm0
+    fdiv.f64 xmm1, xmm1, xmm0
+    fmul.f64 xmm0, xmm1, xmm0
     ret xmm0
 
 function @keeps_numerator
@@ -186,20 +182,16 @@ function @keeps_numerator
     param %b -> xmm1 : f64
     return f64 -> xmm0
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %a -> [rbp-8] : f64
-    param-slot %b -> [rbp-16] : f64
 
   block ^entry
-    fmov.f64 [rbp-8], xmm0
-    fmov.f64 [rbp-16], xmm1
-    fadd.f64 xmm0, [rbp-16], 1.0
-    fdiv.f64 xmm1, [rbp-8], xmm0
-    fadd.f64 xmm1, xmm1, [rbp-8]
-    ret xmm1
+    fadd.f64 xmm1, xmm1, 1.0
+    fdiv.f64 xmm2, xmm0, xmm1
+    fadd.f64 xmm0, xmm2, xmm0
+    ret xmm0
 
 function @keeps_minuend
   abi
@@ -207,27 +199,23 @@ function @keeps_minuend
     param %b -> xmm1 : f32
     return f32 -> xmm0
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 0
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %a -> [rbp-8] : f32
-    param-slot %b -> [rbp-16] : f32
 
   block ^entry
-    fmov.f32 [rbp-8], xmm0
-    fmov.f32 [rbp-16], xmm1
-    fadd.f32 xmm0, [rbp-16], 1.0f
-    fsub.f32 xmm1, [rbp-8], xmm0
-    fmul.f32 xmm1, xmm1, [rbp-8]
-    ret xmm1
+    fadd.f32 xmm1, xmm1, 1.0f
+    fsub.f32 xmm2, xmm0, xmm1
+    fmul.f32 xmm0, xmm2, xmm0
+    ret xmm0
 
 function @main
   abi
     return i64 -> rax
   frame
-    stack_size 192
-    scratch_bytes 48
+    stack_size 144
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
     preserve rbx r12 r13 r14

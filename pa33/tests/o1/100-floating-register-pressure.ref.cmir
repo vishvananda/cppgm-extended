@@ -11,14 +11,12 @@ function @opaque
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %x -> [rbp-<off0>] : f64
 
   block ^entry
-    fmov.f64 [rbp-<off0>], xmm0
-    fmul.f64 xmm0, [rbp-<off0>], 0.25
+    fmul.f64 xmm0, xmm0, 0.25
     ret xmm0
 
 function @pressure
@@ -27,7 +25,7 @@ function @pressure
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
 
@@ -81,7 +79,7 @@ function @across_call
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
     temp %x0 -> [rbp-<off0>] : f64
@@ -167,17 +165,15 @@ function @in_place
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %x -> [rbp-<off0>] : f64
 
   block ^entry
-    fmov.f64 [rbp-<off0>], xmm0
-    fmov.f64 xmm0, [rdi]
-    fsub.f64 xmm0, xmm0, [rbp-<off0>]
-    fdiv.f64 xmm0, xmm0, [rbp-<off0>]
-    fmul.f64 xmm0, xmm0, [rbp-<off0>]
+    fmov.f64 xmm1, [rdi]
+    fsub.f64 xmm1, xmm1, xmm0
+    fdiv.f64 xmm1, xmm1, xmm0
+    fmul.f64 xmm0, xmm1, xmm0
     ret xmm0
 
 function @keeps_numerator
@@ -187,19 +183,15 @@ function @keeps_numerator
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %a -> [rbp-<off0>] : f64
-    param-slot %b -> [rbp-<off1>] : f64
 
   block ^entry
-    fmov.f64 [rbp-<off0>], xmm0
-    fmov.f64 [rbp-<off1>], xmm1
-    fadd.f64 xmm0, [rbp-<off1>], 1.0
-    fdiv.f64 xmm1, [rbp-<off0>], xmm0
-    fadd.f64 xmm1, xmm1, [rbp-<off0>]
-    ret xmm1
+    fadd.f64 xmm1, xmm1, 1.0
+    fdiv.f64 <xmm0>, xmm0, xmm1
+    fadd.f64 xmm0, <xmm0>, xmm0
+    ret xmm0
 
 function @keeps_minuend
   abi
@@ -208,26 +200,22 @@ function @keeps_minuend
     return f32 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %a -> [rbp-<off0>] : f32
-    param-slot %b -> [rbp-<off1>] : f32
 
   block ^entry
-    fmov.f32 [rbp-<off0>], xmm0
-    fmov.f32 [rbp-<off1>], xmm1
-    fadd.f32 xmm0, [rbp-<off1>], 1.0f
-    fsub.f32 xmm1, [rbp-<off0>], xmm0
-    fmul.f32 xmm1, xmm1, [rbp-<off0>]
-    ret xmm1
+    fadd.f32 xmm1, xmm1, 1.0f
+    fsub.f32 <xmm0>, xmm0, xmm1
+    fmul.f32 xmm0, <xmm0>, xmm0
+    ret xmm0
 
 function @main
   abi
     return i64 -> rax
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
     preserve <gpr0> <gpr1> <gpr2> <gpr3>

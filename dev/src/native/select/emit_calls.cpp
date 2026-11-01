@@ -400,7 +400,8 @@ void FunctionSelector::emit_entry()
 	{
 		TempInfo& t = temps_[p];
 		const ArgLayout& arg = layout.args[p];
-		if (t.uses == 0 || t.cls != VClass::Gpr || arg.part_count != 1 || t.greg != kNoReg)
+		if (t.uses == 0 || arg.part_count != 1 || t.greg != kNoReg ||
+			!(t.cls == VClass::Gpr || (t.cls == VClass::Xmm && level_ >= 1)))
 			continue;
 		const Reg reg = layout.parts[arg.first_part].reg;
 		if (reg != kNoReg && !(t.forbid & (1u << reg)) && !((pinned_ | occupied_) & (1u << reg)) && t.last >= 0)
@@ -468,10 +469,10 @@ void FunctionSelector::emit_entry()
 			move.dst = Operand::make_reg(t.greg);
 		else if (t.flags & TF_GLOBAL)
 			move.dst = Operand::make_frame(home_of(p));
-		else if (t.cls == VClass::Xmm)
+		else if (t.cls == VClass::Xmm && level_ == 0)
 		{
-			// A vector parameter lives in its parameter slot (a conservative
-			// spill at the ABI boundary, as the reference lays frames out).
+			// -O0: a vector parameter lives in its parameter slot (a
+			// conservative spill at the ABI boundary).
 			move.dst = Operand::make_frame(home_of(p));
 			t.flags |= TF_HOMED;
 		}

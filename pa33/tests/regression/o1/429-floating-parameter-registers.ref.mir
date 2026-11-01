@@ -1,0 +1,226 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @sub
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fsub.f64 xmm0, xmm0, xmm1
+    ret xmm0
+
+function @exchanged
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.f64 xmm14, xmm0
+    fmov.f64 xmm0, xmm1
+    fmov.f64 xmm1, xmm14
+    call @sub [args=(xmm0,xmm1)]
+    ret xmm0
+
+function @across_calls
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %c -> xmm2 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    param-slot %a -> [rbp-8] : f64
+    param-slot %b -> [rbp-16] : f64
+    param-slot %c -> [rbp-24] : f64
+    temp %x -> [rbp-32] : f64
+
+  block ^entry
+    fmov.f64 [rbp-8], xmm0
+    fmov.f64 [rbp-16], xmm1
+    fmov.f64 [rbp-24], xmm2
+    fmov.f64 xmm0, [rbp-8]
+    fmov.f64 xmm1, [rbp-16]
+    call @sub [args=(xmm0,xmm1)]
+    fmov.f64 xmm14, xmm0
+    fmov.f64 [rbp-32], xmm14
+    fmov.f64 xmm0, [rbp-16]
+    fmov.f64 xmm1, [rbp-24]
+    call @sub [args=(xmm0,xmm1)]
+    fmul.f64 xmm0, [rbp-32], xmm0
+    fadd.f64 xmm0, xmm0, [rbp-8]
+    fadd.f64 xmm0, xmm0, [rbp-24]
+    ret xmm0
+
+function @scaled_sum
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i64
+    param %scale -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.f64 xmm1, xmm0
+    mov r8, 0
+    fmov.f64 xmm0, 0.0
+
+  block ^head
+    cmp.i64 r8, rsi
+    jl ^body
+    ret xmm0
+
+  block ^body
+    fmov.f64 xmm2, [rdi+r8*8]
+    fmul.f64 xmm2, xmm2, xmm1
+    fadd.f64 xmm0, xmm0, xmm2
+    lea r9, [r8+1]
+    mov r8, r9
+    cmp.i64 r8, rsi
+    jl ^body
+    ret xmm0
+
+  block ^done
+    ret xmm0
+
+function @mixed
+  abi
+    param %i -> rdi : i64
+    param %a -> xmm0 : f64
+    param %j -> rsi : i64
+    param %b -> xmm1 : f32
+    param %k -> rdx : i64
+    return f64 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fpext.f32.f64 xmm1, xmm1
+    lea r9, [rdi+rsi]
+    add r9, rdx
+    sitofp.i64.f64 xmm2, r9
+    fmul.f64 xmm2, xmm2, xmm0
+    fadd.f64 xmm2, xmm2, xmm1
+    ret xmm2
+
+function @extended_round_trip
+  abi
+    param %a -> xmm0 : f64
+    return i64 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues duplicated
+    temp %e -> [rbp-16] : f80
+
+  block ^entry
+    fpext.f64.f80 [rbp-16], xmm0
+    fptosi.f80.i64 rax, [rbp-16]
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $values -> [rbp-24] : obj<24x8>
+
+  block ^entry
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @exchanged [args=(xmm0,xmm1)]
+    fcmp.f64 xmm0, 1.0
+    jp ^bad1
+    je ^across
+
+  block ^bad1
+    mov rax, 1
+    ret rax
+
+  block ^across
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    fmov.f64 xmm2, 3.0
+    call @across_calls [args=(xmm0,xmm1,xmm2)]
+    fcmp.f64 xmm0, 5.0
+    jp ^bad2
+    je ^loop
+
+  block ^bad2
+    mov rax, 2
+    ret rax
+
+  block ^loop
+    fmov.f64 [rbp-24], 1.5
+    fmov.f64 [rbp-16], 2.5
+    fmov.f64 [rbp-8], 4.0
+    lea rdi, [rbp-24]
+    mov rsi, 3
+    fmov.f64 xmm0, 2.0
+    call @scaled_sum [args=(rsi,rdi,xmm0)]
+    fcmp.f64 xmm0, 16.0
+    jp ^bad3
+    je ^mix
+
+  block ^bad3
+    mov rax, 3
+    ret rax
+
+  block ^mix
+    mov rdi, 1
+    mov rsi, 2
+    mov rdx, 3
+    fmov.f64 xmm0, 2.0
+    fmov.f32 xmm1, 0.5f
+    call @mixed [args=(rdx,rsi,rdi,xmm0,xmm1)]
+    fcmp.f64 xmm0, 12.5
+    jp ^bad4
+    je ^wide
+
+  block ^bad4
+    mov rax, 4
+    ret rax
+
+  block ^wide
+    fmov.f64 xmm0, 9.0
+    call @extended_round_trip [args=(xmm0)]
+    cmp.i64 rax, 9
+    je ^pass
+
+  block ^bad5
+    mov rax, 5
+    ret rax
+
+  block ^pass
+    mov rax, 0
+    ret rax

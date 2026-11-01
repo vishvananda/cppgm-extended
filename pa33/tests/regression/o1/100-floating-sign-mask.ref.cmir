@@ -31,14 +31,12 @@ function @magnitude64
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %x -> [rbp-<off0>] : f64
 
   block ^entry
-    fmov.f64 [rbp-<off0>], xmm0
-    fabs.f64 xmm0, [rbp-<off0>]
+    fabs.f64 xmm0, xmm0
     ret xmm0
 
 function @magnitude32
@@ -47,14 +45,12 @@ function @magnitude32
     return f32 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %x -> [rbp-<off0>] : f32
 
   block ^entry
-    fmov.f32 [rbp-<off0>], xmm0
-    fabs.f32 xmm0, [rbp-<off0>]
+    fabs.f32 xmm0, xmm0
     ret xmm0
 
 function @mask_first
@@ -63,14 +59,12 @@ function @mask_first
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %x -> [rbp-<off0>] : f64
 
   block ^entry
-    fmov.f64 [rbp-<off0>], xmm0
-    fabs.f64 xmm0, [rbp-<off0>]
+    fabs.f64 xmm0, xmm0
     ret xmm0
 
 function @from_memory
@@ -79,7 +73,7 @@ function @from_memory
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
 
@@ -94,17 +88,15 @@ function @source_lives_on
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %x -> [rbp-<off0>] : f64
 
   block ^entry
-    fmov.f64 [rbp-<off0>], xmm0
-    fabs.f64 xmm0, [rbp-<off0>]
-    fdiv.f64 xmm1, [rbp-<off0>], xmm0
-    fadd.f64 xmm1, xmm1, [rbp-<off0>]
-    ret xmm1
+    fabs.f64 xmm1, xmm0
+    fdiv.f64 <xmm0>, xmm0, xmm1
+    fadd.f64 xmm0, <xmm0>, xmm0
+    ret xmm0
 
 function @across_call
   abi
@@ -112,7 +104,7 @@ function @across_call
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
     param-slot %x -> [rbp-<off0>] : f64
@@ -129,14 +121,12 @@ function @mask_read_again
     return i64 -> rax
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %x -> [rbp-<off0>] : f64
 
   block ^entry
-    fmov.f64 [rbp-<off0>], xmm0
-    load.i64 r8, [rbp-<off0>]
+    fmov.f64 r8, xmm0
     and r8, 9223372036854775807
     fmov.f64 xmm0, r8
     fmul.f64 xmm0, xmm0, 0.5
@@ -150,14 +140,12 @@ function @other_mask
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %x -> [rbp-<off0>] : f64
 
   block ^entry
-    fmov.f64 [rbp-<off0>], xmm0
-    load.i64 r8, [rbp-<off0>]
+    fmov.f64 r8, xmm0
     and r8, 9223372036854775806
     fmov.f64 xmm0, r8
     ret xmm0
@@ -168,7 +156,7 @@ function @integer_source
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
 
@@ -183,14 +171,12 @@ function @narrower_source
     return f64 -> xmm0
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %x -> [rbp-<off0>] : f32
 
   block ^entry
-    fmov.f32 [rbp-<off0>], xmm0
-    fadd.f32 xmm0, [rbp-<off0>], 1.0f
+    fadd.f32 xmm0, xmm0, 1.0f
     fmov.f32 r8, xmm0
     and r8, 9223372036854775807
     fmov.f64 xmm0, r8
@@ -201,7 +187,7 @@ function @main
     return i64 -> rax
   frame
     stack_size N
-    scratch_bytes 48
+    scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
     preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>

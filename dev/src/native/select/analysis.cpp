@@ -71,8 +71,11 @@ void FunctionSelector::reset(lowir::SymbolId symbol, Function& out)
 	va_save_area_ = 0;
 	named_gprs_ = named_xmms_ = named_stack_ = 0;
 	needs_scratch_area_ = false;
-	scratch_area_ = signature_->result.is_float() || signature_->boundary.arity == ir_model::CAM_VARIADIC;
-	for (uint32_t p = 0; p < signature_->parameter_count; ++p)
+	// -O0: every floating function reserves the area. Above it, the emission
+	// that uses the area asks for it (needs_scratch_area_).
+	scratch_area_ = (level_ == 0 && signature_->result.is_float()) ||
+		signature_->boundary.arity == ir_model::CAM_VARIADIC;
+	for (uint32_t p = 0; level_ == 0 && p < signature_->parameter_count; ++p)
 		if (program_.parameters_of(*signature_)[p].type.is_float())
 			scratch_area_ = true;
 	out.locations = body.locations;
@@ -158,7 +161,7 @@ void FunctionSelector::build_cfg()
 				blocks_[b].has_phi = true;
 			if ((inst.op == Opcode::EhTry || inst.op == Opcode::EhCleanup) && inst.ops[0].kind == ValueKind::Block)
 				handlers.push_back(layout_of_[inst.ops[0].index]);
-			if (!scratch_area_ && floating_inst(inst))
+			if (!scratch_area_ && level_ == 0 && floating_inst(inst))
 				scratch_area_ = true;
 			if (inst.op == Opcode::Call && (program_.symbols[symbol_].metadata.flags & lowir::SF_KEEP_ALIAS))
 				scratch_area_ = true;

@@ -66,6 +66,8 @@ RM FunctionEmitter::rm(const Operand& op) const
 
 RM FunctionEmitter::scratch_rm() const
 {
+	if (function_->scratch_bytes == 0)
+		throw InternalError("a function without a scratch area uses it");
 	return frame_rm(function_->scratch_offset);
 }
 
