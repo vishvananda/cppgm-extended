@@ -42,6 +42,11 @@ hosted headers depend on:
   splicing, trigraphs and comment delimiters retain their usual behavior.
   This does not relax UTF-8 diagnostics for tokens or literals, or the strict
   PA1 tokenizer's input contract
+- hosted source lines may end in CRLF: a splice deletes the carriage return
+  with the backslash and new-line, after a trigraph `??/` too. PA1's `new-line`
+  stays LF alone
+- a quote with no partner on its line is a token of its own, so `#if 0` text
+  may say `don't`. PA1 rejects one
 
 - the `aligned` attribute takes a constant expression, not only a literal, and
   inside a class template that expression may name the template's own

@@ -96,7 +96,8 @@ const PPToken& PPLexer::lex_quoted_literal(PPTokenKind plain, PPTokenKind user_d
 	// cur_ is the opening quote; any encoding prefix is already taken.
 	// The c-char/s-char sequence may be empty: `''` lexes as a
 	// character-literal and later phases reject it as a literal.
-	const int32_t quote = cur_.code_point;
+	const SourceChar opening = cur_;
+	const int32_t quote = opening.code_point;
 	take(cur_);
 	for (;;)
 	{
@@ -107,7 +108,17 @@ const PPToken& PPLexer::lex_quoted_literal(PPTokenKind plain, PPTokenKind user_d
 			return finish_literal(plain, user_defined);
 		}
 		if (c == '\n' || c == kEndOfSource)
-			throw SourceError(token_begin_, "unterminated quoted literal");
+		{
+			// A lone quote is its own preprocessing token, with undefined
+			// behavior (2.5p2); hosted sources have one in skipped text and
+			// the words of a directive, as in `don't`.
+			if (!lone_quotes_ || opening.begin != token_begin_)
+				throw SourceError(token_begin_, "unterminated quoted literal");
+			cur_ = opening;
+			start_token();
+			take(cur_);
+			return finish(PPTokenKind::NonWhitespaceCharacter);
+		}
 		if (c == '\\')
 			lex_escape_sequence();
 		else

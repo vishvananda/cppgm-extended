@@ -53,20 +53,23 @@ uint32_t TranslationReader::skip_line_splices(uint32_t offset) const
 	// followed by a new-line splices just like a backslash does.
 	for (;;)
 	{
-		if (offset + 1 < size_ && bytes_[offset] == '\\' && bytes_[offset + 1] == '\n')
-		{
-			offset += 2;
-		}
-		else if (offset + 3 < size_ && bytes_[offset] == '?' && bytes_[offset + 1] == '?' &&
-			bytes_[offset + 2] == '/' && bytes_[offset + 3] == '\n')
-		{
-			offset += 4;
-		}
-		else
-		{
+		uint32_t end = 0;
+		if (offset < size_ && bytes_[offset] == '\\')
+			end = new_line_end(offset + 1);
+		else if (offset + 2 < size_ && bytes_[offset] == '?' && bytes_[offset + 1] == '?' && bytes_[offset + 2] == '/')
+			end = new_line_end(offset + 3);
+		if (end == 0)
 			return offset;
-		}
+		offset = end;
 	}
+}
+
+// The offset after the new-line at `offset`, or 0 where there is none.
+uint32_t TranslationReader::new_line_end(uint32_t offset) const
+{
+	if (crlf_splices_ && offset < size_ && bytes_[offset] == '\r')
+		++offset;
+	return offset < size_ && bytes_[offset] == '\n' ? offset + 1 : 0;
 }
 
 SourceChar TranslationReader::logical_slow(uint32_t offset, bool comment) const

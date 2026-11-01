@@ -26,8 +26,11 @@ class TranslationReader
 public:
 	// Without `translate`, logical() is raw(): the buffer holds token
 	// spellings that are already past phases 1-2.
-	explicit TranslationReader(const SourceBuffer& source, bool translate = true)
-		: bytes_(reinterpret_cast<const unsigned char*>(source.data())), size_(source.size()), translate_(translate)
+	// With `crlf_splices`, a CR before the new-line of a splice is deleted
+	// with it (hosted sources, as GCC reads them).
+	explicit TranslationReader(const SourceBuffer& source, bool translate = true, bool crlf_splices = false)
+		: bytes_(reinterpret_cast<const unsigned char*>(source.data())), size_(source.size()), translate_(translate),
+		  crlf_splices_(crlf_splices)
 	{}
 
 	// The next character at or after `offset` with physical characters
@@ -61,8 +64,10 @@ private:
 	SourceChar raw_slow(uint32_t offset) const;
 	SourceChar decode_multibyte(uint32_t offset) const;
 	uint32_t skip_line_splices(uint32_t offset) const;
+	uint32_t new_line_end(uint32_t offset) const;
 
 	const unsigned char* bytes_;
 	uint32_t size_;
 	bool translate_;
+	bool crlf_splices_;
 };

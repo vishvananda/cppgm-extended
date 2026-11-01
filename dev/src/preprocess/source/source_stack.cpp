@@ -38,6 +38,8 @@ void SourceStack::enter(SourceFile* file, std::string presumed_name, std::size_t
 	options.header_names_on_request = true;
 	options.binary_exponents = hosted_;
 	options.legacy_comment_bytes = hosted_;
+	options.lone_quotes = hosted_;
+	options.crlf_splices = hosted_;
 	frame->lexer.reset(new PPLexer(file->buffer(), options));
 	frame->conditional_depth = conditional_depth;
 	frame->search_index = search_index;

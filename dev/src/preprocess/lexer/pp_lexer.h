@@ -27,6 +27,10 @@ struct PPLexerOptions
 	bool binary_exponents = false;
 	// Hosted source comments may contain legacy bytes, never token spellings.
 	bool legacy_comment_bytes = false;
+	// A quote with no partner on its line is a token of its own (hosted).
+	bool lone_quotes = false;
+	// Hosted sources may end lines in CRLF: a splice deletes the CR too.
+	bool crlf_splices = false;
 };
 
 // Streaming preprocessing tokenizer: translation phase 3 over the phase 1-2
@@ -148,5 +152,6 @@ private:
 	bool header_names_on_request_;
 	bool binary_exponents_;
 	bool legacy_comment_bytes_;
+	bool lone_quotes_;
 	DirectiveContext context_;
 };

@@ -1,0 +1,19 @@
+preproc 1
+sof tests/preproc/400-host-crlf-splice.t
+simple int KW_INT
+identifier first
+simple = OP_ASS
+literal 1 int 01000000
+simple ; OP_SEMICOLON
+simple int KW_INT
+identifier second
+simple = OP_ASS
+literal 2 int 02000000
+simple ; OP_SEMICOLON
+identifier left
+identifier right
+simple int KW_INT
+identifier third
+simple ; OP_SEMICOLON
+literal "a b" array of 4 char 61206200
+eof
