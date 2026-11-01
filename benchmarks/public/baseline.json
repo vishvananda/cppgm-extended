@@ -2,13 +2,13 @@
  "programs": {
   "Adobe-C++/stepanov_vector": {
    "cppgm": {
-    "compile_instructions": 590166664,
-    "frontend_instructions": 392502147
+    "compile_instructions": 590222434,
+    "frontend_instructions": 392489333
    }
   },
   "CoyoteBench/fftbench": {
    "cppgm": {
-    "run_instructions": 2123761360
+    "run_instructions": 2123761346
    },
    "gcc": {
     "run_instructions": 1442810743
@@ -16,41 +16,41 @@
   },
   "DOE/HPCCG": {
    "cppgm": {
-    "run_instructions": 5039328444
+    "run_instructions": 5039328454
    },
    "gcc": {
-    "run_instructions": 4112346390
+    "run_instructions": 4112346345
    }
   },
   "DOE/PENNANT": {
    "cppgm": {
-    "compile_instructions": 9848773404,
-    "frontend_instructions": 8485852214,
-    "run_instructions": 4092626222
+    "compile_instructions": 9849122669,
+    "frontend_instructions": 8485981495,
+    "run_instructions": 4092626352
    },
    "gcc": {
-    "run_instructions": 2947077045
+    "run_instructions": 2947077064
    }
   },
   "Misc-C++-EH/spirit": {
    "cppgm": {
-    "compile_instructions": 3068278442,
-    "frontend_instructions": 1545982505
+    "compile_instructions": 3068114435,
+    "frontend_instructions": 1545878671
    }
   },
   "Misc-C++/bigfib": {
    "cppgm": {
-    "run_instructions": 1234835310
+    "run_instructions": 1234835296
    },
    "gcc": {
-    "run_instructions": 1003300271
+    "run_instructions": 1003300299
    }
   },
   "Misc-C++/oopack_v1p8": {
    "cppgm": {
-    "compile_instructions": 208606957,
-    "frontend_instructions": 191017001,
-    "run_instructions": 1258433224
+    "compile_instructions": 208607906,
+    "frontend_instructions": 191031660,
+    "run_instructions": 1258433238
    },
    "gcc": {
     "run_instructions": 611001415
@@ -58,17 +58,17 @@
   },
   "PAQ8p": {
    "cppgm": {
-    "compile_instructions": 1139921638,
-    "frontend_instructions": 275292366,
+    "compile_instructions": 1139925750,
+    "frontend_instructions": 275335444,
     "run_instructions": 800503982
    },
    "gcc": {
-    "run_instructions": 300120289
+    "run_instructions": 300120006
    }
   },
   "Prolangs-C++/ocean": {
    "cppgm": {
-    "run_instructions": 233551209
+    "run_instructions": 233503158
    },
    "gcc": {
     "run_instructions": 217402456
@@ -79,7 +79,7 @@
     "run_instructions": 797255660
    },
    "gcc": {
-    "run_instructions": 704393981
+    "run_instructions": 704393967
    }
   },
   "Shootout-C++-EH/except": {
@@ -87,7 +87,7 @@
     "run_instructions": 1019661224
    },
    "gcc": {
-    "run_instructions": 1199908800
+    "run_instructions": 1199908786
    }
   },
   "Shootout-C++/ackermann": {
@@ -95,7 +95,7 @@
     "run_instructions": 5607887291
    },
    "gcc": {
-    "run_instructions": 4613887276
+    "run_instructions": 4613887290
    }
   },
   "Shootout-C++/hash": {
@@ -103,7 +103,7 @@
     "run_instructions": 1913187680
    },
    "gcc": {
-    "run_instructions": 1905577704
+    "run_instructions": 1905577690
    }
   },
   "Shootout-C++/heapsort": {
@@ -111,12 +111,12 @@
     "run_instructions": 3757120356
    },
    "gcc": {
-    "run_instructions": 3977446462
+    "run_instructions": 3977446448
    }
   },
   "Shootout-C++/lists1": {
    "cppgm": {
-    "run_instructions": 1562737621
+    "run_instructions": 1562737607
    },
    "gcc": {
     "run_instructions": 1519738057
@@ -124,7 +124,7 @@
   },
   "Shootout-C++/moments": {
    "cppgm": {
-    "run_instructions": 316927022
+    "run_instructions": 316927036
    },
    "gcc": {
     "run_instructions": 224423760
@@ -135,12 +135,12 @@
     "run_instructions": 4452150713
    },
    "gcc": {
-    "run_instructions": 4135919202
+    "run_instructions": 4135919216
    }
   },
   "Stanford/Bubblesort": {
    "cppgm": {
-    "run_instructions": 151796922
+    "run_instructions": 151796908
    },
    "gcc": {
     "run_instructions": 126269045
@@ -148,18 +148,18 @@
   },
   "Stanford/FloatMM": {
    "cppgm": {
-    "run_instructions": 4003542023
+    "run_instructions": 4003542037
    },
    "gcc": {
-    "run_instructions": 1015757278
+    "run_instructions": 1015757306
    }
   },
   "Stanford/Puzzle": {
    "cppgm": {
-    "run_instructions": 944979102
+    "run_instructions": 944979088
    },
    "gcc": {
-    "run_instructions": 563853995
+    "run_instructions": 563854023
    }
   },
   "Stanford/Treesort": {
@@ -167,39 +167,39 @@
     "run_instructions": 175990344
    },
    "gcc": {
-    "run_instructions": 157882862
+    "run_instructions": 157882848
    }
   },
   "bg/binarytrees/2": {
    "cppgm": {
-    "run_instructions": 5795555686
+    "run_instructions": 5795555690
    },
    "gcc": {
-    "run_instructions": 6002130860
+    "run_instructions": 6002130846
    }
   },
   "bg/fannkuchredux/3": {
    "cppgm": {
-    "run_instructions": 1050803382
+    "run_instructions": 1050803386
    },
    "gcc": {
-    "run_instructions": 1138761704
+    "run_instructions": 1138761694
    }
   },
   "bg/fasta/1": {
    "cppgm": {
-    "run_instructions": 2549235863
+    "run_instructions": 2551027529
    },
    "gcc": {
-    "run_instructions": 1607581382
+    "run_instructions": 1608581443
    }
   },
   "bg/fasta/2": {
    "cppgm": {
-    "run_instructions": 2549235809
+    "run_instructions": 2551027475
    },
    "gcc": {
-    "run_instructions": 1635248054
+    "run_instructions": 1636248115
    }
   },
   "bg/fasta/3": {
@@ -207,7 +207,7 @@
     "run_instructions": 1053846469
    },
    "gcc": {
-    "run_instructions": 986087767
+    "run_instructions": 986087828
    }
   },
   "bg/fasta/4": {
@@ -215,15 +215,15 @@
     "run_instructions": 889561739
    },
    "gcc": {
-    "run_instructions": 871808938
+    "run_instructions": 871808999
    }
   },
   "bg/mandelbrot/0": {
    "cppgm": {
-    "run_instructions": 2140529636
+    "run_instructions": 2140529699
    },
    "gcc": {
-    "run_instructions": 1234980900
+    "run_instructions": 1234981604
    }
   },
   "bg/mandelbrot/2": {
@@ -231,7 +231,7 @@
     "run_instructions": 4455769865
    },
    "gcc": {
-    "run_instructions": 1923137759
+    "run_instructions": 1923137745
    }
   },
   "bg/mandelbrot/3": {
@@ -239,7 +239,7 @@
     "run_instructions": 2753035483
    },
    "gcc": {
-    "run_instructions": 1721758299
+    "run_instructions": 1721758285
    }
   },
   "bg/mandelbrot/5": {
@@ -247,7 +247,7 @@
     "run_instructions": 3737802094
    },
    "gcc": {
-    "run_instructions": 1888717429
+    "run_instructions": 1888717415
    }
   },
   "bg/mandelbrot/7": {
@@ -255,7 +255,7 @@
     "run_instructions": 2981714397
    },
    "gcc": {
-    "run_instructions": 1798408432
+    "run_instructions": 1798408418
    }
   },
   "bg/mandelbrot/9": {
@@ -263,7 +263,7 @@
     "run_instructions": 2959701410
    },
    "gcc": {
-    "run_instructions": 1798410180
+    "run_instructions": 1798410166
    }
   },
   "bg/nbody/1": {
@@ -271,7 +271,7 @@
     "run_instructions": 1586173648
    },
    "gcc": {
-    "run_instructions": 1016140903
+    "run_instructions": 1016140964
    }
   },
   "bg/nbody/2": {
@@ -279,7 +279,7 @@
     "run_instructions": 2926173281
    },
    "gcc": {
-    "run_instructions": 1210141301
+    "run_instructions": 1210141362
    }
   },
   "bg/nbody/3": {
@@ -287,7 +287,7 @@
     "run_instructions": 2140173231
    },
    "gcc": {
-    "run_instructions": 1110141089
+    "run_instructions": 1110141150
    }
   },
   "bg/nbody/6": {
@@ -295,7 +295,7 @@
     "run_instructions": 1606173648
    },
    "gcc": {
-    "run_instructions": 1200140900
+    "run_instructions": 1200140961
    }
   },
   "bg/pidigits/4": {
@@ -303,7 +303,7 @@
     "run_instructions": 924855986
    },
    "gcc": {
-    "run_instructions": 930014993
+    "run_instructions": 930014979
    }
   },
   "bg/pidigits/5": {
@@ -311,7 +311,7 @@
     "run_instructions": 853932628
    },
    "gcc": {
-    "run_instructions": 853348201
+    "run_instructions": 853348187
    }
   },
   "bg/revcomp/1": {
@@ -319,7 +319,7 @@
     "run_instructions": 461200985
    },
    "gcc": {
-    "run_instructions": 438198430
+    "run_instructions": 438198491
    }
   },
   "bg/revcomp/5": {
@@ -327,71 +327,71 @@
     "run_instructions": 2224013522
    },
    "gcc": {
-    "run_instructions": 2236247611
+    "run_instructions": 2236247672
    }
   },
   "bg/spectralnorm/1": {
    "cppgm": {
-    "compile_instructions": 695475555,
-    "frontend_instructions": 671142661,
-    "run_instructions": 882313687
+    "compile_instructions": 695497664,
+    "frontend_instructions": 671115838,
+    "run_instructions": 882313691
    },
    "gcc": {
-    "run_instructions": 377755257
+    "run_instructions": 377755247
    }
   },
   "box2d": {
    "cppgm": {
-    "compile_instructions": 9933617863,
-    "frontend_instructions": 8752705322
+    "compile_instructions": 9934011925,
+    "frontend_instructions": 8752966343
    }
   },
   "fmt": {
    "cppgm": {
-    "compile_instructions": 4860025585,
-    "frontend_instructions": 2558235692
+    "compile_instructions": 4859824457,
+    "frontend_instructions": 2558297102
    }
   },
   "nlohmann-json": {
    "cppgm": {
-    "compile_instructions": 3139758537,
-    "frontend_instructions": 1698358978
+    "compile_instructions": 3139544230,
+    "frontend_instructions": 1698414513
    }
   },
   "pugixml": {
    "cppgm": {
-    "compile_instructions": 2919773988,
-    "frontend_instructions": 1234301203,
-    "run_instructions": 4754036992
+    "compile_instructions": 2919890092,
+    "frontend_instructions": 1234242416,
+    "run_instructions": 4754044832
    },
    "gcc": {
-    "run_instructions": 4904380468
+    "run_instructions": 4904372794
    }
   },
   "rapidjson": {
    "cppgm": {
-    "compile_instructions": 994245122,
-    "frontend_instructions": 550537151
+    "compile_instructions": 994061605,
+    "frontend_instructions": 550453783
    }
   },
   "re2": {
    "cppgm": {
-    "compile_instructions": 20354326932,
-    "frontend_instructions": 16566241950,
-    "run_instructions": 2230428775
+    "compile_instructions": 20355262314,
+    "frontend_instructions": 16566292691,
+    "run_instructions": 2230428803
    },
    "gcc": {
-    "run_instructions": 2006172998
+    "run_instructions": 2006173040
    }
   },
   "tramp3d-v4": {
    "cppgm": {
-    "compile_instructions": 11448164403,
-    "frontend_instructions": 2713086691,
-    "run_instructions": 4156173976
+    "compile_instructions": 11449094053,
+    "frontend_instructions": 2713398166,
+    "run_instructions": 4156173902
    },
    "gcc": {
-    "run_instructions": 668740404
+    "run_instructions": 668740398
    }
   }
  }
