@@ -1238,12 +1238,18 @@ void Analyzer::enumerators(EnumEntity* entity, const syntax::EnumSpecifier& spec
 	// the values to the instantiations: the pattern's count in int.
 	const bool dependent = entity->fixed && !IntegralKindOf(entity->underlying, fixed_kind);
 	const bool fixed = entity->fixed && !dependent;
+	// Whether a template's enumerator holds only its position, its value
+	// depending on a template parameter (an omitted value on the previous).
+	bool value_dependent = false;
 	for (const syntax::Enumerator& enumerator : specifier.enumerators)
 	{
 		// A template's enumerator values wait for its instantiations; their
 		// non-dependent names are bound where they appear (14.6p10).
 		if (enumerator.value != nullptr && template_depth_ != 0)
+		{
 			expression_walk(enumerator.value, values);
+			value_dependent = instantiation_dependent(*enumerator.value, values);
+		}
 		Constant value = Constant{ 0, fixed ? entity->underlying : types_.fundamental(FundamentalType::Int) };
 		if (enumerator.value != nullptr && template_depth_ == 0)
 		{
@@ -1286,8 +1292,10 @@ void Analyzer::enumerators(EnumEntity* entity, const syntax::EnumSpecifier& spec
 			EntityKind::Enumerator, enumerator.name, lookup, entity->type);
 		constant->enumeration = entity;
 		constant->value = value;
+		constant->value_dependent = value_dependent;
 		Binding* binding = new_binding(BindingKind::Enumerator, enumerator.name, constant, entity->type);
 		binding->declaration = declaration;
+		binding->value_dependent = value_dependent;
 		print_in(print, binding);
 		declare_in(lookup, binding);
 		enumerator_scratch_.push_back(constant);

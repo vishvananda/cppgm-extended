@@ -345,8 +345,10 @@ bool ConstantEvaluator::entity_value(const Entity& entity, uint32_t location, Co
 	switch (entity.kind)
 	{
 	case EntityKind::Enumerator:
-		// A pointer or reference template argument is no integral value.
-		if (static_cast<const EnumeratorEntity&>(entity).argument != nullptr)
+		// A pointer or reference template argument is no integral value, and
+		// a value-dependent enumerator has none yet.
+		if (static_cast<const EnumeratorEntity&>(entity).argument != nullptr ||
+			static_cast<const EnumeratorEntity&>(entity).value_dependent)
 			return fail(location, "not an integral constant expression");
 		value = static_cast<const EnumeratorEntity&>(entity).value;
 		return true;

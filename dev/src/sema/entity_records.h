@@ -416,6 +416,9 @@ struct EnumeratorEntity : Entity
 	EnumEntity* enumeration;
 	Constant value;
 	const Type* argument;
+	// A template definition's value-dependent enumerator: `value` is only
+	// its position until an instantiation (14.6.2.3).
+	bool value_dependent;
 };
 
 // A template parameter (14.1), with its position: the number of enclosing
