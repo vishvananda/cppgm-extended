@@ -156,6 +156,57 @@ bool Deducible(const Type* type, uint32_t depth, uint32_t level)
 	}
 }
 
+// Whether a parameter type names a template parameter of `depth` without a
+// value in `deduced`, a non-deduced context's included. Which parameters an
+// expression names is not recorded: it answers yes (where some parameter
+// has none, see Undeduced).
+bool NamesUndeduced(const Type* type, uint32_t depth, const Type* const* deduced, uint32_t count, uint32_t level)
+{
+	if (type == nullptr || level > 16)
+		return false;
+	if (type->kind == TypeKind::TemplateParameter || type->kind == TypeKind::TemplateTemplateParameter)
+	{
+		const TemplateParameterEntity* parameter = static_cast<const TemplateParameterEntity*>(
+			type->unqualified->entity);
+		if (parameter->named != nullptr)
+			parameter = parameter->named;
+		if (IsPlaceholder(parameter))
+			return parameter->expression != nullptr ||
+				NamesUndeduced(parameter->qualifier, depth, deduced, count, level + 1);
+		return parameter->depth == depth && parameter->index < count && deduced[parameter->index] == nullptr;
+	}
+	if (type->kind == TypeKind::Class)
+	{
+		const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(type->unqualified->entity)->templ;
+		for (uint32_t i = 0; facts != nullptr && facts->dependent && i < facts->argument_count; ++i)
+		{
+			if (NamesUndeduced(facts->arguments[i], depth, deduced, count, level + 1))
+				return true;
+		}
+		return false;
+	}
+	if (NamesUndeduced(type->element, depth, deduced, count, level + 1) ||
+		NamesUndeduced(type->owner, depth, deduced, count, level + 1))
+		return true;
+	for (uint32_t i = 0; i < type->param_count; ++i)
+	{
+		if (NamesUndeduced(type->params[i], depth, deduced, count, level + 1))
+			return true;
+	}
+	return false;
+}
+
+// Whether a parameter that is no pack has no value.
+bool Undeduced(const TemplateHead* head, const Type* const* deduced)
+{
+	for (uint32_t i = 0; i < head->count; ++i)
+	{
+		if (deduced[i] == nullptr && !head->parameters[i]->pack)
+			return true;
+	}
+	return false;
+}
+
 // A reference type's referred cv-qualifiers, an array's its elements'
 // (3.9.3p5), for partial ordering (14.8.2.4p6).
 uint8_t ReferredCv(const Type* reference)
@@ -1266,6 +1317,7 @@ bool Analyzer::compute_function_order(
 	const uint32_t depth = other->parameters[0]->depth;
 	TypeList deduced(other->count, nullptr);
 	TypeList packed;
+	TypeList compared;
 	for (uint32_t i = 0; i < arguments; ++i)
 	{
 		if (i >= from_fixed && !from_pack)
@@ -1290,6 +1342,15 @@ bool Analyzer::compute_function_order(
 		const Type* p = types_.adjusted_parameter(ordering_parameter(second, i, to_inserted));
 		p = p->is_reference() ? p->element : p;
 		if (!deduce_type(ordering_type(p), ordering_type(a), depth, deduced, false))
+			return false;
+		compared.push_back(p);
+	}
+	// p11: a template parameter may stay without a value only where it is
+	// not used in the types being ordered; one that only a non-deduced
+	// context names has none.
+	for (uint32_t i = 0; i < compared.size() && Undeduced(other, deduced.data()); ++i)
+	{
+		if (NamesUndeduced(compared[i], depth, deduced.data(), other->count, 0))
 			return false;
 	}
 	if (packed.empty())

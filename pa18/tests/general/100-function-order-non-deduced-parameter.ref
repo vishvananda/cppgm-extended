@@ -1,0 +1,154 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : i32
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+  slot $land__4 : i64
+  slot $land__5 : i64
+  slot $land__6 : i64
+
+  block ^entry:
+    store typed i32 0, $x
+    %t1 = load typed i32 $x
+    %t2 = call i32 @p(%t1)
+    %t3 = cmp eq i32 %t2, 2
+    branch %t3, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t4 = load typed i32 $x
+    %t5 = call i32 @q(%t4, 1)
+    %t6 = cmp eq i32 %t5, 2
+    %t7 = cmp ne i64 %t6, 0
+    store typed i64 %t7, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t8 = load typed i64 $land__2
+    branch %t8, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t9 = call i32 @u(3)
+    %t10 = cmp eq i32 %t9, 2
+    %t11 = cmp ne i64 %t10, 0
+    store typed i64 %t11, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store typed i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t12 = load typed i64 $land__3
+    branch %t12, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t13 = load typed i32 $x
+    %t14 = call i32 @v(%t13)
+    %t15 = cmp eq i32 %t14, 2
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $land__4
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store typed i64 0, $land__4
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t17 = load typed i64 $land__4
+    branch %t17, ^land_rhs_13, ^land_short_14
+
+  block ^land_rhs_13:
+    %t18 = addr $x
+    %t19 = addr $x
+    %t20 = call i32 @r(%t18, %t19)
+    %t21 = cmp eq i32 %t20, 1
+    %t22 = cmp ne i64 %t21, 0
+    store typed i64 %t22, $land__5
+    jump ^land_end_15
+
+  block ^land_short_14:
+    store typed i64 0, $land__5
+    jump ^land_end_15
+
+  block ^land_end_15:
+    %t23 = load typed i64 $land__5
+    branch %t23, ^land_rhs_16, ^land_short_17
+
+  block ^land_rhs_16:
+    %t24 = addr $x
+    %t25 = call i32 @t(%t24)
+    %t26 = cmp eq i32 %t25, 2
+    %t27 = cmp ne i64 %t26, 0
+    store typed i64 %t27, $land__6
+    jump ^land_end_18
+
+  block ^land_short_17:
+    store typed i64 0, $land__6
+    jump ^land_end_18
+
+  block ^land_end_18:
+    %t28 = load typed i64 $land__6
+    branch %t28, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t29 = load typed i32 $cond__1
+    return i32 %t29
+}
+function @p(%__param0 : i32) -> i32 [binding=weak, object=_Z1pIiEiN2idIT_E4typeE] {
+  slot $__param0 : i32
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    return i32 2
+}
+function @q(%__param0 : i32, %__param1 : i32) -> i32 [binding=weak, object=_Z1qIiEiN6enableIXeqstT_Li4EES1_E4typeEi] {
+  slot $__param0 : i32
+  slot $__param1 : i32
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    store typed i32 %__param1, $__param1
+    return i32 2
+}
+function @u(%__param0 : i32) -> i32 [binding=weak, object=_Z1uIcEiN6alwaysIT_E4typeE] {
+  slot $__param0 : i32
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    return i32 2
+}
+function @v(%__param0 : i32) -> i32 [binding=weak, object=_Z1vIiEiN2idIT_E4typeE] {
+  slot $__param0 : i32
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    return i32 2
+}
+function @r(%__param0 : ptr, %__param1 : ptr) -> i32 [binding=weak, object=_Z1rIPiEiT_N2idIS1_E4typeE] {
+  slot $__param0 : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
+    return i32 1
+}
+function @t(%__param0 : ptr) -> i32 [binding=weak, object=_Z1tIiEiPT_] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    return i32 2
+}
