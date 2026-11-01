@@ -1,0 +1,142 @@
+#include <cstdio>
+#include <cstring>
+
+const int kSize = 96;
+int words[kSize + 16], other_words[kSize + 16];
+float floats[kSize + 16], other_floats[kSize + 16];
+double doubles[kSize + 16];
+short shorts[kSize + 16];
+unsigned char bytes[kSize + 16];
+unsigned long check = 14695981039346656037ul;
+
+void mix(const void* p, unsigned long n)
+{
+	const unsigned char* c = static_cast<const unsigned char*>(p);
+	for (unsigned long i = 0; i < n; ++i)
+		check = (check ^ c[i]) * 1099511628211ul;
+}
+
+void reset()
+{
+	for (int i = 0; i < kSize + 16; ++i)
+	{
+		words[i] = i * 7 - 40;
+		other_words[i] = i * 3 + 1;
+		floats[i] = i * 0.5f - 3;
+		other_floats[i] = i + 0.25f;
+		doubles[i] = i * 1.5 + 1;
+		shorts[i] = static_cast<short>(i * 300 - 1000);
+		bytes[i] = static_cast<unsigned char>(i * 11);
+	}
+}
+
+__attribute__((noinline)) void add_arrays(int* d, const int* a, const int* b, int n)
+{
+	for (int i = 0; i < n; ++i)
+		d[i] = a[i] + b[i] * 3;
+}
+
+__attribute__((noinline)) void scale(float* d, const float* a, float k, int n)
+{
+	for (int i = 0; i < n; ++i)
+		d[i] = a[i] * k - 1;
+}
+
+__attribute__((noinline)) int sum(const int* a, long n)
+{
+	int s = 2;
+	for (long i = 0; i < n; ++i)
+		s += a[i];
+	return s;
+}
+
+__attribute__((noinline)) long xor_all(const long* a, unsigned n)
+{
+	long s = 1;
+	for (unsigned i = 0; i <= n; ++i)
+		s ^= a[i];
+	return s;
+}
+
+__attribute__((noinline)) void clamp(short* d, short top, int n)
+{
+	for (int i = 0; i < n; ++i)
+		d[i] = d[i] < top ? d[i] : top;
+}
+
+__attribute__((noinline)) void bump(unsigned char* p, unsigned char* e)
+{
+	for (; p != e; ++p)
+		*p = static_cast<unsigned char>(*p + 3);
+}
+
+__attribute__((noinline)) void roots(double* d, int n)
+{
+	for (int i = 0; i < n; ++i)
+		d[i] = __builtin_sqrt(d[i] * d[i] + 1);
+}
+
+__attribute__((noinline)) void numbered(int* d, int n)
+{
+	for (int i = 0; i < n; ++i)
+		d[i] = i * 5 + 1;
+}
+
+__attribute__((noinline)) void shift_down(int* a, int by, int n)
+{
+	for (int i = 0; i < n; ++i)
+		a[i] = a[i + by] + 1;
+}
+
+__attribute__((noinline)) void shift_up(int* a, int by, int n)
+{
+	for (int i = by; i < n; ++i)
+		a[i] = a[i - by] + 1;
+}
+
+__attribute__((noinline)) void two_stores(int* a, int* b, const int* x, int n)
+{
+	for (int i = 0; i < n; ++i)
+	{
+		a[i] = x[i] + 1;
+		b[i] = x[i] + 2;
+	}
+}
+
+int main()
+{
+	long longs[kSize + 16];
+	for (int n = 0; n <= 40; ++n)
+	{
+		reset();
+		add_arrays(words, words, other_words, n);
+		scale(floats, other_floats, 1.5f, n);
+		clamp(shorts, 700, n);
+		bump(bytes + 1, bytes + 1 + n);
+		roots(doubles, n);
+		numbered(other_words + 2, n);
+		for (int i = 0; i < kSize + 16; ++i)
+			longs[i] = i * 0x100000001l;
+		check ^= static_cast<unsigned long>(sum(words, n)) ^ static_cast<unsigned long>(xor_all(longs, n));
+		mix(words, sizeof words);
+		mix(other_words, sizeof other_words);
+		mix(floats, sizeof floats);
+		mix(doubles, sizeof doubles);
+		mix(shorts, sizeof shorts);
+		mix(bytes, sizeof bytes);
+	}
+	std::printf("%lx\n", check);
+	for (int by = 1; by <= 9; ++by)
+		for (int n = 0; n <= 40; n += 3)
+		{
+			reset();
+			shift_down(words, by, n);
+			shift_up(other_words, by, n + by);
+			two_stores(words + by, words, other_words, n);
+			two_stores(words, other_words + by, other_words, n);
+			mix(words, sizeof words);
+			mix(other_words, sizeof other_words);
+		}
+	std::printf("%lx\n", check);
+	return 0;
+}

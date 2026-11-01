@@ -202,6 +202,10 @@ bool hoist_loop_loads(FunctionContext& context);
 // through slots for promote_slots to join again.
 bool rotate_loops(FunctionContext& context);
 
+// Loop vectorization (O3, last, opt/loop_vectorizer.cpp): a one-block counted
+// loop also runs in sixteen-byte lanes before the scalar loop, which finishes.
+bool vectorize_loops(FunctionContext& context);
+
 // Fill loops of a run-time value whose bytes repeat call memset for long
 // runs (O2+, after all inlining: opt/loop_passes.cpp).
 bool version_fill_loops(FunctionContext& context);

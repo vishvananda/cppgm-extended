@@ -370,6 +370,14 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		RUN_PASS(cleanup_cfg);
 		changed = true;
 	}
+	// O3: loops in lanes, then what their guards and exits leave.
+	if (options.level >= 3 && RUN_PASS(vectorize_loops))
+	{
+		RUN_PASS(simplify_values);
+		RUN_PASS(cleanup_cfg);
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
 	if (!changed)
 		return;
 	RUN_PASS(split_branch_compares);
@@ -567,7 +575,8 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " loads_reused=" << s.loads_reused << " stores_removed=" << s.stores_removed
 		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled
 		<< " invariants_hoisted=" << s.invariants_hoisted << " stores_sunk=" << s.stores_sunk
-		<< " specialized=" << s.specialized << " optimize_ms=" << s.optimize_ms;
+		<< " loops_vectorized=" << s.loops_vectorized << " specialized=" << s.specialized
+		<< " optimize_ms=" << s.optimize_ms;
 #else
 	(void)s;
 #endif

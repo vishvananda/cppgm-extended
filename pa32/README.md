@@ -374,7 +374,9 @@ PA32 does not require:
   or an unbounded insertion/fixed-point schedule
 - alias-driven aggressive dead-store elimination
 - partial unrolling, peeling, vectorization, or loop transformations beyond
-  the bounded transformations needed by the fixture expectations
+  the bounded transformations needed by the fixture expectations (the course
+  solution's optional loop vectorizer is described in
+  [design-notes.md](design-notes.md))
 - machine-IR scheduling or register-allocation optimization
 - unbounded interprocedural cloning, externally observable ABI changes,
   semantic body merging, or indirect-call specialization

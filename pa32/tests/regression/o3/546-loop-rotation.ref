@@ -42,21 +42,37 @@ function @only_calls(%n : i64) -> void [no_inline=yes] {
 }
 function @literal_guard(%p : ptr) -> i64 [no_inline=yes] {
   block ^entry:
+    %t1 = vector pzero
+    jump ^wide_loop_1
+
+  block ^wide_loop_1:
+    %t2 = phi v128 [^entry: %t1, ^wide_loop_1: %t6]
+    %t3 = phi i64 [^entry: 0, ^wide_loop_1: %t7]
+    %t4 = index i64 %p, %t3
+    %t5 = load v128 %t4
+    %t6 = vector paddq %t5, %t2
+    %t7 = binary add i64 %t3, 2
+    %t8 = cmp lt i64 %t7, 998
+    branch %t8, ^wide_loop_1, ^loop_exit_2
+
+  block ^loop_exit_2:
+    %t9 = vector pshufd %t6, 78
+    %t10 = vector paddq %t6, %t9
+    %t11 = vector toi64 %t10
     jump ^body
 
   block ^body:
-    %t1 = phi i64 [^body: %t, ^entry: 0]
-    %t2 = phi i64 [^body: %next, ^entry: 0]
-    %q = index i64 %p, %t2
+    %t12 = phi i64 [^body: %t, ^loop_exit_2: %t11]
+    %t13 = phi i64 [^body: %next, ^loop_exit_2: %t7]
+    %q = index i64 %p, %t13
     %v = load i64 %q
-    %t = binary add i64 %v, %t1
-    %next = binary add i64 %t2, 1
-    %t7 = cmp lt i64 %next, 1000
-    branch %t7, ^body, ^done
+    %t = binary add i64 %v, %t12
+    %next = binary add i64 %t13, 1
+    %t18 = cmp lt i64 %next, 1000
+    branch %t18, ^body, ^done
 
   block ^done:
-    %t8 = phi i64 [^body: %t]
-    return i64 %t8
+    return i64 %t
 }
 function @swap(%n : i64) -> i64 [no_inline=yes] {
   block ^entry:

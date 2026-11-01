@@ -84,21 +84,44 @@ function @through_pointer(%n : i64, %s : ptr, %q : ptr, %v : f64) -> void [no_in
   block ^entry:
     %t1 = index i8 %s, 8
     %t2 = load i64 %t1
+    %t3 = cmp ugt i64 %n, 0
+    %t4 = cmp ugt i64 %n, 2
+    %t5 = binary and i64 %t3, %t4
+    branch %t5, ^loop_preheader_1, ^loop_preheader_3
+
+  block ^loop_preheader_1:
+    %t6 = binary add i64 %n, -2
+    %t7 = vector fromf64 %v
+    %t8 = vector pshufd %t7, 68
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t9 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t13]
+    %t10 = phi i64 [^loop_preheader_1: %t2, ^wide_loop_2: %t12]
+    %t11 = index f64 %q, %t9
+    store v128 %t8, %t11
+    %t12 = binary add i64 %t10, 2
+    %t13 = binary add i64 %t9, 2
+    %t14 = cmp ult i64 %t13, %t6
+    branch %t14, ^wide_loop_2, ^loop_preheader_3
+
+  block ^loop_preheader_3:
+    %t15 = phi i64 [^entry: 0, ^wide_loop_2: %t13]
+    %t16 = phi i64 [^entry: %t2, ^wide_loop_2: %t12]
     jump ^head
 
   block ^head:
-    %t3 = phi i64 [^entry: %t2, ^head: %u]
-    %i = phi i64 [^entry: 0, ^head: %next]
+    %t17 = phi i64 [^loop_preheader_3: %t16, ^head: %u]
+    %i = phi i64 [^loop_preheader_3: %t15, ^head: %next]
     %at = index f64 %q, %i
     store typed f64 %v, %at
-    %u = binary add i64 %t3, 1
+    %u = binary add i64 %t17, 1
     %next = binary add i64 %i, 1
     %c = cmp ult i64 %next, %n
-    branch %c, ^head, ^loop_exit_2
+    branch %c, ^head, ^loop_exit_5
 
-  block ^loop_exit_2:
-    %t9 = index i8 %s, 8
-    store typed i64 %u, %t9
+  block ^loop_exit_5:
+    store typed i64 %u, %t1
     return void
 }
 function @nested(%n : i64, %m : i64) -> void [no_inline=yes] {
@@ -109,12 +132,47 @@ function @nested(%n : i64, %m : i64) -> void [no_inline=yes] {
   block ^outer:
     %t2 = phi i64 [^entry: %t1, ^latch: %u]
     %i = phi i64 [^entry: 0, ^latch: %i_next]
+    %t4 = cmp ugt i64 %m, 0
+    %t5 = cmp ugt i64 %m, 2
+    %t6 = binary and i64 %t4, %t5
+    branch %t6, ^loop_preheader_2, ^loop_preheader_5
+
+  block ^loop_preheader_2:
+    %t7 = binary add i64 %m, -2
+    %t8 = vector fromi64 %t2
+    %t9 = vector fromi64 1
+    %t10 = vector pzero
+    %t11 = vector punpcklqdq %t10, %t9
+    %t12 = vector paddq %t10, %t11
+    %t13 = vector fromi64 2
+    %t14 = vector pshufd %t13, 68
+    jump ^wide_loop_3
+
+  block ^wide_loop_3:
+    %t15 = phi v128 [^loop_preheader_2: %t8, ^wide_loop_3: %t18]
+    %t16 = phi v128 [^loop_preheader_2: %t12, ^wide_loop_3: %t20]
+    %t17 = phi i64 [^loop_preheader_2: 0, ^wide_loop_3: %t19]
+    %t18 = vector paddq %t16, %t15
+    %t19 = binary add i64 %t17, 2
+    %t20 = vector paddq %t16, %t14
+    %t21 = cmp ult i64 %t19, %t7
+    branch %t21, ^wide_loop_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t22 = vector pshufd %t18, 78
+    %t23 = vector paddq %t18, %t22
+    %t24 = vector toi64 %t23
+    jump ^loop_preheader_5
+
+  block ^loop_preheader_5:
+    %t25 = phi i64 [^outer: %t2, ^loop_exit_4: %t24]
+    %t26 = phi i64 [^outer: 0, ^loop_exit_4: %t19]
     jump ^inner
 
   block ^inner:
-    %t = phi i64 [^outer: %t2, ^inner: %u]
-    %j = phi i64 [^outer: 0, ^inner: %j_next]
-    %u = binary add i64 %j, %t
+    %t = phi i64 [^loop_preheader_5: %t25, ^inner: %u]
+    %j = phi i64 [^loop_preheader_5: %t26, ^inner: %j_next]
+    %u = binary add i64 %t, %j
     %j_next = binary add i64 %j, 1
     %d = cmp ult i64 %j_next, %m
     branch %d, ^inner, ^latch
@@ -122,9 +180,9 @@ function @nested(%n : i64, %m : i64) -> void [no_inline=yes] {
   block ^latch:
     %i_next = binary add i64 %i, 1
     %c = cmp ult i64 %i_next, %n
-    branch %c, ^outer, ^loop_exit_4
+    branch %c, ^outer, ^loop_exit_8
 
-  block ^loop_exit_4:
+  block ^loop_exit_8:
     store typed i64 %u, @total
     return void
 }
@@ -135,20 +193,53 @@ function @escaped_slot(%n : i64) -> i64 [no_inline=yes] {
     %p = addr $s
     %f = index i8 %p, 8
     store i64 %n, %f
+    %t3 = cmp ugt i64 %n, 0
+    %t4 = cmp ugt i64 %n, 2
+    %t5 = binary and i64 %t3, %t4
+    branch %t5, ^loop_preheader_1, ^loop_preheader_4
+
+  block ^loop_preheader_1:
+    %t6 = binary add i64 %n, -2
+    %t7 = vector fromi64 %n
+    %t8 = vector fromi64 1
+    %t9 = vector pzero
+    %t10 = vector punpcklqdq %t9, %t8
+    %t11 = vector paddq %t9, %t10
+    %t12 = vector fromi64 2
+    %t13 = vector pshufd %t12, 68
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t14 = phi v128 [^loop_preheader_1: %t7, ^wide_loop_2: %t17]
+    %t15 = phi v128 [^loop_preheader_1: %t11, ^wide_loop_2: %t19]
+    %t16 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t18]
+    %t17 = vector paddq %t15, %t14
+    %t18 = binary add i64 %t16, 2
+    %t19 = vector paddq %t15, %t13
+    %t20 = cmp ult i64 %t18, %t6
+    branch %t20, ^wide_loop_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t21 = vector pshufd %t17, 78
+    %t22 = vector paddq %t17, %t21
+    %t23 = vector toi64 %t22
+    jump ^loop_preheader_4
+
+  block ^loop_preheader_4:
+    %t24 = phi i64 [^entry: %n, ^loop_exit_3: %t23]
+    %t25 = phi i64 [^entry: 0, ^loop_exit_3: %t18]
     jump ^head
 
   block ^head:
-    %t = phi i64 [^entry: %n, ^head: %u]
-    %i = phi i64 [^entry: 0, ^head: %next]
-    %u = binary add i64 %i, %t
+    %t = phi i64 [^loop_preheader_4: %t24, ^head: %u]
+    %i = phi i64 [^loop_preheader_4: %t25, ^head: %next]
+    %u = binary add i64 %t, %i
     %next = binary add i64 %i, 1
     %c = cmp ult i64 %next, %n
-    branch %c, ^head, ^loop_exit_2
+    branch %c, ^head, ^loop_exit_6
 
-  block ^loop_exit_2:
-    %t8 = addr $s
-    %t9 = index i8 %t8, 8
-    store i64 %u, %t9
+  block ^loop_exit_6:
+    store i64 %u, %f
     %r = call i64 @read(%p)
     return i64 %r
 }
@@ -240,10 +331,31 @@ function @back_without_store(%n : i64, %f : i64) -> void [no_inline=yes] {
 }
 function @pointer_walk(%p : ptr, %e : ptr) -> void [no_inline=yes] {
   block ^entry:
+    %t1 = binary sub ptr %e, %p
+    %t2 = cmp ult ptr %p, %e
+    %t3 = cmp ugt i64 %t1, 16
+    %t4 = binary and i64 %t2, %t3
+    branch %t4, ^loop_preheader_1, ^loop_preheader_3
+
+  block ^loop_preheader_1:
+    %t5 = index i8 %e, -16
+    %t6 = vector fromi64 1
+    %t7 = vector pshufd %t6, 68
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t8 = phi ptr [^loop_preheader_1: %p, ^wide_loop_2: %t9]
+    store v128 %t7, %t8
+    %t9 = index i8 %t8, 16
+    %t10 = cmp ult ptr %t9, %t5
+    branch %t10, ^wide_loop_2, ^loop_preheader_3
+
+  block ^loop_preheader_3:
+    %t11 = phi ptr [^entry: %p, ^wide_loop_2: %t9]
     jump ^head
 
   block ^head:
-    %at = phi ptr [^entry: %p, ^head: %next]
+    %at = phi ptr [^loop_preheader_3: %t11, ^head: %next]
     store typed i64 1, %at
     %next = index i64 %at, 1
     %c = cmp ne ptr %e, %next
@@ -321,10 +433,37 @@ function @neighbouring_field(%n : i64) -> void [no_inline=yes] {
 }
 function @stepped(%n : i64, %p : ptr) -> void [no_inline=yes] {
   block ^entry:
+    %t1 = cmp ugt i64 %n, 0
+    %t2 = cmp ugt i64 %n, 2
+    %t3 = binary and i64 %t1, %t2
+    branch %t3, ^loop_preheader_1, ^loop_preheader_3
+
+  block ^loop_preheader_1:
+    %t4 = binary add i64 %n, -2
+    %t5 = vector fromi64 1
+    %t6 = vector pzero
+    %t7 = vector punpcklqdq %t6, %t5
+    %t8 = vector paddq %t6, %t7
+    %t9 = vector fromi64 2
+    %t10 = vector pshufd %t9, 68
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t11 = phi v128 [^loop_preheader_1: %t8, ^wide_loop_2: %t15]
+    %t12 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t14]
+    %t13 = index i64 %p, %t12
+    store v128 %t11, %t13
+    %t14 = binary add i64 %t12, 2
+    %t15 = vector paddq %t11, %t10
+    %t16 = cmp ult i64 %t14, %t4
+    branch %t16, ^wide_loop_2, ^loop_preheader_3
+
+  block ^loop_preheader_3:
+    %t17 = phi i64 [^entry: 0, ^wide_loop_2: %t14]
     jump ^head
 
   block ^head:
-    %i = phi i64 [^entry: 0, ^head: %next]
+    %i = phi i64 [^loop_preheader_3: %t17, ^head: %next]
     %at = index i64 %p, %i
     store typed i64 %i, %at
     %next = binary add i64 %i, 1
@@ -354,28 +493,84 @@ function @large_values(%n : i64, %v : f64) -> void [no_inline=yes] {
 function @through_unknown_step(%row : i64, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     %p = index i64 @table, %row
+    %t2 = cmp gt i64 %n, 0
+    %t3 = cmp ugt i64 %n, 2
+    %t4 = binary and i64 %t2, %t3
+    branch %t4, ^loop_preheader_1, ^loop_preheader_4
+
+  block ^loop_preheader_1:
+    %t5 = binary add i64 %n, -2
+    %t6 = vector pzero
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t7 = phi v128 [^loop_preheader_1: %t6, ^wide_loop_2: %t11]
+    %t8 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t12]
+    %t9 = index i64 @values, %t8
+    %t10 = load v128 %t9
+    %t11 = vector paddq %t7, %t10
+    %t12 = binary add i64 %t8, 2
+    %t13 = cmp lt i64 %t12, %t5
+    branch %t13, ^wide_loop_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t14 = vector pshufd %t11, 78
+    %t15 = vector paddq %t11, %t14
+    %t16 = vector toi64 %t15
+    jump ^loop_preheader_4
+
+  block ^loop_preheader_4:
+    %t17 = phi i64 [^entry: 0, ^loop_exit_3: %t16]
+    %t18 = phi i64 [^entry: 0, ^loop_exit_3: %t12]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %s = phi i64 [^entry: 0, ^body: %t]
+    %i = phi i64 [^loop_preheader_4: %t18, ^body: %next]
+    %s = phi i64 [^loop_preheader_4: %t17, ^body: %t]
     %q = index i64 @values, %i
     %v = load typed i64 %q
     %t = binary add i64 %s, %v
     %next = binary add i64 %i, 1
     %c = cmp lt i64 %next, %n
-    branch %c, ^body, ^loop_exit_2
+    branch %c, ^body, ^loop_exit_6
 
-  block ^loop_exit_2:
+  block ^loop_exit_6:
     store typed i64 %t, %p
     return void
 }
 function @changing_step(%n : i64) -> void [no_inline=yes] {
   block ^entry:
+    %t1 = cmp gt i64 %n, 0
+    %t2 = cmp ugt i64 %n, 2
+    %t3 = binary and i64 %t1, %t2
+    branch %t3, ^loop_preheader_1, ^loop_preheader_3
+
+  block ^loop_preheader_1:
+    %t4 = binary add i64 %n, -2
+    %t5 = vector fromi64 1
+    %t6 = vector pzero
+    %t7 = vector punpcklqdq %t6, %t5
+    %t8 = vector paddq %t6, %t7
+    %t9 = vector fromi64 2
+    %t10 = vector pshufd %t9, 68
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t11 = phi v128 [^loop_preheader_1: %t8, ^wide_loop_2: %t15]
+    %t12 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t14]
+    %t13 = index i64 @table, %t12
+    store v128 %t11, %t13
+    %t14 = binary add i64 %t12, 2
+    %t15 = vector paddq %t11, %t10
+    %t16 = cmp lt i64 %t14, %t4
+    branch %t16, ^wide_loop_2, ^loop_preheader_3
+
+  block ^loop_preheader_3:
+    %t17 = phi i64 [^entry: 0, ^wide_loop_2: %t14]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^entry: 0, ^body: %next]
+    %i = phi i64 [^loop_preheader_3: %t17, ^body: %next]
     %p = index i64 @table, %i
     store typed i64 %i, %p
     %next = binary add i64 %i, 1

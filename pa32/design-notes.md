@@ -409,6 +409,31 @@ exit writes nothing a run of the loop would not have written. The location is
 loaded in the preheader and stored on each exit edge. The stores this leaves
 may then leave the loop around it.
 
+Loop vectorization: last at `-O3`, an innermost loop of one block may also run
+in sixteen-byte lanes of the x86-64 baseline. No fixture requires this pass;
+vectorization stays outside the course contract.
+
+- The loop has a counter of a literal step and an invariant bound, and every
+  other phi is another counter or an integer reduction (`add`, `sub`, `and`,
+  `or` or `xor` of `i32`, `u32` or `i64`). A floating sum stays scalar: lanes
+  would change the order of its additions.
+- Each load and store reads or writes consecutive elements, and all lanes have
+  one size. Each operation needs a lane form: `add`, `sub`, the bit operators,
+  shifts by a literal, `mul` of `i16` and `i32` and of the floating types,
+  floating `div`, `neg`, `bitnot`, `sqrt`, `select` of a compare, and `sitofp`
+  and `fptosi` between `i32` and `f32`.
+- Two accesses of one array must keep their order. Accesses at the same element
+  or sixteen bytes apart do, and so does a load that reads ahead of a later
+  store. Other accesses of one array leave the loop scalar.
+- Accesses of two different named objects, or typed accesses of incompatible
+  types, do not overlap. Other pairs get a test of their ranges in a guard before
+  the wide loop, up to eight tests.
+
+The wide loop stops with at least one pass left. The original loop always runs
+last, so the code after it reads the loop's values as before, and the wide loop
+only changes the values the scalar loop starts from. The scalar loop also runs
+alone when there are too few passes or a range test fails.
+
 Value numbering across diamonds: when a diamond's merge heads a second
 diamond on the same condition, and none of the arms or the first merge
 writes memory, a phi of the second whose arm inputs compute what a phi of
