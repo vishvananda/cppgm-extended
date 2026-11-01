@@ -69,6 +69,7 @@ public:
 	bool run();
 
 private:
+	bool objects_through_slots();
 	bool address_of(Value v, SlotAddress& out) const;
 	void escape(Value v);
 	void analyze();
@@ -866,10 +867,89 @@ void AggregateSlots::rewrite()
 	}
 }
 
+// A whole-object load whose value only stores read becomes a copy into a
+// temporary slot of its own, and a store of a call's result or a parameter
+// a copy from the value: the forms the splitting below reads field by field.
+// (Complex values move this way, as whole objects from slot to slot.)
+bool AggregateSlots::objects_through_slots()
+{
+	const auto whole = [](const Instruction& inst) {
+		return (inst.op == Opcode::Load || inst.op == Opcode::Store) && inst.type.is_object() &&
+			(inst.flags & IF_VOLATILE) == 0;
+	};
+	// Per temp: 1 a whole load's value only whole stores have read, 2 not.
+	std::vector<uint8_t> stored;
+	for (BlockId b : body_.layout)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			if (!whole(inst))
+				continue;
+			if (stored.empty())
+				stored.assign(body_.temps.size(), 0);
+			if (inst.op == Opcode::Load && inst.result != kNoId)
+				stored[inst.result] = 1;
+		}
+	if (stored.empty())
+		return false;
+	for (BlockId b : body_.layout)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			if (whole(inst) && inst.op == Opcode::Store)
+				continue;
+			for_each_operand(body_, inst, [&](const Value& v) {
+				if (v.is(ValueKind::Temp) && stored[v.index] == 1)
+					stored[v.index] = 2;
+			});
+		}
+	bool rewritten = false;
+	const auto copy = [&](Instruction& inst, Value from, Value to) {
+		const Type type = inst.type;
+		inst.op = Opcode::CopyObject;
+		inst.ops[0] = from;
+		inst.ops[1] = to;
+		inst.immediate = static_cast<int64_t>(storage_bytes(type));
+		inst.sub = static_cast<uint8_t>(type.align_log2);
+		inst.type = Type::scalar(TypeKind::Void);
+		rewritten = true;
+	};
+	std::vector<SlotId> home(body_.temps.size(), kNoId);
+	for (BlockId b : body_.layout)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			Instruction& inst = body_.instructions[i];
+			if (!whole(inst))
+				continue;
+			if (inst.op == Opcode::Load)
+			{
+				if (inst.result == kNoId || stored[inst.result] != 1)
+					continue;
+				const SlotId slot = static_cast<SlotId>(body_.slots.size());
+				body_.slots.push_back(Slot{ 0, SlotKind::Aggregate, 0, 0, inst.type });
+				home[inst.result] = slot;
+				inst.result = kNoId;
+				copy(inst, inst.ops[0], Value::slot(slot));
+				continue;
+			}
+			const Value value = inst.ops[0];
+			if (!value.is(ValueKind::Temp))
+				continue;
+			const Value to = inst.ops[1];
+			if (home[value.index] != kNoId)
+				copy(inst, Value::slot(home[value.index]), to);
+			else if (value.index < body_.parameter_count ||
+				body_.instructions[body_.temps[value.index].def].op == Opcode::Call)
+				copy(inst, value, to);
+		}
+	return rewritten;
+}
+
 bool AggregateSlots::run()
 {
 	if (body_.slots.empty())
 		return false;
+	const bool rewritten = objects_through_slots();
 	analyze();
 	first_field_.assign(body_.slots.size(), kNoId);
 	bool any = false;
@@ -913,7 +993,7 @@ bool AggregateSlots::run()
 		any = true;
 	}
 	if (!any || !compatible_copies())
-		return false;
+		return rewritten;
 	rewrite();
 	return true;
 }
