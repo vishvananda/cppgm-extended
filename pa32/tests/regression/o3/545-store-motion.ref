@@ -1,0 +1,345 @@
+global @total : obj<8x8> = {
+  zero 8
+}
+global @other : obj<8x8> = {
+  zero 8
+}
+global @pair : obj<16x8> = {
+  zero 16
+}
+
+function @opaque(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %r = binary add i64 %x, 1
+    return i64 %r
+}
+function @read(%p : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %f = index i8 %p, 8
+    %v = load i64 %f
+    return i64 %v
+}
+function @reduction(%n : i64, %p : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    %t1 = load typed i64 @total
+    jump ^head
+
+  block ^head:
+    %t = phi i64 [^entry: %t1, ^head: %u]
+    %i = phi i64 [^entry: 0, ^head: %next]
+    %at = index i64 %p, %i
+    %v = load typed i32 %at
+    %x = convert sext i64 i32 %v
+    %u = binary add i64 %x, %t
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^loop_exit_2
+
+  block ^loop_exit_2:
+    store typed i64 %u, @total
+    return void
+}
+function @two_exits(%n : i64, %p : ptr, %f : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = load typed i64 @total
+    %t2 = load i64 @other
+    jump ^head
+
+  block ^head:
+    %t3 = phi i64 [^entry: %t2, ^tail: %w]
+    %t = phi i64 [^entry: %t1, ^tail: %u]
+    %i = phi i64 [^entry: 0, ^tail: %next]
+    %at = index i32 %p, %i
+    %v = load typed i32 %at
+    %x = convert sext i64 i32 %v
+    %u = binary add i64 %x, %t
+    %w = binary xor i64 %x, %t3
+    %e = cmp eq i64 %f, %x
+    branch %e, ^loop_exit_3, ^tail
+
+  block ^tail:
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^loop_exit_4
+
+  block ^loop_exit_3:
+    store typed i64 %w, @other
+    store typed i64 %u, @total
+    return i64 1
+
+  block ^loop_exit_4:
+    store typed i64 %w, @other
+    store typed i64 %u, @total
+    return i64 0
+}
+function @through_pointer(%n : i64, %s : ptr, %q : ptr, %v : f64) -> void [no_inline=yes] {
+  block ^entry:
+    %t1 = index i8 %s, 8
+    %t2 = load i64 %t1
+    jump ^head
+
+  block ^head:
+    %t3 = phi i64 [^entry: %t2, ^head: %u]
+    %i = phi i64 [^entry: 0, ^head: %next]
+    %at = index f64 %q, %i
+    store typed f64 %v, %at
+    %u = binary add i64 %t3, 1
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^loop_exit_2
+
+  block ^loop_exit_2:
+    %t9 = index i8 %s, 8
+    store typed i64 %u, %t9
+    return void
+}
+function @nested(%n : i64, %m : i64) -> void [no_inline=yes] {
+  block ^entry:
+    %t1 = load typed i64 @total
+    jump ^outer
+
+  block ^outer:
+    %t2 = phi i64 [^entry: %t1, ^loop_exit_3: %u]
+    %i = phi i64 [^entry: 0, ^loop_exit_3: %i_next]
+    jump ^inner
+
+  block ^inner:
+    %t = phi i64 [^outer: %t2, ^inner: %u]
+    %j = phi i64 [^outer: 0, ^inner: %j_next]
+    %u = binary add i64 %j, %t
+    %j_next = binary add i64 %j, 1
+    %d = cmp ult i64 %j_next, %m
+    branch %d, ^inner, ^loop_exit_3
+
+  block ^loop_exit_3:
+    store typed i64 %u, @total
+    %i_next = binary add i64 %i, 1
+    %c = cmp ult i64 %i_next, %n
+    branch %c, ^outer, ^done
+
+  block ^done:
+    return void
+}
+function @escaped_slot(%n : i64) -> i64 [no_inline=yes] {
+  slot $s : obj<16x8>
+
+  block ^entry:
+    %p = addr $s
+    %f = index i8 %p, 8
+    store i64 %n, %f
+    jump ^head
+
+  block ^head:
+    %t = phi i64 [^entry: %n, ^head: %u]
+    %i = phi i64 [^entry: 0, ^head: %next]
+    %u = binary add i64 %i, %t
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^loop_exit_2
+
+  block ^loop_exit_2:
+    %t8 = addr $s
+    %t9 = index i8 %t8, 8
+    store i64 %u, %t9
+    %r = call i64 @read(%p)
+    return i64 %r
+}
+function @some_passes(%n : i64, %f : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^tail: %next]
+    %e = cmp eq i64 %f, %i
+    branch %e, ^write, ^tail
+
+  block ^write:
+    store typed i64 %i, @total
+    jump ^tail
+
+  block ^tail:
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return void
+}
+function @exit_before_store(%n : i64, %f : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^tail: %next]
+    %e = cmp eq i64 %f, %i
+    branch %e, ^done, ^tail
+
+  block ^tail:
+    store typed i64 %i, @total
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return void
+}
+function @call_in_loop(%n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^head: %next]
+    store typed i64 %i, @total
+    %next = call i64 @opaque(%i)
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return void
+}
+function @volatile_in_loop(%n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^head: %next]
+    store typed i64 %i, @total
+    %v = load volatile i64 @other
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return void
+}
+function @back_without_store(%n : i64, %f : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^head: %next, ^write: %next]
+    %next = binary add i64 %i, 1
+    %e = cmp eq i64 %f, %i
+    branch %e, ^head, ^write
+
+  block ^write:
+    store typed i64 %i, @total
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return void
+}
+function @pointer_walk(%p : ptr, %e : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %at = phi ptr [^entry: %p, ^head: %next]
+    store typed i64 1, %at
+    %next = index i64 %at, 1
+    %c = cmp ne ptr %e, %next
+    branch %c, ^head, ^done
+
+  block ^done:
+    return void
+}
+function @may_overlap_store(%n : i64, %s : ptr, %q : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^head: %next]
+    %at = index i64 %q, %i
+    store typed i64 %i, %at
+    store typed i64 %i, %s
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return void
+}
+function @may_overlap_load(%n : i64, %s : ptr, %q : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^head: %next]
+    %r = phi i64 [^entry: 0, ^head: %t]
+    %at = index i64 %q, %i
+    %v = load typed i64 %at
+    %t = binary add i64 %r, %v
+    store typed i64 %i, %s
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return i64 %t
+}
+function @other_width(%n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^head: %next]
+    %a = load i32 @pair
+    %x = convert sext i64 i32 %a
+    %u = binary add i64 %i, %x
+    store i64 %u, @pair
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return void
+}
+function @neighbouring_field(%n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^head: %next]
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^loop_exit_2
+
+  block ^loop_exit_2:
+    %t4 = index i8 @pair, 8
+    store i64 %next, %t4
+    store i64 %i, @pair
+    return void
+}
+function @stepped(%n : i64, %p : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^head: %next]
+    %at = index i64 %p, %i
+    store typed i64 %i, %at
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return void
+}
+function @large_values(%n : i64, %v : f64) -> void [no_inline=yes] {
+  block ^entry:
+    %e = convert fpext f80 f64 %v
+    %q = call i64 @opaque(%n)
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^head: %next]
+    %a = index i8 @pair, 0
+    store f80 %e, %a
+    %next = binary add i64 %i, 1
+    %c = cmp ult i64 %next, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return void
+}

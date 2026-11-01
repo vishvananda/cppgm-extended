@@ -357,6 +357,16 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		RUN_PASS(hoist_loop_invariants);
 		changed = true;
 	}
+	// O3: what each pass of a loop stores stays in a register; the exit's
+	// store then reaches the loop around it.
+	if (options.level >= 3 && RUN_PASS(promote_loop_memory))
+	{
+		RUN_PASS(promote_slots);
+		RUN_PASS(forward_memory);
+		RUN_PASS(remove_dead_code);
+		RUN_PASS(cleanup_cfg);
+		changed = true;
+	}
 	if (!changed)
 		return;
 	RUN_PASS(split_branch_compares);
@@ -552,7 +562,8 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " phis_inserted=" << s.phis_inserted << " calls_inlined=" << s.calls_inlined
 		<< " inlined_instructions=" << s.inlined_instructions << " functions_pruned=" << s.functions_pruned
 		<< " loads_reused=" << s.loads_reused << " stores_removed=" << s.stores_removed
-		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled << " invariants_hoisted=" << s.invariants_hoisted
+		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled
+		<< " invariants_hoisted=" << s.invariants_hoisted << " stores_sunk=" << s.stores_sunk
 		<< " specialized=" << s.specialized << " optimize_ms=" << s.optimize_ms;
 #else
 	(void)s;

@@ -174,6 +174,12 @@ bool thread_jumps(FunctionContext& context);
 // preheader's entry always reaches it. O(loops x blocks x instructions).
 bool hoist_loop_invariants(FunctionContext& context);
 
+// Store motion (opt/store_motion.cpp), O3: a location a loop without calls
+// stores on every pass, which nothing else in the loop may touch, is loaded in
+// the preheader, kept in a slot through the loop and stored on each exit.
+// O(rounds x loops x accesses^2), accesses bounded per loop.
+bool promote_loop_memory(FunctionContext& context);
+
 // Loop removal (opt/loop_passes.cpp): a loop with one exit, tested as
 // `iv != bound` on an induction variable, is bypassed when its body has
 // no effect and nothing outside reads its values but the tested one (the

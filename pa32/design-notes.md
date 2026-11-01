@@ -379,6 +379,15 @@ Full unrolling, at most 16 loops per run of the pass:
 - A loop containing an EH instruction, `stack_alloc` or `va_start`, or one
   that exits into a handler block, is not unrolled.
 
+Store motion: after rotation, a loop with no call, volatile access or
+atomic operation keeps in a register each of up to four locations it stores
+on every pass. The location has a loop-invariant address, an `int`, pointer or
+`f32`/`f64` type, and nothing else in the loop may overlap it. A store of it
+must dominate every latch and every block that exits, so the copy on the
+exit writes nothing a run of the loop would not have written. The location is
+loaded in the preheader and stored on each exit edge. The stores this leaves
+may then leave the loop around it.
+
 Value numbering across diamonds: when a diamond's merge heads a second
 diamond on the same condition, and none of the arms or the first merge
 writes memory, a phi of the second whose arm inputs compute what a phi of
@@ -471,6 +480,7 @@ fields `functions` (definitions optimized; 0 at `-O0`), `instructions_in`,
 `reused`, `dead`, `branches_folded`, `blocks_removed`, `blocks_merged`,
 `slots_promoted`, `phis_inserted`, `calls_inlined`, `inlined_instructions`,
 `functions_pruned`, `loads_reused`, `stores_removed`, `loops_removed`,
-`loops_unrolled`, `invariants_hoisted`, `specialized` and `optimize_ms`; `lowiropt` appends
+`loops_unrolled`, `invariants_hoisted`, `stores_sunk`, `specialized` and
+`optimize_ms`; `lowiropt` appends
 `parse_ms`, `validate_ms`, `write_ms` and `peak_rss_kb`. The counts are
 observational only.
