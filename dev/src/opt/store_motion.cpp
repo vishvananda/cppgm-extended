@@ -22,18 +22,20 @@ const size_t kLoopLocations = 4;
 class StoreMotion
 {
 public:
+	struct Access
+	{
+		InstId inst;
+		Located at;	 // the address the loop does not change, or its object
+		Value object; // what the address steps from
+		Type type;
+		bool store, typed;
+	};
+
 	explicit StoreMotion(FunctionContext& context) : c_(context), body_(context.body), cfg_(context.cfg) {}
 
 	bool run();
 
 private:
-	struct Access
-	{
-		InstId inst;
-		Located at;
-		Type type;
-		bool store, typed;
-	};
 	struct Location
 	{
 		Located at;
@@ -42,6 +44,7 @@ private:
 	};
 
 	bool invariant(uint32_t loop, Value v) const;
+	Located place(uint32_t loop, Value address, const Located& located) const;
 	bool read_accesses(uint32_t loop);
 	bool stored_each_pass(uint32_t loop, const std::vector<BlockId>& exiting, const Access& location) const;
 	void find_locations(uint32_t loop);
@@ -63,18 +66,9 @@ bool same_place(const Located& a, Type a_type, const Located& b, Type b_type)
 	return a.root == b.root && a.known && b.known && a.offset == b.offset && a_type == b_type;
 }
 
-// Whether two accesses may touch one byte.
-bool may_overlap(const Located& a, Type a_type, bool a_typed, const Located& b, Type b_type, bool b_typed)
+bool named(Value object)
 {
-	if (a.root == b.root)
-		return !a.known || !b.known ||
-			(a.offset < b.offset + static_cast<int64_t>(storage_bytes(b_type)) &&
-				b.offset < a.offset + static_cast<int64_t>(storage_bytes(a_type)));
-	const bool a_named = a.root.is(ValueKind::Slot) || a.root.is(ValueKind::Symbol);
-	const bool b_named = b.root.is(ValueKind::Slot) || b.root.is(ValueKind::Symbol);
-	if (a_named && b_named)
-		return false;
-	return !(a_typed && b_typed && typed_types_apart(a_type, b_type));
+	return object.is(ValueKind::Slot) || object.is(ValueKind::Symbol);
 }
 
 bool StoreMotion::invariant(uint32_t loop, Value v) const
@@ -83,6 +77,43 @@ bool StoreMotion::invariant(uint32_t loop, Value v) const
 		return true;
 	const InstId def = body_.temps[v.index].def;
 	return def != kNoId && c_.block_of[def] != kNoId && !in_loop(forest_, loop, c_.block_of[def]);
+}
+
+// Whether two accesses may touch one byte.
+bool may_overlap(const StoreMotion::Access& a, const StoreMotion::Access& b)
+{
+	if (a.at.root == b.at.root)
+		return !a.at.known || !b.at.known ||
+			(a.at.offset < b.at.offset + static_cast<int64_t>(storage_bytes(b.type)) &&
+				b.at.offset < a.at.offset + static_cast<int64_t>(storage_bytes(a.type)));
+	if (!(a.object == b.object) && named(a.object) && named(b.object))
+		return false;
+	return !(a.typed && b.typed && typed_types_apart(a.type, b.type));
+}
+
+// Where an access stays through the loop: an address computed by steps of
+// unknown size that the loop does not change is itself the place.
+Located StoreMotion::place(uint32_t loop, Value address, const Located& located) const
+{
+	if (located.known)
+		return located;
+	Located out;
+	for (unsigned step = 0; step < 8; ++step)
+	{
+		if (!address.is(ValueKind::Temp) || address.index < body_.parameter_count ||
+			body_.temps[address.index].def == kNoId)
+			break;
+		const Instruction& def = body_.instructions[body_.temps[address.index].def];
+		if (def.op != Opcode::Index || !def.ops[1].is(ValueKind::Integer) || invariant(loop, address))
+			break;
+		out.offset += static_cast<int64_t>(body_.literals[def.ops[1].index].low) *
+			static_cast<int64_t>(storage_bytes(def.type));
+		address = def.ops[0];
+	}
+	if (!invariant(loop, address))
+		return located;
+	out.root = address;
+	return out;
 }
 
 // The loads and stores of the loop, none volatile, and false if anything
@@ -98,7 +129,9 @@ bool StoreMotion::read_accesses(uint32_t loop)
 			{
 				if ((inst.flags & IF_VOLATILE) != 0 || accesses_.size() == kLoopAccesses)
 					return false;
-				accesses_.push_back(Access{ i, locate(body_, inst.ops[inst.op == Opcode::Load ? 0 : 1]), inst.type,
+				const Value address = inst.ops[inst.op == Opcode::Load ? 0 : 1];
+				const Located located = locate(body_, address);
+				accesses_.push_back(Access{ i, place(loop, address, located), located.root, inst.type,
 					inst.op == Opcode::Store, (inst.flags & IF_TYPED) != 0 });
 			}
 			else if (!is_pure(inst) && inst.op != Opcode::Jump && inst.op != Opcode::Branch &&
@@ -145,6 +178,9 @@ void StoreMotion::find_locations(uint32_t loop)
 		if (!s.store || !invariant(loop, s.at.root) || locations_.size() == kLoopLocations || s.type.is_object() ||
 			s.type.is_vector() || kind == TypeKind::F80 || kind == TypeKind::I128)
 			continue;
+		// (A slot this pass made is promotion's already.)
+		if (s.at.root.is(ValueKind::Slot) && body_.slots[s.at.root.index].kind == SlotKind::Demote)
+			continue;
 		bool seen = false;
 		for (const Location& l : locations_)
 			seen = seen || same_place(l.at, l.type, s.at, s.type);
@@ -156,7 +192,7 @@ void StoreMotion::find_locations(uint32_t loop)
 			if (same_place(a.at, a.type, s.at, s.type))
 				typed = typed && (a.typed || !a.store);
 			else
-				alone = alone && !may_overlap(a.at, a.type, a.typed, s.at, s.type, s.typed);
+				alone = alone && !may_overlap(a, s);
 		}
 		if (alone && stored_each_pass(loop, exiting, s))
 			locations_.push_back(Location{ s.at, s.type, typed });

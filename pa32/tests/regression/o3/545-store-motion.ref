@@ -7,6 +7,14 @@ global @other : obj<8x8> = {
 global @pair : obj<16x8> = {
   zero 16
 }
+global @table : obj<80x8> = {
+  zero 80
+}
+global @values : obj<80x8> = {
+  zero 80
+}
+global @first : i64 = 0
+global @second : i64 = 0
 
 function @opaque(%x : i64) -> i64 [no_inline=yes] {
   block ^entry:
@@ -99,8 +107,8 @@ function @nested(%n : i64, %m : i64) -> void [no_inline=yes] {
     jump ^outer
 
   block ^outer:
-    %t2 = phi i64 [^entry: %t1, ^loop_exit_3: %u]
-    %i = phi i64 [^entry: 0, ^loop_exit_3: %i_next]
+    %t2 = phi i64 [^entry: %t1, ^latch: %u]
+    %i = phi i64 [^entry: 0, ^latch: %i_next]
     jump ^inner
 
   block ^inner:
@@ -109,15 +117,15 @@ function @nested(%n : i64, %m : i64) -> void [no_inline=yes] {
     %u = binary add i64 %j, %t
     %j_next = binary add i64 %j, 1
     %d = cmp ult i64 %j_next, %m
-    branch %d, ^inner, ^loop_exit_3
+    branch %d, ^inner, ^latch
 
-  block ^loop_exit_3:
-    store typed i64 %u, @total
+  block ^latch:
     %i_next = binary add i64 %i, 1
     %c = cmp ult i64 %i_next, %n
-    branch %c, ^outer, ^done
+    branch %c, ^outer, ^loop_exit_4
 
-  block ^done:
+  block ^loop_exit_4:
+    store typed i64 %u, @total
     return void
 }
 function @escaped_slot(%n : i64) -> i64 [no_inline=yes] {
@@ -341,5 +349,63 @@ function @large_values(%n : i64, %v : f64) -> void [no_inline=yes] {
     branch %c, ^head, ^done
 
   block ^done:
+    return void
+}
+function @through_unknown_step(%row : i64, %n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    %p = index i64 @table, %row
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %s = phi i64 [^entry: 0, ^body: %t]
+    %q = index i64 @values, %i
+    %v = load typed i64 %q
+    %t = binary add i64 %s, %v
+    %next = binary add i64 %i, 1
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^loop_exit_2
+
+  block ^loop_exit_2:
+    store typed i64 %t, %p
+    return void
+}
+function @changing_step(%n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %p = index i64 @table, %i
+    store typed i64 %i, %p
+    %next = binary add i64 %i, 1
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return void
+}
+function @two_loops(%n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^one
+
+  block ^one:
+    %i = phi i64 [^entry: 0, ^one: %i2]
+    %i2 = binary add i64 %i, 1
+    %c = cmp lt i64 %i2, %n
+    branch %c, ^one, ^loop_exit_2
+
+  block ^loop_exit_2:
+    store typed i64 %i, @first
+    jump ^two
+
+  block ^two:
+    %j = phi i64 [^two: %j2, ^loop_exit_2: 0]
+    %j2 = binary add i64 %j, 1
+    %d = cmp lt i64 %j2, %n
+    branch %d, ^two, ^loop_exit_4
+
+  block ^loop_exit_4:
+    store typed i64 %j, @second
     return void
 }

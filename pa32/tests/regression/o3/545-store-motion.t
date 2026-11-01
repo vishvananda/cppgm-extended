@@ -325,3 +325,66 @@ function @large_values(%n : i64, %v : f64) -> void [no_inline=yes] {
   block ^done:
     return void
 }
+
+# The address has a step of unknown size that the loop does not change. The
+# loaded elements are another object's.
+global @table : obj<80x8> = { zero 80 }
+global @values : obj<80x8> = { zero 80 }
+
+function @through_unknown_step(%row : i64, %n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    %p = index i64 @table, %row
+    jump ^body
+  block ^body:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %s = phi i64 [^entry: 0, ^body: %t]
+    %q = index i64 @values, %i
+    %v = load typed i64 %q
+    %t = binary add i64 %s, %v
+    store typed i64 %t, %p
+    %next = binary add i64 %i, 1
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+  block ^done:
+    return void
+}
+
+# A store through a step the loop does change stays.
+function @changing_step(%n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^body
+  block ^body:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %p = index i64 @table, %i
+    store typed i64 %i, %p
+    %next = binary add i64 %i, 1
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+  block ^done:
+    return void
+}
+
+# Both loops of the function move their location.
+global @first : i64 = 0
+global @second : i64 = 0
+
+function @two_loops(%n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^one
+  block ^one:
+    %i = phi i64 [^entry: 0, ^one: %i2]
+    store typed i64 %i, @first
+    %i2 = binary add i64 %i, 1
+    %c = cmp lt i64 %i2, %n
+    branch %c, ^one, ^between
+  block ^between:
+    jump ^two
+  block ^two:
+    %j = phi i64 [^between: 0, ^two: %j2]
+    store typed i64 %j, @second
+    %j2 = binary add i64 %j, 1
+    %d = cmp lt i64 %j2, %n
+    branch %d, ^two, ^done
+  block ^done:
+    return void
+}
