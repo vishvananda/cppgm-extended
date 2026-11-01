@@ -25,7 +25,7 @@ function @negated_direct(%left : i64, %right : i64) -> i64 {
     return i64 4
 }
 
-function @keeps_float(%left : f64, %right : f64) -> i64 {
+function @negated_float(%left : f64, %right : f64) -> i64 {
   block ^entry:
     %inner = cmp lt f64 %left, %right
     %narrow = convert trunc u8 i64 %inner

@@ -1172,6 +1172,10 @@ Required PA8 comparison predicates:
 - `ugt`
 - `uge`
 
+On a floating type, `lt`, `le`, `gt`, `ge` and `eq` are false when an operand is
+a NaN. `ne`, `ult`, `ule`, `ugt` and `uge` are true: `ult a, b` is `!(a >= b)`,
+and likewise for the other `u` predicates.
+
 For `cmp`, `<type>` is the comparison operand type, not the result type. The
 destination temporary is a canonical integer truth value and is materialized as
 `i64` `0` or `1`. This is true for floating comparisons such as

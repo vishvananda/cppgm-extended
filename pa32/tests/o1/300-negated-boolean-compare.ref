@@ -20,11 +20,9 @@ function @negated_direct(%left : i64, %right : i64) -> i64 {
   block ^same:
     return i64 4
 }
-function @keeps_float(%left : f64, %right : f64) -> i64 {
+function @negated_float(%left : f64, %right : f64) -> i64 {
   block ^entry:
-    %inner = cmp lt f64 %left, %right
-    %narrow = convert trunc u8 i64 %inner
-    %test = cmp eq u8 %narrow, 0
+    %test = cmp uge f64 %left, %right
     branch %test, ^not_less, ^less
 
   block ^not_less:

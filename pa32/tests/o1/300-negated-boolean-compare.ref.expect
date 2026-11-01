@@ -7,4 +7,4 @@ count(store) <= 3
 count(phi) <= 3
 instructions <= 7 in @negated_trunc
 instructions <= 7 in @negated_direct
-instructions <= 9 in @keeps_float
+instructions <= 9 in @negated_float

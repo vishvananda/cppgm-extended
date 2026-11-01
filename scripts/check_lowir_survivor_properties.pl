@@ -165,10 +165,11 @@ for my $test (@tests)
 		die "$test: O1 did not collapse the integer negation to one compare\n"
 			if scalar(@positive_cmps) != 1 ||
 			   $positive !~ /^\s+%\w+ = cmp ne i64 /m;
-		my $guard = function_body($test, $o1, 'keeps_float');
-		my @float_cmps = $guard =~ /^\s+%\w+ = cmp /mg;
-		die "$test: O1 applied the integer-only negation rule to float\n"
-			if scalar(@float_cmps) != 2;
+		my $float = function_body($test, $o1, 'negated_float');
+		my @float_cmps = $float =~ /^\s+%\w+ = cmp /mg;
+		die "$test: O1 did not negate the float compare to its unordered form\n"
+			if scalar(@float_cmps) != 1 ||
+			   $float !~ /^\s+%\w+ = cmp uge f64 /m;
 		next;
 	}
 	if($test =~ /\d{3}-duplicate-block-loads/) {

@@ -9,6 +9,33 @@ using namespace lowir;
 
 namespace {
 
+// The floating predicate that holds exactly when `predicate` does not: an
+// ordered one's negation holds when an operand is a NaN.
+ComparePredicate float_inverted(ComparePredicate predicate)
+{
+	switch (predicate)
+	{
+	case ComparePredicate::Lt:
+		return ComparePredicate::Uge;
+	case ComparePredicate::Le:
+		return ComparePredicate::Ugt;
+	case ComparePredicate::Gt:
+		return ComparePredicate::Ule;
+	case ComparePredicate::Ge:
+		return ComparePredicate::Ult;
+	case ComparePredicate::Ult:
+		return ComparePredicate::Ge;
+	case ComparePredicate::Ule:
+		return ComparePredicate::Gt;
+	case ComparePredicate::Ugt:
+		return ComparePredicate::Le;
+	case ComparePredicate::Uge:
+		return ComparePredicate::Lt;
+	default:
+		return inverted(predicate);
+	}
+}
+
 // An operand of a hashed expression: a temporary, symbol or slot by id, a
 // literal by value.
 struct OperandKey
@@ -959,8 +986,8 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 		}
 		return false;
 	}
-	// x == 0 and x != 1 invert an integer comparison x is (through
-	// truth-preserving conversions).
+	// x == 0 and x != 1 invert a comparison x is (through truth-preserving
+	// conversions).
 	Value v = x;
 	const Instruction* def = producer(v);
 	while (def != nullptr && def->op == Opcode::Convert)
@@ -968,9 +995,10 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 		v = def->ops[0];
 		def = producer(v);
 	}
-	if (def == nullptr || def->op != Opcode::Compare || def->type.is_float())
+	if (def == nullptr || def->op != Opcode::Compare)
 		return false;
-	inst.sub = static_cast<uint8_t>(inverted(static_cast<ComparePredicate>(def->sub)));
+	const ComparePredicate tested = static_cast<ComparePredicate>(def->sub);
+	inst.sub = static_cast<uint8_t>(def->type.is_float() ? float_inverted(tested) : inverted(tested));
 	inst.type = def->type;
 	inst.ops[0] = def->ops[0];
 	inst.ops[1] = def->ops[1];
