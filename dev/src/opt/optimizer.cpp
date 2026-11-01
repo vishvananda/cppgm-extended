@@ -351,6 +351,9 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	if (options.level >= 3 && RUN_PASS(rotate_loops))
 	{
 		RUN_PASS(promote_slots);
+		// (A guard of literals goes.)
+		RUN_PASS(simplify_values);
+		RUN_PASS(cleanup_cfg);
 		RUN_PASS(forward_memory);
 		RUN_PASS(remove_dead_code);
 		RUN_PASS(hoist_loop_loads);

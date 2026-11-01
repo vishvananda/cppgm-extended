@@ -1,0 +1,83 @@
+declare function @touch(%value : i64) -> void [unwind=no]
+
+global @last : i64 = 0
+
+function @count_down(%n : i32) -> void [no_inline=yes] {
+  block ^entry:
+    %next = binary sub nowrap i32 %n, 1
+    branch %n, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    %t2 = load i64 @last
+    jump ^body
+
+  block ^body:
+    %t3 = phi i64 [^body: %w, ^loop_preheader_1: %t2]
+    %t4 = phi i32 [^body: %t6, ^loop_preheader_1: %next]
+    %w = binary mul i64 %t3, 3
+    %t6 = binary sub nowrap i32 %t4, 1
+    branch %t4, ^body, ^loop_exit_3
+
+  block ^loop_exit_3:
+    store typed i64 %w, @last
+    jump ^done
+
+  block ^done:
+    return void
+}
+function @only_calls(%n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    %c = cmp gt i64 %n, 0
+    branch %c, ^body, ^done
+
+  block ^body:
+    %t2 = phi i64 [^body: %next, ^entry: 0]
+    call void @touch(%t2)
+    %next = binary add i64 %t2, 1
+    %t4 = cmp lt i64 %next, %n
+    branch %t4, ^body, ^done
+
+  block ^done:
+    return void
+}
+function @literal_guard(%p : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %t1 = phi i64 [^body: %t, ^entry: 0]
+    %t2 = phi i64 [^body: %next, ^entry: 0]
+    %q = index i64 %p, %t2
+    %v = load i64 %q
+    %t = binary add i64 %v, %t1
+    %next = binary add i64 %t2, 1
+    %t7 = cmp lt i64 %next, 1000
+    branch %t7, ^body, ^done
+
+  block ^done:
+    %t8 = phi i64 [^body: %t]
+    return i64 %t8
+}
+function @swap(%n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^header
+
+  block ^header:
+    %a = phi i64 [^entry: 1, ^body: %b]
+    %b = phi i64 [^entry: 2, ^body: %a]
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %c = cmp lt i64 %i, %n
+    branch %c, ^body, ^done
+
+  block ^body:
+    call void @touch(%a)
+    %next = binary add i64 %i, 1
+    jump ^header
+
+  block ^done:
+    return i64 %b
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

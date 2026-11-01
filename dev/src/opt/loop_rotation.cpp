@@ -15,10 +15,11 @@ namespace {
 // in the loop -- and whose latches jump to it is rotated: each latch ends
 // in its own copy of the header's instructions and branch, the header
 // stays as the entry's guard, and the side in the loop (the new header)
-// is entered from it through a preheader. A load the body makes every
-// pass then has a block that runs once per entry beside the latch's value
-// on the back edge (forward_memory's pre_load, hoist_loop_loads), where
-// before the header's test stood between them. The header's values go
+// is entered from it through a preheader. What the body does every pass
+// then runs before every exit and once the preheader has run: a load
+// has a block that runs once per entry beside the latch's value on the
+// back edge (forward_memory's pre_load, hoist_loop_loads), and a store
+// can leave the loop. The header's values go
 // through slots, promoted again by the caller: its phis stored on its
 // predecessors' edges (before a predecessor's terminator), the others
 // right after their definition, each use outside the header and each
@@ -124,68 +125,19 @@ bool LoopRotation::rotate_loop(uint32_t loop)
 		const InstId def = body_.temps[v.index].def;
 		return def != kNoId && std::find(defined.begin(), defined.end(), def) != defined.end() ? def : kNoId;
 	};
-	// Only where a reload goes: the in-loop side starts (before anything
-	// there may write memory) with a load the latches read too -- at the
-	// same offset from their input of one of the header's phis, or from the
-	// same root from outside the loop -- or with a load of an address from
-	// outside a loop that writes no memory (then hoisted).
-	bool writes = false;
-	for (BlockId b : l.blocks)
-		for (InstId i = body_.blocks[b].first; i != kNoId && !writes; i = body_.instructions[i].next)
-		{
-			const Instruction& inst = body_.instructions[i];
-			writes = inst.op == Opcode::Store || inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit ||
-				may_write_memory(c_.program, inst);
-		}
-	bool reload = false;
-	for (InstId i = body_.blocks[inside].first; i != kNoId && !reload; i = body_.instructions[i].next)
-	{
-		const Instruction& inst = body_.instructions[i];
-		if (inst.op == Opcode::Store || inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit ||
-			may_write_memory(c_.program, inst))
-			break;
-		if (inst.op != Opcode::Load || (inst.flags & IF_VOLATILE) != 0 || inst.type.is_object())
-			continue;
-		const Located at = locate(body_, inst.ops[0]);
-		if (!at.known)
-			continue;
-		const bool outside = invariant(loop, at.root);
-		if (outside && !writes)
-		{
-			reload = true;
-			break;
-		}
-		const InstId phi = of_h(at.root);
-		if (!outside && (phi == kNoId || body_.instructions[phi].op != Opcode::Phi))
-			continue;
-		bool every = true;
-		for (BlockId lt : l.latches)
-		{
-			const Value in = outside ? at.root : phi_incoming(body_, body_.instructions[phi], lt);
-			bool found = false;
-			for (InstId j = body_.blocks[lt].first; j != kNoId && !found; j = body_.instructions[j].next)
-			{
-				const Instruction& prior = body_.instructions[j];
-				if (prior.op != Opcode::Load || prior.type != inst.type)
-					continue;
-				const Located p = locate(body_, prior.ops[0]);
-				found = p.known && p.root == in && p.offset == at.offset;
-			}
-			every = every && found;
-		}
-		reload = every;
-	}
-	if (!reload)
-		return false;
-	// The header's phis take nothing the header defines.
+	// The header's phis take none of its phis (each is stored on the edge: a
+	// swap would read what another just wrote).
 	for (InstId d : defined)
 	{
 		const Instruction& phi = body_.instructions[d];
 		if (phi.op != Opcode::Phi)
 			break;
 		for (uint32_t k = 0; k + 1 < phi.extra_count; k += 2)
-			if (of_h(body_.operands[phi.extra_first + k + 1]) != kNoId)
+		{
+			const InstId def = of_h(body_.operands[phi.extra_first + k + 1]);
+			if (def != kNoId && body_.instructions[def].op == Opcode::Phi)
 				return false;
+		}
 	}
 	struct Use
 	{
@@ -219,7 +171,10 @@ bool LoopRotation::rotate_loop(uint32_t loop)
 		}
 	if (!ok)
 		return false;
-	// Demote the header's values.
+	// Demote the header's values, the phis last: what a phi takes from the
+	// header is then a load the latch made, ahead of the phi's store.
+	std::stable_partition(
+		defined.begin(), defined.end(), [&](InstId d) { return body_.instructions[d].op != Opcode::Phi; });
 	for (InstId d : defined)
 	{
 		const Instruction value = body_.instructions[d];

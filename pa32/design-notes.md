@@ -392,10 +392,18 @@ Full unrolling, at most 16 loops per run of the pass:
 - A loop containing an EH instruction, `stack_alloc` or `va_start`, or one
   that exits into a handler block, is not unrolled.
 
+Loop rotation: at `-O3` a loop whose header holds only its phis, at most four
+plain instructions and a branch out of the loop is rotated. Each latch ends in
+a copy of the test, and the header stays as a guard, which folds when its
+operands are literals. What the body does on every pass then runs before every
+exit. A phi that takes another phi of the header keeps the loop as it is.
+
 Store motion: after rotation, a loop with no call, volatile access or
 atomic operation keeps in a register each of up to four locations it stores
-on every pass. The location has a loop-invariant address, an `int`, pointer or
-`f32`/`f64` type, and nothing else in the loop may overlap it. A store of it
+on every pass. The location has a loop-invariant address, which may have a
+step of unknown size, an `int`, pointer or `f32`/`f64` type, and nothing else
+in the loop may overlap it. Accesses to two different named objects do not
+overlap, whatever their steps. A store of it
 must dominate every latch and every block that exits, so the copy on the
 exit writes nothing a run of the loop would not have written. The location is
 loaded in the preheader and stored on each exit edge. The stores this leaves

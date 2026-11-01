@@ -60,26 +60,23 @@ function @nine_passes(%k : i64) -> i64 [no_inline=yes] {
   block ^entry:
     %p = addr $s
     call void @keep(%p)
-    jump ^header
-
-  block ^header:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %s = phi i64 [^entry: %k, ^body: %out]
-    %more = cmp lt i64 %i, 9
-    branch %more, ^body, ^exit
+    jump ^body
 
   block ^body:
-    store i64 %s, %p
-    %v0 = binary mul i64 %k, %s
+    %t2 = phi i64 [^body: %out, ^entry: %k]
+    %t3 = phi i64 [^body: %next, ^entry: 0]
+    %v0 = binary mul i64 %k, %t2
     %v1 = binary sub i64 %v0, %k
     %v2 = binary mul i64 %k, %v1
     %out = binary add i64 %v2, 1
-    %next = binary add i64 %i, 1
-    jump ^header
+    %next = binary add i64 %t3, 1
+    %t9 = cmp lt i64 %next, 9
+    branch %t9, ^body, ^loop_exit_2
 
-  block ^exit:
-    %last = load i64 %p
-    %r = binary add i64 %s, %last
+  block ^loop_exit_2:
+    %t10 = addr $s
+    store i64 %t2, %t10
+    %r = binary add i64 %t2, %out
     return i64 %r
 }
 function @five_passes_within_size(%k : i64) -> i64 [no_inline=yes] {
@@ -293,17 +290,12 @@ function @five_passes_over_size(%k : i64) -> i64 [no_inline=yes] {
   block ^entry:
     %p = addr $s
     call void @keep(%p)
-    jump ^header
-
-  block ^header:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %s = phi i64 [^entry: %k, ^body: %out]
-    %more = cmp lt i64 %i, 5
-    branch %more, ^body, ^exit
+    jump ^body
 
   block ^body:
-    store i64 %s, %p
-    %v0 = binary mul i64 %k, %s
+    %t2 = phi i64 [^body: %out, ^entry: %k]
+    %t3 = phi i64 [^body: %next, ^entry: 0]
+    %v0 = binary mul i64 %k, %t2
     %v1 = binary sub i64 %v0, %k
     %v2 = binary mul i64 %k, %v1
     %v3 = binary sub i64 %v2, %k
@@ -343,12 +335,14 @@ function @five_passes_over_size(%k : i64) -> i64 [no_inline=yes] {
     %v37 = binary sub i64 %v36, %k
     %v38 = binary mul i64 %k, %v37
     %out = binary add i64 %v38, 1
-    %next = binary add i64 %i, 1
-    jump ^header
+    %next = binary add i64 %t3, 1
+    %t45 = cmp lt i64 %next, 5
+    branch %t45, ^body, ^loop_exit_2
 
-  block ^exit:
-    %last = load i64 %p
-    %r = binary add i64 %s, %last
+  block ^loop_exit_2:
+    %t46 = addr $s
+    store i64 %t2, %t46
+    %r = binary add i64 %t2, %out
     return i64 %r
 }
 function @four_passes_with_call(%k : i64) -> i64 [no_inline=yes] {
@@ -361,21 +355,19 @@ function @four_passes_with_call(%k : i64) -> i64 [no_inline=yes] {
 }
 function @five_passes_with_call(%k : i64) -> i64 [no_inline=yes] {
   block ^entry:
-    jump ^header
-
-  block ^header:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %s = phi i64 [^entry: %k, ^body: %out]
-    %more = cmp lt i64 %i, 5
-    branch %more, ^body, ^exit
+    jump ^body
 
   block ^body:
-    %out = call i64 @opaque(%s)
-    %next = binary add i64 %i, 1
-    jump ^header
+    %t1 = phi i64 [^body: %out, ^entry: %k]
+    %t2 = phi i64 [^body: %next, ^entry: 0]
+    %out = call i64 @opaque(%t1)
+    %next = binary add i64 %t2, 1
+    %t5 = cmp lt i64 %next, 5
+    branch %t5, ^body, ^exit
 
   block ^exit:
-    return i64 %s
+    %t6 = phi i64 [^body: %out]
+    return i64 %t6
 }
 function @main() -> i32 [role=entry] {
   block ^entry:
