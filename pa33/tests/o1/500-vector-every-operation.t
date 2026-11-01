@@ -1,6 +1,8 @@
 # Every vector operation over three sets of inputs. The expected bytes are the
 # hardware results of the matching SSE instructions. The exit status is 0 when
 # all match, and otherwise the position of the first operation that differs.
+# rcpps, rsqrtps, rcpss and rsqrtss are approximate and differ between processors,
+# so they check a bound of 2^-10 instead of exact bytes.
 global @in0 : obj<48x16> = {
   i64 -3309568867362737582
   i64 3927675499376875657
@@ -101,10 +103,10 @@ global @exp0 : obj<3280x16> = {
   i64 3927675499376875657
   i64 -2251799813685248
   i64 3927675499376875657
-  i64 -3309568868732039168
-  i64 3927675499376875657
-  i64 -3309568868363241472
-  i64 3927675499376875657
+  i64 15
+  i64 0
+  i64 15
+  i64 0
   i64 5002904080171925504
   i64 3927675499376875657
   i64 -3309568866912305152
@@ -305,10 +307,10 @@ global @exp0 : obj<3280x16> = {
   i64 4251665371293024256
   i64 -2251799813685248
   i64 4267143073647165376
-  i64 -5989681950854201344
-  i64 5223120040505915392
-  i64 -18014397760897024
-  i64 4899379837195517952
+  i64 15
+  i64 0
+  i64 15
+  i64 0
   i64 -3309568865535390554
   i64 3927675497785452558
   i64 7288779482644017746
@@ -514,10 +516,10 @@ global @exp1 : obj<3280x16> = {
   i64 5770521767084818432
   i64 5188804118931657380
   i64 5770521767084818432
-  i64 5770521768154365952
-  i64 5770521767084818432
-  i64 5770521768154365952
-  i64 5770521767084818432
+  i64 15
+  i64 0
+  i64 15
+  i64 0
   i64 0
   i64 5770521767084818432
   i64 5770521768154365952
@@ -718,10 +720,10 @@ global @exp1 : obj<3280x16> = {
   i64 5171064759148921969
   i64 5188804120337584228
   i64 5188804119398317164
-  i64 3376538639451521024
-  i64 3376538637308698624
-  i64 3974356306701058048
-  i64 3974356303472558080
+  i64 15
+  i64 0
+  i64 15
+  i64 0
   i64 5770521767358825209
   i64 5770521767358825209
   i64 -4607182415577743360
@@ -927,10 +929,10 @@ global @exp2 : obj<3280x16> = {
   i64 4756540486875873280
   i64 4610479282544200874
   i64 4756540486875873280
-  i64 -4620693215543033856
-  i64 4756540486875873280
-  i64 -4620693215543033856
-  i64 4756540486875873280
+  i64 15
+  i64 0
+  i64 15
+  i64 0
   i64 0
   i64 4756540486875873280
   i64 -4620693216604192768
@@ -1131,10 +1133,10 @@ global @exp2 : obj<3280x16> = {
   i64 4663158526505714931
   i64 -2251799813685248
   i64 4681608360884174848
-  i64 -4678606692001251328
-  i64 4394044290372726784
-  i64 -18014396370386944
-  i64 4481970035957757952
+  i64 15
+  i64 0
+  i64 15
+  i64 0
   i64 -4620693214463000576
   i64 4756540487446470751
   i64 0
@@ -1269,6 +1271,49 @@ global @exp2 : obj<3280x16> = {
   i64 0
   i64 -4620693217682128896
   i64 0
+}
+
+global @approx_a : obj<16x16> = {
+  i64 4539628425471590400
+  i64 4683743613539057664
+}
+
+global @approx_upper : obj<16x16> = {
+  i64 4575657222499991552
+  i64 4575657222473777152
+}
+
+global @ones : obj<16x16> = {
+  i64 4575657222473777152
+  i64 4575657222473777152
+}
+
+global @limit : obj<16x16> = {
+  i64 4215369252200251392
+  i64 4215369252200251392
+}
+
+global @magnitude : obj<16x16> = {
+  i64 9223372034707292159
+  i64 9223372034707292159
+}
+
+function @near_one(%y : v128) -> void {
+  block ^entry:
+    %o = addr @ones
+    %one = load v128 %o
+    %l = addr @limit
+    %limit = load v128 %l
+    %m = addr @magnitude
+    %mask = load v128 %m
+    %d = vector subps %y, %one
+    %a = vector andps %d, %mask
+    %c = vector cmpps %a, %limit, 1
+    %i = vector movmskps %c
+    %r = vector fromi32 %i
+    %out = addr @result
+    store v128 %r, %out
+    return void
 }
 
 function @op_addps(%p : ptr) -> void {
@@ -1647,23 +1692,26 @@ function @op_sqrtsd(%p : ptr) -> void {
 
 function @op_rcpss(%p : ptr) -> void {
   block ^entry:
-    %a = load v128 %p
-    %q = index i8 %p, 16
-    %b = load v128 %q
-    %r = vector rcpss %a, %b
-    %o = addr @result
-    store v128 %r, %o
+    %pa = addr @approx_a
+    %x = load v128 %pa
+    %pu = addr @approx_upper
+    %u = load v128 %pu
+    %r = vector rcpss %u, %x
+    %y = vector mulss %r, %x
+    call void @near_one(%y)
     return void
 }
 
 function @op_rsqrtss(%p : ptr) -> void {
   block ^entry:
-    %a = load v128 %p
-    %q = index i8 %p, 16
-    %b = load v128 %q
-    %r = vector rsqrtss %a, %b
-    %o = addr @result
-    store v128 %r, %o
+    %pa = addr @approx_a
+    %x = load v128 %pa
+    %pu = addr @approx_upper
+    %u = load v128 %pu
+    %r = vector rsqrtss %u, %x
+    %s = vector mulss %r, %r
+    %y = vector mulss %s, %x
+    call void @near_one(%y)
     return void
 }
 
@@ -2769,23 +2817,22 @@ function @op_sqrtpd(%p : ptr) -> void {
 
 function @op_rcpps(%p : ptr) -> void {
   block ^entry:
-    %a = load v128 %p
-    %q = index i8 %p, 16
-    %b = load v128 %q
-    %r = vector rcpps %a
-    %o = addr @result
-    store v128 %r, %o
+    %pa = addr @approx_a
+    %x = load v128 %pa
+    %r = vector rcpps %x
+    %y = vector mulps %x, %r
+    call void @near_one(%y)
     return void
 }
 
 function @op_rsqrtps(%p : ptr) -> void {
   block ^entry:
-    %a = load v128 %p
-    %q = index i8 %p, 16
-    %b = load v128 %q
-    %r = vector rsqrtps %a
-    %o = addr @result
-    store v128 %r, %o
+    %pa = addr @approx_a
+    %x = load v128 %pa
+    %r = vector rsqrtps %x
+    %s = vector mulps %r, %r
+    %y = vector mulps %x, %s
+    call void @near_one(%y)
     return void
 }
 

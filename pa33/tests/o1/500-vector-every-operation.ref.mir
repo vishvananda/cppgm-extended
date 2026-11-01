@@ -106,10 +106,10 @@ global @exp0
   item i64 3927675499376875657
   item i64 -2251799813685248
   item i64 3927675499376875657
-  item i64 -3309568868732039168
-  item i64 3927675499376875657
-  item i64 -3309568868363241472
-  item i64 3927675499376875657
+  item i64 15
+  item i64 0
+  item i64 15
+  item i64 0
   item i64 5002904080171925504
   item i64 3927675499376875657
   item i64 -3309568866912305152
@@ -310,10 +310,10 @@ global @exp0
   item i64 4251665371293024256
   item i64 -2251799813685248
   item i64 4267143073647165376
-  item i64 -5989681950854201344
-  item i64 5223120040505915392
-  item i64 -18014397760897024
-  item i64 4899379837195517952
+  item i64 15
+  item i64 0
+  item i64 15
+  item i64 0
   item i64 -3309568865535390554
   item i64 3927675497785452558
   item i64 7288779482644017746
@@ -519,10 +519,10 @@ global @exp1
   item i64 5770521767084818432
   item i64 5188804118931657380
   item i64 5770521767084818432
-  item i64 5770521768154365952
-  item i64 5770521767084818432
-  item i64 5770521768154365952
-  item i64 5770521767084818432
+  item i64 15
+  item i64 0
+  item i64 15
+  item i64 0
   item i64 0
   item i64 5770521767084818432
   item i64 5770521768154365952
@@ -723,10 +723,10 @@ global @exp1
   item i64 5171064759148921969
   item i64 5188804120337584228
   item i64 5188804119398317164
-  item i64 3376538639451521024
-  item i64 3376538637308698624
-  item i64 3974356306701058048
-  item i64 3974356303472558080
+  item i64 15
+  item i64 0
+  item i64 15
+  item i64 0
   item i64 5770521767358825209
   item i64 5770521767358825209
   item i64 -4607182415577743360
@@ -932,10 +932,10 @@ global @exp2
   item i64 4756540486875873280
   item i64 4610479282544200874
   item i64 4756540486875873280
-  item i64 -4620693215543033856
-  item i64 4756540486875873280
-  item i64 -4620693215543033856
-  item i64 4756540486875873280
+  item i64 15
+  item i64 0
+  item i64 15
+  item i64 0
   item i64 0
   item i64 4756540486875873280
   item i64 -4620693216604192768
@@ -1136,10 +1136,10 @@ global @exp2
   item i64 4663158526505714931
   item i64 -2251799813685248
   item i64 4681608360884174848
-  item i64 -4678606692001251328
-  item i64 4394044290372726784
-  item i64 -18014396370386944
-  item i64 4481970035957757952
+  item i64 15
+  item i64 0
+  item i64 15
+  item i64 0
   item i64 -4620693214463000576
   item i64 4756540487446470751
   item i64 0
@@ -1274,6 +1274,53 @@ global @exp2
   item i64 0
   item i64 -4620693217682128896
   item i64 0
+
+global @approx_a
+  storage data
+  item i64 4539628425471590400
+  item i64 4683743613539057664
+
+global @approx_upper
+  storage data
+  item i64 4575657222499991552
+  item i64 4575657222473777152
+
+global @ones
+  storage data
+  item i64 4575657222473777152
+  item i64 4575657222473777152
+
+global @limit
+  storage data
+  item i64 4215369252200251392
+  item i64 4215369252200251392
+
+global @magnitude
+  storage data
+  item i64 9223372034707292159
+  item i64 9223372034707292159
+
+function @near_one
+  abi
+    param %y -> xmm0 : v128
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm1, @ones
+    fmov.v128 xmm2, @limit
+    fmov.v128 xmm3, @magnitude
+    vector.subps xmm0, xmm0, xmm1
+    vector.andps xmm0, xmm0, xmm3
+    vector.cmpps xmm0, xmm0, xmm2, 1
+    vector.movmskps r8, xmm0
+    vector.fromi32 xmm0, r8
+    fmov.v128 @result, xmm0
+    ret
 
 function @op_addps
   abi
@@ -1864,10 +1911,12 @@ function @op_rcpss
     epilogues duplicated
 
   block ^entry
-    fmov.v128 xmm0, [rdi]
-    fmov.v128 xmm1, [rdi+16]
-    vector.rcpss xmm0, xmm0, xmm1
-    fmov.v128 @result, xmm0
+    fmov.v128 xmm0, @approx_a
+    fmov.v128 xmm1, @approx_upper
+    vector.rcpss xmm1, xmm1, xmm0
+    vector.mulss xmm1, xmm1, xmm0
+    fmov.v128 xmm0, xmm1
+    call @near_one [args=(xmm0)]
     ret
 
 function @op_rsqrtss
@@ -1881,10 +1930,13 @@ function @op_rsqrtss
     epilogues duplicated
 
   block ^entry
-    fmov.v128 xmm0, [rdi]
-    fmov.v128 xmm1, [rdi+16]
-    vector.rsqrtss xmm0, xmm0, xmm1
-    fmov.v128 @result, xmm0
+    fmov.v128 xmm0, @approx_a
+    fmov.v128 xmm1, @approx_upper
+    vector.rsqrtss xmm1, xmm1, xmm0
+    vector.mulss xmm2, xmm1, xmm1
+    vector.mulss xmm2, xmm2, xmm0
+    fmov.v128 xmm0, xmm2
+    call @near_one [args=(xmm0)]
     ret
 
 function @op_cvtss2sd
@@ -3596,9 +3648,10 @@ function @op_rcpps
     epilogues duplicated
 
   block ^entry
-    fmov.v128 xmm0, [rdi]
-    vector.rcpps xmm0, xmm0
-    fmov.v128 @result, xmm0
+    fmov.v128 xmm0, @approx_a
+    vector.rcpps xmm1, xmm0
+    vector.mulps xmm0, xmm0, xmm1
+    call @near_one [args=(xmm0)]
     ret
 
 function @op_rsqrtps
@@ -3612,9 +3665,11 @@ function @op_rsqrtps
     epilogues duplicated
 
   block ^entry
-    fmov.v128 xmm0, [rdi]
-    vector.rsqrtps xmm0, xmm0
-    fmov.v128 @result, xmm0
+    fmov.v128 xmm0, @approx_a
+    vector.rsqrtps xmm1, xmm0
+    vector.mulps xmm1, xmm1, xmm1
+    vector.mulps xmm0, xmm0, xmm1
+    call @near_one [args=(xmm0)]
     ret
 
 function @op_movshdup
