@@ -1,0 +1,15 @@
+# budget from 500-vector-zero-literal.ref.mir: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 120
+blocks <= 23
+count(call) <= 10
+mem <= 29
+instructions <= 11 in @chosen
+stack_size <= 32 in @chosen
+instructions <= 5 in @nothing
+stack_size <= 32 in @nothing
+instructions <= 7 in @sum
+stack_size <= 32 in @sum
+instructions <= 7 in @ninth
+stack_size <= 32 in @ninth
+instructions <= 100 in @main
+stack_size <= 85 in @main

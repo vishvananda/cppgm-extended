@@ -44,6 +44,7 @@ bool is_phi_type(Type type)
 	case TypeKind::F32:
 	case TypeKind::F64:
 	case TypeKind::Ptr:
+	case TypeKind::V128:
 		return true;
 	default:
 		return false;
@@ -203,8 +204,10 @@ const OperandRule kOperandRules[] = {
 	{ { kValueOperand, kValueOperand, kNoOperand }, ExtraOperands::None, kComparePredicateCount },  // Compare
 	{ { kValueOperand, kValueOperand, kValueOperand }, ExtraOperands::None, 1 },                    // Select
 	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::None, kConvertOpCount },            // Convert
-	{ { kValueOperand, kValueOperand, kNoOperand }, ExtraOperands::None, 1 },                       // AtomicAddFetch
-	{ { kValueOperand, kValueOperand, kNoOperand }, ExtraOperands::None, 1 },                       // AtomicExchange
+	{ { kValueOperand | kNoOperand, kValueOperand | kNoOperand, kValueOperand | kNoOperand }, ExtraOperands::None,
+		kVectorOpCount },                                                     // Vector
+	{ { kValueOperand, kValueOperand, kNoOperand }, ExtraOperands::None, 1 }, // AtomicAddFetch
+	{ { kValueOperand, kValueOperand, kNoOperand }, ExtraOperands::None, 1 }, // AtomicExchange
 	{ { kValueOperand, kValueOperand, kValueOperand }, ExtraOperands::None,
 		kMemoryOrderCount },                                                                 // AtomicCompareExchange
 	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // VaArg
@@ -293,6 +296,8 @@ private:
 	bool check_return(const Instruction& inst);
 	// The type of a temporary, slot or symbol operand; false for others.
 	bool value_type(Value value, Type& type) const;
+	bool check_vector(const Instruction& inst);
+	bool vector_value(Value value) const;
 	bool add_edge(BlockId from, Value target);
 
 	const Program& program_;
@@ -759,6 +764,8 @@ bool Validator::check_instruction(InstId id, const Instruction& inst, BlockId bl
 		if (!(inst.type.is_integer() || inst.type.is_pointer()) || inst.type.kind() == TypeKind::I128)
 			return fail("invalid select type");
 		return true;
+	case Opcode::Vector:
+		return check_vector(inst);
 	case Opcode::Convert:
 		if (!is_valid_conversion(static_cast<ConvertOp>(inst.sub), inst.type, convert_source_type(inst)))
 			return fail("invalid conversion widths or categories");
@@ -784,6 +791,11 @@ bool Validator::check_instruction(InstId id, const Instruction& inst, BlockId bl
 		if (!inst.ops[0].is(ValueKind::Integer) && (!value_type(inst.ops[0], type) || !type.is_integer()))
 			return fail("stack_alloc requires an integer size");
 		return true;
+	case Opcode::Store:
+	case Opcode::Copy:
+		if (inst.type.is_vector() && !vector_value(inst.ops[0]))
+			return fail("vector literal must be zero");
+		return true;
 	case Opcode::Call:
 		return check_call(inst);
 	case Opcode::Return:
@@ -791,6 +803,58 @@ bool Validator::check_instruction(InstId id, const Instruction& inst, BlockId bl
 	default:
 		return true;
 	}
+}
+
+// A v128 value is not a literal, other than the zero vector.
+bool Validator::vector_value(Value value) const
+{
+	if (value.is(ValueKind::Integer))
+		return body_->literals[value.index].low == 0 && body_->literals[value.index].high == 0;
+	return !value.is(ValueKind::Float);
+}
+
+// Operand types by shape; a `vector` immediate is a byte.
+bool Validator::check_vector(const Instruction& inst)
+{
+	if (inst.sub >= kVectorOpCount)
+		return fail("unknown vector operation");
+	const VectorOp op = static_cast<VectorOp>(inst.sub);
+	const VectorShape shape = shape_of(op);
+	if (inst.type != vector_result_type(op))
+		return fail("vector result type mismatch");
+	const bool immediate = shape == VectorShape::BinaryImmediate || shape == VectorShape::UnaryImmediate;
+	const unsigned needed = shape == VectorShape::Zero ? 0
+		: shape == VectorShape::Binary || shape == VectorShape::Test || shape == VectorShape::BinaryImmediate ||
+			shape == VectorShape::Blend
+		? 2
+		: 1;
+	for (unsigned i = 0; i < 3; ++i)
+	{
+		Type type;
+		const bool used = i < needed || (i == 2 && (immediate || shape == VectorShape::Blend));
+		if (!used)
+		{
+			if (!inst.ops[i].is(ValueKind::None))
+				return fail("too many vector operands");
+			continue;
+		}
+		if (i == 2 && immediate)
+		{
+			if (!inst.ops[2].is(ValueKind::Integer) || body_->literals[inst.ops[2].index].high != 0 ||
+				body_->literals[inst.ops[2].index].low > 255)
+				return fail("vector immediate must be a byte");
+			continue;
+		}
+		// A scalar literal, or the zero vector.
+		const Value operand = inst.ops[i];
+		if (shape == VectorShape::FromScalar ? operand.is(ValueKind::Integer) || operand.is(ValueKind::Float)
+											 : operand.is(ValueKind::Integer) && vector_value(operand))
+			continue;
+		const Type wanted = Type::scalar(shape == VectorShape::FromScalar ? vector_scalar_kind(op) : TypeKind::V128);
+		if (!value_type(inst.ops[i], type) || type != wanted)
+			return fail("vector operand type mismatch");
+	}
+	return true;
 }
 
 bool Validator::check_phi(const Instruction& inst, BlockId block)
@@ -825,7 +889,7 @@ bool Validator::check_phi(const Instruction& inst, BlockId block)
 				return fail("phi incoming temporary type mismatch", body_->temps[value.index].name);
 			break;
 		case ValueKind::Integer:
-			if (!inst.type.is_integer() && !inst.type.is_pointer())
+			if (inst.type.is_vector() ? !vector_value(value) : !inst.type.is_integer() && !inst.type.is_pointer())
 				return fail("phi integer literal type mismatch");
 			break;
 		case ValueKind::Float:
@@ -869,6 +933,8 @@ bool Validator::check_call(const Instruction& inst)
 	for (uint32_t i = 0; i < parameters; ++i)
 	{
 		const Value argument = body_->operands[inst.extra_first + i];
+		if (parameter[i].type.is_vector() && !vector_value(argument))
+			return fail("vector argument literal must be zero");
 		if (argument.is(ValueKind::Slot) && parameter[i].pass == ir_model::PPM_DIRECT &&
 			body_->slots[argument.index].type != parameter[i].type)
 			return fail("call argument slot type does not match the parameter type", body_->slots[argument.index].name);
@@ -888,6 +954,8 @@ bool Validator::check_return(const Instruction& inst)
 	const bool has_value = !inst.ops[0].is(ValueKind::None);
 	if (inst.type != signature_->result || has_value == inst.type.is_void())
 		return fail("return type does not match function");
+	if (inst.type.is_vector() && !vector_value(inst.ops[0]))
+		return fail("vector literal must be zero");
 	return true;
 }
 

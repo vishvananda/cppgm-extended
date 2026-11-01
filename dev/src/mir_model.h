@@ -80,6 +80,7 @@ enum class Op : std::uint8_t
 	FDiv,
 	FNeg,
 	FAbs,
+	Vector,  // vector.op dst, a [, b] [, imm] (pa8/lowir.md "Vector Operations")
 	FCmp,    // fcmp.T a, b (an unordered result sets PF)
 	FSetcc,  // f<predicate>.T dst, a, b: the comparison as a Boolean
 	Convert, // <conversion>.S.D dst, src (source and destination types)
@@ -131,8 +132,8 @@ inline const char* spelling(Op op)
 	static const char* const kOps[kOpCount] = { "mov", "load", "store", "lea", "add", "sub", "and", "or", "xor", "imul",
 		"neg", "not", "bswap", "bsf", "bsr", "shl", "shr", "sar", "rol", "ror", "cmp", "test", "bt", "set", "cmov",
 		"movzx", "sext", "zext", "cqo", "idiv", "div", "j", "jmp", "call", "tail_jump", "copy_bytes", "zero_bytes",
-		"ret", "fmov", "fadd", "fsub", "fmul", "fdiv", "fneg", "fabs", "fcmp", "f", "", "fret", "fstp", "", "set",
-		"cmp_branch", "lock_xadd", "xchg", "lock_cmpxchg", "lock_cmpxchg16b", "mfence", "va_start", "va_arg",
+		"ret", "fmov", "fadd", "fsub", "fmul", "fdiv", "fneg", "fabs", "vector", "fcmp", "f", "", "fret", "fstp", "",
+		"set", "cmp_branch", "lock_xadd", "xchg", "lock_cmpxchg", "lock_cmpxchg16b", "mfence", "va_start", "va_arg",
 		"stack_alloc", "eh_push", "eh_pop", "throw", "resume", "load_exception", "eh_mark", "eh_catch", "load_selector",
 		"landing", "eh_select", "catch_all", "tls_addr", "exit", "trap", "jump_table", "mul", "imul", "prologue", "" };
 	return kOps[static_cast<unsigned>(op)];

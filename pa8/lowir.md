@@ -73,6 +73,7 @@ The base LowIR type family begins with the scalar and pointer types:
 - `f64`
 - `f80`
 - `ptr`
+- `v128` (PA29; see [Vector Operations](#vector-operations))
 
 PA8 also accepts a restricted object-aware direct call-boundary type:
 
@@ -952,6 +953,9 @@ The PA8 subset uses:
 - block labels for terminators: `^entry`
 - scalar literals (`integer` or `floating`)
 
+A `v128` operand is a temporary or the literal `0`, the vector of zero bits. No
+other literal has this type.
+
 ## Required PA8 Instructions
 
 ### Constants and Copies
@@ -1301,6 +1305,74 @@ Examples:
 
 The plain integer types in LowIR do not encode signedness by themselves, so the signedness
 for integer/float conversions lives in the operator spelling rather than the type text.
+
+### Vector Operations
+
+PA29 adds these forms for GNU vector types and SSE builtins. A `v128` value is
+sixteen bytes in one XMM register. It has no lanes of its own: each operation
+states how it reads the bits. Every optimization level uses these forms. `-O0`
+keeps each value in a sixteen-byte stack home, aligned to 16.
+
+`v128` is valid wherever a scalar value type is: slots, `load`, `store`, `copy`,
+`phi`, parameters, results and call arguments. `select` does not take it. A
+`load` or `store` of `v128` needs no alignment.
+
+At a call boundary a `v128` value takes the next XMM register, SSE and SSEUP
+together, and a result returns in `xmm0`. With no register left it goes on the
+stack at the next 16-byte boundary. This is the psABI's rule for `__m128` and
+any other 16-byte vector. A class containing a vector is still an `obj` with
+stated classes (see [Object ABI Conventions](#object-abi-conventions)).
+
+The lowering makes a GNU vector of 16 bytes a `v128`. Exceptions are a vector of
+`bool` lanes and a one-lane vector of a floating type, which stay `obj`. A
+vector of any other size stays `obj`, and its operations go lane by lane.
+
+```text
+%r = vector <op> %a, %b           ; binary
+%r = vector <op> %a               ; unary
+%r = vector <op> %a, %b, <imm>    ; binary with an immediate
+%r = vector <op> %a, <imm>        ; unary with an immediate
+%r = vector <op> %a, %b, %mask    ; blend
+%i = vector <op> %a               ; mask: the i32 of the sign bits
+%i = vector <op> %a, %b           ; test: the i32 0 or 1
+%r = vector pzero                 ; zero
+%r = vector from<t> %x            ; the scalar in the low lane, the rest zero
+%x = vector to<t> %a              ; the low lane as a scalar
+```
+
+`<imm>` is an integer literal from 0 to 255. `<t>` is `f32`, `f64`, `i32` or
+`i64`.
+
+Each `<op>` is the SSE instruction of its name, with the first operand as the
+destination. `vector` reads no memory, has no side effect and does not trap.
+
+| Shape | Operations |
+| --- | --- |
+| binary | `addps` `addpd` `addss` `addsd` `subps` `subpd` `subss` `subsd` `mulps` `mulpd` `mulss` `mulsd` `divps` `divpd` `divss` `divsd` `minps` `minpd` `minss` `minsd` `maxps` `maxpd` `maxss` `maxsd` `andps` `andpd` `andnps` `andnpd` `orps` `orpd` `xorps` `xorpd` `sqrtss` `sqrtsd` `rcpss` `rsqrtss` `cvtss2sd` `cvtsd2ss` `movss` `movsd` `movhlps` `movlhps` `unpcklps` `unpcklpd` `unpckhps` `unpckhpd` `addsubps` `addsubpd` `haddps` `haddpd` `hsubps` `hsubpd` |
+| binary | `paddb` `paddw` `paddd` `paddq` `psubb` `psubw` `psubd` `psubq` `paddsb` `paddsw` `paddusb` `paddusw` `psubsb` `psubsw` `psubusb` `psubusw` `pavgb` `pavgw` `pmullw` `pmulld` `pmulhw` `pmulhuw` `pmulhrsw` `pmuludq` `pmuldq` `pmaddwd` `pmaddubsw` `psadbw` |
+| binary | `pmaxsb` `pmaxsw` `pmaxsd` `pmaxub` `pmaxuw` `pmaxud` `pminsb` `pminsw` `pminsd` `pminub` `pminuw` `pminud` `pand` `pandn` `por` `pxor` `pcmpeqb` `pcmpeqw` `pcmpeqd` `pcmpeqq` `pcmpgtb` `pcmpgtw` `pcmpgtd` `pcmpgtq` |
+| binary | `psllw` `pslld` `psllq` `psrlw` `psrld` `psrlq` `psraw` `psrad` `packsswb` `packssdw` `packuswb` `packusdw` `punpcklbw` `punpcklwd` `punpckldq` `punpcklqdq` `punpckhbw` `punpckhwd` `punpckhdq` `punpckhqdq` `pshufb` `psignb` `psignw` `psignd` `phaddw` `phaddd` `phaddsw` `phsubw` `phsubd` `phsubsw` |
+| unary | `sqrtps` `sqrtpd` `rcpps` `rsqrtps` `movshdup` `movsldup` `movddup` `pabsb` `pabsw` `pabsd` `pmovsxbw` `pmovsxbd` `pmovsxbq` `pmovsxwd` `pmovsxwq` `pmovsxdq` `pmovzxbw` `pmovzxbd` `pmovzxbq` `pmovzxwd` `pmovzxwq` `pmovzxdq` `cvtdq2ps` `cvtdq2pd` `cvtps2dq` `cvttps2dq` `cvtpd2dq` `cvttpd2dq` `cvtps2pd` `cvtpd2ps` |
+| binary with an immediate | `cmpps` `cmppd` `cmpss` `cmpsd` `shufps` `shufpd` `palignr` `blendps` `blendpd` `pblendw` |
+| unary with an immediate | `pshufd` `pshuflw` `pshufhw` `psllwi` `pslldi` `psllqi` `psrlwi` `psrldi` `psrlqi` `psrawi` `psradi` `pslldq` `psrldq` |
+| blend | `blendvps` `blendvpd` `pblendvb` |
+| mask | `movmskps` `movmskpd` `pmovmskb` |
+| test | `ptestz` `ptestc` `ptestnzc` |
+
+These forms have no single SSE name:
+
+- `psllwi` through `psradi` are the shifts by an immediate count.
+- `ptestz`, `ptestc` and `ptestnzc` are `ptest` with `ZF`, `CF` and neither.
+- The blends take `xmm0` as the mask, so a backend moves `%mask` there.
+- `movss` and `movsd` are the register forms: the low lane of `%b` above the
+  upper lanes of `%a`.
+- `sqrtss`, `sqrtsd`, `rcpss` and `rsqrtss` compute on the low lane of `%b` and
+  keep the upper lanes of `%a`.
+
+`cppgm++` uses the operations of the x86-64 baseline for GNU vector operators.
+Operations past SSE2 come only from builtins, which a program reaches through
+its own feature macros. An operation with no form here, such as `pmulld` on a
+GNU `*`, goes lane by lane.
 
 ### Stack allocation
 

@@ -157,6 +157,11 @@ public:
 	void emit_compare(const lowir::Instruction& inst);
 	void emit_select(const lowir::Instruction& inst);
 	void emit_convert(const lowir::Instruction& inst);
+	void emit_vector(const lowir::Instruction& inst);
+	void emit_vector_two_operand(const lowir::Instruction& inst);
+	void emit_vector_from_scalar(const lowir::Instruction& inst);
+	void emit_vector_to_scalar(const lowir::Instruction& inst);
+	Operand vector_register(lowir::Value value, Reg scratch);
 	void emit_int_convert(const lowir::Instruction& inst);
 	void emit_atomic(const lowir::Instruction& inst);
 	void emit_bulk(const lowir::Instruction& inst);

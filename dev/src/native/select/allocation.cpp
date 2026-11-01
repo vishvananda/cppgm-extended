@@ -232,6 +232,11 @@ void FunctionSelector::inst_clobbers(uint32_t id, uint32_t& clobber, uint32_t& e
 			clobber = early = 1u << RCX;
 		break;
 	}
+	case Opcode::Vector:
+		// A blend reads its mask in xmm0.
+		if (lowir::shape_of(static_cast<lowir::VectorOp>(inst.sub)) == lowir::VectorShape::Blend)
+			clobber = early = 1u << XMM0;
+		break;
 	case Opcode::Compare:
 		if (compare_scratch(inst))
 			clobber = early = 1u << kCompareScratch;
@@ -383,7 +388,7 @@ void FunctionSelector::prepass_block(uint32_t b)
 			const bool two_address = v.kind == ValueKind::Temp && v.index >= body.parameter_count &&
 				body.instructions[body.temps[v.index].def].op == Opcode::Binary && !inst.type.is_float();
 			if (!two_address)
-				hint(inst.ops[0], inst.type.is_float() ? XMM0 : RAX, pos);
+				hint(inst.ops[0], inst.type.is_float() || inst.type.is_vector() ? XMM0 : RAX, pos);
 		}
 		else if (inst.op == Opcode::Binary && !inst.type.is_float())
 		{

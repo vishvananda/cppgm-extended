@@ -1,0 +1,599 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @ticks
+  storage data
+  item i32 0
+
+function @tick
+  abi
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    add.i32 @ticks, 1
+    ret
+
+function @rotate
+  abi
+    param %rounds -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1>
+    temp %low14 -> [rbp-<off0>] : v128
+    temp %start14 -> [rbp-<off1>] : v128
+    temp %low15 -> [rbp-<off2>] : v128
+    temp %start15 -> [rbp-<off3>] : v128
+    temp %low16 -> [rbp-<off4>] : v128
+    temp %start16 -> [rbp-<off5>] : v128
+    temp %low17 -> [rbp-<off6>] : v128
+    temp %start17 -> [rbp-<off7>] : v128
+    temp %low18 -> [rbp-<off8>] : v128
+    temp %start18 -> [rbp-<off9>] : v128
+    temp %low19 -> [rbp-<off10>] : v128
+    temp %start19 -> [rbp-<off11>] : v128
+    temp %v0 -> [rbp-<off12>] : v128
+    temp %v1 -> [rbp-<off13>] : v128
+    temp %v2 -> [rbp-<off14>] : v128
+    temp %v3 -> [rbp-<off15>] : v128
+    temp %v4 -> [rbp-<off16>] : v128
+    temp %v5 -> [rbp-<off17>] : v128
+    temp %v6 -> [rbp-<off18>] : v128
+    temp %v7 -> [rbp-<off19>] : v128
+    temp %v8 -> [rbp-<off20>] : v128
+    temp %v9 -> [rbp-<off21>] : v128
+    temp %v10 -> [rbp-<off22>] : v128
+    temp %v11 -> [rbp-<off23>] : v128
+    temp %v12 -> [rbp-<off24>] : v128
+    temp %v13 -> [rbp-<off25>] : v128
+    temp %v14 -> [rbp-<off26>] : v128
+    temp %v15 -> [rbp-<off27>] : v128
+    temp %v16 -> [rbp-<off28>] : v128
+    temp %v17 -> [rbp-<off29>] : v128
+    temp %v18 -> [rbp-<off30>] : v128
+    temp %v19 -> [rbp-<off31>] : v128
+    temp %zero -> [rbp-<off32>] : v128
+
+  block ^entry
+    mov <gpr2>, 1
+    vector.fromi32 xmm0, <gpr2>
+    vector.pshufd xmm0, xmm0, 0
+    mov <gpr2>, 2
+    vector.fromi32 xmm1, <gpr2>
+    vector.pshufd xmm1, xmm1, 0
+    mov <gpr2>, 3
+    vector.fromi32 <xmm0>, <gpr2>
+    vector.pshufd <xmm0>, <xmm0>, 0
+    mov <gpr2>, 4
+    vector.fromi32 <xmm1>, <gpr2>
+    vector.pshufd <xmm1>, <xmm1>, 0
+    mov <gpr2>, 5
+    vector.fromi32 <xmm2>, <gpr2>
+    vector.pshufd <xmm2>, <xmm2>, 0
+    mov <gpr2>, 6
+    vector.fromi32 <xmm3>, <gpr2>
+    vector.pshufd <xmm3>, <xmm3>, 0
+    mov <gpr2>, 7
+    vector.fromi32 <xmm4>, <gpr2>
+    vector.pshufd <xmm4>, <xmm4>, 0
+    mov <gpr2>, 8
+    vector.fromi32 <xmm5>, <gpr2>
+    vector.pshufd <xmm5>, <xmm5>, 0
+    mov <gpr2>, 9
+    vector.fromi32 xmm8, <gpr2>
+    vector.pshufd xmm8, xmm8, 0
+    mov <gpr2>, 10
+    vector.fromi32 xmm9, <gpr2>
+    vector.pshufd xmm9, xmm9, 0
+    mov <gpr2>, 11
+    vector.fromi32 xmm10, <gpr2>
+    vector.pshufd xmm10, xmm10, 0
+    mov <gpr2>, 12
+    vector.fromi32 xmm11, <gpr2>
+    vector.pshufd xmm11, xmm11, 0
+    mov <gpr2>, 13
+    vector.fromi32 xmm12, <gpr2>
+    vector.pshufd xmm12, xmm12, 0
+    mov <gpr2>, 14
+    vector.fromi32 xmm13, <gpr2>
+    vector.pshufd xmm13, xmm13, 0
+    mov <gpr2>, 15
+    vector.fromi32 xmm14, <gpr2>
+    fmov.v128 [rbp-<off0>], xmm14
+    fmov.v128 xmm15, [rbp-<off0>]
+    vector.pshufd xmm14, xmm15, 0
+    fmov.v128 [rbp-<off1>], xmm14
+    mov <gpr2>, 16
+    vector.fromi32 xmm14, <gpr2>
+    fmov.v128 [rbp-<off2>], xmm14
+    fmov.v128 xmm15, [rbp-<off2>]
+    vector.pshufd xmm14, xmm15, 0
+    fmov.v128 [rbp-<off3>], xmm14
+    mov <gpr2>, 17
+    vector.fromi32 xmm14, <gpr2>
+    fmov.v128 [rbp-<off4>], xmm14
+    fmov.v128 xmm15, [rbp-<off4>]
+    vector.pshufd xmm14, xmm15, 0
+    fmov.v128 [rbp-<off5>], xmm14
+    mov <gpr2>, 18
+    vector.fromi32 xmm14, <gpr2>
+    fmov.v128 [rbp-<off6>], xmm14
+    fmov.v128 xmm15, [rbp-<off6>]
+    vector.pshufd xmm14, xmm15, 0
+    fmov.v128 [rbp-<off7>], xmm14
+    mov <gpr2>, 19
+    vector.fromi32 xmm14, <gpr2>
+    fmov.v128 [rbp-<off8>], xmm14
+    fmov.v128 xmm15, [rbp-<off8>]
+    vector.pshufd xmm14, xmm15, 0
+    fmov.v128 [rbp-<off9>], xmm14
+    mov <gpr2>, 20
+    vector.fromi32 xmm14, <gpr2>
+    fmov.v128 [rbp-<off10>], xmm14
+    fmov.v128 xmm15, [rbp-<off10>]
+    vector.pshufd xmm14, xmm15, 0
+    fmov.v128 [rbp-<off11>], xmm14
+    mov <gpr1>, 0
+    mov <gpr0>, rdi
+    fmov.v128 [rbp-<off12>], xmm0
+    fmov.v128 [rbp-<off13>], xmm1
+    fmov.v128 [rbp-<off14>], <xmm0>
+    fmov.v128 [rbp-<off15>], <xmm1>
+    fmov.v128 [rbp-<off16>], <xmm2>
+    fmov.v128 [rbp-<off17>], <xmm3>
+    fmov.v128 [rbp-<off18>], <xmm4>
+    fmov.v128 [rbp-<off19>], <xmm5>
+    fmov.v128 [rbp-<off20>], xmm8
+    fmov.v128 [rbp-<off21>], xmm9
+    fmov.v128 [rbp-<off22>], xmm10
+    fmov.v128 [rbp-<off23>], xmm11
+    fmov.v128 [rbp-<off24>], xmm12
+    fmov.v128 [rbp-<off25>], xmm13
+    fmov.v128 xmm15, [rbp-<off1>]
+    fmov.v128 [rbp-<off26>], xmm15
+    fmov.v128 xmm15, [rbp-<off3>]
+    fmov.v128 [rbp-<off27>], xmm15
+    fmov.v128 xmm15, [rbp-<off5>]
+    fmov.v128 [rbp-<off28>], xmm15
+    fmov.v128 xmm15, [rbp-<off7>]
+    fmov.v128 [rbp-<off29>], xmm15
+    fmov.v128 xmm15, [rbp-<off9>]
+    fmov.v128 [rbp-<off30>], xmm15
+    fmov.v128 xmm15, [rbp-<off11>]
+    fmov.v128 [rbp-<off31>], xmm15
+    vector.pzero xmm15
+    fmov.v128 [rbp-<off32>], xmm15
+
+  block ^loop
+    cmp.i32 <gpr1>, <gpr0>
+    jl ^body
+
+  block ^done
+    call @tick [args=()]
+    cmp.i32 <gpr0>, 0
+    je ^check
+
+  block ^again
+    call @tick [args=()]
+    mov <gpr1>, 0
+    mov <gpr0>, 0
+    vector.pzero xmm15
+    fmov.v128 [rbp-<off32>], xmm15
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^done
+
+  block ^body
+    call @tick [args=()]
+    add <gpr1>, 1
+    fmov.v128 xmm15, [rbp-<off15>]
+    fmov.v128 [rbp-<off32>], xmm15
+    fmov.v128 xmm14, [rbp-<off12>]
+    fmov.v128 xmm15, [rbp-<off13>]
+    fmov.v128 [rbp-<off12>], xmm15
+    fmov.v128 xmm15, [rbp-<off14>]
+    fmov.v128 [rbp-<off13>], xmm15
+    fmov.v128 xmm15, [rbp-<off15>]
+    fmov.v128 [rbp-<off14>], xmm15
+    fmov.v128 xmm15, [rbp-<off16>]
+    fmov.v128 [rbp-<off15>], xmm15
+    fmov.v128 xmm15, [rbp-<off17>]
+    fmov.v128 [rbp-<off16>], xmm15
+    fmov.v128 xmm15, [rbp-<off18>]
+    fmov.v128 [rbp-<off17>], xmm15
+    fmov.v128 xmm15, [rbp-<off19>]
+    fmov.v128 [rbp-<off18>], xmm15
+    fmov.v128 xmm15, [rbp-<off20>]
+    fmov.v128 [rbp-<off19>], xmm15
+    fmov.v128 xmm15, [rbp-<off21>]
+    fmov.v128 [rbp-<off20>], xmm15
+    fmov.v128 xmm15, [rbp-<off22>]
+    fmov.v128 [rbp-<off21>], xmm15
+    fmov.v128 xmm15, [rbp-<off23>]
+    fmov.v128 [rbp-<off22>], xmm15
+    fmov.v128 xmm15, [rbp-<off24>]
+    fmov.v128 [rbp-<off23>], xmm15
+    fmov.v128 xmm15, [rbp-<off25>]
+    fmov.v128 [rbp-<off24>], xmm15
+    fmov.v128 xmm15, [rbp-<off26>]
+    fmov.v128 [rbp-<off25>], xmm15
+    fmov.v128 xmm15, [rbp-<off27>]
+    fmov.v128 [rbp-<off26>], xmm15
+    fmov.v128 xmm15, [rbp-<off28>]
+    fmov.v128 [rbp-<off27>], xmm15
+    fmov.v128 xmm15, [rbp-<off29>]
+    fmov.v128 [rbp-<off28>], xmm15
+    fmov.v128 xmm15, [rbp-<off30>]
+    fmov.v128 [rbp-<off29>], xmm15
+    fmov.v128 xmm15, [rbp-<off31>]
+    fmov.v128 [rbp-<off30>], xmm15
+    fmov.v128 [rbp-<off31>], xmm14
+    cmp.i32 <gpr1>, <gpr0>
+    jge ^done
+    jmp ^body
+
+  block ^check
+    fmov.v128 xmm15, [rbp-<off32>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r8, xmm0
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off32>]
+    vector.toi32 r9, xmm15
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off12>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off12>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 1
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off13>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off13>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 2
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off14>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off14>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 3
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off15>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off15>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 4
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off16>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off16>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 5
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off17>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off17>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 6
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off18>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off18>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 7
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off19>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off19>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 8
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off20>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off20>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 9
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off21>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off21>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 10
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off22>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off22>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 11
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off23>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off23>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 12
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off24>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off24>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 13
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off25>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off25>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 14
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off26>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off26>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 15
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off27>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off27>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 16
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off28>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off28>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 17
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off29>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off29>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 18
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off30>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off30>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 19
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    fmov.v128 xmm15, [rbp-<off31>]
+    vector.pshufd xmm0, xmm15, 3
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    fmov.v128 xmm15, [rbp-<off31>]
+    vector.toi32 rdi, xmm15
+    sext.i32 rdi
+    mov rsi, r9
+    sub rsi, rdi
+    sext.i32 rsi
+    imul r9, 20
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    add r8, rsi
+    sext.i32 r8
+    ret r8
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, 7
+    call @rotate [args=(rdi)]
+    cmp.i32 rax, 1960
+    je ^pass
+
+  block ^fail
+    mov rax, 1
+    ret rax
+
+  block ^pass
+    mov rax, 0
+    ret rax

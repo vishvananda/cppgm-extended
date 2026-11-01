@@ -15,10 +15,10 @@ using lowir::TypeKind;
 namespace {
 
 // movss, movsd; movups for a whole XMM register (an i128 move: binary128
-// values at the call boundary).
+// values at the call boundary; a v128 value).
 uint8_t sse_prefix(TypeKind kind)
 {
-	return kind == TypeKind::F32 ? 0xf3 : kind == TypeKind::I128 ? 0 : 0xf2;
+	return kind == TypeKind::F32 ? 0xf3 : kind == TypeKind::I128 || kind == TypeKind::V128 ? 0 : 0xf2;
 }
 
 const Reg kX14 = static_cast<Reg>(XMM0 + 14);

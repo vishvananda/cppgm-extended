@@ -327,6 +327,11 @@ void MirWriter::instruction(const Function& function, const Inst& inst)
 		text_ += '.';
 		text_ += lowir::spelling(inst.type);
 		break;
+	case Op::Vector:
+		text_ += spelling(inst.op);
+		text_ += '.';
+		text_ += lowir::spelling(static_cast<lowir::VectorOp>(inst.sub));
+		break;
 	case Op::Convert:
 		text_ += spelling(static_cast<ConvKind>(inst.sub % 6));
 		text_ += '.';
@@ -402,7 +407,16 @@ void MirWriter::instruction(const Function& function, const Inst& inst)
 			operand(&function, inst.ops[k]);
 		}
 	}
-	if (inst.op == Op::Call)
+	if (inst.op == Op::Vector)
+	{
+		const lowir::VectorShape shape = lowir::shape_of(static_cast<lowir::VectorOp>(inst.sub));
+		if (shape == lowir::VectorShape::BinaryImmediate || shape == lowir::VectorShape::UnaryImmediate)
+		{
+			text_ += ", ";
+			append_int(text_, inst.aux);
+		}
+	}
+	else if (inst.op == Op::Call)
 		call_facts(inst);
 	else if (inst.op == Op::EhPush || inst.op == Op::EhCatch || inst.op == Op::EhSelect || inst.op == Op::CatchAll)
 	{

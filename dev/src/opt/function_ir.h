@@ -69,6 +69,7 @@ inline bool is_pure(const lowir::Instruction& inst)
 	case lowir::Opcode::Compare:
 	case lowir::Opcode::Select:
 	case lowir::Opcode::Convert:
+	case lowir::Opcode::Vector:
 		return true;
 	default:
 		return false;
@@ -154,6 +155,7 @@ inline uint64_t storage_bytes(lowir::Type type)
 		return 8;
 	case lowir::TypeKind::I128:
 	case lowir::TypeKind::F80:
+	case lowir::TypeKind::V128:
 		return 16;
 	case lowir::TypeKind::Obj:
 		return type.bytes;

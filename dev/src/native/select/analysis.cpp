@@ -1169,7 +1169,7 @@ void FunctionSelector::place_uses()
 		const Type type = body.temps[i].type;
 		if (type.is_object() || type.kind() == TypeKind::F80 || type.kind() == TypeKind::I128)
 			t.cls = VClass::Memory;
-		else if (type.is_float())
+		else if (type.is_float() || type.is_vector())
 			t.cls = VClass::Xmm;
 		else if (!type.is_void())
 			t.cls = VClass::Gpr;

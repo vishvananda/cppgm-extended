@@ -152,6 +152,10 @@ private:
 	void mov(const Operand& a, const Operand& b, bool keep_flags);
 	void float_move(const Inst& inst);
 	void float_arith(const Inst& inst);
+	void vector_op(const Inst& inst);
+	void vector_special(const Inst& inst);
+	void vector_move(Reg d, const Operand& src);
+	Reg vector_operands(const Inst& inst);
 	void float_compare(const Operand& a, const Operand& b, lowir::TypeKind type);
 	void float_setcc(const Inst& inst);
 	void convert(const Inst& inst);

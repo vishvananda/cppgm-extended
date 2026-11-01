@@ -1146,7 +1146,7 @@ void FunctionSelector::emit_return(const Instruction& inst)
 		return;
 	}
 	const Operand src = rm_operand(v, type, kSelectScratch);
-	if (type.is_float())
+	if (type.is_float() || type.is_vector())
 	{
 		if (src.kind == OperandKind::Reg)
 		{

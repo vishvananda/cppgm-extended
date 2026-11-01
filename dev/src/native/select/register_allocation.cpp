@@ -971,7 +971,7 @@ void FunctionSelector::assign_registers()
 				ra_use_hint_[static_cast<size_t>(cand[v.index])] = reg;
 		};
 		if (inst.op == Opcode::Return && inst.ops[0].kind != ValueKind::None && !inst.type.is_object())
-			hint(inst.ops[0], inst.type.is_float() ? XMM0 : RAX);
+			hint(inst.ops[0], inst.type.is_float() || inst.type.is_vector() ? XMM0 : RAX);
 		else if (inst.op == Opcode::Call)
 		{
 			const lowir::Signature* sig = program_.call_boundary(inst);

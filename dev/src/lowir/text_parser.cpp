@@ -64,13 +64,15 @@ void Parser::define_words()
 		define(lowir_model::spelling(static_cast<ComparePredicate>(i)), WordClass::Compare, i);
 	for (unsigned i = 0; i < kConvertOpCount; ++i)
 		define(lowir_model::spelling(static_cast<ConvertOp>(i)), WordClass::Convert, i);
+	for (unsigned i = 0; i < kVectorOpCount; ++i)
+		define(lowir_model::spelling(static_cast<VectorOp>(i)), WordClass::Vector, i);
 	for (const InstructionFlag fact : { IF_VOLATILE, IF_TYPED, IF_NO_WRAP, IF_EXACT })
 		define(lowir_model::spelling(fact), WordClass::Fact, fact);
 	// The compatibility spellings `readonly` and `thread_local` after a
 	// global's name (lowir.md "Structured Global Data Initializers").
 	for (unsigned i = ir_model::GSM_READONLY; i < ir_model::kGlobalStorageModeCount; ++i)
 		define(ir_model::spelling(static_cast<ir_model::GlobalStorageMode>(i)), WordClass::Storage, i);
-	for (unsigned kind = 0; kind <= static_cast<unsigned>(TypeKind::Ptr); ++kind)
+	for (unsigned kind = 0; kind < static_cast<unsigned>(TypeKind::Obj); ++kind)
 		define(lowir_model::spelling(static_cast<TypeKind>(kind)), WordClass::Type, kind);
 	// The floating words also take a floating suffix (`INFINITYL`, `nanf`);
 	// the value records the suffix above the literal (kNamedSuffixShift).

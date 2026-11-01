@@ -30,6 +30,7 @@ uint32_t value_bytes(Type type)
 		return 8;
 	case TypeKind::I128:
 	case TypeKind::F80:
+	case TypeKind::V128:
 		return 16;
 	case TypeKind::Obj:
 		// Objects live in frames and data addressed by 32-bit displacements.
@@ -143,6 +144,17 @@ void classify_one(Type type, uint8_t classes, CallLayout& layout)
 		else
 			add_stack_value(layout, arg, 8, 8);
 	}
+	else if (kind == TypeKind::V128)
+	{
+		if (layout.xmms < 8)
+		{
+			arg.cls = ArgClass::Xmm;
+			arg.part_count = 1;
+			add_part(layout, static_cast<Reg>(XMM0 + layout.xmms++), 0, 0, 16);
+		}
+		else
+			add_stack_value(layout, arg, 16, 16);
+	}
 	else if (kind == TypeKind::F80)
 		add_stack_value(layout, arg, 16, 16);
 	else if (kind == TypeKind::I128 || kind == TypeKind::Obj)
@@ -242,6 +254,7 @@ void classify_call(
 		break;
 	case TypeKind::F32:
 	case TypeKind::F64:
+	case TypeKind::V128:
 		layout.result = ArgClass::Xmm;
 		break;
 	case TypeKind::F80:

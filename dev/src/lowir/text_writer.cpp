@@ -728,6 +728,27 @@ bool Writer::write_value_instruction(const Instruction& inst)
 		text(", ");
 		operand(inst.ops[2], inst.type.kind());
 		return true;
+	case Opcode::Vector:
+	{
+		head(inst.op);
+		text(lowir_model::spelling(static_cast<VectorOp>(inst.sub)));
+		const VectorShape shape = shape_of(static_cast<VectorOp>(inst.sub));
+		const TypeKind first = shape == VectorShape::FromScalar ? vector_scalar_kind(static_cast<VectorOp>(inst.sub))
+																: TypeKind::V128;
+		const char* separator = " ";
+		for (unsigned i = 0; i < 3; ++i)
+		{
+			if (inst.ops[i].is(ValueKind::None))
+				continue;
+			text(separator);
+			operand(inst.ops[i],
+				i == 0                                      ? first
+					: i == 2 && shape != VectorShape::Blend ? TypeKind::I32
+															: TypeKind::V128);
+			separator = ", ";
+		}
+		return true;
+	}
 	case Opcode::Unary:
 	case Opcode::Binary:
 	case Opcode::Compare:

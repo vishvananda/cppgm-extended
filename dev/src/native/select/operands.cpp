@@ -237,7 +237,11 @@ void FunctionSelector::load_into(Reg dst, const Operand& src, TypeKind type)
 		}
 		break;
 	case OperandKind::Imm:
-		emit2(Op::Mov, TypeKind::Void, Operand::make_reg(dst), src);
+		// A v128 value whose definition never executes: any bits will do.
+		if (type == TypeKind::V128)
+			emit1(Op::Vector, type, Operand::make_reg(dst)).sub = static_cast<uint8_t>(lowir::VectorOp::Pzero);
+		else
+			emit2(Op::Mov, TypeKind::Void, Operand::make_reg(dst), src);
 		break;
 	case OperandKind::FImm:
 		emit2(Op::FMov, src.type, Operand::make_reg(dst), src);
@@ -559,12 +563,28 @@ void FunctionSelector::emit_move(const Move& move)
 			emit2(Op::Store, int_type, dst, src);
 		break;
 	case OperandKind::Imm:
+		if (move.type == TypeKind::V128)
+		{
+			const Operand x15 = Operand::make_reg(static_cast<Reg>(XMM0 + 15));
+			load_into(x15.reg, src, move.type);
+			emit2(Op::FMov, move.type, dst, x15);
+			break;
+		}
 		emit2(Op::Store, int_type, dst, src);
 		break;
 	case OperandKind::FImm:
 		emit2(Op::FMov, src.type, dst, src);
 		break;
 	case OperandKind::Mem:
+		if (move.type == TypeKind::V128)
+		{
+			// Sixteen bytes go through the vector scratch; xmm14 may hold a
+			// value parallel_moves saved.
+			const Operand x15 = Operand::make_reg(static_cast<Reg>(XMM0 + 15));
+			emit2(Op::FMov, move.type, x15, src);
+			emit2(Op::FMov, move.type, dst, x15);
+			break;
+		}
 		emit2(
 			Op::Load, move.src_type == TypeKind::Void ? int_type : move.src_type, Operand::make_reg(kEmitScratch), src);
 		emit2(Op::Store, int_type, dst, Operand::make_reg(kEmitScratch));
@@ -616,7 +636,8 @@ void FunctionSelector::parallel_moves(std::vector<Move>& moves)
 			pm_mem_srcs_.push_back(i);
 	}
 	// Memory locations ordered by base, index, symbol and displacement; a
-	// typed move touches at most 8 bytes, so overlaps lie within 8 bytes.
+	// typed move touches at most 8 bytes, so overlaps lie within 8 bytes. A
+	// v128 home holds nothing else, so its moves overlap only at the same place.
 	auto location_less = [](const Operand& a, int32_t a_disp, const Operand& b, int32_t b_disp) {
 		if (a.reg != b.reg)
 			return a.reg < b.reg;
@@ -749,7 +770,7 @@ void FunctionSelector::parallel_moves(std::vector<Move>& moves)
 		const uint32_t m0 = first_pending;
 		const Operand dst = moves[m0].dst;
 		const bool xmm = (dst.kind == OperandKind::Reg && is_xmm(dst.reg)) || moves[m0].type == TypeKind::F32 ||
-			moves[m0].type == TypeKind::F64;
+			moves[m0].type == TypeKind::F64 || moves[m0].type == TypeKind::V128;
 		const Reg save = xmm ? static_cast<Reg>(XMM0 + 14) : kSelectScratch;
 		Move saving;
 		saving.dst = Operand::make_reg(save);

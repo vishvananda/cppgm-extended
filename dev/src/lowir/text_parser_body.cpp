@@ -287,6 +287,57 @@ void Parser::parse_rvalue(FunctionBuilder& builder, TempId result)
 	builder.bind(result, type, id);
 }
 
+// vector <op> [operands], by the operation's shape (lowir_model::VectorShape).
+void Parser::parse_vector(FunctionBuilder& builder, Instruction& inst, Type& result)
+{
+	const WordInfo info = word(token());
+	if (info.word_class != WordClass::Vector)
+		fail("unknown vector operation: " + spelling(token()));
+	advance();
+	const VectorOp op = static_cast<VectorOp>(info.value);
+	const VectorShape shape = shape_of(op);
+	inst.op = Opcode::Vector;
+	inst.sub = info.value;
+	inst.type = result = vector_result_type(op);
+	const TypeKind v128 = TypeKind::V128;
+	auto next = [&](TypeKind kind) {
+		expect(TokenKind::Comma, ",");
+		return parse_value(builder, kind);
+	};
+	switch (shape)
+	{
+	case VectorShape::Zero:
+		break;
+	case VectorShape::FromScalar:
+		inst.ops[0] = parse_value(builder, vector_scalar_kind(op));
+		break;
+	case VectorShape::Unary:
+	case VectorShape::Mask:
+	case VectorShape::ToScalar:
+		inst.ops[0] = parse_value(builder, v128);
+		break;
+	case VectorShape::UnaryImmediate:
+		inst.ops[0] = parse_value(builder, v128);
+		inst.ops[2] = next(TypeKind::I32);
+		break;
+	case VectorShape::Binary:
+	case VectorShape::Test:
+		inst.ops[0] = parse_value(builder, v128);
+		inst.ops[1] = next(v128);
+		break;
+	case VectorShape::BinaryImmediate:
+		inst.ops[0] = parse_value(builder, v128);
+		inst.ops[1] = next(v128);
+		inst.ops[2] = next(TypeKind::I32);
+		break;
+	case VectorShape::Blend:
+		inst.ops[0] = parse_value(builder, v128);
+		inst.ops[1] = next(v128);
+		inst.ops[2] = next(v128);
+		break;
+	}
+}
+
 bool Parser::parse_value_instruction(FunctionBuilder& builder, Opcode keyword, Instruction& inst, Type& result)
 {
 	switch (keyword)
@@ -355,6 +406,9 @@ bool Parser::parse_value_instruction(FunctionBuilder& builder, Opcode keyword, I
 		inst.ops[2] = parse_value(builder, inst.type.kind());
 		return true;
 	}
+	case Opcode::Vector:
+		parse_vector(builder, inst, result);
+		return true;
 	case Opcode::Convert:
 	{
 		const WordInfo info = word(token());

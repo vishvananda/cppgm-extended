@@ -240,6 +240,9 @@ void FunctionSelector::emit_inst(uint32_t id)
 	case Opcode::Convert:
 		emit_convert(inst);
 		break;
+	case Opcode::Vector:
+		emit_vector(inst);
+		break;
 	case Opcode::Call:
 		emit_call(id);
 		break;
@@ -366,7 +369,7 @@ void FunctionSelector::emit_copy(const Instruction& inst)
 		if (src.kind == OperandKind::Symbol)
 			throw BackendError("floating copy requires a numeric value or storage operand");
 		const Reg d = result_reg(inst, dying_reg(inst.ops[0]));
-		if (src.kind == OperandKind::Imm)
+		if (src.kind == OperandKind::Imm && !inst.type.is_vector())
 		{
 			// An integer carrier is copied by representation, not converted.
 			load_into(kSelectScratch, src, TypeKind::I64);
@@ -553,7 +556,9 @@ void FunctionSelector::emit_store(const Instruction& inst)
 	}
 	Operand src = rm_operand(inst.ops[0], type, kEmitScratch);
 	const Operand mem = address_operand(inst.ops[1], kSelectScratch);
-	if (type.is_float())
+	if (type.is_vector())
+		src = vector_register(inst.ops[0], static_cast<Reg>(XMM0 + 15));
+	if (type.is_float() || type.is_vector())
 	{
 		Inst& mir = emit2(Op::FMov, kind, mem, src);
 		if (inst.flags & lowir::IF_VOLATILE)

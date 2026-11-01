@@ -28,6 +28,7 @@ enum class WordClass : uint8_t
 	Binary,
 	Compare,
 	Convert,
+	Vector,
 	NamedLiteral,
 	Opcode, // an instruction head
 	Fact,   // an InstructionFlag word: volatile, typed, nowrap, exact
@@ -167,6 +168,7 @@ private:
 	MemoryOrder parse_order();
 	void parse_instruction(FunctionBuilder& builder);
 	void parse_rvalue(FunctionBuilder& builder, TempId result);
+	void parse_vector(FunctionBuilder& builder, Instruction& inst, Type& result);
 	bool parse_value_instruction(FunctionBuilder& builder, Opcode keyword, Instruction& inst, Type& result);
 	bool parse_memory_instruction(FunctionBuilder& builder, Opcode keyword, Instruction& inst, Type& result);
 	void parse_effect(FunctionBuilder& builder);

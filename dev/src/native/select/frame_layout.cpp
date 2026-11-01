@@ -28,7 +28,7 @@ uint32_t access_bytes(const Inst& inst)
 		return 10;
 	// An i128 floating move transfers a whole XMM register (SSE/SSEUP),
 	// including the upper eight bytes of a vector or binary128 value.
-	if (inst.op == Op::FMov && inst.type == lowir::TypeKind::I128)
+	if (inst.op == Op::FMov && (inst.type == lowir::TypeKind::I128 || inst.type == lowir::TypeKind::V128))
 		return 16;
 	return register_bytes(inst.type);
 }

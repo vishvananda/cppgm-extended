@@ -1,0 +1,11 @@
+# budget from 500-vector-phis-in-memory.ref.mir: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 559
+blocks <= 13
+count(call) <= 7
+mem <= 149
+instructions <= 5 in @tick
+stack_size <= 32 in @tick
+instructions <= 548 in @rotate
+stack_size <= 631 in @rotate
+instructions <= 11 in @main
+stack_size <= 32 in @main

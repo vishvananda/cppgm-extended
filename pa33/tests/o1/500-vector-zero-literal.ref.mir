@@ -1,0 +1,219 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @memory
+  storage data
+  item i64 -1
+  item i64 -1
+
+function @chosen
+  abi
+    param %flag -> rdi : i32
+    return v128 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i32 rdi, 0
+    je ^entry~join
+
+  block ^five
+    mov r10, 5
+    vector.fromi32 xmm0, r10
+    ret xmm0
+
+  block ^join
+    ret xmm0
+
+  block ^entry~join
+    vector.pzero xmm0
+    ret xmm0
+
+function @nothing
+  abi
+    return v128 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    vector.pzero xmm0
+    ret xmm0
+
+function @sum
+  abi
+    param %a -> xmm0 : v128
+    param %b -> xmm1 : v128
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    vector.paddd xmm0, xmm0, xmm1
+    vector.toi32 rax, xmm0
+    sext.i32 rax
+    ret rax
+
+function @ninth
+  abi
+    param %a -> xmm0 : v128
+    param %b -> xmm1 : v128
+    param %c -> xmm2 : v128
+    param %d -> xmm3 : v128
+    param %e -> xmm4 : v128
+    param %f -> xmm5 : v128
+    param %g -> xmm6 : v128
+    param %h -> xmm7 : v128
+    param %i -> [rbp+16] : v128
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm15, [rbp+16]
+    vector.toi32 rax, xmm15
+    sext.i32 rax
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
+    temp %seven -> [rbp-16] : v128
+    temp %off -> [rbp-32] : v128
+
+  block ^entry
+    vector.pzero xmm15
+    fmov.v128 @memory, xmm15
+    load.i64 r8, @memory
+    or r8, @memory+8
+    je ^returned
+
+  block ^bad_store
+    mov rax, 1
+    ret rax
+
+  block ^returned
+    call @nothing [args=()]
+    vector.toi64 r8, xmm0
+    cmp.i64 r8, 0
+    je ^passed
+
+  block ^bad_return
+    mov rax, 2
+    ret rax
+
+  block ^passed
+    mov r10, 7
+    vector.fromi32 xmm14, r10
+    fmov.v128 [rbp-16], xmm14
+    vector.pzero xmm0
+    fmov.v128 xmm1, [rbp-16]
+    call @sum [args=(xmm0,xmm1)]
+    mov rbx, rax
+    fmov.v128 xmm0, [rbp-16]
+    vector.pzero xmm1
+    call @sum [args=(xmm0,xmm1)]
+    add rbx, rax
+    sext.i32 rbx
+    cmp.i32 rbx, 14
+    je ^joined
+
+  block ^bad_argument
+    mov rax, 3
+    ret rax
+
+  block ^joined
+    mov rdi, 0
+    call @chosen [args=(rdi)]
+    fmov.v128 xmm14, xmm0
+    fmov.v128 [rbp-32], xmm14
+    mov rdi, 1
+    call @chosen [args=(rdi)]
+    fmov.v128 xmm15, [rbp-32]
+    vector.toi32 r8, xmm15
+    sext.i32 r8
+    vector.toi32 r9, xmm0
+    sext.i32 r9
+    add r8, r9
+    sext.i32 r8
+    cmp.i32 r8, 5
+    jne ^bad_join
+
+  block ^operand
+    vector.pzero xmm15
+    vector.paddd xmm0, [rbp-16], xmm15
+    vector.toi32 r8, xmm0
+    sext.i32 r8
+    cmp.i32 r8, 7
+    je ^stacked
+
+  block ^bad_operand
+    mov rax, 5
+    ret rax
+
+  block ^bad_join
+    mov rax, 4
+    ret rax
+
+  block ^stacked
+    sub rsp, 16
+    fmov.v128 xmm0, [rbp-16]
+    fmov.v128 xmm1, [rbp-16]
+    fmov.v128 xmm2, [rbp-16]
+    fmov.v128 xmm3, [rbp-16]
+    fmov.v128 xmm4, [rbp-16]
+    fmov.v128 xmm5, [rbp-16]
+    fmov.v128 xmm6, [rbp-16]
+    fmov.v128 xmm7, [rbp-16]
+    mov r11, 0
+    store.v128 [rsp], r11
+    call @ninth [args=(xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7), stack=16]
+    add rsp, 16
+    mov rbx, rax
+    sub rsp, 16
+    fmov.v128 xmm15, [rbp-16]
+    fmov.v128 [rsp], xmm15
+    vector.pzero xmm0
+    vector.pzero xmm1
+    vector.pzero xmm2
+    vector.pzero xmm3
+    vector.pzero xmm4
+    vector.pzero xmm5
+    vector.pzero xmm6
+    vector.pzero xmm7
+    call @ninth [args=(xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7), stack=16]
+    add rsp, 16
+    sub rax, 7
+    sext.i32 rax
+    or rbx, rax
+    cmp.i32 rbx, 0
+    je ^done
+
+  block ^bad_stack
+    mov rax, 6
+    ret rax
+
+  block ^done
+    mov rax, 0
+    ret rax

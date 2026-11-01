@@ -45,7 +45,8 @@ enum class TypeKind : std::uint8_t
 	F64,
 	F80,
 	Ptr,
-	Obj // obj<bytes x align>
+	V128, // sixteen bytes of SSE lanes
+	Obj   // obj<bytes x align>
 };
 
 const unsigned kTypeKindCount = static_cast<unsigned>(TypeKind::Obj) + 1;
@@ -83,6 +84,7 @@ struct Type
 	bool is_integer() const { return kind() >= TypeKind::I1 && kind() <= TypeKind::I128; }
 	bool is_float() const { return kind() >= TypeKind::F32 && kind() <= TypeKind::F80; }
 	bool is_pointer() const { return kind() == TypeKind::Ptr; }
+	bool is_vector() const { return kind() == TypeKind::V128; }
 	bool is_object() const { return kind() == TypeKind::Obj; }
 
 	bool operator==(const Type& other) const
@@ -99,7 +101,7 @@ static_assert(sizeof(Type) == 8, "a Type is 8 bytes");
 inline const char* spelling(TypeKind kind)
 {
 	static const char* const kTypeKinds[kTypeKindCount] = { "void", "i1", "i8", "u8", "i16", "u16", "i32", "u32", "i64",
-		"i128", "f32", "f64", "f80", "ptr", "obj" };
+		"i128", "f32", "f64", "f80", "ptr", "v128", "obj" };
 	return kTypeKinds[static_cast<unsigned>(kind)];
 }
 
@@ -195,6 +197,7 @@ enum class Opcode : std::uint8_t
 	Compare,
 	Select,
 	Convert,
+	Vector,
 	AtomicAddFetch,
 	AtomicExchange,
 	AtomicCompareExchange,
@@ -251,11 +254,11 @@ inline bool is_eh_marker(Opcode op)
 inline const char* spelling(Opcode op)
 {
 	static const char* const kOpcodes[kOpcodeCount] = { "const", "copy", "phi", "addr", "load", "atomic_load", "index",
-		"unary", "binary", "cmp", "select", "convert", "atomic_add_fetch", "atomic_exchange", "atomic_compare_exchange",
-		"va_arg", "stack_alloc", "call", "exception", "exception_selector", "store", "atomic_store",
-		"atomic_thread_fence", "atomic_signal_fence", "va_start", "copyobj", "zeroinit", "eh_try", "eh_cleanup",
-		"eh_catch", "eh_filter", "eh_catch_all", "eh_end", "throw", "resume", "jump", "branch", "switch", "return",
-		"unreachable" };
+		"unary", "binary", "cmp", "select", "convert", "vector", "atomic_add_fetch", "atomic_exchange",
+		"atomic_compare_exchange", "va_arg", "stack_alloc", "call", "exception", "exception_selector", "store",
+		"atomic_store", "atomic_thread_fence", "atomic_signal_fence", "va_start", "copyobj", "zeroinit", "eh_try",
+		"eh_cleanup", "eh_catch", "eh_filter", "eh_catch_all", "eh_end", "throw", "resume", "jump", "branch", "switch",
+		"return", "unreachable" };
 	return kOpcodes[static_cast<unsigned>(op)];
 }
 
@@ -346,6 +349,348 @@ enum class MemoryOrder : std::uint8_t
 
 const unsigned kMemoryOrderCount = static_cast<unsigned>(MemoryOrder::SeqCst) + 1;
 
+// The operation of `vector`, named for its SSE instruction (pa8/lowir.md
+// "Vector Operations"). `Vector` instructions and their shapes:
+//   Binary           %r = vector op %a, %b
+//   Unary            %r = vector op %a
+//   BinaryImmediate  %r = vector op %a, %b, imm
+//   UnaryImmediate   %r = vector op %a, imm
+//   Blend            %r = vector op %a, %b, %mask
+//   Mask, Test       %r = vector op %a[, %b] (an i32)
+//   Zero             %r = vector op
+//   FromScalar       %r = vector op %x (the low lane, the rest zero)
+//   ToScalar         %r = vector op %a (the low lane)
+enum class VectorShape : std::uint8_t
+{
+	Binary,
+	Unary,
+	BinaryImmediate,
+	UnaryImmediate,
+	Blend,
+	Mask,
+	Test,
+	Zero,
+	FromScalar,
+	ToScalar
+};
+
+enum class VectorOp : std::uint8_t
+{
+	Addps,
+	Addpd,
+	Addss,
+	Addsd,
+	Subps,
+	Subpd,
+	Subss,
+	Subsd,
+	Mulps,
+	Mulpd,
+	Mulss,
+	Mulsd,
+	Divps,
+	Divpd,
+	Divss,
+	Divsd,
+	Minps,
+	Minpd,
+	Minss,
+	Minsd,
+	Maxps,
+	Maxpd,
+	Maxss,
+	Maxsd,
+	Andps,
+	Andpd,
+	Andnps,
+	Andnpd,
+	Orps,
+	Orpd,
+	Xorps,
+	Xorpd,
+	Sqrtss,
+	Sqrtsd,
+	Rcpss,
+	Rsqrtss,
+	Cvtss2sd,
+	Cvtsd2ss,
+	Movss,
+	Movsd,
+	Movhlps,
+	Movlhps,
+	Unpcklps,
+	Unpcklpd,
+	Unpckhps,
+	Unpckhpd,
+	Addsubps,
+	Addsubpd,
+	Haddps,
+	Haddpd,
+	Hsubps,
+	Hsubpd,
+	Paddb,
+	Paddw,
+	Paddd,
+	Paddq,
+	Psubb,
+	Psubw,
+	Psubd,
+	Psubq,
+	Paddsb,
+	Paddsw,
+	Paddusb,
+	Paddusw,
+	Psubsb,
+	Psubsw,
+	Psubusb,
+	Psubusw,
+	Pavgb,
+	Pavgw,
+	Pmullw,
+	Pmulld,
+	Pmulhw,
+	Pmulhuw,
+	Pmulhrsw,
+	Pmuludq,
+	Pmuldq,
+	Pmaddwd,
+	Pmaddubsw,
+	Psadbw,
+	Pmaxsb,
+	Pmaxsw,
+	Pmaxsd,
+	Pmaxub,
+	Pmaxuw,
+	Pmaxud,
+	Pminsb,
+	Pminsw,
+	Pminsd,
+	Pminub,
+	Pminuw,
+	Pminud,
+	Pand,
+	Pandn,
+	Por,
+	Pxor,
+	Pcmpeqb,
+	Pcmpeqw,
+	Pcmpeqd,
+	Pcmpeqq,
+	Pcmpgtb,
+	Pcmpgtw,
+	Pcmpgtd,
+	Pcmpgtq,
+	Psllw,
+	Pslld,
+	Psllq,
+	Psrlw,
+	Psrld,
+	Psrlq,
+	Psraw,
+	Psrad,
+	Packsswb,
+	Packssdw,
+	Packuswb,
+	Packusdw,
+	Punpcklbw,
+	Punpcklwd,
+	Punpckldq,
+	Punpcklqdq,
+	Punpckhbw,
+	Punpckhwd,
+	Punpckhdq,
+	Punpckhqdq,
+	Pshufb,
+	Psignb,
+	Psignw,
+	Psignd,
+	Phaddw,
+	Phaddd,
+	Phaddsw,
+	Phsubw,
+	Phsubd,
+	Phsubsw,
+	Sqrtps,
+	Sqrtpd,
+	Rcpps,
+	Rsqrtps,
+	Movshdup,
+	Movsldup,
+	Movddup,
+	Pabsb,
+	Pabsw,
+	Pabsd,
+	Pmovsxbw,
+	Pmovsxbd,
+	Pmovsxbq,
+	Pmovsxwd,
+	Pmovsxwq,
+	Pmovsxdq,
+	Pmovzxbw,
+	Pmovzxbd,
+	Pmovzxbq,
+	Pmovzxwd,
+	Pmovzxwq,
+	Pmovzxdq,
+	Cvtdq2ps,
+	Cvtdq2pd,
+	Cvtps2dq,
+	Cvttps2dq,
+	Cvtpd2dq,
+	Cvttpd2dq,
+	Cvtps2pd,
+	Cvtpd2ps,
+	Cmpps,
+	Cmppd,
+	Cmpss,
+	Cmpsd,
+	Shufps,
+	Shufpd,
+	Palignr,
+	Blendps,
+	Blendpd,
+	Pblendw,
+	Pshufd,
+	Pshuflw,
+	Pshufhw,
+	Psllwi,
+	Pslldi,
+	Psllqi,
+	Psrlwi,
+	Psrldi,
+	Psrlqi,
+	Psrawi,
+	Psradi,
+	Pslldq,
+	Psrldq,
+	Blendvps,
+	Blendvpd,
+	Pblendvb,
+	Movmskps,
+	Movmskpd,
+	Pmovmskb,
+	Ptestz,
+	Ptestc,
+	Ptestnzc,
+	Pzero,
+	Fromf32,
+	Fromf64,
+	Fromi32,
+	Fromi64,
+	Tof32,
+	Tof64,
+	Toi32,
+	Toi64
+};
+
+const unsigned kVectorOpCount = static_cast<unsigned>(VectorOp::Toi64) + 1;
+
+inline const char* spelling(VectorOp op)
+{
+	static const char* const kVectorOps[kVectorOpCount] = { "addps", "addpd", "addss", "addsd", "subps", "subpd",
+		"subss", "subsd", "mulps", "mulpd", "mulss", "mulsd", "divps", "divpd", "divss", "divsd", "minps", "minpd",
+		"minss", "minsd", "maxps", "maxpd", "maxss", "maxsd", "andps", "andpd", "andnps", "andnpd", "orps", "orpd",
+		"xorps", "xorpd", "sqrtss", "sqrtsd", "rcpss", "rsqrtss", "cvtss2sd", "cvtsd2ss", "movss", "movsd", "movhlps",
+		"movlhps", "unpcklps", "unpcklpd", "unpckhps", "unpckhpd", "addsubps", "addsubpd", "haddps", "haddpd", "hsubps",
+		"hsubpd", "paddb", "paddw", "paddd", "paddq", "psubb", "psubw", "psubd", "psubq", "paddsb", "paddsw", "paddusb",
+		"paddusw", "psubsb", "psubsw", "psubusb", "psubusw", "pavgb", "pavgw", "pmullw", "pmulld", "pmulhw", "pmulhuw",
+		"pmulhrsw", "pmuludq", "pmuldq", "pmaddwd", "pmaddubsw", "psadbw", "pmaxsb", "pmaxsw", "pmaxsd", "pmaxub",
+		"pmaxuw", "pmaxud", "pminsb", "pminsw", "pminsd", "pminub", "pminuw", "pminud", "pand", "pandn", "por", "pxor",
+		"pcmpeqb", "pcmpeqw", "pcmpeqd", "pcmpeqq", "pcmpgtb", "pcmpgtw", "pcmpgtd", "pcmpgtq", "psllw", "pslld",
+		"psllq", "psrlw", "psrld", "psrlq", "psraw", "psrad", "packsswb", "packssdw", "packuswb", "packusdw",
+		"punpcklbw", "punpcklwd", "punpckldq", "punpcklqdq", "punpckhbw", "punpckhwd", "punpckhdq", "punpckhqdq",
+		"pshufb", "psignb", "psignw", "psignd", "phaddw", "phaddd", "phaddsw", "phsubw", "phsubd", "phsubsw", "sqrtps",
+		"sqrtpd", "rcpps", "rsqrtps", "movshdup", "movsldup", "movddup", "pabsb", "pabsw", "pabsd", "pmovsxbw",
+		"pmovsxbd", "pmovsxbq", "pmovsxwd", "pmovsxwq", "pmovsxdq", "pmovzxbw", "pmovzxbd", "pmovzxbq", "pmovzxwd",
+		"pmovzxwq", "pmovzxdq", "cvtdq2ps", "cvtdq2pd", "cvtps2dq", "cvttps2dq", "cvtpd2dq", "cvttpd2dq", "cvtps2pd",
+		"cvtpd2ps", "cmpps", "cmppd", "cmpss", "cmpsd", "shufps", "shufpd", "palignr", "blendps", "blendpd", "pblendw",
+		"pshufd", "pshuflw", "pshufhw", "psllwi", "pslldi", "psllqi", "psrlwi", "psrldi", "psrlqi", "psrawi", "psradi",
+		"pslldq", "psrldq", "blendvps", "blendvpd", "pblendvb", "movmskps", "movmskpd", "pmovmskb", "ptestz", "ptestc",
+		"ptestnzc", "pzero", "fromf32", "fromf64", "fromi32", "fromi64", "tof32", "tof64", "toi32", "toi64" };
+	return kVectorOps[static_cast<unsigned>(op)];
+}
+
+// Whether every lane of a vector operation commutes in its two operands. The
+// scalar forms keep the first operand's upper lanes; min and max keep the
+// second operand on a NaN.
+inline bool vector_commutes(VectorOp op)
+{
+	switch (op)
+	{
+	case VectorOp::Addps:
+	case VectorOp::Addpd:
+	case VectorOp::Mulps:
+	case VectorOp::Mulpd:
+	case VectorOp::Andps:
+	case VectorOp::Andpd:
+	case VectorOp::Orps:
+	case VectorOp::Orpd:
+	case VectorOp::Xorps:
+	case VectorOp::Xorpd:
+	case VectorOp::Pand:
+	case VectorOp::Por:
+	case VectorOp::Pxor:
+		return true;
+	default:
+		return (op >= VectorOp::Paddb && op <= VectorOp::Paddq) ||
+			(op >= VectorOp::Paddsb && op <= VectorOp::Paddusw) || (op >= VectorOp::Pavgb && op <= VectorOp::Pmulhuw) ||
+			(op >= VectorOp::Pmaxsb && op <= VectorOp::Pminud) ||
+			(op >= VectorOp::Pcmpeqb && op <= VectorOp::Pcmpeqq) || op == VectorOp::Pmuludq || op == VectorOp::Pmuldq ||
+			op == VectorOp::Pmaddwd;
+	}
+}
+
+inline VectorShape shape_of(VectorOp op)
+{
+	if (op >= VectorOp::Tof32)
+		return VectorShape::ToScalar;
+	if (op >= VectorOp::Fromf32)
+		return VectorShape::FromScalar;
+	if (op >= VectorOp::Pzero)
+		return VectorShape::Zero;
+	if (op >= VectorOp::Ptestz)
+		return VectorShape::Test;
+	if (op >= VectorOp::Movmskps)
+		return VectorShape::Mask;
+	if (op >= VectorOp::Blendvps)
+		return VectorShape::Blend;
+	if (op >= VectorOp::Pshufd)
+		return VectorShape::UnaryImmediate;
+	if (op >= VectorOp::Cmpps)
+		return VectorShape::BinaryImmediate;
+	if (op >= VectorOp::Sqrtps)
+		return VectorShape::Unary;
+	return VectorShape::Binary;
+}
+
+// The scalar type a FromScalar operation reads or a ToScalar one gives.
+inline TypeKind vector_scalar_kind(VectorOp op)
+{
+	switch (op)
+	{
+	case VectorOp::Fromf32:
+	case VectorOp::Tof32:
+		return TypeKind::F32;
+	case VectorOp::Fromf64:
+	case VectorOp::Tof64:
+		return TypeKind::F64;
+	case VectorOp::Fromi32:
+	case VectorOp::Toi32:
+		return TypeKind::I32;
+	default:
+		return TypeKind::I64;
+	}
+}
+
+// The type of a `vector` instruction's result.
+inline Type vector_result_type(VectorOp op)
+{
+	const VectorShape shape = shape_of(op);
+	if (shape == VectorShape::Mask || shape == VectorShape::Test)
+		return Type::scalar(TypeKind::I32);
+	return Type::scalar(shape == VectorShape::ToScalar ? vector_scalar_kind(op) : TypeKind::V128);
+}
+
 inline const char* spelling(UnaryOp op)
 {
 	static const char* const kUnaryOps[kUnaryOpCount] = { "neg", "not", "bitnot", "bswap", "ctz", "clz" };
@@ -371,6 +716,11 @@ inline const char* spelling(ConvertOp op)
 	static const char* const kConvertOps[kConvertOpCount] = { "sext", "zext", "trunc", "sitofp", "uitofp", "fptosi",
 		"fptoui", "fpext", "fptrunc" };
 	return kConvertOps[static_cast<unsigned>(op)];
+}
+
+inline bool from_spelling(const char* text, std::size_t length, VectorOp* op)
+{
+	return detail::find_spelling(text, length, 0, kVectorOpCount, op);
 }
 
 inline bool from_spelling(const char* text, std::size_t length, UnaryOp* op)

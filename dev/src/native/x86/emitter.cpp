@@ -1092,6 +1092,9 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	case Op::FMov:
 		float_move(inst);
 		break;
+	case Op::Vector:
+		vector_op(inst);
+		break;
 	case Op::FAdd:
 	case Op::FSub:
 	case Op::FMul:

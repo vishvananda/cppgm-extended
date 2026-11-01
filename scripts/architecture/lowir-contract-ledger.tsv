@@ -13,6 +13,7 @@ type	f32	semantic lowering;explicit LowIR	parser;optimizer;native	pa8/README.md	
 type	f64	semantic lowering;explicit LowIR	parser;optimizer;native	pa8/README.md	pa8/tests/spec/100-f64-arith-cmp.t	keep	binary64 semantics
 type	f80	semantic lowering;explicit LowIR	parser;optimizer;native;host ABI	pa8/README.md	pa8/tests/spec/200-f80-direct-call.t	keep	x87 storage and boundary semantics
 type	ptr	semantic lowering;explicit LowIR	parser;optimizer;native;object	pa8/README.md	pa8/tests/spec/100-global-variable.t	keep	address values
+type	v128	semantic lowering;explicit LowIR	parser;optimizer;native;host ABI	pa29/README.md	pa33/tests/o1/500-vector-every-operation.t	keep	sixteen bytes of SSE lanes
 type	obj<bytesxalign>	semantic lowering;explicit LowIR	parser;ABI lowering;native	pa8/README.md	pa8/tests/spec/100-small-direct-object-argument.t	keep	direct object boundary
 instruction	const	semantic lowering;explicit LowIR	optimizer;native	pa8/README.md	pa8/tests/spec/100-local-arith.t	keep	literal materialization
 instruction	copy	semantic lowering;explicit LowIR	optimizer;native	pa8/README.md	pa8/tests/spec/200-copy-instruction.t	keep	value transfer
@@ -38,6 +39,7 @@ instruction	unary ctz|clz	GNU bit-scan builtin lowering;explicit LowIR	constant 
 instruction	cmp	semantic lowering;explicit LowIR	optimizer;native	pa8/README.md	pa8/tests/spec/200-compare-predicates.t	keep	typed comparison
 instruction	convert	semantic lowering;explicit LowIR	optimizer;native	pa8/README.md	pa8/tests/spec/200-integral-float-conversions.t	keep	typed conversion
 instruction	select	GNU clzg/ctzg fallback lowering;explicit LowIR	native CMOV;constant folding	pa8/lowir.md;pa24/README.md	pa8/tests/spec/300-select.t	keep	branch-free choice between two computed values; the course optimizer also forms it from pure diamonds at O2+
+instruction	vector	SSE builtin lowering;GNU vector lowering;explicit LowIR	value simplification;native SSE encoding	pa29/README.md;pa8/lowir.md	pa33/tests/o1/500-vector-every-operation.t	keep	one SSE operation on a whole register
 instruction	va_start	variadic lowering;explicit LowIR	native varargs	pa24/README.md	pa24/tests/behavior/800-reactive-spill-va-start-register-save.t	keep	variadic ABI state
 instruction	va_arg	variadic lowering;explicit LowIR	native varargs	pa24/README.md	pa24/tests/behavior/900-variadic-f64-register-save.t	keep	variadic ABI access
 instruction	stack_alloc	dynamic storage lowering;explicit LowIR	frame planning;native	pa29/README.md	pa29/tests/compile/700-builtin-alloca-reactive-spill.t	keep	dynamic stack storage
