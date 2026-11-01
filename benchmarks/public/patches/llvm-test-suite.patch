@@ -1,0 +1,246 @@
+--- a/MultiSource/Applications/hexxagon/hexxagon.cpp
++++ b/MultiSource/Applications/hexxagon/hexxagon.cpp
+@@ -60,7 +60,7 @@
+ 	printf("Hexxagon board game.\n");
+ 	printf("Copyright (C) 2001 Erik Jonsson.\n\n");
+ 	
+-	printf("The pieces was drawn by Stefan Påhlson.\n\n");
++	printf("The pieces was drawn by Stefan PÃ¥hlson.\n\n");
+ 
+ 	printf("This program is free software; you can redistribute it and/or\n");
+ 	printf("modify it under the terms of the GNU General Public License\n");
+--- a/MultiSource/Applications/lambda-0.1.3/lambda.cc
++++ b/MultiSource/Applications/lambda-0.1.3/lambda.cc
+@@ -134,12 +134,12 @@
+ 				do {
+ 					if( rexp ){
+ 						if(1){
+-							char* step = "=";
++							char* step = (char*)"=";
+ 							if( outp & node::BETA_ETA_DONE ){
+ 								if( outp & node::ETA_DONE ){
+-									step = "H";
++									step = (char*)"H";
+ 								}else{
+-									step = "B";
++									step = (char*)"B";
+ 								}
+ 							}
+ 							printf("=%1.1s==> ", step );
+--- a/MultiSource/Applications/lambda-0.1.3/parse.cc
++++ b/MultiSource/Applications/lambda-0.1.3/parse.cc
+@@ -207,7 +207,7 @@
+ 	case token_stream::EOE:
+ 		break;
+ 	default:
+-		dderrmsg("expresion expected: got %s", ptok?ptok:"(*null*)" );
++		dderrmsg((char*)"expresion expected: got %s", ptok?ptok:(char*)"(*null*)" );
+ 		//tokstr_v->push_token(tok,ptok );
+ 	}
+ 
+@@ -234,7 +234,7 @@
+ 
+ 	tok = tokstr_v->get_token(&ptok);
+ 	if( token_stream::NAME!=tok ){
+-		dderrmsg("NAME expected: got %s", ptok?ptok:"(*null*)" );
++		dderrmsg((char*)"NAME expected: got %s", ptok?ptok:(char*)"(*null*)" );
+ 		//tokstr_v->push_token(tok,ptok );
+ 		return exp;
+ 	}
+@@ -242,7 +242,7 @@
+ 
+ 	tok = tokstr_v->get_token(&ptok);
+ 	if( token_stream::PERIOD!=tok ){
+-		dderrmsg("PERIOD expected: got %s", ptok?ptok:"(*null*)" );
++		dderrmsg((char*)"PERIOD expected: got %s", ptok?ptok:(char*)"(*null*)" );
+ 		//tokstr_v->push_token(tok,ptok );
+ 		return exp;
+ 	}
+@@ -300,7 +300,7 @@
+ 		exp = application();//expression();
+ 		tok = tokstr_v->get_token(&ptok);
+ 		if( token_stream::RPAREN!=tok ){
+-			dderrmsg(") expected: got %s", ptok?ptok:"(*null*)" );
++			dderrmsg((char*)") expected: got %s", ptok?ptok:(char*)"(*null*)" );
+ 			//if( token_stream::EOE!=tok )
+ 			//	tokstr_v->push_token(tok,ptok );
+ 		}	
+--- a/MultiSource/Applications/lambda-0.1.3/token_stream.cc
++++ b/MultiSource/Applications/lambda-0.1.3/token_stream.cc
+@@ -35,13 +35,13 @@
+ 	token_stream::header_type type;
+ 	char* value;
+ } headers[] = {
+-	{token_stream::DEF, "def"},
+-	{token_stream::LOAD, "load"},
+-	{token_stream::SAVE, "save"},
+-	{token_stream::QUIT, "quit"},
+-	{token_stream::LIST, "list"},
+-	{token_stream::SET,  "set"},
+-	{token_stream::EXT,  "ext"},
++	{token_stream::DEF, (char*)"def"},
++	{token_stream::LOAD, (char*)"load"},
++	{token_stream::SAVE, (char*)"save"},
++	{token_stream::QUIT, (char*)"quit"},
++	{token_stream::LIST, (char*)"list"},
++	{token_stream::SET,  (char*)"set"},
++	{token_stream::EXT,  (char*)"ext"},
+ 	{token_stream::NOTHDR, NULL} };
+ 
+ token_stream::
+@@ -64,7 +64,7 @@
+ 		in = fopen(filename,"r" );
+ 		if( !in ){
+ 			read_error = True;
+-			dderrmsg("Cannot Open \"%s\":%s\n",
++			dderrmsg((char*)"Cannot Open \"%s\":%s\n",
+ 				filename, strerror(errno));
+ 		}
+ 		file_name_v = new char[strlen(filename)+1];
+@@ -74,7 +74,7 @@
+ 		file_name_v = 0;
+ 	}
+ 	read_EOF = False;
+-	push_token(NOTOKEN,"");
++	push_token(NOTOKEN,(char*)"");
+ 	ptok = 0;
+ 	linenum_v = 0;
+ 	paren_level_v = 0;
+--- a/MultiSource/Applications/minisat/Main.cpp
++++ b/MultiSource/Applications/minisat/Main.cpp
+@@ -145,7 +145,7 @@
+ }
+ 
+ template<class B>
+-static bool match(B& in, char* str) {
++static bool match(B& in, const char* str) {
+     for (; *str != 0; ++str, ++in)
+         if (*str != *in)
+             return false;
+@@ -286,7 +286,7 @@
+ 
+ 
+     reportf("This is MiniSat 2.0 beta\n");
+-#if defined(__linux__) && defined(_FPU_EXTENDED) && defined(_FPU_DOUBLE)
++#if 0
+     fpu_control_t oldcw, newcw;
+     _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
+ #endif
+--- a/MultiSource/Benchmarks/Bullet/btSoftBodyHelpers.cpp
++++ b/MultiSource/Benchmarks/Bullet/btSoftBodyHelpers.cpp
+@@ -285,7 +285,7 @@
+ 				add(hres.m_OutputVertices,center);
+ 				for(j=0;j<(int)hres.mNumFaces;++j)
+ 				{
+-					const int idx[]={hres.m_Indices[j*3+0],hres.m_Indices[j*3+1],hres.m_Indices[j*3+2]};
++					const int idx[]={(int)hres.m_Indices[j*3+0],(int)hres.m_Indices[j*3+1],(int)hres.m_Indices[j*3+2]};
+ 					idraw->drawTriangle(hres.m_OutputVertices[idx[0]],
+ 						hres.m_OutputVertices[idx[1]],
+ 						hres.m_OutputVertices[idx[2]],
+@@ -865,9 +865,9 @@
+ 		&hres.m_OutputVertices[0],0);
+ 	for(int i=0;i<(int)hres.mNumFaces;++i)
+ 	{
+-		const int idx[]={	hres.m_Indices[i*3+0],
+-			hres.m_Indices[i*3+1],
+-			hres.m_Indices[i*3+2]};
++		const int idx[]={	(int)hres.m_Indices[i*3+0],
++			(int)hres.m_Indices[i*3+1],
++			(int)hres.m_Indices[i*3+2]};
+ 		if(idx[0]<idx[1]) psb->appendLink(	idx[0],idx[1]);
+ 		if(idx[1]<idx[2]) psb->appendLink(	idx[1],idx[2]);
+ 		if(idx[2]<idx[0]) psb->appendLink(	idx[2],idx[0]);
+--- a/MultiSource/Benchmarks/tramp3d-v4/tramp3d-v4.cpp
++++ b/MultiSource/Benchmarks/tramp3d-v4/tramp3d-v4.cpp
+@@ -2354,10 +2354,10 @@
+     DomainTraits<typename DT::OneDomain_t>::initializeStorage(s[0].storage());
+   }
+ };
+-template <class Domain>
+-struct WrapNoInit : public Domain
++template <class WDom_>
++struct WrapNoInit : public WDom_
+ {
+-  WrapNoInit() : Domain(Pooma::NoInit()) {}
++  WrapNoInit() : WDom_(Pooma::NoInit()) {}
+ };
+ template<class DomT, class T, int Dim>
+ struct DomainTraitsDomain
+@@ -3240,7 +3240,7 @@
+ inline void VectorToDomain(const V &vec, D &dom)
+ {
+   for (int i=0; i < DomainTraits<D>::dimensions; ++i)
+-    dom[i] = DomainTraits<D>::OneDomain_t(vec(i), vec(i));
++    dom[i] = typename DomainTraits<D>::OneDomain_t(vec(i), vec(i));
+ }
+ template<class DT>
+ std::ostream& operator<<(std::ostream &o, const DomainBase<DT> &dbase)
+@@ -15676,7 +15676,7 @@
+   inline bool resize(int newsize,
+        const typename DataBlockPtr<T>::NoInitTag &)
+   {
+-    return controller_m->resize(newsize,DataBlockPtr<T>::NoInitTag());
++    return controller_m->resize(newsize,typename DataBlockPtr<T>::NoInitTag());
+   }
+   inline void setSize(int newsize)
+   {
+@@ -15925,7 +15925,7 @@
+       ;
+       if (block_m.capacity() >= newsize)
+  {
+-   block_m.resize(newsize, DataBlockPtr<T>::NoInitTag());
++   block_m.resize(newsize, typename DataBlockPtr<T>::NoInitTag());
+    size_m = block_m.size();
+  }
+       else
+@@ -15933,7 +15933,7 @@
+    size_t nsize = newsize * sizeof(T);
+    size_t n_ext = nsize/sizeof(T);
+    DataBlockPtr<T> newdata(n_ext,dataObject_m);
+-   newdata.resize(newsize, DataBlockPtr<T>::NoInitTag());
++   newdata.resize(newsize, typename DataBlockPtr<T>::NoInitTag());
+           T * pOld = block_m.beginPointer();
+           T * pNew = newdata.beginPointer();
+           const T * const pEnd = pNew + block_m.size();
+@@ -36007,7 +36007,7 @@
+ class TensorStorageSize<D, Antisymmetric>
+ {
+ public:
+-  enum { Size = (D*D - D)/2 + 1/D };
++  enum { Size = (D*D - D)/2 + 1/(D?D:1) };
+ };
+ template<int D>
+ class TensorStorageSize<D, Symmetric>
+--- a/SingleSource/Benchmarks/CoyoteBench/huffbench.c
++++ b/SingleSource/Benchmarks/CoyoteBench/huffbench.c
+@@ -87,7 +87,7 @@
+ 
+ byte * generate_test_data(size_t n)
+ {
+-    char * codes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ012345";
++    char * codes = (char*)"ABCDEFGHIJKLMNOPQRSTUVWXYZ012345";
+     
+     byte * result = (byte *)malloc(n);
+     byte * ptr = result;
+--- a/SingleSource/Benchmarks/Misc-C++/bigfib.cpp
++++ b/SingleSource/Benchmarks/Misc-C++/bigfib.cpp
+@@ -198,7 +198,7 @@
+ // ---------------------
+ void usage (char **argv)
+ {
+-  argv[0] = "bigfib";
++  argv[0] = (char*)"bigfib";
+   cerr << "USAGE : "
+        << endl
+ 
+--- a/SingleSource/Benchmarks/SmallPT/smallpt.cpp
++++ b/SingleSource/Benchmarks/SmallPT/smallpt.cpp
+@@ -81,7 +81,7 @@
+   fprintf(stderr,"Rendering (%d spp)\n",samps*4);
+   for (int y=0; y<h; y++){                       // Loop over image rows
+     //fprintf(stderr,"\rRendering (%d spp) %5.2f%%",samps*4,100.*y/(h-1));
+-    for (unsigned short x=0, Xi[3]={0,0,y*y*y}; x<w; x++)   // Loop cols
++    for (unsigned short x=0, Xi[3]={0,0,(unsigned short)(y*y*y)}; x<w; x++)   // Loop cols
+       for (int sy=0, i=(h-y-1)*w+x; sy<2; sy++)     // 2x2 subpixel rows
+         for (int sx=0; sx<2; sx++, r=Vec()){        // 2x2 subpixel cols
+           for (int s=0; s<samps; s++){

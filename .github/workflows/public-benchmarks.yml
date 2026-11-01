@@ -1,0 +1,103 @@
+name: Public benchmarks
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-benchmarks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmarks:
+    name: public benchmarks (advisory)
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    # Advisory. This job is not part of the required Tests workflow.
+    continue-on-error: true
+    timeout-minutes: 75
+    defaults:
+      run:
+        shell: bash
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_STDLIB_FLAGS: ""
+
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential ca-certificates clang git libgmp-dev patch python3 valgrind
+
+      - uses: actions/checkout@v6
+
+      - name: Build compiler
+        run: make -C dev cppgm++
+
+      - name: Cache pinned sources
+        uses: actions/cache@v4
+        with:
+          path: obj/public-benchmarks/src
+          key: public-benchmarks-${{ hashFiles('benchmarks/public/manifest.json', 'benchmarks/public/patches/**') }}
+
+      - name: Fetch pinned sources
+        run: python3 scripts/public_benchmarks.py fetch --cache obj/public-benchmarks/src
+
+      - name: Build, run and compare
+        run: |
+          python3 scripts/public_benchmarks.py run \
+            --cache obj/public-benchmarks/src \
+            --work obj/public-benchmarks/work \
+            --output obj/public-benchmarks/results.json \
+            --jobs "$(nproc)"
+
+      - name: Report
+        run: |
+          python3 scripts/public_benchmarks.py report obj/public-benchmarks/results.json \
+            --summary "$GITHUB_STEP_SUMMARY" \
+            --badges obj/public-benchmarks/badges
+
+      - name: Retain results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: public-benchmarks-${{ github.sha }}
+          path: |
+            obj/public-benchmarks/results.json
+            obj/public-benchmarks/badges/
+          if-no-files-found: warn
+          retention-days: 14
+
+  badges:
+    name: publish README badges
+    needs: benchmarks
+    # Only this job has the write token. Do not run third-party code here.
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: public-benchmarks-${{ github.sha }}
+
+      - name: Publish to the badge branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd badges
+          git init -q -b benchmark-badges
+          git add ./*.json
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Publish the benchmark badges of $GITHUB_SHA"
+          git push --force \
+            "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" benchmark-badges

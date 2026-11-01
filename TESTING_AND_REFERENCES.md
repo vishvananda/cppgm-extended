@@ -78,6 +78,14 @@ timings and reviewed results; raw B2 XML, logs and compiler invocations
 remain alongside it. The workflow retains these diagnostics for 14 days.
 The runner's failure controls are part of `make test-harness`.
 
+## Public benchmarks CI
+
+The **Public benchmarks** workflow runs on every push. It is advisory. It builds
+pinned third-party programs with `cppgm++`, `g++` and `clang++` at `-O0` and
+`-O3`. The output of each `cppgm++` binary must match `g++`. See
+[benchmarks/public/README.md](benchmarks/public/README.md). The runner tests are
+part of `make test-harness`.
+
 ## Fixture ownership
 
 Every required fixture lives under its owning `paN/tests/`. From PA5 onward,

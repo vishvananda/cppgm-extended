@@ -1,0 +1,681 @@
+{
+ "levels": ["-O0", "-O3"],
+ "references": {},
+ "common_flags": ["-w"],
+ "default_std": "-std=gnu++11",
+ "ldflags": ["-lm", "-pthread"],
+ "generated": [
+  {
+   "output": "fasta.in",
+   "source": "benchmarksgame",
+   "dir": "fasta",
+   "src": "fasta.gpp",
+   "args": ["1000000"]
+  }
+ ],
+ "sources": {
+  "benchmarksgame": {
+   "url": "https://salsa.debian.org/benchmarksgame-team/benchmarksgame.git",
+   "license": "BSD-3-Clause",
+   "paths": ["public/download/benchmarksgame-sourcecode.zip"],
+   "unzip": "public/download/benchmarksgame-sourcecode.zip",
+   "commit": "40296663ed350d5fe4a6ab5e367bab61cb77c219"
+  },
+  "box2d": {
+   "url": "https://github.com/erincatto/box2d.git",
+   "license": "MIT",
+   "paths": ["include", "src"],
+   "commit": "9ebbbcd960ad424e03e5de6e66a40764c16f51bc"
+  },
+  "fmt": {
+   "url": "https://github.com/fmtlib/fmt.git",
+   "license": "MIT",
+   "paths": ["include", "src"],
+   "commit": "e69e5f977d458f2650bb346dadf2ad30c5320281"
+  },
+  "llvm-test-suite": {
+   "url": "https://github.com/llvm/llvm-test-suite.git",
+   "license": "Apache-2.0 WITH LLVM-exception, with per-benchmark licenses in tree",
+   "paths": ["SingleSource/Benchmarks", "MultiSource/Applications/hexxagon", "MultiSource/Applications/lambda-0.1.3", "MultiSource/Applications/minisat", "MultiSource/Benchmarks/Bullet", "MultiSource/Benchmarks/DOE-ProxyApps-C++", "MultiSource/Benchmarks/PAQ8p", "MultiSource/Benchmarks/Prolangs-C++", "MultiSource/Benchmarks/tramp3d-v4"],
+   "patch": "patches/llvm-test-suite.patch",
+   "commit": "28644d9795d11dcc30f5bdeb398a76a52ca53869"
+  },
+  "nlohmann_json": {
+   "url": "https://github.com/nlohmann/json.git",
+   "license": "MIT",
+   "paths": ["single_include"],
+   "commit": "9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03"
+  },
+  "pugixml": {
+   "url": "https://github.com/zeux/pugixml.git",
+   "license": "MIT",
+   "paths": ["src", "tests"],
+   "patch": "patches/pugixml.patch",
+   "commit": "db78afc2b7d8f043b4bc6b185635d949ea2ed2a8"
+  },
+  "rapidjson": {
+   "url": "https://github.com/Tencent/rapidjson.git",
+   "license": "MIT",
+   "paths": ["include"],
+   "patch": "patches/rapidjson.patch",
+   "commit": "f54b0e47a08782a6131cc3d60f94d038fa6e0a51"
+  },
+  "re2": {
+   "url": "https://github.com/google/re2.git",
+   "license": "BSD-3-Clause",
+   "paths": ["re2", "util"],
+   "commit": "166dbbeb3b0ab7e733b278e8f42a84f6882b8a25"
+  }
+ },
+ "programs": [
+  {
+   "name": "Adobe-C++/functionobjects",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Adobe-C++",
+   "srcs": ["functionobjects.cpp"]
+  },
+  {
+   "name": "Adobe-C++/loop_unroll",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Adobe-C++",
+   "srcs": ["loop_unroll.cpp"]
+  },
+  {
+   "name": "Adobe-C++/simple_types_constant_folding",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Adobe-C++",
+   "srcs": ["simple_types_constant_folding.cpp"]
+  },
+  {
+   "name": "Adobe-C++/simple_types_loop_invariant",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Adobe-C++",
+   "srcs": ["simple_types_loop_invariant.cpp"]
+  },
+  {
+   "name": "Adobe-C++/stepanov_abstraction",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Adobe-C++",
+   "srcs": ["stepanov_abstraction.cpp"]
+  },
+  {
+   "name": "Adobe-C++/stepanov_vector",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Adobe-C++",
+   "srcs": ["stepanov_vector.cpp"],
+   "count": ["compile"]
+  },
+  {
+   "name": "Bullet",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Benchmarks/Bullet",
+   "srcs": ["BenchmarkDemo.cpp", "SphereTriangleDetector.cpp", "btActivatingCollisionAlgorithm.cpp", "btAlignedAllocator.cpp", "btAxisSweep3.cpp", "btBox2dBox2dCollisionAlgorithm.cpp", "btBox2dShape.cpp", "btBoxBoxCollisionAlgorithm.cpp", "btBoxBoxDetector.cpp", "btBoxShape.cpp", "btBroadphaseProxy.cpp", "btBvhTriangleMeshShape.cpp", "btCapsuleShape.cpp", "btCollisionAlgorithm.cpp", "btCollisionDispatcher.cpp", "btCollisionObject.cpp", "btCollisionShape.cpp", "btCollisionWorld.cpp", "btCompoundCollisionAlgorithm.cpp", "btCompoundShape.cpp", "btConcaveShape.cpp", "btConeShape.cpp", "btConeTwistConstraint.cpp", "btContactConstraint.cpp", "btContactProcessing.cpp", "btContinuousConvexCollision.cpp", "btContinuousDynamicsWorld.cpp", "btConvex2dConvex2dAlgorithm.cpp", "btConvex2dShape.cpp", "btConvexCast.cpp", "btConvexConcaveCollisionAlgorithm.cpp", "btConvexConvexAlgorithm.cpp", "btConvexHull.cpp", "btConvexHullShape.cpp", "btConvexInternalShape.cpp", "btConvexPlaneCollisionAlgorithm.cpp", "btConvexPointCloudShape.cpp", "btConvexShape.cpp", "btConvexTriangleMeshShape.cpp", "btCylinderShape.cpp", "btDbvt.cpp", "btDbvtBroadphase.cpp", "btDefaultCollisionConfiguration.cpp", "btDiscreteDynamicsWorld.cpp", "btDispatcher.cpp", "btEmptyCollisionAlgorithm.cpp", "btEmptyShape.cpp", "btGImpactBvh.cpp", "btGImpactCollisionAlgorithm.cpp", "btGImpactQuantizedBvh.cpp", "btGImpactShape.cpp", "btGeneric6DofConstraint.cpp", "btGeneric6DofSpringConstraint.cpp", "btGenericPoolAllocator.cpp", "btGeometryUtil.cpp", "btGhostObject.cpp", "btGjkConvexCast.cpp", "btGjkEpa2.cpp", "btGjkEpaPenetrationDepthSolver.cpp", "btGjkPairDetector.cpp", "btHeightfieldTerrainShape.cpp", "btHinge2Constraint.cpp", "btHingeConstraint.cpp", "btKinematicCharacterController.cpp", "btManifoldResult.cpp", "btMinkowskiPenetrationDepthSolver.cpp", "btMinkowskiSumShape.cpp", "btMultiSapBroadphase.cpp", "btMultiSphereShape.cpp", "btMultimaterialTriangleMeshShape.cpp", "btOptimizedBvh.cpp", "btOverlappingPairCache.cpp", "btPersistentManifold.cpp", "btPoint2PointConstraint.cpp", "btPolyhedralConvexShape.cpp", "btQuantizedBvh.cpp", "btQuickprof.cpp", "btRaycastCallback.cpp", "btRaycastVehicle.cpp", "btRigidBody.cpp", "btScaledBvhTriangleMeshShape.cpp", "btSequentialImpulseConstraintSolver.cpp", "btShapeHull.cpp", "btSimpleBroadphase.cpp", "btSimpleDynamicsWorld.cpp", "btSimulationIslandManager.cpp", "btSliderConstraint.cpp", "btSoftBody.cpp", "btSoftBodyConcaveCollisionAlgorithm.cpp", "btSoftBodyHelpers.cpp", "btSoftBodyRigidBodyCollisionConfiguration.cpp", "btSoftRigidCollisionAlgorithm.cpp", "btSoftRigidDynamicsWorld.cpp", "btSoftSoftCollisionAlgorithm.cpp", "btSolve2LinearConstraint.cpp", "btSphereBoxCollisionAlgorithm.cpp", "btSphereShape.cpp", "btSphereSphereCollisionAlgorithm.cpp", "btSphereTriangleCollisionAlgorithm.cpp", "btStaticPlaneShape.cpp", "btStridingMeshInterface.cpp", "btSubSimplexConvexCast.cpp", "btTetrahedronShape.cpp", "btTriangleBuffer.cpp", "btTriangleCallback.cpp", "btTriangleIndexVertexArray.cpp", "btTriangleIndexVertexMaterialArray.cpp", "btTriangleMesh.cpp", "btTriangleMeshShape.cpp", "btTriangleShapeEx.cpp", "btTypedConstraint.cpp", "btUniformScalingShape.cpp", "btUnionFind.cpp", "btUniversalConstraint.cpp", "btVoronoiSimplexSolver.cpp", "btWheelInfo.cpp", "gim_box_set.cpp", "gim_contact.cpp", "gim_memory.cpp", "gim_tri_collision.cpp", "main.cpp"],
+   "flags": ["-Iinclude", "-DNO_TIME"]
+  },
+  {
+   "name": "CLAMR",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Benchmarks/DOE-ProxyApps-C++/CLAMR",
+   "srcs": ["Bounds.c", "Cmd.cc", "Comm.cc", "Function.cc", "KDTree.c", "MallocPlus.cpp", "Parser_math.cc", "Parser_utils.cc", "PowerParser.cc", "Restartblock.cc", "Variable.cc", "Whenthen.cc", "Word.cc", "clamr_cpuonly.cpp", "crux.cpp", "fmemopen.c", "genmalloc.c", "glibc_compat_rand.c", "graphics.c", "hash.c", "hsfc.c", "hsfcsort.c", "input.cpp", "memstats.c", "mesh.cpp", "partition.cpp", "reduce.c", "s7.c", "state.cpp", "timer.c", "zorder.c"],
+   "flags": ["-ffp-contract=off", "-DFMA_DISABLED=1"],
+   "args": ["-n", "64", "-t", "1000"],
+   "c_with_gcc": true
+  },
+  {
+   "name": "CoyoteBench/almabench",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/CoyoteBench",
+   "srcs": ["almabench.c"]
+  },
+  {
+   "name": "CoyoteBench/fftbench",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/CoyoteBench",
+   "srcs": ["fftbench.cpp"],
+   "count": ["run"]
+  },
+  {
+   "name": "CoyoteBench/huffbench",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/CoyoteBench",
+   "srcs": ["huffbench.c"]
+  },
+  {
+   "name": "CoyoteBench/lpbench",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/CoyoteBench",
+   "srcs": ["lpbench.c"]
+  },
+  {
+   "name": "DOE/HACCKernels",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Benchmarks/DOE-ProxyApps-C++/HACCKernels",
+   "srcs": ["GravityForceKernel.cpp", "main.cpp"],
+   "flags": ["-ffast-math", "-DVERIFICATION_OUTPUT_ONLY=ON"],
+   "args": ["450"]
+  },
+  {
+   "name": "DOE/HPCCG",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Benchmarks/DOE-ProxyApps-C++/HPCCG",
+   "srcs": ["HPCCG.cpp", "HPC_Sparse_Matrix.cpp", "HPC_sparsemv.cpp", "YAML_Doc.cpp", "YAML_Element.cpp", "compute_residual.cpp", "ddot.cpp", "dump_matlab_matrix.cpp", "exchange_externals.cpp", "generate_matrix.cpp", "main.cpp", "make_local_matrix.cpp", "mytimer.cpp", "read_HPC_row.cpp", "waxpby.cpp"],
+   "flags": ["-DREDSTORM", "-ffp-contract=off", "-DFMA_DISABLED=1"],
+   "args": ["50", "50", "50"],
+   "count": ["run"]
+  },
+  {
+   "name": "DOE/PENNANT",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Benchmarks/DOE-ProxyApps-C++/PENNANT",
+   "srcs": ["Driver.cc", "ExportGold.cc", "GenMesh.cc", "Hydro.cc", "HydroBC.cc", "InputFile.cc", "Mesh.cc", "Parallel.cc", "PolyGas.cc", "QCS.cc", "TTS.cc", "WriteXY.cc", "main.cc"],
+   "args": ["intermediate_leblanc.pnt"],
+   "count": ["run", "compile"]
+  },
+  {
+   "name": "DOE/miniFE",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Benchmarks/DOE-ProxyApps-C++/miniFE",
+   "srcs": ["BoxPartition.cpp", "YAML_Doc.cpp", "YAML_Element.cpp", "main.cpp", "mytimer.cpp", "param_utils.cpp", "utils.cpp"],
+   "flags": ["-I.", "-DMINIFE_SCALAR=double", "-DMINIFE_LOCAL_ORDINAL=int", "-DMINIFE_GLOBAL_ORDINAL=int", "-DMINIFE_CSR_MATRIX", "-DREDSTORM", "-ffp-contract=off", "-DFMA_DISABLED=1"],
+   "args": ["-nx", "64", "-ny", "64", "-nz", "64"]
+  },
+  {
+   "name": "Misc-C++-EH/spirit",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Misc-C++-EH",
+   "srcs": ["spirit.cpp"],
+   "count": ["compile"]
+  },
+  {
+   "name": "Misc-C++-Large/ray",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Misc-C++/Large",
+   "srcs": ["ray.cpp"]
+  },
+  {
+   "name": "Misc-C++-Large/sphereflake",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Misc-C++/Large",
+   "srcs": ["sphereflake.cpp"]
+  },
+  {
+   "name": "Misc-C++/bigfib",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Misc-C++",
+   "srcs": ["bigfib.cpp"],
+   "count": ["run"]
+  },
+  {
+   "name": "Misc-C++/oopack_v1p8",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Misc-C++",
+   "srcs": ["oopack_v1p8.cpp"],
+   "count": ["run", "compile"]
+  },
+  {
+   "name": "Misc-C++/stepanov_container",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Misc-C++",
+   "srcs": ["stepanov_container.cpp"]
+  },
+  {
+   "name": "Misc-C++/stepanov_v1p2",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Misc-C++",
+   "srcs": ["stepanov_v1p2.cpp"]
+  },
+  {
+   "name": "PAQ8p",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Benchmarks/PAQ8p",
+   "srcs": ["paq8p.cpp"],
+   "flags": ["-DNOASM", "-DLLVM"],
+   "args": ["-1", "small.in"],
+   "count": ["run", "compile"]
+  },
+  {
+   "name": "Prolangs-C++/life",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Benchmarks/Prolangs-C++/life",
+   "srcs": ["life.cpp"],
+   "flags": ["-I."]
+  },
+  {
+   "name": "Prolangs-C++/ocean",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Benchmarks/Prolangs-C++/ocean",
+   "srcs": ["ocean.cpp"],
+   "flags": ["-I."],
+   "count": ["run"]
+  },
+  {
+   "name": "Prolangs-C++/primes",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Benchmarks/Prolangs-C++/primes",
+   "srcs": ["primes.cpp"],
+   "flags": ["-I."],
+   "count": ["run"]
+  },
+  {
+   "name": "Shootout-C++-EH/except",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++/EH",
+   "srcs": ["except.cpp"],
+   "count": ["run"]
+  },
+  {
+   "name": "Shootout-C++/ackermann",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["ackermann.cpp"],
+   "count": ["run"]
+  },
+  {
+   "name": "Shootout-C++/ary3",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["ary3.cpp"]
+  },
+  {
+   "name": "Shootout-C++/fibo",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["fibo.cpp"]
+  },
+  {
+   "name": "Shootout-C++/hash",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["hash.cpp"],
+   "count": ["run"]
+  },
+  {
+   "name": "Shootout-C++/hash2",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["hash2.cpp"]
+  },
+  {
+   "name": "Shootout-C++/heapsort",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["heapsort.cpp"],
+   "count": ["run"]
+  },
+  {
+   "name": "Shootout-C++/lists",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["lists.cpp"]
+  },
+  {
+   "name": "Shootout-C++/lists1",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["lists1.cpp"],
+   "count": ["run"]
+  },
+  {
+   "name": "Shootout-C++/matrix",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["matrix.cpp"]
+  },
+  {
+   "name": "Shootout-C++/methcall",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["methcall.cpp"]
+  },
+  {
+   "name": "Shootout-C++/moments",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["moments.cpp"],
+   "count": ["run"]
+  },
+  {
+   "name": "Shootout-C++/random",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["random.cpp"]
+  },
+  {
+   "name": "Shootout-C++/sieve",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Shootout-C++",
+   "srcs": ["sieve.cpp"],
+   "count": ["run"]
+  },
+  {
+   "name": "SmallPT",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/SmallPT",
+   "srcs": ["smallpt.cpp"]
+  },
+  {
+   "name": "Stanford/Bubblesort",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Stanford",
+   "srcs": ["Bubblesort.c"],
+   "flags": ["-Dclass=klass"],
+   "count": ["run"]
+  },
+  {
+   "name": "Stanford/FloatMM",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Stanford",
+   "srcs": ["FloatMM.c"],
+   "flags": ["-Dclass=klass"],
+   "count": ["run"]
+  },
+  {
+   "name": "Stanford/Puzzle",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Stanford",
+   "srcs": ["Puzzle.c"],
+   "flags": ["-Dclass=klass"],
+   "count": ["run"]
+  },
+  {
+   "name": "Stanford/Treesort",
+   "source": "llvm-test-suite",
+   "dir": "SingleSource/Benchmarks/Stanford",
+   "srcs": ["Treesort.c"],
+   "flags": ["-Dclass=klass"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/binarytrees/2",
+   "source": "benchmarksgame",
+   "dir": "binarytrees",
+   "srcs": ["binarytrees.gpp-2.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["16"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/fannkuchredux/3",
+   "source": "benchmarksgame",
+   "dir": "fannkuchredux",
+   "srcs": ["fannkuchredux.gpp-3.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["10"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/fasta/1",
+   "source": "benchmarksgame",
+   "dir": "fasta",
+   "srcs": ["fasta.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2500000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/fasta/2",
+   "source": "benchmarksgame",
+   "dir": "fasta",
+   "srcs": ["fasta.gpp-2.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2500000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/fasta/3",
+   "source": "benchmarksgame",
+   "dir": "fasta",
+   "srcs": ["fasta.gpp-3.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2500000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/fasta/4",
+   "source": "benchmarksgame",
+   "dir": "fasta",
+   "srcs": ["fasta.gpp-4.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2500000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/fasta/6",
+   "source": "benchmarksgame",
+   "dir": "fasta",
+   "srcs": ["fasta.gpp-6.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2500000"]
+  },
+  {
+   "name": "bg/mandelbrot/0",
+   "source": "benchmarksgame",
+   "dir": "mandelbrot",
+   "srcs": ["mandelbrot.gpp-0.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/mandelbrot/2",
+   "source": "benchmarksgame",
+   "dir": "mandelbrot",
+   "srcs": ["mandelbrot.gpp-2.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/mandelbrot/3",
+   "source": "benchmarksgame",
+   "dir": "mandelbrot",
+   "srcs": ["mandelbrot.gpp-3.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/mandelbrot/5",
+   "source": "benchmarksgame",
+   "dir": "mandelbrot",
+   "srcs": ["mandelbrot.gpp-5.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/mandelbrot/7",
+   "source": "benchmarksgame",
+   "dir": "mandelbrot",
+   "srcs": ["mandelbrot.gpp-7.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/mandelbrot/9",
+   "source": "benchmarksgame",
+   "dir": "mandelbrot",
+   "srcs": ["mandelbrot.gpp-9.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/nbody/1",
+   "source": "benchmarksgame",
+   "dir": "nbody",
+   "srcs": ["nbody.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2000000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/nbody/2",
+   "source": "benchmarksgame",
+   "dir": "nbody",
+   "srcs": ["nbody.gpp-2.gpp"],
+   "flags": ["-x", "c++"],
+   "std": "-std=gnu++14",
+   "args": ["2000000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/nbody/3",
+   "source": "benchmarksgame",
+   "dir": "nbody",
+   "srcs": ["nbody.gpp-3.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2000000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/nbody/6",
+   "source": "benchmarksgame",
+   "dir": "nbody",
+   "srcs": ["nbody.gpp-6.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["2000000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/pidigits/4",
+   "source": "benchmarksgame",
+   "dir": "pidigits",
+   "srcs": ["pidigits.gpp-4.gpp"],
+   "flags": ["-x", "c++"],
+   "ldflags": ["-lgmpxx", "-lgmp"],
+   "args": ["4000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/pidigits/5",
+   "source": "benchmarksgame",
+   "dir": "pidigits",
+   "srcs": ["pidigits.gpp-5.gpp"],
+   "flags": ["-x", "c++"],
+   "ldflags": ["-lgmp"],
+   "args": ["4000"],
+   "count": ["run"]
+  },
+  {
+   "name": "bg/revcomp/1",
+   "source": "benchmarksgame",
+   "dir": "revcomp",
+   "srcs": ["revcomp.gpp"],
+   "flags": ["-x", "c++"],
+   "stdin": "@generated/fasta.in",
+   "count": ["run"]
+  },
+  {
+   "name": "bg/revcomp/5",
+   "source": "benchmarksgame",
+   "dir": "revcomp",
+   "srcs": ["revcomp.gpp-5.gpp"],
+   "flags": ["-x", "c++"],
+   "stdin": "@generated/fasta.in",
+   "count": ["run"]
+  },
+  {
+   "name": "bg/spectralnorm/1",
+   "source": "benchmarksgame",
+   "dir": "spectralnorm",
+   "srcs": ["spectralnorm.gpp"],
+   "flags": ["-x", "c++"],
+   "args": ["1000"],
+   "count": ["run", "compile"]
+  },
+  {
+   "name": "box2d",
+   "source": "box2d",
+   "srcs": ["src/collision/b2_broad_phase.cpp", "src/collision/b2_chain_shape.cpp", "src/collision/b2_circle_shape.cpp", "src/collision/b2_collide_circle.cpp", "src/collision/b2_collide_edge.cpp", "src/collision/b2_collide_polygon.cpp", "src/collision/b2_collision.cpp", "src/collision/b2_distance.cpp", "src/collision/b2_dynamic_tree.cpp", "src/collision/b2_edge_shape.cpp", "src/collision/b2_polygon_shape.cpp", "src/collision/b2_time_of_impact.cpp", "src/common/b2_block_allocator.cpp", "src/common/b2_draw.cpp", "src/common/b2_math.cpp", "src/common/b2_settings.cpp", "src/common/b2_stack_allocator.cpp", "src/common/b2_timer.cpp", "src/dynamics/b2_body.cpp", "src/dynamics/b2_chain_circle_contact.cpp", "src/dynamics/b2_chain_polygon_contact.cpp", "src/dynamics/b2_circle_contact.cpp", "src/dynamics/b2_contact.cpp", "src/dynamics/b2_contact_manager.cpp", "src/dynamics/b2_contact_solver.cpp", "src/dynamics/b2_distance_joint.cpp", "src/dynamics/b2_edge_circle_contact.cpp", "src/dynamics/b2_edge_polygon_contact.cpp", "src/dynamics/b2_fixture.cpp", "src/dynamics/b2_friction_joint.cpp", "src/dynamics/b2_gear_joint.cpp", "src/dynamics/b2_island.cpp", "src/dynamics/b2_joint.cpp", "src/dynamics/b2_motor_joint.cpp", "src/dynamics/b2_mouse_joint.cpp", "src/dynamics/b2_polygon_circle_contact.cpp", "src/dynamics/b2_polygon_contact.cpp", "src/dynamics/b2_prismatic_joint.cpp", "src/dynamics/b2_pulley_joint.cpp", "src/dynamics/b2_revolute_joint.cpp", "src/dynamics/b2_weld_joint.cpp", "src/dynamics/b2_wheel_joint.cpp", "src/dynamics/b2_world.cpp", "src/dynamics/b2_world_callbacks.cpp", "src/rope/b2_rope.cpp", "@drivers/box2d_drv.cpp"],
+   "flags": ["-Iinclude", "-Isrc"],
+   "count": ["compile"]
+  },
+  {
+   "name": "fmt",
+   "source": "fmt",
+   "srcs": ["src/format.cc", "src/os.cc", "@drivers/fmt_drv.cpp"],
+   "flags": ["-Iinclude"],
+   "count": ["compile"]
+  },
+  {
+   "name": "hexxagon",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Applications/hexxagon",
+   "srcs": ["bitboard64.cpp", "hexxagon.cpp", "hexxagonboard.cpp", "hexxagongame.cpp", "hexxagonmove.cpp"],
+   "flags": ["-I."],
+   "stdin": "input"
+  },
+  {
+   "name": "lambda",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Applications/lambda-0.1.3",
+   "srcs": ["lambda.cc", "node.cc", "parse.cc", "token_stream.cc"],
+   "flags": ["-I."],
+   "stdin": "input"
+  },
+  {
+   "name": "minisat",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Applications/minisat",
+   "srcs": ["Main.cpp", "Solver.cpp"],
+   "args": ["-verbosity=0", "short.cnf"]
+  },
+  {
+   "name": "nlohmann-json",
+   "source": "nlohmann_json",
+   "srcs": ["@drivers/nlohmann_drv.cpp"],
+   "flags": ["-Isingle_include"],
+   "count": ["compile"]
+  },
+  {
+   "name": "pugixml",
+   "source": "pugixml",
+   "srcs": ["src/pugixml.cpp", "@drivers/pugixml_drv.cpp"],
+   "flags": ["-Isrc"],
+   "count": ["run", "compile"]
+  },
+  {
+   "name": "pugixml-tests",
+   "source": "pugixml",
+   "srcs": ["src/pugixml.cpp", "tests/allocator.cpp", "tests/main.cpp", "tests/test.cpp", "tests/test_compact.cpp", "tests/test_deprecated.cpp", "tests/test_document.cpp", "tests/test_dom_modify.cpp", "tests/test_dom_text.cpp", "tests/test_dom_traverse.cpp", "tests/test_header_guard.cpp", "tests/test_header_iosfwd_1.cpp", "tests/test_header_iosfwd_2.cpp", "tests/test_header_iostream_1.cpp", "tests/test_header_iostream_2.cpp", "tests/test_header_only_1.cpp", "tests/test_header_only_2.cpp", "tests/test_header_string_1.cpp", "tests/test_header_string_2.cpp", "tests/test_header_string_iostream.cpp", "tests/test_memory.cpp", "tests/test_parse.cpp", "tests/test_parse_doctype.cpp", "tests/test_unicode.cpp", "tests/test_version.cpp", "tests/test_write.cpp", "tests/test_xpath.cpp", "tests/test_xpath_api.cpp", "tests/test_xpath_functions.cpp", "tests/test_xpath_operators.cpp", "tests/test_xpath_parse.cpp", "tests/test_xpath_paths.cpp", "tests/test_xpath_paths_abbrev_w3c.cpp", "tests/test_xpath_paths_w3c.cpp", "tests/test_xpath_variables.cpp", "tests/test_xpath_xalan_1.cpp", "tests/test_xpath_xalan_2.cpp", "tests/test_xpath_xalan_3.cpp", "tests/test_xpath_xalan_4.cpp", "tests/test_xpath_xalan_5.cpp", "tests/writer_string.cpp"],
+   "flags": ["-Isrc"]
+  },
+  {
+   "name": "rapidjson",
+   "source": "rapidjson",
+   "srcs": ["@drivers/rapidjson_drv.cpp"],
+   "flags": ["-Iinclude"],
+   "count": ["compile"]
+  },
+  {
+   "name": "re2",
+   "source": "re2",
+   "srcs": ["re2/bitstate.cc", "re2/compile.cc", "re2/dfa.cc", "re2/filtered_re2.cc", "re2/mimics_pcre.cc", "re2/nfa.cc", "re2/onepass.cc", "re2/parse.cc", "re2/perl_groups.cc", "re2/prefilter.cc", "re2/prefilter_tree.cc", "re2/prog.cc", "re2/re2.cc", "re2/regexp.cc", "re2/set.cc", "re2/simplify.cc", "re2/stringpiece.cc", "re2/tostring.cc", "re2/unicode_casefold.cc", "re2/unicode_groups.cc", "util/rune.cc", "util/strutil.cc", "@drivers/re2_drv.cpp"],
+   "flags": ["-I."],
+   "count": ["run", "compile"]
+  },
+  {
+   "name": "re2-test-re2",
+   "source": "re2",
+   "srcs": ["re2/bitstate.cc", "re2/compile.cc", "re2/dfa.cc", "re2/filtered_re2.cc", "re2/mimics_pcre.cc", "re2/nfa.cc", "re2/onepass.cc", "re2/parse.cc", "re2/perl_groups.cc", "re2/prefilter.cc", "re2/prefilter_tree.cc", "re2/prog.cc", "re2/re2.cc", "re2/regexp.cc", "re2/set.cc", "re2/simplify.cc", "re2/stringpiece.cc", "re2/tostring.cc", "re2/unicode_casefold.cc", "re2/unicode_groups.cc", "util/rune.cc", "util/strutil.cc", "re2/testing/backtrack.cc", "re2/testing/dump.cc", "re2/testing/exhaustive_tester.cc", "re2/testing/null_walker.cc", "re2/testing/regexp_generator.cc", "re2/testing/string_generator.cc", "re2/testing/tester.cc", "util/pcre.cc", "util/test.cc", "re2/testing/re2_test.cc"],
+   "flags": ["-I."]
+  },
+  {
+   "name": "re2-test-search",
+   "source": "re2",
+   "srcs": ["re2/bitstate.cc", "re2/compile.cc", "re2/dfa.cc", "re2/filtered_re2.cc", "re2/mimics_pcre.cc", "re2/nfa.cc", "re2/onepass.cc", "re2/parse.cc", "re2/perl_groups.cc", "re2/prefilter.cc", "re2/prefilter_tree.cc", "re2/prog.cc", "re2/re2.cc", "re2/regexp.cc", "re2/set.cc", "re2/simplify.cc", "re2/stringpiece.cc", "re2/tostring.cc", "re2/unicode_casefold.cc", "re2/unicode_groups.cc", "util/rune.cc", "util/strutil.cc", "re2/testing/backtrack.cc", "re2/testing/dump.cc", "re2/testing/exhaustive_tester.cc", "re2/testing/null_walker.cc", "re2/testing/regexp_generator.cc", "re2/testing/string_generator.cc", "re2/testing/tester.cc", "util/pcre.cc", "util/test.cc", "re2/testing/search_test.cc"],
+   "flags": ["-I."]
+  },
+  {
+   "name": "tramp3d-v4",
+   "source": "llvm-test-suite",
+   "dir": "MultiSource/Benchmarks/tramp3d-v4",
+   "srcs": ["tramp3d-v4.cpp"],
+   "flags": ["-fno-exceptions"],
+   "args": ["--cartvis", "1.0", "0.0", "--rhomin", "1e-8", "-n", "10", "--domain", "32", "32", "32"],
+   "count": ["run", "compile"]
+  }
+ ]
+}
