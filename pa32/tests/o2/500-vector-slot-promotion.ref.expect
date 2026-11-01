@@ -1,0 +1,16 @@
+# budget from 500-vector-slot-promotion.ref: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 41
+blocks <= 14
+count(call) <= 3
+count(load) <= 3
+count(store) <= 3
+count(phi) <= 8
+instructions <= 7 in @pick
+instructions <= 18 in @sum_of_lanes
+instructions <= 20 in @main
+
+# outcomes from 500-vector-slot-promotion.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(call @pick)
+none(call @sum_of_lanes)
+none(load)
+none(store)

@@ -21,6 +21,7 @@ bool phi_type(Type type)
 	case TypeKind::I64:
 	case TypeKind::F32:
 	case TypeKind::F64:
+	case TypeKind::V128:
 	case TypeKind::Ptr:
 		return true;
 	default:

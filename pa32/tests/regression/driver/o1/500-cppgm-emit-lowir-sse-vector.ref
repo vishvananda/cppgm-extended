@@ -1,0 +1,287 @@
+function @add_floats(%a : v128, %b : v128) -> v128 [binding=strong, object=_Z10add_floatsDv4_fS_] {
+  block ^entry:
+    %t1 = vector addps %a, %b
+    return v128 %t1
+}
+function @divide_doubles(%a : v128, %b : v128) -> v128 [binding=strong, object=_Z14divide_doublesDv2_dS_] {
+  block ^entry:
+    %t1 = vector divpd %a, %b
+    return v128 %t1
+}
+function @add_words(%a : v128, %b : v128) -> v128 [binding=strong, object=_Z9add_wordsDv4_iS_] {
+  block ^entry:
+    %t1 = vector paddd %a, %b
+    return v128 %t1
+}
+function @multiply_words(%a : v128, %b : v128) -> v128 [binding=strong, object=_Z14multiply_wordsDv4_iS_] {
+  slot $vector__1 : v128
+  slot $vector__2 : v128
+  slot $vector__3 : v128
+
+  block ^entry:
+    store v128 %a, $vector__1
+    %t1 = addr $vector__1
+    store v128 %b, $vector__2
+    %t2 = addr $vector__2
+    zeroinit 16x16 $vector__3
+    %t3 = addr $vector__3
+    %t4 = load typed i32 %t1
+    %t5 = load typed i32 %t2
+    %t6 = binary mul nowrap i32 %t4, %t5
+    store typed i32 %t6, %t3
+    %t7 = index i8 [projection=field] %t1, 4
+    %t8 = load typed i32 %t7
+    %t9 = index i8 [projection=field] %t2, 4
+    %t10 = load typed i32 %t9
+    %t11 = binary mul nowrap i32 %t8, %t10
+    %t12 = index i8 [projection=field] %t3, 4
+    store typed i32 %t11, %t12
+    %t13 = index i8 [projection=field] %t1, 8
+    %t14 = load typed i32 %t13
+    %t15 = index i8 [projection=field] %t2, 8
+    %t16 = load typed i32 %t15
+    %t17 = binary mul nowrap i32 %t14, %t16
+    %t18 = index i8 [projection=field] %t3, 8
+    store typed i32 %t17, %t18
+    %t19 = index i8 [projection=field] %t1, 12
+    %t20 = load typed i32 %t19
+    %t21 = index i8 [projection=field] %t2, 12
+    %t22 = load typed i32 %t21
+    %t23 = binary mul nowrap i32 %t20, %t22
+    %t24 = index i8 [projection=field] %t3, 12
+    store typed i32 %t23, %t24
+    %t25 = load v128 $vector__3
+    return v128 %t25
+}
+function @bit_mix(%a : v128, %b : v128) -> v128 [binding=strong, object=_Z7bit_mixDv4_iS_] {
+  block ^entry:
+    %t1 = vector pand %a, %b
+    %t2 = vector pxor %t1, %b
+    return v128 %t2
+}
+function @compare_words(%a : v128, %b : v128) -> v128 [binding=strong, object=_Z13compare_wordsDv4_iS_] {
+  block ^entry:
+    %t1 = vector pcmpeqd %a, %b
+    return v128 %t1
+}
+function @shift_left(%a : v128) -> v128 [binding=strong, object=_Z10shift_leftDv4_i] {
+  block ^entry:
+    %t1 = vector pslldi %a, 3
+    return v128 %t1
+}
+function @shift_right(%a : v128, %count : i32) -> v128 [binding=strong, object=_Z11shift_rightDv4_ii] {
+  block ^entry:
+    %t1 = vector fromi32 %count
+    %t2 = vector psrad %a, %t1
+    return v128 %t2
+}
+function @shift_right_literal(%a : v128) -> v128 [binding=strong, object=_Z19shift_right_literalDv4_i] {
+  block ^entry:
+    %t1 = vector psradi %a, 2
+    return v128 %t1
+}
+function @shift_unsigned(%a : v128, %count : i32) -> v128 [binding=strong, object=_Z14shift_unsignedDv4_ji] {
+  slot $vector__1 : v128
+  slot $vector__2 : v128
+
+  block ^entry:
+    %t1 = copy u32 %count
+    store v128 %a, $vector__1
+    %t2 = addr $vector__1
+    zeroinit 16x16 $vector__2
+    %t3 = addr $vector__2
+    %t4 = load typed u32 %t2
+    %t5 = binary ushr u32 %t4, %t1
+    store typed u32 %t5, %t3
+    %t6 = index i8 [projection=field] %t2, 4
+    %t7 = load typed u32 %t6
+    %t8 = binary ushr u32 %t7, %t1
+    %t9 = index i8 [projection=field] %t3, 4
+    store typed u32 %t8, %t9
+    %t10 = index i8 [projection=field] %t2, 8
+    %t11 = load typed u32 %t10
+    %t12 = binary ushr u32 %t11, %t1
+    %t13 = index i8 [projection=field] %t3, 8
+    store typed u32 %t12, %t13
+    %t14 = index i8 [projection=field] %t2, 12
+    %t15 = load typed u32 %t14
+    %t16 = binary ushr u32 %t15, %t1
+    %t17 = index i8 [projection=field] %t3, 12
+    store typed u32 %t16, %t17
+    %t18 = load v128 $vector__2
+    return v128 %t18
+}
+function @shift_short(%a : v128, %count : i32) -> v128 [binding=strong, object=_Z11shift_shortDv8_si] {
+  block ^entry:
+    %t1 = convert trunc i16 i32 %count
+    %t2 = convert zext i32 i16 %t1
+    %t3 = vector fromi32 %t2
+    %t4 = vector psllw %a, %t3
+    return v128 %t4
+}
+function @shift_quad(%a : v128, %count : i32) -> v128 [binding=strong, object=_Z10shift_quadDv2_xi] {
+  slot $vector__1 : v128
+  slot $vector__2 : v128
+
+  block ^entry:
+    %t1 = convert sext i64 i32 %count
+    store v128 %a, $vector__1
+    %t2 = addr $vector__1
+    zeroinit 16x16 $vector__2
+    %t3 = addr $vector__2
+    %t4 = load typed i64 %t2
+    %t5 = binary shr i64 %t4, %t1
+    store typed i64 %t5, %t3
+    %t6 = index i8 [projection=field] %t2, 8
+    %t7 = load typed i64 %t6
+    %t8 = binary shr i64 %t7, %t1
+    %t9 = index i8 [projection=field] %t3, 8
+    store typed i64 %t8, %t9
+    %t10 = load v128 $vector__2
+    return v128 %t10
+}
+function @scale_floats(%a : v128, %b : f32) -> v128 [binding=strong, object=_Z12scale_floatsDv4_ff] {
+  block ^entry:
+    %t1 = vector fromf32 %b
+    %t2 = vector shufps %t1, %t1, 0
+    %t3 = vector mulps %a, %t2
+    return v128 %t3
+}
+function @scale_doubles(%a : v128, %b : f64) -> v128 [binding=strong, object=_Z13scale_doublesDv2_dd] {
+  block ^entry:
+    %t1 = vector fromf64 %b
+    %t2 = vector unpcklpd %t1, %t1
+    %t3 = vector mulpd %t2, %a
+    return v128 %t3
+}
+function @add_scalar(%a : v128, %b : i32) -> v128 [binding=strong, object=_Z10add_scalarDv4_ii] {
+  block ^entry:
+    %t1 = vector fromi32 %b
+    %t2 = vector pshufd %t1, 0
+    %t3 = vector paddd %a, %t2
+    return v128 %t3
+}
+function @add_quad_scalar(%a : v128, %b : i64) -> v128 [binding=strong, object=_Z15add_quad_scalarDv2_xx] {
+  block ^entry:
+    %t1 = vector fromi64 %b
+    %t2 = vector punpcklqdq %t1, %t1
+    %t3 = vector paddq %a, %t2
+    return v128 %t3
+}
+function @compare_scalar(%a : v128, %b : f32) -> v128 [binding=strong, object=_Z14compare_scalarDv4_ff] {
+  block ^entry:
+    %t1 = vector fromf32 %b
+    %t2 = vector shufps %t1, %t1, 0
+    %t3 = vector cmpps %a, %t2, 1
+    return v128 %t3
+}
+function @compare_zero(%a : v128) -> v128 [binding=strong, object=_Z12compare_zeroDv4_i] {
+  block ^entry:
+    %t1 = vector fromi32 0
+    %t2 = vector pshufd %t1, 0
+    %t3 = vector pcmpgtd %a, %t2
+    return v128 %t3
+}
+function @pair(%a : f64, %b : f64) -> v128 [binding=strong, object=_Z4pairdd] {
+  block ^entry:
+    %t1 = vector fromf64 %a
+    %t2 = vector fromf64 %b
+    %t3 = vector unpcklpd %t1, %t2
+    return v128 %t3
+}
+function @words(%a : i32, %b : i32, %c : i32, %d : i32) -> v128 [binding=strong, object=_Z5wordsiiii] {
+  block ^entry:
+    %t1 = vector fromi32 %a
+    %t2 = vector fromi32 %b
+    %t3 = vector fromi32 %c
+    %t4 = vector fromi32 %d
+    %t5 = vector punpckldq %t1, %t2
+    %t6 = vector punpckldq %t3, %t4
+    %t7 = vector punpcklqdq %t5, %t6
+    return v128 %t7
+}
+function @second_lane(%a : v128) -> f64 [binding=strong, object=_Z11second_laneDv2_d] {
+  slot $a : v128
+
+  block ^entry:
+    store v128 %a, $a
+    %t1 = addr $a
+    %t2 = index i8 [projection=array_element] %t1, 8
+    %t3 = load typed f64 %t2
+    return f64 %t3
+}
+function @third_lane(%a : v128) -> f32 [binding=strong, object=_Z10third_laneDv4_f] {
+  slot $a : v128
+
+  block ^entry:
+    store v128 %a, $a
+    %t1 = addr $a
+    %t2 = index i8 [projection=array_element] %t1, 8
+    %t3 = load typed f32 %t2
+    return f32 %t3
+}
+function @first_word(%a : v128) -> i32 [binding=strong, object=_Z10first_wordDv4_i] {
+  slot $a : v128
+
+  block ^entry:
+    store v128 %a, $a
+    %t1 = addr $a
+    %t2 = load typed i32 %t1
+    return i32 %t2
+}
+function @sign_mask(%a : v128) -> i32 [binding=strong, object=_Z9sign_maskDv4_f] {
+  block ^entry:
+    %t1 = vector movmskps %a
+    return i32 %t1
+}
+function @add_low(%a : v128, %b : v128) -> v128 [binding=strong, object=_Z7add_lowDv2_dS_] {
+  block ^entry:
+    %t1 = vector addsd %a, %b
+    return v128 %t1
+}
+function @root(%a : v128) -> v128 [binding=strong, object=_Z4rootDv4_f] {
+  block ^entry:
+    %t1 = vector sqrtps %a
+    return v128 %t1
+}
+function @shuffle_words(%a : v128) -> v128 [binding=strong, object=_Z13shuffle_wordsDv4_i] {
+  block ^entry:
+    %t1 = vector pshufd %a, 27
+    return v128 %t1
+}
+function @small_add(%a : obj<8x8>, %b : obj<8x8>) -> obj<8x8> [binding=strong, object=_Z9small_addDv2_iS_] {
+  slot $vector__1 : obj<8x8>
+  slot $vector__2 : obj<8x8>
+  slot $vector__3 : obj<8x8>
+
+  block ^entry:
+    copyobj 8x8 %a, $vector__1
+    %t1 = addr $vector__1
+    copyobj 8x8 %b, $vector__2
+    %t2 = addr $vector__2
+    zeroinit 8x8 $vector__3
+    %t3 = addr $vector__3
+    %t4 = load typed i32 %t1
+    %t5 = load typed i32 %t2
+    %t6 = binary add nowrap i32 %t4, %t5
+    store typed i32 %t6, %t3
+    %t7 = index i8 [projection=field] %t1, 4
+    %t8 = load typed i32 %t7
+    %t9 = index i8 [projection=field] %t2, 4
+    %t10 = load typed i32 %t9
+    %t11 = binary add nowrap i32 %t8, %t10
+    %t12 = index i8 [projection=field] %t3, 4
+    store typed i32 %t11, %t12
+    %t13 = load obj<8x8> $vector__3
+    return obj<8x8> %t13
+}
+function @store_load(%p : ptr, %q : ptr) -> v128 [binding=strong, object=_Z10store_loadPKDv2_dPS_] {
+  block ^entry:
+    %t1 = load v128 %p
+    store v128 %t1, %q
+    return v128 %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

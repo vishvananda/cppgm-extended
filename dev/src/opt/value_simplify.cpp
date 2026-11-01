@@ -124,6 +124,29 @@ Type operand_type(const Instruction& inst)
 	return inst.type;
 }
 
+// The operation that reads back what a `from*` operation places.
+VectorOp lane_read(VectorOp from)
+{
+	switch (from)
+	{
+	case VectorOp::Fromf32:
+		return VectorOp::Tof32;
+	case VectorOp::Fromf64:
+		return VectorOp::Tof64;
+	case VectorOp::Fromi32:
+		return VectorOp::Toi32;
+	case VectorOp::Fromi64:
+		return VectorOp::Toi64;
+	default:
+		return from;
+	}
+}
+
+unsigned lane_bytes(VectorOp read)
+{
+	return read == VectorOp::Tof32 || read == VectorOp::Toi32 ? 4 : 8;
+}
+
 class Simplifier
 {
 public:
@@ -159,6 +182,8 @@ private:
 	bool binary_identity(Instruction& inst, Value& out);
 	bool compare_identity(Instruction& inst, Value& out);
 	bool convert_identity(Instruction& inst, Value& out);
+	bool vector_identity(Instruction& inst, Value& out);
+	Value low_lane_source(Value v, unsigned bytes);
 	bool reassociate(Instruction& inst);
 	uint64_t possible_bits(Value v, Type type, unsigned depth = 0);
 	bool mask_or(Instruction& inst);
@@ -550,6 +575,8 @@ bool Simplifier::identity(Instruction& inst, Value& out)
 		return compare_identity(inst, out);
 	case Opcode::Convert:
 		return convert_identity(inst, out);
+	case Opcode::Vector:
+		return vector_identity(inst, out);
 	case Opcode::Phi:
 		return phi_value(inst, out) || select_identity(inst, current_block_, out);
 	default:
@@ -1003,6 +1030,112 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 	inst.ops[0] = def->ops[0];
 	inst.ops[1] = def->ops[1];
 	changed_ = true;
+	return false;
+}
+
+// A value with the same low bytes as v, when v only moves them: a scalar taken
+// out and put back, or the first operand of an interleave.
+Value Simplifier::low_lane_source(Value v, unsigned bytes)
+{
+	for (;;)
+	{
+		const Instruction* def = producer(v);
+		if (def == nullptr || def->op != Opcode::Vector)
+			return v;
+		Value next = def->ops[0];
+		switch (static_cast<VectorOp>(def->sub))
+		{
+		case VectorOp::Fromf32:
+		case VectorOp::Fromf64:
+		case VectorOp::Fromi32:
+		case VectorOp::Fromi64:
+		{
+			const VectorOp to = lane_read(static_cast<VectorOp>(def->sub));
+			const Instruction* scalar = producer(next);
+			if (bytes > lane_bytes(to) || scalar == nullptr || scalar->op != Opcode::Vector ||
+				static_cast<VectorOp>(scalar->sub) != to)
+				return v;
+			next = scalar->ops[0];
+			break;
+		}
+		case VectorOp::Shufpd:
+		{
+			// Bit 0 of the immediate picks the first operand's lane.
+			Constant selector;
+			if (!literal_constant(body_, def->ops[2], selector) || (selector.bits.low & 1) != 0)
+				return v;
+			break;
+		}
+		case VectorOp::Unpcklps:
+		case VectorOp::Punpckldq:
+			if (bytes > 4)
+				return v;
+			break;
+		case VectorOp::Unpcklpd:
+		case VectorOp::Movlhps:
+		case VectorOp::Punpcklqdq:
+			break;
+		default:
+			return v;
+		}
+		v = resolve(next);
+	}
+}
+
+bool Simplifier::vector_identity(Instruction& inst, Value& out)
+{
+	const VectorOp op = static_cast<VectorOp>(inst.sub);
+	switch (op)
+	{
+	case VectorOp::Tof32:
+	case VectorOp::Tof64:
+	case VectorOp::Toi32:
+	case VectorOp::Toi64:
+	{
+		const Value source = low_lane_source(resolve(inst.ops[0]), lane_bytes(op));
+		const Instruction* def = producer(source);
+		if (def != nullptr && def->op == Opcode::Vector && lane_read(static_cast<VectorOp>(def->sub)) == op)
+		{
+			out = resolve(def->ops[0]);
+			return true;
+		}
+		if (!(source == inst.ops[0]))
+		{
+			inst.ops[0] = source;
+			changed_ = true;
+		}
+		return false;
+	}
+	case VectorOp::Unpcklpd:
+	case VectorOp::Unpcklps:
+	case VectorOp::Punpckldq:
+	case VectorOp::Punpcklqdq:
+	case VectorOp::Movlhps:
+		break;
+	default:
+		return false;
+	}
+	// An interleave of the low halves reads only their low eight bytes, and the
+	// low double of a duplicated high lane is that high lane.
+	for (unsigned k = 0; k < 2; ++k)
+	{
+		const Value source = low_lane_source(resolve(inst.ops[k]), 8);
+		if (!(source == inst.ops[k]))
+		{
+			inst.ops[k] = source;
+			changed_ = true;
+		}
+	}
+	const Instruction* high = producer(resolve(inst.ops[1]));
+	if (op == VectorOp::Unpcklpd && high != nullptr && high->op == Opcode::Vector &&
+		static_cast<VectorOp>(high->sub) == VectorOp::Unpckhpd && resolve(high->ops[0]) == resolve(high->ops[1]))
+	{
+		// The first's low double beside the second's high double.
+		inst.sub = static_cast<uint8_t>(VectorOp::Shufpd);
+		inst.ops[1] = resolve(high->ops[0]);
+		inst.ops[2] = integer_value(body_, Literal{ 2, 0 });
+		changed_ = true;
+	}
 	return false;
 }
 

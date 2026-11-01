@@ -1,0 +1,61 @@
+function @pick(%a : v128, %b : v128, %which : i32) -> v128 {
+  block ^entry:
+    branch %which, ^done, ^right
+
+  block ^right:
+    jump ^done
+
+  block ^done:
+    %t1 = phi v128 [^right: %b, ^entry: %a]
+    return v128 %t1
+}
+function @sum_of_lanes(%count : i32) -> f64 {
+  block ^entry:
+    %start = vector pzero
+    %one = vector fromf64 1.5
+    %step = vector unpcklpd %one, %one
+    jump ^loop
+
+  block ^loop:
+    %t4 = phi v128 [^entry: %start, ^body: %new]
+    %i = phi i32 [^entry: 0, ^body: %next]
+    %more = cmp lt i32 %i, %count
+    branch %more, ^body, ^done
+
+  block ^body:
+    %new = vector addpd %t4, %step
+    %next = binary add nowrap i32 %i, 1
+    jump ^loop
+
+  block ^done:
+    %high = vector unpckhpd %t4, %t4
+    %low = vector addsd %t4, %high
+    %result = vector tof64 %low
+    return f64 %result
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %start_1 = vector pzero
+    %one_2 = vector fromf64 1.5
+    %step_3 = vector unpcklpd %one_2, %one_2
+    jump ^loop_1
+
+  block ^loop_1:
+    %t4 = phi v128 [^entry: %start_1, ^body_2: %new_7]
+    %i_5 = phi i32 [^entry: 0, ^body_2: %next_8]
+    %more_6 = cmp lt i32 %i_5, 4
+    branch %more_6, ^body_2, ^done_3
+
+  block ^body_2:
+    %new_7 = vector addpd %t4, %step_3
+    %next_8 = binary add nowrap i32 %i_5, 1
+    jump ^loop_1
+
+  block ^done_3:
+    %high_9 = vector unpckhpd %t4, %t4
+    %low_10 = vector addsd %t4, %high_9
+    %result_11 = vector tof64 %low_10
+    %whole = convert fptosi i32 f64 %result_11
+    %total = binary add i32 %whole, 18
+    return i32 %total
+}
