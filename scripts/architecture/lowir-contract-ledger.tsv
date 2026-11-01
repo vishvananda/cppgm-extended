@@ -36,6 +36,7 @@ instruction	unary	semantic lowering;explicit LowIR	optimizer;native	pa8/README.m
 instruction	binary	semantic lowering;explicit LowIR	optimizer;native	pa8/README.md	pa8/tests/spec/200-binary-int-ops.t	keep	scalar arithmetic family
 instruction	binary nowrap|exact	semantic lowering;explicit LowIR	parser;validator;optimizer drop rules;object roundtrip	pa8/lowir.md;pa10/README.md	pa8/tests/spec/300-instruction-facts.t;pa10/tests/controls/100-pointer-difference-strength-reduction.t	keep	undefined signed overflow of int/long arithmetic and exact pointer-difference division
 instruction	unary ctz|clz	GNU bit-scan builtin lowering;explicit LowIR	constant folding;native BSF/BSR	pa8/lowir.md	pa8/tests/spec/300-bit-scans.t	keep	bit scans with an unspecified result for zero, kept whole for the backend
+instruction	unary sqrt	optimizer library-call rewrite;explicit LowIR	constant folding;native SQRTSS/SQRTSD	pa8/lowir.md	pa8/tests/spec/300-sqrt.t	keep	IEEE square root without errno
 instruction	cmp	semantic lowering;explicit LowIR	optimizer;native	pa8/README.md	pa8/tests/spec/200-compare-predicates.t	keep	typed comparison
 instruction	convert	semantic lowering;explicit LowIR	optimizer;native	pa8/README.md	pa8/tests/spec/200-integral-float-conversions.t	keep	typed conversion
 instruction	select	GNU clzg/ctzg fallback lowering;explicit LowIR	native CMOV;constant folding	pa8/lowir.md;pa24/README.md	pa8/tests/spec/300-select.t	keep	branch-free choice between two computed values; the course optimizer also forms it from pure diamonds at O2+

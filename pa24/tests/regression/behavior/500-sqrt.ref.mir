@@ -1,0 +1,89 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @root64
+  abi
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 64
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    param-slot %x -> [rbp-8] : f64
+
+  block ^entry
+    fmov.f64 [rbp-8], xmm0
+    fmov.f64 xmm15, [rbp-8]
+    vector.sqrtsd xmm0, xmm0, xmm15
+    ret xmm0
+
+function @root32
+  abi
+    param %x -> xmm0 : f32
+    return f32 -> xmm0
+  frame
+    stack_size 64
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    param-slot %x -> [rbp-8] : f32
+
+  block ^entry
+    fmov.f32 [rbp-8], xmm0
+    fmov.f32 xmm15, [rbp-8]
+    vector.sqrtss xmm0, xmm0, xmm15
+    ret xmm0
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    fmov.f64 xmm0, 2.25
+    call @root64 [args=(xmm0)]
+    fcmp.f64 xmm0, 1.5
+    jp ^fail
+    je ^b
+    jmp ^fail
+
+  block ^b
+    fmov.f32 xmm0, 6.25f
+    call @root32 [args=(xmm0)]
+    fcmp.f32 xmm0, 2.5f
+    jp ^fail
+    je ^c
+    jmp ^fail
+
+  block ^c
+    fmov.f64 xmm0, -1.0
+    call @root64 [args=(xmm0)]
+    fcmp.f64 xmm0, xmm0
+    jp ^d
+    jne ^d
+    jmp ^fail
+
+  block ^d
+    fmov.f64 xmm15, 16.0
+    vector.sqrtsd xmm0, xmm0, xmm15
+    fcmp.f64 xmm0, 4.0
+    jp ^fail
+    je ^pass
+    jmp ^fail
+
+  block ^pass
+    mov rax, 0
+    ret rax
+
+  block ^fail
+    mov rax, 1
+    ret rax

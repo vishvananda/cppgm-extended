@@ -3,6 +3,8 @@
 #include "opt/scalar_fold.h"
 #include "support/flat_map.h"
 
+#include <cstring>
+
 namespace opt {
 
 using namespace lowir;
@@ -192,6 +194,8 @@ private:
 	bool exact_compare(Instruction& inst);
 	bool bulk_call(Instruction& inst);
 	bool equality_memcmp(BlockId block, InstId& prev, InstId id);
+	bool nonnegative(Value v, unsigned depth);
+	bool math_call(BlockId block, InstId& prev, InstId id);
 	void simplify_branch(Instruction& term);
 	bool phi_value(const Instruction& phi, Value& out);
 	void process_block(BlockId block);
@@ -1648,6 +1652,159 @@ bool Simplifier::equality_memcmp(BlockId block, InstId& prev, InstId id)
 	return true;
 }
 
+// Whether a floating value is never below zero: its square root is no domain
+// error, whose errno a call must set. (A NaN sets none.)
+bool Simplifier::nonnegative(Value v, unsigned depth)
+{
+	Constant c;
+	if (constant(v, Type::scalar(TypeKind::F64), c))
+		return c.kind == ValueKind::Float &&
+			(c.float_kind == TypeKind::F32 ? (c.bits.low >> 31) & 1 : c.bits.low >> 63) == 0;
+	const Instruction* def = depth == 0 ? nullptr : producer(v);
+	if (def == nullptr)
+		return false;
+	switch (def->op)
+	{
+	case Opcode::Binary:
+	{
+		const BinaryOp op = static_cast<BinaryOp>(def->sub);
+		if (op == BinaryOp::Mul && def->ops[0] == def->ops[1])
+			return true;
+		return (op == BinaryOp::Add || op == BinaryOp::Mul || op == BinaryOp::Div) &&
+			nonnegative(def->ops[0], depth - 1) && nonnegative(def->ops[1], depth - 1);
+	}
+	case Opcode::Unary:
+		return static_cast<UnaryOp>(def->sub) == UnaryOp::Sqrt;
+	default:
+		return false;
+	}
+}
+
+// O2+: calls of C library math functions the compiler can do itself. fabs is
+// the sign bit cleared, abs a selected negation. pow of a literal exponent 2,
+// 1, 0 or -1 is x * x, x, 1 or 1 / x, as GCC folds it (no errno either). sqrt
+// of a value that cannot be negative is the instruction.
+bool Simplifier::math_call(BlockId block, InstId& prev, InstId id)
+{
+	const Instruction call = body_.instructions[id];
+	if (c_.level < 2 || !call.ops[0].is(ValueKind::Symbol) || call.result == kNoId || call.extra_count == 0 ||
+		call.extra_count > 2)
+		return false;
+	const MathFunction function = c_.program.math_function(call.ops[0].index);
+	if (function == MathFunction::None)
+		return false;
+	const Value x = body_.operands[call.extra_first];
+	const Type type = call.type;
+	const TypeKind kind = type.kind();
+	if (!x.is(ValueKind::Temp) || body_.temps[x.index].type != type ||
+		call.extra_count != (function == MathFunction::Pow ? 2u : 1u))
+		return false;
+	const bool floating = kind == TypeKind::F32 || kind == TypeKind::F64;
+	if (function == MathFunction::Abs ? kind != TypeKind::I32 && kind != TypeKind::I64 : !floating)
+		return false;
+	auto emit = [&](Instruction inst, Type result_type) {
+		inst.location = call.location;
+		const InstId at = append_instruction(body_, inst);
+		body_.instructions[at].result = append_temp(body_, result_type, at);
+		insert_after(body_, block, prev, at);
+		prev = at;
+		return Value::temp(body_.instructions[at].result);
+	};
+	// The call becomes the instruction left in `last`.
+	Instruction last = make_instruction(Opcode::Copy, type);
+	last.ops[0] = x;
+	switch (function)
+	{
+	case MathFunction::Fabs:
+	{
+		const Type bits = Type::scalar(kind == TypeKind::F64 ? TypeKind::I64 : TypeKind::I32);
+		Instruction copy = make_instruction(Opcode::Copy, bits);
+		copy.ops[0] = x;
+		Instruction mask = make_instruction(Opcode::Binary, bits);
+		mask.sub = static_cast<uint8_t>(BinaryOp::And);
+		mask.ops[0] = emit(copy, bits);
+		mask.ops[1] = integer_value(
+			body_, integer_literal(kind == TypeKind::F64 ? INT64_C(0x7fffffffffffffff) : INT64_C(0x7fffffff)));
+		last.ops[0] = emit(mask, bits);
+		break;
+	}
+	case MathFunction::Abs:
+	{
+		Instruction negate = make_instruction(Opcode::Unary, type);
+		negate.sub = static_cast<uint8_t>(UnaryOp::Neg);
+		negate.ops[0] = x;
+		const Value negated = emit(negate, type);
+		Instruction below = make_instruction(Opcode::Compare, type);
+		below.sub = static_cast<uint8_t>(ComparePredicate::Lt);
+		below.ops[0] = x;
+		below.ops[1] = integer_value(body_, integer_literal(0));
+		last = make_instruction(Opcode::Select, type);
+		last.ops[0] = emit(below, Type::scalar(TypeKind::I1));
+		last.ops[1] = negated;
+		last.ops[2] = x;
+		break;
+	}
+	case MathFunction::Pow:
+	{
+		Constant e;
+		if (!constant(body_.operands[call.extra_first + 1], type, e) || e.kind != ValueKind::Float ||
+			e.float_kind != kind)
+			return false;
+		double exponent;
+		if (kind == TypeKind::F64)
+			std::memcpy(&exponent, &e.bits.low, 8);
+		else
+		{
+			float narrow;
+			const uint32_t raw = static_cast<uint32_t>(e.bits.low);
+			std::memcpy(&narrow, &raw, 4);
+			exponent = narrow;
+		}
+		if (exponent == 2)
+		{
+			last = make_instruction(Opcode::Binary, type);
+			last.sub = static_cast<uint8_t>(BinaryOp::Mul);
+			last.ops[0] = last.ops[1] = x;
+		}
+		else if (exponent == -1)
+		{
+			last = make_instruction(Opcode::Binary, type);
+			last.sub = static_cast<uint8_t>(BinaryOp::Div);
+			last.ops[0] = phi_input(body_, type, integer_value(body_, integer_literal(1)));
+			last.ops[1] = x;
+		}
+		else if (exponent == 0)
+			last.ops[0] = phi_input(body_, type, integer_value(body_, integer_literal(1)));
+		else if (exponent != 1)
+			return false;
+		break;
+	}
+	case MathFunction::Sqrt:
+		if (!nonnegative(x, 6))
+			return false;
+		last = make_instruction(Opcode::Unary, type);
+		last.sub = static_cast<uint8_t>(UnaryOp::Sqrt);
+		last.ops[0] = x;
+		break;
+	default:
+		return false;
+	}
+	repl_.resize(body_.temps.size(), Value::none());
+	uses_.resize(body_.temps.size(), 0);
+	nonzero_.resize(body_.temps.size(), 0);
+	equal_.resize(body_.temps.size(), Value::none());
+	Instruction& replaced = body_.instructions[id];
+	replaced.op = last.op;
+	replaced.sub = last.sub;
+	replaced.type = type;
+	replaced.ops[0] = last.ops[0];
+	replaced.ops[1] = last.ops[1];
+	replaced.ops[2] = last.ops[2];
+	replaced.extra_first = replaced.extra_count = 0;
+	replaced.flags = 0;
+	return true;
+}
+
 // A branch tests only whether its condition is zero: look through
 // zero-extensions, truncations of truth values and `x != 0`.
 void Simplifier::simplify_branch(Instruction& term)
@@ -1812,7 +1969,7 @@ void Simplifier::process_block(BlockId block)
 		substitute(inst);
 		// The rewrite appends instructions (`inst` may move): the call,
 		// now a conversion, is taken up again.
-		if (inst.op == Opcode::Call && equality_memcmp(block, prev, id))
+		if (inst.op == Opcode::Call && (equality_memcmp(block, prev, id) || math_call(block, prev, id)))
 		{
 			changed_ = true;
 			continue;

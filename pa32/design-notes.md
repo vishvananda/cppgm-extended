@@ -211,6 +211,19 @@ each of them. **Switch formation** (`-O2` and above) turns tests of one
 value against literals (at most 24 blocks, 256 case values) into a
 `switch` when that needs fewer runs of consecutive values per target.
 
+### Library Calls (`-O2`, `-O3`)
+
+Value simplification rewrites calls of the C library's math functions that a
+unit declares and does not define:
+
+- `fabs` and `fabsf` clear the sign bit (`copy`, `and`, `copy`).
+- `abs`, `labs` and `llabs` select the negation.
+- `pow` and `powf` of a literal exponent 2, 1, 0 or -1 are `x * x`, `x`, `1`
+  and `1 / x`.
+- `sqrt` and `sqrtf` become `unary sqrt` when the operand cannot be negative:
+  a square, a `sqrt`, a literal, or a sum, product or quotient of such values.
+  Another operand keeps the call, which sets `errno` for a negative operand.
+
 ### Inlining and Pruning
 
 The direct-call graph gives every function definition a dense index; its

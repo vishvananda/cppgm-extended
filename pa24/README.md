@@ -361,7 +361,8 @@ PA10-PA23, including:
   eightbyte in a GPR or an XMM register (or nowhere) as the parameter's
   `classes` or the function's `result_classes` metadata states, and the whole
   object on the stack for `classes=memory` or when its registers run out
-- `select`, as a conditional move or branches, and the `ctz` and `clz` bit scans
+- `select`, as a conditional move or branches, the `ctz` and `clz` bit scans and
+  `sqrt`
 - supported variadic calls and `va_start` register-save state for GPR and XMM
   arguments, including the caller-provided vector-register count
 - structured vtable/global table data emitted by source-to-LowIR lowering

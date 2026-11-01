@@ -155,6 +155,25 @@ bool Program::memcmp_function(SymbolId symbol) const
 		(callee.metadata.linkage == ir_model::LLM_C && std::strcmp(spelling, "memcmp") == 0);
 }
 
+MathFunction Program::math_function(SymbolId symbol) const
+{
+	const Symbol& callee = symbols[symbol];
+	if (callee.kind != SymbolKind::FunctionDeclaration || callee.metadata.linkage != ir_model::LLM_C)
+		return MathFunction::None;
+	static const struct
+	{
+		const char* name;
+		MathFunction function;
+	} kFunctions[] = { { "fabs", MathFunction::Fabs }, { "fabsf", MathFunction::Fabs }, { "abs", MathFunction::Abs },
+		{ "labs", MathFunction::Abs }, { "llabs", MathFunction::Abs }, { "pow", MathFunction::Pow },
+		{ "powf", MathFunction::Pow }, { "sqrt", MathFunction::Sqrt }, { "sqrtf", MathFunction::Sqrt } };
+	const char* spelling = this->spelling(callee.metadata.object != 0 ? callee.metadata.object : callee.name);
+	for (const auto& f : kFunctions)
+		if (std::strcmp(spelling, f.name) == 0)
+			return f.function;
+	return MathFunction::None;
+}
+
 SignatureId Program::add_signature(const Signature& signature)
 {
 	signatures.push_back(signature);

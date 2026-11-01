@@ -39,6 +39,16 @@ struct Temp
 // A slot's name; or, for a kind other than Plain, what its generated name
 // derives from: the source name a shadow, range-for variable or inlined
 // copy shares (`name`), an unnamed parameter's position (`index`).
+// C library functions the optimizer understands.
+enum class MathFunction : uint8_t
+{
+	None,
+	Fabs, // fabs, fabsf
+	Abs,  // abs, labs, llabs
+	Pow,  // pow, powf
+	Sqrt  // sqrt, sqrtf
+};
+
 struct Slot
 {
 	NameId name;
@@ -305,6 +315,8 @@ struct Program
 	bool memset_function(SymbolId symbol) const;
 	bool memcpy_function(SymbolId symbol) const;
 	bool memcmp_function(SymbolId symbol) const; // C 7.24.4.1
+	// The C library math function `symbol` declares (not defines).
+	MathFunction math_function(SymbolId symbol) const;
 	// Whether `symbol` is the runtime's trap (`object=cppgm_builtin_trap`,
 	// __builtin_trap), which the back end encodes as a trap instruction.
 	bool trap_function(SymbolId symbol) const;

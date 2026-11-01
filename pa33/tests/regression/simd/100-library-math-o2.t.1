@@ -1,0 +1,33 @@
+#include <cerrno>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+
+volatile double zero = 0.0;
+volatile double minus_two = -2.0;
+volatile double three = 3.0;
+volatile float minus_half = -0.5f;
+volatile int minus_seven = -7;
+volatile long minus_eight = -8;
+
+int main()
+{
+	const double x = minus_two, y = three, z = zero;
+	const float f = minus_half;
+	std::printf("%g %g %g\n", fabs(x), fabs(-z), 1.0 / fabs(-z));
+	std::printf("%g %d %ld %lld\n", (double)fabsf(f), abs(minus_seven), labs(minus_eight), llabs((long long)minus_eight));
+	std::printf("%g %g %g %g %g\n", pow(x, 2.0), pow(x, 1.0), pow(x, 0.0), pow(x, -1.0), pow(x, 3.0));
+	std::printf("%g %g\n", (double)powf(f, 2.0f), pow(std::nan(""), 0.0));
+	std::printf("%g %g\n", sqrt(x * x + y * y), (double)sqrtf(f * f));
+
+	errno = 0;
+	const double bad = sqrt(x);
+	std::printf("%d %d\n", bad != bad, errno == EDOM);
+	errno = 0;
+	const double good = sqrt(x * x);
+	std::printf("%g %d\n", good, errno);
+	errno = 0;
+	const double unknown = sqrt(x * y);
+	std::printf("%d %d\n", unknown != unknown, errno == EDOM);
+	return 0;
+}

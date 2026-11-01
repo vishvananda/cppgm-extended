@@ -208,11 +208,42 @@ Constant truth_constant(bool value)
 	return integer_constant(Type::scalar(TypeKind::I64), bits);
 }
 
+// The host's sqrt is IEEE's, correctly rounded. A NaN or a negative operand
+// stays for run time.
+bool fold_sqrt(Type type, const Constant& a, Constant& out)
+{
+	out = a;
+	if (type.kind() == TypeKind::F32)
+	{
+		float x;
+		const uint32_t bits = static_cast<uint32_t>(a.bits.low);
+		std::memcpy(&x, &bits, 4);
+		if (!(x >= 0))
+			return false;
+		const float r = std::sqrt(x);
+		uint32_t result;
+		std::memcpy(&result, &r, 4);
+		out.bits.low = result;
+		return true;
+	}
+	double x;
+	std::memcpy(&x, &a.bits.low, 8);
+	if (!(x >= 0))
+		return false;
+	const double r = std::sqrt(x);
+	std::memcpy(&out.bits.low, &r, 8);
+	return true;
+}
+
 bool fold_unary(UnaryOp op, Type type, const Constant& a, Constant& out)
 {
 	if (type.is_float())
 	{
-		if (op != UnaryOp::Neg || a.kind != ValueKind::Float || a.float_kind != type.kind())
+		if (a.kind != ValueKind::Float || a.float_kind != type.kind())
+			return false;
+		if (op == UnaryOp::Sqrt)
+			return fold_sqrt(type, a, out);
+		if (op != UnaryOp::Neg)
 			return false;
 		// Negation flips the sign bit only (the back end's xor): a NaN keeps
 		// its payload, a signaling one stays signaling.

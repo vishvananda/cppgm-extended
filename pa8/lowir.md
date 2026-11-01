@@ -1139,6 +1139,7 @@ Required PA8 unary operators:
 - `bitnot`
 - `bswap` for `i16`, `i32`, and `i64`
 - `ctz` and `clz` for `i32`, `u32`, and `i64`
+- `sqrt` for `f32` and `f64`
 
 Required PA8 binary operators:
 
@@ -1242,6 +1243,11 @@ them, an operand narrower than 32 bits widened to `u32` first and, for
 `__builtin_ctzg` then `select` their second operand for a zero operand.
 x86-64 lowers them to `bsf`, and to `bsr` followed by an `xor` with the
 width less one.
+
+`unary sqrt` is the IEEE square root of an `f32` or `f64`, correctly rounded.
+It has no other effect: unlike the C library's `sqrt`, it does not set `errno`.
+The C++ lowering does not emit it. The optimizer writes it for a library call
+whose operand cannot be negative. x86-64 lowers it to `sqrtss` or `sqrtsd`.
 
 Array-to-pointer and function-to-pointer decay use the ordinary pointer value
 produced by `addr`, `index`, a parameter, or `copy ptr`. There is no decay-specific

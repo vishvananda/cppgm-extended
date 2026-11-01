@@ -269,7 +269,8 @@ inline bool from_spelling(const char* text, std::size_t length, Opcode* op)
 
 // The operation of `unary`.  ctz/clz: the index of the lowest (highest)
 // set bit of a 32- or 64-bit integer, counted from bit 0 (from the top);
-// undefined for 0, as GCC's builtins.
+// undefined for 0, as GCC's builtins. sqrt: IEEE square root of an f32 or
+// f64; it sets no errno.
 enum class UnaryOp : std::uint8_t
 {
 	Neg,
@@ -277,10 +278,11 @@ enum class UnaryOp : std::uint8_t
 	BitNot,
 	ByteSwap,
 	CountTrailingZeros,
-	CountLeadingZeros
+	CountLeadingZeros,
+	Sqrt
 };
 
-const unsigned kUnaryOpCount = static_cast<unsigned>(UnaryOp::CountLeadingZeros) + 1;
+const unsigned kUnaryOpCount = static_cast<unsigned>(UnaryOp::Sqrt) + 1;
 
 enum class BinaryOp : std::uint8_t
 {
@@ -693,7 +695,7 @@ inline Type vector_result_type(VectorOp op)
 
 inline const char* spelling(UnaryOp op)
 {
-	static const char* const kUnaryOps[kUnaryOpCount] = { "neg", "not", "bitnot", "bswap", "ctz", "clz" };
+	static const char* const kUnaryOps[kUnaryOpCount] = { "neg", "not", "bitnot", "bswap", "ctz", "clz", "sqrt" };
 	return kUnaryOps[static_cast<unsigned>(op)];
 }
 
