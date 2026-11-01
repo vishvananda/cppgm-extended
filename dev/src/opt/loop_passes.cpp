@@ -1838,18 +1838,22 @@ bool LoopPass::fill_available() const
 // straight-line body (a chain of jump-ended blocks back to the header)
 // becomes those passes in one block, then the header's final test values,
 // and the exit. Values the loop's header defines read their final copies
-// outside it. At most kUnrollBody cloned instructions.
+// outside it. At most kUnrollBody cloned instructions; a body with no call
+// runs kUnrollCallFreeTrips passes within kUnrollCallFreeBody (a call first
+// has its chance to inline at each site the copies would make).
 const int64_t kUnrollTrips = 4;
 const uint32_t kUnrollBody = 64;
+const int64_t kUnrollCallFreeTrips = 8;
+const uint32_t kUnrollCallFreeBody = 256;
 
 bool LoopPass::try_unroll(uint32_t loop)
 {
 	const Loop& l = forest_.loops[loop];
-	if (l.latches.size() != 1 || l.preheader == kNoId)
+	if (l.latches.size() != 1)
 		return false;
 	ExitTest test;
 	std::vector<Induction> ivs;
-	if (!exit_test(loop, test, ivs) || test.trips < 0 || test.trips > kUnrollTrips || test.exiting != l.header)
+	if (!exit_test(loop, test, ivs) || test.trips < 0 || test.trips > kUnrollCallFreeTrips || test.exiting != l.header)
 		return false;
 	// The body chain: header -> b1 -> ... -> latch -> header, jumps only.
 	std::vector<BlockId> chain;
@@ -1868,6 +1872,7 @@ bool LoopPass::try_unroll(uint32_t loop)
 	if (chain.size() + 1 != l.blocks.size())
 		return false;
 	uint32_t size = 0;
+	bool calls = false;
 	for (BlockId b : l.blocks)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
@@ -1875,9 +1880,16 @@ bool LoopPass::try_unroll(uint32_t loop)
 			if (is_eh_instruction(inst.op) || inst.op == Opcode::StackAlloc || inst.op == Opcode::VaStart)
 				return false;
 			size += inst.op == Opcode::Phi || is_terminator(inst.op) ? 0 : 1;
+			calls = calls || inst.op == Opcode::Call;
 		}
-	if (static_cast<uint64_t>(size) * static_cast<uint64_t>(test.trips + 1) > kUnrollBody)
+	if (test.trips > (calls ? kUnrollTrips : kUnrollCallFreeTrips) ||
+		static_cast<uint64_t>(size) * static_cast<uint64_t>(test.trips + 1) >
+			(calls ? kUnrollBody : kUnrollCallFreeBody))
 		return false;
+	// A loop entered from a branching block gets its preheader first (the
+	// caller finds the loops again and comes back).
+	if (l.preheader == kNoId)
+		return make_preheader(loop);
 	// Clone pass by pass into one new block.
 	const BlockId unrolled = append_block(body_, BlockKind::Unrolled);
 	std::vector<Value> map(body_.temps.size(), Value::none());

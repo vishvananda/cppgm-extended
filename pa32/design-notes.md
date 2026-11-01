@@ -8,8 +8,8 @@ order, data structures and numeric limits below are design choices.
 
 Everything in this section describes the course solution. It is one way to
 meet the quality bar, and its numbers (the 1,536-instruction caller budget,
-the 40-, 24- and 6-instruction callee caps, the four-pass unrolling limit
-and the rest) are its choices, recorded so that its outputs can be
+the 40-, 24- and 6-instruction callee caps, the unrolling limits and the
+rest) are its choices, recorded so that its outputs can be
 explained. None of them is a requirement; the course fixtures do not
 compare your output's shape with the course solution's.
 
@@ -356,9 +356,11 @@ them changed it, branch compares are computed again beside their branches:
 Full unrolling, at most 16 loops per run of the pass:
 
 - A loop with a straight-line body (a chain of jump-ended blocks), one
-  preheader, one latch and its exit test in the header, whose trip count
-  is known without wrapping and at most 4, and whose body times the trip
-  count plus one is at most 64 instructions, becomes one block.
+  latch and its exit test in the header, whose trip count is known without
+  wrapping and at most 4, and whose body times the trip count plus one is
+  at most 64 instructions, becomes one block. With no call in the body the
+  limits are 8 passes and 256 instructions. A loop entered from a branching
+  block gets a preheader first.
 - An innermost loop with a branching body, an integer induction and a
   literal start, step and bound giving 1 to 16 passes is copied pass by
   pass: up to 16 passes within 256 cloned instructions when it reads
