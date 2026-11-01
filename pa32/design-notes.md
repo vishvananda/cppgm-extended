@@ -121,8 +121,10 @@ copy); a load in a known-zero range reads zero.
   split); or at most 3 single-predecessor blocks below a loop header, when
   every predecessor of the header knows the value.
 - At `-O2` and above a store of the value the location already holds is
-  removed, and a store to a slot that is dead on one side of a two-way
-  branch moves to the other side when that side has no other predecessor.
+  removed, a store to a slot goes when a later store in its block replaces
+  all of it and nothing between them may read it, and a store to a slot
+  that is dead on one side of a two-way branch moves to the other side when
+  that side has no other predecessor.
 
 **Dead-code removal** marks from the instructions that must stay and
 removes the rest: unused pure values, nonvolatile loads, stack allocations,

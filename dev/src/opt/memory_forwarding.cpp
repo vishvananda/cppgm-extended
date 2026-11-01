@@ -153,6 +153,7 @@ private:
 	InstId known_copy(BlockId block, InstId prev, InstId id);
 	InstId field_copy(BlockId block, InstId prev, InstId id);
 	void drop_unread_writes();
+	void drop_overwritten_stores();
 	bool may_read_slot(const Instruction& inst, uint32_t slot, uint64_t bytes) const;
 	bool may_write_slot(const Instruction& inst, uint32_t slot, uint64_t bytes) const;
 	bool overwrites_slot(const Instruction& inst, uint32_t slot, uint64_t bytes) const;
@@ -864,6 +865,86 @@ void MemoryForwarding::drop_unread_writes()
 	}
 }
 
+// O2+: a store to a slot whose address escapes goes when a later store in its
+// block replaces all of it and nothing between them may read it. (Each
+// unrolled pass through a slot a pointer walk keeps in memory writes the same
+// elements. A private slot's stores promotion and drop_unread_writes handle.)
+const size_t kPendingStores = 32;
+
+void MemoryForwarding::drop_overwritten_stores()
+{
+	if (c_.level < 2 || body_.slots.empty())
+		return;
+	struct Pending
+	{
+		InstId store;
+		AddressFacts at;
+		uint64_t bytes;
+	};
+	std::vector<Pending> pending;
+	std::vector<uint8_t> dead;
+	auto forget_read = [&](const AddressFacts& read, uint64_t bytes) {
+		pending.erase(std::remove_if(pending.begin(), pending.end(),
+						  [&](const Pending& p) { return may_alias(read, bytes, p.at, p.bytes); }),
+			pending.end());
+	};
+	for (BlockId b : body_.layout)
+	{
+		bool found = false;
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			if (inst.op == Opcode::Store && (inst.flags & IF_VOLATILE) == 0)
+			{
+				const AddressFacts at = facts_of(inst.ops[1]);
+				const uint64_t bytes = storage_bytes(inst.type);
+				// (An f80 store writes 10 of its 16 bytes.)
+				if (at.base != ValueKind::Slot || !escaped_[at.index] || inst.type.is_object() ||
+					inst.type.kind() == TypeKind::F80)
+					continue;
+				for (size_t k = 0; k < pending.size();)
+				{
+					const Pending& p = pending[k];
+					if (p.at.index != at.index || p.at.offset < at.offset ||
+						p.at.offset + static_cast<int64_t>(p.bytes) > at.offset + static_cast<int64_t>(bytes))
+					{
+						++k;
+						continue;
+					}
+					dead.resize(body_.instructions.size(), 0);
+					dead[p.store] = 1;
+					found = true;
+					pending.erase(pending.begin() + static_cast<std::ptrdiff_t>(k));
+				}
+				if (pending.size() < kPendingStores)
+					pending.push_back(Pending{ i, at, bytes });
+			}
+			else if (pending.empty() || is_pure(inst))
+				continue;
+			else if (inst.op == Opcode::Load && (inst.flags & IF_VOLATILE) == 0)
+				forget_read(facts_of(inst.ops[0]), storage_bytes(inst.type));
+			else
+				pending.clear();
+		}
+		if (!found)
+			continue;
+		InstId prev = kNoId;
+		for (InstId i = body_.blocks[b].first; i != kNoId;)
+		{
+			const InstId next = body_.instructions[i].next;
+			if (i < dead.size() && dead[i] != 0)
+			{
+				unlink_after(body_, b, prev, i);
+				++c_.stats.stores_removed;
+				changed_ = true;
+			}
+			else
+				prev = i;
+			i = next;
+		}
+	}
+}
+
 // Whether `inst` may read slot `slot` (`bytes` long): a call; a load or
 // copy from it, or from an address that may name it reading at most its
 // bytes (an access is within one object: a wider one is not of the slot);
@@ -1176,6 +1257,7 @@ bool MemoryForwarding::run()
 						v = repl_[v.index];
 				});
 	drop_unread_writes();
+	drop_overwritten_stores();
 	sink_slot_stores();
 	phi_loads();
 	return changed_;
