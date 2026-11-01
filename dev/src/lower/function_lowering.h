@@ -1363,6 +1363,28 @@ private:
 	RValue elementwise_minmax(const syntax::CallExpr& expr);
 	RValue numeric_minmax(const sema::Type* lane, const RValue& first, const RValue& second, bool maximum);
 	RValue vector_andnot(const syntax::CallExpr& expr);
+	// sse_lowering.cpp: the SSE family computed lane by lane.
+	struct LanewiseCall;
+	RValue lanewise_vector(const syntax::CallExpr& expr);
+	RValue select_value(const RValue& condition, const RValue& first, const RValue& second);
+	RValue lane_bits(lowir::Value address, uint64_t bytes, uint64_t lane);
+	void set_lane_bits(lowir::Value address, uint64_t bytes, uint64_t lane, const RValue& value);
+	RValue finish_lanes(const sema::Type* vector, lowir::SlotId slot);
+	RValue lanewise_floating(const LanewiseCall& call);
+	RValue lanewise_mask(const LanewiseCall& call);
+	RValue lanewise_ordered(const LanewiseCall& call);
+	RValue lanewise_bitwise(const LanewiseCall& call);
+	RValue lanewise_convert(const LanewiseCall& call);
+	RValue lanewise_move(const LanewiseCall& call);
+	RValue lanewise_saturate(const LanewiseCall& call);
+	RValue lanewise_multiply(const LanewiseCall& call);
+	RValue lanewise_extreme(const LanewiseCall& call);
+	RValue lanewise_shift(const LanewiseCall& call);
+	RValue lanewise_magnitude(const LanewiseCall& call);
+	RValue lanewise_bytes(const LanewiseCall& call);
+	RValue lanewise_horizontal(const LanewiseCall& call);
+	RValue lanewise_blend(const LanewiseCall& call);
+	RValue lanewise_memory(const LanewiseCall& call);
 	RValue pack_vector(const syntax::CallExpr& expr);
 	RValue permute_vector(const syntax::CallExpr& expr);
 	RValue unpack_vector(const syntax::CallExpr& expr);

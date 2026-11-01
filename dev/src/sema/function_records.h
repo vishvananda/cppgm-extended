@@ -195,6 +195,9 @@ enum class Intrinsic : uint8_t
 	VectorAndNot,
 	VectorPack,
 	VectorPermute,
+	// The SSE family computed lane by lane: bits 8-15 hold the
+	// VectorLanewiseOp and bit 16 is set for a scalar form.
+	VectorLanewise,
 	// SSE2 interleaves two vectors' low/high halves. Bits 8-15 hold
 	// twice the lane-width index (8/16/32/64 bits) plus the high-half bit.
 	VectorUnpack,
@@ -371,6 +374,9 @@ struct FunctionEntity : Entity
 	// The registry entry a builtin was declared from (lex/gnu_builtins.h).
 	GnuBuiltin gnu_builtin;
 	uint8_t builtin_variant;
+	// A VectorLanewise builtin's: its shapes, and whether it is a scalar form.
+	const char* builtin_shapes = nullptr;
+	bool builtin_scalar = false;
 	// An operator function (13.5): its operator and array form. A literal
 	// operator (13.5.8) is no operator function: its operator_token is
 	// KW_OPERATOR (see IsLiteralOperator).

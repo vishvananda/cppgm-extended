@@ -74,6 +74,10 @@ const SoftFloatSpec kSoftFloat[] = {
 	{ "__fixunstfdi", "q", 'l' },
 	{ "__fixtfti", "q", 't' },
 	{ "__fixunstfti", "q", 't' },
+	{ "sqrt", "d", 'd' },
+	{ "sqrtf", "f", 'f' },
+	{ "rint", "d", 'd' },
+	{ "rintf", "f", 'f' },
 	{ "__extendhfsf2", "h", 'f' },
 	{ "__extendhfdf2", "h", 'd' },
 	{ "__extendhfxf2", "h", 'x' },
@@ -638,7 +642,8 @@ lowir::SymbolId ProgramLowering::soft_float_helper(SoftFloatHelper which)
 	if (soft_float_helpers_[index] != lowir::kNoId)
 		return soft_float_helpers_[index];
 	const SoftFloatSpec& spec = kSoftFloat[index];
-	const lowir::SymbolId symbol = new_symbol(std::string("__cppgm_libgcc_") + (spec.name + 2));
+	const lowir::SymbolId symbol = new_symbol(
+		std::string("__cppgm_libgcc_") + (spec.name[0] == '_' ? spec.name + 2 : spec.name));
 	lowir::Signature signature = lowir::Signature();
 	signature.first_parameter = static_cast<uint32_t>(program_.parameters.size());
 	const uint32_t count = static_cast<uint32_t>(std::strlen(spec.parameters));

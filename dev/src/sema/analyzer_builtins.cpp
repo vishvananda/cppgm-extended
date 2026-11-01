@@ -86,7 +86,7 @@ FunctionEntity* Analyzer::builtin_function(const Identifier* name)
 		return nullptr;
 	// The type-generic and query builtins have no type of their own; a
 	// variadic int(...) stands for it.
-	const Type* type = entry.signature != nullptr
+	const Type* type = entry.signature != nullptr && entry.builtin != GnuBuiltin::VectorLanewise
 		? builtin_signature(entry.signature, entry.floating)
 		: types_.function(types_.fundamental(FundamentalType::Int), nullptr, 0, true, 0, RefQualifier::None);
 	if (type == nullptr)
@@ -97,6 +97,8 @@ FunctionEntity* Analyzer::builtin_function(const Identifier* name)
 	function->builtin = FunctionKindOf(entry.builtin);
 	function->gnu_builtin = entry.builtin;
 	function->builtin_variant = entry.variant;
+	function->builtin_shapes = entry.builtin == GnuBuiltin::VectorLanewise ? entry.signature : nullptr;
+	function->builtin_scalar = entry.floating == 's';
 	function->nothrow = true;
 	function->c_linkage = true;
 	Binding* binding = new_binding(BindingKind::Function, name, function, type);
@@ -215,6 +217,8 @@ ExprFacts* Analyzer::builtin_operation(const syntax::CallExpr& expr, const Funct
 		return vector_shift_builtin(expr, variant, scope);
 	case GnuBuiltin::VectorShuffle:
 		return vector_shuffle_builtin(expr, variant, scope);
+	case GnuBuiltin::VectorLanewise:
+		return vector_lanewise_builtin(expr, builtin, scope);
 	case GnuBuiltin::OperatorNew:
 	case GnuBuiltin::OperatorDelete:
 		return allocation_builtin(expr, builtin->gnu_builtin == GnuBuiltin::OperatorNew, scope);
@@ -1011,6 +1015,93 @@ ExprFacts* Analyzer::vector_shuffle_builtin(const syntax::CallExpr& expr, uint8_
 	facts->value = static_cast<uint64_t>(Intrinsic::VectorShuffle) |
 		(constant ? (selector.bits & (doubles ? 3U : 255U)) << 8 : uint64_t(1) << 16) |
 		(variant == 3 ? uint64_t(1) << 17 : 0);
+	return facts;
+}
+
+const Type* Analyzer::vector_shape(const char*& shape, bool const_pointee)
+{
+	// A letter of a VectorLanewise signature (lex/gnu_builtins.h).
+	const Type* type = nullptr;
+	const char letter = *shape++;
+	const Type* byte = types_.fundamental(FundamentalType::Char);
+	const Type* single = types_.fundamental(FundamentalType::Float);
+	const Type* wide = types_.fundamental(FundamentalType::Double);
+	const Type* word = types_.fundamental(FundamentalType::Int);
+	const Type* quad = types_.fundamental(FundamentalType::LongLongInt);
+	switch (letter)
+	{
+	case 'F':
+		type = types_.vector(single, 4);
+		break;
+	case 'D':
+		type = types_.vector(wide, 2);
+		break;
+	case 'G':
+		type = types_.vector(single, 2);
+		break;
+	case 'B':
+		type = types_.vector(byte, 16);
+		break;
+	case 'H':
+		type = types_.vector(types_.fundamental(FundamentalType::ShortInt), 8);
+		break;
+	case 'W':
+		type = types_.vector(word, 4);
+		break;
+	case 'Q':
+		type = types_.vector(quad, 2);
+		break;
+	case 'f':
+		type = single;
+		break;
+	case 'd':
+		type = wide;
+		break;
+	case 'c':
+		type = byte;
+		break;
+	case 'i':
+		type = word;
+		break;
+	case 'x':
+		type = quad;
+		break;
+	default:
+		type = types_.fundamental(FundamentalType::Void);
+		break;
+	}
+	if (*shape == '*')
+	{
+		++shape;
+		type = types_.pointer(const_pointee ? types_.qualified(type, kConst) : type);
+	}
+	return type;
+}
+
+ExprFacts* Analyzer::vector_lanewise_builtin(const syntax::CallExpr& expr, const FunctionEntity* builtin, Scope* scope)
+{
+	// The registry's shapes type the call; a vector operand of another
+	// shape converts as any operand does (GCC's casts spell this out).
+	const VectorLanewiseOp operation = static_cast<VectorLanewiseOp>(builtin->builtin_variant);
+	const bool reads = operation == VectorLanewiseOp::Load || operation == VectorLanewiseOp::LoadHigh ||
+		operation == VectorLanewiseOp::LoadLow || operation == VectorLanewiseOp::Hint;
+	const char* shape = builtin->builtin_shapes;
+	const Type* result = vector_shape(shape, false);
+	for (const syntax::Expr* argument : expr.arguments)
+	{
+		if (*shape == '\0')
+			error(expr.location, "too many arguments to a packed operation");
+		const Type* parameter = vector_shape(shape, reads);
+		if (typed_value(*argument, scope) == nullptr)
+			return nullptr;
+		convert(*argument, parameter, false);
+	}
+	if (*shape != '\0')
+		error(expr.location, "too few arguments to a packed operation");
+	ExprFacts* facts = new_facts(expr, result, ValueCategory::PRValue);
+	facts->value = static_cast<uint64_t>(Intrinsic::VectorLanewise) | (static_cast<uint64_t>(operation) << 8) |
+		(builtin->builtin_scalar ? uint64_t(1) << 16 : 0);
+	facts->flags |= kIntrinsic;
 	return facts;
 }
 

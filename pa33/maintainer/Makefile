@@ -9,6 +9,7 @@ REGRESSION_BEHAVIOR_O3_TEST_ROOT ?= tests/regression/behavior/o3
 PERF_TOLERANCE_PERCENT ?= 10
 DRIVER_CENSUS_TEST_ROOT ?= tests/regression/driver
 STRUCTURAL_CONTROL_TEST_ROOT ?= tests/regression/controls
+SIMD_TEST_ROOT ?= tests/regression/simd
 # The course solution's selection policies at the native level (the strlen
 # prefix probe, the dynamic copy of an unused-result memcpy), outside the
 # course contract.
@@ -58,6 +59,8 @@ test-regression: $(TEST_DEPS)
 	$(call run_native_bucket,$(REGRESSION_BEHAVIOR_O1_TEST_ROOT),-O1)
 	$(call run_native_bucket,$(REGRESSION_BEHAVIOR_O2_TEST_ROOT),-O2)
 	$(call run_native_bucket,$(REGRESSION_BEHAVIOR_O3_TEST_ROOT),-O3)
+	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_DRIVER_APP) my $(SIMD_TEST_ROOT)
+	@../pa29/scripts/compare_results_link.pl ref my $(SIMD_TEST_ROOT)
 	$(call run_structural_control_bucket,$(STRUCTURAL_CONTROL_TEST_ROOT))
 	@if [ -d "$(NATIVE_CONTROL_TEST_ROOT)" ]; then \
 		perl ../scripts/check_pa24_native_contracts.pl $(LOWIR2NATIVE_APP) "$(NATIVE_CONTROL_TEST_ROOT)"; \
@@ -77,8 +80,10 @@ ref-test-regression:
 	$(call run_native_bucket_ref,$(REGRESSION_BEHAVIOR_O1_TEST_ROOT),-O1)
 	$(call run_native_bucket_ref,$(REGRESSION_BEHAVIOR_O2_TEST_ROOT),-O2)
 	$(call run_native_bucket_ref,$(REGRESSION_BEHAVIOR_O3_TEST_ROOT),-O3)
+	perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_DRIVER_APP)-ref ref $(SIMD_TEST_ROOT)
 
 CHECK_RUN += \
+	'$(SIMD_TEST_ROOT)/*::perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_DRIVER_APP) check {tests}' \
 	'$(NATIVE_CONTROL_TEST_ROOT)/*::perl ../scripts/check_pa24_native_contracts.pl $(LOWIR2NATIVE_APP) {tests}' \
 	'$(STRUCTURAL_CONTROL_TEST_ROOT)/*host-scalar-tail-query*.t::perl ../scripts/check_lowir_native_scalar_query.pl $(LOWIR2NATIVE_APP) $(CPPGM_DRIVER_APP) {tests}' \
 	'$(STRUCTURAL_CONTROL_TEST_ROOT)/*host-tail-jump-transfer*.t::perl ../scripts/check_lowir_native_tail_jump.pl $(LOWIR2NATIVE_APP) $(CPPGM_DRIVER_APP) {tests}' \
@@ -87,6 +92,7 @@ CHECK_RUN += \
 	'$(STRUCTURAL_CONTROL_TEST_ROOT)/*::perl ../scripts/check_lowir_native_structural_controls.pl $(LOWIR2NATIVE_APP) $(CPPGM_DRIVER_APP) {tests}'
 
 CHECK_COMPARE += \
+	'$(SIMD_TEST_ROOT)/*::../pa29/scripts/compare_results_link.pl ref check {tests}' \
 	'$(NATIVE_CONTROL_TEST_ROOT)/*::true' \
 	'$(DRIVER_CENSUS_TEST_ROOT)/*::true' \
 	'$(STRUCTURAL_CONTROL_TEST_ROOT)/*::true'

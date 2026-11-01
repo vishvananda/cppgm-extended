@@ -135,7 +135,9 @@ PA24, PA32 and PA33 also have `tests/regression/`, which pins this solution's
 particular output shapes. Maintainer `make test` runs both `test-course` and
 `test-regression`; student-export `make test` runs the course contract only.
 PA33's export omits its regression fixtures and `maintainer/` tooling entirely.
-The source-only `pa33/maintainer/Makefile` retains census and Cachegrind
+`pa33/tests/regression/simd/` is one such lane: hosted programs that compile the
+GCC vector intrinsic headers and link with `-lm`, so PA29's required surface does
+not grow. The source-only `pa33/maintainer/Makefile` retains census and Cachegrind
 targets, which are not student requirements; the course lane
 `make -C pa33 test-kernels` (PA35's kernels under Cachegrind, at PA33's
 limit) is one, so `make test-report` needs valgrind.
