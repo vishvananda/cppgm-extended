@@ -1,0 +1,55 @@
+function @walk(%a : ptr, %n : i64) -> i64 [binding=strong] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %j = phi i64 [^entry: 1, ^merge: %doubled]
+    %more = cmp lt i64 %j, %n
+    branch %more, ^body, ^done
+
+  block ^body:
+    %left_at = index f64 [projection=array_element] %a, %j
+    %left = load typed f64 %left_at
+    %right_index = binary add i64 %j, 1
+    %right_at = index f64 [projection=array_element] %a, %right_index
+    %right = load typed f64 %right_at
+    %greater = cmp gt f64 %right, %left
+    branch %greater, ^take_right, ^merge
+
+  block ^take_right:
+    jump ^merge
+
+  block ^merge:
+    %child = phi i64 [^body: %j, ^take_right: %right_index]
+    %doubled = binary shl i64 %child, 1
+    jump ^loop
+
+  block ^done:
+    return i64 %j
+}
+function @scan(%a : ptr, %n : i64) -> i64 [binding=strong] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %best = phi i64 [^entry: 0, ^body: %t7]
+    %more = cmp lt i64 %i, %n
+    branch %more, ^body, ^done
+
+  block ^body:
+    %at = index f64 [projection=array_element] %a, %i
+    %value = load typed f64 %at
+    %positive = cmp gt f64 %value, 0
+    %t7 = select i64 %positive, %i, %best
+    %next = binary add i64 %i, 1
+    jump ^loop
+
+  block ^done:
+    return i64 %best
+}
+function @chosen(%on : i1, %a : i64, %b : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %t1 = select i64 %on, %b, %a
+    return i64 %t1
+}

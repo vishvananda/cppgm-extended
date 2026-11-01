@@ -13,6 +13,8 @@ namespace {
 // branch is cheaper than computing both sides.
 const unsigned kArmCap = 2;
 const unsigned kSelectCap = 2;
+// The values the walk from a condition back to its merge visits.
+const unsigned kCycleWalkCap = 48;
 
 bool selectable(Type type)
 {
@@ -60,6 +62,7 @@ public:
 
 private:
 	bool arm(BlockId a, BlockId from, BlockId& to) const;
+	bool loads_through_merge(Value cond, BlockId join) const;
 	bool form(BlockId e);
 	InstId hoist(BlockId a, BlockId e, InstId after);
 
@@ -101,6 +104,62 @@ InstId SelectFormation::hoist(BlockId a, BlockId e, InstId after)
 		after = i;
 	}
 	return after;
+}
+
+// Whether `cond` reads a load whose address comes from a phi of `join`, as
+// `j = a[j] < a[j + 1] ? j + 1 : j` picks a heap's next child (only a back
+// edge leads from a merge to the condition before it). Under a cmov the next
+// load waits for this one; a branch starts it on the predicted value. Past
+// the cache a heap takes twice as long on the cmov, for a sixth saved inside.
+bool SelectFormation::loads_through_merge(Value cond, BlockId join) const
+{
+	struct Step
+	{
+		TempId temp;
+		bool loaded;
+	};
+	std::vector<Step> work;
+	const auto follow = [&](Value v, bool loaded) {
+		if (!v.is(ValueKind::Temp) || v.index < body_.parameter_count)
+			return;
+		for (const Step& s : work)
+			if (s.temp == v.index && s.loaded == loaded)
+				return;
+		work.push_back(Step{ v.index, loaded });
+	};
+	follow(cond, false);
+	for (size_t next = 0; next < work.size() && next < kCycleWalkCap; ++next)
+	{
+		const Step step = work[next];
+		const Instruction& inst = body_.instructions[body_.temps[step.temp].def];
+		switch (inst.op)
+		{
+		case Opcode::Phi:
+			for (InstId i = body_.blocks[join].first;
+				step.loaded && i != kNoId && body_.instructions[i].op == Opcode::Phi; i = body_.instructions[i].next)
+				if (body_.instructions[i].result == step.temp)
+					return true;
+			for (uint32_t k = 1; k < inst.extra_count; k += 2)
+				follow(body_.operands[inst.extra_first + k], step.loaded);
+			break;
+		case Opcode::Load:
+			follow(inst.ops[0], true);
+			break;
+		case Opcode::Binary:
+		case Opcode::Compare:
+		case Opcode::Select:
+		case Opcode::Index:
+		case Opcode::Unary:
+		case Opcode::Convert:
+		case Opcode::Copy:
+			for (unsigned k = 0; k < 3; ++k)
+				follow(inst.ops[k], step.loaded);
+			break;
+		default:
+			break;
+		}
+	}
+	return false;
 }
 
 // e ends `branch c, T, F`: a diamond (T and F each jump to J) or a
@@ -152,6 +211,8 @@ bool SelectFormation::form(BlockId e)
 			a.is(ValueKind::None) || b.is(ValueKind::None))
 			return false;
 	}
+	if (selects != 0 && loads_through_merge(cond, join))
+		return false;
 	InstId at = previous_in_block(body_, e, term);
 	if (from_t == t)
 		at = hoist(t, e, at);
