@@ -13,6 +13,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import public_benchmarks as pb
+import publish_benchmark_badges as publication
 
 
 def outcome(name, gcc, cppgm, status='ok', **extra):
@@ -376,6 +377,53 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('| p | `compile: no` |', text)
         self.assertIn('| Executable size, `-O3` | 2.00× | 1 | - | 0 |', text)
+
+
+class BadgePublicationTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.root = Path(temp.name)
+        self.artifact = self.root / 'artifact'
+        self.target = self.root / 'published'
+        (self.artifact / 'badges').mkdir(parents=True)
+        self.target.mkdir()
+        for name in publication.BADGES:
+            (self.artifact / 'badges' / f'{name}.json').write_text(json.dumps(
+                dict(schemaVersion=1, label=name, message='0.97×', color='green')))
+
+    def prepare(self, platform, cpu):
+        (self.artifact / 'results.json').write_text(json.dumps(dict(environment=dict(cpu=cpu))))
+        publication.prepare(self.artifact, self.target, platform, 'a' * 40,
+                            'https://github.com/owner/repo/actions/runs/1')
+
+    def test_intel_publication_preserves_epyc_results(self):
+        self.prepare('epyc', 'AMD EPYC 9V45 96-Core Processor')
+        before = (self.target / 'epyc/o3-generated.json').read_bytes()
+        legacy = (self.target / 'o3-generated.json').read_bytes()
+        self.prepare('intel', 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz')
+        self.assertEqual((self.target / 'epyc/o3-generated.json').read_bytes(), before)
+        self.assertEqual((self.target / 'o3-generated.json').read_bytes(), legacy)
+        provenance = json.loads((self.target / 'intel/provenance.json').read_text())
+        self.assertEqual(provenance['revision'], 'a' * 40)
+        self.assertIn('Intel', provenance['cpu'])
+
+    def test_epyc_publication_preserves_intel_results(self):
+        self.prepare('intel', 'Intel Xeon')
+        before = (self.target / 'intel/o3-generated.json').read_bytes()
+        self.prepare('epyc', 'AMD EPYC 9V45')
+        self.assertEqual((self.target / 'intel/o3-generated.json').read_bytes(), before)
+
+    def test_wrong_hardware_does_not_replace_a_measurement(self):
+        with self.assertRaisesRegex(ValueError, 'Intel hardware'):
+            self.prepare('intel', 'AMD EPYC 9V45')
+        self.assertEqual(list(self.target.iterdir()), [])
+
+    def test_incomplete_artifact_does_not_replace_a_measurement(self):
+        (self.artifact / 'badges/self-built.json').unlink()
+        with self.assertRaises(FileNotFoundError):
+            self.prepare('intel', 'Intel Xeon')
+        self.assertEqual(list(self.target.iterdir()), [])
 
 
 if __name__ == '__main__':

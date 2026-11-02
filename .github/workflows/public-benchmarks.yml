@@ -3,17 +3,32 @@ name: Public benchmarks
 on:
   push:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Benchmark host
+        type: choice
+        options: [github, intel]
+        default: github
+      revision:
+        description: Intel run's trusted commit or ref (empty means this workflow's revision)
+        type: string
+        default: ''
+      runner_label:
+        description: Intel runner label (the temporary-runner helper supplies a unique label)
+        type: string
+        default: cppgm-intel
 
 permissions:
   contents: read
 
 concurrency:
-  group: public-benchmarks-${{ github.ref }}
+  group: public-benchmarks-${{ github.ref }}-${{ inputs.platform || 'github' }}
   cancel-in-progress: true
 
 jobs:
   benchmarks:
     name: public benchmarks
+    if: inputs.platform != 'intel'
     runs-on: ubuntu-24.04
     container: ubuntu:26.04
     # A wrong output or a build failure fails this job. A changed count warns.
@@ -91,21 +106,132 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: write
+    concurrency:
+      group: benchmark-badge-publication
+      cancel-in-progress: false
 
     steps:
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: benchmark-badges
+          path: badge-branch
       - uses: actions/download-artifact@v7
         with:
           name: public-benchmarks-${{ github.sha }}
+          path: artifact
 
       - name: Publish to the badge branch
         env:
-          GH_TOKEN: ${{ github.token }}
+          REVISION: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          cd badges
-          git init -q -b benchmark-badges
-          git add ./*.json
+          python3 tools/scripts/publish_benchmark_badges.py artifact badge-branch \
+            --platform epyc --revision "$REVISION" --run-url "$RUN_URL"
+          cd badge-branch
+          git add .
+          if git diff --cached --quiet; then exit 0; fi
           git -c user.name='github-actions[bot]' \
             -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit -q -m "Publish the benchmark badges of $GITHUB_SHA"
-          git push --force \
-            "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" benchmark-badges
+            commit -q -m "Publish EPYC benchmark badges of $REVISION"
+          git push origin HEAD:benchmark-badges
+
+  intel:
+    name: Intel public benchmarks (manual)
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'intel' && github.actor == github.repository_owner
+    runs-on: [self-hosted, Linux, X64, '${{ inputs.runner_label }}']
+    timeout-minutes: 90
+    outputs:
+      revision: ${{ steps.revision.outputs.sha }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.revision || github.sha }}
+          persist-credentials: false
+      - name: Record the measured revision and check Intel hardware
+        id: revision
+        run: |
+          python3 -c 'import pathlib; assert "GenuineIntel" in pathlib.Path("/proc/cpuinfo").read_text(), "Intel CPU required"'
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Run the benchmark suite in Ubuntu 26.04
+        run: |
+          engine=$(command -v podman || command -v docker)
+          "$engine" run --rm \
+            -v "$GITHUB_WORKSPACE:/work" -w /work \
+            -e CXX=g++ -e CPPGM_HOST_CXX=g++ -e CPPGM_STDLIB_FLAGS= \
+            ubuntu:26.04 bash -euo pipefail -c '
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                build-essential ca-certificates clang git libgmp-dev patch python3 valgrind
+              git config --global --add safe.directory /work
+              jobs=16
+              make -C dev cppgm++ -j "$jobs"
+              python3 scripts/public_benchmarks.py fetch --cache obj/public-benchmarks/src
+              python3 scripts/public_benchmarks.py run \
+                --cache obj/public-benchmarks/src --work obj/public-benchmarks/work \
+                --output obj/public-benchmarks/results.json --jobs "$jobs"
+              python3 scripts/public_benchmarks.py selfhost \
+                --work obj/public-benchmarks/selfhost \
+                --output obj/public-benchmarks/selfhost.json --jobs "$jobs"
+              python3 scripts/public_benchmarks.py report obj/public-benchmarks/results.json \
+                --summary obj/public-benchmarks/summary.md \
+                --badges obj/public-benchmarks/badges \
+                --selfhost obj/public-benchmarks/selfhost.json
+            '
+          cat obj/public-benchmarks/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain Intel results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: public-benchmarks-intel-${{ steps.revision.outputs.sha }}
+          path: |
+            obj/public-benchmarks/results.json
+            obj/public-benchmarks/selfhost.json
+            obj/public-benchmarks/badges/
+          if-no-files-found: warn
+          retention-days: 14
+
+  intel-badges:
+    name: publish Intel README badges
+    needs: intel
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'intel' && needs.intel.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    concurrency:
+      group: benchmark-badge-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: benchmark-badges
+          path: badge-branch
+      - uses: actions/download-artifact@v7
+        with:
+          name: public-benchmarks-intel-${{ needs.intel.outputs.revision }}
+          path: artifact
+      - name: Publish Intel measurements without changing EPYC badges
+        env:
+          REVISION: ${{ needs.intel.outputs.revision }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 tools/scripts/publish_benchmark_badges.py artifact badge-branch \
+            --platform intel --revision "$REVISION" --run-url "$RUN_URL"
+          cd badge-branch
+          git add .
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Publish Intel benchmark badges of $REVISION"
+          git push origin HEAD:benchmark-badges

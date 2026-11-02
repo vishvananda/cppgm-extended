@@ -133,3 +133,33 @@ compiler. The current patches change:
 - An assignment to a `const` member in `rapidjson`.
 - A Latin-1 byte in `hexxagon`.
 - x87 inline assembly in `minisat`.
+
+## Optional Intel CI run
+
+The Public benchmarks workflow runs on GitHub's Linux pool by default. Its
+EPYC badges and the optional Intel badges occupy separate directories on
+`benchmark-badges`; publishing either keeps the other column's results.
+[EPYC provenance](https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/epyc/provenance.json)
+and [Intel provenance](https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/intel/provenance.json) record the exact CPU,
+compiler commit, toolchains and workflow URL. The README shows the measured
+commit because a manual Intel run can be older than the automatic EPYC run.
+
+On the Intel Linux host, with `gh` authenticated and Podman or Docker installed:
+
+```sh
+python3 scripts/run_intel_benchmarks_once.py --ref main --revision main
+```
+
+This downloads the official GitHub runner, verifies its SHA-256 digest,
+registers it for one job, dispatches Public benchmarks with `platform=intel`,
+and removes its registration after the job. It keeps logs and measurements
+in the printed temporary directory, removes the runner credentials, and
+installs no service. Choose only a trusted compiler revision.
+
+To trigger from the Actions UI instead, start the helper with `--listen`,
+then choose Public benchmarks → Run workflow → `platform=intel`. Keep
+`runner_label=cppgm-intel` and select the compiler revision to measure. An
+Intel job waits for this temporary runner; ordinary pushes never queue it.
+The Intel job uses Ubuntu 26.04 and the same benchmark, GCC, Clang, serial
+timing and self-host measurements as the automatic run. Run it while the
+host is otherwise idle.
