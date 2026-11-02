@@ -432,6 +432,8 @@ them changed it, branch compares are computed again beside their branches:
 - A branch to a diamond or triangle whose arms hold at most two
   speculatable integer instructions each (no load, division or floating
   point) becomes `select`s, at most two per merge, for at most three rounds.
+  A diamond with work on both arms makes only one: for two values, the branch
+  runs one arm where the selects would run both.
   A merge that picks between the two `f32` or `f64` values its compare reads
   becomes `vector` `min` or `max` of those values. Those operations give the
   second operand when unordered, and compare `<` or `>`, so `<=` and `>=` need

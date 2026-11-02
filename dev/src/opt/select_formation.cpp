@@ -292,6 +292,10 @@ bool SelectFormation::form(BlockId e)
 	}
 	if (selects != 0 && loads_through_merge(cond, join))
 		return false;
+	// Two values with work on both arms: selects run both arms on every path.
+	if (selects == kSelectCap && from_t == t && from_f == f && body_.blocks[t].first != body_.blocks[t].last &&
+		body_.blocks[f].first != body_.blocks[f].last)
+		return false;
 	InstId at = previous_in_block(body_, e, term);
 	if (from_t == t)
 		at = hoist(t, e, at);
