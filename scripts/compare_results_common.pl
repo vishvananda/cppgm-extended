@@ -189,7 +189,8 @@ sub canonicalize_machine_ir
 	$data =~ s/\[([A-Za-z_][A-Za-z0-9_]*)\+([A-Za-z_][A-Za-z0-9_]*)(?:\*([1248]))?([+-])(\d+)\]/canonical_machine_ir_indexed_memory_operand($1, $2, $3, $4, $5, \%state)/ge;
 	$data =~ s/\[([A-Za-z_][A-Za-z0-9_]*)([+-])(\d+)\]/canonical_machine_ir_memory_operand($1, $2, $3, \%state)/ge;
 	$data =~ s/\b(rbx|r10|r11|r12|r13|r14|r15)\b/canonical_machine_ir_free_gpr($1, \%state)/ge;
-	$data =~ s/\b(xmm2|xmm3|xmm4|xmm5|xmm6|xmm7)\b/canonical_machine_ir_free_xmm($1, \%state)/ge;
+	# (A canonical name is read again as an oracle: it stays as it is.)
+	$data =~ s/(?<!<)\b(xmm2|xmm3|xmm4|xmm5|xmm6|xmm7)\b/canonical_machine_ir_free_xmm($1, \%state)/ge;
 	return $data;
 }
 

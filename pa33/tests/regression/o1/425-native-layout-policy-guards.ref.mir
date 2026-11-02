@@ -140,7 +140,7 @@ function @main
     frame_pointer keep
     epilogues duplicated
     preserve rbx r12 r13 r14 r15
-    temp %eh_value -> [rbp-8] : i64
+    temp %floating_bad -> [rbp-8] : i64
 
   block ^entry
     mov rdi, 28
@@ -157,8 +157,8 @@ function @main
     call @floating_scratch [args=(), unwind=no]
     mov r15, rax
     call @host_eh [args=()]
-    mov r10, rax
-    store.i64 [rbp-8], r10
+    store.i64 [rbp-8], r15
+    mov r15, rax
     mov rdi, 1
     call @direct_returns [args=(rdi), unwind=no]
     cmp.i64 rbx, 29
@@ -173,15 +173,15 @@ function @main
     cmp.i64 r14, 37
     setne r14
     movzx r14, r14
-    cmp.i64 [rbp-8], 41
-    setne r8
-    movzx r8, r8
+    cmp.i64 r15, 41
+    setne r15
+    movzx r15, r15
     cmp.i64 rax, 43
     setne rax
     movzx rax, rax
     or rbx, r12
     or r13, r14
-    or r15, r8
+    or r15, [rbp-8]
     or rbx, r13
     or r15, rax
     or rbx, r15
