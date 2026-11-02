@@ -2,6 +2,7 @@
 """Update one CPU's badges while retaining the other CPU's last measurement."""
 import argparse
 import datetime
+from html import escape
 import json
 from pathlib import Path
 import re
@@ -10,6 +11,26 @@ import public_benchmarks
 
 BADGES = ('o0-compile', 'o0-generated', 'o3-compile', 'o3-generated',
           'self-compile', 'self-built')
+
+
+def badge_svg(data):
+    """Keep bold performance text in a compact, rounded badge."""
+    message = data['message']
+    color = data['color']
+    if not re.fullmatch(r'[0-9a-fA-F]{6}', color):
+        raise ValueError('badge color must be a six-digit hex value')
+    text_width = max(8, len(message) * 8 - 1)
+    width = text_width + 12
+    title = escape(f"{data['label']}: {message}", quote=True)
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="24" '
+            f'viewBox="0 0 {width} 24" role="img" aria-label="{title}">\n'
+            f'  <title>{title}</title>\n'
+            f'  <rect width="{width}" height="24" rx="4" fill="#{color}"/>\n'
+            f'  <text x="{width / 2:g}" y="16.5" fill="#fff" text-anchor="middle" '
+            'font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" '
+            f'font-weight="700" letter-spacing="1" textLength="{text_width}" '
+            f'lengthAdjust="spacingAndGlyphs">{escape(message)}</text>\n'
+            '</svg>\n')
 
 
 def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
@@ -43,6 +64,7 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
         destination.mkdir(parents=True, exist_ok=True)
         for name, data in badges.items():
             (destination / f'{name}.json').write_text(json.dumps(data, indent=1) + '\n')
+            (destination / f'{name}.svg').write_text(badge_svg(data))
         (destination / 'provenance.json').write_text(json.dumps(provenance, indent=1) + '\n')
 
 

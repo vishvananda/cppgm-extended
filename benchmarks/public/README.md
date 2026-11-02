@@ -92,8 +92,8 @@ a multiple of `g++` speed. Higher is better.
 | Building `cppgm++` | compile speed | `self compile speed vs gcc` | CPU time of the `-O3` build of `cppgm++` by the `g++`-built `cppgm++`, against the same build by `g++` |
 | Building `cppgm++` | generated code speed | `self-built speed vs gcc` | CPU time of the `-O3` build of `cppgm++` by the self-built `cppgm++`, against the same build by the `g++`-built `cppgm++` |
 
-The badge JSON holds the label. The table hides it with `&label=` in the URL,
-uses the bold `for-the-badge` style at 32 pixels high, and uses dark backgrounds
+The publisher keeps the badge JSON and renders compact SVG badges for the
+table: bold 12-pixel text, a 24-pixel height, rounded corners and dark backgrounds
 so the white performance numbers stay readable.
 
 The three builds use the same job count.
