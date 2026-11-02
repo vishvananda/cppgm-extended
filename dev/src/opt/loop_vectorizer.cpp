@@ -89,6 +89,7 @@ private:
 	bool in_body(Value v) const;
 	bool narrow_fits(Value v, Type type, unsigned depth) const;
 	Value narrowed(Value v, Type type, InstId& tail);
+	Value narrowed_outside(Value v, Type type);
 	void narrow_arithmetic();
 	bool add_reduction(TempId read, const Instruction& step, Value start, Type type);
 	bool extends_counter(const Instruction& step, Value start, Type type, int64_t& by) const;
@@ -347,10 +348,13 @@ bool LoopVectorizer::narrow_fits(Value v, Type type, unsigned depth) const
 {
 	if (v.is(ValueKind::Integer))
 		return true;
+	const unsigned bytes = lane_bytes(type);
+	// (A value from outside the loop is truncated where it is defined.)
+	if (v.is(ValueKind::Temp) && !in_body(v))
+		return lane_bytes(body_.temps[v.index].type) >= bytes;
 	if (!in_body(v) || depth == 0)
 		return false;
 	const Instruction& def = body_.instructions[body_.temps[v.index].def];
-	const unsigned bytes = lane_bytes(type);
 	if (def.op == Opcode::Convert)
 	{
 		const ConvertOp op = static_cast<ConvertOp>(def.sub);
@@ -379,11 +383,53 @@ bool LoopVectorizer::narrow_fits(Value v, Type type, unsigned depth) const
 	return narrow_fits(def.ops[0], type, depth - 1) && narrow_fits(def.ops[1], type, depth - 1);
 }
 
+// A value from outside the loop in `type`: its source when it extends one,
+// else a truncation right after its definition.
+Value LoopVectorizer::narrowed_outside(Value v, Type type)
+{
+	const Type from = body_.temps[v.index].type;
+	if (from.kind() == type.kind())
+		return v;
+	const InstId def = body_.temps[v.index].def;
+	const bool parameter = v.index < body_.parameter_count || def == kNoId;
+	if (!parameter)
+	{
+		const Instruction& extension = body_.instructions[def];
+		if (extension.op == Opcode::Convert &&
+			(static_cast<ConvertOp>(extension.sub) == ConvertOp::SExt ||
+				static_cast<ConvertOp>(extension.sub) == ConvertOp::ZExt) &&
+			extension.ops[0].is(ValueKind::Temp) && body_.temps[extension.ops[0].index].type.kind() == type.kind())
+			return extension.ops[0];
+	}
+	const BlockId block = parameter ? cfg_.rpo[0] : c_.block_of[def];
+	InstId after = parameter ? kNoId : def;
+	while (body_.instructions[after == kNoId ? body_.blocks[block].first : after].op == Opcode::Phi)
+	{
+		const InstId next = after == kNoId ? body_.blocks[block].first : body_.instructions[after].next;
+		if (after != kNoId && body_.instructions[next].op != Opcode::Phi)
+			break;
+		after = next;
+	}
+	Instruction trunc = make_instruction(Opcode::Convert, type);
+	trunc.sub = static_cast<uint8_t>(ConvertOp::Trunc);
+	set_convert_source_type(trunc, from);
+	trunc.ops[0] = v;
+	const InstId id = append_instruction(body_, trunc);
+	const TempId result = append_temp(body_, type, id);
+	body_.instructions[id].result = result;
+	insert_after(body_, block, after, id);
+	c_.block_of.resize(body_.instructions.size(), kNoId);
+	c_.block_of[id] = block;
+	return Value::temp(result);
+}
+
 // `v` in `type`, computed before what follows `tail`.
 Value LoopVectorizer::narrowed(Value v, Type type, InstId& tail)
 {
 	if (v.is(ValueKind::Integer))
 		return integer_value(body_, normalize_integer(type, body_.literals[v.index]));
+	if (!in_body(v))
+		return narrowed_outside(v, type);
 	const Instruction def = body_.instructions[body_.temps[v.index].def];
 	auto add = [&](Instruction inst) {
 		const InstId id = append_instruction(body_, inst);

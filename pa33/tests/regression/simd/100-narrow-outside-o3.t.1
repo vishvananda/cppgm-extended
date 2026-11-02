@@ -1,0 +1,62 @@
+#include <cstdio>
+
+__attribute__((noinline)) static signed char byte_sum(signed char* a, int n, signed char v)
+{
+	signed char s = 0;
+	for (int i = 0; i < n; ++i)
+		s += a[i] + v;
+	return s;
+}
+
+__attribute__((noinline)) static signed char byte_wide(signed char* a, int n, int v)
+{
+	signed char s = 0;
+	for (int i = 0; i < n; ++i)
+		s += a[i] + v;
+	return s;
+}
+
+__attribute__((noinline)) static unsigned char byte_mask(unsigned char* a, int n, unsigned v)
+{
+	unsigned char s = 0;
+	for (int i = 0; i < n; ++i)
+		s ^= (a[i] + v) & 0x7f;
+	return s;
+}
+
+__attribute__((noinline)) static short short_mul(short* a, int n, int v, int w)
+{
+	int m = v > 0 ? v + 3 : w;
+	short s = 0;
+	for (int i = 0; i < n; ++i)
+		s += a[i] * m;
+	return s;
+}
+
+__attribute__((noinline)) static unsigned short short_sub(unsigned short* a, int n, long long v)
+{
+	unsigned short s = 7;
+	for (int i = 0; i < n; ++i)
+		s -= a[i] - v;
+	return s;
+}
+
+int main()
+{
+	signed char c[67];
+	unsigned char u[67];
+	short h[67];
+	unsigned short w[67];
+	for (int i = 0; i < 67; ++i)
+	{
+		c[i] = static_cast<signed char>(i * 37 - 90);
+		u[i] = static_cast<unsigned char>(i * 91);
+		h[i] = static_cast<short>(i * 12345 - 3000);
+		w[i] = static_cast<unsigned short>(i * 54321);
+	}
+	for (int n = 0; n <= 67; n += 3)
+		std::printf("%d %d %d %d %d %d\n", byte_sum(c, n, static_cast<signed char>(n * 11)), byte_wide(c, n, n * 100003 - 7),
+			byte_mask(u, n, n * 65537u), short_mul(h, n, n - 30, n * 70001), short_mul(h, n, n, -1),
+			short_sub(w, n, n * 0x100000001ll + 5));
+	return 0;
+}

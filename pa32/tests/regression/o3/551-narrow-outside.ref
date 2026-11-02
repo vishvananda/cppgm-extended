@@ -1,0 +1,220 @@
+function @byte_of_extension(%first : ptr, %count : i32, %v : i8) -> i8 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %more = cmp gt i32 %count, 0
+    branch %more, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    %t2 = cmp ugt i32 %count, 16
+    %t3 = binary and i64 %more, %t2
+    branch %t3, ^loop_preheader_2, ^loop_preheader_5
+
+  block ^loop_preheader_2:
+    %t4 = binary add i32 %count, -16
+    %t5 = vector pzero
+    %t6 = convert zext i32 i8 %v
+    %t7 = binary mul i32 %t6, 257
+    %t8 = vector fromi32 %t7
+    %t9 = vector pshuflw %t8, 0
+    %t10 = vector pshufd %t9, 0
+    jump ^wide_loop_3
+
+  block ^wide_loop_3:
+    %t11 = phi v128 [^loop_preheader_2: %t5, ^wide_loop_3: %t16]
+    %t12 = phi i32 [^loop_preheader_2: 0, ^wide_loop_3: %t17]
+    %t13 = index i8 %first, %t12
+    %t14 = load v128 %t13
+    %t15 = vector paddb %t10, %t14
+    %t16 = vector paddb %t15, %t11
+    %t17 = binary add nowrap i32 %t12, 16
+    %t18 = cmp lt i32 %t17, %t4
+    branch %t18, ^wide_loop_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t19 = vector pshufd %t16, 78
+    %t20 = vector paddb %t16, %t19
+    %t21 = vector pshufd %t20, 177
+    %t22 = vector paddb %t20, %t21
+    %t23 = vector psrldi %t22, 16
+    %t24 = vector paddb %t22, %t23
+    %t25 = vector psrlwi %t24, 8
+    %t26 = vector paddb %t24, %t25
+    %t27 = vector toi32 %t26
+    %t28 = convert trunc i8 i32 %t27
+    jump ^loop_preheader_5
+
+  block ^loop_preheader_5:
+    %t29 = phi i8 [^loop_preheader_1: 0, ^loop_exit_4: %t28]
+    %t30 = phi i32 [^loop_preheader_1: 0, ^loop_exit_4: %t17]
+    jump ^loop
+
+  block ^loop:
+    %sum = phi i8 [^loop_preheader_5: %t29, ^loop: %t36]
+    %i = phi i32 [^loop_preheader_5: %t30, ^loop: %next]
+    %p = index i8 %first, %i
+    %x = load i8 %p
+    %t35 = binary add i8 %v, %x
+    %t36 = binary add i8 %sum, %t35
+    %next = binary add nowrap i32 %i, 1
+    %again = cmp lt i32 %next, %count
+    branch %again, ^loop, ^done
+
+  block ^done:
+    %r = phi i8 [^entry: 0, ^loop: %t36]
+    return i8 %r
+}
+function @byte_of_parameter(%first : ptr, %count : i32, %v : i32) -> i8 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = convert trunc i8 i32 %v
+    %more = cmp gt i32 %count, 0
+    branch %more, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    %t3 = cmp ugt i32 %count, 16
+    %t4 = binary and i64 %more, %t3
+    branch %t4, ^loop_preheader_2, ^loop_preheader_5
+
+  block ^loop_preheader_2:
+    %t5 = binary add i32 %count, -16
+    %t6 = vector pzero
+    %t7 = convert zext i32 i8 %t1
+    %t8 = binary mul i32 %t7, 257
+    %t9 = vector fromi32 %t8
+    %t10 = vector pshuflw %t9, 0
+    %t11 = vector pshufd %t10, 0
+    jump ^wide_loop_3
+
+  block ^wide_loop_3:
+    %t12 = phi v128 [^loop_preheader_2: %t6, ^wide_loop_3: %t17]
+    %t13 = phi i32 [^loop_preheader_2: 0, ^wide_loop_3: %t18]
+    %t14 = index i8 %first, %t13
+    %t15 = load v128 %t14
+    %t16 = vector paddb %t11, %t15
+    %t17 = vector paddb %t16, %t12
+    %t18 = binary add nowrap i32 %t13, 16
+    %t19 = cmp lt i32 %t18, %t5
+    branch %t19, ^wide_loop_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t20 = vector pshufd %t17, 78
+    %t21 = vector paddb %t17, %t20
+    %t22 = vector pshufd %t21, 177
+    %t23 = vector paddb %t21, %t22
+    %t24 = vector psrldi %t23, 16
+    %t25 = vector paddb %t23, %t24
+    %t26 = vector psrlwi %t25, 8
+    %t27 = vector paddb %t25, %t26
+    %t28 = vector toi32 %t27
+    %t29 = convert trunc i8 i32 %t28
+    jump ^loop_preheader_5
+
+  block ^loop_preheader_5:
+    %t30 = phi i8 [^loop_preheader_1: 0, ^loop_exit_4: %t29]
+    %t31 = phi i32 [^loop_preheader_1: 0, ^loop_exit_4: %t18]
+    jump ^loop
+
+  block ^loop:
+    %sum = phi i8 [^loop_preheader_5: %t30, ^loop: %t37]
+    %i = phi i32 [^loop_preheader_5: %t31, ^loop: %next]
+    %p = index i8 %first, %i
+    %x = load i8 %p
+    %t36 = binary add i8 %x, %t1
+    %t37 = binary add i8 %sum, %t36
+    %next = binary add nowrap i32 %i, 1
+    %again = cmp lt i32 %next, %count
+    branch %again, ^loop, ^done
+
+  block ^done:
+    %r = phi i8 [^entry: 0, ^loop: %t37]
+    return i8 %r
+}
+function @short_of_phi(%first : ptr, %count : i32, %c : i1, %v : i32, %w : i32) -> i16 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %more = cmp gt i32 %count, 0
+    %v2 = binary add i32 %v, 3
+    %t3 = select i32 %c, %v2, %w
+    %t4 = convert trunc i16 i32 %t3
+    branch %more, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    %t5 = cmp ugt i32 %count, 8
+    %t6 = binary and i64 %more, %t5
+    branch %t6, ^loop_preheader_2, ^loop_preheader_5
+
+  block ^loop_preheader_2:
+    %t7 = binary add i32 %count, -8
+    %t8 = vector pzero
+    %t9 = convert zext i32 i16 %t4
+    %t10 = vector fromi32 %t9
+    %t11 = vector pshuflw %t10, 0
+    %t12 = vector pshufd %t11, 0
+    jump ^wide_loop_3
+
+  block ^wide_loop_3:
+    %t13 = phi v128 [^loop_preheader_2: %t8, ^wide_loop_3: %t18]
+    %t14 = phi i32 [^loop_preheader_2: 0, ^wide_loop_3: %t19]
+    %t15 = index i16 %first, %t14
+    %t16 = load v128 %t15
+    %t17 = vector pmullw %t12, %t16
+    %t18 = vector paddw %t17, %t13
+    %t19 = binary add nowrap i32 %t14, 8
+    %t20 = cmp lt i32 %t19, %t7
+    branch %t20, ^wide_loop_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t21 = vector pshufd %t18, 78
+    %t22 = vector paddw %t18, %t21
+    %t23 = vector pshufd %t22, 177
+    %t24 = vector paddw %t22, %t23
+    %t25 = vector psrldi %t24, 16
+    %t26 = vector paddw %t24, %t25
+    %t27 = vector toi32 %t26
+    %t28 = convert trunc i16 i32 %t27
+    jump ^loop_preheader_5
+
+  block ^loop_preheader_5:
+    %t29 = phi i16 [^loop_preheader_1: 0, ^loop_exit_4: %t28]
+    %t30 = phi i32 [^loop_preheader_1: 0, ^loop_exit_4: %t19]
+    jump ^loop
+
+  block ^loop:
+    %sum = phi i16 [^loop_preheader_5: %t29, ^loop: %t36]
+    %i = phi i32 [^loop_preheader_5: %t30, ^loop: %next]
+    %p = index i16 %first, %i
+    %x = load typed i16 %p
+    %t35 = binary mul i16 %x, %t4
+    %t36 = binary add i16 %sum, %t35
+    %next = binary add nowrap i32 %i, 1
+    %again = cmp lt i32 %next, %count
+    branch %again, ^loop, ^done
+
+  block ^done:
+    %r = phi i16 [^entry: 0, ^loop: %t36]
+    return i16 %r
+}
+function @byte_shift_stays(%first : ptr, %count : i32, %v : i32) -> i8 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %more = cmp gt i32 %count, 0
+    branch %more, ^loop, ^done
+
+  block ^loop:
+    %sum = phi i8 [^entry: 0, ^loop: %next_sum]
+    %i = phi i32 [^entry: 0, ^loop: %next]
+    %p = index i8 %first, %i
+    %x = load i8 %p
+    %ex = convert sext i32 i8 %x
+    %a = binary shr i32 %ex, %v
+    %es = convert sext i32 i8 %sum
+    %b = binary add nowrap i32 %a, %es
+    %next_sum = convert trunc i8 i32 %b
+    %next = binary add nowrap i32 %i, 1
+    %again = cmp lt i32 %next, %count
+    branch %again, ^loop, ^done
+
+  block ^done:
+    %r = phi i8 [^entry: 0, ^loop: %next_sum]
+    return i8 %r
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

@@ -490,7 +490,8 @@ vectorization stays outside the course contract.
   counts with it, when both start at the same value.
 - Before the loop is read, `add`, `sub` and the bit operators that only a
   truncation to `i8`, `u8`, `i16` or `u16` reads move to the narrow type, as does
-  `mul` to the two-byte types. Their lanes are then narrower, and more of them
+  `mul` to the two-byte types. A value from outside the loop is truncated where
+  it is defined. Their lanes are then narrower, and more of them
   fit in a register.
 - Each load and store reads or writes consecutive elements, and all of them
   step in one direction. In a loop that steps down, the lanes hold their passes
