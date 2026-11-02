@@ -1,0 +1,34 @@
+function @half(%x : f64) -> f64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %h = binary mul f64 %x, 0.5
+    return f64 %h
+}
+function @quarter(%x : f32) -> f32 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %h = binary mul f32 %x, -0.25f
+    return f32 %h
+}
+function @third(%x : f64) -> f64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %h = binary div f64 %x, 3
+    return f64 %h
+}
+function @huge(%x : f64) -> f64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %h = binary div f64 %x, 8.9884656743115795386e+307
+    return f64 %h
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %a = call f64 @half(8.0)
+    %b = call f32 @quarter(8f)
+    %c = call f64 @third(9.0)
+    %d = call f64 @huge(0.0)
+    %e = convert fpext f64 f32 %b
+    %f = binary add f64 %a, %e
+    %g = binary add f64 %c, %f
+    %h = binary add f64 %d, %g
+    %i = convert fptosi i32 f64 %h
+    %j = binary sub i32 %i, 5
+    return i32 %j
+}

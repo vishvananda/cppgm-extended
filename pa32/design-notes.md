@@ -573,7 +573,9 @@ compare against a positive literal above every possible value folds. A signed
 division or remainder of a value that cannot be negative, by a power of two, is
 a shift or a mask. A signed halving of `x * (x + k)` for an odd `k` is an
 arithmetic shift, as one factor is even whatever wraps. Floating `add` and `mul`
-commute for value numbering: only which NaN payload comes out could differ. An extension of a truncation that lost no bits is the
+commute for value numbering: only which NaN payload comes out could differ. A
+floating division by a power of two whose reciprocal is exact (`x / 2`) is a
+multiplication by that reciprocal, which rounds alike and costs far less. An extension of a truncation that lost no bits is the
 original value.
 
 Step sinking: in a one-block loop, a counter's step that runs before the last
