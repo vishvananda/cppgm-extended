@@ -489,6 +489,32 @@ again; the boundary is internal, so no other unit sees the change. A call
 with a stated signature or another argument count disqualifies the
 function. Pruning follows.
 
+### Static Initialization
+
+[basic.start.init]p3 allows a dynamic initializer to run as static
+initialization when its result is the same. At `-O1` and above, before
+the first wave, read the entry block of the init function (`role=init`) in order. Track each
+temporary as a literal, a symbol's address at a byte offset, or unknown,
+and fold `addr`, `index`, `copy`, `convert`, unary and binary operations
+and compares as the back end computes them. A load reads a value this
+block stored at the same place, if no call or store through an unknown
+address came between; otherwise it reads readonly data.
+
+Record each store of a literal or an address to a known place in an
+internal global with zero initial data, not replaceable and in no section.
+A global becomes static when every store to it was recorded and nothing
+else in the unit writes it (`find_unwritten_globals`, with the recorded
+stores left out). Its data is then the last stored value at each place,
+with zero bytes between. Remove those stores. Value simplification then
+folds loads of the global. A recorded store of a global's address keeps
+that global dynamic: the scan leaves those stores out, and code can write
+the global through a pointer loaded from where its address went.
+
+The entry block often holds only calls to constructors. At `-O2` and
+above, run the reading again after the waves, when those constructors are
+inlined. The final pass then runs value simplification in each function
+that names a global that became static.
+
 ### Read-Only Functions (`-O2`, `-O3`)
 
 After argument propagation, mark the functions that write no memory their

@@ -1,0 +1,49 @@
+global @pi : f64 [storage=readonly, binding=internal] = 3.25
+global @two_pi : f64 [binding=internal] = 6.5
+global @body : obj<16x8> [binding=internal] = {
+  f64 6.5
+  f64 3.25
+}
+global @later : f64 [binding=internal] = zero
+global @after_call : f64 [binding=internal] = 2.5
+global @shown : i32 = zero
+global @count : i32 [binding=internal] = zero
+
+function @tick() -> void [no_inline=yes] {
+  block ^entry:
+    %c = load i32 @count
+    %d = binary add i32 %c, 1
+    store i32 %d, @count
+    return void
+}
+function @set(%x : f64) -> void [no_inline=yes] {
+  block ^entry:
+    store f64 %x, @later
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    store f64 1.5, @later
+    call void @tick()
+    store i32 7, @shown
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %before = load f64 @later
+    call void @set(4.0)
+    %now = load f64 @later
+    %s = load i32 @shown
+    %c = load i32 @count
+    %s4 = binary add f64 %before, 18.75
+    %s5 = binary add f64 %now, %s4
+    %bad_f = cmp ne f64 %s5, 24.25
+    %bad_s = cmp ne i32 %s, 7
+    %bad_c = cmp ne i32 %c, 1
+    %x = convert zext i32 i1 %bad_f
+    %y = convert zext i32 i1 %bad_s
+    %z = convert zext i32 i1 %bad_c
+    %xy = binary or i32 %x, %y
+    %all = binary or i32 %z, %xy
+    return i32 %all
+}

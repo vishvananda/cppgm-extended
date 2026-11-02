@@ -799,7 +799,8 @@ bool constant_contents(const Program& program, SymbolId symbol, const std::vecto
 			(unwritten != nullptr && symbol < unwritten->size() && (*unwritten)[symbol] != 0));
 }
 
-void find_unwritten_globals(const Program& program, std::vector<uint8_t>& unwritten)
+void find_unwritten_globals(
+	const Program& program, std::vector<uint8_t>& unwritten, SymbolId skip_function, const std::vector<uint8_t>* skip)
 {
 	const SymbolId symbols = static_cast<SymbolId>(program.symbols.size());
 	unwritten.assign(symbols, 0);
@@ -933,6 +934,8 @@ void find_unwritten_globals(const Program& program, std::vector<uint8_t>& unwrit
 			for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
 			{
 				const Instruction& inst = body.instructions[i];
+				if (f == skip_function && i < skip->size() && (*skip)[i] != 0)
+					continue;
 				uint32_t position = 0;
 				for_each_operand(body, inst, [&](const Value& v) {
 					const uint32_t at = position++;

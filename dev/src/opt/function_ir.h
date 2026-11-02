@@ -334,8 +334,11 @@ bool read_readonly_scalar(const lowir::Program& program, lowir::SymbolId symbol,
 // address arithmetic and comparisons, kept in private slots on the way);
 // no other global's data holds its address. readonly storage aside, the
 // const tables lowering keeps in writable storage (pa10/README.md: only
-// const scalars are readonly). O(instructions).
-void find_unwritten_globals(const lowir::Program& program, std::vector<uint8_t>& unwritten);
+// const scalars are readonly). O(instructions). The instructions of
+// `skip_function` that `skip` marks (by id) are left out: the stores
+// initialize_statically would move into data.
+void find_unwritten_globals(const lowir::Program& program, std::vector<uint8_t>& unwritten,
+	lowir::SymbolId skip_function = lowir::kNoId, const std::vector<uint8_t>* skip = nullptr);
 
 // The address a pointer-sized load at `offset` into constant global
 // `symbol` reads: an address item there, its symbol in `target`; with no

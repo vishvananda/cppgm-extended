@@ -1,0 +1,27 @@
+global @point : obj<16x8> [binding=internal] = {
+  f64 3
+  f64 4
+}
+
+function @construct(%p : ptr, %x : f64, %y : f64) -> void {
+  block ^entry:
+    store f64 %x, %p
+    %q = index i8 %p, 8
+    store f64 %y, %q
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    return void
+}
+function @norm() -> f64 [no_inline=yes] {
+  block ^entry:
+    return f64 25
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %n = call f64 @norm()
+    %bad = cmp ne f64 %n, 25
+    %r = convert zext i32 i1 %bad
+    return i32 %r
+}

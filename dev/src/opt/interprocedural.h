@@ -36,4 +36,17 @@ bool copy_for_callees(lowir::Program& program, OptimizerStats& stats);
 // goes through the slot as before. True when it rewrote a call.
 bool speculate_virtual_calls(lowir::Program& program, OptimizerStats& stats);
 
+// Static initialization (O1+): the stores of constants into internal
+// globals that open the unit's initialization function (its entry block:
+// literals, readonly data and what it stored there, as the native back end
+// computes them) become those globals' data, as [basic.start.init]p3
+// permits, when the global starts zero and nothing else writes it
+// (find_unwritten_globals). Its loads then fold. One scan of the entry
+// block and, when it records a store, one of the unit, which fills
+// `unwritten` as find_unwritten_globals would after the move (an empty
+// `unwritten` is filled in any case). `moved`, when given, marks the
+// globals whose stores it moved; true when it moved one.
+bool initialize_statically(
+	lowir::Program& program, std::vector<uint8_t>& unwritten, std::vector<uint8_t>* moved = nullptr);
+
 } // namespace opt

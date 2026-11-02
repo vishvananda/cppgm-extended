@@ -447,16 +447,39 @@ bool finish_loops(FunctionContext& context, int level)
 	return changed;
 }
 
+// Whether an instruction of `body` names a symbol `marked` marks.
+bool names_symbol(const FunctionBody& body, const std::vector<uint8_t>& marked)
+{
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			bool found = false;
+			for_each_operand(body, body.instructions[i], [&](const Value& v) {
+				found = found || (v.is(ValueKind::Symbol) && v.index < marked.size() && marked[v.index] != 0);
+			});
+			if (found)
+				return true;
+		}
+	return false;
+}
+
 void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, const OptimizerOptions& options,
-	std::vector<uint8_t>& nounwind, const std::vector<uint8_t>& unwritten)
+	std::vector<uint8_t>& nounwind, const std::vector<uint8_t>& unwritten, const std::vector<uint8_t>* moved)
 {
 	FunctionContext context(program, symbol, stats, 2);
 	const PooledContext pooled(context, context_pool());
 	context.nounwind = &nounwind;
 	context.unwritten = &unwritten;
 	enable_verify(context, options);
-	// What a call now known to write nothing no longer hides.
+	// What a call now known to write nothing no longer hides, and the
+	// loads of globals the late static initialization gave data (and the
+	// addresses of the stores it removed).
 	bool changed = calls_read_only(context) && RUN_PASS(forward_memory);
+	if (moved != nullptr && names_symbol(context.body, *moved))
+	{
+		RUN_PASS(simplify_values);
+		changed = true;
+	}
 	if (changed)
 		RUN_PASS(remove_dead_code);
 	changed = RUN_PASS(combine_sin_cos) || changed;
@@ -638,8 +661,8 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 		}
 		const int level = options.level;
 		std::vector<uint8_t> nounwind(program.symbols.size(), 0);
-		std::vector<uint8_t> unwritten;
-		find_unwritten_globals(program, unwritten);
+		std::vector<uint8_t> unwritten, moved;
+		initialize_statically(program, unwritten);
 		const std::function<void(SymbolId)> simplify = [&](SymbolId s) {
 			simplify_function(program, s, stats, options, nounwind, unwritten);
 		};
@@ -670,10 +693,13 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 			prune_unreachable(program, stats);
 		if (level >= 2)
 			infer_read_only_functions(program);
+		// The waves inlined the constructors the init function calls: what
+		// they store is now stores the final pass's loads can read.
+		const bool moved_late = level >= 2 && initialize_statically(program, unwritten, &moved);
 		for (SymbolId s = 0; level >= 2 && s < program.symbols.size(); ++s)
 			if (program.symbols[s].kind == SymbolKind::FunctionDefinition &&
 				program.functions[program.symbols[s].detail].body != nullptr)
-				finish_function(program, s, stats, options, nounwind, unwritten);
+				finish_function(program, s, stats, options, nounwind, unwritten, moved_late ? &moved : nullptr);
 	}
 	count_program(program, stats.instructions_out, stats.blocks_out);
 	stats.optimize_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
