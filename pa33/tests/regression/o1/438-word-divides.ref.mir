@@ -1,0 +1,149 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @by_seven
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r11, 2454267027
+    mov rax, rdi
+    imul rax, r11
+    sar rax, 34
+    mov rdx, rdi
+    sar rdx, 63
+    sub rax, rdx
+    ret rax
+
+function @by_minus_seven
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r11, 2454267027
+    mov rax, rdi
+    imul rax, r11
+    sar rax, 34
+    mov rdx, rdi
+    sar rdx, 63
+    sub rdx, rax
+    ret rdx
+
+function @rest_of
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    imul rax, rdi, 502748801
+    sar rax, 46
+    mov rdx, rdi
+    sar rdx, 63
+    sub rax, rdx
+    imul rax, 139968
+    mov rdx, rdi
+    sub rdx, rax
+    ret rdx
+
+function @unsigned_by_ten
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zext.i32 r10, rdi
+    mov r11, 3435973837
+    mov rax, r10
+    imul rax, r11
+    shr rax, 35
+    sext.i32 rax
+    ret rax
+
+function @unsigned_by_seven
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zext.i32 r10, rdi
+    mov rax, r10
+    mov r11, 2635249153387078803
+    mul r11
+    mov rax, r10
+    sub rax, rdx
+    shr rax, 1
+    add rax, rdx
+    shr rax, 2
+    sext.i32 rax
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14
+
+  block ^entry
+    mov rdi, -50
+    call @by_seven [args=(rdi)]
+    mov rbx, rax
+    mov rdi, 50
+    call @by_minus_seven [args=(rdi)]
+    mov r12, rax
+    mov rdi, 200000
+    call @rest_of [args=(rdi)]
+    mov r13, rax
+    mov rdi, -1
+    call @unsigned_by_ten [args=(rdi)]
+    mov r14, rax
+    mov rdi, -1
+    call @unsigned_by_seven [args=(rdi)]
+    add rbx, r12
+    add rbx, r13
+    add rbx, r14
+    add rbx, rax
+    sext.i32 rbx
+    imul rax, rbx, 1374389535
+    sar rax, 37
+    mov rdx, rbx
+    sar rdx, 63
+    sub rax, rdx
+    imul rax, 100
+    mov rdx, rbx
+    sub rdx, rax
+    ret rdx

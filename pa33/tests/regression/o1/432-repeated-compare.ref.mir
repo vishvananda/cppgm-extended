@@ -132,14 +132,8 @@ function @main
     add rbx, r14
     sext.i32 rbx
     zext.i32 r10, rbx
-    mov rax, r10
-    mov r11, 5165088340638674453
-    mul r11
-    mov rax, r10
-    sub rax, rdx
-    shr rax, 1
-    add rax, rdx
-    shr rax, 7
+    imul rax, r10, 1374389535
+    shr rax, 38
     imul rax, 200
     mov rdx, r10
     sub rdx, rax

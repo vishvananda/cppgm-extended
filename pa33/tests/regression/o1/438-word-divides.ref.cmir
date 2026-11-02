@@ -1,0 +1,149 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @by_seven
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov <gpr0>, 2454267027
+    mov rax, rdi
+    imul rax, <gpr0>
+    sar rax, 34
+    mov rdx, rdi
+    sar rdx, 63
+    sub rax, rdx
+    ret rax
+
+function @by_minus_seven
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov <gpr0>, 2454267027
+    mov rax, rdi
+    imul rax, <gpr0>
+    sar rax, 34
+    mov rdx, rdi
+    sar rdx, 63
+    sub rdx, rax
+    ret rdx
+
+function @rest_of
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    imul rax, rdi, 502748801
+    sar rax, 46
+    mov rdx, rdi
+    sar rdx, 63
+    sub rax, rdx
+    imul rax, 139968
+    mov rdx, rdi
+    sub rdx, rax
+    ret rdx
+
+function @unsigned_by_ten
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zext.i32 <gpr1>, rdi
+    mov <gpr0>, 3435973837
+    mov rax, <gpr1>
+    imul rax, <gpr0>
+    shr rax, 35
+    sext.i32 rax
+    ret rax
+
+function @unsigned_by_seven
+  abi
+    param %x -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zext.i32 <gpr1>, rdi
+    mov rax, <gpr1>
+    mov <gpr0>, 2635249153387078803
+    mul <gpr0>
+    mov rax, <gpr1>
+    sub rax, rdx
+    shr rax, 1
+    add rax, rdx
+    shr rax, 2
+    sext.i32 rax
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr2> <gpr3> <gpr4> <gpr5>
+
+  block ^entry
+    mov rdi, -50
+    call @by_seven [args=(rdi)]
+    mov <gpr2>, rax
+    mov rdi, 50
+    call @by_minus_seven [args=(rdi)]
+    mov <gpr3>, rax
+    mov rdi, 200000
+    call @rest_of [args=(rdi)]
+    mov <gpr4>, rax
+    mov rdi, -1
+    call @unsigned_by_ten [args=(rdi)]
+    mov <gpr5>, rax
+    mov rdi, -1
+    call @unsigned_by_seven [args=(rdi)]
+    add <gpr2>, <gpr3>
+    add <gpr2>, <gpr4>
+    add <gpr2>, <gpr5>
+    add <gpr2>, rax
+    sext.i32 <gpr2>
+    imul rax, <gpr2>, 1374389535
+    sar rax, 37
+    mov rdx, <gpr2>
+    sar rdx, 63
+    sub rax, rdx
+    imul rax, 100
+    mov rdx, <gpr2>
+    sub rdx, rax
+    ret rdx

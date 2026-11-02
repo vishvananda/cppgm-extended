@@ -56,6 +56,35 @@ struct SignedMagic
 	unsigned shift;
 };
 
+// Word division in a 64-bit product (Granlund and Montgomery 1994, section 6):
+// (x * multiplier) >> shift, for 0 < d < 2^31 not a power of two, and x below
+// 2^precision in magnitude. The multiplier is the smallest that serves; when
+// it would take 33 bits it is above 2^32 - 1.
+struct WordMagic
+{
+	uint64_t multiplier;
+	unsigned shift;
+};
+
+WordMagic word_magic(uint64_t d, unsigned precision)
+{
+	unsigned bits = 0;
+	while ((uint64_t(1) << bits) < d)
+		++bits;
+	const unsigned power = 32 + bits;
+	uint64_t low = (uint64_t(1) << power) / d;
+	uint64_t high = ((uint64_t(1) << power) + (uint64_t(1) << (power - precision))) / d;
+	unsigned post = bits;
+	while (post > 0 && (low >> 1) < (high >> 1))
+	{
+		low >>= 1;
+		high >>= 1;
+		--post;
+	}
+	const WordMagic magic = { high, 32 + post };
+	return magic;
+}
+
 // Hacker's Delight 10-10 (magicu2) at 64 bits: the multiplier and shift
 // for an unsigned divisor d >= 2 that is not a power of two.
 UnsignedMagic unsigned_magic(uint64_t d)
@@ -373,8 +402,14 @@ void FunctionSelector::emit_divide_constant(const Instruction& inst, DivideForm 
 	}
 	else
 	{
-		const Reg from = form == DivideForm::UnsignedMagic ? emit_unsigned_magic_divide(x, divisor, is_remainder(op))
-														   : emit_signed_magic_divide(x, divisor, is_remainder(op));
+		const bool word = level_ >= 1 && narrow_integer(kind) && divisor > -(int64_t(1) << 31) &&
+			divisor < (int64_t(1) << 31);
+		Reg from = kNoReg;
+		if (word)
+			from = emit_word_magic_divide(x, divisor, is_remainder(op), form == DivideForm::UnsignedMagic);
+		if (from == kNoReg)
+			from = form == DivideForm::UnsignedMagic ? emit_unsigned_magic_divide(x, divisor, is_remainder(op))
+													 : emit_signed_magic_divide(x, divisor, is_remainder(op));
 		d = result_reg(inst, from);
 		load_into(d, reg(from), TypeKind::I64);
 	}
@@ -502,6 +537,40 @@ Reg FunctionSelector::emit_unsigned_magic_divide(Reg x, int64_t divisor, bool re
 		if (magic.shift > 1)
 			emit2(Op::Shr, TypeKind::I64, reg(RAX), imm(magic.shift - 1));
 		q = RAX;
+	}
+	return remainder ? emit_magic_remainder(x, q, divisor) : q;
+}
+
+// A word dividend, extended to 64 bits at the operation's signedness, by the
+// multiplier in a plain 64-bit product: its high half needs no rdx:rax pair.
+// The quotient's (or remainder's) register, or kNoReg if the multiplier takes
+// 33 bits.
+Reg FunctionSelector::emit_word_magic_divide(Reg x, int64_t divisor, bool remainder, bool unsigned_op)
+{
+	const uint64_t size = static_cast<uint64_t>(divisor < 0 ? -divisor : divisor);
+	const WordMagic magic = word_magic(size, unsigned_op ? 32 : 31);
+	if (magic.multiplier >> 32 != 0)
+		return kNoReg;
+	if (magic.multiplier <= INT32_MAX)
+		emit3(Op::Imul, TypeKind::I64, reg(RAX), reg(x), imm(static_cast<int64_t>(magic.multiplier)));
+	else
+	{
+		emit2(Op::Mov, TypeKind::Void, reg(kEmitScratch), imm(static_cast<int64_t>(magic.multiplier)));
+		emit2(Op::Mov, TypeKind::Void, reg(RAX), reg(x));
+		emit2(Op::Imul, TypeKind::I64, reg(RAX), reg(kEmitScratch));
+	}
+	Reg q = RAX;
+	if (unsigned_op)
+		emit2(Op::Shr, TypeKind::I64, reg(RAX), imm(magic.shift));
+	else
+	{
+		emit2(Op::Sar, TypeKind::I64, reg(RAX), imm(magic.shift));
+		// Add one to a negative quotient (truncation toward zero).
+		emit2(Op::Mov, TypeKind::Void, reg(RDX), reg(x));
+		emit2(Op::Sar, TypeKind::I64, reg(RDX), imm(63));
+		const Reg other = divisor < 0 ? RAX : RDX;
+		q = divisor < 0 ? RDX : RAX;
+		emit2(Op::Sub, TypeKind::I64, reg(q), reg(other));
 	}
 	return remainder ? emit_magic_remainder(x, q, divisor) : q;
 }

@@ -132,14 +132,8 @@ function @main
     add <gpr0>, <gpr3>
     sext.i32 <gpr0>
     zext.i32 <gpr5>, <gpr0>
-    mov rax, <gpr5>
-    mov <gpr6>, 5165088340638674453
-    mul <gpr6>
-    mov rax, <gpr5>
-    sub rax, rdx
-    shr rax, 1
-    add rax, rdx
-    shr rax, 7
+    imul rax, <gpr5>, 1374389535
+    shr rax, 38
     imul rax, 200
     mov rdx, <gpr5>
     sub rdx, rax

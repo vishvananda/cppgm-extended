@@ -156,9 +156,13 @@ public:
 	Reg emit_magic_remainder(Reg x, Reg q, int64_t divisor);
 	Reg emit_unsigned_magic_divide(Reg x, int64_t divisor, bool remainder);
 	Reg emit_signed_magic_divide(Reg x, int64_t divisor, bool remainder);
+	Reg emit_word_magic_divide(Reg x, int64_t divisor, bool remainder, bool unsigned_op);
 	void emit_shift(const lowir::Instruction& inst);
 	void emit_compare(const lowir::Instruction& inst);
 	void emit_select(const lowir::Instruction& inst);
+	void emit_count(const lowir::Instruction& inst, Cond cc);
+	int count_step(const lowir::Instruction& add, lowir::Value base) const;
+	void absorb_count(const lowir::Instruction& select, uint32_t block);
 	void emit_convert(const lowir::Instruction& inst);
 	void emit_vector(const lowir::Instruction& inst);
 	void emit_vector_two_operand(const lowir::Instruction& inst);
