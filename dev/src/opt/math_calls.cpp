@@ -179,6 +179,154 @@ void SinCos::combine(size_t first, const std::vector<size_t>& later, Value sine,
 
 } // namespace
 
+namespace {
+
+// `sqrt(x)` differs from the instruction only where it sets `errno`, for a
+// negative `x`. The instruction runs always; the call stays on that path alone,
+// out of the way of the loop around it.
+class SqrtGuards
+{
+public:
+	explicit SqrtGuards(FunctionContext& context) : c_(context), body_(context.body) {}
+
+	bool run();
+
+private:
+	bool guarded(InstId call) const;
+	void guard(BlockId block, InstId before, InstId call, BlockId& rest);
+
+	FunctionContext& c_;
+	FunctionBody& body_;
+};
+
+bool SqrtGuards::guarded(InstId id) const
+{
+	const Instruction& call = body_.instructions[id];
+	if (call.op != Opcode::Call || !call.ops[0].is(ValueKind::Symbol) || call.result == kNoId ||
+		call.extra_count != 1 || c_.program.math_function(call.ops[0].index) != MathFunction::Sqrt)
+		return false;
+	const TypeKind kind = call.type.kind();
+	const Value x = body_.operands[call.extra_first];
+	return (kind == TypeKind::F32 || kind == TypeKind::F64) && x.is(ValueKind::Temp) &&
+		body_.temps[x.index].type == call.type;
+}
+
+// `block` ends at a branch on the sign of the operand, and `rest` holds what
+// followed the call, starting with a phi of the two results under the call's
+// own name.
+void SqrtGuards::guard(BlockId block, InstId before, InstId id, BlockId& rest)
+{
+	const Instruction call = body_.instructions[id];
+	const Value x = body_.operands[call.extra_first];
+	const Type type = call.type;
+	rest = append_block(body_, BlockKind::Split);
+	const BlockId slow = append_block(body_, BlockKind::Split);
+	// What follows the call moves, and the successors' phis with it.
+	const InstId last = body_.blocks[block].last;
+	const InstId moved = call.next;
+	body_.blocks[rest].first = moved;
+	body_.blocks[rest].last = last;
+	for_each_successor(
+		body_, body_.instructions[last], [&](BlockId& target) { rename_phi_incoming(body_, target, block, rest); });
+	InstId at = before;
+	auto emit = [&](BlockId b, InstId& after, Instruction inst, Type result) {
+		inst.location = call.location;
+		const InstId made = append_instruction(body_, inst);
+		const TempId temp = result.kind() == TypeKind::Void ? kNoId : append_temp(body_, result, made);
+		body_.instructions[made].result = temp;
+		insert_after(body_, b, after, made);
+		after = made;
+		return Value::temp(temp);
+	};
+	// The call leaves `block` with what followed it.
+	body_.blocks[block].last = before;
+	if (before == kNoId)
+		body_.blocks[block].first = kNoId;
+	else
+		body_.instructions[before].next = kNoId;
+	Instruction root = make_instruction(Opcode::Unary, type);
+	root.sub = static_cast<uint8_t>(UnaryOp::Sqrt);
+	root.ops[0] = x;
+	const Value fast = emit(block, at, root, type);
+	Instruction below = make_instruction(Opcode::Compare, type);
+	below.sub = static_cast<uint8_t>(ComparePredicate::Lt);
+	below.ops[0] = x;
+	below.ops[1] = phi_input(body_, type, integer_value(body_, integer_literal(0)));
+	const Value negative = emit(block, at, below, Type::scalar(TypeKind::I64));
+	Instruction branch = make_instruction(Opcode::Branch, Type::scalar(TypeKind::Void));
+	branch.ops[0] = negative;
+	branch.ops[1] = Value::block(slow);
+	branch.ops[2] = Value::block(rest);
+	emit(block, at, branch, Type::scalar(TypeKind::Void));
+	// The call, under a new name, and its way back.
+	const TempId result = call.result;
+	const TempId slow_result = append_temp(body_, type, id);
+	body_.instructions[id].next = kNoId;
+	body_.instructions[id].result = slow_result;
+	InstId tail = kNoId;
+	insert_after(body_, slow, tail, id);
+	tail = id;
+	Instruction back = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
+	back.ops[0] = Value::block(rest);
+	emit(slow, tail, back, Type::scalar(TypeKind::Void));
+	const Value pairs[4] = { Value::block(block), fast, Value::block(slow), Value::temp(slow_result) };
+	Instruction phi = make_instruction(Opcode::Phi, type);
+	phi.extra_first = append_operands(body_, pairs, 4);
+	phi.extra_count = 4;
+	phi.result = result;
+	phi.location = call.location;
+	const InstId merge = append_instruction(body_, phi);
+	body_.temps[result].def = merge;
+	insert_after(body_, rest, kNoId, merge);
+	// In the layout, what follows the call stays where it was and the call
+	// goes last.
+	std::vector<BlockId> layout;
+	layout.reserve(body_.layout.size() + 2);
+	for (BlockId b : body_.layout)
+	{
+		layout.push_back(b);
+		if (b == block)
+			layout.push_back(rest);
+	}
+	layout.push_back(slow);
+	body_.layout.swap(layout);
+}
+
+bool SqrtGuards::run()
+{
+	bool changed = false;
+	// (The blocks of the calls gather past `end`.)
+	size_t end = body_.layout.size();
+	for (size_t at = 0; at < end; ++at)
+	{
+		const BlockId block = body_.layout[at];
+		InstId before = kNoId;
+		for (InstId i = body_.blocks[block].first; i != kNoId; before = i, i = body_.instructions[i].next)
+			if (guarded(i))
+			{
+				BlockId rest;
+				guard(block, before, i, rest);
+				++end;
+				changed = true;
+				break; // (`rest` comes next in the layout)
+			}
+	}
+	if (changed)
+	{
+		c_.invalidate_cfg();
+		c_.invalidate_block_of();
+	}
+	return changed;
+}
+
+} // namespace
+
+bool guard_sqrt_calls(FunctionContext& context)
+{
+	SqrtGuards pass(context);
+	return pass.run();
+}
+
 bool combine_sin_cos(FunctionContext& context)
 {
 	SinCos pass(context);

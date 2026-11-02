@@ -155,22 +155,49 @@ function @sqrtf_of_square(%x : f32) -> f32 [no_inline=yes] {
 }
 function @sqrt_of_any(%x : f64) -> f64 [no_inline=yes] {
   block ^entry:
-    %r = call f64 @sqrt(%x)
+    %t1 = unary sqrt f64 %x
+    %t2 = cmp lt f64 %x, 0
+    branch %t2, ^split_2, ^split_1
+
+  block ^split_1:
+    %r = phi f64 [^entry: %t1, ^split_2: %t4]
     return f64 %r
+
+  block ^split_2:
+    %t4 = call f64 @sqrt(%x)
+    jump ^split_1
 }
 function @sqrt_of_difference(%x : f64, %y : f64) -> f64 [no_inline=yes] {
   block ^entry:
     %a = binary mul f64 %x, %x
     %s = binary sub f64 %a, %y
-    %r = call f64 @sqrt(%s)
+    %t3 = unary sqrt f64 %s
+    %t4 = cmp lt f64 %s, 0
+    branch %t4, ^split_2, ^split_1
+
+  block ^split_1:
+    %r = phi f64 [^entry: %t3, ^split_2: %t6]
     return f64 %r
+
+  block ^split_2:
+    %t6 = call f64 @sqrt(%s)
+    jump ^split_1
 }
 function @sqrt_of_mixed(%x : f64, %y : f64) -> f64 [no_inline=yes] {
   block ^entry:
     %a = binary mul f64 %x, %x
     %s = binary mul f64 %a, %y
-    %r = call f64 @sqrt(%s)
+    %t3 = unary sqrt f64 %s
+    %t4 = cmp lt f64 %s, 0
+    branch %t4, ^split_2, ^split_1
+
+  block ^split_1:
+    %r = phi f64 [^entry: %t3, ^split_2: %t6]
     return f64 %r
+
+  block ^split_2:
+    %t6 = call f64 @sqrt(%s)
+    jump ^split_1
 }
 function @pow_of_literal() -> f64 [no_inline=yes] {
   block ^entry:
@@ -180,23 +207,50 @@ function @sqrt_of_negative_literal(%x : f64) -> f64 [no_inline=yes] {
   block ^entry:
     %a = binary mul f64 %x, %x
     %s = binary add f64 %a, -1
-    %r = call f64 @sqrt(%s)
+    %t3 = unary sqrt f64 %s
+    %t4 = cmp lt f64 %s, 0
+    branch %t4, ^split_2, ^split_1
+
+  block ^split_1:
+    %r = phi f64 [^entry: %t3, ^split_2: %t6]
     return f64 %r
+
+  block ^split_2:
+    %t6 = call f64 @sqrt(%s)
+    jump ^split_1
 }
 function @sqrt_of_squares_difference(%x : f64, %y : f64) -> f64 [no_inline=yes] {
   block ^entry:
     %a = binary mul f64 %x, %x
     %b = binary mul f64 %y, %y
     %s = binary sub f64 %a, %b
-    %r = call f64 @sqrt(%s)
+    %t4 = unary sqrt f64 %s
+    %t5 = cmp lt f64 %s, 0
+    branch %t5, ^split_2, ^split_1
+
+  block ^split_1:
+    %r = phi f64 [^entry: %t4, ^split_2: %t7]
     return f64 %r
+
+  block ^split_2:
+    %t7 = call f64 @sqrt(%s)
+    jump ^split_1
 }
 function @sqrt_of_negated(%x : f64) -> f64 [no_inline=yes] {
   block ^entry:
     %a = binary mul f64 %x, %x
     %s = unary neg f64 %a
-    %r = call f64 @sqrt(%s)
+    %t3 = unary sqrt f64 %s
+    %t4 = cmp lt f64 %s, 0
+    branch %t4, ^split_2, ^split_1
+
+  block ^split_1:
+    %r = phi f64 [^entry: %t3, ^split_2: %t6]
     return f64 %r
+
+  block ^split_2:
+    %t6 = call f64 @sqrt(%s)
+    jump ^split_1
 }
 function @main() -> i32 [role=entry] {
   block ^entry:

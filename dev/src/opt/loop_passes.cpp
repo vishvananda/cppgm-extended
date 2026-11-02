@@ -2926,6 +2926,15 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 			else if (inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit)
 				writes.push_back(LoopWrite{ locate(body_, inst.op == Opcode::CopyObject ? inst.ops[1] : inst.ops[0]),
 					static_cast<uint64_t>(inst.immediate), Type::scalar(TypeKind::Void), false });
+			else if (inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol) &&
+				c_.program.math_function(inst.ops[0].index) == MathFunction::Sqrt)
+			{
+				// Of all memory, it writes `errno`, an `int`.
+				Located unknown;
+				unknown.root = Value::none();
+				unknown.known = false;
+				writes.push_back(LoopWrite{ unknown, 4, Type::scalar(TypeKind::I32), true });
+			}
 			else if (may_write_memory(c_.program, inst) || (inst.op == Opcode::Load && (inst.flags & IF_VOLATILE) != 0))
 				return false; // a call, an atomic, a volatile access: memory may change anywhere
 		}

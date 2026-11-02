@@ -329,6 +329,7 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	context.unwritten = &unwritten;
 	enable_verify(context, options);
 	bool changed = RUN_PASS(combine_sin_cos);
+	changed = (options.level >= 2 && RUN_PASS(guard_sqrt_calls)) || changed;
 	// i128 values as halves once the inliner has sized its callees whole
 	// (a variable shift is a dozen i64 instructions): the halves' slots
 	// promoted and a round over what that exposes.

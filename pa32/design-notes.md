@@ -469,6 +469,22 @@ the wide value fits, so the truncation needs no instruction and its reader can
 use the wide register. Run this after strength reduction, which reads the
 narrow products. An unsigned counter that cannot wrap widens by zero extension.
 
+Square roots: `sqrt` differs from the instruction only where it sets `errno`, for
+a negative operand. Emit the instruction always and call on the negative path
+alone. The cold call then costs little: nothing else in the loop has to live in
+memory around it, and of all memory it writes only `errno`, an `int`, so loads
+of other types can still leave the loop. Skip the test when the operand cannot
+be negative.
+
+Loop entries: a loop entered from several blocks has no preheader, and most loop
+passes need one. Give it one first: a new block the entries jump to, with phis
+that merge the values they bring. A header phi that only keeps its value then
+folds, and the loop can rotate.
+
+Packed parts: a pair of `int` fields copied as one 64-bit value is two values
+or-ed together. A truncation or a right shift needs only the operand with bits
+it keeps, so a field read back from the pair is the value stored in it.
+
 Private slots: a slot whose address reaches only its own accesses, copies and
 constant steps is reached by no other pointer. A write to such a slot does not
 keep a load through a pointer in its loop.

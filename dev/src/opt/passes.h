@@ -230,6 +230,9 @@ bool widen_counters(FunctionContext& context);
 bool eliminate_tail_recursion(FunctionContext& context);
 // O2+: `sin` and `cos` of one value become one `sincos`.
 bool combine_sin_cos(FunctionContext& context);
+// O2+: a `sqrt` of what may be negative becomes the instruction, with the call
+// on the path of a negative operand (opt/math_calls.cpp).
+bool guard_sqrt_calls(FunctionContext& context);
 
 // Fill loops of a run-time value whose bytes repeat call memset for long
 // runs (O2+, after all inlining: opt/loop_passes.cpp).

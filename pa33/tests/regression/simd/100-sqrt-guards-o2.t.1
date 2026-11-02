@@ -1,0 +1,58 @@
+#include <errno.h>
+#include <math.h>
+#include <stdio.h>
+
+__attribute__((noinline)) double root(double x)
+{
+	return sqrt(x);
+}
+
+__attribute__((noinline)) float root_float(float x)
+{
+	return sqrtf(x);
+}
+
+__attribute__((noinline)) double sum(const double* p, int n, const double* scale)
+{
+	double total = 0;
+	for (int i = 0; i < n; ++i)
+		total += sqrt(p[i] * *scale);
+	return total;
+}
+
+static void show(double x)
+{
+	errno = 0;
+	double r = root(x);
+	int e = errno;
+	if (r != r)
+		printf("nan %d\n", e != 0);
+	else
+		printf("%.6f %d %d\n", r, signbit(r) != 0, e != 0);
+}
+
+int main()
+{
+	show(4);
+	show(0);
+	show(-0.0);
+	show(2);
+	show(-1);
+	show(1e300);
+	show(NAN);
+	show(INFINITY);
+	show(-INFINITY);
+	errno = 0;
+	float f = root_float(-2.5f);
+	printf("%d %d\n", f != f, errno != 0);
+	errno = 0;
+	printf("%.6f %d\n", root_float(6.25f), errno != 0);
+	const double values[5] = { 1, 4, 9, -16, 25 };
+	const double scale = 1;
+	errno = 0;
+	double t = sum(values, 3, &scale);
+	printf("%.6f %d\n", t, errno != 0);
+	t = sum(values, 5, &scale);
+	printf("%d %d\n", t != t, errno != 0);
+	return 0;
+}
