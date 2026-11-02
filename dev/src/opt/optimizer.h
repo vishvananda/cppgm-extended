@@ -75,6 +75,7 @@ struct OptimizerStats
 	telemetry::Counter loops_unrolled = 0;
 	telemetry::Counter stores_sunk = 0;
 	telemetry::Counter loops_vectorized = 0;
+	telemetry::Counter multiplies_reduced = 0;
 	telemetry::Counter invariants_hoisted = 0;
 	telemetry::Counter specialized = 0;
 	telemetry::Milliseconds optimize_ms = 0;

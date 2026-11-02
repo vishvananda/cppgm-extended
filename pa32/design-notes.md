@@ -211,6 +211,12 @@ each of them. **Switch formation** (`-O2` and above) turns tests of one
 value against literals (at most 24 blocks, 256 case values) into a
 `switch` when that needs fewer runs of consecutive values per target.
 
+**Strength reduction** (`-O2` and above): in a loop without calls, the `mul` of
+a counter by a literal that no shift or address form covers becomes a counter of
+its own, stepped by the product of that literal and the step. A sign extension
+of a counter that does not wrap may stand between them. Each loop gets at most 4
+such counters.
+
 ### Library Calls (`-O2`, `-O3`)
 
 Value simplification rewrites calls of the C library's math functions that a

@@ -206,6 +206,10 @@ bool rotate_loops(FunctionContext& context);
 // loop also runs in sixteen-byte lanes before the scalar loop, which finishes.
 bool vectorize_loops(FunctionContext& context);
 
+// A product of a counter and a literal no addressing mode or `lea` gives
+// becomes a counter of its own.
+bool reduce_strength(FunctionContext& context);
+
 // Fill loops of a run-time value whose bytes repeat call memset for long
 // runs (O2+, after all inlining: opt/loop_passes.cpp).
 bool version_fill_loops(FunctionContext& context);

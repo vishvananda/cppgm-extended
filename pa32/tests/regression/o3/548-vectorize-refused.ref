@@ -28,12 +28,12 @@ function @counter_as_data(%d : ptr, %n : i64) -> void [no_inline=yes] {
     %t16 = phi v128 [^loop_preheader_1: %t10, ^wide_loop_2: %t27]
     %t17 = phi i32 [^loop_preheader_1: 3, ^wide_loop_2: %t26]
     %t18 = vector pmuludq %t16, %t12
-    %t19 = vector psrlqi %t12, 32
-    %t20 = vector psrlqi %t16, 32
-    %t21 = vector pmuludq %t20, %t19
-    %t22 = vector pshufd %t21, 8
-    %t23 = vector pshufd %t18, 8
-    %t24 = vector punpckldq %t23, %t22
+    %t19 = vector psrlqi %t16, 32
+    %t20 = vector psrlqi %t12, 32
+    %t21 = vector pmuludq %t19, %t20
+    %t22 = vector pshufd %t18, 8
+    %t23 = vector pshufd %t21, 8
+    %t24 = vector punpckldq %t22, %t23
     %t25 = index i32 %d, %t15
     store v128 %t24, %t25
     %t26 = binary add i32 %t17, 8
@@ -45,15 +45,18 @@ function @counter_as_data(%d : ptr, %n : i64) -> void [no_inline=yes] {
   block ^loop_preheader_3:
     %t30 = phi i64 [^entry: 0, ^wide_loop_2: %t28]
     %t31 = phi i32 [^entry: 3, ^wide_loop_2: %t26]
+    %t32 = binary mul i32 %t31, 7
     jump ^body
 
   block ^body:
+    %t33 = phi i32 [^loop_preheader_3: %t32, ^body: %t39]
     %i = phi i32 [^loop_preheader_3: %t31, ^body: %next]
     %j = phi i64 [^loop_preheader_3: %t30, ^body: %j2]
-    %m = binary mul i32 %i, 7
+    %m = copy i32 %t33
     %o = index i32 %d, %j
     store typed i32 %m, %o
     %next = binary add nowrap i32 %i, 2
+    %t39 = binary add i32 %t33, 14
     %j2 = binary add i64 %j, 1
     %c = cmp lt i64 %j2, %n
     branch %c, ^body, ^done

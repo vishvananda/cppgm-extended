@@ -378,6 +378,8 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		RUN_PASS(remove_dead_code);
 		changed = true;
 	}
+	// O2: products of a counter, after everything that reads a loop's shape.
+	changed = RUN_PASS(reduce_strength) || changed;
 	if (!changed)
 		return;
 	RUN_PASS(split_branch_compares);
@@ -575,7 +577,7 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " loads_reused=" << s.loads_reused << " stores_removed=" << s.stores_removed
 		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled
 		<< " invariants_hoisted=" << s.invariants_hoisted << " stores_sunk=" << s.stores_sunk
-		<< " loops_vectorized=" << s.loops_vectorized << " specialized=" << s.specialized
+		<< " loops_vectorized=" << s.loops_vectorized << " multiplies_reduced=" << s.multiplies_reduced << " specialized=" << s.specialized
 		<< " optimize_ms=" << s.optimize_ms;
 #else
 	(void)s;
