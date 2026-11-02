@@ -668,8 +668,8 @@ void FunctionSelector::emit_unary(const Instruction& inst)
 			const Reg d = result_reg(inst, dying_reg(inst.ops[0]));
 			if (!(a.kind == OperandKind::Reg && a.reg == d))
 				load_into(d, a, kind);
-			Inst& mir =
-				emit3(Op::Vector, TypeKind::V128, Operand::make_reg(d), Operand::make_reg(d), Operand::make_reg(d));
+			Inst& mir = emit3(
+				Op::Vector, TypeKind::V128, Operand::make_reg(d), Operand::make_reg(d), Operand::make_reg(d));
 			mir.sub = static_cast<uint8_t>(kind == TypeKind::F64 ? lowir::VectorOp::Sqrtsd : lowir::VectorOp::Sqrtss);
 			finish_result(inst, d);
 			return;
