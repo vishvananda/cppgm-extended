@@ -1,0 +1,67 @@
+# A loop that compares a value with a function's address reads the address
+# from an `addr` before the loop, which the allocator keeps in a register; the
+# loop calls functions on both paths, and a general register survives a call.
+# The compare in @once is outside any loop and keeps the symbol.
+function @one(%x : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %y = binary add i64 %x, 1
+    return i64 %y
+}
+
+function @two(%x : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %y = binary mul i64 %x, 2
+    return i64 %y
+}
+
+function @apply(%p : ptr, %n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i64 [^entry: 0, ^next: %step]
+    %t = phi i64 [^entry: 1, ^next: %u]
+    %f = load typed ptr %p
+    %known = cmp eq ptr %f, @one
+    branch %known, ^direct, ^indirect
+
+  block ^direct:
+    %a = call i64 @one(%t)
+    jump ^next
+
+  block ^indirect:
+    %b = call i64 %f(%t) as (%x : i64) -> i64
+    jump ^next
+
+  block ^next:
+    %u = phi i64 [^direct: %a, ^indirect: %b]
+    %step = binary add i64 %i, 1
+    %c = cmp lt i64 %step, %n
+    branch %c, ^head, ^done
+
+  block ^done:
+    return i64 %u
+}
+
+function @once(%p : ptr) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %f = load typed ptr %p
+    %known = cmp eq ptr %f, @two
+    %r = convert zext i64 i1 %known
+    return i64 %r
+}
+
+function @main() -> i32 [role=entry] {
+  slot $fn : obj<8x8>
+  block ^entry:
+    %p = addr $fn
+    store ptr @one, %p
+    %a = call i64 @apply(%p, 5)
+    store ptr @two, %p
+    %b = call i64 @apply(%p, 3)
+    %k = call i64 @once(%p)
+    %s = binary add i64 %a, %b
+    %t = binary add i64 %s, %k
+    %r = convert trunc i32 i64 %t
+    return i32 %r
+}

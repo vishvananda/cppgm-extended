@@ -534,6 +534,11 @@ them changed it, branch compares are computed again beside their branches:
   needs no load per iteration. Zero, a stored literal and a phi's input from
   outside stay. A call behind a test for not a number, or for a negative value
   under a square root, is a rare path: the allocator saves around it.
+- A compare in a loop reads a symbol's address, at most four of them, from an
+  `addr` in the block that dominates the outermost loop's header. Calls do not
+  stop it: a general register survives a call. Read in place, the address
+  takes a `lea` on every pass; a loop that tests a function pointer against a
+  known target before each call ran 8% fewer instructions.
 
 ### What `-O3` Adds
 

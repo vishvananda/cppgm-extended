@@ -12,6 +12,7 @@ namespace {
 
 // The most literals one loop keeps in registers: the rest stay in memory.
 constexpr size_t kHeld = 8;
+constexpr size_t kHeldAddresses = 4;
 
 // A loop without calls on its usual paths reads its floating literals from registers: each is
 // copied once before the outermost such loop, and a register costs no load
@@ -37,6 +38,7 @@ private:
 	bool reads_literal(const Loop& loop) const;
 	bool same_literal(Value a, Value b) const;
 	bool hold(uint32_t loop);
+	bool hold_addresses(uint32_t loop);
 
 	FunctionContext& c_;
 	FunctionBody& body_;
@@ -155,6 +157,50 @@ bool LoopLiterals::hold(uint32_t loop)
 	return changed;
 }
 
+// A compare in a loop reads a symbol's address, at most kHeldAddresses of
+// them, from an `addr` in the block that dominates the outermost loop's
+// header: a preheader, or the test that enters the loop. Read in place, the
+// address takes a `lea` per pass. A general register survives a call, so a
+// loop with calls holds them too.
+bool LoopLiterals::hold_addresses(uint32_t loop)
+{
+	const Loop& l = forest_.loops[loop];
+	const BlockId pre = cfg_.idom[l.header];
+	InstId tail = previous_in_block(body_, pre, body_.blocks[pre].last);
+	held_.clear();
+	bool changed = false;
+	for (BlockId b : l.blocks)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+			for (unsigned k = 0; k < 2 && body_.instructions[i].op == Opcode::Compare; ++k)
+			{
+				const Value v = body_.instructions[i].ops[k];
+				if (!v.is(ValueKind::Symbol))
+					continue;
+				Value temp = Value::none();
+				for (const Held& h : held_)
+					if (h.literal == v)
+						temp = h.temp;
+				if (temp.is(ValueKind::None))
+				{
+					if (held_.size() == kHeldAddresses)
+						continue;
+					const Type type = Type::scalar(TypeKind::Ptr);
+					Instruction addr = make_instruction(Opcode::Addr, type);
+					addr.ops[0] = v;
+					const InstId id = append_instruction(body_, addr);
+					const TempId result = append_temp(body_, type, id);
+					body_.instructions[id].result = result;
+					insert_after(body_, pre, tail, id);
+					tail = id;
+					temp = Value::temp(result);
+					held_.push_back(Held{ v, temp });
+				}
+				body_.instructions[i].ops[k] = temp;
+				changed = true;
+			}
+	return changed;
+}
+
 bool LoopLiterals::run()
 {
 	if (body_.layout.size() == 1)
@@ -176,6 +222,19 @@ bool LoopLiterals::run()
 		held[loop] = 1;
 		if (forest_.loops[loop].preheader != kNoId && reads_literal(forest_.loops[loop]))
 			changed = hold(loop) || changed;
+	}
+	std::vector<uint8_t> addressed(forest_.loops.size(), 0);
+	for (uint32_t loop = 0; loop < forest_.loops.size(); ++loop)
+	{
+		const uint32_t parent = forest_.loops[loop].parent;
+		if (parent != kNoId && addressed[parent] != 0)
+		{
+			addressed[loop] = 1;
+			continue;
+		}
+		addressed[loop] = cfg_.idom[forest_.loops[loop].header] != kNoId;
+		if (addressed[loop] != 0)
+			changed = hold_addresses(loop) || changed;
 	}
 	if (changed)
 		c_.invalidate_block_of();
