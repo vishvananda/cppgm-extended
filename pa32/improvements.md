@@ -63,6 +63,11 @@ must preserve its operation order unless the input grants another semantics.
 Instruction counts cannot reveal division latency, branch prediction or fetch
 alignment costs.
 
+For frame and block-layout experiments, reuse the cold-call-state and bounded
+search inputs in `tests/kernels/` with the timing command below and
+`--report-only`. Keep the ABI, unwind and debug checks passing; no particular
+frame arrangement, padding or block order is required.
+
 ## Reproducible timing
 
 For a longer diagnostic run from the repository root:
