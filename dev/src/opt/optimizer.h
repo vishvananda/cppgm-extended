@@ -78,6 +78,7 @@ struct OptimizerStats
 	telemetry::Counter loops_interchanged = 0;
 	telemetry::Counter loops_unswitched = 0;
 	telemetry::Counter counters_shifted = 0;
+	telemetry::Counter counters_widened = 0;
 	telemetry::Counter multiplies_reduced = 0;
 	telemetry::Counter tail_calls_removed = 0;
 	telemetry::Counter math_calls_shared = 0;

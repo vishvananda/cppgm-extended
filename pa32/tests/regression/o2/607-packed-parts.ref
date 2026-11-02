@@ -1,0 +1,16 @@
+function @parts(%a : i32, %b : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %r = binary sub i32 %a, %b
+    return i32 %r
+}
+function @retyped(%a : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    return i32 %a
+}
+function @not_packed(%a : i64, %b : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %high = binary shl i64 %b, 32
+    %pair = binary or i64 %a, %high
+    %shifted = binary ushr i64 %pair, 32
+    return i64 %shifted
+}

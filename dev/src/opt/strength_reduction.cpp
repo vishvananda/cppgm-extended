@@ -12,6 +12,8 @@ namespace {
 
 // At most this many new counters per loop: each takes a register for the loop.
 const unsigned kCountersPerLoop = 8;
+// The most addresses sink_steps follows from one phi.
+const size_t kCarried = 16;
 // The most additions one counter takes in.
 const unsigned kShiftedTerms = 4;
 
@@ -24,6 +26,7 @@ public:
 	explicit StrengthReduction(FunctionContext& context) : c_(context), body_(context.body), cfg_(context.cfg) {}
 
 	bool run();
+	bool sink();
 
 private:
 	struct Counter
@@ -64,6 +67,7 @@ private:
 	LoopForest forest_;
 	std::vector<Counter> counters_;
 	std::vector<Scaled> scaled_;
+	std::vector<TempId> carried_;               // sink_steps: the phi and addresses stepping from it
 	std::vector<uint32_t> uses_;                // per temp
 	std::vector<InstId> first_reader_, reader_; // per temp: the first and last in layout order
 	bool changed_ = false;
@@ -465,10 +469,21 @@ void StrengthReduction::sink_steps(uint32_t loop)
 		const size_t at = static_cast<size_t>(std::find(order.begin() + phis, order.end(), step) - order.begin());
 		if (at == order.size() || !is_pure(body_.instructions[step]) || !reads(step, phi.result))
 			continue;
+		// (An address steps from the phi at the access that reads it.)
 		size_t last = at;
+		carried_.assign(1, phi.result);
 		for (size_t k = at + 1; k < order.size(); ++k)
-			if (reads(order[k], phi.result))
-				last = k;
+		{
+			const Instruction& inst = body_.instructions[order[k]];
+			bool read = false;
+			for (TempId t : carried_)
+				read = read || reads(order[k], t);
+			if (!read)
+				continue;
+			last = k;
+			if (inst.op == Opcode::Index && inst.result != kNoId && carried_.size() < kCarried)
+				carried_.push_back(inst.result);
+		}
 		if (last == at || order[last] == term)
 			continue;
 		// What reads the step before `last`: at most the branch's compare.
@@ -531,10 +546,17 @@ bool StrengthReduction::run()
 	for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0;)
 		if (forest_.loops[loop].preheader != kNoId)
 			shift_counters(loop);
-	for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0;)
-		sink_steps(loop);
 	if (changed_)
 		c_.invalidate_block_of();
+	return changed_;
+}
+
+bool StrengthReduction::sink()
+{
+	c_.ensure_cfg();
+	find_loops(body_, cfg_, forest_);
+	for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0;)
+		sink_steps(loop);
 	return changed_;
 }
 
@@ -544,6 +566,12 @@ bool reduce_strength(FunctionContext& context)
 {
 	StrengthReduction pass(context);
 	return pass.run();
+}
+
+bool sink_counter_steps(FunctionContext& context)
+{
+	StrengthReduction pass(context);
+	return pass.sink();
 }
 
 } // namespace opt

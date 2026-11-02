@@ -1,0 +1,211 @@
+function @direct(%p : ptr, %n : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %has = cmp gt i32 %n, 0
+    branch %has, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    %t2 = convert sext i64 i32 %n
+    jump ^loop
+
+  block ^loop:
+    %t3 = phi i64 [^loop: %t8, ^loop_preheader_1: 0]
+    %sum = phi i64 [^loop: %more, ^loop_preheader_1: 0]
+    %at = index i64 %p, %t3
+    %v = load typed i64 %at
+    %more = binary add i64 %sum, %v
+    %t8 = binary add nowrap i64 %t3, 1
+    %again = cmp lt i64 %t8, %t2
+    branch %again, ^loop, ^done
+
+  block ^done:
+    %r = phi i64 [^entry: 0, ^loop: %more]
+    return i64 %r
+}
+function @offsets(%p : ptr, %q : ptr, %start : i32, %k : i32, %n : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = convert sext i64 i32 %start
+    %t2 = index i64 %p, %k
+    %t3 = index i64 %q, %k
+    %t4 = convert sext i64 i32 %n
+    jump ^loop
+
+  block ^loop:
+    %t5 = phi i64 [^entry: %t1, ^loop: %t22]
+    %sum = phi i64 [^entry: 0, ^loop: %more]
+    %at_a = index i64 %t2, %t5
+    %va = load typed i64 %at_a
+    %t9 = index i64 %p, %t5
+    %at_b = index i64 %t9, 3
+    %vb = load typed i64 %at_b
+    %t12 = index i64 %q, %t5
+    %at_c = index i64 %t12, -1
+    %vc = load typed i64 %at_c
+    %t15 = index i64 %t3, %t5
+    %at_d = index i64 %t15, -1
+    %vd = load typed i64 %at_d
+    %s1 = binary add i64 %va, %vb
+    %s2 = binary add i64 %vc, %vd
+    %s3 = binary add i64 %s1, %s2
+    %more = binary add i64 %sum, %s3
+    %t22 = binary add nowrap i64 %t5, 1
+    %again = cmp lt i64 %t22, %t4
+    branch %again, ^loop, ^done
+
+  block ^done:
+    return i64 %more
+}
+function @next_value(%p : ptr, %n : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = convert sext i64 i32 %n
+    jump ^loop
+
+  block ^loop:
+    %t2 = phi i64 [^entry: 0, ^loop: %t9]
+    %sum = phi i64 [^entry: 0, ^loop: %more]
+    %t4 = index i64 %p, %t2
+    %at = index i64 %t4, 1
+    %v = load typed i64 %at
+    %here = index i64 %p, %t2
+    %w = load typed i64 %here
+    %t9 = binary add nowrap i64 %t2, 1
+    %d = binary sub i64 %v, %w
+    %more = binary add i64 %sum, %d
+    %again = cmp lt i64 %t9, %t1
+    branch %again, ^loop, ^done
+
+  block ^done:
+    return i64 %more
+}
+function @moving_base(%p : ptr, %k : i32, %n : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = load typed ptr %p
+    %t2 = convert sext i64 i32 %k
+    %t3 = convert sext i64 i32 %n
+    jump ^loop
+
+  block ^loop:
+    %base = phi ptr [^entry: %t1, ^loop: %at]
+    %t5 = phi i64 [^entry: 0, ^loop: %t11]
+    %sum = phi i64 [^entry: 0, ^loop: %more]
+    %t7 = binary add i64 %t5, %t2
+    %at = index i64 %base, %t7
+    %v = load typed i64 %at
+    %more = binary add i64 %sum, %v
+    store typed ptr %at, %p
+    %t11 = binary add nowrap i64 %t5, 1
+    %again = cmp lt i64 %t11, %t3
+    branch %again, ^loop, ^done
+
+  block ^done:
+    return i64 %more
+}
+function @downward(%p : ptr, %n : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = convert sext i64 i32 %n
+    jump ^loop
+
+  block ^loop:
+    %t2 = phi i64 [^entry: %t1, ^loop: %t7]
+    %sum = phi i64 [^entry: 0, ^loop: %more]
+    %at = index i64 %p, %t2
+    %v = load typed i64 %at
+    %more = binary add i64 %sum, %v
+    %t7 = binary sub nowrap i64 %t2, 1
+    %again = cmp ge i64 %t7, 0
+    branch %again, ^loop, ^done
+
+  block ^done:
+    return i64 %more
+}
+function @unsigned(%p : ptr, %n : u32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = convert zext i64 u32 %n
+    jump ^loop
+
+  block ^loop:
+    %t2 = phi i64 [^entry: 2, ^loop: %t7]
+    %sum = phi i64 [^entry: 0, ^loop: %more]
+    %at = index i64 %p, %t2
+    %v = load typed i64 %at
+    %more = binary add i64 %sum, %v
+    %t7 = binary add nowrap i64 %t2, 2
+    %again = cmp ult i64 %t7, %t1
+    branch %again, ^loop, ^done
+
+  block ^done:
+    return i64 %more
+}
+function @also_narrow(%p : ptr, %n : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = convert sext i64 i32 %n
+    jump ^loop
+
+  block ^loop:
+    %t2 = phi i64 [^entry: 0, ^loop: %t11]
+    %sum = phi i64 [^entry: 0, ^loop: %more]
+    %i = convert trunc i32 i64 %t2
+    %at = index i64 %p, %t2
+    %v = load typed i64 %at
+    %d = binary div i32 %i, 3
+    %w = convert sext i64 i32 %d
+    %s = binary add i64 %v, %w
+    %more = binary add i64 %sum, %s
+    %t11 = binary add nowrap i64 %t2, 1
+    %again = cmp lt i64 %t11, %t1
+    branch %again, ^loop, ^done
+
+  block ^done:
+    return i64 %more
+}
+function @nested(%p : ptr, %n : i32, %m : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = convert sext i64 i32 %n
+    jump ^outer
+
+  block ^outer:
+    %t2 = phi i64 [^entry: 0, ^outer_next: %t13]
+    %total = phi i64 [^entry: 0, ^outer_next: %sum2]
+    %t4 = copy i64 %t2
+    %t5 = convert sext i64 i32 %m
+    jump ^inner
+
+  block ^inner:
+    %t6 = phi i64 [^outer: %t4, ^inner: %t11]
+    %sum = phi i64 [^outer: %total, ^inner: %sum2]
+    %at = index i64 %p, %t6
+    %v = load typed i64 %at
+    %sum2 = binary add i64 %sum, %v
+    %t11 = binary add nowrap i64 %t6, 1
+    %again = cmp lt i64 %t11, %t5
+    branch %again, ^inner, ^outer_next
+
+  block ^outer_next:
+    %t13 = binary add nowrap i64 %t2, 1
+    %more = cmp lt i64 %t13, %t1
+    branch %more, ^outer, ^done
+
+  block ^done:
+    return i64 %sum2
+}
+function @wrapping(%p : ptr, %n : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %i = phi i32 [^entry: 0, ^latch: %next]
+    %sum = phi i64 [^entry: 0, ^latch: %more]
+    %at = index i64 %p, %i
+    %v = load typed i64 %at
+    %more = binary add i64 %sum, %v
+    %odd = cmp eq i64 %v, 0
+    branch %odd, ^done, ^latch
+
+  block ^latch:
+    %next = binary add i32 %i, 7
+    %again = cmp ne i32 %n, %next
+    branch %again, ^loop, ^done
+
+  block ^done:
+    %r = phi i64 [^loop: 0, ^latch: %more]
+    return i64 %r
+}

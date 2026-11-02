@@ -1,16 +1,18 @@
 function @rows(%base : ptr, %step : i32, %row : i32, %plane : i32, %n : i32) -> i64 [no_inline=yes] {
   block ^entry:
     %t2 = binary add i32 %row, %plane
+    %t3 = convert sext i64 i32 %t2
+    %t4 = convert sext i64 i32 %step
     jump ^body
 
   block ^body:
     %c = phi i32 [^entry: 0, ^body: %c1]
-    %at = phi i32 [^entry: %t2, ^body: %at1]
+    %t6 = phi i64 [^entry: %t3, ^body: %t11]
     %t = phi i64 [^entry: 0, ^body: %t1]
-    %p = index f64 %base, %at
+    %p = index f64 %base, %t6
     %v = load i64 %p
     %t1 = binary add i64 %t, %v
-    %at1 = binary add nowrap i32 %step, %at
+    %t11 = binary add nowrap i64 %t6, %t4
     %c1 = binary add nowrap i32 %c, 1
     %d = cmp lt i32 %c1, %n
     branch %d, ^body, ^done

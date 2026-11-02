@@ -191,6 +191,7 @@ private:
 	bool reassociate(Instruction& inst);
 	uint64_t possible_bits(Value v, Type type, unsigned depth = 0);
 	bool mask_or(Instruction& inst);
+	bool packed_part(Instruction& inst);
 	bool unsigned_division(Instruction& inst);
 	void canonicalize(Instruction& inst);
 	bool narrow_compare(Instruction& inst);
@@ -541,10 +542,12 @@ bool Simplifier::identity(Instruction& inst, Value& out)
 			out = inst.ops[0];
 			return true;
 		}
-		// There and back: a floating value's bits through an integer.
+		// There and back: a floating value's bits through an integer, or an
+		// integer's through the other signedness.
 		if (const Instruction* retype = producer(inst.ops[0]))
 			if (retype->op == Opcode::Copy && retype->ops[0].is(ValueKind::Temp) &&
-				float_twins(retype->type, inst.type) && body_.temps[retype->ops[0].index].type == inst.type)
+				(float_twins(retype->type, inst.type) || (retype->type.is_integer() && inst.type.is_integer())) &&
+				body_.temps[retype->ops[0].index].type == inst.type)
 			{
 				out = retype->ops[0];
 				return true;
@@ -794,6 +797,19 @@ bool Simplifier::binary_identity(Instruction& inst, Value& out)
 		if (op == BinaryOp::And && is_all_ones(type, cy))
 		{
 			out = x;
+			return true;
+		}
+		// Back down a shift up that lost no bits.
+		const Instruction* up = op == BinaryOp::UShr ? producer(x) : nullptr;
+		Constant cu;
+		Literal by;
+		if (up != nullptr && up->op == Opcode::Binary && static_cast<BinaryOp>(up->sub) == BinaryOp::Shl &&
+			up->type == type && integral && type.kind() != TypeKind::I128 && constant(up->ops[1], type, cu) &&
+			integer_bits(type, cu, by) && by.low == bits.low && by.high == bits.high && bits.high == 0 &&
+			bits.low != 0 && bits.low < 8 * storage_bytes(type) && up->ops[0].is(ValueKind::Temp) &&
+			(possible_bits(up->ops[0], type) >> (8 * storage_bytes(type) - bits.low)) == 0)
+		{
+			out = up->ops[0];
 			return true;
 		}
 		if (zero && (op == BinaryOp::Mul || op == BinaryOp::And))
@@ -1414,6 +1430,39 @@ bool Simplifier::mask_or(Instruction& inst)
 		return false;
 	for (unsigned k = 0; k < 2; ++k)
 		if ((possible_bits(def->ops[k], inst.type) & bits.low) == 0)
+		{
+			inst.ops[0] = def->ops[1 - k];
+			return true;
+		}
+	return false;
+}
+
+// A part read back from two values or-ed into one: a truncation or a right
+// shift needs only the operand with bits it keeps.
+bool Simplifier::packed_part(Instruction& inst)
+{
+	const bool truncation = inst.op == Opcode::Convert && static_cast<ConvertOp>(inst.sub) == ConvertOp::Trunc;
+	if (!truncation && !(inst.op == Opcode::Binary && static_cast<BinaryOp>(inst.sub) == BinaryOp::UShr))
+		return false;
+	const Type type = truncation ? convert_source_type(inst) : inst.type;
+	if (!type.is_integer() || type.kind() == TypeKind::I128 || !inst.type.is_integer())
+		return false;
+	const Instruction* def = producer(inst.ops[0]);
+	if (def == nullptr || def->op != Opcode::Binary || static_cast<BinaryOp>(def->sub) != BinaryOp::Or ||
+		def->type != type)
+		return false;
+	Constant c;
+	Literal bits;
+	if (!truncation &&
+		(!constant(inst.ops[1], type, c) || !integer_bits(type, c, bits) || bits.high != 0 ||
+			bits.low >= 8 * storage_bytes(type)))
+		return false;
+	const unsigned narrow = static_cast<unsigned>(8 * storage_bytes(inst.type));
+	const uint64_t kept = truncation
+		? (narrow >= 64 ? ~static_cast<uint64_t>(0) : (static_cast<uint64_t>(1) << narrow) - 1)
+		: ~static_cast<uint64_t>(0) << bits.low;
+	for (unsigned k = 0; k < 2; ++k)
+		if ((possible_bits(def->ops[k], type) & kept) == 0)
 		{
 			inst.ops[0] = def->ops[1 - k];
 			return true;
@@ -2144,9 +2193,9 @@ void Simplifier::process_block(BlockId block)
 		if (inst.op == Opcode::Branch)
 			simplify_branch(inst);
 		canonicalize(inst);
-		if (reassociate(inst) || narrow_truncation(inst) || mask_or(inst) || unsigned_division(inst) ||
-			merge_index(inst) || narrow_compare(inst) || exact_compare(inst) || bulk_call(inst) ||
-			readonly_table_address(inst))
+		if (reassociate(inst) || narrow_truncation(inst) || mask_or(inst) || packed_part(inst) ||
+			unsigned_division(inst) || merge_index(inst) || narrow_compare(inst) || exact_compare(inst) ||
+			bulk_call(inst) || readonly_table_address(inst))
 			changed_ = true;
 		Value value;
 		if (inst.result != kNoId && (fold(inst, value) || identity(inst, value)))

@@ -216,6 +216,12 @@ bool unswitch_loops(FunctionContext& context);
 // A product of a counter and a literal no addressing mode or `lea` gives
 // becomes a counter of its own.
 bool reduce_strength(FunctionContext& context);
+// In a one-block loop, the step of a phi after the phi's last reader, so that
+// the back edge copies nothing.
+bool sink_counter_steps(FunctionContext& context);
+// O2+: an `int` counter that indexes memory, and the sums of it that do, read
+// from a 64-bit counter (opt/counter_widening.cpp).
+bool widen_counters(FunctionContext& context);
 // O2+: a call of the function itself in tail position becomes a jump to its
 // entry.
 bool eliminate_tail_recursion(FunctionContext& context);

@@ -410,6 +410,13 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		RUN_PASS(remove_dead_code);
 		changed = true;
 	}
+	if (RUN_PASS(widen_counters))
+	{
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
+	if (RUN_PASS(sink_counter_steps))
+		changed = true;
 	if (!changed)
 		return;
 	RUN_PASS(split_branch_compares);
@@ -609,9 +616,9 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " invariants_hoisted=" << s.invariants_hoisted << " stores_sunk=" << s.stores_sunk
 		<< " loops_vectorized=" << s.loops_vectorized << " loops_interchanged=" << s.loops_interchanged
 		<< " loops_unswitched=" << s.loops_unswitched << " counters_shifted=" << s.counters_shifted
-		<< " multiplies_reduced=" << s.multiplies_reduced << " tail_calls_removed=" << s.tail_calls_removed
-		<< " math_calls_shared=" << s.math_calls_shared << " specialized=" << s.specialized
-		<< " optimize_ms=" << s.optimize_ms;
+		<< " counters_widened=" << s.counters_widened << " multiplies_reduced=" << s.multiplies_reduced
+		<< " tail_calls_removed=" << s.tail_calls_removed << " math_calls_shared=" << s.math_calls_shared
+		<< " specialized=" << s.specialized << " optimize_ms=" << s.optimize_ms;
 #else
 	(void)s;
 #endif

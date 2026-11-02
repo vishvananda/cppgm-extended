@@ -4,35 +4,41 @@ function @add_down(%y : ptr, %x : ptr, %n : i32) -> void [no_inline=yes] {
     %t2 = cmp gt i32 %first, -1
     %t3 = cmp uge i32 %n, 4
     %t4 = binary and i64 %t2, %t3
-    branch %t4, ^wide_loop_1, ^loop_preheader_3
+    branch %t4, ^loop_preheader_1, ^loop_preheader_4
 
-  block ^wide_loop_1:
-    %t5 = phi i32 [^wide_loop_1: %t15, ^entry: %first]
-    %t6 = convert sext i64 i32 %t5
-    %t7 = index i32 %x, %t6
-    %t8 = index i8 %t7, -12
-    %t9 = load v128 %t8
-    %t10 = index f32 %y, %t6
-    %t11 = index i8 %t10, -12
-    %t12 = load v128 %t11
-    %t13 = vector cvtdq2ps %t9
-    %t14 = vector addps %t12, %t13
-    store v128 %t14, %t11
-    %t15 = binary add nowrap i32 %t5, -4
-    %t16 = cmp ge i32 %t15, 3
-    branch %t16, ^wide_loop_1, ^loop_exit_2
+  block ^loop_preheader_1:
+    %t5 = convert sext i64 i32 %first
+    jump ^wide_loop_2
 
-  block ^loop_exit_2:
-    %t17 = cmp gt i32 %t15, -1
-    branch %t17, ^loop_preheader_3, ^done
+  block ^wide_loop_2:
+    %t6 = phi i64 [^wide_loop_2: %t16, ^loop_preheader_1: %t5]
+    %t7 = copy i64 %t6
+    %t8 = index i32 %x, %t7
+    %t9 = index i8 %t8, -12
+    %t10 = load v128 %t9
+    %t11 = index f32 %y, %t7
+    %t12 = index i8 %t11, -12
+    %t13 = load v128 %t12
+    %t14 = vector cvtdq2ps %t10
+    %t15 = vector addps %t13, %t14
+    store v128 %t15, %t12
+    %t16 = binary add nowrap i64 %t6, -4
+    %t17 = convert trunc i32 i64 %t16
+    %t18 = cmp ge i64 %t16, 3
+    branch %t18, ^wide_loop_2, ^loop_exit_3
 
-  block ^loop_preheader_3:
-    %t18 = phi i32 [^entry: %first, ^loop_exit_2: %t15]
+  block ^loop_exit_3:
+    %t19 = cmp gt i32 %t17, -1
+    branch %t19, ^loop_preheader_4, ^done
+
+  block ^loop_preheader_4:
+    %t20 = phi i32 [^entry: %first, ^loop_exit_3: %t17]
+    %t21 = convert sext i64 i32 %t20
     jump ^body
 
   block ^body:
-    %i = phi i32 [^loop_preheader_3: %t18, ^body: %next]
-    %w = convert sext i64 i32 %i
+    %t22 = phi i64 [^loop_preheader_4: %t21, ^body: %t30]
+    %w = copy i64 %t22
     %p = index i32 %x, %w
     %a = load typed i32 %p
     %q = index f32 %y, %w
@@ -40,8 +46,8 @@ function @add_down(%y : ptr, %x : ptr, %n : i32) -> void [no_inline=yes] {
     %c = convert sitofp f32 i32 %a
     %s = binary add f32 %b, %c
     store typed f32 %s, %q
-    %next = binary sub nowrap i32 %i, 1
-    %t = cmp ge i32 %next, 0
+    %t30 = binary sub nowrap i64 %t22, 1
+    %t = cmp ge i64 %t30, 0
     branch %t, ^body, ^done
 
   block ^done:
