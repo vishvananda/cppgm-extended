@@ -1084,8 +1084,19 @@ bool LoopVectorizer::supported(const Instruction& inst) const
 			(p == ComparePredicate::Eq || p == ComparePredicate::Ne || p == ComparePredicate::Lt ||
 				p == ComparePredicate::Le || p == ComparePredicate::Gt || p == ComparePredicate::Ge);
 	}
-	case Opcode::Compare: // (A select reads it.)
+	case Opcode::Compare:
+	{
+		// Only selects read it, as their test: it has no lanes of its own.
+		const Value self = Value::temp(inst.result);
+		for (InstId id : code_)
+		{
+			const Instruction& user = body_.instructions[id];
+			for (unsigned k = user.op == Opcode::Select ? 1 : 0; k < 3; ++k)
+				if (user.ops[k] == self)
+					return false;
+		}
 		return true;
+	}
 	default:
 		return false;
 	}

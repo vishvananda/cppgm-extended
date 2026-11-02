@@ -793,7 +793,8 @@ vectorization stays outside the course contract.
   in the opposite order, so no lane needs a shuffle. Each operation
   needs a lane form: `add`, `sub`, the bit operators, shifts by a literal, `mul`
   of `i16` and `i32` and of the floating types, floating `div`, `neg`, `bitnot`,
-  `sqrt`, `select` of a compare, integer `sext`, `zext` and `trunc`, `sitofp`
+  `sqrt`, `select` of a compare (a compare has lanes only as a select's test;
+  `count += x != 0` stays scalar), integer `sext`, `zext` and `trunc`, `sitofp`
   from `i32`, `fptosi` to `i32`, `fpext` and `fptrunc`. The baseline has no lane
   form of `uitofp`, `fptoui` or of a conversion between `i64` and a floating
   type.
