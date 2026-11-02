@@ -1,5 +1,7 @@
 #include "lowir/builder.h"
+#include "lowir/literals.h"
 #include "opt/passes.h"
+#include "opt/scalar_fold.h"
 
 namespace opt {
 
@@ -32,6 +34,26 @@ bool phi_type(Type type)
 unsigned value_bits(Type type)
 {
 	return type.is_pointer() ? 64 : integer_bits(type.kind());
+}
+
+// The bits a slot's value holds, in any phi type.
+unsigned held_bits(Type type)
+{
+	return type.is_float() ? 8 * static_cast<unsigned>(storage_bytes(type)) : value_bits(type);
+}
+
+// A literal as `type`, where the two differ in being floating: the same bits.
+// (An integer written to floating storage is its value, in the store's type.)
+Value retyped_literal(FunctionBody& body, Value v, Type type)
+{
+	if (type.is_float() == v.is(ValueKind::Float))
+		return v;
+	Literal bits = body.literals[v.index];
+	if (!type.is_float())
+		return integer_value(body, normalize_integer(type, bits));
+	bits.low &= type.kind() == TypeKind::F32 ? 0xffffffffull : ~0ull;
+	bits.high = 0;
+	return literal_value(body, ValueKind::Float, type.kind(), bits);
 }
 
 // The type a store's value operand has (a literal takes the store's).
@@ -390,7 +412,7 @@ void SlotPromotion::classify()
 					return;
 				accessed_[v.index] = 1;
 				const Type type = body_.slots[v.index].type;
-				const bool typed = inst.type == type || integer_twins(inst.type, type);
+				const bool typed = inst.type == type || integer_twins(inst.type, type) || float_twins(inst.type, type);
 				const bool load = inst.op == Opcode::Load && at == 0 && (inst.flags & IF_VOLATILE) == 0 && typed;
 				const bool store = inst.op == Opcode::Store && at == 1 && (inst.flags & IF_VOLATILE) == 0 && typed &&
 					!inst.ops[0].is(ValueKind::Slot) && storable(body_, inst);
@@ -619,10 +641,12 @@ void SlotPromotion::rename_block(BlockId block)
 				// Read before any store: an indeterminate value, zero.
 				undo_.push_back(std::make_pair(c, current_[c]));
 				Literal zero = { 0, 0 };
-				current_[c] = inst.type.is_float() ? literal_value(body_, ValueKind::Float, inst.type.kind(), zero)
-												   : integer_value(body_, zero);
+				const Type held = body_.slots[inst.ops[0].index].type;
+				current_[c] = held.is_float() ? literal_value(body_, ValueKind::Float, held.kind(), zero)
+											  : integer_value(body_, zero);
 			}
-			repl_[inst.result] = current_[c];
+			repl_[inst.result] = current_[c].is_literal() ? retyped_literal(body_, current_[c], inst.type)
+														  : current_[c];
 			if (inst.type != body_.slots[inst.ops[0].index].type && current_[c].is(ValueKind::Temp))
 			{
 				// A twin-typed read: a copy retyping the value.
@@ -646,11 +670,18 @@ void SlotPromotion::rename_block(BlockId block)
 			current_[c] = inst.ops[0];
 			const Type from = stored_type(body_, inst);
 			const Type held = body_.slots[inst.ops[1].index].type;
-			if (from != held)
+			if (inst.ops[0].is_literal() && (from.is_float() || held.is_float()))
+			{
+				if (from.is_float() && inst.ops[0].is(ValueKind::Integer))
+					current_[c] = literal_value(body_, ValueKind::Float, from.kind(),
+						integer_as_float(from.kind(), body_.literals[inst.ops[0].index]));
+				current_[c] = retyped_literal(body_, current_[c], held);
+			}
+			else if (from != held)
 			{
 				// The value the slot holds: a retype, a truncation or an
 				// extension.
-				const unsigned bits_from = value_bits(from), bits_to = value_bits(held);
+				const unsigned bits_from = held_bits(from), bits_to = held_bits(held);
 				const bool same = bits_from == bits_to;
 				Instruction convert = make_instruction(same ? Opcode::Copy : Opcode::Convert, held);
 				convert.ops[0] = inst.ops[0];

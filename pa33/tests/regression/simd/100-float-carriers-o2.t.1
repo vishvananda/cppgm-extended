@@ -1,0 +1,129 @@
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+
+struct OneFloat
+{
+	float p;
+};
+
+struct OneDouble
+{
+	double p;
+};
+
+struct Pair
+{
+	float x, y;
+};
+
+template <class F>
+static inline F pass(F f) { return f; }
+
+template <class T, class F>
+static inline int count(const T* first, const T* last, F f)
+{
+	int n = 0;
+	for (; first != last; ++first)
+		if (f(*first))
+			++n;
+	return n;
+}
+
+static OneFloat flip(OneFloat f)
+{
+	f.p = -f.p;
+	return f;
+}
+
+static uint32_t bits_of(float f)
+{
+	uint32_t b;
+	std::memcpy(&b, &f, sizeof b);
+	return b;
+}
+
+static uint64_t bits_of(double f)
+{
+	uint64_t b;
+	std::memcpy(&b, &f, sizeof b);
+	return b;
+}
+
+static float float_of(uint32_t b)
+{
+	float f;
+	std::memcpy(&f, &b, sizeof f);
+	return f;
+}
+
+static double double_of(uint64_t b)
+{
+	double f;
+	std::memcpy(&f, &b, sizeof f);
+	return f;
+}
+
+struct Below
+{
+	float limit;
+	bool operator()(float v) const { return v < limit; }
+};
+
+volatile float vf = 2.5f;
+volatile double vd = -0.0;
+volatile uint32_t vb = 0xffc12345u; // a NaN with a sign and a payload
+volatile uint64_t vq = 0x7ff8000000abcdefull;
+
+int main()
+{
+	const float values[] = { 0.5f, 1.5f, 2.5f, 3.5f, 4.5f, -1.5f };
+	Below below = { vf };
+	std::printf("%d\n", count(values, values + 6, pass(pass(below))));
+
+	OneFloat f = { vf };
+	std::printf("%08x\n", bits_of(flip(pass(f)).p));
+
+	OneDouble d = { vd };
+	OneDouble e = pass(d);
+	std::printf("%016llx\n", (unsigned long long)bits_of(e.p));
+
+	// The identities keep -0 and a NaN's payload.
+	const float nan = float_of(vb);
+	std::printf("%08x\n", bits_of(nan * 1.0f));
+	std::printf("%08x\n", bits_of(1.0f * nan));
+	std::printf("%08x\n", bits_of(nan / 1.0f));
+	std::printf("%08x\n", bits_of(nan - 0.0f));
+	const double wide_nan = double_of(vq);
+	std::printf("%016llx\n", (unsigned long long)bits_of(wide_nan * 1.0));
+	std::printf("%016llx\n", (unsigned long long)bits_of(vd * 1.0));
+	std::printf("%016llx\n", (unsigned long long)bits_of(vd / 1.0));
+	std::printf("%016llx\n", (unsigned long long)bits_of(vd - 0.0));
+	std::printf("%016llx\n", (unsigned long long)bits_of(vd + -0.0));
+	std::printf("%016llx\n", (unsigned long long)bits_of(vd + 0.0));
+	std::printf("%016llx\n", (unsigned long long)bits_of(vd - -0.0));
+
+	// Bits taken apart keep the parts.
+	Pair pair = { vf, -vf };
+	uint64_t whole;
+	std::memcpy(&whole, &pair, sizeof whole);
+	std::printf("%016llx\n", (unsigned long long)whole);
+
+	// Merged from both kinds.
+	float merged[3];
+	for (int i = 0; i < 3; ++i)
+	{
+		union
+		{
+			float f;
+			uint32_t u;
+		} cell;
+		if (i & 1)
+			cell.u = bits_of(vf) + i;
+		else
+			cell.f = vf * i;
+		merged[i] = cell.f;
+	}
+	std::printf("%08x %08x %08x\n", bits_of(merged[0]), bits_of(merged[1]), bits_of(merged[2]));
+	return 0;
+}

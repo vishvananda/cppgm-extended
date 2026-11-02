@@ -1948,7 +1948,8 @@ follows them, and so must yours.
   enumeration to its underlying type, a bit-field read completing to its
   declared type, a `nullptr` materialized as a `ptr` temporary) is written
   `copy <type> <value>`; it is not omitted and it is not written as
-  `convert`.
+  `convert`. An optimizer may also write a `copy` between `f32` and a 32-bit
+  integer, or `f64` and `i64`: it moves the bits and converts nothing.
 - Instruction facts are part of the instruction. `typed`, `nowrap` and
   `exact` follow the production rules of Instruction Facts above; an output
   that misses one, or states one the rules do not, differs from the

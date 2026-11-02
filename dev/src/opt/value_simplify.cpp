@@ -182,6 +182,7 @@ private:
 	bool readonly_table_address(Instruction& inst);
 	bool readonly_base(Value address, Value& base, int64_t& offset);
 	bool binary_identity(Instruction& inst, Value& out);
+	bool float_identity(Instruction& inst, Value& out);
 	bool compare_identity(Instruction& inst, Value& out);
 	bool convert_identity(Instruction& inst, Value& out);
 	bool narrow_truncation(Instruction& inst);
@@ -539,6 +540,14 @@ bool Simplifier::identity(Instruction& inst, Value& out)
 			out = inst.ops[0];
 			return true;
 		}
+		// There and back: a floating value's bits through an integer.
+		if (const Instruction* retype = producer(inst.ops[0]))
+			if (retype->op == Opcode::Copy && retype->ops[0].is(ValueKind::Temp) &&
+				float_twins(retype->type, inst.type) && body_.temps[retype->ops[0].index].type == inst.type)
+			{
+				out = retype->ops[0];
+				return true;
+			}
 		// The only reader of a nonvolatile integer load reinterpreting it at
 		// the same width (`(unsigned char)c`): the load reads that type.
 		const TempId loaded = inst.ops[0].is(ValueKind::Temp) ? inst.ops[0].index : kNoId;
@@ -722,10 +731,41 @@ bool Simplifier::merge_index(Instruction& inst)
 	return true;
 }
 
+// The floating operations that keep their operand's value, -0 and every NaN's
+// sign and payload included: x * 1, x / 1, x - +0 and x + -0.
+bool Simplifier::float_identity(Instruction& inst, Value& out)
+{
+	const TypeKind kind = inst.type.kind();
+	if (kind != TypeKind::F32 && kind != TypeKind::F64)
+		return false;
+	const BinaryOp op = static_cast<BinaryOp>(inst.sub);
+	const bool sign_kept = op == BinaryOp::Add || op == BinaryOp::Sub;
+	auto keeps = [&](const Value& v, bool sign) {
+		if (!v.is(ValueKind::Float) || v.float_kind != kind)
+			return false;
+		const uint64_t bits = body_.literals[v.index].low;
+		if (!sign_kept)
+			return bits == (kind == TypeKind::F32 ? 0x3f800000ull : 0x3ff0000000000000ull);
+		return bits == (!sign ? 0 : kind == TypeKind::F32 ? 0x80000000ull : 0x8000000000000000ull);
+	};
+	const bool commutes = op == BinaryOp::Add || op == BinaryOp::Mul;
+	if ((op == BinaryOp::Mul || op == BinaryOp::Div || sign_kept) && keeps(inst.ops[1], op == BinaryOp::Add))
+	{
+		out = inst.ops[0];
+		return true;
+	}
+	if (commutes && keeps(inst.ops[0], op == BinaryOp::Add))
+	{
+		out = inst.ops[1];
+		return true;
+	}
+	return false;
+}
+
 bool Simplifier::binary_identity(Instruction& inst, Value& out)
 {
 	if (!inst.type.is_integer())
-		return false;
+		return float_identity(inst, out);
 	const Type type = inst.type;
 	const BinaryOp op = static_cast<BinaryOp>(inst.sub);
 	const Value x = inst.ops[0], y = inst.ops[1];

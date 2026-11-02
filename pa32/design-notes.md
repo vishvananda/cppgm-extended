@@ -68,7 +68,10 @@ do is not run again until the body changes.
   out-of-range count; `f64` arithmetic is x87 extended precision rounded
   to double.
 - It applies algebraic identities (`x + 0`, `x * 1`, `x & -1`, `x - x`, a
-  mask that clears no bit `x` can have, and so on), reassociates `add`,
+  mask that clears no bit `x` can have, and so on, and for `f32` and `f64`
+  `x * 1`, `x / 1`, `x - 0` and `x + -0`, but not `x + 0`, which turns `-0`
+  into `0`), folds a `copy` of a floating value to an integer and back to
+  that value, reassociates `add`,
   `mul`, `and`, `or` and `xor` chains with constants, merges constant
   `index` steps, orders commutative operands, collapses a phi whose inputs
   are all one value, and merges two phis of a block that agree on every
@@ -155,7 +158,10 @@ decided side (copying at most 6 of the test block's instructions).
 
 **Slot promotion** turns a scalar slot (any integer up to 64 bits, `ptr`,
 `f32`, `f64`) into SSA values when every use is a direct nonvolatile `load`
-or `store` of its type, or of the other integer type of its width. Phis go
+or `store` of its type, of the other integer type of its width, or, between
+`f32` and a 32-bit integer or `f64` and `i64`, of the floating or integer type
+of its width. A read of the other kind is a `copy` of the bits; a literal
+changes kind with the same bits. Phis go
 at the iterated dominance frontier of its stores over ordinary edges,
 semi-pruned (a slot no block reads before storing gets none). One run's
 phis have at most 4,096 inputs plus four per other instruction; past that,
@@ -167,7 +173,9 @@ and promotes them. Every use of its address (through `addr`, constant
 `index` steps and pointer copies) must be a nonvolatile scalar `load` or
 `store`, a `copyobj` or `zeroinit` at a constant non-negative offset, or a
 call's indirect-result argument, and the typed accesses must agree where
-they meet; copies and zeroing then expand per field. At `-O2` and above an
+they meet, except that an integer may carry a floating field of its width (a
+small object passed by value is often read in its integer carrier): the field
+stays floating. Copies and zeroing then expand per field. At `-O2` and above an
 address-taken scalar slot is rewritten the same way, and eightbytes that
 copies move whole may become one integer field.
 

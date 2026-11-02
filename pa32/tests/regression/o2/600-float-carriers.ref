@@ -1,0 +1,47 @@
+function @round_trip(%x : f32) -> f32 [binding=strong, no_inline=yes] {
+  block ^entry:
+    return f32 %x
+}
+function @double_bits(%x : f64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = copy i64 %x
+    return i64 %t1
+}
+function @float_of_bits(%x : i32) -> f32 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = copy f32 %x
+    return f32 %t1
+}
+function @merged(%c : i1, %x : f32, %y : u32) -> f32 [binding=strong, no_inline=yes] {
+  block ^entry:
+    branch %c, ^join, ^bits
+
+  block ^bits:
+    %t1 = copy f32 %y
+    jump ^join
+
+  block ^join:
+    %r = phi f32 [^bits: %t1, ^entry: %x]
+    return f32 %r
+}
+function @literal_bits() -> u32 [binding=strong, no_inline=yes] {
+  block ^entry:
+    return u32 1069547520
+}
+function @literal_float() -> f32 [binding=strong, no_inline=yes] {
+  block ^entry:
+    return f32 1f
+}
+function @half_of_bits(%x : f32) -> u16 [binding=strong, no_inline=yes] {
+  slot $s : obj<4x4>
+
+  block ^entry:
+    %a = addr $s
+    store f32 %x, %a
+    %low = load u16 %a
+    return u16 %low
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

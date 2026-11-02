@@ -86,6 +86,7 @@ private:
 	Value field_slot(SlotId slot, uint64_t offset) const;
 	void rewrite();
 	bool compatible_copies();
+	bool share_floats(const SlotAddress& x, const SlotAddress& y, uint64_t bytes);
 	bool same_fields(const SlotAddress& x, const SlotAddress& y, uint64_t bytes) const;
 	void expand_copy(BlockId block, InstId prev, const Instruction& inst, InstId& last);
 	InstId emit(BlockId block, InstId after, Instruction inst, Type result);
@@ -325,7 +326,7 @@ bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 		for (const Field& f : fields)
 			shared = shared ||
 				(f.offset < w.first + 8 && f.offset + storage_bytes(f.type) > w.first &&
-					!(f.offset == w.first && f.type.kind() == TypeKind::I64));
+					!(f.offset == w.first && (f.type.kind() == TypeKind::I64 || f.type.kind() == TypeKind::F64)));
 		if (!shared || w.first / 8 >= 64 || w.first + 8 > size)
 			continue;
 		facts.forced |= static_cast<uint64_t>(1) << (w.first / 8);
@@ -360,6 +361,14 @@ bool AggregateSlots::settle(SlotFacts& facts, uint64_t size, SlotId slot)
 			return false;
 		if (!unique.empty() && unique.back().offset == f.offset)
 		{
+			// (An integer carrying a floating field's bits: the field stays
+			// floating, and promotion retypes the integer accesses.)
+			if (float_twins(unique.back().type, f.type))
+			{
+				if (f.type.is_float())
+					unique.back().type = f.type;
+				continue;
+			}
 			if (unique.back().type != f.type)
 				return false;
 			continue;
@@ -1023,6 +1032,7 @@ bool AggregateSlots::compatible_copies()
 					continue;
 				if (first_field_[x.slot] == kNoId || first_field_[y.slot] == kNoId)
 					continue;
+				changed = share_floats(x, y, static_cast<uint64_t>(inst.immediate)) || changed;
 				if (x.slot == y.slot || !same_fields(x, y, static_cast<uint64_t>(inst.immediate)))
 				{
 					first_field_[x.slot] = first_field_[y.slot] = kNoId;
@@ -1034,6 +1044,34 @@ bool AggregateSlots::compatible_copies()
 		if (first_field_[s] != kNoId)
 			return true;
 	return false;
+}
+
+// An integer field a copy moves to or from a floating field of its width is
+// that field's carrier: it floats too, so the value stays in one register file.
+bool AggregateSlots::share_floats(const SlotAddress& x, const SlotAddress& y, uint64_t bytes)
+{
+	bool changed = false;
+	std::vector<Field>& from = facts_[x.slot].fields;
+	std::vector<Field>& to = facts_[y.slot].fields;
+	for (size_t i = 0; i < from.size(); ++i)
+	{
+		if (from[i].offset < static_cast<uint64_t>(x.offset) ||
+			from[i].offset + storage_bytes(from[i].type) > x.offset + bytes)
+			continue;
+		const uint64_t at = from[i].offset - x.offset + y.offset;
+		for (size_t k = 0; k < to.size(); ++k)
+			if (to[k].offset == at && float_twins(from[i].type, to[k].type))
+			{
+				Field& integer = from[i].type.is_float() ? to[k] : from[i];
+				const Type floating = from[i].type.is_float() ? from[i].type : to[k].type;
+				const SlotId field = first_field_[from[i].type.is_float() ? y.slot : x.slot] +
+					static_cast<uint32_t>(from[i].type.is_float() ? k : i);
+				integer.type = floating;
+				body_.slots[field].type = floating;
+				changed = true;
+			}
+	}
+	return changed;
 }
 
 bool AggregateSlots::same_fields(const SlotAddress& x, const SlotAddress& y, uint64_t bytes) const

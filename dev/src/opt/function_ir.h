@@ -256,6 +256,17 @@ inline lowir::InstId append_copy(
 }
 lowir::TempId append_temp(lowir::FunctionBody& body, lowir::Type type, lowir::InstId def);
 lowir::Value integer_value(lowir::FunctionBody& body, lowir::Literal bits);
+// Whether one is a floating type and the other an integer type of its width:
+// a retyping copy moves the bits between them.
+inline bool float_twins(lowir::Type a, lowir::Type b)
+{
+	const lowir::TypeKind x = a.kind(), y = b.kind();
+	return (x == lowir::TypeKind::F32 && (y == lowir::TypeKind::I32 || y == lowir::TypeKind::U32)) ||
+		(y == lowir::TypeKind::F32 && (x == lowir::TypeKind::I32 || x == lowir::TypeKind::U32)) ||
+		(x == lowir::TypeKind::F64 && y == lowir::TypeKind::I64) ||
+		(y == lowir::TypeKind::F64 && x == lowir::TypeKind::I64);
+}
+
 lowir::Value literal_value(
 	lowir::FunctionBody& body, lowir::ValueKind kind, lowir::TypeKind float_kind, lowir::Literal bits);
 // A new unnamed block of presentation kind `kind` (lowir/local_kinds.h).
