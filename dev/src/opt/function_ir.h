@@ -319,12 +319,13 @@ void compact_body(lowir::Program& program, lowir::FunctionBody& body);
 // Instructions in placed blocks.
 uint64_t instruction_count(const lowir::FunctionBody& body);
 
-// The integer `type` value stored at `offset` bytes into a readonly,
-// non-thread-local global definition no other object can replace (its
-// data items laid out at their natural alignment, as the back end places
-// them): a scalar item of that exact place and width, or zero bytes.
-// False for address items, partial overlaps and other globals.
-bool read_readonly_integer(const lowir::Program& program, lowir::SymbolId symbol, int64_t offset, lowir::Type type,
+// The integer, f32 or f64 `type` value stored at `offset` bytes into a
+// readonly, non-thread-local global definition no other object can
+// replace (its data items laid out at their natural alignment, as the
+// back end places them): the bytes of scalar items and zero runs, or a
+// scalar global's literal of that type. False for address items and other
+// globals.
+bool read_readonly_scalar(const lowir::Program& program, lowir::SymbolId symbol, int64_t offset, lowir::Type type,
 	lowir::Constant& out, const std::vector<uint8_t>* unwritten = nullptr);
 
 // Per symbol: an internal global definition the unit never writes after
@@ -339,7 +340,7 @@ void find_unwritten_globals(const lowir::Program& program, std::vector<uint8_t>&
 // The address a pointer-sized load at `offset` into constant global
 // `symbol` reads: an address item there, its symbol in `target`; with no
 // `addend`, only one without an addend, else its addend there too
-// (read_readonly_integer's rules otherwise).
+// (read_readonly_scalar's rules otherwise).
 bool read_readonly_address(const lowir::Program& program, lowir::SymbolId symbol, int64_t offset,
 	const std::vector<uint8_t>* unwritten, lowir::SymbolId& target, int64_t* addend = nullptr);
 

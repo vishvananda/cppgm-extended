@@ -96,11 +96,13 @@ do is not run again until the body changes.
   multiplication tests its real part so before calling `__muldc3`; in the
   Mandelbrot iteration over `std::complex`, which took 9% fewer cycles, the
   call goes.
-- A nonvolatile integer or pointer load at a constant offset into a global
-  of `storage=readonly`, or into an internal global the unit never writes
-  (every use of its address reads through it and no other global's data
-  holds it), becomes the stored constant or address; replaceable and
-  thread-local globals are never read this way. `strlen` of such byte data
+- A nonvolatile integer, floating or pointer load at a constant offset into
+  a global of `storage=readonly`, or into an internal global the unit never
+  writes (every use of its address reads through it and no other global's
+  data holds it), becomes the stored constant or address; replaceable and
+  thread-local globals are never read this way. In `HACCKernels` the
+  coefficients of `const float` arrays become literals in the force loop,
+  and the run takes 3% fewer cycles. `strlen` of such byte data
   with a known NUL becomes its length (at most 4,096 data items), and
   `memset(p, 0, n)` and `memcpy(d, s, n)` with a literal `n` of at most 128
   become `zeroinit` and `copyobj`; so does `memmove(d, s, n)` when its two
@@ -116,7 +118,8 @@ do is not run again until the body changes.
 nonvolatile load read or a store wrote at an address and type, and byte
 ranges known to be zero. A load reuses a fact of its address and type (or
 of the other integer or pointer type of that width, through a retyping
-copy); a load in a known-zero range reads zero.
+copy); a load in a known-zero range reads zero. An `f32` or `f64` load of
+an integer literal fact of its width reads the literal's bits as a float.
 
 - An address is a slot, global or pointer temporary plus a constant offset.
   Distinct slots and globals never overlap, nor do disjoint ranges of one.
@@ -136,6 +139,8 @@ copy); a load in a known-zero range reads zero.
 - A block inherits its immediate dominator's facts less whatever the
   blocks between them may write (at most 32 such blocks, none a handler).
   A handler block starts with no facts.
+- A `copyobj` between different objects gives its destination range the
+  facts and zero ranges of its source range, within the same limits.
 - Object copies whose source bytes are known constants (at most 256 bytes)
   or known stored values (at most 32 bytes) become zeroing and stores;
   writes to a private slot that nothing reads are removed.

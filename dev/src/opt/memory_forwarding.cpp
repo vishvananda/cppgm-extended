@@ -145,8 +145,11 @@ private:
 		zeros_.clear();
 	}
 	bool known_zero(Value address, uint64_t bytes) const;
+	Value float_bits(const Instruction& load);
 	void note_zero(Value address, uint64_t bytes);
 	void remember(Value address, Type type, Value value, bool typed);
+	void remember_at(const AddressFacts& f, const Key& key, Type type, Value value, bool typed);
+	void copy_facts(const Instruction& copy);
 	void process(BlockId block);
 	InstId known_copy(BlockId block, InstId prev, InstId id);
 	InstId field_copy(BlockId block, InstId prev, InstId id);
@@ -448,6 +451,30 @@ bool MemoryForwarding::known_zero(Value address, uint64_t bytes) const
 	return false;
 }
 
+// An f32 or f64 load of bytes known as an integer literal of its width
+// or as zero: the float literal of those bits (a constant built as
+// eightbytes and read back as a double, the copy of static data split
+// into words); None otherwise.
+Value MemoryForwarding::float_bits(const Instruction& load)
+{
+	const bool wide = load.type.kind() == TypeKind::F64;
+	if (known_zero(load.ops[0], wide ? 8 : 4))
+		return literal_value(body_, ValueKind::Float, load.type.kind(), Literal());
+	const TypeKind twins[2] = { wide ? TypeKind::I64 : TypeKind::I32, wide ? TypeKind::I64 : TypeKind::U32 };
+	for (TypeKind twin : twins)
+	{
+		const Known* other = find(key_of(load.ops[0], Type::scalar(twin)));
+		if (other != nullptr && other->generation == generation_ && other->value.is(ValueKind::Integer))
+		{
+			Literal bits = body_.literals[other->value.index];
+			bits.low &= wide ? ~0ull : 0xffffffffull;
+			bits.high = 0;
+			return literal_value(body_, ValueKind::Float, load.type.kind(), bits);
+		}
+	}
+	return Value::none();
+}
+
 // The most zero ranges one point of the walk keeps (the oldest goes).
 const size_t kMaxZeroRanges = 16;
 
@@ -469,7 +496,11 @@ const size_t kMaxFacts = 64;
 void MemoryForwarding::remember(Value address, Type type, Value value, bool typed)
 {
 	const AddressFacts f = facts_of(address);
-	const Key key = key_of(f, address, type);
+	remember_at(f, key_of(f, address, type), type, value, typed);
+}
+
+void MemoryForwarding::remember_at(const AddressFacts& f, const Key& key, Type type, Value value, bool typed)
+{
 	const uint32_t* at = index_.find(key);
 	Known* found = at != nullptr ? &facts_[*at].known : nullptr;
 	const bool live = found != nullptr && found->generation == generation_;
@@ -592,6 +623,8 @@ void MemoryForwarding::process(BlockId block)
 				repl_[inst.result] = found->value;
 			else if (integral && known_zero(inst.ops[0], storage_bytes(inst.type)))
 				repl_[inst.result] = integer_value(body_, Literal());
+			else if (inst.type.kind() == TypeKind::F32 || inst.type.kind() == TypeKind::F64)
+				repl_[inst.result] = float_bits(inst);
 			else if (integral)
 			{
 				// A same-width access of the other integer (or pointer)
@@ -670,6 +703,7 @@ void MemoryForwarding::process(BlockId block)
 				continue;
 			}
 			invalidate(inst.ops[1], static_cast<uint64_t>(inst.immediate));
+			copy_facts(inst);
 		}
 		else if (inst.op == Opcode::ZeroInit)
 		{
@@ -682,6 +716,44 @@ void MemoryForwarding::process(BlockId block)
 			invalidate(Value::none(), ~static_cast<uint64_t>(0) >> 1); // private slots survive
 		prev = i;
 		i = next;
+	}
+}
+
+// What a copy's source is known to hold within the copied bytes holds at
+// the same place of its destination after it (another object): each live
+// fact, and each zero range. A loop over a copied aggregate, the tail of
+// a tuple built by copies, then reads the values the copy left in place.
+void MemoryForwarding::copy_facts(const Instruction& copy)
+{
+	const int64_t bytes = copy.immediate;
+	const AddressFacts src = facts_of(copy.ops[0]), dst = facts_of(copy.ops[1]);
+	if ((copy.flags & IF_VOLATILE) != 0 || bytes <= 0 || src.base == ValueKind::None || dst.base == ValueKind::None ||
+		(src.base == dst.base && src.index == dst.index))
+		return;
+	const size_t count = live_.size();
+	for (size_t k = 0; k < count && live_.size() + 1 < kMaxFacts; ++k)
+	{
+		const Known f = facts_[live_[k]].known;
+		const int64_t delta = f.at.offset - src.offset;
+		if (f.generation != generation_ || f.value.is(ValueKind::None) || f.at.base != src.base ||
+			f.at.index != src.index || delta < 0 || delta + static_cast<int64_t>(f.bytes) > bytes)
+			continue;
+		AddressFacts at = dst;
+		at.offset += delta;
+		remember_at(at, key_of(at, Value::none(), f.type), f.type, f.value, f.typed);
+	}
+	const size_t ranges = zeros_.size();
+	for (size_t k = 0; k < ranges; ++k)
+	{
+		const ZeroRange r = zeros_[k];
+		const int64_t start = std::max(r.start, src.offset), end = std::min(r.end, src.offset + bytes);
+		if (r.base.base != src.base || r.base.index != src.index || start >= end)
+			continue;
+		if (zeros_.size() >= kMaxZeroRanges)
+			break;
+		AddressFacts base = dst;
+		base.offset = 0;
+		zeros_.push_back(ZeroRange{ base, dst.offset + (start - src.offset), dst.offset + (end - src.offset) });
 	}
 }
 

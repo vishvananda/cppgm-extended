@@ -1005,23 +1005,36 @@ bool read_readonly_address(const Program& program, SymbolId symbol, int64_t offs
 	return false;
 }
 
-bool read_readonly_integer(const Program& program, SymbolId symbol, int64_t offset, Type type, Constant& out,
+// Whether a data item's literal is of its type's class (integer bits for an
+// integer or pointer item, IEEE bits of the item's own format for a
+// floating one), so its bytes are the literal's.
+static bool item_bytes_known(const DataItem& item)
+{
+	if (item.kind != DataItemKind::Scalar)
+		return false;
+	if (item.constant.kind == ValueKind::Integer)
+		return item.type.is_integer() || item.type.is_pointer();
+	return item.constant.kind == ValueKind::Float && item.constant.float_kind == item.type.kind();
+}
+
+bool read_readonly_scalar(const Program& program, SymbolId symbol, int64_t offset, Type type, Constant& out,
 	const std::vector<uint8_t>* unwritten)
 {
 	const Symbol& s = program.symbols[symbol];
-	if (!constant_contents(program, symbol, unwritten) || !type.is_integer() || offset < 0)
+	const bool floating = type.kind() == TypeKind::F32 || type.kind() == TypeKind::F64;
+	if (!constant_contents(program, symbol, unwritten) || !(type.is_integer() || floating) || offset < 0)
 		return false;
 	const Global& g = program.globals[s.detail];
 	const uint64_t want = static_cast<uint64_t>(offset), size = storage_bytes(type);
-	out.kind = ValueKind::Integer;
-	out.float_kind = TypeKind::Void;
+	out.kind = floating ? ValueKind::Float : ValueKind::Integer;
+	out.float_kind = floating ? type.kind() : TypeKind::Void;
 	out.bits = Literal{ 0, 0 };
 	if (g.init == GlobalInit::Zero)
 		return true;
 	if (g.init == GlobalInit::Constant)
 	{
-		if (!g.typed || want != 0 || storage_bytes(g.type) != size || !g.type.is_integer() ||
-			g.constant.kind != ValueKind::Integer)
+		if (!g.typed || want != 0 || storage_bytes(g.type) != size || g.constant.kind != out.kind ||
+			(floating ? g.constant.float_kind != type.kind() : !g.type.is_integer()))
 			return false;
 		out.bits = g.constant.bits;
 		return true;
@@ -1050,7 +1063,7 @@ bool read_readonly_integer(const Program& program, SymbolId symbol, int64_t offs
 		at = (at + align - 1) & ~(align - 1);
 		if (want < at + bytes && want + size > at)
 		{
-			if (item.kind != DataItemKind::Scalar || !t.is_integer() || item.constant.kind != ValueKind::Integer)
+			if (!item_bytes_known(item) || t.is_pointer())
 				return false;
 			for (uint64_t b = at > want ? at : want; b < at + bytes && b < want + size; ++b)
 			{

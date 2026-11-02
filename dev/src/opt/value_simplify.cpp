@@ -620,8 +620,9 @@ bool Simplifier::identity(Instruction& inst, Value& out)
 	}
 }
 
-// A nonvolatile integer load from a constant offset into readonly data
-// (an `addr` of the global, `index` steps by literals, pointer copies).
+// A nonvolatile integer, f32 or f64 load from a constant offset into
+// readonly data (an `addr` of the global, `index` steps by literals,
+// pointer copies).
 bool Simplifier::readonly_base(Value address, Value& base, int64_t& offset)
 {
 	// The global and constant offset an address denotes (through `addr`,
@@ -673,7 +674,9 @@ bool Simplifier::readonly_table_address(Instruction& inst)
 
 bool Simplifier::readonly_load(const Instruction& inst, Value& out)
 {
-	if ((inst.flags & IF_VOLATILE) != 0 || !(inst.type.is_integer() || inst.type.is_pointer()))
+	const TypeKind kind = inst.type.kind();
+	if ((inst.flags & IF_VOLATILE) != 0 ||
+		!(inst.type.is_integer() || inst.type.is_pointer() || kind == TypeKind::F32 || kind == TypeKind::F64))
 		return false;
 	Value base;
 	int64_t offset = 0;
@@ -690,9 +693,9 @@ bool Simplifier::readonly_load(const Instruction& inst, Value& out)
 	}
 	Constant c;
 	if (!base.is(ValueKind::Symbol) ||
-		!read_readonly_integer(c_.program, base.index, offset, inst.type, c, c_.unwritten))
+		!read_readonly_scalar(c_.program, base.index, offset, inst.type, c, c_.unwritten))
 		return false;
-	out = literal(integer_constant(inst.type, c.bits));
+	out = literal(c.kind == ValueKind::Float ? c : integer_constant(inst.type, c.bits));
 	return true;
 }
 

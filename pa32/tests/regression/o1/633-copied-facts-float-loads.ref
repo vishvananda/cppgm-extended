@@ -1,0 +1,47 @@
+function @copied(%x : f64) -> f64 [no_inline=yes] {
+  slot $a : obj<24x8>
+  slot $b : obj<24x8>
+
+  block ^entry:
+    %pa = addr $a
+    store i64 4614500768194494464, %pa
+    %fa = index i8 %pa, 8
+    store f64 %x, %fa
+    %za = index i8 %pa, 16
+    store i64 0, %za
+    %pb = addr $b
+    copyobj 24x8 %pa, %pb
+    call void @escape(%pa, %pb)
+    %s = binary add f64 %x, 3.25
+    %t = binary add f64 %s, 0
+    return f64 %t
+}
+function @overwritten(%x : f64, %y : f64) -> f64 [no_inline=yes] {
+  slot $a : obj<16x8>
+  slot $b : obj<16x8>
+
+  block ^entry:
+    %pa = addr $a
+    store f64 %x, %pa
+    %fa = index i8 %pa, 8
+    store f64 %x, %fa
+    %pb = addr $b
+    copyobj 16x8 %pa, %pb
+    store f64 %y, %pb
+    call void @escape(%pa, %pb)
+    %s = binary add f64 %x, %y
+    return f64 %s
+}
+function @escape(%a : ptr, %b : ptr) -> void [no_inline=yes] {
+  block ^entry:
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %c = call f64 @copied(1.5)
+    %o = call f64 @overwritten(1.0, 2.0)
+    %s = binary add f64 %c, %o
+    %bad = cmp ne f64 %s, 7.75
+    %r = convert zext i32 i1 %bad
+    return i32 %r
+}
