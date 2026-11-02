@@ -24,6 +24,8 @@ Options for `run`:
 - `--only REGEX`: run the programs that match.
 - `--no-count`: do not run `cachegrind`.
 - `--no-clang`: do not run `clang++`.
+- `--timing-rounds N`: the runs of a short program in the timing pass. The
+  default is 5. `0` turns off the pass.
 
 ## Measurements
 
@@ -34,6 +36,12 @@ All programs, at `-O0` and `-O3`:
 - Run CPU time.
 
 All programs, once: frontend CPU time, from `-fsyntax-only`.
+
+The `-O3` run CPU time comes from a timing pass. The pass runs after all
+builds, one program at a time. Each round runs the binary of each compiler
+once. A program whose `g++` binary runs for less than 1 second gets 5 rounds,
+and other programs get 1 round. The result is the least CPU time of the
+rounds.
 
 Programs with `count` in the manifest, at `-O3`, from
 `valgrind --tool=cachegrind`:

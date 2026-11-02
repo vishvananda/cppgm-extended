@@ -173,6 +173,47 @@ class CountingTests(unittest.TestCase):
         self.assertFalse(self.side('cppgm').counting('run', '-O0'))
 
 
+class TimingTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        root = Path(temp.name)
+        self.context = SimpleNamespace(manifest=dict(levels=['-O0', '-O3']), work=root,
+                                       cache=root, tools=dict(gcc='g++', cppgm='cppgm++'))
+        self.program = dict(name='p', source='s')
+
+    def time(self, result, times, rounds=3):
+        samples = iter(times)
+        calls = []
+
+        def fake(command, *arguments):
+            calls.append(command[0])
+            return dict(code=0, timed_out=False, cpu=next(samples))
+        with mock.patch.object(pb, 'measure', fake):
+            pb.time_runs(self.context, self.program, result, rounds)
+        return calls
+
+    def result(self, gcc_cpu):
+        return dict(status='ok', gcc=dict(run_cpu_O3=gcc_cpu, exit_code_O3=0),
+                    cppgm=dict(run_cpu_O3=9.0, exit_code_O3=0))
+
+    def test_keeps_the_least_time_of_the_rounds(self):
+        result = self.result(0.5)
+        calls = self.time(result, [0.4, 0.6, 0.3, 0.5, 0.35, 0.7])
+        self.assertEqual(len(calls), 6)
+        self.assertEqual(result['gcc']['run_cpu_O3'], 0.3)
+        self.assertEqual(result['cppgm']['run_cpu_O3'], 0.5)
+
+    def test_a_long_program_runs_once(self):
+        result = self.result(2.0)
+        self.assertEqual(len(self.time(result, [1.9, 2.1])), 2)
+        self.assertEqual(result['cppgm']['run_cpu_O3'], 2.1)
+
+    def test_a_failed_program_is_not_timed(self):
+        result = dict(self.result(0.5), status='output-mismatch')
+        self.assertEqual(self.time(result, []), [])
+
+
 class ReportTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

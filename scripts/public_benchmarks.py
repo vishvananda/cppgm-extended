@@ -45,6 +45,10 @@ TOLERANCE = {
 DRIFT = 0.005
 # CPU times below this are ignored.
 MINIMUM_CPU = 0.01
+# The timing pass runs a program this many times when its g++ binary runs for
+# less than LONG_RUN seconds at the last level, and once otherwise.
+TIMING_ROUNDS = 5
+LONG_RUN = 1.0
 METRICS = (
     ('frontend_cpu', 'Frontend CPU, `-fsyntax-only`'),
     ('frontend_instructions', 'Frontend instructions'),
@@ -431,6 +435,30 @@ def run_program(context, program):
     return result
 
 
+def time_runs(context, program, result, rounds):
+    """Time the last level's runs again one program at a time. Each round runs
+    every compiler's binary once. Keep the least CPU time of each."""
+    if result['status'] != 'ok':
+        return
+    level = context.manifest['levels'][-1]
+    cpu, code = level_key('run_cpu', level), level_key('exit_code', level)
+    labels = [label for label in context.tools if cpu in result.get(label, {})]
+    if result['gcc'][cpu] >= LONG_RUN:
+        rounds = 1
+    best = {}
+    for _ in range(rounds):
+        for label in labels:
+            side = Side(context, program, label)
+            work = side.work / level
+            with open(os.devnull, 'wb') as discard:
+                timed = measure([str(work / 'a.out'), *program.get('args', [])], side.cwd,
+                                RUN_TIMEOUT, work / 'time.log', side.stdin(), discard)
+            if not timed['timed_out'] and timed['code'] == result[label][code]:
+                best[label] = min(best.get(label, timed['cpu']), timed['cpu'])
+    for label, value in best.items():
+        result[label][cpu] = round(value, 3)
+
+
 def tool_version(command):
     try:
         output = subprocess.run(command, capture_output=True, text=True).stdout
@@ -469,6 +497,9 @@ def run(arguments):
             results.append(result)
             print(f'{result["name"]}: {result["status"]} {result.get("error", "")}',
                   flush=True)
+    if arguments.timing_rounds:
+        for program, result in zip(programs, results):
+            time_runs(context, program, result, arguments.timing_rounds)
     document = dict(
         environment=dict(cpu=cpu_model(),
                          gcc=tool_version([arguments.gxx, '--version']),
@@ -731,6 +762,8 @@ def main():
     command.add_argument('--no-count', action='store_true',
                          help='skip cachegrind, measuring CPU time alone')
     command.add_argument('-j', '--jobs', type=int, default=os.cpu_count())
+    command.add_argument('--timing-rounds', type=int, default=TIMING_ROUNDS,
+                         help='runs of a short program in the serial timing pass (0: no pass)')
     command.set_defaults(handler=run)
 
     command = commands.add_parser('report')
