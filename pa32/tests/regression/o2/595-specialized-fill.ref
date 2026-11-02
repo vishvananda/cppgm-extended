@@ -1,0 +1,21 @@
+declare function @__cppgm_builtin_memset(%arg0 : ptr, %arg1 : i32, %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memset]
+
+global @buffer : obj<4096x4> = {
+  zero 4096
+}
+
+function @scale(%first : ptr, %last : ptr) -> void [binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = copy i64 %last
+    %t2 = copy i64 %first
+    %t3 = binary sub i64 %t1, %t2
+    %t4 = call ptr @__cppgm_builtin_memset(%first, 0, %t3)
+    return void
+}
+function @main(%n : i64) -> i32 [role=entry] {
+  block ^entry:
+    %first = addr @buffer
+    %last = index i8 %first, %n
+    call void @scale(%first, %last)
+    return i32 0
+}

@@ -1388,9 +1388,9 @@ bool InlineWaveRunner::leaf_return_path(const FunctionBody& body, const Cfg& cfg
 			const Instruction& inst = body.instructions[i];
 			if (inst.op != Opcode::Call)
 				continue;
-			if (!inst.ops[0].is(ValueKind::Symbol) || graph_.index_of[inst.ops[0].index] == kNoId)
+			if (!inst.ops[0].is(ValueKind::Symbol) || graph_.function_of(inst.ops[0].index) == kNoId)
 				return false;
-			const uint32_t g = graph_.index_of[inst.ops[0].index];
+			const uint32_t g = graph_.function_of(inst.ops[0].index);
 			const bool forced = (program_.symbols[inst.ops[0].index].metadata.flags & SF_FORCE_INLINE) != 0;
 			if (!forced && (shapes_[g].size > kTrivialLeaf || shapes_[g].call))
 				return false;
@@ -1548,7 +1548,7 @@ bool InlineWaveRunner::process(SymbolId caller)
 				continue;
 			if (source_required_)
 				materialize_call_arguments(program_, body, b, before_call, i);
-			const uint32_t g = graph_.index_of[callee];
+			const uint32_t g = graph_.function_of(callee);
 			uint32_t charge = 0;
 			bool once = false;
 			if (g == kNoId || !compatible(body.instructions[i], callee))

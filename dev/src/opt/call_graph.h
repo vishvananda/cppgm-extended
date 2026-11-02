@@ -25,6 +25,13 @@ struct CallGraph
 	std::vector<uint8_t> recursive;              // on a call cycle (or calls itself)
 	std::vector<uint32_t> component;             // SCC id
 	std::vector<uint32_t> bottom_up;             // callees before callers; ties in program order
+
+	// The function index of `symbol`, or kNoId. A pass that runs after the
+	// graph is built may declare a symbol the graph has not seen.
+	uint32_t function_of(lowir::SymbolId symbol) const
+	{
+		return symbol < index_of.size() ? index_of[symbol] : lowir::kNoId;
+	}
 };
 
 void build_call_graph(const lowir::Program& program, CallGraph& graph, bool forced_calls_only = false);

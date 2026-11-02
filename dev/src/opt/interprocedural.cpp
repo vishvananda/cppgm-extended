@@ -75,7 +75,7 @@ void Specializer::record(uint32_t g, bool agreeing)
 			const Instruction& inst = body.instructions[i];
 			if (inst.op != Opcode::Call || !inst.ops[0].is(ValueKind::Symbol))
 				continue;
-			const uint32_t f = graph.index_of[inst.ops[0].index];
+			const uint32_t f = graph.function_of(inst.ops[0].index);
 			if (f == kNoId || !ok[f])
 				continue;
 			sites[f].push_back(Site{ g, generation[g], i });
