@@ -43,28 +43,25 @@ function @keep_five_trips() -> i64 [no_inline=yes] {
 }
 function @keep_branching_body(%choose : i64) -> i64 [no_inline=yes] {
   block ^entry:
-    jump ^body
+    branch %choose, ^body, ^loop_preheader_2
 
   block ^body:
-    %t1 = phi i64 [^latch: %next, ^entry: 0]
-    branch %choose, ^left, ^right
-
-  block ^left:
+    %t1 = phi i64 [^body: %next, ^entry: 0]
     call void @touch(1)
-    jump ^latch
-
-  block ^right:
-    call void @touch(2)
-    jump ^latch
-
-  block ^latch:
     %next = binary add i64 %t1, 1
     %t3 = cmp lt i64 %next, 2
     branch %t3, ^body, ^exit
 
+  block ^loop_preheader_2:
+    %t4 = phi i64 [^loop_preheader_2: %t5, ^entry: 0]
+    call void @touch(2)
+    %t5 = binary add i64 %t4, 1
+    %t6 = cmp lt i64 %t5, 2
+    branch %t6, ^loop_preheader_2, ^exit
+
   block ^exit:
-    %t4 = phi i64 [^latch: %next]
-    return i64 %t4
+    %t7 = phi i64 [^body: %next, ^loop_preheader_2: %t5]
+    return i64 %t7
 }
 function @keep_clone_budget() -> i64 [no_inline=yes] {
   block ^entry:

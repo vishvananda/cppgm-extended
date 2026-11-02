@@ -1,0 +1,293 @@
+declare function @touch(%v : i64) -> void [unwind=no, linkage=c, binding=strong, object=touch]
+declare function @thrower(%v : i64) -> void [linkage=c, binding=strong, object=thrower]
+
+function @on_parameter(%flag : i64, %p : ptr, %n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %more = cmp gt i64 %n, 0
+    branch %more, ^loop_preheader_1, ^exit
+
+  block ^loop_preheader_1:
+    branch %flag, ^loop_preheader_2, ^loop_preheader_8
+
+  block ^loop_preheader_2:
+    %t2 = cmp ugt i64 %n, 2
+    %t3 = binary and i64 %more, %t2
+    branch %t3, ^loop_preheader_3, ^loop_preheader_6
+
+  block ^loop_preheader_3:
+    %t4 = binary add i64 %n, -2
+    %t5 = vector pzero
+    jump ^wide_loop_4
+
+  block ^wide_loop_4:
+    %t6 = phi v128 [^loop_preheader_3: %t5, ^wide_loop_4: %t11]
+    %t7 = phi i64 [^loop_preheader_3: 0, ^wide_loop_4: %t12]
+    %t8 = index i64 %p, %t7
+    %t9 = load v128 %t8
+    %t10 = vector paddq %t9, %t9
+    store v128 %t10, %t8
+    %t11 = vector paddq %t10, %t6
+    %t12 = binary add nowrap i64 %t7, 2
+    %t13 = cmp lt i64 %t12, %t4
+    branch %t13, ^wide_loop_4, ^loop_exit_5
+
+  block ^loop_exit_5:
+    %t14 = vector pshufd %t11, 78
+    %t15 = vector paddq %t11, %t14
+    %t16 = vector toi64 %t15
+    jump ^loop_preheader_6
+
+  block ^loop_preheader_6:
+    %t17 = phi i64 [^loop_preheader_2: 0, ^loop_exit_5: %t16]
+    %t18 = phi i64 [^loop_preheader_2: 0, ^loop_exit_5: %t12]
+    jump ^body
+
+  block ^body:
+    %t19 = phi i64 [^body: %next_sum, ^loop_preheader_6: %t17]
+    %t20 = phi i64 [^body: %next, ^loop_preheader_6: %t18]
+    %at = index i64 %p, %t20
+    %v = load i64 %at
+    %twice = binary add i64 %v, %v
+    store i64 %twice, %at
+    %next_sum = binary add i64 %twice, %t19
+    %next = binary add i64 %t20, 1
+    %t26 = cmp lt i64 %next, %n
+    branch %t26, ^body, ^exit
+
+  block ^loop_preheader_8:
+    %t27 = cmp ugt i64 %n, 2
+    %t28 = binary and i64 %more, %t27
+    branch %t28, ^loop_preheader_9, ^loop_preheader_12
+
+  block ^loop_preheader_9:
+    %t29 = binary add i64 %n, -2
+    %t30 = vector pzero
+    jump ^wide_loop_10
+
+  block ^wide_loop_10:
+    %t31 = phi v128 [^loop_preheader_9: %t30, ^wide_loop_10: %t36]
+    %t32 = phi i64 [^loop_preheader_9: 0, ^wide_loop_10: %t37]
+    %t33 = index i64 %p, %t32
+    %t34 = load v128 %t33
+    %t35 = vector psubq %t30, %t34
+    store v128 %t35, %t33
+    %t36 = vector paddq %t31, %t35
+    %t37 = binary add nowrap i64 %t32, 2
+    %t38 = cmp lt i64 %t37, %t29
+    branch %t38, ^wide_loop_10, ^loop_exit_11
+
+  block ^loop_exit_11:
+    %t39 = vector pshufd %t36, 78
+    %t40 = vector paddq %t36, %t39
+    %t41 = vector toi64 %t40
+    jump ^loop_preheader_12
+
+  block ^loop_preheader_12:
+    %t42 = phi i64 [^loop_preheader_8: 0, ^loop_exit_11: %t41]
+    %t43 = phi i64 [^loop_preheader_8: 0, ^loop_exit_11: %t37]
+    jump ^loop_preheader_13
+
+  block ^loop_preheader_13:
+    %t44 = phi i64 [^loop_preheader_13: %t49, ^loop_preheader_12: %t42]
+    %t45 = phi i64 [^loop_preheader_13: %t50, ^loop_preheader_12: %t43]
+    %t46 = index i64 %p, %t45
+    %t47 = load i64 %t46
+    %t48 = unary neg i64 %t47
+    store i64 %t48, %t46
+    %t49 = binary add i64 %t44, %t48
+    %t50 = binary add i64 %t45, 1
+    %t51 = cmp lt i64 %t50, %n
+    branch %t51, ^loop_preheader_13, ^exit
+
+  block ^exit:
+    %t52 = phi i64 [^entry: 0, ^body: %next_sum, ^loop_preheader_13: %t49]
+    return i64 %t52
+}
+function @on_outer_compare(%p : ptr, %n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    %more = cmp gt i64 %n, 0
+    branch %more, ^loop_preheader_1, ^exit
+
+  block ^loop_preheader_1:
+    %t2 = phi i64 [^outer_latch: %i_next, ^entry: 0]
+    %at_i = index i64 %p, %t2
+    %t4 = cmp eq i64 %t2, 0
+    branch %t4, ^loop_preheader_2, ^loop_preheader_7
+
+  block ^loop_preheader_2:
+    %t5 = vector pzero
+    %t6 = vector fromi64 1
+    %t7 = vector punpcklqdq %t5, %t6
+    %t8 = vector paddq %t5, %t7
+    %t9 = vector fromi64 2
+    %t10 = vector pshufd %t9, 68
+    jump ^wide_loop_3
+
+  block ^wide_loop_3:
+    %t11 = phi v128 [^loop_preheader_2: %t8, ^wide_loop_3: %t15]
+    %t12 = phi i64 [^loop_preheader_2: 0, ^wide_loop_3: %t14]
+    %t13 = index i64 %p, %t12
+    store v128 %t11, %t13
+    %t14 = binary add nowrap i64 %t12, 2
+    %t15 = vector paddq %t11, %t10
+    %t16 = cmp le i64 %t14, 6
+    branch %t16, ^wide_loop_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t17 = cmp lt i64 %t14, 8
+    branch %t17, ^loop_preheader_5, ^outer_latch
+
+  block ^loop_preheader_5:
+    %t18 = phi i64 [^loop_exit_4: %t14]
+    jump ^inner
+
+  block ^inner:
+    %j = phi i64 [^inner: %j_next, ^loop_preheader_5: %t18]
+    %at_seed = index i64 %p, %j
+    store i64 %j, %at_seed
+    %j_next = binary add i64 %j, 1
+    %inner_more = cmp lt i64 %j_next, 8
+    branch %inner_more, ^inner, ^outer_latch
+
+  block ^loop_preheader_7:
+    %t23 = index i8 %p, 64
+    %t24 = index i8 %at_i, 64
+    %t25 = cmp ule ptr %t23, %at_i
+    %t26 = cmp ule ptr %t24, %p
+    %t27 = binary or i64 %t25, %t26
+    branch %t27, ^wide_loop_8, ^loop_preheader_10
+
+  block ^wide_loop_8:
+    %t28 = phi i64 [^wide_loop_8: %t32, ^loop_preheader_7: 0]
+    %t29 = index i64 %p, %t28
+    %t30 = load v128 %t29
+    %t31 = index i64 %at_i, %t28
+    store v128 %t30, %t31
+    %t32 = binary add nowrap i64 %t28, 2
+    %t33 = cmp le i64 %t32, 6
+    branch %t33, ^wide_loop_8, ^loop_exit_9
+
+  block ^loop_exit_9:
+    %t34 = cmp lt i64 %t32, 8
+    branch %t34, ^loop_preheader_10, ^outer_latch
+
+  block ^loop_preheader_10:
+    %t35 = phi i64 [^loop_preheader_7: 0, ^loop_exit_9: %t32]
+    jump ^loop_preheader_11
+
+  block ^loop_preheader_11:
+    %t36 = phi i64 [^loop_preheader_11: %t40, ^loop_preheader_10: %t35]
+    %t37 = index i64 %p, %t36
+    %t38 = load i64 %t37
+    %t39 = index i64 %at_i, %t36
+    store i64 %t38, %t39
+    %t40 = binary add i64 %t36, 1
+    %t41 = cmp lt i64 %t40, 8
+    branch %t41, ^loop_preheader_11, ^outer_latch
+
+  block ^outer_latch:
+    %i_next = binary add i64 %t2, 1
+    %t43 = cmp lt i64 %i_next, %n
+    branch %t43, ^loop_preheader_1, ^exit
+
+  block ^exit:
+    return void
+}
+function @read_past_exit(%flag : i64, %p : ptr, %n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    branch %flag, ^body, ^loop_preheader_2
+
+  block ^body:
+    %i = phi i64 [^body: %next, ^entry: 0]
+    %at = index i64 %p, %i
+    %v = load i64 %at
+    call void @touch(%v)
+    %next = binary add i64 %i, 1
+    %more = cmp lt i64 %next, %n
+    branch %more, ^body, ^after
+
+  block ^loop_preheader_2:
+    %t6 = phi i64 [^loop_preheader_2: %t9, ^entry: 0]
+    %t7 = index i64 %p, %t6
+    %t8 = load i64 %t7
+    call void @touch(1)
+    %t9 = binary add i64 %t6, 1
+    %t10 = cmp lt i64 %t9, %n
+    branch %t10, ^loop_preheader_2, ^after
+
+  block ^after:
+    %t11 = phi i64 [^body: %next, ^loop_preheader_2: %t9]
+    %t12 = phi i64 [^body: %v, ^loop_preheader_2: %t8]
+    call void @touch(2)
+    %r = binary add i64 %t12, %t11
+    return i64 %r
+}
+function @keep_exit_test(%flag : i64, %p : ptr, %n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %more = cmp gt i64 %n, 0
+    branch %more, ^body, ^exit
+
+  block ^body:
+    %t2 = phi i64 [^latch: %next, ^entry: 0]
+    branch %flag, ^latch, ^exit
+
+  block ^latch:
+    %at = index i64 %p, %t2
+    store i64 %t2, %at
+    %next = binary add i64 %t2, 1
+    %t5 = cmp lt i64 %next, %n
+    branch %t5, ^body, ^exit
+
+  block ^exit:
+    %t6 = phi i64 [^entry: 0, ^body: %t2, ^latch: %next]
+    return i64 %t6
+}
+function @keep_variant_test(%p : ptr, %n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    %more = cmp gt i64 %n, 0
+    branch %more, ^body, ^exit
+
+  block ^body:
+    %t2 = phi i64 [^latch: %next, ^entry: 0]
+    %at = index i64 %p, %t2
+    %v = load i64 %at
+    %odd = binary and i64 %v, 1
+    branch %odd, ^left, ^latch
+
+  block ^left:
+    store i64 0, %at
+    jump ^latch
+
+  block ^latch:
+    %next = binary add i64 %t2, 1
+    %t7 = cmp lt i64 %next, %n
+    branch %t7, ^body, ^exit
+
+  block ^exit:
+    return void
+}
+function @keep_unwinding_call(%flag : i64, %n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    %more = cmp gt i64 %n, 0
+    branch %more, ^body, ^exit
+
+  block ^body:
+    %t2 = phi i64 [^latch: %next, ^entry: 0]
+    branch %flag, ^left, ^latch
+
+  block ^left:
+    call void @thrower(%t2)
+    jump ^latch
+
+  block ^latch:
+    %next = binary add i64 %t2, 1
+    %t4 = cmp lt i64 %next, %n
+    branch %t4, ^body, ^exit
+
+  block ^exit:
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

@@ -209,6 +209,9 @@ bool vectorize_loops(FunctionContext& context);
 // O3: a nest that folds sums over a stride, swapped so the new inner loop
 // walks consecutive elements.
 bool interchange_loops(FunctionContext& context);
+// O3: a loop testing what it does not compute, copied with the test before it
+// (opt/loop_unswitch.cpp).
+bool unswitch_loops(FunctionContext& context);
 
 // A product of a counter and a literal no addressing mode or `lea` gives
 // becomes a counter of its own.

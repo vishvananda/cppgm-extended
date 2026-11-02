@@ -1,0 +1,135 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct Rows
+{
+	int n;
+	unsigned short* t;
+	Rows(int count, unsigned short* store);
+};
+
+static int squash(int d)
+{
+	if (d > 2047)
+		return 4095;
+	if (d < -2047)
+		return 0;
+	return (d + 2048) >> 3;
+}
+
+__attribute__((noinline)) Rows::Rows(int count, unsigned short* store) : n(count), t(store)
+{
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < 33; ++j)
+			t[i * 33 + j] = i == 0 ? squash((j - 16) * 128) * 16 : t[j];
+}
+
+__attribute__((noinline)) long sum_or_clear(int* p, int n, int clear)
+{
+	long sum = 0;
+	for (int i = 0; i < n; ++i)
+	{
+		if (clear)
+			p[i] = 0;
+		else
+			sum += p[i] * 3;
+		sum ^= i;
+	}
+	return sum;
+}
+
+__attribute__((noinline)) int last_seen(int* p, int n, bool twice)
+{
+	int last = -1;
+	int i = 0;
+	for (; i < n; ++i)
+	{
+		int v = p[i];
+		if (twice)
+			p[i] = v + v;
+		else
+			p[i] = v - 1;
+		last = v;
+		if (v == 77)
+			break;
+	}
+	return last * 1000 + i;
+}
+
+__attribute__((noinline)) double two_tests(double* a, int n, bool neg, int scale)
+{
+	double total = 0;
+	for (int i = 0; i < n; ++i)
+	{
+		double x = a[i];
+		if (neg)
+			a[i] = -x;
+		if (scale > 2)
+			a[i] *= scale;
+		else
+			a[i] += scale;
+		total += a[i];
+	}
+	return total;
+}
+
+__attribute__((noinline)) int nested(int* m, int n, int k)
+{
+	int count = 0;
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < n; ++j)
+		{
+			if (i == k)
+				m[i * n + j] = j;
+			else
+				m[i * n + j] += m[k * n + j];
+			if (m[i * n + j] & 1)
+				++count;
+		}
+	return count;
+}
+
+static volatile int zero;
+
+int main()
+{
+	unsigned short store[33 * 4];
+	Rows rows(4, store);
+	unsigned long hash = 0;
+	for (int i = 0; i < 33 * 4; ++i)
+		hash = hash * 31 + store[i];
+	printf("%lu\n", hash);
+
+	int p[64];
+	for (int i = 0; i < 64; ++i)
+		p[i] = i * 7 + zero;
+	printf("%ld\n", sum_or_clear(p, 64, zero));
+	printf("%ld\n", sum_or_clear(p, 32, 1 + zero));
+	printf("%ld\n", sum_or_clear(p, 64, zero));
+	printf("%ld\n", sum_or_clear(p, zero, 1));
+
+	for (int i = 0; i < 64; ++i)
+		p[i] = i * 7 + zero;
+	printf("%d\n", last_seen(p, 64, true));
+	printf("%d\n", last_seen(p, 64, false));
+	printf("%d\n", last_seen(p, zero, false));
+
+	double a[16];
+	for (int i = 0; i < 16; ++i)
+		a[i] = i + 0.5;
+	printf("%.3f\n", two_tests(a, 16, true, 3));
+	printf("%.3f\n", two_tests(a, 16, false, 1));
+	printf("%.3f\n", two_tests(a, 16, true, 1));
+	printf("%.3f\n", two_tests(a, zero, true, 1));
+
+	int m[36];
+	for (int i = 0; i < 36; ++i)
+		m[i] = i;
+	printf("%d\n", nested(m, 6, 2));
+	printf("%d\n", nested(m, 6, 0));
+	for (int i = 0; i < 36; ++i)
+		hash = hash * 31 + m[i];
+	printf("%lu\n", hash);
+	return 0;
+}

@@ -463,6 +463,16 @@ read of its phi holds both values at once, and the back edge must copy one to
 the other. The step moves after that read, with the compare only the branch
 reads when that reads the step. Nothing else may read the step before there.
 
+Loop unswitching: at `-O3`, after rotation, an innermost loop of at most 64
+instructions with a branch that has both sides in the loop and tests a value
+the loop does not compute, or a compare of two such values, is copied. The
+preheader makes the test, and each copy keeps one path. A branch with a side
+that leaves the loop is not a candidate, since it runs at most once as it
+stands. A loop with a call that may unwind stays. A phi on an exit takes the
+copy's value on the copy's edge; every other read past the loop goes through a
+slot, and the promotion that follows removes it. After the copy, a test that
+blocked hoisting or lanes is gone from both paths. Each loop is copied once.
+
 Loop interchange: after store motion at `-O3`, a nest of two rotated loops may
 swap when the inner loop folds one sum and the outer loop stores it, as in a
 matrix product written `for j { s = 0; for k { s += a[k] * b[k][j]; } r[j] = s; }`.

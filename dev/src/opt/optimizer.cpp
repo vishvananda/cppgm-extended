@@ -362,6 +362,21 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		RUN_PASS(hoist_loop_invariants);
 		changed = true;
 	}
+	// O3: a loop per value of a test it need not repeat, then what each copy's
+	// straight code leaves.
+	if (options.level >= 3 && RUN_PASS(unswitch_loops))
+	{
+		RUN_PASS(promote_slots);
+		RUN_PASS(cleanup_cfg);
+		RUN_PASS(simplify_values);
+		RUN_PASS(forward_memory);
+		RUN_PASS(remove_dead_code);
+		RUN_PASS(cleanup_cfg);
+		RUN_PASS(hoist_loop_invariants);
+		RUN_PASS(hoist_loop_loads);
+		RUN_PASS(hoist_loop_invariants);
+		changed = true;
+	}
 	// O3: what each pass of a loop stores stays in a register; the exit's
 	// store then reaches the loop around it.
 	if (options.level >= 3 && RUN_PASS(promote_loop_memory))
@@ -592,7 +607,7 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " loads_reused=" << s.loads_reused << " stores_removed=" << s.stores_removed
 		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled
 		<< " invariants_hoisted=" << s.invariants_hoisted << " stores_sunk=" << s.stores_sunk
-		<< " loops_vectorized=" << s.loops_vectorized << " loops_interchanged=" << s.loops_interchanged
+		<< " loops_vectorized=" << s.loops_vectorized << " loops_interchanged=" << s.loops_interchanged << " loops_unswitched=" << s.loops_unswitched
 		<< " counters_shifted=" << s.counters_shifted << " multiplies_reduced=" << s.multiplies_reduced
 		<< " tail_calls_removed=" << s.tail_calls_removed << " math_calls_shared=" << s.math_calls_shared
 		<< " specialized=" << s.specialized << " optimize_ms=" << s.optimize_ms;
