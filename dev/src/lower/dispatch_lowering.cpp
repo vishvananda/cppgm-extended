@@ -149,7 +149,64 @@ lowir::Value FunctionLowering::member_callee(
 	if (!function->pure && !lowering_.host_objects())
 		lowering_.demand(function);
 	signature = lowering_.virtual_call_signature(function);
-	return virtual_callee(object, function->vtable_slot);
+	const lowir::Value callee = virtual_callee(object, function->vtable_slot);
+	if (lowering_.speculate_virtual() && !function->has_overrider && !function->pure && function->defined &&
+		function->body != nullptr && !function->destructor && !function->always_inline && !function->unanalyzed_body &&
+		!function->excluded_instantiation && !function->type->canonical->variadic)
+	{
+		lowering_.demand(function);
+		speculated_callee_ = callee;
+		speculated_target_ = lowir::Value::symbol(lowering_.function_symbol(function));
+	}
+	return callee;
+}
+
+lowir::TempId FunctionLowering::speculative_call(
+	lowir::Type result, lowir::Value callee, lowir::Value target, size_t base, lowir::SignatureId signature)
+{
+	const lowir::Type pointer = lowir::Type::scalar(lowir::TypeKind::Ptr);
+	const bool value = result.kind() != lowir::TypeKind::Void;
+	Place merged = Place();
+	if (value)
+		merged.storage = lowir::Value::slot(generated_slot(lowir::SlotKind::Call, result));
+	const lowir::BlockId direct = new_block(lowir::BlockKind::Plain);
+	const lowir::BlockId other = new_block(lowir::BlockKind::Plain);
+	const lowir::BlockId done = new_block(lowir::BlockKind::Plain);
+	RValue have, want;
+	have.value = callee;
+	have.type = want.type = pointer;
+	want.value = target;
+	// (The call's region stays open across the branch: it guards both calls.)
+	const auto finish = [this](const lowir::Instruction& inst) {
+		emit(inst);
+		terminated_ = true;
+	};
+	lowir::Instruction test = lowir::make_instruction(
+		lowir::Opcode::Branch, lowir::Type::scalar(lowir::TypeKind::Void));
+	test.ops[0] = compare(lowir::ComparePredicate::Eq, pointer, have, want).value;
+	test.ops[1] = lowir::Value::block(direct);
+	test.ops[2] = lowir::Value::block(other);
+	finish(test);
+	const uint32_t count = static_cast<uint32_t>(arguments_.size() - base);
+	for (unsigned arm = 0; arm < 2; ++arm)
+	{
+		place(arm == 0 ? direct : other);
+		const lowir::TempId temp = builder_.call(result, arm == 0 ? target : callee, arguments_.data() + base, count,
+			arm == 0 ? lowir::kNoId : signature, 0, 0);
+		if (value)
+		{
+			RValue returned;
+			returned.value = lowir::Value::temp(temp);
+			returned.type = result;
+			store(result, returned, merged);
+		}
+		lowir::Instruction leave = lowir::make_instruction(
+			lowir::Opcode::Jump, lowir::Type::scalar(lowir::TypeKind::Void));
+		leave.ops[0] = lowir::Value::block(done);
+		finish(leave);
+	}
+	place(done);
+	return value ? load(result, merged).value.index : lowir::kNoId;
 }
 
 bool FunctionLowering::deleting_inlines_body(uint32_t location)

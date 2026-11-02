@@ -1,0 +1,117 @@
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
+
+global @__typeinfo_name__struct_Lone [storage=readonly, binding=weak, object=_ZTS4Lone] = {
+  i8 52
+  i8 76
+  i8 111
+  i8 110
+  i8 101
+  i8 0
+}
+global @__rtti_struct_Lone [storage=readonly, binding=weak, object=_ZTI4Lone] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Lone
+}
+global @Lone__vtable [storage=readonly, binding=weak, object=_ZTV4Lone] = {
+  i64 0
+  ptr addr @__rtti_struct_Lone
+  ptr addr @Lone__next
+}
+global @__typeinfo_name__struct_Derived [storage=readonly, binding=weak, object=_ZTS7Derived] = {
+  i8 55
+  i8 68
+  i8 101
+  i8 114
+  i8 105
+  i8 118
+  i8 101
+  i8 100
+  i8 0
+}
+global @__typeinfo_name__struct_Base [storage=readonly, binding=weak, object=_ZTS4Base] = {
+  i8 52
+  i8 66
+  i8 97
+  i8 115
+  i8 101
+  i8 0
+}
+global @__rtti_struct_Base [storage=readonly, binding=weak, object=_ZTI4Base] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Base
+}
+global @__rtti_struct_Derived [storage=readonly, binding=weak, object=_ZTI7Derived] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Derived
+  ptr addr @__rtti_struct_Base
+}
+global @Derived__vtable [storage=readonly, binding=weak, object=_ZTV7Derived] = {
+  i64 0
+  ptr addr @__rtti_struct_Derived
+  ptr addr @Derived__value
+}
+global @Base__vtable [storage=readonly, binding=weak, object=_ZTV4Base] = {
+  i64 0
+  ptr addr @__rtti_struct_Base
+  ptr addr @Base__value
+}
+
+function @lone(%p : ptr) -> i32 [binding=strong, object=_Z4loneP4Lone] {
+  block ^entry:
+    %t1 = load typed ptr %p
+    %t2 = load typed ptr %t1
+    %t3 = cmp eq ptr %t2, @Lone__next
+    branch %t3, ^inline_entry_1, ^2
+
+  block ^inline_entry_1:
+    %t4 = index i8 [projection=field] %p, 8
+    %t5 = load typed i32 %t4
+    %t6 = binary add nowrap i32 %t5, 1
+    store typed i32 %t6, %t4
+    jump ^3
+
+  block ^2:
+    %t7 = call i32 %t2(%p) as (%arg0 : ptr [object_bytes=16]) -> i32
+    jump ^3
+
+  block ^3:
+    %t8 = phi i32 [^2: %t7, ^inline_entry_1: %t6]
+    %t9 = binary add nowrap i32 %t8, 1
+    return i32 %t9
+}
+function @base(%p : ptr) -> i32 [binding=strong, object=_Z4baseP4Base] {
+  block ^entry:
+    %t1 = load typed ptr %p
+    %t2 = load typed ptr %t1
+    %t3 = call i32 %t2(%p) as (%arg0 : ptr [object_bytes=8]) -> i32
+    %t4 = binary add nowrap i32 %t3, 1
+    return i32 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 7
+}
+function @Lone__next(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN4Lone4nextEv, inline_hint=yes] {
+  block ^entry:
+    %t1 = index i8 [projection=field] %this, 8
+    %t2 = load typed i32 %t1
+    %t3 = binary add nowrap i32 %t2, 1
+    store typed i32 %t3, %t1
+    return i32 %t3
+}
+function @Base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN4Base5valueEv, inline_hint=yes] {
+  block ^entry:
+    return i32 1
+}
+function @Derived__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN7Derived5valueEv, inline_hint=yes] {
+  block ^entry:
+    return i32 2
+}
+function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
+  block ^entry:
+    %t1 = addr @Base__vtable
+    %t2 = index i8 %t1, 16
+    store typed ptr %t2, %this
+    return void
+}

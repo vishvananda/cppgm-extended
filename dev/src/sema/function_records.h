@@ -406,6 +406,8 @@ struct FunctionEntity : Entity
 	// A C-linkage function whose first declaration, non-throwing, is in a
 	// system header (see Analyzer::check_redeclared_exceptions).
 	bool system_nothrow : 1;
+	// A function of the unit overrides it.
+	mutable bool has_overrider : 1;
 	// A noexcept-specification's constant expression waits for its first
 	// need (Analyzer::function_nothrow, which holds it; `nothrow` is false
 	// until then).

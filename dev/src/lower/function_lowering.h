@@ -867,6 +867,12 @@ private:
 	// dispatches (`signature` then its boundary), else the function.
 	lowir::Value member_callee(
 		const sema::FunctionEntity* function, lowir::Value object, bool dispatch, lowir::SignatureId& signature);
+	// The call of `callee`, a table's entry, tested for `target`, the function
+	// the call names: called directly when it is, so that it can be inlined.
+	lowir::TempId speculative_call(
+		lowir::Type result, lowir::Value callee, lowir::Value target, size_t base, lowir::SignatureId signature);
+	lowir::Value speculated_callee_ = lowir::Value::none(); // member_callee's, for emit_call
+	lowir::Value speculated_target_ = lowir::Value::none();
 	// A deleting entry: whether it is the complete destructor's code (else
 	// a call of the complete entry), the call, and the deallocation.
 	bool deleting_inlines_body(uint32_t location);

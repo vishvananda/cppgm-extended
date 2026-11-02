@@ -436,6 +436,10 @@ public:
 		return strict_aliasing_ && (may_alias_kinds_ >> static_cast<unsigned>(kind) & 1) == 0;
 	}
 	bool host_objects() const { return host_objects_; }
+	// Optimizing levels: a virtual call tests for the function it names
+	// and calls that one directly (FunctionLowering::speculative_call).
+	void set_speculate_virtual(bool on) { speculate_virtual_ = on; }
+	bool speculate_virtual() const { return speculate_virtual_; }
 	// Whether a function type has a class parameter its caller destroys
 	// (unit-scoped: function type -> 0 or 1, see
 	// FunctionLowering::caller_destroys).
@@ -1970,6 +1974,7 @@ private:
 	lowir::NameId debug_file_name_ = 0;
 	bool object_mode_ = false;
 	bool host_objects_ = false;
+	bool speculate_virtual_ = false;
 	bool strict_aliasing_ = true;
 	uint64_t may_alias_kinds_ = 0; // bit per TypeKind: a may_alias typedef of the unit names it
 	std::uintptr_t stack_base_;

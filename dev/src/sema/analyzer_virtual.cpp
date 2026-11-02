@@ -255,6 +255,7 @@ void Analyzer::overrides(
 	}
 	note_exception_override(function, found, location);
 	function->is_virtual = true;
+	found->has_overrider = true;
 	// The first found on the primary path is that table's final overrider.
 	if (primary && function->overridden == nullptr)
 	{

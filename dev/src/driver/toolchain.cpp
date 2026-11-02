@@ -505,6 +505,7 @@ bool compile_unit(
 	lowering.set_debug_locations(invocation.debug_info);
 	lowering.set_debug_types(invocation.debug_types);
 	lowering.set_host_objects(eh_model == native::EhModel::Host);
+	lowering.set_speculate_virtual(invocation.optimizer.level >= 2);
 	lowering.set_strict_aliasing(invocation.strict_aliasing);
 	double front_ms = 0;
 	UnitWork work;

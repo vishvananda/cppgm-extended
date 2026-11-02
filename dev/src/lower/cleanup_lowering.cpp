@@ -1819,8 +1819,13 @@ lowir::Value FunctionLowering::emit_call(
 	++lowering_.counters().instructions;
 	if (terminated_)
 		place(new_block(lowir::BlockKind::Unreachable));
-	const lowir::TempId temp = builder_.call(result, callee, arguments_.data() + base,
-		static_cast<uint32_t>(arguments_.size() - base), signature, 0, elision ? lowir::IF_COPY_ELISION : 0);
+	const bool speculated = callee == speculated_callee_ && !speculated_target_.is(lowir::ValueKind::None) &&
+		!elision && !result.is_object();
+	const lowir::TempId temp = speculated
+		? speculative_call(result, callee, speculated_target_, base, signature)
+		: builder_.call(result, callee, arguments_.data() + base, static_cast<uint32_t>(arguments_.size() - base),
+			  signature, 0, elision ? lowir::IF_COPY_ELISION : 0);
+	speculated_target_ = lowir::Value::none();
 	if (!variadic_classes_.empty() && variadic_classes_.back().first >= base)
 	{
 		// The classes of its class objects passed to `...` (object mode).

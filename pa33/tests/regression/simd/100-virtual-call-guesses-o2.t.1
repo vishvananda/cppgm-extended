@@ -1,0 +1,160 @@
+#include <stdio.h>
+
+struct Thrown
+{
+	int value;
+};
+
+struct Pair
+{
+	long first, second;
+};
+
+struct Shape
+{
+	virtual int sides() { return 3; }
+	virtual double area(double scale) { return scale * 2; }
+	virtual void bump(int& out) { out += 1; }
+	virtual Pair pair(int v)
+	{
+		Pair p = {v, v + 1};
+		return p;
+	}
+	virtual int fails(int v)
+	{
+		if (v > 2)
+			throw Thrown{v};
+		return v;
+	}
+	virtual ~Shape() {}
+};
+
+// One function here has no overrider: the call guesses it and is right.
+struct Lone
+{
+	int count;
+	Lone() : count(0) {}
+	virtual int next() { return ++count; }
+	virtual int fails(int v)
+	{
+		if (v > 2)
+			throw Thrown{v + 10};
+		return v * 2;
+	}
+};
+
+// Overrides only in a derived class of this unit's other half: a pointer
+// to Other holds the base, and a call through a pointer into Late picks
+// the most derived function.
+struct Other : Shape
+{
+	int sides() { return 4; }
+	void bump(int& out) { out += 10; }
+};
+
+struct Late : Other
+{
+	int sides() { return 5; }
+};
+
+// `Quiet` has no overrider in this file: the second file's derived class
+// overrides it, so the guess is wrong at run time.
+struct Quiet
+{
+	virtual int value() { return 1; }
+	virtual long total(long a, long b) { return a + b; }
+	virtual ~Quiet() {}
+};
+
+Quiet* make_quiet(int which);
+
+int __attribute__((noinline)) sum_sides(Shape** shapes, int n)
+{
+	int total = 0;
+	for (int i = 0; i < n; ++i)
+		total += shapes[i]->sides();
+	return total;
+}
+
+int __attribute__((noinline)) sum_lone(Lone* lone, int n)
+{
+	int total = 0;
+	for (int i = 0; i < n; ++i)
+		total += lone->next();
+	return total;
+}
+
+long __attribute__((noinline)) sum_quiet(Quiet* q, int n)
+{
+	long total = 0;
+	for (int i = 0; i < n; ++i)
+		total = q->total(total, q->value());
+	return total;
+}
+
+int __attribute__((noinline)) caught(Lone* lone, int v)
+{
+	struct Guard
+	{
+		int* seen;
+		~Guard() { ++*seen; }
+	};
+	static int unwound;
+	try
+	{
+		Guard guard = {&unwound};
+		return lone->fails(v);
+	}
+	catch (Thrown& t)
+	{
+		return t.value * 100 + unwound;
+	}
+}
+
+int main()
+{
+	Shape s;
+	Other o;
+	Late l;
+	Shape* shapes[] = {&s, &o, &l, &o, &s};
+	printf("%d\n", sum_sides(shapes, 5));
+
+	double area = 0;
+	for (int i = 0; i < 5; ++i)
+		area += shapes[i]->area(i + 0.5);
+	printf("%g\n", area);
+
+	int bumped = 0;
+	for (int i = 0; i < 5; ++i)
+		shapes[i]->bump(bumped);
+	printf("%d\n", bumped);
+
+	Pair p = l.Shape::pair(7);
+	Pair q = shapes[2]->pair(9);
+	printf("%ld %ld %ld %ld\n", p.first, p.second, q.first, q.second);
+
+	Lone lone;
+	int summed = sum_lone(&lone, 6);
+	printf("%d %d\n", summed, lone.count);
+	int low = caught(&lone, 1);
+	int middle = caught(&lone, 3);
+	int high = caught(&lone, 4);
+	printf("%d %d %d\n", low, middle, high);
+
+	for (int which = 0; which < 3; ++which)
+	{
+		Quiet* made = make_quiet(which);
+		printf("%ld\n", sum_quiet(made, 4));
+		delete made;
+	}
+
+	try
+	{
+		shapes[1]->fails(9);
+	}
+	catch (Thrown& t)
+	{
+		printf("%d\n", t.value);
+	}
+	return 0;
+}

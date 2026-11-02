@@ -1,0 +1,25 @@
+struct Quiet
+{
+	virtual int value() { return 1; }
+	virtual long total(long a, long b) { return a + b; }
+	virtual ~Quiet() {}
+};
+
+struct Loud : Quiet
+{
+	int value() { return 7; }
+};
+
+struct Louder : Quiet
+{
+	long total(long a, long b) { return a * 2 + b; }
+};
+
+Quiet* make_quiet(int which)
+{
+	if (which == 0)
+		return new Quiet;
+	if (which == 1)
+		return new Loud;
+	return new Louder;
+}

@@ -360,6 +360,20 @@ is not discardable and every symbol named in global data; definitions
 reachable from them through any symbol operand stay, and the other
 discardable function definitions are removed.
 
+### Virtual Calls (`-O2`, `-O3`)
+
+The lowering, not the optimizer, guesses a virtual call's target: it knows
+which functions the unit overrides. A call of a defined, non-pure,
+non-variadic function that nothing in the unit overrides compares the
+table's entry with the function's address. Equal, it calls the function
+directly, and the inliner can see the body; otherwise it calls through the
+pointer. A wrong guess costs one compare, so the guess needs no proof: a
+class of another unit that overrides the function takes the indirect path.
+A function with an overrider keeps its plain indirect call, since such calls
+are often wrong. Destructors and calls returning a class object are left
+out. Both calls sit in one exception region, so that a throw from either
+runs the same cleanups.
+
 ### Argument Propagation (`-O2`, `-O3`)
 
 After the waves, an internal function that is called, has parameters, no
