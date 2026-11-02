@@ -131,9 +131,9 @@ function @main
     mov <gpr5>, rax
     mov rdi, -1
     call @unsigned_by_seven [args=(rdi)]
-    add <gpr2>, <gpr3>
-    add <gpr2>, <gpr4>
-    add <gpr2>, <gpr5>
+    add.i32 <gpr2>, <gpr3>
+    add.i32 <gpr2>, <gpr4>
+    add.i32 <gpr2>, <gpr5>
     add rax, <gpr2>
     sext.i32 rax
     imul rax, rax, 1374389535

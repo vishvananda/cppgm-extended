@@ -862,10 +862,11 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 	const Operand dst = Operand::make_reg(d);
 	const bool bitwise = op == BinaryOp::And || op == BinaryOp::Or || op == BinaryOp::Xor;
 	// O1+: u32 arithmetic in its 32-bit form, which zero-extends (no
-	// renormalization).
-	const TypeKind width = b.kind == OperandKind::Mem || (level_ >= 1 && kind == TypeKind::U32 && !bitwise)
-		? kind
-		: TypeKind::I64;
+	// renormalization), and i32 arithmetic only its low bits are read of,
+	// whose flags a test of the result then reads.
+	const bool word = level_ >= 1 && !bitwise &&
+		(kind == TypeKind::U32 || (kind == TypeKind::I32 && low_read(inst.result)));
+	const TypeKind width = b.kind == OperandKind::Mem || word ? kind : TypeKind::I64;
 	if (a.kind == OperandKind::Reg && a.reg == d)
 		emit2(mop, width, dst, b);
 	else if (commutative && b.kind == OperandKind::Reg && b.reg == d)
@@ -1044,7 +1045,7 @@ void FunctionSelector::emit_compare(const Instruction& inst)
 		b = Operand::make_reg(kCompareScratch);
 	}
 	const Reg d = result_reg(inst, dying_reg(inst.ops[0]), dying_reg(inst.ops[1]));
-	emit2(Op::Cmp, compare_width(inst), a, b);
+	emit2(Op::Cmp, compare_width(inst, a), a, b);
 	Inst& set = emit1(Op::Setcc, TypeKind::Void, Operand::make_reg(d));
 	set.sub = int_cond(pred);
 	// O1+: a result whose one reader stores its byte needs no extension.

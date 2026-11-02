@@ -39,5 +39,5 @@ function @main
     mov rsi, 2
     mov rdx, 1
     call @pick [args=(rdx,rsi,rdi)]
-    sub rax, 129
+    sub.i32 rax, 129
     ret rax

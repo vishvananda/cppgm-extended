@@ -1,0 +1,79 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @out
+  storage scalar i64
+  init i64 7
+
+function @low
+  abi
+    param %n -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rdi
+
+  block ^head
+    sub.i32 rax, 1
+    jne ^head~head
+    ret rax
+
+  block ^head~head
+    sub.i32 rax, 1
+    jne ^head~head
+    ret rax
+
+  block ^done
+    ret rax
+
+function @full
+  abi
+    param %n -> rdi : i32
+    param %p -> rsi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r8, rdi
+
+  block ^head
+    sub r8, 1
+    store.i64 [rsi], r8
+    jne ^head
+
+  block ^done
+    load.i64 rax, [rsi]
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
+
+  block ^entry
+    mov rdi, 3
+    call @low [args=(rdi)]
+    mov rbx, rax
+    mov rdi, 3
+    mov rsi, @out
+    call @full [args=(rsi,rdi)]
+    add.i32 rax, rbx
+    ret rax

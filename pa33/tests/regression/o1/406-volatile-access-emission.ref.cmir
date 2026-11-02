@@ -20,7 +20,7 @@ function @spin_flag
     store.i32 [rbp-<off0>], 1
     load.i32 rax, [rbp-<off0>]
     load.i32 r8, [rbp-<off0>]
-    add rax, r8
+    add.i32 rax, r8
     ret rax
 
 function @main

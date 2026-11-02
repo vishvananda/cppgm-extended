@@ -60,6 +60,9 @@ that paid there in the course solution:
   its source's register is sound for a reader of the low bits only, and keeping
   a `nowrap` add computed at 64 bits is sound for canonical operands only. Each
   is correct alone, and together they turn `(int)wide + y` into a wrong index.
+- An `i32` add or subtract only read in its low bits uses the 32-bit form; one
+  read in full stays at 64 bits, and a `nowrap` one is canonical there, so a test
+  of either against zero reads the flags it set.
 - Extend a narrow value only for a reader of its upper bits. A compare, a store,
   a branch, a 32-bit divide, a wrapping add, a negation, a shift's count, a copy
   to the other sign, a return and a host call's `i32` argument read the low bits alone: the

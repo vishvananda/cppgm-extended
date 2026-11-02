@@ -192,5 +192,5 @@ function @main
     add rax, <gpr1>
     load.i32 r8, [rbp-<off1>]
     add.i32 r8, [rbp-<off0>]
-    add rax, r8
+    add.i32 rax, r8
     ret rax

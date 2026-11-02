@@ -122,13 +122,13 @@ function @main
     mov rsi, 2
     mov rdx, 1
     call @not_every_edge [args=(rdx,rsi,rdi)]
-    imul <gpr0>, 10
-    add <gpr0>, <gpr1>
-    imul <gpr0>, 10
-    add <gpr0>, <gpr2>
-    add <gpr3>, <gpr4>
+    imul.i32 <gpr0>, 10
+    add.i32 <gpr0>, <gpr1>
+    imul.i32 <gpr0>, 10
+    add.i32 <gpr0>, <gpr2>
+    add.i32 <gpr3>, <gpr4>
     add.i32 <gpr3>, [rbp-<off0>]
-    add <gpr3>, rax
+    add.i32 <gpr3>, rax
     add <gpr0>, <gpr3>
     sext.i32 <gpr0>
     zext.i32 <gpr5>, <gpr0>

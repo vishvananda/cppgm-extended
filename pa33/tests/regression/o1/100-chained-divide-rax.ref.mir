@@ -93,6 +93,6 @@ function @main
     mov rbx, rax
     mov rdi, @cell
     call @through [args=(rdi)]
-    sub rbx, 2
-    sub rbx, rax
+    sub.i32 rbx, 2
+    sub.i32 rbx, rax
     ret rbx

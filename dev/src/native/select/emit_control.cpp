@@ -585,7 +585,12 @@ void FunctionSelector::emit_branch(const Instruction& inst)
 	}
 	// A Boolean's byte (find_byte_booleans).
 	const bool boolean = level_ >= 1 && cond.kind == ValueKind::Temp && known_boolean(cond.index);
-	emit2(Op::Cmp, boolean ? TypeKind::U8 : type.is_pointer() ? TypeKind::Ptr : type.kind(), c, Operand::make_imm(0));
+	const bool step = type.kind() == TypeKind::I32 && c.kind == OperandKind::Reg && canonical_step(cond);
+	const TypeKind tested = boolean ? TypeKind::U8
+		: type.is_pointer()         ? TypeKind::Ptr
+		: step                      ? TypeKind::I64
+									: type.kind();
+	emit2(Op::Cmp, tested, c, Operand::make_imm(0));
 	Inst& jcc = emit1(Op::Jcc, TypeKind::Void, Operand::make_label(on_true));
 	jcc.sub = CC_NE;
 	emit1(Op::Jmp, TypeKind::Void, Operand::make_label(on_false));
@@ -789,7 +794,7 @@ Cond FunctionSelector::compare_flags(const Instruction& compare)
 		load_into(kSelectScratch, a, kind);
 		a = Operand::make_reg(kSelectScratch);
 	}
-	emit2(Op::Cmp, logical_not ? kind : compare_width(compare), a, b);
+	emit2(Op::Cmp, logical_not ? kind : compare_width(compare, a), a, b);
 	return int_cond(pred);
 }
 

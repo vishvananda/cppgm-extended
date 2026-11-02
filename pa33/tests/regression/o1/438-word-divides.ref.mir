@@ -131,9 +131,9 @@ function @main
     mov r14, rax
     mov rdi, -1
     call @unsigned_by_seven [args=(rdi)]
-    add rbx, r12
-    add rbx, r13
-    add rbx, r14
+    add.i32 rbx, r12
+    add.i32 rbx, r13
+    add.i32 rbx, r14
     add rax, rbx
     sext.i32 rax
     imul rax, rax, 1374389535

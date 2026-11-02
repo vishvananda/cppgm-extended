@@ -1475,15 +1475,33 @@ void FunctionSelector::find_addresses()
 	}
 }
 
+// Whether v is an i32 add or subtract that never wraps and is read in full:
+// canonical at 64 bits, so a test of its register against zero at that width
+// reads its flags. (A value in memory has only its four bytes.)
+bool FunctionSelector::canonical_step(Value v) const
+{
+	if (level_ < 1 || v.kind != ValueKind::Temp || v.index < body_->parameter_count || low_read(v.index) ||
+		body_->temps[v.index].def == kNoId)
+		return false;
+	const Instruction& def = body_->instructions[body_->temps[v.index].def];
+	const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(def.sub);
+	return def.op == Opcode::Binary && (def.flags & lowir::IF_NO_WRAP) != 0 && def.type.kind() == TypeKind::I32 &&
+		(op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Sub);
+}
+
 // O1+: an eq/ne compare of a Boolean with 0 or 1 compares the byte (the
 // Boolean's setcc may leave bits above it, find_byte_booleans).
-TypeKind FunctionSelector::compare_width(const Instruction& compare) const
+TypeKind FunctionSelector::compare_width(const Instruction& compare, const Operand& left) const
 {
 	const TypeKind kind = compare.type.is_pointer() ? TypeKind::Ptr : compare.type.kind();
 	const lowir::ComparePredicate pred = static_cast<lowir::ComparePredicate>(compare.sub);
 	if (level_ < 1 || compare.op != Opcode::Compare || !compare.type.is_integer() || kind == TypeKind::I128 ||
 		register_bytes(kind) == 1 || (pred != lowir::ComparePredicate::Eq && pred != lowir::ComparePredicate::Ne))
 		return kind;
+	const Value against = resolve(compare.ops[1]);
+	if (kind == TypeKind::I32 && left.kind == OperandKind::Reg && against.kind == ValueKind::Integer &&
+		literal(against).high == 0 && literal(against).low == 0 && canonical_step(resolve(compare.ops[0])))
+		return TypeKind::I64;
 	for (unsigned k = 0; k < 2; ++k)
 	{
 		const Value v = resolve(compare.ops[k]);

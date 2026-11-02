@@ -152,5 +152,5 @@ function @main
     fmov.f64 xmm0, @output
     fptosi.f64.i32 rax, xmm0
     sext.i32 rax
-    sub rax, 6
+    sub.i32 rax, 6
     ret rax
