@@ -1,0 +1,35 @@
+function @butterfly(%p : ptr, %q : ptr, %a : f64, %b : f64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = vector fromf64 %a
+    %t2 = vector fromf64 %b
+    %t3 = vector unpcklpd %t1, %t2
+    %t4 = load v128 %p
+    %t5 = vector addpd %t3, %t4
+    store v128 %t5, %p
+    %t6 = vector subpd %t4, %t3
+    store v128 %t6, %q
+    return void
+}
+function @main() -> i32 [role=entry] {
+  slot $x : obj<32x8>
+
+  block ^entry:
+    %p = addr $x
+    store f64 1.5, %p
+    %p1 = index i8 %p, 8
+    store f64 2.5, %p1
+    %q = index i8 %p, 16
+    call void @butterfly(%p, %q, 0.5, 4.0)
+    %r0 = load f64 %p
+    %r1 = load f64 %p1
+    %r2 = load f64 %q
+    %q1 = index i8 %p, 24
+    %r3 = load f64 %q1
+    %s = binary add f64 %r0, %r1
+    %t = binary mul f64 %r2, 10
+    %u = binary add f64 %s, %t
+    %v = binary add f64 %r3, %u
+    %bad = cmp ne f64 %v, 17
+    %r = convert zext i32 i1 %bad
+    return i32 %r
+}

@@ -24,7 +24,10 @@ const unsigned kMaxLanes = 4;
 // anything else the lanes of values computed as before. A value something
 // else reads stays scalar too, so a group packs only if it removes more
 // instructions than it adds. All of it happens just before the group's last
-// store, where every value exists.
+// store, where every value exists. A group that does not pay alone may pay
+// with a later group of the block that reads the same lanes (the two halves
+// of a butterfly read one loaded pair): the later group reuses the vectors
+// the first made.
 class BlockLanes
 {
 public:
@@ -55,7 +58,9 @@ private:
 	};
 
 	bool block(BlockId b);
-	bool group(BlockId b, const std::vector<Stored>& stores, size_t first);
+	int plan(BlockId b, const std::vector<Stored>& stores, size_t first, InstId& last);
+	bool group(BlockId b, const std::vector<Stored>& stores, const std::vector<size_t>& runs, size_t run);
+	void pack(BlockId b, const std::vector<Stored>& stores, size_t first, InstId last, int root);
 	bool stores_move(const std::vector<Stored>& stores, size_t first, InstId last) const;
 	bool load_moves(InstId load, const std::vector<Stored>& stores, size_t first, InstId last) const;
 	int build(
@@ -66,7 +71,7 @@ private:
 	bool adjacent_loads(const Value* lanes) const;
 	bool pure(const Instruction& inst) const;
 	bool apart(const Instruction& store, Value address, const Located& at, uint64_t bytes, Type type, bool typed) const;
-	int net_gain();
+	int net_gain(const int* roots, size_t count);
 	Value lane_value(Value v);
 	Value make(int node);
 	Value emit(Instruction inst, Type type);
@@ -78,6 +83,7 @@ private:
 	std::vector<uint32_t> uses_;
 	std::vector<uint8_t> escaped_;
 	std::vector<Node> nodes_;
+	size_t shared_ = 0; // nodes_ below this belong to an earlier group a later one may reuse
 	unsigned lanes_ = 2;
 	Type lane_type_ = Type::scalar(TypeKind::F64);
 	BlockId block_ = kNoId;
@@ -263,14 +269,23 @@ int BlockLanes::match_score(const Value* a, const Value* b) const
 int BlockLanes::build(
 	BlockId b, const Value* lanes, const std::vector<Stored>& stores, size_t first, InstId last, unsigned depth)
 {
-	if (depth >= kMaxDepth || nodes_.size() >= kMaxNodes)
+	if (depth >= kMaxDepth || nodes_.size() - shared_ >= kMaxNodes)
 		return add_gather(lanes);
 	bool here = true;
 	for (unsigned lane = 0; lane < lanes_; ++lane)
 		here = here && same_block(b, lanes[lane]);
 	if (!here)
 		return add_gather(lanes);
-	// Each scalar has one place in the tree.
+	// Each scalar has one place in the tree. An earlier group's node of
+	// these very lanes is reused: its vector exists where this group packs.
+	for (size_t n = 0; n < shared_; ++n)
+	{
+		bool same = nodes_[n].kind >= NodeKind::Loaded;
+		for (unsigned lane = 0; lane < lanes_ && same; ++lane)
+			same = nodes_[n].lanes[lane] == lanes[lane];
+		if (same)
+			return static_cast<int>(n);
+	}
 	for (const Node& known : nodes_)
 		for (unsigned lane = 0; lane < lanes_ && known.kind >= NodeKind::Loaded; ++lane)
 			for (unsigned other = 0; other < lanes_; ++other)
@@ -356,36 +371,61 @@ int BlockLanes::build(
 	return index;
 }
 
-// What the tree in nodes_ saves, in instructions. A scalar another reader
-// needs stays, and a node none of whose scalars go is better gathered.
-int BlockLanes::net_gain()
+// What the trees in nodes_ from `roots` save, in instructions. A scalar
+// another reader needs stays, and a node none of whose scalars go is better
+// gathered. A node two trees share counts the readers of both; the nodes are
+// read parents first (a later tree's nodes read only earlier nodes, which
+// its own parents reach once theirs are read).
+int BlockLanes::net_gain(const int* roots, size_t count)
 {
-	std::vector<std::pair<TempId, uint32_t>> removed;
-	const auto take = [&](Value v) {
-		if (!v.is(ValueKind::Temp))
-			return false;
-		for (auto& seen : removed)
-			if (seen.first == v.index)
-				return ++seen.second == uses_[v.index];
-		removed.push_back(std::make_pair(v.index, uint32_t(1)));
-		return uses_[v.index] == 1;
-	};
-	int gain = static_cast<int>(lanes_) - 1;
-	std::vector<uint8_t> going_lanes(nodes_.size(), 0); // bit per lane: the reader of this lane goes
-	going_lanes[0] = static_cast<uint8_t>((1u << lanes_) - 1);
-	for (size_t n = 0; n < nodes_.size(); ++n)
+	std::vector<uint32_t> removed(nodes_.size() * kMaxLanes, 0); // per node and lane: readers that go
+	std::vector<uint32_t> parents(nodes_.size(), 0), seen(nodes_.size(), 0);
+	std::vector<uint8_t> needed(nodes_.size(), 0); // a root, or read by a lane operation
+	for (const Node& node : nodes_)
+		if (node.kind == NodeKind::Operation)
+		{
+			if (node.left >= 0)
+				++parents[node.left];
+			if (node.right >= 0)
+				++parents[node.right];
+		}
+	std::vector<int> ready;
+	int gain = 0;
+	for (size_t r = 0; r < count; ++r)
 	{
-		if (going_lanes[n] == 0)
-			continue;
+		gain += static_cast<int>(lanes_) - 1;
+		for (unsigned lane = 0; lane < lanes_; ++lane)
+			++removed[roots[r] * kMaxLanes + lane];
+		needed[roots[r]] = 1;
+		if (parents[roots[r]] == 0)
+			ready.push_back(roots[r]);
+	}
+	while (!ready.empty())
+	{
+		const int n = ready.back();
+		ready.pop_back();
 		Node& node = nodes_[n];
+		const bool operation = node.kind == NodeKind::Operation;
+		if (needed[n] == 0)
+		{
+			// (Nothing makes it: its children are not read through it.)
+			for (const int child : { node.left, node.right })
+				if (operation && child >= 0 && ++seen[child] == parents[child])
+					ready.push_back(child);
+			continue;
+		}
 		int going = 0;
 		uint8_t goes = 0;
 		for (unsigned lane = 0; lane < lanes_; ++lane)
-			if ((going_lanes[n] >> lane & 1) != 0 && take(node.lanes[lane]))
+		{
+			const Value v = node.lanes[lane];
+			const uint32_t r = removed[n * kMaxLanes + lane];
+			if (r != 0 && v.is(ValueKind::Temp) && r == uses_[v.index])
 			{
 				++going;
 				goes |= static_cast<uint8_t>(1u << lane);
 			}
+		}
 		if (going == 0 && node.kind >= NodeKind::Loaded)
 		{
 			bool splat = true;
@@ -393,22 +433,32 @@ int BlockLanes::net_gain()
 				splat = splat && node.lanes[lane] == node.lanes[0];
 			node.kind = splat ? NodeKind::Splat : NodeKind::Gather;
 		}
+		const bool reads = node.kind == NodeKind::Operation;
 		if (node.kind == NodeKind::Gather || node.kind == NodeKind::Splat)
 		{
 			gain -= node.kind == NodeKind::Splat ? 1 : static_cast<int>(lanes_) - 1;
 			for (unsigned lane = 0; lane < lanes_; ++lane)
 				if (!node.lanes[lane].is(ValueKind::Temp))
 					gain -= 1;
-			continue;
 		}
-		gain += going - 1;
-		if (node.kind == NodeKind::Loaded)
-			continue;
-		// (A lane that stays still reads its operands.)
-		if (node.left >= 0)
-			going_lanes[node.left] = goes;
-		if (node.right >= 0)
-			going_lanes[node.right] = goes;
+		else
+			gain += going - 1;
+		// (A lane that stays still reads its operands.) A child is read once
+		// all its parents are.
+		for (const int child : { node.left, node.right })
+		{
+			if (!operation || child < 0)
+				continue;
+			if (reads)
+			{
+				needed[child] = 1;
+				for (unsigned lane = 0; lane < lanes_; ++lane)
+					if ((goes >> lane & 1) != 0)
+						++removed[child * kMaxLanes + lane];
+			}
+			if (++seen[child] == parents[child])
+				ready.push_back(child);
+		}
 	}
 	return gain;
 }
@@ -497,14 +547,17 @@ Value BlockLanes::make(int index)
 	return out;
 }
 
-bool BlockLanes::group(BlockId b, const std::vector<Stored>& stores, size_t first)
+// Builds the tree of the group of stores from `first` after nodes_ (the
+// earlier group's, below shared_): its root, or -1 if the group cannot pack.
+// `last` is the group's last store.
+int BlockLanes::plan(BlockId b, const std::vector<Stored>& stores, size_t first, InstId& last)
 {
-	InstId last = stores[first].id;
+	last = stores[first].id;
 	for (unsigned lane = 1; lane < lanes_; ++lane)
 		if (position_[stores[first + lane].id] > position_[last])
 			last = stores[first + lane].id;
 	if (!stores_move(stores, first, last))
-		return false;
+		return -1;
 	Value lanes[kMaxLanes];
 	bool useful = false;
 	for (unsigned lane = 0; lane < lanes_; ++lane)
@@ -513,14 +566,15 @@ bool BlockLanes::group(BlockId b, const std::vector<Stored>& stores, size_t firs
 		useful = useful || same_block(b, lanes[lane]);
 	}
 	if (!useful)
-		return false;
-	nodes_.clear();
-	build(b, lanes, stores, first, last, 0);
-	if (net_gain() <= 0 || nodes_[0].kind < NodeKind::Loaded)
-		return false;
+		return -1;
+	return build(b, lanes, stores, first, last, 0);
+}
+
+void BlockLanes::pack(BlockId b, const std::vector<Stored>& stores, size_t first, InstId last, int root)
+{
 	block_ = b;
 	tail_ = previous_in_block(body_, b, last);
-	const Value out = make(0);
+	const Value out = make(root);
 	const Instruction& low = body_.instructions[stores[first].id];
 	Instruction store = make_instruction(Opcode::Store, Type::scalar(TypeKind::V128));
 	store.ops[0] = out;
@@ -533,7 +587,53 @@ bool BlockLanes::group(BlockId b, const std::vector<Stored>& stores, size_t firs
 		unlink_after(body_, b, previous_in_block(body_, b, id), id);
 		c_.block_of[id] = kNoId;
 	}
-	return true;
+}
+
+// The group of runs[run], alone or with another group whose stores all come
+// after its own and whose tree reuses some of its nodes.
+bool BlockLanes::group(BlockId b, const std::vector<Stored>& stores, const std::vector<size_t>& runs, size_t run)
+{
+	const size_t first = runs[run];
+	nodes_.clear();
+	shared_ = 0;
+	InstId last = kNoId;
+	const int root = plan(b, stores, first, last);
+	if (root < 0)
+		return false;
+	const std::vector<Node> built = nodes_;
+	if (net_gain(&root, 1) > 0 && nodes_[root].kind >= NodeKind::Loaded)
+	{
+		pack(b, stores, first, last, root);
+		return true;
+	}
+	for (size_t other = 0; other < runs.size(); ++other)
+	{
+		const size_t second = runs[other];
+		const Type type = body_.instructions[stores[second].id].type;
+		bool after = type == lane_type_;
+		for (unsigned lane = 0; lane < lanes_ && after; ++lane)
+			after = position_[stores[second + lane].id] > position_[last];
+		if (!after)
+			continue;
+		nodes_ = built;
+		shared_ = built.size();
+		InstId later = kNoId;
+		const int next = plan(b, stores, second, later);
+		bool reuses = false;
+		for (size_t n = shared_; n < nodes_.size() && next >= 0; ++n)
+			for (const int child : { nodes_[n].left, nodes_[n].right })
+				reuses = reuses ||
+					(nodes_[n].kind == NodeKind::Operation && child >= 0 && static_cast<size_t>(child) < shared_);
+		if (next < 0 || !reuses)
+			continue;
+		const int roots[2] = { root, next };
+		if (net_gain(roots, 2) <= 0 || nodes_[root].kind < NodeKind::Loaded || nodes_[next].kind < NodeKind::Loaded)
+			continue;
+		pack(b, stores, first, last, root);
+		pack(b, stores, second, later, next);
+		return true;
+	}
+	return false;
 }
 
 bool BlockLanes::block(BlockId b)
@@ -561,7 +661,9 @@ bool BlockLanes::block(BlockId b)
 			return a.at.root.index < b.at.root.index;
 		return a.at.offset < b.at.offset;
 	});
-	for (size_t i = 0; i + 1 < stores.size();)
+	// The runs of adjacent stores of one type that may form a group.
+	std::vector<size_t> runs;
+	for (size_t i = 0; i + 1 < stores.size(); ++i)
 	{
 		const Type type = body_.instructions[stores[i].id].type;
 		const unsigned lanes = type.kind() == TypeKind::F64 ? 2 : 4;
@@ -571,17 +673,17 @@ bool BlockLanes::block(BlockId b)
 			run = stores[i + lane].at.root == stores[i].at.root &&
 				stores[i + lane].at.offset == stores[i].at.offset + lane * step &&
 				body_.instructions[stores[i + lane].id].type == type;
-		if (!run)
-		{
-			++i;
-			continue;
-		}
-		lanes_ = lanes;
+		if (run)
+			runs.push_back(i);
+	}
+	for (size_t r = 0; r < runs.size(); ++r)
+	{
+		const Type type = body_.instructions[stores[runs[r]].id].type;
+		lanes_ = type.kind() == TypeKind::F64 ? 2 : 4;
 		lane_type_ = type;
 		// (A group changes the block's order: it is read again.)
-		if (group(b, stores, i))
+		if (group(b, stores, runs, r))
 			return true;
-		++i;
 	}
 	return false;
 }

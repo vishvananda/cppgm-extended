@@ -836,7 +836,12 @@ what they store:
 
 A scalar that something else reads stays, and a node with no scalar to remove
 is gathered instead. A group packs only if it removes more instructions than it
-adds. All of it runs just before the group's last store. A store moves down to
+adds. A group that does not pay alone is weighed again with another group of
+the block whose stores all follow its own and whose tree reads some of the
+same lanes: the second group reuses those vectors, and a scalar both trees
+read goes when both do. The two halves of a butterfly (`u + t` and `u - t`
+of one loaded pair and one computed pair) pack this way; `fftbench` took 10%
+fewer cycles. All of it runs just before the group's last store. A store moves down to
 that point only past accesses it cannot overlap, and a load only if nothing it
 passes may write its memory. A store of the group that ran before the load
 must not overlap it either. The vector accesses carry no `typed` fact, so loads
