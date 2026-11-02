@@ -103,5 +103,4 @@ function @main
     imul rbx, 2
     add rbx, r12
     sub rbx, rax
-    sext.i32 rbx
     ret rbx

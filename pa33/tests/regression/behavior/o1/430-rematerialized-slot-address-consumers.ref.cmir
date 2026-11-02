@@ -180,5 +180,5 @@ function @main
     or <gpr0>, <gpr3>
     or <gpr0>, <gpr4>
     or <gpr0>, [rbp-<off0>]
-    or <gpr0>, rax
-    ret <gpr0>
+    or rax, <gpr0>
+    ret rax

@@ -180,5 +180,5 @@ function @main
     or rbx, r14
     or rbx, r15
     or rbx, [rbp-8]
-    or rbx, rax
-    ret rbx
+    or rax, rbx
+    ret rax

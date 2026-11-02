@@ -18,11 +18,10 @@ function @spin_flag
   block ^entry
     store.i32 [rbp-8], 0
     store.i32 [rbp-8], 1
+    load.i32 rax, [rbp-8]
     load.i32 r8, [rbp-8]
-    load.i32 r9, [rbp-8]
-    add r8, r9
-    sext.i32 r8
-    ret r8
+    add rax, r8
+    ret rax
 
 function @main
   abi

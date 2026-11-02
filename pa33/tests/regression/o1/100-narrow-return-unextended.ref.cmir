@@ -1,0 +1,53 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @word
+  storage scalar u32
+  init u32 -1
+
+function @bit
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rcx, rsi
+    mov rax, 1
+    shl rax, rcx
+    and.u32 rax, [rdi]
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, @word
+    mov rsi, 31
+    call @bit [args=(rsi,rdi)]
+    sext.i32 rax
+    cmp.i64 rax, 0
+    jl ^good
+
+  block ^bad
+    mov rax, 1
+    ret rax
+
+  block ^good
+    mov rax, 0
+    ret rax

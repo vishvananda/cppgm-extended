@@ -309,6 +309,10 @@ void FunctionSelector::narrow_params_observed(std::vector<uint8_t>& observed)
 				check(inst.ops[0], true);
 				check(inst.ops[1], false);
 				return;
+			case Opcode::Return:
+				safe = inst.ops[0].kind == ValueKind::Temp && inst.type.is_integer() &&
+					register_bytes(body.temps[inst.ops[0].index].type.kind()) == register_bytes(inst.type.kind());
+				break;
 			case Opcode::Call:
 				check(inst.ops[0], false);
 				for (uint32_t k = 0; k < inst.extra_count; ++k)
@@ -1005,17 +1009,6 @@ void FunctionSelector::emit_call(uint32_t id)
 			!(resolve(user.ops[1]) == self);
 		terminal = stored || (user.op == Opcode::Return && user.type == inst.type);
 	}
-	// O1+: a callee this unit defines (no other object's definition can
-	// replace it) returns a narrow result extended, as every register here
-	// holds one (a returned narrow parameter is extended on entry).
-	const Value target_symbol = resolve(inst.ops[0]);
-	bool own = false;
-	if (level_ >= 1 && target_symbol.kind == ValueKind::Symbol)
-	{
-		const lowir::Symbol& s = program_.symbols[target_symbol.index];
-		own = s.kind == lowir::SymbolKind::FunctionDefinition && s.metadata.binding != ir_model::SBM_WEAK &&
-			(s.metadata.flags & lowir::SF_REPLACEABLE) == 0;
-	}
 	// O1+ prefers rax wherever no instruction of the result's interval
 	// clobbers it. A byte result only a branch reads (which tests its byte)
 	// needs no normalization.
@@ -1024,7 +1017,7 @@ void FunctionSelector::emit_call(uint32_t id)
 	const bool byte_tested = level_ >= 1 && register_bytes(kind) == 1 && t.uses == 1 && t.user != kNoId &&
 		body.instructions[t.user].op == Opcode::Branch && !(t.flags & (TF_GLOBAL | TF_HOMED)) && d != kSelectScratch &&
 		d != kEmitScratch;
-	if (!stored && !byte_tested && !own && !(level_ >= 1 && byte_only_[inst.result]))
+	if (!stored && !byte_tested && !(level_ >= 1 && byte_only_[inst.result]))
 		normalize_result(inst, d, kind);
 	finish_result(inst, d);
 }
@@ -1160,10 +1153,11 @@ void FunctionSelector::emit_return(const Instruction& inst)
 		emit1(Op::Ret, kind, Operand::make_reg(XMM0));
 		return;
 	}
-	// O1+: a narrow result returns extended at its own width (callers in
-	// this unit read it so: emit_call), also from a value of another width.
+	// A narrow result from a value of another width returns extended at its
+	// own (the upper bits of one of its width are its callers').
 	if (level_ >= 1 && src.kind == OperandKind::Reg && v.kind == ValueKind::Temp && narrow_integer(kind) &&
-		body_->temps[v.index].type.kind() != kind && (v.index >= fits_.size() || fits_[v.index] > canonical_bits(kind)))
+		register_bytes(body_->temps[v.index].type.kind()) != register_bytes(kind) &&
+		(v.index >= fits_.size() || fits_[v.index] > canonical_bits(kind)))
 	{
 		load_into(RAX, src, TypeKind::I64);
 		normalize(RAX, kind);

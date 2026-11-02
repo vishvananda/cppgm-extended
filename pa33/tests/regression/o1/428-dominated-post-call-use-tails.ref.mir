@@ -72,23 +72,23 @@ function @post_call_tails
     eh_pop
 
   block ^tail
-    load.i64 r8, [rbp-8]
-    add r8, [rbp-8]
-    add r8, [rbp-8]
-    load.i64 r9, [rbp-16]
-    add r9, [rbp-16]
-    add r9, [rbp-16]
-    load.i64 rdi, [rbp-24]
-    add rdi, [rbp-24]
-    add rdi, [rbp-24]
-    load.i64 rsi, [rbp-32]
-    add rsi, [rbp-32]
-    add rsi, [rbp-32]
-    load.i64 rdx, [rbp-40]
-    add rdx, [rbp-40]
-    add rdx, [rbp-40]
-    load.i64 rcx, [rbp-48]
-    load.i64 rax, [rbp-56]
+    load.i64 rax, [rbp-8]
+    add rax, [rbp-8]
+    add rax, [rbp-8]
+    load.i64 r8, [rbp-16]
+    add r8, [rbp-16]
+    add r8, [rbp-16]
+    load.i64 r9, [rbp-24]
+    add r9, [rbp-24]
+    add r9, [rbp-24]
+    load.i64 rdi, [rbp-32]
+    add rdi, [rbp-32]
+    add rdi, [rbp-32]
+    load.i64 rsi, [rbp-40]
+    add rsi, [rbp-40]
+    add rsi, [rbp-40]
+    load.i64 rdx, [rbp-48]
+    load.i64 rcx, [rbp-56]
     load.i64 rbx, [rbp-64]
     load.i64 r12, [rbp-72]
     add r12, 1
@@ -101,19 +101,19 @@ function @post_call_tails
     load.i64 r10, [rbp-72]
     add r10, 2
     store.i64 [rbp-80], r10
-    add r8, r9
-    add rdi, rsi
-    add r8, rdi
-    add r8, rdx
-    lea rcx, [rcx+r13+1]
-    lea rax, [rax+r14+1]
+    add rax, r8
+    add r9, rdi
+    add rax, r9
+    add rax, rsi
+    lea rdx, [rdx+r13+1]
+    lea rcx, [rcx+r14+1]
     lea rbx, [rbx+r15+1]
     add r12, [rbp-80]
-    add rcx, rax
+    add rdx, rcx
     add rbx, r12
-    add rcx, rbx
-    add r8, rcx
-    ret r8
+    add rdx, rbx
+    add rax, rdx
+    ret rax
 
   block ^handler
     mov rax, 99

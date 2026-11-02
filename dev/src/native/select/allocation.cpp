@@ -382,12 +382,14 @@ void FunctionSelector::prepass_block(uint32_t b)
 		touched |= clobber | early;
 		if (inst.op == Opcode::Return && inst.ops[0].kind != ValueKind::None)
 		{
-			// An integer two-address result keeps the register it is computed
-			// in; other returned values are produced in the return register.
+			// A returned value is produced in the return register; so are
+			// the values an integer two-address result is computed from.
 			const Value v = resolve(inst.ops[0]);
 			const bool two_address = v.kind == ValueKind::Temp && v.index >= body.parameter_count &&
 				body.instructions[body.temps[v.index].def].op == Opcode::Binary && !inst.type.is_float();
-			if (!two_address)
+			if (two_address && level_ >= 1)
+				hint_chain(v, b, RAX);
+			else if (!two_address)
 				hint(inst.ops[0], inst.type.is_float() || inst.type.is_vector() ? XMM0 : RAX, pos);
 		}
 		else if (inst.op == Opcode::Binary && !inst.type.is_float())

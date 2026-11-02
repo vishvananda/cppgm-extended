@@ -63,5 +63,5 @@ function @main
     setne rbx
     movzx rbx, rbx
     call @float_loop [args=(), unwind=no]
-    or rbx, rax
-    ret rbx
+    or rax, rbx
+    ret rax

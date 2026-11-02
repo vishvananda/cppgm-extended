@@ -1107,11 +1107,12 @@ void FunctionSelector::emit_switch_tests(
 	// selector - v in a scratch register the selector is not in (or in
 	// place: a linear switch's selector in the scratch, for its last use).
 	auto offset = [&](int64_t v, bool last) {
+		if (v == 0)
+			return t.selector;
 		const Reg r = t.selector != kSelectScratch || last ? kSelectScratch : kEmitScratch;
 		if (t.selector != r)
 			emit2(Op::Mov, TypeKind::I64, Operand::make_reg(r), selector);
-		if (v != 0)
-			emit2(Op::Sub, TypeKind::I64, Operand::make_reg(r), imm(v));
+		emit2(Op::Sub, TypeKind::I64, Operand::make_reg(r), imm(v));
 		return r;
 	};
 	if (t.tree && past - first >= 4)

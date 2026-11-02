@@ -175,7 +175,6 @@ function @main
     fmov.f64 xmm0, 5.0
     call @more [args=(rdi,xmm0)]
     imul r12, 10
-    add r12, rax
-    add r12, rbx
-    sext.i32 r12
-    ret r12
+    add rax, r12
+    add rax, rbx
+    ret rax

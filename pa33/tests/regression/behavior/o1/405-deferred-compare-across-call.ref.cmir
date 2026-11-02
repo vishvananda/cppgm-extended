@@ -83,5 +83,5 @@ function @main
     cmp.i64 rax, 0
     setne rax
     movzx rax, rax
-    or <gpr0>, rax
-    ret <gpr0>
+    or rax, <gpr0>
+    ret rax

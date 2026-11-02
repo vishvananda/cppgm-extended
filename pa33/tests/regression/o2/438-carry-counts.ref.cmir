@@ -111,7 +111,6 @@ function @count_float
   block ^entry
     fcmp.f64 xmm0, xmm1
     sbb.i32 rdi, -1
-    sext.i32 rdi
     ret rdi
 
 function @count_signed
@@ -188,11 +187,10 @@ function @main
     call @count_at_least [args=(rdx,rsi,rdi)]
     add <gpr1>, <gpr2>
     add <gpr3>, <gpr4>
-    add <gpr5>, rax
+    add rax, <gpr5>
     add <gpr1>, <gpr3>
-    add <gpr5>, <gpr1>
+    add rax, <gpr1>
     load.i32 r8, [rbp-<off1>]
     add.i32 r8, [rbp-<off0>]
-    add <gpr5>, r8
-    sext.i32 <gpr5>
-    ret <gpr5>
+    add rax, r8
+    ret rax

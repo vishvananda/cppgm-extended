@@ -126,13 +126,13 @@ function @mask_read_again
     epilogues duplicated
 
   block ^entry
-    fmov.f64 r8, xmm0
-    and r8, 9223372036854775807
-    fmov.f64 xmm0, r8
+    fmov.f64 rax, xmm0
+    and rax, 9223372036854775807
+    fmov.f64 xmm0, rax
     fmul.f64 xmm0, xmm0, 0.5
-    fmov.f64 r9, xmm0
-    sub r8, r9
-    ret r8
+    fmov.f64 r8, xmm0
+    sub rax, r8
+    ret rax
 
 function @other_mask
   abi

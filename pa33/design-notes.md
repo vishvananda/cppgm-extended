@@ -59,7 +59,10 @@ that paid there in the course solution:
   a `nowrap` add computed at 64 bits is sound for canonical operands only. Each
   is correct alone, and together they turn `(int)wide + y` into a wrong index.
 - Extend a narrow value only for a reader of its upper bits. A compare, a store,
-  a branch, a 32-bit divide and a wrapping add read the low bits alone. A phi, a
+  a branch, a 32-bit divide, a wrapping add, a shift's count, a copy to the other
+  sign, a return and a host call's `i32` argument read the low bits alone: the
+  psABI leaves the upper bits to the reader, so a caller extends a narrow call
+  result itself even when this unit defines the callee. A phi, a
   select, an `and` and a `nowrap` add pass their readers' needs to their operands,
   so grow the set to a fixed point. A sum of `int` products that is only stored
   then needs no `movslq` per iteration. The same question decides whether a

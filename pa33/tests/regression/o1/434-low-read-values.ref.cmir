@@ -103,5 +103,4 @@ function @main
     imul <gpr0>, 2
     add <gpr0>, <gpr1>
     sub <gpr0>, rax
-    sext.i32 <gpr0>
     ret <gpr0>

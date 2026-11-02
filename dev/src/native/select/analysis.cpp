@@ -528,7 +528,11 @@ bool truncates_integer(const Instruction& inst)
 // value needs no extension; a truncation of one stands for its source.
 // Reading the low bits alone: an add, sub, mul or left shift of the value's
 // type (whose result is extended again), a divide at 32 bits, a store or
-// compare of its type or narrower, a branch, a narrower truncation. What keeps upper bits passes its readers'
+// compare of its type or narrower, a branch, a shift's count, a narrower
+// truncation, a copy
+// to the other sign, a return (the callers of a returned narrow value extend
+// it; the psABI leaves the upper bits to them), a host word argument (the
+// callee extends it likewise). What keeps upper bits passes its readers'
 // needs to its operands: a phi, a copy, the arms of a select, an and, or or
 // xor, and a `nowrap` add, sub, mul or shift, computed at 64 bits without
 // being extended again. Any other reader needs the full register, as does a
@@ -599,9 +603,18 @@ void FunctionSelector::find_low_reads()
 			{
 			case Opcode::Copy:
 				passes = same;
+				low = !same && inst.type.is_integer() && inst.type.kind() != TypeKind::I128 &&
+					width_bits(inst.type.kind()) == bits;
 				break;
 			case Opcode::Select:
 				passes = same && (k == 1 || k == 2);
+				break;
+			case Opcode::Return:
+				low = k == 0 && inst.type.is_integer() && width_bits(inst.type.kind()) == bits;
+				break;
+			case Opcode::Call:
+				// (A word argument: the callee extends what it reads above it.)
+				low = k > 0 && eh_model_ == EhModel::Host && width_bits(kind) == 32;
 				break;
 			case Opcode::Binary:
 			{
@@ -615,7 +628,9 @@ void FunctionSelector::find_low_reads()
 				const bool divides = (op == lowir::BinaryOp::Div || op == lowir::BinaryOp::Mod ||
 										 op == lowir::BinaryOp::UDiv || op == lowir::BinaryOp::UMod) &&
 					(kind == TypeKind::I32 || kind == TypeKind::U32) && resolve(inst.ops[1]).kind != ValueKind::Integer;
-				low = same && k < 2 && ((wraps && !no_wrap) || divides);
+				const bool count = k == 1 &&
+					(op == lowir::BinaryOp::Shl || op == lowir::BinaryOp::Shr || op == lowir::BinaryOp::UShr);
+				low = count || (same && k < 2 && ((wraps && !no_wrap) || divides));
 				passes = same && k < 2 && (bitwise || (wraps && no_wrap));
 				break;
 			}
@@ -848,6 +863,10 @@ void FunctionSelector::resolve_aliases()
 				(alias_compatible(inst.type, body.temps[src.index].type) ||
 					((inst.type.is_integer() && inst.type.kind() != TypeKind::I128) &&
 						(known_boolean(src.index) ||
+							// (A copy to the other sign no reader reads above
+							// its width stands for its source.)
+							(low_read(r) && body.temps[src.index].type.is_integer() &&
+								width_bits(body.temps[src.index].type.kind()) == width_bits(inst.type.kind())) ||
 							fits_[src.index] <= std::min(canonical_bits(inst.type.kind()),
 													canonical_bits(body.temps[src.index].type.kind()))))))
 				to = src;

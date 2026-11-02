@@ -137,5 +137,4 @@ function @main
     imul rax, 200
     mov rdx, r10
     sub rdx, rax
-    sext.i32 rdx
     ret rdx

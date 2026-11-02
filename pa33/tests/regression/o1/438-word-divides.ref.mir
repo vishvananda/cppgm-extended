@@ -82,7 +82,6 @@ function @unsigned_by_ten
     mov rax, r10
     imul rax, r11
     shr rax, 35
-    sext.i32 rax
     ret rax
 
 function @unsigned_by_seven
@@ -105,7 +104,6 @@ function @unsigned_by_seven
     shr rax, 1
     add rax, rdx
     shr rax, 2
-    sext.i32 rax
     ret rax
 
 function @main

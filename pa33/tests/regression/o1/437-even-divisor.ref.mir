@@ -48,5 +48,5 @@ function @main
     mul r11
     shr rdx, 26
     add rdx, r12
-    sext.i32 rdx
-    ret rdx
+    sext.i32 rax, rdx
+    ret rax

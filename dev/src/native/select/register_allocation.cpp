@@ -1485,7 +1485,11 @@ void FunctionSelector::hint_chain(Value v, uint32_t b, Reg reg)
 		const lowir::InstId def = body.temps[v.index].def;
 		if (def == kNoId || !ties_first_operand(body.instructions[def]))
 			return;
-		const Value u = resolve(body.instructions[def].ops[0]);
+		// (A load folded into the first operand leaves the second to the result.)
+		const Instruction& computed = body.instructions[def];
+		Value u = resolve(computed.ops[0]);
+		if (u.kind == ValueKind::Temp && (temps_[u.index].flags & TF_FOLDED) && computed.op == Opcode::Binary)
+			u = resolve(computed.ops[1]);
 		if (u.kind != ValueKind::Temp || temps_[u.index].last != pos_[def])
 			return;
 		v = u;

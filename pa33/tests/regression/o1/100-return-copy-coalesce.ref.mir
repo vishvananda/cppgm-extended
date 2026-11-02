@@ -15,8 +15,8 @@ function @main
     epilogues duplicated
 
   block ^entry
-    mov r8, 1
-    add r8, 2
-    imul r8, 4
-    sub r8, 12
-    ret r8
+    mov rax, 1
+    add rax, 2
+    imul rax, 4
+    sub rax, 12
+    ret rax

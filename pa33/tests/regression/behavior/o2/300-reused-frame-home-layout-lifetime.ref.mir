@@ -79,8 +79,8 @@ function @probe
 
   block ^use_current
     call @clobber [args=()]
-    add rbx, rax
-    ret rbx
+    add rax, rbx
+    ret rax
 
 function @main
   abi

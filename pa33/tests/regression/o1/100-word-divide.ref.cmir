@@ -20,7 +20,6 @@ function @signed_quotient
     mov rax, rdi
     cqo.i32
     idiv.i32 rsi
-    sext.i32 rax
     ret rax
 
 function @signed_remainder
@@ -38,7 +37,6 @@ function @signed_remainder
     mov rax, rdi
     cqo.i32
     idiv.i32 rsi
-    sext.i32 rdx
     ret rdx
 
 function @unsigned_quotient
@@ -91,7 +89,6 @@ function @signed_memory
     mov rax, rdi
     cqo.i32
     idiv.i32 rsi
-    sext.i32 rdx
     ret rdx
 
 function @wide
@@ -126,7 +123,6 @@ function @negative_one
     mov rax, rdi
     cqo
     idiv <gpr0>
-    sext.i32 rax
     ret rax
 
 function @narrow
@@ -144,7 +140,6 @@ function @narrow
     mov rax, rdi
     cqo
     idiv rsi
-    sext.i16 rax
     ret rax
 
 function @main
@@ -224,5 +219,5 @@ function @main
     or <gpr1>, <gpr5>
     or <gpr1>, r8
     or <gpr1>, r9
-    or <gpr1>, rax
-    ret <gpr1>
+    or rax, <gpr1>
+    ret rax

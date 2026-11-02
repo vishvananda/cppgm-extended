@@ -71,5 +71,5 @@ function @main
     cmp.i64 rax, 23
     setne rax
     movzx rax, rax
-    or rbx, rax
-    ret rbx
+    or rax, rbx
+    ret rax
