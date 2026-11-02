@@ -584,7 +584,7 @@ void FunctionEmitter::encode(const Function& function)
 			continue;
 		if (!relax_pass_)
 			block_start_[b] = static_cast<int32_t>(asm_.size());
-		else if (std::binary_search(loop_heads_.begin(), loop_heads_.end(), block_start_[b]))
+		else if (!block.fallen_into && std::binary_search(loop_heads_.begin(), loop_heads_.end(), block_start_[b]))
 			align_loop_head();
 		asm_.bind(labels_[b]);
 		// An argument area a noreturn call left open ends with its block.

@@ -73,6 +73,9 @@ struct Block
 	uint32_t first;
 	uint32_t count;
 	bool landing; // a host landing pad (named by its landing block)
+	// O2+: mostly reached from the block laid out before it, so padding here
+	// would run each time.
+	bool fallen_into;
 };
 
 struct DebugSlot

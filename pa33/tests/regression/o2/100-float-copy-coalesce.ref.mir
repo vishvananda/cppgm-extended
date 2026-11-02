@@ -15,7 +15,8 @@ function @main
     epilogues duplicated
 
   block ^entry
-    fadd.f64 xmm0, 1.5, 2.25
+    fmov.f64 xmm0, 1.5
+    fadd.f64 xmm0, xmm0, 2.25
     fcmp.f64 xmm0, 3.75
     jp ^bad
     je ^ok

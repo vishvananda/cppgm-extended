@@ -124,7 +124,8 @@ that paid there in the course solution:
   body.
 - Start each loop head on a 16-byte boundary when that takes at most 10 bytes
   of padding, else on an 8-byte one, as GCC does at `-O2`. Padding is `nop`s;
-  they run once per entry to the loop, not per iteration. The fetch and
+  they run once per entry to the loop, not per iteration, so leave out a block
+  mostly reached from the block before it, where they would run each time. The fetch and
   prediction hardware works in 16 and 32-byte windows, so a short loop that
   crosses one can cost several times its cycles: on the machine this was
   measured on, a 7-instruction loop that ran 4 to 15 times had its exit

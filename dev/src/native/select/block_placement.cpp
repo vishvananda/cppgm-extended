@@ -588,6 +588,18 @@ uint32_t Placement::run()
 	for (uint32_t c : chains)
 		for (uint32_t b = head[c]; b != kNone; b = next[b])
 			order.push_back(b);
+	for (uint32_t k = 1; k < n_; ++k)
+	{
+		const uint32_t from = order[k - 1];
+		const uint32_t p = two_way_[from] ? taken(from) : 0;
+		const uint32_t count = succ_first_[from + 1] - succ_first_[from];
+		uint64_t flow = 0;
+		for (uint32_t e = succ_first_[from]; e < succ_first_[from + 1]; ++e)
+			if (succs_[e] == order[k])
+				flow += frequency[from] * (two_way_[from] ? (e == succ_first_[from] ? p : 1000 - p) : 1000 / count) /
+					1000;
+		f_.blocks[order[k]].fallen_into = flow >= frequency[order[k]] / 2;
+	}
 	uint32_t moved = 0;
 	for (uint32_t k = 0; k < n_; ++k)
 		moved += order[k] != k ? 1 : 0;

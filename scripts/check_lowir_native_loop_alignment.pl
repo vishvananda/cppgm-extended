@@ -13,8 +13,10 @@ use CppgmBatchWorker qw(collect_tests run_command_capture);
 # At -O2 and above a loop head starts on an 8-byte boundary, on a 16-byte one
 # when that takes at most 10 bytes of padding (dev/src/native/x86/emitter.cpp,
 # align_loop_head). MIR does not show padding, so the check reads the host
-# object's encoding: a loop head is the target of a backward branch. Levels
-# below keep their heads where they fall, and the code stays contiguous.
+# object's encoding: a loop head is the target of a backward branch. Only an
+# innermost head must be on a boundary, one with no other head before its
+# branch: a block the block before it mostly falls into takes no padding.
+# Levels below keep their heads where they fall, and the code stays contiguous.
 
 sub read_file
 {
@@ -41,9 +43,21 @@ sub loop_heads
 	my %heads;
 	while($code =~ /^\s+([0-9a-f]+):\s+j\w+\s+([0-9a-f]+)\s/mg) {
 		my ($from, $to) = (hex($1), hex($2));
-		$heads{$to} = 1 if $to <= $from;
+		next if $to > $from;
+		$heads{$to} = $from if !defined($heads{$to}) || $heads{$to} < $from;
 	}
-	return sort { $a <=> $b } keys %heads;
+	return %heads;
+}
+
+# Of those heads (offset to its last branch), the innermost.
+sub innermost_heads
+{
+	my (%heads) = @_;
+	my @all = sort { $a <=> $b } keys %heads;
+	return grep {
+		my $head = $_;
+		!grep { $_ > $head && $_ <= $heads{$head} } @all;
+	} @all;
 }
 
 if(scalar(@ARGV) != 2)
@@ -97,10 +111,10 @@ for my $test (@tests)
 		);
 		die "$test: $level disassembly failed\n" if $status != 0;
 		my $body = object_function($test, read_file($disassembly), 'nested');
-		my @heads = loop_heads($body);
-		die "$test: $level has no two loops to read\n" if scalar(@heads) < 2;
+		my %heads = loop_heads($body);
+		die "$test: $level has no two loops to read\n" if scalar(keys %heads) < 2;
 		next if $level eq 'O1';
-		for my $head (@heads) {
+		for my $head (innermost_heads(%heads)) {
 			die sprintf("%s: %s loop head at %x is off its boundary\n",
 				$test, $level, $head) if $head % 8 != 0;
 		}
