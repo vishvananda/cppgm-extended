@@ -59,5 +59,21 @@ struct Located
 };
 
 Located locate(const lowir::FunctionBody& body, lowir::Value v);
+// The same up to the first step by a value: that step's result is the root.
+Located locate_steps(const lowir::FunctionBody& body, lowir::Value v);
+
+// An address as a base, a constant offset and a multiple of `stride` (0: no
+// multiple), through `index` steps, pointer copies and a pointer phi stepping
+// by a literal. Two accesses from one base whose ranges do not meet modulo the
+// common stride lie in different fields of an array's elements.
+struct Strided
+{
+	lowir::Value base = lowir::Value::none();
+	int64_t offset = 0;
+	uint64_t stride = 0;
+};
+
+Strided strided_address(const lowir::FunctionBody& body, lowir::Value v);
+bool strided_apart(const Strided& a, uint64_t a_bytes, const Strided& b, uint64_t b_bytes);
 
 } // namespace opt

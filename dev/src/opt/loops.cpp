@@ -159,6 +159,167 @@ Located locate(const FunctionBody& body, Value v)
 	return out;
 }
 
+static uint64_t common_factor(uint64_t a, uint64_t b)
+{
+	while (b != 0)
+	{
+		const uint64_t r = a % b;
+		a = b;
+		b = r;
+	}
+	return a;
+}
+
+// Values one address's multiples read.
+const unsigned kMultipleSteps = 32;
+
+// Whether a product of v and a literal below 2^31 cannot wrap at 64 bits.
+static bool bounded_factor(const FunctionBody& body, Value v)
+{
+	if (!v.is(ValueKind::Temp) || body.temps[v.index].def == kNoId)
+		return false;
+	const Instruction& def = body.instructions[body.temps[v.index].def];
+	return def.op == Opcode::Convert &&
+		(static_cast<ConvertOp>(def.sub) == ConvertOp::SExt || static_cast<ConvertOp>(def.sub) == ConvertOp::ZExt) &&
+		storage_bytes(convert_source_type(def)) <= 4;
+}
+
+// A number v is a multiple of, 0 for any (a phi's own step). A wrapped product
+// keeps only the power of two in its factor, so a larger factor needs a product
+// that cannot wrap. A sum of such products or literal steps would need more
+// iterations than can run to wrap.
+static uint64_t multiple_of(const FunctionBody& body, Value v, std::vector<TempId>& open, unsigned& steps)
+{
+	if (v.is(ValueKind::Integer))
+	{
+		const uint64_t low = body.literals[v.index].low;
+		return low >> 63 != 0 ? ~low + 1 : low;
+	}
+	if (!v.is(ValueKind::Temp) || body.temps[v.index].def == kNoId || ++steps > kMultipleSteps)
+		return 1;
+	const Type type = body.temps[v.index].type;
+	if (type.kind() != TypeKind::I64)
+		return 1;
+	const Instruction& def = body.instructions[body.temps[v.index].def];
+	if (def.op == Opcode::Copy)
+		return multiple_of(body, def.ops[0], open, steps);
+	if (def.op == Opcode::Phi)
+	{
+		for (TempId seen : open)
+			if (seen == v.index)
+				return 0;
+		open.push_back(v.index);
+		uint64_t factor = 0;
+		for (uint32_t k = 0; k < def.extra_count && factor != 1; k += 2)
+			factor = common_factor(factor, multiple_of(body, body.operands[def.extra_first + k + 1], open, steps));
+		open.pop_back();
+		return factor;
+	}
+	if (def.op != Opcode::Binary)
+		return 1;
+	const BinaryOp op = static_cast<BinaryOp>(def.sub);
+	if (op == BinaryOp::Add || op == BinaryOp::Sub)
+	{
+		open.push_back(v.index);
+		const uint64_t left = multiple_of(body, def.ops[0], open, steps);
+		const uint64_t factor = left == 1 ? 1 : common_factor(left, multiple_of(body, def.ops[1], open, steps));
+		open.pop_back();
+		return factor;
+	}
+	if (op != BinaryOp::Mul)
+		return 1;
+	const bool literal_first = def.ops[0].is(ValueKind::Integer);
+	const Value literal = def.ops[literal_first ? 0 : 1], factor = def.ops[literal_first ? 1 : 0];
+	if (!literal.is(ValueKind::Integer))
+		return 1;
+	const uint64_t scale = body.literals[literal.index].low;
+	if (scale == 0 || scale >= 1ull << 31)
+		return 1;
+	return (def.flags & IF_NO_WRAP) != 0 || bounded_factor(body, factor) ? scale : scale & (~scale + 1);
+}
+
+Strided strided_address(const FunctionBody& body, Value v)
+{
+	Strided out;
+	std::vector<TempId> open;
+	unsigned steps = 0;
+	for (unsigned step = 0; step < 8; ++step)
+	{
+		if (!v.is(ValueKind::Temp) || v.index < body.parameter_count || body.temps[v.index].def == kNoId)
+			break;
+		const Instruction& def = body.instructions[body.temps[v.index].def];
+		if (def.op == Opcode::Addr || (def.op == Opcode::Copy && def.type.is_pointer()))
+			v = def.ops[0];
+		else if (def.op == Opcode::Index)
+		{
+			const uint64_t size = storage_bytes(def.type);
+			if (def.ops[1].is(ValueKind::Integer))
+				out.offset += static_cast<int64_t>(body.literals[def.ops[1].index].low * size);
+			else
+				out.stride = common_factor(out.stride, multiple_of(body, def.ops[1], open, steps) * size);
+			v = def.ops[0];
+		}
+		else if (def.op == Opcode::Phi && def.extra_count == 4)
+		{
+			// (A pointer stepping by a literal, from its entry value.)
+			const Value first = body.operands[def.extra_first + 1], second = body.operands[def.extra_first + 3];
+			const auto steps = [&](Value x) {
+				if (!x.is(ValueKind::Temp) || body.temps[x.index].def == kNoId)
+					return false;
+				const Instruction& step_def = body.instructions[body.temps[x.index].def];
+				return step_def.op == Opcode::Index && step_def.ops[0] == v && step_def.ops[1].is(ValueKind::Integer);
+			};
+			const bool first_steps = steps(first);
+			if (!first_steps && !steps(second))
+				break;
+			const Instruction& step_def = body.instructions[body.temps[(first_steps ? first : second).index].def];
+			const uint64_t size = storage_bytes(step_def.type) * body.literals[step_def.ops[1].index].low;
+			out.stride = common_factor(out.stride, size >> 63 != 0 ? ~size + 1 : size);
+			v = first_steps ? second : first;
+		}
+		else
+			break;
+	}
+	out.base = v;
+	return out;
+}
+
+bool strided_apart(const Strided& a, uint64_t a_bytes, const Strided& b, uint64_t b_bytes)
+{
+	if (!(a.base == b.base) || a.base.is(ValueKind::None))
+		return false;
+	const uint64_t stride = common_factor(a.stride, b.stride);
+	if (stride <= 1 || a_bytes + b_bytes > stride)
+		return false;
+	// Where b starts after a's start, modulo the stride.
+	const int64_t modulus = static_cast<int64_t>(stride);
+	const uint64_t from = static_cast<uint64_t>(((b.offset - a.offset) % modulus + modulus) % modulus);
+	return from >= a_bytes && from + b_bytes <= stride;
+}
+
+Located locate_steps(const FunctionBody& body, Value v)
+{
+	Located out;
+	for (unsigned step = 0; step < 8; ++step)
+	{
+		if (!v.is(ValueKind::Temp) || v.index < body.parameter_count || body.temps[v.index].def == kNoId)
+			break;
+		const Instruction& def = body.instructions[body.temps[v.index].def];
+		if (def.op == Opcode::Addr || (def.op == Opcode::Copy && def.type.is_pointer()))
+			v = def.ops[0];
+		else if (def.op == Opcode::Index && def.ops[1].is(ValueKind::Integer))
+		{
+			out.offset += static_cast<int64_t>(body.literals[def.ops[1].index].low) *
+				static_cast<int64_t>(storage_bytes(def.type));
+			v = def.ops[0];
+		}
+		else
+			break;
+	}
+	out.root = v;
+	return out;
+}
+
 // The header's phis take from the new preheader what they took from the blocks
 // entering the loop, merged there by a phi where those differ.
 static void merge_entry_values(FunctionBody& body, const LoopForest& forest, uint32_t loop, BlockId pre)

@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include "lowir/builder.h"
+#include "opt/loops.h"
 #include "opt/passes.h"
 #include "support/flat_map.h"
 
@@ -132,6 +133,7 @@ public:
 private:
 	AddressFacts facts_of(Value address) const;
 	bool may_alias(const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const;
+	bool fields_apart(const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const;
 	TempId allocation_of(const AddressFacts& f) const;
 	bool private_allocation(const AddressFacts& f) const;
 	void forget_int_cells();
@@ -193,6 +195,7 @@ private:
 	FunctionBody& body_;
 	Cfg& cfg_;
 	std::vector<AddressFacts> address_;    // per temp
+	mutable std::vector<Strided> strided_; // per temp once asked (known: base set)
 	std::vector<uint8_t> escaped_;         // per slot: address leaves the analysis
 	std::vector<TempId> allocation_;       // per temp: the allocation it points into
 	std::vector<uint8_t> allocation_left_; // per temp: the allocation's address leaves
@@ -305,6 +308,22 @@ AddressFacts MemoryForwarding::facts_of(Value v) const
 	return f;
 }
 
+// Different fields of an array's elements, through different pointers.
+bool MemoryForwarding::fields_apart(
+	const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const
+{
+	if (strided_.size() < body_.temps.size())
+		strided_.resize(body_.temps.size());
+	const auto of = [&](const AddressFacts& f) {
+		if (strided_[f.index].base.is(ValueKind::None))
+			strided_[f.index] = strided_address(body_, Value::temp(f.index));
+		Strided out = strided_[f.index];
+		out.offset += f.offset;
+		return out;
+	};
+	return strided_apart(of(a), a_bytes, of(b), b_bytes);
+}
+
 bool MemoryForwarding::may_alias(const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const
 {
 	const bool ka = a.base != ValueKind::None, kb = b.base != ValueKind::None;
@@ -318,6 +337,8 @@ bool MemoryForwarding::may_alias(const AddressFacts& a, uint64_t a_bytes, const 
 		if (a.base != ValueKind::Temp && b.base != ValueKind::Temp)
 			return false;
 		if ((a.base == ValueKind::Slot && !escaped_[a.index]) || (b.base == ValueKind::Slot && !escaped_[b.index]))
+			return false;
+		if (a.base == ValueKind::Temp && b.base == ValueKind::Temp && fields_apart(a, a_bytes, b, b_bytes))
 			return false;
 		// New storage is no slot, no global, no other allocation and nothing a
 		// parameter reaches; what never leaves is reached by nothing else.

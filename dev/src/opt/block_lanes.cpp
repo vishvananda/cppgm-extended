@@ -65,7 +65,7 @@ private:
 	int match_score(const Value* a, const Value* b) const;
 	bool adjacent_loads(const Value* lanes) const;
 	bool pure(const Instruction& inst) const;
-	bool apart(const Instruction& store, const Located& at, uint64_t bytes, Type type, bool typed) const;
+	bool apart(const Instruction& store, Value address, const Located& at, uint64_t bytes, Type type, bool typed) const;
 	int net_gain();
 	Value lane_value(Value v);
 	Value make(int node);
@@ -103,9 +103,10 @@ bool BlockLanes::pure(const Instruction& inst) const
 	}
 }
 
-bool BlockLanes::apart(const Instruction& store, const Located& at, uint64_t bytes, Type type, bool typed) const
+bool BlockLanes::apart(
+	const Instruction& store, Value address, const Located& at, uint64_t bytes, Type type, bool typed) const
 {
-	const Located there = locate(body_, store.ops[1]);
+	const Located there = locate_steps(body_, store.ops[1]);
 	const uint64_t size = storage_bytes(store.type);
 	const bool named_a = there.root.is(ValueKind::Slot) || there.root.is(ValueKind::Symbol);
 	const bool named_b = at.root.is(ValueKind::Slot) || at.root.is(ValueKind::Symbol);
@@ -118,7 +119,9 @@ bool BlockLanes::apart(const Instruction& store, const Located& at, uint64_t byt
 	if ((there.root.is(ValueKind::Slot) && !escaped_[there.root.index]) ||
 		(at.root.is(ValueKind::Slot) && !escaped_[at.root.index]))
 		return true;
-	return (store.flags & IF_TYPED) != 0 && typed && typed_types_apart(store.type, type);
+	if ((store.flags & IF_TYPED) != 0 && typed && typed_types_apart(store.type, type))
+		return true;
+	return strided_apart(strided_address(body_, store.ops[1]), size, strided_address(body_, address), bytes);
 }
 
 // Each store of the group but the last moves down to the last: nothing it
@@ -144,10 +147,10 @@ bool BlockLanes::stores_move(const std::vector<Stored>& stores, size_t first, In
 				// (A load overlapping nothing the store writes.)
 				Instruction read = inst;
 				read.ops[1] = inst.ops[0];
-				ok = apart(read, stores[first + lane].at, bytes, store.type, typed);
+				ok = apart(read, store.ops[1], stores[first + lane].at, bytes, store.type, typed);
 			}
 			else if (inst.op == Opcode::Store && (inst.flags & IF_VOLATILE) == 0)
-				ok = apart(inst, stores[first + lane].at, bytes, store.type, typed);
+				ok = apart(inst, store.ops[1], stores[first + lane].at, bytes, store.type, typed);
 			if (!ok)
 				return false;
 		}
@@ -161,13 +164,13 @@ bool BlockLanes::stores_move(const std::vector<Stored>& stores, size_t first, In
 bool BlockLanes::load_moves(InstId load, const std::vector<Stored>& stores, size_t first, InstId last) const
 {
 	const Instruction& read = body_.instructions[load];
-	const Located at = locate(body_, read.ops[0]);
+	const Located at = locate_steps(body_, read.ops[0]);
 	const uint64_t bytes = storage_bytes(read.type);
 	const bool typed = (read.flags & IF_TYPED) != 0;
 	for (unsigned lane = 0; lane < lanes_; ++lane)
 	{
 		const InstId id = stores[first + lane].id;
-		if (position_[id] < position_[load] && !apart(body_.instructions[id], at, bytes, read.type, typed))
+		if (position_[id] < position_[load] && !apart(body_.instructions[id], read.ops[0], at, bytes, read.type, typed))
 			return false;
 	}
 	for (InstId i = read.next; i != last; i = body_.instructions[i].next)
@@ -180,7 +183,7 @@ bool BlockLanes::load_moves(InstId load, const std::vector<Stored>& stores, size
 		bool ours = false;
 		for (unsigned lane = 0; lane < lanes_; ++lane)
 			ours = ours || stores[first + lane].id == i;
-		if (!ours && !apart(inst, at, bytes, read.type, typed))
+		if (!ours && !apart(inst, read.ops[0], at, bytes, read.type, typed))
 			return false;
 	}
 	return true;
@@ -200,7 +203,7 @@ bool BlockLanes::adjacent_loads(const Value* lanes) const
 		const Instruction& inst = body_.instructions[body_.temps[lanes[lane].index].def];
 		if (inst.op != Opcode::Load || (inst.flags & IF_VOLATILE) != 0 || inst.type != lane_type_)
 			return false;
-		const Located at = locate(body_, inst.ops[0]);
+		const Located at = locate_steps(body_, inst.ops[0]);
 		if (!at.known)
 			return false;
 		if (lane == 0)
@@ -544,7 +547,7 @@ bool BlockLanes::block(BlockId b)
 		if (inst.op == Opcode::Store && (inst.flags & IF_VOLATILE) == 0 &&
 			(inst.type.kind() == TypeKind::F64 || inst.type.kind() == TypeKind::F32) && stores.size() < kBlockStores)
 		{
-			const Located at = locate(body_, inst.ops[1]);
+			const Located at = locate_steps(body_, inst.ops[1]);
 			if (at.known)
 				stores.push_back(Stored{ i, at });
 		}

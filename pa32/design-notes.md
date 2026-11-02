@@ -113,6 +113,12 @@ copy); a load in a known-zero range reads zero.
   constant `index` steps, `copyobj` and `zeroinit`, is reached by no other
   pointer. Two `typed` accesses of incompatible types, neither of a byte
   type, name different objects unless they share a base.
+- Two addresses from one base by multiples of one stride, with ranges that do
+  not meet modulo that stride, do not alias: they are different fields of an
+  array's elements. Loop motion and block lanes use this too. A product is a
+  multiple of its literal only if it cannot wrap: its other factor is `nowrap`
+  or extended from 32 bits. A wrapped product keeps only the literal's power of
+  two.
 - A write ends every fact it may alias. A call that may write memory, an
   atomic operation, `va_start` or `va_arg` ends every fact except those of
   private slots. At most 64 facts and 16 zero ranges are live.
