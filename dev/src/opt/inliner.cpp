@@ -413,7 +413,8 @@ void merge_returns(FunctionBody& cb, TempId result, Type type, const std::vector
 // A copy over `cap` is not made. (Cutting at the shallowest clean
 // dominator instead, to copy the first test only, mostly copied a rarely
 // taken call-free path and kept the call on the common one: ParserState::at
-// copied its replayed-token read, and every call read the window.)
+// copied its replayed-token read, and every call read the window.) A copy
+// with a loop is not made either: the call behind a cut repeats the loop.
 struct PartialCut
 {
 	std::vector<uint8_t> copy, cut;
@@ -528,7 +529,17 @@ bool partial_cut(const Program& program, const FunctionBody& kb, PartialCut& out
 			out.cut[at] = 1;
 	}
 	partial_region(kb, cfg, out, returns);
-	return out.cuts != 0 && returns && out.size <= cap;
+	if (out.cuts == 0 || !returns || out.size > cap)
+		return false;
+	// A loop in the copy would run again in the call behind a cut.
+	std::vector<uint32_t> order(n, 0);
+	for (uint32_t r = 0; r < cfg.rpo.size(); ++r)
+		order[cfg.rpo[r]] = r;
+	for (BlockId b : cfg.rpo)
+		for (uint32_t k = cfg.succ_first[b]; out.copy[b] && k < cfg.succ_first[b + 1]; ++k)
+			if (out.copy[cfg.succs[k]] && order[cfg.succs[k]] <= order[b])
+				return false;
+	return true;
 }
 
 // An already-simplified body that only returns has no frame or local work

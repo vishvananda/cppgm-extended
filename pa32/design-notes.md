@@ -337,7 +337,8 @@ At `-O2` and above the late wave also makes partial copies: for a callee
 kept out of line (scalar or no result, no object or indirect-result
 parameter), its side-effect-free entry and fast returning paths, calling
 the callee where work begins (at most 24 instructions; 40 if hinted, 48
-with at most two call sites, 8 if its hot code allocates). A loop-free,
+with at most two call sites, 8 if its hot code allocates). No copy holds a
+loop: the call where work begins would run the loop again. A loop-free,
 EH-free function of at most 64 instructions that calls itself at least
 twice takes copies of its own body at those calls, two levels deep at most
 and 320 instructions in all. A function of that size with a loop and one call
