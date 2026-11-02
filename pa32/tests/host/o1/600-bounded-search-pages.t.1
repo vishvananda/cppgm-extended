@@ -1,0 +1,40 @@
+// Protected neighbors make a read beyond either end observable. The loop
+// may expand or keep branches, but must retain its early bounds and exits.
+extern "C" void* mmap(void*, unsigned long, int, int, int, long);
+extern "C" int mprotect(void*, unsigned long, int);
+extern "C" int munmap(void*, unsigned long);
+extern "C" int getpagesize();
+__attribute__((noinline)) unsigned forward(const unsigned* p, unsigned n, unsigned key) {
+    for (unsigned i = 0; i < 4; ++i) {
+        if (i == n) return n;
+        if (p[i] == key) return i;
+    }
+    return n;
+}
+__attribute__((noinline)) unsigned backward(const unsigned* p, unsigned n, unsigned key) {
+    for (unsigned i = 0; i < 4; ++i) {
+        if (i == n) return n;
+        unsigned at = n - i - 1;
+        if (p[at] == key) return at;
+    }
+    return n;
+}
+int main() {
+    unsigned long page = static_cast<unsigned long>(getpagesize());
+    void* mapping = mmap(0, page * 3, 0, 0x22, -1, 0);
+    if (mapping == reinterpret_cast<void*>(-1L)) return 1;
+    char* middle = static_cast<char*>(mapping) + page;
+    if (mprotect(middle, page, 3)) return 2;
+    for (unsigned n = 0; n <= 4; ++n) {
+        unsigned* right = reinterpret_cast<unsigned*>(middle + page) - n;
+        unsigned* left = reinterpret_cast<unsigned*>(middle);
+        for (unsigned i = 0; i < n; ++i) right[i] = left[i] = 2 * i + 2;
+        volatile unsigned count = n;
+        for (unsigned k = 0; k <= 5; ++k) {
+            unsigned expected = k && k <= n ? k - 1 : n;
+            if (forward(right, count, 2 * k) != expected) return 3;
+            if (backward(left, count, 2 * k) != expected) return 4;
+        }
+    }
+    return munmap(mapping, page * 3) ? 5 : 0;
+}

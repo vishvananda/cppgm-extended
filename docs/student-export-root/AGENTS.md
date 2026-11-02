@@ -21,14 +21,15 @@ before changing code. [Project layout](PROJECT_LAYOUT.md) gives the assignment m
 ## Validation
 
 ```sh
-make test-paN
-make test-report-through-paN
+make test-paN                 # Iterate on PA N
+make test-report-through-paN  # Final validation for PA1–PA33
 ```
 
-Replace N with the assignment number. For PA1–PA33, pass the root through
-report before advancing. `perl scripts/cppgm_file_audit.pl --paths dev`
-checks the implementation's shape: file and function size limits, counted in
-lines of code, and shortcuts such as reading the environment or running other
+Replace N with the assignment number. The through report includes PA N;
+no separate PA N check is needed.
+`perl scripts/cppgm_file_audit.pl --paths dev` checks the implementation's
+shape: file and function size limits, counted in lines of code, and shortcuts
+such as reading the environment or running other
 programs from the compiler. It is advisory: no exit criterion runs it, the
 shipped files pass it, and a tree that fails it usually has a shortcut or a
 file too large to review. PA34 ends with `make inception`, PA35 with
@@ -36,8 +37,8 @@ file too large to review. PA34 ends with `make inception`, PA35 with
 owning handout when changing those surfaces.
 
 Default tests run the course contract described by each handout.
-PA33 requires behavior, MIR bounds and debug checks, with no profiler or
-allocator-specific diagnostics.
+PA33 requires behavior, MIR bounds, debug checks and kernel instruction counts,
+with no allocator-specific diagnostics.
 
 ## References
 

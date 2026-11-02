@@ -128,7 +128,7 @@ out of the export.
 | Counters, strength, quotients and possible bits | PA32 `600-counter-boundaries` and the narrow-arithmetic kernel, including runtime wrapping and signed negative operands. |
 | Library math and guards | PA32 `600-library-math-effects` and `600-user-math-definition`, including errno, NaNs, infinity, negative zero and user definitions. |
 | Calls, specialization, virtual dispatch and EH | PA32 `600-call-and-cleanup-boundaries`, `600-handler-visible-loop-state`; PA33 reuses the source/object behavior path. Existing call-removal and growth envelopes remain the quality requirements. |
-| Bounded searches | PA32's original bounded-search kernel and reverse/early-exit cases in `600-loop-exit-and-memory-effects`. |
+| Bounded searches | PA32's original bounded-search kernel, reverse/early-exit cases in `600-loop-exit-and-memory-effects`, and host `600-bounded-search-pages` with protected pages before/after the valid range (including empty and one-element ranges). |
 | Rotation, store motion and unswitching | PA32 `600-loop-exit-and-memory-effects`, zero-trip/null cases, conditional stores and calls. |
 | Optional packing and interchange | Six original inputs under PA32 `tests/improvements`, with shared scalar oracle, all published tails and overlap directions, ordered reductions, optional counts/timing and no speed gate. |
 | Native allocation, phis and cold calls | PA33 behavior `600-phi-and-reload-edge`, `600-select-and-phi-lifetimes`; shared cold-call-state kernel. |

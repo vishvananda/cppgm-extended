@@ -21,13 +21,14 @@ For assignment N, read `paN/README.md`, then:
 
 ```sh
 make build
-make test-paN
-make test-report-through-paN
+make test-paN                 # Iterate on PA N
+make test-report-through-paN  # Final validation for PA1–PA33
 ```
 
-Replace N with the assignment number. A clean through-milestone report is the
-exit criterion for PA1–PA33. [PA34](pa34/README.md) runs the self-host ladder
-and ends with `make inception`, comparing the self and inception generations.
+Replace N with the assignment number. The through report includes PA N;
+no separate PA N check is needed.
+[PA34](pa34/README.md) runs the self-host ladder and ends with `make inception`,
+comparing the self and inception generations.
 [PA35](pa35/README.md) makes the compiler fast and ends with
 `make -C pa35 test`, its own gates on generated code and compile speed.
 Later milestones extend your existing compiler; do not reset to the initial

@@ -197,7 +197,7 @@ def main(argv=None):
     parser.add_argument('--optimizer', default=str(ROOT / 'dev/lowiropt'))
     parser.add_argument('--backend', default=str(ROOT / 'dev/cppgm++-ref'))
     parser.add_argument('--compiler', default=str(ROOT / 'dev/cppgm++'))
-    parser.add_argument('--host', default=os.environ.get('CPPGM_HOST_CXX', 'g++'))
+    parser.add_argument('--host', default='g++', help='GCC driver for the common oracle and comparison')
     parser.add_argument('--out', type=Path, default=ROOT / 'pa32/obj/quality')
     parser.add_argument('--scale', type=int, default=1)
     parser.add_argument('--iterations', type=int)

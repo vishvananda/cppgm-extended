@@ -1,19 +1,18 @@
 # Testing and references
 
-Run these commands from the repository root, replacing N with the assignment
-number:
+Run commands from the repository root, replacing N with the assignment number:
 
 ```sh
 make build
-make test-paN
-make test-report-through-paN
-make test-report
-make inception
+make test-paN                 # Iterate on PA N
+make test-report-through-paN  # Final validation for PA1–PA33
+make test-report              # Full PA1–PA33 report
+make inception                # PA34 completion
 ```
 
-For PA1–PA33, a clean through-milestone report is the exit criterion. PA34
-ends with inception. PA35 ends with `make -C pa35 test`, which is not part of
-the report: its gates compare your compiler with the host and its own seed.
+The through report includes PA N; no separate PA N check is needed.
+PA35 ends with `make -C pa35 test`, which is not part of the report: its gates compare your compiler with the host and
+its own seed.
 `make test` builds once and runs all assignment suites; `make test-report`
 keeps going and summarizes failures. Use `ACTIVE_TEST_REPORT_PAS='pa8 pa10'`
 to narrow a report.
@@ -49,14 +48,14 @@ without running shell login scripts.
 - Default `make test` and the through reports run the course contract;
   additional compatibility material does not add completion requirements.
 
-PA33 checks executable behavior, declared MIR bounds and debug locations.
-It requires no profiler, allocator statistics or exact optimized MIR match.
+PA33 checks executable behavior, declared MIR bounds, debug locations and
+kernel instruction counts. It requires no allocator statistics or exact
+optimized MIR match.
 
 From PA5 onward, filenames use a three-digit feature-cluster prefix
 (`100-`, `200-`, ...); PA1–PA4 use finer subgroups. Required controls follow
 the same prefixes and belong in the earliest assignment owning every feature
-their source and checker require. Solution regressions have local naming.
-Required rejection cases are in the
+their source and checker require. Required rejection cases are in the
 owning suite; unspecified inputs do not add requirements.
 
 A graded input is an `x.t` file in the tool's input language (companions
