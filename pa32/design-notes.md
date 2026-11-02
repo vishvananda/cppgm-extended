@@ -288,7 +288,7 @@ be inlined inside an active region; its cloned calls stay in that region.
 Sizes count a callee's instructions outside cold blocks (blocks from which
 every path ends in a `noreturn` call); cold code is copied but not charged.
 At a call site inside one of the caller's loops the ordinary and late-wave
-caps double.
+caps are four times larger.
 
 | policy | `-O1` | `-O2`, `-O3` |
 |---|---|---|

@@ -18,8 +18,8 @@ const uint32_t kOrdinaryCallCap = 6;
 const uint32_t kHintCap = 48;
 const uint32_t kCallerBudget = 1536;
 // A call inside one of the caller's loops runs once per iteration: its
-// callee's caps double.
-const uint32_t kLoopSiteScale = 2;
+// callee's caps grow fourfold.
+const uint32_t kLoopSiteScale = 4;
 const uint32_t kTrivialLeaf = 4;
 // Single-call (definition-removing) inlining; from O2 a callee twice that
 // size and its caller twice the budget (a lambda's instantiation of a
