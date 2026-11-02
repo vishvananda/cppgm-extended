@@ -1,6 +1,7 @@
 #include "opt/interprocedural.h"
 
 #include "opt/function_ir.h"
+#include "opt/loops.h"
 #include "opt/scalar_fold.h"
 
 namespace opt {
@@ -205,6 +206,99 @@ void Specializer::remove_parameters(uint32_t f, const std::vector<uint8_t>& remo
 }
 
 } // namespace
+
+// Whether the function's own instructions leave its callers' memory alone:
+// no store but to a slot whose address stays here, no volatile or atomic
+// access, no exception work. Calls to defined functions are the caller's
+// question; any other call must promise as much itself.
+static bool writes_nothing_outside(const Program& program, const FunctionBody& body, const CallGraph& graph)
+{
+	std::vector<uint8_t> escaped;
+	auto own = [&](Value address) {
+		const Located at = locate(body, address);
+		if (!at.root.is(ValueKind::Slot))
+			return false;
+		if (escaped.empty())
+			escaped = escaped_slots(body, true);
+		return escaped[at.root.index] == 0;
+	};
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			const Instruction& inst = body.instructions[i];
+			if ((inst.flags & IF_VOLATILE) != 0 && (inst.op == Opcode::Load || inst.op == Opcode::Store))
+				return false;
+			if (inst.op == Opcode::Store || inst.op == Opcode::CopyObject)
+			{
+				if (!own(inst.ops[1]))
+					return false;
+			}
+			else if (inst.op == Opcode::ZeroInit)
+			{
+				if (!own(inst.ops[0]))
+					return false;
+			}
+			else if (inst.op == Opcode::Call)
+			{
+				const bool defined = inst.ops[0].is(ValueKind::Symbol) && graph.function_of(inst.ops[0].index) != kNoId;
+				if (!defined && call_may_write_memory(program, inst))
+					return false;
+			}
+			else if (may_write_memory(program, inst))
+				return false;
+		}
+	return true;
+}
+
+bool infer_read_only_functions(Program& program)
+{
+	CallGraph graph;
+	build_call_graph(program, graph);
+	const uint32_t n = static_cast<uint32_t>(graph.functions.size());
+	std::vector<uint8_t> writes(n, 0);
+	std::vector<uint32_t> work;
+	for (uint32_t f = 0; f < n; ++f)
+	{
+		const Symbol& symbol = program.symbols[graph.functions[f]];
+		if ((symbol.metadata.flags & SF_REPLACEABLE) != 0 ||
+			!writes_nothing_outside(program, *program.functions[symbol.detail].body, graph))
+		{
+			writes[f] = 1;
+			work.push_back(f);
+		}
+	}
+	// The callers of a function that writes write too; what remains calls
+	// only functions that do not, cycles included.
+	std::vector<uint32_t> caller_first(n + 1, 0), callers(graph.callees.size());
+	for (uint32_t callee : graph.callees)
+		++caller_first[callee + 1];
+	for (uint32_t f = 0; f < n; ++f)
+		caller_first[f + 1] += caller_first[f];
+	std::vector<uint32_t> at(caller_first.begin(), caller_first.end() - 1);
+	for (uint32_t g = 0; g < n; ++g)
+		for (uint32_t k = graph.callee_first[g]; k < graph.callee_first[g + 1]; ++k)
+			callers[at[graph.callees[k]]++] = g;
+	while (!work.empty())
+	{
+		const uint32_t f = work.back();
+		work.pop_back();
+		for (uint32_t k = caller_first[f]; k < caller_first[f + 1]; ++k)
+			if (writes[callers[k]] == 0)
+			{
+				writes[callers[k]] = 1;
+				work.push_back(callers[k]);
+			}
+	}
+	bool any = false;
+	program.read_only_functions.assign(program.symbols.size(), 0);
+	for (uint32_t f = 0; f < n; ++f)
+		if (writes[f] == 0)
+		{
+			program.read_only_functions[graph.functions[f]] = 1;
+			any = true;
+		}
+	return any;
+}
 
 bool specialize_arguments(Program& program, OptimizerStats& stats, const std::function<void(SymbolId)>& simplify)
 {

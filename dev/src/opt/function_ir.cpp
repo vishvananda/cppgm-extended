@@ -14,6 +14,9 @@ using namespace lowir;
 
 bool call_may_write_memory(const Program& program, const Instruction& call)
 {
+	if (call.ops[0].is(ValueKind::Symbol) && call.ops[0].index < program.read_only_functions.size() &&
+		program.read_only_functions[call.ops[0].index] != 0)
+		return false;
 	const Signature* boundary = program.call_boundary(call);
 	return boundary == nullptr ||
 		(boundary->boundary.effects != ir_model::CFXM_READNONE &&
@@ -30,7 +33,7 @@ bool may_unwind(const Program& program, const Instruction& inst)
 	return boundary == nullptr || boundary->boundary.unwind != ir_model::CUM_NO;
 }
 
-std::vector<uint8_t> escaped_slots(const FunctionBody& body)
+std::vector<uint8_t> escaped_slots(const FunctionBody& body, bool any_index)
 {
 	std::vector<uint8_t> escaped(body.slots.size(), 0);
 	std::vector<uint32_t> slot_of(body.temps.size(), kNoId); // the slot a temp's address is in
@@ -49,7 +52,7 @@ std::vector<uint8_t> escaped_slots(const FunctionBody& body)
 		{
 			const Instruction& inst = body.instructions[i];
 			if (inst.op == Opcode::Addr || (inst.op == Opcode::Copy && inst.type.is_pointer()) ||
-				(inst.op == Opcode::Index && inst.ops[1].is(ValueKind::Integer)))
+				(inst.op == Opcode::Index && (any_index || inst.ops[1].is(ValueKind::Integer))))
 			{
 				if (inst.result != kNoId)
 					slot_of[inst.result] = slot_in(inst.ops[0]);

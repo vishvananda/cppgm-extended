@@ -282,6 +282,9 @@ struct Program
 	// callee's (an Unresolved callee's forward boundary, if a producer
 	// stated one); null for an indirect call without a signature.
 	const Signature* call_boundary(const Instruction& call) const;
+	// Per symbol: a defined function the optimizer proved writes no memory
+	// its callers can see (empty until then, and never written out).
+	std::vector<uint8_t> read_only_functions;
 	// The boundary of a function referenced before it is declared or
 	// defined (a producer streaming definitions to a back end states it:
 	// the declaration or definition that follows has the same).

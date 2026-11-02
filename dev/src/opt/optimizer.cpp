@@ -320,6 +320,22 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 // sizes would see): i128 values as halves, then selects, each round's
 // cleanup dropping the arms and merging what the next round may convert,
 // then their compares split beside them.
+bool calls_read_only(const FunctionContext& context)
+{
+	const Program& program = context.program;
+	const FunctionBody& body = context.body;
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			const Instruction& inst = body.instructions[i];
+			if (inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol) &&
+				inst.ops[0].index < program.read_only_functions.size() &&
+				program.read_only_functions[inst.ops[0].index] != 0)
+				return true;
+		}
+	return false;
+}
+
 void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, const OptimizerOptions& options,
 	std::vector<uint8_t>& nounwind, const std::vector<uint8_t>& unwritten)
 {
@@ -328,7 +344,11 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	context.nounwind = &nounwind;
 	context.unwritten = &unwritten;
 	enable_verify(context, options);
-	bool changed = RUN_PASS(combine_sin_cos);
+	// What a call now known to write nothing no longer hides.
+	bool changed = calls_read_only(context) && RUN_PASS(forward_memory);
+	if (changed)
+		RUN_PASS(remove_dead_code);
+	changed = RUN_PASS(combine_sin_cos) || changed;
 	changed = (options.level >= 2 && RUN_PASS(guard_sqrt_calls)) || changed;
 	// i128 values as halves once the inliner has sized its callees whole
 	// (a variable shift is a dozen i64 instructions): the halves' slots
@@ -594,6 +614,8 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 		prune_unreachable(program, stats);
 		if (level >= 2 && specialize_arguments(program, stats, simplify))
 			prune_unreachable(program, stats);
+		if (level >= 2)
+			infer_read_only_functions(program);
 		for (SymbolId s = 0; level >= 2 && s < program.symbols.size(); ++s)
 			if (program.symbols[s].kind == SymbolKind::FunctionDefinition &&
 				program.functions[program.symbols[s].detail].body != nullptr)

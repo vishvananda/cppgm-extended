@@ -13,6 +13,10 @@
 // simplified once (`simplify`).
 namespace opt {
 
+// Marks each defined function whose calls leave memory as it was
+// (Program::read_only_functions); true when it marks one.
+bool infer_read_only_functions(lowir::Program& program);
+
 bool specialize_arguments(
 	lowir::Program& program, OptimizerStats& stats, const std::function<void(lowir::SymbolId)>& simplify);
 

@@ -372,6 +372,27 @@ again; the boundary is internal, so no other unit sees the change. A call
 with a stated signature or another argument count disqualifies the
 function. Pruning follows.
 
+### Read-Only Functions (`-O2`, `-O3`)
+
+After argument propagation, mark the functions that write no memory their
+callers can see. Such a function:
+
+- writes only slots whose address stays in the function,
+- does no volatile or atomic access and no exception work,
+- is not replaceable, and
+- calls only functions of this kind, or declarations stated `readonly` or
+  `readnone`.
+
+Start with every definition marked. Remove the mark from each function that
+fails, then from the callers of each unmarked function, so call cycles keep the
+mark. One scan of the bodies and one walk of the call graph are enough.
+
+Forwarding, load hoisting and the other memory passes then treat a call to a
+marked function as a reader: loads move across it, and stores it may read stay.
+The mark is not written to LowIR text. Run forwarding again at the start of the
+final pass in each function that calls a marked function, since the earlier
+rounds saw those calls as writes.
+
 ### Final Pass (`-O2`, `-O3`)
 
 After argument propagation every function gets these rewrites; if any of
