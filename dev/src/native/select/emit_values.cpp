@@ -3,6 +3,7 @@
 #include <string>
 
 #include "native/backend_error.h"
+#include "native/select/operand_roles.h"
 #include "support/internal_error.h"
 
 // Instruction selection for value-producing LowIR instructions, loads and
@@ -64,6 +65,67 @@ Reg FunctionSelector::dying_reg(Value value) const
 	return t.reg;
 }
 
+// The registers of the temps the instruction reads, also through values it
+// folds into itself (an address, a compare), which hold no register of their
+// own.
+uint32_t FunctionSelector::read_registers(const Instruction& inst, unsigned depth) const
+{
+	uint32_t regs = 0;
+	for_each_operand(*body_, inst, [&](const Value& operand, OperandRole) {
+		const Value v = resolve(operand);
+		if (v.kind != ValueKind::Temp)
+			return;
+		const TempInfo& t = temps_[v.index];
+		if (t.reg != kNoReg)
+			regs |= 1u << t.reg;
+		else if (depth != 0 && v.index >= body_->parameter_count && !(t.flags & TF_HOMED) &&
+			body_->temps[v.index].def != lowir::kNoId)
+			regs |= read_registers(body_->instructions[body_->temps[v.index].def], depth - 1);
+	});
+	return regs;
+}
+
+// O1+: with no register free, the block-local value that lives longest goes to
+// its home, when it outlives the new value: a value with few reads left pays a
+// store and its reloads, and a short one keeps a register.
+Reg FunctionSelector::evict_for(const Instruction& inst, uint32_t exclude)
+{
+	const TempInfo& t = temps_[inst.result];
+	if (level_ < 1 || (t.flags & TF_GLOBAL) || t.block != block_ || t.last <= t.def)
+		return kNoReg;
+	const uint32_t pool = t.cls == VClass::Xmm ? kAllocatableXmms
+		: t.cls == VClass::Gpr                 ? kAllocatableGprs | (rbp_free_ ? 1u << RBP : 0u)
+											   : 0;
+	uint32_t open = pool & occupied_ & ~t.forbid & ~pinned_ & ~exclude & ~excluded_ & ~read_registers(inst, 3);
+	Reg victim = kNoReg;
+	int32_t latest = t.last;
+	for (; open != 0; open &= open - 1)
+	{
+		const Reg r = static_cast<Reg>(__builtin_ctz(open));
+		const uint32_t held = owner_[r];
+		if (held == kNoId || held < body_->parameter_count)
+			continue;
+		const TempInfo& h = temps_[held];
+		if (h.reg == r && h.greg == kNoReg && !(h.flags & TF_GLOBAL) && h.block == block_ && h.last > latest)
+		{
+			victim = r;
+			latest = h.last;
+		}
+	}
+	if (victim == kNoReg)
+		return kNoReg;
+	const uint32_t held = owner_[victim];
+	const Operand home = Operand::make_frame(home_of(held));
+	const TypeKind kind = body_->temps[held].type.kind();
+	if (is_xmm(victim))
+		emit2(Op::FMov, kind, home, Operand::make_reg(victim));
+	else
+		emit2(Op::Store, kind, home, Operand::make_reg(victim));
+	temps_[held].flags |= TF_HOMED;
+	release(victim);
+	return victim;
+}
+
 Reg FunctionSelector::result_reg(const Instruction& inst, Reg prefer0, Reg prefer1, uint32_t exclude)
 {
 	const uint32_t temp = inst.result;
@@ -84,7 +146,9 @@ Reg FunctionSelector::result_reg(const Instruction& inst, Reg prefer0, Reg prefe
 		++stats_.defined_in_plan;
 		return t.greg;
 	}
-	const Reg reg = allocate(temp, exclude, prefer0, prefer1);
+	Reg reg = allocate(temp, exclude, prefer0, prefer1);
+	if (reg == kNoReg)
+		reg = evict_for(inst, exclude);
 	if (reg == kNoReg)
 	{
 		if (!(t.flags & TF_GLOBAL) && t.last > t.def)

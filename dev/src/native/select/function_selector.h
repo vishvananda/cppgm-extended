@@ -167,6 +167,8 @@ public:
 	void emit_bulk(const lowir::Instruction& inst);
 	void emit_wide(const lowir::Instruction& inst);
 	void normalize(Reg reg, lowir::TypeKind type);
+	uint32_t read_registers(const lowir::Instruction& inst, unsigned depth) const;
+	Reg evict_for(const lowir::Instruction& inst, uint32_t exclude);
 	Reg result_reg(const lowir::Instruction& inst, Reg prefer0 = kNoReg, Reg prefer1 = kNoReg, uint32_t exclude = 0);
 	void finish_result(const lowir::Instruction& inst, Reg reg);
 	void store_result_memory(const lowir::Instruction& inst, const Operand& src, lowir::TypeKind type);
