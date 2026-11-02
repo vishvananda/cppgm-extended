@@ -13,6 +13,7 @@ import hashlib
 import json
 import math
 import os
+import platform
 from pathlib import Path
 import re
 import resource
@@ -438,6 +439,17 @@ def tool_version(command):
     return output.splitlines()[0] if output else None
 
 
+def cpu_model():
+    try:
+        with open('/proc/cpuinfo') as cpuinfo:
+            for line in cpuinfo:
+                if line.startswith('model name'):
+                    return line.split(':', 1)[1].strip()
+    except OSError:
+        pass
+    return platform.processor() or None
+
+
 def run(arguments):
     manifest = load_manifest(arguments.manifest)
     tools = dict(gcc=arguments.gxx, cppgm=str(Path(arguments.cppgm).resolve()))
@@ -458,7 +470,8 @@ def run(arguments):
             print(f'{result["name"]}: {result["status"]} {result.get("error", "")}',
                   flush=True)
     document = dict(
-        environment=dict(gcc=tool_version([arguments.gxx, '--version']),
+        environment=dict(cpu=cpu_model(),
+                         gcc=tool_version([arguments.gxx, '--version']),
                          clang=tool_version([tools.get('clang', 'false'), '--version']),
                          valgrind=tool_version(['valgrind', '--version'])),
         programs=results)
@@ -570,8 +583,11 @@ def summary(document, changes, builds=None):
     lines = ['# Public benchmarks', '',
              f'{len(results) - len(failures)} of {len(results)} programs built '
              'with cppgm++ and g++ and agreed. Each number is the reference over '
-             'cppgm++, so above 1× means cppgm++ is smaller or faster.', '',
-             '| Measure | vs g++ | Programs | vs clang++ | Programs |',
+             'cppgm++, so above 1× means cppgm++ is smaller or faster.', '']
+    cpu = document.get('environment', {}).get('cpu')
+    if cpu:
+        lines += [f'CPU: {cpu}.', '']
+    lines += ['| Measure | vs g++ | Programs | vs clang++ | Programs |',
              '| --- | ---: | ---: | ---: | ---: |']
     for metric, title in METRICS:
         cells = []
