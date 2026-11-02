@@ -101,6 +101,26 @@ UnsignedMagic unsigned_magic(uint64_t d)
 	return magic;
 }
 
+// A multiplier below 2^64 and the shift after it for a dividend of `bits` bits
+// and an odd divisor d >= 3 (Granlund and Montgomery, 1994).
+UnsignedMagic narrow_unsigned_magic(uint64_t d, unsigned bits)
+{
+	typedef unsigned __int128 u128;
+	unsigned log = 64 - static_cast<unsigned>(__builtin_clzll(d - 1));
+	UnsignedMagic magic = { 0, log, false };
+	const u128 low = (u128(1) << (64 + log)) / d;
+	const u128 high = ((u128(1) << (64 + log)) + (u128(1) << (64 + log - bits))) / d;
+	u128 lo = low, hi = high;
+	while (magic.shift > 0 && lo >> 1 < hi >> 1)
+	{
+		lo >>= 1;
+		hi >>= 1;
+		--magic.shift;
+	}
+	magic.multiplier = static_cast<uint64_t>(hi);
+	return magic;
+}
+
 // Hacker's Delight 10-1 (magic) at 64 bits: for a signed divisor with
 // |d| >= 2 that is not a power of two.
 SignedMagic signed_magic(int64_t d)
@@ -454,8 +474,16 @@ Reg FunctionSelector::emit_magic_remainder(Reg x, Reg q, int64_t divisor)
 // remainder's) register, rax or rdx. x is in neither.
 Reg FunctionSelector::emit_unsigned_magic_divide(Reg x, int64_t divisor, bool remainder)
 {
-	const UnsignedMagic magic = unsigned_magic(static_cast<uint64_t>(divisor));
+	UnsignedMagic magic = unsigned_magic(static_cast<uint64_t>(divisor));
 	emit2(Op::Mov, TypeKind::Void, reg(RAX), reg(x));
+	// An even divisor needing the 65-bit multiplier: the dividend's low zeros
+	// shifted out first leave a shorter dividend, which one fits.
+	const unsigned zeros = trailing_zeros(static_cast<uint64_t>(divisor));
+	if (magic.add && zeros != 0)
+	{
+		magic = narrow_unsigned_magic(static_cast<uint64_t>(divisor) >> zeros, 64 - zeros);
+		emit2(Op::Shr, TypeKind::I64, reg(RAX), imm(zeros));
+	}
 	emit2(Op::Mov, TypeKind::Void, reg(kEmitScratch), imm(static_cast<int64_t>(magic.multiplier)));
 	emit1(Op::MulWide, TypeKind::I64, reg(kEmitScratch));
 	Reg q = RDX;

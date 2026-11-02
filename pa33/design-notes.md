@@ -46,6 +46,9 @@ that paid there in the course solution:
   with its second operand, which copying the first would destroy. In the
   floating-point loops profiled for this, reloads and copies were the largest
   difference from GCC's code.
+- An unsigned divide by an even constant can take a shorter path. Where the odd
+  divisor's multiplier needs 65 bits, shift the divisor's low zeros out of the
+  dividend first: the dividend is shorter, and a 64-bit multiplier then serves.
 - Divide at the width of the type. A 64-bit `idiv` of two `int`s gives the
   right answer, but on many x86 cores it costs several times what the 32-bit
   one does, and an instruction count will not show it. The 32-bit form traps

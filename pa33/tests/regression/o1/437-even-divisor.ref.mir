@@ -1,0 +1,52 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @billions
+  abi
+    param %x -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rdi
+    shr rax, 9
+    mov r11, 19342813113834067
+    mul r11
+    shr rdx, 11
+    ret rdx
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12
+
+  block ^entry
+    mov rdi, -1
+    call @billions [args=(rdi)]
+    mov rbx, rax
+    mov rdi, 999999999
+    call @billions [args=(rdi)]
+    mov r12, rax
+    mov rdi, 1000000000
+    call @billions [args=(rdi)]
+    add r12, rax
+    mov rax, rbx
+    mov r11, -6067343680855748867
+    mul r11
+    shr rdx, 26
+    add rdx, r12
+    sext.i32 rdx
+    ret rdx
