@@ -150,8 +150,9 @@ def check_fixture(args, fixture, output, tools):
                                        f'{name}: {actual!r}, expected {expected!r}')
                 data['checks'] += 1
     # Core fixtures measure each alias scenario. Optional exercises report one
-    # representative workload after checking correctness for every scenario.
-    scenarios = config['scenarios'][-1:] if args.report_only else config['scenarios']
+    # longest disjoint workload after checking correctness for every scenario.
+    representative = max(config['scenarios'], key=lambda s: (s >> 2, -(s & 3)))
+    scenarios = [representative] if args.report_only else config['scenarios']
     measurements = []
     for scenario in scenarios:
         counts = {}

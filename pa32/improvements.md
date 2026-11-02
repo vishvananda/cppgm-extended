@@ -39,7 +39,8 @@ make test-improvements
 
 PA32 measures LowIR optimization through the supplied `-O0` backend. PA33
 measures the combined compiler path. Both execute the programs and report
-instruction counts; no speed threshold is imposed on this optional target.
+instruction counts for the longest disjoint scenario; no speed threshold is
+imposed on this optional target. Correctness covers every published scenario.
 
 | Input in `tests/improvements/` | Question | Correctness cases |
 | --- | --- | --- |
