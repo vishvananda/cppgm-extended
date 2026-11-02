@@ -264,7 +264,11 @@ private:
 	// Per temporary: proved nonzero on every path into the current block
 	// (by a branch edge into a block whose only predecessor tested it).
 	std::vector<uint8_t> nonzero_;
+	// Per temporary: proved finite on every path into the current block.
+	std::vector<uint8_t> finite_;
+	// Undo entries of both (a finite one has kFiniteMark set).
 	std::vector<TempId> nonzero_undo_;
+	static constexpr TempId kFiniteMark = 1u << 31;
 	// Per temporary: the literal a branch edge proved it equals on every
 	// path into the current block (none outside such a region).
 	std::vector<Value> equal_;
@@ -277,6 +281,10 @@ private:
 	{
 		return v.is(ValueKind::Temp) && v.index < nonzero_.size() && nonzero_[v.index] != 0;
 	}
+	void float_bound_facts(const Instruction& test, bool taken);
+	void mark_finite(Value v);
+	bool finite(Value v) const;
+	bool not_nan(Value v) const;
 };
 
 struct Simplifier::Pool
@@ -287,7 +295,7 @@ struct Simplifier::Pool
 	FlatMap<ExprKey, Available, ExprHash> table;
 	FlatMap<uint64_t, Chain, SignatureHash> phi_heads;
 	std::vector<std::pair<InstId, uint32_t>> phi_chain;
-	std::vector<uint8_t> handler_reached, nonzero, walked;
+	std::vector<uint8_t> handler_reached, nonzero, finite, walked;
 	std::vector<TempId> nonzero_undo, equal_undo;
 };
 
@@ -306,6 +314,7 @@ void Simplifier::exchange(Pool& pool)
 	phi_chain_.swap(pool.phi_chain);
 	handler_reached_.swap(pool.handler_reached);
 	nonzero_.swap(pool.nonzero);
+	finite_.swap(pool.finite);
 	walked_.swap(pool.walked);
 	nonzero_undo_.swap(pool.nonzero_undo);
 	equal_undo_.swap(pool.equal_undo);
@@ -933,6 +942,8 @@ void Simplifier::edge_facts(BlockId block)
 		equal_undo_.push_back(x.index);
 	}
 	const Instruction* def = producer(term.ops[0]);
+	if (def != nullptr && def->op == Opcode::Compare && def->type.is_float())
+		float_bound_facts(*def, taken);
 	Constant zero;
 	if (def == nullptr || def->op != Opcode::Compare || !def->type.is_integer() ||
 		!literal_constant(body_, def->ops[1], zero) || !is_integer(def->type, zero, 0))
@@ -940,6 +951,119 @@ void Simplifier::edge_facts(BlockId block)
 	const ComparePredicate pred = static_cast<ComparePredicate>(def->sub);
 	if ((taken && pred == ComparePredicate::Ne) || (!taken && pred == ComparePredicate::Eq))
 		mark(def->ops[0]);
+}
+
+void Simplifier::mark_finite(Value v)
+{
+	if (v.is(ValueKind::Temp) && v.index < finite_.size() && !finite_[v.index])
+	{
+		finite_[v.index] = 1;
+		nonzero_undo_.push_back(v.index | kFiniteMark);
+	}
+}
+
+// A branch on `s <= k` (or `s < k`, `k >= s`, ..., or the negation of an
+// unordered test) for a finite literal k proves s no NaN and at most k. A
+// square is at least 0 or a NaN, so when s is a square or a sum of two,
+// each square lies in [0, k] and it and the value squared are finite (the
+// escape test `x*x + y*y <= 4` of a complex iteration).
+void Simplifier::float_bound_facts(const Instruction& test, bool taken)
+{
+	ComparePredicate pred = static_cast<ComparePredicate>(test.sub);
+	// Not taken, an unordered test is the ordered one it negates.
+	if (!taken)
+		switch (pred)
+		{
+		case ComparePredicate::Ult:
+			pred = ComparePredicate::Ge;
+			break;
+		case ComparePredicate::Ule:
+			pred = ComparePredicate::Gt;
+			break;
+		case ComparePredicate::Ugt:
+			pred = ComparePredicate::Le;
+			break;
+		case ComparePredicate::Uge:
+			pred = ComparePredicate::Lt;
+			break;
+		default:
+			return;
+		}
+	Value s, k;
+	if (pred == ComparePredicate::Lt || pred == ComparePredicate::Le)
+	{
+		s = test.ops[0];
+		k = test.ops[1];
+	}
+	else if (pred == ComparePredicate::Gt || pred == ComparePredicate::Ge)
+	{
+		s = test.ops[1];
+		k = test.ops[0];
+	}
+	else
+		return;
+	if (!finite(k) || !k.is(ValueKind::Float))
+		return;
+	auto square = [&](Value v) -> const Instruction* {
+		const Instruction* def = producer(v);
+		return def != nullptr && def->op == Opcode::Binary && static_cast<BinaryOp>(def->sub) == BinaryOp::Mul &&
+				def->ops[0] == def->ops[1]
+			? def
+			: nullptr;
+	};
+	const Instruction* sum = producer(s);
+	const Instruction* a = square(s);
+	const Instruction* b = nullptr;
+	if (a == nullptr && sum != nullptr && sum->op == Opcode::Binary && static_cast<BinaryOp>(sum->sub) == BinaryOp::Add)
+	{
+		a = square(sum->ops[0]);
+		b = square(sum->ops[1]);
+		if (a == nullptr || b == nullptr)
+			return;
+	}
+	if (a == nullptr)
+		return;
+	mark_finite(s);
+	for (const Instruction* q : { a, b })
+		if (q != nullptr)
+		{
+			mark_finite(Value::temp(q->result));
+			mark_finite(q->ops[0]);
+		}
+}
+
+// A finite literal, a value an edge proved finite, or an integer's
+// conversion (64 bits or fewer).
+bool Simplifier::finite(Value v) const
+{
+	if (v.is(ValueKind::Float))
+	{
+		const uint64_t bits = body_.literals[v.index].low;
+		return v.float_kind == TypeKind::F32 ? ((bits >> 23) & 0xff) != 0xff : ((bits >> 52) & 0x7ff) != 0x7ff;
+	}
+	if (!v.is(ValueKind::Temp))
+		return false;
+	if (v.index < finite_.size() && finite_[v.index])
+		return true;
+	const Instruction* def = producer(v);
+	if (def == nullptr || def->op != Opcode::Convert)
+		return false;
+	const ConvertOp op = static_cast<ConvertOp>(def->sub);
+	return (op == ConvertOp::SIToFP || op == ConvertOp::UIToFP) && convert_source_type(*def).kind() != TypeKind::I128;
+}
+
+// No NaN: a finite value, or the sum, difference or product of two (which
+// may overflow to an infinity, not to a NaN).
+bool Simplifier::not_nan(Value v) const
+{
+	if (finite(v))
+		return true;
+	const Instruction* def = producer(v);
+	if (def == nullptr || def->op != Opcode::Binary || !def->type.is_float())
+		return false;
+	const BinaryOp op = static_cast<BinaryOp>(def->sub);
+	return (op == BinaryOp::Add || op == BinaryOp::Sub || op == BinaryOp::Mul) && finite(def->ops[0]) &&
+		finite(def->ops[1]);
 }
 
 // The equality x == y the branch ending `from` proves on its edge to `to`:
@@ -1083,6 +1207,12 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 		const bool equal = pred == ComparePredicate::Eq || pred == ComparePredicate::Le ||
 			pred == ComparePredicate::Ge || pred == ComparePredicate::Ule || pred == ComparePredicate::Uge;
 		out = literal(truth_constant(equal));
+		return true;
+	}
+	// x != x is a NaN test (x == x its negation).
+	if (type.is_float() && x == y && (pred == ComparePredicate::Ne || pred == ComparePredicate::Eq) && not_nan(x))
+	{
+		out = literal(truth_constant(pred == ComparePredicate::Eq));
 		return true;
 	}
 	if (type.is_float())
@@ -2633,6 +2763,7 @@ bool Simplifier::run()
 	// Preorder over the dominator tree.
 	std::vector<std::pair<BlockId, uint32_t>> stack;
 	nonzero_.assign(body_.temps.size(), 0);
+	finite_.assign(body_.temps.size(), 0);
 	equal_.assign(body_.temps.size(), Value::none());
 	walked_.assign(body_.blocks.size(), 0);
 	c_.entry_block_of(simplify_values);
@@ -2661,7 +2792,13 @@ bool Simplifier::run()
 		equal_undo_.resize(equal_marks.back());
 		equal_marks.pop_back();
 		for (size_t u = nonzero_undo_.size(); u > nonzero_marks.back(); --u)
-			nonzero_[nonzero_undo_[u - 1]] = 0;
+		{
+			const TempId t = nonzero_undo_[u - 1];
+			if ((t & kFiniteMark) != 0)
+				finite_[t & ~kFiniteMark] = 0;
+			else
+				nonzero_[t] = 0;
+		}
 		nonzero_undo_.resize(nonzero_marks.back());
 		nonzero_marks.pop_back();
 		stack.pop_back();

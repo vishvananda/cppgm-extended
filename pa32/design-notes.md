@@ -89,6 +89,13 @@ do is not run again until the body changes.
   taken, `ne` not taken, and unsigned tests that pin `x`) replaces `x` with
   `k`. A two-input phi that picks the value its edges prove equal
   (`min(n, max)`, `max(n, 0)`) becomes that value.
+- A branch on `s <= k` for a finite literal `k` (or `ugt` not taken), where
+  `s` is a square or the sum of two squares, proves each square and the value
+  squared finite there: a square is at least 0 or a NaN. A sum, difference
+  or product of finite values is no NaN, so `d != d` folds to false. Complex
+  multiplication tests its real part so before calling `__muldc3`; in the
+  Mandelbrot iteration over `std::complex`, which took 9% fewer cycles, the
+  call goes.
 - A nonvolatile integer or pointer load at a constant offset into a global
   of `storage=readonly`, or into an internal global the unit never writes
   (every use of its address reads through it and no other global's data
