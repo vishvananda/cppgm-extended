@@ -49,26 +49,26 @@ function @across_calls
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    param-slot %a -> [rbp-8] : f64
-    param-slot %b -> [rbp-16] : f64
-    param-slot %c -> [rbp-24] : f64
+    param-slot %a -> [rbp-16] : f64
+    param-slot %b -> [rbp-24] : f64
+    param-slot %c -> [rbp-8] : f64
     temp %x -> [rbp-32] : f64
 
   block ^entry
-    fmov.f64 [rbp-8], xmm0
-    fmov.f64 [rbp-16], xmm1
-    fmov.f64 [rbp-24], xmm2
-    fmov.f64 xmm0, [rbp-8]
-    fmov.f64 xmm1, [rbp-16]
+    fmov.f64 [rbp-16], xmm0
+    fmov.f64 [rbp-24], xmm1
+    fmov.f64 [rbp-8], xmm2
+    fmov.f64 xmm0, xmm0
+    fmov.f64 xmm1, xmm1
     call @sub [args=(xmm0,xmm1)]
     fmov.f64 xmm14, xmm0
     fmov.f64 [rbp-32], xmm14
-    fmov.f64 xmm0, [rbp-16]
-    fmov.f64 xmm1, [rbp-24]
+    fmov.f64 xmm0, [rbp-24]
+    fmov.f64 xmm1, [rbp-8]
     call @sub [args=(xmm0,xmm1)]
     fmul.f64 xmm0, [rbp-32], xmm0
+    fadd.f64 xmm0, xmm0, [rbp-16]
     fadd.f64 xmm0, xmm0, [rbp-8]
-    fadd.f64 xmm0, xmm0, [rbp-24]
     ret xmm0
 
 function @scaled_sum

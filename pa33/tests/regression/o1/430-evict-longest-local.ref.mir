@@ -18,8 +18,8 @@ function @main
     frame_pointer keep
     epilogues duplicated
     temp %v14 -> [rbp-8] : f64
-    temp %v15 -> [rbp-16] : f64
-    temp %v13 -> [rbp-24] : f64
+    temp %v15 -> [rbp-24] : f64
+    temp %v13 -> [rbp-16] : f64
 
   block ^entry
     fmov.f64 xmm0, @data
@@ -39,8 +39,8 @@ function @main
     fmov.f64 xmm14, @data+112
     fmov.f64 [rbp-8], xmm14
     fmov.f64 xmm14, @data+120
-    fmov.f64 [rbp-16], xmm14
-    fmov.f64 [rbp-24], xmm13
+    fmov.f64 [rbp-24], xmm14
+    fmov.f64 [rbp-16], xmm13
     fmul.f64 xmm13, xmm0, xmm1
     fadd.f64 xmm13, xmm13, xmm1
     fmul.f64 xmm13, xmm13, xmm2
@@ -65,12 +65,12 @@ function @main
     fadd.f64 xmm13, xmm13, xmm11
     fmul.f64 xmm13, xmm13, xmm12
     fadd.f64 xmm13, xmm13, xmm12
-    fmul.f64 xmm13, xmm13, [rbp-24]
-    fadd.f64 xmm13, xmm13, [rbp-24]
-    fmul.f64 xmm13, xmm13, [rbp-8]
-    fadd.f64 xmm13, xmm13, [rbp-8]
     fmul.f64 xmm13, xmm13, [rbp-16]
     fadd.f64 xmm13, xmm13, [rbp-16]
+    fmul.f64 xmm13, xmm13, [rbp-8]
+    fadd.f64 xmm13, xmm13, [rbp-8]
+    fmul.f64 xmm13, xmm13, xmm14
+    fadd.f64 xmm13, xmm13, xmm14
     fmov.f64 @data, xmm0
     fmov.f64 @data+8, xmm1
     fmov.f64 @data+16, xmm2
@@ -84,9 +84,9 @@ function @main
     fmov.f64 @data+80, xmm10
     fmov.f64 @data+88, xmm11
     fmov.f64 @data+96, xmm12
-    fmov.f64 @data+104, [rbp-24]
+    fmov.f64 @data+104, [rbp-16]
     fmov.f64 @data+112, [rbp-8]
-    fmov.f64 @data+120, [rbp-16]
+    fmov.f64 @data+120, [rbp-24]
     fmov.f64 @data, xmm13
     mov rax, 0
     ret rax

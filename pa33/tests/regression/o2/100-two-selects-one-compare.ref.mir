@@ -1,0 +1,43 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @pick
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    param %m -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdx, 1
+    cmovbe rsi, rdi
+    mov r11, 128
+    cmovbe rdi, r11
+    xor rsi, rdi
+    ret rsi
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, 1
+    mov rsi, 2
+    mov rdx, 1
+    call @pick [args=(rdx,rsi,rdi)]
+    sub rax, 129
+    ret rax

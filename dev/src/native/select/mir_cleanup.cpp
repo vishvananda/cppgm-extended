@@ -2320,7 +2320,8 @@ bool left_value(
 // Up to four tests per jump; linear.
 // A block that starts with the compare of registers each of its predecessors
 // ends with reads the flags they left: `if (a > b) ... else if (a < b)`, and
-// the copy of a loop's test on its back edge. The compare goes. Linear.
+// the copy of a loop's test on its back edge. The compare goes, as does the
+// second of two alike in a block with nothing that sets flags between. Linear.
 uint32_t drop_repeated_compares(Function& f)
 {
 	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
@@ -2381,6 +2382,36 @@ uint32_t drop_repeated_compares(Function& f)
 			edge(b + 1, kMixed);
 	}
 	uint32_t removed = 0;
+	// Two selects of one test in a block compare once: a conditional move
+	// keeps the flags, as do copies and memory accesses.
+	for (const Block& block : f.blocks)
+	{
+		uint32_t earlier = kUnseen;
+		for (uint32_t i = block.first; i < block.first + block.count; ++i)
+		{
+			Inst& inst = f.insts[i];
+			if (compare_of(inst))
+			{
+				if (earlier == kUnseen || !same(f.insts[earlier], inst))
+				{
+					earlier = i;
+					continue;
+				}
+				inst.op = Op::Nop;
+				inst.nops = 0;
+				++removed;
+				continue;
+			}
+			// (`mov r, 0` may be encoded as an xor.)
+			const bool quiet = inst.op == Op::Nop || inst.op == Op::Cmov || inst.op == Op::Lea || inst.op == Op::Load ||
+				inst.op == Op::Store || (inst.op == Op::Mov && !(inst.ops[1].is_imm() && inst.ops[1].imm == 0));
+			const Reg w = inst.op == Op::Nop ? kNoReg : written_reg(inst);
+			if (earlier != kUnseen &&
+				(!quiet || w == f.insts[earlier].ops[0].reg ||
+					(f.insts[earlier].ops[1].is_reg() && w == f.insts[earlier].ops[1].reg)))
+				earlier = kUnseen;
+		}
+	}
 	for (uint32_t b = 0; b < blocks; ++b)
 	{
 		const Block& block = f.blocks[b];

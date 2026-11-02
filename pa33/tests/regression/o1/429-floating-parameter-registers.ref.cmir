@@ -58,8 +58,8 @@ function @across_calls
     fmov.f64 [rbp-<off0>], xmm0
     fmov.f64 [rbp-<off1>], xmm1
     fmov.f64 [rbp-<off2>], <xmm0>
-    fmov.f64 xmm0, [rbp-<off0>]
-    fmov.f64 xmm1, [rbp-<off1>]
+    fmov.f64 xmm0, xmm0
+    fmov.f64 xmm1, xmm1
     call @sub [args=(xmm0,xmm1)]
     fmov.f64 xmm14, xmm0
     fmov.f64 [rbp-<off3>], xmm14
@@ -137,11 +137,11 @@ function @extended_round_trip
     scratch_bytes 48
     frame_pointer keep
     epilogues duplicated
-    temp %e -> [rbp-<off1>] : f80
+    temp %e -> [rbp-<off0>] : f80
 
   block ^entry
-    fpext.f64.f80 [rbp-<off1>], xmm0
-    fptosi.f80.i64 rax, [rbp-<off1>]
+    fpext.f64.f80 [rbp-<off0>], xmm0
+    fptosi.f80.i64 rax, [rbp-<off0>]
     ret rax
 
 function @main
@@ -152,7 +152,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues duplicated
-    slot $values -> [rbp-<off2>] : obj<24x8>
+    slot $values -> [rbp-<off1>] : obj<24x8>
 
   block ^entry
     fmov.f64 xmm0, 1.0
@@ -180,10 +180,10 @@ function @main
     ret rax
 
   block ^loop
-    fmov.f64 [rbp-<off2>], 1.5
-    fmov.f64 [rbp-<off1>], 2.5
-    fmov.f64 [rbp-<off0>], 4.0
-    lea rdi, [rbp-<off2>]
+    fmov.f64 [rbp-<off1>], 1.5
+    fmov.f64 [rbp-<off0>], 2.5
+    fmov.f64 [rbp-<off2>], 4.0
+    lea rdi, [rbp-<off1>]
     mov rsi, 3
     fmov.f64 xmm0, 2.0
     call @scaled_sum [args=(rsi,rdi,xmm0)]

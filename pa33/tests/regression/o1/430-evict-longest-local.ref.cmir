@@ -69,8 +69,8 @@ function @main
     fadd.f64 xmm13, xmm13, [rbp-<off2>]
     fmul.f64 xmm13, xmm13, [rbp-<off0>]
     fadd.f64 xmm13, xmm13, [rbp-<off0>]
-    fmul.f64 xmm13, xmm13, [rbp-<off1>]
-    fadd.f64 xmm13, xmm13, [rbp-<off1>]
+    fmul.f64 xmm13, xmm13, xmm14
+    fadd.f64 xmm13, xmm13, xmm14
     fmov.f64 @data, xmm0
     fmov.f64 @data+8, xmm1
     fmov.f64 @data+16, <xmm0>
