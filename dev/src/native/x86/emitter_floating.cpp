@@ -229,6 +229,8 @@ void FunctionEmitter::float_compare(const Operand& a, const Operand& b, TypeKind
 	Reg left = kX15;
 	if (is_xmm_reg(a))
 		left = a.reg;
+	else if (a.kind == OperandKind::FImm && a.imm == 0)
+		asm_.sse(0, 0x57, kX15, RM::r(kX15)); // xorps
 	else
 		asm_.sse(prefix, 0x10, kX15, a.kind == OperandKind::FImm ? constant_rm(a) : rm(a));
 	const RM right = b.kind == OperandKind::FImm ? constant_rm(b) : rm(b);

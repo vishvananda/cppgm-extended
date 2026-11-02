@@ -125,6 +125,7 @@ private:
 	void prune_functions();
 	void place_text();
 	void place_globals();
+	void place_constants();
 	void place_startup();
 	void record_unwind(uint32_t range, bool encoded, const UnwindFacts* generated = nullptr);
 	void place_unwind();
@@ -547,19 +548,28 @@ void ObjectCompiler::place_text()
 		section.size = section.bytes.size();
 		placement_[slot(range.symbol)] = Placement{ range.section, range.base, range.end - range.start };
 	}
-	// The floating constants start the read-only data.
-	if (!image_.rodata().empty())
+}
+
+// The floating constants end the read-only data: at its start in a small
+// program they share page offsets with the writable data at its own start,
+// and a load of one right after a store of that data waits on the store
+// (the processor compares the low 12 bits of the addresses).
+void ObjectCompiler::place_constants()
+{
+	if (image_.rodata().empty())
+		return;
+	const uint32_t rodata = shared_section(".rodata", SectionKind::Rodata);
+	object::Section& section = out_->sections[rodata];
+	const uint64_t base = align_up(section.size, 16);
+	section.bytes.resize(base, 0);
+	section.bytes.insert(section.bytes.end(), image_.rodata().begin(), image_.rodata().end());
+	section.size = section.bytes.size();
+	section.align = std::max<uint64_t>(section.align, 16);
+	for (uint32_t k = 0; k < image_.local_count(); ++k)
 	{
-		const uint32_t rodata = shared_section(".rodata", SectionKind::Rodata);
-		out_->sections[rodata].bytes = image_.rodata();
-		out_->sections[rodata].size = image_.rodata().size();
-		out_->sections[rodata].align = 16;
-		for (uint32_t k = 0; k < image_.local_count(); ++k)
-		{
-			const uint32_t s = Image::kLocalSymbols + k;
-			if (image_.symbol(s).section == Section::Rodata)
-				placement_[slot(s)] = Placement{ rodata, image_.symbol(s).offset, 0 };
-		}
+		const uint32_t s = Image::kLocalSymbols + k;
+		if (image_.symbol(s).section == Section::Rodata)
+			placement_[slot(s)] = Placement{ rodata, base + image_.symbol(s).offset, 0 };
 	}
 }
 
@@ -1096,6 +1106,7 @@ void ObjectCompiler::finish(ObjectFile& out)
 	prune_functions();
 	place_text();
 	place_globals();
+	place_constants();
 	place_startup();
 	place_unwind();
 	add_symbols();
