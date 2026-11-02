@@ -54,6 +54,14 @@ bool speculatable(const FunctionBody& body, const Instruction& inst)
 	}
 }
 
+// A floating select the lanes' `min` and `max` give exactly: each is
+// `first < second ? first : second` (or `>`), the second when unordered.
+struct MinMax
+{
+	bool max;
+	Value first, second;
+};
+
 class SelectFormation
 {
 public:
@@ -65,6 +73,9 @@ private:
 	bool loads_through_merge(Value cond, BlockId join) const;
 	bool form(BlockId e);
 	InstId hoist(BlockId a, BlockId e, InstId after);
+	bool nonzero_literal(Value v) const;
+	bool min_or_max(Value cond, Value a, Value b, MinMax& out) const;
+	Value emit_min_max(BlockId e, InstId& at, const MinMax& m, Type type, uint32_t location);
 
 	FunctionContext& c_;
 	FunctionBody& body_;
@@ -162,6 +173,73 @@ bool SelectFormation::loads_through_merge(Value cond, BlockId join) const
 	return false;
 }
 
+bool SelectFormation::nonzero_literal(Value v) const
+{
+	if (!v.is(ValueKind::Float))
+		return false;
+	const Literal& bits = body_.literals[v.index];
+	return bits.low != 0 && bits.low != (1ull << 63) && bits.low != (1ull << 31);
+}
+
+// Whether `cond ? a : b` is a lane `min` or `max`. `<=` and `>=` differ from
+// them when the two compare equal, as +0 and -0 do: a literal other than zero
+// rules that out.
+bool SelectFormation::min_or_max(Value cond, Value a, Value b, MinMax& out) const
+{
+	if (!cond.is(ValueKind::Temp) || cond.index < body_.parameter_count)
+		return false;
+	const Instruction& test = body_.instructions[body_.temps[cond.index].def];
+	if (test.op != Opcode::Compare || !test.type.is_float() || test.type.kind() == TypeKind::F80)
+		return false;
+	const ComparePredicate p = static_cast<ComparePredicate>(test.sub);
+	const bool strict = p == ComparePredicate::Lt || p == ComparePredicate::Gt;
+	const bool less = p == ComparePredicate::Lt || p == ComparePredicate::Le;
+	if (!strict && !less && p != ComparePredicate::Ge)
+		return false;
+	if (!strict && !nonzero_literal(test.ops[0]) && !nonzero_literal(test.ops[1]))
+		return false;
+	const Value x = test.ops[0], y = test.ops[1];
+	// (Each mention of a literal has its own index.)
+	const auto same = [&](Value p, Value q) {
+		return p == q ||
+			(p.is(ValueKind::Float) && q.is(ValueKind::Float) && p.float_kind == q.float_kind &&
+				body_.literals[p.index].low == body_.literals[q.index].low &&
+				body_.literals[p.index].high == body_.literals[q.index].high);
+	};
+	if (same(a, x) && same(b, y))
+		out = MinMax{ !less, x, y };
+	else if (same(a, y) && same(b, x))
+		out = MinMax{ less, y, x };
+	else
+		return false;
+	return true;
+}
+
+Value SelectFormation::emit_min_max(BlockId e, InstId& at, const MinMax& m, Type type, uint32_t location)
+{
+	const bool wide = type.kind() == TypeKind::F64;
+	const Type v128 = Type::scalar(TypeKind::V128);
+	auto vector = [&](VectorOp op, Type result, Value p, Value q) {
+		Instruction inst = make_instruction(Opcode::Vector, result);
+		inst.sub = static_cast<uint8_t>(op);
+		inst.ops[0] = p;
+		inst.ops[1] = q;
+		inst.location = location;
+		const InstId id = append_instruction(body_, inst);
+		body_.instructions[id].result = append_temp(body_, result, id);
+		insert_after(body_, e, at, id);
+		at = id;
+		return Value::temp(body_.instructions[id].result);
+	};
+	const VectorOp from = wide ? VectorOp::Fromf64 : VectorOp::Fromf32;
+	const Value first = vector(from, v128, m.first, Value::none());
+	const Value second = vector(from, v128, m.second, Value::none());
+	const VectorOp op = wide ? (m.max ? VectorOp::Maxpd : VectorOp::Minpd)
+							 : (m.max ? VectorOp::Maxps : VectorOp::Minps);
+	const Value lanes = vector(op, v128, first, second);
+	return vector(wide ? VectorOp::Tof64 : VectorOp::Tof32, type, lanes, Value::none());
+}
+
 // e ends `branch c, T, F`: a diamond (T and F each jump to J) or a
 // triangle (one of them is J) whose arms speculate, and whose merge's
 // phis differ in at most kSelectCap values between the two paths.
@@ -207,8 +285,9 @@ bool SelectFormation::form(BlockId e)
 		const Value a = phi_incoming(body_, phi, from_t), b = phi_incoming(body_, phi, from_f);
 		if (a == b)
 			continue;
-		if (++selects > kSelectCap || !selectable(phi.type) || a.is(ValueKind::Slot) || b.is(ValueKind::Slot) ||
-			a.is(ValueKind::None) || b.is(ValueKind::None))
+		MinMax unused;
+		if (++selects > kSelectCap || (!selectable(phi.type) && !min_or_max(cond, a, b, unused)) ||
+			a.is(ValueKind::Slot) || b.is(ValueKind::Slot) || a.is(ValueKind::None) || b.is(ValueKind::None))
 			return false;
 	}
 	if (selects != 0 && loads_through_merge(cond, join))
@@ -224,7 +303,10 @@ bool SelectFormation::form(BlockId e)
 		const Value a = phi_incoming(body_, body_.instructions[i], from_t);
 		const Value b = phi_incoming(body_, body_.instructions[i], from_f);
 		Value merged = a;
-		if (!(a == b))
+		MinMax lanes;
+		if (!(a == b) && !selectable(body_.instructions[i].type) && min_or_max(cond, a, b, lanes))
+			merged = emit_min_max(e, at, lanes, body_.instructions[i].type, body_.instructions[term].location);
+		else if (!(a == b))
 		{
 			Instruction sel = make_instruction(Opcode::Select, body_.instructions[i].type);
 			sel.ops[0] = cond;

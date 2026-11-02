@@ -361,6 +361,11 @@ them changed it, branch compares are computed again beside their branches:
 - A branch to a diamond or triangle whose arms hold at most two
   speculatable integer instructions each (no load, division or floating
   point) becomes `select`s, at most two per merge, for at most three rounds.
+  A merge that picks between the two `f32` or `f64` values its compare reads
+  becomes `vector` `min` or `max` of those values. Those operations give the
+  second operand when unordered, and compare `<` or `>`, so `<=` and `>=` need
+  a literal other than zero on one side: only then is the result of equal
+  operands known.
 - Loads move out of loops where nothing but `store`, `copyobj` and
   `zeroinit` may write memory (no writing call, atomic operation,
   `va_start`, `va_arg` or EH instruction) and no load is volatile. A load

@@ -59,6 +59,25 @@ void FunctionSelector::emit_vector_two_operand(const Instruction& inst)
 	finish_result(inst, d);
 }
 
+// Whether only a scalar `min` or `max` reads this value, its result read as a
+// scalar: the other lanes do not matter.
+bool FunctionSelector::low_lane_only(const Instruction& inst) const
+{
+	const auto single_user = [&](const Instruction& def) -> const Instruction* {
+		const auto& t = temps_[def.result];
+		return t.uses == 1 && t.user != lowir::kNoId ? &body_->instructions[t.user] : nullptr;
+	};
+	const Instruction* lanes = single_user(inst);
+	if (lanes == nullptr || lanes->op != lowir::Opcode::Vector)
+		return false;
+	const VectorOp op = static_cast<VectorOp>(lanes->sub);
+	if (op != VectorOp::Minps && op != VectorOp::Minpd && op != VectorOp::Maxps && op != VectorOp::Maxpd)
+		return false;
+	const Instruction* read = single_user(*lanes);
+	return read != nullptr && read->op == lowir::Opcode::Vector &&
+		(static_cast<VectorOp>(read->sub) == VectorOp::Tof32 || static_cast<VectorOp>(read->sub) == VectorOp::Tof64);
+}
+
 void FunctionSelector::emit_vector_from_scalar(const Instruction& inst)
 {
 	const VectorOp op = static_cast<VectorOp>(inst.sub);
@@ -67,7 +86,7 @@ void FunctionSelector::emit_vector_from_scalar(const Instruction& inst)
 													  : reg_operand(inst.ops[0], Type::scalar(kind), kSelectScratch);
 	const Reg d = result_reg(inst, dying_reg(inst.ops[0]));
 	// A load or a literal already clears the other lanes.
-	if (src.kind == OperandKind::Reg)
+	if (src.kind == OperandKind::Reg && !(level_ >= 1 && low_lane_only(inst)))
 		emit2(Op::Vector, TypeKind::V128, Operand::make_reg(d), src).sub = inst.sub;
 	else
 		load_into(d, src, kind);

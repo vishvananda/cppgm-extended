@@ -1,0 +1,90 @@
+function @min_lt(%a : f64, %b : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %c = cmp lt f64 %a, %b
+    %t2 = vector fromf64 %a
+    %t3 = vector fromf64 %b
+    %t4 = vector minpd %t2, %t3
+    %t5 = vector tof64 %t4
+    return f64 %t5
+}
+function @max_gt(%a : f32, %b : f32) -> f32 [no_inline=yes] {
+  block ^entry:
+    %c = cmp gt f32 %a, %b
+    %t2 = vector fromf32 %a
+    %t3 = vector fromf32 %b
+    %t4 = vector maxps %t2, %t3
+    %t5 = vector tof32 %t4
+    return f32 %t5
+}
+function @max_of_lt(%a : f64, %b : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %c = cmp lt f64 %a, %b
+    %t2 = vector fromf64 %b
+    %t3 = vector fromf64 %a
+    %t4 = vector maxpd %t2, %t3
+    %t5 = vector tof64 %t4
+    return f64 %t5
+}
+function @min_of_gt(%a : f64, %b : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %c = cmp gt f64 %a, %b
+    %t2 = vector fromf64 %b
+    %t3 = vector fromf64 %a
+    %t4 = vector minpd %t2, %t3
+    %t5 = vector tof64 %t4
+    return f64 %t5
+}
+function @min_le_literal(%a : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %c = cmp le f64 %a, 2.5
+    %t2 = vector fromf64 %a
+    %t3 = vector fromf64 2.5
+    %t4 = vector minpd %t2, %t3
+    %t5 = vector tof64 %t4
+    return f64 %t5
+}
+function @min_ge_literal(%a : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %c = cmp ge f64 %a, 2.5
+    %t2 = vector fromf64 2.5
+    %t3 = vector fromf64 %a
+    %t4 = vector minpd %t2, %t3
+    %t5 = vector tof64 %t4
+    return f64 %t5
+}
+function @le_values(%a : f64, %b : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %c = cmp le f64 %a, %b
+    branch %c, ^out, ^f
+
+  block ^f:
+    jump ^out
+
+  block ^out:
+    %r = phi f64 [^f: %b, ^entry: %a]
+    return f64 %r
+}
+function @le_zero(%a : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %c = cmp le f64 %a, 0
+    branch %c, ^out, ^f
+
+  block ^f:
+    jump ^out
+
+  block ^out:
+    %r = phi f64 [^f: 0, ^entry: %a]
+    return f64 %r
+}
+function @other(%a : f64, %b : f64, %d : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %c = cmp lt f64 %a, %b
+    branch %c, ^out, ^f
+
+  block ^f:
+    jump ^out
+
+  block ^out:
+    %r = phi f64 [^f: %d, ^entry: %a]
+    return f64 %r
+}
