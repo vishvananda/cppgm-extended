@@ -43,8 +43,7 @@ function @pressure
     fmov.f64 xmm10, [rdi+80]
     fmov.f64 xmm11, [rdi+88]
     fmov.f64 xmm12, [rdi+96]
-    fmov.f64 xmm13, [rdi+104]
-    fsub.f64 xmm13, xmm13, xmm12
+    fsub.f64 xmm13, [rdi+104], xmm12
     fsub.f64 xmm13, xmm13, xmm11
     fsub.f64 xmm13, xmm13, xmm10
     fsub.f64 xmm13, xmm13, xmm9
@@ -170,8 +169,7 @@ function @in_place
     epilogues duplicated
 
   block ^entry
-    fmov.f64 xmm1, [rdi]
-    fsub.f64 xmm1, xmm1, xmm0
+    fsub.f64 xmm1, [rdi], xmm0
     fdiv.f64 xmm1, xmm1, xmm0
     fmul.f64 xmm0, xmm1, xmm0
     ret xmm0
