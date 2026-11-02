@@ -197,13 +197,13 @@ function @wrapping(%p : ptr, %n : i32) -> i64 [no_inline=yes] {
     %sum = phi i64 [^entry: 0, ^latch: %more]
     %at = index i64 %p, %i
     %v = load typed i64 %at
-    %more = binary add i64 %sum, %v
     %odd = cmp eq i64 %v, 0
     branch %odd, ^done, ^latch
 
   block ^latch:
     %next = binary add i32 %i, 7
     %again = cmp ne i32 %n, %next
+    %more = binary add i64 %sum, %v
     branch %again, ^loop, ^done
 
   block ^done:

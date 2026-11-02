@@ -2,14 +2,14 @@ global @cell : i32 [binding=internal] = 0
 
 function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=yes] {
   block ^entry:
-    %w_0 = binary mul i32 %m, 3
     %c_0 = cmp gt i64 %n, 0
     branch %c_0, ^loop_preheader_1, ^loop_preheader_7
 
   block ^loop_preheader_1:
-    %t3 = cmp ugt i64 %n, 4
-    %t4 = binary and i64 %c_0, %t3
-    branch %t4, ^loop_preheader_2, ^loop_preheader_5
+    %t2 = cmp ugt i64 %n, 4
+    %t3 = binary and i64 %c_0, %t2
+    %w_0 = binary mul i32 %m, 3
+    branch %t3, ^loop_preheader_2, ^loop_preheader_5
 
   block ^loop_preheader_2:
     %t5 = binary add i64 %n, -4
@@ -55,13 +55,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_7:
     %t32 = phi i32 [^entry: 0, ^body_0: %sum_0]
-    %w_1 = binary mul i32 %m, 4
     branch %c_0, ^loop_preheader_8, ^after_1
 
   block ^loop_preheader_8:
-    %t34 = cmp ugt i64 %n, 4
-    %t35 = binary and i64 %c_0, %t34
-    branch %t35, ^loop_preheader_9, ^loop_preheader_12
+    %t33 = cmp ugt i64 %n, 4
+    %t34 = binary and i64 %c_0, %t33
+    %w_1 = binary mul i32 %m, 4
+    branch %t34, ^loop_preheader_9, ^loop_preheader_12
 
   block ^loop_preheader_9:
     %t36 = binary add i64 %n, -4
@@ -108,13 +108,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_1:
     %t63 = phi i32 [^loop_preheader_7: %t32, ^body_1: %sum_1]
     %z_1 = binary xor i32 %t63, 1
-    %w_2 = binary mul i32 %m, 5
     branch %c_0, ^loop_preheader_15, ^loop_preheader_21
 
   block ^loop_preheader_15:
-    %t66 = cmp ugt i64 %n, 4
-    %t67 = binary and i64 %c_0, %t66
-    branch %t67, ^loop_preheader_16, ^loop_preheader_19
+    %t65 = cmp ugt i64 %n, 4
+    %t66 = binary and i64 %c_0, %t65
+    %w_2 = binary mul i32 %m, 5
+    branch %t66, ^loop_preheader_16, ^loop_preheader_19
 
   block ^loop_preheader_16:
     %t68 = binary add i64 %n, -4
@@ -160,13 +160,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_21:
     %t95 = phi i32 [^after_1: %z_1, ^body_2: %sum_2]
-    %w_3 = binary mul i32 %m, 6
     branch %c_0, ^loop_preheader_22, ^after_3
 
   block ^loop_preheader_22:
-    %t97 = cmp ugt i64 %n, 4
-    %t98 = binary and i64 %c_0, %t97
-    branch %t98, ^loop_preheader_23, ^loop_preheader_26
+    %t96 = cmp ugt i64 %n, 4
+    %t97 = binary and i64 %c_0, %t96
+    %w_3 = binary mul i32 %m, 6
+    branch %t97, ^loop_preheader_23, ^loop_preheader_26
 
   block ^loop_preheader_23:
     %t99 = binary add i64 %n, -4
@@ -213,13 +213,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_3:
     %t126 = phi i32 [^loop_preheader_21: %t95, ^body_3: %sum_3]
     %z_3 = binary xor i32 %t126, 3
-    %w_4 = binary mul i32 %m, 7
     branch %c_0, ^loop_preheader_29, ^loop_preheader_35
 
   block ^loop_preheader_29:
-    %t129 = cmp ugt i64 %n, 4
-    %t130 = binary and i64 %c_0, %t129
-    branch %t130, ^loop_preheader_30, ^loop_preheader_33
+    %t128 = cmp ugt i64 %n, 4
+    %t129 = binary and i64 %c_0, %t128
+    %w_4 = binary mul i32 %m, 7
+    branch %t129, ^loop_preheader_30, ^loop_preheader_33
 
   block ^loop_preheader_30:
     %t131 = binary add i64 %n, -4
@@ -265,13 +265,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_35:
     %t158 = phi i32 [^after_3: %z_3, ^body_4: %sum_4]
-    %w_5 = binary mul i32 %m, 8
     branch %c_0, ^loop_preheader_36, ^after_5
 
   block ^loop_preheader_36:
-    %t160 = cmp ugt i64 %n, 4
-    %t161 = binary and i64 %c_0, %t160
-    branch %t161, ^loop_preheader_37, ^loop_preheader_40
+    %t159 = cmp ugt i64 %n, 4
+    %t160 = binary and i64 %c_0, %t159
+    %w_5 = binary mul i32 %m, 8
+    branch %t160, ^loop_preheader_37, ^loop_preheader_40
 
   block ^loop_preheader_37:
     %t162 = binary add i64 %n, -4
@@ -318,13 +318,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_5:
     %t189 = phi i32 [^loop_preheader_35: %t158, ^body_5: %sum_5]
     %z_5 = binary xor i32 %t189, 5
-    %w_6 = binary mul i32 %m, 9
     branch %c_0, ^loop_preheader_43, ^loop_preheader_49
 
   block ^loop_preheader_43:
-    %t192 = cmp ugt i64 %n, 4
-    %t193 = binary and i64 %c_0, %t192
-    branch %t193, ^loop_preheader_44, ^loop_preheader_47
+    %t191 = cmp ugt i64 %n, 4
+    %t192 = binary and i64 %c_0, %t191
+    %w_6 = binary mul i32 %m, 9
+    branch %t192, ^loop_preheader_44, ^loop_preheader_47
 
   block ^loop_preheader_44:
     %t194 = binary add i64 %n, -4
@@ -370,13 +370,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_49:
     %t221 = phi i32 [^after_5: %z_5, ^body_6: %sum_6]
-    %w_7 = binary mul i32 %m, 10
     branch %c_0, ^loop_preheader_50, ^after_7
 
   block ^loop_preheader_50:
-    %t223 = cmp ugt i64 %n, 4
-    %t224 = binary and i64 %c_0, %t223
-    branch %t224, ^loop_preheader_51, ^loop_preheader_54
+    %t222 = cmp ugt i64 %n, 4
+    %t223 = binary and i64 %c_0, %t222
+    %w_7 = binary mul i32 %m, 10
+    branch %t223, ^loop_preheader_51, ^loop_preheader_54
 
   block ^loop_preheader_51:
     %t225 = binary add i64 %n, -4
@@ -423,13 +423,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_7:
     %t252 = phi i32 [^loop_preheader_49: %t221, ^body_7: %sum_7]
     %z_7 = binary xor i32 %t252, 7
-    %w_8 = binary mul i32 %m, 11
     branch %c_0, ^loop_preheader_57, ^loop_preheader_63
 
   block ^loop_preheader_57:
-    %t255 = cmp ugt i64 %n, 4
-    %t256 = binary and i64 %c_0, %t255
-    branch %t256, ^loop_preheader_58, ^loop_preheader_61
+    %t254 = cmp ugt i64 %n, 4
+    %t255 = binary and i64 %c_0, %t254
+    %w_8 = binary mul i32 %m, 11
+    branch %t255, ^loop_preheader_58, ^loop_preheader_61
 
   block ^loop_preheader_58:
     %t257 = binary add i64 %n, -4
@@ -475,13 +475,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_63:
     %t284 = phi i32 [^after_7: %z_7, ^body_8: %sum_8]
-    %w_9 = binary mul i32 %m, 12
     branch %c_0, ^loop_preheader_64, ^after_9
 
   block ^loop_preheader_64:
-    %t286 = cmp ugt i64 %n, 4
-    %t287 = binary and i64 %c_0, %t286
-    branch %t287, ^loop_preheader_65, ^loop_preheader_68
+    %t285 = cmp ugt i64 %n, 4
+    %t286 = binary and i64 %c_0, %t285
+    %w_9 = binary mul i32 %m, 12
+    branch %t286, ^loop_preheader_65, ^loop_preheader_68
 
   block ^loop_preheader_65:
     %t288 = binary add i64 %n, -4
@@ -528,13 +528,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_9:
     %t315 = phi i32 [^loop_preheader_63: %t284, ^body_9: %sum_9]
     %z_9 = binary xor i32 %t315, 9
-    %w_10 = binary mul i32 %m, 13
     branch %c_0, ^loop_preheader_71, ^loop_preheader_77
 
   block ^loop_preheader_71:
-    %t318 = cmp ugt i64 %n, 4
-    %t319 = binary and i64 %c_0, %t318
-    branch %t319, ^loop_preheader_72, ^loop_preheader_75
+    %t317 = cmp ugt i64 %n, 4
+    %t318 = binary and i64 %c_0, %t317
+    %w_10 = binary mul i32 %m, 13
+    branch %t318, ^loop_preheader_72, ^loop_preheader_75
 
   block ^loop_preheader_72:
     %t320 = binary add i64 %n, -4
@@ -580,13 +580,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_77:
     %t347 = phi i32 [^after_9: %z_9, ^body_10: %sum_10]
-    %w_11 = binary mul i32 %m, 14
     branch %c_0, ^loop_preheader_78, ^after_11
 
   block ^loop_preheader_78:
-    %t349 = cmp ugt i64 %n, 4
-    %t350 = binary and i64 %c_0, %t349
-    branch %t350, ^loop_preheader_79, ^loop_preheader_82
+    %t348 = cmp ugt i64 %n, 4
+    %t349 = binary and i64 %c_0, %t348
+    %w_11 = binary mul i32 %m, 14
+    branch %t349, ^loop_preheader_79, ^loop_preheader_82
 
   block ^loop_preheader_79:
     %t351 = binary add i64 %n, -4
@@ -633,13 +633,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_11:
     %t378 = phi i32 [^loop_preheader_77: %t347, ^body_11: %sum_11]
     %z_11 = binary xor i32 %t378, 11
-    %w_12 = binary mul i32 %m, 15
     branch %c_0, ^loop_preheader_85, ^loop_preheader_91
 
   block ^loop_preheader_85:
-    %t381 = cmp ugt i64 %n, 4
-    %t382 = binary and i64 %c_0, %t381
-    branch %t382, ^loop_preheader_86, ^loop_preheader_89
+    %t380 = cmp ugt i64 %n, 4
+    %t381 = binary and i64 %c_0, %t380
+    %w_12 = binary mul i32 %m, 15
+    branch %t381, ^loop_preheader_86, ^loop_preheader_89
 
   block ^loop_preheader_86:
     %t383 = binary add i64 %n, -4
@@ -685,13 +685,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_91:
     %t410 = phi i32 [^after_11: %z_11, ^body_12: %sum_12]
-    %w_13 = binary mul i32 %m, 16
     branch %c_0, ^loop_preheader_92, ^after_13
 
   block ^loop_preheader_92:
-    %t412 = cmp ugt i64 %n, 4
-    %t413 = binary and i64 %c_0, %t412
-    branch %t413, ^loop_preheader_93, ^loop_preheader_96
+    %t411 = cmp ugt i64 %n, 4
+    %t412 = binary and i64 %c_0, %t411
+    %w_13 = binary mul i32 %m, 16
+    branch %t412, ^loop_preheader_93, ^loop_preheader_96
 
   block ^loop_preheader_93:
     %t414 = binary add i64 %n, -4
@@ -738,13 +738,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_13:
     %t441 = phi i32 [^loop_preheader_91: %t410, ^body_13: %sum_13]
     %z_13 = binary xor i32 %t441, 13
-    %w_14 = binary mul i32 %m, 17
     branch %c_0, ^loop_preheader_99, ^loop_preheader_105
 
   block ^loop_preheader_99:
-    %t444 = cmp ugt i64 %n, 4
-    %t445 = binary and i64 %c_0, %t444
-    branch %t445, ^loop_preheader_100, ^loop_preheader_103
+    %t443 = cmp ugt i64 %n, 4
+    %t444 = binary and i64 %c_0, %t443
+    %w_14 = binary mul i32 %m, 17
+    branch %t444, ^loop_preheader_100, ^loop_preheader_103
 
   block ^loop_preheader_100:
     %t446 = binary add i64 %n, -4
@@ -790,13 +790,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_105:
     %t473 = phi i32 [^after_13: %z_13, ^body_14: %sum_14]
-    %w_15 = binary mul i32 %m, 18
     branch %c_0, ^loop_preheader_106, ^after_15
 
   block ^loop_preheader_106:
-    %t475 = cmp ugt i64 %n, 4
-    %t476 = binary and i64 %c_0, %t475
-    branch %t476, ^loop_preheader_107, ^loop_preheader_110
+    %t474 = cmp ugt i64 %n, 4
+    %t475 = binary and i64 %c_0, %t474
+    %w_15 = binary mul i32 %m, 18
+    branch %t475, ^loop_preheader_107, ^loop_preheader_110
 
   block ^loop_preheader_107:
     %t477 = binary add i64 %n, -4
@@ -843,13 +843,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_15:
     %t504 = phi i32 [^loop_preheader_105: %t473, ^body_15: %sum_15]
     %z_15 = binary xor i32 %t504, 15
-    %w_16 = binary mul i32 %m, 19
     branch %c_0, ^loop_preheader_113, ^loop_preheader_119
 
   block ^loop_preheader_113:
-    %t507 = cmp ugt i64 %n, 4
-    %t508 = binary and i64 %c_0, %t507
-    branch %t508, ^loop_preheader_114, ^loop_preheader_117
+    %t506 = cmp ugt i64 %n, 4
+    %t507 = binary and i64 %c_0, %t506
+    %w_16 = binary mul i32 %m, 19
+    branch %t507, ^loop_preheader_114, ^loop_preheader_117
 
   block ^loop_preheader_114:
     %t509 = binary add i64 %n, -4
@@ -895,13 +895,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_119:
     %t536 = phi i32 [^after_15: %z_15, ^body_16: %sum_16]
-    %w_17 = binary mul i32 %m, 20
     branch %c_0, ^loop_preheader_120, ^after_17
 
   block ^loop_preheader_120:
-    %t538 = cmp ugt i64 %n, 4
-    %t539 = binary and i64 %c_0, %t538
-    branch %t539, ^loop_preheader_121, ^loop_preheader_124
+    %t537 = cmp ugt i64 %n, 4
+    %t538 = binary and i64 %c_0, %t537
+    %w_17 = binary mul i32 %m, 20
+    branch %t538, ^loop_preheader_121, ^loop_preheader_124
 
   block ^loop_preheader_121:
     %t540 = binary add i64 %n, -4
@@ -948,13 +948,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_17:
     %t567 = phi i32 [^loop_preheader_119: %t536, ^body_17: %sum_17]
     %z_17 = binary xor i32 %t567, 17
-    %w_18 = binary mul i32 %m, 21
     branch %c_0, ^loop_preheader_127, ^loop_preheader_133
 
   block ^loop_preheader_127:
-    %t570 = cmp ugt i64 %n, 4
-    %t571 = binary and i64 %c_0, %t570
-    branch %t571, ^loop_preheader_128, ^loop_preheader_131
+    %t569 = cmp ugt i64 %n, 4
+    %t570 = binary and i64 %c_0, %t569
+    %w_18 = binary mul i32 %m, 21
+    branch %t570, ^loop_preheader_128, ^loop_preheader_131
 
   block ^loop_preheader_128:
     %t572 = binary add i64 %n, -4
@@ -1000,13 +1000,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_133:
     %t599 = phi i32 [^after_17: %z_17, ^body_18: %sum_18]
-    %w_19 = binary mul i32 %m, 22
     branch %c_0, ^loop_preheader_134, ^after_19
 
   block ^loop_preheader_134:
-    %t601 = cmp ugt i64 %n, 4
-    %t602 = binary and i64 %c_0, %t601
-    branch %t602, ^loop_preheader_135, ^loop_preheader_138
+    %t600 = cmp ugt i64 %n, 4
+    %t601 = binary and i64 %c_0, %t600
+    %w_19 = binary mul i32 %m, 22
+    branch %t601, ^loop_preheader_135, ^loop_preheader_138
 
   block ^loop_preheader_135:
     %t603 = binary add i64 %n, -4
@@ -1053,13 +1053,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_19:
     %t630 = phi i32 [^loop_preheader_133: %t599, ^body_19: %sum_19]
     %z_19 = binary xor i32 %t630, 19
-    %w_20 = binary mul i32 %m, 23
     branch %c_0, ^loop_preheader_141, ^loop_preheader_147
 
   block ^loop_preheader_141:
-    %t633 = cmp ugt i64 %n, 4
-    %t634 = binary and i64 %c_0, %t633
-    branch %t634, ^loop_preheader_142, ^loop_preheader_145
+    %t632 = cmp ugt i64 %n, 4
+    %t633 = binary and i64 %c_0, %t632
+    %w_20 = binary mul i32 %m, 23
+    branch %t633, ^loop_preheader_142, ^loop_preheader_145
 
   block ^loop_preheader_142:
     %t635 = binary add i64 %n, -4
@@ -1105,13 +1105,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_147:
     %t662 = phi i32 [^after_19: %z_19, ^body_20: %sum_20]
-    %w_21 = binary mul i32 %m, 24
     branch %c_0, ^loop_preheader_148, ^after_21
 
   block ^loop_preheader_148:
-    %t664 = cmp ugt i64 %n, 4
-    %t665 = binary and i64 %c_0, %t664
-    branch %t665, ^loop_preheader_149, ^loop_preheader_152
+    %t663 = cmp ugt i64 %n, 4
+    %t664 = binary and i64 %c_0, %t663
+    %w_21 = binary mul i32 %m, 24
+    branch %t664, ^loop_preheader_149, ^loop_preheader_152
 
   block ^loop_preheader_149:
     %t666 = binary add i64 %n, -4
@@ -1158,13 +1158,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_21:
     %t693 = phi i32 [^loop_preheader_147: %t662, ^body_21: %sum_21]
     %z_21 = binary xor i32 %t693, 21
-    %w_22 = binary mul i32 %m, 25
     branch %c_0, ^loop_preheader_155, ^loop_preheader_161
 
   block ^loop_preheader_155:
-    %t696 = cmp ugt i64 %n, 4
-    %t697 = binary and i64 %c_0, %t696
-    branch %t697, ^loop_preheader_156, ^loop_preheader_159
+    %t695 = cmp ugt i64 %n, 4
+    %t696 = binary and i64 %c_0, %t695
+    %w_22 = binary mul i32 %m, 25
+    branch %t696, ^loop_preheader_156, ^loop_preheader_159
 
   block ^loop_preheader_156:
     %t698 = binary add i64 %n, -4
@@ -1210,13 +1210,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_161:
     %t725 = phi i32 [^after_21: %z_21, ^body_22: %sum_22]
-    %w_23 = binary mul i32 %m, 26
     branch %c_0, ^loop_preheader_162, ^after_23
 
   block ^loop_preheader_162:
-    %t727 = cmp ugt i64 %n, 4
-    %t728 = binary and i64 %c_0, %t727
-    branch %t728, ^loop_preheader_163, ^loop_preheader_166
+    %t726 = cmp ugt i64 %n, 4
+    %t727 = binary and i64 %c_0, %t726
+    %w_23 = binary mul i32 %m, 26
+    branch %t727, ^loop_preheader_163, ^loop_preheader_166
 
   block ^loop_preheader_163:
     %t729 = binary add i64 %n, -4
@@ -1263,13 +1263,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_23:
     %t756 = phi i32 [^loop_preheader_161: %t725, ^body_23: %sum_23]
     %z_23 = binary xor i32 %t756, 23
-    %w_24 = binary mul i32 %m, 27
     branch %c_0, ^loop_preheader_169, ^loop_preheader_175
 
   block ^loop_preheader_169:
-    %t759 = cmp ugt i64 %n, 4
-    %t760 = binary and i64 %c_0, %t759
-    branch %t760, ^loop_preheader_170, ^loop_preheader_173
+    %t758 = cmp ugt i64 %n, 4
+    %t759 = binary and i64 %c_0, %t758
+    %w_24 = binary mul i32 %m, 27
+    branch %t759, ^loop_preheader_170, ^loop_preheader_173
 
   block ^loop_preheader_170:
     %t761 = binary add i64 %n, -4
@@ -1315,13 +1315,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_175:
     %t788 = phi i32 [^after_23: %z_23, ^body_24: %sum_24]
-    %w_25 = binary mul i32 %m, 28
     branch %c_0, ^loop_preheader_176, ^after_25
 
   block ^loop_preheader_176:
-    %t790 = cmp ugt i64 %n, 4
-    %t791 = binary and i64 %c_0, %t790
-    branch %t791, ^loop_preheader_177, ^loop_preheader_180
+    %t789 = cmp ugt i64 %n, 4
+    %t790 = binary and i64 %c_0, %t789
+    %w_25 = binary mul i32 %m, 28
+    branch %t790, ^loop_preheader_177, ^loop_preheader_180
 
   block ^loop_preheader_177:
     %t792 = binary add i64 %n, -4
@@ -1368,13 +1368,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_25:
     %t819 = phi i32 [^loop_preheader_175: %t788, ^body_25: %sum_25]
     %z_25 = binary xor i32 %t819, 25
-    %w_26 = binary mul i32 %m, 29
     branch %c_0, ^loop_preheader_183, ^loop_preheader_189
 
   block ^loop_preheader_183:
-    %t822 = cmp ugt i64 %n, 4
-    %t823 = binary and i64 %c_0, %t822
-    branch %t823, ^loop_preheader_184, ^loop_preheader_187
+    %t821 = cmp ugt i64 %n, 4
+    %t822 = binary and i64 %c_0, %t821
+    %w_26 = binary mul i32 %m, 29
+    branch %t822, ^loop_preheader_184, ^loop_preheader_187
 
   block ^loop_preheader_184:
     %t824 = binary add i64 %n, -4
@@ -1420,13 +1420,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_189:
     %t851 = phi i32 [^after_25: %z_25, ^body_26: %sum_26]
-    %w_27 = binary mul i32 %m, 30
     branch %c_0, ^loop_preheader_190, ^after_27
 
   block ^loop_preheader_190:
-    %t853 = cmp ugt i64 %n, 4
-    %t854 = binary and i64 %c_0, %t853
-    branch %t854, ^loop_preheader_191, ^loop_preheader_194
+    %t852 = cmp ugt i64 %n, 4
+    %t853 = binary and i64 %c_0, %t852
+    %w_27 = binary mul i32 %m, 30
+    branch %t853, ^loop_preheader_191, ^loop_preheader_194
 
   block ^loop_preheader_191:
     %t855 = binary add i64 %n, -4
@@ -1473,13 +1473,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_27:
     %t882 = phi i32 [^loop_preheader_189: %t851, ^body_27: %sum_27]
     %z_27 = binary xor i32 %t882, 27
-    %w_28 = binary mul i32 %m, 31
     branch %c_0, ^loop_preheader_197, ^loop_preheader_203
 
   block ^loop_preheader_197:
-    %t885 = cmp ugt i64 %n, 4
-    %t886 = binary and i64 %c_0, %t885
-    branch %t886, ^loop_preheader_198, ^loop_preheader_201
+    %t884 = cmp ugt i64 %n, 4
+    %t885 = binary and i64 %c_0, %t884
+    %w_28 = binary mul i32 %m, 31
+    branch %t885, ^loop_preheader_198, ^loop_preheader_201
 
   block ^loop_preheader_198:
     %t887 = binary add i64 %n, -4
@@ -1525,13 +1525,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_203:
     %t914 = phi i32 [^after_27: %z_27, ^body_28: %sum_28]
-    %w_29 = binary mul i32 %m, 32
     branch %c_0, ^loop_preheader_204, ^after_29
 
   block ^loop_preheader_204:
-    %t916 = cmp ugt i64 %n, 4
-    %t917 = binary and i64 %c_0, %t916
-    branch %t917, ^loop_preheader_205, ^loop_preheader_208
+    %t915 = cmp ugt i64 %n, 4
+    %t916 = binary and i64 %c_0, %t915
+    %w_29 = binary mul i32 %m, 32
+    branch %t916, ^loop_preheader_205, ^loop_preheader_208
 
   block ^loop_preheader_205:
     %t918 = binary add i64 %n, -4
@@ -1578,13 +1578,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_29:
     %t945 = phi i32 [^loop_preheader_203: %t914, ^body_29: %sum_29]
     %z_29 = binary xor i32 %t945, 29
-    %w_30 = binary mul i32 %m, 33
     branch %c_0, ^loop_preheader_211, ^loop_preheader_217
 
   block ^loop_preheader_211:
-    %t948 = cmp ugt i64 %n, 4
-    %t949 = binary and i64 %c_0, %t948
-    branch %t949, ^loop_preheader_212, ^loop_preheader_215
+    %t947 = cmp ugt i64 %n, 4
+    %t948 = binary and i64 %c_0, %t947
+    %w_30 = binary mul i32 %m, 33
+    branch %t948, ^loop_preheader_212, ^loop_preheader_215
 
   block ^loop_preheader_212:
     %t950 = binary add i64 %n, -4
@@ -1630,13 +1630,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_217:
     %t977 = phi i32 [^after_29: %z_29, ^body_30: %sum_30]
-    %w_31 = binary mul i32 %m, 34
     branch %c_0, ^loop_preheader_218, ^after_31
 
   block ^loop_preheader_218:
-    %t979 = cmp ugt i64 %n, 4
-    %t980 = binary and i64 %c_0, %t979
-    branch %t980, ^loop_preheader_219, ^loop_preheader_222
+    %t978 = cmp ugt i64 %n, 4
+    %t979 = binary and i64 %c_0, %t978
+    %w_31 = binary mul i32 %m, 34
+    branch %t979, ^loop_preheader_219, ^loop_preheader_222
 
   block ^loop_preheader_219:
     %t981 = binary add i64 %n, -4
@@ -1683,13 +1683,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_31:
     %t1008 = phi i32 [^loop_preheader_217: %t977, ^body_31: %sum_31]
     %z_31 = binary xor i32 %t1008, 31
-    %w_32 = binary mul i32 %m, 35
     branch %c_0, ^loop_preheader_225, ^loop_preheader_231
 
   block ^loop_preheader_225:
-    %t1011 = cmp ugt i64 %n, 4
-    %t1012 = binary and i64 %c_0, %t1011
-    branch %t1012, ^loop_preheader_226, ^loop_preheader_229
+    %t1010 = cmp ugt i64 %n, 4
+    %t1011 = binary and i64 %c_0, %t1010
+    %w_32 = binary mul i32 %m, 35
+    branch %t1011, ^loop_preheader_226, ^loop_preheader_229
 
   block ^loop_preheader_226:
     %t1013 = binary add i64 %n, -4
@@ -1735,13 +1735,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_231:
     %t1040 = phi i32 [^after_31: %z_31, ^body_32: %sum_32]
-    %w_33 = binary mul i32 %m, 36
     branch %c_0, ^loop_preheader_232, ^after_33
 
   block ^loop_preheader_232:
-    %t1042 = cmp ugt i64 %n, 4
-    %t1043 = binary and i64 %c_0, %t1042
-    branch %t1043, ^loop_preheader_233, ^loop_preheader_236
+    %t1041 = cmp ugt i64 %n, 4
+    %t1042 = binary and i64 %c_0, %t1041
+    %w_33 = binary mul i32 %m, 36
+    branch %t1042, ^loop_preheader_233, ^loop_preheader_236
 
   block ^loop_preheader_233:
     %t1044 = binary add i64 %n, -4
@@ -1788,13 +1788,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
   block ^after_33:
     %t1071 = phi i32 [^loop_preheader_231: %t1040, ^body_33: %sum_33]
     %z_33 = binary xor i32 %t1071, 33
-    %w_34 = binary mul i32 %m, 37
     branch %c_0, ^loop_preheader_239, ^loop_preheader_245
 
   block ^loop_preheader_239:
-    %t1074 = cmp ugt i64 %n, 4
-    %t1075 = binary and i64 %c_0, %t1074
-    branch %t1075, ^loop_preheader_240, ^loop_preheader_243
+    %t1073 = cmp ugt i64 %n, 4
+    %t1074 = binary and i64 %c_0, %t1073
+    %w_34 = binary mul i32 %m, 37
+    branch %t1074, ^loop_preheader_240, ^loop_preheader_243
 
   block ^loop_preheader_240:
     %t1076 = binary add i64 %n, -4
@@ -1840,13 +1840,13 @@ function @many(%p : ptr, %n : i64, %m : i32) -> i32 [binding=strong, no_inline=y
 
   block ^loop_preheader_245:
     %t1103 = phi i32 [^after_33: %z_33, ^body_34: %sum_34]
-    %w_35 = binary mul i32 %m, 38
     branch %c_0, ^loop_preheader_246, ^after_35
 
   block ^loop_preheader_246:
-    %t1105 = cmp ugt i64 %n, 4
-    %t1106 = binary and i64 %c_0, %t1105
-    branch %t1106, ^loop_preheader_247, ^loop_preheader_250
+    %t1104 = cmp ugt i64 %n, 4
+    %t1105 = binary and i64 %c_0, %t1104
+    %w_35 = binary mul i32 %m, 38
+    branch %t1105, ^loop_preheader_247, ^loop_preheader_250
 
   block ^loop_preheader_247:
     %t1107 = binary add i64 %n, -4

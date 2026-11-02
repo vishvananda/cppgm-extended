@@ -11,10 +11,10 @@ function @probe(%condition : i64) -> void {
     return void
 
   block ^cleanup_start:
-    %address = addr $object
     branch %condition, ^use, ^resume
 
   block ^use:
+    %address = addr $object
     call void @sink(%address)
     jump ^resume
 

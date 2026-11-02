@@ -67,19 +67,19 @@ function @byte_of_extension(%first : ptr, %count : i32, %v : i8) -> i8 [binding=
 }
 function @byte_of_parameter(%first : ptr, %count : i32, %v : i32) -> i8 [binding=strong, no_inline=yes] {
   block ^entry:
-    %t1 = convert trunc i8 i32 %v
     %more = cmp gt i32 %count, 0
     branch %more, ^loop_preheader_1, ^done
 
   block ^loop_preheader_1:
-    %t3 = cmp ugt i32 %count, 16
-    %t4 = binary and i64 %more, %t3
-    branch %t4, ^loop_preheader_2, ^loop_preheader_5
+    %t2 = cmp ugt i32 %count, 16
+    %t3 = binary and i64 %more, %t2
+    %t4 = convert trunc i8 i32 %v
+    branch %t3, ^loop_preheader_2, ^loop_preheader_5
 
   block ^loop_preheader_2:
     %t5 = binary add i32 %count, -16
     %t6 = vector pzero
-    %t7 = convert zext i32 i8 %t1
+    %t7 = convert zext i32 i8 %t4
     %t8 = binary mul i32 %t7, 257
     %t9 = vector fromi32 %t8
     %t10 = vector pshuflw %t9, 0
@@ -122,7 +122,7 @@ function @byte_of_parameter(%first : ptr, %count : i32, %v : i32) -> i8 [binding
     %t35 = phi i64 [^loop_preheader_5: %t33, ^loop: %t40]
     %p = index i8 %first, %t35
     %x = load i8 %p
-    %t38 = binary add i8 %x, %t1
+    %t38 = binary add i8 %x, %t4
     %t39 = binary add i8 %sum, %t38
     %t40 = binary add nowrap i64 %t35, 1
     %next = convert trunc exact i32 i64 %t40
@@ -136,20 +136,20 @@ function @byte_of_parameter(%first : ptr, %count : i32, %v : i32) -> i8 [binding
 function @short_of_phi(%first : ptr, %count : i32, %c : i1, %v : i32, %w : i32) -> i16 [binding=strong, no_inline=yes] {
   block ^entry:
     %more = cmp gt i32 %count, 0
-    %v2 = binary add i32 %v, 3
-    %t3 = select i32 %c, %v2, %w
-    %t4 = convert trunc i16 i32 %t3
     branch %more, ^loop_preheader_1, ^done
 
   block ^loop_preheader_1:
-    %t5 = cmp ugt i32 %count, 8
-    %t6 = binary and i64 %more, %t5
-    branch %t6, ^loop_preheader_2, ^loop_preheader_5
+    %t2 = cmp ugt i32 %count, 8
+    %t3 = binary and i64 %more, %t2
+    %v2 = binary add i32 %v, 3
+    %t5 = select i32 %c, %v2, %w
+    %t6 = convert trunc i16 i32 %t5
+    branch %t3, ^loop_preheader_2, ^loop_preheader_5
 
   block ^loop_preheader_2:
     %t7 = binary add i32 %count, -8
     %t8 = vector pzero
-    %t9 = convert zext i32 i16 %t4
+    %t9 = convert zext i32 i16 %t6
     %t10 = vector fromi32 %t9
     %t11 = vector pshuflw %t10, 0
     %t12 = vector pshufd %t11, 0
@@ -189,7 +189,7 @@ function @short_of_phi(%first : ptr, %count : i32, %c : i1, %v : i32, %w : i32) 
     %t34 = phi i64 [^loop_preheader_5: %t32, ^loop: %t39]
     %p = index i16 %first, %t34
     %x = load typed i16 %p
-    %t37 = binary mul i16 %x, %t4
+    %t37 = binary mul i16 %x, %t6
     %t38 = binary add i16 %sum, %t37
     %t39 = binary add nowrap i64 %t34, 1
     %next = convert trunc exact i32 i64 %t39

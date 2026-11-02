@@ -4,15 +4,15 @@ global @last : i64 = 0
 
 function @count_down(%n : i32) -> void [no_inline=yes] {
   block ^entry:
-    %next = binary sub nowrap i32 %n, 1
     branch %n, ^loop_preheader_1, ^done
 
   block ^loop_preheader_1:
-    %t2 = load i64 @last
+    %t1 = load i64 @last
+    %next = binary sub nowrap i32 %n, 1
     jump ^body
 
   block ^body:
-    %t3 = phi i64 [^body: %w, ^loop_preheader_1: %t2]
+    %t3 = phi i64 [^body: %w, ^loop_preheader_1: %t1]
     %t4 = phi i32 [^body: %t6, ^loop_preheader_1: %next]
     %w = binary mul i64 %t3, 3
     %t6 = binary sub nowrap i32 %t4, 1

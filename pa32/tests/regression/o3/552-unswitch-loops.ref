@@ -111,38 +111,37 @@ function @on_outer_compare(%p : ptr, %n : i64) -> void [no_inline=yes] {
   block ^loop_preheader_1:
     %t2 = phi i64 [^outer_latch: %i_next, ^entry: 0]
     %first = cmp eq i64 %t2, 0
-    %at_i = index i64 %p, %t2
     branch %first, ^loop_preheader_2, ^loop_preheader_7
 
   block ^loop_preheader_2:
-    %t5 = vector pzero
-    %t6 = vector fromi64 1
-    %t7 = vector punpcklqdq %t5, %t6
-    %t8 = vector paddq %t5, %t7
-    %t9 = vector fromi64 2
-    %t10 = vector pshufd %t9, 68
+    %t4 = vector pzero
+    %t5 = vector fromi64 1
+    %t6 = vector punpcklqdq %t4, %t5
+    %t7 = vector paddq %t4, %t6
+    %t8 = vector fromi64 2
+    %t9 = vector pshufd %t8, 68
     jump ^wide_loop_3
 
   block ^wide_loop_3:
-    %t11 = phi v128 [^loop_preheader_2: %t8, ^wide_loop_3: %t15]
-    %t12 = phi i64 [^loop_preheader_2: 0, ^wide_loop_3: %t14]
-    %t13 = index i64 %p, %t12
-    store v128 %t11, %t13
-    %t14 = binary add nowrap i64 %t12, 2
-    %t15 = vector paddq %t11, %t10
-    %t16 = cmp le i64 %t14, 6
-    branch %t16, ^wide_loop_3, ^loop_exit_4
+    %t10 = phi v128 [^loop_preheader_2: %t7, ^wide_loop_3: %t14]
+    %t11 = phi i64 [^loop_preheader_2: 0, ^wide_loop_3: %t13]
+    %t12 = index i64 %p, %t11
+    store v128 %t10, %t12
+    %t13 = binary add nowrap i64 %t11, 2
+    %t14 = vector paddq %t10, %t9
+    %t15 = cmp le i64 %t13, 6
+    branch %t15, ^wide_loop_3, ^loop_exit_4
 
   block ^loop_exit_4:
-    %t17 = cmp lt i64 %t14, 8
-    branch %t17, ^loop_preheader_5, ^outer_latch
+    %t16 = cmp lt i64 %t13, 8
+    branch %t16, ^loop_preheader_5, ^outer_latch
 
   block ^loop_preheader_5:
-    %t18 = phi i64 [^loop_exit_4: %t14]
+    %t17 = phi i64 [^loop_exit_4: %t13]
     jump ^inner
 
   block ^inner:
-    %j = phi i64 [^inner: %j_next, ^loop_preheader_5: %t18]
+    %j = phi i64 [^inner: %j_next, ^loop_preheader_5: %t17]
     %at_seed = index i64 %p, %j
     store i64 %j, %at_seed
     %j_next = binary add i64 %j, 1
@@ -150,9 +149,10 @@ function @on_outer_compare(%p : ptr, %n : i64) -> void [no_inline=yes] {
     branch %inner_more, ^inner, ^outer_latch
 
   block ^loop_preheader_7:
-    %t23 = index i8 %p, 64
+    %t22 = index i8 %p, 64
+    %at_i = index i64 %p, %t2
     %t24 = index i8 %at_i, 64
-    %t25 = cmp ule ptr %t23, %at_i
+    %t25 = cmp ule ptr %t22, %at_i
     %t26 = cmp ule ptr %t24, %p
     %t27 = binary or i64 %t25, %t26
     branch %t27, ^wide_loop_8, ^loop_preheader_10

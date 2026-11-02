@@ -24,6 +24,8 @@ struct LoopForest
 {
 	std::vector<Loop> loops;            // outer loops before the loops they contain
 	std::vector<uint32_t> innermost;    // per block: innermost loop or kNoId
+	std::vector<uint8_t> dropped;       // per block: in a cycle not reported (a handler, not reducible)
+	bool partial = false;               // the budget ended the search: more loops exist
 	std::vector<uint32_t> enter, leave; // per loop: preorder interval in the loop tree
 	std::vector<uint32_t> mark;         // scratch membership marks
 	uint32_t epoch = 0;

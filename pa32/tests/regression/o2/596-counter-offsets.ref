@@ -47,13 +47,13 @@ function @read_after(%step : i64, %row : i64, %n : i64) -> i64 [no_inline=yes] {
   block ^body:
     %c = phi i64 [^entry: 0, ^body: %c1]
     %at = phi i64 [^entry: %row, ^body: %at1]
-    %a = copy i64 %at
     %at1 = binary add i64 %step, %at
     %c1 = binary add i64 %c, 1
     %d = cmp lt i64 %c1, %n
     branch %d, ^body, ^done
 
   block ^done:
+    %a = copy i64 %at
     return i64 %a
 }
 function @some_passes(%base : ptr, %step : i32, %row : i32, %n : i32) -> i64 [no_inline=yes] {

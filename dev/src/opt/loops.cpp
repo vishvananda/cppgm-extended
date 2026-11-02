@@ -14,6 +14,8 @@ void find_loops(const FunctionBody& body, const Cfg& cfg, LoopForest& forest)
 	(void)body;
 	forest.loops.clear();
 	forest.innermost.assign(cfg.block_count, kNoId);
+	forest.dropped.assign(cfg.block_count, 0);
+	forest.partial = false;
 	if (forest.mark.size() < cfg.block_count)
 		forest.mark.assign(cfg.block_count, 0);
 	static std::vector<BlockId> work; // (kept for its capacity, like size and cursor below)
@@ -71,7 +73,11 @@ void find_loops(const FunctionBody& body, const Cfg& cfg, LoopForest& forest)
 		for (BlockId b : loop.blocks)
 			handlers = handlers || (cfg.flags[b] & BF_HANDLER) != 0;
 		if (!reducible || handlers)
+		{
+			for (BlockId b : loop.blocks)
+				forest.dropped[b] = 1;
 			continue;
+		}
 		BlockId outside = kNoId;
 		uint32_t outside_count = 0;
 		for (uint32_t k = cfg.pred_first[h]; k < cfg.pred_first[h + 1]; ++k)
@@ -84,7 +90,10 @@ void find_loops(const FunctionBody& body, const Cfg& cfg, LoopForest& forest)
 			loop.preheader = outside;
 		memberships += loop.blocks.size();
 		if (memberships > budget)
+		{
+			forest.partial = true;
 			break;
+		}
 		const uint32_t index = static_cast<uint32_t>(forest.loops.size());
 		for (BlockId b : loop.blocks)
 			forest.innermost[b] = index;

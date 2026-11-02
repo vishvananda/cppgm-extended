@@ -465,6 +465,13 @@ them changed it, branch compares are computed again beside their branches:
 - A fill loop of a run-time value whose bytes all repeat calls `memset`
   for runs of at least 128 bytes.
 - Narrow loop counters that cannot pass their bound are marked `nowrap`.
+- Last, a pure instruction other than a phi moves down to the block nearest
+  its readers, one in no deeper loop than its own, and sits before its first
+  reader there; a phi's input is read at the end of its predecessor. Visit
+  blocks in reverse order so that a reader has moved before its operands are
+  placed: one walk moves a whole chain. A path that reads nothing computes
+  nothing, and a step ends up beside the test that reads it, which then needs
+  no compare. A handler or a cycle not reported as a loop takes nothing.
 
 ### What `-O3` Adds
 

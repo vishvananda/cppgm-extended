@@ -500,41 +500,40 @@ function @large_values(%n : i64, %v : f64) -> void [no_inline=yes] {
 }
 function @through_unknown_step(%row : i64, %n : i64) -> void [no_inline=yes] {
   block ^entry:
-    %p = index i64 @table, %row
-    %t2 = cmp gt i64 %n, 0
-    %t3 = cmp ugt i64 %n, 2
-    %t4 = binary and i64 %t2, %t3
-    branch %t4, ^loop_preheader_1, ^loop_preheader_4
+    %t1 = cmp gt i64 %n, 0
+    %t2 = cmp ugt i64 %n, 2
+    %t3 = binary and i64 %t1, %t2
+    branch %t3, ^loop_preheader_1, ^loop_preheader_4
 
   block ^loop_preheader_1:
-    %t5 = binary add i64 %n, -2
-    %t6 = vector pzero
+    %t4 = binary add i64 %n, -2
+    %t5 = vector pzero
     jump ^wide_loop_2
 
   block ^wide_loop_2:
-    %t7 = phi v128 [^loop_preheader_1: %t6, ^wide_loop_2: %t11]
-    %t8 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t12]
-    %t9 = index i64 @values, %t8
-    %t10 = load v128 %t9
-    %t11 = vector paddq %t7, %t10
-    %t12 = binary add nowrap i64 %t8, 2
-    %t13 = cmp lt i64 %t12, %t5
-    branch %t13, ^wide_loop_2, ^loop_exit_3
+    %t6 = phi v128 [^loop_preheader_1: %t5, ^wide_loop_2: %t10]
+    %t7 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t11]
+    %t8 = index i64 @values, %t7
+    %t9 = load v128 %t8
+    %t10 = vector paddq %t6, %t9
+    %t11 = binary add nowrap i64 %t7, 2
+    %t12 = cmp lt i64 %t11, %t4
+    branch %t12, ^wide_loop_2, ^loop_exit_3
 
   block ^loop_exit_3:
-    %t14 = vector pshufd %t11, 78
-    %t15 = vector paddq %t11, %t14
-    %t16 = vector toi64 %t15
+    %t13 = vector pshufd %t10, 78
+    %t14 = vector paddq %t10, %t13
+    %t15 = vector toi64 %t14
     jump ^loop_preheader_4
 
   block ^loop_preheader_4:
-    %t17 = phi i64 [^entry: 0, ^loop_exit_3: %t16]
-    %t18 = phi i64 [^entry: 0, ^loop_exit_3: %t12]
+    %t16 = phi i64 [^entry: 0, ^loop_exit_3: %t15]
+    %t17 = phi i64 [^entry: 0, ^loop_exit_3: %t11]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^loop_preheader_4: %t18, ^body: %next]
-    %s = phi i64 [^loop_preheader_4: %t17, ^body: %t]
+    %i = phi i64 [^loop_preheader_4: %t17, ^body: %next]
+    %s = phi i64 [^loop_preheader_4: %t16, ^body: %t]
     %q = index i64 @values, %i
     %v = load typed i64 %q
     %t = binary add i64 %s, %v
@@ -543,6 +542,7 @@ function @through_unknown_step(%row : i64, %n : i64) -> void [no_inline=yes] {
     branch %c, ^body, ^loop_exit_6
 
   block ^loop_exit_6:
+    %p = index i64 @table, %row
     store typed i64 %t, %p
     return void
 }

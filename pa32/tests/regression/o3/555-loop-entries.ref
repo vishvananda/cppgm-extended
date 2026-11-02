@@ -59,18 +59,18 @@ function @capped(%n : i32, %p : ptr) -> i32 [no_inline=yes] {
 
   block ^body:
     %t35 = phi i64 [^body: %t37, ^loop_preheader_6: %t33]
-    %t36 = phi i64 [^body: %t41, ^loop_preheader_6: %t34]
+    %t36 = phi i64 [^body: %t40, ^loop_preheader_6: %t34]
     %t37 = binary add nowrap i64 %t35, 3
-    %new = convert trunc exact i32 i64 %t37
     %wide = copy i64 %t37
     %at = index i64 %p, %t36
     store typed i64 %wide, %at
-    %t41 = binary add nowrap i64 %t36, 1
-    %next = convert trunc exact i32 i64 %t41
-    %t43 = cmp lt i32 %next, %t2
-    branch %t43, ^body, ^loop_exit_8
+    %t40 = binary add nowrap i64 %t36, 1
+    %next = convert trunc exact i32 i64 %t40
+    %t42 = cmp lt i32 %next, %t2
+    branch %t42, ^body, ^loop_exit_8
 
   block ^loop_exit_8:
+    %new = convert trunc exact i32 i64 %t37
     store typed i32 %new, @state
     jump ^done
 
