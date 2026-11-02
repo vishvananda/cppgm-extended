@@ -1,0 +1,123 @@
+# Storage an allocation call returns is new: no pointer from before the call
+# reaches it. In @encode the inner loop stores into %out, which malloc
+# returned, and loads through %d, which steps from the parameter %data: the
+# store cannot touch %d's byte, and its load leaves the inner loop. The loop
+# may leave through ^fail before it reads %d, but the outer loop read %d
+# before the inner loop with no call between, so reading it early cannot
+# fault. In @guarded a call between that read and the loop might free %d:
+# its load stays.
+
+declare function @malloc(%arg0 : i64) -> ptr [unwind=no, linkage=c, binding=strong]
+declare function @free(%arg0 : ptr) -> void [unwind=no, linkage=c, binding=strong]
+declare function @exit(%arg0 : i32) -> void [unwind=no, linkage=c, binding=strong]
+
+global @hits : i64 = 0
+
+function @note() -> void [no_inline=yes] {
+  block ^entry:
+    %h = load i64 @hits
+    %h1 = binary add i64 %h, 1
+    store i64 %h1, @hits
+    return void
+}
+
+function @encode(%data : ptr, %n : i64, %cap : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %out = call ptr @malloc(%cap)
+    jump ^outer
+  block ^outer:
+    %d = phi ptr [^entry: %data, ^onext: %d2]
+    %j = phi i64 [^entry: 0, ^onext: %j2]
+    %len = phi i64 [^entry: 0, ^onext: %l2]
+    %first = load u8 %d
+    %some = cmp ne u8 %first, 0
+    branch %some, ^inner, ^onext
+  block ^inner:
+    %i = phi i64 [^outer: 0, ^next: %i2]
+    %l = phi i64 [^outer: %len, ^next: %l2]
+    %odd = binary and i64 %i, 1
+    branch %odd, ^put, ^next
+  block ^put:
+    %c = load u8 %d
+    %at = index u8 %out, %l
+    store u8 %c, %at
+    %l1 = binary add i64 %l, 1
+    %full = cmp eq i64 %l1, %cap
+    branch %full, ^fail, ^next
+  block ^fail:
+    call void @exit(1)
+    unreachable
+  block ^next:
+    %l2 = phi i64 [^inner: %l, ^put: %l1]
+    %v = load u8 %d
+    %w = convert zext i64 u8 %v
+    %i2 = binary add i64 %i, 1
+    %more = cmp ult i64 %i2, %w
+    branch %more, ^inner, ^onext
+  block ^onext:
+    %l3 = phi i64 [^outer: %len, ^next: %l2]
+    %d2 = index u8 %d, 1
+    %j2 = binary add i64 %j, 1
+    %go = cmp ult i64 %j2, %n
+    branch %go, ^outer, ^done
+  block ^done:
+    %last = binary sub i64 %l3, 1
+    %lp = index u8 %out, %last
+    %lv = load u8 %lp
+    %lw = convert zext i64 u8 %lv
+    call void @free(%out)
+    %r = binary add i64 %l3, %lw
+    return i64 %r
+}
+
+function @guarded(%data : ptr, %n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %out = call ptr @malloc(%n)
+    %first = load u8 %data
+    call void @note()
+    jump ^loop
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^next: %i2]
+    %s = phi i64 [^entry: 0, ^next: %s2]
+    %odd = binary and i64 %i, 1
+    branch %odd, ^put, ^next
+  block ^put:
+    %c = load u8 %data
+    %at = index u8 %out, %i
+    store u8 %c, %at
+    %cw = convert zext i64 u8 %c
+    %s1 = binary add i64 %s, %cw
+    jump ^next
+  block ^next:
+    %s2 = phi i64 [^loop: %s, ^put: %s1]
+    %i2 = binary add i64 %i, 1
+    %more = cmp ult i64 %i2, %n
+    branch %more, ^loop, ^done
+  block ^done:
+    call void @free(%out)
+    %fw = convert zext i64 u8 %first
+    %r = binary add i64 %s2, %fw
+    return i64 %r
+}
+
+function @main() -> i32 [role=entry] {
+  slot $data : obj<4x1>
+
+  block ^entry:
+    %p = addr $data
+    store u8 3, %p
+    %p1 = index u8 %p, 1
+    store u8 4, %p1
+    %p2 = index u8 %p, 2
+    store u8 0, %p2
+    %p3 = index u8 %p, 3
+    store u8 5, %p3
+    %a = call i64 @encode(%p, 4, 64)
+    %b = call i64 @guarded(%p, 6)
+    %h = load i64 @hits
+    %t = binary mul i64 %b, 10
+    %u = binary add i64 %a, %t
+    %v = binary add i64 %u, %h
+    %w = convert trunc i32 i64 %v
+    return i32 %w
+}

@@ -15,6 +15,11 @@ namespace {
 // moves.
 const size_t kLoopAccesses = 256;
 const size_t kLoopLocations = 4;
+// The most values `before` follows back from one pointer, and the most
+// dominators and blocks between them and a loop `read_before` searches.
+const size_t kOriginWalk = 16;
+const unsigned kReadBefore = 4;
+const size_t kReadBetween = 16;
 
 // Store motion: a location a loop stores on every pass lives in a slot for
 // the loop, which promotion then keeps in a register: loaded in the preheader
@@ -53,10 +58,14 @@ private:
 	void read_location(uint32_t loop, const Location& location);
 
 	bool invariant(uint32_t loop, Value v) const;
+	bool allocation(Value v) const;
+	bool before(Value v, Value fresh) const;
+	bool overlap(const Access& a, const Access& b) const;
 	Located place(uint32_t loop, Value address, const Located& located) const;
 	bool read_accesses(uint32_t loop);
 	bool each_pass(uint32_t loop, const std::vector<BlockId>& exiting, const Access& location, bool stores) const;
 	std::vector<BlockId> exiting_blocks(uint32_t loop) const;
+	bool read_before(uint32_t loop, const Access& location) const;
 	bool readable(uint32_t loop, const std::vector<BlockId>& exiting, const Access& location) const;
 	void find_locations(uint32_t loop);
 	Value address_of(const Location& location, BlockId block, InstId& tail);
@@ -102,6 +111,58 @@ bool may_overlap(const StoreMotion::Access& a, const StoreMotion::Access& b)
 	if (!(a.object == b.object) && named(a.object) && named(b.object))
 		return false;
 	return !(a.typed && b.typed && typed_types_apart(a.type, b.type));
+}
+
+// Whether v is the result of an allocation call: storage no earlier
+// pointer reaches.
+bool StoreMotion::allocation(Value v) const
+{
+	if (!v.is(ValueKind::Temp) || v.index < body_.parameter_count)
+		return false;
+	const InstId def = body_.temps[v.index].def;
+	return def != kNoId && allocation_call(c_.program, body_.instructions[def]);
+}
+
+// Whether every pointer v may be comes, through steps, copies and phis, from
+// a parameter, a slot, a global or an allocation other than `fresh`: from
+// storage `fresh` cannot reach. Up to kOriginWalk values.
+bool StoreMotion::before(Value v, Value fresh) const
+{
+	std::vector<Value> walk(1, v);
+	for (size_t n = 0; n < walk.size(); ++n)
+	{
+		const Value x = walk[n];
+		if (n == kOriginWalk || x == fresh)
+			return false;
+		if (x.is(ValueKind::Slot) || x.is(ValueKind::Symbol) ||
+			(x.is(ValueKind::Temp) && x.index < body_.parameter_count))
+			continue;
+		if (!x.is(ValueKind::Temp) || body_.temps[x.index].def == kNoId)
+			return false;
+		const Instruction& d = body_.instructions[body_.temps[x.index].def];
+		auto visit = [&](Value y) {
+			if (std::find(walk.begin(), walk.end(), y) == walk.end())
+				walk.push_back(y);
+		};
+		if (allocation_call(c_.program, d))
+			continue;
+		if (d.op == Opcode::Index || d.op == Opcode::Addr || (d.op == Opcode::Copy && d.type.is_pointer()))
+			visit(d.ops[0]);
+		else if (d.op == Opcode::Phi)
+			for (uint32_t k = 1; k < d.extra_count; k += 2)
+				visit(body_.operands[d.extra_first + k]);
+		else
+			return false;
+	}
+	return true;
+}
+
+// may_overlap, but apart where one access is in storage the loop's function
+// allocated and the other's pointer comes from before it.
+bool StoreMotion::overlap(const Access& a, const Access& b) const
+{
+	return may_overlap(a, b) && !(allocation(a.object) && before(b.object, a.object)) &&
+		!(allocation(b.object) && before(a.object, b.object));
 }
 
 // Where an access stays through the loop: an address computed by steps of
@@ -193,9 +254,63 @@ std::vector<BlockId> StoreMotion::exiting_blocks(uint32_t loop) const
 	return exiting;
 }
 
+// Whether the location is read or written at its type before the loop: in
+// a block that dominates the header from outside (up to kReadBefore of them,
+// nearest first), with no call after it there or in the blocks between it
+// and the loop (up to kReadBetween of them), which might free the location.
+bool StoreMotion::read_before(uint32_t loop, const Access& location) const
+{
+	const BlockId header = forest_.loops[loop].header;
+	BlockId b = cfg_.idom[header];
+	for (unsigned step = 0; b != kNoId && step < kReadBefore; ++step, b = cfg_.idom[b])
+	{
+		bool read = false, call = false;
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			if ((inst.op == Opcode::Load || inst.op == Opcode::Store) && (inst.flags & IF_VOLATILE) == 0 &&
+				inst.type == location.type &&
+				same_place(
+					locate(body_, inst.ops[inst.op == Opcode::Load ? 0 : 1]), inst.type, location.at, location.type))
+				read = true;
+			else if (inst.op == Opcode::Call)
+				read = false, call = true;
+		}
+		if (!read)
+		{
+			if (call)
+				return false;
+			continue;
+		}
+		// The blocks from b to the loop, back from the header's entries.
+		std::vector<BlockId> between;
+		for (uint32_t k = cfg_.pred_first[header]; k < cfg_.pred_first[header + 1]; ++k)
+			if (!in_loop(forest_, loop, cfg_.preds[k]) && cfg_.preds[k] != b)
+				between.push_back(cfg_.preds[k]);
+		for (size_t n = 0; n < between.size(); ++n)
+		{
+			if (between.size() > kReadBetween)
+				return false;
+			const BlockId x = between[n];
+			for (InstId i = body_.blocks[x].first; i != kNoId; i = body_.instructions[i].next)
+				if (body_.instructions[i].op == Opcode::Call)
+					return false;
+			for (uint32_t k = cfg_.pred_first[x]; k < cfg_.pred_first[x + 1]; ++k)
+			{
+				const BlockId p = cfg_.preds[k];
+				if (p != b && std::find(between.begin(), between.end(), p) == between.end())
+					between.push_back(p);
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
 // Whether the preheader may read a location the loop loads: one in a slot
-// or a defined global, or (in a loop without calls) one the loop reads or
-// writes on every pass before it can leave.
+// or a defined global, one read before the loop (read_before), or (in a loop
+// without calls) one the loop reads or writes on every pass before it can
+// leave.
 bool StoreMotion::readable(uint32_t loop, const std::vector<BlockId>& exiting, const Access& location) const
 {
 	const Value root = location.at.root;
@@ -203,7 +318,7 @@ bool StoreMotion::readable(uint32_t loop, const std::vector<BlockId>& exiting, c
 		(root.is(ValueKind::Symbol) && c_.program.symbols[root.index].kind == SymbolKind::GlobalDefinition &&
 			location.at.offset >= 0))
 		return true;
-	return calls_.empty() && each_pass(loop, exiting, location, false);
+	return read_before(loop, location) || (calls_.empty() && each_pass(loop, exiting, location, false));
 }
 
 void StoreMotion::find_locations(uint32_t loop)
@@ -230,7 +345,7 @@ void StoreMotion::find_locations(uint32_t loop)
 			if (same_place(a.at, a.type, s.at, s.type))
 				typed = typed && (a.typed || !a.store);
 			else
-				alone = alone && !may_overlap(a, s);
+				alone = alone && !overlap(a, s);
 		}
 		if (alone && each_pass(loop, exiting, s, true))
 			locations_.push_back(Location{ s.at, s.type, typed });
@@ -290,7 +405,7 @@ void StoreMotion::find_loaded_locations(uint32_t loop)
 				read = read || (!a.store && !copied_in(a.inst));
 			}
 			else
-				alone = alone && !(a.store && may_overlap(a, l));
+				alone = alone && !(a.store && overlap(a, l));
 		}
 		// (Without calls, a slot's elements stay: the lanes of a local
 		// array an unrolled loop updates cost more registers than loads.)

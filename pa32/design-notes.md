@@ -585,9 +585,17 @@ to dominate some latch), or a loop with no location stored on every pass,
 keeps in a register each of up to four locations it loads instead. The
 location has a loop-invariant address of known offset and the same types as
 above, and no other store of the loop may overlap it. Loads of other
-locations may overlap it. The load before the loop must not fault: the
-location is in a slot or a defined global, or, in a loop without calls, the
-loop reads or writes it on every pass before it can leave. In a loop without
+locations may overlap it. Storage that a call of malloc, calloc or `operator
+new` in the function returned is new: a pointer that comes, through steps,
+copies and phis, only from parameters, slots, globals or other such calls
+does not reach it, so a store into it does not overlap a load through that
+pointer. The load before the loop must not fault: the location is in a slot
+or a defined global; or the function reads or writes it at the same type in
+a block that dominates the loop's header, with no call after that access or
+in the blocks between it and the loop (a call might free it); or, in a loop
+without calls, the loop reads or writes it on every pass before it can
+leave. In huffbench's encoder this keeps the input byte out of memory in the
+loop that writes the output bits, and took 9% of the cycles off. In a loop without
 calls, a slot's location stays in memory (the lanes of a local array that an
 unrolled loop updates cost more registers than loads). Its stores stay where
 they are. The register takes

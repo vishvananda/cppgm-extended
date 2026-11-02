@@ -1,0 +1,120 @@
+declare function @malloc(%arg0 : i64) -> ptr [unwind=no, linkage=c, binding=strong]
+declare function @free(%arg0 : ptr) -> void [unwind=no, linkage=c, binding=strong]
+declare function @exit(%arg0 : i32) -> void [unwind=no, linkage=c, binding=strong]
+
+global @hits : i64 = 0
+
+function @note() -> void [no_inline=yes] {
+  block ^entry:
+    %h = load i64 @hits
+    %h1 = binary add i64 %h, 1
+    store i64 %h1, @hits
+    return void
+}
+function @encode(%data : ptr, %n : i64, %cap : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %out = call ptr @malloc(%cap)
+    jump ^outer
+
+  block ^outer:
+    %d = phi ptr [^entry: %data, ^onext: %d2]
+    %j = phi i64 [^entry: 0, ^onext: %j2]
+    %len = phi i64 [^entry: 0, ^onext: %l2]
+    %first = load u8 %d
+    branch %first, ^inner, ^onext
+
+  block ^inner:
+    %c = phi u8 [^next: %first, ^outer: %first]
+    %i = phi i64 [^next: %i2, ^outer: 0]
+    %l = phi i64 [^next: %l2, ^outer: %len]
+    %odd = binary and i64 %i, 1
+    branch %odd, ^put, ^next
+
+  block ^put:
+    %at = index u8 %out, %l
+    store u8 %c, %at
+    %l1 = binary add i64 %l, 1
+    %full = cmp eq i64 %cap, %l1
+    branch %full, ^fail, ^next
+
+  block ^fail:
+    call void @exit(1)
+    unreachable
+
+  block ^next:
+    %l2 = phi i64 [^inner: %l, ^put: %l1]
+    %w = convert zext i64 u8 %first
+    %i2 = binary add i64 %i, 1
+    %more = cmp ult i64 %i2, %w
+    branch %more, ^inner, ^onext
+
+  block ^onext:
+    %l3 = phi i64 [^outer: %len, ^next: %l2]
+    %d2 = index u8 %d, 1
+    %j2 = binary add i64 %j, 1
+    %go = cmp ult i64 %j2, %n
+    branch %go, ^outer, ^done
+
+  block ^done:
+    %last = binary sub i64 %l3, 1
+    %lp = index u8 %out, %last
+    %lv = load u8 %lp
+    %lw = convert zext i64 u8 %lv
+    call void @free(%out)
+    %r = binary add i64 %l3, %lw
+    return i64 %r
+}
+function @guarded(%data : ptr, %n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %out = call ptr @malloc(%n)
+    %first = load u8 %data
+    call void @note()
+    jump ^loop
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^next: %i2]
+    %s = phi i64 [^entry: 0, ^next: %s2]
+    %odd = binary and i64 %i, 1
+    branch %odd, ^put, ^next
+
+  block ^put:
+    %c = load u8 %data
+    %at = index u8 %out, %i
+    store u8 %c, %at
+    %cw = convert zext i64 u8 %c
+    %s1 = binary add i64 %s, %cw
+    jump ^next
+
+  block ^next:
+    %s2 = phi i64 [^loop: %s, ^put: %s1]
+    %i2 = binary add i64 %i, 1
+    %more = cmp ult i64 %i2, %n
+    branch %more, ^loop, ^done
+
+  block ^done:
+    call void @free(%out)
+    %fw = convert zext i64 u8 %first
+    %r = binary add i64 %s2, %fw
+    return i64 %r
+}
+function @main() -> i32 [role=entry] {
+  slot $data : obj<4x1>
+
+  block ^entry:
+    %p = addr $data
+    store u8 3, %p
+    %p1 = index u8 %p, 1
+    store u8 4, %p1
+    %p2 = index u8 %p, 2
+    store u8 0, %p2
+    %p3 = index u8 %p, 3
+    store u8 5, %p3
+    %a = call i64 @encode(%p, 4, 64)
+    %b = call i64 @guarded(%p, 6)
+    %h = load i64 @hits
+    %t = binary mul i64 %b, 10
+    %u = binary add i64 %a, %t
+    %v = binary add i64 %h, %u
+    %w = convert trunc i32 i64 %v
+    return i32 %w
+}
