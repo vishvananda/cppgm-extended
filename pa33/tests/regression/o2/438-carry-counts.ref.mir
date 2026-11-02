@@ -1,0 +1,198 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @values
+  storage data
+  item i32 3
+  item i32 9
+  item i32 1
+  item i32 7
+
+function @count_below
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i64
+    param %limit -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r8, 0
+    mov r9, 0
+
+  block ^loop
+    load.u32 rcx, [rdi+r8*4]
+    cmp.i64 rcx, rdx
+    mov rax, r9
+    adc rax, 0
+    add r8, 1
+    cmp.i64 r8, rsi
+    jb ^loop~loop
+    ret rax
+
+  block ^loop~loop
+    mov r9, rax
+    jmp ^loop
+
+  block ^done
+    ret rax
+
+function @count_at_least
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    param %c -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdi, rsi
+    sbb rdx, -1
+    ret rdx
+
+function @down_below
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    param %c -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdi, rsi
+    sbb rdx, 0
+    ret rdx
+
+function @down_at_least
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    param %c -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdi, rsi
+    adc rdx, -1
+    ret rdx
+
+function @count_float
+  abi
+    param %a -> xmm0 : f64
+    param %b -> xmm1 : f64
+    param %c -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm0, xmm1
+    sbb.i32 rdi, -1
+    sext.i32 rdi
+    ret rdi
+
+function @count_signed
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    param %c -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdi, rsi
+    lea r11, [rdx+1]
+    cmovl rdx, r11
+    ret rdx
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    temp %f -> [rbp-8] : i32
+    temp %e -> [rbp-16] : i32
+
+  block ^entry
+    mov rdi, @values
+    mov rsi, 4
+    mov rdx, 8
+    call @count_below [args=(rdx,rsi,rdi)]
+    mov rbx, rax
+    mov rdi, 5
+    mov rsi, 5
+    mov rdx, 10
+    call @count_at_least [args=(rdx,rsi,rdi)]
+    mov r12, rax
+    mov rdi, 5
+    mov rsi, 6
+    mov rdx, 10
+    call @down_below [args=(rdx,rsi,rdi)]
+    mov r13, rax
+    mov rdi, 6
+    mov rsi, 5
+    mov rdx, 10
+    call @down_at_least [args=(rdx,rsi,rdi)]
+    mov r14, rax
+    mov rdi, 100
+    fmov.f64 xmm0, 2.0
+    fmov.f64 xmm1, 1.0
+    call @count_float [args=(rdi,xmm0,xmm1)]
+    mov r15, rax
+    mov rdi, 100
+    fmov.f64 xmm0, 1.0
+    fmov.f64 xmm1, 2.0
+    call @count_float [args=(rdi,xmm0,xmm1)]
+    mov r10, rax
+    store.i32 [rbp-8], r10
+    mov rdi, -1
+    mov rsi, 0
+    mov rdx, 7
+    call @count_signed [args=(rdx,rsi,rdi)]
+    store.i32 [rbp-16], r15
+    mov r15, rax
+    mov rdi, 5
+    mov rsi, 6
+    mov rdx, 10
+    call @count_at_least [args=(rdx,rsi,rdi)]
+    add rbx, r12
+    add r13, r14
+    add r15, rax
+    add rbx, r13
+    add r15, rbx
+    load.i32 r8, [rbp-16]
+    add.i32 r8, [rbp-8]
+    add r15, r8
+    sext.i32 r15
+    ret r15

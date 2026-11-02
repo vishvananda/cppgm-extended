@@ -1065,6 +1065,49 @@ void FunctionSelector::emit_compare(const Instruction& inst)
 // register. The moves past the flags keep them (the emitter zeroes by mov
 // there). t goes to a register (r11 unless in its own); d holding t's
 // dying register instead takes f under the inverted condition.
+// What `add` adds to `base`: 1 or -1, else 0.
+int FunctionSelector::count_step(const Instruction& add, Value base) const
+{
+	const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(add.sub);
+	if ((op != lowir::BinaryOp::Add && op != lowir::BinaryOp::Sub) || !(resolve(add.ops[0]) == base))
+		return 0;
+	const Value by = resolve(add.ops[1]);
+	if (by.kind != ValueKind::Integer || literal(by).high != 0 || literal(by).low != 1)
+		return 0;
+	return op == lowir::BinaryOp::Add ? 1 : -1;
+}
+
+// A select whose arm is absorb_count's step, the compare's flags set: the
+// carry flag decides most of them, adding or taking away itself. Unordered
+// floating operands set it, as `ucomisd` reports them (`ae` is an ordered
+// test, `b` an unordered one).
+void FunctionSelector::emit_count(const Instruction& inst, Cond cc)
+{
+	const unsigned at = (temps_[resolve(inst.ops[1]).index].flags & TF_FUSED) != 0 ? 1 : 2;
+	const Value base = resolve(inst.ops[3 - at]);
+	const int step = count_step(body_->instructions[body_->temps[resolve(inst.ops[at]).index].def], base);
+	const Cond when = at == 1 ? cc : invert(cc);
+	const TypeKind kind = inst.type.kind();
+	const Reg d = result_reg(inst, dying_reg(base), kNoReg, 0);
+	const Operand from = rm_operand(base, inst.type, d);
+	if (from.kind == OperandKind::Mem)
+		emit2(Op::Load, kind, Operand::make_reg(d), from);
+	else
+		load_into(d, from, TypeKind::I64);
+	if (when == CC_B)
+		emit2(step > 0 ? Op::Adc : Op::Sbb, kind, Operand::make_reg(d), Operand::make_imm(0));
+	else if (when == CC_AE)
+		emit2(step > 0 ? Op::Sbb : Op::Adc, kind, Operand::make_reg(d), Operand::make_imm(-1, -1));
+	else
+	{
+		emit2(Op::Lea, kind, Operand::make_reg(kEmitScratch), Operand::make_mem(d, step));
+		Inst& mov = emit2(Op::Cmov, TypeKind::Void, Operand::make_reg(d), Operand::make_reg(kEmitScratch));
+		mov.sub = when;
+	}
+	normalize_result(inst, d, kind);
+	finish_result(inst, d);
+}
+
 void FunctionSelector::emit_select(const Instruction& inst)
 {
 	const Value cond = resolve(inst.ops[0]);
@@ -1073,7 +1116,15 @@ void FunctionSelector::emit_select(const Instruction& inst)
 	Cond cc = CC_NE;
 	bool known = cond.kind == ValueKind::Integer, taken = known && (literal(cond).low | literal(cond).high) != 0;
 	if (cond.kind == ValueKind::Temp && (temps_[cond.index].flags & TF_FUSED))
+	{
 		cc = compare_flags(body_->instructions[body_->temps[cond.index].def]);
+		if ((t.kind == ValueKind::Temp && (temps_[t.index].flags & TF_FUSED)) ||
+			(f.kind == ValueKind::Temp && (temps_[f.index].flags & TF_FUSED)))
+		{
+			emit_count(inst, cc);
+			return;
+		}
+	}
 	else if (!known)
 	{
 		const Type type = type_of(cond);

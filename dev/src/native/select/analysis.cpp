@@ -1821,6 +1821,8 @@ void FunctionSelector::find_folds()
 		{
 			t.flags |= TF_FUSED;
 			++stats_.fused_compares;
+			if (inst.op == Opcode::Compare)
+				absorb_count(user, b);
 			return;
 		}
 		if ((inst.op == Opcode::Compare || logical_not) && user.op == Opcode::Branch && left)
@@ -1882,6 +1884,34 @@ void FunctionSelector::find_folds()
 				a.last = pos_[user_id];
 		}
 	});
+}
+
+// O2+: a select between x and x + 1 or x - 1, on a fused compare, takes the
+// step from the flags (emit_count). The step, used only there, has no code,
+// and the count's chain is one instruction long.
+void FunctionSelector::absorb_count(const Instruction& select, uint32_t block)
+{
+	const TypeKind kind = select.type.kind();
+	if (level_ < 2 || (kind != TypeKind::I32 && kind != TypeKind::U32 && kind != TypeKind::I64))
+		return;
+	const lowir::FunctionBody& body = *body_;
+	const uint16_t taken = TF_GLOBAL | TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_ROTATED |
+		TF_RMW;
+	for (unsigned k = 1; k < 3; ++k)
+	{
+		const Value step = resolve(select.ops[k]);
+		const Value base = resolve(select.ops[3 - k]);
+		if (step.kind != ValueKind::Temp || base.kind != ValueKind::Temp || body.temps[step.index].def == kNoId)
+			continue;
+		const uint32_t def = body.temps[step.index].def;
+		TempInfo& s = temps_[step.index];
+		const Instruction& add = body.instructions[def];
+		if (s.uses != 1 || (s.flags & taken) || inst_block_[def] != block || add.op != Opcode::Binary ||
+			add.type.kind() != kind || count_step(add, base) == 0)
+			continue;
+		s.flags |= TF_FUSED;
+		return;
+	}
 }
 
 // O1+: `store (op (load m), x), m`, the load and the operation used once

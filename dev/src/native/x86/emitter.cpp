@@ -277,6 +277,8 @@ bool flags_read_after(const Function& function, uint32_t index)
 		case Op::Cmov:
 		case Op::Setcc:
 		case Op::Jcc:
+		case Op::Adc:
+		case Op::Sbb:
 			return true;
 		default:
 			return false;
@@ -1011,6 +1013,12 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 		break;
 	case Op::Xor:
 		alu(6, inst);
+		break;
+	case Op::Adc:
+		alu(2, inst);
+		break;
+	case Op::Sbb:
+		alu(3, inst);
 		break;
 	case Op::Cmp:
 		compare(inst);

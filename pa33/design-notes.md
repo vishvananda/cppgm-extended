@@ -65,6 +65,10 @@ that paid there in the course solution:
   then needs no `movslq` per iteration. The same question decides whether a
   parameter needs one on entry: the psABI leaves the bits above an `int` argument
   unset, and a `nowrap` add of it into an index reads them.
+- `x + (a < b)` needs no `cmov`. `lea` and `cmov` make a chain of two instructions
+  per pass; `adc rax, 0` or `sbb rax, -1` make a chain of one, when the carry flag
+  decides the compare. That holds for the unsigned compares and for `>=` on
+  floats: `ucomisd` sets the carry flag when unordered.
 - Divide a 32-bit value by a constant with a two-operand `imul` on 64 bits: the
   multiplier fits, the product does too, and `imul r, r` is one micro-operation
   where `mul` needs rdx:rax and three.
