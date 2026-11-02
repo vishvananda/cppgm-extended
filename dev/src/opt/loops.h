@@ -39,6 +39,13 @@ bool in_loop(const LoopForest& forest, uint32_t l, lowir::BlockId b);
 // several or that one is a handler. The graph changes.
 bool make_loop_preheader(lowir::FunctionBody& body, const Cfg& cfg, const LoopForest& forest, uint32_t loop);
 
+// For a pass that rewrites several loops between finding them: marks in
+// `touched` (per block) the blocks a rewrite of `l` may change -- the loop, the
+// blocks that enter it and those it leaves to -- and returns true, or returns
+// false with nothing marked when one is marked already (`l` waits for the next
+// round). Loops a pass rewrites under this rule do not see each other's changes.
+bool claim_loop(const Cfg& cfg, const Loop& l, std::vector<uint8_t>& touched);
+
 // An address as its root (a slot, a global, or the temporary or parameter
 // it steps from) and a constant byte offset when known, through literal
 // `index` steps, `addr` and pointer copies.

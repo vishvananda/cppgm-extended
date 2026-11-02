@@ -25,7 +25,10 @@ namespace {
 // right after their definition, each use outside the header and each
 // read of a phi loading.
 const uint32_t kRotateCopy = 4;
-const uint32_t kRotateLoops = 16; // per body
+// Each round rotates the loops that do not touch one another, in one scan of
+// the body: a nest takes a round per level, a chain of adjacent loops a round
+// per halving.
+const uint32_t kRotateRounds = 16;
 
 bool rotation_copyable(const Instruction& inst)
 {
@@ -61,7 +64,26 @@ public:
 	bool run();
 
 private:
-	bool rotate_loop(uint32_t loop);
+	struct Use
+	{
+		InstId inst;
+		BlockId block; // the use's block, or a phi input's incoming block
+		uint32_t position;
+		InstId def;
+	};
+	struct Candidate
+	{
+		uint32_t loop;
+		BlockId inside, outside;
+		std::vector<InstId> defined; // the header's phis, then its plain instructions
+		std::vector<Use> uses;
+		bool ok;
+	};
+
+	bool select_loop(uint32_t loop);
+	void read_uses();
+	void rotate(const Candidate& candidate);
+	void place_preheaders();
 	// Whether v is defined outside `loop` (a parameter, or before it).
 	bool invariant(uint32_t loop, Value v) const
 	{
@@ -76,11 +98,16 @@ private:
 	FunctionBody& body_;
 	Cfg& cfg_;
 	LoopForest forest_;
+	std::vector<Candidate> candidates_;
+	std::vector<uint32_t> owner_;    // per instruction: the candidate whose header defines it
+	std::vector<uint8_t> touched_;   // per block: this round's rotation may change it
+	std::vector<BlockId> preheader_; // per block: the preheader to place after it
 };
 
 } // namespace
 
-bool LoopRotation::rotate_loop(uint32_t loop)
+// Whether the loop can rotate, and is apart from those already chosen.
+bool LoopRotation::select_loop(uint32_t loop)
 {
 	const Loop& l = forest_.loops[loop];
 	const BlockId h = l.header;
@@ -139,38 +166,57 @@ bool LoopRotation::rotate_loop(uint32_t loop)
 				return false;
 		}
 	}
-	struct Use
-	{
-		InstId inst;
-		BlockId block; // the use's block, or a phi input's incoming block
-		uint32_t position;
-		InstId def;
-	};
-	std::vector<Use> uses;
-	bool ok = true;
+	if (!claim_loop(cfg_, l, touched_))
+		return false;
+	const uint32_t candidate = static_cast<uint32_t>(candidates_.size());
+	for (InstId d : defined)
+		owner_[d] = candidate;
+	owner_[term] = candidate;
+	candidates_.push_back(Candidate{ loop, inside, outside, std::move(defined), {}, true });
+	return true;
+}
+
+// Every use of the candidates' header values, in one scan of the body. A
+// candidate whose values another's header reads waits a round: that header
+// must not change before its copies are made.
+void LoopRotation::read_uses()
+{
 	for (BlockId b : body_.layout)
-		for (InstId i = body_.blocks[b].first; i != kNoId && ok; i = body_.instructions[i].next)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
 			const Instruction& inst = body_.instructions[i];
 			uint32_t position = 0;
 			for_each_operand(body_, inst, [&](const Value& v) {
 				const uint32_t at = position++;
-				const InstId def = of_h(v);
-				if (def == kNoId)
+				if (!v.is(ValueKind::Temp) || v.index < body_.parameter_count)
 					return;
+				const InstId def = body_.temps[v.index].def;
+				if (def == kNoId || owner_[def] == kNoId)
+					return;
+				Candidate& c = candidates_[owner_[def]];
+				const BlockId h = forest_.loops[c.loop].header;
 				const bool phi_input = inst.op == Opcode::Phi && at >= 3;
 				const BlockId from = phi_input ? body_.operands[inst.extra_first + (at - 3) - 1].index : b;
 				if ((cfg_.flags[from] & BF_HANDLER) != 0)
-					ok = false;
+					c.ok = false;
+				if (b != h && owner_[i] != kNoId && owner_[i] != owner_[def])
+					c.ok = false;
 				// The header's own reads of its later values stay (the copies
 				// rename them); of its phis, they load.
 				if (b == h && !phi_input && body_.instructions[def].op != Opcode::Phi)
 					return;
-				uses.push_back(Use{ i, from, at, def });
+				c.uses.push_back(Use{ i, from, at, def });
 			});
 		}
-	if (!ok)
-		return false;
+}
+
+void LoopRotation::rotate(const Candidate& candidate)
+{
+	const Loop& l = forest_.loops[candidate.loop];
+	const BlockId h = l.header, inside = candidate.inside, outside = candidate.outside;
+	const InstId term = body_.blocks[h].last;
+	const std::vector<Use>& uses = candidate.uses;
+	std::vector<InstId> defined = candidate.defined;
 	// Demote the header's values, the phis last: what a phi takes from the
 	// header is then a load the latch made, ahead of the phi's store.
 	std::stable_partition(
@@ -232,14 +278,7 @@ bool LoopRotation::rotate_loop(uint32_t loop)
 		Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
 		jump.ops[0] = Value::block(inside);
 		insert_after(body_, pre, kNoId, append_instruction(body_, jump));
-		std::vector<BlockId> layout;
-		for (BlockId b : body_.layout)
-		{
-			layout.push_back(b);
-			if (b == h)
-				layout.push_back(pre);
-		}
-		body_.layout.swap(layout);
+		preheader_[h] = pre;
 		Instruction& branch = body_.instructions[term];
 		(branch.ops[1].index == inside ? branch.ops[1] : branch.ops[2]) = Value::block(pre);
 		rename_phi_incoming(body_, inside, h, pre);
@@ -295,23 +334,49 @@ bool LoopRotation::rotate_loop(uint32_t loop)
 				phi.extra_count = static_cast<uint32_t>(pairs.size());
 			}
 	}
-	return true;
+}
+
+void LoopRotation::place_preheaders()
+{
+	std::vector<BlockId> layout;
+	layout.reserve(body_.layout.size() + candidates_.size());
+	for (BlockId b : body_.layout)
+	{
+		layout.push_back(b);
+		if (preheader_[b] != kNoId)
+			layout.push_back(preheader_[b]);
+	}
+	body_.layout.swap(layout);
 }
 
 bool LoopRotation::run()
 {
 	bool any = false;
-	for (uint32_t n = 0; n < kRotateLoops; ++n)
+	for (uint32_t round = 0; round < kRotateRounds; ++round)
 	{
 		c_.ensure_cfg();
 		find_loops(body_, cfg_, forest_);
 		map_instruction_blocks(body_, c_.block_of);
 		c_.invalidate_block_of();
+		candidates_.clear();
+		owner_.assign(body_.instructions.size(), kNoId);
+		touched_.assign(body_.blocks.size(), 0);
+		for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0;)
+			select_loop(loop);
+		if (candidates_.empty())
+			break;
+		read_uses();
+		preheader_.assign(body_.blocks.size(), kNoId);
 		bool one = false;
-		for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0 && !one;)
-			one = rotate_loop(loop);
+		for (const Candidate& candidate : candidates_)
+			if (candidate.ok)
+			{
+				rotate(candidate);
+				one = true;
+			}
 		if (!one)
 			break;
+		place_preheaders();
 		any = true;
 		c_.invalidate_cfg();
 	}

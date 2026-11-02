@@ -184,15 +184,16 @@ bool LoopMotion::run()
 		return false;
 	c_.entry_block_of(hoist_loop_invariants);
 	note_register_uses();
-	// A preheader for each loop with something to move (each one made changes
-	// the graph: the loops are found again).
+	// A preheader for each loop with something to move, then the loops are
+	// found again. (A loop's preheader changes only its header's entry edge.)
 	bool changed = false;
 	for (unsigned round = 0; round < 16; ++round)
 	{
 		bool one = false;
-		for (uint32_t loop = 0; loop < forest_.loops.size() && !one; ++loop)
-			one = forest_.loops[loop].preheader == kNoId && sweep(loop, false) &&
-				make_loop_preheader(body_, cfg_, forest_, loop);
+		for (uint32_t loop = 0; loop < forest_.loops.size(); ++loop)
+			one = (forest_.loops[loop].preheader == kNoId && sweep(loop, false) &&
+					  make_loop_preheader(body_, cfg_, forest_, loop)) ||
+				one;
 		if (!one)
 			break;
 		changed = true;

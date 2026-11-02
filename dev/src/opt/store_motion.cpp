@@ -51,7 +51,7 @@ private:
 	Value address_of(const Location& location, BlockId block, InstId& tail);
 	void move_location(uint32_t loop, const Location& location, const std::vector<BlockId>& exits);
 	std::vector<BlockId> exit_blocks(uint32_t loop);
-	bool promote(uint32_t loop);
+	void promote(uint32_t loop);
 
 	FunctionContext& c_;
 	FunctionBody& body_;
@@ -303,17 +303,11 @@ void StoreMotion::move_location(uint32_t loop, const Location& location, const s
 	++c_.stats.stores_sunk;
 }
 
-bool StoreMotion::promote(uint32_t loop)
+void StoreMotion::promote(uint32_t loop)
 {
-	if (!read_accesses(loop))
-		return false;
-	find_locations(loop);
-	if (locations_.empty())
-		return false;
 	const std::vector<BlockId> exits = exit_blocks(loop);
 	for (const Location& location : locations_)
 		move_location(loop, location, exits);
-	return true;
 }
 
 bool StoreMotion::run()
@@ -323,22 +317,29 @@ bool StoreMotion::run()
 	if (forest_.loops.empty())
 		return false;
 	c_.entry_block_of(promote_loop_memory);
-	// Innermost loops first. Each change alters the graph: the loops are
-	// found again, and the copies a loop leaves may move out of the loop
-	// around it.
+	// Innermost loops first. Each round rewrites the loops that do not touch
+	// one another. A change alters the graph: the loops are found again, and
+	// the copies a loop leaves may move out of the loop around it.
 	bool changed = false;
+	std::vector<uint8_t> touched;
 	for (unsigned round = 0; round < 16; ++round)
 	{
+		touched.assign(body_.blocks.size(), 0);
 		bool one = false;
-		for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0 && !one;)
+		for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0;)
 		{
+			if (!read_accesses(loop))
+				continue;
+			find_locations(loop);
+			if (locations_.empty() || !claim_loop(cfg_, forest_.loops[loop], touched))
+				continue;
 			if (forest_.loops[loop].preheader == kNoId)
-			{
-				if (read_accesses(loop) && (find_locations(loop), !locations_.empty()))
-					one = make_loop_preheader(body_, cfg_, forest_, loop);
-			}
+				one = make_loop_preheader(body_, cfg_, forest_, loop) || one;
 			else
-				one = promote(loop);
+			{
+				promote(loop);
+				one = true;
+			}
 		}
 		if (!one)
 			break;

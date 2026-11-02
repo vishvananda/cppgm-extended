@@ -435,6 +435,12 @@ Full unrolling, at most 16 loops per run of the pass:
 - A loop containing an EH instruction, `stack_alloc` or `va_start`, or one
   that exits into a handler block, is not unrolled.
 
+A large function holds hundreds of loops once inlining has run. The loop
+passes below rewrite, in one round, every loop that does not touch another
+one rewritten in that round, and only then find the loops again. So a loop
+pass costs a few walks of the body, not one per loop, and no fixed count of
+loops per function limits it.
+
 Loop rotation: at `-O3` a loop whose header holds only its phis, at most four
 plain instructions and a branch out of the loop is rotated. Each latch ends in
 a copy of the test, and the header stays as a guard, which folds when its

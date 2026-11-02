@@ -433,12 +433,12 @@ bool StrengthReduction::run()
 	if (forest_.loops.empty())
 		return false;
 	c_.entry_block_of(reduce_strength);
-	// (Each preheader made changes the graph: the loops are found again.)
+	// (The preheaders made change the graph: the loops are found again.)
 	for (unsigned round = 0; round < 16; ++round)
 	{
 		bool one = false;
-		for (uint32_t loop = 0; loop < forest_.loops.size() && !one; ++loop)
-			one = wants_preheader(loop) && make_loop_preheader(body_, cfg_, forest_, loop);
+		for (uint32_t loop = 0; loop < forest_.loops.size(); ++loop)
+			one = (wants_preheader(loop) && make_loop_preheader(body_, cfg_, forest_, loop)) || one;
 		if (!one)
 			break;
 		changed_ = true;

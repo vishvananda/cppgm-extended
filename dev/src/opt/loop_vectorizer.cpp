@@ -2100,19 +2100,23 @@ bool LoopVectorizer::run()
 		return false;
 	c_.entry_block_of(vectorize_loops);
 	bool changed = false;
+	// Each round rewrites the loops that do not touch one another.
+	std::vector<uint8_t> touched;
 	for (unsigned round = 0; round < 32; ++round)
 	{
 		done_.resize(body_.blocks.size(), 0);
+		touched.assign(body_.blocks.size(), 0);
 		bool one = false;
-		for (uint32_t loop = 0; loop < forest_.loops.size() && !one; ++loop)
+		for (uint32_t loop = 0; loop < forest_.loops.size(); ++loop)
 		{
-			if (!analyze(loop))
+			if (!analyze(loop) || !claim_loop(cfg_, forest_.loops[loop], touched))
 				continue;
 			// (A preheader changes the graph: the loop comes round again.)
 			if (forest_.loops[loop].preheader == kNoId)
 			{
-				one = make_loop_preheader(body_, cfg_, forest_, loop);
-				done_[b_] = one ? 0 : 1;
+				const bool made = make_loop_preheader(body_, cfg_, forest_, loop);
+				done_[b_] = made ? 0 : 1;
+				one = made || one;
 				continue;
 			}
 			done_[b_] = 1;

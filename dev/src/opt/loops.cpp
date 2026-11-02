@@ -184,4 +184,23 @@ bool make_loop_preheader(FunctionBody& body, const Cfg& cfg, const LoopForest& f
 	return true;
 }
 
+bool claim_loop(const Cfg& cfg, const Loop& l, std::vector<uint8_t>& touched)
+{
+	std::vector<BlockId> near;
+	for (BlockId b : l.blocks)
+	{
+		near.push_back(b);
+		for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1]; ++k)
+			near.push_back(cfg.succs[k]);
+	}
+	for (uint32_t k = cfg.pred_first[l.header]; k < cfg.pred_first[l.header + 1]; ++k)
+		near.push_back(cfg.preds[k]);
+	for (BlockId b : near)
+		if (touched[b] != 0)
+			return false;
+	for (BlockId b : near)
+		touched[b] = 1;
+	return true;
+}
+
 } // namespace opt
