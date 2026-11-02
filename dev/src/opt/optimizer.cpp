@@ -654,6 +654,11 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 		materialize_storage_arguments(program);
 		run_inline_wave(program, options, stats, InlineWave::Ordinary, budgets, original, nounwind, simplify);
 		prune_unreachable(program, stats);
+		if (level >= 2 && copy_for_callees(program, stats))
+		{
+			original.resize(program.symbols.size(), 0);
+			nounwind.resize(program.symbols.size(), 0);
+		}
 		run_inline_wave(program, options, stats, InlineWave::Once, budgets, original, nounwind, simplify);
 		prune_unreachable(program, stats);
 		run_inline_wave(program, options, stats, InlineWave::Late, budgets, original, nounwind, simplify);

@@ -371,4 +371,178 @@ bool specialize_arguments(Program& program, OptimizerStats& stats, const std::fu
 	return any;
 }
 
+namespace {
+
+// Callee copies: a function of at most kCalleeCopyCap instructions, at most
+// kCalleeCopies copies in a unit, found in at most kCalleeCopyRounds scans
+// (a copy passing the function on to another candidate is found by the next).
+const uint64_t kCalleeCopyCap = 400;
+const uint32_t kCalleeCopies = 32;
+const uint32_t kCalleeCopyRounds = 2;
+
+struct CalleeCopy
+{
+	SymbolId function;
+	uint32_t parameter;
+	SymbolId argument;
+	SymbolId copy;
+};
+
+struct CalleeCopier
+{
+	Program& program;
+	std::vector<uint64_t> called; // per symbol: the parameters (below 64) its body calls through
+	std::vector<CalleeCopy> copies;
+	uint32_t names = 0;
+
+	explicit CalleeCopier(Program& p) : program(p) {}
+
+	FunctionBody* body_of(SymbolId s) const
+	{
+		const Symbol& symbol = program.symbols[s];
+		return symbol.kind == SymbolKind::FunctionDefinition ? program.functions[symbol.detail].body.get() : nullptr;
+	}
+	void measure(SymbolId s);
+	SymbolId copy_for(SymbolId f, uint32_t parameter, SymbolId argument);
+	bool scan(SymbolId g, bool make);
+};
+
+void CalleeCopier::measure(SymbolId s)
+{
+	if (s >= called.size())
+		called.resize(program.symbols.size(), 0);
+	const Symbol& symbol = program.symbols[s];
+	const FunctionBody* body = body_of(s);
+	const Signature& sig = program.signatures[program.functions[symbol.detail].signature];
+	if (body == nullptr || (symbol.metadata.flags & (SF_NO_INLINE | SF_REPLACEABLE)) != 0 ||
+		sig.boundary.arity != ir_model::CAM_FIXED || instruction_count(*body) > kCalleeCopyCap)
+		return;
+	uint64_t mask = 0;
+	for (BlockId b : body->layout)
+		for (InstId i = body->blocks[b].first; i != kNoId; i = body->instructions[i].next)
+		{
+			const Instruction& inst = body->instructions[i];
+			if (inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Temp) &&
+				inst.ops[0].index < body->parameter_count && inst.ops[0].index < 64)
+				mask |= uint64_t(1) << inst.ops[0].index;
+		}
+	called[s] = mask;
+}
+
+SymbolId CalleeCopier::copy_for(SymbolId f, uint32_t parameter, SymbolId argument)
+{
+	for (const CalleeCopy& c : copies)
+		if (c.function == f && c.parameter == parameter && c.argument == argument)
+			return c.copy;
+	if (copies.size() >= kCalleeCopies)
+		return kNoId;
+	std::string name;
+	NameId id = 0;
+	do
+	{
+		name = "__callee_copy" + std::to_string(names++);
+		id = program.names.find(name.data(), static_cast<uint32_t>(name.size()));
+	} while (id != 0 && program.find_symbol(id) != kNoId);
+	// By value: making the copy's symbol may move the symbol table.
+	const SymbolMetadata metadata = program.symbols[f].metadata;
+	const uint32_t detail = program.symbols[f].detail;
+	const SymbolId copy = program.symbol_for(program.names.intern(name.data(), static_cast<uint32_t>(name.size())));
+	Function function;
+	function.signature = program.functions[detail].signature;
+	function.location = program.functions[detail].location;
+	function.body.reset(new FunctionBody(*program.functions[detail].body));
+	Symbol& symbol = program.symbols[copy];
+	symbol.kind = SymbolKind::FunctionDefinition;
+	symbol.detail = static_cast<uint32_t>(program.functions.size());
+	symbol.metadata = metadata;
+	symbol.metadata.binding = ir_model::SBM_INTERNAL;
+	symbol.metadata.object = 0;
+	symbol.metadata.flags &= static_cast<uint8_t>(~(SF_OBJECT_ROOT | SF_KEEP_ALIAS));
+	program.functions.push_back(std::move(function));
+	program.order.push_back(copy);
+	FunctionBody& body = *program.functions[symbol.detail].body;
+	const Value value = Value::symbol(argument);
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+			for_each_operand(body, body.instructions[i], [&](Value& v) {
+				if (v.is(ValueKind::Temp) && v.index == parameter)
+					v = value;
+			});
+	copies.push_back(CalleeCopy{ f, parameter, argument, copy });
+	measure(copy);
+	return copy;
+}
+
+// Points `g`'s calls that pass a defined function for a parameter their
+// callee calls through at the callee's copy for it, making the copy when
+// `make`; returns whether it made one.
+bool CalleeCopier::scan(SymbolId g, bool make)
+{
+	bool made = false;
+	FunctionBody* body = body_of(g);
+	for (BlockId b : body->layout)
+		for (InstId i = body->blocks[b].first; i != kNoId; i = body->instructions[i].next)
+		{
+			const Instruction& inst = body->instructions[i];
+			if (inst.op != Opcode::Call || !inst.ops[0].is(ValueKind::Symbol) || (inst.flags & IF_SIGNATURE) != 0)
+				continue;
+			const SymbolId f = inst.ops[0].index;
+			if (f >= called.size() || called[f] == 0)
+				continue;
+			for (uint32_t k = 0; k < inst.extra_count && k < 64; ++k)
+			{
+				Value v = body->operands[inst.extra_first + k];
+				if (v.is(ValueKind::Temp) && v.index >= body->parameter_count && body->temps[v.index].def != kNoId &&
+					body->instructions[body->temps[v.index].def].op == Opcode::Addr)
+					v = body->instructions[body->temps[v.index].def].ops[0];
+				if ((called[f] & (uint64_t(1) << k)) == 0 || !v.is(ValueKind::Symbol) || body_of(v.index) == nullptr)
+					continue;
+				SymbolId copy = kNoId;
+				for (const CalleeCopy& c : copies)
+					if (c.function == f && c.parameter == k && c.argument == v.index)
+						copy = c.copy;
+				if (copy == kNoId && make)
+				{
+					copy = copy_for(f, k, v.index);
+					made = made || copy != kNoId;
+					// (Copying may move the bodies' table, not this body.)
+				}
+				if (copy != kNoId)
+				{
+					body->instructions[i].ops[0] = Value::symbol(copy);
+					break;
+				}
+			}
+		}
+	return made;
+}
+
+} // namespace
+
+bool copy_for_callees(Program& program, OptimizerStats& stats)
+{
+	CalleeCopier copier(program);
+	copier.called.assign(program.symbols.size(), 0);
+	for (SymbolId s = 0; s < program.symbols.size(); ++s)
+		if (program.symbols[s].kind == SymbolKind::FunctionDefinition)
+			copier.measure(s);
+	bool any = false;
+	for (uint32_t round = 0; round < kCalleeCopyRounds; ++round)
+	{
+		bool made = false;
+		const SymbolId count = static_cast<SymbolId>(program.symbols.size());
+		for (SymbolId s = 0; s < count; ++s)
+			if (copier.body_of(s) != nullptr)
+				made = copier.scan(s, true) || made;
+		if (!made)
+			break;
+		any = true;
+	}
+	// The copies' own calls passing the function on.
+	for (const CalleeCopy& c : copier.copies)
+		copier.scan(c.copy, false);
+	stats.specialized += static_cast<uint32_t>(copier.copies.size());
+	return any;
+}
+
 } // namespace opt

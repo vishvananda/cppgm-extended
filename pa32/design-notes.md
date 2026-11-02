@@ -398,6 +398,18 @@ bit-field, a table pointer, a `long double`, a `packed` or `may_alias` class,
 and an object that holds a volatile member, since these need all their bytes
 or have no single type for them. Padding is not copied, and need not be.
 
+### Callee Copies (`-O2`, `-O3`)
+
+After the ordinary wave, a call that passes a defined function for a
+parameter its callee calls through calls an internal copy of the callee that
+reads that function instead. The callee must have fixed arity, at most 400
+instructions, and no `no_inline` or `replaceable` mark. The copy's own calls
+that pass the function on, including a recursive call to the callee, call
+the copy as well. The later waves can then inline the function into the
+copy. A unit makes at most 32 copies, in two scans of its calls. A sort that
+takes a comparison function is the usual case: in such a benchmark, the
+copies took 18% of the instructions off.
+
 ### Argument Propagation (`-O2`, `-O3`)
 
 After the waves, an internal function that is called, has parameters, no

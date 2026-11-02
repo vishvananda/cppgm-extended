@@ -20,4 +20,11 @@ bool infer_read_only_functions(lowir::Program& program);
 bool specialize_arguments(
 	lowir::Program& program, OptimizerStats& stats, const std::function<void(lowir::SymbolId)>& simplify);
 
+// Callee copies (O2+): a call passing a defined function for a parameter its
+// callee (a fixed-arity, inlinable definition of at most 400 instructions)
+// calls through calls an internal copy that reads the function instead, as
+// do the copy's calls passing it on (a recursive callee's included), so the
+// inliner may then inline it. True when it made a copy.
+bool copy_for_callees(lowir::Program& program, OptimizerStats& stats);
+
 } // namespace opt
