@@ -121,6 +121,7 @@ struct Shape
 	uint32_t returns = 0;
 	bool eh = false;
 	bool catches = false; // a catch or filter clause, a selector or exception read, or a throw
+	bool guarded = false; // catches only in terminate guards (guard_landing)
 	bool call = false;
 	uint32_t calls = 0; // call instructions
 	bool loop = false;
@@ -152,6 +153,25 @@ bool phi_type(Type type)
 		(type.is_integer() && type.kind() != TypeKind::I128);
 }
 
+// Whether block `b` is a terminate guard's landing, as a noexcept function's
+// is: a catch-all, the exception read, a call that neither returns nor
+// unwinds, and `unreachable`. Nothing it catches leaves it.
+bool guard_landing(const Program& program, const FunctionBody& body, BlockId b)
+{
+	const Instruction* inst[4] = {};
+	InstId i = body.blocks[b].first;
+	for (unsigned k = 0; k < 4; ++k)
+	{
+		if (i == kNoId)
+			return false;
+		inst[k] = &body.instructions[i];
+		i = inst[k]->next;
+	}
+	return i == kNoId && inst[0]->op == Opcode::EhCatchAll && inst[1]->op == Opcode::Exception &&
+		inst[2]->op == Opcode::Call && inst[3]->op == Opcode::Unreachable && program.may_end_block(*inst[2]) &&
+		!may_unwind(program, *inst[2]);
+}
+
 template<bool source_required = false>
 Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_t>& nounwind)
 {
@@ -160,18 +180,23 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 	const FunctionBody& body = *function.body;
 	const Signature& sig = program.signatures[function.signature];
 	shape.unsafe = sig.boundary.arity == ir_model::CAM_VARIADIC || body.layout.empty();
-	bool unwinding = false;
+	bool unwinding = false, unguarded = false;
 	for (BlockId b : body.layout)
 	{
 		++shape.blocks;
+		bool guard = false;
 		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
 		{
 			const Instruction& inst = body.instructions[i];
 			++shape.size;
 			shape.eh = shape.eh || is_eh_instruction(inst.op);
-			shape.catches = shape.catches || inst.op == Opcode::EhCatch || inst.op == Opcode::EhFilter ||
+			const bool catching = inst.op == Opcode::EhCatch || inst.op == Opcode::EhFilter ||
 				inst.op == Opcode::EhCatchAll || inst.op == Opcode::ExceptionSelector || inst.op == Opcode::Exception ||
 				inst.op == Opcode::Throw;
+			if (catching && i == body.blocks[b].first)
+				guard = guard_landing(program, body, b);
+			unguarded = unguarded || (catching && !guard);
+			shape.catches = shape.catches || catching;
 			shape.call = shape.call || inst.op == Opcode::Call;
 			shape.calls += inst.op == Opcode::Call ? 1 : 0;
 			shape.returns += inst.op == Opcode::Return ? 1 : 0;
@@ -186,6 +211,7 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 		}
 	}
 	shape.unwinds = unwinding && sig.boundary.unwind != ir_model::CUM_NO && !nounwind[symbol];
+	shape.guarded = shape.catches && !unguarded;
 	shape.hot = shape.size;
 	shape.hot_call = shape.call;
 	// Required substitution has no profitability policy: loops, cold paths
@@ -1091,6 +1117,11 @@ bool InlineWaveRunner::known_target(const Instruction& call) const
 	return false;
 }
 
+// A callee whose only catches are terminate guards (a noexcept function
+// that calls what may throw) may go inline at -O2 and above outside handler
+// code when it cannot unwind: its guard catches all that its copy raises,
+// whatever the caller's records hold.
+//
 // A callee whose handlers only clean up and resume may go inline where the
 // caller catches nothing (no landing of the caller lists clauses the copy's
 // landings would then need) and may unwind, outside handler code: its
@@ -1118,7 +1149,9 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 		return false;
 	if (graph_.recursive[g] || g == caller_ || (m.flags & SF_NO_INLINE) != 0 || shape.unsafe ||
 		(!source_required_ &&
-			((m.flags & SF_REPLACEABLE) != 0 || (shape.eh && !cleanup_welcome(shape, handler_code, loop_site)) ||
+			((m.flags & SF_REPLACEABLE) != 0 ||
+				(shape.eh && !cleanup_welcome(shape, handler_code, loop_site) &&
+					!(shape.guarded && !shape.unwinds && !handler_code && options_.level >= 2)) ||
 				(handler_code && shape.unwinds))))
 		return false;
 	if ((m.flags & SF_FORCE_INLINE) != 0)

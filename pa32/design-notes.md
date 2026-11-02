@@ -309,7 +309,14 @@ handlers only clean up and resume (no `eh_catch`, `eh_filter`,
 has none of these either and may unwind, and the call is not in handler
 code: the copy's records nest in the caller's frame and a resume continues
 to the caller's own. The ordinary and single-call waves take such a callee
-only at a loop site; the late wave takes it at any site. (A copy grows its
+only at a loop site; the late wave takes it at any site. A callee whose only
+catches are terminate guards (a landing of `eh_catch_all`, `exception`, a
+call that neither returns nor unwinds, and `unreachable`: a `noexcept`
+function's) and that cannot unwind may go inline at any site outside handler
+code, also inside the caller's own regions: the copy's guard catches all
+that the copy raises. {fmt}'s small `noexcept` helpers, each with an
+assertion that may print, then went inline, and its formatting loop took
+11% fewer cycles. (A copy grows its
 caller, which can then miss the caps of its own callers: tramp3d's kernels
 ran twice as many instructions when every site took one. Single-call copies
 at other sites made a Boost unit's `-O3` compile 6% longer for no net gain

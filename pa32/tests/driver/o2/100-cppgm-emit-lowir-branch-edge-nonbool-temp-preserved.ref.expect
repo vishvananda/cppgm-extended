@@ -5,6 +5,5 @@ count(call) <= 8
 count(load) <= 4
 count(store) <= 5
 count(phi) <= 3
-instructions <= 7 in @main
-instructions <= 18 in @P___P
+instructions <= 12 in @main
 instructions <= 6 in @cppgm_call_terminate
