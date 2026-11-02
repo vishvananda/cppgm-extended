@@ -1095,11 +1095,12 @@ bool InlineWaveRunner::known_target(const Instruction& call) const
 // caller catches nothing (no landing of the caller lists clauses the copy's
 // landings would then need) and may unwind, outside handler code: its
 // records then nest in the caller's own, and a resume continues to them.
-// The ordinary wave takes one only at a loop site: a copy grows its caller,
-// which may then miss the caps of its own callers.
+// The ordinary and single-call waves take one only at a loop site: a copy
+// grows its caller, which may then miss the caps of its own callers, and
+// optimizing the grown callers cost more than their code gained.
 bool InlineWaveRunner::cleanup_welcome(const Shape& shape, bool handler_code, bool loop_site) const
 {
-	if (shape.catches || handler_code || options_.level < 2 || (wave_ == InlineWave::Ordinary && !loop_site))
+	if (shape.catches || handler_code || options_.level < 2 || (wave_ != InlineWave::Late && !loop_site))
 		return false;
 	const Shape& caller = shapes_[caller_];
 	const Symbol& symbol = program_.symbols[graph_.functions[caller_]];

@@ -302,10 +302,12 @@ handlers only clean up and resume (no `eh_catch`, `eh_filter`,
 `eh_catch_all`, `exception_selector`, `exception` or `throw`), the caller
 has none of these either and may unwind, and the call is not in handler
 code: the copy's records nest in the caller's frame and a resume continues
-to the caller's own. The ordinary wave takes such a callee only at a loop
-site; the late wave takes it at any site. (A copy grows its caller, which
-can then miss the caps of its own callers: tramp3d's kernels ran twice as
-many instructions when every site took one.) In handler code (blocks a handler entry dominates) a
+to the caller's own. The ordinary and single-call waves take such a callee
+only at a loop site; the late wave takes it at any site. (A copy grows its
+caller, which can then miss the caps of its own callers: tramp3d's kernels
+ran twice as many instructions when every site took one. Single-call copies
+at other sites made a Boost unit's `-O3` compile 6% longer for no net gain
+in run time.) In handler code (blocks a handler entry dominates) a
 callee that may unwind stays a call. A callee without EH instructions may
 be inlined inside an active region; its cloned calls stay in that region.
 
