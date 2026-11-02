@@ -45,9 +45,9 @@ function @product(%i : i64) -> void [no_inline=yes] {
   block ^for_body_4:
     %t15 = phi i64 [^loop_preheader_3: %t14, ^for_body_4: %t17]
     %t16 = index f64 %ri, %t15
+    store typed f64 0, %t16
     %t17 = binary add i64 %t15, 1
     %t18 = cmp lt i64 %t17, 32
-    store typed f64 0, %t16
     branch %t18, ^for_body_4, ^loop_preheader_5
 
   block ^loop_preheader_5:
@@ -87,12 +87,12 @@ function @product(%i : i64) -> void [no_inline=yes] {
     %s = load typed f64 %cell
     %q = index f64 %rowk, %j
     %w = load typed f64 %q
-    %j1 = binary add i64 %j, 1
-    %d = cmp lt i64 %j1, 32
     %m = binary mul f64 %v, %w
     %sum = binary add f64 %s, %m
     %c = cmp lt i64 %k1, 32
     store typed f64 %sum, %cell
+    %j1 = binary add i64 %j, 1
+    %d = cmp lt i64 %j1, 32
     branch %d, ^columns, ^next
 
   block ^next:
@@ -129,9 +129,9 @@ function @started() -> void [no_inline=yes] {
   block ^for_body_4:
     %t11 = phi i64 [^loop_preheader_3: %t10, ^for_body_4: %t13]
     %t12 = index i32 %r, %t11
+    store typed i32 5, %t12
     %t13 = binary add i64 %t11, 1
     %t14 = cmp lt i64 %t13, 32
-    store typed i32 5, %t12
     branch %t14, ^for_body_4, ^loop_preheader_5
 
   block ^loop_preheader_5:
@@ -162,11 +162,11 @@ function @started() -> void [no_inline=yes] {
     %s = load typed i32 %cell
     %q = index i32 %rowk, %j
     %w = load typed i32 %q
-    %j1 = binary add i64 %j, 1
-    %d = cmp lt i64 %j1, 32
     %sum = binary add i32 %s, %w
     %c = cmp lt i64 %k1, 32
     store typed i32 %sum, %cell
+    %j1 = binary add i64 %j, 1
+    %d = cmp lt i64 %j1, 32
     branch %d, ^columns, ^next
 
   block ^next:

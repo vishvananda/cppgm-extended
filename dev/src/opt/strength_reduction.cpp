@@ -472,15 +472,17 @@ void StrengthReduction::sink_steps(uint32_t loop)
 		// (An address steps from the phi at the access that reads it.)
 		size_t last = at;
 		carried_.assign(1, phi.result);
-		for (size_t k = at + 1; k < order.size(); ++k)
+		for (size_t k = phis; k < order.size(); ++k)
 		{
+			if (k == at)
+				continue;
 			const Instruction& inst = body_.instructions[order[k]];
 			bool read = false;
 			for (TempId t : carried_)
 				read = read || reads(order[k], t);
 			if (!read)
 				continue;
-			last = k;
+			last = std::max(last, k);
 			if (inst.op == Opcode::Index && inst.result != kNoId && carried_.size() < kCarried)
 				carried_.push_back(inst.result);
 		}
