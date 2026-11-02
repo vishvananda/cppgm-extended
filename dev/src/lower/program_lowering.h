@@ -33,6 +33,15 @@ struct ConstValue;
 // (lower/function_lowering.h) lowers one body.
 namespace lower {
 
+// A scalar member a small class's copy moves (ProgramLowering::moved_fields).
+struct MovedField
+{
+	uint64_t offset;
+	lowir::Type type;
+};
+
+const size_t kMovedFields = 3;
+
 class SourceInlining;
 
 class DebugInfo;
@@ -437,9 +446,10 @@ public:
 	}
 	bool host_objects() const { return host_objects_; }
 	// Optimizing levels: a virtual call tests for the function it names
-	// and calls that one directly (FunctionLowering::speculative_call).
-	void set_speculate_virtual(bool on) { speculate_virtual_ = on; }
-	bool speculate_virtual() const { return speculate_virtual_; }
+	// and calls that one directly (FunctionLowering::speculative_call), and
+	// a small class moves member by member (FunctionLowering::copy_members).
+	void set_optimizing(bool on) { optimizing_ = on; }
+	bool optimizing() const { return optimizing_; }
 	// Whether a function type has a class parameter its caller destroys
 	// (unit-scoped: function type -> 0 or 1, see
 	// FunctionLowering::caller_destroys).
@@ -488,6 +498,11 @@ public:
 	// The LowIR type holding a value of `type`: scalars and pointers by
 	// kind, references as `ptr`, arrays and classes as `obj<size x align>`.
 	lowir::Type storage_type(const sema::Type* type);
+	// The scalar members of an object of `type` at `offset`, up to
+	// kMovedFields of them, each with the type it is accessed by; false if
+	// its bytes do not all move that way (a union, a bit-field, a table
+	// pointer, a long double...).
+	bool moved_fields(const sema::Type* type, uint64_t offset, std::vector<MovedField>& fields);
 	uint64_t size_of(const sema::Type* type, uint32_t location);
 	uint64_t alignment_of(const sema::Type* type, uint32_t location);
 	// The byte offset of a non-static data member in its class; a
@@ -1974,7 +1989,7 @@ private:
 	lowir::NameId debug_file_name_ = 0;
 	bool object_mode_ = false;
 	bool host_objects_ = false;
-	bool speculate_virtual_ = false;
+	bool optimizing_ = false;
 	bool strict_aliasing_ = true;
 	uint64_t may_alias_kinds_ = 0; // bit per TypeKind: a may_alias typedef of the unit names it
 	std::uintptr_t stack_base_;

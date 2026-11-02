@@ -1290,6 +1290,7 @@ private:
 		uint32_t& next, uint32_t location, bool field);
 	lowir::Value structured_element(
 		lowir::Value array, const sema::Type* element, uint64_t index, uint32_t location, bool field);
+	bool copy_members(const sema::Type* type, lowir::Value source, lowir::Value destination);
 	void copy_object(const sema::Type* type, lowir::Value source, lowir::Value destination, uint32_t location);
 	lowir::Value va_list_tag(const syntax::Expr& list);
 	RValue gnu_intrinsic(const syntax::CallExpr& expr, sema::Intrinsic kind);

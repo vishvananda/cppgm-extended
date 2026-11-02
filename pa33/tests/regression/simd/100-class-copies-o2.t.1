@@ -1,0 +1,177 @@
+#include <stdio.h>
+#include <string.h>
+#include <complex>
+#include <new>
+
+struct Three
+{
+	double x, y, z;
+};
+
+struct Base
+{
+	int a;
+};
+
+struct Derived : Base
+{
+	short b;
+	char c;
+};
+
+struct Holder
+{
+	float parts[2];
+	Base inner;
+};
+
+union Either
+{
+	long whole;
+	double real;
+};
+
+struct WithUnion
+{
+	Either value;
+};
+
+struct Bits
+{
+	unsigned low : 3;
+	unsigned high : 5;
+};
+
+struct Wide
+{
+	long double value;
+};
+
+struct Dynamic
+{
+	int value;
+	virtual int get() { return value; }
+};
+
+struct __attribute__((packed)) Packed
+{
+	char tag;
+	int value;
+};
+
+struct Storage
+{
+	char bytes[sizeof(double)];
+};
+
+typedef int __attribute__((may_alias)) AnyInt;
+
+struct Words
+{
+	AnyInt first, second;
+};
+
+Three __attribute__((noinline)) sum(const Three* v, int n)
+{
+	Three total = v[0];
+	for (int i = 1; i < n; ++i)
+	{
+		Three next = v[i];
+		total.x += next.x;
+		total.y += next.y;
+		total.z += next.z;
+	}
+	return total;
+}
+
+void __attribute__((noinline)) copy_derived(Base* to, const Derived* from)
+{
+	*to = *from;
+}
+
+long __attribute__((noinline)) as_bits(double* cell, const WithUnion* value)
+{
+	*reinterpret_cast<WithUnion*>(cell) = *value;
+	return *reinterpret_cast<long*>(cell);
+}
+
+double __attribute__((noinline)) through_storage(Storage* to, const Storage* from, double* seen)
+{
+	*to = *from;
+	return *seen;
+}
+
+int __attribute__((noinline)) swap_words(float* cells)
+{
+	Words* w = reinterpret_cast<Words*>(cells);
+	Words saved = *w;
+	w->first = saved.second;
+	w->second = saved.first;
+	unsigned bits;
+	memcpy(&bits, &cells[0], 4);
+	return bits == 0x40000000;
+}
+
+std::complex<double> __attribute__((noinline)) rotate(std::complex<double>* data, int n)
+{
+	for (int i = 1; i < n; ++i)
+		data[i] = data[i - 1] * std::complex<double>(0, 1);
+	return data[n - 1];
+}
+
+int main()
+{
+	Three v[3] = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+	Three t = sum(v, 3);
+	printf("%g %g %g\n", t.x, t.y, t.z);
+
+	Three self = v[1];
+	self = *&self;
+	printf("%g\n", self.y);
+
+	Derived d;
+	d.a = 5;
+	d.b = 6;
+	d.c = 7;
+	Derived e = d;
+	Base sliced;
+	copy_derived(&sliced, &e);
+	printf("%d %d %d %d\n", e.a, e.b, e.c, sliced.a);
+
+	Holder h = {{1.5f, 2.5f}, {3}};
+	Holder i = h;
+	printf("%g %g %d\n", i.parts[0], i.parts[1], i.inner.a);
+
+	WithUnion u;
+	u.value.real = 1;
+	double cell = 0;
+	printf("%lx\n", as_bits(&cell, &u));
+
+	Bits b = {5, 19};
+	Bits c = b;
+	printf("%u %u\n", c.low, c.high);
+
+	Wide w = {1.25L};
+	Wide x = w;
+	printf("%Lg\n", x.value);
+
+	Dynamic dyn;
+	dyn.value = 8;
+	Dynamic* held = new (::operator new(sizeof(Dynamic))) Dynamic(dyn);
+	printf("%d\n", held->get());
+
+	Packed p = {1, 77};
+	Packed q = p;
+	printf("%d %d\n", q.tag, q.value);
+
+	double from = 2.5, to = 0;
+	printf("%g\n", through_storage(reinterpret_cast<Storage*>(&to), reinterpret_cast<Storage*>(&from), &to));
+
+	float cells[2] = {1, 2};
+	printf("%d\n", swap_words(cells));
+
+	std::complex<double> data[4] = {std::complex<double>(1, 2)};
+	std::complex<double> last = rotate(data, 4);
+	printf("%g %g\n", last.real(), last.imag());
+	return 0;
+}

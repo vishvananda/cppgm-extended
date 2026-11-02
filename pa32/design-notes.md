@@ -374,6 +374,18 @@ are often wrong. Destructors and calls returning a class object are left
 out. Both calls sit in one exception region, so that a throw from either
 runs the same cleanups.
 
+### Small Class Copies (`-O2`, `-O3`)
+
+The lowering also moves a class of at most three scalar members, bases,
+array elements and complex parts included, by a typed load and store per
+member. A `copyobj` has no type, so it may alias every other access. It
+would stop a loop from hoisting a `typed` pointer load past it. Separate
+accesses also forward from the stores that made the object, where one wide
+load of two narrower stores stalls. The whole `copyobj` stays for a union, a
+bit-field, a table pointer, a `long double`, a `packed` or `may_alias` class,
+and an object that holds a volatile member, since these need all their bytes
+or have no single type for them. Padding is not copied, and need not be.
+
 ### Argument Propagation (`-O2`, `-O3`)
 
 After the waves, an internal function that is called, has parameters, no

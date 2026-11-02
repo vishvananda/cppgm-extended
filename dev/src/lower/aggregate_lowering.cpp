@@ -1553,6 +1553,100 @@ void FunctionLowering::structured_array(const sema::Type* type, lowir::Value add
 			element, structured_element(address, element, i, location, field), list, next, location, false, true);
 }
 
+bool ProgramLowering::moved_fields(const sema::Type* type, uint64_t offset, std::vector<MovedField>& fields)
+{
+	if ((type->cv & (sema::kVolatile | sema::kAtomic)) != 0)
+		return false;
+	type = type->unqualified;
+	switch (type->kind)
+	{
+	case sema::TypeKind::Fundamental:
+	case sema::TypeKind::Enum:
+	case sema::TypeKind::Pointer:
+	case sema::TypeKind::LValueReference:
+	case sema::TypeKind::RValueReference:
+	{
+		const lowir::Type stored = storage_type(type);
+		const lowir::TypeKind kind = stored.kind();
+		if (fields.size() == kMovedFields || kind == lowir::TypeKind::Void || kind == lowir::TypeKind::I1 ||
+			kind == lowir::TypeKind::I128 || kind == lowir::TypeKind::F80 || kind == lowir::TypeKind::V128 ||
+			kind == lowir::TypeKind::Obj)
+			return false;
+		fields.push_back(MovedField{ offset, stored });
+		return true;
+	}
+	case sema::TypeKind::Complex:
+	{
+		const uint64_t part = size_of(type->element, 0);
+		return moved_fields(type->element, offset, fields) && moved_fields(type->element, offset + part, fields);
+	}
+	case sema::TypeKind::Array:
+	{
+		if (type->bound == 0 || type->bound > kMovedFields)
+			return false;
+		const uint64_t element = size_of(type->element, 0);
+		for (uint64_t i = 0; i < type->bound; ++i)
+		{
+			if (!moved_fields(type->element, offset + i * element, fields))
+				return false;
+		}
+		return true;
+	}
+	case sema::TypeKind::Class:
+	{
+		const sema::ClassEntity* entity = static_cast<const sema::ClassEntity*>(type->entity);
+		if (entity->dynamic || entity->packed || entity->may_alias || entity->contains_volatile_or_union)
+			return false;
+		for (const sema::BaseClass* base = entity->bases; base != nullptr; base = base->next)
+		{
+			if (base->is_virtual || !moved_fields(base->base->type, offset + base->offset, fields))
+				return false;
+		}
+		for (const sema::DataMember* member = entity->members; member != nullptr; member = member->next)
+		{
+			if (member->bit_field || member->packed || member->overlapping ||
+				!moved_fields(member->variable->type, offset + member->offset / 8, fields))
+				return false;
+		}
+		return true;
+	}
+	default:
+		return false;
+	}
+}
+
+// A small class moves as the typed accesses of its members: the optimizer
+// tells them from other types' accesses, and each may forward or vectorize.
+// (A union or a may_alias class keeps its untyped object copy.)
+bool FunctionLowering::copy_members(const sema::Type* type, lowir::Value source, lowir::Value destination)
+{
+	if (!lowering_.optimizing() || lowering_.size_of(type, 0) > kMovedFields * 8)
+		return false;
+	std::vector<MovedField> fields;
+	if (!lowering_.moved_fields(type, 0, fields) || fields.empty())
+		return false;
+	Place from = Place();
+	from.storage = source;
+	Place to = Place();
+	to.storage = destination;
+	const lowir::Value base_from = address_of(from);
+	const lowir::Value base_to = address_of(to);
+	const lowir::Type bytes = lowir::Type::scalar(lowir::TypeKind::I8);
+	const lowir::Type offset_type = lowir::Type::scalar(lowir::TypeKind::I64);
+	for (const MovedField& field : fields)
+	{
+		from.storage = base_from;
+		to.storage = base_to;
+		if (field.offset != 0)
+		{
+			from.storage = index(bytes, ir_model::IPK_FIELD, base_from, integer(offset_type, field.offset)).value;
+			to.storage = index(bytes, ir_model::IPK_FIELD, base_to, integer(offset_type, field.offset)).value;
+		}
+		store(field.type, load(field.type, from), to);
+	}
+	return true;
+}
+
 void FunctionLowering::copy_object(
 	const sema::Type* type, lowir::Value source, lowir::Value destination, uint32_t location)
 {
@@ -1561,6 +1655,10 @@ void FunctionLowering::copy_object(
 	const sema::ClassEntity* empty = overlapping_empty_ && type->kind != sema::TypeKind::Array ? sema::ClassOf(type)
 																							   : nullptr;
 	if (empty != nullptr && empty->empty)
+		return;
+	const bool whole = source.kind == lowir::ValueKind::Temp &&
+		builder_.body().temps[source.index].type.kind() == lowir::TypeKind::Obj;
+	if (!whole && copy_members(type, source, destination))
 		return;
 	const uint64_t alignment = lowering_.alignment_of(type, location);
 	lowir::Instruction inst = lowir::make_instruction(
@@ -1573,9 +1671,7 @@ void FunctionLowering::copy_object(
 	// bytes (an object value whole).
 	uint64_t size = lowering_.size_of(type, location);
 	const sema::ClassEntity* cls = type->kind == sema::TypeKind::Array ? nullptr : sema::ClassOf(type);
-	const bool object_value = source.kind == lowir::ValueKind::Temp &&
-		builder_.body().temps[source.index].type.kind() == lowir::TypeKind::Obj;
-	if (cls != nullptr && cls->nvsize != 0 && !object_value)
+	if (cls != nullptr && cls->nvsize != 0 && !whole)
 		size = std::min(size, cls->nvsize);
 	inst.immediate = static_cast<int64_t>(size);
 	unsigned log2 = 0;

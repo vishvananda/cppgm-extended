@@ -918,7 +918,7 @@ int run_emit_lowir_mode(vector<string> args)
 		lowering.set_definition_stream(&definitions);
 	lowering.set_object_mode(object_half);
 	lowering.set_host_objects(object_half);
-	lowering.set_speculate_virtual(invocation.optimizer.level >= 2);
+	lowering.set_optimizing(invocation.optimizer.level >= 2);
 	lowering.set_strict_aliasing(invocation.strict_aliasing);
 	// The LowIR view carries the source's debug locations when debug
 	// information is asked for, including the object roundtrip's view.

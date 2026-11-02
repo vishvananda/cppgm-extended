@@ -150,7 +150,7 @@ lowir::Value FunctionLowering::member_callee(
 		lowering_.demand(function);
 	signature = lowering_.virtual_call_signature(function);
 	const lowir::Value callee = virtual_callee(object, function->vtable_slot);
-	if (lowering_.speculate_virtual() && !function->has_overrider && !function->pure && function->defined &&
+	if (lowering_.optimizing() && !function->has_overrider && !function->pure && function->defined &&
 		function->body != nullptr && !function->destructor && !function->always_inline && !function->unanalyzed_body &&
 		!function->excluded_instantiation && !function->type->canonical->variadic)
 	{
