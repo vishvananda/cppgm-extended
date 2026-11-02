@@ -607,10 +607,11 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " loads_reused=" << s.loads_reused << " stores_removed=" << s.stores_removed
 		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled
 		<< " invariants_hoisted=" << s.invariants_hoisted << " stores_sunk=" << s.stores_sunk
-		<< " loops_vectorized=" << s.loops_vectorized << " loops_interchanged=" << s.loops_interchanged << " loops_unswitched=" << s.loops_unswitched
-		<< " counters_shifted=" << s.counters_shifted << " multiplies_reduced=" << s.multiplies_reduced
-		<< " tail_calls_removed=" << s.tail_calls_removed << " math_calls_shared=" << s.math_calls_shared
-		<< " specialized=" << s.specialized << " optimize_ms=" << s.optimize_ms;
+		<< " loops_vectorized=" << s.loops_vectorized << " loops_interchanged=" << s.loops_interchanged
+		<< " loops_unswitched=" << s.loops_unswitched << " counters_shifted=" << s.counters_shifted
+		<< " multiplies_reduced=" << s.multiplies_reduced << " tail_calls_removed=" << s.tail_calls_removed
+		<< " math_calls_shared=" << s.math_calls_shared << " specialized=" << s.specialized
+		<< " optimize_ms=" << s.optimize_ms;
 #else
 	(void)s;
 #endif

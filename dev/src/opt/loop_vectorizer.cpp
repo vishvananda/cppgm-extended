@@ -146,6 +146,8 @@ private:
 	bool read_after_loop() const;
 	void add_incoming(BlockId block, BlockId from, BlockId extra);
 	BlockId place_block(BlockKind kind);
+	std::vector<Value> reduction_starts();
+	std::vector<Value> counter_lanes();
 	void vectorize(uint32_t loop);
 
 	FunctionContext& c_;
@@ -1863,6 +1865,78 @@ void LoopVectorizer::add_incoming(BlockId block, BlockId from, BlockId extra)
 	}
 }
 
+// What each sum's lanes start from, in the vector preheader.
+std::vector<Value> LoopVectorizer::reduction_starts()
+{
+	std::vector<Value> wide_start(reductions_.size(), Value::none());
+	for (size_t k = 0; k < reductions_.size(); ++k)
+	{
+		const Reduction& r = reductions_[k];
+		if (r.ordered)
+			wide_start[k] = r.start;
+		else if (r.op == BinaryOp::And)
+			wide_start[k] = Value::none();
+		else if (r.start.is(ValueKind::Integer) && body_.literals[r.start.index].low == 0 &&
+			body_.literals[r.start.index].high == 0)
+			wide_start[k] = vector(VectorOp::Pzero);
+		else if (r.start.is(ValueKind::Integer) && lane_bytes(r.type) < 4)
+		{
+			// (Only the first lane holds the start: the others are zero.)
+			const uint64_t mask = lane_bytes(r.type) == 1 ? 0xff : 0xffff;
+			wide_start[k] = vector(
+				VectorOp::Fromi32, literal(static_cast<int64_t>(body_.literals[r.start.index].low & mask)));
+		}
+		else
+			wide_start[k] = vector(
+				lane_bytes(r.type) == 8 ? VectorOp::Fromi64 : VectorOp::Fromi32, exact_scalar(r.start, r.type));
+	}
+	pre_tail_ = tail_;
+	for (size_t k = 0; k < reductions_.size(); ++k)
+		if (wide_start[k].is(ValueKind::None))
+			wide_start[k] = broadcast(reductions_[k].start, reductions_[k].type);
+	return wide_start;
+}
+
+// Lanes of a counter that is data: its first value in each.
+std::vector<Value> LoopVectorizer::counter_lanes()
+{
+	std::vector<Value> wide_counter(inductions_.size(), Value::none());
+	for (size_t k = 0; k < inductions_.size(); ++k)
+	{
+		const Induction& iv = inductions_[k];
+		if (!in_wide_[iv.phi])
+			continue;
+		at(vector_pre_, pre_tail_);
+		const uint64_t d = static_cast<uint64_t>(iv.step);
+		// The pass each lane holds, counted from the first.
+		auto pass = [&](unsigned lane) { return (backward_ ? lanes_ - 1 - lane : lane) * d; };
+		auto bits = [&](uint64_t value) {
+			return value == 0 ? vector(VectorOp::Pzero)
+							  : vector(VectorOp::Fromi64, literal(static_cast<int64_t>(value)));
+		};
+		Value steps = Value::none();
+		if (lane_bytes(iv.type) == 8)
+		{
+			const Value low = bits(pass(0));
+			steps = vector(VectorOp::Punpcklqdq, low, bits(pass(1)));
+		}
+		else
+		{
+			const Value low = bits((pass(1) << 32) | (pass(0) & 0xffffffffu));
+			steps = lanes_ == 2 ? low
+								: vector(VectorOp::Punpcklqdq, low, bits((pass(3) << 32) | (pass(2) & 0xffffffffu)));
+		}
+		pre_tail_ = tail_;
+		const Value from = broadcast(iv.start, iv.type);
+		at(vector_pre_, pre_tail_);
+		VectorOp add;
+		lane_operation(BinaryOp::Add, iv.type, add);
+		wide_counter[k] = vector(add, from, steps);
+		pre_tail_ = tail_;
+	}
+	return wide_counter;
+}
+
 void LoopVectorizer::vectorize(uint32_t loop)
 {
 	const BlockId pre = forest_.loops[loop].preheader;
@@ -1931,68 +2005,8 @@ void LoopVectorizer::vectorize(uint32_t loop)
 			read.next = kNoId;
 			r.start = emit(read, r.type);
 		}
-	std::vector<Value> wide_start(reductions_.size(), Value::none());
-	for (size_t k = 0; k < reductions_.size(); ++k)
-	{
-		const Reduction& r = reductions_[k];
-		if (r.ordered)
-			wide_start[k] = r.start;
-		else if (r.op == BinaryOp::And)
-			wide_start[k] = Value::none();
-		else if (r.start.is(ValueKind::Integer) && body_.literals[r.start.index].low == 0 &&
-			body_.literals[r.start.index].high == 0)
-			wide_start[k] = vector(VectorOp::Pzero);
-		else if (r.start.is(ValueKind::Integer) && lane_bytes(r.type) < 4)
-		{
-			// (Only the first lane holds the start: the others are zero.)
-			const uint64_t mask = lane_bytes(r.type) == 1 ? 0xff : 0xffff;
-			wide_start[k] = vector(
-				VectorOp::Fromi32, literal(static_cast<int64_t>(body_.literals[r.start.index].low & mask)));
-		}
-		else
-			wide_start[k] = vector(
-				lane_bytes(r.type) == 8 ? VectorOp::Fromi64 : VectorOp::Fromi32, exact_scalar(r.start, r.type));
-	}
-	pre_tail_ = tail_;
-	for (size_t k = 0; k < reductions_.size(); ++k)
-		if (wide_start[k].is(ValueKind::None))
-			wide_start[k] = broadcast(reductions_[k].start, reductions_[k].type);
-
-	// Lanes of a counter that is data: its first value in each.
-	std::vector<Value> wide_counter(inductions_.size(), Value::none());
-	for (size_t k = 0; k < inductions_.size(); ++k)
-	{
-		const Induction& iv = inductions_[k];
-		if (!in_wide_[iv.phi])
-			continue;
-		at(vector_pre_, pre_tail_);
-		const uint64_t d = static_cast<uint64_t>(iv.step);
-		// The pass each lane holds, counted from the first.
-		auto pass = [&](unsigned lane) { return (backward_ ? lanes_ - 1 - lane : lane) * d; };
-		auto bits = [&](uint64_t value) {
-			return value == 0 ? vector(VectorOp::Pzero)
-							  : vector(VectorOp::Fromi64, literal(static_cast<int64_t>(value)));
-		};
-		Value steps = Value::none();
-		if (lane_bytes(iv.type) == 8)
-		{
-			const Value low = bits(pass(0));
-			steps = vector(VectorOp::Punpcklqdq, low, bits(pass(1)));
-		}
-		else
-		{
-			const Value low = bits((pass(1) << 32) | (pass(0) & 0xffffffffu));
-			steps = lanes_ == 2 ? low
-								: vector(VectorOp::Punpcklqdq, low, bits((pass(3) << 32) | (pass(2) & 0xffffffffu)));
-		}
-		pre_tail_ = tail_;
-		const Value from = broadcast(iv.start, iv.type);
-		at(vector_pre_, pre_tail_);
-		VectorOp add;
-		lane_operation(BinaryOp::Add, iv.type, add);
-		wide_counter[k] = vector(add, from, steps);
-		pre_tail_ = tail_;
-	}
+	const std::vector<Value> wide_start = reduction_starts();
+	const std::vector<Value> wide_counter = counter_lanes();
 
 	// The wide loop.
 	at(wide_loop, kNoId);
