@@ -142,6 +142,12 @@ that paid there in the course solution:
 - Lay out the frame last: reuse slots whose lifetimes do not overlap, put the
   most accessed objects nearest the frame register, and give each return its
   own epilogue.
+- Without a frame pointer, push the callee-saved registers first, right below
+  the return address, and reserve the rest of the frame below them. Keep each
+  object at its alignment from the CFA, also in a function that makes no
+  call. With the saves below the reserved bytes, a deep recursion stalled on
+  its stores: Ackermann's function took 19% fewer cycles with the saves on
+  top.
 - Chain blocks along their likely edges, put blocks that only throw or exit
   last, and rotate a loop whose test is at its top so the test also ends the
   body.

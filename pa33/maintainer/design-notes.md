@@ -147,7 +147,9 @@ bottom. From `-O1`:
 - every return has its own epilogue (`epilogues duplicated`);
 - *host*: in a non-variadic function where RSP never moves after the
   prologue (no `stack_alloc`, `va_arg`, i128 conversion, stack argument
-  area or over-aligned locals) the frame pointer is omitted. Such a
+  area or over-aligned locals) the frame pointer is omitted. Its prologue
+  pushes the saves first, from CFA - 16 down, then reserves the frame,
+  whose objects keep their alignment from the CFA. Such a
   function may be shrink-wrapped, running a frameless early-return region
   before a `prologue` instruction, and a leaf that no longer uses its
   frame drops it.

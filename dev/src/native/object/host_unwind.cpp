@@ -181,14 +181,14 @@ uint32_t encode_cie(bool personality, std::vector<uint8_t>& out)
 }
 
 // Without a frame pointer (UnwindFacts::frameless) the CFA stays RSP +
-// the bytes below the return address: `reserve`, then each push, and in
-// the body a call's argument area while it is open; each epilogue pops
-// the saves back and releases the reserve.
+// the bytes below the return address: each push, then `reserve`, and in
+// the body a call's argument area while it is open; each epilogue
+// releases the reserve and pops the saves back.
 void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vector<uint8_t>& out)
 {
 	Cursor cursor = { out, 0 };
 	uint32_t below = 8;
-	// Each prologue: the reservation, then the saves' pushes. A
+	// Each prologue: the saves' pushes, then the reservation. A
 	// shrink-wrapped function's code before its first has the entry's
 	// rules; a later one starts from them again (the one before it ended
 	// with the body's).
@@ -210,13 +210,7 @@ void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vec
 			for (const UnwindFacts::Save& save : facts.saves)
 				out.push_back(static_cast<uint8_t>(DW_CFA_restore | kDwarfRegs[save.reg]));
 		}
-		below = 8 + facts.reserve;
-		if (facts.reserve != 0)
-		{
-			cursor.advance(prologues[p].reserve_end);
-			out.push_back(DW_CFA_def_cfa_offset);
-			put_uleb(out, below);
-		}
+		below = 8;
 		// [virtual rbp + offset] is CFA - 16 + offset.
 		for (size_t k = 0; k < facts.saves.size() && k < 6; ++k)
 		{
@@ -228,6 +222,13 @@ void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vec
 			out.push_back(static_cast<uint8_t>(DW_CFA_offset | kDwarfRegs[save.reg]));
 			put_uleb(out, static_cast<uint32_t>(16 - save.offset) / 8);
 		}
+		below += facts.reserve;
+		if (facts.reserve != 0)
+		{
+			cursor.advance(prologues[p].reserve_end);
+			out.push_back(DW_CFA_def_cfa_offset);
+			put_uleb(out, below);
+		}
 	}
 	const uint32_t body = below;
 	// The body's rules hold up to each epilogue (the previous one's code
@@ -238,6 +239,13 @@ void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vec
 		if (more)
 			out.push_back(DW_CFA_remember_state);
 		uint32_t at = body;
+		if (facts.reserve != 0)
+		{
+			cursor.advance(released_end);
+			at -= facts.reserve;
+			out.push_back(DW_CFA_def_cfa_offset);
+			put_uleb(out, at);
+		}
 		for (size_t k = facts.saves.size(); k-- > 0;)
 		{
 			const size_t popped = facts.saves.size() - 1 - k; // pops run rbx first: the last save first
@@ -246,12 +254,6 @@ void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vec
 			out.push_back(DW_CFA_def_cfa_offset);
 			put_uleb(out, at);
 			out.push_back(static_cast<uint8_t>(DW_CFA_restore | kDwarfRegs[facts.saves[k].reg]));
-		}
-		if (facts.reserve != 0)
-		{
-			cursor.advance(released_end);
-			out.push_back(DW_CFA_def_cfa_offset);
-			put_uleb(out, 8);
 		}
 		if (more)
 		{
@@ -298,13 +300,13 @@ void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vec
 		}
 	};
 	// The duplicated epilogues, then the shared one; an epilogue's first
-	// rule follows its first pop (or the release).
+	// rule follows the release (or its first pop).
 	for (size_t r = 0; r <= facts.returns.size(); ++r)
 	{
 		const bool shared = r == facts.returns.size();
 		const uint32_t* pop_end = shared ? facts.pop_end : facts.returns[r].pop_end;
 		const uint32_t released_end = shared ? facts.leave_end : facts.returns[r].leave_end;
-		body_events(facts.saves.empty() ? released_end : pop_end[0]);
+		body_events(facts.reserve != 0 || facts.saves.empty() ? released_end : pop_end[0]);
 		epilogue(pop_end, released_end, shared ? facts.ret_end : facts.returns[r].ret_end,
 			!shared || facts.size > facts.ret_end);
 	}

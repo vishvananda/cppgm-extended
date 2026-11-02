@@ -288,7 +288,7 @@ void LineEncoder::encode()
 } // namespace
 
 void DwarfLines::append(lowir::SymbolId symbol, uint32_t size, lowir::DebugLocation declaration,
-	const std::vector<CodeLocation>& locations, const native::Function& machine)
+	const std::vector<CodeLocation>& locations, const native::Function& machine, int32_t frame_base)
 {
 	const uint32_t first = static_cast<uint32_t>(locations_.size());
 	for (const CodeLocation& row : locations)
@@ -301,8 +301,8 @@ void DwarfLines::append(lowir::SymbolId symbol, uint32_t size, lowir::DebugLocat
 		for (const DebugSlot& slot : machine.debug_slots)
 		{
 			const bool aligned = in_aligned_region(machine, slot.offset);
-			variables_.push_back(
-				Variable{ slot.slot, aligned ? slot.offset - machine.aligned_disp : slot.offset - 16, aligned });
+			variables_.push_back(Variable{
+				slot.slot, aligned ? slot.offset - machine.aligned_disp : slot.offset + frame_base, aligned });
 		}
 		functions_.push_back(Function{ symbol, size, declaration, first, count, first_variable,
 			static_cast<uint32_t>(variables_.size()) - first_variable });

@@ -60,9 +60,9 @@ struct UnwindFacts
 	};
 	uint32_t push_end = 0;  // after `push rbp`
 	uint32_t frame_end = 0; // after `mov rbp, rsp`
-	// Function::omit_frame_pointer: the CFA stays RSP-based; `sub rsp,
-	// reserve` (ending at reserve_end, absent when reserve is 0) precedes
-	// the saves' pushes.
+	// Function::omit_frame_pointer: the CFA stays RSP-based; the saves'
+	// pushes precede `sub rsp, reserve` (ending at reserve_end, absent when
+	// reserve is 0), and an epilogue releases the reserve before its pops.
 	bool frameless = false;
 	uint32_t reserve = 0;
 	uint32_t reserve_end = 0;
@@ -125,6 +125,9 @@ public:
 	void set_eh_model(EhModel model) { eh_model_ = model; }
 	const UnwindFacts& unwind() const { return unwind_; }
 	const std::vector<CodeLocation>& locations() const { return locations_; }
+	// The last function's frame displacements relative to its CFA: a
+	// frame operand's displacement plus this.
+	int32_t frame_base() const;
 
 private:
 	std::vector<CodeLocation> locations_;
@@ -133,8 +136,9 @@ private:
 	void prologue(const Function& function);
 	void frame_reserve(const Function& function);
 	void epilogue(const Function& function);
-	void epilogue_body(const Function& function, uint32_t* pop_end);
+	uint32_t epilogue_body(const Function& function, uint32_t* pop_end);
 	RM frame_rm(int32_t disp) const;
+	int32_t rsp_disp(int32_t disp) const;
 	void return_jump(const Function& function, bool last);
 	void tail_jump(const Function& function, const Inst& inst);
 	void ret(const Function& function, const Inst& inst, bool last);
@@ -200,11 +204,13 @@ private:
 	uint32_t terminal_ = 0;      // the host resume terminal's label
 	bool dynamic_stack_ = false; // RSP moves (stack_alloc, pushed EH records)
 	bool omit_fp_ = false;       // Function::omit_frame_pointer
-	// Without a frame pointer, a function making no call needs no 16-byte
-	// alignment: its frame sits 8 bytes higher (no padding for the missing
-	// saved RBP), which moves the incoming arguments, not the slots, by
-	// incoming_shift_ relative to RSP.
-	int32_t incoming_shift_ = 0;
+	// Without a frame pointer, the saves are pushed before the reserve:
+	// the frame's objects lie save_shift_ bytes lower than with a frame
+	// pointer, and frame_top_ bytes lie between RSP after the prologue and
+	// the CFA (frame_reserve). A function making no call needs no 16-byte
+	// alignment of RSP.
+	int32_t save_shift_ = 0;
+	int32_t frame_top_ = 0;
 	// Without a frame pointer, the bytes of a call's argument area RSP is
 	// lowered by at the current instruction (`sub rsp, n` before the call,
 	// `add rsp, n` after it, in one block): frame operands lie that much

@@ -16,8 +16,10 @@ struct Function;
 class DwarfLines
 {
 public:
+	// `frame_base`: a frame slot's offset from the CFA, less its frame
+	// displacement (FunctionEmitter::frame_base).
 	void append(lowir::SymbolId symbol, uint32_t size, lowir::DebugLocation declaration,
-		const std::vector<CodeLocation>& locations, const native::Function& machine);
+		const std::vector<CodeLocation>& locations, const native::Function& machine, int32_t frame_base);
 	void write(
 		object::ObjectFile& object, const lowir::Program& program, const std::vector<uint32_t>& object_symbols) const;
 

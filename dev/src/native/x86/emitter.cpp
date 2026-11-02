@@ -53,10 +53,7 @@ RM FunctionEmitter::rm(const Operand& op) const
 		if (op.reg == kFrame && in_aligned_region(*function_, op.disp))
 			return RM::m(R12, op.disp - function_->aligned_disp, op.index, op.scale);
 		if (op.reg == kFrame)
-			return omit_fp_ ? RM::m(RSP,
-								  op.disp + static_cast<int32_t>(function_->stack_size) -
-									  (op.disp >= 0 ? incoming_shift_ : 0) + rsp_shift_,
-								  op.index, op.scale)
+			return omit_fp_ ? RM::m(RSP, rsp_disp(op.disp), op.index, op.scale)
 							: RM::m(RBP, op.disp, op.index, op.scale);
 		return RM::m(op.reg, op.disp, op.index, op.scale);
 	default:
@@ -74,10 +71,20 @@ RM FunctionEmitter::scratch_rm() const
 // [rbp + disp], RSP-based without a frame pointer (Function::omit_frame_pointer).
 RM FunctionEmitter::frame_rm(int32_t disp) const
 {
-	return omit_fp_
-		? RM::m(
-			  RSP, disp + static_cast<int32_t>(function_->stack_size) - (disp >= 0 ? incoming_shift_ : 0) + rsp_shift_)
-		: RM::m(RBP, disp);
+	return omit_fp_ ? RM::m(RSP, rsp_disp(disp)) : RM::m(RBP, disp);
+}
+
+// Without a frame pointer: a frame displacement from RSP. [virtual rbp +
+// disp] is CFA - 16 + disp, and the frame's objects (disp < 0) lie
+// save_shift_ lower, below the saves.
+int32_t FunctionEmitter::rsp_disp(int32_t disp) const
+{
+	return disp + frame_top_ - 16 + rsp_shift_ - (disp < 0 ? save_shift_ : 0);
+}
+
+int32_t FunctionEmitter::frame_base() const
+{
+	return omit_fp_ ? -16 - save_shift_ : -16;
 }
 
 Reg FunctionEmitter::scratch(const Inst& inst, Reg avoid) const
@@ -602,7 +609,6 @@ void FunctionEmitter::encode(const Function& function)
 		dynamic_stack_ = function.insts[i].op == Op::StackAlloc;
 	omit_fp_ = function.omit_frame_pointer && !dynamic_stack_ && eh_model_ == EhModel::Host;
 	unwind_.frameless = omit_fp_;
-	incoming_shift_ = omit_fp_ && !calls_out(function) ? 8 : 0;
 	current_ = 0;
 	if (!relax_pass_)
 	{
@@ -774,13 +780,30 @@ void FunctionEmitter::emit_tables(const Function& function)
 void FunctionEmitter::frame_reserve(const Function& function)
 {
 	const uint32_t saved = static_cast<uint32_t>(__builtin_popcount(function.preserve_mask));
-	unwind_.reserve = omit_fp_ ? function.stack_size + 8 - 8 * saved - static_cast<uint32_t>(incoming_shift_) : 0;
+	unwind_.reserve = 0;
+	save_shift_ = 0;
+	frame_top_ = 0;
+	if (!omit_fp_)
+		return;
+	// The saves lie right below the return address, the first in the
+	// virtual RBP's slot (CFA - 16), and the objects move below them by a
+	// multiple of 16, which keeps their alignment. (A frame whose saves sat
+	// below the reserved bytes stalled on its stores in a deep recursion.)
+	save_shift_ = saved == 0 ? 0 : static_cast<int32_t>((8 * saved - 8 + 15) & ~15u);
+	// The objects fill [CFA - 16 - stack_size + 8 * saved - save_shift_,
+	// CFA - 16 - save_shift_); a function that calls keeps RSP 16-aligned at
+	// its calls, which the padding of stack_size and save_shift_ already
+	// give.
+	const bool leaf = !calls_out(function);
+	unwind_.reserve = leaf ? function.stack_size + 8 + static_cast<uint32_t>(save_shift_) - 16 * saved
+						   : function.stack_size + 8 - 8 * saved;
 	// O1+, a body that names no frame location: only a call's alignment
 	// needs RSP moved past the saves (none in a function that calls
 	// nothing; an odd number of pushes leaves it aligned), not the frame's
 	// unused virtual-RBP slot and padding.
-	if (omit_fp_ && frameless_body(function))
-		unwind_.reserve = incoming_shift_ != 0 || saved % 2 == 1 ? 0 : 8;
+	if (frameless_body(function))
+		unwind_.reserve = leaf || saved % 2 == 1 ? 0 : 8;
+	frame_top_ = static_cast<int32_t>(8 + 8 * saved + unwind_.reserve);
 }
 
 void FunctionEmitter::prologue(const Function& function)
@@ -792,32 +815,21 @@ void FunctionEmitter::prologue(const Function& function)
 	// are (the saves' registers and offsets are the first's).
 	const bool first = unwind_.prologues.empty();
 	UnwindFacts::Prologue at = { asm_.size() - base, 0, {} };
-	if (omit_fp_)
-	{
-		// The frame below a virtual RBP (CFA - 16, its slot unused): the
-		// same layout and alignment as with the frame pointer.
-		if (unwind_.reserve != 0)
-			asm_.alu_ri(5, RM::r(RSP), unwind_.reserve, 8);
-		at.reserve_end = asm_.size() - base;
-		if (first)
-			unwind_.reserve_end = at.reserve_end;
-	}
-	else
+	if (!omit_fp_)
 	{
 		asm_.push(RBP);
 		unwind_.push_end = asm_.size() - base;
 		asm_.mov_rr(RBP, RSP);
 		unwind_.frame_end = asm_.size() - base;
+		// The callee-saved registers fill the frame's bottom
+		// (preserve_offset = -stack_size, rbx lowest): the rest is reserved,
+		// then they are pushed from the highest (r15) down.
+		if (function.stack_size != 8 * saved)
+			asm_.alu_ri(5, RM::r(RSP), function.stack_size - 8 * saved, 8);
 	}
-	// The callee-saved registers fill the frame's bottom (preserve_offset
-	// = -stack_size, rbx lowest): the rest is reserved, then they are
-	// pushed from the highest (r15) down.
-	if (!omit_fp_ && function.stack_size != 8 * saved)
-		asm_.alu_ri(5, RM::r(RSP), function.stack_size - 8 * saved, 8);
-	// (Without a frame pointer the first push stores at [virtual rbp -
-	// reserve].)
-	int32_t offset = omit_fp_ ? 8 - static_cast<int32_t>(unwind_.reserve)
-							  : function.preserve_offset + static_cast<int32_t>(8 * saved) + incoming_shift_;
+	// Without a frame pointer they are pushed first, from [virtual rbp]
+	// (CFA - 16) down, and the rest is reserved below them.
+	int32_t offset = omit_fp_ ? 8 : function.preserve_offset + static_cast<int32_t>(8 * saved);
 	unsigned pushed = 0;
 	for (unsigned k = 6; k-- > 0;)
 	{
@@ -828,6 +840,14 @@ void FunctionEmitter::prologue(const Function& function)
 		at.save_end[pushed++] = asm_.size() - base;
 		if (eh_model_ == EhModel::Host && first)
 			unwind_.saves.push_back(UnwindFacts::Save{ asm_.size() - base, order[k], offset });
+	}
+	if (omit_fp_)
+	{
+		if (unwind_.reserve != 0)
+			asm_.alu_ri(5, RM::r(RSP), unwind_.reserve, 8);
+		at.reserve_end = asm_.size() - base;
+		if (first)
+			unwind_.reserve_end = at.reserve_end;
 	}
 	// The over-aligned objects' base: their region's start rounded up.
 	if (function.aligned_base != 0)
@@ -840,12 +860,17 @@ void FunctionEmitter::prologue(const Function& function)
 }
 
 // Pops of the saved registers (RSP first back at the save area when it
-// moves during the body), `leave`, `ret`.
-void FunctionEmitter::epilogue_body(const Function& function, uint32_t* pop_end)
+// moves during the body), `leave`; without a frame pointer the reserve's
+// release, then the pops. Returns where the frame is released (after
+// `leave` or the release).
+uint32_t FunctionEmitter::epilogue_body(const Function& function, uint32_t* pop_end)
 {
 	const Reg order[6] = { RBX, R12, R13, R14, R15, RBP };
 	if (function.preserve_mask != 0 && dynamic_stack_)
 		asm_.lea(RSP, RM::m(RBP, function.preserve_offset));
+	if (omit_fp_ && unwind_.reserve != 0)
+		asm_.alu_ri(0, RM::r(RSP), unwind_.reserve, 8);
+	uint32_t released = asm_.size() - static_cast<uint32_t>(base_);
 	unsigned pops = 0;
 	for (unsigned k = 0; k < 6; ++k)
 		if (function.preserve_mask & (1u << order[k]))
@@ -854,15 +879,16 @@ void FunctionEmitter::epilogue_body(const Function& function, uint32_t* pop_end)
 			pop_end[pops++] = asm_.size() - static_cast<uint32_t>(base_);
 		}
 	if (!omit_fp_)
+	{
 		asm_.byte(0xc9); // leave
-	else if (unwind_.reserve != 0)
-		asm_.alu_ri(0, RM::r(RSP), unwind_.reserve, 8);
+		released = asm_.size() - static_cast<uint32_t>(base_);
+	}
+	return released;
 }
 
 void FunctionEmitter::epilogue(const Function& function)
 {
-	epilogue_body(function, unwind_.pop_end);
-	unwind_.leave_end = asm_.size() - static_cast<uint32_t>(base_);
+	unwind_.leave_end = epilogue_body(function, unwind_.pop_end);
 	asm_.ret();
 	unwind_.ret_end = asm_.size() - static_cast<uint32_t>(base_);
 }
@@ -937,8 +963,7 @@ void FunctionEmitter::return_jump(const Function& function, bool last)
 		return;
 	}
 	UnwindFacts::Epilogue ret;
-	epilogue_body(function, ret.pop_end);
-	ret.leave_end = asm_.size() - static_cast<uint32_t>(base_);
+	ret.leave_end = epilogue_body(function, ret.pop_end);
 	asm_.ret();
 	ret.ret_end = asm_.size() - static_cast<uint32_t>(base_);
 	unwind_.returns.push_back(ret);
@@ -953,8 +978,7 @@ void FunctionEmitter::tail_jump(const Function& function, const Inst& inst)
 	else if (target.kind == OperandKind::Mem)
 		asm_.mov_load(R11, rm(target), 8, false);
 	UnwindFacts::Epilogue ret;
-	epilogue_body(function, ret.pop_end);
-	ret.leave_end = asm_.size() - static_cast<uint32_t>(base_);
+	ret.leave_end = epilogue_body(function, ret.pop_end);
 	if (target.kind == OperandKind::Symbol)
 		asm_.jmp_symbol(target.symbol);
 	else
