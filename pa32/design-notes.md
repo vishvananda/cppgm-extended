@@ -106,7 +106,9 @@ do is not run again until the body changes.
   with a known NUL becomes its length (at most 4,096 data items), and
   `memset(p, 0, n)` and `memcpy(d, s, n)` with a literal `n` of at most 128
   become `zeroinit` and `copyobj`; so does `memmove(d, s, n)` when its two
-  ranges are in different slots or globals, or `n` apart in one.
+  ranges are in different slots or globals, or `n` apart in one. A larger
+  literal `n` converts too when every range lies inside one slot: clearing
+  or copying a local table then tells later passes what each element holds.
 - Two addresses at known offsets from one base (a local array's begin and
   end) subtract to the difference of the offsets and compare as the
   offsets do. `std::copy` of an array then moves a literal number of bytes.

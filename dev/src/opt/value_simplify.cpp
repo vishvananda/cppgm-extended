@@ -203,6 +203,7 @@ private:
 	void canonicalize(Instruction& inst);
 	bool narrow_compare(Instruction& inst);
 	bool exact_compare(Instruction& inst);
+	bool in_slot(Value a, int64_t n) const;
 	bool bulk_call(Instruction& inst);
 	ExprKey expression_key(const Instruction& inst);
 	bool reuse_quotient(BlockId block, InstId& prev, InstId id);
@@ -1939,6 +1940,9 @@ bool Simplifier::exact_compare(Instruction& inst)
 // memset(p, 0, n) and memcpy(d, s, n) of a literal n up to kBulkCallBytes:
 // zeroinit and copyobj (the back end stores directly); the result is the
 // destination. memmove(d, s, n) too when its two ranges cannot overlap.
+// Of any n when each address lies within a slot: the call would pass the
+// slot's address, which then reaches any pointer (escaped_slots); the back
+// end clears or copies a long range with one string instruction.
 const int64_t kBulkCallBytes = 128;
 
 // Whether n bytes at `a` and n bytes at `b` are apart: in two different
@@ -1950,6 +1954,16 @@ static bool apart(const FunctionBody& body, Value a, Value b, int64_t n)
 	if (object(x.root) && object(y.root) && !(x.root == y.root))
 		return true;
 	return x.known && y.known && x.root == y.root && (x.offset - y.offset >= n || y.offset - x.offset >= n);
+}
+
+// Whether n bytes at `a` lie within one slot, at a known offset.
+bool Simplifier::in_slot(Value a, int64_t n) const
+{
+	const Located at = locate(body_, a);
+	if (!at.known || !at.root.is(ValueKind::Slot) || at.offset < 0)
+		return false;
+	const uint64_t size = storage_bytes(body_.slots[at.root.index].type);
+	return static_cast<uint64_t>(at.offset) <= size && static_cast<uint64_t>(n) <= size - at.offset;
 }
 
 bool Simplifier::bulk_call(Instruction& inst)
@@ -1965,12 +1979,14 @@ bool Simplifier::bulk_call(Instruction& inst)
 	if (!constant(args[2], Type::scalar(TypeKind::I64), n) || n.kind != ValueKind::Integer)
 		return false;
 	const int64_t bytes = static_cast<int64_t>(n.bits.low);
-	if (bytes <= 0 || bytes > kBulkCallBytes || n.bits.high != 0)
+	if (bytes <= 0 || n.bits.high != 0)
 		return false;
 	if (zero &&
 		(!constant(args[1], Type::scalar(TypeKind::I32), fill) || !is_integer(Type::scalar(TypeKind::I32), fill, 0)))
 		return false;
 	const Value to = args[0], from = args[1];
+	if (bytes > kBulkCallBytes && !(in_slot(to, bytes) && (zero || in_slot(from, bytes))))
+		return false;
 	if (move && !apart(body_, to, from, bytes))
 		return false;
 	if (inst.result != kNoId)
