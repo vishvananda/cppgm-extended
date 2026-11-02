@@ -45,9 +45,9 @@ function @add_bytes(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_inline=y
     %a = load u8 %p
     %q = index u8 %y, %i
     %b = load u8 %q
-    %t30 = binary add u8 %a, %b
+    %t = binary add u8 %a, %b
     %o = index u8 %d, %i
-    store u8 %t30, %o
+    store u8 %t, %o
     %next = binary add i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
@@ -305,9 +305,9 @@ function @both(%d : ptr, %e : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %s = binary add i32 %w, 300
     %o = index i32 %e, %i
     store i32 %s, %o
-    %t46 = binary add u8 %a, 44
+    %t = binary add u8 %a, 44
     %q = index u8 %d, %i
-    store u8 %t46, %q
+    store u8 %t, %q
     %next = binary add i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done

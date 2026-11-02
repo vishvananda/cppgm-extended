@@ -73,6 +73,11 @@ do is not run again until the body changes.
   `index` steps, orders commutative operands, collapses a phi whose inputs
   are all one value, and merges two phis of a block that agree on every
   input.
+- A truncation of `add`, `sub`, `and`, `or`, `xor`, a `shl` by a literal below
+  the narrow width, or a `mul` to two bytes or more, whose operands are
+  literals or extensions of the truncation's own type, becomes that operation
+  in the narrow type. C promotes `b |= 1` to `int`, so this leaves one
+  instruction where three would stop a select from forming.
 - It reuses a pure computation already made in the same or a dominating
   block (hashed by operation, type and operands).
 - When a block's only predecessor ends in a branch, the edge's facts hold

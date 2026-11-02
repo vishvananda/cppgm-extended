@@ -184,6 +184,7 @@ private:
 	bool binary_identity(Instruction& inst, Value& out);
 	bool compare_identity(Instruction& inst, Value& out);
 	bool convert_identity(Instruction& inst, Value& out);
+	bool narrow_truncation(Instruction& inst);
 	bool vector_identity(Instruction& inst, Value& out);
 	Value low_lane_source(Value v, unsigned bytes);
 	bool reassociate(Instruction& inst);
@@ -1166,6 +1167,58 @@ bool Simplifier::convert_identity(Instruction& inst, Value& out)
 	return false;
 }
 
+// A truncation of arithmetic on extensions of its own type is that arithmetic
+// in the narrow type: the low bits of each operation depend only on the low
+// bits of its operands.
+bool Simplifier::narrow_truncation(Instruction& inst)
+{
+	if (inst.op != Opcode::Convert || static_cast<ConvertOp>(inst.sub) != ConvertOp::Trunc || !inst.type.is_integer() ||
+		inst.type.kind() == TypeKind::I1 || c_.level < 1)
+		return false;
+	const Instruction* def = producer(inst.ops[0]);
+	if (def == nullptr || def->op != Opcode::Binary || !def->type.is_integer())
+		return false;
+	const BinaryOp op = static_cast<BinaryOp>(def->sub);
+	const bool shift = op == BinaryOp::Shl;
+	// (No lanes multiply bytes: the wider form may still run in lanes.)
+	const bool product = op == BinaryOp::Mul && storage_bytes(inst.type) > 1;
+	if (op != BinaryOp::Add && op != BinaryOp::Sub && op != BinaryOp::And && op != BinaryOp::Or &&
+		op != BinaryOp::Xor && !shift && !product)
+		return false;
+	Value narrow[2] = { Value::none(), Value::none() };
+	for (unsigned k = 0; k < 2; ++k)
+	{
+		const Value v = def->ops[k];
+		Constant c;
+		Literal bits;
+		if (constant(v, def->type, c))
+		{
+			if (!integer_bits(def->type, c, bits) || (shift && k == 1 && bits.low >= 8 * storage_bytes(inst.type)))
+				return false;
+			narrow[k] = integer_value(body_, normalize_integer(inst.type, bits));
+			continue;
+		}
+		const Instruction* wide = producer(v);
+		if ((shift && k == 1) || wide == nullptr || wide->op != Opcode::Convert ||
+			(static_cast<ConvertOp>(wide->sub) != ConvertOp::SExt &&
+				static_cast<ConvertOp>(wide->sub) != ConvertOp::ZExt) ||
+			!wide->ops[0].is(ValueKind::Temp) || body_.temps[wide->ops[0].index].type != inst.type)
+			return false;
+		narrow[k] = wide->ops[0];
+	}
+	if (narrow[0].is(ValueKind::Integer) && narrow[1].is(ValueKind::Integer))
+		return false;
+	Instruction rewritten = make_instruction(Opcode::Binary, inst.type);
+	rewritten.sub = static_cast<uint8_t>(op);
+	rewritten.ops[0] = narrow[0];
+	rewritten.ops[1] = narrow[1];
+	rewritten.result = inst.result;
+	rewritten.next = inst.next;
+	rewritten.location = inst.location;
+	inst = rewritten;
+	return true;
+}
+
 bool Simplifier::phi_value(const Instruction& phi, Value& out)
 {
 	Value same = Value::none();
@@ -1978,8 +2031,8 @@ void Simplifier::process_block(BlockId block)
 		if (inst.op == Opcode::Branch)
 			simplify_branch(inst);
 		canonicalize(inst);
-		if (reassociate(inst) || mask_or(inst) || merge_index(inst) || narrow_compare(inst) || exact_compare(inst) ||
-			bulk_call(inst) || readonly_table_address(inst))
+		if (reassociate(inst) || narrow_truncation(inst) || mask_or(inst) || merge_index(inst) ||
+			narrow_compare(inst) || exact_compare(inst) || bulk_call(inst) || readonly_table_address(inst))
 			changed_ = true;
 		Value value;
 		if (inst.result != kNoId && (fold(inst, value) || identity(inst, value)))

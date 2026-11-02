@@ -1,0 +1,54 @@
+#include <stdio.h>
+
+__attribute__((noinline)) static signed char bits(const unsigned long* code, const unsigned char* index, int n)
+{
+	signed char out = 0;
+	for (int i = 0; i < n; ++i)
+	{
+		out <<= 1;
+		if (code[index[i]] & (1ul << (i & 7)))
+			out |= 1;
+	}
+	return out;
+}
+
+__attribute__((noinline)) static unsigned short mix16(unsigned short a, unsigned short b)
+{
+	a = a * b + 40000;
+	a ^= 0x1ffff;
+	return a - b;
+}
+
+__attribute__((noinline)) static signed char mix8(signed char a, signed char b)
+{
+	signed char c = a * b;
+	c += 127;
+	c &= 0x1f7;
+	c -= a;
+	return c << 3;
+}
+
+__attribute__((noinline)) static int widened(signed char a, unsigned char b)
+{
+	signed char c = a | b;
+	unsigned char d = a + b;
+	return c * 1000 + d;
+}
+
+int main()
+{
+	unsigned long code[16];
+	unsigned char index[64];
+	for (int i = 0; i < 16; ++i)
+		code[i] = 0x9e3779b97f4a7c15ul * (i + 1);
+	for (int i = 0; i < 64; ++i)
+		index[i] = (i * 7) & 15;
+	for (int n = 1; n < 64; n += 9)
+		printf("%d\n", bits(code, index, n));
+	for (int a = -200; a < 70000; a += 9973)
+		for (int b = -129; b < 400; b += 131)
+		{
+			printf("%u %d %d\n", mix16(a, b), mix8(a, b), widened(a, b));
+		}
+	return 0;
+}

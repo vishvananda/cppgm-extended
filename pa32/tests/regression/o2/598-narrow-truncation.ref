@@ -1,0 +1,51 @@
+function @bit(%b : i8) -> i8 [no_inline=yes] {
+  block ^entry:
+    %r = binary or i8 %b, 1
+    return i8 %r
+}
+function @shifted(%b : i8) -> i8 [no_inline=yes] {
+  block ^entry:
+    %r = binary shl i8 %b, 1
+    return i8 %r
+}
+function @sum(%a : u16, %b : u16) -> u16 [no_inline=yes] {
+  block ^entry:
+    %r = binary add u16 %a, %b
+    return u16 %r
+}
+function @masked(%b : u8) -> u8 [no_inline=yes] {
+  block ^entry:
+    %r = binary xor u8 %b, 255
+    return u8 %r
+}
+function @other_type(%b : i8) -> u8 [no_inline=yes] {
+  block ^entry:
+    %w = convert sext i32 i8 %b
+    %o = binary or i32 %w, 1
+    %r = convert trunc u8 i32 %o
+    return u8 %r
+}
+function @shift_out(%b : i8) -> i8 [no_inline=yes] {
+  block ^entry:
+    %w = convert sext i32 i8 %b
+    %o = binary shl i32 %w, 9
+    %r = convert trunc i8 i32 %o
+    return i8 %r
+}
+function @right_shift(%b : i8) -> i8 [no_inline=yes] {
+  block ^entry:
+    %w = convert sext i32 i8 %b
+    %o = binary shr i32 %w, 1
+    %r = convert trunc i8 i32 %o
+    return i8 %r
+}
+function @unextended(%b : i32) -> i8 [no_inline=yes] {
+  block ^entry:
+    %o = binary or i32 %b, 1
+    %r = convert trunc i8 i32 %o
+    return i8 %r
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

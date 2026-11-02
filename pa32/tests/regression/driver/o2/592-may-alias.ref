@@ -50,10 +50,8 @@ function @plain(%f : ptr, %i : ptr) -> i16 [binding=strong, object=_Z5plainPsPf,
   block ^entry:
     %t1 = load typed i16 %f
     store typed f32 1f, %i
-    %t2 = convert sext i32 i16 %t1
-    %t3 = binary add nowrap i32 %t2, %t2
-    %t4 = convert trunc i16 i32 %t3
-    return i16 %t4
+    %t2 = binary add i16 %t1, %t1
+    return i16 %t2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
