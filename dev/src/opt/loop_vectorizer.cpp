@@ -23,9 +23,10 @@ const unsigned kNarrowDepth = 6;
 // lanes hold what the scalar loop computes pass by pass, so each operation
 // is the one on each lane. The widest value sets how many passes one wide pass
 // does, and a narrower value keeps that many lanes at the bottom of its
-// register. The vector loop stops with at least one pass left:
-// the scalar loop then runs last, on every path, and so gives every value
-// the code after it reads, and the vector loop only sets where it starts.
+// register. When code after the loop reads a value of its body, the vector
+// loop stops with at least one pass left: the scalar loop then runs last, on
+// every path, and gives every value that code reads. Otherwise the lanes may
+// finish the loop, and the scalar loop runs only for what is left.
 //
 //   preheader:  enough passes?          (to the scalar loop if not)
 //   guard:      the arrays apart?       (only when the types do not say)
@@ -141,6 +142,8 @@ private:
 	bool lanes_pay_for_order() const;
 	bool halves(const Instruction& inst, unsigned& shift) const;
 	void make_phi(BlockId block, Type type, std::initializer_list<Value> pairs, Value& out);
+	bool read_after_loop() const;
+	void add_incoming(BlockId block, BlockId from, BlockId extra);
 	BlockId place_block(BlockKind kind);
 	void vectorize(uint32_t loop);
 
@@ -1784,6 +1787,36 @@ BlockId LoopVectorizer::place_block(BlockKind kind)
 	return block;
 }
 
+// Whether code after the loop reads a value of its body.
+bool LoopVectorizer::read_after_loop() const
+{
+	bool read = false;
+	for (BlockId b : body_.layout)
+		if (b != b_)
+			for (InstId i = body_.blocks[b].first; i != kNoId && !read; i = body_.instructions[i].next)
+				for_each_operand(body_, body_.instructions[i], [&](const Value& v) { read = read || in_body(v); });
+	return read;
+}
+
+// Each phi of `block` takes from `extra` what it takes from `from`.
+void LoopVectorizer::add_incoming(BlockId block, BlockId from, BlockId extra)
+{
+	for (InstId i = body_.blocks[block].first; i != kNoId; i = body_.instructions[i].next)
+	{
+		if (body_.instructions[i].op != Opcode::Phi)
+			break;
+		const Instruction phi = body_.instructions[i];
+		std::vector<Value> edges(
+			body_.operands.begin() + phi.extra_first, body_.operands.begin() + phi.extra_first + phi.extra_count);
+		const Value value = phi_incoming(body_, phi, from);
+		edges.push_back(Value::block(extra));
+		edges.push_back(value);
+		Instruction& out = body_.instructions[i];
+		out.extra_first = append_operands(body_, edges.data(), static_cast<uint32_t>(edges.size()));
+		out.extra_count = static_cast<uint32_t>(edges.size());
+	}
+}
+
 void LoopVectorizer::vectorize(uint32_t loop)
 {
 	const BlockId pre = forest_.loops[loop].preheader;
@@ -1794,6 +1827,11 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	const Type distance_type = type.is_pointer() ? i64 : type;
 	const int64_t span = static_cast<int64_t>(lanes_) * (up ? counter.step : -counter.step);
 	const ComparePredicate below = unsigned_counter_ ? ComparePredicate::Ult : ComparePredicate::Lt;
+	const ComparePredicate within = unsigned_counter_ ? ComparePredicate::Ule : ComparePredicate::Le;
+	const bool drains = !read_after_loop();
+	const BlockId after = body_.instructions[body_.blocks[b_].last].ops[1].index == b_
+		? body_.instructions[body_.blocks[b_].last].ops[2].index
+		: body_.instructions[body_.blocks[b_].last].ops[1].index;
 	const BlockId guard = tests_.empty() ? kNoId : place_block(BlockKind::LoopPreheader);
 	vector_pre_ = place_block(BlockKind::LoopPreheader);
 	const BlockId wide_loop = place_block(BlockKind::WideLoop);
@@ -1815,7 +1853,8 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	difference.ops[1] = up ? start : bound;
 	const Value distance = emit(difference, distance_type);
 	const Value before = up ? compare(below, type, start, bound) : compare(below, type, bound, start);
-	const Value enough = compare(ComparePredicate::Ugt, distance_type, distance, literal(span));
+	const Value enough = compare(
+		drains ? ComparePredicate::Uge : ComparePredicate::Ugt, distance_type, distance, literal(span));
 	const Value test = binary(BinaryOp::And, i64, before, enough, i64);
 	Instruction& jump = body_.instructions[body_.blocks[pre].last];
 	jump.op = Opcode::Branch;
@@ -1955,7 +1994,16 @@ void LoopVectorizer::vectorize(uint32_t loop)
 			next = emit(inst, iv.type);
 		}
 		else
-			next = binary(BinaryOp::Add, iv.type, counters[k], literal(by), iv.type);
+		{
+			Instruction add = make_instruction(Opcode::Binary, iv.type);
+			add.sub = static_cast<uint8_t>(BinaryOp::Add);
+			add.ops[0] = counters[k];
+			add.ops[1] = literal(by);
+			// (Each value is one the scalar counter takes.)
+			if (iv.no_wrap)
+				add.flags |= IF_NO_WRAP;
+			next = emit(add, iv.type);
+		}
 		set_back_edge(counters[k], next);
 		next_values[k] = next;
 		if (k == counter_)
@@ -1969,7 +2017,9 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	}
 	for (size_t k = 0; k < reductions_.size(); ++k)
 		set_back_edge(sums[k], reductions_[k].ordered ? reductions_[k].next_sum : wides_[reductions_[k].next]);
-	const Value more = up ? compare(below, type, next_counter, limit) : compare(below, type, limit, next_counter);
+	const ComparePredicate keep_going = drains ? within : below;
+	const Value more = up ? compare(keep_going, type, next_counter, limit)
+						  : compare(keep_going, type, limit, next_counter);
 	Instruction back = make_instruction(Opcode::Branch, Type::scalar(TypeKind::Void));
 	back.ops[0] = more;
 	back.ops[1] = Value::block(wide_loop);
@@ -1989,7 +2039,7 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	{
 		const Reduction& r = reductions_[k];
 		finals[k] = r.ordered ? r.next_sum : add_across(r, wides_[r.next]);
-		if (r.load == kNoId)
+		if (r.store == kNoId || (r.load == kNoId && !drains))
 			continue;
 		Instruction write = body_.instructions[r.store];
 		write.ops[0] = finals[k];
@@ -1997,9 +2047,22 @@ void LoopVectorizer::vectorize(uint32_t loop)
 		write.next = kNoId;
 		emit_void(write);
 	}
-	Instruction leave = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
-	leave.ops[0] = Value::block(scalar_pre);
-	finish_block(leave);
+	if (drains)
+	{
+		const Value left = up ? compare(below, type, next_counter, bound) : compare(below, type, bound, next_counter);
+		Instruction leave = make_instruction(Opcode::Branch, Type::scalar(TypeKind::Void));
+		leave.ops[0] = left;
+		leave.ops[1] = Value::block(scalar_pre);
+		leave.ops[2] = Value::block(after);
+		finish_block(leave);
+		add_incoming(after, b_, exit);
+	}
+	else
+	{
+		Instruction leave = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
+		leave.ops[0] = Value::block(scalar_pre);
+		finish_block(leave);
+	}
 
 	at(scalar_pre, kNoId);
 	auto scalar_start = [&](TempId phi_temp, Value start_value, Value from_lanes) {

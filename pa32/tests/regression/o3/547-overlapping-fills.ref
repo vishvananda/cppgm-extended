@@ -30,7 +30,7 @@ function @two_pointers(%a : ptr, %b : ptr) -> void [no_inline=yes] {
     %t3 = cmp ule ptr %t1, %b
     %t4 = cmp ule ptr %t2, %a
     %t5 = binary or i64 %t3, %t4
-    branch %t5, ^loop_preheader_1, ^loop_preheader_3
+    branch %t5, ^loop_preheader_1, ^loop_preheader_4
 
   block ^loop_preheader_1:
     %t6 = vector fromi64 1
@@ -45,23 +45,27 @@ function @two_pointers(%a : ptr, %b : ptr) -> void [no_inline=yes] {
     store v128 %t7, %t11
     %t12 = index i64 %b, %t10
     store v128 %t9, %t12
-    %t13 = binary add i64 %t10, 2
-    %t14 = cmp lt i64 %t13, 28
-    branch %t14, ^wide_loop_2, ^loop_preheader_3
+    %t13 = binary add nowrap i64 %t10, 2
+    %t14 = cmp le i64 %t13, 28
+    branch %t14, ^wide_loop_2, ^loop_exit_3
 
-  block ^loop_preheader_3:
-    %t15 = phi i64 [^entry: 0, ^wide_loop_2: %t13]
+  block ^loop_exit_3:
+    %t15 = cmp lt i64 %t13, 30
+    branch %t15, ^loop_preheader_4, ^done
+
+  block ^loop_preheader_4:
+    %t16 = phi i64 [^entry: 0, ^loop_exit_3: %t13]
     jump ^body
 
   block ^body:
-    %t16 = phi i64 [^body: %next, ^loop_preheader_3: %t15]
-    %p = index i64 %a, %t16
+    %t17 = phi i64 [^body: %next, ^loop_preheader_4: %t16]
+    %p = index i64 %a, %t17
     store i64 1, %p
-    %q = index i64 %b, %t16
+    %q = index i64 %b, %t17
     store i64 2, %q
-    %next = binary add i64 %t16, 1
-    %t20 = cmp lt i64 %next, 30
-    branch %t20, ^body, ^done
+    %next = binary add i64 %t17, 1
+    %t21 = cmp lt i64 %next, 30
+    branch %t21, ^body, ^done
 
   block ^done:
     return void

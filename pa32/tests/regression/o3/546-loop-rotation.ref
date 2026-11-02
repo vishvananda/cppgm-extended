@@ -51,7 +51,7 @@ function @literal_guard(%p : ptr) -> i64 [no_inline=yes] {
     %t4 = index i64 %p, %t3
     %t5 = load v128 %t4
     %t6 = vector paddq %t5, %t2
-    %t7 = binary add i64 %t3, 2
+    %t7 = binary add nowrap i64 %t3, 2
     %t8 = cmp lt i64 %t7, 998
     branch %t8, ^wide_loop_1, ^loop_exit_2
 

@@ -498,10 +498,12 @@ vectorization stays outside the course contract.
   types, do not overlap. Other pairs get a test of their ranges in a guard before
   the wide loop, up to eight tests.
 
-The wide loop stops with at least one pass left. The original loop always runs
-last, so the code after it reads the loop's values as before, and the wide loop
-only changes the values the scalar loop starts from. The scalar loop also runs
-alone when there are too few passes or a range test fails.
+When code after the loop reads a value of its body, the wide loop stops with at
+least one pass left. The original loop then always runs last, so that code reads
+the loop's values as before, and the wide loop only changes the values the scalar
+loop starts from. Otherwise the wide loop may run every pass, and a test after it
+skips the scalar loop when none are left. The scalar loop also runs alone when
+there are too few passes or a range test fails.
 
 Value numbering across diamonds: when a diamond's merge heads a second
 diamond on the same condition, and none of the arms or the first merge

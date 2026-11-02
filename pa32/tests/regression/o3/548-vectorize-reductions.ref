@@ -16,7 +16,7 @@ function @add_i32(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
     %t8 = index i32 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector paddd %t6, %t9
-    %t11 = binary add i64 %t7, 4
+    %t11 = binary add nowrap i64 %t7, 4
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -64,7 +64,7 @@ function @sub_i32(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
     %t8 = index i32 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector psubd %t6, %t9
-    %t11 = binary add i64 %t7, 4
+    %t11 = binary add nowrap i64 %t7, 4
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -113,7 +113,7 @@ function @and_i32(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
     %t9 = index i32 %x, %t8
     %t10 = load v128 %t9
     %t11 = vector pand %t7, %t10
-    %t12 = binary add i64 %t8, 4
+    %t12 = binary add nowrap i64 %t8, 4
     %t13 = cmp lt i64 %t12, %t4
     branch %t13, ^wide_loop_2, ^loop_exit_3
 
@@ -161,7 +161,7 @@ function @or_i32(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
     %t8 = index i32 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector por %t6, %t9
-    %t11 = binary add i64 %t7, 4
+    %t11 = binary add nowrap i64 %t7, 4
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -209,7 +209,7 @@ function @xor_i32(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
     %t8 = index i32 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector pxor %t6, %t9
-    %t11 = binary add i64 %t7, 4
+    %t11 = binary add nowrap i64 %t7, 4
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -257,7 +257,7 @@ function @add_i64(%x : ptr, %n : i64) -> i64 [no_inline=yes] {
     %t8 = index i64 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector paddq %t6, %t9
-    %t11 = binary add i64 %t7, 2
+    %t11 = binary add nowrap i64 %t7, 2
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -303,7 +303,7 @@ function @sub_i64(%x : ptr, %n : i64) -> i64 [no_inline=yes] {
     %t8 = index i64 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector psubq %t6, %t9
-    %t11 = binary add i64 %t7, 2
+    %t11 = binary add nowrap i64 %t7, 2
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -350,7 +350,7 @@ function @and_i64(%x : ptr, %n : i64) -> i64 [no_inline=yes] {
     %t9 = index i64 %x, %t8
     %t10 = load v128 %t9
     %t11 = vector pand %t7, %t10
-    %t12 = binary add i64 %t8, 2
+    %t12 = binary add nowrap i64 %t8, 2
     %t13 = cmp lt i64 %t12, %t4
     branch %t13, ^wide_loop_2, ^loop_exit_3
 
@@ -396,7 +396,7 @@ function @or_i64(%x : ptr, %n : i64) -> i64 [no_inline=yes] {
     %t8 = index i64 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector por %t6, %t9
-    %t11 = binary add i64 %t7, 2
+    %t11 = binary add nowrap i64 %t7, 2
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -442,7 +442,7 @@ function @xor_i64(%x : ptr, %n : i64) -> i64 [no_inline=yes] {
     %t8 = index i64 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector pxor %t6, %t9
-    %t11 = binary add i64 %t7, 2
+    %t11 = binary add nowrap i64 %t7, 2
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -488,7 +488,7 @@ function @add_zero(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
     %t8 = index i32 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector paddd %t6, %t9
-    %t11 = binary add i64 %t7, 4
+    %t11 = binary add nowrap i64 %t7, 4
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -536,7 +536,7 @@ function @add_commuted(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
     %t8 = index i32 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector paddd %t6, %t9
-    %t11 = binary add i64 %t7, 4
+    %t11 = binary add nowrap i64 %t7, 4
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -585,7 +585,7 @@ function @and_commuted(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
     %t9 = index i32 %x, %t8
     %t10 = load v128 %t9
     %t11 = vector pand %t7, %t10
-    %t12 = binary add i64 %t8, 4
+    %t12 = binary add nowrap i64 %t8, 4
     %t13 = cmp lt i64 %t12, %t4
     branch %t13, ^wide_loop_2, ^loop_exit_3
 
@@ -633,7 +633,7 @@ function @from_parameter(%x : ptr, %n : i64, %k : i32) -> i32 [no_inline=yes] {
     %t8 = index i32 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector paddd %t6, %t9
-    %t11 = binary add i64 %t7, 4
+    %t11 = binary add nowrap i64 %t7, 4
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -681,7 +681,7 @@ function @unsigned_sum(%x : ptr, %n : i64) -> u32 [no_inline=yes] {
     %t8 = index u32 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector paddd %t6, %t9
-    %t11 = binary add i64 %t7, 4
+    %t11 = binary add nowrap i64 %t7, 4
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 
@@ -783,7 +783,7 @@ function @byte_sum(%x : ptr, %n : i64) -> i8 [no_inline=yes] {
     %t8 = index i8 %x, %t7
     %t9 = load v128 %t8
     %t10 = vector paddb %t6, %t9
-    %t11 = binary add i64 %t7, 16
+    %t11 = binary add nowrap i64 %t7, 16
     %t12 = cmp lt i64 %t11, %t4
     branch %t12, ^wide_loop_2, ^loop_exit_3
 

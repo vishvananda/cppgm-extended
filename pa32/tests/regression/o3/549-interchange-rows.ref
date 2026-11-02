@@ -30,55 +30,56 @@ function @product(%i : i64) -> void [no_inline=yes] {
     %t9 = phi i64 [^entry: 0, ^wide_loop_1: %t11]
     %t10 = index f64 %ri, %t9
     store v128 %t8, %t10
-    %t11 = binary add i64 %t9, 2
-    %t12 = cmp lt i64 %t11, 30
-    branch %t12, ^wide_loop_1, ^loop_preheader_2
+    %t11 = binary add nowrap i64 %t9, 2
+    %t12 = cmp le i64 %t11, 30
+    branch %t12, ^wide_loop_1, ^loop_exit_2
 
-  block ^loop_preheader_2:
-    %t13 = phi i64 [^wide_loop_1: %t11]
-    jump ^for_body_3
+  block ^loop_exit_2:
+    %t13 = cmp lt i64 %t11, 32
+    branch %t13, ^loop_preheader_3, ^terms
 
-  block ^for_body_3:
-    %t14 = phi i64 [^loop_preheader_2: %t13, ^for_body_3: %t16]
-    %t15 = index f64 %ri, %t14
-    %t16 = binary add i64 %t14, 1
-    %t17 = cmp lt i64 %t16, 32
-    store typed f64 0, %t15
-    branch %t17, ^for_body_3, ^loop_preheader_4
+  block ^loop_preheader_3:
+    %t14 = phi i64 [^loop_exit_2: %t11]
+    jump ^for_body_4
 
-  block ^loop_preheader_4:
-    jump ^terms
+  block ^for_body_4:
+    %t15 = phi i64 [^loop_preheader_3: %t14, ^for_body_4: %t17]
+    %t16 = index f64 %ri, %t15
+    %t17 = binary add i64 %t15, 1
+    %t18 = cmp lt i64 %t17, 32
+    store typed f64 0, %t16
+    branch %t18, ^for_body_4, ^terms
 
   block ^terms:
-    %k = phi i64 [^loop_preheader_4: 0, ^next: %k1]
+    %k = phi i64 [^for_body_4: 0, ^next: %k1, ^loop_exit_2: 0]
     %p = index f64 %ai, %k
     %v = load typed f64 %p
     %scaled = binary mul i64 %k, 256
     %rowk = index i8 %b, %scaled
     %k1 = binary add i64 %k, 1
-    %t24 = vector fromf64 %v
-    %t25 = vector pshufd %t24, 68
+    %t25 = vector fromf64 %v
+    %t26 = vector pshufd %t25, 68
     jump ^wide_loop_6
 
   block ^wide_loop_6:
-    %t26 = phi i64 [^terms: 0, ^wide_loop_6: %t33]
-    %t27 = index f64 %ri, %t26
-    %t28 = load v128 %t27
-    %t29 = index f64 %rowk, %t26
-    %t30 = load v128 %t29
-    %t31 = vector mulpd %t25, %t30
-    %t32 = vector addpd %t28, %t31
-    store v128 %t32, %t27
-    %t33 = binary add i64 %t26, 2
-    %t34 = cmp lt i64 %t33, 30
-    branch %t34, ^wide_loop_6, ^loop_preheader_7
+    %t27 = phi i64 [^terms: 0, ^wide_loop_6: %t34]
+    %t28 = index f64 %ri, %t27
+    %t29 = load v128 %t28
+    %t30 = index f64 %rowk, %t27
+    %t31 = load v128 %t30
+    %t32 = vector mulpd %t26, %t31
+    %t33 = vector addpd %t29, %t32
+    store v128 %t33, %t28
+    %t34 = binary add nowrap i64 %t27, 2
+    %t35 = cmp lt i64 %t34, 30
+    branch %t35, ^wide_loop_6, ^loop_preheader_7
 
   block ^loop_preheader_7:
-    %t35 = phi i64 [^wide_loop_6: %t33]
+    %t36 = phi i64 [^wide_loop_6: %t34]
     jump ^columns
 
   block ^columns:
-    %j = phi i64 [^loop_preheader_7: %t35, ^columns: %j1]
+    %j = phi i64 [^loop_preheader_7: %t36, ^columns: %j1]
     %cell = index f64 %ri, %j
     %j1 = binary add i64 %j, 1
     %d = cmp lt i64 %j1, 32
@@ -92,8 +93,8 @@ function @product(%i : i64) -> void [no_inline=yes] {
     branch %d, ^columns, ^next
 
   block ^next:
-    %t46 = cmp lt i64 %k1, 32
-    branch %t46, ^terms, ^done
+    %t47 = cmp lt i64 %k1, 32
+    branch %t47, ^terms, ^done
 
   block ^done:
     return void
@@ -110,46 +111,47 @@ function @started() -> void [no_inline=yes] {
     %t5 = phi i64 [^entry: 0, ^wide_loop_1: %t7]
     %t6 = index i32 %r, %t5
     store v128 %t4, %t6
-    %t7 = binary add i64 %t5, 4
-    %t8 = cmp lt i64 %t7, 28
-    branch %t8, ^wide_loop_1, ^loop_preheader_2
+    %t7 = binary add nowrap i64 %t5, 4
+    %t8 = cmp le i64 %t7, 28
+    branch %t8, ^wide_loop_1, ^loop_exit_2
 
-  block ^loop_preheader_2:
-    %t9 = phi i64 [^wide_loop_1: %t7]
-    jump ^for_body_3
+  block ^loop_exit_2:
+    %t9 = cmp lt i64 %t7, 32
+    branch %t9, ^loop_preheader_3, ^terms
 
-  block ^for_body_3:
-    %t10 = phi i64 [^loop_preheader_2: %t9, ^for_body_3: %t12]
-    %t11 = index i32 %r, %t10
-    %t12 = binary add i64 %t10, 1
-    %t13 = cmp lt i64 %t12, 32
-    store typed i32 5, %t11
-    branch %t13, ^for_body_3, ^loop_preheader_4
+  block ^loop_preheader_3:
+    %t10 = phi i64 [^loop_exit_2: %t7]
+    jump ^for_body_4
 
-  block ^loop_preheader_4:
-    jump ^terms
+  block ^for_body_4:
+    %t11 = phi i64 [^loop_preheader_3: %t10, ^for_body_4: %t13]
+    %t12 = index i32 %r, %t11
+    %t13 = binary add i64 %t11, 1
+    %t14 = cmp lt i64 %t13, 32
+    store typed i32 5, %t12
+    branch %t14, ^for_body_4, ^terms
 
   block ^terms:
-    %k = phi i64 [^loop_preheader_4: 0, ^next: %k1]
+    %k = phi i64 [^for_body_4: 0, ^next: %k1, ^loop_exit_2: 0]
     %scaled = binary mul i64 %k, 128
     %rowk = index i8 %b, %scaled
     %k1 = binary add i64 %k, 1
     jump ^wide_loop_6
 
   block ^wide_loop_6:
-    %t18 = phi i64 [^wide_loop_6: %t24, ^terms: 0]
-    %t19 = index i32 %r, %t18
-    %t20 = load v128 %t19
-    %t21 = index i32 %rowk, %t18
-    %t22 = load v128 %t21
-    %t23 = vector paddd %t20, %t22
-    store v128 %t23, %t19
-    %t24 = binary add i64 %t18, 4
-    %t25 = cmp lt i64 %t24, 28
-    branch %t25, ^wide_loop_6, ^columns
+    %t19 = phi i64 [^wide_loop_6: %t25, ^terms: 0]
+    %t20 = index i32 %r, %t19
+    %t21 = load v128 %t20
+    %t22 = index i32 %rowk, %t19
+    %t23 = load v128 %t22
+    %t24 = vector paddd %t21, %t23
+    store v128 %t24, %t20
+    %t25 = binary add nowrap i64 %t19, 4
+    %t26 = cmp lt i64 %t25, 28
+    branch %t26, ^wide_loop_6, ^columns
 
   block ^columns:
-    %j = phi i64 [^columns: %j1, ^wide_loop_6: %t24]
+    %j = phi i64 [^columns: %j1, ^wide_loop_6: %t25]
     %cell = index i32 %r, %j
     %j1 = binary add i64 %j, 1
     %d = cmp lt i64 %j1, 32
@@ -162,8 +164,8 @@ function @started() -> void [no_inline=yes] {
     branch %d, ^columns, ^next
 
   block ^next:
-    %t35 = cmp lt i64 %k1, 32
-    branch %t35, ^terms, ^done
+    %t36 = cmp lt i64 %k1, 32
+    branch %t36, ^terms, ^done
 
   block ^done:
     return void
@@ -253,7 +255,7 @@ function @consecutive() -> void [no_inline=yes] {
     %t12 = vector pshufd %t9, 238
     %t13 = vector tof64 %t12
     %t14 = binary add f64 %t11, %t13
-    %t15 = binary add i64 %t6, 2
+    %t15 = binary add nowrap i64 %t6, 2
     %t16 = cmp lt i64 %t15, 30
     branch %t16, ^wide_loop_2, ^terms
 

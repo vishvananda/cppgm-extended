@@ -1,0 +1,92 @@
+#include <stdio.h>
+
+static int a[64], b[64];
+static double x[64], y[64];
+static char c[64];
+
+__attribute__((noinline)) static void copy(int n)
+{
+	for (int i = 0; i < n; ++i)
+		a[i] = b[i] + i;
+}
+
+__attribute__((noinline)) static void down(int n)
+{
+	for (int i = n - 1; i >= 0; --i)
+		x[i] = y[i] * 2.0;
+}
+
+__attribute__((noinline)) static void bytes(int n)
+{
+	for (int i = 0; i < n; ++i)
+		c[i] = i * 3;
+}
+
+__attribute__((noinline)) static void stored(long* out, int n)
+{
+	long s = 5;
+	for (int i = 0; i < n; ++i)
+	{
+		s += b[i];
+		*out = s;
+	}
+}
+
+__attribute__((noinline)) static void cell(double* out, int n)
+{
+	for (int i = 0; i < n; ++i)
+		*out += y[i] * y[i];
+}
+
+__attribute__((noinline)) static int joined(int k, int n)
+{
+	int r = k;
+	if (n > 0)
+	{
+		for (int i = 0; i < n; ++i)
+			a[i] = i ^ k;
+		r = k + 1;
+	}
+	return r;
+}
+
+__attribute__((noinline)) static void pointers(int* p, int* q)
+{
+	while (p != q)
+		*p++ = 7;
+}
+
+int main()
+{
+	for (int i = 0; i < 64; ++i)
+	{
+		b[i] = i * i;
+		y[i] = 0.5 * i;
+	}
+	for (int n = 0; n < 34; ++n)
+	{
+		for (int i = 0; i < 64; ++i)
+		{
+			a[i] = -1;
+			x[i] = -1;
+			c[i] = -1;
+		}
+		copy(n);
+		down(n);
+		bytes(n);
+		long l = -1;
+		stored(&l, n);
+		double d = 1;
+		cell(&d, n);
+		unsigned h = 0;
+		for (int i = 0; i < 64; ++i)
+			h = h * 31 + a[i] + (unsigned)x[i] + c[i];
+		printf("%d %u %ld %.1f %d", n, h, l, d, joined(n, n));
+		pointers(a, a + n);
+		h = 0;
+		for (int i = 0; i < 64; ++i)
+			h = h * 31 + a[i];
+		printf(" %u\n", h);
+	}
+	return 0;
+}

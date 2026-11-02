@@ -8,9 +8,9 @@ global @other : obj<4000x4> = {
 function @reads_ahead(%a : ptr, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     %t1 = cmp gt i64 %n, 0
-    %t2 = cmp ugt i64 %n, 4
+    %t2 = cmp uge i64 %n, 4
     %t3 = binary and i64 %t1, %t2
-    branch %t3, ^loop_preheader_1, ^loop_preheader_3
+    branch %t3, ^loop_preheader_1, ^loop_preheader_4
 
   block ^loop_preheader_1:
     %t4 = binary add i64 %n, -4
@@ -26,16 +26,20 @@ function @reads_ahead(%a : ptr, %n : i64) -> void [no_inline=yes] {
     %t11 = vector paddd %t10, %t6
     %t12 = index i32 %a, %t7
     store v128 %t11, %t12
-    %t13 = binary add i64 %t7, 4
-    %t14 = cmp lt i64 %t13, %t4
-    branch %t14, ^wide_loop_2, ^loop_preheader_3
+    %t13 = binary add nowrap i64 %t7, 4
+    %t14 = cmp le i64 %t13, %t4
+    branch %t14, ^wide_loop_2, ^loop_exit_3
 
-  block ^loop_preheader_3:
-    %t15 = phi i64 [^entry: 0, ^wide_loop_2: %t13]
+  block ^loop_exit_3:
+    %t15 = cmp lt i64 %t13, %n
+    branch %t15, ^loop_preheader_4, ^done
+
+  block ^loop_preheader_4:
+    %t16 = phi i64 [^entry: 0, ^loop_exit_3: %t13]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^loop_preheader_3: %t15, ^body: %j]
+    %i = phi i64 [^loop_preheader_4: %t16, ^body: %j]
     %j = binary add nowrap i64 %i, 1
     %p = index i32 %a, %j
     %v = load typed i32 %p
@@ -51,9 +55,9 @@ function @reads_ahead(%a : ptr, %n : i64) -> void [no_inline=yes] {
 function @same_element(%a : ptr, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     %t1 = cmp gt i64 %n, 0
-    %t2 = cmp ugt i64 %n, 4
+    %t2 = cmp uge i64 %n, 4
     %t3 = binary and i64 %t1, %t2
-    branch %t3, ^loop_preheader_1, ^loop_preheader_3
+    branch %t3, ^loop_preheader_1, ^loop_preheader_4
 
   block ^loop_preheader_1:
     %t4 = binary add i64 %n, -4
@@ -67,16 +71,20 @@ function @same_element(%a : ptr, %n : i64) -> void [no_inline=yes] {
     %t9 = load v128 %t8
     %t10 = vector paddd %t9, %t6
     store v128 %t10, %t8
-    %t11 = binary add i64 %t7, 4
-    %t12 = cmp lt i64 %t11, %t4
-    branch %t12, ^wide_loop_2, ^loop_preheader_3
+    %t11 = binary add nowrap i64 %t7, 4
+    %t12 = cmp le i64 %t11, %t4
+    branch %t12, ^wide_loop_2, ^loop_exit_3
 
-  block ^loop_preheader_3:
-    %t13 = phi i64 [^entry: 0, ^wide_loop_2: %t11]
+  block ^loop_exit_3:
+    %t13 = cmp lt i64 %t11, %n
+    branch %t13, ^loop_preheader_4, ^done
+
+  block ^loop_preheader_4:
+    %t14 = phi i64 [^entry: 0, ^loop_exit_3: %t11]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^loop_preheader_3: %t13, ^body: %next]
+    %i = phi i64 [^loop_preheader_4: %t14, ^body: %next]
     %p = index i32 %a, %i
     %v = load typed i32 %p
     %r = binary add i32 %v, 1
@@ -129,9 +137,9 @@ function @reads_behind_3(%a : ptr, %n : i64) -> void [no_inline=yes] {
 function @apart_behind(%a : ptr, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     %t1 = cmp gt i64 %n, 0
-    %t2 = cmp ugt i64 %n, 4
+    %t2 = cmp uge i64 %n, 4
     %t3 = binary and i64 %t1, %t2
-    branch %t3, ^loop_preheader_1, ^loop_preheader_3
+    branch %t3, ^loop_preheader_1, ^loop_preheader_4
 
   block ^loop_preheader_1:
     %t4 = binary add i64 %n, -4
@@ -147,16 +155,20 @@ function @apart_behind(%a : ptr, %n : i64) -> void [no_inline=yes] {
     %t11 = vector paddd %t10, %t6
     %t12 = index i32 %a, %t7
     store v128 %t11, %t12
-    %t13 = binary add i64 %t7, 4
-    %t14 = cmp lt i64 %t13, %t4
-    branch %t14, ^wide_loop_2, ^loop_preheader_3
+    %t13 = binary add nowrap i64 %t7, 4
+    %t14 = cmp le i64 %t13, %t4
+    branch %t14, ^wide_loop_2, ^loop_exit_3
 
-  block ^loop_preheader_3:
-    %t15 = phi i64 [^entry: 0, ^wide_loop_2: %t13]
+  block ^loop_exit_3:
+    %t15 = cmp lt i64 %t13, %n
+    branch %t15, ^loop_preheader_4, ^done
+
+  block ^loop_preheader_4:
+    %t16 = phi i64 [^entry: 0, ^loop_exit_3: %t13]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^loop_preheader_3: %t15, ^body: %next]
+    %i = phi i64 [^loop_preheader_4: %t16, ^body: %next]
     %j = binary add nowrap i64 %i, -4
     %p = index i32 %a, %j
     %v = load typed i32 %p
@@ -192,9 +204,9 @@ function @store_first(%a : ptr, %n : i64) -> void [no_inline=yes] {
 function @rows_of_one_object(%k : i64, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     %t1 = cmp gt i64 %n, 0
-    %t2 = cmp ugt i64 %n, 4
+    %t2 = cmp uge i64 %n, 4
     %t3 = binary and i64 %t1, %t2
-    branch %t3, ^loop_preheader_1, ^loop_preheader_4
+    branch %t3, ^loop_preheader_1, ^loop_preheader_5
 
   block ^loop_preheader_1:
     %t4 = index i32 @table, %k
@@ -205,7 +217,7 @@ function @rows_of_one_object(%k : i64, %n : i64) -> void [no_inline=yes] {
     %t9 = cmp ule ptr %t7, %t5
     %t10 = cmp ule ptr %t8, %t4
     %t11 = binary or i64 %t9, %t10
-    branch %t11, ^loop_preheader_2, ^loop_preheader_4
+    branch %t11, ^loop_preheader_2, ^loop_preheader_5
 
   block ^loop_preheader_2:
     %t12 = binary add i64 %n, -4
@@ -218,16 +230,20 @@ function @rows_of_one_object(%k : i64, %n : i64) -> void [no_inline=yes] {
     %t16 = load v128 %t15
     %t17 = index i32 @table, %t13
     store v128 %t16, %t17
-    %t18 = binary add i64 %t13, 4
-    %t19 = cmp lt i64 %t18, %t12
-    branch %t19, ^wide_loop_3, ^loop_preheader_4
+    %t18 = binary add nowrap i64 %t13, 4
+    %t19 = cmp le i64 %t18, %t12
+    branch %t19, ^wide_loop_3, ^loop_exit_4
 
-  block ^loop_preheader_4:
-    %t20 = phi i64 [^entry: 0, ^loop_preheader_1: 0, ^wide_loop_3: %t18]
+  block ^loop_exit_4:
+    %t20 = cmp lt i64 %t18, %n
+    branch %t20, ^loop_preheader_5, ^done
+
+  block ^loop_preheader_5:
+    %t21 = phi i64 [^entry: 0, ^loop_preheader_1: 0, ^loop_exit_4: %t18]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^loop_preheader_4: %t20, ^body: %next]
+    %i = phi i64 [^loop_preheader_5: %t21, ^body: %next]
     %j = binary add nowrap i64 %k, %i
     %p = index i32 @table, %j
     %v = load typed i32 %p
@@ -243,9 +259,9 @@ function @rows_of_one_object(%k : i64, %n : i64) -> void [no_inline=yes] {
 function @two_objects(%n : i64) -> void [no_inline=yes] {
   block ^entry:
     %t1 = cmp gt i64 %n, 0
-    %t2 = cmp ugt i64 %n, 4
+    %t2 = cmp uge i64 %n, 4
     %t3 = binary and i64 %t1, %t2
-    branch %t3, ^loop_preheader_1, ^loop_preheader_3
+    branch %t3, ^loop_preheader_1, ^loop_preheader_4
 
   block ^loop_preheader_1:
     %t4 = binary add i64 %n, -4
@@ -257,16 +273,20 @@ function @two_objects(%n : i64) -> void [no_inline=yes] {
     %t7 = load v128 %t6
     %t8 = index i32 @table, %t5
     store v128 %t7, %t8
-    %t9 = binary add i64 %t5, 4
-    %t10 = cmp lt i64 %t9, %t4
-    branch %t10, ^wide_loop_2, ^loop_preheader_3
+    %t9 = binary add nowrap i64 %t5, 4
+    %t10 = cmp le i64 %t9, %t4
+    branch %t10, ^wide_loop_2, ^loop_exit_3
 
-  block ^loop_preheader_3:
-    %t11 = phi i64 [^entry: 0, ^wide_loop_2: %t9]
+  block ^loop_exit_3:
+    %t11 = cmp lt i64 %t9, %n
+    branch %t11, ^loop_preheader_4, ^done
+
+  block ^loop_preheader_4:
+    %t12 = phi i64 [^entry: 0, ^loop_exit_3: %t9]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^loop_preheader_3: %t11, ^body: %next]
+    %i = phi i64 [^loop_preheader_4: %t12, ^body: %next]
     %p = index i32 @other, %i
     %v = load typed i32 %p
     %o = index i32 @table, %i
@@ -281,9 +301,9 @@ function @two_objects(%n : i64) -> void [no_inline=yes] {
 function @types_apart(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     %t1 = cmp gt i64 %n, 0
-    %t2 = cmp ugt i64 %n, 4
+    %t2 = cmp uge i64 %n, 4
     %t3 = binary and i64 %t1, %t2
-    branch %t3, ^loop_preheader_1, ^loop_preheader_3
+    branch %t3, ^loop_preheader_1, ^loop_preheader_4
 
   block ^loop_preheader_1:
     %t4 = binary add i64 %n, -4
@@ -296,16 +316,20 @@ function @types_apart(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t8 = vector cvttps2dq %t7
     %t9 = index i32 %d, %t5
     store v128 %t8, %t9
-    %t10 = binary add i64 %t5, 4
-    %t11 = cmp lt i64 %t10, %t4
-    branch %t11, ^wide_loop_2, ^loop_preheader_3
+    %t10 = binary add nowrap i64 %t5, 4
+    %t11 = cmp le i64 %t10, %t4
+    branch %t11, ^wide_loop_2, ^loop_exit_3
 
-  block ^loop_preheader_3:
-    %t12 = phi i64 [^entry: 0, ^wide_loop_2: %t10]
+  block ^loop_exit_3:
+    %t12 = cmp lt i64 %t10, %n
+    branch %t12, ^loop_preheader_4, ^done
+
+  block ^loop_preheader_4:
+    %t13 = phi i64 [^entry: 0, ^loop_exit_3: %t10]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^loop_preheader_3: %t12, ^body: %next]
+    %i = phi i64 [^loop_preheader_4: %t13, ^body: %next]
     %p = index f32 %x, %i
     %v = load typed f32 %p
     %r = convert fptosi i32 f32 %v
@@ -321,9 +345,9 @@ function @types_apart(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
 function @untyped(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     %t1 = cmp gt i64 %n, 0
-    %t2 = cmp ugt i64 %n, 4
+    %t2 = cmp uge i64 %n, 4
     %t3 = binary and i64 %t1, %t2
-    branch %t3, ^loop_preheader_1, ^loop_preheader_4
+    branch %t3, ^loop_preheader_1, ^loop_preheader_5
 
   block ^loop_preheader_1:
     %t4 = binary mul i64 %n, 4
@@ -332,7 +356,7 @@ function @untyped(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t7 = cmp ule ptr %t5, %d
     %t8 = cmp ule ptr %t6, %x
     %t9 = binary or i64 %t7, %t8
-    branch %t9, ^loop_preheader_2, ^loop_preheader_4
+    branch %t9, ^loop_preheader_2, ^loop_preheader_5
 
   block ^loop_preheader_2:
     %t10 = binary add i64 %n, -4
@@ -344,16 +368,20 @@ function @untyped(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t13 = load v128 %t12
     %t14 = index i32 %d, %t11
     store v128 %t13, %t14
-    %t15 = binary add i64 %t11, 4
-    %t16 = cmp lt i64 %t15, %t10
-    branch %t16, ^wide_loop_3, ^loop_preheader_4
+    %t15 = binary add nowrap i64 %t11, 4
+    %t16 = cmp le i64 %t15, %t10
+    branch %t16, ^wide_loop_3, ^loop_exit_4
 
-  block ^loop_preheader_4:
-    %t17 = phi i64 [^entry: 0, ^loop_preheader_1: 0, ^wide_loop_3: %t15]
+  block ^loop_exit_4:
+    %t17 = cmp lt i64 %t15, %n
+    branch %t17, ^loop_preheader_5, ^done
+
+  block ^loop_preheader_5:
+    %t18 = phi i64 [^entry: 0, ^loop_preheader_1: 0, ^loop_exit_4: %t15]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^loop_preheader_4: %t17, ^body: %next]
+    %i = phi i64 [^loop_preheader_5: %t18, ^body: %next]
     %p = index i32 %x, %i
     %v = load i32 %p
     %o = index i32 %d, %i
@@ -368,9 +396,9 @@ function @untyped(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
 function @three_stores(%a0 : ptr, %a1 : ptr, %a2 : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     %t1 = cmp gt i64 %n, 0
-    %t2 = cmp ugt i64 %n, 4
+    %t2 = cmp uge i64 %n, 4
     %t3 = binary and i64 %t1, %t2
-    branch %t3, ^loop_preheader_1, ^loop_preheader_4
+    branch %t3, ^loop_preheader_1, ^loop_preheader_5
 
   block ^loop_preheader_1:
     %t4 = binary mul i64 %n, 4
@@ -401,7 +429,7 @@ function @three_stores(%a0 : ptr, %a1 : ptr, %a2 : ptr, %x : ptr, %n : i64) -> v
     %t29 = cmp ule ptr %t15, %a1
     %t30 = binary or i64 %t28, %t29
     %t31 = binary and i64 %t27, %t30
-    branch %t31, ^loop_preheader_2, ^loop_preheader_4
+    branch %t31, ^loop_preheader_2, ^loop_preheader_5
 
   block ^loop_preheader_2:
     %t32 = binary add i64 %n, -4
@@ -417,16 +445,20 @@ function @three_stores(%a0 : ptr, %a1 : ptr, %a2 : ptr, %x : ptr, %n : i64) -> v
     store v128 %t35, %t37
     %t38 = index i32 %a2, %t33
     store v128 %t35, %t38
-    %t39 = binary add i64 %t33, 4
-    %t40 = cmp lt i64 %t39, %t32
-    branch %t40, ^wide_loop_3, ^loop_preheader_4
+    %t39 = binary add nowrap i64 %t33, 4
+    %t40 = cmp le i64 %t39, %t32
+    branch %t40, ^wide_loop_3, ^loop_exit_4
 
-  block ^loop_preheader_4:
-    %t41 = phi i64 [^entry: 0, ^loop_preheader_1: 0, ^wide_loop_3: %t39]
+  block ^loop_exit_4:
+    %t41 = cmp lt i64 %t39, %n
+    branch %t41, ^loop_preheader_5, ^done
+
+  block ^loop_preheader_5:
+    %t42 = phi i64 [^entry: 0, ^loop_preheader_1: 0, ^loop_exit_4: %t39]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^loop_preheader_4: %t41, ^body: %next]
+    %i = phi i64 [^loop_preheader_5: %t42, ^body: %next]
     %p = index i32 %x, %i
     %v = load i32 %p
     %o0 = index i32 %a0, %i
@@ -485,9 +517,9 @@ function @close_stores(%a : ptr, %n : i64) -> void [no_inline=yes] {
 function @one_typed(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     %t1 = cmp gt i64 %n, 0
-    %t2 = cmp ugt i64 %n, 4
+    %t2 = cmp uge i64 %n, 4
     %t3 = binary and i64 %t1, %t2
-    branch %t3, ^loop_preheader_1, ^loop_preheader_4
+    branch %t3, ^loop_preheader_1, ^loop_preheader_5
 
   block ^loop_preheader_1:
     %t4 = binary mul i64 %n, 4
@@ -496,7 +528,7 @@ function @one_typed(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t7 = cmp ule ptr %t5, %d
     %t8 = cmp ule ptr %t6, %x
     %t9 = binary or i64 %t7, %t8
-    branch %t9, ^loop_preheader_2, ^loop_preheader_4
+    branch %t9, ^loop_preheader_2, ^loop_preheader_5
 
   block ^loop_preheader_2:
     %t10 = binary add i64 %n, -4
@@ -509,16 +541,20 @@ function @one_typed(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
     %t14 = vector cvttps2dq %t13
     %t15 = index i32 %d, %t11
     store v128 %t14, %t15
-    %t16 = binary add i64 %t11, 4
-    %t17 = cmp lt i64 %t16, %t10
-    branch %t17, ^wide_loop_3, ^loop_preheader_4
+    %t16 = binary add nowrap i64 %t11, 4
+    %t17 = cmp le i64 %t16, %t10
+    branch %t17, ^wide_loop_3, ^loop_exit_4
 
-  block ^loop_preheader_4:
-    %t18 = phi i64 [^entry: 0, ^loop_preheader_1: 0, ^wide_loop_3: %t16]
+  block ^loop_exit_4:
+    %t18 = cmp lt i64 %t16, %n
+    branch %t18, ^loop_preheader_5, ^done
+
+  block ^loop_preheader_5:
+    %t19 = phi i64 [^entry: 0, ^loop_preheader_1: 0, ^loop_exit_4: %t16]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^loop_preheader_4: %t18, ^body: %next]
+    %i = phi i64 [^loop_preheader_5: %t19, ^body: %next]
     %p = index f32 %x, %i
     %v = load f32 %p
     %r = convert fptosi i32 f32 %v
