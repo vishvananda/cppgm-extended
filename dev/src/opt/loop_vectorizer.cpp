@@ -1134,7 +1134,7 @@ bool LoopVectorizer::lanes_pay_for_order() const
 	for (InstId id : code_)
 	{
 		const Instruction& inst = body_.instructions[id];
-		if (!inst.type.is_float() || !in_wide_[inst.result])
+		if (!inst.type.is_float() || inst.result == kNoId || !in_wide_[inst.result])
 			continue;
 		const BinaryOp operation = static_cast<BinaryOp>(inst.sub);
 		if ((inst.op == Opcode::Binary && (operation == BinaryOp::Mul || operation == BinaryOp::Div)) ||

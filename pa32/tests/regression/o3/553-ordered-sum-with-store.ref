@@ -1,0 +1,25 @@
+function @sum_and_store(%x : ptr, %d : ptr, %n : i64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %more = cmp gt i64 %n, 0
+    branch %more, ^latch, ^exit
+
+  block ^latch:
+    %t2 = phi f64 [^latch: %sum, ^entry: 0]
+    %t3 = phi i64 [^latch: %next, ^entry: 0]
+    %at = index f64 %x, %t3
+    %v = load typed f64 %at
+    %to = index f64 %d, %t3
+    store typed f64 0.25, %to
+    %sum = binary add f64 %t2, %v
+    %next = binary add i64 %t3, 1
+    %t9 = cmp lt i64 %next, %n
+    branch %t9, ^latch, ^exit
+
+  block ^exit:
+    %t10 = phi f64 [^entry: 0, ^latch: %sum]
+    return f64 %t10
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}
