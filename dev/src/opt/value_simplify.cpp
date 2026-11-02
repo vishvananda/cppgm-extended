@@ -2139,11 +2139,11 @@ ExprKey Simplifier::expression_key(const Instruction& inst)
 bool Simplifier::reuse_quotient(BlockId block, InstId& prev, InstId id)
 {
 	const uint32_t kReach = 8;
-	const Instruction remainder = body_.instructions[id];
-	if (remainder.op != Opcode::Binary || remainder.type.kind() == TypeKind::I128 || remainder.result == kNoId ||
-		(static_cast<BinaryOp>(remainder.sub) != BinaryOp::Mod &&
-			static_cast<BinaryOp>(remainder.sub) != BinaryOp::UMod))
+	const Instruction& seen = body_.instructions[id];
+	if (seen.op != Opcode::Binary || seen.type.kind() == TypeKind::I128 || seen.result == kNoId ||
+		(static_cast<BinaryOp>(seen.sub) != BinaryOp::Mod && static_cast<BinaryOp>(seen.sub) != BinaryOp::UMod))
 		return false;
+	const Instruction remainder = seen;
 	Instruction quotient = make_instruction(Opcode::Binary, remainder.type);
 	quotient.sub = static_cast<uint8_t>(
 		static_cast<BinaryOp>(remainder.sub) == BinaryOp::Mod ? BinaryOp::Div : BinaryOp::UDiv);

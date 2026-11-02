@@ -320,6 +320,21 @@ void simplify_function(Program& program, SymbolId symbol, OptimizerStats& stats,
 // sizes would see): i128 values as halves, then selects, each round's
 // cleanup dropping the arms and merging what the next round may convert,
 // then their compares split beside them.
+// A loop is a back edge of the reverse postorder. Without one, the loop passes
+// each build a forest to find nothing.
+bool has_loop(FunctionContext& context)
+{
+	Cfg& cfg = context.ensure_cfg_light();
+	std::vector<uint32_t> order(cfg.block_count, 0);
+	for (uint32_t r = 0; r < cfg.rpo.size(); ++r)
+		order[cfg.rpo[r]] = r;
+	for (BlockId b : cfg.rpo)
+		for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1]; ++k)
+			if (order[cfg.succs[k]] <= order[b])
+				return true;
+	return false;
+}
+
 bool calls_read_only(const FunctionContext& context)
 {
 	const Program& program = context.program;
@@ -334,6 +349,89 @@ bool calls_read_only(const FunctionContext& context)
 				return true;
 		}
 	return false;
+}
+
+// The loop passes of the final pass.
+bool finish_loops(FunctionContext& context, int level)
+{
+	bool changed = false;
+	changed = RUN_PASS(hoist_loop_loads) || changed;
+	changed = RUN_PASS(hoist_loop_invariants) || changed;
+	changed = RUN_PASS(version_fill_loops) || changed;
+	// (Last: the counters' facts hold for the instructions as they stand.)
+	changed = RUN_PASS(mark_no_wrap_counters) || changed;
+	// O3: rotated loops, what each pass loads anew and what the latch just
+	// read meeting at the new header, where the preheader may load it once.
+	if (level >= 3 && RUN_PASS(merge_loop_entries))
+		RUN_PASS(simplify_values);
+	if (level >= 3 && RUN_PASS(rotate_loops))
+	{
+		RUN_PASS(promote_slots);
+		// (A guard of literals goes.)
+		RUN_PASS(simplify_values);
+		RUN_PASS(cleanup_cfg);
+		RUN_PASS(forward_memory);
+		RUN_PASS(remove_dead_code);
+		RUN_PASS(hoist_loop_loads);
+		RUN_PASS(hoist_loop_invariants);
+		changed = true;
+	}
+	// O3: a loop per value of a test it need not repeat, then what each copy's
+	// straight code leaves.
+	if (level >= 3 && RUN_PASS(unswitch_loops))
+	{
+		RUN_PASS(promote_slots);
+		RUN_PASS(cleanup_cfg);
+		RUN_PASS(simplify_values);
+		RUN_PASS(forward_memory);
+		RUN_PASS(remove_dead_code);
+		RUN_PASS(cleanup_cfg);
+		RUN_PASS(hoist_loop_invariants);
+		RUN_PASS(hoist_loop_loads);
+		RUN_PASS(hoist_loop_invariants);
+		changed = true;
+	}
+	// O3: what each pass of a loop stores stays in a register; the exit's
+	// store then reaches the loop around it.
+	if (level >= 3 && RUN_PASS(promote_loop_memory))
+	{
+		RUN_PASS(promote_slots);
+		RUN_PASS(forward_memory);
+		RUN_PASS(remove_dead_code);
+		RUN_PASS(cleanup_cfg);
+		changed = true;
+	}
+	// O3: swapped nests, then what their new inner loops leave behind.
+	if (level >= 3 && RUN_PASS(interchange_loops))
+	{
+		// (A load's address may be arithmetic the swap made invariant.)
+		RUN_PASS(hoist_loop_invariants);
+		RUN_PASS(hoist_loop_loads);
+		RUN_PASS(hoist_loop_invariants);
+		changed = true;
+	}
+	// O3: loops in lanes, then what their guards and exits leave.
+	if (level >= 3 && RUN_PASS(vectorize_loops))
+	{
+		RUN_PASS(simplify_values);
+		RUN_PASS(cleanup_cfg);
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
+	// O2: products of a counter, after everything that reads a loop's shape.
+	if (RUN_PASS(reduce_strength))
+	{
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
+	if (RUN_PASS(widen_counters))
+	{
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
+	if (RUN_PASS(sink_counter_steps))
+		changed = true;
+	return changed;
 }
 
 void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, const OptimizerOptions& options,
@@ -364,82 +462,8 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		RUN_PASS(cleanup_cfg);
 		changed = true;
 	}
-	changed = RUN_PASS(hoist_loop_loads) || changed;
-	changed = RUN_PASS(hoist_loop_invariants) || changed;
-	changed = RUN_PASS(version_fill_loops) || changed;
-	// (Last: the counters' facts hold for the instructions as they stand.)
-	changed = RUN_PASS(mark_no_wrap_counters) || changed;
-	// O3: rotated loops, what each pass loads anew and what the latch just
-	// read meeting at the new header, where the preheader may load it once.
-	if (options.level >= 3 && RUN_PASS(merge_loop_entries))
-		RUN_PASS(simplify_values);
-	if (options.level >= 3 && RUN_PASS(rotate_loops))
-	{
-		RUN_PASS(promote_slots);
-		// (A guard of literals goes.)
-		RUN_PASS(simplify_values);
-		RUN_PASS(cleanup_cfg);
-		RUN_PASS(forward_memory);
-		RUN_PASS(remove_dead_code);
-		RUN_PASS(hoist_loop_loads);
-		RUN_PASS(hoist_loop_invariants);
-		changed = true;
-	}
-	// O3: a loop per value of a test it need not repeat, then what each copy's
-	// straight code leaves.
-	if (options.level >= 3 && RUN_PASS(unswitch_loops))
-	{
-		RUN_PASS(promote_slots);
-		RUN_PASS(cleanup_cfg);
-		RUN_PASS(simplify_values);
-		RUN_PASS(forward_memory);
-		RUN_PASS(remove_dead_code);
-		RUN_PASS(cleanup_cfg);
-		RUN_PASS(hoist_loop_invariants);
-		RUN_PASS(hoist_loop_loads);
-		RUN_PASS(hoist_loop_invariants);
-		changed = true;
-	}
-	// O3: what each pass of a loop stores stays in a register; the exit's
-	// store then reaches the loop around it.
-	if (options.level >= 3 && RUN_PASS(promote_loop_memory))
-	{
-		RUN_PASS(promote_slots);
-		RUN_PASS(forward_memory);
-		RUN_PASS(remove_dead_code);
-		RUN_PASS(cleanup_cfg);
-		changed = true;
-	}
-	// O3: swapped nests, then what their new inner loops leave behind.
-	if (options.level >= 3 && RUN_PASS(interchange_loops))
-	{
-		// (A load's address may be arithmetic the swap made invariant.)
-		RUN_PASS(hoist_loop_invariants);
-		RUN_PASS(hoist_loop_loads);
-		RUN_PASS(hoist_loop_invariants);
-		changed = true;
-	}
-	// O3: loops in lanes, then what their guards and exits leave.
-	if (options.level >= 3 && RUN_PASS(vectorize_loops))
-	{
-		RUN_PASS(simplify_values);
-		RUN_PASS(cleanup_cfg);
-		RUN_PASS(remove_dead_code);
-		changed = true;
-	}
-	// O2: products of a counter, after everything that reads a loop's shape.
-	if (RUN_PASS(reduce_strength))
-	{
-		RUN_PASS(remove_dead_code);
-		changed = true;
-	}
-	if (RUN_PASS(widen_counters))
-	{
-		RUN_PASS(remove_dead_code);
-		changed = true;
-	}
-	if (RUN_PASS(sink_counter_steps))
-		changed = true;
+	if (has_loop(context))
+		changed = finish_loops(context, options.level) || changed;
 	if (!changed)
 		return;
 	RUN_PASS(split_branch_compares);
@@ -579,6 +603,7 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 	count_program(program, stats.instructions_in, stats.blocks_in);
 	if (options.level > 0)
 	{
+		find_allocation_functions(program);
 		std::vector<uint32_t> original(program.symbols.size(), 0);
 		for (SymbolId s = 0; s < program.symbols.size(); ++s)
 		{

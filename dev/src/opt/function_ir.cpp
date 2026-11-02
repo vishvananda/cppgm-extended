@@ -75,17 +75,25 @@ std::vector<uint8_t> escaped_slots(const FunctionBody& body, bool any_index)
 	return escaped;
 }
 
+void find_allocation_functions(Program& program)
+{
+	program.allocation_functions.assign(program.symbols.size(), 0);
+	for (SymbolId s = 0; s < program.symbols.size(); ++s)
+	{
+		const Symbol& symbol = program.symbols[s];
+		if (symbol.kind != SymbolKind::FunctionDeclaration)
+			continue;
+		const char* spelling = program.spelling(symbol.metadata.object != 0 ? symbol.metadata.object : symbol.name);
+		program.allocation_functions[s] = std::strcmp(spelling, "malloc") == 0 ||
+			std::strcmp(spelling, "calloc") == 0 || std::strcmp(spelling, "cppgm_builtin_operator_new") == 0 ||
+			std::strcmp(spelling, "cppgm_builtin_operator_new_array") == 0;
+	}
+}
+
 bool allocation_call(const Program& program, const Instruction& inst)
 {
-	if (inst.op != Opcode::Call || !inst.ops[0].is(ValueKind::Symbol) || inst.result == kNoId)
-		return false;
-	const Symbol& callee = program.symbols[inst.ops[0].index];
-	if (callee.kind != SymbolKind::FunctionDeclaration)
-		return false;
-	const char* spelling = program.spelling(callee.metadata.object != 0 ? callee.metadata.object : callee.name);
-	return std::strcmp(spelling, "malloc") == 0 || std::strcmp(spelling, "calloc") == 0 ||
-		std::strcmp(spelling, "cppgm_builtin_operator_new") == 0 ||
-		std::strcmp(spelling, "cppgm_builtin_operator_new_array") == 0;
+	return inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol) && inst.result != kNoId &&
+		inst.ops[0].index < program.allocation_functions.size() && program.allocation_functions[inst.ops[0].index] != 0;
 }
 
 namespace {

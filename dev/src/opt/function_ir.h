@@ -99,6 +99,7 @@ bool may_unwind(const lowir::Program& program, const lowir::Instruction& inst);
 
 // A call of malloc, calloc or the runtime's `operator new`, declared and not
 // defined here: its result is storage no earlier pointer reaches.
+void find_allocation_functions(lowir::Program& program);
 bool allocation_call(const lowir::Program& program, const lowir::Instruction& inst);
 // eh_* instructions and throw, resume, exception and exception_selector.
 inline bool is_eh_instruction(lowir::Opcode op)

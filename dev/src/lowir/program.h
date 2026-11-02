@@ -285,6 +285,9 @@ struct Program
 	// Per symbol: a defined function the optimizer proved writes no memory
 	// its callers can see (empty until then, and never written out).
 	std::vector<uint8_t> read_only_functions;
+	// Per symbol: a declaration of an allocation function; empty until the
+	// optimizer looks the names up once.
+	std::vector<uint8_t> allocation_functions;
 	// The boundary of a function referenced before it is declared or
 	// defined (a producer streaming definitions to a back end states it:
 	// the declaration or definition that follows has the same).
