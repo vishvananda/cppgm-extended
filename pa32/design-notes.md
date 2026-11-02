@@ -458,6 +458,14 @@ exit writes nothing a run of the loop would not have written. The location is
 loaded in the preheader and stored on each exit edge. The stores this leaves
 may then leave the loop around it.
 
+Possible bits: the simplifier tracks which bits a value can have through masks,
+shifts, extensions, truncations and remainders by a literal. A value below a
+positive literal divisor is its own remainder, and its quotient is zero. A
+compare against a positive literal above every possible value folds. A signed
+division or remainder of a value that cannot be negative, by a power of two, is
+a shift or a mask. An extension of a truncation that lost no bits is the
+original value.
+
 Step sinking: in a one-block loop, a counter's step that runs before the last
 read of its phi holds both values at once, and the back edge must copy one to
 the other. The step moves after that read, with the compare only the branch

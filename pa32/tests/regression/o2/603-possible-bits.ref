@@ -1,0 +1,59 @@
+function @quotient_of_mask(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    return i64 0
+}
+function @remainder_of_mask(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %m = binary and i64 %x, 65535
+    return i64 %m
+}
+function @divisor_within_the_mask(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %m = binary and i64 %x, 65535
+    %r = binary mod i64 %m, 60000
+    return i64 %r
+}
+function @negative_divisor(%x : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %m = binary and i32 %x, 15
+    %r = binary div i32 %m, -100
+    return i32 %r
+}
+function @sign_may_be_set(%x : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %w = convert sext i64 i32 %x
+    %m = binary and i64 %w, 4294967295
+    %q = binary div i64 %w, 8
+    %r = binary add i64 %m, %q
+    return i64 %r
+}
+function @halve_nonnegative(%x : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %m = binary and i32 %x, 1023
+    %q = binary ushr i32 %m, 3
+    return i32 %q
+}
+function @rest_of_nonnegative(%x : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %r = binary and i32 %x, 7
+    return i32 %r
+}
+function @remainder_bound(%x : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    return i32 1
+}
+function @signed_remainder_unbounded(%x : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %m = binary mod i32 %x, 100
+    %c = cmp ult i32 %m, 128
+    %w = convert zext i32 i1 %c
+    return i32 %w
+}
+function @compare_above_mask(%x : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    return i64 0
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

@@ -191,6 +191,7 @@ private:
 	bool reassociate(Instruction& inst);
 	uint64_t possible_bits(Value v, Type type, unsigned depth = 0);
 	bool mask_or(Instruction& inst);
+	bool unsigned_division(Instruction& inst);
 	void canonicalize(Instruction& inst);
 	bool narrow_compare(Instruction& inst);
 	bool exact_compare(Instruction& inst);
@@ -822,6 +823,15 @@ bool Simplifier::binary_identity(Instruction& inst, Value& out)
 				return true;
 			}
 		}
+		// A value below the divisor is the remainder, and the quotient zero.
+		if ((op == BinaryOp::Div || op == BinaryOp::UDiv || op == BinaryOp::Mod || op == BinaryOp::UMod) && integral &&
+			bits.high == 0 && type.kind() != TypeKind::I128 && (bits.low >> (8 * storage_bytes(type) - 1)) == 0 &&
+			possible_bits(x, type) < bits.low)
+		{
+			Literal none = { 0, 0 };
+			out = op == BinaryOp::Div || op == BinaryOp::UDiv ? literal(integer_constant(type, none)) : x;
+			return true;
+		}
 		// A logical shift right of a zero-extended value by at least the
 		// width it was extended from leaves zero.
 		const Instruction* ext = producer(x);
@@ -1000,6 +1010,15 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 			(pred == ComparePredicate::Ne || pred == ComparePredicate::Eq))
 		{
 			out = literal(truth_constant(pred == ComparePredicate::Ne));
+			return true;
+		}
+		// A positive literal above every value x can have.
+		Literal limit;
+		if (type.kind() != TypeKind::I128 && constant(y, type, cy) && integer_bits(type, cy, limit) &&
+			limit.high == 0 && (limit.low >> (8 * storage_bytes(type) - 1)) == 0 && possible_bits(x, type) < limit.low)
+		{
+			out = literal(truth_constant(pred == ComparePredicate::Ne || pred == ComparePredicate::Lt ||
+				pred == ComparePredicate::Le || pred == ComparePredicate::Ult || pred == ComparePredicate::Ule));
 			return true;
 		}
 		// Either orientation: (x - 1) pred x, or x pred (x - 1).
@@ -1195,6 +1214,20 @@ bool Simplifier::convert_identity(Instruction& inst, Value& out)
 		out = inst.ops[0];
 		return true;
 	}
+	// An extension of a truncation that kept every bit the value can have.
+	if (op == ConvertOp::SExt || op == ConvertOp::ZExt)
+	{
+		const Instruction* cut = producer(inst.ops[0]);
+		const Type from = convert_source_type(inst);
+		if (cut != nullptr && cut->op == Opcode::Convert && static_cast<ConvertOp>(cut->sub) == ConvertOp::Trunc &&
+			inst.type.is_integer() && inst.type.kind() != TypeKind::I128 && from.is_integer() &&
+			cut->ops[0].is(ValueKind::Temp) && body_.temps[cut->ops[0].index].type == inst.type &&
+			(possible_bits(cut->ops[0], inst.type) >> (8 * storage_bytes(from) - 1)) == 0)
+		{
+			out = cut->ops[0];
+			return true;
+		}
+	}
 	// A truncation back to the type an extension widened.
 	const Instruction* def = op == ConvertOp::Trunc ? producer(inst.ops[0]) : nullptr;
 	if (def != nullptr && def->op == Opcode::Convert &&
@@ -1298,14 +1331,18 @@ uint64_t Simplifier::possible_bits(Value v, Type type, unsigned depth)
 	if (constant(v, type, c))
 		return integer_bits(type, c, bits) ? bits.low & all : all;
 	const Instruction* def = producer(v);
-	if (def == nullptr || depth >= 4 || !type.is_integer() || type.kind() == TypeKind::I128 || def->type != type)
+	if (def == nullptr || depth >= 6 || !type.is_integer() || type.kind() == TypeKind::I128 || def->type != type)
 		return all;
-	if (def->op == Opcode::Convert && static_cast<ConvertOp>(def->sub) == ConvertOp::ZExt)
+	if (def->op == Opcode::Convert)
 	{
+		const ConvertOp convert = static_cast<ConvertOp>(def->sub);
 		const Type from = convert_source_type(*def);
-		return from.is_integer() && from.kind() != TypeKind::I128 && storage_bytes(from) < storage_bytes(type)
-			? possible_bits(def->ops[0], from, depth + 1)
-			: all;
+		if ((convert != ConvertOp::ZExt && convert != ConvertOp::SExt && convert != ConvertOp::Trunc) ||
+			!from.is_integer() || from.kind() == TypeKind::I128)
+			return all;
+		const uint64_t bits_from = possible_bits(def->ops[0], from, depth + 1);
+		const uint64_t sign = static_cast<uint64_t>(1) << (8 * storage_bytes(from) - 1);
+		return convert == ConvertOp::SExt && (bits_from & sign) != 0 ? all : bits_from & all;
 	}
 	if (def->op != Opcode::Binary)
 		return all;
@@ -1320,7 +1357,43 @@ uint64_t Simplifier::possible_bits(Value v, Type type, unsigned depth)
 		const uint64_t from = possible_bits(def->ops[0], type, depth + 1);
 		return (op == BinaryOp::Shl ? from << bits.low : from >> bits.low) & all;
 	}
+	// A remainder below a positive divisor: of an unsigned operation, or a
+	// value that cannot be negative.
+	if ((op == BinaryOp::UMod || op == BinaryOp::Mod) && constant(def->ops[1], type, c) &&
+		integer_bits(type, c, bits) && bits.high == 0 && bits.low != 0 && (bits.low & (all ^ (all >> 1))) == 0 &&
+		(op == BinaryOp::UMod || (possible_bits(def->ops[0], type, depth + 1) & (all ^ (all >> 1))) == 0))
+	{
+		uint64_t mask = bits.low - 1;
+		for (unsigned shift = 1; shift < 64; shift *= 2)
+			mask |= mask >> shift;
+		return mask;
+	}
 	return all;
+}
+
+// A signed division or remainder of a value that cannot be negative, by a
+// power of two: a shift or a mask, with no fix-up for negative values.
+bool Simplifier::unsigned_division(Instruction& inst)
+{
+	if (inst.op != Opcode::Binary || !inst.type.is_integer() || inst.type.kind() == TypeKind::I128)
+		return false;
+	const BinaryOp op = static_cast<BinaryOp>(inst.sub);
+	Constant c;
+	Literal bits;
+	if ((op != BinaryOp::Div && op != BinaryOp::Mod) || !constant(inst.ops[1], inst.type, c) ||
+		!integer_bits(inst.type, c, bits) || bits.high != 0 || bits.low < 2 || (bits.low & (bits.low - 1)) != 0)
+		return false;
+	const uint64_t sign = static_cast<uint64_t>(1) << (8 * storage_bytes(inst.type) - 1);
+	if (bits.low >= sign || (possible_bits(inst.ops[0], inst.type) & sign) != 0)
+		return false;
+	unsigned shift = 0;
+	while ((static_cast<uint64_t>(1) << shift) != bits.low)
+		++shift;
+	Literal operand = { op == BinaryOp::Div ? shift : bits.low - 1, 0 };
+	inst.sub = static_cast<uint8_t>(op == BinaryOp::Div ? BinaryOp::UShr : BinaryOp::And);
+	inst.ops[1] = integer_value(body_, operand);
+	inst.flags = static_cast<decltype(inst.flags)>(inst.flags & ~(IF_EXACT | IF_NO_WRAP));
+	return true;
 }
 
 // `and (or a, b), c` where c keeps none of a's possible bits is
@@ -2071,8 +2144,9 @@ void Simplifier::process_block(BlockId block)
 		if (inst.op == Opcode::Branch)
 			simplify_branch(inst);
 		canonicalize(inst);
-		if (reassociate(inst) || narrow_truncation(inst) || mask_or(inst) || merge_index(inst) ||
-			narrow_compare(inst) || exact_compare(inst) || bulk_call(inst) || readonly_table_address(inst))
+		if (reassociate(inst) || narrow_truncation(inst) || mask_or(inst) || unsigned_division(inst) ||
+			merge_index(inst) || narrow_compare(inst) || exact_compare(inst) || bulk_call(inst) ||
+			readonly_table_address(inst))
 			changed_ = true;
 		Value value;
 		if (inst.result != kNoId && (fold(inst, value) || identity(inst, value)))
