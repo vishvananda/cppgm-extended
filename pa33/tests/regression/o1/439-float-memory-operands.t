@@ -1,6 +1,7 @@
 # A float load whose only reader comes next is that reader's memory operand: an
 # add or multiply on either side, the right of a subtract or divide, and the
-# operand a compare reads second. On the left of a subtract, the load stays.
+# operand a compare reads second. On the left of a subtract or divide, the load
+# goes straight into the result's register.
 function @add_left(%p : ptr, %x : f64) -> f64 [no_inline=yes] {
   block ^entry:
     %v = load typed f64 %p

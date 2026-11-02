@@ -47,8 +47,7 @@ function @sub_left
     epilogues duplicated
 
   block ^entry
-    fmov.f64 xmm1, [rdi]
-    fsub.f64 xmm1, xmm1, xmm0
+    fsub.f64 xmm1, [rdi], xmm0
     ret xmm1
 
 function @divide

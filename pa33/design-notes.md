@@ -110,7 +110,8 @@ that paid there in the course solution:
 - A float load read once by the next `addsd`, `mulsd`, `divsd` or `ucomisd` is that
   instruction's memory operand. The load's register and its `movsd` go. Only the
   operand read second may be memory, so check the compare's operand swap. Unlike
-  packed instructions, the scalar forms take unaligned memory.
+  packed instructions, the scalar forms take unaligned memory. A load on the
+  left of `subsd` or `divsd` goes straight into the result's register.
 - A call through a register that a load just filled can read the target from
   memory: `call *(%rax)`. The register must be caller-saved and carry no argument;
   only moves into other registers may separate the two.

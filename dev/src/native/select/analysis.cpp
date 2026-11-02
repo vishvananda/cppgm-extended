@@ -1990,8 +1990,9 @@ void FunctionSelector::find_folds()
 		// reference's shapes.)
 		if (floating)
 		{
-			// (The operand `ucomis` or the arithmetic reads second, where
-			// memory is allowed; compare_flags swaps these predicates.)
+			// (The operand `ucomis` reads second, where memory is allowed;
+			// compare_flags swaps these predicates. The arithmetic loads a
+			// first operand into the result's register.)
 			const lowir::ComparePredicate pred = static_cast<lowir::ComparePredicate>(user.sub);
 			const bool swapped = pred == lowir::ComparePredicate::Lt || pred == lowir::ComparePredicate::Le ||
 				pred == lowir::ComparePredicate::Ugt || pred == lowir::ComparePredicate::Uge;
@@ -1999,8 +2000,8 @@ void FunctionSelector::find_folds()
 			if (user.op == Opcode::Compare)
 				ok = (swapped ? left : right) && !sunk_compare(user_id);
 			else if (user.op == Opcode::Binary)
-				ok = op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Mul ||
-					((op == lowir::BinaryOp::Sub || op == lowir::BinaryOp::Div) && right);
+				ok = op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Mul || op == lowir::BinaryOp::Sub ||
+					op == lowir::BinaryOp::Div;
 		}
 		else if (user.op == Opcode::Compare)
 			ok = (k != TypeKind::I1 || level_ >= 1) && !sunk_compare(user_id);
