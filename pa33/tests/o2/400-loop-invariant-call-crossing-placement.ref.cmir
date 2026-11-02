@@ -63,5 +63,5 @@ function @main
     setne <gpr0>
     movzx <gpr0>, <gpr0>
     call @float_loop [args=(), unwind=no]
-    or <gpr0>, rax
-    ret <gpr0>
+    or rax, <gpr0>
+    ret rax

@@ -106,5 +106,5 @@ function @main
     movzx rax, rax
     or <gpr0>, rax
     call @loop_overlap [args=()]
-    or <gpr0>, rax
-    ret <gpr0>
+    or rax, <gpr0>
+    ret rax

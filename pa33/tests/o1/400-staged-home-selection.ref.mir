@@ -184,8 +184,9 @@ function @load_with_dead_address
     store.i64 [rbp-56], r8
 
   block ^done
-    add r8, [rbp-48]
-    ret r8
+    mov rax, r8
+    add rax, [rbp-48]
+    ret rax
 
   block ^right
     load.i64 r8, [rbp-8]

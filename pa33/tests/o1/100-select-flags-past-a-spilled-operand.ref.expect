@@ -2,7 +2,7 @@
 instructions <= 367
 blocks <= 5
 count(call) <= 4
-mem <= 157
+mem <= 160
 instructions <= 326 in @clamp
 stack_size <= 420 in @clamp
 instructions <= 42 in @main

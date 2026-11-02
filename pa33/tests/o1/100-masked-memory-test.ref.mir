@@ -216,9 +216,9 @@ function @main
     preserve rbx r12 r13 r14 r15
     slot $data -> [rbp-8] : i64
     temp %bad_full -> [rbp-16] : i64
-    temp %e -> [rbp-24] : i32
+    temp %w -> [rbp-24] : i32
     temp %f -> [rbp-32] : i32
-    temp %zero_byte -> [rbp-40] : i32
+    temp %e -> [rbp-40] : i32
 
   block ^entry
     store.i64 [rbp-8], 4295000208
@@ -245,8 +245,8 @@ function @main
     store.i64 [rbp-16], r10
     lea rdi, [rbp-8]
     call @before_store [args=(rdi)]
-    mov r10, rax
-    store.i32 [rbp-24], r10
+    store.i32 [rbp-24], r15
+    mov r15, rax
     store.i32 [rbp-8], 32912
     lea rdi, [rbp-8]
     call @before_call [args=(rdi)]
@@ -254,29 +254,23 @@ function @main
     store.i32 [rbp-32], r10
     lea rdi, [rbp-8]
     call @byte_test [args=(rdi)]
-    mov r10, rax
-    store.i32 [rbp-40], r10
+    store.i32 [rbp-40], r15
+    sext.i32 r15, rax
     lea rdi, [rbp-8]
     call @half_test [args=(rdi)]
-    or.i32 rax, [rbp-40]
     sext.i32 rax
-    add rbx, r12
-    sext.i32 rbx
-    add r13, r14
-    sext.i32 r13
-    load.i32 r8, [rbp-24]
+    or r15, rax
+    add.i32 rbx, r12
+    add.i32 r13, r14
+    load.i32 r8, [rbp-40]
     add.i32 r8, [rbp-32]
-    sext.i32 r8
-    add rbx, r13
-    sext.i32 rbx
-    add rbx, r8
-    sext.i32 rbx
-    add rbx, r15
-    sext.i32 rbx
+    add.i32 rbx, r13
+    add.i32 rbx, r8
+    add.i32 rbx, [rbp-24]
     cmp.i32 rbx, 7
     setne rbx
     movzx rbx, rbx
     load.i64 r11, [rbp-16]
     or rbx, r11
-    or rbx, rax
+    or rbx, r15
     ret rbx

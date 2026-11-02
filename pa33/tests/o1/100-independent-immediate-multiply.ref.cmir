@@ -20,9 +20,9 @@ function @narrow_memory
     epilogues duplicated
 
   block ^entry
-    load.i32 r8, [rdi]
-    imul r8, 37
-    ret r8
+    load.i32 rax, [rdi]
+    imul rax, 37
+    ret rax
 
 function @imul_register
   abi
@@ -35,9 +35,9 @@ function @imul_register
     epilogues duplicated
 
   block ^entry
-    imul r8, rdi, 37
-    sub r8, rdi
-    ret r8
+    imul rax, rdi, 37
+    sub rax, rdi
+    ret rax
 
 function @imul_memory
   abi
@@ -50,8 +50,8 @@ function @imul_memory
     epilogues duplicated
 
   block ^entry
-    imul r8, [rdi], -37
-    ret r8
+    imul rax, [rdi], -37
+    ret rax
 
 function @imul_word
   abi
@@ -64,9 +64,9 @@ function @imul_word
     epilogues duplicated
 
   block ^entry
-    imul.u32 r8, rdi, 0x0000000000000000ffffffff9e3779b9
-    xor r8, rdi
-    ret r8
+    imul.u32 rax, rdi, 0x0000000000000000ffffffff9e3779b9
+    xor rax, rdi
+    ret rax
 
 function @volatile_multiply
   abi
@@ -79,9 +79,9 @@ function @volatile_multiply
     epilogues duplicated
 
   block ^entry
-    load.i64 rdi, [rdi]
-    imul rdi, -37
-    ret rdi
+    load.i64 rax, [rdi]
+    imul rax, -37
+    ret rax
 
 function @before_store
   abi
@@ -94,10 +94,10 @@ function @before_store
     epilogues duplicated
 
   block ^entry
-    load.i64 r8, [rdi]
+    load.i64 rax, [rdi]
     store.i64 [rdi], 0
-    imul r8, -37
-    ret r8
+    imul rax, -37
+    ret rax
 
 function @wide_constant
   abi
@@ -111,10 +111,10 @@ function @wide_constant
 
   block ^entry
     mov <gpr0>, 4294967297
-    mov r8, rdi
-    imul r8, <gpr0>
-    sub r8, rdi
-    ret r8
+    mov rax, rdi
+    imul rax, <gpr0>
+    sub rax, rdi
+    ret rax
 
 function @main
   abi
@@ -126,7 +126,7 @@ function @main
     epilogues duplicated
     preserve <gpr1> <gpr2> <gpr3> <gpr4> <gpr5>
     slot $cell -> [rbp-<off0>] : i64
-    temp %wide -> [rbp-<off1>] : i64
+    temp %bad_narrow -> [rbp-<off1>] : i64
     temp %zero -> [rbp-<off2>] : i64
 
   block ^entry
@@ -150,8 +150,8 @@ function @main
     mov <gpr5>, rax
     mov rdi, 3
     call @wide_constant [args=(rdi)]
-    mov <gpr6>, rax
-    store.i64 [rbp-<off1>], <gpr6>
+    store.i64 [rbp-<off1>], <gpr1>
+    mov <gpr1>, rax
     lea rdi, [rbp-<off0>]
     call @imul_memory [args=(rdi)]
     mov <gpr6>, rax
@@ -168,22 +168,22 @@ function @main
     setne rax
     movzx rax, rax
     or <gpr2>, <gpr3>
-    or <gpr2>, rax
+    or rax, <gpr2>
     cmp.i64 <gpr4>, 185
     setne <gpr4>
     movzx <gpr4>, <gpr4>
     cmp.i64 <gpr5>, 185
     setne <gpr5>
     movzx <gpr5>, <gpr5>
-    cmp.i64 [rbp-<off1>], 12884901888
+    cmp.i64 <gpr1>, 12884901888
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    cmp.i64 [rbp-<off2>], 0
     setne r8
     movzx r8, r8
-    cmp.i64 [rbp-<off2>], 0
-    setne r9
-    movzx r9, r9
     or <gpr4>, <gpr5>
-    or r8, r9
-    or <gpr4>, r8
-    or <gpr2>, <gpr4>
-    or <gpr2>, <gpr1>
-    ret <gpr2>
+    or <gpr1>, r8
+    or <gpr4>, <gpr1>
+    or rax, <gpr4>
+    or rax, [rbp-<off1>]
+    ret rax

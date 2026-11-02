@@ -134,8 +134,7 @@ function @main
     fmov.v128 xmm0, [rbp-16]
     vector.pzero xmm1
     call @sum [args=(xmm0,xmm1)]
-    add rbx, rax
-    sext.i32 rbx
+    add.i32 rbx, rax
     cmp.i32 rbx, 14
     je ^joined
 
@@ -155,8 +154,7 @@ function @main
     sext.i32 r8
     vector.toi32 r9, xmm0
     sext.i32 r9
-    add r8, r9
-    sext.i32 r8
+    add.i32 r8, r9
     cmp.i32 r8, 5
     jne ^bad_join
 
@@ -204,8 +202,7 @@ function @main
     vector.pzero xmm7
     call @ninth [args=(xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7), stack=16]
     add rsp, 16
-    sub rax, 7
-    sext.i32 rax
+    sub.i32 rax, 7
     or rbx, rax
     cmp.i32 rbx, 0
     je ^done

@@ -24,9 +24,9 @@ function @neighbors
     epilogues duplicated
 
   block ^entry
-    load.i64 r8, [rdi+rsi*8+8]
-    sub r8, [rdi+rsi*8-8]
-    ret r8
+    load.i64 rax, [rdi+rsi*8+8]
+    sub rax, [rdi+rsi*8-8]
+    ret rax
 
 function @byte_scaled
   abi
@@ -126,9 +126,9 @@ function @read_as_value
 
   block ^entry
     add rsi, 1
-    mov r8, rsi
-    add r8, [rdi+rsi*8]
-    ret r8
+    mov rax, rsi
+    add rax, [rdi+rsi*8]
+    ret rax
 
 function @scale_kept
   abi
@@ -341,5 +341,5 @@ function @main
     or rbx, [rbp-48]
     or rbx, [rbp-56]
     or rbx, [rbp-64]
-    or rbx, rax
-    ret rbx
+    or rax, rbx
+    ret rax

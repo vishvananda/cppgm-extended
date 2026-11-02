@@ -20,8 +20,8 @@ function @main
     lea rdi, [rbp-8]
     call @Box_int___Box [args=(rdi)]
     store.i32 [rbp-8], 7
-    load.i32 r8, [rbp-8]
-    lea rbx, [r8-7]
+    load.i32 rax, [rbp-8]
+    lea rbx, [rax-7]
     lea rdi, [rbp-8]
     call @Box_int____Box [args=(rdi)]
     ret rbx

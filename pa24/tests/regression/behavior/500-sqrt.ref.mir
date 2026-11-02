@@ -18,8 +18,8 @@ function @root64
 
   block ^entry
     fmov.f64 [rbp-8], xmm0
-    fmov.f64 xmm15, [rbp-8]
-    vector.sqrtsd xmm0, xmm0, xmm15
+    fmov.f64 xmm0, [rbp-8]
+    vector.sqrtsd xmm0, xmm0, xmm0
     ret xmm0
 
 function @root32
@@ -35,8 +35,8 @@ function @root32
 
   block ^entry
     fmov.f32 [rbp-8], xmm0
-    fmov.f32 xmm15, [rbp-8]
-    vector.sqrtss xmm0, xmm0, xmm15
+    fmov.f32 xmm0, [rbp-8]
+    vector.sqrtss xmm0, xmm0, xmm0
     ret xmm0
 
 function @main
@@ -69,12 +69,11 @@ function @main
     call @root64 [args=(xmm0)]
     fcmp.f64 xmm0, xmm0
     jp ^d
-    jne ^d
     jmp ^fail
 
   block ^d
-    fmov.f64 xmm15, 16.0
-    vector.sqrtsd xmm0, xmm0, xmm15
+    fmov.f64 xmm0, 16.0
+    vector.sqrtsd xmm0, xmm0, xmm0
     fcmp.f64 xmm0, 4.0
     jp ^fail
     je ^pass

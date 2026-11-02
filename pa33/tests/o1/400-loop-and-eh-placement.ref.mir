@@ -163,9 +163,9 @@ function @call_crossing_eh_value
     eh_pop
 
   block ^done
-    load.i64 r8, [rbp-8]
-    add r8, 1
-    ret r8
+    load.i64 rax, [rbp-8]
+    add rax, 1
+    ret rax
 
   block ^handler
     mov rax, 99
@@ -217,5 +217,5 @@ function @main
     or rbx, r12
     or r13, r14
     or rbx, r13
-    or rbx, rax
-    ret rbx
+    or rax, rbx
+    ret rax
