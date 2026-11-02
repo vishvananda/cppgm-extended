@@ -145,6 +145,16 @@ bool Program::memcpy_function(SymbolId symbol) const
 		(callee.metadata.linkage == ir_model::LLM_C && std::strcmp(spelling, "memcpy") == 0);
 }
 
+bool Program::memmove_function(SymbolId symbol) const
+{
+	const Symbol& callee = symbols[symbol];
+	if (!is_function_kind(callee.kind))
+		return false;
+	const char* spelling = this->spelling(callee.metadata.object != 0 ? callee.metadata.object : callee.name);
+	return (callee.metadata.object != 0 && std::strcmp(spelling, "cppgm_builtin_memmove") == 0) ||
+		(callee.metadata.linkage == ir_model::LLM_C && std::strcmp(spelling, "memmove") == 0);
+}
+
 bool Program::memcmp_function(SymbolId symbol) const
 {
 	const Symbol& callee = symbols[symbol];

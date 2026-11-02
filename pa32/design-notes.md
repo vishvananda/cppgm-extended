@@ -96,7 +96,11 @@ do is not run again until the body changes.
   thread-local globals are never read this way. `strlen` of such byte data
   with a known NUL becomes its length (at most 4,096 data items), and
   `memset(p, 0, n)` and `memcpy(d, s, n)` with a literal `n` of at most 128
-  become `zeroinit` and `copyobj`.
+  become `zeroinit` and `copyobj`; so does `memmove(d, s, n)` when its two
+  ranges are in different slots or globals, or `n` apart in one.
+- Two addresses at known offsets from one base (a local array's begin and
+  end) subtract to the difference of the offsets and compare as the
+  offsets do. `std::copy` of an array then moves a literal number of bytes.
 - At `-O2` and above an indirect call whose target is the `addr` of a
   function becomes direct, and `memcmp` of a literal length of at most 16,
   compared only with zero, becomes loads of one or two chunks of each side.

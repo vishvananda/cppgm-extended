@@ -322,6 +322,7 @@ struct Program
 	// compiler's builtin or the C library's (reserved names).
 	bool memset_function(SymbolId symbol) const;
 	bool memcpy_function(SymbolId symbol) const;
+	bool memmove_function(SymbolId symbol) const;
 	bool memcmp_function(SymbolId symbol) const; // C 7.24.4.1
 	// The C library math function `symbol` declares (not defines).
 	MathFunction math_function(SymbolId symbol) const;

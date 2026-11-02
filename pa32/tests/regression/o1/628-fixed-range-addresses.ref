@@ -1,0 +1,40 @@
+declare function @__builtin_memmove(%arg0 : ptr, %arg1 : ptr, %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memmove]
+
+function @span() -> i64 [no_inline=yes] {
+  block ^entry:
+    return i64 9
+}
+function @copied(%x : i64, %y : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %r = binary sub i64 %y, %x
+    return i64 %r
+}
+function @shift(%x : i64, %y : i64) -> i64 [no_inline=yes] {
+  slot $s : obj<16x8>
+
+  block ^entry:
+    %p = addr $s
+    store i64 %x, %p
+    %p1 = index i8 %p, 8
+    store i64 %y, %p1
+    %q = index i8 %p, 4
+    %m = call ptr @__builtin_memmove(%q, %p, 8)
+    %w = load i64 %p1
+    return i64 %w
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %n = call i64 @span()
+    %d = call i64 @copied(5, 7)
+    %w = call i64 @shift(4294967296, 0)
+    %bad_n = cmp ne i64 %n, 9
+    %bad_d = cmp ne i64 %d, 2
+    %bad_w = cmp ne i64 %w, 1
+    %a = convert zext i64 i1 %bad_n
+    %b = convert zext i64 i1 %bad_d
+    %c = convert zext i64 i1 %bad_w
+    %ab = binary or i64 %a, %b
+    %abc = binary or i64 %c, %ab
+    %status = convert trunc i32 i64 %abc
+    return i32 %status
+}

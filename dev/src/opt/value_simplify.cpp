@@ -1,4 +1,5 @@
 #include "lowir/builder.h"
+#include "opt/loops.h"
 #include "opt/passes.h"
 #include "opt/scalar_fold.h"
 #include "support/flat_map.h"
@@ -776,6 +777,20 @@ bool Simplifier::float_identity(Instruction& inst, Value& out)
 
 bool Simplifier::binary_identity(Instruction& inst, Value& out)
 {
+	// The difference of two addresses at known offsets from one root (an
+	// end pointer less its begin) is the difference of the offsets.
+	if (inst.type.is_pointer())
+	{
+		if (static_cast<BinaryOp>(inst.sub) != BinaryOp::Sub)
+			return false;
+		const Located a = locate(body_, inst.ops[0]), b = locate(body_, inst.ops[1]);
+		if (!a.known || !b.known || !(a.root == b.root) ||
+			!(a.root.is(ValueKind::Temp) || a.root.is(ValueKind::Slot) || a.root.is(ValueKind::Symbol)))
+			return false;
+		const int64_t bytes = a.offset - b.offset;
+		out = integer_value(body_, Literal{ static_cast<uint64_t>(bytes), bytes < 0 ? ~0ull : 0 });
+		return true;
+	}
 	if (!inst.type.is_integer())
 		return float_identity(inst, out);
 	const Type type = inst.type;
@@ -1072,6 +1087,26 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 	}
 	if (type.is_float())
 		return false;
+	// Two addresses at known offsets from one root (a range's begin and end)
+	// compare as their offsets.
+	if (type.is_pointer() &&
+		(pred == ComparePredicate::Eq || pred == ComparePredicate::Ne || pred == ComparePredicate::Ult ||
+			pred == ComparePredicate::Ule || pred == ComparePredicate::Ugt || pred == ComparePredicate::Uge))
+	{
+		const Located a = locate(body_, x), b = locate(body_, y);
+		if (!a.known || !b.known || !(a.root == b.root) ||
+			!(a.root.is(ValueKind::Temp) || a.root.is(ValueKind::Slot) || a.root.is(ValueKind::Symbol)))
+			return false;
+		const int64_t d = a.offset - b.offset;
+		const bool truth = pred == ComparePredicate::Eq ? d == 0
+			: pred == ComparePredicate::Ne              ? d != 0
+			: pred == ComparePredicate::Ult             ? d < 0
+			: pred == ComparePredicate::Ule             ? d <= 0
+			: pred == ComparePredicate::Ugt             ? d > 0
+														: d >= 0;
+		out = literal(truth_constant(truth));
+		return true;
+	}
 	Constant cx, cy;
 	const bool lx = constant(x, type, cx), ly = constant(y, type, cy);
 	// Unsigned comparisons against 0 whose result is fixed.
@@ -1770,15 +1805,27 @@ bool Simplifier::exact_compare(Instruction& inst)
 
 // memset(p, 0, n) and memcpy(d, s, n) of a literal n up to kBulkCallBytes:
 // zeroinit and copyobj (the back end stores directly); the result is the
-// destination.
+// destination. memmove(d, s, n) too when its two ranges cannot overlap.
 const int64_t kBulkCallBytes = 128;
+
+// Whether n bytes at `a` and n bytes at `b` are apart: in two different
+// slots or globals, or at known offsets from one root at least n apart.
+static bool apart(const FunctionBody& body, Value a, Value b, int64_t n)
+{
+	const Located x = locate(body, a), y = locate(body, b);
+	auto object = [](Value v) { return v.is(ValueKind::Slot) || v.is(ValueKind::Symbol); };
+	if (object(x.root) && object(y.root) && !(x.root == y.root))
+		return true;
+	return x.known && y.known && x.root == y.root && (x.offset - y.offset >= n || y.offset - x.offset >= n);
+}
 
 bool Simplifier::bulk_call(Instruction& inst)
 {
 	if (inst.op != Opcode::Call || !inst.ops[0].is(ValueKind::Symbol) || inst.extra_count != 3)
 		return false;
 	const bool zero = c_.program.memset_function(inst.ops[0].index);
-	if (!zero && !c_.program.memcpy_function(inst.ops[0].index))
+	const bool move = !zero && !c_.program.memcpy_function(inst.ops[0].index);
+	if (move && !c_.program.memmove_function(inst.ops[0].index))
 		return false;
 	const Value* args = &body_.operands[inst.extra_first];
 	Constant n, fill;
@@ -1791,6 +1838,8 @@ bool Simplifier::bulk_call(Instruction& inst)
 		(!constant(args[1], Type::scalar(TypeKind::I32), fill) || !is_integer(Type::scalar(TypeKind::I32), fill, 0)))
 		return false;
 	const Value to = args[0], from = args[1];
+	if (move && !apart(body_, to, from, bytes))
+		return false;
 	if (inst.result != kNoId)
 	{
 		if (repl_.size() <= inst.result)

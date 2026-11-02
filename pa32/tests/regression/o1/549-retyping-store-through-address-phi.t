@@ -14,7 +14,7 @@ function @max(%a : ptr, %b : ptr) -> ptr [binding=internal, inline_hint=yes, unw
     return ptr %a
 }
 
-function @grow(%begin : ptr, %end : ptr, %n : i64) -> i64 [binding=internal, unwind=no] {
+function @grow(%begin : ptr, %end : ptr, %n : i64) -> i64 [binding=internal, no_inline=yes, unwind=no] {
   slot $size : i64
   slot $n : i64
 
