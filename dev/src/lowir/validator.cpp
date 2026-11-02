@@ -83,7 +83,7 @@ bool is_bswap_type(Type type)
 
 // Where the instruction facts may stand (lowir.md "Instruction Facts"): nowrap on
 // an integer add, sub, mul or shl; exact on an integer div, udiv, shr or
-// ushr; typed on a load or store of a pointer, a floating type or an
+// ushr or a trunc to an integer type; typed on a load or store of a pointer, a floating type or an
 // integer wider than a byte (a byte access may be a character type's).
 // Other instructions never spell them, so their flag bits are not facts.
 const char* misplaced_fact(const Instruction& inst)
@@ -99,6 +99,9 @@ const char* misplaced_fact(const Instruction& inst)
 			!(integer && (op == BinaryOp::Div || op == BinaryOp::UDiv || op == BinaryOp::Shr || op == BinaryOp::UShr)))
 			return "exact requires an integer div, udiv, shr or ushr";
 	}
+	if (inst.op == Opcode::Convert && (inst.flags & IF_EXACT) != 0 &&
+		!(static_cast<ConvertOp>(inst.sub) == ConvertOp::Trunc && inst.type.is_integer()))
+		return "exact requires a trunc to an integer type";
 	if ((inst.op == Opcode::Load || inst.op == Opcode::Store) && (inst.flags & IF_TYPED) != 0)
 	{
 		const TypeKind k = inst.type.kind();

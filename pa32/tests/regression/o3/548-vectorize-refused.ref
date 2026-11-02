@@ -412,38 +412,37 @@ function @step_after_widening(%d : ptr, %n : i32) -> void [no_inline=yes] {
     %t4 = binary add i32 %n, -4
     %t5 = vector fromi32 1
     %t6 = vector pshufd %t5, 0
-    %t7 = convert sext i64 i32 %t4
     jump ^wide_loop_2
 
   block ^wide_loop_2:
-    %t8 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t12]
-    %t9 = copy i64 %t8
-    %t10 = binary add i64 %t9, 2
-    %t11 = index i32 %d, %t10
-    store v128 %t6, %t11
-    %t12 = binary add nowrap i64 %t8, 4
-    %t13 = convert trunc i32 i64 %t12
-    %t14 = cmp le i64 %t12, %t7
-    branch %t14, ^wide_loop_2, ^loop_exit_3
+    %t7 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t11]
+    %t8 = copy i64 %t7
+    %t9 = binary add i64 %t8, 2
+    %t10 = index i32 %d, %t9
+    store v128 %t6, %t10
+    %t11 = binary add nowrap i64 %t7, 4
+    %t12 = convert trunc exact i32 i64 %t11
+    %t13 = cmp le i32 %t12, %t4
+    branch %t13, ^wide_loop_2, ^loop_exit_3
 
   block ^loop_exit_3:
-    %t15 = cmp lt i32 %t13, %n
-    branch %t15, ^loop_preheader_4, ^done
+    %t14 = cmp lt i32 %t12, %n
+    branch %t14, ^loop_preheader_4, ^done
 
   block ^loop_preheader_4:
-    %t16 = phi i32 [^entry: 0, ^loop_exit_3: %t13]
-    %t17 = convert sext i64 i32 %t16
-    %t18 = convert sext i64 i32 %n
+    %t15 = phi i32 [^entry: 0, ^loop_exit_3: %t12]
+    %t16 = convert sext i64 i32 %t15
     jump ^body
 
   block ^body:
-    %t19 = phi i64 [^loop_preheader_4: %t17, ^body: %t23]
-    %w = copy i64 %t19
+    %t17 = phi i64 [^loop_preheader_4: %t16, ^body: %t21]
+    %w = copy i64 %t17
     %a = binary add i64 %w, 2
     %o = index i32 %d, %a
     store typed i32 1, %o
-    %t23 = binary add nowrap i64 %t19, 1
-    %c = cmp lt i64 %t23, %t18
+    %t21 = binary add nowrap i64 %t17, 1
+    %next = convert trunc exact i32 i64 %t21
+    %c = cmp lt i32 %next, %n
     branch %c, ^body, ^done
 
   block ^done:

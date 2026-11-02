@@ -23,8 +23,8 @@ function @add_down(%y : ptr, %x : ptr, %n : i32) -> void [no_inline=yes] {
     %t15 = vector addps %t13, %t14
     store v128 %t15, %t12
     %t16 = binary add nowrap i64 %t6, -4
-    %t17 = convert trunc i32 i64 %t16
-    %t18 = cmp ge i64 %t16, 3
+    %t17 = convert trunc exact i32 i64 %t16
+    %t18 = cmp ge i32 %t17, 3
     branch %t18, ^wide_loop_2, ^loop_exit_3
 
   block ^loop_exit_3:
@@ -47,7 +47,8 @@ function @add_down(%y : ptr, %x : ptr, %n : i32) -> void [no_inline=yes] {
     %s = binary add f32 %b, %c
     store typed f32 %s, %q
     %t30 = binary sub nowrap i64 %t22, 1
-    %t = cmp ge i64 %t30, 0
+    %next = convert trunc exact i32 i64 %t30
+    %t = cmp ge i32 %next, 0
     branch %t, ^body, ^done
 
   block ^done:

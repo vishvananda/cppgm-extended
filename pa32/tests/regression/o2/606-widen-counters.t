@@ -1,6 +1,6 @@
 # An `int` counter that does not wrap reads as a 64-bit counter where it indexes
 # memory. What the loop adds to it goes into the base before the loop, a literal
-# into the access, and an exit test reads the wide counter.
+# into the access. What reads the `int` reads an exact truncation.
 function @direct(%p : ptr, %n : i32) -> i64 [no_inline=yes] {
   block ^entry:
     %has = cmp gt i32 %n, 0

@@ -777,6 +777,11 @@ bool Writer::write_value_instruction(const Instruction& inst)
 	case Opcode::Convert:
 		head(inst.op);
 		spelled(kConvertWords[inst.sub]);
+		if ((inst.flags & IF_EXACT) != 0)
+		{
+			out_.push_back(' ');
+			text(spelling(IF_EXACT));
+		}
 		out_.push_back(' ');
 		type(inst.type);
 		out_.push_back(' ');

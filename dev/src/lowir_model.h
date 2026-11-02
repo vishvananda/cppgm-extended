@@ -774,7 +774,7 @@ inline ComparePredicate inverted(ComparePredicate predicate)
 // - IF_SELECTOR: eh_catch, eh_filter or eh_catch_all states a selector.
 // - The instruction facts (pa8/lowir.md "Instruction Facts"), true whenever
 //   the instruction runs; dropping one is always correct: IF_EXACT (`exact`
-//   on div/udiv/shr/ushr), IF_NO_WRAP (`nowrap` on add/sub/mul/shl),
+//   on div/udiv/shr/ushr/trunc), IF_NO_WRAP (`nowrap` on add/sub/mul/shl),
 //   IF_TYPED (`typed` on load/store).
 
 enum InstructionFlag : std::uint8_t

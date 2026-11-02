@@ -18,7 +18,8 @@ const unsigned kSumDepth = 4;
 // narrow counter that indexes memory costs an extension, and the sum of a
 // counter and a value the loop does not change costs an addition as well. The
 // 64-bit counter needs neither: the value goes into the base, or the literal
-// into the displacement, before the loop or at the access.
+// into the displacement, before the loop or at the access. What still reads
+// the narrow value reads an exact truncation, which costs nothing.
 class CounterWidening
 {
 public:
@@ -49,7 +50,6 @@ private:
 	{
 		InstId id, previous; // (never moves)
 		Sum sum;
-		Value other; // a compare's other operand
 	};
 	struct Rebased
 	{
@@ -67,7 +67,6 @@ private:
 	bool sum_of(uint32_t loop, Value v, Sum& sum, unsigned depth) const;
 	bool add_term(Value v, bool is_signed, Sum& sum) const;
 	void read_loop(uint32_t loop);
-	bool compare_read(uint32_t loop, const Instruction& inst, Read& read) const;
 	bool wanted(uint32_t loop);
 	void forget_counters();
 	void widen(uint32_t loop);
@@ -217,35 +216,6 @@ bool CounterWidening::sum_of(uint32_t loop, Value v, Sum& sum, unsigned depth) c
 	return add_term(inst.ops[first ? 1 : 0], is_signed, sum);
 }
 
-// A compare of a counter with a value the loop does not change.
-bool CounterWidening::compare_read(uint32_t loop, const Instruction& inst, Read& read) const
-{
-	const ComparePredicate pred = static_cast<ComparePredicate>(inst.sub);
-	const TypeKind kind = inst.type.kind();
-	if (kind != TypeKind::I32 && kind != TypeKind::U32)
-		return false;
-	const bool either = pred == ComparePredicate::Eq || pred == ComparePredicate::Ne;
-	const bool is_signed = pred == ComparePredicate::Lt || pred == ComparePredicate::Le ||
-		pred == ComparePredicate::Gt || pred == ComparePredicate::Ge;
-	if (!either && is_signed != (kind == TypeKind::I32))
-		return false;
-	for (unsigned at = 0; at < 2; ++at)
-	{
-		const Value v = inst.ops[at];
-		const Value other = inst.ops[1 - at];
-		if (!v.is(ValueKind::Temp) || v.index >= role_.size() || role_[v.index] < 0 || !outside(loop, other))
-			continue;
-		if (!(other.is(ValueKind::Integer) || other.is(ValueKind::Temp)) ||
-			(other.is(ValueKind::Temp) && body_.temps[other.index].type.kind() != kind))
-			continue;
-		read.sum.counter = static_cast<uint32_t>(role_[v.index]) / 2;
-		read.sum.stepped = (role_[v.index] & 1) != 0;
-		read.other = other;
-		return true;
-	}
-	return false;
-}
-
 // The reads the wide counter serves. Only an index or an extension makes a
 // counter worth widening.
 void CounterWidening::read_loop(uint32_t loop)
@@ -261,13 +231,6 @@ void CounterWidening::read_loop(uint32_t loop)
 			Read read = Read();
 			read.id = i;
 			read.previous = previous;
-			read.other = Value::none();
-			if (inst.op == Opcode::Compare)
-			{
-				if (compare_read(loop, inst, read))
-					reads_.push_back(read);
-				continue;
-			}
 			Value v = Value::none();
 			if (inst.op == Opcode::Index)
 				v = inst.ops[1];
@@ -362,6 +325,7 @@ void CounterWidening::widen_counter(const Loop& l, Counter& counter)
 	auto narrowed = [&](Value wide, TempId result, BlockId block, InstId after) {
 		Instruction trunc = make_instruction(Opcode::Convert, narrow);
 		trunc.sub = static_cast<uint8_t>(ConvertOp::Trunc);
+		trunc.flags = IF_EXACT;
 		set_convert_source_type(trunc, i64);
 		trunc.ops[0] = wide;
 		trunc.result = result;
@@ -429,17 +393,6 @@ void CounterWidening::rewrite(const Loop& l, uint32_t loop, Read& read)
 	InstId at = read.previous;
 	const Type i64 = Type::scalar(TypeKind::I64);
 	const Opcode op = body_.instructions[read.id].op;
-	const Value wide = read.sum.stepped ? counter.wide_next : counter.wide;
-	if (op == Opcode::Compare)
-	{
-		const Value other = extended(l, read.other, counter.is_signed);
-		Instruction& inst = body_.instructions[read.id];
-		const bool first = inst.ops[1] == read.other;
-		inst.ops[first ? 0 : 1] = wide;
-		inst.ops[first ? 1 : 0] = other;
-		inst.type = i64;
-		return;
-	}
 	if (op == Opcode::Convert)
 	{
 		const Value sum = full_sum(read, block, at);

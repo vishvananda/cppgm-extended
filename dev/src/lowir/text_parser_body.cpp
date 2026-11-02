@@ -417,6 +417,8 @@ bool Parser::parse_value_instruction(FunctionBuilder& builder, Opcode keyword, I
 		advance();
 		inst.op = Opcode::Convert;
 		inst.sub = info.value;
+		if (accept_word(WordClass::Fact, IF_EXACT))
+			inst.flags |= IF_EXACT;
 		inst.type = result = parse_type();
 		const Type source = parse_type();
 		set_convert_source_type(inst, source);

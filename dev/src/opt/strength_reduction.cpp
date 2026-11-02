@@ -486,14 +486,22 @@ void StrengthReduction::sink_steps(uint32_t loop)
 		}
 		if (last == at || order[last] == term)
 			continue;
-		// What reads the step before `last`: at most the branch's compare.
-		InstId compare = kNoId;
+		// What reads the step before `last`: at most the branch's compare,
+		// perhaps through the truncation of a widened counter.
+		InstId compare = kNoId, narrow = kNoId;
 		bool blocked = false;
 		for (size_t k = at + 1; k <= last && !blocked; ++k)
 		{
-			if (!reads(order[k], next.index))
+			if (!reads(order[k], next.index) &&
+				(narrow == kNoId || !reads(order[k], body_.instructions[narrow].result)))
 				continue;
 			const Instruction& reader = body_.instructions[order[k]];
+			if (narrow == kNoId && reader.op == Opcode::Convert && (reader.flags & IF_EXACT) != 0 &&
+				reads(order[k], next.index))
+			{
+				narrow = order[k];
+				continue;
+			}
 			const Value tested = body_.instructions[term].op == Opcode::Branch ? body_.instructions[term].ops[0]
 																			   : Value::none();
 			blocked = compare != kNoId || reader.op != Opcode::Compare || !(tested == Value::temp(reader.result));
@@ -506,10 +514,17 @@ void StrengthReduction::sink_steps(uint32_t loop)
 		const InstId tail = order[last];
 		unlink_after(body_, b, previous_in_block(body_, b, step), step);
 		insert_after(body_, b, tail, step);
+		InstId placed = step;
+		if (narrow != kNoId)
+		{
+			unlink_after(body_, b, previous_in_block(body_, b, narrow), narrow);
+			insert_after(body_, b, placed, narrow);
+			placed = narrow;
+		}
 		if (compare != kNoId)
 		{
 			unlink_after(body_, b, previous_in_block(body_, b, compare), compare);
-			insert_after(body_, b, step, compare);
+			insert_after(body_, b, placed, compare);
 		}
 		changed_ = true;
 		read_order();

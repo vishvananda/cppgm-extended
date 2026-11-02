@@ -463,14 +463,11 @@ that feeds an index costs an extension. An `int` counter whose step cannot wrap
 equals, extended, a 64-bit counter of the same step, and so does its sum with
 values the loop does not change, if those additions cannot wrap either. Widen
 such a counter when an `index` or an extension reads it or such a sum. A value
-in the sum goes into the base before the loop, a literal into the access, and an
-exit test against an invariant compares the wide values. What still reads the
-`int` reads a truncation. Run this after strength reduction, which reads the
+in the sum goes into the base before the loop, and a literal into the access.
+What still reads the `int`, such as the exit test, reads a `convert trunc exact`:
+the wide value fits, so the truncation needs no instruction and its reader can
+use the wide register. Run this after strength reduction, which reads the
 narrow products. An unsigned counter that cannot wrap widens by zero extension.
-
-Packed parts: a pair of `int` fields copied as one 64-bit value is two values
-or-ed together. A truncation or a right shift needs only the operand with bits
-it keeps, so a field read back from the pair is the value stored in it.
 
 Private slots: a slot whose address reaches only its own accesses, copies and
 constant steps is reached by no other pointer. A write to such a slot does not

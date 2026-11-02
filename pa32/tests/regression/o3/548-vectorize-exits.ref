@@ -463,40 +463,39 @@ function @narrow_counter(%d : ptr, %x : ptr, %n : i32) -> void [no_inline=yes] {
     %t12 = binary add i32 %n, -4
     %t13 = vector fromi32 1
     %t14 = vector pshufd %t13, 0
-    %t15 = convert sext i64 i32 %t12
     jump ^wide_loop_3
 
   block ^wide_loop_3:
-    %t16 = phi i64 [^loop_preheader_2: 0, ^wide_loop_3: %t21]
-    %t17 = index i32 %x, %t16
-    %t18 = load v128 %t17
-    %t19 = vector paddd %t18, %t14
-    %t20 = index i32 %d, %t16
-    store v128 %t19, %t20
-    %t21 = binary add nowrap i64 %t16, 4
-    %t22 = convert trunc i32 i64 %t21
-    %t23 = cmp le i64 %t21, %t15
-    branch %t23, ^wide_loop_3, ^loop_exit_4
+    %t15 = phi i64 [^loop_preheader_2: 0, ^wide_loop_3: %t20]
+    %t16 = index i32 %x, %t15
+    %t17 = load v128 %t16
+    %t18 = vector paddd %t17, %t14
+    %t19 = index i32 %d, %t15
+    store v128 %t18, %t19
+    %t20 = binary add nowrap i64 %t15, 4
+    %t21 = convert trunc exact i32 i64 %t20
+    %t22 = cmp le i32 %t21, %t12
+    branch %t22, ^wide_loop_3, ^loop_exit_4
 
   block ^loop_exit_4:
-    %t24 = cmp lt i32 %t22, %n
-    branch %t24, ^loop_preheader_5, ^done
+    %t23 = cmp lt i32 %t21, %n
+    branch %t23, ^loop_preheader_5, ^done
 
   block ^loop_preheader_5:
-    %t25 = phi i32 [^entry: 0, ^loop_preheader_1: 0, ^loop_exit_4: %t22]
-    %t26 = convert sext i64 i32 %t25
-    %t27 = convert sext i64 i32 %n
+    %t24 = phi i32 [^entry: 0, ^loop_preheader_1: 0, ^loop_exit_4: %t21]
+    %t25 = convert sext i64 i32 %t24
     jump ^body
 
   block ^body:
-    %t28 = phi i64 [^loop_preheader_5: %t26, ^body: %t33]
-    %p = index i32 %x, %t28
+    %t26 = phi i64 [^loop_preheader_5: %t25, ^body: %t31]
+    %p = index i32 %x, %t26
     %v = load typed i32 %p
     %r = binary add i32 %v, 1
-    %o = index i32 %d, %t28
+    %o = index i32 %d, %t26
     store typed i32 %r, %o
-    %t33 = binary add nowrap i64 %t28, 1
-    %c = cmp lt i64 %t33, %t27
+    %t31 = binary add nowrap i64 %t26, 1
+    %next = convert trunc exact i32 i64 %t31
+    %c = cmp lt i32 %next, %n
     branch %c, ^body, ^done
 
   block ^done:

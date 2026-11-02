@@ -468,14 +468,14 @@ function @main
     frame_pointer keep
     epilogues duplicated
     preserve <gpr0> <gpr1> <gpr2>
-    temp %nan -> [rbp-<off2>] : f64
     temp %nan32 -> [rbp-<off0>] : f32
+    temp %nan -> [rbp-<off2>] : f64
 
   block ^entry
     fmov.f64 xmm0, @nan_bits
+    fptrunc.f64.f32 xmm1, xmm0
+    fmov.f32 [rbp-<off0>], xmm1
     fmov.f64 [rbp-<off2>], xmm0
-    fptrunc.f64.f32 xmm0, xmm0
-    fmov.f32 [rbp-<off0>], xmm0
 
   block ^b0
     mov rdi, 11

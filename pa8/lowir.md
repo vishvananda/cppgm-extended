@@ -1126,7 +1126,7 @@ is required.
 %t = binary <op> [nowrap] [exact] <type> <lhs>, <rhs>
 %t = cmp <pred> <type> <lhs>, <rhs>
 %t = select <type> <cond>, <a>, <b>
-%t = convert <op> <dst-type> <src-type> <value>
+%t = convert <op> [exact] <dst-type> <src-type> <value>
 %t = atomic_add_fetch <type> <ptr-value>, <delta>, <order>
 atomic_thread_fence <order>
 atomic_signal_fence <order>
@@ -1585,7 +1585,9 @@ store typed i32 %n, %count
   operation's type at the type's signedness. `i8`, `i16`, `i32`, `i64` and
   `i128` are signed; `u8`, `u16` and `u32` are unsigned.
 - `exact`, on an integer `div` or `udiv`: the dividend is a multiple of the
-  divisor; on `shr` or `ushr`: no set bit is shifted out.
+  divisor; on `shr` or `ushr`: no set bit is shifted out; on `convert trunc`
+  to an integer type: the value is representable in that type at its
+  signedness.
 
 A fact holds every time its instruction runs. A program in which one does
 not hold has undefined behavior, which is what lets a consumer rely on it.

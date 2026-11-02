@@ -844,7 +844,9 @@ void FunctionSelector::resolve_aliases()
 																   : 0u;
 				const bool same = fits_[src.index] <= std::min(kept, canonical_bits(dest));
 				const bool low = op == lowir::ConvertOp::Trunc && r < low_only.size() && low_only[r] == 1;
-				if (boolean || extension || same || low)
+				// (A value that fits is already its result's register form.)
+				const bool exact = op == lowir::ConvertOp::Trunc && (inst.flags & lowir::IF_EXACT) != 0;
+				if (boolean || extension || same || low || exact)
 					to = src;
 			}
 		}
