@@ -231,6 +231,9 @@ bool sink_values(FunctionContext& context);
 // O2+: a loop without calls reads its floating literals from registers
 // (opt/loop_literals.cpp).
 bool hold_loop_literals(FunctionContext& context);
+// O2+: in a block, the square roots and divisions that follow one an
+// instruction is about to read start before it (opt/long_latency.cpp).
+bool issue_long_latency(FunctionContext& context);
 // O2+: an `int` counter that indexes memory, and the sums of it that do, read
 // from a 64-bit counter (opt/counter_widening.cpp).
 bool widen_counters(FunctionContext& context);

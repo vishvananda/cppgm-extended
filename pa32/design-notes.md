@@ -545,6 +545,14 @@ them changed it, branch compares are computed again beside their branches:
   stop it: a general register survives a call. Read in place, the address
   takes a `lea` on every pass; a loop that tests a function pointer against a
   known target before each call ran 8% fewer instructions.
+- A floating square root or division takes many cycles, and an instruction
+  that reads it waits in the processor's scheduler, where it can keep the next
+  root from starting. Walk each block in order. Before an instruction that
+  reads a root or quotient that nothing has read yet, move up the next ones
+  of the block with their pure operands, at most 24 instructions each, until
+  four are unread. Nothing moves past a call, since no floating register
+  survives one, and an integer division stays, since it may trap. The n-body
+  step, ten roots and ten divisions in one block, took 11% fewer cycles.
 
 ### What `-O3` Adds
 
