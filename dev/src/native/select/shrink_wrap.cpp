@@ -582,7 +582,7 @@ bool shrink_wrap(Function& f)
 	// Placed again, then the frameless blocks (what the entry reaches short
 	// of a prologue block) first, then the prologue blocks, then the rest,
 	// each in placed order; the prologue block of the earliest-placed exit
-	// is last and falls into its target.
+	// is last and falls into its target and what follows that.
 	place_blocks(f);
 	const uint32_t total = static_cast<uint32_t>(f.blocks.size());
 	std::vector<uint8_t> part(total, 2); // 0 frameless, 1 prologue, 2 framed
@@ -616,16 +616,26 @@ bool shrink_wrap(Function& f)
 			hot_target = jump.ops[0].symbol;
 		}
 	}
+	// The target brings the blocks placed to fall through after it.
+	std::vector<uint8_t> moved(total, 0);
 	std::vector<uint32_t> order;
 	for (uint8_t k = 0; k < 3; ++k)
 	{
-		if (k == 2)
+		if (k == 2 && hot != lowir::kNoId)
 		{
+			moved[hot] = 1;
 			order.push_back(hot);
-			order.push_back(hot_target);
+			for (uint32_t b = hot_target; b < total && part[b] == 2 && !moved[b]; ++b)
+			{
+				moved[b] = 1;
+				order.push_back(b);
+				const Inst& end = f.insts[f.blocks[b].first + f.blocks[b].count - 1];
+				if (end.op != Op::Jmp || end.ops[0].kind != OperandKind::Label || end.ops[0].symbol != b + 1)
+					break;
+			}
 		}
 		for (uint32_t b = 0; b < total; ++b)
-			if (part[b] == k && b != hot && b != hot_target)
+			if (part[b] == k && !moved[b] && b != hot)
 				order.push_back(b);
 	}
 	reorder_blocks(f, order);

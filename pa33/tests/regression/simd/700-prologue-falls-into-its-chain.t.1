@@ -1,0 +1,22 @@
+#include <cstdio>
+
+int ack(int m, int n)
+{
+	return m ? ack(m - 1, n ? ack(m, n - 1) : 1) : n + 1;
+}
+
+int walk(int depth, int n)
+{
+	if (depth == 0)
+		return n + 1;
+	int total = 0;
+	for (int i = 0; i < n; ++i)
+		total += walk(depth - 1, i);
+	return total;
+}
+
+int main()
+{
+	std::printf("%d %d %d\n", ack(2, 3), ack(3, 3), walk(3, 5));
+	return 0;
+}
