@@ -2138,10 +2138,11 @@ private:
 	std::vector<BaseWalkFrame> base_frames_;
 	PointerMap base_leads_;
 	const ClassEntity* base_leads_target_ = nullptr;
-	// The lists of argument_demand_head, by context, and the (context,
-	// function) pairs they hold.
+	// The lists of argument_demand_head, by context (the list outside any
+	// body apart), and the (context, function) pairs they hold.
 	std::vector<ArgumentDemand> argument_demands_;
 	PointerMap argument_demand_heads_;
+	uint32_t top_argument_demand_head_ = 0;
 	FlatMap<EntityPair, bool, EntityPairHash> argument_demanded_;
 	// `&C::f` of a set of overloaded member functions: its naming class and
 	// scope, for the access check of the function its target selects, and

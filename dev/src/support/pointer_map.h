@@ -10,6 +10,7 @@
 // full and doubles as it grows, so an insertion allocates nothing but that
 // growth. clear() resets only the slots written since the last clear, so a
 // map reused for many small functions costs what they use, not the largest.
+// Keys are not null: the null key marks an empty slot.
 class PointerMap
 {
 public:

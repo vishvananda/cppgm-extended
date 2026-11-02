@@ -215,13 +215,20 @@ void Analyzer::note_argument_demand(const Entity* entity)
 	if (argument_demanded_.find(key) != nullptr)
 		return;
 	argument_demanded_.insert(key, true);
-	const uint32_t head = argument_demand_heads_.find(context);
-	argument_demands_.push_back(ArgumentDemand{ function, head == PointerMap::kMissing ? 0 : head });
-	argument_demand_heads_.set(context, static_cast<uint32_t>(argument_demands_.size()));
+	const uint32_t head = argument_demand_head(context);
+	argument_demands_.push_back(ArgumentDemand{ function, head });
+	const uint32_t index = static_cast<uint32_t>(argument_demands_.size());
+	if (context == nullptr)
+		top_argument_demand_head_ = index;
+	else
+		argument_demand_heads_.set(context, index);
 }
 
 uint32_t Analyzer::argument_demand_head(const FunctionEntity* context) const
 {
+	// (A PointerMap marks its empty slots with the null key.)
+	if (context == nullptr)
+		return top_argument_demand_head_;
 	const uint32_t head = argument_demand_heads_.find(context);
 	return head == PointerMap::kMissing ? 0 : head;
 }
