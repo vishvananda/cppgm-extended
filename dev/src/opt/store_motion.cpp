@@ -55,7 +55,9 @@ private:
 	bool invariant(uint32_t loop, Value v) const;
 	Located place(uint32_t loop, Value address, const Located& located) const;
 	bool read_accesses(uint32_t loop);
-	bool stored_each_pass(uint32_t loop, const std::vector<BlockId>& exiting, const Access& location) const;
+	bool each_pass(uint32_t loop, const std::vector<BlockId>& exiting, const Access& location, bool stores) const;
+	std::vector<BlockId> exiting_blocks(uint32_t loop) const;
+	bool readable(uint32_t loop, const std::vector<BlockId>& exiting, const Access& location) const;
 	void find_locations(uint32_t loop);
 	Value address_of(const Location& location, BlockId block, InstId& tail);
 	void move_location(uint32_t loop, const Location& location, const std::vector<BlockId>& exits);
@@ -155,13 +157,15 @@ bool StoreMotion::read_accesses(uint32_t loop)
 	return true;
 }
 
-// Whether a store of the location runs before every exit and on every pass:
-// nothing then writes it on a path that would not have.
-bool StoreMotion::stored_each_pass(uint32_t loop, const std::vector<BlockId>& exiting, const Access& location) const
+// Whether a store of the location (any access, unless `stores`) runs
+// before every exit and on every pass: nothing then writes (or reads) it on
+// a path that would not have.
+bool StoreMotion::each_pass(
+	uint32_t loop, const std::vector<BlockId>& exiting, const Access& location, bool stores) const
 {
 	for (const Access& a : accesses_)
 	{
-		if (!a.store || !same_place(a.at, a.type, location.at, location.type))
+		if ((stores && !a.store) || !same_place(a.at, a.type, location.at, location.type))
 			continue;
 		const BlockId b = c_.block_of[a.inst];
 		bool all = true;
@@ -175,9 +179,9 @@ bool StoreMotion::stored_each_pass(uint32_t loop, const std::vector<BlockId>& ex
 	return false;
 }
 
-void StoreMotion::find_locations(uint32_t loop)
+// The loop's blocks with a successor outside it.
+std::vector<BlockId> StoreMotion::exiting_blocks(uint32_t loop) const
 {
-	locations_.clear();
 	std::vector<BlockId> exiting;
 	for (BlockId b : forest_.loops[loop].blocks)
 		for (uint32_t k = cfg_.succ_first[b]; k < cfg_.succ_first[b + 1]; ++k)
@@ -186,6 +190,26 @@ void StoreMotion::find_locations(uint32_t loop)
 				exiting.push_back(b);
 				break;
 			}
+	return exiting;
+}
+
+// Whether the preheader may read a location the loop loads: one in a slot
+// or a defined global, or (in a loop without calls) one the loop reads or
+// writes on every pass before it can leave.
+bool StoreMotion::readable(uint32_t loop, const std::vector<BlockId>& exiting, const Access& location) const
+{
+	const Value root = location.at.root;
+	if (root.is(ValueKind::Slot) ||
+		(root.is(ValueKind::Symbol) && c_.program.symbols[root.index].kind == SymbolKind::GlobalDefinition &&
+			location.at.offset >= 0))
+		return true;
+	return calls_.empty() && each_pass(loop, exiting, location, false);
+}
+
+void StoreMotion::find_locations(uint32_t loop)
+{
+	locations_.clear();
+	const std::vector<BlockId> exiting = exiting_blocks(loop);
 	for (const Access& s : accesses_)
 	{
 		const TypeKind kind = s.type.kind();
@@ -208,7 +232,7 @@ void StoreMotion::find_locations(uint32_t loop)
 			else
 				alone = alone && !may_overlap(a, s);
 		}
-		if (alone && stored_each_pass(loop, exiting, s))
+		if (alone && each_pass(loop, exiting, s, true))
 			locations_.push_back(Location{ s.at, s.type, typed });
 	}
 }
@@ -246,6 +270,7 @@ void StoreMotion::find_loaded_locations(uint32_t loop)
 	locations_.clear();
 	if (!side_calls(loop))
 		return;
+	const std::vector<BlockId> exiting = exiting_blocks(loop);
 	for (const Access& l : accesses_)
 	{
 		const TypeKind kind = l.type.kind();
@@ -267,7 +292,9 @@ void StoreMotion::find_loaded_locations(uint32_t loop)
 			else
 				alone = alone && !(a.store && may_overlap(a, l));
 		}
-		if (alone && read)
+		// (Without calls, a slot's elements stay: the lanes of a local
+		// array an unrolled loop updates cost more registers than loads.)
+		if (alone && read && readable(loop, exiting, l) && !(calls_.empty() && l.at.root.is(ValueKind::Slot)))
 			locations_.push_back(Location{ l.at, l.type, typed });
 	}
 }

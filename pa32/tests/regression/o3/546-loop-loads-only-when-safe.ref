@@ -1,0 +1,67 @@
+global @seen : i32 = 0
+
+function @tally(%p : ptr, %n : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i32 [^entry: 0, ^next: %j]
+    %s = phi i32 [^entry: 0, ^next: %t]
+    %odd = binary and i32 %i, 1
+    branch %odd, ^read, ^next
+
+  block ^read:
+    %v = load i32 %p
+    %w = binary add i32 %v, 1
+    store i32 %w, %p
+    %u = binary add i32 %s, %v
+    jump ^next
+
+  block ^next:
+    %t = phi i32 [^head: %s, ^read: %u]
+    %j = binary add nowrap i32 %i, 1
+    %go = cmp lt i32 %j, %n
+    branch %go, ^head, ^done
+
+  block ^done:
+    return i32 %t
+}
+function @counts(%n : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %t1 = load i32 @seen
+    jump ^head
+
+  block ^head:
+    %t2 = phi i32 [^entry: %t1, ^next: %t9]
+    %i = phi i32 [^entry: 0, ^next: %j]
+    %c = phi i32 [^entry: 0, ^next: %e]
+    %low = binary and i32 %i, 3
+    %bump = cmp eq i32 %low, 0
+    branch %bump, ^up, ^next
+
+  block ^up:
+    %d = binary add i32 %c, 1
+    %h = binary add i32 %i, %t2
+    store i32 %h, @seen
+    jump ^next
+
+  block ^next:
+    %t9 = phi i32 [^head: %t2, ^up: %h]
+    %e = phi i32 [^head: %c, ^up: %d]
+    %j = binary add nowrap i32 %i, 1
+    %go = cmp lt i32 %j, %n
+    branch %go, ^head, ^done
+
+  block ^done:
+    return i32 %e
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %a = call i32 @tally(0, 1)
+    %b = call i32 @counts(10)
+    %s = load i32 @seen
+    %x = binary mul i32 %b, 10
+    %y = binary add i32 %s, %x
+    %z = binary add i32 %a, %y
+    return i32 %z
+}

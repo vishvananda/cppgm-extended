@@ -583,7 +583,12 @@ to dominate some latch), or a loop with no location stored on every pass,
 keeps in a register each of up to four locations it loads instead. The
 location has a loop-invariant address of known offset and the same types as
 above, and no other store of the loop may overlap it. Loads of other
-locations may overlap it. Its stores stay where they are. The register takes
+locations may overlap it. The load before the loop must not fault: the
+location is in a slot or a defined global, or, in a loop without calls, the
+loop reads or writes it on every pass before it can leave. In a loop without
+calls, a slot's location stays in memory (the lanes of a local array that an
+unrolled loop updates cost more registers than loads). Its stores stay where
+they are. The register takes
 the value of each store, and the location is loaded again after each call,
 which may have written it. A seed that a loop updates through a global then
 stays out of memory on the chain from one pass to the next, and so does a
