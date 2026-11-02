@@ -431,8 +431,10 @@ vectorization stays outside the course contract.
 
 - The loop has a counter of a literal step and an invariant bound, and every
   other phi is another counter or an integer reduction (`add`, `sub`, `and`,
-  `or` or `xor`). A floating sum stays scalar: lanes would change the order of
-  its additions.
+  `or` or `xor`), or a floating sum or product. Lanes would change the order of
+  floating operations, so that value stays scalar and takes the lanes one at a
+  time, in pass order. This needs a floating `mul`, `div` or `sqrt` in the lanes
+  to pay for the moves.
 - Before the loop is read, `add`, `sub` and the bit operators that only a
   truncation to `i8`, `u8`, `i16` or `u16` reads move to the narrow type, as does
   `mul` to the two-byte types. Their lanes are then narrower, and more of them

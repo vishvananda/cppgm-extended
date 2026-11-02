@@ -54,6 +54,8 @@ private:
 		Value start, operand;
 		BinaryOp op;
 		Type type;
+		bool ordered; // floating: the sum stays scalar, lane by lane in pass order
+		Value next_sum;
 	};
 	// A value as offset + scale * pass + term_scale * term.
 	struct Linear
@@ -124,6 +126,9 @@ private:
 	void clone_scalars(bool also_widen);
 	Value overlap_guard(Value distance);
 	Value add_across(const Reduction& r, Value v);
+	Value add_in_order(const Reduction& r, Value sum, Value lanes);
+	bool lanes_pay_for_order() const;
+	bool halves(const Instruction& inst, unsigned& shift) const;
 	void make_phi(BlockId block, Type type, std::initializer_list<Value> pairs, Value& out);
 	BlockId place_block(BlockKind kind);
 	void vectorize(uint32_t loop);
@@ -492,11 +497,13 @@ bool LoopVectorizer::read_phis()
 				(step.flags & IF_NO_WRAP) != 0 || phi.type.kind() == TypeKind::I64 });
 			continue;
 		}
-		const bool commutes = op == BinaryOp::Add || op == BinaryOp::And || op == BinaryOp::Or || op == BinaryOp::Xor;
-		if ((left == right) || (right && !commutes) || (!commutes && op != BinaryOp::Sub) || !phi.type.is_integer() ||
-			lane_bytes(phi.type) == 0)
+		const bool ordered = phi.type.is_float();
+		const bool commutes = op == BinaryOp::Add || (ordered && op == BinaryOp::Mul) ||
+			(!ordered && (op == BinaryOp::And || op == BinaryOp::Or || op == BinaryOp::Xor));
+		if ((left == right) || (right && !commutes) || (!commutes && op != BinaryOp::Sub) || lane_bytes(phi.type) == 0)
 			return false;
-		reductions_.push_back(Reduction{ phi.result, next.index, start, step.ops[left ? 1 : 0], op, phi.type });
+		reductions_.push_back(
+			Reduction{ phi.result, next.index, start, step.ops[left ? 1 : 0], op, phi.type, ordered, Value::none() });
 	}
 	return !inductions_.empty();
 }
@@ -811,6 +818,21 @@ bool LoopVectorizer::read_accesses()
 	return true;
 }
 
+// A signed 32-bit division by a literal power of two (shifts of the lanes).
+bool LoopVectorizer::halves(const Instruction& inst, unsigned& shift) const
+{
+	if (inst.op != Opcode::Binary || static_cast<BinaryOp>(inst.sub) != BinaryOp::Div ||
+		inst.type.kind() != TypeKind::I32 || !inst.ops[1].is(ValueKind::Integer))
+		return false;
+	const uint64_t divisor = body_.literals[inst.ops[1].index].low;
+	if (divisor < 2 || divisor > (1u << 30) || (divisor & (divisor - 1)) != 0)
+		return false;
+	shift = 0;
+	while ((1ull << shift) != divisor)
+		++shift;
+	return true;
+}
+
 // Whether a lane form of the instruction exists.
 bool LoopVectorizer::supported(const Instruction& inst) const
 {
@@ -830,6 +852,9 @@ bool LoopVectorizer::supported(const Instruction& inst) const
 			return inst.ops[1].is(ValueKind::Integer) &&
 				body_.literals[inst.ops[1].index].low < lane_bytes(inst.type) * 8;
 		if (operation == BinaryOp::Mul && !inst.type.is_float() && lane_bytes(inst.type) == 4)
+			return true;
+		unsigned shift;
+		if (halves(inst, shift))
 			return true;
 		return lane_operation(operation, inst.type, op);
 	}
@@ -912,10 +937,32 @@ bool LoopVectorizer::choose_lanes()
 			if (!lane(lane_bytes(iv.type)) || iv.step != static_cast<int32_t>(iv.step))
 				return false;
 		}
-	if (lane_bytes_ == 0 || (accesses_.empty() && reductions_.empty()))
+	if (lane_bytes_ == 0 || (accesses_.empty() && reductions_.empty()) || !lanes_pay_for_order())
 		return false;
 	lanes_ = 16 / lane_bytes_;
 	return true;
+}
+
+// A floating sum adds its lanes one at a time, as many additions as the scalar
+// loop and a shuffle more: only a costlier operation in lanes pays for that.
+bool LoopVectorizer::lanes_pay_for_order() const
+{
+	bool ordered = false;
+	for (const Reduction& r : reductions_)
+		ordered = ordered || r.ordered;
+	if (!ordered)
+		return true;
+	for (InstId id : code_)
+	{
+		const Instruction& inst = body_.instructions[id];
+		if (!inst.type.is_float() || !in_wide_[inst.result])
+			continue;
+		const BinaryOp operation = static_cast<BinaryOp>(inst.sub);
+		if ((inst.op == Opcode::Binary && (operation == BinaryOp::Mul || operation == BinaryOp::Div)) ||
+			(inst.op == Opcode::Unary && static_cast<UnaryOp>(inst.sub) == UnaryOp::Sqrt))
+			return true;
+	}
+	return false;
 }
 
 bool LoopVectorizer::same_group(const Access& a, const Access& b) const
@@ -1331,6 +1378,24 @@ Value LoopVectorizer::widen_mask(const Instruction& test, bool& swapped)
 
 void LoopVectorizer::widen_binary(const Instruction& inst)
 {
+	for (Reduction& r : reductions_)
+		if (r.ordered && r.next == inst.result)
+		{
+			const Value lanes = wide(r.operand, r.type);
+			r.next_sum = add_in_order(r, wides_[r.phi], lanes);
+			return;
+		}
+	unsigned shift;
+	if (halves(inst, shift))
+	{
+		// Negative lanes round toward zero: they add the divisor less one.
+		const Value a = wide(inst.ops[0], inst.type);
+		const Value sign = vector(VectorOp::Psradi, a, Value::none(), 31);
+		const Value bias = vector(VectorOp::Psrldi, sign, Value::none(), 32 - static_cast<int>(shift));
+		const Value rounded = vector(VectorOp::Paddd, a, bias);
+		wides_[inst.result] = vector(VectorOp::Psradi, rounded, Value::none(), static_cast<int>(shift));
+		return;
+	}
 	const BinaryOp operation = static_cast<BinaryOp>(inst.sub);
 	VectorOp op;
 	if (lane_shift(operation, inst.type, op))
@@ -1503,6 +1568,21 @@ Value LoopVectorizer::overlap_guard(Value distance)
 	return all;
 }
 
+// The floating lanes added to `sum` in the order of their passes.
+Value LoopVectorizer::add_in_order(const Reduction& r, Value sum, Value lanes)
+{
+	const unsigned bytes = lane_bytes(r.type);
+	for (unsigned k = 0; k < lanes_; ++k)
+	{
+		const unsigned lane = backward_ ? lanes_ - 1 - k : k;
+		const Value moved = lane == 0 ? lanes
+									  : vector(VectorOp::Pshufd, lanes, Value::none(), bytes == 8 ? 0xee : 0x55 * lane);
+		const Value value = vector(bytes == 8 ? VectorOp::Tof64 : VectorOp::Tof32, moved);
+		sum = binary(r.op, r.type, sum, value, r.type);
+	}
+	return sum;
+}
+
 // A reduction's lanes as one value.
 Value LoopVectorizer::add_across(const Reduction& r, Value v)
 {
@@ -1618,7 +1698,9 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	for (size_t k = 0; k < reductions_.size(); ++k)
 	{
 		const Reduction& r = reductions_[k];
-		if (r.op == BinaryOp::And)
+		if (r.ordered)
+			wide_start[k] = r.start;
+		else if (r.op == BinaryOp::And)
 			wide_start[k] = Value::none();
 		else if (r.start.is(ValueKind::Integer) && body_.literals[r.start.index].low == 0 &&
 			body_.literals[r.start.index].high == 0)
@@ -1696,8 +1778,8 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	for (size_t k = 0; k < reductions_.size(); ++k)
 	{
 		const Reduction& r = reductions_[k];
-		make_phi(wide_loop, v128, { Value::block(vector_pre_), wide_start[k], Value::block(wide_loop), Value::none() },
-			sums[k]);
+		make_phi(wide_loop, r.ordered ? r.type : v128,
+			{ Value::block(vector_pre_), wide_start[k], Value::block(wide_loop), Value::none() }, sums[k]);
 		wides_[r.phi] = sums[k];
 	}
 	at(wide_loop, body_.blocks[wide_loop].last);
@@ -1734,7 +1816,7 @@ void LoopVectorizer::vectorize(uint32_t loop)
 		}
 	}
 	for (size_t k = 0; k < reductions_.size(); ++k)
-		set_back_edge(sums[k], wides_[reductions_[k].next]);
+		set_back_edge(sums[k], reductions_[k].ordered ? reductions_[k].next_sum : wides_[reductions_[k].next]);
 	const Value more = up ? compare(below, type, next_counter, limit) : compare(below, type, limit, next_counter);
 	Instruction back = make_instruction(Opcode::Branch, Type::scalar(TypeKind::Void));
 	back.ops[0] = more;
@@ -1752,7 +1834,8 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	at(exit, kNoId);
 	std::vector<Value> finals(reductions_.size(), Value::none());
 	for (size_t k = 0; k < reductions_.size(); ++k)
-		finals[k] = add_across(reductions_[k], wides_[reductions_[k].next]);
+		finals[k] = reductions_[k].ordered ? reductions_[k].next_sum
+										   : add_across(reductions_[k], wides_[reductions_[k].next]);
 	Instruction leave = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
 	leave.ops[0] = Value::block(scalar_pre);
 	finish_block(leave);

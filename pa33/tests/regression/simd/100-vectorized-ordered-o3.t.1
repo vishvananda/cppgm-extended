@@ -1,0 +1,73 @@
+#include <stdio.h>
+
+static double dot(const double* a, const double* b, int n)
+{
+	double s = 0.25;
+	for (int i = 0; i < n; ++i)
+		s += a[i] * b[i];
+	return s;
+}
+
+static float quotients(const float* a, const float* b, int n)
+{
+	float s = 1;
+	for (int i = 0; i < n; ++i)
+		s -= a[i] / b[i];
+	return s;
+}
+
+static double down(const double* a, int n)
+{
+	double s = 1e20;
+	for (int i = n - 1; i >= 0; --i)
+		s += a[i] * 3.0;
+	return s;
+}
+
+static double triangle(int n)
+{
+	double s = 0;
+	for (int j = 0; j < n; ++j)
+		s += 1.0 / (((j + 3) * (j + 2)) / 2 + j + 3);
+	return s;
+}
+
+static double product(const double* a, int n)
+{
+	double p = 1;
+	for (int i = 0; i < n; ++i)
+		p *= a[i] / 3.0;
+	return p;
+}
+
+// Negative lanes round toward zero.
+static void halve(int* d, const int* a, int n)
+{
+	for (int i = 0; i < n; ++i)
+		d[i] = a[i] / 8;
+}
+
+int main()
+{
+	double a[100], b[100];
+	float f[100], g[100];
+	int m[40], h[40];
+	for (int i = 0; i < 100; ++i)
+	{
+		a[i] = i * 1.37e15 + 0.1;
+		b[i] = 1.0 / (i + 1);
+		f[i] = i * 1.1f;
+		g[i] = 3.3f + i;
+	}
+	for (int n = 0; n < 12; ++n)
+		printf("%.17g %.9g %.17g %.17g %.17g\n", dot(a, b, n), quotients(f, g, n), down(a, n), triangle(n), product(a + 1, n));
+	printf("%.17g %.9g\n", dot(a, b, 100), quotients(f, g, 100));
+	for (int i = 0; i < 40; ++i)
+		m[i] = (i - 20) * 5;
+	halve(h, m, 40);
+	int sum = 0;
+	for (int i = 0; i < 40; ++i)
+		sum = sum * 3 + h[i];
+	printf("%d %d %d\n", h[0], h[17], sum);
+	return 0;
+}

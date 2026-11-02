@@ -1,0 +1,270 @@
+function @dot(%x : ptr, %y : ptr, %n : i64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %t1 = cmp gt i64 %n, 0
+    %t2 = cmp ugt i64 %n, 2
+    %t3 = binary and i64 %t1, %t2
+    branch %t3, ^loop_preheader_1, ^loop_preheader_3
+
+  block ^loop_preheader_1:
+    %t4 = binary add i64 %n, -2
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t5 = phi f64 [^loop_preheader_1: 0.5, ^wide_loop_2: %t16]
+    %t6 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t17]
+    %t7 = index f64 %x, %t6
+    %t8 = load v128 %t7
+    %t9 = index f64 %y, %t6
+    %t10 = load v128 %t9
+    %t11 = vector mulpd %t8, %t10
+    %t12 = vector tof64 %t11
+    %t13 = binary add f64 %t5, %t12
+    %t14 = vector pshufd %t11, 238
+    %t15 = vector tof64 %t14
+    %t16 = binary add f64 %t13, %t15
+    %t17 = binary add i64 %t6, 2
+    %t18 = cmp lt i64 %t17, %t4
+    branch %t18, ^wide_loop_2, ^loop_preheader_3
+
+  block ^loop_preheader_3:
+    %t19 = phi f64 [^entry: 0.5, ^wide_loop_2: %t16]
+    %t20 = phi i64 [^entry: 0, ^wide_loop_2: %t17]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^loop_preheader_3: %t20, ^body: %next]
+    %s = phi f64 [^loop_preheader_3: %t19, ^body: %sum]
+    %p = index f64 %x, %i
+    %v = load typed f64 %p
+    %q = index f64 %y, %i
+    %w = load typed f64 %q
+    %m = binary mul f64 %v, %w
+    %sum = binary add f64 %s, %m
+    %next = binary add i64 %i, 1
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return f64 %sum
+}
+function @quotients(%x : ptr, %y : ptr, %n : i64) -> f32 [no_inline=yes] {
+  block ^entry:
+    %t1 = cmp gt i64 %n, 0
+    %t2 = cmp ugt i64 %n, 4
+    %t3 = binary and i64 %t1, %t2
+    branch %t3, ^loop_preheader_1, ^loop_preheader_3
+
+  block ^loop_preheader_1:
+    %t4 = binary add i64 %n, -4
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t5 = phi f32 [^loop_preheader_1: 1f, ^wide_loop_2: %t22]
+    %t6 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t23]
+    %t7 = index f32 %x, %t6
+    %t8 = load v128 %t7
+    %t9 = index f32 %y, %t6
+    %t10 = load v128 %t9
+    %t11 = vector divps %t8, %t10
+    %t12 = vector tof32 %t11
+    %t13 = binary sub f32 %t5, %t12
+    %t14 = vector pshufd %t11, 85
+    %t15 = vector tof32 %t14
+    %t16 = binary sub f32 %t13, %t15
+    %t17 = vector pshufd %t11, 170
+    %t18 = vector tof32 %t17
+    %t19 = binary sub f32 %t16, %t18
+    %t20 = vector pshufd %t11, 255
+    %t21 = vector tof32 %t20
+    %t22 = binary sub f32 %t19, %t21
+    %t23 = binary add i64 %t6, 4
+    %t24 = cmp lt i64 %t23, %t4
+    branch %t24, ^wide_loop_2, ^loop_preheader_3
+
+  block ^loop_preheader_3:
+    %t25 = phi f32 [^entry: 1f, ^wide_loop_2: %t22]
+    %t26 = phi i64 [^entry: 0, ^wide_loop_2: %t23]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^loop_preheader_3: %t26, ^body: %next]
+    %s = phi f32 [^loop_preheader_3: %t25, ^body: %sum]
+    %p = index f32 %x, %i
+    %v = load typed f32 %p
+    %q = index f32 %y, %i
+    %w = load typed f32 %q
+    %m = binary div f32 %v, %w
+    %sum = binary sub f32 %s, %m
+    %next = binary add i64 %i, 1
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return f32 %sum
+}
+function @down(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %t1 = cmp gt i64 %n, 0
+    %t2 = cmp ugt i64 %n, 2
+    %t3 = binary and i64 %t1, %t2
+    branch %t3, ^loop_preheader_1, ^loop_preheader_3
+
+  block ^loop_preheader_1:
+    %t4 = vector fromf64 3
+    %t5 = vector pshufd %t4, 68
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t6 = phi f64 [^loop_preheader_1: 0, ^wide_loop_2: %t16]
+    %t7 = phi i64 [^loop_preheader_1: %n, ^wide_loop_2: %t17]
+    %t8 = index f64 %x, %t7
+    %t9 = index i8 %t8, -8
+    %t10 = load v128 %t9
+    %t11 = vector mulpd %t10, %t5
+    %t12 = vector pshufd %t11, 238
+    %t13 = vector tof64 %t12
+    %t14 = binary add f64 %t6, %t13
+    %t15 = vector tof64 %t11
+    %t16 = binary add f64 %t14, %t15
+    %t17 = binary add i64 %t7, -2
+    %t18 = cmp gt i64 %t17, 2
+    branch %t18, ^wide_loop_2, ^loop_preheader_3
+
+  block ^loop_preheader_3:
+    %t19 = phi f64 [^entry: 0, ^wide_loop_2: %t16]
+    %t20 = phi i64 [^entry: %n, ^wide_loop_2: %t17]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^loop_preheader_3: %t20, ^body: %next]
+    %s = phi f64 [^loop_preheader_3: %t19, ^body: %sum]
+    %p = index f64 %x, %i
+    %v = load typed f64 %p
+    %m = binary mul f64 %v, 3
+    %sum = binary add f64 %m, %s
+    %next = binary sub i64 %i, 1
+    %c = cmp gt i64 %next, 0
+    branch %c, ^body, ^done
+
+  block ^done:
+    return f64 %sum
+}
+function @halves(%n : i32) -> f64 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub i32 %n, 1
+    %t2 = cmp gt i32 %n, 1
+    %t3 = cmp ugt i32 %t1, 2
+    %t4 = binary and i64 %t2, %t3
+    branch %t4, ^loop_preheader_1, ^loop_preheader_3
+
+  block ^loop_preheader_1:
+    %t5 = binary add i32 %n, -2
+    %t6 = vector fromi64 4294967296
+    %t7 = vector fromi32 1
+    %t8 = vector pshufd %t7, 0
+    %t9 = vector paddd %t8, %t6
+    %t10 = vector fromf64 1
+    %t11 = vector pshufd %t10, 68
+    %t12 = vector fromi32 2
+    %t13 = vector pshufd %t12, 0
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t14 = phi f64 [^loop_preheader_1: 1, ^wide_loop_2: %t33]
+    %t15 = phi v128 [^loop_preheader_1: %t9, ^wide_loop_2: %t35]
+    %t16 = phi i32 [^loop_preheader_1: 1, ^wide_loop_2: %t34]
+    %t17 = vector pmuludq %t15, %t15
+    %t18 = vector psrlqi %t15, 32
+    %t19 = vector pmuludq %t18, %t18
+    %t20 = vector pshufd %t17, 8
+    %t21 = vector pshufd %t19, 8
+    %t22 = vector punpckldq %t20, %t21
+    %t23 = vector psradi %t22, 31
+    %t24 = vector psrldi %t23, 30
+    %t25 = vector paddd %t22, %t24
+    %t26 = vector psradi %t25, 2
+    %t27 = vector cvtdq2pd %t26
+    %t28 = vector divpd %t11, %t27
+    %t29 = vector tof64 %t28
+    %t30 = binary mul f64 %t14, %t29
+    %t31 = vector pshufd %t28, 238
+    %t32 = vector tof64 %t31
+    %t33 = binary mul f64 %t30, %t32
+    %t34 = binary add i32 %t16, 2
+    %t35 = vector paddd %t15, %t13
+    %t36 = cmp lt i32 %t34, %t5
+    branch %t36, ^wide_loop_2, ^loop_preheader_3
+
+  block ^loop_preheader_3:
+    %t37 = phi f64 [^entry: 1, ^wide_loop_2: %t33]
+    %t38 = phi i32 [^entry: 1, ^wide_loop_2: %t34]
+    jump ^body
+
+  block ^body:
+    %i = phi i32 [^loop_preheader_3: %t38, ^body: %next]
+    %s = phi f64 [^loop_preheader_3: %t37, ^body: %sum]
+    %t = binary mul nowrap i32 %i, %i
+    %h = binary div i32 %t, 4
+    %f = convert sitofp f64 i32 %h
+    %r = binary div f64 1, %f
+    %sum = binary mul f64 %s, %r
+    %next = binary add nowrap i32 %i, 1
+    %c = cmp lt i32 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return f64 %sum
+}
+function @plain(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %s = phi f64 [^entry: 0, ^body: %sum]
+    %p = index f64 %x, %i
+    %v = load typed f64 %p
+    %sum = binary add f64 %s, %v
+    %next = binary add i64 %i, 1
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return f64 %sum
+}
+function @running(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %s = phi f64 [^entry: 0, ^body: %sum]
+    %p = index f64 %x, %i
+    %v = load typed f64 %p
+    %m = binary mul f64 %v, %s
+    %sum = binary add f64 %s, %m
+    %next = binary add i64 %i, 1
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return f64 %sum
+}
+function @thirds(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %s = phi i32 [^entry: 0, ^body: %sum]
+    %p = index i32 %x, %i
+    %v = load typed i32 %p
+    %h = binary div i32 %v, 3
+    %sum = binary add i32 %s, %h
+    %next = binary add i64 %i, 1
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return i32 %sum
+}
