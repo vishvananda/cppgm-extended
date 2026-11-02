@@ -25,7 +25,7 @@ public:
 	struct Access
 	{
 		InstId inst;
-		Located at;	 // the address the loop does not change, or its object
+		Located at;   // the address the loop does not change, or its object
 		Value object; // what the address steps from
 		Type type;
 		bool store, typed;
