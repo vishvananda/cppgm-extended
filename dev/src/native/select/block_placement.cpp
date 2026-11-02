@@ -10,8 +10,8 @@
 // first: an edge links a block to a successor when the block ends its
 // chain and the successor starts its own. A two-way branch's static
 // taken-probability comes from its target only leading to a noreturn end
-// (cold), from loop back edges and loop exits, and from an equality test
-// being the unlikely outcome; an edge weighs that times its source's
+// (cold), from loop back edges and loop exits, from a NaN being rare, and
+// from an equality test being the unlikely outcome; an edge weighs that times its source's
 // frequency (the entry's spread along forward edges by those
 // probabilities, 8 times a loop header's inflow). The entry's chain comes first,
 // then the other chains in their first block's order, cold chains last.
@@ -40,6 +40,8 @@ const uint32_t kNegativeTaken = 300;
 // byte in a register this often.
 const uint32_t kMemoryZeroTaken = 700;
 const uint32_t kByteZeroTaken = 600;
+// A floating compare is unordered (an operand is a NaN) this often.
+const uint32_t kNanTaken = 30;
 const uint64_t kLevelFrequency = 8;
 
 bool terminator(const Inst& inst)
@@ -304,6 +306,11 @@ uint32_t Placement::taken(uint32_t b) const
 		if (t_exits != f_exits)
 			return t_exits ? kLoopExit : 1000 - kLoopExit;
 	}
+	const Block& block = f_.blocks[b];
+	const Cond cond = static_cast<Cond>(f_.insts[block.first + block.count - 2].sub);
+	// A floating compare's parity branch: an operand is a NaN.
+	if ((cond == CC_P || cond == CC_NP) && block.count >= 3 && f_.insts[block.first + block.count - 3].op == Op::FCmp)
+		return cond == CC_P ? kNanTaken : 1000 - kNanTaken;
 	auto calls = [&](uint32_t s) {
 		const Block& sb = f_.blocks[s];
 		for (uint32_t i = sb.first; i < sb.first + sb.count; ++i)
@@ -326,8 +333,6 @@ uint32_t Placement::taken(uint32_t b) const
 	const bool t_returns = returns(t), f_returns = returns(f);
 	if (t_returns != f_returns)
 		return t_returns ? kReturnTaken : 1000 - kReturnTaken;
-	const Block& block = f_.blocks[b];
-	const Cond cond = static_cast<Cond>(f_.insts[block.first + block.count - 2].sub);
 	// A sign test: `test x, x` or `cmp x, 0` just before a signed less
 	// (or sign) branch.
 	if ((cond == CC_L || cond == CC_S || cond == CC_GE || cond == CC_NS) && block.count >= 3)

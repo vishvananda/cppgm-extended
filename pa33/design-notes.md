@@ -110,6 +110,9 @@ that paid there in the course solution:
 - A `cmov` tests one condition. `ucomisd` reports a NaN as unordered, so `lt`, `le`,
   `gt`, `ge` and their `u` forms each map to one condition, but `eq` and `ne` need
   parity as well and stay materialized.
+- A branch on `x != x` is a NaN test. `ucomisd` of a register with itself sets
+  the parity flag only for a NaN, so the branch is one `jp`, with no `jne`.
+  Predict the NaN side rare and place it out of line.
 - Let a phi's sources and result share a register when their ranges do not
   overlap, so its edge transfers move nothing. A transfer on a conditional
   edge is executed in that edge's block, not at the end of the predecessor.

@@ -800,6 +800,15 @@ void FunctionSelector::emit_compare_jump(const Instruction& compare, uint32_t on
 			Inst& j = emit1(Op::Jcc, TypeKind::Void, label);
 			j.sub = cond;
 		};
+		// A value against itself (a NaN test) is unordered or equal: PF
+		// alone decides.
+		if ((pred == ComparePredicate::Eq || pred == ComparePredicate::Ne) &&
+			resolve(compare.ops[0]) == resolve(compare.ops[1]))
+		{
+			jcc(CC_P, pred == ComparePredicate::Ne ? t : f);
+			emit1(Op::Jmp, TypeKind::Void, pred == ComparePredicate::Ne ? f : t);
+			return;
+		}
 		switch (pred)
 		{
 		case ComparePredicate::Eq:

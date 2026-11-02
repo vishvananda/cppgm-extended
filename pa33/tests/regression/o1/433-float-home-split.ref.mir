@@ -48,7 +48,23 @@ function @scaled_sum
   block ^entry~loop
     mov rbx, 0
     fmov.f64 xmm1, 0.0
-    jmp ^loop
+
+  block ^loop
+    fmov.f64 xmm0, [r12+rbx*8]
+    fmul.f64 xmm4, xmm0, xmm2
+    fadd.f64 xmm4, xmm4, xmm3
+    fcmp.f64 xmm4, xmm4
+    jp ^loop~cold
+
+  block ^loop~next
+    fmov.f64 xmm0, xmm4
+
+  block ^next
+    fadd.f64 xmm1, xmm1, xmm0
+    add rbx, 1
+    cmp.i64 rbx, r13
+    jl ^loop
+    jmp ^next~done
 
   block ^loop~cold
     fmov.f64 [rbp-16], xmm1
@@ -61,23 +77,6 @@ function @scaled_sum
     fmov.f64 xmm1, [rbp-16]
     fmov.f64 xmm2, [rbp-8]
     fmov.f64 xmm3, [rbp-24]
-
-  block ^next
-    fadd.f64 xmm1, xmm1, xmm0
-    add rbx, 1
-    cmp.i64 rbx, r13
-    jge ^next~done
-
-  block ^loop
-    fmov.f64 xmm0, [r12+rbx*8]
-    fmul.f64 xmm4, xmm0, xmm2
-    fadd.f64 xmm4, xmm4, xmm3
-    fcmp.f64 xmm4, xmm4
-    jp ^loop~cold
-    jne ^loop~cold
-
-  block ^loop~next
-    fmov.f64 xmm0, xmm4
     jmp ^next
 
   block ^next~done

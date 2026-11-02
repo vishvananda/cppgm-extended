@@ -1,0 +1,87 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @clean
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i64
+    return f64 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r8, 0
+    fmov.f64 xmm1, 0.0
+
+  block ^head
+    lea r9, [r8*8]
+    add r9, rdi
+    fmov.f64 xmm0, [r9]
+    fcmp.f64 xmm0, xmm0
+    jp ^skip
+
+  block ^add
+    fadd.f64 xmm1, xmm1, xmm0
+
+  block ^next
+    add r8, 1
+    cmp.i64 r8, rsi
+    jl ^head
+    ret xmm1
+
+  block ^skip
+    fadd.f64 xmm1, xmm1, 1e+03
+    add r8, 1
+    cmp.i64 r8, rsi
+    jl ^head
+    ret xmm1
+
+  block ^out
+    ret xmm1
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $data -> [rbp-32] : obj<32x8>
+
+  block ^entry
+    lea rdi, [rbp-32]
+    fsub.f64 xmm0, 0.0, 0.0
+    fdiv.f64 xmm1, xmm0, xmm0
+    fmov.f64 [rdi], 1.5
+    mov r8, rdi
+    add r8, 8
+    fmov.f64 [r8], xmm1
+    mov r8, rdi
+    add r8, 16
+    fmov.f64 [r8], 2.5
+    mov r8, rdi
+    add r8, 24
+    fmov.f64 [r8], 3.0
+    mov rsi, 4
+    call @clean [args=(rsi,rdi)]
+    fptosi.f64.i32 r8, xmm0
+    sext.i32 r8
+    mov r11, 2190262207
+    mov rax, r8
+    imul rax, r11
+    sar rax, 39
+    mov rdx, r8
+    sar rdx, 63
+    sub rax, rdx
+    imul rax, 251
+    mov rdx, r8
+    sub rdx, rax
+    ret rdx
