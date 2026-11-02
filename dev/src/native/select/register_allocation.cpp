@@ -1125,14 +1125,7 @@ void FunctionSelector::assign_registers()
 			commit(w, reg, ra_range_first_[w], ra_range_first_[w + 1]);
 		return true;
 	};
-	for (size_t k = 0; k < m; ++k)
-	{
-		const uint32_t c = order[k];
-		if (temps_[ra_candidates_[c]].greg != kNoReg)
-			continue;
-		const Reg tied = tie[c] >= 0 ? temps_[ra_candidates_[static_cast<size_t>(tie[c])]].greg : kNoReg;
-		if (assign_web(c, tied))
-			continue;
+	auto assign_alone = [&](uint32_t c, Reg tied) {
 		uint32_t first = ra_range_first_[c], past = ra_range_first_[c + 1];
 		Reg reg = choose_register(c, first, past, group_reg[find(c)], tied);
 		// Else one outside the loops it skips, or the blocks clobbering it (a phi: not in its block or predecessors).
@@ -1179,6 +1172,34 @@ void FunctionSelector::assign_registers()
 		}
 		if (reg != kNoReg)
 			commit(c, reg, first, past);
+	};
+	// Whether every register of the class is clobbered somewhere in c's ranges.
+	auto crosses_clobbers = [&](uint32_t c) {
+		const uint32_t all = temps_[ra_candidates_[c]].cls == VClass::Gpr ? kAllocatableGprs : kAllocatableXmms;
+		uint32_t clobbered = 0;
+		for (uint32_t r = ra_range_first_[c]; r < ra_range_first_[c + 1]; ++r)
+			clobbered |= ra_clobber_.query(ra_ranges_[r].first + 1, ra_ranges_[r].second - 1);
+		return (clobbered & all) == all;
+	};
+	for (size_t k = 0; k < m; ++k)
+	{
+		const uint32_t c = order[k];
+		if (temps_[ra_candidates_[c]].greg != kNoReg)
+			continue;
+		const Reg tied = tie[c] >= 0 ? temps_[ra_candidates_[static_cast<size_t>(tie[c])]].greg : kNoReg;
+		if (assign_web(c, tied))
+			continue;
+		// A member that must be split around calls has the fewest registers
+		// to choose from: it picks first, and the web follows if it can.
+		const uint32_t root = find(c);
+		for (uint32_t w = web_first[root]; w < web_first[root + 1] && group_reg[root] == kNoReg; ++w)
+		{
+			const uint32_t member = web_members[w];
+			if (member != c && temps_[ra_candidates_[member]].greg == kNoReg &&
+				temps_[ra_candidates_[member]].cls == temps_[ra_candidates_[c]].cls && crosses_clobbers(member))
+				assign_alone(member, kNoReg);
+		}
+		assign_alone(c, tied);
 	}
 	if (!split_moves_.empty() || !homed.empty())
 		install_splits(split, homed);

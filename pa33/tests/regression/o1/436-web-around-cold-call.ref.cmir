@@ -1,0 +1,115 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @cold
+  abi
+    param %a -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fadd.f64 xmm0, xmm0, xmm0
+    ret xmm0
+
+function @sum
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i64
+    param %limit -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2>
+    temp %v -> [rbp-<off0>] : f64
+    temp %s -> [rbp-<off1>] : f64
+    param-slot %limit -> [rbp-<off2>] : f64
+
+  block ^entry
+    mov <gpr1>, rdi
+    mov <gpr2>, rsi
+    fmov.f64 <xmm0>, xmm0
+    cmp.i64 <gpr2>, 0
+    jle ^empty
+
+  block ^entry~loop
+    mov <gpr0>, 0
+    fmov.f64 xmm1, 0.0
+    jmp ^loop
+
+  block ^empty
+    fmov.f64 xmm0, 0.0
+    ret xmm0
+
+  block ^use~add
+    fmov.f64 <xmm1>, xmm0
+    jmp ^add
+
+  block ^next
+    add <gpr0>, 1
+    cmp.i64 <gpr0>, <gpr2>
+    jge ^end
+
+  block ^loop
+    fmov.f64 xmm0, [<gpr1>+<gpr0>*8]
+    fcmp.f64 xmm0, <xmm0>
+    ja ^next
+
+  block ^use
+    fcmp.f64 0.0, xmm0
+    jbe ^use~add
+
+  block ^use~slow
+    fmov.f64 [rbp-<off0>], xmm0
+    fmov.f64 [rbp-<off1>], xmm1
+    fmov.f64 [rbp-<off2>], <xmm0>
+
+  block ^slow
+    fmov.f64 xmm0, [rbp-<off0>]
+    call @cold [args=(xmm0)]
+    fmov.f64 <xmm1>, xmm0
+    fmov.f64 xmm0, [rbp-<off0>]
+    fmov.f64 xmm1, [rbp-<off1>]
+    fmov.f64 <xmm0>, [rbp-<off2>]
+
+  block ^add
+    fmul.f64 <xmm1>, <xmm1>, xmm0
+    fadd.f64 xmm1, xmm1, <xmm1>
+    add <gpr0>, 1
+    cmp.i64 <gpr0>, <gpr2>
+    jl ^loop
+
+  block ^end
+    ret xmm1
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $values -> [rbp-<off2>] : obj<24x8>
+
+  block ^entry
+    fmov.f64 [rbp-<off2>], 2.0
+    fmov.f64 [rbp-<off1>], -1.0
+    fmov.f64 [rbp-<off0>], 3e+01
+    lea rdi, [rbp-<off2>]
+    mov rsi, 3
+    fmov.f64 xmm0, 1e+01
+    call @sum [args=(rsi,rdi,xmm0)]
+    fptosi.f64.i32 rax, xmm0
+    sext.i32 rax
+    ret rax
