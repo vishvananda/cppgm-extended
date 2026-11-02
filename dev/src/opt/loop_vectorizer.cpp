@@ -340,8 +340,10 @@ bool LoopVectorizer::in_body(Value v) const
 {
 	if (!v.is(ValueKind::Temp) || v.index < body_.parameter_count)
 		return false;
+	// (An instruction a loop vectorized earlier in the round added has no
+	// block recorded yet; it is outside this loop.)
 	const InstId def = body_.temps[v.index].def;
-	return def != kNoId && c_.block_of[def] == b_;
+	return def != kNoId && def < c_.block_of.size() && c_.block_of[def] == b_;
 }
 
 // Whether the low bytes of `v` can be computed in `type`: wide arithmetic only
