@@ -360,10 +360,12 @@ is not discardable and every symbol named in global data; definitions
 reachable from them through any symbol operand stay, and the other
 discardable function definitions are removed.
 
-### Virtual Calls (`-O2`, `-O3`)
+### Virtual Calls
 
 The lowering, not the optimizer, guesses a virtual call's target: it knows
-which functions the unit overrides. A call of a defined, non-pure,
+which functions the unit overrides. It does so in every object compile, as
+the LowIR of `-c` does not depend on the level (see `tests/object-roundtrip`),
+and in `--emit-lowir` from `-O2`. A call of a defined, non-pure,
 non-variadic function that nothing in the unit overrides compares the
 table's entry with the function's address. Equal, it calls the function
 directly, and the inliner can see the body; otherwise it calls through the
@@ -374,9 +376,9 @@ are often wrong. Destructors and calls returning a class object are left
 out. Both calls sit in one exception region, so that a throw from either
 runs the same cleanups.
 
-### Small Class Copies (`-O2`, `-O3`)
+### Small Class Copies
 
-The lowering also moves a class of at most three scalar members, bases,
+In the same cases, the lowering moves a class of at most three scalar members, bases,
 array elements and complex parts included, by a typed load and store per
 member. A `copyobj` has no type, so it may alias every other access. It
 would stop a loop from hoisting a `typed` pointer load past it. Separate

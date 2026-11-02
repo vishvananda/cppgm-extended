@@ -445,9 +445,11 @@ public:
 		return strict_aliasing_ && (may_alias_kinds_ >> static_cast<unsigned>(kind) & 1) == 0;
 	}
 	bool host_objects() const { return host_objects_; }
-	// Optimizing levels: a virtual call tests for the function it names
-	// and calls that one directly (FunctionLowering::speculative_call), and
-	// a small class moves member by member (FunctionLowering::copy_members).
+	// An object compile at any level (its LowIR is the same at every
+	// level) and the LowIR view from -O2: a virtual call tests for the
+	// function it names and calls that one directly
+	// (FunctionLowering::speculative_call), and a small class moves member
+	// by member (FunctionLowering::copy_members).
 	void set_optimizing(bool on) { optimizing_ = on; }
 	bool optimizing() const { return optimizing_; }
 	// Whether a function type has a class parameter its caller destroys
