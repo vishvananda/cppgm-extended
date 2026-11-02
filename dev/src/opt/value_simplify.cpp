@@ -1696,8 +1696,9 @@ bool Simplifier::math_call(BlockId block, InstId& prev, InstId id)
 	const Value x = body_.operands[call.extra_first];
 	const Type type = call.type;
 	const TypeKind kind = type.kind();
-	if (!x.is(ValueKind::Temp) || body_.temps[x.index].type != type ||
-		call.extra_count != (function == MathFunction::Pow ? 2u : 1u))
+	const bool typed = x.is(ValueKind::Temp) ? body_.temps[x.index].type == type
+											 : function == MathFunction::Pow && x.is(ValueKind::Float);
+	if (!typed || call.extra_count != (function == MathFunction::Pow ? 2u : 1u))
 		return false;
 	const bool floating = kind == TypeKind::F32 || kind == TypeKind::F64;
 	if (function == MathFunction::Abs ? kind != TypeKind::I32 && kind != TypeKind::I64 : !floating)

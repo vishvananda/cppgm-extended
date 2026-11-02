@@ -196,6 +196,12 @@ function @sqrt_of_mixed(%x : f64, %y : f64) -> f64 [no_inline=yes] {
     return f64 %r
 }
 
+function @pow_of_literal() -> f64 [no_inline=yes] {
+  block ^entry:
+    %r = call f64 @pow(1.5, 2.0)
+    return f64 %r
+}
+
 function @sqrt_of_negative_literal(%x : f64) -> f64 [no_inline=yes] {
   block ^entry:
     %a = binary mul f64 %x, %x
