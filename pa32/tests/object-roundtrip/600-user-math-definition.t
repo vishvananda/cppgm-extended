@@ -1,0 +1,1 @@
+../driver/o2/600-user-math-definition.t

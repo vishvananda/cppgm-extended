@@ -980,6 +980,15 @@ null pointer constant and is valid with `ptr`. `inf` and `nan` are the floating 
 and quiet NaN, and `snan` is the signalling NaN; each may also be written
 in uppercase as `INFINITY`, `NAN`, or `SNAN`, and `inf` may carry a leading `-`.
 
+A NaN may state its payload in hexadecimal: `nan(0x12)`, `-snanf(0x3)`
+or `nanL(0x55)`. The payload supplies the fraction bits below the quiet bit;
+it must fit those bits, and a signalling NaN needs a nonzero payload. The
+sign and quiet/signalling state come from the spelling. A writer preserves
+nondefault payloads, including a value produced by an optimizer's bit copy.
+Numeric operations need not preserve a particular NaN payload, but a copy of
+the representation does. Omitting the payload selects the format's default
+NaN of that sign and kind.
+
 `f80` storage is 16 bytes at 16-byte alignment wherever LowIR lays it out: a
 slot, a structured global's item, the stride of `index f80`. The first 10 bytes
 carry the x87 extended value and the trailing 6 bytes are zero padding. The
@@ -1048,8 +1057,8 @@ currently supported projection kinds are:
 `array_element` labels the address of an array element (`p[i]`), and `field` the
 address of a member (`s.x`, `p->x`, `obj.*pm`). When omitted, `index` is plain
 pointer arithmetic; already-lowered source origins such as base-subobject selection
-have no spelling. No pass of the course solution draws a conclusion from the label, so a
-consumer may not depend on it, a producer may omit it, and the comparison ignores it.
+have no spelling. The label supplies no semantic proof: a consumer may not
+depend on it, a producer may omit it, and the comparison ignores it.
 
 `typed` is an instruction fact (see Instruction Facts below).
 
@@ -1435,7 +1444,7 @@ to erase the call: an `-O0` consumer executes the call and all ordinary source
 cleanup exactly as written.  The permission is invalid on value-returning or
 indirect calls and does not classify an unmarked call by its symbol spelling.
 The C++ lowering states it by the rule in Facts The C++ Lowering States below;
-consuming it is optional, and the course solution's optimizer does not.
+consuming it is optional.
 
 ### Terminators
 

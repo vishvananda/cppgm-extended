@@ -29,6 +29,7 @@ pa30/README.md
 pa31/README.md
 pa32/README.md
 pa32/design-notes.md
+pa32/improvements.md
 pa33/README.md
 pa33/design-notes.md
 pa33/tests/o1/README.md

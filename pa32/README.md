@@ -24,10 +24,10 @@ built the same way.
   the outcome and the size envelope each fixture states in its
   `x.ref.expect` sidecar, and the lowering floor.  The Quality Bar section
   is normative.
-- **One design** is how the course solution meets that bar, pass by pass,
-  with the budgets and caps it chose.  The linked design notes are a worked example.  A different optimizer that meets the bar is a correct PA32; a
-  course fixture never compares the shape of your output with the course
-  solution's.
+- The **design notes** discuss algorithms, proofs and tradeoffs. They are
+  advice, not additional requirements. A different optimizer that meets the
+  bar is correct; a course fixture never compares its output shape with the
+  reference implementation's.
 
 Run `make test` from this assignment directory to check the course contract.
 See [Testing and references](../TESTING_AND_REFERENCES.md) for selecting tests.
@@ -35,6 +35,9 @@ See [Testing and references](../TESTING_AND_REFERENCES.md) for selecting tests.
 ### Prerequisites
 
 You should complete PA31 before starting this assignment.
+
+The kernel quality checks require Python 3, GCC and Valgrind's Cachegrind on
+Linux x86-64, in addition to the ordinary course tools.
 
 You will reuse:
 
@@ -199,9 +202,8 @@ the fixture is about in terms of the LowIR it reads and writes:
 `none(phi) in ^merge` for a choice that must collapse.  Budget lines bound
 the output's size: `instructions <= N`, `blocks <= N`, `count(call)`,
 `count(load)`, `count(store)`, `count(phi)`, and `instructions <= N in
-@function`.  The budgets were generated from an earlier course solution's
-output at 10% tolerance plus one. Each sidecar states the actual required bounds
-and outcomes. The adjacent `x.ref` is an informational example; matching its
+@function`. Each sidecar states the required bounds and outcomes, with room
+for alternative implementations. The adjacent `x.ref` is an informational example; matching its
 instruction sequence is not required.
 
 A source fixture in a driver lane is also run: the emitted LowIR is built
@@ -215,6 +217,14 @@ To evaluate one sidecar by hand:
 ```sh
 $ perl ../scripts/expect_ir.pl tests/o1/x.my tests/o1/x.ref.expect
 ```
+
+`make test-kernels` adds four dynamic work checks: bounded search, aliased and
+disjoint field updates, narrow arithmetic and state crossing a cold call.
+They use one host-built scalar oracle and driver, and compare startup-subtracted
+Cachegrind instruction counts against GCC. Each `.quality` file publishes its
+limit; the supplied frontend and unoptimized backend isolate your LowIR work.
+The ordinary course suite includes these checks. See
+[improvements.md](improvements.md) for their edge cases and measurement method.
 
 ### Design Notes (Non-Normative)
 
@@ -240,29 +250,20 @@ pass:
   undone once the backend improves.
 - Know what blocks inlining in real code. A callee that contains exception
   instructions is the common case (any destructible local and a call), and
-  LowIR's handler edges are implicit (see PA21's design notes). The course
-  solution inlines such a callee only when constant arguments fold its
-  exception instructions away; an optimizer that tracks the handler stack can
-  admit a callee whose regions leave it balanced.
+  LowIR's handler edges are implicit (see PA21's handout). An
+  optimizer must track the handler stack or prove the copied regions no
+  longer needed. Every normal and exceptional path must leave balanced state.
   An `eh_try` landing that pops its own record with `eh_end` needs a
   targetless `eh_cleanup` to retain that record on entry, as specified in
   [LowIR's exception-handling contract](../pa8/lowir.md#exception-instructions).
 - Keep the optimizer's own work bounded. PA34 compiles the whole compiler
   at `-O3` with this optimizer; [the design notes](design-notes.md) describe
-  how the course solution avoids repeating work.
+  how to avoid repeating work.
 
-No course fixture pins a cap: a sidecar states what must be simplified
-(outcome lines) and how large the output may be (budgets with room above
-the course solution's counts), and an upper bound on a function the
-optimizer removed holds. The course solution's own caps (which loop callees
-stay calls, what a single-call callee may cost, when a small callee made of
-calls stays out of line, how far a loop unrolls) are pinned only in
-`tests/regression`, outside your exit criteria.
-
-### Design example
-
-[Design notes](design-notes.md) describe the course solution’s passes and
-implementation choices. They are a worked example, not additional requirements.
+No course fixture requires a particular admission cap or pass order. The
+sidecars state observable outcomes and output-size limits; an upper bound on a
+function removed by optimization still holds. Consult the
+[design notes](design-notes.md) for the reasoning behind possible approaches.
 
 ### Further improvements
 
@@ -284,9 +285,8 @@ optimizer can retain a guarded scalar path when a proof fails.
 Judge the benefit by work removed or by a generous size bound, and measure
 larger workloads as described in PA33's design notes. A shorter dump alone may
 increase register pressure or delay a division. Keep compile cost and code
-growth in the comparison. The course solution's exact pass ordering, vector
-instructions, register choices and admission caps are examples, not targets to
-copy.
+growth in the comparison. See [the improvement exercises](improvements.md)
+for supplied inputs, scalar oracles and optional measurement commands.
 
 ### Validation Modes
 
@@ -340,6 +340,13 @@ source-language clauses.
   It covers nested catch forwarding after optimization; PA26 retains the
   corresponding unoptimized EH coverage. These `.t` anchors use `.t.N`
   companion sources and the ordinary host-link result sidecars.
+  An adjacent `.flags` file may select additional driver options, including
+  the disabled-strict-aliasing case's `-O2 -fno-strict-aliasing`.
+- `tests/kernels` supplies the four required dynamic quality checks described
+  above. `make test-kernels` runs these independently.
+- `tests/improvements` supplies optional vector, memory traversal and scheduling
+  experiments. `make test-improvements` checks their behavior and reports work
+  without a speed threshold; see [improvements.md](improvements.md).
 - `tests/object-roundtrip` compares direct `cppgm++ -c` output against an
   object produced by `cppgm++ --emit-lowir -O0` followed by `cppgm++ -c` on
   the generated LowIR file. This checks that object emission can be
@@ -398,9 +405,8 @@ PA32 does not require:
   or an unbounded insertion/fixed-point schedule
 - alias-driven aggressive dead-store elimination
 - partial unrolling, peeling, vectorization, or loop transformations beyond
-  the bounded transformations needed by the fixture expectations (the course
-  solution's optional loop vectorizer is described in
-  [design-notes.md](design-notes.md))
+  the bounded transformations needed by the fixture expectations; optional
+  experiments are described in [improvements.md](improvements.md)
 - machine-IR scheduling or register-allocation optimization
 - unbounded interprocedural cloning, externally observable ABI changes,
   semantic body merging, or indirect-call specialization

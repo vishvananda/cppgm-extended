@@ -1,0 +1,248 @@
+declare function @__builtin_memcpy(%arg0 : ptr [alias=noalias], %arg1 : ptr [alias=noalias], %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memcpy]
+declare function @memset(%arg0 : ptr, %arg1 : i32, %arg2 : i64) -> ptr [unwind=no, linkage=c, binding=strong]
+declare function @__builtin_memmove(%arg0 : ptr, %arg1 : ptr, %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memmove]
+
+global @order : i32 [binding=internal, object=_ZL5order] = zero
+global @a : i32 [binding=strong] = zero
+global @b : i32 [binding=strong] = zero
+
+function @first() -> i32 [binding=strong, object=_Z5firstv] {
+  block ^entry:
+    %t1 = load typed i32 @order
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = binary add nowrap i32 %t2, 1
+    store typed i32 %t3, @order
+    return i32 3
+}
+function @second() -> i32 [binding=strong, object=_Z6secondv] {
+  block ^entry:
+    %t1 = load typed i32 @order
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = binary add nowrap i32 %t2, 2
+    store typed i32 %t3, @order
+    return i32 5
+}
+function @copy(%p : obj<8x4>) -> obj<8x4> [binding=strong, object=_Z4copy6Padded, no_inline=yes] {
+  slot $retobj__1 : obj<8x4>
+
+  block ^entry:
+    %t1 = addr $retobj__1
+    copyobj 8x4 %p, %t1
+    return obj<8x4> $retobj__1
+}
+function @carrier(%bits : i64) -> f64 [binding=strong, object=_Z7carriery, no_inline=yes] {
+  block ^entry:
+    %t1 = copy f64 %bits
+    return f64 %t1
+}
+function @clear(%i : u32) -> i64 [binding=strong, object=_Z5clearj, no_inline=yes] {
+  slot $values : obj<640x8>
+
+  block ^entry:
+    %t1 = addr $values
+    zeroinit 640x1 %t1
+    %t2 = binary and u32 %i, 79
+    %t3 = index i64 [projection=array_element] %t1, %t2
+    store typed i64 17, %t3
+    %t4 = binary xor u32 %t2, 1
+    %t5 = index i64 [projection=array_element] %t1, %t4
+    %t6 = load typed i64 %t5
+    %t7 = binary add i64 %t6, 17
+    return i64 %t7
+}
+function @publish(%s : ptr) -> i32 [binding=strong, object=_Z7publishP4Self, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed ptr %s
+    %t2 = load typed i32 %t1
+    %t3 = binary add nowrap i32 %t2, 4
+    store typed i32 %t3, %t1
+    %t4 = index i8 [projection=field] %s, 8
+    %t5 = load typed i32 %t4
+    return i32 %t5
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $n : i32
+  slot $p : obj<8x4>
+  slot $argobj__1 : obj<8x4>
+  slot $aggregate__2 : obj<8x4>
+  slot $source : obj<24x1>
+  slot $dest : obj<24x1>
+  slot $aligned : obj<32x32>
+  slot $self : obj<16x8>
+
+  block ^entry:
+    store volatile i32 7, $n
+    %t1 = load typed i32 @order
+    %t2 = cmp ne i32 %t1, 12
+    branch %t2, ^if_then_3, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t3 = load typed i32 @a
+    %t4 = cmp ne i32 %t3, 3
+    branch %t4, ^if_then_3, ^lor_rhs_2
+
+  block ^lor_rhs_2:
+    %t5 = load typed i32 @b
+    %t6 = cmp ne i32 %t5, 5
+    branch %t6, ^if_then_3, ^if_end_4
+
+  block ^if_then_3:
+    return i32 1
+
+  block ^if_end_4:
+    %t7 = addr $p
+    %t8 = call ptr @memset(%t7, 90, 8)
+    store i8 113, %t7
+    %t9 = load volatile i32 $n
+    %t10 = index i8 [projection=field] %t7, 4
+    store typed i32 %t9, %t10
+    %t11 = addr $argobj__1
+    copyobj 8x4 %t7, %t11
+    %t12 = call obj<8x4> @copy($argobj__1)
+    %t13 = addr $aggregate__2
+    copyobj 8x4 %t12, %t13
+    %t14 = load i64 %t13
+    %t15 = convert trunc i8 i64 %t14
+    %t16 = cmp ne i8 %t15, 113
+    branch %t16, ^if_then_6, ^lor_rhs_5
+
+  block ^lor_rhs_5:
+    %t17 = binary ushr i64 %t14, 32
+    %t18 = convert trunc i32 i64 %t17
+    %t19 = cmp ne i32 %t18, 7
+    branch %t19, ^if_then_6, ^loop_preheader_7
+
+  block ^if_then_6:
+    return i32 2
+
+  block ^loop_preheader_7:
+    %t20 = addr $source
+    jump ^for_cond_8
+
+  block ^for_cond_8:
+    %t21 = phi u32 [^for_body_9: %t28, ^loop_preheader_7: 0]
+    %t22 = cmp ult u32 %t21, 24
+    branch %t22, ^for_body_9, ^for_end_10
+
+  block ^for_body_9:
+    %t23 = load volatile i32 $n
+    %t24 = copy u32 %t23
+    %t25 = binary add u32 %t21, %t24
+    %t26 = convert trunc u8 u32 %t25
+    %t27 = index u8 [projection=array_element] %t20, %t21
+    store u8 %t26, %t27
+    %t28 = binary add u32 %t21, 1
+    jump ^for_cond_8
+
+  block ^for_end_10:
+    %t29 = addr $dest
+    %t30 = addr $source
+    copyobj 24x1 %t30, %t29
+    %t31 = index i8 %t29, 2
+    %t32 = call ptr @__builtin_memmove(%t31, %t29, 20)
+    jump ^for_cond_11
+
+  block ^for_cond_11:
+    %t33 = phi u32 [^for_end_10: 2, ^if_end_14: %t41]
+    %t34 = cmp ult u32 %t33, 22
+    branch %t34, ^for_body_12, ^for_end_15
+
+  block ^for_body_12:
+    %t35 = index u8 [projection=array_element] %t29, %t33
+    %t36 = load u8 %t35
+    %t37 = binary sub u32 %t33, 2
+    %t38 = index u8 [projection=array_element] %t30, %t37
+    %t39 = load u8 %t38
+    %t40 = cmp ne u8 %t36, %t39
+    branch %t40, ^if_then_13, ^if_end_14
+
+  block ^if_then_13:
+    return i32 3
+
+  block ^if_end_14:
+    %t41 = binary add u32 %t33, 1
+    jump ^for_cond_11
+
+  block ^for_end_15:
+    %t42 = call f64 @carrier(-9223372036854775808)
+    %t43 = copy i64 %t42
+    %t44 = cmp ne i64 %t43, -9223372036854775808
+    branch %t44, ^if_then_16, ^if_end_17
+
+  block ^if_then_16:
+    return i32 4
+
+  block ^if_end_17:
+    %t45 = call f64 @carrier(9221120237041090578)
+    %t46 = copy i64 %t45
+    %t47 = cmp ne i64 %t46, 9221120237041090578
+    branch %t47, ^if_then_18, ^if_else_19
+
+  block ^if_then_18:
+    return i32 5
+
+  block ^if_else_19:
+    %t48 = addr $aligned
+    store typed i64 1, %t48
+    %t49 = index i64 [projection=array_element] %t48, 1
+    store typed i64 2, %t49
+    %t50 = index i64 [projection=array_element] %t48, 2
+    store typed i64 3, %t50
+    %t51 = index i64 [projection=array_element] %t48, 3
+    store typed i64 4, %t51
+    %t52 = copy i64 %t48
+    %t53 = binary and i64 %t52, 31
+    branch %t53, ^if_then_20, ^if_end_21
+
+  block ^if_then_20:
+    return i32 6
+
+  block ^if_end_21:
+    %t54 = addr $self
+    %t55 = load volatile i32 $n
+    %t56 = index i8 [projection=field] %t54, 8
+    store typed ptr %t56, %t54
+    store typed i32 %t55, %t56
+    %t57 = call i32 @publish(%t54)
+    %t58 = cmp ne i32 %t57, 11
+    branch %t58, ^if_then_23, ^lor_rhs_22
+
+  block ^lor_rhs_22:
+    %t59 = load typed ptr %t54
+    %t60 = cmp ne ptr %t59, %t56
+    branch %t60, ^if_then_23, ^if_end_24
+
+  block ^if_then_23:
+    return i32 7
+
+  block ^if_end_24:
+    %t61 = load volatile i32 $n
+    %t62 = copy u32 %t61
+    %t63 = call i64 @clear(%t62)
+    %t64 = cmp ne i64 %t63, 17
+    branch %t64, ^if_then_26, ^lor_rhs_25
+
+  block ^lor_rhs_25:
+    %t65 = load typed i64 %t51
+    %t66 = cmp ne i64 %t65, 4
+    branch %t66, ^if_then_26, ^if_end_27
+
+  block ^if_then_26:
+    return i32 8
+
+  block ^if_end_27:
+    return i32 0
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = load typed i32 @order
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = binary add nowrap i32 %t2, 1
+    store typed i32 %t3, @order
+    store typed i32 3, @a
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 2
+    store typed i32 %t5, @order
+    store typed i32 5, @b
+    return void
+}

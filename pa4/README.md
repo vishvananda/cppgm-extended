@@ -126,7 +126,7 @@ host's standard library headers for every translation unit, and PA34
 compiles the compiler itself: hundreds of thousands of tokens per compile,
 most of them from macros, include guards and groups that are skipped. At
 that scale the representation decides the cost, not the rules. One representation
-that scales, and the one the course solution uses:
+that scales:
 
 - Find a macro through the identifier's interned entry (a field that says
   whether, and as what, the name is defined), not by probing a table keyed by

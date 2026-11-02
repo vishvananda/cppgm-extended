@@ -32,7 +32,7 @@ built the same way.
 - **One design** is a way to lower LowIR: the five-stage structure and
   compact shapes in the linked design notes.  A different lowering that meets
   the bar is a correct PA24; only the contract-shape fixtures compare your
-  instruction selection with the course solution's.
+  instruction selection with the reference output.
 
 Run `make test` from this assignment directory to check the course contract.
 See [Testing and references](../TESTING_AND_REFERENCES.md) for selecting tests.
@@ -81,9 +81,7 @@ The starter kit contains:
 - `tests/controls/` for focused property checks that inspect only the
   documented MIR or native relationship and generated behavior, never a
   complete MIR dump or executable image
-- `tests/regression/`, which pins the course solution's own MIR shapes and
-  selection policies (`controls/`); it is
-  outside your exit criteria, and `make test-regression` runs it on request
+
 
 Students should implement the assignment in `dev/lowir2native.cpp` and any reusable
 student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
@@ -159,14 +157,10 @@ The frame section also records the final native layout policy.  It contains
 `frame_pointer keep|omit` and `epilogues shared|duplicated` (one epilogue
 that every return reaches, or one per return); these are the exact facts
 consumed by prologue/epilogue and unwind emission, not optimization hints.
-Which policy a level uses is yours; the course solution keeps the frame
-pointer and shares epilogues at `-O0`.
+Which policy a level uses is yours, subject to the ABI and fixture bounds.
 
-`--stats` writes one diagnostic record to standard error after successful
-lowering and encoding. Its counters are the course solution's own (for
-example `scratch_carried_reloads`, the frame reloads its `-O0` selection
-satisfied from a carried value); no course lane requires any of them, and
-only the regression lane reads one.
+`--stats` enables diagnostic statistics after successful lowering and encoding.
+The counter names and their values are not part of the course contract.
 
 That MIR dump path must work even for helper-only LowIR inputs that have no
 entry function. In that case the dumped MIR should simply omit the optional
@@ -218,10 +212,8 @@ It also checks the machine-IR dump:
   locally bound global; a copy of 32, 48 or 56 aligned bytes made of direct
   chunks rather than a string operation; the `unreachable` terminator; the
   storage a by-address argument gets; and a 32-bit `and` for an
-  upper-clearing mask. The course solution's other selection policies (its
-  copy and zero thresholds, its `-O0` frame-pointer and epilogue choice, its
-  switch compare chain, its carried reloads and parameter carriers) are
-  checked only in `tests/regression`.
+  upper-clearing mask. Other selection policies remain your choice within
+  the documented relationships and size bounds.
 
 Canonicalization absorbs interchangeable free registers and frame offsets;
 it preserves instruction families, widths, ordering and operand classes.
@@ -403,14 +395,10 @@ Within the supported subset, PA24 should lower:
 
 What the course lane requires of your backend is the behaviour of every
 program, the ABI relationships the strict and structural fixtures check,
-the size budgets of the sidecars (generated from the course solution's dumps
-with 100% room) and the controls under `tests/controls/`. The goals below
-describe the course solution's `-O0` lowering within that frame: a shape a
-strict or structural fixture or a control checks is the contract; a
-selection rule no control names (the copy and zero thresholds, carried
-reloads, the frame-pointer and epilogue policy, the switch compare chain) is
-the course solution's choice, pinned only in `tests/regression`, and a
-backend may choose otherwise within the budgets.
+the size budgets in the sidecars and the controls under `tests/controls/`.
+A relationship checked by a strict or structural fixture or control is part of
+the contract. Other instruction-selection and placement policies are choices
+within those bounds.
 
 To complete PA24, implement these goals:
 
@@ -418,14 +406,9 @@ To complete PA24, implement these goals:
    LowIR branches, first-class `switch` dispatch, and direct calls should become
    first-class machine-IR branches and direct calls.
 
-   For a `switch` with at least sixteen case edges, an integer-literal case
-   should remain an immediate operand of its machine comparison.  When that
-   value fits the target comparison's immediate field, encode the comparison
-   directly instead of first copying the value to a scratch register.  A
-   nonliteral case value keeps the ordinary register-materialization path,
-   and smaller switches may use that path for every case.  This is the
-   course solution's selection, checked only in `tests/regression`; a jump
-   table is an equally valid lowering.
+   Select a switch using comparisons, a tree or a jump table while preserving
+   every case and default edge. Immediate operands can avoid unnecessary
+   materialization when their values fit the target encoding.
 
 2. Direct startup/runtime wiring.
    The startup path should call `@__cppgm_init`, `@main`, and `@__cppgm_fini` as direct
@@ -592,53 +575,23 @@ To complete PA24, implement these goals:
    The lowering may reverse the setup order or stage one address in reserved
    scratch; generated behavior must remain correct.
 
-   A direct three-argument call to the canonical builtin `memcpy` may become
-   a dynamic `copy_bytes` machine operation when its returned pointer is
-   unused.  After ordinary ABI argument setup, that operation consumes the
-   destination, source, and runtime byte count from their calling-convention
-   carriers and copies exactly that many bytes.  A call whose result is used,
-   an indirect call, an ordinary unmarked function, or a call with a different
-   argument shape remains a call.  The course solution applies this rule at
-   every level; `tests/regression` checks it, and the course lane does not.
+   A recognized canonical memory builtin may use a bulk machine operation
+   when its result and effects remain correct. Preserve overlap semantics,
+   returned pointers, argument setup and all live values. An ordinary user
+   function with a similar name is not such a builtin.
 
-   A fixed 16-byte zero may avoid string-operation setup with a cleared
-   reserved vector scratch and one unaligned store.  This direct form must be
-   smaller than the corresponding setup for every address-register choice,
-   preserve the integer condition flags, and must not consume an XMM register
-   available to ordinary value placement.  Other zero sizes retain the
-   existing exact target-byte comparison between direct scalar stores and the
-   compact string form.  These are the course solution's thresholds, checked
-   only in `tests/regression`.
+   Choose direct chunks or a string operation based on legal encodings and
+   cost. The focused controls require direct chunks for aligned copies of
+   32, 48 and 56 bytes. Both strategies must preserve all source and destination
+   bytes and declare their scratch effects accurately. Do not consume a register
+   still holding a live scalar or ABI argument.
 
-   For fixed copies through 32 bytes, direct chunks may also avoid the setup
-   for a string operation.  The direct encoder uses its reserved vector
-   scratch for each complete 16-byte chunk and scalar chunks for the tail.
-   This form extends through 64 bytes when the operation declares at least
-   eight-byte alignment.  Larger or more weakly aligned copies retain the
-   compact string-operation form.  `tests/controls` requires the direct
-   chunks for copies of 32, 48 and 56 aligned bytes; where the course
-   solution switches to the string operation is its choice, checked only in
-   `tests/regression`.  Both forms must preserve the source bytes,
-   destination bytes, and declared scratch effects; vector chunks may not
-   consume an XMM register available to ordinary value placement.
+   Reusing a value already held in a register can avoid a frame reload. Prove
+   that its bytes and register survive every intervening effect, call and
+   clobber. Frame storage remains valid when that proof fails.
 
-   Native emission may carry a compiler-created scalar temporary from its one
-   defining frame store to later typed reloads in the same block when the
-   complete bounded window is safe. A carried window must not cross a call,
-   bulk-memory or EH operation, floating/XMM operation, symbol/global access,
-   large-immediate scratch use, or any explicit or implicit definition of the
-   chosen carry register. Overlapping windows require distinct carry registers
-   or retain their frame traffic. The conservative frame form is always valid;
-   the course solution carries such values at `-O0`, and `tests/regression`
-   checks that it does.
-
-   Direct object returns follow the same rule in both directions: returning a
-   frame-resident object loads its chunks directly into the ABI result
-   registers, and storing a direct object call result writes those registers
-   directly to its frame destination. In the course solution a destination
-   address created before the call remains frame-shaped through the later
-   result copy rather than occupying a register across the call
-   (`tests/regression` checks it).
+   Object returns and call results must move their chunks through the ABI
+   result registers without overwriting an address or another live result.
 
    An immediately returned integer quotient or remainder may use the fixed
    division result register directly. If its dividend is frame-, global-, or

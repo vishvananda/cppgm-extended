@@ -301,8 +301,12 @@ integer-literal:
 scalar-literal:
 	TT_LITERAL
 	OP_MINUS TT_LITERAL
-	LOW_NAMED_LITERAL
-	OP_MINUS LOW_NAMED_LITERAL
+	LOW_NAMED_LITERAL nan-payload?
+	OP_MINUS LOW_NAMED_LITERAL nan-payload?
+
+# A payload is valid only on a NaN and must fit below its quiet bit.
+nan-payload:
+	OP_LPAREN TT_LITERAL OP_RPAREN
 
 # `LOW_SPAN` is the single token `<bytes>x<alignment>`, or a bare
 # `<bytes>` when the alignment is 1.  Both counts are positive and the

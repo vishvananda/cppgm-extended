@@ -394,13 +394,11 @@ they can improve:
   opener's block, not from the call that throws. An optimizer that does not
   model those edges must keep a value in memory where a handler might read
   it, and cannot inline a callee that contains exception instructions. The
-  course solution's PA32 is in that position: it inlines such a callee only
-  when constant arguments fold its exception instructions away. Region
-  granularity is therefore a performance decision as well as a correctness
-  one.
+  optimizer must either model those edges or keep the affected transformation
+  conservative. Region granularity is therefore a performance decision as well
+  as a correctness one.
 - A backend that treats each landing pad as a successor of every call that
   can unwind into it can keep values in registers across those calls, as
   the host model of PA26 allows. A runtime whose handler records restore
   callee-saved registers to their values when the region was entered does
-  not, and in the course runtime a function with regions keeps its
-  cross-block values in memory.
+  not, so allocation must follow the runtime contract used by the target.

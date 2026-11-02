@@ -19,6 +19,8 @@ def check_documents(export: Path) -> None:
     if actual != expected:
         raise RuntimeError(f"student documents: missing {sorted(expected - actual)}; "
                            f"unexpected {sorted(actual - expected)}")
+    subprocess.run(['perl', str(root / 'scripts/audit_student_documents.pl'),
+                    '--root', str(export)], check=True)
     print(f"Student document inventory: {len(actual)} files, PASS")
 
 

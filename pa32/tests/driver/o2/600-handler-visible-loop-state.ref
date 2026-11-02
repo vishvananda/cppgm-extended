@@ -1,0 +1,95 @@
+declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
+
+declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
+declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
+declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
+
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal] = {
+  zero 4
+}
+
+function @thrower(%x : i32) -> i32 [binding=strong, object=_Z7throweri, no_inline=yes] {
+  block ^entry:
+    %t1 = cmp gt i32 %x, 5
+    branch %t1, ^if_then_1, ^if_end_2
+
+  block ^if_then_1:
+    %t2 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store typed i32 %x, %t2
+    %t3 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t2, %t3, 0)
+    unreachable
+
+  block ^if_end_2:
+    return i32 %x
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $field__1 : i64
+
+  block ^entry:
+    store typed i64 0, $field__1
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi i32 [^entry: 0, ^for_iter_7: %t16]
+    %t2 = cmp lt i32 %t1, 9
+    branch %t2, ^for_body_2, ^for_end_8
+
+  block ^for_body_2:
+    eh_try ^catch_dispatch_3
+    %t3 = call i32 @thrower(%t1)
+    %t4 = convert sext i64 i32 %t3
+    %t5 = load typed i64 $field__1
+    %t6 = binary add nowrap i64 %t4, %t5
+    store typed i64 %t6, $field__1
+    eh_end
+    jump ^for_iter_7
+
+  block ^catch_dispatch_3:
+    eh_catch @__external_rtti__int, 1
+    %t7 = exception ptr
+    %t8 = exception_selector i32
+    %t9 = cmp eq i32 %t8, 1
+    branch %t9, ^catch_body_4, ^catch_next_6
+
+  block ^catch_body_4:
+    %t10 = call ptr @__external_runtime____cxa_begin_catch(%t7)
+    eh_cleanup ^catch_cleanup_5
+    %t11 = load typed i32 %t10
+    %t12 = binary mul nowrap i32 %t11, 1000
+    %t13 = convert sext i64 i32 %t12
+    %t14 = load typed i64 $field__1
+    %t15 = binary add nowrap i64 %t13, %t14
+    store typed i64 %t15, $field__1
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    jump ^for_iter_7
+
+  block ^catch_cleanup_5:
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
+
+  block ^catch_next_6:
+    resume
+
+  block ^for_iter_7:
+    %t16 = binary add nowrap i32 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_8:
+    %t17 = load typed i64 $field__1
+    %t18 = cmp eq i64 %t17, 21015
+    %t19 = select i32 %t18, 0, 1
+    return i32 %t19
+}

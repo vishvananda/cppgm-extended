@@ -1,0 +1,45 @@
+function @change(%f : ptr, %bits : ptr) -> f32 [binding=strong, object=_Z6changePfPj, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed f32 %f
+    store u32 1073741824, %bits
+    %t2 = load typed f32 %f
+    %t3 = binary add f32 %t1, %t2
+    return f32 %t3
+}
+function @change_class(%f : ptr, %cell : ptr) -> f32 [binding=strong, object=_Z12change_classPfP9AliasCell, no_inline=yes] {
+  block ^entry:
+    %t1 = load typed f32 %f
+    store u32 1082130432, %cell
+    %t2 = load typed f32 %f
+    %t3 = binary add f32 %t1, %t2
+    return f32 %t3
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $one : f32
+  slot $data : obj<4x4>
+
+  block ^entry:
+    store volatile f32 1f, $one
+    %t1 = addr $data
+    %t2 = load volatile f32 $one
+    store f32 %t2, %t1
+    %t3 = call f32 @change(%t1, %t1)
+    %t4 = cmp ne f32 %t3, 3f
+    branch %t4, ^if_then_1, ^if_end_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_end_2:
+    %t5 = load volatile f32 $one
+    store f32 %t5, %t1
+    %t6 = call f32 @change_class(%t1, %t1)
+    %t7 = cmp ne f32 %t6, 5f
+    branch %t7, ^if_then_3, ^if_else_4
+
+  block ^if_then_3:
+    return i32 2
+
+  block ^if_else_4:
+    return i32 0
+}

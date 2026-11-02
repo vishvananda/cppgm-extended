@@ -1,0 +1,6 @@
+case=8
+level=3
+iterations=65536
+scenarios=0,4,8,12,16,28,32,60,64,68,252,256,260,272
+lowir_limit=3.0
+native_limit=2.0

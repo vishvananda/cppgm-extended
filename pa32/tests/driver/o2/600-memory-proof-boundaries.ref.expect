@@ -1,0 +1,5 @@
+# Broad output envelope; the behavior and serialization checks are required.
+instructions <= 700
+blocks <= 180
+count(load) <= 2 in @fields
+instructions <= 24 in @fields

@@ -531,9 +531,9 @@ Constant Parser::parse_constant(TypeKind context)
 			: named == NamedLiteral::QuietNaN                      ? SpecialFloat::QuietNaN
 																   : SpecialFloat::SignalingNaN;
 		constant.bits = special_float(constant.float_kind, which, negative);
-		if (which != SpecialFloat::Infinity && program_.object_facts && accept(TokenKind::LParen))
+		if (which != SpecialFloat::Infinity && accept(TokenKind::LParen))
 		{
-			// Host objects: a NaN's payload, `nan(0x55)` (append_float_literal).
+			// Preserve observable representation bits through text roundtrips.
 			Literal payload;
 			if (!at(TokenKind::Number) || is_floating_spelling(token().text, token().length) ||
 				!scan_integer_literal(token().text, token().length, false, true, payload) || payload.high != 0 ||

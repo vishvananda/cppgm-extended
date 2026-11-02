@@ -44,6 +44,8 @@ BEHAVIOR_O1_TEST_ROOT ?= $(BEHAVIOR_TEST_ROOT)/o1
 BEHAVIOR_O2_TEST_ROOT ?= $(BEHAVIOR_TEST_ROOT)/o2
 BEHAVIOR_O3_TEST_ROOT ?= $(BEHAVIOR_TEST_ROOT)/o3
 DRIVER_TEST_ROOT ?= tests/driver
+QUALITY_KERNEL_ROOT ?= ../pa32/tests/kernels
+IMPROVEMENT_TEST_ROOT ?= ../pa32/tests/improvements
 # PA35's generated-code kernels at PA33's limit (scripts/check_kernels.pl).
 KERNEL_LIMIT ?= 1.50
 KERNEL_SCALE ?= 16
@@ -91,6 +93,12 @@ test-course: $(TEST_DEPS)
 
 test-kernels: $(TEST_DEPS)
 	perl scripts/check_kernels.pl --compiler $(CPPGM_DRIVER_APP) --limit $(KERNEL_LIMIT) --scale $(KERNEL_SCALE)
+	python3 ../scripts/check_optimization_quality.py $(QUALITY_KERNEL_ROOT) --mode native --compiler $(CPPGM_DRIVER_APP) --out obj/quality
+
+test-improvements: $(TEST_DEPS)
+	python3 ../scripts/check_optimization_quality.py $(IMPROVEMENT_TEST_ROOT) --mode native --compiler $(CPPGM_DRIVER_APP) --out obj/improvements --report-only
+
+.PHONY: test-improvements
 
 test-debuginfo: $(TEST_DEPS)
 	$(call run_native_bucket,$(DEBUGINFO_O1_TEST_ROOT),-O1)

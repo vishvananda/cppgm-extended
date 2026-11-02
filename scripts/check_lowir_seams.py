@@ -59,12 +59,23 @@ def run_result_name(name):
     )
 
 
+def copy_lane(source, target, suffix):
+    # A worktree can retain many result namespaces. Only this invocation's
+    # outputs participate; copying all older runs for every rewrite exhausts
+    # temporary-file quotas without adding coverage.
+    endings = tuple(suffix + extension for extension in ('', '.exit_status', '.stdout', '.stderr'))
+    def ignore(_directory, names):
+        return [name for name in names
+                if re.search(r'\.(?:my|check)(?:\.|$)', name) and not name.endswith(endings)]
+    shutil.copytree(source, target, symlinks=False, ignore=ignore)
+
+
 def run_mode(assignment, lane, mode, scratch):
     """(passed, total, changed, first failure line) for one rewrite of the lane."""
     copy = os.path.join(scratch, mode)
-    shutil.copytree(os.path.join(assignment, lane), copy, symlinks=False)
-    changed = 0
     suffix = '.' + run_result_name('my')
+    copy_lane(os.path.join(assignment, lane), copy, suffix)
+    changed = 0
     for name in sorted(os.listdir(copy)):
         if not name.endswith(suffix):
             continue

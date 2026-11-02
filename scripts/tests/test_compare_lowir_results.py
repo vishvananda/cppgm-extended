@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
+import importlib.util
 import os
 import re
 import subprocess
@@ -43,6 +44,40 @@ RENAMED = """function @main(%a : i64, %b : i64) -> i64 {
 
 
 class LowIrComparisonTest(unittest.TestCase):
+    def test_seam_scratch_keeps_current_results_and_fixture_companions(self):
+        spec = importlib.util.spec_from_file_location('seams', REPO_ROOT / 'scripts/check_lowir_seams.py')
+        seams = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(seams)
+        for suffix in ('.my.current-run', '.my'):
+            with self.subTest(suffix=suffix), tempfile.TemporaryDirectory() as tmp:
+                source, target = Path(tmp) / 'lane', Path(tmp) / 'copy'
+                source.mkdir()
+                keep = ['case.t', 'case.ref', 'case.ref.exit_status', 'case.ref.expect',
+                        'case' + suffix, 'case' + suffix + '.exit_status']
+                discard = ['case.my.stale-run', 'case.my.stale-run.exit_status',
+                           'case.check.current-run', 'case.check.exit_status']
+                for name in keep + discard:
+                    (source / name).write_text('fixture')
+                seams.copy_lane(source, target, suffix)
+                self.assertEqual(sorted(p.name for p in target.iterdir()), sorted(keep))
+
+    def test_nan_payload_arguments_preserve_call_boundaries(self):
+        program = """declare function @value(%a : f64) -> f64
+declare function @effect(%a : f64) -> void
+function @main() -> i32 {
+  block ^entry:
+    %direct = call f64 @value(nan(0x12))
+    call void @effect(-nan(0x23))
+    %fp = addr @value
+    %indirect = call f64 %fp(snan(0x34)) as (%a : f64) -> f64
+    %ep = addr @effect
+    call void %ep(nan(0x45)) as (%a : f64) -> void
+    return i32 0
+}
+"""
+        result = self.compare(program, program)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def compare(self, reference, generated, *, direct=False, mode="lowir_t"):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

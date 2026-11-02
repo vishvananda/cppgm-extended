@@ -17,6 +17,10 @@ on:
         description: Intel runner label (the temporary-runner helper supplies a unique label)
         type: string
         default: cppgm-intel
+      course_quality:
+        description: Also measure the optional course optimization exercises
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -46,7 +50,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            build-essential ca-certificates clang git libgmp-dev patch python3 valgrind
+            build-essential ca-certificates clang git libgmp-dev patch python3 time valgrind
 
       - uses: actions/checkout@v6
 
@@ -84,6 +88,14 @@ jobs:
             --badges obj/public-benchmarks/badges \
             --selfhost obj/public-benchmarks/selfhost.json
 
+      - name: Measure optional course exercises
+        if: github.event_name == 'workflow_dispatch' && inputs.course_quality
+        run: |
+          python3 scripts/check_optimization_quality.py pa32/tests/improvements \
+            --mode native --compiler dev/cppgm++ --report-only \
+            --iterations 1000000 --timing-rounds 6 \
+            --out obj/public-benchmarks/course-quality
+
       - name: Retain results
         if: always()
         uses: actions/upload-artifact@v6
@@ -93,6 +105,7 @@ jobs:
             obj/public-benchmarks/results.json
             obj/public-benchmarks/selfhost.json
             obj/public-benchmarks/badges/
+            obj/public-benchmarks/course-quality/
           if-no-files-found: warn
           retention-days: 14
 
@@ -160,15 +173,18 @@ jobs:
           python3 -c 'import pathlib; assert "GenuineIntel" in pathlib.Path("/proc/cpuinfo").read_text(), "Intel CPU required"'
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Run the benchmark suite in Ubuntu 26.04
+        env:
+          COURSE_QUALITY: ${{ inputs.course_quality }}
         run: |
           engine=$(command -v podman || command -v docker)
           "$engine" run --rm \
             -v "$GITHUB_WORKSPACE:/work" -w /work \
             -e CXX=g++ -e CPPGM_HOST_CXX=g++ -e CPPGM_STDLIB_FLAGS= \
+            -e COURSE_QUALITY \
             ubuntu:26.04 bash -euo pipefail -c '
               apt-get update
               apt-get install -y --no-install-recommends \
-                build-essential ca-certificates clang git libgmp-dev patch python3 valgrind
+                build-essential ca-certificates clang git libgmp-dev patch python3 time valgrind
               git config --global --add safe.directory /work
               jobs=16
               make -C dev cppgm++ -j "$jobs"
@@ -183,6 +199,12 @@ jobs:
                 --summary obj/public-benchmarks/summary.md \
                 --badges obj/public-benchmarks/badges \
                 --selfhost obj/public-benchmarks/selfhost.json
+              if [ "$COURSE_QUALITY" = true ]; then
+                python3 scripts/check_optimization_quality.py pa32/tests/improvements \
+                  --mode native --compiler dev/cppgm++ --report-only \
+                  --iterations 1000000 --timing-rounds 6 \
+                  --out obj/public-benchmarks/course-quality
+              fi
             '
           cat obj/public-benchmarks/summary.md >> "$GITHUB_STEP_SUMMARY"
       - name: Retain Intel results
@@ -194,6 +216,7 @@ jobs:
             obj/public-benchmarks/results.json
             obj/public-benchmarks/selfhost.json
             obj/public-benchmarks/badges/
+            obj/public-benchmarks/course-quality/
           if-no-files-found: warn
           retention-days: 14
 

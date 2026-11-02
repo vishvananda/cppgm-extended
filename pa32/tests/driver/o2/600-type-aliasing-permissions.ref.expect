@@ -1,0 +1,3 @@
+# Allow any correct memory representation and selection.
+instructions <= 140
+blocks <= 30

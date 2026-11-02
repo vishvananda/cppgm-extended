@@ -45,6 +45,8 @@ DRIVER_O1_TEST_ROOT ?= tests/driver/o1
 DRIVER_O2_TEST_ROOT ?= tests/driver/o2
 DRIVER_O3_TEST_ROOT ?= tests/driver/o3
 OBJECT_ROUNDTRIP_TEST_ROOT ?= tests/object-roundtrip
+QUALITY_KERNEL_ROOT ?= tests/kernels
+IMPROVEMENT_TEST_ROOT ?= tests/improvements
 HOST_O1_TEST_ROOT ?= tests/host/o1
 DEBUGINFO_O2_TEST_ROOT ?= tests/debuginfo/o2
 DEBUGINFO_O3_TEST_ROOT ?= tests/debuginfo/o3
@@ -183,7 +185,7 @@ endef
 # its pass-specific controls.
 test: test-course test-regression
 
-test-course: $(TEST_DEPS)
+test-course: $(TEST_DEPS) test-kernels
 	@CPPGM_APP_ARGS='-O0' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(O0_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(O0_TEST_ROOT)
 	@CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(O1_TEST_ROOT)
@@ -201,6 +203,14 @@ test-course: $(TEST_DEPS)
 	$(call run_object_roundtrip_bucket,$(OBJECT_ROUNDTRIP_TEST_ROOT))
 	@CPPGM_APP_ARGS='-O1' perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_DRIVER_APP) my $(HOST_O1_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(HOST_O1_TEST_ROOT)
+
+test-kernels: $(TEST_DEPS)
+	python3 ../scripts/check_optimization_quality.py $(QUALITY_KERNEL_ROOT) --mode lowir --optimizer $(LOWIROPT_APP) --frontend $(CPPGM_DRIVER_REF_APP) --backend $(CPPGM_DRIVER_REF_APP) --out obj/quality
+
+test-improvements: $(TEST_DEPS)
+	python3 ../scripts/check_optimization_quality.py $(IMPROVEMENT_TEST_ROOT) --mode lowir --optimizer $(LOWIROPT_APP) --frontend $(CPPGM_DRIVER_REF_APP) --backend $(CPPGM_DRIVER_REF_APP) --out obj/improvements --report-only
+
+.PHONY: test-kernels test-improvements
 
 test-regression: $(TEST_DEPS)
 	$(call run_text_course_bucket,-O0,$(LOWIROPT_APP),$(REGRESSION_O0_TEST_ROOT))

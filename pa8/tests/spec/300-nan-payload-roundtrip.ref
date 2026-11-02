@@ -1,0 +1,22 @@
+global @sample : f64 = nan(0x123)
+
+function @bits(%value : f64) -> i64 {
+  block ^entry:
+    %r = copy i64 %value
+    return i64 %r
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %q = call i64 @bits(-nan(0x12))
+    %s = copy f32 snanf(0x3)
+    %sb = copy u32 %s
+    %v = load f64 @sample
+    %vb = copy i64 %v
+    %a = cmp eq i64 %q, -2251799813685230
+    %b = cmp eq u32 %sb, 2139095043
+    %c = cmp eq i64 %vb, 9221120237041090851
+    %ab = binary and i1 %a, %b
+    %ok = binary and i1 %ab, %c
+    %r = select i32 %ok, 0, 1
+    return i32 %r
+}

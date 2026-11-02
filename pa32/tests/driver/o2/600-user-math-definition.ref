@@ -1,0 +1,33 @@
+function @pow(%x : f64, %y : f64) -> f64 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary add f64 %x, %y
+    %t2 = binary add f64 %t1, 17
+    return f64 %t2
+}
+function @sqrt(%x : f64) -> f64 [linkage=c, binding=strong, no_inline=yes] {
+  block ^entry:
+    %t1 = binary add f64 %x, 29
+    return f64 %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : f64
+
+  block ^entry:
+    store volatile f64 3, $x
+    %t1 = load volatile f64 $x
+    %t2 = call f64 @pow(%t1, 2.0)
+    %t3 = cmp ne f64 %t2, 22
+    branch %t3, ^if_then_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t4 = load volatile f64 $x
+    %t5 = call f64 @sqrt(%t4)
+    %t6 = cmp ne f64 %t5, 32
+    branch %t6, ^if_then_2, ^if_end_3
+
+  block ^if_then_2:
+    return i32 1
+
+  block ^if_end_3:
+    return i32 0
+}

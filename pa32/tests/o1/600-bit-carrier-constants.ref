@@ -1,0 +1,12 @@
+function @payload() -> f64 [no_inline=yes] {
+  block ^entry:
+    return f64 nan(0x12)
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %nan = call f64 @payload()
+    %payload = copy i64 %nan
+    %same = cmp eq i64 %payload, 9221120237041090578
+    %r = select i32 %same, 0, 1
+    return i32 %r
+}

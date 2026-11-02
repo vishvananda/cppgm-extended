@@ -1,0 +1,3 @@
+# Behavior, lifetime and serialization are the primary contract.
+instructions <= 700
+blocks <= 180

@@ -166,6 +166,13 @@ The Intel job uses Ubuntu 26.04 and the same benchmark, GCC, Clang, serial
 timing and self-host measurements as the automatic run. Run it while the
 host is otherwise idle.
 
+For the optional course exercise measurements, enable `course_quality` in
+either manual CPU lane, or add `--course-quality` to the Intel helper. This
+checks the scalar oracles, records Cachegrind work, and retains A/A calibration
+and six paired timing blocks under `course-quality/` in the results artifact.
+Use the same compiler revision in both lanes. These diagnostic timings do not
+change the badges or impose a hardware-specific course gate.
+
 CPU times below 0.01 seconds are omitted from speed ratios, separately on
 each host. The O3 program-count row shows the resulting denominator. For
 example, at commit `2234c3b54`, EPYC counted 80 programs and Intel counted 81

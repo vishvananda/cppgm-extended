@@ -486,7 +486,7 @@ To emit a token there is an interface provided in the skeleton code called `IPPT
 
 The pipeline above is the clearest way to get every translation rule right,
 and it is a fine way to finish PA1. What follows is one representation that
-scales, and the one the course solution uses; any design that meets the
+scales; any design that meets the
 output here and the speed gates later is acceptable. Later assignments lex all of the host's
 standard library headers for every translation unit, and PA34 compiles the
 compiler itself: millions of bytes per compile. There, a pipeline that

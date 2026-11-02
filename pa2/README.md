@@ -545,7 +545,7 @@ The course mapping for simple tokens is given below, and this has also been tran
 These design tips are optional, and only suggest one way to complete this assignment.
 
 The tips below connect your PA1 code to the PA2 output. One design that
-scales, and the one the course solution uses, reads post-tokens on a
+scales reads post-tokens on a
 different path: classify an
 identifier as a keyword once, on its interned entry, and produce post-tokens
 on demand as small records that refer to their spellings rather than copy

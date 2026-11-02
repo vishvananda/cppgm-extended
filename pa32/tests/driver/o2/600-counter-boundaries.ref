@@ -1,0 +1,256 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i32 -2147483647
+  i32 -19
+  i32 -1
+  i32 0
+  i32 1
+  i32 19
+  i32 2147483647
+}
+global @__constexpr_template__2 [storage=readonly, binding=internal] = {
+  i32 -7
+  i32 -1
+  i32 1
+  i32 7
+}
+
+function @chain(%v : u32, %n : u32) -> u32 [binding=strong, object=_Z5chainjj, no_inline=yes] {
+  block ^entry:
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi u32 [^entry: 0, ^for_body_2: %t8]
+    %t2 = phi u32 [^entry: %v, ^for_body_2: %t7]
+    %t3 = cmp ult u32 %t1, %n
+    branch %t3, ^for_body_2, ^for_end_3
+
+  block ^for_body_2:
+    %t4 = binary mul u32 %t2, 33
+    %t5 = binary add u32 %t4, %t1
+    %t6 = binary ushr u32 %t2, 3
+    %t7 = binary xor u32 %t5, %t6
+    %t8 = binary add u32 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_3:
+    return u32 %t2
+}
+function @quotients(%x : i32, %y : i32) -> i32 [binding=strong, object=_Z9quotientsii, no_inline=yes] {
+  block ^entry:
+    %t1 = binary div i32 %x, %y
+    %t2 = binary mul nowrap i32 %y, %t1
+    %t3 = binary sub i32 %x, %t2
+    %t4 = binary add nowrap i32 %t2, %t3
+    return i32 %t4
+}
+function @multi(%p : ptr, %n : u32, %stride : u32) -> u32 [binding=strong, object=_Z5multiPjjj, no_inline=yes] {
+  block ^entry:
+    jump ^while_cond_1
+
+  block ^while_cond_1:
+    %t1 = phi u32 [^entry: 0, ^if_then_3: %t9, ^if_end_4: %t11]
+    %t2 = phi u32 [^entry: 0, ^if_then_3: %t8, ^if_end_4: %t10]
+    %t3 = cmp ult u32 %t1, %n
+    branch %t3, ^while_body_2, ^while_end_5
+
+  block ^while_body_2:
+    %t4 = binary mul u32 %stride, %t1
+    %t5 = index u32 [projection=array_element] %p, %t1
+    %t6 = load typed u32 %t5
+    %t7 = binary and u32 %t6, 1
+    branch %t7, ^if_then_3, ^if_end_4
+
+  block ^if_then_3:
+    %t8 = binary add u32 %t4, %t2
+    %t9 = binary add u32 %t1, 1
+    jump ^while_cond_1
+
+  block ^if_end_4:
+    %t10 = binary xor u32 %t4, %t2
+    %t11 = binary add u32 %t1, 1
+    jump ^while_cond_1
+
+  block ^while_end_5:
+    %t12 = binary add u32 %t2, %t1
+    return u32 %t12
+}
+function @wide(%start : u32, %n : u32) -> i64 [binding=strong, object=_Z4widejj, no_inline=yes] {
+  block ^entry:
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi u32 [^entry: 0, ^for_body_2: %t7]
+    %t2 = phi i64 [^entry: 0, ^for_body_2: %t6]
+    %t3 = cmp ult u32 %t1, %n
+    branch %t3, ^for_body_2, ^for_end_3
+
+  block ^for_body_2:
+    %t4 = binary add u32 %start, %t1
+    %t5 = convert zext i64 u32 %t4
+    %t6 = binary add i64 %t5, %t2
+    %t7 = binary add u32 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_3:
+    return i64 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $seed : u32
+  slot $data : obj<68x4>
+
+  block ^entry:
+    store volatile u32 4294967280, $seed
+    %t1 = load volatile u32 $seed
+    %t2 = load volatile u32 $seed
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t3 = phi u32 [^entry: 0, ^if_end_7: %t17]
+    %t4 = cmp ult u32 %t3, 33
+    branch %t4, ^for_body_2, ^for_end_8
+
+  block ^for_body_2:
+    %t5 = load volatile u32 $seed
+    %t6 = call u32 @chain(%t5, %t3)
+    %t7 = load volatile u32 $seed
+    jump ^for_cond_3
+
+  block ^for_cond_3:
+    %t8 = phi u32 [^for_body_2: %t7, ^for_body_4: %t14]
+    %t9 = phi u32 [^for_body_2: 0, ^for_body_4: %t15]
+    %t10 = cmp ult u32 %t9, %t3
+    branch %t10, ^for_body_4, ^for_end_5
+
+  block ^for_body_4:
+    %t11 = binary mul u32 %t8, 33
+    %t12 = binary add u32 %t9, %t11
+    %t13 = binary ushr u32 %t8, 3
+    %t14 = binary xor u32 %t12, %t13
+    %t15 = binary add u32 %t9, 1
+    jump ^for_cond_3
+
+  block ^for_end_5:
+    %t16 = cmp ne u32 %t6, %t8
+    branch %t16, ^if_then_6, ^if_end_7
+
+  block ^if_then_6:
+    return i32 1
+
+  block ^if_end_7:
+    %t17 = binary add u32 %t3, 1
+    jump ^for_cond_1
+
+  block ^for_end_8:
+    %t18 = addr @__constexpr_template__1
+    %t19 = addr @__constexpr_template__2
+    jump ^for_cond_9
+
+  block ^for_cond_9:
+    %t20 = phi u32 [^for_end_8: 0, ^for_iter_14: %t31]
+    %t21 = cmp ult u32 %t20, 7
+    branch %t21, ^for_cond_10, ^loop_preheader_15
+
+  block ^for_cond_10:
+    %t22 = phi u32 [^if_end_13: %t30, ^for_cond_9: 0]
+    %t23 = cmp ult u32 %t22, 4
+    branch %t23, ^for_body_11, ^for_iter_14
+
+  block ^for_body_11:
+    %t24 = index i32 [projection=array_element] %t18, %t20
+    %t25 = load typed i32 %t24
+    %t26 = index i32 [projection=array_element] %t19, %t22
+    %t27 = load typed i32 %t26
+    %t28 = call i32 @quotients(%t25, %t27)
+    %t29 = cmp ne i32 %t28, %t25
+    branch %t29, ^if_then_12, ^if_end_13
+
+  block ^if_then_12:
+    return i32 2
+
+  block ^if_end_13:
+    %t30 = binary add u32 %t22, 1
+    jump ^for_cond_10
+
+  block ^for_iter_14:
+    %t31 = binary add u32 %t20, 1
+    jump ^for_cond_9
+
+  block ^loop_preheader_15:
+    %t32 = addr $data
+    jump ^for_cond_16
+
+  block ^for_cond_16:
+    %t33 = phi u32 [^for_body_17: %t36, ^loop_preheader_15: 0]
+    %t34 = cmp ult u32 %t33, 17
+    branch %t34, ^for_body_17, ^for_cond_18
+
+  block ^for_body_17:
+    %t35 = index u32 [projection=array_element] %t32, %t33
+    store typed u32 %t33, %t35
+    %t36 = binary add u32 %t33, 1
+    jump ^for_cond_16
+
+  block ^for_cond_18:
+    %t37 = phi u32 [^if_end_28: %t64, ^for_cond_16: 0]
+    %t38 = cmp ult u32 %t37, 18
+    branch %t38, ^loop_preheader_19, ^for_end_29
+
+  block ^loop_preheader_19:
+    jump ^for_cond_20
+
+  block ^for_cond_20:
+    %t39 = phi u32 [^for_body_21: %t47, ^loop_preheader_19: 0]
+    %t40 = phi u32 [^for_body_21: %t48, ^loop_preheader_19: 0]
+    %t41 = cmp ult u32 %t40, %t37
+    branch %t41, ^for_body_21, ^for_end_22
+
+  block ^for_body_21:
+    %t42 = binary and u32 %t40, 1
+    %t43 = binary mul u32 %t40, 13
+    %t44 = binary add u32 %t43, %t39
+    %t45 = binary mul u32 %t40, 13
+    %t46 = binary xor u32 %t45, %t39
+    %t47 = select u32 %t42, %t44, %t46
+    %t48 = binary add u32 %t40, 1
+    jump ^for_cond_20
+
+  block ^for_end_22:
+    %t49 = addr $data
+    %t50 = call u32 @multi(%t49, %t37, 13)
+    %t51 = binary add u32 %t37, %t39
+    %t52 = cmp ne u32 %t50, %t51
+    branch %t52, ^if_then_23, ^for_cond_24
+
+  block ^if_then_23:
+    return i32 3
+
+  block ^for_cond_24:
+    %t53 = phi i64 [^for_body_25: %t59, ^for_end_22: 0]
+    %t54 = phi u32 [^for_body_25: %t60, ^for_end_22: 0]
+    %t55 = cmp ult u32 %t54, %t37
+    branch %t55, ^for_body_25, ^for_end_26
+
+  block ^for_body_25:
+    %t56 = load volatile u32 $seed
+    %t57 = binary add u32 %t54, %t56
+    %t58 = convert zext i64 u32 %t57
+    %t59 = binary add i64 %t58, %t53
+    %t60 = binary add u32 %t54, 1
+    jump ^for_cond_24
+
+  block ^for_end_26:
+    %t61 = load volatile u32 $seed
+    %t62 = call i64 @wide(%t61, %t37)
+    %t63 = cmp ne i64 %t62, %t53
+    branch %t63, ^if_then_27, ^if_end_28
+
+  block ^if_then_27:
+    return i32 4
+
+  block ^if_end_28:
+    %t64 = binary add u32 %t37, 1
+    jump ^for_cond_18
+
+  block ^for_end_29:
+    return i32 0
+}

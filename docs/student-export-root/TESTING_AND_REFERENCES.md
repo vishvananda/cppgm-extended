@@ -46,9 +46,8 @@ without running shell login scripts.
   `controls/` holds focused property checks with no complete-output oracle.
 - Personal inputs and harnesses live in `student.tests/`; run them explicitly.
   Default assignment targets do not discover that directory.
-- PA24 and PA32 also ship `tests/regression/`, which pins the course
-  solution's particular design. Those fixtures are outside your exit criteria;
-  default `make test` and the through reports run the course contract.
+- Default `make test` and the through reports run the course contract;
+  additional compatibility material does not add completion requirements.
 
 PA33 checks executable behavior, declared MIR bounds and debug locations.
 It requires no profiler, allocator statistics or exact optimized MIR match.

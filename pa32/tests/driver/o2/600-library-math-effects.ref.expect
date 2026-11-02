@@ -1,0 +1,3 @@
+# Broad output envelope; the behavior and serialization checks are required.
+instructions <= 700
+blocks <= 180

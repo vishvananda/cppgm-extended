@@ -1,0 +1,1 @@
+../driver/o3/600-loop-exit-and-memory-effects.t

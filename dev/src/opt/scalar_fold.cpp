@@ -509,15 +509,31 @@ bool fold_copy(Type type, const Constant& a, Constant& out)
 {
 	if (type.is_float())
 	{
-		if (a.kind != ValueKind::Float || a.float_kind != type.kind())
-			return false;
-		out = a;
+		if (a.kind == ValueKind::Float && a.float_kind == type.kind())
+		{
+			out = a;
+			return true;
+		}
+		if (a.kind == ValueKind::Integer && (type.kind() == TypeKind::F32 || type.kind() == TypeKind::F64))
+		{
+			out.kind = ValueKind::Float;
+			out.float_kind = type.kind();
+			out.bits = { type.kind() == TypeKind::F32 ? a.bits.low & UINT64_C(0xffffffff) : a.bits.low, 0 };
+			return true;
+		}
+		return false;
+	}
+	if (width_of(type) == 0)
+		return false;
+	if (a.kind == ValueKind::Integer ||
+		(a.kind == ValueKind::Float &&
+			((a.float_kind == TypeKind::F32 && width_of(type) == 32) ||
+				(a.float_kind == TypeKind::F64 && type.kind() == TypeKind::I64))))
+	{
+		out = integer_constant(type, a.bits);
 		return true;
 	}
-	if (width_of(type) == 0 || a.kind != ValueKind::Integer)
-		return false;
-	out = integer_constant(type, a.bits);
-	return true;
+	return false;
 }
 
 bool same_constant(Type type, const Constant& a, const Constant& b)

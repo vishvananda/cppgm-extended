@@ -74,8 +74,8 @@ void append_integer_literal(std::string& out, const Literal& bits, TypeKind cont
 // `INFINITYf`, `nanL`, as the course's LowIR writes them). `marked` (no type
 // gives the kind: an argument to `...`, or of a call whose boundary is not
 // known yet) keeps an f64 floating there: a spelling without a fraction or
-// exponent gets `.0`. With `exact` (object mode) a NaN reads back bit for
-// bit where the course's `nan` keeps only its sign and quiet bit: fraction
+// exponent gets `.0`. With `exact` a NaN reads back bit for bit; plain `nan`
+// states the default payload: fraction
 // bits below the quiet bit other than its spelling's default ones are
 // stated in hexadecimal, `nan(0x55)`, `-snanf(0x2)` (nan_with_payload).
 void append_float_literal(

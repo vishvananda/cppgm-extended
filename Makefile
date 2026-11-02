@@ -88,7 +88,7 @@ SUBMAKE_OBJ_ARG = $(if $(strip $(OBJ)),OBJ=$(OBJ))
 SUBMAKE_GENERATED_ARG = $(if $(strip $(GENERATED)),GENERATED=$(GENERATED))
 SUBMAKE_CC_FLAGS_ARG = $(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)")
 
-.PHONY: all build build-telemetry-off test test-telemetry-off audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-usage audit-scaffold-spellings audit-ir-expectations audit-clang-format ref-test ref-test-debuginfo \
+.PHONY: all build build-telemetry-off test test-telemetry-off audit-student-documents audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-usage audit-scaffold-spellings audit-ir-expectations audit-clang-format ref-test ref-test-debuginfo \
 	test-debuginfo test-debuginfo-nobuild require-clang require-clang-libcxx asan-build test-cells \
 	test-report inception clean run-cppgm run-cppgm-nobuild \
 	test-report-nobuild test-report-through-% test-report-through-%-nobuild \
@@ -98,6 +98,9 @@ SUBMAKE_CC_FLAGS_ARG = $(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)")
 .NOTPARALLEL: ref-test ref-test-debuginfo
 
 all: build
+
+audit-student-documents:
+	@perl scripts/audit_student_documents.pl
 
 audit-lowir-contract:
 	@perl scripts/audit_lowir_contract.pl
@@ -298,6 +301,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_machine_object_host_eh_roundtrip.py \
 	scripts/tests/test_pa24_mir_modes.py \
 	scripts/tests/test_pa33_course.py \
+	scripts/tests/test_optimization_quality.py \
 	scripts/tests/test_pa35_harness.py \
 	scripts/tests/test_pending_audit_regressions.py \
 	scripts/tests/test_report_elf_code_shape.py \

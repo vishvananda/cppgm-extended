@@ -10,7 +10,7 @@ its translation to machine instructions. Reuse this backend in both
 Complete PA24 and PA32 first. Continue working in `dev/lowir2native.cpp` and
 your shared backend under `dev/src/`. The assignment wrapper points there.
 The supplied `mir_model.h` and register definitions are the MIR vocabulary
-the course solution also uses; the MIR's containers are yours.
+provide shared spellings; the MIR's containers are yours.
 [Design notes](design-notes.md) suggest a starting approach.
 
 ### Required behavior
@@ -82,6 +82,19 @@ region, so the optimizer's inlining and the allocator's register use,
 inside exception regions included, are measured here rather than deferred.
 PA34 builds the compiler with itself, so this code becomes the compiler's
 own speed; PA35 tightens the same kernels to 1.30.
+
+The same target also runs PA32's four original kernel families from
+`../pa32/tests/kernels/`: bounded search, aliased/disjoint field updates,
+narrow arithmetic and state crossing a cold call. They pass through the
+complete optimized compiler and use the same host-built driver and scalar
+oracle. Their `.quality` files publish the native instruction-ratio limits.
+The driver checks unspecified upper bits on a narrow incoming argument too.
+These checks require Python 3, GCC and Cachegrind on Linux x86-64.
+
+`make test-improvements` runs optional vector, memory traversal, floating
+reduction and scheduling experiments, checking results and reporting work
+without a speed threshold. See [the exercise guide](../pa32/improvements.md)
+for inputs, correctness boundaries and reproducible timing commands.
 
 For a failed expectation, inspect the reported predicate or run:
 

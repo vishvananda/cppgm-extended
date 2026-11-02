@@ -209,7 +209,7 @@ void Writer::value(Value v)
 		append_integer_literal(out_, body_->literals[v.index]);
 		break;
 	case ValueKind::Float:
-		append_float_literal(out_, v.float_kind, body_->literals[v.index], program_.object_facts, true);
+		append_float_literal(out_, v.float_kind, body_->literals[v.index], true, true);
 		break;
 	case ValueKind::None:
 		break;
@@ -219,13 +219,11 @@ void Writer::value(Value v)
 void Writer::operand(Value v, TypeKind context)
 {
 	if (v.kind == ValueKind::Integer && float_rank(context) != 0)
-		append_float_literal(
-			out_, context, integer_as_float(context, body_->literals[v.index]), program_.object_facts, false);
+		append_float_literal(out_, context, integer_as_float(context, body_->literals[v.index]), true, false);
 	else if (v.kind == ValueKind::Integer)
 		append_integer_literal(out_, body_->literals[v.index], context);
 	else if (v.kind == ValueKind::Float)
-		append_float_literal(
-			out_, v.float_kind, body_->literals[v.index], program_.object_facts, float_rank(context) == 0);
+		append_float_literal(out_, v.float_kind, body_->literals[v.index], true, float_rank(context) == 0);
 	else
 		value(v);
 }
@@ -339,9 +337,9 @@ void Writer::parameters(const Signature& signature, bool definition)
 void Writer::constant(const Constant& c, TypeKind context)
 {
 	if (c.kind == ValueKind::Integer && float_rank(context) != 0)
-		append_float_literal(out_, context, integer_as_float(context, c.bits), program_.object_facts, false);
+		append_float_literal(out_, context, integer_as_float(context, c.bits), true, false);
 	else if (c.kind == ValueKind::Float)
-		append_float_literal(out_, c.float_kind, c.bits, program_.object_facts, float_rank(context) == 0);
+		append_float_literal(out_, c.float_kind, c.bits, true, float_rank(context) == 0);
 	else
 		append_integer_literal(out_, c.bits, context);
 }
@@ -653,8 +651,7 @@ void Writer::argument_list(const Instruction& call)
 		const TypeKind kind = boundary != nullptr && i < boundary->parameter_count ? parameters[i].type.kind()
 																				   : TypeKind::Void;
 		if (argument.kind == ValueKind::Integer && float_rank(kind) != 0)
-			append_float_literal(
-				out_, kind, integer_as_float(kind, body_->literals[argument.index]), program_.object_facts, true);
+			append_float_literal(out_, kind, integer_as_float(kind, body_->literals[argument.index]), true, true);
 		else
 			value(argument);
 	}

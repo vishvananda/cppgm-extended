@@ -1,0 +1,131 @@
+declare function @sqrt(%arg0 : f64) -> f64 [linkage=c, binding=strong]
+declare function @pow(%arg0 : f64, %arg1 : f64) -> f64 [linkage=c, binding=strong]
+declare function @__errno_location() -> ptr [linkage=c, binding=strong]
+declare function @fabs(%arg0 : f64) -> f64 [linkage=c, binding=strong]
+
+function @root(%x : f64) -> f64 [binding=strong, object=_Z4rootd, no_inline=yes] {
+  block ^entry:
+    %t1 = unary sqrt f64 %x
+    %t2 = cmp lt f64 %x, 0
+    branch %t2, ^split_2, ^split_1
+
+  block ^split_1:
+    %t3 = phi f64 [^entry: %t1, ^split_2: %t4]
+    return f64 %t3
+
+  block ^split_2:
+    %t4 = call f64 @sqrt(%x)
+    jump ^split_1
+}
+function @length(%x : f64, %y : f64) -> f64 [binding=strong, object=_Z6lengthdd, no_inline=yes] {
+  block ^entry:
+    %t1 = binary mul f64 %x, %x
+    %t2 = binary mul f64 %y, %y
+    %t3 = binary add f64 %t1, %t2
+    %t4 = unary sqrt f64 %t3
+    return f64 %t4
+}
+function @guarded(%x : f64) -> f64 [binding=strong, object=_Z7guardedd, no_inline=yes] {
+  block ^entry:
+    %t1 = cmp lt f64 %x, 0
+    branch %t1, ^cond_end_2, ^cond_else_1
+
+  block ^cond_else_1:
+    %t2 = unary sqrt f64 %x
+    jump ^cond_end_2
+
+  block ^cond_end_2:
+    %t3 = phi f64 [^cond_else_1: %t2, ^entry: 0]
+    return f64 %t3
+}
+function @square(%x : f64) -> f64 [binding=strong, object=_Z6squared, no_inline=yes] {
+  block ^entry:
+    %t1 = binary mul f64 %x, %x
+    return f64 %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $negative : f64
+  slot $positive : f64
+
+  block ^entry:
+    store volatile f64 -1, $negative
+    store volatile f64 16, $positive
+    %t1 = call ptr @__errno_location()
+    store typed i32 0, %t1
+    %t2 = load volatile f64 $negative
+    %t3 = call f64 @root(%t2)
+    %t4 = cmp eq f64 %t3, %t3
+    branch %t4, ^if_then_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t5 = load typed i32 %t1
+    %t6 = cmp eq i32 %t5, 0
+    branch %t6, ^if_then_2, ^if_end_3
+
+  block ^if_then_2:
+    return i32 1
+
+  block ^if_end_3:
+    store typed i32 0, %t1
+    %t7 = load volatile f64 $positive
+    %t8 = call f64 @root(%t7)
+    %t9 = cmp ne f64 %t8, 4
+    branch %t9, ^if_then_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t10 = load typed i32 %t1
+    branch %t10, ^if_then_5, ^if_end_6
+
+  block ^if_then_5:
+    return i32 2
+
+  block ^if_end_6:
+    %t11 = call f64 @root(-0.0)
+    %t12 = copy i64 %t11
+    %t13 = cmp ne i64 %t12, -9223372036854775808
+    branch %t13, ^if_then_7, ^if_else_8
+
+  block ^if_then_7:
+    return i32 3
+
+  block ^if_else_8:
+    %t14 = call f64 @guarded(nan(0x12))
+    %t15 = cmp eq f64 %t14, %t14
+    branch %t15, ^if_then_9, ^if_end_10
+
+  block ^if_then_9:
+    return i32 4
+
+  block ^if_end_10:
+    %t16 = call f64 @root(inf)
+    %t17 = cmp ne f64 %t16, inf
+    branch %t17, ^if_then_11, ^if_else_12
+
+  block ^if_then_11:
+    return i32 5
+
+  block ^if_else_12:
+    %t18 = load volatile f64 $negative
+    %t19 = call f64 @guarded(%t18)
+    %t20 = cmp ne f64 %t19, 0
+    branch %t20, ^if_then_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t21 = call f64 @length(3.0, 4.0)
+    %t22 = cmp ne f64 %t21, 5
+    branch %t22, ^if_then_14, ^if_end_15
+
+  block ^if_then_14:
+    return i32 6
+
+  block ^if_end_15:
+    %t23 = call f64 @square(-3.0)
+    %t24 = cmp ne f64 %t23, 9
+    branch %t24, ^if_then_17, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    return i32 0
+
+  block ^if_then_17:
+    return i32 7
+}

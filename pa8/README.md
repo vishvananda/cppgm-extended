@@ -44,7 +44,7 @@ The starter kit provides:
   `lowir.cpp` symlink to it;
 - `dev/src/lowir_model.h`, the LowIR vocabulary (every enumerable concept of
   the format as an enum with its spellings and readers, and the 8-byte
-  `Type`), which the course solution also builds on;
+  `Type`);
 - `dev/src/ir_symbol_model.h`, the metadata vocabulary;
 - [the format reference](lowir.md), [the grammar](pa8.gram), and its HTML
   explorer under `grammar/`;
@@ -53,7 +53,6 @@ The starter kit provides:
   and the grading support described below.
 
 Your choice of classes, containers, names and construction helpers is your own.
-The course solution's interned IDs and storage layout are not a required design.
 Implement compiler work in `dev/`; leave the assignment fixtures and harnesses
 unchanged during normal student work.
 
@@ -109,6 +108,8 @@ Use `lowir.md` for each field's type and meaning, and `pa8.gram` for syntax.
 Optimized LowIR uses this same boundary: `unary sqrt` computes without
 `errno`, `convert trunc exact` carries a representability proof, and a `copy`
 between a floating value and an integer of its width preserves the bits.
+NaN literals may carry an explicit payload, such as `nan(0x12)`, so these
+representation copies survive serialization without losing observable bits.
 The specification fixtures exercise reading, validation and serialization of
 these forms; PA32 explains when an optimizer can introduce them. They need no
 private source-language facts when read back by the object path.

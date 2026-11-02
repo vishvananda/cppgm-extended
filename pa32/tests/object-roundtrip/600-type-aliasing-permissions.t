@@ -1,0 +1,1 @@
+../driver/o2/600-type-aliasing-permissions.t

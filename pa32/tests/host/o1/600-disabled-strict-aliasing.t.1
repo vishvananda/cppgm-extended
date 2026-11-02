@@ -1,0 +1,8 @@
+__attribute__((noinline)) float changed(float* p, unsigned* q) {
+    float before = *p; *q = 0x40000000u; return before + *p;
+}
+int main() {
+    union { float f; unsigned u; } value;
+    volatile float one = 1; value.f = one;
+    return changed(&value.f, &value.u) == 3 ? 0 : 1;
+}

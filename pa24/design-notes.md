@@ -1,12 +1,12 @@
 # PA24 design example
 
 The [assignment README](README.md) defines the requirements. These notes
-describe the structure of the course solution's backend and the seams that
-later assignments build on.
+describe possible backend stages and interfaces that later assignments can
+extend. They prescribe no allocator or internal representation.
 
 ### Design Notes (Non-Normative)
 
-The course solution's backend runs these stages for each function:
+A backend can separate these stages for each function:
 
 - read LowIR into the PA8 model (`cppgm++` hands the backend the same model
   directly)
@@ -21,14 +21,10 @@ The course solution's backend runs these stages for each function:
 Reuse PA8's LowIR machinery and build the encoding, layout, and fixup
 components introduced in [the native encoding lesson](native-encoding.md).
 
-At `-O0` the placement is simple. A value used outside its defining block
-takes one register over its whole span in block order: a linear scan gives
-at most seven general registers out at once, preferring a parameter's
-incoming register and, for a value live across a call, a callee-saved
-register. Any other such value takes a frame home, and a function with
-exception regions keeps all of them in frame homes. A value used only inside
-its block takes a free register as it is selected; one that finds none is
-computed in a reserved scratch register and stored to a frame home.
+At `-O0`, a conservative placement policy can give values frame homes and
+use short-lived registers during selection. A simple allocator is another
+option. Keep value identity distinct from physical location so PA33 can improve
+placement without replacing instruction selection.
 
 #### Seams for later work
 
@@ -53,8 +49,8 @@ it. These seams cost little to leave in place now and much to cut in later:
   emission, the two must agree: a disagreement is wrong code.
 - **Keep back only the registers an encoding needs.** A register set aside
   as the selector's scratch is unavailable to every value of every function,
-  and is paid for in spills and in longer encodings. The course solution keeps
-  two general and two vector registers back.
+  and is paid for in spills and in longer encodings. Model each instruction's
+  actual constraints before deciding how many to reserve.
 - **Finish the frame last.** Assign frame offsets after placement and
   selection, so that a later pass can drop unused slots, share slots whose
   lives do not overlap, and put the most used objects within an 8-bit
@@ -81,7 +77,7 @@ introduces a temporary; LowIR liveness alone does not describe those changes.
 
 #### Shapes the fixtures check
 
-The README's goals give the shapes that the strict MIR fixtures check, and
+The README's goals identify the relationships that fixtures check, and
 each holds under any placement policy: integer immediates kept as operands,
 memory right operands, extending narrow loads, `index` addresses folded into
 memory operands, division and variable-shift operands placed directly in
@@ -91,4 +87,4 @@ and object copies and zeroing kept whole as `copy_bytes` and `zero_bytes`.
 
 These are suggestions, not required internal data structures or algorithms.
 Any implementation is acceptable if it preserves program behavior and produces
-the checked strict or structural MIR output.
+the documented MIR relationships and quality bounds.

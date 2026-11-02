@@ -1,0 +1,226 @@
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
+declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
+
+global @zero : i32 [binding=strong] = 0
+global @__strlit__1 [storage=readonly, binding=internal] = {
+  i8 104
+  i8 101
+  i8 108
+  i8 108
+  i8 111
+  i8 0
+}
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i64 7
+  i64 7
+}
+
+function @release(%big : ptr) -> void [binding=strong, object=_Z7releaseP3Big, no_inline=yes] {
+  block ^entry:
+    %t1 = cmp ne ptr %big, 0
+    branch %t1, ^delete_nonnull_1, ^delete_end_2
+
+  block ^delete_nonnull_1:
+    call void @operatordelete(%big)
+    jump ^delete_end_2
+
+  block ^delete_end_2:
+    return void
+}
+function @release__ov2(%big : ptr) -> void [binding=strong, object=_Z7releaseP6Bigger, no_inline=yes] {
+  block ^entry:
+    %t1 = cmp ne ptr %big, 0
+    branch %t1, ^delete_nonnull_1, ^delete_end_2
+
+  block ^delete_nonnull_1:
+    call void @operatordelete(%big)
+    jump ^delete_end_2
+
+  block ^delete_end_2:
+    return void
+}
+function @release__ov3(%big : ptr) -> void [binding=strong, object=_Z7releaseP4Huge, no_inline=yes] {
+  block ^entry:
+    %t1 = cmp ne ptr %big, 0
+    branch %t1, ^delete_nonnull_1, ^delete_end_2
+
+  block ^delete_nonnull_1:
+    call void @operatordelete(%big)
+    jump ^delete_end_2
+
+  block ^delete_end_2:
+    return void
+}
+function @sum_after_delete(%big : ptr [pass=by_address, object_bytes=1048592], %n : i32) -> i64 [binding=strong, object=_Z16sum_after_deleteR3Bigi, no_inline=yes] {
+  block ^entry:
+    call void @release(%big)
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi i64 [^entry: 0, ^for_body_2: %t11]
+    %t2 = phi i64 [^entry: 1, ^for_body_2: %t10]
+    %t3 = convert trunc exact i32 i64 %t1
+    %t4 = cmp lt i32 %t3, %n
+    branch %t4, ^for_body_2, ^for_end_3
+
+  block ^for_body_2:
+    %t5 = index i8 [projection=field] %big, 8
+    %t6 = load typed ptr %t5
+    %t7 = index i8 [projection=array_element] %t6, %t1
+    %t8 = load i8 %t7
+    %t9 = convert sext i64 i8 %t8
+    %t10 = binary add nowrap i64 %t9, %t2
+    %t11 = binary add nowrap i64 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_3:
+    return i64 %t2
+}
+function @fill_after_delete(%big : ptr [pass=by_address, object_bytes=8388616], %out : ptr, %n : i32) -> void [binding=strong, object=_Z17fill_after_deleteR6BiggerPli, no_inline=yes] {
+  block ^entry:
+    call void @release__ov2(%big)
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = phi i64 [^entry: 0, ^for_body_2: %t6]
+    %t2 = convert trunc exact i32 i64 %t1
+    %t3 = cmp lt i32 %t2, %n
+    branch %t3, ^for_body_2, ^for_end_3
+
+  block ^for_body_2:
+    %t4 = load typed i64 %big
+    %t5 = index i64 [projection=array_element] %out, %t1
+    store typed i64 %t4, %t5
+    %t6 = binary add nowrap i64 %t1, 1
+    jump ^for_cond_1
+
+  block ^for_end_3:
+    return void
+}
+function @sum_after_branch_delete(%big : ptr [pass=by_address, object_bytes=16777232], %n : i32, %f : i32) -> i64 [binding=strong, object=_Z23sum_after_branch_deleteR4Hugeii, no_inline=yes] {
+  block ^entry:
+    branch %f, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    call void @release__ov3(%big)
+    jump ^if_end_3
+
+  block ^if_else_2:
+    %t1 = load typed i64 %big
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t2 = phi i64 [^if_then_1: 0, ^if_else_2: %t1]
+    jump ^for_cond_4
+
+  block ^for_cond_4:
+    %t3 = phi i64 [^if_end_3: 0, ^for_body_5: %t13]
+    %t4 = phi i64 [^if_end_3: %t2, ^for_body_5: %t12]
+    %t5 = convert trunc exact i32 i64 %t3
+    %t6 = cmp lt i32 %t5, %n
+    branch %t6, ^for_body_5, ^for_end_6
+
+  block ^for_body_5:
+    %t7 = index i8 [projection=field] %big, 8
+    %t8 = load typed ptr %t7
+    %t9 = index i8 [projection=array_element] %t8, %t3
+    %t10 = load i8 %t9
+    %t11 = convert sext i64 i8 %t10
+    %t12 = binary add nowrap i64 %t11, %t4
+    %t13 = binary add nowrap i64 %t3, 1
+    jump ^for_cond_4
+
+  block ^for_end_6:
+    return i64 %t4
+}
+function @sum_kept(%big : ptr [pass=by_address, object_bytes=1048592], %n : i32) -> i64 [binding=strong, object=_Z8sum_keptR3Bigi, no_inline=yes] {
+  block ^entry:
+    %t1 = index i8 [projection=field] %big, 8
+    %t2 = load ptr %t1
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t3 = phi i64 [^entry: 0, ^for_body_2: %t11]
+    %t4 = phi i64 [^entry: 0, ^for_body_2: %t10]
+    %t5 = convert trunc exact i32 i64 %t3
+    %t6 = cmp lt i32 %t5, %n
+    branch %t6, ^for_body_2, ^for_end_3
+
+  block ^for_body_2:
+    %t7 = index i8 [projection=array_element] %t2, %t3
+    %t8 = load i8 %t7
+    %t9 = convert sext i64 i8 %t8
+    %t10 = binary add nowrap i64 %t9, %t4
+    %t11 = binary add nowrap i64 %t3, 1
+    jump ^for_cond_1
+
+  block ^for_end_3:
+    return i64 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $out : obj<16x8>
+
+  block ^entry:
+    %t1 = call ptr @operatornew(1048592)
+    %t2 = addr @__strlit__1
+    %t3 = index i8 [projection=field] %t1, 8
+    store typed ptr %t2, %t3
+    %t4 = load volatile i32 @zero
+    %t5 = binary add nowrap i32 %t4, 5
+    %t6 = call i64 @sum_kept(%t1, %t5)
+    %t7 = cmp ne i64 %t6, 532
+    branch %t7, ^if_then_1, ^if_end_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_end_2:
+    %t8 = call ptr @operatornew(1048592)
+    %t9 = index i8 [projection=field] %t8, 8
+    store typed ptr %t2, %t9
+    %t10 = load volatile i32 @zero
+    %t11 = call i64 @sum_after_delete(%t8, %t10)
+    %t12 = cmp ne i64 %t11, 1
+    branch %t12, ^if_then_3, ^if_else_4
+
+  block ^if_then_3:
+    return i32 2
+
+  block ^if_else_4:
+    %t13 = call ptr @operatornew(8388616)
+    store typed i64 42, %t13
+    %t14 = addr $out
+    store typed i64 7, %t14
+    %t15 = index i8 [projection=field] %t14, 8
+    store typed i64 7, %t15
+    %t16 = load volatile i32 @zero
+    call void @fill_after_delete(%t13, %t14, %t16)
+    %t17 = load typed i64 %t14
+    %t18 = cmp ne i64 %t17, 7
+    branch %t18, ^if_then_5, ^if_end_6
+
+  block ^if_then_5:
+    return i32 3
+
+  block ^if_end_6:
+    %t19 = call ptr @operatornew(16777232)
+    %t20 = index i8 [projection=field] %t19, 8
+    store typed ptr %t2, %t20
+    %t21 = load volatile i32 @zero
+    %t22 = call i64 @sum_after_branch_delete(%t19, %t21, 1)
+    branch %t22, ^if_then_7, ^if_else_8
+
+  block ^if_then_7:
+    return i32 4
+
+  block ^if_else_8:
+    %t23 = cmp ne ptr %t1, 0
+    branch %t23, ^delete_nonnull_9, ^delete_end_10
+
+  block ^delete_nonnull_9:
+    call void @operatordelete(%t1)
+    jump ^delete_end_10
+
+  block ^delete_end_10:
+    return i32 0
+}

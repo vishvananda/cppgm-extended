@@ -184,8 +184,8 @@ in the ABI identity.
 
 Temporaries and by-value arguments whose destructors are not trivial are
 destroyed on the exceptional path as well as the normal one, inside cleanup
-regions. The course solution places those regions by the shape of the
-full-expression, not by whether its calls can throw, so the references have
+regions. Place those regions by the shape of the full-expression, not by
+whether its calls can throw; the required output therefore has
 regions around calls that cannot throw, and the comparison checks them like
 any other region. A temporary's destructor is called even when its body is
 empty: PA11's exception for a destructor with no effect covers only a single

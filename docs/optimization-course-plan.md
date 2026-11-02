@@ -37,6 +37,7 @@ work is a consumer of existing LowIR:
 | `unary sqrt f32/f64` | Preserve IEEE value semantics without the library's `errno` effect; negative inputs still have defined floating results. | PA8 `300-sqrt`; PA32 math/guard reducers; explain guarded fallback in `lowir.md`. |
 | `convert trunc exact` | Read/write the proof that the value fits the destination's signedness; reject it on other conversions. | New PA8 positive and rejection fixtures; PA32 counter widening. |
 | Floating/integer bit `copy` | Preserve the representation of `f32`/32-bit integer and `f64`/`i64`; this is not numeric conversion. | New PA8 `300-floating-bit-copies`; existing native carrier behavior checks. |
+| NaN payload literals | Preserve observable floating representations through bit-copy folding and text replay. | PA8 payload roundtrip and rejection fixtures; PA32 constant-carrier execution. |
 | `typed` aliasing | Respect character access, same-width integer compatibility, unions, `may_alias` and disabled strict aliasing. | Existing format rules and PA29 ownership; PA32 memory-proof guidance needs examples. |
 | `v128` and `vector` | Existing PA29 vocabulary, now also produced by optional PA32 transformations; native input must roundtrip. | PA29/PA33 vector cases already exist. No new vector instruction vocabulary is needed for these optimizations. |
 
@@ -47,9 +48,9 @@ typed unit; they are not new serialized facts or hidden frontend requirements.
 
 ## Coverage to add by behavior
 
-Use this inventory to make small follow-up patches. Read both the positive
-reducer and the guard cases before promoting a requirement. Keep exact solution
-shapes in `regression/`.
+The implementation below follows this inventory. Positive cases and guard
+cases share behavior oracles and generous work/size bounds. Exact solution
+shapes remain in `regression/`.
 
 | Improvement family | Useful course check | Essential counterexamples |
 | --- | --- | --- |
@@ -109,3 +110,49 @@ links from each handout to the relevant design-note sections. Regenerate
 references with the supplied tools, run the course/harness/debug/placement
 checks, and validate the student export for each batch; inspect the exported
 lanes as well as the source checkout.
+
+## Implementation record
+
+The public design notes now discuss proofs, tradeoffs and experiments. They no
+longer publish private helper APIs, implementation caps, tuning histories or
+benchmark-specific recipes. `audit-student-documents` scans every reviewed
+student prose file, including both design notes and exported root overrides;
+the export client validator runs the same check on the actual exported tree.
+The document inventory is explicit, so this plan and calibration record stay
+out of the export.
+
+| Family | Delivered behavior or measurement coverage |
+| --- | --- |
+| Memory, aliasing, private storage and allocations | PA32 `600-memory-proof-boundaries`, `600-type-aliasing-permissions`, host `600-disabled-strict-aliasing`, `600-load-after-release`, `600-zero-trip-reference`; field-update kernel and existing table-load outcome checks. |
+| Object copies, clearing, carriers and initialization | PA32 `600-object-representations` and LowIR `600-bit-carrier-constants`; direct/text object replay. |
+| Counters, strength, quotients and possible bits | PA32 `600-counter-boundaries` and the narrow-arithmetic kernel, including runtime wrapping and signed negative operands. |
+| Library math and guards | PA32 `600-library-math-effects` and `600-user-math-definition`, including errno, NaNs, infinity, negative zero and user definitions. |
+| Calls, specialization, virtual dispatch and EH | PA32 `600-call-and-cleanup-boundaries`, `600-handler-visible-loop-state`; PA33 reuses the source/object behavior path. Existing call-removal and growth envelopes remain the quality requirements. |
+| Bounded searches | PA32's original bounded-search kernel and reverse/early-exit cases in `600-loop-exit-and-memory-effects`. |
+| Rotation, store motion and unswitching | PA32 `600-loop-exit-and-memory-effects`, zero-trip/null cases, conditional stores and calls. |
+| Optional packing and interchange | Six original inputs under PA32 `tests/improvements`, with shared scalar oracle, all published tails and overlap directions, ordered reductions, optional counts/timing and no speed gate. |
+| Native allocation, phis and cold calls | PA33 behavior `600-phi-and-reload-edge`, `600-select-and-phi-lifetimes`; shared cold-call-state kernel. |
+| Narrow values, products and division | PA33 behavior `600-narrow-value-readers`, `600-wide-product-results`, `600-word-quotients-and-remainders`; shared driver dirties the upper half of the count register. |
+| Floating operand order and latency | PA33 behavior `600-floating-operand-order`; optional independent-math chains and ordered floating reductions. |
+| Layout, frames, objects and debug/unwind | Existing PA33 ABI/EH/debug lanes remain required; the optional timing lane measures whole generated kernels without requiring padding or block order. |
+
+PA32 owns the four new required kernel families. PA33 reuses them through the
+combined optimized compiler. One GCC-built driver links both candidate and
+host objects and checks them against an independent scalar oracle. All core
+scenarios receive startup-subtracted Cachegrind comparisons. The
+[calibration record](optimization-course-calibration.md) preserves measured
+GCC/Clang and optimizer-level alternatives and the rationale for each limit.
+Correct but unoptimized search controls fail both mode-specific work limits.
+
+`pa32/improvements.md`, exported and linked from both handouts/design notes,
+gives required/optional commands and explains the limits. Both manual CPU
+lanes accept `course_quality` for the same frozen inputs, scalar checks,
+Cachegrind counts, A/A calibration, six paired timing blocks and retained
+observations. The Intel helper forwards it with `--course-quality`.
+
+The new correctness coverage found and fixed a real constant-propagation
+problem: an equal-width floating/integer representation copy must retype a
+folded literal. Exposing a nondefault NaN payload also requires its public
+text spelling to preserve those bits. PA8's format, grammar, generated grammar
+pages and fixtures cover it; the Perl comparison validator now recognizes a
+payload's parentheses inside all direct and indirect call forms.

@@ -35,8 +35,7 @@ file too large to review. PA34 ends with `make inception`, PA35 with
 `make -C pa35 test`. Use the debug and inspection targets required by the
 owning handout when changing those surfaces.
 
-Default tests run the course contract. PA24 and PA32's `tests/regression/`
-describe the course solution's design and are outside your exit criteria.
+Default tests run the course contract described by each handout.
 PA33 requires behavior, MIR bounds and debug checks, with no profiler or
 allocator-specific diagnostics.
 

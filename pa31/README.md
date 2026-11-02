@@ -137,8 +137,8 @@ including `<functional>`, using `std::forward`, using placement `new`, or
 instantiating an `unordered_set` should not by itself cause unrelated libc++ or
 libstdc++ helper definitions to appear as defined symbols in the output object.
 
-The course solution decides what to emit by the closure below; a different
-closure whose objects link and run is acceptable. The closure starts from the
+One way to decide what to emit is the closure below; another design whose
+objects link and run is acceptable. Start from the
 definitions the translation unit owns (its non-inline functions and variables with external linkage, and
 the vtable of each class whose key function it defines, as the Itanium ABI
 decides) and adds, until nothing new appears, every vague-linkage definition

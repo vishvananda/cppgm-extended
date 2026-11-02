@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--revision', default='main', help='trusted compiler revision to measure')
     parser.add_argument('--directory', type=Path, help='new directory for runner files and logs')
     parser.add_argument('--listen', action='store_true', help='accept one manually queued job instead of dispatching')
+    parser.add_argument('--course-quality', action='store_true', help='also measure the optional course exercises')
     args = parser.parse_args()
     if not Path('/proc/cpuinfo').exists() or 'GenuineIntel' not in Path('/proc/cpuinfo').read_text():
         parser.error('this helper requires Intel Linux hardware')
@@ -62,9 +63,12 @@ def main():
         registered = True
         if not args.listen:
             # Queue the job for this runner's unique label, not any other runner.
-            subprocess.run(['gh', 'workflow', 'run', 'public-benchmarks.yml', '--repo', args.repo,
+            command = ['gh', 'workflow', 'run', 'public-benchmarks.yml', '--repo', args.repo,
                 '--ref', args.ref, '-f', 'platform=intel', '-f', f'revision={revision}',
-                '-f', f'runner_label={label}'], check=True)
+                '-f', f'runner_label={label}']
+            if args.course_quality:
+                command += ['-f', 'course_quality=true']
+            subprocess.run(command, check=True)
             print(f'Queued Intel measurement of {revision}', flush=True)
         else:
             print('Listening for one job with runner_label=cppgm-intel', flush=True)

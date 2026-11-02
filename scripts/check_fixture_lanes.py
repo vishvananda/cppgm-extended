@@ -58,6 +58,7 @@ NON_RUNNERS = {
 # source: (pattern on the path, whether controls/ and regression/ below a
 # root are skipped).
 SELECTIONS = {
+    "check_optimization_quality.py": (r"\.t$", False),
     # Every paN/scripts/run_all_tests.pl runs run_all_tests_common.pl in
     # text_t mode or execs a worker that collects `.t` the same way.
     "run_all_tests.pl": (r"\.t$", True),
