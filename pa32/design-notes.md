@@ -630,8 +630,10 @@ Full unrolling, at most 16 loops per run of the pass:
   latch and its exit test in the header, whose trip count is known without
   wrapping and at most 4, and whose body times the trip count plus one is
   at most 64 instructions, becomes one block. With no call in the body the
-  limits are 8 passes and 256 instructions. A loop entered from a branching
-  block gets a preheader first. A pointer induction counts too when its
+  limits are 8 passes and 512 instructions: a few passes of a long body
+  (eight lanes of complex arithmetic held in registers) then keep no value
+  live across a back edge, and work only the last pass needs drops from the
+  others. A loop entered from a branching block gets a preheader first. A pointer induction counts too when its
   start and its bound are known offsets from one slot or global (`std::fill`
   over a local array): the trip count is the distance over the step, and
   the bound may be an address the header computes.

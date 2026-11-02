@@ -1754,7 +1754,7 @@ bool LoopPass::fill_available() const
 const int64_t kUnrollTrips = 4;
 const uint32_t kUnrollBody = 64;
 const int64_t kUnrollCallFreeTrips = 8;
-const uint32_t kUnrollCallFreeBody = 256;
+const uint32_t kUnrollCallFreeBody = 512;
 
 bool LoopPass::try_unroll(uint32_t loop)
 {
