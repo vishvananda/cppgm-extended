@@ -2,12 +2,12 @@
 
 [![Tests](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml/badge.svg)](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml)
 
-A C++11 compiler course in 35 cumulative assignments, from preprocessing to
-native code, optimization and self-hosting. This repository contains the
-complete compiler solution in `dev/`; `pa1/` through `pa35/` hold the handouts,
-tests and wrappers.
+A C++11 compiler course designed for agents, with 35 cumulative assignments from
+preprocessing to native code, optimization and self-hosting. This repository
+contains a high-performance reference implementation in `dev/`; `pa1/` through
+`pa35/` hold the handouts, tests and wrappers.
 
-Students should start with
+To take the course, start with
 [cppgm-assignments](https://github.com/vishvananda/cppgm-assignments), the export
 containing scaffolds, handouts, tests and downloadable reference tools.
 The export's references are generated from this compiler.
@@ -30,6 +30,15 @@ measurement; the commit row identifies the compiler it measured. The 10 ms
 cutoff is applied per host, so compare the program counts too. CPU models,
 toolchain versions and workflow links are recorded with the
 [benchmark results](benchmarks/public/README.md).
+
+## Caveats
+
+- C++11 is the baseline; other dialects have only partial extension support.
+- Linux x86-64 is the only target architecture and platform.
+- General inline assembly is unsupported; a few GNU forms are recognized.
+- No C++ standard library is bundled; use a host-installed library.
+- The compiler may contain bugs.
+- Code generation may be poor for unfamiliar program shapes.
 
 ## Build and validate
 
