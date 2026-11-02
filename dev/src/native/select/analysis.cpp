@@ -1,6 +1,7 @@
 #include "native/select/function_selector.h"
 #include "native/select/for_each_inst.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 
@@ -524,12 +525,19 @@ bool truncates_integer(const Instruction& inst)
 
 } // namespace
 
+namespace {
+
+const size_t kExtendedWalk = 16;
+
+} // namespace
+
 // O1+: the narrow integer results no reader reads above their width. Such a
 // value needs no extension; a truncation of one stands for its source.
 // Reading the low bits alone: an add, sub, mul or left shift of the value's
 // type (whose result is extended again), a divide at 32 bits, a store or
 // compare of its type or narrower, a branch, a shift's count, a narrower
-// truncation, a copy
+// truncation, an extension of a value that would extend its own (the
+// extension extends the low bits again), a copy
 // to the other sign, a return (the callers of a returned narrow value extend
 // it; the psABI leaves the upper bits to them), a host word argument (the
 // callee extends it likewise). What keeps upper bits passes its readers'
@@ -576,6 +584,49 @@ void FunctionSelector::find_low_reads()
 		}
 		passed.push_back(Passed{ v.index, first[reader] });
 		first[reader] = static_cast<uint32_t>(passed.size() - 1);
+	};
+	// Whether a narrow value reaches, through phis, select arms, copies and
+	// bitwise operations, a wrapping add, sub, mul or left shift or a
+	// negation: one that extends its result. (A load extends for nothing,
+	// and a `nowrap` step is canonical at 64 bits.) Up to kExtendedWalk values.
+	std::vector<uint32_t> walk;
+	auto extended = [&](uint32_t temp) {
+		walk.assign(1, temp);
+		for (size_t n = 0; n < walk.size() && n < kExtendedWalk; ++n)
+		{
+			const uint32_t def = body.temps[walk[n]].def;
+			if (walk[n] < body.parameter_count || def == kNoId)
+				continue;
+			const Instruction& d = body.instructions[def];
+			auto visit = [&](Value x) {
+				if (x.kind == ValueKind::Temp && std::find(walk.begin(), walk.end(), x.index) == walk.end())
+					walk.push_back(x.index);
+			};
+			const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(d.sub);
+			if (d.op == Opcode::Binary && (d.flags & lowir::IF_NO_WRAP) == 0 &&
+				(op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Sub || op == lowir::BinaryOp::Mul ||
+					op == lowir::BinaryOp::Shl))
+				return true;
+			if (d.op == Opcode::Unary && static_cast<lowir::UnaryOp>(d.sub) == lowir::UnaryOp::Neg)
+				return true;
+			if (d.op == Opcode::Phi)
+				for (uint32_t k = 1; k < d.extra_count; k += 2)
+					visit(body.operands[d.extra_first + k]);
+			else if (d.op == Opcode::Select)
+			{
+				visit(d.ops[1]);
+				visit(d.ops[2]);
+			}
+			else if (d.op == Opcode::Copy ||
+				(d.op == Opcode::Binary &&
+					(op == lowir::BinaryOp::And || op == lowir::BinaryOp::Or || op == lowir::BinaryOp::Xor)))
+			{
+				visit(d.ops[0]);
+				if (d.op == Opcode::Binary)
+					visit(d.ops[1]);
+			}
+		}
+		return false;
 	};
 	for (uint32_t s = 0; s < slot_state_.size(); ++s)
 		if (slot_state_[s] == SS_PROMOTED)
@@ -653,8 +704,16 @@ void FunctionSelector::find_low_reads()
 				low = true; // tested at the value's type
 				break;
 			case Opcode::Convert:
-				low = k == 0 && truncates_integer(inst) && width_bits(inst.type.kind()) <= bits;
+			{
+				// (An extension of a narrow source extends its low bits again,
+				// where the source would otherwise extend its own.)
+				const lowir::ConvertOp op = static_cast<lowir::ConvertOp>(inst.sub);
+				const bool extends = (op == lowir::ConvertOp::SExt || op == lowir::ConvertOp::ZExt) &&
+					inst.type.is_integer() && inst.type.kind() != TypeKind::I128 &&
+					lowir::convert_source_type(inst).kind() == kind && extended(v.index);
+				low = k == 0 && ((truncates_integer(inst) && width_bits(inst.type.kind()) <= bits) || extends);
 				break;
+			}
 			default:
 				break;
 			}
@@ -923,6 +982,9 @@ void FunctionSelector::resolve_aliases()
 										   alias_compatible(inst.type, lowir::convert_source_type(inst))) ||
 					(op == lowir::ConvertOp::SExt && signed_narrow(from) &&
 						alias_compatible(inst.type, lowir::convert_source_type(inst)));
+				// (A source no reader reads above its width keeps no extension,
+				// and its fit describes the extended form.)
+				const bool canonical = !low_read(src.index);
 				// A non-negative value the conversion keeps (O1+): within the
 				// bits a zero-extension keeps, below the sign bit a sign
 				// extension copies, and a canonical value of the result type.
@@ -936,7 +998,7 @@ void FunctionSelector::resolve_aliases()
 				const bool low = truncates_integer(inst) && low_read(r);
 				// (A value that fits is already its result's register form.)
 				const bool exact = op == lowir::ConvertOp::Trunc && (inst.flags & lowir::IF_EXACT) != 0;
-				if (boolean || extension || same || low || exact)
+				if (boolean || ((extension || same) && canonical) || low || exact)
 					to = src;
 			}
 		}

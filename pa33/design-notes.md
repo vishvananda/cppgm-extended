@@ -79,7 +79,12 @@ that paid there in the course solution:
   dividend and a shift's count may be computed in `rax` and `rcx`: that early
   clobber is their own load, so a quotient divided again stays in `rax`. A divide
   by a constant writes `rax` with its product and then reads the dividend again,
-  so its dividend stays out of `rax`. A phi, a
+  so its dividend stays out of `rax`. An extension reads the low bits too and
+  extends them again, where its source would otherwise extend its own result
+  (a wrapping step or a negation, through phis and selects): a byte shifted
+  on every pass and extended once after the loop then extends there alone. A
+  load extends for nothing, so an extension of a loaded value stays the
+  load's. A phi, a
   select, an `and`, a complement and a `nowrap` add pass their readers' needs to their operands,
   so grow the set to a fixed point. A sum of `int` products that is only stored
   then needs no `movslq` per iteration. The same question decides whether a

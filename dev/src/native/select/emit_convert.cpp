@@ -70,9 +70,16 @@ void FunctionSelector::emit_int_convert(const Instruction& inst)
 		emit2(Op::Load, st, Operand::make_reg(d), src);
 	else
 		load_into(d, src, TypeKind::I64);
+	// A register source no reader reads above its width holds its value in
+	// the low bits alone.
+	const Value v = resolve(inst.ops[0]);
+	const bool raw = src.kind == OperandKind::Reg && v.kind == ValueKind::Temp &&
+		(low_read(v.index) || (inst.ops[0].kind == ValueKind::Temp && low_read(inst.ops[0].index)));
 	switch (op)
 	{
 	case ConvertOp::SExt:
+		if (raw && signed_narrow(st))
+			normalize(d, st);
 		if (st == TypeKind::I1)
 			emit1(Op::Neg, TypeKind::Void, Operand::make_reg(d));
 		else if (unsigned_narrow(st))
@@ -83,6 +90,8 @@ void FunctionSelector::emit_int_convert(const Instruction& inst)
 	case ConvertOp::ZExt:
 		if (signed_narrow(st))
 			normalize(d, flip_sign(st));
+		else if (raw && unsigned_narrow(st))
+			normalize(d, st);
 		if (bits_of(dt) <= bits_of(st))
 			normalize(d, dt);
 		break;

@@ -1,0 +1,58 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @pack
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i64
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r8, 0
+    mov r9, 0
+
+  block ^head
+    shl r9, 1
+    load.u8 rdx, [rdi+r8]
+    and rdx, 1
+    mov rcx, r9
+    or rcx, 1
+    test.u8 rdx, rdx
+    cmovne r9, rcx
+    add r8, 1
+    cmp.i64 r8, rsi
+    jb ^head
+
+  block ^out
+    sext.i8 r9
+    load.i8 rdi, [rdi]
+    add.i32 r9, rdi
+    ret r9
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $bits -> [rbp-8] : obj<8x1>
+
+  block ^entry
+    store.i32 [rbp-8], 16842753
+    store.i32 [rbp-4], 16842752
+    lea rdi, [rbp-8]
+    mov rsi, 8
+    call @pack [args=(rsi,rdi)]
+    add.i32 rax, 200
+    ret rax
