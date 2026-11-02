@@ -143,7 +143,7 @@ private:
 	void instruction(const Function& function, const Inst& inst, uint32_t index, bool last_in_function);
 	void branch(Cond cond, bool conditional, uint32_t label);
 	void find_loop_heads(const Function& function);
-	bool measure_short_loops();
+	bool measure_short_loops(const Function& function);
 	void align_loop_head(size_t head);
 	RM rm(const Operand& op) const;
 	Reg scratch(const Inst& inst, Reg avoid = kNoReg) const;

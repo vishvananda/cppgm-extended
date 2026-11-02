@@ -142,7 +142,11 @@ that paid there in the course solution:
   on one too, and so must its text section. Decide this after the branches are
   shortened, since their lengths set the loop's size; until then, allow 31
   bytes of padding before such a head. In a 7-instruction matrix loop that
-  crossed a window, this took 15% of the cycles off.
+  crossed a window, this took 15% of the cycles off. Do this only for a
+  counted loop, one whose every exit tests a counter stepped by a constant
+  against a value the loop does not compute. The padding runs on each entry,
+  and a search loop that usually stops after one or two iterations ran 7%
+  slower with it.
 
 When a change does less than expected, look for a constraint stricter than
 emission needs before tuning a heuristic. A phi transfer modeled at the

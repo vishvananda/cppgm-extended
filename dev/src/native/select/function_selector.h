@@ -204,6 +204,8 @@ public:
 
 	// ---- emit_control.cpp
 	void emit_blocks();
+	bool counter_test(lowir::Value condition, const std::vector<uint32_t>& mark, uint32_t epoch, uint32_t header) const;
+	void mark_counted_loops();
 	void emit_block(uint32_t block);
 	void enter_block(uint32_t block);
 	void retain_parameters(uint32_t block);

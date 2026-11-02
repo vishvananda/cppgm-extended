@@ -143,6 +143,9 @@ const unsigned kRelaxPasses = 3;
 // to 8.
 const unsigned kLoopPad = 10;
 
+// chain_end_ of a block whose jump chain enters a cycle.
+const uint32_t kNoChainEnd = 0xfffffffdu;
+
 // The instruction cache of decoded operations holds a 32-byte window at a time,
 // and a loop that crosses a window costs a cycle more each iteration. An
 // innermost loop of at most this many bytes starts on a 32-byte boundary when
@@ -188,15 +191,31 @@ void FunctionEmitter::find_loop_heads(const Function& function)
 
 // With the branch lengths settled: the bytes of each loop that may move to a
 // window boundary, and whether any may.
-bool FunctionEmitter::measure_short_loops()
+bool FunctionEmitter::measure_short_loops(const Function& function)
 {
 	for (size_t i = 0; i < short_.size(); ++i)
 		relax_saved_[i + 1] = relax_saved_[i] + (short_[i] ? (branch_conditional_[i] ? 4 : 3) : 0);
 	loop_bytes_.assign(loop_heads_.size(), 0);
+	// Only a counted loop's head (Block::counted) may move: padding before
+	// a head runs on each entry, and a loop of few iterations pays more for
+	// it than it saves.
+	std::vector<uint8_t> counted(loop_heads_.size(), 0);
+	for (size_t b = 0; b < function.blocks.size(); ++b)
+	{
+		const Block& block = function.blocks[b];
+		if (!block.counted || block.fallen_into || (chain_end_[b] != b && chain_end_[b] != kNoChainEnd))
+			continue;
+		const std::vector<int32_t>::const_iterator head = std::lower_bound(
+			loop_heads_.begin(), loop_heads_.end(), block_start_[b]);
+		if (head != loop_heads_.end() && *head == block_start_[b])
+			counted[static_cast<size_t>(head - loop_heads_.begin())] = 1;
+	}
 	bool any = false;
 	for (size_t k = 0; k < loop_heads_.size(); ++k)
 	{
 		const uint32_t last = loop_last_[k];
+		if (!counted[k])
+			continue;
 		if (k + 1 < loop_heads_.size() && loop_heads_[k + 1] <= branch_offset_[last])
 			continue;
 		const size_t before = static_cast<size_t>(
@@ -288,7 +307,7 @@ void FunctionEmitter::emit(const Function& function)
 	if (shortened || !loop_heads_.empty())
 	{
 		text.resize(base_);
-		if (measure_short_loops())
+		if (measure_short_loops(function))
 		{
 			// Windows count from the function's start.
 			while (text.size() % kWindowBytes != 0)
@@ -618,7 +637,6 @@ void FunctionEmitter::encode(const Function& function)
 	// block is walked once: a walk stops at a block already resolved.
 	const uint32_t kUnresolved = 0xffffffffu;
 	const uint32_t kWalking = 0xfffffffeu;
-	const uint32_t kNoChainEnd = 0xfffffffdu;
 	chain_end_.assign(blocks, kUnresolved);
 	for (size_t b = 0; b < blocks; ++b)
 	{

@@ -76,6 +76,9 @@ struct Block
 	// O2+: mostly reached from the block laid out before it, so padding here
 	// would run each time.
 	bool fallen_into;
+	// O2+: in an innermost loop whose every exit tests a counter stepped by
+	// a literal against a value the loop does not compute.
+	bool counted;
 };
 
 struct DebugSlot

@@ -94,6 +94,8 @@ void FunctionSelector::begin_mir_block(lowir::NameId name, uint32_t edge_from, u
 	block.first = static_cast<uint32_t>(out_->insts.size());
 	block.count = 0;
 	block.landing = false;
+	block.fallen_into = false;
+	block.counted = false;
 	out_->blocks.push_back(block);
 }
 
