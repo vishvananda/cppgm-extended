@@ -2399,6 +2399,53 @@ bool left_value(
 	return false;
 }
 
+const uint32_t kNoTarget = 0xffffffffu;
+// A block copied into the block jumping to it holds at most this many
+// instructions, its final `jcc; jmp` included.
+const uint32_t kCopyThrough = 5;
+
+// Block b, ending in a jump to t (simple instructions, then `jcc X; jmp
+// Y`), ends in a copy of t instead when the value b leaves decides the test
+// X or Y is: the copy's branch goes to the decided side. `decided(b, view,
+// test)` names that side, or kNoTarget.
+template<typename Decided>
+bool copy_through(Function& f, uint32_t b, uint32_t t, const Decided& decided)
+{
+	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
+	if (t == b || t >= blocks || f.blocks[t].landing || f.blocks[t].count < 3 || f.blocks[t].count > kCopyThrough)
+		return false;
+	const Block from = f.blocks[b], test = f.blocks[t];
+	const Inst jcc = f.insts[test.first + test.count - 2], jmp = f.insts[test.first + test.count - 1];
+	if (jcc.op != Op::Jcc || jcc.ops[0].kind != OperandKind::Label || jmp.op != Op::Jmp ||
+		jmp.ops[0].kind != OperandKind::Label)
+		return false;
+	for (uint32_t i = test.first; i + 2 < test.first + test.count; ++i)
+		if (!simple_inst(f.insts[i]))
+			return false;
+	const uint32_t at = static_cast<uint32_t>(f.insts.size());
+	for (uint32_t i = from.first; i + 1 < from.first + from.count; ++i)
+		f.insts.push_back(f.insts[i]);
+	for (uint32_t i = test.first; i < test.first + test.count; ++i)
+		f.insts.push_back(f.insts[i]);
+	Block view = from;
+	view.first = at;
+	view.count = static_cast<uint32_t>(f.insts.size()) - at - 1; // up to the jcc
+	const uint32_t on_jump = decided(b, view, jmp.ops[0].symbol);
+	const uint32_t on_jcc = decided(b, view, jcc.ops[0].symbol);
+	if (on_jump == kNoTarget && on_jcc == kNoTarget)
+	{
+		f.insts.resize(at);
+		return false;
+	}
+	if (on_jump != kNoTarget)
+		f.insts.back().ops[0].symbol = on_jump;
+	if (on_jcc != kNoTarget)
+		f.insts[f.insts.size() - 2].ops[0].symbol = on_jcc;
+	f.blocks[b].first = at;
+	f.blocks[b].count = static_cast<uint32_t>(f.insts.size()) - at;
+	return true;
+}
+
 } // namespace
 
 // O1+, before block placement: a block ending in a jump to a test block
@@ -2408,7 +2455,10 @@ bool left_value(
 // successor. An address (a defined symbol's, a frame location) decides
 // only whether it is zero. A rotated loop's entry test of its constant
 // start, a switch's cases meeting at a null test of the table they chose.
-// Up to four tests per jump; linear.
+// A jump to a short block (simple instructions, then `jcc X; jmp Y`) whose
+// value decides the test at X or Y takes a copy of that block, branching to
+// the decided side: a latch entered with a constant from its header's test
+// then skips the test on its way around. Up to four steps per jump; linear.
 // A block that starts with the compare of registers each of its predecessors
 // ends with reads the flags they left: `if (a > b) ... else if (a < b)`, and
 // the copy of a loop's test on its back edge. The compare goes, as does the
@@ -2523,50 +2573,61 @@ uint32_t thread_decided_tests(Function& f, const lowir::Program& program)
 {
 	uint32_t threaded = 0;
 	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
+	// The side test block t takes for the value block b (its instructions
+	// `view`, up to its last) leaves in the tested register, or kNoTarget.
+	auto decided = [&](uint32_t b, const Block& view, uint32_t t) {
+		if (t == b || t >= blocks || f.blocks[t].count != 3 || f.blocks[t].landing)
+			return kNoTarget;
+		const Inst* test = &f.insts[f.blocks[t].first];
+		const Inst& jcc = test[1];
+		const Inst& jmp = test[2];
+		const bool is_test = test->op == Op::Test;
+		if ((test->op != Op::Cmp && !is_test) || test->ops[0].kind != OperandKind::Reg || test->ops[0].reg >= 16 ||
+			jcc.op != Op::Jcc || jcc.ops[0].kind != OperandKind::Label || jmp.op != Op::Jmp ||
+			jmp.ops[0].kind != OperandKind::Label)
+			return kNoTarget;
+		const Reg r = test->ops[0].reg;
+		const Operand& other = test->ops[1];
+		if (!(other.kind == OperandKind::Imm || (is_test && other.kind == OperandKind::Reg && other.reg == r)))
+			return kNoTarget;
+		uint64_t value = 0;
+		bool nonzero = false;
+		if (!left_value(f, program, view, r, value, nonzero))
+			return kNoTarget;
+		const unsigned bytes = register_bytes(test->type);
+		const Cond cond = static_cast<Cond>(jcc.sub);
+		int holds;
+		if (!nonzero)
+			holds = decided_condition(cond, is_test, value, other.kind == OperandKind::Imm ? other.imm : value, bytes);
+		else if (bytes != 8 || (other.kind == OperandKind::Imm && other.imm != 0))
+			holds = -1;
+		else
+			holds = cond == CC_NE || cond == CC_A || cond == CC_AE ? 1
+				: cond == CC_E || cond == CC_BE || cond == CC_B    ? 0
+																   : -1;
+		if (holds < 0)
+			return kNoTarget;
+		return holds ? jcc.ops[0].symbol : jmp.ops[0].symbol;
+	};
 	for (uint32_t b = 0; b < blocks; ++b)
 	{
-		const Block block = f.blocks[b];
-		if (block.count == 0)
+		if (f.blocks[b].count == 0)
 			continue;
-		Inst& jump = f.insts[block.first + block.count - 1];
 		for (unsigned step = 0; step < 4; ++step)
 		{
+			Inst& jump = f.insts[f.blocks[b].first + f.blocks[b].count - 1];
 			if (jump.op != Op::Jmp || jump.ops[0].kind != OperandKind::Label)
 				break;
 			const uint32_t t = jump.ops[0].symbol;
-			if (t == b || t >= blocks || f.blocks[t].count != 3 || f.blocks[t].landing)
+			const uint32_t to = decided(b, f.blocks[b], t);
+			if (to != kNoTarget)
+			{
+				jump.ops[0].symbol = to;
+				++threaded;
+				continue;
+			}
+			if (!copy_through(f, b, t, decided))
 				break;
-			const Inst* test = &f.insts[f.blocks[t].first];
-			const Inst& jcc = test[1];
-			const Inst& jmp = test[2];
-			const bool is_test = test->op == Op::Test;
-			if ((test->op != Op::Cmp && !is_test) || test->ops[0].kind != OperandKind::Reg || test->ops[0].reg >= 16 ||
-				jcc.op != Op::Jcc || jcc.ops[0].kind != OperandKind::Label || jmp.op != Op::Jmp ||
-				jmp.ops[0].kind != OperandKind::Label)
-				break;
-			const Reg r = test->ops[0].reg;
-			const Operand& other = test->ops[1];
-			if (!(other.kind == OperandKind::Imm || (is_test && other.kind == OperandKind::Reg && other.reg == r)))
-				break;
-			uint64_t value = 0;
-			bool nonzero = false;
-			if (!left_value(f, program, block, r, value, nonzero))
-				break;
-			const unsigned bytes = register_bytes(test->type);
-			const Cond cond = static_cast<Cond>(jcc.sub);
-			int holds;
-			if (!nonzero)
-				holds = decided_condition(
-					cond, is_test, value, other.kind == OperandKind::Imm ? other.imm : value, bytes);
-			else if (bytes != 8 || (other.kind == OperandKind::Imm && other.imm != 0))
-				holds = -1;
-			else
-				holds = cond == CC_NE || cond == CC_A || cond == CC_AE ? 1
-					: cond == CC_E || cond == CC_BE || cond == CC_B    ? 0
-																	   : -1;
-			if (holds < 0)
-				break;
-			jump.ops[0].symbol = holds ? jcc.ops[0].symbol : jmp.ops[0].symbol;
 			++threaded;
 		}
 	}

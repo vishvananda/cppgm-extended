@@ -137,6 +137,12 @@ that paid there in the course solution:
 - Chain blocks along their likely edges, put blocks that only throw or exit
   last, and rotate a loop whose test is at its top so the test also ends the
   body.
+- A jump to a short block that ends `jcc X; jmp Y` may take a copy of that
+  block when the jumping block's values decide the test at `X` or `Y`. The
+  copy branches straight to the decided side. A latch entered with a constant
+  from the test at its loop's head then skips that test on its way around.
+  In a recursive function inlined into itself, this took 10% of the cycles
+  off.
 - Start each loop head on a 16-byte boundary when that takes at most 10 bytes
   of padding, else on an 8-byte one, as GCC does at `-O2`. Padding is `nop`s;
   they run once per entry to the loop, not per iteration, so leave out a block
