@@ -1,0 +1,32 @@
+function @fill(%v : i64, %i : i64) -> i64 [no_inline=yes] {
+  slot $a : obj<64x8>
+
+  block ^entry:
+    %b = addr $a
+    store i64 %v, %b
+    %t2 = index i64 %b, 1
+    store i64 %v, %t2
+    %t3 = index i8 %b, 16
+    store i64 %v, %t3
+    %t4 = index i8 %b, 24
+    store i64 %v, %t4
+    %t5 = index i8 %b, 32
+    store i64 %v, %t5
+    %t6 = index i8 %b, 40
+    store i64 %v, %t6
+    %t7 = index i8 %b, 48
+    store i64 %v, %t7
+    %t8 = index i8 %b, 56
+    store i64 %v, %t8
+    %k = binary and i64 %i, 7
+    %at = index i64 %b, %k
+    %x = load i64 %at
+    return i64 %x
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %x = call i64 @fill(6, 13)
+    %bad = cmp ne i64 %x, 6
+    %r = convert zext i32 i1 %bad
+    return i32 %r
+}

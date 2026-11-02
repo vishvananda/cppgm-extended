@@ -61,7 +61,7 @@ private:
 	bool invariant(uint32_t loop, Value v) const;
 	bool induction(uint32_t loop, InstId phi, Induction& out) const;
 	void add_narrow_accumulators(uint32_t loop, std::vector<Induction>& ivs) const;
-	bool exit_test(uint32_t loop, ExitTest& out, std::vector<Induction>& ivs) const;
+	bool exit_test(uint32_t loop, ExitTest& out, std::vector<Induction>& ivs, bool fixed_bounds = false) const;
 	bool effect_free(uint32_t loop) const;
 	bool fill_pattern(uint32_t loop, const Induction& iv, InstId& store, InstId& load) const;
 	bool copy_pattern(
@@ -208,6 +208,14 @@ void LoopPass::add_narrow_accumulators(uint32_t loop, std::vector<Induction>& iv
 	}
 }
 
+// An address at a known offset from a frame slot or a symbol: the same
+// wherever it is computed.
+static bool fixed_address(const FunctionBody& body, Value v)
+{
+	const Located at = locate(body, v);
+	return at.known && (at.root.is(ValueKind::Slot) || at.root.is(ValueKind::Symbol));
+}
+
 // The test number (0-based) at which a counted loop leaves: the induction
 // starts at a literal and steps by a literal, the bound is a literal, and
 // the tested values move from continuing to leaving without leaving the
@@ -303,8 +311,9 @@ bool counted_trips(Type type, ComparePredicate pred, bool continue_on_true, __in
 // One exit edge, branching on `cmp ne|eq` of an induction value against
 // an invariant. A pointer induction may step by any constant (it moves
 // within its object until it meets the bound); an integer one steps by
-// one, so it meets any bound.
-bool LoopPass::exit_test(uint32_t loop, ExitTest& out, std::vector<Induction>& ivs) const
+// one, so it meets any bound. With `fixed_bounds`, a pointer's bound may be
+// a fixed address the loop computes (only the trip count is then used).
+bool LoopPass::exit_test(uint32_t loop, ExitTest& out, std::vector<Induction>& ivs, bool fixed_bounds) const
 {
 	const Loop& l = forest_.loops[loop];
 	uint32_t exits = 0;
@@ -339,7 +348,9 @@ bool LoopPass::exit_test(uint32_t loop, ExitTest& out, std::vector<Induction>& i
 		for (unsigned side = 0; side < 2; ++side)
 		{
 			const Value v = cmp.ops[side], other = cmp.ops[1 - side];
-			if (!v.is(ValueKind::Temp) || (v.index != iv.value && v.index != iv.next) || !invariant(loop, other))
+			if (!v.is(ValueKind::Temp) || (v.index != iv.value && v.index != iv.next))
+				continue;
+			if (!invariant(loop, other) && !(fixed_bounds && iv.pointer && fixed_address(body_, other)))
 				continue;
 			ComparePredicate pred = side == 0 ? static_cast<ComparePredicate>(cmp.sub)
 											  : swapped(static_cast<ComparePredicate>(cmp.sub));
@@ -378,6 +389,21 @@ bool LoopPass::exit_test(uint32_t loop, ExitTest& out, std::vector<Induction>& i
 			// (moving within its object) or an integer stepping by one.
 			const bool equality = (pred == ComparePredicate::Ne && !leave_on_true) ||
 				(pred == ComparePredicate::Eq && leave_on_true);
+			// A pointer from a known offset to a known offset of one object
+			// (a local array's begin and end) is counted by the offsets.
+			const Located from = locate(body_, iv.init), to = locate(body_, other);
+			if (iv.pointer && equality && from.known && to.known && from.root == to.root &&
+				!from.root.is(ValueKind::None))
+			{
+				__int128 last;
+				int64_t trips;
+				if (counted_trips(Type::scalar(TypeKind::I64), pred, !leave_on_true, from.offset, iv.step_bytes,
+						to.offset, v.index == iv.next, trips, last))
+				{
+					out.trips = trips;
+					return true;
+				}
+			}
 			if (equality && (iv.pointer || iv.step_bytes == 1 || iv.step_bytes == -1))
 				return true;
 			// A runtime bound it approaches by one and stops at: every value
@@ -1827,7 +1853,8 @@ bool LoopPass::try_unroll(uint32_t loop)
 		return false;
 	ExitTest test;
 	std::vector<Induction> ivs;
-	if (!exit_test(loop, test, ivs) || test.trips < 0 || test.trips > kUnrollCallFreeTrips || test.exiting != l.header)
+	if (!exit_test(loop, test, ivs, true) || test.trips < 0 || test.trips > kUnrollCallFreeTrips ||
+		test.exiting != l.header)
 		return false;
 	// The body chain: header -> b1 -> ... -> latch -> header, jumps only.
 	std::vector<BlockId> chain;

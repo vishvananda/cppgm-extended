@@ -574,7 +574,10 @@ Full unrolling, at most 16 loops per run of the pass:
   wrapping and at most 4, and whose body times the trip count plus one is
   at most 64 instructions, becomes one block. With no call in the body the
   limits are 8 passes and 256 instructions. A loop entered from a branching
-  block gets a preheader first.
+  block gets a preheader first. A pointer induction counts too when its
+  start and its bound are known offsets from one slot or global (`std::fill`
+  over a local array): the trip count is the distance over the step, and
+  the bound may be an address the header computes.
 - An innermost loop with a branching body, an integer induction and a
   literal start, step and bound giving 1 to 16 passes is copied pass by
   pass: up to 16 passes within 256 cloned instructions when it reads
