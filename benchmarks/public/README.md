@@ -78,32 +78,34 @@ a `cppgm++` count differs from `baseline.json`:
 - Compile counts: more than 0.5%.
 - Run counts: more than 1%.
 
-## Badges
+## Reading the README table
 
-The root README has a table of six badges. Each badge gives `cppgm++` speed as
-a multiple of `g++` speed. Higher is better.
+Program speed is `GCC CPU time / cppgm++ CPU time`: 1× is equal, and higher
+is faster. Compile speed measures compilation, excluding linking;
+generated code speed measures execution of the resulting programs. The `-O3`
+execution timings use the separate timing pass described above.
 
-| Row | Column | Label | Measure |
-| --- | --- | --- | --- |
-| `-O0` | compile speed | `-O0 compile speed vs gcc` | geometric mean of compile CPU time at `-O0` |
-| `-O0` | generated code speed | `-O0 generated speed vs gcc` | geometric mean of run CPU time at `-O0` |
-| `-O3` | compile speed | `-O3 compile speed vs gcc` | geometric mean of compile CPU time at `-O3` |
-| `-O3` | generated code speed | `-O3 generated speed vs gcc` | geometric mean of run CPU time at `-O3` |
-| Building `cppgm++` | compile speed | `self compile speed vs gcc` | CPU time of the `-O3` build of `cppgm++` by the `g++`-built `cppgm++`, against the same build by `g++` |
-| Building `cppgm++` | generated code speed | `self-built speed vs gcc` | CPU time of the `-O3` build of `cppgm++` by the self-built `cppgm++`, against the same build by the `g++`-built `cppgm++` |
+For each of these four program rows, the value is the geometric mean of the
+per-program ratios, giving each included program equal weight. Only passing
+programs with both measurements are included; CPU times below 0.01 seconds on
+either side are excluded. The `-O3` timed programs row shows how many programs
+contributed to that generated-code ratio. Cutoffs apply separately on each host,
+so counts can differ between columns.
 
-The publisher keeps the badge JSON and renders compact SVG badges for the
-table: bold 12-pixel text, a 24-pixel height, rounded corners and dark backgrounds
-so the white performance numbers stay readable.
+The two compiler build rows time the same compiler sources at `-O3`, with the
+same job count:
 
-The three builds use the same job count.
+- **Building `cppgm++`**: GCC's build time divided by the time taken by the
+  GCC-built `cppgm++` to build itself.
+- **Self-built compiler speed**: that self-build time divided by the time
+  taken by the self-built compiler to build the next (inception) generation.
 
-The job summary uses the same format. It gives the reference over `cppgm++` for
-each measure, so above 1× means `cppgm++` is smaller or faster.
-
-Each push to `main` writes the badges to the `benchmark-badges` branch. If a
-program or a self-hosted build fails, the badges it affects are red and give the
-number of failures. `clang++` results are in the job summary.
+EPYC and Intel columns retain their latest separate measurements, which can be
+from different commits. The measured commit row and the provenance links below
+identify the revision, CPU, toolchains and workflow for each column. The
+publisher renders compact, rounded SVG badges. A failed program or self-hosted
+build makes the affected speed badge show the failure count. The job summary
+also reports Clang comparisons.
 
 ## Update the baseline
 
@@ -172,9 +174,3 @@ checks the scalar oracles, records Cachegrind work, and retains A/A calibration
 and six paired timing blocks under `course-quality/` in the results artifact.
 Use the same compiler revision in both lanes. These diagnostic timings do not
 change the badges or impose a hardware-specific course gate.
-
-CPU times below 0.01 seconds are omitted from speed ratios, separately on
-each host. The O3 program-count row shows the resulting denominator. For
-example, at commit `2234c3b54`, EPYC counted 80 programs and Intel counted 81
-because Bubblesort ran below the cutoff on EPYC. The headline speeds were
-0.9741x and 0.9849x; using the common 80 programs gave 0.9741x and 0.9745x.

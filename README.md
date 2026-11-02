@@ -25,6 +25,8 @@ The export's references are generated from this compiler.
 | `-O3` timed programs | [<img alt="epyc O3 timed programs" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/epyc/o3-programs.svg">](benchmarks/public/README.md) | [<img alt="intel O3 timed programs" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/intel/o3-programs.svg">](benchmarks/public/README.md) |
 | Measured commit | [<img alt="epyc Measured commit" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/epyc/revision.svg">](benchmarks/public/README.md) | [<img alt="intel Measured commit" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/intel/revision.svg">](benchmarks/public/README.md) |
 
+See [benchmark methodology](benchmarks/public/README.md) for how the numbers are calculated.
+
 ## Caveats
 
 - C++11 is the baseline; other dialects have only partial extension support.
