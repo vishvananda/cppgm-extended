@@ -136,6 +136,13 @@ that paid there in the course solution:
   measured on, a 7-instruction loop that ran 4 to 15 times had its exit
   mispredicted on most entries until it was aligned. A branch that may jump
   over padding must allow for it when you shorten it to `rel8`.
+- The decoded-instruction cache delivers one 32-byte window per cycle, so an
+  innermost loop of up to 64 bytes that a 16-byte head would spread over one
+  more window starts on a 32-byte boundary instead. The function then starts
+  on one too, and so must its text section. Decide this after the branches are
+  shortened, since their lengths set the loop's size; until then, allow 31
+  bytes of padding before such a head. In a 7-instruction matrix loop that
+  crossed a window, this took 15% of the cycles off.
 
 When a change does less than expected, look for a constraint stricter than
 emission needs before tuning a heuristic. A phi transfer modeled at the

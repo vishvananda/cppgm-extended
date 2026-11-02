@@ -541,8 +541,9 @@ void ObjectCompiler::place_text()
 									 section_names_[static_cast<unsigned>(SectionKind::Text)])
 							   : shared_section(".text", SectionKind::Text);
 		object::Section& section = out_->sections[range.section];
-		section.align = 16;
-		range.base = align_up(section.bytes.size(), 16);
+		const uint32_t align = image_.symbol(range.symbol).code_align;
+		section.align = std::max<uint64_t>(section.align, align);
+		range.base = align_up(section.bytes.size(), align);
 		section.bytes.resize(range.base, 0xcc);
 		section.bytes.insert(section.bytes.end(), code.begin() + range.start, code.begin() + range.end);
 		section.size = section.bytes.size();

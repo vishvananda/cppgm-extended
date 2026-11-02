@@ -17,6 +17,8 @@ use CppgmBatchWorker qw(collect_tests run_command_capture);
 # innermost head must be on a boundary, one with no other head before its
 # branch: a block the block before it mostly falls into takes no padding.
 # Levels below keep their heads where they fall, and the code stays contiguous.
+# An innermost loop of at most 32 bytes stays in one 32-byte window of a text
+# section aligned to 32.
 
 sub read_file
 {
@@ -47,6 +49,16 @@ sub loop_heads
 		$heads{$to} = $from if !defined($heads{$to}) || $heads{$to} < $from;
 	}
 	return %heads;
+}
+
+# The offset of the instruction after the one at `from`.
+sub instruction_end
+{
+	my ($code, $from) = @_;
+	while($code =~ /^\s+([0-9a-f]+):/mg) {
+		return hex($1) if hex($1) > $from;
+	}
+	return undef;
 }
 
 # Of those heads (offset to its last branch), the innermost.
@@ -110,14 +122,33 @@ for my $test (@tests)
 			timeout => 30,
 		);
 		die "$test: $level disassembly failed\n" if $status != 0;
-		my $body = object_function($test, read_file($disassembly), 'nested');
+		my $code = read_file($disassembly);
+		my $body = object_function($test, $code, 'nested');
 		my %heads = loop_heads($body);
 		die "$test: $level has no two loops to read\n" if scalar(keys %heads) < 2;
 		next if $level eq 'O1';
+		my $windows = 0;
 		for my $head (innermost_heads(%heads)) {
 			die sprintf("%s: %s loop head at %x is off its boundary\n",
 				$test, $level, $head) if $head % 8 != 0;
+			my $end = instruction_end($code, $heads{$head});
+			die "$test: $level loop at $head has no end\n" if !defined($end);
+			next if $end - $head > 32;
+			++$windows;
+			die sprintf("%s: %s loop at %x crosses a 32-byte window\n",
+				$test, $level, $head) if $head % 32 + ($end - $head) > 32;
 		}
+		die "$test: $level has no short loop to read\n" if !$windows;
+		my $headers = "$directory/$level.headers";
+		$status = run_command_capture(
+			cmd => ['objdump', '-h', $object],
+			stdout => $headers,
+			stderr => "$headers.stderr",
+			timeout => 30,
+		);
+		die "$test: $level section headers failed\n" if $status != 0;
+		die "$test: $level text section is not aligned to 32\n"
+			if read_file($headers) !~ /^\s*\d+\s+\.text\s.*\s2\*\*(\d+)\s*$/m || $1 < 5;
 	}
 }
 

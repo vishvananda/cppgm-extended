@@ -143,24 +143,84 @@ const unsigned kRelaxPasses = 3;
 // to 8.
 const unsigned kLoopPad = 10;
 
+// The instruction cache of decoded operations holds a 32-byte window at a time,
+// and a loop that crosses a window costs a cycle more each iteration. An
+// innermost loop of at most this many bytes starts on a 32-byte boundary when
+// that puts it in fewer windows.
+const unsigned kWindowBytes = 32;
+const int32_t kWindowLoop = 64;
+
+// A loop this long before branches shorten may still reach kWindowLoop.
+const int32_t kWindowLoopLong = 2 * kWindowLoop;
+
+// The windows `bytes` of code at `position` touch.
+unsigned windows_touched(uint64_t position, int32_t bytes)
+{
+	return static_cast<unsigned>((position % kWindowBytes + bytes + kWindowBytes - 1) / kWindowBytes);
+}
+
 // A loop head is what a branch at or after it targets. (Laid-out code: a loop
 // runs through its head and back to it.)
 void FunctionEmitter::find_loop_heads(const Function& function)
 {
 	loop_heads_.clear();
+	loop_last_.clear();
+	loop_padding_.assign(1, 0);
 	if (!function.align_loops)
 		return;
+	std::vector<std::pair<int32_t, uint32_t>> heads;
 	for (size_t i = 0; i < branch_offset_.size(); ++i)
 		if (relax_target_[i] >= 0 && relax_target_[i] <= branch_offset_[i])
-			loop_heads_.push_back(relax_target_[i]);
-	std::sort(loop_heads_.begin(), loop_heads_.end());
-	loop_heads_.erase(std::unique(loop_heads_.begin(), loop_heads_.end()), loop_heads_.end());
+			heads.push_back(std::make_pair(relax_target_[i], static_cast<uint32_t>(i)));
+	std::sort(heads.begin(), heads.end());
+	for (size_t k = 0; k < heads.size(); ++k)
+		if (k + 1 == heads.size() || heads[k + 1].first != heads[k].first)
+		{
+			loop_heads_.push_back(heads[k].first);
+			loop_last_.push_back(heads[k].second);
+		}
+	for (size_t k = 0; k < loop_heads_.size(); ++k)
+	{
+		const bool short_loop = branch_offset_[loop_last_[k]] - loop_heads_[k] <= kWindowLoopLong;
+		loop_padding_.push_back(loop_padding_[k] + (short_loop ? kWindowBytes - 1 : kLoopPad));
+	}
 }
 
-void FunctionEmitter::align_loop_head()
+// With the branch lengths settled: the bytes of each loop that may move to a
+// window boundary, and whether any may.
+bool FunctionEmitter::measure_short_loops()
 {
-	const unsigned to16 = (16 - asm_.size() % 16) % 16;
-	asm_.nops(to16 <= kLoopPad ? to16 : to16 - 8);
+	for (size_t i = 0; i < short_.size(); ++i)
+		relax_saved_[i + 1] = relax_saved_[i] + (short_[i] ? (branch_conditional_[i] ? 4 : 3) : 0);
+	loop_bytes_.assign(loop_heads_.size(), 0);
+	bool any = false;
+	for (size_t k = 0; k < loop_heads_.size(); ++k)
+	{
+		const uint32_t last = loop_last_[k];
+		if (k + 1 < loop_heads_.size() && loop_heads_[k + 1] <= branch_offset_[last])
+			continue;
+		const size_t before = static_cast<size_t>(
+			std::lower_bound(branch_offset_.begin(), branch_offset_.end(), loop_heads_[k]) - branch_offset_.begin());
+		const int32_t length = short_[last] ? 2 : (branch_conditional_[last] ? 6 : 5);
+		const int64_t bytes = branch_offset_[last] + length - relax_saved_[last] -
+			(loop_heads_[k] - relax_saved_[before]);
+		if (bytes > kWindowLoop)
+			continue;
+		loop_bytes_[k] = static_cast<int32_t>(bytes);
+		any = true;
+	}
+	return any;
+}
+
+void FunctionEmitter::align_loop_head(size_t head)
+{
+	const uint64_t at = asm_.size();
+	const unsigned to16 = (16 - at % 16) % 16;
+	const unsigned usual = to16 <= kLoopPad ? to16 : to16 - 8;
+	const unsigned to32 = (kWindowBytes - at % kWindowBytes) % kWindowBytes;
+	const int32_t bytes = loop_bytes_[head];
+	const bool fewer = bytes != 0 && windows_touched(at + to32, bytes) < windows_touched(at + usual, bytes);
+	asm_.nops(fewer ? to32 : usual);
 }
 
 void FunctionEmitter::emit(const Function& function)
@@ -212,9 +272,9 @@ void FunctionEmitter::emit(const Function& function)
 			// (Padding may lengthen what the branch jumps over.)
 			const int32_t low = std::min(target, branch_offset_[i]);
 			const int32_t high = std::max(target, branch_offset_[i]);
-			const int64_t padding = kLoopPad *
-				(std::upper_bound(loop_heads_.begin(), loop_heads_.end(), high) -
-					std::upper_bound(loop_heads_.begin(), loop_heads_.end(), low));
+			const int64_t padding =
+				loop_padding_[std::upper_bound(loop_heads_.begin(), loop_heads_.end(), high) - loop_heads_.begin()] -
+				loop_padding_[std::upper_bound(loop_heads_.begin(), loop_heads_.end(), low) - loop_heads_.begin()];
 			if (fits_i8(distance - padding) && fits_i8(distance + padding))
 			{
 				short_[i] = 1;
@@ -228,6 +288,15 @@ void FunctionEmitter::emit(const Function& function)
 	if (shortened || !loop_heads_.empty())
 	{
 		text.resize(base_);
+		if (measure_short_loops())
+		{
+			// Windows count from the function's start.
+			while (text.size() % kWindowBytes != 0)
+				text.push_back(0xcc);
+			base_ = text.size();
+			image_.define(function.symbol, Section::Text, base_);
+			image_.align_code(function.symbol, kWindowBytes);
+		}
 		asm_.fixups().clear();
 		relax_pass_ = true;
 		encode(function);
@@ -584,8 +653,13 @@ void FunctionEmitter::encode(const Function& function)
 			continue;
 		if (!relax_pass_)
 			block_start_[b] = static_cast<int32_t>(asm_.size());
-		else if (!block.fallen_into && std::binary_search(loop_heads_.begin(), loop_heads_.end(), block_start_[b]))
-			align_loop_head();
+		else if (!block.fallen_into)
+		{
+			const std::vector<int32_t>::const_iterator head = std::lower_bound(
+				loop_heads_.begin(), loop_heads_.end(), block_start_[b]);
+			if (head != loop_heads_.end() && *head == block_start_[b])
+				align_loop_head(static_cast<size_t>(head - loop_heads_.begin()));
+		}
 		asm_.bind(labels_[b]);
 		// An argument area a noreturn call left open ends with its block.
 		if (rsp_shift_ != 0)

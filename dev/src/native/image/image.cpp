@@ -45,6 +45,14 @@ void Image::define(uint32_t symbol, Section section, uint64_t offset)
 	defined->offset = offset;
 }
 
+void Image::align_code(uint32_t symbol, uint32_t align)
+{
+	if (symbol >= kLocalSymbols)
+		locals_[symbol - kLocalSymbols].code_align = align;
+	else if (symbol < symbols_.size())
+		symbols_[symbol].code_align = align;
+}
+
 uint64_t Image::reserve(Section section, uint64_t bytes, uint64_t align)
 {
 	if (align == 0)
@@ -119,7 +127,8 @@ uint64_t Image::address_of(uint32_t symbol) const
 
 bool Image::write_executable(const std::string& path, uint32_t entry, std::string& error, uint32_t& undefined)
 {
-	const ExecutableLayout layout = layout_executable(text_.size(), rodata_.size(), data_.size(), bss_size_);
+	// (A function's code may need a 32-byte boundary.)
+	const ExecutableLayout layout = layout_executable(text_.size(), rodata_.size(), data_.size(), bss_size_, 32);
 	text_address_ = layout.text_address;
 	rodata_address_ = layout.rodata_address;
 	data_address_ = layout.data_address;

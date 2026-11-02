@@ -143,7 +143,8 @@ private:
 	void instruction(const Function& function, const Inst& inst, uint32_t index, bool last_in_function);
 	void branch(Cond cond, bool conditional, uint32_t label);
 	void find_loop_heads(const Function& function);
-	void align_loop_head();
+	bool measure_short_loops();
+	void align_loop_head(size_t head);
 	RM rm(const Operand& op) const;
 	Reg scratch(const Inst& inst, Reg avoid = kNoReg) const;
 	void move_imm(Reg dst, int64_t value, bool keep_flags);
@@ -219,8 +220,11 @@ private:
 	std::vector<int32_t> relax_target_;       // per branch: its target's first-encode position
 	std::vector<int64_t> relax_saved_;        // per branch: bytes the short branches before it save
 	bool relax_pass_ = false;
-	std::vector<int32_t> block_start_; // per block: its first-encode position
-	std::vector<int32_t> loop_heads_;  // sorted: first-encode positions backward branches target
+	std::vector<int32_t> block_start_;  // per block: its first-encode position
+	std::vector<int32_t> loop_heads_;   // sorted: first-encode positions backward branches target
+	std::vector<uint32_t> loop_last_;   // per loop head: the last branch that targets it
+	std::vector<int32_t> loop_padding_; // the padding that may precede each loop head, summed
+	std::vector<int32_t> loop_bytes_;   // per loop head: an innermost short loop's bytes, else 0
 	uint32_t current_ = 0;
 	uint32_t block_first_ = 0; // the block being encoded: its first instruction
 	uint32_t inst_index_ = 0;  // and the instruction being encoded
