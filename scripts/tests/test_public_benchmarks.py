@@ -393,7 +393,8 @@ class BadgePublicationTests(unittest.TestCase):
                 dict(schemaVersion=1, label=name, message='0.97×', color='green')))
 
     def prepare(self, platform, cpu):
-        (self.artifact / 'results.json').write_text(json.dumps(dict(environment=dict(cpu=cpu))))
+        (self.artifact / 'results.json').write_text(json.dumps(dict(environment=dict(cpu=cpu),
+            programs=[outcome('p', dict(run_cpu_O3=1), dict(run_cpu_O3=2))])))
         publication.prepare(self.artifact, self.target, platform, 'a' * 40,
                             'https://github.com/owner/repo/actions/runs/1', legacy_epyc=True)
 
@@ -430,6 +431,16 @@ class BadgePublicationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Intel hardware'):
             self.prepare('intel', 'AMD EPYC 9V45')
         self.assertEqual(list(self.target.iterdir()), [])
+
+    def test_program_count_uses_the_same_cutoff_as_the_speed_badge(self):
+        self.prepare('intel', 'Intel Xeon')
+        document = json.loads((self.artifact / 'results.json').read_text())
+        document['programs'] += [outcome('tiny', dict(run_cpu_O3=0.1), dict(run_cpu_O3=0.006)),
+                                 outcome('bad', dict(run_cpu_O3=1), dict(run_cpu_O3=2), status='output-mismatch')]
+        (self.artifact / 'results.json').write_text(json.dumps(document))
+        publication.prepare(self.artifact, self.target, 'intel', 'a' * 40,
+                            'https://github.com/owner/repo/actions/runs/1')
+        self.assertEqual(json.loads((self.target / 'intel/o3-programs.json').read_text())['message'], '1')
 
     def test_incomplete_artifact_does_not_replace_a_measurement(self):
         (self.artifact / 'badges/self-built.json').unlink()

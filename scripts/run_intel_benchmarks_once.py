@@ -32,7 +32,7 @@ def main():
     revision = github(f'repos/{args.repo}/commits/{args.revision}')['sha']
     directory = args.directory or Path(tempfile.mkdtemp(prefix='cppgm-intel-runner-'))
     if args.directory:
-        directory.mkdir(parents=True, exist_ok=False)
+        directory.mkdir(mode=0o700, parents=True, exist_ok=False)
     directory = directory.resolve()
     label = 'cppgm-intel-' + directory.name.removeprefix('cppgm-intel-runner-')
     name = label

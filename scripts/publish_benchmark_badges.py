@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import re
 
+import public_benchmarks
+
 BADGES = ('o0-compile', 'o0-generated', 'o3-compile', 'o3-generated',
           'self-compile', 'self-built')
 
@@ -14,7 +16,8 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
     if not re.fullmatch(r'[0-9a-f]{40}', revision):
         raise ValueError('the measured revision must be a full commit hash')
     artifact, target = Path(artifact), Path(target)
-    environment = json.loads((artifact / 'results.json').read_text())['environment']
+    document = json.loads((artifact / 'results.json').read_text())
+    environment = document['environment']
     cpu = environment.get('cpu') or ''
     expected = 'Intel' if platform == 'intel' else 'AMD EPYC'
     if expected not in cpu:
@@ -34,6 +37,8 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
                       published_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                       environment=environment)
     badges['revision'] = dict(schemaVersion=1, label='commit', message=revision[:9], color='blue')
+    _, count = public_benchmarks.mean_ratio(document['programs'], 'run_cpu_O3', 'gcc')
+    badges['o3-programs'] = dict(schemaVersion=1, label='programs', message=str(count), color='lightgrey')
     for destination in destinations:
         destination.mkdir(parents=True, exist_ok=True)
         for name, data in badges.items():
