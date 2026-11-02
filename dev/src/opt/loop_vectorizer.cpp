@@ -32,6 +32,9 @@ const unsigned kNarrowDepth = 6;
 //   vector_pre: lanes of what the loop does not change
 //   wide_loop:  the lanes, the counter stepping by the lanes
 //   exit:       reductions added across, then the scalar preheader
+//
+// A sum the loop keeps in memory is a reduction too: the lanes load it before
+// they start and store it when they stop.
 class LoopVectorizer
 {
 public:
@@ -56,6 +59,9 @@ private:
 		Type type;
 		bool ordered; // floating: the sum stays scalar, lane by lane in pass order
 		Value next_sum;
+		Value cell;   // a sum in memory: its address
+		InstId store; // and its store (each kNoId if none)
+		InstId load;  // `phi` is this load's result, not a phi's
 	};
 	// A value as offset + scale * pass + term_scale * term.
 	struct Linear
@@ -83,9 +89,13 @@ private:
 	bool narrow_fits(Value v, Type type, unsigned depth) const;
 	Value narrowed(Value v, Type type, InstId& tail);
 	void narrow_arithmetic();
+	bool add_reduction(TempId read, const Instruction& step, Value start, Type type);
+	bool extends_counter(const Instruction& step, Value start, Type type, int64_t& by) const;
 	bool read_phis();
 	bool read_exit();
 	bool read_code();
+	bool fixed_address(Value v) const;
+	void read_cells();
 	void mark(Value v, std::vector<uint8_t>& marks);
 	void mark_uses();
 	bool integer_term(Value v, Linear& out, int64_t factor, unsigned depth) const;
@@ -115,6 +125,7 @@ private:
 	Value widen_load(Value address, unsigned bytes, InstId origin);
 	void widen_store(Value value, Value address, unsigned bytes, InstId origin);
 	Value lane_address(Value address, Type type);
+	Value cell_address(const Reduction& r);
 	Value extend(Value v, unsigned from, unsigned to, bool is_signed);
 	Value narrow(Value v, unsigned from, unsigned to);
 	void widen_convert(const Instruction& inst);
@@ -458,6 +469,48 @@ void LoopVectorizer::narrow_arithmetic()
 	}
 }
 
+// Whether `step` folds a pass's value into `read`, of the running value.
+bool LoopVectorizer::add_reduction(TempId read, const Instruction& step, Value start, Type type)
+{
+	const BinaryOp op = static_cast<BinaryOp>(step.sub);
+	const Value self = Value::temp(read);
+	const bool left = step.ops[0] == self, right = step.ops[1] == self;
+	const bool ordered = type.is_float();
+	const bool commutes = op == BinaryOp::Add || (ordered && op == BinaryOp::Mul) ||
+		(!ordered && (op == BinaryOp::And || op == BinaryOp::Or || op == BinaryOp::Xor));
+	if ((left == right) || (right && !commutes) || (!commutes && op != BinaryOp::Sub) || lane_bytes(type) == 0)
+		return false;
+	reductions_.push_back(Reduction{ read, step.result, start, step.ops[left ? 1 : 0], op, type, ordered, Value::none(),
+		Value::none(), kNoId, kNoId });
+	return true;
+}
+
+// Whether a phi of `type` from `start` and this next value is the 64-bit form
+// of a 32-bit counter that does not wrap: a counter of that step.
+bool LoopVectorizer::extends_counter(const Instruction& step, Value start, Type type, int64_t& by) const
+{
+	if (static_cast<ConvertOp>(step.sub) != ConvertOp::SExt || type.kind() != TypeKind::I64 || !in_body(step.ops[0]))
+		return false;
+	const Instruction& add = body_.instructions[body_.temps[step.ops[0].index].def];
+	if (add.op != Opcode::Binary || static_cast<BinaryOp>(add.sub) != BinaryOp::Add ||
+		add.type.kind() != TypeKind::I32 || (add.flags & IF_NO_WRAP) == 0 || !add.ops[1].is(ValueKind::Integer) ||
+		!in_body(add.ops[0]))
+		return false;
+	const Instruction& counter = body_.instructions[body_.temps[add.ops[0].index].def];
+	if (counter.op != Opcode::Phi || counter.extra_count != 4 || !(phi_incoming(body_, counter, b_) == step.ops[0]))
+		return false;
+	const uint32_t entry = body_.operands[counter.extra_first].index == b_ ? 3 : 1;
+	const Value from = body_.operands[counter.extra_first + entry];
+	by = static_cast<int32_t>(body_.literals[add.ops[1].index].low);
+	if (start.is(ValueKind::Integer) && from.is(ValueKind::Integer))
+		return static_cast<int64_t>(body_.literals[start.index].low) ==
+			static_cast<int32_t>(body_.literals[from.index].low);
+	if (!start.is(ValueKind::Temp) || start.index < body_.parameter_count || body_.temps[start.index].def == kNoId)
+		return false;
+	const Instruction& wider = body_.instructions[body_.temps[start.index].def];
+	return wider.op == Opcode::Convert && static_cast<ConvertOp>(wider.sub) == ConvertOp::SExt && wider.ops[0] == from;
+}
+
 // The block's phis: each a counter of a literal step or a reduction.
 bool LoopVectorizer::read_phis()
 {
@@ -485,6 +538,12 @@ bool LoopVectorizer::read_phis()
 				phi.type, true });
 			continue;
 		}
+		int64_t by = 0;
+		if (step.op == Opcode::Convert && extends_counter(step, start, phi.type, by))
+		{
+			inductions_.push_back(Induction{ phi.result, next.index, start, by, phi.type, true });
+			continue;
+		}
 		if (step.op != Opcode::Binary)
 			return false;
 		const BinaryOp op = static_cast<BinaryOp>(step.sub);
@@ -497,13 +556,8 @@ bool LoopVectorizer::read_phis()
 				(step.flags & IF_NO_WRAP) != 0 || phi.type.kind() == TypeKind::I64 });
 			continue;
 		}
-		const bool ordered = phi.type.is_float();
-		const bool commutes = op == BinaryOp::Add || (ordered && op == BinaryOp::Mul) ||
-			(!ordered && (op == BinaryOp::And || op == BinaryOp::Or || op == BinaryOp::Xor));
-		if ((left == right) || (right && !commutes) || (!commutes && op != BinaryOp::Sub) || lane_bytes(phi.type) == 0)
+		if (!add_reduction(phi.result, step, start, phi.type))
 			return false;
-		reductions_.push_back(
-			Reduction{ phi.result, next.index, start, step.ops[left ? 1 : 0], op, phi.type, ordered, Value::none() });
 	}
 	return !inductions_.empty();
 }
@@ -632,6 +686,64 @@ bool LoopVectorizer::read_code()
 	return !code_.empty();
 }
 
+// Whether `v` holds one address on every pass.
+bool LoopVectorizer::fixed_address(Value v) const
+{
+	if (!in_body(v))
+		return true;
+	const Instruction& field = body_.instructions[body_.temps[v.index].def];
+	return field.op == Opcode::Index && !in_body(field.ops[0]) && field.ops[1].is(ValueKind::Integer);
+}
+
+// A sum kept in memory. Either a load and a store of one fixed address, the
+// store of a step on what the load read: the lanes load it first and store it
+// last. Or a phi's sum stored on each pass: the scalar loop, which runs last,
+// stores it. Both accesses leave the code the lanes read. Nothing else in the
+// loop may reach the cell: read_accesses and read_dependences see to that.
+void LoopVectorizer::read_cells()
+{
+	for (size_t i = 0; i < code_.size(); ++i)
+	{
+		const Instruction& write = body_.instructions[code_[i]];
+		if (write.op != Opcode::Store || !fixed_address(write.ops[1]))
+			continue;
+		for (Reduction& r : reductions_)
+			if (r.store == kNoId && write.ops[0] == Value::temp(r.next))
+			{
+				r.cell = write.ops[1];
+				r.store = code_[i];
+				code_.erase(code_.begin() + static_cast<std::ptrdiff_t>(i));
+				--i;
+				break;
+			}
+	}
+	for (size_t i = 0; i < code_.size(); ++i)
+	{
+		const Instruction& read = body_.instructions[code_[i]];
+		if (read.op != Opcode::Load || lane_bytes(read.type) == 0 || !fixed_address(read.ops[0]))
+			continue;
+		const Value cell = read.ops[0];
+		for (size_t j = i + 1; j < code_.size(); ++j)
+		{
+			const Instruction& write = body_.instructions[code_[j]];
+			if (write.op != Opcode::Store || !(write.ops[1] == cell))
+				continue;
+			if (write.type.kind() != read.type.kind() || !in_body(write.ops[0]))
+				break;
+			const Instruction& step = body_.instructions[body_.temps[write.ops[0].index].def];
+			if (step.op != Opcode::Binary || !add_reduction(read.result, step, Value::none(), read.type))
+				break;
+			reductions_.back().cell = cell;
+			reductions_.back().store = code_[j];
+			reductions_.back().load = code_[i];
+			code_.erase(code_.begin() + static_cast<std::ptrdiff_t>(j));
+			code_.erase(code_.begin() + static_cast<std::ptrdiff_t>(i));
+			--i;
+			break;
+		}
+	}
+}
+
 void LoopVectorizer::mark(Value v, std::vector<uint8_t>& marks)
 {
 	if (in_body(v))
@@ -646,7 +758,11 @@ void LoopVectorizer::mark_uses()
 	in_scalar_.assign(body_.temps.size(), 0);
 	in_wide_.assign(body_.temps.size(), 0);
 	for (const Reduction& r : reductions_)
+	{
 		in_wide_[r.next] = 1;
+		if (r.store != kNoId)
+			mark(r.cell, in_scalar_);
+	}
 	for (size_t at = code_.size(); at-- > 0;)
 	{
 		const Instruction& inst = body_.instructions[code_[at]];
@@ -780,6 +896,7 @@ bool LoopVectorizer::address(Value v, Linear& out, Value& base, Value& object) c
 bool LoopVectorizer::read_accesses()
 {
 	accesses_.clear();
+	backward_ = false;
 	for (InstId id : code_)
 	{
 		const Instruction& inst = body_.instructions[id];
@@ -800,6 +917,19 @@ bool LoopVectorizer::read_accesses()
 	}
 	for (const Reduction& r : reductions_)
 	{
+		if (r.store != kNoId)
+		{
+			// One access of scale 0, as a store: what the pass reads there
+			// happens in the loop's order only if nothing else reaches it.
+			const uint32_t flags = body_.instructions[r.store].flags &
+				(r.load != kNoId ? body_.instructions[r.load].flags : IF_TYPED);
+			Access a{ r.store, r.type, true, (flags & IF_TYPED) != 0, Linear(), Value::none(), Value::none(), 0 };
+			if (!address(r.cell, a.at, a.base, a.object))
+				return false;
+			a.at = Linear();
+			a.base = r.cell;
+			accesses_.push_back(a);
+		}
 		// The running value is the operator's alone: a lane holds its own
 		// pass's part only.
 		uint32_t reads = 0;
@@ -967,7 +1097,8 @@ bool LoopVectorizer::lanes_pay_for_order() const
 
 bool LoopVectorizer::same_group(const Access& a, const Access& b) const
 {
-	return a.base == b.base && a.at.term == b.at.term && a.at.term_scale == b.at.term_scale;
+	return a.at.scale != 0 && b.at.scale != 0 && a.base == b.base && a.at.term == b.at.term &&
+		a.at.term_scale == b.at.term_scale;
 }
 
 bool LoopVectorizer::add_overlap_test(uint32_t a, uint32_t b)
@@ -993,8 +1124,8 @@ bool LoopVectorizer::read_dependences()
 			if (same_group(a, accesses_[groups_[g].lowest]))
 				break;
 		if (g == groups_.size())
-			groups_.push_back(
-				Group{ static_cast<uint32_t>(&a - accesses_.data()), a.at.offset, a.at.offset, a.at.scale });
+			groups_.push_back(Group{ static_cast<uint32_t>(&a - accesses_.data()), a.at.offset,
+				a.at.offset + (a.at.scale == 0 ? static_cast<int64_t>(lane_bytes(a.type)) : 0), a.at.scale });
 		else
 		{
 			if (a.at.offset < groups_[g].low)
@@ -1042,8 +1173,11 @@ bool LoopVectorizer::analyze(uint32_t loop)
 		return false;
 	b_ = l.header;
 	narrow_arithmetic();
-	return read_phis() && read_exit() && read_code() && (mark_uses(), read_accesses()) && choose_lanes() &&
-		read_dependences();
+	if (!read_phis() || !read_exit() || !read_code())
+		return false;
+	read_cells();
+	mark_uses();
+	return read_accesses() && choose_lanes() && read_dependences();
 }
 
 void LoopVectorizer::at(BlockId block, InstId tail)
@@ -1446,6 +1580,16 @@ Value LoopVectorizer::lane_address(Value address, Type type)
 	return emit(low, Type::scalar(TypeKind::Ptr));
 }
 
+// A sum in memory's address at the current point.
+Value LoopVectorizer::cell_address(const Reduction& r)
+{
+	if (!in_body(r.cell))
+		return r.cell;
+	Instruction field = body_.instructions[body_.temps[r.cell.index].def];
+	field.next = kNoId;
+	return emit(field, body_.temps[r.cell.index].type);
+}
+
 void LoopVectorizer::widen(const Instruction& inst, InstId origin)
 {
 	switch (inst.op)
@@ -1694,6 +1838,14 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	// What the lanes start from.
 	at(vector_pre_, kNoId);
 	const Value limit = step_counter(bound, up ? -span : span);
+	for (Reduction& r : reductions_)
+		if (r.load != kNoId)
+		{
+			Instruction read = body_.instructions[r.load];
+			read.ops[0] = cell_address(r);
+			read.next = kNoId;
+			r.start = emit(read, r.type);
+		}
 	std::vector<Value> wide_start(reductions_.size(), Value::none());
 	for (size_t k = 0; k < reductions_.size(); ++k)
 	{
@@ -1834,8 +1986,17 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	at(exit, kNoId);
 	std::vector<Value> finals(reductions_.size(), Value::none());
 	for (size_t k = 0; k < reductions_.size(); ++k)
-		finals[k] = reductions_[k].ordered ? reductions_[k].next_sum
-										   : add_across(reductions_[k], wides_[reductions_[k].next]);
+	{
+		const Reduction& r = reductions_[k];
+		finals[k] = r.ordered ? r.next_sum : add_across(r, wides_[r.next]);
+		if (r.load == kNoId)
+			continue;
+		Instruction write = body_.instructions[r.store];
+		write.ops[0] = finals[k];
+		write.ops[1] = cell_address(r);
+		write.next = kNoId;
+		emit_void(write);
+	}
 	Instruction leave = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
 	leave.ops[0] = Value::block(scalar_pre);
 	finish_block(leave);
@@ -1858,7 +2019,8 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	for (size_t k = 0; k < inductions_.size(); ++k)
 		scalar_start(inductions_[k].phi, inductions_[k].start, next_values[k]);
 	for (size_t k = 0; k < reductions_.size(); ++k)
-		scalar_start(reductions_[k].phi, reductions_[k].start, finals[k]);
+		if (reductions_[k].load == kNoId)
+			scalar_start(reductions_[k].phi, reductions_[k].start, finals[k]);
 	Instruction into = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
 	into.ops[0] = Value::block(b_);
 	at(scalar_pre, body_.blocks[scalar_pre].last);

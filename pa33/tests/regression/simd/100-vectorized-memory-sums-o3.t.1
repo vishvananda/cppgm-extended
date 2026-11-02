@@ -1,0 +1,123 @@
+#include <stdio.h>
+
+struct Total
+{
+	long pad;
+	int sum;
+	int count;
+};
+
+__attribute__((noinline)) static void row(double* out, const double* a, const double* b, int n)
+{
+	for (int j = 0; j < n; ++j)
+		*out += a[j] / b[j];
+}
+
+__attribute__((noinline)) static void field(Total* t, const int* a, int n)
+{
+	for (long i = 0; i < n; ++i)
+		t->sum += a[i];
+}
+
+__attribute__((noinline)) static void shrink(float* out, const float* a, int n)
+{
+	for (int j = 0; j < n; ++j)
+		*out -= a[j] * 2.0f;
+}
+
+__attribute__((noinline)) static void bytes(unsigned char* out, const unsigned char* a, int n)
+{
+	for (int j = 0; j < n; ++j)
+		*out += a[j];
+}
+
+__attribute__((noinline)) static void both(int* out, int* a, int n)
+{
+	for (int j = 0; j < n; ++j)
+	{
+		*out += a[j];
+		a[j] = j;
+	}
+}
+
+__attribute__((noinline)) static void triangle(double* out, const double* u, int row_index, int n)
+{
+	for (int j = row_index; j < n; ++j)
+		*out += u[j] / ((row_index + j) * (row_index + j + 1) / 2 + row_index + 1);
+}
+
+int main()
+{
+	double a[40], b[40];
+	for (int i = 0; i < 40; ++i)
+	{
+		a[i] = i + 0.25;
+		b[i] = 1.5 + i % 3;
+	}
+	double d = 0.5;
+	row(&d, a, b, 37);
+	printf("%.12g\n", d);
+
+	// The sum is an element of what it adds, in each place the lanes could read it.
+	for (int at = 0; at < 8; ++at)
+	{
+		double c[40];
+		for (int i = 0; i < 40; ++i)
+			c[i] = i + 1;
+		row(&c[at], c, b, 21);
+		printf("%d %.12g\n", at, c[at]);
+	}
+	// The sum sits just past each end.
+	{
+		double c[42];
+		for (int i = 0; i < 42; ++i)
+			c[i] = i + 1;
+		row(&c[0], c + 1, b, 20);
+		row(&c[21], c + 1, b, 20);
+		printf("%.12g %.12g\n", c[0], c[21]);
+	}
+
+	int v[33];
+	for (int i = 0; i < 33; ++i)
+		v[i] = 3 * i - 7;
+	Total t = { 1, 100, 2 };
+	field(&t, v, 33);
+	printf("%d %d %ld\n", t.sum, t.count, t.pad);
+	for (int at = 0; at < 6; ++at)
+	{
+		int w[20];
+		for (int i = 0; i < 20; ++i)
+			w[i] = i * i;
+		both(&w[at], w, 20);
+		printf("%d", w[at]);
+		for (int i = 0; i < 20; ++i)
+			printf(" %d", w[i]);
+		printf("\n");
+	}
+
+	float f[19];
+	for (int i = 0; i < 19; ++i)
+		f[i] = 0.125f * i;
+	float g = 3.0f;
+	shrink(&g, f, 19);
+	shrink(&f[4], f, 19);
+	printf("%.6g %.6g\n", g, f[4]);
+
+	unsigned char s[50];
+	for (int i = 0; i < 50; ++i)
+		s[i] = static_cast<unsigned char>(i * 37);
+	unsigned char total = 200;
+	bytes(&total, s, 50);
+	printf("%d\n", total);
+
+	double u[64];
+	for (int i = 0; i < 64; ++i)
+		u[i] = 1.0 / (i + 1);
+	for (int r = 0; r < 5; ++r)
+	{
+		double x = r;
+		triangle(&x, u, r, 64);
+		printf("%.12g\n", x);
+	}
+	return 0;
+}

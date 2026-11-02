@@ -445,6 +445,12 @@ vectorization stays outside the course contract.
   floating operations, so that value stays scalar and takes the lanes one at a
   time, in pass order. This needs a floating `mul`, `div` or `sqrt` in the lanes
   to pay for the moves.
+- A sum may live in memory instead of a phi: a load and a store of one address
+  that does not change, or a phi's sum stored on each pass. The lanes load it
+  first and store it last, and the guard below tests that the arrays are apart
+  from those bytes.
+- A 64-bit phi that is the sign extension of a 32-bit counter that does not wrap
+  counts with it, when both start at the same value.
 - Before the loop is read, `add`, `sub` and the bit operators that only a
   truncation to `i8`, `u8`, `i16` or `u16` reads move to the narrow type, as does
   `mul` to the two-byte types. Their lanes are then narrower, and more of them
