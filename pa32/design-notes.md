@@ -708,7 +708,9 @@ a negative operand. Emit the instruction always and call on the negative path
 alone. The cold call then costs little: nothing else in the loop has to live in
 memory around it, and of all memory it writes only `errno`, an `int`, so loads
 of other types can still leave the loop. Skip the test when the operand cannot
-be negative.
+be negative: a square, a sum or product of such values, a conversion from an
+unsigned integer, or a value that a dominating branch tested against a literal
+at least zero (`if (d < 0) return 0; return sqrt(d);`).
 
 Loop entries: a loop entered from several blocks has no preheader, and most loop
 passes need one. Give it one first: a new block the entries jump to, with phis

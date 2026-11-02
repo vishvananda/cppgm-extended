@@ -2,6 +2,7 @@
 
 #include "lowir/builder.h"
 #include "opt/passes.h"
+#include "opt/scalar_fold.h"
 
 namespace opt {
 
@@ -183,21 +184,129 @@ namespace {
 
 // `sqrt(x)` differs from the instruction only where it sets `errno`, for a
 // negative `x`. The instruction runs always; the call stays on that path alone,
-// out of the way of the loop around it.
+// out of the way of the loop around it. An `x` that cannot be negative takes
+// the instruction alone: a square, a root, a sum, product or
+// quotient of such values, or a phi or select of them (at most kSignDepth
+// steps), or a value a dominating branch found not below a non-negative
+// literal (at most kSignDominators blocks up).
+const unsigned kSignDepth = 6;
+const unsigned kSignDominators = 8;
+
 class SqrtGuards
 {
 public:
-	explicit SqrtGuards(FunctionContext& context) : c_(context), body_(context.body) {}
+	explicit SqrtGuards(FunctionContext& context) : c_(context), body_(context.body), cfg_(context.cfg) {}
 
 	bool run();
 
 private:
 	bool guarded(InstId call) const;
+	bool never_negative(Value x, Type type, unsigned depth) const;
+	bool not_negative_literal(Value v, Type type) const;
+	bool tested_not_negative(BlockId block, Value x) const;
 	void guard(BlockId block, InstId before, InstId call, BlockId& rest);
 
 	FunctionContext& c_;
 	FunctionBody& body_;
+	const Cfg& cfg_;
 };
+
+// Whether v is a literal neither negative nor NaN, read as `type`.
+bool SqrtGuards::not_negative_literal(Value v, Type type) const
+{
+	Constant k, ge;
+	return literal_constant(body_, v, k) &&
+		fold_compare(
+			ComparePredicate::Ge, type, k, integer_constant(Type::scalar(TypeKind::I64), integer_literal(0)), ge) &&
+		is_integer(Type::scalar(TypeKind::I64), ge, 1);
+}
+
+// Whether x < 0 is false for every value x may hold (x may be NaN or -0).
+bool SqrtGuards::never_negative(Value x, Type type, unsigned depth) const
+{
+	if (x.is_literal())
+		return not_negative_literal(x, type);
+	if (!x.is(ValueKind::Temp) || x.index < body_.parameter_count || body_.temps[x.index].def == kNoId ||
+		depth == kSignDepth)
+		return false;
+	const Instruction& d = body_.instructions[body_.temps[x.index].def];
+	if (!d.type.is_float())
+		return d.op == Opcode::Convert && static_cast<ConvertOp>(d.sub) == ConvertOp::UIToFP;
+	switch (d.op)
+	{
+	case Opcode::Unary:
+		return static_cast<UnaryOp>(d.sub) == UnaryOp::Sqrt;
+	case Opcode::Binary:
+		switch (static_cast<BinaryOp>(d.sub))
+		{
+		case BinaryOp::Mul:
+			return d.ops[0] == d.ops[1] ||
+				(never_negative(d.ops[0], d.type, depth + 1) && never_negative(d.ops[1], d.type, depth + 1));
+		case BinaryOp::Add:
+		case BinaryOp::Div:
+			return never_negative(d.ops[0], d.type, depth + 1) && never_negative(d.ops[1], d.type, depth + 1);
+		default:
+			return false;
+		}
+	case Opcode::Convert:
+		return static_cast<ConvertOp>(d.sub) == ConvertOp::UIToFP ||
+			((static_cast<ConvertOp>(d.sub) == ConvertOp::FPExt ||
+				 static_cast<ConvertOp>(d.sub) == ConvertOp::FPTrunc) &&
+				never_negative(d.ops[0], convert_source_type(d), depth + 1));
+	case Opcode::Select:
+		return never_negative(d.ops[1], d.type, depth + 1) && never_negative(d.ops[2], d.type, depth + 1);
+	case Opcode::Copy:
+		return never_negative(d.ops[0], d.type, depth + 1);
+	case Opcode::Phi:
+		for (uint32_t k = 1; k < d.extra_count; k += 2)
+		{
+			const Value in = body_.operands[d.extra_first + k];
+			if (!(in == x) && !never_negative(in, d.type, depth + 1))
+				return false;
+		}
+		return true;
+	default:
+		return false;
+	}
+}
+
+// Whether a block dominating `block`, entered only from a branch, is on the
+// side of a compare of x with a non-negative literal k where x >= k, x > k,
+// !(x < k) or !(x <= k) holds.
+bool SqrtGuards::tested_not_negative(BlockId block, Value x) const
+{
+	BlockId d = block;
+	for (unsigned up = 0; up < kSignDominators && d != kNoId; ++up, d = cfg_.idom[d])
+	{
+		if (cfg_.pred_count(d) != 1)
+			continue;
+		const BlockId p = cfg_.preds[cfg_.pred_first[d]];
+		const Instruction& br = body_.instructions[body_.blocks[p].last];
+		if (br.op != Opcode::Branch || !br.ops[0].is(ValueKind::Temp) || br.ops[1] == br.ops[2] ||
+			body_.temps[br.ops[0].index].def == kNoId)
+			continue;
+		const Instruction& cmp = body_.instructions[body_.temps[br.ops[0].index].def];
+		if (cmp.op != Opcode::Compare || !cmp.type.is_float())
+			continue;
+		const bool taken = br.ops[1].index == d;
+		ComparePredicate pred = static_cast<ComparePredicate>(cmp.sub);
+		Value k;
+		if (cmp.ops[0] == x)
+			k = cmp.ops[1];
+		else if (cmp.ops[1] == x)
+		{
+			k = cmp.ops[0];
+			pred = swapped(pred);
+		}
+		else
+			continue;
+		const bool holds = taken ? (pred == ComparePredicate::Ge || pred == ComparePredicate::Gt)
+								 : (pred == ComparePredicate::Lt || pred == ComparePredicate::Le);
+		if (holds && not_negative_literal(k, cmp.type))
+			return true;
+	}
+	return false;
+}
 
 bool SqrtGuards::guarded(InstId id) const
 {
@@ -295,6 +404,7 @@ void SqrtGuards::guard(BlockId block, InstId before, InstId id, BlockId& rest)
 bool SqrtGuards::run()
 {
 	bool changed = false;
+	c_.ensure_cfg();
 	// (The blocks of the calls gather past `end`.)
 	size_t end = body_.layout.size();
 	for (size_t at = 0; at < end; ++at)
@@ -304,10 +414,26 @@ bool SqrtGuards::run()
 		for (InstId i = body_.blocks[block].first; i != kNoId; before = i, i = body_.instructions[i].next)
 			if (guarded(i))
 			{
+				const Value x = body_.operands[body_.instructions[i].extra_first];
+				if (never_negative(x, body_.instructions[i].type, 0) || tested_not_negative(block, x))
+				{
+					// The instruction alone.
+					Instruction& call = body_.instructions[i];
+					call.op = Opcode::Unary;
+					call.sub = static_cast<uint8_t>(UnaryOp::Sqrt);
+					call.ops[0] = x;
+					call.ops[1] = call.ops[2] = Value::none();
+					call.extra_first = call.extra_count = 0;
+					call.flags = 0;
+					changed = true;
+					continue;
+				}
 				BlockId rest;
 				guard(block, before, i, rest);
 				++end;
 				changed = true;
+				c_.invalidate_cfg();
+				c_.ensure_cfg();
 				break; // (`rest` comes next in the layout)
 			}
 	}

@@ -1,0 +1,91 @@
+declare function @sqrt(%arg0 : f64) -> f64 [unwind=no, linkage=c, binding=strong]
+
+function @length(%x : f64, %y : f64) -> f64 [binding=strong, object=_Z6lengthdd] {
+  block ^entry:
+    %t1 = binary mul f64 %x, %x
+    %t2 = binary mul f64 %y, %y
+    %t3 = binary add f64 %t1, %t2
+    %t4 = unary sqrt f64 %t3
+    return f64 %t4
+}
+function @root(%d : f64) -> f64 [binding=strong, object=_Z4rootd] {
+  block ^entry:
+    %t1 = cmp lt f64 %d, 0
+    branch %t1, ^if_then_1, ^if_end_2
+
+  block ^if_then_1:
+    return f64 0
+
+  block ^if_end_2:
+    %t2 = unary sqrt f64 %d
+    return f64 %t2
+}
+function @any(%d : f64) -> f64 [binding=strong, object=_Z3anyd] {
+  block ^entry:
+    %t1 = unary sqrt f64 %d
+    %t2 = cmp lt f64 %d, 0
+    branch %t2, ^split_2, ^split_1
+
+  block ^split_1:
+    %t3 = phi f64 [^entry: %t1, ^split_2: %t4]
+    return f64 %t3
+
+  block ^split_2:
+    %t4 = call f64 @sqrt(%d)
+    jump ^split_1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $a : f64
+  slot $b : f64
+  slot $c : f64
+  slot $e : f64
+
+  block ^entry:
+    store volatile f64 3, $a
+    store volatile f64 4, $b
+    store volatile f64 16, $c
+    store volatile f64 -1, $e
+    %t1 = load volatile f64 $a
+    %t2 = load volatile f64 $b
+    %t3 = load volatile f64 $c
+    %t4 = cmp lt f64 %t3, 0
+    branch %t4, ^inline_cont_2, ^if_end_1
+
+  block ^if_end_1:
+    %t5 = unary sqrt f64 %t3
+    jump ^inline_cont_2
+
+  block ^inline_cont_2:
+    %t6 = phi f64 [^if_end_1: %t5, ^entry: 0]
+    %t7 = load volatile f64 $e
+    %t8 = cmp lt f64 %t7, 0
+    branch %t8, ^inline_cont_4, ^if_end_3
+
+  block ^if_end_3:
+    %t9 = unary sqrt f64 %t7
+    jump ^inline_cont_4
+
+  block ^inline_cont_4:
+    %t10 = phi f64 [^if_end_3: %t9, ^inline_cont_2: 0]
+    %t11 = load volatile f64 $c
+    %t12 = unary sqrt f64 %t11
+    %t13 = cmp lt f64 %t11, 0
+    branch %t13, ^split_6, ^split_5
+
+  block ^split_5:
+    %t14 = phi f64 [^inline_cont_4: %t12, ^split_6: %t24]
+    %t15 = binary mul f64 %t1, %t1
+    %t16 = binary mul f64 %t2, %t2
+    %t17 = binary add f64 %t15, %t16
+    %t18 = unary sqrt f64 %t17
+    %t19 = binary add f64 %t6, %t18
+    %t20 = binary add f64 %t19, %t10
+    %t21 = binary add f64 %t20, %t14
+    %t22 = convert fptosi i32 f64 %t21
+    %t23 = binary sub nowrap i32 %t22, 13
+    return i32 %t23
+
+  block ^split_6:
+    %t24 = call f64 @sqrt(%t11)
+    jump ^split_5
+}
