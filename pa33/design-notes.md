@@ -38,7 +38,10 @@ that paid there in the course solution:
   or outside just the blocks that clobber or crowd it, rather than giving the
   value a frame home everywhere. Floating values need this more than integers:
   no XMM register survives a call, so a loop with one rare call would otherwise
-  keep every floating value in memory.
+  keep every floating value in memory. On an edge that leaves such a loop, the
+  reload of a split value and a phi of the target block can set one register.
+  The phi's value is the live one there: move only it, or the reload undoes
+  the phi.
 - Allocate floating values as carefully as integers. Every XMM register except
   your scratch can hold one, though none survives a call. SSE arithmetic
   overwrites its first operand, so a result that takes the register of a first

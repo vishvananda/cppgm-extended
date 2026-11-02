@@ -518,11 +518,20 @@ void FunctionSelector::emit_edge_transfers(uint32_t from, uint32_t to)
 		moves_.push_back(move);
 	}
 	// Values spilled around loops: stored entering them, reloaded leaving.
+	// A phi of `to` that sets the register a reload would fill holds its
+	// value there instead: the register's old value is dead on the edge,
+	// and the two moves would write one register.
 	if (!split_moves_.empty())
 	{
+		const size_t phis = moves_.size();
 		const auto range = split_transfers(split_moves_, from, to);
 		for (auto it = range.first; it != range.second; ++it)
 		{
+			bool set = false;
+			for (size_t m = 0; m < phis && !it->store; ++m)
+				set = set || (moves_[m].dst.kind == OperandKind::Reg && moves_[m].dst.reg == it->reg);
+			if (set)
+				continue;
 			const lowir::Type type = body.temps[it->temp].type;
 			const Operand reg = Operand::make_reg(it->reg);
 			const Operand home = Operand::make_frame(home_of(it->temp));

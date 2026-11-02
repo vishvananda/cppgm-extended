@@ -1,0 +1,209 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @walk
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : u32
+    param %first -> rdx : u32
+    return u32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    param-slot %p -> [rbp-<off0>] : ptr
+    param-slot %first -> [rbp-<off1>] : u32
+    temp %t -> [rbp-<off2>] : i64
+    temp %w1 -> [rbp-<off3>] : u32
+    temp %a1 -> [rbp-<off4>] : i64
+    temp %a2 -> [rbp-<off5>] : i64
+    temp %a3 -> [rbp-<off6>] : i64
+    temp %a4 -> [rbp-<off7>] : i64
+    temp %a5 -> [rbp-<off8>] : i64
+    temp %a6 -> [rbp-<off9>] : i64
+    temp %w -> [rbp-<off10>] : u32
+    temp %b0 -> [rbp-<off11>] : i64
+    temp %b1 -> [rbp-<off12>] : i64
+    temp %b2 -> [rbp-<off13>] : i64
+    temp %b3 -> [rbp-<off14>] : i64
+    temp %b4 -> [rbp-<off15>] : i64
+    temp %b5 -> [rbp-<off16>] : i64
+
+  block ^entry
+    store.ptr [rbp-<off0>], rdi
+    store.u32 [rbp-<off1>], rdx
+    mov <gpr3>, rsi
+    store.i64 [rbp-<off2>], 0
+
+  block ^head
+    cmp.u32 <gpr3>, rdx
+    ja ^body
+
+  block ^done
+    load.i64 <gpr5>, [rbp-<off2>]
+    mov rax, <gpr5>
+    and rax, 255
+    ret rax
+
+  block ^next~head
+    store.i64 [rbp-<off2>], <gpr3>
+    load.u32 <gpr3>, [rbp-<off3>]
+    cmp.u32 <gpr3>, [rbp-<off1>]
+    jbe ^done
+
+  block ^body
+    lea.i32 r8, [<gpr3>-<off0>]
+    store.u32 [rbp-<off3>], r8
+    mov r8, 0
+    mov <gpr2>, 0
+    store.i64 [rbp-<off4>], 1
+    store.i64 [rbp-<off5>], 2
+    store.i64 [rbp-<off6>], 3
+    store.i64 [rbp-<off7>], 4
+    store.i64 [rbp-<off8>], 5
+    store.i64 [rbp-<off9>], 6
+    mov <gpr1>, 7
+    mov <gpr0>, 8
+    mov rax, 9
+    mov rcx, 10
+    mov rdx, 11
+    mov rsi, 12
+    mov rdi, 13
+    mov r9, 14
+    store.u32 [rbp-<off10>], <gpr3>
+
+  block ^inner
+    load.ptr <gpr5>, [rbp-<off0>]
+    load.i64 <gpr3>, [<gpr5>+r8*8]
+    lea <gpr4>, [r8+<off0>]
+    imul <gpr2>, <gpr4>
+    xor <gpr2>, <gpr3>
+    store.i64 [rbp-<off11>], <gpr2>
+    lea <gpr2>, [r8+<off1>]
+    imul <gpr2>, [rbp-<off4>]
+    xor <gpr2>, <gpr3>
+    store.i64 [rbp-<off12>], <gpr2>
+    lea <gpr2>, [r8+<off2>]
+    imul <gpr2>, [rbp-<off5>]
+    xor <gpr2>, <gpr3>
+    store.i64 [rbp-<off13>], <gpr2>
+    lea <gpr2>, [r8+<off3>]
+    imul <gpr2>, [rbp-<off6>]
+    xor <gpr2>, <gpr3>
+    store.i64 [rbp-<off14>], <gpr2>
+    lea <gpr2>, [r8+<off4>]
+    imul <gpr2>, [rbp-<off7>]
+    xor <gpr2>, <gpr3>
+    store.i64 [rbp-<off15>], <gpr2>
+    lea <gpr2>, [r8+<off5>]
+    imul <gpr2>, [rbp-<off8>]
+    xor <gpr2>, <gpr3>
+    store.i64 [rbp-<off16>], <gpr2>
+    lea <gpr2>, [r8+<off6>]
+    imul <gpr2>, [rbp-<off9>]
+    xor <gpr2>, <gpr3>
+    lea <gpr4>, [r8+<off7>]
+    imul <gpr1>, <gpr4>
+    xor <gpr1>, <gpr3>
+    lea <gpr4>, [r8+<off8>]
+    imul <gpr0>, <gpr4>
+    xor <gpr0>, <gpr3>
+    lea <gpr4>, [r8+<off9>]
+    imul rax, <gpr4>
+    xor rax, <gpr3>
+    lea <gpr4>, [r8+<off10>]
+    imul rcx, <gpr4>
+    xor rcx, <gpr3>
+    lea <gpr4>, [r8+<off11>]
+    imul rdx, <gpr4>
+    xor rdx, <gpr3>
+    lea <gpr4>, [r8+<off12>]
+    imul rsi, <gpr4>
+    xor rsi, <gpr3>
+    lea <gpr4>, [r8+<off13>]
+    imul rdi, <gpr4>
+    xor rdi, <gpr3>
+    lea <gpr4>, [r8+<off14>]
+    imul r9, <gpr4>
+    xor r9, <gpr3>
+    add r8, 1
+    cmp.i64 <gpr3>, 99
+    je ^inner~found
+
+  block ^next
+    load.i64 <gpr3>, [rbp-<off11>]
+    add <gpr3>, [rbp-<off12>]
+    add <gpr3>, [rbp-<off13>]
+    add <gpr3>, [rbp-<off14>]
+    add <gpr3>, [rbp-<off15>]
+    add <gpr3>, [rbp-<off16>]
+    add <gpr3>, <gpr2>
+    add <gpr3>, <gpr1>
+    add <gpr3>, <gpr0>
+    add <gpr3>, rax
+    add <gpr3>, rcx
+    add <gpr3>, rdx
+    add <gpr3>, rsi
+    add <gpr3>, rdi
+    add <gpr3>, r9
+    add <gpr3>, [rbp-<off2>]
+    cmp.i64 r8, 4
+    jge ^next~head
+
+  block ^next~inner
+    load.i64 <gpr6>, [rbp-<off12>]
+    store.i64 [rbp-<off4>], <gpr6>
+    load.i64 <gpr6>, [rbp-<off13>]
+    store.i64 [rbp-<off5>], <gpr6>
+    load.i64 <gpr6>, [rbp-<off14>]
+    store.i64 [rbp-<off6>], <gpr6>
+    load.i64 <gpr6>, [rbp-<off15>]
+    store.i64 [rbp-<off7>], <gpr6>
+    load.i64 <gpr6>, [rbp-<off16>]
+    store.i64 [rbp-<off8>], <gpr6>
+    store.i64 [rbp-<off9>], <gpr2>
+    load.i64 <gpr2>, [rbp-<off11>]
+    jmp ^inner
+
+  block ^inner~found
+    load.u32 <gpr3>, [rbp-<off10>]
+
+  block ^found
+    add.u32 <gpr3>, 1000
+    ret <gpr3>
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0>
+    slot $data -> [rbp-<off14>] : obj<32x8>
+
+  block ^entry
+    store.i64 [rbp-<off14>], 1
+    store.i64 [rbp-<off13>], 2
+    store.i64 [rbp-<off12>], 3
+    store.i64 [rbp-<off11>], 4
+    lea rdi, [rbp-<off14>]
+    mov rsi, 6
+    mov rdx, 0
+    call @walk [args=(rdx,rsi,rdi)]
+    mov <gpr0>, rax
+    store.i64 [rbp-<off12>], 99
+    lea rdi, [rbp-<off14>]
+    mov rsi, 6
+    mov rdx, 0
+    call @walk [args=(rdx,rsi,rdi)]
+    add.u32 <gpr0>, rax
+    and <gpr0>, 127
+    ret <gpr0>
