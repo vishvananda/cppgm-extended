@@ -69,4 +69,8 @@ uint32_t rotate_loops(Function& function);
 // successor. Returns the jumps retargeted.
 uint32_t thread_decided_tests(Function& function, const lowir::Program& program);
 
+// A block starting with the compare of registers each of its predecessors
+// ends with reads the flags they left. Returns the compares dropped.
+uint32_t drop_repeated_compares(Function& function);
+
 } // namespace native

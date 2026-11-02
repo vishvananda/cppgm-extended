@@ -1,0 +1,154 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @three_way
+  abi
+    param %a -> rdi : i32
+    param %b -> rsi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i32 rdi, rsi
+    jg ^above
+
+  block ^rest
+    jge ^same
+
+  block ^below
+    mov rax, 2
+    ret rax
+
+  block ^above
+    mov rax, 1
+    ret rax
+
+  block ^same
+    mov rax, 3
+    ret rax
+
+function @not_every_edge
+  abi
+    param %a -> rdi : i32
+    param %b -> rsi : i32
+    param %e -> rdx : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i32 rdi, rsi
+    jle ^mid
+
+  block ^entry~above
+    mov rax, 1
+    ret rax
+
+  block ^above
+    ret rax
+
+  block ^mid
+    cmp.i32 rdx, 0
+    je ^rest
+
+  block ^mid~above
+    mov rax, 4
+    ret rax
+
+  block ^rest
+    cmp.i32 rdi, rsi
+    jge ^same
+
+  block ^below
+    mov rax, 2
+    ret rax
+
+  block ^same
+    mov rax, 3
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    temp %f -> [rbp-8] : i32
+
+  block ^entry
+    mov rdi, 1
+    mov rsi, 2
+    call @three_way [args=(rsi,rdi)]
+    mov rbx, rax
+    mov rdi, 2
+    mov rsi, 1
+    call @three_way [args=(rsi,rdi)]
+    mov r12, rax
+    mov rdi, 2
+    mov rsi, 2
+    call @three_way [args=(rsi,rdi)]
+    mov r13, rax
+    mov rdi, 1
+    mov rsi, 2
+    mov rdx, 0
+    call @not_every_edge [args=(rdx,rsi,rdi)]
+    mov r14, rax
+    mov rdi, 2
+    mov rsi, 2
+    mov rdx, 0
+    call @not_every_edge [args=(rdx,rsi,rdi)]
+    mov r15, rax
+    mov rdi, 2
+    mov rsi, 2
+    mov rdx, 1
+    call @not_every_edge [args=(rdx,rsi,rdi)]
+    mov r10, rax
+    store.i32 [rbp-8], r10
+    mov rdi, 3
+    mov rsi, 2
+    mov rdx, 1
+    call @not_every_edge [args=(rdx,rsi,rdi)]
+    imul rbx, 10
+    sext.i32 rbx
+    add rbx, r12
+    sext.i32 rbx
+    imul rbx, 10
+    sext.i32 rbx
+    add rbx, r13
+    sext.i32 rbx
+    add r14, r15
+    sext.i32 r14
+    add.i32 r14, [rbp-8]
+    sext.i32 r14
+    add r14, rax
+    sext.i32 r14
+    add rbx, r14
+    sext.i32 rbx
+    zext.i32 r10, rbx
+    mov rax, r10
+    mov r11, 5165088340638674453
+    mul r11
+    mov rax, r10
+    sub rax, rdx
+    shr rax, 1
+    add rax, rdx
+    shr rax, 7
+    imul rax, 200
+    mov rdx, r10
+    sub rdx, rax
+    sext.i32 rdx
+    ret rdx

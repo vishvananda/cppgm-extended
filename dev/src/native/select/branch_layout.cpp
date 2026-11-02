@@ -110,6 +110,7 @@ uint32_t FunctionSelector::layout_branches()
 		forward_home_reloads(*out_);
 	if (rotated != 0)
 		drop_redundant_tests(*out_);
+	drop_repeated_compares(*out_);
 	Function& f = *out_;
 	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
 	auto jump_only = [&](uint32_t b) {

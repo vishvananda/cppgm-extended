@@ -2158,6 +2158,85 @@ bool left_value(
 // only whether it is zero. A rotated loop's entry test of its constant
 // start, a switch's cases meeting at a null test of the table they chose.
 // Up to four tests per jump; linear.
+// A block that starts with the compare of registers each of its predecessors
+// ends with reads the flags they left: `if (a > b) ... else if (a < b)`, and
+// the copy of a loop's test on its back edge. The compare goes. Linear.
+uint32_t drop_repeated_compares(Function& f)
+{
+	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
+	const uint32_t kUnseen = lowir::kNoId, kMixed = lowir::kNoId - 1;
+	auto compare_of = [](const Inst& inst) {
+		return (inst.op == Op::Cmp || inst.op == Op::Test) && inst.ops[0].is_reg() &&
+			(inst.ops[1].is_reg() || inst.ops[1].is_imm());
+	};
+	auto same = [](const Inst& a, const Inst& b) {
+		return a.op == b.op && a.type == b.type && a.ops[0].reg == b.ops[0].reg && a.ops[1].kind == b.ops[1].kind &&
+			a.ops[1].reg == b.ops[1].reg && a.ops[1].imm == b.ops[1].imm;
+	};
+	// Per block: the compare its predecessors end with.
+	std::vector<uint32_t> left(blocks, kUnseen);
+	auto edge = [&](uint32_t t, uint32_t compare) {
+		if (t >= blocks)
+			return;
+		if (left[t] == kUnseen)
+			left[t] = compare;
+		else if (compare == kMixed || left[t] == kMixed || !same(f.insts[left[t]], f.insts[compare]))
+			left[t] = kMixed;
+	};
+	if (blocks != 0)
+		edge(0, kMixed);
+	for (const EhLanding& landing : f.eh.landings)
+	{
+		if (landing.pad != lowir::kNoId)
+			edge(landing.pad, kMixed);
+		if (landing.select != lowir::kNoId)
+			edge(landing.select, kMixed);
+	}
+	for (uint32_t b = 0; b < blocks; ++b)
+	{
+		const Block& block = f.blocks[b];
+		if (block.landing)
+			edge(b, kMixed);
+		const uint32_t end = block.first + block.count;
+		const bool tail = block.count >= 3 && f.insts[end - 1].op == Op::Jmp && f.insts[end - 2].op == Op::Jcc &&
+			compare_of(f.insts[end - 3]);
+		Op last = Op::Nop;
+		for (uint32_t i = block.first; i < end; ++i)
+		{
+			const Inst& inst = f.insts[i];
+			if (inst.op == Op::Nop)
+				continue;
+			last = inst.op;
+			if (inst.op == Op::JumpTable)
+				for (uint32_t k = inst.aux; k < inst.aux + inst.aux2; ++k)
+					edge(f.jump_targets[k], kMixed);
+			if (inst.op == Op::WideCmpBranch)
+				edge(inst.aux, kMixed);
+			for (unsigned k = 0; k < inst.nops; ++k)
+				if (inst.ops[k].kind == OperandKind::Label)
+					edge(inst.ops[k].symbol, tail && i + 2 >= end ? end - 3 : kMixed);
+		}
+		if (!(last == Op::Jmp || last == Op::Ret || last == Op::TailJump || last == Op::JumpTable || last == Op::Trap ||
+				last == Op::Resume || last == Op::Throw))
+			edge(b + 1, kMixed);
+	}
+	uint32_t removed = 0;
+	for (uint32_t b = 0; b < blocks; ++b)
+	{
+		const Block& block = f.blocks[b];
+		if (block.count == 0 || left[b] >= kMixed)
+			continue;
+		Inst& first = f.insts[block.first];
+		if (compare_of(first) && same(first, f.insts[left[b]]) && static_cast<uint32_t>(left[b]) != block.first)
+		{
+			first.op = Op::Nop;
+			first.nops = 0;
+			++removed;
+		}
+	}
+	return removed;
+}
+
 uint32_t thread_decided_tests(Function& f, const lowir::Program& program)
 {
 	uint32_t threaded = 0;

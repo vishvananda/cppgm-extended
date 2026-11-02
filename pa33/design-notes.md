@@ -57,6 +57,10 @@ that paid there in the course solution:
   short zero, and it clears the flags: a scan that stops at the first instruction
   it does not recognize, such as a sign extension, lets a zero through as an
   `xor` and the select quietly stops selecting. Only spilled operands reach this.
+- A block that starts with the compare its predecessors each ended with reads
+  the flags they left, as in `if (a > b) ... else if (a < b)`. Only compares of
+  registers and literals, and only with no edge from elsewhere: a landing pad
+  or a jump table target keeps its compare.
 - A `cmov` tests one condition. `ucomisd` reports a NaN as unordered, so `lt`, `le`,
   `gt`, `ge` and their `u` forms each map to one condition, but `eq` and `ne` need
   parity as well and stay materialized.
