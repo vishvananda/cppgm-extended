@@ -1,0 +1,62 @@
+function @scale(%x : ptr, %out : ptr, %n : i64) -> void [binding=strong] {
+  block ^entry:
+    %any = cmp gt i64 %n, 0
+    branch %any, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    %t2 = cmp uge i64 %n, 4
+    %t3 = binary and i64 %any, %t2
+    branch %t3, ^loop_preheader_2, ^loop_preheader_6
+
+  block ^loop_preheader_2:
+    %t4 = binary mul i64 %n, 4
+    %t5 = index i8 %x, %t4
+    %t6 = index i8 %out, %t4
+    %t7 = cmp ule ptr %t5, %out
+    %t8 = cmp ule ptr %t6, %x
+    %t9 = binary or i64 %t7, %t8
+    branch %t9, ^loop_preheader_3, ^loop_preheader_6
+
+  block ^loop_preheader_3:
+    %t10 = binary add i64 %n, -4
+    jump ^wide_loop_4
+
+  block ^wide_loop_4:
+    %t11 = phi i64 [^loop_preheader_3: 0, ^wide_loop_4: %t17]
+    %t12 = index i32 %x, %t11
+    %t13 = load v128 %t12
+    %t14 = vector pslldi %t13, 3
+    %t15 = vector paddd %t13, %t14
+    %t16 = index i32 %out, %t11
+    store v128 %t15, %t16
+    %t17 = binary add nowrap i64 %t11, 4
+    %t18 = cmp le i64 %t17, %t10
+    branch %t18, ^wide_loop_4, ^loop_exit_5
+
+  block ^loop_exit_5:
+    %t19 = cmp lt i64 %t17, %n
+    branch %t19, ^loop_preheader_6, ^done
+
+  block ^loop_preheader_6:
+    %t20 = phi i64 [^loop_preheader_1: 0, ^loop_preheader_2: 0, ^loop_exit_5: %t17]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^loop_preheader_6: %t20, ^body: %next]
+    %a = index i32 %x, %i
+    %c = load typed i32 %a
+    %m = binary mul nowrap i32 %c, 8
+    %s = binary add nowrap i32 %c, %m
+    %p = index i32 %out, %i
+    store typed i32 %s, %p
+    %next = binary add nowrap i64 %i, 1
+    %more = cmp lt i64 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

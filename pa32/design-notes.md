@@ -624,7 +624,8 @@ vectorization stays outside the course contract.
 - Values may have different sizes. The widest value sets the number of lanes. A
   narrower value keeps that number of lanes at the bottom of its register, and a
   load or store of it reads or writes only those bytes. Two `i32` lanes move to
-  the even lanes for one `pmuludq`; four need two.
+  the even lanes for one `pmuludq`; four need two. A literal power of two
+  is a `pslld`.
 - Two accesses of one array must keep their order. Accesses of one size at the
   same element or at least one wide pass apart do, and so does a load of the same
   size that reads ahead of a later store. Other accesses of one array leave the

@@ -1596,6 +1596,20 @@ void LoopVectorizer::widen_binary(const Instruction& inst)
 			op, wide(inst.ops[0], inst.type), Value::none(), static_cast<int>(body_.literals[inst.ops[1].index].low));
 		return;
 	}
+	// (A power of two needs no product: 32-bit lanes have no plain multiply.)
+	if (operation == BinaryOp::Mul && !inst.type.is_float() && lane_bytes(inst.type) == 4 &&
+		inst.ops[1].is(ValueKind::Integer))
+	{
+		const uint32_t factor = static_cast<uint32_t>(body_.literals[inst.ops[1].index].low);
+		if (factor != 0 && (factor & (factor - 1)) == 0)
+		{
+			int shift = 0;
+			while ((factor >> shift) != 1)
+				++shift;
+			wides_[inst.result] = vector(VectorOp::Pslldi, wide(inst.ops[0], inst.type), Value::none(), shift);
+			return;
+		}
+	}
 	const Value a = wide(inst.ops[0], inst.type), b = wide(inst.ops[1], inst.type);
 	if (lane_operation(operation, inst.type, op))
 		wides_[inst.result] = vector(op, a, b);
