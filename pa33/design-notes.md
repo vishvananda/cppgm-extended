@@ -114,6 +114,11 @@ that paid there in the course solution:
   overlap, so its edge transfers move nothing. A transfer on a conditional
   edge is executed in that edge's block, not at the end of the predecessor.
   Modeling it there is what lets the web share.
+- An integer `select` keeps one arm in place too: `cmov` writes its
+  destination only when the condition holds. Read the arms before the result
+  is written, so an arm that dies at the select may share the result's
+  register. A loop whose select updates a phi then moves nothing on the back
+  edge.
 - When one member of a phi web crosses a call and has to be split around it, let
   that member choose the register first. It has the fewest choices. Choosing for
   the others first gives a sum in a loop two registers and a move on each side.

@@ -31,19 +31,14 @@ function @count_below
   block ^loop
     load.u32 rcx, [rdi+r8*4]
     cmp.i64 rcx, rdx
-    mov rax, r9
-    adc rax, 0
+    adc r9, 0
     add r8, 1
     cmp.i64 r8, rsi
-    jb ^loop~loop
-    ret rax
-
-  block ^loop~loop
-    mov r9, rax
-    jmp ^loop
+    jb ^loop
+    ret r9
 
   block ^done
-    ret rax
+    ret r9
 
 function @count_at_least
   abi

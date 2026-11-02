@@ -763,6 +763,16 @@ void FunctionSelector::collect_uses(const std::vector<int32_t>& index)
 				record(inst.ops[1], b, early, late, false);
 			return;
 		}
+		// A cmov keeps either arm in place: an arm dying there may be the
+		// result's register.
+		if (inst.op == Opcode::Select && !inst.type.is_float() && !inst.type.is_vector() &&
+			inst.type.kind() != TypeKind::I128)
+		{
+			record(inst.ops[0], b, early, late, false);
+			record(inst.ops[1], b, early, late, true);
+			record(inst.ops[2], b, early, late, true);
+			return;
+		}
 		for_each_operand(body, inst, [&](Value v, OperandRole) { record(v, b, early, late, false); });
 	});
 	ra_use_first_.assign(ra_candidates_.size() + 1, 0);
