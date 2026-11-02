@@ -458,6 +458,14 @@ exit writes nothing a run of the loop would not have written. The location is
 loaded in the preheader and stored on each exit edge. The stores this leaves
 may then leave the loop around it.
 
+Allocations: memory forwarding treats the result of `malloc`, `calloc` or
+`operator new`, when the callee is declared and not defined here, as storage no
+earlier pointer reaches. It is apart from every slot, global, parameter and
+other allocation. An allocation whose address never leaves, by a store, a call,
+a phi or a return, is apart from every other pointer and survives calls. The
+allocation call itself ends only facts about an `int` behind a pointer, which
+may be `errno`.
+
 Possible bits: the simplifier tracks which bits a value can have through masks,
 shifts, extensions, truncations and remainders by a literal. A value below a
 positive literal divisor is its own remainder, and its quotient is zero. A

@@ -1,0 +1,70 @@
+declare function @malloc(%n : i64) -> ptr [unwind=no, linkage=c, binding=strong, object=malloc]
+declare function @touch(%p : ptr) -> void [unwind=no, linkage=c, binding=strong, object=touch]
+declare function @__errno_location() -> ptr [unwind=no, linkage=c, binding=strong, object=__errno_location]
+
+global @shared : ptr = 0
+global @count : i64 = 0
+
+function @past_a_parameter(%out : ptr, %v : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %p = call ptr @malloc(16)
+    store i64 %v, %p
+    store i64 7, %out
+    return i64 %v
+}
+function @address_stays(%slot : ptr) -> ptr [no_inline=yes] {
+  block ^entry:
+    %p = call ptr @malloc(16)
+    store ptr %p, %slot
+    store ptr 0, %p
+    return ptr %p
+}
+function @past_others(%v : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %p = call ptr @malloc(16)
+    %q = call ptr @malloc(16)
+    store i64 %v, %p
+    store i64 1, %q
+    store i64 2, @count
+    return i64 %v
+}
+function @kept_private(%from : ptr, %v : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %p = call ptr @malloc(16)
+    store i64 %v, %p
+    call void @touch(%from)
+    %other = load ptr %from
+    store i64 3, %other
+    return i64 %v
+}
+function @through_the_call(%this : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    %a = load i64 %this
+    %p = call ptr @malloc(16)
+    store i64 1, %p
+    %r = binary add i64 %a, %a
+    return i64 %r
+}
+function @after_it_left(%v : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %p = call ptr @malloc(16)
+    store ptr %p, @shared
+    store i64 %v, %p
+    call void @touch(%p)
+    %again = load ptr @shared
+    store i64 9, %again
+    %r = load i64 %p
+    return i64 %r
+}
+function @errno_cell() -> i32 [no_inline=yes] {
+  block ^entry:
+    %e = call ptr @__errno_location()
+    store i32 0, %e
+    %p = call ptr @malloc(16)
+    %r = load i32 %e
+    return i32 %r
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "opt/function_ir.h"
 
 #include <algorithm>
@@ -26,6 +28,19 @@ bool may_unwind(const Program& program, const Instruction& inst)
 		return false;
 	const Signature* boundary = program.call_boundary(inst);
 	return boundary == nullptr || boundary->boundary.unwind != ir_model::CUM_NO;
+}
+
+bool allocation_call(const Program& program, const Instruction& inst)
+{
+	if (inst.op != Opcode::Call || !inst.ops[0].is(ValueKind::Symbol) || inst.result == kNoId)
+		return false;
+	const Symbol& callee = program.symbols[inst.ops[0].index];
+	if (callee.kind != SymbolKind::FunctionDeclaration)
+		return false;
+	const char* spelling = program.spelling(callee.metadata.object != 0 ? callee.metadata.object : callee.name);
+	return std::strcmp(spelling, "malloc") == 0 || std::strcmp(spelling, "calloc") == 0 ||
+		std::strcmp(spelling, "cppgm_builtin_operator_new") == 0 ||
+		std::strcmp(spelling, "cppgm_builtin_operator_new_array") == 0;
 }
 
 namespace {

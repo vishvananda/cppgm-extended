@@ -132,6 +132,9 @@ public:
 private:
 	AddressFacts facts_of(Value address) const;
 	bool may_alias(const AddressFacts& a, uint64_t a_bytes, const AddressFacts& b, uint64_t b_bytes) const;
+	TempId allocation_of(const AddressFacts& f) const;
+	bool private_allocation(const AddressFacts& f) const;
+	void forget_int_cells();
 	void invalidate(Value address, uint64_t bytes, const Instruction* writer = nullptr);
 	void invalidate_all()
 	{
@@ -189,8 +192,10 @@ private:
 	FunctionContext& c_;
 	FunctionBody& body_;
 	Cfg& cfg_;
-	std::vector<AddressFacts> address_; // per temp
-	std::vector<uint8_t> escaped_;      // per slot: address leaves the analysis
+	std::vector<AddressFacts> address_;    // per temp
+	std::vector<uint8_t> escaped_;         // per slot: address leaves the analysis
+	std::vector<TempId> allocation_;       // per temp: the allocation it points into
+	std::vector<uint8_t> allocation_left_; // per temp: the allocation's address leaves
 	// A location's fact; generation 0 marks none (entries are reset in
 	// place rather than erased). A location keeps its entry of facts_.
 	struct Fact
@@ -226,6 +231,8 @@ struct MemoryForwarding::Pool
 {
 	std::vector<AddressFacts> address;
 	std::vector<uint8_t> escaped;
+	std::vector<TempId> allocation;
+	std::vector<uint8_t> allocation_left;
 	FlatMap<Key, uint32_t, KeyHash> index;
 	std::vector<Fact> facts;
 	std::vector<std::pair<uint32_t, Known>> undo;
@@ -244,6 +251,8 @@ void MemoryForwarding::exchange(Pool& pool)
 {
 	address_.swap(pool.address);
 	escaped_.swap(pool.escaped);
+	allocation_.swap(pool.allocation);
+	allocation_left_.swap(pool.allocation_left);
 	index_.swap(pool.index);
 	facts_.swap(pool.facts);
 	undo_.swap(pool.undo);
@@ -265,6 +274,18 @@ void MemoryForwarding::exchange(Pool& pool)
 // A slot or global, a constant offset into it; or, for an address not
 // known to be one, the pointer temporary it steps from by a constant (an
 // opaque base: `this` and its fields).
+// The allocation call whose result an address steps from, or kNoId.
+TempId MemoryForwarding::allocation_of(const AddressFacts& f) const
+{
+	return f.base == ValueKind::Temp && f.index < allocation_.size() ? allocation_[f.index] : kNoId;
+}
+
+bool MemoryForwarding::private_allocation(const AddressFacts& f) const
+{
+	const TempId fresh = allocation_of(f);
+	return fresh != kNoId && allocation_left_[fresh] == 0;
+}
+
 AddressFacts MemoryForwarding::facts_of(Value v) const
 {
 	AddressFacts f;
@@ -298,14 +319,50 @@ bool MemoryForwarding::may_alias(const AddressFacts& a, uint64_t a_bytes, const 
 			return false;
 		if ((a.base == ValueKind::Slot && !escaped_[a.index]) || (b.base == ValueKind::Slot && !escaped_[b.index]))
 			return false;
-		return true;
+		// New storage is no slot, no global, no other allocation and nothing a
+		// parameter reaches; what never leaves is reached by nothing else.
+		const TempId fa = allocation_of(a), fb = allocation_of(b);
+		if (fa == fb)
+			return true;
+		if (fa != kNoId && fb != kNoId)
+			return false;
+		const TempId fresh = fa != kNoId ? fa : fb;
+		const AddressFacts& other = fa != kNoId ? b : a;
+		return other.base == ValueKind::Temp && other.index >= body_.parameter_count && allocation_left_[fresh] != 0;
 	}
-	// An unknown pointer reaches no private slot.
-	if (ka && a.base == ValueKind::Slot && !escaped_[a.index])
+	// An unknown pointer reaches no private slot, and no allocation that
+	// never left.
+	if (ka && ((a.base == ValueKind::Slot && !escaped_[a.index]) || private_allocation(a)))
 		return false;
-	if (kb && b.base == ValueKind::Slot && !escaped_[b.index])
+	if (kb && ((b.base == ValueKind::Slot && !escaped_[b.index]) || private_allocation(b)))
 		return false;
 	return true;
+}
+
+// At an allocation call nothing the program reaches changes but errno, an
+// `int` behind a pointer.
+void MemoryForwarding::forget_int_cells()
+{
+	size_t kept = 0;
+	for (size_t k = 0; k < live_.size(); ++k)
+	{
+		Known& found = facts_[live_[k]].known;
+		if (found.generation != generation_)
+			continue;
+		if (found.at.base == ValueKind::Temp && allocation_of(found.at) == kNoId && found.bytes == 4 &&
+			found.type.kind() == TypeKind::I32)
+		{
+			undo_.push_back(std::make_pair(live_[k], found));
+			found.generation = 0;
+			continue;
+		}
+		live_[kept++] = live_[k];
+	}
+	live_.resize(kept);
+	zeros_.erase(
+		std::remove_if(zeros_.begin(), zeros_.end(),
+			[&](const ZeroRange& r) { return r.base.base == ValueKind::Temp && allocation_of(r.base) == kNoId; }),
+		zeros_.end());
 }
 
 // Facts a write may alias lapse in place (their previous state on the
@@ -422,6 +479,12 @@ void MemoryForwarding::escapes()
 {
 	escaped_.assign(body_.slots.size(), 0);
 	address_.assign(body_.temps.size(), AddressFacts());
+	allocation_.assign(body_.temps.size(), kNoId);
+	allocation_left_.assign(body_.temps.size(), 0);
+	auto stepped = [&](const Instruction& inst) {
+		if (inst.ops[0].is(ValueKind::Temp) && inst.ops[0].index < allocation_.size())
+			allocation_[inst.result] = allocation_[inst.ops[0].index];
+	};
 	for (BlockId b : body_.layout)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
@@ -433,11 +496,13 @@ void MemoryForwarding::escapes()
 			}
 			if (inst.op == Opcode::Copy && inst.type.is_pointer() && inst.result != kNoId)
 			{
+				stepped(inst);
 				address_[inst.result] = facts_of(inst.ops[0]);
 				continue;
 			}
 			if (inst.op == Opcode::Index && inst.result != kNoId)
 			{
+				stepped(inst);
 				AddressFacts f = facts_of(inst.ops[0]);
 				if (f.base != ValueKind::None && inst.ops[1].is(ValueKind::Integer))
 				{
@@ -465,7 +530,12 @@ void MemoryForwarding::escapes()
 				const AddressFacts f = facts_of(v);
 				if (f.base == ValueKind::Slot && (v.is(ValueKind::Temp) || inst.op != Opcode::Load))
 					escaped_[f.index] = 1;
+				if (inst.op != Opcode::Compare && v.is(ValueKind::Temp) && v.index < allocation_.size() &&
+					allocation_[v.index] != kNoId)
+					allocation_left_[allocation_[v.index]] = 1;
 			});
+			if (allocation_call(c_.program, inst))
+				allocation_[inst.result] = inst.result;
 		}
 	for (BlockId b : body_.layout)
 		for (InstId i = body_.blocks[b].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
@@ -474,6 +544,8 @@ void MemoryForwarding::escapes()
 				const AddressFacts f = facts_of(v);
 				if (f.base == ValueKind::Slot)
 					escaped_[f.index] = 1;
+				if (v.is(ValueKind::Temp) && v.index < allocation_.size() && allocation_[v.index] != kNoId)
+					allocation_left_[allocation_[v.index]] = 1;
 			});
 }
 
@@ -583,6 +655,8 @@ void MemoryForwarding::process(BlockId block)
 			invalidate(inst.ops[0], static_cast<uint64_t>(inst.immediate));
 			note_zero(inst.ops[0], static_cast<uint64_t>(inst.immediate));
 		}
+		else if (allocation_call(c_.program, inst))
+			forget_int_cells();
 		else if (may_write_memory(c_.program, inst) && !region_marker(inst.op))
 			invalidate(Value::none(), ~static_cast<uint64_t>(0) >> 1); // private slots survive
 		prev = i;
@@ -1287,7 +1361,7 @@ bool MemoryForwarding::may_clobber(
 		const Value dst = inst.op == Opcode::CopyObject ? inst.ops[1] : inst.ops[0];
 		return may_alias(facts_of(dst), static_cast<uint64_t>(inst.immediate), want, storage_bytes(type));
 	}
-	return !(want.base == ValueKind::Slot && !escaped_[want.index]);
+	return !((want.base == ValueKind::Slot && !escaped_[want.index]) || private_allocation(want));
 }
 
 Value MemoryForwarding::value_at_end(BlockId block, Value address, Type type, bool typed)

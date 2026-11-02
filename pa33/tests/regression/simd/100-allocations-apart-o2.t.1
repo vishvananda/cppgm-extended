@@ -1,0 +1,136 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+
+struct Node
+{
+	Node* left;
+	Node* right;
+	int val;
+};
+
+Node* tree;
+
+__attribute__((noinline)) void create(Node** t, int n)
+{
+	*t = (Node*)malloc(sizeof(Node));
+	(*t)->left = 0;
+	(*t)->right = 0;
+	(*t)->val = n;
+}
+
+__attribute__((noinline)) int reaches_through_global()
+{
+	int* p = (int*)malloc(sizeof(int));
+	*p = 1;
+	int** volatile self = &p;
+	**self = 2;
+	int r = *p;
+	free(p);
+	return r;
+}
+
+int* kept;
+
+__attribute__((noinline)) void write_kept(int v)
+{
+	*kept = v;
+}
+
+__attribute__((noinline)) int left_through_global()
+{
+	int* p = new int;
+	*p = 1;
+	kept = p;
+	write_kept(5);
+	int r = *p;
+	delete p;
+	return r;
+}
+
+__attribute__((noinline)) int two_new(int a)
+{
+	int* p = new int[4];
+	int* q = new int[4];
+	p[1] = a;
+	q[1] = a + 1;
+	int r = p[1] * 10 + q[1];
+	delete[] p;
+	delete[] q;
+	return r;
+}
+
+__attribute__((noinline)) int parameter_apart(int* a)
+{
+	int* p = (int*)calloc(4, sizeof(int));
+	p[2] = 3;
+	a[2] = 4;
+	int r = p[2] + p[1];
+	free(p);
+	return r;
+}
+
+__attribute__((noinline)) int reused_storage(int v)
+{
+	int* p = (int*)malloc(64);
+	p[0] = v;
+	int first = p[0];
+	free(p);
+	int* q = (int*)malloc(64);
+	q[0] = v + 1;
+	int second = q[0];
+	free(q);
+	return first * 100 + second;
+}
+
+__attribute__((noinline)) int errno_after(size_t size)
+{
+	errno = 0;
+	int* e = &errno;
+	void* p = malloc(size);
+	int r = *e != 0;
+	free(p);
+	return r;
+}
+
+__attribute__((noinline)) int list_sum(int n)
+{
+	Node* head = 0;
+	for (int i = 0; i < n; ++i)
+	{
+		Node* cell = (Node*)malloc(sizeof(Node));
+		cell->val = i;
+		cell->left = head;
+		head = cell;
+	}
+	int sum = 0;
+	while (head != 0)
+	{
+		Node* next = head->left;
+		sum = sum * 3 + head->val;
+		free(head);
+		head = next;
+	}
+	return sum;
+}
+
+int main()
+{
+	create(&tree, 5);
+	create(&tree->left, 6);
+	create(&tree->left->right, 7);
+	printf("%d %d %d\n", tree->val, tree->left->val, tree->left->right->val);
+	printf("%d\n", reaches_through_global());
+	printf("%d\n", left_through_global());
+	printf("%d\n", two_new(4));
+	int a[4] = { 0, 0, 0, 0 };
+	int apart = parameter_apart(a);
+	printf("%d %d\n", apart, a[2]);
+	printf("%d\n", reused_storage(11));
+	int small_size = errno_after(16);
+	int huge_size = errno_after(~static_cast<size_t>(0) >> 1);
+	printf("%d %d\n", small_size, huge_size);
+	printf("%d\n", list_sum(9));
+	return 0;
+}
