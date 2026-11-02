@@ -1,0 +1,71 @@
+#include <stdio.h>
+
+typedef unsigned char u8;
+typedef signed char s8;
+typedef unsigned short u16;
+
+__attribute__((noinline)) s8 sum_s8(const s8* x, int n) { s8 s = 0; for (int i = 0; i < n; i++) s = s + (s8)(x[i] & 10); return s; }
+__attribute__((noinline)) u8 sum_u8(const u8* x, int n) { u8 s = 200; for (int i = 0; i < n; i++) s += x[i]; return s; }
+__attribute__((noinline)) s8 sum_start(const s8* x, s8 k, int n) { s8 s = k; for (int i = 0; i < n; i++) s -= x[i]; return s; }
+__attribute__((noinline)) s8 sum_minus_one(const s8* x, int n) { s8 s = -1; for (int i = 0; i < n; i++) s += x[i]; return s; }
+__attribute__((noinline)) u16 sum_u16(const u16* x, int n) { u16 s = 7; for (int i = 0; i < n; i++) s += x[i] * 3; return s; }
+__attribute__((noinline)) short sum_short(const short* x, int n) { short s = -2; for (int i = 0; i < n; i++) s ^= x[i]; return s; }
+__attribute__((noinline)) u8 and_u8(const u8* x, int n) { u8 s = 0xff; for (int i = 0; i < n; i++) s &= x[i] | 1; return s; }
+__attribute__((noinline)) u8 or_u8(const u8* x, int n) { u8 s = 1; for (int i = 0; i < n; i++) s |= x[i] & 0x70; return s; }
+__attribute__((noinline)) void add_u8(u8* d, const u8* x, const u8* y, int n) { for (int i = 0; i < n; i++) d[i] = x[i] + y[i]; }
+__attribute__((noinline)) void sub_s8(s8* d, const s8* x, int n) { for (int i = 0; i < n; i++) d[i] = x[i] - 100; }
+__attribute__((noinline)) void mul_short(short* d, const short* x, int n) { for (int i = 0; i < n; i++) d[i] = x[i] * 3 + 1; }
+__attribute__((noinline)) void mul_byte(u8* d, const u8* x, int n) { for (int i = 0; i < n; i++) d[i] = x[i] * 3 + 1; }
+__attribute__((noinline)) void shift_short(short* d, const short* x, int n) { for (int i = 0; i < n; i++) d[i] = (x[i] >> 2) + 1; }
+__attribute__((noinline)) void shift_u8(u8* d, const u8* x, int n) { for (int i = 0; i < n; i++) d[i] = (x[i] >> 1) + (x[i] << 2); }
+__attribute__((noinline)) void add_short_wide(short* d, const short* x, const int* y, int n) { for (int i = 0; i < n; i++) d[i] = x[i] + y[i]; }
+__attribute__((noinline)) void add_down(u8* d, const u8* x, int n) { for (int i = n - 1; i >= 0; --i) d[i] += x[i]; }
+
+static unsigned long H = 14695981039346656037ul;
+static void mix(const void* p, unsigned long n) {
+  const u8* b = (const u8*)p;
+  for (unsigned long i = 0; i < n; i++) H = (H ^ b[i]) * 1099511628211ul;
+}
+
+static u8 a[300], b[300], c[300];
+static s8 s[300], t[300];
+static short w[300], v[300];
+static u16 z[300];
+static int q[300];
+
+static void reset() {
+  for (int i = 0; i < 300; i++) {
+    a[i] = (u8)(i * 7 + 200);
+    b[i] = (u8)(i * 13 + 5);
+    c[i] = 0;
+    s[i] = (s8)(i * 11 - 100);
+    t[i] = 0;
+    w[i] = (short)(i * 977 - 30000);
+    v[i] = 0;
+    z[i] = (u16)(i * 1009 + 40000);
+    q[i] = i * 1000003 - 1500000000;
+  }
+}
+
+int main() {
+  for (int n = 0; n < 70; n++) {
+    reset();
+    int r = sum_s8(s, n) + sum_u8(a, n) + sum_start(s, 5, n) + sum_start(s, -9, n) + sum_minus_one(s, n);
+    r = r * 31 + sum_u16(z, n);
+    r = r * 31 + sum_short(w, n);
+    r = r * 31 + and_u8(a, n);
+    r = r * 31 + or_u8(b, n);
+    mix(&r, sizeof r);
+    add_u8(c, a, b, n); mix(c, sizeof c);
+    add_u8(a + 1, a, b, n); mix(a, sizeof a);
+    sub_s8(t, s, n); mix(t, sizeof t);
+    mul_short(v, w, n); mix(v, sizeof v);
+    mul_byte(c, b, n); mix(c, sizeof c);
+    shift_short(v, w, n); mix(v, sizeof v);
+    shift_u8(c, b, n); mix(c, sizeof c);
+    add_short_wide(v, w, q, n); mix(v, sizeof v);
+    add_down(c, b, n); mix(c, sizeof c);
+    printf("%d %d %lx\n", n, r, H);
+  }
+  return 0;
+}

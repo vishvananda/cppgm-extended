@@ -767,11 +767,47 @@ function @sub_from(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
 }
 function @byte_sum(%x : ptr, %n : i64) -> i8 [no_inline=yes] {
   block ^entry:
+    %t1 = cmp gt i64 %n, 0
+    %t2 = cmp ugt i64 %n, 16
+    %t3 = binary and i64 %t1, %t2
+    branch %t3, ^loop_preheader_1, ^loop_preheader_4
+
+  block ^loop_preheader_1:
+    %t4 = binary add i64 %n, -16
+    %t5 = vector pzero
+    jump ^wide_loop_2
+
+  block ^wide_loop_2:
+    %t6 = phi v128 [^loop_preheader_1: %t5, ^wide_loop_2: %t10]
+    %t7 = phi i64 [^loop_preheader_1: 0, ^wide_loop_2: %t11]
+    %t8 = index i8 %x, %t7
+    %t9 = load v128 %t8
+    %t10 = vector paddb %t6, %t9
+    %t11 = binary add i64 %t7, 16
+    %t12 = cmp lt i64 %t11, %t4
+    branch %t12, ^wide_loop_2, ^loop_exit_3
+
+  block ^loop_exit_3:
+    %t13 = vector pshufd %t10, 78
+    %t14 = vector paddb %t10, %t13
+    %t15 = vector pshufd %t14, 177
+    %t16 = vector paddb %t14, %t15
+    %t17 = vector psrldi %t16, 16
+    %t18 = vector paddb %t16, %t17
+    %t19 = vector psrlwi %t18, 8
+    %t20 = vector paddb %t18, %t19
+    %t21 = vector toi32 %t20
+    %t22 = convert trunc i8 i32 %t21
+    jump ^loop_preheader_4
+
+  block ^loop_preheader_4:
+    %t23 = phi i8 [^entry: 0, ^loop_exit_3: %t22]
+    %t24 = phi i64 [^entry: 0, ^loop_exit_3: %t11]
     jump ^body
 
   block ^body:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %s = phi i8 [^entry: 0, ^body: %r]
+    %i = phi i64 [^loop_preheader_4: %t24, ^body: %next]
+    %s = phi i8 [^loop_preheader_4: %t23, ^body: %r]
     %p = index i8 %x, %i
     %v = load i8 %p
     %r = binary add i8 %s, %v

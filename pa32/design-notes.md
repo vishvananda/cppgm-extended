@@ -418,8 +418,12 @@ vectorization stays outside the course contract.
 
 - The loop has a counter of a literal step and an invariant bound, and every
   other phi is another counter or an integer reduction (`add`, `sub`, `and`,
-  `or` or `xor` of `i32`, `u32` or `i64`). A floating sum stays scalar: lanes
-  would change the order of its additions.
+  `or` or `xor`). A floating sum stays scalar: lanes would change the order of
+  its additions.
+- Before the loop is read, `add`, `sub` and the bit operators that only a
+  truncation to `i8`, `u8`, `i16` or `u16` reads move to the narrow type, as does
+  `mul` to the two-byte types. Their lanes are then narrower, and more of them
+  fit in a register.
 - Each load and store reads or writes consecutive elements, and all of them
   step in one direction. In a loop that steps down, the lanes hold their passes
   in the opposite order, so no lane needs a shuffle. Each operation

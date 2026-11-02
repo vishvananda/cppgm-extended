@@ -294,7 +294,7 @@ function @sub_from(%x : ptr, %n : i64) -> i32 [no_inline=yes] {
     return i32 %r
 }
 
-# Refused: no sum of bytes across the lanes.
+# Bytes sum across the lanes in four more steps.
 function @byte_sum(%x : ptr, %n : i64) -> i8 [no_inline=yes] {
   block ^entry:
     jump ^body

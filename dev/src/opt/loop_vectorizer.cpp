@@ -15,6 +15,8 @@ namespace {
 // loop's vector form may wait on.
 const size_t kBodyInstructions = 64;
 const size_t kOverlapTests = 8;
+// How deep a truncation's arithmetic is rewritten.
+const unsigned kNarrowDepth = 6;
 
 // Loop vectorization at O3: a loop of one block, whose count a counter and an
 // invariant bound give, runs in sixteen-byte steps of the x86-64 baseline. The
@@ -76,6 +78,9 @@ private:
 	};
 
 	bool in_body(Value v) const;
+	bool narrow_fits(Value v, Type type, unsigned depth) const;
+	Value narrowed(Value v, Type type, InstId& tail);
+	void narrow_arithmetic();
 	bool read_phis();
 	bool read_exit();
 	bool read_code();
@@ -317,6 +322,137 @@ bool LoopVectorizer::in_body(Value v) const
 	return def != kNoId && c_.block_of[def] == b_;
 }
 
+// Whether the low bytes of `v` can be computed in `type`: wide arithmetic only
+// a truncation reads takes narrower lanes, and more of them.
+bool LoopVectorizer::narrow_fits(Value v, Type type, unsigned depth) const
+{
+	if (v.is(ValueKind::Integer))
+		return true;
+	if (!in_body(v) || depth == 0)
+		return false;
+	const Instruction& def = body_.instructions[body_.temps[v.index].def];
+	const unsigned bytes = lane_bytes(type);
+	if (def.op == Opcode::Convert)
+	{
+		const ConvertOp op = static_cast<ConvertOp>(def.sub);
+		const unsigned from = lane_bytes(convert_source_type(def));
+		if (op == ConvertOp::SExt || op == ConvertOp::ZExt)
+			return from >= bytes && (from == bytes || narrow_fits(def.ops[0], type, depth - 1));
+		return op == ConvertOp::Trunc && narrow_fits(def.ops[0], type, depth - 1);
+	}
+	if (def.op != Opcode::Binary || !def.type.is_integer())
+		return false;
+	switch (static_cast<BinaryOp>(def.sub))
+	{
+	case BinaryOp::Mul:
+		if (bytes != 2)
+			return false;
+		break;
+	case BinaryOp::Add:
+	case BinaryOp::Sub:
+	case BinaryOp::And:
+	case BinaryOp::Or:
+	case BinaryOp::Xor:
+		break;
+	default:
+		return false;
+	}
+	return narrow_fits(def.ops[0], type, depth - 1) && narrow_fits(def.ops[1], type, depth - 1);
+}
+
+// `v` in `type`, computed before what follows `tail`.
+Value LoopVectorizer::narrowed(Value v, Type type, InstId& tail)
+{
+	if (v.is(ValueKind::Integer))
+		return integer_value(body_, normalize_integer(type, body_.literals[v.index]));
+	const Instruction def = body_.instructions[body_.temps[v.index].def];
+	auto add = [&](Instruction inst) {
+		const InstId id = append_instruction(body_, inst);
+		const TempId result = append_temp(body_, type, id);
+		body_.instructions[id].result = result;
+		insert_after(body_, b_, tail, id);
+		c_.block_of.resize(body_.instructions.size(), kNoId);
+		c_.block_of[id] = b_;
+		tail = id;
+		return Value::temp(result);
+	};
+	if (def.op == Opcode::Convert)
+	{
+		if (lane_bytes(def.type) != lane_bytes(type) && lane_bytes(convert_source_type(def)) != lane_bytes(type))
+			return narrowed(def.ops[0], type, tail);
+		if (static_cast<ConvertOp>(def.sub) == ConvertOp::Trunc && lane_bytes(def.type) != lane_bytes(type))
+			return narrowed(def.ops[0], type, tail);
+		const Value source = static_cast<ConvertOp>(def.sub) == ConvertOp::Trunc ? v : def.ops[0];
+		if (body_.temps[source.index].type.kind() == type.kind())
+			return source;
+		Instruction copy = make_instruction(Opcode::Copy, type);
+		copy.ops[0] = source;
+		return add(copy);
+	}
+	Instruction op = make_instruction(Opcode::Binary, type);
+	op.sub = def.sub;
+	op.location = def.location;
+	op.ops[0] = narrowed(def.ops[0], type, tail);
+	op.ops[1] = narrowed(def.ops[1], type, tail);
+	return add(op);
+}
+
+// Before the block is read: a truncation of arithmetic becomes the arithmetic
+// in the narrow type, and what the block reads of it reads that.
+void LoopVectorizer::narrow_arithmetic()
+{
+	bool changed = false;
+	InstId prev = kNoId;
+	for (InstId i = body_.blocks[b_].first; i != kNoId; prev = i, i = body_.instructions[i].next)
+	{
+		const Instruction inst = body_.instructions[i];
+		if (inst.op == Opcode::Call)
+			return;
+		if (inst.op != Opcode::Convert || static_cast<ConvertOp>(inst.sub) != ConvertOp::Trunc ||
+			lane_bytes(inst.type) == 0 || lane_bytes(inst.type) > 2 || !in_body(inst.ops[0]) ||
+			body_.instructions[body_.temps[inst.ops[0].index].def].op != Opcode::Binary ||
+			!narrow_fits(inst.ops[0], inst.type, kNarrowDepth))
+			continue;
+		InstId tail = prev;
+		const Value value = narrowed(inst.ops[0], inst.type, tail);
+		Instruction& copy = body_.instructions[i];
+		copy.op = Opcode::Copy;
+		copy.sub = 0;
+		copy.ops[0] = value;
+		prev = tail;
+		const Value self = Value::temp(inst.result);
+		for (InstId k = body_.instructions[i].next; k != kNoId; k = body_.instructions[k].next)
+			for (Value& operand : body_.instructions[k].ops)
+				if (operand == self)
+					operand = value;
+		for (InstId k = body_.blocks[b_].first; body_.instructions[k].op == Opcode::Phi; k = body_.instructions[k].next)
+			for (uint32_t e = 1; e < body_.instructions[k].extra_count; e += 2)
+				if (body_.operands[body_.instructions[k].extra_first + e - 1].index == b_ &&
+					body_.operands[body_.instructions[k].extra_first + e] == self)
+					body_.operands[body_.instructions[k].extra_first + e] = value;
+		changed = true;
+	}
+	if (!changed)
+		return;
+	// The wide arithmetic goes: a reduction's phi may have no other reader.
+	std::vector<uint32_t> uses;
+	count_uses(body_, uses);
+	std::vector<InstId> order;
+	for (InstId i = body_.blocks[b_].first; i != kNoId; i = body_.instructions[i].next)
+		order.push_back(i);
+	for (size_t k = order.size(); k-- > 0;)
+	{
+		const Instruction inst = body_.instructions[order[k]];
+		if (inst.op == Opcode::Phi || inst.result == kNoId || !is_pure(inst) || uses[inst.result] != 0)
+			continue;
+		unlink_after(body_, b_, previous_in_block(body_, b_, order[k]), order[k]);
+		for_each_operand(body_, inst, [&](const Value& v) {
+			if (v.is(ValueKind::Temp))
+				--uses[v.index];
+		});
+	}
+}
+
 // The block's phis: each a counter of a literal step or a reduction.
 bool LoopVectorizer::read_phis()
 {
@@ -357,9 +493,8 @@ bool LoopVectorizer::read_phis()
 			continue;
 		}
 		const bool commutes = op == BinaryOp::Add || op == BinaryOp::And || op == BinaryOp::Or || op == BinaryOp::Xor;
-		const TypeKind kind = phi.type.kind();
-		if ((left == right) || (right && !commutes) || (!commutes && op != BinaryOp::Sub) ||
-			(kind != TypeKind::I32 && kind != TypeKind::U32 && kind != TypeKind::I64))
+		if ((left == right) || (right && !commutes) || (!commutes && op != BinaryOp::Sub) || !phi.type.is_integer() ||
+			lane_bytes(phi.type) == 0)
 			return false;
 		reductions_.push_back(Reduction{ phi.result, next.index, start, step.ops[left ? 1 : 0], op, phi.type });
 	}
@@ -662,8 +797,14 @@ bool LoopVectorizer::read_accesses()
 		// pass's part only.
 		uint32_t reads = 0;
 		for (InstId id : code_)
-			for (const Value& v : body_.instructions[id].ops)
+		{
+			// (A copy for the code after the loop reads the scalar loop's value.)
+			const Instruction& inst = body_.instructions[id];
+			if (inst.op == Opcode::Copy && !in_wide_[inst.result] && !in_scalar_[inst.result])
+				continue;
+			for (const Value& v : inst.ops)
 				reads += v.is(ValueKind::Temp) && (v.index == r.phi || v.index == r.next);
+		}
 		if (reads != 1 || body_.instructions[body_.blocks[b_].last].ops[0] == Value::temp(r.next))
 			return false;
 	}
@@ -853,6 +994,7 @@ bool LoopVectorizer::analyze(uint32_t loop)
 	if (l.blocks.size() != 1 || done_[l.header] != 0 || forest_.innermost[l.header] != loop)
 		return false;
 	b_ = l.header;
+	narrow_arithmetic();
 	return read_phis() && read_exit() && read_code() && (mark_uses(), read_accesses()) && choose_lanes() &&
 		read_dependences();
 }
@@ -1360,15 +1502,32 @@ Value LoopVectorizer::overlap_guard(Value distance)
 Value LoopVectorizer::add_across(const Reduction& r, Value v)
 {
 	const Type type = r.type;
-	const bool eight = lane_bytes(type) == 8;
+	const unsigned bytes = lane_bytes(type);
 	VectorOp op;
 	lane_operation(r.op == BinaryOp::Sub ? BinaryOp::Add : r.op, type, op);
 	Value sum = v;
-	if (lanes_ == 4 || eight)
+	// Each step folds the upper half of what is left onto the lower.
+	unsigned width = lanes_ * bytes;
+	if (width == 16)
+	{
 		sum = vector(op, sum, vector(VectorOp::Pshufd, sum, Value::none(), 0x4e));
-	if (!eight)
+		width = 8;
+	}
+	if (width == 8 && bytes < 8)
+	{
 		sum = vector(op, sum, vector(VectorOp::Pshufd, sum, Value::none(), 0xb1));
-	const Value out = vector(eight ? VectorOp::Toi64 : VectorOp::Toi32, sum);
+		width = 4;
+	}
+	if (width == 4 && bytes < 4)
+	{
+		sum = vector(op, sum, vector(VectorOp::Psrldi, sum, Value::none(), 16));
+		width = 2;
+	}
+	if (width == 2 && bytes < 2)
+		sum = vector(op, sum, vector(VectorOp::Psrlwi, sum, Value::none(), 8));
+	const Value out = vector(bytes == 8 ? VectorOp::Toi64 : VectorOp::Toi32, sum);
+	if (bytes < 4)
+		return convert(ConvertOp::Trunc, type, Type::scalar(TypeKind::I32), out);
 	if (type.kind() != TypeKind::U32)
 		return out;
 	Instruction copy = make_instruction(Opcode::Copy, type);
@@ -1459,6 +1618,13 @@ void LoopVectorizer::vectorize(uint32_t loop)
 		else if (r.start.is(ValueKind::Integer) && body_.literals[r.start.index].low == 0 &&
 			body_.literals[r.start.index].high == 0)
 			wide_start[k] = vector(VectorOp::Pzero);
+		else if (r.start.is(ValueKind::Integer) && lane_bytes(r.type) < 4)
+		{
+			// (Only the first lane holds the start: the others are zero.)
+			const uint64_t mask = lane_bytes(r.type) == 1 ? 0xff : 0xffff;
+			wide_start[k] = vector(
+				VectorOp::Fromi32, literal(static_cast<int64_t>(body_.literals[r.start.index].low & mask)));
+		}
 		else
 			wide_start[k] = vector(
 				lane_bytes(r.type) == 8 ? VectorOp::Fromi64 : VectorOp::Fromi32, exact_scalar(r.start, r.type));
