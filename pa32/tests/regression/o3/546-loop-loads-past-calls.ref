@@ -71,9 +71,9 @@ function @main() -> i32 [role=entry] {
     %g = call i32 @generate()
     %e = call i32 @every(3)
     %f = load i32 @flushes
+    %y = binary mul i32 %f, 1000
     %h = binary and i32 %e, 255
     %x = binary add i32 %g, %h
-    %y = binary mul i32 %f, 1000
     %r = binary add i32 %x, %y
     %b = binary and i32 %r, 255
     return i32 %b

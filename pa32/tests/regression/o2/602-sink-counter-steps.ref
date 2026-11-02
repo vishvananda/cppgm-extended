@@ -7,9 +7,9 @@ function @reader_after_step(%p : ptr, %n : i64) -> i64 [binding=strong, no_inlin
     %sum = phi i64 [^entry: 0, ^loop: %total]
     %q = index i64 %p, %i
     %v = load i64 %q
+    %total = binary add i64 %sum, %v
     %next = binary add i64 %i, 1
     %more = cmp lt i64 %next, %n
-    %total = binary add i64 %sum, %v
     branch %more, ^loop, ^done
 
   block ^done:

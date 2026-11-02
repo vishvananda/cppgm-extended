@@ -228,6 +228,12 @@ bool sink_counter_steps(FunctionContext& context);
 // O2+: pure instructions move down to the block nearest their readers that
 // lies in no deeper loop (opt/code_sinking.cpp).
 bool sink_values(FunctionContext& context);
+
+// Consume dying scalar integer operands derived from loads as soon as their
+// definitions allow, within one block and without crossing memory effects or
+// trapping operations.
+// O(instructions + operands), with stable buckets for the new order.
+bool schedule_integer_values(FunctionContext& context);
 // O2+: a loop without calls reads its floating literals from registers
 // (opt/loop_literals.cpp).
 bool hold_loop_literals(FunctionContext& context);

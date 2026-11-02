@@ -7,8 +7,8 @@ function @atomic_barrier() -> i64 {
     %before = load i64 @value
     %address = addr @value
     %observed = atomic_load i64 %address, 5
-    %after = load i64 @value
     %sum1 = binary add i64 %before, %observed
+    %after = load i64 @value
     %sum2 = binary add i64 %after, %sum1
     return i64 %sum2
 }

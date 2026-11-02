@@ -236,11 +236,156 @@ bool CodeSinking::run()
 	return true;
 }
 
+// A scalar integer computation with no effect or trap. Consuming a dying
+// loaded operand early replaces its live range by the result's, and may let
+// the next computation consume two such ranges. Counters stay where the
+// loop passes put them, beside their tests.
+bool integer_step(const Instruction& inst)
+{
+	if ((!inst.type.is_integer() && !inst.type.is_pointer()) || storage_bytes(inst.type) > 8)
+		return false;
+	if (inst.op == Opcode::Binary)
+	{
+		const BinaryOp op = static_cast<BinaryOp>(inst.sub);
+		return op != BinaryOp::Div && op != BinaryOp::Mod && op != BinaryOp::UDiv && op != BinaryOp::UMod;
+	}
+	if (inst.op == Opcode::Unary)
+		return true;
+	if (inst.op != Opcode::Convert)
+		return false;
+	const Type from = convert_source_type(inst);
+	return (from.is_integer() || from.is_pointer()) && storage_bytes(from) <= 8;
+}
+
+class IntegerSchedule
+{
+public:
+	explicit IntegerSchedule(FunctionContext& context)
+		: body_(context.body), uses_(context.entry_uses(schedule_integer_values)),
+		  block_(context.entry_block_of(schedule_integer_values)), anchor_(body_.instructions.size(), 0),
+		  loaded_(body_.temps.size(), 0)
+	{}
+
+	bool run();
+
+private:
+	bool loaded(Value v, BlockId b) const;
+	bool dying(const Instruction& inst, BlockId b) const;
+	bool order(BlockId b);
+	FunctionBody& body_;
+	const std::vector<uint32_t>& uses_;
+	const std::vector<BlockId>& block_;
+	std::vector<uint32_t> anchor_, first_, last_, next_;
+	std::vector<uint8_t> loaded_;
+	std::vector<InstId> seq_, out_;
+};
+
+bool IntegerSchedule::loaded(Value v, BlockId b) const
+{
+	if (!v.is(ValueKind::Temp) || !loaded_[v.index])
+		return false;
+	const InstId def = body_.temps[v.index].def;
+	return def != kNoId && block_[def] == b;
+}
+
+bool IntegerSchedule::dying(const Instruction& inst, BlockId b) const
+{
+	for (Value v : inst.ops)
+		if (loaded(v, b))
+		{
+			uint32_t here = 0;
+			for (Value w : inst.ops)
+				here += v == w ? 1 : 0;
+			if (uses_[v.index] == here)
+				return true;
+		}
+	return false;
+}
+
+// Bucket each instruction after its latest operand or barrier, retaining
+// original order within a bucket. One forward walk computes every anchor;
+// dependencies already assigned to the same bucket precede their readers.
+bool IntegerSchedule::order(BlockId b)
+{
+	seq_.clear();
+	for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		seq_.push_back(i);
+	if (seq_.size() < 3)
+		return false;
+	first_.assign(seq_.size(), kNoId);
+	last_.assign(seq_.size(), kNoId);
+	next_.assign(seq_.size(), kNoId);
+	uint32_t barrier = 0;
+	for (uint32_t p = 0; p < seq_.size(); ++p)
+	{
+		const InstId i = seq_[p];
+		const Instruction& inst = body_.instructions[i];
+		const bool integer = integer_step(inst);
+		if (inst.result != kNoId)
+		{
+			bool from_load = inst.op == Opcode::Load && (inst.flags & IF_VOLATILE) == 0 &&
+				(inst.type.is_integer() || inst.type.is_pointer()) && storage_bytes(inst.type) <= 8;
+			for (Value v : inst.ops)
+				from_load = from_load || (integer && loaded(v, b));
+			loaded_[inst.result] = from_load ? 1 : 0;
+		}
+		if (inst.op == Opcode::Phi ||
+			(!(inst.op == Opcode::Load && (inst.flags & IF_VOLATILE) == 0) &&
+				(!is_pure(inst) || (inst.op == Opcode::Binary && inst.type.is_integer() && !integer))))
+			barrier = p;
+		uint32_t at = p;
+		if (integer && dying(inst, b))
+		{
+			at = barrier;
+			for_each_operand(body_, inst, [&](const Value& v) {
+				if (!v.is(ValueKind::Temp))
+					return;
+				const InstId def = body_.temps[v.index].def;
+				if (def != kNoId && block_[def] == b)
+					at = std::max(at, anchor_[def]);
+			});
+		}
+		anchor_[i] = at;
+		if (first_[at] == kNoId)
+			first_[at] = p;
+		else
+			next_[last_[at]] = p;
+		last_[at] = p;
+	}
+	out_.clear();
+	for (uint32_t p : first_)
+		for (; p != kNoId; p = next_[p])
+			out_.push_back(seq_[p]);
+	if (out_ == seq_)
+		return false;
+	for (size_t k = 0; k < out_.size(); ++k)
+		body_.instructions[out_[k]].next = k + 1 == out_.size() ? kNoId : out_[k + 1];
+	body_.blocks[b].first = out_.front();
+	body_.blocks[b].last = out_.back();
+	return true;
+}
+
+bool IntegerSchedule::run()
+{
+	bool changed = false;
+	for (BlockId b : body_.layout)
+		changed = order(b) || changed;
+	return changed;
+}
+
 } // namespace
 
 bool sink_values(FunctionContext& context)
 {
 	CodeSinking pass(context);
+	return pass.run();
+}
+
+bool schedule_integer_values(FunctionContext& context)
+{
+	if (context.body.temps.size() < 3)
+		return false;
+	IntegerSchedule pass(context);
 	return pass.run();
 }
 

@@ -36,13 +36,13 @@ function @offsets(%p : ptr, %q : ptr, %start : i32, %k : i32, %n : i32) -> i64 [
     %t8 = index i64 %p, %t4
     %at_b = index i64 %t8, 3
     %vb = load typed i64 %at_b
-    %t11 = index i64 %q, %t4
-    %at_c = index i64 %t11, -1
-    %vc = load typed i64 %at_c
-    %t14 = index i64 %t3, %t4
-    %at_d = index i64 %t14, -1
-    %vd = load typed i64 %at_d
     %s1 = binary add i64 %va, %vb
+    %t12 = index i64 %q, %t4
+    %at_c = index i64 %t12, -1
+    %vc = load typed i64 %at_c
+    %t15 = index i64 %t3, %t4
+    %at_d = index i64 %t15, -1
+    %vd = load typed i64 %at_d
     %s2 = binary add i64 %vc, %vd
     %s3 = binary add i64 %s1, %s2
     %more = binary add i64 %sum, %s3
@@ -59,17 +59,17 @@ function @next_value(%p : ptr, %n : i32) -> i64 [no_inline=yes] {
     jump ^loop
 
   block ^loop:
-    %t1 = phi i64 [^entry: 0, ^loop: %t8]
+    %t1 = phi i64 [^entry: 0, ^loop: %t10]
     %sum = phi i64 [^entry: 0, ^loop: %more]
     %t3 = index i64 %p, %t1
     %at = index i64 %t3, 1
     %v = load typed i64 %at
     %here = index i64 %p, %t1
     %w = load typed i64 %here
-    %t8 = binary add nowrap i64 %t1, 1
-    %next = convert trunc exact i32 i64 %t8
     %d = binary sub i64 %v, %w
     %more = binary add i64 %sum, %d
+    %t10 = binary add nowrap i64 %t1, 1
+    %next = convert trunc exact i32 i64 %t10
     %again = cmp lt i32 %next, %n
     branch %again, ^loop, ^done
 

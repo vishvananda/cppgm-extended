@@ -1,0 +1,107 @@
+function @touch(%p : ptr) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    %old = load i64 %p
+    %new = binary add i64 %old, 100
+    store i64 %new, %p
+    return void
+}
+function @sum(%p : ptr, %a : i64, %b : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %x0 = load typed i64 %p
+    %m0 = binary mul i64 %a, %x0
+    %p1 = index i64 %p, 1
+    %x1 = load typed i64 %p1
+    %m1 = binary mul i64 %b, %x1
+    %s1 = binary add i64 %m0, %m1
+    %p2 = index i64 %p, 2
+    %x2 = load typed i64 %p2
+    %m2 = binary mul i64 %a, %x2
+    %s2 = binary add i64 %m2, %s1
+    %p3 = index i64 %p, 3
+    %x3 = load typed i64 %p3
+    %m3 = binary mul i64 %b, %x3
+    %s3 = binary add i64 %m3, %s2
+    %p4 = index i64 %p, 4
+    %x4 = load typed i64 %p4
+    %m4 = binary mul i64 %a, %x4
+    %s4 = binary add i64 %m4, %s3
+    %p5 = index i64 %p, 5
+    %x5 = load typed i64 %p5
+    %m5 = binary mul i64 %b, %x5
+    %s5 = binary add i64 %m5, %s4
+    %p6 = index i64 %p, 6
+    %x6 = load typed i64 %p6
+    %m6 = binary mul i64 %a, %x6
+    %s6 = binary add i64 %m6, %s5
+    %p7 = index i64 %p, 7
+    %x7 = load typed i64 %p7
+    %m7 = binary mul i64 %b, %x7
+    %s7 = binary add i64 %m7, %s6
+    return i64 %s7
+}
+function @across_call(%p : ptr, %a : i64, %b : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %x0 = load typed i64 %p
+    %p1 = index i64 %p, 1
+    %x1 = load typed i64 %p1
+    %p2 = index i64 %p, 2
+    %x2 = load typed i64 %p2
+    %p3 = index i64 %p, 3
+    %x3 = load typed i64 %p3
+    %p4 = index i64 %p, 4
+    %x4 = load typed i64 %p4
+    %p5 = index i64 %p, 5
+    %x5 = load typed i64 %p5
+    %p6 = index i64 %p, 6
+    %x6 = load typed i64 %p6
+    %p7 = index i64 %p, 7
+    %x7 = load typed i64 %p7
+    call void @touch(%p)
+    %m0 = binary mul i64 %a, %x0
+    %m1 = binary mul i64 %b, %x1
+    %m2 = binary mul i64 %a, %x2
+    %m3 = binary mul i64 %b, %x3
+    %m4 = binary mul i64 %a, %x4
+    %m5 = binary mul i64 %b, %x5
+    %m6 = binary mul i64 %a, %x6
+    %m7 = binary mul i64 %b, %x7
+    %s1 = binary add i64 %m0, %m1
+    %s2 = binary add i64 %m2, %s1
+    %s3 = binary add i64 %m3, %s2
+    %s4 = binary add i64 %m4, %s3
+    %s5 = binary add i64 %m5, %s4
+    %s6 = binary add i64 %m6, %s5
+    %s7 = binary add i64 %m7, %s6
+    return i64 %s7
+}
+function @main() -> i32 [role=entry] {
+  slot $data : obj<64x8>
+
+  block ^entry:
+    %p = addr $data
+    store i64 1, %p
+    %p1 = index i64 %p, 1
+    store i64 2, %p1
+    %p2 = index i64 %p, 2
+    store i64 3, %p2
+    %p3 = index i64 %p, 3
+    store i64 4, %p3
+    %p4 = index i64 %p, 4
+    store i64 5, %p4
+    %p5 = index i64 %p, 5
+    store i64 6, %p5
+    %p6 = index i64 %p, 6
+    store i64 7, %p6
+    %p7 = index i64 %p, 7
+    store i64 8, %p7
+    %a = call i64 @sum(%p, 3, 5)
+    %b = call i64 @across_call(%p, 3, 5)
+    %first = load i64 %p
+    %ok_a = cmp eq i64 %a, 148
+    %ok_b = cmp eq i64 %b, 148
+    %ok_first = cmp eq i64 %first, 101
+    %ok_both = binary and i64 %ok_a, %ok_b
+    %ok = binary and i64 %ok_first, %ok_both
+    %rc = select i32 %ok, 0, 1
+    return i32 %rc
+}

@@ -603,6 +603,17 @@ them changed it, branch compares are computed again beside their branches:
   placed: one walk moves a whole chain. A path that reads nothing computes
   nothing, and a step ends up beside the test that reads it, which then needs
   no compare. A handler or a cycle not reported as a loop takes nothing.
+- Within each block, scalar integer arithmetic that consumes a dying loaded
+  value, or the result of such arithmetic, moves up to its last operand's
+  definition. A loaded field's product and sum can then finish before the
+  next fields are read, reducing register pressure after loop hoisting. The
+  operands and result must fit one general register. Memory accesses keep
+  their order, and no computation crosses a call, store, volatile access,
+  integer division, phi or exception operation. Counters and other arithmetic
+  without a loaded operand stay beside their readers. Stable buckets place
+  dependencies before their readers in one linear walk. This took 0.7% of
+  the instructions off PENNANT and 0.3% off tramp3d-v4 in a local O3 run.
+  A frozen O3 compile took 0.18% more instructions, with unchanged peak RSS.
 - A loop without calls on its usual paths reads its floating literals, at most
   eight, from `copy` instructions before the outermost such loop: a register
   needs no load per iteration. Zero, a stored literal and a phi's input from
