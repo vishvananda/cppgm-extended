@@ -1,0 +1,104 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @pick
+  abi
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    param %a -> rdx : i64
+    param %b -> rcx : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.i64 rdi, rsi
+    cmovne rcx, rdx
+    ret rcx
+
+function @bit
+  abi
+    param %x -> rdi : i32
+    param %a -> rsi : i32
+    param %b -> rdx : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    test.i32 rdi, 1024
+    cmovne rdx, rsi
+    ret rdx
+
+function @shared
+  abi
+    param %x -> rdi : i64
+    param %y -> rsi : i64
+    param %a -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    and rdi, rsi
+    mov r11, 7
+    cmove rdx, r11
+    add rdx, rdi
+    ret rdx
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14
+
+  block ^entry
+    mov rdi, 6
+    mov rsi, 3
+    mov rdx, 10
+    mov rcx, 20
+    call @pick [args=(rcx,rdx,rsi,rdi)]
+    mov rbx, rax
+    mov rdi, 4
+    mov rsi, 3
+    mov rdx, 10
+    mov rcx, 20
+    call @pick [args=(rcx,rdx,rsi,rdi)]
+    mov r12, rax
+    mov rdi, 1024
+    mov rsi, 1
+    mov rdx, 2
+    call @bit [args=(rdx,rsi,rdi)]
+    mov r13, rax
+    mov rdi, 1023
+    mov rsi, 1
+    mov rdx, 2
+    call @bit [args=(rdx,rsi,rdi)]
+    mov r14, rax
+    mov rdi, 6
+    mov rsi, 3
+    mov rdx, 100
+    call @shared [args=(rdx,rsi,rdi)]
+    add rbx, r12
+    add rax, rbx
+    imul.i32 r13, 10
+    add.i32 r13, r14
+    add.i32 rax, r13
+    ret rax

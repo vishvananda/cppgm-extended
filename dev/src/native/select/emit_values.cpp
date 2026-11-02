@@ -1126,6 +1126,8 @@ void FunctionSelector::emit_select(const Instruction& inst)
 			return;
 		}
 	}
+	else if (cond.kind == ValueKind::Temp && (temps_[cond.index].flags & TF_TESTED))
+		cc = emit_and_test(body_->instructions[body_->temps[cond.index].def], true);
 	else if (!known)
 	{
 		const Type type = type_of(cond);

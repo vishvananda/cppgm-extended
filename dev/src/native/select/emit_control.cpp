@@ -702,62 +702,69 @@ void FunctionSelector::emit_branch(const Instruction& inst)
 	emit1(Op::Jmp, TypeKind::Void, Operand::make_label(on_false));
 }
 
+// A tested `x & y` (find_folds): test x, y, or bt x, k for `x & (1 << k)`;
+// the condition taking ZF or CF for `set` (nonzero) or its inverse.
+Cond FunctionSelector::emit_and_test(const Instruction& conj, bool set)
+{
+	const Type type = conj.type;
+	const TypeKind kind = type.is_pointer() ? TypeKind::Ptr : type.kind();
+	Type test_type = type;
+	Value x = resolve(conj.ops[0]), y = resolve(conj.ops[1]);
+	// A promoted narrow load folded by fold_mask_load still reads its
+	// original bytes: the mask was proved to ignore the promoted bits.
+	for (Value v : { x, y })
+		if (v.kind == ValueKind::Temp && (temps_[v.index].flags & TF_FOLDED))
+			test_type = body_->instructions[body_->temps[v.index].def].type;
+	const auto tested = [&](Value v) { return v.kind == ValueKind::Temp && (temps_[v.index].flags & TF_TESTED); };
+	if (tested(x))
+		std::swap(x, y);
+	Cond cond = set ? CC_NE : CC_E;
+	if (tested(y))
+	{
+		// bt x, k: the bit number in a register or an immediate, x in a register.
+		const Instruction& bit = body_->instructions[body_->temps[y.index].def];
+		const Operand k = rm_operand(bit.ops[1], body_->temps[y.index].type, kEmitScratch);
+		Operand a = rm_operand(x, type, kSelectScratch);
+		if (a.kind != OperandKind::Reg)
+		{
+			load_into(kSelectScratch, a, kind);
+			a = Operand::make_reg(kSelectScratch);
+		}
+		Operand b = k;
+		if (b.kind == OperandKind::Mem)
+		{
+			load_into(kEmitScratch, b, kind);
+			b = Operand::make_reg(kEmitScratch);
+		}
+		emit2(Op::Bt, kind, a, b);
+		cond = set ? CC_B : CC_AE;
+	}
+	else
+	{
+		Operand a = rm_operand(x, test_type, kSelectScratch);
+		Operand b = rm_operand(y, test_type, kEmitScratch);
+		if (a.kind == OperandKind::Imm || (a.kind != OperandKind::Reg && b.kind == OperandKind::Reg))
+			std::swap(a, b);
+		if (a.kind == OperandKind::Imm || a.kind == OperandKind::Symbol)
+		{
+			load_into(kSelectScratch, a, kind);
+			a = Operand::make_reg(kSelectScratch);
+		}
+		if (b.kind == OperandKind::Mem || b.kind == OperandKind::Symbol)
+		{
+			load_into(kEmitScratch, b, kind);
+			b = Operand::make_reg(kEmitScratch);
+		}
+		emit2(Op::Test, test_type.kind(), a, b);
+	}
+	return cond;
+}
+
 void FunctionSelector::emit_compare_jump(const Instruction& compare, uint32_t on_true, uint32_t on_false)
 {
-	// A compare with zero of a tested `x & y` (find_folds): test x, y, or
-	// bt x, k for `x & (1 << k)`; the branch takes ZF or CF.
+	// A compare with zero of a tested `x & y`: the branch takes its test.
 	auto emit_test_jump = [&](const Instruction& conj, bool set) {
-		const Type type = conj.type;
-		const TypeKind kind = type.is_pointer() ? TypeKind::Ptr : type.kind();
-		Type test_type = type;
-		Value x = resolve(conj.ops[0]), y = resolve(conj.ops[1]);
-		// A promoted narrow load folded by fold_mask_load still reads its
-		// original bytes: the mask was proved to ignore the promoted bits.
-		for (Value v : { x, y })
-			if (v.kind == ValueKind::Temp && (temps_[v.index].flags & TF_FOLDED))
-				test_type = body_->instructions[body_->temps[v.index].def].type;
-		const auto tested = [&](Value v) { return v.kind == ValueKind::Temp && (temps_[v.index].flags & TF_TESTED); };
-		if (tested(x))
-			std::swap(x, y);
-		Cond cond = set ? CC_NE : CC_E;
-		if (tested(y))
-		{
-			// bt x, k: the bit number in a register or an immediate, x in a register.
-			const Instruction& bit = body_->instructions[body_->temps[y.index].def];
-			const Operand k = rm_operand(bit.ops[1], body_->temps[y.index].type, kEmitScratch);
-			Operand a = rm_operand(x, type, kSelectScratch);
-			if (a.kind != OperandKind::Reg)
-			{
-				load_into(kSelectScratch, a, kind);
-				a = Operand::make_reg(kSelectScratch);
-			}
-			Operand b = k;
-			if (b.kind == OperandKind::Mem)
-			{
-				load_into(kEmitScratch, b, kind);
-				b = Operand::make_reg(kEmitScratch);
-			}
-			emit2(Op::Bt, kind, a, b);
-			cond = set ? CC_B : CC_AE;
-		}
-		else
-		{
-			Operand a = rm_operand(x, test_type, kSelectScratch);
-			Operand b = rm_operand(y, test_type, kEmitScratch);
-			if (a.kind == OperandKind::Imm || (a.kind != OperandKind::Reg && b.kind == OperandKind::Reg))
-				std::swap(a, b);
-			if (a.kind == OperandKind::Imm || a.kind == OperandKind::Symbol)
-			{
-				load_into(kSelectScratch, a, kind);
-				a = Operand::make_reg(kSelectScratch);
-			}
-			if (b.kind == OperandKind::Mem || b.kind == OperandKind::Symbol)
-			{
-				load_into(kEmitScratch, b, kind);
-				b = Operand::make_reg(kEmitScratch);
-			}
-			emit2(Op::Test, test_type.kind(), a, b);
-		}
+		const Cond cond = emit_and_test(conj, set);
 		Inst& j = emit1(Op::Jcc, TypeKind::Void, Operand::make_label(on_true));
 		j.sub = cond;
 		emit1(Op::Jmp, TypeKind::Void, Operand::make_label(on_false));

@@ -122,6 +122,8 @@ that paid there in the course solution:
   the flags they left, as in `if (a > b) ... else if (a < b)`. Only compares of
   registers and literals, and only with no edge from elsewhere: a landing pad
   or a jump table target keeps its compare.
+- A `select` on `x & y` that nothing else reads tests the operands: `test x, y`
+  then `cmov`, as a branch on it does. The `and` writes no register.
 - A `cmov` tests one condition. `ucomisd` reports a NaN as unordered, so `lt`, `le`,
   `gt`, `ge` and their `u` forms each map to one condition, but `eq` and `ne` need
   parity as well and stay materialized.

@@ -1885,6 +1885,20 @@ void FunctionSelector::find_folds()
 		}
 		if (inst_block_[user_id] != b || pos_[user_id] <= pos_[id])
 			return;
+		// O2+: an `and` only a later select of its block reads as its
+		// condition: the select tests it (test x, y before the cmov).
+		if (level_ >= 2 && inst.op == Opcode::Binary && static_cast<lowir::BinaryOp>(inst.sub) == lowir::BinaryOp::And)
+		{
+			const Instruction& user = body.instructions[user_id];
+			const Value self = Value::temp(inst.result);
+			if (user.op == Opcode::Select && resolve(user.ops[0]) == self && !(resolve(user.ops[1]) == self) &&
+				!(resolve(user.ops[2]) == self))
+			{
+				test_fold(self, user_id);
+				if (t.flags & TF_TESTED)
+					return;
+			}
+		}
 		// O1+: a load folds into a later user of its block past a few
 		// instructions that write no memory (a hash step's rotation between
 		// the field load and the xor reading it); everything else folds
