@@ -2931,9 +2931,10 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 		const Instruction& def = body_.instructions[d];
 		if (!(def.op == Opcode::Index || def.op == Opcode::Addr || (def.op == Opcode::Copy && def.type.is_pointer())))
 			return false;
+		// (The base is the next step of the walk.)
 		bool ok = true;
-		for (const Value& v : def.ops)
-			ok = ok && invariant(loop, v);
+		for (unsigned k = 1; k < 3; ++k)
+			ok = ok && invariant(loop, def.ops[k]);
 		return ok;
 	};
 	// Values live into the loop (defined outside, used inside) and its
@@ -2961,7 +2962,7 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 	uint32_t moved = 0;
 	// The header's instructions before its first call run on every entry.
 	bool header_clear = true;
-	for (bool progress = true; progress && moved < limit;)
+	for (bool progress = true; progress;)
 	{
 		progress = false;
 		for (BlockId b : l.blocks)
@@ -3015,7 +3016,7 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 						static_cast<uint64_t>(at.offset) + bytes <= param.object_bytes &&
 						entry_objects_kept(loop, at.root.index);
 				}
-				if (clobbered || !readable || moved >= limit)
+				if (clobbered || !readable || (moved >= limit && !on_entry))
 				{
 					i = next;
 					continue;
