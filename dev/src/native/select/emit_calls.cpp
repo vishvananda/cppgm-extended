@@ -253,7 +253,20 @@ void FunctionSelector::narrow_params_observed(std::vector<uint8_t>& observed)
 				// read the upper bits.)
 				safe = ((op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Sub || op == lowir::BinaryOp::Mul) &&
 						   (!(inst.flags & lowir::IF_NO_WRAP) || low_read(inst.result))) ||
-					(op == lowir::BinaryOp::And && small_mask(inst));
+					(op == lowir::BinaryOp::And && small_mask(inst)) ||
+					// (A divide by a variable word divides at 32 bits.)
+					((op == lowir::BinaryOp::Div || op == lowir::BinaryOp::Mod || op == lowir::BinaryOp::UDiv ||
+						 op == lowir::BinaryOp::UMod) &&
+						(inst.type.kind() == TypeKind::I32 || inst.type.kind() == TypeKind::U32) &&
+						resolve(inst.ops[1]).kind != ValueKind::Integer);
+				if (op == lowir::BinaryOp::Shl || op == lowir::BinaryOp::Shr || op == lowir::BinaryOp::UShr)
+				{
+					// (A count is read in cl; a left shift's bits move up.)
+					check(inst.ops[0],
+						op == lowir::BinaryOp::Shl && (!(inst.flags & lowir::IF_NO_WRAP) || low_read(inst.result)));
+					check(inst.ops[1], true);
+					return;
+				}
 				if (!safe && (op == lowir::BinaryOp::And || op == lowir::BinaryOp::Or || op == lowir::BinaryOp::Xor) &&
 					narrow_integer(inst.type.kind()) && inst.result != kNoId)
 				{

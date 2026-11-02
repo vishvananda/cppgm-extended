@@ -1438,7 +1438,7 @@ void FunctionSelector::emission_facts()
 
 // Whether value g's definition computes it in its own register from its
 // first operand `from`, which it reads nowhere else: a Binary/Unary (not an
-// integer division) or an integer extension or truncation.
+// integer division), an integer extension or truncation, or a load through it.
 bool FunctionSelector::computed_from(uint32_t g, uint32_t from) const
 {
 	const lowir::FunctionBody& body = *body_;
@@ -1453,6 +1453,10 @@ bool FunctionSelector::computed_from(uint32_t g, uint32_t from) const
 			inst.type.is_integer() && inst.type.kind() != TypeKind::I128 &&
 			lowir::convert_source_type(inst).kind() != TypeKind::I128;
 	}
+	// (A plain load reads its address before it writes its result.)
+	if (inst.op == Opcode::Load && (inst.type.is_integer() || inst.type.is_pointer()) &&
+		inst.type.kind() != TypeKind::I128)
+		return true;
 	if (!ties_first_operand(inst))
 		return false;
 	if (inst.op == Opcode::Binary)

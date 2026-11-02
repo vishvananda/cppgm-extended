@@ -351,9 +351,9 @@ void FunctionSelector::prepass_block(uint32_t b)
 			t.hint = reg;
 	};
 	// O1+: values whose last use is the count of a variable shift (which
-	// loads rcx first): that early clobber is the count's own load, so the
-	// count may be computed in rcx.
-	std::vector<std::pair<uint32_t, int32_t>> counts;
+	// loads rcx first) or a divide's dividend (which loads rax first): that
+	// early clobber is the value's own load, so it may be computed there.
+	std::vector<std::pair<uint32_t, int32_t>> counts, dividends;
 	for (size_t k = block_insts_.size(); k-- > 0;)
 	{
 		const uint32_t id = block_insts_[k];
@@ -371,6 +371,10 @@ void FunctionSelector::prepass_block(uint32_t b)
 					if (c.first == inst.result && c.second == t.last && next_clobber[RCX] == t.last &&
 						next_early[RCX] == t.last)
 						t.forbid &= ~(1u << RCX);
+				for (const std::pair<uint32_t, int32_t>& d : dividends)
+					if (d.first == inst.result && d.second == t.last && next_clobber[RAX] == t.last &&
+						next_early[RAX] == t.last)
+						t.forbid &= ~(1u << RAX);
 			}
 		}
 		const uint32_t clobber = clobber_[id];
@@ -396,7 +400,14 @@ void FunctionSelector::prepass_block(uint32_t b)
 		{
 			const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);
 			if (clobber & (1u << RAX))
+			{
 				hint(inst.ops[0], RAX, pos);
+				const Value dividend = resolve(inst.ops[0]);
+				if (level_ >= 1 && (early & (1u << RAX)) && dividend.kind == ValueKind::Temp &&
+					!(resolve(inst.ops[1]) == dividend) && temps_[dividend.index].last == pos &&
+					temps_[dividend.index].block == b)
+					dividends.push_back(std::make_pair(dividend.index, pos));
+			}
 			else if ((clobber & (1u << RCX)) &&
 				(op == lowir::BinaryOp::Shl || op == lowir::BinaryOp::Shr || op == lowir::BinaryOp::UShr))
 			{

@@ -62,7 +62,9 @@ that paid there in the course solution:
   a branch, a 32-bit divide, a wrapping add, a shift's count, a copy to the other
   sign, a return and a host call's `i32` argument read the low bits alone: the
   psABI leaves the upper bits to the reader, so a caller extends a narrow call
-  result itself even when this unit defines the callee. A phi, a
+  result itself even when this unit defines the callee. A divide's dividend and a
+  shift's count may be computed in `rax` and `rcx`: that early clobber is their own
+  load, so a quotient divided again stays in `rax`. A phi, a
   select, an `and` and a `nowrap` add pass their readers' needs to their operands,
   so grow the set to a fixed point. A sum of `int` products that is only stored
   then needs no `movslq` per iteration. The same question decides whether a

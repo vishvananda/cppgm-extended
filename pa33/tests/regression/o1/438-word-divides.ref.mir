@@ -134,14 +134,14 @@ function @main
     add rbx, r12
     add rbx, r13
     add rbx, r14
-    add rbx, rax
-    sext.i32 rbx
-    imul rax, rbx, 1374389535
+    add rax, rbx
+    sext.i32 rax
+    imul rax, rax, 1374389535
     sar rax, 37
-    mov rdx, rbx
+    mov rdx, rax
     sar rdx, 63
     sub rax, rdx
     imul rax, 100
-    mov rdx, rbx
+    mov rdx, rax
     sub rdx, rax
     ret rdx

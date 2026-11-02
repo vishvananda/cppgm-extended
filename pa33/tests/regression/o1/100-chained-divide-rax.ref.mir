@@ -1,0 +1,98 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @value
+  storage scalar i32
+  init i32 3
+
+global @cell
+  storage scalar ptr
+  init addr @value
+
+function @chain
+  abi
+    param %x -> rdi : i32
+    param %a -> rsi : i32
+    param %b -> rdx : i32
+    param %c -> rcx : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r8, rdx
+    mov rax, rdi
+    cqo.i32
+    idiv.i32 rsi
+    cqo.i32
+    idiv.i32 r8
+    cqo.i32
+    idiv.i32 rcx
+    ret rax
+
+function @seen
+  abi
+    param %p -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i32 rax, [rdi]
+    ret rax
+
+function @through
+  abi
+    param %s -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.ptr rdi, [rdi]
+    cmp.ptr rdi, 0
+    jne ^some
+
+  block ^none
+    mov rax, 0
+    ret rax
+
+  block ^some
+    call @seen [args=(rdi)]
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
+
+  block ^entry
+    mov rdi, 120
+    mov rsi, 2
+    mov rdx, 3
+    mov rcx, 4
+    call @chain [args=(rcx,rdx,rsi,rdi)]
+    mov rbx, rax
+    mov rdi, @cell
+    call @through [args=(rdi)]
+    sub rbx, 2
+    sub rbx, rax
+    ret rbx

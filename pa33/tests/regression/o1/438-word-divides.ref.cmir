@@ -134,14 +134,14 @@ function @main
     add <gpr2>, <gpr3>
     add <gpr2>, <gpr4>
     add <gpr2>, <gpr5>
-    add <gpr2>, rax
-    sext.i32 <gpr2>
-    imul rax, <gpr2>, 1374389535
+    add rax, <gpr2>
+    sext.i32 rax
+    imul rax, rax, 1374389535
     sar rax, 37
-    mov rdx, <gpr2>
+    mov rdx, rax
     sar rdx, 63
     sub rax, rdx
     imul rax, 100
-    mov rdx, <gpr2>
+    mov rdx, rax
     sub rdx, rax
     ret rdx
