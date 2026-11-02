@@ -27,4 +27,13 @@ bool specialize_arguments(
 // inliner may then inline it. True when it made a copy.
 bool copy_for_callees(lowir::Program& program, OptimizerStats& stats);
 
+// Speculative devirtualization (O2+): a call through a slot of an object's
+// vtable, passing the object first, where a store of a readonly table's
+// address into the object (its construction) dominates the call, compares
+// the loaded callee with the function the table holds in that slot (a
+// definition of at most 64 instructions) and calls that function directly
+// when they match, so the later waves may inline it; otherwise the call
+// goes through the slot as before. True when it rewrote a call.
+bool speculate_virtual_calls(lowir::Program& program, OptimizerStats& stats);
+
 } // namespace opt

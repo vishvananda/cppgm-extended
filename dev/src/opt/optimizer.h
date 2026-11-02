@@ -84,6 +84,7 @@ struct OptimizerStats
 	telemetry::Counter math_calls_shared = 0;
 	telemetry::Counter invariants_hoisted = 0;
 	telemetry::Counter specialized = 0;
+	telemetry::Counter calls_speculated = 0;
 	telemetry::Milliseconds optimize_ms = 0;
 };
 

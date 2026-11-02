@@ -1,0 +1,93 @@
+declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
+
+global @toggle_table [storage=readonly, binding=internal] = {
+  i64 0
+  i64 0
+  ptr addr @flip
+  ptr addr @tally
+}
+
+function @flip(%this : ptr) -> ptr [binding=internal] {
+  block ^entry:
+    %at = index i8 %this, 8
+    %v = load u8 %at
+    %w = binary xor u8 %v, 1
+    store u8 %w, %at
+    return ptr %this
+}
+function @tally(%this : ptr) -> void [binding=internal] {
+  block ^entry:
+    %at = index i8 %this, 12
+    %v = load i32 %at
+    %w = binary add i32 %v, 1
+    store i32 %w, %at
+    return void
+}
+function @other(%obj : ptr) -> void [binding=internal, no_inline=yes] {
+  block ^entry:
+    %vptr = load ptr %obj
+    %f = load ptr %vptr
+    %r = call ptr %f(%obj) as (%this : ptr) -> ptr
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %obj = call ptr @operatornew(16)
+    %table = addr @toggle_table
+    %point = index i8 %table, 16
+    store ptr %point, %obj
+    %state = index i8 %obj, 8
+    store u8 1, %state
+    %count = index i8 %obj, 12
+    store i32 0, %count
+    jump ^loop
+
+  block ^loop:
+    %i = phi i32 [^entry: 0, ^split_5: %next]
+    %vptr = load ptr %obj
+    %f = load ptr %vptr
+    %t9 = cmp eq ptr %f, @flip
+    branch %t9, ^inline_entry_2, ^split_8
+
+  block ^inline_entry_2:
+    %v_10 = load u8 %state
+    %w_11 = binary xor u8 %v_10, 1
+    store u8 %w_11, %state
+    jump ^split_3
+
+  block ^split_3:
+    %again = phi ptr [^split_8: %t26, ^inline_entry_2: %vptr]
+    %slot = index i8 %again, 8
+    %g = load ptr %slot
+    %t15 = cmp eq ptr %g, @tally
+    branch %t15, ^inline_entry_4, ^split_7
+
+  block ^inline_entry_4:
+    %v_16 = load i32 %count
+    %w_17 = binary add i32 %v_16, 1
+    store i32 %w_17, %count
+    jump ^split_5
+
+  block ^split_5:
+    %next = binary add nowrap i32 %i, 1
+    %more = cmp lt i32 %next, 6
+    branch %more, ^loop, ^done
+
+  block ^done:
+    call void @other(%obj)
+    %s = load u8 %state
+    %wide = convert zext i32 u8 %s
+    %hundreds = binary mul i32 %wide, 100
+    %n = load i32 %count
+    %result = binary add i32 %hundreds, %n
+    return i32 %result
+
+  block ^split_7:
+    call void %g(%obj) as (%this : ptr) -> void
+    jump ^split_5
+
+  block ^split_8:
+    %t25 = call ptr %f(%obj) as (%this : ptr) -> ptr
+    %t26 = load ptr %obj
+    jump ^split_3
+}

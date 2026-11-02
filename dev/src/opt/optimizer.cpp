@@ -654,6 +654,8 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 		materialize_storage_arguments(program);
 		run_inline_wave(program, options, stats, InlineWave::Ordinary, budgets, original, nounwind, simplify);
 		prune_unreachable(program, stats);
+		if (level >= 2)
+			speculate_virtual_calls(program, stats);
 		if (level >= 2 && copy_for_callees(program, stats))
 		{
 			original.resize(program.symbols.size(), 0);
@@ -694,7 +696,8 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " loops_unswitched=" << s.loops_unswitched << " counters_shifted=" << s.counters_shifted
 		<< " counters_widened=" << s.counters_widened << " multiplies_reduced=" << s.multiplies_reduced
 		<< " tail_calls_removed=" << s.tail_calls_removed << " math_calls_shared=" << s.math_calls_shared
-		<< " specialized=" << s.specialized << " optimize_ms=" << s.optimize_ms;
+		<< " specialized=" << s.specialized << " calls_speculated=" << s.calls_speculated
+		<< " optimize_ms=" << s.optimize_ms;
 #else
 	(void)s;
 #endif

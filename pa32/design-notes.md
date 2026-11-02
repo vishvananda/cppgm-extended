@@ -424,6 +424,23 @@ copy. A unit makes at most 32 copies, in two scans of its calls. A sort that
 takes a comparison function is the usual case: in such a benchmark, the
 copies took 18% of the instructions off.
 
+### Speculative Devirtualization (`-O2`, `-O3`)
+
+After the ordinary wave, and before the callee copies, a call is rewritten
+when its callee is a load from a slot of the table that the first
+argument's first word points to, and a store of a readonly table's address
+into that object (its construction) dominates the call. The pass reads the
+function that the latest such store's table holds in the slot. The function
+must be a definition of at most 64 instructions, with no `no_inline` or
+`replaceable` mark, and with the call's arity and result type. The call's
+block then ends at a branch on the loaded callee being that function. One
+side calls the function directly and the other side keeps the call through
+the slot; a phi joins the results. The later waves can inline the direct
+call. A function gets at most 8 such rewrites. A loop that calls a virtual
+member function of an object it constructed before the loop is the usual
+case: a call in the loop can replace the object's table pointer, so the
+table must be loaded again on each pass.
+
 ### Argument Propagation (`-O2`, `-O3`)
 
 After the waves, an internal function that is called, has parameters, no
