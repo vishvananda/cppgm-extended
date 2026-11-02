@@ -96,6 +96,57 @@ bool allocation_call(const Program& program, const Instruction& inst)
 		inst.ops[0].index < program.allocation_functions.size() && program.allocation_functions[inst.ops[0].index] != 0;
 }
 
+bool allocated(const Program& program, const FunctionBody& body, Value v)
+{
+	if (!v.is(ValueKind::Temp) || v.index < body.parameter_count)
+		return false;
+	const InstId def = body.temps[v.index].def;
+	return def != kNoId && allocation_call(program, body.instructions[def]);
+}
+
+// The most values comes_before follows back from one pointer.
+const size_t kOriginWalk = 16;
+
+bool comes_before(const Program& program, const FunctionBody& body, Value v, Value fresh)
+{
+	Value walk[kOriginWalk];
+	size_t count = 0;
+	walk[count++] = v;
+	for (size_t n = 0; n < count; ++n)
+	{
+		const Value x = walk[n];
+		if (x == fresh)
+			return false;
+		if (x.is(ValueKind::Slot) || x.is(ValueKind::Symbol) ||
+			(x.is(ValueKind::Temp) && x.index < body.parameter_count))
+			continue;
+		if (!x.is(ValueKind::Temp) || body.temps[x.index].def == kNoId)
+			return false;
+		const Instruction& d = body.instructions[body.temps[x.index].def];
+		bool full = false;
+		auto visit = [&](Value y) {
+			if (std::find(walk, walk + count, y) != walk + count)
+				return;
+			if (count == kOriginWalk)
+				full = true;
+			else
+				walk[count++] = y;
+		};
+		if (allocation_call(program, d))
+			continue;
+		if (d.op == Opcode::Index || d.op == Opcode::Addr || (d.op == Opcode::Copy && d.type.is_pointer()))
+			visit(d.ops[0]);
+		else if (d.op == Opcode::Phi)
+			for (uint32_t k = 1; k < d.extra_count; k += 2)
+				visit(body.operands[d.extra_first + k]);
+		else
+			return false;
+		if (full)
+			return false;
+	}
+	return true;
+}
+
 namespace {
 
 void build_edges(const Program& program, const FunctionBody& body, Cfg& cfg)

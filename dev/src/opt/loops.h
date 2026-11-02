@@ -81,4 +81,35 @@ struct Strided
 Strided strided_address(const lowir::FunctionBody& body, lowir::Value v);
 bool strided_apart(const Strided& a, uint64_t a_bytes, const Strided& b, uint64_t b_bytes);
 
+// Whether two located accesses name the same place at the same type.
+bool same_place(const Located& a, lowir::Type a_type, const Located& b, lowir::Type b_type);
+
+// Whether a place is read or written at its type before `loop`: in a block
+// that dominates the header from outside (the nearest few), with no call
+// after it there or in the blocks between it and the loop, which might free
+// the place.
+bool read_before_loop(const lowir::FunctionBody& body, const Cfg& cfg, const LoopForest& forest, uint32_t loop,
+	const Located& at, lowir::Type type);
+
+// Whether `bytes` at `address` lie in a slot for any value of its index: a
+// table lookup by a byte reads the table, whatever the byte.
+bool table_entry(const lowir::FunctionBody& body, lowir::Value address, uint64_t bytes);
+
+// What a load moved to `pre` reads when `pre`, or the one block before it,
+// already loaded or stored that address at its type with no write after it:
+// that value (None otherwise).
+lowir::Value read_in_preheader(const lowir::Program& program, const lowir::FunctionBody& body, const Cfg& cfg,
+	lowir::BlockId pre, const lowir::Instruction& load);
+
+// Replaces each phi of `header` that `v` enters from every edge (or that
+// reads only itself otherwise) with `v`, moving its counts in `uses`.
+void fold_header_phis(lowir::FunctionBody& body, lowir::BlockId header, lowir::Value v, std::vector<uint32_t>& uses);
+
+// The test number (0-based) at which a counted loop leaves: the induction
+// starts at a literal and steps by a literal, the bound is a literal, and
+// the tested values move from continuing to leaving without leaving the
+// comparison's integer range (no wrap). `next` tests the stepped value.
+bool counted_trips(lowir::Type type, lowir::ComparePredicate pred, bool continue_on_true, __int128 init, __int128 step,
+	__int128 bound, bool next, int64_t& trips, __int128& last);
+
 } // namespace opt

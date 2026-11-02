@@ -21,18 +21,21 @@ function @encode(%data : ptr, %n : i64, %cap : i64) -> i64 [no_inline=yes] {
     %j = phi i64 [^entry: 0, ^onext: %j2]
     %len = phi i64 [^entry: 0, ^onext: %l2]
     %first = load u8 %d
-    branch %first, ^inner, ^onext
+    branch %first, ^loop_preheader_2, ^onext
+
+  block ^loop_preheader_2:
+    %w = convert zext i64 u8 %first
+    jump ^inner
 
   block ^inner:
-    %c = phi u8 [^next: %first, ^outer: %first]
-    %i = phi i64 [^next: %i2, ^outer: 0]
-    %l = phi i64 [^next: %l2, ^outer: %len]
+    %i = phi i64 [^loop_preheader_2: 0, ^next: %i2]
+    %l = phi i64 [^loop_preheader_2: %len, ^next: %l2]
     %odd = binary and i64 %i, 1
     branch %odd, ^put, ^next
 
   block ^put:
     %at = index u8 %out, %l
-    store u8 %c, %at
+    store u8 %first, %at
     %l1 = binary add i64 %l, 1
     %full = cmp eq i64 %cap, %l1
     branch %full, ^fail, ^next
@@ -43,7 +46,6 @@ function @encode(%data : ptr, %n : i64, %cap : i64) -> i64 [no_inline=yes] {
 
   block ^next:
     %l2 = phi i64 [^inner: %l, ^put: %l1]
-    %w = convert zext i64 u8 %first
     %i2 = binary add i64 %i, 1
     %more = cmp ult i64 %i2, %w
     branch %more, ^inner, ^onext

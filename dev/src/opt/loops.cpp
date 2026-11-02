@@ -421,6 +421,279 @@ bool make_loop_preheader(FunctionBody& body, const Cfg& cfg, const LoopForest& f
 	return true;
 }
 
+// The largest value an index operand may hold, unsigned: its literal, an
+// unsigned type's or a zero extension's range, or an `and` with a literal.
+// ~0 when unknown.
+static uint64_t index_bound(const FunctionBody& body, Value v)
+{
+	if (v.is(ValueKind::Integer))
+		return body.literals[v.index].high == 0 && body.literals[v.index].low >> 63 == 0 ? body.literals[v.index].low
+																						 : ~uint64_t(0);
+	if (!v.is(ValueKind::Temp))
+		return ~uint64_t(0);
+	const TypeKind kind = body.temps[v.index].type.kind();
+	if (kind == TypeKind::U8 || kind == TypeKind::U16)
+		return kind == TypeKind::U8 ? 0xff : 0xffff;
+	const InstId d = body.temps[v.index].def;
+	if (d == kNoId)
+		return ~uint64_t(0);
+	const Instruction& def = body.instructions[d];
+	if (def.op == Opcode::Convert && static_cast<ConvertOp>(def.sub) == ConvertOp::ZExt)
+	{
+		const uint64_t from = storage_bytes(convert_source_type(def));
+		return from < 8 ? (uint64_t(1) << (8 * from)) - 1 : ~uint64_t(0);
+	}
+	if (def.op == Opcode::Binary && static_cast<BinaryOp>(def.sub) == BinaryOp::And)
+		return std::min(index_bound(body, def.ops[0]), index_bound(body, def.ops[1]));
+	return ~uint64_t(0);
+}
+
+// Whether `bytes` at `address` lie in a slot for any value of its index: a
+// table lookup by a byte reads the table, whatever the byte.
+bool table_entry(const FunctionBody& body, Value address, uint64_t bytes)
+{
+	if (!address.is(ValueKind::Temp) || body.temps[address.index].def == kNoId)
+		return false;
+	const Instruction& def = body.instructions[body.temps[address.index].def];
+	if (def.op != Opcode::Index)
+		return false;
+	const Located base = locate(body, def.ops[0]);
+	const uint64_t bound = index_bound(body, def.ops[1]), element = storage_bytes(def.type);
+	if (!base.known || !base.root.is(ValueKind::Slot) || base.offset < 0 || bound >= (uint64_t(1) << 32) ||
+		element >= (uint64_t(1) << 16))
+		return false;
+	return static_cast<uint64_t>(base.offset) + bound * element + bytes <=
+		storage_bytes(body.slots[base.root.index].type);
+}
+
+// Whether two addresses are one value or the same index steps from one.
+static bool same_address(const FunctionBody& body, Value a, Value b)
+{
+	for (unsigned depth = 0; depth < 4; ++depth)
+	{
+		if (a == b)
+			return true;
+		if (!a.is(ValueKind::Temp) || !b.is(ValueKind::Temp) || body.temps[a.index].def == kNoId ||
+			body.temps[b.index].def == kNoId)
+			return false;
+		const Instruction& x = body.instructions[body.temps[a.index].def];
+		const Instruction& y = body.instructions[body.temps[b.index].def];
+		if (x.op != Opcode::Index || y.op != Opcode::Index || x.type != y.type || !(x.ops[1] == y.ops[1]) ||
+			x.immediate != y.immediate)
+			return false;
+		a = x.ops[0];
+		b = y.ops[0];
+	}
+	return false;
+}
+
+// What a load moved to `pre` reads when `pre`, or the one block before it,
+// already loaded or stored that address at its type with no write after it:
+// that value (None otherwise).
+Value read_in_preheader(
+	const Program& program, const FunctionBody& body, const Cfg& cfg, BlockId pre, const Instruction& load)
+{
+	BlockId blocks[2] = { kNoId, pre };
+	if (cfg.pred_first[pre + 1] - cfg.pred_first[pre] == 1)
+		blocks[0] = cfg.preds[cfg.pred_first[pre]];
+	Value known = Value::none();
+	for (BlockId b : blocks)
+		for (InstId i = b == kNoId ? kNoId : body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			const Instruction& inst = body.instructions[i];
+			const bool same = inst.type == load.type && (inst.flags & IF_VOLATILE) == 0;
+			if (inst.op == Opcode::Load && same && same_address(body, inst.ops[0], load.ops[0]))
+				known = Value::temp(inst.result);
+			else if (inst.op == Opcode::Store && same && same_address(body, inst.ops[1], load.ops[0]))
+				known = inst.ops[0];
+			else if (may_write_memory(program, inst))
+				known = Value::none();
+		}
+	return known;
+}
+
+// A phi of `header` that `v` now enters from every edge (or that reads only
+// itself otherwise) is `v`.
+void fold_header_phis(FunctionBody& body, BlockId header, Value v, std::vector<uint32_t>& uses)
+{
+	for (InstId i = body.blocks[header].first, prev = kNoId; i != kNoId;)
+	{
+		const Instruction& phi = body.instructions[i];
+		const InstId next = phi.next;
+		if (phi.op != Opcode::Phi)
+			break;
+		bool same = true;
+		for (uint32_t k = 1; k < phi.extra_count && same; k += 2)
+		{
+			const Value in = body.operands[phi.extra_first + k];
+			same = in == v || in == Value::temp(phi.result);
+		}
+		if (!same)
+		{
+			prev = i;
+			i = next;
+			continue;
+		}
+		const TempId result = phi.result;
+		unlink_after(body, header, prev, i);
+		if (v.is(ValueKind::Temp) && v.index < uses.size() && result < uses.size())
+			uses[v.index] += uses[result];
+		replace_all_uses(body, result, v);
+		i = next;
+	}
+}
+
+// The test number (0-based) at which a counted loop leaves: the induction
+// starts at a literal and steps by a literal, the bound is a literal, and
+// the tested values move from continuing to leaving without leaving the
+// comparison's integer range (no wrap). `next` tests the stepped value.
+bool counted_trips(Type type, ComparePredicate pred, bool continue_on_true, __int128 init, __int128 step,
+	__int128 bound, bool next, int64_t& trips, __int128& last)
+{
+	const unsigned bits = integer_bits(type.kind());
+	const bool unsigned_order = pred == ComparePredicate::Ult || pred == ComparePredicate::Ule ||
+		pred == ComparePredicate::Ugt || pred == ComparePredicate::Uge;
+	if (bits == 0 || bits > 64)
+		return false;
+	const __int128 lo = unsigned_order ? 0 : -(static_cast<__int128>(1) << (bits - 1));
+	const __int128 hi = unsigned_order ? (static_cast<__int128>(1) << bits) - 1
+									   : (static_cast<__int128>(1) << (bits - 1)) - 1;
+	auto in_range = [&](__int128 v) { return v >= lo && v <= hi; };
+	// Literals read in the comparison's order.
+	auto order = [&](__int128 v) {
+		const __int128 mask = (static_cast<__int128>(1) << bits) - 1;
+		v &= mask;
+		if (!unsigned_order && v > hi)
+			v -= mask + 1;
+		return v;
+	};
+	init = order(init);
+	bound = order(bound);
+	auto holds = [&](__int128 x) {
+		bool r;
+		switch (pred)
+		{
+		case ComparePredicate::Eq:
+			r = x == bound;
+			break;
+		case ComparePredicate::Ne:
+			r = x != bound;
+			break;
+		case ComparePredicate::Lt:
+		case ComparePredicate::Ult:
+			r = x < bound;
+			break;
+		case ComparePredicate::Le:
+		case ComparePredicate::Ule:
+			r = x <= bound;
+			break;
+		case ComparePredicate::Gt:
+		case ComparePredicate::Ugt:
+			r = x > bound;
+			break;
+		default:
+			r = x >= bound;
+			break;
+		}
+		return r == continue_on_true;
+	};
+	const __int128 first = init + (next ? step : 0);
+	if (!in_range(first))
+		return false;
+	if (!holds(first))
+	{
+		trips = 0;
+		last = first;
+		return true;
+	}
+	// The first k with !holds(first + k*step), found by the side the bound
+	// lies on; any candidate is checked exactly.
+	__int128 k;
+	const __int128 gap = bound - first;
+	if (step > 0 ? gap < 0 : gap > 0)
+		k = 1; // already past the bound: the next value decides
+	else
+		k = gap / step;
+	for (__int128 probe = k > 1 ? k - 1 : 1; probe <= k + 2; ++probe)
+	{
+		const __int128 x = first + probe * step;
+		if (!in_range(x))
+			return false;
+		if (!holds(x))
+		{
+			// Every earlier value continued (monotone between first and x).
+			for (__int128 q = 1; q < probe && q < 3; ++q)
+				if (!holds(first + q * step))
+					return false;
+			if (probe > 0x7fffffff)
+				return false;
+			trips = static_cast<int64_t>(probe);
+			last = x;
+			return true;
+		}
+	}
+	return false;
+}
+
+// The most dominators and blocks between them and a loop read_before_loop
+// searches.
+const unsigned kReadBefore = 4;
+const size_t kReadBetween = 16;
+
+bool same_place(const Located& a, Type a_type, const Located& b, Type b_type)
+{
+	return a.root == b.root && a.known && b.known && a.offset == b.offset && a_type == b_type;
+}
+
+bool read_before_loop(
+	const FunctionBody& body, const Cfg& cfg, const LoopForest& forest, uint32_t loop, const Located& at, Type type)
+{
+	const BlockId header = forest.loops[loop].header;
+	BlockId b = cfg.idom[header];
+	for (unsigned step = 0; b != kNoId && step < kReadBefore; ++step, b = cfg.idom[b])
+	{
+		bool read = false, call = false;
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			const Instruction& inst = body.instructions[i];
+			if ((inst.op == Opcode::Load || inst.op == Opcode::Store) && (inst.flags & IF_VOLATILE) == 0 &&
+				inst.type == type &&
+				same_place(locate(body, inst.ops[inst.op == Opcode::Load ? 0 : 1]), inst.type, at, type))
+				read = true;
+			else if (inst.op == Opcode::Call)
+				read = false, call = true;
+		}
+		if (!read)
+		{
+			if (call)
+				return false;
+			continue;
+		}
+		// The blocks from b to the loop, back from the header's entries.
+		std::vector<BlockId> between;
+		for (uint32_t k = cfg.pred_first[header]; k < cfg.pred_first[header + 1]; ++k)
+			if (!in_loop(forest, loop, cfg.preds[k]) && cfg.preds[k] != b)
+				between.push_back(cfg.preds[k]);
+		for (size_t n = 0; n < between.size(); ++n)
+		{
+			if (between.size() > kReadBetween)
+				return false;
+			const BlockId x = between[n];
+			for (InstId i = body.blocks[x].first; i != kNoId; i = body.instructions[i].next)
+				if (body.instructions[i].op == Opcode::Call)
+					return false;
+			for (uint32_t k = cfg.pred_first[x]; k < cfg.pred_first[x + 1]; ++k)
+			{
+				const BlockId p = cfg.preds[k];
+				if (p != b && std::find(between.begin(), between.end(), p) == between.end())
+					between.push_back(p);
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
 bool claim_loop(const Cfg& cfg, const Loop& l, std::vector<uint8_t>& touched)
 {
 	std::vector<BlockId> near;

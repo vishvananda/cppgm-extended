@@ -564,11 +564,18 @@ them changed it, branch compares are computed again beside their branches:
   moves to the preheader when no write in the loop may overlap it and it
   either runs on every entry (in the header before any call or, in a loop
   with no call, in a block on the way to every exit) or reads a
-  slot, a global, or a parameter's `object_bytes` extent. A load of the second
+  slot, a global, a parameter's `object_bytes` extent, an element of a local
+  table at an index whose range fits it (a byte indexes a table of 256), or a
+  location a dominating block read or wrote at the same type with no call
+  between, which might free it. Storage that `malloc` returned is apart from
+  every pointer that existed before the call, so stores through it do not
+  block a load through such a pointer. When the preheader already read the
+  location, the loop uses that value and no load moves. A load of the second
   kind may be read on a path that had no need of it: a loop moves at most 10 of
   those, less the values already live through it (its header phis and the
-  outside values it uses). Invariant integer arithmetic, one of
-  whose operands is used nowhere else, moves too. So does an invariant
+  outside values it uses). A load that frees an operand register (its address
+  is read by nothing else in the loop) does not count. Invariant integer
+  arithmetic, one of whose operands is used nowhere else, moves too. So does an invariant
   conversion of an integer other than `i128` to `f32` or `f64`, whatever else
   reads its operand: it cannot trap, and its result costs less to keep than
   to convert again.

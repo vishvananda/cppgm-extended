@@ -101,6 +101,21 @@ bool may_unwind(const lowir::Program& program, const lowir::Instruction& inst);
 // defined here: its result is storage no earlier pointer reaches.
 void find_allocation_functions(lowir::Program& program);
 bool allocation_call(const lowir::Program& program, const lowir::Instruction& inst);
+// Whether v is the result of an allocation call: storage no earlier
+// pointer reaches.
+bool allocated(const lowir::Program& program, const lowir::FunctionBody& body, lowir::Value v);
+// Whether every pointer v may be comes, through steps, copies and phis, from
+// a parameter, a slot, a global or an allocation other than `fresh`: from
+// storage `fresh` cannot reach (up to a few values).
+bool comes_before(const lowir::Program& program, const lowir::FunctionBody& body, lowir::Value v, lowir::Value fresh);
+// Whether pointers rooted at a and b (one an allocation's result, the other
+// from before it) name different storage.
+inline bool allocation_apart(
+	const lowir::Program& program, const lowir::FunctionBody& body, lowir::Value a, lowir::Value b)
+{
+	return (allocated(program, body, a) && comes_before(program, body, b, a)) ||
+		(allocated(program, body, b) && comes_before(program, body, a, b));
+}
 // eh_* instructions and throw, resume, exception and exception_selector.
 inline bool is_eh_instruction(lowir::Opcode op)
 {

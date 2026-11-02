@@ -102,6 +102,8 @@ private:
 	LoopForest forest_;
 	std::vector<uint32_t> hoist_uses_;   // use counts for hoist_from (empty: not counted)
 	std::vector<uint8_t> hoist_escaped_; // escaped_slots, once a loop writes memory
+	std::vector<uint32_t> loop_reads_;   // hoist_from's reads in the loop per temp
+	std::vector<TempId> read_temps_;     // the temps loop_reads_ counts (to clear)
 	// Per block of cfg_: the by-address parameters (bit k: parameter k)
 	// whose objects are known live at its end (entry_objects_kept; empty:
 	// not computed for this graph).
@@ -214,98 +216,6 @@ static bool fixed_address(const FunctionBody& body, Value v)
 {
 	const Located at = locate(body, v);
 	return at.known && (at.root.is(ValueKind::Slot) || at.root.is(ValueKind::Symbol));
-}
-
-// The test number (0-based) at which a counted loop leaves: the induction
-// starts at a literal and steps by a literal, the bound is a literal, and
-// the tested values move from continuing to leaving without leaving the
-// comparison's integer range (no wrap). `next` tests the stepped value.
-bool counted_trips(Type type, ComparePredicate pred, bool continue_on_true, __int128 init, __int128 step,
-	__int128 bound, bool next, int64_t& trips, __int128& last)
-{
-	const unsigned bits = integer_bits(type.kind());
-	const bool unsigned_order = pred == ComparePredicate::Ult || pred == ComparePredicate::Ule ||
-		pred == ComparePredicate::Ugt || pred == ComparePredicate::Uge;
-	if (bits == 0 || bits > 64)
-		return false;
-	const __int128 lo = unsigned_order ? 0 : -(static_cast<__int128>(1) << (bits - 1));
-	const __int128 hi = unsigned_order ? (static_cast<__int128>(1) << bits) - 1
-									   : (static_cast<__int128>(1) << (bits - 1)) - 1;
-	auto in_range = [&](__int128 v) { return v >= lo && v <= hi; };
-	// Literals read in the comparison's order.
-	auto order = [&](__int128 v) {
-		const __int128 mask = (static_cast<__int128>(1) << bits) - 1;
-		v &= mask;
-		if (!unsigned_order && v > hi)
-			v -= mask + 1;
-		return v;
-	};
-	init = order(init);
-	bound = order(bound);
-	auto holds = [&](__int128 x) {
-		bool r;
-		switch (pred)
-		{
-		case ComparePredicate::Eq:
-			r = x == bound;
-			break;
-		case ComparePredicate::Ne:
-			r = x != bound;
-			break;
-		case ComparePredicate::Lt:
-		case ComparePredicate::Ult:
-			r = x < bound;
-			break;
-		case ComparePredicate::Le:
-		case ComparePredicate::Ule:
-			r = x <= bound;
-			break;
-		case ComparePredicate::Gt:
-		case ComparePredicate::Ugt:
-			r = x > bound;
-			break;
-		default:
-			r = x >= bound;
-			break;
-		}
-		return r == continue_on_true;
-	};
-	const __int128 first = init + (next ? step : 0);
-	if (!in_range(first))
-		return false;
-	if (!holds(first))
-	{
-		trips = 0;
-		last = first;
-		return true;
-	}
-	// The first k with !holds(first + k*step), found by the side the bound
-	// lies on; any candidate is checked exactly.
-	__int128 k;
-	const __int128 gap = bound - first;
-	if (step > 0 ? gap < 0 : gap > 0)
-		k = 1; // already past the bound: the next value decides
-	else
-		k = gap / step;
-	for (__int128 probe = k > 1 ? k - 1 : 1; probe <= k + 2; ++probe)
-	{
-		const __int128 x = first + probe * step;
-		if (!in_range(x))
-			return false;
-		if (!holds(x))
-		{
-			// Every earlier value continued (monotone between first and x).
-			for (__int128 q = 1; q < probe && q < 3; ++q)
-				if (!holds(first + q * step))
-					return false;
-			if (probe > 0x7fffffff)
-				return false;
-			trips = static_cast<int64_t>(probe);
-			last = x;
-			return true;
-		}
-	}
-	return false;
 }
 
 // One exit edge, branching on `cmp ne|eq` of an induction value against
@@ -2914,9 +2824,20 @@ bool LoopPass::entry_objects_kept(uint32_t loop, uint32_t parameter)
 	return true;
 }
 
+// Whether locate() stopped at a step (past its step limit): the address
+// may still lie in a slot.
+static bool step_root(const FunctionBody& body, Value root)
+{
+	if (!root.is(ValueKind::Temp) || root.index < body.parameter_count || body.temps[root.index].def == kNoId)
+		return false;
+	const Instruction& def = body.instructions[body.temps[root.index].def];
+	return def.op == Opcode::Addr || def.op == Opcode::Index || (def.op == Opcode::Copy && def.type.is_pointer());
+}
+
 // Whether a load at `at` (bytes, type, typed) may read what `w` writes.
-static bool may_overlap(const LoopWrite& w, const Located& at, const Strided& fields, uint64_t bytes, Type type,
-	bool typed, const std::vector<uint8_t>& escaped)
+// `escaped` counts a variable index as a step (locate() follows it).
+static bool may_overlap(const Program& program, const FunctionBody& body, const LoopWrite& w, const Located& at,
+	const Strided& fields, uint64_t bytes, Type type, bool typed, const std::vector<uint8_t>& escaped)
 {
 	if (strided_apart(w.fields, w.bytes, fields, bytes))
 		return false;
@@ -2928,9 +2849,12 @@ static bool may_overlap(const LoopWrite& w, const Located& at, const Strided& fi
 				at.offset < w.at.offset + static_cast<int64_t>(w.bytes));
 	if (named_a && named_b)
 		return false; // distinct slots and globals
-	if ((w.at.root.is(ValueKind::Slot) && !escaped[w.at.root.index]) ||
-		(at.root.is(ValueKind::Slot) && !escaped[at.root.index]))
+	if (((w.at.root.is(ValueKind::Slot) && !escaped[w.at.root.index]) ||
+			(at.root.is(ValueKind::Slot) && !escaped[at.root.index])) &&
+		!step_root(body, w.at.root) && !step_root(body, at.root))
 		return false; // no pointer reaches a slot whose address stays here
+	if (allocation_apart(program, body, w.at.root, at.root))
+		return false;
 	return !(w.typed && typed && typed_types_apart(w.type, type));
 }
 
@@ -2974,7 +2898,7 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 				return false; // a call, an atomic, a volatile access: memory may change anywhere
 		}
 	if (!writes.empty() && hoist_escaped_.size() != body_.slots.size())
-		hoist_escaped_ = escaped_slots(body_);
+		hoist_escaped_ = escaped_slots(body_, true);
 	const Function& function = c_.program.functions[c_.program.symbols[c_.symbol].detail];
 	const Signature& sig = c_.program.signatures[function.signature];
 	// Address steps inside the loop whose operands are invariant.
@@ -2990,24 +2914,61 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 	};
 	// Values live into the loop (defined outside, used inside) and its
 	// header phis: the registers already held across it.
+	// Per temp, its reads in the loop (a load moved out keeps its count).
 	uint32_t live_in = 0;
-	{
-		std::vector<uint8_t> seen(body_.temps.size(), 0);
-		for (BlockId b : l.blocks)
-			for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+	for (TempId t : read_temps_)
+		loop_reads_[t] = 0;
+	read_temps_.clear();
+	if (loop_reads_.size() < body_.temps.size())
+		loop_reads_.resize(body_.temps.size(), 0);
+	for (BlockId b : l.blocks)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			if (b == l.header && inst.op == Opcode::Phi)
+				++live_in;
+			for_each_operand(body_, inst, [&](const Value& v) {
+				if (!v.is(ValueKind::Temp) || v.index >= loop_reads_.size() || loop_reads_[v.index]++ != 0)
+					return;
+				read_temps_.push_back(v.index);
+				live_in += invariant(loop, v) ? 1 : 0;
+			});
+		}
+	// Whether moving a load and its steps leaves no more values live across
+	// the loop: an invariant value only they read there is then dead in it.
+	auto frees_one = [&](InstId load, const std::vector<InstId>& steps) {
+		bool frees = false;
+		for (size_t k = 0; k <= steps.size() && !frees; ++k)
+		{
+			const Instruction& x = body_.instructions[k < steps.size() ? steps[k] : load];
+			for (unsigned o = 0; o < (x.op == Opcode::Load ? 1u : 3u) && !frees; ++o)
 			{
-				const Instruction& inst = body_.instructions[i];
-				if (b == l.header && inst.op == Opcode::Phi)
-					++live_in;
-				for_each_operand(body_, inst, [&](const Value& v) {
-					if (v.is(ValueKind::Temp) && v.index < seen.size() && !seen[v.index] && invariant(loop, v))
-					{
-						seen[v.index] = 1;
-						++live_in;
-					}
-				});
+				const Value v = x.ops[o];
+				if (!v.is(ValueKind::Temp) || v.index >= loop_reads_.size() || !invariant(loop, v))
+					continue;
+				uint32_t chain = 0;
+				for (size_t j = 0; j <= steps.size(); ++j)
+				{
+					const Instruction& y = body_.instructions[j < steps.size() ? steps[j] : load];
+					for (unsigned q = 0; q < (y.op == Opcode::Load ? 1u : 3u); ++q)
+						chain += y.ops[q] == v ? 1 : 0;
+				}
+				frees = chain == loop_reads_[v.index];
 			}
-	}
+		}
+		return frees;
+	};
+	// A moved load's and steps' reads leave the loop.
+	auto moved_reads = [&](InstId load, const std::vector<InstId>& steps) {
+		for (size_t k = 0; k <= steps.size(); ++k)
+		{
+			const Instruction& x = body_.instructions[k < steps.size() ? steps[k] : load];
+			for (unsigned o = 0; o < (x.op == Opcode::Load ? 1u : 3u); ++o)
+				if (x.ops[o].is(ValueKind::Temp) && x.ops[o].index < loop_reads_.size() &&
+					loop_reads_[x.ops[o].index] != 0)
+					--loop_reads_[x.ops[o].index];
+		}
+	};
 	const uint32_t limit = live_in < kLoopRegisters ? kLoopRegisters - live_in : 0;
 	bool changed = false;
 	uint32_t moved = 0;
@@ -3067,13 +3028,18 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 				const Strided fields = strided_address(body_, inst.ops[0]);
 				bool clobbered = false;
 				for (const LoopWrite& w : writes)
-					clobbered = clobbered || may_overlap(w, at, fields, bytes, inst.type, typed, hoist_escaped_);
+					clobbered = clobbered ||
+						may_overlap(c_.program, body_, w, at, fields, bytes, inst.type, typed, hoist_escaped_);
 				// Run on every entry, the load keeps its facts; moved only
 				// because its memory may always be read, it runs where it did
 				// not, and `typed` may not hold there (lowir.md "Instruction Facts").
 				const bool on_entry = (header_clear && b == l.header) || on_every_pass(b);
 				bool readable = on_entry;
 				if (!readable && at.known && (at.root.is(ValueKind::Slot) || at.root.is(ValueKind::Symbol)))
+					readable = true;
+				if (!readable && !at.known && table_entry(body_, inst.ops[0], bytes))
+					readable = true;
+				if (!readable && read_before_loop(body_, cfg_, forest_, loop, at, inst.type))
 					readable = true;
 				if (!readable && at.known && at.offset >= 0 && at.root.is(ValueKind::Temp) &&
 					at.root.index < body_.parameter_count && at.root.index < sig.parameter_count)
@@ -3083,14 +3049,18 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 						static_cast<uint64_t>(at.offset) + bytes <= param.object_bytes &&
 						entry_objects_kept(loop, at.root.index);
 				}
-				if (clobbered || !readable || (moved >= limit && !on_entry))
+				const bool free = !on_entry && !clobbered && readable && moved >= limit && frees_one(i, steps);
+				if (clobbered || !readable || (moved >= limit && !on_entry && !free))
 				{
 					i = next;
 					continue;
 				}
 				if (!apply)
 					return true;
-				++moved;
+				if (!free)
+					++moved;
+				moved_reads(i, steps);
+				const TempId result = inst.result;
 				// Steps base first, then the load, before the preheader's jump.
 				const BlockId pre = l.preheader;
 				for (size_t k = steps.size(); k-- > 0;)
@@ -3103,12 +3073,30 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 					c_.invalidate_block_of();
 				}
 				unlink_after(body_, b, previous_in_block(body_, b, i), i);
+				changed = progress = true;
+				// (The preheader may already hold the value: read before the loop. Its
+				// moved steps are then dead.)
+				const Value known = read_in_preheader(c_.program, body_, cfg_, pre, inst);
+				if (!known.is(ValueKind::None))
+				{
+					if (known.is(ValueKind::Temp) && known.index < hoist_uses_.size())
+						hoist_uses_[known.index] += hoist_uses_[result];
+					if (known.is(ValueKind::Temp) && known.index < loop_reads_.size() && result < loop_reads_.size())
+					{
+						if (loop_reads_[known.index] == 0)
+							read_temps_.push_back(known.index);
+						loop_reads_[known.index] += loop_reads_[result];
+					}
+					replace_all_uses(body_, result, known);
+					fold_header_phis(body_, l.header, known, hoist_uses_);
+					i = next;
+					continue;
+				}
 				insert_after(body_, pre, previous_in_block(body_, pre, body_.blocks[pre].last), i);
 				if (!on_entry)
 					body_.instructions[i].flags &= static_cast<uint8_t>(~IF_TYPED);
 				c_.block_of[i] = pre;
 				c_.invalidate_block_of();
-				changed = progress = true;
 				i = next;
 			}
 		}
