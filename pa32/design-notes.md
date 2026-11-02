@@ -485,6 +485,10 @@ Packed parts: a pair of `int` fields copied as one 64-bit value is two values
 or-ed together. A truncation or a right shift needs only the operand with bits
 it keeps, so a field read back from the pair is the value stored in it.
 
+Quotients: `x % y` next to `x / y` is `x - (x / y) * y`, so one divide serves
+both, for a variable divisor as well. When the remainder comes first, as in the
+digit loop `d = x % 10; x /= 10;`, move the quotient up to it.
+
 Private slots: a slot whose address reaches only its own accesses, copies and
 constant steps is reached by no other pointer. A write to such a slot does not
 keep a load through a pointer in its loop.

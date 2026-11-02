@@ -197,6 +197,8 @@ private:
 	bool narrow_compare(Instruction& inst);
 	bool exact_compare(Instruction& inst);
 	bool bulk_call(Instruction& inst);
+	ExprKey expression_key(const Instruction& inst);
+	bool reuse_quotient(BlockId block, InstId& prev, InstId id);
 	bool equality_memcmp(BlockId block, InstId& prev, InstId id);
 	bool nonnegative(Value v, unsigned depth);
 	bool math_call(BlockId block, InstId& prev, InstId id);
@@ -2118,6 +2120,86 @@ uint64_t Simplifier::phi_signature(const Instruction& phi) const
 	return sum ^ (type_bits(phi.type) * 0x165667b19e3779f9ull) ^ phi.extra_count;
 }
 
+ExprKey Simplifier::expression_key(const Instruction& inst)
+{
+	const Type type = operand_type(inst);
+	ExprKey key;
+	key.op = static_cast<uint8_t>(inst.op);
+	key.sub = inst.sub;
+	key.type = type_bits(inst.type);
+	key.immediate = static_cast<uint64_t>(inst.immediate);
+	key.a = key_of(inst.ops[0], type);
+	key.b = key_of(inst.ops[1], type);
+	key.c = key_of(inst.ops[2], type);
+	return key;
+}
+
+// `x % y` where `x / y` is also computed is `x - (x / y) * y`: no second divide.
+// A quotient computed just after the remainder moves up to it.
+bool Simplifier::reuse_quotient(BlockId block, InstId& prev, InstId id)
+{
+	const uint32_t kReach = 8;
+	const Instruction remainder = body_.instructions[id];
+	if (remainder.op != Opcode::Binary || remainder.type.kind() == TypeKind::I128 || remainder.result == kNoId ||
+		(static_cast<BinaryOp>(remainder.sub) != BinaryOp::Mod &&
+			static_cast<BinaryOp>(remainder.sub) != BinaryOp::UMod))
+		return false;
+	Instruction quotient = make_instruction(Opcode::Binary, remainder.type);
+	quotient.sub = static_cast<uint8_t>(
+		static_cast<BinaryOp>(remainder.sub) == BinaryOp::Mod ? BinaryOp::Div : BinaryOp::UDiv);
+	quotient.ops[0] = remainder.ops[0];
+	quotient.ops[1] = remainder.ops[1];
+	quotient.location = remainder.location;
+	const ExprKey key = expression_key(quotient);
+	Value q = Value::none();
+	const Available* found = table_.find(key);
+	if (found != nullptr && c_.cfg.dominates(found->block, block) &&
+		!(handler_reached_[block] && first_opener_[found->block] != kNoId &&
+			found->ordinal >= first_opener_[found->block]))
+		q = Value::temp(found->temp);
+	InstId later = remainder.next;
+	for (uint32_t k = 0; q.is(ValueKind::None) && later != kNoId && k < kReach; ++k)
+	{
+		const Instruction& inst = body_.instructions[later];
+		if (inst.op == Opcode::Binary && inst.sub == quotient.sub && type_bits(inst.type) == key.type &&
+			inst.result != kNoId)
+		{
+			Instruction read = inst;
+			substitute(read);
+			const ExprKey other = expression_key(read);
+			if (other == key)
+			{
+				const InstId at = append_instruction(body_, quotient);
+				body_.instructions[at].result = append_temp(body_, remainder.type, at);
+				insert_after(body_, block, prev, at);
+				prev = at;
+				q = Value::temp(body_.instructions[at].result);
+				table_.insert(key, Available{ q.index, block, ordinal_[id] });
+			}
+			break;
+		}
+		later = inst.next;
+	}
+	if (q.is(ValueKind::None))
+		return false;
+	Instruction product = make_instruction(Opcode::Binary, remainder.type);
+	product.sub = static_cast<uint8_t>(BinaryOp::Mul);
+	product.ops[0] = q;
+	product.ops[1] = remainder.ops[1];
+	product.location = remainder.location;
+	const InstId at = append_instruction(body_, product);
+	body_.instructions[at].result = append_temp(body_, remainder.type, at);
+	insert_after(body_, block, prev, at);
+	prev = at;
+	Instruction& difference = body_.instructions[id];
+	difference.sub = static_cast<uint8_t>(BinaryOp::Sub);
+	difference.ops[1] = Value::temp(body_.instructions[at].result);
+	difference.flags = 0;
+	repl_.resize(body_.temps.size(), Value::none());
+	uses_.resize(body_.temps.size(), 0);
+	return true;
+}
+
 void Simplifier::process_block(BlockId block)
 {
 	current_block_ = block;
@@ -2207,19 +2289,18 @@ void Simplifier::process_block(BlockId block)
 			id = next;
 			continue;
 		}
+		// The rewrite appends instructions (`inst` may move): the remainder,
+		// now a subtraction, is taken up again.
+		if (reuse_quotient(block, prev, id))
+		{
+			changed_ = true;
+			continue;
+		}
 		const bool reusable = inst.result != kNoId && is_pure(inst) && inst.op != Opcode::Phi &&
 			inst.op != Opcode::Const;
 		if (reusable)
 		{
-			const Type type = operand_type(inst);
-			ExprKey key;
-			key.op = static_cast<uint8_t>(inst.op);
-			key.sub = inst.sub;
-			key.type = type_bits(inst.type);
-			key.immediate = static_cast<uint64_t>(inst.immediate);
-			key.a = key_of(inst.ops[0], type);
-			key.b = key_of(inst.ops[1], type);
-			key.c = key_of(inst.ops[2], type);
+			ExprKey key = expression_key(inst);
 			if (inst.op == Opcode::Compare && inst.ops[0].is(ValueKind::Temp) && inst.ops[1].is(ValueKind::Temp) &&
 				inst.ops[0].index > inst.ops[1].index)
 			{

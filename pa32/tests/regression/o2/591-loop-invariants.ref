@@ -188,11 +188,14 @@ function @guarded_division(%n : i64, %a : i64, %b : i64, %f : i64) -> i64 [no_in
   block ^divide:
     %q1 = binary div i64 %a, %b
     %q2 = binary udiv i64 %a, %b
-    %q3 = binary mod i64 %a, %b
-    %q4 = binary umod i64 %a, %b
+    %t8 = binary mul i64 %b, %q1
+    %q3 = binary sub i64 %a, %t8
+    %t10 = binary mul i64 %b, %q2
+    %q4 = binary sub i64 %a, %t10
     %q6 = binary div i64 %a, -1
     %q7 = binary udiv i64 %a, 0
-    %q8 = binary mod i64 %a, -1
+    %t14 = binary mul i64 %q6, -1
+    %q8 = binary sub i64 %a, %t14
     %x1 = binary add i64 %q1, %q2
     %x2 = binary add i64 %q3, %x1
     %x3 = binary add i64 %q4, %x2
