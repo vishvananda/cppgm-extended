@@ -72,6 +72,10 @@ that paid there in the course solution:
 - Divide a 32-bit value by a constant with a two-operand `imul` on 64 bits: the
   multiplier fits, the product does too, and `imul r, r` is one micro-operation
   where `mul` needs rdx:rax and three.
+- A float load read once by the next `addsd`, `mulsd`, `divsd` or `ucomisd` is that
+  instruction's memory operand. The load's register and its `movsd` go. Only the
+  operand read second may be memory, so check the compare's operand swap. Unlike
+  packed instructions, the scalar forms take unaligned memory.
 - A call through a register that a load just filled can read the target from
   memory: `call *(%rax)`. The register must be caller-saved and carry no argument;
   only moves into other registers may separate the two.

@@ -1855,14 +1855,30 @@ void FunctionSelector::find_folds()
 		const bool retyped = level_ >= 1 &&
 			((user.type.kind() == TypeKind::I64 && inst.type.is_pointer()) ||
 				(user.type.is_pointer() && inst.type.kind() == TypeKind::I64));
-		if (inst.op != Opcode::Load || (inst.flags & lowir::IF_VOLATILE) || t.cls != VClass::Gpr || left == right ||
-			(user.type != inst.type && !branch_test && !retyped))
+		const bool floating = level_ >= 1 && t.cls == VClass::Xmm && user.type == inst.type &&
+			(inst.type.kind() == TypeKind::F32 || inst.type.kind() == TypeKind::F64);
+		if (inst.op != Opcode::Load || (inst.flags & lowir::IF_VOLATILE) || (t.cls != VClass::Gpr && !floating) ||
+			left == right || (user.type != inst.type && !branch_test && !retyped))
 			return;
 		const TypeKind k = inst.type.kind();
-		bool ok = branch_test && k != TypeKind::I128;
+		bool ok = branch_test && k != TypeKind::I128 && !floating;
 		// (A Boolean's byte compares in memory at O1+; -O0 keeps the
 		// reference's shapes.)
-		if (user.op == Opcode::Compare)
+		if (floating)
+		{
+			// (The operand `ucomis` or the arithmetic reads second, where
+			// memory is allowed; compare_flags swaps these predicates.)
+			const lowir::ComparePredicate pred = static_cast<lowir::ComparePredicate>(user.sub);
+			const bool swapped = pred == lowir::ComparePredicate::Lt || pred == lowir::ComparePredicate::Le ||
+				pred == lowir::ComparePredicate::Ugt || pred == lowir::ComparePredicate::Uge;
+			const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(user.sub);
+			if (user.op == Opcode::Compare)
+				ok = (swapped ? left : right) && !sunk_compare(user_id);
+			else if (user.op == Opcode::Binary)
+				ok = op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Mul ||
+					((op == lowir::BinaryOp::Sub || op == lowir::BinaryOp::Div) && right);
+		}
+		else if (user.op == Opcode::Compare)
 			ok = (k != TypeKind::I1 || level_ >= 1) && !sunk_compare(user_id);
 		else if (user.op == Opcode::Binary)
 		{

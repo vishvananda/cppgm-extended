@@ -94,8 +94,7 @@ function @scaled_sum
     ret xmm0
 
   block ^body
-    fmov.f64 xmm2, [rdi+r8*8]
-    fmul.f64 xmm2, xmm2, xmm1
+    fmul.f64 xmm2, [rdi+r8*8], xmm1
     fadd.f64 xmm0, xmm0, xmm2
     lea r9, [r8+1]
     mov r8, r9

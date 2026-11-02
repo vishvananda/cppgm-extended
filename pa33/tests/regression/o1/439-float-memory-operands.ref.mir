@@ -1,0 +1,181 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @add_left
+  abi
+    param %p -> rdi : ptr
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fadd.f64 xmm0, [rdi], xmm0
+    ret xmm0
+
+function @sub_right
+  abi
+    param %p -> rdi : ptr
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fsub.f64 xmm0, xmm0, [rdi]
+    ret xmm0
+
+function @sub_left
+  abi
+    param %p -> rdi : ptr
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.f64 xmm1, [rdi]
+    fsub.f64 xmm1, xmm1, xmm0
+    ret xmm1
+
+function @divide
+  abi
+    param %p -> rdi : ptr
+    param %x -> xmm0 : f32
+    return f32 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fdiv.f32 xmm0, xmm0, [rdi]
+    ret xmm0
+
+function @both
+  abi
+    param %p -> rdi : ptr
+    param %q -> rsi : ptr
+    return f64 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmul.f64 xmm0, [rdi], [rsi]
+    ret xmm0
+
+function @less
+  abi
+    param %p -> rdi : ptr
+    param %x -> xmm0 : f64
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm0, [rdi]
+    jbe ^no
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+  block ^no
+    mov rax, 2
+    ret rax
+
+function @more
+  abi
+    param %p -> rdi : ptr
+    param %x -> xmm0 : f64
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fcmp.f64 xmm0, [rdi]
+    jbe ^no
+
+  block ^yes
+    mov rax, 3
+    ret rax
+
+  block ^no
+    mov rax, 4
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12
+    slot $a -> [rbp-16] : obj<16x8>
+    temp %b -> [rbp-24] : f64
+    temp %c -> [rbp-32] : f64
+    temp %d -> [rbp-40] : f64
+
+  block ^entry
+    fmov.f64 [rbp-16], 6.0
+    fmov.f64 [rbp-8], 2.0
+    lea rdi, [rbp-16]
+    fmov.f64 xmm0, 1.0
+    call @add_left [args=(rdi,xmm0)]
+    fmov.f64 xmm14, xmm0
+    fmov.f64 [rbp-24], xmm14
+    lea rdi, [rbp-16]
+    fmov.f64 xmm0, 1e+01
+    call @sub_right [args=(rdi,xmm0)]
+    fmov.f64 xmm14, xmm0
+    fmov.f64 [rbp-32], xmm14
+    lea rdi, [rbp-8]
+    fmov.f64 xmm0, 1e+01
+    call @sub_left [args=(rdi,xmm0)]
+    fmov.f64 xmm14, xmm0
+    fmov.f64 [rbp-40], xmm14
+    lea rdi, [rbp-16]
+    lea rsi, [rbp-8]
+    call @both [args=(rsi,rdi)]
+    fadd.f64 xmm1, [rbp-24], [rbp-32]
+    fadd.f64 xmm0, [rbp-40], xmm0
+    fadd.f64 xmm1, xmm1, xmm0
+    fptosi.f64.i32 rbx, xmm1
+    sext.i32 rbx
+    lea rdi, [rbp-16]
+    fmov.f64 xmm0, 7.0
+    call @less [args=(rdi,xmm0)]
+    mov r12, rax
+    lea rdi, [rbp-16]
+    fmov.f64 xmm0, 5.0
+    call @more [args=(rdi,xmm0)]
+    imul r12, 10
+    add r12, rax
+    add r12, rbx
+    sext.i32 r12
+    ret r12
