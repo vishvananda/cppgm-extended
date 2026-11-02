@@ -206,6 +206,10 @@ bool rotate_loops(FunctionContext& context);
 // loop also runs in sixteen-byte lanes before the scalar loop, which finishes.
 bool vectorize_loops(FunctionContext& context);
 
+// O3: a nest that folds sums over a stride, swapped so the new inner loop
+// walks consecutive elements.
+bool interchange_loops(FunctionContext& context);
+
 // A product of a counter and a literal no addressing mode or `lea` gives
 // becomes a counter of its own.
 bool reduce_strength(FunctionContext& context);

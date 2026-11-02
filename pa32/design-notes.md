@@ -435,6 +435,20 @@ exit writes nothing a run of the loop would not have written. The location is
 loaded in the preheader and stored on each exit edge. The stores this leaves
 may then leave the loop around it.
 
+Loop interchange: after store motion at `-O3`, a nest of two rotated loops may
+swap when the inner loop folds one sum and the outer loop stores it, as in a
+matrix product written `for j { s = 0; for k { s += a[k] * b[k][j]; } r[j] = s; }`.
+The result is a loop that stores each sum's start, then a nest whose inner loop
+adds one term to every cell. Each cell takes the same operations in the same
+order, so this also holds for floating sums. No fixture requires this pass.
+
+- The inner count and counters do not depend on the outer pass.
+- The cell steps by one element with the outer counter, and the inner loop reads
+  only named objects other than the cell's.
+- Each load steps by zero or one element with the outer counter, and at least
+  one steps by more than one element with the inner counter. Otherwise the inner
+  loop could already run in lanes.
+
 Loop vectorization: last at `-O3`, an innermost loop of one block may also run
 in sixteen-byte lanes of the x86-64 baseline. No fixture requires this pass;
 vectorization stays outside the course contract.
