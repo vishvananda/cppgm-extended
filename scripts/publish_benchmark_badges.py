@@ -36,9 +36,9 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
     provenance = dict(revision=revision, cpu=cpu, run_url=run_url,
                       published_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                       environment=environment)
-    badges['revision'] = dict(schemaVersion=1, label='commit', message=revision[:9], color='blue')
+    badges['revision'] = dict(schemaVersion=1, label='commit', message=revision[:9], color='1e40af')
     _, count = public_benchmarks.mean_ratio(document['programs'], 'run_cpu_O3', 'gcc')
-    badges['o3-programs'] = dict(schemaVersion=1, label='programs', message=str(count), color='lightgrey')
+    badges['o3-programs'] = dict(schemaVersion=1, label='programs', message=str(count), color='475569')
     for destination in destinations:
         destination.mkdir(parents=True, exist_ok=True)
         for name, data in badges.items():

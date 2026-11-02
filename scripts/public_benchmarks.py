@@ -532,10 +532,10 @@ def mean_ratio(results, metric, reference):
 
 
 def badge_color(speed):
-    for limit, color in ((1.0, 'brightgreen'), (0.8, 'green'), (0.67, 'yellow')):
+    for limit, color in ((1.0, '14532d'), (0.8, '166534'), (0.67, '854d0e')):
         if speed >= limit:
             return color
-    return 'orange'
+    return '9a3412'
 
 
 def speed_text(mean, digits=2):
@@ -546,11 +546,11 @@ def speed_text(mean, digits=2):
 def speed_badge(label, mean, digits, failures):
     """Return the shields.io endpoint document for one speed."""
     if failures:
-        message, color = f'{failures} failing', 'red'
+        message, color = f'{failures} failing', 'b91c1c'
     elif mean:
         message, color = speed_text(mean, digits), badge_color(1 / mean)
     else:
-        message, color = 'no data', 'lightgrey'
+        message, color = 'no data', '475569'
     return dict(schemaVersion=1, label=label, message=message, color=color)
 
 

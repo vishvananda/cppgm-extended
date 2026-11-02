@@ -268,44 +268,44 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(badge['schemaVersion'], 1)
         self.assertEqual(badge['label'], '-O3 generated speed vs gcc')
         self.assertEqual(badge['message'], '0.80×')
-        self.assertEqual(badge['color'], 'green')
+        self.assertEqual(badge['color'], '166534')
         badge = pb.badge(results, '-O3 compile speed vs gcc', 'compile_cpu_O3', 1)
         self.assertEqual(badge['message'], '5.0×')
-        self.assertEqual(badge['color'], 'brightgreen')
+        self.assertEqual(badge['color'], '14532d')
 
     def test_badge_color_follows_the_speed(self):
-        self.assertEqual(pb.badge_color(1.0), 'brightgreen')
-        self.assertEqual(pb.badge_color(0.7), 'yellow')
-        self.assertEqual(pb.badge_color(0.5), 'orange')
+        self.assertEqual(pb.badge_color(1.0), '14532d')
+        self.assertEqual(pb.badge_color(0.7), '854d0e')
+        self.assertEqual(pb.badge_color(0.5), '9a3412')
 
     def test_badge_turns_red_on_a_failure(self):
         results = [outcome('p', dict(compile_cpu_O0=1.0, run_cpu_O0=1.0),
                            dict(compile_cpu_O0=1.0, run_cpu_O0=1.0)),
                    outcome('bad', {}, {}, status='output-mismatch')]
         badge = pb.badge(results, 'label', 'run_cpu_O0', 2)
-        self.assertEqual(badge['color'], 'red')
+        self.assertEqual(badge['color'], 'b91c1c')
         self.assertEqual(badge['message'], '1 failing')
 
     def test_badge_without_numbers_says_so(self):
         badge = pb.badge([], 'label', 'run_cpu_O3', 2)
-        self.assertEqual((badge['message'], badge['color']), ('no data', 'lightgrey'))
+        self.assertEqual((badge['message'], badge['color']), ('no data', '475569'))
 
     def test_build_badge_gives_the_speed_of_a_self_hosted_build(self):
         builds = dict(status='ok', gcc=500.0, self=125.0, inception=200.0)
         badge = pb.build_badge(builds, 'self', 'gcc', 'self compile speed vs gcc', 1)
-        self.assertEqual((badge['message'], badge['color']), ('4.0×', 'brightgreen'))
+        self.assertEqual((badge['message'], badge['color']), ('4.0×', '14532d'))
 
     def test_build_badge_compares_the_self_built_compiler_with_the_gcc_built_one(self):
         builds = dict(status='ok', gcc=500.0, self=100.0, inception=102.0)
         badge = pb.build_badge(builds, 'inception', 'self', 'self-built speed vs gcc', 2)
-        self.assertEqual((badge['message'], badge['color']), ('0.98×', 'green'))
+        self.assertEqual((badge['message'], badge['color']), ('0.98×', '166534'))
 
     def test_build_badge_without_a_run_says_so(self):
         self.assertEqual(pb.build_badge(None, 'self', 'gcc', 'label', 1)['message'], 'no data')
 
     def test_build_badge_turns_red_on_a_failed_build(self):
         badge = pb.build_badge(dict(status='self build failed', gcc=1.0), 'self', 'gcc', 'label', 1)
-        self.assertEqual((badge['message'], badge['color']), ('1 failing', 'red'))
+        self.assertEqual((badge['message'], badge['color']), ('1 failing', 'b91c1c'))
 
     def test_report_writes_every_badge(self):
         path = self.root / 'results.json'
@@ -390,7 +390,7 @@ class BadgePublicationTests(unittest.TestCase):
         self.target.mkdir()
         for name in publication.BADGES:
             (self.artifact / 'badges' / f'{name}.json').write_text(json.dumps(
-                dict(schemaVersion=1, label=name, message='0.97×', color='green')))
+                dict(schemaVersion=1, label=name, message='0.97×', color='166534')))
 
     def prepare(self, platform, cpu):
         (self.artifact / 'results.json').write_text(json.dumps(dict(environment=dict(cpu=cpu),
