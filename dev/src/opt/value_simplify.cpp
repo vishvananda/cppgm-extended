@@ -193,6 +193,7 @@ private:
 	bool mask_or(Instruction& inst);
 	bool packed_part(Instruction& inst);
 	bool unsigned_division(Instruction& inst);
+	bool even_product_halved(Instruction& inst);
 	void canonicalize(Instruction& inst);
 	bool narrow_compare(Instruction& inst);
 	bool exact_compare(Instruction& inst);
@@ -1414,6 +1415,37 @@ bool Simplifier::unsigned_division(Instruction& inst)
 	return true;
 }
 
+// A signed halving of `x * (x + k)` for odd k: one factor is even, whatever
+// wraps, so an arithmetic shift loses no bit and needs no fix-up.
+bool Simplifier::even_product_halved(Instruction& inst)
+{
+	if (inst.op != Opcode::Binary || static_cast<BinaryOp>(inst.sub) != BinaryOp::Div || !inst.type.is_integer() ||
+		inst.type.kind() == TypeKind::I128)
+		return false;
+	Constant c;
+	Literal bits;
+	if (!constant(inst.ops[1], inst.type, c) || !integer_bits(inst.type, c, bits) || bits.high != 0 || bits.low != 2)
+		return false;
+	const Instruction* product = producer(inst.ops[0]);
+	if (product == nullptr || product->op != Opcode::Binary || static_cast<BinaryOp>(product->sub) != BinaryOp::Mul ||
+		product->type != inst.type)
+		return false;
+	auto odd_step = [&](Value of, Value from) {
+		const Instruction* step = producer(of);
+		if (step == nullptr || step->op != Opcode::Binary || step->type != inst.type ||
+			(static_cast<BinaryOp>(step->sub) != BinaryOp::Add && static_cast<BinaryOp>(step->sub) != BinaryOp::Sub))
+			return false;
+		return step->ops[0] == from && step->ops[1].is(ValueKind::Integer) &&
+			(body_.literals[step->ops[1].index].low & 1) != 0;
+	};
+	if (!odd_step(product->ops[0], product->ops[1]) && !odd_step(product->ops[1], product->ops[0]))
+		return false;
+	inst.sub = static_cast<uint8_t>(BinaryOp::Shr);
+	inst.ops[1] = integer_value(body_, Literal{ 1, 0 });
+	inst.flags = static_cast<decltype(inst.flags)>((inst.flags & ~IF_NO_WRAP) | IF_EXACT);
+	return true;
+}
+
 // `and (or a, b), c` where c keeps none of a's possible bits is
 // `and b, c` (a packed field's store after another field's: the earlier
 // merge's kept bits fall out, and with them the eightbyte's old value).
@@ -2276,8 +2308,8 @@ void Simplifier::process_block(BlockId block)
 			simplify_branch(inst);
 		canonicalize(inst);
 		if (reassociate(inst) || narrow_truncation(inst) || mask_or(inst) || packed_part(inst) ||
-			unsigned_division(inst) || merge_index(inst) || narrow_compare(inst) || exact_compare(inst) ||
-			bulk_call(inst) || readonly_table_address(inst))
+			unsigned_division(inst) || even_product_halved(inst) || merge_index(inst) || narrow_compare(inst) ||
+			exact_compare(inst) || bulk_call(inst) || readonly_table_address(inst))
 			changed_ = true;
 		Value value;
 		if (inst.result != kNoId && (fold(inst, value) || identity(inst, value)))
