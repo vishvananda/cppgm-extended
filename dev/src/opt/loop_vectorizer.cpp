@@ -1277,7 +1277,7 @@ Value LoopVectorizer::compare(ComparePredicate predicate, Type type, Value a, Va
 	inst.sub = static_cast<uint8_t>(predicate);
 	inst.ops[0] = a;
 	inst.ops[1] = b;
-	return emit(inst, Type::scalar(TypeKind::I1));
+	return emit(inst, Type::scalar(TypeKind::I64));
 }
 
 Value LoopVectorizer::binary(BinaryOp op, Type type, Value a, Value b, Type result)
@@ -1944,7 +1944,6 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	const bool up = counter.step > 0;
 	const Type type = counter.type, v128 = Type::scalar(TypeKind::V128);
 	const Type i64 = Type::scalar(TypeKind::I64);
-	const Type distance_type = type.is_pointer() ? i64 : type;
 	const int64_t span = static_cast<int64_t>(lanes_) * (up ? counter.step : -counter.step);
 	const ComparePredicate below = unsigned_counter_ ? ComparePredicate::Ult : ComparePredicate::Lt;
 	const ComparePredicate within = unsigned_counter_ ? ComparePredicate::Ule : ComparePredicate::Le;
@@ -1971,10 +1970,9 @@ void LoopVectorizer::vectorize(uint32_t loop)
 	difference.sub = static_cast<uint8_t>(BinaryOp::Sub);
 	difference.ops[0] = up ? bound : start;
 	difference.ops[1] = up ? start : bound;
-	const Value distance = emit(difference, distance_type);
+	const Value distance = emit(difference, type);
 	const Value before = up ? compare(below, type, start, bound) : compare(below, type, bound, start);
-	const Value enough = compare(
-		drains ? ComparePredicate::Uge : ComparePredicate::Ugt, distance_type, distance, literal(span));
+	const Value enough = compare(drains ? ComparePredicate::Uge : ComparePredicate::Ugt, type, distance, literal(span));
 	const Value test = binary(BinaryOp::And, i64, before, enough, i64);
 	Instruction& jump = body_.instructions[body_.blocks[pre].last];
 	jump.op = Opcode::Branch;

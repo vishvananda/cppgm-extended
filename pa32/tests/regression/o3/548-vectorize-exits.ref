@@ -619,7 +619,7 @@ function @pointer_counter(%d : ptr, %e : ptr) -> void [no_inline=yes] {
   block ^entry:
     %t1 = binary sub ptr %e, %d
     %t2 = cmp ult ptr %d, %e
-    %t3 = cmp uge i64 %t1, 16
+    %t3 = cmp uge ptr %t1, 16
     %t4 = binary and i64 %t2, %t3
     branch %t4, ^loop_preheader_1, ^loop_preheader_4
 

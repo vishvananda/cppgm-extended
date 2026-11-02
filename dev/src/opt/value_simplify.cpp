@@ -1906,7 +1906,7 @@ bool Simplifier::math_call(BlockId block, InstId& prev, InstId id)
 		below.ops[0] = x;
 		below.ops[1] = integer_value(body_, integer_literal(0));
 		last = make_instruction(Opcode::Select, type);
-		last.ops[0] = emit(below, Type::scalar(TypeKind::I1));
+		last.ops[0] = emit(below, Type::scalar(TypeKind::I64));
 		last.ops[1] = negated;
 		last.ops[2] = x;
 		break;

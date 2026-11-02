@@ -229,7 +229,8 @@ else:
                 self.assertIn(diagnostic, result.stderr)
 
     def test_structural_bucket_propagates_each_failure_and_runs_remaining_checks(self):
-        checkers = ('structural_controls', 'parameter_addresses', 'tail_jump', 'scalar_query')
+        checkers = ('structural_controls', 'parameter_addresses', 'tail_jump', 'scalar_query',
+                    'loop_alignment')
         for failure in (None, *checkers):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)

@@ -156,7 +156,9 @@ void LoopUnswitch::read_uses()
 				// (An exit's phi reading the edge from the loop is the copy's.)
 				if (phi_input && owner_[from] == own)
 					return;
-				if (owner_[b] != kNoId || (cfg_.flags[from] & BF_HANDLER) != 0)
+				// (Another's loop is copied with what it reads, phi inputs
+				// on its edges too.)
+				if (owner_[b] != kNoId || owner_[from] != kNoId || (cfg_.flags[from] & BF_HANDLER) != 0)
 					c.ok = false;
 				c.uses.push_back(Use{ i, from, at, v.index });
 			});

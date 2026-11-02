@@ -201,6 +201,10 @@ void LoopRotation::read_uses()
 					c.ok = false;
 				if (b != h && owner_[i] != kNoId && owner_[i] != owner_[def])
 					c.ok = false;
+				// (A phi input on another's header edge: that rotation copies it.)
+				const InstId edge = phi_input ? body_.blocks[from].last : kNoId;
+				if (edge != kNoId && owner_[edge] != kNoId && owner_[edge] != owner_[def])
+					c.ok = false;
 				// The header's own reads of its later values stay (the copies
 				// rename them); of its phis, they load.
 				if (b == h && !phi_input && body_.instructions[def].op != Opcode::Phi)
