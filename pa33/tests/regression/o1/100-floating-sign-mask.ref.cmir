@@ -214,7 +214,6 @@ function @main
     fmov.f32 xmm0, @negative_nan32
     call @magnitude32 [args=(xmm0)]
     fmov.f32 r8, xmm0
-    sext.i32 r8
     cmp.i32 r8, 2143289345
     setne <gpr2>
     movzx <gpr2>, <gpr2>

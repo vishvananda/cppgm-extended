@@ -169,6 +169,7 @@ struct SelectorState
 	std::vector<uint8_t> narrow_observed_; // host: per parameter, read beyond its width
 	std::vector<uint64_t> narrow_from_;    // host: per temp, the parameters its upper bits come from
 	std::vector<uint8_t> byte_only_;       // O1+: per Boolean temp, every reader reads its low byte only
+	std::vector<uint8_t> low_read_;        // O1+: per narrow temp, no reader reads above its width
 	std::vector<uint8_t> scale_of_;        // O1+: per byte offset, the scale its indexes apply (find_scaled_offsets)
 	std::vector<int32_t> shift_of_;        // O1+: per offset aliasing x, what it adds to x (empty: none)
 	std::vector<uint8_t> rotate_;          // O1+: per or/xor/add result, its rotation's left count (find_rmw; 0: none)

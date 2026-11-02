@@ -123,19 +123,12 @@ function @main
     mov rdx, 1
     call @not_every_edge [args=(rdx,rsi,rdi)]
     imul rbx, 10
-    sext.i32 rbx
     add rbx, r12
-    sext.i32 rbx
     imul rbx, 10
-    sext.i32 rbx
     add rbx, r13
-    sext.i32 rbx
     add r14, r15
-    sext.i32 r14
     add.i32 r14, [rbp-8]
-    sext.i32 r14
     add r14, rax
-    sext.i32 r14
     add rbx, r14
     sext.i32 rbx
     zext.i32 r10, rbx

@@ -269,7 +269,7 @@ void FunctionSelector::emit_divide_unsigned_shift(const Instruction& inst, uint6
 	else if (divisor != 1)
 		emit2(Op::Shr, TypeKind::I64, reg(d), imm(log2_of(divisor)));
 	if (signed_integer(kind) && kind != TypeKind::I64)
-		normalize(d, kind);
+		normalize_result(inst, d, kind);
 	finish_result(inst, d);
 }
 
@@ -316,7 +316,7 @@ void FunctionSelector::emit_divide_hardware(const Instruction& inst)
 	load_into(d, reg(from), TypeKind::I64);
 	// A 32-bit divide zero-extends both results.
 	if (word ? kind == TypeKind::I32 : narrow_integer(kind) && (convert_a || !remainder))
-		normalize(d, kind);
+		normalize_result(inst, d, kind);
 	finish_result(inst, d);
 }
 
@@ -359,7 +359,7 @@ void FunctionSelector::emit_divide_constant(const Instruction& inst, DivideForm 
 		load_into(d, reg(from), TypeKind::I64);
 	}
 	if (convert)
-		normalize(d, kind);
+		normalize_result(inst, d, kind);
 	finish_result(inst, d);
 }
 

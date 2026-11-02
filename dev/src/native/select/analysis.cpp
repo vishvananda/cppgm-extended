@@ -513,6 +513,143 @@ uint32_t FunctionSelector::magnitude_source(const Instruction& copy, uint32_t& m
 	return source.index;
 }
 
+namespace {
+
+bool truncates_integer(const Instruction& inst)
+{
+	return inst.op == Opcode::Convert && static_cast<lowir::ConvertOp>(inst.sub) == lowir::ConvertOp::Trunc &&
+		inst.type.is_integer() && inst.type.kind() != TypeKind::I128 && inst.type.kind() != TypeKind::I1 &&
+		lowir::convert_source_type(inst).is_integer() && lowir::convert_source_type(inst).kind() != TypeKind::I128;
+}
+
+} // namespace
+
+// O1+: the narrow integer results no reader reads above their width. Such a
+// value needs no extension; a truncation of one stands for its source.
+// Reading the low bits alone: an add, sub, mul or left shift of the value's
+// type (whose result is extended again), a divide at 32 bits, a store or
+// compare of its type or narrower, a branch, a narrower truncation. What keeps upper bits passes its readers'
+// needs to its operands: a phi, a copy, the arms of a select, an and, or or
+// xor, and a `nowrap` add, sub, mul or shift, computed at 64 bits without
+// being extended again. Any other reader needs the full register, as does a
+// promoted slot's value (its store emits nothing; the slot's loads stand for
+// the value and are read in full by their own readers).
+void FunctionSelector::find_low_reads()
+{
+	const lowir::FunctionBody& body = *body_;
+	low_read_.assign(level_ >= 1 ? temps_.size() : 0, 0);
+	if (level_ < 1)
+		return;
+	for_each_inst([&](uint32_t id, uint32_t) {
+		const Instruction& inst = body.instructions[id];
+		if (!(marks_[id] & IM_DEAD) && inst.result != kNoId && narrow_integer(inst.type.kind()) &&
+			inst.type.kind() != TypeKind::I1)
+			low_read_[inst.result] = 1;
+	});
+	std::vector<uint32_t> full;
+	auto read_in_full = [&](Value v) {
+		if (v.kind == ValueKind::Temp && v.index < low_read_.size() && low_read_[v.index] != 0)
+		{
+			low_read_[v.index] = 0;
+			full.push_back(v.index);
+		}
+	};
+	// Per reader that passes on its needs, a list of the values it reads.
+	struct Passed
+	{
+		uint32_t value;
+		uint32_t next;
+	};
+	std::vector<Passed> passed;
+	std::vector<uint32_t> first(temps_.size(), kNoId);
+	auto read_as = [&](Value v, uint32_t reader) {
+		if (v.kind != ValueKind::Temp || v.index >= low_read_.size() || low_read_[v.index] == 0)
+			return;
+		if (low_read_[reader] == 0)
+		{
+			read_in_full(v);
+			return;
+		}
+		passed.push_back(Passed{ v.index, first[reader] });
+		first[reader] = static_cast<uint32_t>(passed.size() - 1);
+	};
+	for (uint32_t s = 0; s < slot_state_.size(); ++s)
+		if (slot_state_[s] == SS_PROMOTED)
+			read_in_full(slot_value_[s]);
+	for_each_inst([&](uint32_t id, uint32_t) {
+		const Instruction& inst = body.instructions[id];
+		if (marks_[id] & IM_DEAD)
+			return;
+		if (inst.op == Opcode::Phi)
+		{
+			for (uint32_t k = 1; k < inst.extra_count; k += 2)
+				read_as(body.operands[inst.extra_first + k], inst.result);
+			return;
+		}
+		uint32_t position = 0;
+		for_each_operand(body, inst, [&](Value v, OperandRole) {
+			const uint32_t k = position++;
+			if (v.kind != ValueKind::Temp || v.index >= low_read_.size() || low_read_[v.index] == 0)
+				return;
+			const TypeKind kind = body.temps[v.index].type.kind();
+			const unsigned bits = width_bits(kind);
+			const bool same = inst.type.kind() == kind;
+			bool low = false, passes = false;
+			switch (inst.op)
+			{
+			case Opcode::Copy:
+				passes = same;
+				break;
+			case Opcode::Select:
+				passes = same && (k == 1 || k == 2);
+				break;
+			case Opcode::Binary:
+			{
+				const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);
+				const bool wraps = op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Sub ||
+					op == lowir::BinaryOp::Mul || (op == lowir::BinaryOp::Shl && k == 0);
+				const bool bitwise = op == lowir::BinaryOp::And || op == lowir::BinaryOp::Or ||
+					op == lowir::BinaryOp::Xor;
+				const bool no_wrap = (inst.flags & lowir::IF_NO_WRAP) != 0;
+				// (A divide by a variable word divides at 32 bits.)
+				const bool divides = (op == lowir::BinaryOp::Div || op == lowir::BinaryOp::Mod ||
+										 op == lowir::BinaryOp::UDiv || op == lowir::BinaryOp::UMod) &&
+					(kind == TypeKind::I32 || kind == TypeKind::U32) && resolve(inst.ops[1]).kind != ValueKind::Integer;
+				low = same && k < 2 && ((wraps && !no_wrap) || divides);
+				passes = same && k < 2 && (bitwise || (wraps && no_wrap));
+				break;
+			}
+			case Opcode::Store:
+				low = k == 0 && inst.type.is_integer() && width_bits(inst.type.kind()) <= bits &&
+					!(inst.flags & lowir::IF_VOLATILE);
+				break;
+			case Opcode::Compare:
+				low = k < 2 && same;
+				break;
+			case Opcode::Branch:
+				low = true; // tested at the value's type
+				break;
+			case Opcode::Convert:
+				low = k == 0 && truncates_integer(inst) && width_bits(inst.type.kind()) <= bits;
+				break;
+			default:
+				break;
+			}
+			if (passes)
+				read_as(v, inst.result);
+			else if (!low)
+				read_in_full(v);
+		});
+	});
+	while (!full.empty())
+	{
+		const uint32_t reader = full.back();
+		full.pop_back();
+		for (uint32_t e = first[reader]; e != kNoId; e = passed[e].next)
+			read_in_full(Value::temp(passed[e].value));
+	}
+}
+
 void FunctionSelector::resolve_aliases()
 {
 	const lowir::FunctionBody& body = *body_;
@@ -639,83 +776,7 @@ void FunctionSelector::resolve_aliases()
 		fits_[inst.result] = static_cast<uint8_t>(r);
 		done[inst.result] = 1;
 	});
-	// O1+: an integer truncation every use of which reads only its low
-	// bits -- an add, sub or mul of its type, a store or compare of its
-	// type or narrower, a narrower truncation -- stands for its source
-	// (whose upper bits those ignore). Not one a phi, branch, extension or
-	// any other instruction reads, nor the stored value of a promoted slot
-	// (its store emits nothing; the slot's loads stand for the value, read
-	// in full by their own readers).
-	std::vector<uint8_t> low_only(level_ >= 1 ? temps_.size() : 0, 0);
-	if (level_ >= 1)
-	{
-		auto narrows = [&](const Instruction& inst) {
-			return inst.op == Opcode::Convert && static_cast<lowir::ConvertOp>(inst.sub) == lowir::ConvertOp::Trunc &&
-				inst.type.is_integer() && inst.type.kind() != TypeKind::I128 && inst.type.kind() != TypeKind::I1 &&
-				lowir::convert_source_type(inst).is_integer() &&
-				lowir::convert_source_type(inst).kind() != TypeKind::I128;
-		};
-		for_each_inst([&](uint32_t id, uint32_t) {
-			const Instruction& inst = body.instructions[id];
-			if (!(marks_[id] & IM_DEAD) && inst.result != kNoId && narrows(inst) && inst.ops[0].kind == ValueKind::Temp)
-				low_only[inst.result] = 1;
-		});
-		for (uint32_t s = 0; s < slot_state_.size(); ++s)
-			if (slot_state_[s] == SS_PROMOTED && slot_value_[s].kind == ValueKind::Temp &&
-				slot_value_[s].index < low_only.size() && low_only[slot_value_[s].index] == 1)
-				low_only[slot_value_[s].index] = 2;
-		for_each_inst([&](uint32_t id, uint32_t) {
-			const Instruction& inst = body.instructions[id];
-			if (marks_[id] & IM_DEAD)
-				return;
-			uint32_t position = 0;
-			auto visit = [&](const Value& v) {
-				const uint32_t k = position++;
-				if (v.kind != ValueKind::Temp || v.index >= low_only.size() || low_only[v.index] != 1)
-					return;
-				const unsigned bits = width_bits(body.temps[v.index].type.kind());
-				bool ok = false;
-				switch (inst.op)
-				{
-				case Opcode::Binary:
-				{
-					const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);
-					// (Not a `nowrap` one: it may keep what 64 bits compute,
-					// which needs canonical operands.)
-					ok = k < 2 &&
-						(op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Sub || op == lowir::BinaryOp::Mul) &&
-						inst.type.kind() == body.temps[v.index].type.kind() && !(inst.flags & lowir::IF_NO_WRAP);
-					break;
-				}
-				case Opcode::Store:
-					ok = k == 0 && inst.type.is_integer() && width_bits(inst.type.kind()) <= bits &&
-						!(inst.flags & lowir::IF_VOLATILE);
-					break;
-				case Opcode::Compare:
-					ok = k < 2 && inst.type.kind() == body.temps[v.index].type.kind();
-					break;
-				case Opcode::Convert:
-					ok = k == 0 && narrows(inst) && width_bits(inst.type.kind()) <= bits;
-					break;
-				default:
-					break;
-				}
-				if (!ok)
-					low_only[v.index] = 2;
-			};
-			if (inst.op == Opcode::Phi)
-			{
-				for (uint32_t k = 1; k < inst.extra_count; k += 2)
-				{
-					const Value v = body.operands[inst.extra_first + k];
-					if (v.kind == ValueKind::Temp && v.index < low_only.size())
-						low_only[v.index] = low_only[v.index] ? 2 : 0;
-				}
-				return;
-			}
-			for_each_operand(body, inst, [&](Value v, OperandRole) { visit(v); });
-		});
-	}
+	find_low_reads();
 	// Whether one operand reads the temporary, counted the first time it is
 	// asked (only a function with the magnitude idiom asks).
 	std::vector<uint32_t> reads;
@@ -843,7 +904,9 @@ void FunctionSelector::resolve_aliases()
 					: op == lowir::ConvertOp::Trunc                ? 64u
 																   : 0u;
 				const bool same = fits_[src.index] <= std::min(kept, canonical_bits(dest));
-				const bool low = op == lowir::ConvertOp::Trunc && r < low_only.size() && low_only[r] == 1;
+				// A truncation no reader reads above its width stands for its
+				// source, whose upper bits they ignore.
+				const bool low = truncates_integer(inst) && low_read(r);
 				// (A value that fits is already its result's register form.)
 				const bool exact = op == lowir::ConvertOp::Trunc && (inst.flags & lowir::IF_EXACT) != 0;
 				if (boolean || extension || same || low || exact)

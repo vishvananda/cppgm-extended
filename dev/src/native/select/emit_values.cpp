@@ -191,6 +191,12 @@ void FunctionSelector::finish_result(const Instruction& inst, Reg reg)
 	}
 }
 
+void FunctionSelector::normalize_result(const Instruction& inst, Reg reg, TypeKind type)
+{
+	if (!low_read(inst.result))
+		normalize(reg, type);
+}
+
 void FunctionSelector::normalize(Reg reg, TypeKind type)
 {
 	// O1+: `mov reg, src` just emitted in this block and an extension of
@@ -458,7 +464,7 @@ void FunctionSelector::emit_copy(const Instruction& inst)
 		const TypeKind source_kind = src.kind == OperandKind::Reg && is_xmm(src.reg) ? type_of(inst.ops[0]).kind()
 																					 : TypeKind::I64;
 		load_into(d, src, source_kind);
-		normalize(d, kind);
+		normalize_result(inst, d, kind);
 	}
 	finish_result(inst, d);
 }
@@ -720,18 +726,18 @@ void FunctionSelector::emit_unary(const Instruction& inst)
 	if (op == UnaryOp::Neg)
 	{
 		emit1(Op::Neg, TypeKind::Void, Operand::make_reg(d));
-		normalize(d, kind);
+		normalize_result(inst, d, kind);
 	}
 	else if (op == UnaryOp::BitNot)
 	{
 		emit1(Op::Not, TypeKind::Void, Operand::make_reg(d));
 		if (!signed_integer(kind))
-			normalize(d, kind);
+			normalize_result(inst, d, kind);
 	}
 	else
 	{
 		emit1(Op::Bswap, kind, Operand::make_reg(d));
-		normalize(d, kind);
+		normalize_result(inst, d, kind);
 	}
 	finish_result(inst, d);
 }
@@ -900,10 +906,10 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 		if (width != TypeKind::I64)
 		{
 			if (kind == TypeKind::I32)
-				normalize(d, kind);
+				normalize_result(inst, d, kind);
 		}
 		else if (!bitwise)
-			normalize(d, kind);
+			normalize_result(inst, d, kind);
 	}
 	finish_result(inst, d);
 }
@@ -967,7 +973,7 @@ void FunctionSelector::emit_shift(const Instruction& inst)
 	{
 		emit2(Op::Shl, TypeKind::I64, dst, count);
 		if (!fits_unnormalized_bits(fits_[inst.result], kind))
-			normalize(d, kind);
+			normalize_result(inst, d, kind);
 	}
 	else if (op == BinaryOp::UShr)
 	{
@@ -975,7 +981,7 @@ void FunctionSelector::emit_shift(const Instruction& inst)
 			normalize(d, unsigned_of(kind));
 		emit2(Op::Shr, TypeKind::I64, dst, count);
 		if (signed_integer(kind) && kind != TypeKind::I64)
-			normalize(d, kind);
+			normalize_result(inst, d, kind);
 	}
 	else
 	{
@@ -984,7 +990,7 @@ void FunctionSelector::emit_shift(const Instruction& inst)
 			normalize(d, signed_of(kind));
 		emit2(Op::Sar, TypeKind::I64, dst, count);
 		if (unsigned_kind)
-			normalize(d, kind);
+			normalize_result(inst, d, kind);
 	}
 	finish_result(inst, d);
 }

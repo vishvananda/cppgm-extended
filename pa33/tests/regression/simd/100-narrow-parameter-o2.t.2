@@ -1,0 +1,17 @@
+#include <stdio.h>
+// The definitions take int; this unit passes whole registers to reach them.
+extern "C" long pick(long);
+extern "C" long widen(long);
+extern "C" long scaled(long, long);
+extern "C" int low(long, long);
+int main()
+{
+	const long dirty = 0x7bcd000000000000l;
+	printf("%ld\n", pick(dirty + 2));
+	printf("%ld\n", pick(0xffffffffl));
+	printf("%ld\n", widen(dirty + 2));
+	printf("%ld\n", widen(0xfffffffel));
+	printf("%ld\n", scaled(dirty + 3, dirty + 4));
+	printf("%d\n", low(dirty + 1, 1));
+	return 0;
+}

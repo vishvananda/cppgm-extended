@@ -225,7 +225,7 @@ void FunctionSelector::narrow_params_observed(std::vector<uint8_t>& observed)
 			if (inst.op == Opcode::Phi)
 			{
 				for (uint32_t k = 1; k < inst.extra_count; k += 2)
-					check(body.operands[inst.extra_first + k], false);
+					check(body.operands[inst.extra_first + k], low_read(inst.result));
 				return;
 			}
 			const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);
@@ -249,7 +249,10 @@ void FunctionSelector::narrow_params_observed(std::vector<uint8_t>& observed)
 				return;
 			}
 			case Opcode::Binary:
-				safe = op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Sub || op == lowir::BinaryOp::Mul ||
+				// (`nowrap` computes at 64 bits unextended, for readers that may
+				// read the upper bits.)
+				safe = ((op == lowir::BinaryOp::Add || op == lowir::BinaryOp::Sub || op == lowir::BinaryOp::Mul) &&
+						   (!(inst.flags & lowir::IF_NO_WRAP) || low_read(inst.result))) ||
 					(op == lowir::BinaryOp::And && small_mask(inst));
 				if (!safe && (op == lowir::BinaryOp::And || op == lowir::BinaryOp::Or || op == lowir::BinaryOp::Xor) &&
 					narrow_integer(inst.type.kind()) && inst.result != kNoId)
@@ -1022,7 +1025,7 @@ void FunctionSelector::emit_call(uint32_t id)
 		body.instructions[t.user].op == Opcode::Branch && !(t.flags & (TF_GLOBAL | TF_HOMED)) && d != kSelectScratch &&
 		d != kEmitScratch;
 	if (!stored && !byte_tested && !own && !(level_ >= 1 && byte_only_[inst.result]))
-		normalize(d, kind);
+		normalize_result(inst, d, kind);
 	finish_result(inst, d);
 }
 

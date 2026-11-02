@@ -63,6 +63,9 @@ public:
 	bool alias_compatible(lowir::Type to, lowir::Type from) const;
 	bool known_boolean(uint32_t temp, unsigned depth = 0) const;
 	lowir::TypeKind compare_width(const lowir::Instruction& compare) const;
+	void find_low_reads();
+	bool low_read(uint32_t temp) const { return temp < low_read_.size() && low_read_[temp] != 0; }
+	void normalize_result(const lowir::Instruction& inst, Reg reg, lowir::TypeKind type);
 	bool floating_inst(const lowir::Instruction& inst) const;
 	bool sunk_compare(uint32_t inst) const;
 	int32_t read_pos(uint32_t inst) const;

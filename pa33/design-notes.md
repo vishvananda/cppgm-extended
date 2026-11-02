@@ -55,6 +55,16 @@ that paid there in the course solution:
   its source's register is sound for a reader of the low bits only, and keeping
   a `nowrap` add computed at 64 bits is sound for canonical operands only. Each
   is correct alone, and together they turn `(int)wide + y` into a wrong index.
+- Extend a narrow value only for a reader of its upper bits. A compare, a store,
+  a branch, a 32-bit divide and a wrapping add read the low bits alone. A phi, a
+  select, an `and` and a `nowrap` add pass their readers' needs to their operands,
+  so grow the set to a fixed point. A sum of `int` products that is only stored
+  then needs no `movslq` per iteration. The same question decides whether a
+  parameter needs one on entry: the psABI leaves the bits above an `int` argument
+  unset, and a `nowrap` add of it into an index reads them.
+- A call through a register that a load just filled can read the target from
+  memory: `call *(%rax)`. The register must be caller-saved and carry no argument;
+  only moves into other registers may separate the two.
 - Know what sits between a compare and the `cmov` reading it. `xor r, r` is the
   short zero, and it clears the flags: a scan that stops at the first instruction
   it does not recognize, such as a sign extension, lets a zero through as an

@@ -1,0 +1,107 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @table
+  storage data
+  item zero 16
+
+function @sum_products
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i32
+    param %out -> rdx : ptr
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i32 rsi, 0
+    jg ^entry~loop
+    ret rsi
+
+  block ^entry~loop
+    mov r8, 0
+    mov r9, 0
+
+  block ^loop
+    load.i32 rcx, [rdi+r8*4]
+    imul rcx, rcx
+    add r9, rcx
+    add r8, 1
+    cmp.i32 r8, rsi
+    jl ^loop
+
+  block ^loop~end
+    mov r8, r9
+
+  block ^end
+    store.i32 [rdx], r8
+    ret rsi
+
+  block ^done
+    ret rsi
+
+function @divides
+  abi
+    param %a -> rdi : i32
+    param %b -> rsi : i32
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rax, rdi
+    cqo.i32
+    idiv.i32 rsi
+    cmp.i32 rdx, 0
+    je ^yes
+
+  block ^no
+    mov rax, 0
+    ret rax
+
+  block ^yes
+    mov rax, 1
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12
+
+  block ^entry
+    store.i32 @table, 3
+    store.i32 @table+4, 4
+    store.i32 @table+8, 5
+    lea rdi, @table
+    mov rsi, 3
+    lea rdx, @table+12
+    call @sum_products [args=(rdx,rsi,rdi)]
+    load.i32 rbx, @table+12
+    mov rdi, 9
+    mov rsi, 3
+    call @divides [args=(rsi,rdi)]
+    mov r12, rax
+    mov rdi, 9
+    mov rsi, 4
+    call @divides [args=(rsi,rdi)]
+    imul rbx, 2
+    add rbx, r12
+    sub rbx, rax
+    sext.i32 rbx
+    ret rbx

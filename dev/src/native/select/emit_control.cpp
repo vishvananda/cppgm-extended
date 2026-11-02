@@ -559,7 +559,8 @@ void FunctionSelector::emit_branch(const Instruction& inst)
 		emit1(Op::Jmp, TypeKind::Void, Operand::make_label(taken ? on_true : on_false));
 		return;
 	}
-	const Type type = type_of(cond);
+	// (At the value's own type: a truncation may stand for a wider source.)
+	const Type type = type_of(inst.ops[0].kind == ValueKind::Temp ? inst.ops[0] : cond);
 	Operand c = rm_operand(cond, type, kSelectScratch);
 	if (c.kind == OperandKind::Symbol)
 	{

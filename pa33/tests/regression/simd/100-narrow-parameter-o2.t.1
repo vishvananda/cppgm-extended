@@ -1,0 +1,5 @@
+int table[8] = {10, 11, 12, 13, 14, 15, 16, 17};
+extern "C" long pick(int x) { return table[x + 1]; }
+extern "C" long widen(int x) { long r = x + 1; return r; }
+extern "C" long scaled(int x, int y) { long r = x * 2 + y; return r; }
+extern "C" int low(int x, int y) { int s = x + y; return s < 3 ? 1 : 0; }
