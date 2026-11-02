@@ -109,6 +109,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out)
 		fuse_adds_and_extensions(out);
 		drop_redundant_tests(out);
 		drop_redundant_copies(out);
+		fold_call_targets(out);
 		drop_redundant_constants(out);
 		forward_frame_copies(out, frame_objects_);
 		stats_.dead_frame_stores += drop_dead_frame_stores(out, frame_objects_);

@@ -1296,6 +1296,56 @@ uint32_t drop_redundant_tests(Function& function)
 // since -- goes (an argument set up from the callee-saved register its
 // value was just copied into from that argument register). Linear in each
 // block's instructions times the pairs it tracks.
+// A call through a register a load just filled reads the target from memory
+// itself. The register is free after the call (caller-saved, no argument);
+// only moves into other registers may separate the two.
+uint32_t fold_call_targets(Function& function)
+{
+	const unsigned kReach = 6;
+	std::vector<Inst>& insts = function.insts;
+	uint32_t removed = 0;
+	for (const Block& block : function.blocks)
+		for (uint32_t i = block.first; i < block.first + block.count; ++i)
+		{
+			Inst& call = insts[i];
+			if (call.op != Op::Call || !plain_gpr(call.ops[0]))
+				continue;
+			const Reg target = call.ops[0].reg;
+			if (!(kCallerSavedGprs & (1u << target)) || (call.aux & (1u << target)))
+				continue;
+			uint32_t written = 0;
+			for (uint32_t j = i, reach = 0; j > block.first && reach < kReach; ++reach)
+			{
+				Inst& prior = insts[--j];
+				if (prior.op == Op::Nop)
+					continue;
+				if (prior.op == Op::Load && wide_kind(prior.type) && plain_gpr(prior.ops[0]) &&
+					prior.ops[0].reg == target)
+				{
+					const Operand from = prior.ops[1];
+					bool clear = from.kind == OperandKind::Mem && from.reg < 16 && from.reg != RSP;
+					for (Reg r = 0; r < 16; ++r)
+						clear = clear && !((written & (1u << r)) && from.uses_reg(r));
+					if (clear)
+					{
+						call.ops[0] = from;
+						prior.op = Op::Nop;
+						prior.nops = 0;
+						prior.ops[0] = prior.ops[1] = Operand();
+						++removed;
+					}
+					break;
+				}
+				const bool move = (prior.op == Op::Mov || prior.op == Op::Lea) && prior.nops == 2 &&
+					plain_gpr(prior.ops[0]) && (prior.op == Op::Lea || prior.ops[1].kind != OperandKind::Mem);
+				if (!move || reads_or_writes(prior, target))
+					break;
+				written |= 1u << prior.ops[0].reg;
+			}
+		}
+	return removed;
+}
+
 uint32_t drop_redundant_copies(Function& function)
 {
 	std::vector<Inst>& insts = function.insts;

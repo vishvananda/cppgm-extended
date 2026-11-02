@@ -31,6 +31,10 @@ uint32_t drop_redundant_tests(Function& function);
 // made equal (neither named since) goes. Returns the copies removed.
 uint32_t drop_redundant_copies(Function& function);
 
+// A load of a call's target into a free register folds into the call.
+// Returns the loads removed.
+uint32_t fold_call_targets(Function& function);
+
 // A register set to a constant it already holds (set by an earlier move in
 // the block, unwritten since: a 64-bit multiplier or mask reloaded into
 // the scratch register for each use) is not set again. Returns the number
