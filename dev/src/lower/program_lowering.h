@@ -37,6 +37,7 @@ namespace lower {
 struct MovedField
 {
 	uint64_t offset;
+	uint64_t bytes;
 	lowir::Type type;
 };
 

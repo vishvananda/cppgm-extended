@@ -1572,7 +1572,7 @@ bool ProgramLowering::moved_fields(const sema::Type* type, uint64_t offset, std:
 			kind == lowir::TypeKind::I128 || kind == lowir::TypeKind::F80 || kind == lowir::TypeKind::V128 ||
 			kind == lowir::TypeKind::Obj)
 			return false;
-		fields.push_back(MovedField{ offset, stored });
+		fields.push_back(MovedField{ offset, size_of(type, 0), stored });
 		return true;
 	}
 	case sema::TypeKind::Complex:
@@ -1624,6 +1624,18 @@ bool FunctionLowering::copy_members(const sema::Type* type, lowir::Value source,
 		return false;
 	std::vector<MovedField> fields;
 	if (!lowering_.moved_fields(type, 0, fields) || fields.empty())
+		return false;
+	// Members that leave a gap move as one copy: the back end moves it in
+	// the fewest wide accesses, where each member would take a load and a
+	// store of its own.
+	uint64_t end = 0;
+	for (const MovedField& field : fields)
+	{
+		if (field.offset != end)
+			return false;
+		end = field.offset + field.bytes;
+	}
+	if (end != lowering_.size_of(type, 0))
 		return false;
 	Place from = Place();
 	from.storage = source;

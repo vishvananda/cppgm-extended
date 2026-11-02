@@ -436,7 +436,12 @@ accesses also forward from the stores that made the object, where one wide
 load of two narrower stores stalls. The whole `copyobj` stays for a union, a
 bit-field, a table pointer, a `long double`, a `packed` or `may_alias` class,
 and an object that holds a volatile member, since these need all their bytes
-or have no single type for them. Padding is not copied, and need not be.
+or have no single type for them. It also stays for a class whose members
+leave a gap of padding: the back end moves such a class in one or two wide
+accesses, where its members take a load and a store each. The compiler's
+own `lowir::Value` (two bytes, a gap, four bytes) is such a class; moved by
+members, it made the self-built compiler run 7% more instructions in an
+`-O3` compile.
 
 ### Callee Copies (`-O2`, `-O3`)
 
