@@ -82,14 +82,17 @@ const uint32_t kPartialRecursiveCap = 8;
 // Recursive inlining (O2+, late wave): a caller's call to itself takes a
 // copy of the caller's body as the wave found it, to kRecursiveDepth
 // levels (fewer when the copies would pass kRecursiveTotal instructions),
-// while that body has at most kRecursiveCap instructions, no loop, no EH
-// region and at least kRecursiveTreeCalls calls to itself (a tree walk
+// while that body has at most kRecursiveCap instructions, no EH region and,
+// without a loop, at least kRecursiveTreeCalls calls to itself (a tree walk
 // recurses from about every other activation; a lone self call usually
 // sits behind an early return, and a copy would only lengthen the common
-// path's prologue); the deepest copies' calls get the partial copies.
+// path's prologue); the deepest copies' calls get the partial copies. A
+// body with a loop and one call to itself, as tail recursion often leaves,
+// takes kRecursiveChainDepth levels: the copies are nested loops.
 const uint32_t kRecursiveCap = 64;
 const uint32_t kRecursiveTotal = 320;
 const uint32_t kRecursiveDepth = 2;
+const uint32_t kRecursiveChainDepth = 8;
 const uint32_t kRecursiveTreeCalls = 2;
 // From O2, a caller this unit never copies into another (no call site
 // here, or larger than any cap admits it at a loop site, kFastPathTotal-
@@ -1498,15 +1501,20 @@ bool InlineWaveRunner::process(SymbolId caller)
 	original_.reset();
 	original_count_ = recursive_budget_ = recursive_depth_ = 0;
 	if (wave_ == InlineWave::Late && options_.level >= 2 && graph_.recursive[caller_] && !shapes_[caller_].eh &&
-		!shapes_[caller_].unsafe && !shapes_[caller_].loop && shapes_[caller_].size <= kRecursiveCap)
+		!shapes_[caller_].unsafe && shapes_[caller_].size <= kRecursiveCap)
 	{
 		uint64_t self_calls = 0;
 		for (BlockId b : body.layout)
 			for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
 				self_calls += body.instructions[i].op == Opcode::Call &&
 					body.instructions[i].ops[0].is(ValueKind::Symbol) && body.instructions[i].ops[0].index == caller;
+		// (A loop's one self call, what is left of a tail-recursive function,
+		// is a chain: its copies nest loops.)
+		const bool chain = shapes_[caller_].loop && self_calls == 1;
+		const uint32_t depth_cap = chain ? kRecursiveChainDepth : kRecursiveDepth;
 		uint64_t copies = 0, level = 1;
-		for (uint32_t d = 1; d <= kRecursiveDepth && self_calls >= kRecursiveTreeCalls; ++d)
+		for (uint32_t d = 1; d <= depth_cap && (chain || (self_calls >= kRecursiveTreeCalls && !shapes_[caller_].loop));
+			++d)
 		{
 			level *= self_calls;
 			copies += level;

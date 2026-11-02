@@ -211,6 +211,12 @@ each of them. **Switch formation** (`-O2` and above) turns tests of one
 value against literals (at most 24 blocks, 256 case values) into a
 `switch` when that needs fewer runs of consecutive values per target.
 
+**Tail recursion** (`-O2` and above): a call of the function itself followed
+only by the return of its result becomes a jump to the entry, whose phis take
+the arguments. The rewrite needs a fixed parameter list of scalars, no `eh_*`
+instruction, no `stack_alloc` and no slot address that leaves the frame's own
+loads and stores: a loop has one frame where the calls had many.
+
 **Strength reduction** (`-O2` and above): in a loop without calls, the `mul` of
 a counter by a literal that no shift or address form covers becomes a counter of
 its own, stepped by the product of that literal and the step. A sign extension
@@ -313,7 +319,8 @@ the callee where work begins (at most 24 instructions; 40 if hinted, 48
 with at most two call sites, 8 if its hot code allocates). A loop-free,
 EH-free function of at most 64 instructions that calls itself at least
 twice takes copies of its own body at those calls, two levels deep at most
-and 320 instructions in all.
+and 320 instructions in all. A function of that size with a loop and one call
+of itself takes them eight levels deep, nesting the loops.
 
 Further rules adjust admission by call site and caller. For example, at
 every level a small caller (at most 32 instructions) with a call-free path

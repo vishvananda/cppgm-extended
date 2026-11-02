@@ -1,0 +1,107 @@
+declare function @use(%p : ptr) -> void
+
+function @sum_down(%n : i64, %total : i64) -> i64 [no_inline=yes] {
+  block ^0:
+    jump ^entry
+
+  block ^entry:
+    %t1 = phi i64 [^0: %total, ^more: %t]
+    %t2 = phi i64 [^0: %n, ^more: %m]
+    %c = cmp eq i64 %t2, 0
+    branch %c, ^done, ^more
+
+  block ^done:
+    return i64 %t1
+
+  block ^more:
+    %m = binary sub i64 %t2, 1
+    %t = binary add i64 %t2, %t1
+    jump ^entry
+}
+function @step(%n : i32, %k : i32) -> i32 [no_inline=yes] {
+  block ^0:
+    jump ^entry
+
+  block ^entry:
+    %t1 = phi i32 [^0: %n, ^high: %m]
+    %c = cmp gt i32 %t1, %k
+    branch %c, ^high, ^out
+
+  block ^high:
+    %m = binary sub i32 %t1, %k
+    jump ^entry
+
+  block ^out:
+    return i32 %t1
+}
+function @walk(%p : ptr, %n : i64) -> void [no_inline=yes] {
+  block ^0:
+    jump ^entry
+
+  block ^entry:
+    %t1 = phi i64 [^0: %n, ^more: %m]
+    %c = cmp eq i64 %t1, 0
+    branch %c, ^done, ^more
+
+  block ^done:
+    return void
+
+  block ^more:
+    store i64 %t1, %p
+    %m = binary sub i64 %t1, 1
+    jump ^entry
+}
+function @local(%n : i64) -> i64 [no_inline=yes] {
+  slot $s : obj<16x8>
+
+  block ^0:
+    jump ^entry
+
+  block ^entry:
+    %t1 = phi i64 [^0: %n, ^more: %m]
+    %a = addr $s
+    %b = index i8 %a, 8
+    store volatile i64 %t1, %b
+    %v = load volatile i64 %b
+    %c = cmp eq i64 %v, 0
+    branch %c, ^done, ^more
+
+  block ^done:
+    return i64 0
+
+  block ^more:
+    %m = binary sub i64 %v, 1
+    jump ^entry
+}
+function @escaping(%n : i64) -> i64 [no_inline=yes] {
+  slot $s : obj<8x8>
+
+  block ^entry:
+    %a = addr $s
+    store volatile i64 %n, %a
+    call void @use(%a)
+    %c = cmp eq i64 %n, 0
+    branch %c, ^done, ^more
+
+  block ^done:
+    return i64 0
+
+  block ^more:
+    %m = binary sub i64 %n, 1
+    %r = call i64 @escaping(%m)
+    return i64 %r
+}
+function @after(%n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %c = cmp eq i64 %n, 0
+    branch %c, ^done, ^more
+
+  block ^done:
+    return i64 1
+
+  block ^more:
+    %m = binary sub i64 %n, 1
+    %r = call i64 @after(%m)
+    %s = binary xor i64 %n, %r
+    return i64 %s
+}

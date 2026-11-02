@@ -1,0 +1,87 @@
+#include <stdio.h>
+
+static int ack(int m, int n)
+{
+	if (m == 0)
+		return n + 1;
+	if (n == 0)
+		return ack(m - 1, 1);
+	return ack(m - 1, ack(m, n - 1));
+}
+
+static long gcd(long a, long b)
+{
+	return b == 0 ? a : gcd(b, a % b);
+}
+
+// Swapped arguments: each is read before either is written.
+static int order(int a, int b, int n)
+{
+	return n == 0 ? a * 3 + b : order(b, a + 1, n - 1);
+}
+
+// A float and a pointer change, an integer stays.
+static double walk(const double* p, double total, int left, int keep)
+{
+	if (left == 0)
+		return total * keep;
+	return walk(p + 1, total + *p, left - 1, keep);
+}
+
+struct node
+{
+	node* next;
+	int value;
+};
+
+// A local whose address stays in the frame.
+static int last(node* n, int total)
+{
+	int local[2] = { n->value, total };
+	const int* p = local;
+	if (n->next == 0)
+		return p[0] + p[1];
+	return last(n->next, p[0] + p[1]);
+}
+
+// A local whose address leaves: each activation needs its own.
+static void* seen[4];
+static int nested(int depth)
+{
+	int here = depth;
+	seen[depth] = &here;
+	if (depth == 3)
+		return seen[0] != seen[3] && seen[1] != seen[2];
+	return nested(depth + 1);
+}
+
+// A void function of two tail calls.
+static int visits;
+static void tree(int depth)
+{
+	++visits;
+	if (depth == 0)
+		return;
+	if (depth & 1)
+	{
+		tree(depth - 1);
+		return;
+	}
+	tree(depth - 1);
+	tree(depth - 2);
+}
+
+int main()
+{
+	printf("%d %d\n", ack(2, 3), ack(3, 3));
+	printf("%ld\n", gcd(1071, 462));
+	printf("%d\n", order(1, 2, 5));
+	const double values[4] = { 1.5, 2.5, 3.5, 4.5 };
+	printf("%g\n", walk(values, 0.5, 4, 3));
+	node c = { 0, 5 }, b = { &c, 6 }, a = { &b, 7 };
+	printf("%d\n", last(&a, 1));
+	printf("%d\n", nested(0));
+	tree(9);
+	printf("%d\n", visits);
+	return 0;
+}
