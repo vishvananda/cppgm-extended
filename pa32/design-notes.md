@@ -127,8 +127,11 @@ an integer literal fact of its width reads the literal's bits as a float.
   Distinct slots and globals never overlap, nor do disjoint ranges of one.
   A private slot, whose address reaches only loads, stores, pointer copies,
   constant `index` steps, `copyobj` and `zeroinit`, is reached by no other
-  pointer. Two `typed` accesses of incompatible types, neither of a byte
-  type, name different objects unless they share a base.
+  pointer. A slot that stores its own address into itself (an object's
+  pointer to its own array) is still private when no load or copy reads those
+  bytes: those stores are removed. Two `typed` accesses of incompatible
+  types, neither of a byte type, name different objects unless they share a
+  base.
 - Two addresses from one base by multiples of one stride, with ranges that do
   not meet modulo that stride, do not alias: they are different fields of an
   array's elements. Loop motion and block lanes use this too. A product is a

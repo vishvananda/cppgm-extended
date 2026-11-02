@@ -163,6 +163,7 @@ private:
 	bool diamond_join(BlockId block);
 	void replay_arms();
 	void escapes();
+	void drop_self_pointers();
 	Value value_at_end(BlockId block, Value address, Type type, bool typed = false);
 	Value value_at_end(BlockId block, const Key& key, const AddressFacts& want, Type type, bool typed);
 	bool may_clobber(const Instruction& inst, const Key& key, const AddressFacts& want, Type type, bool typed) const;
@@ -197,11 +198,12 @@ private:
 	FunctionContext& c_;
 	FunctionBody& body_;
 	Cfg& cfg_;
-	std::vector<AddressFacts> address_;    // per temp
-	mutable std::vector<Strided> strided_; // per temp once asked (known: base set)
-	std::vector<uint8_t> escaped_;         // per slot: address leaves the analysis
-	std::vector<TempId> allocation_;       // per temp: the allocation it points into
-	std::vector<uint8_t> allocation_left_; // per temp: the allocation's address leaves
+	std::vector<AddressFacts> address_;                   // per temp
+	mutable std::vector<Strided> strided_;                // per temp once asked (known: base set)
+	std::vector<uint8_t> escaped_;                        // per slot: address leaves the analysis
+	std::vector<std::pair<BlockId, InstId>> self_stores_; // stores of a slot's address into itself
+	std::vector<TempId> allocation_;                      // per temp: the allocation it points into
+	std::vector<uint8_t> allocation_left_;                // per temp: the allocation's address leaves
 	// A location's fact; generation 0 marks none (entries are reset in
 	// place rather than erased). A location keeps its entry of facts_.
 	struct Fact
@@ -526,10 +528,12 @@ void MemoryForwarding::remember_at(const AddressFacts& f, const Key& key, Type t
 }
 
 // Slots whose address reaches anything but loads, stores (as the address),
-// index/copy chains, copyobj and zeroinit.
+// index/copy chains, copyobj and zeroinit. A slot's address stored into the
+// slot itself leaves only when something reads it (drop_self_pointers).
 void MemoryForwarding::escapes()
 {
 	escaped_.assign(body_.slots.size(), 0);
+	self_stores_.clear();
 	address_.assign(body_.temps.size(), AddressFacts());
 	allocation_.assign(body_.temps.size(), kNoId);
 	allocation_left_.assign(body_.temps.size(), 0);
@@ -580,6 +584,15 @@ void MemoryForwarding::escapes()
 				if (address_use)
 					return;
 				const AddressFacts f = facts_of(v);
+				if (inst.op == Opcode::Store && f.base == ValueKind::Slot)
+				{
+					const AddressFacts to = facts_of(inst.ops[1]);
+					if (to.base == ValueKind::Slot && to.index == f.index)
+					{
+						self_stores_.emplace_back(b, i);
+						return;
+					}
+				}
 				if (f.base == ValueKind::Slot && (v.is(ValueKind::Temp) || inst.op != Opcode::Load))
 					escaped_[f.index] = 1;
 				if (inst.op != Opcode::Compare && v.is(ValueKind::Temp) && v.index < allocation_.size() &&
@@ -599,6 +612,66 @@ void MemoryForwarding::escapes()
 				if (v.is(ValueKind::Temp) && v.index < allocation_.size() && allocation_[v.index] != kNoId)
 					allocation_left_[allocation_[v.index]] = 1;
 			});
+	drop_self_pointers();
+}
+
+// A slot that holds its own address (an object's pointer to its own array)
+// keeps it private when no load or copy reads those bytes: the stores go.
+// Otherwise the address leaves through them.
+void MemoryForwarding::drop_self_pointers()
+{
+	// (Most slots that store their own address leave some other way.)
+	auto slot_of = [&](InstId s) { return facts_of(body_.instructions[s].ops[1]).index; };
+	for (const auto& s : self_stores_)
+		if ((body_.instructions[s.second].flags & IF_VOLATILE) != 0)
+			escaped_[slot_of(s.second)] = 1;
+	size_t kept = 0;
+	for (const auto& s : self_stores_)
+		if (!escaped_[slot_of(s.second)])
+			self_stores_[kept++] = s;
+	self_stores_.resize(kept);
+	if (self_stores_.empty())
+		return;
+	std::vector<uint8_t> holds(body_.slots.size(), 0);
+	for (const auto& s : self_stores_)
+		holds[slot_of(s.second)] = 1;
+	auto overlaps = [&](const AddressFacts& f, uint64_t bytes) {
+		for (const auto& s : self_stores_)
+		{
+			const Instruction& store = body_.instructions[s.second];
+			const AddressFacts to = facts_of(store.ops[1]);
+			if (to.index == f.index && to.offset < f.offset + static_cast<int64_t>(bytes) &&
+				f.offset < to.offset + static_cast<int64_t>(storage_bytes(store.type)))
+				return true;
+		}
+		return false;
+	};
+	for (BlockId b : body_.layout)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			if (inst.op != Opcode::Load && inst.op != Opcode::CopyObject)
+				continue;
+			const AddressFacts f = facts_of(inst.ops[0]);
+			if (f.base != ValueKind::Slot || !holds[f.index] || escaped_[f.index])
+				continue;
+			const uint64_t bytes = inst.op == Opcode::Load ? storage_bytes(inst.type)
+														   : static_cast<uint64_t>(inst.immediate);
+			if (overlaps(f, bytes))
+				escaped_[f.index] = 1;
+		}
+	for (const auto& s : self_stores_)
+	{
+		if (escaped_[slot_of(s.second)])
+			continue;
+		InstId prev = kNoId;
+		for (InstId i = body_.blocks[s.first].first; i != s.second; i = body_.instructions[i].next)
+			prev = i;
+		unlink_after(body_, s.first, prev, s.second);
+		++c_.stats.stores_removed;
+		changed_ = true;
+	}
+	self_stores_.clear();
 }
 
 void MemoryForwarding::process(BlockId block)
