@@ -85,7 +85,47 @@ function @preferred_body(%value : i64) -> i64
     %v61 = call i64 @advance(%v60)
     %v62 = call i64 @advance(%v61)
     %v63 = call i64 @advance(%v62)
-    return i64 %v63
+    %v64 = call i64 @advance(%v63)
+    %v65 = call i64 @advance(%v64)
+    %v66 = call i64 @advance(%v65)
+    %v67 = call i64 @advance(%v66)
+    %v68 = call i64 @advance(%v67)
+    %v69 = call i64 @advance(%v68)
+    %v70 = call i64 @advance(%v69)
+    %v71 = call i64 @advance(%v70)
+    %v72 = call i64 @advance(%v71)
+    %v73 = call i64 @advance(%v72)
+    %v74 = call i64 @advance(%v73)
+    %v75 = call i64 @advance(%v74)
+    %v76 = call i64 @advance(%v75)
+    %v77 = call i64 @advance(%v76)
+    %v78 = call i64 @advance(%v77)
+    %v79 = call i64 @advance(%v78)
+    %v80 = call i64 @advance(%v79)
+    %v81 = call i64 @advance(%v80)
+    %v82 = call i64 @advance(%v81)
+    %v83 = call i64 @advance(%v82)
+    %v84 = call i64 @advance(%v83)
+    %v85 = call i64 @advance(%v84)
+    %v86 = call i64 @advance(%v85)
+    %v87 = call i64 @advance(%v86)
+    %v88 = call i64 @advance(%v87)
+    %v89 = call i64 @advance(%v88)
+    %v90 = call i64 @advance(%v89)
+    %v91 = call i64 @advance(%v90)
+    %v92 = call i64 @advance(%v91)
+    %v93 = call i64 @advance(%v92)
+    %v94 = call i64 @advance(%v93)
+    %v95 = call i64 @advance(%v94)
+    %v96 = call i64 @advance(%v95)
+    %v97 = call i64 @advance(%v96)
+    %v98 = call i64 @advance(%v97)
+    %v99 = call i64 @advance(%v98)
+    %v100 = call i64 @advance(%v99)
+    %v101 = call i64 @advance(%v100)
+    %v102 = call i64 @advance(%v101)
+    %v103 = call i64 @advance(%v102)
+    return i64 %v103
 }
 
 function @loop_first(%limit : i64) -> i64 [unwind=no, no_inline=yes] {
@@ -170,6 +210,6 @@ function @main() -> i64 [role=entry, unwind=no] {
     %sum0 = binary add i64 %first, %second
     %sum1 = binary add i64 %sum0, %plain
     %sum2 = binary add i64 %sum1, %looped
-    %bad = cmp ne i64 %sum2, 1024
+    %bad = cmp ne i64 %sum2, 1664
   return i64 %bad
 }
