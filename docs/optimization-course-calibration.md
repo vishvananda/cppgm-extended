@@ -67,3 +67,34 @@ observations remain in `obj/tmp/optimization-course/compiler-cost/`.
 Instruction work and peak memory are effectively unchanged. Concurrent host
 activity made wall time noisy, including A/A; these timings do not support a
 claim of a small speed change. The complete raw samples are retained.
+
+## Two-CPU CI exercise evidence
+
+Both manual jobs measured compiler revision `4c53891b4` in Ubuntu 26.04.
+Both passed all 81 public programs, the three compiler builds and all six
+optional exercise families. The exercise input hashes match across hosts;
+every published tail and overlap scenario passed the scalar oracle.
+
+- [EPYC run](https://github.com/vishvananda/cppgm-extended/actions/runs/41528163188): AMD EPYC 9V74 80-Core Processor.
+- [Intel run](https://github.com/vishvananda/cppgm-extended/actions/runs/41528203472): Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz.
+
+The following are candidate/GCC ratios, so lower is better. Work subtracts
+startup instructions. Time is the median of six paired ABBA/BAAB blocks;
+two A/A blocks precede them. These diagnostic timings impose no course gate.
+
+| Optional exercise | EPYC work | Intel work | EPYC time | Intel time |
+| --- | ---: | ---: | ---: | ---: |
+| adjacent-store-groups | 1.667 | 1.667 | 1.279 | 1.313 |
+| independent-math | 3.000 | 3.000 | 8.387 | 6.891 |
+| mixed-width-lanes | 1.751 | 1.751 | 2.291 | 1.589 |
+| ordered-floating-sum | 1.132 | 1.132 | 1.000 | 1.034 |
+| strided-matrix | 4.000 | 4.000 | 2.040 | 2.138 |
+| vector-overlap | 1.111 | 1.111 | 1.080 | 1.117 |
+
+A/A block ratios span 0.971–1.011 on epyc, 0.820–1.115 on intel.
+Keep these ranges with the individual timing blocks rather than treating a
+small difference as a speed claim. The retained artifacts include all command
+observations, counts, stdout hashes, tool and executable hashes, frozen inputs,
+compile wall costs and peak RSS. They are under
+`obj/tmp/optimization-course/cpu-epyc/` and `cpu-intel/`.
+The Intel runner registration and credentials were removed after its one job.

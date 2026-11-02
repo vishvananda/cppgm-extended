@@ -156,3 +156,32 @@ folded literal. Exposing a nondefault NaN payload also requires its public
 text spelling to preserve those bits. PA8's format, grammar, generated grammar
 pages and fixtures cover it; the Perl comparison validator now recognizes a
 payload's parentheses inside all direct and indirect call forms.
+
+## Validation and completion
+
+- Full strict report: 7,979/7,979, including all 21 comparison-seam rewrites.
+  The added protected-page host check also passes independently, with direct
+  and serialized objects at every optimization level and with debug info.
+- Full debug-info and harness checks pass; self-host through PA5 and PA35
+  smoke pass. Architecture, source-set, scaffold, exception, format, file,
+  placement and fixture-lane audits pass (the file audit retains its seven
+  pre-existing advisory header-layout warnings).
+- A fresh student export validates 22,332 portable reference outputs and its
+  expectation sidecars, 55 student documents (53 Markdown prose files), bundle
+  installation and all 42 reference wrappers. Both required kernel modes and
+  all six optional families pass from the export. Student root guidance now
+  separates iteration from final through-milestone validation.
+- Both CPU CI jobs pass all 81 public programs, compiler builds and all six
+  optional experiment families. Their input hashes match, and every paired
+  timing observation is retained; see the calibration record's linked runs.
+  The temporary Intel runner and its credentials are removed.
+- Immutable pre/post compiler measurements retain A/A calibration, paired
+  observations, precise peak RSS and equal O0/O3 output hashes. Compiler
+  instruction work and peak memory are effectively unchanged; noisy wall
+  times support no small speed claim.
+
+Raw evidence is retained under `obj/tmp/optimization-course/` in the parent
+checkout. These records and the calibration document are maintainer material,
+outside the student document manifest. The delivery covers the inventory
+above without making vectorization, interchange, layout, a pass sequence or a
+particular instruction/register assignment a completion requirement.
