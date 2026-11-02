@@ -1510,6 +1510,13 @@ void LoopVectorizer::widen_convert(const Instruction& inst)
 // i32 lanes multiplied: SSE2 multiplies the even lanes only.
 Value LoopVectorizer::widen_multiply(Value a, Value b)
 {
+	// (Two lanes at the bottom of the register move to the even lanes.)
+	if (lanes_ == 2)
+	{
+		const Value spread_a = vector(VectorOp::Pshufd, a, Value::none(), 0x50);
+		const Value spread_b = vector(VectorOp::Pshufd, b, Value::none(), 0x50);
+		return vector(VectorOp::Pshufd, vector(VectorOp::Pmuludq, spread_a, spread_b), Value::none(), 0x08);
+	}
 	const Value even = vector(VectorOp::Pmuludq, a, b);
 	const Value high_a = vector(VectorOp::Psrlqi, a, Value::none(), 32);
 	const Value high_b = vector(VectorOp::Psrlqi, b, Value::none(), 32);

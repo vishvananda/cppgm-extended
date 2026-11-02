@@ -1,0 +1,35 @@
+#include <stdio.h>
+
+void __attribute__((noinline)) fill(double* out, const int* x, const int* y, int n)
+{
+	for (int i = 0; i < n; i++)
+		out[i] = x[i] * y[i];
+}
+
+// The sum of 1 / (i + j)(i + j + 1) / 2 + i + 1, as spectral norm reads it.
+double __attribute__((noinline)) row(const double* u, int i, int n)
+{
+	double sum = 0;
+	for (int j = 0; j < n; j++)
+		sum += 1.0 / ((i + j) * (i + j + 1) / 2 + i + 1) * u[j];
+	return sum;
+}
+
+int main()
+{
+	int x[9], y[9];
+	double out[9], u[9];
+	for (int i = 0; i < 9; i++)
+	{
+		x[i] = (i - 4) * 12345;
+		y[i] = i % 2 == 0 ? 1000 + i : -2000 - i;
+		u[i] = i + 0.5;
+	}
+	fill(out, x, y, 9);
+	for (int i = 0; i < 9; i++)
+		printf("%.0f ", out[i]);
+	printf("\n");
+	for (int i = 0; i < 3; i++)
+		printf("%.10f\n", row(u, i, 9));
+	return 0;
+}

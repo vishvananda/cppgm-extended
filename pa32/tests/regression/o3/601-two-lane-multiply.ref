@@ -1,0 +1,62 @@
+function @fill(%x : ptr, %y : ptr, %out : ptr, %n : i64) -> void [binding=strong] {
+  block ^entry:
+    %any = cmp gt i64 %n, 0
+    branch %any, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    %t2 = cmp uge i64 %n, 2
+    %t3 = binary and i64 %any, %t2
+    branch %t3, ^loop_preheader_2, ^loop_preheader_5
+
+  block ^loop_preheader_2:
+    %t4 = binary add i64 %n, -2
+    jump ^wide_loop_3
+
+  block ^wide_loop_3:
+    %t5 = phi i64 [^loop_preheader_2: 0, ^wide_loop_3: %t18]
+    %t6 = index i32 %x, %t5
+    %t7 = index i32 %y, %t5
+    %t8 = load i64 %t6
+    %t9 = vector fromi64 %t8
+    %t10 = load i64 %t7
+    %t11 = vector fromi64 %t10
+    %t12 = vector pshufd %t9, 80
+    %t13 = vector pshufd %t11, 80
+    %t14 = vector pmuludq %t12, %t13
+    %t15 = vector pshufd %t14, 8
+    %t16 = vector cvtdq2pd %t15
+    %t17 = index f64 %out, %t5
+    store v128 %t16, %t17
+    %t18 = binary add nowrap i64 %t5, 2
+    %t19 = cmp le i64 %t18, %t4
+    branch %t19, ^wide_loop_3, ^loop_exit_4
+
+  block ^loop_exit_4:
+    %t20 = cmp lt i64 %t18, %n
+    branch %t20, ^loop_preheader_5, ^done
+
+  block ^loop_preheader_5:
+    %t21 = phi i64 [^loop_preheader_1: 0, ^loop_exit_4: %t18]
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^loop_preheader_5: %t21, ^body: %next]
+    %a = index i32 %x, %i
+    %b = index i32 %y, %i
+    %c = load typed i32 %a
+    %d = load typed i32 %b
+    %m = binary mul nowrap i32 %c, %d
+    %f = convert sitofp f64 i32 %m
+    %o = index f64 %out, %i
+    store typed f64 %f, %o
+    %next = binary add nowrap i64 %i, 1
+    %more = cmp lt i64 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}
