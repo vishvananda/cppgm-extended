@@ -227,6 +227,9 @@ bool sink_counter_steps(FunctionContext& context);
 // O2+: pure instructions move down to the block nearest their readers that
 // lies in no deeper loop (opt/code_sinking.cpp).
 bool sink_values(FunctionContext& context);
+// O2+: a loop without calls reads its floating literals from registers
+// (opt/loop_literals.cpp).
+bool hold_loop_literals(FunctionContext& context);
 // O2+: an `int` counter that indexes memory, and the sums of it that do, read
 // from a 64-bit counter (opt/counter_widening.cpp).
 bool widen_counters(FunctionContext& context);

@@ -472,6 +472,11 @@ them changed it, branch compares are computed again beside their branches:
   placed: one walk moves a whole chain. A path that reads nothing computes
   nothing, and a step ends up beside the test that reads it, which then needs
   no compare. A handler or a cycle not reported as a loop takes nothing.
+- A loop without calls on its usual paths reads its floating literals, at most
+  eight, from `copy` instructions before the outermost such loop: a register
+  needs no load per iteration. Zero, a stored literal and a phi's input from
+  outside stay. A call behind a test for not a number, or for a negative value
+  under a square root, is a rare path: the allocator saves around it.
 
 ### What `-O3` Adds
 
@@ -566,7 +571,9 @@ shifts, extensions, truncations and remainders by a literal. A value below a
 positive literal divisor is its own remainder, and its quotient is zero. A
 compare against a positive literal above every possible value folds. A signed
 division or remainder of a value that cannot be negative, by a power of two, is
-a shift or a mask. An extension of a truncation that lost no bits is the
+a shift or a mask. A signed halving of `x * (x + k)` for an odd `k` is an
+arithmetic shift, as one factor is even whatever wraps. Floating `add` and `mul`
+commute for value numbering: only which NaN payload comes out could differ. An extension of a truncation that lost no bits is the
 original value.
 
 Step sinking: in a one-block loop, a counter's step that runs before the last

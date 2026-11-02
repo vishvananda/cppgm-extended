@@ -865,7 +865,7 @@ void FunctionSelector::resolve_aliases()
 				const Literal norm = normalize_literal(inst.type.kind(), literal(src));
 				to = (norm.low == literal(src).low && norm.high == literal(src).high) ? src : add_literal(norm);
 			}
-			else if (src.kind == ValueKind::Float && inst.type.is_float())
+			else if (src.kind == ValueKind::Float && inst.type.is_float() && level_ < 2)
 				to = src;
 			else if (src.kind == ValueKind::Temp &&
 				(alias_compatible(inst.type, body.temps[src.index].type) ||

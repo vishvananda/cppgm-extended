@@ -60,6 +60,9 @@ that paid there in the course solution:
   its source's register is sound for a reader of the low bits only, and keeping
   a `nowrap` add computed at 64 bits is sound for canonical operands only. Each
   is correct alone, and together they turn `(int)wide + y` into a wrong index.
+- Above `-O1` a `copy` of a floating literal is a value of its own, not an alias
+  of the literal: the optimizer wrote it to keep the literal in a register
+  through a loop.
 - An `i32` add or subtract only read in its low bits uses the 32-bit form; one
   read in full stays at 64 bits, and a `nowrap` one is canonical there, so a test
   of either against zero reads the flags it set.

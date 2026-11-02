@@ -483,6 +483,7 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		changed = true;
 	}
 	changed = RUN_PASS(sink_values) || changed;
+	changed = RUN_PASS(hold_loop_literals) || changed;
 	if (!changed)
 		return;
 	RUN_PASS(split_branch_compares);
