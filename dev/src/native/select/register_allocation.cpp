@@ -356,6 +356,9 @@ bool split_choice(
 
 // Whether the ranges [first, past) of ra_ranges_ are pairwise disjoint
 // (sorting them in place).
+// The members of a phi web tried for one register.
+const size_t kWebTrials = 32;
+
 bool disjoint_ranges(std::vector<std::pair<int32_t, int32_t>>& ranges, uint32_t first, uint32_t past)
 {
 	std::sort(ranges.begin() + first, ranges.begin() + past);
@@ -1054,20 +1057,39 @@ void FunctionSelector::assign_registers()
 		const uint32_t first = static_cast<uint32_t>(ra_ranges_.size());
 		uint64_t weight = 0;
 		uint8_t looped = 0;
-		for (uint32_t k = web_first[root]; k < web_first[root + 1]; ++k)
-		{
-			const uint32_t w = web_members[k];
+		// The members one register can hold: the heaviest first, each that
+		// overlaps none already taken. (A value live through the loop that
+		// also feeds a phi would otherwise cost the rest of the web theirs.)
+		std::vector<uint32_t> members(web_members.begin() + web_first[root], web_members.begin() + web_first[root + 1]);
+		for (uint32_t w : members)
 			if (temps_[ra_candidates_[w]].cls != temps_[ra_candidates_[c]].cls)
 				return false;
-			weight += ra_freq_[w];
-			looped |= ra_looped_[w];
+		std::stable_sort(members.begin(), members.end(), [&](uint32_t a, uint32_t b) {
+			return a == c ? b != c : b == c ? false : ra_freq_[a] > ra_freq_[b];
+		});
+		size_t kept = 0;
+		std::vector<std::pair<int32_t, int32_t>> taken;
+		for (size_t k = 0; k < members.size() && k < kWebTrials; ++k)
+		{
+			const uint32_t w = members[k];
+			taken.assign(ra_ranges_.begin() + first, ra_ranges_.end());
 			for (uint32_t r = ra_range_first_[w]; r < ra_range_first_[w + 1]; ++r)
 				ra_ranges_.push_back(ra_ranges_[r]);
+			if (!disjoint_ranges(ra_ranges_, first, static_cast<uint32_t>(ra_ranges_.size())))
+			{
+				ra_ranges_.resize(first);
+				ra_ranges_.insert(ra_ranges_.end(), taken.begin(), taken.end());
+				continue;
+			}
+			members[kept++] = w;
+			weight += ra_freq_[w];
+			looped |= ra_looped_[w];
 		}
+		members.resize(kept);
 		const uint32_t past = static_cast<uint32_t>(ra_ranges_.size());
 		ra_range_block_.resize(past, 0);
 		Reg reg = kNoReg;
-		if (disjoint_ranges(ra_ranges_, first, past))
+		if (kept >= 2)
 		{
 			const uint64_t own = ra_freq_[c];
 			const uint8_t own_looped = ra_looped_[c];
@@ -1079,9 +1101,9 @@ void FunctionSelector::assign_registers()
 		}
 		// choose_register keeps only c's own variable shift off rcx: a web
 		// whose other member is one takes registers one by one instead.
-		for (uint32_t k = web_first[root]; k < web_first[root + 1] && reg != kNoReg; ++k)
+		for (size_t k = 0; k < members.size() && reg != kNoReg; ++k)
 		{
-			const uint32_t temp = ra_candidates_[web_members[k]];
+			const uint32_t temp = ra_candidates_[members[k]];
 			const lowir::InstId def = temp >= body_->parameter_count ? body_->temps[temp].def : lowir::kNoId;
 			if (def == lowir::kNoId || body_->instructions[def].op != Opcode::Binary)
 				continue;
@@ -1094,8 +1116,8 @@ void FunctionSelector::assign_registers()
 		ra_range_block_.resize(first);
 		if (reg == kNoReg)
 			return false;
-		for (uint32_t k = web_first[root]; k < web_first[root + 1]; ++k)
-			commit(web_members[k], reg, ra_range_first_[web_members[k]], ra_range_first_[web_members[k] + 1]);
+		for (uint32_t w : members)
+			commit(w, reg, ra_range_first_[w], ra_range_first_[w + 1]);
 		return true;
 	};
 	for (size_t k = 0; k < m; ++k)

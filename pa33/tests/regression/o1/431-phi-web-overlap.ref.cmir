@@ -1,0 +1,75 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @table
+  storage data
+  item zero 64
+
+function @walk
+  abi
+    param %n -> rdi : i64
+    param %k -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdx, rsi
+    mov rsi, rdi
+    mov rdi, @table
+    mov r8, rdx
+    mov rax, 0
+
+  block ^head
+    load.i64 r9, [rdi+r8*8]
+    cmp.i64 r9, rsi
+    jl ^step
+
+  block ^back
+    mov r8, rdx
+
+  block ^tail
+    add r9, 1
+    add rax, r9
+    cmp.i64 rax, rsi
+    jl ^tail~head
+    ret rax
+
+  block ^tail~head
+    load.i64 r9, [rdi+r8*8]
+    cmp.i64 r9, rsi
+    jge ^back
+
+  block ^step
+    add r8, 1
+    add r9, 1
+    add rax, r9
+    cmp.i64 rax, rsi
+    jl ^tail~head
+    ret rax
+
+  block ^out
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, 4
+    mov rsi, 0
+    call @walk [args=(rsi,rdi)]
+    sext.i32 rax
+    ret rax
