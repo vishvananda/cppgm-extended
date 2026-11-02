@@ -173,6 +173,7 @@ struct SelectorState
 	std::vector<uint8_t> scale_of_;        // O1+: per byte offset, the scale its indexes apply (find_scaled_offsets)
 	std::vector<int32_t> shift_of_;        // O1+: per offset aliasing x, what it adds to x (empty: none)
 	std::vector<uint8_t> rotate_;          // O1+: per or/xor/add result, its rotation's left count (find_rmw; 0: none)
+	std::vector<uint8_t> high_product_;    // O1+: per i64 trunc, 1/2: the high half of a zext/sext product
 	std::vector<uint32_t> handler_first_;  // per block: the landings its eh_try/eh_cleanup name
 	std::vector<uint32_t> handlers_;
 	std::vector<uint32_t> global_temps_;        // values with a hull register

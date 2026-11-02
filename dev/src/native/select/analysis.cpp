@@ -2255,6 +2255,100 @@ void FunctionSelector::find_rmw()
 	});
 }
 
+// O1+: the high half of the product of two 64-bit values, `trunc i64
+// (ushr|shr i128 (mul i128 x, y), 64)`, the shift and the product each used
+// once, x and y both zero or both sign extensions of i64 values (or
+// literals that are), is one mul (or one-operand imul) leaving it in rdx:
+// the product and the shift emit nothing (TF_ROTATED, read at the
+// truncation) and the truncation multiplies (emit_high_product). An
+// extension the product alone reads emits nothing either; one read
+// elsewhere too keeps its i128 home, whose low half the multiply reads.
+void FunctionSelector::find_high_products()
+{
+	const lowir::FunctionBody& body = *body_;
+	high_product_.assign(level_ >= 1 ? temps_.size() : 0, 0);
+	if (level_ < 1)
+		return;
+	const uint16_t taken = TF_GLOBAL | TF_ALIAS | TF_DEAD | TF_LAZY | TF_FOLDED | TF_FUSED | TF_TESTED | TF_ROTATED |
+		TF_RMW;
+	// The definition of v, a value of block b `user` alone reads, `uses` times.
+	auto only = [&](Value v, uint32_t user, uint32_t b, uint32_t uses) -> lowir::InstId {
+		if (v.kind != ValueKind::Temp || v.index < body.parameter_count)
+			return kNoId;
+		const lowir::InstId def = body.temps[v.index].def;
+		const TempInfo& t = temps_[v.index];
+		if (def == kNoId || (marks_[def] & IM_DEAD) || inst_block_[def] != b || t.uses != uses || t.user != user ||
+			(t.flags & taken))
+			return kNoId;
+		return def;
+	};
+	// The extensions a factor may be: bit 0 zero, bit 1 sign.
+	auto kinds = [&](Value v) -> unsigned {
+		if (v.kind == ValueKind::Integer)
+		{
+			const lowir::Literal bits = literal(v);
+			const uint64_t sign = (bits.low >> 63) != 0 ? ~0ull : 0;
+			return (bits.high == 0 ? 1u : 0u) | (bits.high == sign ? 2u : 0u);
+		}
+		if (v.kind != ValueKind::Temp || v.index < body.parameter_count || body.temps[v.index].def == kNoId)
+			return 0;
+		const lowir::InstId def = body.temps[v.index].def;
+		const Instruction& e = body.instructions[def];
+		if ((marks_[def] & IM_DEAD) || e.op != Opcode::Convert || lowir::convert_source_type(e).kind() != TypeKind::I64)
+			return 0;
+		const lowir::ConvertOp op = static_cast<lowir::ConvertOp>(e.sub);
+		return op == lowir::ConvertOp::ZExt ? 1u : op == lowir::ConvertOp::SExt ? 2u : 0u;
+	};
+	for_each_inst([&](uint32_t id, uint32_t b) {
+		const Instruction& inst = body.instructions[id];
+		if ((marks_[id] & IM_DEAD) || inst.op != Opcode::Convert || inst.result == kNoId ||
+			static_cast<lowir::ConvertOp>(inst.sub) != lowir::ConvertOp::Trunc || inst.type.kind() != TypeKind::I64 ||
+			lowir::convert_source_type(inst).kind() != TypeKind::I128 ||
+			(temps_[inst.result].flags & (TF_ALIAS | TF_DEAD)))
+			return;
+		const Value high = resolve(inst.ops[0]);
+		const lowir::InstId shift = only(high, id, b, 1);
+		if (shift == kNoId)
+			return;
+		const Instruction& s = body.instructions[shift];
+		const lowir::BinaryOp sop = static_cast<lowir::BinaryOp>(s.sub);
+		const Value count = resolve(s.ops[1]);
+		if (s.op != Opcode::Binary || (sop != lowir::BinaryOp::UShr && sop != lowir::BinaryOp::Shr) ||
+			count.kind != ValueKind::Integer || literal(count).low != 64 || literal(count).high != 0)
+			return;
+		const Value full = resolve(s.ops[0]);
+		const lowir::InstId product = only(full, shift, b, 1);
+		if (product == kNoId)
+			return;
+		const Instruction& m = body.instructions[product];
+		if (m.op != Opcode::Binary || static_cast<lowir::BinaryOp>(m.sub) != lowir::BinaryOp::Mul)
+			return;
+		const Value x = resolve(m.ops[0]), y = resolve(m.ops[1]);
+		const unsigned both = kinds(x) & kinds(y);
+		if (both == 0 || (x.kind == ValueKind::Integer && y.kind == ValueKind::Integer))
+			return;
+		temps_[full.index].flags |= TF_ROTATED;
+		temps_[high.index].flags |= TF_ROTATED;
+		high_product_[inst.result] = static_cast<uint8_t>((both & 1) != 0 ? 1 : 2);
+		const bool square = x == y;
+		for (const Value v : { x, y })
+		{
+			if (v.kind != ValueKind::Temp)
+				continue;
+			const lowir::InstId ext = only(v, product, b, square ? 2 : 1);
+			if (ext == kNoId)
+				continue;
+			temps_[v.index].flags |= TF_ROTATED;
+			const Value source = resolve(body.instructions[ext].ops[0]);
+			if (source.kind != ValueKind::Temp)
+				continue;
+			TempInfo& c = temps_[source.index];
+			if (c.block == b && !(c.flags & TF_GLOBAL) && c.last < pos_[id])
+				c.last = pos_[id];
+		}
+	});
+}
+
 // An integer compare or logical not whose only use is the condition of the
 // branch ending its block, with other instructions between them: it is
 // evaluated at the branch (README goal 7).

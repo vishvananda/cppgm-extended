@@ -529,6 +529,23 @@ bool WideIntegers::bridge(InstId id)
 		if (!wide(v) || kept_[v.index])
 			return;
 		const Pair p = halves_[v.index];
+		// An extended i64 is its extension again (a high half of 0, or of
+		// the low half's sign).
+		if (p.hi.is(ValueKind::Integer) && body_.literals[p.hi.index].low == 0 && body_.literals[p.hi.index].high == 0)
+		{
+			v = convert(ConvertOp::ZExt, kI128, kI64, p.lo);
+			return;
+		}
+		if (p.hi.is(ValueKind::Temp) && body_.temps[p.hi.index].def != kNoId)
+		{
+			const Instruction& sign = body_.instructions[body_.temps[p.hi.index].def];
+			if (sign.op == Opcode::Binary && static_cast<BinaryOp>(sign.sub) == BinaryOp::Shr && sign.ops[0] == p.lo &&
+				sign.ops[1].is(ValueKind::Integer) && body_.literals[sign.ops[1].index].low == 63)
+			{
+				v = convert(ConvertOp::SExt, kI128, kI64, p.lo);
+				return;
+			}
+		}
 		const Value lo = convert(ConvertOp::ZExt, kI128, kI64, p.lo);
 		const Value hi = convert(ConvertOp::ZExt, kI128, kI64, p.hi);
 		Instruction up = make_instruction(Opcode::Binary, kI128);

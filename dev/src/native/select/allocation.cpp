@@ -242,6 +242,10 @@ void FunctionSelector::inst_clobbers(uint32_t id, uint32_t& clobber, uint32_t& e
 			clobber = early = 1u << kCompareScratch;
 		break;
 	case Opcode::Convert:
+		// The high half of a 64-bit product multiplies in rdx:rax
+		// (find_high_products).
+		if (level_ >= 1 && inst.result != kNoId && high_product_[inst.result] != 0)
+			clobber = early = (1u << RAX) | (1u << RDX);
 		// An i128/floating conversion calls the runtime's routine.
 		if ((inst.type.kind() == TypeKind::I128 && lowir::convert_source_type(inst).is_float()) ||
 			(inst.type.is_float() && lowir::convert_source_type(inst).kind() == TypeKind::I128))

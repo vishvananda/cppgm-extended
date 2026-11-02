@@ -1,0 +1,30 @@
+function @signed(%a : i64, %b : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = convert sext i128 i64 %a
+    %t2 = convert sext i128 i64 %b
+    %p = binary mul i128 %t1, %t2
+    %t4 = binary ushr i128 %p, 64
+    %t5 = convert trunc i64 i128 %t4
+    return i64 %t5
+}
+function @mixed(%a : i64, %b : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = convert zext i128 i64 %a
+    %t2 = convert sext i128 i64 %b
+    %p = binary mul i128 %t1, %t2
+    %t4 = binary ushr i128 %p, 64
+    %t5 = convert trunc i64 i128 %t4
+    return i64 %t5
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %s = call i64 @signed(-1, 6)
+    %m = call i64 @mixed(-1, -1)
+    %bad_s = cmp ne i64 %s, -1
+    %bad_m = cmp ne i64 %m, -2
+    %a = convert zext i64 i1 %bad_s
+    %b = convert zext i64 i1 %bad_m
+    %ab = binary or i64 %a, %b
+    %status = convert trunc i32 i64 %ab
+    return i32 %status
+}

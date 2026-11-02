@@ -102,8 +102,48 @@ void FunctionSelector::emit_int_convert(const Instruction& inst)
 	finish_result(inst, d);
 }
 
+// The high half of a 64-bit product (find_high_products): a in rax, one
+// mul (or imul) of b, the half in rdx. A factor is the value an extension
+// the product alone reads extends, a literal, or the low half of an
+// extension's home.
+void FunctionSelector::emit_high_product(const Instruction& inst)
+{
+	const lowir::FunctionBody& body = *body_;
+	auto def_of = [&](Value v) -> const Instruction& { return body.instructions[body.temps[resolve(v).index].def]; };
+	const Instruction& product = def_of(def_of(inst.ops[0]).ops[0]);
+	const Type i64 = Type::scalar(TypeKind::I64);
+	auto factor = [&](Value v, Reg scratch) {
+		v = resolve(v);
+		if (v.kind == ValueKind::Temp && (temps_[v.index].flags & TF_ROTATED))
+			return rm_operand(def_of(v).ops[0], i64, scratch);
+		if (v.kind == ValueKind::Integer)
+			return Operand::make_imm(static_cast<int64_t>(literal(v).low));
+		return rm_operand(v, i64, scratch);
+	};
+	const Operand a = factor(product.ops[0], kSelectScratch);
+	Operand b = factor(product.ops[1], kEmitScratch);
+	if (b.kind != OperandKind::Reg && b.kind != OperandKind::Mem)
+	{
+		load_into(kEmitScratch, b, TypeKind::I64);
+		b = Operand::make_reg(kEmitScratch);
+	}
+	if (a.kind == OperandKind::Mem)
+		emit2(Op::Load, TypeKind::I64, Operand::make_reg(RAX), a);
+	else
+		load_into(RAX, a, TypeKind::I64);
+	emit1(high_product_[inst.result] == 1 ? Op::MulWide : Op::ImulWide, TypeKind::I64, b);
+	const Reg d = result_reg(inst, RDX);
+	load_into(d, Operand::make_reg(RDX), TypeKind::I64);
+	finish_result(inst, d);
+}
+
 void FunctionSelector::emit_convert(const Instruction& inst)
 {
+	if (level_ >= 1 && inst.result != lowir::kNoId && high_product_[inst.result] != 0)
+	{
+		emit_high_product(inst);
+		return;
+	}
 	const ConvertOp op = static_cast<ConvertOp>(inst.sub);
 	const Type source = lowir::convert_source_type(inst);
 	const TypeKind st = source.kind();

@@ -54,6 +54,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out)
 	find_addresses();
 	find_folds();
 	find_rmw();
+	find_high_products();
 	find_byte_booleans();
 	extend_lifetimes();
 	compute_clobbers();

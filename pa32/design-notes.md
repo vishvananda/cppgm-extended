@@ -507,7 +507,9 @@ them changed it, branch compares are computed again beside their branches:
 
 - `i128` values become pairs of `i64` halves for logic, addition,
   subtraction, shifts, extensions, truncations, compares, selects, phis and
-  whole loads and stores; other uses reassemble the value.
+  whole loads and stores; other uses reassemble the value. A value whose
+  high half is 0 or the low half's sign reassembles as that extension, so
+  a multiplication keeps the form the back end reads as one multiply.
 - A branch to a diamond or triangle whose arms hold at most two
   speculatable integer instructions each (no load, division or floating
   point) becomes `select`s, at most two per merge, for at most three rounds.

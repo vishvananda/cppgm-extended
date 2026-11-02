@@ -55,6 +55,13 @@ that paid there in the course solution:
 - An unsigned divide by an even constant can take a shorter path. Where the odd
   divisor's multiplier needs 65 bits, shift the divisor's low zeros out of the
   dividend first: the dividend is shorter, and a 64-bit multiplier then serves.
+- The high half of a 64-bit product, `trunc i64 (ushr (mul i128 (zext a),
+  (zext b)), 64)`, is one `mul` leaving it in `rdx` (one-operand `imul` for
+  sign extensions). Selected as a general `i128` multiply, it costs three
+  multiplies and passes its halves through the frame. An extension another
+  instruction reads too keeps its home: read the low half there. Floating
+  point formatting multiplies so; in the {fmt} program this took 5% fewer
+  cycles.
 - Divide at the width of the type. A 64-bit `idiv` of two `int`s gives the
   right answer, but on many x86 cores it costs several times what the 32-bit
   one does, and an instruction count will not show it. The 32-bit form traps
