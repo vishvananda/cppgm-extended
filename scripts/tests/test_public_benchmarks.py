@@ -395,7 +395,7 @@ class BadgePublicationTests(unittest.TestCase):
     def prepare(self, platform, cpu):
         (self.artifact / 'results.json').write_text(json.dumps(dict(environment=dict(cpu=cpu))))
         publication.prepare(self.artifact, self.target, platform, 'a' * 40,
-                            'https://github.com/owner/repo/actions/runs/1')
+                            'https://github.com/owner/repo/actions/runs/1', legacy_epyc=True)
 
     def test_intel_publication_preserves_epyc_results(self):
         self.prepare('epyc', 'AMD EPYC 9V45 96-Core Processor')
@@ -413,6 +413,18 @@ class BadgePublicationTests(unittest.TestCase):
         before = (self.target / 'intel/o3-generated.json').read_bytes()
         self.prepare('epyc', 'AMD EPYC 9V45')
         self.assertEqual((self.target / 'intel/o3-generated.json').read_bytes(), before)
+
+    def test_cpu_column_can_be_seeded_without_replacing_main_measurements(self):
+        self.prepare('epyc', 'AMD EPYC 9V45')
+        old = (self.target / 'o3-generated.json').read_bytes()
+        path = self.artifact / 'badges/o3-generated.json'
+        data = json.loads(path.read_text())
+        data['message'] = '1.01×'
+        path.write_text(json.dumps(data))
+        publication.prepare(self.artifact, self.target, 'epyc', 'b' * 40,
+                            'https://github.com/owner/repo/actions/runs/2')
+        self.assertEqual((self.target / 'o3-generated.json').read_bytes(), old)
+        self.assertEqual(json.loads((self.target / 'epyc/o3-generated.json').read_text())['message'], '1.01×')
 
     def test_wrong_hardware_does_not_replace_a_measurement(self):
         with self.assertRaisesRegex(ValueError, 'Intel hardware'):

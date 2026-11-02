@@ -10,7 +10,7 @@ BADGES = ('o0-compile', 'o0-generated', 'o3-compile', 'o3-generated',
           'self-compile', 'self-built')
 
 
-def prepare(artifact, target, platform, revision, run_url):
+def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
     if not re.fullmatch(r'[0-9a-f]{40}', revision):
         raise ValueError('the measured revision must be a full commit hash')
     artifact, target = Path(artifact), Path(target)
@@ -26,8 +26,10 @@ def prepare(artifact, target, platform, revision, run_url):
         if data.get('schemaVersion') != 1 or not isinstance(data.get('message'), str):
             raise ValueError(f'invalid badge: {name}')
         badges[name] = data
-    # Keep the original EPYC URLs working while the README uses CPU directories.
-    destinations = [target / 'intel'] if platform == 'intel' else [target / 'epyc', target]
+    destinations = [target / platform]
+    # Only main's automatic run updates the original, unqualified URLs.
+    if platform == 'epyc' and legacy_epyc:
+        destinations.append(target)
     provenance = dict(revision=revision, cpu=cpu, run_url=run_url,
                       published_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                       environment=environment)
@@ -46,8 +48,9 @@ def main():
     parser.add_argument('--platform', choices=['epyc', 'intel'], required=True)
     parser.add_argument('--revision', required=True)
     parser.add_argument('--run-url', required=True)
+    parser.add_argument('--legacy-epyc', action='store_true', help='also update main\'s original EPYC URLs')
     args = parser.parse_args()
-    prepare(args.artifact, args.target, args.platform, args.revision, args.run_url)
+    prepare(args.artifact, args.target, args.platform, args.revision, args.run_url, args.legacy_epyc)
 
 
 if __name__ == '__main__':
