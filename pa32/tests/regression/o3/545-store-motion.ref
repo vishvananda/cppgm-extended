@@ -140,10 +140,10 @@ function @nested(%n : i64, %m : i64) -> void [no_inline=yes] {
   block ^loop_preheader_2:
     %t7 = binary add i64 %m, -2
     %t8 = vector fromi64 %t2
-    %t9 = vector fromi64 1
-    %t10 = vector pzero
-    %t11 = vector punpcklqdq %t10, %t9
-    %t12 = vector paddq %t10, %t11
+    %t9 = vector pzero
+    %t10 = vector fromi64 1
+    %t11 = vector punpcklqdq %t9, %t10
+    %t12 = vector paddq %t9, %t11
     %t13 = vector fromi64 2
     %t14 = vector pshufd %t13, 68
     jump ^wide_loop_3
@@ -201,10 +201,10 @@ function @escaped_slot(%n : i64) -> i64 [no_inline=yes] {
   block ^loop_preheader_1:
     %t6 = binary add i64 %n, -2
     %t7 = vector fromi64 %n
-    %t8 = vector fromi64 1
-    %t9 = vector pzero
-    %t10 = vector punpcklqdq %t9, %t8
-    %t11 = vector paddq %t9, %t10
+    %t8 = vector pzero
+    %t9 = vector fromi64 1
+    %t10 = vector punpcklqdq %t8, %t9
+    %t11 = vector paddq %t8, %t10
     %t12 = vector fromi64 2
     %t13 = vector pshufd %t12, 68
     jump ^wide_loop_2
@@ -440,10 +440,10 @@ function @stepped(%n : i64, %p : ptr) -> void [no_inline=yes] {
 
   block ^loop_preheader_1:
     %t4 = binary add i64 %n, -2
-    %t5 = vector fromi64 1
-    %t6 = vector pzero
-    %t7 = vector punpcklqdq %t6, %t5
-    %t8 = vector paddq %t6, %t7
+    %t5 = vector pzero
+    %t6 = vector fromi64 1
+    %t7 = vector punpcklqdq %t5, %t6
+    %t8 = vector paddq %t5, %t7
     %t9 = vector fromi64 2
     %t10 = vector pshufd %t9, 68
     jump ^wide_loop_2
@@ -547,10 +547,10 @@ function @changing_step(%n : i64) -> void [no_inline=yes] {
 
   block ^loop_preheader_1:
     %t4 = binary add i64 %n, -2
-    %t5 = vector fromi64 1
-    %t6 = vector pzero
-    %t7 = vector punpcklqdq %t6, %t5
-    %t8 = vector paddq %t6, %t7
+    %t5 = vector pzero
+    %t6 = vector fromi64 1
+    %t7 = vector punpcklqdq %t5, %t6
+    %t8 = vector paddq %t5, %t7
     %t9 = vector fromi64 2
     %t10 = vector pshufd %t9, 68
     jump ^wide_loop_2

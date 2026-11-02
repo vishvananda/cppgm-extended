@@ -107,6 +107,7 @@ private:
 	Value scalar(Value v) const;
 	Value widen_load(Value address, unsigned bytes, InstId origin);
 	void widen_store(Value value, Value address, unsigned bytes, InstId origin);
+	Value lane_address(Value address, Type type);
 	Value extend(Value v, unsigned from, unsigned to, bool is_signed);
 	Value narrow(Value v, unsigned from, unsigned to);
 	void widen_convert(const Instruction& inst);
@@ -138,6 +139,7 @@ private:
 	std::vector<std::pair<uint32_t, uint32_t>> tests_;
 	std::vector<uint8_t> in_scalar_, in_wide_; // per temp
 	uint32_t counter_ = 0;
+	bool backward_ = false; // accesses step down: the top lane holds the first pass
 	Value bound_ = Value::none();
 	int64_t bound_add_ = 0;
 	bool unsigned_counter_ = false;
@@ -643,9 +645,15 @@ bool LoopVectorizer::read_accesses()
 			continue;
 		Access a{ id, inst.type, inst.op == Opcode::Store, (inst.flags & IF_TYPED) != 0, Linear(), Value::none(),
 			Value::none(), 0 };
-		if (!address(inst.ops[a.store ? 1 : 0], a.at, a.base, a.object) ||
-			a.at.scale != static_cast<int64_t>(lane_bytes(inst.type)) || a.at.scale == 0)
+		if (!address(inst.ops[a.store ? 1 : 0], a.at, a.base, a.object))
 			return false;
+		const int64_t bytes = static_cast<int64_t>(lane_bytes(inst.type));
+		// One direction: lanes hold their passes in one order, in every access.
+		if (bytes == 0 || (a.at.scale != bytes && a.at.scale != -bytes) ||
+			(!accesses_.empty() && (a.at.scale < 0) != backward_))
+			return false;
+		backward_ = a.at.scale < 0;
+		a.at.scale = bytes;
 		accesses_.push_back(a);
 	}
 	for (const Reduction& r : reductions_)
@@ -820,7 +828,7 @@ bool LoopVectorizer::read_dependences()
 				continue;
 			if (first.group == later.group)
 			{
-				const int64_t apart = later.at.offset - first.at.offset;
+				const int64_t apart = (later.at.offset - first.at.offset) * (backward_ ? -1 : 1);
 				const int64_t whole = static_cast<int64_t>(lanes_) * std::max(first.at.scale, later.at.scale);
 				if ((apart == 0 && first.at.scale == later.at.scale) || apart >= whole || apart <= -whole)
 					continue;
@@ -1217,15 +1225,29 @@ void LoopVectorizer::widen_unary(const Instruction& inst)
 	}
 }
 
+// Where the lanes of an access lie: its element in this pass is the highest
+// of them when the accesses step down.
+Value LoopVectorizer::lane_address(Value address, Type type)
+{
+	if (!backward_)
+		return address;
+	Instruction low = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
+	low.ops[0] = address;
+	low.ops[1] = literal(-static_cast<int64_t>((lanes_ - 1) * lane_bytes(type)));
+	return emit(low, Type::scalar(TypeKind::Ptr));
+}
+
 void LoopVectorizer::widen(const Instruction& inst, InstId origin)
 {
 	switch (inst.op)
 	{
 	case Opcode::Load:
-		wides_[inst.result] = widen_load(scalar(inst.ops[0]), lanes_ * lane_bytes(inst.type), origin);
+		wides_[inst.result] = widen_load(
+			lane_address(scalar(inst.ops[0]), inst.type), lanes_ * lane_bytes(inst.type), origin);
 		break;
 	case Opcode::Store:
-		widen_store(wide(inst.ops[0], inst.type), scalar(inst.ops[1]), lanes_ * lane_bytes(inst.type), origin);
+		widen_store(wide(inst.ops[0], inst.type), lane_address(scalar(inst.ops[1]), inst.type),
+			lanes_ * lane_bytes(inst.type), origin);
 		break;
 	case Opcode::Copy:
 		wides_[inst.result] = wides_[inst.ops[0].index];
@@ -1300,16 +1322,26 @@ Value LoopVectorizer::overlap_guard(Value distance)
 			return;
 		const Access& a = accesses_[groups_[g].lowest];
 		const Instruction& inst = body_.instructions[a.inst];
-		first[g] = scalar(inst.ops[a.store ? 1 : 0]);
+		const Value lowest = scalar(inst.ops[a.store ? 1 : 0]);
+		const int64_t spread = groups_[g].high - groups_[g].low;
 		const Value bytes = binary(BinaryOp::Mul, i64, passes, literal(groups_[g].scale), i64);
-		Instruction end = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
-		end.ops[0] = first[g];
-		end.ops[1] = bytes;
-		Value top = emit(end, pointer);
-		Instruction past = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
-		past.ops[0] = top;
-		past.ops[1] = literal(groups_[g].high - groups_[g].low);
-		last[g] = emit(past, pointer);
+		auto step = [&](Value from, Value by) {
+			Instruction index = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
+			index.ops[0] = from;
+			index.ops[1] = by;
+			return emit(index, pointer);
+		};
+		if (backward_)
+		{
+			const Value down = binary(BinaryOp::Sub, i64, literal(groups_[g].scale), bytes, i64);
+			first[g] = step(lowest, down);
+			last[g] = step(lowest, literal(spread + groups_[g].scale));
+		}
+		else
+		{
+			first[g] = lowest;
+			last[g] = step(step(lowest, bytes), literal(spread));
+		}
 	};
 	Value all = Value::none();
 	for (const std::pair<uint32_t, uint32_t>& test : tests_)
@@ -1445,16 +1477,23 @@ void LoopVectorizer::vectorize(uint32_t loop)
 			continue;
 		at(vector_pre_, pre_tail_);
 		const uint64_t d = static_cast<uint64_t>(iv.step);
+		// The pass each lane holds, counted from the first.
+		auto pass = [&](unsigned lane) { return (backward_ ? lanes_ - 1 - lane : lane) * d; };
+		auto bits = [&](uint64_t value) {
+			return value == 0 ? vector(VectorOp::Pzero)
+							  : vector(VectorOp::Fromi64, literal(static_cast<int64_t>(value)));
+		};
 		Value steps = Value::none();
 		if (lane_bytes(iv.type) == 8)
-			steps = vector(VectorOp::Punpcklqdq, vector(VectorOp::Pzero),
-				vector(VectorOp::Fromi64, literal(static_cast<int64_t>(d))));
+		{
+			const Value low = bits(pass(0));
+			steps = vector(VectorOp::Punpcklqdq, low, bits(pass(1)));
+		}
 		else
 		{
-			const Value low = vector(VectorOp::Fromi64, literal(static_cast<int64_t>(d << 32)));
-			const Value high = vector(
-				VectorOp::Fromi64, literal(static_cast<int64_t>(((d * 3) << 32) | ((d * 2) & 0xffffffffu))));
-			steps = lanes_ == 2 ? low : vector(VectorOp::Punpcklqdq, low, high);
+			const Value low = bits((pass(1) << 32) | (pass(0) & 0xffffffffu));
+			steps = lanes_ == 2 ? low
+								: vector(VectorOp::Punpcklqdq, low, bits((pass(3) << 32) | (pass(2) & 0xffffffffu)));
 		}
 		pre_tail_ = tail_;
 		const Value from = broadcast(iv.start, iv.type);

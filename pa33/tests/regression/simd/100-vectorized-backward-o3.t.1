@@ -1,0 +1,73 @@
+#include <stdio.h>
+
+typedef unsigned char u8;
+
+__attribute__((noinline)) void add_down(int* y, const int* x, int n) { for (int i = n - 1; i >= 0; --i) y[i] += x[i]; }
+__attribute__((noinline)) void mul_down(float* y, const float* x, int n) { for (int i = n; i-- > 0;) y[i] = y[i] * x[i] + 1.5f; }
+__attribute__((noinline)) void pointer_down(long* first, long* last) { while (last != first) { --last; *last ^= 5; } }
+__attribute__((noinline)) void bytes_down(int* d, const u8* x, int n) { for (int i = n - 1; i >= 0; --i) d[i] = x[i]; }
+__attribute__((noinline)) void narrow_down(u8* d, const int* x, int n) { for (int i = n - 1; i >= 0; --i) d[i] = (u8)x[i]; }
+__attribute__((noinline)) void short_down(short* d, const u8* x, int n) { for (int i = n - 1; i >= 0; --i) d[i] = (short)(x[i] + 300); }
+__attribute__((noinline)) void counter_int(int* d, int n) { for (int i = n - 1; i >= 0; --i) d[i] = i * 3; }
+__attribute__((noinline)) void counter_long(long* d, long n) { for (long i = n - 1; i >= 0; --i) d[i] = i + 7; }
+__attribute__((noinline)) void counter_other(int* d, int n) { int k = 11; for (int i = n - 1; i >= 0; --i) { d[i] = k; k += 5; } }
+__attribute__((noinline)) int sum_down(const int* x, int n) { int s = 3; for (int i = n - 1; i >= 0; --i) s += x[i]; return s; }
+__attribute__((noinline)) int sub_down(const int* x, int n) { int s = 3; for (int i = n - 1; i >= 0; --i) s -= x[i]; return s; }
+__attribute__((noinline)) void shift_up(int* d, int n) { for (int i = n; i > 0; --i) d[i] = d[i - 1] + 1; }
+__attribute__((noinline)) void shift_down(int* d, int n) { for (int i = n; i > 0; --i) d[i - 1] = d[i] + 1; }
+__attribute__((noinline)) void step_two(int* d, int n) { for (int i = n - 2; i >= 0; i -= 2) d[i] = i; }
+
+static unsigned long H = 14695981039346656037ul;
+static void mix(const void* p, unsigned long n) {
+  const u8* b = (const u8*)p;
+  for (unsigned long i = 0; i < n; i++) H = (H ^ b[i]) * 1099511628211ul;
+}
+
+static int a[200], o[200];
+static long l[200];
+static float f[200], g[200];
+static u8 b[200];
+static short s[200];
+
+static void reset() {
+  for (int i = 0; i < 200; i++) {
+    a[i] = i * 7 - 40;
+    o[i] = i * 3 + 1;
+    l[i] = i * 1000000007l;
+    f[i] = i * 0.5f - 3;
+    g[i] = i + 0.25f;
+    b[i] = (u8)(i * 11);
+    s[i] = (short)(i * 300 - 1000);
+  }
+}
+
+int main() {
+  for (int n = 0; n < 40; n++) {
+    reset();
+    add_down(o + 1, a + 2, n); mix(o, sizeof o);
+    mul_down(f + 1, g + 2, n); mix(f, sizeof f);
+    pointer_down(l + 1, l + 1 + n); mix(l, sizeof l);
+    bytes_down(a + 1, b + 2, n); mix(a, sizeof a);
+    narrow_down(b, o + 1, n); mix(b, sizeof b);
+    short_down(s, b, n); mix(s, sizeof s);
+    counter_int(o, n); mix(o, sizeof o);
+    counter_long(l, n); mix(l, sizeof l);
+    counter_other(o, n); mix(o, sizeof o);
+    int t = sum_down(a, n) ^ sub_down(o, n);
+    mix(&t, sizeof t);
+    shift_up(a, n); mix(a, sizeof a);
+    shift_down(a, n); mix(a, sizeof a);
+    step_two(a, n); mix(a, sizeof a);
+    printf("%d %lx\n", n, H);
+  }
+  // Bytes may alias the ints: the ranges overlap at every small distance.
+  for (int d = 0; d < 12; d++) {
+    reset();
+    bytes_down(a, (const u8*)a + d, 30); mix(a, sizeof a);
+    bytes_down(a + d, (const u8*)a, 30); mix(a, sizeof a);
+    narrow_down((u8*)a + d, a, 30); mix(a, sizeof a);
+    narrow_down((u8*)a, a + d, 30); mix(a, sizeof a);
+    printf("%d %lx\n", d, H);
+  }
+  return 0;
+}

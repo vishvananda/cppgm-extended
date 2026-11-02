@@ -70,10 +70,10 @@ function @long_counter_as_data(%d : ptr, %n : i64) -> void [no_inline=yes] {
 
   block ^loop_preheader_1:
     %t4 = binary add i64 %n, -2
-    %t5 = vector fromi64 1
-    %t6 = vector pzero
-    %t7 = vector punpcklqdq %t6, %t5
-    %t8 = vector paddq %t6, %t7
+    %t5 = vector pzero
+    %t6 = vector fromi64 1
+    %t7 = vector punpcklqdq %t5, %t6
+    %t8 = vector paddq %t5, %t7
     %t9 = vector fromi64 2
     %t10 = vector pshufd %t9, 68
     jump ^wide_loop_2

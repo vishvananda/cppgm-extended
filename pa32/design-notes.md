@@ -417,7 +417,9 @@ vectorization stays outside the course contract.
   other phi is another counter or an integer reduction (`add`, `sub`, `and`,
   `or` or `xor` of `i32`, `u32` or `i64`). A floating sum stays scalar: lanes
   would change the order of its additions.
-- Each load and store reads or writes consecutive elements. Each operation
+- Each load and store reads or writes consecutive elements, and all of them
+  step in one direction. In a loop that steps down, the lanes hold their passes
+  in the opposite order, so no lane needs a shuffle. Each operation
   needs a lane form: `add`, `sub`, the bit operators, shifts by a literal, `mul`
   of `i16` and `i32` and of the floating types, floating `div`, `neg`, `bitnot`,
   `sqrt`, `select` of a compare, integer `sext`, `zext` and `trunc`, `sitofp`
