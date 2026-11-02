@@ -16,66 +16,55 @@ function @more(%a : i64, %b : i64) -> i64 [binding=internal] {
     return i64 %c
 }
 function @count(%p : ptr, %n : i64, %f : ptr) -> i64 [binding=strong] {
+  block ^0:
+    jump ^entry
+
   block ^entry:
-    %more = cmp gt i64 %n, 1
+    %t1 = phi i64 [^0: 0, ^step: %t10]
+    %t2 = phi i64 [^0: %n, ^step: %m]
+    %t3 = phi ptr [^0: %p, ^step: %q]
+    %more = cmp gt i64 %t2, 1
     branch %more, ^step, ^none
 
   block ^step:
-    %a = load typed i64 %p
-    %q = index i8 %p, 8
+    %a = load typed i64 %t3
+    %q = index i8 %t3, 8
     %b = load typed i64 %q
     %x = call i64 %f(%a, %b) as (%l : i64, %r : i64) -> i64
-    %m = binary sub i64 %n, 1
-    %more_7 = cmp gt i64 %m, 1
-    branch %more_7, ^step_2, ^inline_cont_3
-
-  block ^step_2:
-    %t8 = call i64 @count(%q, %m, %f)
-    jump ^inline_cont_3
-
-  block ^inline_cont_3:
-    %rest = phi i64 [^step_2: %t8, ^step: 0]
-    %sum = binary add i64 %x, %rest
-    return i64 %sum
+    %m = binary sub i64 %t2, 1
+    %t10 = binary add i64 %x, %t1
+    jump ^entry
 
   block ^none:
-    return i64 0
+    return i64 %t1
 }
 function @main() -> i32 [role=entry] {
   block ^entry:
-    %ascending = call i64 @__callee_copy0(@data, 4, @less)
+    jump ^entry_1
+
+  block ^entry_1:
+    %t1 = phi i64 [^step_2: %t10, ^entry: 0]
+    %t2 = phi i64 [^step_2: %m_9, ^entry: 4]
+    %t3 = phi ptr [^step_2: %q_6, ^entry: @data]
+    %more_4 = cmp gt i64 %t2, 1
+    branch %more_4, ^step_2, ^none_3
+
+  block ^step_2:
+    %a_5 = load typed i64 %t3
+    %q_6 = index i8 %t3, 8
+    %b_7 = load typed i64 %q_6
+    %c_8 = cmp lt i64 %a_5, %b_7
+    %m_9 = binary sub i64 %t2, 1
+    %t10 = binary add i64 %t1, %c_8
+    jump ^entry_1
+
+  block ^none_3:
     %pick = load volatile i64 @data
     %up = cmp gt i64 %pick, 4
     %which = select ptr %up, @more, @less
-    %t5 = call i64 @count(@data, 4, %which)
-    %scaled = binary mul i64 %ascending, 10
-    %all = binary add i64 %scaled, %t5
+    %descending = call i64 @count(@data, 4, %which)
+    %scaled = binary mul i64 %t1, 10
+    %all = binary add i64 %descending, %scaled
     %r = convert trunc i32 i64 %all
     return i32 %r
-}
-function @__callee_copy0(%p : ptr, %n : i64, %f : ptr) -> i64 [binding=internal] {
-  block ^entry:
-    %more = cmp gt i64 %n, 1
-    branch %more, ^step, ^none
-
-  block ^step:
-    %a = load typed i64 %p
-    %q = index i8 %p, 8
-    %b = load typed i64 %q
-    %m = binary sub i64 %n, 1
-    %more_6 = cmp gt i64 %m, 1
-    branch %more_6, ^step_2, ^inline_cont_3
-
-  block ^step_2:
-    %t7 = call i64 @__callee_copy0(%q, %m, @less)
-    jump ^inline_cont_3
-
-  block ^inline_cont_3:
-    %rest = phi i64 [^step_2: %t7, ^step: 0]
-    %c_9 = cmp lt i64 %a, %b
-    %sum = binary add i64 %rest, %c_9
-    return i64 %sum
-
-  block ^none:
-    return i64 0
 }

@@ -1,0 +1,52 @@
+function @sum(%n : i64, %m : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^0:
+    jump ^entry
+
+  block ^entry:
+    %t1 = phi i64 [^0: 0, ^plain: %t1, ^adding: %t9]
+    %t2 = phi i64 [^0: %m, ^plain: %more, ^adding: %t2]
+    %t3 = phi i64 [^0: %n, ^plain: %less, ^adding: %less]
+    %done = cmp eq i64 %t3, 0
+    branch %done, ^base, ^step
+
+  block ^base:
+    %t5 = binary add i64 %t2, %t1
+    return i64 %t5
+
+  block ^step:
+    %odd = binary and i64 %t3, 1
+    %less = binary sub i64 %t3, 1
+    branch %odd, ^plain, ^adding
+
+  block ^plain:
+    %more = binary add i64 %t2, 1
+    jump ^entry
+
+  block ^adding:
+    %t9 = binary add i64 %t3, %t1
+    jump ^entry
+}
+function @half(%n : i64, %x : f64) -> f64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %done = cmp eq i64 %n, 0
+    branch %done, ^base, ^step
+
+  block ^base:
+    return f64 %x
+
+  block ^step:
+    %less = binary sub i64 %n, 1
+    %q = call f64 @half(%less, %x)
+    %r = binary add f64 %q, 0.5
+    return f64 %r
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %s = call i64 @sum(100, 5)
+    %h = call f64 @half(4, 1.0)
+    %hi = convert fptosi i64 f64 %h
+    %t = binary add i64 %s, %hi
+    %bad = cmp ne i64 %t, 2608
+    %r = convert trunc i32 i64 %bad
+    return i32 %r
+}

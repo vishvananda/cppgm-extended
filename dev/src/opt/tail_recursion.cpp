@@ -10,7 +10,11 @@ namespace {
 // Tail recursion: a call of the function itself whose result is all it then
 // returns becomes a jump back to the entry, its arguments the parameters' new
 // values. The caller's frame is reused, so no address of it may reach anything
-// but this frame's own loads and stores.
+// but this frame's own loads and stores. A call whose result an integer add
+// then returns (`return a + f(x)`) does the same with an accumulator: a phi
+// of the entry, zero on entering, that the call's site adds `a` to and every
+// other return adds to what it returns (integer addition reassociates, so no
+// add keeps `nowrap`).
 class TailRecursion
 {
 public:
@@ -25,6 +29,8 @@ private:
 		InstId call;
 		InstId before_call;
 		BlockId merge; // the block of the phi that returns the result, if any
+		InstId add;    // the add of an accumulating site, else kNoId
+		Value addend;  // and what it adds to the call's result
 	};
 
 	bool frame_private();
@@ -104,8 +110,28 @@ bool TailRecursion::self_call(BlockId block, Site& site, Value& returned) const
 		return false;
 	site.block = block;
 	site.call = previous_in_block(body_, block, last);
+	site.add = kNoId;
+	site.addend = Value::none();
 	if (site.call == kNoId)
 		return false;
+	const Instruction& add = body_.instructions[site.call];
+	if (add.op == Opcode::Binary && add.sub == static_cast<uint8_t>(BinaryOp::Add) && add.type.is_integer() &&
+		add.type.kind() != TypeKind::I1 && returned == Value::temp(add.result))
+	{
+		const InstId at = previous_in_block(body_, block, site.call);
+		if (at == kNoId || body_.instructions[at].op != Opcode::Call || body_.instructions[at].type.is_void())
+			return false;
+		const Value result = Value::temp(body_.instructions[at].result);
+		if (add.ops[0] == result && !(add.ops[1] == result))
+			site.addend = add.ops[1];
+		else if (add.ops[1] == result && !(add.ops[0] == result))
+			site.addend = add.ops[0];
+		else
+			return false;
+		site.add = site.call;
+		site.call = at;
+		returned = result;
+	}
 	const Instruction& call = body_.instructions[site.call];
 	if (call.op != Opcode::Call || !call.ops[0].is(ValueKind::Symbol) || call.ops[0].index != c_.symbol ||
 		call.extra_count != body_.parameter_count)
@@ -146,6 +172,10 @@ void TailRecursion::rewrite(BlockId header)
 			phis[k] = append_temp(body_, body_.temps[k].type, kNoId);
 			replace_all_uses(body_, k, Value::temp(phis[k]));
 		}
+	// (An addend read from the instruction holds what it was.)
+	for (Site& site : sites_)
+		if (site.addend.is(ValueKind::Temp) && site.addend.index < count && changes[site.addend.index])
+			site.addend = Value::temp(phis[site.addend.index]);
 
 	const BlockId entry = append_block(body_, BlockKind::Plain);
 	Instruction enter = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
@@ -175,15 +205,88 @@ void TailRecursion::rewrite(BlockId header)
 		insert_after(body_, header, kNoId, id);
 	}
 
+	// The accumulator, when a site adds to the call's result.
+	bool accumulates = false;
 	for (const Site& site : sites_)
+		accumulates = accumulates || site.add != kNoId;
+	TempId sum = kNoId;
+	std::vector<Value> sums(sites_.size(), Value::none());
+	const auto add = [&](Value left, Value right, Type type) {
+		Instruction inst = make_instruction(Opcode::Binary, type);
+		inst.sub = static_cast<uint8_t>(BinaryOp::Add);
+		inst.ops[0] = left;
+		inst.ops[1] = right;
+		inst.result = append_temp(body_, type, kNoId);
+		const InstId id = append_instruction(body_, inst);
+		body_.temps[body_.instructions[id].result].def = id;
+		return id;
+	};
+	Type type = Type::scalar(TypeKind::Void);
+	if (accumulates)
 	{
+		for (const Site& site : sites_)
+			if (site.add != kNoId)
+				type = body_.instructions[site.add].type;
+		sum = append_temp(body_, type, kNoId);
+		// Every return adds the accumulator (the sites' returns go below).
+		for (BlockId b : body_.layout)
+		{
+			const InstId last = body_.blocks[b].last;
+			if (last == kNoId || body_.instructions[last].op != Opcode::Return)
+				continue;
+			bool site_block = false;
+			for (const Site& site : sites_)
+				site_block = site_block || (site.block == b && site.merge == kNoId);
+			if (site_block)
+				continue;
+			const InstId id = add(Value::temp(sum), body_.instructions[last].ops[0], type);
+			insert_after(body_, b, previous_in_block(body_, b, last), id);
+			body_.instructions[last].ops[0] = Value::temp(body_.instructions[id].result);
+		}
+	}
+
+	for (size_t k = 0; k < sites_.size(); ++k)
+	{
+		const Site& site = sites_[k];
 		if (site.merge != kNoId)
 			remove_phi_incoming(body_, site.merge, site.block);
-		unlink_after(body_, site.block, site.call, body_.blocks[site.block].last);
+		if (site.add != kNoId)
+		{
+			unlink_after(body_, site.block, site.add, body_.blocks[site.block].last);
+			unlink_after(body_, site.block, site.call, site.add);
+		}
+		else
+			unlink_after(body_, site.block, site.call, body_.blocks[site.block].last);
 		unlink_after(body_, site.block, site.before_call, site.call);
-		insert_after(body_, site.block, site.before_call, append_instruction(body_, enter));
+		InstId after = site.before_call;
+		sums[k] = Value::temp(sum);
+		if (site.add != kNoId)
+		{
+			const InstId id = add(Value::temp(sum), site.addend, type);
+			insert_after(body_, site.block, after, id);
+			after = id;
+			sums[k] = Value::temp(body_.instructions[id].result);
+		}
+		insert_after(body_, site.block, after, append_instruction(body_, enter));
 		++c_.stats.tail_calls_removed;
 	}
+	if (!accumulates)
+		return;
+	pairs.clear();
+	pairs.push_back(Value::block(entry));
+	pairs.push_back(integer_value(body_, Literal{ 0, 0 }));
+	for (size_t k = 0; k < sites_.size(); ++k)
+	{
+		pairs.push_back(Value::block(sites_[k].block));
+		pairs.push_back(sums[k]);
+	}
+	Instruction phi = make_instruction(Opcode::Phi, type);
+	phi.extra_first = append_operands(body_, pairs.data(), static_cast<uint32_t>(pairs.size()));
+	phi.extra_count = static_cast<uint32_t>(pairs.size());
+	phi.result = sum;
+	const InstId id = append_instruction(body_, phi);
+	body_.temps[sum].def = id;
+	insert_after(body_, header, kNoId, id);
 }
 
 bool TailRecursion::run()

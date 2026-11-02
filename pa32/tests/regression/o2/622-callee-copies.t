@@ -1,6 +1,7 @@
 # A call that passes a defined function for a parameter its callee calls
 # through calls a copy that calls the function directly, and the copy's
-# recursive call passes it on to itself, so the comparison is inlined there.
+# recursive call passes it on to itself, so the comparison is inlined there
+# (the copy's recursion then accumulates into a loop, inlined into main).
 # The other caller passes a function it computes and keeps the original.
 global @data : obj<32x8> = {
   i64 5
