@@ -1,0 +1,80 @@
+global @seed : i32 = 42
+global @bound : i32 = 9
+global @flushes : i32 = 0
+
+function @flush() -> void [no_inline=yes] {
+  block ^entry:
+    %f = load i32 @flushes
+    %g = binary add i32 %f, 1
+    store i32 %g, @flushes
+    %s = load i32 @seed
+    %t = binary add i32 %s, 1000
+    store i32 %t, @seed
+    return void
+}
+function @generate() -> i32 [no_inline=yes] {
+  block ^entry:
+    %t1 = load i32 @seed
+    %t2 = load i32 @bound
+    jump ^head
+
+  block ^head:
+    %t3 = phi i32 [^entry: %t2, ^flush: %t15, ^next: %t3]
+    %t4 = phi i32 [^entry: %t1, ^flush: %t16, ^next: %z]
+    %i = phi i32 [^entry: 0, ^next: %j, ^flush: %j]
+    %sum = phi i32 [^entry: 0, ^next: %more, ^flush: %more]
+    %m = binary mul i32 %t4, 3877
+    %a = binary add i32 %m, 29573
+    %z = binary mod i32 %a, 139968
+    store i32 %z, @seed
+    %bits = binary and i32 %z, 15
+    %more = binary add i32 %sum, %bits
+    %j = binary add i32 %i, 1
+    %every = binary and i32 %j, 3
+    %full = cmp eq i32 %every, 0
+    branch %full, ^flush, ^next
+
+  block ^flush:
+    call void @flush()
+    %t15 = load i32 @bound
+    %t16 = load i32 @seed
+    %go = cmp lt i32 %j, %t15
+    branch %go, ^head, ^done
+
+  block ^next:
+    %on = cmp lt i32 %j, %t3
+    branch %on, ^head, ^done
+
+  block ^done:
+    return i32 %more
+}
+function @every(%n : i32) -> i32 [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^head
+
+  block ^head:
+    %i = phi i32 [^entry: 0, ^head: %j]
+    %s = load i32 @seed
+    %t = binary add i32 %s, 1
+    store i32 %t, @seed
+    call void @flush()
+    %j = binary add nowrap i32 %i, 1
+    %go = cmp lt i32 %j, %n
+    branch %go, ^head, ^done
+
+  block ^done:
+    %r = load i32 @seed
+    return i32 %r
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %g = call i32 @generate()
+    %e = call i32 @every(3)
+    %f = load i32 @flushes
+    %h = binary and i32 %e, 255
+    %x = binary add i32 %g, %h
+    %y = binary mul i32 %f, 1000
+    %r = binary add i32 %x, %y
+    %b = binary and i32 %r, 255
+    return i32 %b
+}

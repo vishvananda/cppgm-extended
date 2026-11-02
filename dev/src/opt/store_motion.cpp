@@ -18,7 +18,9 @@ const size_t kLoopLocations = 4;
 
 // Store motion: a location a loop stores on every pass lives in a slot for
 // the loop, which promotion then keeps in a register: loaded in the preheader
-// and stored on each exit.
+// and stored on each exit. In a loop with calls on some paths, a location the
+// loop loads is read from such a slot instead (its stores stay, and write the
+// slot too; a reload follows each call).
 class StoreMotion
 {
 public:
@@ -42,6 +44,12 @@ private:
 		Type type;
 		bool typed; // every store of it is
 	};
+	// The loop's calls when none runs on every pass (calls_ then empty when
+	// it holds none).
+	bool side_calls(uint32_t loop) const;
+	bool copied_in(InstId load) const;
+	void find_loaded_locations(uint32_t loop);
+	void read_location(uint32_t loop, const Location& location);
 
 	bool invariant(uint32_t loop, Value v) const;
 	Located place(uint32_t loop, Value address, const Located& located) const;
@@ -58,6 +66,7 @@ private:
 	Cfg& cfg_;
 	LoopForest forest_;
 	std::vector<Access> accesses_;
+	std::vector<InstId> calls_;
 	std::vector<Location> locations_;
 };
 
@@ -121,6 +130,7 @@ Located StoreMotion::place(uint32_t loop, Value address, const Located& located)
 bool StoreMotion::read_accesses(uint32_t loop)
 {
 	accesses_.clear();
+	calls_.clear();
 	for (BlockId b : forest_.loops[loop].blocks)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
@@ -134,6 +144,8 @@ bool StoreMotion::read_accesses(uint32_t loop)
 				accesses_.push_back(Access{ i, place(loop, address, located), located.root, inst.type,
 					inst.op == Opcode::Store, (inst.flags & IF_TYPED) != 0 });
 			}
+			else if (inst.op == Opcode::Call && calls_.size() < kLoopAccesses)
+				calls_.push_back(i);
 			else if (!is_pure(inst) && inst.op != Opcode::Jump && inst.op != Opcode::Branch &&
 				inst.op != Opcode::Switch)
 				return false;
@@ -196,6 +208,65 @@ void StoreMotion::find_locations(uint32_t loop)
 		}
 		if (alone && stored_each_pass(loop, exiting, s))
 			locations_.push_back(Location{ s.at, s.type, typed });
+	}
+}
+
+// Whether a load is one read_location made: its value goes straight into
+// a slot of this pass.
+bool StoreMotion::copied_in(InstId load) const
+{
+	const Instruction& inst = body_.instructions[load];
+	if (inst.next == kNoId)
+		return false;
+	const Instruction& next = body_.instructions[inst.next];
+	return next.op == Opcode::Store && next.ops[0] == Value::temp(inst.result) && next.ops[1].is(ValueKind::Slot) &&
+		body_.slots[next.ops[1].index].kind == SlotKind::Demote;
+}
+
+bool StoreMotion::side_calls(uint32_t loop) const
+{
+	for (InstId call : calls_)
+	{
+		const BlockId b = c_.block_of[call];
+		bool every = true;
+		for (BlockId latch : forest_.loops[loop].latches)
+			every = every && cfg_.dominates(b, latch);
+		if (every)
+			return false;
+	}
+	return true;
+}
+
+// Locations the loop loads, with a loop-invariant address no other store of
+// the loop may overlap.
+void StoreMotion::find_loaded_locations(uint32_t loop)
+{
+	locations_.clear();
+	if (!side_calls(loop))
+		return;
+	for (const Access& l : accesses_)
+	{
+		const TypeKind kind = l.type.kind();
+		if (l.store || !invariant(loop, l.at.root) || !l.at.known || locations_.size() == kLoopLocations ||
+			l.type.is_object() || l.type.is_vector() || kind == TypeKind::F80 || kind == TypeKind::I128 ||
+			(l.at.root.is(ValueKind::Slot) && body_.slots[l.at.root.index].kind == SlotKind::Demote))
+			continue;
+		bool seen = false;
+		for (const Location& m : locations_)
+			seen = seen || same_place(m.at, m.type, l.at, l.type);
+		bool alone = !seen, typed = true, read = false;
+		for (const Access& a : accesses_)
+		{
+			if (same_place(a.at, a.type, l.at, l.type))
+			{
+				typed = typed && a.typed;
+				read = read || (!a.store && !copied_in(a.inst));
+			}
+			else
+				alone = alone && !(a.store && may_overlap(a, l));
+		}
+		if (alone && read)
+			locations_.push_back(Location{ l.at, l.type, typed });
 	}
 }
 
@@ -303,8 +374,62 @@ void StoreMotion::move_location(uint32_t loop, const Location& location, const s
 	++c_.stats.stores_sunk;
 }
 
+// The location's loads read a slot: loaded in the preheader, written with
+// each store's value, and loaded again after each call.
+void StoreMotion::read_location(uint32_t loop, const Location& location)
+{
+	const SlotId slot = static_cast<SlotId>(body_.slots.size());
+	body_.slots.push_back(Slot{ 0, SlotKind::Demote, 0, 0, location.type });
+	auto copy_in = [&](BlockId block, InstId& tail) {
+		Instruction load = make_instruction(Opcode::Load, location.type);
+		load.ops[0] = address_of(location, block, tail);
+		if (location.typed)
+			load.flags |= IF_TYPED;
+		const InstId loaded = append_instruction(body_, load);
+		const TempId value = append_temp(body_, location.type, loaded);
+		body_.instructions[loaded].result = value;
+		insert_after(body_, block, tail, loaded);
+		Instruction keep = make_instruction(Opcode::Store, location.type);
+		keep.ops[0] = Value::temp(value);
+		keep.ops[1] = Value::slot(slot);
+		const InstId kept = append_instruction(body_, keep);
+		insert_after(body_, block, loaded, kept);
+		tail = kept;
+	};
+	for (const Access& a : accesses_)
+	{
+		if (!same_place(a.at, a.type, location.at, location.type))
+			continue;
+		if (!a.store)
+		{
+			body_.instructions[a.inst].ops[0] = Value::slot(slot);
+			body_.instructions[a.inst].flags &= static_cast<uint8_t>(~IF_TYPED);
+			continue;
+		}
+		Instruction keep = make_instruction(Opcode::Store, location.type);
+		keep.ops[0] = body_.instructions[a.inst].ops[0];
+		keep.ops[1] = Value::slot(slot);
+		insert_after(body_, c_.block_of[a.inst], a.inst, append_instruction(body_, keep));
+	}
+	for (InstId call : calls_)
+	{
+		InstId tail = call;
+		copy_in(c_.block_of[call], tail);
+	}
+	const BlockId pre = forest_.loops[loop].preheader;
+	InstId tail = previous_in_block(body_, pre, body_.blocks[pre].last);
+	copy_in(pre, tail);
+	++c_.stats.loads_reused;
+}
+
 void StoreMotion::promote(uint32_t loop)
 {
+	if (!calls_.empty())
+	{
+		for (const Location& location : locations_)
+			read_location(loop, location);
+		return;
+	}
 	const std::vector<BlockId> exits = exit_blocks(loop);
 	for (const Location& location : locations_)
 		move_location(loop, location, exits);
@@ -330,7 +455,10 @@ bool StoreMotion::run()
 		{
 			if (!read_accesses(loop))
 				continue;
-			find_locations(loop);
+			if (calls_.empty())
+				find_locations(loop);
+			else
+				find_loaded_locations(loop);
 			if (locations_.empty() || !claim_loop(cfg_, forest_.loops[loop], touched))
 				continue;
 			if (forest_.loops[loop].preheader == kNoId)

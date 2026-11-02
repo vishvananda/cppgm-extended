@@ -578,6 +578,17 @@ exit writes nothing a run of the loop would not have written. The location is
 loaded in the preheader and stored on each exit edge. The stores this leaves
 may then leave the loop around it.
 
+A loop with calls, none of which runs on every pass (each call's block fails
+to dominate some latch), keeps in a register each of up to four locations it
+loads instead. The location has a loop-invariant address of known offset and
+the same types as above, and no other store of the loop may overlap it.
+Loads of other locations may overlap it. Its stores stay where they are. The
+register takes the value of each store, and the location is loaded again
+after each call, which may have written it. A seed that a loop updates
+through a global then stays out of memory on the chain from one pass to the
+next. A call that runs on every pass would reload it on every pass, and the
+loop is left as it is.
+
 Counter widening: registers hold narrow values extended, so each `int` addition
 that feeds an index costs an extension. An `int` counter whose step cannot wrap
 equals, extended, a 64-bit counter of the same step, and so does its sum with
