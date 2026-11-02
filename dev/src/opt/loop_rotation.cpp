@@ -387,6 +387,32 @@ bool LoopRotation::run()
 	return any;
 }
 
+bool merge_loop_entries(FunctionContext& context)
+{
+	context.ensure_cfg();
+	LoopForest forest;
+	find_loops(context.body, context.cfg, forest);
+	bool any = false;
+	for (uint32_t loop = 0; loop < forest.loops.size(); ++loop)
+	{
+		const Loop& l = forest.loops[loop];
+		BlockId entry = kNoId;
+		bool several = false;
+		for (uint32_t k = context.cfg.pred_first[l.header]; k < context.cfg.pred_first[l.header + 1]; ++k)
+		{
+			const BlockId p = context.cfg.preds[k];
+			if (in_loop(forest, loop, p))
+				continue;
+			several = several || (entry != kNoId && entry != p);
+			entry = p;
+		}
+		any = (several && make_loop_preheader(context.body, context.cfg, forest, loop)) || any;
+	}
+	if (any)
+		context.invalidate_cfg();
+	return any;
+}
+
 bool rotate_loops(FunctionContext& context)
 {
 	LoopRotation pass(context);

@@ -350,6 +350,8 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	changed = RUN_PASS(mark_no_wrap_counters) || changed;
 	// O3: rotated loops, what each pass loads anew and what the latch just
 	// read meeting at the new header, where the preheader may load it once.
+	if (options.level >= 3 && RUN_PASS(merge_loop_entries))
+		RUN_PASS(simplify_values);
 	if (options.level >= 3 && RUN_PASS(rotate_loops))
 	{
 		RUN_PASS(promote_slots);

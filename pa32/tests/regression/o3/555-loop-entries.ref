@@ -1,0 +1,79 @@
+global @state : i32 [binding=internal] = 42
+
+function @capped(%n : i32, %p : ptr) -> i32 [no_inline=yes] {
+  block ^entry:
+    %big = cmp gt i32 %n, 60
+    branch %big, ^cap, ^loop_preheader_2
+
+  block ^cap:
+    jump ^loop_preheader_2
+
+  block ^loop_preheader_2:
+    %t2 = phi i32 [^entry: %n, ^cap: 60]
+    %t3 = phi i32 [^entry: %n, ^cap: 60]
+    %more = cmp gt i32 %t3, 0
+    branch %more, ^loop_preheader_3, ^done
+
+  block ^loop_preheader_3:
+    %t5 = load i32 @state
+    %t6 = cmp gt i32 %t2, 0
+    %t7 = cmp ugt i32 %t2, 2
+    %t8 = binary and i64 %t6, %t7
+    branch %t8, ^loop_preheader_4, ^loop_preheader_6
+
+  block ^loop_preheader_4:
+    %t9 = binary add i32 %t2, -2
+    %t10 = vector fromi64 12884901888
+    %t11 = vector fromi32 %t5
+    %t12 = vector pshufd %t11, 0
+    %t13 = vector paddd %t12, %t10
+    %t14 = vector fromi32 3
+    %t15 = vector pshufd %t14, 0
+    %t16 = vector pzero
+    %t17 = vector fromi32 6
+    %t18 = vector pshufd %t17, 0
+    jump ^wide_loop_5
+
+  block ^wide_loop_5:
+    %t19 = phi i64 [^loop_preheader_4: 0, ^wide_loop_5: %t28]
+    %t20 = phi v128 [^loop_preheader_4: %t13, ^wide_loop_5: %t27]
+    %t21 = phi i32 [^loop_preheader_4: %t5, ^wide_loop_5: %t26]
+    %t22 = vector paddd %t20, %t15
+    %t23 = vector pcmpgtd %t16, %t22
+    %t24 = vector punpckldq %t22, %t23
+    %t25 = index i64 %p, %t19
+    store v128 %t24, %t25
+    %t26 = binary add nowrap i32 %t21, 6
+    %t27 = vector paddd %t20, %t18
+    %t28 = binary add nowrap i64 %t19, 2
+    %t29 = convert trunc exact i32 i64 %t28
+    %t30 = cmp lt i32 %t29, %t9
+    branch %t30, ^wide_loop_5, ^loop_preheader_6
+
+  block ^loop_preheader_6:
+    %t31 = phi i32 [^loop_preheader_3: 0, ^wide_loop_5: %t29]
+    %t32 = phi i32 [^loop_preheader_3: %t5, ^wide_loop_5: %t26]
+    %t33 = convert sext i64 i32 %t32
+    %t34 = convert sext i64 i32 %t31
+    jump ^body
+
+  block ^body:
+    %t35 = phi i64 [^body: %t37, ^loop_preheader_6: %t33]
+    %t36 = phi i64 [^body: %t41, ^loop_preheader_6: %t34]
+    %t37 = binary add nowrap i64 %t35, 3
+    %new = convert trunc exact i32 i64 %t37
+    %wide = copy i64 %t37
+    %at = index i64 %p, %t36
+    store typed i64 %wide, %at
+    %t41 = binary add nowrap i64 %t36, 1
+    %next = convert trunc exact i32 i64 %t41
+    %t43 = cmp lt i32 %next, %t2
+    branch %t43, ^body, ^loop_exit_8
+
+  block ^loop_exit_8:
+    store typed i32 %new, @state
+    jump ^done
+
+  block ^done:
+    return i32 %t2
+}

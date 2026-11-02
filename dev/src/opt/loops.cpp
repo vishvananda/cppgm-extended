@@ -2,6 +2,7 @@
 
 #include "lowir/builder.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace opt {
@@ -149,20 +150,62 @@ Located locate(const FunctionBody& body, Value v)
 	return out;
 }
 
+// The header's phis take from the new preheader what they took from the blocks
+// entering the loop, merged there by a phi where those differ.
+static void merge_entry_values(FunctionBody& body, const LoopForest& forest, uint32_t loop, BlockId pre)
+{
+	const BlockId header = forest.loops[loop].header;
+	InstId at = kNoId;
+	for (InstId i = body.blocks[header].first; i != kNoId && body.instructions[i].op == Opcode::Phi;
+		i = body.instructions[i].next)
+	{
+		const Instruction phi = body.instructions[i];
+		std::vector<Value> kept, entering;
+		bool same = true;
+		for (uint32_t k = 0; k < phi.extra_count; k += 2)
+		{
+			const Value from = body.operands[phi.extra_first + k];
+			const Value value = body.operands[phi.extra_first + k + 1];
+			std::vector<Value>& side = in_loop(forest, loop, from.index) ? kept : entering;
+			side.push_back(from);
+			side.push_back(value);
+			same = same && (&side == &kept || value == entering[1]);
+		}
+		Value merged = entering[1];
+		if (!same)
+		{
+			Instruction values = make_instruction(Opcode::Phi, phi.type);
+			values.extra_first = append_operands(body, entering.data(), static_cast<uint32_t>(entering.size()));
+			values.extra_count = static_cast<uint32_t>(entering.size());
+			const InstId id = append_instruction(body, values);
+			const TempId result = append_temp(body, phi.type, id);
+			body.instructions[id].result = result;
+			insert_after(body, pre, at, id);
+			at = id;
+			merged = Value::temp(result);
+		}
+		kept.push_back(Value::block(pre));
+		kept.push_back(merged);
+		const uint32_t first = append_operands(body, kept.data(), static_cast<uint32_t>(kept.size()));
+		body.instructions[i].extra_first = first;
+		body.instructions[i].extra_count = static_cast<uint32_t>(kept.size());
+	}
+}
+
 bool make_loop_preheader(FunctionBody& body, const Cfg& cfg, const LoopForest& forest, uint32_t loop)
 {
 	const Loop& l = forest.loops[loop];
-	BlockId entry = kNoId;
+	std::vector<BlockId> entries;
 	for (uint32_t k = cfg.pred_first[l.header]; k < cfg.pred_first[l.header + 1]; ++k)
 	{
 		const BlockId p = cfg.preds[k];
-		if (in_loop(forest, loop, p))
+		if (in_loop(forest, loop, p) || std::find(entries.begin(), entries.end(), p) != entries.end())
 			continue;
-		if (entry != kNoId && entry != p)
+		if ((cfg.flags[p] & BF_HANDLER) != 0)
 			return false;
-		entry = p;
+		entries.push_back(p);
 	}
-	if (entry == kNoId || (cfg.flags[entry] & BF_HANDLER) != 0)
+	if (entries.empty())
 		return false;
 	const BlockId pre = append_block(body, BlockKind::LoopPreheader);
 	Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
@@ -176,11 +219,17 @@ bool make_loop_preheader(FunctionBody& body, const Cfg& cfg, const LoopForest& f
 		layout.push_back(b);
 	}
 	body.layout.swap(layout);
-	for_each_successor(body, body.instructions[body.blocks[entry].last], [&](BlockId& t) {
-		if (t == l.header)
-			t = pre;
-	});
-	rename_phi_incoming(body, l.header, entry, pre);
+	for (BlockId entry : entries)
+		for_each_successor(body, body.instructions[body.blocks[entry].last], [&](BlockId& t) {
+			if (t == l.header)
+				t = pre;
+		});
+	if (entries.size() == 1)
+	{
+		rename_phi_incoming(body, l.header, entries[0], pre);
+		return true;
+	}
+	merge_entry_values(body, forest, loop, pre);
 	return true;
 }
 

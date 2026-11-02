@@ -201,6 +201,9 @@ bool hoist_loop_loads(FunctionContext& context);
 // is copied into the latches and stays as the guard; its values go
 // through slots for promote_slots to join again.
 bool rotate_loops(FunctionContext& context);
+// O3: a loop entered from several blocks is entered from one, which merges what
+// they bring (a phi of the loop may then fold before rotation reads it).
+bool merge_loop_entries(FunctionContext& context);
 
 // Loop vectorization (O3, last, opt/loop_vectorizer.cpp): a one-block counted
 // loop also runs in sixteen-byte lanes before the scalar loop, which finishes.

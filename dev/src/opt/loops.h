@@ -35,8 +35,8 @@ void find_loops(const lowir::FunctionBody& body, const Cfg& cfg, LoopForest& for
 bool in_loop(const LoopForest& forest, uint32_t l, lowir::BlockId b);
 
 // Gives loop `loop` a preheader: a new block of one jump to its header, between
-// its one predecessor outside the loop and the header. False when it has
-// several or that one is a handler. The graph changes.
+// the predecessors outside the loop and the header. False when one is a
+// handler. The graph changes.
 bool make_loop_preheader(lowir::FunctionBody& body, const Cfg& cfg, const LoopForest& forest, uint32_t loop);
 
 // For a pass that rewrites several loops between finding them: marks in
