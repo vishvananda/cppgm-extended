@@ -1854,8 +1854,74 @@ private:
 
 // The value a return load reads from the frame, from the writes before it
 // in its block (insts[first, end)): its replacement, or false.
-bool resolve_return_load(
-	const Function& f, uint32_t first, uint32_t end, const Inst& load, const FrameWrites*& writes, Inst& out)
+// Eight bytes from two four-byte halves (each a register's low half or a
+// constant): the instructions that form them in the load's register, with
+// R11 or R10 for the high half.
+bool compose_halves(const std::vector<Inst>& insts, const ByteSource* src, const Inst& load, std::vector<Inst>& out)
+{
+	Operand half[2];
+	for (uint32_t h = 0; h < 2; ++h)
+	{
+		const ByteSource& s = src[4 * h];
+		uint64_t value = 0;
+		for (uint32_t p = 0; p < 4; ++p)
+		{
+			const ByteSource& b = src[4 * h + p];
+			if (b.kind != s.kind ||
+				(s.kind == ByteSource::Imm
+						? false
+						: s.kind != ByteSource::FromReg || b.writer != s.writer || b.offset != static_cast<int32_t>(p)))
+				return false;
+			if (s.kind == ByteSource::Imm)
+				value |= static_cast<uint64_t>(b.value) << (8 * p);
+		}
+		if (s.kind == ByteSource::Imm)
+			half[h] = Operand::make_imm(static_cast<int64_t>(value), 0);
+		else if (register_bytes(insts[s.writer].type) == 4)
+			half[h] = insts[s.writer].ops[1];
+		else
+			return false;
+	}
+	const Reg to = load.ops[0].reg;
+	Reg high = R11;
+	if (half[0].uses_reg(R11) || to == R11)
+		high = R10;
+	if (half[0].uses_reg(high) || to == high)
+		return false;
+	auto inst = [&](Op op, lowir::TypeKind type, const Operand& a, const Operand& b) {
+		Inst i = Inst();
+		i.op = op;
+		i.type = type;
+		i.nops = 2;
+		i.ops[0] = a;
+		i.ops[1] = b;
+		out.push_back(i);
+	};
+	const bool high_zero = half[1].kind == OperandKind::Imm && half[1].imm == 0;
+	if (!high_zero)
+	{
+		if (half[1].kind == OperandKind::Imm)
+		{
+			const int64_t value = static_cast<int64_t>(static_cast<uint64_t>(half[1].imm) << 32);
+			inst(Op::Mov, lowir::TypeKind::Void, Operand::make_reg(high), Operand::make_imm(value, value < 0 ? -1 : 0));
+		}
+		else
+		{
+			inst(Op::Mov, lowir::TypeKind::Void, Operand::make_reg(high), half[1]);
+			inst(Op::Shl, lowir::TypeKind::I64, Operand::make_reg(high), Operand::make_imm(32, 0));
+		}
+	}
+	if (half[0].kind == OperandKind::Imm)
+		inst(Op::Mov, lowir::TypeKind::Void, load.ops[0], half[0]);
+	else
+		inst(Op::Zext, lowir::TypeKind::U32, load.ops[0], half[0]);
+	if (!high_zero)
+		inst(Op::Or, lowir::TypeKind::I64, load.ops[0], Operand::make_reg(high));
+	return true;
+}
+
+bool resolve_return_load(const Function& f, uint32_t first, uint32_t end, const Inst& load, const FrameWrites*& writes,
+	Inst& out, std::vector<Inst>* composed)
 {
 	const std::vector<Inst>& insts = f.insts;
 	const int32_t a = load.ops[1].disp;
@@ -1958,7 +2024,7 @@ bool resolve_return_load(
 		if (src[p].kind != kind || src[p].kind == ByteSource::Bad ||
 			(kind != ByteSource::Imm &&
 				(src[p].writer != src[0].writer || src[p].offset != src[0].offset + static_cast<int32_t>(p))))
-			return false;
+			return w == 8 && composed != nullptr && compose_halves(insts, src, load, *composed);
 	out = Inst();
 	out.nops = 2;
 	out.ops[0] = load.ops[0];
@@ -2015,12 +2081,12 @@ uint32_t forward_return_slots_once(Function& function)
 	bool escapes = function.variadic || function.eh_records_pushed;
 	for (const Inst& inst : insts)
 		escapes = escapes || (inst.op == Op::Lea && frame_based(inst.ops[1])) || inst.op == Op::EhPush;
-	for (const Block& block : function.blocks)
+	for (Block& block : function.blocks)
 	{
 		if (block.count == 0 || insts[block.first + block.count - 1].op != Op::Ret ||
 			(insts[block.first + block.count - 1].flags & MF_FRAMELESS))
 			continue;
-		const uint32_t ret = block.first + block.count - 1;
+		uint32_t ret = block.first + block.count - 1;
 		// The moves into rax and rdx just before the return (one each at
 		// most): frame loads, or what an earlier round made of them. They
 		// form one parallel assignment, so an earlier move whose register
@@ -2043,17 +2109,42 @@ uint32_t forward_return_slots_once(Function& function)
 		// at[count - 1] runs first.
 		Inst now[2];
 		bool changed = false;
+		std::vector<Inst> composed;
 		for (uint32_t k = 0; k < count; ++k)
 		{
 			const Inst& inst = insts[at[k]];
 			now[k] = inst;
 			if (inst.op == Op::Load && fixed_frame(inst.ops[1]) &&
 				(register_bytes(inst.type) == 8 || inst.type == lowir::TypeKind::U32) &&
-				resolve_return_load(function, block.first, start, inst, writes, now[k]))
+				resolve_return_load(
+					function, block.first, start, inst, writes, now[k], count == 1 ? &composed : nullptr))
 				changed = true;
 		}
 		if (!changed)
 			continue;
+		if (!composed.empty())
+		{
+			// The block moves to the end, the halves' instructions in the
+			// load's place.
+			const uint32_t moved = static_cast<uint32_t>(insts.size());
+			insts.reserve(insts.size() + block.count + composed.size());
+			for (uint32_t i = block.first; i <= ret; ++i)
+			{
+				if (i != at[0])
+					insts.push_back(insts[i]);
+				else
+					insts.insert(insts.end(), composed.begin(), composed.end());
+			}
+			for (uint32_t i = block.first; i <= ret; ++i)
+			{
+				insts[i] = Inst();
+				insts[i].op = Op::Nop;
+			}
+			block.first = moved;
+			block.count = static_cast<uint32_t>(insts.size()) - moved;
+			ret = block.first + block.count - 1;
+			count = 0;
+		}
 		// One parallel assignment: neither reads what the other writes, or
 		// the one that does runs first; else a frame load stays (it reads
 		// no register).

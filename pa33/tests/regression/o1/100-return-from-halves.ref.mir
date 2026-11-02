@@ -1,0 +1,74 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @both
+  abi
+    param %a -> rdi : i32
+    param %b -> rsi : i32
+    return obj<8x4> -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $result -> [rbp-8] : obj<8x4>
+
+  block ^entry
+    xor rdi, 5
+    add.i32 rsi, 7
+    mov r11, rsi
+    shl r11, 32
+    zext.i32 rax, rdi
+    or rax, r11
+    ret
+
+function @constant_high
+  abi
+    param %a -> rdi : i32
+    return obj<8x4> -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $result -> [rbp-8] : obj<8x4>
+
+  block ^entry
+    xor rdi, 5
+    mov r11, 38654705664
+    zext.i32 rax, rdi
+    or rax, r11
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    slot $x -> [rbp-8] : obj<8x4>
+    slot $y -> [rbp-16] : obj<8x4>
+    temp %vx -> [rbp-24] : obj<8x4>
+    temp %vy -> [rbp-32] : obj<8x4>
+
+  block ^entry
+    mov rdi, 1
+    mov rsi, 2
+    call @both [args=(rsi,rdi)]
+    store.i64 [rbp-24], rax
+    copy_bytes 8x4, [rbp-8], [rbp-24]
+    mov rdi, 3
+    call @constant_high [args=(rdi)]
+    store.i64 [rbp-32], rax
+    copy_bytes 8x4, [rbp-16], [rbp-32]
+    load.i32 rax, [rbp-8]
+    add.i32 rax, [rbp-4]
+    add.i32 rax, [rbp-16]
+    add.i32 rax, [rbp-12]
+    ret rax

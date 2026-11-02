@@ -59,8 +59,9 @@ uint32_t forward_float_homes(Function& function);
 uint32_t forward_frame_copies(Function& function, const std::vector<FrameObject>& objects);
 
 // A return's loads of rax/rdx from the frame take what its block stored
-// there directly, and the block's frame writes nothing reads before the
-// return go. Returns the writes removed.
+// there directly (a lone rax from two four-byte halves forms from them), and
+// the block's frame writes nothing reads before the return go. Returns the
+// writes removed.
 uint32_t forward_return_slots(Function& function);
 
 // A frame-pointer-free leaf whose instructions no longer use its frame

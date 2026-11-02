@@ -147,6 +147,12 @@ that paid there in the course solution:
   against a value the loop does not compute. The padding runs on each entry,
   and a search loop that usually stops after one or two iterations ran 7%
   slower with it.
+- A load forwards from one earlier store that covers it, not from two. An
+  8-byte object returned in `rax` from two 4-byte stores to its slot waits
+  about 12 cycles for the stores to retire. Form the value in `rax` from the
+  stored registers instead (`zext.i32` of the low half, `or` of the high half
+  shifted by 32). In a program whose bit-board operators return such objects,
+  this took 6% of the cycles off.
 
 When a change does less than expected, look for a constraint stricter than
 emission needs before tuning a heuristic. A phi transfer modeled at the
