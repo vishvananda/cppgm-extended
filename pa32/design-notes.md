@@ -389,6 +389,9 @@ Full unrolling, at most 16 loops per run of the pass:
   constant data or branches on values computed from the induction, or
   calls nothing and touches no frame slot; otherwise up to 8 passes within
   160 when some path through the body back to the header calls nothing.
+  A body that indexes a local array by the induction may copy up to 640
+  instructions: each copy names one element, and the elements then become
+  registers.
 - A loop containing an EH instruction, `stack_alloc` or `va_start`, or one
   that exits into a handler block, is not unrolled.
 

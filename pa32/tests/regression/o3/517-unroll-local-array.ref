@@ -1,0 +1,99 @@
+function @local(%m : i64) -> i64 [no_inline=yes] {
+  slot $a : obj<64x8>
+
+  block ^entry:
+    %base = addr $a
+    store typed i64 %m, %base
+    %t2 = binary mul i64 %m, 3
+    store typed i64 %t2, %base
+    %t3 = index i64 %base, 2
+    %t4 = load typed i64 %t3
+    %t5 = binary mul i64 %t4, 3
+    %t6 = binary add i64 %t5, 88
+    store typed i64 %t6, %t3
+    %t7 = index i64 %base, 4
+    %t8 = load typed i64 %t7
+    %t9 = binary mul i64 %t8, 3
+    %t10 = binary add i64 %t9, 176
+    store typed i64 %t10, %t7
+    %t11 = index i64 %base, 6
+    %t12 = load typed i64 %t11
+    %t13 = binary mul i64 %t12, 3
+    %t14 = binary add i64 %t13, 264
+    store typed i64 %t14, %t11
+    return i64 %t2
+}
+function @elsewhere(%base : ptr) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %t1 = phi i64 [^tail: %next, ^entry: 0]
+    %p = index i64 %base, %t1
+    %v = load typed i64 %p
+    %odd = binary and i64 %t1, 1
+    %t = cmp eq i64 %odd, 0
+    branch %t, ^even, ^tail
+
+  block ^even:
+    %w = binary mul i64 %v, 3
+    %x0 = binary add i64 %w, %t1
+    %x1 = binary add i64 %x0, %t1
+    %x2 = binary add i64 %x1, %t1
+    %x3 = binary add i64 %x2, %t1
+    %x4 = binary add i64 %x3, %t1
+    %x5 = binary add i64 %x4, %t1
+    %x6 = binary add i64 %x5, %t1
+    %x7 = binary add i64 %x6, %t1
+    %x8 = binary add i64 %x7, %t1
+    %x9 = binary add i64 %x8, %t1
+    %x10 = binary add i64 %x9, %t1
+    %x11 = binary add i64 %x10, %t1
+    %x12 = binary add i64 %x11, %t1
+    %x13 = binary add i64 %x12, %t1
+    %x14 = binary add i64 %x13, %t1
+    %x15 = binary add i64 %x14, %t1
+    %x16 = binary add i64 %x15, %t1
+    %x17 = binary add i64 %x16, %t1
+    %x18 = binary add i64 %x17, %t1
+    %x19 = binary add i64 %x18, %t1
+    %x20 = binary add i64 %x19, %t1
+    %x21 = binary add i64 %x20, %t1
+    %x22 = binary add i64 %x21, %t1
+    %x23 = binary add i64 %x22, %t1
+    %x24 = binary add i64 %x23, %t1
+    %x25 = binary add i64 %x24, %t1
+    %x26 = binary add i64 %x25, %t1
+    %x27 = binary add i64 %x26, %t1
+    %x28 = binary add i64 %x27, %t1
+    %x29 = binary add i64 %x28, %t1
+    %x30 = binary add i64 %x29, %t1
+    %x31 = binary add i64 %x30, %t1
+    %x32 = binary add i64 %x31, %t1
+    %x33 = binary add i64 %x32, %t1
+    %x34 = binary add i64 %x33, %t1
+    %x35 = binary add i64 %x34, %t1
+    %x36 = binary add i64 %x35, %t1
+    %x37 = binary add i64 %x36, %t1
+    %x38 = binary add i64 %x37, %t1
+    %x39 = binary add i64 %x38, %t1
+    %x40 = binary add i64 %x39, %t1
+    %x41 = binary add i64 %x40, %t1
+    %x42 = binary add i64 %x41, %t1
+    %x43 = binary add i64 %x42, %t1
+    store typed i64 %x43, %p
+    jump ^tail
+
+  block ^tail:
+    %next = binary add i64 %t1, 1
+    %t52 = cmp ult i64 %next, 8
+    branch %t52, ^body, ^done
+
+  block ^done:
+    %r = load typed i64 %base
+    return i64 %r
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

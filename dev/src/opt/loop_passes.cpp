@@ -54,6 +54,7 @@ public:
 private:
 	bool try_unroll(uint32_t loop);
 	bool try_unroll_search(uint32_t loop);
+	bool indexes_local_array(uint32_t loop, TempId iv) const;
 	bool unroll_search_shape(uint32_t loop, int64_t trips, TempId iv, std::vector<uint8_t>& member,
 		std::vector<uint8_t>& owned, BlockId& through);
 	void add_exit_phis(const std::vector<uint8_t>& member, const std::vector<uint8_t>& owned, BlockId exit);
@@ -1968,6 +1969,9 @@ const int64_t kSearchTrips = 16;
 const unsigned kUnrollRounds = 16;
 const uint32_t kSearchBody = 256;
 const uint32_t kUnrollBranchBody = 160;
+// A pass that reaches a local array at the induction names one element in
+// each copy, so the array's elements then fold into registers.
+const uint32_t kUnrollArrayBody = 640;
 const int64_t kShortTrips = 8;
 
 // Whether `v` is computed inside the loop (`member` blocks) from the
@@ -1992,6 +1996,22 @@ bool from_induction(const FunctionBody& body, const std::vector<BlockId>& block_
 		if (!o.is(ValueKind::None) && !from_induction(body, block_of, member, iv, o, depth - 1))
 			return false;
 	return true;
+}
+
+bool LoopPass::indexes_local_array(uint32_t loop, TempId iv) const
+{
+	for (BlockId b : forest_.loops[loop].blocks)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			if (inst.op != Opcode::Index || !(inst.ops[1] == Value::temp(iv)) || !inst.ops[0].is(ValueKind::Temp))
+				continue;
+			const InstId def = body_.temps[inst.ops[0].index].def;
+			if (def != kNoId && body_.instructions[def].op == Opcode::Addr &&
+				body_.instructions[def].ops[0].is(ValueKind::Slot))
+				return true;
+		}
+	return false;
 }
 
 // The shape try_unroll_search copies: the loop's blocks (`member`: no
@@ -2168,7 +2188,7 @@ bool LoopPass::unroll_search_shape(uint32_t loop, int64_t trips, TempId iv, std:
 	for (InstId i = body_.blocks[l.header].first; i != kNoId; i = body_.instructions[i].next)
 		header_size += body_.instructions[i].op == Opcode::Phi || is_terminator(body_.instructions[i].op) ? 0 : 1;
 	const uint64_t cloned = static_cast<uint64_t>(size) * static_cast<uint64_t>(trips) + (table ? size : header_size);
-	if (cloned > (long_pass ? kSearchBody : kUnrollBranchBody))
+	if (cloned > (indexes_local_array(loop, iv) ? kUnrollArrayBody : long_pass ? kSearchBody : kUnrollBranchBody))
 		return false;
 	for (BlockId b : l.blocks)
 		for (uint32_t k = cfg_.succ_first[b]; k < cfg_.succ_first[b + 1]; ++k)
