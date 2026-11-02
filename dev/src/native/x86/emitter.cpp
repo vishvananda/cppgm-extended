@@ -139,6 +139,30 @@ void FunctionEmitter::address_into(Reg dst, const Operand& op)
 
 const unsigned kRelaxPasses = 3;
 
+// The most nop bytes before a loop head: to 16 when that takes this many, else
+// to 8.
+const unsigned kLoopPad = 10;
+
+// A loop head is what a branch at or after it targets. (Laid-out code: a loop
+// runs through its head and back to it.)
+void FunctionEmitter::find_loop_heads(const Function& function)
+{
+	loop_heads_.clear();
+	if (!function.align_loops)
+		return;
+	for (size_t i = 0; i < branch_offset_.size(); ++i)
+		if (relax_target_[i] >= 0 && relax_target_[i] <= branch_offset_[i])
+			loop_heads_.push_back(relax_target_[i]);
+	std::sort(loop_heads_.begin(), loop_heads_.end());
+	loop_heads_.erase(std::unique(loop_heads_.begin(), loop_heads_.end()), loop_heads_.end());
+}
+
+void FunctionEmitter::align_loop_head()
+{
+	const unsigned to16 = (16 - asm_.size() % 16) % 16;
+	asm_.nops(to16 <= kLoopPad ? to16 : to16 - 8);
+}
+
 void FunctionEmitter::emit(const Function& function)
 {
 	function_ = &function;
@@ -166,6 +190,7 @@ void FunctionEmitter::emit(const Function& function)
 	relax_target_.resize(branches);
 	for (size_t i = 0; i < branches; ++i)
 		relax_target_[i] = asm_.label_position(branch_label_[i]);
+	find_loop_heads(function);
 	relax_saved_.assign(branches + 1, 0);
 	const unsigned passes = function.branches_laid_out ? kRelaxPasses : 1;
 	bool shortened = false;
@@ -183,7 +208,14 @@ void FunctionEmitter::emit(const Function& function)
 			const size_t before = static_cast<size_t>(
 				std::lower_bound(branch_offset_.begin(), branch_offset_.end(), target) - branch_offset_.begin());
 			const int64_t offset = branch_offset_[i] - relax_saved_[i];
-			if (fits_i8(static_cast<int64_t>(target) - relax_saved_[before] - (offset + 2)))
+			const int64_t distance = static_cast<int64_t>(target) - relax_saved_[before] - (offset + 2);
+			// (Padding may lengthen what the branch jumps over.)
+			const int32_t low = std::min(target, branch_offset_[i]);
+			const int32_t high = std::max(target, branch_offset_[i]);
+			const int64_t padding = kLoopPad *
+				(std::upper_bound(loop_heads_.begin(), loop_heads_.end(), high) -
+					std::upper_bound(loop_heads_.begin(), loop_heads_.end(), low));
+			if (fits_i8(distance - padding) && fits_i8(distance + padding))
 			{
 				short_[i] = 1;
 				any = true;
@@ -193,7 +225,7 @@ void FunctionEmitter::emit(const Function& function)
 			break;
 		shortened = true;
 	}
-	if (shortened)
+	if (shortened || !loop_heads_.empty())
 	{
 		text.resize(base_);
 		asm_.fixups().clear();
@@ -534,6 +566,7 @@ void FunctionEmitter::encode(const Function& function)
 		for (size_t k = 0; k < chain_.size(); ++k)
 			chain_end_[chain_[k]] = end;
 	}
+	block_start_.resize(blocks);
 	next_emitted_.assign(blocks + 1, static_cast<uint32_t>(blocks));
 	for (size_t b = blocks; b-- > 0;)
 	{
@@ -547,6 +580,10 @@ void FunctionEmitter::encode(const Function& function)
 		const Block& block = function.blocks[b];
 		if (chain_end_[b] != b && chain_end_[b] != kNoChainEnd)
 			continue;
+		if (!relax_pass_)
+			block_start_[b] = static_cast<int32_t>(asm_.size());
+		else if (std::binary_search(loop_heads_.begin(), loop_heads_.end(), block_start_[b]))
+			align_loop_head();
 		asm_.bind(labels_[b]);
 		// An argument area a noreturn call left open ends with its block.
 		if (rsp_shift_ != 0)

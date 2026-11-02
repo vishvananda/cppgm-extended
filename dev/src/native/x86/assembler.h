@@ -103,6 +103,7 @@ public:
 
 	void byte(uint8_t b) { code_.push_back(b); }
 	void imm(int64_t value, unsigned bytes);
+	void nops(unsigned bytes); // padding, in the fewest instructions
 
 	// [prefix] [REX] opcode (1-3 bytes) ModRM [SIB] [disp] for `rm`, with
 	// `reg` the ModRM.reg field (a register or an opcode extension) and

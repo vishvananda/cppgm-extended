@@ -39,6 +39,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out)
 {
 	reset(symbol, out);
 	out.wide_bulk = level_ >= 1;
+	out.align_loops = level_ >= 2;
 	classify_signature(*signature_, entry_layout_);
 	note_parameter_classes();
 	build_cfg();

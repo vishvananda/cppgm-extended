@@ -117,6 +117,8 @@ struct Function
 	// O1+: copy_bytes and zero_bytes through 128 bytes are direct
 	// (select/bulk_policy.h).
 	bool wide_bulk = false;
+	// O2+: loop heads start on a fetch boundary, nops before them.
+	bool align_loops = false;
 	// O1+, host model: no RBP frame. The frame keeps its layout below a
 	// virtual RBP (the saved-RBP slot left unused): the prologue reserves
 	// stack_size + 8 less the saves and pushes them, so a frame operand
@@ -164,6 +166,7 @@ struct Function
 		branches_laid_out = false;
 		duplicate_epilogues = false;
 		wide_bulk = false;
+		align_loops = false;
 		omit_frame_pointer = false;
 		shrink_wrapped = false;
 		aligned_base = aligned_bytes = 0;

@@ -76,6 +76,14 @@ that paid there in the course solution:
 - Chain blocks along their likely edges, put blocks that only throw or exit
   last, and rotate a loop whose test is at its top so the test also ends the
   body.
+- Start each loop head on a 16-byte boundary when that takes at most 10 bytes
+  of padding, else on an 8-byte one, as GCC does at `-O2`. Padding is `nop`s;
+  they run once per entry to the loop, not per iteration. The fetch and
+  prediction hardware works in 16 and 32-byte windows, so a short loop that
+  crosses one can cost several times its cycles: on the machine this was
+  measured on, a 7-instruction loop that ran 4 to 15 times had its exit
+  mispredicted on most entries until it was aligned. A branch that may jump
+  over padding must allow for it when you shorten it to `rel8`.
 
 When a change does less than expected, look for a constraint stricter than
 emission needs before tuning a heuristic. A phi transfer modeled at the
