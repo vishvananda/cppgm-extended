@@ -165,6 +165,16 @@ function @over_cap(%value : i64) -> void [binding=strong, inline_hint=yes] {
     call void @observe(%v39)
     call void @observe(%v39)
     call void @observe(%v39)
+    call void @observe(%v39)
+    call void @observe(%v39)
+    call void @observe(%v39)
+    call void @observe(%v39)
+    call void @observe(%v39)
+    call void @observe(%v39)
+    call void @observe(%v39)
+    call void @observe(%v39)
+    call void @observe(%v39)
+    call void @observe(%v39)
     return void
 }
 

@@ -15,7 +15,7 @@ namespace {
 const uint32_t kOrdinaryLeafCap = 40;
 const uint32_t kOrdinaryCap = 24;
 const uint32_t kOrdinaryCallCap = 6;
-const uint32_t kHintCap = 48;
+const uint32_t kHintCap = 96;
 const uint32_t kCallerBudget = 1536;
 // A call inside one of the caller's loops runs once per iteration: its
 // callee's caps grow fourfold.

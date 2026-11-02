@@ -294,7 +294,7 @@ caps are four times larger.
 |---|---|---|
 | `force_inline=yes` | always, not charged | |
 | trivial leaf (no call), ordinary wave | 4, not charged | |
-| `inline_hint=yes` | 48 | |
+| `inline_hint=yes` | 96 | |
 | one block, one return, no call | 40 | 48 |
 | other, no call outside cold code | 24 | 48 |
 | calls outside cold code | 6 | |
