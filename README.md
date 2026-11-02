@@ -25,12 +25,6 @@ The export's references are generated from this compiler.
 | `-O3` timed programs | [<img alt="epyc O3 timed programs" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/epyc/o3-programs.svg">](benchmarks/public/README.md) | [<img alt="intel O3 timed programs" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/intel/o3-programs.svg">](benchmarks/public/README.md) |
 | Measured commit | [<img alt="epyc Measured commit" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/epyc/revision.svg">](benchmarks/public/README.md) | [<img alt="intel Measured commit" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/intel/revision.svg">](benchmarks/public/README.md) |
 
-The Intel run is optional and manually triggered. Each column retains its last
-measurement; the commit row identifies the compiler it measured. The 10 ms
-cutoff is applied per host, so compare the program counts too. CPU models,
-toolchain versions and workflow links are recorded with the
-[benchmark results](benchmarks/public/README.md).
-
 ## Caveats
 
 - C++11 is the baseline; other dialects have only partial extension support.
