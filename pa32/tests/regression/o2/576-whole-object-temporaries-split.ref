@@ -19,8 +19,8 @@ function @square_add(%re : f64, %im : f64, %c : f64, %retry : i1) -> f64 [bindin
     %t6 = phi f64 [^entry: %im, ^again: %t5]
     %t7 = phi f64 [^entry: %re, ^again: %t3]
     %sum = binary add f64 %t7, %t6
-    %out = binary add f64 %sum, %c
+    %out = binary add f64 %c, %sum
     %square = binary mul f64 %re, %re
-    %total = binary add f64 %out, %square
+    %total = binary add f64 %square, %out
     return f64 %total
 }

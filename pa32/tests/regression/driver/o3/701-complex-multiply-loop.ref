@@ -35,7 +35,7 @@ function @sum_scaled(%v : ptr, %w : obj<16x8>) -> f64 [binding=strong, object=_Z
   block ^complex_nan_3:
     %t19 = binary mul f64 %t10, %t12
     %t20 = binary mul f64 %t8, %t14
-    %t21 = binary add f64 %t20, %t19
+    %t21 = binary add f64 %t19, %t20
     %t22 = cmp ne f64 %t21, %t21
     branch %t22, ^complex_recompute_4, ^complex_end_5
 
@@ -48,7 +48,7 @@ function @sum_scaled(%v : ptr, %w : obj<16x8>) -> f64 [binding=strong, object=_Z
 
   block ^complex_end_5:
     %t26 = phi f64 [^for_body_2: %t17, ^complex_nan_3: %t17, ^complex_recompute_4: %t25]
-    %t27 = binary add f64 %t6, %t26
+    %t27 = binary add f64 %t26, %t6
     %t28 = binary add nowrap i64 %t5, 1
     %t29 = cmp lt i64 %t28, %t2
     branch %t29, ^for_body_2, ^for_end_6

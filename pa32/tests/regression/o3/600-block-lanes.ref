@@ -2,10 +2,10 @@ function @pair(%p : ptr, %k : f64) -> void [binding=strong] {
   block ^entry:
     %a = index i8 %p, 16
     %c = index i8 %p, 32
-    %t3 = load v128 %a
-    %t4 = vector fromf64 %k
-    %t5 = vector pshufd %t4, 68
-    %t6 = vector mulpd %t3, %t5
+    %t3 = vector fromf64 %k
+    %t4 = vector pshufd %t3, 68
+    %t5 = load v128 %a
+    %t6 = vector mulpd %t4, %t5
     %t7 = load v128 %c
     %t8 = vector addpd %t6, %t7
     store v128 %t8, %p
@@ -21,8 +21,8 @@ function @copy_pair(%this : ptr) -> void [binding=strong] {
 function @four(%this : ptr) -> void [binding=strong] {
   block ^entry:
     %a = index i8 %this, 16
-    %t2 = load v128 %this
-    %t3 = load v128 %a
+    %t2 = load v128 %a
+    %t3 = load v128 %this
     %t4 = vector mulps %t2, %t3
     store v128 %t4, %this
     return void
@@ -30,12 +30,12 @@ function @four(%this : ptr) -> void [binding=strong] {
 function @kept(%a : ptr, %b : ptr, %k : f64) -> f64 [binding=strong] {
   block ^entry:
     %x = load typed f64 %a
-    %m = binary mul f64 %x, %k
+    %m = binary mul f64 %k, %x
     store typed f64 %m, %a
     %c = load typed f64 %b
     %y = index i8 %a, 8
     %z = load typed f64 %y
-    %n = binary mul f64 %z, %k
+    %n = binary mul f64 %k, %z
     store typed f64 %n, %y
     return f64 %c
 }

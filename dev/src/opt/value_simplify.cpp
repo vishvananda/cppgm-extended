@@ -95,8 +95,12 @@ uint64_t type_bits(Type type)
 	return bits;
 }
 
+// (Floating add and mul commute too: only which of two NaNs' payloads comes
+// out could differ, and no program can rely on that.)
 bool is_commutative(const Instruction& inst)
 {
+	if (inst.op == Opcode::Binary && inst.type.is_float())
+		return static_cast<BinaryOp>(inst.sub) == BinaryOp::Add || static_cast<BinaryOp>(inst.sub) == BinaryOp::Mul;
 	if (inst.op == Opcode::Binary && inst.type.is_integer())
 	{
 		switch (static_cast<BinaryOp>(inst.sub))

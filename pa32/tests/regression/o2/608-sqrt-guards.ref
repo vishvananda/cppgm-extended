@@ -71,7 +71,7 @@ function @in_loop(%p : ptr, %q : ptr, %n : i64) -> f64 [no_inline=yes] {
     %sum = phi f64 [^entry: 0, ^split_2: %more]
     %at = index f64 %p, %i
     %v = load typed f64 %at
-    %m = binary mul f64 %v, %scale
+    %m = binary mul f64 %scale, %v
     %t7 = unary sqrt f64 %m
     %t8 = cmp lt f64 %m, 0
     branch %t8, ^split_4, ^split_2

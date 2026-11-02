@@ -76,7 +76,7 @@ function @f() -> void [binding=strong, object=_Z1fv] {
     %t37 = index f64 [projection=array_element] %t33, %t34
     %t38 = load v128 %t37
     %t39 = vector mulpd %t31, %t38
-    %t40 = vector addpd %t36, %t39
+    %t40 = vector addpd %t39, %t36
     store v128 %t40, %t35
     %t41 = binary add nowrap i64 %t34, 2
     %t42 = convert trunc exact i32 i64 %t41
@@ -101,7 +101,7 @@ function @f() -> void [binding=strong, object=_Z1fv] {
     %t52 = index f64 [projection=array_element] %t48, %t49
     %t53 = load typed f64 %t52
     %t54 = binary mul f64 %t29, %t53
-    %t55 = binary add f64 %t51, %t54
+    %t55 = binary add f64 %t54, %t51
     store typed f64 %t55, %t50
     %t56 = binary add nowrap i64 %t49, 1
     %t57 = convert trunc exact i32 i64 %t56

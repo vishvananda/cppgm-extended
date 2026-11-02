@@ -12,7 +12,7 @@ function @signed_scale(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes] {
   block ^body:
     %at = index f64 %p, %i
     %x = load f64 %at
-    %scaled = binary mul f64 %x, %scale
+    %scaled = binary mul f64 %scale, %x
     %total = binary add f64 %sum, %scaled
     %next = binary add i64 %i, 1
     jump ^cond
@@ -34,7 +34,7 @@ function @unsigned_scale(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes] {
   block ^body:
     %at = index f64 %p, %i
     %x = load f64 %at
-    %scaled = binary mul f64 %x, %scale
+    %scaled = binary mul f64 %scale, %x
     %total = binary add f64 %sum, %scaled
     %next = binary add i64 %i, 1
     jump ^cond
@@ -56,7 +56,7 @@ function @narrow_scale(%p : ptr, %n : i64, %k : i32) -> f32 [no_inline=yes] {
   block ^body:
     %at = index f32 %p, %i
     %x = load f32 %at
-    %scaled = binary mul f32 %x, %scale
+    %scaled = binary mul f32 %scale, %x
     %total = binary add f32 %sum, %scaled
     %next = binary add i64 %i, 1
     jump ^cond
@@ -78,7 +78,7 @@ function @wide_source(%p : ptr, %n : i64, %k : i128) -> f64 [no_inline=yes] {
     %scale = convert sitofp f64 i128 %k
     %at = index f64 %p, %i
     %x = load f64 %at
-    %scaled = binary mul f64 %x, %scale
+    %scaled = binary mul f64 %scale, %x
     %total = binary add f64 %sum, %scaled
     %next = binary add i64 %i, 1
     jump ^cond
@@ -101,7 +101,7 @@ function @operand_read_again(%p : ptr, %n : i64, %k : i64) -> f64 [no_inline=yes
     %offset = binary add i64 %k, %i
     %at = index f64 %p, %offset
     %x = load f64 %at
-    %scaled = binary mul f64 %x, %scale
+    %scaled = binary mul f64 %scale, %x
     %total = binary add f64 %sum, %scaled
     %next = binary add i64 %i, 1
     jump ^cond
@@ -123,7 +123,7 @@ function @varying_source(%p : ptr, %n : i64) -> f64 [no_inline=yes] {
     %scale = convert uitofp f64 i64 %i
     %at = index f64 %p, %i
     %x = load f64 %at
-    %scaled = binary mul f64 %x, %scale
+    %scaled = binary mul f64 %scale, %x
     %total = binary add f64 %sum, %scaled
     %next = binary add i64 %i, 1
     jump ^cond

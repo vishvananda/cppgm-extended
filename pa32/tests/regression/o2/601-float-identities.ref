@@ -1,7 +1,7 @@
 function @kept(%x : f32, %y : f64) -> f64 [binding=strong, no_inline=yes] {
   block ^entry:
     %g = convert fpext f64 f32 %x
-    %l = binary add f64 %g, %y
+    %l = binary add f64 %y, %g
     return f64 %l
 }
 function @not_kept(%x : f32) -> f32 [binding=strong, no_inline=yes] {

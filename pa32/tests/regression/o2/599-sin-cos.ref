@@ -31,7 +31,7 @@ function @apart(%x : f32, %k : i1) -> f32 [no_inline=yes] {
     branch %k, ^then, ^done
 
   block ^then:
-    %m = binary mul f32 %t3, %t4
+    %m = binary mul f32 %t4, %t3
     return f32 %m
 
   block ^done:
@@ -48,7 +48,7 @@ function @three(%x : f64) -> f64 [no_inline=yes] {
     %t3 = load f64 %t1
     %t4 = load f64 %t2
     %r = binary add f64 %t3, %t4
-    %t = binary add f64 %r, %t3
+    %t = binary add f64 %t3, %r
     return f64 %t
 }
 function @different(%x : f64, %y : f64) -> f64 [no_inline=yes] {

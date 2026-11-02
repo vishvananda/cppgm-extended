@@ -1,0 +1,14 @@
+function @twice(%x : f64, %y : f64) -> f64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %a = binary mul f64 %x, %y
+    %c = binary add f64 %a, %a
+    %d = binary add f64 %c, 2
+    return f64 %d
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %r = call f64 @twice(3.0, 4.0)
+    %i = convert fptosi i32 f64 %r
+    %c = binary sub i32 %i, 26
+    return i32 %c
+}

@@ -133,6 +133,7 @@ function @down(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
   block ^loop_preheader_3:
     %t19 = phi f64 [^entry: 0, ^wide_loop_2: %t16]
     %t20 = phi i64 [^entry: %n, ^wide_loop_2: %t17]
+    %t21 = copy f64 3
     jump ^body
 
   block ^body:
@@ -140,8 +141,8 @@ function @down(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
     %s = phi f64 [^loop_preheader_3: %t19, ^body: %sum]
     %p = index f64 %x, %i
     %v = load typed f64 %p
-    %m = binary mul f64 %v, 3
-    %sum = binary add f64 %m, %s
+    %m = binary mul f64 %v, %t21
+    %sum = binary add f64 %s, %m
     %next = binary sub i64 %i, 1
     %c = cmp gt i64 %next, 0
     branch %c, ^body, ^done
@@ -195,6 +196,7 @@ function @halves(%n : i32) -> f64 [no_inline=yes] {
   block ^loop_preheader_3:
     %t34 = phi f64 [^entry: 1, ^wide_loop_2: %t30]
     %t35 = phi i32 [^entry: 1, ^wide_loop_2: %t31]
+    %t36 = copy f64 1
     jump ^body
 
   block ^body:
@@ -203,7 +205,7 @@ function @halves(%n : i32) -> f64 [no_inline=yes] {
     %t = binary mul nowrap i32 %i, %i
     %h = binary div i32 %t, 4
     %f = convert sitofp f64 i32 %h
-    %r = binary div f64 1, %f
+    %r = binary div f64 %t36, %f
     %sum = binary mul f64 %s, %r
     %next = binary add nowrap i32 %i, 1
     %c = cmp lt i32 %next, %n
@@ -238,7 +240,7 @@ function @running(%x : ptr, %n : i64) -> f64 [no_inline=yes] {
     %s = phi f64 [^entry: 0, ^body: %sum]
     %p = index f64 %x, %i
     %v = load typed f64 %p
-    %m = binary mul f64 %v, %s
+    %m = binary mul f64 %s, %v
     %sum = binary add f64 %s, %m
     %next = binary add i64 %i, 1
     %c = cmp lt i64 %next, %n

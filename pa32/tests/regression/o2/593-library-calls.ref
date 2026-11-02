@@ -186,7 +186,7 @@ function @sqrt_of_difference(%x : f64, %y : f64) -> f64 [no_inline=yes] {
 function @sqrt_of_mixed(%x : f64, %y : f64) -> f64 [no_inline=yes] {
   block ^entry:
     %a = binary mul f64 %x, %x
-    %s = binary mul f64 %a, %y
+    %s = binary mul f64 %y, %a
     %t3 = unary sqrt f64 %s
     %t4 = cmp lt f64 %s, 0
     branch %t4, ^split_2, ^split_1
