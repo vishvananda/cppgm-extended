@@ -34,15 +34,17 @@ function @varying(%n : i64, %a : i64) -> i64 [no_inline=yes] {
     jump ^head
 
   block ^head:
+    %t1 = phi i64 [^entry: 0, ^tail: %t8]
     %i = phi i64 [^entry: 0, ^tail: %next]
     %s = phi i64 [^entry: 0, ^tail: %t]
     %c = cmp ult i64 %i, %n
     branch %c, ^tail, ^done
 
   block ^tail:
-    %m = binary mul i64 %a, %i
+    %m = copy i64 %t1
     %t = binary add i64 %s, %m
     %next = binary add i64 %i, 1
+    %t8 = binary add i64 %t1, %a
     jump ^head
 
   block ^done:

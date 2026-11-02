@@ -218,10 +218,10 @@ instruction, no `stack_alloc` and no slot address that leaves the frame's own
 loads and stores: a loop has one frame where the calls had many.
 
 **Strength reduction** (`-O2` and above): in a loop without calls, the `mul` of
-a counter by a literal that no shift or address form covers becomes a counter of
-its own, stepped by the product of that literal and the step. A sign extension
-of a counter that does not wrap may stand between them. Each loop gets at most 4
-such counters.
+a counter by a value the loop does not compute becomes a counter of its own,
+stepped by the product of that value and the step. A literal that a shift or an
+address form covers stays a `mul`. A sign extension of a counter that does not
+wrap may stand between them. Each loop gets at most 8 such counters.
 
 ### Library Calls (`-O2`, `-O3`)
 
@@ -366,9 +366,10 @@ them changed it, branch compares are computed again beside their branches:
   `va_start`, `va_arg` or EH instruction) and no load is volatile. A load
   moves to the preheader when no write in the loop may overlap it and it
   either runs on every entry (in the header, before any call) or reads a
-  slot, a global, or a parameter's `object_bytes` extent; a loop moves at
-  most 10 loads less the values already live through it (its header phis
-  and the outside values it uses). Invariant integer arithmetic, one of
+  slot, a global, or a parameter's `object_bytes` extent. A load of the second
+  kind may be read on a path that had no need of it: a loop moves at most 10 of
+  those, less the values already live through it (its header phis and the
+  outside values it uses). Invariant integer arithmetic, one of
   whose operands is used nowhere else, moves too. So does an invariant
   conversion of an integer other than `i128` to `f32` or `f64`, whatever else
   reads its operand: it cannot trap, and its result costs less to keep than

@@ -9,10 +9,11 @@ using namespace lowir;
 namespace {
 
 // At most this many new counters per loop: each takes a register for the loop.
-const unsigned kCountersPerLoop = 4;
+const unsigned kCountersPerLoop = 8;
 
-// A product of a counter and a literal the addressing modes cannot do becomes
-// a counter of its own: a loop adds to it where it multiplied.
+// A product of a counter and a literal the addressing modes cannot do, or a
+// value the loop does not change, becomes a counter of its own: a loop adds to
+// it where it multiplied.
 class StrengthReduction
 {
 public:
@@ -32,7 +33,7 @@ private:
 	struct Scaled
 	{
 		uint32_t counter;
-		int64_t factor;
+		Value factor;
 		Type type;
 		bool extended;
 		TempId phi, next;
@@ -42,8 +43,12 @@ private:
 	int32_t counter_of(Value v, bool& extended) const;
 	void reduce(uint32_t loop);
 	Value emit_after(BlockId block, InstId& at, Instruction inst, Type type);
-	void add_counter(const Loop& l, Scaled& s);
-	Value product(Value start, int64_t factor, Type type, bool extended, BlockId block, InstId& at);
+	void add_counter(const Loop& l, Scaled& s, bool no_wrap);
+	Value multiply(Value a, Value b, Type type, BlockId block, InstId& at);
+	Value product(Value start, Value factor, Type type, bool extended, BlockId block, InstId& at);
+	bool outside(uint32_t loop, Value v) const;
+	bool same_factor(Value a, Value b) const;
+	bool wants_preheader(uint32_t loop) const;
 
 	FunctionContext& c_;
 	FunctionBody& body_;
@@ -125,19 +130,47 @@ Value StrengthReduction::emit_after(BlockId block, InstId& at, Instruction inst,
 	return Value::temp(body_.instructions[id].result);
 }
 
-// start * factor at `at`, in type `type`.
-Value StrengthReduction::product(Value start, int64_t factor, Type type, bool extended, BlockId block, InstId& at)
+// Whether the loop does not compute `v`.
+bool StrengthReduction::outside(uint32_t loop, Value v) const
 {
-	if (start.is(ValueKind::Integer))
-	{
-		int64_t value = static_cast<int64_t>(body_.literals[start.index].low);
-		if (extended)
-			value = static_cast<int32_t>(value);
+	if (!v.is(ValueKind::Temp) || v.index < body_.parameter_count)
+		return true;
+	const InstId def = body_.temps[v.index].def;
+	return def != kNoId && c_.block_of[def] != kNoId && !in_loop(forest_, loop, c_.block_of[def]);
+}
+
+bool StrengthReduction::same_factor(Value a, Value b) const
+{
+	if (a.is(ValueKind::Integer) && b.is(ValueKind::Integer))
+		return body_.literals[a.index].low == body_.literals[b.index].low;
+	return a == b;
+}
+
+Value StrengthReduction::multiply(Value a, Value b, Type type, BlockId block, InstId& at)
+{
+	if (a.is(ValueKind::Integer) && b.is(ValueKind::Integer))
 		return integer_value(
-			body_, integer_literal(static_cast<int64_t>(static_cast<uint64_t>(value) * static_cast<uint64_t>(factor))));
-	}
+			body_, integer_literal(static_cast<int64_t>(body_.literals[a.index].low * body_.literals[b.index].low)));
+	if (a.is(ValueKind::Integer))
+		std::swap(a, b);
+	if (b.is(ValueKind::Integer) && body_.literals[b.index].low == 1)
+		return a;
+	if (b.is(ValueKind::Integer) && body_.literals[b.index].low == 0)
+		return b;
+	Instruction mul = make_instruction(Opcode::Binary, type);
+	mul.sub = static_cast<uint8_t>(BinaryOp::Mul);
+	mul.ops[0] = a;
+	mul.ops[1] = b;
+	return emit_after(block, at, mul, type);
+}
+
+// start * factor at `at`, in type `type`.
+Value StrengthReduction::product(Value start, Value factor, Type type, bool extended, BlockId block, InstId& at)
+{
 	Value from = start;
-	if (extended)
+	if (extended && start.is(ValueKind::Integer))
+		from = integer_value(body_, integer_literal(static_cast<int32_t>(body_.literals[start.index].low)));
+	else if (extended)
 	{
 		Instruction widen = make_instruction(Opcode::Convert, type);
 		widen.sub = static_cast<uint8_t>(ConvertOp::SExt);
@@ -145,14 +178,10 @@ Value StrengthReduction::product(Value start, int64_t factor, Type type, bool ex
 		widen.ops[0] = start;
 		from = emit_after(block, at, widen, type);
 	}
-	Instruction mul = make_instruction(Opcode::Binary, type);
-	mul.sub = static_cast<uint8_t>(BinaryOp::Mul);
-	mul.ops[0] = from;
-	mul.ops[1] = integer_value(body_, integer_literal(factor));
-	return emit_after(block, at, mul, type);
+	return multiply(from, factor, type, block, at);
 }
 
-void StrengthReduction::add_counter(const Loop& l, Scaled& s)
+void StrengthReduction::add_counter(const Loop& l, Scaled& s, bool no_wrap)
 {
 	const Counter counter = counters_[s.counter];
 	InstId at = previous_in_block(body_, l.preheader, body_.blocks[l.preheader].last);
@@ -160,8 +189,8 @@ void StrengthReduction::add_counter(const Loop& l, Scaled& s)
 	const BlockId stepping = c_.block_of[counter.step];
 	Instruction add = make_instruction(Opcode::Binary, s.type);
 	add.sub = static_cast<uint8_t>(BinaryOp::Add);
-	add.ops[1] = integer_value(body_,
-		integer_literal(static_cast<int64_t>(static_cast<uint64_t>(counter.by) * static_cast<uint64_t>(s.factor))));
+	add.flags = no_wrap ? IF_NO_WRAP : 0;
+	add.ops[1] = multiply(integer_value(body_, integer_literal(counter.by)), s.factor, s.type, l.preheader, at);
 	InstId after = counter.step;
 	const InstId step = append_instruction(body_, add);
 	s.next = append_temp(body_, s.type, step);
@@ -200,20 +229,30 @@ void StrengthReduction::reduce(uint32_t loop)
 		{
 			Instruction& inst = body_.instructions[i];
 			if (inst.op != Opcode::Binary || static_cast<BinaryOp>(inst.sub) != BinaryOp::Mul ||
-				(inst.type.kind() != TypeKind::I32 && inst.type.kind() != TypeKind::I64) ||
-				!inst.ops[1].is(ValueKind::Integer))
+				(inst.type.kind() != TypeKind::I32 && inst.type.kind() != TypeKind::I64))
 				continue;
-			const int64_t factor = static_cast<int64_t>(body_.literals[inst.ops[1].index].low);
 			bool extended = false;
-			const int32_t counter = counter_of(inst.ops[0], extended);
-			if (counter < 0 || cheap_factor(factor) || factor != static_cast<int32_t>(factor))
+			int32_t counter = counter_of(inst.ops[0], extended);
+			Value factor = inst.ops[1];
+			if (counter < 0)
+			{
+				counter = counter_of(inst.ops[1], extended);
+				factor = inst.ops[0];
+			}
+			if (counter < 0 || !outside(loop, factor))
 				continue;
+			if (factor.is(ValueKind::Integer))
+			{
+				const int64_t literal = static_cast<int64_t>(body_.literals[factor.index].low);
+				if (cheap_factor(literal) || literal != static_cast<int32_t>(literal))
+					continue;
+			}
 			const Type start_type = body_.temps[counters_[static_cast<size_t>(counter)].phi].type;
 			if (!extended && !(start_type.kind() == inst.type.kind()))
 				continue;
 			size_t k = 0;
 			for (; k < scaled_.size(); ++k)
-				if (scaled_[k].counter == static_cast<uint32_t>(counter) && scaled_[k].factor == factor &&
+				if (scaled_[k].counter == static_cast<uint32_t>(counter) && same_factor(scaled_[k].factor, factor) &&
 					scaled_[k].type.kind() == inst.type.kind() && scaled_[k].extended == extended)
 					break;
 			if (k == scaled_.size())
@@ -221,7 +260,7 @@ void StrengthReduction::reduce(uint32_t loop)
 				if (scaled_.size() == kCountersPerLoop)
 					continue;
 				scaled_.push_back(Scaled{ static_cast<uint32_t>(counter), factor, inst.type, extended, 0, 0 });
-				add_counter(l, scaled_.back());
+				add_counter(l, scaled_.back(), (inst.flags & IF_NO_WRAP) != 0 && counters_[counter].no_wrap);
 			}
 			// (`inst` still names its instruction: adding appends to storage.)
 			Instruction& mul = body_.instructions[i];
@@ -235,6 +274,35 @@ void StrengthReduction::reduce(uint32_t loop)
 		}
 }
 
+// Whether the loop multiplies one of its header's phis, or what extends one.
+bool StrengthReduction::wants_preheader(uint32_t loop) const
+{
+	const Loop& l = forest_.loops[loop];
+	if (l.preheader != kNoId)
+		return false;
+	auto header_phi = [&](Value v) {
+		if (!v.is(ValueKind::Temp) || v.index < body_.parameter_count)
+			return false;
+		InstId def = body_.temps[v.index].def;
+		if (def != kNoId && body_.instructions[def].op == Opcode::Convert &&
+			body_.instructions[def].ops[0].is(ValueKind::Temp) &&
+			body_.instructions[def].ops[0].index >= body_.parameter_count)
+			def = body_.temps[body_.instructions[def].ops[0].index].def;
+		return def != kNoId && body_.instructions[def].op == Opcode::Phi && c_.block_of[def] == l.header;
+	};
+	for (BlockId b : l.blocks)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			if (inst.op == Opcode::Call)
+				return false;
+			if (inst.op == Opcode::Binary && static_cast<BinaryOp>(inst.sub) == BinaryOp::Mul &&
+				(header_phi(inst.ops[0]) || header_phi(inst.ops[1])))
+				return true;
+		}
+	return false;
+}
+
 bool StrengthReduction::run()
 {
 	c_.ensure_cfg();
@@ -242,6 +310,22 @@ bool StrengthReduction::run()
 	if (forest_.loops.empty())
 		return false;
 	c_.entry_block_of(reduce_strength);
+	// (Each preheader made changes the graph: the loops are found again.)
+	for (unsigned round = 0; round < 16; ++round)
+	{
+		bool one = false;
+		for (uint32_t loop = 0; loop < forest_.loops.size() && !one; ++loop)
+			one = wants_preheader(loop) && make_loop_preheader(body_, cfg_, forest_, loop);
+		if (!one)
+			break;
+		changed_ = true;
+		c_.invalidate_cfg();
+		c_.ensure_cfg();
+		find_loops(body_, cfg_, forest_);
+		map_instruction_blocks(body_, c_.block_of);
+		c_.invalidate_block_of();
+		c_.entry_block_of(reduce_strength);
+	}
 	for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0;)
 		if (forest_.loops[loop].preheader != kNoId)
 			reduce(loop);

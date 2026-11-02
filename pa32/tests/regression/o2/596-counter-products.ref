@@ -102,3 +102,68 @@ function @main() -> i32 [role=entry] {
   block ^entry:
     return i32 0
 }
+function @stride(%a : ptr, %s : i32, %n : i32) -> i64 [no_inline=yes] {
+  block ^entry:
+    %g = cmp gt i32 %n, 0
+    branch %g, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    jump ^body
+
+  block ^body:
+    %t2 = phi i32 [^loop_preheader_1: 0, ^body: %t10]
+    %i = phi i32 [^loop_preheader_1: 0, ^body: %next]
+    %t = phi i64 [^loop_preheader_1: 0, ^body: %sum]
+    %m = copy i32 %t2
+    %p = index i64 %a, %m
+    %v = load i64 %p
+    %sum = binary add i64 %t, %v
+    %next = binary add nowrap i32 %i, 1
+    %t10 = binary add nowrap i32 %t2, %s
+    %c = cmp lt i32 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    %r = phi i64 [^entry: 0, ^body: %sum]
+    return i64 %r
+}
+function @offset(%a : ptr, %s : i64, %from : i64, %n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary mul i64 %from, %s
+    %t2 = binary mul i64 %s, 3
+    jump ^body
+
+  block ^body:
+    %t3 = phi i64 [^entry: %t1, ^body: %t11]
+    %i = phi i64 [^entry: %from, ^body: %next]
+    %t = phi i64 [^entry: 0, ^body: %sum]
+    %m = copy i64 %t3
+    %p = index i8 %a, %m
+    %v = load i64 %p
+    %sum = binary add i64 %t, %v
+    %next = binary add i64 %i, 3
+    %t11 = binary add i64 %t3, %t2
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return i64 %sum
+}
+function @changing(%a : ptr, %n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %t = phi i64 [^entry: 1, ^body: %sum]
+    %m = binary mul i64 %i, %t
+    %p = index i8 %a, %m
+    %v = load i64 %p
+    %sum = binary add i64 %t, %v
+    %next = binary add i64 %i, 1
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return i64 %sum
+}
