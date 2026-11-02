@@ -1,0 +1,44 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @last
+  storage scalar i32
+  init i32 42
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i32 r8, @last
+    mov r9, 0
+
+  block ^loop
+    imul r8, 3877
+    lea rdi, [r8+29573]
+    imul rax, rdi, 502748801
+    sar rax, 46
+    mov rdx, rdi
+    sar rdx, 63
+    sub rax, rdx
+    imul rax, 139968
+    mov rdx, rdi
+    sub rdx, rax
+    mov r8, rdx
+    store.i32 @last, r8
+    add.i32 r9, 1
+    cmp.i32 r9, 5
+    jl ^loop
+
+  block ^done
+    and r8, 255
+    ret r8

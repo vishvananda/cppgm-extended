@@ -402,10 +402,14 @@ void FunctionSelector::prepass_block(uint32_t b)
 			if (clobber & (1u << RAX))
 			{
 				hint(inst.ops[0], RAX, pos);
+				// A dividend that dies here may be computed in rax for the
+				// hardware divide, which reads it there first; the magic
+				// multiplies write rax and read the dividend again.
 				const Value dividend = resolve(inst.ops[0]);
+				int64_t divisor = 0;
 				if (level_ >= 1 && (early & (1u << RAX)) && dividend.kind == ValueKind::Temp &&
-					!(resolve(inst.ops[1]) == dividend) && temps_[dividend.index].last == pos &&
-					temps_[dividend.index].block == b)
+					divide_form(inst, divisor) == DivideForm::Hardware && !(resolve(inst.ops[1]) == dividend) &&
+					temps_[dividend.index].last == pos && temps_[dividend.index].block == b)
 					dividends.push_back(std::make_pair(dividend.index, pos));
 			}
 			else if ((clobber & (1u << RCX)) &&
