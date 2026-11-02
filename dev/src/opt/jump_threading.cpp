@@ -2232,8 +2232,11 @@ bool split_branch_compares(FunctionContext& context)
 			if (def == kNoId || def == prev || uses[c] < 1 || branch_uses[c] + select_uses[c] != uses[c])
 				continue;
 			const Instruction cmp = body.instructions[def];
+			// (A floating equality takes two conditions, which one cmov cannot test.)
 			if (cmp.op != Opcode::Compare || cmp.type.kind() == TypeKind::I128 || cmp.type.kind() == TypeKind::F80 ||
-				cmp.type.is_float())
+				(cmp.type.is_float() &&
+					(static_cast<ComparePredicate>(cmp.sub) == ComparePredicate::Eq ||
+						static_cast<ComparePredicate>(cmp.sub) == ComparePredicate::Ne)))
 				continue;
 			Instruction copy = cmp;
 			copy.next = kNoId;
