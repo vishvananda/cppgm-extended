@@ -100,7 +100,7 @@ private:
 	FunctionBody& body_;
 	Cfg& cfg_;
 	LoopForest forest_;
-	std::vector<uint32_t> hoist_uses_; // use counts for hoist_from (empty: not counted)
+	std::vector<uint32_t> hoist_uses_;   // use counts for hoist_from (empty: not counted)
 	std::vector<uint8_t> hoist_escaped_; // escaped_slots, once a loop writes memory
 	// Per block of cfg_: the by-address parameters (bit k: parameter k)
 	// whose objects are known live at its end (entry_objects_kept; empty:
