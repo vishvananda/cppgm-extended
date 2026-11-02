@@ -1,0 +1,156 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @input
+  storage data
+  item zero 160
+
+global @output
+  storage data
+  item zero 8
+
+function @many
+  abi
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    temp %v14 -> [rbp-<off0>] : f64
+    temp %v15 -> [rbp-<off1>] : f64
+    temp %v16 -> [rbp-<off2>] : f64
+    temp %v17 -> [rbp-<off3>] : f64
+    temp %v13 -> [rbp-<off4>] : f64
+    temp %v12 -> [rbp-<off5>] : f64
+    temp %v11 -> [rbp-<off6>] : f64
+    temp %v10 -> [rbp-<off7>] : f64
+    temp %v9 -> [rbp-<off8>] : f64
+    temp %v8 -> [rbp-<off9>] : f64
+    temp %v6 -> [rbp-<off10>] : f64
+    temp %v7 -> [rbp-<off11>] : f64
+    temp %v5 -> [rbp-<off12>] : f64
+    temp %v4 -> [rbp-<off13>] : f64
+    temp %v3 -> [rbp-<off14>] : f64
+    temp %v2 -> [rbp-<off15>] : f64
+    temp %v1 -> [rbp-<off16>] : f64
+    temp %v0 -> [rbp-<off17>] : f64
+    temp %m15 -> [rbp-<off18>] : f64
+    temp %m16 -> [rbp-<off19>] : f64
+    temp %m17 -> [rbp-<off20>] : f64
+
+  block ^entry
+    fmov.f64 xmm0, @input
+    fmov.f64 xmm1, @input+8
+    fmov.f64 <xmm0>, @input+16
+    fmov.f64 <xmm1>, @input+24
+    fmov.f64 <xmm2>, @input+32
+    fmov.f64 <xmm3>, @input+40
+    fmov.f64 <xmm4>, @input+48
+    fmov.f64 <xmm5>, @input+56
+    fmov.f64 xmm8, @input+64
+    fmov.f64 xmm9, @input+72
+    fmov.f64 xmm10, @input+80
+    fmov.f64 xmm11, @input+88
+    fmov.f64 xmm12, @input+96
+    fmov.f64 xmm13, @input+104
+    fmov.f64 xmm14, @input+112
+    fmov.f64 [rbp-<off0>], xmm14
+    fmov.f64 xmm14, @input+120
+    fmov.f64 [rbp-<off1>], xmm14
+    fmov.f64 xmm14, @input+128
+    fmov.f64 [rbp-<off2>], xmm14
+    fmov.f64 xmm14, @input+136
+    fmov.f64 [rbp-<off3>], xmm14
+    fmov.f64 [rbp-<off4>], xmm13
+    fmul.f64 xmm13, xmm1, xmm1
+    fmov.f64 [rbp-<off5>], xmm12
+    fmul.f64 xmm12, <xmm0>, <xmm0>
+    fmov.f64 [rbp-<off6>], xmm11
+    fmul.f64 xmm11, <xmm1>, <xmm1>
+    fmov.f64 [rbp-<off7>], xmm10
+    fmul.f64 xmm10, <xmm2>, <xmm2>
+    fmov.f64 [rbp-<off8>], xmm9
+    fmul.f64 xmm9, <xmm3>, <xmm3>
+    fmov.f64 [rbp-<off9>], xmm8
+    fmul.f64 xmm8, <xmm4>, <xmm4>
+    fmov.f64 [rbp-<off10>], <xmm4>
+    fmul.f64 <xmm4>, <xmm5>, <xmm5>
+    fmov.f64 [rbp-<off11>], <xmm5>
+    fmul.f64 <xmm5>, [rbp-<off9>], [rbp-<off9>]
+    fmov.f64 [rbp-<off12>], <xmm3>
+    fmul.f64 <xmm3>, [rbp-<off8>], [rbp-<off8>]
+    fmov.f64 [rbp-<off13>], <xmm2>
+    fmul.f64 <xmm2>, [rbp-<off7>], [rbp-<off7>]
+    fmov.f64 [rbp-<off14>], <xmm1>
+    fmul.f64 <xmm1>, [rbp-<off6>], [rbp-<off6>]
+    fmov.f64 [rbp-<off15>], <xmm0>
+    fmul.f64 <xmm0>, [rbp-<off5>], [rbp-<off5>]
+    fmov.f64 [rbp-<off16>], xmm1
+    fmul.f64 xmm1, [rbp-<off4>], [rbp-<off4>]
+    fmov.f64 [rbp-<off17>], xmm0
+    fmul.f64 xmm0, [rbp-<off0>], [rbp-<off0>]
+    fmul.f64 xmm14, [rbp-<off1>], [rbp-<off1>]
+    fmov.f64 [rbp-<off18>], xmm14
+    fmul.f64 xmm14, [rbp-<off2>], [rbp-<off2>]
+    fmov.f64 [rbp-<off19>], xmm14
+    fmul.f64 xmm14, [rbp-<off3>], [rbp-<off3>]
+    fadd.f64 xmm13, [rbp-<off17>], xmm13
+    fadd.f64 xmm13, xmm13, xmm12
+    fadd.f64 xmm13, xmm13, xmm11
+    fadd.f64 xmm13, xmm13, xmm10
+    fadd.f64 xmm13, xmm13, xmm9
+    fadd.f64 xmm13, xmm13, xmm8
+    fadd.f64 xmm13, xmm13, <xmm4>
+    fadd.f64 xmm13, xmm13, <xmm5>
+    fadd.f64 xmm13, xmm13, <xmm3>
+    fadd.f64 xmm13, xmm13, <xmm2>
+    fadd.f64 xmm13, xmm13, <xmm1>
+    fadd.f64 xmm13, xmm13, <xmm0>
+    fadd.f64 xmm13, xmm13, xmm1
+    fadd.f64 xmm13, xmm13, xmm0
+    fadd.f64 xmm13, xmm13, [rbp-<off18>]
+    fadd.f64 xmm13, xmm13, [rbp-<off19>]
+    fadd.f64 xmm13, xmm13, xmm14
+    fadd.f64 xmm13, xmm13, [rbp-<off17>]
+    fadd.f64 xmm13, xmm13, [rbp-<off16>]
+    fadd.f64 xmm13, xmm13, [rbp-<off15>]
+    fadd.f64 xmm13, xmm13, [rbp-<off14>]
+    fadd.f64 xmm13, xmm13, [rbp-<off13>]
+    fadd.f64 xmm13, xmm13, [rbp-<off12>]
+    fadd.f64 xmm13, xmm13, [rbp-<off10>]
+    fadd.f64 xmm13, xmm13, [rbp-<off11>]
+    fadd.f64 xmm13, xmm13, [rbp-<off9>]
+    fadd.f64 xmm13, xmm13, [rbp-<off8>]
+    fadd.f64 xmm13, xmm13, [rbp-<off7>]
+    fadd.f64 xmm13, xmm13, [rbp-<off6>]
+    fadd.f64 xmm13, xmm13, [rbp-<off5>]
+    fadd.f64 xmm13, xmm13, [rbp-<off4>]
+    fadd.f64 xmm13, xmm13, [rbp-<off0>]
+    fadd.f64 xmm13, xmm13, [rbp-<off1>]
+    fadd.f64 xmm13, xmm13, [rbp-<off2>]
+    fadd.f64 xmm13, xmm13, [rbp-<off3>]
+    fmov.f64 @output, xmm13
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.f64 @input+8, 2.0
+    call @many [args=()]
+    fmov.f64 xmm0, @output
+    fptosi.f64.i32 rax, xmm0
+    sext.i32 rax
+    sub rax, 6
+    ret rax

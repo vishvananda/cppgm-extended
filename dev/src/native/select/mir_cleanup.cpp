@@ -1165,6 +1165,116 @@ uint32_t forward_home_reloads(Function& function)
 	return forwarding.run();
 }
 
+// O1+: a floating read of a frame home whose value an XMM register holds
+// since a store of it in this block reads the register: the load would wait
+// for that store. Integer work keeps what the registers hold; a call or any
+// other floating or vector instruction ends it. Linear.
+uint32_t forward_float_homes(Function& function)
+{
+	std::vector<int32_t> homes;
+	for (const FrameBinding& binding : function.bindings)
+		if (binding.kind != BindingKind::Slot && !binding.type.is_object() &&
+			(binding.type.kind() == lowir::TypeKind::F32 || binding.type.kind() == lowir::TypeKind::F64))
+			homes.push_back(binding.offset);
+	if (homes.empty())
+		return 0;
+	std::sort(homes.begin(), homes.end());
+	const unsigned kXmms = 16;
+	int32_t held[kXmms];
+	lowir::TypeKind type[kXmms];
+	const auto forget_all = [&]() { std::fill(held, held + kXmms, kHoldsNothing); };
+	const auto forget_home = [&](int32_t at) {
+		for (unsigned r = 0; r < kXmms; ++r)
+			if (held[r] != kHoldsNothing && held[r] < at + 8 && at < held[r] + 8)
+				held[r] = kHoldsNothing;
+	};
+	const auto home_of = [&](const Operand& op) {
+		return op.kind == OperandKind::Mem && op.reg == kFrame && op.index == kNoReg && op.symbol == lowir::kNoId &&
+			std::binary_search(homes.begin(), homes.end(), op.disp);
+	};
+	const auto holder_of = [&](int32_t at, lowir::TypeKind kind) {
+		for (unsigned r = 0; r < kXmms; ++r)
+			if (held[r] == at && type[r] == kind)
+				return static_cast<Reg>(XMM0 + r);
+		return kNoReg;
+	};
+	uint32_t forwarded = 0;
+	for (const Block& block : function.blocks)
+	{
+		forget_all();
+		const uint32_t end = block.first + block.count;
+		for (uint32_t i = block.first; i < end; ++i)
+		{
+			Inst& inst = function.insts[i];
+			const bool scalar = inst.type == lowir::TypeKind::F32 || inst.type == lowir::TypeKind::F64;
+			const bool volatile_access = (inst.flags & MF_VOLATILE) != 0;
+			if (scalar && !volatile_access &&
+				(inst.op == Op::FAdd || inst.op == Op::FSub || inst.op == Op::FMul || inst.op == Op::FDiv))
+			{
+				const Reg d = inst.ops[0].kind == OperandKind::Reg ? inst.ops[0].reg : kNoReg;
+				for (unsigned k = 1; k < 3 && d != kNoReg; ++k)
+				{
+					if (!home_of(inst.ops[k]))
+						continue;
+					const Reg r = holder_of(inst.ops[k].disp, inst.type);
+					// (A second operand must survive the copy of the first.)
+					if (r != kNoReg && (k == 1 || r != d))
+					{
+						inst.ops[k] = Operand::make_reg(r);
+						++forwarded;
+					}
+				}
+				if (d != kNoReg && is_xmm(d))
+					held[d - XMM0] = kHoldsNothing;
+				held[kXmms - 1] = kHoldsNothing;
+				continue;
+			}
+			if (scalar && !volatile_access && inst.op == Op::FMov && inst.ops[0].kind == OperandKind::Reg &&
+				is_xmm(inst.ops[0].reg) && home_of(inst.ops[1]))
+			{
+				const Reg d = inst.ops[0].reg;
+				const Reg r = holder_of(inst.ops[1].disp, inst.type);
+				const int32_t at = inst.ops[1].disp;
+				if (r != kNoReg)
+				{
+					inst.ops[1] = Operand::make_reg(r);
+					++forwarded;
+				}
+				held[d - XMM0] = d < XMM0 + 14 ? at : kHoldsNothing;
+				type[d - XMM0] = inst.type;
+				continue;
+			}
+			if ((inst.op == Op::Store || (scalar && inst.op == Op::FMov)) && inst.ops[0].kind == OperandKind::Mem)
+			{
+				const bool frame = inst.ops[0].reg == kFrame && inst.ops[0].index == kNoReg;
+				if (frame)
+					forget_home(inst.ops[0].disp);
+				if (scalar && !volatile_access && home_of(inst.ops[0]) && inst.ops[1].kind == OperandKind::Reg &&
+					is_xmm(inst.ops[1].reg))
+				{
+					held[inst.ops[1].reg - XMM0] = inst.ops[0].disp;
+					type[inst.ops[1].reg - XMM0] = inst.type;
+				}
+				continue;
+			}
+			if (scalar && inst.op == Op::FMov && inst.ops[0].kind == OperandKind::Reg && is_xmm(inst.ops[0].reg))
+			{
+				held[inst.ops[0].reg - XMM0] = kHoldsNothing;
+				continue;
+			}
+			// (Integer work touches no XMM register.)
+			if (simple_inst(inst))
+			{
+				if (inst.nops > 0 && inst.ops[0].kind == OperandKind::Mem && inst.ops[0].reg == kFrame)
+					forget_home(inst.ops[0].disp);
+				continue;
+			}
+			forget_all();
+		}
+	}
+	return forwarded;
+}
+
 // O1+: `test r, r` (or `cmp r, 0`, which sets the flags alike) after an
 // instruction that set the flags from r at the same width goes when every
 // reader of the flags before they are set again (or the block ends: the

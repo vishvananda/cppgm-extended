@@ -1,0 +1,156 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @input
+  storage data
+  item zero 160
+
+global @output
+  storage data
+  item zero 8
+
+function @many
+  abi
+    return void -> void
+  frame
+    stack_size 176
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    temp %v14 -> [rbp-8] : f64
+    temp %v15 -> [rbp-16] : f64
+    temp %v16 -> [rbp-24] : f64
+    temp %v17 -> [rbp-32] : f64
+    temp %v13 -> [rbp-40] : f64
+    temp %v12 -> [rbp-48] : f64
+    temp %v11 -> [rbp-56] : f64
+    temp %v10 -> [rbp-64] : f64
+    temp %v9 -> [rbp-72] : f64
+    temp %v8 -> [rbp-80] : f64
+    temp %v6 -> [rbp-96] : f64
+    temp %v7 -> [rbp-104] : f64
+    temp %v5 -> [rbp-112] : f64
+    temp %v4 -> [rbp-120] : f64
+    temp %v3 -> [rbp-128] : f64
+    temp %v2 -> [rbp-136] : f64
+    temp %v1 -> [rbp-144] : f64
+    temp %v0 -> [rbp-88] : f64
+    temp %m15 -> [rbp-152] : f64
+    temp %m16 -> [rbp-160] : f64
+    temp %m17 -> [rbp-168] : f64
+
+  block ^entry
+    fmov.f64 xmm0, @input
+    fmov.f64 xmm1, @input+8
+    fmov.f64 xmm2, @input+16
+    fmov.f64 xmm3, @input+24
+    fmov.f64 xmm4, @input+32
+    fmov.f64 xmm5, @input+40
+    fmov.f64 xmm6, @input+48
+    fmov.f64 xmm7, @input+56
+    fmov.f64 xmm8, @input+64
+    fmov.f64 xmm9, @input+72
+    fmov.f64 xmm10, @input+80
+    fmov.f64 xmm11, @input+88
+    fmov.f64 xmm12, @input+96
+    fmov.f64 xmm13, @input+104
+    fmov.f64 xmm14, @input+112
+    fmov.f64 [rbp-8], xmm14
+    fmov.f64 xmm14, @input+120
+    fmov.f64 [rbp-16], xmm14
+    fmov.f64 xmm14, @input+128
+    fmov.f64 [rbp-24], xmm14
+    fmov.f64 xmm14, @input+136
+    fmov.f64 [rbp-32], xmm14
+    fmov.f64 [rbp-40], xmm13
+    fmul.f64 xmm13, xmm1, xmm1
+    fmov.f64 [rbp-48], xmm12
+    fmul.f64 xmm12, xmm2, xmm2
+    fmov.f64 [rbp-56], xmm11
+    fmul.f64 xmm11, xmm3, xmm3
+    fmov.f64 [rbp-64], xmm10
+    fmul.f64 xmm10, xmm4, xmm4
+    fmov.f64 [rbp-72], xmm9
+    fmul.f64 xmm9, xmm5, xmm5
+    fmov.f64 [rbp-80], xmm8
+    fmul.f64 xmm8, xmm6, xmm6
+    fmov.f64 [rbp-96], xmm6
+    fmul.f64 xmm6, xmm7, xmm7
+    fmov.f64 [rbp-104], xmm7
+    fmul.f64 xmm7, [rbp-80], [rbp-80]
+    fmov.f64 [rbp-112], xmm5
+    fmul.f64 xmm5, [rbp-72], [rbp-72]
+    fmov.f64 [rbp-120], xmm4
+    fmul.f64 xmm4, [rbp-64], [rbp-64]
+    fmov.f64 [rbp-128], xmm3
+    fmul.f64 xmm3, [rbp-56], [rbp-56]
+    fmov.f64 [rbp-136], xmm2
+    fmul.f64 xmm2, [rbp-48], [rbp-48]
+    fmov.f64 [rbp-144], xmm1
+    fmul.f64 xmm1, [rbp-40], [rbp-40]
+    fmov.f64 [rbp-88], xmm0
+    fmul.f64 xmm0, [rbp-8], [rbp-8]
+    fmul.f64 xmm14, [rbp-16], [rbp-16]
+    fmov.f64 [rbp-152], xmm14
+    fmul.f64 xmm14, [rbp-24], [rbp-24]
+    fmov.f64 [rbp-160], xmm14
+    fmul.f64 xmm14, [rbp-32], [rbp-32]
+    fadd.f64 xmm13, [rbp-88], xmm13
+    fadd.f64 xmm13, xmm13, xmm12
+    fadd.f64 xmm13, xmm13, xmm11
+    fadd.f64 xmm13, xmm13, xmm10
+    fadd.f64 xmm13, xmm13, xmm9
+    fadd.f64 xmm13, xmm13, xmm8
+    fadd.f64 xmm13, xmm13, xmm6
+    fadd.f64 xmm13, xmm13, xmm7
+    fadd.f64 xmm13, xmm13, xmm5
+    fadd.f64 xmm13, xmm13, xmm4
+    fadd.f64 xmm13, xmm13, xmm3
+    fadd.f64 xmm13, xmm13, xmm2
+    fadd.f64 xmm13, xmm13, xmm1
+    fadd.f64 xmm13, xmm13, xmm0
+    fadd.f64 xmm13, xmm13, [rbp-152]
+    fadd.f64 xmm13, xmm13, [rbp-160]
+    fadd.f64 xmm13, xmm13, xmm14
+    fadd.f64 xmm13, xmm13, [rbp-88]
+    fadd.f64 xmm13, xmm13, [rbp-144]
+    fadd.f64 xmm13, xmm13, [rbp-136]
+    fadd.f64 xmm13, xmm13, [rbp-128]
+    fadd.f64 xmm13, xmm13, [rbp-120]
+    fadd.f64 xmm13, xmm13, [rbp-112]
+    fadd.f64 xmm13, xmm13, [rbp-96]
+    fadd.f64 xmm13, xmm13, [rbp-104]
+    fadd.f64 xmm13, xmm13, [rbp-80]
+    fadd.f64 xmm13, xmm13, [rbp-72]
+    fadd.f64 xmm13, xmm13, [rbp-64]
+    fadd.f64 xmm13, xmm13, [rbp-56]
+    fadd.f64 xmm13, xmm13, [rbp-48]
+    fadd.f64 xmm13, xmm13, [rbp-40]
+    fadd.f64 xmm13, xmm13, [rbp-8]
+    fadd.f64 xmm13, xmm13, [rbp-16]
+    fadd.f64 xmm13, xmm13, [rbp-24]
+    fadd.f64 xmm13, xmm13, [rbp-32]
+    fmov.f64 @output, xmm13
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.f64 @input+8, 2.0
+    call @many [args=()]
+    fmov.f64 xmm0, @output
+    fptosi.f64.i32 rax, xmm0
+    sext.i32 rax
+    sub rax, 6
+    ret rax

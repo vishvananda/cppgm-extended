@@ -45,7 +45,9 @@ that paid there in the course solution:
   operand dying there needs no copy. A subtraction or division cannot do that
   with its second operand, which copying the first would destroy. In the
   floating-point loops profiled for this, reloads and copies were the largest
-  difference from GCC's code.
+  difference from GCC's code. A floating
+  read of a home an XMM register still holds reads the register, as a read that
+  soon after the store would wait for it.
 - An unsigned divide by an even constant can take a shorter path. Where the odd
   divisor's multiplier needs 65 bits, shift the divisor's low zeros out of the
   dividend first: the dividend is shorter, and a 64-bit multiplier then serves.
