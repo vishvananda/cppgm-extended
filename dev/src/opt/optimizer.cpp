@@ -382,7 +382,8 @@ bool finish_loops(FunctionContext& context, int level)
 	if (level >= 3 && RUN_PASS(rotate_loops))
 	{
 		RUN_PASS(promote_slots);
-		// (A guard of literals goes.)
+		// (Latches now test what their headers read. A guard of literals goes.)
+		RUN_PASS(fold_nonzero_tests);
 		RUN_PASS(simplify_values);
 		RUN_PASS(cleanup_cfg);
 		RUN_PASS(forward_memory);

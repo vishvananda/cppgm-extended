@@ -167,6 +167,7 @@ bool name_returned_slot(FunctionContext& context);
 // small block's branch (whose values nothing else uses) jumps to the
 // decided successor. O(blocks + edges) plus bounded per-edge evaluation.
 bool thread_jumps(FunctionContext& context);
+bool fold_nonzero_tests(FunctionContext& context);
 
 // Loop-invariant code motion (opt/loop_motion.cpp), O2+: pure instructions
 // whose operands a loop does not compute move to its preheader, innermost

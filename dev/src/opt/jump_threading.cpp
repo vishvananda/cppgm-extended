@@ -256,6 +256,7 @@ public:
 	explicit JumpThreading(FunctionContext& context) : c_(context), body_(context.body), cfg_(context.cfg) {}
 
 	bool run();
+	bool nonzero_phis();
 	uint32_t demoted() const { return demoted_; }
 
 private:
@@ -269,6 +270,7 @@ private:
 	bool mergeable(BlockId p, BlockId s, Value v) const;
 	BlockId copy_merge(BlockId p, BlockId q, BlockId s);
 	bool dominating_facts();
+	bool entered_nonzero(Value v, BlockId p, BlockId to) const;
 	// `counted`: c_.uses holds the body's use counts as it stands.
 	bool constant_phis(bool counted);
 	void find_use_dominators();
@@ -820,6 +822,8 @@ const uint32_t kDominatorFactDepth = 8;
 const uint32_t kDemotedBlocks = 32;
 // Plain instructions a threaded predecessor's copy of a test block takes.
 const uint32_t kThreadCopy = 6;
+// Phis one run follows from the branches testing them.
+const size_t kNonzeroPhis = 1024;
 
 bool JumpThreading::known_compares()
 {
@@ -1890,10 +1894,136 @@ bool JumpThreading::dominating_facts()
 	return changed;
 }
 
+// Whether p's branch reaches `to` only when v is not zero: it tests v, or
+// compares it with zero.
+bool JumpThreading::entered_nonzero(Value v, BlockId p, BlockId to) const
+{
+	const InstId t = body_.blocks[p].last;
+	if (t == kNoId || body_.instructions[t].op != Opcode::Branch)
+		return false;
+	const Instruction& br = body_.instructions[t];
+	if (br.ops[1].index == br.ops[2].index || !br.ops[0].is(ValueKind::Temp))
+		return false;
+	const bool taken = br.ops[1].index == to;
+	if (br.ops[0] == v)
+		return taken;
+	const InstId def = body_.temps[br.ops[0].index].def;
+	if (def == kNoId || body_.instructions[def].op != Opcode::Compare)
+		return false;
+	const Instruction& cmp = body_.instructions[def];
+	const ComparePredicate pred = static_cast<ComparePredicate>(cmp.sub);
+	if (pred != ComparePredicate::Eq && pred != ComparePredicate::Ne)
+		return false;
+	Constant zero;
+	return cmp.ops[0] == v && literal_constant(body_, cmp.ops[1], zero) && zero.kind == ValueKind::Integer &&
+		zero.bits.low == 0 && zero.bits.high == 0 && (pred == ComparePredicate::Ne) == taken;
+}
+
+// A phi tested for zero whose every input is a nonzero literal, a value its
+// edge is entered only when nonzero, or a phi of the same kind cannot be zero:
+// a recursion's `n ? ... : ...` inlined into itself tests again the value each
+// of its entries tested. All of them start assumed; those with a failing input
+// drop out until the rest hold one another up.
+bool JumpThreading::nonzero_phis()
+{
+	std::vector<uint8_t> nonzero(body_.temps.size(), 0);
+	std::vector<TempId> phis;
+	auto add = [&](Value v) {
+		if (!v.is(ValueKind::Temp) || nonzero[v.index] || body_.temps[v.index].def == kNoId ||
+			body_.instructions[body_.temps[v.index].def].op != Opcode::Phi)
+			return;
+		const Type type = body_.temps[v.index].type;
+		if ((type.is_integer() || type.is_pointer()) && type.kind() != TypeKind::I128)
+		{
+			nonzero[v.index] = 1;
+			phis.push_back(v.index);
+		}
+	};
+	// (The value a branch tests, directly or by a compare with a literal.)
+	auto tested = [&](const Instruction& br) {
+		Value v = br.ops[0];
+		if (!v.is(ValueKind::Temp))
+			return Value::none();
+		const InstId def = body_.temps[v.index].def;
+		if (def != kNoId && body_.instructions[def].op == Opcode::Compare)
+			v = body_.instructions[def].ops[0];
+		return v;
+	};
+	for (BlockId b : body_.layout)
+	{
+		const InstId t = body_.blocks[b].last;
+		if (cfg_.reachable(b) && t != kNoId && body_.instructions[t].op == Opcode::Branch)
+			add(tested(body_.instructions[t]));
+	}
+	for (size_t k = 0; k < phis.size() && phis.size() <= kNonzeroPhis; ++k)
+	{
+		const Instruction& phi = body_.instructions[body_.temps[phis[k]].def];
+		for (uint32_t i = 0; i < phi.extra_count; i += 2)
+			add(body_.operands[phi.extra_first + i + 1]);
+	}
+	if (phis.empty() || phis.size() > kNonzeroPhis)
+		return false;
+	auto input_holds = [&](Value v, BlockId p, BlockId to) {
+		Constant c;
+		if (literal_constant(body_, v, c))
+			return c.kind == ValueKind::Integer && (c.bits.low != 0 || c.bits.high != 0);
+		if (!v.is(ValueKind::Temp))
+			return false;
+		if (nonzero[v.index] || entered_nonzero(v, p, to))
+			return true;
+		BlockId d = p;
+		for (uint32_t depth = 0; depth < kDominatorFactDepth && d != kNoId; ++depth)
+		{
+			if (cfg_.pred_count(d) == 1 && entered_nonzero(v, cfg_.preds[cfg_.pred_first[d]], d))
+				return true;
+			d = cfg_.idom[d];
+		}
+		return false;
+	};
+	for (bool dropped = true; dropped;)
+	{
+		dropped = false;
+		for (BlockId block : body_.layout)
+			for (InstId id = body_.blocks[block].first; id != kNoId && body_.instructions[id].op == Opcode::Phi;
+				id = body_.instructions[id].next)
+			{
+				const Instruction& phi = body_.instructions[id];
+				for (uint32_t i = 0; i < phi.extra_count && nonzero[phi.result]; i += 2)
+				{
+					const BlockId p = body_.operands[phi.extra_first + i].index;
+					if (cfg_.reachable(p) && !input_holds(body_.operands[phi.extra_first + i + 1], p, block))
+					{
+						nonzero[phi.result] = 0;
+						dropped = true;
+					}
+				}
+			}
+	}
+	bool changed = false;
+	for (BlockId b : body_.layout)
+	{
+		const InstId t = body_.blocks[b].last;
+		if (!cfg_.reachable(b) || t == kNoId || body_.instructions[t].op != Opcode::Branch)
+			continue;
+		Instruction& br = body_.instructions[t];
+		const Value v = tested(br);
+		if (!v.is(ValueKind::Temp) || !nonzero[v.index] || br.ops[1].index == br.ops[2].index)
+			continue;
+		const bool through = entered_nonzero(v, b, br.ops[1].index), against = entered_nonzero(v, b, br.ops[2].index);
+		if (through != against)
+		{
+			br.ops[0] = integer_value(body_, Literal{ through ? 1u : 0u, 0 });
+			changed = true;
+		}
+	}
+	return changed;
+}
+
 bool JumpThreading::run()
 {
 	c_.ensure_cfg();
 	bool changed = c_.level >= 2 && dominating_facts();
+	changed = (c_.level >= 2 && nonzero_phis()) || changed;
 	changed = known_edges() || changed;
 	if (changed)
 	{
@@ -1921,6 +2051,16 @@ bool JumpThreading::run()
 }
 
 } // namespace
+
+bool fold_nonzero_tests(FunctionContext& context)
+{
+	context.ensure_cfg();
+	JumpThreading threading(context);
+	if (!threading.nonzero_phis())
+		return false;
+	context.invalidate_cfg();
+	return true;
+}
 
 bool thread_jumps(FunctionContext& context)
 {

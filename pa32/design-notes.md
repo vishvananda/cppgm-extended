@@ -154,7 +154,11 @@ inputs decide a small block's branch (at most 8 instructions besides its
 phis) jump to the decided successor. At `-O2` and above, facts from
 dominating branches fold the compares they decide, and a predecessor whose
 recent path decides a test block's compare against a literal jumps to the
-decided side (copying at most 6 of the test block's instructions).
+decided side (copying at most 6 of the test block's instructions). A branch
+on a phi goes when every input is a nonzero literal, a value its edge is
+entered only when nonzero, or another such phi. The search assumes all phis
+qualify and drops those with a failing input, so a loop's phis hold each other
+up. At `-O3` it runs again after loop rotation, which moves tests to latches.
 
 **Slot promotion** turns a scalar slot (any integer up to 64 bits, `ptr`,
 `f32`, `f64`) into SSA values when every use is a direct nonvolatile `load`
