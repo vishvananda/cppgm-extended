@@ -1,0 +1,12 @@
+function @main() -> i32 {
+  block ^entry:
+    %s = convert trunc exact i32 i64 -2147483648
+    %u = convert trunc exact u32 i64 4294967295
+    %a = convert sext i64 i32 %s
+    %b = convert zext i64 u32 %u
+    %c = cmp eq i64 %a, -2147483648
+    %d = cmp eq i64 %b, 4294967295
+    %ok = binary and i1 %c, %d
+    %r = select i32 %ok, 0, 1
+    return i32 %r
+}

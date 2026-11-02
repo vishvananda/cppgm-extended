@@ -99,6 +99,10 @@ a complete reference module; its source and checker must stay within the
 owning handout's requirements. Personal inputs and scratch
 harnesses belong in `student.tests/` and are run explicitly.
 
+The numbering check includes solution-only `regression/` lanes, nested
+controls and PA32's standalone object-roundtrip sources. Their implementation
+requirements remain separate from the course feature-placement check.
+
 A fixture must also sit where a lane runs it: a fixture beside the roots its
 Makefile names ships to students and is never graded. `make test-harness`
 runs `scripts/check_fixture_lanes.py`, which derives each assignment's lanes

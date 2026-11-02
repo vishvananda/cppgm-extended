@@ -1474,13 +1474,14 @@ def in_unjudged_lane(path: Path) -> bool:
     return any(part in UNJUDGED_LANE_DIRS for part in path.parts)
 
 
-def suite_test_files(test_root: Path) -> list[Path]:
+def suite_test_files(test_root: Path, *, include_regression: bool = False) -> list[Path]:
     inputs = list(test_root.rglob("*.t"))
-    control_root = test_root if test_root.name == "controls" else test_root / "controls"
-    inputs.extend(control_root.rglob("*.cpp"))
+    inputs.extend(path for path in test_root.rglob("*.cpp")
+                  if {"controls", "object-roundtrip"}.intersection(path.relative_to(test_root).parts)
+                  or test_root.name in {"controls", "object-roundtrip"})
     return [
         path for path in sorted(inputs)
-        if path.is_file() and not in_unjudged_lane(path.relative_to(test_root))
+        if path.is_file() and (include_regression or not in_unjudged_lane(path.relative_to(test_root)))
     ]
 
 
@@ -1505,12 +1506,13 @@ def iter_local_hygiene_pas(pas: Iterable[str]) -> list[str]:
     return selected
 
 
-def iter_local_test_files(root: Path, pas: Iterable[str]) -> list[Path]:
+def iter_local_test_files(root: Path, pas: Iterable[str], *,
+                          include_regression: bool = False) -> list[Path]:
     files: list[Path] = []
     for pa in iter_local_hygiene_pas(pas):
         test_root = root / pa / "tests"
         if test_root.exists():
-            files.extend(suite_test_files(test_root))
+            files.extend(suite_test_files(test_root, include_regression=include_regression))
     return files
 
 
@@ -1842,7 +1844,9 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
                     "tested"
                 ),
             ))
-    for path in iter_local_test_files(root, selected_pas):
+    # Numbering is repository hygiene, including solution-only fixtures. Keep
+    # their feature requirements out of the separate course-contract scan.
+    for path in iter_local_test_files(root, selected_pas, include_regression=True):
         relative = path.relative_to(root).as_posix()
         cluster = cluster_for(path)
         pa_index = pa_number(current_pa_for(path.relative_to(root)))
@@ -1868,6 +1872,8 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
                     f"cluster; use {nearest:03d} for this cluster"
                 ),
             ))
+        if in_unjudged_lane(path.relative_to(root)):
+            continue
         current_pa = current_pa_for(path.relative_to(root))
         if current_pa == "pa18":
             source = read_text(path) + "\n" + companion_source_text_for(path)

@@ -189,7 +189,7 @@ else:
             result = subprocess.run(
                 ['perl', str(ROOT / 'scripts/check_lowir_native_parameter_addresses.pl'),
                  *map(str, tools), str(ROOT / 'pa33/tests/regression/controls/'
-                                      '459-parameter-address-folding.t')],
+                                      '400-parameter-address-folding.t')],
                 env=dict(os.environ, PA33_CALL_LOG=str(log), PA33_MIR=mir),
                 capture_output=True, text=True, timeout=30)
             return result, log.read_text().splitlines()

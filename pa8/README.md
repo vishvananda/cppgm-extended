@@ -106,6 +106,12 @@ The required representation includes the forms exercised by `tests/spec/`:
   `replaceable`.
 
 Use `lowir.md` for each field's type and meaning, and `pa8.gram` for syntax.
+Optimized LowIR uses this same boundary: `unary sqrt` computes without
+`errno`, `convert trunc exact` carries a representability proof, and a `copy`
+between a floating value and an integer of its width preserves the bits.
+The specification fixtures exercise reading, validation and serialization of
+these forms; PA32 explains when an optimizer can introduce them. They need no
+private source-language facts when read back by the object path.
 The full format reference also documents later additions. A feature appearing
 there alone does not add a new PA8 requirement: this handout and the owning
 specification fixtures define the introductory interface. Later assignments

@@ -160,7 +160,8 @@ for my $test (@tests) {
                              [backend])
             findings = audit.scan_test_hygiene(root, ["pa12", "pa24"])
             self.assertEqual([(f.path, f.kind) for f in findings],
-                             [("pa12/tests/controls/536-member-call.cpp", "test-number")])
+                             [("pa12/tests/controls/536-member-call.cpp", "test-number"),
+                              ("pa12/tests/regression/controls/536-private.cpp", "test-number")])
             features = audit.load_feature_table(REPO_ROOT / audit.DEFAULT_TRACKER)
             row = audit.row_for(bad, root, features)
             self.assertEqual(row["test_role"], "control")
@@ -172,6 +173,23 @@ for my $test (@tests) {
             row = audit.row_for(misplaced_source, root, features)
             self.assertEqual(row["input_contract"], "cpp-source")
             self.assertIn("class.member_pointer", row["detected_features"])
+
+    def test_regression_numbering_does_not_expand_course_requirements(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bad = ["pa32/tests/regression/o3/548-lanes.t",
+                   "pa32/tests/object-roundtrip/540-boundary.cpp",
+                   "pa33/tests/regression/controls/native/439-memory.cpp",
+                   "pa24/tests/regression/unnumbered.t"]
+            for name in bad:
+                write(root / name, "return\n")
+            write(root / "pa33/tests/regression/o1/400-memory.t", "return\n")
+            write(root / "pa33/tests/regression/simd/100-helper.t.1", "int main() {}\n")
+            self.assertEqual(audit.iter_test_files(root, ["pa24", "pa32", "pa33"]),
+                             [root / "pa32/tests/object-roundtrip/540-boundary.cpp"])
+            findings = audit.scan_test_hygiene(root, ["pa24", "pa32", "pa33"])
+            self.assertEqual({f.path for f in findings}, set(bad))
+            self.assertTrue(all(f.kind == "test-number" for f in findings))
 
     def test_noinline_is_early_function_metadata_without_hiding_host_attributes(self) -> None:
         features = audit.load_feature_table(REPO_ROOT / audit.DEFAULT_TRACKER)

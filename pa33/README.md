@@ -133,6 +133,24 @@ The numbered buckets group backend features. `tests/o1`, `o2` and `o3` check
 code-quality bounds as well as execution; `tests/behavior/` adds correctness
 cases and applies bounds only where an expectation is supplied.
 
+### Further improvements
+
+After meeting the supplied bounds, compare repeated work in your optimized
+MIR with measured native execution. Useful investigations include keeping
+narrow values unextended until a reader needs the upper bits, sharing a
+dying operand's register, avoiding reloads around rare calls, selecting a
+high product or a constant divide economically, and placing dependent
+floating operations so independent ones can start. PA32's vector output
+uses the existing PA29 LowIR vocabulary; accepting and correctly lowering
+that output is separate from choosing to vectorize scalar input yourself.
+
+Check results at the ABI boundary as well as inside a function: incoming
+upper bits, caller clobbers, phi transfers, exceptional exits and frame
+alignment all matter. Measure instruction counts for redundant work and
+time for latency and layout changes. Preserve a behavior test for each
+counterexample. Neither the course reference dump nor a speed comparison
+requires a particular instruction, register allocation or block order.
+
 ### Scope
 
 PA33 does not require a new LowIR optimizer, source-language changes,

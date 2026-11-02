@@ -1246,8 +1246,11 @@ width less one.
 
 `unary sqrt` is the IEEE square root of an `f32` or `f64`, correctly rounded.
 It has no other effect: unlike the C library's `sqrt`, it does not set `errno`.
-The C++ lowering does not emit it. The optimizer writes it for a library call
-whose operand cannot be negative. x86-64 lowers it to `sqrtss` or `sqrtsd`.
+The C++ lowering does not emit it. An optimizer may replace a library call
+when the operand cannot be negative, or use it on a guarded path while
+retaining the library call for negative operands and its `errno` effect.
+The operation itself also accepts negative values and NaNs with IEEE results.
+x86-64 lowers it to `sqrtss` or `sqrtsd`.
 
 Array-to-pointer and function-to-pointer decay use the ordinary pointer value
 produced by `addr`, `index`, a parameter, or `copy ptr`. There is no decay-specific
@@ -1569,6 +1572,7 @@ Three keywords state facts about an instruction:
 store typed i32 %n, %count
 %t = binary add nowrap i32 %i, 1
 %q = binary div exact i64 %bytes, 12
+%n = convert trunc exact i32 i64 %wide
 ```
 
 - `typed`, on a `load` or `store` of a pointer, a floating type or an integer
@@ -1592,8 +1596,12 @@ store typed i32 %n, %count
 A fact holds every time its instruction runs. A program in which one does
 not hold has undefined behavior, which is what lets a consumer rely on it.
 The validator rejects a fact on any other instruction or type. The keywords
-follow `volatile` on loads and stores and the operation on `binary`, in the
-order shown.
+follow `volatile` on loads and stores and the operation on `binary` and
+`convert`, in the order shown. An exact truncation states that extending the
+result with the destination's signedness recovers the original value; it does
+not change truncation's value semantics. The C++ lowering does not state this
+fact for an ordinary cast. An optimizer may prove it when widening a loop
+counter whose narrow value cannot overflow.
 
 The C++ lowering (PA10 onward) states facts by these rules, and the
 comparison checks them as part of the instruction:

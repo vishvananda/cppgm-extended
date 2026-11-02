@@ -311,6 +311,7 @@ uint64_t Analyzer::attribute_alignment(
 		{
 		case syntax::AttributeKind::VectorSize:
 		case syntax::AttributeKind::ExtVectorType:
+		case syntax::AttributeKind::Mode:
 		case syntax::AttributeKind::ExcludeFromExplicitInstantiation:
 		case syntax::AttributeKind::AlwaysInline:
 		case syntax::AttributeKind::GnuInline:

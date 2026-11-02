@@ -264,6 +264,30 @@ calls stays out of line, how far a loop unrolls) are pinned only in
 [Design notes](design-notes.md) describe the course solution’s passes and
 implementation choices. They are a worked example, not additional requirements.
 
+### Further improvements
+
+Once the course checks pass, investigate work that repeats on hot paths. The
+design notes cover newer examples: keeping table lookups and object fields in
+registers, simplifying library math, specializing calls, unrolling bounded
+searches, and computing independent values in vector lanes. These are useful
+directions for experiments; they add no named-pass requirement to this
+assignment. Vectorization and interchange remain optional.
+
+For each experiment, first write a small behavior test with runtime inputs.
+Include the cases that invalidate the proposed shortcut: aliasing and overlap,
+zero iterations and short tails, an early exit, calls and exception paths,
+negative values, NaNs and signed zero where relevant. Run optimized LowIR
+through the reference backend at `-O0` to check the optimizer independently,
+then check the source and serialized-LowIR object paths together. A good
+optimizer can retain a guarded scalar path when a proof fails.
+
+Judge the benefit by work removed or by a generous size bound, and measure
+larger workloads as described in PA33's design notes. A shorter dump alone may
+increase register pressure or delay a division. Keep compile cost and code
+growth in the comparison. The course solution's exact pass ordering, vector
+instructions, register choices and admission caps are examples, not targets to
+copy.
+
 ### Validation Modes
 
 Successful outputs must pass the LowIR structural validator, the fixture’s

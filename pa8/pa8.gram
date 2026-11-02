@@ -147,13 +147,14 @@ rvalue-instruction:
 	KW_COPY type value
 	KW_PHI type OP_LSQUARE phi-incoming (OP_COMMA phi-incoming)* OP_RSQUARE
 	KW_ADDR addressable
-	KW_LOAD KW_VOLATILE? type storage
+	KW_LOAD KW_VOLATILE? KW_TYPED? type storage
 	KW_ATOMIC_LOAD type value OP_COMMA integer-literal
 	KW_INDEX type index-metadata? value OP_COMMA value
 	KW_UNARY unary-operator type value
-	KW_BINARY binary-operator type value OP_COMMA value
+	KW_BINARY binary-operator KW_NOWRAP? KW_EXACT? type value OP_COMMA value
 	KW_CMP compare-predicate type value OP_COMMA value
-	KW_CONVERT conversion-operator type type value
+	KW_SELECT type value OP_COMMA value OP_COMMA value
+	KW_CONVERT conversion-operator KW_EXACT? type type value
 	KW_ATOMIC_ADD_FETCH type value OP_COMMA value OP_COMMA integer-literal
 	KW_ATOMIC_EXCHANGE type value OP_COMMA value OP_COMMA integer-literal
 	KW_ATOMIC_COMPARE_EXCHANGE type value OP_COMMA value OP_COMMA value
@@ -168,7 +169,7 @@ phi-incoming:
 	block-name OP_COLON value
 
 store-instruction:
-	KW_STORE KW_VOLATILE? type value OP_COMMA storage
+	KW_STORE KW_VOLATILE? KW_TYPED? type value OP_COMMA storage
 
 atomic-store-instruction:
 	KW_ATOMIC_STORE type value OP_COMMA value OP_COMMA integer-literal
@@ -314,6 +315,9 @@ unary-operator:
 	KW_NOT
 	KW_BITNOT
 	KW_BSWAP
+	KW_CTZ
+	KW_CLZ
+	KW_SQRT
 
 binary-operator:
 	KW_ADD
