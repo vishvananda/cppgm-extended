@@ -36,7 +36,9 @@ that paid there in the course solution:
 - Keep a value in one register over its whole life where possible. When that
   fails, split it: keep the register outside a loop it crosses without a use,
   or outside just the blocks that clobber or crowd it, rather than giving the
-  value a frame home everywhere.
+  value a frame home everywhere. Floating values need this more than integers:
+  no XMM register survives a call, so a loop with one rare call would otherwise
+  keep every floating value in memory.
 - Allocate floating values as carefully as integers. Every XMM register except
   your scratch can hold one, though none survives a call. SSE arithmetic
   overwrites its first operand, so a result that takes the register of a first

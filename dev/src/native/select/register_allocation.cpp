@@ -311,6 +311,8 @@ bool split_choice(
 {
 	uint64_t best_cost = ~0ull;
 	std::vector<uint32_t> conflicts;
+	const PressureTree& pressure = s.temps_[s.ra_candidates_[c]].cls == VClass::Gpr ? s.ra_gpr_pressure_
+																					: s.ra_xmm_pressure_;
 	// Per range: the registers clobbered in it, those assigned over it,
 	// and whether its pressure is full (the same for every register: found
 	// on first need).
@@ -328,9 +330,10 @@ bool split_choice(
 			if (known[r - first] == 0)
 			{
 				clobbers[r - first] = s.ra_clobber_.query(lo + 1, hi - 1) | s.ra_early_.query(lo + 1, hi);
-				taken_regs[r - first] = s.ra_gpr_pressure_.regs(static_cast<uint32_t>(lo), static_cast<uint32_t>(hi));
-				known[r - first] =
-					s.ra_gpr_pressure_.max(static_cast<uint32_t>(lo), static_cast<uint32_t>(hi)) + 1 > capacity ? 2 : 1;
+				taken_regs[r - first] = pressure.regs(static_cast<uint32_t>(lo), static_cast<uint32_t>(hi));
+				known[r - first] = pressure.max(static_cast<uint32_t>(lo), static_cast<uint32_t>(hi)) + 1 > capacity
+					? 2
+					: 1;
 			}
 			const bool taken = (taken_regs[r - first] >> reg) & 1u;
 			const bool clobbered = (clobbers[r - first] >> reg) & 1u;
@@ -1026,6 +1029,8 @@ void FunctionSelector::assign_registers()
 	// interference): the class's, callee-saved ones past those saved only
 	// for values worth their saves.
 	auto split_registers = [&](uint32_t c) {
+		if (temps_[ra_candidates_[c]].cls != VClass::Gpr)
+			return kAllocatableXmms;
 		uint32_t allowed = (kAllocatableGprs | (rbp_free_ ? 1u << RBP : 0u)) & ~reserved_gprs(*out_);
 		if (ra_freq_[c] < (ra_looped_[c] ? kOpenWeight : kOpenWeightStraight) &&
 			(used_callee_saved_ & (kCalleeSavedGprs | (1u << RBP))) != 0)
@@ -1131,14 +1136,16 @@ void FunctionSelector::assign_registers()
 		uint32_t first = ra_range_first_[c], past = ra_range_first_[c + 1];
 		Reg reg = choose_register(c, first, past, group_reg[find(c)], tied);
 		// Else one outside the loops it skips, or the blocks clobbering it (a phi: not in its block or predecessors).
-		const int32_t capacity = kGprCapacity + (rbp_free_ ? 1 : 0) - (reserved_gprs(*out_) != 0 ? 1 : 0);
 		const uint32_t temp = ra_candidates_[c];
+		const int32_t capacity = temps_[temp].cls != VClass::Gpr
+			? kXmmCapacity
+			: kGprCapacity + (rbp_free_ ? 1 : 0) - (reserved_gprs(*out_) != 0 ? 1 : 0);
 		std::vector<uint32_t> conflicts;
 		bool homes = false;
 		bool planned = reg == kNoReg && loop_splitter_.candidates(*this, c) &&
 			split_choice(*this, c, split_registers(c), capacity, false, conflicts) &&
 			loop_splitter_.plan(*this, c, &conflicts);
-		if (reg == kNoReg && !planned && temps_[temp].cls == VClass::Gpr)
+		if (reg == kNoReg && !planned)
 		{
 			conflicts.clear();
 			planned = homes = split_choice(*this, c, split_registers(c), capacity, true, conflicts) &&
