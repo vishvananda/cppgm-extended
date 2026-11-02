@@ -612,6 +612,14 @@ void FunctionSelector::find_low_reads()
 			case Opcode::Return:
 				low = k == 0 && inst.type.is_integer() && width_bits(inst.type.kind()) == bits;
 				break;
+			case Opcode::Unary:
+			{
+				// (A negation extends its result; a signed complement does not.)
+				const lowir::UnaryOp op = static_cast<lowir::UnaryOp>(inst.sub);
+				low = same && op == lowir::UnaryOp::Neg;
+				passes = same && op == lowir::UnaryOp::BitNot;
+				break;
+			}
 			case Opcode::Call:
 				// (A word argument: the callee extends what it reads above it.)
 				low = k > 0 && eh_model_ == EhModel::Host && width_bits(kind) == 32;
@@ -1493,7 +1501,7 @@ TypeKind FunctionSelector::compare_width(const Instruction& compare) const
 // byte, bits 1-7 zero). Reading the byte: a one-byte store of the value, a
 // compare at one byte, a compare (eq/ne) of a Boolean with 0 or 1, a
 // branch on a Boolean or a one-byte value (both test the byte,
-// emit_compare/emit_branch),
+// emit_compare/emit_branch), a one-byte return (the caller extends it)
 // and (host objects) a one-byte argument of a call to a function this
 // unit defines (which extends a parameter it reads wider on entry). A
 // phi, or an and, or or xor, passes its readers' needs to its operands;
@@ -1583,6 +1591,9 @@ void FunctionSelector::find_byte_booleans()
 		case Opcode::Store:
 			read(inst.ops[0], register_bytes(inst.type.kind()) == 1);
 			read(inst.ops[1], false);
+			return;
+		case Opcode::Return:
+			read(inst.ops[0], inst.type.is_integer() && register_bytes(inst.type.kind()) == 1);
 			return;
 		case Opcode::Compare:
 		{

@@ -287,10 +287,20 @@ void FunctionSelector::narrow_params_observed(std::vector<uint8_t>& observed)
 				}
 				break;
 			case Opcode::Unary:
-				// A bit scan reads its operand at its own width.
+				// A bit scan reads its operand at its own width; a negation
+				// extends its result, and a complement's readers may read
+				// the low bits alone.
 				safe = static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::CountTrailingZeros ||
-					static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::CountLeadingZeros;
+					static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::CountLeadingZeros ||
+					static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::Neg ||
+					(static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::BitNot && low_read(inst.result));
 				break;
+			case Opcode::Select:
+				// (Its arms stand for it, as a phi's inputs do.)
+				check(inst.ops[0], false);
+				check(inst.ops[1], low_read(inst.result));
+				check(inst.ops[2], low_read(inst.result));
+				return;
 			case Opcode::Convert:
 				// An extension aliased to its source: its uses read the
 				// register (checked there).
