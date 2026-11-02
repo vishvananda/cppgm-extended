@@ -1,0 +1,58 @@
+global @table : ptr = 0
+
+function @chain(%this : ptr, %out : ptr, %n : i64) -> void [binding=strong] {
+  block ^entry:
+    %t1 = load typed ptr @table
+    %t2 = index i8 [projection=field] %this, 8
+    %t3 = load typed i64 %t2
+    %row = binary mul i64 %t3, 88
+    %entry = index i8 %t1, %row
+    %field = index i8 [projection=field] %entry, 28
+    %stride = load typed i32 %field
+    %wide = convert sext i64 i32 %stride
+    jump ^body
+
+  block ^body:
+    %t9 = phi i64 [^entry: 0, ^body: %t14]
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %step = copy i64 %t9
+    %slot = index f64 %out, %step
+    store typed f64 1, %slot
+    %next = binary add i64 %i, 1
+    %t14 = binary add i64 %t9, %wide
+    %more = cmp lt i64 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    return void
+}
+function @past_branch(%this : ptr, %out : ptr, %n : i64, %c : i64) -> void [binding=strong] {
+  block ^entry:
+    %at = index i8 [projection=field] %this, 8
+    %base = load typed ptr %at
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^entry: 0, ^join: %next]
+    %odd = binary and i64 %c, %i
+    branch %odd, ^then, ^join
+
+  block ^then:
+    %slot = index f64 %out, %i
+    store typed f64 2, %slot
+    jump ^join
+
+  block ^join:
+    %cell = index f64 %base, %i
+    store typed f64 3, %cell
+    %next = binary add i64 %i, 1
+    %more = cmp lt i64 %next, %n
+    branch %more, ^body, ^done
+
+  block ^done:
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

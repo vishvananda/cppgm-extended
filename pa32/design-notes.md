@@ -439,7 +439,8 @@ them changed it, branch compares are computed again beside their branches:
   `zeroinit` may write memory (no writing call, atomic operation,
   `va_start`, `va_arg` or EH instruction) and no load is volatile. A load
   moves to the preheader when no write in the loop may overlap it and it
-  either runs on every entry (in the header, before any call) or reads a
+  either runs on every entry (in the header before any call or, in a loop
+  with no call, in a block on the way to every exit) or reads a
   slot, a global, or a parameter's `object_bytes` extent. A load of the second
   kind may be read on a path that had no need of it: a loop moves at most 10 of
   those, less the values already live through it (its header phis and the
@@ -452,6 +453,8 @@ them changed it, branch compares are computed again beside their branches:
   preheader, a phi or a compare excepted. An integer division needs a
   literal divisor other than 0 and, signed, other than -1, unless it runs on
   every entry to the loop (in the header, before anything that may leave).
+  Load motion then runs again, up to five rounds: a pointer read through a
+  chain of tables needs its arithmetic moved before the next load can move.
   In a loop with a call only multiplication and division move, since the
   result would have to survive the calls. An address that reaches only loads
   and stores, through literal steps, stays: it fits in their operands. `f80`

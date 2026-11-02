@@ -24,6 +24,7 @@ namespace {
 // stops at the first round that changes nothing.
 const unsigned kScalarRounds = 4;
 // Select formation rounds per function (nested merges convert inside out).
+const unsigned kHoistRounds = 4;
 const unsigned kSelectRounds = 3;
 
 void count_program(const Program& program, uint64_t& instructions, uint64_t& blocks)
@@ -352,11 +353,25 @@ bool calls_read_only(const FunctionContext& context)
 }
 
 // The loop passes of the final pass.
+// Code motion out of loops: a load through a pointer whose arithmetic just
+// left the loop follows it, then the arithmetic on what it loads.
+bool hoist_loops(FunctionContext& context)
+{
+	bool changed = RUN_PASS(hoist_loop_loads);
+	for (unsigned round = 0; round < kHoistRounds && RUN_PASS(hoist_loop_invariants); ++round)
+	{
+		changed = true;
+		if (!RUN_PASS(hoist_loop_loads))
+			break;
+	}
+	return changed;
+}
+
 bool finish_loops(FunctionContext& context, int level)
 {
 	bool changed = false;
 	changed = RUN_PASS(hoist_loop_loads) || changed;
-	changed = RUN_PASS(hoist_loop_invariants) || changed;
+	changed = hoist_loops(context) || changed;
 	changed = RUN_PASS(version_fill_loops) || changed;
 	// (Last: the counters' facts hold for the instructions as they stand.)
 	changed = RUN_PASS(mark_no_wrap_counters) || changed;
@@ -372,8 +387,7 @@ bool finish_loops(FunctionContext& context, int level)
 		RUN_PASS(cleanup_cfg);
 		RUN_PASS(forward_memory);
 		RUN_PASS(remove_dead_code);
-		RUN_PASS(hoist_loop_loads);
-		RUN_PASS(hoist_loop_invariants);
+		hoist_loops(context);
 		changed = true;
 	}
 	// O3: a loop per value of a test it need not repeat, then what each copy's
@@ -387,8 +401,7 @@ bool finish_loops(FunctionContext& context, int level)
 		RUN_PASS(remove_dead_code);
 		RUN_PASS(cleanup_cfg);
 		RUN_PASS(hoist_loop_invariants);
-		RUN_PASS(hoist_loop_loads);
-		RUN_PASS(hoist_loop_invariants);
+		hoist_loops(context);
 		changed = true;
 	}
 	// O3: what each pass of a loop stores stays in a register; the exit's
@@ -406,8 +419,7 @@ bool finish_loops(FunctionContext& context, int level)
 	{
 		// (A load's address may be arithmetic the swap made invariant.)
 		RUN_PASS(hoist_loop_invariants);
-		RUN_PASS(hoist_loop_loads);
-		RUN_PASS(hoist_loop_invariants);
+		hoist_loops(context);
 		changed = true;
 	}
 	// O3: loops in lanes, then what their guards and exits leave.

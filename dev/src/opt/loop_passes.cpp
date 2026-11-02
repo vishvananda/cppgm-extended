@@ -2916,10 +2916,12 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 	if (apply && l.preheader == kNoId)
 		return false;
 	std::vector<LoopWrite> writes;
+	bool quiet = true; // no call: only an exit leaves a pass
 	for (BlockId b : l.blocks)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
 			const Instruction& inst = body_.instructions[i];
+			quiet = quiet && inst.op != Opcode::Call && !may_unwind(c_.program, inst);
 			if (inst.op == Opcode::Store)
 				writes.push_back(LoopWrite{ locate(body_, inst.ops[1]), storage_bytes(inst.type), inst.type,
 					(inst.flags & IF_TYPED) != 0 && (inst.flags & IF_VOLATILE) == 0 });
@@ -2976,7 +2978,22 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 	const uint32_t limit = live_in < kLoopRegisters ? kLoopRegisters - live_in : 0;
 	bool changed = false;
 	uint32_t moved = 0;
-	// The header's instructions before its first call run on every entry.
+	// Without calls, a block on the way to every exit also runs on every
+	// entry (as the header's instructions before its first call do).
+	std::vector<BlockId> exits;
+	if (quiet && l.blocks.size() > 1)
+		for (BlockId b : l.blocks)
+			for (uint32_t k = cfg_.succ_first[b]; k < cfg_.succ_first[b + 1]; ++k)
+				if (!in_loop(forest_, loop, cfg_.succs[k]) && (exits.empty() || exits.back() != b))
+					exits.push_back(b);
+	const auto on_every_pass = [&](BlockId b) {
+		if (exits.empty())
+			return false;
+		for (BlockId e : exits)
+			if (!cfg_.dominates(b, e))
+				return false;
+		return true;
+	};
 	bool header_clear = true;
 	for (bool progress = true; progress;)
 	{
@@ -3020,7 +3037,7 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 				// Run on every entry, the load keeps its facts; moved only
 				// because its memory may always be read, it runs where it did
 				// not, and `typed` may not hold there (lowir.md "Instruction Facts").
-				const bool on_entry = header_clear && b == l.header;
+				const bool on_entry = (header_clear && b == l.header) || on_every_pass(b);
 				bool readable = on_entry;
 				if (!readable && at.known && (at.root.is(ValueKind::Slot) || at.root.is(ValueKind::Symbol)))
 					readable = true;
