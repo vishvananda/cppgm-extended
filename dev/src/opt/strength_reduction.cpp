@@ -469,7 +469,7 @@ void StrengthReduction::sink_steps(uint32_t loop)
 		for (size_t k = at + 1; k < order.size(); ++k)
 			if (reads(order[k], phi.result))
 				last = k;
-		if (last == at)
+		if (last == at || order[last] == term)
 			continue;
 		// What reads the step before `last`: at most the branch's compare.
 		InstId compare = kNoId;

@@ -46,6 +46,18 @@ function @step_read_early(%p : ptr, %n : i64) -> void [binding=strong, no_inline
   block ^done:
     return void
 }
+function @branch_reads_the_phi(%n : i32) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %i = phi i32 [^entry: %n, ^loop: %next]
+    %next = binary sub nowrap i32 %i, 1
+    branch %i, ^loop, ^done
+
+  block ^done:
+    return void
+}
 function @main() -> i32 [role=entry] {
   block ^entry:
     return i32 0
