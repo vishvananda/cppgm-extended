@@ -110,9 +110,9 @@ function @on_outer_compare(%p : ptr, %n : i64) -> void [no_inline=yes] {
 
   block ^loop_preheader_1:
     %t2 = phi i64 [^outer_latch: %i_next, ^entry: 0]
+    %first = cmp eq i64 %t2, 0
     %at_i = index i64 %p, %t2
-    %t4 = cmp eq i64 %t2, 0
-    branch %t4, ^loop_preheader_2, ^loop_preheader_7
+    branch %first, ^loop_preheader_2, ^loop_preheader_7
 
   block ^loop_preheader_2:
     %t5 = vector pzero

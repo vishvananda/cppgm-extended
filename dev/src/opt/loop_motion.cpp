@@ -111,6 +111,7 @@ bool LoopMotion::worth_moving(const Instruction& inst, bool calls) const
 		return !calls || op == BinaryOp::Mul || op == BinaryOp::Div || op == BinaryOp::Mod || op == BinaryOp::UDiv ||
 			op == BinaryOp::UMod;
 	}
+	case Opcode::Compare:
 	case Opcode::Copy:
 	case Opcode::Unary:
 	case Opcode::Select:
