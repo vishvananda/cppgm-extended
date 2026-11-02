@@ -476,6 +476,12 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	}
 	if (has_loop(context))
 		changed = finish_loops(context, options.level) || changed;
+	if (options.level >= 3 && RUN_PASS(pack_block_lanes))
+	{
+		RUN_PASS(simplify_values);
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
 	if (!changed)
 		return;
 	RUN_PASS(split_branch_compares);

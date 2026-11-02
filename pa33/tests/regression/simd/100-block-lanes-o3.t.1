@@ -1,0 +1,92 @@
+#include <stdio.h>
+
+struct V2
+{
+	double x, y;
+};
+
+struct F4
+{
+	float a, b, c, d;
+};
+
+struct Pair
+{
+	V2 from, to;
+};
+
+void __attribute__((noinline)) move(Pair* p, double k)
+{
+	p->to.x = p->from.x * k + 1;
+	p->to.y = p->from.y * k + 2;
+}
+
+void __attribute__((noinline)) swapped(Pair* p)
+{
+	double a = p->from.x, b = p->from.y;
+	p->from.x = p->to.x;
+	p->from.y = p->to.y;
+	p->to.x = a;
+	p->to.y = b;
+}
+
+// The stores and the loads may overlap: `r` may be `a` a double further on.
+void __attribute__((noinline)) add(double* r, const double* a, const double* b)
+{
+	r[0] = a[0] + b[0];
+	r[1] = a[1] + b[1];
+}
+
+void __attribute__((noinline)) scale(F4* f, float k)
+{
+	f->a = f->a * k;
+	f->b = f->b * k;
+	f->c = f->c * k;
+	f->d = f->d * k;
+}
+
+void __attribute__((noinline)) roots(double* out, const double* in)
+{
+	double a = in[0] * in[0], b = in[1] * in[1];
+	out[2] = a / 2;
+	out[3] = b / 2;
+	out[0] = __builtin_sqrt(a);
+	out[1] = __builtin_sqrt(b);
+}
+
+// Stored one way, read back through the lanes in the other order.
+void __attribute__((noinline)) crossed(double* out, const double* in)
+{
+	double a = in[1] + 1, b = in[0] + 2;
+	out[0] = a;
+	out[1] = b;
+}
+
+int main()
+{
+	Pair p = {{1, 2}, {0, 0}};
+	move(&p, 3);
+	printf("%g %g %g %g\n", p.from.x, p.from.y, p.to.x, p.to.y);
+	swapped(&p);
+	printf("%g %g %g %g\n", p.from.x, p.from.y, p.to.x, p.to.y);
+
+	double cells[4] = {1, 2, 3, 4};
+	add(cells + 1, cells, cells + 2);
+	printf("%g %g %g %g\n", cells[0], cells[1], cells[2], cells[3]);
+	double same[3] = {1, 2, 3};
+	add(same, same + 1, same);
+	printf("%g %g %g\n", same[0], same[1], same[2]);
+
+	F4 f = {1, 2, 3, 4};
+	scale(&f, 1.5f);
+	printf("%g %g %g %g\n", f.a, f.b, f.c, f.d);
+
+	double in[2] = {3, 4}, out[4];
+	roots(out, in);
+	printf("%g %g %g %g\n", out[0], out[1], out[2], out[3]);
+
+	double both[2] = {5, 6};
+	crossed(both, both);
+	printf("%g %g\n", both[0], both[1]);
+	return 0;
+}

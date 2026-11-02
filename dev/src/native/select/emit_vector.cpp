@@ -71,6 +71,8 @@ bool FunctionSelector::low_lane_only(const Instruction& inst) const
 	if (lanes == nullptr || lanes->op != lowir::Opcode::Vector)
 		return false;
 	const VectorOp op = static_cast<VectorOp>(lanes->sub);
+	if (op == VectorOp::Unpcklpd)
+		return true;
 	if (op != VectorOp::Minps && op != VectorOp::Minpd && op != VectorOp::Maxps && op != VectorOp::Maxpd)
 		return false;
 	const Instruction* read = single_user(*lanes);

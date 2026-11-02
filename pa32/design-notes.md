@@ -645,6 +645,26 @@ writes memory, a phi of the second whose arm inputs compute what a phi of
 the first takes from the same sides (compared to depth 4) becomes that phi.
 At most 1,024 phi pairs are compared per pair of diamonds.
 
+Block lanes: at `-O3`, after the loop passes, adjacent floating stores of one
+block may become one sixteen-byte store. No fixture requires this pass either.
+Two `f64` stores or four `f32` stores form a group, and the pass walks up from
+what they store:
+
+- Lanes of one operation (`add`, `sub`, `mul`, `div` or `sqrt`) become a lane
+  operation. `add` and `mul` may swap one lane's operands to match the others.
+- Loads of adjacent memory become one load.
+- Anything else is gathered into a vector from the values computed as before.
+  The same value in every lane is one shuffle.
+
+A scalar that something else reads stays, and a node with no scalar to remove
+is gathered instead. A group packs only if it removes more instructions than it
+adds. All of it runs just before the group's last store. A store moves down to
+that point only past accesses it cannot overlap, and a load only if nothing it
+passes may write its memory. A store of the group that ran before the load
+must not overlap it either. The vector accesses carry no `typed` fact, so loads
+that loops may hoist have already moved. Volatile accesses and anything that
+can leave the block, such as a call, stop a group.
+
 ### Safety Rules
 
 These are the facts that stop a transformation in the course solution:

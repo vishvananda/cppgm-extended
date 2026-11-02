@@ -208,6 +208,8 @@ bool merge_loop_entries(FunctionContext& context);
 // Loop vectorization (O3, last, opt/loop_vectorizer.cpp): a one-block counted
 // loop also runs in sixteen-byte lanes before the scalar loop, which finishes.
 bool vectorize_loops(FunctionContext& context);
+// O3: adjacent floating stores of a block and what they store in lanes.
+bool pack_block_lanes(FunctionContext& context);
 
 // O3: a nest that folds sums over a stride, swapped so the new inner loop
 // walks consecutive elements.
