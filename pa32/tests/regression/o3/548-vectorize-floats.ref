@@ -920,9 +920,9 @@ function @float_chooses_int(%d : ptr, %x : ptr, %y : ptr, %n : i64) -> void [no_
     %t13 = load v128 %t12
     %t14 = vector paddd %t13, %t6
     %t15 = vector cmpps %t9, %t11, 1
-    %t16 = vector pandn %t15, %t14
-    %t17 = vector pand %t15, %t13
-    %t18 = vector por %t17, %t16
+    %t16 = vector pand %t15, %t13
+    %t17 = vector pandn %t15, %t14
+    %t18 = vector por %t16, %t17
     store v128 %t18, %t12
     %t19 = binary add i64 %t7, 4
     %t20 = cmp lt i64 %t19, %t4

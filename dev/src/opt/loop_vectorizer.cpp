@@ -1279,10 +1279,12 @@ void LoopVectorizer::widen_convert(const Instruction& inst)
 Value LoopVectorizer::widen_multiply(Value a, Value b)
 {
 	const Value even = vector(VectorOp::Pmuludq, a, b);
-	const Value odd = vector(VectorOp::Pmuludq, vector(VectorOp::Psrlqi, a, Value::none(), 32),
-		vector(VectorOp::Psrlqi, b, Value::none(), 32));
-	return vector(VectorOp::Punpckldq, vector(VectorOp::Pshufd, even, Value::none(), 0x08),
-		vector(VectorOp::Pshufd, odd, Value::none(), 0x08));
+	const Value high_a = vector(VectorOp::Psrlqi, a, Value::none(), 32);
+	const Value high_b = vector(VectorOp::Psrlqi, b, Value::none(), 32);
+	const Value odd = vector(VectorOp::Pmuludq, high_a, high_b);
+	const Value low_even = vector(VectorOp::Pshufd, even, Value::none(), 0x08);
+	const Value low_odd = vector(VectorOp::Pshufd, odd, Value::none(), 0x08);
+	return vector(VectorOp::Punpckldq, low_even, low_odd);
 }
 
 // The mask of a compare's lanes. Set `swapped` when it is of the opposite test.
@@ -1388,9 +1390,11 @@ void LoopVectorizer::widen(const Instruction& inst, InstId origin)
 			lane_address(scalar(inst.ops[0]), inst.type), lanes_ * lane_bytes(inst.type), origin);
 		break;
 	case Opcode::Store:
-		widen_store(wide(inst.ops[0], inst.type), lane_address(scalar(inst.ops[1]), inst.type),
-			lanes_ * lane_bytes(inst.type), origin);
+	{
+		const Value value = wide(inst.ops[0], inst.type);
+		widen_store(value, lane_address(scalar(inst.ops[1]), inst.type), lanes_ * lane_bytes(inst.type), origin);
 		break;
+	}
 	case Opcode::Copy:
 		wides_[inst.result] = wides_[inst.ops[0].index];
 		break;
@@ -1410,8 +1414,9 @@ void LoopVectorizer::widen(const Instruction& inst, InstId origin)
 		const Value mask = widen_mask(test, swapped);
 		const Value chosen = wide(inst.ops[swapped ? 2 : 1], inst.type),
 					other = wide(inst.ops[swapped ? 1 : 2], inst.type);
-		wides_[inst.result] = vector(
-			VectorOp::Por, vector(VectorOp::Pand, mask, chosen), vector(VectorOp::Pandn, mask, other));
+		const Value taken = vector(VectorOp::Pand, mask, chosen);
+		const Value not_taken = vector(VectorOp::Pandn, mask, other);
+		wides_[inst.result] = vector(VectorOp::Por, taken, not_taken);
 		break;
 	}
 	default:
