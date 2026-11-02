@@ -434,8 +434,8 @@ function @tests_old_value(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] 
     %r = binary add i32 %v, 1
     %o = index i32 %d, %i
     store typed i32 %r, %o
-    %next = binary add i64 %i, 1
     %c = cmp lt i64 %i, %n
+    %next = binary add i64 %i, 1
     branch %c, ^body, ^done
 
   block ^done:

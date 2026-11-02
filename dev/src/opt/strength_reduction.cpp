@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "lowir/builder.h"
 #include "opt/loops.h"
 #include "opt/passes.h"
@@ -52,6 +54,7 @@ private:
 	bool same_factor(Value a, Value b) const;
 	bool wants_preheader(uint32_t loop) const;
 	void read_uses();
+	void sink_steps(uint32_t loop);
 	void shift_counters(uint32_t loop);
 	void shift_counter(const Loop& l, uint32_t loop, InstId phi_id, InstId& at);
 
@@ -426,6 +429,78 @@ void StrengthReduction::shift_counters(uint32_t loop)
 	}
 }
 
+// In a one-block loop, a step of a phi that runs before the phi's last reader
+// holds both values at once, and the back edge copies one to the other: the
+// step (with the compare only the branch reads, when that reads the step) moves
+// after that reader.
+void StrengthReduction::sink_steps(uint32_t loop)
+{
+	const Loop& l = forest_.loops[loop];
+	const BlockId b = l.header;
+	if (l.blocks.size() != 1)
+		return;
+	const InstId term = body_.blocks[b].last;
+	std::vector<InstId> order;
+	auto read_order = [&]() {
+		order.clear();
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+			order.push_back(i);
+	};
+	auto reads = [&](InstId i, TempId t) {
+		bool found = false;
+		for_each_operand(body_, body_.instructions[i], [&](const Value& v) { found = found || v == Value::temp(t); });
+		return found;
+	};
+	read_order();
+	const size_t phis = static_cast<size_t>(std::find_if(order.begin(), order.end(), [&](InstId i) {
+		return body_.instructions[i].op != Opcode::Phi;
+	}) - order.begin());
+	for (size_t p = 0; p < phis; ++p)
+	{
+		const Instruction phi = body_.instructions[order[p]];
+		const Value next = phi_incoming(body_, phi, b);
+		if (!next.is(ValueKind::Temp) || next.index < body_.parameter_count)
+			continue;
+		const InstId step = body_.temps[next.index].def;
+		const size_t at = static_cast<size_t>(std::find(order.begin() + phis, order.end(), step) - order.begin());
+		if (at == order.size() || !is_pure(body_.instructions[step]) || !reads(step, phi.result))
+			continue;
+		size_t last = at;
+		for (size_t k = at + 1; k < order.size(); ++k)
+			if (reads(order[k], phi.result))
+				last = k;
+		if (last == at)
+			continue;
+		// What reads the step before `last`: at most the branch's compare.
+		InstId compare = kNoId;
+		bool blocked = false;
+		for (size_t k = at + 1; k <= last && !blocked; ++k)
+		{
+			if (!reads(order[k], next.index))
+				continue;
+			const Instruction& reader = body_.instructions[order[k]];
+			const Value tested = body_.instructions[term].op == Opcode::Branch ? body_.instructions[term].ops[0]
+																			   : Value::none();
+			blocked = compare != kNoId || reader.op != Opcode::Compare || !(tested == Value::temp(reader.result));
+			for (size_t j = k + 1; j + 1 < order.size() && !blocked; ++j)
+				blocked = reads(order[j], reader.result);
+			compare = order[k];
+		}
+		if (blocked)
+			continue;
+		const InstId tail = order[last];
+		unlink_after(body_, b, previous_in_block(body_, b, step), step);
+		insert_after(body_, b, tail, step);
+		if (compare != kNoId)
+		{
+			unlink_after(body_, b, previous_in_block(body_, b, compare), compare);
+			insert_after(body_, b, step, compare);
+		}
+		changed_ = true;
+		read_order();
+	}
+}
+
 bool StrengthReduction::run()
 {
 	c_.ensure_cfg();
@@ -456,6 +531,8 @@ bool StrengthReduction::run()
 	for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0;)
 		if (forest_.loops[loop].preheader != kNoId)
 			shift_counters(loop);
+	for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0;)
+		sink_steps(loop);
 	if (changed_)
 		c_.invalidate_block_of();
 	return changed_;

@@ -53,10 +53,10 @@ function @product(%i : i64) -> void [no_inline=yes] {
   block ^terms:
     %k = phi i64 [^for_body_4: 0, ^next: %k1, ^loop_exit_2: 0]
     %p = index f64 %ai, %k
-    %v = load typed f64 %p
     %scaled = binary mul i64 %k, 256
     %rowk = index i8 %b, %scaled
     %k1 = binary add i64 %k, 1
+    %v = load typed f64 %p
     %t25 = vector fromf64 %v
     %t26 = vector pshufd %t25, 68
     jump ^wide_loop_6
@@ -81,10 +81,10 @@ function @product(%i : i64) -> void [no_inline=yes] {
   block ^columns:
     %j = phi i64 [^loop_preheader_7: %t36, ^columns: %j1]
     %cell = index f64 %ri, %j
-    %j1 = binary add i64 %j, 1
-    %d = cmp lt i64 %j1, 32
     %s = load typed f64 %cell
     %q = index f64 %rowk, %j
+    %j1 = binary add i64 %j, 1
+    %d = cmp lt i64 %j1, 32
     %w = load typed f64 %q
     %m = binary mul f64 %v, %w
     %sum = binary add f64 %s, %m
@@ -153,10 +153,10 @@ function @started() -> void [no_inline=yes] {
   block ^columns:
     %j = phi i64 [^columns: %j1, ^wide_loop_6: %t25]
     %cell = index i32 %r, %j
-    %j1 = binary add i64 %j, 1
-    %d = cmp lt i64 %j1, 32
     %s = load typed i32 %cell
     %q = index i32 %rowk, %j
+    %j1 = binary add i64 %j, 1
+    %d = cmp lt i64 %j1, 32
     %w = load typed i32 %q
     %sum = binary add i32 %s, %w
     %c = cmp lt i64 %k1, 32

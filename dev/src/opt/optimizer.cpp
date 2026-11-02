@@ -375,6 +375,8 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	// O3: swapped nests, then what their new inner loops leave behind.
 	if (options.level >= 3 && RUN_PASS(interchange_loops))
 	{
+		// (A load's address may be arithmetic the swap made invariant.)
+		RUN_PASS(hoist_loop_invariants);
 		RUN_PASS(hoist_loop_loads);
 		RUN_PASS(hoist_loop_invariants);
 		changed = true;

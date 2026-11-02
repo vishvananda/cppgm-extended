@@ -1,0 +1,55 @@
+function @reader_after_step(%p : ptr, %n : i64) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^loop: %next]
+    %sum = phi i64 [^entry: 0, ^loop: %total]
+    %next = binary add i64 %i, 1
+    %more = cmp lt i64 %next, %n
+    %q = index i64 %p, %i
+    %v = load i64 %q
+    %total = binary add i64 %sum, %v
+    branch %more, ^loop, ^done
+
+  block ^done:
+    return i64 %total
+}
+
+function @compare_read_twice(%p : ptr, %n : i64) -> i1 [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^loop: %next]
+    %next = binary add i64 %i, 1
+    %more = cmp lt i64 %next, %n
+    %q = index i64 %p, %i
+    %w = convert zext i64 i1 %more
+    store i64 %w, %q
+    branch %more, ^loop, ^done
+
+  block ^done:
+    return i1 %more
+}
+
+function @step_read_early(%p : ptr, %n : i64) -> void [binding=strong, no_inline=yes] {
+  block ^entry:
+    jump ^loop
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^loop: %next]
+    %next = binary add i64 %i, 1
+    %q = index i64 %p, %next
+    store i64 %i, %q
+    %more = cmp lt i64 %next, %n
+    branch %more, ^loop, ^done
+
+  block ^done:
+    return void
+}
+
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

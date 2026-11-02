@@ -3121,14 +3121,14 @@ bool LoopPass::hoist_loads()
 	if (forest_.loops.empty())
 		return false;
 	c_.entry_block_of(hoist_loop_loads);
-	// A preheader for each loop with a load to move (each one made changes
-	// the graph: the loops are found again).
+	// A preheader for each loop with a load to move, then the loops are found
+	// again. (A loop's preheader changes only its header's entry edge.)
 	bool made = false;
 	for (unsigned round = 0; round < 16; ++round)
 	{
 		bool one = false;
-		for (uint32_t loop = 0; loop < forest_.loops.size() && !one; ++loop)
-			one = forest_.loops[loop].preheader == kNoId && hoist_from(loop, false) && make_preheader(loop);
+		for (uint32_t loop = 0; loop < forest_.loops.size(); ++loop)
+			one = (forest_.loops[loop].preheader == kNoId && hoist_from(loop, false) && make_preheader(loop)) || one;
 		if (!one)
 			break;
 		made = true;
