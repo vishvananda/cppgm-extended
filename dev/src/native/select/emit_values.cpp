@@ -958,7 +958,8 @@ void FunctionSelector::emit_shift(const Instruction& inst)
 		load_into(RCX, c, TypeKind::I64);
 		count = Operand::make_reg(RCX);
 	}
-	const Reg d = result_reg(inst, dying_reg(inst.ops[0]), kNoReg, 1u << RCX);
+	// (A count in rcx keeps the result out of it.)
+	const Reg d = result_reg(inst, dying_reg(inst.ops[0]), kNoReg, count.kind == OperandKind::Imm ? 0u : 1u << RCX);
 	if (a.kind == OperandKind::Mem)
 		emit2(Op::Load, kind == TypeKind::Ptr ? TypeKind::Ptr : kind, Operand::make_reg(d), a);
 	else

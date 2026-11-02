@@ -1437,12 +1437,18 @@ void FunctionSelector::emission_facts()
 }
 
 // Whether value g's definition computes it in its own register from its
-// first operand `from`, which it reads nowhere else: a Binary/Unary (not an
+// first operand `from`, which it reads nowhere else: a Select's arm, a Binary/Unary (not an
 // integer division), an integer extension or truncation, or a load through it.
 bool FunctionSelector::computed_from(uint32_t g, uint32_t from) const
 {
 	const lowir::FunctionBody& body = *body_;
 	const Instruction& inst = body.instructions[body.temps[g].def];
+	// (A select keeps either arm in place and moves the other in.)
+	if (inst.op == Opcode::Select)
+	{
+		const Value t = resolve(inst.ops[1]), f = resolve(inst.ops[2]);
+		return (t.kind == ValueKind::Temp && t.index == from) || (f.kind == ValueKind::Temp && f.index == from);
+	}
 	const Value first = resolve(inst.ops[0]);
 	if (first.kind != ValueKind::Temp || first.index != from)
 		return false;

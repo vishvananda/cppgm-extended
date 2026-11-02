@@ -42,7 +42,8 @@ that paid there in the course solution:
 - Allocate floating values as carefully as integers. Every XMM register except
   your scratch can hold one, though none survives a call. SSE arithmetic
   overwrites its first operand, so a result that takes the register of a first
-  operand dying there needs no copy. A subtraction or division cannot do that
+  operand dying there needs no copy. So does a `select` and an arm dying there,
+  and an immediate shift in `rcx`. A subtraction or division cannot do that
   with its second operand, which copying the first would destroy. In the
   floating-point loops profiled for this, reloads and copies were the largest
   difference from GCC's code. A floating
