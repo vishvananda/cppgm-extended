@@ -60,6 +60,10 @@ that paid there in the course solution:
   its source's register is sound for a reader of the low bits only, and keeping
   a `nowrap` add computed at 64 bits is sound for canonical operands only. Each
   is correct alone, and together they turn `(int)wide + y` into a wrong index.
+- `sqrtsd`, `cvtss2sd` and `cvtsd2ss` keep the destination's upper bits, so they
+  wait for whatever last wrote it, even a long division. Compute a square root
+  in place after a move, and clear a conversion's destination first, unless the
+  operand already lies there.
 - Above `-O1` a `copy` of a floating literal is a value of its own, not an alias
   of the literal: the optimizer wrote it to keep the literal in a register
   through a loop.

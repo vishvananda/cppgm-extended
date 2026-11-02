@@ -479,6 +479,10 @@ void FunctionEmitter::convert(const Inst& inst)
 			asm_.x87(0xdb, 7, rm(d));
 			return;
 		}
+		// (Both keep the destination's upper bits, and so wait for what last
+		// wrote them, unless it is cleared first.)
+		if (!(s.kind == OperandKind::Reg && s.reg == d.reg))
+			asm_.sse(0, 0x57, d.reg, RM::r(d.reg)); // xorps
 		asm_.sse(0xf3, 0x5a, d.reg, source(s));
 		return;
 	case ConvKind::FPTrunc:
@@ -489,6 +493,8 @@ void FunctionEmitter::convert(const Inst& inst)
 			asm_.sse(sse_prefix(to), 0x10, d.reg, scratch_rm());
 			return;
 		}
+		if (!(s.kind == OperandKind::Reg && s.reg == d.reg))
+			asm_.sse(0, 0x57, d.reg, RM::r(d.reg)); // xorps
 		asm_.sse(0xf2, 0x5a, d.reg, source(s));
 		return;
 	}

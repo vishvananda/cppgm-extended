@@ -662,15 +662,14 @@ void FunctionSelector::emit_unary(const Instruction& inst)
 	{
 		if (op == UnaryOp::Sqrt)
 		{
-			// (The instruction keeps the destination's upper lanes.)
-			Operand source = a;
-			if (source.kind != OperandKind::Reg)
-			{
-				load_into(XMM15, source, kind);
-				source = Operand::make_reg(XMM15);
-			}
+			// (The instruction keeps the destination's upper lanes, and so
+			// waits for what last wrote them: the value goes to the
+			// destination first.)
 			const Reg d = result_reg(inst, dying_reg(inst.ops[0]));
-			Inst& mir = emit3(Op::Vector, TypeKind::V128, Operand::make_reg(d), Operand::make_reg(d), source);
+			if (!(a.kind == OperandKind::Reg && a.reg == d))
+				load_into(d, a, kind);
+			Inst& mir =
+				emit3(Op::Vector, TypeKind::V128, Operand::make_reg(d), Operand::make_reg(d), Operand::make_reg(d));
 			mir.sub = static_cast<uint8_t>(kind == TypeKind::F64 ? lowir::VectorOp::Sqrtsd : lowir::VectorOp::Sqrtss);
 			finish_result(inst, d);
 			return;
