@@ -287,9 +287,9 @@ void AggregateSlots::analyze()
 
 // Fields: the typed accesses, which must agree where they meet, tiled
 // with integer fillers across every copied or zeroed span.
-// A filler at `gap` (below `end`) in `slot`: a typed field of at least 4
-// bytes that a copy partner has there (its type, so copies between the two
-// match field for field), else void.
+// A filler at `gap` (below `end`) in `slot`: a typed field that a copy
+// partner has there (its type, so copies between the two match field for
+// field), else void.
 Type AggregateSlots::hinted_filler(SlotId slot, uint64_t gap, uint64_t end) const
 {
 	for (const SlotCopy& copy : copies_)
@@ -306,7 +306,7 @@ Type AggregateSlots::hinted_filler(SlotId slot, uint64_t gap, uint64_t end) cons
 		for (const Field& f : facts_[other.slot].fields)
 		{
 			const uint64_t bytes = storage_bytes(f.type);
-			if (static_cast<int64_t>(f.offset) == at && bytes >= 4 && bytes <= 8 && (bytes & (bytes - 1)) == 0 &&
+			if (static_cast<int64_t>(f.offset) == at && bytes <= 8 && (bytes & (bytes - 1)) == 0 &&
 				gap + bytes <= end && gap % bytes == 0 && f.type.kind() != TypeKind::F80 && !f.type.is_object())
 				return f.type;
 		}

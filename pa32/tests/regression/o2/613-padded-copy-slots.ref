@@ -1,0 +1,10 @@
+function @sum(%a : ptr, %out : ptr) -> f32 [binding=strong] {
+  block ^entry:
+    %f = index i8 [projection=field] %a, 4
+    %v = load typed f32 %f
+    return f32 %v
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}
