@@ -33,7 +33,6 @@ private:
 		Value temp;
 	};
 
-	bool rare(BlockId b) const;
 	bool has_call(const Loop& loop) const;
 	bool reads_literal(const Loop& loop) const;
 	bool same_literal(Value a, Value b) const;
@@ -52,33 +51,11 @@ bool held_kind(Value v)
 	return v.is(ValueKind::Float) && (v.float_kind == TypeKind::F32 || v.float_kind == TypeKind::F64);
 }
 
-// Whether a branch leads to b only on a floating value that is not a number,
-// or on a negative one under a square root: a rare path, around whose call
-// the allocator saves what the loop keeps.
-bool LoopLiterals::rare(BlockId b) const
-{
-	if (cfg_.pred_count(b) != 1)
-		return false;
-	const Instruction& branch = body_.instructions[body_.blocks[cfg_.preds[cfg_.pred_first[b]]].last];
-	if (branch.op != Opcode::Branch || !branch.ops[0].is(ValueKind::Temp) || !(branch.ops[1].index == b))
-		return false;
-	const InstId def = body_.temps[branch.ops[0].index].def;
-	if (def == kNoId)
-		return false;
-	const Instruction& test = body_.instructions[def];
-	if (test.op != Opcode::Compare || !test.type.is_float())
-		return false;
-	const ComparePredicate pred = static_cast<ComparePredicate>(test.sub);
-	return (pred == ComparePredicate::Ne && test.ops[0] == test.ops[1]) ||
-		(pred == ComparePredicate::Lt && test.ops[1].is(ValueKind::Float) &&
-			body_.literals[test.ops[1].index].low == 0);
-}
-
 bool LoopLiterals::has_call(const Loop& loop) const
 {
 	for (BlockId b : loop.blocks)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
-			if (body_.instructions[i].op == Opcode::Call && !rare(b))
+			if (body_.instructions[i].op == Opcode::Call && !rare_float_path(body_, cfg_, b))
 				return true;
 	return false;
 }

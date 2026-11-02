@@ -1,0 +1,98 @@
+declare function @note(%x : f64) -> f64 [linkage=c, binding=strong, object=note]
+declare function @use(%x : i64) -> void [linkage=c, binding=strong]
+
+function @butterfly(%a : ptr, %m : i64, %half : i64, %n : i64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary mul i64 %half, 16
+    %t2 = binary mul i64 %m, 16
+    jump ^body
+
+  block ^body:
+    %t3 = phi i64 [^entry: 0, ^next: %t19]
+    %t4 = phi i64 [^entry: %t1, ^next: %t20]
+    %k = phi i64 [^entry: 0, ^next: %step]
+    %t = phi f64 [^entry: 0, ^next: %u]
+    %fo = copy i64 %t4
+    %p = index i8 %a, %fo
+    %x = load f64 %p
+    %no = copy i64 %t3
+    %q = index i8 %a, %no
+    %y = load f64 %q
+    %z = binary mul f64 %x, %y
+    %nan = cmp ne f64 %z, %z
+    branch %nan, ^rare, ^next
+
+  block ^rare:
+    %r = call f64 @note(%z)
+    jump ^next
+
+  block ^next:
+    %v = phi f64 [^body: %z, ^rare: %r]
+    store f64 %v, %q
+    %u = binary add f64 %t, %v
+    %step = binary add i64 %m, %k
+    %t19 = binary add i64 %t3, %t2
+    %t20 = binary add i64 %t4, %t2
+    %c = cmp lt i64 %step, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return f64 %u
+}
+function @pairs(%a : ptr, %n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %t1 = phi i64 [^entry: 0, ^body: %t9]
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %s = phi i64 [^entry: 0, ^body: %sum]
+    %o = copy i64 %t1
+    %p = index i8 %a, %o
+    %v = load i64 %p
+    %sum = binary add i64 %s, %v
+    %next = binary add i64 %i, 1
+    %t9 = binary add i64 %t1, 16
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return i64 %sum
+}
+function @scaled(%a : ptr, %m : i64, %n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %k = phi i64 [^entry: 0, ^body: %step]
+    %s = phi i64 [^entry: 0, ^body: %sum]
+    %o = binary mul i64 %k, 8
+    %p = index i8 %a, %o
+    %v = load i64 %p
+    %sum = binary add i64 %s, %v
+    %step = binary add i64 %m, %k
+    %c = cmp lt i64 %step, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return i64 %sum
+}
+function @called(%m : i64, %n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %k = phi i64 [^entry: 0, ^body: %step]
+    %o = binary mul i64 %k, 24
+    call void @use(%o)
+    %step = binary add i64 %m, %k
+    %c = cmp lt i64 %step, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return void
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    return i32 0
+}

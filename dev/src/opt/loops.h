@@ -36,6 +36,11 @@ void find_loops(const lowir::FunctionBody& body, const Cfg& cfg, LoopForest& for
 // Whether block `b` belongs to loop `l` (including nested loops). O(1).
 bool in_loop(const LoopForest& forest, uint32_t l, lowir::BlockId b);
 
+// Whether a branch leads to `b` only on a floating value that is not a number,
+// or on a negative one under a square root: a rare path, around whose calls
+// the allocator saves what a loop keeps in registers.
+bool rare_float_path(const lowir::FunctionBody& body, const Cfg& cfg, lowir::BlockId b);
+
 // Gives loop `loop` a preheader: a new block of one jump to its header, between
 // the predecessors outside the loop and the header. False when one is a
 // handler. The graph changes.

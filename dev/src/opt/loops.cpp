@@ -133,6 +133,24 @@ bool in_loop(const LoopForest& forest, uint32_t l, BlockId b)
 	return x != kNoId && forest.enter[l] <= forest.enter[x] && forest.enter[x] < forest.leave[l];
 }
 
+bool rare_float_path(const FunctionBody& body, const Cfg& cfg, BlockId b)
+{
+	if (cfg.pred_count(b) != 1)
+		return false;
+	const Instruction& branch = body.instructions[body.blocks[cfg.preds[cfg.pred_first[b]]].last];
+	if (branch.op != Opcode::Branch || !branch.ops[0].is(ValueKind::Temp) || !(branch.ops[1].index == b))
+		return false;
+	const InstId def = body.temps[branch.ops[0].index].def;
+	if (def == kNoId)
+		return false;
+	const Instruction& test = body.instructions[def];
+	if (test.op != Opcode::Compare || !test.type.is_float())
+		return false;
+	const ComparePredicate pred = static_cast<ComparePredicate>(test.sub);
+	return (pred == ComparePredicate::Ne && test.ops[0] == test.ops[1]) ||
+		(pred == ComparePredicate::Lt && test.ops[1].is(ValueKind::Float) && body.literals[test.ops[1].index].low == 0);
+}
+
 Located locate(const FunctionBody& body, Value v)
 {
 	Located out;

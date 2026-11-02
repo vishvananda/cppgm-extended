@@ -248,9 +248,15 @@ function makes half its calls this way, which took 38% of its cycles off.
 
 **Strength reduction** (`-O2` and above): in a loop without calls, the `mul` of
 a counter by a value the loop does not compute becomes a counter of its own,
-stepped by the product of that value and the step. A literal that a shift or an
-address form covers stays a `mul`. A sign extension of a counter that does not
-wrap may stand between them. Each loop gets at most 8 such counters.
+stepped by the product of that value and the step. A call on a rare path (see
+the floating literals below) does not count. The counter may step by a literal
+or by a value the loop does not compute. A literal that an address scale or
+one `lea` gives (1, 2, 3, 4, 5, 8 or 9) stays a `mul`; 16 takes a shift and a
+scale. A sign extension of a literal-step counter that does not wrap may stand
+between them, or an `add` of an invariant to the counter: the new counter
+starts at the product of the sum. Each loop gets at most 8 such counters. An
+FFT's butterfly loop, `k += m` over 16-byte complex values at `k` and
+`k + half`, lost three instructions of 34.
 
 A counter of an invariant step that only additions of invariants read starts at
 their sum, and the additions go. The counter's own `add` keeps `nowrap` only when
