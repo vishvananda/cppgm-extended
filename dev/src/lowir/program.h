@@ -46,7 +46,9 @@ enum class MathFunction : uint8_t
 	Fabs, // fabs, fabsf
 	Abs,  // abs, labs, llabs
 	Pow,  // pow, powf
-	Sqrt  // sqrt, sqrtf
+	Sqrt, // sqrt, sqrtf
+	Sin,  // sin, sinf
+	Cos   // cos, cosf
 };
 
 struct Slot

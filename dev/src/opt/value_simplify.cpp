@@ -1691,7 +1691,7 @@ bool Simplifier::math_call(BlockId block, InstId& prev, InstId id)
 		call.extra_count > 2)
 		return false;
 	const MathFunction function = c_.program.math_function(call.ops[0].index);
-	if (function == MathFunction::None)
+	if (function == MathFunction::None || function == MathFunction::Sin || function == MathFunction::Cos)
 		return false;
 	const Value x = body_.operands[call.extra_first];
 	const Type type = call.type;

@@ -328,7 +328,7 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	context.nounwind = &nounwind;
 	context.unwritten = &unwritten;
 	enable_verify(context, options);
-	bool changed = false;
+	bool changed = RUN_PASS(combine_sin_cos);
 	// i128 values as halves once the inliner has sized its callees whole
 	// (a variable shift is a dozen i64 instructions): the halves' slots
 	// promoted and a round over what that exposes.
@@ -580,8 +580,8 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled
 		<< " invariants_hoisted=" << s.invariants_hoisted << " stores_sunk=" << s.stores_sunk
 		<< " loops_vectorized=" << s.loops_vectorized << " multiplies_reduced=" << s.multiplies_reduced
-		<< " tail_calls_removed=" << s.tail_calls_removed << " specialized=" << s.specialized
-		<< " optimize_ms=" << s.optimize_ms;
+		<< " tail_calls_removed=" << s.tail_calls_removed << " math_calls_shared=" << s.math_calls_shared
+		<< " specialized=" << s.specialized << " optimize_ms=" << s.optimize_ms;
 #else
 	(void)s;
 #endif

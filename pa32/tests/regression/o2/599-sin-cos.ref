@@ -1,0 +1,79 @@
+declare function @sin(%x : f64) -> f64 [linkage=c, binding=strong, object=sin]
+declare function @cos(%x : f64) -> f64 [linkage=c, binding=strong, object=cos]
+declare function @sinf(%x : f32) -> f32 [linkage=c, binding=strong, object=sinf]
+declare function @cosf(%x : f32) -> f32 [linkage=c, binding=strong, object=cosf]
+declare function @sincos(%arg0 : f64, %arg1 : ptr, %arg2 : ptr) -> void [unwind=no, linkage=c, binding=strong, object=sincos]
+declare function @sincosf(%arg0 : f32, %arg1 : ptr, %arg2 : ptr) -> void [unwind=no, linkage=c, binding=strong, object=sincosf]
+
+function @both(%x : f64) -> f64 [no_inline=yes] {
+  slot $aggregate__1 : f64
+  slot $aggregate__2 : f64
+
+  block ^entry:
+    %t1 = addr $aggregate__1
+    %t2 = addr $aggregate__2
+    call void @sincos(%x, %t1, %t2)
+    %t3 = load f64 %t1
+    %t4 = load f64 %t2
+    %r = binary div f64 %t3, %t4
+    return f64 %r
+}
+function @apart(%x : f32, %k : i1) -> f32 [no_inline=yes] {
+  slot $aggregate__1 : f32
+  slot $aggregate__2 : f32
+
+  block ^entry:
+    %t1 = addr $aggregate__1
+    %t2 = addr $aggregate__2
+    call void @sincosf(%x, %t1, %t2)
+    %t3 = load f32 %t1
+    %t4 = load f32 %t2
+    branch %k, ^then, ^done
+
+  block ^then:
+    %m = binary mul f32 %t3, %t4
+    return f32 %m
+
+  block ^done:
+    return f32 %t4
+}
+function @three(%x : f64) -> f64 [no_inline=yes] {
+  slot $aggregate__1 : f64
+  slot $aggregate__2 : f64
+
+  block ^entry:
+    %t1 = addr $aggregate__1
+    %t2 = addr $aggregate__2
+    call void @sincos(%x, %t1, %t2)
+    %t3 = load f64 %t1
+    %t4 = load f64 %t2
+    %r = binary add f64 %t3, %t4
+    %t = binary add f64 %r, %t3
+    return f64 %t
+}
+function @different(%x : f64, %y : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %s = call f64 @sin(%x)
+    %c = call f64 @cos(%y)
+    %r = binary add f64 %s, %c
+    return f64 %r
+}
+function @same_function(%x : f64) -> f64 [no_inline=yes] {
+  block ^entry:
+    %s = call f64 @sin(%x)
+    %c = call f64 @sin(%x)
+    %r = binary add f64 %s, %c
+    return f64 %r
+}
+function @arms(%x : f64, %k : i1) -> f64 [no_inline=yes] {
+  block ^entry:
+    branch %k, ^t, ^f
+
+  block ^t:
+    %s = call f64 @sin(%x)
+    return f64 %s
+
+  block ^f:
+    %c = call f64 @cos(%x)
+    return f64 %c
+}

@@ -212,6 +212,8 @@ bool reduce_strength(FunctionContext& context);
 // O2+: a call of the function itself in tail position becomes a jump to its
 // entry.
 bool eliminate_tail_recursion(FunctionContext& context);
+// O2+: `sin` and `cos` of one value become one `sincos`.
+bool combine_sin_cos(FunctionContext& context);
 
 // Fill loops of a run-time value whose bytes repeat call memset for long
 // runs (O2+, after all inlining: opt/loop_passes.cpp).

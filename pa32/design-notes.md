@@ -236,6 +236,10 @@ unit declares and does not define:
   a square, a `sqrt`, a literal, or a sum, product or quotient of such values.
   Another operand keeps the call, which sets `errno` for a negative operand.
 
+The final pass joins `sin` and `cos` of one value (or `sinf` and `cosf`) into
+one `sincos`, which is about as costly as one of them. The first call of the
+pair must dominate the others, which then read the two results.
+
 ### Inlining and Pruning
 
 The direct-call graph gives every function definition a dense index; its

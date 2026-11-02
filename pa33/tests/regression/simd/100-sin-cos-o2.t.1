@@ -1,0 +1,34 @@
+#include <math.h>
+#include <stdio.h>
+
+static double both(double x)
+{
+	return sin(x) * 3 + cos(x);
+}
+
+static float narrow(float x)
+{
+	return cosf(x) - sinf(x);
+}
+
+static double chain(double x, int n)
+{
+	double t = 0;
+	for (int i = 0; i < n; ++i)
+	{
+		const double c = cos(x + i);
+		if (i % 2)
+			t += c;
+		else
+			t += sin(x + i) * c;
+	}
+	return t;
+}
+
+int main()
+{
+	const double values[] = { 0.0, -0.0, 0.5, 1.0, -2.5, 100.0, 1e300 };
+	for (double x : values)
+		printf("%.17g %.9g %.17g\n", both(x), (double)narrow((float)x), chain(x, 6));
+	return 0;
+}

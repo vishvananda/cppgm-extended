@@ -166,7 +166,9 @@ MathFunction Program::math_function(SymbolId symbol) const
 		MathFunction function;
 	} kFunctions[] = { { "fabs", MathFunction::Fabs }, { "fabsf", MathFunction::Fabs }, { "abs", MathFunction::Abs },
 		{ "labs", MathFunction::Abs }, { "llabs", MathFunction::Abs }, { "pow", MathFunction::Pow },
-		{ "powf", MathFunction::Pow }, { "sqrt", MathFunction::Sqrt }, { "sqrtf", MathFunction::Sqrt } };
+		{ "powf", MathFunction::Pow }, { "sqrt", MathFunction::Sqrt }, { "sqrtf", MathFunction::Sqrt },
+		{ "sin", MathFunction::Sin }, { "sinf", MathFunction::Sin }, { "cos", MathFunction::Cos },
+		{ "cosf", MathFunction::Cos } };
 	const char* spelling = this->spelling(callee.metadata.object != 0 ? callee.metadata.object : callee.name);
 	for (const auto& f : kFunctions)
 		if (std::strcmp(spelling, f.name) == 0)
