@@ -120,6 +120,7 @@ struct Shape
 	uint32_t blocks = 0;
 	uint32_t returns = 0;
 	bool eh = false;
+	bool catches = false; // a catch or filter clause, a selector or exception read, or a throw
 	bool call = false;
 	uint32_t calls = 0; // call instructions
 	bool loop = false;
@@ -168,6 +169,9 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 			const Instruction& inst = body.instructions[i];
 			++shape.size;
 			shape.eh = shape.eh || is_eh_instruction(inst.op);
+			shape.catches = shape.catches || inst.op == Opcode::EhCatch || inst.op == Opcode::EhFilter ||
+				inst.op == Opcode::EhCatchAll || inst.op == Opcode::ExceptionSelector || inst.op == Opcode::Exception ||
+				inst.op == Opcode::Throw;
 			shape.call = shape.call || inst.op == Opcode::Call;
 			shape.calls += inst.op == Opcode::Call ? 1 : 0;
 			shape.returns += inst.op == Opcode::Return ? 1 : 0;
@@ -932,6 +936,7 @@ private:
 	bool compatible(const Instruction& call, SymbolId callee) const;
 	// The charge of inlining `callee` here, or false when the policy keeps
 	// the call.
+	bool cleanup_welcome(const Shape& shape, bool handler_code, bool loop_site) const;
 	bool admit(uint32_t callee, bool handler_code, bool loop_site, uint32_t& charge, bool& once, bool dispatch = false);
 	bool leaf_return_path(const FunctionBody& body, const Cfg& cfg) const;
 	bool known_target(const Instruction& call) const;
@@ -1086,6 +1091,22 @@ bool InlineWaveRunner::known_target(const Instruction& call) const
 	return false;
 }
 
+// A callee whose handlers only clean up and resume may go inline where the
+// caller catches nothing (no landing of the caller lists clauses the copy's
+// landings would then need) and may unwind, outside handler code: its
+// records then nest in the caller's own, and a resume continues to them.
+// The ordinary wave takes one only at a loop site: a copy grows its caller,
+// which may then miss the caps of its own callers.
+bool InlineWaveRunner::cleanup_welcome(const Shape& shape, bool handler_code, bool loop_site) const
+{
+	if (shape.catches || handler_code || options_.level < 2 || (wave_ == InlineWave::Ordinary && !loop_site))
+		return false;
+	const Shape& caller = shapes_[caller_];
+	const Symbol& symbol = program_.symbols[graph_.functions[caller_]];
+	const Signature& sig = program_.signatures[program_.functions[symbol.detail].signature];
+	return !caller.catches && sig.boundary.unwind != ir_model::CUM_NO;
+}
+
 bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint32_t& charge, bool& once, bool dispatch)
 {
 	const SymbolId callee = graph_.functions[g];
@@ -1095,7 +1116,9 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 	if (source_required_ && (m.flags & SF_FORCE_INLINE) == 0)
 		return false;
 	if (graph_.recursive[g] || g == caller_ || (m.flags & SF_NO_INLINE) != 0 || shape.unsafe ||
-		(!source_required_ && ((m.flags & SF_REPLACEABLE) != 0 || shape.eh || (handler_code && shape.unwinds))))
+		(!source_required_ &&
+			((m.flags & SF_REPLACEABLE) != 0 || (shape.eh && !cleanup_welcome(shape, handler_code, loop_site)) ||
+				(handler_code && shape.unwinds))))
 		return false;
 	if ((m.flags & SF_FORCE_INLINE) != 0)
 	{

@@ -297,7 +297,15 @@ recursive rule below), is `no_inline=yes` or replaceable, is variadic,
 contains `va_start`, `va_arg`, `stack_alloc` or an EH instruction
 (`eh_*`, `throw`, `resume`, `exception`, `exception_selector`; but see
 folded copies below), or does not match the call's arity, result type and
-parameter passing. In handler code (blocks a handler entry dominates) a
+parameter passing. At `-O2` and above an EH callee may go inline when its
+handlers only clean up and resume (no `eh_catch`, `eh_filter`,
+`eh_catch_all`, `exception_selector`, `exception` or `throw`), the caller
+has none of these either and may unwind, and the call is not in handler
+code: the copy's records nest in the caller's frame and a resume continues
+to the caller's own. The ordinary wave takes such a callee only at a loop
+site; the late wave takes it at any site. (A copy grows its caller, which
+can then miss the caps of its own callers: tramp3d's kernels ran twice as
+many instructions when every site took one.) In handler code (blocks a handler entry dominates) a
 callee that may unwind stays a call. A callee without EH instructions may
 be inlined inside an active region; its cloned calls stay in that region.
 
