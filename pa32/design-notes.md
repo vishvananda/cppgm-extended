@@ -648,8 +648,8 @@ Full unrolling, at most 16 loops per run of the pass:
   start and its bound are known offsets from one slot or global (`std::fill`
   over a local array): the trip count is the distance over the step, and
   the bound may be an address the header computes.
-- An innermost loop with a branching body, an integer induction and a
-  literal start, step and bound giving 1 to 16 passes is copied pass by
+- An innermost loop with a branching body and an induction giving at most
+  1 to 16 passes is copied pass by
   pass: up to 16 passes within 256 cloned instructions when it reads
   constant data or branches on values computed from the induction, or
   calls nothing and touches no frame slot; otherwise up to 8 passes within
@@ -657,6 +657,12 @@ Full unrolling, at most 16 loops per run of the pass:
   A body that indexes a local array by the induction may copy up to 640
   instructions: each copy names one element, and the elements then become
   registers.
+  The bound may test the header's counter before a pass or the latch's after
+  it. Integer counters have literal starts, steps and bounds; a pointer
+  counter has a literal step between known offsets of one object and an
+  equality exit. Other branches may leave early, and their copies keep the
+  tests and memory effects in order. A short mutable-table search can then
+  lose its counter and back edge without assuming the table's contents.
 - A loop containing an EH instruction, `stack_alloc` or `va_start`, or one
   that exits into a handler block, is not unrolled.
 

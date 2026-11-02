@@ -54,6 +54,7 @@ public:
 private:
 	bool try_unroll(uint32_t loop);
 	bool try_unroll_search(uint32_t loop);
+	int64_t unroll_bound(uint32_t loop, BlockId tested, TempId& iv_temp) const;
 	bool indexes_local_array(uint32_t loop, TempId iv) const;
 	bool unroll_search_shape(uint32_t loop, int64_t trips, TempId iv, std::vector<uint8_t>& member,
 		std::vector<uint8_t>& owned, BlockId& through);
@@ -2217,48 +2218,75 @@ void LoopPass::add_exit_phis(const std::vector<uint8_t>& member, const std::vect
 	}
 }
 
+// The header or latch bounds the number of passes even when other blocks
+// leave early. Pointer bounds count offsets from one object; integer bounds
+// count literals. A latch's test follows the current pass rather than precedes it.
+int64_t LoopPass::unroll_bound(uint32_t loop, BlockId tested, TempId& iv_temp) const
+{
+	const Loop& l = forest_.loops[loop];
+	const Instruction& term = body_.instructions[body_.blocks[tested].last];
+	if (term.op != Opcode::Branch || !term.ops[0].is(ValueKind::Temp) ||
+		in_loop(forest_, loop, term.ops[1].index) == in_loop(forest_, loop, term.ops[2].index))
+		return -1;
+	const InstId cmp_id = body_.temps[term.ops[0].index].def;
+	if (cmp_id == kNoId || body_.instructions[cmp_id].op != Opcode::Compare || c_.block_of[cmp_id] != tested)
+		return -1;
+	const Instruction& cmp = body_.instructions[cmp_id];
+	const bool leave_on_true = !in_loop(forest_, loop, term.ops[1].index);
+	for (InstId i = body_.blocks[l.header].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
+		i = body_.instructions[i].next)
+	{
+		Induction iv;
+		if (!induction(loop, i, iv))
+			continue;
+		for (unsigned side = 0; side < 2; ++side)
+		{
+			const Value v = cmp.ops[side], other = cmp.ops[1 - side];
+			if (!v.is(ValueKind::Temp) || (v.index != iv.value && v.index != iv.next))
+				continue;
+			const ComparePredicate pred = side == 0 ? static_cast<ComparePredicate>(cmp.sub)
+													: swapped(static_cast<ComparePredicate>(cmp.sub));
+			__int128 start, bound;
+			Type type = cmp.type;
+			if (iv.pointer)
+			{
+				const bool equality = (pred == ComparePredicate::Ne && !leave_on_true) ||
+					(pred == ComparePredicate::Eq && leave_on_true);
+				const Located from = locate(body_, iv.init), to = locate(body_, other);
+				if (!equality || !from.known || !to.known || !(from.root == to.root) || from.root.is(ValueKind::None))
+					continue;
+				start = from.offset;
+				bound = to.offset;
+				type = Type::scalar(TypeKind::I64);
+			}
+			else
+			{
+				if (!iv.init.is(ValueKind::Integer) || !other.is(ValueKind::Integer) || !type.is_integer())
+					continue;
+				start = static_cast<int64_t>(normalize_integer(type, body_.literals[iv.init.index]).low);
+				bound = static_cast<int64_t>(normalize_integer(type, body_.literals[other.index]).low);
+			}
+			__int128 last;
+			int64_t trips;
+			if (counted_trips(type, pred, !leave_on_true, start, iv.step_bytes, bound, v.index == iv.next, trips, last))
+			{
+				iv_temp = iv.value;
+				return trips + (tested != l.header ? 1 : 0);
+			}
+		}
+	}
+	return -1;
+}
+
 bool LoopPass::try_unroll_search(uint32_t loop)
 {
 	const Loop& l = forest_.loops[loop];
 	if (l.latches.size() != 1)
 		return false;
-	// The header's counted test.
-	const Instruction& head_term = body_.instructions[body_.blocks[l.header].last];
-	if (head_term.op != Opcode::Branch || !head_term.ops[0].is(ValueKind::Temp) ||
-		in_loop(forest_, loop, head_term.ops[1].index) == in_loop(forest_, loop, head_term.ops[2].index))
-		return false;
-	const InstId cmp_id = body_.temps[head_term.ops[0].index].def;
-	if (cmp_id == kNoId || body_.instructions[cmp_id].op != Opcode::Compare || c_.block_of[cmp_id] != l.header)
-		return false;
-	const Instruction& cmp = body_.instructions[cmp_id];
-	const bool leave_on_true = !in_loop(forest_, loop, head_term.ops[1].index);
-	int64_t trips = -1;
 	TempId iv_temp = kNoId;
-	for (InstId i = body_.blocks[l.header].first; i != kNoId && body_.instructions[i].op == Opcode::Phi && trips < 0;
-		i = body_.instructions[i].next)
-	{
-		Induction iv;
-		if (!induction(loop, i, iv) || iv.pointer || !iv.init.is(ValueKind::Integer) || !cmp.type.is_integer())
-			continue;
-		for (unsigned side = 0; side < 2 && trips < 0; ++side)
-		{
-			const Value v = cmp.ops[side], other = cmp.ops[1 - side];
-			if (!v.is(ValueKind::Temp) || (v.index != iv.value && v.index != iv.next) || !other.is(ValueKind::Integer))
-				continue;
-			const ComparePredicate pred = side == 0 ? static_cast<ComparePredicate>(cmp.sub)
-													: swapped(static_cast<ComparePredicate>(cmp.sub));
-			const Literal a = normalize_integer(cmp.type, body_.literals[iv.init.index]);
-			const Literal b = normalize_integer(cmp.type, body_.literals[other.index]);
-			__int128 last;
-			int64_t n;
-			if (counted_trips(cmp.type, pred, !leave_on_true, static_cast<__int128>(static_cast<int64_t>(a.low)),
-					iv.step_bytes, static_cast<__int128>(static_cast<int64_t>(b.low)), v.index == iv.next, n, last))
-			{
-				trips = n;
-				iv_temp = iv.value;
-			}
-		}
-	}
+	int64_t trips = unroll_bound(loop, l.header, iv_temp);
+	if (trips < 0 && l.latches[0] != l.header)
+		trips = unroll_bound(loop, l.latches[0], iv_temp);
 	if (trips < 1 || trips > kSearchTrips)
 		return false;
 	std::vector<uint8_t> member, owned;

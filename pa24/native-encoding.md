@@ -118,9 +118,9 @@ alignment are properties of the call boundary. Fixed scratch registers
 must not destroy a live value or an indirect-call target.
 
 Use the existing test groups while extending the encoder. In particular,
-`strict/100-400-immediate-move-encoding-boundaries.t`,
-`strict/100-400-fallthrough-jump-encoding.t`, and
-`structural/100-400-indexed-memory-addressing.t` exercise immediate width,
+`strict/100-immediate-move-encoding-boundaries.t`,
+`strict/100-fallthrough-jump-encoding.t`, and
+`structural/100-indexed-memory-addressing.t` exercise immediate width,
 branch layout, and addressing. They are part of the native suite.
 
 ## Resolve labels after layout

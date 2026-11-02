@@ -1,0 +1,117 @@
+global @values : obj<40x8> = {
+  i64 2
+  i64 4
+  i64 6
+  i64 8
+  i64 10
+}
+global @probes : i64 = 0
+
+function @search(%wanted : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %base = addr @values
+    %t2 = load volatile i64 @probes
+    %t3 = binary add i64 %t2, 1
+    store volatile i64 %t3, @probes
+    %t4 = load i64 %base
+    %t5 = cmp eq i64 %wanted, %t4
+    branch %t5, ^done, ^unrolled_1
+
+  block ^unrolled_1:
+    %t6 = index i64 %base, 1
+    %t7 = load volatile i64 @probes
+    %t8 = binary add i64 %t7, 1
+    store volatile i64 %t8, @probes
+    %t9 = load i64 %t6
+    %t10 = cmp eq i64 %wanted, %t9
+    branch %t10, ^done, ^unrolled_2
+
+  block ^unrolled_2:
+    %t11 = index i8 %base, 16
+    %t12 = load volatile i64 @probes
+    %t13 = binary add i64 %t12, 1
+    store volatile i64 %t13, @probes
+    %t14 = load i64 %t11
+    %t15 = cmp eq i64 %wanted, %t14
+    branch %t15, ^done, ^unrolled_3
+
+  block ^unrolled_3:
+    %t16 = index i8 %base, 24
+    %t17 = load volatile i64 @probes
+    %t18 = binary add i64 %t17, 1
+    store volatile i64 %t18, @probes
+    %t19 = load i64 %t16
+    %t20 = cmp eq i64 %wanted, %t19
+    %t21 = index i8 %base, 32
+    %t22 = cmp eq i64 %wanted, %t19
+    %t23 = select ptr %t22, %t16, %t21
+    jump ^done
+
+  block ^done:
+    %result = phi ptr [^entry: %base, ^unrolled_1: %t6, ^unrolled_2: %t11, ^unrolled_3: %t23]
+    %bytes = binary sub ptr %result, %base
+    return i64 %bytes
+}
+function @backward(%wanted : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %base = addr @values
+    %begin = index i64 %base, 4
+    %t3 = load i64 %begin
+    %t4 = cmp eq i64 %wanted, %t3
+    branch %t4, ^done, ^unrolled_1
+
+  block ^unrolled_1:
+    %t5 = index i8 %base, 24
+    %t6 = load i64 %t5
+    %t7 = cmp eq i64 %wanted, %t6
+    branch %t7, ^done, ^unrolled_2
+
+  block ^unrolled_2:
+    %t8 = index i8 %base, 16
+    %t9 = load i64 %t8
+    %t10 = cmp eq i64 %wanted, %t9
+    branch %t10, ^done, ^unrolled_3
+
+  block ^unrolled_3:
+    %t11 = index i8 %base, 8
+    %t12 = load i64 %t11
+    %t13 = cmp eq i64 %wanted, %t12
+    %t14 = select ptr %t13, %t11, %base
+    jump ^done
+
+  block ^done:
+    %result = phi ptr [^entry: %begin, ^unrolled_1: %t5, ^unrolled_2: %t8, ^unrolled_3: %t14]
+    %bytes = binary sub ptr %result, %base
+    return i64 %bytes
+}
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %a = call i64 @search(2)
+    %count_a = load volatile i64 @probes
+    %b = call i64 @search(8)
+    %count_b = load volatile i64 @probes
+    %c = call i64 @search(10)
+    %count_c = load volatile i64 @probes
+    %d = call i64 @backward(10)
+    %e = call i64 @backward(4)
+    %f = call i64 @backward(2)
+    %aa = cmp eq i64 %a, 0
+    %bb = cmp eq i64 %b, 24
+    %cc = cmp eq i64 %c, 32
+    %dd = cmp eq i64 %d, 32
+    %ee = cmp eq i64 %e, 8
+    %ff = cmp eq i64 %f, 0
+    %ca = cmp eq i64 %count_a, 1
+    %cb = cmp eq i64 %count_b, 5
+    %ccount = cmp eq i64 %count_c, 9
+    %ab = binary and i1 %aa, %bb
+    %cd = binary and i1 %cc, %dd
+    %ef = binary and i1 %ee, %ff
+    %abcd = binary and i1 %ab, %cd
+    %indices = binary and i1 %ef, %abcd
+    %cab = binary and i1 %ca, %cb
+    %counts = binary and i1 %ccount, %cab
+    %ok = binary and i1 %indices, %counts
+    %r = select i32 %ok, 0, 1
+    return i32 %r
+}

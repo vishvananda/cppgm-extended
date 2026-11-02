@@ -16,8 +16,8 @@ type	ptr	semantic lowering;explicit LowIR	parser;optimizer;native;object	pa8/REA
 type	v128	semantic lowering;explicit LowIR	parser;optimizer;native;host ABI	pa29/README.md	pa33/tests/o1/500-vector-every-operation.t	keep	sixteen bytes of SSE lanes
 type	obj<bytesxalign>	semantic lowering;explicit LowIR	parser;ABI lowering;native	pa8/README.md	pa8/tests/spec/100-small-direct-object-argument.t	keep	direct object boundary
 instruction	const	semantic lowering;explicit LowIR	optimizer;native	pa8/README.md	pa8/tests/spec/100-local-arith.t	keep	literal materialization
-instruction	copy	semantic lowering;explicit LowIR	optimizer;native	pa8/README.md	pa8/tests/spec/200-copy-instruction.t	keep	value transfer
-instruction	phi	slot promotion;explicit LowIR	CFG;inliner;optimizer;native phi lowering	pa8/README.md	pa24/tests/structural/800-400-phi-critical-loop.t	keep	non-derivable merge value
+instruction	copy	semantic lowering;explicit LowIR	optimizer;native	pa8/README.md	pa8/tests/spec/200-copy-instruction.t;pa8/tests/spec/300-floating-bit-copies.t	keep	value transfer including equal-width floating/integer bit copies
+instruction	phi	slot promotion;explicit LowIR	CFG;inliner;optimizer;native phi lowering	pa8/README.md	pa24/tests/structural/800-phi-critical-loop.t	keep	non-derivable merge value
 instruction	addr	semantic lowering;explicit LowIR	address folding;native;object	pa8/README.md	pa8/tests/spec/100-global-variable.t	keep	symbol and slot address
 instruction	load	semantic lowering;explicit LowIR	optimizer;native	pa8/README.md	pa8/tests/spec/100-global-variable.t	keep	memory read
 instruction	load volatile	volatile semantic lowering;explicit LowIR	DCE;GVN;slot promotion;MIR;native	pa10/README.md	pa11/tests/controls/200-volatile-access-markers.t	keep	observable access
@@ -138,4 +138,4 @@ metadata	section=<token-safe-name>	PA27 GNU section lowering;explicit LowIR	ELF 
 metadata	section_segment	internal PA10 only	transport through PA25 and MIR	pa25/README.md	MISSING	remove	no producer or Linux target consumer
 debug	!dbg(file,line,column)	semantic source locations;explicit LowIR	line table;object roundtrip	pa8/README.md	pa8/tests/spec/100-function-and-instruction-debug-locations.t	keep	object-visible source mapping
 role	cpu_query	GNU CPUID lowering	native object and standalone runtime	pa29/README.md	pa29/tests/compile/500-gnu-asm-cpuid-forms.t	keep	real CPUID with typed call ABI and preserved callee-saved registers
-instruction	convert trunc exact	optimizer counter widening;explicit LowIR	parser;validator;writer;native narrow-value canonicalization	pa8/README.md;pa8/lowir.md;pa32/design-notes.md	pa8/tests/spec/300-exact-truncation.t;pa8/tests/spec/300-bad-exact-on-extension.t;pa8/tests/spec/300-bad-exact-on-floating-conversion.t	keep	representability at the destination signedness, not a change to truncation semantics
+instruction	convert exact	optimizer counter widening;explicit LowIR	parser;validator;writer;native narrow-value canonicalization	pa8/README.md;pa8/lowir.md;pa32/design-notes.md	pa8/tests/spec/300-exact-truncation.t;pa8/tests/spec/300-bad-exact-on-extension.t;pa8/tests/spec/300-bad-exact-on-floating-conversion.t	keep	representability at the destination signedness, not a change to truncation semantics
