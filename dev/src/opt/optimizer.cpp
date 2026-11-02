@@ -388,7 +388,11 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		changed = true;
 	}
 	// O2: products of a counter, after everything that reads a loop's shape.
-	changed = RUN_PASS(reduce_strength) || changed;
+	if (RUN_PASS(reduce_strength))
+	{
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
 	if (!changed)
 		return;
 	RUN_PASS(split_branch_compares);
@@ -587,9 +591,9 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled
 		<< " invariants_hoisted=" << s.invariants_hoisted << " stores_sunk=" << s.stores_sunk
 		<< " loops_vectorized=" << s.loops_vectorized << " loops_interchanged=" << s.loops_interchanged
-		<< " multiplies_reduced=" << s.multiplies_reduced << " tail_calls_removed=" << s.tail_calls_removed
-		<< " math_calls_shared=" << s.math_calls_shared << " specialized=" << s.specialized
-		<< " optimize_ms=" << s.optimize_ms;
+		<< " counters_shifted=" << s.counters_shifted << " multiplies_reduced=" << s.multiplies_reduced
+		<< " tail_calls_removed=" << s.tail_calls_removed << " math_calls_shared=" << s.math_calls_shared
+		<< " specialized=" << s.specialized << " optimize_ms=" << s.optimize_ms;
 #else
 	(void)s;
 #endif

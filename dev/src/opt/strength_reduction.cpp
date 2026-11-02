@@ -10,6 +10,8 @@ namespace {
 
 // At most this many new counters per loop: each takes a register for the loop.
 const unsigned kCountersPerLoop = 8;
+// The most additions one counter takes in.
+const unsigned kShiftedTerms = 4;
 
 // A product of a counter and a literal the addressing modes cannot do, or a
 // value the loop does not change, becomes a counter of its own: a loop adds to
@@ -49,6 +51,9 @@ private:
 	bool outside(uint32_t loop, Value v) const;
 	bool same_factor(Value a, Value b) const;
 	bool wants_preheader(uint32_t loop) const;
+	void read_uses();
+	void shift_counters(uint32_t loop);
+	void shift_counter(const Loop& l, uint32_t loop, InstId phi_id, InstId& at);
 
 	FunctionContext& c_;
 	FunctionBody& body_;
@@ -56,6 +61,8 @@ private:
 	LoopForest forest_;
 	std::vector<Counter> counters_;
 	std::vector<Scaled> scaled_;
+	std::vector<uint32_t> uses_;                // per temp
+	std::vector<InstId> first_reader_, reader_; // per temp: the first and last in layout order
 	bool changed_ = false;
 };
 
@@ -303,6 +310,122 @@ bool StrengthReduction::wants_preheader(uint32_t loop) const
 	return false;
 }
 
+void StrengthReduction::read_uses()
+{
+	uses_.assign(body_.temps.size(), 0);
+	first_reader_.assign(body_.temps.size(), kNoId);
+	reader_.assign(body_.temps.size(), kNoId);
+	for (BlockId b : body_.layout)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+			for_each_operand(body_, body_.instructions[i], [&](const Value& v) {
+				if (!v.is(ValueKind::Temp))
+					return;
+				if (uses_[v.index]++ == 0)
+					first_reader_[v.index] = i;
+				reader_[v.index] = i;
+			});
+}
+
+// A counter of any invariant step read only through additions of what the
+// loop does not change: it starts at their sum instead, and the additions go.
+void StrengthReduction::shift_counter(const Loop& l, uint32_t loop, InstId phi_id, InstId& at)
+{
+	const Instruction phi = body_.instructions[phi_id];
+	const uint32_t entry = body_.operands[phi.extra_first].index == l.preheader ? 0 : 2;
+	if (body_.operands[phi.extra_first + entry].index != l.preheader)
+		return;
+	const Value next = body_.operands[phi.extra_first + (2 - entry) + 1];
+	const Value self = Value::temp(phi.result);
+	if (!next.is(ValueKind::Temp) || next.index < body_.parameter_count || uses_[phi.result] != 2 ||
+		uses_[next.index] != 1)
+		return;
+	const InstId step = body_.temps[next.index].def;
+	const Instruction& add = body_.instructions[step];
+	if (step == kNoId || add.op != Opcode::Binary || static_cast<BinaryOp>(add.sub) != BinaryOp::Add ||
+		!in_loop(forest_, loop, c_.block_of[step]))
+		return;
+	const bool first = add.ops[0] == self;
+	if ((!first && !(add.ops[1] == self)) || !outside(loop, add.ops[first ? 1 : 0]))
+		return;
+	InstId read = first_reader_[phi.result] == step ? reader_[phi.result] : first_reader_[phi.result];
+	Value value = self;
+	Value terms[kShiftedTerms];
+	unsigned count = 0;
+	InstId last_add = kNoId;
+	bool no_wrap = true;
+	for (unsigned depth = 0; depth < kShiftedTerms * 2 && read != kNoId; ++depth)
+	{
+		const Instruction& inst = body_.instructions[read];
+		if (!in_loop(forest_, loop, c_.block_of[read]) || inst.type.kind() != phi.type.kind())
+			break;
+		if (inst.op == Opcode::Binary && static_cast<BinaryOp>(inst.sub) == BinaryOp::Add && count < kShiftedTerms)
+		{
+			const Value other = inst.ops[0] == value ? inst.ops[1] : inst.ops[0];
+			if (!outside(loop, other))
+				break;
+			terms[count++] = other;
+			last_add = read;
+			no_wrap = no_wrap && (inst.flags & IF_NO_WRAP) != 0 && c_.block_of[read] == l.header;
+		}
+		else if (inst.op != Opcode::Copy)
+			break;
+		value = Value::temp(inst.result);
+		read = uses_[inst.result] == 1 ? reader_[inst.result] : kNoId;
+	}
+	if (last_add == kNoId)
+		return;
+	Value start = body_.operands[phi.extra_first + entry + 1];
+	for (unsigned k = 0; k < count; ++k)
+	{
+		const bool zero = start.is(ValueKind::Integer) && body_.literals[start.index].low == 0 &&
+			body_.literals[start.index].high == 0;
+		if (zero)
+		{
+			start = terms[k];
+			continue;
+		}
+		Instruction sum = make_instruction(Opcode::Binary, phi.type);
+		sum.sub = static_cast<uint8_t>(BinaryOp::Add);
+		sum.ops[0] = start;
+		sum.ops[1] = terms[k];
+		start = emit_after(l.preheader, at, sum, phi.type);
+	}
+	const Instruction& placed = body_.instructions[phi_id];
+	body_.operands[placed.extra_first + entry + 1] = start;
+	const Value shifted = Value::temp(body_.instructions[last_add].result);
+	Instruction copy = make_instruction(Opcode::Copy, phi.type);
+	copy.result = shifted.index;
+	copy.ops[0] = self;
+	copy.next = body_.instructions[last_add].next;
+	copy.location = body_.instructions[last_add].location;
+	body_.instructions[last_add] = copy;
+	for (BlockId b : l.blocks)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+			if (i != last_add)
+				for_each_operand(body_, body_.instructions[i], [&](Value& v) {
+					if (v == shifted)
+						v = self;
+				});
+	if (!no_wrap)
+		body_.instructions[step].flags &= static_cast<uint8_t>(~IF_NO_WRAP);
+	++c_.stats.counters_shifted;
+	changed_ = true;
+}
+
+void StrengthReduction::shift_counters(uint32_t loop)
+{
+	const Loop& l = forest_.loops[loop];
+	InstId at = previous_in_block(body_, l.preheader, body_.blocks[l.preheader].last);
+	for (InstId i = body_.blocks[l.header].first; i != kNoId; i = body_.instructions[i].next)
+	{
+		const Instruction& phi = body_.instructions[i];
+		if (phi.op != Opcode::Phi)
+			break;
+		if (phi.extra_count == 4 && (phi.type.kind() == TypeKind::I32 || phi.type.kind() == TypeKind::I64))
+			shift_counter(l, loop, i, at);
+	}
+}
+
 bool StrengthReduction::run()
 {
 	c_.ensure_cfg();
@@ -329,6 +452,10 @@ bool StrengthReduction::run()
 	for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0;)
 		if (forest_.loops[loop].preheader != kNoId)
 			reduce(loop);
+	read_uses();
+	for (uint32_t loop = static_cast<uint32_t>(forest_.loops.size()); loop-- > 0;)
+		if (forest_.loops[loop].preheader != kNoId)
+			shift_counters(loop);
 	if (changed_)
 		c_.invalidate_block_of();
 	return changed_;

@@ -30,16 +30,15 @@ function @down(%a : ptr, %n : i32) -> i64 [no_inline=yes] {
     jump ^body
 
   block ^body:
-    %t3 = phi i64 [^entry: %t2, ^body: %t12]
+    %t3 = phi i64 [^entry: %t2, ^body: %t11]
     %i = phi i32 [^entry: %n, ^body: %next]
     %s = phi i64 [^entry: 0, ^body: %sum]
-    %w = convert sext i64 i32 %i
     %m = copy i64 %t3
     %p = index i8 %a, %m
     %v = load i64 %p
     %sum = binary add i64 %s, %v
     %next = binary sub nowrap i32 %i, 1
-    %t12 = binary add i64 %t3, -164
+    %t11 = binary add i64 %t3, -164
     %c = cmp gt i32 %next, 0
     branch %c, ^body, ^done
 

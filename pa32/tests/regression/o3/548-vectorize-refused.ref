@@ -49,14 +49,12 @@ function @counter_as_data(%d : ptr, %n : i64) -> void [no_inline=yes] {
     jump ^body
 
   block ^body:
-    %t33 = phi i32 [^loop_preheader_3: %t32, ^body: %t39]
-    %i = phi i32 [^loop_preheader_3: %t31, ^body: %next]
+    %t33 = phi i32 [^loop_preheader_3: %t32, ^body: %t37]
     %j = phi i64 [^loop_preheader_3: %t30, ^body: %j2]
     %m = copy i32 %t33
     %o = index i32 %d, %j
     store typed i32 %m, %o
-    %next = binary add nowrap i32 %i, 2
-    %t39 = binary add i32 %t33, 14
+    %t37 = binary add i32 %t33, 14
     %j2 = binary add i64 %j, 1
     %c = cmp lt i64 %j2, %n
     branch %c, ^body, ^done

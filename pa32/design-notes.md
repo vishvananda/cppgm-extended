@@ -223,6 +223,10 @@ stepped by the product of that value and the step. A literal that a shift or an
 address form covers stays a `mul`. A sign extension of a counter that does not
 wrap may stand between them. Each loop gets at most 8 such counters.
 
+A counter of an invariant step that only additions of invariants read starts at
+their sum, and the additions go. The counter's own `add` keeps `nowrap` only when
+those additions had it and ran on every pass.
+
 ### Library Calls (`-O2`, `-O3`)
 
 Value simplification rewrites calls of the C library's math functions that a
