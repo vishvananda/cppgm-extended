@@ -116,6 +116,9 @@ lowir::SymbolId ProgramLowering::complex_helper(bool divide, const sema::Type* p
 	signature.result = storage_type(complex);
 	signature.boundary.result_classes = complex_classes(complex);
 	signature.boundary.unwind = ir_model::CUM_NO;
+	// (The float and double forms return in registers: they touch no memory.)
+	if (mode == 's' || mode == 'd')
+		signature.boundary.effects = ir_model::CFXM_READNONE;
 	program_.declare_function(symbol, lowir::SymbolKind::FunctionDeclaration, program_.add_signature(signature));
 	lowir::SymbolMetadata& metadata = program_.symbols[symbol].metadata;
 	metadata.linkage = ir_model::LLM_C;

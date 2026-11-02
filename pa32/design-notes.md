@@ -458,6 +458,10 @@ exit writes nothing a run of the loop would not have written. The location is
 loaded in the preheader and stored on each exit edge. The stores this leaves
 may then leave the loop around it.
 
+Private slots: a slot whose address reaches only its own accesses, copies and
+constant steps is reached by no other pointer. A write to such a slot does not
+keep a load through a pointer in its loop.
+
 Allocations: memory forwarding treats the result of `malloc`, `calloc` or
 `operator new`, when the callee is declared and not defined here, as storage no
 earlier pointer reaches. It is apart from every slot, global, parameter and

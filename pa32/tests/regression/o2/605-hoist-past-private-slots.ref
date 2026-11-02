@@ -1,0 +1,46 @@
+function @private_slot(%p : ptr, %q : ptr, %n : i64) -> i64 [no_inline=yes] {
+  block ^entry:
+    %has = cmp gt i64 %n, 0
+    branch %has, ^loop_preheader_1, ^done
+
+  block ^loop_preheader_1:
+    %t2 = load i64 %q
+    %limit = load typed i64 %p
+    %c = binary add i64 %limit, %t2
+    jump ^loop
+
+  block ^loop:
+    %i = phi i64 [^loop_preheader_1: 0, ^loop: %next]
+    %sum = phi i64 [^loop_preheader_1: 0, ^loop: %more]
+    %more = binary add i64 %sum, %c
+    %next = binary add nowrap i64 %i, 1
+    %again = cmp lt i64 %next, %n
+    branch %again, ^loop, ^done
+
+  block ^done:
+    %r = phi i64 [^entry: 0, ^loop: %more]
+    return i64 %r
+}
+function @escaped_slot(%p : ptr, %q : ptr, %n : i64, %out : ptr) -> i64 [no_inline=yes] {
+  slot $s : obj<16x8>
+
+  block ^entry:
+    %a = addr $s
+    store typed ptr %a, %out
+    %has = cmp gt i64 %n, 0
+    branch %has, ^loop, ^done
+
+  block ^loop:
+    %i = phi i64 [^entry: 0, ^loop: %next]
+    %sum = phi i64 [^entry: 0, ^loop: %more]
+    copyobj 16x8 %q, $s
+    %limit = load typed i64 %p
+    %more = binary add i64 %sum, %limit
+    %next = binary add nowrap i64 %i, 1
+    %again = cmp lt i64 %next, %n
+    branch %again, ^loop, ^done
+
+  block ^done:
+    %r = phi i64 [^entry: 0, ^loop: %more]
+    return i64 %r
+}

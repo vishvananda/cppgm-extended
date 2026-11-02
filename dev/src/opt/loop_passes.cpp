@@ -101,6 +101,7 @@ private:
 	Cfg& cfg_;
 	LoopForest forest_;
 	std::vector<uint32_t> hoist_uses_; // use counts for hoist_from (empty: not counted)
+	std::vector<uint8_t> hoist_escaped_; // escaped_slots, once a loop writes memory
 	// Per block of cfg_: the by-address parameters (bit k: parameter k)
 	// whose objects are known live at its end (entry_objects_kept; empty:
 	// not computed for this graph).
@@ -2886,7 +2887,8 @@ bool LoopPass::entry_objects_kept(uint32_t loop, uint32_t parameter)
 }
 
 // Whether a load at `at` (bytes, type, typed) may read what `w` writes.
-static bool may_overlap(const LoopWrite& w, const Located& at, uint64_t bytes, Type type, bool typed)
+static bool may_overlap(
+	const LoopWrite& w, const Located& at, uint64_t bytes, Type type, bool typed, const std::vector<uint8_t>& escaped)
 {
 	const bool named_a = w.at.root.is(ValueKind::Slot) || w.at.root.is(ValueKind::Symbol);
 	const bool named_b = at.root.is(ValueKind::Slot) || at.root.is(ValueKind::Symbol);
@@ -2896,6 +2898,9 @@ static bool may_overlap(const LoopWrite& w, const Located& at, uint64_t bytes, T
 				at.offset < w.at.offset + static_cast<int64_t>(w.bytes));
 	if (named_a && named_b)
 		return false; // distinct slots and globals
+	if ((w.at.root.is(ValueKind::Slot) && !escaped[w.at.root.index]) ||
+		(at.root.is(ValueKind::Slot) && !escaped[at.root.index]))
+		return false; // no pointer reaches a slot whose address stays here
 	return !(w.typed && typed && typed_types_apart(w.type, type));
 }
 
@@ -2924,6 +2929,8 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 			else if (may_write_memory(c_.program, inst) || (inst.op == Opcode::Load && (inst.flags & IF_VOLATILE) != 0))
 				return false; // a call, an atomic, a volatile access: memory may change anywhere
 		}
+	if (!writes.empty() && hoist_escaped_.size() != body_.slots.size())
+		hoist_escaped_ = escaped_slots(body_);
 	const Function& function = c_.program.functions[c_.program.symbols[c_.symbol].detail];
 	const Signature& sig = c_.program.signatures[function.signature];
 	// Address steps inside the loop whose operands are invariant.
@@ -3000,7 +3007,7 @@ bool LoopPass::hoist_from(uint32_t loop, bool apply)
 				const bool typed = (inst.flags & IF_TYPED) != 0;
 				bool clobbered = false;
 				for (const LoopWrite& w : writes)
-					clobbered = clobbered || may_overlap(w, at, bytes, inst.type, typed);
+					clobbered = clobbered || may_overlap(w, at, bytes, inst.type, typed, hoist_escaped_);
 				// Run on every entry, the load keeps its facts; moved only
 				// because its memory may always be read, it runs where it did
 				// not, and `typed` may not hold there (lowir.md "Instruction Facts").

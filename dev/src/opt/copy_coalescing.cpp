@@ -68,7 +68,6 @@ private:
 	// or globals, a slot whose address never escapes and anything else,
 	// or two parameters both promised noalias.
 	bool disjoint(Value a, Value b) const;
-	void find_escapes();
 	void flush(BlockId block, std::vector<Pair>& run);
 	bool forward_copies(BlockId block);
 	bool zero_fill_slots();
@@ -105,34 +104,6 @@ bool CopyCoalescing::disjoint(Value a, Value b) const
 			params[a.index].alias == ir_model::PALM_NOALIAS && params[b.index].alias == ir_model::PALM_NOALIAS;
 	}
 	return false;
-}
-
-// A slot escapes when its address (through literal index steps and
-// pointer copies) is anything but a load's or store's address or a copy's
-// or zeroing's operand: a stored value, a call argument, a phi input, a
-// variable index's base.
-void CopyCoalescing::find_escapes()
-{
-	escaped_.assign(body_.slots.size(), 0);
-	for (BlockId b : body_.layout)
-		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
-		{
-			const Instruction& inst = body_.instructions[i];
-			const bool step = inst.op == Opcode::Addr || (inst.op == Opcode::Copy && inst.type.is_pointer()) ||
-				(inst.op == Opcode::Index && inst.ops[1].is(ValueKind::Integer));
-			if (step)
-				continue; // its result's uses decide
-			uint32_t position = 0;
-			for_each_operand(body_, inst, [&](const Value& v) {
-				const uint32_t at = position++;
-				const bool address = (inst.op == Opcode::Load && at == 0) || (inst.op == Opcode::Store && at == 1) ||
-					inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit;
-				Rooted r;
-				if (!address && rooted(body_, v, r) && r.root.is(ValueKind::Slot) &&
-					(v.is(ValueKind::Temp) || inst.op != Opcode::Load))
-					escaped_[r.root.index] = 1;
-			});
-		}
 }
 
 // Two or more adjacent pairs become one copyobj at the last store.
@@ -458,7 +429,7 @@ bool CopyCoalescing::constant_slots()
 bool CopyCoalescing::run()
 {
 	uses_ = c_.entry_uses(coalesce_copies);
-	find_escapes();
+	escaped_ = escaped_slots(body_);
 	dead_.assign(body_.instructions.size(), 0);
 	std::vector<Pair> run, group; // (emptied per block, per load group)
 	std::vector<InstId> loads;

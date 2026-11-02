@@ -30,6 +30,48 @@ bool may_unwind(const Program& program, const Instruction& inst)
 	return boundary == nullptr || boundary->boundary.unwind != ir_model::CUM_NO;
 }
 
+std::vector<uint8_t> escaped_slots(const FunctionBody& body)
+{
+	std::vector<uint8_t> escaped(body.slots.size(), 0);
+	std::vector<uint32_t> slot_of(body.temps.size(), kNoId); // the slot a temp's address is in
+	auto slot_in = [&](const Value& v) {
+		if (v.is(ValueKind::Slot))
+			return v.index;
+		return v.is(ValueKind::Temp) && v.index < slot_of.size() ? slot_of[v.index] : kNoId;
+	};
+	auto leaves = [&](const Value& v) {
+		const uint32_t slot = slot_in(v);
+		if (slot != kNoId)
+			escaped[slot] = 1;
+	};
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+		{
+			const Instruction& inst = body.instructions[i];
+			if (inst.op == Opcode::Addr || (inst.op == Opcode::Copy && inst.type.is_pointer()) ||
+				(inst.op == Opcode::Index && inst.ops[1].is(ValueKind::Integer)))
+			{
+				if (inst.result != kNoId)
+					slot_of[inst.result] = slot_in(inst.ops[0]);
+				continue;
+			}
+			if (inst.op == Opcode::Phi) // (its inputs may be defined later in layout)
+				continue;
+			uint32_t position = 0;
+			for_each_operand(body, inst, [&](const Value& v) {
+				const uint32_t at = position++;
+				if (!((inst.op == Opcode::Load && at == 0) || (inst.op == Opcode::Store && at == 1) ||
+						inst.op == Opcode::CopyObject || inst.op == Opcode::ZeroInit))
+					leaves(v);
+			});
+		}
+	for (BlockId b : body.layout)
+		for (InstId i = body.blocks[b].first; i != kNoId && body.instructions[i].op == Opcode::Phi;
+			i = body.instructions[i].next)
+			for_each_operand(body, body.instructions[i], leaves);
+	return escaped;
+}
+
 bool allocation_call(const Program& program, const Instruction& inst)
 {
 	if (inst.op != Opcode::Call || !inst.ops[0].is(ValueKind::Symbol) || inst.result == kNoId)

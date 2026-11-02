@@ -53,6 +53,11 @@ void for_each_successor(lowir::FunctionBody& body, lowir::Instruction& term, F f
 	}
 }
 
+// Per slot: whether its address reaches more than accesses, copies, zeroing
+// and steps by a constant (a stored value, a call argument, a phi input, a
+// variable index's base). No other pointer reaches a slot that has not.
+std::vector<uint8_t> escaped_slots(const lowir::FunctionBody& body);
+
 // Whether typed accesses (IF_TYPED) of these types name different objects
 // unless their addresses agree (strict aliasing): pointers go together, one
 // floating type with itself, and integers by width.
