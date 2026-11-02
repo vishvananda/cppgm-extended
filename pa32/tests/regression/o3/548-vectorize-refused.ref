@@ -169,17 +169,35 @@ function @gather(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
   block ^done:
     return void
 }
-function @mixed_sizes(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
+function @from_long(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
   block ^entry:
     jump ^body
 
   block ^body:
     %i = phi i64 [^entry: 0, ^body: %next]
-    %p = index i16 %x, %i
-    %v = load typed i16 %p
-    %w = convert sext i32 i16 %v
-    %o = index i32 %d, %i
-    store typed i32 %w, %o
+    %p = index i64 %x, %i
+    %v = load typed i64 %p
+    %w = convert sitofp f64 i64 %v
+    %o = index f64 %d, %i
+    store typed f64 %w, %o
+    %next = binary add i64 %i, 1
+    %c = cmp lt i64 %next, %n
+    branch %c, ^body, ^done
+
+  block ^done:
+    return void
+}
+function @from_unsigned(%d : ptr, %x : ptr, %n : i64) -> void [no_inline=yes] {
+  block ^entry:
+    jump ^body
+
+  block ^body:
+    %i = phi i64 [^entry: 0, ^body: %next]
+    %p = index u32 %x, %i
+    %v = load typed u32 %p
+    %w = convert uitofp f32 u32 %v
+    %o = index f32 %d, %i
+    store typed f32 %w, %o
     %next = binary add i64 %i, 1
     %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
@@ -405,23 +423,6 @@ function @step_after_widening(%d : ptr, %n : i32) -> void [no_inline=yes] {
     store typed i32 1, %o
     %next = binary add nowrap i32 %i, 1
     %c = cmp lt i32 %next, %n
-    branch %c, ^body, ^done
-
-  block ^done:
-    return void
-}
-function @two_sizes(%a : ptr, %b : ptr, %n : i64) -> void [no_inline=yes] {
-  block ^entry:
-    jump ^body
-
-  block ^body:
-    %i = phi i64 [^entry: 0, ^body: %next]
-    %p = index i16 %a, %i
-    store typed i16 1, %p
-    %q = index i32 %b, %i
-    store typed i32 2, %q
-    %next = binary add i64 %i, 1
-    %c = cmp lt i64 %next, %n
     branch %c, ^body, ^done
 
   block ^done:

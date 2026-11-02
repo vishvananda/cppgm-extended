@@ -19,7 +19,9 @@ const size_t kOverlapTests = 8;
 // Loop vectorization at O3: a loop of one block, whose count a counter and an
 // invariant bound give, runs in sixteen-byte steps of the x86-64 baseline. The
 // lanes hold what the scalar loop computes pass by pass, so each operation
-// is the one on each lane. The vector loop stops with at least one pass left:
+// is the one on each lane. The widest value sets how many passes one wide pass
+// does, and a narrower value keeps that many lanes at the bottom of its
+// register. The vector loop stops with at least one pass left:
 // the scalar loop then runs last, on every path, and so gives every value
 // the code after it reads, and the vector loop only sets where it starts.
 //
@@ -70,7 +72,7 @@ private:
 	struct Group
 	{
 		uint32_t lowest;
-		int64_t low, high;
+		int64_t low, high, scale;
 	};
 
 	bool in_body(Value v) const;
@@ -103,11 +105,16 @@ private:
 	Value broadcast(Value v, Type type);
 	Value wide(Value v, Type type);
 	Value scalar(Value v) const;
+	Value widen_load(Value address, unsigned bytes, InstId origin);
+	void widen_store(Value value, Value address, unsigned bytes, InstId origin);
+	Value extend(Value v, unsigned from, unsigned to, bool is_signed);
+	Value narrow(Value v, unsigned from, unsigned to);
+	void widen_convert(const Instruction& inst);
 	Value widen_multiply(Value a, Value b);
 	Value widen_mask(const Instruction& test, bool& swapped);
 	void widen_binary(const Instruction& inst);
 	void widen_unary(const Instruction& inst);
-	void widen(const Instruction& inst);
+	void widen(const Instruction& inst, InstId origin);
 	void clone_scalars(bool also_widen);
 	Value overlap_guard(Value distance);
 	Value add_across(const Reduction& r, Value v);
@@ -686,9 +693,24 @@ bool LoopVectorizer::supported(const Instruction& inst) const
 	case Opcode::Convert:
 	{
 		const ConvertOp operation = static_cast<ConvertOp>(inst.sub);
-		const TypeKind from = convert_source_type(inst).kind(), to = inst.type.kind();
-		return (operation == ConvertOp::SIToFP && from == TypeKind::I32 && to == TypeKind::F32) ||
-			(operation == ConvertOp::FPToSI && from == TypeKind::F32 && to == TypeKind::I32);
+		const Type source = convert_source_type(inst);
+		const TypeKind from = source.kind(), to = inst.type.kind();
+		switch (operation)
+		{
+		case ConvertOp::SExt:
+		case ConvertOp::ZExt:
+		case ConvertOp::Trunc:
+			return lane_bytes(source) != 0 && !source.is_float() && !inst.type.is_float();
+		case ConvertOp::SIToFP:
+			return from == TypeKind::I32;
+		case ConvertOp::FPToSI:
+			return to == TypeKind::I32;
+		case ConvertOp::FPExt:
+		case ConvertOp::FPTrunc:
+			return from != TypeKind::F80 && to != TypeKind::F80;
+		default:
+			return false;
+		}
 	}
 	case Opcode::Select:
 	{
@@ -712,15 +734,13 @@ bool LoopVectorizer::supported(const Instruction& inst) const
 	}
 }
 
-// One lane size for all that needs lanes, and a lane form of each.
+// The widest lane of all that needs lanes, and a lane form of each.
 bool LoopVectorizer::choose_lanes()
 {
 	lane_bytes_ = 0;
 	auto lane = [&](unsigned bytes) {
-		if (bytes == 0 || (lane_bytes_ != 0 && lane_bytes_ != bytes))
-			return false;
-		lane_bytes_ = bytes;
-		return true;
+		lane_bytes_ = std::max(lane_bytes_, bytes);
+		return bytes != 0;
 	};
 	for (InstId id : code_)
 	{
@@ -740,7 +760,7 @@ bool LoopVectorizer::choose_lanes()
 	for (const Induction& iv : inductions_)
 		if (in_wide_[iv.phi])
 		{
-			if (!lane(lane_bytes(iv.type)) || lane_bytes_ < 4 || iv.step != static_cast<int32_t>(iv.step))
+			if (!lane(lane_bytes(iv.type)) || iv.step != static_cast<int32_t>(iv.step))
 				return false;
 		}
 	if (lane_bytes_ == 0 || (accesses_.empty() && reductions_.empty()))
@@ -777,7 +797,8 @@ bool LoopVectorizer::read_dependences()
 			if (same_group(a, accesses_[groups_[g].lowest]))
 				break;
 		if (g == groups_.size())
-			groups_.push_back(Group{ static_cast<uint32_t>(&a - accesses_.data()), a.at.offset, a.at.offset });
+			groups_.push_back(
+				Group{ static_cast<uint32_t>(&a - accesses_.data()), a.at.offset, a.at.offset, a.at.scale });
 		else
 		{
 			if (a.at.offset < groups_[g].low)
@@ -786,6 +807,7 @@ bool LoopVectorizer::read_dependences()
 				groups_[g].lowest = static_cast<uint32_t>(&a - accesses_.data());
 			}
 			groups_[g].high = std::max(groups_[g].high, a.at.offset);
+			groups_[g].scale = std::max(groups_[g].scale, a.at.scale);
 		}
 		a.group = g;
 	}
@@ -799,11 +821,11 @@ bool LoopVectorizer::read_dependences()
 			if (first.group == later.group)
 			{
 				const int64_t apart = later.at.offset - first.at.offset;
-				const int64_t whole = 16;
-				if (apart == 0 || apart >= whole || apart <= -whole)
+				const int64_t whole = static_cast<int64_t>(lanes_) * std::max(first.at.scale, later.at.scale);
+				if ((apart == 0 && first.at.scale == later.at.scale) || apart >= whole || apart <= -whole)
 					continue;
 				// (The earlier access reads ahead of what the later writes.)
-				if (!first.store && later.store && apart < 0)
+				if (!first.store && later.store && apart < 0 && first.at.scale == later.at.scale)
 					continue;
 				return false;
 			}
@@ -983,6 +1005,126 @@ Value LoopVectorizer::scalar(Value v) const
 		: v;
 }
 
+// The bytes at `address` at the bottom of a register.
+Value LoopVectorizer::widen_load(Value address, unsigned bytes, InstId origin)
+{
+	const TypeKind kind = bytes == 16 ? TypeKind::V128
+		: bytes == 8                  ? TypeKind::I64
+		: bytes == 4                  ? TypeKind::I32
+									  : TypeKind::U16;
+	Instruction load = make_instruction(Opcode::Load, Type::scalar(kind));
+	load.ops[0] = address;
+	load.location = body_.instructions[origin].location;
+	const Value loaded = emit(load, Type::scalar(kind));
+	if (bytes == 16)
+		return loaded;
+	if (bytes == 8)
+		return vector(VectorOp::Fromi64, loaded);
+	if (bytes == 4)
+		return vector(VectorOp::Fromi32, loaded);
+	return vector(VectorOp::Fromi32, convert(ConvertOp::ZExt, Type::scalar(TypeKind::I32), Type::scalar(kind), loaded));
+}
+
+void LoopVectorizer::widen_store(Value value, Value address, unsigned bytes, InstId origin)
+{
+	Value out = value;
+	TypeKind kind = TypeKind::V128;
+	if (bytes == 8)
+	{
+		out = vector(VectorOp::Toi64, value);
+		kind = TypeKind::I64;
+	}
+	else if (bytes == 4)
+	{
+		out = vector(VectorOp::Toi32, value);
+		kind = TypeKind::I32;
+	}
+	else if (bytes == 2)
+	{
+		kind = TypeKind::I16;
+		out = convert(
+			ConvertOp::Trunc, Type::scalar(kind), Type::scalar(TypeKind::I32), vector(VectorOp::Toi32, value));
+	}
+	Instruction store = make_instruction(Opcode::Store, Type::scalar(kind));
+	store.ops[0] = out;
+	store.ops[1] = address;
+	store.location = body_.instructions[origin].location;
+	emit_void(store);
+}
+
+// Integer lanes twice as wide, as often as it takes.
+Value LoopVectorizer::extend(Value v, unsigned from, unsigned to, bool is_signed)
+{
+	const Value zero = broadcast(literal(0), Type::scalar(TypeKind::I32));
+	for (; from < to; from *= 2)
+	{
+		if (from == 1)
+			v = is_signed ? vector(VectorOp::Psrawi, vector(VectorOp::Punpcklbw, v, v), Value::none(), 8)
+						  : vector(VectorOp::Punpcklbw, v, zero);
+		else if (from == 2)
+			v = is_signed ? vector(VectorOp::Psradi, vector(VectorOp::Punpcklwd, v, v), Value::none(), 16)
+						  : vector(VectorOp::Punpcklwd, v, zero);
+		else
+			v = vector(VectorOp::Punpckldq, v, is_signed ? vector(VectorOp::Pcmpgtd, zero, v) : zero);
+	}
+	return v;
+}
+
+// Integer lanes half as wide, as often as it takes, each cut to its low bits.
+Value LoopVectorizer::narrow(Value v, unsigned from, unsigned to)
+{
+	for (; from > to; from /= 2)
+	{
+		if (from == 2)
+		{
+			const Value kept = vector(VectorOp::Pand, v, broadcast(literal(0xff), Type::scalar(TypeKind::I16)));
+			v = vector(VectorOp::Packuswb, kept, kept);
+		}
+		else if (from == 4)
+		{
+			const Value kept = vector(
+				VectorOp::Psradi, vector(VectorOp::Pslldi, v, Value::none(), 16), Value::none(), 16);
+			v = vector(VectorOp::Packssdw, kept, kept);
+		}
+		else
+			v = vector(VectorOp::Pshufd, v, Value::none(), 0x08);
+	}
+	return v;
+}
+
+void LoopVectorizer::widen_convert(const Instruction& inst)
+{
+	const Type source = convert_source_type(inst);
+	const unsigned from = lane_bytes(source), to = lane_bytes(inst.type);
+	const Value v = wide(inst.ops[0], source);
+	Value out = Value::none();
+	switch (static_cast<ConvertOp>(inst.sub))
+	{
+	case ConvertOp::SExt:
+		out = extend(v, from, to, true);
+		break;
+	case ConvertOp::ZExt:
+		out = extend(v, from, to, false);
+		break;
+	case ConvertOp::Trunc:
+		out = narrow(v, from, to);
+		break;
+	case ConvertOp::SIToFP:
+		out = vector(to == 8 ? VectorOp::Cvtdq2pd : VectorOp::Cvtdq2ps, v);
+		break;
+	case ConvertOp::FPToSI:
+		out = vector(from == 8 ? VectorOp::Cvttpd2dq : VectorOp::Cvttps2dq, v);
+		break;
+	case ConvertOp::FPExt:
+		out = vector(VectorOp::Cvtps2pd, v);
+		break;
+	default:
+		out = vector(VectorOp::Cvtpd2ps, v);
+		break;
+	}
+	wides_[inst.result] = out;
+}
+
 // i32 lanes multiplied: SSE2 multiplies the even lanes only.
 Value LoopVectorizer::widen_multiply(Value a, Value b)
 {
@@ -1075,28 +1217,16 @@ void LoopVectorizer::widen_unary(const Instruction& inst)
 	}
 }
 
-void LoopVectorizer::widen(const Instruction& inst)
+void LoopVectorizer::widen(const Instruction& inst, InstId origin)
 {
-	const Type v128 = Type::scalar(TypeKind::V128);
 	switch (inst.op)
 	{
 	case Opcode::Load:
-	{
-		Instruction load = make_instruction(Opcode::Load, v128);
-		load.ops[0] = scalar(inst.ops[0]);
-		load.location = inst.location;
-		wides_[inst.result] = emit(load, v128);
+		wides_[inst.result] = widen_load(scalar(inst.ops[0]), lanes_ * lane_bytes(inst.type), origin);
 		break;
-	}
 	case Opcode::Store:
-	{
-		Instruction store = make_instruction(Opcode::Store, v128);
-		store.ops[0] = wide(inst.ops[0], inst.type);
-		store.ops[1] = scalar(inst.ops[1]);
-		store.location = inst.location;
-		emit_void(store);
+		widen_store(wide(inst.ops[0], inst.type), scalar(inst.ops[1]), lanes_ * lane_bytes(inst.type), origin);
 		break;
-	}
 	case Opcode::Copy:
 		wides_[inst.result] = wides_[inst.ops[0].index];
 		break;
@@ -1107,9 +1237,7 @@ void LoopVectorizer::widen(const Instruction& inst)
 		widen_unary(inst);
 		break;
 	case Opcode::Convert:
-		wides_[inst.result] = vector(
-			static_cast<ConvertOp>(inst.sub) == ConvertOp::SIToFP ? VectorOp::Cvtdq2ps : VectorOp::Cvttps2dq,
-			wide(inst.ops[0], convert_source_type(inst)));
+		widen_convert(inst);
 		break;
 	case Opcode::Select:
 	{
@@ -1143,7 +1271,7 @@ void LoopVectorizer::clone_scalars(bool also_widen)
 			scalars_[inst.result] = emit(copy, body_.temps[inst.result].type);
 		}
 		if (also_widen && (inst.op == Opcode::Store || inst.op == Opcode::Load || in_wide_[inst.result]))
-			widen(inst);
+			widen(inst, id);
 	}
 }
 
@@ -1173,7 +1301,7 @@ Value LoopVectorizer::overlap_guard(Value distance)
 		const Access& a = accesses_[groups_[g].lowest];
 		const Instruction& inst = body_.instructions[a.inst];
 		first[g] = scalar(inst.ops[a.store ? 1 : 0]);
-		const Value bytes = binary(BinaryOp::Mul, i64, passes, literal(a.at.scale), i64);
+		const Value bytes = binary(BinaryOp::Mul, i64, passes, literal(groups_[g].scale), i64);
 		Instruction end = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
 		end.ops[0] = first[g];
 		end.ops[1] = bytes;
@@ -1203,7 +1331,9 @@ Value LoopVectorizer::add_across(const Reduction& r, Value v)
 	const bool eight = lane_bytes(type) == 8;
 	VectorOp op;
 	lane_operation(r.op == BinaryOp::Sub ? BinaryOp::Add : r.op, type, op);
-	Value sum = vector(op, v, vector(VectorOp::Pshufd, v, Value::none(), 0x4e));
+	Value sum = v;
+	if (lanes_ == 4 || eight)
+		sum = vector(op, sum, vector(VectorOp::Pshufd, sum, Value::none(), 0x4e));
 	if (!eight)
 		sum = vector(op, sum, vector(VectorOp::Pshufd, sum, Value::none(), 0xb1));
 	const Value out = vector(eight ? VectorOp::Toi64 : VectorOp::Toi32, sum);
@@ -1324,7 +1454,7 @@ void LoopVectorizer::vectorize(uint32_t loop)
 			const Value low = vector(VectorOp::Fromi64, literal(static_cast<int64_t>(d << 32)));
 			const Value high = vector(
 				VectorOp::Fromi64, literal(static_cast<int64_t>(((d * 3) << 32) | ((d * 2) & 0xffffffffu))));
-			steps = vector(VectorOp::Punpcklqdq, low, high);
+			steps = lanes_ == 2 ? low : vector(VectorOp::Punpcklqdq, low, high);
 		}
 		pre_tail_ = tail_;
 		const Value from = broadcast(iv.start, iv.type);

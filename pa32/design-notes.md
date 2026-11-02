@@ -417,14 +417,20 @@ vectorization stays outside the course contract.
   other phi is another counter or an integer reduction (`add`, `sub`, `and`,
   `or` or `xor` of `i32`, `u32` or `i64`). A floating sum stays scalar: lanes
   would change the order of its additions.
-- Each load and store reads or writes consecutive elements, and all lanes have
-  one size. Each operation needs a lane form: `add`, `sub`, the bit operators,
-  shifts by a literal, `mul` of `i16` and `i32` and of the floating types,
-  floating `div`, `neg`, `bitnot`, `sqrt`, `select` of a compare, and `sitofp`
-  and `fptosi` between `i32` and `f32`.
-- Two accesses of one array must keep their order. Accesses at the same element
-  or sixteen bytes apart do, and so does a load that reads ahead of a later
-  store. Other accesses of one array leave the loop scalar.
+- Each load and store reads or writes consecutive elements. Each operation
+  needs a lane form: `add`, `sub`, the bit operators, shifts by a literal, `mul`
+  of `i16` and `i32` and of the floating types, floating `div`, `neg`, `bitnot`,
+  `sqrt`, `select` of a compare, integer `sext`, `zext` and `trunc`, `sitofp`
+  from `i32`, `fptosi` to `i32`, `fpext` and `fptrunc`. The baseline has no lane
+  form of `uitofp`, `fptoui` or of a conversion between `i64` and a floating
+  type.
+- Values may have different sizes. The widest value sets the number of lanes. A
+  narrower value keeps that number of lanes at the bottom of its register, and a
+  load or store of it reads or writes only those bytes.
+- Two accesses of one array must keep their order. Accesses of one size at the
+  same element or at least one wide pass apart do, and so does a load of the same
+  size that reads ahead of a later store. Other accesses of one array leave the
+  loop scalar.
 - Accesses of two different named objects, or typed accesses of incompatible
   types, do not overlap. Other pairs get a test of their ranges in a guard before
   the wide loop, up to eight tests.

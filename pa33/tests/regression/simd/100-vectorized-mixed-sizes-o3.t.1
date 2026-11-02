@@ -1,0 +1,63 @@
+#include <stdio.h>
+
+typedef unsigned char u8;
+
+__attribute__((noinline)) void widen_short(int* d, const short* x, int n) { for (int i = 0; i < n; i++) d[i] = x[i]; }
+__attribute__((noinline)) void widen_byte(int* d, const u8* x, int n) { for (int i = 0; i < n; i++) d[i] = x[i]; }
+__attribute__((noinline)) void widen_sbyte(long* d, const signed char* x, int n) { for (int i = 0; i < n; i++) d[i] = x[i] + 3L; }
+__attribute__((noinline)) void narrow(short* d, const int* x, int n) { for (int i = 0; i < n; i++) d[i] = (short)x[i]; }
+__attribute__((noinline)) void narrow_byte(u8* d, const int* x, int n) { for (int i = 0; i < n; i++) d[i] = (u8)x[i]; }
+__attribute__((noinline)) void to_double(double* d, const int* x, int n) { for (int i = 0; i < n; i++) d[i] = x[i] * 0.5; }
+__attribute__((noinline)) void to_float(float* d, const double* x, int n) { for (int i = 0; i < n; i++) d[i] = (float)x[i]; }
+__attribute__((noinline)) void from_float(double* d, const float* x, int n) { for (int i = 0; i < n; i++) d[i] = x[i]; }
+__attribute__((noinline)) void to_int(int* d, const double* x, int n) { for (int i = 0; i < n; i++) d[i] = (int)x[i]; }
+__attribute__((noinline)) long sum_widened(const int* x, int n) { long s = 0; for (int i = 0; i < n; i++) s += x[i]; return s; }
+__attribute__((noinline)) int sum_bytes(const u8* x, int n) { int s = 0; for (int i = 0; i < n; i++) s += x[i]; return s; }
+__attribute__((noinline)) void two_arrays(long* a, const int* b, short* c, int n) { for (int i = 0; i < n; i++) { a[i] = (long)b[i] << 1; c[i] = (short)(b[i] + 1); } }
+
+static long H = 0;
+static void mix(const void* p, unsigned long n) {
+  const u8* b = (const u8*)p;
+  for (unsigned long i = 0; i < n; i++) H = H * 131 + b[i];
+}
+
+int main() {
+  static short s[300];
+  static u8 b[300];
+  static signed char sb[300];
+  static int a[300], o[300];
+  static long l[300];
+  static double f[300], g[300];
+  static float h[300];
+  for (int i = 0; i < 300; i++) {
+    s[i] = (short)(i * 977 - 30000);
+    b[i] = (u8)(i * 7 + 200);
+    sb[i] = (signed char)(i * 11 - 100);
+    a[i] = i * 1000003 - 1500000000;
+    f[i] = i * 1.5 - 200;
+    h[i] = (float)(i * 0.25 - 30);
+  }
+  for (int n = 0; n < 40; n++) {
+    widen_short(o, s + n, n); mix(o, sizeof o);
+    widen_byte(o, b + n, n); mix(o, sizeof o);
+    widen_sbyte(l, sb + n, n); mix(l, sizeof l);
+    narrow((short*)o, a + n, n); mix(o, sizeof o);
+    narrow_byte((u8*)o, a + n, n); mix(o, sizeof o);
+    to_double(g, a + n, n); mix(g, sizeof g);
+    to_float((float*)o, f + n, n); mix(o, sizeof o);
+    from_float(g, h + n, n); mix(g, sizeof g);
+    to_int(o, f + n, n); mix(o, sizeof o);
+    two_arrays(l, a + n, s + 100, n); mix(l, sizeof l); mix(s, sizeof s);
+    printf("%d %lx %ld %d\n", n, (unsigned long)H, sum_widened(a, n), sum_bytes(b, n));
+  }
+  // Overlap: bytes may alias the ints, so a range test must catch these.
+  for (int i = 0; i < 300; i++) o[i] = i * 65537 + 3;
+  widen_byte(o + 2, (const u8*)o, 100); mix(o, sizeof o);
+  widen_byte(o, (const u8*)(o + 2), 100); mix(o, sizeof o);
+  widen_byte(o, (const u8*)o + 1, 100); mix(o, sizeof o);
+  narrow_byte((u8*)o, o, 100); mix(o, sizeof o);
+  narrow_byte((u8*)(o + 1), o, 100); mix(o, sizeof o);
+  narrow_byte((u8*)o + 3, o + 1, 100); mix(o, sizeof o);
+  printf("%lx\n", (unsigned long)H);
+  return 0;
+}
