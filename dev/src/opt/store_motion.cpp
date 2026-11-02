@@ -18,9 +18,10 @@ const size_t kLoopLocations = 4;
 
 // Store motion: a location a loop stores on every pass lives in a slot for
 // the loop, which promotion then keeps in a register: loaded in the preheader
-// and stored on each exit. In a loop with calls on some paths, a location the
-// loop loads is read from such a slot instead (its stores stay, and write the
-// slot too; a reload follows each call).
+// and stored on each exit. Otherwise (a loop with calls on some paths, or no
+// location stored on every pass), a location the loop loads is read from such
+// a slot instead: its stores stay, and write the slot too; a reload follows
+// each call.
 class StoreMotion
 {
 public:
@@ -68,6 +69,7 @@ private:
 	std::vector<Access> accesses_;
 	std::vector<InstId> calls_;
 	std::vector<Location> locations_;
+	bool loads_only_ = false; // locations_ came from find_loaded_locations
 };
 
 bool same_place(const Located& a, Type a_type, const Located& b, Type b_type)
@@ -424,7 +426,7 @@ void StoreMotion::read_location(uint32_t loop, const Location& location)
 
 void StoreMotion::promote(uint32_t loop)
 {
-	if (!calls_.empty())
+	if (loads_only_)
 	{
 		for (const Location& location : locations_)
 			read_location(loop, location);
@@ -455,10 +457,16 @@ bool StoreMotion::run()
 		{
 			if (!read_accesses(loop))
 				continue;
-			if (calls_.empty())
+			// (A location not stored on every pass, or a loop with calls:
+			// its loads alone.)
+			loads_only_ = !calls_.empty();
+			if (!loads_only_)
 				find_locations(loop);
-			else
+			if (locations_.empty())
+			{
+				loads_only_ = true;
 				find_loaded_locations(loop);
+			}
 			if (locations_.empty() || !claim_loop(cfg_, forest_.loops[loop], touched))
 				continue;
 			if (forest_.loops[loop].preheader == kNoId)
