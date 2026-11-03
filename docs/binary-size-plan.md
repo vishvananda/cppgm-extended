@@ -92,7 +92,10 @@ the proofs and tradeoffs without publishing implementation thresholds.
   these findings.
 - The revised candidate matches all 81 public outputs, with 1.0032 times
   baseline instruction efficiency and no individual increase above 1% in the
-  counter screen. Its complete paired timing is still running. A targeted
+  counter screen. Six mirrored paired blocks give about 0.998 times baseline
+  aggregate CPU speed, within this shared host's noise. FASTA6's four threads
+  needed a four-core rerun: its single-core A/A instruction drift was 41%.
+  All original observations are retained. A targeted
   Spirit rerun is about 0.982 times baseline CPU speed; that outlier remains
   under review. The candidate is not accepted for main under a requirement
   that every program retain its speed.
