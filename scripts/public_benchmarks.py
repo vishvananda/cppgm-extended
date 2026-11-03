@@ -452,10 +452,13 @@ def time_runs(context, program, result, rounds):
     directory.mkdir(parents=True, exist_ok=True)
     directory = Path(tempfile.mkdtemp(prefix='paired-', dir=directory))
     samples = []
+    active_label = None
     data = result['timing'] = dict(method='ABBA/BAAB', samples=samples, pairs={},
                                   executable_sha256=hashes)
 
     def run_one(label, phase, block, position):
+        nonlocal active_label
+        active_label = label
         side = sides[label]
         command = [str(executables[label]), *program.get('args', [])]
         output = directory / f'{len(samples):03}.stdout'
@@ -485,7 +488,11 @@ def time_runs(context, program, result, rounds):
             if reference == 'gcc':
                 result['cppgm'][cpu] = pair['candidate_cpu']
     except (RuntimeError, ValueError, OSError) as error:
-        result.update(status='timing-failed', error=str(error))
+        if active_label == 'clang':
+            result['clang_error'] = str(error)
+            result['clang'].clear()
+        else:
+            result.update(status='timing-failed', error=str(error))
 
 
 def tool_version(command):

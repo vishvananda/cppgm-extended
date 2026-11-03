@@ -193,7 +193,7 @@ class TimingTests(unittest.TestCase):
 
         def fake(command, cwd, timeout, log, stdin, stdout):
             calls.append(Path(command[0]).parent.parent.name)
-            stdout.write(output)
+            stdout.write(output(len(calls)) if callable(output) else output)
             return dict(code=exit_code, timed_out=timed_out, cpu=next(samples))
         with mock.patch.object(pb, 'measure', fake):
             pb.time_runs(self.context, self.program, result, rounds)
@@ -250,6 +250,23 @@ class TimingTests(unittest.TestCase):
         self.assertEqual(calls[-8:], ['clang', 'cppgm', 'cppgm', 'clang',
                                      'cppgm', 'clang', 'clang', 'cppgm'])
         self.assertEqual(pb.ratio(result, 'run_cpu_O3', 'clang'), 0.5)
+
+    def test_clang_timing_failure_is_advisory_but_cppgm_failure_is_not(self):
+        self.context.tools['clang'] = 'clang++'
+        directory = pb.Side(self.context, self.program, 'clang').work / '-O3'
+        directory.mkdir(parents=True)
+        (directory / 'a.out').write_bytes(b'clang')
+        for bad_sample, expected in [(13, 'ok'), (14, 'timing-failed')]:
+            result = self.result(0.5)
+            result['clang'] = dict(result['gcc'])
+            self.time(result, [1] * 20,
+                      output=lambda n: b'wrong' if n == bad_sample else b'ok')
+            self.assertEqual(result['status'], expected)
+            self.assertEqual(len(result['timing']['samples']), bad_sample)
+            if expected == 'ok':
+                self.assertEqual(result['clang'], {})
+                self.assertIn('clang: timed run', result['clang_error'])
+                self.assertEqual(pb.ratio(result, 'run_cpu_O3'), 1.0)
 
 
 class RebuildTimingTests(unittest.TestCase):
