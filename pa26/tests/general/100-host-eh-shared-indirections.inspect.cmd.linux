@@ -1,0 +1,15 @@
+set -euo pipefail
+# Bound duplicated dynamic pointers, without prescribing cell names, code
+# sequences, or whether indirection is used. Local exception types must also
+# remain distinct, as the executable checks.
+readelf -rW "__PROGRAM__" | awk '
+    /R_X86_64_64/ && /__gxx_personality_v0/ { personality++ }
+    /R_X86_64_64/ && /_ZTIi(@|[[:space:]])/ { integer_type++ }
+    END {
+        if (personality > 1 || integer_type > 1) {
+            print "duplicated shared EH references" > "/dev/stderr"
+            exit 1
+        }
+    }'
+readelf -dW "__PROGRAM__" | awk '/TEXTREL/ { exit 1 }'
+echo 'compact shared EH references; no text relocations'

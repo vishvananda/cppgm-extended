@@ -247,6 +247,7 @@ bool Decoder::read_symbols()
 		if (symbol.name >= names.size)
 			return fail("malformed symbol name");
 		const uint8_t info = entry[4];
+		symbol.visibility = static_cast<Visibility>(entry[5] & 3);
 		const uint8_t bind = info >> 4;
 		const uint8_t type = info & 0xf;
 		uint32_t index = static_cast<uint32_t>(get_le(entry + 6, 2));

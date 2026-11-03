@@ -1,0 +1,20 @@
+namespace { struct Tag { int value; }; }
+int left(int);
+int local_tag();
+void foreign_tag();
+
+int right(int x)
+{
+    try { if (x) throw x; }
+    catch (int v) { return v + 2; }
+    return 0;
+}
+
+int main()
+{
+    if (left(3) + right(4) != 10 || local_tag() != 4) return 1;
+    try { foreign_tag(); }
+    catch (Tag) { return 2; }
+    catch (...) { return 0; }
+    return 3;
+}

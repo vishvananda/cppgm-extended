@@ -190,8 +190,9 @@ private:
 	struct Cell
 	{
 		uint32_t target;
-		uint64_t offset;
 		uint32_t symbol;
+		uint32_t section;
+		bool shared;
 	};
 	std::vector<Cell> cells_;
 	FlatMap<uint32_t, uint32_t, WordHash32> cell_index_;
@@ -672,22 +673,14 @@ void ObjectCompiler::place_startup()
 	}
 }
 
-// The DW.ref cell holding `image_symbol`'s address (8 bytes in .data,
-// relocated when the symbols exist).
+// Reserve the indirection cell. Its target's final object binding decides
+// whether it can be shared, after all definitions and aliases are placed.
 uint32_t ObjectCompiler::cell(uint32_t image_symbol)
 {
 	if (const uint32_t* known = cell_index_.find(image_symbol))
 		return *known;
-	const uint32_t data = shared_section(".data", SectionKind::Data);
-	object::Section& section = out_->sections[data];
-	if (section.align < 8)
-		section.align = 8;
-	const uint64_t offset = align_up(section.size, 8);
-	section.size = offset + 8;
-	section.bytes.resize(section.size, 0);
-	pending_.push_back(PendingRelocation{ data, offset, object::R_X86_64_64, image_symbol, 0 });
 	const uint32_t index = static_cast<uint32_t>(cells_.size());
-	cells_.push_back(Cell{ image_symbol, offset, 0 });
+	cells_.push_back(Cell{ image_symbol, 0, 0, false });
 	cell_index_.insert(image_symbol, index);
 	return index;
 }
@@ -708,7 +701,6 @@ void ObjectCompiler::place_unwind()
 	for (const UnwindEntry& entry : unwind_)
 		if (!ranges_[entry.range].dropped)
 			(entry.lsda_count != 0 ? any_lsda : plain) = true;
-	// The cells' .data exists before any section reference is taken.
 	const uint32_t personality_cell = any_lsda ? cell(personality_) : kNoCell;
 	for (size_t u = 0; u < unwind_.size(); ++u)
 	{
@@ -800,21 +792,38 @@ uint32_t ObjectCompiler::section_symbol(uint32_t section)
 	return section_symbols_[section];
 }
 
-// The cells' symbols (`DW.ref.<target>`, local) and the tables'
-// pc-relative relocations.
+// A non-local target has the same identity in every object. Give its
+// indirection cell a hidden weak COMDAT definition, so a host linker can
+// merge the cells and CIEs that refer to them. Local RTTI remains private.
 void ObjectCompiler::add_unwind_relocations()
 {
-	const uint32_t data = data_;
 	for (Cell& c : cells_)
 	{
+		const uint32_t target = object_symbol(c.target);
+		c.shared = out_->symbols[target].binding != Binding::Local;
 		object::Symbol symbol;
 		spelling_.assign("DW.ref.");
-		spelling_ += out_->symbol_name(object_symbol(c.target));
+		spelling_ += out_->symbol_name(target);
 		symbol.name = out_->add_string(spelling_);
 		symbol.type = SymbolType::Object;
-		symbol.section = data;
-		symbol.value = c.offset;
+		if (c.shared)
+		{
+			symbol.binding = Binding::Weak;
+			symbol.visibility = object::Visibility::Hidden;
+			spelling_.insert(0, ".data.");
+			c.section = out_->add_section(spelling_.c_str(), SectionKind::Data, 8);
+		}
+		else
+			c.section = shared_section(".data", SectionKind::Data);
+		object::Section& section = out_->sections[c.section];
+		if (section.align < 8)
+			section.align = 8;
+		symbol.section = c.section;
+		symbol.value = align_up(section.size, 8);
 		symbol.size = 8;
+		section.size = symbol.value + 8;
+		section.bytes.resize(section.size, 0);
+		section.relocations.push_back(object::Relocation{ symbol.value, object::R_X86_64_64, target, 0 });
 		c.symbol = out_->add_symbol(symbol);
 	}
 	for (const UnwindRelocation& r : unwind_relocations_)
@@ -1087,6 +1096,15 @@ void ObjectCompiler::add_groups()
 		out_->groups[g].sections.push_back(member.second);
 		out_->sections[member.second].group = static_cast<uint32_t>(g);
 	}
+	for (const Cell& c : cells_)
+		if (c.shared)
+		{
+			object::Group group;
+			group.signature = c.symbol;
+			group.sections.push_back(c.section);
+			out_->sections[c.section].group = static_cast<uint32_t>(out_->groups.size());
+			out_->groups.push_back(std::move(group));
+		}
 }
 
 void ObjectCompiler::place_debug()

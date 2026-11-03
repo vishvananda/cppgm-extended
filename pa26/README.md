@@ -252,6 +252,12 @@ host ABI symbols and platform EH metadata:
 Do not construct host EH facts from source text. The object backend should work
 from typed semantic/runtime-role information and final machine layout.
 
+References to the same external personality or type information can share
+relocation cells across objects. Preserve symbol binding and position
+independence: sharing must not merge translation-unit-local exception types or
+require text relocations. The tests bound repeated external references and
+check catch behavior without requiring particular cell names or instructions.
+
 Generate each function's call-frame instructions from the frame facts the
 encoder records as it emits the prologue and epilogues: each push, the stack
 reservation, where the prologue sits, and each epilogue, with its own rows

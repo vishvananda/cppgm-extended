@@ -64,6 +64,16 @@ confirming duplication as an important cause, but loses useful optimization.
    conservative. Preserve call-frame and stack-argument rules for calls after
    the last normal return, including cleanup landings.
 
+5. **Share external EH references.** Use hidden weak COMDAT indirection cells
+   for non-local personality and type-information symbols. The linker can then
+   merge repeated cells and common unwind records. Keep cells for local type
+   information private. Preserve ELF symbol visibility in the object model.
+   This saves 13,216 allocated section bytes on the frozen compiler, including
+   6,432 bytes of unwind records and 5,088 bytes of dynamic relocations; file
+   alignment leaves a 9,888-byte stripped-file saving. All 251 objects retain
+   identical executable-section bytes and relocation targets. The frozen
+   stripped executable is now 7,493,992 bytes, or 1.16194 times GCC.
+
 These changes use existing typed LowIR and MIR information and need no format
 extension. Required PA32/PA33 fixtures execute both normal and exceptional
 paths, check retained work with broad quality bounds, and cover conditional
@@ -99,10 +109,23 @@ the proofs and tradeoffs without publishing implementation thresholds.
   Spirit rerun is about 0.982 times baseline CPU speed; that outlier remains
   under review. The candidate is not accepted for main under a requirement
   that every program retain its speed.
-- Recheck the EPYC CI score before merging. Local Intel results cannot prove
-  performance on another microarchitecture.
+- The complete 251-file rebuild using the actual changed compiler at
+  `6464fa34e` has instruction efficiency 1.0066 and cycle efficiency 1.0141
+  against the original self-built compiler. All six mirrored blocks improve
+  cycles beyond the A/A block spread. CPU and wall-time efficiencies of
+  1.0076 and 1.0042 remain within shared-host A/A variation. Every repeated
+  object and linked frozen compiler reproduces its side's expected hash.
+- EPYC CI run 41624091729 passed at `6464fa34e`: the published O3 native score
+  is 0.98 times GCC, self-built execution 0.99, and O3 compile speed 4.1.
+  This is evidence for that revision; subsequent changes need their own CI
+  checks. The EH-cell change passes 424 PA26–PA28 tests and mixed GCC/Clang
+  external-EH controls, including PIC shared links without text relocations.
+  Its scoped paired compile instructions are unchanged; timing is within
+  A/A variation. A pre-existing mismatch between Clang and cppgm for
+  same-named anonymous-namespace exception types is recorded separately and
+  does not establish a regression from this change.
 - For a **whole stripped executable** target of 1.15 times GCC, another
-  approximately 86 KB must go. Prioritize unwind-table and repeated ABI-entry
+  approximately 76 KB must go on the frozen comparison. Prioritize unwind-table and repeated ABI-entry
   metadata, then redundant address/copy instructions. Do not obtain the saving
   by deleting required unwind information or accepting poorer hot code.
 - A diagnostic survey finds about 104 KB of apparently matching constructor

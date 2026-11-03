@@ -47,6 +47,16 @@ enum class SymbolType : uint8_t
 	Tls // STT_TLS: a thread-local object (its offset in the TLS block)
 };
 
+// ELF st_other's low two bits. Hidden helper definitions can be shared
+// across objects without making their own addresses interposable.
+enum class Visibility : uint8_t
+{
+	Default,
+	Internal,
+	Hidden,
+	Protected
+};
+
 // Symbol::section values besides section indexes, beyond any index (an
 // object with extended section numbering has indexes from 0xff00 up;
 // ELF's SHN_ABS and SHN_COMMON in the file).
@@ -103,6 +113,7 @@ struct Symbol
 	uint32_t name = 0; // offset in ObjectFile::strings
 	Binding binding = Binding::Local;
 	SymbolType type = SymbolType::None;
+	Visibility visibility = Visibility::Default;
 	uint32_t section = kUndefinedSection; // section index, or a k*Section value
 	uint64_t value = 0;                   // offset in its section; a common symbol's alignment
 	uint64_t size = 0;

@@ -287,7 +287,7 @@ void Encoder::add_symbols()
 		}
 		put32(table.built, symbol.name);
 		table.built.push_back(static_cast<uint8_t>((binding_code(symbol.binding) << 4) | type_code(symbol.type)));
-		table.built.push_back(0);
+		table.built.push_back(static_cast<uint8_t>(symbol.visibility));
 		put16(table.built, escaped ? kShnXindex : index);
 		put64(table.built, symbol.value);
 		put64(table.built, symbol.size);
