@@ -67,6 +67,7 @@ struct PendingRelocation
 struct UnwindEntry
 {
 	uint32_t range;
+	uint32_t code_bytes; // excludes trailing jump-table data in the function's range
 	uint32_t cfi_first;
 	uint32_t cfi_count;
 	uint32_t lsda_first;
@@ -176,7 +177,7 @@ private:
 	std::vector<PendingRelocation> pending_;
 	std::vector<uint32_t> grouped_; // image symbols with their own COMDAT section
 	// Host EH tables: per function, the pools, the DW.ref cells (target
-	// image symbol, .data offset, object symbol), their index, the
+	// image symbol, object symbol and section), their index, the
 	// relocations awaiting symbols, each section's symbol and the extra
 	// members of COMDAT groups (image symbol, section).
 	EhModel eh_model_;
@@ -396,6 +397,7 @@ void ObjectCompiler::record_unwind(uint32_t range, bool encoded, const UnwindFac
 {
 	UnwindEntry entry = UnwindEntry();
 	entry.range = range;
+	entry.code_bytes = static_cast<uint32_t>(ranges_[range].end - ranges_[range].start);
 	entry.cfi_first = static_cast<uint32_t>(cfi_pool_.size());
 	entry.lsda_first = static_cast<uint32_t>(lsda_pool_.size());
 	entry.types_first = static_cast<uint32_t>(type_fields_.size());
@@ -403,6 +405,7 @@ void ObjectCompiler::record_unwind(uint32_t range, bool encoded, const UnwindFac
 	if (encoded)
 	{
 		const UnwindFacts& facts = emitter_.unwind();
+		entry.code_bytes = facts.size;
 		const size_t before = lsda_pool_.size();
 		lsda = encode_lsda(facts, mir_, lsda_pool_, type_fields_, lsda_scratch_);
 		encode_frame_instructions(facts, lsda, cfi_pool_);
@@ -762,8 +765,8 @@ void ObjectCompiler::place_unwind()
 		const bool lsda = entry.lsda_count != 0;
 		uint32_t pc_field = 0;
 		uint32_t lsda_field = 0;
-		encode_fde(lsda ? personality_cie : plain_cie, static_cast<uint32_t>(range.end - range.start), lsda,
-			cfi_pool_.data() + entry.cfi_first, entry.cfi_count, bytes, pc_field, lsda_field);
+		encode_fde(lsda ? personality_cie : plain_cie, entry.code_bytes, lsda, cfi_pool_.data() + entry.cfi_first,
+			entry.cfi_count, bytes, pc_field, lsda_field);
 		unwind_relocations_.push_back(
 			UnwindRelocation{ frame, pc_field, kNoCell, range.section, static_cast<int64_t>(range.base) });
 		if (lsda)

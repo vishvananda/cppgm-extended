@@ -274,6 +274,12 @@ falls into the next, the calls of the next block still need the entries of
 their own region, and a landing pad is entered only by unwinding, never by
 falling into it.
 
+Restore the body's unwind state after an epilogue only when later code needs
+it, including cleanup landings. There is no later instruction to cover after
+the final return at the end of the function.
+Use the encoded instruction range for the FDE; trailing jump-table data is
+not code that needs unwind rules.
+
 A compact terminate boundary can pass the typed exception value to a single
 internal helper. This keeps the handler-entry ABI sequence in one place while
 leaving ordinary source catch handlers independent.

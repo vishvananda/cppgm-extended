@@ -308,8 +308,8 @@ void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vec
 		const uint32_t* pop_end = shared ? facts.pop_end : facts.returns[r].pop_end;
 		const uint32_t released_end = shared ? facts.leave_end : facts.returns[r].leave_end;
 		body_events(facts.reserve != 0 || facts.saves.empty() ? released_end : pop_end[0]);
-		epilogue(pop_end, released_end, shared ? facts.ret_end : facts.returns[r].ret_end,
-			!shared || facts.size > facts.ret_end);
+		const uint32_t end = shared ? facts.ret_end : facts.returns[r].ret_end;
+		epilogue(pop_end, released_end, end, facts.size > end);
 	}
 	// Without a shared epilogue, calls and argument areas can continue
 	// after the last duplicated return (for example in a cleanup landing).
@@ -369,7 +369,8 @@ void encode_frame_instructions(const UnwindFacts& facts, bool lsda, std::vector<
 	{
 		while (next_return < facts.returns.size() && facts.returns[next_return].leave_end <= call.begin)
 		{
-			epilogue(facts.returns[next_return].leave_end, facts.returns[next_return].ret_end, true);
+			epilogue(facts.returns[next_return].leave_end, facts.returns[next_return].ret_end,
+				facts.size > facts.returns[next_return].ret_end);
 			++next_return;
 		}
 		if (!lsda || call.landing == 0 || call.args == args || (facts.ret_end != 0 && call.begin >= facts.ret_end))
@@ -380,7 +381,8 @@ void encode_frame_instructions(const UnwindFacts& facts, bool lsda, std::vector<
 		args = call.args;
 	}
 	for (; next_return < facts.returns.size(); ++next_return)
-		epilogue(facts.returns[next_return].leave_end, facts.returns[next_return].ret_end, true);
+		epilogue(facts.returns[next_return].leave_end, facts.returns[next_return].ret_end,
+			facts.size > facts.returns[next_return].ret_end);
 	if (facts.ret_end != 0)
 		epilogue(facts.leave_end, facts.ret_end, facts.size > facts.ret_end);
 }

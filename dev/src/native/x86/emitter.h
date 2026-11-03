@@ -96,7 +96,7 @@ struct UnwindFacts
 		uint32_t args;
 	};
 	std::vector<Adjust> adjusts;
-	uint32_t size = 0;
+	uint32_t size = 0; // code bytes, before trailing jump-table data and its alignment
 	std::vector<CallSite> calls;
 	std::vector<uint32_t> pads;
 };

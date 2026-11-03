@@ -2,8 +2,9 @@
 
 The target is at most 1.15 times GCC's `.text`, the existing PA35 code-size
 metric, while preserving native speed and compiler throughput. Whole executable
-size is reported separately: the current candidate meets the code-size target
-but its stripped ELF is still 1.163 times GCC's. This is an implementation
+size is reported separately: the last complete changed-source build meets the
+code-size target but its stripped ELF is still 1.163 times GCC's. Subsequent
+unwind changes are measured on frozen source below. This is an implementation
 review record, not a student handout.
 
 ## Evidence and size budget
@@ -73,6 +74,16 @@ confirming duplication as an important cause, but loses useful optimization.
    alignment leaves a 9,888-byte stripped-file saving. All 251 objects retain
    identical executable-section bytes and relocation targets. The frozen
    stripped executable is now 7,493,992 bytes, or 1.16194 times GCC.
+6. **End unwind coverage at the code boundary.** Keep the encoder's instruction
+   extent separate from trailing jump-table data. Restore saved body rules
+   after an epilogue only when more instructions follow it. On the frozen
+   compiler, all decoded frame rules within 9,233 code ranges and all 343
+   stack-argument transition addresses and values match the preceding
+   implementation. The FDEs exclude 40,710 bytes of trailing data in 317
+   functions. Unwind records shrink by 568 bytes; file alignment gives another
+   4,096-byte saving, to 7,489,896 bytes (1.16131 times GCC). PA26/PA33 and PA35
+   smoke checks pass. Scoped compile instructions remain unchanged; timing is
+   inconclusive because A/A calibration drifts by up to 16.6% in cycles.
 
 These changes use existing typed LowIR and MIR information and need no format
 extension. Required PA32/PA33 fixtures execute both normal and exceptional
@@ -125,7 +136,8 @@ the proofs and tradeoffs without publishing implementation thresholds.
   same-named anonymous-namespace exception types is recorded separately and
   does not establish a regression from this change.
 - For a **whole stripped executable** target of 1.15 times GCC, another
-  approximately 76 KB must go on the frozen comparison. Prioritize unwind-table and repeated ABI-entry
+  approximately 73 KB must go on the frozen comparison. Prioritize unwind-table
+  and repeated ABI-entry
   metadata, then redundant address/copy instructions. Do not obtain the saving
   by deleting required unwind information or accepting poorer hot code.
 - A diagnostic survey finds about 104 KB of apparently matching constructor
