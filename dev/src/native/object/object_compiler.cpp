@@ -173,6 +173,7 @@ private:
 	bool entries_indexed_ = false;
 	FlatMap<uint32_t, uint32_t, WordHash32> equivalent_targets_;
 	lowir::JumpThunk shared_entry_;
+	std::vector<lowir::EquivalentEntry> shared_aliases_;
 	std::vector<const char*> runtime_names_; // the first image-local symbols
 	uint32_t program_symbols_ = 0;
 	std::vector<Placement> placement_;
@@ -365,6 +366,7 @@ const lowir::JumpThunk* ObjectCompiler::equivalent_entry(lowir::SymbolId symbol)
 				equivalent_targets_.insert(entry.symbol, entry.target);
 		}
 		entries_indexed_ = true;
+		share_entries_ = equivalent_targets_.size() != 0;
 	}
 	const uint32_t* target = equivalent_targets_.find(symbol);
 	if (target == nullptr)
@@ -379,14 +381,22 @@ void ObjectCompiler::function(lowir::SymbolId symbol)
 	// describes it), whatever its body.
 	if (const lowir::JumpThunk* thunk = jump_thunk(symbol))
 	{
-		emit_jump_thunk(
-			image_, symbol, thunk->target, thunk->this_index == 0 ? RDI : RSI, thunk->adjustment, thunk->vcall_offset);
-		ranges_.push_back(CodeRange{ symbol, image_.symbol(symbol).offset, image_.text().size(), 0, 0, false });
+		if (thunk == &shared_entry_ && program_.symbols[symbol].metadata.binding == ir_model::SBM_STRONG &&
+			program_.symbols[thunk->target].metadata.binding == ir_model::SBM_STRONG)
+			// Both definitions are retained roots in the shared text section.
+			// Keep their independent names without an extra jump or FDE.
+			shared_aliases_.push_back(lowir::EquivalentEntry{ symbol, thunk->target });
+		else
+		{
+			emit_jump_thunk(image_, symbol, thunk->target, thunk->this_index == 0 ? RDI : RSI, thunk->adjustment,
+				thunk->vcall_offset);
+			ranges_.push_back(CodeRange{ symbol, image_.symbol(symbol).offset, image_.text().size(), 0, 0, false });
+			if (eh_model_ == EhModel::Host)
+				record_unwind(static_cast<uint32_t>(ranges_.size() - 1), false);
+		}
 		if (symbol >= emitted_.size())
 			emitted_.resize(std::max<size_t>(symbol + 1, emitted_.size() * 2), 0);
 		emitted_[symbol] = 1;
-		if (eh_model_ == EhModel::Host)
-			record_unwind(static_cast<uint32_t>(ranges_.size() - 1), false);
 		return;
 	}
 	if (!stats_.clocks && !stats_.census)
@@ -584,6 +594,8 @@ void ObjectCompiler::place_text()
 		section.size = section.bytes.size();
 		placement_[slot(range.symbol)] = Placement{ range.section, range.base, range.end - range.start };
 	}
+	for (const lowir::EquivalentEntry& alias : shared_aliases_)
+		placement_[slot(alias.symbol)] = placement_[slot(alias.target)];
 }
 
 // The floating constants end the read-only data: at its start in a small
