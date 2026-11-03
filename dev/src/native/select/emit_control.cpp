@@ -178,6 +178,14 @@ bool FunctionSelector::counter_test(
 		return body.instructions[def].op == Opcode::Phi && inst_block_[def] == header;
 	};
 	const auto stepped = [&](Value v) {
+		// Widening may leave an exact narrowing at the original counter test.
+		if (v.is(ValueKind::Temp) && body.temps[v.index].def != kNoId)
+		{
+			const Instruction& conversion = body.instructions[body.temps[v.index].def];
+			if (conversion.op == Opcode::Convert && conversion.sub == static_cast<uint8_t>(lowir::ConvertOp::Trunc) &&
+				(conversion.flags & lowir::IF_EXACT) != 0)
+				v = conversion.ops[0];
+		}
 		if (!v.is(ValueKind::Temp) || body.temps[v.index].def == kNoId)
 			return false;
 		const Instruction& step = body.instructions[body.temps[v.index].def];

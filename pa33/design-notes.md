@@ -18,6 +18,10 @@ arithmetic and jumps to the next block. Stop propagation at conflicting writes,
 unknown clobbers and exceptional boundaries. Keep meaningful debug locations
 on surviving instructions.
 
+Preserve loop recognition through exact integer conversions. Check layout
+changes with native timing: instruction counts can stay unchanged while speed
+changes.
+
 ## Allocate across the control-flow graph
 
 Compute liveness across ordinary and exception edges. Model a phi transfer on
