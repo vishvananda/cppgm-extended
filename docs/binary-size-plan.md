@@ -1,11 +1,12 @@
 # Binary size investigation and implementation
 
-The target is at most 1.15 times GCC's `.text`, the existing PA35 code-size
-metric, while preserving native speed and compiler throughput. Whole executable
-size is reported separately: the last complete changed-source build meets the
-code-size target but its stripped ELF is still 1.16174 times GCC's. Frozen and
-changed-source measurements are recorded below. This is an implementation
-review record, not a student handout.
+The target is at most 1.15 times GCC for both `.text` and the whole stripped
+executable, while preserving native speed and compiler throughput. The first
+equivalent-entry checkpoint meets both limits. The current frozen-source
+build has 6,314,946 text bytes (1.12843 times GCC) and a 7,399,784-byte
+stripped executable (1.14734 times GCC). Final performance, release and export
+validation remains in progress. This is an implementation review record, not
+a student handout.
 
 ## Evidence and size budget
 
@@ -19,12 +20,16 @@ survives the implementation itself.
 | Build | GCC `.text` | cppgm++ `.text` | cppgm++ / GCC |
 | --- | ---: | ---: | ---: |
 | Frozen baseline | 5,596,214 | 7,143,970 | 1.2766 |
-| Frozen source, candidate code generator | 5,596,214 | 6,400,514 | 1.1437 |
+| Frozen source, unwind checkpoint | 5,596,214 | 6,400,514 | 1.1437 |
+| Frozen source, equivalent entries and strong aliases | 5,596,214 | 6,314,946 | 1.1284 |
+| Changed source, first equivalent-entry checkpoint | 5,610,358 | 6,330,146 | 1.1283 |
 | Changed source after unwind cleanup, repository flags | 5,603,958 | 6,408,770 | 1.1436 |
 | Changed source after unwind cleanup, PA34 default flags | 5,590,294 | 6,409,394 | 1.1465 |
 | Student plain flags, preceding checkpoint | 5,585,558 | 6,407,794 | 1.1472 |
 
-The frozen saving is 743,456 bytes, or 10.41%. The preceding student plain configuration has
+The frozen text saving is now 829,024 bytes, or 11.60%. The first entry-sharing
+changed-source pair is 7,420,264 versus 6,465,920 stripped bytes (1.14760 times
+GCC); this predates the direct strong aliases. The preceding student plain configuration has
 15,598 bytes of headroom below 1.15 times GCC. This margin is small; size must
 remain a gate, including after future source or host-toolchain changes.
 
@@ -87,8 +92,22 @@ confirming duplication as an important cause, but loses useful optimization.
    smoke checks pass. Scoped compile instructions remain unchanged; timing is
    inconclusive because A/A calibration drifts by up to 16.6% in cycles.
 
-These changes use existing typed LowIR and MIR information and need no format
-extension. Required PA32/PA33 fixtures execute both normal and exceptional
+7. **Share equivalent ABI entries after inlining.** The lowering records a
+   public, serialized `equivalent_entry` proof for eligible complete/base
+   entries of one source function. Keep both bodies available to inlining.
+   Exclude virtual-base, synthesized, replaceable and otherwise unproved cases.
+   At optimized object emission, strong entries share the retained body
+   directly; weak entries keep independently available forwarding definitions
+   in their own COMDAT groups. O0 does not build or consult the equivalence
+   index, and optimized units with no candidates stop looking up entries.
+   Pruning drops proofs whose entries disappear. PA8 validates the contract;
+   PA12/PA27/PA32 explain the semantic and linking obligations. Tests cover
+   normal and exceptional behavior, mixed GCC/Clang linking in both orders,
+   serialized object replay, pruning and a broad code-footprint bound.
+
+The first six changes use existing typed LowIR and MIR information. Entry
+sharing adds the public fact above, including reader, writer and validator
+support; no optimizer relies on a private side channel. Required PA32/PA33 fixtures execute both normal and exceptional
 paths, check retained work with broad quality bounds, and cover conditional
 floating state through an independent scalar oracle. Student guidance discusses
 the proofs and tradeoffs without publishing implementation thresholds.
@@ -142,35 +161,28 @@ the proofs and tradeoffs without publishing implementation thresholds.
   timing remains inconclusive across A/A spread. Each side emits byte-identical
   objects between GNU-built and self-built compilers at both levels. Retain
   and label the first self-built comparison as confounded by aliasing flags.
-- EPYC CI run 41624091729 passed at `6464fa34e`: the published O3 native score
-  is 0.98 times GCC, self-built execution 0.99, and O3 compile speed 4.1.
-  This is evidence for that revision; subsequent changes need their own CI
-  checks. The EH-cell change passes 424 PA26–PA28 tests and mixed GCC/Clang
-  external-EH controls, including PIC shared links without text relocations.
-  Its scoped paired compile instructions are unchanged; timing is within
-  A/A variation. A pre-existing mismatch between Clang and cppgm for
-  same-named anonymous-namespace exception types is recorded separately and
-  does not establish a regression from this change.
-- The preceding EPYC result improves about 0.4% over main across 80 comparable
-  native programs, but Spirit is about 2.4% slower and pugixml about 9% slower
-  relative to GCC. Pugixml's two paired blocks agree and A/A differs by only
-  0.6%; investigate rather than dismiss it as noise. Local pugixml is about
-  0.5% faster, so the microarchitecture-sensitive cause remains unresolved.
-- For a **whole stripped executable** target of 1.15 times GCC, another
-  approximately 73 KB must go on the frozen comparison. Prioritize unwind-table
-  and repeated ABI-entry
-  metadata, then redundant address/copy instructions. Do not obtain the saving
-  by deleting required unwind information or accepting poorer hot code.
-  The latest changed-source stripped pair is 7,502,184 versus GCC's 6,457,728
-  bytes (1.16174), leaving about 76 KB to remove in that configuration.
-- A diagnostic survey finds about 104 KB of apparently matching constructor
-  and destructor entry bodies. Sharing is a later option only with typed proof
-  of equivalent base/complete-object behavior, including tail padding, virtual
-  bases, EH, symbol replacement and COMDAT. Matching instruction bytes is not
-  sufficient proof.
-  If sharing needs new facts across the LowIR boundary, document their public
-  semantics and test direct and serialized routes. The current changes add
-  no LowIR facts.
+- EPYC CI run 41634484750 passed at `e231b55da`, before entry sharing.
+  Published O3 native speed is 0.98 times GCC, self-built execution 1.00,
+  O3 compilation 4.1. The prior run's 9% pugixml deficit did not repeat:
+  its latest score is 0.9753 versus main's 0.9836 (about 0.8% lower, with
+  A/A variation about 0.9%). Spirit is about 1.1% better than main in that
+  run. Preserve the earlier observations; they do not establish a persistent
+  9% regression. New entry-sharing changes need their own CI measurements.
+- Entry sharing's scoped GNU-built compile-cost checks preserve O0 instruction
+  counts. On a frozen native-object source with eligible entries, O3 uses
+  about 0.25% fewer instructions than the preceding unwind checkpoint.
+  Replacing strong forwarders with aliases adds no measurable instruction
+  cost at either level. A/A timing drifts, so no timing improvement is claimed.
+  Recheck cumulative GNU-built and self-built O0/O3 cost after the final build.
+- Whole-file size now meets 1.15 times GCC on frozen source and the first
+  changed-source entry-sharing pair. Rebuild the final changed source with
+  matching flags and repeat the plain/student configuration. Keep the target
+  as a gate: the whole-file margin remains much smaller than the text margin.
+- The entry-sharing checkpoint passes the strict report (8,005/8,005), debug
+  information, self-host through PA5, byte-identical inception, smoke tests,
+  architecture audits and harness tests. The direct-alias follow-up is under
+  broader validation. Finish the generated-seed campaign, student export,
+  release check and paired public native measurements before acceptance.
 
 Raw measurements, prototypes (including rejected policies) and commands live
 outside the repository in
