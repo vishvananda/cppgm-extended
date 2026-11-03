@@ -25,6 +25,8 @@ import tempfile
 import threading
 import zipfile
 
+import benchmark_timing as timing
+
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / 'benchmarks/public/manifest.json'
@@ -45,9 +47,8 @@ TOLERANCE = {
 DRIFT = 0.005
 # CPU times below this are ignored.
 MINIMUM_CPU = 0.01
-# The timing pass runs a program this many times when its g++ binary runs for
-# less than LONG_RUN seconds at the last level, and once otherwise.
-TIMING_ROUNDS = 5
+# Paired blocks for short programs; long programs get one four-run block.
+TIMING_ROUNDS = 2
 LONG_RUN = 1.0
 METRICS = (
     ('frontend_cpu', 'Frontend CPU, `-fsyntax-only`'),
@@ -436,8 +437,7 @@ def run_program(context, program):
 
 
 def time_runs(context, program, result, rounds):
-    """Time the last level's runs again one program at a time. Each round runs
-    every compiler's binary once. Keep the least CPU time of each."""
+    """Reuse fixed executables in ABBA/BAAB blocks, retaining every sample."""
     if result['status'] != 'ok':
         return
     level = context.manifest['levels'][-1]
@@ -445,18 +445,47 @@ def time_runs(context, program, result, rounds):
     labels = [label for label in context.tools if cpu in result.get(label, {})]
     if result['gcc'][cpu] >= LONG_RUN:
         rounds = 1
-    best = {}
-    for _ in range(rounds):
-        for label in labels:
-            side = Side(context, program, label)
-            work = side.work / level
-            with open(os.devnull, 'wb') as discard:
-                timed = measure([str(work / 'a.out'), *program.get('args', [])], side.cwd,
-                                RUN_TIMEOUT, work / 'time.log', side.stdin(), discard)
-            if not timed['timed_out'] and timed['code'] == result[label][code]:
-                best[label] = min(best.get(label, timed['cpu']), timed['cpu'])
-    for label, value in best.items():
-        result[label][cpu] = round(value, 3)
+    sides = {label: Side(context, program, label) for label in labels}
+    executables = {label: side.work / level / 'a.out' for label, side in sides.items()}
+    hashes = {label: timing.sha(path) for label, path in executables.items()}
+    directory = context.work / 'timing' / re.sub(r'[^A-Za-z0-9_.-]', '_', program['name'])
+    directory.mkdir(parents=True, exist_ok=True)
+    directory = Path(tempfile.mkdtemp(prefix='paired-', dir=directory))
+    samples = []
+    data = result['timing'] = dict(method='ABBA/BAAB', samples=samples, pairs={},
+                                  executable_sha256=hashes)
+
+    def run_one(label, phase, block, position):
+        side = sides[label]
+        command = [str(executables[label]), *program.get('args', [])]
+        output = directory / f'{len(samples):03}.stdout'
+        with output.open('wb') as stream:
+            row = measure(command, side.cwd, RUN_TIMEOUT, output.with_suffix('.log'),
+                          side.stdin(), stream)
+        row.update(label=label, phase=phase, block=block, position=position,
+                   command=command, output_sha256=timing.sha(output))
+        samples.append(row)
+        timing.retain(directory / 'observations.jsonl', row)
+        if (row['timed_out'] or row['code'] != result[label][code]
+                or row['output_sha256'] != result[label][level_key('output', level)]):
+            raise RuntimeError(f'{label}: timed run changed output, exit code or timed out')
+        if timing.sha(executables[label]) != hashes[label]:
+            raise RuntimeError(f'{label}: executable changed during timing')
+        output.unlink()
+        return row
+
+    try:
+        data['AA'] = timing.summarize(timing.observations(run_one, 'gcc', 'gcc', 1, 'AA'))
+        for reference in labels:
+            if reference == 'cppgm':
+                continue
+            rows = timing.observations(run_one, reference, 'cppgm', rounds, reference)
+            pair = data['pairs'][reference] = timing.summarize(rows)
+            result[reference][cpu] = pair['reference_cpu']
+            if reference == 'gcc':
+                result['cppgm'][cpu] = pair['candidate_cpu']
+    except (RuntimeError, ValueError, OSError) as error:
+        result.update(status='timing-failed', error=str(error))
 
 
 def tool_version(command):
@@ -500,6 +529,7 @@ def run(arguments):
     if arguments.timing_rounds:
         for program, result in zip(programs, results):
             time_runs(context, program, result, arguments.timing_rounds)
+            print(f'{result["name"]}: paired timing {result["status"]}', flush=True)
     document = dict(
         environment=dict(cpu=cpu_model(),
                          gcc=tool_version([arguments.gxx, '--version']),
@@ -515,6 +545,11 @@ def geomean(ratios):
 
 
 def ratio(result, metric, reference='gcc'):
+    paired = result.get('timing', {}).get('pairs', {}).get(reference)
+    if metric == 'run_cpu_O3' and paired:
+        if min(paired['reference_cpu'], paired['candidate_cpu']) < MINIMUM_CPU:
+            return None
+        return paired['ratio']
     before = result.get(reference, {}).get(metric)
     after = result['cppgm'].get(metric)
     if not before or not after:
@@ -563,6 +598,8 @@ def build_ratio(builds, key, reference):
     """Return the CPU of a build over the CPU of its reference build."""
     if not builds or builds.get('status') != 'ok' or not builds.get(reference):
         return None
+    if key == 'inception' and reference == 'self' and builds.get('paired_self'):
+        return builds['paired_self']['comparison']['ratio']
     return builds[key] / builds[reference]
 
 
@@ -631,6 +668,19 @@ def summary(document, changes, builds=None):
         mean = build_ratio(builds, key, reference)
         if mean:
             lines.append(f'| {title} | {speed_text(mean)} | - | - | - |')
+    calibrations = [r['timing']['AA']['ratio'] for r in results
+                    if r.get('timing', {}).get('AA', {}).get('ratio')]
+    if calibrations:
+        lines += ['', 'O3 execution uses paired ABBA/BAAB blocks. GCC A/A CPU ratios '
+                  f'ranged from {min(calibrations):.3f} to {max(calibrations):.3f}; '
+                  'raw observations and block ratios are retained in the artifact.']
+    paired = builds.get('paired_self', {}) if builds else {}
+    if paired.get('comparison'):
+        values = [block['ratio'] for block in paired['comparison']['blocks']]
+        lines += ['', f'Self-built / GCC-built compiler CPU: paired ratios '
+                  f'{min(values):.3f}–{max(values):.3f}; '
+                  f'A/A calibration {paired["AA"]["ratio"]:.3f}. '
+                  'A/A variation limits conclusions about small changes.']
     if builds and builds.get('status') != 'ok':
         lines += ['', f'The self-hosted builds failed: {builds.get("status")}.']
     if failures:
@@ -729,11 +779,39 @@ def selfhost_commands(work, jobs):
 
 def selfhost(arguments):
     builds = dict(status='ok')
-    for key, command in selfhost_commands(arguments.work, arguments.jobs):
-        builds[key] = build_cpu(command)
-        if builds[key] is None:
-            builds['status'] = f'{key} build failed'
-            break
+    work = Path(arguments.work).resolve()
+    work.mkdir(parents=True, exist_ok=True)
+    directory = Path(tempfile.mkdtemp(prefix='paired-', dir=work))
+    seed = directory / 'bootstrap-seed'
+    try:
+        for key, command in selfhost_commands(work, arguments.jobs):
+            builds[key] = build_cpu(command)
+            if builds[key] is None:
+                raise RuntimeError(f'{key} build failed')
+            if key == 'gcc':
+                shutil.copy2(ROOT / 'dev/cppgm++', seed)
+                seed.chmod(0o555)
+        compiler = work / 'pa34/bin/selfhost/cppgm++-self'
+        inception = work / 'pa34/bin/inception/cppgm++-inception'
+        require(timing.sha(compiler) == timing.sha(inception),
+                'self and inception compiler binaries differ')
+        rebuild = timing.Rebuild(ROOT, directory, arguments.jobs, seed, compiler, measure)
+        paired = builds['paired_self'] = dict(method='ABBA/BAAB',
+                                             compiler_sha256=rebuild.hashes,
+                                             samples=rebuild.samples)
+        def rebuild_one(label, phase, block, position):
+            row = rebuild.run(label, phase, block, position)
+            print(f'{phase} block {block + 1}, {label}: {row["cpu"]:.3f} CPU s', flush=True)
+            return row
+
+        for position, label in enumerate(('seed', 'self')):
+            rebuild_one(label, 'warmup', -1, position)
+        paired['AA'] = timing.summarize(timing.observations(
+            rebuild_one, 'seed', 'seed', 1, 'AA'))
+        paired['comparison'] = timing.summarize(timing.observations(
+            rebuild_one, 'seed', 'self', arguments.paired_blocks))
+    except (RuntimeError, ValueError, OSError) as error:
+        builds['status'] = str(error)
     Path(arguments.output).write_text(json.dumps(builds, indent=1) + '\n')
     return 0
 
@@ -762,8 +840,9 @@ def main():
     command.add_argument('--no-count', action='store_true',
                          help='skip cachegrind, measuring CPU time alone')
     command.add_argument('-j', '--jobs', type=int, default=os.cpu_count())
-    command.add_argument('--timing-rounds', type=int, default=TIMING_ROUNDS,
-                         help='runs of a short program in the serial timing pass (0: no pass)')
+    command.add_argument('--timing-blocks', '--timing-rounds', dest='timing_rounds',
+                         type=int, default=TIMING_ROUNDS,
+                         help='paired blocks for short programs (default: 2; 0: no pass)')
     command.set_defaults(handler=run)
 
     command = commands.add_parser('report')
@@ -779,9 +858,15 @@ def main():
     command.add_argument('--work', required=True)
     command.add_argument('--output', required=True)
     command.add_argument('-j', '--jobs', type=int, default=os.cpu_count())
+    command.add_argument('--paired-blocks', type=int, default=2,
+                         help='paired seed/self compiler rebuild blocks (default: 2)')
     command.set_defaults(handler=selfhost)
 
     arguments = parser.parse_args()
+    if getattr(arguments, 'timing_rounds', 0) < 0:
+        parser.error('--timing-blocks must be nonnegative')
+    if getattr(arguments, 'paired_blocks', 1) < 1:
+        parser.error('--paired-blocks must be positive')
     return arguments.handler(arguments)
 
 

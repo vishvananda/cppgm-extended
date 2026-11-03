@@ -24,8 +24,8 @@ Options for `run`:
 - `--only REGEX`: run the programs that match.
 - `--no-count`: do not run `cachegrind`.
 - `--no-clang`: do not run `clang++`.
-- `--timing-rounds N`: the runs of a short program in the timing pass. The
-  default is 5. `0` turns off the pass.
+- `--timing-blocks N`: paired blocks for a short program (default: 2).
+  `0` turns off the pass. `--timing-rounds` remains an alias.
 
 ## Measurements
 
@@ -37,11 +37,14 @@ All programs, at `-O0` and `-O3`:
 
 All programs, once: frontend CPU time, from `-fsyntax-only`.
 
-The `-O3` run CPU time comes from a timing pass. The pass runs after all
-builds, one program at a time. Each round runs the binary of each compiler
-once. A program whose `g++` binary runs for less than 1 second gets 5 rounds,
-and other programs get 1 round. The result is the least CPU time of the
-rounds.
+The `-O3` timing pass reuses the built executables, one program at a time.
+For each reference compiler, A is its executable and B is `cppgm++`'s.
+The pass alternates four-run ABBA and BAAB blocks and takes the median of
+the blocks' CPU ratios; each block uses the mean of its two runs per side.
+Programs whose initial `g++` run takes at least 1 second get one block;
+shorter programs get two. A four-run GCC A/A calibration records timing
+variation. Every observation is retained, including failures; each timed
+run must reproduce its original stdout and exit code.
 
 Programs with `count` in the manifest, at `-O3`, from
 `valgrind --tool=cachegrind`:
@@ -98,7 +101,17 @@ same job count:
 - **Building `cppgm++`**: GCC's build time divided by the time taken by the
   GCC-built `cppgm++` to build itself.
 - **Self-built compiler speed**: that self-build time divided by the time
-  taken by the self-built compiler to build the next (inception) generation.
+  taken by the self-built compiler to compile the same sources. After the
+  initial bootstrap, fixed GCC-built and self-built binaries rebuild identical
+  PA34 inputs in two ABBA/BAAB blocks, following warmups and four GCC-built A/A runs.
+  The badge uses the median paired CPU ratio. Every rebuild must produce
+  identical objects and compiler binaries.
+
+`selfhost --paired-blocks N` changes the rebuild block count. The initial GCC
+build is measured once for the **Building `cppgm++`** row. Pairing reduces
+order effects; A/A variation still limits claims about small differences.
+The results JSON and workflow artifacts retain the calibration, block ratios,
+raw observations and output hashes.
 
 EPYC and Intel columns retain their latest separate measurements, which can be
 from different commits. The measured commit row and the provenance links below

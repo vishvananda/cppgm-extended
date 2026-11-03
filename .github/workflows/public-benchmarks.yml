@@ -104,6 +104,10 @@ jobs:
           path: |
             obj/public-benchmarks/results.json
             obj/public-benchmarks/selfhost.json
+            obj/public-benchmarks/work/timing/
+            obj/public-benchmarks/selfhost/paired-*/*.jsonl
+            obj/public-benchmarks/selfhost/paired-*/*.log
+            obj/public-benchmarks/selfhost/paired-*/*.stderr
             obj/public-benchmarks/badges/
             obj/public-benchmarks/course-quality/
           if-no-files-found: warn
@@ -215,6 +219,10 @@ jobs:
           path: |
             obj/public-benchmarks/results.json
             obj/public-benchmarks/selfhost.json
+            obj/public-benchmarks/work/timing/
+            obj/public-benchmarks/selfhost/paired-*/*.jsonl
+            obj/public-benchmarks/selfhost/paired-*/*.log
+            obj/public-benchmarks/selfhost/paired-*/*.stderr
             obj/public-benchmarks/badges/
             obj/public-benchmarks/course-quality/
           if-no-files-found: warn

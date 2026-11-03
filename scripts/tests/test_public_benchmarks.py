@@ -182,37 +182,127 @@ class TimingTests(unittest.TestCase):
         self.context = SimpleNamespace(manifest=dict(levels=['-O0', '-O3']), work=root,
                                        cache=root, tools=dict(gcc='g++', cppgm='cppgm++'))
         self.program = dict(name='p', source='s')
+        for label in self.context.tools:
+            directory = pb.Side(self.context, self.program, label).work / '-O3'
+            directory.mkdir(parents=True)
+            (directory / 'a.out').write_bytes(label.encode())
 
-    def time(self, result, times, rounds=3):
+    def time(self, result, times, rounds=2, output=b'ok', exit_code=0, timed_out=False):
         samples = iter(times)
         calls = []
 
-        def fake(command, *arguments):
-            calls.append(command[0])
-            return dict(code=0, timed_out=False, cpu=next(samples))
+        def fake(command, cwd, timeout, log, stdin, stdout):
+            calls.append(Path(command[0]).parent.parent.name)
+            stdout.write(output)
+            return dict(code=exit_code, timed_out=timed_out, cpu=next(samples))
         with mock.patch.object(pb, 'measure', fake):
             pb.time_runs(self.context, self.program, result, rounds)
         return calls
 
     def result(self, gcc_cpu):
-        return dict(status='ok', gcc=dict(run_cpu_O3=gcc_cpu, exit_code_O3=0),
-                    cppgm=dict(run_cpu_O3=9.0, exit_code_O3=0))
+        digest = pb.hashlib.sha256(b'ok').hexdigest()
+        return dict(status='ok', gcc=dict(run_cpu_O3=gcc_cpu, exit_code_O3=0, output_O3=digest),
+                    cppgm=dict(run_cpu_O3=9.0, exit_code_O3=0, output_O3=digest))
 
-    def test_keeps_the_least_time_of_the_rounds(self):
+    def test_uses_paired_ratios_instead_of_independent_minima(self):
         result = self.result(0.5)
-        calls = self.time(result, [0.4, 0.6, 0.3, 0.5, 0.35, 0.7])
-        self.assertEqual(len(calls), 6)
-        self.assertEqual(result['gcc']['run_cpu_O3'], 0.3)
-        self.assertEqual(result['cppgm']['run_cpu_O3'], 0.5)
+        calls = self.time(result, [1] * 4 + [1, 2, 2, 1, 3, 2, 2, 3])
+        self.assertEqual(calls, ['gcc'] * 4 + ['gcc', 'cppgm', 'cppgm', 'gcc']
+                         + ['cppgm', 'gcc', 'gcc', 'cppgm'])
+        self.assertEqual(result['gcc']['run_cpu_O3'], 1.5)
+        self.assertEqual(result['cppgm']['run_cpu_O3'], 2.5)
+        self.assertEqual(pb.ratio(result, 'run_cpu_O3'), 1.75)
+        self.assertEqual(len(result['timing']['samples']), 12)
+        receipts = list(self.context.work.glob('timing/p/paired-*/observations.jsonl'))
+        self.assertEqual(len(receipts[0].read_text().splitlines()), 12)
 
-    def test_a_long_program_runs_once(self):
+    def test_a_long_program_gets_calibration_and_one_block(self):
         result = self.result(2.0)
-        self.assertEqual(len(self.time(result, [1.9, 2.1])), 2)
+        self.assertEqual(len(self.time(result, [2] * 4 + [1.9, 2.1, 2.1, 1.9])), 8)
         self.assertEqual(result['cppgm']['run_cpu_O3'], 2.1)
 
     def test_a_failed_program_is_not_timed(self):
         result = dict(self.result(0.5), status='output-mismatch')
         self.assertEqual(self.time(result, []), [])
+
+    def test_bad_output_or_exit_or_timeout_fails_and_retains_the_observation(self):
+        for options in [dict(output=b'wrong'), dict(exit_code=1), dict(timed_out=True)]:
+            result = self.result(0.5)
+            self.time(result, [0.2], **options)
+            self.assertEqual(result['status'], 'timing-failed')
+            self.assertEqual(len(result['timing']['samples']), 1)
+            self.assertIn('gcc: timed run', result['error'])
+
+    def test_a_repeatable_nonzero_exit_is_allowed(self):
+        result = self.result(0.5)
+        result['gcc']['exit_code_O3'] = result['cppgm']['exit_code_O3'] = 7
+        self.time(result, [0.5] * 12, exit_code=7)
+        self.assertEqual(result['status'], 'ok')
+
+    def test_clang_is_paired_directly_with_cppgm(self):
+        self.context.tools['clang'] = 'clang++'
+        directory = pb.Side(self.context, self.program, 'clang').work / '-O3'
+        directory.mkdir(parents=True)
+        (directory / 'a.out').write_bytes(b'clang')
+        result = self.result(0.5)
+        result['clang'] = dict(result['gcc'])
+        calls = self.time(result, [1] * 12 + [4, 2, 2, 4, 2, 4, 4, 2])
+        self.assertEqual(calls[-8:], ['clang', 'cppgm', 'cppgm', 'clang',
+                                     'cppgm', 'clang', 'clang', 'cppgm'])
+        self.assertEqual(pb.ratio(result, 'run_cpu_O3', 'clang'), 0.5)
+
+
+class RebuildTimingTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.root = Path(temp.name)
+        source = self.root / 'compiler'
+        source.write_bytes(b'original compiler')
+        directory = self.root / 'measurement'
+        directory.mkdir()
+        self.object = b'object'
+        self.code = 0
+
+        def measure(command, cwd, timeout, log, stdout):
+            self.command = command
+            build = directory / 'pa34'
+            objects = build / 'selfhost'
+            objects.mkdir(parents=True)
+            (objects / 'one.o').write_bytes(self.object)
+            binary = build / 'bin/selfhost/cppgm++-self'
+            binary.parent.mkdir(parents=True, exist_ok=True)
+            binary.write_bytes(b'identical compiler')
+            return dict(cpu=1.0, code=self.code, timed_out=False)
+
+        self.directory = directory
+        self.rebuild = pb.timing.Rebuild(self.root, directory, 3, source, source, measure)
+
+    def test_reuses_frozen_compilers_and_requires_identical_outputs(self):
+        (self.root / 'compiler').write_bytes(b'later change')
+        first = self.rebuild.run('seed', 'AB', 0, 0)
+        second = self.rebuild.run('self', 'AB', 0, 1)
+        self.assertEqual(first['object_sha256'], second['object_sha256'])
+        self.assertEqual(first['output_sha256'], second['output_sha256'])
+        self.assertEqual((self.directory / 'seed').read_bytes(), b'original compiler')
+        self.assertIn('INCEPTION_COMPILER_FLAVOR=selfhost', self.command)
+        self.assertIn('INCEPTION_OBJECT_BUILD_JOBS=3', self.command)
+
+    def test_changed_objects_fail_and_keep_the_mismatching_hashes(self):
+        self.rebuild.run('seed', 'AB', 0, 0)
+        self.object = b'changed object'
+        with self.assertRaisesRegex(RuntimeError, 'changed compiler output'):
+            self.rebuild.run('self', 'AB', 0, 1)
+        rows = [json.loads(line) for line in (self.directory / 'outputs.jsonl').read_text().splitlines()]
+        self.assertEqual(len(rows), 2)
+        self.assertNotEqual(rows[0]['object_sha256'], rows[1]['object_sha256'])
+
+    def test_failed_rebuild_keeps_its_observation(self):
+        self.code = 2
+        with self.assertRaisesRegex(RuntimeError, 'paired rebuild failed'):
+            self.rebuild.run('seed', 'AA', 0, 0)
+        rows = (self.directory / 'observations.jsonl').read_text().splitlines()
+        self.assertEqual(json.loads(rows[0])['code'], 2)
 
 
 class ReportTests(unittest.TestCase):
@@ -300,6 +390,12 @@ class ReportTests(unittest.TestCase):
         badge = pb.build_badge(builds, 'inception', 'self', 'self-built speed vs gcc', 2)
         self.assertEqual((badge['message'], badge['color']), ('0.98×', '166534'))
 
+    def test_self_built_badge_uses_the_paired_result(self):
+        builds = dict(status='ok', gcc=500.0, self=100.0, inception=102.0,
+                      paired_self=dict(comparison=dict(ratio=1.0)))
+        badge = pb.build_badge(builds, 'inception', 'self', 'label', 2)
+        self.assertEqual(badge['message'], '1.00×')
+
     def test_build_badge_without_a_run_says_so(self):
         self.assertEqual(pb.build_badge(None, 'self', 'gcc', 'label', 1)['message'], 'no data')
 
@@ -353,7 +449,10 @@ class ReportTests(unittest.TestCase):
     def test_selfhost_records_the_failed_build(self):
         output = self.root / 'selfhost.json'
         arguments = SimpleNamespace(work=self.root, output=output, jobs=1)
-        with mock.patch.object(pb, 'build_cpu', side_effect=[3.0, None]):
+        (self.root / 'dev').mkdir()
+        (self.root / 'dev/cppgm++').write_bytes(b'seed')
+        with mock.patch.object(pb, 'build_cpu', side_effect=[3.0, None]), \
+                mock.patch.object(pb, 'ROOT', self.root):
             self.assertEqual(pb.selfhost(arguments), 0)
         written = json.loads(output.read_text())
         self.assertEqual(written['status'], 'self build failed')
