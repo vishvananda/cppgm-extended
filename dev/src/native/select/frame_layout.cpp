@@ -135,7 +135,7 @@ std::vector<uint8_t> tracked_frame_objects(const Function& f, const FrameObjectI
 
 uint32_t drop_dead_frame_stores(Function& f, const std::vector<FrameObject>& objects)
 {
-	if (objects.empty() || f.stack_size == 0 || f.variadic || f.eh_records_pushed || !f.eh.landings.empty())
+	if (objects.empty() || f.stack_size == 0 || f.variadic || f.eh_records_pushed)
 		return 0;
 	const uint32_t n = static_cast<uint32_t>(objects.size());
 	const FrameObjectIndex index(objects);
@@ -156,6 +156,14 @@ uint32_t drop_dead_frame_stores(Function& f, const std::vector<FrameObject>& obj
 	if (bytes == 0)
 		return 0;
 	const uint32_t words = (bytes + 63) / 64;
+	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
+	// Bound scratch and convergence work before considering any rewrite.
+	if (static_cast<uint64_t>(blocks) * words > (1u << 20))
+		return 0;
+	for (const Inst& inst : f.insts)
+		if (inst.eh != 0 && (inst.eh > f.eh.landings.size() || f.eh.landings[inst.eh - 1].pad >= blocks))
+			return 0;
+	std::vector<std::vector<uint64_t>> live_in(blocks, std::vector<uint64_t>(words, 0));
 	auto range = [&](const Operand& op, uint32_t count, uint32_t& first, uint32_t& past) {
 		if (!frame_operand(op))
 			return false;
@@ -186,6 +194,15 @@ uint32_t drop_dead_frame_stores(Function& f, const std::vector<FrameObject>& obj
 	auto step = [&](Inst& inst, std::vector<uint64_t>& live, bool rewrite, uint32_t& dropped) {
 		if (inst.op == Op::Nop)
 			return;
+		// A throw leaves at this instruction, before any later store in
+		// the block. Merge its pad's live bytes here, not at block exit:
+		// a later overwrite on the normal path must not kill them.
+		if (inst.eh != 0)
+		{
+			const uint32_t pad = f.eh.landings[inst.eh - 1].pad;
+			for (uint32_t w = 0; w < words; ++w)
+				live[w] |= live_in[pad][w];
+		}
 		uint32_t first = 0, past = 0;
 		const bool writes = inst.nops > 0 && frame_operand(inst.ops[0]) &&
 			(inst.op == Op::Store || inst.op == Op::CopyBytes || inst.op == Op::ZeroBytes || inst.op == Op::FMov);
@@ -209,10 +226,10 @@ uint32_t drop_dead_frame_stores(Function& f, const std::vector<FrameObject>& obj
 			if (frame_operand(inst.ops[k]) && range(inst.ops[k], access_bytes(inst), first, past))
 				set(live, first, past, true);
 	};
-	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
-	std::vector<std::vector<uint64_t>> live_in(blocks, std::vector<uint64_t>(words, 0));
 	std::vector<uint32_t> succ;
 	uint32_t dropped = 0;
+	uint64_t work = 0;
+	const uint64_t budget = 64ull * (f.insts.size() + blocks + bytes);
 	for (bool changed = true; changed;)
 	{
 		changed = false;
@@ -220,13 +237,19 @@ uint32_t drop_dead_frame_stores(Function& f, const std::vector<FrameObject>& obj
 		{
 			std::vector<uint64_t> live(words, 0);
 			successors(f, b, succ);
+			work += static_cast<uint64_t>(words) * (3 + succ.size()) + f.blocks[b].count;
+			if (work > budget)
+				return 0;
 			for (uint32_t s : succ)
 				if (s < blocks)
 					for (uint32_t w = 0; w < words; ++w)
 						live[w] |= live_in[s][w];
 			const Block& block = f.blocks[b];
 			for (uint32_t i = block.first + block.count; i-- > block.first;)
+			{
+				work += f.insts[i].eh != 0 ? words : 0;
 				step(f.insts[i], live, false, dropped);
+			}
 			if (live != live_in[b])
 			{
 				live_in[b] = live;

@@ -1,0 +1,168 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @zeroed
+  storage data
+  item i64 -1
+  item i64 -1
+  item i64 -1
+  item i64 -1
+  item i64 -1
+  item i64 -1
+  item i64 -1
+  item i64 -1
+  item i64 -1
+  item i64 -1
+
+global @holes
+  storage data
+  item i64 11
+  item i64 22
+  item i64 33
+
+global @mixed
+  storage data
+  item i64 11
+  item i64 22
+  item i64 33
+
+global @volatiles
+  storage data
+  item i64 11
+  item i64 22
+
+global @atomics
+  storage data
+  item i64 11
+  item i64 22
+
+function @zero_fields
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    zero_bytes 64x1, [rdi]
+    zero_bytes 16x1, [rdi+<off0>]
+    ret
+
+function @leave_hole
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    store.i64 [rdi], 0
+    store.i64 [rdi+<off1>], 0
+    ret
+
+function @keep_nonzero
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    store.i64 [rdi], 0
+    store.i64 [rdi+<off2>], 9
+    store.i64 [rdi+<off1>], 0
+    ret
+
+function @volatile_fields
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    store.i64 [rdi], 0
+    store.i64 [rdi+<off2>], 0
+    ret
+
+function @atomic_fields
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    store.i64 [rdi], 0
+    store.i64 [rdi+<off2>], 0
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov rdi, @zeroed
+    call @zero_fields [args=(rdi), unwind=no]
+    mov rdi, @holes
+    call @leave_hole [args=(rdi), unwind=no]
+    mov rdi, @mixed
+    call @keep_nonzero [args=(rdi), unwind=no]
+    mov rdi, @volatiles
+    call @volatile_fields [args=(rdi), unwind=no]
+    mov rdi, @atomics
+    call @atomic_fields [args=(rdi), unwind=no]
+    load.i64 r8, @zeroed+72
+    load.i64 r9, @zeroed
+    load.i64 rdi, @holes+8
+    load.i64 rsi, @mixed+8
+    load.i64 rdx, @volatiles+8
+    load.i64 rcx, @atomics+8
+    cmp.i64 r9, 0
+    setne r9
+    movzx r9, r9
+    cmp.i64 r8, 0
+    setne r8
+    movzx r8, r8
+    cmp.i64 rdi, 22
+    setne rdi
+    movzx rdi, rdi
+    cmp.i64 rsi, 9
+    setne rsi
+    movzx rsi, rsi
+    cmp.i64 rdx, 0
+    setne rdx
+    movzx rdx, rdx
+    cmp.i64 rcx, 0
+    setne rcx
+    movzx rcx, rcx
+    or r9, r8
+    or rdi, rsi
+    or rdx, rcx
+    or r9, rdi
+    or r9, rdx
+    ret r9

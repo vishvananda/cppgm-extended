@@ -17,6 +17,10 @@ const uint32_t kOrdinaryCap = 24;
 const uint32_t kOrdinaryCallCap = 6;
 const uint32_t kHintCap = 96;
 const uint32_t kCallerBudget = 1536;
+// Additional call-containing copies in an already large caller, outside
+// its loops. Small helpers retain ordinary admission: losing a setter or
+// accessor there can cost every activation of a hot wrapper.
+const uint32_t kOutsideLoopBudget = 40;
 // A call inside one of the caller's loops runs once per iteration: its
 // callee's caps grow fourfold.
 const uint32_t kLoopSiteScale = 4;
@@ -42,17 +46,18 @@ const uint32_t kFastPathCap = 24;
 const uint32_t kFastPathHintCap = 48;
 const uint32_t kFastPathTotalCap = 96;
 const uint32_t kFastPathTotalHintCap = 160;
-// A fast-path wrapper (a body this small with a call-free path from the
-// entry to a return) keeps callees larger than kSlowSiteCap out of its
-// slow paths, so it stays small enough to inline (vector::push_back and
-// _M_realloc_append).
+// A wrapper keeps large callees out of its slow paths, so its fast path
+// stays small enough to inline. From O2 recognize a larger wrapper body:
+// an already expanded slow path must not make it absorb more slow work.
+// The size of a callee admitted into a leaf wrapper stays separate.
 const uint32_t kWrapperCap = 32;
+const uint32_t kFastWrapperBodyCap = 64;
 const uint32_t kSlowSiteCap = 16;
 // From O2, a discardable body up to this size whose path to a return
 // calls only callees every wave copies whole (forced, trivial leaves:
 // emplace_back's construct and forward) keeps callees larger than
 // kWrapperCap out of its slow paths.
-const uint32_t kLeafWrapperCap = 48;
+const uint32_t kLeafWrapperCap = 96;
 // A callee whose loop calls through a pointer the site passes as a known
 // function is copied up to this size (the call turns direct).
 const uint32_t kDispatchCap = 96;
@@ -105,7 +110,7 @@ const uint32_t kSettledScaleNum = 3;
 const uint32_t kSettledScaleDen = 2;
 const uint32_t kSettledCalls = 3;
 const uint32_t kSettledFewCalls = 2;
-const uint32_t kSettledFewCap = 128;
+const uint32_t kSettledFewCap = 64;
 const uint32_t kSettledCallShare = 8;
 const uint32_t kSettledSmallCaller = 128;
 // A callee grown past its caps by its own copies is judged by its input
@@ -1005,6 +1010,7 @@ private:
 	// value a register by weight, native/select/register_allocation.cpp.)
 	bool loop_welcome(const Shape&) const { return true; }
 	uint64_t budget_ = 0;
+	uint64_t outside_loop_budget_ = 0;
 	uint64_t once_budget_ = 0;
 	uint64_t folded_budget_ = 0;
 	std::vector<uint32_t> folded_failures_; // per function index, this wave
@@ -1174,7 +1180,10 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 		charge = size;
 		return true;
 	}
-	if ((caller_wrapper_ && size > kSlowSiteCap) || (caller_leaf_wrapper_ && size > kWrapperCap))
+	// An early return around a loop does not make that loop's calls slow
+	// paths. Keep their ordinary loop-site admission and growth budget.
+	if ((options_.level < 2 || !loop_site) &&
+		((caller_wrapper_ && size > kSlowSiteCap) || (caller_leaf_wrapper_ && size > kWrapperCap)))
 		return false;
 	// O2+: a tiny loop around one call (a skip loop: take tokens until one
 	// is not whitespace) goes inline: the loop stays, a call level goes.
@@ -1499,13 +1508,15 @@ bool InlineWaveRunner::process(SymbolId caller)
 	caller_cfg_changed_ = false;
 	caller_loop_ = shapes_[caller_].loop;
 	caller_eh_ = shapes_[caller_].eh;
-	caller_wrapper_ = shapes_[caller_].fast_return && shapes_[caller_].hot <= kWrapperCap;
+	caller_wrapper_ = shapes_[caller_].fast_return &&
+		shapes_[caller_].hot <= (options_.level >= 2 ? kFastWrapperBodyCap : kWrapperCap);
 	caller_settled_ = options_.level >= 2 &&
 		(graph_.calls_in[caller_] == 0 ||
 			(shapes_[caller_].size > kSettledSize &&
 				!(discardable(program_, caller) && graph_.calls_in[caller_] == 1)));
 	const uint32_t default_budget = options_.limits.caller_budget != 0 ? options_.limits.caller_budget : kCallerBudget;
 	budget_ = default_budget;
+	outside_loop_budget_ = kOutsideLoopBudget;
 	once_budget_ = options_.limits.once_caller_budget != 0
 		? options_.limits.once_caller_budget
 		: kOnceCallerBudget * (options_.level >= 2 ? kOnceO2Scale : 1);
@@ -1696,6 +1707,13 @@ bool InlineWaveRunner::process(SymbolId caller)
 			uint64_t& unit = forced ? budgets_.force_unit : budgets_.growth_unit;
 			// (A trivial leaf takes no more room than its call.)
 			const bool free_leaf = !partly && copy == kNoId && shapes_[g].size <= kTrivialLeaf && !shapes_[g].call;
+			// Preserve loop/handler sites, small and call-free helpers,
+			// mandatory/constant copies and definition-removing inlining.
+			const bool outside_loop = options_.level >= 2 && options_.limits.caller_budget == 0 && !source_required_ &&
+				!once && !forced && !free_leaf && copy == kNoId && !fully && shapes_[g].size > kWrapperCap &&
+				shapes_[g].hot_call && shapes_[caller_].size >= kSettledSize && in_loop[b] == 0 && handler[b] == 0;
+			if (outside_loop && size > outside_loop_budget_)
+				continue;
 			if (!once && !free_leaf && size > unit)
 			{
 				if (copy != kNoId)
@@ -1704,6 +1722,8 @@ bool InlineWaveRunner::process(SymbolId caller)
 			}
 			if (!once && !free_leaf)
 				unit -= size;
+			if (outside_loop)
+				outside_loop_budget_ -= size;
 			const bool loop = copy != kNoId ? shape_of(program_, copy, nounwind_).loop : shapes_[g].loop;
 			InstId tail = kNoId;
 			if (!source_required_ || !inline_return(body, b, before_call, i, kb, tail))

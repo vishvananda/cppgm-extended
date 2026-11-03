@@ -27,7 +27,7 @@ def settings(path):
         raise ValueError(f'{path}: incomplete or unknown quality settings')
     for key in ('case', 'level', 'iterations'):
         data[key] = int(data[key])
-    if data['level'] not in (1, 2, 3) or data['iterations'] < 1 or not 1 <= data['case'] <= 10:
+    if data['level'] not in (1, 2, 3) or data['iterations'] < 1 or not 1 <= data['case'] <= 11:
         raise ValueError(f'{path}: invalid case, level or iteration count')
     data['scenarios'] = [int(n) for n in data['scenarios'].split(',')]
     if not data['scenarios'] or any(n < 0 or n > 275 for n in data['scenarios']):

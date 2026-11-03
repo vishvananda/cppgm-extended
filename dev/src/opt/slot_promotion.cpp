@@ -1,5 +1,6 @@
 #include "lowir/builder.h"
 #include "lowir/literals.h"
+#include "opt/loops.h"
 #include "opt/passes.h"
 #include "opt/scalar_fold.h"
 
@@ -8,6 +9,11 @@ namespace opt {
 using namespace lowir;
 
 namespace {
+
+// Large floating field sets with additional merges inside loops can add
+// repeated spill transfers. Keep those fields addressable; ordinary scalars
+// and loop-header-only states retain their normal promotion policy.
+const uint32_t kConditionalFloatFieldCap = 4;
 
 bool phi_type(Type type)
 {
@@ -595,6 +601,13 @@ void SlotPromotion::place_phis()
 	static std::vector<uint32_t> placed, queued;
 	static std::vector<BlockId> work;
 	static std::vector<std::pair<BlockId, uint32_t>> wanted;
+	uint32_t floating_fields = 0;
+	for (SlotId slot : slots_)
+		floating_fields += accessed_[slot] && body_.slots[slot].kind == SlotKind::Field &&
+			body_.slots[slot].type.is_float();
+	LoopForest pressure_loops;
+	if (c_.level >= 2 && floating_fields > kConditionalFloatFieldCap)
+		find_loops(body_, cfg_, pressure_loops);
 	placements.clear();
 	placed.assign(n, kNoId);
 	queued.assign(n, kNoId);
@@ -637,6 +650,14 @@ void SlotPromotion::place_phis()
 		// a multiple of its size (a deep loop nest whose counters each get
 		// a dead phi at every enclosing header would place depth^2); past
 		// it the remaining candidates keep their memory.
+		if (c_.level >= 2 && floating_fields > kConditionalFloatFieldCap &&
+			body_.slots[slots_[c]].kind == SlotKind::Field && body_.slots[slots_[c]].type.is_float())
+			for (const auto& w : wanted)
+			{
+				const uint32_t loop = pressure_loops.innermost[w.first];
+				if (loop != kNoId && pressure_loops.loops[loop].header != w.first)
+					rejected = true;
+			}
 		uint64_t inputs = 0;
 		for (const std::pair<BlockId, uint32_t>& w : wanted)
 			inputs += cfg_.pred_count(w.first);

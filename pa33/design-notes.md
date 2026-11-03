@@ -80,11 +80,22 @@ count alone does not establish a latency improvement.
 
 ## Frame layout, blocks and encoding
 
+Adjacent ordinary field stores can offer another size improvement: combine
+their written bytes when fewer memory operations suffice. Preserve holes,
+nonzero fields and the separate effects of volatile or atomic accesses.
+Check both code size and runtime work; a shorter encoding alone is not a
+performance result. The adjacent-zero-fields fixture bounds memory work
+without prescribing a particular clearing instruction.
+
 Lay out the final frame after allocation. Preserve object alignment, reuse
 storage only when lifetimes do not overlap, and derive unwind information from
 the actual saved registers and stack changes. Test leaf functions, calls,
 alternate exits and exceptional returns. Omitting a frame pointer changes
 addressing and unwind requirements; it is not just deleting two instructions.
+
+When eliminating stack stores, include each throwing call's handler reads.
+A later overwrite on the normal path cannot replace a value the handler
+needs before that overwrite. Check nested handlers and partial-width accesses.
 
 Place frequently followed edges together and keep cold paths out of hot loops
 where profitable. Alignment can improve fetch behavior or add work at every

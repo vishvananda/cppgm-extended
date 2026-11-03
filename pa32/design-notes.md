@@ -42,6 +42,11 @@ that all its accesses are understood. Splitting an aggregate may expose more
 promotable fields. Preserve padding, bit-fields, volatile members, alignment
 and ABI carriers; splitting every object is not always profitable.
 
+Conditionally updated fields can need many merge values inside a loop.
+Promoting all of them may turn a few memory updates into repeated register
+spills and transfers. Compare both native work and size, including inactive
+fields and early exits; a smaller SSA graph alone does not establish a win.
+
 ## Memory facts and safe motion
 
 Distinguish the proof that accesses cannot overlap from the proof that a load
@@ -109,6 +114,13 @@ callers harder to optimize and increase compiler cost. Consider hot work and
 cold paths separately, and bound total growth rather than copying a large body
 at every site. Partial specialization may remove repeated work without copying
 the whole function. Recursion and address-taken functions need separate care.
+
+A short returning path around a larger calling path can be useful to inline
+even when the whole body is not. Keep growth in that slower path from
+duplicating work at every caller or hiding the useful wrapper. Measure both
+retained code size and native execution; fewer copies alone are not a win.
+An early return around a loop does not make the loop's work cold. Include
+zero-work and nonzero iteration cases when checking those decisions.
 
 A direct-call optimization must respect replacement and `no_inline` metadata.
 A guessed virtual target needs a runtime identity check and an indirect

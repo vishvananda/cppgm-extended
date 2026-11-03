@@ -96,6 +96,25 @@ static unsigned oracle(QualityData* d, unsigned n) {
         for (unsigned i = 0; i < d->length; ++i) s += d->x[i] * d->y[i];
         d->z[0] = s;
     }
+#elif QUALITY_CASE == 11
+    for (unsigned r = 0; r < n; ++r) {
+        double a[8], b[8];
+        for (unsigned k = 0; k < 8; ++k) { a[k] = d->x[k]; b[k] = d->y[k]; }
+        unsigned active = 255u ^ d->alias;
+        for (unsigned step = 0; step < 16 && active; ++step) {
+            for (unsigned k = 0; k < 8; ++k) {
+                if (active & (1u << k)) {
+                    const double aa = a[k] * a[k], bb = b[k] * b[k];
+                    const double ab = a[k] * b[k];
+                    a[k] = aa - bb + d->x[k];
+                    b[k] = 2.0 * ab + d->y[k];
+                    if (aa + bb > 4.0) active &= ~(1u << k);
+                }
+            }
+        }
+        sum += active ^ r;
+        for (unsigned k = 0; k < 8; ++k) d->z[k] = a[k] + b[k];
+    }
 #endif
     return sum;
 }

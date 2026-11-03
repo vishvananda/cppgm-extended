@@ -81,7 +81,9 @@ void FunctionSelector::emit_atomic(const Instruction& inst)
 			load_into(kEmitScratch, value, kind == TypeKind::Ptr ? TypeKind::Ptr : kind);
 			value = Operand::make_reg(kEmitScratch);
 		}
-		emit2(inst.order == MemoryOrder::SeqCst ? Op::Xchg : Op::Store, kind, mem, value);
+		// Even a relaxed atomic store must remain a distinct access: MIR
+		// memory cleanup must not combine it with an adjacent field store.
+		emit2(inst.order == MemoryOrder::SeqCst ? Op::Xchg : Op::Store, kind, mem, value).flags |= MF_VOLATILE;
 		return;
 	}
 	case Opcode::AtomicAddFetch:

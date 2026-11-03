@@ -218,8 +218,9 @@ To evaluate one sidecar by hand:
 $ perl ../scripts/expect_ir.pl tests/o1/x.my tests/o1/x.ref.expect
 ```
 
-`make test-kernels` adds four dynamic work checks: bounded search, aliased and
-disjoint field updates, narrow arithmetic and state crossing a cold call.
+`make test-kernels` adds five dynamic work checks: bounded search, aliased and
+disjoint field updates, narrow arithmetic, state crossing a cold call and
+conditionally updated floating state.
 They use one host-built scalar oracle and driver, and compare startup-subtracted
 Cachegrind instruction counts against GCC. Each `.quality` file publishes its
 limit; the supplied frontend and unoptimized backend isolate your LowIR work.
@@ -342,7 +343,7 @@ source-language clauses.
   companion sources and the ordinary host-link result sidecars.
   An adjacent `.flags` file may select additional driver options, including
   the disabled-strict-aliasing case's `-O2 -fno-strict-aliasing`.
-- `tests/kernels` supplies the four required dynamic quality checks described
+- `tests/kernels` supplies the five required dynamic quality checks described
   above. `make test-kernels` runs these independently.
 - `tests/improvements` supplies optional vector, memory traversal and scheduling
   experiments. `make test-improvements` checks their behavior and reports work

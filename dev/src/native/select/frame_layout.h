@@ -30,9 +30,11 @@ bool order_frame(Function& function, const std::vector<FrameObject>& objects);
 // the function returns go. Only objects every access of which is a direct
 // load, store, compare, test or bulk copy of known bytes are tracked (no
 // address taken, no index, not the scratch area or the EH slot); a
-// function with EH landings, records or a variable argument list keeps
-// its stores. Backward liveness of the tracked bytes over the blocks to a
-// fixed point. Returns the stores dropped.
+// function with course EH records or a variable argument list keeps its
+// stores. Host landing reads join liveness at each throwing instruction,
+// before later normal-path overwrites. Backward liveness runs to a fixed
+// point within bounded scratch/work; exhaustion keeps all stores.
+// Returns the stores dropped.
 uint32_t drop_dead_frame_stores(Function& function, const std::vector<FrameObject>& objects);
 
 // The frame object holding a frame offset (lowir::kNoId: none).

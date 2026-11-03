@@ -1,0 +1,6 @@
+# Bound memory work while permitting scalar, vector or other valid strategies.
+mem <= 4 in @zero_fields
+
+# These are distinct observable accesses, independent of register selection.
+count(store) >= 2 in @volatile_fields
+count(store) >= 2 in @atomic_fields

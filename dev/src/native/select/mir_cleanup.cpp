@@ -10,16 +10,44 @@ namespace native {
 
 namespace {
 
+// A complete run of zero bytes can use the direct vector/scalar bulk form.
+// Its scratch XMM is reserved by selection; no ordinary register or flags
+// are clobbered. Gaps remain gaps, including padding between fields.
+bool merge_zero_run(std::vector<Inst>& insts, uint32_t first, uint32_t past, int32_t lo, uint32_t span,
+	const uint8_t* value, const uint8_t* written, bool wide)
+{
+	if (!wide || span < 16)
+		return false;
+	for (uint32_t p = 0; p < span; ++p)
+		if (!written[p] || value[p] != 0)
+			return false;
+	Inst& zero = insts[first];
+	zero.op = Op::ZeroBytes;
+	zero.type = lowir::TypeKind::Void;
+	zero.nops = 1;
+	zero.ops[0].disp = lo;
+	zero.aux = span;
+	zero.aux2 = 1;
+	for (uint32_t k = first + 1; k < past; ++k)
+	{
+		insts[k].op = Op::Nop;
+		insts[k].nops = 0;
+	}
+	return true;
+}
+
 // The stores insts[first, past) (immediates, one base): rewritten in place
 // when fewer chunks cover their bytes; stores that overlap, or span more
 // than 64 bytes, stay.
-void merge_store_run(std::vector<Inst>& insts, uint32_t first, uint32_t past)
+void merge_store_run(std::vector<Inst>& insts, uint32_t first, uint32_t past, bool wide)
 {
 	const uint32_t kSpan = 64;
 	int32_t lo = INT32_MAX, hi = INT32_MIN;
 	for (uint32_t k = first; k < past; ++k)
 	{
 		const int32_t disp = insts[k].ops[0].disp;
+		if (disp > INT32_MAX - static_cast<int32_t>(register_bytes(insts[k].type)))
+			return;
 		lo = std::min(lo, disp);
 		hi = std::max(hi, disp + static_cast<int32_t>(register_bytes(insts[k].type)));
 	}
@@ -37,6 +65,9 @@ void merge_store_run(std::vector<Inst>& insts, uint32_t first, uint32_t past)
 			value[at + b] = static_cast<uint8_t>(static_cast<uint64_t>(insts[k].ops[1].imm) >> (8 * b));
 		}
 	}
+	const uint32_t span = static_cast<uint32_t>(hi - lo);
+	if (merge_zero_run(insts, first, past, lo, span, value, written, wide))
+		return;
 	static const lowir::TypeKind kTypes[9] = { lowir::TypeKind::Void, lowir::TypeKind::I8, lowir::TypeKind::I16,
 		lowir::TypeKind::Void, lowir::TypeKind::I32, lowir::TypeKind::Void, lowir::TypeKind::Void,
 		lowir::TypeKind::Void, lowir::TypeKind::I64 };
@@ -44,7 +75,6 @@ void merge_store_run(std::vector<Inst>& insts, uint32_t first, uint32_t past)
 	uint8_t widths[kSpan];
 	int64_t imms[kSpan];
 	uint32_t count = 0;
-	const uint32_t span = static_cast<uint32_t>(hi - lo);
 	for (uint32_t p = 0; p < span;)
 	{
 		if (!written[p])
@@ -222,14 +252,24 @@ void merge_constant_stores(Function& function)
 		for (uint32_t i = block.first; i < block.first + block.count;)
 		{
 			uint32_t j = i;
+			int64_t lo = INT32_MAX, hi = INT32_MIN;
 			while (j < block.first + block.count && mergeable(insts[j]) && insts[j].ops[0].reg == insts[i].ops[0].reg)
+			{
+				const int64_t start = insts[j].ops[0].disp;
+				const int64_t end = start + register_bytes(insts[j].type);
+				const int64_t next_lo = std::min(lo, start), next_hi = std::max(hi, end);
+				if (next_hi - next_lo > 64)
+					break;
+				lo = next_lo;
+				hi = next_hi;
 				++j;
+			}
 			if (j - i < 2)
 			{
 				i = j == i ? i + 1 : j;
 				continue;
 			}
-			merge_store_run(insts, i, j);
+			merge_store_run(insts, i, j, function.wide_bulk);
 			i = j;
 		}
 	}
