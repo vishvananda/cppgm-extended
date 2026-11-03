@@ -3,14 +3,15 @@
 The target is at most 1.15 times GCC's `.text`, the existing PA35 code-size
 metric, while preserving native speed and compiler throughput. Whole executable
 size is reported separately: the last complete changed-source build meets the
-code-size target but its stripped ELF is still 1.163 times GCC's. Subsequent
-unwind changes are measured on frozen source below. This is an implementation
+code-size target but its stripped ELF is still 1.16174 times GCC's. Frozen and
+changed-source measurements are recorded below. This is an implementation
 review record, not a student handout.
 
 ## Evidence and size budget
 
-All comparisons use GNU C++11, `-O3`, libstdc++ and
-`-fno-strict-aliasing`, with identical source and flags within each pair.
+The frozen and repository comparisons use GNU C++11, `-O3`, libstdc++ and
+`-fno-strict-aliasing`; the separate default/student configurations enable
+strict aliasing. Source and flags match within each pair.
 The frozen comparison uses the 251 compiler translation units at
 `8d4c68b9e379`; rebuilding the changed source separately checks that the saving
 survives the implementation itself.
@@ -19,10 +20,11 @@ survives the implementation itself.
 | --- | ---: | ---: | ---: |
 | Frozen baseline | 5,596,214 | 7,143,970 | 1.2766 |
 | Frozen source, candidate code generator | 5,596,214 | 6,400,514 | 1.1437 |
-| Changed source, repository build flags | 5,599,798 | 6,407,202 | 1.1442 |
-| Changed source, student build flags | 5,585,558 | 6,407,794 | 1.1472 |
+| Changed source after unwind cleanup, repository flags | 5,603,958 | 6,408,770 | 1.1436 |
+| Changed source after unwind cleanup, PA34 default flags | 5,590,294 | 6,409,394 | 1.1465 |
+| Student plain flags, preceding checkpoint | 5,585,558 | 6,407,794 | 1.1472 |
 
-The frozen saving is 743,456 bytes, or 10.41%. The student configuration has
+The frozen saving is 743,456 bytes, or 10.41%. The preceding student plain configuration has
 15,598 bytes of headroom below 1.15 times GCC. This margin is small; size must
 remain a gate, including after future source or host-toolchain changes.
 
@@ -93,6 +95,13 @@ the proofs and tradeoffs without publishing implementation thresholds.
 
 ## Acceptance and further work
 
+- After reaching the size target, profile the reduction passes and remove
+  avoidable analysis, allocations and repeated work. Require paired O0 and O3
+  compile-cost checks, including both GNU-built and self-built compiler paths.
+  Keep fast paths cheap when an optimization cannot apply; do not give back
+  size or native speed to improve compile time. The initial CI comparison
+  suggests O0 compile speed relative to GCC fell about 1.9%; compilation was
+  not paired there, so reproduce it locally before attributing its cause.
 - Freeze both binaries and inputs, verify outputs, calibrate A/A, then retain
   mirrored ABBA observations. Check the 81 public native programs, compiler
   execution at O0/O3, PA35 kernels and the affected Boost container workload.
@@ -126,6 +135,13 @@ the proofs and tradeoffs without publishing implementation thresholds.
   cycles beyond the A/A block spread. CPU and wall-time efficiencies of
   1.0076 and 1.0042 remain within shared-host A/A variation. Every repeated
   object and linked frozen compiler reproduces its side's expected hash.
+- A later fixed-input GNU-built compiler comparison measures O0 instruction
+  efficiency 0.9993 and O3 efficiency 1.0139. O0 timing remains inside A/A
+  variation. The matched-flags self-built comparison gives O0 instruction
+  efficiency 0.9912 (about 0.9% extra work) and O3 efficiency 1.0027. Its
+  timing remains inconclusive across A/A spread. Each side emits byte-identical
+  objects between GNU-built and self-built compilers at both levels. Retain
+  and label the first self-built comparison as confounded by aliasing flags.
 - EPYC CI run 41624091729 passed at `6464fa34e`: the published O3 native score
   is 0.98 times GCC, self-built execution 0.99, and O3 compile speed 4.1.
   This is evidence for that revision; subsequent changes need their own CI
@@ -135,11 +151,18 @@ the proofs and tradeoffs without publishing implementation thresholds.
   A/A variation. A pre-existing mismatch between Clang and cppgm for
   same-named anonymous-namespace exception types is recorded separately and
   does not establish a regression from this change.
+- The preceding EPYC result improves about 0.4% over main across 80 comparable
+  native programs, but Spirit is about 2.4% slower and pugixml about 9% slower
+  relative to GCC. Pugixml's two paired blocks agree and A/A differs by only
+  0.6%; investigate rather than dismiss it as noise. Local pugixml is about
+  0.5% faster, so the microarchitecture-sensitive cause remains unresolved.
 - For a **whole stripped executable** target of 1.15 times GCC, another
   approximately 73 KB must go on the frozen comparison. Prioritize unwind-table
   and repeated ABI-entry
   metadata, then redundant address/copy instructions. Do not obtain the saving
   by deleting required unwind information or accepting poorer hot code.
+  The latest changed-source stripped pair is 7,502,184 versus GCC's 6,457,728
+  bytes (1.16174), leaving about 76 KB to remove in that configuration.
 - A diagnostic survey finds about 104 KB of apparently matching constructor
   and destructor entry bodies. Sharing is a later option only with typed proof
   of equivalent base/complete-object behavior, including tail padding, virtual
