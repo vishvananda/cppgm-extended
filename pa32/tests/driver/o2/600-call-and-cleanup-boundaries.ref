@@ -389,3 +389,4 @@ function @Derived___Derived(%this : ptr [object_bytes=8]) -> void [unwind=no, bi
     store typed ptr %t4, %this
     return void
 }
+equivalent_entry @Base___Base = @Base___Base__base_entry
