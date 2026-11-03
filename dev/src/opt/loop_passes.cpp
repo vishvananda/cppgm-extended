@@ -932,7 +932,7 @@ bool LoopPass::fill_pattern(uint32_t loop, const Induction& iv, InstId& store, I
 		const Literal bits = normalize_integer(st.type, body_.literals[v.index]);
 		const uint64_t byte = bits.low & 0xff;
 		for (uint64_t k = 1; k < size; ++k)
-			if (((bits.low >> (8 * k)) & 0xff) != byte)
+			if ((((k < 8 ? bits.low : bits.high) >> (8 * (k & 7))) & 0xff) != byte)
 				return false;
 		return load == kNoId;
 	}
@@ -2481,7 +2481,7 @@ bool LoopPass::unroll()
 
 const uint32_t kLoopTries = 16;
 
-// O2+: a loop counting an i64 down to zero by ones (its header branching on
+// O2+: a loop counting down to zero by ones (its header branching on
 // `c` or `ne|eq c, 0`) beside a pointer induction tests the pointer against
 // its end instead -- init + n * step, formed in the preheader -- when the
 // counter has no other use: it goes (std::uninitialized_fill_n's
@@ -2495,7 +2495,7 @@ bool LoopPass::count_to_pointer(uint32_t loop)
 	const InstId t = body_.blocks[h].last;
 	if (t == kNoId)
 		return false;
-	Instruction& term = body_.instructions[t];
+	const Instruction term = body_.instructions[t];
 	if (term.op != Opcode::Branch || !term.ops[0].is(ValueKind::Temp) || term.ops[1].index == term.ops[2].index ||
 		in_loop(forest_, loop, term.ops[1].index) == in_loop(forest_, loop, term.ops[2].index))
 		return false;
@@ -2518,7 +2518,8 @@ bool LoopPass::count_to_pointer(uint32_t loop)
 		nonzero_true = pred == ComparePredicate::Ne;
 		c = a;
 	}
-	if (!body_.temps[c.index].type.is_integer() || body_.temps[c.index].type.kind() != TypeKind::I64)
+	const Type count_type = body_.temps[c.index].type;
+	if (count_type.kind() != TypeKind::I64 && count_type.kind() != TypeKind::I32 && count_type.kind() != TypeKind::U32)
 		return false;
 	Induction counter, pointer;
 	bool have_counter = false, have_pointer = false;
@@ -2541,6 +2542,13 @@ bool LoopPass::count_to_pointer(uint32_t loop)
 	}
 	if (!have_counter || !have_pointer || (nonzero_true != in_loop(forest_, loop, term.ops[1].index)))
 		return false;
+	// Leave narrow fill counts for the guarded fill recognizers. Turning their
+	// test into a pointer range can otherwise expose a zero-trip source read.
+	if (count_type.kind() != TypeKind::I64)
+		for (BlockId b : l.blocks)
+			for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+				if (body_.instructions[i].op == Opcode::Load && invariant(loop, body_.instructions[i].ops[0]))
+					return false;
 	// The counter is read only by the test and its step; the step only by
 	// the counter's phi.
 	uint32_t counter_uses = 0, next_uses = 0;
@@ -2566,9 +2574,18 @@ bool LoopPass::count_to_pointer(uint32_t loop)
 		return Value::temp(body_.instructions[id].result);
 	};
 	const Type i64 = Type::scalar(TypeKind::I64), ptr = Type::scalar(TypeKind::Ptr);
+	Value count = counter.init;
+	if (count_type.kind() != TypeKind::I64)
+	{
+		Instruction widen = make_instruction(Opcode::Convert, i64);
+		widen.sub = static_cast<uint8_t>(ConvertOp::ZExt);
+		set_convert_source_type(widen, count_type);
+		widen.ops[0] = count;
+		count = emit(pre, at, widen, i64);
+	}
 	Instruction scale = make_instruction(Opcode::Binary, i64);
 	scale.sub = static_cast<uint8_t>(BinaryOp::Mul);
-	scale.ops[0] = counter.init;
+	scale.ops[0] = count;
 	scale.ops[1] = integer_value(body_, integer_literal(pointer.step_bytes));
 	const Value bytes = emit(pre, at, scale, i64);
 	Instruction end = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));

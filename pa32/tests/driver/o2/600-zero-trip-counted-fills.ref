@@ -1,0 +1,185 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i8 97
+  i8 98
+  i8 99
+  i8 0
+}
+global @__constexpr_template__2 [storage=readonly, binding=internal] = {
+  u32 1
+  u32 2
+}
+global @__constexpr_template__3 [storage=readonly, binding=internal] = {
+  i128 0
+  i128 0
+}
+
+function @fill_bytes(%p : ptr, %s : ptr, %n : u32) -> void [binding=strong, object=_Z10fill_bytesPcPKcj, no_inline=yes] {
+  block ^entry:
+    jump ^while_cond_1
+
+  block ^while_cond_1:
+    %t1 = phi u32 [^entry: %n, ^while_body_2: %t5]
+    %t2 = phi ptr [^entry: %p, ^while_body_2: %t4]
+    branch %t1, ^while_body_2, ^while_end_3
+
+  block ^while_body_2:
+    %t3 = load i8 %s
+    %t4 = index i8 %t2, 1
+    store i8 %t3, %t2
+    %t5 = binary sub u32 %t1, 1
+    jump ^while_cond_1
+
+  block ^while_end_3:
+    return void
+}
+function @fill_words(%p : ptr, %s : ptr, %n : u32) -> void [binding=strong, object=_Z10fill_wordsPjPKjj, no_inline=yes] {
+  block ^entry:
+    jump ^while_cond_1
+
+  block ^while_cond_1:
+    %t1 = phi u32 [^entry: %n, ^while_body_2: %t5]
+    %t2 = phi ptr [^entry: %p, ^while_body_2: %t4]
+    branch %t1, ^while_body_2, ^while_end_3
+
+  block ^while_body_2:
+    %t3 = load typed u32 %s
+    %t4 = index i8 %t2, 4
+    store typed u32 %t3, %t2
+    %t5 = binary sub u32 %t1, 1
+    jump ^while_cond_1
+
+  block ^while_end_3:
+    return void
+}
+function @fill_wide(%p : ptr, %n : u32) -> void [binding=strong, object=_Z9fill_widePoj, no_inline=yes] {
+  block ^entry:
+    %t1 = convert zext i64 u32 %n
+    %t2 = binary mul i64 %t1, 16
+    %t3 = index i8 %p, %t2
+    jump ^while_cond_1
+
+  block ^while_cond_1:
+    %t4 = phi ptr [^entry: %p, ^while_body_2: %t6]
+    %t5 = cmp ne ptr %t4, %t3
+    branch %t5, ^while_body_2, ^while_end_3
+
+  block ^while_body_2:
+    %t6 = index i8 %t4, 16
+    store typed i128 18446744073709551616, %t4
+    jump ^while_cond_1
+
+  block ^while_end_3:
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $zero : u32
+  slot $two : u32
+  slot $bytes : obj<4x1>
+  slot $words : obj<8x4>
+  slot $x : i8
+  slot $y : u32
+  slot $wide : obj<32x16>
+
+  block ^entry:
+    store volatile u32 0, $zero
+    store volatile u32 2, $two
+    %t1 = addr $bytes
+    copyobj 4x1 @__constexpr_template__1, %t1
+    %t2 = addr $words
+    store typed u32 1, %t2
+    %t3 = index i8 [projection=field] %t2, 4
+    store typed u32 2, %t3
+    %t4 = load volatile u32 $zero
+    call void @fill_bytes(%t1, 0, %t4)
+    %t5 = load volatile u32 $zero
+    call void @fill_words(%t2, 0, %t5)
+    %t6 = load i8 %t1
+    %t7 = cmp ne i8 %t6, 97
+    branch %t7, ^if_then_3, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t8 = load typed u32 %t2
+    %t9 = cmp ne u32 %t8, 1
+    branch %t9, ^if_then_3, ^lor_rhs_2
+
+  block ^lor_rhs_2:
+    %t10 = index u32 [projection=array_element] %t2, 1
+    %t11 = load typed u32 %t10
+    %t12 = cmp ne u32 %t11, 2
+    branch %t12, ^if_then_3, ^if_end_4
+
+  block ^if_then_3:
+    return i32 1
+
+  block ^if_end_4:
+    store i8 122, $x
+    store typed u32 16843009, $y
+    %t13 = addr $x
+    %t14 = load volatile u32 $two
+    call void @fill_bytes(%t1, %t13, %t14)
+    %t15 = addr $y
+    %t16 = load volatile u32 $two
+    call void @fill_words(%t2, %t15, %t16)
+    %t17 = load i8 %t1
+    %t18 = cmp ne i8 %t17, 122
+    branch %t18, ^if_then_9, ^lor_rhs_5
+
+  block ^lor_rhs_5:
+    %t19 = index i8 [projection=array_element] %t1, 1
+    %t20 = load i8 %t19
+    %t21 = cmp ne i8 %t20, 122
+    branch %t21, ^if_then_9, ^lor_rhs_6
+
+  block ^lor_rhs_6:
+    %t22 = index i8 [projection=array_element] %t1, 2
+    %t23 = load i8 %t22
+    %t24 = cmp ne i8 %t23, 99
+    branch %t24, ^if_then_9, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t25 = load typed u32 %t2
+    %t26 = load typed u32 $y
+    %t27 = cmp ne u32 %t25, %t26
+    branch %t27, ^if_then_9, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t28 = load typed u32 %t10
+    %t29 = cmp ne u32 %t26, %t28
+    branch %t29, ^if_then_9, ^if_end_10
+
+  block ^if_then_9:
+    return i32 2
+
+  block ^if_end_10:
+    %t30 = addr $wide
+    copyobj 32x16 @__constexpr_template__3, %t30
+    %t31 = load volatile u32 $two
+    call void @fill_wide(%t30, %t31)
+    jump ^for_cond_11
+
+  block ^for_cond_11:
+    %t32 = phi u32 [^if_end_10: 0, ^if_end_15: %t39]
+    %t33 = cmp ult u32 %t32, 2
+    branch %t33, ^for_body_12, ^for_end_16
+
+  block ^for_body_12:
+    %t34 = index i128 [projection=array_element] %t30, %t32
+    %t35 = load i64 %t34
+    %t36 = index i8 [projection=field] %t34, 8
+    %t37 = load i64 %t36
+    %t38 = cmp ne i64 %t37, 1
+    branch %t38, ^if_then_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    branch %t35, ^if_then_14, ^if_end_15
+
+  block ^if_then_14:
+    return i32 3
+
+  block ^if_end_15:
+    %t39 = binary add u32 %t32, 1
+    jump ^for_cond_11
+
+  block ^for_end_16:
+    return i32 0
+}

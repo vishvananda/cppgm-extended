@@ -316,18 +316,21 @@ function @back_without_store(%n : i64, %f : i64) -> void [no_inline=yes] {
     jump ^head
 
   block ^head:
-    %i = phi i64 [^entry: 0, ^head: %next, ^write: %next]
+    %i = phi i64 [^entry: 0, ^loop_preheader_4: %next]
     %next = binary add i64 %i, 1
     %e = cmp eq i64 %f, %i
-    branch %e, ^head, ^write
+    branch %e, ^loop_preheader_4, ^write
 
   block ^write:
     store typed i64 %i, @total
     %c = cmp ult i64 %next, %n
-    branch %c, ^head, ^done
+    branch %c, ^loop_preheader_4, ^done
 
   block ^done:
     return void
+
+  block ^loop_preheader_4:
+    jump ^head
 }
 function @pointer_walk(%p : ptr, %e : ptr) -> void [no_inline=yes] {
   block ^entry:

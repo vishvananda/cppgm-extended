@@ -413,6 +413,92 @@ bool merge_loop_entries(FunctionContext& context)
 	return any;
 }
 
+// Small branchy loops often have a back edge on both the ordinary and boundary
+// paths. Join those edges so induction analysis and rotation see one latch.
+bool merge_loop_latches(FunctionContext& context)
+{
+	context.ensure_cfg();
+	FunctionBody& body = context.body;
+	LoopForest forest;
+	find_loops(body, context.cfg, forest);
+	std::vector<uint8_t> touched(body.blocks.size(), 0);
+	unsigned joined = 0;
+	for (uint32_t loop = static_cast<uint32_t>(forest.loops.size()); loop-- > 0 && joined < kRotateRounds;)
+	{
+		const Loop& l = forest.loops[loop];
+		if (l.latches.size() < 2 || l.latches.size() > 4 || l.blocks.size() > 4)
+			continue;
+		const InstId term = body.blocks[l.header].last;
+		if (term == kNoId || body.instructions[term].op != Opcode::Branch)
+			continue;
+		bool plain = true;
+		unsigned count = 0;
+		for (InstId i = body.blocks[l.header].first; i != term && plain; i = body.instructions[i].next)
+			if (body.instructions[i].op != Opcode::Phi)
+				plain = ++count <= kRotateCopy && rotation_copyable(body.instructions[i]);
+		if (!plain || !claim_loop(context.cfg, l, touched))
+			continue;
+		const BlockId latch = append_block(body, BlockKind::LoopPreheader);
+		body.layout.push_back(latch);
+		InstId tail = kNoId;
+		for (InstId i = body.blocks[l.header].first; i != term && body.instructions[i].op == Opcode::Phi;
+			i = body.instructions[i].next)
+		{
+			const Instruction phi = body.instructions[i];
+			std::vector<Value> outside, incoming;
+			Value common = Value::none();
+			bool same = true;
+			for (uint32_t k = 0; k < phi.extra_count; k += 2)
+			{
+				const Value pred = body.operands[phi.extra_first + k], value = body.operands[phi.extra_first + k + 1];
+				std::vector<Value>& pairs = in_loop(forest, loop, pred.index) ? incoming : outside;
+				if (in_loop(forest, loop, pred.index))
+				{
+					if (common.is(ValueKind::None))
+						common = value;
+					else
+						same = same && common == value;
+				}
+				pairs.push_back(pred);
+				pairs.push_back(value);
+			}
+			if (!same)
+			{
+				Instruction merge = make_instruction(Opcode::Phi, phi.type);
+				merge.location = phi.location;
+				merge.extra_first = append_operands(body, incoming.data(), static_cast<uint32_t>(incoming.size()));
+				merge.extra_count = static_cast<uint32_t>(incoming.size());
+				const InstId id = append_instruction(body, merge);
+				body.instructions[id].result = append_temp(body, phi.type, id);
+				insert_after(body, latch, tail, id);
+				tail = id;
+				common = Value::temp(body.instructions[id].result);
+			}
+			outside.push_back(Value::block(latch));
+			outside.push_back(common);
+			const uint32_t first = append_operands(body, outside.data(), static_cast<uint32_t>(outside.size()));
+			body.instructions[i].extra_first = first;
+			body.instructions[i].extra_count = static_cast<uint32_t>(outside.size());
+		}
+		Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
+		jump.ops[0] = Value::block(l.header);
+		insert_after(body, latch, tail, append_instruction(body, jump));
+		for (BlockId from : l.latches)
+			for_each_successor(body, body.instructions[body.blocks[from].last], [&](BlockId& target) {
+				if (target == l.header)
+					target = latch;
+			});
+		++joined;
+	}
+	if (joined != 0)
+	{
+		context.invalidate_cfg();
+		context.invalidate_block_of();
+		context.invalidate_uses();
+	}
+	return joined != 0;
+}
+
 bool rotate_loops(FunctionContext& context)
 {
 	LoopRotation pass(context);

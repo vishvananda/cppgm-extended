@@ -373,6 +373,12 @@ bool finish_loops(FunctionContext& context, int level)
 	changed = RUN_PASS(hoist_loop_loads) || changed;
 	changed = hoist_loops(context) || changed;
 	changed = RUN_PASS(version_fill_loops) || changed;
+	if (level >= 3 && RUN_PASS(merge_loop_latches))
+	{
+		RUN_PASS(remove_loops);
+		RUN_PASS(remove_dead_code);
+		changed = true;
+	}
 	// (Last: the counters' facts hold for the instructions as they stand.)
 	changed = RUN_PASS(mark_no_wrap_counters) || changed;
 	// O3: rotated loops, what each pass loads anew and what the latch just
@@ -421,6 +427,12 @@ bool finish_loops(FunctionContext& context, int level)
 		// (A load's address may be arithmetic the swap made invariant.)
 		RUN_PASS(hoist_loop_invariants);
 		hoist_loops(context);
+		changed = true;
+	}
+	if (level >= 3 && RUN_PASS(cache_loop_loads))
+	{
+		RUN_PASS(remove_dead_code);
+		RUN_PASS(simplify_values);
 		changed = true;
 	}
 	// O3: loops in lanes, then what their guards and exits leave.

@@ -19,6 +19,10 @@ changes expensive. Keep use/definition information and control-flow analyses
 consistent after edits. A transformation that reports no change should not
 force another round of unrelated analyses.
 
+A join needs a phi only when the incoming value can be read before another
+definition. Liveness can avoid unnecessary phis and stack traffic, but must
+include exceptional paths and preserve values a handler observes.
+
 ## Scalar and control-flow simplification
 
 Start with constant folding, identities, copies and unreachable blocks.
@@ -90,6 +94,13 @@ Unswitching moves an invariant choice outside a loop by making specialized
 paths. Interchange changes the traversal of a nest. For either, prove memory
 dependences and final values, including exceptional exits, before considering
 profitability.
+
+A conditional pointer update can leave a segment boundary unchanged on most
+iterations. Consider carrying the boundary with that pointer and comparing a
+copying pointer against its end. Prove which stores can change a loaded
+boundary, preserve zero-work guards, and test segment crossings, overlapping
+ranges, byte aliases and volatile accesses. Measure the resulting program;
+fewer scalar instructions can still increase register pressure.
 
 ## Calls and exceptions
 

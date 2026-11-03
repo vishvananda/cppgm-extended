@@ -198,6 +198,10 @@ bool mark_no_wrap_counters(FunctionContext& context);
 // loop may write, moves to the preheader with its address steps.
 bool hoist_loop_loads(FunctionContext& context);
 
+// O3: carry a typed pointer load and its constant boundary through a small
+// pointer-phi graph when loop stores cannot change it (loop_load_cache.cpp).
+bool cache_loop_loads(FunctionContext& context);
+
 // Loop rotation (O3, last, opt/loop_rotation.cpp): a header that only tests
 // is copied into the latches and stays as the guard; its values go
 // through slots for promote_slots to join again.
@@ -205,6 +209,8 @@ bool rotate_loops(FunctionContext& context);
 // O3: a loop entered from several blocks is entered from one, which merges what
 // they bring (a phi of the loop may then fold before rotation reads it).
 bool merge_loop_entries(FunctionContext& context);
+// O3: join the back edges of small branchy loops before induction/rotation.
+bool merge_loop_latches(FunctionContext& context);
 
 // Loop vectorization (O3, last, opt/loop_vectorizer.cpp): a one-block counted
 // loop also runs in sixteen-byte lanes before the scalar loop, which finishes.

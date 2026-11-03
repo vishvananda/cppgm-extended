@@ -1,0 +1,3 @@
+# Behavior and serialization are the oracle; allow different loop strategies.
+instructions <= 1500
+blocks <= 350

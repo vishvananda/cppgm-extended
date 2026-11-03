@@ -575,6 +575,16 @@ void FunctionLowering::aggregate_array(
 		else
 			literal = nullptr;
 	}
+	// Empty integral lists initialize the whole array to zero. Preserve scalar
+	// accesses for volatile/atomic elements and construction for class elements.
+	sema::IntegralKind zero_kind;
+	if (list != nullptr && list->elements.empty() &&
+		((type->cv | element->cv) & (sema::kVolatile | sema::kAtomic)) == 0 &&
+		sema::IntegralKindOf(element, zero_kind) && lowering_.size_of(type, location) >= 32)
+	{
+		zero_object(type, path_address(path), location);
+		return;
+	}
 	const lowir::Type element_storage = lowering_.storage_type(element);
 	if (literal == nullptr)
 	{

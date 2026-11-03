@@ -478,8 +478,23 @@ void SlotPromotion::dominance_frontiers()
 		df_[fill[f.first]++] = f.second;
 }
 
-// Phis at the iterated frontier of each candidate's stores; a candidate
-// needing a phi in a handler block stays a slot.
+static void candidate_blocks(uint32_t count, const std::vector<std::pair<uint32_t, BlockId>>& pairs,
+	std::vector<uint32_t>& first, std::vector<BlockId>& blocks)
+{
+	first.assign(count + 1, 0);
+	for (const std::pair<uint32_t, BlockId>& p : pairs)
+		++first[p.first + 1];
+	for (uint32_t c = 0; c < count; ++c)
+		first[c + 1] += first[c];
+	blocks.assign(pairs.size(), 0);
+	std::vector<uint32_t> fill(first.begin(), first.end() - 1);
+	for (const std::pair<uint32_t, BlockId>& p : pairs)
+		blocks[fill[p.first]++] = p.second;
+}
+
+// Phis at the live iterated frontier of each candidate's stores; a candidate
+// needing a live phi in a handler block stays a slot. Bounded liveness work
+// falls back to conservative, semi-pruned placement.
 void SlotPromotion::place_phis()
 {
 	const uint32_t n = cfg_.block_count;
@@ -496,7 +511,9 @@ void SlotPromotion::place_phis()
 	// (The vectors below persist for their capacity: each is assigned or
 	// emptied before use; promotion never runs inside itself.)
 	static std::vector<std::pair<uint32_t, BlockId>> stores;
+	static std::vector<std::pair<uint32_t, BlockId>> reads;
 	stores.clear();
+	reads.clear();
 	// Semi-pruned placement: a candidate read in no block before that
 	// block stores it is never live into a block, and needs no phi.
 	static std::vector<uint8_t> exposed;
@@ -509,7 +526,11 @@ void SlotPromotion::place_phis()
 			const Instruction& inst = body_.instructions[i];
 			if (inst.op == Opcode::Load && inst.ops[0].is(ValueKind::Slot) && candidate_[inst.ops[0].index] != kNoId &&
 				stored_in[candidate_[inst.ops[0].index]] != b)
-				exposed[candidate_[inst.ops[0].index]] = 1;
+			{
+				const uint32_t c = candidate_[inst.ops[0].index];
+				exposed[c] = 1;
+				reads.push_back(std::make_pair(c, b));
+			}
 			if (inst.op == Opcode::Store && inst.ops[1].is(ValueKind::Slot) && candidate_[inst.ops[1].index] != kNoId)
 			{
 				const uint32_t c = candidate_[inst.ops[1].index];
@@ -518,20 +539,57 @@ void SlotPromotion::place_phis()
 				stored_in[c] = b;
 			}
 		}
-	static std::vector<uint32_t> def_first;
-	def_first.assign(count + 1, 0);
-	for (const std::pair<uint32_t, BlockId>& d : stores)
-		++def_first[d.first + 1];
-	for (uint32_t c = 0; c < count; ++c)
-		def_first[c + 1] += def_first[c];
-	static std::vector<BlockId> defs;
-	defs.assign(stores.size(), 0);
-	{
-		static std::vector<uint32_t> fill;
-		fill.assign(def_first.begin(), def_first.end() - 1);
-		for (const std::pair<uint32_t, BlockId>& d : stores)
-			defs[fill[d.first]++] = d.second;
-	}
+	static std::vector<uint32_t> def_first, read_first;
+	static std::vector<BlockId> defs, read_blocks;
+	candidate_blocks(count, stores, def_first, defs);
+	candidate_blocks(count, reads, read_first, read_blocks);
+	// Ordinary predecessors are already indexed. Include exception edges in
+	// backward liveness too, retaining the existing handler-state checks.
+	static std::vector<std::pair<uint32_t, BlockId>> handlers;
+	static std::vector<uint32_t> handler_first;
+	static std::vector<BlockId> handler_preds;
+	handlers.clear();
+	for (BlockId b : cfg_.rpo)
+		for (uint32_t k = cfg_.handler_first[b]; k < cfg_.handler_first[b + 1]; ++k)
+			handlers.push_back(std::make_pair(cfg_.handlers[k], b));
+	candidate_blocks(n, handlers, handler_first, handler_preds);
+	static std::vector<uint32_t> live, defined;
+	static std::vector<BlockId> live_work;
+	live.assign(n, kNoId);
+	defined.assign(n, kNoId);
+	uint64_t live_budget = 8 * (body_.instructions.size() + cfg_.succs.size() + 1);
+	// Walk backward only from reads before a store, stopping at definitions.
+	// No blocks-by-slots matrix is allocated.
+	auto mark_live = [&](uint32_t c) {
+		live_work.clear();
+		for (uint32_t k = def_first[c]; k < def_first[c + 1]; ++k)
+			defined[defs[k]] = c;
+		auto visit = [&](BlockId b) {
+			if (live[b] != c)
+			{
+				live[b] = c;
+				live_work.push_back(b);
+			}
+		};
+		for (uint32_t k = read_first[c]; k < read_first[c + 1]; ++k)
+			visit(read_blocks[k]);
+		while (!live_work.empty())
+		{
+			const BlockId b = live_work.back();
+			live_work.pop_back();
+			const uint64_t edges = cfg_.pred_count(b) + handler_first[b + 1] - handler_first[b];
+			if (live_budget < edges + 1)
+				return false;
+			live_budget -= edges + 1;
+			for (uint32_t k = cfg_.pred_first[b]; k < cfg_.pred_first[b + 1]; ++k)
+				if (defined[cfg_.preds[k]] != c)
+					visit(cfg_.preds[k]);
+			for (uint32_t k = handler_first[b]; k < handler_first[b + 1]; ++k)
+				if (defined[handler_preds[k]] != c)
+					visit(handler_preds[k]);
+		}
+		return true;
+	};
 	// (block, candidate, phi) in placement order.
 	static std::vector<std::pair<BlockId, std::pair<uint32_t, InstId>>> placements;
 	static std::vector<uint32_t> placed, queued;
@@ -546,6 +604,7 @@ void SlotPromotion::place_phis()
 	{
 		if (!exposed[c])
 			continue;
+		const bool pruned = mark_live(c);
 		wanted.clear();
 		work.assign(defs.begin() + def_first[c], defs.begin() + def_first[c + 1]);
 		for (BlockId b : work)
@@ -558,7 +617,7 @@ void SlotPromotion::place_phis()
 			for (uint32_t k = df_first_[b]; k < df_first_[b + 1]; ++k)
 			{
 				const BlockId f = df_[k];
-				if (placed[f] == c)
+				if (placed[f] == c || (pruned && live[f] != c))
 					continue;
 				if ((cfg_.flags[f] & BF_HANDLER) != 0)
 				{

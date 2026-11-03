@@ -1,0 +1,3 @@
+# Runtime outcomes, including handler-visible state, are required.
+instructions <= 1500
+blocks <= 350

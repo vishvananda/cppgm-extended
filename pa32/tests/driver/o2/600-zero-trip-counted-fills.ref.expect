@@ -1,0 +1,3 @@
+# Preserve behavior across zero work and both halves of a wide value.
+instructions <= 500
+blocks <= 120
