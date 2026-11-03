@@ -1781,6 +1781,7 @@ uint32_t fuse_adds_and_extensions(Function& function)
 			case Op::Sar:
 			case Op::Rol:
 			case Op::Ror:
+			case Op::Cmov:
 			case Op::Movzx:
 			case Op::Sext:
 			case Op::Zext:
