@@ -93,6 +93,11 @@ the actual saved registers and stack changes. Test leaf functions, calls,
 alternate exits and exceptional returns. Omitting a frame pointer changes
 addressing and unwind requirements; it is not just deleting two instructions.
 
+A shared return sequence is useful only when a path reaches it. After giving
+exits their own teardown, check whether a shared copy remains reachable through
+a branch or fallthrough. Retain unwind rows for every emitted exit and calls
+in cleanup code, including calls with stack arguments.
+
 When eliminating stack stores, include each throwing call's handler reads.
 A later overwrite on the normal path cannot replace a value the handler
 needs before that overwrite. Check nested handlers and partial-width accesses.

@@ -3,7 +3,7 @@
 The target is at most 1.15 times GCC's `.text`, the existing PA35 code-size
 metric, while preserving native speed and compiler throughput. Whole executable
 size is reported separately: the current candidate meets the code-size target
-but its stripped ELF is still 1.174 times GCC's. This is an implementation
+but its stripped ELF is still 1.163 times GCC's. This is an implementation
 review record, not a student handout.
 
 ## Evidence and size budget
@@ -17,12 +17,18 @@ survives the implementation itself.
 | Build | GCC `.text` | cppgm++ `.text` | cppgm++ / GCC |
 | --- | ---: | ---: | ---: |
 | Frozen baseline | 5,596,214 | 7,143,970 | 1.2766 |
-| Frozen source, candidate code generator | 5,596,214 | 6,428,114 | 1.1487 |
-| Changed source, candidate self-build | 5,600,054 | 6,431,922 | 1.1485 |
+| Frozen source, candidate code generator | 5,596,214 | 6,400,514 | 1.1437 |
+| Changed source, repository build flags | 5,599,798 | 6,407,202 | 1.1442 |
+| Changed source, student build flags | 5,585,558 | 6,407,794 | 1.1472 |
 
-The frozen saving is 715,856 bytes, or 10.02%. The changed-source pair has
-8,140 bytes of headroom below 1.15 times GCC. This margin is small; size must
+The frozen saving is 743,456 bytes, or 10.41%. The student configuration has
+15,598 bytes of headroom below 1.15 times GCC. This margin is small; size must
 remain a gate, including after future source or host-toolchain changes.
+
+The ordered ablations save 53,776 bytes from adjacent zero stores, 26,944
+from EH-aware dead stores, 635,136 from the inlining/promotion policy, and
+27,600 from unused machine epilogues. These are incremental measurements in
+that order; the transformations can interact.
 
 Reachability checks find no disconnected LowIR blocks in three representative
 inputs, including exception edges. Linker garbage collection removes only
@@ -52,6 +58,11 @@ confirming duplication as an important cause, but loses useful optimization.
    functions using handler liveness at each throwing instruction, with bounded
    analysis memory and work. A later normal overwrite cannot kill a value a
    handler observes.
+4. **Remove unreachable shared epilogues.** When every emitted exit already
+   returns or transfers control, omit the unused common return sequence and
+   its unwind rows. Keep implicit fallthrough and shared-return branches
+   conservative. Preserve call-frame and stack-argument rules for calls after
+   the last normal return, including cleanup landings.
 
 These changes use existing typed LowIR and MIR information and need no format
 extension. Required PA32/PA33 fixtures execute both normal and exceptional
@@ -72,29 +83,33 @@ the proofs and tradeoffs without publishing implementation thresholds.
   a validated student export. The strict report passes 7,990/7,990, and
   debug-info, architecture audits, self-host through PA5, inception, harness,
   export and all 6,002 generated programs at O0–O3 pass. PA35's course build
-  passes 17/17 gates; its complete release-margin check is still running.
-  The public native geometric mean is 1.0025 times baseline CPU speed, but a
-  ten-block Spirit rerun is 0.956 times baseline with good A/A calibration.
-  That outlier is not performance-neutral; the candidate is not accepted for
-  main under a requirement that every program retain its speed.
+  passed 17/17 gates before epilogue cleanup. Its complete release check
+  reported insufficient text and lookup-kernel margins; the initial student
+  build also exceeded the text limit. The revised builds both meet the text
+  limit, but still lack the release check's additional 1% size margin. The
+  lookup result (1.2827 times GCC's instructions) is unchanged and lacks its
+  required 2% margin. Do not relax the gates or edit the calibration to hide
+  these findings.
+- The revised candidate matches all 81 public outputs, with 1.0032 times
+  baseline instruction efficiency and no individual increase above 1% in the
+  counter screen. Its complete paired timing is still running. A targeted
+  Spirit rerun is about 0.982 times baseline CPU speed; that outlier remains
+  under review. The candidate is not accepted for main under a requirement
+  that every program retain its speed.
 - Recheck the EPYC CI score before merging. Local Intel results cannot prove
   performance on another microarchitecture.
 - For a **whole stripped executable** target of 1.15 times GCC, another
-  approximately 156 KB must go. Prioritize unwind-table and repeated ABI-entry
+  approximately 86 KB must go. Prioritize unwind-table and repeated ABI-entry
   metadata, then redundant address/copy instructions. Do not obtain the saving
   by deleting required unwind information or accepting poorer hot code.
-- Remove unused machine epilogues before pursuing broader sharing. A private
-  prototype omits the shared return sequence when every emitted path already
-  returns or transfers control, saving another 27,600 frozen compiler text
-  bytes (1.1437 times GCC). This is unreachable machine code outside the
-  explicit LowIR block graph. Keep implicit fallthrough, nonduplicated returns
-  and required unwind rules; host EH and runtime validation are still pending
-  for this separate prototype.
 - A diagnostic survey finds about 104 KB of apparently matching constructor
   and destructor entry bodies. Sharing is a later option only with typed proof
   of equivalent base/complete-object behavior, including tail padding, virtual
   bases, EH, symbol replacement and COMDAT. Matching instruction bytes is not
   sufficient proof.
+  If sharing needs new facts across the LowIR boundary, document their public
+  semantics and test direct and serialized routes. The current changes add
+  no LowIR facts.
 
 Raw measurements, prototypes (including rejected policies) and commands live
 outside the repository in

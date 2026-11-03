@@ -274,7 +274,8 @@ void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vec
 			while (next_call < facts.calls.size())
 			{
 				const UnwindFacts::CallSite& call = facts.calls[next_call];
-				if (lsda && call.landing != 0 && call.args != args && call.begin < facts.ret_end)
+				if (lsda && call.landing != 0 && call.args != args &&
+					(facts.ret_end == 0 || call.begin < facts.ret_end))
 					break;
 				++next_call;
 			}
@@ -301,7 +302,7 @@ void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vec
 	};
 	// The duplicated epilogues, then the shared one; an epilogue's first
 	// rule follows the release (or its first pop).
-	for (size_t r = 0; r <= facts.returns.size(); ++r)
+	for (size_t r = 0; r < facts.returns.size() + (facts.ret_end != 0); ++r)
 	{
 		const bool shared = r == facts.returns.size();
 		const uint32_t* pop_end = shared ? facts.pop_end : facts.returns[r].pop_end;
@@ -310,6 +311,10 @@ void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vec
 		epilogue(pop_end, released_end, shared ? facts.ret_end : facts.returns[r].ret_end,
 			!shared || facts.size > facts.ret_end);
 	}
+	// Without a shared epilogue, calls and argument areas can continue
+	// after the last duplicated return (for example in a cleanup landing).
+	if (facts.ret_end == 0)
+		body_events(0xffffffffu);
 }
 
 void encode_frame_instructions(const UnwindFacts& facts, bool lsda, std::vector<uint8_t>& out)
@@ -367,7 +372,7 @@ void encode_frame_instructions(const UnwindFacts& facts, bool lsda, std::vector<
 			epilogue(facts.returns[next_return].leave_end, facts.returns[next_return].ret_end, true);
 			++next_return;
 		}
-		if (!lsda || call.landing == 0 || call.args == args || call.begin >= facts.ret_end)
+		if (!lsda || call.landing == 0 || call.args == args || (facts.ret_end != 0 && call.begin >= facts.ret_end))
 			continue;
 		cursor.advance(call.begin);
 		out.push_back(DW_CFA_GNU_args_size);
@@ -376,7 +381,8 @@ void encode_frame_instructions(const UnwindFacts& facts, bool lsda, std::vector<
 	}
 	for (; next_return < facts.returns.size(); ++next_return)
 		epilogue(facts.returns[next_return].leave_end, facts.returns[next_return].ret_end, true);
-	epilogue(facts.leave_end, facts.ret_end, facts.size > facts.ret_end);
+	if (facts.ret_end != 0)
+		epilogue(facts.leave_end, facts.ret_end, facts.size > facts.ret_end);
 }
 
 void encode_fde(uint32_t cie, uint32_t code_bytes, bool lsda, const uint8_t* instructions, size_t count,

@@ -603,6 +603,9 @@ void FunctionEmitter::encode(const Function& function)
 	unwind_.returns.clear();
 	unwind_.prologues.clear();
 	unwind_.adjusts.clear();
+	unwind_.ret_end = 0;
+	bool shared_epilogue = false;
+	bool falls_through = true;
 	rsp_shift_ = 0;
 	dynamic_stack_ = function.eh_records_pushed;
 	for (size_t i = 0; i < function.insts.size() && !dynamic_stack_; ++i)
@@ -684,6 +687,13 @@ void FunctionEmitter::encode(const Function& function)
 			if (head != loop_heads_.end() && *head == block_start_[b])
 				align_loop_head(static_cast<size_t>(head - loop_heads_.begin()));
 		}
+		falls_through = true;
+		if (block.count != 0)
+		{
+			const Op last = function.insts[block.first + block.count - 1].op;
+			falls_through = last != Op::Ret && last != Op::FRet && last != Op::Jmp && last != Op::JumpTable &&
+				last != Op::TailJump && last != Op::Throw && last != Op::Resume && last != Op::Trap;
+		}
 		asm_.bind(labels_[b]);
 		// An argument area a noreturn call left open ends with its block.
 		if (rsp_shift_ != 0)
@@ -718,6 +728,10 @@ void FunctionEmitter::encode(const Function& function)
 			}
 			if (inst.op == Op::Jmp && next < blocks && labels_[inst.ops[0].symbol] == next_label)
 				continue;
+			// Other returns emit their own epilogues. A final framed
+			// return falls into the shared one; nonduplicated returns jump.
+			if ((inst.op == Op::Ret && !(inst.flags & MF_FRAMELESS)) || inst.op == Op::FRet)
+				shared_epilogue |= !function.duplicate_epilogues || (next == blocks && i + 1 == block.count);
 			inst_index_ = index;
 			instruction(function, inst, index, next == blocks && i + 1 == block.count);
 			if (pending_copy_ != kNoReg)
@@ -728,7 +742,10 @@ void FunctionEmitter::encode(const Function& function)
 		}
 	}
 	asm_.bind(epilogue_);
-	epilogue(function);
+	// Keep implicit fallthrough conservative. Otherwise a shared return
+	// with no incoming path is unreachable code, including its unwind rows.
+	if (shared_epilogue || falls_through)
+		epilogue(function);
 	if (terminal_used_)
 		resume_terminal(function);
 	if (eh_model_ == EhModel::Host)

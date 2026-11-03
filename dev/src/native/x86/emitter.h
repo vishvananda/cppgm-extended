@@ -74,7 +74,7 @@ struct UnwindFacts
 		uint32_t pop_end[6]; // frameless: after each pop, in pop order
 	};
 	uint32_t leave_end = 0;        // after the shared epilogue's `leave`
-	uint32_t ret_end = 0;          // after its `ret`; the resume terminal follows
+	uint32_t ret_end = 0;          // after its `ret`, or 0 when no shared epilogue is emitted
 	uint32_t pop_end[6] = {};      // frameless: after the shared epilogue's pops
 	std::vector<Epilogue> returns; // duplicated epilogues before it, in order
 	// A shrink-wrapped function's prologues (each sets the frame up from
