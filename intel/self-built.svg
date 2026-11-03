@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="51" height="24" viewBox="0 0 51 24" role="img" aria-label="self-built speed vs gcc: 0.97×">
-  <title>self-built speed vs gcc: 0.97×</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="51" height="24" viewBox="0 0 51 24" role="img" aria-label="self-built speed vs gcc: 0.96×">
+  <title>self-built speed vs gcc: 0.96×</title>
   <rect width="51" height="24" rx="4" fill="#166534"/>
-  <text x="25.5" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="39" lengthAdjust="spacingAndGlyphs">0.97×</text>
+  <text x="25.5" y="16.5" fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="12" font-weight="700" letter-spacing="1" textLength="39" lengthAdjust="spacingAndGlyphs">0.96×</text>
 </svg>
