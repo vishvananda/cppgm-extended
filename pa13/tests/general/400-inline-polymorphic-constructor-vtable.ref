@@ -244,3 +244,5 @@ function @Base___Base(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=
 }
 alias object _ZN4ImplC2Ev = @Impl__Impl
 alias object _ZN4ImplD2Ev = @Impl___Impl
+equivalent_entry @Base___Base = @Base___Base__base_entry
+equivalent_entry @Base__Base = @Base__Base__base_entry

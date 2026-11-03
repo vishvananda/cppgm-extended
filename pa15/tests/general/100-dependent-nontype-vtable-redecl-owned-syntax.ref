@@ -126,3 +126,4 @@ function @Control_int_7____Control(%this : ptr [object_bytes=8]) -> void [unwind
     return void
 }
 alias object _ZN7ControlIiLi7EEC2Ev = @Control_int_7___Control
+equivalent_entry @Control_int_7____Control = @Control_int_7____Control__base_entry

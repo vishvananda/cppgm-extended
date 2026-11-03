@@ -1,0 +1,26 @@
+# Bound the union of the two entries' code, allowing either body to be kept,
+# aliases, forwarding entries, or another implementation with compact code.
+perl -e '
+use strict; use warnings;
+open(my $fh, "-|", "readelf", "-sW", $ARGV[0]) or die "readelf: $!";
+my @entries;
+while (<$fh>) {
+  my @f = split;
+  next unless @f >= 8 && $f[3] eq "FUNC" &&
+              $f[7] =~ /^_ZN10EntryStateC[12]Ei$/ && $f[6] =~ /^\d+$/;
+  push @entries, [ $f[6], hex($f[1]), 0 + $f[2] ];
+}
+close($fh) or die "readelf failed";
+die "missing constructor entries" unless @entries == 2;
+my ($a, $b) = @entries;
+my $bytes = $a->[2] + $b->[2];
+if ($a->[0] eq $b->[0]) {
+  my $first = $a->[1] > $b->[1] ? $a->[1] : $b->[1];
+  my $end_a = $a->[1] + $a->[2]; my $end_b = $b->[1] + $b->[2];
+  my $last = $end_a < $end_b ? $end_a : $end_b;
+  $bytes -= $last - $first if $last > $first;
+}
+my $largest = $a->[2] > $b->[2] ? $a->[2] : $b->[2];
+die "duplicated equivalent entry bodies" if $bytes > $largest + 32;
+print "equivalent entry footprint bounded\n";
+' "__OBJ1__"

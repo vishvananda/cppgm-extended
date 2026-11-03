@@ -22,6 +22,7 @@ top-level-item:
 	global-definition
 	function-definition
 	object-alias
+	equivalent-entry
 
 global-declaration:
 	KW_DECLARE KW_GLOBAL global-name (OP_COLON type)? metadata?
@@ -42,6 +43,9 @@ structured-global-definition:
 
 object-alias:
 	KW_ALIAS KW_OBJECT object-symbol OP_ASS alias-target
+
+equivalent-entry:
+	KW_EQUIVALENT_ENTRY function-name OP_ASS function-name
 
 metadata:
 	OP_LSQUARE metadata-item (OP_COMMA metadata-item)* OP_RSQUARE

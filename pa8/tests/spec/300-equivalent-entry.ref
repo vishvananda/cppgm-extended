@@ -1,0 +1,15 @@
+declare function @removed_entry(%x : i64) -> i64
+declare function @removed_body(%x : i64) -> i64
+
+function @base(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %next = binary add i64 %x, 7
+    return i64 %next
+}
+function @complete(%other : i64) -> i64 [binding=weak] {
+  block ^entry:
+    %next = binary add i64 %other, 7
+    return i64 %next
+}
+equivalent_entry @complete = @base
+equivalent_entry @removed_entry = @removed_body

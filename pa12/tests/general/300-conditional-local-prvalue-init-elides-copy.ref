@@ -96,3 +96,6 @@ function @S___S(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong
     store typed ptr %this, $this
     return void
 }
+equivalent_entry @S__S = @S__S__base_entry
+equivalent_entry @S__S__ov2 = @S__S__ov2__base_entry
+equivalent_entry @S___S = @S___S__base_entry

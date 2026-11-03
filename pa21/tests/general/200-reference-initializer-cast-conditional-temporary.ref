@@ -722,3 +722,6 @@ function @Padding__Padding__base_entry(%this : ptr [object_bytes=8]) -> void [bi
 }
 alias object _ZN1DC2Ev = @D__D
 alias object _ZN1DD2Ev = @D___D
+equivalent_entry @S__S = @S__S__base_entry
+equivalent_entry @S__S__ov2 = @S__S__ov2__base_entry
+equivalent_entry @S___S = @S___S__base_entry

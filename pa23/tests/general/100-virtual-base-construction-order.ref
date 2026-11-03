@@ -819,3 +819,7 @@ function @Middle__Middle__ov2__base_entry(%this : ptr [alias=noalias, object_byt
     call void @mark(12)
     return void
 }
+equivalent_entry @Root__Root = @Root__Root__base_entry
+equivalent_entry @Side__Side = @Side__Side__base_entry
+equivalent_entry @Root___Root = @Root___Root__base_entry
+equivalent_entry @Side___Side = @Side___Side__base_entry

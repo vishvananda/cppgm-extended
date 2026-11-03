@@ -152,3 +152,4 @@ function @base__base(%this : ptr [object_bytes=4]) -> void [binding=weak, object
     return void
 }
 alias object _ZN7derivedC2Ev = @derived__derived
+equivalent_entry @base__base = @base__base__base_entry

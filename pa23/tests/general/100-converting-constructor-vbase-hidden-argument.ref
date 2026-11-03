@@ -136,3 +136,4 @@ function @IOS__IOS(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_
     return void
 }
 alias object _ZN4IterC2ER6Stream = @Iter__Iter
+equivalent_entry @IOS__IOS = @IOS__IOS__base_entry

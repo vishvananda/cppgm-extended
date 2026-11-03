@@ -202,3 +202,5 @@ function @base__base(%this : ptr [object_bytes=4], %v : i32) -> void [binding=we
     return void
 }
 alias object _ZN4leafC2Ev = @leaf__leaf
+equivalent_entry @leaf___leaf = @leaf___leaf__base_entry
+equivalent_entry @base__base = @base__base__base_entry

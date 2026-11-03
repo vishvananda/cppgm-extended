@@ -327,6 +327,11 @@ object files within the supported subset:
    at the object boundary even when optimization removes its last direct call.
    Retention does not by itself prohibit inlining that entry at other call
    sites.
+
+   Equivalent complete/base entries may share an implementation after inlining.
+   Preserve their ABI names and cross-unit availability; do not assume equivalence
+   from similar code, especially with virtual bases or implicit copies. Carry any
+   proof used by object emission through public LowIR (`equivalent_entry`).
 9. For the supported GNU `section` attribute on a global object, require one
    string-literal name, reject conflicting redeclarations and names outside the
    token-safe Linux subset above, carry the name as global LowIR

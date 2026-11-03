@@ -265,3 +265,4 @@ function @Base___Base(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=
     return void
 }
 alias object _ZN7DerivedC2Ev = @Derived__Derived
+equivalent_entry @Base___Base = @Base___Base__base_entry

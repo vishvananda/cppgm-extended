@@ -224,6 +224,8 @@ void Parser::parse_top_level_item()
 		parse_function(true);
 	else if (accept_keyword(Keyword::Alias))
 		parse_alias();
+	else if (accept_keyword(Keyword::EquivalentEntry))
+		parse_equivalent_entry();
 	else if (accept_keyword(Keyword::DebugType))
 		parse_debug_type();
 	else if (accept_keyword(Keyword::DebugScope))
@@ -418,6 +420,14 @@ void Parser::parse_alias()
 	expect(TokenKind::Equals, "=");
 	const SymbolId target = reference_symbol(expect_name(TokenKind::Global, "alias target"));
 	program_.aliases.push_back(ObjectAlias{ object, target });
+}
+
+void Parser::parse_equivalent_entry()
+{
+	const SymbolId symbol = reference_symbol(expect_name(TokenKind::Global, "equivalent entry"));
+	expect(TokenKind::Equals, "=");
+	const SymbolId target = reference_symbol(expect_name(TokenKind::Global, "equivalent entry target"));
+	program_.equivalent_entries.push_back(EquivalentEntry{ symbol, target });
 }
 
 // ---------------------------------------------------------------------------

@@ -694,3 +694,5 @@ function @__cppgm_fini() -> void [role=fini, binding=internal] {
 }
 alias object _ZN6HolderC2Ev = @Holder__Holder
 alias object _ZN6HolderD2Ev = @Holder___Holder
+equivalent_entry @Primary___Primary = @Primary___Primary__base_entry
+equivalent_entry @Virtual___Virtual = @Virtual___Virtual__base_entry

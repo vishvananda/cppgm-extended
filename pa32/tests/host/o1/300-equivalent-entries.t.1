@@ -1,0 +1,19 @@
+#include "300-equivalent-entries.helper.h"
+EntryState::EntryState(int n) : member(n), value(n)
+{
+  for (int i = 0; i < 9; ++i) tally += n + i;
+  if (n < 0) throw n;
+}
+EntryState::~EntryState()
+{
+  for (int i = 0; i < 8; ++i) tally += value - i;
+}
+struct Derived : WeakState<7> {
+  Derived(int n) : WeakState<7>(n) {}
+};
+int weak_work(int n)
+{
+  Derived a(n);
+  WeakState<7> b(n + 1);
+  return a.value + b.value;
+}

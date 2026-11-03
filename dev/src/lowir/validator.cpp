@@ -281,6 +281,7 @@ private:
 	template<typename NameOf>
 	bool check_spellings(uint32_t count, NameOf name_of, const char* message);
 	bool check_symbols();
+	bool check_equivalent_entries();
 	bool check_function(SymbolId symbol);
 	bool check_layout();
 	bool check_operands(InstId id, const Instruction& inst);
@@ -393,6 +394,41 @@ bool Validator::check_symbols()
 			return fail("duplicate object alias", alias.object);
 		alias_seen[alias.object] = true;
 	}
+	return check_equivalent_entries();
+}
+
+bool Validator::check_equivalent_entries()
+{
+	if (program_.equivalent_entries.empty())
+		return true;
+	std::vector<uint8_t> sources(program_.symbols.size(), 0);
+	for (SymbolId symbol : program_.order)
+	{
+		if (symbol >= sources.size())
+			return fail("invalid program order");
+		sources[symbol] = 2; // the declaration/definition is present in this unit
+	}
+	for (const EquivalentEntry& entry : program_.equivalent_entries)
+	{
+		if (entry.symbol >= program_.symbols.size() || entry.target >= program_.symbols.size())
+			return fail("invalid equivalent entry");
+		const Symbol& symbol = program_.symbols[entry.symbol];
+		const Symbol& target = program_.symbols[entry.target];
+		if ((sources[entry.symbol] & sources[entry.target] & 2) == 0)
+			return fail("equivalent entry is absent from the unit", symbol.name);
+		if (entry.symbol == entry.target)
+			return fail("equivalent entry targets itself", symbol.name);
+		if ((sources[entry.symbol] & 1) != 0)
+			return fail("duplicate equivalent entry", symbol.name);
+		sources[entry.symbol] |= 1;
+		if (!program_.same_entry_abi(entry.symbol, entry.target))
+			return fail("incompatible equivalent entry ABI", symbol.name);
+		if (((symbol.metadata.flags | target.metadata.flags) & SF_REPLACEABLE) != 0)
+			return fail("replaceable equivalent entry", symbol.name);
+	}
+	for (const EquivalentEntry& entry : program_.equivalent_entries)
+		if ((sources[entry.target] & 1) != 0)
+			return fail("equivalent entry target is another entry", program_.symbols[entry.symbol].name);
 	return true;
 }
 
@@ -515,6 +551,9 @@ bool Validator::check_links()
 		if (alias.object == 0 || alias.object >= program_.names.size() || alias.target >= symbols)
 			return fail("invalid object alias");
 	}
+	for (const EquivalentEntry& entry : program_.equivalent_entries)
+		if (entry.symbol >= symbols || entry.target >= symbols)
+			return fail("invalid equivalent entry");
 	return true;
 }
 

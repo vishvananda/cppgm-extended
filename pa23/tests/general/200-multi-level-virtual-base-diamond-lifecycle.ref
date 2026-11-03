@@ -608,3 +608,5 @@ function @B___B__base_entry(%this : ptr [object_bytes=8], %__vtt : ptr) -> void 
     store typed ptr %t8, %t6
     return void
 }
+equivalent_entry @V__V = @V__V__base_entry
+equivalent_entry @V___V = @V___V__base_entry

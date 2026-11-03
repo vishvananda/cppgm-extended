@@ -126,3 +126,4 @@ function @VirtualBase___VirtualBase(%this : ptr [object_bytes=4]) -> void [unwin
     return void
 }
 alias object _ZN11VirtualBaseD2Ev = @VirtualBase___VirtualBase
+equivalent_entry @VirtualBase__VirtualBase = @VirtualBase__VirtualBase__base_entry

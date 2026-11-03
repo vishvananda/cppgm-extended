@@ -235,3 +235,4 @@ function @Base__Base__2(%this : ptr [object_bytes=16]) -> void [binding=weak, ob
     store typed i32 4, %t7
     return void
 }
+equivalent_entry @Root__Root = @Root__Root__base_entry

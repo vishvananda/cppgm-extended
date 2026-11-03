@@ -547,3 +547,4 @@ function @Derived__Derived(%this : ptr [object_bytes=8]) -> void [unwind=no, bin
     resume
 }
 alias object _ZN7FurtherC2Ev = @Further__Further
+equivalent_entry @Base___Base = @Base___Base__base_entry

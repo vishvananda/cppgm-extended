@@ -1137,3 +1137,5 @@ function @__cppgm_fini() -> void [role=fini, binding=internal] {
 alias object _ZN7DerivedD2Ev = @Derived___Derived
 alias object _ZN7DerivedC2Ev = @Derived__Derived
 alias object _ZN7PrivateD2Ev = @Private___Private
+equivalent_entry @Base___Base = @Base___Base__base_entry
+equivalent_entry @Base__Base = @Base__Base__base_entry

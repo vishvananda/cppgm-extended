@@ -345,3 +345,4 @@ function @raise_code__2(%code : i64) -> void [return=noreturn, binding=weak, obj
     return void
 }
 alias object _ZN5GuardC2Ev = @Guard__Guard
+equivalent_entry @Guard___Guard = @Guard___Guard__base_entry

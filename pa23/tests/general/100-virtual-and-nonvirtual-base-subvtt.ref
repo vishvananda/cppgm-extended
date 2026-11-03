@@ -523,3 +523,4 @@ function @_Inner__id__vtable_return_adjust__this_pos0__return_pos0__vcall_n24(%a
     %t5 = call i32 @Inner__id(%t4)
     return i32 %t5
 }
+equivalent_entry @Root__Root = @Root__Root__base_entry

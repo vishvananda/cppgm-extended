@@ -341,6 +341,11 @@ source-language clauses.
   It covers nested catch forwarding after optimization; PA26 retains the
   corresponding unoptimized EH coverage. These `.t` anchors use `.t.N`
   companion sources and the ordinary host-link result sidecars.
+  Equivalent ABI entries can share retained code after inlining without losing
+  their names or cross-unit availability. The footprint check permits either
+  entry to hold the body, aliases or forwarding entries; it does not prescribe
+  instructions. Keep the equivalence proof independent of inline profitability
+  and preserve it through LowIR serialization.
   An adjacent `.flags` file may select additional driver options, including
   the disabled-strict-aliasing case's `-O2 -fno-strict-aliasing`.
 - `tests/kernels` supplies the five required dynamic quality checks described

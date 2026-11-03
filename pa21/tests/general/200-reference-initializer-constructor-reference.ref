@@ -693,3 +693,6 @@ function @H___H(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=intern
 }
 alias object _ZZ18construction_probeEN1HC2Ev = @H__H
 alias object _ZZ18construction_probeEN1HD2Ev = @H___H
+equivalent_entry @S__S = @S__S__base_entry
+equivalent_entry @S__S__ov2 = @S__S__ov2__base_entry
+equivalent_entry @S___S = @S___S__base_entry

@@ -210,3 +210,5 @@ alias object _ZN10BaseHolderC2Ev = @BaseHolder__BaseHolder
 alias object _ZN10BaseHolderC2EOS_ = @BaseHolder__BaseHolder__ov2
 alias object _ZN12MemberHolderC2Ev = @MemberHolder__MemberHolder
 alias object _ZN12MemberHolderC2EOS_ = @MemberHolder__MemberHolder__ov2
+equivalent_entry @Stateful__Stateful = @Stateful__Stateful__base_entry
+equivalent_entry @Stateful__Stateful__ov3 = @Stateful__Stateful__ov3__base_entry

@@ -112,3 +112,5 @@ function @A__A(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1A
     store typed i32 7, %t2
     return void
 }
+equivalent_entry @V__V = @V__V__base_entry
+equivalent_entry @A__A = @A__A__base_entry

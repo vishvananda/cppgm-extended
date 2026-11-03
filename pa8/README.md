@@ -92,7 +92,8 @@ The required representation includes the forms exercised by `tests/spec/`:
 
 - scalar and object-storage types, integer/floating literals, and pointers;
 - declarations, scalar and structured globals, zero/data/address initializers,
-  functions, parameters, slots, blocks, and object aliases;
+  functions, parameters, slots, blocks, object aliases and `equivalent_entry`
+  proofs for ABI entries that can share an implementation;
 - constants and copies, addresses and indexed addresses, memory operations,
   arithmetic/comparisons/conversions, direct and explicitly typed indirect calls;
 - jumps, branches, switches, phi values and terminators;

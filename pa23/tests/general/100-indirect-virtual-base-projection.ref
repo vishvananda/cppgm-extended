@@ -806,3 +806,4 @@ function @E__E(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1
     store typed ptr %t9, %t7
     return void
 }
+equivalent_entry @B__B = @B__B__base_entry

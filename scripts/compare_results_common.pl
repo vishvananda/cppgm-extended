@@ -1177,6 +1177,7 @@ sub parse_lowir_param_list
 			access => $access,
 			alias => $alias,
 			object_bytes => $object_bytes,
+			classes => $metadata_or_error->{classes} // '',
 		};
 	}
 	return (1, \@params);
@@ -1237,6 +1238,7 @@ sub parse_lowir_parameter_metadata_suffix
 		{
 			return (0, "invalid parameter classes '$value'")
 				if $value !~ /^(?:memory|(?:none|integer|sse)(?:_(?:none|integer|sse))?)$/;
+			$metadata{classes} = $value;
 		}
 		else
 		{
@@ -1320,6 +1322,7 @@ sub parse_lowir_symbol_metadata_suffix
 			{
 				return (0, "unknown replaceable mode '$value'")
 					if $value ne 'yes';
+				$metadata{replaceable} = $value;
 			}
 			else
 			{
@@ -1468,6 +1471,7 @@ sub parse_lowir_function_metadata_suffix
 			{
 				return (0, "invalid result classes '$value'")
 					if $value !~ /^(?:memory|(?:none|integer|sse)(?:_(?:none|integer|sse))?)$/;
+				$metadata{result_classes} = $value;
 			}
 			else
 			{
@@ -2646,6 +2650,48 @@ sub validate_lowir_roles
 	return @errors;
 }
 
+# Equivalent entries are optional source-lowering proofs, but a stated proof
+# still has to be structurally valid before relaxed comparison can omit it.
+sub validate_lowir_equivalent_entries
+{
+	my ($data, $signatures) = @_;
+	my (@errors, @pairs, %sources);
+	for my $line (split(/\n/, $data))
+	{
+		next unless $line =~ /^\s*equivalent_entry\b/;
+		if ($line !~ /^\s*equivalent_entry\s+@([A-Za-z0-9_]+)\s*=\s*@([A-Za-z0-9_]+)\s*$/)
+		{
+			push @errors, "invalid equivalent entry syntax";
+			next;
+		}
+		my ($source, $target) = ($1, $2);
+		push @pairs, [$source, $target];
+		push @errors, "duplicate equivalent entry \@$source" if $sources{$source}++;
+		push @errors, "equivalent entry targets itself" if $source eq $target;
+		my ($a, $b) = @{$signatures}{$source, $target};
+		if (!defined($a) || !defined($b))
+		{
+			push @errors, "equivalent entry requires function symbols";
+			next;
+		}
+		my $shape = sub {
+			my ($signature) = @_;
+			return join('|', $signature->{ret}, $signature->{arity},
+				$signature->{entry_metadata}{result_classes} // '',
+				map { join(':', $_->{type}, $_->{pass}, $_->{classes}) } @{$signature->{params}});
+		};
+		push @errors, "incompatible equivalent entry ABI" if $shape->($a) ne $shape->($b);
+		push @errors, "replaceable equivalent entry"
+			if ($a->{entry_metadata}{replaceable} // '') eq 'yes' ||
+			   ($b->{entry_metadata}{replaceable} // '') eq 'yes';
+	}
+	for my $pair (@pairs)
+	{
+		push @errors, "equivalent entry target is another entry" if $sources{$pair->[1]};
+	}
+	return @errors;
+}
+
 sub validate_lowir_text
 {
 	my ($data, $source_file, $options) = @_;
@@ -2756,6 +2802,7 @@ sub validate_lowir_text
 			ret => $3,
 			params => $params_or_error,
 			arity => $metadata_ok ? $metadata_or_error->{arity} : 'fixed',
+			entry_metadata => $metadata_ok ? $metadata_or_error : {},
 		};
 	}
 	while ($data =~ /^declare function @([A-Za-z0-9_]+)\((.*?)\) -> ($type_pattern)((?:\s+\[[^\]]+\])*)$/gm)
@@ -2776,8 +2823,11 @@ sub validate_lowir_text
 			ret => $3,
 			params => $params_or_error,
 			arity => $metadata_ok ? $metadata_or_error->{arity} : 'fixed',
+			entry_metadata => $metadata_ok ? $metadata_or_error : {},
 		};
 	}
+
+	push @errors, validate_lowir_equivalent_entries($data, \%signatures);
 
 	my %missing_alias_targets;
 	for my $name (@alias_targets)
@@ -4025,6 +4075,13 @@ sub canonicalize_lowir_generated_root_annotations_for_compare
 sub canonicalize_lowir_pair_for_compare
 {
 	my ($ref_data, $my_data) = @_;
+	# A valid equivalence proof permits code sharing but does not change
+	# either function body. Source comparisons allow a different proof policy;
+	# PA8 reader/writer comparisons and strict text checks preserve the facts.
+	for ($ref_data, $my_data)
+	{
+		s/^[ \t]*equivalent_entry[ \t]+\@[A-Za-z0-9_]+[ \t]*=[ \t]*\@[A-Za-z0-9_]+[ \t]*\n?//gm;
+	}
 	$ref_data =~ s/\bpass\s*=\s*reference\b/pass=by_address/g;
 	$ref_data = canonicalize_lowir_tls_accesses_for_compare($ref_data);
 	$my_data = canonicalize_lowir_tls_accesses_for_compare($my_data);

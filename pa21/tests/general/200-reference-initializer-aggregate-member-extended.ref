@@ -699,3 +699,6 @@ function @E___E(%this : ptr [object_bytes=20]) -> void [unwind=no, binding=weak,
     return void
 }
 alias object _ZN1ED2Ev = @E___E
+equivalent_entry @S__S = @S__S__base_entry
+equivalent_entry @S__S__ov2 = @S__S__ov2__base_entry
+equivalent_entry @S___S = @S___S__base_entry

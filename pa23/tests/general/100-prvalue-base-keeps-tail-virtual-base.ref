@@ -183,3 +183,4 @@ function @Tail__Tail(%this : ptr [object_bytes=1]) -> void [binding=weak, object
     return void
 }
 alias object _ZN6PaddedC2Eic = @Padded__Padded
+equivalent_entry @Tail__Tail = @Tail__Tail__base_entry

@@ -275,3 +275,4 @@ function @B__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_addre
     %t6 = load typed ptr $this
     return ptr %t6
 }
+equivalent_entry @B__B = @B__B__base_entry

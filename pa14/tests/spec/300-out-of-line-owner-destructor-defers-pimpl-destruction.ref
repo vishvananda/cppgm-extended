@@ -94,3 +94,5 @@ function @holder_implementation____holder(%this : ptr [object_bytes=1]) -> void 
     return void
 }
 alias object _ZN6holderIN5owner14implementationEED2Ev = @holder_implementation____holder
+equivalent_entry @owner__owner = @owner__owner__base_entry
+equivalent_entry @owner___owner = @owner___owner__base_entry

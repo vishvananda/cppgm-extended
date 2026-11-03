@@ -419,3 +419,5 @@ function @Tail__Tail(%this : ptr [object_bytes=8]) -> void [binding=weak, object
     store i8 2, %t4
     return void
 }
+equivalent_entry @Mark__Mark = @Mark__Mark__base_entry
+equivalent_entry @Tail__Tail = @Tail__Tail__base_entry

@@ -838,3 +838,4 @@ alias object _ZN3BoxD2Ev = @Box___Box
 alias object _ZN7TrackerD2Ev = @Tracker___Tracker
 alias object _ZN7DerivedC2Ev = @Derived__Derived
 alias object _ZN7DerivedD2Ev = @Derived___Derived
+equivalent_entry @Box__Box = @Box__Box__base_entry

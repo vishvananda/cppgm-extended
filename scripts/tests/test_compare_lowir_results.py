@@ -123,6 +123,43 @@ function @main() -> i32 {
                 stderr=subprocess.PIPE,
             )
 
+    EQUIVALENT_ENTRIES = """function @body(%x : i64) -> i64 {
+  block ^entry:
+    return i64 %x
+}
+function @main(%x : i64) -> i64 {
+  block ^entry:
+    return i64 %x
+}
+"""
+
+    def test_source_compare_allows_optional_entry_equivalence_on_either_side(self):
+        plain = self.EQUIVALENT_ENTRIES
+        proof = plain + "equivalent_entry @main = @body\n"
+        for reference, generated in ((plain, proof), (proof, plain)):
+            result = self.compare(reference, generated)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            result = self.compare(reference, generated, direct=True)
+            self.assertNotEqual(result.returncode, 0)
+
+    def test_entry_equivalence_does_not_hide_changed_function_behavior(self):
+        program = self.EQUIVALENT_ENTRIES
+        wrong = program.rsplit("return i64 %x", 1)
+        generated = "return i64 7".join(wrong) + "equivalent_entry @main = @body\n"
+        result = self.compare(program, generated)
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_source_compare_rejects_malformed_entry_equivalence(self):
+        for proof in ("equivalent_entry @main = @missing\n",
+                      "equivalent_entry @main = @main\n",
+                      "equivalent_entry @main = @body\nequivalent_entry @body = @main\n",
+                      "equivalent_entry @main = @body\nequivalent_entry @main = @body\n"):
+            with self.subTest(proof=proof):
+                result = self.compare(self.EQUIVALENT_ENTRIES,
+                                      self.EQUIVALENT_ENTRIES + proof)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("equivalent entry", result.stdout)
+
     def test_relaxed_compare_ignores_function_local_names(self):
         result = self.compare(REFERENCE, RENAMED)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

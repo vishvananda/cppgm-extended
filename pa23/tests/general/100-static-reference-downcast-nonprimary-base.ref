@@ -205,3 +205,5 @@ function @downcast_root__downcast_root(%this : ptr [object_bytes=4], %v : i32) -
     return void
 }
 alias object _ZN13downcast_leafC2Ev = @downcast_leaf__downcast_leaf
+equivalent_entry @downcast_leaf___downcast_leaf = @downcast_leaf___downcast_leaf__base_entry
+equivalent_entry @downcast_root__downcast_root = @downcast_root__downcast_root__base_entry

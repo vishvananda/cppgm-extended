@@ -530,3 +530,4 @@ function @_Object___Object__vtable_return_adjust__this_pos0__return_pos0__vcall_
     call void @Object___Object(%t4)
     return void
 }
+equivalent_entry @Virtual___Virtual = @Virtual___Virtual__base_entry

@@ -209,3 +209,4 @@ function @IOS__set(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak
     store typed i32 %t1, %t3
     return void
 }
+equivalent_entry @IOS__IOS = @IOS__IOS__base_entry

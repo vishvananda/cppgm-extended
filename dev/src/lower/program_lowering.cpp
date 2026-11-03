@@ -18,6 +18,22 @@ namespace lower {
 
 namespace {
 
+bool EquivalentEntries(const sema::SemanticGraph& graph, const sema::FunctionEntity* function)
+{
+	// A source body does the same work in the complete and base entries
+	// when no virtual bases need a different initialization/destruction path.
+	// Implicit/defaulted copies can treat tail padding differently.
+	if (!(function->constructor || function->destructor) || function->trivial || function->implicit ||
+		function->synthesized || function->is_constexpr || function->noreturn || function->body == nullptr ||
+		!function->defined || function->owner == nullptr || function->owner->entity == nullptr)
+		return false;
+	const sema::ClassEntity* owner = sema::ClassOf(function->owner->entity->type);
+	if (owner == nullptr || !owner->complete || sema::VirtualBaseCount(owner) != 0)
+		return false;
+	const sema::SemanticGraph::SymbolAttributes* attributes = graph.symbol_attributes(function);
+	return attributes == nullptr || !attributes->weak;
+}
+
 bool HasExternSpecifier(const syntax::Slice<syntax::DeclSpecifier>& specifiers)
 {
 	for (const syntax::DeclSpecifier& specifier : specifiers)
@@ -339,7 +355,11 @@ void ProgramLowering::finish()
 		const lowir::SymbolId defined = alias.object < by_object_.size() ? by_object_[alias.object] : lowir::kNoId;
 		if (defined != lowir::kNoId && defined != kLocalObject &&
 			program_.symbols[defined].kind == lowir::SymbolKind::FunctionDefinition)
+		{
+			if (alias.equivalent)
+				program_.equivalent_entries.push_back(lowir::EquivalentEntry{ alias.target, defined });
 			continue;
+		}
 		if (defined == kLocalObject)
 			continue;
 		program_.aliases.push_back(lowir::ObjectAlias{ alias.object, alias.target });
@@ -770,7 +790,7 @@ void ProgramLowering::emit_definition(
 			program_.symbols[symbol].metadata.flags |= lowir::SF_OBJECT_ROOT;
 		const std::string base = function_object(function, EntryVariant::Base);
 		base_object = intern(base.data(), static_cast<uint32_t>(base.size()));
-		entry_aliases_.push_back(EntryAlias{ base_object, symbol });
+		entry_aliases_.push_back(EntryAlias{ base_object, symbol, EquivalentEntries(*graph_, function) });
 	}
 	note_family_members(function, variant, symbol, base_object);
 	if (function->unanalyzed_body)

@@ -475,3 +475,6 @@ function @D__D__base_entry(%this : ptr [alias=noalias, object_bytes=24], %__vtt 
     store typed ptr %t2, %t1
     return void
 }
+equivalent_entry @A__A = @A__A__base_entry
+equivalent_entry @B__B = @B__B__base_entry
+equivalent_entry @C__C = @C__C__base_entry

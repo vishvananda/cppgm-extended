@@ -120,6 +120,7 @@ private:
 	// The program's jump thunk defining `symbol`, or null (the program's
 	// list indexed as it grows: the lowering adds a thunk before its body).
 	const lowir::JumpThunk* jump_thunk(lowir::SymbolId symbol);
+	const lowir::JumpThunk* equivalent_entry(lowir::SymbolId symbol);
 	void declare_symbols();
 	void emit_remaining();
 	bool local_function(uint32_t image_symbol) const;
@@ -168,6 +169,10 @@ private:
 	std::vector<uint8_t> emitted_;           // per program symbol
 	std::vector<uint32_t> jump_thunk_index_; // per program symbol: 1 + its jump thunk, 0 none
 	size_t jump_thunks_indexed_ = 0;
+	bool share_entries_;
+	bool entries_indexed_ = false;
+	FlatMap<uint32_t, uint32_t, WordHash32> equivalent_targets_;
+	lowir::JumpThunk shared_entry_;
 	std::vector<const char*> runtime_names_; // the first image-local symbols
 	uint32_t program_symbols_ = 0;
 	std::vector<Placement> placement_;
@@ -218,8 +223,8 @@ private:
 
 ObjectCompiler::ObjectCompiler(
 	lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level, bool position_independent)
-	: program_(program), stats_(stats), selector_(program), emitter_(image_, runtime_, stats.emit), eh_model_(eh_model),
-	  position_independent_(position_independent)
+	: program_(program), stats_(stats), selector_(program), emitter_(image_, runtime_, stats.emit),
+	  share_entries_(optimization_level >= 1), eh_model_(eh_model), position_independent_(position_independent)
 {
 	selector_.set_eh_model(eh_model);
 	selector_.set_position_independent(position_independent);
@@ -339,7 +344,33 @@ const lowir::JumpThunk* ObjectCompiler::jump_thunk(lowir::SymbolId symbol)
 	}
 	return symbol < jump_thunk_index_.size() && jump_thunk_index_[symbol] != 0
 		? &program_.jump_thunks[jump_thunk_index_[symbol] - 1]
-		: nullptr;
+		: share_entries_ ? equivalent_entry(symbol)
+						 : nullptr;
+}
+
+const lowir::JumpThunk* ObjectCompiler::equivalent_entry(lowir::SymbolId symbol)
+{
+	// O1+ has retained the unit through inlining. Build this sparse index
+	// once, after lowering has finished; O0 never visits these facts.
+	if (!entries_indexed_)
+	{
+		for (const lowir::EquivalentEntry& entry : program_.equivalent_entries)
+		{
+			const lowir::Symbol& source = program_.symbols[entry.symbol];
+			const lowir::Symbol& target = program_.symbols[entry.target];
+			if (source.kind == lowir::SymbolKind::FunctionDefinition &&
+				target.kind == lowir::SymbolKind::FunctionDefinition &&
+				((source.metadata.flags | target.metadata.flags) & lowir::SF_REPLACEABLE) == 0 &&
+				program_.same_entry_abi(entry.symbol, entry.target))
+				equivalent_targets_.insert(entry.symbol, entry.target);
+		}
+		entries_indexed_ = true;
+	}
+	const uint32_t* target = equivalent_targets_.find(symbol);
+	if (target == nullptr)
+		return nullptr;
+	shared_entry_ = lowir::JumpThunk{ symbol, *target, 0, 0, 0 };
+	return &shared_entry_;
 }
 
 void ObjectCompiler::function(lowir::SymbolId symbol)

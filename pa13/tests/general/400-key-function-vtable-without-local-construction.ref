@@ -192,3 +192,4 @@ function @KeyFunctionBase___KeyFunctionBase(%this : ptr [object_bytes=8]) -> voi
     return void
 }
 alias object _ZN18KeyFunctionDerivedD2Ev = @KeyFunctionDerived___KeyFunctionDerived
+equivalent_entry @KeyFunctionBase___KeyFunctionBase = @KeyFunctionBase___KeyFunctionBase__base_entry

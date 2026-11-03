@@ -1,0 +1,20 @@
+#include "300-equivalent-entries.helper.h"
+volatile int tally = 0;
+volatile int input = 3;
+int main()
+{
+  {
+    EntryState item(input);
+    if (item.value != 3) return 1;
+  }
+  if (tally != 160) return 2;
+  tally = 0;
+  try { EntryState item(-2); return 3; }
+  catch (int n) { if (n != -2 || tally != 119) return 4; }
+  tally = 0;
+  {
+    WeakState<7> item(4);
+    if (weak_work(2) != 5) return 5;
+  }
+  return tally == 114 ? 0 : 6;
+}

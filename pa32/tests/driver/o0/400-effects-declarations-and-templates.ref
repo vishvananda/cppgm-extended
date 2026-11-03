@@ -255,3 +255,4 @@ function @Shape___Shape(%this : ptr [object_bytes=16]) -> void [unwind=no, bindi
     return void
 }
 alias object _ZN5ShapeC2Ev = @Shape__Shape
+equivalent_entry @Shape___Shape = @Shape___Shape__base_entry

@@ -9,7 +9,7 @@ namespace lowir {
 
 // Serializes a program as canonical LowIR text (lowir.md "Program
 // Structure"): declared globals, declared functions, global definitions,
-// function definitions and object aliases, each phase in declaration
+// function definitions, object aliases and equivalent-entry facts, each phase in declaration
 // order; metadata in one bracket per item, in a fixed key order; literals
 // by value. Unnamed temporaries, slots and blocks print the presentation
 // names their kinds give them (lowir/local_names.h).

@@ -1784,6 +1784,7 @@ private:
 	{
 		lowir::NameId object;
 		lowir::SymbolId target;
+		bool equivalent;
 	};
 	std::vector<EntryAlias> entry_aliases_;
 	// Symbols whose singleton role is secondary (an array allocation or

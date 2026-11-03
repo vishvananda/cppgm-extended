@@ -118,3 +118,4 @@ function @IOS__IOS(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_
     return void
 }
 alias object _ZN6HolderC2ER7OStream = @Holder__Holder
+equivalent_entry @IOS__IOS = @IOS__IOS__base_entry

@@ -439,6 +439,14 @@ void Writer::write()
 		symbol(alias.target);
 		out_.push_back('\n');
 	}
+	for (const EquivalentEntry& entry : program_.equivalent_entries)
+	{
+		word(spelling(Keyword::EquivalentEntry));
+		symbol(entry.symbol);
+		text(" = ");
+		symbol(entry.target);
+		out_.push_back('\n');
+	}
 }
 
 void Writer::global_declaration(const Symbol& symbol)

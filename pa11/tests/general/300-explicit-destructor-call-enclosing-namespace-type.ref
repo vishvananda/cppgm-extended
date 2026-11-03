@@ -42,3 +42,4 @@ function @ns__json__value___value(%this : ptr [object_bytes=4]) -> void [unwind=
     return void
 }
 alias object _ZN2ns4json6detail6holderD2Ev = @ns__json__detail__holder___holder
+equivalent_entry @ns__json__value___value = @ns__json__value___value__base_entry

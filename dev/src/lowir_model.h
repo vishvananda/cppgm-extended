@@ -941,15 +941,16 @@ enum class Keyword : std::uint8_t
 	As,   // call ... as (<parameters>) -> <type>
 	DebugType,
 	DebugScope,
-	DebugLocal
+	DebugLocal,
+	EquivalentEntry // equivalent_entry @entry = @target
 };
 
-const unsigned kKeywordCount = static_cast<unsigned>(Keyword::DebugLocal) + 1;
+const unsigned kKeywordCount = static_cast<unsigned>(Keyword::EquivalentEntry) + 1;
 
 inline const char* spelling(Keyword keyword)
 {
 	static const char* const kKeywords[kKeywordCount] = { "declare", "global", "function", "alias", "object", "slot",
-		"block", "zero", "as", "debug_type", "debug_scope", "debug_local" };
+		"block", "zero", "as", "debug_type", "debug_scope", "debug_local", "equivalent_entry" };
 	return kKeywords[static_cast<unsigned>(keyword)];
 }
 

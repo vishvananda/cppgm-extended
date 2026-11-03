@@ -525,3 +525,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t47 = load typed i32 $cond__5
     return i32 %t47
 }
+equivalent_entry @S__S = @S__S__base_entry
+equivalent_entry @S__S__ov2 = @S__S__ov2__base_entry
+equivalent_entry @S___S = @S___S__base_entry

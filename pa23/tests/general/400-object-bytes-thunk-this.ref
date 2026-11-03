@@ -467,3 +467,5 @@ function @_Joined___Joined__vtable_return_adjust__this_neg16__return_pos0(%arg0 
 }
 alias object _ZN6JoinedC2Ev = @Joined__Joined
 alias object _ZN6JoinedD2Ev = @Joined___Joined
+equivalent_entry @Second___Second = @Second___Second__base_entry
+equivalent_entry @First___First = @First___First__base_entry

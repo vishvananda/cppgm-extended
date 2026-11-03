@@ -65,3 +65,5 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = binary sub nowrap i32 %t9, 17
     return i32 %t10
 }
+equivalent_entry @s_int___s = @s_int___s__base_entry
+equivalent_entry @s_int___s__ov2 = @s_int___s__ov2__base_entry

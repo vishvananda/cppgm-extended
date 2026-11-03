@@ -333,3 +333,4 @@ function @Pair__Pair(%this : ptr [object_bytes=8]) -> void [binding=weak, object
 }
 alias object _ZN6TaggedC2Ev = @Tagged__Tagged
 alias object _ZN8ExtendedC2Ev = @Extended__Extended
+equivalent_entry @Pair__Pair = @Pair__Pair__base_entry

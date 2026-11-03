@@ -1,0 +1,9 @@
+function @implementation(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %value = binary add i64 %x, 7
+    return i64 %value
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    return i64 0
+}

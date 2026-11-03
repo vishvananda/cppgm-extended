@@ -99,3 +99,4 @@ function @counter__counter(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     return void
 }
 alias object _ZN7derivedC2Ev = @derived__derived
+equivalent_entry @counter__counter = @counter__counter__base_entry

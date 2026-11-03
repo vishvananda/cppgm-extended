@@ -295,3 +295,4 @@ function @pa13_reentrant_override_base___pa13_reentrant_override_base(%this : pt
     return void
 }
 alias object _ZN31pa13_reentrant_override_derivedC2Ev = @pa13_reentrant_override_derived__pa13_reentrant_override_derived
+equivalent_entry @pa13_reentrant_override_base___pa13_reentrant_override_base = @pa13_reentrant_override_base___pa13_reentrant_override_base__base_entry

@@ -43,3 +43,5 @@ function @Y___Y(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong
     store typed ptr %this, $this
     return void
 }
+equivalent_entry @Y__Y = @Y__Y__base_entry
+equivalent_entry @Y___Y = @Y___Y__base_entry

@@ -44,3 +44,5 @@ function @Owner_ThrowingLeaf____Owner(%this : ptr [object_bytes=1]) -> void [bin
     store typed ptr %this, $this
     return void
 }
+equivalent_entry @Owner_SafeLeaf____Owner = @Owner_SafeLeaf____Owner__base_entry
+equivalent_entry @Owner_ThrowingLeaf____Owner = @Owner_ThrowingLeaf____Owner__base_entry

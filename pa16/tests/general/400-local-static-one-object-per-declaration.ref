@@ -158,3 +158,4 @@ function @counted__counted(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     return void
 }
 alias object _ZN7derivedC2Ev = @derived__derived
+equivalent_entry @counted__counted = @counted__counted__base_entry

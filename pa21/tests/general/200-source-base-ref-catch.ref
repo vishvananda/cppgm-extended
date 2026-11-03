@@ -321,3 +321,4 @@ function @B__B__base_entry__2(%this : ptr [alias=noalias, object_bytes=8], %othe
 }
 alias object _ZN1DC2Ev = @D__D
 alias object _ZN1DC2EOS_ = @D__D__2
+equivalent_entry @B___B = @B___B__base_entry

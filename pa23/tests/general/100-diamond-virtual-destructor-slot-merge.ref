@@ -597,3 +597,7 @@ function @_D___D__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> v
     return void
 }
 alias object _ZN1DC2Ev = @D__D
+equivalent_entry @D___D = @D___D__base_entry
+equivalent_entry @B1___B1 = @B1___B1__base_entry
+equivalent_entry @B2___B2 = @B2___B2__base_entry
+equivalent_entry @B0___B0 = @B0___B0__base_entry

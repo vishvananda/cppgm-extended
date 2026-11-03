@@ -413,3 +413,5 @@ function @_YC___YC__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) ->
     return void
 }
 alias object _ZN2YCC2Ev = @YC__YC
+equivalent_entry @YA___YA = @YA___YA__base_entry
+equivalent_entry @YB___YB = @YB___YB__base_entry

@@ -265,3 +265,4 @@ function @YB___YB(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak
     return void
 }
 alias object _ZN2YDC2Ev = @YD__YD
+equivalent_entry @YB___YB = @YB___YB__base_entry

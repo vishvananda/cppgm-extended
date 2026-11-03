@@ -417,3 +417,9 @@ function @case3__A__A(%this : ptr [object_bytes=4], %n : i32) -> void [binding=w
     return void
 }
 alias object _ZN5case31AC2Ei = @case3__A__A
+equivalent_entry @case0__A__A__ov2 = @case0__A__A__ov2__base_entry
+equivalent_entry @case1__A__A__ov2 = @case1__A__A__ov2__base_entry
+equivalent_entry @case2__A__A__ov2 = @case2__A__A__ov2__base_entry
+equivalent_entry @case3__A__A__ov2 = @case3__A__A__ov2__base_entry
+equivalent_entry @case4__A__A__ov2 = @case4__A__A__ov2__base_entry
+equivalent_entry @case5__A__A__ov2 = @case5__A__A__ov2__base_entry

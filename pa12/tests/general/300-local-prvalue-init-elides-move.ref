@@ -25,3 +25,4 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @make(%t1)
     return i32 0
 }
+equivalent_entry @S__S = @S__S__base_entry

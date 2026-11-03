@@ -776,3 +776,5 @@ function @__cppgm_fini() -> void [role=fini, binding=internal] {
     call void @Object___Object(%t7)
     return void
 }
+equivalent_entry @Primary___Primary = @Primary___Primary__base_entry
+equivalent_entry @Virtual___Virtual = @Virtual___Virtual__base_entry

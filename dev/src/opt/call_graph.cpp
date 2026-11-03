@@ -256,6 +256,14 @@ uint32_t prune_unreachable(Program& program, OptimizerStats& stats)
 		if (is_definition(program, thunk.symbol))
 			program.jump_thunks[kept_thunks++] = thunk;
 	program.jump_thunks.resize(kept_thunks);
+	// Equivalence is permission to share retained implementations, not a
+	// root. A removed entry must not survive as a dangling text reference.
+	size_t kept_entries = 0;
+	for (const EquivalentEntry& entry : program.equivalent_entries)
+		if (is_definition(program, entry.symbol) && is_definition(program, entry.target) &&
+			program.same_entry_abi(entry.symbol, entry.target))
+			program.equivalent_entries[kept_entries++] = entry;
+	program.equivalent_entries.resize(kept_entries);
 	if (removed != 0)
 	{
 		std::vector<ObjectAlias> aliases;

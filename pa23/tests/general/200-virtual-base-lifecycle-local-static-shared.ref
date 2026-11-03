@@ -325,3 +325,4 @@ function @counted__counted(%this : ptr [object_bytes=16]) -> void [binding=weak,
     store typed i32 %t8, %t10
     return void
 }
+equivalent_entry @shared__shared = @shared__shared__base_entry

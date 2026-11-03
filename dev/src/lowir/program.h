@@ -233,6 +233,15 @@ struct ObjectAlias
 	SymbolId target;
 };
 
+// Two ABI entries of one source function with equivalent behavior and no
+// required distinct address identity. Each keeps its object name and binding;
+// a consumer may ignore the proof, share code, or forward to the target.
+struct EquivalentEntry
+{
+	SymbolId symbol;
+	SymbolId target;
+};
+
 // ---------------------------------------------------------------------------
 // Program
 
@@ -271,6 +280,9 @@ struct Program
 	void declare_function(SymbolId symbol, SymbolKind kind, SignatureId signature);
 
 	SignatureId add_signature(const Signature& signature);
+	// Calling-ABI equality for valid function symbols; parameter names and
+	// inferred effect/alias promises do not change the calling convention.
+	bool same_entry_abi(SymbolId first, SymbolId second) const;
 	const Parameter* parameters_of(const Signature& signature) const
 	{
 		return parameters.data() + signature.first_parameter;
@@ -342,6 +354,7 @@ struct Program
 	std::vector<Signature> signatures;
 	std::vector<Parameter> parameters;
 	std::vector<ObjectAlias> aliases;
+	std::vector<EquivalentEntry> equivalent_entries;
 	std::vector<SignatureId> forward_boundaries;
 	std::vector<uint8_t> forward_globals;
 	// A host-object program (the lowering's object mode, or text the

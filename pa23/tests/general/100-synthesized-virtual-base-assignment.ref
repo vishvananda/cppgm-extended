@@ -470,3 +470,5 @@ function @Mid__Mid(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [p
     store typed ptr %t15, %t13
     return void
 }
+equivalent_entry @Shared__Shared = @Shared__Shared__base_entry
+equivalent_entry @Pad__Pad = @Pad__Pad__base_entry

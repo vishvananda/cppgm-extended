@@ -381,6 +381,35 @@ data. If the extra ABI surface is separate generated code, such as a thread-loca
 wrapper, represent it as a normal LowIR function declaration or definition with its own
 `object=...` spelling.
 
+`equivalent_entry @entry = @target` is an optional proof that two ABI entries of
+one source function behave identically for every valid argument and do not require
+distinct code addresses. It permits sharing an implementation or forwarding to
+one, while retaining each entry's object name, binding and independent availability.
+It does not force either entry to have a particular address or instruction sequence.
+Both bodies remain valid when a consumer ignores the proof.
+
+The proof covers normal and exceptional behavior and all parameter, extent, alias
+and effect assumptions. Calling ABIs must match: result and parameter types,
+argument count and arity, passing modes, and object ABI classes. Names and inferred
+effect facts need not match. The reader checks structure and ABI compatibility;
+the producer is responsible for the behavioral and address-identity proof.
+Replaceable functions cannot participate. Each entry may have one target; a target
+cannot itself be an equivalent entry, so there are no chains or cycles. References
+may precede the function declarations or definitions. A declaration may retain the
+fact after optimization removes a body; sharing requires an available implementation.
+The fact does not keep either function alive. A pass that removes a function's
+declaration/definition from the unit must remove the corresponding proof too.
+
+```text
+equivalent_entry @complete = @base
+```
+
+This differs from an object alias: both entries remain ordinary LowIR functions,
+and their bodies can be optimized independently before optional code sharing.
+Constructor or destructor entry equivalence needs a source-language proof; matching
+instruction bytes alone does not establish it. Virtual bases, implicit copies and
+tail padding can make superficially similar entries behave differently.
+
 Canonical `cppgm++ --emit-lowir` output is expected to carry all backend-relevant symbol/export
 and runtime-support information needed by later object preparation. Later object-path steps such
 as debug stripping or LowIR optimization may transform that canonical program, but they should

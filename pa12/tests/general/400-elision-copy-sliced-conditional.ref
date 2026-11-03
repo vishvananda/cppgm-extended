@@ -176,3 +176,4 @@ alias object _ZN4BaseC2ERKS_ = @Base__Base__ov2
 alias object _ZN4BaseD2Ev = @Base___Base
 alias object _ZN7DerivedC2Ei = @Derived__Derived
 alias object _ZN7DerivedD2Ev = @Derived___Derived
+equivalent_entry @Base__Base = @Base__Base__base_entry

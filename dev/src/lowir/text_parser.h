@@ -129,6 +129,7 @@ private:
 	void parse_global_data(Global& global);
 	void parse_function(bool definition);
 	void parse_alias();
+	void parse_equivalent_entry();
 	void parse_storage_keyword(SymbolMetadata& metadata);
 	Type parse_type();
 	Type parse_object_type(const Token& token);

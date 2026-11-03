@@ -132,3 +132,4 @@ function @Control_int__Policy_2____Control(%this : ptr [object_bytes=8]) -> void
     return void
 }
 alias object _ZN7ControlIiL6Policy2EEC2Ev = @Control_int__Policy_2___Control
+equivalent_entry @Control_int__Policy_2____Control = @Control_int__Policy_2____Control__base_entry

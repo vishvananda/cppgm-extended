@@ -130,6 +130,12 @@ temporary-materialization support are part of the PA12 semantic model, but `cppg
 needs to emit the helper definitions that the lowered program actually requires. Unused
 copy/move/value helpers do not need to appear just because they are synthesizable.
 
+Keep distinct ABI entries separate from their implementation bodies. Complete
+and base constructor/destructor entries may behave identically, but virtual bases
+and implicit copies of tail padding need different treatment. Record any proven
+equivalence used by later code generation in public LowIR (`equivalent_entry`);
+do not infer it from matching emitted instructions.
+
 The indirect destination and source parameters of a same-class copy or move
 constructor denote distinct live objects during construction, so the emitted
 LowIR marks both `alias=noalias`, in every entry of the constructor and in a

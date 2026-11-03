@@ -7,6 +7,24 @@ namespace lowir {
 Program::Program() : names(arena)
 {}
 
+bool Program::same_entry_abi(SymbolId first, SymbolId second) const
+{
+	if (first >= symbols.size() || second >= symbols.size() || !is_function_kind(symbols[first].kind) ||
+		!is_function_kind(symbols[second].kind))
+		return false;
+	const Signature& a = signatures[functions[symbols[first].detail].signature];
+	const Signature& b = signatures[functions[symbols[second].detail].signature];
+	if (a.result != b.result || a.parameter_count != b.parameter_count || a.boundary.arity != b.boundary.arity ||
+		a.boundary.result_classes != b.boundary.result_classes)
+		return false;
+	const Parameter* ap = parameters_of(a);
+	const Parameter* bp = parameters_of(b);
+	for (uint32_t i = 0; i < a.parameter_count; ++i)
+		if (ap[i].type != bp[i].type || ap[i].pass != bp[i].pass || ap[i].classes != bp[i].classes)
+			return false;
+	return true;
+}
+
 SymbolId Program::symbol_for(NameId name)
 {
 	if (name >= symbol_by_name.size())

@@ -149,3 +149,4 @@ function @HeaderVtableBase__HeaderVtableBase__base_entry(%this : ptr [object_byt
     store typed ptr %t3, %t1
     return void
 }
+equivalent_entry @HeaderVtableDerived__HeaderVtableDerived = @HeaderVtableDerived__HeaderVtableDerived__base_entry

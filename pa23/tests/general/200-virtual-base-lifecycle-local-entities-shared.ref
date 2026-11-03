@@ -437,3 +437,4 @@ function @counter____lambda_counter___counter_t158_158__operator__(%this : ptr [
     store typed i32 %t2, @destroyed
     return void
 }
+equivalent_entry @shared__shared = @shared__shared__base_entry

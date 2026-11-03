@@ -95,3 +95,4 @@ function @std__ios_base__ios_base(%this : ptr [object_bytes=8]) -> void [unwind=
     return void
 }
 alias object _ZNSt8ios_baseC2Ev = @std__ios_base__ios_base
+equivalent_entry @std__ios_base___ios_base = @std__ios_base___ios_base__base_entry
