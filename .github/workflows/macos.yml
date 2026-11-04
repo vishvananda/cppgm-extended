@@ -82,7 +82,9 @@ jobs:
           fi
           "$host_tools/sdk-check"
       - name: Build the compiler and native tools
-        run: make -C dev -j4 CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+        run: |
+          sysctl hw.logicalcpu hw.physicalcpu machdep.cpu.brand_string
+          /usr/bin/time -lp make -C dev -j4 CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Check the mixed-toolchain vtable link
         run: |
           if ! make -C pa27 check CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
@@ -93,7 +95,11 @@ jobs:
             exit 1
           fi
       - name: Run the default Intel macOS test report
-        run: make test-report CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+        run: |
+          make --no-print-directory \
+            --eval='ci-report-config:; @echo "Report parallelism: $(TEST_REPORT_ASSIGNMENT_JOBS) assignments x $(TEST_REPORT_SUBTEST_JOBS) workers ($(DEFAULT_BUILD_JOBS) CPUs)"' \
+            ci-report-config
+          /usr/bin/time -lp make test-report CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Compare self-built and inception compilers
         run: |
           make -C pa34 cppgm++-self CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
