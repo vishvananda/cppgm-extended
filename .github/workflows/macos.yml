@@ -29,27 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install Homebrew LLVM Intel bottle
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: '1'
-        run: |
-          # This Homebrew revision still includes Intel LLVM 18/21 bottles.
-          # Current revisions only publish ARM bottles for macOS.
-          brew tap-new cppgm/ci
-          formula_name="llvm@${{ matrix.llvm }}"
-          formula="$(brew --repository cppgm/ci)/Formula/$formula_name.rb"
-          curl --fail --location --retry 3 \
-            "https://raw.githubusercontent.com/Homebrew/homebrew-core/c722500ede2e1d33523c27ef11338fec48adfdf9/Formula/l/$formula_name.rb" \
-            --output "$formula"
-          python3 - "$formula" <<'PY'
-          from pathlib import Path
-          import sys
-          path = Path(sys.argv[1])
-          text = path.read_text()
-          text = text.replace('  bottle do\n',
-                              '  bottle do\n    root_url "https://ghcr.io/v2/homebrew/core"\n', 1)
-          path.write_text(text)
-          PY
-          brew install --force-bottle "cppgm/ci/$formula_name"
+        run: bash scripts/install_macos_llvm.sh '${{ matrix.llvm }}'
       - name: Select Homebrew LLVM
         run: |
           host_llvm="$(brew --prefix 'cppgm/ci/llvm@${{ matrix.llvm }}')"
