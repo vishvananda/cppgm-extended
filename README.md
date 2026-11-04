@@ -7,6 +7,9 @@ preprocessing to native code, optimization and self-hosting. This repository
 contains a high-performance reference implementation in `dev/`; `pa1/` through
 `pa35/` hold the handouts, tests and wrappers.
 
+For how the reference compiler was built and its performance results, read
+[How I Built a Compiler That Is Faster Than GCC and Clang](https://medium.com/@vishvananda/how-i-built-a-compiler-that-is-faster-than-gcc-and-clang-4c8c1d4818fa).
+
 To take the course, start with
 [cppgm-assignments](https://github.com/vishvananda/cppgm-assignments), the export
 containing scaffolds, handouts, tests and downloadable reference tools.
