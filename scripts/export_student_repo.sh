@@ -550,11 +550,17 @@ RUNNER_STATE_STAMP = $(OBJDIR)/.test_runner_mode
 
 all: $(TARGETS)
 
+# Record successful links separately: an identical binary retains its mtime,
+# while newer objects must not force that same link on every subsequent make.
 define FRONTEND_RULES
-$(1): $(call link_objs,$(1)) $(RUNNER_STATE_STAMP) | $(OBJDIR)
-	$(call quiet,LINK,$$@)
-	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o $$@.tmp $(call link_objs,$(1))
-	@if ! cmp -s $$@.tmp $$@ 2>/dev/null; then mv -f $$@.tmp $$@; else rm -f $$@.tmp; fi
+$(1): | $(OBJDIR)/.link-$(1)
+	@:
+
+$(OBJDIR)/.link-$(1): $(call link_objs,$(1)) $(RUNNER_STATE_STAMP) $(if $(wildcard $(1)),,FORCE) | $(OBJDIR)
+	$(call quiet,LINK,$(1))
+	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o $(1).tmp $(call link_objs,$(1))
+	@if ! cmp -s $(1).tmp $(1) 2>/dev/null; then mv -f $(1).tmp $(1); else rm -f $(1).tmp; fi
+	@touch $$@
 
 $(call entry_obj,$(1)): $(1).cpp $(COMPILE_CONFIG_STAMP)
 	@mkdir -p $$(@D) $(DEPDIR)/entry

@@ -235,12 +235,18 @@ class ExportedDevMakefileTests(unittest.TestCase):
                               result.stderr)
 
     def test_identical_relink_preserves_frontend_mtime(self):
+        self.check_identical_relink(exported_dev_makefile())
+
+    def test_solution_identical_relink_preserves_frontend_mtime(self):
+        self.check_identical_relink((REPO_ROOT / "dev/Makefile").read_text())
+
+    def check_identical_relink(self, makefile):
         with tempfile.TemporaryDirectory(prefix="exported-dev-makefile.") as temp:
             root = Path(temp)
             dev = root / "dev"
             src = dev / "src"
             src.mkdir(parents=True)
-            (dev / "Makefile").write_text(exported_dev_makefile())
+            (dev / "Makefile").write_text(makefile)
 
             targets = [
                 "abimangle", "pptoken", "posttoken", "ppexpr",
@@ -276,7 +282,7 @@ class ExportedDevMakefileTests(unittest.TestCase):
 
             command = [
                 "make", "-s", "-C", str(dev), "pptoken",
-                "CPPGM_TEST_RUNNER=0", f"CXX={compiler}",
+                "CPPGM_TEST_RUNNER=0", f"CXX={compiler}", f"CPPGM_HOST_CXX={compiler}",
             ]
             subprocess.run(command, check=True)
             binary = dev / "pptoken"
@@ -301,11 +307,22 @@ class ExportedDevMakefileTests(unittest.TestCase):
             self.assertEqual(original_content, binary.read_bytes())
             self.assertEqual(original_mtime, binary.stat().st_mtime_ns)
 
+            result = subprocess.run(command, check=True, text=True, stdout=subprocess.PIPE)
+            self.assertNotIn("LINK", result.stdout)
+            self.assertEqual(original_mtime, binary.stat().st_mtime_ns)
+
+            binary.unlink()
+            subprocess.run(command, check=True, stdout=subprocess.PIPE)
+            self.assertEqual(original_content, binary.read_bytes())
+            rebuilt_mtime = binary.stat().st_mtime_ns
+            result = subprocess.run(command, check=True, text=True, stdout=subprocess.PIPE)
+            self.assertNotIn("LINK", result.stdout)
+
             time.sleep(1.1)
             (src / "shared.cpp").write_text("shared-v2\n")
             subprocess.run(command, check=True)
             self.assertNotEqual(original_content, binary.read_bytes())
-            self.assertGreater(binary.stat().st_mtime_ns, original_mtime)
+            self.assertGreater(binary.stat().st_mtime_ns, rebuilt_mtime)
 
     def test_reference_bundle_and_ci_build_export_the_same_binaries(self):
         script = EXPORT_SCRIPT.read_text()
