@@ -652,6 +652,57 @@ def baseline_of(results):
     return dict(programs=programs)
 
 
+def cpu_text(value):
+    return f'{value:,.3f}' if isinstance(value, (int, float)) else '—'
+
+
+def timing_table(results, metric):
+    lines = ['| Program | cppgm++ (s) | GCC (s) | Speed vs GCC ↑ | Clang (s) | Speed vs Clang ↑ | Status |',
+             '| --- | ---: | ---: | ---: | ---: | ---: | --- |']
+    for result in sorted(results, key=lambda row: row['name']):
+        name = result['name'].replace('|', r'\|').replace('\n', ' ')
+        cells = [name, cpu_text(result.get('cppgm', {}).get(metric))]
+        for reference in ('gcc', 'clang'):
+            cells.append(cpu_text(result.get(reference, {}).get(metric)))
+            value = ratio(result, metric, reference) if result['status'] == 'ok' else None
+            cells.append(speed_text(value) if value else '—')
+        cells.append(result['status'].replace('|', r'\|').replace('\n', ' '))
+        lines.append('| ' + ' | '.join(cells) + ' |')
+    return lines
+
+
+def timing_details(document, builds=None):
+    lines = ['', '## Compile CPU times', '',
+             'Times are CPU seconds, excluding linking. Speed is reference time divided by '
+             'cppgm++ time; higher is better. Every program is listed. Missing times show a dash. '
+             'Ratios are omitted for failed programs or when either time is below 10 ms.', '',
+             'Compilation is measured once per compiler and level; the ABBA/BAAB repetitions '
+             'apply to generated-program execution and self-built compiler speed.', '']
+    for metric, title in (('compile_cpu_O0', 'O0 compilation'),
+                          ('compile_cpu_O3', 'O3 compilation'),
+                          ('frontend_cpu', 'Frontend only: -fsyntax-only')):
+        lines += [f'### {title}', ''] + timing_table(document['programs'], metric) + ['']
+    if builds:
+        lines += ['### Building the compiler', '',
+                  '| Compiler doing the rebuild | CPU seconds |', '| --- | ---: |',
+                  f'| GCC | {cpu_text(builds.get("gcc"))} |',
+                  f'| GCC-built cppgm++ | {cpu_text(builds.get("self"))} |',
+                  f'| Self-built cppgm++ | {cpu_text(builds.get("inception"))} |', '',
+                  'These are the initial bootstrap builds. The GCC rebuild is measured once.']
+        paired = builds.get('paired_self', {})
+        if paired.get('comparison'):
+            lines += ['', '#### Paired self-built compiler measurements', '',
+                      '| Block | GCC-built cppgm++ (s) | Self-built cppgm++ (s) | Self-built speed ↑ |',
+                      '| ---: | ---: | ---: | ---: |']
+            for index, block in enumerate(paired['comparison']['blocks'], 1):
+                lines.append(f'| {index} | {cpu_text(block["reference_cpu"])} | '
+                             f'{cpu_text(block["candidate_cpu"])} | {speed_text(block["ratio"])} |')
+            lines += ['', 'Each block averages its two observations per compiler. '
+                      'The badge uses the median block ratio; calibration and every observation '
+                      'are retained in the raw results.']
+    return '\n'.join(lines)
+
+
 def summary(document, changes, builds=None):
     results = document['programs']
     failures = [r for r in results if r['status'] != 'ok']
@@ -715,16 +766,18 @@ def summary(document, changes, builds=None):
         lines += ['', '## Slowest generated code, by run-time instructions', '',
                   '| Program | vs g++ |', '| --- | ---: |']
         lines += [f'| {name} | {speed_text(value)} |' for value, name in worst]
+    lines.append(timing_details(document, builds))
     return '\n'.join(lines) + '\n'
 
 
 def report(arguments):
     return main_report(arguments.results, arguments.summary, arguments.baseline,
-                       arguments.write_baseline, arguments.badges, arguments.selfhost)
+                       arguments.write_baseline, arguments.badges, arguments.selfhost,
+                       arguments.details)
 
 
 def main_report(results_path, summary_path=None, baseline_path=None, write_baseline=None,
-                badges=None, selfhost_path=None):
+                badges=None, selfhost_path=None, details_path=None):
     document = json.loads(Path(results_path).read_text())
     results = document['programs']
     builds = None
@@ -746,6 +799,8 @@ def main_report(results_path, summary_path=None, baseline_path=None, write_basel
         baseline = json.loads(Path(baseline_path).read_text())
     changes = compare_baseline(results, baseline)
     text = summary(document, changes, builds)
+    if details_path:
+        Path(details_path).write_text(text)
     if summary_path:
         with open(summary_path, 'a') as stream:
             stream.write(text)
@@ -856,6 +911,7 @@ def main():
     command.add_argument('results')
     command.add_argument('--baseline', default=str(BASELINE))
     command.add_argument('--summary', help='a file to append the summary to')
+    command.add_argument('--details', help='write the complete Markdown report to this file')
     command.add_argument('--write-baseline', help='record these results as the baseline')
     command.add_argument('--badges', help='a directory to write the README badges to')
     command.add_argument('--selfhost', help='the output of the selfhost command')

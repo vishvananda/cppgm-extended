@@ -60,12 +60,31 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
     badges['revision'] = dict(schemaVersion=1, label='commit', message=revision[:9], color='1e40af')
     _, count = public_benchmarks.mean_ratio(document['programs'], 'run_cpu_O3', 'gcc')
     badges['o3-programs'] = dict(schemaVersion=1, label='programs', message=str(count), color='475569')
+    builds = None
+    if (artifact / 'selfhost.json').is_file():
+        builds = json.loads((artifact / 'selfhost.json').read_text())
+    report = public_benchmarks.summary(document, [], builds)
+    heading = 'Intel Xeon' if platform == 'intel' else 'AMD EPYC'
+    source = 'https://github.com/vishvananda/cppgm-extended/commit/' + revision
+    report = report.replace('# Public benchmarks\n\n',
+                            f'# Public benchmarks: {heading}\n\n'
+                            f'Measured compiler: [`{revision[:9]}`]({source}) · '
+                            f'[CI run]({run_url}) · [Raw program results](results.json)'
+                            + (' · [Raw rebuild results](selfhost.json)' if builds else '') + '\n\n', 1)
+    report += ('\n## Toolchains\n\n' + '\n'.join(
+        f'- **{name}**: {value}' for name, value in environment.items() if name != 'cpu') + '\n')
     for destination in destinations:
         destination.mkdir(parents=True, exist_ok=True)
         for name, data in badges.items():
             (destination / f'{name}.json').write_text(json.dumps(data, indent=1) + '\n')
             (destination / f'{name}.svg').write_text(badge_svg(data))
         (destination / 'provenance.json').write_text(json.dumps(provenance, indent=1) + '\n')
+        (destination / 'report.md').write_text(report)
+        (destination / 'results.json').write_bytes((artifact / 'results.json').read_bytes())
+        if builds:
+            (destination / 'selfhost.json').write_bytes((artifact / 'selfhost.json').read_bytes())
+        else:
+            (destination / 'selfhost.json').unlink(missing_ok=True)
 
 
 def main():

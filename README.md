@@ -26,6 +26,8 @@ The export's references are generated from this compiler.
 | Measured commit | [<img alt="epyc Measured commit" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/epyc/revision.svg">](benchmarks/public/README.md) | [<img alt="intel Measured commit" height="24" src="https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/intel/revision.svg">](benchmarks/public/README.md) |
 
 See [benchmark methodology](benchmarks/public/README.md) for how the numbers are calculated.
+Detailed compile timings: [EPYC](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/epyc/report.md)
+and [Intel Xeon](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/intel/report.md).
 
 ## Caveats
 

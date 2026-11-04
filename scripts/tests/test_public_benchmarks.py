@@ -455,6 +455,35 @@ class ReportTests(unittest.TestCase):
         self.assertIn('| Self compile CPU | 4.00× |', text)
         self.assertIn('| Self-built compiler CPU | 0.50× |', text)
 
+    def test_details_show_raw_compile_times_and_higher_is_better_ratios(self):
+        own = dict(compile_cpu_O0=0.5, compile_cpu_O3=2.0, frontend_cpu=0.25)
+        gcc = dict(compile_cpu_O0=2.0, compile_cpu_O3=6.0, frontend_cpu=1.0)
+        clang = dict(compile_cpu_O0=1.5, compile_cpu_O3=4.0, frontend_cpu=0.5)
+        document = dict(programs=[outcome('sample', gcc, own, clang=clang)])
+        text = pb.summary(document, [], dict(status='ok', gcc=100, self=20, inception=22))
+        self.assertIn('### O0 compilation', text)
+        self.assertIn('| sample | 0.500 | 2.000 | 4.00× | 1.500 | 3.00× | ok |', text)
+        self.assertIn('| sample | 2.000 | 6.000 | 3.00× | 4.000 | 2.00× | ok |', text)
+        self.assertIn('| sample | 0.250 | 1.000 | 4.00× | 0.500 | 2.00× | ok |', text)
+        self.assertIn('| GCC | 100.000 |', text)
+        self.assertIn('| GCC-built cppgm++ | 20.000 |', text)
+
+    def test_details_retain_tiny_missing_and_failing_measurements(self):
+        records = [outcome('tiny', dict(compile_cpu_O3=1), dict(compile_cpu_O3=0.005)),
+                   outcome('bad|name', dict(compile_cpu_O3=2), dict(compile_cpu_O3=1), status='output-mismatch')]
+        text = '\n'.join(pb.timing_table(records, 'compile_cpu_O3'))
+        self.assertIn('| tiny | 0.005 | 1.000 | — | — | — | ok |', text)
+        self.assertIn(r'| bad\|name | 1.000 | 2.000 | — | — | — | output-mismatch |', text)
+
+    def test_details_file_matches_the_workflow_summary(self):
+        path = self.root / 'results.json'
+        path.write_text(json.dumps(dict(programs=[outcome('sample', {}, {})])))
+        summary, details = self.root / 'summary.md', self.root / 'details.md'
+        with contextlib.redirect_stdout(io.StringIO()):
+            pb.main_report(path, summary_path=summary, details_path=details)
+        self.assertEqual(details.read_bytes(), summary.read_bytes())
+        self.assertIn('### O3 compilation', details.read_text())
+
     def test_selfhost_builds_use_one_job_count(self):
         commands = dict(pb.selfhost_commands('/work', 3))
         self.assertEqual(sorted(commands), ['gcc', 'inception', 'self'])
@@ -518,12 +547,31 @@ class BadgePublicationTests(unittest.TestCase):
         self.prepare('epyc', 'AMD EPYC 9V45 96-Core Processor')
         before = (self.target / 'epyc/o3-generated.json').read_bytes()
         legacy = (self.target / 'o3-generated.json').read_bytes()
+        report = (self.target / 'epyc/report.md').read_bytes()
+        raw = (self.target / 'epyc/results.json').read_bytes()
         self.prepare('intel', 'Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz')
         self.assertEqual((self.target / 'epyc/o3-generated.json').read_bytes(), before)
         self.assertEqual((self.target / 'o3-generated.json').read_bytes(), legacy)
+        self.assertEqual((self.target / 'epyc/report.md').read_bytes(), report)
+        self.assertEqual((self.target / 'epyc/results.json').read_bytes(), raw)
         provenance = json.loads((self.target / 'intel/provenance.json').read_text())
         self.assertEqual(provenance['revision'], 'a' * 40)
         self.assertIn('Intel', provenance['cpu'])
+
+    def test_report_identifies_its_source_and_retains_exact_raw_measurements(self):
+        builds = dict(status='ok', gcc=100, self=20, inception=21)
+        (self.artifact / 'selfhost.json').write_text(json.dumps(builds))
+        self.prepare('intel', 'Intel Xeon')
+        text = (self.target / 'intel/report.md').read_text()
+        self.assertIn('# Public benchmarks: Intel Xeon', text)
+        self.assertIn('commit/' + 'a' * 40, text)
+        self.assertIn('https://github.com/owner/repo/actions/runs/1', text)
+        self.assertIn('[Raw program results](results.json)', text)
+        self.assertIn('[Raw rebuild results](selfhost.json)', text)
+        self.assertIn('### O3 compilation', text)
+        self.assertEqual((self.target / 'intel/results.json').read_bytes(),
+                         (self.artifact / 'results.json').read_bytes())
+        self.assertEqual(json.loads((self.target / 'intel/selfhost.json').read_text()), builds)
 
     def test_epyc_publication_preserves_intel_results(self):
         self.prepare('intel', 'Intel Xeon')

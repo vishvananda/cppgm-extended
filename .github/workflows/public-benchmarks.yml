@@ -85,6 +85,7 @@ jobs:
         run: |
           python3 scripts/public_benchmarks.py report obj/public-benchmarks/results.json \
             --summary "$GITHUB_STEP_SUMMARY" \
+            --details obj/public-benchmarks/details.md \
             --badges obj/public-benchmarks/badges \
             --selfhost obj/public-benchmarks/selfhost.json
 
@@ -104,6 +105,7 @@ jobs:
           path: |
             obj/public-benchmarks/results.json
             obj/public-benchmarks/selfhost.json
+            obj/public-benchmarks/details.md
             obj/public-benchmarks/work/timing/
             obj/public-benchmarks/selfhost/paired-*/*.jsonl
             obj/public-benchmarks/selfhost/paired-*/*.log
@@ -201,6 +203,7 @@ jobs:
                 --output obj/public-benchmarks/selfhost.json --jobs "$jobs"
               python3 scripts/public_benchmarks.py report obj/public-benchmarks/results.json \
                 --summary obj/public-benchmarks/summary.md \
+                --details obj/public-benchmarks/details.md \
                 --badges obj/public-benchmarks/badges \
                 --selfhost obj/public-benchmarks/selfhost.json
               if [ "$COURSE_QUALITY" = true ]; then
@@ -219,6 +222,7 @@ jobs:
           path: |
             obj/public-benchmarks/results.json
             obj/public-benchmarks/selfhost.json
+            obj/public-benchmarks/details.md
             obj/public-benchmarks/work/timing/
             obj/public-benchmarks/selfhost/paired-*/*.jsonl
             obj/public-benchmarks/selfhost/paired-*/*.log

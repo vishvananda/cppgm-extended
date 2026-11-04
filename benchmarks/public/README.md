@@ -83,6 +83,14 @@ a `cppgm++` count differs from `baseline.json`:
 
 ## Reading the README table
 
+The [EPYC report](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/epyc/report.md)
+and [Intel report](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/intel/report.md)
+list every program's O0, O3 and frontend compile CPU times for all three
+compilers, with higher-is-better speed ratios. They include compiler rebuild
+times, paired self-build blocks, toolchains and links to the exact CI run and
+raw measurements. The same tables appear in each new workflow run's summary
+and its `details.md` artifact.
+
 Program speed is `GCC CPU time / cppgm++ CPU time`: 1× is equal, and higher
 is faster. Compile speed measures compilation, excluding linking;
 generated code speed measures execution of the resulting programs. The `-O3`
