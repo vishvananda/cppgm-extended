@@ -1,8 +1,8 @@
 {
  "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
  "cpu": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz",
- "run_url": "https://github.com/vishvananda/cppgm-extended/actions/runs/41766545983",
- "published_at": "2026-11-04T04:11:15.102372+00:00",
+ "run_url": "https://github.com/vishvananda/cppgm-extended/actions/runs/41781359245",
+ "published_at": "2026-11-04T06:34:10.335894+00:00",
  "environment": {
   "cpu": "Intel(R) Xeon(R) CPU E5-2696 v4 @ 2.20GHz",
   "gcc": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
