@@ -40,10 +40,10 @@ These checks are outside the required Linux suites. Linux hosts check emission
 and, when installed, use LLVM to inspect, link and verify debug information.
 Intel Macs additionally execute the programs and test interoperability with
 host-built objects, including exception unwinding and thread-local storage.
-The **Intel macOS port** workflow runs on GitHub's `macos-15-intel` runner and
+The **Intel macOS port** workflow runs on GitHub's `macos-26-intel` runner and
 also compares self-built and inception compilers with Homebrew LLVM 18 and 21,
-matching the Ubuntu compiler majors. LLVM 21 uses a pinned Homebrew revision
-with an Intel bottle. Each job records its compiler's path and version. The
+matching the Ubuntu compiler majors. Both use a pinned Homebrew revision
+with Intel bottles. Each job records its compiler's path and version. The
 workflow runs on `v8macho` pushes and can be dispatched manually.
 
 The Mach-O implementation adapts v3's format support to the current typed
