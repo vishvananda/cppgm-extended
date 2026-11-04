@@ -60,6 +60,10 @@ Every native fixture checks compilation status and the generated program's
 stdout and exit status. Correct output is required regardless of optimization
 level or allocation strategy.
 
+A one-past pointer can still reach its array through valid backward arithmetic.
+Preserve the array's contents and lifetime when such a pointer crosses a call
+or a block boundary; storage optimizations must account for those uses too.
+
 Where `x.ref.expect` exists, the MIR must satisfy its predicates. They bound
 quantities such as instruction count, blocks, calls, memory operands and frame
 size, and state focused requirements for effects such as volatile accesses

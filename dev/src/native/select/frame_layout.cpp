@@ -12,7 +12,7 @@ namespace {
 bool frame_operand(const Operand& op)
 {
 	return op.kind == OperandKind::Mem && op.symbol == lowir::kNoId && (op.reg == kFrame || op.index == kFrame) &&
-		op.disp < 0;
+		op.disp <= 0;
 }
 
 // The bytes an instruction's memory operand covers (at least its first).
@@ -128,7 +128,14 @@ std::vector<uint8_t> tracked_frame_objects(const Function& f, const FrameObjectI
 			if (o == lowir::kNoId || !direct || !plain ||
 				static_cast<int64_t>(op.disp) + access_bytes(inst) >
 					static_cast<int64_t>(objects[o].offset) + objects[o].bytes)
+			{
 				untrack(op.disp);
+				// An address at a boundary can denote either the next object's
+				// start or the previous object's one-past pointer. Both objects
+				// escape, including when the frame's last object ends at zero.
+				if ((!direct || !plain) && op.disp > INT32_MIN)
+					untrack(op.disp - 1);
+			}
 		}
 	return tracked;
 }
