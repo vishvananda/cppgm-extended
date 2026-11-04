@@ -44,6 +44,7 @@ function @copy_and_store_address
     je ^direct
 
   block ^copy
+    store.ptr [rbp-<off1>], <gpr0>
 
   block ^done
     cmp.ptr <gpr0>, 0
@@ -52,6 +53,7 @@ function @copy_and_store_address
     ret rax
 
   block ^direct
+    store.ptr [rbp-<off1>], <gpr0>
     jmp ^done
 
 function @return_slot_address

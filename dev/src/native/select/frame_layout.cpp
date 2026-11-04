@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 #include "native/mir/type_kinds.h"
@@ -133,7 +134,7 @@ std::vector<uint8_t> tracked_frame_objects(const Function& f, const FrameObjectI
 				// An address at a boundary can denote either the next object's
 				// start or the previous object's one-past pointer. Both objects
 				// escape, including when the frame's last object ends at zero.
-				if ((!direct || !plain) && op.disp > INT32_MIN)
+				if ((!direct || inst.op == Op::Lea) && op.disp > INT32_MIN)
 					untrack(op.disp - 1);
 			}
 		}
@@ -307,6 +308,7 @@ bool order_frame(Function& f, const std::vector<FrameObject>& objects)
 	std::vector<uint64_t> frequency;
 	block_frequencies(f, frequency);
 	std::vector<uint64_t> weight(objects.size(), 0);
+	std::vector<std::pair<uint32_t, uint32_t>> boundaries;
 	for (uint32_t b = 0; b < f.blocks.size(); ++b)
 	{
 		const Block& block = f.blocks[b];
@@ -328,6 +330,12 @@ bool order_frame(Function& f, const std::vector<FrameObject>& objects)
 						static_cast<int64_t>(op.disp) + access_bytes(inst) >
 							static_cast<int64_t>(objects[o].offset) + objects[o].bytes))
 					return false;
+				if ((inst.op == Op::Lea || op.index != kNoReg) && op.disp > INT32_MIN)
+				{
+					const uint32_t before = find(op.disp - 1);
+					if (before != lowir::kNoId && before != o)
+						boundaries.emplace_back(before, o);
+				}
 				weight[o] += w;
 			}
 		}
@@ -356,6 +364,11 @@ bool order_frame(Function& f, const std::vector<FrameObject>& objects)
 	}
 	if (!changed)
 		return false;
+	// An ambiguous boundary must remain both the preceding object's end
+	// and the following object's start after relocation.
+	for (const auto& pair : boundaries)
+		if (static_cast<int64_t>(moved[pair.first]) + objects[pair.first].bytes != moved[pair.second])
+			return false;
 	auto relocate = [&](int32_t& disp) {
 		const uint32_t o = find(disp);
 		if (o != lowir::kNoId)
