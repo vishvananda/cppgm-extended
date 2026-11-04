@@ -16,6 +16,29 @@ ROOT = Path(__file__).resolve().parents[2]
 class ReportIsolationTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("gcc") and shutil.which("g++"), "needs host C and C++ compilers")
     def test_shared_helpers_link_with_their_language_runtime(self):
+        self.check_shared_helpers(ROOT / "scripts/run_cpphostinterop_tests_worker.pl")
+
+    @unittest.skipUnless(sys.platform == "linux" and shutil.which("gcc") and shutil.which("g++"),
+                         "student export requires Linux host compilers")
+    def test_exported_shared_helpers_retain_their_language_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            scripts = root / "scripts"
+            scripts.mkdir()
+            for name in ("run_cpphostinterop_tests_worker.pl", "CppgmBatchWorker.pm", "CppgmTestPlatform.pm"):
+                shutil.copy(ROOT / "scripts" / name, scripts / name)
+            export = (ROOT / "scripts/export_student_repo.sh").read_text()
+            start = export.index("sanitize_linux_student_scripts() {")
+            end = export.index("\n}\n", start) + len("\n}\n")
+            subprocess.run(["bash", "-euc", export[start:end] +
+                            '\ndest="$1"\nsanitize_linux_student_scripts',
+                            "bash", str(root)], check=True, capture_output=True, text=True)
+            worker = scripts / "run_cpphostinterop_tests_worker.pl"
+            syntax = subprocess.run(["perl", "-c", str(worker)], capture_output=True, text=True)
+            self.assertEqual(syntax.returncode, 0, syntax.stderr)
+            self.check_shared_helpers(worker)
+
+    def check_shared_helpers(self, worker):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             drivers = {}
@@ -56,8 +79,7 @@ class ReportIsolationTests(unittest.TestCase):
                 (root / f"{language}.link.flags").write_text("__LIBDIR__/libprovider.__SHARED_EXT__\n")
             env = dict(self.environment(), CPPGM_BATCH_TESTS="1", CPPGM_HOST_CC=drivers["C"],
                        CPPGM_HOST_CXX=drivers["CXX"])
-            q = subprocess.run(["perl", str(ROOT / "scripts/run_cpphostinterop_tests_worker.pl"),
-                                str(compiler), "my", str(root)], cwd=root, env=env,
+            q = subprocess.run(["perl", str(worker), str(compiler), "my", str(root)], cwd=root, env=env,
                                capture_output=True, text=True, timeout=30)
             self.assertEqual(q.returncode, 0, q.stdout + q.stderr)
             for language in ("c", "cpp"):

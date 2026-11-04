@@ -354,18 +354,11 @@ sanitize_linux_student_scripts() {
       s/\|dylib//g;
       s@\$flag =~ m/\(\?:\\\.__SHARED_EXT__\|\\\.dylib\|\\\.so\)\$/@\$flag =~ m/(?:\\.__SHARED_EXT__|\\.so)$/@g;
     ' "$run_script"
-    perl -pi -e '
-      if ($skip_dylib_cmd) {
-        if (/^\t\t\t\t: \(\@\{\$ctx->\{host_cc\}\}, '"'"'-shared'"'"', '"'"'-o'"'"', \$sharedlib, \$obj\);$/) {
-          $_ = "\t\t\tmy \@cmd = (\@{\$ctx->{host_cc}}, '"'"'-shared'"'"', '"'"'-o'"'"', \$sharedlib, \$obj);\n";
-          $skip_dylib_cmd = 0;
-        } else {
-          $_ = "";
-        }
-      } elsif (/^\t\t\tmy \@cmd = \$ctx->\{shared_ext\} eq '"'"'dylib'"'"'$/) {
-        $skip_dylib_cmd = 1;
-        $_ = "";
-      }
+    # Select the complete Linux expression in one bounded replacement. Never
+    # discard lines while searching for a linker spelling that may change.
+    perl -0pi -e '
+      s/^\t{3}my \@cmd = \$ctx->\{shared_ext\} eq '"'"'dylib'"'"'\n\t{4}\? [^\n]*\n\t{4} +[^\n]*\n\t{4}: (\([^\n]*\));$/\t\t\tmy \@cmd = $1;/m
+        or die "Unable to select Linux shared-library link in $ARGV\n";
     ' "$run_script"
   fi
 
