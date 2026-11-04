@@ -6,13 +6,39 @@ soft: a reproducible individual slowdown outweighs a small size overrun.
 No candidate is accepted for main yet. This maintainer record is excluded from
 the student export.
 
+## Closeout
+
+Compiler changes are frozen at `f8bfc70ab`. The user approved closing the size
+work and raising PA35's text-size allowance to 1.20 times the seed, retaining
+the existing 1% release headroom. The unpublished inlining rollback was
+reverted; literal, encoding and expanded-unrolling experiments stay outside
+the PR. No further optimizer changes are planned for this closeout.
+
+Fresh matching-source builds measure course text/stripped ratios of
+1.1383/1.1556 times GCC and student ratios of 1.1413/1.1586. The frozen
+251-unit rebuild confirms 6,370,434 text bytes, or 1.1383 times GCC. All 81
+executables rebuilt from the published source match the measured candidate's
+hashes. The small stripped-size overrun is within the user's stated allowance.
+
+All 17 normal PA35 gates passed in both configurations. The completed release
+measurements pass all 17 additional release checks after re-evaluation at the
+approved 1.20 text limit; compiler measurements were not repeated. Strict
+8,015-case, debug, self-host, inception, architecture/harness and export checks
+pass. Boost CI passes 1,818 checks in 17 suites. Matching final GNU/self-built
+compile-cost receipts have also been collected. Public EPYC CI is pending.
+
+Known local individual runtime losses remain documented in `~/comparison.md`
+and the private measurement receipts; these results do not claim every program
+became faster. The following sections retain the investigation, including
+rejected experiments, for review.
+
 ## Current approach
 
 The coherent review checkout is `affine-review-source`, branch
 `review/general-affine`: the general candidate, exact unrolling cost, guarded
 typed-EH inlining, modular integer composition and scalar lane-width proofs.
-It retains the compact unwind encoding. The earlier `compiler` checkout holds
-rejected layout work and is not a source for this checkpoint. Experimental
+It retains the compact unwind encoding. The `compiler` checkout now holds this validated source and the gate-only
+closeout changes; the rejected layout work remains archived separately. Experimental
 mask narrowing, scalar/shuffle folding and padding encodings remain separate.
 Retain the established counted-loop and function alignment policy. Experiments
 with tiny-entry spacing cutoffs, floating-function entry phases and
@@ -195,8 +221,8 @@ Architecture/format audits, the complete harness suite, file/placement audits,
 all three PA35 smoke checks and the student document audit pass. A fresh
 student export verifies 22,415 portable reference output files and its six
 new cases pass through the exported runners. The current GNU source build
-emits no warnings. Final full PA35 release, matching final GNU/self compile
-cost, Boost checks and individual native acceptance remain open.
+emits no warnings. Final PA35 release reassessment, matching GNU/self compile-cost checks and
+Boost CI have completed. See the closeout above for remaining runtime caveats.
 
 Separate encoding experiments narrow only zero-flag register mask tests,
 fold adjacent scalar insertion/shuffle operations, and pack existing padding

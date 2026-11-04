@@ -74,7 +74,7 @@ reported as not run. `make -C pa35 test-correctness`, `test-speed` and
 | codegen | `codegen-O3-instructions` | the same at `-O3` | <= 1.12 |
 | codegen | `codegen-O0-cycle-proxy` | self / seed cycle proxy for the whole process at `-O0` | <= 1.09 |
 | codegen | `codegen-O3-cycle-proxy` | the same at `-O3` | <= 1.10 |
-| codegen | `text-size` | self / seed `.text` bytes | <= 1.15 |
+| codegen | `text-size` | self / seed `.text` bytes | <= 1.20 |
 | codegen | `kernel-*` (4) | each kernel in `kernels/`, compiled by `cppgm++` and by GCC and linked against one GCC-built driver: instructions for the measured input relative to GCC | <= 1.30 each |
 
 The cycle proxy is `Ir/3 + 15 Bcm + 20 Bim + 10 I1mr + 10 (D1mr + D1mw)` from
