@@ -1,10 +1,10 @@
 {
- "revision": "08bba949b4a0c3f2a728bf52c6e7089a38b44797",
- "cpu": "AMD EPYC 9V45 96-Core Processor",
- "run_url": "https://github.com/vishvananda/cppgm-extended/actions/runs/41766426226",
- "published_at": "2026-11-04T03:59:37.209606+00:00",
+ "revision": "9aea5b162d370eaf81708ad0894d157278d05c3f",
+ "cpu": "AMD EPYC 7763 64-Core Processor",
+ "run_url": "https://github.com/vishvananda/cppgm-extended/actions/runs/41900049360",
+ "published_at": "2026-11-04T20:48:53.364496+00:00",
  "environment": {
-  "cpu": "AMD EPYC 9V45 96-Core Processor",
+  "cpu": "AMD EPYC 7763 64-Core Processor",
   "gcc": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
   "clang": "Ubuntu clang version 21.1.8 (6ubuntu1)",
   "valgrind": "valgrind-3.26.0"
