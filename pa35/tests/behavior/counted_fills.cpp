@@ -52,7 +52,9 @@ int main()
 		sum += v.size();
 	}
 	std::vector<int> iv(5, -3);
-	iv.assign(17, iv[2]);   // the value is an element being replaced
+	// N3485 Table 100: assign's value must not refer into the container.
+	const int value = iv[2];
+	iv.assign(17, value);
 	for (int x : iv)
 		sum = sum * 31 + static_cast<unsigned>(x);
 	std::printf("%llu\n", static_cast<unsigned long long>(sum));
