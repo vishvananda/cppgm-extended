@@ -33,7 +33,7 @@ class FunctionSelector : private SelectorState
 public:
 	FunctionSelector(const lowir::Program& program, SelectStats& stats);
 
-	void select(lowir::SymbolId symbol, Function& out);
+	void select(lowir::SymbolId symbol, Function& out, uint32_t extra_preserved_gprs);
 	void set_eh_model(EhModel model) { eh_model_ = model; }
 	void set_position_independent(bool enabled) { position_independent_ = enabled; }
 	void set_optimization_level(int level) { level_ = level; }

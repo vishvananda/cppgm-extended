@@ -22,6 +22,7 @@ Use the host Clang linker for programs needing the system C/C++ libraries.
 Keep Clang in `CPPGM_HOST_CXX` during self-hosting:
 
 ```sh
+make -C pa34 cppgm++-self CPPGM_HOST_CXX=clang++
 make -C pa34 compare-cppgm++-inception CPPGM_HOST_CXX=clang++
 ```
 

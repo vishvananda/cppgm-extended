@@ -162,8 +162,8 @@ bool terminated(const Function& f, const Block& block)
 bool shrink_wrap(Function& f)
 {
 	const uint32_t n = static_cast<uint32_t>(f.blocks.size());
-	if (!f.omit_frame_pointer || f.variadic || f.eh_records_pushed || n < 2 ||
-		(f.preserve_mask == 0 && f.stack_size == 0))
+	if (!f.omit_frame_pointer || f.variadic || f.eh_records_pushed || (f.preserve_mask & kCallerSavedGprs) != 0 ||
+		n < 2 || (f.preserve_mask == 0 && f.stack_size == 0))
 		return false;
 	// The entry's stores of registers to frame slots it does not otherwise
 	// touch (spills at the entry): they move to the prologue blocks, the

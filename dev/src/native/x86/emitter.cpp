@@ -829,7 +829,8 @@ void FunctionEmitter::frame_reserve(const Function& function)
 void FunctionEmitter::prologue(const Function& function)
 {
 	const uint32_t base = static_cast<uint32_t>(base_);
-	const Reg order[6] = { RBX, R12, R13, R14, R15, RBP }; // RBP: without a frame pointer
+	const Reg order[13] = { RBX, R12, R13, R14, R15, RBP, RCX, RDX, RSI, R8, R9, R10, R11 };
+	const unsigned registers = (function.preserve_mask & kCallerSavedGprs) != 0 ? 13 : 6;
 	const uint32_t saved = static_cast<uint32_t>(__builtin_popcount(function.preserve_mask));
 	// A shrink-wrapped function's later prologues record only where they
 	// are (the saves' registers and offsets are the first's).
@@ -851,7 +852,7 @@ void FunctionEmitter::prologue(const Function& function)
 	// (CFA - 16) down, and the rest is reserved below them.
 	int32_t offset = omit_fp_ ? 8 : function.preserve_offset + static_cast<int32_t>(8 * saved);
 	unsigned pushed = 0;
-	for (unsigned k = 6; k-- > 0;)
+	for (unsigned k = registers; k-- > 0;)
 	{
 		if (!(function.preserve_mask & (1u << order[k])))
 			continue;
@@ -885,14 +886,15 @@ void FunctionEmitter::prologue(const Function& function)
 // `leave` or the release).
 uint32_t FunctionEmitter::epilogue_body(const Function& function, uint32_t* pop_end)
 {
-	const Reg order[6] = { RBX, R12, R13, R14, R15, RBP };
+	const Reg order[13] = { RBX, R12, R13, R14, R15, RBP, RCX, RDX, RSI, R8, R9, R10, R11 };
+	const unsigned registers = (function.preserve_mask & kCallerSavedGprs) != 0 ? 13 : 6;
 	if (function.preserve_mask != 0 && dynamic_stack_)
 		asm_.lea(RSP, RM::m(RBP, function.preserve_offset));
 	if (omit_fp_ && unwind_.reserve != 0)
 		asm_.alu_ri(0, RM::r(RSP), unwind_.reserve, 8);
 	uint32_t released = asm_.size() - static_cast<uint32_t>(base_);
 	unsigned pops = 0;
-	for (unsigned k = 0; k < 6; ++k)
+	for (unsigned k = 0; k < registers; ++k)
 		if (function.preserve_mask & (1u << order[k]))
 		{
 			asm_.pop(order[k]);

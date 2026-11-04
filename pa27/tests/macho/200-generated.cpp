@@ -16,6 +16,12 @@ extern "C" int catch_from_host() {
   catch (int value) { return value + 1; }
 }
 extern "C" int tlv_add(int value) { shared_tls += value; return shared_tls; }
+extern "C" int imported_tls(int value) { host_tls += value; return host_tls; }
+struct ThreadLifetime {
+  ~ThreadLifetime() { ++destruction_count; }
+};
+thread_local ThreadLifetime thread_lifetime;
+extern "C" int touch_lifetime() { return &thread_lifetime != nullptr; }
 extern "C" double tlv_fp(double value, int increment) {
   double twice = value * 2;
   return twice + tlv_add(increment) + value;

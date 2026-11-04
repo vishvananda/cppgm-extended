@@ -396,14 +396,7 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 	if (invocation.debug_optimization && invocation.debug_types)
 		invocation.optimizer.level = 0;
 	add_host_environment(invocation.preprocessor, nostdinc || invocation.target != native::host_target());
-	if (invocation.target != native::host_target())
-	{
-		invocation.preprocessor.command_line.insert(0,
-			invocation.target == native::Target::MacOS
-				? "#undef __linux__\n#undef __linux\n#undef __gnu_linux__\n#undef __ELF__\n#define __APPLE__ "
-				  "1\n#define __MACH__ 1\n"
-				: "#undef __APPLE__\n#undef __MACH__\n#define __linux__ 1\n#define __linux 1\n#define __ELF__ 1\n");
-	}
+	configure_target_environment(invocation.preprocessor, invocation.target);
 	// Darwin objects are position independent even without an explicit -fPIC.
 	if (invocation.target == native::Target::MacOS)
 		invocation.position_independent = true;

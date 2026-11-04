@@ -72,6 +72,7 @@ SELECTIONS = {
 LISTING_RUNNERS = {
     # Only the controls that state an outcome; focused checkers own the rest.
     "check_controls.pl": ["--list"],
+    "check_macho.py": ["--list"],
 }
 
 # Lanes a Makefile does not show: (assignment or "*", pattern under the
@@ -260,7 +261,8 @@ def selection_for(script):
 def lane_selects(lane, selection, pa_dir, inputs):
     if selection == "list":
         listed = subprocess.run(
-            ["perl", str(lane.script), *LISTING_RUNNERS[lane.script.name],
+            [sys.executable if lane.script.suffix == '.py' else "perl",
+             str(lane.script), *LISTING_RUNNERS[lane.script.name],
              *lane.roots], cwd=pa_dir, capture_output=True, text=True).stdout
         names = {os.path.normpath(line) for line in listed.splitlines() if line}
         return inputs & names

@@ -12,9 +12,9 @@ Selector::~Selector()
 	delete state_;
 }
 
-void Selector::select(lowir::SymbolId function, Function& out)
+void Selector::select(lowir::SymbolId function, Function& out, uint32_t extra_preserved_gprs)
 {
-	state_->select(function, out);
+	state_->select(function, out, extra_preserved_gprs);
 }
 
 void Selector::set_eh_model(EhModel model)

@@ -67,7 +67,7 @@ uint32_t emit_runtime(
 void emit_dispatcher(Image& image, const RuntimeSymbols& runtime);
 bool builtin_known(const char* name);
 void emit_builtin_routine(Image& image, uint32_t symbol, const char* name);
-void emit_tls_wrapper(Image& image, uint32_t symbol, uint32_t object);
+void emit_tls_wrapper(Image& image, uint32_t symbol, uint32_t object, UnwindFacts* facts = nullptr);
 
 // The Darwin descriptor thunk may clobber the ordinary caller-saved state.
 // This private helper preserves it for MIR symbol-address instructions.

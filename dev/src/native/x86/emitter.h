@@ -71,13 +71,13 @@ struct UnwindFacts
 	std::vector<Save> saves;
 	struct Epilogue
 	{
-		uint32_t leave_end;  // after its `leave` (frameless: after the stack is released)
-		uint32_t ret_end;    // after its `ret`
-		uint32_t pop_end[6]; // frameless: after each pop, in pop order
+		uint32_t leave_end;   // after its `leave` (frameless: after the stack is released)
+		uint32_t ret_end;     // after its `ret`
+		uint32_t pop_end[13]; // frameless: after each pop, in pop order
 	};
 	uint32_t leave_end = 0;        // after the shared epilogue's `leave`
 	uint32_t ret_end = 0;          // after its `ret`, or 0 when no shared epilogue is emitted
-	uint32_t pop_end[6] = {};      // frameless: after the shared epilogue's pops
+	uint32_t pop_end[13] = {};     // frameless: after the shared epilogue's pops
 	std::vector<Epilogue> returns; // duplicated epilogues before it, in order
 	// A shrink-wrapped function's prologues (each sets the frame up from
 	// the entry's state), in address order; its code before the first has
@@ -86,7 +86,7 @@ struct UnwindFacts
 	{
 		uint32_t start;
 		uint32_t reserve_end;
-		uint32_t save_end[6];
+		uint32_t save_end[13];
 	};
 	std::vector<Prologue> prologues;
 	// Frameless: after each `sub rsp, n` or `add rsp, n` of a call's

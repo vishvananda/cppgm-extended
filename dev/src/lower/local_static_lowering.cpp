@@ -211,23 +211,25 @@ lowir::SymbolId ProgramLowering::thread_atexit_function()
 	if (thread_atexit_ != lowir::kNoId)
 		return thread_atexit_;
 	thread_atexit_ = new_symbol("__cppgm_runtime_cxa_thread_atexit");
+	const bool darwin = darwin_host_objects();
+	const uint32_t arity = darwin ? 2 : 3;
 	lowir::Signature signature = lowir::Signature();
 	signature.first_parameter = static_cast<uint32_t>(program_.parameters.size());
-	for (uint32_t i = 0; i < 3; ++i)
+	for (uint32_t i = 0; i < arity; ++i)
 	{
 		lowir::Parameter parameter = lowir::Parameter();
 		parameter.name = argument_name(i);
 		parameter.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
 		program_.parameters.push_back(parameter);
 	}
-	signature.parameter_count = 3;
-	signature.result = lowir::Type::scalar(lowir::TypeKind::I32);
+	signature.parameter_count = arity;
+	signature.result = lowir::Type::scalar(darwin ? lowir::TypeKind::Void : lowir::TypeKind::I32);
 	program_.declare_function(
 		thread_atexit_, lowir::SymbolKind::FunctionDeclaration, program_.add_signature(signature));
 	lowir::SymbolMetadata& metadata = program_.symbols[thread_atexit_].metadata;
 	metadata.linkage = ir_model::LLM_C;
 	metadata.binding = ir_model::SBM_STRONG;
-	metadata.object = intern("__cxa_thread_atexit", 19);
+	metadata.object = darwin ? intern("_tlv_atexit", 11) : intern("__cxa_thread_atexit", 19);
 	return thread_atexit_;
 }
 
@@ -541,10 +543,13 @@ void FunctionLowering::register_destruction(
 		// pending and needs a real one (a null handle crashes it).
 		const lowir::Type ptr = lowir::Type::scalar(lowir::TypeKind::Ptr);
 		arguments_.push_back(integer(ptr, 0).value);
-		arguments_.push_back(lowir::Value::symbol(lowering_.dso_handle()));
+		if (!lowering_.darwin_host_objects())
+			arguments_.push_back(lowir::Value::symbol(lowering_.dso_handle()));
 	}
 	const lowir::SymbolId registrar = thread ? lowering_.thread_atexit_function() : lowering_.atexit_function();
-	emit_call(lowir::Type::scalar(lowir::TypeKind::I32), lowir::Value::symbol(registrar), base, lowir::kNoId, false);
+	const lowir::Signature& signature =
+		program_.signatures[program_.functions[program_.symbols[registrar].detail].signature];
+	emit_call(signature.result, lowir::Value::symbol(registrar), base, lowir::kNoId, false);
 }
 
 } // namespace lower

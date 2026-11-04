@@ -61,11 +61,13 @@ class ExportedDevMakefileTests(unittest.TestCase):
         for relative in documents:
             self.assertTrue((REPO_ROOT / relative).is_file(), relative)
         fixtures = {
+            'scripts/check_macho.py': '# optional public target checker\n',
             'pa8/tests/general/100-valid.t': 'program input\n',
             'pa27/tests/behavior/100-layout.ref.inspect.plan': 'object contract\n',
             'pa27/tests/controls/200-section-token-safe.t': 'graded control\n',
         }
         excluded = [
+            'scripts/private_audit.py',
             # Run only by the maintainer's pending-audit checker.
             'pa28/tests/controls/100-audit-standalone-function-try.audit',
             'pa27/tests/controls/200-audit-global-variable-name.cpp',

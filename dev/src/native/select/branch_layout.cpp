@@ -47,7 +47,9 @@ bool branch_to(const Inst& inst, Op op, uint32_t block)
 // it. The returned registers are the callee's either way.
 uint32_t form_tail_jumps(Function& f)
 {
-	if (f.variadic || f.eh_records_pushed)
+	// A wrapper with a stronger preservation convention cannot tail-call
+	// an ordinary System V function after restoring its saved registers.
+	if (f.variadic || f.eh_records_pushed || (f.preserve_mask & kCallerSavedGprs) != 0)
 		return 0;
 	for (const Inst& inst : f.insts)
 		for (unsigned k = 0; k < inst.nops && inst.op != Op::Nop; ++k)

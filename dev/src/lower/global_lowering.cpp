@@ -845,6 +845,10 @@ lowir::SymbolId ProgramLowering::external_thread_local_wrapper(
 	// through its wrapper, which runs that unit's initialization for the
 	// thread first (through its entry, `_ZTH`), then gives the address.
 	const lowir::SymbolId wrapper = thread_local_wrapper_symbol(global, variable);
+	// Darwin exports the C++ wrapper, not the other unit's TLS storage.
+	// Calling its declaration also prevents inlining a locally invented body.
+	if (darwin_host_objects())
+		return wrapper;
 	const lowir::SymbolId init = thread_local_init_entry(global, variable, false);
 	{
 		FunctionLowering body(*this, wrapper, nullptr);
@@ -869,16 +873,21 @@ lowir::SymbolId ProgramLowering::thread_local_wrapper_symbol(
 	lowir::Signature returning = lowir::Signature();
 	returning.first_parameter = static_cast<uint32_t>(program_.parameters.size());
 	returning.result = lowir::Type::scalar(lowir::TypeKind::Ptr);
-	program_.declare_function(wrapper, lowir::SymbolKind::FunctionDefinition, program_.add_signature(returning));
+	const bool imported = darwin_host_objects() && !variable->defined;
+	program_.declare_function(wrapper,
+		imported ? lowir::SymbolKind::FunctionDeclaration : lowir::SymbolKind::FunctionDefinition,
+		program_.add_signature(returning));
 	// The wrapper is its variable's unit's own when the variable is (an
 	// internal symbol's object spelling is claimed once in the program).
 	lowir::SymbolMetadata& metadata = program_.symbols[wrapper].metadata;
 	const std::string object = tls_wrapper_object(variable);
-	metadata.binding = unit_local(variable) ? ir_model::SBM_INTERNAL : ir_model::SBM_WEAK;
+	metadata.binding = imported ? ir_model::SBM_STRONG
+		: unit_local(variable)  ? ir_model::SBM_INTERNAL
+								: ir_model::SBM_WEAK;
 	metadata.object = metadata.binding == ir_model::SBM_INTERNAL
 		? local_object(object, false)
 		: intern(object.data(), static_cast<uint32_t>(object.size()));
-	metadata.tls_for = global;
+	metadata.tls_for = imported ? lowir::kNoId : global;
 	if (used)
 		tls_wrappers_.set(variable, wrapper);
 	return wrapper;

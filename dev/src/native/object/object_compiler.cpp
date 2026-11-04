@@ -371,6 +371,8 @@ const lowir::JumpThunk* ObjectCompiler::equivalent_entry(lowir::SymbolId symbol)
 				target.kind == lowir::SymbolKind::FunctionDefinition &&
 				source.metadata.binding == ir_model::SBM_STRONG && target.metadata.binding == ir_model::SBM_STRONG &&
 				((source.metadata.flags | target.metadata.flags) & lowir::SF_REPLACEABLE) == 0 &&
+				(image_.target != Target::MacOS ||
+					(source.metadata.tls_for == lowir::kNoId) == (target.metadata.tls_for == lowir::kNoId)) &&
 				program_.same_entry_abi(entry.symbol, entry.target))
 				equivalent_targets_.insert(entry.symbol, entry.target);
 		}
@@ -386,9 +388,15 @@ const lowir::JumpThunk* ObjectCompiler::equivalent_entry(lowir::SymbolId symbol)
 
 void ObjectCompiler::function(lowir::SymbolId symbol)
 {
+	// Darwin's C++ TLS wrappers preserve every GPR except RAX and RDI.
+	// The body may call arbitrary initializers, so save these at entry.
+	const uint32_t extra_preserved = image_.target == Target::MacOS && eh_model_ == EhModel::Host &&
+			program_.symbols[symbol].metadata.tls_for != lowir::kNoId
+		? kCallerSavedGprs & ~((1u << RAX) | (1u << RDI))
+		: 0;
 	// A jump thunk is its adjustment and a jump (no frame: the CIE's rule
 	// describes it), whatever its body.
-	if (const lowir::JumpThunk* thunk = jump_thunk(symbol))
+	if (const lowir::JumpThunk* thunk = extra_preserved == 0 ? jump_thunk(symbol) : nullptr)
 	{
 		if (thunk == &shared_entry_)
 			// Both definitions are retained roots in the shared text section.
@@ -409,14 +417,14 @@ void ObjectCompiler::function(lowir::SymbolId symbol)
 	}
 	if (!stats_.clocks && !stats_.census)
 	{
-		selector_.select(symbol, mir_);
+		selector_.select(symbol, mir_, extra_preserved);
 		emitter_.emit(mir_);
 	}
 	else
 	{
 		const SelectStats before = selector_.stats();
 		std::chrono::steady_clock::time_point phase = std::chrono::steady_clock::now();
-		selector_.select(symbol, mir_);
+		selector_.select(symbol, mir_, extra_preserved);
 		stats_.select_ms += milliseconds_since(phase);
 		if (stats_.census)
 			append_function_census(program_, mir_, before, selector_.stats(), stats_.census_lines);
@@ -498,10 +506,12 @@ void ObjectCompiler::emit_remaining()
 		}
 		if (symbol.kind != lowir::SymbolKind::FunctionDeclaration || symbol.metadata.tls_for == lowir::kNoId)
 			continue;
-		emit_tls_wrapper(image_, s, symbol.metadata.tls_for);
+		UnwindFacts facts;
+		const bool darwin = image_.target == Target::MacOS && eh_model_ == EhModel::Host;
+		emit_tls_wrapper(image_, s, symbol.metadata.tls_for, darwin ? &facts : nullptr);
 		ranges_.push_back(CodeRange{ s, image_.symbol(s).offset, image_.text().size(), 0, 0, false });
 		if (eh_model_ == EhModel::Host)
-			record_unwind(static_cast<uint32_t>(ranges_.size() - 1), false);
+			record_unwind(static_cast<uint32_t>(ranges_.size() - 1), false, darwin ? &facts : nullptr);
 	}
 }
 

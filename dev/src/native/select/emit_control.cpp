@@ -35,9 +35,10 @@ bool conditional(const Instruction& term)
 
 } // namespace
 
-void FunctionSelector::select(lowir::SymbolId symbol, Function& out)
+void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t extra_preserved_gprs)
 {
 	reset(symbol, out);
+	used_callee_saved_ |= extra_preserved_gprs;
 	out.wide_bulk = level_ >= 1;
 	out.align_loops = level_ >= 2;
 	classify_signature(*signature_, entry_layout_);

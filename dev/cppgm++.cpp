@@ -189,6 +189,7 @@ EmitMode parse_emit_mode(vector<string>& args)
 
 struct SourceOutputInvocation
 {
+	native::Target target = native::host_target();
 	string outfile;
 	vector<string> inputs;
 	// `--hosted`: the host environment -c uses (include paths, predefined
@@ -250,6 +251,20 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 
 	for (size_t i = 0; i < args.size(); ++i)
 	{
+		if (args[i] == "--target" || starts_with(args[i], "--target="))
+		{
+			string target;
+			if (args[i] == "--target")
+			{
+				consume_required_option_argument(args, i, "--target", "target");
+				target = args[i];
+			}
+			else
+				target = args[i].substr(9);
+			if (!native::parse_target(target, invocation.target))
+				throw InvocationError("unsupported target: " + target);
+			continue;
+		}
 		if (args[i] == "-o")
 		{
 			consume_required_option_argument(args, i, "-o", "output file");
@@ -567,7 +582,8 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 	options.command_line = invocation.command_line;
 	options.plain_char_unsigned = invocation.plain_char_unsigned;
 	if (invocation.hosted)
-		driver::add_host_environment(options, false);
+		driver::add_host_environment(options, invocation.target != native::host_target());
+	driver::configure_target_environment(options, invocation.target);
 	return options;
 }
 
@@ -907,7 +923,7 @@ int run_emit_lowir_mode(vector<string> args)
 	// The LowIR view preprocesses in the host environment -c uses (PA32: a
 	// source the driver lanes compile includes host headers).
 	if (!options.hosted)
-		driver::add_host_environment(options, false);
+		driver::add_host_environment(options, invocation.target != native::host_target());
 	lowir::Program program;
 	lower::ProgramLowering lowering(program);
 	// Definitions are written as they complete and their bodies released,
@@ -918,6 +934,7 @@ int run_emit_lowir_mode(vector<string> args)
 		lowering.set_definition_stream(&definitions);
 	lowering.set_object_mode(object_half);
 	lowering.set_host_objects(object_half);
+	lowering.set_macho_objects(invocation.target == native::Target::MacOS);
 	lowering.set_optimizing(object_half || invocation.optimizer.level >= 2);
 	lowering.set_strict_aliasing(invocation.strict_aliasing);
 	// The LowIR view carries the source's debug locations when debug

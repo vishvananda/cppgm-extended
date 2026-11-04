@@ -196,7 +196,7 @@ void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vec
 	if (prologues.empty())
 	{
 		UnwindFacts::Prologue only = { 0, facts.reserve_end, {} };
-		for (size_t k = 0; k < facts.saves.size() && k < 6; ++k)
+		for (size_t k = 0; k < facts.saves.size() && k < 13; ++k)
 			only.save_end[k] = facts.saves[k].end;
 		prologues.push_back(only);
 	}
@@ -212,7 +212,7 @@ void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vec
 		}
 		below = 8;
 		// [virtual rbp + offset] is CFA - 16 + offset.
-		for (size_t k = 0; k < facts.saves.size() && k < 6; ++k)
+		for (size_t k = 0; k < facts.saves.size() && k < 13; ++k)
 		{
 			const UnwindFacts::Save& save = facts.saves[k];
 			cursor.advance(prologues[p].save_end[k]);

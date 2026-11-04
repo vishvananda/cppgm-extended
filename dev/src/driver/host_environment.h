@@ -1,6 +1,7 @@
 #pragma once
 
 #include "preprocess/preprocessor.h"
+#include "native/target.h"
 
 namespace driver {
 
@@ -14,6 +15,10 @@ namespace driver {
 // (__EXCEPTIONS, __cpp_exceptions) and RTTI (__GXX_RTTI, __cpp_rtti) are
 // read only in the modes that have them (options.modes).
 void add_host_environment(PreprocessorOptions& options, bool nostdinc);
+
+// The platform macros of an explicitly selected foreign target. Its SDK
+// paths must be provided explicitly; baked host include paths are not an SDK.
+void configure_target_environment(PreprocessorOptions& options, native::Target target);
 
 // Whether `-stdlib=<name>` agrees with the standard library selection
 // cppgm++ was built with (CPPGM_STDLIB_FLAGS), or, for a build that made

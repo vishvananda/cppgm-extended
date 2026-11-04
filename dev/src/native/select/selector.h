@@ -76,7 +76,7 @@ public:
 	// Selects the definition of `function` into `out` (cleared first).
 	// Throws BackendError for LowIR outside the supported subset
 	// and InternalError for a broken invariant of the selector.
-	void select(lowir::SymbolId function, Function& out);
+	void select(lowir::SymbolId function, Function& out, uint32_t extra_preserved_gprs = 0);
 	// The exception model of the functions selected from now on (the
 	// course's runtime ABI unless set).
 	void set_eh_model(EhModel model);

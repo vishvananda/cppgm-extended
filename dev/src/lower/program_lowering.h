@@ -440,6 +440,7 @@ public:
 	// landing-pad entry and resume boundaries.
 	void set_host_objects(bool on) { host_objects_ = on; }
 	void set_macho_objects(bool on) { macho_objects_ = on; }
+	bool darwin_host_objects() const { return host_objects_ && macho_objects_; }
 	// -fno-strict-aliasing: no access states its type.
 	void set_strict_aliasing(bool on) { strict_aliasing_ = on; }
 	bool states_type(lowir::TypeKind kind) const

@@ -7,6 +7,17 @@
 
 namespace driver {
 
+void configure_target_environment(PreprocessorOptions& options, native::Target target)
+{
+	if (target == native::host_target())
+		return;
+	options.command_line.insert(0,
+		target == native::Target::MacOS
+			? "#undef __linux__\n#undef __linux\n#undef __gnu_linux__\n#undef __ELF__\n#define __APPLE__ 1\n#define "
+			  "__MACH__ 1\n"
+			: "#undef __APPLE__\n#undef __MACH__\n#define __linux__ 1\n#define __linux 1\n#define __ELF__ 1\n");
+}
+
 namespace {
 
 // The names the preprocessor predefines itself (preprocess/preprocessor.cpp,

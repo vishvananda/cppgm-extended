@@ -99,6 +99,19 @@ class StandInTests(unittest.TestCase):
         self.assertIn("ref-test regenerates its references, but no test lane runs it",
                       output)
 
+    def test_optional_macho_checker_lists_only_inputs_it_uses(self):
+        self.assignment("pa27", """\
+            test-macho:
+            \t@python3 ../scripts/check_macho.py --mode interop --fixtures tests/macho
+            """)
+        self.write("pa27/tests/macho/200-generated.cpp")
+        self.write("pa27/tests/macho/200-host.cpp")
+        self.write("pa27/tests/macho/200-host-tls.cpp")
+        self.write("pa27/tests/macho/200-forgotten.cpp")
+        status, problems, output = self.check()
+        self.assertEqual(status, 1, output)
+        self.assertEqual(problems, ["pa27/tests/macho/200-forgotten.cpp"], output)
+
     def test_focused_checker_selects_by_its_collect_pattern(self):
         self.assignment("pa22", """\
             test:

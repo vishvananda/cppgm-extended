@@ -252,13 +252,30 @@ void emit_builtin_routine(Image& image, uint32_t symbol, const char* name)
 	a.resolve_labels();
 }
 
-void emit_tls_wrapper(Image& image, uint32_t symbol, uint32_t object)
+void emit_tls_wrapper(Image& image, uint32_t symbol, uint32_t object, UnwindFacts* facts)
 {
 	Assembler a(image.text());
 	align_text(image);
 	image.define(symbol, Section::Text, image.text().size());
-	a.lea(RAX, RM::rip(object, 0));
+	const uint32_t base = static_cast<uint32_t>(image.text().size());
+	if (facts != nullptr)
+	{
+		// Darwin's descriptor call and C++ wrapper both preserve all GPRs
+		// except RAX and RDI. Keep the call aligned and describe its frame.
+		a.push(RBP);
+		facts->push_end = a.size() - base;
+		a.mov_rr(RBP, RSP);
+		facts->frame_end = a.size() - base;
+		a.mov_tlv(RDI, object);
+		a.call_rm(RM::m(RDI, 0));
+		a.byte(0xc9);
+		facts->leave_end = a.size() - base;
+	}
+	else
+		a.lea(RAX, RM::rip(object, 0));
 	a.ret();
+	if (facts != nullptr)
+		facts->size = facts->ret_end = a.size() - base;
 	image.add_code_fixups(a.fixups(), 0);
 }
 
