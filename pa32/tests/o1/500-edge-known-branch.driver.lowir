@@ -1,0 +1,11 @@
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    %zero = const i64 0
+    %one = const i64 1
+    %folded = call i64 @fold_false_edge(%zero)
+    %false = call i64 @retain_removed_phi_edge(%zero)
+    %true = call i64 @retain_removed_phi_edge(%one)
+    %partial = binary add i64 %folded, %false
+    %result = binary add i64 %partial, %true
+    return i64 %result
+}

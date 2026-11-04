@@ -6,6 +6,7 @@ use warnings;
 use Exporter 'import';
 use Errno qw(EACCES EPERM ESRCH);
 use File::Find;
+use File::Basename qw(basename dirname);
 use Fcntl qw(F_GETFD F_SETFD FD_CLOEXEC);
 use IPC::Open2;
 use IO::Handle;
@@ -21,6 +22,7 @@ our @EXPORT_OK = qw(
   detect_jobs
   ensure_test_app_available
   get_timeout_from_env
+  input_files_with_prefix
   note_progress_state
   open_worker
   print_test_run_summary
@@ -30,6 +32,7 @@ our @EXPORT_OK = qw(
   result_suffix
   run_result_name
   run_command_capture
+  run_parallel_tests
   submit_cli_request
   write_file
   write_named_status
@@ -39,6 +42,99 @@ our @EXPORT_OK = qw(
 );
 
 my %worker_has_process_group;
+my %input_directory_entries;
+
+# Fixture inputs do not change during a runner invocation. Inventory each
+# directory once: globbing for every fixture repeatedly scans all retained
+# result namespaces as well as the source files.
+sub input_files_with_prefix
+{
+	my ($prefix) = @_;
+	my $directory = dirname($prefix);
+	my $name = basename($prefix);
+	if (!exists($input_directory_entries{$directory}))
+	{
+		opendir(my $dh, $directory) or die "Unable to read $directory: $!";
+		my @entries = sort readdir($dh);
+		closedir($dh);
+		$input_directory_entries{$directory} = \@entries;
+	}
+	my $entries = $input_directory_entries{$directory};
+	my ($first, $last) = (0, scalar(@$entries));
+	while ($first < $last)
+	{
+		my $middle = int(($first + $last) / 2);
+		if ($entries->[$middle] lt $name) { $first = $middle + 1; }
+		else { $last = $middle; }
+	}
+	my $parent = $prefix =~ m{/} ? "$directory/" : '';
+	my @inputs;
+	while ($first < @$entries && index($entries->[$first], $name) == 0)
+	{
+		push @inputs, $parent . $entries->[$first++];
+	}
+	return @inputs;
+}
+
+# Fork from the idle parent for each item, without reloading the comparer or
+# leaving a slow fixture at the end of a fixed shard. Results and diagnostics
+# are collected in input order; only the parent updates the suite totals.
+sub run_parallel_tests
+{
+	my ($tests, $jobs, $run) = @_;
+	require File::Temp;
+	require JSON::PP;
+	my $scratch = File::Temp::tempdir('cppgm-compare-XXXXXX', TMPDIR => 1, CLEANUP => 1);
+	my (%children, @results);
+	my $next = 0;
+	while ($next < @$tests || %children)
+	{
+		while ($next < @$tests && scalar(keys %children) < $jobs)
+		{
+			my $index = $next++;
+			STDOUT->flush();
+			STDERR->flush();
+			my $pid = fork();
+			die "fork failed: $!" if !defined($pid);
+			if ($pid == 0)
+			{
+				open(STDOUT, '>', "$scratch/$index.out") or die $!;
+				open(STDERR, '>', "$scratch/$index.err") or die $!;
+				my $result = $run->($tests->[$index]);
+				open(my $fh, '>', "$scratch/$index.json") or die $!;
+				print $fh JSON::PP::encode_json($result);
+				close($fh) or die $!;
+				exit 0;
+			}
+			$children{$pid} = $index;
+		}
+		my $pid = waitpid(-1, 0);
+		die "waitpid failed: $!" if $pid < 0;
+		my $status = $?;
+		my $index = delete $children{$pid};
+		if ($status != 0)
+		{
+			# Reap every worker before removing their shared scratch directory.
+			waitpid($_, 0) for keys %children;
+			open(my $fh, '<', "$scratch/$index.err") or die $!;
+			print STDERR do { local $/; <$fh> };
+			die "comparison worker failed for $tests->[$index]\n";
+		}
+		open(my $fh, '<', "$scratch/$index.json") or die $!;
+		$results[$index] = JSON::PP::decode_json(do { local $/; <$fh> });
+	}
+	for my $index (0 .. $#$tests)
+	{
+		for my $stream ('out', 'err')
+		{
+			open(my $fh, '<', "$scratch/$index.$stream") or die $!;
+			my $data = do { local $/; <$fh> };
+			if ($stream eq 'out') { print STDOUT $data; }
+			else { print STDERR $data; }
+		}
+	}
+	return @results;
+}
 
 # Producer and comparer share a make invocation's inherited run ID. Plain
 # script invocations retain their explicit suffix, and references are fixed.

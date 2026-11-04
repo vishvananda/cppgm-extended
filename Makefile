@@ -458,6 +458,12 @@ test-report-nobuild: audit-compiler-exceptions
 			$(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)") \
 			CPPGM_SKIP_DEV_REBUILD=1 \
 			test >> "$$2/$$dir.out" 2>&1 || status=$$?; \
+		if [ "$$dir" = pa11 ] && [ -d "$$dir/tests/general" ]; then \
+			if ! $(MAKE) -s -C "$$dir" test-seams > "$$2/$$dir.seams" 2>&1; then \
+				cat "$$2/$$dir.seams" >> "$$2/$$dir.out"; \
+				status=1; \
+			fi; \
+		fi; \
 		if grep -q "\] Error [0-9][0-9]* (ignored)" "$$2/$$dir.out"; then status=1; fi; \
 		printf "%s\n" "$$status" > "$$2/$$dir.status"; \
 		: > "$$2/$$dir.done"; \
@@ -500,12 +506,6 @@ test-report-nobuild: audit-compiler-exceptions
 	for dir in $(ACTIVE_TEST_REPORT_PAS); do \
 		emit_completed_output "$$dir"; \
 	done; \
-	if [ -d pa11/tests/general ] && grep -qx pa11 "$$tmpdir/pas.list"; then \
-		if ! $(MAKE) -s -C pa11 test-seams > "$$tmpdir/seams.out" 2>&1; then \
-			cat "$$tmpdir/seams.out"; \
-			touch "pa11/$$CPPGM_TEST_FAILURE_MARKER"; \
-		fi; \
-	fi; \
 	passed=$$(awk '{s+=$$1} END {print s}' "$$CPPGM_TEST_COUNTS_FILE" 2>/dev/null || echo 0); \
 	total=$$(awk '{s+=$$2} END {print s}' "$$CPPGM_TEST_COUNTS_FILE" 2>/dev/null || echo 0); \
 	if [ -n "$$parent_counts_file" ]; then \

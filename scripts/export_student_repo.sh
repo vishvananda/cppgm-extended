@@ -303,7 +303,7 @@ sanitize_student_root_makefile() {
     s/(?:^#[^\n]*\n)*^test-cells:\n(?:\t[^\n]*\n)+\n?//m;
     s/(?:^#[^\n]*\n)*^HARNESS_TESTS = \\\n(?:\t[^\n]*\n)+\n?^test-harness:\n(?:\t[^\n]*\n)+\n?//m;
     s/\b(?:audit-[a-z-]+|build-telemetry-off|test-telemetry-off|test-harness|test-cells) //g;
-    s/^\tif \[ -d pa11\/tests\/general \][^\n]*; then \\\n(?:\t[^\n]*\n)*?\tfi; \\\n//m;
+    s/^\t\tif \[ "\$\$dir" = pa11 \][^\n]*; then \\\n(?:\t[^\n]*\n)*?\t\tfi; \\\n//m;
   ' "$@"
 }
 

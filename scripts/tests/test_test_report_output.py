@@ -13,6 +13,46 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class TestReportOutputTests(unittest.TestCase):
+    def test_seams_overlap_other_assignments_instead_of_running_after_them(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shutil.copy(ROOT / 'Makefile', root / 'Makefile')
+            (root / 'scripts').mkdir()
+            for name in ('test_run_id.mk', 'test_platform.pl', 'CppgmTestPlatform.pm'):
+                shutil.copy(ROOT / 'scripts' / name, root / 'scripts' / name)
+            (root / 'scripts/audit_compiler_exceptions.pl').write_text('exit 0;\n')
+            (root / 'pa11/tests/general').mkdir(parents=True)
+            (root / 'pa12').mkdir()
+            (root / 'barrier.py').write_text(
+                'import pathlib, sys, time\n'
+                'pathlib.Path(sys.argv[1]).touch()\n'
+                'deadline = time.monotonic() + 5\n'
+                'while not pathlib.Path(sys.argv[2]).exists():\n'
+                ' if time.monotonic() > deadline: sys.exit("seams did not overlap")\n'
+                ' time.sleep(0.01)\n'
+            )
+            (root / 'pa11/Makefile').write_text(
+                'test:\n\t@echo "1 1" >> "$$CPPGM_TEST_COUNTS_FILE"\n'
+                'test-seams:\n'
+                '\t@python3 ../barrier.py ../seams.started ../pa12.started\n'
+            )
+            (root / 'pa12/Makefile').write_text(
+                'test:\n'
+                '\t@python3 ../barrier.py ../pa12.started ../seams.started\n'
+                '\t@echo "1 1" >> "$$CPPGM_TEST_COUNTS_FILE"\n'
+            )
+            environment = os.environ.copy()
+            for key in ('MAKEFLAGS', 'MFLAGS', 'MAKELEVEL', 'MAKEOVERRIDES',
+                        'CPPGM_TEST_COUNTS_FILE', 'CPPGM_TEST_RUN_ID'):
+                environment.pop(key, None)
+            result = subprocess.run(
+                ['make', 'test-report-nobuild', 'ACTIVE_TEST_REPORT_PAS=pa11 pa12',
+                 'TEST_REPORT_ASSIGNMENT_JOBS=2', 'TEST_REPORT_SUBTEST_JOBS=1'],
+                cwd=root, env=environment, capture_output=True, text=True, timeout=20)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(result.stdout,
+                             '===== ALL TESTS PASSED SUCCESSFULLY! (2 / 2) =====\n')
+
     def report(self, *, failure=None, ordered=True, target="test-report-nobuild",
                exported=False, low_jobs=False, real_control=False, later_lane=False, active_pa="pa11",
                platform_skip=False):

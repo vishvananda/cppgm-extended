@@ -466,12 +466,6 @@ sub remove_nonportable_reference_stdout
 	}
 }
 
-sub sorted_glob
-{
-	my ($pattern) = @_;
-	return sort glob($pattern);
-}
-
 sub build_wrapped_text_request
 {
 	my ($mode, $suffix, $test, $assignment) = @_;
@@ -495,7 +489,7 @@ sub build_wrapped_text_request
 		{
 			my $test_base = $test;
 			$test_base =~ s/\.t$//;
-			my @inputs = sorted_glob("$test*");
+			my @inputs = CppgmBatchWorker::input_files_with_prefix($test);
 			return ("$test_out.stdout",
 			        "$test_out.stdout",
 			        "-",
@@ -538,7 +532,7 @@ sub build_wrapped_text_request
 		$test_out =~ s/\.t\.1$/\.$suffix/;
 		my $test_base = $test;
 		$test_base =~ s/\.t\.1$/\.t/;
-		my @inputs = sorted_glob("$test_base.*");
+		my @inputs = CppgmBatchWorker::input_files_with_prefix("$test_base.");
 		return ("$test_out.stdout",
 		        "$test_out.stdout",
 		        "-",

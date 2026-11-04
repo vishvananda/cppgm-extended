@@ -27,6 +27,12 @@ streams completed jobs. Use `CPPGM_TEST_RUNNER=0` to diagnose ordinary versus
 batch-runner behavior. Architecture audits and self-host checks are listed in
 [AGENTS.md](AGENTS.md).
 
+The per-assignment worker limit also covers expensive LowIR comparisons.
+PA11's maintainer seam checks run in its assignment slot, alongside the other
+assignments, with independent rewrites sharing that slot's worker limit.
+Each worker indexes fixture companion filenames once per directory; retained
+result namespaces do not require a new scan per fixture.
+
 CI sets `CPPGM_WARNINGS_AS_ERRORS=1` for the compiler and tool sources, including
 PA34 builds. Use `make CPPGM_WARNINGS_AS_ERRORS=1` to apply the same policy locally.
 Test programs use their harness's compile flags.

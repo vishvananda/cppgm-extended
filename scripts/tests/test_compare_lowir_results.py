@@ -44,6 +44,88 @@ RENAMED = """function @main(%a : i64, %b : i64) -> i64 {
 
 
 class LowIrComparisonTest(unittest.TestCase):
+    def test_parallel_seams_keep_the_reports_failure_marker_isolated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'scripts').mkdir()
+            lane = root / 'tests/general'
+            lane.mkdir(parents=True)
+            program = '''function @main(%a : i64) -> i64 {
+  block ^entry:
+    %condition = cmp eq i64 %a, 0
+    branch %condition, ^yes, ^no
+  block ^yes:
+    return i64 3
+  block ^no:
+    return i64 4
+}
+'''
+            for suffix in ('t', 'ref', 'my.current-run'):
+                (lane / f'case.{suffix}').write_text(program)
+            for suffix in ('ref', 'my.current-run'):
+                (lane / f'case.{suffix}.exit_status').write_text('EXIT_SUCCESS\n')
+            marker = root / '.test_failed.current-run'
+            marker.write_text('real assignment failure\n')
+            comparer = root / 'scripts/compare_results.pl'
+            comparer.write_text(
+                '#!/usr/bin/env python3\n'
+                'import os, pathlib, sys\n'
+                'copy = pathlib.Path(sys.argv[3])\n'
+                'suffix = ".my." + os.environ["CPPGM_TEST_RUN_ID"]\n'
+                'assert (copy / ("case" + suffix)).exists()\n'
+                'assert (copy / ("case" + suffix + ".exit_status")).exists()\n'
+                'failed = copy.name == "R14-branch-negate"\n'
+                'pathlib.Path(os.environ["CPPGM_TEST_COUNTS_FILE"]).write_text('
+                '"0 1\\n" if failed else "1 1\\n")\n'
+                'if failed:\n'
+                ' pathlib.Path(".test_failed." + os.environ["CPPGM_TEST_RUN_ID"]).touch()\n'
+                ' print("ERROR: deliberately rejected convention")\n'
+            )
+            comparer.chmod(0o755)
+            outputs = []
+            for jobs in (1, 2):
+                result = subprocess.run(
+                    ['python3', str(REPO_ROOT / 'scripts/check_lowir_seams.py'),
+                     str(root), 'tests/general', '--jobs', str(jobs),
+                     '--modes', 'R1-temps,R14-branch-negate'],
+                    env=dict(os.environ, CPPGM_TEST_RUN_ID='current-run'),
+                    capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(marker.read_text(), 'real assignment failure\n')
+                self.assertEqual(list(root.glob('.test_failed.*')), [marker])
+                outputs.append(result.stdout)
+            self.assertEqual(outputs[0], outputs[1])
+
+    def test_parallel_comparison_preserves_totals_and_failure_diagnostics(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for index in range(3):
+                base = root / f'case{index}'
+                Path(str(base) + '.t').write_text(REFERENCE)
+                Path(str(base) + '.ref').write_text(REFERENCE)
+                Path(str(base) + '.my').write_text(RENAMED if index != 1 else 'invalid\n')
+                for suffix in ('ref', 'my'):
+                    Path(str(base) + f'.{suffix}.exit_status').write_text('EXIT_SUCCESS\n')
+            outputs = []
+            for jobs in (1, 2):
+                counts = root / f'counts{jobs}'
+                environment = dict(os.environ, KEEP_GOING='1', CPPGM_TEST_JOBS=str(jobs),
+                                   CPPGM_TEST_COUNTS_FILE=str(counts), CPPGM_TEST_RUN_ID='')
+                for name in ('CPPGM_CHECK_AUTO_KEEP_GOING', 'CPPGM_LOWER_CHECK_APP',
+                             'CPPGM_BEHAVIOR_CHECK_APP', 'CPPGM_LOWIR_BEHAVIOR_APP',
+                             'CPPGM_LOWIR_DIRECT_TEXT_COMPARE'):
+                    environment.pop(name, None)
+                result = subprocess.run(
+                    ['perl', str(COMPARE), 'lowir_t', 'ref', 'my', directory],
+                    cwd=root, env=environment, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(counts.read_text(), '2 3\n')
+                self.assertTrue((root / '.test_failed').is_file())
+                (root / '.test_failed').unlink()
+                outputs.append((result.stdout, result.stderr))
+            self.assertEqual(outputs[0], outputs[1])
+            self.assertIn('case1', outputs[1][0])
+
     def test_seam_scratch_keeps_current_results_and_fixture_companions(self):
         spec = importlib.util.spec_from_file_location('seams', REPO_ROOT / 'scripts/check_lowir_seams.py')
         seams = importlib.util.module_from_spec(spec)
