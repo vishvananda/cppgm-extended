@@ -29,6 +29,13 @@ uint32_t Encoder::section(const char* segment, const std::string& name, uint32_t
 bool Encoder::sections()
 {
 	placements_.resize(input_.sections.size());
+	// Darwin coalesces weak definitions in byte-backed atoms. Unlike ELF,
+	// a zero-initialized weak definition belongs in data, not zerofill.
+	std::vector<uint8_t> weak_data(input_.sections.size(), 0);
+	for (const object::Symbol& symbol : input_.symbols)
+		if (symbol.binding == Binding::Weak && symbol.section < input_.sections.size() &&
+			input_.sections[symbol.section].kind == SectionKind::Bss)
+			weak_data[symbol.section] = 1;
 	for (uint32_t s = 1; s < input_.sections.size(); ++s)
 	{
 		const object::Section& source = input_.sections[s];
@@ -52,8 +59,8 @@ bool Encoder::sections()
 				flags = 0x6800000b; // coalesced, no TOC, strip static symbols, live support
 			break;
 		case SectionKind::Bss:
-			name = "__bss";
-			flags = 1;
+			name = weak_data[s] ? "__data" : "__bss";
+			flags = weak_data[s] ? 0 : 1;
 			break;
 		case SectionKind::TlsData:
 			name = "__thread_data";
@@ -112,7 +119,9 @@ bool Encoder::sections()
 		placements_[s] = Placement{ index, base };
 		output.align = std::max(output.align, source.align);
 		output.size = base + source.size;
-		if (source.kind != SectionKind::Bss && source.kind != SectionKind::TlsBss)
+		if (weak_data[s])
+			output.bytes.resize(base + source.size, 0);
+		else if (source.kind != SectionKind::Bss && source.kind != SectionKind::TlsBss)
 		{
 			if (source.bytes.size() != source.size)
 				return fail("section size disagrees with its bytes");

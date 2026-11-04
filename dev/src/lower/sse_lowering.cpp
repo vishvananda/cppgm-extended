@@ -177,6 +177,8 @@ RValue FunctionLowering::lanewise_vector(const syntax::CallExpr& expr)
 		call.types[i] = (argument->conversion != nullptr ? argument->conversion->result : argument->type)->unqualified;
 		call.values[i] = operand(*expr.arguments[i], ConversionContext::Argument);
 	}
+	if (call.operation == VectorLanewiseOp::Sqrt && call.result->unqualified->kind != sema::TypeKind::Vector)
+		return unary(lowir::UnaryOp::Sqrt, call.values[0]);
 	RValue direct;
 	if (direct_vector_call(call, expr, direct))
 		return direct;

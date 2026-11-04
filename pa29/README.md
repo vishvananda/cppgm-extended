@@ -640,3 +640,9 @@ each operand once. Floating operations follow LLVM maxNum/minNum: one NaN
 yields the numeric operand, two NaNs yield NaN, and equal zeros may retain
 either sign. Consume typed operands and lower through existing scalar
 comparisons and selection; integer scalar constant evaluation uses the same operation.
+
+### Clang elementwise square root
+
+Clang's `__builtin_elementwise_sqrt` preserves `float` and `double` scalar
+types as well as their vector forms. Evaluate the operand once, preserve IEEE
+square-root results (including signed zero and NaNs), and leave `errno` alone.

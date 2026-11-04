@@ -1,6 +1,7 @@
 #include "200-host-abi.h"
 
 extern "C" {
+  __attribute__((weak)) int zero_shared = 0;
   int init_state;
   thread_local int shared_tls = 3;
 }
@@ -37,3 +38,5 @@ extern "C" NativeBase* make_value(int value) { return new NativeValue(value); }
 extern "C" int* weak_object() { return &coalesced(); }
 extern "C" int weak_function(int value) { return adjust<5>(value); }
 extern "C" int raw_label(int value) { return value * 2; }
+
+extern "C" int* weak_zero_object() { return &zero_shared; }

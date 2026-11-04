@@ -1,0 +1,30 @@
+#include <errno.h>
+#if __has_builtin(__builtin_elementwise_sqrt)
+#define ROOT __builtin_elementwise_sqrt
+#else
+float root(float x) { return __builtin_sqrtf(x); }
+double root(double x) { return __builtin_sqrt(x); }
+#define ROOT root
+#endif
+volatile float fv = 9.0f;
+volatile double dv = 16.0;
+int visits;
+float next_f() { ++visits; return fv; }
+double next_d() { ++visits; return dv; }
+int main() {
+  if (ROOT(next_f()) != 3.0f || visits != 1) return 1;
+  if (ROOT(next_d()) != 4.0 || visits != 2) return 2;
+  fv = -0.0f; dv = -0.0;
+  if (!__builtin_signbit(ROOT(fv)) || !__builtin_signbit(ROOT(dv))) return 3;
+  fv = -1.0f; dv = -1.0;
+  errno = 37;
+  if (!__builtin_isnan(ROOT(fv)) || !__builtin_isnan(ROOT(dv))) return 4;
+#if __has_builtin(__builtin_elementwise_sqrt)
+  if (errno != 37) return 5;
+  using V = float __attribute__((vector_size(16)));
+  V input = { 4.0f, 9.0f, 16.0f, 25.0f };
+  V output = ROOT(input);
+  if (output[0] != 2.0f || output[1] != 3.0f || output[2] != 4.0f || output[3] != 5.0f) return 6;
+#endif
+  return 0;
+}

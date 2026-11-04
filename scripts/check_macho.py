@@ -31,11 +31,30 @@ def macho(path, filetype):
     magic, cpu, _, kind, count, size, _, _ = struct.unpack_from('<8I', data)
     assert (magic, cpu, kind) == (0xfeedfacf, 0x01000007, filetype), path
     at = 32
+    sections = []
+    symtab = None
     for _ in range(count):
-        _, length = struct.unpack_from('<II', data, at)
+        command, length = struct.unpack_from('<II', data, at)
         assert length >= 8 and at + length <= 32 + size <= len(data), path
+        if command == 0x19:  # LC_SEGMENT_64
+            nsects, = struct.unpack_from('<I', data, at + 64)
+            assert 72 + nsects * 80 <= length, path
+            sections.extend(struct.unpack_from('<I', data, at + 72 + i * 80 + 64)[0]
+                            for i in range(nsects))
+        elif command == 2:  # LC_SYMTAB
+            symtab = struct.unpack_from('<4I', data, at + 8)
         at += length
     assert at == 32 + size, path
+    if filetype == 1:
+        assert symtab is not None, path
+        offset, symbols, _, _ = symtab
+        assert offset + symbols * 16 <= len(data), path
+        for i in range(symbols):
+            _, kind, section, desc, _ = struct.unpack_from('<IBBHQ', data, offset + i * 16)
+            if kind & 0xe == 0xe and desc & 0x80:  # N_SECT, N_WEAK_DEF
+                assert 0 < section <= len(sections), path
+                assert sections[section - 1] & 0xff not in (1, 0xc, 0x12), (
+                    f'{path}: coalesced weak definition requires byte-backed storage')
 
 
 def inspect(path, extra=()):

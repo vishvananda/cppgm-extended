@@ -1156,7 +1156,9 @@ ExprFacts* Analyzer::vector_elementwise_builtin(const syntax::CallExpr& expr, ui
 		result = types_.fundamental(FundamentalType::Void);
 	}
 	else if (operation == VectorLanewiseOp::Sqrt)
-		typed = typed && IsFloating(first->element->unqualified);
+		typed = typed ? IsFloating(first->element->unqualified)
+					  : first == types_.fundamental(FundamentalType::Float) ||
+				first == types_.fundamental(FundamentalType::Double);
 	else
 		typed = typed && first == last && IntegralKindOf(first->element->unqualified, lane) &&
 			(!saturates || lane.bits <= 16);

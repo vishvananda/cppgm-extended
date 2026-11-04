@@ -3,6 +3,7 @@
 
 extern "C" int from_host_throw() { throw 41; }
 extern "C" {
+  __attribute__((weak)) int zero_shared = 0;
   int destruction_count;
 }
 
@@ -32,5 +33,8 @@ int main() {
   delete value;
   if (weak_object() != &coalesced() || weak_function(2) != adjust<5>(2)) return 11;
   if (raw_label(4) != 8) return 12;
+  if (weak_zero_object() != &zero_shared || zero_shared != 0) return 14;
+  *weak_zero_object() = 19;
+  if (zero_shared != 19) return 15;
   return 0;
 }

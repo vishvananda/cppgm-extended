@@ -14,6 +14,7 @@ template<int N> int adjust(int value) { return value + N; }
 
 extern "C" {
   extern int init_state;
+  extern int zero_shared;
   extern thread_local int shared_tls;
   extern thread_local int host_tls;
   extern int destruction_count;
@@ -28,6 +29,7 @@ extern "C" {
   Mixed aggregate(Mixed);
   NativeBase* make_value(int);
   int* weak_object();
+  int* weak_zero_object();
   int weak_function(int);
 }
 
