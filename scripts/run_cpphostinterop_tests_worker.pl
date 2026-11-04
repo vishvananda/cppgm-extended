@@ -133,7 +133,8 @@ sub build_test_context
 	$worker_env{CPPGM_BATCH_TIMEOUT_SEC} = $build_timeout;
 
 	my @srcfiles =
-		sort grep { $_ =~ m/^\Q$test_base.t.\E\d+(?:\.lowir)?$/ } glob("$test_base.t.*");
+		grep { $_ =~ m/^\Q$test_base.t.\E\d+(?:\.lowir)?$/ }
+		CppgmBatchWorker::input_files_with_prefix("$test_base.t.");
 
 	my $host_cxx_str =
 		defined($env->{CPPGM_HOST_CXX}) && $env->{CPPGM_HOST_CXX} ne '' ? $env->{CPPGM_HOST_CXX} :
@@ -203,7 +204,8 @@ sub build_test_context
 	my @helper_provider_files;
 	my @helper_referencer_files;
 	my @helper_sources =
-		grep { $_ =~ m/\.(?:c|cc|cpp|cxx)$/ } glob("$test_base.lib.*");
+		grep { $_ =~ m/\.(?:c|cc|cpp|cxx)$/ }
+		CppgmBatchWorker::input_files_with_prefix("$test_base.lib.");
 	if (scalar(@helper_sources) != 0)
 	{
 		$libdir = "$test_base.$suffix.libdir";

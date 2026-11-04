@@ -108,7 +108,7 @@ sub process_one_test
 	unlink(glob("$test_base.$suffix.*.obj"));
 	remove_tree("$test_base.$suffix.libdir", {error => \my $remove_error});
 
-	my @srcfiles = sort glob("$test_base.t.*");
+	my @srcfiles = CppgmBatchWorker::input_files_with_prefix("$test_base.t.");
 	if (scalar(@srcfiles) == 0)
 	{
 		write_numeric_status("$test_base.$suffix.impl.exit_status", 1);
@@ -141,7 +141,8 @@ sub process_one_test
 	my $libdir = '';
 	my $helper_status = 0;
 	my @helper_sources =
-		grep { $_ =~ m/\.(?:c|cc|cpp|cxx)$/ } glob("$test_base.lib.*");
+		grep { $_ =~ m/\.(?:c|cc|cpp|cxx)$/ }
+		CppgmBatchWorker::input_files_with_prefix("$test_base.lib.");
 	if (scalar(@helper_sources) != 0)
 	{
 		$libdir = "$test_base.$suffix.libdir";
