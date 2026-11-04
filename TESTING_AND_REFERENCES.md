@@ -312,9 +312,9 @@ never move a limit to fit it. The export ships `calibration.tsv` and drops
 
 ## Optional Intel macOS checks
 
-`make -C pa24 test-macho`, `make -C pa25 test-macho` and
-`make -C pa27 test-macho` check the optional Mach-O target. They are separate
-from the required Linux suites, like the debug-info checks. On Linux they check
-cross-emission; on Intel macOS they also execute the standalone programs and
-link generated objects with Clang, including exceptions and thread-local data.
-The Intel macOS CI lane additionally compares self-built and inception compilers.
+Each assignment from PA24 through PA28 provides `make test-macho` for focused
+checks of the optional target. These checks are optional on Linux and included
+in the default Intel macOS report. Linux checks cross-emission; Intel macOS also
+executes standalone programs and links generated objects with Clang, including
+exceptions and thread-local data. The Intel macOS CI lane additionally compares
+self-built and inception compilers. See [the macOS guide](docs/intel-macos.md).
