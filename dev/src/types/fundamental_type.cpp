@@ -64,6 +64,8 @@ const char* FundamentalTypeName(FundamentalType type)
 		return "__float128";
 	case FundamentalType::BFloat16:
 		return "__bf16";
+	case FundamentalType::StorageHalf:
+		return "__fp16";
 	}
 	return "?";
 }
@@ -82,6 +84,7 @@ unsigned FundamentalTypeSize(FundamentalType type)
 	case FundamentalType::Char16T:
 	case FundamentalType::Float16:
 	case FundamentalType::BFloat16:
+	case FundamentalType::StorageHalf:
 		return 2;
 	case FundamentalType::Int:
 	case FundamentalType::UnsignedInt:
@@ -121,6 +124,8 @@ FundamentalType FloatingRepresentation(FundamentalType type)
 {
 	switch (type)
 	{
+	case FundamentalType::StorageHalf:
+		return FundamentalType::Float16;
 	case FundamentalType::Float32:
 		return FundamentalType::Float;
 	case FundamentalType::Float64:
@@ -142,6 +147,7 @@ unsigned FloatingRank(FundamentalType type)
 	case FundamentalType::BFloat16:
 		return 1;
 	case FundamentalType::Float16:
+	case FundamentalType::StorageHalf:
 		return 2;
 	case FundamentalType::Float:
 	case FundamentalType::Float32:

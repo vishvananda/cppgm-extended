@@ -63,10 +63,14 @@ enum class FundamentalType : uint8_t
 	// arithmetic is performed in float; of a lower floating-point rank
 	// than _Float16, and converting to or from it only by the usual
 	// arithmetic conversions.
-	BFloat16
+	BFloat16,
+
+	// Clang's binary16 storage type. Arithmetic promotes it to float;
+	// its identity and Itanium spelling differ from _Float16.
+	StorageHalf
 };
 
-const unsigned kFundamentalTypeCount = static_cast<unsigned>(FundamentalType::BFloat16) + 1;
+const unsigned kFundamentalTypeCount = static_cast<unsigned>(FundamentalType::StorageHalf) + 1;
 
 // The type's spelling as a simple-type-specifier sequence, e.g. "unsigned long int".
 const char* FundamentalTypeName(FundamentalType type);

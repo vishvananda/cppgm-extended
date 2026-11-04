@@ -130,7 +130,7 @@ void Analyzer::analyze(const syntax::TranslationUnit& unit)
 		{ "_Float32", FundamentalType::Float32 }, { "_Float64", FundamentalType::Float64 },
 		{ "_Float128", FundamentalType::Float128 }, { "_Float32x", FundamentalType::Float32x },
 		{ "_Float64x", FundamentalType::Float64x }, { "__float128", FundamentalType::GnuFloat128 },
-		{ "__bf16", FundamentalType::BFloat16 } };
+		{ "__bf16", FundamentalType::BFloat16 }, { "__fp16", FundamentalType::StorageHalf } };
 	for (const auto& name : wide)
 	{
 		const Identifier* identifier = special_key(name.spelling);

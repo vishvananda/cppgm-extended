@@ -921,6 +921,8 @@ const Type* Analyzer::decayed(ExprFacts* facts)
 
 const Type* Analyzer::promoted(const Type* type)
 {
+	if (type->unqualified == types_.fundamental(FundamentalType::StorageHalf))
+		return types_.fundamental(FundamentalType::Float);
 	return IsIntegralOrUnscopedEnum(type) ? PromotedType(types_, type) : type->unqualified;
 }
 
@@ -952,6 +954,12 @@ const Type* Analyzer::usual_arithmetic(const Type* a, const Type* b)
 	if (IsComplex(a) || IsComplex(b))
 		return types_.complex(
 			usual_arithmetic(IsComplex(a) ? a->unqualified->element : a, IsComplex(b) ? b->unqualified->element : b));
+	// __fp16 is a storage type: promote before choosing the common type,
+	// including when both operands have that type.
+	if (a->unqualified == types_.fundamental(FundamentalType::StorageHalf))
+		a = types_.fundamental(FundamentalType::Float);
+	if (b->unqualified == types_.fundamental(FundamentalType::StorageHalf))
+		b = types_.fundamental(FundamentalType::Float);
 	const unsigned rank_a = IsFloating(a) ? FloatingRank(a->unqualified->fundamental) : 0;
 	const unsigned rank_b = IsFloating(b) ? FloatingRank(b->unqualified->fundamental) : 0;
 	if (rank_a != 0 || rank_b != 0)
@@ -1515,6 +1523,7 @@ unsigned FloatingRank(FundamentalType type, unsigned& precision)
 		precision = 8;
 		return 1;
 	case FundamentalType::Float16:
+	case FundamentalType::StorageHalf:
 		precision = 11;
 		return 2;
 	case FundamentalType::Float:

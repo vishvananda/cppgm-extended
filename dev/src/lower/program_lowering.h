@@ -285,7 +285,7 @@ inline SoftFloat SoftFloatOf(const sema::Type* type)
 	type = type->unqualified;
 	if (type->kind != sema::TypeKind::Fundamental)
 		return SoftFloat::None;
-	return type->fundamental == FundamentalType::Float16 ? SoftFloat::Half
+	return FloatingRepresentation(type->fundamental) == FundamentalType::Float16 ? SoftFloat::Half
 		: type->fundamental == FundamentalType::Float128 || type->fundamental == FundamentalType::GnuFloat128
 		? SoftFloat::Quad
 		: type->fundamental == FundamentalType::BFloat16 ? SoftFloat::BFloat

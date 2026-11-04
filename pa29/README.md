@@ -646,3 +646,11 @@ comparisons and selection; integer scalar constant evaluation uses the same oper
 Clang's `__builtin_elementwise_sqrt` preserves `float` and `double` scalar
 types as well as their vector forms. Evaluate the operand once, preserve IEEE
 square-root results (including signed zero and NaNs), and leave `errno` alone.
+
+### Clang binary16 storage
+
+`__fp16` is a distinct two-byte floating storage type. Scalar arithmetic and
+unary `+`/`-` promote it to `float`; variadic arguments promote it to `double`.
+Preserve binary16 conversions, vector lanes and its distinct Itanium `Dh`
+encoding. Scalar function parameters and return values require a pointer or
+reference instead.

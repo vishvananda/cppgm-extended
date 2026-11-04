@@ -54,7 +54,7 @@ ParserState::ParserState(ParseTokenStream& tokens, IdentifierTable& identifiers,
 	// the type keywords, sema/analyzer_types.cpp) and Clang's __bf16.
 	unsigned extended = 0;
 	for (const char* wide : { "__int128", "__int128_t", "__uint128_t", "_Float16", "_Float32", "_Float64", "_Float128",
-			 "_Float32x", "_Float64x", "__float128", "_Complex", "__complex__", "__complex", "__bf16" })
+			 "_Float32x", "_Float64x", "__float128", "_Complex", "__complex__", "__complex", "__bf16", "__fp16" })
 	{
 		Identifier* identifier = identifiers.intern(wide, static_cast<uint32_t>(std::strlen(wide)));
 		scopes_.declare(scopes_.global(), identifier, NameBinding{ NameCategory::Type, false, nullptr });

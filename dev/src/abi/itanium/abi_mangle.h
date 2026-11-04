@@ -90,6 +90,7 @@ enum AbiBuiltinTypeKind : std::uint8_t
 	ABI_BUILTIN_TYPE_COMPLEX_LONG_DOUBLE,
 	ABI_BUILTIN_TYPE_NULLPTR,
 	ABI_BUILTIN_TYPE_BFLOAT16, // __bf16, std::bfloat16_t
+	ABI_BUILTIN_TYPE_HALF,     // Clang __fp16
 	ABI_BUILTIN_TYPE_COUNT
 };
 
@@ -114,7 +115,7 @@ inline const AbiBuiltinTypeEntry& abi_builtin_type_entry(AbiBuiltinTypeKind kind
 		{ "float32x", "DF32x", 0, false }, { "float64", "DF64_", 0, false }, { "float64x", "DF64x", 0, false },
 		{ "stdfloat128", "DF128_", 0, false }, { "float128", "g", 0, false }, { "complex-float", "Cf", 0, false },
 		{ "complex-double", "Cd", 0, false }, { "complex-longdouble", "Ce", 0, false }, { "nullptr", "Dn", 0, false },
-		{ "bfloat16", "DF16b", 0, false } };
+		{ "bfloat16", "DF16b", 0, false }, { "half", "Dh", 0, false } };
 	return kBuiltins[kind];
 }
 

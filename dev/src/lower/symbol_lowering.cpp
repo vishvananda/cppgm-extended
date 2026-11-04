@@ -77,6 +77,8 @@ abi_mangle::AbiBuiltinTypeKind BuiltinKind(FundamentalType type)
 		return abi_mangle::ABI_BUILTIN_TYPE_UINT128;
 	case FundamentalType::Float16:
 		return abi_mangle::ABI_BUILTIN_TYPE_FLOAT16;
+	case FundamentalType::StorageHalf:
+		return abi_mangle::ABI_BUILTIN_TYPE_HALF;
 	case FundamentalType::Float32:
 		return abi_mangle::ABI_BUILTIN_TYPE_FLOAT32;
 	case FundamentalType::Float64:
@@ -2657,6 +2659,7 @@ void ProgramLowering::classify_eightbytes(const sema::Type* type, uint64_t offse
 		case FundamentalType::Double:
 		case FundamentalType::Float16:
 		case FundamentalType::BFloat16:
+		case FundamentalType::StorageHalf:
 		case FundamentalType::Float32:
 		case FundamentalType::Float64:
 		case FundamentalType::Float32x:
@@ -2864,6 +2867,7 @@ void ProgramLowering::course_member_quarters(const sema::Type* type, uint64_t of
 		case FundamentalType::Double:
 		case FundamentalType::Float16:
 		case FundamentalType::BFloat16:
+		case FundamentalType::StorageHalf:
 		case FundamentalType::Float32:
 		case FundamentalType::Float32x:
 		case FundamentalType::Float64:

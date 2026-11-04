@@ -1322,6 +1322,7 @@ lowir::Type ProgramLowering::storage_type(const sema::Type* type)
 			return Type::scalar(TypeKind::F80);
 		case FundamentalType::Float16:
 		case FundamentalType::BFloat16:
+		case FundamentalType::StorageHalf:
 			// No LowIR floating type holds binary16, bfloat16 or binary128
 			// values: an object of their bytes
 			// (lower/soft_float_lowering.cpp).

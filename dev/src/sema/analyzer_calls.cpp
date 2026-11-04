@@ -1332,7 +1332,8 @@ void Analyzer::convert_arguments(
 		if (IsVoid(facts->type))
 			error(argument.location, "argument of type void");
 		const Type* type = facts->type->unqualified->kind == TypeKind::Class ? facts->type : decayed(facts);
-		if (type->kind == TypeKind::Fundamental && type->fundamental == FundamentalType::Float)
+		if (type->unqualified == types_.fundamental(FundamentalType::Float) ||
+			type->unqualified == types_.fundamental(FundamentalType::StorageHalf))
 			type = types_.fundamental(FundamentalType::Double);
 		else if (type->kind == TypeKind::Fundamental && type->fundamental == FundamentalType::NullptrT)
 			type = types_.pointer(types_.fundamental(FundamentalType::Void));

@@ -116,6 +116,9 @@ The normalized builtin word `float128` denotes GNU `__float128` and uses the
 Itanium builtin type code `g`. This is an ABI fact spelling, not a requirement
 to parse `__float128` as C++ source in PA9.
 
+The builtin word `half` denotes Clang's `__fp16` storage type and encodes as
+`Dh`; `float16` denotes the distinct `_Float16` type and encodes as `DF16_`.
+
 The normalized builtin words `complex-float`, `complex-double`, and
 `complex-longdouble` denote GNU complex floating types and use the Itanium type
 encodings `Cf`, `Cd`, and `Ce`. These are typed ABI facts: the fact file never

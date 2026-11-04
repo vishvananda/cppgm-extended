@@ -361,7 +361,8 @@ bool ConversionRules::value_conversion(
 		out.result = goal;
 		return true;
 	}
-	if (IsFundamental(source, FundamentalType::Float) && IsFundamental(goal, FundamentalType::Double))
+	if ((IsFundamental(source, FundamentalType::Float) && IsFundamental(goal, FundamentalType::Double)) ||
+		(IsFundamental(source, FundamentalType::StorageHalf) && IsFundamental(goal, FundamentalType::Float)))
 	{
 		out.second = ValueConversion::FloatingPromotion;
 		out.rank = ConversionRank::Promotion;

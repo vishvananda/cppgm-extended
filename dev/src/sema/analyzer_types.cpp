@@ -1390,6 +1390,11 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 		parameter_scratch_.resize(base);
 		return type;
 	}
+	if (type->unqualified == types_.fundamental(FundamentalType::StorageHalf))
+		substitution_error(location, "function return type cannot be __fp16; use a pointer or reference");
+	for (size_t i = base; i < parameter_scratch_.size(); ++i)
+		if (parameter_scratch_[i]->unqualified == types_.fundamental(FundamentalType::StorageHalf))
+			substitution_error(location, "function parameter cannot be __fp16; use a pointer or reference");
 	const Type* result = types_.function(type, parameter_scratch_.data() + base, count, clause.ellipsis, cv, ref);
 	parameter_scratch_.resize(base);
 	return result;

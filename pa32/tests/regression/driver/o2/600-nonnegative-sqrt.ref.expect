@@ -1,0 +1,11 @@
+# Check the optimization and the errno-preserving fallback independently of
+# incidental globals emitted by the selected standard-library headers.
+has(unary sqrt) in @length
+none(call @sqrt) in @length
+has(unary sqrt) in @root
+none(call @sqrt) in @root
+has(unary sqrt) in @any
+has(call @sqrt) in @any
+has(cmp lt) in @any
+has(branch) in @any
+instructions <= 100

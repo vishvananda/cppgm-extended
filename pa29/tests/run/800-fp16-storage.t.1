@@ -1,0 +1,48 @@
+#include <cstdarg>
+#include <cstring>
+#if defined(__clang__) || defined(__CPPGM__)
+using Half = __fp16;
+#define VALUE(x) (x)
+#else
+// GCC supplies arithmetic binary16 but no storage-only spelling.
+using Half = _Float16;
+#define VALUE(x) float(x)
+#endif
+volatile unsigned short samples[] = {0, 0x8000, 0x3c00, 1, 0x7bff, 0x7c00, 0x7e00};
+volatile float base = 1.0f, increment = 0.00048828125f;
+int variadic(int unused, ...) {
+  va_list arguments;
+  va_start(arguments, unused);
+  double value = va_arg(arguments, double);
+  va_end(arguments);
+  return value == 1.0 ? 0 : 1;
+}
+int main() {
+  for (unsigned i = 0; i != sizeof(samples) / sizeof(samples[0]); ++i) {
+    unsigned short raw = samples[i];
+    Half half = __builtin_bit_cast(Half, raw);
+    float value = half;
+    if (i == 0 && value != 0) return 1;
+    if (i == 1 && !__builtin_signbit(value)) return 2;
+    if (i == 2 && value != 1.0f) return 3;
+    if (i == 3 && value != 0.000000059604644775390625f) return 4;
+    if (i == 4 && value != 65504.0f) return 5;
+    if (i == 5 && !__builtin_isinf(value)) return 6;
+    if (i == 6 && !__builtin_isnan(value)) return 7;
+    Half roundtrip = value;
+    unsigned short bits;
+    std::memcpy(&bits, &roundtrip, 2);
+    if (i != 6 && bits != raw) return 8;
+  }
+  Half a = base, b = increment;
+  if (VALUE(a) + VALUE(b) != 1.00048828125f) return 9;
+  if (variadic(0, VALUE(a))) return 10;
+  using H4 = Half __attribute__((vector_size(8)));
+  using F4 = float __attribute__((vector_size(16)));
+  H4 input = {1.0f, 2.0f, 3.0f, 4.0f};
+  F4 wide = __builtin_convertvector(input, F4);
+  H4 narrow = __builtin_convertvector(wide, H4);
+  for (int i = 0; i != 4; ++i)
+    if ((float)narrow[i] != float(i + 1) || wide[i] != float(i + 1)) return 11;
+  return 0;
+}
