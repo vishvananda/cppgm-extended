@@ -63,19 +63,19 @@ function @main
     frame_pointer keep
     epilogues duplicated
     preserve rbx
-    slot $left -> [rbp-24] : obj<16x8>
-    slot $right -> [rbp-8] : i64
+    slot $left -> [rbp-16] : obj<16x8>
+    slot $right -> [rbp-24] : i64
 
   block ^entry
-    store.i64 [rbp-16], 41
-    store.i64 [rbp-8], 7
-    lea rdi, [rbp-24]
-    lea rsi, [rbp-8]
+    store.i64 [rbp-8], 41
+    store.i64 [rbp-24], 7
+    lea rdi, [rbp-16]
+    lea rsi, [rbp-24]
     call @probe [args=(rsi,rdi), unwind=no]
     mov rbx, rax
-    store.i64 [rbp-8], 41
-    lea rdi, [rbp-24]
-    lea rsi, [rbp-8]
+    store.i64 [rbp-24], 41
+    lea rdi, [rbp-16]
+    lea rsi, [rbp-24]
     call @probe [args=(rsi,rdi), unwind=no]
     cmp.i64 rbx, 1
     setne rbx
