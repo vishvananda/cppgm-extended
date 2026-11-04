@@ -67,6 +67,7 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
                 REPO_ROOT / "scripts/CppgmBatchWorker.pm",
                 root / "scripts/CppgmBatchWorker.pm",
             )
+            shutil.copyfile(REPO_ROOT / "scripts/CppgmTestPlatform.pm", root / "scripts/CppgmTestPlatform.pm")
             app = pa / "tool.py"
             app.write_text(
                 "#!/usr/bin/env python3\n"

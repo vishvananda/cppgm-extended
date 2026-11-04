@@ -186,6 +186,10 @@ sub build_test_context
 	my $inspect_plan_file = -f "$test_base.inspect.plan.$host_tag"
 		? "$test_base.inspect.plan.$host_tag"
 		: (-f "$test_base.inspect.plan" ? "$test_base.inspect.plan" : '');
+	if (!CppgmTestPlatform::inspection_supported($test_base))
+	{
+		($inspect_cmd_file, $inspect_expect_file, $inspect_facts_file, $inspect_plan_file) = ('', '', '', '');
+	}
 
 	my ($need_helper_object, $need_helper_static, $need_helper_shared) = (0, 0, 0);
 	for my $flag (@link_flags)
@@ -566,6 +570,15 @@ sub finish_one_test
 	if ($impl_status == 0)
 	{
 		unlink(@{$ctx->{objfiles}});
+		if (CppgmTestPlatform::host_output_oracle($ctx->{test_base}))
+		{
+			my $oracle_status = run_host_output_oracle($ctx);
+			if ($oracle_status != 0)
+			{
+				write_numeric_status(impl_status_file($ctx), $oracle_status);
+				return;
+			}
+		}
 		note_progress_state('run', $test);
 		my $program_status = run_command_capture(
 			cmd => ["$ctx->{test_base}.$suffix.program", @{$ctx->{run_args}}],
@@ -587,6 +600,30 @@ sub finish_one_test
 		unlink(glob("$ctx->{test_base}.$suffix.program.stdout"));
 		unlink(glob("$ctx->{test_base}.$suffix.program.stderr"));
 	}
+}
+
+sub run_host_output_oracle
+{
+	my ($ctx) = @_;
+	die "$ctx->{test}: host output oracle requires C++ sources without helper libraries\n"
+		if @{$ctx->{helper_sources}} || grep { /\.lowir$/ } @{$ctx->{srcfiles}};
+	my $output = "$ctx->{test_base}.$ctx->{suffix}.oracle";
+	unlink("$output.program.stdout", "$output.program.exit_status");
+	my $status = run_command_capture(
+		cmd => [@{$ctx->{host_cxx}}, '-std=gnu++11', @{$ctx->{stdlib_flags}},
+			@{$ctx->{compile_flags}}, '-x', 'c++', @{$ctx->{srcfiles}},
+			'-o', "$output.program", @{$ctx->{link_flags}}],
+		stdout => $ctx->{impl_stdout}, stderr => $ctx->{impl_stderr},
+		env => $ctx->{env}, timeout => $ctx->{build_timeout});
+	return $status if $status != 0;
+	$status = run_command_capture(
+		cmd => ["$output.program", @{$ctx->{run_args}}],
+		stdout => "$output.program.stdout", stderr => "$output.program.stderr",
+		stdin => (-f "$ctx->{test_base}.stdin" ? "$ctx->{test_base}.stdin" : undef),
+		env => $ctx->{env}, timeout => get_timeout_from_env("CPPGM_PROGRAM_TEST_TIMEOUT_SEC", 10));
+	write_numeric_status("$output.program.exit_status", $status);
+	unlink("$output.program");
+	return 0;
 }
 
 sub run_hostinterop_compile_tests

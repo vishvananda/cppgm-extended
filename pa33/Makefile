@@ -93,10 +93,10 @@ test-course: $(TEST_DEPS)
 
 test-kernels: $(TEST_DEPS)
 	perl scripts/check_kernels.pl --compiler $(CPPGM_DRIVER_APP) --limit $(KERNEL_LIMIT) --scale $(KERNEL_SCALE)
-	python3 ../scripts/check_optimization_quality.py $(QUALITY_KERNEL_ROOT) --mode native --compiler $(CPPGM_DRIVER_APP) --out obj/quality
+	perl ../scripts/test_platform.pl linux $(QUALITY_KERNEL_ROOT) 'Cachegrind instruction-count gate' -- python3 ../scripts/check_optimization_quality.py $(QUALITY_KERNEL_ROOT) --mode native --compiler $(CPPGM_DRIVER_APP) --out obj/quality
 
 test-improvements: $(TEST_DEPS)
-	python3 ../scripts/check_optimization_quality.py $(IMPROVEMENT_TEST_ROOT) --mode native --compiler $(CPPGM_DRIVER_APP) --out obj/improvements --report-only
+	perl ../scripts/test_platform.pl linux $(IMPROVEMENT_TEST_ROOT) 'Cachegrind instruction-count gate' -- python3 ../scripts/check_optimization_quality.py $(IMPROVEMENT_TEST_ROOT) --mode native --compiler $(CPPGM_DRIVER_APP) --out obj/improvements --report-only
 
 .PHONY: test-improvements
 

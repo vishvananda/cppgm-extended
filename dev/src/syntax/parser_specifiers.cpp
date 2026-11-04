@@ -785,8 +785,8 @@ bool Parser::parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, Speci
 	{
 		pending_template_ = is_template;
 		specifier.kind = DeclSpecKind::Class;
-		specifier.class_specifier = parse_class_body(
-			key, name, final, start, name_info.prefix == PrefixState::Known ? name_info.prefix_scope : nullptr);
+		specifier.class_specifier = parse_class_body(key, name, final, start,
+			name_info.prefix == PrefixState::Known ? name_info.prefix_scope : nullptr, info.type_scope);
 		if (specifier.class_specifier == nullptr)
 			return false;
 		// GNU attributes just past the closing brace are the class's too
@@ -876,7 +876,8 @@ bool Parser::parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, Speci
 	return true;
 }
 
-ClassSpecifier* Parser::parse_class_body(TokenKind key, Name* name, bool final, uint32_t start, Scope* member_of)
+ClassSpecifier* Parser::parse_class_body(
+	TokenKind key, Name* name, bool final, uint32_t start, Scope* member_of, Scope*& declared)
 {
 	ClassSpecifier* specifier = make<ClassSpecifier>();
 	*specifier = ClassSpecifier();
@@ -1004,6 +1005,7 @@ ClassSpecifier* Parser::parse_class_body(TokenKind key, Name* name, bool final, 
 	if (!parsed)
 		return nullptr;
 	scopes_.complete_class(scope, is_template || specialization);
+	declared = scope;
 	specifier->members = members.take(arena_);
 	if (class_names_.empty())
 	{

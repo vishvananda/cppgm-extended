@@ -38,6 +38,9 @@ You will want to reuse:
 The GNU/Clang concessions this assignment owns include several the selected
 hosted headers depend on:
 
+- GNU anonymous structs expose their fields as members of the enclosing class;
+  these field names remain values when distinguishing casts from calls
+
 - hosted source-file comments may contain opaque legacy 8-bit bytes; line
   splicing, trigraphs and comment delimiters retain their usual behavior.
   This does not relax UTF-8 diagnostics for tokens or literals, or the strict

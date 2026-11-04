@@ -243,7 +243,8 @@ sub normalize_macho_reloc_type
 
 sub parse_macho_relocations
 {
-	my ($text) = @_;
+	my ($text, $symbol_sections) = @_;
+	$symbol_sections //= {};
 	my @relocs;
 	my $current_section;
 	for my $raw_line (split(/\n/, $text))
@@ -260,13 +261,35 @@ sub parse_macho_relocations
 		next if $line eq '' || $line =~ /^address/;
 		if($line =~ /^[0-9A-Fa-f]+\s+\S+\s+.+?\s+(?:True|False)\s+(\S+)\s+(?:True|False)\s+(.+)$/)
 		{
+			my ($kind, $target) = (normalize_macho_reloc_type($1), $2);
+			my $section = $symbol_sections->{$target} // '';
+			# An FDE reaches code and LSDA through named atoms on Mach-O,
+			# where ELF may use a section symbol. A SUBTRACTOR's base is
+			# implicit in ELF's PC-relative expression, not another referent.
+			my $normalized = $current_section eq 'host_unwind' && $kind ne 'sub' &&
+				($section eq 'text' || $section eq 'host_lsda')
+				? "section:$section" : classify_target('mach-o', $target);
 			push @relocs, join(' ',
 				$current_section,
-				normalize_macho_reloc_type($1),
-				classify_target('mach-o', $2));
+				$kind,
+				$normalized);
 		}
 	}
 	return unique_sorted(@relocs);
+}
+
+sub parse_macho_symbol_sections
+{
+	my ($text) = @_;
+	my %sections;
+	for my $line (split(/\n/, $text))
+	{
+		if ($line =~ /^\s*[0-9A-Fa-f]+\s+\(([^)]+)\).*\s(\S+)$/)
+		{
+			$sections{$2} = classify_section($1);
+		}
+	}
+	return \%sections;
 }
 
 sub normalize_elf_reloc_type
@@ -610,7 +633,8 @@ sub dump_object_facts
 	if($fmt eq 'mach-o')
 	{
 		@sections = parse_macho_sections(join('', read_command_lines('otool', '-l', $obj)));
-		@relocs = parse_macho_relocations(join('', read_command_lines('otool', '-rv', $obj)));
+		@relocs = parse_macho_relocations(join('', read_command_lines('otool', '-rv', $obj)),
+			parse_macho_symbol_sections(join('', read_command_lines('nm', '-a', '-m', $obj))));
 	}
 	else
 	{

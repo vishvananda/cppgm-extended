@@ -86,6 +86,9 @@ class DumpHostEhObjectFactsPlTests(unittest.TestCase):
                 address  pcrel length extern type    scattered symbolnum/value
                 00000030 False ?( 3)  True   UNSIGND False     ___gxx_personality_v0
                 00000038 False ?( 3)  False  UNSIGND False     2 (__TEXT,__gcc_except_tab)
+                00000040 False long True SUB False frame_expression_base
+                00000040 False long True UNSIGND False routine_entry
+                00000048 False long True UNSIGND False exception_actions
                 ''')
             elif args[:1] == ["-s"]:
                 sys.stdout.write('''
@@ -102,6 +105,9 @@ class DumpHostEhObjectFactsPlTests(unittest.TestCase):
                                  U ___cxa_throw
                                  U ___gxx_personality_v0
                 0000000000000000 S __ZTI4Mark
+                0000000000000000 (__TEXT,__text) external routine_entry
+                0000000000000040 (__TEXT,__gcc_except_tab) non-external exception_actions
+                0000000000000080 (__TEXT,__eh_frame) non-external frame_expression_base
                 """
             ),
             otool_script=otool_script,
@@ -115,6 +121,8 @@ class DumpHostEhObjectFactsPlTests(unittest.TestCase):
         self.assertIn("object 1 reloc_call __cxa_throw", lines)
         self.assertIn("object 1 reloc_ref __gxx_personality_v0", lines)
         self.assertIn("object 1 reloc_section_ref host_lsda", lines)
+        self.assertIn("object 1 reloc_section_ref text", lines)
+        self.assertNotIn("object 1 reloc_section_ref host_unwind", lines)
         self.assertNotIn("object 1 lsda call_site_starts_at_zero", lines)
         self.assertIn("object 1 lsda action_has_catch", lines)
         self.assertIn("object 1 lsda type_table", lines)

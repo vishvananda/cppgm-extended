@@ -33,6 +33,8 @@ if(scalar(@ARGV) != 2)
 }
 
 my ($driver, $root) = @ARGV;
+exit 0 unless CppgmTestPlatform::require_platform(
+    'linux', "$FindBin::Script:$root", 'ELF symbol, section and code inspection');
 my @tests = collect_tests($root, qr/host-loop-alignment\.t$/);
 die "No host loop-alignment controls found under $root\n" if !@tests;
 

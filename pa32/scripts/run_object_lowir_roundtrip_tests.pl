@@ -244,12 +244,15 @@ sub check_mode {
   return $from_lowir_error if defined $from_lowir_error;
 
   if($source =~ /gnu-section-attribute/) {
-    my $direct_relationship = gnu_section_relationship_error(
-      $direct, "$source $level_name direct");
-    return $direct_relationship if defined $direct_relationship;
-    my $replayed_relationship = gnu_section_relationship_error(
-      $from_lowir, "$source $level_name replayed");
-    return $replayed_relationship if defined $replayed_relationship;
+    if (CppgmTestPlatform::require_platform('linux', "$source ELF relationships",
+                                           'ELF section-symbol and relocation inspection')) {
+      my $direct_relationship = gnu_section_relationship_error(
+        $direct, "$source $level_name direct");
+      return $direct_relationship if defined $direct_relationship;
+      my $replayed_relationship = gnu_section_relationship_error(
+        $from_lowir, "$source $level_name replayed");
+      return $replayed_relationship if defined $replayed_relationship;
+    }
   }
 
   my $direct_bytes = read_bytes($direct);

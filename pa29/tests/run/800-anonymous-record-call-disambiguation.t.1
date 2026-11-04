@@ -1,0 +1,17 @@
+template<class T> struct Tree {
+  struct { T allocator; };
+  void destroy(T* p) { (Deleter(allocator))(p); }
+  struct Deleter {
+    T& allocator;
+    Deleter(T& value) : allocator(value) {}
+    void operator()(T* p) { *p += allocator; }
+  };
+};
+
+int main() {
+  Tree<int> tree;
+  tree.allocator = 3;
+  int value = 4;
+  tree.destroy(&value);
+  return value == 7 ? 0 : 1;
+}

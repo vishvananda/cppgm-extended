@@ -54,7 +54,7 @@ sub collect_tests
 			}
 		}
 	}
-	return @tests;
+	return CppgmTestPlatform::select_tests(@tests);
 }
 
 sub getdata
@@ -5020,6 +5020,17 @@ sub compare_program_outputs
 	my $my_program_status = getdata("$my_prefix.program.exit_status");
 	my $ref_program_stdout = getdata("$ref_prefix.program.stdout");
 	my $my_program_stdout = getdata("$my_prefix.program.stdout");
+	(my $base = $ref_prefix) =~ s/\.ref$//;
+	if (CppgmTestPlatform::host_output_oracle($base))
+	{
+		my $oracle_status = getdata("$my_prefix.oracle.program.exit_status");
+		my $expected_status = canonical_exit_status($ref_program_status);
+		return (0, 'ERROR: host output oracle failed or is missing')
+			if !defined($expected_status) || !defined($oracle_status) ||
+				canonical_exit_status($oracle_status) ne $expected_status;
+		$ref_program_stdout = getdata("$my_prefix.oracle.program.stdout");
+		return (0, 'ERROR: missing host output oracle stdout') if !defined($ref_program_stdout);
+	}
 	if ($allow_missing_stdout)
 	{
 		$ref_program_stdout = '' if !defined($ref_program_stdout);
@@ -5056,6 +5067,8 @@ sub host_platform_tag
 sub compare_optional_inspect
 {
 	my ($ref_prefix, $my_prefix, $host_tag) = @_;
+	(my $base = $ref_prefix) =~ s/\.ref$//;
+	return (1, undef, undef) if !CppgmTestPlatform::inspection_supported($base);
 	my @ref_candidates = ();
 	push @ref_candidates, "$ref_prefix.inspect.$host_tag" if defined($host_tag) && $host_tag ne '';
 	push @ref_candidates, "$ref_prefix.inspect";

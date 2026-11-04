@@ -31,6 +31,19 @@ CI sets `CPPGM_WARNINGS_AS_ERRORS=1` for the compiler and tool sources, includin
 PA34 builds. Use `make CPPGM_WARNINGS_AS_ERRORS=1` to apply the same policy locally.
 Test programs use their harness's compile flags.
 
+The default report selects checks for Linux or Intel macOS automatically.
+Mach-O checks run by default on Intel Macs. Unsupported checks are listed in a
+separate skip summary and never counted as passes. Linux retains its ELF and
+Cachegrind gates; missing tools on a supported platform remain failures.
+
+A fixture's `NAME.platforms` lists supported platforms (`linux`, `macos`) with
+a `#` explanation. Use `NAME.inspect.platforms` when only object inspection is
+specific to one format: the fixture still compiles, links and executes on both.
+Platform-suffixed inspection commands select their named platform. Tests whose
+output depends on native libm conventions can declare `host-output` in
+`NAME.oracle.macos`; their exit status stays checked and their stdout is compared
+with a freshly host-compiled program. Keep exclusions tied to platform contracts.
+
 For quick iteration:
 
 ```sh

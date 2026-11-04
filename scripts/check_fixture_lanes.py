@@ -206,6 +206,8 @@ def lane_from_command(words, pa_dir, root):
             words = words[1:]
     if not words or "/" not in words[0]:
         return None
+    if words[0].endswith('/test_platform.pl') and '--' in words:
+        return lane_from_command(words[words.index('--') + 1:], pa_dir, root)
     script = Path(os.path.normpath(pa_dir / words[0]))
     if not str(script).startswith(str(root) + os.sep) or not script.is_file():
         return None
@@ -263,7 +265,8 @@ def lane_selects(lane, selection, pa_dir, inputs):
         listed = subprocess.run(
             [sys.executable if lane.script.suffix == '.py' else "perl",
              str(lane.script), *LISTING_RUNNERS[lane.script.name],
-             *lane.roots], cwd=pa_dir, capture_output=True, text=True).stdout
+             *lane.roots], cwd=pa_dir, capture_output=True, text=True,
+            env=dict(os.environ, CPPGM_TEST_INCLUDE_ALL='1')).stdout
         names = {os.path.normpath(line) for line in listed.splitlines() if line}
         return inputs & names
     pattern, prunes = selection

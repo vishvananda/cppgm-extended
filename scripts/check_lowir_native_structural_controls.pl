@@ -69,6 +69,8 @@ if (scalar(@ARGV) != 3)
 }
 
 	my ($app, $driver, $root) = @ARGV;
+exit 0 unless CppgmTestPlatform::require_platform(
+    'linux', "$FindBin::Script:$root", 'ELF symbol, section and code inspection');
 my @tests = collect_tests($root,
 	qr/(?:acyclic-phi-shared-register|call-result-loop-register|conditional-fallthrough-layout|medium-copy-direct-chunks|selected-parameter-index-home|private-stage-promotion).*\.t$/);
 die "No native structural-control tests found under $root\n" if !@tests;

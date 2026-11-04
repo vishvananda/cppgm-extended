@@ -14,7 +14,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class TestReportOutputTests(unittest.TestCase):
     def report(self, *, failure=None, ordered=True, target="test-report-nobuild",
-               exported=False, low_jobs=False, real_control=False, later_lane=False, active_pa="pa11"):
+               exported=False, low_jobs=False, real_control=False, later_lane=False, active_pa="pa11",
+               platform_skip=False):
         with tempfile.TemporaryDirectory(prefix="test-report-output.") as directory:
             root = Path(directory)
             shutil.copy(ROOT / "Makefile", root / "Makefile")
@@ -34,6 +35,8 @@ class TestReportOutputTests(unittest.TestCase):
                 self.assertNotIn("test-cells", makefile)
             (root / "scripts").mkdir()
             shutil.copy(ROOT / "scripts/test_run_id.mk", root / "scripts/test_run_id.mk")
+            for name in ('test_platform.pl', 'CppgmTestPlatform.pm'):
+                shutil.copy(ROOT / 'scripts' / name, root / 'scripts' / name)
             audit = root / "scripts/audit_compiler_exceptions.pl"
             audit.write_text(
                 'if ("' + str(failure) + '" eq "audit") { '
@@ -66,6 +69,8 @@ class TestReportOutputTests(unittest.TestCase):
                                   " " + str(producer) + " tests/general\n")
             (root / "pa11/Makefile").write_text(
                 "test:\n"
+                + ("\t@perl -I../scripts -MCppgmTestPlatform -e 'CppgmTestPlatform::skip(\"elf inspection\", \"ELF format\")'\n"
+                   if platform_skip else "") +
                 "\t@if [ \"$$CPPGM_REPORT_QUIET\" != 1 ]; then echo suite success detail; "
                 "echo maintainer success detail >&2; fi\n" +
                 control_recipe + "\t@echo '2 2' >> \"$$CPPGM_TEST_COUNTS_FILE\"\n" +
@@ -104,6 +109,13 @@ class TestReportOutputTests(unittest.TestCase):
                 self.assertEqual(result.stdout,
                                  "===== ALL TESTS PASSED SUCCESSFULLY! (2 / 2) =====\n")
                 self.assertEqual(result.stderr, "")
+
+    def test_platform_skips_are_visible_and_not_counted_as_passes(self):
+        result = self.report(platform_skip=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('PLATFORM SKIPS: 1', result.stdout)
+        self.assertIn('elf inspection: ELF format', result.stdout)
+        self.assertIn('(2 / 2)', result.stdout)
 
     def test_selected_assignment_does_not_run_an_unrelated_seams_lane(self):
         result = self.report(failure="seams", active_pa="pa13")

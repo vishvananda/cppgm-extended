@@ -1,9 +1,7 @@
 // Protected neighbors make a read beyond either end observable. The loop
 // may expand or keep branches, but must retain its early bounds and exits.
-extern "C" void* mmap(void*, unsigned long, int, int, int, long);
-extern "C" int mprotect(void*, unsigned long, int);
-extern "C" int munmap(void*, unsigned long);
-extern "C" int getpagesize();
+#include <sys/mman.h>
+#include <unistd.h>
 __attribute__((noinline)) unsigned forward(const unsigned* p, unsigned n, unsigned key) {
     for (unsigned i = 0; i < 4; ++i) {
         if (i == n) return n;
@@ -21,7 +19,7 @@ __attribute__((noinline)) unsigned backward(const unsigned* p, unsigned n, unsig
 }
 int main() {
     unsigned long page = static_cast<unsigned long>(getpagesize());
-    void* mapping = mmap(0, page * 3, 0, 0x22, -1, 0);
+    void* mapping = mmap(0, page * 3, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (mapping == reinterpret_cast<void*>(-1L)) return 1;
     char* middle = static_cast<char*>(mapping) + page;
     if (mprotect(middle, page, 3)) return 2;

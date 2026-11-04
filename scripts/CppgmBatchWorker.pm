@@ -11,6 +11,7 @@ use IPC::Open2;
 use IO::Handle;
 use POSIX qw(setpgid WNOHANG);
 use Text::ParseWords qw(shellwords);
+use CppgmTestPlatform;
 
 our @EXPORT_OK = qw(
   app_args_for
@@ -142,7 +143,7 @@ sub collect_tests
 			}
 		}
 	}
-	return @tests;
+	return CppgmTestPlatform::select_tests(@tests);
 }
 
 sub get_timeout_from_env

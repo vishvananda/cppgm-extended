@@ -24,6 +24,7 @@ my $root = dirname($pa33);
 my %o = (compiler => "$root/dev/cppgm++", limit => 1.50, scale => 16, out => "$pa33/obj/" . run_result_name('kernels'));
 GetOptions(\%o, 'compiler=s', 'limit=f', 'scale=i', 'out=s') && $o{limit} > 0 && $o{scale} >= 1
 	or die "usage: check_kernels.pl [--compiler C] [--limit L] [--scale N] [--out DIR]\n";
+exit 0 unless CppgmTestPlatform::require_platform('linux', 'test-kernels', 'Cachegrind instruction-count gate');
 my $kernels = "$root/pa35/scripts/kernels.pl";
 -f $kernels or die "missing $kernels\n";
 

@@ -872,6 +872,11 @@ Decl* Parser::finish_simple_declaration(
 	{
 		// A lone class or enumeration specifier declares just the type (the
 		// course dump keeps a member enumeration's simple-declaration).
+		if (specifiers.size == 1 && specifiers[0].kind == DeclSpecKind::Class &&
+			specifiers[0].class_specifier->name == nullptr && info.type_scope != nullptr)
+			// Anonymous record members participate in the enclosing scope's
+			// type/value disambiguation, including deferred inline bodies.
+			scopes_.add_new_edge(declaration_scope(), info.type_scope);
 		const bool member_enum = context == DeclContext::Class && specifiers[0].kind == DeclSpecKind::Enum;
 		// An elaborated-type-specifier with ABI tags (Attribute::on_class)
 		// stays a simple-declaration, which keeps its attributes.

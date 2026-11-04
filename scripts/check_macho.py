@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check optional x86-64 Mach-O output; execute and host-link it on Intel macOS."""
 import argparse
+import os
 from pathlib import Path
 import platform
 import shutil
@@ -143,6 +144,10 @@ def main():
         modes = {'image': image, 'object': objects, 'host': host_objects,
                  'runtime': host_objects, 'interop': interop}
         modes[args.mode](args, Path(temporary), native)
+    if os.environ.get('CPPGM_TEST_COUNTS_FILE'):
+        count = len(FIXTURES['runtime']) if args.mode == 'runtime' else 1
+        with open(os.environ['CPPGM_TEST_COUNTS_FILE'], 'a') as counts:
+            counts.write(f'{count} {count}\n')
     print(f'Mach-O {args.mode}: PASS ({"native Intel macOS" if native else "cross emission"})')
 
 

@@ -56,7 +56,7 @@ class Run:
         start = time.monotonic()
         number = len(self.observations)
         rss = self.directory / f'{number:04}.rss'
-        measured = ['/usr/bin/time', '-f', '%M', '-o', str(rss), *map(str, command)] if phase == 'build' and Path('/usr/bin/time').is_file() else list(map(str, command))
+        measured = ['/usr/bin/time', '-f', '%M', '-o', str(rss), *map(str, command)] if phase == 'build' and platform.system() == 'Linux' and Path('/usr/bin/time').is_file() else list(map(str, command))
         proc = subprocess.Popen(measured, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, start_new_session=True)
         try:

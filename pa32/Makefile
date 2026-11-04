@@ -208,10 +208,10 @@ test-course: $(TEST_DEPS) test-kernels
 	@scripts/compare_results.pl ref my $(HOST_O2_TEST_ROOT)
 
 test-kernels: $(TEST_DEPS)
-	python3 ../scripts/check_optimization_quality.py $(QUALITY_KERNEL_ROOT) --mode lowir --optimizer $(LOWIROPT_APP) --frontend $(CPPGM_DRIVER_REF_APP) --backend $(CPPGM_DRIVER_REF_APP) --out obj/quality
+	perl ../scripts/test_platform.pl linux $(QUALITY_KERNEL_ROOT) 'Cachegrind instruction-count gate' -- python3 ../scripts/check_optimization_quality.py $(QUALITY_KERNEL_ROOT) --mode lowir --optimizer $(LOWIROPT_APP) --frontend $(CPPGM_DRIVER_REF_APP) --backend $(CPPGM_DRIVER_REF_APP) --out obj/quality
 
 test-improvements: $(TEST_DEPS)
-	python3 ../scripts/check_optimization_quality.py $(IMPROVEMENT_TEST_ROOT) --mode lowir --optimizer $(LOWIROPT_APP) --frontend $(CPPGM_DRIVER_REF_APP) --backend $(CPPGM_DRIVER_REF_APP) --out obj/improvements --report-only
+	perl ../scripts/test_platform.pl linux $(IMPROVEMENT_TEST_ROOT) 'Cachegrind instruction-count gate' -- python3 ../scripts/check_optimization_quality.py $(IMPROVEMENT_TEST_ROOT) --mode lowir --optimizer $(LOWIROPT_APP) --frontend $(CPPGM_DRIVER_REF_APP) --backend $(CPPGM_DRIVER_REF_APP) --out obj/improvements --report-only
 
 .PHONY: test-kernels test-improvements
 

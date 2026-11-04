@@ -128,3 +128,7 @@ $(DDEPDIR)/%.d: ;
 test-macho: $(TEST_DEPS)
 	python3 ../scripts/check_macho.py --mode host --fixtures tests/macho \
 		--compiler ../dev/cppgm++ --host-cxx "$(CPPGM_HOST_CXX)"
+
+ifeq ($(shell uname -s),Darwin)
+test: test-macho
+endif

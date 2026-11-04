@@ -246,6 +246,8 @@ if(scalar(@ARGV) != 2)
 }
 
 my ($app, $root) = @ARGV;
+exit 0 unless CppgmTestPlatform::require_platform(
+    'linux', "$FindBin::Script:$root", 'ELF symbol, section and code inspection');
 my @tests = collect_tests($root, qr/\.t$/);
 die "No PA24 native contract tests found under $root\n" if !@tests;
 

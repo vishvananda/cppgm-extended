@@ -2,7 +2,7 @@ name: Intel macOS port
 
 on:
   push:
-    branches: [v8macho]
+    branches: [main, v8macho]
   workflow_dispatch:
 
 permissions:
@@ -44,10 +44,11 @@ jobs:
           import sys
           compiler, sdk, wrapper = sys.argv[1:]
           path = Path(wrapper)
-          base = shlex.join([compiler, '--no-default-config', '-isysroot', sdk])
+          base = shlex.join([compiler, '--no-default-config', '--sysroot=' + sdk, '-isysroot', sdk])
           library = Path(compiler).parent.parent / 'lib'
-          link = shlex.join([f'-L{library / "c++"}', f'-L{library}', '-lunwind',
-                             f'-Wl,-rpath,{library / "c++"}', f'-Wl,-rpath,{library}'])
+          link = shlex.join([f'-L{library / "c++"}', f'-L{library / "unwind"}', f'-L{library}', '-lunwind',
+                             f'-Wl,-rpath,{library / "c++"}', f'-Wl,-rpath,{library / "unwind"}',
+                             f'-Wl,-rpath,{library}'])
           # Homebrew's bundled libc++/unwind flags apply only when linking.
           path.write_text('#!/bin/sh\nfor argument do\n  case "$argument" in\n'
                           '    -c|-S|-E|-M|-MM|-fsyntax-only|--version)\n'
@@ -82,15 +83,8 @@ jobs:
           "$host_tools/sdk-check"
       - name: Build the compiler and native tools
         run: make -C dev -j4 CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
-      - name: Execute standalone Mach-O programs and check mixed host objects
-        run: |
-          make -C pa24 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
-          make -C pa25 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
-          make -C pa26 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
-          make -C pa27 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
-          make -C pa28 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
-          make -C pa32 check TEST=tests/host/o1/600-disabled-strict-aliasing.t \
-            CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+      - name: Run the default Intel macOS test report
+        run: make test-report CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Compare self-built and inception compilers
         run: |
           make -C pa34 cppgm++-self CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \

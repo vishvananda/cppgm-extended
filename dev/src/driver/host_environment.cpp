@@ -9,7 +9,9 @@ namespace driver {
 
 void configure_target_environment(PreprocessorOptions& options, native::Target target)
 {
-	if (target == native::host_target())
+	// The course preprocessor starts with Linux target macros even when
+	// this compiler is running on Darwin.
+	if (target == native::Target::Linux && target == native::host_target())
 		return;
 	options.command_line.insert(0,
 		target == native::Target::MacOS

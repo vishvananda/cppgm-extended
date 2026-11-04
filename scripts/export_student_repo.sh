@@ -384,6 +384,8 @@ done
 
 shared_scripts=(
   scripts/CppgmBatchWorker.pm
+  scripts/CppgmTestPlatform.pm
+  scripts/test_platform.pl
   scripts/check_macho.py
   scripts/check_optimization_quality.py
   scripts/check_object_expectations.pl

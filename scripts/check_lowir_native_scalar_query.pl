@@ -106,6 +106,8 @@ if(scalar(@ARGV) != 3)
 }
 
 my ($app, $driver, $root) = @ARGV;
+exit 0 unless CppgmTestPlatform::require_platform(
+    'linux', "$FindBin::Script:$root", 'ELF symbol, section and code inspection');
 my @tests = collect_tests($root, qr/host-scalar-tail-query\.t$/);
 die "No scalar tail-query controls found under $root\n" if !@tests;
 

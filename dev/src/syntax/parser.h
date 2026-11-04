@@ -178,7 +178,8 @@ private:
 	bool parse_type_specifier_seq(ListFrame<DeclSpecifier>& list, SpecifierInfo& info);
 	bool parse_named_type_specifier(ListFrame<DeclSpecifier>& list, SpecifierInfo& info);
 	bool parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, SpecifierInfo& info);
-	ClassSpecifier* parse_class_body(TokenKind key, Name* name, bool final, uint32_t start, Scope* member_of);
+	ClassSpecifier* parse_class_body(
+		TokenKind key, Name* name, bool final, uint32_t start, Scope* member_of, Scope*& declared);
 	void link_specialization(const Identifier* template_name, Scope* scope);
 	void declare_class(const Identifier* name, bool is_template, Scope* scope);
 	// A class declared before its definition gets its scope at once: names

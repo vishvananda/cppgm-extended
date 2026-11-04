@@ -30,7 +30,7 @@ class ReportIsolationTests(unittest.TestCase):
             root = Path(directory)
             scripts = root / "scripts"
             scripts.mkdir()
-            for name in ("test_run_id.mk", "CppgmBatchWorker.pm", "run_all_tests_common.pl",
+            for name in ("test_run_id.mk", "CppgmBatchWorker.pm", "CppgmTestPlatform.pm", "run_all_tests_common.pl",
                          "compare_results_common.pl", "run_with_timeout.pl", "pa_run_check_targets.mk"):
                 shutil.copy(ROOT / "scripts" / name, scripts / name)
             (scripts / "audit_compiler_exceptions.pl").write_text("exit 0;\n")

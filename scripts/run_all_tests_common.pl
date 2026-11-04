@@ -103,7 +103,7 @@ sub collect_tests
 			}
 		}
 	}
-	return @tests;
+	return CppgmTestPlatform::select_tests(@tests);
 }
 
 sub ensure_test_app_available

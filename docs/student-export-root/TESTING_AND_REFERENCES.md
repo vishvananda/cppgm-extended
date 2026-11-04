@@ -17,6 +17,10 @@ its own seed.
 keeps going and summarizes failures. Use `ACTIVE_TEST_REPORT_PAS='pa8 pa10'`
 to narrow a report.
 
+Suites select platform-specific checks automatically and list skips separately
+from passes. A fixture's `.platforms` sidecar limits the whole test;
+`.inspect.platforms` limits only inspection, keeping compilation and execution.
+
 ## Local checks and toolchains
 
 ```sh
