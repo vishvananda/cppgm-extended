@@ -139,7 +139,7 @@ void Encoder::tlv(uint32_t original, const object::Symbol& source, Symbol& targe
 		has_tlv_ = true;
 		tlv_section_ = section("__DATA", "__thread_vars", 0x13);
 		sections_[tlv_section_].align = 8;
-		bootstrap_ = symbol("___tlv_bootstrap", 1, 0, 0, 0);
+		bootstrap_ = symbol("__tlv_bootstrap", 1, 0, 0, 0);
 	}
 	const uint32_t storage = symbol("Lcppgm_tlv_" + std::to_string(original), 0x0e, target.section, 0, target.value);
 	Section& variables = sections_[tlv_section_];
