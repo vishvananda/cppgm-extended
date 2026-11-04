@@ -2740,8 +2740,8 @@ void FunctionLowering::push_converted(
 lowir::Value FunctionLowering::temporary_storage(const sema::Type* type, bool persistent, lowir::SlotKind kind)
 {
 	// A temporary's storage: a frame slot, or (persistent: bound to a
-	// reference of an object with static storage duration, 12.2p5) an
-	// internal global of its own.
+	// reference of static or thread storage duration, 12.2p5) an internal
+	// global with the owner's storage duration.
 	if (persistent)
 		return lowir::Value::symbol(lowering_.static_temporary(type));
 	return lowir::Value::slot(generated_slot(kind, lowering_.storage_type(type)));

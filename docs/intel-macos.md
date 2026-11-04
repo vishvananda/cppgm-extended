@@ -35,6 +35,7 @@ make -C pa24 test-macho CXX="$host_cxx" CPPGM_HOST_CXX="$host_cxx"
 make -C pa25 test-macho CXX="$host_cxx" CPPGM_HOST_CXX="$host_cxx"
 make -C pa26 test-macho CXX="$host_cxx" CPPGM_HOST_CXX="$host_cxx"
 make -C pa27 test-macho CXX="$host_cxx" CPPGM_HOST_CXX="$host_cxx"
+make -C pa28 test-macho CXX="$host_cxx" CPPGM_HOST_CXX="$host_cxx"
 ```
 
 These checks are outside the required Linux suites. Linux hosts check emission

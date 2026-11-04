@@ -122,3 +122,9 @@ $(DDEPDIR)/%.d: ;
 -include $(addprefix $(DDEPDIR)/,$(addsuffix .d,$(common_obj_basenames)))
 -include $(RDEPDIR)/test_runner_enabled.d
 -include $(DDEPDIR)/test_runner_enabled.d
+
+# Optional Intel macOS target; reuse the host-runtime behavior fixtures.
+.PHONY: test-macho
+test-macho: $(TEST_DEPS)
+	python3 ../scripts/check_macho.py --mode runtime --fixtures tests/general \
+		--compiler ../dev/cppgm++ --host-cxx "$(CPPGM_HOST_CXX)"

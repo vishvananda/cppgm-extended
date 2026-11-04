@@ -1,0 +1,41 @@
+// N3485 12.2p5 and 3.7.2: namespace and block-scope thread_local
+// references extend temporary lifetimes through their own thread's exit.
+extern "C" {
+  typedef unsigned long pthread_t;
+  int pthread_create(pthread_t*, const void*, void* (*)(void*), void*);
+  int pthread_join(pthread_t, void**);
+}
+
+int constructions;
+int destructions;
+struct Value {
+  int tag;
+  Value(int n) : tag(n) { ++constructions; }
+  ~Value() { tag = 0; ++destructions; }
+};
+
+thread_local const Value& global_value = Value(1);
+const Value& local_value() {
+  static thread_local const Value& held = Value(2);
+  return held;
+}
+
+void* worker(void*) {
+  if (global_value.tag != 1 || local_value().tag != 2) return (void*)1;
+  const_cast<Value&>(global_value).tag = 11;
+  const_cast<Value&>(local_value()).tag = 22;
+  return 0;
+}
+
+int main() {
+  if (global_value.tag != 1 || local_value().tag != 2) return 1;
+  for (int round = 0; round != 2; ++round) {
+    pthread_t thread;
+    if (pthread_create(&thread, 0, worker, 0)) return 2;
+    void* result;
+    if (pthread_join(thread, &result) || result) return 3;
+    if (constructions != 4 + 2 * round || destructions != 2 + 2 * round) return 4;
+    if (global_value.tag != 1 || local_value().tag != 2) return 5;
+  }
+  return 0;
+}

@@ -529,6 +529,7 @@ void FunctionLowering::register_static_temporaries(lowir::SymbolId global, const
 void FunctionLowering::register_destruction(
 	lowir::SymbolId object, const sema::Type* type, uint32_t location, bool thread)
 {
+	thread = thread || program_.symbols[object].metadata.storage == ir_model::GSM_THREAD_LOCAL;
 	// 3.6.3p1: objects of static storage duration are destroyed in the
 	// reverse order of the completion of their construction, so one
 	// constructed on a first pass has its destructor registered now; so are

@@ -974,6 +974,8 @@ lowir::SymbolId ProgramLowering::static_temporary(const sema::Type* type)
 	state_storage_type(storage, size_of(type, 0), alignment_of(type, 0));
 	program_.declare_global(temporary, lowir::SymbolKind::GlobalDefinition, storage);
 	program_.symbols[temporary].metadata.binding = ir_model::SBM_INTERNAL;
+	if (object_mode_ && owner != nullptr && owner->is_thread_local)
+		program_.symbols[temporary].metadata.storage = ir_model::GSM_THREAD_LOCAL;
 	name_temporary(temporary);
 	++counters_.globals;
 	if (temporary_owner_ != nullptr)

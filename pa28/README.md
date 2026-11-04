@@ -41,6 +41,10 @@ If those are not set, the harness searches for common compilers such as
 also require `ar`, `nm`, and `readelf`. The checked-in tests assume the normal
 x86_64 Linux host C++ ABI.
 
+Optional Intel macOS validation runs with `make test-macho` and a host Clang
+toolchain. It checks thread-local reference lifetimes and destruction on thread
+exit, separately from the required Linux suite.
+
 PA26 introduced the basic host-EH object-facts surface. PA28 keeps the same
 host-link path while exercising richer host ABI/runtime interactions.
 

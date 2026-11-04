@@ -64,8 +64,15 @@ jobs:
           import sys
           compiler, sdk, wrapper = sys.argv[1:]
           path = Path(wrapper)
-          path.write_text('#!/bin/sh\nexec ' + shlex.join(
-              [compiler, '--no-default-config', '-isysroot', sdk]) + ' "$@"\n')
+          base = shlex.join([compiler, '--no-default-config', '-isysroot', sdk])
+          library = Path(compiler).parent.parent / 'lib'
+          link = shlex.join([f'-L{library / "c++"}', f'-L{library}', '-lunwind',
+                             f'-Wl,-rpath,{library / "c++"}', f'-Wl,-rpath,{library}'])
+          # Homebrew's bundled libc++/unwind flags apply only when linking.
+          path.write_text('#!/bin/sh\nfor argument do\n  case "$argument" in\n'
+                          '    -c|-S|-E|-M|-MM|-fsyntax-only|--version)\n'
+                          '      exec ' + base + ' "$@" ;;\n'
+                          '  esac\ndone\nexec ' + base + ' ' + link + ' "$@"\n')
           path.chmod(0o755)
           PY
           printf '%s\n%s\n' "$host_llvm/bin" "$host_tools" >> "$GITHUB_PATH"
@@ -75,7 +82,7 @@ jobs:
           echo "Host compiler: $host_llvm/bin/clang++"
           echo "SDK: $host_sdk"
           "$host_tools/clang++" --version
-          if ! "$host_tools/clang++" -std=c++11 -Wall -Werror -fsyntax-only -x c++ - <<'CPP'
+          if ! "$host_tools/clang++" -std=c++11 -Wall -Werror -x c++ - -o "$host_tools/sdk-check" <<'CPP'
           #include <cstdint>
           #include <cstdlib>
           #include <cstring>
@@ -89,8 +96,10 @@ jobs:
           CPP
           then
             "$host_tools/clang++" -v -E -x c++ /dev/null > /dev/null
+            "$host_tools/clang++" -### -x c++ /dev/null -o "$host_tools/sdk-check"
             exit 1
           fi
+          "$host_tools/sdk-check"
       - name: Build the compiler and native tools
         run: make -C dev -j4 CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Execute standalone Mach-O programs and check mixed host objects
@@ -99,6 +108,7 @@ jobs:
           make -C pa25 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
           make -C pa26 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
           make -C pa27 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+          make -C pa28 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Compare self-built and inception compilers
         run: |
           make -C pa34 cppgm++-self CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \

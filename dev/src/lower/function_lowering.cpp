@@ -493,9 +493,10 @@ void FunctionLowering::lower_dynamic_initializer(lowir::SymbolId global, const s
 	if (type->is_reference())
 	{
 		single = reference_initializer(single);
-		// 12.2p5: the temporaries it binds persist (a thread's own
-		// reference keeps them in frames, see temporary_storage).
-		const bool persistent = !variable->is_thread_local;
+		// 12.2p5: bound temporaries persist with the reference. Host
+		// initializers return, so a thread's temporary needs TLS storage;
+		// the course runtime keeps its thread initialization frame alive.
+		const bool persistent = !variable->is_thread_local || lowering_.object_mode();
 		if (persistent)
 			extension_path(single);
 		RValue address;
@@ -513,7 +514,7 @@ void FunctionLowering::lower_dynamic_initializer(lowir::SymbolId global, const s
 		initialize_storage(type, place, initializer, location);
 	choice_root_ = saved;
 	lowering_.end_temporary_names(names);
-	if (!variable->is_thread_local || !type->is_reference())
+	if (!variable->is_thread_local || !type->is_reference() || lowering_.object_mode())
 		destroy_temporaries(first);
 	static_initializer_ = false;
 }
