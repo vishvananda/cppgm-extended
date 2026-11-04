@@ -76,6 +76,7 @@ function @loop_overlap
     je ^first
 
   block ^second
+    store.i32 [rbp-<off2>], 9
     load.ptr r8, [rbp-<off3>]
     cmp.i32 [r8], 7
     setne rax
