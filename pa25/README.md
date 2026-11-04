@@ -355,3 +355,10 @@ In particular:
 
 PA26 adds host-compatible exception metadata and relocatable objects. PA27
 then completes the host-object symbol and ABI surface using the PA9 encoder.
+
+### Optional Intel macOS target
+
+Implementations may also support `--target macos` for Intel Mach-O objects and
+standalone executables. Linux remains the required course target. The separate
+`make test-macho` check exercises cross-unit code and data relocations; it runs
+the resulting programs when invoked on Intel macOS.

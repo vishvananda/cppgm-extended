@@ -30,7 +30,7 @@ See [benchmark methodology](benchmarks/public/README.md) for how the numbers are
 ## Caveats
 
 - C++11 is the baseline; other dialects have only partial extension support.
-- Linux x86-64 is the only target architecture and platform.
+- Targets are Linux x86-64 and optional Intel macOS; other architectures are unsupported.
 - General inline assembly is unsupported; a few GNU forms are recognized.
 - No C++ standard library is bundled; use a host-installed library.
 - The compiler may contain bugs.
@@ -47,6 +47,9 @@ make test-pa8
 make test-report
 make inception
 ```
+
+Intel macOS support and its optional checks are described in
+[the macOS guide](docs/intel-macos.md).
 
 See [ROADMAP.md](ROADMAP.md) for the assignment sequence,
 [AGENTS.md](AGENTS.md) for contributor instructions, and

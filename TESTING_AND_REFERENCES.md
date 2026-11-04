@@ -292,3 +292,12 @@ When either build falls short, improve the solution and re-sync it;
 never move a limit to fit it. The export ships `calibration.tsv` and drops
 `pa35/maintainer/`.
 
+
+## Optional Intel macOS checks
+
+`make -C pa24 test-macho`, `make -C pa25 test-macho` and
+`make -C pa27 test-macho` check the optional Mach-O target. They are separate
+from the required Linux suites, like the debug-info checks. On Linux they check
+cross-emission; on Intel macOS they also execute the standalone programs and
+link generated objects with Clang, including exceptions and thread-local data.
+The Intel macOS CI lane additionally compares self-built and inception compilers.

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "native/object/object_file.h"
+#include "native/target.h"
 #include "support/telemetry.h"
 
 // Link mode's static linker: relocatable objects (this compiler's and
@@ -49,7 +50,7 @@ struct LinkStats
 // Links `objects` into the executable `output`. Returns false with
 // `error` set for duplicate or unresolved symbols, a missing `main`,
 // unsupported relocations or an I/O failure.
-bool link_executable(
-	std::vector<object::ObjectFile>& objects, const std::string& output, std::string& error, LinkStats* stats);
+bool link_executable(std::vector<object::ObjectFile>& objects, const std::string& output, std::string& error,
+	LinkStats* stats, Target target = Target::Linux);
 
 } // namespace native

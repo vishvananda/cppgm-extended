@@ -25,6 +25,7 @@ struct LowIR2NativeInvocation
 {
 	bool has_optimization_level = false;
 	int optimization_level = 0;
+	native::Target target = native::host_target();
 	string output_target;
 	string outfile;
 	string machine_ir_file;
@@ -122,7 +123,7 @@ LowIR2NativeInvocation parse_lowir2native_invocation(const vector<string>& args)
 				throw InvocationError("multiple --target options provided");
 			}
 			invocation.output_target = args[++i];
-			if (invocation.output_target != "linux")
+			if (!native::parse_target(invocation.output_target, invocation.target))
 			{
 				throw InvocationError("unsupported target: " + invocation.output_target);
 			}
@@ -179,9 +180,9 @@ bool link_with_runtime(lowir::Program& program, const LowIR2NativeInvocation& in
 	vector<native::object::ObjectFile> objects(1);
 	objects[0].path = invocation.srcfiles[0];
 	error.clear();
-	if (!native::compile_object(
-			program, objects[0], error, nullptr, native::EhModel::Course, invocation.optimization_level) ||
-		!native::link_executable(objects, invocation.outfile, error, nullptr))
+	if (!native::compile_object(program, objects[0], error, nullptr, native::EhModel::Course,
+			invocation.optimization_level, false, invocation.target) ||
+		!native::link_executable(objects, invocation.outfile, error, nullptr, invocation.target))
 	{
 		remove(invocation.outfile.c_str());
 		return false;
@@ -211,6 +212,7 @@ int run_lowir2native_mode(const vector<string>& args)
 		return EXIT_FAILURE;
 	}
 	native::BackendOptions options;
+	options.target = invocation.target;
 	options.output = invocation.outfile;
 	options.machine_ir = invocation.machine_ir_file;
 	options.optimization_level = invocation.optimization_level;

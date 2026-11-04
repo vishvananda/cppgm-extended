@@ -99,7 +99,7 @@ lowir::SymbolId ProgramLowering::local_static(const sema::VariableEntity* variab
 	// A GNU asm label names its object (as for other variables).
 	if (const char* asm_label = graph_->asm_label(variable))
 	{
-		const std::string label = asm_label;
+		const std::string label = asm_object_name(asm_label);
 		metadata.object = metadata.binding == ir_model::SBM_INTERNAL
 			? local_object(label, false)
 			: intern(label.data(), static_cast<uint32_t>(label.size()));

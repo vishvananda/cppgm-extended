@@ -4,12 +4,14 @@
 #include <vector>
 
 #include "lowir/program.h"
+#include "native/target.h"
 
 // LowIR program -> MIR -> native executable (the lowir2native pipeline).
 namespace native {
 
 struct BackendOptions
 {
+	Target target = Target::Linux;
 	std::string output;     // executable path, or empty
 	std::string machine_ir; // MIR dump path, or empty
 	int optimization_level = 0;

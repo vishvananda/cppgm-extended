@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "native/object/object_file.h"
+#include "native/target.h"
 
 // Link mode's runtime library: the support code and data a program's
 // objects refer to without defining, generated on demand per link as one
@@ -39,6 +40,7 @@ bool runtime_provides(const char* name);
 // Builds the members defining `names` (each one runtime_provides accepts)
 // and the process entry, with the members they depend on, as objects
 // appended to `out`.
-bool build_runtime(const std::vector<std::string>& names, std::vector<object::ObjectFile>& out, std::string& error);
+bool build_runtime(const std::vector<std::string>& names, std::vector<object::ObjectFile>& out, std::string& error,
+	Target target = Target::Linux);
 
 } // namespace native

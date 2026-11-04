@@ -19,6 +19,7 @@
 #include "native/backend_error.h"
 #include "native/link/linker.h"
 #include "native/object/elf_object.h"
+#include "native/object/macho_object.h"
 #include "native/object/object_compiler.h"
 #include "opt/optimizer.h"
 #include "sema/analyzer.h"
@@ -49,6 +50,7 @@ struct Input
 
 struct Invocation
 {
+	native::Target target = native::host_target();
 	bool compile_only = false;
 	bool position_independent = false;
 	bool preprocess_only = false;
@@ -140,24 +142,6 @@ bool option_value(const std::vector<std::string>& args, size_t& i, const char* o
 		return true;
 	}
 	return false;
-}
-
-// The names of this compiler's one native target: `linux` and the x86-64
-// Linux triples (x86_64-<vendor>-linux[-<environment>], x86_64-linux...).
-void check_target(const std::string& target)
-{
-	if (target == "linux")
-		return;
-	if (starts_with(target, "x86_64-"))
-	{
-		const size_t linux_at = target.find("linux", 7);
-		const bool vendor_ok = linux_at == 7 ||
-			(linux_at != std::string::npos && target[linux_at - 1] == '-' && target.find('-', 7) == linux_at - 1);
-		const size_t end = linux_at + 5;
-		if (vendor_ok && (end == target.size() || target[end] == '-'))
-			return;
-	}
-	throw InvocationError("unsupported target: " + target);
 }
 
 // GCC flags that change the program's types, layout, ABI or observable
@@ -357,7 +341,9 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 		{
 			if (arg == "--target" && i + 1 >= args.size())
 				throw InvocationError("missing target after --target");
-			check_target(arg == "--target" ? args[++i] : arg.substr(9));
+			const std::string target = arg == "--target" ? args[++i] : arg.substr(9);
+			if (!native::parse_target(target, invocation.target))
+				throw InvocationError("unsupported target: " + target);
 		}
 		else if (option_value(args, i, "-isystem", value))
 			invocation.preprocessor.system_include_paths.push_back(value);
@@ -409,7 +395,18 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 	// Preprocessing still observes GCC's __OPTIMIZE__ for -Og.
 	if (invocation.debug_optimization && invocation.debug_types)
 		invocation.optimizer.level = 0;
-	add_host_environment(invocation.preprocessor, nostdinc);
+	add_host_environment(invocation.preprocessor, nostdinc || invocation.target != native::host_target());
+	if (invocation.target != native::host_target())
+	{
+		invocation.preprocessor.command_line.insert(0,
+			invocation.target == native::Target::MacOS
+				? "#undef __linux__\n#undef __linux\n#undef __gnu_linux__\n#undef __ELF__\n#define __APPLE__ "
+				  "1\n#define __MACH__ 1\n"
+				: "#undef __APPLE__\n#undef __MACH__\n#define __linux__ 1\n#define __linux 1\n#define __ELF__ 1\n");
+	}
+	// Darwin objects are position independent even without an explicit -fPIC.
+	if (invocation.target == native::Target::MacOS)
+		invocation.position_independent = true;
 	prune_include_paths(invocation.preprocessor);
 	if (invocation.preprocess_only)
 		invocation.preprocessor.builtin_declarations.clear();
@@ -496,7 +493,7 @@ bool compile_unit(
 	stats.clocks = invocation.stats;
 	stats.census = invocation.function_census;
 	native::ObjectBuilder builder(
-		program, stats, eh_model, invocation.optimizer.level, invocation.position_independent);
+		program, stats, eh_model, invocation.optimizer.level, invocation.position_independent, invocation.target);
 	// At -O0 each definition is encoded as the lowering completes it; an
 	// optimizing level keeps the program until the optimizer has run.
 	if (invocation.optimizer.level == 0)
@@ -505,6 +502,7 @@ bool compile_unit(
 	lowering.set_debug_locations(invocation.debug_info);
 	lowering.set_debug_types(invocation.debug_types);
 	lowering.set_host_objects(eh_model == native::EhModel::Host);
+	lowering.set_macho_objects(invocation.target == native::Target::MacOS);
 	lowering.set_optimizing(true);
 	lowering.set_strict_aliasing(invocation.strict_aliasing);
 	double front_ms = 0;
@@ -618,8 +616,8 @@ bool compile_lowir_unit(
 	stats.clocks = invocation.stats;
 	stats.census = invocation.function_census;
 	object.path = path;
-	if (!native::compile_object(
-			program, object, error, &stats, eh_model, invocation.optimizer.level, invocation.position_independent))
+	if (!native::compile_object(program, object, error, &stats, eh_model, invocation.optimizer.level,
+			invocation.position_independent, invocation.target))
 	{
 		std::cerr << "ERROR: " << path << ": " << error << std::endl;
 		return false;
@@ -694,7 +692,8 @@ int compile_mode(const Invocation& invocation)
 			return EXIT_FAILURE;
 		std::string error;
 		check_output(invocation, output);
-		if (!native::object::write_elf_object(object, output, error))
+		if (!(invocation.target == native::Target::MacOS ? native::object::write_macho_object(object, output, error)
+														 : native::object::write_elf_object(object, output, error)))
 		{
 			std::cerr << "ERROR: " << error << std::endl;
 			return EXIT_FAILURE;
@@ -736,7 +735,8 @@ int link_mode(const Invocation& invocation)
 		}
 		const std::string path = input.kind == Input::Kind::Library ? find_library(invocation, input.name) : input.name;
 		std::string error;
-		if (!native::object::read_elf_object(path, object, error))
+		if (!(invocation.target == native::Target::MacOS ? native::object::read_macho_object(path, object, error)
+														 : native::object::read_elf_object(path, object, error)))
 		{
 			std::cerr << "ERROR: " << error << std::endl;
 			return EXIT_FAILURE;
@@ -744,7 +744,7 @@ int link_mode(const Invocation& invocation)
 	}
 	native::LinkStats stats;
 	std::string error;
-	if (!native::link_executable(objects, output, error, &stats))
+	if (!native::link_executable(objects, output, error, &stats, invocation.target))
 	{
 		// No stale executable is left behind (as the host linker removes it).
 		std::remove(output.c_str());

@@ -128,7 +128,8 @@ uint64_t Image::address_of(uint32_t symbol) const
 bool Image::write_executable(const std::string& path, uint32_t entry, std::string& error, uint32_t& undefined)
 {
 	// (A function's code may need a 32-byte boundary.)
-	const ExecutableLayout layout = layout_executable(text_.size(), rodata_.size(), data_.size(), bss_size_, 32);
+	const ExecutableLayout layout = layout_executable(
+		text_.size(), rodata_.size(), data_.size(), bss_size_, 32, 1, 1, 64, target);
 	text_address_ = layout.text_address;
 	rodata_address_ = layout.rodata_address;
 	data_address_ = layout.data_address;

@@ -1,0 +1,36 @@
+name: Intel macOS port
+
+on:
+  push:
+    branches: [v8macho]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-port-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    name: Mach-O and self-hosting
+    runs-on: macos-15-intel
+    timeout-minutes: 90
+    env:
+      CXX: clang++
+      CPPGM_HOST_CXX: clang++
+      CPPGM_STDLIB_FLAGS: ''
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build the compiler and native tools
+        run: make -C dev -j4 CXX=clang++ CPPGM_HOST_CXX=clang++
+      - name: Execute standalone Mach-O programs and check mixed host objects
+        run: |
+          make -C pa24 test-macho CXX=clang++ CPPGM_HOST_CXX=clang++
+          make -C pa25 test-macho CXX=clang++ CPPGM_HOST_CXX=clang++
+          make -C pa27 test-macho CXX=clang++ CPPGM_HOST_CXX=clang++
+      - name: Compare self-built and inception compilers
+        run: |
+          make -C pa34 compare-cppgm++-inception CPPGM_HOST_CXX=clang++ \
+            INCEPTION_BUILD_JOBS=4 INCEPTION_OBJECT_BUILD_JOBS=4

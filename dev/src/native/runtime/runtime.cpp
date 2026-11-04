@@ -176,16 +176,18 @@ void emit_exit_registration(Image& image, uint32_t symbol, uint32_t state)
 	a.alu_rr(7, RAX, RM::rip(state, 16), 8); // cmp rax, end (both 0 at first)
 	a.jcc_short(CC_NE, carve);
 	a.push(RDI);
-	a.mov_ri(RAX, 9); // mmap(0, 4096, read|write, private|anonymous, -1, 0)
+	a.mov_ri(RAX, image.target == Target::MacOS ? 0x20000c5 : 9); // mmap(0, 4096, read|write, private|anonymous, -1, 0)
 	a.mov_ri(RDI, 0);
 	a.mov_ri(RSI, 4096);
 	a.mov_ri(RDX, 3);
-	a.mov_ri(R10, 0x22);
+	a.mov_ri(R10, image.target == Target::MacOS ? 0x1002 : 0x22);
 	a.mov_ri(R8, -1);
 	a.mov_ri(R9, 0);
 	a.byte(0x0f);
 	a.byte(0x05);
 	a.pop(RDI);
+	if (image.target == Target::MacOS)
+		a.jcc_short(CC_B, failed);
 	a.op(0, true, 0x85, 1, RAX, RM::r(RAX)); // test rax, rax: -errno on failure
 	a.jcc_short(CC_S, failed);
 	a.lea(RDX, RM::m(RAX, 4096));
@@ -225,11 +227,11 @@ void emit_exit_drain(Assembler& a, uint32_t state)
 
 } // namespace
 
-void emit_exit(Assembler& a, Reg status)
+void emit_exit(Assembler& a, Reg status, Target target)
 {
 	if (status != RDI)
 		a.mov_rr(RDI, status);
-	a.mov_ri(RAX, 231);
+	a.mov_ri(RAX, target == Target::MacOS ? 0x2000001 : 231);
 	a.byte(0x0f);
 	a.byte(0x05);
 }
@@ -300,7 +302,7 @@ void emit_dispatcher(Image& image, const RuntimeSymbols& runtime)
 	align_text(image);
 	image.define(runtime.eh_uncaught, Section::Text, image.text().size());
 	a.mov_ri(RDI, 134);
-	emit_exit(a, RDI);
+	emit_exit(a, RDI, image.target);
 	// Throw/resume: drop the active records on top (their landings are
 	// abandoned), mark the innermost remaining record active, restore the
 	// frame and callee-saved registers it captured, and continue at its
@@ -387,10 +389,10 @@ uint32_t emit_runtime(
 			emit_exit_drain(a, exit_state);
 		if (startup.fini != lowir::kNoId)
 			a.call_symbol(startup.fini);
-		emit_exit(a, R12);
+		emit_exit(a, R12, image.target);
 	}
 	else
-		emit_exit(a, RAX);
+		emit_exit(a, RAX, image.target);
 	a.resolve_labels();
 	image.add_code_fixups(a.fixups(), 0);
 	return start;

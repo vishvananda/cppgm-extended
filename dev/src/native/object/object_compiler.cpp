@@ -110,7 +110,7 @@ class ObjectCompiler
 {
 public:
 	ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level,
-		bool position_independent);
+		bool position_independent, Target target);
 
 	// Selects and encodes one function definition.
 	void function(lowir::SymbolId symbol);
@@ -222,11 +222,12 @@ private:
 	std::vector<uint32_t> named_sections_;
 };
 
-ObjectCompiler::ObjectCompiler(
-	lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level, bool position_independent)
+ObjectCompiler::ObjectCompiler(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level,
+	bool position_independent, Target target)
 	: program_(program), stats_(stats), selector_(program), emitter_(image_, runtime_, stats.emit),
 	  share_entries_(optimization_level >= 1), eh_model_(eh_model), position_independent_(position_independent)
 {
+	image_.target = target;
 	selector_.set_eh_model(eh_model);
 	selector_.set_position_independent(position_independent);
 	selector_.set_optimization_level(optimization_level);
@@ -332,6 +333,11 @@ void ObjectCompiler::declare_symbols()
 	runtime_names_.push_back("_Unwind_Resume");
 	personality_ = image_.add_symbol();
 	runtime_names_.push_back("__gxx_personality_v0");
+	if (image_.target == Target::MacOS && eh_model_ == EhModel::Host)
+	{
+		runtime_.tlv_lookup = image_.add_symbol();
+		runtime_names_.push_back("__cppgm_tlv_address");
+	}
 }
 
 const lowir::JumpThunk* ObjectCompiler::jump_thunk(lowir::SymbolId symbol)
@@ -847,6 +853,10 @@ void ObjectCompiler::add_unwind_relocations()
 {
 	for (Cell& c : cells_)
 	{
+		// Darwin's indirect pcrel fields reach a GOT slot directly. ELF
+		// instead materializes a hidden DW.ref cell in each object.
+		if (image_.target == Target::MacOS)
+			continue;
 		const uint32_t target = object_symbol(c.target);
 		c.shared = out_->symbols[target].binding != Binding::Local;
 		object::Symbol symbol;
@@ -881,6 +891,11 @@ void ObjectCompiler::add_unwind_relocations()
 		relocation.type = object::R_X86_64_PC32;
 		relocation.symbol = r.cell != kNoCell ? cells_[r.cell].symbol : section_symbol(r.target_section);
 		relocation.addend = r.addend;
+		if (image_.target == Target::MacOS && r.cell != kNoCell)
+		{
+			relocation.type = object::R_X86_64_GOTPCREL;
+			relocation.symbol = object_symbol(cells_[r.cell].target);
+		}
 		out_->sections[r.section].relocations.push_back(relocation);
 	}
 }
@@ -1083,6 +1098,11 @@ void ObjectCompiler::add_relocations()
 				relocation.type = object::R_X86_64_PC32;
 			}
 		}
+		else if (fixup.kind == FixupKind::Tlv)
+		{
+			relocation.type = object::R_MACHO_TLV;
+			relocation.addend = static_cast<int64_t>(fixup.addend) - fixup.end;
+		}
 		else if (fixup.kind == FixupKind::TpOff)
 		{
 			relocation.type = object::R_X86_64_TPOFF32;
@@ -1161,7 +1181,7 @@ void ObjectCompiler::place_debug()
 		return;
 	std::vector<uint32_t> symbols(program_.symbols.size(), lowir::kNoId);
 	for (const CodeRange& range : ranges_)
-		if (!range.dropped)
+		if (!range.dropped && range.symbol < symbols.size())
 			symbols[range.symbol] = object_symbol(range.symbol);
 	debug_->write(*out_, program_, symbols);
 }
@@ -1171,6 +1191,20 @@ void ObjectCompiler::finish(ObjectFile& out)
 	out_ = &out;
 	emit_remaining();
 	prune_functions();
+	if (image_.target == Target::MacOS && eh_model_ == EhModel::Host)
+	{
+		bool needed = false;
+		for (const CodeFixup& fixup : image_.code_fixups())
+			needed = needed || fixup.kind == FixupKind::Tlv;
+		if (needed)
+		{
+			UnwindFacts facts;
+			emit_tlv_lookup(image_, runtime_.tlv_lookup, facts);
+			ranges_.push_back(CodeRange{
+				runtime_.tlv_lookup, image_.symbol(runtime_.tlv_lookup).offset, image_.text().size(), 0, 0, false });
+			record_unwind(static_cast<uint32_t>(ranges_.size() - 1), false, &facts);
+		}
+	}
 	place_text();
 	place_globals();
 	place_constants();
@@ -1187,9 +1221,9 @@ void ObjectCompiler::finish(ObjectFile& out)
 		stats_.relocations += section.relocations.size();
 }
 
-ObjectBuilder::ObjectBuilder(
-	lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level, bool position_independent)
-	: compiler_(new ObjectCompiler(program, stats, eh_model, optimization_level, position_independent))
+ObjectBuilder::ObjectBuilder(lowir::Program& program, ObjectStats& stats, EhModel eh_model, int optimization_level,
+	bool position_independent, Target target)
+	: compiler_(new ObjectCompiler(program, stats, eh_model, optimization_level, position_independent, target))
 {}
 
 ObjectBuilder::~ObjectBuilder()
@@ -1321,13 +1355,13 @@ void recover_jump_thunks(lowir::Program& program, EhModel eh_model)
 }
 
 bool compile_object(lowir::Program& program, object::ObjectFile& out, std::string& error, ObjectStats* stats,
-	EhModel eh_model, int optimization_level, bool position_independent)
+	EhModel eh_model, int optimization_level, bool position_independent, Target target)
 {
 	ObjectStats local;
 	try
 	{
 		ObjectBuilder builder(
-			program, stats != nullptr ? *stats : local, eh_model, optimization_level, position_independent);
+			program, stats != nullptr ? *stats : local, eh_model, optimization_level, position_independent, target);
 		builder.finish(out);
 	}
 	catch (const BackendError& e)

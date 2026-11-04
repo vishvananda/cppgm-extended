@@ -121,8 +121,8 @@ struct Location
 class Linker
 {
 public:
-	Linker(std::vector<ObjectFile>& objects, LinkStats& stats, std::string& error)
-		: objects_(objects), stats_(stats), error_(error)
+	Linker(std::vector<ObjectFile>& objects, LinkStats& stats, std::string& error, Target target)
+		: objects_(objects), stats_(stats), error_(error), target_(target)
 	{}
 
 	bool link(const std::string& output);
@@ -156,6 +156,7 @@ private:
 	std::vector<ObjectFile>& objects_;
 	LinkStats& stats_;
 	std::string& error_;
+	Target target_;
 	FlatMap<NameKey, uint32_t, NameHash> names_;
 	FlatMap<NameKey, uint32_t, NameHash> groups_;
 	std::vector<GlobalSymbol> globals_;
@@ -303,7 +304,7 @@ bool Linker::add_runtime()
 			wanted.push_back(name);
 	}
 	const uint32_t first = static_cast<uint32_t>(objects_.size());
-	if (!build_runtime(wanted, objects_, error_))
+	if (!build_runtime(wanted, objects_, error_, target_))
 		return false;
 	stats_.runtime_members = wanted.size() + 1;
 	global_of_.resize(objects_.size());
@@ -603,7 +604,7 @@ bool Linker::target_address(uint32_t object, uint32_t symbol, uint64_t& address)
 void Linker::assign_addresses()
 {
 	layout_ = layout_executable(text_.size(), rodata_.size(), data_.size(), bss_, segment_align_[kText],
-		segment_align_[kRodata], segment_align_[kData], segment_align_[kBss]);
+		segment_align_[kRodata], segment_align_[kData], segment_align_[kBss], target_);
 	for (GlobalSymbol& global : globals_)
 	{
 		switch (global.state)
@@ -801,11 +802,11 @@ bool Linker::link(const std::string& output)
 
 } // namespace
 
-bool link_executable(
-	std::vector<object::ObjectFile>& objects, const std::string& output, std::string& error, LinkStats* stats)
+bool link_executable(std::vector<object::ObjectFile>& objects, const std::string& output, std::string& error,
+	LinkStats* stats, Target target)
 {
 	LinkStats local;
-	Linker linker(objects, stats != nullptr ? *stats : local, error);
+	Linker linker(objects, stats != nullptr ? *stats : local, error, target);
 	return linker.link(output);
 }
 

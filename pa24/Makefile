@@ -167,3 +167,10 @@ test-perf: $(TEST_DEPS)
 
 test-perf-refs: $(TEST_DEPS)
 	@perl ../scripts/check_ir_envelope.pl --write $(PERF_TOLERANCE_PERCENT) tests/behavior
+
+# Optional Intel macOS target; the required course target remains Linux.
+.PHONY: test-macho
+test-macho: $(TEST_DEPS)
+	python3 ../scripts/check_macho.py --mode image --fixtures tests/macho \
+		--compiler ../dev/cppgm++ --lowir2native ../dev/lowir2native \
+		--host-cxx "$(CPPGM_HOST_CXX)"

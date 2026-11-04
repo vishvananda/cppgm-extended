@@ -382,3 +382,11 @@ or dropping one definition never scans the relocations of the whole object.
 
 Later host-link tests keep the same object path and then exercise richer host
 C++ ABI/runtime behavior.
+
+### Optional Intel macOS checks
+
+`make test-macho` checks Intel Mach-O host objects separately from the required
+Linux suite. On Intel macOS it links with Clang and runs checks of calls,
+aggregate returns, virtual dispatch, weak definitions, initialization,
+exceptions in both directions and per-thread storage. Linux can check emitted
+objects with LLVM tools, but cannot execute these macOS programs.

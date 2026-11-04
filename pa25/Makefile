@@ -122,3 +122,10 @@ $(DDEPDIR)/%.d: ;
 -include $(addprefix $(DDEPDIR)/,$(addsuffix .d,$(common_obj_basenames)))
 -include $(RDEPDIR)/test_runner_enabled.d
 -include $(DDEPDIR)/test_runner_enabled.d
+
+# Optional Intel macOS target; the required course target remains Linux.
+.PHONY: test-macho
+test-macho: $(TEST_DEPS)
+	python3 ../scripts/check_macho.py --mode object --fixtures tests/macho \
+		--compiler ../dev/cppgm++ --lowir2native ../dev/lowir2native \
+		--host-cxx "$(CPPGM_HOST_CXX)"

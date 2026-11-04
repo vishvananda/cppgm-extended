@@ -30,6 +30,8 @@ struct RuntimeSymbols
 	uint32_t eh_catch = 0;
 	// The host model's _Unwind_Resume.
 	uint32_t unwind_resume = 0;
+	// Darwin TLV lookup with a private ABI: r11 in/out, all other state preserved.
+	uint32_t tlv_lookup = 0;
 	// i128 division (libgcc's names): __divti3, __udivti3, __modti3,
 	// __umodti3, by WideOp::Div - Div.
 	uint32_t wide_division[4] = { 0, 0, 0, 0 };

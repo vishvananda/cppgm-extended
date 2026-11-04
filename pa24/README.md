@@ -56,7 +56,8 @@ No earlier assembler implementation is assumed.
 
 PA24 tests execute generated native programs. Your development host therefore
 needs an x86-64 Linux execution environment. With no `--target`, the tool should
-emit a Linux executable. The target name used by the course is `linux`.
+emit a Linux executable on Linux. The required course target is `linux`;
+implementations may additionally support a native host default on other platforms.
 
 ### Starter Kit
 
@@ -124,7 +125,9 @@ Behaviour is undefined unless the command-line arguments match one of:
 
 where each `<srcfileK>` is a LowIR source file and `<target>` is `linux`.
 
-With no `--target`, `lowir2native` should emit a native Linux executable.
+On Linux, omitting `--target` selects `linux`. The optional `macos` target
+emits an Intel Mach-O executable; it is not a course requirement.
+`make test-macho` checks it separately and executes its output on Intel macOS.
 
 ### Output Format
 

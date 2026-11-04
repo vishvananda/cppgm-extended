@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include "native/target.h"
 
 // The static Linux x86-64 executable both native outputs write
 // (lowir2native's image and link mode's linker): the ELF and program
@@ -12,6 +13,7 @@ namespace native {
 
 struct ExecutableLayout
 {
+	Target target = Target::Linux;
 	uint64_t text_offset = 0;
 	uint64_t text_address = 0;
 	uint64_t rodata_offset = 0;
@@ -28,11 +30,19 @@ struct ExecutableLayout
 // to its contents' largest alignment (the text at least 16, the
 // zero-filled storage at least 64; the others start on pages).
 ExecutableLayout layout_executable(uint64_t text_bytes, uint64_t rodata_bytes, uint64_t data_bytes, uint64_t bss_bytes,
-	uint64_t text_align = 16, uint64_t rodata_align = 1, uint64_t data_align = 1, uint64_t bss_align = 64);
+	uint64_t text_align = 16, uint64_t rodata_align = 1, uint64_t data_align = 1, uint64_t bss_align = 64,
+	Target target = Target::Linux);
 
 // Writes the executable (mode 0755). Trailing zero bytes of the data take
 // no file space: the segment's memory size covers them.
 bool write_executable_file(const std::string& path, const ExecutableLayout& layout, const std::vector<uint8_t>& text,
+	const std::vector<uint8_t>& rodata, const std::vector<uint8_t>& data, uint64_t bss_bytes, uint64_t entry,
+	std::string& error);
+
+// The Mach-O implementation uses the same final segment layout and buffers.
+ExecutableLayout layout_macho_executable(uint64_t text_bytes, uint64_t rodata_bytes, uint64_t data_bytes,
+	uint64_t bss_bytes, uint64_t text_align, uint64_t rodata_align, uint64_t data_align, uint64_t bss_align);
+bool write_macho_executable(const std::string& path, const ExecutableLayout& layout, const std::vector<uint8_t>& text,
 	const std::vector<uint8_t>& rodata, const std::vector<uint8_t>& data, uint64_t bss_bytes, uint64_t entry,
 	std::string& error);
 

@@ -454,9 +454,11 @@ void MirWriter::instruction(const Function& function, const Inst& inst)
 	text_ += '\n';
 }
 
-void MirWriter::header(const Startup& startup)
+void MirWriter::header(const Startup& startup, Target target)
 {
-	text_ += "machine_ir x86_64 linux\n";
+	text_ += "machine_ir x86_64 ";
+	text_ += target_name(target);
+	text_ += '\n';
 	if (startup.entry == lowir::kNoId)
 		return;
 	text_ += "\nstartup\n";

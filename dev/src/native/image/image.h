@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "native/x86/assembler.h"
+#include "native/target.h"
 
 // The executable image: code, read-only data, initialized data and
 // zero-filled storage, a symbol table over all four, and the fixups that
@@ -42,6 +43,7 @@ class Image
 {
 public:
 	Image();
+	Target target = Target::Linux;
 
 	std::vector<uint8_t>& text() { return text_; }
 	std::vector<uint8_t>& rodata() { return rodata_; }

@@ -22,7 +22,8 @@ enum class FixupKind : uint8_t
 	Address,
 	Got,
 	TpOff,
-	GotTpOff
+	GotTpOff,
+	Tlv
 };
 
 struct CodeFixup
@@ -130,6 +131,7 @@ public:
 	// add dst, fs:0) otherwise (psABI / Drepper's TLS models).
 	void tls_local_exec(Reg dst, uint32_t symbol, int32_t addend);
 	void tls_initial_exec(Reg dst, uint32_t symbol);
+	void mov_tlv(Reg dst, uint32_t symbol);
 	// add/or/adc/sbb/and/sub/xor/cmp by ModRM digit 0-7.
 	void alu_rr(unsigned digit, Reg dst, const RM& src, unsigned bytes);       // dst op= src
 	void alu_mr(unsigned digit, const RM& dst, Reg src, unsigned bytes);       // [dst] op= src

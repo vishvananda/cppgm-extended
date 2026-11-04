@@ -350,7 +350,7 @@ void emit_entry(CoreBuilder& core)
 	a.call_rm(RM::m(RBX, 0));
 	a.jmp_short(fini_loop);
 	a.bind(done);
-	emit_exit(a, R12);
+	emit_exit(a, R12, core.image.target);
 	a.resolve_labels();
 	image.add_code_fixups(a.fixups(), 0);
 }
@@ -369,32 +369,87 @@ void emit_eh_core(CoreBuilder& core)
 	emit_dispatcher(core.image, runtime);
 }
 
+// Darwin has no mremap. Allocate first, preserve the original on failure,
+// copy min(old,new) bytes, then unmap the original allocation.
+void emit_macos_remap(CoreBuilder& core)
+{
+	begin(core, core.named("__cppgm_mremap"));
+	Assembler a(core.image.text());
+	const uint32_t done = a.new_label();
+	const uint32_t copy = a.new_label();
+	for (Reg reg : { RBP, RBX, R12, R13, R14 })
+		a.push(reg);
+	a.mov_rr(RBX, RDI);
+	a.mov_rr(R12, RSI);
+	a.mov_rr(R13, RDX);
+	a.mov_rr(RDI, RDX);
+	a.call_symbol(core.named("__cppgm_mmap"));
+	a.op(0, true, 0x85, 1, RAX, RM::r(RAX));
+	a.jcc_short(CC_E, done);
+	a.mov_rr(R14, RAX);
+	a.mov_rr(RDI, RAX);
+	a.mov_rr(RSI, RBX);
+	a.mov_rr(RCX, R12);
+	a.alu_rr(7, RCX, RM::r(R13), 8);
+	a.jcc_short(CC_BE, copy);
+	a.mov_rr(RCX, R13);
+	a.bind(copy);
+	a.byte(0xf3);
+	a.byte(0xa4); // rep movsb
+	a.mov_rr(RDI, RBX);
+	a.mov_rr(RSI, R12);
+	a.call_symbol(core.named("__cppgm_munmap"));
+	a.mov_rr(RAX, R14);
+	a.bind(done);
+	for (Reg reg : { R14, R13, R12, RBX, RBP })
+		a.pop(reg);
+	a.ret();
+	a.resolve_labels();
+	core.image.add_code_fixups(a.fixups(), 0);
+}
+
 // __cppgm_mmap(bytes): fresh zeroed read-write pages, or null.
 // __cppgm_munmap(address, bytes). __cppgm_mremap(address, bytes, new_bytes):
 // the mapping grown, perhaps moved, or null.
 void emit_system(CoreBuilder& core)
 {
+	const bool macos = core.image.target == Target::MacOS;
 	Assembler a(core.image.text());
 	begin(core, core.named("__cppgm_mmap"));
 	const uint32_t done = a.new_label();
+	const uint32_t failed = a.new_label();
 	a.mov_rr(RSI, RDI);
 	a.op(0, false, 0x33, 1, RDI, RM::r(RDI)); // xor edi, edi
 	a.mov_ri(RDX, 3);                         // PROT_READ | PROT_WRITE
-	a.mov_ri(R10, 0x22);                      // MAP_PRIVATE | MAP_ANONYMOUS
+	a.mov_ri(R10, macos ? 0x1002 : 0x22);     // MAP_PRIVATE | MAP_ANONYMOUS
 	a.mov_ri(R8, -1);
 	a.op(0, false, 0x33, 1, R9, RM::r(R9)); // xor r9d, r9d
-	a.mov_ri(RAX, 9);
+	a.mov_ri(RAX, macos ? 0x20000c5 : 9);
 	emit_syscall(a);
-	a.alu_ri(7, RM::r(RAX), -4096, 8); // cmp rax, -4096
-	a.jcc_short(CC_BE, done);
+	if (macos)
+	{
+		a.jcc_short(CC_B, failed); // Darwin reports errno with CF set
+		a.jmp_short(done);
+	}
+	else
+	{
+		a.alu_ri(7, RM::r(RAX), -4096, 8); // Linux returns -errno
+		a.jcc_short(CC_BE, done);
+	}
+	a.bind(failed);
 	a.op(0, false, 0x33, 1, RAX, RM::r(RAX));
 	a.bind(done);
 	a.ret();
 	a.resolve_labels();
 	begin(core, core.named("__cppgm_munmap"));
-	a.mov_ri(RAX, 11);
+	a.mov_ri(RAX, macos ? 0x2000049 : 11);
 	emit_syscall(a);
 	a.ret();
+	if (macos)
+	{
+		emit_macos_remap(core);
+		return;
+	}
 	begin(core, core.named("__cppgm_mremap"));
 	const uint32_t moved = a.new_label();
 	a.mov_ri(R10, 1); // MREMAP_MAYMOVE
@@ -416,7 +471,7 @@ void emit_terminate(CoreBuilder& core)
 	const uint32_t terminate = core.named("_ZSt9terminatev");
 	begin(core, terminate);
 	a.mov_ri(RDI, 134);
-	emit_exit(a, RDI);
+	emit_exit(a, RDI, core.image.target);
 	for (const char* name : { "__cxa_pure_virtual", "__cxa_deleted_virtual", "abort" })
 	{
 		begin(core, core.named(name));
@@ -466,9 +521,11 @@ void emit_runtime_type(CoreBuilder& core, const std::string& code)
 	emit_runtime_type(core, pointee);
 }
 
-void build_core(const std::vector<uint8_t>& members, const std::vector<std::string>& names, ObjectFile& out)
+void build_core(
+	const std::vector<uint8_t>& members, const std::vector<std::string>& names, ObjectFile& out, Target target)
 {
 	CoreBuilder core;
+	core.image.target = target;
 	if (members[kEntry])
 		emit_entry(core);
 	if (members[kEhCore])
@@ -507,7 +564,8 @@ bool runtime_provides(const char* name)
 	return member_of(name) != kMembers;
 }
 
-bool build_runtime(const std::vector<std::string>& names, std::vector<ObjectFile>& out, std::string& error)
+bool build_runtime(
+	const std::vector<std::string>& names, std::vector<ObjectFile>& out, std::string& error, Target target)
 {
 	std::vector<uint8_t> members(kMembers, 0);
 	std::vector<uint32_t> work(1, kEntry);
@@ -525,7 +583,7 @@ bool build_runtime(const std::vector<std::string>& names, std::vector<ObjectFile
 	}
 	out.push_back(ObjectFile());
 	out.back().path = "<runtime library>";
-	build_core(members, names, out.back());
+	build_core(members, names, out.back(), target);
 	bool support = false;
 	for (uint32_t member = kSupport; member < kMembers; ++member)
 		support = support || members[member];
@@ -541,7 +599,7 @@ bool build_runtime(const std::vector<std::string>& names, std::vector<ObjectFile
 	out.push_back(ObjectFile());
 	ObjectFile& object = out.back();
 	object.path = "<runtime library>";
-	if (!compile_object(program, object, error, nullptr))
+	if (!compile_object(program, object, error, nullptr, EhModel::Course, 0, false, target))
 	{
 		error = "runtime library: " + error;
 		return false;

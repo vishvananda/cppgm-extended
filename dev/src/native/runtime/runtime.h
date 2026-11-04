@@ -68,6 +68,10 @@ void emit_dispatcher(Image& image, const RuntimeSymbols& runtime);
 bool builtin_known(const char* name);
 void emit_builtin_routine(Image& image, uint32_t symbol, const char* name);
 void emit_tls_wrapper(Image& image, uint32_t symbol, uint32_t object);
+
+// The Darwin descriptor thunk may clobber the ordinary caller-saved state.
+// This private helper preserves it for MIR symbol-address instructions.
+void emit_tlv_lookup(Image& image, uint32_t symbol, UnwindFacts& facts);
 // role=cpu_query: void(i32 leaf, i32 subleaf, ptr four_word_result).
 // Execute CPUID, preserving callee-saved registers and recording its frame.
 void emit_cpu_query(Image& image, uint32_t symbol, UnwindFacts& facts);
@@ -79,6 +83,6 @@ void emit_cpu_query(Image& image, uint32_t symbol, UnwindFacts& facts);
 void emit_jump_thunk(
 	Image& image, uint32_t symbol, uint32_t target, Reg self, int64_t adjustment, int64_t vcall_offset);
 // Process exit with the status in `status` (exit_group).
-void emit_exit(Assembler& a, Reg status);
+void emit_exit(Assembler& a, Reg status, Target target = Target::Linux);
 
 } // namespace native

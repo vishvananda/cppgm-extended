@@ -1935,7 +1935,7 @@ std::string ProgramLowering::function_object(const sema::FunctionEntity* functio
 	if (function->builtin == sema::BuiltinFunction::Library)
 		return LibraryName(function);
 	if (const char* label = graph_->asm_label(function))
-		return label;
+		return asm_object_name(label);
 	// The replaceable allocation functions are the runtime's (a program's
 	// definition replaces the runtime's under the same object name).
 	switch (function->allocation)
@@ -2276,10 +2276,20 @@ AbiNode ProgramLowering::head_declaration(const sema::TemplateHead* head, bool p
 	return node;
 }
 
+// Darwin adds an underscore to ordinary C/Itanium names. An asm label
+// is already an exact object spelling: normalize its underscore, or mark
+// a spelling that deliberately has none (the writer removes the marker).
+std::string ProgramLowering::asm_object_name(const char* label) const
+{
+	if (!macho_objects_)
+		return label;
+	return label[0] == '_' ? std::string(label + 1) : std::string("\1") + label;
+}
+
 std::string ProgramLowering::variable_object(const sema::VariableEntity* variable)
 {
 	if (const char* label = graph_->asm_label(variable))
-		return label;
+		return asm_object_name(label);
 	// 5.1.2: a variable of the global namespace is not mangled (nor is a
 	// C-linkage one); others are _Z <nested-name>. The ABI leaves names of
 	// internal linkage to the implementation (local symbols no other

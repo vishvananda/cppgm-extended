@@ -1097,6 +1097,15 @@ void FunctionEmitter::mov(const Operand& a, const Operand& b, bool keep_flags)
 		throw InternalError("unsupported mov form");
 	else if (b.access == SymbolAccess::Direct)
 		asm_.lea(a.reg, RM::rip(b.symbol, b.disp));
+	else if (image_.target == Target::MacOS &&
+		(b.access == SymbolAccess::TlsLocal || b.access == SymbolAccess::TlsInitial))
+	{
+		asm_.mov_tlv(R11, b.symbol);
+		asm_.call_symbol(runtime_.tlv_lookup);
+		asm_.mov_rr(a.reg, R11);
+		if (b.disp != 0)
+			asm_.lea(a.reg, RM::m(a.reg, b.disp));
+	}
 	else if (b.access == SymbolAccess::TlsLocal)
 		asm_.tls_local_exec(a.reg, b.symbol, b.disp);
 	else

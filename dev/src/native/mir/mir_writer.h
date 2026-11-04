@@ -5,6 +5,7 @@
 
 #include "lowir/program.h"
 #include "native/mir/mir.h"
+#include "native/target.h"
 
 // The deterministic machine-IR dump: a view of the MIR native emission
 // consumes. Sections are appended as the backend produces them (startup,
@@ -18,7 +19,7 @@ public:
 	MirWriter(const lowir::Program& program, std::FILE* file);
 	~MirWriter();
 
-	void header(const Startup& startup);
+	void header(const Startup& startup, Target target = Target::Linux);
 	void global(lowir::SymbolId symbol);
 	void function(const Function& function);
 	// Flushes buffered text; false on a write error.

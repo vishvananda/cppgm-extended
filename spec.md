@@ -3,7 +3,7 @@
 ## Purpose
 
 This specification defines the production architecture for a self-contained
-Linux x86-64 C++11 compiler. It is normative and intended for implementation
+x86-64 C++11 compiler targeting Linux and Intel macOS. It is normative and intended for implementation
 reviews and architecture audits.
 
 Compile-time performance is a property of semantic design, not a mode that may
@@ -28,7 +28,7 @@ source buffers
     -> typed LowIR, lowered on demand
     -> LowIR optimization (at -O1 and above)
     -> per-function machine IR
-    -> direct ELF object writer
+    -> direct target object writer (ELF or Mach-O)
 ```
 
 A later phase MAY ask an earlier one for work the language defers until it is
@@ -245,7 +245,7 @@ object compiler to build a representation that only a tool reads.
 ## 7. Backend and object generation
 
 - The default object path MUST use a compact per-function machine IR and direct
-  ELF emission. It MUST NOT emit assembly text, parse assembly text, or invoke
+  ELF or Mach-O emission. It MUST NOT emit assembly text, parse assembly text, or invoke
   an external assembler.
 - Instruction selection, register allocation, local relaxation, and encoding
   SHOULD complete for one function before the next begins, and that
@@ -311,7 +311,7 @@ object compiler to build a representation that only a tool reads.
   small case inline or reusing a buffer. Large collections MUST grow
   geometrically and MUST NOT repeatedly copy their full contents.
 - Ownership boundaries MUST be explicit for source buffers, retained template
-  patterns, semantic facts, typed LowIR, machine IR, and ELF buffers.
+  patterns, semantic facts, typed LowIR, machine IR, and native object buffers.
 - After lowering, the boundary MUST be typed LowIR alone: the optimizer and
   backend hold no pointer into the front end. Data crossing any boundary MUST
   NOT be an owning pointer into a phase that should otherwise be dead.
@@ -374,7 +374,7 @@ object compiler to build a representation that only a tool reads.
 ## Architecture audit checklist
 
 An audit should trace one nontrivial declaration and one demanded template from
-source bytes to ELF and answer the following questions.
+source bytes to a native object and answer the following questions.
 
 ### Representation and ownership
 
@@ -422,7 +422,7 @@ source bytes to ELF and answer the following questions.
   specializations?
 - Are complete-program validators or serializers present on the ordinary object
   path?
-- Is machine code and ELF data emitted directly?
+- Is machine code and object data emitted directly?
 
 ### Allocation and scaling
 

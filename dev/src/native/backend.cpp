@@ -114,6 +114,7 @@ bool compile_program(
 		return false;
 	}
 	Image image;
+	image.target = options.target;
 	RuntimeSymbols runtime;
 	declare_runtime(image, runtime);
 	FileHandle mir_handle(options.machine_ir.empty() ? nullptr : std::fopen(options.machine_ir.c_str(), "wb"));
@@ -132,7 +133,7 @@ bool compile_program(
 	{
 		MirWriter writer(program, mir_file);
 		if (mir_file != nullptr)
-			writer.header(startup);
+			writer.header(startup, options.target);
 		// The data section is sized up front so it never grows by copying.
 		uint64_t data_bytes = 0;
 		for (size_t i = 0; i < program.order.size(); ++i)

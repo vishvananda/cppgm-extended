@@ -86,7 +86,9 @@ enum RelocationType : uint32_t
 	R_X86_64_GOTPC32 = 26,
 	R_X86_64_GOTPC64 = 29,
 	R_X86_64_GOTPCRELX = 41,
-	R_X86_64_REX_GOTPCRELX = 42
+	R_X86_64_REX_GOTPCRELX = 42,
+	// A Darwin thread-local descriptor, resolved by __tlv_bootstrap.
+	R_MACHO_TLV = 0x10000
 };
 
 struct Relocation

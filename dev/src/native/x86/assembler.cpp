@@ -323,6 +323,12 @@ void Assembler::tls_initial_exec(Reg dst, uint32_t symbol)
 	op(0x64, true, 0x03, 1, dst, RM::m(kNoReg, 0)); // add dst, fs:[0]
 }
 
+void Assembler::mov_tlv(Reg dst, uint32_t symbol)
+{
+	op(0, true, 0x8b, 1, dst, RM::rip(symbol, 0));
+	fixups_.back().kind = FixupKind::Tlv;
+}
+
 void Assembler::alu_rr(unsigned digit, Reg dst, const RM& src, unsigned bytes)
 {
 	// Register sources use the r/m, reg direction (00+/01+), the canonical
