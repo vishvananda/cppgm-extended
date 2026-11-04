@@ -109,6 +109,8 @@ jobs:
           make -C pa26 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
           make -C pa27 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
           make -C pa28 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+          make -C pa32 check TEST=tests/host/o1/600-disabled-strict-aliasing.t \
+            CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Compare self-built and inception compilers
         run: |
           make -C pa34 cppgm++-self CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
