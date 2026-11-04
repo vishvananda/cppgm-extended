@@ -1,0 +1,65 @@
+#include "400-nested-catch-effects.helper.h"
+extern "C" int printf(const char*, ...);
+unsigned trace;
+inline int catch_first(int mode) {
+  if (mode == 0) return 17;
+  Guard outer(11);
+  try {
+    Guard inner(12);
+    return unknown(mode);
+  } catch (First const& failure) {
+    mark(static_cast<unsigned>(failure.value) + 200u);
+    return failure.value + 17;
+  }
+}
+inline int catch_second(int mode) {
+  if (mode == 0) return 19;
+  Guard outer(21);
+  try {
+    Guard inner(22);
+    return unknown(mode);
+  } catch (Second const& failure) {
+    mark(static_cast<unsigned>(failure.value) + 300u);
+    return static_cast<int>(failure.value) + 19;
+  }
+}
+inline int nested(int mode) {
+  Guard live(31);
+  try {
+    return catch_first(mode) + catch_second(mode + 1);
+  } catch (Second const& failure) {
+    mark(static_cast<unsigned>(failure.value) + 400u);
+    int result = catch_first(0) + catch_second(0);
+    if (mode & 1) {
+      try { unknown(1); }
+      catch (First const&) { mark(501); }
+      throw;
+    }
+    return result + static_cast<int>(failure.value);
+  }
+}
+inline int recover(int mode) noexcept {
+  try { return catch_first(mode); }
+  catch (...) { mark(601); return -777; }
+}
+int main() {
+  for (int mode = 0; mode < 20; ++mode) {
+    trace = 0;
+    int result = 0;
+    try {
+      Guard live(41);
+      result = nested(mode);
+    } catch (First const& failure) {
+      mark(701); result = failure.value + 1000;
+    } catch (Second const& failure) {
+      mark(702); result = static_cast<int>(failure.value) + 2000;
+    } catch (int failure) {
+      mark(703); result = failure + 3000;
+    } catch (...) {
+      return 1;
+    }
+    int recovered = recover(mode);
+    printf("%d %d %d %u\n", mode, result, recovered, trace);
+  }
+  return 0;
+}

@@ -110,7 +110,7 @@ const uint32_t kSettledScaleNum = 3;
 const uint32_t kSettledScaleDen = 2;
 const uint32_t kSettledCalls = 3;
 const uint32_t kSettledFewCalls = 2;
-const uint32_t kSettledFewCap = 64;
+const uint32_t kSettledFewCap = 128;
 const uint32_t kSettledCallShare = 8;
 const uint32_t kSettledSmallCaller = 128;
 // A callee grown past its caps by its own copies is judged by its input
@@ -120,24 +120,28 @@ const uint32_t kGrownCopies = 2;
 struct Shape
 {
 	uint32_t size = 0;
-	uint32_t hot = 0;      // instructions outside cold blocks (every path from them ends in noreturn)
+	uint32_t hot = 0;      // instructions outside cold blocks (every path from them
+						   // ends in noreturn)
 	bool hot_call = false; // a call outside cold blocks
 	uint32_t blocks = 0;
 	uint32_t returns = 0;
 	bool eh = false;
-	bool catches = false; // a catch or filter clause, a selector or exception read, or a throw
+	bool catches = false; // a catch or filter clause, a selector or exception
+						  // read, or a throw
 	bool guarded = false; // catches only in terminate guards (guard_landing)
 	bool call = false;
 	uint32_t calls = 0; // call instructions
 	bool loop = false;
-	bool loop_dispatch = false; // an indirect call outside cold blocks inside one of its natural loops
+	bool loop_dispatch = false; // an indirect call outside cold blocks inside one
+								// of its natural loops
 	bool unsafe = false;
 	bool unwinds = false;
 	// Instructions on the longest call-free path from the entry to a return
 	// (with a loop: in every block such a path reaches).
 	uint32_t fast = 0;
-	bool fast_return = false; // one of them returns
-	bool allocates = false;   // hot code calls an allocation function (a growth path)
+	bool fast_return = false;     // one of them returns
+	bool allocates = false;       // hot code calls an allocation function (a growth path)
+	bool constant_result = false; // every normal return is the same integer literal
 };
 
 uint32_t addressed_slot(const FunctionBody& body, Value v);
@@ -186,6 +190,8 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 	const Signature& sig = program.signatures[function.signature];
 	shape.unsafe = sig.boundary.arity == ir_model::CAM_VARIADIC || body.layout.empty();
 	bool unwinding = false, unguarded = false;
+	bool same_result = !source_required && sig.result.is_integer();
+	uint32_t result_literal = kNoId;
 	for (BlockId b : body.layout)
 	{
 		++shape.blocks;
@@ -205,6 +211,22 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 			shape.call = shape.call || inst.op == Opcode::Call;
 			shape.calls += inst.op == Opcode::Call ? 1 : 0;
 			shape.returns += inst.op == Opcode::Return ? 1 : 0;
+			if (inst.op == Opcode::Return && same_result)
+			{
+				const Value value = inst.ops[0];
+				if (value.kind != ValueKind::Integer)
+					same_result = false;
+				else
+				{
+					if (result_literal != kNoId)
+					{
+						const Literal& first = body.literals[result_literal];
+						const Literal& next = body.literals[value.index];
+						same_result = first.low == next.low && first.high == next.high;
+					}
+					result_literal = value.index;
+				}
+			}
 			unwinding = unwinding ||
 				(!source_required &&
 					(may_unwind(program, inst) &&
@@ -215,6 +237,7 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 				shape.unsafe = true;
 		}
 	}
+	shape.constant_result = same_result && shape.returns != 0;
 	shape.unwinds = unwinding && sig.boundary.unwind != ir_model::CUM_NO && !nounwind[symbol];
 	shape.guarded = shape.catches && !unguarded;
 	shape.hot = shape.size;
@@ -225,7 +248,8 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 		return shape;
 	if (shape.blocks > 1)
 	{
-		static Cfg scratch; // (reused for its capacity: every build overwrites what it fills)
+		static Cfg scratch; // (reused for its capacity: every build overwrites what
+							// it fills)
 		Cfg& cfg = scratch;
 		build_cfg_light(program, body, cfg); // dominators only for find_loops
 		for (BlockId b : cfg.rpo)
@@ -498,7 +522,8 @@ void partial_region(const FunctionBody& kb, const Cfg& cfg, PartialCut& out, boo
 
 bool partial_cut(const Program& program, const FunctionBody& kb, PartialCut& out, uint32_t cap)
 {
-	static Cfg scratch; // (reused for its capacity: every build overwrites what it fills)
+	static Cfg scratch; // (reused for its capacity: every build overwrites what
+						// it fills)
 	Cfg& cfg = scratch;
 	build_cfg(program, kb, cfg);
 	const uint32_t n = cfg.block_count;
@@ -993,9 +1018,12 @@ private:
 	bool caller_cfg_changed_ = false;
 	CallGraph graph_;
 	std::vector<Shape> shapes_;
-	std::vector<Shape> input_shapes_;     // the ordinary wave's input (every function before its own copies)
-	std::vector<uint32_t> grown_copies_;  // per function index: copies judged by the input shape, this caller
-	std::vector<uint32_t> grown_touched_; // the indexes grown_copies_ counts for this caller (reset per caller)
+	std::vector<Shape> input_shapes_;     // the ordinary wave's input (every function
+										  // before its own copies)
+	std::vector<uint32_t> grown_copies_;  // per function index: copies judged by
+										  // the input shape, this caller
+	std::vector<uint32_t> grown_touched_; // the indexes grown_copies_ counts for
+										  // this caller (reset per caller)
 	uint32_t caller_ = kNoId;
 	// The caller has a loop (its own or an inlined one) or EH regions.
 	bool caller_loop_ = false;
@@ -1128,21 +1156,20 @@ bool InlineWaveRunner::known_target(const Instruction& call) const
 // code when it cannot unwind: its guard catches all that its copy raises,
 // whatever the caller's records hold.
 //
-// A callee whose handlers only clean up and resume may go inline where the
-// caller catches nothing (no landing of the caller lists clauses the copy's
-// landings would then need) and may unwind, outside handler code: its
-// records then nest in the caller's own, and a resume continues to them.
-// The ordinary and single-call waves take one only at a loop site: a copy
-// grows its caller, which may then miss the caps of its own callers, and
-// optimizing the grown callers cost more than their code gained.
+// A cleanup-only body, or a guarded operation with a call-free normal
+// return, may go inline outside every path reachable from handler code.
+// Do not grow an exception dispatcher that has no such normal fast path:
+// moving its handlers expands the caller's unwind program on every throw.
+// The caller may unwind; copying into handler code could overwrite its
+// still-current exception. Existing size and growth budgets still apply.
 bool InlineWaveRunner::cleanup_welcome(const Shape& shape, bool handler_code, bool loop_site) const
 {
-	if (shape.catches || handler_code || options_.level < 2 || (wave_ != InlineWave::Late && !loop_site))
+	if (handler_code || options_.level < 2 || (wave_ != InlineWave::Late && !loop_site) ||
+		(shape.catches && !shape.fast_return))
 		return false;
-	const Shape& caller = shapes_[caller_];
 	const Symbol& symbol = program_.symbols[graph_.functions[caller_]];
 	const Signature& sig = program_.signatures[program_.functions[symbol.detail].signature];
-	return !caller.catches && sig.boundary.unwind != ir_model::CUM_NO;
+	return sig.boundary.unwind != ir_model::CUM_NO;
 }
 
 bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint32_t& charge, bool& once, bool dispatch)
@@ -1525,22 +1552,44 @@ bool InlineWaveRunner::process(SymbolId caller)
 		grown_copies_[g] = 0;
 	grown_touched_.clear();
 	FunctionBody& body = *program_.functions[program_.symbols[caller].detail].body;
-	static Cfg scratch; // (reused for its capacity: every build overwrites what it fills)
+	static Cfg scratch; // (reused for its capacity: every build overwrites what
+						// it fills)
 	Cfg& cfg = scratch;
 	// Dominators only for handler code and the loops (find_loops).
 	if (!source_required_)
 		build_cfg_light(program_, body, cfg);
-	if (!source_required_ && (!cfg.handlers.empty() || caller_loop_))
+	if (!source_required_ && caller_loop_)
 		complete_cfg(cfg);
 	caller_leaf_wrapper_ = !caller_wrapper_ && options_.level >= 2 && shapes_[caller_].hot <= kLeafWrapperCap &&
 		discardable(program_, caller) && leaf_return_path(body, cfg);
-	// Handler code: blocks dominated by a handler target (new blocks
-	// inherit their split block's answer); none without a handler.
+	// Any ordinary path from a landing may still carry its exception.
+	// A merge with a normal path is not enough to prove otherwise.
 	const size_t policy_blocks = source_required_ ? 0 : body.blocks.size();
 	std::vector<uint8_t> handler(policy_blocks, 0);
-	if (!source_required_ && !cfg.handlers.empty())
-		for (BlockId b : cfg.rpo)
-			handler[b] = (cfg.flags[b] & BF_HANDLER) != 0 || (cfg.idom[b] != kNoId && handler[cfg.idom[b]]);
+	std::vector<BlockId> work;
+	if (!source_required_)
+	{
+		for (BlockId b : cfg.handlers)
+			if (!handler[b])
+			{
+				handler[b] = 1;
+				work.push_back(b);
+			}
+		for (size_t k = 0; k < work.size(); ++k)
+		{
+			const BlockId b = work[k];
+			for (uint32_t e = cfg.succ_first[b]; e < cfg.succ_first[b + 1]; ++e)
+			{
+				const BlockId next = cfg.succs[e];
+				if (!handler[next])
+				{
+					handler[next] = 1;
+					work.push_back(next);
+				}
+			}
+		}
+	}
+	work.clear();
 	// Cold blocks: every path from them ends in a noreturn call or an
 	// unreachable (O2+: only trivial and forced callees go inline there;
 	// new blocks inherit their split block's answer).
@@ -1567,7 +1616,7 @@ bool InlineWaveRunner::process(SymbolId caller)
 		for (BlockId b : cfg.rpo)
 			in_loop[b] = forest.innermost[b] != kNoId;
 	}
-	std::vector<BlockId> work(body.layout.rbegin(), body.layout.rend());
+	work.assign(body.layout.rbegin(), body.layout.rend());
 	std::vector<BlockId> layout_next(source_required_ ? 0 : body.blocks.size(), kNoId);
 	if (!source_required_)
 		for (size_t k = 0; k + 1 < body.layout.size(); ++k)
@@ -1709,9 +1758,15 @@ bool InlineWaveRunner::process(SymbolId caller)
 			const bool free_leaf = !partly && copy == kNoId && shapes_[g].size <= kTrivialLeaf && !shapes_[g].call;
 			// Preserve loop/handler sites, small and call-free helpers,
 			// mandatory/constant copies and definition-removing inlining.
+			// Inlining a small original wrapper with a constant result can
+			// remove its caller's guard after the wrapper absorbs helpers.
+			// The actual expanded copy still pays the ordinary unit budget.
+			const bool folds_result = body.instructions[i].result != kNoId && shapes_[g].constant_result &&
+				callee < original_size_.size() && original_size_[callee] != 0 && original_size_[callee] <= kWrapperCap;
 			const bool outside_loop = options_.level >= 2 && options_.limits.caller_budget == 0 && !source_required_ &&
-				!once && !forced && !free_leaf && copy == kNoId && !fully && shapes_[g].size > kWrapperCap &&
-				shapes_[g].hot_call && shapes_[caller_].size >= kSettledSize && in_loop[b] == 0 && handler[b] == 0;
+				!once && !forced && !free_leaf && !folds_result && copy == kNoId && !fully &&
+				shapes_[g].size > kWrapperCap && shapes_[g].hot_call && shapes_[caller_].size >= kSettledSize &&
+				in_loop[b] == 0 && handler[b] == 0;
 			if (outside_loop && size > outside_loop_budget_)
 				continue;
 			if (!once && !free_leaf && size > unit)

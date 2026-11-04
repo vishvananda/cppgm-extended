@@ -1,0 +1,464 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @signed_prefix
+  abi
+    param %value -> rdi : i32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.u32 rdi, 3
+    jbe ^case_0
+    cmp.u32 rdi, 7
+    jbe ^case_1
+    cmp.u32 rdi, 15
+    jbe ^case_2
+    jmp ^default
+
+  block ^case_0
+    mov rax, 11
+    ret rax
+
+  block ^case_1
+    mov rax, 22
+    ret rax
+
+  block ^case_2
+    mov rax, 33
+    ret rax
+
+  block ^default
+    mov rax, 99
+    ret rax
+
+function @gapped
+  abi
+    param %value -> rdi : i32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdi, 3
+    jbe ^case_0
+    lea r10, [rdi-8]
+    cmp.i64 r10, 3
+    jbe ^case_1
+    jmp ^default
+
+  block ^case_0
+    mov rax, 11
+    ret rax
+
+  block ^case_1
+    mov rax, 22
+    ret rax
+
+  block ^default
+    mov rax, 99
+    ret rax
+
+function @signed_cases
+  abi
+    param %value -> rdi : i32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea r10, [rdi+4]
+    cmp.i64 r10, 3
+    jbe ^case_0
+    cmp.i64 rdi, 3
+    jbe ^case_1
+    jmp ^default
+
+  block ^case_0
+    mov rax, 11
+    ret rax
+
+  block ^case_1
+    mov rax, 22
+    ret rax
+
+  block ^default
+    mov rax, 99
+    ret rax
+
+function @unsigned_prefix
+  abi
+    param %value -> rdi : u32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.u32 rdi, 3
+    jbe ^case_0
+    cmp.u32 rdi, 7
+    jbe ^case_1
+    jmp ^default
+
+  block ^case_0
+    mov rax, 11
+    ret rax
+
+  block ^case_1
+    mov rax, 22
+    ret rax
+
+  block ^default
+    mov rax, 99
+    ret rax
+
+function @wide_prefix
+  abi
+    param %value -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rdi, 3
+    jbe ^case_0
+    cmp.i64 rdi, 7
+    jbe ^case_1
+    jmp ^default
+
+  block ^case_0
+    mov rax, 11
+    ret rax
+
+  block ^case_1
+    mov rax, 22
+    ret rax
+
+  block ^default
+    mov rax, 99
+    ret rax
+
+function @byte_prefix
+  abi
+    param %value -> rdi : u8
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.u8 rdi, 3
+    jbe ^case_0
+    cmp.u8 rdi, 7
+    jbe ^case_1
+    jmp ^default
+
+  block ^case_0
+    mov rax, 11
+    ret rax
+
+  block ^case_1
+    mov rax, 22
+    ret rax
+
+  block ^default
+    mov rax, 99
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
+
+  block ^entry
+    mov rdi, -2147483648
+    call @signed_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rbx
+    movzx rbx, rbx
+    mov rdi, -1
+    call @signed_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 0
+    call @signed_prefix [args=(rdi)]
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 3
+    call @signed_prefix [args=(rdi)]
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 4
+    call @signed_prefix [args=(rdi)]
+    cmp.i64 rax, 22
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 7
+    call @signed_prefix [args=(rdi)]
+    cmp.i64 rax, 22
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 8
+    call @signed_prefix [args=(rdi)]
+    cmp.i64 rax, 33
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 15
+    call @signed_prefix [args=(rdi)]
+    cmp.i64 rax, 33
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 16
+    call @signed_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 2147483647
+    call @signed_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, -1
+    call @gapped [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 0
+    call @gapped [args=(rdi)]
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 3
+    call @gapped [args=(rdi)]
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 4
+    call @gapped [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 7
+    call @gapped [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 8
+    call @gapped [args=(rdi)]
+    cmp.i64 rax, 22
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 11
+    call @gapped [args=(rdi)]
+    cmp.i64 rax, 22
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 12
+    call @gapped [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, -2147483648
+    call @signed_cases [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, -5
+    call @signed_cases [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, -4
+    call @signed_cases [args=(rdi)]
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, -1
+    call @signed_cases [args=(rdi)]
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 0
+    call @signed_cases [args=(rdi)]
+    cmp.i64 rax, 22
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 3
+    call @signed_cases [args=(rdi)]
+    cmp.i64 rax, 22
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 4
+    call @signed_cases [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 0
+    call @unsigned_prefix [args=(rdi)]
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 3
+    call @unsigned_prefix [args=(rdi)]
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 4
+    call @unsigned_prefix [args=(rdi)]
+    cmp.i64 rax, 22
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 7
+    call @unsigned_prefix [args=(rdi)]
+    cmp.i64 rax, 22
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 8
+    call @unsigned_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 2147483648
+    call @unsigned_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 4294967295
+    call @unsigned_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, -1
+    call @wide_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 0
+    call @wide_prefix [args=(rdi)]
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 7
+    call @wide_prefix [args=(rdi)]
+    cmp.i64 rax, 22
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 8
+    call @wide_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 4294967296
+    call @wide_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 9223372036854775807
+    call @wide_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 0
+    call @byte_prefix [args=(rdi)]
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 3
+    call @byte_prefix [args=(rdi)]
+    cmp.i64 rax, 11
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 4
+    call @byte_prefix [args=(rdi)]
+    cmp.i64 rax, 22
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 7
+    call @byte_prefix [args=(rdi)]
+    cmp.i64 rax, 22
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 8
+    call @byte_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rbx, rax
+    mov rdi, 255
+    call @byte_prefix [args=(rdi)]
+    cmp.i64 rax, 99
+    setne rax
+    movzx rax, rax
+    or rax, rbx
+    ret rax

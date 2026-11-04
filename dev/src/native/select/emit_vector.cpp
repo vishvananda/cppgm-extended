@@ -59,8 +59,8 @@ void FunctionSelector::emit_vector_two_operand(const Instruction& inst)
 	finish_result(inst, d);
 }
 
-// Whether only a scalar `min` or `max` reads this value, its result read as a
-// scalar: the other lanes do not matter.
+// Whether the sole consumer reads only the scalar source lanes: other
+// lanes need not be cleared before that consumer.
 bool FunctionSelector::low_lane_only(const Instruction& inst) const
 {
 	const auto single_user = [&](const Instruction& def) -> const Instruction* {
@@ -71,13 +71,28 @@ bool FunctionSelector::low_lane_only(const Instruction& inst) const
 	if (lanes == nullptr || lanes->op != lowir::Opcode::Vector)
 		return false;
 	const VectorOp op = static_cast<VectorOp>(lanes->sub);
+	const VectorOp from = static_cast<VectorOp>(inst.sub);
+	if (from != VectorOp::Fromf32 && from != VectorOp::Fromf64)
+		return false;
+	if (op == VectorOp::Pshufd)
+	{
+		const uint32_t lanes_read = static_cast<uint32_t>(literal(resolve(lanes->ops[2])).low) & 0xff;
+		// Each two-bit selector names a dword of the source. The scalar
+		// supplies one dword (f32) or two (f64); no other lane is observed.
+		return (from == VectorOp::Fromf32 && lanes_read == 0) ||
+			(from == VectorOp::Fromf64 && (lanes_read & 0xaa) == 0);
+	}
 	if (op == VectorOp::Unpcklpd)
-		return true;
+		return from == VectorOp::Fromf64; // the whole low qword is read
 	if (op != VectorOp::Minps && op != VectorOp::Minpd && op != VectorOp::Maxps && op != VectorOp::Maxpd)
 		return false;
 	const Instruction* read = single_user(*lanes);
-	return read != nullptr && read->op == lowir::Opcode::Vector &&
-		(static_cast<VectorOp>(read->sub) == VectorOp::Tof32 || static_cast<VectorOp>(read->sub) == VectorOp::Tof64);
+	if (read == nullptr || read->op != lowir::Opcode::Vector)
+		return false;
+	const VectorOp to = static_cast<VectorOp>(read->sub);
+	const bool wide_operation = op == VectorOp::Minpd || op == VectorOp::Maxpd;
+	return (to == VectorOp::Tof32 || to == VectorOp::Tof64) &&
+		(from == VectorOp::Fromf64 || (!wide_operation && to == VectorOp::Tof32));
 }
 
 void FunctionSelector::emit_vector_from_scalar(const Instruction& inst)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Concurrent makes keep each producer's output paired with its comparer."""
 from pathlib import Path
+import json
 import os
 import shutil
 import subprocess
@@ -164,6 +165,56 @@ class ReportIsolationTests(unittest.TestCase):
             self.assertEqual((root / "sample.my.impl.exit_status").read_text(), "0\n")
             self.assertEqual((root / "sample.my.program.exit_status").read_text(), "0\n")
             self.assertEqual((root / "sample.my.inspect").read_text(), "preserved")
+
+    @unittest.skipUnless(shutil.which("g++"), "needs a host C++ compiler")
+    def test_host_numbered_lowir_inputs_keep_distinct_objects(self):
+        with tempfile.TemporaryDirectory(prefix="report-host-lowir.") as directory:
+            root = Path(directory)
+            compiler = root / "compiler"
+            compiler.write_text(
+                "#!/usr/bin/env python3\nimport json, pathlib, subprocess, sys\n"
+                "def compile(args, out, err):\n"
+                " with open('arguments.jsonl', 'a') as log: log.write(json.dumps(args) + '\\n')\n"
+                " with open(out, 'ab') as stdout, open(err, 'ab') as stderr:\n"
+                "  return subprocess.run([" + repr(shutil.which("g++")) +
+                ", '-x', 'c++', *args], stdout=stdout, stderr=stderr).returncode\n"
+                "for line in sys.stdin:\n"
+                " out, err, inp, env, *args = line.rstrip('\\n').split('\\t')\n"
+                " status = compile(args, out, err)\n"
+                " print('EXIT_SUCCESS' if status == 0 else 'EXIT_FAILURE', flush=True)\n"
+            )
+            compiler.chmod(0o755)
+            (root / "sample.t").write_text("mixed numbered sources\n")
+            (root / "sample.t.1.lowir").write_text(
+                "int helper(); int main() { return helper() != 37; }\n"
+            )
+            (root / "sample.t.2").write_text("int helper() { return 37; }\n")
+            env = dict(self.environment(), CPPGM_BATCH_TESTS="1",
+                       CPPGM_HOST_CXX=shutil.which("g++"))
+            result = subprocess.run(
+                ["perl", str(ROOT / "scripts/run_cpphostinterop_tests_worker.pl"),
+                 str(compiler), "my", str(root / "sample.t")],
+                cwd=root, env=env, capture_output=True, text=True, timeout=20,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual((root / "sample.my.impl.exit_status").read_text(), "0\n")
+            self.assertEqual((root / "sample.my.program.exit_status").read_text(), "0\n")
+            arguments = [json.loads(line) for line in (root / "arguments.jsonl").read_text().splitlines()]
+            self.assertEqual([Path(args[-1]).name for args in arguments],
+                             ["sample.t.1.lowir", "sample.t.2"])
+            self.assertEqual([Path(args[args.index("-o") + 1]).name for args in arguments],
+                             ["sample.my.1.o", "sample.my.2.o"])
+
+            # Two source spellings for one index must not silently overwrite
+            # the same object and accidentally skip a translation unit.
+            (root / "sample.t.1").write_text("int unused;\n")
+            duplicate = subprocess.run(
+                ["perl", str(ROOT / "scripts/run_cpphostinterop_tests_worker.pl"),
+                 str(compiler), "duplicate", str(root / "sample.t")],
+                cwd=root, env=env, capture_output=True, text=True, timeout=20,
+            )
+            self.assertNotEqual(duplicate.returncode, 0)
+            self.assertIn("Duplicate host translation-unit index 1", duplicate.stderr)
 
     def test_explicit_suffix_and_fixed_references(self):
         def suffix(value, run_id):

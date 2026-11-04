@@ -133,7 +133,7 @@ sub build_test_context
 	$worker_env{CPPGM_BATCH_TIMEOUT_SEC} = $build_timeout;
 
 	my @srcfiles =
-		sort grep { $_ =~ m/^\Q$test_base.t.\E\d+$/ } glob("$test_base.t.*");
+		sort grep { $_ =~ m/^\Q$test_base.t.\E\d+(?:\.lowir)?$/ } glob("$test_base.t.*");
 
 	my $host_cxx_str =
 		defined($env->{CPPGM_HOST_CXX}) && $env->{CPPGM_HOST_CXX} ne '' ? $env->{CPPGM_HOST_CXX} :
@@ -215,9 +215,12 @@ sub build_test_context
 	} @link_flags;
 
 	my @objfiles;
+	my %source_indexes;
 	for my $src (@srcfiles)
 	{
-		my ($index) = ($src =~ m/\.([^.]+)$/);
+		my ($index) = ($src =~ m/\.t\.(\d+)(?:\.lowir)?$/);
+		die "Duplicate host translation-unit index $index for $test\n"
+			if $source_indexes{$index}++;
 		push @objfiles, "$test_base.$suffix.$index.o";
 	}
 

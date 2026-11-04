@@ -978,11 +978,13 @@ function @main() -> i32 {
             write(anchor, "")
             write(anchor.parent / f"{anchor.name}.1", "int main() { throw 1; }\n")
             write(anchor.parent / f"{anchor.name}.2", "int helper() { return 2; }\n")
+            write(anchor.parent / f"{anchor.name}.3.lowir", "function @lowir_helper() -> i64 {}\n")
             write(anchor.with_suffix(".ref.stdout"), "ignored\n")
 
             source = audit.companion_source_text_for(anchor)
             self.assertIn("throw 1", source)
             self.assertIn("int helper", source)
+            self.assertIn("function @lowir_helper", source)
             self.assertNotIn("ignored", source)
 
     def test_generated_lowir_review_probes_only_selected_host_tests(self) -> None:

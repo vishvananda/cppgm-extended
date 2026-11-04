@@ -1,0 +1,644 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @inputs
+  storage data
+  item i32 1056964608
+  item i32 1057039173
+  item i32 1057113738
+  item i32 1057188303
+  item i32 1057262868
+  item i32 1057337433
+  item i32 1057411998
+  item i32 1057486563
+  item i32 1057561128
+  item i32 1057635693
+  item i32 1057710258
+  item i32 1057784823
+  item i32 1057859388
+  item i32 1057933953
+  item i32 1058008518
+  item i32 1058083083
+  item i32 1058157648
+  item i32 1058232213
+  item i32 1058306778
+  item i32 1058381343
+
+global @output
+  storage data
+  item zero 400
+
+global @seen
+  storage scalar f64
+  init f64 0.0
+
+function @clobber
+  abi
+    param %x0 -> xmm0 : f64
+    param %x1 -> xmm1 : f64
+    param %x2 -> xmm2 : f64
+    param %x3 -> xmm3 : f64
+    param %x4 -> xmm4 : f64
+    param %x5 -> xmm5 : f64
+    param %x6 -> xmm6 : f64
+    param %x7 -> xmm7 : f64
+    param %x8 -> [rbp+16] : f64
+    param %x9 -> [rbp+24] : f64
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.f64 @seen, xmm7
+    ret
+
+function @pressure
+  abi
+    param %src -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 176
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx
+    temp %x0 -> [rbp-8] : f32
+    temp %x1 -> [rbp-16] : f32
+    temp %x2 -> [rbp-24] : f32
+    temp %x3 -> [rbp-32] : f32
+    temp %x4 -> [rbp-40] : f32
+    temp %x5 -> [rbp-48] : f32
+    temp %x6 -> [rbp-56] : f32
+    temp %x7 -> [rbp-64] : f32
+    temp %x8 -> [rbp-72] : f32
+    temp %x9 -> [rbp-80] : f32
+    temp %x10 -> [rbp-88] : f32
+    temp %x11 -> [rbp-96] : f32
+    temp %x12 -> [rbp-104] : f32
+    temp %x13 -> [rbp-112] : f32
+    temp %x14 -> [rbp-120] : f32
+    temp %x15 -> [rbp-128] : f32
+    temp %x16 -> [rbp-136] : f32
+    temp %x17 -> [rbp-144] : f32
+    temp %x18 -> [rbp-152] : f32
+    temp %x19 -> [rbp-160] : f32
+
+  block ^entry
+    mov rbx, rsi
+    fmov.f32 xmm14, [rdi]
+    fmov.f32 [rbp-8], xmm14
+    fmov.f32 xmm14, [rdi+4]
+    fmov.f32 [rbp-16], xmm14
+    fmov.f32 xmm14, [rdi+8]
+    fmov.f32 [rbp-24], xmm14
+    fmov.f32 xmm14, [rdi+12]
+    fmov.f32 [rbp-32], xmm14
+    fmov.f32 xmm14, [rdi+16]
+    fmov.f32 [rbp-40], xmm14
+    fmov.f32 xmm14, [rdi+20]
+    fmov.f32 [rbp-48], xmm14
+    fmov.f32 xmm14, [rdi+24]
+    fmov.f32 [rbp-56], xmm14
+    fmov.f32 xmm14, [rdi+28]
+    fmov.f32 [rbp-64], xmm14
+    fmov.f32 xmm14, [rdi+32]
+    fmov.f32 [rbp-72], xmm14
+    fmov.f32 xmm14, [rdi+36]
+    fmov.f32 [rbp-80], xmm14
+    fmov.f32 xmm14, [rdi+40]
+    fmov.f32 [rbp-88], xmm14
+    fmov.f32 xmm14, [rdi+44]
+    fmov.f32 [rbp-96], xmm14
+    fmov.f32 xmm14, [rdi+48]
+    fmov.f32 [rbp-104], xmm14
+    fmov.f32 xmm14, [rdi+52]
+    fmov.f32 [rbp-112], xmm14
+    fmov.f32 xmm14, [rdi+56]
+    fmov.f32 [rbp-120], xmm14
+    fmov.f32 xmm14, [rdi+60]
+    fmov.f32 [rbp-128], xmm14
+    fmov.f32 xmm14, [rdi+64]
+    fmov.f32 [rbp-136], xmm14
+    fmov.f32 xmm14, [rdi+68]
+    fmov.f32 [rbp-144], xmm14
+    fmov.f32 xmm14, [rdi+72]
+    fmov.f32 [rbp-152], xmm14
+    fmov.f32 xmm14, [rdi+76]
+    fmov.f32 [rbp-160], xmm14
+    sub rsp, 16
+    fmov.f64 [rsp], 8.0
+    fmov.f64 [rsp+8], 9.0
+    fmov.f64 xmm0, 0.0
+    fmov.f64 xmm1, 1.0
+    fmov.f64 xmm2, 2.0
+    fmov.f64 xmm3, 3.0
+    fmov.f64 xmm4, 4.0
+    fmov.f64 xmm5, 5.0
+    fmov.f64 xmm6, 6.0
+    fmov.f64 xmm7, 7.0
+    call @clobber [args=(xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7), stack=16]
+    add rsp, 16
+    fmov.f32 xmm0, [rbp-8]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx], xmm0
+    fmov.f32 xmm0, [rbp-16]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+16], xmm0
+    fmov.f32 xmm0, [rbp-24]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+32], xmm0
+    fmov.f32 xmm0, [rbp-32]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+48], xmm0
+    fmov.f32 xmm0, [rbp-40]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+64], xmm0
+    fmov.f32 xmm0, [rbp-48]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+80], xmm0
+    fmov.f32 xmm0, [rbp-56]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+96], xmm0
+    fmov.f32 xmm0, [rbp-64]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+112], xmm0
+    fmov.f32 xmm0, [rbp-72]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+128], xmm0
+    fmov.f32 xmm0, [rbp-80]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+144], xmm0
+    fmov.f32 xmm0, [rbp-88]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+160], xmm0
+    fmov.f32 xmm0, [rbp-96]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+176], xmm0
+    fmov.f32 xmm0, [rbp-104]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+192], xmm0
+    fmov.f32 xmm0, [rbp-112]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+208], xmm0
+    fmov.f32 xmm0, [rbp-120]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+224], xmm0
+    fmov.f32 xmm0, [rbp-128]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+240], xmm0
+    fmov.f32 xmm0, [rbp-136]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+256], xmm0
+    fmov.f32 xmm0, [rbp-144]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+272], xmm0
+    fmov.f32 xmm0, [rbp-152]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+288], xmm0
+    fmov.f32 xmm0, [rbp-160]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rbx+304], xmm0
+    fmov.f32 [rbx+320], [rbp-8]
+    fmov.f32 [rbx+324], [rbp-16]
+    fmov.f32 [rbx+328], [rbp-24]
+    fmov.f32 [rbx+332], [rbp-32]
+    fmov.f32 [rbx+336], [rbp-40]
+    fmov.f32 [rbx+340], [rbp-48]
+    fmov.f32 [rbx+344], [rbp-56]
+    fmov.f32 [rbx+348], [rbp-64]
+    fmov.f32 [rbx+352], [rbp-72]
+    fmov.f32 [rbx+356], [rbp-80]
+    fmov.f32 [rbx+360], [rbp-88]
+    fmov.f32 [rbx+364], [rbp-96]
+    fmov.f32 [rbx+368], [rbp-104]
+    fmov.f32 [rbx+372], [rbp-112]
+    fmov.f32 [rbx+376], [rbp-120]
+    fmov.f32 [rbx+380], [rbp-128]
+    fmov.f32 [rbx+384], [rbp-136]
+    fmov.f32 [rbx+388], [rbp-144]
+    fmov.f32 [rbx+392], [rbp-152]
+    fmov.f32 [rbx+396], [rbp-160]
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea rdi, @inputs
+    lea rsi, @output
+    call @pressure [args=(rsi,rdi)]
+    cmp.u32 @output, 1056964608
+    setne r8
+    movzx r8, r8
+    or r8, 0
+    cmp.u32 @output+4, 1056964608
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+8, 1056964608
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+12, 1056964608
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+320, 1056964608
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+16, 1057039173
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+20, 1057039173
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+24, 1057039173
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+28, 1057039173
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+324, 1057039173
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+32, 1057113738
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+36, 1057113738
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+40, 1057113738
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+44, 1057113738
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+328, 1057113738
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+48, 1057188303
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+52, 1057188303
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+56, 1057188303
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+60, 1057188303
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+332, 1057188303
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+64, 1057262868
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+68, 1057262868
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+72, 1057262868
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+76, 1057262868
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+336, 1057262868
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+80, 1057337433
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+84, 1057337433
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+88, 1057337433
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+92, 1057337433
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+340, 1057337433
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+96, 1057411998
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+100, 1057411998
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+104, 1057411998
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+108, 1057411998
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+344, 1057411998
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+112, 1057486563
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+116, 1057486563
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+120, 1057486563
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+124, 1057486563
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+348, 1057486563
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+128, 1057561128
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+132, 1057561128
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+136, 1057561128
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+140, 1057561128
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+352, 1057561128
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+144, 1057635693
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+148, 1057635693
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+152, 1057635693
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+156, 1057635693
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+356, 1057635693
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+160, 1057710258
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+164, 1057710258
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+168, 1057710258
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+172, 1057710258
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+360, 1057710258
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+176, 1057784823
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+180, 1057784823
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+184, 1057784823
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+188, 1057784823
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+364, 1057784823
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+192, 1057859388
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+196, 1057859388
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+200, 1057859388
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+204, 1057859388
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+368, 1057859388
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+208, 1057933953
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+212, 1057933953
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+216, 1057933953
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+220, 1057933953
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+372, 1057933953
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+224, 1058008518
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+228, 1058008518
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+232, 1058008518
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+236, 1058008518
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+376, 1058008518
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+240, 1058083083
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+244, 1058083083
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+248, 1058083083
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+252, 1058083083
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+380, 1058083083
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+256, 1058157648
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+260, 1058157648
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+264, 1058157648
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+268, 1058157648
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+384, 1058157648
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+272, 1058232213
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+276, 1058232213
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+280, 1058232213
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+284, 1058232213
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+388, 1058232213
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+288, 1058306778
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+292, 1058306778
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+296, 1058306778
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+300, 1058306778
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+392, 1058306778
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+304, 1058381343
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+308, 1058381343
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+312, 1058381343
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+316, 1058381343
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    cmp.u32 @output+396, 1058381343
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    ret r8

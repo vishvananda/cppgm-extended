@@ -1,0 +1,106 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @poison
+  storage data
+  item i64 -6510615557136195584
+  item i64 -1
+
+global @output
+  storage data
+  item zero 32
+
+function @unpack
+  abi
+    param %source -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf32 xmm0, xmm0
+    vector.pzero xmm15
+    vector.unpcklpd xmm0, xmm0, xmm15
+    vector.toi64 rax, xmm0
+    ret rax
+
+function @mixed_min
+  abi
+    param %source -> rdi : ptr
+    return f32 -> xmm0
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf32 xmm0, xmm0
+    vector.pzero xmm15
+    vector.minpd xmm0, xmm0, xmm15
+    ret xmm0
+
+function @multiple_uses
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf32 xmm0, xmm0
+    vector.pshufd xmm1, xmm0, 0
+    fmov.v128 [rsi], xmm0
+    fmov.v128 [rsi+<off0>], xmm1
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr0> <gpr1> <gpr2>
+
+  block ^entry
+    lea rdi, @poison
+    call @unpack [args=(rdi)]
+    load.u32 <gpr0>, @poison
+    cmp.i64 rax, <gpr0>
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    lea rdi, @poison
+    call @mixed_min [args=(rdi)]
+    fmov.f32 @output, xmm0
+    cmp.i32 @output, 0
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    lea rdi, @poison
+    lea rsi, @output
+    call @multiple_uses [args=(rsi,rdi)]
+    cmp.i64 @output, <gpr0>
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    cmp.i64 @output+8, 0
+    setne r8
+    movzx r8, r8
+    or <gpr1>, <gpr2>
+    or <gpr0>, r8
+    or <gpr1>, <gpr0>
+    ret <gpr1>

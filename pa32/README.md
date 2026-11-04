@@ -319,6 +319,7 @@ Before moving on, run `make test-report-through-pa32` from the repository root.
 - `tests/driver/o2`
 - `tests/driver/o3`
 - `tests/host/o1`
+- `tests/host/o2`
 - `tests/object-roundtrip`
 
 
@@ -336,11 +337,13 @@ source-language clauses.
 - `tests/driver/o1` runs `cppgm++ --emit-lowir -g0 -O1` on source programs.
 - `tests/driver/o2` runs `cppgm++ --emit-lowir -g0 -O2` on source programs.
 - `tests/driver/o3` runs `cppgm++ --emit-lowir -g0 -O3` on source programs.
-- `tests/host/o1` builds host-compatible objects with `cppgm++ -c -O1`,
-  links them with the host compiler and checks program output and exit status.
-  It covers nested catch forwarding after optimization; PA26 retains the
+- `tests/host/o1` and `tests/host/o2` build host-compatible objects at their level,
+  link them with the host compiler and check program output and exit status.
+  They cover nested catches and shared normal/handler continuations after
+  optimization; PA26 retains the
   corresponding unoptimized EH coverage. These `.t` anchors use `.t.N`
-  companion sources and the ordinary host-link result sidecars.
+  companion sources (`.t.N.lowir` for handwritten LowIR) and the ordinary
+  host-link result sidecars.
   Equivalent ABI entries can share retained code after inlining without losing
   their names or cross-unit availability. The footprint check permits either
   entry to hold the body, aliases or forwarding entries; it does not prescribe

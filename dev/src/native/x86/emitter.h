@@ -204,6 +204,7 @@ private:
 	uint32_t terminal_ = 0;      // the host resume terminal's label
 	bool dynamic_stack_ = false; // RSP moves (stack_alloc, pushed EH records)
 	bool omit_fp_ = false;       // Function::omit_frame_pointer
+	bool calls_out_ = false;     // Shared by repeated frame encodings.
 	// Without a frame pointer, the saves are pushed before the reserve:
 	// the frame's objects lie save_shift_ bytes lower than with a frame
 	// pointer, and frame_top_ bytes lie between RSP after the prologue and

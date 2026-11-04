@@ -35,6 +35,8 @@ int64_t narrowed(int64_t value, unsigned bytes)
 	return value;
 }
 
+bool calls_out(const Function& function);
+
 } // namespace
 
 FunctionEmitter::FunctionEmitter(Image& image, const RuntimeSymbols& runtime, EmitStats& stats)
@@ -252,6 +254,7 @@ void FunctionEmitter::align_loop_head(size_t head)
 void FunctionEmitter::emit(const Function& function)
 {
 	function_ = &function;
+	calls_out_ = function.omit_frame_pointer && calls_out(function);
 	std::vector<uint8_t>& text = image_.text();
 	while (text.size() % 16 != 0)
 		text.push_back(0xcc);
@@ -811,7 +814,7 @@ void FunctionEmitter::frame_reserve(const Function& function)
 	// CFA - 16 - save_shift_); a function that calls keeps RSP 16-aligned at
 	// its calls, which the padding of stack_size and save_shift_ already
 	// give.
-	const bool leaf = !calls_out(function);
+	const bool leaf = !calls_out_;
 	unwind_.reserve = leaf ? function.stack_size + 8 + static_cast<uint32_t>(save_shift_) - 16 * saved
 						   : function.stack_size + 8 - 8 * saved;
 	// O1+, a body that names no frame location: only a call's alignment
@@ -1125,11 +1128,22 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 		store(inst);
 		break;
 	case Op::Lea:
+	{
+		RM address = rm(b);
+		// RBP/R13 require a displacement even at zero. At scale one,
+		// commuting the registers removes it in either LEA width.
+		if ((address.base == RBP || address.base == R13) && address.disp == 0 && address.scale == 1 &&
+			address.index != kNoReg && address.index != RSP && address.index != RBP && address.index != R13 &&
+			address.symbol == 0xffffffffu && address.label == 0xffffffffu)
+		{
+			std::swap(address.base, address.index);
+		}
 		if (inst.type == TypeKind::I32)
-			asm_.op(0, false, 0x8d, 1, a.reg, rm(b));
+			asm_.op(0, false, 0x8d, 1, a.reg, address);
 		else
-			asm_.lea(a.reg, rm(b));
+			asm_.lea(a.reg, address);
 		break;
+	}
 	case Op::Add:
 		alu(0, inst);
 		argument_area(inst);

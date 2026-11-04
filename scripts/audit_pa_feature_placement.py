@@ -1517,7 +1517,7 @@ def iter_local_test_files(root: Path, pas: Iterable[str], *,
 
 
 def is_hygiene_source_file(path: Path) -> bool:
-    if re.search(r"\.t\.\d+$", path.name):
+    if re.search(r"\.t\.\d+(?:\.lowir)?$", path.name):
         return True
     return path.suffix in {
         ".t",
@@ -1561,7 +1561,7 @@ def hosted_eh_rtti_include(header: str) -> bool:
 
 def test_local_include_override(root: Path, source_path: Path, header: str) -> bool:
     """Return whether a family-owned -I directory supplies this angle header."""
-    family_name = re.sub(r"\.t(?:\.\d+)?$", "", source_path.name)
+    family_name = re.sub(r"\.t(?:\.\d+(?:\.lowir)?)?$", "", source_path.name)
     flags_path = source_path.with_name(f"{family_name}.flags")
     if not flags_path.exists():
         return False
@@ -2016,7 +2016,7 @@ def numbered_test_source_files_for(path: Path) -> list[Path]:
         for sidecar in sorted(path.parent.glob(f"{path.name}.*"))
         if sidecar.is_file()
         and sidecar.name.startswith(prefix)
-        and sidecar.name[len(prefix):].isdigit()
+        and re.fullmatch(r"\d+(?:\.lowir)?", sidecar.name[len(prefix):])
     ]
 
 

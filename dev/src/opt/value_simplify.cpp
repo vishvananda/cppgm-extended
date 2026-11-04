@@ -194,6 +194,7 @@ private:
 	bool vector_identity(Instruction& inst, Value& out);
 	Value low_lane_source(Value v, unsigned bytes);
 	bool reassociate(Instruction& inst);
+	bool affine_constant(BlockId block, InstId& prev, InstId id);
 	uint64_t possible_bits(Value v, Type type, unsigned depth = 0);
 	bool mask_or(Instruction& inst);
 	bool packed_part(Instruction& inst);
@@ -1700,6 +1701,70 @@ bool Simplifier::packed_part(Instruction& inst)
 	return false;
 }
 
+// ((x * a) +/- b) * c = x * (a * c) +/- (b * c), at the
+// integer type's width. Only consume single-use intermediates: one multiply
+// disappears without duplicating shared work. Floating arithmetic stays ordered.
+bool Simplifier::affine_constant(BlockId block, InstId& prev, InstId id)
+{
+	const Instruction& seen = body_.instructions[id];
+	if (seen.op != Opcode::Binary || static_cast<BinaryOp>(seen.sub) != BinaryOp::Mul || !seen.type.is_integer())
+		return false;
+	Constant scale;
+	if (!constant(seen.ops[1], seen.type, scale))
+		return false;
+	const Instruction* sum = producer(seen.ops[0]);
+	if (sum == nullptr || sum->op != Opcode::Binary || sum->type != seen.type || sum->result >= uses_.size() ||
+		uses_[sum->result] != 1)
+		return false;
+	const BinaryOp operation = static_cast<BinaryOp>(sum->sub);
+	if (operation != BinaryOp::Add && operation != BinaryOp::Sub)
+		return false;
+	const Instruction* product = producer(resolve(sum->ops[0]));
+	if (product == nullptr || product->op != Opcode::Binary || product->type != seen.type ||
+		static_cast<BinaryOp>(product->sub) != BinaryOp::Mul || product->result >= uses_.size() ||
+		uses_[product->result] != 1)
+		return false;
+	Constant a, b, coefficient, offset;
+	if (!constant(product->ops[1], seen.type, a) || !constant(sum->ops[1], seen.type, b) ||
+		!fold_binary(BinaryOp::Mul, seen.type, a, scale, coefficient) ||
+		!fold_binary(BinaryOp::Mul, seen.type, b, scale, offset))
+		return false;
+	// The native baseline forms powers of two and scaled sums with
+	// shifts/LEAs. Do not turn two such factors into a general multiply.
+	const auto cheap_factor = [&](const Constant& c) {
+		Literal bits;
+		if (!integer_bits(seen.type, c, bits))
+			return false;
+		uint64_t magnitude = bits.high == ~uint64_t(0) ? uint64_t(0) - bits.low : bits.low;
+		if (magnitude == 0)
+			return true;
+		while ((magnitude & 1) == 0)
+			magnitude >>= 1;
+		return magnitude == 1 || magnitude == 3 || magnitude == 5 || magnitude == 9;
+	};
+	if (seen.type.kind() != TypeKind::I128 && cheap_factor(a) && cheap_factor(scale) && !cheap_factor(coefficient))
+		return false;
+	Instruction multiply = make_instruction(Opcode::Binary, seen.type);
+	multiply.sub = static_cast<uint8_t>(BinaryOp::Mul);
+	multiply.ops[0] = resolve(product->ops[0]);
+	multiply.ops[1] = literal(coefficient);
+	multiply.location = seen.location;
+	const Value bias = literal(offset);
+	const Type type = seen.type;
+	const InstId at = append_instruction(body_, multiply);
+	body_.instructions[at].result = append_temp(body_, type, at);
+	insert_after(body_, block, prev, at);
+	prev = at;
+	Instruction& result = body_.instructions[id];
+	result.sub = static_cast<uint8_t>(operation);
+	result.ops[0] = Value::temp(body_.instructions[at].result);
+	result.ops[1] = bias;
+	result.flags &= static_cast<uint8_t>(~(IF_NO_WRAP | IF_EXACT));
+	repl_.resize(body_.temps.size(), Value::none());
+	uses_.resize(body_.temps.size(), 0);
+	return true;
+}
+
 bool Simplifier::reassociate(Instruction& inst)
 {
 	if (inst.op != Opcode::Binary || !inst.type.is_integer())
@@ -2532,6 +2597,13 @@ void Simplifier::process_block(BlockId block)
 		if (inst.op == Opcode::Branch)
 			simplify_branch(inst);
 		canonicalize(inst);
+		// Appending the replacement product may move `inst`; take up the
+		// rewritten sum again with a fresh instruction reference.
+		if (affine_constant(block, prev, id))
+		{
+			changed_ = true;
+			continue;
+		}
 		if (reassociate(inst) || narrow_truncation(inst) || mask_or(inst) || packed_part(inst) ||
 			unsigned_division(inst) || even_product_halved(inst) || exact_reciprocal(inst) || merge_index(inst) ||
 			narrow_compare(inst) || exact_compare(inst) || bulk_call(inst) || readonly_table_address(inst))

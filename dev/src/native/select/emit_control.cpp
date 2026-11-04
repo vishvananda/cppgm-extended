@@ -960,6 +960,8 @@ void FunctionSelector::emit_switch(const Instruction& inst)
 		return;
 	}
 	Operand s = rm_operand(sel, type, kSelectScratch);
+	if (level_ >= 1 && emit_clustered_switch(inst, s, kind, fallback))
+		return;
 	if (s.kind != OperandKind::Reg)
 	{
 		load_into(kSelectScratch, s, kind == TypeKind::Ptr ? TypeKind::Ptr : kind);
@@ -976,8 +978,6 @@ void FunctionSelector::emit_switch(const Instruction& inst)
 		emit2(signed_integer(from) ? Op::Sext : Op::Zext, from, Operand::make_reg(kSelectScratch), s);
 		s = Operand::make_reg(kSelectScratch);
 	}
-	if (level_ >= 1 && emit_clustered_switch(inst, s, kind, fallback))
-		return;
 	for (uint32_t k = 0; k + 1 < inst.extra_count; k += 2)
 	{
 		const Value value = resolve(body.operands[inst.extra_first + k]);
@@ -1073,9 +1073,28 @@ bool signed_kind(TypeKind kind)
 // stays a jump table. False (linear compares) when a bound needs more
 // than an imm32.
 bool FunctionSelector::emit_clustered_switch(
-	const Instruction& inst, const Operand& selector, TypeKind kind, uint32_t fallback)
+	const Instruction& inst, const Operand& input, TypeKind kind, uint32_t fallback)
 {
 	const lowir::FunctionBody& body = *body_;
+	Operand selector = input;
+	auto canonicalize = [&](bool word) {
+		if (selector.kind != OperandKind::Reg)
+		{
+			load_into(kSelectScratch, selector, word ? TypeKind::U32 : kind);
+			selector = Operand::make_reg(kSelectScratch);
+			return;
+		}
+		const Value source = resolve(inst.ops[0]);
+		if (!word && eh_model_ == EhModel::Host && source.kind == ValueKind::Temp &&
+			source.index < body.parameter_count && source.index < narrow_observed_.size() &&
+			!narrow_observed_[source.index] && narrow_integer(body.temps[source.index].type.kind()) &&
+			body.temps[source.index].type.kind() != TypeKind::I1)
+		{
+			const TypeKind from = body.temps[source.index].type.kind();
+			emit2(signed_integer(from) ? Op::Sext : Op::Zext, from, Operand::make_reg(kSelectScratch), selector);
+			selector = Operand::make_reg(kSelectScratch);
+		}
+	};
 	std::vector<std::pair<int64_t, uint32_t>> cases;
 	for (uint32_t k = 0; k + 1 < inst.extra_count; k += 2)
 	{
@@ -1111,6 +1130,7 @@ bool FunctionSelector::emit_clustered_switch(
 	if (targets.size() > kBitTestTargets && cases.size() >= kJumpTableMinCases && span < kJumpTableMaxEntries &&
 		span + 1 <= kJumpTableSpread * cases.size() && fits_i32(low))
 	{
+		canonicalize(false);
 		const uint32_t entries = static_cast<uint32_t>(span + 1);
 		const uint32_t first = static_cast<uint32_t>(out_->jump_targets.size());
 		out_->jump_targets.resize(first + entries, fallback);
@@ -1132,10 +1152,27 @@ bool FunctionSelector::emit_clustered_switch(
 		++stats_.jump_tables;
 		return true;
 	}
+	// Validate before pricing windows; unsupported constants use the
+	// caller's general comparisons without any speculative emission.
+	bool prefix = clusters.front().lo == 0;
+	for (size_t k = 0; k < clusters.size(); ++k)
+	{
+		const CaseCluster& c = clusters[k];
+		if (!fits_i32(c.lo) || !fits_i32(c.hi) || !fits_i32(c.hi - c.lo))
+			return false;
+		prefix = prefix && (k == 0 || clusters[k - 1].hi + 1 == c.lo);
+	}
+	// A contiguous nonnegative prefix needs comparisons only. Its narrow
+	// selector can stay in the caller's register, with no 64-bit index.
+	const bool word = prefix && (kind == TypeKind::I32 || kind == TypeKind::U32);
+	canonicalize(word);
+	const TypeKind test_kind = word ? TypeKind::U32 : kind;
 	int64_t tmin = 0, tmax = 0;
-	type_bounds(kind, tmin, tmax);
+	type_bounds(test_kind, tmin, tmax);
 	// Instructions to test one cluster on its own.
-	auto test_cost = [&](const CaseCluster& c) { return c.lo == c.hi || c.lo == tmin || c.hi == tmax ? 2 : 4; };
+	auto test_cost = [&](const CaseCluster& c) {
+		return prefix || c.lo == c.hi || c.lo == tmin || c.hi == tmax ? 2 : 4;
+	};
 	// The window: the clusters within 64 values for few targets whose own
 	// tests cost the most more than the window's (an index, a bounds check,
 	// a mask and a bit test per target).
@@ -1171,13 +1208,10 @@ bool FunctionSelector::emit_clustered_switch(
 			}
 		}
 	}
-	for (const CaseCluster& c : clusters)
-		if (!fits_i32(c.lo) || !fits_i32(c.hi) || !fits_i32(c.hi - c.lo))
-			return false;
 	SwitchTree tree;
 	tree.selector = selector.reg;
-	tree.kind = kind;
-	tree.sign = signed_kind(kind);
+	tree.kind = test_kind;
+	tree.sign = signed_kind(test_kind);
 	tree.fallback = fallback;
 	tree.location = location_;
 	for (size_t i = 0; i < clusters.size(); ++i)
@@ -1289,6 +1323,9 @@ void FunctionSelector::emit_switch_tests(
 		emit1(Op::Jmp, TypeKind::Void, Operand::make_label(t.fallback));
 		return;
 	}
+	// Earlier failed tests can exclude a contiguous unsigned prefix.
+	// A following run then needs only its upper bound, not a new offset.
+	uint64_t excluded_prefix = 0;
 	for (uint32_t i = first; i < past; ++i)
 	{
 		const SwitchTest& c = t.tests[i];
@@ -1309,6 +1346,11 @@ void FunctionSelector::emit_switch_tests(
 				emit2(Op::Cmp, t.kind, selector, imm(c.lo));
 			jump(CC_E, c.target);
 		}
+		else if (c.lo >= 0 && static_cast<uint64_t>(c.lo) == excluded_prefix && excluded_prefix != 0)
+		{
+			emit2(Op::Cmp, t.kind, selector, imm(c.hi));
+			jump(CC_BE, c.target);
+		}
 		else if (c.lo <= lo)
 		{
 			emit2(Op::Cmp, t.kind, selector, imm(c.hi));
@@ -1325,6 +1367,8 @@ void FunctionSelector::emit_switch_tests(
 			emit2(Op::Cmp, TypeKind::I64, Operand::make_reg(r), imm(c.hi - c.lo));
 			jump(CC_BE, c.target);
 		}
+		if (c.lo >= 0 && static_cast<uint64_t>(c.lo) == excluded_prefix)
+			excluded_prefix = static_cast<uint64_t>(c.hi) + 1;
 	}
 	if (window != nullptr)
 	{

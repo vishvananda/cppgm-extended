@@ -1,0 +1,1150 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @inputs
+  storage data
+  item i64 -6510615558205997056
+  item i64 -72339069014638593
+  item i64 -6510615556058513408
+  item i64 -72339069014638593
+  item i64 -6510615556066902016
+  item i64 -72339069014638593
+  item i64 -6510615553919418368
+  item i64 -72339069014638593
+  item i64 -6510615556062707627
+  item i64 -72339069014638593
+  item i64 -6510615556066901931
+  item i64 -72339069014638593
+  item i64 -6510615558205997055
+  item i64 -72339069014638593
+  item i64 -6510615554993160192
+  item i64 -72339069014638593
+  item i64 0
+  item i64 -72339069014638593
+  item i64 -9223372036854775808
+  item i64 -72339069014638593
+  item i64 9218868437227405312
+  item i64 -72339069014638593
+  item i64 -4503599627370496
+  item i64 -72339069014638593
+  item i64 9221120237041090645
+  item i64 -72339069014638593
+  item i64 9218868437227405397
+  item i64 -72339069014638593
+  item i64 1
+  item i64 -72339069014638593
+  item i64 -4616189618054758400
+  item i64 -72339069014638593
+
+global @output
+  storage data
+  item zero 32
+
+function @f32_0
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f32_1
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf32 xmm0, xmm0
+    vector.pshufd xmm0, xmm0, 1
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f32_85
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf32 xmm0, xmm0
+    vector.pshufd xmm0, xmm0, 85
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f32_170
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf32 xmm0, xmm0
+    vector.pshufd xmm0, xmm0, 170
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f32_255
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf32 xmm0, xmm0
+    vector.pshufd xmm0, xmm0, 255
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f32_27
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf32 xmm0, xmm0
+    vector.pshufd xmm0, xmm0, 27
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_0
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_1
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 1
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_4
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 4
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_5
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 5
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_16
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 16
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_17
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 17
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_20
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 20
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_21
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 21
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_64
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 64
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_65
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 65
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_68
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 68
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_69
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 69
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_80
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 80
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_81
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 81
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_84
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 84
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_85
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.pshufd xmm0, xmm0, 85
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_170
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf64 xmm0, xmm0
+    vector.pshufd xmm0, xmm0, 170
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_255
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf64 xmm0, xmm0
+    vector.pshufd xmm0, xmm0, 255
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @f64_228
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf64 xmm0, xmm0
+    vector.pshufd xmm0, xmm0, 228
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @i32_0
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i32 rdi, [rdi]
+    vector.fromi32 xmm0, rdi
+    vector.pshufd xmm0, xmm0, 0
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @i64_68
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 rdi, [rdi]
+    vector.fromi64 xmm0, rdi
+    vector.pshufd xmm0, xmm0, 68
+    fmov.v128 [rsi], xmm0
+    ret
+
+function @live_source
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    fmov.f32 xmm1, xmm0
+    vector.pshufd xmm1, xmm1, 0
+    fmov.v128 [rsi], xmm1
+    fmov.f32 [rsi+16], xmm0
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    temp %lo -> [rbp-8] : u32
+
+  block ^entry
+    mov r13, @inputs
+    mov rbx, 0
+    mov r12, 0
+
+  block ^loop
+    lea r8, [rbx+rbx]
+    lea r14, [r13+r8*8]
+    load.u32 r15, [r14]
+    store.u32 [rbp-8], r15
+    load.u32 r15, [r14+4]
+    mov rdi, r14
+    lea rsi, @output
+    call @f32_0 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f32_1 [args=(rsi,rdi)]
+    cmp.u32 @output, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f32_85 [args=(rsi,rdi)]
+    cmp.u32 @output, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f32_170 [args=(rsi,rdi)]
+    cmp.u32 @output, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f32_255 [args=(rsi,rdi)]
+    cmp.u32 @output, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f32_27 [args=(rsi,rdi)]
+    cmp.u32 @output, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_0 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_1 [args=(rsi,rdi)]
+    cmp.u32 @output, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_4 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_5 [args=(rsi,rdi)]
+    cmp.u32 @output, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_16 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_17 [args=(rsi,rdi)]
+    cmp.u32 @output, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_20 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_21 [args=(rsi,rdi)]
+    cmp.u32 @output, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_64 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_65 [args=(rsi,rdi)]
+    cmp.u32 @output, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_68 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_69 [args=(rsi,rdi)]
+    cmp.u32 @output, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_80 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_81 [args=(rsi,rdi)]
+    cmp.u32 @output, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_84 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_85 [args=(rsi,rdi)]
+    cmp.u32 @output, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_170 [args=(rsi,rdi)]
+    cmp.u32 @output, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_255 [args=(rsi,rdi)]
+    cmp.u32 @output, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @f64_228 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+8, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, 0
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @i32_0 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    mov rdi, r14
+    lea rsi, @output
+    call @i64_68 [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+4, r15
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    cmp.u32 @output+12, r15
+    setne r15
+    movzx r15, r15
+    or r12, r15
+    mov rdi, r14
+    lea rsi, @output
+    call @live_source [args=(rsi,rdi)]
+    load.u32 r10, @output
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+4
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+8
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+12
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    load.u32 r10, @output+16
+    cmp.u32 r10, [rbp-8]
+    setne r8
+    movzx r8, r8
+    or r12, r8
+    add rbx, 1
+    cmp.i64 rbx, 16
+    jl ^loop
+
+  block ^exit
+    ret r12

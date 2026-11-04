@@ -1783,7 +1783,7 @@ bool LoopPass::try_unroll(uint32_t loop)
 	}
 	if (chain.size() + 1 != l.blocks.size())
 		return false;
-	uint32_t size = 0;
+	uint32_t size = 0, header_size = 0;
 	bool calls = false;
 	for (BlockId b : l.blocks)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
@@ -1791,11 +1791,16 @@ bool LoopPass::try_unroll(uint32_t loop)
 			const Instruction& inst = body_.instructions[i];
 			if (is_eh_instruction(inst.op) || inst.op == Opcode::StackAlloc || inst.op == Opcode::VaStart)
 				return false;
-			size += inst.op == Opcode::Phi || is_terminator(inst.op) ? 0 : 1;
+			if (inst.op != Opcode::Phi && !is_terminator(inst.op))
+			{
+				++size;
+				header_size += b == l.header ? 1 : 0;
+			}
 			calls = calls || inst.op == Opcode::Call;
 		}
+	// Each pass copies the loop; only the header is copied for the final test.
 	if (test.trips > (calls ? kUnrollTrips : kUnrollCallFreeTrips) ||
-		static_cast<uint64_t>(size) * static_cast<uint64_t>(test.trips + 1) >
+		static_cast<uint64_t>(size) * static_cast<uint64_t>(test.trips) + header_size >
 			(calls ? kUnrollBody : kUnrollCallFreeBody))
 		return false;
 	// A loop entered from a branching block gets its preheader first (the

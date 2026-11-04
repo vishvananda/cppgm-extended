@@ -1,0 +1,303 @@
+global @state : u32 [binding=strong] = zero
+
+function @touch(%value : u32) -> void [binding=strong, object=_Z5touchj, no_inline=yes] {
+  block ^entry:
+    %t1 = load volatile u32 @state
+    %t2 = binary mul u32 %t1, 33
+    %t3 = binary add u32 %value, %t2
+    store volatile u32 %t3, @state
+    return void
+}
+function @exercise(%value : u32) -> u32 [binding=strong, object=_Z8exercisej, no_inline=yes] {
+  block ^entry:
+    %t1 = binary xor u32 %value, 20
+    call void @touch(%t1)
+    %t2 = binary xor u32 %value, 21
+    call void @touch(%t2)
+    %t3 = binary xor u32 %value, 22
+    call void @touch(%t3)
+    %t4 = binary xor u32 %value, 23
+    call void @touch(%t4)
+    %t5 = binary xor u32 %value, 24
+    call void @touch(%t5)
+    %t6 = binary xor u32 %value, 25
+    call void @touch(%t6)
+    %t7 = binary xor u32 %value, 26
+    call void @touch(%t7)
+    %t8 = binary xor u32 %value, 27
+    call void @touch(%t8)
+    %t9 = binary xor u32 %value, 28
+    call void @touch(%t9)
+    %t10 = binary xor u32 %value, 29
+    call void @touch(%t10)
+    %t11 = binary xor u32 %value, 30
+    call void @touch(%t11)
+    %t12 = binary xor u32 %value, 31
+    call void @touch(%t12)
+    call void @touch(%value)
+    %t13 = binary add u32 %value, 1
+    call void @touch(%t13)
+    %t14 = binary add u32 %value, 2
+    call void @touch(%t14)
+    %t15 = binary add u32 %value, 3
+    call void @touch(%t15)
+    %t16 = binary add u32 %value, 4
+    call void @touch(%t16)
+    %t17 = binary add u32 %value, 5
+    call void @touch(%t17)
+    %t18 = binary add u32 %value, 6
+    call void @touch(%t18)
+    %t19 = binary add u32 %value, 7
+    call void @touch(%t19)
+    %t20 = binary add u32 %value, 8
+    call void @touch(%t20)
+    %t21 = binary add u32 %value, 9
+    call void @touch(%t21)
+    %t22 = binary add u32 %value, 10
+    call void @touch(%t22)
+    %t23 = binary add u32 %value, 11
+    call void @touch(%t23)
+    call void @touch(%t13)
+    call void @touch(%t14)
+    call void @touch(%t15)
+    call void @touch(%t16)
+    call void @touch(%t17)
+    call void @touch(%t18)
+    call void @touch(%t19)
+    call void @touch(%t20)
+    call void @touch(%t21)
+    call void @touch(%t22)
+    call void @touch(%t23)
+    %t24 = binary add u32 %value, 12
+    call void @touch(%t24)
+    call void @touch(%t14)
+    call void @touch(%t15)
+    call void @touch(%t16)
+    call void @touch(%t17)
+    call void @touch(%t18)
+    call void @touch(%t19)
+    call void @touch(%t20)
+    call void @touch(%t21)
+    call void @touch(%t22)
+    call void @touch(%t23)
+    call void @touch(%t24)
+    %t25 = binary add u32 %value, 13
+    call void @touch(%t25)
+    %t26 = binary and u32 %t14, 1
+    %t27 = select u32 %t26, 5, 1
+    call void @touch(%t15)
+    call void @touch(%t16)
+    call void @touch(%t17)
+    call void @touch(%t18)
+    call void @touch(%t19)
+    call void @touch(%t20)
+    call void @touch(%t21)
+    call void @touch(%t22)
+    call void @touch(%t23)
+    call void @touch(%t24)
+    call void @touch(%t25)
+    %t28 = binary add u32 %value, 14
+    call void @touch(%t28)
+    %t29 = binary and u32 %t15, 1
+    %t30 = binary add u32 %t27, 8
+    %t31 = select u32 %t29, %t30, %t27
+    return u32 %t31
+}
+function @general_literals(%value : u32) -> u32 [binding=strong, object=_Z16general_literalsj, no_inline=yes] {
+  block ^entry:
+    %t1 = binary xor u32 %value, 40
+    call void @touch(%t1)
+    %t2 = binary xor u32 %value, 41
+    call void @touch(%t2)
+    %t3 = binary xor u32 %value, 42
+    call void @touch(%t3)
+    %t4 = binary xor u32 %value, 43
+    call void @touch(%t4)
+    %t5 = binary xor u32 %value, 44
+    call void @touch(%t5)
+    %t6 = binary xor u32 %value, 45
+    call void @touch(%t6)
+    %t7 = binary xor u32 %value, 46
+    call void @touch(%t7)
+    %t8 = binary xor u32 %value, 47
+    call void @touch(%t8)
+    %t9 = binary xor u32 %value, 48
+    call void @touch(%t9)
+    %t10 = binary xor u32 %value, 49
+    call void @touch(%t10)
+    %t11 = binary xor u32 %value, 50
+    call void @touch(%t11)
+    %t12 = binary xor u32 %value, 51
+    call void @touch(%t12)
+    call void @touch(%value)
+    %t13 = binary add u32 %value, 1
+    call void @touch(%t13)
+    %t14 = binary add u32 %value, 2
+    call void @touch(%t14)
+    %t15 = binary add u32 %value, 3
+    call void @touch(%t15)
+    %t16 = binary add u32 %value, 4
+    call void @touch(%t16)
+    %t17 = binary add u32 %value, 5
+    call void @touch(%t17)
+    %t18 = binary add u32 %value, 6
+    call void @touch(%t18)
+    %t19 = binary add u32 %value, 7
+    call void @touch(%t19)
+    %t20 = binary add u32 %value, 8
+    call void @touch(%t20)
+    %t21 = binary add u32 %value, 9
+    call void @touch(%t21)
+    %t22 = binary add u32 %value, 10
+    call void @touch(%t22)
+    %t23 = binary add u32 %value, 11
+    call void @touch(%t23)
+    call void @touch(%t13)
+    call void @touch(%t14)
+    call void @touch(%t15)
+    call void @touch(%t16)
+    call void @touch(%t17)
+    call void @touch(%t18)
+    call void @touch(%t19)
+    call void @touch(%t20)
+    call void @touch(%t21)
+    call void @touch(%t22)
+    call void @touch(%t23)
+    %t24 = binary add u32 %value, 12
+    call void @touch(%t24)
+    call void @touch(%t14)
+    call void @touch(%t15)
+    call void @touch(%t16)
+    call void @touch(%t17)
+    call void @touch(%t18)
+    call void @touch(%t19)
+    call void @touch(%t20)
+    call void @touch(%t21)
+    call void @touch(%t22)
+    call void @touch(%t23)
+    call void @touch(%t24)
+    %t25 = binary add u32 %value, 13
+    call void @touch(%t25)
+    %t26 = binary and u32 %value, 1
+    %t27 = select i32 %t26, 1, 2
+    %t28 = convert sext i64 i32 %t27
+    %t29 = binary shl i64 %t28, 36
+    call void @touch(%value)
+    call void @touch(%t13)
+    call void @touch(%t14)
+    call void @touch(%t15)
+    call void @touch(%t16)
+    call void @touch(%t17)
+    call void @touch(%t18)
+    call void @touch(%t19)
+    call void @touch(%t20)
+    call void @touch(%t21)
+    call void @touch(%t22)
+    call void @touch(%t23)
+    branch %t26, ^inline_cont_2, ^if_end_1
+
+  block ^if_end_1:
+    %t30 = binary xor i64 %t29, 137438953472
+    %t31 = cmp eq i64 %t30, 0
+    branch %t31, ^if_then_3, ^if_end_4
+
+  block ^inline_cont_2:
+    %t32 = binary xor i64 %t29, 68719476736
+    %t33 = cmp eq i64 %t32, 0
+    branch %t33, ^if_then_3, ^if_end_4
+
+  block ^if_then_3:
+    jump ^if_end_4
+
+  block ^if_end_4:
+    %t34 = phi u32 [^if_then_3: 15, ^inline_cont_2: 7, ^if_end_1: 7]
+    return u32 %t34
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    store volatile u32 0, @state
+    %t1 = call u32 @exercise(0)
+    %t2 = cmp ne u32 %t1, 9
+    branch %t2, ^if_then_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t3 = load volatile u32 @state
+    %t4 = cmp ne u32 %t3, 910840962
+    branch %t4, ^if_then_2, ^if_end_3
+
+  block ^if_then_2:
+    return i32 1
+
+  block ^if_end_3:
+    store volatile u32 0, @state
+    %t5 = call u32 @exercise(1)
+    %t6 = cmp ne u32 %t5, 5
+    branch %t6, ^if_then_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t7 = load volatile u32 @state
+    %t8 = cmp ne u32 %t7, 1897896562
+    branch %t8, ^if_then_5, ^if_end_6
+
+  block ^if_then_5:
+    return i32 1
+
+  block ^if_end_6:
+    store volatile u32 0, @state
+    %t9 = call u32 @exercise(4294967294)
+    %t10 = cmp ne u32 %t9, 9
+    branch %t10, ^if_then_8, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t11 = load volatile u32 @state
+    %t12 = cmp ne u32 %t11, 2177805746
+    branch %t12, ^if_then_8, ^if_end_9
+
+  block ^if_then_8:
+    return i32 1
+
+  block ^if_end_9:
+    store volatile u32 0, @state
+    %t13 = call u32 @general_literals(0)
+    %t14 = cmp ne u32 %t13, 15
+    branch %t14, ^if_then_11, ^lor_rhs_10
+
+  block ^lor_rhs_10:
+    %t15 = load volatile u32 @state
+    %t16 = cmp ne u32 %t15, 3506336142
+    branch %t16, ^if_then_11, ^if_end_12
+
+  block ^if_then_11:
+    return i32 1
+
+  block ^if_end_12:
+    store volatile u32 0, @state
+    %t17 = call u32 @general_literals(1)
+    %t18 = cmp ne u32 %t17, 15
+    branch %t18, ^if_then_14, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t19 = load volatile u32 @state
+    %t20 = cmp ne u32 %t19, 198424446
+    branch %t20, ^if_then_14, ^if_end_15
+
+  block ^if_then_14:
+    return i32 1
+
+  block ^if_end_15:
+    store volatile u32 0, @state
+    %t21 = call u32 @general_literals(4294967294)
+    %t22 = cmp ne u32 %t21, 15
+    branch %t22, ^if_then_17, ^lor_rhs_16
+
+  block ^lor_rhs_16:
+    %t23 = load volatile u32 @state
+    %t24 = cmp ne u32 %t23, 1748549342
+    branch %t24, ^if_then_17, ^if_end_18
+
+  block ^if_then_17:
+    return i32 1
+
+  block ^if_end_18:
+    return i32 0
+}

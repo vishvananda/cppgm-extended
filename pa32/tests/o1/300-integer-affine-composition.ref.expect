@@ -1,0 +1,30 @@
+# budget from 300-integer-affine-composition.ref: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 39
+blocks <= 14
+count(call) <= 3
+count(load) <= 3
+count(store) <= 3
+count(phi) <= 3
+instructions <= 6 in @affine_i8
+instructions <= 6 in @affine_u8
+instructions <= 6 in @affine_i16
+instructions <= 6 in @affine_u16
+instructions <= 6 in @affine_i32
+instructions <= 6 in @affine_u32
+instructions <= 6 in @affine_i64
+instructions <= 6 in @affine_i128
+instructions <= 8 in @shared
+instructions <= 7 in @ordered
+instructions <= 4 in @main
+
+# outcomes from 300-integer-affine-composition.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(call @affine_i128)
+none(call @affine_i16)
+none(call @affine_i32)
+none(call @affine_i64)
+none(call @affine_i8)
+none(call @affine_u16)
+none(call @affine_u32)
+none(call @affine_u8)
+none(call @ordered)
+none(call @shared)

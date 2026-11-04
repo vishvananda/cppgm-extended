@@ -359,8 +359,11 @@ const lowir::JumpThunk* ObjectCompiler::equivalent_entry(lowir::SymbolId symbol)
 		{
 			const lowir::Symbol& source = program_.symbols[entry.symbol];
 			const lowir::Symbol& target = program_.symbols[entry.target];
+			// Share only direct aliases. Other bindings retain their own body
+			// rather than adding a forwarding branch at entry.
 			if (source.kind == lowir::SymbolKind::FunctionDefinition &&
 				target.kind == lowir::SymbolKind::FunctionDefinition &&
+				source.metadata.binding == ir_model::SBM_STRONG && target.metadata.binding == ir_model::SBM_STRONG &&
 				((source.metadata.flags | target.metadata.flags) & lowir::SF_REPLACEABLE) == 0 &&
 				program_.same_entry_abi(entry.symbol, entry.target))
 				equivalent_targets_.insert(entry.symbol, entry.target);
@@ -381,8 +384,7 @@ void ObjectCompiler::function(lowir::SymbolId symbol)
 	// describes it), whatever its body.
 	if (const lowir::JumpThunk* thunk = jump_thunk(symbol))
 	{
-		if (thunk == &shared_entry_ && program_.symbols[symbol].metadata.binding == ir_model::SBM_STRONG &&
-			program_.symbols[thunk->target].metadata.binding == ir_model::SBM_STRONG)
+		if (thunk == &shared_entry_)
 			// Both definitions are retained roots in the shared text section.
 			// Keep their independent names without an extra jump or FDE.
 			shared_aliases_.push_back(lowir::EquivalentEntry{ symbol, thunk->target });

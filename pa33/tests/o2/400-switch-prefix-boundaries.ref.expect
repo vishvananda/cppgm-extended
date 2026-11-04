@@ -1,0 +1,19 @@
+# budget from 400-switch-prefix-boundaries.ref.mir: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 371
+blocks <= 30
+count(call) <= 50
+mem <= 52
+instructions <= 18 in @signed_prefix
+stack_size <= 32 in @signed_prefix
+instructions <= 15 in @gapped
+stack_size <= 32 in @gapped
+instructions <= 15 in @signed_cases
+stack_size <= 32 in @signed_cases
+instructions <= 14 in @unsigned_prefix
+stack_size <= 32 in @unsigned_prefix
+instructions <= 14 in @wide_prefix
+stack_size <= 32 in @wide_prefix
+instructions <= 14 in @byte_prefix
+stack_size <= 32 in @byte_prefix
+instructions <= 292 in @main
+stack_size <= 50 in @main

@@ -1,0 +1,106 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @poison
+  storage data
+  item i64 -6510615557136195584
+  item i64 -1
+
+global @output
+  storage data
+  item zero 32
+
+function @unpack
+  abi
+    param %source -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf32 xmm0, xmm0
+    vector.pzero xmm15
+    vector.unpcklpd xmm0, xmm0, xmm15
+    vector.toi64 rax, xmm0
+    ret rax
+
+function @mixed_min
+  abi
+    param %source -> rdi : ptr
+    return f32 -> xmm0
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf32 xmm0, xmm0
+    vector.pzero xmm15
+    vector.minpd xmm0, xmm0, xmm15
+    ret xmm0
+
+function @multiple_uses
+  abi
+    param %source -> rdi : ptr
+    param %out -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    fmov.v128 xmm0, [rdi]
+    vector.fromf32 xmm0, xmm0
+    vector.pshufd xmm1, xmm0, 0
+    fmov.v128 [rsi], xmm0
+    fmov.v128 [rsi+16], xmm1
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13
+
+  block ^entry
+    lea rdi, @poison
+    call @unpack [args=(rdi)]
+    load.u32 rbx, @poison
+    cmp.i64 rax, rbx
+    setne r12
+    movzx r12, r12
+    lea rdi, @poison
+    call @mixed_min [args=(rdi)]
+    fmov.f32 @output, xmm0
+    cmp.i32 @output, 0
+    setne r13
+    movzx r13, r13
+    lea rdi, @poison
+    lea rsi, @output
+    call @multiple_uses [args=(rsi,rdi)]
+    cmp.i64 @output, rbx
+    setne rbx
+    movzx rbx, rbx
+    cmp.i64 @output+8, 0
+    setne r8
+    movzx r8, r8
+    or r12, r13
+    or rbx, r8
+    or r12, rbx
+    ret r12

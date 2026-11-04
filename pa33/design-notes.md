@@ -54,6 +54,17 @@ Do not assume incoming upper bits are initialized when the ABI leaves them
 unspecified. A proof such as `convert trunc exact` may help; an arbitrary cast
 supplies no such proof.
 
+For scalar/vector transfers, track which bits each consumer reads. A shuffle
+that uses only supplied lanes may not need cleared upper lanes; a wider unpack
+or a second consumer can observe them. Test with nonzero prior register bits,
+signed zero and NaN payloads, not only freshly loaded scalar values.
+
+Switch tests can reuse ranges excluded by earlier comparisons on that path.
+Check gaps, signed boundaries and the selector's full width before omitting a
+bound or extension; an out-of-range value must still reach the default case.
+Equivalent indexed addresses can have different encoding costs. Preserve
+scale, width and flags when choosing the order of their operands.
+
 Test signed extrema and wrapping unsigned arithmetic. Select a division at the
 intended width and preserve its trapping preconditions. A high-half product
 must retain the correct signedness and any other users of the full product.
@@ -111,6 +122,11 @@ where profitable. Alignment can improve fetch behavior or add work at every
 entry to a short loop. Branch shortening and padding interact, so validate
 final displacements and relocations after layout. No particular padding size,
 block order or prologue sequence is a quality requirement.
+Removing code can shift hot loops into less favorable fetch windows even when
+their instruction counts stay the same. Measure runtime as well as size;
+use selective alignment rather than assuming more padding always helps.
+Entry placement can affect direct calls and table-driven indirect calls
+differently. Include both when measuring changes to compact leaf functions.
 
 ## Validation and further experiments
 

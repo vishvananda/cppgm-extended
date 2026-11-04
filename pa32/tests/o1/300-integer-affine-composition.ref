@@ -1,0 +1,67 @@
+function @affine_i8(%x : i8) -> i8 [binding=strong] {
+  block ^entry:
+    %t1 = binary mul i8 %x, 13
+    %v6 = binary add i8 %t1, 127
+    return i8 %v6
+}
+function @affine_u8(%x : u8) -> u8 [binding=strong] {
+  block ^entry:
+    %t1 = binary mul u8 %x, 13
+    %v6 = binary add u8 %t1, 127
+    return u8 %v6
+}
+function @affine_i16(%x : i16) -> i16 [binding=strong] {
+  block ^entry:
+    %t1 = binary mul i16 %x, 23053
+    %v6 = binary add i16 %t1, -6017
+    return i16 %v6
+}
+function @affine_u16(%x : u16) -> u16 [binding=strong] {
+  block ^entry:
+    %t1 = binary mul u16 %x, 23053
+    %v6 = binary add u16 %t1, 59519
+    return u16 %v6
+}
+function @affine_i32(%x : i32) -> i32 [binding=strong] {
+  block ^entry:
+    %t1 = binary mul i32 %x, 121330189
+    %v6 = binary add i32 %t1, 44230783
+    return i32 %v6
+}
+function @affine_u32(%x : u32) -> u32 [binding=strong] {
+  block ^entry:
+    %t1 = binary mul u32 %x, 121330189
+    %v6 = binary add u32 %t1, 44230783
+    return u32 %v6
+}
+function @affine_i64(%x : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %t1 = binary mul i64 %x, 121330189
+    %v6 = binary add i64 %t1, 44230783
+    return i64 %v6
+}
+function @affine_i128(%x : i128) -> i128 [binding=strong] {
+  block ^entry:
+    %t1 = binary mul i128 %x, 121330189
+    %v6 = binary add i128 %t1, 44230783
+    return i128 %v6
+}
+function @shared(%x : i32) -> i32 [binding=strong] {
+  block ^entry:
+    %p = binary mul i32 %x, 101
+    %q = binary add i32 %p, 37
+    %r = binary mul i32 %q, 103
+    %s = binary xor i32 %p, %r
+    return i32 %s
+}
+function @ordered(%x : f64) -> f64 [binding=strong] {
+  block ^entry:
+    %p = binary mul f64 %x, 1.5
+    %q = binary add f64 %p, -2.75
+    %r = binary mul f64 %q, 3.25
+    return f64 %r
+}
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    return i64 0
+}

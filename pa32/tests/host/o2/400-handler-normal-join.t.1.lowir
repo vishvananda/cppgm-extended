@@ -1,0 +1,59 @@
+# A join of normal and landing paths can still need the caller's exception.
+declare global @int_type : ptr [binding=strong, object=_ZTIi]
+declare function @raise_int(%value : i32) -> void [binding=strong]
+declare function @begin_catch(%exception : ptr) -> ptr [binding=strong, object=__cxa_begin_catch, role=eh_begin_catch, unwind=no]
+declare function @end_catch() -> void [binding=strong, object=__cxa_end_catch, role=eh_end_catch, unwind=no]
+global @choose_handler : i32 = 1
+
+function @inner(%value : i32) -> i64 [inline_hint=yes] {
+  block ^entry:
+    %fast = cmp eq i32 %value, 0
+    branch %fast, ^quick, ^protected
+  block ^quick:
+    return i64 13
+  block ^protected:
+    eh_try ^caught
+    call void @raise_int(%value)
+    eh_end
+    return i64 0
+  block ^caught:
+    eh_catch @int_type, 1
+    %exception = exception ptr
+    %object = call ptr @begin_catch(%exception)
+    call void @end_catch()
+    return i64 13
+}
+
+function @main() -> i32 [role=entry] {
+  block ^entry:
+    %choose = load volatile i32 @choose_handler
+    eh_try ^caught
+    branch %choose, ^throwing, ^normal
+  block ^throwing:
+    call void @raise_int(7)
+    eh_end
+    jump ^normal_after
+  block ^normal:
+    eh_end
+    jump ^normal_after
+  block ^normal_after:
+    jump ^joined
+  block ^caught:
+    eh_catch @int_type, 1
+    %original = exception ptr
+    %object = call ptr @begin_catch(%original)
+    jump ^joined
+  block ^joined:
+    %was_handler = phi i32 [^normal_after: 0, ^caught: 1]
+    %saved = phi ptr [^normal_after: 0, ^caught: %original]
+    %result = call i64 @inner(99)
+    branch %was_handler, ^check, ^normal_exit
+  block ^check:
+    %still_original = exception ptr
+    %ok = cmp eq ptr %still_original, %saved
+    call void @end_catch()
+    %answer = select i32 %ok, 0, 1
+    return i32 %answer
+  block ^normal_exit:
+    return i32 0
+}
