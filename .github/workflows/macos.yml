@@ -96,9 +96,9 @@ jobs:
           fi
       - name: Run the default Intel macOS test report
         run: |
-          make --no-print-directory \
-            --eval='ci-report-config:; @echo "Report parallelism: $(TEST_REPORT_ASSIGNMENT_JOBS) assignments x $(TEST_REPORT_SUBTEST_JOBS) workers ($(DEFAULT_BUILD_JOBS) CPUs)"' \
-            ci-report-config
+          make --no-print-directory -f Makefile -f - ci-report-config <<'MAKE'
+          ci-report-config:; @echo "Report parallelism: $(TEST_REPORT_ASSIGNMENT_JOBS) assignments x $(TEST_REPORT_SUBTEST_JOBS) workers ($(DEFAULT_BUILD_JOBS) CPUs)"
+          MAKE
           /usr/bin/time -lp make test-report CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Compare self-built and inception compilers
         run: |
