@@ -18,21 +18,28 @@ jobs:
     runs-on: macos-15-intel
     timeout-minutes: 90
     env:
-      CXX: clang++
-      CPPGM_HOST_CXX: clang++
       CPPGM_STDLIB_FLAGS: ''
     steps:
       - uses: actions/checkout@v6
+      - name: Select Homebrew LLVM
+        run: |
+          host_llvm="$(brew --prefix llvm@18)"
+          test -x "$host_llvm/bin/clang++"
+          echo "$host_llvm/bin" >> "$GITHUB_PATH"
+          printf 'CXX=%s\nCPPGM_HOST_CXX=%s\n' \
+            "$host_llvm/bin/clang++" "$host_llvm/bin/clang++" >> "$GITHUB_ENV"
+          echo "Host compiler: $host_llvm/bin/clang++"
+          "$host_llvm/bin/clang++" --version
       - name: Build the compiler and native tools
-        run: make -C dev -j4 CXX=clang++ CPPGM_HOST_CXX=clang++
+        run: make -C dev -j4 CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Execute standalone Mach-O programs and check mixed host objects
         run: |
-          make -C pa24 test-macho CXX=clang++ CPPGM_HOST_CXX=clang++
-          make -C pa25 test-macho CXX=clang++ CPPGM_HOST_CXX=clang++
-          make -C pa27 test-macho CXX=clang++ CPPGM_HOST_CXX=clang++
+          make -C pa24 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+          make -C pa25 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+          make -C pa27 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Compare self-built and inception compilers
         run: |
-          make -C pa34 cppgm++-self CXX=../dev/cppgm++ CPPGM_HOST_CXX=clang++ \
+          make -C pa34 cppgm++-self CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             INCEPTION_BUILD_JOBS=4 INCEPTION_OBJECT_BUILD_JOBS=4
-          make -C pa34 compare-cppgm++-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX=clang++ \
+          make -C pa34 compare-cppgm++-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             INCEPTION_BUILD_JOBS=4 INCEPTION_OBJECT_BUILD_JOBS=4
