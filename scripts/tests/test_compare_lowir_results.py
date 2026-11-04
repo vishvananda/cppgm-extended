@@ -5,6 +5,7 @@ import importlib.util
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -1242,6 +1243,81 @@ if __name__ == "__main__":
 LOWIR2NATIVE = REPO_ROOT / "dev" / "lowir2native"
 
 
+class ParallelLowIrComparisonTest(unittest.TestCase):
+    def compare_pair(self, *, changed=False, crash=False):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            program = "function @main() -> i64 [role=entry] {\n  block ^entry:\n    return i64 7\n}\n"
+            for name in ("one", "two"):
+                (root / f"{name}.t").write_text(program)
+                (root / f"{name}.ref").write_text(program)
+                (root / f"{name}.my").write_text(
+                    program.replace("i64 7", "i64 9") if changed and name == "two" else program)
+                (root / f"{name}.ref.expect").write_text("instructions <= 3\n")
+                for suffix in ("ref", "my"):
+                    (root / f"{name}.{suffix}.exit_status").write_text("EXIT_SUCCESS\n")
+            backend = root / "backend"
+            backend.write_text(f"""#!{sys.executable}
+from pathlib import Path
+import os, re, signal, sys
+source = Path(sys.argv[-1])
+output = Path(sys.argv[sys.argv.index('-o') + 1])
+name = source.name.split('.')[0]
+is_input = '.input.lowir' in source.name
+if {crash!r} and name == 'one':
+    os.kill(os.getppid(), signal.SIGKILL)
+    sys.exit(1)
+value = int(re.search(r'return i64 (\\d+)', source.read_text())[1])
+code = '#!{sys.executable}\\n'
+if is_input:
+    # Both input programs must be running before either proceeds. Serial
+    # comparisons fail this barrier, without a fragile elapsed-time assertion.
+    code += 'from pathlib import Path\\nimport time, sys\\n'
+    code += 'root = Path(' + repr({str(root)!r}) + ')\\n'
+    code += f'(root / {{name!r}}).touch()\\n'
+    code += 'deadline = time.monotonic() + 3\\n'
+    code += 'while not all((root / n).exists() for n in ("one", "two")):\\n'
+    code += '    if time.monotonic() >= deadline: sys.exit(91)\\n'
+    code += '    time.sleep(0.005)\\n'
+code += f'raise SystemExit({{value}})\\n'
+output.write_text(code)
+output.chmod(0o755)
+""")
+            backend.chmod(0o755)
+            environment = os.environ.copy()
+            for name in ("CPPGM_CHECK_AUTO_KEEP_GOING", "CPPGM_CHECK_MODE", "CPPGM_TEST_RUN_ID",
+                         "CPPGM_LOWER_CHECK_APP", "CPPGM_BEHAVIOR_CHECK_APP",
+                         "CPPGM_LOWIR_DIRECT_TEXT_COMPARE", "CPPGM_TEST_PLATFORM"):
+                environment.pop(name, None)
+            environment.update(KEEP_GOING="1", CPPGM_COMPARE_JOBS="2", CPPGM_TEST_JOBS="2",
+                               CPPGM_LOWIR_BEHAVIOR_APP=str(backend),
+                               CPPGM_TEST_COUNTS_FILE=str(root / "counts"))
+            result = subprocess.run(
+                ["perl", str(COMPARE), "lowir_optimized_t", "ref", "my",
+                 f"{root / 'one.t'} {root / 'two.t'}"],
+                cwd=root, env=environment, capture_output=True, text=True, timeout=20)
+            return result, (root / "counts").read_text() if (root / "counts").exists() else None, (root / ".test_failed").exists()
+
+    def test_independent_behavior_comparisons_overlap(self):
+        result, counts, failed = self.compare_pair()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(counts, "2 2\n", result.stdout + result.stderr)
+        self.assertFalse(failed)
+
+    def test_parallel_failure_preserves_counts_and_keep_going(self):
+        result, counts, failed = self.compare_pair(changed=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(counts, "1 2\n", result.stdout + result.stderr)
+        self.assertTrue(failed)
+        self.assertIn("exited with status 9; the input's program exited with status 7", result.stdout)
+
+    def test_a_crashed_worker_cannot_report_success(self):
+        result, counts, failed = self.compare_pair(crash=True)
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIsNone(counts)
+        self.assertIn("comparison worker failed", result.stderr)
+
+
 @unittest.skipUnless(LOWIR2NATIVE.exists(), "needs the built dev/lowir2native")
 class OptimizedLowIrBehaviorTest(unittest.TestCase):
     """PA32's optimized lanes run a handwritten fixture with an entry
@@ -1424,6 +1500,25 @@ function @main() -> i64 {
         result = self.compare(self.HELPER, self.HELPER, self.HELPER.replace("%x, 0", "%x, 1"), driver=self.DRIVER)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("exited with status 6; the input's program exited with status 5", result.stdout)
+
+    def test_edge_folding_driver_runs_both_reachable_phi_values(self):
+        fixture = REPO_ROOT / "pa32/tests/o1/500-edge-known-branch.t"
+        source = fixture.read_text()
+        reference = fixture.with_suffix(".ref").read_text()
+        driver = fixture.with_suffix(".driver.lowir").read_text()
+        result = self.compare(source, reference, reference, driver=driver)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("1 with its driver sidecar", result.stdout)
+        for before, after, status in (("i64 7", "i64 8", 1),
+                                      ("i64 3", "i64 4", 2),
+                                      ("i64 11", "i64 12", 3)):
+            with self.subTest(result=before):
+                changed = reference.replace(before, after)
+                self.assertNotEqual(changed, reference)
+                result = self.compare(source, reference, changed, driver=driver)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn(f"exited with status {status}; the input's program exited with status 0",
+                              result.stdout)
 
     def test_an_input_the_backend_rejects_fails_the_lane(self):
         broken = self.RETURNS_124.replace("return i64 124", "return i32 124")

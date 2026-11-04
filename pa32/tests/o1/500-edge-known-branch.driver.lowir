@@ -3,9 +3,22 @@ function @main() -> i64 [role=entry] {
     %zero = const i64 0
     %one = const i64 1
     %folded = call i64 @fold_false_edge(%zero)
-    %false = call i64 @retain_removed_phi_edge(%zero)
-    %true = call i64 @retain_removed_phi_edge(%one)
-    %partial = binary add i64 %folded, %false
-    %result = binary add i64 %partial, %true
-    return i64 %result
+    %folded_ok = cmp eq i64 %folded, 7
+    branch %folded_ok, ^check_false, ^fail_folded
+  block ^check_false:
+    %false_value = call i64 @retain_removed_phi_edge(%zero)
+    %false_ok = cmp eq i64 %false_value, 3
+    branch %false_ok, ^check_true, ^fail_false
+  block ^check_true:
+    %true_value = call i64 @retain_removed_phi_edge(%one)
+    %true_ok = cmp eq i64 %true_value, 11
+    branch %true_ok, ^success, ^fail_true
+  block ^success:
+    return i64 0
+  block ^fail_folded:
+    return i64 1
+  block ^fail_false:
+    return i64 2
+  block ^fail_true:
+    return i64 3
 }

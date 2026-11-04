@@ -283,6 +283,7 @@ class ExportedDevMakefileTests(unittest.TestCase):
             command = [
                 "make", "-s", "-C", str(dev), "pptoken",
                 "CPPGM_TEST_RUNNER=0", f"CXX={compiler}", f"CPPGM_HOST_CXX={compiler}",
+                f"OBJ={root / 'obj'}", f"GENERATED={root / 'obj' / 'generated'}",
             ]
             subprocess.run(command, check=True)
             binary = dev / "pptoken"

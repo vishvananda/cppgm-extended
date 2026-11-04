@@ -128,6 +128,70 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
             self.assertIn('expected worker error', result.stderr)
             self.assertTrue((Path(directory) / 'peer-finished').is_file())
 
+    def test_interrupting_parallel_comparisons_reaps_active_commands(self):
+        with tempfile.TemporaryDirectory() as directory:
+            code = r'''
+                use CppgmBatchWorker qw(run_parallel_tests run_command_capture);
+                run_parallel_tests([0, 1], 2, sub {
+                    my ($index) = @_;
+                    run_command_capture(
+                        cmd => [$ARGV[1], '-c',
+                            'import os,pathlib,sys,time; pathlib.Path(sys.argv[1]).write_text(str(os.getpid())); time.sleep(60)',
+                            "$ARGV[0]/$index.pid"],
+                        stdout => "$ARGV[0]/$index.out", stderr => "$ARGV[0]/$index.err", timeout => 60);
+                    return {};
+                });
+            '''
+            process = subprocess.Popen(
+                ['perl', '-I' + str(REPO_ROOT / 'scripts'), '-e', code, directory, sys.executable],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            children = []
+            try:
+                children = [int(wait_for_file(Path(directory) / f'{index}.pid', 10)) for index in (0, 1)]
+                process.terminate()
+                stdout, stderr = process.communicate(timeout=10)
+                self.assertEqual(process.returncode, 143, stdout + stderr)
+                for pid in children:
+                    wait_for_pid_exit(pid, 5)
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                    process.communicate()
+                for pid in children:
+                    try:
+                        os.kill(pid, 9)
+                    except ProcessLookupError:
+                        pass
+
+    def test_cached_companion_inputs_preserve_glob_selection_and_order(self):
+        with tempfile.TemporaryDirectory(prefix="companion-inputs.") as temporary:
+            root = Path(temporary)
+            for directory in (root / "lane", root / "other"):
+                directory.mkdir()
+                for name in ("case.t", "case.t.1", "case.t.10", "case.t.2", "case.t2",
+                             "case.t.extra", "case.lib.cpp", "case.lib.2.c", "case.lib.txt",
+                             "case.ref", "case2.t", ".case.t"):
+                    (directory / name).touch()
+                (directory / "case.t.link").symlink_to("case.t")
+                for i in range(1000):
+                    (directory / f"case.my.old-{i}.stdout").touch()
+            prefixes = ["lane/case.t", "lane/case.t.", "lane/case.lib.", "lane/missing.t",
+                        "other/case.t", "lane/.case.t"]
+            source = r'''
+use CppgmBatchWorker;
+use JSON::PP;
+my $prefixes = decode_json($ARGV[0]);
+for my $prefix (@$prefixes) {
+    my @expected = sort glob("$prefix*");
+    my @actual = CppgmBatchWorker::input_files_with_prefix($prefix);
+    die "changed inputs for $prefix" if encode_json(\@actual) ne encode_json(\@expected);
+}
+'''
+            result = subprocess.run(
+                ["perl", "-I", str(REPO_ROOT / "scripts"), "-e", source, json.dumps(prefixes)],
+                cwd=root, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_pa29_legacy_compile_preserves_system_include_arguments(self):
         with tempfile.TemporaryDirectory(prefix="pa29-system-includes.") as temp_dir:
             root = Path(temp_dir)

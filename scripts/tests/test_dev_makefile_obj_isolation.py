@@ -35,6 +35,7 @@ class DevMakefileObjIsolationTests(unittest.TestCase):
                     "cppgm++",
                     f"CXX={fake_cxx}",
                     f"CPPGM_HOST_CXX={host_cxx()}",
+                    f"OBJ={REPO_ROOT / 'obj'}",
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,

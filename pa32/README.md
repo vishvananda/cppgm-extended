@@ -190,7 +190,9 @@ For each LowIR or `--emit-lowir` driver fixture `x.t`, the course checks:
   provider that throws, so the handlers run too.  An `x.driver.lowir` beside
   a fixture replaces the generated driver and providers: it is appended as
   written, its `@main` is the entry, and the fixture's own `@main` is renamed
-  `@__behavior_entry`.  The lane's summary line says how many inputs ran,
+  `@__behavior_entry`. Use a driver sidecar to choose terminating inputs and
+  check meaningful results when the default arguments are unsuitable.
+  The lane's summary line says how many inputs ran,
   how, and why the others did not (a pointer parameter or result, a helper
   no provider can define, a program that does not finish); an input the
   reference backend cannot build fails the lane.

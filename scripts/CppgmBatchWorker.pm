@@ -86,6 +86,14 @@ sub run_parallel_tests
 	require JSON::PP;
 	my $scratch = File::Temp::tempdir('cppgm-compare-XXXXXX', TMPDIR => 1, CLEANUP => 1);
 	my (%children, @results);
+	my $interrupt = sub {
+		my ($status) = @_;
+		kill 'TERM', keys %children;
+		waitpid($_, 0) for keys %children;
+		exit $status;
+	};
+	local $SIG{INT} = sub { $interrupt->(130); };
+	local $SIG{TERM} = sub { $interrupt->(143); };
 	my $next = 0;
 	while ($next < @$tests || %children)
 	{
@@ -98,6 +106,7 @@ sub run_parallel_tests
 			die "fork failed: $!" if !defined($pid);
 			if ($pid == 0)
 			{
+				$SIG{INT} = $SIG{TERM} = 'DEFAULT';
 				open(STDOUT, '>', "$scratch/$index.out") or die $!;
 				open(STDERR, '>', "$scratch/$index.err") or die $!;
 				my $result = $run->($tests->[$index]);
@@ -599,6 +608,15 @@ sub run_command_capture
 		die "Unable to exec $cmd[0]: $!";
 	}
 	my $has_process_group = try_set_process_group($pid);
+	my $interrupt = sub {
+		my ($status) = @_;
+		kill 'KILL', -$pid if $has_process_group;
+		kill 'KILL', $pid;
+		waitpid($pid, 0);
+		exit $status;
+	};
+	local $SIG{INT} = sub { $interrupt->(130); };
+	local $SIG{TERM} = sub { $interrupt->(143); };
 
 	if (defined($timeout))
 	{

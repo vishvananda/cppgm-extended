@@ -739,6 +739,15 @@ sub run_lowir_program
 		exec { $program } $program;
 		exit(127);
 	}
+	my $interrupt = sub {
+		my ($status) = @_;
+		kill 'KILL', -$pid;
+		kill 'KILL', $pid;
+		waitpid($pid, 0);
+		exit $status;
+	};
+	local $SIG{INT} = sub { $interrupt->(130); };
+	local $SIG{TERM} = sub { $interrupt->(143); };
 	my $deadline = Time::HiRes::time() + $timeout;
 	while (1)
 	{
