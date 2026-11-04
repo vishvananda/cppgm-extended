@@ -13,6 +13,42 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ReportIsolationTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("g++"), "needs a host C++ compiler")
+    def test_host_compile_failures_retain_diagnostics_through_finish(self):
+        for phase in ("compile", "helper"):
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                compiler = root / "compiler"
+                compiler.write_text(
+                    "#!/usr/bin/env python3\nimport sys\n"
+                    "for line in sys.stdin:\n"
+                    " out, err, *_ = line.rstrip('\\n').split('\\t')\n"
+                    " with open(out, 'a') as f: f.write('compile stdout\\n')\n"
+                    " with open(err, 'a') as f: f.write('compile diagnostic\\n')\n"
+                    " print('EXIT_FAILURE', flush=True)\n"
+                )
+                compiler.chmod(0o755)
+                helper = root / "helper"
+                helper.write_text("#!/bin/sh\necho helper stdout\necho helper diagnostic >&2\nexit 2\n")
+                helper.chmod(0o755)
+                for n in range(2):
+                    (root / f"sample{n}.t").write_text("failure diagnostics\n")
+                    (root / f"sample{n}.t.1").write_text("int main() { return 0; }\n")
+                    if phase == "helper":
+                        (root / f"sample{n}.lib.provider.cpp").write_text("int helper;\n")
+                        (root / f"sample{n}.link.flags").write_text("__LIBDIR__/libprovider.o\n")
+                env = dict(self.environment(), CPPGM_BATCH_TESTS="1", CPPGM_TEST_JOBS="2",
+                           CPPGM_HOST_CXX=str(helper) if phase == "helper" else shutil.which("g++"))
+                q = subprocess.run(["perl", str(ROOT / "scripts/run_cpphostinterop_tests_worker.pl"),
+                                    str(compiler), "my", str(root)], cwd=root, env=env,
+                                   capture_output=True, text=True, timeout=20)
+                self.assertEqual(q.returncode, 0, q.stdout + q.stderr)
+                for n in range(2):
+                    self.assertEqual((root / f"sample{n}.my.impl.exit_status").read_text(),
+                                     "2\n" if phase == "helper" else "1\n")
+                    self.assertEqual((root / f"sample{n}.my.impl.stdout").read_text(), f"{phase} stdout\n")
+                    self.assertEqual((root / f"sample{n}.my.impl.stderr").read_text(), f"{phase} diagnostic\n")
+
     def environment(self):
         env = dict(os.environ, CPPGM_BATCH_TESTS="0", CPPGM_TEST_RUNNER="0", CPPGM_TEST_JOBS="1")
         for key in ("MAKEFLAGS", "MFLAGS", "MAKELEVEL", "MAKEOVERRIDES", "CPPGM_TEST_RUN_ID",

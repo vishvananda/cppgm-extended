@@ -83,6 +83,15 @@ jobs:
           "$host_tools/sdk-check"
       - name: Build the compiler and native tools
         run: make -C dev -j4 CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+      - name: Check the mixed-toolchain vtable link
+        run: |
+          if ! make -C pa27 check CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
+              TEST=tests/general/200-host-extern-template-vtable-reference.t; then
+            for diagnostic in pa27/tests/general/200-host-extern-template-vtable-reference.check*.impl.stderr; do
+              if [ -f "$diagnostic" ]; then cat "$diagnostic"; fi
+            done
+            exit 1
+          fi
       - name: Run the default Intel macOS test report
         run: make test-report CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Compare self-built and inception compilers
@@ -98,8 +107,16 @@ jobs:
           name: macos-llvm-${{ matrix.llvm }}-diagnostics
           path: |
             pa*/tests/**/*.my*.stderr
+            pa*/tests/**/*.my*.stdout
             pa*/tests/**/*.my*.exit_status
             pa*/tests/**/*.my*.inspect
             pa*/tests/**/*.my*.link_command
+            pa*/tests/**/*.my*.link_verbose
             pa*/tests/**/*.my*.unresolved_symbols
+            pa*/tests/**/*.check*.stderr
+            pa*/tests/**/*.check*.stdout
+            pa*/tests/**/*.check*.exit_status
+            pa*/tests/**/*.check*.link_command
+            pa*/tests/**/*.check*.link_verbose
+            pa*/tests/**/*.check*.unresolved_symbols
           retention-days: 7

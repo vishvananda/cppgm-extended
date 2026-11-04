@@ -167,8 +167,6 @@ sub build_test_context
 	my $link_command = "$test_base.$suffix.impl.link_command";
 	my $link_verbose = "$test_base.$suffix.impl.link_verbose";
 	my $nm_report = "$test_base.$suffix.impl.unresolved_symbols";
-	write_file($impl_stdout, '');
-	write_file($impl_stderr, '');
 
 	my @system_include_dirs = read_word_list("$test_base.system-includes");
 	my @system_include_flags = map { ('-isystem', $_) } @system_include_dirs;
