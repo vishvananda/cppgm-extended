@@ -22,9 +22,9 @@ inline std::uintptr_t stack_budget_bytes()
 }
 
 // Bytes of stack between `base` (an address recorded higher in the same
-// thread's call chain) and `here`.
-inline std::uintptr_t stack_bytes_used(std::uintptr_t base, const void* here)
+// thread's call chain) and `here`. Both arguments are addresses: no bytes
+// of the stack markers are read.
+inline std::uintptr_t stack_bytes_used(std::uintptr_t base, std::uintptr_t here)
 {
-	const std::uintptr_t position = reinterpret_cast<std::uintptr_t>(here);
-	return base > position ? base - position : position - base;
+	return base > here ? base - here : here - base;
 }

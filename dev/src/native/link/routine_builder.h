@@ -102,7 +102,6 @@ public:
 private:
 	lowir::Value value_of(lowir::Instruction inst, Kind result);
 
-	lowir::Program& program_;
 	lowir::FunctionBuilder builder_;
 };
 

@@ -310,6 +310,7 @@ int run_with_timeout(int argc, char** argv, const std::string& stdin_file, const
 	return 124;
 }
 
+#if defined(__linux__) && defined(__NR_pidfd_open)
 double monotonic_ms()
 {
 	struct timespec ts;
@@ -319,6 +320,7 @@ double monotonic_ms()
 	}
 	return ts.tv_sec * 1000.0 + ts.tv_nsec / 1000000.0;
 }
+#endif
 
 // Waits for a child to exit. Returns >0 once it has been reaped, 0 if
 // timeout_ms elapsed first, <0 on error.

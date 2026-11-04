@@ -91,7 +91,6 @@ public:
 	const SelectStats& stats() const { return stats_; }
 
 private:
-	const lowir::Program& program_;
 	SelectStats stats_;
 	FunctionSelector* state_;
 };

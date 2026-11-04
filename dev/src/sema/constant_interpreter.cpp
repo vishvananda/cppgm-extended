@@ -99,7 +99,8 @@ bool ConstantInterpreter::stack_left(uint32_t location)
 bool ConstantInterpreter::subobjects_too_deep(uint32_t depth) const
 {
 	char marker;
-	return depth > kSubobjectDepth && stack_bytes_used(analyzer_.stack_base_, &marker) > analyzer_.stack_budget_;
+	return depth > kSubobjectDepth &&
+		stack_bytes_used(analyzer_.stack_base_, reinterpret_cast<std::uintptr_t>(&marker)) > analyzer_.stack_budget_;
 }
 
 // ------------------------------------------------------ objects and places

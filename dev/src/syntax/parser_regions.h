@@ -22,7 +22,7 @@ public:
 	explicit NestingGuard(ParserState& parser) : parser_(parser)
 	{
 		char marker;
-		if (stack_bytes_used(parser.stack_base_, &marker) > parser.stack_budget_)
+		if (stack_bytes_used(parser.stack_base_, reinterpret_cast<std::uintptr_t>(&marker)) > parser.stack_budget_)
 			throw ParseError(parser.location(), "constructs nested too deeply");
 		telemetry::note_peak(parser_.peak_nesting_, ++parser_.nesting_);
 	}

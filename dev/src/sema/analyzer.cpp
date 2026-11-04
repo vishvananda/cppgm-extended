@@ -318,7 +318,7 @@ bool Analyzer::substitution_error(uint32_t location, const char* message, bool t
 bool Analyzer::stack_half_used() const
 {
 	char marker;
-	return stack_bytes_used(stack_base_, &marker) > stack_budget_ / 2;
+	return stack_bytes_used(stack_base_, reinterpret_cast<std::uintptr_t>(&marker)) > stack_budget_ / 2;
 }
 
 Scope* Analyzer::declaration_scope(Scope* scope)

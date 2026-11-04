@@ -14,9 +14,6 @@ namespace lower {
 
 namespace {
 
-// The table's address points past its offset to the top and type
-// information (two pointer-sized entries).
-const uint64_t kTableHeader = kTableHeaderBytes;
 const uint64_t kSlotBytes = 8;
 
 } // namespace

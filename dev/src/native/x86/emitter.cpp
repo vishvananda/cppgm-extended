@@ -23,9 +23,6 @@ bool signed_load(TypeKind kind)
 		kind == TypeKind::Ptr || kind == TypeKind::I128;
 }
 
-const Reg kX14 = static_cast<Reg>(XMM0 + 14);
-const Reg kX15 = static_cast<Reg>(XMM0 + 15);
-
 // An immediate narrowed to its instruction's encoding: refused rather than
 // truncated when bits would be lost (the selector materializes those).
 int64_t narrowed(int64_t value, unsigned bytes)

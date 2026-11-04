@@ -157,8 +157,7 @@ void RuntimeProgram::alias(const char* spelling, lowir::SymbolId target)
 	program_.aliases.push_back(lowir::ObjectAlias{ name(spelling), target });
 }
 
-RoutineBuilder::RoutineBuilder(lowir::Program& program, lowir::SymbolId function)
-	: program_(program), builder_(program, function)
+RoutineBuilder::RoutineBuilder(lowir::Program& program, lowir::SymbolId function) : builder_(program, function)
 {
 	enter(block());
 }

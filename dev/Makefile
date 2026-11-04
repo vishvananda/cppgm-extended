@@ -39,6 +39,10 @@ CPPGM_STDLIB_FLAGS ?=
 # how the host compiler builds these tools, never the code they emit, so the
 # byte-exact references are unchanged.
 CC_FLAGS ?= -std=gnu++11 -Wall -O3 -fno-strict-aliasing $(CPPGM_STDLIB_FLAGS)
+export CPPGM_WARNINGS_AS_ERRORS ?= 0
+ifeq ($(CPPGM_WARNINGS_AS_ERRORS),1)
+override CC_FLAGS += -Werror
+endif
 TELEMETRY_OFF_OBJ ?= ../obj/dev-telemetry-off
 TELEMETRY_OFF_CC_FLAGS ?= $(CC_FLAGS) -DCPPGM_TELEMETRY_ENABLED=0
 TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)

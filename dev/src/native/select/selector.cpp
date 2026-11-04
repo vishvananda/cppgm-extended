@@ -4,7 +4,7 @@
 
 namespace native {
 
-Selector::Selector(const lowir::Program& program) : program_(program), state_(new FunctionSelector(program, stats_))
+Selector::Selector(const lowir::Program& program) : state_(new FunctionSelector(program, stats_))
 {}
 
 Selector::~Selector()

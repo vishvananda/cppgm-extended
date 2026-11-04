@@ -1625,7 +1625,7 @@ private:
 	void check_stack(uint32_t location) const
 	{
 		char marker;
-		if (stack_bytes_used(stack_base_, &marker) > stack_budget_)
+		if (stack_bytes_used(stack_base_, reinterpret_cast<std::uintptr_t>(&marker)) > stack_budget_)
 			error(location, "constructs nested too deeply");
 	}
 	bool stack_half_used() const;

@@ -151,7 +151,7 @@ void AbiEncoder::check_no_qualifiers(unsigned qualifiers) const
 void AbiEncoder::check_stack() const
 {
 	char marker;
-	if (stack_bytes_used(stack_base_, &marker) > stack_budget_)
+	if (stack_bytes_used(stack_base_, reinterpret_cast<std::uintptr_t>(&marker)) > stack_budget_)
 		fail("ABI name nested too deeply");
 }
 

@@ -815,7 +815,7 @@ void FunctionLowering::finish_initializer()
 void FunctionLowering::check_stack(uint32_t location) const
 {
 	char marker;
-	if (stack_bytes_used(lowering_.stack_base(), &marker) > lowering_.stack_budget())
+	if (stack_bytes_used(lowering_.stack_base(), reinterpret_cast<std::uintptr_t>(&marker)) > lowering_.stack_budget())
 		throw LoweringError(location, "constructs nested too deeply");
 }
 

@@ -188,7 +188,7 @@ AbiNode CaseReader::resolve(std::uint32_t index)
 	if (definition.state == 1)
 		fail(definition.line, "recursive ABI definition '" + definition.id.str() + "'");
 	char marker;
-	if (stack_bytes_used(stack_base_, &marker) > stack_budget_)
+	if (stack_bytes_used(stack_base_, reinterpret_cast<std::uintptr_t>(&marker)) > stack_budget_)
 		fail(definition.line, "ABI definitions nested too deeply");
 	definition.state = 1;
 	const AbiNode node = read_definition(definition);

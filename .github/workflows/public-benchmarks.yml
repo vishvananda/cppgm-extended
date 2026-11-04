@@ -29,6 +29,9 @@ concurrency:
   group: public-benchmarks-${{ github.ref }}-${{ inputs.platform || 'github' }}
   cancel-in-progress: true
 
+env:
+  CPPGM_WARNINGS_AS_ERRORS: "1"
+
 jobs:
   benchmarks:
     name: public benchmarks
@@ -186,6 +189,7 @@ jobs:
           "$engine" run --rm \
             -v "$GITHUB_WORKSPACE:/work" -w /work \
             -e CXX=g++ -e CPPGM_HOST_CXX=g++ -e CPPGM_STDLIB_FLAGS= \
+            -e CPPGM_WARNINGS_AS_ERRORS=1 \
             -e COURSE_QUALITY \
             ubuntu:26.04 bash -euo pipefail -c '
               apt-get update

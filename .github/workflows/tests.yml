@@ -13,6 +13,9 @@ on:
 permissions:
   contents: read
 
+env:
+  CPPGM_WARNINGS_AS_ERRORS: "1"
+
 jobs:
   test-placement:
     name: test placement audit

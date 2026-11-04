@@ -293,6 +293,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_compare_results_common.py \
 	scripts/tests/test_cppgm_cmake_wrapper.py \
 	scripts/tests/test_dev_makefile_obj_isolation.py \
+	scripts/tests/test_warning_policy.py \
 	scripts/tests/test_dump_host_eh_object_facts_pl.py \
 	scripts/tests/test_exported_dev_makefile.py \
 	scripts/tests/test_fixture_lanes.py \

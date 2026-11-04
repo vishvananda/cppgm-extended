@@ -832,10 +832,8 @@ bool FindGnuBuiltin(const char* spelling, uint32_t length, GnuBuiltinEntry& entr
 		return false;
 	}
 	const auto* end = kGnuBuiltins + sizeof kGnuBuiltins / sizeof kGnuBuiltins[0];
-	const auto* found = std::lower_bound(
-		kGnuBuiltins, end, spelling, [length](const decltype(kGnuBuiltins[0])& item, const char* key) {
-			return Compare(item.spelling, key, length) < 0;
-		});
+	const auto* found = std::lower_bound(kGnuBuiltins, end, spelling,
+		[length](decltype(kGnuBuiltins[0]) item, const char* key) { return Compare(item.spelling, key, length) < 0; });
 	if (found != end && Compare(found->spelling, spelling, length) == 0)
 	{
 		entry = found->entry;
