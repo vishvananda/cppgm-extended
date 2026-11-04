@@ -14,16 +14,46 @@ concurrency:
 
 jobs:
   native:
-    name: Mach-O and self-hosting
+    name: Mach-O and self-hosting / LLVM ${{ matrix.llvm }}
     runs-on: macos-15-intel
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - llvm: 18
+            formula: llvm@18
+          - llvm: 21
+            formula: cppgm/ci/llvm@21
     env:
       CPPGM_STDLIB_FLAGS: ''
     steps:
       - uses: actions/checkout@v6
+      - name: Install Homebrew LLVM 21 Intel bottle
+        if: matrix.llvm == 21
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+        run: |
+          # This Homebrew revision still includes the Intel 21.1.8 bottle.
+          # Current revisions only publish ARM bottles for macOS.
+          brew tap-new cppgm/ci
+          formula="$(brew --repository cppgm/ci)/Formula/llvm@21.rb"
+          curl --fail --location --retry 3 \
+            https://raw.githubusercontent.com/Homebrew/homebrew-core/c722500ede2e1d33523c27ef11338fec48adfdf9/Formula/l/llvm@21.rb \
+            --output "$formula"
+          python3 - "$formula" <<'PY'
+          from pathlib import Path
+          import sys
+          path = Path(sys.argv[1])
+          text = path.read_text()
+          text = text.replace('  bottle do\n',
+                              '  bottle do\n    root_url "https://ghcr.io/v2/homebrew/core"\n', 1)
+          path.write_text(text)
+          PY
+          brew install --force-bottle cppgm/ci/llvm@21
       - name: Select Homebrew LLVM
         run: |
-          host_llvm="$(brew --prefix llvm@18)"
+          host_llvm="$(brew --prefix '${{ matrix.formula }}')"
           test -x "$host_llvm/bin/clang++"
           echo "$host_llvm/bin" >> "$GITHUB_PATH"
           printf 'CXX=%s\nCPPGM_HOST_CXX=%s\n' \
