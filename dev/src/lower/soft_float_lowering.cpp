@@ -768,7 +768,17 @@ RValue FunctionLowering::soft_convert(const RValue& value, const sema::Type* fro
 	}
 	const lowir::Type storage = lowering_.storage_type(to);
 	if (storage.is_float())
+	{
+		// Every binary16 value widens exactly through float. Reuse its
+		// native extensions rather than require optional hf-to-df/xf
+		// runtime entry points (older Darwin runtimes lack them).
+		if (source == SoftFloat::Half)
+		{
+			const RValue wide = soft_call(SoftFloatHelper::ExtendHFSF, value);
+			return storage == f32 ? wide : convert_op(lowir::ConvertOp::FPExt, storage, wide);
+		}
 		return soft_call(FloatingHelper(storage.kind(), source, false), value);
+	}
 	const bool is_signed = SignedIntegral(to);
 	const unsigned bits = lowir::integer_bits(storage.kind());
 	if (bits == 128)

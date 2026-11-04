@@ -22,6 +22,12 @@ int main() {
     unsigned short raw = samples[i];
     Half half = __builtin_bit_cast(Half, raw);
     float value = half;
+    double wide = half;
+    long double extended = half;
+    if (i == 6) {
+      if (!__builtin_isnan(wide) || !__builtin_isnan(extended)) return 12;
+    } else if (wide != (double)value || extended != (long double)value) return 13;
+    if (i == 1 && (!__builtin_signbit(wide) || !__builtin_signbit(extended))) return 14;
     if (i == 0 && value != 0) return 1;
     if (i == 1 && !__builtin_signbit(value)) return 2;
     if (i == 2 && value != 1.0f) return 3;
