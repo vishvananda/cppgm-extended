@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import textwrap
 import unittest
@@ -13,6 +14,61 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ReportIsolationTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("gcc") and shutil.which("g++"), "needs host C and C++ compilers")
+    def test_shared_helpers_link_with_their_language_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            drivers = {}
+            for label, executable in (("C", "gcc"), ("CXX", "g++")):
+                driver = root / label
+                strict = "-Wl,-undefined,error" if sys.platform == "darwin" else "-Wl,--no-undefined"
+                driver.write_text(
+                    "#!/usr/bin/env python3\nimport json, subprocess, sys\n"
+                    "args = sys.argv[1:]\n"
+                    "with open('drivers.jsonl', 'a') as log:\n"
+                    f" log.write(json.dumps(dict(driver={label!r}, args=args)) + '\\n')\n"
+                    f"if '-shared' in args or '-dynamiclib' in args: args.append({strict!r})\n"
+                    f"sys.exit(subprocess.run([{shutil.which(executable)!r}, *args]).returncode)\n"
+                )
+                driver.chmod(0o755)
+                drivers[label] = str(driver)
+            compiler = root / "compiler"
+            compiler.write_text(
+                "#!/usr/bin/env python3\nimport subprocess, sys\n"
+                "for line in sys.stdin:\n"
+                " out, err, inp, env, *args = line.rstrip('\\n').split('\\t')\n"
+                " with open(out, 'ab') as stdout, open(err, 'ab') as stderr:\n"
+                f"  q = subprocess.run([{shutil.which('g++')!r}, '-x', 'c++', *args], "
+                "stdout=stdout, stderr=stderr)\n"
+                " print('EXIT_SUCCESS' if q.returncode == 0 else 'EXIT_FAILURE', flush=True)\n"
+            )
+            compiler.chmod(0o755)
+            for language, extension in (("c", "c"), ("cpp", "cpp")):
+                (root / f"{language}.t").write_text("shared provider\n")
+                (root / f"{language}.t.1").write_text(
+                    'extern "C" int value(); int main() { return value() != 7; }\n'
+                )
+                provider = "int value() { return 7; }\n" if language == "c" else (
+                    "struct Base { virtual ~Base() {} }; struct Derived : Base {};\n"
+                    'extern "C" int value() { Base* p = new Derived; delete p; return 7; }\n'
+                )
+                (root / f"{language}.lib.provider.{extension}").write_text(provider)
+                (root / f"{language}.link.flags").write_text("__LIBDIR__/libprovider.__SHARED_EXT__\n")
+            env = dict(self.environment(), CPPGM_BATCH_TESTS="1", CPPGM_HOST_CC=drivers["C"],
+                       CPPGM_HOST_CXX=drivers["CXX"])
+            q = subprocess.run(["perl", str(ROOT / "scripts/run_cpphostinterop_tests_worker.pl"),
+                                str(compiler), "my", str(root)], cwd=root, env=env,
+                               capture_output=True, text=True, timeout=30)
+            self.assertEqual(q.returncode, 0, q.stdout + q.stderr)
+            for language in ("c", "cpp"):
+                stderr = (root / f"{language}.my.impl.stderr").read_text() if (
+                    root / f"{language}.my.impl.stderr").exists() else ""
+                self.assertEqual((root / f"{language}.my.impl.exit_status").read_text(), "0\n", stderr)
+                self.assertEqual((root / f"{language}.my.program.exit_status").read_text(), "0\n")
+            calls = [json.loads(line) for line in (root / "drivers.jsonl").read_text().splitlines()]
+            shared = [c for c in calls if "-shared" in c["args"] or "-dynamiclib" in c["args"]]
+            self.assertCountEqual([c["driver"] for c in shared], ["C", "CXX"])
+
     @unittest.skipUnless(shutil.which("g++"), "needs a host C++ compiler")
     def test_host_compile_failures_retain_diagnostics_through_finish(self):
         for phase in ("compile", "helper"):

@@ -319,9 +319,9 @@ sub compile_helper_inputs
 		if ($ctx->{need_helper_shared})
 		{
 			my @cmd = $ctx->{shared_ext} eq 'dylib'
-				? (@{$ctx->{host_cc}}, '-dynamiclib', '-o', $sharedlib, $obj,
+				? (@compiler, '-dynamiclib', '-o', $sharedlib, $obj,
 				   '-Wl,-install_name,@rpath/' . "lib$name.$ctx->{shared_ext}")
-				: (@{$ctx->{host_cc}}, '-shared', '-o', $sharedlib, $obj);
+				: (@compiler, '-shared', '-o', $sharedlib, $obj);
 			my $helper_status = run_command_capture(
 				cmd => \@cmd,
 				stdout => $ctx->{impl_stdout},
