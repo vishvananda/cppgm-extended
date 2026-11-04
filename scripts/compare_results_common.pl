@@ -760,7 +760,11 @@ sub build_lowir_program
 {
 	my ($app, $lowir, $program, $log) = @_;
 	my $build_timeout = CppgmBatchWorker::get_timeout_from_env('CPPGM_BUILD_TEST_TIMEOUT_SEC', 30);
-	return system("timeout $build_timeout \"$app\" -O0 -o \"$program\" \"$lowir\" > /dev/null 2> \"$log\"") == 0;
+	putrawdata($log, '');
+	return CppgmBatchWorker::run_command_capture(
+		cmd => [$app, '-O0', '-o', $program, $lowir],
+		stdin => '/dev/null', stdout => '/dev/null', stderr => $log,
+		timeout => $build_timeout) == 0;
 }
 
 sub lowir_undefined_symbols
@@ -939,9 +943,10 @@ sub source_is_lowir
 sub run_program_capture
 {
 	my ($program, $stdout_path) = @_;
-	my $timeout = CppgmBatchWorker::get_timeout_from_env('CPPGM_PROGRAM_TEST_TIMEOUT_SEC', 10);
-	my $status = system("timeout $timeout \"$program\" < /dev/null > \"$stdout_path\" 2>/dev/null");
-	return $status == -1 ? undef : ($status >> 8);
+	my $result = run_lowir_program($program, $stdout_path);
+	return undef if $result->{timed_out} || $result->{status} == -1;
+	return 128 + ($result->{status} & 127) if $result->{status} & 127;
+	return $result->{status} >> 8;
 }
 
 sub check_source_behavior

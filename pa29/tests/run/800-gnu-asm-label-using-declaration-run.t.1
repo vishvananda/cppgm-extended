@@ -1,5 +1,10 @@
+#if defined(__APPLE__)
+#define CPPGM_ASM_LABEL "_cppgm_pa29_using_asm_probe"
+#else
+#define CPPGM_ASM_LABEL "cppgm_pa29_using_asm_probe"
+#endif
 extern "C" int raw_using_asm_probe(int)
-    __asm("cppgm_pa29_using_asm_probe");
+    __asm(CPPGM_ASM_LABEL);
 
 namespace abi_link
 {

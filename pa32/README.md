@@ -221,6 +221,10 @@ $ perl ../scripts/expect_ir.pl tests/o1/x.my tests/o1/x.ref.expect
 `make test-kernels` adds five dynamic work checks: bounded search, aliased and
 disjoint field updates, narrow arithmetic, state crossing a cold call and
 conditionally updated floating state.
+
+Library-call rewrites must preserve side effects and use an ABI provided by
+the target runtime. Keeping independent calls is valid; tests judge behavior
+and linkability rather than requiring a combined helper call.
 They use one host-built scalar oracle and driver, and compare startup-subtracted
 Cachegrind instruction counts against GCC. Each `.quality` file publishes its
 limit; the supplied frontend and unoptimized backend isolate your LowIR work.

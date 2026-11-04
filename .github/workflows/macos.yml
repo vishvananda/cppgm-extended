@@ -46,9 +46,9 @@ jobs:
           path = Path(wrapper)
           base = shlex.join([compiler, '--no-default-config', '--sysroot=' + sdk, '-isysroot', sdk])
           library = Path(compiler).parent.parent / 'lib'
-          link = shlex.join([f'-L{library / "c++"}', f'-L{library / "unwind"}', f'-L{library}', '-lunwind',
-                             f'-Wl,-rpath,{library / "c++"}', f'-Wl,-rpath,{library / "unwind"}',
-                             f'-Wl,-rpath,{library}'])
+          directories = [p for p in [library / 'c++', library / 'unwind', library] if p.is_dir()]
+          link = shlex.join([f'-L{p}' for p in directories] + ['-lunwind'] +
+                            [f'-Wl,-rpath,{p}' for p in directories])
           # Homebrew's bundled libc++/unwind flags apply only when linking.
           path.write_text('#!/bin/sh\nfor argument do\n  case "$argument" in\n'
                           '    -c|-S|-E|-M|-MM|-fsyntax-only|--version)\n'
@@ -91,3 +91,15 @@ jobs:
             INCEPTION_BUILD_JOBS=4 INCEPTION_OBJECT_BUILD_JOBS=4
           make -C pa34 compare-cppgm++-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             INCEPTION_BUILD_JOBS=4 INCEPTION_OBJECT_BUILD_JOBS=4
+      - name: Retain failing test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-llvm-${{ matrix.llvm }}-diagnostics
+          path: |
+            pa*/tests/**/*.my*.stderr
+            pa*/tests/**/*.my*.exit_status
+            pa*/tests/**/*.my*.inspect
+            pa*/tests/**/*.my*.link_command
+            pa*/tests/**/*.my*.unresolved_symbols
+          retention-days: 7

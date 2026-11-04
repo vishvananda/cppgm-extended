@@ -1,0 +1,18 @@
+extern "C" double sin(double) noexcept;
+extern "C" double cos(double) noexcept;
+extern "C" float sinf(float) noexcept;
+extern "C" float cosf(float) noexcept;
+
+volatile double wide_input = 0.5;
+volatile float narrow_input = 0.25f;
+
+int main() {
+  const double x = wide_input;
+  const double sine = sin(x), cosine = cos(x);
+  const double wide = sine * sine + cosine * cosine;
+  const float y = narrow_input;
+  const float sine_f = sinf(y), cosine_f = cosf(y);
+  const float narrow = sine_f * sine_f + cosine_f * cosine_f;
+  return wide > 0.999999 && wide < 1.000001 &&
+         narrow > 0.99999f && narrow < 1.00001f ? 0 : 1;
+}

@@ -652,12 +652,18 @@ lowir::SymbolId ProgramLowering::soft_float_helper(SoftFloatHelper which)
 		lowir::Parameter parameter = lowir::Parameter();
 		parameter.name = argument_name(i);
 		parameter.type = SpecType(spec.parameters[i]);
-		parameter.classes = soft_float_classes(SpecKind(spec.parameters[i]));
+		// Darwin's compiler-rt half-conversion entry points take/return
+		// the representation as an integer, unlike ordinary _Float16 calls.
+		parameter.classes = darwin_host_objects() && spec.parameters[i] == 'h'
+			? static_cast<uint8_t>(lowir::OC_STATED | lowir::EB_INTEGER)
+			: soft_float_classes(SpecKind(spec.parameters[i]));
 		program_.parameters.push_back(parameter);
 	}
 	signature.parameter_count = count;
 	signature.result = SpecType(spec.result);
-	signature.boundary.result_classes = soft_float_classes(SpecKind(spec.result));
+	signature.boundary.result_classes = darwin_host_objects() && spec.result == 'h'
+		? static_cast<uint8_t>(lowir::OC_STATED | lowir::EB_INTEGER)
+		: soft_float_classes(SpecKind(spec.result));
 	signature.boundary.unwind = ir_model::CUM_NO;
 	program_.declare_function(symbol, lowir::SymbolKind::FunctionDeclaration, program_.add_signature(signature));
 	lowir::SymbolMetadata& metadata = program_.symbols[symbol].metadata;

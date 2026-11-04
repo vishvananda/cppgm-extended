@@ -397,6 +397,7 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 		invocation.optimizer.level = 0;
 	add_host_environment(invocation.preprocessor, nostdinc || invocation.target != native::host_target());
 	configure_target_environment(invocation.preprocessor, invocation.target);
+	invocation.optimizer.has_gnu_sincos = invocation.target == native::Target::Linux;
 	// Darwin objects are position independent even without an explicit -fPIC.
 	if (invocation.target == native::Target::MacOS)
 		invocation.position_independent = true;

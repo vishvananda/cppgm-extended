@@ -16,8 +16,8 @@ namespace driver {
 // read only in the modes that have them (options.modes).
 void add_host_environment(PreprocessorOptions& options, bool nostdinc);
 
-// The platform macros of an explicitly selected foreign target. Its SDK
-// paths must be provided explicitly; baked host include paths are not an SDK.
+// The selected target's platform macros, including the native host target.
+// Foreign SDK paths must be explicit; baked host paths are not a foreign SDK.
 void configure_target_environment(PreprocessorOptions& options, native::Target target);
 
 // Whether `-stdlib=<name>` agrees with the standard library selection

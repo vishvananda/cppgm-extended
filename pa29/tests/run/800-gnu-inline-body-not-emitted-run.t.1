@@ -2,6 +2,10 @@
 // extern inline gnu_inline definition is for inlining only and never emitted;
 // the address names the external abs from libc; expect exit 0
 extern "C" int abs(int);
+#if defined(__APPLE__)
+extern "C++" int library_abs(int) __asm__("_abs");
+#else
 extern "C++" int library_abs(int) __asm__("abs");
+#endif
 extern __inline __attribute__((__gnu_inline__)) int library_abs(int x) { return 42; }
 int main() { int (*p)(int) = library_abs; return p(-3) == 3 ? 0 : 1; }

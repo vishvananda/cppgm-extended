@@ -1,0 +1,1 @@
+linux # ELF permits an unprovided weak reference without an importing shared library

@@ -45,6 +45,9 @@ struct OptimizerOptions
 	// native::recover_jump_thunks), so the inliner copies the target into
 	// it and a dispatch makes one call; otherwise thunks stay as lowered.
 	bool inline_thunk_targets = false;
+	// The target library provides GNU's void sincos(x, sin*, cos*) ABI.
+	// Other libraries may provide a different combined-call interface.
+	bool has_gnu_sincos = true;
 };
 
 // Work counters (`--stats`): observational only.

@@ -1,0 +1,1 @@
+linux # Uses the GNU linker --wrap option to intercept guard acquisition

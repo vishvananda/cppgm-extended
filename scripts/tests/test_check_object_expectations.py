@@ -20,6 +20,20 @@ def write_executable(path: Path, contents: str) -> None:
 
 
 class CheckObjectExpectationsTests(unittest.TestCase):
+    def test_darwin_c_names_local_patterns_and_dwarf_unwind(self):
+        result = self.run_helper(
+            "Darwin",
+            "defined_symbol_canonical 1 counter\n"
+            "undefined_symbol_canonical 1 source\n"
+            "local_defined_symbol_pattern 1 ^_ZZ.*helperEv$\n"
+            "host_unwind_section 1\n",
+            nm_output="0000000000000000 D _counter\n"
+                      "0000000000000020 t __ZZ4mainENK6helperEv\n",
+            nm_u_output="                 U _source\n",
+            otool_output=" sectname __eh_frame\n",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def run_helper(self, platform: str, spec_text: str, *, nm_output: str,
                    nm_u_output: str = "", otool_output: str = "",
                    readelf_output: str = "") -> subprocess.CompletedProcess[str]:

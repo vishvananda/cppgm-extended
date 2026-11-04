@@ -1,4 +1,8 @@
+#if defined(__APPLE__)
+#define CPPGM_PA29_LABEL_PREFIX _
+#else
 #define CPPGM_PA29_LABEL_PREFIX
+#endif
 #define CPPGM_PA29_STRINGIZE_IMPL(x) #x
 #define CPPGM_PA29_STRINGIZE(x) CPPGM_PA29_STRINGIZE_IMPL(x)
 

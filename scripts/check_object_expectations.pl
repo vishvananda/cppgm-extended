@@ -15,6 +15,8 @@ sub host_os
 	return $os;
 }
 
+my $host_os = host_os();
+
 sub read_command_lines
 {
 	my (@cmd) = @_;
@@ -47,6 +49,7 @@ sub canonical_symbol_matches
 {
 	my ($symbol, $needle) = @_;
 	return 1 if $symbol eq $needle;
+	return 1 if $host_os eq 'darwin' && $symbol eq "_$needle";
 	return 1 if $needle eq '_main' && $symbol eq 'main';
 	return 0;
 }
@@ -319,7 +322,8 @@ sub elf_section_contents
 sub validate_host_unwind_section
 {
 	my ($os, $obj) = @_;
-	return has_section_named($os, $obj, '__compact_unwind') if $os eq 'darwin';
+	return has_section_named($os, $obj, '__compact_unwind') || has_section_named($os, $obj, '__eh_frame')
+		if $os eq 'darwin';
 	return has_section_named($os, $obj, '.eh_frame') if $os eq 'linux';
 	die "Unsupported host OS for unwind section checks: $os\n";
 }
@@ -407,14 +411,18 @@ sub validate_thread_local_export_surface_canonical
 	my $canonical_linux_global = canonicalize_symbol($linux_global_symbol);
 	if($os eq 'darwin')
 	{
-		if (count_defined_symbols_canonical($obj, $canonical_wrapper) != 0 &&
-		    count_defined_symbols_canonical($obj, $canonical_darwin_global) != 0 &&
-		    has_section_named($os, $obj, '__thread_data') &&
-		    has_section_named($os, $obj, '__thread_vars') &&
-		    count_macos_relocation_kind_symbol($obj, 'TLV', $canonical_darwin_global) != 0 &&
-		    count_macos_relocation_kind_symbol(
-			    $obj, 'UNSIGND', canonicalize_symbol('__tlv_bootstrap')) != 0) {
-			return 1;
+		for my $global ($canonical_darwin_global, $canonical_linux_global)
+		{
+			if (count_defined_symbols_canonical($obj, $canonical_wrapper) != 0 &&
+			    count_defined_symbols_canonical($obj, $global) != 0 &&
+			    has_section_named($os, $obj, '__thread_data') &&
+			    has_section_named($os, $obj, '__thread_vars') &&
+			    count_macos_relocation_kind_symbol($obj, 'TLV', $global) != 0 &&
+			    count_macos_relocation_kind_symbol(
+				    $obj, 'UNSIGND', canonicalize_symbol('__tlv_bootstrap')) != 0)
+			{
+				return 1;
+			}
 		}
 		return 1 if count_defined_symbols_canonical($obj, $canonical_wrapper) != 0 &&
 			count_defined_symbols_with_prefix_canonical($obj, '__emutls_v.') != 0 &&
@@ -635,7 +643,7 @@ if (scalar(@ARGV) >= 1 && $ARGV[0] eq '--record')
 usage() if scalar(@ARGV) < 2;
 
 my ($spec_file, @objs) = @ARGV;
-my $os = host_os();
+my $os = $host_os;
 
 open(my $spec, '<', $spec_file) or die "Unable to open $spec_file\n";
 while (my $line = <$spec>)
@@ -804,7 +812,7 @@ while (my $line = <$spec>)
 		my ($local, $exported) = (0, 0);
 		for my $entry (read_nm_symbol_entries($obj, 'defined'))
 		{
-			next if $entry->{raw_symbol} !~ $re;
+			next if $entry->{symbol} !~ $re;
 			if ($entry->{type} =~ /^[a-z]$/) { ++$local; } else { ++$exported; }
 		}
 		die "Expected a local defined symbol matching /$pattern/ in object $obj_index and no global or weak one; got $local local and $exported exported\n"

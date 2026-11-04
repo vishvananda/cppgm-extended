@@ -1,8 +1,4 @@
-#if defined(__APPLE__)
-#define CPPGM_TEST_SECTION __attribute__((section("__DATA," "cppgmsec")))
-#else
 #define CPPGM_TEST_SECTION __attribute__((section("cppgmsec")))
-#endif
 
 namespace
 {
