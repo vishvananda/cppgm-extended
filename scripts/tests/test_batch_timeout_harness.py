@@ -57,6 +57,77 @@ def wait_for_pid_exit(pid: int, timeout_sec: float) -> None:
 
 
 class BatchTimeoutHarnessTests(unittest.TestCase):
+    def test_companion_prefixes_preserve_literal_names_and_sorted_groups(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            names = ['case.t', 'case.t2', 'case.t.2', 'case.t.10',
+                     'case.my.old-run', 'case.ref', 'literal[1].t', 'literal[1].t.2']
+            for name in names:
+                (root / name).touch()
+            code = (
+                'use JSON::PP; use CppgmBatchWorker qw(input_files_with_prefix); '
+                'print encode_json([map { [input_files_with_prefix($_)] } @ARGV]);'
+            )
+            result = run('perl', '-I' + str(REPO_ROOT / 'scripts'), '-e', code,
+                         str(root / 'case.t'), str(root / 'case.t.'),
+                         str(root / 'literal[1].t'), capture_output=True)
+            groups = json.loads(result.stdout)
+            self.assertEqual(groups, [
+                [str(root / name) for name in ['case.t', 'case.t.10', 'case.t.2', 'case.t2']],
+                [str(root / name) for name in ['case.t.10', 'case.t.2']],
+                [str(root / name) for name in ['literal[1].t', 'literal[1].t.2']],
+            ])
+
+    def test_parallel_tests_overlap_and_collect_results_in_input_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            code = r'''
+                use CppgmBatchWorker qw(run_parallel_tests);
+                use JSON::PP;
+                use Time::HiRes qw(time sleep);
+                my @results = run_parallel_tests([0, 1, 2], 2, sub {
+                    my ($test) = @_;
+                    open(my $fh, '>', "$ARGV[0]/$test.ready") or die $!;
+                    close($fh);
+                    if ($test < 2) {
+                        my $deadline = time() + 5;
+                        while (!-f "$ARGV[0]/0.ready" || !-f "$ARGV[0]/1.ready") {
+                            die "workers did not overlap" if time() > $deadline;
+                            sleep(0.01);
+                        }
+                    }
+                    print "case $test\n";
+                    return { passed => $test != 1 ? 1 : 0 };
+                });
+                print encode_json(\@results), "\n";
+            '''
+            result = run('perl', '-I' + str(REPO_ROOT / 'scripts'), '-e', code,
+                         directory, capture_output=True)
+            self.assertEqual(result.stderr, '')
+            lines = result.stdout.splitlines()
+            self.assertEqual(lines[:3], ['case 0', 'case 1', 'case 2'])
+            self.assertEqual(json.loads(lines[3]),
+                             [{'passed': 1}, {'passed': 0}, {'passed': 1}])
+
+    def test_parallel_tests_propagate_worker_errors_after_reaping_peers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            code = r'''
+                use CppgmBatchWorker qw(run_parallel_tests);
+                use Time::HiRes qw(sleep);
+                run_parallel_tests([0, 1], 2, sub {
+                    my ($test) = @_;
+                    die "expected worker error\n" if $test == 0;
+                    sleep(0.05);
+                    open(my $fh, '>', "$ARGV[0]/peer-finished") or die $!;
+                    close($fh);
+                    return {};
+                });
+            '''
+            result = run('perl', '-I' + str(REPO_ROOT / 'scripts'), '-e', code,
+                         directory, capture_output=True, check=False)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('expected worker error', result.stderr)
+            self.assertTrue((Path(directory) / 'peer-finished').is_file())
+
     def test_pa29_legacy_compile_preserves_system_include_arguments(self):
         with tempfile.TemporaryDirectory(prefix="pa29-system-includes.") as temp_dir:
             root = Path(temp_dir)

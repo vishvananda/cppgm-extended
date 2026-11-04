@@ -1,0 +1,6 @@
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    %zero = const i64 0
+    %result = call i64 @spin(%zero)
+    return i64 %result
+}
