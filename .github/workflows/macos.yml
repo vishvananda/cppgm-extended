@@ -54,17 +54,50 @@ jobs:
         run: |
           host_llvm="$(brew --prefix 'cppgm/ci/llvm@${{ matrix.llvm }}')"
           test -x "$host_llvm/bin/clang++"
-          echo "$host_llvm/bin" >> "$GITHUB_PATH"
+          host_sdk="$(xcrun --sdk macosx --show-sdk-path)"
+          host_tools="$RUNNER_TEMP/host-llvm-${{ matrix.llvm }}"
+          mkdir -p "$host_tools"
+          # Keep SDK selection identical in builds, header discovery and linking.
+          python3 - "$host_llvm/bin/clang++" "$host_sdk" "$host_tools/clang++" <<'PY'
+          from pathlib import Path
+          import shlex
+          import sys
+          compiler, sdk, wrapper = sys.argv[1:]
+          path = Path(wrapper)
+          path.write_text('#!/bin/sh\nexec ' + shlex.join(
+              [compiler, '--no-default-config', '-isysroot', sdk]) + ' "$@"\n')
+          path.chmod(0o755)
+          PY
+          printf '%s\n%s\n' "$host_llvm/bin" "$host_tools" >> "$GITHUB_PATH"
           printf 'CXX=%s\nCPPGM_HOST_CXX=%s\n' \
-            "$host_llvm/bin/clang++" "$host_llvm/bin/clang++" >> "$GITHUB_ENV"
+            "$host_tools/clang++" "$host_tools/clang++" >> "$GITHUB_ENV"
+          printf 'SDKROOT=%s\n' "$host_sdk" >> "$GITHUB_ENV"
           echo "Host compiler: $host_llvm/bin/clang++"
-          "$host_llvm/bin/clang++" --version
+          echo "SDK: $host_sdk"
+          "$host_tools/clang++" --version
+          if ! "$host_tools/clang++" -std=c++11 -Wall -Werror -fsyntax-only -x c++ - <<'CPP'
+          #include <cstdint>
+          #include <cstdlib>
+          #include <cstring>
+          #include <cmath>
+          static_assert(sizeof(std::uintptr_t) == 8, "x86-64 SDK");
+          int main() {
+            char text[2] = {};
+            std::memcpy(text, "a", 2);
+            return std::strlen(text) != 1 || !std::isfinite(1.0);
+          }
+          CPP
+          then
+            "$host_tools/clang++" -v -E -x c++ /dev/null > /dev/null
+            exit 1
+          fi
       - name: Build the compiler and native tools
         run: make -C dev -j4 CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Execute standalone Mach-O programs and check mixed host objects
         run: |
           make -C pa24 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
           make -C pa25 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+          make -C pa26 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
           make -C pa27 test-macho CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Compare self-built and inception compilers
         run: |

@@ -33,6 +33,7 @@ make -C pa34 compare-cppgm++-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX="$host_
 ```sh
 make -C pa24 test-macho CXX="$host_cxx" CPPGM_HOST_CXX="$host_cxx"
 make -C pa25 test-macho CXX="$host_cxx" CPPGM_HOST_CXX="$host_cxx"
+make -C pa26 test-macho CXX="$host_cxx" CPPGM_HOST_CXX="$host_cxx"
 make -C pa27 test-macho CXX="$host_cxx" CPPGM_HOST_CXX="$host_cxx"
 ```
 
@@ -40,6 +41,8 @@ These checks are outside the required Linux suites. Linux hosts check emission
 and, when installed, use LLVM to inspect, link and verify debug information.
 Intel Macs additionally execute the programs and test interoperability with
 host-built objects, including exception unwinding and thread-local storage.
+The full `make test-report` suite includes Linux ELF and GNU-tool checks; use
+the optional targets above for macOS validation.
 The **Intel macOS port** workflow runs on GitHub's `macos-26-intel` runner and
 also compares self-built and inception compilers with Homebrew LLVM 18 and 21,
 matching the Ubuntu compiler majors. Both use a pinned Homebrew revision

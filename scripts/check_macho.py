@@ -11,6 +11,7 @@ import tempfile
 
 FIXTURES = {'image': ['100-entry.lowir'],
             'object': ['100-main.cpp', '100-data.cpp'],
+            'host': ['100-handler-rejoin.cpp'],
             'interop': ['200-generated.cpp', '200-host.cpp', '200-host-tls.cpp']}
 
 
@@ -78,8 +79,21 @@ def objects(args, work, native):
         run([args.compiler, '--target=macos', path, '-o', work / 'bad'], 1)
 
 
+def host_objects(args, work, native):
+    for level in range(4):
+        output = work / f'host-{level}.o'
+        run([args.compiler, '--target=macos', f'-O{level}', '-g', '-c',
+             args.fixtures / FIXTURES['host'][0], '-o', output])
+        macho(output, 1)
+        inspect(output)
+        if native:
+            executable = work / f'host-{level}'
+            run([args.host_cxx, output, '-o', executable])
+            run([executable])
+
+
 def interop(args, work, native):
-    clang = shutil.which('clang++')
+    clang = args.host_cxx if native else shutil.which('clang++')
     helper = work / 'host-tls.o'
     if clang:
         run([clang, '--target=x86_64-apple-macos10.15', '-std=c++11', '-c',
@@ -99,7 +113,7 @@ def interop(args, work, native):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mode', choices=['image', 'object', 'interop'])
+    parser.add_argument('--mode', choices=['image', 'object', 'host', 'interop'])
     parser.add_argument('--fixtures', type=Path)
     parser.add_argument('--list', action='store_true', help='list selected fixture inputs without running them')
     parser.add_argument('roots', nargs='*', type=Path)
@@ -123,7 +137,7 @@ def main():
     args.fixtures = args.fixtures.resolve()
     native = sys.platform == 'darwin' and platform.machine() == 'x86_64'
     with tempfile.TemporaryDirectory(prefix='cppgm-macho-') as temporary:
-        modes = {'image': image, 'object': objects, 'interop': interop}
+        modes = {'image': image, 'object': objects, 'host': host_objects, 'interop': interop}
         modes[args.mode](args, Path(temporary), native)
     print(f'Mach-O {args.mode}: PASS ({"native Intel macOS" if native else "cross emission"})')
 

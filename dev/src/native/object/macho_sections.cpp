@@ -141,7 +141,7 @@ void Encoder::tlv(uint32_t original, const object::Symbol& source, Symbol& targe
 		sections_[tlv_section_].align = 8;
 		bootstrap_ = symbol("__tlv_bootstrap", 1, 0, 0, 0);
 	}
-	const uint32_t storage = symbol("Lcppgm_tlv_" + std::to_string(original), 0x0e, target.section, 0, target.value);
+	const uint32_t storage = symbol("lcppgm_tlv_" + std::to_string(original), 0x0e, target.section, 0, target.value);
 	Section& variables = sections_[tlv_section_];
 	const uint32_t at = static_cast<uint32_t>(variables.bytes.size());
 	variables.bytes.resize(at + 24, 0);
@@ -166,8 +166,10 @@ bool Encoder::symbols()
 		const bool external = source.binding != Binding::Local;
 		const bool section_symbol = source.type == SymbolType::Section;
 		Symbol target;
-		target.name = section_symbol                ? "Lcppgm_section_" + std::to_string(i)
-			: source.name == 0                      ? "Lcppgm_anonymous_" + std::to_string(i)
+		// Primary atoms need retained local labels. Darwin strips uppercase-L
+		// assembler temporaries before establishing section atom boundaries.
+		target.name = section_symbol                ? "lcppgm_section_" + std::to_string(i)
+			: source.name == 0                      ? "lcppgm_anonymous_" + std::to_string(i)
 			: input_.string(source.name)[0] == '\1' ? std::string(input_.string(source.name) + 1)
 													: std::string("_") + input_.string(source.name);
 		target.type = external ? 1 : 0;

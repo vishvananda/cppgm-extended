@@ -51,6 +51,10 @@ If those are not set, the harness searches for common compilers such as
 `clang++`, `g++`, `c++`, `clang`, `gcc`, and `cc`. Object-inspection tests also
 require host symbol/object tools such as `nm` and `readelf`.
 
+Optional Intel macOS validation runs with `make test-macho` using a host Clang
+toolchain. It links generated Mach-O objects and executes exception handlers
+that rejoin a loop. These checks are separate from the required Linux suite.
+
 ### Starter Kit
 
 The starter kit provides:
