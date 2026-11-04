@@ -325,7 +325,7 @@ void LoopRotation::rotate(const Candidate& candidate)
 		branch.ops[0] = mapped(body_.instructions[term].ops[0]);
 		branch.ops[1] = Value::block(body_.instructions[term].ops[1].index == pre ? inside : outside);
 		branch.ops[2] = Value::block(body_.instructions[term].ops[2].index == pre ? inside : outside);
-		for (const std::pair<BlockId, BlockId> to : { std::make_pair(inside, pre), std::make_pair(outside, h) })
+		for (const std::pair<BlockId, BlockId>& to : { std::make_pair(inside, pre), std::make_pair(outside, h) })
 			for (InstId i = body_.blocks[to.first].first; i != kNoId && body_.instructions[i].op == Opcode::Phi;
 				i = body_.instructions[i].next)
 			{
