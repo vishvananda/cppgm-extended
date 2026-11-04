@@ -41,7 +41,7 @@ sub process_one_test
 	unlink(glob("$test_base.$suffix.impl.exit_status"));
 	unlink(glob("$test_base.$suffix.*.obj"));
 
-	my @srcfiles = sort glob("$test_base.t.*");
+	my @srcfiles = CppgmBatchWorker::input_files_with_prefix("$test_base.t.");
 	if (scalar(@srcfiles) == 0)
 	{
 		write_file("$test_base.$suffix.impl.stderr",

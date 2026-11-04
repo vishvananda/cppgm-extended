@@ -43,7 +43,7 @@ sub process_one_test
 		@include_args = ('-nostdinc', map { ('-isystem', $_) }
 			grep { $_ ne '' } split(/:/, $paths));
 	}
-	my @inputs = sort glob("$test*");
+	my @inputs = CppgmBatchWorker::input_files_with_prefix($test);
 	my $status;
 	my $build_timeout = get_timeout_from_env("CPPGM_BUILD_TEST_TIMEOUT_SEC", 30);
 	my %worker_env = %{$env};
