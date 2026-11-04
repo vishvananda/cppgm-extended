@@ -652,5 +652,5 @@ square-root results (including signed zero and NaNs), and leave `errno` alone.
 `__fp16` is a distinct two-byte floating storage type. Scalar arithmetic and
 unary `+`/`-` promote it to `float`; variadic arguments promote it to `double`.
 Preserve binary16 conversions, vector lanes and its distinct Itanium `Dh`
-encoding. Scalar function parameters and return values require a pointer or
-reference instead.
+encoding. A declared scalar `__fp16` parameter or return type is rejected;
+pointers and references remain valid.

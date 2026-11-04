@@ -463,12 +463,15 @@ const Type* Analyzer::substitute_function(const Type* type, const Substitution& 
 	if (result == nullptr)
 		return nullptr;
 	const Type* void_type = types_.fundamental(FundamentalType::Void);
-	bool invalid = result->kind == TypeKind::Function || result->kind == TypeKind::Array;
+	const Type* storage_half = types_.fundamental(FundamentalType::StorageHalf);
+	bool invalid = result->kind == TypeKind::Function || result->kind == TypeKind::Array ||
+		result->unqualified == storage_half;
 	for (const Type* parameter : parameters)
-		invalid = invalid || parameter->unqualified == void_type;
+		invalid = invalid || parameter->unqualified == void_type || parameter->unqualified == storage_half;
 	if (invalid)
 	{
-		substitution_error(0, "a function type returning an array or a function, or with a parameter of type void");
+		substitution_error(
+			0, "a function type returning an array or function, with a void parameter, or using __fp16 by value");
 		return nullptr;
 	}
 	// A parameter or return type of an abstract class is no substitution
