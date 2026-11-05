@@ -668,6 +668,19 @@ bool Parser::parse_typeof_specifier(ListFrame<DeclSpecifier>& list, SpecifierInf
 
 bool Parser::parse_named_type_specifier(ListFrame<DeclSpecifier>& list, SpecifierInfo& info)
 {
+	if (at(TokenKind::KW_DECLTYPE) && at(TokenKind::OP_LPAREN, 1) && at(TokenKind::KW_AUTO, 2) &&
+		at(TokenKind::OP_RPAREN, 3))
+	{
+		DeclSpecifier specifier = DeclSpecifier();
+		specifier.kind = DeclSpecKind::DecltypeAuto;
+		specifier.location = location();
+		for (unsigned i = 0; i < 4; ++i)
+			next();
+		list.push(specifier);
+		info.has_type = true;
+		info.sign_only = false;
+		return true;
+	}
 	Tentative tentative(*this);
 	DeclSpecifier specifier = DeclSpecifier();
 	specifier.location = location();

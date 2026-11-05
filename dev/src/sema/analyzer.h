@@ -62,6 +62,7 @@ public:
 	// gates contradict are dropped -- a constexpr non-static member function
 	// is not implicitly const (7.1.5p8 in C++11) and may return void (N3652).
 	void set_cxx14(bool on) { cxx14_ = on; }
+	void set_cxx17(bool on) { cxx17_ = on; }
 	// -fno-exceptions (hosted -c): allocation and deallocation functions'
 	// redeclarations are not compared (check_redeclared_exceptions).
 	void set_exceptions(bool on) { exceptions_ = on; }
@@ -431,8 +432,9 @@ private:
 	Scope* qualified_lookup_scope(Scope* qualifier, Scope* scope);
 	bool member_hides_parameter(Scope* qualifier, const Identifier* name);
 	const Type* parameter_type(const syntax::ParameterDeclaration& parameter, Scope* scope);
-	const Type* type_id(const syntax::TypeId& type, Scope* scope);
+	const Type* type_id(const syntax::TypeId& type, Scope* scope, bool allow_placeholder = false);
 	const Type* decltype_type(const syntax::Expr& operand, Scope* scope);
+	const Type* decltype_result(const syntax::Expr& operand, const ExprFacts& facts);
 	uint64_t array_bound(const syntax::Expr& bound, Scope* scope);
 	const Type* checked_pointer(const Type* pointee, uint32_t location);
 	const Type* checked_array(const Type* element, uint64_t bound, uint32_t location);
@@ -967,8 +969,8 @@ private:
 	void capture_this(uint32_t location);
 	void finish_captures(LambdaFrame& frame);
 	void closure_conversion(const ClassEntity* closure, bool conversion_function = true);
-	const Type* deduced_result(ExprFacts* facts, uint32_t location);
-	const Type* return_deduction(ExprFacts* facts, uint32_t location);
+	const Type* deduced_result(ExprFacts* facts, uint32_t location, const syntax::Expr* operand = nullptr);
+	const Type* return_deduction(ExprFacts* facts, uint32_t location, const syntax::Expr* operand);
 	void deduce_function_result(FunctionEntity* function, const Type* result);
 	bool require_deduced(FunctionEntity* function, uint32_t location);
 
@@ -1409,6 +1411,9 @@ private:
 	void pending_noexcept(FunctionEntity* function, const syntax::DeclaratorSuffix* suffix,
 		const syntax::ParameterClause* parameters, Scope* scope);
 	bool noexcept_value(const FunctionEntity* function, const syntax::Expr* operand, Scope* scope);
+	const Type* function_exception_type(
+		const syntax::DeclaratorSuffix& suffix, Scope* scope, const Type* const* parameters, uint32_t count);
+	bool record_function_exception_type(FunctionEntity* function);
 	static bool NonThrowingSpecification(const syntax::DeclaratorSuffix* suffix);
 	static bool HasExceptionSpecification(const syntax::DeclaratorSuffix* suffix);
 	void record_throw_specification(FunctionEntity* function, const syntax::DeclaratorSuffix* suffix, Scope* scope);
@@ -1638,6 +1643,7 @@ private:
 	AnalysisMode mode_;
 	bool hosted_ = false;
 	bool cxx14_ = false;
+	bool cxx17_ = false;
 	bool exceptions_ = true;
 	bool ignore_narrowing_ = false;
 	const SourcePositions* positions_ = nullptr;
@@ -1860,6 +1866,7 @@ private:
 	const Identifier* delete_array_key_;
 	// The type of an `auto` decl-specifier until deduction.
 	const Type* auto_placeholder_;
+	const Type* decltype_auto_placeholder_;
 	// The prototype scope of the innermost trailing return type, until
 	// declarator() attaches it to the dump.
 	PendingPrototype pending_prototype_;

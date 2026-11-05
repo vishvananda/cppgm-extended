@@ -1,0 +1,1 @@
+inline namespace invalid::inner {}

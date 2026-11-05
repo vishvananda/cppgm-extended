@@ -292,6 +292,14 @@ void AbiEncoder::encode_function_type(AbiNode type)
 {
 	const AbiNodeData& data = graph_.node(type);
 	encode_qualifiers(data.code);
+	if (data.c != ABI_NONE)
+	{
+		put("DO");
+		encode_expression(data.c);
+		put('E');
+	}
+	else if ((data.flags & ABI_FLAG_NONTHROWING) != 0)
+		put("Do");
 	put('F');
 	if (data.a != ABI_NONE)
 		encode_type(data.a);

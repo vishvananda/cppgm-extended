@@ -477,6 +477,14 @@ void FunctionLowering::flush_deferred()
 	// was pushed (a try the body entered since is not theirs).
 	std::vector<DeferredCleanup> blocks;
 	blocks.swap(deferred_);
+	// A virtual call's operand branch can place these handlers while a
+	// full-expression's region is still open on the normal path. Their
+	// calls and terminators must not alter that path's region bookkeeping.
+	const bool segment = region_segment_;
+	const bool stale = stale_region_;
+	const bool nothrow = nothrow_segment_;
+	region_segment_ = stale_region_ = nothrow_segment_ = false;
+	++explicit_regions_;
 	for (const DeferredCleanup& deferred : blocks)
 	{
 		builder_.place_block(deferred.block);
@@ -520,6 +528,10 @@ void FunctionLowering::flush_deferred()
 			innermost_try_ = innermost;
 		}
 	}
+	--explicit_regions_;
+	region_segment_ = segment;
+	stale_region_ = stale;
+	nothrow_segment_ = nothrow;
 }
 
 lowir::BlockId FunctionLowering::context_return_entry()

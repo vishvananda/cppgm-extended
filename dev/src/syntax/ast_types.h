@@ -16,6 +16,8 @@ enum class DeclSpecKind : uint8_t
 	// A named type: type-name, qualified type name or typename-specifier.
 	Name,
 	Decltype,
+	// C++14's placeholder, whose deduction uses decltype rather than auto.
+	DecltypeAuto,
 	// A class-specifier with a body.
 	Class,
 	// An elaborated-type-specifier `class-key name` (also written alone as

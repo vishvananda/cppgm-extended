@@ -1060,6 +1060,25 @@ void Analyzer::record_constant_initializer(
 	}
 }
 
+const Type* Analyzer::decltype_result(const syntax::Expr& operand, const ExprFacts& facts)
+{
+	// The written operand matters: `x` names its declared type, `(x)`
+	// yields a reference. Reuse the evaluated expression's entity and
+	// value category, without repeating lookup or typing its initializer.
+	if ((operand.kind == syntax::ExprKind::Id || operand.kind == syntax::ExprKind::Member) && facts.entity != nullptr)
+	{
+		if (facts.entity->kind == EntityKind::Variable &&
+			static_cast<const VariableEntity*>(facts.entity)->structured_binding)
+			return static_cast<const BindingEntity*>(facts.entity)->referenced;
+		return facts.entity->type;
+	}
+	if (facts.category == ValueCategory::LValue)
+		return types_.reference(facts.type, false);
+	if (facts.category == ValueCategory::XValue)
+		return types_.reference(facts.type, true);
+	return facts.type;
+}
+
 const Type* Analyzer::decltype_type(const syntax::Expr& operand, Scope* scope)
 {
 	// 7.1.6.2p4: an unparenthesized id-expression or class member access
@@ -1119,6 +1138,8 @@ const Type* Analyzer::decltype_type(const syntax::Expr& operand, Scope* scope)
 			if ((set != nullptr && set->next != nullptr) || static_cast<const FunctionEntity*>(function)->templated)
 				error(expr->location, "decltype of an overloaded function");
 			// A function's type has its parameters adjusted (8.3.5p5).
+			if (cxx17_)
+				function_nothrow(static_cast<const FunctionEntity*>(function));
 			type = function->type->canonical;
 			break;
 		}

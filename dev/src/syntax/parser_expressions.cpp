@@ -1,6 +1,7 @@
 #include "syntax/parser.h"
 
 #include <cstring>
+#include <string>
 
 #include "lex/gnu_builtins.h"
 #include "lex/identifier_table.h"
@@ -1251,6 +1252,59 @@ Expr* Parser::parse_keyword_cast()
 	return cast;
 }
 
+void Parser::invent_lambda_parameters(LambdaExpr& lambda)
+{
+	if (!hosted_ || lambda.parameters == nullptr)
+		return;
+	std::vector<TemplateParameter*> invented;
+	ParameterDeclaration** normalized = nullptr;
+	const uint32_t explicit_count = lambda.template_parameters != nullptr ? lambda.template_parameters->parameters.size
+																		  : 0;
+	for (uint32_t i = 0; i < lambda.parameters->parameters.size; ++i)
+	{
+		const ParameterDeclaration& parameter = *lambda.parameters->parameters[i];
+		for (uint32_t j = 0; j < parameter.specifiers.size; ++j)
+		{
+			const DeclSpecifier& specifier = parameter.specifiers[j];
+			if (specifier.kind != DeclSpecKind::Keyword || specifier.keyword != TokenKind::KW_AUTO)
+				continue;
+			if (normalized == nullptr)
+				normalized = arena_.copy_array(lambda.parameters->parameters.data, lambda.parameters->parameters.size);
+			TemplateParameter* type = make<TemplateParameter>();
+			*type = TemplateParameter();
+			type->kind = TemplateParameterKind::Type;
+			type->key = TokenKind::KW_TYPENAME;
+			type->location = specifier.location;
+			type->pack = parameter.declarator != nullptr && parameter.declarator->pack != PackPosition::None;
+			const std::string spelling = " auto:" + std::to_string(lambda.clause_token) + ":" +
+				std::to_string(explicit_count + invented.size());
+			type->name = identifiers_.intern(spelling.data(), static_cast<uint32_t>(spelling.size()));
+			invented.push_back(type);
+			ParameterDeclaration* copy = make<ParameterDeclaration>();
+			*copy = parameter;
+			copy->specifiers.data = arena_.copy_array(parameter.specifiers.data, parameter.specifiers.size);
+			copy->specifiers[j].kind = DeclSpecKind::Name;
+			copy->specifiers[j].name = make_simple_name(type->name, specifier.location);
+			normalized[i] = copy;
+			break;
+		}
+	}
+	if (invented.empty())
+		return;
+	TemplateParameterList* head = make<TemplateParameterList>();
+	head->location = lambda.location;
+	head->parameters.size = explicit_count + static_cast<uint32_t>(invented.size());
+	head->parameters.data = arena_.allocate_array<TemplateParameter*>(head->parameters.size);
+	for (uint32_t i = 0; i < explicit_count; ++i)
+		head->parameters[i] = lambda.template_parameters->parameters[i];
+	for (uint32_t i = 0; i < invented.size(); ++i)
+		head->parameters[explicit_count + i] = invented[i];
+	lambda.template_parameters = head;
+	lambda.generic_parameters = make<ParameterClause>();
+	*lambda.generic_parameters = *lambda.parameters;
+	lambda.generic_parameters->parameters.data = normalized;
+}
+
 Expr* Parser::parse_lambda()
 {
 	LambdaExpr* lambda = make<LambdaExpr>(ExprKind::Lambda, location());
@@ -1318,6 +1372,7 @@ Expr* Parser::parse_lambda()
 		if (lambda->parameters == nullptr)
 			return nullptr;
 		body_scope = parameter_scope_;
+		invent_lambda_parameters(*lambda);
 		// GNU attributes may come before the specifiers.
 		if (!collect_attributes(lambda->attributes))
 			return nullptr;

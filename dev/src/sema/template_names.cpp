@@ -463,7 +463,7 @@ const Type* Analyzer::without_stand_ins(const Type* type)
 		if (!changed && result == type->element)
 			return type;
 		return types_.function(result, parameters.data(), static_cast<uint32_t>(parameters.size()), type->variadic,
-			type->function_cv, type->ref);
+			type->function_cv, type->ref, type->owner);
 	}
 	default:
 		return type;
@@ -536,7 +536,11 @@ void Analyzer::named_parameters(const Type* type, uint32_t depth, uint64_t& name
 		for (uint32_t i = 0; i < type->param_count; ++i)
 			named_parameters(type->params[i], depth, named, opaque, level + 1);
 		if (type->kind == TypeKind::Function)
+		{
 			named_parameters(type->element, depth, named, opaque, level + 1);
+			if (type->owner != nullptr)
+				named_parameters(type->owner, depth, named, opaque, level + 1);
+		}
 		return;
 	default:
 		return;
@@ -976,7 +980,7 @@ void Analyzer::declare_alias_template(const syntax::AliasDecl& decl, Scope* scop
 		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
 	if (info.virt_suffix != nullptr || specifiers.is_virtual)
 		error(decl.location, "a virt-specifier or virtual in an alias-declaration");
-	if (DeclaratorSpecifiesExceptions(decl.type->declarator))
+	if (!cxx17_ && DeclaratorSpecifiesExceptions(decl.type->declarator))
 		error(decl.location, "an exception-specification in an alias-declaration");
 	Scope* where = declaration_scope(scope);
 	check_template_parameter_name(scope, decl.name, decl.location);

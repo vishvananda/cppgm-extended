@@ -71,9 +71,9 @@ PPToken EndToken()
 MacroExpander::MacroExpander(Arena& arena, IdentifierTable& identifiers, const PreprocessorNames& names,
 	ExpansionEnvironment& environment, MacroExpansionState& state)
 	: arena_(arena), identifiers_(identifiers), names_(names), environment_(environment), input_(nullptr),
-	  controlling_expression_(false), binary_exponents_(false), hosted_recursion_(false), pending_space_(false),
-	  building_head_(EndToken()), building_serial_(0), building_chain_(0), read_serial_(0), read_chain_(0),
-	  read_root_(0), read_disabled_(0), current_(EndToken()), state_(state)
+	  controlling_expression_(false), binary_exponents_(false), digit_separators_(false), hosted_recursion_(false),
+	  pending_space_(false), building_head_(EndToken()), building_serial_(0), building_chain_(0), read_serial_(0),
+	  read_chain_(0), read_root_(0), read_disabled_(0), current_(EndToken()), state_(state)
 {}
 
 // ---- rescanning ---------------------------------------------------------------
@@ -846,6 +846,7 @@ PPToken MacroExpander::paste_tokens(const PPToken& left, const PPToken& right)
 	options.header_names_on_request = true;
 	options.token_text = true;
 	options.binary_exponents = binary_exponents_;
+	options.digit_separators = digit_separators_;
 	PPLexer lexer(text, options);
 	PPToken result = PPToken();
 	try

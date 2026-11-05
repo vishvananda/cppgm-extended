@@ -308,8 +308,8 @@ const Type* TypeTable::complex(const Type* element)
 	return intern(key);
 }
 
-const Type* TypeTable::function(
-	const Type* result, const Type* const* params, uint32_t count, bool variadic, uint8_t cv, RefQualifier ref)
+const Type* TypeTable::function(const Type* result, const Type* const* params, uint32_t count, bool variadic,
+	uint8_t cv, RefQualifier ref, const Type* exception)
 {
 	Type key = Key(TypeKind::Function);
 	key.element = result;
@@ -318,6 +318,8 @@ const Type* TypeTable::function(
 	key.variadic = variadic;
 	key.function_cv = cv;
 	key.ref = ref;
+	key.owner = exception != nullptr && exception->kind == TypeKind::Value && exception->bound == 0 ? nullptr
+																									: exception;
 	return intern(key);
 }
 

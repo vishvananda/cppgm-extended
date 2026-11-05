@@ -214,6 +214,21 @@ bool Analyzer::NonThrowingSpecification(const syntax::DeclaratorSuffix* suffix)
 	return false;
 }
 
+const Type* Analyzer::function_exception_type(
+	const syntax::DeclaratorSuffix& suffix, Scope* scope, const Type* const* parameters, uint32_t count)
+{
+	const Type* boolean = types_.fundamental(FundamentalType::Bool);
+	if (NonThrowingSpecification(&suffix))
+		return types_.value(boolean, 1);
+	const syntax::Expr* operand = NoexceptOperand(&suffix);
+	if (operand == nullptr)
+		return nullptr;
+	Scope* prototype = prototype_scope(*suffix.parameters, parameters, count, scope);
+	if (template_depth_ != 0 && instantiation_dependent(*operand, prototype))
+		return dependent_expression(*operand, prototype, true, boolean);
+	return noexcept_value(nullptr, operand, prototype) ? types_.value(boolean, 1) : nullptr;
+}
+
 bool Analyzer::HasExceptionSpecification(const syntax::DeclaratorSuffix* suffix)
 {
 	if (suffix == nullptr)
@@ -346,6 +361,15 @@ void Analyzer::check_nothrow_initializer(const syntax::Initializer& initializer)
 
 bool Analyzer::nothrow_target(const syntax::Expr& callee)
 {
+	if (cxx17_ && callee.facts != nullptr)
+	{
+		const Type* type = callee.facts->type;
+		while (type != nullptr &&
+			(type->is_reference() || type->kind == TypeKind::Pointer || type->kind == TypeKind::MemberPointer))
+			type = type->element;
+		if (type != nullptr && type->is_nothrow_function())
+			return true;
+	}
 	// A call's callee designating a function through such an entity
 	// (`fp()`, `(*fp)()`, `s.fp()`, `(obj.*pm)()`).
 	const syntax::Expr* e = WithoutParentheses(&callee);
@@ -596,27 +620,45 @@ void Analyzer::check_redeclared_exceptions(
 		error(location, "redeclaration with an incompatible exception-specification");
 }
 
+bool Analyzer::record_function_exception_type(FunctionEntity* function)
+{
+	if (!cxx17_ || function->templated)
+		return function->nothrow;
+	const bool specified = function->exception_spec || function->implicit || function->defaulted ||
+		function->destructor || function->allocation == AllocationRole::Delete ||
+		function->allocation == AllocationRole::DeleteArray;
+	const bool nonthrowing = specified && function->nothrow;
+	if (function->type->is_nothrow_function() != nonthrowing)
+	{
+		const Type* type = function->type;
+		const Type* exception = nonthrowing ? types_.value(types_.fundamental(FundamentalType::Bool), 1) : nullptr;
+		function->type = types_.function(
+			type->element, type->params, type->param_count, type->variadic, type->function_cv, type->ref, exception);
+	}
+	return function->nothrow;
+}
+
 bool Analyzer::function_nothrow(const FunctionEntity* entity)
 {
 	// 15.4p12: the noexcept-specification's value, the expression
 	// contextually converted to bool (15.4p1) and evaluated once.
 	FunctionEntity* function = const_cast<FunctionEntity*>(entity);
 	if (!function->noexcept_pending || function->templated)
-		return function->nothrow;
+		return record_function_exception_type(function);
 	function->noexcept_pending = false;
 	// An inheriting constructor's, from its implicit definition's plan (see
 	// planned_inheriting_constructor).
 	if (function->inherited != nullptr && function->constructor)
 	{
 		function->nothrow = plan_nothrow(function);
-		return function->nothrow;
+		return record_function_exception_type(function);
 	}
 	const FunctionEntity* primary = function->primary;
 	uint32_t index = noexcept_index_.find(function);
 	if (index == PointerMap::kMissing && primary != nullptr)
 		index = noexcept_index_.find(primary);
 	if (index == PointerMap::kMissing)
-		return function->nothrow;
+		return record_function_exception_type(function);
 	const syntax::Expr* operand = noexcepts_[index].operand;
 	Scope* scope = noexcepts_[index].scope;
 	if (primary != nullptr && primary->template_parameters != nullptr && HeadOf(primary) != nullptr)
@@ -678,7 +720,7 @@ bool Analyzer::function_nothrow(const FunctionEntity* entity)
 	function->nothrow = noexcept_value(function, operand, scope);
 	names_.set_limit(limit);
 	lexical_limit_ = lexical;
-	return function->nothrow;
+	return record_function_exception_type(function);
 }
 
 bool Analyzer::noexcept_value(const FunctionEntity* function, const syntax::Expr* operand, Scope* scope)

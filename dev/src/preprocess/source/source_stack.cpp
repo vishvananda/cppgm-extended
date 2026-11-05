@@ -37,6 +37,7 @@ void SourceStack::enter(SourceFile* file, std::string presumed_name, std::size_t
 	options.location_base = frame->base;
 	options.header_names_on_request = true;
 	options.binary_exponents = hosted_;
+	options.digit_separators = hosted_;
 	options.legacy_comment_bytes = hosted_;
 	options.lone_quotes = hosted_;
 	options.crlf_splices = hosted_;

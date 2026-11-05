@@ -678,6 +678,11 @@ void ProgramLowering::simple_declaration(const syntax::SimpleDecl& decl, bool ex
 		if (variable->member || variable->owner == nullptr ||
 			(variable->owner->kind != sema::ScopeKind::Namespace && variable->owner->kind != sema::ScopeKind::Class))
 			continue;
+		// C++17's constexpr static member is defined inline in its class;
+		// a later declaration without an initializer emits no second object.
+		if (variable->is_inline && variable->is_constexpr && variable->owner->kind == sema::ScopeKind::Class &&
+			init.initializer == nullptr)
+			continue;
 		// 3.1p2: an extern declaration without an initializer only declares;
 		// 14.7.3p13: so does a static data member's explicit specialization.
 		if ((is_extern || (explicit_specialization && variable->owner->kind == sema::ScopeKind::Class)) &&

@@ -663,6 +663,10 @@ const Type* Analyzer::composite_pointer(const ExprFacts* a, const ExprFacts* b, 
 			if (ta == tb)
 				return ta;
 		}
+		if (conversions_.function_conversion(ta->element, tb->element))
+			return tb;
+		if (conversions_.function_conversion(tb->element, ta->element))
+			return ta;
 		if (ConversionRules::qualification_convertible(ta, tb))
 			return tb;
 		if (ConversionRules::qualification_convertible(tb, ta))
@@ -675,6 +679,10 @@ const Type* Analyzer::composite_pointer(const ExprFacts* a, const ExprFacts* b, 
 		return nullptr;
 	const Type* pa = ta->element;
 	const Type* pb = tb->element;
+	if (conversions_.function_conversion(pa, pb))
+		return tb;
+	if (conversions_.function_conversion(pb, pa))
+		return ta;
 	const uint8_t cv = pa->cv | pb->cv;
 	if (IsVoid(pa) || IsVoid(pb))
 	{

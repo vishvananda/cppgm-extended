@@ -433,6 +433,16 @@ To complete PA29, implement hosted compatibility for:
   still place the callee's body, and the block the callee's returns would have
   landed in is simply not reachable.  A hosted library declares its throw
   helpers this way, so refusing the shape rejects the header
+- selected C++14/17 source forms used by hosted libraries and programs:
+  digit separators, nested namespace definitions, `decltype(auto)` variable and
+  return deduction, generic lambda parameters (including packs and forwarding),
+  and pack-expanded using-declarations. Preserve reference/value categories;
+  invalid initializers and overload candidates must still be rejected
+- in C++17 mode, `noexcept` is part of a function type. Keep throwing and
+  non-throwing types distinct, allow discarding the guarantee, and preserve it
+  through deduction, host ABI names and runtime type information. A static
+  `constexpr` data member is implicitly inline: definitions across translation
+  units denote one object, including arrays and class-valued members
 - semantic and lowering compatibility for hosted source patterns used by those
   headers, including post-declarator parameter
   attributes, explicit specializations of primary-template member functions,

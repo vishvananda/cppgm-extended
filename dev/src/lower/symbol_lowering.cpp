@@ -1612,8 +1612,11 @@ AbiNode ProgramLowering::abi_type_node(const sema::Type* type)
 			qualifiers |= abi_mangle::ABI_QUALIFIER_LVALUE_REF;
 		else if (bare->ref == sema::RefQualifier::RValue)
 			qualifiers |= abi_mangle::ABI_QUALIFIER_RVALUE_REF;
-		node = abi_graph_.function_type(
-			result, abi_scratch_.data() + base, bare->param_count, bare->variadic, qualifiers);
+		const AbiNode exception = bare->owner != nullptr && !bare->is_nothrow_function()
+			? placeholder_expression(static_cast<const sema::TemplateParameterEntity*>(bare->owner->entity))
+			: abi_mangle::ABI_NONE;
+		node = abi_graph_.function_type(result, abi_scratch_.data() + base, bare->param_count, bare->variadic,
+			qualifiers, bare->is_nothrow_function(), exception);
 		abi_scratch_.resize(base);
 		break;
 	}

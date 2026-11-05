@@ -750,8 +750,9 @@ void Analyzer::declare_declarator(
 	// A function declared with a placeholder return type (C++14's
 	// 7.1.6.4p2: its own function declarator; a definition later deduces
 	// it, see function_definition).
-	auto_declarator_ = specifiers.type == auto_placeholder_ && !specifiers.is_typedef;
-	placeholder_suffix_ = auto_declarator_ ? OwnFunctionSuffix(init.declarator) : nullptr;
+	auto_declarator_ = (specifiers.type == auto_placeholder_ || specifiers.type == decltype_auto_placeholder_) &&
+		!specifiers.is_typedef;
+	placeholder_suffix_ = !specifiers.is_typedef ? OwnFunctionSuffix(init.declarator) : nullptr;
 	DeclaratorInfo info = declarator(init.declarator, specifiers.type, scope, location, &specifiers);
 	auto_declarator_ = false;
 	placeholder_suffix_ = nullptr;
@@ -796,9 +797,9 @@ void Analyzer::declare_declarator(
 		if (specifiers.is_constexpr)
 			error(info.location, "constexpr in a typedef declaration");
 		// 15.4p2: nor has it an exception-specification.
-		if (DeclaratorSpecifiesExceptions(init.declarator))
+		if (!cxx17_ && DeclaratorSpecifiesExceptions(init.declarator))
 			error(info.location, "an exception-specification in a typedef declaration");
-		if (info.type == auto_placeholder_)
+		if (info.type == auto_placeholder_ || info.type == decltype_auto_placeholder_)
 			error(info.location, "typedef of auto");
 		Binding* binding = declare_typedef(
 			declared_name(*info.name, declaration_scope(scope)), info.type, scope, info.location);
@@ -881,7 +882,7 @@ bool Analyzer::holds_auto(const Type* type) const
 	while (type->is_reference() || type->unqualified->kind == TypeKind::Pointer ||
 		type->unqualified->kind == TypeKind::MemberPointer)
 		type = type->unqualified->element;
-	return type->unqualified == auto_placeholder_;
+	return type->unqualified == auto_placeholder_ || type->unqualified == decltype_auto_placeholder_;
 }
 
 const Type* Analyzer::deduced_type(const Specifiers& specifiers, const Type* declared,
@@ -911,6 +912,33 @@ const Type* Analyzer::deduced_type(const Specifiers& specifiers, const Type* dec
 		: nullptr;
 	if (expression == nullptr)
 		error(location, "auto without an initializer of one expression (7.1.6.4p3)");
+	if (declared == decltype_auto_placeholder_)
+	{
+		if (expression->kind == syntax::ExprKind::BracedInit)
+			error(location, "a braced-init-list deduces no decltype(auto) type");
+		if (template_depth_ != 0 || !semantic())
+			return decltype_type(*expression, scope);
+		BodyContext* saved = body_;
+		const syntax::Initializer* saved_initializing = initializing_;
+		BodyContext context = BodyContext();
+		if (body_ == nullptr)
+		{
+			body_ = &context;
+			initializing_ = initializer;
+		}
+		ExprFacts* facts = typed(*expression, scope);
+		body_ = saved;
+		initializing_ = saved_initializing;
+		if (facts == nullptr || !check_resolved(*expression))
+			return declared;
+		if (saved != nullptr)
+			facts->flags |= kImplicit;
+		const Type* result = decltype_result(*expression, *facts);
+		if (auto_deduced_ != nullptr && result->canonical != auto_deduced_->canonical)
+			error(location, "decltype(auto) deduced as different types by one declaration's declarators");
+		auto_deduced_ = result;
+		return result;
+	}
 	if (expression->kind == syntax::ExprKind::BracedInit)
 		return list_deduced_type(
 			specifiers, declared, static_cast<const syntax::BracedInitList&>(*expression), scope, location);
@@ -984,7 +1012,7 @@ const Type* Analyzer::replaced_auto(const Type* declared, const Type* type, uint
 	// `declared` (see holds_auto) with auto replaced by `type` qualified by
 	// the decl-specifiers' `cv`; a reference to a reference U collapses
 	// (8.3.2p6).
-	if (declared->unqualified == auto_placeholder_)
+	if (declared->unqualified == auto_placeholder_ || declared->unqualified == decltype_auto_placeholder_)
 		return types_.qualified(type, static_cast<uint8_t>(cv | declared->cv));
 	const Type* element = replaced_auto(declared->unqualified->element, type, cv);
 	if (declared->unqualified->kind == TypeKind::MemberPointer)
@@ -1128,8 +1156,8 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	// its qualified namespace-scope one is (9.4.2p2). One declared inline in
 	// its class is (C++17's 9.4.2p3, accepted in hosted compilations as an
 	// inline variable is: libc++'s integral_constant::value).
-	const bool inline_member = hosted_ && specifiers.is_inline && specifiers.is_static &&
-		where->kind == ScopeKind::Class && !qualified;
+	const bool inline_member = hosted_ && (specifiers.is_inline || (cxx17_ && specifiers.is_constexpr)) &&
+		specifiers.is_static && where->kind == ScopeKind::Class && !qualified;
 	bool definition = ((where->kind != ScopeKind::Class || qualified) && (!is_extern || initializer != nullptr)) ||
 		inline_member;
 	check_variable_specifiers(specifiers, type, where, qualified, member, definition, initializer != nullptr, location);
@@ -1145,6 +1173,10 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 		(variable->constant == ConstantState::Value || variable->is_constexpr);
 	if (initialized_in_class && initializer != nullptr)
 		error(location, "the definition of a static data member initialized in its class repeats the initializer");
+	// [depr.static_constexpr]: an out-of-class declaration without an
+	// initializer may repeat the inline constexpr member's definition.
+	if (initialized_in_class && cxx17_ && variable->is_inline && initializer == nullptr)
+		definition = false;
 	if (variable != nullptr)
 	{
 		if (!CompatibleVariableTypes(variable->type, type))
@@ -1494,7 +1526,9 @@ VariableEntity* Analyzer::new_variable(const Specifiers& specifiers, const char*
 	variable->is_static = specifiers.is_static;
 	variable->member = member;
 	variable->is_thread_local = specifiers.is_thread_local;
-	variable->is_inline = hosted_ && specifiers.is_inline &&
+	variable->is_inline = hosted_ &&
+		(specifiers.is_inline ||
+			(cxx17_ && specifiers.is_constexpr && where->kind == ScopeKind::Class && specifiers.is_static)) &&
 		(where->kind == ScopeKind::Namespace || (where->kind == ScopeKind::Class && specifiers.is_static));
 	// A block-scope one of static or thread storage duration numbered
 	// among its function's of its name (apart from its classes, as Clang
@@ -2202,8 +2236,9 @@ void Analyzer::function_definition(const syntax::FunctionDecl& decl, Scope* scop
 	const Type* declared = specifiers.type == auto_placeholder_ && specifiers.cv != 0
 		? types_.qualified(auto_placeholder_, specifiers.cv)
 		: specifiers.type;
-	auto_declarator_ = specifiers.type == auto_placeholder_ && !specifiers.is_typedef;
-	placeholder_suffix_ = auto_declarator_ ? OwnFunctionSuffix(decl.declarator) : nullptr;
+	auto_declarator_ = (specifiers.type == auto_placeholder_ || specifiers.type == decltype_auto_placeholder_) &&
+		!specifiers.is_typedef;
+	placeholder_suffix_ = !specifiers.is_typedef ? OwnFunctionSuffix(decl.declarator) : nullptr;
 	const DeclaratorInfo info = declarator(decl.declarator, declared, scope, decl.location, &specifiers);
 	auto_declarator_ = false;
 	placeholder_suffix_ = nullptr;
@@ -2255,7 +2290,9 @@ void Analyzer::special_member(const syntax::SpecialMemberDecl& decl, Scope* scop
 	else if (last.kind == syntax::NameComponentKind::Destructor &&
 		(last.destructor_decltype || last.identifier != owner->entity->name))
 		error(decl.location, "destructor name does not match its class");
+	placeholder_suffix_ = OwnFunctionSuffix(decl.declarator);
 	const DeclaratorInfo info = declarator(decl.declarator, result, scope, decl.location);
+	placeholder_suffix_ = nullptr;
 	// 12.3.2p1: a conversion function has no parameters.
 	if (last.kind == syntax::NameComponentKind::Conversion &&
 		(info.type->canonical->param_count != 0 || info.type->canonical->variadic))
@@ -2378,7 +2415,8 @@ void Analyzer::bit_field_declaration(const syntax::BitFieldDecl& decl, Scope* sc
 		error(decl.location, "bit-field outside a class");
 	Specifiers specifiers;
 	this->specifiers(decl.specifiers, scope, specifiers, false);
-	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_)
+	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_ ||
+		specifiers.type == decltype_auto_placeholder_)
 		error(decl.location, "bit-field without a type");
 	// 7.6.2p1: an alignment-specifier may not apply to a bit-field.
 	for (const syntax::Attribute* attribute = decl.attributes; attribute != nullptr; attribute = attribute->next)

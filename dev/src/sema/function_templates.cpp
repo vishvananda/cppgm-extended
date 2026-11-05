@@ -131,7 +131,15 @@ bool Deducible(const Type* type, uint32_t depth, uint32_t level)
 			if (Deducible(type->params[i], depth, level + 1))
 				return true;
 		}
-		return type->kind == TypeKind::Function && Deducible(type->element, depth, level + 1);
+		if (type->kind != TypeKind::Function)
+			return false;
+		if (type->owner != nullptr)
+		{
+			const TemplateParameterEntity* parameter = DirectBoundParameter(type->owner);
+			if (parameter != nullptr && parameter->depth == depth)
+				return true;
+		}
+		return Deducible(type->element, depth, level + 1);
 	case TypeKind::Class:
 	{
 		const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(type->unqualified->entity)->templ;
@@ -326,7 +334,8 @@ const Type* Analyzer::substitute(const Type* type, const Substitution& substitut
 		if (parameter->expression != nullptr)
 			return parameter->non_type ? substitute_value(type, substitution) : substitute_decltype(type, substitution);
 		if (parameter->depth != substitution.depth || parameter->index >= substitution.count ||
-			substitution.arguments[parameter->index] == nullptr || type->unqualified == auto_placeholder_)
+			substitution.arguments[parameter->index] == nullptr || type->unqualified == auto_placeholder_ ||
+			type->unqualified == decltype_auto_placeholder_)
 			return type;
 		// A pack an enclosing expansion substitutes element by element
 		// stands for that element.
@@ -477,8 +486,11 @@ const Type* Analyzer::substitute_function(const Type* type, const Substitution& 
 	// A parameter or return type of an abstract class is no substitution
 	// failure: it is checked at the function's definition and calls (the
 	// hosts' rule in every mode, P0929R2).
+	const Type* exception = type->owner != nullptr ? substitute(type->owner, substitution) : nullptr;
+	if (type->owner != nullptr && exception == nullptr)
+		return nullptr;
 	return types_.function(result, parameters.data(), static_cast<uint32_t>(parameters.size()), type->variadic,
-		type->function_cv, type->ref);
+		type->function_cv, type->ref, exception);
 }
 
 bool Analyzer::AnyNull(const TypeList& types)
@@ -703,6 +715,17 @@ bool Analyzer::deduce_type(const Type* p, const Type* a, uint32_t depth, TypeLis
 		// remaining ones (14.8.2.5p10), as an argument pack's elements do.
 		if (p->variadic != a->variadic || p->function_cv != a->function_cv || p->ref != a->ref)
 			return false;
+		if (p->owner != a->owner)
+		{
+			if (p->owner == nullptr || !dependent_type(p->owner))
+				return false;
+			const Type* exception = a->owner != nullptr ? a->owner
+														: types_.value(types_.fundamental(FundamentalType::Bool), 0);
+			const TemplateParameterEntity* parameter = DirectBoundParameter(p->owner);
+			const Type* pattern = parameter != nullptr ? parameter->canonical->type : p->owner;
+			if (!deduce_type(pattern, exception, depth, arguments, false))
+				return false;
+		}
 		const bool trailing = p->param_count != 0 && p->params[p->param_count - 1]->kind == TypeKind::Expansion;
 		if (trailing)
 		{
@@ -846,6 +869,16 @@ bool Analyzer::deduce_argument(
 		a = types_.pointer(a);
 	else
 		a = a->unqualified;
+	// [temp.deduct.call]: a non-throwing function pointer can match the
+	// corresponding potentially-throwing pointer after deduction.
+	if (p->unqualified->kind == TypeKind::Pointer && a->kind == TypeKind::Pointer &&
+		p->unqualified->element->kind == TypeKind::Function && p->unqualified->element->owner == nullptr &&
+		a->element->is_nothrow_function())
+	{
+		const Type* function = a->element;
+		a = types_.pointer(types_.function(function->element, function->params, function->param_count,
+			function->variadic, function->function_cv, function->ref));
+	}
 	return deduce_type(p->unqualified, a, depth, arguments, true) ||
 		(p->unqualified->kind == TypeKind::Pointer && a->kind == TypeKind::Pointer &&
 			deduce_from_base(p->unqualified->element, a->element, depth, arguments)) ||

@@ -1,0 +1,12 @@
+#include "600-hosted-noexcept-function-abi.h"
+int safe() noexcept { return 5; }
+int normal() { return 2; }
+void raise_pointer(Nonthrowing pointer) { throw pointer; }
+int main() {
+  if (accept(&safe) != 7 || accept(&normal) != 3) return 1;
+  if (kind(&safe) != 7 || kind(&normal) != 3) return 2;
+  if (check_rtti(typeid(Nonthrowing)) != 0) return 3;
+  if (catch_pointer(&safe, &raise_pointer) != 5) return 4;
+  try { throw_pointer(&safe); return 5; }
+  catch (Throwing pointer) { return pointer() != 5; }
+}

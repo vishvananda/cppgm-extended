@@ -729,6 +729,7 @@ bool SyntaxCloner::specifier(const DeclSpecifier& in, DeclSpecifier& out)
 	switch (in.kind)
 	{
 	case DeclSpecKind::Constinit:
+	case DeclSpecKind::DecltypeAuto:
 	case DeclSpecKind::Mode:
 		return false;
 	case DeclSpecKind::Keyword:
@@ -1043,6 +1044,7 @@ Expr* SyntaxCloner::call_like(const Expr* expr)
 			shadow_template_packs(lambda->template_parameters);
 		const size_t packs = parameter_packs_.size();
 		result->parameters = parameter_clause(result->parameters);
+		result->generic_parameters = parameter_clause(result->generic_parameters);
 		if (parameter_packs_.size() > packs)
 		{
 			typedef std::pair<const Identifier*, uint32_t> Pack;
@@ -1497,6 +1499,34 @@ ClassSpecifier* SyntaxCloner::class_specifier(const ClassSpecifier* specifier)
 	return result;
 }
 
+UsingDecl* SyntaxCloner::using_declaration(const UsingDecl* declaration)
+{
+	UsingDecl* result = copy(declaration);
+	result->target = name(declaration->target);
+	if (!declaration->pack || expander_ == nullptr)
+		return result;
+	std::vector<const Identifier*> packs;
+	const int32_t count = pattern_packs([&]() { name(declaration->target); }, packs, declaration->location);
+	if (count < 0)
+		return result;
+	std::vector<std::pair<const Identifier*, const Identifier*>> saved;
+	saved.swap(renames_);
+	std::vector<Name*> targets;
+	for (int32_t i = 0; i < count; ++i)
+	{
+		rename_to(packs, static_cast<uint32_t>(i));
+		targets.push_back(name(declaration->target));
+	}
+	renames_.swap(saved);
+	result->pack = false;
+	result->expanded_pack = true;
+	if (!targets.empty())
+		result->target = targets.front();
+	result->expanded = Slice<Name*>{ targets.empty() ? nullptr : arena_.copy_array(targets.data(), targets.size()),
+		static_cast<uint32_t>(targets.size()) };
+	return result;
+}
+
 Decl* SyntaxCloner::decl(const Decl* decl)
 {
 	if (decl == nullptr)
@@ -1510,11 +1540,7 @@ Decl* SyntaxCloner::decl(const Decl* decl)
 	case DeclKind::UsingDirective:
 		return const_cast<Decl*>(decl);
 	case DeclKind::UsingDeclaration:
-	{
-		UsingDecl* result = copy(static_cast<const UsingDecl*>(decl));
-		result->target = name(result->target);
-		return result;
-	}
+		return using_declaration(static_cast<const UsingDecl*>(decl));
 	case DeclKind::Namespace:
 	{
 		NamespaceDecl* result = copy(static_cast<const NamespaceDecl*>(decl));

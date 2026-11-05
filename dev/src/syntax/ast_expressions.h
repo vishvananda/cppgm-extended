@@ -235,6 +235,9 @@ struct LambdaExpr : Expr
 	// C++20's template-parameter-list after the lambda-introducer (hosted
 	// compilations): the call operator is a member function template.
 	TemplateParameterList* template_parameters = nullptr;
+	// Generic lambda parameters keep their written auto specifiers above;
+	// this signature replaces each auto with its invented template type.
+	ParameterClause* generic_parameters = nullptr;
 	// An instantiation's copy whose parameter clause expanded function
 	// parameter packs: the clause it copied, and each pack's name and
 	// number of elements (see Analyzer::function_pack_scope).

@@ -265,7 +265,9 @@ FunctionEntity* Analyzer::templated_closure_call(
 		qualifiers[count++].trailing = expr.trailing;
 	}
 	built->suffix.kind = syntax::DeclaratorSuffixKind::Function;
-	built->suffix.parameters = expr.parameters != nullptr ? expr.parameters : &built->none;
+	built->suffix.parameters = expr.generic_parameters != nullptr ? expr.generic_parameters
+		: expr.parameters != nullptr                              ? expr.parameters
+																  : &built->none;
 	built->suffix.qualifiers = syntax::Slice<syntax::FunctionQualifier>{ qualifiers, count };
 	built->declarator.location = expr.location;
 	built->declarator.name = &built->name;
@@ -744,7 +746,7 @@ void Analyzer::closure_conversion(const ClassEntity* entity, bool conversion_fun
 	const FunctionEntity* call = facts->call;
 	const Type* operator_type = call->type->canonical;
 	const Type* function_type = types_.function(operator_type->element, operator_type->params,
-		operator_type->param_count, operator_type->variadic, 0, RefQualifier::None);
+		operator_type->param_count, operator_type->variadic, 0, RefQualifier::None, operator_type->owner);
 	if (facts->invoker == nullptr)
 	{
 		// Its name is Clang's (`__invoke`, a reserved identifier no lookup
@@ -961,8 +963,10 @@ void Analyzer::number_closure(ClassEntity* closure, ClosureFacts* facts)
 		closure->local_discriminator > earlier_variadic ? closure->local_discriminator - earlier_variadic : 0);
 }
 
-const Type* Analyzer::return_deduction(ExprFacts* facts, uint32_t location)
+const Type* Analyzer::return_deduction(ExprFacts* facts, uint32_t location, const syntax::Expr* operand)
 {
+	if (body_->placeholder == decltype_auto_placeholder_)
+		return decltype_result(*operand, *facts);
 	// The result a return statement's operand deduces. A lambda's (5.1.2p4
 	// as CWG 1048 revised it, the auto rules GCC and Clang apply in C++11):
 	// its type after the array-to-pointer and function-to-pointer
@@ -990,14 +994,15 @@ const Type* Analyzer::return_deduction(ExprFacts* facts, uint32_t location)
 	return replaced_auto(declared, deduced[0], 0)->canonical;
 }
 
-const Type* Analyzer::deduced_result(ExprFacts* facts, uint32_t location)
+const Type* Analyzer::deduced_result(ExprFacts* facts, uint32_t location, const syntax::Expr* operand)
 {
 	// The first return statement deduces the result (a lambda's function
 	// call operator's or the function's type takes it); each later one
 	// deduces the same (C++14's 7.1.6.4p9, CWG 975 for lambdas). A return
 	// without an operand (facts null) deduces void.
-	const Type* result = facts != nullptr ? return_deduction(facts, location)
-		: body_->placeholder == nullptr || body_->placeholder->unqualified == auto_placeholder_
+	const Type* result = facts != nullptr ? return_deduction(facts, location, operand)
+		: body_->placeholder == nullptr || body_->placeholder->unqualified == auto_placeholder_ ||
+			body_->placeholder == decltype_auto_placeholder_
 		? types_.fundamental(FundamentalType::Void)
 		: nullptr;
 	if (result == nullptr)
@@ -1020,12 +1025,15 @@ const Type* Analyzer::deduced_result(ExprFacts* facts, uint32_t location)
 void Analyzer::deduce_function_result(FunctionEntity* function, const Type* result)
 {
 	const Type* old = function->type;
-	function->type = types_.function(result, old->params, old->param_count, old->variadic, old->function_cv, old->ref);
+	function->type = types_.function(
+		result, old->params, old->param_count, old->variadic, old->function_cv, old->ref, old->owner);
 	function->signature = signature_of(function->type);
 }
 
 bool Analyzer::require_deduced(FunctionEntity* function, uint32_t location)
 {
+	if (cxx17_)
+		function_nothrow(function);
 	// A function whose placeholder return type is undeduced where its type
 	// is needed: a template specialization's definition is instantiated
 	// (C++14's 7.1.6.4p12), else the program is ill-formed (p11).

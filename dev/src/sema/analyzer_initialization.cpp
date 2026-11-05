@@ -608,7 +608,10 @@ void Analyzer::aggregate_element(const syntax::BracedInitList& list, uint32_t& n
 		}
 		Conversion conversion = Conversion();
 		if (!user_conversion(element.facts, object, conversion))
-			error(element.location, "no conversion to the member's class");
+		{
+			substitution_error(element.location, "no conversion to the member's class");
+			return;
+		}
 		expression_scope_ = scope;
 		apply_user_conversion(element.facts, conversion, element.location);
 		record_conversion(facts_of(element), conversion);

@@ -117,6 +117,7 @@ private:
 	ParameterDeclaration* parameter_element(const ParameterDeclaration* parameter);
 	Slice<ParameterDeclaration*> expanded_parameters(const Slice<ParameterDeclaration*>& list);
 	Slice<BaseSpecifier> bases(const Slice<BaseSpecifier>& list);
+	UsingDecl* using_declaration(const UsingDecl* declaration);
 	Slice<LambdaCapture> captures(const Slice<LambdaCapture>& list);
 	Slice<MemInitializer> mem_initializers(const Slice<MemInitializer>& list);
 	void shadow(const Declarator* declarator, int32_t length);

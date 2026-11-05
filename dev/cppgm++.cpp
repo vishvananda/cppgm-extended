@@ -191,6 +191,7 @@ struct SourceOutputInvocation
 {
 	native::Target target = native::host_target();
 	string outfile;
+	string standard;
 	vector<string> inputs;
 	// `--hosted`: the host environment -c uses (include paths, predefined
 	// macros, builtin declarations, hosted analysis), so a hosted source's
@@ -270,6 +271,17 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 			consume_required_option_argument(args, i, "-o", "output file");
 			invocation.outfile = args[i];
 			explicit_outfile = true;
+			continue;
+		}
+		if (args[i] == "-std" || starts_with(args[i], "-std="))
+		{
+			if (args[i] == "-std")
+			{
+				consume_required_option_argument(args, i, "-std", "language standard");
+				invocation.standard = args[i];
+			}
+			else
+				invocation.standard = args[i].substr(5);
 			continue;
 		}
 		if (args[i] == "--hosted")
@@ -580,6 +592,8 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 	PreprocessorOptions options = source_preprocessor_options();
 	options.include_paths = invocation.include_paths;
 	options.command_line = invocation.command_line;
+	if (!invocation.standard.empty())
+		driver::language_standard(invocation.standard, options);
 	options.plain_char_unsigned = invocation.plain_char_unsigned;
 	if (invocation.hosted)
 		driver::add_host_environment(options, invocation.target != native::host_target());
@@ -734,6 +748,8 @@ int run_emit_types_mode(vector<string> args)
 			{
 				sema::Analyzer analyzer(graph, unit.identifiers());
 				analyzer.set_hosted(options.hosted);
+				analyzer.set_cxx14(options.cplusplus != "201103L");
+				analyzer.set_cxx17(options.cplusplus == "201703L");
 				analyzer.set_source_positions(&unit.positions());
 				analyzer.analyze(unit.tree());
 			}
@@ -814,6 +830,8 @@ int run_emit_semantics_mode(vector<string> args)
 			{
 				sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
 				analyzer.set_hosted(options.hosted);
+				analyzer.set_cxx14(options.cplusplus != "201103L");
+				analyzer.set_cxx17(options.cplusplus == "201703L");
 				analyzer.set_source_positions(&unit.positions());
 				analyzer.analyze(unit.tree());
 			}
@@ -958,6 +976,8 @@ int run_emit_lowir_mode(vector<string> args)
 			graph.names.reserve(unit.counters().bindings);
 			sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
 			analyzer.set_hosted(options.hosted);
+			analyzer.set_cxx14(options.cplusplus != "201103L");
+			analyzer.set_cxx17(options.cplusplus == "201703L");
 			analyzer.set_source_positions(&unit.positions());
 			try
 			{

@@ -37,7 +37,7 @@ std::string FundamentalSpelling(FundamentalType type)
 // member pointer's incomplete class (0x10).
 uint32_t PointeeFlags(const sema::Type* pointee)
 {
-	uint32_t flags = 0;
+	uint32_t flags = pointee->is_nothrow_function() ? 0x40 : 0;
 	if ((pointee->cv & sema::kConst) != 0)
 		flags |= 1;
 	if ((pointee->cv & sema::kVolatile) != 0)
@@ -171,14 +171,20 @@ lowir::SymbolId ProgramLowering::type_information(const sema::Type* type)
 	switch (type->kind)
 	{
 	case sema::TypeKind::Pointer:
-		kind = TypeInfoKind::Pointer;
-		pointee = type_information(type->element);
-		break;
 	case sema::TypeKind::MemberPointer:
-		kind = TypeInfoKind::PointerToMember;
-		pointee = type_information(type->element);
-		owner = type_information(type->owner);
+	{
+		kind = type->kind == sema::TypeKind::Pointer ? TypeInfoKind::Pointer : TypeInfoKind::PointerToMember;
+		const sema::Type* referred = type->element;
+		// __pbase_type_info stores noexcept in its flags; the referenced
+		// function's RTTI describes the potentially-throwing function type.
+		if (referred->is_nothrow_function())
+			referred = graph_->types.function(referred->element, referred->params, referred->param_count,
+				referred->variadic, referred->function_cv, referred->ref);
+		pointee = type_information(referred);
+		if (type->kind == sema::TypeKind::MemberPointer)
+			owner = type_information(type->owner);
 		break;
+	}
 	case sema::TypeKind::Function:
 		kind = TypeInfoKind::Function;
 		break;

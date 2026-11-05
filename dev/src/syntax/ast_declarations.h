@@ -65,6 +65,11 @@ struct UsingDecl : Decl
 	bool typename_keyword;
 	// A using-declaration with Clang's using_if_exists attribute.
 	bool if_exists;
+	// C++17 using-declarator pack expansion. An instantiated declaration
+	// keeps its expanded names together, preserving class-member positions.
+	bool pack = false;
+	bool expanded_pack = false;
+	Slice<Name*> expanded{ nullptr, 0 };
 };
 
 struct AliasDecl : Decl

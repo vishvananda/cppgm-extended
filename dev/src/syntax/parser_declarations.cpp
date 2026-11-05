@@ -267,32 +267,59 @@ Decl* Parser::parse_namespace()
 		ns->name = tok().identifier;
 		next();
 	}
-	if (!collect_attributes(attributes) || !expect(TokenKind::OP_LBRACE))
+	if (!collect_attributes(attributes))
 		return nullptr;
 	ns->attributes = attributes;
+	Scope* enclosing = scopes_.current();
+	NamespaceDecl* innermost = ns;
+	enter_namespace(*innermost);
+	// C++17's nested namespace definition is the corresponding sequence
+	// of namespace definitions. Keep those declarations and scopes so all
+	// later consumers use the same typed namespace facts as a braced form.
+	while (accept(TokenKind::OP_COLON2))
+	{
+		if (ns->name == nullptr || is_inline || !at_identifier())
+		{
+			fail();
+			scopes_.set_current(enclosing);
+			return nullptr;
+		}
+		NamespaceDecl* nested = make<NamespaceDecl>(DeclKind::Namespace, location());
+		nested->name = tok().identifier;
+		nested->is_inline = false;
+		next();
+		Decl* child = nested;
+		innermost->declarations = Slice<Decl*>{ arena_.copy_array(&child, 1), 1 };
+		innermost = nested;
+		enter_namespace(*innermost);
+	}
+	ListFrame<Decl*> declarations(decls_);
+	const bool parsed = expect(TokenKind::OP_LBRACE) &&
+		parse_declaration_seq(declarations, true, DeclContext::Namespace) && expect(TokenKind::OP_RBRACE);
+	scopes_.set_current(enclosing);
+	if (!parsed)
+		return nullptr;
+	innermost->declarations = declarations.take(arena_);
+	return ns;
+}
+
+void Parser::enter_namespace(const NamespaceDecl& ns)
+{
 	// A reopened namespace continues its scope; an unnamed or inline one is
 	// nominated by its enclosing namespace (7.3.1.1, 7.3.1p8).
 	Scope* enclosing = scopes_.current();
-	const Identifier* key = ns->name != nullptr ? ns->name : unnamed_namespace_;
+	const Identifier* key = ns.name != nullptr ? ns.name : unnamed_namespace_;
 	const NameBinding existing = scopes_.own(enclosing, key);
 	Scope* scope = existing.category == NameCategory::Namespace ? existing.scope : nullptr;
 	if (scope == nullptr)
 	{
-		scope = scopes_.push(ScopeKind::Namespace, ns->name);
+		scope = scopes_.push(ScopeKind::Namespace, ns.name);
 		scopes_.set_current(enclosing);
 		scopes_.declare(enclosing, key, NameBinding{ NameCategory::Namespace, false, scope });
 	}
-	if (ns->name == nullptr || is_inline)
+	if (ns.name == nullptr || ns.is_inline)
 		scopes_.add_edge(enclosing, scope);
 	scopes_.enter(scope);
-	ListFrame<Decl*> declarations(decls_);
-	const bool parsed = parse_declaration_seq(declarations, true, DeclContext::Namespace) &&
-		expect(TokenKind::OP_RBRACE);
-	scopes_.set_current(enclosing);
-	if (!parsed)
-		return nullptr;
-	ns->declarations = declarations.take(arena_);
-	return ns;
 }
 
 Decl* Parser::parse_using()
@@ -363,6 +390,7 @@ Decl* Parser::parse_using()
 	declaration->if_exists = false;
 	NameInfo info;
 	declaration->target = parse_name(NameMode::Declarator, info);
+	declaration->pack = accept(TokenKind::OP_DOTS);
 	// GNU attributes after the name (Clang's using_if_exists).
 	Attribute* attributes = nullptr;
 	if (declaration->target == nullptr || !collect_attributes(attributes) || !expect(TokenKind::OP_SEMICOLON))

@@ -343,10 +343,10 @@ std::uint32_t AbiGraph::tag_set(AbiNode node, unsigned mode)
 		memo.resize(nodes_.size(), 0);
 	if (memo[node] != 0)
 		return memo[node];
-	AbiNode a = ABI_NONE, b = ABI_NONE;
+	AbiNode a = ABI_NONE, b = ABI_NONE, c = ABI_NONE;
 	std::uint32_t count = 0;
 	bool own = false;
-	tag_components(node, a, b, count, own);
+	tag_components(node, a, b, c, count, own);
 	const AbiNodeData& data = nodes_[node];
 	const AbiNode* items = list(node);
 	const unsigned below = mode == kWrittenTags || (mode == kScopedTags && data.kind == ABI_NODE_FUNCTION_SCOPE)
@@ -375,6 +375,7 @@ std::uint32_t AbiGraph::tag_set(AbiNode node, unsigned mode)
 	};
 	add(a);
 	add(b);
+	add(c);
 	for (std::uint32_t i = 0; i < count; ++i)
 		add(items[i]);
 	std::uint32_t result = 2;
@@ -414,7 +415,7 @@ AbiNode AbiGraph::tag_node(AbiNode node)
 	return node;
 }
 
-void AbiGraph::tag_components(AbiNode node, AbiNode& a, AbiNode& b, std::uint32_t& count, bool& own) const
+void AbiGraph::tag_components(AbiNode node, AbiNode& a, AbiNode& b, AbiNode& c, std::uint32_t& count, bool& own) const
 {
 	// The components of a node that can hold ABI tags, and whether its own
 	// list is its tags (a name's or an abbreviation's).
@@ -486,6 +487,7 @@ void AbiGraph::tag_components(AbiNode node, AbiNode& a, AbiNode& b, std::uint32_
 	}
 	a = walk_a ? data.a : ABI_NONE;
 	b = walk_b ? data.b : ABI_NONE;
+	c = data.kind == ABI_NODE_FUNCTION_TYPE ? data.c : ABI_NONE;
 	count = walk_list ? data.list_size : 0;
 }
 
@@ -499,13 +501,13 @@ bool AbiGraph::holds_tags(AbiNode node)
 		tag_memo_.resize(nodes_.size(), 0);
 	if (tag_memo_[node] != 0)
 		return tag_memo_[node] == 2;
-	AbiNode a = ABI_NONE, b = ABI_NONE;
+	AbiNode a = ABI_NONE, b = ABI_NONE, c = ABI_NONE;
 	std::uint32_t count = 0;
 	bool own = false;
-	tag_components(node, a, b, count, own);
+	tag_components(node, a, b, c, count, own);
 	const AbiNode* items = list(node);
 	bool holds = own && nodes_[node].list_size != 0;
-	holds = holds || holds_tags(a) || holds_tags(b);
+	holds = holds || holds_tags(a) || holds_tags(b) || holds_tags(c);
 	for (std::uint32_t i = 0; i < count && !holds; ++i)
 		holds = holds_tags(items[i]);
 	tag_memo_[node] = holds ? 2 : 1;
@@ -536,10 +538,10 @@ void AbiGraph::walk_tags(AbiNode node, std::vector<AbiNode>& tags, unsigned mode
 	if (marks[node] == tag_epoch_ || (written && node < tag_marks_.size() && tag_marks_[node] == tag_epoch_))
 		return;
 	marks[node] = tag_epoch_;
-	AbiNode a = ABI_NONE, b = ABI_NONE;
+	AbiNode a = ABI_NONE, b = ABI_NONE, c = ABI_NONE;
 	std::uint32_t count = 0;
 	bool own = false;
-	tag_components(node, a, b, count, own);
+	tag_components(node, a, b, c, count, own);
 	const AbiNode* items = list(node);
 	const AbiNodeData& data = nodes_[node];
 	if (own && !(written && data.kind == ABI_NODE_NAME && (data.flags & ABI_FLAG_HIDDEN_TAGS) != 0))
@@ -548,6 +550,7 @@ void AbiGraph::walk_tags(AbiNode node, std::vector<AbiNode>& tags, unsigned mode
 																									: mode;
 	walk_tags(a, tags, below);
 	walk_tags(b, tags, below);
+	walk_tags(c, tags, below);
 	for (std::uint32_t i = 0; i < count; ++i)
 		walk_tags(items[i], tags, below);
 }
@@ -741,13 +744,16 @@ AbiNode AbiGraph::array(AbiNode element, AbiArrayBound bound_kind, long long bou
 	return intern(data, nullptr, 0);
 }
 
-AbiNode AbiGraph::function_type(
-	AbiNode result, const AbiNode* params, std::size_t count, bool variadic, unsigned qualifiers)
+AbiNode AbiGraph::function_type(AbiNode result, const AbiNode* params, std::size_t count, bool variadic,
+	unsigned qualifiers, bool nonthrowing, AbiNode exception)
 {
 	AbiNodeData data = make_data(ABI_NODE_FUNCTION_TYPE);
 	data.a = result;
 	data.flags = variadic ? ABI_FLAG_VARIADIC : 0;
 	data.code = static_cast<std::uint16_t>(qualifiers);
+	data.c = exception;
+	if (nonthrowing)
+		data.flags |= ABI_FLAG_NONTHROWING;
 	return intern(data, params, count);
 }
 

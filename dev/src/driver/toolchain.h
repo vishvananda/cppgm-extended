@@ -39,6 +39,9 @@ namespace driver {
 // __DATE__ and friends. Returns the process exit status.
 int run_toolchain(const std::vector<std::string>& args, const PreprocessorOptions& base);
 
+// Select the supported language mode and the host macro dialect.
+void language_standard(const std::string& standard, PreprocessorOptions& options);
+
 // A -g option's request: 0 disables debug information, 1 enables it,
 // -1 is a modifier that leaves the current request unchanged.
 int debug_info_request(const std::string& arg);

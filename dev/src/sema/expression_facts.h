@@ -38,6 +38,8 @@ enum class ValueConversion : uint8_t
 	IntegralConversion,
 	FloatingConversion,
 	FloatingIntegral,
+	// C++17: dropping a non-throwing function type's exception-specification.
+	FunctionPointer,
 	// 4.10: a null pointer constant to a pointer, member pointer or
 	// std::nullptr_t; an object pointer to cv void*; a pointer to a derived
 	// class to a pointer to its base (also a reference binding to a base

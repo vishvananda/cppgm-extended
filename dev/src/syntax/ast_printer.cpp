@@ -384,6 +384,9 @@ void AstDumper::decl_specifier_seq(const Slice<DeclSpecifier>& specifiers)
 			expression(*specifier.operand);
 			close();
 			break;
+		case DeclSpecKind::DecltypeAuto:
+			line("decl-specifier", "decltype(auto)");
+			break;
 		default:
 			owned_specifier(specifier);
 			break;
@@ -426,6 +429,9 @@ void AstDumper::type_specifier_seq(const Slice<DeclSpecifier>& specifiers)
 			open("decltype-specifier", "decltype(" + RenderExpression(*specifier.operand) + ")");
 			expression(*specifier.operand);
 			close();
+			break;
+		case DeclSpecKind::DecltypeAuto:
+			line("decltype-specifier", "decltype(auto)");
 			break;
 		default:
 			owned_specifier(specifier);

@@ -144,6 +144,9 @@ void SyntaxRenderer::specifier(const DeclSpecifier& specifier)
 		expression(*specifier.operand);
 		text(")");
 		break;
+	case DeclSpecKind::DecltypeAuto:
+		text("decltype(auto)");
+		break;
 	case DeclSpecKind::Class:
 		class_specifier(*specifier.class_specifier);
 		break;
@@ -1042,6 +1045,8 @@ void SyntaxRenderer::declaration(const Decl& decl)
 		const UsingDecl& declaration = static_cast<const UsingDecl&>(decl);
 		text(declaration.typename_keyword ? "usingtypename " : "using");
 		name(*declaration.target, true);
+		if (declaration.pack)
+			text("...");
 		text(";");
 		break;
 	}

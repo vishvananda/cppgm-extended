@@ -30,6 +30,35 @@
 
 namespace driver {
 
+// -std=<standard>: __cplusplus of C++11 (this implementation's language),
+// or of C++14 or C++17, whose mode-gated hosted declarations a header may
+// be read for, in the GNU dialect (gnu++NN) or the strict ISO one (c++NN,
+// `strict`: the host's macros for it, as the host compiler's -std=c++NN
+// defines them); other standards are refused.
+void language_standard(const std::string& standard, PreprocessorOptions& options)
+{
+	static const struct
+	{
+		const char* names[4];
+		const char* value;
+	} kStandards[] = { { { "c++11", "gnu++11", "c++0x", "gnu++0x" }, "201103L" },
+		{ { "c++14", "gnu++14", "c++1y", "gnu++1y" }, "201402L" },
+		{ { "c++17", "gnu++17", "c++1z", "gnu++1z" }, "201703L" } };
+	for (const auto& entry : kStandards)
+	{
+		for (const char* name : entry.names)
+		{
+			if (standard == name)
+			{
+				options.cplusplus = entry.value;
+				options.strict = standard.compare(0, 3, "gnu") != 0;
+				return;
+			}
+		}
+	}
+	throw InvocationError("unsupported language standard: " + standard);
+}
+
 namespace {
 
 // An input in command-line order: a source, serialized LowIR (`.lowir`,
@@ -211,35 +240,6 @@ void prune_include_paths(PreprocessorOptions& options)
 	}
 	options.system_include_paths.swap(system);
 	options.include_paths.swap(user);
-}
-
-// -std=<standard>: __cplusplus of C++11 (this implementation's language),
-// or of C++14 or C++17, whose mode-gated hosted declarations a header may
-// be read for, in the GNU dialect (gnu++NN) or the strict ISO one (c++NN,
-// `strict`: the host's macros for it, as the host compiler's -std=c++NN
-// defines them); other standards are refused.
-void language_standard(const std::string& standard, PreprocessorOptions& options)
-{
-	static const struct
-	{
-		const char* names[4];
-		const char* value;
-	} kStandards[] = { { { "c++11", "gnu++11", "c++0x", "gnu++0x" }, "201103L" },
-		{ { "c++14", "gnu++14", "c++1y", "gnu++1y" }, "201402L" },
-		{ { "c++17", "gnu++17", "c++1z", "gnu++1z" }, "201703L" } };
-	for (const auto& entry : kStandards)
-	{
-		for (const char* name : entry.names)
-		{
-			if (standard == name)
-			{
-				options.cplusplus = entry.value;
-				options.strict = standard.compare(0, 3, "gnu") != 0;
-				return;
-			}
-		}
-	}
-	throw InvocationError("unsupported language standard: " + standard);
 }
 
 Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions& base)
@@ -515,6 +515,7 @@ bool compile_unit(
 			sema::Analyzer analyzer(graph, unit.identifiers(), sema::AnalysisMode::Semantics);
 			analyzer.set_hosted(invocation.preprocessor.hosted);
 			analyzer.set_cxx14(invocation.preprocessor.cplusplus != "201103L");
+			analyzer.set_cxx17(invocation.preprocessor.cplusplus == "201703L");
 			analyzer.set_exceptions(invocation.preprocessor.modes.exceptions);
 			analyzer.set_ignore_narrowing(invocation.ignore_narrowing);
 			analyzer.set_source_positions(&unit.positions());

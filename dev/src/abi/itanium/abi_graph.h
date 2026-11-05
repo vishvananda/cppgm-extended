@@ -63,7 +63,8 @@ enum AbiNodeKind : std::uint8_t
 	ABI_NODE_ARRAY,            // a = element, flags = AbiArrayBound, b/c = bound value or b = expression
 	ABI_NODE_FUNCTION_TYPE,    // a = result, list = parameters, flags = VARIADIC,
 							   //   code = AbiQualifier bits of the function type,
-							   //   b = class of a member function type (0 otherwise)
+							   //   b = class of a member function type (0 otherwise),
+							   //   c = dependent noexcept expression; NONTHROWING otherwise
 	ABI_NODE_MEMBER_POINTER,   // a = class type, b = member type
 	ABI_NODE_TEMPLATE_PARAM,   // a = index, flags = SUBSTITUTABLE (types, template names, expressions)
 	ABI_NODE_DECLTYPE,         // a = expression, flags = ID_EXPRESSION (Dt) or 0 (DT)
@@ -125,6 +126,7 @@ enum AbiNodeFlag : std::uint8_t
 	ABI_FLAG_GLOBAL = 1,
 	ABI_FLAG_PARENTHESIZED = 1,
 	ABI_FLAG_HIDDEN_TAGS = 2,
+	ABI_FLAG_NONTHROWING = 2,
 	ABI_FLAG_DATA_MEMBER = 4,
 	ABI_FLAG_UNSIGNED_VALUE = 2,
 	ABI_FLAG_NO_VALUE = 4
@@ -246,7 +248,8 @@ public:
 	// that cv-qualifiers then apply to.
 	AbiNode vendor_qualified(AbiNode type, AbiNode qualifier);
 	AbiNode array(AbiNode element, AbiArrayBound bound_kind, long long bound_value, AbiNode bound_expression);
-	AbiNode function_type(AbiNode result, const AbiNode* params, std::size_t count, bool variadic, unsigned qualifiers);
+	AbiNode function_type(AbiNode result, const AbiNode* params, std::size_t count, bool variadic, unsigned qualifiers,
+		bool nonthrowing = false, AbiNode exception = ABI_NONE);
 	// M <class type> <member type>. A member function type is distinct from
 	// every other function type, and from those of other classes' members
 	// (5.1.10): its class becomes part of its identity.
@@ -361,7 +364,7 @@ private:
 	// collect_tags' walk: per node whether it or a component carries a tag
 	// (0 not known, 1 none, 2 some), and the epoch of its last visit.
 	AbiNode tag_node(AbiNode node);
-	void tag_components(AbiNode node, AbiNode& a, AbiNode& b, std::uint32_t& count, bool& own) const;
+	void tag_components(AbiNode node, AbiNode& a, AbiNode& b, AbiNode& c, std::uint32_t& count, bool& own) const;
 	bool holds_tags(AbiNode node);
 	std::uint32_t tag_set(AbiNode node, unsigned mode);
 	void walk_tags(AbiNode node, std::vector<AbiNode>& tags, unsigned mode);

@@ -66,6 +66,8 @@ public:
 	uint32_t new_visit() { return ++visit_; }
 	// 8.5.3p4: same class or `a` a base class of `b`, ignoring cv.
 	bool reference_related(const Type* a, const Type* b);
+	// C++17 function pointer conversion: discard a non-throwing specification.
+	bool function_conversion(const Type* source, const Type* target);
 	// A type without its cv-qualifiers (an array's are its elements').
 	const Type* without_cv(const Type* type);
 

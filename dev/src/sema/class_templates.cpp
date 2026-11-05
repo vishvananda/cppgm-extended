@@ -1598,7 +1598,7 @@ bool Analyzer::leaf_dependent(const Type* type) const
 	switch (type->kind)
 	{
 	case TypeKind::TemplateParameter:
-		return type->unqualified != auto_placeholder_;
+		return type->unqualified != auto_placeholder_ && type->unqualified != decltype_auto_placeholder_;
 	case TypeKind::TemplateTemplateParameter:
 		return true;
 	case TypeKind::Class:
@@ -1615,6 +1615,8 @@ bool Analyzer::leaf_dependent(const Type* type) const
 	case TypeKind::MemberPointer:
 		return dependent_type(type->owner) || dependent_type(type->element);
 	case TypeKind::Function:
+		if (type->owner != nullptr && dependent_type(type->owner))
+			return true;
 		for (uint32_t i = 0; i < type->param_count; ++i)
 		{
 			if (dependent_type(type->params[i]))

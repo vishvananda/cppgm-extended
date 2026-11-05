@@ -129,12 +129,31 @@ bool AccumulateDigits(const char* text, uint32_t begin, uint32_t end, unsigned r
 	value = 0;
 	for (uint32_t i = begin; i < end; ++i)
 	{
+		if (text[i] == '\'')
+			continue;
 		const unsigned digit = static_cast<unsigned>(HexDigitValue(text[i]));
 		if (value > (UINT64_MAX - digit) / radix)
 			return false;
 		value = value * radix + digit;
 	}
 	return true;
+}
+
+// Separators occur only between two digits of the same digit-sequence;
+// exponent digits are decimal even in a hexadecimal floating literal.
+uint32_t DigitsEnd(const char* text, uint32_t length, uint32_t begin, unsigned radix, NumberDialect dialect)
+{
+	uint32_t end = begin;
+	for (; end < length; ++end)
+	{
+		if (IsHexDigit(text[end]) && static_cast<unsigned>(HexDigitValue(text[end])) < radix)
+			continue;
+		if (dialect != NumberDialect::Cxx11 && text[end] == '\'' && end != begin && end + 1 < length &&
+			IsHexDigit(text[end + 1]) && static_cast<unsigned>(HexDigitValue(text[end + 1])) < radix)
+			continue;
+		break;
+	}
+	return end;
 }
 
 // An integer literal whose digits are [digits_begin, digits_end); anything
@@ -180,9 +199,7 @@ NumberLiteral ClassifyInteger(const char* text, uint32_t length, uint32_t digits
 // and binary digits, typed as octal and hexadecimal literals are.
 NumberLiteral ClassifyBinary(const char* text, uint32_t length, NumberDialect dialect)
 {
-	uint32_t end = 2;
-	while (end < length && (text[end] == '0' || text[end] == '1'))
-		++end;
+	const uint32_t end = DigitsEnd(text, length, 2, 2, dialect);
 	if (end == 2)
 		return NumberLiteral{ NumberLiteralKind::Invalid, FundamentalType::Int, length, 0 };
 	return ClassifyInteger(text, length, 2, end, 2, dialect);
@@ -192,9 +209,7 @@ NumberLiteral ClassifyFloating(const char* text, uint32_t length, uint32_t value
 
 NumberLiteral ClassifyHexadecimal(const char* text, uint32_t length, NumberDialect dialect)
 {
-	uint32_t end = 2;
-	while (end < length && IsHexDigit(text[end]))
-		++end;
+	uint32_t end = DigitsEnd(text, length, 2, 16, dialect);
 	const uint32_t integer_digits = end - 2;
 	// A hexadecimal floating literal (C++17's 2.13.4, a GNU extension in
 	// C++11): hex digits with an optional fraction, then a binary exponent,
@@ -203,8 +218,9 @@ NumberLiteral ClassifyHexadecimal(const char* text, uint32_t length, NumberDiale
 	const bool point = end < length && text[end] == '.';
 	if (point)
 	{
-		for (++end; end < length && IsHexDigit(text[end]); ++end)
-			++fraction_digits;
+		const uint32_t begin = ++end;
+		end = DigitsEnd(text, length, begin, 16, dialect);
+		fraction_digits = end - begin;
 	}
 	if (dialect != NumberDialect::Cxx11 && end < length && (text[end] == 'p' || text[end] == 'P') &&
 		integer_digits + fraction_digits != 0)
@@ -213,8 +229,7 @@ NumberLiteral ClassifyHexadecimal(const char* text, uint32_t length, NumberDiale
 		if (exponent < length && (text[exponent] == '+' || text[exponent] == '-'))
 			++exponent;
 		const uint32_t digits = exponent;
-		while (exponent < length && IsAsciiDigit(text[exponent]))
-			++exponent;
+		exponent = DigitsEnd(text, length, exponent, 10, dialect);
 		if (exponent != digits)
 			return ClassifyFloating(text, length, exponent, dialect);
 	}
@@ -224,7 +239,7 @@ NumberLiteral ClassifyHexadecimal(const char* text, uint32_t length, NumberDiale
 }
 
 // The end of an exponent-part starting at `pos`, or `pos` if there is none.
-uint32_t ExponentEnd(const char* text, uint32_t length, uint32_t pos)
+uint32_t ExponentEnd(const char* text, uint32_t length, uint32_t pos, NumberDialect dialect)
 {
 	if (pos >= length || (text[pos] != 'e' && text[pos] != 'E'))
 		return pos;
@@ -233,9 +248,7 @@ uint32_t ExponentEnd(const char* text, uint32_t length, uint32_t pos)
 		++end;
 	if (end >= length || !IsAsciiDigit(text[end]))
 		return pos;
-	while (end < length && IsAsciiDigit(text[end]))
-		++end;
-	return end;
+	return DigitsEnd(text, length, end, 10, dialect);
 }
 
 // The extended floating type a suffix names (`f16`/`F16` ... `f64x`).
@@ -310,22 +323,21 @@ NumberLiteral ClassifyNumber(const char* text, uint32_t length, NumberDialect di
 	if (dialect != NumberDialect::Cxx11 && length >= 2 && text[0] == '0' && (text[1] == 'b' || text[1] == 'B'))
 		return ClassifyBinary(text, length, dialect);
 
-	uint32_t pos = 0;
-	while (pos < length && IsAsciiDigit(text[pos]))
-		++pos;
+	uint32_t pos = DigitsEnd(text, length, 0, 10, dialect);
 	const uint32_t integer_digits = pos;
 	uint32_t fraction_digits = 0;
 	bool floating = false;
 	if (pos < length && text[pos] == '.')
 	{
 		floating = true;
-		for (++pos; pos < length && IsAsciiDigit(text[pos]); ++pos)
-			++fraction_digits;
+		const uint32_t begin = ++pos;
+		pos = DigitsEnd(text, length, begin, 10, dialect);
+		fraction_digits = pos - begin;
 	}
 	if (integer_digits + fraction_digits == 0)
 		return NumberLiteral{ NumberLiteralKind::Invalid, FundamentalType::Int, length, 0 };
 
-	const uint32_t exponent_end = ExponentEnd(text, length, pos);
+	const uint32_t exponent_end = ExponentEnd(text, length, pos, dialect);
 	if (floating || exponent_end != pos)
 		return ClassifyFloating(text, length, exponent_end, dialect);
 
@@ -334,7 +346,7 @@ NumberLiteral ClassifyNumber(const char* text, uint32_t length, NumberDialect di
 		return ClassifyInteger(text, length, 0, integer_digits, 10, dialect);
 	for (uint32_t i = 1; i < integer_digits; ++i)
 	{
-		if (!IsOctalDigit(text[i]))
+		if (text[i] != '\'' && !IsOctalDigit(text[i]))
 			return NumberLiteral{ NumberLiteralKind::Invalid, FundamentalType::Int, length, 0 };
 	}
 	return ClassifyInteger(text, length, 0, integer_digits, 8, dialect);
@@ -356,6 +368,14 @@ bool ScanFloatingValue(
 	// strtod and strtold accept in the "C" locale and round correctly. An
 	// infinite result can only be an overflow.
 	scratch.assign(text, length);
+	if (std::memchr(text, '\'', length) != nullptr)
+	{
+		uint32_t out = 0;
+		for (uint32_t i = 0; i < length; ++i)
+			if (text[i] != '\'')
+				scratch[out++] = text[i];
+		scratch.resize(out);
+	}
 	switch (FloatingRepresentation(type))
 	{
 	case FundamentalType::Float16:
@@ -365,7 +385,7 @@ bool ScanFloatingValue(
 		// Formats no host type has, rounded exactly.
 		const bool half = FloatingRepresentation(type) == FundamentalType::Float16;
 		uint64_t low = 0, high = 0;
-		if (!ScanInterchangeValue(text, length, half ? kBinary16 : kBinary128, low, high))
+		if (!ScanInterchangeValue(scratch.data(), scratch.size(), half ? kBinary16 : kBinary128, low, high))
 			return false;
 		std::memcpy(bytes, &low, half ? 2 : 8);
 		if (!half)

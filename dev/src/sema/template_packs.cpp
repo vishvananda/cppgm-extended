@@ -336,6 +336,8 @@ void Analyzer::unexpanded_packs(const Type* type, uint32_t depth, PackList& out,
 			continue;
 		case TypeKind::Function:
 		case TypeKind::Pack:
+			if (type->kind == TypeKind::Function && type->owner != nullptr)
+				unexpanded_packs(type->owner, depth, out, bound, placeholders);
 			for (uint32_t i = 0; i < type->param_count; ++i)
 			{
 				if (type->params[i]->kind != TypeKind::Expansion)

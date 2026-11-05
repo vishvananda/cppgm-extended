@@ -228,7 +228,16 @@ bool ConversionRules::reference_related(const Type* a, const Type* b)
 	b = without_cv(b->canonical);
 	if (a == b)
 		return true;
+	if (function_conversion(b, a))
+		return true;
 	return is_base_of(ClassEntityOf(a), ClassEntityOf(b));
+}
+
+bool ConversionRules::function_conversion(const Type* source, const Type* target)
+{
+	return source->is_nothrow_function() && target->kind == TypeKind::Function && target->owner == nullptr &&
+		types_.function(source->element, source->params, source->param_count, source->variadic, source->function_cv,
+			source->ref) == target;
 }
 
 bool ConversionRules::qualification_convertible(const Type* from, const Type* to)
@@ -346,6 +355,14 @@ bool ConversionRules::standard(const Operand& from, const Type* target, bool dir
 bool ConversionRules::value_conversion(
 	const Type* source, uint16_t flags, const Type* goal, bool direct, Conversion& out)
 {
+	if (IsPointerLike(source) && source->kind == goal->kind &&
+		(source->kind != TypeKind::MemberPointer || source->owner == goal->owner) &&
+		function_conversion(source->element, goal->element))
+	{
+		out.second = ValueConversion::FunctionPointer;
+		out.result = goal;
+		return true;
+	}
 	// A qualification adjustment alone (4.4).
 	if (IsPointerLike(source) && IsPointerLike(goal) && qualification_convertible(source, goal))
 	{
@@ -490,7 +507,10 @@ bool ConversionRules::reference(const Operand& from, const Type* target, Convers
 	const bool compatible = related && (CvOf(source) & ~CvOf(referenced)) == 0;
 	const bool function_lvalue = source->kind == TypeKind::Function && from.category == ValueCategory::LValue;
 	out.function_lvalue = function_lvalue;
-	const bool derived = related && without_cv(source) != without_cv(referenced);
+	const bool function_adjustment = function_conversion(source, referenced);
+	const bool derived = related && without_cv(source) != without_cv(referenced) && !function_adjustment;
+	if (function_adjustment)
+		out.second = ValueConversion::FunctionPointer;
 	const bool const_lvalue = !rvalue_reference && CvOf(referenced) == kConst;
 	// CWG 2352, as both hosts and the course apply it in C++11 mode: a
 	// pointer whose pointer converts to a pointer to the referenced type by

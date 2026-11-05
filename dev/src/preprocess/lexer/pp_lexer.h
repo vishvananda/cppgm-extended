@@ -25,6 +25,8 @@ struct PPLexerOptions
 	// A pp-number continues with `p` or `P` and a sign, as in C++17 (hosted
 	// hexadecimal floating literals such as `0x1p+4`).
 	bool binary_exponents = false;
+	// C++14 pp-numbers may include apostrophes before digits or nondigits.
+	bool digit_separators = false;
 	// Hosted source comments may contain legacy bytes, never token spellings.
 	bool legacy_comment_bytes = false;
 	// A quote with no partner on its line is a token of its own (hosted).
@@ -151,6 +153,7 @@ private:
 	bool dirty_;
 	bool header_names_on_request_;
 	bool binary_exponents_;
+	bool digit_separators_;
 	bool legacy_comment_bytes_;
 	bool lone_quotes_;
 	DirectiveContext context_;

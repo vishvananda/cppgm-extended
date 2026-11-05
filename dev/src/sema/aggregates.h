@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sema/conversions.h"
+#include "sema/string_literals.h"
 #include "syntax/ast.h"
 
 // The structure of aggregate initialization (8.5.1) shared by its analysis
@@ -86,7 +87,8 @@ inline bool InitializesSubaggregate(const Type* member, const syntax::Expr& elem
 	if (type == nullptr)
 		return false;
 	if (member->kind == TypeKind::Array)
-		return e->kind == syntax::ExprKind::Literal && type->kind == TypeKind::Array;
+		return IsCharacterArrayElement(member->element) && e->kind == syntax::ExprKind::Literal &&
+			type->kind == TypeKind::Array;
 	return ClassOf(type) != nullptr && ClassOf(type) == ClassOf(member);
 }
 

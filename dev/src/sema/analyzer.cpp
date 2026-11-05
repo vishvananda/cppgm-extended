@@ -97,6 +97,10 @@ Analyzer::Analyzer(SemanticGraph& graph, IdentifierTable& identifiers, AnalysisM
 		EntityKind::TemplateParameter, special_key("auto"), nullptr, nullptr);
 	auto_placeholder_ = types_.named(TypeKind::TemplateParameter, placeholder);
 	placeholder->type = auto_placeholder_;
+	placeholder = new_entity<TemplateParameterEntity>(
+		EntityKind::TemplateParameter, special_key("decltype(auto)"), nullptr, nullptr);
+	decltype_auto_placeholder_ = types_.named(TypeKind::TemplateParameter, placeholder);
+	placeholder->type = decltype_auto_placeholder_;
 	pending_prototype_ = PendingPrototype{ nullptr, nullptr };
 	completer_.analyzer = this;
 	conversions_.set_completer(&completer_);
@@ -556,6 +560,20 @@ void Analyzer::using_directive(const syntax::UsingDecl& decl, Scope* scope)
 
 void Analyzer::using_declaration(const syntax::UsingDecl& decl, Scope* scope)
 {
+	if (decl.expanded_pack)
+	{
+		syntax::UsingDecl element = decl;
+		element.expanded_pack = false;
+		element.expanded = syntax::Slice<syntax::Name*>{ nullptr, 0 };
+		for (syntax::Name* target : decl.expanded)
+		{
+			element.target = target;
+			using_declaration(element, scope);
+		}
+		return;
+	}
+	if (decl.pack && template_depth_ == 0)
+		error(decl.location, "a using-declaration expansion has no unexpanded parameter pack");
 	const syntax::Name& target = *decl.target;
 	const syntax::NameComponent& last = target.last();
 	if (!target.qualified())
@@ -758,7 +776,10 @@ void Analyzer::introduce(Binding* target, Scope* scope, uint32_t location)
 			{
 				if (where->kind == ScopeKind::Class && same->binding->entity->owner == where)
 					return;
-				error(location, "using-declaration conflicts with a function of the same signature");
+				// Two base members may both be introduced; overload resolution
+				// diagnoses ambiguity only when that signature is called.
+				if (where->kind != ScopeKind::Class)
+					error(location, "using-declaration conflicts with a function of the same signature");
 			}
 		}
 		else if (target->kind == BindingKind::Type || target->kind == BindingKind::TypeAlias)
@@ -810,7 +831,8 @@ void Analyzer::alias_declaration(const syntax::AliasDecl& decl, Scope* scope)
 	// A deferred reserved builtin call (see deferrable_statement).
 	if (deferred_reserved_call())
 		return;
-	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_)
+	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_ ||
+		specifiers.type == decltype_auto_placeholder_)
 		error(decl.location, "alias-declaration without a type");
 	if (!specifiers.mode_specifiers.empty())
 		filter_mode_alias(specifiers);
@@ -821,7 +843,7 @@ void Analyzer::alias_declaration(const syntax::AliasDecl& decl, Scope* scope)
 	if (info.virt_suffix != nullptr || specifiers.is_virtual)
 		error(decl.location, "a virt-specifier or virtual in an alias-declaration");
 	// 15.4p2: nor an exception-specification.
-	if (DeclaratorSpecifiesExceptions(decl.type->declarator))
+	if (!cxx17_ && DeclaratorSpecifiesExceptions(decl.type->declarator))
 		error(decl.location, "an exception-specification in an alias-declaration");
 	if (specifiers.declared != nullptr && specifiers.defines && specifiers.declared->name == nullptr)
 		name_unnamed_type(specifiers, nullptr, scope);
@@ -1036,7 +1058,8 @@ const Type* Analyzer::non_type_parameter_type(const syntax::TemplateParameter& p
 	// or function type is adjusted to a pointer (14.1p8).
 	Specifiers specifiers;
 	this->specifiers(parameter.specifiers, scope, specifiers, false);
-	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_)
+	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_ ||
+		specifiers.type == decltype_auto_placeholder_)
 		error(parameter.location, "non-type template parameter without a type");
 	// A pack's `...` in the declarator declares the pack, not an expansion.
 	syntax::Declarator bare = parameter.declarator != nullptr ? *parameter.declarator : syntax::Declarator();

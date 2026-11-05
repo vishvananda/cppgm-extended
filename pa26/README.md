@@ -224,6 +224,11 @@ runtime-helper object surface for `cppgm++ -c` within the supported subset:
     instructions between calls, and whether adjacent unprotected calls share
     an entry, is the table's layout and is not graded.
 
+Constructor cleanup must also remain valid when evaluating a call's operands
+branches before the call, including virtual calls returning class temporaries.
+Test both successful construction and an exception after earlier members have
+been constructed; every live temporary and member must be destroyed once.
+
 If object inspection shows missing or malformed host EH metadata for a basic
 throw/catch/cleanup case, fix the host-EH lowering or object-emission path.
 

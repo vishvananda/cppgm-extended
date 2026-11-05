@@ -268,6 +268,9 @@ void Analyzer::specifiers(
 				static_cast<const syntax::BuiltinTraitExpr*>(specifier.operand)->trait == GnuTrait::BitInt)
 				keywords = false;
 			break;
+		case syntax::DeclSpecKind::DecltypeAuto:
+			named = decltype_auto_placeholder_;
+			break;
 		case syntax::DeclSpecKind::Class:
 			// 11.3p2: a class is not defined in a friend declaration (14.5.4p2:
 			// nor a class template).
@@ -334,7 +337,9 @@ void Analyzer::specifiers(
 			error(out.location, "cv-qualifier without a type");
 		return;
 	}
-	out.type = type == auto_placeholder_ ? type : types_.qualified(type, cv);
+	if (type == decltype_auto_placeholder_ && cv != 0)
+		error(out.location, "decltype(auto) cannot be cv-qualified");
+	out.type = type == auto_placeholder_ || type == decltype_auto_placeholder_ ? type : types_.qualified(type, cv);
 	out.cv = cv;
 	for (const syntax::DeclSpecifier& specifier : list)
 	{
@@ -1158,6 +1163,8 @@ bool Analyzer::member_hides_parameter(Scope* qualifier, const Identifier* name)
 const Type* Analyzer::ptr_operator(
 	const syntax::PtrOperator& pointer, const Type* type, Scope* scope, uint32_t location)
 {
+	if (type == decltype_auto_placeholder_)
+		error(location, "decltype(auto) must be the entire declared type");
 	if (type == auto_placeholder_ && !auto_declarator_)
 		error(location, "auto with a declarator operator is not supported here");
 	const uint8_t cv = CvBits(pointer.cv);
@@ -1361,7 +1368,7 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 					context.enclosing = saved_body;
 					body_ = &context;
 				}
-				type = type_id(*qualifier.trailing, prototype);
+				type = type_id(*qualifier.trailing, prototype, true);
 				body_ = saved_body;
 				if (type == nullptr)
 				{
@@ -1382,7 +1389,7 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 	// placeholder return type without a trailing return type, deduced from
 	// its return statements (as C++14's 7.1.6.4p2 and p9; see
 	// deduced_result), on a declaration's own function declarator.
-	if (holds_auto(type) && &suffix != placeholder_suffix_)
+	if (holds_auto(type) && &suffix != placeholder_suffix_ && type != decltype_auto_placeholder_)
 		error(location, "auto return type without a trailing return type");
 	if (type->kind == TypeKind::Function || type->kind == TypeKind::Array)
 	{
@@ -1395,7 +1402,12 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 	for (size_t i = base; i < parameter_scratch_.size(); ++i)
 		if (parameter_scratch_[i]->unqualified == types_.fundamental(FundamentalType::StorageHalf))
 			substitution_error(location, "function parameter cannot be __fp16; use a pointer or reference");
-	const Type* result = types_.function(type, parameter_scratch_.data() + base, count, clause.ellipsis, cv, ref);
+	const Type* exception = cxx17_ && HasExceptionSpecification(&suffix) ? &suffix == placeholder_suffix_
+			? NonThrowingSpecification(&suffix) ? types_.value(types_.fundamental(FundamentalType::Bool), 1) : nullptr
+			: function_exception_type(suffix, scope, parameter_scratch_.data() + base, count)
+																		 : nullptr;
+	const Type* result = types_.function(
+		type, parameter_scratch_.data() + base, count, clause.ellipsis, cv, ref, exception);
 	parameter_scratch_.resize(base);
 	return result;
 }
@@ -1465,7 +1477,8 @@ const Type* Analyzer::parameter_type(const syntax::ParameterDeclaration& paramet
 	this->specifiers(parameter.specifiers, scope, specifiers, false);
 	if (specifiers.is_constinit)
 		error(parameter.location, "__constinit in a parameter declaration");
-	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_)
+	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_ ||
+		specifiers.type == decltype_auto_placeholder_)
 		error(parameter.location, "parameter without a type");
 	// 7.1.2p1: function-specifiers only in function declarations; 9.2p9:
 	// virt-specifiers only in member function declarations.
@@ -1482,7 +1495,7 @@ const Type* Analyzer::parameter_type(const syntax::ParameterDeclaration& paramet
 	return info.type;
 }
 
-const Type* Analyzer::type_id(const syntax::TypeId& type, Scope* scope)
+const Type* Analyzer::type_id(const syntax::TypeId& type, Scope* scope, bool allow_placeholder)
 {
 	Specifiers specifiers;
 	this->specifiers(type.specifiers, scope, specifiers, false);
@@ -1500,7 +1513,7 @@ const Type* Analyzer::type_id(const syntax::TypeId& type, Scope* scope)
 		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
 	if (failed())
 		return nullptr;
-	if (info.type == auto_placeholder_)
+	if ((info.type == auto_placeholder_ || info.type == decltype_auto_placeholder_) && !allow_placeholder)
 		error(type.location, "auto in a type-id");
 	if (info.virt_suffix != nullptr)
 		error(type.location, "a virt-specifier in a type-id");

@@ -9,8 +9,8 @@ PPLexer::PPLexer(const SourceBuffer& source, const PPLexerOptions& options)
 	: source_(source), reader_(source, !options.token_text, options.crlf_splices),
 	  cur_(reader_.logical(source.begin_offset())), token_(), token_begin_(0), clean_end_(0), token_end_(0),
 	  base_(options.location_base), dirty_(false), header_names_on_request_(options.header_names_on_request),
-	  binary_exponents_(options.binary_exponents), legacy_comment_bytes_(options.legacy_comment_bytes),
-	  lone_quotes_(options.lone_quotes),
+	  binary_exponents_(options.binary_exponents), digit_separators_(options.digit_separators),
+	  legacy_comment_bytes_(options.legacy_comment_bytes), lone_quotes_(options.lone_quotes),
 	  context_(options.header_names_on_request ? DirectiveContext::Other : DirectiveContext::LineStart)
 {}
 
@@ -349,7 +349,7 @@ const PPToken& PPLexer::lex_pp_number()
 			if (sign.code_point == '+' || sign.code_point == '-')
 				take(sign);
 		}
-		else if (c == '.')
+		else if (c == '.' || (digit_separators_ && c == '\'' && IsIdentifierContinue(peek_after(cur_).code_point)))
 		{
 			take(cur_);
 		}

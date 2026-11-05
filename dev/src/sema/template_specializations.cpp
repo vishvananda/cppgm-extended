@@ -606,7 +606,8 @@ FunctionEntity* Analyzer::deduce_for_declaration(
 	if (!complete_deduction(primary, arguments))
 		return nullptr;
 	FunctionEntity* function = specialize(primary, arguments);
-	return function != nullptr && function->type->canonical == declared ? function : nullptr;
+	return function != nullptr && declaration_pattern(function->type->canonical, declared, depth) == declared ? function
+																											  : nullptr;
 }
 
 const Type* Analyzer::declaration_pattern(const Type* pattern, const Type* declared, uint32_t depth)
@@ -626,7 +627,10 @@ const Type* Analyzer::declaration_pattern(const Type* pattern, const Type* decla
 		return entity->depth == depth && !IsPlaceholder(entity);
 	};
 	TypeList parameters;
-	bool adjusted = false;
+	// An explicit instantiation may omit noexcept ([except.spec]/3).
+	// Match the outer function declaration independently of it; exception
+	// specifications nested in parameter types keep their identities.
+	bool adjusted = pattern->owner != declared->owner;
 	for (uint32_t i = 0; i < pattern->param_count; ++i)
 	{
 		const Type* parameter = pattern->params[i];
@@ -653,7 +657,7 @@ const Type* Analyzer::declaration_pattern(const Type* pattern, const Type* decla
 		return pattern;
 	return types_
 		.function(pattern->element, parameters.data(), static_cast<uint32_t>(parameters.size()), pattern->variadic,
-			pattern->function_cv, pattern->ref)
+			pattern->function_cv, pattern->ref, declared->owner)
 		->canonical;
 }
 
@@ -921,6 +925,8 @@ void Analyzer::deduced_parameters(const Type* type, uint32_t depth, SmallList<ui
 			continue;
 		case TypeKind::Function:
 			deduced_parameters(type->params, type->param_count, false, depth, deduced);
+			if (type->owner != nullptr)
+				deduced_parameters(type->owner, depth, deduced);
 			type = type->element;
 			continue;
 		case TypeKind::Pack:

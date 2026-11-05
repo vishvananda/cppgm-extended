@@ -1038,6 +1038,7 @@ const Type* Analyzer::dependent_expression(const syntax::Expr& operand, Scope* s
 		key = DecltypeKey{ decltype_words_.data() + base, static_cast<uint32_t>(decltype_words_.size() - base) };
 	}
 	DecltypeKey alias{ nullptr, 0 };
+	TemplateParameterEntity* representative = nullptr;
 	if (keyed)
 	{
 		TemplateParameterEntity** raw = decltype_placeholders_.find(key);
@@ -1048,6 +1049,18 @@ const Type* Analyzer::dependent_expression(const syntax::Expr& operand, Scope* s
 			key.words = decltype_words_.data() + base;
 			if (found != nullptr)
 				decltype_placeholders_.insert(kept_key(key), found);
+		}
+		// A pending representative can carry arguments its expression never
+		// names. Prefer an equivalent operand written directly in a source
+		// template scope: its positions describe exactly the shared key,
+		// without substituting unrelated arguments from the first context.
+		bool framed = false;
+		for (const Scope* s = scope; found != nullptr && found->pending != nullptr && s != nullptr; s = s->parent)
+			framed = framed || (s->kind == ScopeKind::TemplateParameters && !s->dumped && s->lists == 0);
+		if (found != nullptr && found->pending != nullptr && !framed)
+		{
+			representative = found;
+			found = nullptr;
 		}
 		if (found != nullptr)
 		{
@@ -1064,9 +1077,13 @@ const Type* Analyzer::dependent_expression(const syntax::Expr& operand, Scope* s
 	// leaves them unknown.
 	if (enclosing != nullptr)
 		*enclosing |= keyed ? named : kNamedParametersKnown;
-	TemplateParameterEntity* entity = new_entity<TemplateParameterEntity>(
-		EntityKind::TemplateParameter, value ? value_key_ : decltype_key_, nullptr, nullptr);
-	++placeholders_made_;
+	TemplateParameterEntity* entity = representative != nullptr
+		? representative
+		: new_entity<TemplateParameterEntity>(
+			  EntityKind::TemplateParameter, value ? value_key_ : decltype_key_, nullptr, nullptr);
+	if (representative == nullptr)
+		++placeholders_made_;
+	entity->pending = nullptr;
 	entity->non_type = value;
 	entity->canonical = entity;
 	entity->value_type = target;
@@ -1353,7 +1370,9 @@ bool Analyzer::names_placeholder(const Type* type, uint32_t level) const
 			if (names_placeholder(type->params[i], level + 1))
 				return true;
 		}
-		return type->kind == TypeKind::Function && names_placeholder(type->element, level + 1);
+		return type->kind == TypeKind::Function &&
+			(names_placeholder(type->element, level + 1) ||
+				(type->owner != nullptr && names_placeholder(type->owner, level + 1)));
 	case TypeKind::Class:
 	{
 		const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(type->entity)->templ;

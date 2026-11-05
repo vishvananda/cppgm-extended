@@ -66,6 +66,8 @@ ordering. A pending expression can retain unused template parameters, including
 an empty pack; those bookkeeping arguments do not distinguish otherwise
 equivalent operands. Preserve different member names and argument positions,
 even when a concrete specialization gives them equal values.
+An unrelated argument retained by a pending expression must not cause a
+substitution failure when an equivalent operand is reused in another template.
 
 A transformed ordering operand can become independent even while unrelated
 synthesized arguments remain dependent. Evaluate that proven independent

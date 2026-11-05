@@ -142,6 +142,8 @@ struct Type
 	// parameter during partial ordering (see
 	// Analyzer::apply_suffix; null for a known or omitted bound). Vector:
 	// likewise its size (see Analyzer::vector_type).
+	// Function (C++17): its noexcept-specification, as a bool value or a
+	// dependent value placeholder; null means potentially throwing.
 	const Type* owner;
 	// Class, Enum, TemplateParameter, TemplateTemplateParameter.
 	Entity* entity;
@@ -149,6 +151,10 @@ struct Type
 
 	bool is(TypeKind k) const { return kind == k; }
 	bool is_reference() const { return kind == TypeKind::LValueReference || kind == TypeKind::RValueReference; }
+	bool is_nothrow_function() const
+	{
+		return kind == TypeKind::Function && owner != nullptr && owner->kind == TypeKind::Value && owner->bound != 0;
+	}
 };
 
 // An integral constant (5.19): its type (an integral or enumeration type,

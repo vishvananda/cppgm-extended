@@ -145,6 +145,7 @@ private:
 	// `leading`: attributes a declaration statement began with.
 	Decl* parse_declaration(DeclContext context, Attribute* leading = nullptr);
 	Decl* parse_namespace();
+	void enter_namespace(const NamespaceDecl& ns);
 	Decl* parse_using();
 	Decl* parse_static_assert();
 	Decl* parse_template_declaration(DeclContext context);
@@ -382,6 +383,7 @@ private:
 	Expr* parse_new();
 	Expr* parse_delete();
 	Expr* parse_lambda();
+	void invent_lambda_parameters(LambdaExpr& lambda);
 	BracedInitList* parse_braced_init_list();
 	bool parse_expression_list(ListFrame<Expr*>& list, TokenKind close);
 	bool at_cast_operand_start();

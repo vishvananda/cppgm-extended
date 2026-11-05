@@ -3180,9 +3180,16 @@ ExprFacts* Analyzer::braced_list(const syntax::BracedInitList& list, const Type*
 	uint32_t next = 0;
 	uint64_t count = 0;
 	for (; target->bound == 0 ? next < list.elements.size : count < target->bound; ++count)
+	{
 		aggregate_element(list, next, target->element, scope);
+		if (failed())
+			return nullptr;
+	}
 	if (next < list.elements.size)
-		error(list.location, "too many initializers for the array");
+	{
+		substitution_error(list.location, "too many initializers for the array");
+		return nullptr;
+	}
 	if (target->bound == 0 && count != 0)
 		target = types_.array(target->element, count);
 	return new_facts(list, target, ValueCategory::LValue);
