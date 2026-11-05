@@ -1,0 +1,45 @@
+Campaign active — first implementation checkpoint (2026-11-05)
+
+The original full objective and closure criteria remain in cxx11-gap-plan.txt.
+This checkpoint is partial progress, not completion of the external campaign.
+
+Implemented:
+- Immutable original compiler baseline, frozen workloads and compiler/header
+  closure hashes in /mnt/vizier/cppgm-cxx11-upstream/baselines/original.
+- Reproducible upstream Git-tree inventory tool under student.tests, with
+  pinned revisions, blob identities, source hashes and original metadata.
+- inventory-3 records 53,264 compiler candidates/support files, including
+  45,712 candidate inputs. C++11 applicability is unresolved; all inventoried files
+  are now materialized. Library/other-target expansion remains separate.
+- Issue ledger has seven prioritized confirmed symptoms; all initial 521
+  observations remain accounted for and require full intended-options triage.
+- CXX11-001: two required PA18 controls fail on the original compiler with
+  SIGSEGV. Candidate passes the valid case and diagnoses the hard-error case.
+  The GCC sfinae57.C reproducer passes. Regression covers reference parameters
+  remaining valid for incomplete classes and complete values remaining viable.
+- CXX11-001 correctness checks passed: PA18 540/540, full strict report
+  8034/8034, debug info, self-host through PA5, architecture/format audits,
+  placement/file audits, harness checks, student export and all 42 reference
+  wrapper checks. Existing header-layout file-audit warnings are retained.
+- CXX11-001 hardware A/A calibration passed on all three workloads.
+  A/B measurement remains pending the final regression/export rerun.
+  Initial noisy timing experiments and load-screen failures are retained.
+- Local DejaGnu/Expect packages were extracted under evidence/tools (no system
+  installation). Its native GCC runner successfully checked sfinae57.C with
+  the host compiler. That exploratory invocation also ran C++17/C++26; it is
+  infrastructure validation, not the declared C++11 coverage result.
+
+Next:
+- Assess the first fix's calibrated measurements; investigate noise/regressions
+  before closure. Retain every measurement and verify immutable input hashes.
+- Commit the reviewed regression/fix with evidence, then reduce CXX11-002.
+- Finish inventory disposition and implement/test the external adapters using
+  native metadata evaluation; force each declared dialect and optimization
+  configuration, preserve unknown-check limitations, and extend coverage well
+  beyond the original survey before claiming completeness.
+
+Authoritative evidence root: /mnt/vizier/cppgm-cxx11-upstream
+Issue evidence: issues/CXX11-001/
+Full inventory: inventory-3/{manifest.json,inventory.jsonl}
+Native GCC exploratory runner evidence: native-host/initial.log, g++.log,
+  g++.sum; libraries/tools and pinned upstream sources remain alongside them.

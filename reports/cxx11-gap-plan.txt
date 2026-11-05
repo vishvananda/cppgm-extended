@@ -1,0 +1,315 @@
+C++11 GCC/Clang gap discovery and repair plan
+2026-11-05 | investigate/upstream-cxx11
+Worktree: /mnt/vizier/cppgm-upstream-cxx11
+Evidence root: /mnt/vizier/cppgm-cxx11-upstream
+
+Objective and completion boundary
+
+Systematically discover and repair C++11 compatibility gaps exposed by pinned
+GCC and Clang compiler tests, using the repository's normal PA regression,
+compiler implementation, correctness, architecture and performance workflow.
+
+“All gaps” means complete accounting of a declared upstream corpus and its
+applicable test configurations. No finite suite proves complete C++11
+conformance. Close each discovered defect and explain each excluded case;
+never infer completeness from the current source-acceptance percentages.
+The task here is the plan and initial finding ledger; compiler repairs follow
+this plan rather than being bundled into this planning change.
+
+Deliverables
+
+- Versioned corpus manifest with source revisions, paths/hashes, test variants,
+  target/dialect settings and licenses. Preserve original upstream sources.
+- External runner with explicit coverage/skip reasons and validated metadata
+  handling; retain the current personal scripts as the initial survey.
+- Machine-readable observations and a deduplicated root-cause issue ledger.
+- Focused regression/fix changes in the owning PA and dev modules, with full
+  correctness and performance evidence for every fix.
+- Final coverage matrix, unresolved limitations, and reproducible rerun commands.
+
+Stage 0 — preserve the baseline and turn observations into issues
+
+Keep the initial source revisions pinned:
+  GCC 15.2.0: 5115c7e447fc07457443df874bf57840e8316d5f
+  LLVM 21.1.8: 2078da43e25a4623cab2d0d60decddf709aaea28
+  Compiler: b7c6b8e72 at initial survey
+Record host compiler/linker versions, standard library and header closure,
+OS/CPU, build flags, compiler binary hashes and command environments.
+
+Before the first fix, archive an immutable host-built baseline compiler and
+needed tools. Capture each later fix's immediate parent baseline as well;
+compare each fix with its parent and checkpoints with the original baseline.
+Use separate object roots for host-toolchain and self-host cells. Keep a real
+host compiler in CPPGM_HOST_CXX throughout.
+
+The initial observations are in reports/cxx11-gap-observations.csv. They are
+untriaged symptoms, not 521 distinct defects: 509 acceptance disagreements or
+abnormal terminations and 12 nonmatching runtime outcomes. Link duplicates to
+root-cause issues rather than dropping their upstream identities.
+
+For each root-cause issue record: stable ID; all source/variant identities;
+original directives; expected result and rationale; actual phase/status;
+reproducer; feature and handout clause; earliest owning PA and executed lane;
+implementation modules; priority; linked duplicates; regression path; parent
+and fix revisions; correctness logs; performance manifest/results; status.
+States: observed -> triaged -> regression-fails -> fixed -> correctness-passed
+-> performance-passed -> closed. Harness defects have their own issues.
+Out-of-scope and deliberate-extension dispositions need specific explanations.
+
+Stage 1 — build an exhaustive inventory for the declared scope
+
+1. Inventory the complete GCC C++ compiler test directories, including g++.dg
+   beyond cpp0x and applicable g++.old-deja cases. cpp0x is only a starting
+   cluster; C++11-relevant ABI, lookup, parser and template regressions occur
+   elsewhere. Include preprocessing inputs and referenced headers, companion
+   translation units and helper files. Inventory targets before downloading
+   large unrelated trees; record explicitly excluded non-C++ test families.
+2. Inventory Clang CXX (including defect reports), SemaCXX, SemaTemplate,
+   Parser, Lexer, Preprocessor and CodeGenCXX plus applicable C++ inputs in
+   other compiler directories. Select by metadata/actual C++11 applicability,
+   not just filenames or the presence of '-std=c++11' text. Include tests
+   whose defaults apply to C++11 and every relevant RUN-line variant.
+3. Freeze the first coverage scope to x86-64 Linux, ISO C++11 and GNU C++11
+   as separate dialects, the pinned host library, and supported optimization
+   levels. Inventory other targets/configurations as explicit exclusions.
+   Track standard defect resolutions separately from later language features.
+4. Keep standard-library test projects as a separately inventoried expansion:
+   GCC libstdc++ and LLVM libc++. They require their own library configuration,
+   test support and expected failures. Do not mix their scores with core
+   compiler tests. Add macOS and alternate host-library cells after Linux core
+   coverage has reliable oracles; retain them in the declared coverage roadmap.
+5. Every candidate must have a disposition: supported check scheduled/executed,
+   harness-blocked, outside declared scope, intentional course extension,
+   upstream/host problem or unresolved. Unknown directives remain visible
+   blockers. A directory-wide skip cannot stand in for per-case inventory.
+
+Stage 2 — make the external oracle trustworthy
+
+Prefer upstream DejaGnu metadata evaluation for GCC. If an adapter supports a
+restricted grammar, reject unsupported directives explicitly. Honor dg-do,
+language/target selectors, effective-target requirements, options, additional
+sources, diagnostic expectations, dg-final checks and expected failures.
+Force the selected C++11 dialect; never silently run a test in a newer mode.
+Probe effective targets using the candidate's real capabilities. Accepted but
+ignored -f/-m/-W flags do not establish support.
+
+Use a dedicated Clang lit configuration/adapter for applicable RUN lines.
+Preserve substitutions, target triples, includes, split-file setup,
+REQUIRES/UNSUPPORTED/XFAIL and standard-specific verify prefixes. Do not
+redirect arbitrary %clang_cc1 commands to the cppgm driver. Diagnostic tests
+need severity/location/expectation checking, not just a nonzero exit status.
+
+For each case distinguish preprocessing, semantic analysis, object generation,
+linking and execution. Run positive syntax cases through object generation
+where applicable: syntax-only acceptance misses deferred/emission failures.
+Compile cppgm host objects with -c and link hosted programs using the host
+compiler driver. Test multiple translation units and ABI interaction when the
+case calls for them. Exercise supported -O0/-O1/-O2/-O3 configurations at the
+appropriate external lane, without adding optimizer requirements to early PAs.
+
+cppgm currently rejects GCC's -S and Clang's -cc1/-verify/-emit-llvm. Translate
+only semantically equivalent checks. AST/LLVM IR/assembly checks that cannot
+be run remain harness/output-interface coverage gaps. Where practical add an
+independent behavior/ABI/object check, recording it as adapted coverage, not
+an upstream textual-check pass. Genuine codegen requirements remain open
+until tested. No implementation of an LLVM IR backend is implied by this plan.
+
+Validate the adapter against small metadata cases and upstream host compilers
+before trusting candidate totals. Run make test-harness after runner changes;
+include fixtures that exercise conditional diagnostics, xfails, skips, extra
+sources, crashes, timeouts and unavailable checker interfaces. Keep upstream
+baseline failures separate from candidate failures.
+
+Mixed positive/negative source files need diagnostic verification or isolated,
+faithfully reduced subcases. A shared rejection may hide untested valid paths.
+Compare required diagnostics, detect unexpected acceptance, and report missing
+warnings separately. Signals, timeout and internal error 70 always fail a
+negative case. Do not equate matching exit statuses with matching semantics.
+
+Stage 3 — triage all findings and fill discovery blind spots
+
+First reproduce every current mismatch with its intended options and target.
+Cross-check GCC and Clang, then adjudicate against C++11/course requirements;
+host agreement is evidence, not the specification. In particular PA20 accepts
+some C++14 auto-return forms in C++11: record that deliberate extension rather
+than breaking the handout to force host agreement. Changes to a deliberate
+language policy are separate explicit scope decisions.
+
+Group symptoms by demonstrated root cause, retaining all source/variant links.
+Reduce crashes, wrong code, missing diagnostics and performance pathologies.
+A reducer predicate must preserve the intended failure: a runtime defect must
+not reduce to a compile rejection; a missing diagnostic must not become UB.
+Check both low-level facts and runtime behavior to separate semantics,
+lowering, optimization, ABI, backend, driver and harness faults.
+
+After initial disagreements, inspect cases both compilers reject, currently
+unexecuted variants, warning checks, and positives accepted only in syntax
+mode. Expand to the full inventory, including other C++11 feature directories,
+defect-report tests, multi-TU tests and applicable optimization configurations.
+Maintain a feature-by-phase-by-dialect matrix; add targeted neighboring cases
+where upstream coverage or the reduction leaves a blind spot. Never close a
+feature merely because one representative source works.
+
+Initial repair order (placement is provisional until reduced)
+
+P0  sfinae57.C compiler SIGSEGV: deduction/substitution immediate context;
+    start with PA18, escalate composition coverage to PA19 only if necessary.
+P1  constexpr-static4.C runtime abort: static/dynamic initialization; check
+    PA10/11/16 contracts and reduce to the earliest owning feature. Add a
+    PA27/28 check only if the defect specifically needs host object/ABI behavior.
+P1  ref-qual19.C and ref-qual20.C runtime aborts: implicit move/ref-qualified
+    conversions; inspect PA12/20 contracts, choose after isolating the trigger.
+P1  alias-decl-17.C missing pack diagnostic: inspect PA15/17 alias/pack boundary.
+P1  abstract-default1.C missing abstract-type construction diagnostic: inspect
+    PA13 plus initialization requirements; use the latest feature in the reduction.
+P1  cxx11-initializer-aggregate.cpp timeout at 15 and 45 seconds: inspect large
+    sparse initialization handling; determine whether semantics or emission
+    scales with the full 2^31-element array. Preserve bounded-resource coverage.
+P2  Remaining nine runtime compile failures and all acceptance discrepancies;
+    prioritize wrong code, false acceptance, common valid features, then
+    diagnostics fidelity and vendor-extension compatibility.
+
+Priority sets order; it does not remove lower-priority findings from scope.
+
+Stage 4 — normal regression/fix cycle, repeated for EVERY compiler issue
+
+1. Read the owning handout and spec.md. Identify the earliest PA that owns all
+   reduced requirements, in the feature cluster of the latest feature used.
+   Backend-only defects may need a LowIR fixture in PA24; host integration in
+   PA26-28; hosted headers in PA29-31; optimization in PA32-33. Do not default
+   every imported source to PA29 or put required regressions in student.tests.
+2. Add a small required fixture under that PA's tests/ in a lane its Makefile
+   actually executes. For PA10-23 prefer existing self-checking controls with
+   explicit expected exit/rejection when appropriate. Use semantic/IR checks
+   only when they assert the relevant contract. Preserve attribution/provenance
+   according to NOTICE, including upstream revision/path for adapted tests.
+3. Demonstrate the fixture fails on the unmodified baseline for the expected
+   reason, and retain the log. A negative fixture must not “pass” on a crash.
+   Add valid neighboring cases and SFINAE/hard-error distinctions where needed.
+   Timeouts/large-array issues need a bounded scaling/resource check in addition
+   to ordinary behavior, integrated into an appropriate executed lane.
+4. Fix shared compiler modules in dev/src (and dev entrypoints if necessary).
+   Consume typed syntax/semantic facts, preserve canonical identity and deferred
+   work, parse once, and avoid source/output reparsing or eager hot-path work.
+   Keep dev/frontend_source_sets.mk current. No test-name special cases.
+5. Show the new regression passes, then rerun every upstream reproducer linked
+   to the issue with its intended flags and all relevant dialect/optimization
+   variants. Record remaining symptoms as separate open issues.
+6. Run the owning suite and the full required verification below. Generate
+   necessary references only through documented tools after establishing the
+   oracle; reference wrappers built from dev are not independent correctness
+   evidence. Do not hand-edit references, .my files, logs or obj artifacts.
+7. Complete per-fix performance validation below. Correctness does not excuse
+   an unmeasured hot-path regression. Resolve regressions or report the issue
+   still open; do not loosen benchmark gates or silently waive noisy results.
+8. Keep each logical regression/fix reviewable with its evidence. Close only
+   after all mandatory checks and the external reproducer pass. Update ledger
+   and external results, then move to the next independent root cause.
+
+Required correctness and architecture checks after compiler changes
+
+Use the same host compiler/stdlib flags throughout:
+  make CXX=g++ CPPGM_HOST_CXX=g++
+  make test-paN                         # replace N with the owning PA
+  CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-report
+  make test-debuginfo
+  make -C pa34 test-through-pa5 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
+  make audit-lowir-contract audit-compiler-layout audit-compiler-exceptions \
+    audit-frontend-source-sets audit-builtin-registry-tables \
+    audit-scaffold-usage audit-scaffold-spellings audit-ir-expectations \
+    audit-clang-format
+  perl scripts/cppgm_file_audit.pl --paths dev
+  python3 scripts/audit_pa_feature_placement.py --fail-on-early
+
+Use clang-format 19+ (CI pins 21.1.8) for changed implementation C++ files;
+never reformat fixtures. Run make test-harness for harness/discovery/export
+changes and when confirming new fixtures are in executed lanes. Validate a
+student export when shipped files or their discovery change. Keep this plan,
+ledger, run evidence and upstream corpus out of student-export documents.
+Run make inception when self-host behavior changes. For optimizer, backend or
+lowering changes also run make -C pa35 test-smoke; PA35 ref-test is its release
+check. Run that release check for the final integrated release and changes
+being released under that contract. Do not infer those checks from make test.
+
+Per-fix performance protocol
+
+A. Before editing, preserve immutable A (parent baseline); build immutable B
+   (candidate) with the same host compiler, flags, instrumentation and runtime.
+   Hash both and retain build identities. Freeze source AND included headers,
+   host headers/toolchain, options and environment. Do not benchmark against
+   live dev/src input that changed with the implementation.
+B. Use the existing frozen semantic_overload workload and its stable/include
+   closure/PERF_EPOCH.json. Add representative already-correct feature workloads
+   relevant to the change and frozen representative hosted/self-host workloads.
+   For changes to templates, constant evaluation or initialization, include
+   bounded scaling variants and record max RSS. Self-host throughput must be
+   measured when the fix can affect it, with frozen compiler input trees.
+C. On this Linux host use scripts/run_ab_compile_benchmark.py. Calibrate A/A
+   first using the same immutable binary as A and B. Then run at least 10 paired
+   ABBA blocks per selected workload with predeclared warmup/load controls.
+   Batch very short inputs so process startup/timer granularity does not dominate;
+   document batching and apply the identical procedure to A/A and A/B.
+   Retain every observation, including failed/contended blocks and exclusions.
+   Do not benchmark concurrently with builds, suites or another benchmark.
+D. Record wall/user/system time, peak RSS, output sizes/hashes and load/pressure
+   snapshots. Measure allocation/instruction counts when the change plausibly
+   affects them and an appropriate profiler/counter is available; record tool
+   and availability, never substitute an unsupported counter claim. On macOS
+   run scripts/validate_perf_regression.py against the existing hardware-counter
+   gates. Linux wall-time evidence does not replace a claimed macOS gate pass.
+   With hardware counters available, use paired retired-instruction counts as
+   the primary compiler-work measure under load (user steering, 2026-11-05).
+   Calibrate A/A counters, verify scheduling/multiplexing, and retain timing
+   and RSS. Noisy wall time stays explicitly inconclusive; reliable counter
+   and memory gates can establish the performance result without pretending
+   timing passed. Predeclare counter tolerances before inspecting A/B data.
+E. Predeclare workload tolerances and the statistical method using A/A noise and
+   repository gates before inspecting A/B results. Report paired ratios and
+   uncertainty; retain existing PA35 thresholds unchanged. A material regression
+   outside the noise band requires investigation. If noise prevents a conclusion,
+   improve isolation/measurement and repeat; do not record a pass.
+F. Default to --output-mode exact on unchanged-correct workloads. A fix can
+   legitimately change objects; in that case use deterministic mode plus an
+   explicit independent semantic/ABI oracle and explain the expected difference.
+   Determinism alone does not establish correctness. A baseline that crashes,
+   rejects, times out or miscompiles the reproducer is not a comparable speed
+   measurement: measure regression overhead on common correct workloads and
+   report absolute cost/scaling of the newly supported case separately.
+G. Attach immutable input/binary manifests, raw measurements, equality/oracle
+   results, ratios, noise calibration and interpretation to the issue. Compare
+   cumulative checkpoints with the original baseline to catch many small costs.
+
+Example Linux measurement shape (use fresh evidence prefixes and real hashes):
+  python3 scripts/run_ab_compile_benchmark.py \
+    --compiler-a /absolute/immutable/A --compiler-b /absolute/immutable/A \
+    --source benchmarks/self_compile/stable/semantic_overload.cpp \
+    --include benchmarks/self_compile/stable/include --compiler-arg=-O0 \
+    --abba-blocks 10 --output-prefix /absolute/evidence/ISSUE/aa
+  python3 scripts/run_ab_compile_benchmark.py \
+    --compiler-a /absolute/immutable/A --compiler-b /absolute/immutable/B \
+    --source benchmarks/self_compile/stable/semantic_overload.cpp \
+    --include benchmarks/self_compile/stable/include --compiler-arg=-O0 \
+    --abba-blocks 10 --output-prefix /absolute/evidence/ISSUE/ab
+
+Add the predeclared load-screen options and repeat at other relevant levels.
+These commands are templates; execution starts after baseline capture.
+
+Checkpoints and final acceptance
+
+After every fix: required PA regression passes; linked external cases pass;
+full correctness/audits and applicable self-host/PA35 checks pass; per-fix
+performance meets the calibrated gates; ledger has concrete evidence paths.
+
+At each feature-family checkpoint: replay the entire supported external matrix,
+compare with the original baseline, inspect new failures and unexpected passes,
+and refresh counts without changing the denominator silently. Recheck closed
+issues whenever a source revision, host toolchain or runner changes.
+
+Declare the pinned core-compiler campaign complete only when every inventoried
+in-scope variant has executed its relevant oracle or has a documented approved
+scope disposition; every confirmed in-scope compiler defect is closed; no
+unexplained crashes/timeouts, hidden negative-test failures or unmeasured fixes
+remain; and final integrated correctness, export and performance checks pass.
+Harness-blocked checks and intentional extensions are named coverage limits,
+not successes. Library/target expansions have separate completion matrices.
+Upstream revision refreshes start a new manifest/comparison cycle.

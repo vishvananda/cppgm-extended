@@ -1,0 +1,184 @@
+[
+  {
+    "id": "CXX11-001",
+    "priority": "P0",
+    "status": "correctness-passed",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/sfinae57.C"
+    ],
+    "root_cause": "by-value call parameter completeness was not checked before constructor lookup, including in immediate substitution context",
+    "expected": "incomplete by-value call fails substitution in immediate context; same expression in an instantiated body diagnoses normally; reference parameters remain valid",
+    "owning_pa": 18,
+    "handout": "pa18/README.md: deduction/substitution and candidate dropping",
+    "regressions": [
+      "pa18/tests/controls/300-incomplete-by-value-call-sfinae.t",
+      "pa18/tests/controls/300-incomplete-by-value-call-hard-error.t"
+    ],
+    "implementation": [
+      "dev/src/sema/analyzer_calls.cpp"
+    ],
+    "baseline": "/mnt/vizier/cppgm-cxx11-upstream/baselines/original/manifest.json",
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-001",
+    "checks": {
+      "pa18": {
+        "status": "pass",
+        "count": 540,
+        "log": "pa18.log"
+      },
+      "strict_report": {
+        "status": "pass",
+        "count": 8034,
+        "log": "strict-report.log"
+      },
+      "debug_info": {
+        "status": "pass",
+        "log": "debuginfo.log"
+      },
+      "selfhost_pa5": {
+        "status": "pass",
+        "log": "selfhost-pa5.log"
+      },
+      "architecture": {
+        "status": "pass",
+        "log": "audits.log"
+      },
+      "file_audit": {
+        "status": "pass-with-existing-warnings",
+        "log": "file-audit.log"
+      },
+      "placement": {
+        "status": "pass",
+        "log": "placement.log"
+      },
+      "harness": {
+        "status": "pass",
+        "log": "test-harness.log"
+      },
+      "student_export": {
+        "status": "pass",
+        "log": "export.log"
+      },
+      "reference_bundle": {
+        "status": "pass",
+        "wrappers": 42,
+        "log": "export-bundle-check.log"
+      }
+    },
+    "performance": {
+      "status": "pending",
+      "reason": "wait for export and harness checks to finish before measurements"
+    },
+    "pending_checks": [
+      "performance"
+    ]
+  },
+  {
+    "id": "CXX11-002",
+    "priority": "P1",
+    "status": "observed",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-static4.C"
+    ],
+    "symptom": "runtime SIGABRT; static/dynamic initialization ordering",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/runtime-1/logs/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-static4.C",
+    "root_cause": null,
+    "owning_pa": null,
+    "regressions": [],
+    "fix_revision": null,
+    "checks": {},
+    "performance": {
+      "status": "not-started"
+    }
+  },
+  {
+    "id": "CXX11-003",
+    "priority": "P1",
+    "status": "observed",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/ref-qual19.C"
+    ],
+    "symptom": "runtime SIGABRT; implicit move/ref-qualified class conversion",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/runtime-1/logs/gcc/gcc/testsuite/g++.dg/cpp0x/ref-qual19.C",
+    "root_cause": null,
+    "owning_pa": null,
+    "regressions": [],
+    "fix_revision": null,
+    "checks": {},
+    "performance": {
+      "status": "not-started"
+    }
+  },
+  {
+    "id": "CXX11-004",
+    "priority": "P1",
+    "status": "observed",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/ref-qual20.C"
+    ],
+    "symptom": "runtime SIGABRT; implicit move/ref-qualified base-result conversion",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/runtime-1/logs/gcc/gcc/testsuite/g++.dg/cpp0x/ref-qual20.C",
+    "root_cause": null,
+    "owning_pa": null,
+    "regressions": [],
+    "fix_revision": null,
+    "checks": {},
+    "performance": {
+      "status": "not-started"
+    }
+  },
+  {
+    "id": "CXX11-005",
+    "priority": "P1",
+    "status": "observed",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-17.C"
+    ],
+    "symptom": "accepted unexpanded alias parameter pack; GCC and Clang reject",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/triage/alias-decl-17.C",
+    "root_cause": null,
+    "owning_pa": null,
+    "regressions": [],
+    "fix_revision": null,
+    "checks": {},
+    "performance": {
+      "status": "not-started"
+    }
+  },
+  {
+    "id": "CXX11-006",
+    "priority": "P1",
+    "status": "observed",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/abstract-default1.C"
+    ],
+    "symptom": "accepted abstract default-argument construction; GCC and Clang reject",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/triage/abstract-default1.C",
+    "root_cause": null,
+    "owning_pa": null,
+    "regressions": [],
+    "fix_revision": null,
+    "checks": {},
+    "performance": {
+      "status": "not-started"
+    }
+  },
+  {
+    "id": "CXX11-007",
+    "priority": "P1",
+    "status": "observed",
+    "upstream": [
+      "llvm-project/clang/test/CodeGenCXX/cxx11-initializer-aggregate.cpp"
+    ],
+    "symptom": "syntax-only timeout at 15 and 45 seconds; large sparse initialization",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/rechecks/aggregate",
+    "root_cause": null,
+    "owning_pa": null,
+    "regressions": [],
+    "fix_revision": null,
+    "checks": {},
+    "performance": {
+      "status": "not-started"
+    }
+  }
+]

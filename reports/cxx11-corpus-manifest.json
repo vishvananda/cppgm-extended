@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "pins": {
+    "gcc": "5115c7e447fc07457443df874bf57840e8316d5f",
+    "llvm-project": "2078da43e25a4623cab2d0d60decddf709aaea28"
+  },
+  "scope": "compiler inputs; applicability unresolved",
+  "target": "x86_64-linux-gnu",
+  "dialects": [
+    "c++11",
+    "gnu++11"
+  ],
+  "optimization_levels": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "counts": [
+    {
+      "repository": "gcc",
+      "role": "candidate",
+      "materialized": true,
+      "count": 25221
+    },
+    {
+      "repository": "gcc",
+      "role": "support",
+      "materialized": true,
+      "count": 910
+    },
+    {
+      "repository": "llvm-project",
+      "role": "candidate",
+      "materialized": true,
+      "count": 20491
+    },
+    {
+      "repository": "llvm-project",
+      "role": "support",
+      "materialized": true,
+      "count": 6642
+    }
+  ],
+  "excluded_gcc_families": "non-C++ and non-shared families; separate library campaign",
+  "library_expansion": [
+    "libstdc++-v3/testsuite",
+    "libcxx/test"
+  ],
+  "other_targets": "outside initial Linux scope; require later matrix",
+  "inventory_sha256": "f2b5b29e8953e63cd599a1fc0cf0df9badd56b4c9b2b456be3250a9958430f96",
+  "licenses": {
+    "gcc": {
+      "path": "COPYING3",
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+    },
+    "llvm-project": {
+      "path": "LICENSE.TXT",
+      "sha256": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee"
+    }
+  }
+}

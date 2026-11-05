@@ -1,0 +1,205 @@
+GCC / Clang C++11 feasibility investigation — 2026-11-05
+
+Worktree: /mnt/vizier/cppgm-upstream-cxx11
+Branch: investigate/upstream-cxx11
+Compiler source: b7c6b8e72 (main at worktree creation)
+External sources and all generated evidence: /mnt/vizier/cppgm-cxx11-upstream
+Compiler built successfully with:
+  make -C dev cppgm++ CXX=g++ CPPGM_HOST_CXX=g++
+No compiler implementation, course fixtures or references changed.
+
+Conclusion
+
+Useful external coverage is already practical. This is a compiler compatibility
+project as well as a harness integration project. The added personal harnesses
+provide a repeatable first survey; they do not implement DejaGnu or lit semantics.
+Full native GCC/Clang test-suite results cannot be inferred from these numbers.
+
+Pinned inputs
+
+GCC releases/gcc-15.2.0:
+  5115c7e447fc07457443df874bf57840e8316d5f
+  gcc/testsuite/g++.dg/cpp0x/**/*.C (3,045 sources)
+LLVM llvmorg-21.1.8:
+  2078da43e25a4623cab2d0d60decddf709aaea28
+  clang/test/{CXX,SemaCXX,Parser,CodeGenCXX}/**/*.cpp containing an explicit
+  -std=c++11, -std=gnu++11, -std=c++0x or -std=gnu++0x (1,288 sources)
+Host baselines: GCC 15.2.0 and Ubuntu Clang 22.1.2.
+These stable releases are pinned deliberately; this is not a survey of trunk.
+Neither libstdc++ nor libc++ library tests were surveyed.
+
+Source acceptance results (4,333 original source files)
+
+All invocations use -std=c++11 -fsyntax-only. GCC sources are compared with g++;
+Clang sources with clang++. No source edits or expected-diagnostic removal.
+
+                                     GCC files     Clang files
+Host accepts / cppgm accepts             1,853             477
+Host accepts / cppgm rejects               205              85
+Host accepts / cppgm crashes                 1               0
+Host accepts / cppgm exceeds 15 seconds       0               1
+Host rejects / cppgm accepts               150              67
+Host rejects / cppgm rejects               836             658
+Total                                   3,045           1,288
+
+Of host-accepted inputs, cppgm accepts 1,853/2,059 (90.0%) for GCC and
+477/563 (84.7%) for Clang. These are acceptance rates under normalized flags,
+NOT upstream test pass rates. Shared rejection says nothing about whether the
+right error or source line was diagnosed. A host rejection may reflect missing
+test flags/includes, intentional errors, a platform assumption or a newer
+language requirement. An acceptance disagreement requires individual triage.
+
+Runtime experiment
+
+132 GCC sources selected from host-accepted inputs with dg-do run, restricted
+to unconditional or c++11/c++11_only selectors, no require/skip/xfail directives,
+no extra sources/options, no dg-final/error/output/shouldfail directives, and
+only std/optimization options. Both builds use fixed -std=c++11 -O0; original
+optimization options are not replayed. The selector is intentionally narrow.
+Compile cppgm sources with -c to host-compatible .o files and link with g++.
+The ordinary cppgm executable-link path uses the course runtime and is not a
+substitute for hosted GCC runtime testing.
+
+  120: host and cppgm programs exit zero, with identical stdout and stderr
+    9: cppgm compilation rejects
+    3: cppgm program aborts (SIGABRT) after compiling and linking
+    0: link failures or output-only differences among remaining cases
+
+The three runtime aborts are constexpr-static4.C (static versus dynamic global
+initialization ordering) and ref-qual19.C / ref-qual20.C (implicit move and
+ref-qualified conversion behavior). The source contents suggest these semantic
+areas; the precise root causes have not been established. Host versions exit 0.
+All three sources are also accepted by both host compilers' syntax checks.
+
+The nine compilation failures are auto2.C, constexpr-tuple.C, defaulted19.C,
+defaulted19a.C, initlist-array7.C, initlist53.C, lambda/lambda-ctors.C,
+temp-extend2.C and udlit-macros.C. They exercise deferred function analysis,
+hosted builtins, special members, initialization, lambdas and literal handling.
+
+Confirmed high-priority findings
+
+1. sfinae57.C reproducibly SIGSEGVs. The saved gdb backtrace begins in
+   sema::NameLookup::find, through constructor_candidates, record_copy,
+   convert_arguments, decltype substitution and template deduction.
+   This is a robustness defect in the incomplete-class/SFINAE path.
+
+2. alias-decl-17.C is accepted, although both GCC and Clang reject the
+   unexpanded parameter pack in an alias template. abstract-default1.C is
+   accepted, although both reject abstract-class default argument construction.
+   These demonstrate real missing diagnostics, beyond harness flag differences.
+
+3. Clang CodeGenCXX/cxx11-initializer-aggregate.cpp exceeds both the original
+   15-second timeout and an isolated 45-second recheck in syntax-only mode.
+   It contains an aggregate with 2^31 int elements. Investigate compact handling
+   of zero-initialized tails; do not infer the exact cause from timeout alone.
+
+Other GCC first-error clusters among host-accepted/cppgm-rejected inputs:
+static assertions (13), parser syntax errors (12), call viability (10),
+constant-expression variable rules (9), implicit conversions (7), deleted
+functions (7), narrowing (6), aggregates (6), incomplete types (6), pack
+expansion (6), overload ambiguity (6). These are triage clues, not root causes.
+Clang's largest cluster is parser syntax errors (27); vendor extensions and
+newer-language constructs accepted as host extensions contribute noise.
+
+What native suite integration requires
+
+GCC:
+- Add an explicit external lane, leaving the course default discovery intact.
+- Pin source revisions and preserve upstream licenses/comments; keep sources
+  outside the export and record every selected/skipped test and its reason.
+- Prefer DejaGnu's own metadata evaluation; do not turn the survey's regex
+  selector into a general dg parser. Honor language/target selectors,
+  effective-target probes, dg-options/additional-options, extra translation
+  units, expected failures, diagnostic expectations and timeout/crash states.
+- Use a compiler/board adapter that compiles with cppgm and links hosted
+  runtime tests with the host compiler. Force the C++11 standard list.
+- GCC's compile tests commonly use -S. cppgm currently rejects -S, verified
+  directly. For semantic-only coverage, map eligible compile tests to
+  -fsyntax-only and mark assembly/scan-assembler tests unsupported. Object
+  tests must actually use -c. Supporting real assembly output is separate work.
+- cppgm accepts many -W/-f/-m options without implementing their behavior;
+  capability checks must prevent those from silently becoming false passes.
+- Diagnostic text differs and warnings/pedantic behavior are incomplete.
+  Initially report coarse accept/reject separately; exact dg-error/warning
+  compatibility is a later milestone and must never count a crash as rejection.
+
+Clang:
+- Use a separate lit configuration or an explicit RUN-line adapter for the
+  portable C++11 subset. Preserve standard-specific verify prefixes and guards.
+- cppgm rejects -cc1, -verify and -emit-llvm. Native Clang RUN lines therefore
+  cannot be redirected wholesale to cppgm.
+- Translate eligible syntax invocations to the driver; implement diagnostic
+  checking using structured severity/location/category where possible. Existing
+  GCC/Clang wording checks require either mapped expectations or compatible
+  diagnostics, explicitly reported as adapted coverage.
+- AST-dump checks and FileCheck tests of LLVM IR do not describe cppgm's
+  outputs. Skip them explicitly in native-form conformance coverage; use
+  execution/ABI/object checks for equivalent backend behavior. The survey's
+  syntax acceptance of a CodeGenCXX source does not validate its codegen checks.
+- Respect REQUIRES/UNSUPPORTED/XFAIL, target triples, split-file inputs,
+  substitutions, includes, compiler-specific builtins and multiple RUN lines.
+
+Next implementation order
+
+1. Check in an external lane with pinned fetch manifests and explicit eligibility
+   rules. Retain per-case commands/stdout/stderr and separate skip, reject,
+   crash, timeout, codegen, link and execution outcomes.
+2. Fix the SFINAE crash, two confirmed false accepts and three runtime aborts.
+   Reduce cases into the earliest owning PA feature lane before compiler fixes.
+3. Expand valid C++11 compile/object/run coverage by feature, separating GNU
+   extensions, platform cases and mixed negative files. Then implement reliable
+   negative diagnostics and expand to library suites as a distinct project.
+4. Every compiler fix must follow spec.md, relevant handouts, full strict report,
+   debug-info/self-host checks and architecture audits. Backend/lowering changes
+   additionally need PA35 checks; measure compile-time or allocation effects.
+
+Reproduction (from worktree root)
+
+The two sources are student.tests/upstream_cxx11_probe.py and
+student.tests/upstream_cxx11_runtime.py. Python 3 and host g++/clang++ suffice.
+No Python package installation is needed. Use fresh output directories:
+
+  python3 student.tests/upstream_cxx11_probe.py \
+    --sources /mnt/vizier/cppgm-cxx11-upstream --compiler dev/cppgm++ \
+    --output /mnt/vizier/cppgm-cxx11-upstream/probe-2
+  python3 student.tests/upstream_cxx11_runtime.py \
+    --probe /mnt/vizier/cppgm-cxx11-upstream/probe-2 \
+    --output /mnt/vizier/cppgm-cxx11-upstream/runtime-2
+
+Fetch commands for a fresh sibling source directory:
+  git clone --depth 1 --filter=blob:none --sparse --branch releases/gcc-15.2.0 \
+    https://github.com/gcc-mirror/gcc.git gcc
+  git -C gcc sparse-checkout set gcc/testsuite/g++.dg/cpp0x gcc/testsuite/lib
+  git clone --depth 1 --filter=blob:none --sparse --branch llvmorg-21.1.8 \
+    https://github.com/llvm/llvm-project.git llvm-project
+  git -C llvm-project sparse-checkout set clang/test/CXX clang/test/SemaCXX \
+    clang/test/Parser clang/test/CodeGenCXX clang/test/lit.cfg.py \
+    llvm/utils/lit --skip-checks
+
+Evidence inventory
+
+build.log, test-harness.log, host-versions.json, gcc-fetch.log, llvm-fetch.log
+probe-1/{manifest.json,results.jsonl,summary.json,logs/}
+runtime-1/{manifest.json,results.jsonl,summary.json,logs/}
+rechecks/{sfinae57,aggregate}/result.json
+rechecks/sfinae57-backtrace.txt
+triage/results.json and per-invocation diagnostics
+
+Manifests retain compiler binary SHA256 and source revision identities; survey
+rows retain input SHA256, original directives, commands, status and elapsed time.
+The supplemental host-versions.json records the initial run's host identities.
+No upstream sources were copied into the compiler repository.
+
+Validation
+
+Compiler build succeeded. Both explicit survey harnesses completed. Root
+make test-harness passed. Compiler suites/audits were not rerun because no
+compiler source or required fixtures changed. The new harnesses remain personal
+explicit-run tools, outside default discovery and student-export documents.
+
+Upstream documentation
+
+https://gcc.gnu.org/onlinedocs/gccint/Test-Directives.html
+https://clang.llvm.org/docs/InternalsManual.html#testing
+https://llvm.org/docs/CommandGuide/lit.html
+https://clang.llvm.org/cxx_status.html
