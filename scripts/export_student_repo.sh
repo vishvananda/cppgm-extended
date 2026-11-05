@@ -775,6 +775,11 @@ make -s -C "$dest" ref-test-debuginfo \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
   CPPGM_TEST_RUNNER=1
+make -s -C "$dest" ref-test-modern-cxx \
+  CXX="${CXX:-g++}" \
+  CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
+  CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
+  CPPGM_TEST_RUNNER=1
 
 verify_regenerated_reference_outputs
 verify_expectation_sidecars

@@ -247,6 +247,24 @@ and use the correct ABI names.
 The checked-in tests are hosted link/runtime smokes, ABI spelling checks, and
 object-inspection checks rather than direct N3485 clause tests.
 
+### Optional C++17 ABI Extensions
+
+This extension is not required to complete PA31 or any later assignment.
+After implementing PA29's optional function-type support, preserve C++17
+`noexcept` distinctions in host ABI names and runtime type information.
+Host-compiled and compiler-generated objects must agree on function-pointer
+types, template arguments, conversions and exception matching.
+
+The fixtures ship in `tests/modern-cxx/link/`. Run them explicitly:
+
+```sh
+make test-modern-cxx
+make check TEST=tests/modern-cxx/link/600-hosted-noexcept-function-abi.t
+```
+
+`make test` and cumulative reports exclude this suite. The root
+`make test-modern-cxx` runs both PA29 and PA31's optional suites.
+
 ### Required Implementation Surface
 
 To complete PA31, implement hosted link/runtime behavior for:

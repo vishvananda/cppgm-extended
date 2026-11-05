@@ -128,7 +128,7 @@ def scan_optimization_requirements(root, pas):
             inputs = {p.relative_to(directory).as_posix()
                       for p in (directory / 'tests').rglob('*')
                       if p.is_file() and p.suffix in ('.t', '.cpp', '.lowir')
-                      and not {'regression', 'debuginfo'} & set(p.parts)}
+                      and not {'regression', 'debuginfo', 'modern-cxx'} & set(p.parts)}
             scripts = {}
             test_owners = {}
             for batch in ('', '1'):

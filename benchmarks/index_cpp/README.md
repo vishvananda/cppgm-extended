@@ -20,3 +20,5 @@ Omit `TEST=1` for the full workload. The host compiler links the generated
 object against its standard library; use the same host toolchain throughout.
 This exercises selected C++14/17 features and does not establish full C++17
 conformance. The check is optional and requires network access for the clone.
+The local reducers run with `make test-modern-cxx`; they also ship as optional
+PA29/PA31 extensions and are excluded from the required C++11 course suites.

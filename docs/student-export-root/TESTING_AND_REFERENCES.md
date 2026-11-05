@@ -123,6 +123,14 @@ them incorrect. Document the proof and bundle revision. Compiler agreement
 alone is insufficient. Never weaken required behavior, coverage, or comparison
 rules.
 
+## Optional later-language extensions
+
+PA29 and PA31 describe optional C++14/17 extensions in their handouts.
+Their fixtures and references ship in `tests/modern-cxx/`, but these features
+are not required for any assignment. `make test` and cumulative reports exclude
+them. Use root `make test-modern-cxx` to build and run both optional suites,
+or the same target inside one assignment to run its suite.
+
 ## Debug and inspection checks
 
 Run the debug, object and link checks required by the current handout.

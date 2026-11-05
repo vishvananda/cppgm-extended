@@ -60,6 +60,7 @@ export CPPGM_TEXT_TEST_TIMEOUT_SEC ?= 10
 export CPPGM_BUILD_TEST_TIMEOUT_SEC ?= 30
 export CPPGM_PROGRAM_TEST_TIMEOUT_SEC ?= 10
 DEBUGINFO_TEST_PAS ?= pa8 pa32 pa33
+MODERN_CXX_TEST_PAS ?= pa29 pa31
 
 ALL_PAS = $(patsubst %/Makefile,%,$(wildcard pa*/Makefile))
 EXPERIMENTAL_PAS ?= pa34 pa35
@@ -89,13 +90,14 @@ SUBMAKE_GENERATED_ARG = $(if $(strip $(GENERATED)),GENERATED=$(GENERATED))
 SUBMAKE_CC_FLAGS_ARG = $(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)")
 
 .PHONY: all build build-telemetry-off test test-telemetry-off audit-student-documents audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-usage audit-scaffold-spellings audit-ir-expectations audit-clang-format ref-test ref-test-debuginfo \
-	test-debuginfo test-debuginfo-nobuild require-clang require-clang-libcxx asan-build test-cells \
+	test-debuginfo test-debuginfo-nobuild test-modern-cxx test-modern-cxx-nobuild ref-test-modern-cxx \
+	require-clang require-clang-libcxx asan-build test-cells \
 	test-report inception clean run-cppgm run-cppgm-nobuild \
 	test-report-nobuild test-report-through-% test-report-through-%-nobuild \
 	ref-test-% \
 	test-% \
 	$(ALL_PAS)
-.NOTPARALLEL: ref-test ref-test-debuginfo
+.NOTPARALLEL: ref-test ref-test-debuginfo ref-test-modern-cxx
 
 all: build
 
@@ -236,6 +238,44 @@ test-debuginfo-nobuild:
 		exit $$status; \
 	fi; \
 	echo "===== DEBUG-INFO TESTS PASSED SUCCESSFULLY! ====="
+
+# Optional later-language checks stay separate from the C++11 course report.
+test-modern-cxx: build
+	@$(MAKE) test-modern-cxx-nobuild
+
+test-modern-cxx-nobuild:
+	@status=0; failed=""; \
+	for dir in $(MODERN_CXX_TEST_PAS); do \
+		echo "===== $$dir (optional C++14/17) ====="; \
+		$(MAKE) -C $$dir \
+			CXX=$(CXX) \
+			CPPGM_HOST_CXX=$(CPPGM_HOST_CXX) \
+			CPPGM_STDLIB_FLAGS=$(CPPGM_STDLIB_FLAGS) \
+			CPPGM_TEST_RUNNER=$(CPPGM_TEST_RUNNER) \
+			$(SUBMAKE_OBJ_ARG) \
+			$(SUBMAKE_GENERATED_ARG) \
+			$(SUBMAKE_CC_FLAGS_ARG) \
+			CPPGM_SKIP_DEV_REBUILD=1 test-modern-cxx || { status=1; failed="$$failed $$dir"; }; \
+	done; \
+	if [ $$status -ne 0 ]; then \
+		echo "===== OPTIONAL C++14/17 TESTS FAILED IN:$${failed} ====="; \
+		exit $$status; \
+	fi; \
+	echo "===== OPTIONAL C++14/17 TESTS PASSED SUCCESSFULLY! ====="
+
+ref-test-modern-cxx:
+	@set -e; for dir in $(MODERN_CXX_TEST_PAS); do \
+		echo "===== $$dir (ref-test-modern-cxx) ====="; \
+		$(MAKE) -C $$dir \
+			CXX=$(CXX) \
+			CPPGM_HOST_CXX=$(CPPGM_HOST_CXX) \
+			CPPGM_STDLIB_FLAGS=$(CPPGM_STDLIB_FLAGS) \
+			CPPGM_TEST_RUNNER=$(CPPGM_TEST_RUNNER) \
+			$(SUBMAKE_OBJ_ARG) \
+			$(SUBMAKE_GENERATED_ARG) \
+			$(SUBMAKE_CC_FLAGS_ARG) \
+			ref-test-modern-cxx; \
+	done
 
 inception: build
 	@$(MAKE) -C pa34 \

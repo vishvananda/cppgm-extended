@@ -44,6 +44,9 @@ export CPPGM_HOSTCOMPAT_COMPILE_WORKERS
 PREPROC_TEST_ROOT ?= tests/preproc
 COMPILE_TEST_ROOT ?= tests/compile
 RUN_TEST_ROOT ?= tests/run
+MODERN_CXX_TEST_ROOT ?= tests/modern-cxx
+MODERN_CXX_COMPILE_TEST_ROOT ?= $(MODERN_CXX_TEST_ROOT)/compile
+MODERN_CXX_RUN_TEST_ROOT ?= $(MODERN_CXX_TEST_ROOT)/run
 ifneq ($(CPPGM_BATCH_TESTS),)
 export WRAPPED_BATCH_STDIN ?= 1
 endif
@@ -194,6 +197,14 @@ endif
 	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(RUN_TEST_ROOT)
 	@scripts/compare_results_link.pl ref my $(RUN_TEST_ROOT)
 
+test-modern-cxx: $(TEST_DEPS)
+	$(call run_compile_course_bucket,$(MODERN_CXX_COMPILE_TEST_ROOT))
+	$(call run_course_bucket,$(MODERN_CXX_RUN_TEST_ROOT))
+
+ref-test-modern-cxx:
+	@perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref $(MODERN_CXX_COMPILE_TEST_ROOT)
+	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref $(MODERN_CXX_RUN_TEST_ROOT)
+
 test-batch: $(TEST_DEPS)
 	@bash scripts/check_preproc_refs_portable.sh $(PREPROC_TEST_ROOT)
 	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp $(PREPROC_TEST_ROOT)
@@ -218,21 +229,21 @@ ref-test-batch:
 
 REF_TEST_RUN = case "$(TEST)" in \
 	$(PREPROC_TEST_ROOT)/*) perl ../scripts/run_cpphostcompat_preproc_worker.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
-	$(COMPILE_TEST_ROOT)/*) perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
-	$(RUN_TEST_ROOT)/*) perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
+	$(COMPILE_TEST_ROOT)/*|$(MODERN_CXX_COMPILE_TEST_ROOT)/*) perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
+	$(RUN_TEST_ROOT)/*|$(MODERN_CXX_RUN_TEST_ROOT)/*) perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
 	*) echo "Usage: make ref-test TEST=$(PREPROC_TEST_ROOT)/<file>.t, $(COMPILE_TEST_ROOT)/<file>.t, or $(RUN_TEST_ROOT)/<file>.t"; exit 1 ;; \
 esac
 
 CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 	'$(PREPROC_TEST_ROOT)/*::perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) check {tests}' \
-	'$(COMPILE_TEST_ROOT)/*::perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check {tests}' \
-	'tests/run/*::perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) check {tests}'
+	'$(COMPILE_TEST_ROOT)/*|$(MODERN_CXX_COMPILE_TEST_ROOT)/*::perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check {tests}' \
+	'$(RUN_TEST_ROOT)/*|$(MODERN_CXX_RUN_TEST_ROOT)/*::perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) check {tests}'
 CHECK_COMPARE = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
-	'$(PREPROC_TEST_ROOT)/*|$(COMPILE_TEST_ROOT)/*::scripts/compare_results.pl ref check {tests}' \
-	'tests/run/*::scripts/compare_results_link.pl ref check {tests}'
+	'$(PREPROC_TEST_ROOT)/*|$(COMPILE_TEST_ROOT)/*|$(MODERN_CXX_COMPILE_TEST_ROOT)/*::scripts/compare_results.pl ref check {tests}' \
+	'$(RUN_TEST_ROOT)/*|$(MODERN_CXX_RUN_TEST_ROOT)/*::scripts/compare_results_link.pl ref check {tests}'
 include ../scripts/pa_run_check_targets.mk
 
-.PHONY: dev-shared-target ref-test ref-test-batch test-batch
+.PHONY: dev-shared-target ref-test ref-test-batch test-batch test-modern-cxx ref-test-modern-cxx
 ../dev/$(TARGET):
 	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX)
 

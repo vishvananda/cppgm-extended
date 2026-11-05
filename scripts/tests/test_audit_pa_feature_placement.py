@@ -342,6 +342,19 @@ function @main() -> i32 {
             self.assertEqual(audit.iter_test_files(root, ["pa8"]), [spec])
             self.assertIn(debug, audit.iter_local_test_files(root, ["pa8"]))
 
+    def test_modern_cxx_lane_keeps_numbering_without_course_requirements(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            optional = root / "pa29/tests/modern-cxx/compile/501-extension.t"
+            required = root / "pa29/tests/compile/500-required.t"
+            write(optional, "auto identity = [](auto value) { return value; };\n")
+            write(required, "int value;\n")
+            self.assertEqual(audit.iter_test_files(root, ["pa29"]), [required])
+            self.assertIn(optional, audit.iter_local_test_files(root, ["pa29"]))
+            findings = audit.scan_test_hygiene(root, ["pa29"])
+            self.assertTrue(any(f.kind == "test-number" and "501-extension" in f.path
+                                for f in findings), findings)
+
     def test_type_and_ast_outputs_do_not_require_procedural_lowering(self) -> None:
         hits = audit.detect_features("double value; int main() {}\n")
         for name in ("lowir.procedural", "lowir.procedural.float_conversion"):

@@ -244,8 +244,8 @@ Optional sidecars include:
 - `x.env`: environment variables for one test, such as additional standard
   include paths
 - `x.no-exceptions`: compile a `tests/compile` input with `-fno-exceptions`
-- `x.cxx-standard`: compile in the named `c++11`, `c++14`, or `c++17`
-  language mode
+- `x.cxx-standard`: select a language mode; C++14/17 cases belong to the
+  optional suite below
 - `x.flags`: additional compiler flags for a `tests/run` input
 - `x.ref.impl.exit_status`, `x.ref.program.exit_status`, and
   `x.ref.program.stdout`: implementation and program-result references for
@@ -273,6 +273,31 @@ The actual scalar conversions still occur, and narrowing remains a failure in
 SFINAE contexts. `-Wnarrowing` or `-Werror=narrowing` restores the diagnostic;
 the last of these specific options wins. Without suppression, the compiler
 continues to reject narrowing conversions.
+
+### Optional C++14/17 Extensions
+
+These extensions are not required to complete PA29 or any later assignment.
+Their fixtures ship in `tests/modern-cxx/` and run only when selected explicitly:
+
+```sh
+make test-modern-cxx
+make check TEST=tests/modern-cxx/compile/600-hosted-generic-lambda.t
+```
+
+The optional compile and run tests cover digit separators, nested namespace
+definitions, `decltype(auto)` variable and return deduction, generic lambda
+parameters (including packs and forwarding), and pack-expanded using-declarations.
+Preserve reference/value categories and reject invalid initializers and overload
+candidates. The selected language mode also controls later library interfaces.
+
+In C++17 mode, `noexcept` is part of a function type: distinguish throwing and
+non-throwing types, allow discarding the guarantee, and preserve it through
+deduction. Static `constexpr` data members are implicitly inline; definitions
+across translation units denote one object, including arrays and class-valued
+members. PA31's optional suite checks the corresponding host ABI behavior.
+
+`make test` and the cumulative reports exclude these tests. The root
+`make test-modern-cxx` collects the optional PA29 and PA31 suites.
 
 ### Hosted ABI Name Guidance
 
@@ -433,16 +458,6 @@ To complete PA29, implement hosted compatibility for:
   still place the callee's body, and the block the callee's returns would have
   landed in is simply not reachable.  A hosted library declares its throw
   helpers this way, so refusing the shape rejects the header
-- selected C++14/17 source forms used by hosted libraries and programs:
-  digit separators, nested namespace definitions, `decltype(auto)` variable and
-  return deduction, generic lambda parameters (including packs and forwarding),
-  and pack-expanded using-declarations. Preserve reference/value categories;
-  invalid initializers and overload candidates must still be rejected
-- in C++17 mode, `noexcept` is part of a function type. Keep throwing and
-  non-throwing types distinct, allow discarding the guarantee, and preserve it
-  through deduction, host ABI names and runtime type information. A static
-  `constexpr` data member is implicitly inline: definitions across translation
-  units denote one object, including arrays and class-valued members
 - semantic and lowering compatibility for hosted source patterns used by those
   headers, including post-declarator parameter
   attributes, explicit specializations of primary-template member functions,

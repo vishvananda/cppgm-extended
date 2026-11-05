@@ -15,6 +15,8 @@ import unittest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CHECKER = REPO_ROOT / "scripts/check_fixture_lanes.py"
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
+import check_fixture_lanes as fixture_lanes
 
 
 class RepositoryTests(unittest.TestCase):
@@ -22,6 +24,92 @@ class RepositoryTests(unittest.TestCase):
         result = subprocess.run([sys.executable, str(CHECKER)],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
+class OptionalModernCxxTests(unittest.TestCase):
+    def selected(self, pa, target, batch):
+        directory = REPO_ROOT / pa
+        inputs = {p.relative_to(directory).as_posix()
+                  for p in (directory / 'tests').rglob('*.t')}
+        with tempfile.TemporaryDirectory(prefix='optional-lanes.') as scratch:
+            recipes = fixture_lanes.make(directory, scratch, '-n', '-k',
+                                         'TEST_DEPS=', f'CPPGM_BATCH_TESTS={batch}', target)
+        selected = set()
+        for line in recipes.replace('\\\n', ' ').splitlines():
+            for words in fixture_lanes.simple_commands(line):
+                lane = fixture_lanes.lane_from_command(words, directory, REPO_ROOT)
+                if lane is None:
+                    continue
+                selection = fixture_lanes.selection_for(lane.script)
+                if selection is not None:
+                    selected.update(fixture_lanes.lane_selects(
+                        lane, selection, directory, inputs))
+        return selected
+
+    def test_later_language_fixtures_run_only_in_optional_lanes(self):
+        for pa in ('pa29', 'pa31'):
+            directory = REPO_ROOT / pa
+            optional = {p.relative_to(directory).as_posix()
+                        for p in (directory / 'tests/modern-cxx').rglob('*.t')}
+            self.assertTrue(optional)
+            for batch in ('', '1'):
+                for target in ('test', 'test-batch', 'ref-test', 'ref-test-batch'):
+                    with self.subTest(pa=pa, batch=batch, target=target):
+                        selected = self.selected(pa, target, batch)
+                        self.assertTrue(selected)
+                        self.assertFalse(selected & optional, selected & optional)
+                for target in ('test-modern-cxx', 'ref-test-modern-cxx'):
+                    with self.subTest(pa=pa, batch=batch, target=target):
+                        self.assertEqual(self.selected(pa, target, batch), optional)
+
+    def test_cxx11_correctness_regressions_remain_required(self):
+        cases = {
+            'pa11': {'tests/controls/300-aggregate-pointer-array-brace-elision.t',
+                     'tests/controls/300-using-base-identical-signatures.t'},
+            'pa16': {'tests/controls/300-constexpr-pointer-array-brace-elision.t'},
+            'pa18': {'tests/controls/300-aggregate-class-conversion-sfinae.t',
+                     'tests/controls/300-pending-unused-template-context.t'},
+            'pa26': {'tests/general/200-host-eh-constructor-virtual-operand-o0.t'},
+        }
+        for pa, expected in cases.items():
+            for batch in ('', '1'):
+                with self.subTest(pa=pa, batch=batch):
+                    self.assertTrue(expected <= self.selected(pa, 'test', batch), expected)
+
+    def test_later_language_mode_sidecars_stay_optional(self):
+        for pa in ('pa29', 'pa31'):
+            for path in (REPO_ROOT / pa / 'tests').rglob('*'):
+                if path.suffix not in ('.cxx-standard', '.flags'):
+                    continue
+                words = path.read_text().split()
+                if path.suffix == '.cxx-standard':
+                    later = any(word in ('c++14', 'c++17') for word in words)
+                else:
+                    later = any(word in ('-std=c++14', '-std=gnu++14',
+                                         '-std=c++17', '-std=gnu++17') for word in words)
+                if later:
+                    self.assertIn('modern-cxx', path.relative_to(REPO_ROOT).parts, str(path))
+
+    def test_root_optional_target_propagates_failure_and_runs_both_pas(self):
+        with tempfile.TemporaryDirectory(prefix='optional-dispatch.') as temp:
+            root = Path(temp)
+            shutil.copy(REPO_ROOT / 'Makefile', root / 'Makefile')
+            (root / 'scripts').symlink_to(REPO_ROOT / 'scripts')
+            for pa in ('pa29', 'pa31'):
+                (root / pa).mkdir()
+                (root / pa / 'Makefile').write_text(
+                    'test-modern-cxx:\n\t@echo ' + pa + ' >> ../ran\n'
+                    '\t@test "$(FAIL_PA)" != "' + pa + '"\n')
+            for fail in ('', 'pa29', 'pa31'):
+                with self.subTest(fail=fail):
+                    result = subprocess.run(
+                        ['make', '--no-print-directory', '-C', str(root),
+                         'DEFAULT_BUILD_JOBS=2', 'test-modern-cxx-nobuild', f'FAIL_PA={fail}'],
+                        capture_output=True, text=True, env=fixture_lanes.make_environment())
+                    self.assertEqual(result.returncode == 0, not fail,
+                                     result.stdout + result.stderr)
+                    self.assertEqual((root / 'ran').read_text().splitlines(), ['pa29', 'pa31'])
+                    (root / 'ran').unlink()
 
 
 class StandInTests(unittest.TestCase):

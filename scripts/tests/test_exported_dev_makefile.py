@@ -65,6 +65,10 @@ class ExportedDevMakefileTests(unittest.TestCase):
             'pa8/tests/general/100-valid.t': 'program input\n',
             'pa27/tests/behavior/100-layout.ref.inspect.plan': 'object contract\n',
             'pa27/tests/controls/200-section-token-safe.t': 'graded control\n',
+            'pa29/tests/modern-cxx/compile/600-extension.t': 'optional extension\n',
+            'pa29/tests/modern-cxx/compile/600-extension.cxx-standard': 'c++14\n',
+            'pa29/tests/modern-cxx/compile/600-extension.ref.exit_status': 'EXIT_SUCCESS\n',
+            'pa31/tests/modern-cxx/link/600-abi.t': 'optional ABI extension\n',
         }
         excluded = [
             'scripts/private_audit.py',

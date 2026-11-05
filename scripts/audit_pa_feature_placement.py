@@ -1490,11 +1490,12 @@ def iter_test_files(root: Path, pas: Iterable[str]) -> list[Path]:
     for pa in pas:
         test_root = root / pa / "tests"
         if test_root.exists():
-            # Debug-info lanes exercise preservation through completed later
-            # tools. They do not add those tools' source features to the local
-            # assignment contract. Keep them in the separate hygiene scan.
+            # Optional debug preservation and later-language lanes do not add
+            # features to the required assignment contract. Keep their inputs
+            # in the separate hygiene and numbering scans.
             files.extend(path for path in suite_test_files(test_root)
-                         if "debuginfo" not in path.relative_to(test_root).parts)
+                         if not {"debuginfo", "modern-cxx"}.intersection(
+                             path.relative_to(test_root).parts))
     return files
 
 

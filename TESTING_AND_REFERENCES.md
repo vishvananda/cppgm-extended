@@ -68,6 +68,19 @@ the prefix. Report totals and failure markers are isolated too. For predictable 
 `.check` names for manual workflows. Reference filenames stay fixed. Report workers inherit the caller's environment
 without running shell login scripts.
 
+## Optional C++14/17 checks
+
+The C++11 correctness regressions remain in the required assignment suites.
+Selected later-language features are optional: `make test-modern-cxx` builds
+and runs PA29/PA31's `tests/modern-cxx/` suites; add `-nobuild` to reuse a build.
+Neither `make test` nor `make test-report` includes them. Reference CI runs
+them as a separate suite. Both the fixtures and their optional handout sections
+ship to students without adding assignment requirements.
+
+`make ref-test-modern-cxx` regenerates their references separately from the
+required suites; the student export runs both reference targets. Optional
+fixtures retain numbering, discovery and hygiene checks.
+
 ## Boost advisory CI
 
 The independent **Boost advisory** workflow runs on every push, with a
