@@ -2,7 +2,7 @@
   {
     "id": "CXX11-001",
     "priority": "P0",
-    "status": "correctness-passed",
+    "status": "closed",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/sfinae57.C"
     ],
@@ -18,18 +18,18 @@
       "dev/src/sema/analyzer_calls.cpp"
     ],
     "baseline": "/mnt/vizier/cppgm-cxx11-upstream/baselines/original/manifest.json",
-    "fix_revision": null,
+    "fix_revision": "149639a503ad641790d25f9f3ed5600612dcd70e",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-001",
     "checks": {
       "pa18": {
         "status": "pass",
         "count": 540,
-        "log": "pa18.log"
+        "log": "pa18-final.log"
       },
       "strict_report": {
         "status": "pass",
         "count": 8034,
-        "log": "strict-report.log"
+        "log": "strict-report-final.log"
       },
       "debug_info": {
         "status": "pass",
@@ -49,7 +49,7 @@
       },
       "placement": {
         "status": "pass",
-        "log": "placement.log"
+        "log": "placement-final.log"
       },
       "harness": {
         "status": "pass",
@@ -57,20 +57,165 @@
       },
       "student_export": {
         "status": "pass",
-        "log": "export.log"
+        "log": "export-final.log"
       },
       "reference_bundle": {
         "status": "pass",
         "wrappers": 42,
-        "log": "export-bundle-check.log"
+        "log": "export-bundle-final.log"
+      },
+      "upstream_variants": {
+        "status": "pass",
+        "dialects": [
+          "c++11",
+          "gnu++11"
+        ],
+        "optimization_levels": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "mode": "host object compilation; GCC semantic compile check adapted from -S to -c",
+        "log": "after-variants/results.json"
+      },
+      "native_host_oracle": {
+        "status": "pass",
+        "standard": "c++11 only",
+        "expected_passes": 2,
+        "log": "/mnt/vizier/cppgm-cxx11-upstream/native-host-cxx11/g++.sum"
       }
     },
     "performance": {
-      "status": "pending",
-      "reason": "wait for export and harness checks to finish before measurements"
+      "status": "pass-instruction-and-memory-gates",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-001/performance-protocol.json",
+      "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-001/performance-counters",
+      "calibration": "three workload A/A assessments passed; confidence half-width 0.0012%-0.0041%",
+      "primary": "retired user instructions; peak RSS",
+      "timing": "inconclusive under load; retained with confidence intervals; no wall-time speedup/regression claim",
+      "gates": {
+        "instructions_upper95_ratio": 1.01,
+        "max_rss_upper95_ratio": 1.03
+      },
+      "results": [
+        {
+          "workload": "overload-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 0.9999837058624382,
+              "lower_95": 0.9999654622610284,
+              "upper_95": 1.0000019497966885,
+              "multiplicative_halfwidth": 1.8244231524189303e-05
+            },
+            "cycles": {
+              "geometric_mean": 1.0137084578382924,
+              "lower_95": 0.962676232522427,
+              "upper_95": 1.0674459416125137,
+              "multiplicative_halfwidth": 0.05301078762706091
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0140075319012112,
+              "lower_95": 0.9630659630819944,
+              "upper_95": 1.067643665301922,
+              "multiplicative_halfwidth": 0.05289520216890864
+            },
+            "user_seconds": {
+              "geometric_mean": 1.0098830751404422,
+              "lower_95": 0.9525031118536398,
+              "upper_95": 1.0707196782490165,
+              "multiplicative_halfwidth": 0.060241234461834825
+            },
+            "max_rss_kib": {
+              "geometric_mean": 0.9999840128427031,
+              "lower_95": 0.9995984110634092,
+              "upper_95": 1.000369763370465,
+              "multiplicative_halfwidth": 0.00038575669491480724
+            }
+          },
+          "object_sha256": "5298bd8e44284564cdc281f40d7ce8025b19065b587abddb36ce64e06fc776de"
+        },
+        {
+          "workload": "overload-o2-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 0.9999947185654314,
+              "lower_95": 0.9999801088361117,
+              "upper_95": 1.0000093285081997,
+              "multiplicative_halfwidth": 1.4610019930083595e-05
+            },
+            "cycles": {
+              "geometric_mean": 0.99599464507477,
+              "lower_95": 0.9597562426513607,
+              "upper_95": 1.0336013343108528,
+              "multiplicative_halfwidth": 0.037757923119415615
+            },
+            "wall_seconds": {
+              "geometric_mean": 0.995096075990064,
+              "lower_95": 0.958331889219035,
+              "upper_95": 1.0332706357687538,
+              "multiplicative_halfwidth": 0.03836268748292304
+            },
+            "user_seconds": {
+              "geometric_mean": 0.992352960338163,
+              "lower_95": 0.9558997300697066,
+              "upper_95": 1.0301963343164708,
+              "multiplicative_halfwidth": 0.03813499378831087
+            },
+            "max_rss_kib": {
+              "geometric_mean": 0.9997276184180196,
+              "lower_95": 0.9986993650627249,
+              "upper_95": 1.0007569304552357,
+              "multiplicative_halfwidth": 0.001029592479244279
+            }
+          },
+          "object_sha256": "f27200393ce18b3aba089994c0429e16b46f3bf32e24c0a2a5d79b59937c1d60"
+        },
+        {
+          "workload": "self-calls-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 0.9999965756791067,
+              "lower_95": 0.9999610060517113,
+              "upper_95": 1.0000321465717497,
+              "multiplicative_halfwidth": 3.5571014449509164e-05
+            },
+            "cycles": {
+              "geometric_mean": 1.0177329150723966,
+              "lower_95": 0.9953213644457037,
+              "upper_95": 1.04064910432078,
+              "multiplicative_halfwidth": 0.02251689899088416
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0105654595792362,
+              "lower_95": 0.9848903909395266,
+              "upper_95": 1.0369098505676235,
+              "multiplicative_halfwidth": 0.026068960440579714
+            },
+            "user_seconds": {
+              "geometric_mean": 1.0119552668941938,
+              "lower_95": 0.9811247527161618,
+              "upper_95": 1.0437545881498684,
+              "multiplicative_halfwidth": 0.03142364321426028
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0000368110120996,
+              "lower_95": 0.9997737461371052,
+              "upper_95": 1.0002999451058834,
+              "multiplicative_halfwidth": 0.00026312440790809966
+            }
+          },
+          "object_sha256": "31d2172c46c09ae183aebd7248ad684757de60ca1f7f70a99caf5815970765b6"
+        }
+      ],
+      "integrity": "Original source/include/host-header hashes and underlying compiler hashes verified after all runs; all paired output objects identical; all perf events at least 99% scheduled."
     },
-    "pending_checks": [
-      "performance"
+    "pending_checks": [],
+    "parent_revision": "7e31ecb743ef623d972cc12e9f3c3d04a5a81f2c",
+    "completion_regression": "baseline SIGSEGV; both GCC/Clang accept; candidate control passes before and after class completion",
+    "notes": [
+      "The optional cachegrind profiles are retained but not used in the hardware-counter gate.",
+      "Initial noisy timing data, interrupted calibration and load-screen rejection retained.",
+      "The first final export bundle check named the preceding revision archive; the corrected check used the bundle named by the final export manifest and passed."
     ]
   },
   {
@@ -89,7 +234,8 @@
     "checks": {},
     "performance": {
       "status": "not-started"
-    }
+    },
+    "triage_note": "Before prescribing a fix, adjudicate N3485 3.6.2p2-p3: distinguish required constant/zero initialization from optional early dynamic initialization for this aggregate. Host agreement alone does not establish a standard violation."
   },
   {
     "id": "CXX11-003",

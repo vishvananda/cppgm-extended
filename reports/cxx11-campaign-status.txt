@@ -21,18 +21,21 @@ Implemented:
   8034/8034, debug info, self-host through PA5, architecture/format audits,
   placement/file audits, harness checks, student export and all 42 reference
   wrapper checks. Existing header-layout file-audit warnings are retained.
-- CXX11-001 hardware A/A calibration passed on all three workloads.
-  A/B measurement remains pending the final regression/export rerun.
-  Initial noisy timing experiments and load-screen failures are retained.
+- CXX11-001 closed in compiler commit 149639a50. All three A/A counter
+  calibrations and A/B instruction/memory gates passed. Worst instruction
+  upper 95% bound: +0.0033%; worst peak-RSS upper bound: +0.076%.
+  Wall timing remains inconclusive under load; no timing win is claimed.
+  Both C++11 dialects at O0/O1/O2/O3 pass the linked GCC object test.
+  Initial noisy/rejected experiments remain available with the successful runs.
 - Local DejaGnu/Expect packages were extracted under evidence/tools (no system
   installation). Its native GCC runner successfully checked sfinae57.C with
-  the host compiler. That exploratory invocation also ran C++17/C++26; it is
-  infrastructure validation, not the declared C++11 coverage result.
+  the host compiler. The original exploratory invocation also ran C++17/C++26. A separate
+  C++11-only invocation now passes both diagnostic/excess-error checks.
+  These are host-oracle checks, not full candidate adapter coverage.
 
 Next:
-- Assess the first fix's calibrated measurements; investigate noise/regressions
-  before closure. Retain every measurement and verify immutable input hashes.
-- Commit the reviewed regression/fix with evidence, then reduce CXX11-002.
+- Reduce and adjudicate CXX11-002 against the initialization rules before
+  assigning its PA or changing behavior; host agreement is not the oracle.
 - Finish inventory disposition and implement/test the external adapters using
   native metadata evaluation; force each declared dialect and optimization
   configuration, preserve unknown-check limitations, and extend coverage well
