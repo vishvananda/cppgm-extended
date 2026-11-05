@@ -240,38 +240,316 @@
   {
     "id": "CXX11-003",
     "priority": "P1",
-    "status": "observed",
+    "status": "performance-passed",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/ref-qual19.C"
     ],
     "symptom": "runtime SIGABRT; implicit move/ref-qualified class conversion",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/runtime-1/logs/gcc/gcc/testsuite/g++.dg/cpp0x/ref-qual19.C",
-    "root_cause": null,
-    "owning_pa": null,
-    "regressions": [],
-    "fix_revision": null,
-    "checks": {},
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-003",
+    "root_cause": "Return initialization only retained rvalue conversions selecting exact-source-type rvalue-reference constructors; it discarded conversion functions, by-value sinks and derived-to-base selections. Eligible rvalue-reference entities were excluded.",
+    "owning_pa": 12,
+    "regressions": [
+      "pa12/tests/controls/400-return-implicit-conversion-move.t",
+      "pa12/tests/controls/200-return-implicit-move-sinks.t",
+      "pa12/tests/controls/400-return-implicit-conversion-deleted-reject.t",
+      "pa16/tests/controls/300-static-return-conversion-lvalue.t"
+    ],
+    "fix_revision": "c1a5a902b0776477417aea4ce2b0be1c1f4d8abe",
+    "checks": {
+      "pa12": {
+        "status": "pass",
+        "count": 386,
+        "log": "affected-v2.log"
+      },
+      "strict_report": {
+        "status": "pass",
+        "count": 8038,
+        "log": "strict-report-v2.log"
+      },
+      "debug_info": {
+        "status": "pass",
+        "log": "debuginfo-v2.log"
+      },
+      "selfhost_pa5": {
+        "status": "pass",
+        "log": "selfhost-pa5-v2.log"
+      },
+      "inception": {
+        "status": "pass",
+        "log": "inception-v2.log"
+      },
+      "architecture": {
+        "status": "pass",
+        "log": "audits-v2.log"
+      },
+      "file_audit": {
+        "status": "pass-with-existing-warnings",
+        "log": "file-audit-v2.log"
+      },
+      "upstream_variants": {
+        "status": "pass",
+        "variants": 16,
+        "log": "upstream-variants/results.json"
+      },
+      "pa16": {
+        "status": "pass",
+        "count": 227,
+        "log": "affected-v2.log"
+      },
+      "pa21": {
+        "status": "pass",
+        "count": 255,
+        "log": "affected-v2.log"
+      },
+      "placement": {
+        "status": "pass",
+        "log": "placement-v2.log"
+      },
+      "harness": {
+        "status": "pass",
+        "log": "harness.log"
+      },
+      "student_export": {
+        "status": "pass",
+        "log": "export-v2.log"
+      },
+      "reference_bundle": {
+        "status": "pass",
+        "wrappers": 42,
+        "log": "export-bundle-v2.log"
+      }
+    },
     "performance": {
-      "status": "not-started"
-    }
+      "status": "pass-controlled-layout-instruction-and-memory-gates",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-003/performance-protocol-v2-controlled.json",
+      "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-003/performance-counters-v2-controlled",
+      "earlier_experiment": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-003/performance-counters",
+      "improvement": "Reuse a typed constructor candidate; targeted 1,024-return program has 2,049 resolutions instead of 3,073, identical object bytes. Earlier version passed gates but showed avoidable +0.93% retired instructions.",
+      "results": [
+        {
+          "workload": "implicit-rref-workload-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.0005744723116414,
+              "lower_95": 1.0005744391475284,
+              "upper_95": 1.0005745054757558,
+              "multiplicative_halfwidth": 3.314507335261396e-08
+            },
+            "cycles": {
+              "geometric_mean": 0.9532792774104768,
+              "lower_95": 0.8629026951526158,
+              "upper_95": 1.0531215000777323,
+              "multiplicative_halfwidth": 0.10473554291295484
+            },
+            "wall_seconds": {
+              "geometric_mean": 0.9630119914199936,
+              "lower_95": 0.8380162744522074,
+              "upper_95": 1.106651653304606,
+              "multiplicative_halfwidth": 0.1491566700771929
+            },
+            "user_seconds": {
+              "geometric_mean": 0.960264500792218,
+              "lower_95": 0.8201212636457765,
+              "upper_95": 1.1243555707634973,
+              "multiplicative_halfwidth": 0.17088111643813164
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "89469350466c36ad30d7f7efd186c3ee685f64e934a17446912cdbccf50452d0"
+        },
+        {
+          "workload": "overload-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 0.9999165110669775,
+              "lower_95": 0.9999164755156527,
+              "upper_95": 0.9999165466183036,
+              "multiplicative_halfwidth": 3.5554294397499575e-08
+            },
+            "cycles": {
+              "geometric_mean": 0.9985347317696693,
+              "lower_95": 0.9618993701410807,
+              "upper_95": 1.036565405385478,
+              "multiplicative_halfwidth": 0.03808648052572816
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0009905221274182,
+              "lower_95": 0.9598054171200856,
+              "upper_95": 1.0439428737497518,
+              "multiplicative_halfwidth": 0.04290984846794177
+            },
+            "user_seconds": {
+              "geometric_mean": 1.0041567501056514,
+              "lower_95": 0.9617011949544564,
+              "upper_95": 1.0484865611823384,
+              "multiplicative_halfwidth": 0.0441463059149112
+            },
+            "max_rss_kib": {
+              "geometric_mean": 0.9999990601817327,
+              "lower_95": 0.9999969341685194,
+              "upper_95": 1.0000011861994658,
+              "multiplicative_halfwidth": 2.12601973115234e-06
+            }
+          },
+          "object_sha256": "5298bd8e44284564cdc281f40d7ce8025b19065b587abddb36ce64e06fc776de"
+        },
+        {
+          "workload": "overload-o2-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 0.9999697369258717,
+              "lower_95": 0.9999697035741559,
+              "upper_95": 0.9999697702775885,
+              "multiplicative_halfwidth": 3.335272613647078e-08
+            },
+            "cycles": {
+              "geometric_mean": 0.9902169076481361,
+              "lower_95": 0.9746328075306884,
+              "upper_95": 1.0060501930737267,
+              "multiplicative_halfwidth": 0.015989714277042655
+            },
+            "wall_seconds": {
+              "geometric_mean": 0.9819644261269103,
+              "lower_95": 0.9557946866743895,
+              "upper_95": 1.0088506952615488,
+              "multiplicative_halfwidth": 0.027380084674435867
+            },
+            "user_seconds": {
+              "geometric_mean": 0.9830435339317148,
+              "lower_95": 0.9573597894184862,
+              "upper_95": 1.009416313789348,
+              "multiplicative_halfwidth": 0.026827682546422205
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "f27200393ce18b3aba089994c0429e16b46f3bf32e24c0a2a5d79b59937c1d60"
+        },
+        {
+          "workload": "return-conversion-workload-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 0.9941598243616263,
+              "lower_95": 0.9941598153289306,
+              "upper_95": 0.994159833394322,
+              "multiplicative_halfwidth": 9.08575814584367e-09
+            },
+            "cycles": {
+              "geometric_mean": 1.0369795996681845,
+              "lower_95": 1.009165895061933,
+              "upper_95": 1.065559880084924,
+              "multiplicative_halfwidth": 0.027561082615207066
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.012682019967921,
+              "lower_95": 0.9417948315577687,
+              "upper_95": 1.0889047584494032,
+              "multiplicative_halfwidth": 0.07526818584563877
+            },
+            "user_seconds": {
+              "geometric_mean": 0.9926821843743142,
+              "lower_95": 0.9565852750376869,
+              "upper_95": 1.0301412167726889,
+              "multiplicative_halfwidth": 0.03773517142546989
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "19e32ec9de1700e0ca6bb9f4d7cc9ec82b8c00da1894ca1de8a65925a03053c9"
+        },
+        {
+          "workload": "self-calls-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 0.9999822700551115,
+              "lower_95": 0.9999822628056654,
+              "upper_95": 0.9999822773045578,
+              "multiplicative_halfwidth": 7.2495747183154435e-09
+            },
+            "cycles": {
+              "geometric_mean": 1.006933224591241,
+              "lower_95": 0.9877510959176743,
+              "upper_95": 1.0264878702500784,
+              "multiplicative_halfwidth": 0.019420002420493798
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0022582109822178,
+              "lower_95": 0.9801973653805456,
+              "upper_95": 1.0248155697615924,
+              "multiplicative_halfwidth": 0.022506534276499846
+            },
+            "user_seconds": {
+              "geometric_mean": 1.0030393037763643,
+              "lower_95": 0.977525204300082,
+              "upper_95": 1.0292193393013767,
+              "multiplicative_halfwidth": 0.026100707546002022
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "31d2172c46c09ae183aebd7248ad684757de60ca1f7f70a99caf5815970765b6"
+        }
+      ],
+      "gates": {
+        "instructions_upper95_ratio": 1.01,
+        "rss_upper95_ratio": 1.03,
+        "aa_equivalence_halfband": 0.0001
+      },
+      "timing": "Recorded but inconclusive under load; no wall-time speedup claim.",
+      "calibration": "Fixed process addresses; all five A/A intervals inside predeclared \u00b10.01% equivalence band; counter scheduling >=99%; all source/header/binary hashes unchanged."
+    },
+    "implementation": [
+      "dev/src/sema/analyzer_bodies.cpp",
+      "dev/src/sema/analyzer.h",
+      "dev/src/sema/analyzer_construction.cpp",
+      "dev/src/sema/analyzer_handlers.cpp"
+    ],
+    "expected": "P1825 return-by-value defect resolution in C++11; successful rvalue selection retained; hard errors for deleted selections; failed rvalue selection retries as lvalue; static, volatile and lvalue-reference entities remain lvalues.",
+    "standard_sources": [
+      "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html",
+      "https://reviews.llvm.org/D104500"
+    ],
+    "host_disagreement": "GCC 15.2 defers rvalue-reference eligibility until C++20 and retains legacy const-copy fallback in an adjacent probe even there. Clang 22 applies the return DR in C++11. Required controls follow the documented P1825 return contract, not host consensus alone.",
+    "semantic_revision": "1680e7670021b90713d186d23ce37eea6dfb3ab3",
+    "pending_checks": [
+      "final sink-cluster placement and export verification"
+    ]
   },
   {
     "id": "CXX11-004",
     "priority": "P1",
-    "status": "observed",
+    "status": "performance-passed",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/ref-qual20.C"
     ],
     "symptom": "runtime SIGABRT; implicit move/ref-qualified base-result conversion",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/runtime-1/logs/gcc/gcc/testsuite/g++.dg/cpp0x/ref-qual20.C",
-    "root_cause": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-003",
+    "root_cause": "Same discarded conversion-function selection as CXX11-003.",
     "owning_pa": null,
     "regressions": [],
-    "fix_revision": null,
+    "fix_revision": "c1a5a902b0776477417aea4ce2b0be1c1f4d8abe",
     "checks": {},
     "performance": {
       "status": "not-started"
-    }
+    },
+    "duplicate_of": "CXX11-003"
   },
   {
     "id": "CXX11-005",
@@ -322,6 +600,24 @@
     "owning_pa": null,
     "regressions": [],
     "fix_revision": null,
+    "checks": {},
+    "performance": {
+      "status": "not-started"
+    }
+  },
+  {
+    "id": "CXX11-008",
+    "priority": "P1",
+    "status": "observed",
+    "upstream": [
+      "llvm-project/clang/test/SemaCXX/P1155.cpp"
+    ],
+    "symptom": "P1825 throw of a value parameter still attempts deleted copy construction after return-side repair.",
+    "root_cause": "throw_operand excludes function and catch parameters from implicit-move eligibility.",
+    "owning_pa": 21,
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-003/remaining-P1155.log",
     "checks": {},
     "performance": {
       "status": "not-started"

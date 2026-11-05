@@ -1,48 +1,53 @@
-Campaign active — first implementation checkpoint (2026-11-05)
+Campaign active — second implementation checkpoint (2026-11-05)
 
-The original full objective and closure criteria remain in cxx11-gap-plan.txt.
-This checkpoint is partial progress, not completion of the external campaign.
+The full objective and closure criteria remain in cxx11-gap-plan.txt.
+This is partial progress; corpus applicability, native adapters and remaining
+compiler defects still require work before the campaign can be complete.
 
 Implemented:
-- Immutable original compiler baseline, frozen workloads and compiler/header
-  closure hashes in /mnt/vizier/cppgm-cxx11-upstream/baselines/original.
-- Reproducible upstream Git-tree inventory tool under student.tests, with
-  pinned revisions, blob identities, source hashes and original metadata.
-- inventory-3 records 53,264 compiler candidates/support files, including
-  45,712 candidate inputs. C++11 applicability is unresolved; all inventoried files
-  are now materialized. Library/other-target expansion remains separate.
-- Issue ledger has seven prioritized confirmed symptoms; all initial 521
-  observations remain accounted for and require full intended-options triage.
-- CXX11-001: two required PA18 controls fail on the original compiler with
-  SIGSEGV. Candidate passes the valid case and diagnoses the hard-error case.
-  The GCC sfinae57.C reproducer passes. Regression covers reference parameters
-  remaining valid for incomplete classes and complete values remaining viable.
-- CXX11-001 correctness checks passed: PA18 540/540, full strict report
-  8034/8034, debug info, self-host through PA5, architecture/format audits,
-  placement/file audits, harness checks, student export and all 42 reference
-  wrapper checks. Existing header-layout file-audit warnings are retained.
-- CXX11-001 closed in compiler commit 149639a50. All three A/A counter
-  calibrations and A/B instruction/memory gates passed. Worst instruction
-  upper 95% bound: +0.0033%; worst peak-RSS upper bound: +0.076%.
-  Wall timing remains inconclusive under load; no timing win is claimed.
-  Both C++11 dialects at O0/O1/O2/O3 pass the linked GCC object test.
-  Initial noisy/rejected experiments remain available with the successful runs.
-- Local DejaGnu/Expect packages were extracted under evidence/tools (no system
-  installation). Its native GCC runner successfully checked sfinae57.C with
-  the host compiler. The original exploratory invocation also ran C++17/C++26. A separate
-  C++11-only invocation now passes both diagnostic/excess-error checks.
-  These are host-oracle checks, not full candidate adapter coverage.
+- Immutable original and per-fix compiler binaries; frozen source/header
+  closures and raw correctness/performance evidence under the evidence root.
+- Inventory of 53,264 compiler source/support files (45,712 candidate inputs).
+  All inventoried files are materialized; applicability is not yet resolved.
+- Native DejaGnu metadata bridge: all 25,220 selected GCC C/C++ paths accounted
+  for exactly once. 23,633 have directives; 1,587 remain explicitly unresolved
+  pending driver defaults/Old-Deja interpretation. Native extraction is not
+  target evaluation or a test pass. Synthetic tests cover selectors, quoting,
+  xfail, extra sources, unknown commands, malformed directives and symlink IDs.
+- CXX11-001 closed in compiler commit 149639a50 with PA18 regressions, complete
+  correctness/export verification and calibrated counter/memory checks.
+- CXX11-003/004 share the return implicit-move root cause. Semantic repair is
+  1680e7670; c1a5a902b reuses the selected constructor's typed facts. Required
+  regressions are in PA12 with a local-static eligibility guard in PA16.
+  The course documents P1825 return semantics in C++11; adjacent host probes
+  expose GCC/Clang differences in retroactive DR application, retained in data.
+- Final compiler version passes PA12 386/386, PA16 227/227, PA21 255/255, full
+  strict report 8038/8038, debug info, self-host through PA5, inception, all
+  architecture/format/placement audits, export and all 42 reference wrappers.
+- Initial counter experiment passed gates but a targeted rvalue-reference
+  workload showed +0.93% instructions. Typed selection reuse removes 1,024
+  duplicate resolutions with identical object bytes. Five-workload controlled-address A/A and
+  A/B measurements pass: the targeted rvalue-reference workload is +0.0575%
+  (previously +0.93%); conversion-function workload is -0.584%. Objects are
+  identical, memory gates pass, and original observations remain retained.
+  Final placement/export verification for the corrected PA12:200 sink prefix
+  is pending before CXX11-003/004 close.
+- A follow-on P1825 throw-parameter gap is tracked as CXX11-008 (PA21).
+  The full Clang P1155.cpp still rejects there; return-side progress must not
+  be reported as that entire test passing.
 
 Next:
-- Reduce and adjudicate CXX11-002 against the initialization rules before
-  assigning its PA or changing behavior; host agreement is not the oracle.
-- Finish inventory disposition and implement/test the external adapters using
-  native metadata evaluation; force each declared dialect and optimization
-  configuration, preserve unknown-check limitations, and extend coverage well
-  beyond the original survey before claiming completeness.
+- Finish the sink regression placement/export check; final counter process
+  completed successfully and all observations are retained.
+- Implement and validate execution adapters using the extracted metadata,
+  including target/dialect selection, diagnostics, source companions and
+  abnormal termination. Preserve explicit limits for unavailable output checks.
+- Continue regressions/fixes in owning PAs, including the throw-parameter gap.
+- Adjudicate CXX11-002 initialization semantics before prescribing a change;
+  continue the other confirmed missing diagnostics and large-array timeout.
 
-Authoritative evidence root: /mnt/vizier/cppgm-cxx11-upstream
-Issue evidence: issues/CXX11-001/
-Full inventory: inventory-3/{manifest.json,inventory.jsonl}
-Native GCC exploratory runner evidence: native-host/initial.log, g++.log,
-  g++.sum; libraries/tools and pinned upstream sources remain alongside them.
+Evidence root: /mnt/vizier/cppgm-cxx11-upstream
+Current fix: issues/CXX11-003/ (original and version-2 results retained)
+Inventory: inventory-3/{manifest.json,inventory.jsonl}
+Native GCC metadata: dg-metadata-1/{manifest.json,metadata.jsonl,tests-final.log}
+Compiler issue/observation ledgers and metadata manifests live beside this file.

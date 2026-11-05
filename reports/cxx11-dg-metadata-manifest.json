@@ -1,0 +1,16 @@
+{
+  "tcl_version": "8.6.17",
+  "count": 25220,
+  "counts": {
+    "native-directives-extracted; applicability-unresolved": 23633,
+    "native-parser-empty; driver-default-or-old-deja-unresolved": 1587
+  },
+  "inventory_sha256": "f2b5b29e8953e63cd599a1fc0cf0df9badd56b4c9b2b456be3250a9958430f96",
+  "native_libraries": {
+    "utils.exp": "c1bdc6bda71a46e74f48ce2b5bac989daa19086b87fe702bd9f8cce78b9aceed",
+    "dg.exp": "077ad124a343b7af6a406e44570539b267285007adfd665ce5acba064261f5e5"
+  },
+  "metadata_sha256": "38d4a89cfa5609e36bd06e6b4d7dd73cb93de029672b98f4e9333c74a295775d",
+  "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/dg-metadata-1",
+  "identities_checked": "All 25,220 selected inventory paths present exactly once, no extra paths."
+}

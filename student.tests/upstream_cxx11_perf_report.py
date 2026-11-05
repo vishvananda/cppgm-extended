@@ -19,7 +19,7 @@ from run_ab_compile_benchmark import paired_ratios
 
 def counters(path):
     values = {}
-    for fields in csv.reader(path.open(), delimiter=";"):
+    for fields in csv.reader(path.read_text().splitlines(), delimiter=";"):
         if len(fields) < 5 or fields[0].startswith("#"):
             continue
         name = fields[2].removesuffix(":u")
@@ -46,7 +46,7 @@ def interval(ratios):
                 upper_95=math.exp(mean+half), multiplicative_halfwidth=math.exp(half)-1)
 
 
-def assess(path, phase):
+def assess(path, phase, calibration_tolerance=0):
     report = json.loads(path.read_text())
     runs = report["runs"]
     if len(runs) != 40 or any(r["status"] != "ok" for r in runs):
@@ -65,7 +65,11 @@ def assess(path, phase):
         instructions = metrics["instructions"]
         if instructions["multiplicative_halfwidth"] > .005:
             errors.append("instruction calibration noise exceeds 0.5%")
-        if not instructions["lower_95"] <= 1 <= instructions["upper_95"]:
+        if calibration_tolerance:
+            if (instructions["lower_95"] < 1 - calibration_tolerance or
+                    instructions["upper_95"] > 1 + calibration_tolerance):
+                errors.append("instruction A/A interval exceeds predeclared equivalence band")
+        elif not instructions["lower_95"] <= 1 <= instructions["upper_95"]:
             errors.append("instruction A/A interval excludes 1; investigate bias")
     else:
         if metrics["instructions"]["upper_95"] > 1.01:
@@ -80,15 +84,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("directory", type=Path)
     parser.add_argument("--phase", choices=["aa", "ab"], required=True)
+    parser.add_argument("--expected-workloads", type=int, default=3)
+    parser.add_argument("--calibration-tolerance", type=float, default=0,
+                        help="A/A equivalence half-band as a ratio; zero retains the original equality check")
     args = parser.parse_args()
     binary_manifest = args.directory / "underlying-binaries.json"
     for path, digest in json.loads(binary_manifest.read_text()).items():
         if hashlib.sha256(Path(path).read_bytes()).hexdigest() != digest:
             raise ValueError(f"compiler changed: {path}")
     reports = sorted(args.directory.glob("*-" + args.phase + ".json"))
-    if len(reports) != 3:
-        raise ValueError("expected all three predeclared workloads")
-    results = [assess(path, args.phase) for path in reports]
+    if len(reports) != args.expected_workloads:
+        raise ValueError(f"expected {args.expected_workloads} predeclared workloads")
+    results = [assess(path, args.phase, args.calibration_tolerance) for path in reports]
     destination = args.directory / (args.phase + "-assessment.json")
     destination.write_text(json.dumps(results, indent=2) + "\n")
     for result in results:
