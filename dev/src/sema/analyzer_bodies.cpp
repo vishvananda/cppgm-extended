@@ -985,17 +985,15 @@ void Analyzer::return_statement(const syntax::ValueStmt& stmt, Scope* scope)
 		expression_scope_ = scope;
 		if (!same_class_source(cls, *stmt.value))
 		{
-			// CWG 1579: an eligible local can initialize a different result
-			// class through its converting constructor. Keep the selected
-			// typed conversion; successful rvalue selection is not repeated.
+			// CWG 1579 and P1825: an eligible entity can initialize a
+			// different result class through a constructor or conversion
+			// function. Keep the successful rvalue conversion's typed facts.
 			if (!names_automatic_object(*stmt.value) || !move_return_conversion(*stmt.value, result))
 				convert(*stmt.value, result, false);
 			return;
 		}
-		// 12.8p32: a non-volatile automatic object (or parameter) named
-		// alone is first treated as an rvalue, kept when that selects a
-		// constructor whose first parameter is an rvalue reference to the
-		// object's type.
+		// 12.8p32 with P1825: keep any successful rvalue overload
+		// selection; only a failed resolution retries as an lvalue.
 		ExprFacts* inner = facts_of(*WithoutParentheses(stmt.value));
 		const bool as_rvalue = names_automatic_object(*stmt.value) && moves_from(cls, *stmt.value);
 		const ValueCategory category = inner->category;
@@ -1016,12 +1014,6 @@ bool Analyzer::move_return_conversion(const syntax::Expr& source, const Type* re
 	Conversion conversion = Conversion();
 	if (!user_conversion(&view, result, conversion, false))
 		return false;
-	const FunctionEntity* selected = conversion.constructor;
-	if (selected == nullptr || !selected->constructor || selected->type->canonical->param_count == 0)
-		return false;
-	const Type* parameter = selected->type->canonical->params[0];
-	if (parameter->kind != TypeKind::RValueReference || parameter->element->unqualified != facts->type->unqualified)
-		return false;
 	const ValueCategory category = facts->category;
 	facts->category = ValueCategory::XValue;
 	finish_conversion(source, conversion, false);
@@ -1031,14 +1023,15 @@ bool Analyzer::move_return_conversion(const syntax::Expr& source, const Type* re
 
 bool Analyzer::names_automatic_object(const syntax::Expr& expr) const
 {
-	// An id-expression naming a non-volatile object of automatic storage
-	// duration: a parameter or a block-scope variable that is neither
-	// static, extern nor thread_local (12.8p31-p32), the function's own (a
-	// lambda's, not the enclosing function's it captured; CWG 1579).
+	// P1825's implicitly movable entity: a non-volatile automatic object
+	// or rvalue reference to one, declared in this function (a lambda's,
+	// not the enclosing function's it captured; CWG 1579).
 	const syntax::Expr* e = WithoutParentheses(&expr);
 	const Entity* entity = e->kind == syntax::ExprKind::Id && e->facts != nullptr ? e->facts->entity : nullptr;
-	if (entity == nullptr || entity->type == nullptr || entity->type->is_reference() ||
-		(entity->type->cv & kVolatile) != 0)
+	if (entity == nullptr || entity->type == nullptr || entity->type->kind == TypeKind::LValueReference)
+		return false;
+	const Type* type = entity->type->kind == TypeKind::RValueReference ? entity->type->element : entity->type;
+	if ((type->cv & kVolatile) != 0 || type->kind == TypeKind::Function)
 		return false;
 	if (!encloses(body_->function->scope, entity->owner))
 		return false;
@@ -1054,8 +1047,9 @@ bool Analyzer::names_automatic_object(const syntax::Expr& expr) const
 
 bool Analyzer::moves_from(ClassEntity* entity, const syntax::Expr& source)
 {
-	// Whether overload resolution with the object as an rvalue selects a
-	// constructor whose first parameter is an rvalue reference to its type.
+	// P1825: whether overload resolution with the operand as an rvalue
+	// succeeds. Deleted or inaccessible selections are checked by the
+	// actual initialization, not retried as lvalues.
 	ExprFacts view = *WithoutParentheses(&source)->facts;
 	view.category = ValueCategory::XValue;
 	syntax::Expr probe = syntax::Expr();
@@ -1069,10 +1063,7 @@ bool Analyzer::moves_from(ClassEntity* entity, const syntax::Expr& source)
 	set.clear();
 	constructor_candidates(entity, arguments, ConstructionKind::Copy, set);
 	Candidate chosen = Candidate();
-	if (set.empty() || resolve(arguments, set, nullptr, chosen, entity) != Resolution::Selected)
-		return false;
-	const Type* parameter = chosen.function->type->canonical->params[0];
-	return parameter->kind == TypeKind::RValueReference && parameter->element->unqualified == view.type->unqualified;
+	return !set.empty() && resolve(arguments, set, nullptr, chosen, entity) == Resolution::Selected;
 }
 
 // ------------------------------------------------------------ expressions

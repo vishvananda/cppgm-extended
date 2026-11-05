@@ -11,6 +11,12 @@ paths:
 - pass-by-value and return-by-value of class objects
 - implicit move of eligible named locals and value parameters through converting
   constructors of a different result class (CWG 1579)
+- the [P1825 defect resolution](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html)
+  for return-by-value initialization, applied in
+  C++11: eligible rvalue-reference variables and parameters also participate,
+  conversion functions and by-value sinks can be selected, and a successful
+  rvalue overload resolution is retained without requiring an exact-type
+  rvalue-reference constructor parameter
 - temporary materialization in the common call/return/initialization paths
 - delegating constructors
 - out-of-class constructor and destructor definitions
