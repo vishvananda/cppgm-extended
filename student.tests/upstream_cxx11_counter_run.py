@@ -6,6 +6,7 @@ Every output directory is new; observing a running experiment never restarts it.
 """
 import argparse
 import hashlib
+import itertools
 import json
 import os
 from pathlib import Path
@@ -14,8 +15,43 @@ import subprocess
 import sys
 
 
+BATCH_RUNNER = '''#!/bin/sh
+compiler=$1
+repetitions=$2
+shift 2
+output=
+previous=
+for argument do
+  if [ "$previous" = "-o" ]; then output="$argument"; fi
+  previous="$argument"
+done
+if [ -z "$output" ]; then exit 2; fi
+iteration=0
+while [ "$iteration" -lt "$repetitions" ]; do
+  iteration=$((iteration + 1))
+  "$compiler" "$@" -o "$output.batch-$iteration.o" || exit $?
+done
+cp "$output.batch-$iteration.o" "$output"
+'''
+
+
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def validate_batch(report_path, repetitions):
+    """Check every retained child output, outside the measured command."""
+    observations = []
+    for run in json.loads(report_path.read_text())["runs"]:
+        command = run["command"]
+        output = command[command.index("-o") + 1]
+        for iteration in range(1, repetitions + 1):
+            path = Path(f"{output}.batch-{iteration}.o")
+            actual = digest(path)
+            if actual != run["output_sha256"]:
+                raise ValueError(f"batch child differs: {path}")
+            observations.append(dict(path=str(path), sha256=actual))
+    return observations
 
 
 def verify_inputs(closures, sources, binaries):
@@ -31,10 +67,14 @@ def main():
     parser.add_argument("--frozen-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--extra-source", type=Path, action="append", default=[])
+    parser.add_argument("--extra-repetitions", type=int, default=1,
+                        help="compilations per observation for each short extra-source workload")
     parser.add_argument("--cpu", type=int, default=84)
     parser.add_argument("--disable-aslr", action="store_true")
     parser.add_argument("--calibration-tolerance", type=float, default=0)
     args = parser.parse_args()
+    if args.extra_repetitions < 1:
+        raise ValueError("extra repetitions must be positive")
     if args.cpu not in os.sched_getaffinity(0):
         raise ValueError(f"CPU {args.cpu} is not available")
     layout = ["setarch", os.uname().machine, "-R"] if args.disable_aslr else []
@@ -61,13 +101,20 @@ def main():
     identities = {str(path): digest(path) for path in compilers.values()}
     verify_inputs(closures, sources, identities)
     output.mkdir(parents=True, exist_ok=False)
+    batch_runner = output / "batch-compiler"
+    batch_runner.write_text(BATCH_RUNNER)
+    batch_runner.chmod(0o555)
+    identities[str(batch_runner)] = digest(batch_runner)
     (output / "underlying-binaries.json").write_text(json.dumps(identities, indent=2) + "\n")
     (output / "inputs.json").write_text(json.dumps(dict(closures=closures, sources=sources,
         cpu=args.cpu, disable_aslr=args.disable_aslr, calibration_tolerance=args.calibration_tolerance,
+        extra_repetitions=args.extra_repetitions,
         workloads=[dict(name=n, source=str(p), includes=list(map(str, inc)), flags=flags)
                                 for n, p, inc, flags in workloads]), indent=2) + "\n")
-    for label, compiler in compilers.items():
-        wrapper = output / ("compiler-" + label)
+    variants = [False, True] if args.extra_repetitions > 1 else [False]
+    for (label, compiler), batched in itertools.product(compilers.items(), variants):
+        wrapper = output / ("compiler-" + label + ("-batch" if batched else ""))
+        measured = [str(batch_runner), str(compiler), str(args.extra_repetitions)] if batched else [str(compiler)]
         wrapper.write_text('''#!/bin/sh
 output=
 previous=
@@ -79,20 +126,22 @@ if [ -z "$output" ]; then exit 2; fi
 ''' + f'exec taskset -c {args.cpu} ' + (shlex.join(layout) + ' ' if layout else '')
             + 'perf stat -x ";" -o "$output.perf" '
             '-e instructions:u,cycles:u,task-clock,context-switches,cpu-migrations,page-faults '
-            + shlex.quote(str(compiler)) + ' "$@"\n')
+            + shlex.join(measured) + ' "$@"\n')
         wrapper.chmod(0o555)
     for phase in ["aa", "ab"]:
         for name, source, includes, flags in workloads:
+            batched = args.extra_repetitions > 1 and source in [p.resolve() for p in args.extra_source]
+            suffix = "-batch" if batched else ""
             for label in (["a"] if phase == "aa" else ["a", "b"]):
-                warmup = [str(output / ("compiler-" + label)), *flags,
+                warmup = [str(output / ("compiler-" + label + suffix)), *flags,
                           *["-I" + str(path) for path in includes], "-c", str(source),
                           "-o", str(output / "warmup.o")]
                 with (output / f"{name}-{phase}-{label}-warmup.log").open("w") as log:
                     for _ in range(3):
                         subprocess.run(warmup, cwd=repo, stdout=log, stderr=log, check=True)
             command = [sys.executable, str(repo / "scripts/run_ab_compile_benchmark.py"),
-                       "--compiler-a", str(output / "compiler-a"), "--compiler-b",
-                       str(output / ("compiler-a" if phase == "aa" else "compiler-b")),
+                       "--compiler-a", str(output / ("compiler-a" + suffix)), "--compiler-b",
+                       str(output / (("compiler-a" if phase == "aa" else "compiler-b") + suffix)),
                        "--source", str(source), "--abba-blocks", "10",
                        "--output-prefix", str(output / f"{name}-{phase}")]
             for include in includes:
@@ -104,6 +153,9 @@ if [ -z "$output" ]; then exit 2; fi
             print(phase, name, flush=True)
             with (output / f"{name}-{phase}.log").open("w") as log:
                 subprocess.run(command, cwd=repo, stdout=log, stderr=log, check=True)
+            if batched:
+                children = validate_batch(output / f"{name}-{phase}.json", args.extra_repetitions)
+                (output / f"{name}-{phase}-batch-outputs.json").write_text(json.dumps(children, indent=2) + "\n")
         with (output / (phase + "-assessment.log")).open("w") as log:
             # Calibration gates are declared before any candidate run.
             subprocess.run([sys.executable, "-B", str(repo / "student.tests/upstream_cxx11_perf_report.py"),
