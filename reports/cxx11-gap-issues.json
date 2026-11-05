@@ -216,7 +216,11 @@
       "The optional cachegrind profiles are retained but not used in the hardware-counter gate.",
       "Initial noisy timing data, interrupted calibration and load-screen rejection retained.",
       "The first final export bundle check named the preceding revision archive; the corrected check used the bundle named by the final export manifest and passed."
-    ]
+    ],
+    "standards_basis": {
+      "category": "original-cxx11",
+      "rationale": "N3485 14.8.2 [temp.deduct]; crash during SFINAE substitution"
+    }
   },
   {
     "id": "CXX11-002",
@@ -235,7 +239,11 @@
     "performance": {
       "status": "not-started"
     },
-    "triage_note": "Before prescribing a fix, adjudicate N3485 3.6.2p2-p3: distinguish required constant/zero initialization from optional early dynamic initialization for this aggregate. Host agreement alone does not establish a standard violation."
+    "triage_note": "Before prescribing a fix, adjudicate N3485 3.6.2p2-p3: distinguish required constant/zero initialization from optional early dynamic initialization for this aggregate. Host agreement alone does not establish a standard violation.",
+    "standards_basis": {
+      "category": "unadjudicated",
+      "rationale": "N3485 3.6.2p2-p3 optional early initialization requires adjudication"
+    }
   },
   {
     "id": "CXX11-003",
@@ -528,7 +536,11 @@
     ],
     "host_disagreement": "GCC 15.2 defers rvalue-reference eligibility until C++20 and retains legacy const-copy fallback in an adjacent probe even there. Clang 22 applies the return DR in C++11. Required controls follow the documented P1825 return contract, not host consensus alone.",
     "semantic_revision": "1680e7670021b90713d186d23ce37eea6dfb3ab3",
-    "pending_checks": []
+    "pending_checks": [],
+    "standards_basis": {
+      "category": "later-defect-resolution",
+      "rationale": "P1825R0 (2019), retroactive compatibility; not an original C++11 defect"
+    }
   },
   {
     "id": "CXX11-004",
@@ -560,25 +572,365 @@
       "status": "pass-shared-root-cause",
       "shared_evidence": "CXX11-003"
     },
-    "duplicate_of": "CXX11-003"
+    "duplicate_of": "CXX11-003",
+    "standards_basis": {
+      "category": "later-defect-resolution",
+      "rationale": "P1825R0 (2019), same root cause as CXX11-003"
+    }
   },
   {
     "id": "CXX11-005",
     "priority": "P1",
-    "status": "observed",
+    "status": "closed",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-17.C"
     ],
     "symptom": "accepted unexpanded alias parameter pack; GCC and Clang reject",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/triage/alias-decl-17.C",
-    "root_cause": null,
-    "owning_pa": null,
-    "regressions": [],
-    "fix_revision": null,
-    "checks": {},
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-005",
+    "root_cause": "Alias declarations retained dependent type patterns without checking whether their packs were consumed by nested expansions; both alias templates and ordinary member aliases were affected.",
+    "owning_pa": 17,
+    "regressions": [
+      "pa15/tests/controls/200-member-alias-unexpanded-pack-reject.t",
+      "pa17/tests/controls/200-alias-pack-expansions.t",
+      "pa17/tests/controls/200-alias-unexpanded-discarded-pack-reject.t",
+      "pa17/tests/controls/200-alias-unexpanded-expression-pack-reject.t",
+      "pa17/tests/controls/200-alias-unexpanded-pack-reject.t",
+      "pa17/tests/controls/200-alias-unexpanded-value-pack-reject.t"
+    ],
+    "fix_revision": "4ba2fd8ea90d2dc852f4d46100531cd20b0488f9",
+    "checks": {
+      "baseline_reproduction": {
+        "status": "five-false-acceptances-reproduced",
+        "log": "before/results.json"
+      },
+      "focused": {
+        "status": "pass",
+        "log": "after/results.json"
+      },
+      "upstream_variants": {
+        "status": "pass",
+        "variants": 8,
+        "log": "upstream-variants/results.json",
+        "coverage": "adapted mandatory rejection at original source line 21, normal exit 1; exact GCC dg-error prose is not a course requirement and native harness pass is not claimed",
+        "diagnostic": "ERROR severity, alias-decl-17.C:21:1, unexpanded-pack diagnostic verified in all eight variants"
+      },
+      "pa15": {
+        "status": "pass",
+        "count": 257,
+        "log": "affected.log"
+      },
+      "pa17": {
+        "status": "pass",
+        "count": 499,
+        "log": "affected.log"
+      },
+      "strict_report": {
+        "status": "pass",
+        "count": 8044,
+        "log": "strict-report.log"
+      },
+      "debug_info": {
+        "status": "pass",
+        "log": "debuginfo.log"
+      },
+      "selfhost_pa5": {
+        "status": "pass",
+        "log": "selfhost-pa5.log"
+      },
+      "inception": {
+        "status": "pass",
+        "log": "inception.log"
+      },
+      "architecture": {
+        "status": "pass",
+        "log": "audits.log"
+      },
+      "file_audit": {
+        "status": "pass-with-existing-warnings",
+        "log": "file-audit.log"
+      },
+      "placement": {
+        "status": "pass",
+        "log": "placement.log"
+      },
+      "preflight": {
+        "status": "six-equal-object-pairs; three-scaled-workloads-run-zero",
+        "log": "preflight/results.json"
+      },
+      "harness": {
+        "status": "pass",
+        "log": "harness-final.log",
+        "earlier_failure": "harness.log retained: invocation accidentally inherited CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1, invalidating relaxed-comparison unit tests; rerun removes only that environment override"
+      },
+      "student_export": {
+        "status": "pass",
+        "log": "export.log"
+      },
+      "reference_bundle": {
+        "status": "pass",
+        "wrappers": 42,
+        "log": "export-bundle.log"
+      },
+      "valid_upstream_prefix": {
+        "status": "pass",
+        "variants": 8,
+        "compilers": 3,
+        "log": "upstream-valid-prefix/results.json"
+      },
+      "batch_workflow": {
+        "status": "pass",
+        "selfcheck_tests": 2,
+        "selfcheck_log": "batch-selfcheck.log",
+        "repository_harness_log": "harness-batch-workflow.log"
+      }
+    },
     "performance": {
-      "status": "not-started"
-    }
+      "status": "pass-instruction-and-memory-gates",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-005/performance-protocol.json",
+      "batching_addendum": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-005/performance-batching-addendum.json",
+      "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-005/performance-counters-batched",
+      "earlier_experiment": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-005/performance-counters",
+      "results": [
+        {
+          "workload": "alias-packs-128-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.0048403862106234,
+              "lower_95": 1.0048403714040846,
+              "upper_95": 1.0048404010171625,
+              "multiplicative_halfwidth": 1.4735214826089305e-08
+            },
+            "cycles": {
+              "geometric_mean": 1.0021486575791436,
+              "lower_95": 0.9973833226488525,
+              "upper_95": 1.0069367605029256,
+              "multiplicative_halfwidth": 0.004777836988125284
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.011983947139943,
+              "lower_95": 0.9734178182655557,
+              "upper_95": 1.0520780388977362,
+              "multiplicative_halfwidth": 0.039619296206334864
+            },
+            "user_seconds": {
+              "geometric_mean": 1.0765488217119332,
+              "lower_95": 1.0301730973018122,
+              "upper_95": 1.1250122611091729,
+              "multiplicative_halfwidth": 0.045017409726177515
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "b6926c379d2fb87850cfd73d2cb2e25e0b8940de46b4ac476100b39ff3cb873c"
+        },
+        {
+          "workload": "alias-packs-32-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.002844514604277,
+              "lower_95": 1.0028444932783418,
+              "upper_95": 1.0028445359302127,
+              "multiplicative_halfwidth": 2.126544584868384e-08
+            },
+            "cycles": {
+              "geometric_mean": 1.0025834165128646,
+              "lower_95": 0.9968230982676465,
+              "upper_95": 1.0083770217739472,
+              "multiplicative_halfwidth": 0.0057786765327054734
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0455541628881069,
+              "lower_95": 1.00728046760962,
+              "upper_95": 1.0852821460212434,
+              "multiplicative_halfwidth": 0.03799705892174621
+            },
+            "user_seconds": {
+              "geometric_mean": 0.98470313602404,
+              "lower_95": 0.8896075336110917,
+              "upper_95": 1.089964090299032,
+              "multiplicative_halfwidth": 0.10689612983259766
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "dbfd6344c36723d6ae428789d80471563db9028868670716d1c1203d1ca3a682"
+        },
+        {
+          "workload": "alias-packs-512-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.0058995663172092,
+              "lower_95": 1.0058995582735322,
+              "upper_95": 1.0058995743608865,
+              "multiplicative_halfwidth": 7.99650123894935e-09
+            },
+            "cycles": {
+              "geometric_mean": 1.0058883714147588,
+              "lower_95": 0.9815557346671744,
+              "upper_95": 1.030824211006745,
+              "multiplicative_halfwidth": 0.024789867643975505
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0023824379989,
+              "lower_95": 0.9686570131474148,
+              "upper_95": 1.0372820703004682,
+              "multiplicative_halfwidth": 0.03481668371129887
+            },
+            "user_seconds": {
+              "geometric_mean": 0.984074594850503,
+              "lower_95": 0.9482519833255454,
+              "upper_95": 1.0212504959219455,
+              "multiplicative_halfwidth": 0.037777523437732885
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "4a49b67e4b3a18b6bed1c38ec380ce5291a1d7838e5a6bdca2d2fdde503951cc"
+        },
+        {
+          "workload": "overload-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.0003110789579726,
+              "lower_95": 1.0003110462084968,
+              "upper_95": 1.0003111117074492,
+              "multiplicative_halfwidth": 3.2739292166183986e-08
+            },
+            "cycles": {
+              "geometric_mean": 0.9926498584183712,
+              "lower_95": 0.9682912479958756,
+              "upper_95": 1.0176212409824543,
+              "multiplicative_halfwidth": 0.02515628481917176
+            },
+            "wall_seconds": {
+              "geometric_mean": 0.9938302730412465,
+              "lower_95": 0.9679681173795721,
+              "upper_95": 1.0203834133370835,
+              "multiplicative_halfwidth": 0.026717982955561492
+            },
+            "user_seconds": {
+              "geometric_mean": 0.9900891711437421,
+              "lower_95": 0.9666935691581042,
+              "upper_95": 1.0140509858463498,
+              "multiplicative_halfwidth": 0.024201673345166652
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "5298bd8e44284564cdc281f40d7ce8025b19065b587abddb36ce64e06fc776de"
+        },
+        {
+          "workload": "overload-o2-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.0001132014966279,
+              "lower_95": 1.0001131666322127,
+              "upper_95": 1.000113236361044,
+              "multiplicative_halfwidth": 3.4860470066178095e-08
+            },
+            "cycles": {
+              "geometric_mean": 1.0042107344546354,
+              "lower_95": 0.9876656724523597,
+              "upper_95": 1.0210329540865568,
+              "multiplicative_halfwidth": 0.016751682744217122
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0111120151519475,
+              "lower_95": 0.9902365701047091,
+              "upper_95": 1.0324275411041701,
+              "multiplicative_halfwidth": 0.0210812705543999
+            },
+            "user_seconds": {
+              "geometric_mean": 1.0095567831548362,
+              "lower_95": 0.9871730908058667,
+              "upper_95": 1.0324480153545572,
+              "multiplicative_halfwidth": 0.022674536570579384
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "f27200393ce18b3aba089994c0429e16b46f3bf32e24c0a2a5d79b59937c1d60"
+        },
+        {
+          "workload": "self-calls-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.0004712294504625,
+              "lower_95": 1.0004711989973833,
+              "upper_95": 1.0004712599035426,
+              "multiplicative_halfwidth": 3.043873642027961e-08
+            },
+            "cycles": {
+              "geometric_mean": 1.002211270922472,
+              "lower_95": 0.9855130377323084,
+              "upper_95": 1.0191924338974252,
+              "multiplicative_halfwidth": 0.016943695872950304
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0076009619983324,
+              "lower_95": 0.9717754199208923,
+              "upper_95": 1.0447472510702243,
+              "multiplicative_halfwidth": 0.036866071463668604
+            },
+            "user_seconds": {
+              "geometric_mean": 1.0132264253121528,
+              "lower_95": 0.9726657533558772,
+              "upper_95": 1.0554784985579961,
+              "multiplicative_halfwidth": 0.04170052437472349
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "31d2172c46c09ae183aebd7248ad684757de60ca1f7f70a99caf5815970765b6"
+        }
+      ],
+      "gates": {
+        "instructions_upper95_ratio": 1.01,
+        "rss_upper95_ratio": 1.03,
+        "aa_equivalence_halfband": 0.0001
+      },
+      "timing": "Descriptive under load; no wall-time speed claim.",
+      "calibration": "Six A/A intervals inside predeclared \u00b10.01% band, counter scheduling >=99%; all source/header/compiler/helper hashes unchanged. Each short workload batches 16 sequential compilations. Every one of 3,840 measured child objects has its hash checked; full outputs retained.",
+      "earlier_attempt": "All six first A/A observations retained. GNU time rounded user CPU to zero in five 32-alias and four 128-alias observations, so no candidate comparison ran. Fresh batched experiment keeps all instruction/RSS gates unchanged."
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "rationale": "N3485 14.5.3 [temp.variadic]: unexpanded parameter pack"
+    },
+    "additional_owning_pas": [
+      15
+    ],
+    "implementation": [
+      "dev/src/sema/analyzer.cpp",
+      "dev/src/sema/analyzer.h",
+      "dev/src/sema/template_names.cpp"
+    ],
+    "expected": "N3485 14.5.3p5 requires rejection at template definition, even if never instantiated. Nested expansions, sizeof..., discarded dependent arguments and function parameter packs retain their original rules.",
+    "pending_checks": []
   },
   {
     "id": "CXX11-006",
@@ -596,6 +948,10 @@
     "checks": {},
     "performance": {
       "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "rationale": "N3485 10.4 [class.abstract], 8.5.4 [dcl.init.list]: no abstract object construction"
     }
   },
   {
@@ -614,6 +970,10 @@
     "checks": {},
     "performance": {
       "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "implementation-scaling",
+      "rationale": "Large sparse aggregate initialization; must isolate original C++11 subcase from mixed extensions"
     }
   },
   {
@@ -628,10 +988,15 @@
     "owning_pa": 21,
     "regressions": [],
     "fix_revision": null,
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-003/remaining-P1155.log",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008",
     "checks": {},
     "performance": {
       "status": "not-started"
-    }
+    },
+    "standards_basis": {
+      "category": "later-defect-resolution",
+      "rationale": "P1825R0 (2019) function/catch parameter throw implicit move"
+    },
+    "triage_note": "Later-DR compatibility; original C++11 gaps prioritized per user steering. Draft probes retained externally, no compiler change. Function-try ctor-initializer host disagreement still requires adjudication; one initial deleted-move catch draft rejects for an earlier prvalue and needs reduction."
   }
 ]

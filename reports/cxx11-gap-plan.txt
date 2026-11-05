@@ -51,7 +51,8 @@ For each root-cause issue record: stable ID; all source/variant identities;
 original directives; expected result and rationale; actual phase/status;
 reproducer; feature and handout clause; earliest owning PA and executed lane;
 implementation modules; priority; linked duplicates; regression path; parent
-and fix revisions; correctness logs; performance manifest/results; status.
+and fix revisions; correctness logs; performance manifest/results; status; standards basis (original C++11/N3485,
+later defect resolution with date, implementation scaling, or unadjudicated).
 States: observed -> triaged -> regression-fails -> fixed -> correctness-passed
 -> performance-passed -> closed. Harness defects have their own issues.
 Out-of-scope and deliberate-extension dispositions need specific explanations.
@@ -73,6 +74,8 @@ Stage 1 — build an exhaustive inventory for the declared scope
    as separate dialects, the pinned host library, and supported optimization
    levels. Inventory other targets/configurations as explicit exclusions.
    Track standard defect resolutions separately from later language features.
+   Prioritize original C++11/N3485 contract defects; label later CWG/DR
+   compatibility separately rather than counting it as original conformance.
 4. Keep standard-library test projects as a separately inventoried expansion:
    GCC libstdc++ and LLVM libc++. They require their own library configuration,
    test support and expected failures. Do not mix their scores with core
