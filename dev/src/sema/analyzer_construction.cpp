@@ -997,7 +997,7 @@ ExprFacts* Analyzer::deletion(const syntax::DeleteExpr& expr, Scope* scope)
 // ------------------------------------------------------------ constructors
 
 FunctionEntity* Analyzer::select_constructor(ClassEntity* entity, const syntax::Slice<syntax::Expr*>& arguments,
-	ConstructionKind kind, uint32_t location, bool* elide)
+	ConstructionKind kind, uint32_t location, bool* elide, const Candidate* selection)
 {
 	// 13.3.1.3 (direct-initialization), 13.3.1.4 (copy-initialization by a
 	// converting constructor) and 13.3.1.7 (list-initialization, which
@@ -1007,21 +1007,25 @@ FunctionEntity* Analyzer::select_constructor(ClassEntity* entity, const syntax::
 	// elided (12.8p31), selected and checked (12.2p1) but not called;
 	// `elide` then says whether it was. In a substitution no viable or an
 	// ambiguous constructor is its failure (null; 14.8.2p8).
-	std::vector<FunctionEntity*>& set = overload_set_;
-	set.clear();
-	constructor_candidates(entity, arguments, kind, set);
-	if (set.empty())
+	Candidate chosen = selection != nullptr ? *selection : Candidate();
+	if (selection == nullptr)
 	{
-		substitution_error(location, "no constructor for the initialization");
-		return nullptr;
+		std::vector<FunctionEntity*>& set = overload_set_;
+		set.clear();
+		constructor_candidates(entity, arguments, kind, set);
+		if (set.empty())
+		{
+			substitution_error(location, "no constructor for the initialization");
+			return nullptr;
+		}
+		const ClassEntity* saved_direct = direct_class_;
+		const bool saved_standard = standard_only_;
+		direct_class_ = kind == ConstructionKind::Direct && arguments.size == 1 ? entity : nullptr;
+		standard_only_ = kind == ConstructionKind::Converting;
+		chosen = best_viable(arguments, location, set, nullptr, true, entity);
+		direct_class_ = saved_direct;
+		standard_only_ = saved_standard;
 	}
-	const ClassEntity* saved_direct = direct_class_;
-	const bool saved_standard = standard_only_;
-	direct_class_ = kind == ConstructionKind::Direct && arguments.size == 1 ? entity : nullptr;
-	standard_only_ = kind == ConstructionKind::Converting;
-	const Candidate chosen = best_viable(arguments, location, set, nullptr, true, entity);
-	direct_class_ = saved_direct;
-	standard_only_ = saved_standard;
 	FunctionEntity* selected = inherited_specialization(entity, chosen.function, arguments.size, location);
 	if (selected == nullptr)
 		return nullptr;
@@ -1329,8 +1333,8 @@ bool Analyzer::same_class_source(const ClassEntity* entity, const syntax::Expr& 
 	return from != nullptr && (from == entity || conversions_.is_base_of(entity, from));
 }
 
-FunctionEntity* Analyzer::copy_initialization(
-	ClassEntity* entity, const syntax::Expr& source, ConstructionKind kind, uint32_t location, bool in_place)
+FunctionEntity* Analyzer::copy_initialization(ClassEntity* entity, const syntax::Expr& source, ConstructionKind kind,
+	uint32_t location, bool in_place, const Candidate* chosen)
 {
 	// The constructor overload resolution selects with the expression as
 	// its argument (12.8p2-p3: a copy constructor for an lvalue, a move
@@ -1348,12 +1352,12 @@ FunctionEntity* Analyzer::copy_initialization(
 	const syntax::Expr* inner = WithoutParentheses(&source);
 	bool elided = inner->facts->category == ValueCategory::PRValue && ClassOf(inner->facts->type) == entity &&
 		(in_place || inner->kind != syntax::ExprKind::Conditional);
-	FunctionEntity* constructor = select_constructor(entity, arguments, kind, location, &elided);
+	FunctionEntity* constructor = select_constructor(entity, arguments, kind, location, &elided, chosen);
 	return elided ? nullptr : constructor;
 }
 
-const Conversion* Analyzer::record_copy(
-	ClassEntity* entity, const Type* target, const syntax::Expr& source, uint32_t location, bool in_place)
+const Conversion* Analyzer::record_copy(ClassEntity* entity, const Type* target, const syntax::Expr& source,
+	uint32_t location, bool in_place, const Candidate* chosen)
 {
 	// Copy-initialization of a class object (a parameter, a result, an
 	// aggregate's member) from an expression of its class or a derived
@@ -1361,7 +1365,8 @@ const Conversion* Analyzer::record_copy(
 	// expression to its parameter; an elided copy records no constructor.
 	ExprFacts* facts = facts_of(*WithoutParentheses(&source));
 	const Conversion* before = facts->conversion;
-	FunctionEntity* constructor = copy_initialization(entity, source, ConstructionKind::Copy, location, in_place);
+	FunctionEntity* constructor = copy_initialization(
+		entity, source, ConstructionKind::Copy, location, in_place, chosen);
 	Conversion conversion = Conversion();
 	conversion.form = ConversionForm::Standard;
 	conversion.rank = ConversionRank::Exact;

@@ -67,14 +67,15 @@ const Type* Analyzer::throw_operand(const syntax::Expr& operand, Scope* scope, u
 	const bool automatic = named != nullptr && named->kind == EntityKind::Variable && body_ != nullptr &&
 		body_->function != nullptr && names_automatic_object(operand) &&
 		catch_parameters_.find(named) == PointerMap::kMissing;
+	Candidate chosen = Candidate();
 	const bool as_rvalue = automatic &&
 		(try_parent == nullptr || (named->owner != try_parent && encloses(try_parent, named->owner))) &&
-		moves_from(cls, operand);
+		moves_from(cls, operand, chosen);
 	ExprFacts* object = facts_of(*inner);
 	const ValueCategory category = object->category;
 	if (as_rvalue)
 		object->category = ValueCategory::XValue;
-	record_copy(cls, type, operand, location, true);
+	record_copy(cls, type, operand, location, true, as_rvalue ? &chosen : nullptr);
 	object->category = category;
 	return type;
 }

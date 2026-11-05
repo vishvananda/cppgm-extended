@@ -1181,7 +1181,7 @@ private:
 	const Type* switch_condition(const syntax::Condition& condition);
 	void return_statement(const syntax::ValueStmt& stmt, Scope* scope);
 	bool names_automatic_object(const syntax::Expr& expr) const;
-	bool moves_from(ClassEntity* entity, const syntax::Expr& source);
+	bool moves_from(ClassEntity* entity, const syntax::Expr& source, Candidate& chosen);
 	bool move_return_conversion(const syntax::Expr& source, const Type* result);
 	const Conversion* finish_conversion(const syntax::Expr& expr, Conversion& conversion, bool operand);
 	void label_statement(const syntax::LabeledStmt& stmt, Scope* scope);
@@ -1236,7 +1236,7 @@ private:
 	bool narrowing_constant(
 		const syntax::Expr& element, const Conversion* before, Scope* scope, Constant* integer, long double* floating);
 	FunctionEntity* select_constructor(ClassEntity* entity, const syntax::Slice<syntax::Expr*>& arguments,
-		ConstructionKind kind, uint32_t location, bool* elide = nullptr);
+		ConstructionKind kind, uint32_t location, bool* elide = nullptr, const Candidate* chosen = nullptr);
 	FunctionEntity* value_initialize(ClassEntity* entity, uint32_t location);
 	// 8.5p16: initializes an object (or reference) of `type`; returns the
 	// constructor a class object runs.
@@ -1248,9 +1248,11 @@ private:
 	bool parenthesized_aggregate(ClassEntity* entity, const syntax::Slice<syntax::Expr*>& arguments, Scope* scope);
 	bool same_class_source(const ClassEntity* entity, const syntax::Expr& source);
 	FunctionEntity* copy_initialization(ClassEntity* entity, const syntax::Expr& source, ConstructionKind kind,
-		uint32_t location, bool in_place = false);
-	const Conversion* record_copy(
-		ClassEntity* entity, const Type* target, const syntax::Expr& source, uint32_t location, bool in_place = false);
+		uint32_t location, bool in_place = false, const Candidate* chosen = nullptr);
+	// A chosen candidate borrows sequences_ from the immediately preceding
+	// resolution; consume it before another overload query can replace them.
+	const Conversion* record_copy(ClassEntity* entity, const Type* target, const syntax::Expr& source,
+		uint32_t location, bool in_place = false, const Candidate* chosen = nullptr);
 	FunctionEntity* initialize_object(
 		const Type* type, const syntax::Initializer& init, Scope* scope, uint32_t location);
 	void constructor_plan(FunctionEntity* constructor, ClassEntity* entity, const syntax::CtorInitializer* list,

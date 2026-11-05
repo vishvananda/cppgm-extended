@@ -995,11 +995,12 @@ void Analyzer::return_statement(const syntax::ValueStmt& stmt, Scope* scope)
 		// 12.8p32 with P1825: keep any successful rvalue overload
 		// selection; only a failed resolution retries as an lvalue.
 		ExprFacts* inner = facts_of(*WithoutParentheses(stmt.value));
-		const bool as_rvalue = names_automatic_object(*stmt.value) && moves_from(cls, *stmt.value);
+		Candidate chosen = Candidate();
+		const bool as_rvalue = names_automatic_object(*stmt.value) && moves_from(cls, *stmt.value, chosen);
 		const ValueCategory category = inner->category;
 		if (as_rvalue)
 			inner->category = ValueCategory::XValue;
-		record_copy(cls, result, *stmt.value, stmt.location, true);
+		record_copy(cls, result, *stmt.value, stmt.location, true, as_rvalue ? &chosen : nullptr);
 		inner->category = category;
 		return;
 	}
@@ -1045,7 +1046,7 @@ bool Analyzer::names_automatic_object(const syntax::Expr& expr) const
 	return !variable->is_static && !variable->is_extern && !variable->is_thread_local && !variable->structured_binding;
 }
 
-bool Analyzer::moves_from(ClassEntity* entity, const syntax::Expr& source)
+bool Analyzer::moves_from(ClassEntity* entity, const syntax::Expr& source, Candidate& chosen)
 {
 	// P1825: whether overload resolution with the operand as an rvalue
 	// succeeds. Deleted or inaccessible selections are checked by the
@@ -1062,8 +1063,14 @@ bool Analyzer::moves_from(ClassEntity* entity, const syntax::Expr& source)
 	std::vector<FunctionEntity*>& set = overload_set_;
 	set.clear();
 	constructor_candidates(entity, arguments, ConstructionKind::Copy, set);
-	Candidate chosen = Candidate();
-	return !set.empty() && resolve(arguments, set, nullptr, chosen, entity) == Resolution::Selected;
+	const ClassEntity* saved_direct = direct_class_;
+	const bool saved_standard = standard_only_;
+	direct_class_ = nullptr;
+	standard_only_ = false;
+	const bool selected = !set.empty() && resolve(arguments, set, nullptr, chosen, entity) == Resolution::Selected;
+	direct_class_ = saved_direct;
+	standard_only_ = saved_standard;
+	return selected;
 }
 
 // ------------------------------------------------------------ expressions
