@@ -240,7 +240,7 @@
   {
     "id": "CXX11-003",
     "priority": "P1",
-    "status": "performance-passed",
+    "status": "closed",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/ref-qual19.C"
     ],
@@ -259,7 +259,7 @@
       "pa12": {
         "status": "pass",
         "count": 386,
-        "log": "affected-v2.log"
+        "log": "pa12-final.log"
       },
       "strict_report": {
         "status": "pass",
@@ -289,7 +289,7 @@
       "upstream_variants": {
         "status": "pass",
         "variants": 16,
-        "log": "upstream-variants/results.json"
+        "log": "upstream-variants-v2/results.json"
       },
       "pa16": {
         "status": "pass",
@@ -303,20 +303,20 @@
       },
       "placement": {
         "status": "pass",
-        "log": "placement-v2.log"
+        "log": "placement-final-closed.log"
       },
       "harness": {
         "status": "pass",
-        "log": "harness.log"
+        "log": "harness-final.log"
       },
       "student_export": {
         "status": "pass",
-        "log": "export-v2.log"
+        "log": "export-final.log"
       },
       "reference_bundle": {
         "status": "pass",
         "wrappers": 42,
-        "log": "export-bundle-v2.log"
+        "log": "export-bundle-final.log"
       }
     },
     "performance": {
@@ -528,26 +528,37 @@
     ],
     "host_disagreement": "GCC 15.2 defers rvalue-reference eligibility until C++20 and retains legacy const-copy fallback in an adjacent probe even there. Clang 22 applies the return DR in C++11. Required controls follow the documented P1825 return contract, not host consensus alone.",
     "semantic_revision": "1680e7670021b90713d186d23ce37eea6dfb3ab3",
-    "pending_checks": [
-      "final sink-cluster placement and export verification"
-    ]
+    "pending_checks": []
   },
   {
     "id": "CXX11-004",
     "priority": "P1",
-    "status": "performance-passed",
+    "status": "closed",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/ref-qual20.C"
     ],
     "symptom": "runtime SIGABRT; implicit move/ref-qualified base-result conversion",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-003",
     "root_cause": "Same discarded conversion-function selection as CXX11-003.",
-    "owning_pa": null,
-    "regressions": [],
+    "owning_pa": 12,
+    "regressions": [
+      "pa12/tests/controls/400-return-implicit-conversion-move.t",
+      "pa12/tests/controls/200-return-implicit-move-sinks.t",
+      "pa12/tests/controls/400-return-implicit-conversion-deleted-reject.t",
+      "pa16/tests/controls/300-static-return-conversion-lvalue.t"
+    ],
     "fix_revision": "c1a5a902b0776477417aea4ce2b0be1c1f4d8abe",
-    "checks": {},
+    "checks": {
+      "shared_evidence": "CXX11-003",
+      "upstream_variants": {
+        "status": "pass",
+        "variants": 16,
+        "log": "upstream-variants-v2/results.json"
+      }
+    },
     "performance": {
-      "status": "not-started"
+      "status": "pass-shared-root-cause",
+      "shared_evidence": "CXX11-003"
     },
     "duplicate_of": "CXX11-003"
   },
