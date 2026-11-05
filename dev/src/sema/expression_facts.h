@@ -263,6 +263,8 @@ struct ExprFacts
 {
 	// 5p5, 5p6: never a reference type; glvalues keep their cv-qualifiers.
 	// Null while an overloaded function name is unresolved.
+	// A braced-init-list is not an expression: its reference type records
+	// direct binding to its single element rather than a temporary object.
 	const Type* type;
 	ValueCategory category;
 	uint32_t flags;

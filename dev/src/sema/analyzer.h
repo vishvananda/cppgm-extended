@@ -361,6 +361,7 @@ private:
 		Scope* scope, const Identifier* key, const Type* type, bool is_static, uint32_t location);
 	void braced_argument(const syntax::BracedInitList& list, Scope* scope);
 	bool list_sequence(const syntax::BracedInitList& list, const Type* parameter, Conversion& out);
+	const syntax::Expr* reference_list_element(const syntax::BracedInitList& list, const Type* type, Scope* scope);
 	bool aggregate_accepts(const syntax::BracedInitList& list, const ClassEntity* cls);
 	bool designated_list(
 		const syntax::BracedInitList& list, const ClassEntity* cls, syntax::BracedInitList& out, Scope* scope);

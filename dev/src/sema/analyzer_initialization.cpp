@@ -332,6 +332,22 @@ void Analyzer::check_character_array(
 		error(location, "string literal too long for the array");
 }
 
+const syntax::Expr* Analyzer::reference_list_element(const syntax::BracedInitList& list, const Type* type, Scope* scope)
+{
+	// 8.5.4p3: a single reference-related element initializes the
+	// reference itself. Ranking reads already typed elements; actual
+	// initialization may type a default argument's element here once.
+	if (!type->is_reference() || list.elements.size != 1 || list.elements[0]->kind == syntax::ExprKind::BracedInit)
+		return nullptr;
+	const syntax::Expr* element = list.elements[0];
+	const ExprFacts* facts = element->facts;
+	if (facts == nullptr && scope != nullptr)
+		facts = typed(*element, scope);
+	return facts != nullptr && facts->type != nullptr && conversions_.reference_related(type->element, facts->type)
+		? element
+		: nullptr;
+}
+
 void Analyzer::list_initialize(const syntax::BracedInitList& list, const Type* type, Scope* scope)
 {
 	// 8.5.4 for the slice: arrays element by element, scalars from at most
@@ -343,21 +359,8 @@ void Analyzer::list_initialize(const syntax::BracedInitList& list, const Type* t
 		error(list.location, "designated initializers of no class");
 	if (type->is_reference())
 	{
-		const syntax::Expr* element = list.elements.size == 1 && list.elements[0]->kind != syntax::ExprKind::BracedInit
-			? list.elements[0]
-			: nullptr;
-		// (Typed once: a call's braced argument's element was, see
-		// braced_argument.)
-		const ExprFacts* facts = element != nullptr ? element->facts : nullptr;
-		if (element != nullptr && facts == nullptr)
-			facts = typed(*element, scope);
-		if (failed())
-			return;
-		if (facts == nullptr || facts->type == nullptr || !conversions_.reference_related(type->element, facts->type))
-		{
-			list_argument(list, type, scope, list.location);
-			return;
-		}
+		list_argument(list, type, scope, list.location);
+		return;
 	}
 	if (type->unqualified->kind == TypeKind::Vector)
 	{
@@ -923,6 +926,8 @@ bool Analyzer::list_sequence(const syntax::BracedInitList& list, const Type* par
 	// an aggregate one by aggregate initialization (p4); a scalar is its
 	// one element's conversion, or identity for `{}` (p6).
 	const bool reference = parameter->is_reference();
+	if (const syntax::Expr* element = reference_list_element(list, parameter, nullptr))
+		return implicit_sequence(*element, parameter, out);
 	const Type* target = reference ? parameter->element : parameter;
 	if (const Type* element = initializer_list_element(target))
 		return initializer_list_sequence(list, parameter, element, out);
@@ -1246,6 +1251,16 @@ void Analyzer::list_argument(const syntax::BracedInitList& list, const Type* par
 	// stands for that object, a prvalue, which an lvalue reference to a type
 	// that is not const (or is volatile) cannot bind (8.5.4p3's note,
 	// 8.5.3p5; an array's cv-qualifiers are its elements', 3.9.3p5).
+	if (const syntax::Expr* element = reference_list_element(list, parameter, scope))
+	{
+		initialize_element(*element, parameter, scope);
+		// A reference-typed list records binding to its element, rather
+		// than construction of a referenced-type temporary.
+		new_facts(list, parameter, ValueCategory::LValue);
+		return;
+	}
+	if (failed())
+		return;
 	const Type* target = parameter->is_reference() ? parameter->element : parameter;
 	const Type* qualified = target;
 	while (qualified->kind == TypeKind::Array)
@@ -1271,6 +1286,10 @@ void Analyzer::list_argument(const syntax::BracedInitList& list, const Type* par
 	}
 	if (ClassEntity* cls = const_cast<ClassEntity*>(ClassOf(target)))
 	{
+		if (!require_complete(cls) || cls->scope == nullptr)
+			error(location, "initialization of an incomplete class object");
+		if (!check_abstract_object(target, location))
+			return;
 		syntax::Initializer view = syntax::Initializer();
 		view.kind = syntax::InitializerKind::Assign;
 		view.expression = const_cast<syntax::BracedInitList*>(&list);

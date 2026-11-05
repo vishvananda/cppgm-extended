@@ -226,6 +226,10 @@ PA13 supports the following in addition to the PA12 subset:
   the overridden declaration, including a narrower intermediate override;
   non-throwing overrides may use either `throw()` or `noexcept`
 - pure virtual declarations and pure-virtual vtable entries
+- rejection of a temporary whose class has a pure virtual final overrider,
+  including one requested by a braced reference argument or default argument;
+  a single reference-related list element instead binds directly to that
+  object and preserves its dynamic type (N3485 10.4p2, 8.5.4p3)
 - dynamic dispatch for ordinary member calls through:
   - object expressions of polymorphic class type
   - pointers to polymorphic class type

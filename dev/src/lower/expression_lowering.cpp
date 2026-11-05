@@ -2782,7 +2782,10 @@ void FunctionLowering::extension_path(const syntax::Expr* expr)
 			persistent_path_.push_back(e);
 			return;
 		}
-		if (e->kind == syntax::ExprKind::Member && static_cast<const syntax::MemberExpr*>(e)->op == TokenKind::OP_DOT &&
+		if (e->kind == syntax::ExprKind::BracedInit && facts->type->is_reference())
+			expr = static_cast<const syntax::BracedInitList*>(e)->elements[0];
+		else if (e->kind == syntax::ExprKind::Member &&
+			static_cast<const syntax::MemberExpr*>(e)->op == TokenKind::OP_DOT &&
 			(facts->flags & sema::kOperatorCall) == 0)
 			expr = static_cast<const syntax::MemberExpr*>(e)->base;
 		else if (e->kind == syntax::ExprKind::Binary &&
@@ -2977,6 +2980,11 @@ lowir::Value FunctionLowering::bind_converted(const syntax::Expr& expr, const se
 	const lowir::SlotKind reference_kind = context == ConversionContext::Argument ? lowir::SlotKind::Refarg
 		: context == ConversionContext::Return                                    ? lowir::SlotKind::Retref
 																				  : lowir::SlotKind::Tmpref;
+	// A reference-typed list binds to its single related element; analysis
+	// recorded that element's conversion. Do not materialize a base copy.
+	if (e->kind == syntax::ExprKind::BracedInit && facts->type->is_reference())
+		return bind_reference(
+			*static_cast<const syntax::BracedInitList*>(e)->elements[0], reference, context, persistent);
 	if (conversion_function(conversion))
 		return converted_reference(expr, conversion, reference, persistent);
 	// 8.5.3p5: an array prvalue binds a reference to an array directly,
