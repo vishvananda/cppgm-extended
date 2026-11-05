@@ -851,6 +851,7 @@ private:
 	const Type* synthesized_template(uint32_t index);
 	const Type* synthesized_argument(const TemplateParameterEntity* parameter, uint32_t index);
 	void declare_alias_template(const syntax::AliasDecl& decl, Scope* scope);
+	void check_alias_packs(const Type* type, uint32_t location);
 	bool explicit_value(const syntax::Expr& condition, Scope* scope, bool converted = false);
 	struct PendingExplicit
 	{

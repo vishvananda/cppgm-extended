@@ -839,6 +839,7 @@ void Analyzer::alias_declaration(const syntax::AliasDecl& decl, Scope* scope)
 	const DeclaratorInfo info = declarator(decl.type->declarator, specifiers.type, scope, decl.location,
 		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
 	const Type* type = info.type;
+	check_alias_packs(type, decl.location);
 	// 9.2p9, 7.1.2p1: no virt-specifier or function-specifier here.
 	if (info.virt_suffix != nullptr || specifiers.is_virtual)
 		error(decl.location, "a virt-specifier or virtual in an alias-declaration");

@@ -963,6 +963,20 @@ bool Analyzer::specialized_explicit(const PendingExplicit& pending, const TypeLi
 
 // ------------------------------------------------------ alias templates
 
+void Analyzer::check_alias_packs(const Type* type, uint32_t location)
+{
+	// 14.5.3p5: the alias's type-id is not itself an expansion. The typed
+	// pattern retains arguments discarded by dependent aliases too; nested
+	// expansions and sizeof... consume their own packs.
+	if (!dependent_type(type))
+		return;
+	PackList packs;
+	TypeList bound;
+	unexpanded_packs(type, kAnyDepth, packs, &bound);
+	if (!packs.empty() || !bound.empty())
+		error(location, "an alias-declaration names a parameter pack it does not expand (14.5.3p5)");
+}
+
 void Analyzer::declare_alias_template(const syntax::AliasDecl& decl, Scope* scope)
 {
 	// 14.5.7p1: the templated alias-declaration's type-id, analyzed in the
@@ -979,6 +993,7 @@ void Analyzer::declare_alias_template(const syntax::AliasDecl& decl, Scope* scop
 		filter_mode_alias(specifiers);
 	const DeclaratorInfo info = declarator(decl.type->declarator, specifiers.type, scope, decl.location,
 		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
+	check_alias_packs(info.type, decl.location);
 	if (info.virt_suffix != nullptr || specifiers.is_virtual)
 		error(decl.location, "a virt-specifier or virtual in an alias-declaration");
 	if (!cxx17_ && DeclaratorSpecifiesExceptions(decl.type->declarator))
