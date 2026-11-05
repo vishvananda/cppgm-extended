@@ -1289,6 +1289,15 @@ void Analyzer::convert_arguments(
 			// where its function type is formed: P0929R2, as both hosts).
 			if (!parameter->is_reference() && parameter->unqualified->kind == TypeKind::Class)
 			{
+				// 5.2.2p4 also requires a complete parameter type in an
+				// unevaluated call. Reject before looking up constructors;
+				// in an immediate context this discards the candidate.
+				if (!require_complete(ClassOf(parameter)))
+				{
+					argument_scratch_.resize(first);
+					substitution_error(argument.location, "call argument has incomplete class parameter type", true);
+					return;
+				}
 				check_destruction(parameter, expression_scope_, argument.location);
 				check_abstract_object(parameter, argument.location);
 			}
