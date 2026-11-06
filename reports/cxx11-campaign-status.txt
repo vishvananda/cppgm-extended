@@ -338,6 +338,8 @@ Runtime omitted-tail checkpoint (2026-11-06):
 - CXX11-021 records an original padded string-reference acceptance gap under
   N3485 8.5.2/8.5.4 and the March 2011 array-temporary rule; its owner is PA11,
   since PA10 explicitly excludes string-backed character-array initialization.
+  That original-only classification is qualified by the later standards audit
+  below; declaration adjudication and separately dated ranking remain open.
   CXX11-002 remains unadjudicated: a new 18-cell exact/neighbor matrix has GCC
   six exits0 but Clang/cppgm six SIGABRTs each. Host disagreement and candidate
   per-subobject wording arguments remain explicit. The ledger has 21 issues
@@ -585,3 +587,32 @@ Accepted whole-class and omitted-default repairs:
   instruction evidence and completed001 measurements are retained unchanged.
 - The combined reference family, broader corpus/adapters, remaining compiler
   and later-CWG issues, final release and two CI/timing jobs remain open.
+
+Combined family preparation and next standards boundary:
+- Historical CXX11-003's five and CXX11-005's six actual compiler RSS workload
+  replays finish0; the serial worker has advanced to CXX11-006. Full60-report
+  aggregate output verification remains pending, so the overall RSS correction is
+  not closed. Completed CXX11-001 data is not rerun.
+- CXX11-016/family-checkpoint-protocol-v1.json freezes the original family
+  parent, accepted d1c5c14c9 candidate, all12 original workloads, all frozen
+  inputs and unchanged gates. Independent native oracles for the nine targeted
+  sources are queued behind the exact historical aggregate worker identity.
+  Three core/hosted/self-host workloads remain required. Any changed A/B
+  object needs explicit adjudication before paired measurement. No family
+  performance pass or complete external replay is claimed. The full2160-cell
+  original native-dg cohort replay is queued after the exact family oracle
+  worker identity, preserving its source/adapter/host/flag/resource policies.
+  This is a checkpoint replay of the original cohort, not the entire corpus.
+- CXX11-021's source audit distinguishes its provisional declaration rationale
+  from later CWG1467 string-literal conversion ranking (November2014 DR).
+  The declaration's original-only classification is now unadjudicated; the
+  earlier rationale and raw evidence remain. Two duplicate neighbor observations
+  retain their identities and now link to this same issue.
+  Pinned Clang cwg1467::StringLiterals provides native neighboring oracles;
+  reduced execution and repair remain pending. The compiler is unchanged.
+- Matching Clang/LLVM21.1.8 tools and dependencies are acquired in an isolated
+  prefix. All twelve package identities,3201 files and197 symlinks are retained.
+  Eleven version/target/resource/build-description queries pass after resolving
+  a missing development-layout dependency; the first failed query is retained.
+  No system compiler change, feature-probe pass or Clang test execution is
+  claimed. Earlier Clang22 observations and the frozen family protocol remain.

@@ -2638,20 +2638,37 @@
     ],
     "checks": {
       "initial": "initial-evidence.json points to preserved CXX11-011 host/candidate diagnostics; final-v4 replay is pending until the live CXX11-015 performance experiment ends",
-      "source_review": "dev/src/sema/analyzer_initialization.cpp list_sequence array branch and list_argument array branch bypass the existing string-array list_initialize path"
+      "source_review": "dev/src/sema/analyzer_initialization.cpp list_sequence array branch and list_argument array branch bypass the existing string-array list_initialize path",
+      "standards_ranking_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/standards-ranking-audit-v1/assessment.json",
+      "pinned_upstream_neighbor": "LLVM21.1.8 clang/test/CXX/drs/cwg14xx.cpp cwg1467::StringLiterals; reduced replay and full native verification pending",
+      "standards_qualification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/standards-ranking-audit-v1/qualification-v2.json",
+      "duplicate_observations": [
+        "OBS-0530",
+        "OBS-0550"
+      ]
     },
     "performance": {
       "status": "not-started-no-compiler-change"
     },
     "standards_basis": {
-      "category": "original-cxx11",
-      "rationale": "N3485 8.5.4p3 creates a reference-target prvalue temporary when the sole source element is not reference-related. The referenced char[5] is then list-initialized from its braced string under 8.5.2p1. Array temporary list initialization was adopted into C++11 by CWG 1232 in March 2011; modern host disagreement does not define the snapshot rule.",
+      "category": "unadjudicated",
+      "rationale": "N3485 8.5.2 explicitly permits braced string-literal character-array initialization, but 8.5.4p3 initially routes aggregate targets through aggregate initialization. Their interaction for this reference temporary requires adjudication; the earlier original-only declaration classification is provisional. The separately dated conversion-ranking neighbor remains later-DR compatibility.",
       "references": [
         "doc/n3485.txt 8.5.2p1, 8.5.4p3 and 12.2p5",
-        "https://cplusplus.github.io/CWG/issues/1232.html"
-      ]
+        "https://cplusplus.github.io/CWG/issues/1232.html",
+        "https://cplusplus.github.io/CWG/issues/1467.html"
+      ],
+      "ranking_neighbors": {
+        "category": "later-defect-resolution",
+        "issue": "CWG1467",
+        "adopted": "November 2014",
+        "rationale": "Explicit character-array string-literal identity list-conversion rule; separate from original array temporary creation in CWG1232 and the declaration witness.",
+        "reference": "https://cplusplus.github.io/CWG/issues/1467.html"
+      },
+      "previous_category": "original-cxx11",
+      "previous_declaration_rationale": "N3485 8.5.4p3 creates a reference-target prvalue temporary when the sole source element is not reference-related. The referenced char[5] is then list-initialized from its braced string under 8.5.2p1. Array temporary list initialization was adopted into C++11 by CWG 1232 in March 2011; modern host disagreement does not define the snapshot rule."
     },
-    "next_action": "Replay exact/reduced padded-string-reference and bounded/kind/identity neighbors with the final compiler and both hosts, then add owning regressions, share typed string-array initialization/ranking facts and complete normal correctness/performance/export validation. Keep this semantic acceptance failure separate from CXX11-016 evaluated reference values."
+    "next_action": "After the active serial measurements, freeze the accepted baseline; replay declaration, parameter and overload/SFINAE boundary variants, add regressions to the earliest appropriate PA lanes and repair the shared typed string-array logic. Keep original and later-DR evidence distinct. No compiler/fixture changes during frozen measurements."
   },
   {
     "id": "CXX11-022",

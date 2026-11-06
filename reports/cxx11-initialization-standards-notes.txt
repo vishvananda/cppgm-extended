@@ -67,20 +67,25 @@ https://cplusplus.github.io/CWG/issues/1757.html
 https://cplusplus.github.io/CWG/issues/2126.html
 Raw issue snapshots/hashes: issues/CXX11-002/standards-sources.json.
 
-CXX11-021: padded string-array reference temporaries are an original rule.
+CXX11-021: declaration/ranking classification requires separate adjudication.
 
 The preserved const char (&text)[5] = {"abc"} probe is accepted by Clang and
-rejected by GCC/cppgm. N3485 8.5.4p3 creates the referenced-type array temporary
-when the one element is not reference-related; 8.5.2p1 then initializes its
-character array from the optionally braced literal, including zero padding.
-CWG 1232's array temporary list-initialization rule was adopted in March 2011,
-not after this snapshot. Retain the host disagreement and replay current
-compilers before using it as a repair oracle. This semantic acceptance gap is
-separate from CXX11-016's evaluated-value failures.
+rejected by GCC/cppgm. The earlier original-only classification combined
+N3485 8.5.4p3 array temporary creation with8.5.2p1's permission for a braced
+string initializer, but8.5.4 also routes aggregate targets through aggregate
+initialization first. That interaction still needs adjudication. Array
+temporary creation's original date alone does not settle character-array
+conversion ranking; the explicit string-literal identity rule is later.
+Keep the original declaration rationale provisional, and retain the host
+disagreement. Replay declaration and ranking variants separately before
+repairing them. See cxx11-string-array-reference-triage.txt and the retained
+standards-ranking-audit-v1/qualification-v2.json. No original-only defect is
+established by that source review. The gap remains separate from CXX11-016.
 
 The earliest fixture owner is PA11:100: PA10 explicitly excludes character-array
 object initialization from string literals. PA11:200 owns the mixed
 class/constructor/string control used by CXX11-015. The automatic placement
 audit did not detect an earlier PA10 string-array assertion; manual handout
 review moved it to that PA11 control and renewed affected checks/export.
-Source: https://cplusplus.github.io/CWG/issues/1232.html and doc/n3485.txt.
+Sources: https://cplusplus.github.io/CWG/issues/1232.html,
+https://cplusplus.github.io/CWG/issues/1467.html and doc/n3485.txt.

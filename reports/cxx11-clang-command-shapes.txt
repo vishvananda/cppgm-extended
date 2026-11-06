@@ -110,3 +110,33 @@ features, tool flags and shell structure. The execution adapter must replay
 file bindings against the validated complete configuration, not execute these
 partial projections or treat their parse success as a test pass. The 22 native
 conditional RUN templates remain unresolved pending feature configuration.
+
+Matching upstream toolchain acquisition
+
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/tools/llvm21
+
+Twelve Ubuntu packages pinned to1:21.1.8-6ubuntu1 have been downloaded with their
+APT SHA256/size identities verified and extracted into tools/llvm21/root.
+The initial five compiler/tools/header packages were followed by seven matching
+runtime/development dependencies. No package was installed and the system
+compiler was not changed. The source
+suite remains LLVM21.1.8 commit2078da43e25a4623cab2d0d60decddf709aaea28;
+Ubuntu packaging/patches remain explicitly disclosed.
+
+acquisition-protocol-v1.json, acquisition-result-v1.json and the separate
+dependency-acquisition artifacts retain package metadata, hashes and archives.
+All original565 files and164 symlinks are preserved. The complete v2 manifest
+hashes3201 files and197 symlinks, with no unresolved links. The first relocated
+llvm-config --shared-mode query failed because development/shared-library files
+were absent; its raw streams and failed tool-descriptions-v1.json are retained.
+After acquiring those dependencies, all eleven fresh version/target/resource/
+build-description queries pass in tool-descriptions-v2.json, on CPU83 outside
+the measurement CPU. The builtin resource headers resolve inside the prefix.
+loader-closure-v2.json verifies ten required tools and26 unique runtime files;
+LLVM/Clang shared libraries resolve inside the prefix. Remaining OS runtime
+libraries have retained hashes. The earlier loader audit is also preserved.
+These are tool metadata results, not compiler capability or test passes.
+Source/feature/test invocations remain queued behind the serial RSS experiments.
+The matching release tools will permit native FileCheck/not/count/split-file,
+object/IR utilities and Clang diagnostics instead of depending on Clang22 for
+all future21.1.8 baseline cells. Existing older observations remain unchanged.
