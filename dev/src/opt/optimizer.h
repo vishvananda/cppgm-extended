@@ -70,6 +70,7 @@ struct OptimizerStats
 	telemetry::Counter slots_promoted = 0;
 	telemetry::Counter phis_inserted = 0;
 	telemetry::Counter calls_inlined = 0;
+	telemetry::Counter calls_forwarded = 0;
 	telemetry::Counter inlined_instructions = 0;
 	telemetry::Counter functions_pruned = 0;
 	telemetry::Counter loads_reused = 0;

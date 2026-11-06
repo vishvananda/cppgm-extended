@@ -1,0 +1,17 @@
+# outcomes from 400-forwarded-call-boundaries.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(call @constant_depth)
+none(call @narrow_wrapper)
+none(call @permuted)
+none(call @relay)
+none(call @wide_caller)
+
+# Remove redundant forwarding layers; loops or other equivalent work are valid.
+none(call @relay) in @worker
+none(call @constant_depth) in @worker
+instructions <= 40 in @worker
+# Explicit no-inline boundaries remain calls.
+has(call @held) in @held_worker
+# Keep growth bounded around cycles and preserve behavior at narrow boundaries.
+instructions <= 8 in @cycle_a
+instructions <= 8 in @cycle_b
+instructions <= 110

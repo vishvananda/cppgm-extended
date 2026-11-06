@@ -1,0 +1,103 @@
+typedef unsigned long long U;
+extern "C" int printf(const char*, ...);
+extern "C" U host_apply(U (*)(U), U);
+U trace, cleanups, copies, tag_makes, samples[2];
+unsigned throw_depth;
+volatile U initial_seed = 17;
+
+struct Node { U value; const Node* next; };
+struct Guard {
+  unsigned depth;
+  explicit Guard(unsigned d) : depth(d) {}
+  ~Guard() { trace = trace * 33 + depth; ++cleanups; }
+};
+struct Tag {};
+__attribute__((noinline)) Tag make_tag() { ++tag_makes; return Tag(); }
+__attribute__((noinline)) U sample(unsigned i, U value) { ++samples[i]; return value; }
+
+U recursive(const Node*, U, U, unsigned);
+U reversed(U a, const Node* n, unsigned depth, U b) {
+  return recursive(n, a, b, depth);
+}
+U relay(const Node* n, U b, U a, unsigned depth) {
+  return reversed(a, n, depth, b);
+}
+U tagged(Tag, U, const Node* n, U a, U b, unsigned depth) {
+  return relay(n, b, a, depth);
+}
+U recursive(const Node* n, U a, U b, unsigned depth) {
+  Guard guard(depth);
+  trace = trace * 257 + (a & 255) + depth;
+  if (throw_depth && depth == throw_depth) throw depth + 100;
+  if (!depth) return (a ^ n->value) + b;
+  U result = tagged(make_tag(), sample(0, a), n->next,
+                    sample(1, b + n->value), a ^ (b << 1), depth - 1);
+  trace = trace * 17 + (result & 1023);
+  return result + a * 3 + n->value;
+}
+
+struct Box { U value; };
+U box_target(Box copy, U* alias) {
+  U value = copy.value;
+  *alias += 71;
+  return value + copy.value;
+}
+U box_forward(Box copy, U* alias) { return box_target(copy, alias); }
+
+struct Loud {
+  U value;
+  explicit Loud(U x) : value(x) {}
+  Loud(const Loud& other) : value(other.value) { ++copies; }
+  ~Loud() { ++cleanups; }
+};
+U loud_target(Loud copy) { return ++copy.value; }
+U loud_forward(Loud copy) { return loud_target(copy); }
+
+__attribute__((noinline)) U kept(U x) { return x + 13; }
+U through_kept(U x) { return kept(x); }
+U probe(unsigned depth) {
+  if (depth == 2) throw 77u;
+  return depth;
+}
+U constant_forward(const Node* n, U a, U b, unsigned) {
+  return recursive(n, a, b, 0);
+}
+U floating_leaf(double x) { return static_cast<U>(x * 4.0); }
+U floating_forward(double x, U) { return floating_leaf(x); }
+
+extern "C" __attribute__((weak)) U weak_entry(U x) { return through_kept(x); }
+
+int main() {
+  U state = initial_seed, hash = 0;
+  Node a = { 0, 0 }, b = { 0, &a }; a.next = &b;
+  for (unsigned seed = 0; seed != 512; ++seed) {
+    state = state * 6364136223846793005ULL + 1442695040888963407ULL;
+    a.value = state; b.value = state ^ (state >> 31);
+    for (unsigned depth = 0; depth != 13; ++depth) {
+      for (unsigned throwing = 0; throwing != 2; ++throwing) {
+        trace = cleanups = tag_makes = samples[0] = samples[1] = 0;
+        throw_depth = throwing ? 3 : 0;
+        U result = 0;
+        try { result = relay(&a, state + seed, state ^ seed, depth); }
+        catch (unsigned value) { result = value; }
+        hash = hash * 65599 + result + trace * 3 + cleanups * 5;
+        hash ^= tag_makes * 7 + samples[0] * 11 + samples[1] * 13;
+      }
+      throw_depth = 0;
+      try { hash ^= relay(&b, state, seed, static_cast<unsigned>(probe(depth))); }
+      catch (unsigned value) { hash += value; }
+      hash += constant_forward(&b, state, seed, depth);
+    }
+    Box box = { state };
+    if (box_forward(box, &box.value) != state * 2 || box.value != state + 71) return 1;
+    copies = cleanups = 0;
+    { Loud object(state); if (loud_forward(object) != state + 1 || object.value != state) return 2; }
+    if (copies != 2 || cleanups != 3) return 3;
+    U replaced = state ^ 0x19734def89844ab1ULL;
+    if (weak_entry(state) != replaced || host_apply(weak_entry, state) != replaced) return 4;
+    hash ^= through_kept(state) + weak_entry(state);
+    hash += floating_forward(seed * 0.25, state);
+  }
+  printf("%llx\n", hash);
+  return 0;
+}

@@ -129,6 +129,13 @@ stops, preserve argument evaluation and exceptional exits, and recheck the
 call structure after edits. A smaller call graph alone does not justify
 unbounded code growth or repeated analysis of unchanged functions.
 
+For a body that only forwards a call and returns its result, composing argument
+permutations and constants may avoid copying any instructions. Preserve
+argument evaluation and boundary conversions, retain observable object copies,
+and detect forwarding cycles. Resolve shared chains once rather than walking
+the same chain again from every caller. A retained function's address and
+external boundary must keep their meaning.
+
 A short returning path around a larger calling path can be useful to inline
 even when the whole body is not. Keep growth in that slower path from
 duplicating work at every caller or hiding the useful wrapper. Measure both

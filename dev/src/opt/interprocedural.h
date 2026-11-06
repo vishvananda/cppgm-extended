@@ -27,6 +27,13 @@ bool specialize_arguments(
 // inliner may then inline it. True when it made a copy.
 bool copy_for_callees(lowir::Program& program, OptimizerStats& stats);
 
+// O2+: redirect calls through call-and-return wrappers, composing parameter
+// permutations and constants without copying a body or changing signatures.
+// Keep argument evaluation, materialization and cleanup, and honor no-inline
+// and replacement metadata. Resolve each wrapper once; the final argument
+// count may not exceed the original boundary's count. No CFG invalidation.
+bool forward_calls(lowir::Program& program, OptimizerStats& stats);
+
 // Speculative devirtualization (O2+): a call through a slot of an object's
 // vtable, passing the object first, where a store of a readonly table's
 // address into the object (its construction) dominates the call, compares

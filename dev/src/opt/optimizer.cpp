@@ -713,6 +713,8 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 		run_inline_wave(program, options, stats, InlineWave::Once, budgets, original, nounwind, simplify);
 		prune_unreachable(program, stats);
 		run_inline_wave(program, options, stats, InlineWave::Late, budgets, original, nounwind, simplify);
+		if (level >= 2)
+			forward_calls(program, stats);
 		prune_unreachable(program, stats);
 		if (level >= 2 && specialize_arguments(program, stats, simplify))
 			prune_unreachable(program, stats);
@@ -742,17 +744,17 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " branches_folded=" << s.branches_folded << " blocks_removed=" << s.blocks_removed
 		<< " blocks_merged=" << s.blocks_merged << " slots_promoted=" << s.slots_promoted
 		<< " phis_inserted=" << s.phis_inserted << " calls_inlined=" << s.calls_inlined
-		<< " inlined_instructions=" << s.inlined_instructions << " functions_pruned=" << s.functions_pruned
-		<< " loads_reused=" << s.loads_reused << " stores_removed=" << s.stores_removed
-		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled
-		<< " bit_recurrences_folded=" << s.bit_recurrences_folded << " bit_table_bytes=" << s.bit_table_bytes
-		<< " invariants_hoisted=" << s.invariants_hoisted << " stores_sunk=" << s.stores_sunk
-		<< " loops_vectorized=" << s.loops_vectorized << " loops_interchanged=" << s.loops_interchanged
-		<< " loops_unswitched=" << s.loops_unswitched << " counters_shifted=" << s.counters_shifted
-		<< " counters_widened=" << s.counters_widened << " multiplies_reduced=" << s.multiplies_reduced
-		<< " tail_calls_removed=" << s.tail_calls_removed << " math_calls_shared=" << s.math_calls_shared
-		<< " specialized=" << s.specialized << " calls_speculated=" << s.calls_speculated
-		<< " optimize_ms=" << s.optimize_ms;
+		<< " calls_forwarded=" << s.calls_forwarded << " inlined_instructions=" << s.inlined_instructions
+		<< " functions_pruned=" << s.functions_pruned << " loads_reused=" << s.loads_reused
+		<< " stores_removed=" << s.stores_removed << " loops_removed=" << s.loops_removed
+		<< " loops_unrolled=" << s.loops_unrolled << " bit_recurrences_folded=" << s.bit_recurrences_folded
+		<< " bit_table_bytes=" << s.bit_table_bytes << " invariants_hoisted=" << s.invariants_hoisted
+		<< " stores_sunk=" << s.stores_sunk << " loops_vectorized=" << s.loops_vectorized
+		<< " loops_interchanged=" << s.loops_interchanged << " loops_unswitched=" << s.loops_unswitched
+		<< " counters_shifted=" << s.counters_shifted << " counters_widened=" << s.counters_widened
+		<< " multiplies_reduced=" << s.multiplies_reduced << " tail_calls_removed=" << s.tail_calls_removed
+		<< " math_calls_shared=" << s.math_calls_shared << " specialized=" << s.specialized
+		<< " calls_speculated=" << s.calls_speculated << " optimize_ms=" << s.optimize_ms;
 #else
 	(void)s;
 #endif

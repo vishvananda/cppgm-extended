@@ -289,10 +289,12 @@ largest changes are recursive Brainfuck (2.373x instruction speed), CRC32
 (6.279x) and Calculator AST (1.324x). Frozen `-O0` cost remains unchanged;
 the cumulative `-O3` instruction cost is about 0.30% higher.
 
-The new full timing comparison is still provisional: A/A checks and individual
+The completed full timing comparison is still provisional: A/A checks and individual
 blocks show substantial host variation. Preserve the raw results, including
 apparent slowdowns, rather than treating the overall mean as proof that every
-program is safe. The Clang reranking is still running. Results are under
+program is safe. It measures 1.004x GCC and 0.949x Clang overall, with
+instruction speeds of 0.950x and 0.952x respectively. A/A warnings occur in
+26 of 50 GCC pairs and 20 of 50 Clang pairs. Results are under
 `optimization/20261105/group1-scc-full-scoreboard-isolated/`.
 
 The fourth mechanism uses an existing LowIR fact: a switch successor containing
@@ -322,14 +324,85 @@ reproduce the earlier apparent slowdown. The fresh student export verifies
 Receipts are under `switch-unreachable-prototype/`,
 `switch-unreachable-ported/` and `switch-unreachable-frozen/`.
 
-A private call-forwarding prototype substitutes typed arguments without
-cloning bodies or rerunning caller simplification. It improves Calculator AST
-with much less compiler work than broad recursive inlining, but earlier
-Brainfuck timings exposed sensitivity to placement and host activity. Keep
-this experiment private until the combined candidate and existing workloads
-have passed the same controls. A separate private Base64 prototype removes
-redundant narrow extensions before operations that consume only the low bits;
-its initial instruction gain also needs the full acceptance process.
+## Direct forwarding without body copying
+
+The fifth mechanism redirects calls through a function whose body consists of
+one call and its return. Resolve shared chains once and compose parameter
+permutations, constants and symbol arguments. Keep every original argument's
+evaluation and lifetime work. Require compatible scalar boundaries, retain
+materialization and object-copy semantics, honor no-inline and replaceable
+definitions, and reject pure forwarding cycles. The final argument count
+cannot exceed the original call boundary, which bounds both composition and
+rewriting. No body cloning or caller simplification is needed. The retained
+function's address and external ABI are unchanged; ordinary pruning still
+decides which unobserved definitions may disappear.
+
+An earlier broad recursive inlining prototype cost 1.60% extra frozen compile
+instructions. This implementation adds about 0.015% against the preceding
+compiler, with cumulative `-O3` cost about 0.31% above the campaign baseline.
+`-O0` instructions and objects remain unchanged; peak RSS stays within 0.2%.
+Nine additional paired compile blocks with precise CPU/task-clock measurements
+do not reproduce an initial apparent timing loss: median CPU speed is 0.997x,
+inside A/A variation. Preserve every observation, including busy-sibling cases.
+
+The final port emits an index-cpp object identical to the measured combined
+prototype. Against the preceding switch fix, six paired blocks give Calculator
+AST 1.058x instruction speed and approximately 1.129x wall speed; recursive
+Brainfuck gives 1.008x instruction speed and 0.996x wall speed. A controlled
+fixed-ASLR diagnosis also measures Brainfuck at parity. Ordinary-ASLR results
+remain the primary comparison. Earlier forwarding-only attempts had an
+unresolved Brainfuck timing loss and remain archived; accept the combined
+implementation's receipts, not those earlier attempts. Index-cpp `.text`
+falls another 528 bytes, to 389,010.
+
+The strict report passes 8,046 tests, together with debug checks, self-host
+through PA5, PA35 quick/smoke, optional modern-C++ checks and every required
+architecture, placement, format, file and harness audit. GCC and Clang pass
+`-Wall -Werror`. Independent source reductions pass all four optimization
+levels with both reference compilers, the previous compiler and the candidate;
+eight explicit LowIR paths also pass. They cover argument permutations,
+effects and exceptions, narrow conversions, object snapshots, nontrivial
+copies and destruction, no-inline boundaries, and strong host replacement of
+a weak definition. Course tests use behavior and broad quality outcomes;
+direct/serialized source objects also agree for the new reduction.
+
+All six baseline sentinel recompiles reproduce the preceding compiler's
+objects at both levels. The candidate changes only JSON at `-O3`. It keeps identical output and
+executes 0.097% fewer instructions. Nine paired timing blocks give 0.989x CPU
+speed, inside the 2–6% A/A variation; this does not establish a runtime change.
+FlatMap and Xpressive `-O0` objects stay identical. Xpressive `-O3` changes, so
+12 blocks of ten executions each compare against the same host-built framework:
+instruction speed is 1.00012x and task-clock speed 1.004x, inside calibration
+variation. The fresh student export verifies 22,541 portable reference outputs,
+installs all 42 wrappers and passes both new fixtures through the bundle.
+
+Receipts are in `forward-calls-ported/`, its two sibling frozen-guard directories,
+`forward-calls-ported-public-objects/` and `forward-calls-ported-boost-sentinels/`.
+The final all-50 comparison and full public run use this immutable compiler;
+both remain in progress at this checkpoint.
+
+## Refreshed investigation queue
+
+The completed three-fix reranking keeps Base64 decoding, Huffman decoding and
+Calculator AST among the largest remaining gaps. Huffman's profile and typed
+LowIR show repeated bit-extraction work and branch/load diamonds; Clang selects
+the child address before loading. Select formation currently excludes loads
+from speculation, correctly: a possible improvement must move the one selected
+load, rather than speculating both reads. The independent Base64 narrow-extension
+prototype remains private pending its reducers and acceptance gates.
+
+Nbody's refreshed gap is smaller than the initial noisy estimate. Its movement
+helper is already inlined and its hot loop already uses packed SSE2 arithmetic.
+Missing inlining or wholly absent vectorization is not its cause. Profiles and
+disassembly are retained in `group2-{huffman,nbody}-discovery/` for the next work.
+
+A broader whole-index-cpp LowIR replay probe exposes a pre-existing byte-identity
+difference: it reproduces with both the preceding compiler and the candidate,
+although both replayed programs pass all 50 checksum checks. Match the
+`__OPTIMIZE__` preprocessing epoch when comparing paths; that alone does not
+resolve the difference. Reduce and explain this boundary gap before attributing
+differences in that replay to a new optimization. The new C++11 course reduction
+and existing object-roundtrip lanes continue to pass.
 
 ## Outstanding work
 

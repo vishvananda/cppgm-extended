@@ -267,6 +267,9 @@ pass:
   that never inspects its unnamed arguments can be substituted like a fixed
   argument function, preserving every argument's evaluation and cleanup.
   `va_start` and `va_arg` require a separate proof about the argument area.
+- A function that only forwards a call and returns its result may not need a
+  separate call at each use. Preserve argument order, conversions, object
+  materialization and cleanup when composing such boundaries.
 - Keep the optimizer's own work bounded. PA34 compiles the whole compiler
   at `-O3` with this optimizer; [the design notes](design-notes.md) describe
   how to avoid repeating work.

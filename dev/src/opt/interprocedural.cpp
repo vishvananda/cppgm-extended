@@ -545,4 +545,240 @@ bool copy_for_callees(Program& program, OptimizerStats& stats)
 	return any;
 }
 
+namespace {
+
+struct ForwardArgument
+{
+	Value value;
+	Literal literal;
+};
+
+enum class ForwardState : uint8_t
+{
+	Unseen,
+	Visiting,
+	Resolved,
+	Rejected
+};
+
+struct ForwardCall
+{
+	InstId call = kNoId;
+	SymbolId target = kNoId;
+	ForwardState state = ForwardState::Unseen;
+	std::vector<ForwardArgument> arguments;
+};
+
+class CallForwarding
+{
+public:
+	explicit CallForwarding(Program& program) : program_(program), forwards_(program.symbols.size()) {}
+	bool run(OptimizerStats& stats);
+
+private:
+	const Signature& signature(SymbolId s) const
+	{
+		return program_.signatures[program_.functions[program_.symbols[s].detail].signature];
+	}
+	FunctionBody& body(SymbolId s) const { return *program_.functions[program_.symbols[s].detail].body; }
+	bool recognize(SymbolId s);
+	ForwardArgument argument(const FunctionBody& body, Value value) const;
+	bool resolve(SymbolId s);
+	void resolve_chains();
+	bool rewrite(FunctionBody& body, Instruction& call);
+
+	Program& program_;
+	std::vector<ForwardCall> forwards_;
+	std::vector<Value> actual_;
+};
+
+bool CallForwarding::recognize(SymbolId s)
+{
+	const Symbol& symbol = program_.symbols[s];
+	if (symbol.kind != SymbolKind::FunctionDefinition || (symbol.metadata.flags & (SF_NO_INLINE | SF_REPLACEABLE)) != 0)
+		return false;
+	const Signature& sig = signature(s);
+	const FunctionBody& b = body(s);
+	if (sig.boundary.arity != ir_model::CAM_FIXED || sig.result.is_object() || b.layout.size() != 1)
+		return false;
+	const Block& block = b.blocks[b.layout[0]];
+	if (block.first == kNoId || block.first == block.last)
+		return false;
+	const Instruction& call = b.instructions[block.first];
+	const Instruction& leave = b.instructions[block.last];
+	if (call.op != Opcode::Call || !call.ops[0].is(ValueKind::Symbol) ||
+		!is_function_kind(program_.symbols[call.ops[0].index].kind) ||
+		(call.flags & (IF_SIGNATURE | IF_COPY_ELISION)) != 0 || call.next != block.last || leave.op != Opcode::Return ||
+		call.type != sig.result || leave.type != sig.result)
+		return false;
+	if (sig.result.kind() == TypeKind::Void ? !leave.ops[0].is(ValueKind::None)
+											: !(leave.ops[0] == Value::temp(call.result)))
+		return false;
+	const Signature& target = signature(call.ops[0].index);
+	if (target.boundary.arity != ir_model::CAM_FIXED || target.result != sig.result ||
+		call.extra_count != target.parameter_count)
+		return false;
+	forwards_[s].call = block.first;
+	return true;
+}
+
+ForwardArgument CallForwarding::argument(const FunctionBody& b, Value value) const
+{
+	ForwardArgument result = { value, { 0, 0 } };
+	if (value.is_literal())
+		result.literal = b.literals[value.index];
+	return result;
+}
+
+bool CallForwarding::resolve(SymbolId s)
+{
+	ForwardCall& forward = forwards_[s];
+	const FunctionBody& b = body(s);
+	const Instruction& call = b.instructions[forward.call];
+	const SymbolId next = call.ops[0].index;
+	const ForwardCall& nested = forwards_[next];
+	const bool compose = nested.state == ForwardState::Resolved;
+	forward.target = compose ? nested.target : next;
+	const Signature& target = signature(forward.target);
+	const Signature& own = signature(s);
+	// Bypassing a frame must not expand the call's argument work. This also
+	// bounds composition by the original signatures, including long chains.
+	if (target.parameter_count > own.parameter_count)
+		return false;
+	forward.arguments.reserve(target.parameter_count);
+	for (uint32_t p = 0; p < target.parameter_count; ++p)
+	{
+		ForwardArgument a;
+		if (!compose)
+			a = argument(b, b.operands[call.extra_first + p]);
+		else
+		{
+			a = nested.arguments[p];
+			if (a.value.is(ValueKind::Temp))
+				a = argument(b, b.operands[call.extra_first + a.value.index]);
+		}
+		const Type type = program_.parameters_of(target)[p].type;
+		if (a.value.is(ValueKind::Temp))
+		{
+			if (a.value.index >= b.parameter_count || type.is_object() ||
+				program_.parameters_of(own)[a.value.index].type != type)
+				return false;
+		}
+		else if (a.value.is_literal())
+		{
+			if (type.is_object())
+				return false;
+		}
+		else if (!a.value.is(ValueKind::Symbol) || !type.is_pointer())
+			return false;
+		forward.arguments.push_back(a);
+	}
+	return true;
+}
+
+void CallForwarding::resolve_chains()
+{
+	std::vector<SymbolId> chain;
+	for (SymbolId s = 0; s < forwards_.size(); ++s)
+	{
+		if (forwards_[s].call == kNoId || forwards_[s].state != ForwardState::Unseen)
+			continue;
+		SymbolId at = s;
+		while (forwards_[at].call != kNoId && forwards_[at].state == ForwardState::Unseen)
+		{
+			forwards_[at].state = ForwardState::Visiting;
+			chain.push_back(at);
+			at = body(at).instructions[forwards_[at].call].ops[0].index;
+		}
+		const bool cycle = forwards_[at].state == ForwardState::Visiting;
+		while (!chain.empty())
+		{
+			at = chain.back();
+			chain.pop_back();
+			forwards_[at].state = !cycle && resolve(at) ? ForwardState::Resolved : ForwardState::Rejected;
+		}
+	}
+}
+
+bool CallForwarding::rewrite(FunctionBody& b, Instruction& call)
+{
+	if (call.op != Opcode::Call || !call.ops[0].is(ValueKind::Symbol) ||
+		(call.flags & (IF_SIGNATURE | IF_COPY_ELISION)) != 0)
+		return false;
+	const SymbolId callee = call.ops[0].index;
+	const ForwardCall& forward = forwards_[callee];
+	if (forward.state != ForwardState::Resolved || forward.target == callee)
+		return false;
+	const Signature& sig = signature(callee);
+	if (call.extra_count != sig.parameter_count || call.type != sig.result)
+		return false;
+	actual_.clear();
+	for (const ForwardArgument& a : forward.arguments)
+	{
+		Value value = a.value;
+		if (value.is(ValueKind::Temp))
+		{
+			const Parameter& parameter = program_.parameters_of(sig)[value.index];
+			value = b.operands[call.extra_first + value.index];
+			if (value.is(ValueKind::Temp))
+			{
+				if (b.temps[value.index].type != parameter.type)
+					return false;
+			}
+			else if (!(value.is_literal() || (value.is(ValueKind::Symbol) && parameter.type.is_pointer())))
+				return false;
+			// A storage argument supplied as a value is materialized at the
+			// boundary; copying that value would lose its address semantics.
+			if (parameter.pass != ir_model::PPM_DIRECT &&
+				!(value.is(ValueKind::Symbol) || (value.is(ValueKind::Temp) && b.temps[value.index].type.is_pointer())))
+				return false;
+		}
+		actual_.push_back(value);
+	}
+	for (uint32_t p = 0; p < actual_.size(); ++p)
+	{
+		const ForwardArgument& a = forward.arguments[p];
+		if (a.value.is_literal())
+			actual_[p] = literal_value(b, a.value.kind, a.value.float_kind, a.literal);
+		b.operands[call.extra_first + p] = actual_[p];
+	}
+	call.ops[0] = Value::symbol(forward.target);
+	call.extra_count = static_cast<uint32_t>(actual_.size());
+	if (actual_.empty())
+		call.extra_first = 0;
+	return true;
+}
+
+bool CallForwarding::run(OptimizerStats& stats)
+{
+	bool any = false;
+	for (SymbolId s = 0; s < program_.symbols.size(); ++s)
+		any = recognize(s) || any;
+	if (!any)
+		return false;
+	resolve_chains();
+	bool changed = false;
+	for (SymbolId s = 0; s < program_.symbols.size(); ++s)
+		if (program_.symbols[s].kind == SymbolKind::FunctionDefinition)
+		{
+			FunctionBody& b = body(s);
+			for (BlockId block : b.layout)
+				for (InstId i = b.blocks[block].first; i != kNoId; i = b.instructions[i].next)
+					if (rewrite(b, b.instructions[i]))
+					{
+						++stats.calls_forwarded;
+						changed = true;
+					}
+		}
+	return changed;
+}
+
+} // namespace
+
+bool forward_calls(Program& program, OptimizerStats& stats)
+{
+	CallForwarding forwarding(program);
+	return forwarding.run(stats);
+}
+
 } // namespace opt
