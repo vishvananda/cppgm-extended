@@ -1611,7 +1611,9 @@
     },
     "performance": {
       "status": "pending-actual-parent-measurement",
-      "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-preparation-v1.json"
+      "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-preparation-v1.json",
+      "frozen_feature_inputs": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/performance-inputs-v1/protocol.json",
+      "correctness_preflight": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/performance-input-preflight-v1/verification-v2.json"
     },
     "standards_basis": {
       "category": "later-defect-resolution",
@@ -3941,7 +3943,7 @@
   {
     "id": "CXX11-039",
     "priority": "P1",
-    "status": "fixed",
+    "status": "correctness-passed",
     "upstream": [],
     "symptom": "Default arguments cannot find permitted own parameters,fail to hide globals,and can compute the wrong sizeof/runtime value.",
     "root_cause": "Default-argument lookup uses the surrounding declaration scope without the function parameter bindings.",
@@ -3968,8 +3970,8 @@
       "pa14/tests/controls/100-default-parameter-template-original-names.t",
       "pa14/tests/controls/100-default-parameter-template-later-name.t",
       "pa14/tests/controls/100-default-parameter-class-template-sizeof.t",
-      "pa10/tests/controls/100-default-parameter-decltype-self.t",
-      "pa10/tests/controls/100-default-parameter-decltype-cv.t",
+      "pa10/tests/controls/200-default-parameter-decltype-self.t",
+      "pa10/tests/controls/200-default-parameter-decltype-cv.t",
       "pa20/tests/controls/200-default-parameter-lambda-unevaluated-outer.t",
       "pa20/tests/controls/200-default-parameter-lambda-default-scope.t",
       "pa20/tests/controls/200-default-parameter-member-default-lambda.t",
@@ -3981,16 +3983,19 @@
       "pa14/tests/controls/100-default-parameter-template-future-prefix.t",
       "pa14/tests/controls/100-default-parameter-template-prefix-reuse.t"
     ],
-    "fix_revision": "8f3dff5ea8ba9ce3089b96937d68e0eeaac9fbcd",
+    "fix_revision": "22d2b881e345dc92f57c2ed91d557769b27e870d",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039",
     "checks": {
-      "status": "focused-passed-full-normal-export-running",
-      "focused_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/focused-verification-v1.json",
+      "status": "fresh-functional-export-passed",
+      "verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/checks-v2/functional-verification-v1.json",
+      "strict_tests": 8240,
+      "normal_stages": 16,
+      "export_stages": 36,
+      "packaged_controls": 33,
+      "wrappers": 42,
       "candidate_cells": 948,
-      "owning_lanes": 33,
-      "parent_host_preflight_cells": 624,
       "performance_input_exact_pairs": 18,
-      "full_run": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/checks-v1"
+      "placement_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/fixture-placement-correction-v1.json"
     },
     "performance": {
       "status": "pending-actual-parent-measurement",
@@ -4018,7 +4023,9 @@
       "dev/src/sema/semantic_graph.h",
       "dev/src/sema/analysis_records.h"
     ],
-    "triage_note": "Frozen shared parameter index bounds each default by its declaration ordinal,preserves original names/cv and adjusted types,and prevents later-parameter leakage. Template prefix substitution is memoized by concrete specialization; closure declaration ownership/ABI preserved. All33 required controls and45 retained008 controls/originalP1155 pass acrossISO/GNU11/14/17,O0/O2. Full normal/export,actual-parent performance and eventual integration remain pending."
+    "triage_note": "Frozen shared parameter index bounds each default by its declaration ordinal,preserves original names/cv and adjusted types,and prevents later-parameter leakage. Template prefix substitution is memoized by concrete specialization; closure declaration ownership/ABI preserved. All33 required controls and45 retained008 controls/originalP1155 pass acrossISO/GNU11/14/17,O0/O2. Full normal/export acceptance passed; actual-parent performance and eventual integration remain pending. Two byte-identical cast fixtures moved toPA10:200; failed original placement and transfer proof retained.",
+    "implementation_revision": "8f3dff5ea8ba9ce3089b96937d68e0eeaac9fbcd",
+    "fix_worktree": "/mnt/vizier/cppgm-cxx11-default-parameter-lookup-rebased"
   },
   {
     "id": "CXX11-040",
@@ -4037,7 +4044,8 @@
       "initial_source_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-034/auto-function-pointer-review-v1/standards-review.json",
       "parent_normal_rejections": 4,
       "gcc15_normal_rejections": 4,
-      "clang21_and22_valid_runtime_cells": 8
+      "clang21_and22_valid_runtime_cells": 8,
+      "independent_standards_adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-040/standards-adjudication-v1.json"
     },
     "performance": {
       "status": "not-started"
