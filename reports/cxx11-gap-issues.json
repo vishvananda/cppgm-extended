@@ -235,11 +235,13 @@
     "owning_pa": null,
     "regressions": [],
     "fix_revision": null,
-    "checks": {},
+    "checks": {
+      "history": "issues/CXX11-002/gcc-file-history.json and gcc-introduction-commit.json: original test added by fa2200cbb1ef5a6a7bdb9a5ba708c7400eb6b404 on 2010-11-02; later changes only update standard-selection directives."
+    },
     "performance": {
       "status": "not-started"
     },
-    "triage_note": "Before prescribing a fix, adjudicate N3485 3.6.2p2-p3: distinguish required constant/zero initialization from optional early dynamic initialization for this aggregate. Host agreement alone does not establish a standard violation.",
+    "triage_note": "The GCC test predates C++11 publication; its history is not evidence of a post-release CWG requirement. Mandatory per-subobject constant initialization versus permitted partial early initialization still needs adjudication against N3485 3.6.2p2-p3, 3.7 and 8.5.1. CWG 688 removed earlier explicit aggregate partial-initialization wording before N3485; CWG 1677 later recast objects as variables/temporaries. Preserve the failure as unadjudicated until the exact snapshot requirement is established.",
     "standards_basis": {
       "category": "unadjudicated",
       "rationale": "N3485 3.6.2p2-p3 optional early initialization requires adjudication"
@@ -1423,17 +1425,16 @@
       "binary_sha256": "dc50889cf1c93b6487d384341202ffb9c5f83d2db5ef557ead48d223702188a4"
     },
     "upstream_limitations": {
-      "full_source": "Both C++11 dialects now reject promptly at GNU imaginary literal 0i instead of timing out. This is not a full-source pass.",
-      "core_adaptation": "Original GNU-only blocks remain omitted; current candidate still reports bad_alloc on the complete adapted core. CXX11-011/core-isolation-results.json confirms the constexpr pointer-prefix reducer independently.",
-      "remaining_original_gaps": [
-        "CXX11-012 constexpr pointer-prefix emission"
-      ],
-      "isolated_positive_layout": "After CXX11-011, omit only the constexpr pointer-call declaration, restoring the original giant array reference. The 245996-byte adapted LowIR passes nine prefix/zero-range/reference predicates in CXX11-011/core-layout-checks.json; both host syntax checks pass. This is adapted partial coverage, not LLVM FileCheck.",
+      "full_source": "CXX11-012/unmodified-upstream-syntax-v2.json: original source rejects promptly at GNU imaginary literal 0i, line 169, in ISO/GNU11; no unmodified source pass.",
+      "core_adaptation": "CXX11-012/upstream-v2/results.json: the entire previously adapted C++11 core now emits 246111 bytes of LowIR with no further declarations omitted. Ten layout/reference predicates pass. Original GNU-only adaptation remains.",
+      "remaining_original_gaps": [],
+      "isolated_positive_layout": "CXX11-012/core-layout-checks.json plus exact v2 LowIR equality passes all ten prefix, zero-range and reference predicates, including the restored constexpr pointer-prefix array. This remains adapted semantic coverage, not LLVM IR FileCheck.",
       "interfaces": "LLVM IR FileCheck is unavailable; no LLVM textual oracle pass is claimed.",
       "native": "Huge nonzero native data has an output-size lower bound; general dense constexpr aggregate evaluation remains outside the narrow repair.",
-      "prior_isolation_evidence": "Removing those two declarations for phase isolation permits LowIR emission; phase-reductions/layout-checks-v2.json passes eight explicit prefix/zero-range checks (245784-byte program). This remains adapted partial coverage."
+      "prior_isolation_evidence": "Removing those two declarations for phase isolation permits LowIR emission; phase-reductions/layout-checks-v2.json passes eight explicit prefix/zero-range checks (245784-byte program). This remains adapted partial coverage.",
+      "prior_pointer_isolation_evidence": "After CXX11-011, omit only the constexpr pointer-call declaration, restoring the original giant array reference. The 245996-byte adapted LowIR passes nine prefix/zero-range/reference predicates in CXX11-011/core-layout-checks.json; both host syntax checks pass. This is adapted partial coverage, not LLVM FileCheck."
     },
-    "repair_status": "partial upstream scope; ordinary zero tails and constant-reference emission repaired, pointer-prefix emission and full-source/interface limitations remain",
+    "repair_status": "Known original-core scaling paths repaired; full-source GNU-extension and LLVM textual-interface coverage remain partial.",
     "regression_revision": "4d29974ecf64856fcd979cf6da1bbd999da667a4",
     "measurement_report": "reports/cxx11-sparse-array-scaling.txt"
   },
@@ -1756,7 +1757,7 @@
   {
     "id": "CXX11-012",
     "priority": "P1",
-    "status": "triaged",
+    "status": "closed",
     "upstream": [
       "llvm-project/clang/test/CodeGenCXX/cxx11-initializer-aggregate.cpp"
     ],
@@ -1765,32 +1766,89 @@
     "root_cause": "static_element delegates scalar pointer prefixes to static_converted/static_value; static_value rejects direct calls except its special floating intrinsics/type-cast form and probes integral constants only. Fallback initialization_value evaluates the whole array with ConstantInterpreter::skeleton, whose dense bound-sized representation hits the value/step budget. The remaining dynamic structured_array path expands the omitted tail.",
     "expected": "Accept the valid C++11 initializer and keep the omitted array tail compact without losing initializer effects or required initialization order.",
     "owning_pa": 16,
-    "ownership_note": "Provisional PA16:300 constexpr-object boundary; adjudicate static/dynamic initialization before changing that behavior.",
-    "regressions": [],
-    "fix_revision": null,
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007",
+    "ownership_note": "PA16:300 owns typed constexpr scalar/object initialization; PA22:100/300 owns nonzero multiple-base pointer adjustment and member-pointer ABI neighbors.",
+    "regressions": [
+      "pa16/tests/controls/300-sparse-constexpr-pointer-array.t",
+      "pa16/tests/controls/300-constant-scalar-array-elements.t",
+      "pa16/tests/controls/300-runtime-scalar-array-elements.t",
+      "pa16/tests/controls/300-constexpr-pointer-temporary-lifetime-reject.t",
+      "pa22/tests/controls/100-constexpr-pointer-array-base-adjustment.t",
+      "pa22/tests/controls/300-constexpr-member-pointer-array-elements.t"
+    ],
+    "fix_revision": "a7d8ce799b1a663476d851fb2c044e39b226f166",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012",
     "reproductions": [
-      "large-constexpr-pointer-element.cpp"
+      "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007/large-constexpr-pointer-element.cpp"
     ],
     "checks": {
       "reduction": "phase-reductions/constexpr-pointer-results.json (candidate bad_alloc; GCC/Clang syntax accepts)",
       "isolation": "Removing both reference-array and pointer-call declarations from the adapted core permits LowIR emission.",
       "source_trace": "dev/src/lower/global_lowering.cpp: static_element, static_converted, static_value; dev/src/lower/constant_lowering.cpp: initialization_value; dev/src/sema/constant_interpreter.cpp: skeleton; analyzer.h public constant_initialization versus integral_constant interfaces.",
-      "latest_reproduction": "CXX11-011/core-isolation-results.json: immediate new candidate still fails the pointer-prefix reducer and complete adapted core; omitting only pointer prefix succeeds with original array reference restored."
+      "latest_reproduction": "CXX11-011/core-isolation-results.json: immediate new candidate still fails the pointer-prefix reducer and complete adapted core; omitting only pointer prefix succeeds with original array reference restored.",
+      "parent": "regression-initial/results.json: parent resource control bad_alloc; candidate passes all controls",
+      "focused": "focused-v1/results.json: 144/144 ISO/GNU11 O0-O3 host/candidate compile/link/runtime or rejection cells",
+      "correctness": "checks.json: affected PAs, strict 8079/8079 and additional checks in progress",
+      "upstream": "upstream-core-results.json and core-layout-checks.json: original pointer reduction emits 76 bytes, entire previously adapted C++11 core emits 246111 bytes and passes 10/10 layout predicates with no extra declarations omitted",
+      "runtime_oracles": "performance-oracles/results.json: 16 runtime oracle executions and four exact parent/candidate object pairs",
+      "correctness_v2": "checks-v2.json: all 24 stages pass, including complete compiler checks, 144 focused cells, oracle/core refresh, calibrated counters/scaling and fresh export with all six packaged controls",
+      "focused_v2": "focused-v2/results.json (144/144 pass)",
+      "runtime_oracles_v2": "performance-oracles-v2/results.json: 16 correct executions and four exact parent/candidate object pairs",
+      "upstream_v2": "upstream-v2/results.json: exact v1 LowIR retained for the original pointer reduction and entire adapted core; 10 layout predicates preserved",
+      "export": "checks-v2.json, restored-binary-v2.json: fresh export, all 42 wrappers, six packaged controls and exact restored candidate hash pass",
+      "verification": "verified-fix.json",
+      "unmodified_source": "unmodified-upstream-syntax-v2.json: both dialects reject original source at GNU imaginary literal 0i, line 169; no whole-source pass"
     },
     "baseline": {
-      "revision": "894d34a2dbd351de1538b05c956b4951745fe317",
-      "binary": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007/cppgm-candidate",
-      "sha256": "3f57177814a93cef11afcedc48ece938ea6e9a629a8224cbee89030fafb534cd"
+      "revision": "06c7822fcca887cef14d17892524a79f4e64c4e7",
+      "binary": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012/cppgm-baseline",
+      "sha256": "3479190d9a0f236a8befab718fde6eda62a845e141529ac5de9891f1b8a78a0d"
     },
     "performance": {
-      "status": "not-started"
+      "status": "passed",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012/performance-protocol-v2.json",
+      "scaling_protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012/scaling-protocol-v2.json",
+      "last_original_baseline_checkpoint": "CXX11-011/performance-cumulative (current fix compares its immediate parent)",
+      "initial_results": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012/performance-counters/ab-assessment.json",
+      "initial_failure": "Runtime pointer-prefix instructions upper95 +1.472372%, outside unchanged +1% gate; all seven A/A cells pass, all other A/B cells pass. Constant-prefix instruction reductions reach 6.394668%.",
+      "investigation": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012/performance-investigation.json",
+      "protocol_v2": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012/performance-protocol-v2.json",
+      "scaling_protocol_v2": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012/scaling-protocol-v2.json",
+      "retained_sources": "sources-v1/ and sources-v2/ match all declared source SHA256 identities",
+      "initial_protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012/performance-protocol.json",
+      "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012/performance-counters-v2",
+      "parent_max_instruction_upper95_percent": 0.201127973073012,
+      "parent_max_rss_upper95_percent": 0.0,
+      "constant_prefix_max_reduction_lower95_percent": 6.3324321986169885,
+      "measured_batched_child_objects": 5120,
+      "scaling_max_instruction_spread_percent": 0.01586129595523289,
+      "scaling_max_rss_kib": 17436.0,
+      "scaling_max_object_bytes": 560,
+      "bss_span_checks": "scaling-candidate-v2/bss-size-checks.json (32/32 complete array symbol/BSS spans)",
+      "gates_unchanged": true
     },
     "standards_basis": {
       "category": "implementation-scaling",
-      "rationale": "Original C++11 constexpr pointer functions (N3485 7.1.5/5.19) and aggregate initialization; constant-initialization obligations still need exact adjudication."
+      "rationale": "Original N3485 3.6.2p2 third bullet requires constant initialization when each full-expression is constant. The explicit constexpr pointer call meets 7.1.5/5.19; 8.5.1p7 supplies the zero tail. No later CWG decision is involved."
     },
-    "next_action": "Expose/reuse typed scalar constant evaluation for explicit initializer elements, including pointer/address results and failure caching with valid lifetimes; keep omitted tails compact rather than evaluating a bound-sized array. Preserve initialization timing, side effects, pointer conversions and constant-address provenance. The runtime-tail expansion remains CXX11-015."
+    "next_action": "Expose/reuse typed scalar constant evaluation for explicit initializer elements, including pointer/address results and failure caching with valid lifetimes; keep omitted tails compact rather than evaluating a bound-sized array. Preserve initialization timing, side effects, pointer conversions and constant-address provenance. The runtime-tail expansion remains CXX11-015.",
+    "additional_owning_pas": [
+      22
+    ],
+    "implementation": [
+      "dev/src/lower/global_lowering.cpp",
+      "dev/src/sema/analyzer.h",
+      "dev/src/sema/constant_evaluator.cpp",
+      "dev/src/sema/constant_interpreter.cpp",
+      "dev/src/sema/constant_interpreter.h",
+      "dev/src/sema/constant_statements.cpp"
+    ],
+    "repair": "Static aggregate emission asks the semantic engine for a converted scalar initializer value instead of materializing the whole aggregate. Results/failures are cached except deferred/incomplete contexts, and publication enforces constant-address lifetime. The shared constexpr-call eligibility predicate rejects known non-constexpr direct calls before interpreter construction; builtins/intrinsics retain their own paths. Omitted tails remain compact.",
+    "limitations": [
+      "The original full LLVM source still contains GNU-only blocks excluded by the existing adaptation; no full-source or LLVM IR FileCheck pass is claimed.",
+      "Runtime/nonconstant array-tail expansion remains CXX11-015. Semantic constexpr array-reference values remain CXX11-016."
+    ],
+    "regression_revision": "a7d8ce799b1a663476d851fb2c044e39b226f166",
+    "measurement_report": "reports/cxx11-scalar-initializer-fix.txt"
   },
   {
     "id": "CXX11-013",
@@ -2171,7 +2229,13 @@
     },
     "standards_basis": {
       "category": "original-cxx11",
-      "rationale": "N3485 7.1.5p9 constexpr initialization, 5.19 constant expressions through a live literal temporary, 8.5.4p3 array-reference list initialization and 12.2p5 lifetime extension; no later feature is required."
+      "rationale": "N3485 7.1.5p9 constexpr initialization, 5.19 constant expressions through a live literal temporary, 8.5.4p3 array-reference list initialization and 12.2p5 lifetime extension; no later feature is required.",
+      "snapshot_note": "N3485 5.19p2 permits reads of const integral subobjects with preceding constant initializations; its first lvalue-to-rvalue exception does not require a complete object. CWG 1757 added that restriction in 2014, and CWG 2126 restored broad lifetime-extended temporary usability in 2019 under later wording. Our const-int array probes use the older N3485 rule; they must not be classified solely from the later issue title.",
+      "references": [
+        "doc/n3485.txt 5.19p2, 7.1.5p9, 8.5.4p3 and 12.2p5",
+        "https://cplusplus.github.io/CWG/issues/1757.html",
+        "https://cplusplus.github.io/CWG/issues/2126.html"
+      ]
     },
     "next_action": "Add owning regression and fix semantic reference-list binding using typed facts; preserve lazy/bounded evaluation so ordinary giant reference arrays do not start allocating dense ConstValue arrays. Distinguish this evaluated-value failure from CXX11-011 static emission."
   }

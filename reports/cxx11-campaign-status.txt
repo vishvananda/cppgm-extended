@@ -189,9 +189,43 @@ CXX11-011 static array-reference checkpoint (2026-11-06):
 - reports/cxx11-static-array-reference-fix.txt and issues/CXX11-011 retain
   protocols, raw runs, matrices, parent failures, checks and new reductions.
 
+CXX11-012 scalar-initializer checkpoint (2026-11-06):
+- a7d8ce799b1a663476d851fb2c044e39b226f166 evaluates converted scalar initializer elements from typed
+  facts and retains implicit zero tails, avoiding a dense whole-array value.
+  The parent fails the required PA16:300 1 GiB pointer-array control with
+  bad_alloc; the candidate passes. PA22:100/300 controls preserve nonzero
+  base adjustments and member-pointer null representations.
+- Both 144-cell ISO/GNU11 O0-O3 host/candidate matrices pass. Final strict
+  8079/8079, affected PAs, debug info, self-host through PA5, inception,
+  PA35 smoke, architecture/file/format/placement, harness, fresh export,
+  42 wrappers and all six packaged controls pass. Restored binary hash
+  equals the measured v2 candidate. No tracked references changed.
+- The first candidate failed the runtime-pointer counter gate (+1.472372%).
+  Its binary, source snapshots, all observations and child objects remain.
+  The revision shares the interpreter's constexpr-call eligibility predicate
+  to avoid probing known non-constexpr direct calls; gates remain unchanged.
+- All seven revised A/A and A/B pairs pass. Constant-pointer workloads at
+  32/128/512 declarations improve instruction upper bounds by
+  1.504717%/3.868737%/6.332432%; runtime-pointer overhead is +0.201128%.
+  RSS upper bounds show no increase; all 5120 measured child objects agree.
+  This compares immediate parent 06c7822fc; the fresh original checkpoint
+  remains the preceding CXX11-011 run. Wall time is descriptive under load.
+- All 96 absolute scaling runs pass from 8 KiB to 4 GiB pointer-array storage:
+  instruction spread <=0.015862%, peak RSS 17436 KiB, LowIR <=76 bytes and
+  objects 560 bytes. All 32 native files retain complete BSS/symbol spans.
+- The entire previously adapted LLVM core emits 246111-byte LowIR and passes
+  ten layout/reference predicates with no additional declarations omitted.
+  Original source still rejects at GNU literal 0i, and LLVM textual FileCheck
+  remains unavailable. CXX11-007 retains those full-source/interface limits.
+- Reports/cxx11-scalar-initializer-fix.txt retains the complete repair and
+  failed/successful performance evidence. Initialization standards notes
+  preserve the 2010 origin of CXX11-002 without treating host policy as a
+  conformance proof, and distinguish N3485's const-integral-subobject wording
+  from later CWG 1757/2126 changes for CXX11-016.
+
 Next:
-- Repair CXX11-012, runtime-tail CXX11-015 and semantic constexpr-reference
-  CXX11-016 through owning PA regressions, full checks and calibrated perf.
+- Repair runtime-tail CXX11-015 and semantic constexpr-reference CXX11-016
+  through owning PA regressions, full checks and calibrated perf.
 - Continue execution adapters from the native metadata bridge, covering
   applicability, diagnostics, companion sources, target selection, failures
   and unavailable checker interfaces. The full corpus is not yet executed.
@@ -200,7 +234,7 @@ Next:
   compatibility, with its drafts and evidence retained.
 
 Evidence root: /mnt/vizier/cppgm-cxx11-upstream
-Latest repair: issues/CXX11-011/ (static array-reference emission and initialization)
+Latest repair: issues/CXX11-012/ (explicit scalar initializer evaluation)
 Last cumulative checkpoint: issues/CXX11-011/ (fresh original-baseline counter comparison)
 Previous fix: issues/CXX11-006/ (abstract temporaries and direct list-reference binding)
 Return DR evidence: issues/CXX11-003/ (all original/version-2 results retained)

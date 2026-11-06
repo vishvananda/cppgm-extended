@@ -1,0 +1,50 @@
+Initialization snapshot triage (2026-11-06)
+
+CXX11-002: retain the unadjudicated classification.
+
+The exact GCC constexpr-static4.C test was introduced on 2010-11-02 in
+fa2200cbb1ef5a6a7bdb9a5ba708c7400eb6b404. Later file changes update standard
+selection. The introducing implementation splits constant array elements into
+static data and leaves other elements to runtime initialization. That proves
+the GCC policy and test origin; it does not by itself prove the N3485 mandate.
+
+The remaining standards question is whether N3485 3.6.2p2's object wording
+requires independent constant initialization of the first array subobject, or
+whether the test requires an implementation choice of partial early static
+initialization under p3. N3485's treatment of subobject storage duration and
+aggregate initializers must be included in that decision. Do not equate host
+agreement, or a 2010 test date, with a conformance proof.
+
+CWG 688 replaced the earlier explicit aggregate initialization wording in
+2008, before our N3485 snapshot. CWG 1677 later changed the constant-initializer
+formulation to variables/temporaries, adopted in 2017. Neither historical
+fact alone settles the per-subobject interpretation of the original test.
+
+Sources and retained raw evidence:
+https://github.com/gcc-mirror/gcc/commit/fa2200cbb1ef5a6a7bdb9a5ba708c7400eb6b404
+https://cplusplus.github.io/CWG/issues/688.html
+https://cplusplus.github.io/CWG/issues/1677.html
+issues/CXX11-002/{gcc-file-history,gcc-introduction-commit,standards-sources}.json
+under /mnt/vizier/cppgm-cxx11-upstream.
+
+CXX11-016: compare the actual N3485 wording before assigning a later DR label.
+
+CWG 2126 was adopted in 2019 and concerns constant-expression use of
+lifetime-extended temporaries under later wording. That does not automatically
+make every const-array-reference read a post-release requirement. N3485
+5.19p2's first lvalue-to-rvalue exception already permits const integral
+objects with preceding constant initializations and does not limit the rule
+to complete objects. CWG 1757 explicitly added that restriction in 2014.
+
+Our original-contract reasoning for the two const-int array probes uses that
+older exception for their initialized const integral elements, together with
+constant reference initialization and lifetime extension. It does not depend
+on retroactively imposing the 2019 formulation. Broader class/array temporary
+cases need their own snapshot analysis; these two probes are not a general
+claim about all later constant-expression rules.
+
+Sources:
+doc/n3485.txt: 5.19p2, 7.1.5p9, 8.5.4p3, 12.2p5.
+https://cplusplus.github.io/CWG/issues/1757.html
+https://cplusplus.github.io/CWG/issues/2126.html
+Raw issue snapshots/hashes: issues/CXX11-002/standards-sources.json.

@@ -1,0 +1,85 @@
+CXX11-012 scalar initializer checkpoint (2026-11-06)
+Parent: 06c7822fc (immutable binary identity in issues/CXX11-012/baseline.json)
+Fix: a7d8ce799b1a663476d851fb2c044e39b226f166
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012
+State: CXX11-012 closed; correctness/performance/export checks pass
+
+A constexpr pointer-returning array prefix fell outside static_value's
+representable values. The fallback evaluated a dense value for the whole
+array, hit its storage/step budget, and expanded the implicit tail as runtime
+stores. The required PA16:300 1 GiB pointer-array control fails on the parent
+with bad_alloc under the 512 MiB frontend cap and passes on the candidate.
+N3485 3.6.2p2, 7.1.5, 5.19 and 8.5.1p7 establish its original C++11 validity
+and constant-initialization requirements; no later CWG decision is involved.
+
+Static aggregate emission now requests a converted scalar value through
+Analyzer::constant_scalar_initializer. The existing constant interpreter
+computes it from typed expression/conversion facts and publishes only values
+with valid address provenance/lifetimes. The semantic engine caches successful
+values and failures by fully typed expression, leaving deferred/incomplete
+class contexts uncached. Integral expressions already evaluated by the old
+path are not probed again. The containing array stays a prefix plus zero range.
+
+Required controls cover pointer/float calls, recursive/default-argument calls,
+class conversions, static initialization before dynamic reads, volatile pointer
+storage, ordinary runtime effects, dangling constexpr pointers, nonzero
+multiple-base pointer adjustments and member-pointer ABI null values.
+PA16:300 owns scalar/object constant evaluation and failed-probe dynamic
+fallback; PA22:100/300 owns the inheritance and member-pointer neighbors.
+All 144 GCC/Clang/candidate ISO/GNU11 O0-O3 compile/link/runtime or rejection
+cells pass in both candidate versions. The initial full strict report passes
+8079/8079 with no tracked reference changes; the revised compiler also passes
+all required compiler checks in checks-v2.json, including self-host through PA5,
+inception, PA35 smoke, architecture/file/format/placement and harness checks.
+
+The original pointer reducer emits 76 bytes of LowIR. The full previously
+adapted LLVM C++11 core now emits 246111 bytes without omitting any additional
+declarations, passing ten explicit layout/reference predicates. The existing
+GNU-only adaptation remains; no original whole-source or LLVM IR FileCheck
+pass is claimed. See upstream-core-results.json and core-layout-checks.json.
+
+Performance uses the three frozen original compiler workloads plus constant
+pointer-prefix inputs with 32/128/512 declarations and a separate 512-declaration
+runtime-pointer workload. All sixteen host/parent/candidate runtime oracles
+pass and four parent/candidate object pairs match exactly before measurement.
+The unchanged gates are +1% instructions, +3% RSS upper 95% bounds, +/-0.01%
+A/A equivalence and >=99% counter scheduling; CPU 84, ASLR disabled, immutable
+binaries/inputs, three warmups and ten paired ABBA blocks. Each short feature
+observation batches sixteen compilations and checks every child object.
+
+The first candidate passes all seven A/A calibrations. Constant-prefix A/B
+instruction upper bounds improve by 1.513557%/3.906246%/6.394668% at 32/128/512;
+all broad workloads pass. The runtime-pointer workload regresses 1.472372%,
+exceeding the unchanged 1% instruction gate. This is a failed performance
+result, preserved in performance-counters/ab-assessment.json with all raw runs,
+objects, the original immutable binary and SHA256-verified source snapshots.
+
+The second candidate uses ConstantInterpreter::constexpr_candidate, the same
+eligibility rule its evaluator uses, to reject a known non-constexpr direct
+call before constructing an interpreter or adding a failure-cache entry.
+Builtin/intrinsic paths remain separate. Complete validation passes in
+run_validation_v2.py; candidate-v2.json, performance-protocol-v2.json and
+performance-investigation.json retain both versions and unchanged tolerances.
+All seven revised A/A and A/B comparisons pass. Constant-prefix instruction
+upper bounds improve by 1.504717%/3.868737%/6.332432% at 32/128/512. Runtime
+pointer overhead is +0.201128%, below the unchanged 1% gate; the broad frozen
+compiler workloads improve slightly. RSS upper bounds show no increase.
+All 5120 measured batched child objects match exactly. The fresh student
+export, all 42 reference wrappers and all six packaged controls pass.
+The restored development binary exactly matches the measured v2 candidate.
+
+Candidate-only scaling passes all 96 measured/warmup runs over
+1024/1048576/67108864/536870912 pointer elements (8 KiB through 4 GiB), in
+syntax/LowIR/native-object phases. Across the bounds, the largest instruction
+spread is 0.015862%, peak RSS 17436 KiB, LowIR <=76 bytes and objects 560 bytes.
+All 32 native objects retain the complete BSS and array-symbol spans.
+Wall time remains descriptive under load.
+The latest fresh original-survey checkpoint is CXX11-011; this fix compares
+its immediate parent. Runtime-tail CXX11-015, semantic constexpr-reference
+CXX11-016, corpus execution/applicability and other ledger work remain open.
+
+The original unmodified LLVM source still rejects at GNU imaginary literal
+0i (line 169) in both dialects. CXX11-007 has no remaining identified original
+core scaling gap from this source, but GNU-extension and LLVM textual-check
+coverage remain explicitly partial. Original/DR initialization classification
+notes are in reports/cxx11-initialization-standards-notes.txt.
