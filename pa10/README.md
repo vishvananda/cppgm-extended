@@ -332,6 +332,11 @@ This PA10 milestone supports the following:
   `zero <bytes>` data item. Analyze the omitted element type once and retain
   the implicit range, so sparse initialization does not expand with the array
   bound; preserve any required constructors and ABI null values
+- constant list-initialized array temporaries bound to static references use
+  internal structured globals and constant reference addresses, before any
+  dynamic initialization (3.6.2p2, 8.5.4p3, 12.2p5). Preserve their distinct
+  identities and compact omitted tails; dynamic initialization and required
+  destruction retain their ordinary lifetime actions
 - automatic nonvolatile scalar arrays with completely known literal initializers
   use one copy from readonly constant data, including omitted zero elements;
   mutable arrays still have distinct automatic storage. PA16 extends eligibility

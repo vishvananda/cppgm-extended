@@ -1150,20 +1150,50 @@ bool ProgramLowering::define_reference(lowir::Global& global, const sema::Variab
 	// 3.6.2p2: a reference bound to an lvalue with static storage duration
 	// or to a temporary is constant-initialized; its temporary (12.2p5)
 	// lives as long as the reference, in an internal global of its own.
-	const syntax::Expr* single = SingleInitializer(initializer);
+	const syntax::Expr* list = initializer->kind != syntax::InitializerKind::Parenthesized ? initializer->expression
+																						   : nullptr;
+	// A list typed as a prvalue array denotes the reference's temporary
+	// (8.5.4p3). A reference-typed list instead binds its existing element.
+	const bool array = list != nullptr && list->kind == syntax::ExprKind::BracedInit && list->facts != nullptr &&
+		list->facts->type->kind == sema::TypeKind::Array && list->facts->category == sema::ValueCategory::PRValue;
+	const syntax::Expr* single = array ? list : SingleInitializer(initializer);
 	if (single == nullptr)
 		return false;
 	const sema::Conversion* conversion = single->facts->conversion;
 	StaticValue target = StaticValue();
-	if (conversion != nullptr && conversion->form == sema::ConversionForm::Reference && conversion->temporary)
+	if (array ||
+		(conversion != nullptr && conversion->form == sema::ConversionForm::Reference && conversion->temporary))
 	{
 		// Only a constant temporary: another is made by the initialization
 		// function (3.6.2p2).
-		const sema::Type* object = conversion->result;
-		StaticValue value = StaticValue();
-		if (object->unqualified->kind == sema::TypeKind::Class ||
-			!static_converted(*single, object->unqualified, value))
-			return false;
+		const sema::Type* object = array ? variable->type->element : conversion->result;
+		lowir::Global storage = lowir::Global();
+		StaticData data;
+		if (array)
+		{
+			// Preserve the ordinary lifetime/registration path when destruction
+			// or thread-local initialization needs a runtime action.
+			if (variable->is_thread_local || FunctionLowering::needs_destruction(object))
+				return false;
+			if (!static_element(object, *single, data))
+				return false;
+			null_member_pointers(object, data);
+			PreserveStaticOffsets(data);
+		}
+		else
+		{
+			StaticValue value = StaticValue();
+			if (object->unqualified->kind == sema::TypeKind::Class ||
+				!static_converted(*single, object->unqualified, value))
+				return false;
+			storage.typed = true;
+			storage.type = storage_type(object);
+			lowir::DataItem item;
+			static_item(object, value, item);
+			storage.init = item.kind == lowir::DataItemKind::Scalar ? lowir::GlobalInit::Constant
+																	: lowir::GlobalInit::Zero;
+			storage.constant = item.constant;
+		}
 		// The temporary its evaluated value designates is this one: a
 		// constant read of the reference (or of another bound to it) names
 		// the same storage (see constant_temporary).
@@ -1179,17 +1209,19 @@ bool ProgramLowering::define_reference(lowir::Global& global, const sema::Variab
 			std::string spelling = "__ref_tmp__";
 			spelling += variable->name->spelling;
 			temporary = new_symbol(spelling);
-			lowir::Global storage = lowir::Global();
-			storage.typed = true;
-			storage.type = storage_type(object);
-			lowir::DataItem item;
-			static_item(object, value, item);
-			storage.init = item.kind == lowir::DataItemKind::Scalar ? lowir::GlobalInit::Constant
-																	: lowir::GlobalInit::Zero;
-			storage.constant = item.constant;
+			if (array)
+			{
+				storage.init = lowir::GlobalInit::Data;
+				storage.first_item = static_cast<uint32_t>(program_.data_items.size());
+				storage.item_count = static_cast<uint32_t>(data.items.size());
+				program_.data_items.insert(program_.data_items.end(), data.items.begin(), data.items.end());
+				const uint64_t size = size_of(object, location);
+				const uint64_t alignment = alignment_of(object, location);
+				state_storage_type(storage, size, object_mode_ && size >= 16 && alignment < 16 ? 16 : alignment);
+			}
 			program_.declare_global(temporary, lowir::SymbolKind::GlobalDefinition, storage);
 			program_.symbols[temporary].metadata.binding = ir_model::SBM_INTERNAL;
-			if (storage.init == lowir::GlobalInit::Constant && readonly_object(object))
+			if ((array || storage.init == lowir::GlobalInit::Constant) && readonly_object(object))
 				program_.symbols[temporary].metadata.storage = ir_model::GSM_READONLY;
 			name_temporary(temporary);
 			if (extended != nullptr)
