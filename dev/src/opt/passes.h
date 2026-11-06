@@ -8,6 +8,8 @@
 // leaves a valid body; analyses are rebuilt by the pass that needs them.
 namespace opt {
 
+struct BitTablePool;
+
 struct FunctionContext
 {
 	FunctionContext(lowir::Program& p, lowir::SymbolId s, OptimizerStats& st, int l)
@@ -23,6 +25,7 @@ struct FunctionContext
 	lowir::FunctionBody& body;
 	OptimizerStats& stats;
 	int level;
+	BitTablePool* bit_tables = nullptr;
 	bool verify = false;               // OptimizerOptions::verify_passes
 	const char* verify_dump = nullptr; // OptimizerOptions::verify_dump, or null
 	// The CFG and dominator-tree facts, shared by the passes until one
@@ -277,6 +280,10 @@ bool form_switches(FunctionContext& context);
 // differing phi inputs (at most two) `select`s on the branch condition.
 // O(blocks + merge phis) per round.
 bool form_selects(FunctionContext& context);
+
+// O3's closed chains of constant-polynomial bit steps become bounded
+// readonly lookups, with a shared per-unit table budget.
+bool fold_bit_recurrences(FunctionContext& context);
 
 // O2+, the last pass: a compare used only as branch conditions, also in
 // other blocks than its own, is recomputed before each such branch (one

@@ -1,0 +1,438 @@
+global @seed : u32 [binding=strong] = 305419896
+global @__bit_table_0 : obj<1024x4> [storage=readonly, binding=internal] = {
+  u32 0
+  u32 4067132163
+  u32 3778769143
+  u32 324072436
+  u32 3348797215
+  u32 904991772
+  u32 648144872
+  u32 3570033899
+  u32 2329499855
+  u32 2024987596
+  u32 1809983544
+  u32 2575936315
+  u32 1296289744
+  u32 3207089363
+  u32 2893594407
+  u32 1578318884
+  u32 274646895
+  u32 3795141740
+  u32 4049975192
+  u32 51262619
+  u32 3619967088
+  u32 632279923
+  u32 922689671
+  u32 3298075524
+  u32 2592579488
+  u32 1760304291
+  u32 2075979607
+  u32 2312596564
+  u32 1562183871
+  u32 2943781820
+  u32 3156637768
+  u32 1313733451
+  u32 549293790
+  u32 3537243613
+  u32 3246849577
+  u32 871202090
+  u32 3878099393
+  u32 357341890
+  u32 102525238
+  u32 4101499445
+  u32 2858735121
+  u32 1477399826
+  u32 1264559846
+  u32 3107202533
+  u32 1845379342
+  u32 2677391885
+  u32 2361733625
+  u32 2125378298
+  u32 820201905
+  u32 3263744690
+  u32 3520608582
+  u32 598981189
+  u32 4151959214
+  u32 85089709
+  u32 373468761
+  u32 3827903834
+  u32 3124367742
+  u32 1213305469
+  u32 1526817161
+  u32 2842354314
+  u32 2107672161
+  u32 2412447074
+  u32 2627466902
+  u32 1861252501
+  u32 1098587580
+  u32 3004210879
+  u32 2688576843
+  u32 1378610760
+  u32 2262928035
+  u32 1955203488
+  u32 1742404180
+  u32 2511436119
+  u32 3416409459
+  u32 969524848
+  u32 714683780
+  u32 3639785095
+  u32 205050476
+  u32 4266873199
+  u32 3976438427
+  u32 526918040
+  u32 1361435347
+  u32 2739821008
+  u32 2954799652
+  u32 1114974503
+  u32 2529119692
+  u32 1691668175
+  u32 2005155131
+  u32 2247081528
+  u32 3690758684
+  u32 697762079
+  u32 986182379
+  u32 3366744552
+  u32 476452099
+  u32 3993867776
+  u32 4250756596
+  u32 255256311
+  u32 1640403810
+  u32 2477592673
+  u32 2164122517
+  u32 1922457750
+  u32 2791048317
+  u32 1412925310
+  u32 1197962378
+  u32 3037525897
+  u32 3944729517
+  u32 427051182
+  u32 170179418
+  u32 4165941337
+  u32 746937522
+  u32 3740196785
+  u32 3451792453
+  u32 1070968646
+  u32 1905808397
+  u32 2213795598
+  u32 2426610938
+  u32 1657317369
+  u32 3053634322
+  u32 1147748369
+  u32 1463399397
+  u32 2773627110
+  u32 4215344322
+  u32 153784257
+  u32 444234805
+  u32 3893493558
+  u32 1021025245
+  u32 3467647198
+  u32 3722505002
+  u32 797665321
+  u32 2197175160
+  u32 1889384571
+  u32 1674398607
+  u32 2443626636
+  u32 1164749927
+  u32 3070701412
+  u32 2757221520
+  u32 1446797203
+  u32 137323447
+  u32 4198817972
+  u32 3910406976
+  u32 461344835
+  u32 3484808360
+  u32 1037989803
+  u32 781091935
+  u32 3705997148
+  u32 2460548119
+  u32 1623424788
+  u32 1939049696
+  u32 2180517859
+  u32 1429367560
+  u32 2807687179
+  u32 3020495871
+  u32 1180866812
+  u32 410100952
+  u32 3927582683
+  u32 4182430767
+  u32 186734380
+  u32 3756733383
+  u32 763408580
+  u32 1053836080
+  u32 3434856499
+  u32 2722870694
+  u32 1344288421
+  u32 1131464017
+  u32 2971354706
+  u32 1708204729
+  u32 2545590714
+  u32 2229949006
+  u32 1988219213
+  u32 680717673
+  u32 3673779818
+  u32 3383336350
+  u32 1002577565
+  u32 4010310262
+  u32 493091189
+  u32 238226049
+  u32 4233660802
+  u32 2987750089
+  u32 1082061258
+  u32 1395524158
+  u32 2705686845
+  u32 1972364758
+  u32 2279892693
+  u32 2494862625
+  u32 1725896226
+  u32 952904198
+  u32 3399985413
+  u32 3656866545
+  u32 731699698
+  u32 4283874585
+  u32 222117402
+  u32 510512622
+  u32 3959836397
+  u32 3280807620
+  u32 837199303
+  u32 582374963
+  u32 3504198960
+  u32 68661723
+  u32 4135334616
+  u32 3844915500
+  u32 390545967
+  u32 1230274059
+  u32 3141532936
+  u32 2825850620
+  u32 1510247935
+  u32 2395924756
+  u32 2091215383
+  u32 1878366691
+  u32 2644384480
+  u32 3553878443
+  u32 565732008
+  u32 854102364
+  u32 3229815391
+  u32 340358836
+  u32 3861050807
+  u32 4117890627
+  u32 119113024
+  u32 1493875044
+  u32 2875275879
+  u32 3090270611
+  u32 1247431312
+  u32 2660249211
+  u32 1828433272
+  u32 2141937292
+  u32 2378227087
+  u32 3811616794
+  u32 291187481
+  u32 34330861
+  u32 4032846830
+  u32 615137029
+  u32 3603020806
+  u32 3314634738
+  u32 939183345
+  u32 1776939221
+  u32 2609017814
+  u32 2295496738
+  u32 2058945313
+  u32 2926798794
+  u32 1545135305
+  u32 1330124605
+  u32 3173225534
+  u32 4084100981
+  u32 17165430
+  u32 307568514
+  u32 3762199681
+  u32 888469610
+  u32 3332340585
+  u32 3587147933
+  u32 665062302
+  u32 2042050490
+  u32 2346497209
+  u32 2559330125
+  u32 1793573966
+  u32 3190661285
+  u32 1279665062
+  u32 1595330642
+  u32 2910671697
+}
+global @__bit_table_1 : obj<64x4> [storage=readonly, binding=internal] = {
+  u32 0
+  u32 3380386269
+  u32 3716919801
+  u32 351741988
+  u32 4100317617
+  u32 1025079404
+  u32 703483976
+  u32 3767716245
+  u32 2813935905
+  u32 1858459900
+  u32 2050158808
+  u32 3008260357
+  u32 1406967952
+  u32 2594191693
+  u32 2388070761
+  u32 1194035380
+}
+
+function @update_word(%data : ptr, %length : i64, %value : u32) -> u32 [linkage=c, binding=strong] {
+  block ^entry:
+    %t1 = cmp ugt i64 %length, 0
+    branch %t1, ^loop_preheader_1, ^for_end_3
+
+  block ^loop_preheader_1:
+    %t2 = addr @__bit_table_0
+    jump ^for_body_2
+
+  block ^for_body_2:
+    %t3 = phi u32 [^for_body_2: %t14, ^loop_preheader_1: %value]
+    %t4 = phi i64 [^for_body_2: %t15, ^loop_preheader_1: 0]
+    %t5 = index u8 [projection=array_element] %data, %t4
+    %t6 = load u8 %t5
+    %t7 = convert zext u32 u8 %t6
+    %t8 = binary xor u32 %t7, %t3
+    %t9 = binary and u32 %t8, 255
+    %t10 = convert zext i64 u32 %t9
+    %t11 = index u32 %t2, %t10
+    %t12 = load u32 %t11
+    %t13 = binary ushr u32 %t8, 8
+    %t14 = binary xor u32 %t12, %t13
+    %t15 = binary add i64 %t4, 1
+    %t16 = cmp ult i64 %t15, %length
+    branch %t16, ^for_body_2, ^for_end_3
+
+  block ^for_end_3:
+    %t17 = phi u32 [^entry: %value, ^for_body_2: %t14]
+    return u32 %t17
+}
+function @update_nibble(%value : u32) -> u32 [linkage=c, binding=strong] {
+  block ^entry:
+    %t1 = binary and u32 %value, 15
+    %t2 = convert zext i64 u32 %t1
+    %t3 = addr @__bit_table_1
+    %t4 = index u32 %t3, %t2
+    %t5 = load u32 %t4
+    %t6 = binary ushr u32 %value, 4
+    %t7 = binary xor u32 %t5, %t6
+    return u32 %t7
+}
+function @oracle(%value : u32, %polynomial : u32, %steps : u32) -> u32 [binding=strong, object=_Z6oraclejjj, no_inline=yes] {
+  block ^entry:
+    %t1 = cmp ugt u32 %steps, 0
+    branch %t1, ^for_body_1, ^for_end_2
+
+  block ^for_body_1:
+    %t2 = phi u32 [^for_body_1: %t8, ^entry: %value]
+    %t3 = phi u32 [^for_body_1: %t9, ^entry: 0]
+    %t4 = binary ushr u32 %t2, 1
+    %t5 = binary and u32 %t2, 1
+    %t6 = binary sub u32 0, %t5
+    %t7 = binary and u32 %polynomial, %t6
+    %t8 = binary xor u32 %t4, %t7
+    %t9 = binary add u32 %t3, 1
+    %t10 = cmp ult u32 %t9, %steps
+    branch %t10, ^for_body_1, ^for_end_2
+
+  block ^for_end_2:
+    %t11 = phi u32 [^entry: %value, ^for_body_1: %t8]
+    return u32 %t11
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $data : obj<65x1>
+
+  block ^entry:
+    %t1 = load volatile u32 @seed
+    %t2 = addr $data
+    jump ^for_body_1
+
+  block ^for_body_1:
+    %t3 = phi u32 [^for_body_1: %t10, ^entry: 0]
+    %t4 = phi u32 [^for_body_1: %t6, ^entry: %t1]
+    %t5 = binary mul u32 %t4, 1664525
+    %t6 = binary add u32 %t5, 1013904223
+    %t7 = binary ushr u32 %t6, 24
+    %t8 = convert trunc u8 u32 %t7
+    %t9 = index u8 [projection=array_element] %t2, %t3
+    store u8 %t8, %t9
+    %t10 = binary add u32 %t3, 1
+    %t11 = cmp ult u32 %t10, 65
+    branch %t11, ^for_body_1, ^for_body_2
+
+  block ^for_body_2:
+    %t12 = phi u32 [^if_end_11: %t54, ^for_body_1: 0]
+    %t13 = phi u32 [^if_end_11: %t15, ^for_body_1: %t6]
+    %t14 = binary mul u32 %t13, 1664525
+    %t15 = binary add u32 %t14, 1013904223
+    %t16 = cmp ugt u32 %t12, 0
+    branch %t16, ^for_body_3, ^if_end_9
+
+  block ^for_body_3:
+    %t17 = phi u32 [^for_body_3: %t24, ^for_body_2: 0]
+    %t18 = phi u32 [^for_body_3: %t23, ^for_body_2: %t15]
+    %t19 = index u8 [projection=array_element] %t2, %t17
+    %t20 = load u8 %t19
+    %t21 = convert zext u32 u8 %t20
+    %t22 = binary xor u32 %t21, %t18
+    %t23 = call u32 @oracle(%t22, 2197175160, 8)
+    %t24 = binary add u32 %t17, 1
+    %t25 = cmp ult u32 %t24, %t12
+    branch %t25, ^for_body_3, ^split_4
+
+  block ^split_4:
+    %t26 = cmp ugt u32 %t12, 0
+    branch %t26, ^loop_preheader_5, ^for_end_7
+
+  block ^loop_preheader_5:
+    %t27 = addr @__bit_table_0
+    %t28 = convert zext i64 u32 %t12
+    jump ^for_body_6
+
+  block ^for_body_6:
+    %t29 = phi u32 [^for_body_6: %t40, ^loop_preheader_5: %t15]
+    %t30 = phi i64 [^for_body_6: %t41, ^loop_preheader_5: 0]
+    %t31 = index u8 [projection=array_element] %t2, %t30
+    %t32 = load u8 %t31
+    %t33 = convert zext u32 u8 %t32
+    %t34 = binary xor u32 %t33, %t29
+    %t35 = binary and u32 %t34, 255
+    %t36 = convert zext i64 u32 %t35
+    %t37 = index u32 %t27, %t36
+    %t38 = load u32 %t37
+    %t39 = binary ushr u32 %t34, 8
+    %t40 = binary xor u32 %t38, %t39
+    %t41 = binary add i64 %t30, 1
+    %t42 = cmp ult i64 %t41, %t28
+    branch %t42, ^for_body_6, ^for_end_7
+
+  block ^for_end_7:
+    %t43 = phi u32 [^split_4: %t15, ^for_body_6: %t40]
+    %t44 = cmp ne u32 %t23, %t43
+    branch %t44, ^if_then_8, ^if_end_9
+
+  block ^if_then_8:
+    return i32 1
+
+  block ^if_end_9:
+    %t45 = binary and u32 %t15, 15
+    %t46 = convert zext i64 u32 %t45
+    %t47 = addr @__bit_table_1
+    %t48 = index u32 %t47, %t46
+    %t49 = load u32 %t48
+    %t50 = binary ushr u32 %t15, 4
+    %t51 = binary xor u32 %t49, %t50
+    %t52 = call u32 @oracle(%t15, 2813935905, 4)
+    %t53 = cmp ne u32 %t52, %t51
+    branch %t53, ^if_then_10, ^if_end_11
+
+  block ^if_then_10:
+    return i32 2
+
+  block ^if_end_11:
+    %t54 = binary add u32 %t12, 1
+    %t55 = cmp ule u32 %t54, 65
+    branch %t55, ^for_body_2, ^for_end_12
+
+  block ^for_end_12:
+    return i32 0
+}

@@ -76,6 +76,8 @@ struct OptimizerStats
 	telemetry::Counter stores_removed = 0;
 	telemetry::Counter loops_removed = 0;
 	telemetry::Counter loops_unrolled = 0;
+	telemetry::Counter bit_recurrences_folded = 0;
+	telemetry::Counter bit_table_bytes = 0;
 	telemetry::Counter stores_sunk = 0;
 	telemetry::Counter loops_vectorized = 0;
 	telemetry::Counter loops_interchanged = 0;

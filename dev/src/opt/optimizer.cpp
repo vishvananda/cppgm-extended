@@ -10,6 +10,7 @@
 #include "lowir/validator.h"
 
 #include "opt/inliner.h"
+#include "opt/bit_recurrences.h"
 #include "opt/interprocedural.h"
 #include "opt/passes.h"
 
@@ -476,12 +477,14 @@ bool names_symbol(const FunctionBody& body, const std::vector<uint8_t>& marked)
 }
 
 void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, const OptimizerOptions& options,
-	std::vector<uint8_t>& nounwind, const std::vector<uint8_t>& unwritten, const std::vector<uint8_t>* moved)
+	std::vector<uint8_t>& nounwind, std::vector<uint8_t>& unwritten, const std::vector<uint8_t>* moved,
+	BitTablePool& bit_tables)
 {
 	FunctionContext context(program, symbol, stats, 2);
 	const PooledContext pooled(context, context_pool());
 	context.nounwind = &nounwind;
 	context.unwritten = &unwritten;
+	context.bit_tables = options.level >= 3 ? &bit_tables : nullptr;
 	enable_verify(context, options);
 	// What a call now known to write nothing no longer hides, and the
 	// loads of globals the late static initialization gave data (and the
@@ -512,6 +515,15 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	}
 	if (has_loop(context))
 		changed = finish_loops(context, options.level) || changed;
+	if (options.level >= 3 && RUN_PASS(fold_bit_recurrences))
+	{
+		nounwind.resize(program.symbols.size(), 0);
+		unwritten.resize(program.symbols.size(), 0);
+		scalar_rounds(context);
+		// Newly introduced lookup addresses can now leave their loops.
+		RUN_PASS(hoist_loop_invariants);
+		changed = true;
+	}
 	if (options.level >= 3 && RUN_PASS(pack_block_lanes))
 	{
 		RUN_PASS(simplify_values);
@@ -709,10 +721,12 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 		// The waves inlined the constructors the init function calls: what
 		// they store is now stores the final pass's loads can read.
 		const bool moved_late = level >= 2 && initialize_statically(program, unwritten, &moved);
+		BitTablePool bit_tables;
 		for (SymbolId s = 0; level >= 2 && s < program.symbols.size(); ++s)
 			if (program.symbols[s].kind == SymbolKind::FunctionDefinition &&
 				program.functions[program.symbols[s].detail].body != nullptr)
-				finish_function(program, s, stats, options, nounwind, unwritten, moved_late ? &moved : nullptr);
+				finish_function(
+					program, s, stats, options, nounwind, unwritten, moved_late ? &moved : nullptr, bit_tables);
 	}
 	count_program(program, stats.instructions_out, stats.blocks_out);
 	stats.optimize_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
@@ -731,6 +745,7 @@ std::string describe_stats(const OptimizerStats& s)
 		<< " inlined_instructions=" << s.inlined_instructions << " functions_pruned=" << s.functions_pruned
 		<< " loads_reused=" << s.loads_reused << " stores_removed=" << s.stores_removed
 		<< " loops_removed=" << s.loops_removed << " loops_unrolled=" << s.loops_unrolled
+		<< " bit_recurrences_folded=" << s.bit_recurrences_folded << " bit_table_bytes=" << s.bit_table_bytes
 		<< " invariants_hoisted=" << s.invariants_hoisted << " stores_sunk=" << s.stores_sunk
 		<< " loops_vectorized=" << s.loops_vectorized << " loops_interchanged=" << s.loops_interchanged
 		<< " loops_unswitched=" << s.loops_unswitched << " counters_shifted=" << s.counters_shifted

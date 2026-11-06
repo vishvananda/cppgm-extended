@@ -1,0 +1,262 @@
+global @oracle_sum : i64 = 0
+
+function @oracle(%x : i64, %p : i64, %count : i64, %width : i64, %flip : i64, %amount : i64, %arithmetic : i64) -> i64 {
+  block ^entry:
+    %remaining = binary sub i64 64, %width
+    %mask = binary ushr i64 -1, %remaining
+    %sign_index = binary sub i64 %width, 1
+    %sign = binary shl i64 1, %sign_index
+    %initial = binary and i64 %x, %mask
+    jump ^header
+  block ^header:
+    %i = phi i64 [^entry: 0, ^body: %next_i]
+    %value = phi i64 [^entry: %initial, ^body: %next]
+    %total = phi i64 [^entry: 0, ^body: %next_total]
+    %more = cmp ult i64 %i, %count
+    branch %more, ^body, ^exit
+  block ^body:
+    %low = binary and i64 %value, 1
+    %polarity = binary ushr i64 %flip, %i
+    %invert = binary and i64 %polarity, 1
+    %bit = binary xor i64 %low, %invert
+    %all = binary sub i64 0, %bit
+    %mix = binary and i64 %all, %p
+    %toggle = binary xor i64 %value, %sign
+    %signed = binary sub i64 %toggle, %sign
+    %logical = binary ushr i64 %value, %amount
+    %arithmetic_value = binary shr i64 %signed, %amount
+    %shifted = select i64 %arithmetic, %arithmetic_value, %logical
+    %combined = binary xor i64 %shifted, %mix
+    %next = binary and i64 %combined, %mask
+    %next_total = binary add i64 %total, %next
+    %next_i = binary add i64 %i, 1
+    jump ^header
+  block ^exit:
+    store i64 %total, @oracle_sum
+    return i64 %value
+}
+
+function @check_fold_u8(%x : i64) -> i64 {
+  block ^entry:
+    %arg = convert trunc u8 i64 %x
+    %expected = call i64 @oracle(%x, 184, 8, 8, 85, 1, 0)
+    %actual = call u8 @fold_u8(%arg)
+    %wide = convert zext i64 u8 %actual
+    %bad = cmp ne i64 %wide, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @check_fold_i8(%x : i64) -> i64 {
+  block ^entry:
+    %arg = convert trunc i8 i64 %x
+    %expected = call i64 @oracle(%x, 184, 8, 8, 85, 1, 0)
+    %actual = call i8 @fold_i8(%arg)
+    %wide = convert zext i64 i8 %actual
+    %bad = cmp ne i64 %wide, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @check_fold_u16(%x : i64) -> i64 {
+  block ^entry:
+    %arg = convert trunc u16 i64 %x
+    %expected = call i64 @oracle(%x, 46081, 5, 16, 0, 1, 0)
+    %actual = call u16 @fold_u16(%arg)
+    %wide = convert zext i64 u16 %actual
+    %bad = cmp ne i64 %wide, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @check_fold_u32(%x : i64) -> i64 {
+  block ^entry:
+    %arg = convert trunc u32 i64 %x
+    %expected = call i64 @oracle(%x, 2197175160, 8, 32, 0, 1, 0)
+    %actual = call u32 @fold_u32(%arg)
+    %wide = convert zext i64 u32 %actual
+    %bad = cmp ne i64 %wide, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @check_fold_u32_flip(%x : i64) -> i64 {
+  block ^entry:
+    %arg = convert trunc u32 i64 %x
+    %expected = call i64 @oracle(%x, 2813935905, 4, 32, 5, 1, 0)
+    %actual = call u32 @fold_u32_flip(%arg)
+    %wide = convert zext i64 u32 %actual
+    %bad = cmp ne i64 %wide, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @check_fold_i64(%x : i64) -> i64 {
+  block ^entry:
+    %expected = call i64 @oracle(%x, -2882303761517117440, 6, 64, 0, 1, 0)
+    %actual = call i64 @fold_i64(%x)
+    %bad = cmp ne i64 %actual, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @check_fold_i64_eight(%x : i64) -> i64 {
+  block ^entry:
+    %expected = call i64 @oracle(%x, -3932672073523589310, 8, 64, 0, 1, 0)
+    %actual = call i64 @fold_i64_eight(%x)
+    %bad = cmp ne i64 %actual, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @check_fold_sixteen(%x : i64) -> i64 {
+  block ^entry:
+    %arg = convert trunc u32 i64 %x
+    %expected = call i64 @oracle(%x, 2197175160, 16, 32, 0, 1, 0)
+    %actual = call u32 @fold_sixteen(%arg)
+    %wide = convert zext i64 u32 %actual
+    %bad = cmp ne i64 %wide, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @check_variable_poly(%x : i64, %p : i64) -> i64 {
+  block ^entry:
+    %arg = convert trunc u32 i64 %x
+    %expected = call i64 @oracle(%x, %p, 8, 32, 0, 1, 0)
+    %poly = convert trunc u32 i64 %p
+    %actual = call u32 @variable_poly(%arg, %poly)
+    %wide = convert zext i64 u32 %actual
+    %bad = cmp ne i64 %wide, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @check_shift_two(%x : i64) -> i64 {
+  block ^entry:
+    %arg = convert trunc u32 i64 %x
+    %expected = call i64 @oracle(%x, 2813935905, 8, 32, 0, 2, 0)
+    %actual = call u32 @shift_two(%arg)
+    %wide = convert zext i64 u32 %actual
+    %bad = cmp ne i64 %wide, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @check_arithmetic_shift(%x : i64) -> i64 {
+  block ^entry:
+    %arg = convert trunc i32 i64 %x
+    %expected = call i64 @oracle(%x, 2813935905, 8, 32, 0, 1, 1)
+    %actual = call i32 @arithmetic_shift(%arg)
+    %wide = convert zext i64 i32 %actual
+    %bad = cmp ne i64 %wide, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @check_external_uses(%x : i64) -> i64 {
+  block ^entry:
+    %arg = convert trunc u32 i64 %x
+    %expected = call i64 @oracle(%x, 2813935905, 8, 32, 0, 1, 0)
+    store volatile i64 0, @observed
+    %actual = call u32 @external_uses(%arg)
+    %wide = convert zext i64 u32 %actual
+    %bad = cmp ne i64 %wide, %expected
+    %answer = select i64 %bad, 1, 0
+    %expected_sum = load i64 @oracle_sum
+    %actual_sum = load volatile i64 @observed
+    %wrong_sum = cmp ne i64 %actual_sum, %expected_sum
+    %sum_answer = select i64 %wrong_sum, 1, 0
+    %combined = binary or i64 %answer, %sum_answer
+    return i64 %combined
+}
+
+function @check_another_i64(%x : i64) -> i64 {
+  block ^entry:
+    %expected = call i64 @oracle(%x, -7661587058870466123, 8, 64, 0, 1, 0)
+    %actual = call i64 @another_i64(%x)
+    %bad = cmp ne i64 %actual, %expected
+    %answer = select i64 %bad, 1, 0
+    return i64 %answer
+}
+
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    jump ^header
+  block ^header:
+    %i = phi i64 [^entry: 0, ^advance: %next]
+    %state = phi i64 [^entry: 0, ^advance: %random]
+    %more = cmp ult i64 %i, 256
+    branch %more, ^body, ^exit
+  block ^body:
+    %scaled = binary mul i64 %state, 6364136223846793005
+    %random = binary add i64 %scaled, 1442695040888963407
+    %poly = binary and i64 %state, 4294967295
+
+    %check0 = call i64 @check_fold_u8(%i)
+
+    %check1 = call i64 @check_fold_i8(%i)
+
+    %combined1 = binary or i64 %check0, %check1
+
+    %check2 = call i64 @check_fold_u16(%state)
+
+    %combined2 = binary or i64 %combined1, %check2
+
+    %check3 = call i64 @check_fold_u32(%state)
+
+    %combined3 = binary or i64 %combined2, %check3
+
+    %check4 = call i64 @check_fold_u32_flip(%state)
+
+    %combined4 = binary or i64 %combined3, %check4
+
+    %check5 = call i64 @check_fold_i64(%state)
+
+    %combined5 = binary or i64 %combined4, %check5
+
+    %check6 = call i64 @check_fold_i64_eight(%state)
+
+    %combined6 = binary or i64 %combined5, %check6
+
+    %check7 = call i64 @check_fold_sixteen(%state)
+
+    %combined7 = binary or i64 %combined6, %check7
+
+    %check8 = call i64 @check_variable_poly(%state, %poly)
+
+    %combined8 = binary or i64 %combined7, %check8
+
+    %check9 = call i64 @check_shift_two(%state)
+
+    %combined9 = binary or i64 %combined8, %check9
+
+    %check10 = call i64 @check_arithmetic_shift(%state)
+
+    %combined10 = binary or i64 %combined9, %check10
+
+    %check11 = call i64 @check_external_uses(%state)
+
+    %combined11 = binary or i64 %combined10, %check11
+
+    %check12 = call i64 @check_another_i64(%state)
+
+    %combined12 = binary or i64 %combined11, %check12
+
+    branch %combined12, ^fail, ^advance
+
+  block ^advance:
+
+    %next = binary add i64 %i, 1
+
+    jump ^header
+
+  block ^exit:
+
+    return i64 0
+
+  block ^fail:
+
+    return i64 1
+
+}

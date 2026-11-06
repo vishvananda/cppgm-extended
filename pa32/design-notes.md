@@ -167,6 +167,17 @@ A floating/integer `copy` of matching width moves bits; `convert` computes a
 numeric conversion. This distinction matters when promoting ABI carriers,
 forwarding stores and preserving signed zero or NaN representations.
 
+Repeated logical shifts and conditional XORs can sometimes be combined
+algebraically. For a constant word-sized polynomial `P`, the step
+`F(x) = (x >> 1) ^ ((x & 1) ? P : 0)` is linear over bits. After `k` steps,
+split the input into its low `k` bits and the remaining bits: the latter
+contribute `x >> k`, and the former can be evaluated independently. Arithmetic
+or readonly lookup data can express the result. Prove the rule for the actual
+width and branch polarity, handle a shift equal to the width, and retain work
+whose intermediate values have other observable users. Compare table space,
+memory latency and compile cost against the arithmetic removed. Variable
+polynomials and arithmetic shifts need their own proofs.
+
 ## Register pressure and independent work
 
 Reducing LowIR instruction count can lengthen live ranges. A value moved out

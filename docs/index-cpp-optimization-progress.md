@@ -119,16 +119,111 @@ unchanged. The baseline was already larger than the two references.
 
 The initial prototype passed the full strict report (8,038/8,038), debug info,
 self-host through PA5, PA35 quick/smoke and architecture/format/file audits.
-The corrected candidate also passes the strict report, debug info and self-host
-through PA5, including the stronger reducer.
-Public sentinels cover recursion, containers, JSON, regex, hashing and floating
-point. Student-export validation follows the shipped fixture/handout changes.
+The corrected candidate also passes the strict report, debug info, self-host
+through PA5, PA35 quick/smoke and audits, including the stronger reducer. The
+fresh student export verifies 22,517 portable reference files; all 42 reference
+wrappers install, and both new fixtures pass through exported wrappers.
+
+Six existing public sentinels cover recursion, containers, JSON, regex, hashing
+and floating point. All pass with GCC and Clang references; binary sizes are
+unchanged and counted instruction costs are unchanged within noise. FlatMap
+objects at both levels and Xpressive traits at `-O0` are byte-identical to the
+baseline. The Xpressive `-O3` object is 293 bytes smaller: six shared-pointer
+constructor aliases shrink after an empty variadic helper disappears.
+
+For Xpressive traits, 12 paired blocks with ten executions per observation
+confirm exact output equality and 0.327% fewer process instructions. Precise
+CPU/task-clock and cycle medians are within 0.6% of baseline, inside A/A drift;
+there is no resolved timing regression. An earlier three-block estimate using
+coarse CPU timings was unreliable. The raw attempts and final controls remain
+in `boost-sentinels/`; `runtime-precise-v2/report.json` records the calibrated
+check with an identical host-built test framework and a fixed input hash.
+
+The first mechanism is pushed as `e6a636868`. Boost advisory CI passed; the
+public benchmark workflow was still running at this checkpoint. This does not
+close the first group or replace its required full-scoreboard comparison.
+
+## CRC bit-recurrence folding
+
+The second mechanism derives readonly data from closed chains of logical
+shift/conditional-XOR operations. It accepts arbitrary constant polynomials,
+8/16/32/64-bit words and normalized branch polarities. For `k` steps, split
+the input into its low `k` bits and its remaining bits: the latter contribute
+`x >> k`, while the table evaluates the former using the original operations.
+An equal-width shift contributes zero. Narrow indices are zero-extended.
+Variable polynomials, arithmetic shifts and observable intermediate uses do
+not acquire this rewrite without the necessary proof.
+
+Tables share a 4 KiB compilation-unit budget and are deduplicated by their
+mathematical inputs. They are ordinary serialized LowIR globals. Explicit
+addresses allow the existing loop-motion and native addressing logic to keep
+the base outside a loop and combine the index with its load. No polynomial,
+source spelling, benchmark name or expected checksum selects the rewrite.
+
+Three paired blocks on the original full CRC workload give these
+higher-is-better speeds:
+
+| Reference | Loop wall speed | Process instruction speed |
+|---|---:|---:|
+| Previous accepted compiler | 4.223x | 6.279x |
+| GCC | 3.108x | 4.978x |
+| Clang | 1.034x | 0.723x |
+
+Treat the Clang timing as parity: its small measured difference and block
+spread do not establish a lead. Clang still executes fewer instructions;
+its two-byte unrolling and addressing differ. CRC process instructions fall
+84.1% against our previous compiler. The first prototype left the table base
+inside the loop and measured only 0.802x Clang; exposing the address to the
+existing machinery removed that deficit without raising general loop budgets.
+
+Index-cpp `.text` falls from 391,618 to 391,234 bytes, while `.rodata` grows
+by 1,008 bytes including alignment changes. All 50 upstream checks pass.
+Brainfuck and Calculator AST instruction counts are unchanged by this fix;
+their timing blocks are noisy and show no resolved new effect.
+
+The final implementation batches substitutions and retains original block,
+predecessor and use facts while matching. It avoids a whole-function scan per
+recurrence. Independent reductions with 16, 128 and 1,024 recurrences compile
+with identical output to the initial implementation, at compiler instruction
+speeds of 1.058x, 1.670x and 6.641x respectively. A host-built arithmetic
+oracle also checks the large reduction across 256 seeds.
+
+Frozen compiler instruction cost grows 0.018% against the campaign baseline
+and 0.022% against the previous accepted compiler at `-O3`; `-O0` stays within
+0.002%. Objects remain identical and peak RSS stays within 0.25%. Linux RSS is
+the available memory metric here; these observations do not measure physical
+footprint. Raw CPU timings vary too much to resolve a small compile-time change.
+
+The final candidate passes the strict report (8,040/8,040), debug-info checks,
+self-host through PA5, PA35 quick/smoke and architecture, placement, format and file
+audits. The final frozen checks and direct/serialized source-object comparison
+preserve identical output.
+The optional C++14/17 lane also passed. Course tests use broad size bounds and
+independent behavior drivers: exhaustive byte inputs, wider seeds, multiple
+polynomials, affine polarities, equal-width shifts, chained reductions and
+negative legality cases. They prescribe no table or instruction sequence.
+
+All six existing public sentinels pass against GCC and Clang; counted native
+instructions and executable sizes are unchanged. Recompiling their objects
+with the final batching implementation preserves every byte. FlatMap and
+Xpressive objects are also unchanged at both optimization levels. The final
+compiler emits an index-cpp object identical to the measured candidate, so
+the retained executable and runtime receipts apply to that final code too.
+The refreshed student export verifies 22,523 portable reference outputs;
+all 42 wrappers install and both new fixtures pass through the exported tools.
+
+Receipts remain under `optimization/20261105/`: `bit-recurrences-v3-paired/`
+contains native measurements; `bit-recurrences-v4-{frozen,previous-frozen}/`
+contain compiler guards; `many-recurrences-v4-paired/` records scaling.
+`bit-recurrences-v4-provenance.json` identifies the final compiler, sources,
+object and reused identical native executable. Public/Boost object checks and
+student-export checks have separate receipts in that directory.
 
 ## Outstanding work
 
-Finish accepting the corrected first mechanism with current-state receipts,
-then continue the original queue: Brainfuck's residual call chain, CRC32 and
-Calculator AST diagnoses/fixes, followed by a full 50-workload reranking.
+Close the first group with a full 50-workload paired reranking, the full public
+benchmark comparison and PA35 release gates. Profile Brainfuck's residual call
+chain and Calculator AST's remaining ownership/dispatch work on the new code.
 Investigate Base64 decoding, Huffman decoding and Nbody, then the named parser,
 interpreter, SHA256, maze and container workloads using that refreshed evidence.
 Retain existing workload wins and every repeatable individual regression.

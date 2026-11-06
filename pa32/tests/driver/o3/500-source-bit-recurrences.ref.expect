@@ -1,0 +1,3 @@
+# Bound repeated bit work without prescribing arithmetic or lookup operations.
+instructions <= 35 in @update_word
+instructions <= 15 in @update_nibble

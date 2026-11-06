@@ -276,6 +276,11 @@ sidecars state observable outcomes and output-size limits; an upper bound on a
 function removed by optimization still holds. Consult the
 [design notes](design-notes.md) for the reasoning behind possible approaches.
 
+The O3 bit-recurrence fixtures bound repeated shift/XOR work across several
+word widths and constants. Their behavior drivers exercise every byte input,
+wider seeds and cases that invalidate a shortcut. Any equivalent arithmetic
+or data-based solution meeting the size bounds is acceptable.
+
 ### Further improvements
 
 Once the course checks pass, investigate work that repeats on hot paths. The

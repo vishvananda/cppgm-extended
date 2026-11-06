@@ -1,0 +1,12 @@
+# outcomes from 500-bit-recurrence-word-widths.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(phi)
+
+# Closed recurrences must have bounded work; any equivalent lowering is allowed.
+instructions <= 12 in @fold_u8
+instructions <= 12 in @fold_i8
+instructions <= 12 in @fold_u16
+instructions <= 12 in @fold_u32
+instructions <= 12 in @fold_u32_flip
+instructions <= 12 in @fold_i64
+instructions <= 12 in @fold_i64_eight
+instructions <= 22 in @fold_sixteen
