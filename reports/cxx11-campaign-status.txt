@@ -710,3 +710,12 @@ Generated-code performance requirement and stopped family gate:
   Actual default-pool CPU models differ; the dedicated Intel comparison has
   not been repeated. Historical compilers/pinned sources are being prepared
   for matching instruction/layout checks. See cxx11-public-codegen-performance.txt.
+
+Scope correction from the user:
+The additional public runtime/inception regression investigation belongs to
+another agent and is cancelled here. Its completed read-only CI artifact audit
+is retained as provenance; the two historical compiler builds and copied
+public inputs are idle, and no runtime benchmark was launched. Remove the
+extra generated-runtime requirement just added to this plan. Continue the
+original C++11 campaign, including its existing counter/actual-RSS gates and
+its final GCC/Clang CI jobs with full-suite timing.

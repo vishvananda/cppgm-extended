@@ -2619,7 +2619,7 @@
       "worktree": "/mnt/vizier/cppgm-cxx11-constexpr-mutable",
       "controls": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-controls-v1.json",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-parent-protocol-v1.json",
-      "status": "22 controls prepared; baseline/native probes queued after exact serial measurement worker. No new compiler run, implementation edit or closure."
+      "status": "352 discovery cells executed;13 required rejection witnesses reproduced. Three draft positive expectations disagree with both native hosts and require adjudication. No implementation edit;22 draft fixtures remain uncommitted."
     }
   },
   {
@@ -2742,10 +2742,10 @@
       "scaling_host_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/scaling-host-oracles-v1/assessment.json"
     },
     "performance": {
-      "status": "serial-measurements-running",
+      "status": "family-counter-gate-failed-other-measurements-not-started",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/final-stages-protocol-v1.json",
       "progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/final-stages-v1.json",
-      "scope": "Combined12-workload family,16 per-fix and3 cumulative comparisons plus absolute scaling. No final performance pass or issue closure yet."
+      "scope": "The original12-workload family bit-field comparison exceeds the unchanged1% instruction gate at+1.3809909%. Raw observations retained. String-fix per-fix/cumulative/absolute measurements have not started."
     },
     "standards_basis": {
       "category": "later-defect-resolution",
@@ -2783,7 +2783,7 @@
         }
       ]
     },
-    "next_action": "Finish unchanged calibrated measurements and independent output/statistics verification before accepting the repair. The main accepted compiler is unchanged.",
+    "next_action": "Address the existing C++11 family counter gate, then complete string-fix measurements and independent final verification. The separately requested public/runtime inception regression investigation was cancelled by the user and belongs to another agent.",
     "implementation_revision": "256c2cc36c8898532dd6fae894d6e113c6714740",
     "repair_worktree": "/mnt/vizier/cppgm-cxx11-string-reference",
     "implementation": [

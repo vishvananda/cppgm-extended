@@ -1,3 +1,7 @@
+Disposition: user cancelled this additional regression investigation; another
+agent owns it. Retain the completed read-only artifact audit for provenance.
+No further public-runtime/inception benchmarking or fixes are planned here.
+
 Public runtime and inception code-generation audit (2026-11-06)
 
 User scope: generated-program runtime and the self-built/GCC-built inception
@@ -69,3 +73,7 @@ https://github.com/vishvananda/cppgm-extended/actions/runs/42219366686
 https://github.com/vishvananda/cppgm-extended/actions/runs/42224680167
 https://github.com/vishvananda/cppgm-extended/actions/runs/42234352271
 https://github.com/vishvananda/cppgm-extended/actions/runs/42254712761
+
+Both isolated historical compiler builds completed. They and the private
+source cache are idle; no runtime comparison was launched. The C++11 gap
+campaign and its pre-existing performance gates continue separately.

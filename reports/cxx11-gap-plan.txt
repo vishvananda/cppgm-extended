@@ -247,21 +247,6 @@ B. Use the existing frozen semantic_overload workload and its stable/include
    For changes to templates, constant evaluation or initialization, include
    bounded scaling variants and record max RSS. Self-host throughput must be
    measured when the fix can affect it, with frozen compiler input trees.
-   Also quantify generated-code performance (user clarification, 2026-11-06):
-   the public benchmark runtime rows and inception's self-built versus GCC-
-   built compiler ratio. These measure code-generation quality; a single
-   compiler source file's compile counts do not replace them. Freeze the full
-   public program/input/flag cohort and compiler-consumer sources. Compare
-   original and candidate generated executables, and rebuild identical compiler
-   inputs with fixed GCC-built/self-built binaries. Retain per-program and
-   aggregate runtime results, executable/object hashes, stdout/exit checks,
-   A/A and paired observations, resource data and available hardware counters.
-   Distinguish a fixed-source code-generation comparison from an end-to-end
-   rebuild whose compiler implementation sources changed. Quantify observed
-   CI badge changes from unrounded artifacts and their actual CPU models;
-   keep EPYC and dedicated Intel comparisons separate. Preserve conformance
-   and scaling improvements while investigating any reproducible runtime or
-   inception regression under the existing calibrated process.
 C. On this Linux host use scripts/run_ab_compile_benchmark.py. Calibrate A/A
    first using the same immutable binary as A and B. Then run at least 10 paired
    ABBA blocks per selected workload with predeclared warmup/load controls.
