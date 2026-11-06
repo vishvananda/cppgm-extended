@@ -755,8 +755,8 @@ bool ConstantInterpreter::bind_parameters(
 				return false;
 			if (argument.bound)
 			{
-				ConstValue* source = nullptr;
-				if (!locate(argument.place, false, source, location) || !write(local.place, *source, location))
+				ConstValue source;
+				if (!read(argument.place, source, location) || !write(local.place, source, location))
 					return false;
 			}
 			else if (!initialize_from(*argument.expr, argument.conversion, local.place))

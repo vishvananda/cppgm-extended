@@ -95,7 +95,10 @@ enum : uint8_t
 	kSharedElements = 32,
 	// A shared, completely zero-initialized class with no vptr-bearing
 	// subobjects. Lowering can emit zero ranges and typed ABI null patches.
-	kClassZero = 64
+	kClassZero = 64,
+	// A pointer/place names a mutable member or a subobject of one. Its
+	// address remains usable; a read must not reuse an external value.
+	kMutableSubobject = 128
 };
 
 // A glvalue's designation: the root storage, the byte offset of the
@@ -159,7 +162,7 @@ inline ConstPlace PlaceOf(const ConstValue& pointer, const Type* designated)
 {
 	ConstPlace place = ConstPlace();
 	place.root = pointer.root;
-	place.flags = pointer.flags & (kPastEnd | kInvalidView);
+	place.flags = pointer.flags & (kPastEnd | kInvalidView | kMutableSubobject);
 	place.object = pointer.count;
 	place.generation = pointer.extra;
 	place.entity = pointer.address.entity;

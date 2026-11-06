@@ -189,6 +189,41 @@ bool Analyzer::literal_type(const Type* type)
 	return literal;
 }
 
+SubobjectMutability Analyzer::mutable_subobjects(const Type* type, uint32_t depth)
+{
+	if (type->is_reference())
+		return SubobjectMutability::None;
+	while (type->kind == TypeKind::Array)
+	{
+		if (type->bound == 0)
+			return SubobjectMutability::None;
+		type = type->element;
+	}
+	ClassEntity* cls = const_cast<ClassEntity*>(ClassOf(type));
+	if (cls == nullptr)
+		return SubobjectMutability::None;
+	if (cls->subobject_mutability != SubobjectMutability::Unknown)
+		return cls->subobject_mutability;
+	if (depth > kInstantiationDepthLimit || !require_complete(cls))
+		return SubobjectMutability::Unknown;
+	SubobjectMutability result = SubobjectMutability::None;
+	for (const BaseClass* base = cls->bases; base != nullptr && result == SubobjectMutability::None; base = base->next)
+		result = mutable_subobjects(base->base->type, depth + 1);
+	for (const DataMember* member = cls->members; member != nullptr && result == SubobjectMutability::None;
+		member = member->next)
+	{
+		if (member->variable->kind != EntityKind::Variable || (member->bit_field && member->variable->name == nullptr))
+			continue;
+		const VariableEntity* variable = static_cast<const VariableEntity*>(member->variable);
+		result = variable->is_mutable ? SubobjectMutability::Mutable : mutable_subobjects(variable->type, depth + 1);
+	}
+	// Class membership is fixed once complete. Never memoize an incomplete
+	// or budget-limited answer, and never walk an array's logical elements.
+	if (result != SubobjectMutability::Unknown)
+		cls->subobject_mutability = result;
+	return result;
+}
+
 bool Analyzer::constexpr_constructor(const FunctionEntity* constructor, uint32_t depth)
 {
 	// A user-provided constructor is constexpr as declared; an implicit or

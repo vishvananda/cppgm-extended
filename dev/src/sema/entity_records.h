@@ -159,6 +159,13 @@ enum class FactState : uint8_t
 	Done
 };
 
+enum class SubobjectMutability : uint8_t
+{
+	Unknown,
+	None,
+	Mutable
+};
+
 struct ClassEntity : Entity
 {
 	// The class-key of the first declaration, which the type's spelling uses.
@@ -180,6 +187,9 @@ struct ClassEntity : Entity
 	// Whether it is a literal type (3.9p10), once established (see
 	// Analyzer::literal_type): 0 unknown, 1 yes, 2 no, 3 being established.
 	uint8_t literal_state;
+	// A complete class's by-value subobjects include a mutable member.
+	// Computed on demand; references do not include their referents.
+	SubobjectMutability subobject_mutability;
 	// Declared with the class-virt-specifier final (9p3: it is no base).
 	bool is_final;
 	// It has a virtual table pointer (Itanium 2.4's dynamic class): it is

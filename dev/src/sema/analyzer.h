@@ -1457,6 +1457,7 @@ private:
 
 	// -------------------------------- constexpr rules (analyzer_constexpr.cpp)
 	bool literal_type(const Type* type);
+	SubobjectMutability mutable_subobjects(const Type* type, uint32_t depth = 0);
 	// ------------------------------ GNU type traits (analyzer_traits.cpp)
 	ExprFacts* builtin_trait(const syntax::BuiltinTraitExpr& expr, Scope* scope);
 	bool trait_types(const syntax::BuiltinTraitExpr& expr, Scope* scope, SmallList<const Type*, 4>& out);

@@ -900,7 +900,7 @@ uint64_t ConstantInterpreter::leaves(const Type* type, uint32_t depth)
 
 bool ConstantInterpreter::locate(const ConstPlace& place, bool write, ConstValue*& out, uint32_t location)
 {
-	if (place.flags != 0)
+	if ((place.flags & (kPastEnd | kInvalidView)) != 0)
 		return fail(location,
 			(place.flags & kPastEnd) != 0 ? "an access one past the end of an array"
 										  : "an access through an unrelated reference type");
@@ -992,6 +992,23 @@ bool ConstantInterpreter::read(const ConstPlace& place, ConstValue& out, uint32_
 	// or a variable usable in constant expressions, not volatile.
 	if ((place.type->cv & kVolatile) != 0)
 		return fail(location, "a read of a volatile glvalue");
+	const bool aggregate = place.type->kind == TypeKind::Array || place.type->unqualified->kind == TypeKind::Class;
+	if (((place.flags & kMutableSubobject) != 0 || aggregate) &&
+		(!analyzer_.cxx14_ ||
+			!((place.root == RootKind::Object && place.object >= first_object_) ||
+				(place.root == RootKind::Variable && place.entity == constructing_))))
+	{
+		if ((place.flags & kMutableSubobject) != 0)
+			return fail(location, "a read of a mutable subobject in a constant expression");
+		// Trivial aggregate copies read their subobjects even when no
+		// scalar member expression is evaluated. Cache this type fact,
+		// rather than expanding compact class values or omitted arrays.
+		const SubobjectMutability state = analyzer_.mutable_subobjects(place.type);
+		if (state == SubobjectMutability::Unknown)
+			return fail(location, "an unavailable constant-expression subobject fact");
+		if (state == SubobjectMutability::Mutable)
+			return fail(location, "a copy of mutable subobjects in a constant expression");
+	}
 	ConstValue* value = nullptr;
 	if (!locate(place, false, value, location))
 		return false;
@@ -1262,10 +1279,14 @@ bool ConstantInterpreter::member_slot(
 		uint64_t offset = 0;
 		analyzer_.member_offset(chain[i], offset);
 		VariantStep(place, chain[i]);
+		if (chain[i]->is_mutable)
+			place.flags |= kMutableSubobject;
 		place.offset += static_cast<int64_t>(offset);
 		place.type = analyzer_.types_.qualified(chain[i]->type, cv);
 	}
 	VariantStep(place, member);
+	if (member->is_mutable)
+		place.flags |= kMutableSubobject;
 	if (member->bit_field)
 	{
 		out = place;

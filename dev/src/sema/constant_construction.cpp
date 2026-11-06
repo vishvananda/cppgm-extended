@@ -112,10 +112,10 @@ bool ConstantInterpreter::materialize(const syntax::Expr& expr, const ConstPlace
 		// A glvalue of the class: its value copied (the analysis left the
 		// copy to the object's bytes).
 		ConstPlace source;
-		ConstValue* value = nullptr;
-		if (!glvalue(*e, source) || !locate(source, false, value, e->location))
+		ConstValue value;
+		if (!glvalue(*e, source) || !read(source, value, e->location))
 			return false;
-		return write(target, *value, e->location);
+		return write(target, value, e->location);
 	}
 	switch (e->kind)
 	{
@@ -264,14 +264,14 @@ bool ConstantInterpreter::initialize_from(
 	if (e->facts->category != ValueCategory::PRValue)
 	{
 		ConstPlace source;
-		ConstValue* value = nullptr;
+		ConstValue value;
 		if (!glvalue(*e, source))
 			return false;
 		const ClassEntity* to = ClassOf(
 			conversion != nullptr && conversion->result != nullptr ? conversion->result : e->facts->type);
 		if (to != nullptr && ClassOf(source.type) != to && !to_base(source, to, e->location))
 			return false;
-		return locate(source, false, value, e->location) && write(target, *value, e->location);
+		return read(source, value, e->location) && write(target, value, e->location);
 	}
 	return materialize(*e, target);
 }
@@ -725,8 +725,8 @@ bool ConstantInterpreter::run_constructor(const FunctionEntity* constructor, con
 			if (!bind(*arguments[0].expr, arguments[0].conversion, constructor->type->canonical->params[0], source))
 				return false;
 		}
-		ConstValue* value = nullptr;
-		return locate(source, false, value, location) && write(target, *value, location);
+		ConstValue value;
+		return read(source, value, location) && write(target, value, location);
 	}
 	if (constructor->copy_kind != CopyKind::None && (!UserProvidedFunction(constructor) || constructor->synthesized) &&
 		count >= 1)
@@ -829,8 +829,8 @@ bool ConstantInterpreter::copy_subobjects(
 		const FunctionEntity* copy = init.constructor;
 		if (copy == nullptr || copy->trivial)
 		{
-			ConstValue* value = nullptr;
-			if (!locate(from, false, value, location) || !write(to, *value, location))
+			ConstValue value;
+			if (!read(from, value, location) || !write(to, value, location))
 				return false;
 			continue;
 		}
