@@ -1,0 +1,11 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type n::E enum class n::E
+    scope namespace n
+      type E enum class E
+      scope enum E
+    scope enum n::E
+      enumerator zero enum class n::E 0
+end translation unit

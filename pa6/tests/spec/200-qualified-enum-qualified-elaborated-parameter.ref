@@ -1,0 +1,11 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type A struct A
+    function f function of (enum class E) returning int
+    scope class A
+      type E enum class E
+      scope enum E
+        enumerator zero enum class E 0
+end translation unit

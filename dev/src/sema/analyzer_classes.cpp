@@ -1139,7 +1139,13 @@ Entity* Analyzer::enum_specifier(
 		return entity;
 	}
 	if (name->qualified())
+	{
+		// 7.2p2, CWG1638: only an explicit specialization may have a
+		// qualified name in an opaque enum declaration.
+		if (!specifier.has_body && !explicit_specialization_)
+			error(name->location, "qualified opaque enumeration declaration");
 		return qualified_enum_definition(specifier, underlying, scope, printed);
+	}
 	const Identifier* identifier = name->last().identifier;
 	if (EnumEntity* entity = redeclared_enum(specifier, where, underlying))
 	{
