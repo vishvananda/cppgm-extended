@@ -524,3 +524,14 @@ Whole-class prototype and new omitted-default repair:
   gate retains23 exact pairs and one independently audited alignment-field
   difference; counter and direct compiler RSS measurements wait for the
   verified normal worker. Full scaling/cumulative/linked/export gates remain.
+
+Fresh combined027/028 normal acceptance:
+- normal-acceptance-v3.json verifies all14 fresh checks, strict8128/8128,
+ 474 source files,58 fixture/reference files and the live/frozen binary hash.
+  Full placement and all harness checks now pass. The corrected672-cell matrix
+  and84 native performance-input oracle cells remain verified.
+- The frozen parent's actual owning lanes fail all three028 positive controls
+  and preserve deleted-constructor rejection. The calibrated24-workload
+  performance pipeline has begun A/A measurements. Its separate output verifier
+  is queued behind the verified worker; no performance or repair closure is
+  claimed. Cumulative/scaling/linked/export checks remain required.

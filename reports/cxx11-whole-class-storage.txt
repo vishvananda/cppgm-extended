@@ -94,3 +94,17 @@ verified normal worker and all prerequisites, then runs counters/direct memory
 serially. Shared-host wall timing remains inconclusive. Ordinary whole-class
 and parameter scaling, cumulative checks, linked replay and export remain
 required after those gates. Neither027 nor028 is closed.
+
+Completed fresh normal acceptance
+
+normal-acceptance-v3.json now verifies all14 fresh checks, including full
+placement and harness, strict8128/8128, all474 source hashes,58 fixture/reference
+hashes,672 matrix cells,84 performance-input oracle cells and exact equality of
+the live and frozen candidate binary. CXX11-028's required-parent-v1 verifies
+three failing positive controls in the frozen parent's actual owning lanes,
+plus preserved deleted-constructor rejection. The performance worker has
+started A/A calibration in performance-counters-v1; direct-memory and audited
+changed-output stages follow serially. A separate perfix verifier waits on the
+verified worker identity before rehashing every measurement/child output.
+No performance pass is inferred from normal acceptance. Cumulative, absolute
+ordinary-variable/parameter scaling, linked replay and export remain required.
