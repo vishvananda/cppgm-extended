@@ -718,15 +718,23 @@ bool ProgramLowering::constant_placements(const sema::Type* type, const sema::Co
 			// A 128-bit field's bits past 64 are its value's high half (9.6p1:
 			// a field of a type of at most 64 bits has no value bits there).
 			const uint64_t bit = offset * 8 + member_bit_offset(variable, location);
-			for (uint64_t k = 0; k < member->width && k < 128; ++k)
+			const uint64_t width = std::min<uint64_t>(member->width, 128);
+			for (uint64_t k = 0; k < width;)
 			{
 				const size_t byte = static_cast<size_t>((bit + k) / 8);
 				if (byte >= bits.size)
 					return false;
-				const uint64_t word = k < 64 ? element.bits >> k : element.high >> (k - 64);
-				if ((word & 1u) == 0)
+				// Assemble the field's contribution to one byte at a time.
+				// An unaligned chunk can straddle the value's two 64-bit words.
+				const unsigned shift = static_cast<unsigned>((bit + k) % 8);
+				const unsigned count = static_cast<unsigned>(std::min<uint64_t>(8 - shift, width - k));
+				uint64_t word = k < 64 ? element.bits >> k : element.high >> (k - 64);
+				if (k < 64 && count > 64 - k)
+					word |= element.high << (64 - k);
+				const uint8_t set = static_cast<uint8_t>((word & ((uint64_t(1) << count) - 1)) << shift);
+				k += count;
+				if (set == 0)
 					continue;
-				const uint8_t set = static_cast<uint8_t>(1u << ((bit + k) % 8));
 				if (!bits.bytes.empty() && bits.bytes.back().offset == byte)
 					bits.bytes.back().value |= set;
 				else

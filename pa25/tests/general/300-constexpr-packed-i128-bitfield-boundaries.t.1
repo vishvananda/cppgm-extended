@@ -1,0 +1,16 @@
+typedef unsigned __int128 U128;
+struct Wide { U128 lead : 3; U128 value : 125; };
+constexpr U128 wide_value = (U128(1) << 124) | (U128(1) << 64) |
+    (U128(1) << 63) | (U128(1) << 61) | U128(0x93);
+constexpr Wide wide = {5, wide_value};
+struct Aligned { U128 value : 128; };
+constexpr U128 aligned_value = (U128(1) << 127) | (U128(1) << 64) | U128(0x81);
+constexpr Aligned aligned = {aligned_value};
+static_assert(wide.lead == 5 && wide.value == wide_value, "unaligned value");
+static_assert(aligned.value == aligned_value, "complete value");
+int main()
+{
+    const volatile Wide* w = &wide;
+    const volatile Aligned* a = &aligned;
+    return w->lead != 5 || w->value != wide_value || a->value != aligned_value;
+}
