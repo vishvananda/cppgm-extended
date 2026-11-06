@@ -1,0 +1,209 @@
+{
+  "compiler_sha256": "2245243e624fce02c9cdc58ede413f04c94d404f011f7005409258ce48316238",
+  "selected_sources": 513,
+  "gcc_sources_executed": 360,
+  "clang_sources_harness_blocked": 153,
+  "original_observations_accounted": 521,
+  "cohort_cells": 2160,
+  "profiles": {
+    "adapted": {
+      "cells": 1440,
+      "by_mode": {
+        "host": {
+          "native-assertions-passed": 651,
+          "native-failed": 48,
+          "harness-blocked": 13,
+          "native-unsupported": 8
+        },
+        "candidate": {
+          "native-failed": 599,
+          "harness-blocked": 87,
+          "native-assertions-passed": 26,
+          "runtime-abnormal": 2,
+          "native-unsupported": 6
+        }
+      },
+      "pair_counts": {
+        "candidate-native-oracle-failure": 567,
+        "candidate-adapter-or-probe-blocked": 66,
+        "host-baseline-not-passing": 69,
+        "candidate-abnormal": 2,
+        "native-oracles-satisfied": 16
+      },
+      "failed_assertions_by_mode": {
+        "host": {
+          "required-error-pattern": 98,
+          "excess-diagnostics": 51,
+          "warning": 7
+        },
+        "candidate": {
+          "warning": 238,
+          "excess-diagnostics": 425,
+          "required-error-pattern": 546,
+          "other-native-assertion": 12,
+          "execution": 2
+        }
+      }
+    },
+    "native_host": {
+      "cells": 720,
+      "by_mode": {
+        "host": {
+          "native-assertions-passed": 696,
+          "harness-blocked": 13,
+          "native-unsupported": 8,
+          "native-failed": 3
+        }
+      },
+      "failed_assertions_by_mode": {
+        "host": {
+          "required-error-pattern": 32,
+          "warning": 3,
+          "excess-diagnostics": 15
+        }
+      }
+    }
+  },
+  "raw_evidence_verified": {
+    "streams": 15806,
+    "outputs": 4700
+  },
+  "full_inventory_accounting": {
+    "not-scheduled-in-this-cohort": 45199,
+    "scheduled-native-variants": 360,
+    "harness-blocked": 153
+  },
+  "checks": {
+    "harness": {
+      "status": "pass",
+      "suites": 34,
+      "discovered_tests": 516,
+      "log": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/test-harness-final.log",
+      "sha256": "9182a51b0cce95854a9da44b93e82f0570c2de908bb99e410f19be769664d95e"
+    },
+    "native_integration": {
+      "status": "pass",
+      "tests": 41,
+      "log": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/synthetic-3.log",
+      "sha256": "460c320cf80687cc08d6dd2de9ccc9e1334ceb380d5565044e2eb8162d60896f"
+    },
+    "resume": [
+      {
+        "campaign": "original-findings-2",
+        "returncode": 0,
+        "command": [
+          "/usr/bin/python3",
+          "-B",
+          "/mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/original-findings-2/adapter/run_upstream_dg_campaign.py",
+          "--inventory",
+          "/mnt/vizier/cppgm-cxx11-upstream/inventory-3/inventory.jsonl",
+          "--sources",
+          "/mnt/vizier/cppgm-cxx11-upstream",
+          "--dejagnu-library",
+          "/mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/share/dejagnu",
+          "--runtest",
+          "/mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/bin/runtest",
+          "--candidate",
+          "/mnt/vizier/cppgm-cxx11-upstream/native-dg-adapter-v1/pilot-2/cppgm-candidate",
+          "--host",
+          "/usr/bin/x86_64-linux-gnu-g++-15",
+          "--selection-csv",
+          "/mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/selection-original.csv",
+          "--max-observation-id",
+          "521",
+          "--defaults",
+          "adapted",
+          "--timeout-seconds",
+          "15",
+          "--case-timeout-seconds",
+          "90",
+          "--cpu-seconds",
+          "30",
+          "--address-space-bytes",
+          "1073741824",
+          "--file-bytes",
+          "67108864",
+          "--dialects",
+          "c++11",
+          "gnu++11",
+          "--modes",
+          "host",
+          "candidate",
+          "--output",
+          "/mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/original-findings-2",
+          "--resume"
+        ],
+        "unchanged_files": 4320,
+        "elapsed_seconds": 2.0956183390226215,
+        "state": "all-cells-terminal-without-reexecution"
+      },
+      {
+        "campaign": "original-host-native",
+        "returncode": 0,
+        "command": [
+          "/usr/bin/python3",
+          "-B",
+          "/mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/original-host-native/adapter/run_upstream_dg_campaign.py",
+          "--inventory",
+          "/mnt/vizier/cppgm-cxx11-upstream/inventory-3/inventory.jsonl",
+          "--sources",
+          "/mnt/vizier/cppgm-cxx11-upstream",
+          "--dejagnu-library",
+          "/mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/share/dejagnu",
+          "--runtest",
+          "/mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/bin/runtest",
+          "--candidate",
+          "/mnt/vizier/cppgm-cxx11-upstream/native-dg-adapter-v1/pilot-2/cppgm-candidate",
+          "--host",
+          "/usr/bin/x86_64-linux-gnu-g++-15",
+          "--selection-csv",
+          "/mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/selection-original.csv",
+          "--max-observation-id",
+          "521",
+          "--defaults",
+          "native",
+          "--timeout-seconds",
+          "15",
+          "--case-timeout-seconds",
+          "90",
+          "--cpu-seconds",
+          "30",
+          "--address-space-bytes",
+          "1073741824",
+          "--file-bytes",
+          "67108864",
+          "--dialects",
+          "c++11",
+          "gnu++11",
+          "--modes",
+          "host",
+          "--output",
+          "/mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/original-host-native",
+          "--resume"
+        ],
+        "unchanged_files": 2160,
+        "elapsed_seconds": 1.371567657974083,
+        "state": "all-cells-terminal-without-reexecution"
+      }
+    ],
+    "scripts": {
+      "scripts/run_upstream_dg.py": "7f796c5f5aebe5974ff3d7c909b3e0cf27a4709b81ecbcf7b47cf20b9fff56e5",
+      "scripts/run_upstream_dg_campaign.py": "95feda56cf61c7d5fc22e0898dd770bea0886c01efbe89c9b87cd843b4003954",
+      "scripts/summarize_upstream_dg_campaign.py": "3c11bd3a97187619bdd35ae8bda3b1d7a1936350b0ea6a6cff2a5ca08a790d8c",
+      "scripts/tests/test_upstream_dg.py": "cf7adf56f9fc486ded393f9b7ff2b81b6746cdf810ec0c7bac8675617810fbfb",
+      "scripts/tests/test_upstream_dg_campaign.py": "46fb5b30116edb0359a385b8257102592868a87dcbced77d69ed965bb56a2d30"
+    }
+  },
+  "evidence": {
+    "adapted": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/summary-adapted-final/results.json",
+    "native_host": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/summary-host-native-final/results.json",
+    "observation_index": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/original-observation-dispositions.jsonl",
+    "observation_index_sha256": "46058a8643a5c88bd5b122d1acc76b3bca1c90d79dfcc8312f31b882ee7d8e2d"
+  },
+  "issues": 19,
+  "observations": 548,
+  "original_unmapped": 507,
+  "compiler_source_changed": false,
+  "full_upstream_pass": false,
+  "goal_complete": false
+}

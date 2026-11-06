@@ -2311,5 +2311,39 @@
       "rationale": "N3485 2.14.8p10 and 17.6.4.3.5p1 make use of these non-underscore literal suffixes ill-formed, no diagnostic required. GCC recovery/default-warning compatibility is separate from required original-C++11 semantics and later CWG decisions.",
       "source": "doc/n3485.txt"
     }
+  },
+  {
+    "id": "CXX11-019",
+    "priority": "P3",
+    "status": "triaged",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-mutable1.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-mutable2.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-mutable4.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-mutable6.C"
+    ],
+    "symptom": "Modern GCC/Clang reject reading/copying mutable subobjects of constexpr objects; cppgm accepts the four exact source files.",
+    "root_cause": "For these four sources, acceptance matches N3485 5.19p2, whose constexpr-object subobject exception has no non-mutable restriction. CWG 1405 added that restriction after this snapshot.",
+    "owning_pa": 16,
+    "ownership_note": "Later-DR constant-evaluation compatibility; preserve the original N3485 contract while prioritizing original defects.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019",
+    "checks": {
+      "controls": "controls.json: 30 exact-source/nonmutable-neighbor host/candidate ISO/GNU11 cells match the declared modern-host versus snapshot outcomes",
+      "native": "native-dg-campaign-v1/summary-adapted-final and summary-host-native-final",
+      "standards": "standards-sources.json; cwg-1405.html; doc/n3485.txt 5.19p2"
+    },
+    "performance": {
+      "status": "not-started-no-compiler-change"
+    },
+    "standards_basis": {
+      "category": "later-dr",
+      "issue": "CWG 1405",
+      "adopted": "2013-04",
+      "source": "https://cplusplus.github.io/CWG/issues/1405.html",
+      "rationale": "The issue was proposed in February 2012 but moved to DR at the April 2013 meeting. N3485 still allows a sub-object of a constexpr object without the added non-mutable qualification. Modern rejection here is later-DR compatibility, not a failure of the original N3485 rule."
+    },
+    "exclusion_note": "constexpr-mutable3.C involves a by-value parameter and is not grouped here without separate analysis."
   }
 ]

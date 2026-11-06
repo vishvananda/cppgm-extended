@@ -15,6 +15,7 @@ from pathlib import Path
 import re
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 
@@ -120,6 +121,8 @@ def disposition(native, calls, execution, blockers=()):
     if reasons:
         return dict(status='harness-blocked', reasons=sorted(set(reasons)), abnormal=[])
     counts = Counter(item['status'] for item in native)
+    if any(counts[key] for key in ['ERROR', 'WARNING']):
+        return dict(status='harness-unresolved', reasons=['native framework error/warning'], abnormal=[])
     if any(counts[key] for key in ['FAIL', 'XPASS']):
         return dict(status='native-failed', reasons=[], abnormal=[])
     if any(counts[key] for key in ['UNRESOLVED', 'ERROR', 'WARNING']) or not native or execution['returncode'] != 0:
@@ -139,6 +142,11 @@ def binary(command):
 
 
 def main():
+    def interrupted(number, frame):
+        # Unwind execute's finally block instead of abandoning native workers.
+        raise RuntimeError('native adapter interrupted by signal ' + str(number))
+    for number in (signal.SIGHUP, signal.SIGTERM, signal.SIGINT):
+        signal.signal(number, interrupted)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--testsuite', type=Path, required=True)
     parser.add_argument('--dejagnu-library', type=Path, required=True)
@@ -232,7 +240,8 @@ def main():
                                  ['PATH', 'LD_LIBRARY_PATH', 'CPATH', 'CPLUS_INCLUDE_PATH',
                                   'LIBRARY_PATH', 'CPPGM_HOST_CXX', 'CPPGM_STDLIB_FLAGS']},
                     native_helpers={str(p.relative_to(root)): sha256(p) for p in (root / 'lib').glob('*.exp')},
-                    dejagnu_helpers={p.name: sha256(p) for p in args.dejagnu_library.glob('*.exp') if p.is_file()},
+                    dejagnu_helpers={str(p.relative_to(args.dejagnu_library)): sha256(p)
+                                     for p in args.dejagnu_library.rglob('*.exp') if p.is_file()},
                     defaults=args.defaults, dialect=args.dialect,
                     note='Single explicit variant; original native directives. GCC_UNDER_TEST also uses proxy. '
                          'No original multi-standard driver or torture matrix pass is claimed.')

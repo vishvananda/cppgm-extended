@@ -1,4 +1,4 @@
-Campaign active — sixth implementation checkpoint (2026-11-06)
+Campaign active — compiler repairs and native execution checkpoints (2026-11-06)
 
 The full objective and closure criteria remain in cxx11-gap-plan.txt.
 This is partial progress; corpus applicability, native adapters and remaining
@@ -242,12 +242,33 @@ Native execution adapter checkpoint (2026-11-06):
   unmapped. reports/cxx11-native-dg-adapter.txt and .json retain the limitations,
   commands and evidence. Compiler sources/binary and references are unchanged.
 
+Native original-finding execution checkpoint (2026-11-06):
+- A resumable campaign runner now binds frozen binaries/adapters, exact inputs,
+  native helper/config hashes, per-file driver ownership and per-cell evidence.
+  Kernel locks and PID/start-time checks prevent duplicate/restarted workers.
+- All 360 distinct GCC inputs from the original observations now have 1440
+  ISO/GNU11 host/candidate cells, plus a separate 720-cell native-default host
+  control. All 2160 cells are terminal and verified. The 153 selected Clang
+  files have per-file lit-adapter blockers; remaining inventory stays explicit.
+- Adapted host/candidate outcomes and native-default host outcomes stay separate.
+  Omitted pedantic defaults change some host error severities; native defaults
+  reduce host failures from 48 to 3. Candidate native assertions are not a count
+  of original-language defects. 15806 streams/4700 outputs rehash correctly.
+- All 41 boundary/native regressions and the full 34-suite/516-discovered-test
+  harness pass. Resume preserves all 6480 checked artifact bytes and mtimes.
+- CXX11-019 groups four mutable-constexpr observations under CWG 1405, adopted
+  April 2013 and absent from N3485's subobject exception. All 30 separate
+  original-source/nonmutable-neighbor control cells match declared outcomes.
+- All 521 original observations now have an execution/blocker index. The ledger
+  has 19 issues/548 observations; 507 still need root-cause mapping. See
+  cxx11-native-dg-original-cohort.txt/.json. Full corpus coverage remains open.
+
 Next:
 - Repair runtime-tail CXX11-015 and semantic constexpr-reference CXX11-016
   through owning PA regressions, full checks and calibrated perf.
-- Continue execution adapters from the native metadata bridge, covering
-  applicability, diagnostics, companion sources, target selection, failures
-  and unavailable checker interfaces. The full corpus is not yet executed.
+- Extend GCC execution beyond the original-finding cohort and adapt specialized
+  native drivers. Implement Clang lit/RUN handling and complete applicability,
+  diagnostic, target/flag and unavailable-checker accounting for the full corpus.
 - Adjudicate CXX11-002 and continue the original untriaged observations.
   Preserve CXX11-008 throw-parameter work as separately labeled later-DR
   compatibility, with its drafts and evidence retained.

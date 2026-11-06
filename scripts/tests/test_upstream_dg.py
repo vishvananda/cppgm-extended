@@ -64,6 +64,11 @@ class BoundaryTests(unittest.TestCase):
                                     dict(classification='success', returncode=0), ['assembly unavailable'])
         self.assertEqual(result['status'], 'harness-blocked')
 
+    def test_native_framework_error_is_not_attributed_to_compiler(self):
+        native = [dict(status='FAIL'), dict(status='ERROR')]
+        result = runner.disposition(native, [], dict(classification='rejection', returncode=1))
+        self.assertEqual(result['status'], 'harness-unresolved')
+
     def test_resource_errors_signals_and_internal_exit_are_abnormal(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

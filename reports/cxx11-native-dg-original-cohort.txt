@@ -1,0 +1,125 @@
+Original-finding native GCC execution checkpoint (2026-11-06)
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1
+
+scripts/run_upstream_dg_campaign.py now freezes a compiler/adapter, accounts for
+every candidate in inventory-3, schedules declared native variants and resumes
+without discarding observations. scripts/summarize_upstream_dg_campaign.py
+verifies retained evidence and separates host/candidate results, warning/error
+assertions and host-only baseline profiles. These are maintainer tools.
+
+Scope and completed execution
+
+All 521 original observations have an execution/blocker disposition in
+original-observation-dispositions.jsonl, preserving their original outcomes.
+They refer to 513 distinct inputs: 360 GCC and 153 Clang files. Every GCC input
+is owned by the ordinary g++.dg driver. Those sources were executed under
+ISO C++11 and GNU C++11, through host and candidate routes, producing 1440 cells.
+A separate 720-cell host-only run uses GCC's native default flags. All 2160
+cells are terminal and verified; the source of truth is the per-cell state,
+native result/manifest/config, raw child streams and output snapshots.
+
+The selected Clang files are individually recorded as blocked pending the lit
+adapter; their C++11 RUN-variant applicability is unresolved. The accounting
+file also retains all 45199 inventory candidates outside this selected cohort,
+with per-file identities, revisions, hashes and driver/interface dispositions.
+This is execution of the original-finding cohort, not the full declared corpus.
+
+Profile                         Native oracles  Native fail  Blocked  Unsupported  Abnormal
+Host / adapted defaults                 651          48        13          8            0
+Candidate / adapted defaults             26         599        87          6            2
+Host / native defaults                  696           3        13          8            0
+
+"Native oracles" means all applicable assertions were satisfied, including any
+explicit expected failures. Raw PASS/XFAIL/XPASS/FAIL events remain available.
+These are outcome counts, not numbers of language defects or conformance rates.
+Most failing candidate cells involve diagnostic patterns, warning expectations,
+recovery or other unadjudicated requirements. Native metadata alone does not
+prove that an expected diagnostic is required by the original N3485 snapshot.
+The two candidate runtime-abnormal cells are the already recorded
+constexpr-static4.C SIGABRT (CXX11-002); its standards question remains open.
+
+The adapted profile explicitly omits GCC's default -pedantic-errors and
+-Wno-long-long. Native GCC tests can require the first flag to escalate warnings
+to errors, as demonstrated by Wnarrowing5.C and Wnarrowing20.C. The native-default
+host control reduces host failures from 48 to 3. It is retained separately:
+comparing its outcome with an adapted candidate is a comparison of different
+flag policies, not an original-test pass claim. Candidate pedantic options
+remain explicit blockers; accepted-but-ignored flags are never evidence of
+semantic support. Native host failures remain in constexpr-tuple.C (both
+dialects) and va-opt1.C (GNU11); do not attribute those baseline failures to cppgm.
+
+The paired adapted run has 16 satisfied pairs, 567 candidate native-oracle
+failures, 66 candidate adapter/probe blockers, 69 nonpassing host baselines and
+two candidate abnormal outcomes. A total of 15806 raw streams and 4700 emitted
+outputs across both profiles were independently rehashed. Warning failures are
+counted separately from required-error-pattern and excess-diagnostic failures.
+
+Reliable scheduling and resume
+
+The scheduler assigns the actual native driver before selecting a case.
+Specialized .exp families, unsupported input kinds, missing selected identities
+and Clang inputs have explicit per-file dispositions. It does not silently
+route Old-Deja/torture/module cases through the ordinary dg driver. The single
+adapter still executes original native Tcl metadata and records its adaptations.
+
+The compiler and all adapter scripts are copied before execution. The manifest
+binds the inventory, selected-observation snapshot, source hashes, driver and
+native helper files, compiler/tool hashes, environment, dialects, modes and
+resource limits. The native DejaGnu fingerprint now includes configuration and
+board helper subdirectories. A native framework ERROR/WARNING takes precedence
+over an accompanying FAIL assertion, avoiding a false compiler-defect label.
+
+A kernel file lock prevents concurrent schedulers. Each cell has its own
+persistent state and artifacts. Resume verifies terminal result/config/manifest
+hashes, waits for any exact surviving PID/start-time identity, and records a
+missing result from a terminated worker as harness-incomplete. It never silently
+restarts such a cell or overwrites its evidence. SIGINT/SIGTERM stop scheduling
+new cells and drain the bounded active worker set; interruption does not mean
+that the campaign is complete. Native-adapter signal handlers unwind process
+cleanup rather than abandoning a compiler/runtime process group.
+
+Both completed campaigns were resumed using their frozen adapters. All 6480
+checked state, worker-output and native-result files retained identical bytes
+and modification times: no compiler case was reexecuted. resume-checks.json
+retains exact commands, return codes and timings. The 41 boundary/native
+integration regressions pass, including live-worker attachment, PID reuse,
+source/result drift, unavailable drivers, duplicate identities and overlapping
+scheduler rejection. Full make test-harness passes: 34 suites, 516 discovered
+tests, with external-native integration separately enabled for all 41 controls.
+
+Additional standards triage
+
+CXX11-019 maps four original observations (constexpr-mutable1/2/4/6.C) to later
+CWG 1405 compatibility. N3485 5.19p2 permits the relevant constexpr-object
+subobject reads without a non-mutable qualification. CWG 1405's proposal was
+written in February 2012 but moved to DR at the April 2013 meeting; its added
+non-mutable restriction is absent from the release draft. The original source
+files and valid nonmutable neighbors match all declared outcomes in a separate
+30-cell GCC/Clang/candidate ISO/GNU11 control matrix. The issue's primary source,
+retrieved bytes, hashes and commands are retained under issues/CXX11-019.
+constexpr-mutable3.C involves a by-value parameter and remains separate pending
+analysis; it is not grouped merely because its filename contains mutable.
+
+The issue ledger now has 19 issues and 548 observations. All original observations
+have execution accounting, but 507 still lack a demonstrated root-cause mapping.
+No compiler source, binary or reference changed in this checkpoint. The latest
+strict compiler report remains 8079 cases; no new compiler performance result is
+claimed for harness-only changes.
+
+Reproduction and remaining work
+
+The original manifests record all arguments. For resume use the campaign's
+adapter/run_upstream_dg_campaign.py, the frozen selection-original.csv and the
+exact manifest inputs, adding --resume. check_resume.py demonstrates this for
+both profiles. Existing evidence directories are immutable observations; a new
+compiler/adapter/flag policy requires a new campaign. The relocatable native
+tools need LD_LIBRARY_PATH including tools/root/usr/lib/x86_64-linux-gnu.
+The JSON report links the full result indexes and verified checks.
+
+Continue root-cause reduction and original-N3485 adjudication using this native
+cohort; extend execution to the remaining GCC inventory and its specialized
+drivers; implement the Clang lit adapter and applicable RUN variants. Resolve
+remaining flag/final-check/probe interfaces explicitly. Original compiler gaps
+CXX11-015/016 still need owning PA regressions, fixes, full checks and calibrated
+performance gates. CXX11-002 still needs standards adjudication. The full
+campaign objective and final integrated release checks remain open.
