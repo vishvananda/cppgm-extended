@@ -42,3 +42,25 @@ configuration, preserve selected RUN commands and verifier prefixes, check
 severity/location/counts, and account for unavailable AST/IR interfaces. Do
 not redirect arbitrary cc1 commands to the cppgm driver or claim that extracted
 commands have run. The final two CI jobs still wait for all compiler repairs.
+
+Portable repository tool (2026-11-06):
+The extractor now lives at scripts/upstream_clang_lit_metadata.py, with eleven
+boundary tests in scripts/tests/test_upstream_clang_lit_metadata.py and default
+make test-harness registration. All 35 harness suites pass (529 discovered
+tests; optional native-dg integrations retain their explicit skips). It rejects
+stale revisions, changed sources, noncanonical/escaping paths, duplicate inputs,
+unmatched selection and existing output destinations. Native parse errors are
+explicit blockers. Features remain unresolved and execution remains absent.
+
+The CLI retains every native ordered directive and feature field exactly across
+all 20,491 cases and 72,820 commands when compared with the pinned extraction.
+Its input/helper/Python provenance and output digest are recorded. Evidence is
+clang-lit-metadata-v3/verification.json; the full harness log is the sibling
+clang-lit-metadata-v3-harness.log. Reproduce into a fresh output directory:
+
+  python3 -B scripts/upstream_clang_lit_metadata.py \
+    --llvm-root /mnt/vizier/cppgm-cxx11-upstream/llvm-project \
+    --revision 2078da43e25a4623cab2d0d60decddf709aaea28 \
+    --inventory /mnt/vizier/cppgm-cxx11-upstream/inventory-3/inventory.jsonl \
+    --selection /mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1/selection-original.csv \
+    --output /absolute/new-output-directory
