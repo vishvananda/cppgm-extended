@@ -1,3 +1,21 @@
+Alias-template acceptance oracle review (2026-11-06)
+
+CWG1286 remains drafting in the official active issues revision121,dated
+2026-10-10. GCC alias-decl-0.C and alias-decl-dr1286a.C assume that proposed
+identity-equivalence rule. N3485 14.4p1 and14.5.7p2 distinguish templates from
+their alias specializations; the GCC positive expectation is not a normative
+original/later-adopted requirement. Issue037 retains eight verified native
+observations and both raw primary issue-list sources. Isolated negatives and
+valid neighbors still need replay before a replacement language oracle is
+graded. The similarly nameddr1286b is a separate case,not excluded by filename.
+
+V7 rehashes the same720 selected variants:62 matches,533 mismatches (298
+positive rejections,235 missing required diagnostics),44 blockers,57 baseline/
+unprojected-oracle unresolved,8 warning-policy review,6 standards-review and10
+IFNDR. Four provisional mismatches move to standards review,never passes.
+Among595 provisionally screened variants,62 match (10.42%). This selected
+problem cohort still does not establish a whole-corpus correctness percentage.
+
 Additional IFNDR adjudication and unchanged-corpus screen (2026-11-06)
 
 Wnarrowing15.C,16.C and20.C define unused templates whose nondependent narrowing

@@ -1,3 +1,17 @@
+Functional/export verification complete (2026-11-06)
+
+All11 normal obligations pass,strict8144/8144 included. Nineteen fresh export
+stages pass:42 reference wrappers,16 packaged controls and exact development
+compiler restoration. The first harness run inherited a strict-only LowIR
+comparison override into tests for relaxed comparison; its failures remain
+retained. The corrected harness rerun passes with no compiler/source change.
+
+Root functional-acceptance-v1 verifies382 native cells,1540 streams,source and
+fixture identities,all emitted artifacts and export receipts. It rechecks the
+parent source from its exact Git archive. Twenty-four valid required objects
+and six performance-input objects equal the parent. Actual-parent reconciliation
+and all performance gates remain pending; this is no integrated acceptance.
+
 Constant template-argument conversion validation (2026-11-06)
 
 CXX11-035: original N3485 14.3.2p1/p5,5.19p3,8.5.4p7.

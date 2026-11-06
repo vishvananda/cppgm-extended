@@ -1,0 +1,30 @@
+Alias-template identity acceptance review (2026-11-06)
+
+CXX11-037 covers exactly GCC alias-decl-0.C and alias-decl-dr1286a.C.
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-037
+No compiler implementation change is requested or accepted by this checkpoint.
+
+N3485 14.4p1 requires corresponding template template-arguments to name the
+same template. Its 14.5.7p2 equates a specialization of an alias template with
+the substituted type. That does not itself make the alias template identical
+to the class template it references. The corrected N3485 example uses
+X<Y<int>> and X<Z<int>>,rather than the distinct template arguments X<Y>/X<Z>.
+
+The GCC tests assume the additional equivalence rule proposed in CWG1286.
+Both the primary issue page and official active issues revision121,dated
+2026-10-10,still mark1286 as drafting. Its latest direction also revisits
+aliases with default arguments. A filename/comment sayingDR1286 is not proof
+of an adopted original or later defect resolution. Preserve the proposed
+behavior as a separate oracle review; do not implement it solely to match GCC.
+
+Eight exact-source GCC/candidate receipts are independently rehashed. GCC
+accepts and the candidate rejects normally. Isolated required-diagnostic
+controls and valid alias-specialization neighbors remain to be replayed before
+scoring a replacement language oracle. The cases enter standards review,not
+passes. The similarly namedalias-decl-dr1286b.C exercises a different dependent
+pack/alias form and remains untriaged.
+
+Primary sources,raw HTML and hashes:
+https://cplusplus.github.io/CWG/issues/1286.html
+https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#1286
+issues/CXX11-037/standards-v1/sources.json

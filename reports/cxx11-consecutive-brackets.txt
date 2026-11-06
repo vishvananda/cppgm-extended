@@ -1,0 +1,32 @@
+Consecutive left-bracket grammar repair (2026-11-06)
+
+CXX11-031: original N3485 7.6.1p6.
+Worktree: /mnt/vizier/cppgm-clang-consecutive-brackets
+Required fixtures: 15eb37c9a. Implementation: 51d450d15.
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-031
+
+The postfix parser treated a subscript followed by a lambda introducer as
+ordinary expression syntax. N3485 reserves consecutive left brackets for an
+attribute-specifier. The fix checks the next typed token before constructing
+a subscript. It preserves valid parenthesized lambdas, nested subscripts,
+array bounds, keywords and empty attributes. Balanced nested attribute
+arguments remain valid under adopted CWG2079; no global token ban is added.
+
+Sixteen required PA5:200 syntax fixtures include six negatives and ten valid
+neighbors. The parent already diagnoses the direct new-array-bound negative
+and misses the other five; its owning lane passes11/16. Candidate syntax and
+its owning lane pass16/16. Required AST references were generated through the
+unchanged parent, then matched by the candidate. The full Clang p6.cpp receives
+its required diagnostic; native diagnostic spelling/count/location is ignored.
+
+Root independently verifies440 native cells,37 AST projections,16 required
+parent syntax observations,1906 streams and272 objects. Forty valid objects
+and ten valid ASTs equal the parent. All nine normal stages pass,strict8144,
+debug,self-hostPA5,inception,architecture/file/placement/harness included.
+Fresh export,bundle/all42 wrappers,16 packaged regressions and exact compiler
+restoration pass. Six frozen common-correct inputs pass30 native oracle cells.
+
+Performance is held pending029 acceptance and actual-parent reconciliation.
+The candidate is isolated; no main integration or whole-corpus pass is claimed.
+Five malformed unknown-attribute grammar cases are a separate issue036 and
+remain unfixed. Pending CWG2726 wording is not an adopted rule to enforce.

@@ -34,5 +34,17 @@
     "reason": "N3485 14.6p8: the unused function-template definitions have nondependent narrowing in their trailing return types, so no valid specialization can be generated. None is instantiated. The program is ill-formed, no diagnostic required; eager GCC diagnostics are not a required language outcome.",
     "issue": "CXX11-017",
     "sha256": "787741e3ed409b43b831730f8426bb8483aebb493d8345cccf58686028ad6a9f"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-0.C": {
+    "status": "standards-review",
+    "reason": "The GCC positive expectation relies on alias-template identity equivalence proposed by CWG1286, still drafting in the official2026-10-10 active list. N3485 14.4p1 requires the same template identity;14.5.7p2 equates alias specializations with substituted types,not the alias templates themselves. Preserve as standards/oracle review pending isolated required-diagnostic and valid-neighbor replay; do not infer an original acceptance defect or adopted later-DR requirement from the GCC result.",
+    "issue": "CXX11-037",
+    "sha256": "c35e1cbc6e6747bdb18240371ab97b4befae82ba2c0d2ba5df745211b94b59d4"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-dr1286a.C": {
+    "status": "standards-review",
+    "reason": "The GCC positive expectation relies on alias-template identity equivalence proposed by CWG1286, still drafting in the official2026-10-10 active list. N3485 14.4p1 requires the same template identity;14.5.7p2 equates alias specializations with substituted types,not the alias templates themselves. Preserve as standards/oracle review pending isolated required-diagnostic and valid-neighbor replay; do not infer an original acceptance defect or adopted later-DR requirement from the GCC result.",
+    "issue": "CXX11-037",
+    "sha256": "de453ffa2edd414b1ddb3507db881d8238d1371f6f1a75f42422a67374329db1"
   }
 }

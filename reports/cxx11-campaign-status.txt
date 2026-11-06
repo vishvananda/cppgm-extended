@@ -1,3 +1,30 @@
+Additional repair functional checkpoints (2026-11-06)
+
+CXX11-031 implementation51d450d15 passes16 required PA5 fixtures,strict8144,
+normal checks and fresh export/all42 wrappers. Root independently verifies440
+native cells,37 AST projections,40 exact valid object pairs and10 AST pairs.
+The separate malformed-attribute grammar issue036 remains open.
+
+CXX11-035 implementation84ba40170 now passes all11 normal obligations and19
+fresh export stages,including all16 packaged controls and42 wrappers. Root
+independently verifies382 native cells and1540 streams,plus sources,objects,
+executables and packaged references. The first harness invocation incorrectly
+inherited a strict-only comparison environment; its failed log is retained,
+and the correctly scoped rerun passes without compiler/source changes.
+
+Both repairs remain isolated pending029 acceptance,actual-parent reconciliation
+and their full performance gates. The same029 outer controller2991099 is now
+running continuously through family RSS and original counter/RSS groups; all
+compiler/helper/build/suite execution is held. measurement-window-v5.json has
+exact live identities. Main accepted compiler remains d1c5c14c9.
+
+CWG1286 remains drafting,despite GCC tests labelledDR1286. Two source-pinned
+positive assumptions enter037 standards/oracle review; no proposed rule is
+silently treated as an adopted original/later requirement. V7 retains720
+variants:62 matches,533 provisional mismatches,6 standards-review,10 IFNDR,
+44 blockers,57 baseline/unprojected-oracle unresolved and8 warning-policy review.
+No reviewed/excluded case is converted into a pass or whole-corpus percentage.
+
 Original-language narrowing repair and additional grammar gap (2026-11-06)
 
 CXX11-035 now has16 required PA16/18 regressions and implementation84ba40170.

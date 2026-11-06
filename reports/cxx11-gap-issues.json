@@ -3406,25 +3406,48 @@
   {
     "id": "CXX11-031",
     "priority": "P1",
-    "status": "observed-language-gap",
+    "status": "repair-in-validation",
     "upstream": [
       "llvm-project/clang/test/CXX/dcl.dcl/dcl.attr/dcl.attr.grammar/p6.cpp"
     ],
     "symptom": "The compiler silently accepts consecutive left brackets outside an attribute-specifier in ISO/GNU C++11.",
-    "root_cause": "Whole-TU required diagnostic confirmed; isolated reduction and typed parser/semantic root cause still pending.",
+    "root_cause": "The postfix parser accepted a subscript immediately followed by a lambda introducer, consuming two consecutive left brackets outside an attribute-specifier. Check the next typed token before constructing the subscript; retain the existing rejected new-array boundary and valid parenthesized/nested/attribute-argument forms.",
     "expected": "Emit a normal required diagnostic while retaining valid neighboring declarations; diagnostic prose/count/recovery is outside scope.",
-    "owning_pa": null,
-    "ownership_note": "Determine the earliest owning PA from the faithful reduction and read that handout before changing behavior.",
-    "regressions": [],
+    "owning_pa": 5,
+    "ownership_note": "PA5:200 owns the pure syntax ambiguity. Required valid AST references were generated through the unchanged parent; semantic attribute behavior stays later-owned. Handout/placement contract confirmed before implementation.",
+    "regressions": [
+      "pa5/tests/spec/200-consecutive-brackets-subscript-lambda.t",
+      "pa5/tests/spec/200-consecutive-brackets-subscript-capture-lambda.t",
+      "pa5/tests/spec/200-consecutive-brackets-subscript-comment-lambda.t",
+      "pa5/tests/spec/200-consecutive-brackets-subscript-macro-lambda.t",
+      "pa5/tests/spec/200-consecutive-brackets-cast-declarator-lambda.t",
+      "pa5/tests/spec/200-consecutive-brackets-new-bound-lambda.t",
+      "pa5/tests/spec/200-consecutive-brackets-subscript-parenthesized-lambda.t",
+      "pa5/tests/spec/200-consecutive-brackets-subscript-unary-lambda.t",
+      "pa5/tests/spec/200-consecutive-brackets-subscript-parenthesized-capture.t",
+      "pa5/tests/spec/200-consecutive-brackets-subscript-nested.t",
+      "pa5/tests/spec/200-consecutive-brackets-new-parenthesized-bound-lambda.t",
+      "pa5/tests/spec/200-consecutive-brackets-nested-attribute-argument.t",
+      "pa5/tests/spec/200-consecutive-brackets-empty-attribute-list.t",
+      "pa5/tests/spec/200-consecutive-brackets-keyword-attribute-token.t",
+      "pa5/tests/spec/200-consecutive-brackets-attribute-empty-elements.t",
+      "pa5/tests/spec/200-consecutive-brackets-raw-string-brackets.t"
+    ],
     "fix_revision": null,
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-campaign-d1c5c14c9-v3",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-031",
     "checks": {
       "execution": "results.json:two source-pinned ISO/GNU11 variants; native host rejects normally, candidate emits a valid object without a diagnostic.",
       "verification": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-root-verification-v1.json",
-      "adjudication": "reports/cxx11-clang-language-adjudications.json; sourceSHA256 44a6fc38f6081da1ba5c0030f09bdb516027449a0327f3cb3c94571551001941"
+      "adjudication": "reports/cxx11-clang-language-adjudications.json; sourceSHA256 44a6fc38f6081da1ba5c0030f09bdb516027449a0327f3cb3c94571551001941",
+      "parent": "parent-probes-v1:336 native cells/21 AST projections. Five isolated ambiguity cases silently accept; new-array-bound case already diagnoses. Required parent lane fails11/16,with five missing-diagnostic witnesses.",
+      "candidate": "candidate-v1:64 native cells/16 AST projections and required PA5 lane16/16 pass;original-v1 has10 source-pinned parent/candidate/GCC/Clang observations.",
+      "normal": "checks-v1.json:9 normal stages pass,strict8144/8144,debug,self-hostPA5,inception,architecture/file/placement and harness included.",
+      "export": "export-checks-v1.json:4 stages pass,fresh export,42 reference wrappers,all16 packaged PA5 regressions and exact development compiler restoration.",
+      "independent_verification": "functional-verification-v1.json plus root-functional-verification-v1.json independently rehash440 native cells,1906 streams,272 objects,37 AST projections and16 required parent syntax observations. Root directly verifies40 exact parent/candidate object pairs and10 AST pairs.",
+      "separate_grammar": "Five malformed attribute-list cases are separately tracked as036; their exclusion from this focused candidate matrix is explicit,not a pass."
     },
     "performance": {
-      "status": "not-started-no-compiler-change"
+      "status": "held-pending-029-acceptance-and-actual-parent-reconciliation"
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3433,7 +3456,9 @@
       "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
       "rationale": "The function body uses consecutive left-square-bracket tokens in an expression where they cannot introduce an attribute-specifier; this requires a diagnostic."
     },
-    "assigned_agent": null
+    "assigned_agent": null,
+    "regression_revision": "15eb37c9a",
+    "implementation_revision": "51d450d15"
   },
   {
     "id": "CXX11-032",
@@ -3600,11 +3625,12 @@
       "producer_correction": "The original producer counted unsigned-high with a signed-high suffix and failed its final assertion after completing all observations. Independent exact-identity verification rehashes1008 streams and all artifacts; no compiler observation rerun.",
       "candidate": "candidate-v1/assessment.json:all68 ISO/GNU11 O0/O2 cells and16 owning lanes pass, including the original GCC source.",
       "performance_inputs": "performance-controls-v1/assessment.json:42 native cells pass; six common-correct parent/candidate object pairs match,three newly-supported absolute-scaling inputs pass12 candidate/host cells.",
-      "normal": "checks-v1.json:build,affected16/18,strict8144/8144,debug,self-hostPA5,inception,nine architecture audits,file audit and placement pass. Harness failed because the producer propagated the strict-only comparison environment into relaxed-mode harness tests. checks-v2 reruns only the harness with that override removed; all failed observations retained, no compiler/source change.",
-      "export": "Initial export controller stopped before any export stage when its normal prerequisite failed. export-controller-correction-v2.json records the exact worker correction; run_export_v2.py waits on the corrected harness, fresh export remains pending."
+      "normal": "checks-v1.json:10 unchanged-binary stages pass,including strict8144/8144,affected16/18,debug,self-hostPA5,inception,nine architecture audits,file audit,placement. Retained harness failure came from strict-only comparison env leakage. checks-v2 reruns harness without that override and passes; no compiler/source change.",
+      "export": "export-checks-v1.json:19 stages pass,fresh student export,42 reference wrappers,16 packaged controls and exact frozen compiler restoration. The initial prerequisite-only controller failure and corrected controller are retained.",
+      "independent_verification": "functional-acceptance-v1.json:382 native cells,1540 raw streams,all emitted artifacts,source/fixture hashes and export receipts independently verified; baseline source rechecked from exact Git archive. Twenty-four common-correct required objects and six performance-input objects match the parent."
     },
     "performance": {
-      "status": "not-started-normal-and-export-pending",
+      "status": "functional-pass-held-pending-029-acceptance-and-actual-parent-reconciliation",
       "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-035/performance-predeclaration-v1.json"
     },
     "standards_basis": {
@@ -3648,5 +3674,41 @@
       "rationale": "Unknown attribute behavior does not remove the syntactic requirements for attribute-token, a single optional namespace qualifier and a parenthesized argument clause."
     },
     "assigned_agent": "/root/clang_correctness"
+  },
+  {
+    "id": "CXX11-037",
+    "priority": "P3",
+    "status": "standards-oracle-review",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-0.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-dr1286a.C"
+    ],
+    "symptom": "GCC expects alias-template identity equivalence; the candidate rejects these positive-labelled sources.",
+    "root_cause": "The GCC expectations exercise the proposed CWG1286 identity-equivalence rule,which remains drafting in the official2026-10-10 active list. N3485 equates alias specializations with substituted types but does not equate distinct template identities. This is not evidence of an original acceptance defect or an adopted later-DR repair requirement.",
+    "expected": "Replay isolated required-diagnostic and valid alias-specialization neighbors before grading a replacement language oracle. Preserve the pending proposal separately; do not implement it solely to match GCC.",
+    "owning_pa": null,
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-037",
+    "checks": {
+      "standards": "standards-v1/sources.json:raw primary issue page and official active list retained with hashes; N3485 14.4p1/14.5.7p2 checked directly.",
+      "native": "oracle-review-v1.json:eight existing exact-source GCC/candidate cells independently rehashed; GCC accepts,candidate rejects normally.",
+      "scope": "Only alias-decl-0.C and alias-decl-dr1286a.C. Similarly nameddr1286b exercises another dependent pack/alias question and stays untriaged."
+    },
+    "performance": {
+      "status": "not-applicable-no-compiler-change"
+    },
+    "standards_basis": {
+      "category": "unadopted-proposal-review",
+      "issue": "CWG1286",
+      "committee_status": "drafting",
+      "checked_revision": "Core active issues121,2026-10-10",
+      "source": "doc/n3485.txt",
+      "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+      "sources": [
+        "https://cplusplus.github.io/CWG/issues/1286.html",
+        "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html"
+      ]
+    }
   }
 ]
