@@ -1,0 +1,2 @@
+// N3485 focus: 7.6.1p6 [dcl.attr.grammar]; consecutive square-bracket syntax.
+int a[1]; int main(){ return a[ /* gap */ []{return 0;}()]; }
