@@ -1,3 +1,26 @@
+Compiler repair checkpoint and Clang delegation (2026-11-06)
+
+CXX11-029 independently optimizes constant bit-field byte packing to address
+an original-family +1.38099% instruction regression. Native value/object guards,
+strict8130/8130, required normal gates, corrected fixture placement, harness and
+fresh student export/all42 wrappers pass. Serial calibrated counters/direct RSS
+are running; no integration or performance acceptance is claimed. See
+cxx11-bitfield-packing.txt and CXX11-029/measurement-group-hold-v1.json for the
+live child and intentionally held stage-controller coordination.
+
+CXX11-019 now has22 committed required fixtures with352 accounted parent/host
+cells and all13 required parent rejection witnesses. Three draft positive
+oracles were corrected without changing old observations; an actual mutable
+runtime-initialization disagreement remains. New CXX11-030 isolates defaulted
+union copying under CWG2004, with16 native parent/host compiler observations.
+These are unaccepted repair branches; main compiler remains d1c5c14c9.
+
+At the user's request, /root/clang_correctness owns the Clang correctness
+adapter in /mnt/vizier/cppgm-clang-cxx11-correctness. Its native expectation/
+preprocessing-context discovery helper passes14 controls. Imported execution,
+applicability and complete correctness scoring remain pending; diagnostic parity
+is outside scope. Compiler/suite work is coordinated between measurement groups.
+
 Current objective correction (2026-11-06)
 
 Validate C++ correctness: valid acceptance, required diagnosis, link/runtime/ABI

@@ -1,0 +1,48 @@
+Packed constant bit-field performance followup (2026-11-06)
+
+CXX11-029 is an independent compiler-work performance repair. It is unrelated
+to the public runtime/inception regression investigation assigned elsewhere.
+The original reference-family checkpoint retains a calibrated +1.38099%
+instruction regression on bitfield-static-values-o0, beyond its unchanged +1%
+gate. All original failed observations remain under CXX11-016/family-counters-v1.
+
+Repair worktree: /mnt/vizier/cppgm-cxx11-bitfield-packing
+Implementation:19fbac972; fixture placement correction:c4192b194.
+The compiler now assembles each constant bit-field byte in one chunk, including
+chunks crossing its low/high64-bit boundary. Typed layout, sparse zero handling,
+shared-byte merging and generated objects are preserved. No source reparsing,
+new caches or test-specific conditions were added.
+
+The unchanged accepted compiler is frozen as the immediate baseline. A separate
+PA16:300 fixture covers ordinary signed/shared/zero fields. PA25:300 covers
+unaligned125-bit and complete128-bit fields through native separate/direct
+linking. The placement audit rejected an initial combined guard's __int128 use
+in PA16; its exact bytes and initial audit/check results remain retained. The
+new PA25 references were generated through the unchanged parent; their native
+values were independently checked. No generated reference was hand-edited.
+
+Evidence root: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029
+- parent-v2:32 native cells across baseline/candidate/GCC/Clang,ISO/GNU11,O0/O2.
+- focused-v1:22 native cells,all9 original family sources have exact A/B objects;
+  independent existing GCC/Clang native artifacts are rehashed.
+- strict8130/8130,affectedPA16/25,placement and harness pass. Six unchanged-binary
+  debug/self-host/inception/PA35/architecture/file-audit gates are retained from
+  checks-v1 and explicitly revalidated by fixture-placement-correction-v2.json.
+- candidate-source-verification-v1:484 committed regular blobs match the frozen
+  source/fixture closure; exactly one dev module changes.
+- Fresh student export,bundle install/all42 wrappers,and development restoration
+  pass. Restored development compiler equals the immutable candidate hash.
+
+Performance is running under final-protocol-v2.json:13 immediate-parent,12
+original-family and3 original-campaign workloads,each with A/A calibration,
+10 paired ABBA blocks,CPU84,ASLR disabled,and16-child batches for short inputs.
+Instruction upper95 must remain <=1.01; actual compiler RSS upper95 <=1.03.
+Outputs must be byte-identical. Direct compiler memory runs avoid the profiler
+RSS floor. Wall time remains recorded and inconclusive under shared-host load.
+The Clang subagent's compiler/helper/suite work is held during this serial
+measurement window. The outer stage controller is intentionally held while
+its existing per-fix measurement child completes, allowing Clang execution
+windows between complete groups. See measurement-group-hold-v1.json; resume
+the same controller after the coordinated window rather than restarting it.
+No performance acceptance, integration or closure is yet
+claimed. The main accepted compiler remains d1c5c14c9.

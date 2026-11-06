@@ -2522,7 +2522,7 @@
         "https://cplusplus.github.io/CWG/issues/2126.html"
       ]
     },
-    "next_action": "CXX11-023 through028 are repaired and accepted. Replay the complete supported external matrix and compare all12 combined family workloads with the original family baseline before closing the reference family."
+    "next_action": "All individual repairs023-028 retain acceptance, but the original-family gate found cumulative bit-field instruction overhead. CXX11-029 isolates byte-wise packing and is in full validation. Complete the serial counter/direct-RSS checkpoint and complete supported external correctness replay before closing the family."
   },
   {
     "id": "CXX11-017",
@@ -2591,7 +2591,7 @@
   {
     "id": "CXX11-019",
     "priority": "P3",
-    "status": "triaged",
+    "status": "regression-fails",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-mutable1.C",
       "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-mutable2.C",
@@ -2602,13 +2602,38 @@
     "root_cause": "For these four sources, acceptance matches N3485 5.19p2, whose constexpr-object subobject exception has no non-mutable restriction. CWG 1405 added that restriction after this snapshot.",
     "owning_pa": 16,
     "ownership_note": "Later-DR constant-evaluation compatibility; preserve the original N3485 contract while prioritizing original defects.",
-    "regressions": [],
+    "regressions": [
+      "pa16/tests/controls/300-constexpr-mutable-address.t",
+      "pa16/tests/controls/300-constexpr-mutable-aggregate-copy-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-ancestor-read-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-array-copy-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-array-read-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-base-copy-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-bitfield-read-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-constructor-read.t",
+      "pa16/tests/controls/300-constexpr-mutable-defaulted-copy-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-fixed-member.t",
+      "pa16/tests/controls/300-constexpr-mutable-selective-union-copy.t",
+      "pa16/tests/controls/300-constexpr-mutable-local-read-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-member-read-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-nested-copy-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-nested-read-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-pointer-read-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-reference-read-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-runtime-initialization.t",
+      "pa16/tests/controls/300-constexpr-mutable-runtime-read.t",
+      "pa16/tests/controls/300-constexpr-mutable-selective-copy.t",
+      "pa16/tests/controls/300-constexpr-mutable-temporary-read.t",
+      "pa16/tests/controls/300-constexpr-mutable-unevaluated.t"
+    ],
     "fix_revision": null,
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019",
     "checks": {
       "controls": "controls.json: 30 exact-source/nonmutable-neighbor host/candidate ISO/GNU11 cells match the declared modern-host versus snapshot outcomes",
       "native": "native-dg-campaign-v1/summary-adapted-final and summary-host-native-final",
-      "standards": "standards-sources.json; cwg-1405.html; doc/n3485.txt 5.19p2"
+      "standards": "standards-sources.json; cwg-1405.html; doc/n3485.txt 5.19p2",
+      "required_parent": "required-parent-v2/assessment.json: all12 modern-host profiles for each of13 negative controls diagnose normally; parent accepts. Nine valid neighbors retained.",
+      "defaulted_union_copy": "Independent CWG2004 gap now tracked as CXX11-030; defaulted union copying is not an ordinary scalar lvalue conversion."
     },
     "performance": {
       "status": "not-started-no-compiler-change"
@@ -2623,10 +2648,12 @@
     "exclusion_note": "constexpr-mutable3.C involves a by-value parameter and is not grouped here without separate analysis.",
     "regression_preparation": {
       "worktree": "/mnt/vizier/cppgm-cxx11-constexpr-mutable",
-      "controls": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-controls-v1.json",
-      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-parent-protocol-v1.json",
-      "status": "352 discovery cells executed;13 required rejection witnesses reproduced. Three draft positive expectations disagree with both native hosts and require adjudication. No implementation edit;22 draft fixtures remain uncommitted."
-    }
+      "controls": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-controls-v2.json",
+      "assessment": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-parent-v2/assessment.json",
+      "correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/fixture-oracle-correction-v2.json",
+      "status": "352 cells and22 lanes accounted:304 cells/19 lanes reused after source/expectation identity check,48 fresh cells/3 lanes pass host oracles. All13 required negative parent witnesses reproduced. Three incorrect draft positives replaced by valid nonmutable/selective-copy controls, with raw failures retained. Parent still miscompiles the mutable dynamic-initialization neighbor in four variants. No compiler implementation edit."
+    },
+    "regression_revision": "6a62242ab"
   },
   {
     "id": "CXX11-020",
@@ -3267,5 +3294,75 @@
       "dev/src/sema/constant_construction.cpp"
     ],
     "next_action": "Closed for this repair at the verified source/binary checkpoint. Recheck on later compiler/adapter/toolchain changes; the combined reference family, full corpus and remaining compiler/CWG/CI work stay open."
+  },
+  {
+    "id": "CXX11-029",
+    "priority": "P1",
+    "status": "repair-in-validation",
+    "upstream": [],
+    "discovered_neighbor_of": "CXX11-016",
+    "symptom": "The original reference-family checkpoint accumulates a calibrated +1.38099% retired-instruction regression on its unchanged packed-bit-field workload, exceeding the predeclared +1% gate.",
+    "root_cause": "Profile identifies constant_placements visiting every bit while constructing constant bit-field byte data; test byte-wise assembly without changing typed layout or emitted values.",
+    "expected": "Retain exact objects and native bit-field values while passing the unchanged original-family instruction and actual compiler RSS gates.",
+    "owning_pa": 16,
+    "ownership_note": "PA16:300 owns ordinary constant bit-field initialization. PA25:300 owns the extended __int128 native guard; initial placement audit caught the wider feature in PA16, then split controls and regenerated the new PA25 references through the unchanged parent. The retained failing performance gate is the regression witness.",
+    "regressions": [
+      "pa16/tests/controls/300-constexpr-packed-bitfield-byte-boundaries.t",
+      "pa25/tests/general/300-constexpr-packed-i128-bitfield-boundaries.t",
+      "pa25/tests/general/300-constexpr-packed-i128-bitfield-boundaries.t.1"
+    ],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029",
+    "checks": {
+      "initial": "initial-evidence.json; CXX11-016/family-counters-v1/ab-assessment.json",
+      "parent": "parent-v2/assessment.json:32 native cells; focused-v1/assessment.json:22 cells and9 exact A/B family objects",
+      "normal": "checks-v2.json:affectedPA16/25, strict8130/8130, placement and harness pass; fixture-placement-correction-v2.json revalidates six unchanged-binary normal gates from checks-v1.json",
+      "source": "candidate-source-verification-v1.json:484 regular tracked source/fixture/reference blobs match c4192b194; exactly one dev module changed",
+      "export": "final-stages-v2.json:fresh-export,bundle42wrappers,restore-development pass; exact candidate restored"
+    },
+    "performance": {
+      "status": "serial-per-fix-family-original-counter-and-direct-RSS-worker-running",
+      "instruction_upper95_gate": 1.01,
+      "actual_compiler_rss_upper95_gate": 1.03,
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029/final-protocol-v2.json"
+    },
+    "standards_basis": {
+      "category": "implementation-performance",
+      "rationale": "Preserve existing C++11 constant initialization and x86-64 bit-field ABI; cumulative performance gate is part of the gap plan."
+    },
+    "implementation_revision": "19fbac972",
+    "regression_revision": "c4192b194"
+  },
+  {
+    "id": "CXX11-030",
+    "priority": "P2",
+    "status": "regression-fails",
+    "upstream": [],
+    "discovered_neighbor_of": "CXX11-019",
+    "symptom": "A constexpr defaulted copy of a union with an inactive mutable alternative is accepted. Modern GCC15 and Clang21/22 reject in C++11; an explicit selective user-written copy remains valid.",
+    "root_cause": "Defaulted union copying uses the object representation rather than scalar lvalue-to-rvalue reads; the CWG2004 constexpr-constructor restriction needs independent handling.",
+    "expected": "Enforce the C++11 later-DR defaulted-copy/move restriction while preserving explicit selective copies and ordinary runtime union behavior.",
+    "owning_pa": 16,
+    "ownership_note": "PA16:300 owns constexpr validation over the inherited union/copy object model. Read handout before implementation; C++17 CWG2268 relaxation stays separately classified.",
+    "regressions": [
+      "pa16/tests/controls/300-constexpr-mutable-union-defaulted-copy-reject.t"
+    ],
+    "regression_revision": "44ed7f4ee",
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-030",
+    "checks": {
+      "parent": "parent-v1/assessment-v2.json:16 retained compiler cells;12 independent normal host diagnostic cells,4 candidate acceptance witnesses,owning lane fails because frontend accepts",
+      "measurement_correction": "Draft producer required checker exit1; actual checker failure25 is independently verified from its frontend-acceptance failure. No compiler observation rerun."
+    },
+    "performance": {
+      "status": "not-started-no-compiler-change"
+    },
+    "standards_basis": {
+      "category": "later-dr",
+      "issue": "CWG2004",
+      "adopted": "2015-10",
+      "source": "https://cplusplus.github.io/CWG/issues/2004.html",
+      "rationale": "The adopted resolution adds a restriction to defaulted constexpr copy/move constructors when the class has mutable variant subobjects. CWG2268 is a separate C++17 relaxation and is not assumed to be a C++11 positive oracle."
+    }
   }
 ]

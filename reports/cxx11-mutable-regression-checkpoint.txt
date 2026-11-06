@@ -1,0 +1,41 @@
+Mutable constant-evaluation regression preparation (2026-11-06)
+
+Repair worktree:/mnt/vizier/cppgm-cxx11-constexpr-mutable
+Required CXX11-019 controls:6a62242ab; independent CXX11-030 control:44ed7f4ee.
+No compiler implementation edits or accepted repair are implied.
+
+CXX11-019 required-parent-v2 accounts for352 cells and22 executed owning lanes.
+All13 negative fixtures are accepted by the frozen parent and fail their owning
+lane; GCC15 and Clang21/22 provide12 normal diagnostic cells per negative.
+The22 controls cover direct/nested/array/base/bit-field/aliased reads, ordinary
+and defaulted copies, nonmutable siblings, addresses, unevaluated contexts,
+selective copies and runtime behavior. Three draft positives were incorrect
+host oracles; their exact sources/raw failures are retained. Replace them with
+valid nonmutable reads from temporaries/parameters/construction and an explicit
+selective union copy. The corrected run preserves304 identical cells/19 lanes,
+executes48 fresh cells/3 lanes,and reports no host failures. Four parent native
+variants still disagree on the mutable runtime-initialization neighbor.
+
+The initial temporary/constructor mutable-read forms remain separately recorded
+for C++11 versus the course's permitted internal constexpr extensions; replacing
+a bad positive oracle does not settle those policy questions. N3652's lifetime-
+within-evaluation wording is a C++14 relaxation. Original versus later CWG1405
+classification remains explicit; all required later-DR repairs remain in scope.
+
+CXX11-030 is a separate CWG2004 union-copy restriction. The unmodified accepted
+compiler accepts the isolated constexpr defaulted union copy in four ISO/GNU11
+O0/O2 cells; GCC15 and Clang21/22 diagnose it normally in twelve cells. Its
+PA16:300 lane fails because the frontend accepts. The checker reports failure25,
+so an initial producer assertion expecting failure1 was wrong. Independent
+assessment-v2 verifies all16 original compiler observations and the precise
+owning-lane failure without rerunning them. Explicit selective user-written
+union copies remain valid neighbors. The C++17 CWG2268 relaxation is recorded
+separately, not silently used as a C++11 positive oracle.
+
+Evidence roots:
+  /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-parent-v2
+  /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/fixture-oracle-correction-v2.json
+  /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-030/parent-v1/assessment-v2.json
+Primary standards sources are linked in the issue ledger and correction record.
+Both fixes still need implementation, normal correctness/export verification
+and calibrated per-fix/cumulative performance acceptance before integration.
