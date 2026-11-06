@@ -1,3 +1,59 @@
+Throw-move repair and additional lookup/specialization gaps (2026-11-06)
+
+008 now has45 required PA21 controls(f0b2927d1) and implementation97fa48fc0
+in its isolated repair tree. All184 candidate cells,45 owning lanes and the
+originalClangP1155 pass. The immutable parent has23 failing control sources,
+96 disagreeing variants(including the original) and28 silent required-negative
+variants in736 accounted observations. Eight optionalClang-warning observations
+were retained and replayed with that warning disabled; they are host language
+disagreements,not required-diagnostic passes. Primary N5009/P3638 and independent
+scope review establish the adopted2549 update to P1825:ctor-initializers move,
+function-try compound bodies retain their scope barrier,and prototype parameters
+need no activeBodyContext. A typed default-argument boundary preserves lookup
+and closure ownership without allocating synthetic scopes. The older ctor-copy
+oracle and every initial observation remain historical evidence.
+
+008 strict8207/8207,all five affected suites,optional21,debug,selfhostPA5 and
+inception pass; audits/harness/export remain running. 032 implementation50a0f7a6a
+passes its complete new normal/export checkpoint(strict8183,optional21,
+23 packaged cases,42 wrappers) and focused556cells/180 exact positive pairs.
+Both repairs still require performance and eventual integration. 031/033 also
+pass the separate optional21-case modern suites. 034 preparation is underway.
+
+New original-language issue038 separates invalid explicit enum-specialization
+targets from032:three non-template-class forms have12 silent parent variants
+versus36 native diagnoses; a fourth specialized-class form remains review.
+New issue039 records a distinct default-argument lookup defect:function parameter
+names do not hide globals,and permitted unevaluated own-parameter uses can be
+unavailable. A namespace-shadow negative silently accepts on both pre008 and
+008; a valid sizeof-shadow program returns1 instead of0. GCC15/Clang22 diagnose
+the negative and execute the positive correctly. Original3.3.4/8.3.6 rules and
+laterCWG2082 are recorded separately. Twenty native observations are retained;
+no039 fix or required regression is committed yet. PA7:300 owns lookup,PA10
+its procedural runtime projection,andPA21 the blocked throw composition.
+
+The known individual-gap ledger now has11 unaccepted defects:seven have
+implementations(008,019/shared030,021,031,032,033,035);034,036,038 and039
+remain unfixed. This is not a corpus-completeness count or pass percentage.
+
+029's fresh immediate-parent13 A/A and13 A/B instruction gates pass; maximum
+instruction upper95=1.0000305614,the packed-bitfield workload ratio=0.988583506.
+Actual compiler RSS13 A/A and13 A/B also pass. Independent raw verification is
+pending. Outer821381/start52528549 alone is held before family/rebased-original
+groups; its memory child finished uninterrupted with exit0. The explicit
+functional window is open for the remaining fixes; resume that same controller
+only after all functional workers are terminal/held. Historical originalO2
+object-oracle review remains open. No performance acceptance or campaign
+completion is inferred from these partial groups.
+
+Evidence:issues/CXX11-008/{rebased-parent-v2/assessment-v2.json,
+rebased-candidate-v1/focused/assessment.json,rebased-checks-v1/};
+issues/CXX11-032/rebased-18c45-checks-v1/functional-verification-v1.json;
+issues/CXX11-038/standards-adjudication-v1.json;
+issues/CXX11-039/initial-adjudication-v1.json;
+rebases/2026-11-06/bitfield-rebased-performance-v1/functional-window-hold-v1.json.
+All paths are below /mnt/vizier/cppgm-cxx11-upstream.
+
 Fresh rebased functional acceptance (2026-11-06)
 
 All five implemented pending repairs now pass fresh full normal and export

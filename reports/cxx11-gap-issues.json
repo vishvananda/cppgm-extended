@@ -1544,19 +1544,68 @@
   {
     "id": "CXX11-008",
     "priority": "P1",
-    "status": "triaged",
+    "status": "repair-in-validation",
     "upstream": [
       "llvm-project/clang/test/SemaCXX/P1155.cpp"
     ],
     "symptom": "P1825 throw of a value parameter still attempts deleted copy construction after return-side repair.",
     "root_cause": "throw_operand excludes function and catch parameters from implicit-move eligibility.",
     "owning_pa": 21,
-    "regressions": [],
+    "regressions": [
+      "pa21/tests/controls/100-throw-value-parameter-move-only.t",
+      "pa21/tests/controls/100-throw-value-parameter-selection.t",
+      "pa21/tests/controls/100-throw-parenthesized-parameter.t",
+      "pa21/tests/controls/100-throw-rvalue-reference-parameter.t",
+      "pa21/tests/controls/100-throw-value-catch-selection.t",
+      "pa21/tests/controls/100-throw-parameter-deleted-move-reject.t",
+      "pa21/tests/controls/100-throw-catch-deleted-move-reject.t",
+      "pa21/tests/controls/100-throw-parameter-private-move-reject.t",
+      "pa21/tests/controls/100-throw-catch-private-move-reject.t",
+      "pa21/tests/controls/100-throw-lvalue-reference-parameter.t",
+      "pa21/tests/controls/100-throw-const-lvalue-reference-parameter.t",
+      "pa21/tests/controls/100-throw-reference-catch-selection.t",
+      "pa21/tests/controls/100-throw-volatile-value-parameter.t",
+      "pa21/tests/controls/100-throw-const-value-parameter.t",
+      "pa21/tests/controls/100-throw-parameter-lvalue-fallback.t",
+      "pa21/tests/controls/100-throw-parameter-ambiguous-rvalue-fallback.t",
+      "pa21/tests/controls/100-throw-function-try-body-copy.t",
+      "pa21/tests/controls/100-throw-function-try-handler-move.t",
+      "pa21/tests/controls/100-throw-constructor-function-try-initializer-move.t",
+      "pa21/tests/controls/100-throw-constructor-initializer-move.t",
+      "pa21/tests/controls/100-throw-nested-try-parameter-copy.t",
+      "pa21/tests/controls/100-throw-nested-handler-parameter-move.t",
+      "pa21/tests/controls/100-throw-outer-try-catch-parameter-move.t",
+      "pa21/tests/controls/100-throw-catch-parameter-inner-try-copy.t",
+      "pa21/tests/controls/100-throw-member-expression-copy.t",
+      "pa21/tests/controls/100-throw-static-local-copy.t",
+      "pa21/tests/controls/100-throw-conditional-lvalue-copy.t",
+      "pa21/tests/controls/100-throw-ordinary-local-move-only.t",
+      "pa21/tests/controls/100-throw-template-value-parameter-move-only.t",
+      "pa21/tests/controls/100-throw-template-function-try-copy-reject.t",
+      "pa21/tests/controls/100-throw-lambda-value-parameter-move-only.t",
+      "pa21/tests/controls/100-throw-mutable-capture-copy.t",
+      "pa21/tests/controls/100-throw-local-rvalue-reference.t",
+      "pa21/tests/controls/100-throw-function-try-body-copy-reject.t",
+      "pa21/tests/controls/100-throw-prototype-trailing-move-only.t",
+      "pa21/tests/controls/100-throw-prototype-trailing-deleted-move-reject.t",
+      "pa21/tests/controls/100-throw-prototype-noexcept-move-only.t",
+      "pa21/tests/controls/100-throw-prototype-noexcept-deleted-move-reject.t",
+      "pa21/tests/controls/100-throw-local-default-argument-copy-reject.t",
+      "pa21/tests/controls/100-throw-local-default-argument-copy-only.t",
+      "pa21/tests/controls/100-throw-local-class-default-copy-reject.t",
+      "pa21/tests/controls/100-throw-local-class-default-copy-only.t",
+      "pa21/tests/controls/100-throw-reference-capture-copy.t",
+      "pa21/tests/controls/100-throw-prototype-substitution-move.t",
+      "pa21/tests/controls/100-throw-selected-template-deleted-move-reject.t"
+    ],
     "fix_revision": null,
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008",
     "checks": {},
     "performance": {
-      "status": "not-started"
+      "status": "not-started-full-functional-validation-running",
+      "pre_edit_design": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-preparation-v1.json",
+      "instruction_upper95_gate": 1.01,
+      "actual_rss_upper95_gate": 1.03
     },
     "standards_basis": {
       "category": "later-defect-resolution",
@@ -1565,9 +1614,23 @@
       "adoption": "CWG motion23,P1825R0,DR,July2019",
       "wording": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html",
       "cxx11_implementation_evidence": "https://clang.llvm.org/cxx_status.html",
-      "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/standards-rebased-v1/manifest.json"
+      "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/standards-rebased-v1/manifest.json",
+      "later_scope_dr": "CWG2549,February2025",
+      "scope_adoption": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2025/n5009.html",
+      "scope_wording": "https://cplusplus.github.io/CWG/issues/2549.html",
+      "scope_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/standards-cwg2549-v1/manifest.json"
     },
-    "triage_note": "P1825R0 adoption as aDR verified in N4829 motion23; Clang officially lists it for C++11. Honor implicitly movable entities plus ordinary/function-try/ctor-initializer scope. Preserve GCC disagreements and replace the old catch-deleted draft that diagnoses an earlier prvalue,with a faithfully isolated rule and valid neighbors. No compiler fix or new required regression committed yet."
+    "triage_note": "P1825 and adopted2549 scope rules adjudicated with independent review. Ctor-initializer is outside the function-try compound; its current oracle moves. Local default-argument parent scopes block an outer local even in unevaluated context; optionalClangwarnings are replayed away and not counted as required diagnoses. The new039 own-parameter default lookup defect is separate and remains open.",
+    "rebased_checkpoint": {
+      "active_worktree": "/mnt/vizier/cppgm-cxx11-throw-implicit-move-rebased",
+      "active_branch": "repair/cxx11-throw-implicit-move-rebased",
+      "regression_revision": "f0b2927d1",
+      "implementation_revision": "97fa48fc0",
+      "parent_regression_proof": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-parent-v2/assessment-v2.json",
+      "focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-candidate-v1/focused/assessment.json",
+      "normal_export": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-checks-v1",
+      "functional_status": "184focusedcells/45lanes-pass;strict8207,owning+optional+debug+selfhost+inception-pass;remainingaudits/export-running"
+    }
   },
   {
     "id": "CXX11-009",
@@ -3390,7 +3453,11 @@
       "historical_full_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029/performance-acceptance-v1.json",
       "rebased_protocol": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/protocol.json",
       "rebased_native_oracles": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/native-oracles-v1/assessment.json",
-      "historical_original_blocker": "Historical b7c overload-O2 differs due upstream changes; new upstream and candidate exact. Retain the original comparison as open pending independent semantic/ABI adjudication. No output-gate relaxation or denominator shrink."
+      "historical_original_blocker": "Historical b7c overload-O2 differs due upstream changes; new upstream and candidate exact. Retain the original comparison as open pending independent semantic/ABI adjudication. No output-gate relaxation or denominator shrink.",
+      "rebased_per_fix_instruction": "13AA/13AB reports pass;maxupper95=1.0000305614253144;packedbitfieldratio=0.9885835057755644",
+      "rebased_per_fix_actual_rss": "13AA/13ABpass;child1449702/start52607671 terminal0;independentverificationpending",
+      "outer_controller": "821381/start52528549 heldT beforefamily groups;exec93744",
+      "functional_window": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/functional-window-open-v1.json"
     },
     "standards_basis": {
       "category": "implementation-performance",
@@ -3547,7 +3614,7 @@
   {
     "id": "CXX11-032",
     "priority": "P1",
-    "status": "observed-language-gap",
+    "status": "repair-in-validation",
     "upstream": [
       "llvm-project/clang/test/CXX/dcl.dcl/dcl.enum/p1.cpp"
     ],
@@ -3574,7 +3641,15 @@
       "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
       "rationale": "The non-template namespace-scope opaque declarations enum S3::E2 : int and enum class S3::E3 use nested-name-specifiers, which the opaque-enum-declaration grammar does not permit."
     },
-    "assigned_agent": null
+    "assigned_agent": null,
+    "rebased_checkpoint": {
+      "active_worktree": "/mnt/vizier/cppgm-clang-qualified-opaque-enums-rebased",
+      "implementation_revision": "50a0f7a6a4f7fc0f0f3d043b9ffc65d536f21597",
+      "focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-032/required-regression-v1/focused-verification-v2.json",
+      "normal_export": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-032/rebased-18c45-checks-v1/functional-verification-v1.json",
+      "functional_status": "all-required-functional-and-export-pass;performance-pending",
+      "scope": "Eight mandatory non-template qualified-opaque forms fixed; dependent unused templates remain IFNDR review. Invalid fake-template<> target is distinct038,not claimedfixed."
+    }
   },
   {
     "id": "CXX11-033",
@@ -3824,5 +3899,60 @@
         "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html"
       ]
     }
+  },
+  {
+    "id": "CXX11-038",
+    "priority": "P1",
+    "status": "triaged",
+    "upstream": [],
+    "symptom": "Explicit enum-specialization syntax on three members of a non-template class is silently accepted.",
+    "root_cause": "Explicit-specialization target validation does not establish an eligible member-of-class-template target.",
+    "owning_pa": 15,
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-038",
+    "checks": {
+      "adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-038/standards-adjudication-v1.json",
+      "parent_silent": 12,
+      "native_required_diagnostics": 36
+    },
+    "performance": {
+      "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "original-C++11",
+      "clauses": [
+        "N3485 14.7.3p1/p3/p4"
+      ]
+    },
+    "scope": "Three mandatory forms confirmed. The fourth form involving an explicitly specialized class remains standards review and is excluded. Separate from032 qualified opaque-declaration validation."
+  },
+  {
+    "id": "CXX11-039",
+    "priority": "P1",
+    "status": "triaged",
+    "upstream": [],
+    "symptom": "Default arguments cannot find permitted own parameters,fail to hide globals,and can compute the wrong sizeof/runtime value.",
+    "root_cause": "Default-argument lookup uses the surrounding declaration scope without the function parameter bindings.",
+    "owning_pa": 7,
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039",
+    "checks": {
+      "adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/initial-adjudication-v1.json",
+      "source_pinned_cells": 20
+    },
+    "performance": {
+      "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "original-C++11-and-later-DR",
+      "original": [
+        "N3485 3.3.4p1",
+        "N3485 8.3.6p9"
+      ],
+      "later": "CWG2082,February2016"
+    },
+    "scope": "Required lookup regressions belong PA7:300; runtime procedural call PA10; throw composition PA21. Defect is reproduced on both008 parent andcandidate and remains separate from throw eligibility. Invalid negative throws blocked by undeclared-name errors are not counted as008 rule coverage."
   }
 ]
