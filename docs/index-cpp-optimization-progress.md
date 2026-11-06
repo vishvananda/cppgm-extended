@@ -913,6 +913,64 @@ Receipts: `dispatch-tail-final/` and its oracle/frozen/public/Boost companions,
 validation and initial invalid raw fixture are retained; final validation
 uses the corrected fixture and the amortized-growth implementation.
 
+## Eleventh mechanism: propagate uniform local contents
+
+The log parser's matcher has already lost its unused capture parameters
+through specialization. Its remaining initialization work comes from a local
+table filled with `0xff` and subsequently only read as integers. Increasing
+inlining or specialization budgets would not address this memory fact.
+
+The new proof admits a whole constant-byte fill at entry, an unused return,
+and ordinary integer observations through derived addresses. It rejects
+other writes, address observations, merges, escapes, volatile/atomic reads,
+unsupported types and entry exception regions. Replace admitted loads by
+their repeated-byte values and remove the unobserved fill. A cheap entry
+scan avoids full-function analysis when no fill qualifies. Eligible fills
+share one replacement walk and reuse an instruction mask; the initial
+prototype instead scanned its fill list at every instruction.
+
+Compiler hash:
+`e95310aed96a6206af4c38fc9fe892b8cf355e24159982129ee35c3edb3d6a2b`.
+Index binary hash:
+`9b814f2e33348c1ef0671fdf6ad005ce64ce3c3eff461b177a35ba794f63b8b0`.
+The production compiler and native object are identical to the measured
+prototype. All 50 checksums pass and direct/serialized objects agree.
+Index text falls another 320 bytes to 386,194.
+
+Five paired blocks give log parsing 1.189× instruction speed and 1.350×
+process CPU speed against the tenth compiler. The GCC and Clang comparisons
+remain separate in the receipts, with calibration warnings. Brainfuck's
+seven-pair control preserves the dispatch gain with unchanged instructions.
+An unrelated template-regex control initially shows about 3% lower CPU speed
+in two trials. A third, separately calibrated cache-counter trial gives
+0.998× CPU speed, unchanged instructions and no resolved instruction-cache
+increase; its calibration varies more than the suspected effect. Retain that
+uncertainty in the full-scoreboard controls instead of asserting exact times.
+
+Independent GCC/Clang, baseline/candidate and replay paths pass 98,304 cases
+each. Eight additional raw-IR paths pass 57,344 cases each, including pointer
+phis, before-fill reads, partial writes, opaque mutations, volatile/atomic
+accesses, floating values, wide loads and copied contents. A 64–1,024-fill
+scaling family produces identical objects and correct executables; the largest
+case uses about 32% fewer compile instructions than the initial prototype.
+
+All 13 validation gates pass, including the strict 8,061-test report,
+debug info, self-host PA5, PA35 smoke/quick, modern C++, audits, harness and
+GCC/Clang warnings-as-errors. Inception matches. The new raw expectation
+initially lacked its normally generated outcomes; regeneration and the
+targeted fixture/audit rechecks pass, with the first receipt retained.
+All 74 public and four Boost sentinel objects are byte-identical to the
+tenth compiler. Frozen `-O3` compile instructions grow about 0.020% for this
+change and 0.457% cumulatively; `-O0` and RSS remain within the investigation
+bars. Linux measures peak RSS here, not physical footprint.
+
+A fresh student export passes document, reference-bundle and installed-tool
+checks, including both new required C++11 fixtures. Student guidance describes
+content propagation and its proof without prescribing a pass or instruction
+sequence. Receipts: `uniform-local-fill-ported/`, `uniform-local-fill-v4/`,
+its oracle/edge/frozen companions, `uniform-fill-linear-scaling/`,
+`uniform-fill-ported-*` and `student-export-uniform-fill-ported/`.
+
 ## Outstanding work
 
 Retain the completed public suite, 50-workload comparison, PA35 release and

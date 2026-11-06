@@ -76,14 +76,16 @@ fills, and constant-slot coalescing handles copies from immutable globals;
 neither folds this uniform nonzero local fill. The first missing fact is thus
 local-memory content propagation, after the relevant control flow simplifies.
 
-A private experiment recognizes a complete constant-byte fill at entry,
+The eleventh mechanism recognizes a complete constant-byte fill at entry,
 rejects every other write, escape, volatile access or unsupported observation,
 and replaces ordinary integer loads with their repeated-byte value. It needs
 no benchmark name, fixed table length, expected index or checksum. It preserves
 entry order and rejects entry EH regions; it never speculates another load.
 The address can follow variable indices and copies, but a merge or unrecognized
-use conservatively rejects the proof. A production version should share the
-existing address/use walk, rather than adding another unconditional scan.
+use conservatively rejects the proof. The entry scan gates further analysis;
+all eligible fills share a linear replacement walk. A prototype merging the
+global-copy and fill address walks costs more on the frozen workload, so
+fewer scans alone did not justify that refactor.
 
 The private build passes all 50 workloads. An independent host oracle checks
 98,304 cases per path over three fill bytes, four integer widths, mutations,
@@ -92,11 +94,17 @@ memset return values. GCC, Clang, both compilers and serialized replay agree
 at every optimization level. Five paired blocks give 1.189× instruction speed
 and 1.382× process CPU speed against the ninth compiler. Reference timing
 calibration warns, so their apparent runtime advantage is not an acceptance
-claim. Frozen `-O3` compile instructions increase about 0.016%; `-O0` objects
-are unchanged. This remains private, with required fixtures, raw negative
-cases and full production validation still to do. Receipts:
+claim. The final port confirms 1.189× instruction speed and 1.350× CPU speed
+on log parsing against the tenth compiler, with about 0.020% more frozen
+`-O3` compile instructions. All 13 validation gates, inception and fresh
+student export pass. Added raw negatives cover merges, before-fill reads,
+partial writes, escapes, volatile/atomic accesses and unsupported load types.
+The progress record retains an inconclusive template-regex timing concern;
+its instructions are unchanged. Receipts:
 `uniform-local-fill-v2/`, `uniform-local-fill-v2-oracle/` and
-`uniform-local-fill-v2-frozen/`. The first prototype's unchanged matcher and
+`uniform-local-fill-v2-frozen/`, `uniform-local-fill-v4*`,
+`uniform-local-fill-ported/` and `uniform-fill-linear-scaling/`.
+The first prototype's unchanged matcher and
 failed build are retained separately; they do not support the new result.
 
 ## Brainfuck: protect the earlier win against layout sensitivity

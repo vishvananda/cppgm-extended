@@ -72,13 +72,14 @@ private:
 	bool forward_copies(BlockId block);
 	bool zero_fill_slots();
 	bool constant_slots();
+	bool uniform_slots();
 
 	FunctionContext& c_;
 	FunctionBody& body_;
 	std::vector<uint32_t> uses_;
 	std::vector<uint32_t> slot_uses_; // per slot: instructions naming it (directly or by addr)
 	std::vector<uint8_t> escaped_;    // per slot: its address reaches more than accesses and copies
-	std::vector<uint8_t> dead_;       // per instruction: a merged pair's load or store
+	std::vector<uint8_t> dead_;       // per instruction: a merged pair or removable fill
 	uint32_t merges_ = 0;
 	bool changed_ = false;
 };
@@ -421,6 +422,144 @@ bool CopyCoalescing::constant_slots()
 	return changed;
 }
 
+// A whole entry fill of a nonescaping object determines ordinary integer
+// loads through its derived addresses, including variable indices.
+// No other writes, address observations, copy sources or EH entry are allowed.
+bool CopyCoalescing::uniform_slots()
+{
+	if (body_.slots.empty() || body_.layout.empty())
+		return false;
+	const BlockId entry = body_.layout.front();
+	struct Fill
+	{
+		SlotId slot;
+		InstId inst;
+		uint8_t byte;
+	};
+	std::vector<Fill> fills;
+	for (InstId i = body_.blocks[entry].first; i != kNoId; i = body_.instructions[i].next)
+	{
+		const Instruction& inst = body_.instructions[i];
+		if (is_eh_instruction(inst.op))
+			return false;
+		if (inst.op != Opcode::Call || inst.extra_count != 3 || !inst.ops[0].is(ValueKind::Symbol) ||
+			!c_.program.memset_function(inst.ops[0].index) || (inst.result != kNoId && uses_[inst.result] != 0))
+			continue;
+		const Value* args = &body_.operands[inst.extra_first];
+		Rooted at;
+		if (!rooted(body_, args[0], at) || !at.root.is(ValueKind::Slot) || at.offset != 0 ||
+			!args[1].is(ValueKind::Integer) || !args[2].is(ValueKind::Integer))
+			continue;
+		const Literal& n = body_.literals[args[2].index];
+		if (!body_.slots[at.root.index].type.is_object() || n.high != 0 || n.low == 0 ||
+			n.low != storage_bytes(body_.slots[at.root.index].type))
+			continue;
+		fills.push_back(Fill{ at.root.index, i, static_cast<uint8_t>(body_.literals[args[1].index].low) });
+	}
+	if (fills.empty())
+		return false;
+	std::vector<InstId> fill(body_.slots.size(), kNoId);
+	std::vector<uint8_t> byte(body_.slots.size(), 0), bad(body_.slots.size(), 0), seen(body_.slots.size(), 0);
+	for (const Fill& f : fills)
+	{
+		if (fill[f.slot] != kNoId)
+			bad[f.slot] = 1;
+		fill[f.slot] = f.inst;
+		byte[f.slot] = f.byte;
+	}
+	std::vector<SlotId> derived(body_.temps.size(), kNoId);
+	auto slot_of = [&](Value v) -> SlotId {
+		if (v.is(ValueKind::Slot))
+			return v.index;
+		return v.is(ValueKind::Temp) ? derived[v.index] : kNoId;
+	};
+	for (BlockId b : body_.layout)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			if (inst.result == kNoId)
+				continue;
+			if ((inst.op == Opcode::Addr && inst.ops[0].is(ValueKind::Slot)) || inst.op == Opcode::Index ||
+				(inst.op == Opcode::Copy && inst.type.is_pointer()))
+				derived[inst.result] = slot_of(inst.ops[0]);
+		}
+	for (BlockId b : body_.layout)
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+		{
+			const Instruction& inst = body_.instructions[i];
+			const SlotId target = inst.op == Opcode::Call && inst.extra_count == 3
+				? slot_of(body_.operands[inst.extra_first])
+				: kNoId;
+			if (target != kNoId && fill[target] == i)
+				seen[target] = 1;
+			unsigned position = 0;
+			for_each_operand(body_, inst, [&](Value v) {
+				const unsigned at = position++;
+				const SlotId slot = slot_of(v);
+				if (slot == kNoId || fill[slot] == kNoId)
+					return;
+				if (inst.result != kNoId && derived[inst.result] != kNoId && at == 0)
+					return;
+				if (i == fill[slot] && at == 3)
+					return;
+				if (inst.op == Opcode::Load && at == 0 && !(inst.flags & IF_VOLATILE) && inst.type.is_integer() &&
+					storage_bytes(inst.type) <= 8 && (b != entry || seen[slot]))
+					return;
+				bad[slot] = 1;
+			});
+		}
+	bool any = false;
+	for (const Fill& f : fills)
+		any = any || !bad[f.slot];
+	if (!any)
+		return false;
+	// Reuse the instruction mask; all eligible fills share one replacement walk.
+	dead_.assign(body_.instructions.size(), 0);
+	for (const Fill& f : fills)
+		if (!bad[f.slot])
+			dead_[f.inst] = 1;
+	bool changed = false;
+	FunctionBuilder builder(c_.program, c_.symbol);
+	for (BlockId b : body_.layout)
+	{
+		InstId prev = kNoId;
+		for (InstId i = body_.blocks[b].first; i != kNoId;)
+		{
+			Instruction& inst = body_.instructions[i];
+			const InstId next = inst.next;
+			if (inst.op == Opcode::Load && !(inst.flags & IF_VOLATILE))
+			{
+				const SlotId slot = slot_of(inst.ops[0]);
+				if (slot != kNoId && fill[slot] != kNoId && !bad[slot])
+				{
+					uint64_t bits = static_cast<uint64_t>(byte[slot]) * 0x0101010101010101ull;
+					const uint64_t width = storage_bytes(inst.type);
+					if (width < 8)
+						bits &= (uint64_t(1) << (width * 8)) - 1;
+					inst.op = Opcode::Copy;
+					inst.ops[0] = builder.integer(static_cast<int64_t>(bits));
+					inst.ops[1] = inst.ops[2] = Value::none();
+					inst.flags = inst.sub = 0;
+					inst.extra_count = inst.extra_first = 0;
+					inst.immediate = 0;
+					++c_.stats.loads_reused;
+					changed = true;
+				}
+			}
+			if (dead_[i])
+			{
+				unlink_after(body_, b, prev, i);
+				++c_.stats.stores_removed;
+				changed = true;
+			}
+			else
+				prev = i;
+			i = next;
+		}
+	}
+	return changed;
+}
+
 // Adjacent nonvolatile scalar load/store pairs copying a contiguous range
 // of one size between storage that cannot overlap, each loaded value used
 // only by its store, merge into one copyobj; up to four loads may come
@@ -551,6 +690,7 @@ bool CopyCoalescing::run()
 			count_uses(body_, uses_); // (else as counted above)
 		changed_ = zero_fill_slots() || changed_;
 		changed_ = constant_slots() || changed_;
+		changed_ = uniform_slots() || changed_;
 	}
 	return changed_;
 }

@@ -1,0 +1,9 @@
+# outcomes from 500-uniform-local-fill.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
+none(phi)
+none(copyobj)
+
+instructions <= 100
+blocks <= 40
+instructions <= 4 in @uniform_word
+instructions <= 4 in @uniform_short
+instructions <= 4 in @uniform_byte

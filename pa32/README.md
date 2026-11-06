@@ -220,9 +220,10 @@ To evaluate one sidecar by hand:
 $ perl ../scripts/expect_ir.pl tests/o1/x.my tests/o1/x.ref.expect
 ```
 
-`make test-kernels` adds five dynamic work checks: bounded search, aliased and
+`make test-kernels` adds six dynamic work checks: bounded search, aliased and
 disjoint field updates, narrow arithmetic, state crossing a cold call and
-conditionally updated floating state.
+conditionally updated floating state, plus adjacent updates with an invariant
+factor.
 
 Library-call rewrites must preserve side effects and use an ABI provided by
 the target runtime. Keeping independent calls is valid; tests judge behavior
@@ -274,6 +275,10 @@ pass:
   need not reach memory. Address identity can prove this even when an array
   index is dynamic. Preserve alias reads, volatile and atomic accesses,
   callbacks, exceptional paths and bytes a partial write does not replace.
+- A complete constant-byte fill can determine later integer reads through
+  varying indices. Preserve other writes and observations; the object-content
+  fixtures include pointer merges, partial fills and escapes. No particular
+  propagation pass is required.
 - A conditional choice between fields can sometimes use one indexed address
   and one read. Prove the bit test and byte offsets, preserve which address
   is accessed, and keep volatile reads and memory dependencies observable.

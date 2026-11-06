@@ -87,6 +87,13 @@ an array can expose known-zero fields; overlapping copies need the semantics
 of the original operation. Static initialization is possible only when its
 observable values and ordering agree with dynamic initialization.
 
+The same reasoning applies to a complete fill with any constant byte. Later
+integer reads can have known values even when their indices vary. Prove which
+bytes were initialized before each read and account for partial writes,
+pointer merges, escapes, volatile or atomic observations and exception paths.
+A repeated byte is a representation fact, not a general floating or pointer
+value. Different propagation strategies may meet the same quality bounds.
+
 ## Loops, counters and exits
 
 Describe a loop's entries, latches and exits before changing it. A preheader
