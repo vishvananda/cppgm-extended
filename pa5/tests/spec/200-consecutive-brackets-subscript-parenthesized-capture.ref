@@ -1,0 +1,40 @@
+1 translation units
+start translation unit 1
+translation-unit
+  simple-declaration
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    init-declarator-list
+      init-declarator
+        declarator
+          identifier a
+          array-suffix
+            literal 1
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier main
+      parameter-clause
+    compound-statement
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_INT:int
+        init-declarator-list
+          init-declarator
+            declarator
+              identifier x
+            initializer
+              literal 0
+      return-statement
+        subscript-expression
+          id-expression a
+          parenthesized-expression
+            call-expression
+              lambda-expression
+                lambda-introducer [x]
+                compound-statement
+                  return-statement
+                    id-expression x
+              argument-list
+end translation unit

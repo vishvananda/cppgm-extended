@@ -989,6 +989,13 @@ Expr* Parser::parse_postfix_suffixes(Expr* expr)
 		}
 		else if (token.is(TokenKind::OP_LSQUARE))
 		{
+			// 7.6.1p6: consecutive '[' tokens cannot introduce a subscript
+			// followed by a lambda, even when that alternative would parse.
+			if (at(TokenKind::OP_LSQUARE, 1))
+			{
+				fail();
+				return nullptr;
+			}
 			SubscriptExpr* subscript = make<SubscriptExpr>(ExprKind::Subscript, expr->location);
 			subscript->base = expr;
 			next();
