@@ -1526,6 +1526,12 @@ bool ProgramLowering::static_element(const sema::Type* type, const syntax::Expr&
 			static_vector(type, static_cast<const syntax::BracedInitList&>(element), out);
 	if (element.kind == syntax::ExprKind::BracedInit)
 	{
+		// A reference's prvalue array is its own temporary, not its first
+		// initializer. Let the typed constant evaluator retain its backing
+		// object and lifetime instead of binding directly to a string literal.
+		if (type->is_reference() && element.facts != nullptr && element.facts->type->kind == sema::TypeKind::Array &&
+			element.facts->category == sema::ValueCategory::PRValue)
+			return false;
 		const syntax::BracedInitList& list = static_cast<const syntax::BracedInitList&>(element);
 		if (list.elements.empty())
 			return missing_element(type, false, out);

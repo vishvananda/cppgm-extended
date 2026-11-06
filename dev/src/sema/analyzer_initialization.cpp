@@ -75,6 +75,18 @@ bool InitializesCharacterArray(const Type* literal, const Type* element)
 					element->unqualified->fundamental == FundamentalType::UnsignedChar)));
 }
 
+// Preserve the outer expression's typed facts, including parentheses, but
+// recognize only literal syntax: a named character array is not a string literal.
+const syntax::Expr* CharacterArrayLiteral(const syntax::BracedInitList& list, const Type* element)
+{
+	if (list.elements.size != 1 || !IsCharacterArrayElement(element))
+		return nullptr;
+	const syntax::Expr* literal = list.elements[0];
+	while (literal->kind == syntax::ExprKind::Paren)
+		literal = static_cast<const syntax::ParenExpr*>(literal)->inner;
+	return literal->kind == syntax::ExprKind::Literal ? list.elements[0] : nullptr;
+}
+
 } // namespace
 
 FunctionEntity* Analyzer::implicit_constructor(ClassEntity* entity)
@@ -420,20 +432,23 @@ void Analyzer::list_initialize(const syntax::BracedInitList& list, const Type* t
 		// 8.5.2p1: a character array from a string literal, optionally in
 		// braces (and parenthesized, GCC's and Clang's extension, as
 		// check_character_array's and a member's).
-		const syntax::Expr* literal = list.elements.size == 1 ? list.elements[0] : nullptr;
-		while (literal != nullptr && literal->kind == syntax::ExprKind::Paren)
-			literal = static_cast<const syntax::ParenExpr*>(literal)->inner;
-		if (literal != nullptr && literal->kind == syntax::ExprKind::Literal && IsCharacterArrayElement(type->element))
+		if (const syntax::Expr* literal = CharacterArrayLiteral(list, type->element))
 		{
-			ExprFacts* facts = typed(*list.elements[0], scope);
+			ExprFacts* facts = typed(*literal, scope);
 			if (facts == nullptr)
 				return;
 			if (facts->type->kind == TypeKind::Array)
 			{
 				if (!InitializesCharacterArray(facts->type->element, type->element))
-					error(list.location, "array initialized from a string literal of another kind");
+				{
+					substitution_error(list.location, "array initialized from a string literal of another kind");
+					return;
+				}
 				if (type->bound != 0 && facts->type->bound > type->bound)
-					error(list.location, "string literal too long for the array");
+				{
+					substitution_error(list.location, "string literal too long for the array");
+					return;
+				}
 				// An omitted bound is the literal's (8.5.2p2, 8.5.1p4).
 				new_facts(list, type->bound == 0 ? types_.array(type->element, facts->type->bound) : type,
 					ValueCategory::LValue);
@@ -679,15 +694,12 @@ bool Analyzer::array_new_list(
 	// g++ applies in C++11); a run-time one obtains no storage (see the
 	// lowering's array_allocation). `trailing`: elements may follow.
 	const ExprFacts* facts = nullptr;
-	const syntax::Expr* literal = list.elements.size == 1 ? list.elements[0] : nullptr;
-	while (literal != nullptr && literal->kind == syntax::ExprKind::Paren)
-		literal = static_cast<const syntax::ParenExpr*>(literal)->inner;
-	if (literal != nullptr && literal->kind == syntax::ExprKind::Literal && IsCharacterArrayElement(element))
+	if (const syntax::Expr* literal = CharacterArrayLiteral(list, element))
 	{
 		// 8.5.2: characters from a string literal (in braces, perhaps
 		// parenthesized as list_initialize's), its code units' array; the
 		// element typed whole, parentheses included.
-		const ExprFacts* string = typed(*list.elements[0], scope);
+		const ExprFacts* string = typed(*literal, scope);
 		if (string == nullptr)
 			return false;
 		if (string->type->kind == TypeKind::Array)
@@ -959,16 +971,25 @@ bool Analyzer::list_sequence(const syntax::BracedInitList& list, const Type* par
 		// no more elements than its bound (8.5.1p6).
 		if (target->bound == 0 || list.elements.size > target->bound)
 			return false;
-		for (const syntax::Expr* element : list.elements)
-		{
-			Conversion step = Conversion();
-			if (element->kind == syntax::ExprKind::BracedInit
-					? !list_sequence(static_cast<const syntax::BracedInitList&>(*element), target->element, step)
-					: !implicit_sequence(*element, target->element, step))
-				return false;
-			if (conversions_.compare(step, sequence) < 0)
-				sequence = step;
-		}
+		const syntax::Expr* literal = CharacterArrayLiteral(list, target->element);
+		const ExprFacts* string = literal != nullptr ? facts_of(*literal) : nullptr;
+		const bool string_array = string != nullptr && string->type->kind == TypeKind::Array;
+		// CWG1467: an appropriately typed string literal has an identity
+		// conversion. Its length is checked when initializing the selected
+		// target, not when ranking candidates (even a short bound can tie).
+		if (string_array && !InitializesCharacterArray(string->type->element, target->element))
+			return false;
+		if (!string_array)
+			for (const syntax::Expr* element : list.elements)
+			{
+				Conversion step = Conversion();
+				if (element->kind == syntax::ExprKind::BracedInit
+						? !list_sequence(static_cast<const syntax::BracedInitList&>(*element), target->element, step)
+						: !implicit_sequence(*element, target->element, step))
+					return false;
+				if (conversions_.compare(step, sequence) < 0)
+					sequence = step;
+			}
 		sequence.form = ConversionForm::Standard;
 		sequence.result = target;
 		sequence.target = parameter;
@@ -1289,8 +1310,10 @@ void Analyzer::list_argument(const syntax::BracedInitList& list, const Type* par
 	}
 	if (target->kind == TypeKind::Array)
 	{
-		// A reference's temporary array (8.5.4p3), aggregate-initialized.
-		if (braced_list(list, target, scope) != nullptr)
+		// A reference's temporary array (8.5.4p3), including CWG1490's
+		// character array initialization from a single string literal.
+		list_initialize(list, target, scope);
+		if (!failed())
 			facts_of(list)->category = ValueCategory::PRValue;
 		return;
 	}
