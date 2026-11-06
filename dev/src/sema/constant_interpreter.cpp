@@ -22,6 +22,24 @@ const size_t kCallDepth = 512;
 void CopyValue(ConstValue& target, const ConstValue& source, Arena& arena, PointerMap* shared = nullptr,
 	std::vector<ConstValue*>* payloads = nullptr);
 
+bool CompactClass(const ClassEntity* cls)
+{
+	if (cls == nullptr)
+		return false;
+	if (cls->base_count != 0)
+		return true;
+	// Flat objects have storage proportional to their declared fields.
+	// A compound graph can describe many logical subobjects with few types.
+	for (const DataMember* member = cls->members; member != nullptr; member = member->next)
+	{
+		const Type* field = member->variable->type->unqualified;
+		if (!field->is_reference() && field->kind != TypeKind::Fundamental && field->kind != TypeKind::Enum &&
+			field->kind != TypeKind::Pointer && field->kind != TypeKind::MemberPointer)
+			return true;
+	}
+	return false;
+}
+
 bool StaticStorage(const VariableEntity* variable)
 {
 	const Scope* owner = variable->owner;
@@ -185,21 +203,8 @@ bool ConstantInterpreter::new_object(const Type* type, ConstPlace& place, uint32
 	if (cls != nullptr && cls->destructor != nullptr && !cls->destructor->trivial)
 		return fail(location, "an object with a non-trivial destructor in a constant expression");
 	size_of(type, location);
-	if (prefix && type->kind != TypeKind::Array && cls != nullptr && cls->base_count == 0)
-	{
-		// A flat class has storage proportional to its declared fields.
-		// Allocate it once before its constructor, without shared payloads
-		// or deferred storage; compound class graphs keep the compact path.
-		bool flat = true;
-		for (const DataMember* member = cls->members; flat && member != nullptr; member = member->next)
-		{
-			const Type* field = member->variable->type->unqualified;
-			flat = field->is_reference() || field->kind == TypeKind::Fundamental || field->kind == TypeKind::Enum ||
-				field->kind == TypeKind::Pointer || field->kind == TypeKind::MemberPointer;
-		}
-		if (flat)
-			prefix = false;
-	}
+	if (type->kind != TypeKind::Array && cls != nullptr)
+		prefix = CompactClass(cls);
 	if (!prefix && leaves(type, 0) > kValueBudget)
 		return fail(location, "constant evaluation exceeds its storage budget");
 	ConstValue* value = static_cast<ConstValue*>(arena_.allocate(sizeof(ConstValue), alignof(ConstValue)));
@@ -1747,10 +1752,14 @@ bool ConstantInterpreter::initialize(const VariableEntity* variable, const synta
 		out = publish(PointerTo(place, type), location);
 		return out != nullptr;
 	}
-	if (leaves(type, 0) > kValueBudget)
+	const ClassEntity* cls = type->kind == TypeKind::Array ? nullptr : ClassOf(type);
+	if (cls != nullptr)
+		analyzer_.require_complete(cls);
+	const bool prefix = CompactClass(cls);
+	if (!prefix && leaves(type, 0) > kValueBudget)
 		return fail(location, "constant evaluation exceeds its storage budget");
 	ConstValue* storage = static_cast<ConstValue*>(arena_.allocate(sizeof(ConstValue), alignof(ConstValue)));
-	*storage = skeleton(type);
+	*storage = prefix ? prefix_skeleton(type, 0) : skeleton(type);
 	// Static storage is already zero when trivial default-initialization
 	// does nothing. An initializer still cannot read an uninitialized
 	// subobject during constant evaluation.

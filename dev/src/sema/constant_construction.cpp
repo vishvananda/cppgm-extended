@@ -633,6 +633,14 @@ bool ConstantInterpreter::aggregate_element(
 		{
 			if (type->kind == TypeKind::Array)
 			{
+				if (!zero_array_tail(type, 0))
+				{
+					// Omitted aggregates still initialize their nonzero class
+					// defaults; the array path bounds construction and storage.
+					syntax::BracedInitList empty = syntax::BracedInitList();
+					uint32_t none = 0;
+					return aggregate_array(type, target, empty, none, location);
+				}
 				ConstValue* value = nullptr;
 				if (!locate(target, true, value, location))
 					return false;

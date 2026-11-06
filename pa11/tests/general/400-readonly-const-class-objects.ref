@@ -23,8 +23,7 @@ global @mutable_in_member [binding=internal, object=_ZL17mutable_in_member] = {
   i32 12
 }
 global @mutable_in_base [binding=internal, object=_ZL15mutable_in_base] = {
-  i32 0
-  i32 0
+  zero 8
   i32 0
 }
 global @volatile_member [binding=internal, object=_ZL15volatile_member] = {
