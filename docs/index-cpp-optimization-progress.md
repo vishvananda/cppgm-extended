@@ -1127,8 +1127,8 @@ through the installed reference compiler. All three export checks pass.
 Compiler hash:
 `24d05fdd451f1ee4e028e5833d751db4918f765245ca8a2b1cc2d756803c65c5`.
 The index object is byte-identical to the twelfth compiler, all 50 checksums
-pass and serialized replay agrees. All 74 public and four Boost objects are
-also identical. Frozen `-O0`/`-O3` object bytes are unchanged against the
+pass and serialized replay agrees. All 74 selected public-sentinel and four
+Boost objects are also identical. Frozen `-O0`/`-O3` object bytes are unchanged against the
 twelfth compiler; instruction and RSS differences are within calibration.
 Cumulative `-O3` compile-instruction growth remains about 0.461%, below the
 0.5% investigation trigger. The existing native measurements therefore apply
@@ -1151,12 +1151,123 @@ publication validator and writes complete latest/history data locally;
 the workflow publishes remotely only after reaching main. Receipts are
 `ci-head12/index-results/` and `ci-head12/index-publication-validation.json`.
 
-## Remaining work and ranked follow-ups
+## Final validation and public performance review
 
-The correctness follow-up is validated locally. Push its separate compiler
-and harness-test commits, then review the fresh CI head.
-The automatic index-cpp job is already validated locally and on GitHub; its
-first main execution will publish results beside the public suite.
+The compiler and harness follow-ups are pushed through `184956e15`.
+The [full compiler matrix](https://github.com/vishvananda/cppgm-extended/actions/runs/42264540502)
+passes all 22 jobs, including the two previously failing checks. The
+[Boost advisory](https://github.com/vishvananda/cppgm-extended/actions/runs/42264529272),
+[index-cpp](https://github.com/vishvananda/cppgm-extended/actions/runs/42264529509)
+and [public benchmark](https://github.com/vishvananda/cppgm-extended/actions/runs/42264529335)
+workflows also pass. Every public program agrees with GCC at both levels;
+there are no Clang failures. All 14 paired compiler rebuild observations
+produce the same self/inception binary.
+
+The final local `make -C pa35 ref-test` passes all 17 course/student release
+gates at the existing margins. Its calibration files are archived privately
+and restored. This supplements the strict 8,064-test report, debug-info,
+GCC/LLVM 18 self-host checks, inception, architecture audits and fresh export
+already recorded above. No compiler source changes after those validations.
+Matched compile controls against the original campaign compiler add 0.475%
+instructions for tramp3d, remove 0.415% for JSON, and add 0.053% for RE2's
+representative bitstate translation unit. Their peak RSS remains within the
+existing bars; CPU timings are noisy. Linux records peak RSS here, not physical
+footprint, which is unavailable on this host.
+
+Fresh index-cpp CI checks all 50 workloads with all three compilers on an
+EPYC 9V45. Generated-code speeds are 0.999× GCC and 1.000× Clang; compile
+CPU speeds are 6.897× and 5.429×. The 26 GCC and 19 Clang A/A warnings remain
+visible; these small runtime differences establish approximate parity.
+The actual publisher again passes local latest/history persistence checks.
+Trusted main execution will publish the results beside the public suite.
+
+### Public CI changes versus published v8
+
+Compare published `b7c6b8e7` with the final compiler `184956e15` using the
+badge calculation, with all ratios higher is better:
+
+| Measurement | Published v8 | Final compiler | Relative speed change |
+| --- | ---: | ---: | ---: |
+| Public O0 vs GCC, 81 programs | 1.0328× | 1.0432× | +1.01% |
+| Public O3 vs GCC, 81 programs | 0.9841× | 0.9800× | −0.41% |
+| Public O3 vs Clang, 80 timed programs | 0.9697× | 0.9700× | +0.02% |
+| Self-built compiler vs GCC-built compiler | 0.9858× | 0.9679× | −1.81% |
+
+The first run uses an EPYC 9V74; the final run uses an EPYC 7763. Toolchain
+versions match. These are observed changes in relative CI timings, not a
+controlled old/new experiment on one host. The self-built CPU overhead rises
+from 1.44% to 3.31%; the two latest block speeds are 0.9696× and 0.9662×,
+with 0.72% A/A drift. This difference warrants investigation rather than
+being dismissed as rounding.
+
+Forty of the 81 actual O3 cppgm executables have identical CI hashes across
+the runs; all GCC and Clang reference executables are unchanged. Apparent
+losses in Bubblesort (7.52%), the exception test (5.94%), spectralnorm/1
+(5.32%) and Puzzle (5.29%) occur with unchanged cppgm executables. Fasta/6's
+15.01% apparent loss accounts for about 0.20 log-percentage points of the
+0.41% aggregate decline. The CI changes cannot all be compiler regressions.
+
+A local object comparison freezes both compiler binaries and the source/header
+closures. It covers all 81 programs and 444 translation units at both levels,
+including the manifest's host-built C inputs. O0 objects are identical for
+80 programs; only tramp3d changes. O3 objects change in 42 programs, with
+different linked text in 41. Changed outputs and exit statuses agree with
+local GCC reference results. Mandelbrot/0 rounds its height using the hardware
+thread count, so a fresh local GCC oracle checks that host-dependent output;
+cross-host output hashes are not interchangeable.
+
+All 18 changed-object programs with at least a 1% apparent O3 CI loss receive
+fixed-affinity old/new controls: counters, separate precise CPU measurements,
+fresh A/A calibration and unchanged inputs. Additional controls interleave
+calibration across nine paired blocks for the remaining suspicious cases:
+
+| Program | Observed CI speed change | Extended local speed change | Qualification |
+| --- | ---: | ---: | --- |
+| Ray | −5.15% | −0.48% | A/A varies 1.67–3.09%; the initial 3.55% local loss does not repeat. |
+| Spirit | −3.82% | +1.89% | Calibration varies; no repeated slowdown. |
+| Lambda | −3.63% | +0.01% | Calibration varies; no repeated slowdown. |
+| RapidJSON | −2.31% | +1.17% | Calibration varies; no repeated slowdown. |
+| PENNANT | −1.93% | +1.47% | Nine blocks, ten full invocations per observation; the initial 1–2% loss reverses, with substantial A/A variation. |
+
+Fasta/6's four-core control does not reproduce its 15% CI loss: CPU speed is
+0.987× with 9.0% A/A drift. Its earlier single-core trial oversubscribes four
+workers and remains a diagnostic, not a normal-throughput comparison. The
+original-baseline index controls also revisit nine apparent losses; the
+separate Arena confirmation is 1.005× CPU with unchanged instructions and
+unchanged hot code. Every original observation remains available. These
+checks find no repeatable material runtime loss; they do not establish exact
+equality or resolve small effects inside calibration noise.
+
+### Separate additional compiler work from code-generation quality
+
+Use the exact published and final CI seed/self compiler binaries on the same
+frozen semantic-overload input and header epoch. At O3, instruction counts
+increase 0.600% in the GCC-built compiler and 0.685% in the self-built compiler.
+The self/seed instruction ratio changes from 1.01716 to 1.01801, only 0.084%
+relatively. O0 adds 0.410% and 0.348% respectively. These measurements cover
+one fixed compilation, not the entire CI rebuild.
+
+A separate same-source ablation builds the unchanged published compiler
+source with the old and final compiler. The old result exactly reproduces
+the published CI self binary. The new code generator reduces O3 frozen-compile
+instructions by 0.075%, and both generated compilers emit identical frozen
+objects. This does not show a broad code-generation regression. The full
+1.81% CI timing difference remains sensitive to processor, workload mix,
+layout and latency; the instruction counts alone do not explain it.
+
+PA35's separately built self compiler gives a different 1.38% instruction
+increase and must not substitute for the exact CI binary. PA35 replays the
+host build's flags, including `-fno-strict-aliasing`; PA34's CI bootstrap uses
+its own flags. Both are useful checks with different scope.
+
+Receipts: `parser-prefix-final/final-release/`, `ci-final-head/`,
+`final-original-native-controls/`, `final-original-arena-control/` and
+`public-codegen-regression-review/`. The latter retains the complete per-program
+CI comparison, verified object/input manifests, exact binary hashes, separate
+counter/CPU observations, same-source builds and failed review-harness trials.
+No benchmark inputs, compiler policy or acceptance gates change for this review.
+
+## Ranked optimization follow-ups
 
 The new ranking and refreshed diagnoses leave these follow-ups. A diagnosis
 with an open legality or cost proof is not an implemented optimization.

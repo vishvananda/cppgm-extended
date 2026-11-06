@@ -1,7 +1,7 @@
 # index-cpp optimization plan
 
-Status: implementation in progress. See
-[investigation records](index-cpp-optimization-progress.md) for evidence and remaining work.
+Status: implemented. See
+[investigation records](index-cpp-optimization-progress.md) for validation and ranked follow-ups.
 This is a maintainer document and must remain outside the student export.
 
 Improve generated code on the slowest index-cpp workloads while preserving
