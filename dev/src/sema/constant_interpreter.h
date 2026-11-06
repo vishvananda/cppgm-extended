@@ -15,6 +15,7 @@ namespace sema {
 
 class Analyzer;
 class ConstantMemo;
+struct ConstantStorage;
 struct Conversion;
 
 // The constant evaluator of semantics mode (5.19, 7.1.5): it
@@ -100,12 +101,27 @@ private:
 	bool subobjects_too_deep(uint32_t depth) const;
 
 	// -------------------------------------------- objects and places
-	ConstValue skeleton(const Type* type);
+	ConstValue skeleton(const Type* type, bool owned = false);
 	bool new_object(const Type* type, ConstPlace& place, uint32_t location, bool prefix = false);
 	static bool scalar_array(const Type* type);
 	static ConstValue array_prefix(const Type* type);
 	bool zero_array_tail(const Type* type, uint32_t depth);
 	ConstValue prefix_skeleton(const Type* type, uint32_t depth);
+	ConstValue prefix_value(const Type* type, uint32_t depth, bool zero);
+	void detach_elements(ConstValue& value);
+	void writable_elements(ConstValue& value)
+	{
+		if ((value.flags & kSharedElements) != 0)
+			detach_elements(value);
+	}
+	void mutable_root(const ConstPlace& place)
+	{
+		mutable_owner_ = place.root == RootKind::Object ? place.object : PointerMap::kMissing;
+		mutable_generation_ = place.generation;
+	}
+	void retain_mutable_allocation();
+	void release_mutable(const Region& region);
+	ConstantStorage& class_storage() const;
 	ConstValue* zero_storage(const Type* type);
 	static const DataMember* first_zero_member(const ClassEntity* cls);
 	bool expand_array(ConstValue& array, const Type* type, uint32_t location);
@@ -160,6 +176,7 @@ private:
 	void copy_into(ConstValue& target, const ConstValue& source);
 	void zero_into(ConstValue& target);
 	bool complete(const ConstValue& value) const;
+	bool complete_elements(const ConstValue& value) const;
 	const ConstValue* publish(const ConstValue& value, uint32_t location);
 	bool publishable(const ConstValue& value) const;
 	bool static_variable_place(const ConstPlace& place) const;
@@ -378,6 +395,11 @@ private:
 	// Proven zero aggregate defaults, per evaluation. Cache successes only:
 	// a provisional incomplete/default-constructor failure is not a fact.
 	PointerMap zero_array_classes_;
+	// Lazy shared/owned storage is separate from scratch regions. Scalar
+	// evaluations keep the existing arena path without constructing caches.
+	mutable std::unique_ptr<ConstantStorage> storage_;
+	uint32_t mutable_owner_ = PointerMap::kMissing;
+	uint32_t mutable_generation_ = 0;
 };
 
 } // namespace sema

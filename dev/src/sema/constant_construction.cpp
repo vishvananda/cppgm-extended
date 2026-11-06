@@ -80,8 +80,12 @@ bool ConstantInterpreter::temporary(const syntax::Expr& expr, ConstPlace& out)
 	// evaluation leaves the statement or call that made it).
 	const syntax::Expr* e = WithoutParentheses(&expr);
 	const Type* type = e->facts->type;
-	const bool prefix = type->kind == TypeKind::Array;
-	if (prefix && !scalar_array(type) && !analyzer_.literal_type(type))
+	const bool array = type->kind == TypeKind::Array;
+	const bool prefix = array || ClassOf(type) != nullptr;
+	// A trivial default constructor is not invoked by value-initialization
+	// (8.5p8). The compatibility trait includes these class types; actual
+	// constructor calls and temporary destruction still check eligibility.
+	if (array && !scalar_array(type) && !analyzer_.trait_literal_type(type))
 		return fail(e->location, "a nonliteral array temporary in a constant expression");
 	return new_object(type, out, e->location, prefix) && materialize(*e, out);
 }
@@ -349,7 +353,7 @@ bool ConstantInterpreter::construct(const Type* type, const ConstPlace& target, 
 bool ConstantInterpreter::value_initialize(
 	const Type* type, const ConstPlace& target, const FunctionEntity* constructor, uint32_t location)
 {
-	// 8.5p7: a user-provided default constructor runs; otherwise the object
+	// 8.5p8: a user-provided default constructor runs; otherwise the object
 	// is zero-initialized, then an implicit default constructor that is
 	// not trivial runs; an array's elements each.
 	if (type->kind == TypeKind::Array)
@@ -567,6 +571,16 @@ bool ConstantInterpreter::aggregate(
 bool ConstantInterpreter::aggregate_members(const ClassEntity* entity, const ConstPlace& target,
 	const syntax::BracedInitList& list, uint32_t& next, uint32_t location)
 {
+	// An omitted aggregate whose defaults are proven zero needs no walk
+	// of every logical subobject. Shared class children retain their shape.
+	if (next >= list.elements.size && zero_array_tail(entity->type, 0))
+	{
+		ConstValue* value = nullptr;
+		if (!locate(target, true, value, location))
+			return false;
+		zero_into(*value);
+		return true;
+	}
 	// Unnamed bit-fields take no element (9.6p2); a union's one member is
 	// initialized (8.5.1p15, see UnionListMember).
 	const DataMember* selected = entity->key == TokenKind::KW_UNION ? ListUnionMember(entity, &list, next) : nullptr;

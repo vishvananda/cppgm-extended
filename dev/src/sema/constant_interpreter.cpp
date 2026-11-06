@@ -6,6 +6,7 @@
 #include "lex/number_literal.h"
 #include "sema/analyzer.h"
 #include "sema/constant_memo.h"
+#include "sema/constant_storage.h"
 #include "sema/integral_arithmetic.h"
 #include "sema/string_literals.h"
 #include "support/small_list.h"
@@ -18,7 +19,8 @@ namespace {
 // Annex B recommends at least 512 nested constexpr calls; the step and
 // value budgets bound one evaluation's work and storage.
 const size_t kCallDepth = 512;
-void CopyValue(ConstValue& target, const ConstValue& source, Arena& arena);
+void CopyValue(ConstValue& target, const ConstValue& source, Arena& arena, PointerMap* shared = nullptr,
+	std::vector<ConstValue*>* payloads = nullptr);
 
 bool StaticStorage(const VariableEntity* variable)
 {
@@ -104,11 +106,12 @@ bool ConstantInterpreter::subobjects_too_deep(uint32_t depth) const
 
 // ------------------------------------------------------ objects and places
 
-ConstValue ConstantInterpreter::skeleton(const Type* type)
+ConstValue ConstantInterpreter::skeleton(const Type* type, bool owned)
 {
 	// The object's storage with every scalar indeterminate (8.5p11): an
 	// array's elements, a class's bases and members, allocated at once so
 	// a subobject's storage never moves.
+	Arena& storage = owned ? class_storage().mutable_arena : arena_;
 	ConstValue value = ConstValue();
 	value.kind = ValueKind::Indeterminate;
 	value.type = type->unqualified;
@@ -120,8 +123,8 @@ ConstValue ConstantInterpreter::skeleton(const Type* type)
 		// A GNU complex object: its two parts (see constant_complex.cpp).
 		value.kind = ValueKind::Array;
 		value.count = 2;
-		value.elements = arena_.allocate_array<ConstValue>(2);
-		value.elements[0] = skeleton(type->unqualified->element);
+		value.elements = storage.allocate_array<ConstValue>(2);
+		value.elements[0] = skeleton(type->unqualified->element, owned);
 		value.elements[1] = value.elements[0];
 		return value;
 	}
@@ -131,8 +134,8 @@ ConstValue ConstantInterpreter::skeleton(const Type* type)
 		const uint32_t lanes = static_cast<uint32_t>(type->unqualified->bound);
 		value.kind = ValueKind::Array;
 		value.count = lanes;
-		value.elements = arena_.allocate_array<ConstValue>(lanes);
-		value.elements[0] = skeleton(type->unqualified->element);
+		value.elements = storage.allocate_array<ConstValue>(lanes);
+		value.elements[0] = skeleton(type->unqualified->element, owned);
 		for (uint32_t i = 1; i < lanes; ++i)
 			value.elements[i] = value.elements[0];
 		return value;
@@ -150,9 +153,9 @@ ConstValue ConstantInterpreter::skeleton(const Type* type)
 			return value;
 		}
 		value.count = static_cast<uint32_t>(bound);
-		value.elements = arena_.allocate_array<ConstValue>(value.count);
+		value.elements = storage.allocate_array<ConstValue>(value.count);
 		for (uint32_t i = 0; i < value.count; ++i)
-			value.elements[i] = skeleton(type->element);
+			value.elements[i] = skeleton(type->element, owned);
 		return value;
 	}
 	const ClassEntity* cls = ClassOf(type);
@@ -161,12 +164,12 @@ ConstValue ConstantInterpreter::skeleton(const Type* type)
 	analyzer_.require_complete(cls);
 	value.kind = ValueKind::Class;
 	value.count = cls->base_count + cls->member_count;
-	value.elements = arena_.allocate_array<ConstValue>(value.count);
+	value.elements = storage.allocate_array<ConstValue>(value.count);
 	uint32_t index = 0;
 	for (const BaseClass* base = cls->bases; base != nullptr; base = base->next)
-		value.elements[index++] = skeleton(base->base->type);
+		value.elements[index++] = skeleton(base->base->type, owned);
 	for (const DataMember* member = cls->members; member != nullptr; member = member->next)
-		value.elements[index + member->ordinal] = skeleton(member->variable->type);
+		value.elements[index + member->ordinal] = skeleton(member->variable->type, owned);
 	return value;
 }
 
@@ -182,10 +185,25 @@ bool ConstantInterpreter::new_object(const Type* type, ConstPlace& place, uint32
 	if (cls != nullptr && cls->destructor != nullptr && !cls->destructor->trivial)
 		return fail(location, "an object with a non-trivial destructor in a constant expression");
 	size_of(type, location);
+	if (prefix && type->kind != TypeKind::Array && cls != nullptr && cls->base_count == 0)
+	{
+		// A flat class has storage proportional to its declared fields.
+		// Allocate it once before its constructor, without shared payloads
+		// or deferred storage; compound class graphs keep the compact path.
+		bool flat = true;
+		for (const DataMember* member = cls->members; flat && member != nullptr; member = member->next)
+		{
+			const Type* field = member->variable->type->unqualified;
+			flat = field->is_reference() || field->kind == TypeKind::Fundamental || field->kind == TypeKind::Enum ||
+				field->kind == TypeKind::Pointer || field->kind == TypeKind::MemberPointer;
+		}
+		if (flat)
+			prefix = false;
+	}
 	if (!prefix && leaves(type, 0) > kValueBudget)
 		return fail(location, "constant evaluation exceeds its storage budget");
 	ConstValue* value = static_cast<ConstValue*>(arena_.allocate(sizeof(ConstValue), alignof(ConstValue)));
-	*value = prefix ? array_prefix(type) : skeleton(type);
+	*value = prefix ? prefix_skeleton(type, 0) : skeleton(type);
 	if (steps_ >= kStepBudget)
 		return fail(location, "constant evaluation exceeds its storage budget");
 	Object object = Object();
@@ -203,7 +221,7 @@ bool ConstantInterpreter::new_object(const Type* type, ConstPlace& place, uint32
 
 ConstantInterpreter::Region ConstantInterpreter::region() const
 {
-	return Region{ objects_.size(), locals_.size(), arena_.mark() };
+	return Region{ objects_.size(), locals_.size(), arena_.mark(), storage_ ? storage_->allocations.size() : 0 };
 }
 
 void ConstantInterpreter::release(const Region& region)
@@ -214,6 +232,8 @@ void ConstantInterpreter::release(const Region& region)
 	// scratch is rewound within the block the region began in only, so a
 	// region crossing into a new block does not free and take it again at
 	// every iteration.
+	if (storage_ != nullptr && storage_->allocations.size() != region.mutable_allocations)
+		release_mutable(region);
 	if (objects_.size() > region.objects)
 		objects_.resize(region.objects);
 	if (locals_.size() > region.locals)
@@ -461,6 +481,13 @@ bool OverlappingEmpty(const DataMember* member)
 // inactive union member's storage as its lifetime begins (3.8p1).
 void Indeterminate(ConstValue& value)
 {
+	if ((value.flags & kSharedElements) != 0)
+	{
+		const Type* type = value.type;
+		value = ConstValue();
+		value.type = type;
+		return;
+	}
 	value.flags &= kArrayPrefix;
 	if (value.kind != ValueKind::Array && value.kind != ValueKind::Class)
 	{
@@ -497,6 +524,16 @@ ConstantInterpreter::StorageView ConstantInterpreter::descend(
 	// another member makes it the active one, its lifetime beginning.
 	// A null value is a proven zero subtree of an implicit array tail;
 	// follow its layout without constructing unrelated subobjects.
+	if (value != nullptr && write)
+	{
+		if (value->kind == ValueKind::Indeterminate)
+		{
+			const TypeKind kind = type->unqualified->kind;
+			if (kind == TypeKind::Class || kind == TypeKind::Complex || (kind == TypeKind::Vector && LaneVector(type)))
+				*value = prefix_skeleton(type, depth);
+		}
+		writable_elements(*value);
+	}
 	if (offset == 0 && SameObjectType(type, wanted))
 		return StorageView(value, value == nullptr ? type : nullptr);
 	if (subobjects_too_deep(depth))
@@ -866,6 +903,16 @@ bool ConstantInterpreter::locate(const ConstPlace& place, bool write, ConstValue
 	const Type* type = nullptr;
 	if (!root_storage(place, write, storage, type, location))
 		return false;
+	// An exact scalar root has no subobjects or shared payload to detach.
+	// Keep parameter/local accesses on their direct typed storage path.
+	if (type->kind == TypeKind::Fundamental && place.offset == 0 && place.bit_field == nullptr &&
+		place.variant == nullptr && type->unqualified == place.type->unqualified)
+	{
+		out = storage;
+		return true;
+	}
+	if (write)
+		mutable_root(place);
 	if (place.bit_field != nullptr)
 	{
 		// The bit-field member of the class object at the offset.
@@ -1376,11 +1423,20 @@ bool ConstantInterpreter::array_of(
 
 void ConstantInterpreter::copy_into(ConstValue& target, const ConstValue& source)
 {
+	if (&target == &source)
+		return;
+	if ((source.flags & kSharedElements) != 0)
+	{
+		target = source;
+		return;
+	}
+	writable_elements(target);
 	if (target.kind == ValueKind::Array && source.kind == ValueKind::Array &&
 		((target.flags | source.flags) & kArrayPrefix) != 0)
 	{
 		const ConstValue saved = source;
-		CopyValue(target, saved, arena_);
+		retain_mutable_allocation();
+		CopyValue(target, saved, class_storage().mutable_arena);
 		return;
 	}
 	if ((target.kind == ValueKind::Array || target.kind == ValueKind::Class) && target.kind == source.kind &&
@@ -1410,6 +1466,11 @@ void ConstantInterpreter::copy_into(ConstValue& target, const ConstValue& source
 
 void ConstantInterpreter::zero_into(ConstValue& target)
 {
+	if ((target.flags & kSharedElements) != 0)
+	{
+		target = prefix_value(target.type, 0, true);
+		return;
+	}
 	// 8.5p5: zero-initialization: scalars zero (a null pointer), each
 	// element, base and member, a union's first named member.
 	if (target.kind == ValueKind::Array)
@@ -1475,6 +1536,18 @@ void ConstantInterpreter::zero_into(ConstValue& target)
 
 bool ConstantInterpreter::complete(const ConstValue& value) const
 {
+	if ((value.flags & kSharedElements) == 0)
+		return complete_elements(value);
+	const uint32_t known = class_storage().complete.find(value.elements);
+	if (known != PointerMap::kMissing)
+		return known != 0;
+	const bool result = complete_elements(value);
+	class_storage().complete.set(value.elements, result ? 1 : 0);
+	return result;
+}
+
+bool ConstantInterpreter::complete_elements(const ConstValue& value) const
+{
 	// 7.1.5p9: every scalar subobject of a constexpr object is initialized
 	// (a union's active member; unnamed bit-fields hold no value).
 	if (value.kind == ValueKind::Indeterminate)
@@ -1515,6 +1588,10 @@ bool ConstantInterpreter::complete(const ConstValue& value) const
 
 bool ConstantInterpreter::publishable(const ConstValue& value) const
 {
+	// Shared templates contain only unknown or zero values, never an
+	// address of an evaluation object. Writes always detach them first.
+	if ((value.flags & kSharedElements) != 0)
+		return true;
 	// A constant's pointers designate objects with static storage
 	// duration, string literals or functions (5.19p3's address constants;
 	// a thread-local object's address is each thread's own, 3.7.2).
@@ -1542,14 +1619,31 @@ bool ConstantInterpreter::publishable(const ConstValue& value) const
 namespace {
 
 // A value's copy whose elements live in `arena`.
-void CopyValue(ConstValue& target, const ConstValue& source, Arena& arena)
+void CopyValue(
+	ConstValue& target, const ConstValue& source, Arena& arena, PointerMap* shared, std::vector<ConstValue*>* payloads)
 {
 	target = source;
+	if ((source.flags & kSharedElements) != 0)
+	{
+		if (shared == nullptr)
+			return;
+		const uint32_t known = shared->find(source.elements);
+		if (known != PointerMap::kMissing)
+		{
+			target.elements = (*payloads)[known];
+			return;
+		}
+	}
 	if (source.kind != ValueKind::Array && source.kind != ValueKind::Class)
 		return;
 	target.elements = arena.allocate_array<ConstValue>(source.count);
+	if ((source.flags & kSharedElements) != 0)
+	{
+		shared->set(source.elements, static_cast<uint32_t>(payloads->size()));
+		payloads->push_back(target.elements);
+	}
 	for (uint32_t i = 0; i < source.count; ++i)
-		CopyValue(target.elements[i], source.elements[i], arena);
+		CopyValue(target.elements[i], source.elements[i], arena, shared, payloads);
 }
 
 } // namespace
@@ -1563,7 +1657,9 @@ const ConstValue* ConstantInterpreter::publish(const ConstValue& value, uint32_t
 		return nullptr;
 	}
 	ConstValue* copy = static_cast<ConstValue*>(analyzer_.arena_.allocate(sizeof(ConstValue), alignof(ConstValue)));
-	CopyValue(*copy, value, analyzer_.arena_);
+	PointerMap shared;
+	std::vector<ConstValue*> payloads;
+	CopyValue(*copy, value, analyzer_.arena_, &shared, &payloads);
 	return copy;
 }
 

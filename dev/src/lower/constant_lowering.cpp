@@ -672,6 +672,11 @@ bool ProgramLowering::constant_placements(const sema::Type* type, const sema::Co
 	}
 	if (value.kind != sema::ValueKind::Class)
 		return value.kind == sema::ValueKind::Indeterminate;
+	// A complete shared zero class has no nonzero placements or vptrs.
+	// constant_data applies the typed null-member-pointer ABI patches to
+	// these ranges just as it does to an implicit zero array tail.
+	if ((value.flags & sema::kClassZero) != 0)
+		return true;
 	size_of(cls->type, location);
 	if (cls->polymorphic)
 	{

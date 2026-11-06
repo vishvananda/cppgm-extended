@@ -112,6 +112,7 @@ struct ConstRegion
 	size_t objects;
 	size_t locals;
 	Arena::Mark mark;
+	size_t mutable_allocations;
 };
 
 // The evaluations' objects, names and calls, owned by the analyzer and

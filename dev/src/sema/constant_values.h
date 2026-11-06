@@ -88,7 +88,14 @@ enum : uint8_t
 	// An array stores only its explicit prefix; its type retains the full
 	// bound. The omitted tail is indeterminate until initialization finishes.
 	kArrayPrefix = 8,
-	kArrayTailZero = 16
+	kArrayTailZero = 16,
+	// An immutable payload shared by class skeletons of the same type.
+	// Detach its immediate elements before any write; places still identify
+	// each object independently by root and offset.
+	kSharedElements = 32,
+	// A shared, completely zero-initialized class with no vptr-bearing
+	// subobjects. Lowering can emit zero ranges and typed ABI null patches.
+	kClassZero = 64
 };
 
 // A glvalue's designation: the root storage, the byte offset of the

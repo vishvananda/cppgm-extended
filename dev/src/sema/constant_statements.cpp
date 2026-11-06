@@ -1212,6 +1212,7 @@ bool ConstantInterpreter::returned(const syntax::ValueStmt& stmt)
 		for (uint32_t i = 0; i < returned_value.count; ++i)
 			result->held[i] = returned_value.elements[i];
 		returned_value.elements = result->held;
+		returned_value.flags &= ~kSharedElements;
 	}
 	returned_value.flags &= ~kValueZeroed;
 	result->value = returned_value;
