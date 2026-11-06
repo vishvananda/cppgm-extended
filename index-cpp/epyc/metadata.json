@@ -1,7 +1,7 @@
 {
-  "revision": "141166c6cf3279878310a1a9965e6d2fee692a9c",
+  "revision": "25f26d17880cb90b049d47dab65249c2b4e8f582",
   "dirty": false,
-  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "cpu": "AMD EPYC 7763 64-Core Processor",
   "cpus": "0,1,2,3",
   "toolchains": {
     "cppgm": "cppgm++ (host configuration: g++)",
