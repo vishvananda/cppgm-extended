@@ -92,11 +92,24 @@ private:
 	// (a chain of member classes, as deep as the program declares them)
 	// that the stack budget no longer holds.
 	static const uint32_t kSubobjectDepth = 256;
+	static const uint64_t kStepBudget = uint64_t(1) << 24;
+	static const uint64_t kValueBudget = uint64_t(1) << 22;
+	// Expanding an implicit tail must fail softly before a speculative
+	// evaluation allocates a large dense object.
+	static const uint64_t kArrayExpansionBytes = uint64_t(1) << 24;
 	bool subobjects_too_deep(uint32_t depth) const;
 
 	// -------------------------------------------- objects and places
 	ConstValue skeleton(const Type* type);
-	bool new_object(const Type* type, ConstPlace& place, uint32_t location);
+	bool new_object(const Type* type, ConstPlace& place, uint32_t location, bool prefix = false);
+	static bool scalar_array(const Type* type);
+	static ConstValue array_prefix(const Type* type);
+	static bool zero_array_tail(const Type* type, uint32_t depth);
+	ConstValue prefix_skeleton(const Type* type, uint32_t depth);
+	ConstValue* array_element(ConstValue& array, const Type* type, uint64_t index, bool write, uint32_t location);
+	bool expand_array(ConstValue& array, const Type* type, uint32_t location);
+	bool aggregate_array(const Type* type, const ConstPlace& target, const syntax::BracedInitList& list, uint32_t& next,
+		uint32_t location);
 	bool locate(const ConstPlace& place, bool write, ConstValue*& out, uint32_t location);
 	bool locate_variant(const ConstPlace& place, ConstValue* storage, const Type* type, bool write, ConstValue*& out,
 		uint32_t location);
@@ -233,6 +246,7 @@ private:
 		const FunctionEntity* constructor, uint32_t location);
 	bool value_initialize(
 		const Type* type, const ConstPlace& target, const FunctionEntity* constructor, uint32_t location);
+	static const syntax::Expr* reference_initializer(const syntax::Initializer* init);
 	bool initialize_object(
 		const Type* type, const ConstPlace& target, const syntax::Initializer& init, uint32_t location);
 	bool initialize_scalar(

@@ -266,14 +266,26 @@ bool ConstantInterpreter::object_representation(const Type* type, ConstValue& va
 	if (type->kind == TypeKind::Array)
 	{
 		const uint64_t stride = size_of(type->element, location);
-		if (value.kind != ValueKind::Array || value.count != type->bound || stride == 0 ||
-			type->bound > capacity / stride)
+		if (value.kind != ValueKind::Array || stride == 0 || type->bound > capacity / stride)
 			return fail(location, "an array outside the bit cast's representation");
-		for (uint32_t i = 0; i < value.count; ++i)
+		if (value.count > type->bound ||
+			(value.count < type->bound &&
+				(!encode || (value.flags & kArrayPrefix) == 0 || (value.flags & kArrayTailZero) == 0)))
+			return fail(location, "an array outside the bit cast's representation");
+		// Encoding only reads the published value. Expanding a nested array
+		// in place would leave it referring to this evaluation's scratch.
+		ConstValue zero = ConstValue();
+		if (value.count < type->bound)
+		{
+			zero = prefix_skeleton(type->element, depth + 1);
+			zero_into(zero);
+		}
+		for (uint64_t i = 0; i < type->bound; ++i)
 		{
 			const uint64_t offset = i * stride;
-			if (!object_representation(type->element, value.elements[i], bytes + offset, known + offset,
-					capacity - offset, encode, location, depth + 1))
+			ConstValue& element = i < value.count ? value.elements[i] : zero;
+			if (!object_representation(type->element, element, bytes + offset, known + offset, capacity - offset,
+					encode, location, depth + 1))
 				return false;
 		}
 		return true;

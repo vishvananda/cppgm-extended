@@ -1159,6 +1159,11 @@ bool ProgramLowering::define_reference(lowir::Global& global, const sema::Variab
 	const syntax::Expr* single = array ? list : SingleInitializer(initializer);
 	if (single == nullptr)
 		return false;
+	const sema::ConstValue* bound = analyzer_ != nullptr ? analyzer_->evaluated_value(variable) : nullptr;
+	const sema::ConstValue* extended = bound != nullptr && bound->kind == sema::ValueKind::Pointer &&
+			bound->root == sema::RootKind::Temporary && bound->address.offset == 0
+		? static_cast<const sema::ConstValue*>(bound->address.entity)
+		: nullptr;
 	const sema::Conversion* conversion = single->facts->conversion;
 	StaticValue target = StaticValue();
 	if (array ||
@@ -1175,7 +1180,8 @@ bool ProgramLowering::define_reference(lowir::Global& global, const sema::Variab
 			// or thread-local initialization needs a runtime action.
 			if (variable->is_thread_local || FunctionLowering::needs_destruction(object))
 				return false;
-			if (!static_element(object, *single, data))
+			if (extended != nullptr ? !constant_data(object, *extended, data, location)
+									: !static_element(object, *single, data))
 				return false;
 			null_member_pointers(object, data);
 			PreserveStaticOffsets(data);
@@ -1197,11 +1203,6 @@ bool ProgramLowering::define_reference(lowir::Global& global, const sema::Variab
 		// The temporary its evaluated value designates is this one: a
 		// constant read of the reference (or of another bound to it) names
 		// the same storage (see constant_temporary).
-		const sema::ConstValue* bound = analyzer_ != nullptr ? analyzer_->evaluated_value(variable) : nullptr;
-		const sema::ConstValue* extended = bound != nullptr && bound->kind == sema::ValueKind::Pointer &&
-				bound->root == sema::RootKind::Temporary && bound->address.offset == 0
-			? static_cast<const sema::ConstValue*>(bound->address.entity)
-			: nullptr;
 		const uint32_t made = extended != nullptr ? constant_temporaries_.find(extended) : PointerMap::kMissing;
 		lowir::SymbolId temporary = made;
 		if (made == PointerMap::kMissing)

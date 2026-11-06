@@ -153,6 +153,20 @@ struct StaticPlacement
 	lowir::DataItem item;
 };
 
+// Only bit-field bytes with set bits need scratch storage. The logical
+// object may contain a much larger omitted array or padding range.
+struct StaticBitByte
+{
+	uint64_t offset;
+	uint8_t value;
+};
+
+struct StaticBits
+{
+	uint64_t size;
+	std::vector<StaticBitByte> bytes;
+};
+
 // Itanium 2.5.2: a virtual table's offset-to-top and type information
 // precede its slots; an object's table pointer points past them.
 const uint64_t kTableHeaderBytes = 16;
@@ -1381,8 +1395,7 @@ private:
 	// A complete object's table pointers (each segment's with its own).
 	void place_tables(const sema::ClassEntity* cls, uint64_t offset, std::vector<StaticPlacement>& out);
 	bool constant_placements(const sema::Type* type, const sema::ConstValue& value, uint64_t offset,
-		std::vector<StaticPlacement>& out, std::vector<uint8_t>& bits, uint32_t location, uint32_t depth,
-		bool table_placed);
+		std::vector<StaticPlacement>& out, StaticBits& bits, uint32_t location, uint32_t depth, bool table_placed);
 	bool constant_data(const sema::Type* type, const sema::ConstValue& value, StaticData& out, uint32_t location);
 	bool scalar_array_data(
 		const sema::Type* type, const sema::ConstValue& value, StaticData& out, uint32_t location, uint32_t depth);

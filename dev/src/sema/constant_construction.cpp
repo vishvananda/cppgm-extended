@@ -1,5 +1,7 @@
 #include "sema/constant_interpreter.h"
 
+#include <algorithm>
+
 #include "sema/aggregates.h"
 #include "sema/analyzer.h"
 #include "support/small_list.h"
@@ -77,7 +79,11 @@ bool ConstantInterpreter::temporary(const syntax::Expr& expr, ConstPlace& out)
 	// 12.2p1: the temporary a class prvalue initializes (it lives until the
 	// evaluation leaves the statement or call that made it).
 	const syntax::Expr* e = WithoutParentheses(&expr);
-	return new_object(e->facts->type, out, e->location) && materialize(*e, out);
+	const Type* type = e->facts->type;
+	const bool prefix = type->kind == TypeKind::Array;
+	if (prefix && !scalar_array(type) && !analyzer_.literal_type(type))
+		return fail(e->location, "a nonliteral array temporary in a constant expression");
+	return new_object(type, out, e->location, prefix) && materialize(*e, out);
 }
 
 bool ConstantInterpreter::materialize(const syntax::Expr& expr, const ConstPlace& target)
@@ -370,6 +376,26 @@ bool ConstantInterpreter::value_initialize(
 	return true;
 }
 
+const syntax::Expr* ConstantInterpreter::reference_initializer(const syntax::Initializer* init)
+{
+	if (init == nullptr)
+		return nullptr;
+	const syntax::Expr* expr = nullptr;
+	if (init->kind == syntax::InitializerKind::Assign || init->kind == syntax::InitializerKind::Braced)
+		expr = init->expression;
+	else if (init->kind == syntax::InitializerKind::Parenthesized && init->arguments.size == 1)
+		expr = init->arguments[0];
+	if (expr != nullptr && expr->kind == syntax::ExprKind::BracedInit && expr->facts != nullptr &&
+		expr->facts->type != nullptr && expr->facts->type->is_reference())
+	{
+		// A reference-related element binds directly. Otherwise the typed
+		// list denotes the temporary, including its constructor or array.
+		const syntax::BracedInitList& list = static_cast<const syntax::BracedInitList&>(*expr);
+		return list.elements.size == 1 ? list.elements[0] : nullptr;
+	}
+	return expr;
+}
+
 bool ConstantInterpreter::initialize_object(
 	const Type* type, const ConstPlace& target, const syntax::Initializer& init, uint32_t location)
 {
@@ -377,6 +403,8 @@ bool ConstantInterpreter::initialize_object(
 	// element by element or from a string literal, a scalar from its
 	// single expression converted, a reference bound.
 	const syntax::BracedInitList* list = BracedList(init);
+	if (type->is_reference() && list != nullptr)
+		return initialize_scalar(type, target, reference_initializer(&init), location);
 	const syntax::Expr* single = nullptr;
 	if (list != nullptr)
 	{
@@ -463,6 +491,12 @@ bool ConstantInterpreter::string_array(
 	ConstValue* array = nullptr;
 	if (units == nullptr || !locate(target, true, array, location) || array->kind != ValueKind::Array)
 		return false;
+	if ((array->flags & kArrayPrefix) != 0)
+	{
+		array->count = static_cast<uint32_t>(std::min(type->bound, uint64_t(units->count)));
+		array->elements = arena_.allocate_array<ConstValue>(array->count);
+		array->flags |= kArrayTailZero;
+	}
 	for (uint32_t i = 0; i < array->count; ++i)
 	{
 		if (i < units->count)
@@ -511,15 +545,8 @@ bool ConstantInterpreter::aggregate(
 	uint32_t next = 0;
 	if (type->kind == TypeKind::Array)
 	{
-		const uint64_t size = size_of(type->element, location);
-		for (uint64_t i = 0; i < type->bound; ++i)
-		{
-			ConstPlace place = target;
-			place.offset += static_cast<int64_t>(i * size);
-			place.type = type->element;
-			if (!aggregate_element(type->element, place, list, next, location))
-				return false;
-		}
+		if (!aggregate_array(type, target, list, next, location))
+			return false;
 	}
 	else if (!aggregate_members(ClassOf(type), target, list, next, location))
 		return false;
@@ -603,6 +630,8 @@ bool ConstantInterpreter::aggregate_element(
 		view.kind = syntax::InitializerKind::Braced;
 		view.expression = const_cast<syntax::BracedInitList*>(&inner);
 		view.location = inner.location;
+		if (type->is_reference())
+			return initialize_scalar(type, target, reference_initializer(&view), inner.location, true);
 		const ClassEntity* cls = type->is_reference() || type->kind == TypeKind::Array ? nullptr : ClassOf(type);
 		const FunctionEntity* constructor = cls != nullptr && inner.facts != nullptr &&
 				inner.facts->entity != nullptr && inner.facts->entity->kind == EntityKind::Function
@@ -614,16 +643,7 @@ bool ConstantInterpreter::aggregate_element(
 	{
 		if (type->kind == TypeKind::Array)
 		{
-			const uint64_t size = size_of(type->element, location);
-			for (uint64_t i = 0; i < type->bound; ++i)
-			{
-				ConstPlace place = target;
-				place.offset += static_cast<int64_t>(i * size);
-				place.type = type->element;
-				if (!aggregate_element(type->element, place, list, next, location))
-					return false;
-			}
-			return true;
+			return aggregate_array(type, target, list, next, location);
 		}
 		return aggregate_members(ClassOf(type), target, list, next, location);
 	}

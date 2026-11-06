@@ -2405,9 +2405,11 @@ bool ConstantInterpreter::bind(
 			return false;
 		return write(out, value, e->location);
 	}
-	if (facts->category == ValueCategory::PRValue && ClassOf(facts->type) != nullptr)
+	if (facts->category == ValueCategory::PRValue &&
+		(facts->type->kind == TypeKind::Array || ClassOf(facts->type) != nullptr))
 	{
-		// 8.5.3p5: a class prvalue binds directly, materialized (12.2p1).
+		// 8.5.3p5, 8.5.4p3: a class or array temporary binds directly,
+		// materialized in its own storage (12.2p1).
 		if (!temporary(*e, out))
 			return false;
 		if (conversion != nullptr && conversion->second == ValueConversion::DerivedToBase)

@@ -18,8 +18,7 @@ namespace {
 // Annex B recommends at least 512 nested constexpr calls; the step and
 // value budgets bound one evaluation's work and storage.
 const size_t kCallDepth = 512;
-const uint64_t kStepBudget = uint64_t(1) << 24;
-const uint64_t kValueBudget = uint64_t(1) << 22;
+void CopyValue(ConstValue& target, const ConstValue& source, Arena& arena);
 
 bool StaticStorage(const VariableEntity* variable)
 {
@@ -171,7 +170,7 @@ ConstValue ConstantInterpreter::skeleton(const Type* type)
 	return value;
 }
 
-bool ConstantInterpreter::new_object(const Type* type, ConstPlace& place, uint32_t location)
+bool ConstantInterpreter::new_object(const Type* type, ConstPlace& place, uint32_t location, bool prefix)
 {
 	// 5.19p2: an object the evaluation makes (a temporary, parameter or
 	// variable) is of a class whose destructor is trivial, as a literal
@@ -183,10 +182,10 @@ bool ConstantInterpreter::new_object(const Type* type, ConstPlace& place, uint32
 	if (cls != nullptr && cls->destructor != nullptr && !cls->destructor->trivial)
 		return fail(location, "an object with a non-trivial destructor in a constant expression");
 	size_of(type, location);
-	if (leaves(type, 0) > kValueBudget)
+	if (!prefix && leaves(type, 0) > kValueBudget)
 		return fail(location, "constant evaluation exceeds its storage budget");
 	ConstValue* value = static_cast<ConstValue*>(arena_.allocate(sizeof(ConstValue), alignof(ConstValue)));
-	*value = skeleton(type);
+	*value = prefix ? array_prefix(type) : skeleton(type);
 	if (steps_ >= kStepBudget)
 		return fail(location, "constant evaluation exceeds its storage budget");
 	Object object = Object();
@@ -378,7 +377,10 @@ bool ConstantInterpreter::root_storage(
 	case RootKind::Temporary:
 	{
 		// A const one only is read (as a const variable's object).
-		if (write || (place.type->cv & (kConst | kVolatile)) != kConst)
+		const Type* qualified = place.type;
+		while (qualified->kind == TypeKind::Array)
+			qualified = qualified->element;
+		if (write || (qualified->cv & (kConst | kVolatile)) != kConst)
 			return fail(location, "an access to a temporary that is not const, bound outside the evaluation");
 		storage = const_cast<ConstValue*>(static_cast<const ConstValue*>(place.entity));
 		type = storage->type;
@@ -459,7 +461,7 @@ bool OverlappingEmpty(const DataMember* member)
 // inactive union member's storage as its lifetime begins (3.8p1).
 void Indeterminate(ConstValue& value)
 {
-	value.flags = 0;
+	value.flags &= kArrayPrefix;
 	if (value.kind != ValueKind::Array && value.kind != ValueKind::Class)
 	{
 		value.kind = ValueKind::Indeterminate;
@@ -503,10 +505,11 @@ ConstValue* ConstantInterpreter::descend(
 		if (size == 0 || offset < 0)
 			return nullptr;
 		const uint64_t index = static_cast<uint64_t>(offset) / size;
-		if (index >= value->count)
+		ConstValue* element = index < value->count ? &value->elements[index]
+												   : array_element(*value, type, index, write, 0);
+		if (element == nullptr)
 			return nullptr;
-		return descend(&value->elements[index], type->element, offset - static_cast<int64_t>(index * size), wanted,
-			write, depth + 1);
+		return descend(element, type->element, offset - static_cast<int64_t>(index * size), wanted, write, depth + 1);
 	}
 	if (value->kind != ValueKind::Class)
 		return nullptr;
@@ -1331,6 +1334,13 @@ bool ConstantInterpreter::array_of(
 
 void ConstantInterpreter::copy_into(ConstValue& target, const ConstValue& source)
 {
+	if (target.kind == ValueKind::Array && source.kind == ValueKind::Array &&
+		((target.flags | source.flags) & kArrayPrefix) != 0)
+	{
+		const ConstValue saved = source;
+		CopyValue(target, saved, arena_);
+		return;
+	}
 	if ((target.kind == ValueKind::Array || target.kind == ValueKind::Class) && target.kind == source.kind &&
 		target.count == source.count)
 	{
@@ -1343,6 +1353,7 @@ void ConstantInterpreter::copy_into(ConstValue& target, const ConstValue& source
 	if (target.kind == ValueKind::Array || target.kind == ValueKind::Class)
 	{
 		// An indeterminate source leaves each scalar indeterminate.
+		target.flags &= ~kArrayTailZero;
 		for (uint32_t i = 0; i < target.count; ++i)
 		{
 			ConstValue none = ConstValue();
@@ -1361,6 +1372,8 @@ void ConstantInterpreter::zero_into(ConstValue& target)
 	// element, base and member, a union's first named member.
 	if (target.kind == ValueKind::Array)
 	{
+		if ((target.flags & kArrayPrefix) != 0)
+			target.flags |= kArrayTailZero;
 		for (uint32_t i = 0; i < target.count; ++i)
 			zero_into(target.elements[i]);
 		return;
@@ -1429,6 +1442,9 @@ bool ConstantInterpreter::complete(const ConstValue& value) const
 		return false;
 	if (value.kind != ValueKind::Array && value.kind != ValueKind::Class)
 		return true;
+	if (value.kind == ValueKind::Array && (value.flags & kArrayPrefix) != 0 && value.count < value.type->bound &&
+		(value.flags & kArrayTailZero) == 0)
+		return false;
 	const ClassEntity* cls = value.kind == ValueKind::Class ? ClassOf(value.type) : nullptr;
 	if (cls != nullptr)
 	{
@@ -1580,16 +1596,7 @@ bool ConstantInterpreter::initialize(const VariableEntity* variable, const synta
 			return fail(location, "a reference without an initializer");
 		// A reference designates its referent (5.19p3: an object with static
 		// storage duration or a function).
-		const syntax::Expr* single = nullptr;
-		if (initializer->kind == syntax::InitializerKind::Assign)
-			single = initializer->expression;
-		else if (initializer->kind == syntax::InitializerKind::Parenthesized && initializer->arguments.size == 1)
-			single = initializer->arguments[0];
-		if (single != nullptr && single->kind == syntax::ExprKind::BracedInit)
-		{
-			const syntax::BracedInitList* list = static_cast<const syntax::BracedInitList*>(single);
-			single = list->elements.size == 1 ? list->elements[0] : nullptr;
-		}
+		const syntax::Expr* single = reference_initializer(initializer);
 		ConstPlace place;
 		const syntax::Expr* inner = single;
 		while (inner != nullptr && inner->kind == syntax::ExprKind::Paren)

@@ -604,7 +604,7 @@ void ProgramLowering::place_tables(const sema::ClassEntity* cls, uint64_t offset
 }
 
 bool ProgramLowering::constant_placements(const sema::Type* type, const sema::ConstValue& value, uint64_t offset,
-	std::vector<StaticPlacement>& out, std::vector<uint8_t>& bits, uint32_t location, uint32_t depth, bool table_placed)
+	std::vector<StaticPlacement>& out, StaticBits& bits, uint32_t location, uint32_t depth, bool table_placed)
 {
 	// The items of a value at their byte offsets; a bit-field's bits in
 	// `bits` (the object's bytes), its units' bytes items of their own
@@ -614,6 +614,10 @@ bool ProgramLowering::constant_placements(const sema::Type* type, const sema::Co
 		return false;
 	if (type->kind == sema::TypeKind::Array)
 	{
+		if (value.kind != sema::ValueKind::Array || value.count > type->bound ||
+			(value.count < type->bound &&
+				((value.flags & sema::kArrayPrefix) == 0 || (value.flags & sema::kArrayTailZero) == 0)))
+			return false;
 		const uint64_t size = size_of(type->element, location);
 		for (uint32_t i = 0; i < value.count; ++i)
 		{
@@ -712,10 +716,16 @@ bool ProgramLowering::constant_placements(const sema::Type* type, const sema::Co
 			for (uint64_t k = 0; k < member->width && k < 128; ++k)
 			{
 				const size_t byte = static_cast<size_t>((bit + k) / 8);
-				if (byte >= bits.size())
+				if (byte >= bits.size)
 					return false;
 				const uint64_t word = k < 64 ? element.bits >> k : element.high >> (k - 64);
-				bits[byte] |= static_cast<uint8_t>((word & 1u) << ((bit + k) % 8));
+				if ((word & 1u) == 0)
+					continue;
+				const uint8_t set = static_cast<uint8_t>(1u << ((bit + k) % 8));
+				if (!bits.bytes.empty() && bits.bytes.back().offset == byte)
+					bits.bytes.back().value |= set;
+				else
+					bits.bytes.push_back(StaticBitByte{ byte, set });
 			}
 			// The field's storage unit, as one unsigned item of its width
 			// (its value assembled from `bits`, see constant_data). A shared
@@ -788,13 +798,17 @@ bool ProgramLowering::scalar_array_data(
 		append_item(item, out);
 		return true;
 	}
-	if (value.kind != sema::ValueKind::Array || value.count != type->bound || depth > 256)
+	const bool prefix = (value.flags & sema::kArrayPrefix) != 0;
+	if (value.kind != sema::ValueKind::Array || value.count > type->bound ||
+		(value.count != type->bound && (!prefix || (value.flags & sema::kArrayTailZero) == 0)) || depth > 256)
 		return false;
 	for (uint32_t i = 0; i < value.count; ++i)
 	{
 		if (!scalar_array_data(type->element, value.elements[i], out, location, depth + 1))
 			return false;
 	}
+	if (prefix && value.count < type->bound)
+		append_zero((type->bound - value.count) * size_of(type->element, location), out);
 	return true;
 }
 
@@ -806,14 +820,22 @@ bool ProgramLowering::constant_data(
 	while (element->kind == sema::TypeKind::Array)
 		element = element->element;
 	if (type->kind == sema::TypeKind::Array && !element->is_reference() && sema::ClassOf(element) == nullptr)
-		return scalar_array_data(type, value, out, location, 0);
+	{
+		const bool result = scalar_array_data(type, value, out, location, 0);
+		if (result && (value.flags & sema::kArrayPrefix) != 0)
+			null_member_pointers(type, out);
+		return result;
+	}
 	const uint64_t size = size_of(type, location);
 	std::vector<StaticPlacement> placements;
-	std::vector<uint8_t> bits(static_cast<size_t>(size), 0);
+	StaticBits bits;
+	bits.size = size;
 	if (!constant_placements(type, value, 0, placements, bits, location, 0, false))
 		return false;
 	std::stable_sort(placements.begin(), placements.end(),
 		[](const StaticPlacement& a, const StaticPlacement& b) { return a.offset < b.offset; });
+	std::stable_sort(bits.bytes.begin(), bits.bytes.end(),
+		[](const StaticBitByte& a, const StaticBitByte& b) { return a.offset < b.offset; });
 	uint64_t position = 0;
 	for (StaticPlacement& placement : placements)
 	{
@@ -828,8 +850,10 @@ bool ProgramLowering::constant_data(
 		if (bit_byte)
 		{
 			uint64_t unit = 0;
-			for (uint64_t i = placement.size; i-- > 0;)
-				unit = unit << 8 | bits[static_cast<size_t>(placement.offset + i)];
+			auto byte = std::lower_bound(bits.bytes.begin(), bits.bytes.end(), placement.offset,
+				[](const StaticBitByte& item, uint64_t offset) { return item.offset < offset; });
+			for (; byte != bits.bytes.end() && byte->offset < placement.offset + placement.size; ++byte)
+				unit |= uint64_t(byte->value) << (8 * (byte->offset - placement.offset));
 			placement.item.amount = 0;
 			placement.item.constant = IntegerItem(unit);
 		}
@@ -839,6 +863,7 @@ bool ProgramLowering::constant_data(
 	}
 	if (size > position)
 		append_zero(size - position, out);
+	null_member_pointers(type, out);
 	return true;
 }
 

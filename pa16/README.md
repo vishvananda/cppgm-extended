@@ -214,6 +214,13 @@ C++11 `constexpr` forms that later template and library code expect:
   data with one object copy; each automatic array still has distinct storage
 - reference-valued constant evaluation and `const T &` / reference parameter passing where
   the implemented object model already defines the underlying semantics
+- reference initialization consumes the typed list's temporary or directly
+  bound element, including direct braces and aggregate reference members.
+  Array temporaries retain an explicit prefix and omitted zero tails during
+  evaluation; reads preserve their full bounds and identities.
+  Bound dense expansion of implicit tails as well as ordinary evaluation.
+  An optional probe that exceeds its storage budget fails softly so an
+  ordinary runtime initializer can still compile
 - lookup and reuse of previously computed constant values, including qualified lookup and
   static data members
 - function-local static objects over the supported LowIR subset:

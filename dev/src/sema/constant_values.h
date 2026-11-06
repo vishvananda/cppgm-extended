@@ -84,7 +84,11 @@ enum : uint8_t
 	kPastEnd = 2,
 	// An address folded through an unrelated reference type. It may be
 	// bound or compared, but does not designate readable storage of that type.
-	kInvalidView = 4
+	kInvalidView = 4,
+	// An array stores only its explicit prefix; its type retains the full
+	// bound. The omitted tail is indeterminate until initialization finishes.
+	kArrayPrefix = 8,
+	kArrayTailZero = 16
 };
 
 // A glvalue's designation: the root storage, the byte offset of the
@@ -121,8 +125,8 @@ struct ConstValue
 	ValueKind kind;
 	RootKind root;
 	uint8_t flags;
-	// Array and Class: the number of elements; Pointer to an evaluation
-	// object: its slot.
+	// Array and Class: the number of stored elements (kArrayPrefix omits
+	// its tail); Pointer to an evaluation object: its slot.
 	uint32_t count;
 	// Pointer to an evaluation object: the slot's generation; a union: its
 	// active member's index plus one (0 for none).

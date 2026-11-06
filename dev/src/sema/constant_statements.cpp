@@ -1145,12 +1145,7 @@ bool ConstantInterpreter::local_variable(
 	const Type* type = variable->type;
 	if (type->is_reference())
 	{
-		const syntax::Expr* single = nullptr;
-		if (initializer != nullptr && initializer->kind == syntax::InitializerKind::Assign)
-			single = initializer->expression;
-		else if (initializer != nullptr && initializer->kind == syntax::InitializerKind::Parenthesized &&
-			initializer->arguments.size == 1)
-			single = initializer->arguments[0];
+		const syntax::Expr* single = reference_initializer(initializer);
 		if (single != nullptr && single->kind == syntax::ExprKind::BracedInit && single->facts != nullptr &&
 			(single->facts->flags & kInitializerList) != 0)
 		{
@@ -1162,11 +1157,6 @@ bool ConstantInterpreter::local_variable(
 				return false;
 			locals_.push_back(local);
 			return true;
-		}
-		if (single != nullptr && single->kind == syntax::ExprKind::BracedInit)
-		{
-			const syntax::BracedInitList* list = static_cast<const syntax::BracedInitList*>(single);
-			single = list->elements.size == 1 ? list->elements[0] : nullptr;
 		}
 		if (single == nullptr || !bind(*single, RecordedConversion(single), type, local.place))
 			return fail(location, "a reference variable outside constant evaluation");
