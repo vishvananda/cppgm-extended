@@ -434,3 +434,14 @@ Class-prefix performance gate and optimized candidate:
   calibrated 21-workload gate and later stages are queued under CXX11-026's
   checks-v12, performance-pipeline-v5 and final-pipeline-v2 artifacts.
 - CXX11-027 remains an independent unimplemented whole-class storage repair.
+
+Calibrated instruction and Clang structure progress:
+- Candidate v12 passes all twenty exact-output instruction gates after A/A
+  calibration; maximum upper95 is 1.0069872015477916. Direct compiler RSS and
+  the separate audited changed-output pair remain pending; no combined
+  performance/closure claim is made. Raw v9 failures remain retained.
+- Pinned native lit now inventories all 72,820 RUN templates structurally:
+  72,798 parsed and 22 conditional templates unresolved. A normalized two-file
+  ledger round-trips every row and preserves every file's directives/features.
+  See cxx11-clang-command-shapes.txt. This does not evaluate applicability or
+  execute tests, and it closes no compiler gap.

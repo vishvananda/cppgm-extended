@@ -1,0 +1,66 @@
+Pinned Clang RUN-template structure checkpoint
+2026-11-06 | investigate/upstream-cxx11
+
+Evidence root:
+  /mnt/vizier/cppgm-cxx11-upstream/clang-run-shapes-v1
+LLVM revision:
+  2078da43e25a4623cab2d0d60decddf709aaea28
+
+The private inventory prototype consumes the complete native metadata v3,
+verifies all source and native helper hashes before/after, removes only lit's
+own debug annotation using lit's own pattern, and parses command templates
+with the pinned lit.ShUtil.ShParser. Nothing is executed. No configuration
+substitutions, DEFINE/REDEFINE bindings, features, target defaults, language
+applicability or compiler behavior are inferred from parse success.
+
+Coverage of the structural extraction:
+- All 20,491 candidate files remain accounted for, including the 209 without
+  native RUN ownership. They are not all applicable C++11 compiler tests.
+- All 72,820 RUN directives are retained with source identity/hash, line range,
+  native script ordering and their complete file-level directive/feature context.
+- 72,798 templates parse; 22 conditional templates remain explicitly unresolved.
+- Six boundary controls exercise arguments/quoted pipes, redirections,
+  pipelines, sequences, wrapper words and unresolved native conditionals.
+- Native compiler-placeholder tokens occur 45,471 times for %clang_cc1,
+  15,219 for %clang, 1,710 for %clang_analyze_cc1, 698 for %clang_cl,
+  300 for %clangxx and once for %clang_cpp. These are token occurrences;
+  configuration expansion and wrapper handling must establish actual invocations.
+
+Literal argument partitions (not evaluated applicability):
+  no literal standard argument:        56,137 RUN templates
+  only C++11/0x standard spellings:     10,139 RUN templates
+  other literal standard spellings:     6,522 RUN templates
+  conditional template unresolved:         22 RUN templates
+
+These counts do not justify a directory/command skip, a language-default
+assumption or a test result. A substitution can introduce flags/operators;
+repeated options can change meaning; a literal flag in another command is
+not automatically a compiler invocation. Original argument order and source
+text remain available. Native shell parsing before configuration expansion
+is a template view, not a validated execution script.
+
+The raw first extraction repeats full per-file directive context and occupies
+749,560,177 bytes. The normalized contexts.jsonl (22,637,755 bytes) and
+runs.jsonl (95,907,993 bytes) retain that context once per file. A round-trip
+reconstructs and compares every one of the 72,820 raw rows exactly, including
+all ordered directives and feature metadata. The raw extraction is preserved.
+compact-verification.json records counts, hashes, sizes and the unresolved scope.
+manifest.json pins inputs, sources, helpers, prototype and raw output.
+
+Next adapter work:
+1. Apply validated configuration/substitutions and native feature expressions
+   using explicitly probed candidate capabilities; preserve unsupported/default
+   and target decisions as per-case evidence rather than silent skips.
+2. Establish actual tools/arguments after expansion, including not/env wrappers,
+   split-file setup, temporary files, pipelines and multiple compiler commands.
+3. Keep severity/location/prefix-aware diagnostics and expected failures distinct
+   from mere source acceptance. Signals/timeouts/internal errors never satisfy
+   a negative source oracle. Preserve unimplemented AST/LLVM/assembly checker
+   interfaces as named gaps and validate any equivalent behavior adaptations.
+4. Validate the execution adapter and its boundary controls, then replay all
+   supported C++11 variants with native host baselines before using coverage totals.
+
+This is progress toward the full corpus adapter. It closes no compiler issue
+and provides no execution, applicability or C++11 conformance pass. The final
+GCC/Clang CI jobs remain gated by the campaign's complete repair process,
+including later CWG decisions, and must report matched full-suite timing.
