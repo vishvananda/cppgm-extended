@@ -46,3 +46,14 @@ windows between complete groups. See measurement-group-hold-v1.json; resume
 the same controller after the coordinated window rather than restarting it.
 No performance acceptance, integration or closure is yet
 claimed. The main accepted compiler remains d1c5c14c9.
+
+Immediate-parent counter group completed (2026-11-06)
+
+All13 A/A and13 A/B instruction reports pass. Independent verification rehashes
+1040 measured outputs plus12800 batched-child outputs. Maximum A/B instruction
+upper95 is1.000031272; packed-bit-field instructions fall1.1498228% (ratio
+0.9885017724). Profiler-wrapper RSS remains an unaccepted whole-command metric.
+Actual compiler RSS is now running in the same queued pipeline, with outer
+controller2991099 intentionally held and exact child4186298/start51699997 live.
+See measurement-group-hold-v2.json. Cumulative family/original comparisons and
+final independent acceptance remain pending. No compiler integration is claimed.

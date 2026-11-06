@@ -1,3 +1,31 @@
+Clang language adapter integrated and mutable repair implemented (2026-11-06)
+
+Clang adapter8d01f5b98 is integrated as7c69efdb2. Source/test/export hashes match
+its acceptance artifact; root independently verifies all674 selected RUN/dialect
+records,1860 streams,210 objects and252 source snapshots. The37-suite/583-test
+harness,34 boundary controls,21 native controls,formatting and fresh student
+export/all42 wrappers pass. Four original-N3485 required-diagnostic gaps are
+now CXX11-031 through034; the subagent prepares033 separately in PA15:300.
+This is a language/object projection, not a complete lit adapter or a corpus
+correctness percentage. Remaining configuration/output/runtime and inventory
+coverage stays explicit in cxx11-clang-language-projection.txt.
+
+CXX11-019 implementation b1c340fb5 passes104 focused native cells/26 lanes and
+all13 normal checks,strict8176/8176 included. It preserves mutable ancestry in
+places/pointers and validates raw copies through the read barrier. Twenty-five
+required controls prove15 parent rejection witnesses in400 host/parent cells.
+The specific CXX11-030 union-copy reproducer shares this repair; its earlier
+blanket-constructor-ban hypothesis is withdrawn after64 positive mode-boundary
+cells. Export,remaining template-context neighbors,parent integration and all
+performance acceptance remain pending; main compiler remains d1c5c14c9.
+
+CXX11-029 immediate-parent instructions pass13 A/A and13 A/B reports,with1.15%
+less work on the packed-bit-field case. Root independently verifies1040 output
+observations plus12800 child objects. Actual compiler RSS is now running under
+measurement-group-hold-v2.json; the same outer controller is intentionally held
+so compiler/test windows can open only after its exact measurement child stops.
+Original-family/original-campaign comparisons and final acceptance remain open.
+
 Compiler repair checkpoint and Clang delegation (2026-11-06)
 
 CXX11-029 independently optimizes constant bit-field byte packing to address

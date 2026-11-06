@@ -2591,7 +2591,7 @@
   {
     "id": "CXX11-019",
     "priority": "P3",
-    "status": "regression-fails",
+    "status": "repair-in-validation",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-mutable1.C",
       "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-mutable2.C",
@@ -2599,7 +2599,7 @@
       "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-mutable6.C"
     ],
     "symptom": "Modern GCC/Clang reject reading/copying mutable subobjects of constexpr objects; cppgm accepts the four exact source files.",
-    "root_cause": "For these four sources, acceptance matches N3485 5.19p2, whose constexpr-object subobject exception has no non-mutable restriction. CWG 1405 added that restriction after this snapshot.",
+    "root_cause": "Constant places and published pointers did not retain mutable-member ancestry, and trivial class/array copies bypassed read validation through raw storage lookup. The repair records ancestry, checks actual read contexts, and memoizes complete-class by-value mutability without expanding implicit array tails.",
     "owning_pa": 16,
     "ownership_note": "Later-DR constant-evaluation compatibility; preserve the original N3485 contract while prioritizing original defects.",
     "regressions": [
@@ -2624,7 +2624,10 @@
       "pa16/tests/controls/300-constexpr-mutable-runtime-read.t",
       "pa16/tests/controls/300-constexpr-mutable-selective-copy.t",
       "pa16/tests/controls/300-constexpr-mutable-temporary-read.t",
-      "pa16/tests/controls/300-constexpr-mutable-unevaluated.t"
+      "pa16/tests/controls/300-constexpr-mutable-unevaluated.t",
+      "pa16/tests/controls/300-constexpr-mutable-temporary-member-read-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-constructor-member-read-reject.t",
+      "pa16/tests/controls/300-constexpr-mutable-constructor-skipped-read.t"
     ],
     "fix_revision": null,
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019",
@@ -2632,11 +2635,14 @@
       "controls": "controls.json: 30 exact-source/nonmutable-neighbor host/candidate ISO/GNU11 cells match the declared modern-host versus snapshot outcomes",
       "native": "native-dg-campaign-v1/summary-adapted-final and summary-host-native-final",
       "standards": "standards-sources.json; cwg-1405.html; doc/n3485.txt 5.19p2",
-      "required_parent": "required-parent-v2/assessment.json: all12 modern-host profiles for each of13 negative controls diagnose normally; parent accepts. Nine valid neighbors retained.",
-      "defaulted_union_copy": "Independent CWG2004 gap now tracked as CXX11-030; defaulted union copying is not an ordinary scalar lvalue conversion."
+      "required_parent": "required-parent-v3/assessment.json:400 cells/25 lanes;352 unchanged cells reused,48 fresh;15 required negative witnesses reproduced. Baseline source revalidated from immutable44ed7f4ee Git archive after implementation edits.",
+      "defaulted_union_copy": "Independent CWG2004 gap now tracked as CXX11-030; defaulted union copying is not an ordinary scalar lvalue conversion.",
+      "candidate": "candidate-v2/assessment.json:104 native cells/26 owning lanes pass, including the shared CXX11-030 reproducer and corrected runtime-initialization behavior.",
+      "normal": "checks-v1.json:13 required normal stages pass; strict8176/8176, affected11/12/16/18, debug, self-hostPA5,inception,PA35smoke,nine audits,file audit,placement,harness.",
+      "language_versions": "version-neighbors-v3/assessment.json:64 positive mode/parent/candidate/host cells verified,40 link/runs reused and24 missing link/runs completed. Version-neighbor-adjudication-v2.json retains a separate unresolved external-union C++17 question."
     },
     "performance": {
-      "status": "not-started-no-compiler-change"
+      "status": "not-started-candidate-under-validation"
     },
     "standards_basis": {
       "category": "later-dr",
@@ -2648,12 +2654,22 @@
     "exclusion_note": "constexpr-mutable3.C involves a by-value parameter and is not grouped here without separate analysis.",
     "regression_preparation": {
       "worktree": "/mnt/vizier/cppgm-cxx11-constexpr-mutable",
-      "controls": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-controls-v2.json",
-      "assessment": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-parent-v2/assessment.json",
+      "controls": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-controls-v3.json",
+      "assessment": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-parent-v3/assessment.json",
       "correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/fixture-oracle-correction-v2.json",
-      "status": "352 cells and22 lanes accounted:304 cells/19 lanes reused after source/expectation identity check,48 fresh cells/3 lanes pass host oracles. All13 required negative parent witnesses reproduced. Three incorrect draft positives replaced by valid nonmutable/selective-copy controls, with raw failures retained. Parent still miscompiles the mutable dynamic-initialization neighbor in four variants. No compiler implementation edit."
+      "status": "25 required controls committed;400 parent/host cells account for15 negative witnesses. Candidate104 native cells/26 lanes and all13 normal gates pass. Further SFINAE/body-context neighbors are prepared externally for the next compiler window; export and performance acceptance remain pending."
     },
-    "regression_revision": "6a62242ab"
+    "regression_revision": "6f8159fa4",
+    "implementation_revision": "b1c340fb5",
+    "implementation": [
+      "dev/src/sema/entity_records.h",
+      "dev/src/sema/analyzer.h",
+      "dev/src/sema/analyzer_constexpr.cpp",
+      "dev/src/sema/constant_values.h",
+      "dev/src/sema/constant_interpreter.cpp",
+      "dev/src/sema/constant_construction.cpp",
+      "dev/src/sema/constant_statements.cpp"
+    ]
   },
   {
     "id": "CXX11-020",
@@ -3336,12 +3352,12 @@
   {
     "id": "CXX11-030",
     "priority": "P2",
-    "status": "regression-fails",
+    "status": "shared-repair-in-validation",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-019",
     "symptom": "A constexpr defaulted copy of a union with an inactive mutable alternative is accepted. Modern GCC15 and Clang21/22 reject in C++11; an explicit selective user-written copy remains valid.",
-    "root_cause": "Defaulted union copying uses the object representation rather than scalar lvalue-to-rvalue reads; the CWG2004 constexpr-constructor restriction needs independent handling.",
-    "expected": "Enforce the C++11 later-DR defaulted-copy/move restriction while preserving explicit selective copies and ordinary runtime union behavior.",
+    "root_cause": "Raw whole-value copying bypasses constant-expression read validation, shared with CXX11-019. The initial separate constructor-eligibility-ban hypothesis is withdrawn: current native mode probes accept explicit defaulted constexpr union-copy declarations in C++11/14/17 and within-evaluation union copies in14/17.",
+    "expected": "Diagnose the external constexpr union-copy reproducer in the targeted C++11 mode while preserving legal defaulted declarations and within-evaluation C++14/17 copies. Do not impose a blanket constructor ban.",
     "owning_pa": 16,
     "ownership_note": "PA16:300 owns constexpr validation over the inherited union/copy object model. Read handout before implementation; C++17 CWG2268 relaxation stays separately classified.",
     "regressions": [
@@ -3352,17 +3368,156 @@
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-030",
     "checks": {
       "parent": "parent-v1/assessment-v2.json:16 retained compiler cells;12 independent normal host diagnostic cells,4 candidate acceptance witnesses,owning lane fails because frontend accepts",
-      "measurement_correction": "Draft producer required checker exit1; actual checker failure25 is independently verified from its frontend-acceptance failure. No compiler observation rerun."
+      "measurement_correction": "Draft producer required checker exit1; actual checker failure25 is independently verified from its frontend-acceptance failure. No compiler observation rerun.",
+      "shared_candidate": "CXX11-019/candidate-v2/assessment.json:all four C++11 native variants and owning lane pass the required rejection.",
+      "revised_standards_boundary": "CXX11-019/version-neighbors-v3/assessment.json:64 verified positive parent/candidate/GCC/Clang cells. Intermediate CWG2004-only expectations were false after later CWG2268 evolution; raw earlier observations retained."
+    },
+    "performance": {
+      "status": "shared-with-CXX11-019-pending"
+    },
+    "standards_basis": {
+      "category": "later-dr-compatibility",
+      "issues": [
+        "CWG1405",
+        "CWG2004",
+        "CWG2268"
+      ],
+      "sources": [
+        "https://cplusplus.github.io/CWG/issues/1405.html",
+        "https://cplusplus.github.io/CWG/issues/2004.html",
+        "https://cplusplus.github.io/CWG/issues/2268.html"
+      ],
+      "rationale": "The original representation-copy hole and later union rules require the complete resolution history. The specific C++11 external-copy negative is reproduced and repaired by shared read validation. The earlier hypothesis that all defaulted union copy declarations should lose constexpr is disproved by current mode-boundary evidence; do not implement that ban."
+    },
+    "shared_root": "CXX11-019",
+    "implementation_revision": "b1c340fb5"
+  },
+  {
+    "id": "CXX11-031",
+    "priority": "P1",
+    "status": "observed-language-gap",
+    "upstream": [
+      "llvm-project/clang/test/CXX/dcl.dcl/dcl.attr/dcl.attr.grammar/p6.cpp"
+    ],
+    "symptom": "The compiler silently accepts consecutive left brackets outside an attribute-specifier in ISO/GNU C++11.",
+    "root_cause": "Whole-TU required diagnostic confirmed; isolated reduction and typed parser/semantic root cause still pending.",
+    "expected": "Emit a normal required diagnostic while retaining valid neighboring declarations; diagnostic prose/count/recovery is outside scope.",
+    "owning_pa": null,
+    "ownership_note": "Determine the earliest owning PA from the faithful reduction and read that handout before changing behavior.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-campaign-d1c5c14c9-v3",
+    "checks": {
+      "execution": "results.json:two source-pinned ISO/GNU11 variants; native host rejects normally, candidate emits a valid object without a diagnostic.",
+      "verification": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-root-verification-v1.json",
+      "adjudication": "reports/cxx11-clang-language-adjudications.json; sourceSHA256 44a6fc38f6081da1ba5c0030f09bdb516027449a0327f3cb3c94571551001941"
     },
     "performance": {
       "status": "not-started-no-compiler-change"
     },
     "standards_basis": {
-      "category": "later-dr",
-      "issue": "CWG2004",
-      "adopted": "2015-10",
-      "source": "https://cplusplus.github.io/CWG/issues/2004.html",
-      "rationale": "The adopted resolution adds a restriction to defaulted constexpr copy/move constructors when the class has mutable variant subobjects. CWG2268 is a separate C++17 relaxation and is not assumed to be a C++11 positive oracle."
-    }
+      "category": "original-cxx11",
+      "clause": "7.6.1 [dcl.attr.grammar]p6",
+      "source": "doc/n3485.txt",
+      "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+      "rationale": "The function body uses consecutive left-square-bracket tokens in an expression where they cannot introduce an attribute-specifier; this requires a diagnostic."
+    },
+    "assigned_agent": null
+  },
+  {
+    "id": "CXX11-032",
+    "priority": "P1",
+    "status": "observed-language-gap",
+    "upstream": [
+      "llvm-project/clang/test/CXX/dcl.dcl/dcl.enum/p1.cpp"
+    ],
+    "symptom": "The compiler silently accepts qualified opaque-enum declarations in ISO/GNU C++11.",
+    "root_cause": "Whole-TU required diagnostic confirmed; isolated reduction and typed parser/semantic root cause still pending.",
+    "expected": "Emit a normal required diagnostic while retaining valid neighboring declarations; diagnostic prose/count/recovery is outside scope.",
+    "owning_pa": null,
+    "ownership_note": "Determine the earliest owning PA from the faithful reduction and read that handout before changing behavior.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-campaign-d1c5c14c9-v3",
+    "checks": {
+      "execution": "results.json:two source-pinned ISO/GNU11 variants; native host rejects normally, candidate emits a valid object without a diagnostic.",
+      "verification": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-root-verification-v1.json",
+      "adjudication": "reports/cxx11-clang-language-adjudications.json; sourceSHA256 bf7b98ebb7168d6fbe7e145bc86b88b2b0c4717531378b7767ae3fd2d55d39f7"
+    },
+    "performance": {
+      "status": "not-started-no-compiler-change"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "clause": "7.2 [dcl.enum]p1 opaque-enum-declaration grammar",
+      "source": "doc/n3485.txt",
+      "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+      "rationale": "The non-template namespace-scope opaque declarations enum S3::E2 : int and enum class S3::E3 use nested-name-specifiers, which the opaque-enum-declaration grammar does not permit."
+    },
+    "assigned_agent": null
+  },
+  {
+    "id": "CXX11-033",
+    "priority": "P1",
+    "status": "observed-language-gap",
+    "upstream": [
+      "llvm-project/clang/test/CXX/dcl.decl/dcl.fct.def/dcl.fct.def.delete/p4.cpp"
+    ],
+    "symptom": "The compiler silently accepts deleted explicit specialization after an earlier declaration in ISO/GNU C++11.",
+    "root_cause": "Whole-TU required diagnostic confirmed; isolated reduction and typed parser/semantic root cause still pending.",
+    "expected": "Emit a normal required diagnostic while retaining valid neighboring declarations; diagnostic prose/count/recovery is outside scope.",
+    "owning_pa": null,
+    "ownership_note": "Determine the earliest owning PA from the faithful reduction and read that handout before changing behavior.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-campaign-d1c5c14c9-v3",
+    "checks": {
+      "execution": "results.json:two source-pinned ISO/GNU11 variants; native host rejects normally, candidate emits a valid object without a diagnostic.",
+      "verification": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-root-verification-v1.json",
+      "adjudication": "reports/cxx11-clang-language-adjudications.json; sourceSHA256 70fe0af5f6c8bf923ecf549e8e85b6dc6656b1690df5a203eaa6e5a0b5419445"
+    },
+    "performance": {
+      "status": "not-started-no-compiler-change"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "clause": "8.4.3 [dcl.fct.def.delete]p4",
+      "source": "doc/n3485.txt",
+      "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+      "rationale": "The deleted explicit specialization func2<int> follows an earlier declaration of that specialization. A deleted definition must be its first declaration."
+    },
+    "assigned_agent": "/root/clang_correctness"
+  },
+  {
+    "id": "CXX11-034",
+    "priority": "P1",
+    "status": "observed-language-gap",
+    "upstream": [
+      "llvm-project/clang/test/CXX/dcl.decl/dcl.meaning/dcl.fct.default/p3.cpp"
+    ],
+    "symptom": "The compiler silently accepts default arguments in a nested function-pointer declarator in ISO/GNU C++11.",
+    "root_cause": "Whole-TU required diagnostic confirmed; isolated reduction and typed parser/semantic root cause still pending.",
+    "expected": "Emit a normal required diagnostic while retaining valid neighboring declarations; diagnostic prose/count/recovery is outside scope.",
+    "owning_pa": null,
+    "ownership_note": "Determine the earliest owning PA from the faithful reduction and read that handout before changing behavior.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-campaign-d1c5c14c9-v3",
+    "checks": {
+      "execution": "results.json:two source-pinned ISO/GNU11 variants; native host rejects normally, candidate emits a valid object without a diagnostic.",
+      "verification": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-root-verification-v1.json",
+      "adjudication": "reports/cxx11-clang-language-adjudications.json; sourceSHA256 aae73f501835a9f360ca91130776f203fcb7a2ac116d50303a62a6cf470f105f"
+    },
+    "performance": {
+      "status": "not-started-no-compiler-change"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "clause": "8.3.6 [dcl.fct.default]p3",
+      "source": "doc/n3485.txt",
+      "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+      "rationale": "Default arguments appear inside nested pointer-to-function parameter declarators and abstract-declarators, outside the permitted function declaration parameter clause. The TU requires a diagnostic independently of the separate parameter-pack example."
+    },
+    "assigned_agent": null
   }
 ]

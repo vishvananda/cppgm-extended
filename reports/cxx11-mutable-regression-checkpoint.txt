@@ -39,3 +39,30 @@ Evidence roots:
 Primary standards sources are linked in the issue ledger and correction record.
 Both fixes still need implementation, normal correctness/export verification
 and calibrated per-fix/cumulative performance acceptance before integration.
+
+Implementation and broader boundary checkpoint
+
+Implementation b1c340fb5 preserves mutable-member ancestry through places and
+published pointers. A read validates it; an address alone remains valid. Trivial
+class/array copies now use the same read checks. A complete class memoizes its
+by-value mutability, skipping references and logical array-element expansion.
+C++14-created evaluation objects keep their permitted mutable reads.
+
+Required controls now number25 (regression6f8159fa4);15 negative witnesses are
+proved in400 parent/host cells. Candidate v2 passes104 native cells/26 lanes,
+including the shared union reproducer, and fixes the dynamic-initialization
+neighbor. All13 normal checks pass, strict8176/8176 included. Export, integrated
+parent reconciliation and calibrated performance acceptance remain outstanding.
+Two SFINAE/body-context sources are prepared under substitution-neighbors-v1;
+they have not yet been executed or added to required lanes.
+
+The constructor-eligibility hypothesis in the earlier paragraph is superseded.
+Native version probes show legal explicit defaulted constexpr union-copy
+declarations in11/14/17, and new-object union copies in14/17. The v3 verifier
+rehashes64 positive compiler observations, reuses40 existing link/runs and
+performs24 previously missing link/runs; all pass. Preserve those declarations
+rather than adding an intermediate-CWG2004-only ban. CXX11-030 shares the
+CXX11-019 read-validation repair; its specific required C++11 rejection passes.
+An external constexpr union-copy C++17 assumption remains under separate
+standards review, with its eight observations retained. No whole-C++17
+conformance claim or source observation rewrite is implied.
