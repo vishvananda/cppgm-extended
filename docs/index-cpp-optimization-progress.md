@@ -378,8 +378,43 @@ installs all 42 wrappers and passes both new fixtures through the bundle.
 
 Receipts are in `forward-calls-ported/`, its two sibling frozen-guard directories,
 `forward-calls-ported-public-objects/` and `forward-calls-ported-boost-sentinels/`.
-The final all-50 comparison and full public run use this immutable compiler;
-both remain in progress at this checkpoint.
+The final all-50 comparison and full public run use this immutable compiler.
+The all-50 comparison and full PA35 release check have now finished; the
+public run remains in progress.
+
+## Five-fix comparison
+
+All 50 checksum workloads pass for every measured executable. The final
+comparison pairs each workload independently, with three separate CPU lanes
+for single-threaded cases; the threaded matrix cases then use 18 CPUs.
+Every reference remains its unchanged campaign executable.
+
+| Reference | Geometric loop wall speed | Geometric instruction speed | A/A warnings |
+|---|---:|---:|---:|
+| Original campaign compiler | 1.058x | 1.06969x | 21/50 |
+| Previous switch fix | 1.024x | 1.00166x | 32/50 |
+| GCC | 0.998x | 0.95402x | 30/50 |
+| Clang | 0.961x | 0.95603x | 23/50 |
+
+The instruction result establishes a 6.515% geometric reduction against the
+campaign baseline. Recursive Brainfuck executes 61.71% fewer instructions,
+Calculator AST 29.66% fewer and CRC32 84.07% fewer. The many A/A warnings make
+small wall-time differences provisional. Both the aggregate and individual
+slow cases remain in the retained results.
+
+An unusually low Brainfuck/Clang timing in that full run does not reproduce in
+the longer focused control. Nine blocks, with two A/A blocks before and after
+each comparison and recorded CPU-sibling activity, give Brainfuck wall speeds
+of 1.001x the earlier SCC fix, 0.870x GCC and 0.823x Clang. The switch/forwarding
+changes reduce its instructions another 9.1% against the SCC fix, while runtime
+is at parity. There is still a latency gap against both stock compilers.
+These controls are in `group1-final-brain-control/`; the complete 200-pair
+scoreboard, calibrations and raw observations are in
+`group1-final-forwarded-scoreboard/`.
+
+The full PA35 release recipe passes for both the course build and the student
+build, with 100 generated seeds and the existing release margins. Calibration
+outputs and all measurements are retained under `forward-calls-ported/pa35-release/`.
 
 ## Refreshed investigation queue
 
@@ -404,10 +439,20 @@ resolve the difference. Reduce and explain this boundary gap before attributing
 differences in that replay to a new optimization. The new C++11 course reduction
 and existing object-roundtrip lanes continue to pass.
 
+Private tracing finds identical canonical input text on both paths and the
+same live instruction count in every function throughout optimization. After
+normalizing local names and phi-input order, all 1,550 final function bodies
+also agree. The differing object bytes therefore do not establish a missing
+transformation. Investigate incidental value/block numbering, phi-copy order,
+allocation and module layout next. Global sections and alias records still
+need an equivalent comparison. No tracing or environment reads were added to
+the production compiler.
+
 ## Outstanding work
 
-Close the first group with a full 50-workload paired reranking, the full public
-benchmark comparison and PA35 release gates. Profile Brainfuck's residual call
+Finish the first group's full public benchmark comparison and explain the
+whole-index-cpp direct/serialized byte-identity gap. Retain the completed
+50-workload comparison and PA35 release receipts. Profile Brainfuck's residual call
 chain and Calculator AST's remaining ownership/dispatch work on the new code.
 Investigate Base64 decoding, Huffman decoding and Nbody, then the named parser,
 interpreter, SHA256, maze and container workloads using that refreshed evidence.
