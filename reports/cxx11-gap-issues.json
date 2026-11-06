@@ -2651,7 +2651,8 @@
       "independent_verification": "functional-acceptance-v1.json:root independently rehashes478 source files,9 symlinks,all544 native receipts,objects/executables,required fixtures and export artifacts. No performance acceptance."
     },
     "performance": {
-      "status": "not-started-candidate-under-validation"
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
     },
     "standards_basis": {
       "category": "later-dr",
@@ -2678,7 +2679,19 @@
       "dev/src/sema/constant_interpreter.cpp",
       "dev/src/sema/constant_construction.cpp",
       "dev/src/sema/constant_statements.cpp"
-    ]
+    ],
+    "rebased_checkpoint": {
+      "upstream": "25f26d17880cb90b049d47dab65249c2b4e8f582",
+      "active_worktree": "/mnt/vizier/cppgm-cxx11-constexpr-mutable-rebased",
+      "active_branch": "repair/cxx11-constexpr-mutable-rebased",
+      "candidate_revision": "d96909fe0b4a6f9e45625703a14ee7302b950b8d",
+      "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
+      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending.",
+      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/mutable/focused/assessment.json"
+    },
+    "pre_rebase_performance_record": {
+      "status": "not-started-candidate-under-validation"
+    }
   },
   {
     "id": "CXX11-020",
@@ -2800,10 +2813,8 @@
       "scaling_host_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/scaling-host-oracles-v1/assessment.json"
     },
     "performance": {
-      "status": "family-counter-gate-failed-other-measurements-not-started",
-      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/final-stages-protocol-v1.json",
-      "progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/final-stages-v1.json",
-      "scope": "The original12-workload family bit-field comparison exceeds the unchanged1% instruction gate at+1.3809909%. Raw observations retained. String-fix per-fix/cumulative/absolute measurements have not started."
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
     },
     "standards_basis": {
       "category": "later-defect-resolution",
@@ -2847,7 +2858,22 @@
     "implementation": [
       "dev/src/sema/analyzer_initialization.cpp",
       "dev/src/lower/global_lowering.cpp"
-    ]
+    ],
+    "rebased_checkpoint": {
+      "upstream": "25f26d17880cb90b049d47dab65249c2b4e8f582",
+      "active_worktree": "/mnt/vizier/cppgm-cxx11-string-reference-rebased",
+      "active_branch": "repair/cxx11-string-array-references-rebased",
+      "candidate_revision": "1b2ad805d5ead8998f16421a61931e9f9f6ede0d",
+      "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
+      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending.",
+      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/string/focused/assessment.json"
+    },
+    "pre_rebase_performance_record": {
+      "status": "family-counter-gate-failed-other-measurements-not-started",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/final-stages-protocol-v1.json",
+      "progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/final-stages-v1.json",
+      "scope": "The original12-workload family bit-field comparison exceeds the unchanged1% instruction gate at+1.3809909%. Raw observations retained. String-fix per-fix/cumulative/absolute measurements have not started."
+    }
   },
   {
     "id": "CXX11-022",
@@ -3348,17 +3374,30 @@
       "family_instructions": "family-counters-acceptance-v1.json:12 AA+12 AB reports independently pass,960 measured observations and11520 batched child outputs rehashed,max instruction upper95 1.003457704."
     },
     "performance": {
-      "status": "immediate-parent-counter-and-actual-RSS-pass-cumulative-family-original-pending",
-      "instruction_upper95_gate": 1.01,
-      "actual_compiler_rss_upper95_gate": 1.03,
-      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029/final-protocol-v2.json"
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included.",
+      "historical_full_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029/performance-acceptance-v1.json"
     },
     "standards_basis": {
       "category": "implementation-performance",
       "rationale": "Preserve existing C++11 constant initialization and x86-64 bit-field ABI; cumulative performance gate is part of the gap plan."
     },
     "implementation_revision": "19fbac972",
-    "regression_revision": "c4192b194"
+    "regression_revision": "c4192b194",
+    "rebased_checkpoint": {
+      "upstream": "25f26d17880cb90b049d47dab65249c2b4e8f582",
+      "active_worktree": "/mnt/vizier/cppgm-upstream-cxx11",
+      "active_branch": "investigate/upstream-cxx11",
+      "candidate_revision": "18c450526e89575ef86802806594466bdebb3f78",
+      "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
+      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending."
+    },
+    "pre_rebase_performance_record": {
+      "status": "immediate-parent-counter-and-actual-RSS-pass-cumulative-family-original-pending",
+      "instruction_upper95_gate": 1.01,
+      "actual_compiler_rss_upper95_gate": 1.03,
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029/final-protocol-v2.json"
+    }
   },
   {
     "id": "CXX11-030",
@@ -3384,7 +3423,8 @@
       "revised_standards_boundary": "CXX11-019/version-neighbors-v3/assessment.json:64 verified positive parent/candidate/GCC/Clang cells. Intermediate CWG2004-only expectations were false after later CWG2268 evolution; raw earlier observations retained."
     },
     "performance": {
-      "status": "shared-with-CXX11-019-pending"
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
     },
     "standards_basis": {
       "category": "later-dr-compatibility",
@@ -3401,7 +3441,19 @@
       "rationale": "The original representation-copy hole and later union rules require the complete resolution history. The specific C++11 external-copy negative is reproduced and repaired by shared read validation. The earlier hypothesis that all defaulted union copy declarations should lose constexpr is disproved by current mode-boundary evidence; do not implement that ban."
     },
     "shared_root": "CXX11-019",
-    "implementation_revision": "b1c340fb5"
+    "implementation_revision": "b1c340fb5",
+    "rebased_checkpoint": {
+      "upstream": "25f26d17880cb90b049d47dab65249c2b4e8f582",
+      "active_worktree": "/mnt/vizier/cppgm-cxx11-constexpr-mutable-rebased",
+      "active_branch": "repair/cxx11-constexpr-mutable-rebased",
+      "candidate_revision": "d96909fe0b4a6f9e45625703a14ee7302b950b8d",
+      "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
+      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending.",
+      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/mutable/focused/assessment.json"
+    },
+    "pre_rebase_performance_record": {
+      "status": "shared-with-CXX11-019-pending"
+    }
   },
   {
     "id": "CXX11-031",
@@ -3447,7 +3499,8 @@
       "separate_grammar": "Five malformed attribute-list cases are separately tracked as036; their exclusion from this focused candidate matrix is explicit,not a pass."
     },
     "performance": {
-      "status": "held-pending-029-acceptance-and-actual-parent-reconciliation"
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3458,7 +3511,18 @@
     },
     "assigned_agent": null,
     "regression_revision": "15eb37c9a",
-    "implementation_revision": "51d450d15"
+    "implementation_revision": "51d450d15",
+    "rebased_checkpoint": {
+      "upstream": "25f26d17880cb90b049d47dab65249c2b4e8f582",
+      "active_worktree": "/mnt/vizier/cppgm-clang-consecutive-brackets-rebased",
+      "active_branch": "repair/cxx11-consecutive-brackets-rebased",
+      "candidate_revision": "d46f470b2b85d124c744554191eef7c4a25358d3",
+      "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
+      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending."
+    },
+    "pre_rebase_performance_record": {
+      "status": "held-pending-029-acceptance-and-actual-parent-reconciliation"
+    }
   },
   {
     "id": "CXX11-032",
@@ -3537,7 +3601,8 @@
       "performance_inputs": "performance-controls-v1/assessment.json:30 parent/candidate/GCC/Clang native cells validate six frozen specialization workloads. Measurements are held for the shared029 window."
     },
     "performance": {
-      "status": "pending-coordinated-window-no-measurements-started"
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3548,7 +3613,18 @@
     },
     "assigned_agent": "/root/clang_correctness",
     "regression_revision": "8858114ec",
-    "implementation_revision": "40731abe6"
+    "implementation_revision": "40731abe6",
+    "rebased_checkpoint": {
+      "upstream": "25f26d17880cb90b049d47dab65249c2b4e8f582",
+      "active_worktree": "/mnt/vizier/cppgm-clang-deleted-specialization-rebased",
+      "active_branch": "repair/cxx11-deleted-specialization-rebased",
+      "candidate_revision": "2078f40f6ced1b8941984677196d35c25e0f93be",
+      "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
+      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending."
+    },
+    "pre_rebase_performance_record": {
+      "status": "pending-coordinated-window-no-measurements-started"
+    }
   },
   {
     "id": "CXX11-034",
@@ -3630,8 +3706,8 @@
       "independent_verification": "functional-acceptance-v1.json:382 native cells,1540 raw streams,all emitted artifacts,source/fixture hashes and export receipts independently verified; baseline source rechecked from exact Git archive. Twenty-four common-correct required objects and six performance-input objects match the parent."
     },
     "performance": {
-      "status": "functional-pass-held-pending-029-acceptance-and-actual-parent-reconciliation",
-      "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-035/performance-predeclaration-v1.json"
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3643,6 +3719,19 @@
       "source": "doc/n3485.txt",
       "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
       "rationale": "Integral/enumeration non-type arguments require a converted constant expression of the parameter type. The permitted implicit sequence excludes narrowing integral and floating-to-integral conversions. The original source actually forms a specialization, unlike the unused-template IFNDR cases."
+    },
+    "rebased_checkpoint": {
+      "upstream": "25f26d17880cb90b049d47dab65249c2b4e8f582",
+      "active_worktree": "/mnt/vizier/cppgm-cxx11-template-conversion-narrowing-rebased",
+      "active_branch": "repair/cxx11-template-conversion-narrowing-rebased",
+      "candidate_revision": "172168d1b69da9fb80e05d649495e05741a3b91b",
+      "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
+      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending.",
+      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/narrowing/focused/assessment.json"
+    },
+    "pre_rebase_performance_record": {
+      "status": "functional-pass-held-pending-029-acceptance-and-actual-parent-reconciliation",
+      "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-035/performance-predeclaration-v1.json"
     }
   },
   {

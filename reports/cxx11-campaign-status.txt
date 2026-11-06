@@ -1,3 +1,50 @@
+Rebased campaign checkpoint (2026-11-06)
+
+Campaign18c450526 and all six active repair branches descend from origin/main
+25f26d178. The initial rebase onto141166c6c replayed66 campaign commits;
+its bounded-initializer conflict preserves upstream early failure and immediate-
+context substitution behavior. The second upstream commit changes only PA32's
+host memset declaration. Every active tip differs from its immediately prior
+tip solely by that fixture; every local patch and built tool hash is unchanged.
+The changed fixture passes1/1. Prior evidence retains its original scope.
+
+Fresh campaign strict8162/8162 and all14 normal obligations pass,including
+owning suites,debug info,self-host throughPA5,inception,PA35 smoke,all nine
+architecture checks,file/placement audits and harness. The untouched141166
+upstream baseline separately passed8064/8064. Fresh campaign export is running.
+
+Fresh immediate-parent/candidate proof for021,019/shared030 and035 accounts for
+568 native cells:284 candidate cells all pass;66 required PA lanes all pass.
+Independent verification rehashes2020 streams,312 objects and188 executables.
+The separate Clang031/033 rebased focused proofs also pass and survive the
+fixture-only transfer. Their full new-parent normal/export checks are running,
+as are the root repairs' checks. One narrowing strict run hit a process timeout
+on a deliberate null-dereference fixture; the two retained programs are byte-
+identical and both signal normally without core dumps. The failed observation
+is retained; a strict rerun with inherited RLIMIT_CORE=0 is under way.
+
+029's old-base28-workload instruction/actual-compiler-RSS acceptance is complete
+and retained as historical evidence. New upstream compiler changes require
+fresh immediate-parent and cumulative measurement; those gates remain open.
+The exact rebased029 parent d629716f1 is built and frozen. No benchmark is
+running during the functional window. No repair is closed from an old-parent
+performance result,or from an uncalibrated/noisy wall-time observation.
+
+Nine independently triaged individual correctness gaps remain unaccepted:
+019/shared030,021,031,033 and035 have implementations;008,032,034 and036 remain
+unfixed. This is a known-gap count,not an exhaustive corpus result. Family
+closure007/016/022,performance029 and standards/oracle002/037 remain separate.
+The old-base GCC533/Clang116 discrepant-variant screens are provisional
+symptoms,not independent defects or current whole-corpus pass percentages.
+Full discovery,external replay,remaining repairs,and final two CI jobs with
+matched upstream whole-suite timings remain required by cxx11-gap-plan.txt.
+
+Rebase/focus/normal evidence and exact active heads:
+  /mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/
+  fixture-only-rebase-v1.json;active-worktrees-v2.json;checks-v1.json;
+  root-repairs-focused-v1/independent-verification-v1.json
+Historical entries below describe the revisions and scopes recorded then.
+
 Additional repair functional checkpoints (2026-11-06)
 
 CXX11-031 implementation51d450d15 passes16 required PA5 fixtures,strict8144,
