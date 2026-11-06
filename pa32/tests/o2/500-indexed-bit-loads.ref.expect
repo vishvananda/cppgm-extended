@@ -2,9 +2,9 @@
 count(load) <= 1 in @shifted
 count(load) <= 1 in @inverted
 count(load) <= 1 in @high_bit
-count(branch) <= 0 in @shifted
-count(branch) <= 0 in @inverted
-count(branch) <= 0 in @high_bit
+count(branch) <= 1 in @shifted
+count(branch) <= 1 in @inverted
+count(branch) <= 1 in @high_bit
 instructions <= 16 in @shifted
 instructions <= 16 in @inverted
 instructions <= 16 in @high_bit

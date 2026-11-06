@@ -68,7 +68,7 @@ class OptionalModernCxxTests(unittest.TestCase):
                      'tests/controls/300-using-base-identical-signatures.t'},
             'pa16': {'tests/controls/300-constexpr-pointer-array-brace-elision.t'},
             'pa18': {'tests/controls/300-aggregate-class-conversion-sfinae.t',
-                     'tests/controls/300-pending-unused-template-context.t'},
+                     'tests/controls/300-equivalent-dependent-expressions.t'},
             'pa26': {'tests/general/200-host-eh-constructor-virtual-operand-o0.t'},
         }
         for pa, expected in cases.items():

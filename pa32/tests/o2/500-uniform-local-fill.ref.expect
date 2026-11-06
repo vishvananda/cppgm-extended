@@ -1,9 +1,13 @@
-# outcomes from 500-uniform-local-fill.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
-none(phi)
-none(copyobj)
+# explicit-outcomes
 
+# Content propagation is required in the positive cases; other equivalent
+# control-flow and memory representations remain valid.
 instructions <= 100
 blocks <= 40
 instructions <= 4 in @uniform_word
 instructions <= 4 in @uniform_short
 instructions <= 4 in @uniform_byte
+
+# Constant contents do not remove volatile or atomic observations.
+has(load volatile)
+has(atomic_load)

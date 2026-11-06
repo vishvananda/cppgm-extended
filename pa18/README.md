@@ -61,16 +61,14 @@ identity of the class template they name, including when a later declaration
 adds namespace qualification or uses a namespace alias. Different templates or
 template arguments remain distinct. The first declaration retains its ABI spelling.
 
-Non-deduced constraints compare their substituted typed operands during partial
-ordering. A pending expression can retain unused template parameters, including
-an empty pack; those bookkeeping arguments do not distinguish otherwise
-equivalent operands. Preserve different member names and argument positions,
-even when a concrete specialization gives them equal values.
-An unrelated argument retained by a pending expression must not cause a
-substitution failure when an equivalent operand is reused in another template.
+Non-deduced constraints compare their substituted operands during partial
+ordering. Unused template arguments, including an empty pack, do not distinguish
+otherwise equivalent expressions or cause substitution to fail. Preserve
+different member names and argument positions, even when a concrete
+specialization gives them equal values.
 
-A transformed ordering operand can become independent even while unrelated
-synthesized arguments remain dependent. Evaluate that proven independent
+A transformed ordering operand can become independent even while other
+template arguments remain dependent. Evaluate that proven independent
 operand in its ordinary substitution context, preserving access checks and
 immediate substitution failures. Source declarations retain the dependent
 spellings required by the ABI; operands that still depend on arguments remain

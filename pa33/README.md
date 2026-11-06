@@ -94,8 +94,8 @@ own speed; PA35 tightens the same kernels to 1.30.
 The same target also runs PA32's six original kernel families from
 `../pa32/tests/kernels/`: bounded search, aliased/disjoint field updates,
 narrow arithmetic, state crossing a cold call, conditionally updated
-floating state and adjacent updates with an invariant factor. They pass through the
-complete optimized compiler and use the same host-built driver and scalar
+floating state and adjacent updates with an invariant factor. They pass through
+the complete optimized compiler and use the same host-built driver and scalar
 oracle. Their `.quality` files publish the native instruction-ratio limits.
 The driver checks unspecified upper bits on a narrow incoming argument too.
 These checks require Python 3, GCC and Cachegrind on Linux x86-64.

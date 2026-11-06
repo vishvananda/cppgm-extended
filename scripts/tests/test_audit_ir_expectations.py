@@ -10,6 +10,29 @@ import unittest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AUDIT = REPO_ROOT / "scripts" / "audit_ir_expectations.pl"
 REGENERATE = REPO_ROOT / "scripts" / "regenerate_ir_expectations.pl"
+EXPECT = REPO_ROOT / "scripts" / "expect_ir.pl"
+
+POINTER_CHOICE = """function @choose(%condition : i1, %a : ptr, %b : ptr) -> i64 {
+  block ^entry:
+    branch %condition, ^left, ^right
+  block ^left:
+    jump ^join
+  block ^right:
+    jump ^join
+  block ^join:
+    %address = phi ptr [^left: %a, ^right: %b]
+    %value = load i64 %address
+    return i64 %value
+}
+"""
+
+SELECT_CHOICE = """function @choose(%condition : i1, %a : ptr, %b : ptr) -> i64 {
+  block ^entry:
+    %address = select ptr %condition, %a, %b
+    %value = load i64 %address
+    return i64 %value
+}
+"""
 
 # A real dump: the generators read its format, and it is large enough for the
 # two tolerances to give different bounds.
@@ -86,6 +109,102 @@ class AuditIrExpectationsTests(unittest.TestCase):
         with self.sidecar(base).open("a") as stream:
             stream.write("\n# why\ncount(call) == 0\n")
         self.assertEqual(self.audit().returncode, 0)
+
+    def lowir_choice(self) -> Path:
+        base = self.fixture("pa32/tests/o2/x")
+        base.with_suffix(".t").write_text(POINTER_CHOICE)
+        base.with_name("x.ref").write_text(SELECT_CHOICE)
+        self.sidecar(base).write_text("instructions <= 8\ncount(load) <= 1\n")
+        return base
+
+    def test_default_outcomes_still_follow_the_reference(self):
+        base = self.lowir_choice()
+        self.regenerate(base.parent)
+        self.assertIn("none(phi)", self.sidecar(base).read_text())
+        self.assertEqual(self.audit().returncode, 0)
+
+    def test_explicit_outcomes_allow_an_equivalent_phi_and_keep_bounds(self):
+        base = self.lowir_choice()
+        self.regenerate(base.parent, "--add-budgets")
+        with self.sidecar(base).open("a") as stream:
+            stream.write("\n# explicit-outcomes\n")
+        self.assertNotEqual(self.audit().returncode, 0)
+        self.regenerate(base.parent)
+        sidecar = self.sidecar(base)
+        contract = sidecar.read_text()
+        self.assertNotIn("none(phi)", contract)
+        self.assertIn("# budget", contract)
+        self.assertIn("instructions <= 8", contract)
+        self.assertIn("count(load) <= 1", contract)
+        self.assertEqual(self.audit().returncode, 0)
+        for text, status in [(SELECT_CHOICE, 0), (POINTER_CHOICE, 0),
+                             (POINTER_CHOICE.replace("    return i64 %value",
+                                                     "    %extra = load i64 %address\n"
+                                                     "    return i64 %value"), 1)]:
+            candidate = self.root / "candidate.lowir"
+            candidate.write_text(text)
+            result = subprocess.run(["perl", str(EXPECT), str(candidate), str(sidecar)],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, status, result.stdout + result.stderr)
+        self.regenerate(base.parent)
+        self.assertEqual(sidecar.read_text(), contract)
+
+    def test_outcome_policy_does_not_hide_a_generated_block_header(self):
+        base = self.lowir_choice()
+        self.regenerate(base.parent, "--add-budgets")
+        original = self.sidecar(base).read_text()
+        for text in ["# explicit-outcomes\n" + original,
+                     original.replace("instructions <=", "# explicit-outcomes\ninstructions <=", 1),
+                     original + "# explicit-outcomes\n"]:
+            with self.subTest(text=text):
+                self.sidecar(base).write_text(text)
+                self.regenerate(base.parent)
+                updated = self.sidecar(base).read_text()
+                self.assertTrue(updated.startswith("# explicit-outcomes\n\n# budget"))
+                self.assertNotIn("none(phi)", updated)
+                self.assertIn("instructions <= 8", updated)
+                self.assertEqual(self.audit().returncode, 0)
+
+    def test_indexed_field_contract_accepts_a_branched_single_load(self):
+        fixture = REPO_ROOT / "pa32/tests/o2/500-indexed-bit-loads.t"
+        text = fixture.read_text()
+        for name in ("shifted", "inverted", "high_bit"):
+            pattern = re.compile(r"(function @" + name + r"\([^}]+)\n}")
+            match = pattern.search(text)
+            self.assertIsNotNone(match)
+            original = match.group(0)
+            replacement = re.sub(r"    %va = load typed i64 %a\n", "", original)
+            replacement = re.sub(r"    %vb = load typed i64 %b\n", "", replacement)
+            replacement = replacement.replace(
+                "    %v = phi i64 [^left: %va, ^right: %vb]",
+                "    %address = phi ptr [^left: %a, ^right: %b]\n"
+                "    %v = load typed i64 %address")
+            self.assertNotEqual(replacement, original)
+            self.assertIn("%address = phi ptr", replacement)
+            text = text.replace(original, replacement)
+        candidate = self.root / "field-choice.lowir"
+        candidate.write_text(text)
+        sidecar = fixture.with_name(fixture.stem + ".ref.expect")
+        result = subprocess.run(["perl", str(EXPECT), str(candidate), str(sidecar)],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result = subprocess.run(["perl", str(EXPECT), str(fixture), str(sidecar)],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("count(load)", result.stdout)
+
+    def test_explicit_outcomes_do_not_disable_machine_contracts(self):
+        base = self.machine_fixture()
+        contract = subprocess.check_output(
+            ["perl", str(REPO_ROOT / "scripts/make_ir_contract.pl"),
+             "--memory", "--preserve", str(base.with_name("x.ref.mir"))], text=True)
+        with self.sidecar(base).open("a") as stream:
+            stream.write("\n# explicit-outcomes\n\n" + contract)
+        self.regenerate(base.parent)
+        self.assertIn(contract.strip(), self.sidecar(base).read_text())
+        self.assertEqual(self.audit().returncode, 0)
+        base.with_name("x.ref.mir").write_text("machine_ir\n")
+        self.assertNotEqual(self.audit().returncode, 0)
 
     def test_pa24_uses_its_own_tolerance(self):
         base = self.machine_fixture("pa24/tests/o1/x")

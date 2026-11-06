@@ -226,6 +226,10 @@ perl scripts/audit_ir_expectations.pl --backend dev/lowir2native-ref --write
 
 Regeneration never tightens a bound and keeps hand-written lines. `make
 audit-ir-expectations` and export validation fail on a stale sidecar.
+When alternative instruction choices are part of a fixture's contract, add
+`# explicit-outcomes` to its sidecar and state the intended predicates by hand.
+Regeneration still checks budgets and contracts, but does not infer additional
+opcode-absence requirements from the reference.
 
 Failed-case stdout is an informational diagnostic example, generated on Linux
 by the export and untracked here. Successful stdout and required exit-status

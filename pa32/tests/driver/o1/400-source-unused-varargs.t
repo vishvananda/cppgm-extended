@@ -10,7 +10,8 @@ int observe(int value)
 
 int use_first(int value)
 {
-  return first(value, observe(3), 2.5, observe(5)) + observed;
+  int result = first(value, observe(3), 2.5, observe(5));
+  return result + observed;
 }
 
 int main()

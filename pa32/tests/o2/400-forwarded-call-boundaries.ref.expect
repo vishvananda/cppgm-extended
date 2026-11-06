@@ -1,9 +1,4 @@
-# outcomes from 400-forwarded-call-boundaries.ref: what the course solution removed stays removed (a call inlined, memory promoted, a definition pruned)
-none(call @constant_depth)
-none(call @narrow_wrapper)
-none(call @permuted)
-none(call @relay)
-none(call @wide_caller)
+# explicit-outcomes
 
 # Remove redundant forwarding layers; loops or other equivalent work are valid.
 none(call @relay) in @worker

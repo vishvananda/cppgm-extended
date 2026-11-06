@@ -61,9 +61,10 @@ fields and early exits; a smaller SSA graph alone does not establish a win.
 Several switch cases with one destination can describe a numeric interval.
 Preserve the selector's width, signed boundaries, holes and default edge when
 expressing that membership as a predicate. This can expose conditional work
-to existing simplification and predication. An untaken increment must not gain
-overflow promises when speculated; loads, calls and trapping arithmetic need
-their own proofs. No particular representation is required.
+to existing simplification and predication. A fact justified only on a taken
+arm does not automatically apply to speculative work, including an increment's
+overflow promises. Loads, calls and trapping arithmetic need their own proofs.
+No particular representation is required.
 
 ## Memory facts and safe motion
 
@@ -74,9 +75,10 @@ on a zero-iteration path. A call can modify memory or free an allocation.
 An overwrite proof need not establish disjointness: the same SSA address and
 access type identify the same bytes even when their object offset is unknown.
 A later complete write can make an earlier write unobservable if nothing
-between them may read those bytes. Calls, exceptions, volatile or atomic
-operations and partial overlaps require separate care. Reuse the memory walk's
-information to skip blocks that cannot contain an overwrite pair.
+between them may read those bytes. Calls, exceptions, lifetime changes,
+volatile or atomic operations and partial overlaps require separate care.
+Reuse the memory walk's information to skip blocks that cannot contain an
+overwrite pair.
 
 Useful sources of disjointness include separate local objects, non-overlapping
 ranges of one object and the `typed` rules in
@@ -215,14 +217,17 @@ forwarding stores and preserving signed zero or NaN representations.
 
 Repeated logical shifts and conditional XORs can sometimes be combined
 algebraically. For a constant word-sized polynomial `P`, the step
-`F(x) = (x >> 1) ^ ((x & 1) ? P : 0)` is linear over bits. After `k` steps,
-split the input into its low `k` bits and the remaining bits: the latter
-contribute `x >> k`, and the former can be evaluated independently. Arithmetic
-or readonly lookup data can express the result. Prove the rule for the actual
-width and branch polarity, handle a shift equal to the width, and retain work
-whose intermediate values have other observable users. Compare table space,
-memory latency and compile cost against the arithmetic removed. Variable
-polynomials and arithmetic shifts need their own proofs.
+`F(x) = (x >> 1) ^ ((x & 1) ? P : 0)` is linear over bits. Reversing a predicate
+can add a constant XOR term; include it in the proof. When `k` is smaller than
+the word width, split the input into its low `k` bits and the remaining bits.
+After `k` steps, the latter contribute `x >> k`, and the former can be
+evaluated independently. Arithmetic or readonly lookup data can express the
+result. Prove the rule for the actual width and branch polarity. At or beyond
+the word width there is no remaining high-bit contribution; do not form an
+invalid shift. Retain work whose intermediate values have other observable
+users. Compare table space, memory latency and compile cost against the
+arithmetic removed. Variable polynomials and arithmetic shifts need their own
+proofs.
 
 ## Conditional field access
 

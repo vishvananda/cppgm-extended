@@ -279,6 +279,7 @@ continues to reject narrowing conversions.
 ### Optional C++14/17 Extensions
 
 These extensions are not required to complete PA29 or any later assignment.
+The optional tests cover selected features, not full C++14/17 conformance.
 Their fixtures ship in `tests/modern-cxx/` and run only when selected explicitly:
 
 ```sh
@@ -291,6 +292,8 @@ definitions, `decltype(auto)` variable and return deduction, generic lambda
 parameters (including packs and forwarding), and pack-expanded using-declarations.
 Preserve reference/value categories and reject invalid initializers and overload
 candidates. The selected language mode also controls later library interfaces.
+Deleted overloads with placeholder return types must not force deduction from
+a nonexistent body.
 
 In C++17 mode, `noexcept` is part of a function type: distinguish throwing and
 non-throwing types, allow discarding the guarantee, and preserve it through

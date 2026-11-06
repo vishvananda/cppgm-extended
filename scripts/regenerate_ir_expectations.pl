@@ -18,11 +18,14 @@
 # A block is the lines up to a blank line; a block that begins with
 # `# budget`, `# outcome` or `# contract` is generated, every other block is
 # hand-written and kept after the generated ones.  A sidecar with no budget
-# block keeps having none unless --add-budgets is given.  A fixture with no
-# reference output is skipped, unless --backend names a lowir2native: then a
-# fixture under an oN directory is compiled at -ON for its machine IR, which
-# is not kept.  Without --write the changed sidecars are listed and the exit
-# status is 1 if there are any; with --write they are rewritten.
+# block keeps having none unless --add-budgets is given.
+# A `# explicit-outcomes` line makes the sidecar's hand-written outcomes
+# authoritative instead of inferring opcode-absence outcomes from the
+# reference. Generated budget/contract blocks still follow the ordinary rules.
+# A fixture with no reference output is skipped, unless --backend names a
+# lowir2native: then a fixture under an oN directory is compiled at -ON for
+# its machine IR, which is not kept. Without --write the changed sidecars are
+# listed and the exit status is 1 if there are any; with --write they are rewritten.
 use strict;
 use warnings;
 use File::Basename qw(dirname basename);
@@ -118,13 +121,17 @@ for my $sidecar (sort @sidecars)
 	else { print "no reference output for $sidecar\n"; next; }
 
 	my $old = slurp($sidecar);
-	my @blocks = blocks_of($old);
+	my $explicit_outcomes = $old =~ /^[ \t]*# explicit-outcomes[ \t]*$/m;
+	my $block_text = $old;
+	$block_text =~ s/^[ \t]*# explicit-outcomes[ \t]*\n?//mg;
+	my @blocks = blocks_of($block_text);
 	my ($old_budget) = map { $_->[1] } grep { $_->[0] eq 'budget' } @blocks;
 	my ($old_outcome) = map { $_->[1] } grep { $_->[0] eq 'outcome' } @blocks;
 	my ($old_contract) = map { $_->[1] } grep { $_->[0] eq 'contract' } @blocks;
 	my @hand = map { $_->[1] } grep { $_->[0] eq 'hand' } @blocks;
 
 	my @out;
+	push @out, ['# explicit-outcomes'] if $explicit_outcomes;
 	if (defined($old_budget) || $o{'add-budgets'})
 	{
 		my %old_bound;
@@ -142,12 +149,12 @@ for my $sidecar (sort @sidecars)
 		}
 		push @out, [@budget];
 	}
-	if (!$machine && -f $input)
+	if (!$explicit_outcomes && !$machine && -f $input)
 	{
 		my @outcome = generate($^X, "$FindBin::Bin/make_ir_outcome.pl", $input, $reference);
 		push @out, [@outcome] if @outcome;
 	}
-	elsif (defined($old_outcome))
+	elsif (!$explicit_outcomes && defined($old_outcome))
 	{
 		push @out, $old_outcome;
 	}
