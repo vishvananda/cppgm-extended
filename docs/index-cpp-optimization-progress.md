@@ -1079,10 +1079,82 @@ hashes before reuse; incomplete groups were rerun in fresh directories.
 Receipts: `group4-range-full-scoreboard/`, `group4-range-native-controls/`
 and `group4-range-native-controls-recovery/`.
 
+## Correctness follow-up: retain declaration attribute prefixes
+
+The eleventh and twelfth changes are pushed through `f9709ed93`. Boost CI
+passes there. A manually triggered full compiler matrix passes every host
+build, strict report, debug-info and optional modern-C++ lane, but exposes
+two separate problems in source audits and LLVM 18/libc++ self-hosting.
+
+The Git trust unit inherited runner-wide configuration, so its initial
+untrusted-directory probe could succeed before the workflow's exception was
+added. The same assertion fails locally with a system-wide wildcard trust
+setting. Isolate the test's protected Git configuration and exercise system,
+environment-count and parameter forms of inherited trust. The production
+workflow still adds only its exact workspace exception. All nine tests and
+the full harness pass with the corrected test, including contaminated inputs.
+
+The self-host crash occurs while parsing `math_calls.cpp`, before optimization.
+The exact downloaded LLVM 18 artifact reproduces it in the matching container.
+GDB locates the attribute walk; an independent two-line C++11 declaration also
+hangs with the GCC-built compiler. A tentative special-member parse appends
+attributes to a retained leading chain, then rewinds its arena on rejection,
+leaving the retained tail linked to freed nodes. AddressSanitizer confirms
+the heap-use-after-free on the original self-host input.
+
+Keep the tentative attributes in their own chain and join the retained prefix
+only after committing a successful special-member parse. Failed ordinary
+declaration probes neither clone nor mutate the prefix. The private sanitizer
+build compiles the original input cleanly. Its varied attribute program agrees
+with GCC and Clang; the resulting LowIR also retains both `no_inline` and
+`object_root` facts on constructors, destructors and conversions. The sanitizer
+run disables its fake-stack relocation because the parser measures actual
+stack addresses; heap-use-after-free checking remains enabled.
+
+The new required PA29 fixture uses C++11 with GNU declaration attributes,
+checks varied signed/unsigned values, alignment, special members and volatile
+lifetime observations. Its references are generated through the normal runner.
+Student guidance describes attribute attachment without naming parser internals.
+
+All 14 production checks pass: affected PA5/PA29 suites, the strict 8,064-test
+report, debug info, GCC self-host PA5, PA35 smoke/quick, optional modern C++,
+architecture/format/file/placement audits, harness and GCC/Clang warnings-as-
+errors. LLVM 18/libc++ self-host PA5 also passes in its isolated container.
+Inception matches. The fresh export verifies 22,586 portable references and
+all 55 student documents, installs 42 wrappers, and passes the new fixture
+through the installed reference compiler. All three export checks pass.
+
+Compiler hash:
+`24d05fdd451f1ee4e028e5833d751db4918f765245ca8a2b1cc2d756803c65c5`.
+The index object is byte-identical to the twelfth compiler, all 50 checksums
+pass and serialized replay agrees. All 74 public and four Boost objects are
+also identical. Frozen `-O0`/`-O3` object bytes are unchanged against the
+twelfth compiler; instruction and RSS differences are within calibration.
+Cumulative `-O3` compile-instruction growth remains about 0.461%, below the
+0.5% investigation trigger. The existing native measurements therefore apply
+to this corrected compiler's identical workload payloads.
+
+Receipts: `ci-head12/` contains the original failures, exact artifact, GDB,
+sanitizer and independent-oracle evidence; `parser-prefix-final/`, its frozen
+and cumulative-frozen companions and the public/Boost object folders contain
+the production checks. The initial local self-host command omitted the course
+compiler selection; its setup failure is retained separately. The corrected
+LLVM 18 self-host command passes.
+
+The [index-cpp CI run of `f9709ed93`](https://github.com/vishvananda/cppgm-extended/actions/runs/42254712832)
+passes on an AMD EPYC 9V74. All 50 checksums pass with all three compilers;
+generated-code speeds are 1.006× GCC and 0.997× Clang, with five and eleven
+workloads respectively flagged for A/A variation. These small aggregate
+differences indicate approximate parity, not resolved leads. Compile CPU
+speeds are 6.826× GCC and 5.625× Clang. Its clean artifact passes the
+publication validator and writes complete latest/history data locally;
+the workflow publishes remotely only after reaching main. Receipts are
+`ci-head12/index-results/` and `ci-head12/index-publication-validation.json`.
+
 ## Remaining work and ranked follow-ups
 
-Local validation is complete. Push the two validated local commits and review
-index-cpp, public and Boost CI at that head.
+The correctness follow-up is validated locally. Push its separate compiler
+and harness-test commits, then review the fresh CI head.
 The automatic index-cpp job is already validated locally and on GitHub; its
 first main execution will publish results beside the public suite.
 

@@ -1,0 +1,46 @@
+__attribute__((pure)) inline __attribute__((used)) int add(int x)
+{
+    return x * 3 + 7;
+}
+
+__attribute__((const)) static __attribute__((used)) unsigned fold(unsigned x)
+{
+    return (x ^ 0x35u) + 9u;
+}
+
+__attribute__((aligned(64))) static __attribute__((used)) int aligned_value = 19;
+volatile int events;
+
+struct Counter
+{
+    int value;
+    __attribute__((noinline)) explicit __attribute__((used)) Counter(int n) : value(n)
+    {
+        events += n;
+    }
+    __attribute__((noinline)) virtual __attribute__((used)) ~Counter()
+    {
+        events -= value;
+    }
+    __attribute__((noinline)) inline __attribute__((used)) operator int() const
+    {
+        return value;
+    }
+};
+
+int main()
+{
+    for (int n = -37; n <= 37; ++n)
+    {
+        if (add(n) != n * 3 + 7 || fold(static_cast<unsigned>(n)) != (static_cast<unsigned>(n) ^ 0x35u) + 9u)
+            return 1;
+        {
+            Counter counter(n);
+            if (static_cast<int>(counter) != n || events != n)
+                return 2;
+        }
+        if (events != 0)
+            return 3;
+    }
+    return aligned_value != 19 || reinterpret_cast<unsigned long>(&aligned_value) % 64 != 0;
+}

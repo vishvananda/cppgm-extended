@@ -56,6 +56,8 @@ hosted headers depend on:
   parameters, so it is not knowable until instantiation; it is accepted in
   the `[[gnu::aligned]]` spelling too, and before a block-scope declaration or
   after a declarator it aligns the declared object
+- GNU attributes before and among declaration specifiers remain attached to
+  their declaration, including constructors, destructors and conversions
 - a hosted type specifier such as `__uint128_t` or `__float128` spells itself as
   an identifier rather than a keyword, and introduces a functional cast the same
   way a fundamental type keyword does

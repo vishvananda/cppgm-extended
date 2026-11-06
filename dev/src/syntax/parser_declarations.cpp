@@ -688,7 +688,9 @@ bool Parser::try_special_member(DeclContext context, Decl*& decl)
 	Tentative tentative(*this);
 	const uint32_t start = location();
 	ListFrame<DeclSpecifier> specifiers(specs_);
-	pending_attributes_ = leading_attributes_;
+	// Keep tentative attributes separate from the retained prefix: rollback
+	// releases their nodes. Join the chains only after committing.
+	pending_attributes_ = nullptr;
 	for (;;)
 	{
 		if (!collect_attributes(pending_attributes_))
@@ -729,6 +731,15 @@ bool Parser::try_special_member(DeclContext context, Decl*& decl)
 	if (decl == nullptr)
 		return tentative.committed();
 	tentative.commit();
+	if (leading_attributes_ != nullptr)
+	{
+		Attribute* tail = leading_attributes_;
+		while (tail->next != nullptr)
+			tail = tail->next;
+		SpecialMemberDecl* member = static_cast<SpecialMemberDecl*>(decl);
+		tail->next = member->attributes;
+		member->attributes = leading_attributes_;
+	}
 	return true;
 }
 
