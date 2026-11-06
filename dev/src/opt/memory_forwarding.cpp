@@ -228,8 +228,9 @@ private:
 	uint32_t generation_ = 1;
 	uint32_t clock_ = 1;
 	std::vector<Value> repl_;
-	std::vector<BlockId> arms_;      // diamond_join's blocks between the dominator and the join
-	std::vector<uint32_t> arm_mark_; // per block: arm_epoch_ when in arms_
+	std::vector<BlockId> store_blocks_; // blocks with at least two ordinary stores
+	std::vector<BlockId> arms_;         // diamond_join's blocks between the dominator and the join
+	std::vector<uint32_t> arm_mark_;    // per block: arm_epoch_ when in arms_
 	uint32_t arm_epoch_ = 0;
 	bool changed_ = false;
 	bool replaced_ = false; // some repl_ entry is set
@@ -247,7 +248,7 @@ struct MemoryForwarding::Pool
 	std::vector<uint32_t> live, saved_live, arm_mark;
 	std::vector<ZeroRange> zeros, zeros_scratch, saved_zeros;
 	std::vector<Value> repl;
-	std::vector<BlockId> arms;
+	std::vector<BlockId> arms, store_blocks;
 	uint32_t arm_epoch = 0;
 	std::vector<std::pair<uint32_t, uint32_t>> lists;
 	std::vector<InstId> list_arena;
@@ -272,6 +273,7 @@ void MemoryForwarding::exchange(Pool& pool)
 	saved_zeros_.swap(pool.saved_zeros);
 	repl_.swap(pool.repl);
 	arms_.swap(pool.arms);
+	store_blocks_.swap(pool.store_blocks);
 	std::swap(arm_epoch_, pool.arm_epoch);
 	lists_.swap(pool.lists);
 	list_arena_.swap(pool.list_arena);
@@ -676,6 +678,7 @@ void MemoryForwarding::drop_self_pointers()
 
 void MemoryForwarding::process(BlockId block)
 {
+	unsigned stores = 0;
 	InstId prev = kNoId;
 	for (InstId i = body_.blocks[block].first; i != kNoId;)
 	{
@@ -731,6 +734,8 @@ void MemoryForwarding::process(BlockId block)
 		}
 		else if (inst.op == Opcode::Store)
 		{
+			if (c_.level >= 2 && !(inst.flags & IF_VOLATILE) && ++stores == 2)
+				store_blocks_.push_back(block);
 			const Value v = inst.ops[0];
 			const uint64_t bytes = storage_bytes(inst.type);
 			const bool zero = (inst.type.is_pointer() ||
@@ -1098,20 +1103,22 @@ void MemoryForwarding::drop_unread_writes()
 	}
 }
 
-// O2+: a store to a slot whose address escapes goes when a later store in its
-// block replaces all of it and nothing between them may read it. (Each
-// unrolled pass through a slot a pointer walk keeps in memory writes the same
-// elements. A private slot's stores promotion and drop_unread_writes handle.)
+// O2+: an ordinary store dies when a later store in the block overwrites
+// its bytes before anything may read them. Equal address values and types
+// prove this without a fixed object offset; escaped slot ranges also allow
+// a covering write. Only blocks already seen to contain two stores are walked.
 const size_t kPendingStores = 32;
 
 void MemoryForwarding::drop_overwritten_stores()
 {
-	if (c_.level < 2 || body_.slots.empty())
+	if (c_.level < 2 || store_blocks_.empty())
 		return;
 	struct Pending
 	{
 		InstId store;
 		AddressFacts at;
+		Value address;
+		Type type;
 		uint64_t bytes;
 	};
 	std::vector<Pending> pending;
@@ -1121,8 +1128,9 @@ void MemoryForwarding::drop_overwritten_stores()
 						  [&](const Pending& p) { return may_alias(read, bytes, p.at, p.bytes); }),
 			pending.end());
 	};
-	for (BlockId b : body_.layout)
+	for (BlockId b : store_blocks_)
 	{
+		pending.clear();
 		bool found = false;
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
@@ -1132,14 +1140,24 @@ void MemoryForwarding::drop_overwritten_stores()
 				const AddressFacts at = facts_of(inst.ops[1]);
 				const uint64_t bytes = storage_bytes(inst.type);
 				// (An f80 store writes 10 of its 16 bytes.)
-				if (at.base != ValueKind::Slot || !escaped_[at.index] || inst.type.is_object() ||
-					inst.type.kind() == TypeKind::F80)
+				const bool fixed = at.base == ValueKind::Slot && escaped_[at.index];
+				if (inst.type.is_object() || inst.type.kind() == TypeKind::F80 || (!fixed && bytes > 8))
+				{
+					pending.clear();
 					continue;
+				}
 				for (size_t k = 0; k < pending.size();)
 				{
 					const Pending& p = pending[k];
-					if (p.at.index != at.index || p.at.offset < at.offset ||
-						p.at.offset + static_cast<int64_t>(p.bytes) > at.offset + static_cast<int64_t>(bytes))
+					const Value address = inst.ops[1];
+					const bool equal = p.address == address ||
+						(p.address.is(ValueKind::Integer) && address.is(ValueKind::Integer) &&
+							body_.literals[p.address.index].low == body_.literals[address.index].low);
+					const bool same = equal && p.type == inst.type;
+					const bool covered = fixed && p.at.base == ValueKind::Slot && p.at.index == at.index &&
+						p.at.offset >= at.offset &&
+						p.at.offset + static_cast<int64_t>(p.bytes) <= at.offset + static_cast<int64_t>(bytes);
+					if (!same && !covered)
 					{
 						++k;
 						continue;
@@ -1150,7 +1168,7 @@ void MemoryForwarding::drop_overwritten_stores()
 					pending.erase(pending.begin() + static_cast<std::ptrdiff_t>(k));
 				}
 				if (pending.size() < kPendingStores)
-					pending.push_back(Pending{ i, at, bytes });
+					pending.push_back(Pending{ i, at, inst.ops[1], inst.type, bytes });
 			}
 			else if (pending.empty() || is_pure(inst))
 				continue;
@@ -1417,6 +1435,7 @@ void MemoryForwarding::replay_arms()
 
 bool MemoryForwarding::run()
 {
+	store_blocks_.clear();
 	c_.ensure_cfg();
 	if (cfg_.rpo.empty())
 		return false;

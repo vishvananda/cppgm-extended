@@ -3,7 +3,6 @@ function @local(%m : i64) -> i64 [no_inline=yes] {
 
   block ^entry:
     %base = addr $a
-    store typed i64 %m, %base
     %t2 = binary mul i64 %m, 3
     store typed i64 %t2, %base
     %t3 = index i64 %base, 2

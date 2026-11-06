@@ -716,8 +716,70 @@ Receipts are `slot-value-reads-v4/`, `slot-value-width-oracle-v4/`,
 `slot-call-value-oracle-v4/`, `slot-value-reads-v4-frozen/`,
 `slot-value-reads-v4-cumulative-frozen-v2/` and the public/Boost sentinel
 folders; export receipts are `export-results-v5.json`, with the export at
-`student-export-slot-values-v5/`. The eighth optimization remains separate and unaccepted until it
-has been revalidated on this corrected memory model.
+`student-export-slot-values-v5/`. The eighth optimization was revalidated on
+this corrected memory model as described below.
+
+## Eighth mechanism: remove an unobserved overwrite through an exact address
+
+The SHA-named workload is a byte-wise eight-accumulator hash, rather than a
+cryptographic SHA implementation. Its hot loop stores an intermediate value
+through a dynamic index and then replaces that value through the same address.
+The existing memory pass could remove covered writes to escaped local slots,
+but required a fixed slot offset. The optimized host-object LowIR therefore
+retained a write whose address identity already proved it unobservable.
+
+Extend that proof to equal address values and equal scalar access types.
+Potential alias reads, calls, exceptions, volatile and atomic accesses stop
+the proof; unsupported aggregate or extended-precision stores conservatively
+stop it too. Partial writes cannot replace a larger write through this rule.
+Integer address literals compare their numeric address, so serialization's
+literal numbering cannot affect the result. Retain the existing bounded local
+search and collect eligible blocks during the memory walk already performed.
+An earlier prototype scanned every block and cost 0.24% compile instructions;
+collecting blocks with multiple stores reduces that overhead substantially.
+
+The baseline compiler hash is
+`e22b4b8d6fd7754e322629cc8ee99453fdf375c9898b44919c727b357498ceaf`;
+the accepted compiler is
+`4f68ce2264d1fdb6f8b6c02f50a203bea8eec033e49523e657c5464e22957927`.
+The resulting index binary hash is
+`e66430bfe837a47223c6ff62317f5044d3c9039da8df3dda22acb6a7f04a18e2`.
+All 50 checksum workloads pass and direct/serialized object bytes agree.
+Required PA32 LowIR, host-callback and object-roundtrip fixtures cover the
+general rule and its barriers. Independent source checks exercise 1,024 seeds,
+four alias gaps, nine observation cases, dynamic indices, throwing callbacks,
+floating NaN payloads and signed zero across all optimization levels and both
+object paths. Separate literal-address checks also pass.
+
+In three paired blocks with A/A calibration, the hash uses 5.55% fewer native
+instructions and gives 1.118× process CPU speed against the corrected baseline.
+Its instruction speeds are 1.058× GCC and 0.941× Clang. Base64 instructions are
+unchanged, with timing differences within calibration. Index executable text
+falls from 388,946 to 386,626 bytes. Frozen compile instructions are unchanged
+at `-O0` and increase 0.024% at `-O3`; cumulative `-O3` cost is 0.43% above the
+original compiler, below the investigation trigger. Peak RSS remains within
+0.2%. All 74 public sentinel objects and four Boost objects build; changed
+programs preserve their output. Paired controls of changed public programs and
+the container/Xpressive sentinels show no resolved native loss.
+
+All 13 validation gates pass, including the strict 8,054-test report,
+debug-info checks, self-host through PA5, PA35 smoke/quick, modern C++, audits,
+harness and GCC/Clang warnings-as-errors. Inception preserves compiler identity.
+The full PA35 release passes all 17 original gates. Its first student scaling
+measurement missed the release margin (2.49); one repeat with the same immutable
+seed on fixed affinity gives 2.25, and the unchanged release judge passes.
+Both receipts are retained. No threshold was loosened.
+
+A fresh student export verifies 22,562 portable references and 9,041 exit
+statuses, installed tools, and the new raw, host and roundtrip fixtures.
+The export caught four expected reference changes from removing overwritten
+stores; normal reference regeneration and targeted checks resolve them.
+Receipts are in `exact-address-store-after-slot-fix/`, the corresponding
+source/literal-oracle and frozen/public/Boost folders, and
+`student-export-exact-address-after-slot-fix-v3/`. The full paired all-50
+scoreboard is running in `group2-exact-store-full-scoreboard/`; an earlier
+attempt with one-CPU affinity for threaded workloads is explicitly invalid
+and retained separately.
 
 ## Outstanding work
 

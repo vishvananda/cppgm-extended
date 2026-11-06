@@ -1,0 +1,40 @@
+global @cells = {
+  zero 128
+}
+
+function @main() -> i64 {
+  block ^entry:
+    %p = addr @cells
+    %q = index i64 @cells, 1
+    %r0 = call i64 @overwrite_word(@cells, 2, 17)
+    %bad0 = cmp ne i64 %r0, 127
+    %r1 = call u32 @overwrite_indexed(@cells, 3, 305419896)
+    %bad1 = cmp ne u32 %r1, 1421777272
+    %r2 = call i64 @observed(%p, %p, 101)
+    %bad2 = cmp ne i64 %r2, 101
+    store i64 77, %q
+    %r3 = call i64 @observed(%p, %q, 201)
+    %bad3 = cmp ne i64 %r3, 77
+    %r4 = call i64 @volatile_read(%p, %p, 203)
+    %bad4 = cmp ne i64 %r4, 203
+    %r5 = call i64 @partial_write(%p, 1234605616436508552)
+    %bad5 = cmp ne i64 %r5, 1234605616436508476
+    %r6 = call i64 @cross_block(%p, 0, 230)
+    %bad6 = cmp ne i64 %r6, 230
+    %r7 = call i64 @cross_block(%p, 1, 240)
+    %bad7 = cmp ne i64 %r7, 259
+    %r8 = call i64 @volatile_writes(%p, 9)
+    %bad8 = cmp ne i64 %r8, 28
+    %r9 = call f64 @overwrite_float(%p, 1.25, 2.5)
+    %bad9 = cmp ne f64 %r9, 2.5
+    %sum1 = binary add i64 %bad0, %bad1
+    %sum2 = binary add i64 %sum1, %bad2
+    %sum3 = binary add i64 %sum2, %bad3
+    %sum4 = binary add i64 %sum3, %bad4
+    %sum5 = binary add i64 %sum4, %bad5
+    %sum6 = binary add i64 %sum5, %bad6
+    %sum7 = binary add i64 %sum6, %bad7
+    %sum8 = binary add i64 %sum7, %bad8
+    %sum9 = binary add i64 %sum8, %bad9
+    return i64 %sum9
+}

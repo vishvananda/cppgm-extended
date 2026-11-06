@@ -238,7 +238,6 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     %t1 = load typed i32 @order
     %t2 = binary mul nowrap i32 %t1, 10
     %t3 = binary add nowrap i32 %t2, 1
-    store typed i32 %t3, @order
     store typed i32 3, @a
     %t4 = binary mul nowrap i32 %t3, 10
     %t5 = binary add nowrap i32 %t4, 2

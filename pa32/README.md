@@ -270,6 +270,10 @@ pass:
 - A function that only forwards a call and returns its result may not need a
   separate call at each use. Preserve argument order, conversions, object
   materialization and cleanup when composing such boundaries.
+- A write fully replaced through the same address before any possible read
+  need not reach memory. Address identity can prove this even when an array
+  index is dynamic. Preserve alias reads, volatile and atomic accesses,
+  callbacks, exceptional paths and bytes a partial write does not replace.
 - A conditional choice between fields can sometimes use one indexed address
   and one read. Prove the bit test and byte offsets, preserve which address
   is accessed, and keep volatile reads and memory dependencies observable.

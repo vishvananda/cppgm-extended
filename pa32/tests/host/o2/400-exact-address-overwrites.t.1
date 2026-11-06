@@ -1,0 +1,46 @@
+typedef unsigned long long U;
+extern "C" U host_read(const U*);
+extern "C" void host_throw(const U*, U);
+extern "C" U host_produce(U);
+extern "C" __attribute__((noinline)) U overwritten(U* p,U* q,U v) { *p=v; U z=v*(v|1)+13; *p=z; return z^*q; }
+extern "C" __attribute__((noinline)) U interleaved(U* p,U* q,U v) { *p=v; *q=v+5; U z=v*(v|1)+13; *p=z; return z^*q; }
+extern "C" __attribute__((noinline)) U read_alias(U* p,U* q,U v) { *p=v; U seen=*q; *p=v+19; return seen; }
+extern "C" __attribute__((noinline)) U volatile_read(U* p,U* q,U v) { *p=v; U seen=*static_cast<volatile U*>(q); *p=v+19; return seen; }
+extern "C" __attribute__((noinline)) U call_read(U* p,U* q,U v) { *p=v; U seen=host_read(q); *p=v+19; return seen; }
+extern "C" __attribute__((noinline)) U exception_edge(U* p,U* q,U v) { *p=v; host_throw(q,v); *p=v+19; return v; }
+extern "C" __attribute__((noinline)) U values_have_effects(U* p,U* q,U v) { *p=host_produce(v); *p=v+19; return *q; }
+extern "C" __attribute__((noinline)) U volatile_writes(U* p,U* q,U v) { *static_cast<volatile U*>(p)=v; *static_cast<volatile U*>(p)=v+19; return *q; }
+extern "C" __attribute__((noinline)) U branch_exit(U* p,U* q,U v) { *p=v; if(v&1) *p=v+19; return *q; }
+extern "C" __attribute__((noinline)) U indexed(unsigned* p,unsigned v) { unsigned* q=p+(v&7); *q=v; unsigned z=(v<<5)^v; *q=z; return *q; }
+extern "C" __attribute__((noinline)) void floating(double* p,double a,double b) { *p=a; *p=b; }
+
+#include <cstdio>
+#include <cstring>
+typedef unsigned long long U;
+extern "C" U overwritten(U*,U*,U),interleaved(U*,U*,U),read_alias(U*,U*,U),volatile_read(U*,U*,U),call_read(U*,U*,U),exception_edge(U*,U*,U),values_have_effects(U*,U*,U),volatile_writes(U*,U*,U),branch_exit(U*,U*,U),indexed(unsigned*,unsigned);
+extern "C" void floating(double*,double,double);
+extern "C" U reads,produces,throws;
+int main() {
+ U (*f[])(U*,U*,U)={overwritten,interleaved,read_alias,volatile_read,call_read,exception_edge,values_have_effects,volatile_writes,branch_exit};
+ U hash=1469598103934665603ULL,expected_reads=0,expected_produces=0,expected_throws=0;
+ for(unsigned seed=0;seed<1024;++seed) for(unsigned gap=0;gap<4;++gap) for(unsigned n=0;n<9;++n) {
+  U cells[8],model[8];for(unsigned i=0;i<8;++i) cells[i]=model[i]=(U(seed+1)*0xc6bc279692b5cc83ULL)^(U(i+3)*0xd1b54a32d192ed03ULL);
+  unsigned a=seed%4,b=(a+gap)%8;U v=(U(seed)*0x9e3779b97f4a7c15ULL)^0xa125b317ULL,z=v*(v|1)+13,expected=0,actual=0;bool throwing=false;
+  model[a]=v;
+  if(n==0) { model[a]=z;expected=z^model[b]; }
+  if(n==1) { model[b]=v+5;model[a]=z;expected=z^model[b]; }
+  if(n>=2 && n<=4) { expected=model[b];model[a]=v+19;if(n==4) ++expected_reads; }
+  if(n==5) { ++expected_throws;throwing=(v&1)!=0;if(!throwing) {model[a]=v+19;expected=v;} }
+  if(n==6) { ++expected_produces;model[a]=v+19;expected=model[b]; }
+  if(n==7) { model[a]=v+19;expected=model[b]; }
+  if(n==8) { if(v&1) model[a]=v+19;expected=model[b]; }
+  bool caught=false;try { actual=f[n](cells+a,cells+b,v); } catch(unsigned e) {caught=true;if(e!=unsigned(model[b])) return 1;}
+  if(caught!=throwing || (!throwing && actual!=expected)) {std::fprintf(stderr,"case %u seed %u gap %u result\n",n,seed,gap);return 2;}
+  for(unsigned i=0;i<8;++i) {if(cells[i]!=model[i]) {std::fprintf(stderr,"case %u memory\n",n);return 3;}hash=(hash^cells[i])*1099511628211ULL;}
+  if(reads!=expected_reads || produces!=expected_produces || throws!=expected_throws) return 4;
+ }
+ for(unsigned i=0;i<4096;++i) { unsigned cells[8]={};unsigned v=i*32779073U;U got=indexed(cells,v);unsigned expected=(v<<5)^v;if(got!=expected || cells[v&7]!=expected) return 5;hash=(hash^got)*1099511628211ULL; }
+ U bits[]={0,0x8000000000000000ULL,0x3ff0000000000000ULL,0x7ff0000000000000ULL,0x7ff8000012345678ULL};
+ for(U a:bits) for(U b:bits) {double x=0,fa,fb;std::memcpy(&fa,&a,8);std::memcpy(&fb,&b,8);floating(&x,fa,fb);U got;std::memcpy(&got,&x,8);if(got!=b) return 6;hash=(hash^got)*1099511628211ULL;}
+ std::printf("%016llx\n",hash);
+}

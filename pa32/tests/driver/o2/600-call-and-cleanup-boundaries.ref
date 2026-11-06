@@ -336,22 +336,16 @@ function @Derived__value(%this : ptr [object_bytes=8], %x : i32) -> i32 [binding
 }
 function @Derived___Derived__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD2Ev, object_root=yes, inline_hint=yes] {
   block ^entry:
-    %t1 = addr @Derived__vtable
+    %t1 = addr @Base__vtable
     %t2 = index i8 %t1, 16
     store typed ptr %t2, %this
-    %t3 = addr @Base__vtable
-    %t4 = index i8 %t3, 16
-    store typed ptr %t4, %this
     return void
 }
 function @Derived___Derived__deleting_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD0Ev, inline_hint=yes] {
   block ^entry:
-    %t1 = addr @Derived__vtable
+    %t1 = addr @Base__vtable
     %t2 = index i8 %t1, 16
     store typed ptr %t2, %this
-    %t3 = addr @Base__vtable
-    %t4 = index i8 %t3, 16
-    store typed ptr %t4, %this
     call void @operatordelete(%this)
     return void
 }
@@ -364,12 +358,9 @@ function @Base___Base(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=
 }
 function @Derived___Derived(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD1Ev, inline_hint=yes] {
   block ^entry:
-    %t1 = addr @Derived__vtable
+    %t1 = addr @Base__vtable
     %t2 = index i8 %t1, 16
     store typed ptr %t2, %this
-    %t3 = addr @Base__vtable
-    %t4 = index i8 %t3, 16
-    store typed ptr %t4, %this
     return void
 }
 equivalent_entry @Base___Base = @Base___Base__base_entry

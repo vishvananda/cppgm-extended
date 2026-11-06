@@ -1,0 +1,9 @@
+# Require removal of redundant memory writes; arithmetic and scheduling may vary.
+count(store) <= 1 in @overwrite_word
+count(store) <= 1 in @overwrite_indexed
+count(store) <= 1 in @overwrite_float
+count(store) <= 1 in @absolute_address
+instructions <= 12 in @overwrite_word
+instructions <= 12 in @overwrite_indexed
+instructions <= 8 in @overwrite_float
+instructions <= 8 in @absolute_address

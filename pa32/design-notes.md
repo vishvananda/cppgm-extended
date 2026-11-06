@@ -62,6 +62,13 @@ Distinguish the proof that accesses cannot overlap from the proof that a load
 may run earlier. A disjoint store does not justify reading an invalid pointer
 on a zero-iteration path. A call can modify memory or free an allocation.
 
+An overwrite proof need not establish disjointness: the same SSA address and
+access type identify the same bytes even when their object offset is unknown.
+A later complete write can make an earlier write unobservable if nothing
+between them may read those bytes. Calls, exceptions, volatile or atomic
+operations and partial overlaps require separate care. Reuse the memory walk's
+information to skip blocks that cannot contain an overwrite pair.
+
 Useful sources of disjointness include separate local objects, non-overlapping
 ranges of one object and the `typed` rules in
 [Instruction Facts](../pa8/lowir.md#instruction-facts). Character accesses,
