@@ -1,0 +1,107 @@
+C++11 class-prefix repair checkpoint (2026-11-06)
+
+Scope and acceptance
+
+CXX11-025 and CXX11-026 remain open. The compiler changes and eleven PA16:300
+regressions are staged prototypes, not a completed or released repair. The
+previous completed checkpoint is 269dbf2ad. No CI job has been created early;
+Stage 5 still follows closure of every required defect, including later DRs.
+
+Candidate v9 is frozen at:
+  /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/cppgm-candidate-v9
+  SHA256 09feb33ae58e73231fa152cea0015bad2d902b5dfaf25d79b2265f99c84870d1
+Its source identity is source-v9-manifest.json in the same evidence directory.
+All earlier candidate binaries, successful/failed observations and logs remain.
+
+Implementation under validation
+
+- CXX11-025 uses the existing GCC-compatible trait_literal_type predicate for
+  array temporary eligibility. GCC, Clang and cppgm all consider the trivial-
+  default witness a literal type in __is_literal_type; the implementation's
+  stricter core predicate was the faulty gate. Actual calls, destruction,
+  volatile reads and uninitialized objects retain their semantic checks.
+- CXX11-026 replaces recursive class-prefix forest allocation with immutable
+  type-shaped payloads. Modified paths detach; root/offset places continue to
+  distinguish every object, base, member and array element. No extra expression
+  prewalk remains. Constructor calls consume the existing recorded facts.
+- Immutable templates survive scratch rewinds. Detached paths and initialized
+  array payloads record their owning evaluation object and generation; a call
+  retains a caller's writes, and a region reclaims its completed objects.
+  Publication copies each immutable payload once into the semantic arena.
+- Completion memoizes immutable payloads. Typed zero classes with no vptr-
+  bearing subobjects lower to zero ranges plus existing ABI null-member-pointer
+  patches. GNU complex/vector shapes are cached too; repeated zero-tail reads
+  must not build an unreclaimed template per read.
+
+Why focused green results were insufficient
+
+The trait-only candidate makes the new ordinary class-prefix control fail with
+bad_alloc under 48 MiB. Expression prechecks fix some direct calls, but computed
+conditions and legitimate explicit zero values still fail (candidate-v3.json).
+The first shared version passes those syntax probes but has constructor-return
+lifetime failures (affected-pa16-v4.log) and cannot emit the large zero source
+within its native resource bound (focused-v4/results.json).
+
+Candidate v6 passes PA16 and strict 8114/8114, but repeated temporary storage
+grows with call count: about 7/10/19 MiB at depths 12/16/18. Its paired-field
+variant fails under 32 MiB; the original parent passes. Candidate v7 reclaims
+that storage and remains near 6.5 MiB. Its required control records parent pass,
+v6 bad_alloc and v7 pass in required-region-memory-v1.json.
+
+Candidate v7 passes 580 focused cells without a host/candidate failure, and
+strict 8115/8115, debug, PA34 through PA5 and inception. A new independent
+array-member source nevertheless fails when constructor returns discard its
+payload. The live-source check pipeline was stopped before further edits;
+checks-v7-stopped.json records the exact owned workers and reason. Candidate
+v8 repairs array payload ownership but still exhausts 32 MiB on repeated GNU
+complex zero-tail reads (complex-memory-v1/results.json). Candidate v9 also
+caches those shapes. Three bounded v9 probes pass with actual compiler RSS
+6584 KiB (temporary pair tree), 6640 KiB (array-member lifetime) and 7200 KiB
+(GNU complex tail). These observations are resource checks, not calibrated
+performance passes.
+
+Latest correctness evidence
+
+- focused-v2/assessment.json: 600 cells, zero host/candidate failures, eight
+  expected parent failures and twelve older-checkpoint failures. The matrix
+  covers all thirty reference-family controls with GCC, Clang, the 269db parent,
+  the earlier prefix checkpoint and v9, ISO/GNU11, O0/O2, native linking and
+  execution or required rejection. The repeated-call stress gives Clang an
+  explicit 8388608-step evaluator budget; its default budget is insufficient.
+- performance-oracles-v3/assessment.json: 72 native oracle cells across eighteen
+  extra workloads and GCC/Clang/parent/v9 pass; seventeen A/B objects are exact.
+- checks-v9.json and checks-state-v9.json are the authoritative normal-check
+  progress. The pipeline includes affected PA10/11/16/22/29, strict report,
+  debug, PA34 through PA5, inception, PA35 smoke, all nine architecture audits,
+  file/placement audits and the full harness. Do not infer pipeline completion
+  from an earlier candidate's checks or from a still-running state file.
+
+Performance and remaining acceptance
+
+The predeclared protocol is performance-protocol-v3.json: twenty exact-output
+and one audited deterministic-output workload pairs; A/A calibration, ten ABBA
+blocks, +1% instruction and +3% direct compiler RSS upper95 gates, >=99%
+counter scheduling, all batch children verified. Sources and binaries are
+frozen. Every original workload remains accounted for.
+
+The changed zero-tail-subobjects object adds sixteen bytes of readonly layout
+padding after zero-class range lowering. changed-object-audit-v1.json verifies
+all defined object/function bytes, symbol sizes/binding, normalized relocations,
+code and unwind bytes match the parent, alongside all four native execution
+oracles. Physical layouts are retained separately. Determinism alone is not
+used as a correctness oracle. Failed exact-object preparation v2 is retained;
+no timing observation existed when v3 was declared.
+
+wait_then_performance_v3.py waits on verified normal-check process identities
+before checking every prerequisite and starting the counter/direct-memory
+pipeline. Its current status and measurements must be inspected before any
+rerun; do not restart a live or partially observed experiment. No performance
+pass is claimed here. Per-fix counters/direct memory, absolute class-DAG and
+extent scaling, cumulative original-baseline comparisons, linked upstream
+reducers/final reference-family checkpoint and fresh packaged export remain
+required before closure. Recheck source/binary hashes after export restoration.
+
+Campaign accounting remains 26 issues and 556 observations, with 507 original
+observations still unmapped. Other open compiler gaps, full upstream metadata
+applicability/execution, sixty historical RSS reports in eleven evidence groups,
+and the final two CI jobs with matched full-suite timings remain in scope.

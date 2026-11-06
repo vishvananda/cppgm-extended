@@ -393,3 +393,18 @@ Completed nested-zero compiler checkpoint (2026-11-06):
   72,820 commands preserve native directive/feature metadata exactly. The full
   harness passes 35 suites/529 discovered tests, including eleven new boundary
   tests. Applicability, actual RUN execution and diagnostic adaptation remain open.
+
+Class-prefix candidate progress (2026-11-06):
+- CXX11-025/026 remain open. Eleven required PA16:300 controls and the shared
+  class-payload compiler prototype are staged. Frozen candidate v9 and its
+  exact source manifest live under CXX11-026; no compiler-fix commit or final
+  acceptance is claimed. See cxx11-class-prefix-checkpoint.txt.
+- The latest 600-cell reference-family native matrix has no host/candidate
+  failures. All 72 performance-input native oracles pass. Earlier green
+  candidates exposed additional caller/array lifetime and retained-storage
+  defects; their failed observations remain retained and drive new controls.
+- Normal v9 verification and the twenty-one workload performance pipeline
+  retain explicit stage state. Complete all remaining normal, direct-memory,
+  counter/scaling, cumulative, linked-reducer and export gates before closure.
+- The ledger now contains 26 issues and 556 observations; 507 original
+  observations and the remaining campaign coverage/CI work stay open.

@@ -2718,7 +2718,7 @@
   {
     "id": "CXX11-025",
     "priority": "P1",
-    "status": "observed",
+    "status": "fix-in-validation",
     "introduced_by": "212b6c031",
     "discovered_neighbor_of": "CXX11-024",
     "upstream": [],
@@ -2727,7 +2727,13 @@
     "expected": "Accept constant zero initialization that invokes no constructor while still rejecting non-constexpr constructor calls, nontrivial temporary destruction, indeterminate reads and forbidden nonliteral constructor calls.",
     "owning_pa": 16,
     "ownership_note": "PA16:300 owns reference-valued constant evaluation and object-valued initialization, including trivial zero initialization.",
-    "regressions": [],
+    "regressions": [
+      "pa16/tests/controls/300-constexpr-trivial-default-array-reference.t",
+      "pa16/tests/controls/300-constexpr-defaulted-array-reference-no-copy.t",
+      "pa16/tests/controls/300-constexpr-defaulted-array-reference-copy-reject.t",
+      "pa16/tests/controls/300-constexpr-array-reference-destructor-reject.t",
+      "pa16/tests/controls/300-runtime-trivial-default-array-reference-probe.t"
+    ],
     "fix_revision": null,
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-025",
     "reproductions": [
@@ -2736,10 +2742,18 @@
       "trivial-class-prvalue.cpp"
     ],
     "checks": {
-      "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-025/initial-neighbors-v1.json (GCC/Clang accept all; pre-prefix accepts class-prvalue and parameter forms; 212b6c031/current candidate reject only the array forms)"
+      "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-025/initial-neighbors-v1.json (GCC/Clang accept all; pre-prefix accepts class-prvalue and parameter forms; 212b6c031/current candidate reject only the array forms)",
+      "required_parent": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-025/required-parent-v1.json",
+      "focused_candidate_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v6-controls.json",
+      "latest_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/focused-v2/assessment.json (600 cells, no host/candidate failures)",
+      "latest_normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v9.json",
+      "native_performance_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-oracles-v3/assessment.json (72 cells)"
     },
     "performance": {
-      "status": "not-started"
+      "status": "pending",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v3.json",
+      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v3.log",
+      "note": "A/A and A/B counters/direct memory, absolute scaling and cumulative gates required. No pass claimed."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -2749,6 +2763,81 @@
         "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_closed.html#1452"
       ]
     },
-    "next_action": "Create required PA16:300 controls on frozen 269dbf2ad, fix the blanket nonliteral-array guard using actual initialization/destructor eligibility, and complete normal full/performance checks plus reference-family matrix/cumulative validation."
+    "next_action": "Validate the trait guard repair together with CXX11-026 compact class storage; finish all normal, external, performance, cumulative and export gates before closing either issue.",
+    "classification_note": "The implementation intentionally distinguishes its core literal_type predicate from the GCC-compatible trait_literal_type predicate. GCC, Clang and cppgm all report __is_literal_type(E) true for the trivial-default witness; the old core-predicate array guard is too strict. Actual constructor calls and destruction still check constexpr eligibility.",
+    "prototype": {
+      "binary_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v9.json",
+      "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/source-v9-manifest.json",
+      "compiler_changes": "staged, not committed or accepted"
+    }
+  },
+  {
+    "id": "CXX11-026",
+    "priority": "P1",
+    "status": "fix-in-validation",
+    "introduced_by": "uncommitted CXX11-025 candidate-v1 (trait-only guard repair)",
+    "discovered_neighbor_of": "CXX11-025",
+    "upstream": [],
+    "symptom": "A valid ordinary array reference with an explicit class prefix eagerly constructs an exponentially large subobject forest during an optional constant probe. Trait-only candidate fails the required 48 MiB control with bad_alloc, including direct/converting initializers, computed conditions and an explicit zero class prvalue.",
+    "root_cause": "prefix_skeleton recursively allocates every class occurrence rather than sharing unchanged type-shaped payloads. Class-prvalue temporaries also use dense skeletons. Prewalking expressions handles some forbidden calls but does not solve legitimate zero values or computed control flow.",
+    "expected": "Evaluate typed initialization once with bounded shared class payloads; detach modified paths, preserve per-object identity and caller lifetime, publish immutable values without expanding the shared graph, and retain typed ABI zero values.",
+    "owning_pa": 16,
+    "ownership_note": "PA16:300 owns object-valued constant evaluation, array/reference initialization and bounded optional probes; native checks strengthen the same source regression.",
+    "regressions": [
+      "pa16/tests/controls/300-runtime-class-prefix-constant-probe.t",
+      "pa16/tests/controls/300-runtime-class-prefix-conditional-probe.t",
+      "pa16/tests/controls/300-constexpr-class-prefix-zero-probe.t",
+      "pa16/tests/controls/300-constexpr-class-prefix-value-identity.t",
+      "pa16/tests/controls/300-constexpr-class-prefix-region-memory.t",
+      "pa16/tests/controls/300-constexpr-class-prefix-array-member-lifetime.t"
+    ],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026",
+    "reproductions": [
+      "syntax-neighbors-v2/direct.cpp",
+      "syntax-neighbors-v2/prvalue.cpp",
+      "syntax-neighbors-v2/conditional.cpp",
+      "syntax-neighbors-v2/comma.cpp",
+      "syntax-neighbors-v2/conditional-call.cpp",
+      "syntax-neighbors-v2/explicit-zero.cpp"
+    ],
+    "checks": {
+      "required_parent": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/required-parent-v1.json",
+      "partial_prechecks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v3.json",
+      "shared_syntax_v4": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v4.json",
+      "host_and_parent_native_v4": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/focused-v4/results.json",
+      "first_shared_lifetime_failure": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/affected-pa16-v4.log",
+      "focused_candidate_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v6-controls.json",
+      "affected_pa16_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/affected-pa16-v6.log (254/254 pass)",
+      "file_audit_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/file-audit-v6.log",
+      "latest_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/focused-v2/assessment.json (600 cells, no host/candidate failures)",
+      "latest_normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v9.json",
+      "native_performance_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-oracles-v3/assessment.json (72 cells)",
+      "region_memory": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/required-region-memory-v1.json",
+      "array_lifetime": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/array-member-lifetime-v1/results.json",
+      "complex_memory": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/complex-memory-v1/results.json",
+      "bounded_latest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v9.json",
+      "changed_object_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/changed-object-audit-v1.json"
+    },
+    "performance": {
+      "status": "pending",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v3.json",
+      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v3.log",
+      "note": "A/A and A/B counters/direct memory, absolute scaling and cumulative gates required. No pass claimed."
+    },
+    "standards_basis": {
+      "category": "implementation-scaling",
+      "rationale": "The witnesses use original C++11 trivial/default/converting initialization, not a later CWG-only requirement. The implementation must bound optional work by the compact typed graph and preserve storage identity, value independence and lifetime.",
+      "references": [
+        "doc/n3485.txt 5.19, 8.5p8, 8.5.1, 12.2, 12.6",
+        "spec.md typed work, allocation and canonical identity requirements"
+      ]
+    },
+    "next_action": "Finish shared class payload ownership and region-memory controls, broader external/normal checks, all per-fix/cumulative performance gates and fresh packaged export; no closure claim from the focused pass.",
+    "prototype": {
+      "binary_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v9.json",
+      "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/source-v9-manifest.json",
+      "compiler_changes": "staged, not committed or accepted"
+    }
   }
 ]
