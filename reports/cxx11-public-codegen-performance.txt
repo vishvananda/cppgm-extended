@@ -1,0 +1,71 @@
+Public runtime and inception code-generation audit (2026-11-06)
+
+User scope: generated-program runtime and the self-built/GCC-built inception
+comparison. The compiler-work counters and compile-time ratios from the C++11
+repair campaign do not replace either code-generation metric. Preserve the
+conformance/scaling improvements while investigating reproducible losses.
+
+Evidence root: /mnt/vizier/cppgm-cxx11-upstream/public-performance-audit-v1
+Current observations: codegen-assessment-v2.json, runtime-inception-trend-v1.json
+All retrieved CI artifacts are retained and hashed in artifact-manifest-v2.json.
+Benchmark manifest, runner, timing code and workflow hashes are identical for
+b7c6b8e72,675d1299b andf9709ed93. All have81 public programs; no case is dropped.
+
+Exact unrounded generated-runtime / inception speed, higher is better:
+  b7c6b8e72  run41932548048  EPYC9V74     0.984058 / 0.985807
+  d242c4607  run42208965171  EPYC9V74     0.983929 / 0.982381
+  d0245bdf7  run42219366686  EPYC9V45     0.985603 / 0.982311
+  9e2c35a2f  run42224680167  Xeon8573C    0.985211 / 0.991354
+  675d1299b  run42234352271  EPYC7763     0.980524 / 0.972692
+  f9709ed93  run42254712761  EPYC7763     0.982091 / 0.966995
+The default workflow's lane label is not an actual CPU-model identity. The
+Xeon8573C entry is a default-pool run; the separate dedicated Intel lane has
+not been refreshed for this comparison. Latest184956e15 run42264529335 is
+still in progress at retrieval and supplies no completed measurement here.
+
+Against the README's published b7c6b8e72 baseline, f9709ed93 has a1.9083%
+inception speed reduction, matching the rounded0.99x to0.97x change. Its
+public O3 generated-runtime ratio is0.1999% lower,0.984058x to0.982091x;
+both round to0.98x in the retrieved artifacts. A public0.97x endpoint has
+not yet been located in these six results. The rounded0.98x to0.97x change
+would be about1.02%; retain the user's observation while locating its exact
+run rather than claiming that larger loss from the retrieved numbers.
+
+For675d1299b to f9709ed93, both reported onEPYC7763, inception speed falls
+0.5857% and public runtime speed improves0.1599%. Their public compilation
+ratios were initially inspected but are separate from the requested metrics.
+The latest inception's paired rebuild CPU ratio is1.034131756 (self/seed),
+with block ratios1.030557986 and1.037705526; its seed/seed A/A ratio is
+1.001135064. The README baseline's self/seed ratio is1.014397090. These
+are only two A/B blocks and one four-run A/A block per independent CI run;
+a between-revision confidence interval is not supplied by those aggregates.
+
+The same-modelEPYC9V74 pair b7c6b8e72 to d242c4607 changes public runtime
+by-0.0131% and inception speed by-0.3476%. Cross-model comparisons need a
+matched-host experiment before attribution to generated instructions.
+
+The last two runs have64 byte-identical cppgm O3 executables and17 changed
+ones. The changed-executable group improves its timing speed ratio0.6404%;
+the unchanged group improves0.0326%. Hash equality is useful evidence;
+hash differences require instruction/layout inspection, not automatic claims
+of worse code generation. Against b7c6b8e72,40 executables match and41 differ.
+For43 programs with retained Cachegrind run counts, the geometric mean change
+b7c6b8e72 to f9709ed93 is-0.1199%;675d1299b to f9709ed93 is+0.000474%.
+These subset counts are diagnostic, not an81-program runtime pass.
+
+Current work: two isolated historical worktrees at675d1299b andf9709ed93
+are building matching immutable compilers. A private copy of the pinned public
+source cache is prepared. Local instruction/layout diagnostics are labeled
+with the actual XeonE5-2696v4 host; they do not establish EPYC timing effects.
+Next, freeze consumer sources/flags, compare generated executable bytes and
+instructions, run calibrated paired runtime/inception checks with identical
+inputs, and retain every observation. Keep the existing C++11 language fixes
+and their normal checks while investigating both code-generation metrics.
+
+Primary CI runs:
+https://github.com/vishvananda/cppgm-extended/actions/runs/41932548048
+https://github.com/vishvananda/cppgm-extended/actions/runs/42208965171
+https://github.com/vishvananda/cppgm-extended/actions/runs/42219366686
+https://github.com/vishvananda/cppgm-extended/actions/runs/42224680167
+https://github.com/vishvananda/cppgm-extended/actions/runs/42234352271
+https://github.com/vishvananda/cppgm-extended/actions/runs/42254712761

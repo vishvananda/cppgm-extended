@@ -685,3 +685,28 @@ Native replay/prototype checkpoint and isolated string-reference repair:
   It passes88 focused cells and22 owning lanes, including distinct aggregate
   temporary identity. Full normal/scaling/export/performance acceptance is
   pending; the accepted main compiler and its live source guards are unchanged.
+
+Generated-code performance requirement and stopped family gate:
+- The combined original12-workload family A/A calibration passes. Its A/B
+  bit-field workload is+1.3809909% retired instructions, outside the unchanged
+  +1% gate. All12 workloads and raw observations remain. The producer stopped
+  before actual-RSS, string-fix per-fix/cumulative/absolute measurements; no
+  new family or string-repair performance pass is claimed. Profiling is retained
+  at CXX11-016/family-profile-v1; the flat bit-field static-placement path is
+  a measured target for investigation. No optimization has been applied yet.
+- CXX11-019's queued worker stops on that prerequisite failure. A separately
+  documented quiescent discovery run executes352 cells and22 owning lanes.
+  All13 required negative witnesses are wrongly accepted by the frozen parent,
+  but three draft positive neighbors have host disagreements. Those raw results
+  remain and must be adjudicated before the fixtures or a repair are accepted.
+  A runtime-initialization neighbor also exposes a separate current-value issue.
+  The mutable repair is not implemented and its draft fixtures remain uncommitted.
+- The user clarified performance scope: public generated-program runtime and
+  the inception self-built/GCC-built ratio, both code-generation metrics. The
+  plan now explicitly includes these full-consumer comparisons. The CI artifact
+  audit confirms an observed1.9083% inception ratio loss from the README's
+  b7c6b8e72 baseline to f9709ed93. Retrieved public runtime ratios0.984058 to
+  0.982091 show-0.1999%; a rounded public0.97 endpoint is still being located.
+  Actual default-pool CPU models differ; the dedicated Intel comparison has
+  not been repeated. Historical compilers/pinned sources are being prepared
+  for matching instruction/layout checks. See cxx11-public-codegen-performance.txt.
