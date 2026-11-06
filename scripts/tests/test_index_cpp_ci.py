@@ -51,19 +51,33 @@ class IndexCppCITests(unittest.TestCase):
         sibling = self.root / 'untrusted'
         for path in (workspace, sibling):
             subprocess.run(['git', 'init', '-q', str(path)], check=True)
-        env = dict(os.environ, GIT_TEST_ASSUME_DIFFERENT_OWNER='1',
-                   GIT_CONFIG_GLOBAL=str(self.root / 'gitconfig'), GITHUB_WORKSPACE=str(workspace))
         command = ['git', '-C', str(workspace), 'rev-parse', '--show-toplevel']
-        rejected = subprocess.run(command, env=env, capture_output=True)
-        self.assertNotEqual(rejected.returncode, 0)
-        self.assertIn(b'dubious ownership', rejected.stderr)
         workflow = ci.ROOT / '.github/workflows/index-cpp.yml'
         trust = next(line.strip().removeprefix('run: ') for line in workflow.read_text().splitlines()
                      if 'run: git config --global --add safe.directory' in line)
-        subprocess.run(['bash', '-euc', trust], env=env, check=True)
-        self.assertEqual(subprocess.check_output(command, env=env, text=True).strip(), str(workspace))
-        rejected = subprocess.run(['git', '-C', str(sibling), 'rev-parse', '--show-toplevel'], env=env, capture_output=True)
-        self.assertNotEqual(rejected.returncode, 0)
+        system = self.root / 'system.gitconfig'
+        system.write_text('[safe]\n\tdirectory = *\n')
+        configurations = [
+            {},
+            dict(GIT_CONFIG_SYSTEM=str(system)),
+            dict(GIT_CONFIG_COUNT='1', GIT_CONFIG_KEY_0='safe.directory', GIT_CONFIG_VALUE_0='*'),
+            dict(GIT_CONFIG_PARAMETERS="'safe.directory=*'"),
+        ]
+        for number, configuration in enumerate(configurations):
+            with self.subTest(configuration=configuration), patch.dict(os.environ, configuration):
+                # Test this workflow's exception independently of runner-wide trust.
+                env = dict(os.environ, GIT_TEST_ASSUME_DIFFERENT_OWNER='1',
+                           GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_COUNT='0',
+                           GIT_CONFIG_GLOBAL=str(self.root / f'gitconfig-{number}'),
+                           GITHUB_WORKSPACE=str(workspace))
+                env.pop('GIT_CONFIG_PARAMETERS', None)
+                rejected = subprocess.run(command, env=env, capture_output=True)
+                self.assertNotEqual(rejected.returncode, 0)
+                self.assertIn(b'dubious ownership', rejected.stderr)
+                subprocess.run(['bash', '-euc', trust], env=env, check=True)
+                self.assertEqual(subprocess.check_output(command, env=env, text=True).strip(), str(workspace))
+                rejected = subprocess.run(['git', '-C', str(sibling), 'rev-parse', '--show-toplevel'], env=env, capture_output=True)
+                self.assertNotEqual(rejected.returncode, 0)
 
     def test_compiler_symlink_keeps_driver_name_and_installed_configuration(self):
         binary = self.root / 'clang'
