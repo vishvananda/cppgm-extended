@@ -22,3 +22,23 @@ This exercises selected C++14/17 features and does not establish full C++17
 conformance. The check is optional and requires network access for the clone.
 The local reducers run with `make test-modern-cxx`; they also ship as optional
 PA29/PA31 extensions and are excluded from the required C++11 course suites.
+
+For paired runtime measurements, supply immutable executables built from the
+pinned source with the same flags and host library:
+
+```sh
+python3 scripts/index_cpp_benchmarks.py --source-root /tmp/cppgm-index-cpp \
+  --binary baseline=/path/to/previous-index --binary cppgm=/tmp/cppgm-index \
+  --binary gcc=/path/to/gcc-index --binary clang=/path/to/clang-index \
+  --candidate cppgm --out /tmp/index-paired --cpus 0-21 --blocks 3
+```
+
+The receipt directory must be new. `--only Brainfuck::Recursion` selects the
+upstream substring filter; repeat `--only` for disjoint groups. Every binary
+first passes all 50 checks with `TEST=1`; timed runs always use full inputs.
+Choose a CPU list suitable for the host, with enough cores for threaded cases.
+The Linux runner retains raw output, executable/source hashes, load samples,
+process counters and A/A plus ABBA/BAAB observations. `report.json` separates
+upstream loop wall time from process CPU time and reports higher-is-better
+speed ratios. `--metadata` attaches build commands, toolchain versions and
+header manifests. Calibration exposes noise; it never discards observations.
