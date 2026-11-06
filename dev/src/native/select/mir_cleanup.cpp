@@ -1596,6 +1596,37 @@ uint32_t drop_redundant_constants(Function& function)
 
 namespace {
 
+// A following 32-bit operation uses only the low half before writing
+// its result. No memory operand may consume the original full-width address.
+bool consumes_low32(const Inst& inst, Reg r)
+{
+	if (!plain_gpr(inst.ops[0]) || inst.ops[0].reg != r || !narrow_kind(inst.type))
+		return false;
+	for (unsigned k = 1; k < inst.nops; ++k)
+		if (inst.ops[k].kind != OperandKind::Imm && !plain_gpr(inst.ops[k]))
+			return false;
+	switch (inst.op)
+	{
+	case Op::Add:
+	case Op::Sub:
+	case Op::And:
+	case Op::Or:
+	case Op::Xor:
+	case Op::Imul:
+	case Op::Neg:
+	case Op::Not:
+		return true;
+	case Op::Shl:
+	case Op::Shr:
+	case Op::Sar:
+	case Op::Rol:
+	case Op::Ror:
+		return inst.type == lowir::TypeKind::U32 && inst.ops[1].kind == OperandKind::Imm && (inst.ops[1].imm & 31) != 0;
+	default:
+		return false;
+	}
+}
+
 // insts[k], the last writer of r before a 32-bit zero-extension of it
 // that nothing between reads, at 32 bits when the low half of its result
 // depends only on the low halves of its operands (and nothing reads its
@@ -1658,7 +1689,8 @@ bool narrow_to_u32(std::vector<Inst>& insts, uint32_t k, Reg r, uint32_t end)
 // an earlier instruction of the block zeroed (zeroes_upper, through
 // copies; tracking lapses at anything else writing registers) becomes a
 // nop, as does one of a value a 64-bit operation just computed that can
-// run at 32 bits instead (narrow_to_u32). r10 and r11 (emitter scratch)
+// run at 32 bits instead (narrow_to_u32), or whose next low-bit calculation
+// itself zeroes the upper half. r10 and r11 (emitter scratch)
 // are never tracked. Linear.
 uint32_t fuse_adds_and_extensions(Function& function)
 {
@@ -1739,15 +1771,16 @@ uint32_t fuse_adds_and_extensions(Function& function)
 			// The redundant extension.
 			const bool in_place_zext = inst.op == Op::Zext && narrow_kind(inst.type) && plain_gpr(inst.ops[0]) &&
 				(inst.nops == 1 || (inst.ops[1].kind == OperandKind::Reg && inst.ops[1].reg == inst.ops[0].reg));
+			const bool following_narrow = in_place_zext && j < end && consumes_low32(insts[j], inst.ops[0].reg);
 			uint32_t w = i;
 			if (in_place_zext && !((known >> inst.ops[0].reg) & 1u))
 				while (w > block.first && i - w < 16 && !reads_or_writes(insts[w - 1], inst.ops[0].reg))
 					--w;
 			if (in_place_zext &&
 				(((known >> inst.ops[0].reg) & 1u) ||
-					(w > block.first && narrow_to_u32(insts, w - 1, inst.ops[0].reg, end))))
+					(w > block.first && narrow_to_u32(insts, w - 1, inst.ops[0].reg, end)) || following_narrow))
 			{
-				if (inst.ops[0].reg != R10 && inst.ops[0].reg != R11)
+				if (!following_narrow && inst.ops[0].reg != R10 && inst.ops[0].reg != R11)
 					known |= 1u << inst.ops[0].reg;
 				inst.op = Op::Nop;
 				inst.nops = 0;

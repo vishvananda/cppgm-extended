@@ -1,0 +1,187 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @sum_bytes
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i8 r8, [rdi]
+    shl.u32 r8, 13
+    load.i8 r9, [rdi+1]
+    shl.u32 r9, 11
+    load.i8 rsi, [rdi+2]
+    add.u32 rsi, 91
+    load.i8 rdi, [rdi+3]
+    imul.u32 rdi, 7
+    add r8, r9
+    add rsi, rdi
+    add r8, rsi
+    ret r8
+
+function @right
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i8 rdi, [rdi]
+    zext.i32 rdi
+    shr rdi, 7
+    ret rdi
+
+function @wide
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i8 rax, [rdi]
+    shl rax, 13
+    ret rax
+
+function @zero
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i8 rdi, [rdi]
+    zext.i32 rdi
+    shl.u32 rdi, 0
+    ret rdi
+
+function @identity
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i8 rdi, [rdi]
+    imul.u32 rdi, 1
+    ret rdi
+
+function @variable
+  abi
+    param %p -> rdi : ptr
+    param %shift -> rsi : u32
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i8 rdi, [rdi]
+    zext.i32 rdi
+    mov rcx, rsi
+    shl rdi, rcx
+    zext.i32 rdi
+    ret rdi
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    slot $bytes -> [rbp-8] : obj<4x1>
+    temp %variable0 -> [rbp-16] : i64
+    temp %variable1 -> [rbp-24] : i64
+
+  block ^entry
+    store.i32 [rbp-8], 4290806015
+    lea rdi, [rbp-8]
+    call @sum_bytes [args=(rdi)]
+    mov rbx, rax
+    lea rdi, [rbp-8]
+    call @right [args=(rdi)]
+    mov r12, rax
+    lea rdi, [rbp-8]
+    call @wide [args=(rdi)]
+    mov r13, rax
+    lea rdi, [rbp-8]
+    call @zero [args=(rdi)]
+    mov r14, rax
+    lea rdi, [rbp-8]
+    call @identity [args=(rdi)]
+    mov r15, rax
+    lea rdi, [rbp-8]
+    mov rsi, 0
+    call @variable [args=(rsi,rdi)]
+    mov r10, rax
+    store.i64 [rbp-16], r10
+    lea rdi, [rbp-8]
+    mov rsi, 1
+    call @variable [args=(rsi,rdi)]
+    mov r10, rax
+    store.i64 [rbp-24], r10
+    lea rdi, [rbp-8]
+    mov rsi, 31
+    call @variable [args=(rsi,rdi)]
+    cmp.i64 rbx, 12884631572
+    setne rbx
+    movzx rbx, rbx
+    cmp.i64 r12, 33554431
+    setne r12
+    movzx r12, r12
+    cmp.i64 r13, -8192
+    setne r13
+    movzx r13, r13
+    cmp.i64 r14, 4294967295
+    setne r14
+    movzx r14, r14
+    cmp.i64 r15, 4294967295
+    setne r15
+    movzx r15, r15
+    cmp.i64 [rbp-16], 4294967295
+    setne r8
+    movzx r8, r8
+    cmp.i64 [rbp-24], 4294967294
+    setne r9
+    movzx r9, r9
+    cmp.i64 rax, 2147483648
+    setne rax
+    movzx rax, rax
+    or rbx, r12
+    or r13, r14
+    or r15, r8
+    or r9, rax
+    or rbx, r13
+    or r15, r9
+    or rbx, r15
+    ret rbx

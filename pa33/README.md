@@ -173,6 +173,10 @@ time for latency and layout changes. Preserve a behavior test for each
 counterexample. Neither the course reference dump nor a speed comparison
 requires a particular instruction, register allocation or block order.
 
+An extension can be redundant when the next calculation reads only the narrow
+bits and writes the full result. Preserve extensions needed by wider readers,
+address operands or operations that can leave the destination unchanged.
+
 ### Scope
 
 PA33 does not require a new LowIR optimizer, source-language changes,

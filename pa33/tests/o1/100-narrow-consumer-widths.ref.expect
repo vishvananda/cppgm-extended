@@ -1,0 +1,21 @@
+# budget from 100-narrow-consumer-widths.ref.mir: the course solution's count, widened by 10% and rounded up, plus one, and at least three more than the count
+instructions <= 104
+blocks <= 10
+count(call) <= 11
+mem <= 34
+instructions <= 15 in @sum_bytes
+stack_size <= 32 in @sum_bytes
+instructions <= 7 in @right
+stack_size <= 32 in @right
+instructions <= 6 in @wide
+stack_size <= 32 in @wide
+instructions <= 7 in @zero
+stack_size <= 32 in @zero
+instructions <= 6 in @identity
+stack_size <= 32 in @identity
+instructions <= 9 in @variable
+stack_size <= 32 in @variable
+instructions <= 69 in @main
+stack_size <= 103 in @main
+
+# Bounds allow different instructions, registers and scheduling.

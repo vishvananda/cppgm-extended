@@ -54,6 +54,11 @@ Do not assume incoming upper bits are initialized when the ABI leaves them
 unspecified. A proof such as `convert trunc exact` may help; an arbitrary cast
 supplies no such proof.
 
+A calculation that reads only the low bits and then writes the full result
+may establish its own representation. Check the encoded width and all operand
+uses: addresses consume full-width values, and a shift with a possible zero
+count may leave the destination unchanged.
+
 For scalar/vector transfers, track which bits each consumer reads. A shuffle
 that uses only supplied lanes may not need cleared upper lanes; a wider unpack
 or a second consumer can observe them. Test with nonzero prior register bits,

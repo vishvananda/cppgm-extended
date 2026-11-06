@@ -20,7 +20,8 @@ uint32_t fuse_copies_into_lea(Function& function);
 
 // `add b, imm` and `add b, c` adjacent (either order, the flags dead)
 // become one lea; a 32-bit zero-extension of a register whose upper half
-// the block already zeroed becomes a nop. Returns the instructions removed.
+// the block already zeroed, or the next low-bit calculation overwrites,
+// becomes a nop. Returns the instructions removed.
 uint32_t fuse_adds_and_extensions(Function& function);
 
 // A `test r, r` repeating the flags the instruction before it set from r
