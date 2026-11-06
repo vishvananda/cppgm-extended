@@ -90,9 +90,13 @@ struct BodyContext
 	const Type* placeholder;
 	// A lambda's function call operator's body: the lambda's frame.
 	LambdaFrame* lambda;
-	// The scope a try-block being analyzed is in (its handlers' too), for
-	// 12.8p31's throw operand; null outside one.
+	// The parent of the innermost protected try compound being analyzed;
+	// its own handlers and a ctor-initializer are outside that compound.
+	// Null outside one. Used for throw eligibility (P1825, CWG2549).
 	const Scope* try_parent;
+	// A default argument's parameter scope intervenes below this lookup
+	// context, even when the lookup graph has no parameter bindings.
+	const Scope* default_argument_parent;
 	// A constructor's function-try-block's handlers are being analyzed: no
 	// return statement appears in them (15.3p14).
 	bool constructor_handlers;

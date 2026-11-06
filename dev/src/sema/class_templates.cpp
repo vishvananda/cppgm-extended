@@ -2858,6 +2858,7 @@ void Analyzer::instantiate_default_argument(FunctionEntity* function, uint32_t i
 			body.default_argument = index;
 		}
 		body_ = &body;
+		body.default_argument_parent = frame;
 		expression_scope_ = frame;
 		if (copy->kind == syntax::ExprKind::BracedInit)
 			list_argument(static_cast<const syntax::BracedInitList&>(*copy), parameter, frame, copy->location);

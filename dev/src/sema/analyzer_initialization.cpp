@@ -1339,6 +1339,7 @@ void Analyzer::type_default_arguments(FunctionEntity* function, const syntax::Pa
 			continue;
 		context.closure_context = function;
 		context.default_argument = i;
+		context.default_argument_parent = scope;
 		if (initializer->expression->kind == syntax::ExprKind::BracedInit)
 		{
 			// 8.3.6p1, 8.5.4: `= {...}` copy-list-initializes the parameter.

@@ -25,10 +25,9 @@ const Type* Analyzer::throw_operand(const syntax::Expr& operand, Scope* scope, u
 {
 	// 15.1p3: the exception object's type is the operand's static type,
 	// top-level cv-qualifiers removed, an array or function adjusted to a
-	// pointer; it is copy-initialized from the operand, a non-volatile
-	// automatic object's name (not a function's or handler's parameter)
-	// whose scope ends inside the innermost try-block taken first as an
-	// rvalue (12.8p32). p5: a class object's destructor is potentially
+	// pointer; it is copy-initialized from the operand. P1825 and CWG2549
+	// first consider an eligible automatic entity as an rvalue. p5: a class
+	// object's destructor is potentially
 	// invoked (so accessible and not deleted), and the class complete and
 	// not abstract (15.1p4 with 10.4p3).
 	ExprFacts* facts = typed(operand, scope);
@@ -62,15 +61,23 @@ const Type* Analyzer::throw_operand(const syntax::Expr& operand, Scope* scope, u
 	check_destruction(type, scope, location);
 	expression_scope_ = scope;
 	const syntax::Expr* inner = WithoutParentheses(&operand);
-	const Entity* named = inner->kind == syntax::ExprKind::Id ? inner->facts->entity : nullptr;
+	const Entity* named = automatic_entity(operand);
 	const Scope* try_parent = body_ != nullptr ? body_->try_parent : nullptr;
-	const bool automatic = named != nullptr && named->kind == EntityKind::Variable && body_ != nullptr &&
-		body_->function != nullptr && names_automatic_object(operand) &&
-		catch_parameters_.find(named) == PointerMap::kMissing;
+	const Scope* default_parent = body_ != nullptr ? body_->default_argument_parent : nullptr;
+	bool automatic = named != nullptr && (default_parent == nullptr || !encloses(named->owner, default_parent));
+	// CWG2549: only block scopes may intervene, and no protected try
+	// compound. A prototype parameter can be eligible without BodyContext;
+	// a lambda, local class or nested parameter scope blocks an outer name.
+	for (const Scope* current = scope; automatic && current != named->owner;)
+	{
+		if (current == nullptr || current->kind != ScopeKind::Block ||
+			(try_parent != nullptr && current->parent == try_parent))
+			automatic = false;
+		else
+			current = current->parent;
+	}
 	Candidate chosen = Candidate();
-	const bool as_rvalue = automatic &&
-		(try_parent == nullptr || (named->owner != try_parent && encloses(try_parent, named->owner))) &&
-		moves_from(cls, operand, chosen);
+	const bool as_rvalue = automatic && moves_from(cls, operand, chosen);
 	ExprFacts* object = facts_of(*inner);
 	const ValueCategory category = object->category;
 	if (as_rvalue)

@@ -211,6 +211,8 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 	}
 	if (body.body != nullptr && !shared)
 	{
+		if (body.try_block)
+			context.try_parent = scope;
 		compound(*body.body, scope, true);
 		// A hosted wrapper's reserved builtin call in a context with no
 		// full-expression of its own above (see define_function): the rest
@@ -225,6 +227,7 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 		}
 		if (body.try_block)
 		{
+			context.try_parent = nullptr;
 			context.constructor_handlers = function->constructor;
 			handlers(body.try_block->handlers, scope);
 			context.constructor_handlers = false;
@@ -1022,28 +1025,36 @@ bool Analyzer::move_return_conversion(const syntax::Expr& source, const Type* re
 	return true;
 }
 
-bool Analyzer::names_automatic_object(const syntax::Expr& expr) const
+const Entity* Analyzer::automatic_entity(const syntax::Expr& expr) const
 {
 	// P1825's implicitly movable entity: a non-volatile automatic object
-	// or rvalue reference to one, declared in this function (a lambda's,
-	// not the enclosing function's it captured; CWG 1579).
+	// or rvalue reference to one. Scope eligibility is checked separately,
+	// including for prototype parameters outside a function body.
 	const syntax::Expr* e = WithoutParentheses(&expr);
 	const Entity* entity = e->kind == syntax::ExprKind::Id && e->facts != nullptr ? e->facts->entity : nullptr;
 	if (entity == nullptr || entity->type == nullptr || entity->type->kind == TypeKind::LValueReference)
-		return false;
+		return nullptr;
 	const Type* type = entity->type->kind == TypeKind::RValueReference ? entity->type->element : entity->type;
 	if ((type->cv & kVolatile) != 0 || type->kind == TypeKind::Function)
-		return false;
-	if (!encloses(body_->function->scope, entity->owner))
-		return false;
+		return nullptr;
 	if (entity->kind == EntityKind::Parameter)
-		return true;
+		return entity;
 	if (entity->kind != EntityKind::Variable || entity->owner == nullptr || entity->owner->kind != ScopeKind::Block)
-		return false;
+		return nullptr;
 	// A structured binding names no object of its own (C++17's 11.5; GCC
 	// and Clang copy from it).
 	const VariableEntity* variable = static_cast<const VariableEntity*>(entity);
-	return !variable->is_static && !variable->is_extern && !variable->is_thread_local && !variable->structured_binding;
+	return !variable->is_static && !variable->is_extern && !variable->is_thread_local && !variable->structured_binding
+		? entity
+		: nullptr;
+}
+
+bool Analyzer::names_automatic_object(const syntax::Expr& expr) const
+{
+	// A return uses a declaration in this function, not one captured from
+	// an enclosing function (CWG 1579).
+	const Entity* entity = automatic_entity(expr);
+	return entity != nullptr && encloses(body_->function->scope, entity->owner);
 }
 
 bool Analyzer::moves_from(ClassEntity* entity, const syntax::Expr& source, Candidate& chosen)
