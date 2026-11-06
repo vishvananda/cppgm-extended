@@ -2,6 +2,8 @@
 """Index-cpp CI must retain failures and publish only complete comparisons."""
 import copy
 import json
+import os
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -43,6 +45,25 @@ class IndexCppCITests(unittest.TestCase):
 
     def write_document(self):
         ci.save(self.artifact / 'results.json', self.document)
+
+    def test_container_trust_is_scoped_to_the_mounted_workspace(self):
+        workspace = self.root / 'mounted'
+        sibling = self.root / 'untrusted'
+        for path in (workspace, sibling):
+            subprocess.run(['git', 'init', '-q', str(path)], check=True)
+        env = dict(os.environ, GIT_TEST_ASSUME_DIFFERENT_OWNER='1',
+                   GIT_CONFIG_GLOBAL=str(self.root / 'gitconfig'), GITHUB_WORKSPACE=str(workspace))
+        command = ['git', '-C', str(workspace), 'rev-parse', '--show-toplevel']
+        rejected = subprocess.run(command, env=env, capture_output=True)
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn(b'dubious ownership', rejected.stderr)
+        workflow = ci.ROOT / '.github/workflows/index-cpp.yml'
+        trust = next(line.strip().removeprefix('run: ') for line in workflow.read_text().splitlines()
+                     if 'run: git config --global --add safe.directory' in line)
+        subprocess.run(['bash', '-euc', trust], env=env, check=True)
+        self.assertEqual(subprocess.check_output(command, env=env, text=True).strip(), str(workspace))
+        rejected = subprocess.run(['git', '-C', str(sibling), 'rev-parse', '--show-toplevel'], env=env, capture_output=True)
+        self.assertNotEqual(rejected.returncode, 0)
 
     def test_compiler_symlink_keeps_driver_name_and_installed_configuration(self):
         binary = self.root / 'clang'
