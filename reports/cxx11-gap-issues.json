@@ -3464,25 +3464,49 @@
   {
     "id": "CXX11-033",
     "priority": "P1",
-    "status": "observed-language-gap",
+    "status": "repair-in-validation",
     "upstream": [
       "llvm-project/clang/test/CXX/dcl.decl/dcl.fct.def/dcl.fct.def.delete/p4.cpp"
     ],
     "symptom": "The compiler silently accepts deleted explicit specialization after an earlier declaration in ISO/GNU C++11.",
-    "root_cause": "Whole-TU required diagnostic confirmed; isolated reduction and typed parser/semantic root cause still pending.",
+    "root_cause": "The explicit function specialization path reused an existing specialization entity without enforcing the first-declaration requirement for a deleted definition. A typed explicit_specialization fact distinguishes an earlier declaration of that specialization from its primary template declaration.",
     "expected": "Emit a normal required diagnostic while retaining valid neighboring declarations; diagnostic prose/count/recovery is outside scope.",
-    "owning_pa": null,
-    "ownership_note": "Determine the earliest owning PA from the faithful reduction and read that handout before changing behavior.",
-    "regressions": [],
+    "owning_pa": 15,
+    "ownership_note": "PA15:300 owns explicit function specializations. PA17:300 owns the member-template and nested member-template neighbors. Both owning handouts were read and source hashes retained before changes.",
+    "regressions": [
+      "pa15/tests/controls/300-explicit-specialization-delete-after-declaration-reject.t",
+      "pa15/tests/controls/300-explicit-specialization-delete-after-definition-reject.t",
+      "pa15/tests/controls/300-explicit-specialization-delete-deduced-after-declaration-reject.t",
+      "pa15/tests/controls/300-explicit-specialization-delete-deduced-first.t",
+      "pa15/tests/controls/300-explicit-specialization-delete-first-member.t",
+      "pa15/tests/controls/300-explicit-specialization-delete-first.t",
+      "pa15/tests/controls/300-explicit-specialization-delete-member-after-declaration-reject.t",
+      "pa15/tests/controls/300-explicit-specialization-delete-overload-independence.t",
+      "pa15/tests/controls/300-explicit-specialization-delete-partition-independence.t",
+      "pa15/tests/controls/300-explicit-specialization-delete-qualified-after-declaration-reject.t",
+      "pa15/tests/controls/300-explicit-specialization-delete-redefinition-reject.t",
+      "pa15/tests/controls/300-explicit-specialization-delete-then-redeclare.t",
+      "pa15/tests/controls/300-explicit-specialization-of-deleted-template.t",
+      "pa17/tests/controls/300-member-template-specialization-delete-after-declaration-reject.t",
+      "pa17/tests/controls/300-member-template-specialization-delete-first.t",
+      "pa17/tests/controls/300-nested-member-template-specialization-delete-after-declaration-reject.t",
+      "pa17/tests/controls/300-nested-member-template-specialization-delete-first.t"
+    ],
     "fix_revision": null,
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-campaign-d1c5c14c9-v3",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-033",
     "checks": {
       "execution": "results.json:two source-pinned ISO/GNU11 variants; native host rejects normally, candidate emits a valid object without a diagnostic.",
       "verification": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-root-verification-v1.json",
-      "adjudication": "reports/cxx11-clang-language-adjudications.json; sourceSHA256 70fe0af5f6c8bf923ecf549e8e85b6dc6656b1690df5a203eaa6e5a0b5419445"
+      "adjudication": "reports/cxx11-clang-language-adjudications.json; sourceSHA256 70fe0af5f6c8bf923ecf549e8e85b6dc6656b1690df5a203eaa6e5a0b5419445",
+      "parent": "parent-v4/assessment.json:280 reduced/original native cells in17 required lanes. Eight isolated invalid forms and the original Clang source are silently accepted by the parent; normal GCC15/Clang21/22 diagnostics satisfy the language rule, including warning-plus-acceptance.",
+      "candidate": "candidate-v1/assessment.json:70 native cells and17 required lanes pass;36 valid neighbor objects equal the frozen parent.",
+      "normal": "checks-v1.json:10 stages pass, including PA15/17,strict8144/8144,debug,self-hostPA5,inception,nine architecture audits,file audit,placement,harness.",
+      "export": "export-checks-v3.json:20 stages pass, fresh export,42 reference wrappers,17 packaged controls and exact frozen candidate restoration.",
+      "independent_verification": "functional-verification-v1.json and root-functional-verification-v1.json:380 compiler cells,1668 raw streams,266 objects,36 exact valid-neighbor pairs and all required source/export receipts independently verified.",
+      "performance_inputs": "performance-controls-v1/assessment.json:30 parent/candidate/GCC/Clang native cells validate six frozen specialization workloads. Measurements are held for the shared029 window."
     },
     "performance": {
-      "status": "not-started-no-compiler-change"
+      "status": "pending-coordinated-window-no-measurements-started"
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3491,7 +3515,9 @@
       "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
       "rationale": "The deleted explicit specialization func2<int> follows an earlier declaration of that specialization. A deleted definition must be its first declaration."
     },
-    "assigned_agent": "/root/clang_correctness"
+    "assigned_agent": "/root/clang_correctness",
+    "regression_revision": "8858114ec",
+    "implementation_revision": "40731abe6"
   },
   {
     "id": "CXX11-034",

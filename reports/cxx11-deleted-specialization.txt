@@ -1,0 +1,40 @@
+Deleted explicit-specialization correctness repair (2026-11-06)
+
+Issue: CXX11-033, original N3485 8.4.3p4.
+Worktree: /mnt/vizier/cppgm-clang-deleted-specialization
+Required fixture revisions: 0b42a49f0 and 8858114ec.
+Implementation: 40731abe6. This candidate is not yet integrated or accepted.
+
+A deleted definition must be its specialization's first declaration. The
+compiler previously reused an earlier explicit specialization without checking
+that condition. The fix uses the existing typed explicit_specialization fact
+before modifying the entity. The primary template's declaration still permits
+a first deleted specialization; later nondeleted declarations, independent
+overloads and independent template argument specializations stay valid.
+
+Required PA15:300 fixtures cover explicit, deduced and qualified forms,
+repeated deletion, earlier definitions and specialization independence.
+PA17:300 covers member and nested member templates. The seventeen controls
+include eight required-diagnostic cases and nine valid neighbors, one existing.
+The native GCC15 warning-plus-acceptance observation is a valid diagnostic;
+wording, count, location and recovery are outside the correctness gate.
+
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-033
+- parent-v4:280 cells,17 owning lanes; all eight reduced negatives and exact
+  Clang source have silent-parent-acceptance witnesses.
+- candidate-v1:70 cells,17 owning lanes pass;36 valid objects equal the parent.
+- checks-v1:10 normal stages pass,strict8144/8144,debug info,self-host through
+  PA5,inception,architecture/file/placement audits and harness included.
+- export-checks-v3:20 stages pass; fresh student export,all42 wrappers,17
+  packaged controls and exact development compiler restoration.
+- functional-verification-v1 and root-functional-verification-v1 independently
+  verify380 native cells,1668 raw streams,266 objects and the source/export
+  receipts. Initial producer/protocol corrections and raw observations remain
+  retained; a checker failure need not have status1.
+
+Six frozen valid workloads exercise64/256/1024 explicit specializations in
+forward-definition and first-deleted-then-redeclared forms. Their30 native
+parent/candidate/GCC/Clang correctness cells pass. Counter and actual compiler
+RSS measurements have not started. They will use the shared serial window,
+A/A calibration,10 paired blocks,unchanged gates and exact output checks, plus
+three original baseline workloads. No new corpus pass-rate claim is implied.

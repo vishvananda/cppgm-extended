@@ -1,3 +1,19 @@
+Clang deleted-specialization repair checkpoint (2026-11-06)
+
+The Clang subagent's CXX11-033 fix 40731abe6 adds the missing first-declaration
+check for deleted explicit specializations. This is an original N3485 rule.
+Seventeen required PA15/17 fixtures cover eight invalid forms and valid
+neighbors. All70 candidate cells and17 lanes pass;36 valid objects remain equal
+to the parent. Strict8144/8144,normal checks,fresh export/all42 wrappers and17
+packaged controls pass. Root independently verifies380 native observations,
+1668 streams and266 objects. Performance and integration remain pending.
+
+CXX11-029 family counters now run under measurement-group-hold-v3.json with
+child967530/start51884424; the same outer controller2991099 remains held.
+Compiler/helper/build/suite execution is held during this group. The Clang
+subagent reads the consecutive-bracket grammar/owning contract for031 while
+measurements run. Main compiler source remains d1c5c14c9.
+
 Functional and immediate-parent performance checkpoint (2026-11-06)
 
 CXX11-019 now has27 required controls in PA16/18. Parent/host evidence accounts
