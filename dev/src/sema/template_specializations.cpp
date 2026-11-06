@@ -223,6 +223,10 @@ Binding* Analyzer::explicit_function_specialization(const Specifiers& specifiers
 											  : function->instantiation != FactState::NotStarted)
 			error(location, "an explicit specialization after the specialization's instantiation or definition");
 	}
+	// 8.4.3p4: the deleted definition is this specialization's first
+	// declaration; its primary template's declaration does not count.
+	if (deleted && function->explicit_specialization)
+		error(location, "deleted definition of a specialization declared before");
 	if (definition && function->defined && function->explicit_specialization)
 		error(location, "redefinition of a function");
 	// 15.4p4: its exception-specification is compatible with the template's
