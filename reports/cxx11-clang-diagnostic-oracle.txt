@@ -1,9 +1,11 @@
 Clang native diagnostic replay preparation (2026-11-06)
 
-Status: private prototype prepared, build/control validation queued.
+Status: private prototype built;28 controls and complete toolchain rehash pass.
 No imported Clang test or cppgm diagnostic pass is claimed.
 Evidence root: /mnt/vizier/cppgm-cxx11-upstream/clang-native-verifier-v1
-Authoritative current producer protocol: build-protocol-v2.json
+Build protocol: build-protocol-v2.json
+Current acceptance: prototype-acceptance-v4.json
+Current control producer: run_controls_v3.py
 Read-only API evidence: api-readiness-v1.json
 
 The external adapter needs native prefix, source identity/line, severity,
@@ -46,16 +48,24 @@ CR/CRLF input, missing/unexpected diagnostics and malformed directives. The
 initial helper explicitly blocks preprocessing-error inputs until their
 expectation-discovery equivalence is established; full coverage remains needed.
 
-The build/control worker waits for the exact original native-dg replay worker,
-which itself waits behind the family oracles and the historical RSS aggregate
-verification. Compiler measurements, native replay and helper builds therefore
-remain serial. Frozen sources, tools, headers, symlinks and producer identities
-are checked before and after execution. A waiting worker and this API audit
-are not evidence that the helper compiled or the28 controls passed.
+The exact queued worker built the helper successfully after the original2160-
+cell native-dg replay and family native oracles completed. All28 corrected
+controls pass:21 native-equivalence controls,4 outcome/location blockers,1
+preprocessing-error boundary and2 event-preservation faults. Independent
+verification rehashes222 observation files, all4613 toolchain files,203 symlinks
+and the frozen source/producer closures. The helper SHA256 is
+b66fe6c3a93b4a59901d19f830772774514cbfe0299f243a59d089fd40ba39a5.
+
+The first v2 control run is retained: the #warning fixture put its expectation
+on the directive line, where it was diagnostic text rather than an active
+verification comment. Native verify and the helper both rejected it. The v3
+control moves that expectation to a separate line using native@-1 semantics;
+the helper binary, native API and expected verification outcome are unchanged.
+No imported case or candidate compiler result follows from these controls.
 
 Remaining requirements
 
-Validate the helper and fault controls, then integrate the native diagnostic
+Integrate the validated prototype and fault controls into the native diagnostic
 oracle into the dedicated lit adapter with real configuration/substitutions,
 features, targets and supported flags. Establish per-case source/preprocessing
 context applicability and native host baselines before declaring candidate

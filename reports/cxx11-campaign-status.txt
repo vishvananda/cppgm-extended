@@ -659,3 +659,29 @@ Historical paired RSS accepted and family native oracles complete:
   pinned adapters, selection and host flags. The separate Clang diagnostic
   helper remains queued until that functional replay finishes. This is still
   the original cohort and does not cover the whole inventoried corpus.
+
+Native replay/prototype checkpoint and isolated string-reference repair:
+- The original2160 native-dg cells complete and all stream/object accounting
+  verifies. Comparison with the prior cohort has zero changed outcome/count/
+  assertion/reason cells. Candidate adapted results remain26 native passes,
+  599 native failures,87 blockers,6 unsupported and2 runtime abnormalities.
+  These unresolved native diagnostic/recovery outcomes remain campaign work;
+  an executed cohort is not an all-tests-pass claim or full-corpus coverage.
+  Evidence: native-dg-campaign-d1c5c14c9-v1/checkpoint-comparison-v1.json.
+- The matching Clang21 diagnostic helper compiles and all28 native/boundary/
+  fault controls pass. Independent verification rehashes222 observation files,
+  4613 toolchain files and203 symlinks. A malformed warning control was corrected
+  with native@-1 syntax; both old native and helper failures remain. This
+  prototype does not yet cover imported cases, preprocessing-error inputs or
+  complete lit configuration. See cxx11-clang-diagnostic-oracle.txt.
+- CXX11-021 has22 required fixtures committed on the isolated repair branch.
+  Pre-repair proof has352 cells and22 owning lanes,11 required rejection
+  witnesses. Both Clang21/22 confirm expectations;48 GCC cells disagree and
+  are retained. String-literal conversion ranking intentionally does not filter
+  a too-short bound; the required ambiguous-call rejection guards that boundary.
+- The first candidate exposed a hard SFINAE error and static aggregate reference
+  members incorrectly reusing shorter literal storage. The second candidate
+  uses substitution failures and the typed constant-evaluation backing path.
+  It passes88 focused cells and22 owning lanes, including distinct aggregate
+  temporary identity. Full normal/scaling/export/performance acceptance is
+  pending; the accepted main compiler and its live source guards are unchanged.
