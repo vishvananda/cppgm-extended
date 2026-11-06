@@ -2749,7 +2749,8 @@
       "latest_normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v12.json (fresh checks for changed compiler; prior v9 normal acceptance remains historical)",
       "native_performance_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/oracles-v5-verification.json (72 cells; all changed object output audited)",
       "fixture_closure": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/controls-v3-fixture-closure.json",
-      "normal_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v1.json (14 checks including explicit unchanged-source reuse; strict8117/8117; complete matrix accounted)"
+      "normal_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v1.json (14 checks including explicit unchanged-source reuse; strict8117/8117; complete matrix accounted)",
+      "normal_acceptance_latest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v12.json (all14 fresh checks passed; source/fixture hashes and620 tuples verified)"
     },
     "performance": {
       "status": "v9-instruction-gate-failed;v12-full-validation-pending",
@@ -2759,7 +2760,8 @@
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v5.json",
       "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v5.log",
       "diagnostics": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/diagnostic-v12/assessment.json",
-      "note": "Single-observation diagnostics only improve all seven failures below1%; full calibrated21 workloads, actual compiler RSS, absolute scaling, cumulative and export acceptance remain unproven."
+      "note": "Single-observation diagnostics only improve all seven failures below1%; full calibrated21 workloads, actual compiler RSS, absolute scaling, cumulative and export acceptance remain unproven.",
+      "additional_required_resource_check": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/run_complex_resource_v12.py (prepared, not executed; run serially after active measurements)"
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -2827,7 +2829,8 @@
       "changed_object_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/changed-object-audit-v1.json",
       "placement_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v9/placement.log (failed: member-pointer assertions placed early; split from PA16 identity fixture into required PA22:300 control)",
       "fixture_closure": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/controls-v3-fixture-closure.json",
-      "normal_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v1.json (14 checks including explicit unchanged-source reuse; strict8117/8117; complete matrix accounted)"
+      "normal_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v1.json (14 checks including explicit unchanged-source reuse; strict8117/8117; complete matrix accounted)",
+      "normal_acceptance_latest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v12.json (all14 fresh checks passed; source/fixture hashes and620 tuples verified)"
     },
     "performance": {
       "status": "v9-instruction-gate-failed;v12-full-validation-pending",
@@ -2837,7 +2840,8 @@
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v5.json",
       "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v5.log",
       "diagnostics": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/diagnostic-v12/assessment.json",
-      "note": "Single-observation diagnostics only improve all seven failures below1%; full calibrated21 workloads, actual compiler RSS, absolute scaling, cumulative and export acceptance remain unproven."
+      "note": "Single-observation diagnostics only improve all seven failures below1%; full calibrated21 workloads, actual compiler RSS, absolute scaling, cumulative and export acceptance remain unproven.",
+      "additional_required_resource_check": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/run_complex_resource_v12.py (prepared, not executed; run serially after active measurements)"
     },
     "standards_basis": {
       "category": "implementation-scaling",

@@ -184,3 +184,13 @@ final-pipeline-v2.log then validates prerequisites before cumulative counters,
 direct memory, explicit class-DAG/extent scaling, linked reducers and export.
 Source12's gates must be checked directly; earlier normal successes cannot
 prove this changed compiler. The whole campaign remains open.
+
+Fresh v12 normal acceptance is now verified in normal-acceptance-v12.json:
+all 14 checks passed, strict 8117/8117, all 474 sources and 44 fixture/metadata
+files match, all 620 matrix tuples are accounted for and the live binary
+matches the frozen measured candidate. Performance v5 has begun; no pass is
+claimed before its counter/direct-memory and final stages finish. Also run
+run_complex_resource_v12.py serially after active measurements: it prepares
+72 direct-RSS observations across three evaluation depths and three phases,
+with native execution and the complete 48-byte backing checked. This extra
+resource check is still unexecuted and is required before repair closure.
