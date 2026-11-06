@@ -1,3 +1,23 @@
+Additional IFNDR adjudication and unchanged-corpus screen (2026-11-06)
+
+Wnarrowing15.C,16.C and20.C define unused templates whose nondependent narrowing
+precludes every valid specialization. N3485 14.6p8 requires no diagnostic.
+Source-pinned dispositions join CXX11-017;12 existing native observations are
+rehashed. Instantiated trailing-return neighbors remain a future control task.
+
+The v6 screen reuses and independently verifies the same1440 compiler cells,
+9996 streams and2871 outputs for720 selected variants. Counts:62 outcome matches,
+537 mismatches (302 positive rejections,235 missing diagnostics),44 blockers,
+57 baseline/unprojected-oracle unresolved,8 warning-policy review,2 standards
+review and10 IFNDR variants. Six mismatches move to IFNDR,never to passes.
+Among599 provisionally screened variants62 match (10.35%). This selected bad
+cohort still does not establish a whole-corpus correctness percentage. V5 is an
+unchanged v4 receipt replay made before the new dispositions were applied;
+all prior sources,observations and summaries remain retained.
+
+The instantiated Wnarrowing8.C remains a required original-C++11 gap,CXX11-035;
+its isolated repair is documented in cxx11-template-conversion-narrowing.txt.
+
 C++ correctness campaign: revised oracle and first outcome screen
 2026-11-06 | investigate/upstream-cxx11
 

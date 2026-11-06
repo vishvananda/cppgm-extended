@@ -1,3 +1,23 @@
+Original-language narrowing repair and additional grammar gap (2026-11-06)
+
+CXX11-035 now has16 required PA16/18 regressions and implementation84ba40170.
+All272 parent/host cells,68 candidate cells and16 owning lanes are accounted.
+The parent silently accepts nine negatives and rejects a valid SFINAE neighbor;
+the candidate fixes both. All42 frozen performance-input native controls pass.
+Full normal validation/export and actual-parent performance acceptance remain
+pending. The independently confirmed malformed-attribute grammar gap is036,
+separate from the Clang subagent's consecutive-bracket repair031.
+
+Three unused-template GCC sources instead join original IFNDR issue017.
+The unchanged720-variant v6 screen now has537 provisional mismatches,62 matches
+and10 IFNDR variants; no excluded case is counted as a pass.
+
+CXX11-029 family instructions independently pass12 A/A plus12 A/B comparisons:
+960 observations,11520 batched children,max instruction upper95 1.003457704.
+Its exact child967530/start51884424 is terminal0; the same outer controller
+2991099 is held while the coordinated035/031 functional window is open.
+Family RSS,original counter/RSS and integrated acceptance remain required.
+
 Clang deleted-specialization repair checkpoint (2026-11-06)
 
 The Clang subagent's CXX11-033 fix 40731abe6 adds the missing first-declaration

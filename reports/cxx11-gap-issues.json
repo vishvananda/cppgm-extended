@@ -2529,10 +2529,13 @@
     "priority": "P3",
     "status": "not-required-original-ifndr",
     "upstream": [
-      "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing13.C"
+      "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing13.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing15.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing16.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing20.C"
     ],
-    "symptom": "Uninstantiated class-template static member narrowing is accepted; two native required-error assertions fail.",
-    "root_cause": "The compiler defers these static-member initializers until instantiation. The exact unused template has no valid specialization. Both hosts reject it eagerly, while cppgm rejects the separately instantiated control and accepts valid integer initializers.",
+    "symptom": "Unused class/function templates contain nondependent narrowing and are accepted without the native GCC eager diagnostics.",
+    "root_cause": "These uninstantiated templates have no valid specialization. N3485 14.6p8 requires no diagnostic; optional eager checking is outside language correctness. The instantiated Wnarrowing13 control remains required and passes; trailing-return neighbors are separate pending probes.",
     "owning_pa": null,
     "ownership_note": "Native GCC implementation compatibility; no language regression/fix assigned for an original IFNDR program.",
     "regressions": [],
@@ -2540,7 +2543,9 @@
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-adapter-v1",
     "checks": {
       "native": "pilot-2/summary.json and per-cell result.json",
-      "controls": "narrowing-triage/results.json (18 syntax cells)"
+      "controls": "narrowing-triage/results.json (18 syntax cells)",
+      "additional_function_templates": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-017/additional-ifndr-v1/assessment.json: three exact source files and12 saved native cells verified; no new compiler execution.",
+      "revised_screen": "/mnt/vizier/cppgm-cxx11-upstream/language-outcome-screen-d1c5c14c9-v6/results.json: same720 variants; six mandatory-diagnostic mismatches moved to not-required, never passes."
     },
     "performance": {
       "status": "not-applicable-to-triage-no-compiler-change"
@@ -3339,7 +3344,8 @@
       "normal": "checks-v2.json:affectedPA16/25, strict8130/8130, placement and harness pass; fixture-placement-correction-v2.json revalidates six unchanged-binary normal gates from checks-v1.json",
       "source": "candidate-source-verification-v1.json:484 regular tracked source/fixture/reference blobs match c4192b194; exactly one dev module changed",
       "export": "final-stages-v2.json:fresh-export,bundle42wrappers,restore-development pass; exact candidate restored",
-      "immediate_parent_performance": "per-fix-counter-acceptance-v1.json and per-fix-memory-acceptance-v1.json:13 AA+13 AB comparisons independently pass both unchanged gates. Each verifies1040 observations/12800 batched children. Target instructions -1.1498228%; max instruction upper95 1.000031272; AB actual compiler RSS upper95 1.0."
+      "immediate_parent_performance": "per-fix-counter-acceptance-v1.json and per-fix-memory-acceptance-v1.json:13 AA+13 AB comparisons independently pass both unchanged gates. Each verifies1040 observations/12800 batched children. Target instructions -1.1498228%; max instruction upper95 1.000031272; AB actual compiler RSS upper95 1.0.",
+      "family_instructions": "family-counters-acceptance-v1.json:12 AA+12 AB reports independently pass,960 measured observations and11520 batched child outputs rehashed,max instruction upper95 1.003457704."
     },
     "performance": {
       "status": "immediate-parent-counter-and-actual-RSS-pass-cumulative-family-original-pending",
@@ -3550,5 +3556,97 @@
       "rationale": "Default arguments appear inside nested pointer-to-function parameter declarators and abstract-declarators, outside the permitted function declaration parameter clause. The TU requires a diagnostic independently of the separate parameter-pack example."
     },
     "assigned_agent": null
+  },
+  {
+    "id": "CXX11-035",
+    "priority": "P1",
+    "status": "repair-in-validation",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing8.C"
+    ],
+    "symptom": "A constexpr conversion returning int1000 silently forms a signed-char template argument; related integer/floating/reference conversions also bypass required validation, and a valid SFINAE fallback is rejected.",
+    "root_cause": "template_value evaluated the selected user-defined conversion together with its second standard conversion, losing the original value/type before converted_value checked representability. Preserve the selected function result until the existing parameter conversion check; evaluate it once.",
+    "expected": "Diagnose invalid converted constant expressions; preserve fitting conversions, explicit casts, ordinary initialization and the immediate-context/body-error distinction.",
+    "owning_pa": 16,
+    "ownership_note": "PA16:300 owns constexpr user-defined conversions to integral template arguments; PA18:300 owns enumeration arguments and substitution/body-context neighbors. PA15/16/18 handout hashes and architecture are recorded before compiler changes.",
+    "regressions": [
+      "pa16/tests/controls/300-constexpr-nttp-conversion-signed-high-reject.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-signed-low-reject.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-unsigned-negative-reject.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-unsigned-high-reject.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-bool-reject.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-floating-reject.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-reference-reject.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-dependent-default-reject.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-fitting-boundaries.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-explicit-cast.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-ordinary-initializer.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-reference-fitting.t",
+      "pa16/tests/controls/300-constexpr-nttp-conversion-converted-return.t",
+      "pa18/tests/controls/300-constexpr-nttp-conversion-enumeration.t",
+      "pa18/tests/controls/300-constexpr-nttp-conversion-substitution.t",
+      "pa18/tests/controls/300-constexpr-nttp-conversion-selected-body-reject.t"
+    ],
+    "regression_revision": "82ae20fc5",
+    "implementation_revision": "84ba40170",
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-035",
+    "implementation": [
+      "dev/src/sema/class_templates.cpp"
+    ],
+    "checks": {
+      "prior": "prior-native-witnesses-v1.json:four exact original-source GCC/accepted-parent observations independently rehashed.",
+      "parent": "parent-v1/assessment-v2.json:272 native cells/16 owning lanes,40 silent parent acceptance variants (nine reduced negatives plus original),four wrong-rejected SFINAE-positive variants; all native host oracles agree.",
+      "producer_correction": "The original producer counted unsigned-high with a signed-high suffix and failed its final assertion after completing all observations. Independent exact-identity verification rehashes1008 streams and all artifacts; no compiler observation rerun.",
+      "candidate": "candidate-v1/assessment.json:all68 ISO/GNU11 O0/O2 cells and16 owning lanes pass, including the original GCC source.",
+      "performance_inputs": "performance-controls-v1/assessment.json:42 native cells pass; six common-correct parent/candidate object pairs match,three newly-supported absolute-scaling inputs pass12 candidate/host cells.",
+      "normal": "checks-v1.json:build,affected16/18,strict8144/8144,debug,self-hostPA5,inception,nine architecture audits,file audit and placement pass. Harness failed because the producer propagated the strict-only comparison environment into relaxed-mode harness tests. checks-v2 reruns only the harness with that override removed; all failed observations retained, no compiler/source change.",
+      "export": "Initial export controller stopped before any export stage when its normal prerequisite failed. export-controller-correction-v2.json records the exact worker correction; run_export_v2.py waits on the corrected harness, fresh export remains pending."
+    },
+    "performance": {
+      "status": "not-started-normal-and-export-pending",
+      "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-035/performance-predeclaration-v1.json"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "clauses": [
+        "14.3.2p1/p5",
+        "5.19p3",
+        "8.5.4p7"
+      ],
+      "source": "doc/n3485.txt",
+      "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+      "rationale": "Integral/enumeration non-type arguments require a converted constant expression of the parameter type. The permitted implicit sequence excludes narrowing integral and floating-to-integral conversions. The original source actually forms a specialization, unlike the unused-template IFNDR cases."
+    }
+  },
+  {
+    "id": "CXX11-036",
+    "priority": "P1",
+    "status": "observed-language-gap",
+    "upstream": [],
+    "discovered_neighbor_of": "CXX11-031",
+    "symptom": "Malformed unknown attribute syntax is silently accepted: numeric token, extra token, incomplete scoped token, bare braced argument and excess namespace components.",
+    "root_cause": "collect_attribute_specifiers skips unknown tokens rather than first enforcing attribute-token and optional parenthesized argument grammar; distinct from the consecutive-bracket ambiguity.",
+    "expected": "Enforce attribute-list grammar while preserving unknown valid attributes, keyword/scoped tokens, empty lists and balanced argument tokens. Diagnostic wording/count/location is outside scope.",
+    "owning_pa": null,
+    "ownership_note": "Determine earliest syntax owner from required reductions; PA5 syntax-only surface and PA29 semantic attributes are distinct. Read owning handout before implementation.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-036",
+    "checks": {
+      "parent": "parent-evidence-v1.json:root independently verifies80 native cells for five source-pinned cases;20 silent parent acceptances and60 normal GCC15/Clang21/Clang22 diagnostics.",
+      "discovery": "CXX11-031/probe-protocol-v1.json and parent-probes-v1/results.json; the independent grammar cohort remains separate from031."
+    },
+    "performance": {
+      "status": "not-started-no-compiler-change"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "clause": "7.6.1p1 [dcl.attr.grammar] attribute-list grammar",
+      "source": "doc/n3485.txt",
+      "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+      "rationale": "Unknown attribute behavior does not remove the syntactic requirements for attribute-token, a single optional namespace qualifier and a parenthesized argument clause."
+    },
+    "assigned_agent": "/root/clang_correctness"
   }
 ]

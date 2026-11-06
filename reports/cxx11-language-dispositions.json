@@ -16,5 +16,23 @@
     "reason": "GCC exits zero; Clang and cppgm abort. The permitted partial static-initialization behavior is unresolved; retain the runtime difference without treating GCC behavior as normative.",
     "issue": "CXX11-002",
     "sha256": "3362d483f36b6d1416d78ee61a4bbfb644254a446925de249b54fc16e0259d1d"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing15.C": {
+    "status": "not-required",
+    "reason": "N3485 14.6p8: the unused function-template definitions have nondependent narrowing in their trailing return types, so no valid specialization can be generated. None is instantiated. The program is ill-formed, no diagnostic required; eager GCC diagnostics are not a required language outcome.",
+    "issue": "CXX11-017",
+    "sha256": "7a8a52f6e106cac5ab19fc2ba5f901f83e090a09f2b2354a56a45a0a480fb7f3"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing16.C": {
+    "status": "not-required",
+    "reason": "N3485 14.6p8: the unused function-template definitions have nondependent narrowing in their trailing return types, so no valid specialization can be generated. None is instantiated. The program is ill-formed, no diagnostic required; eager GCC diagnostics are not a required language outcome.",
+    "issue": "CXX11-017",
+    "sha256": "05dfbc14adb7fcbe5d54a08d40df6e662fde891bb8b7a08d1e9c316070e5f8d0"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing20.C": {
+    "status": "not-required",
+    "reason": "N3485 14.6p8: the unused function-template definitions have nondependent narrowing in their trailing return types, so no valid specialization can be generated. None is instantiated. The program is ill-formed, no diagnostic required; eager GCC diagnostics are not a required language outcome.",
+    "issue": "CXX11-017",
+    "sha256": "787741e3ed409b43b831730f8426bb8483aebb493d8345cccf58686028ad6a9f"
   }
 }

@@ -1,0 +1,32 @@
+Constant template-argument conversion validation (2026-11-06)
+
+CXX11-035: original N3485 14.3.2p1/p5,5.19p3,8.5.4p7.
+Worktree:/mnt/vizier/cppgm-cxx11-template-conversion-narrowing
+Required fixtures:82ae20fc5. Implementation:84ba40170.
+Evidence:/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-035
+
+The exact GCC Wnarrowing8.C forms a signed-char template argument from a
+constexpr conversion returning int1000. It requires a nonnarrowing converted
+constant expression. The old path applied the second standard conversion
+before checking representability,so the original out-of-range value was lost.
+The repair keeps the selected conversion function's typed result until the
+existing converted_value validation. The existing evaluator reads reference
+results and evaluates each selected call once; no source reparsing or extra
+constant evaluation is added.
+
+Sixteen required PA16/18 controls cover signed/unsigned/bool bounds,floating
+and reference results,dependent defaults,explicit casts,ordinary initialization,
+conversions inside a function body,enumeration targets and SFINAE/body errors.
+All272 native parent/host cells agree with the declared host oracle. The parent
+silently accepts40 invalid variants (nine reductions plus original GCC source)
+and rejects four valid SFINAE variants. Candidate68 cells/16 owning lanes pass.
+A producer suffix-count mistake occurred after all observations completed;
+independent assessment-v2 verifies exact identities,1008 raw streams and all
+artifacts without rerunning a compiler observation.
+
+Six common-correct bounded workloads at64/256/1024 arguments preserve exact
+parent/candidate objects. Three newly-supported substitution workloads get
+absolute candidate scaling only; a wrongly rejecting parent is not a speed
+baseline. All42 native performance-input correctness cells pass. No performance
+measurement is claimed. Full normal checks,export,parent reconciliation and
+calibrated per-fix/cumulative instruction and compiler-RSS gates remain required.
