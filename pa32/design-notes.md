@@ -99,6 +99,11 @@ value and that the store does not run on a path that previously wrote nothing.
 A location updated conditionally may need a phi or a retained memory path.
 Calls and exception paths are part of these proofs.
 
+Combining independent operations can introduce invariant values after an
+earlier motion step. Revisit changed loops when that exposes useful work;
+reuse existing loop facts and avoid repeating analysis for unaffected code.
+The same zero-trip, memory and exception proofs still apply.
+
 A product of an induction variable and an invariant can sometimes become an
 induction of its own. Account for every latch, the initial value, overflow and
 all users of the original counter. Widening a narrow counter may avoid repeated

@@ -115,6 +115,13 @@ static unsigned oracle(QualityData* d, unsigned n) {
         sum += active ^ r;
         for (unsigned k = 0; k < 8; ++k) d->z[k] = a[k] + b[k];
     }
+#elif QUALITY_CASE == 12
+    const double scale = 0.99999997 + static_cast<double>(d->alias) * 0.00000001;
+    const volatile double* observed = d->alias == 0 ? d->z : d->alias == 1 ? d->z + 1 : d->y;
+    for (unsigned i = 0; i < n; ++i) {
+        for (unsigned lane = 0; lane < 2; ++lane) d->z[lane] *= scale;
+        sum += *observed > 0.0;
+    }
 #endif
     return sum;
 }
@@ -149,6 +156,9 @@ int main(int argc, char** argv) {
         d.y[i] = (i % 7) * 0.125; d.z[i] = -0.0;
     }
     d.state[0] = 17; d.state[1] = 43; d.state[2] = 71; d.state[3] = 99;
+#if QUALITY_CASE == 12
+    d.z[0] = 0.75; d.z[1] = -1.25;
+#endif
 #if QUALITY_CASE == 10
     // A reassociated reduction would lose the intervening small term.
     d.x[0] = 1e16; d.x[1] = 1; d.x[2] = -1e16;

@@ -1,0 +1,373 @@
+declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
+
+declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
+declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
+declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
+
+global @factor : f64 [binding=strong] = 0.5
+global @callbacks : u32 [binding=strong] = 0
+global @destroyed : u32 [binding=strong] = 0
+global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [storage=readonly, binding=internal] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal] = {
+  zero 4
+}
+
+function @scale_pair(%p : ptr, %seen : ptr, %n : u32, %scale : f64) -> u32 [binding=strong, object=_Z10scale_pairP4PairPVKdjd, no_inline=yes] {
+  block ^entry:
+    %t1 = cmp ugt u32 %n, 0
+    branch %t1, ^loop_preheader_1, ^for_end_3
+
+  block ^loop_preheader_1:
+    %t2 = vector fromf64 %scale
+    %t3 = vector pshufd %t2, 68
+    jump ^for_body_2
+
+  block ^for_body_2:
+    %t4 = phi u32 [^for_body_2: %t11, ^loop_preheader_1: 0]
+    %t5 = phi u32 [^for_body_2: %t12, ^loop_preheader_1: 0]
+    %t6 = load v128 %p
+    %t7 = vector mulpd %t3, %t6
+    store v128 %t7, %p
+    %t8 = load volatile f64 %seen
+    %t9 = cmp gt f64 %t8, 0
+    %t10 = convert trunc u32 i64 %t9
+    %t11 = binary add u32 %t10, %t4
+    %t12 = binary add u32 %t5, 1
+    %t13 = cmp ult u32 %t12, %n
+    branch %t13, ^for_body_2, ^for_end_3
+
+  block ^for_end_3:
+    %t14 = phi u32 [^entry: 0, ^for_body_2: %t11]
+    return u32 %t14
+}
+function @change(%p : ptr, %i : u32, %mode : u32) -> void [binding=strong, object=_Z6changeP4Pairjj, no_inline=yes] {
+  block ^entry:
+    %t1 = load volatile u32 @callbacks
+    %t2 = binary add u32 %t1, 1
+    store volatile u32 %t2, @callbacks
+    store volatile f64 0.25, @factor
+    %t3 = binary add u32 %i, 2
+    %t4 = convert uitofp f64 u32 %t3
+    %t5 = index i8 [projection=field] %p, 8
+    %t6 = load typed f64 %t5
+    %t7 = binary add f64 %t4, %t6
+    store typed f64 %t7, %t5
+    %t8 = cmp eq u32 %mode, 2
+    branch %t8, ^land_rhs_1, ^if_end_3
+
+  block ^land_rhs_1:
+    %t9 = cmp eq u32 %i, 1
+    branch %t9, ^if_then_2, ^if_end_3
+
+  block ^if_then_2:
+    %t10 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store typed i32 5, %t10
+    %t11 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t10, %t11, 0)
+    unreachable
+
+  block ^if_end_3:
+    return void
+}
+function @guarded_pair(%p : ptr, %n : u32, %denominator : u32, %mode : u32) -> u32 [binding=strong, object=_Z12guarded_pairP4Pairjjj, no_inline=yes] {
+  block ^entry:
+    %t1 = cmp ugt u32 %n, 0
+    branch %t1, ^loop_preheader_1, ^for_end_4
+
+  block ^loop_preheader_1:
+    %t2 = binary udiv u32 12, %denominator
+    jump ^for_body_2
+
+  block ^for_body_2:
+    %t3 = phi u32 [^for_body_2: %t15, ^loop_preheader_1: 0]
+    %t4 = phi u32 [^for_body_2: %t14, ^loop_preheader_1: 0]
+    %t5 = binary add u32 %t2, %t4
+    %t6 = load volatile f64 @factor
+    %t7 = load typed f64 %p
+    %t8 = binary mul f64 %t6, %t7
+    store typed f64 %t8, %p
+    %t9 = index i8 [projection=field] %p, 8
+    %t10 = load typed f64 %t9
+    %t11 = binary mul f64 %t6, %t10
+    store typed f64 %t11, %t9
+    %t12 = cmp gt f64 %t11, 0
+    %t13 = convert trunc u32 i64 %t12
+    %t14 = binary add u32 %t5, %t13
+    eh_try ^cleanup_action_3
+    call void @change(%p, %t3, %mode)
+    eh_end
+    %t15 = binary add u32 %t3, 1
+    %t16 = cmp ult u32 %t15, %n
+    branch %t16, ^for_body_2, ^for_end_4
+
+  block ^cleanup_action_3:
+    %t17 = load volatile u32 @destroyed
+    %t18 = binary add u32 %t17, 1
+    store volatile u32 %t18, @destroyed
+    resume
+
+  block ^for_end_4:
+    %t19 = phi u32 [^entry: 0, ^for_body_2: %t14]
+    %t20 = load volatile u32 @destroyed
+    %t21 = binary add u32 %t20, 1
+    store volatile u32 %t21, @destroyed
+    return u32 %t19
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $p : obj<16x8>
+  slot $p__shadow2 : obj<16x8>
+  slot $zero : f64
+
+  block ^entry:
+    %t1 = call u32 @scale_pair(0, 0, 0, 0.5)
+    branch %t1, ^if_then_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t2 = call u32 @guarded_pair(0, 0, 0, 0)
+    branch %t2, ^if_then_2, ^if_end_3
+
+  block ^if_then_2:
+    return i32 1
+
+  block ^if_end_3:
+    %t3 = load volatile u32 @callbacks
+    branch %t3, ^if_then_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t4 = load volatile u32 @destroyed
+    %t5 = cmp ne u32 %t4, 1
+    branch %t5, ^if_then_5, ^for_body_6
+
+  block ^if_then_5:
+    return i32 2
+
+  block ^for_body_6:
+    %t6 = phi u32 [^if_end_20: %t47, ^lor_rhs_4: 0]
+    %t7 = addr $p
+    store typed f64 8, %t7
+    %t8 = index i8 [projection=field] %t7, 8
+    store typed f64 -16, %t8
+    %t9 = cmp ugt u32 %t6, 0
+    branch %t9, ^loop_preheader_7, ^for_end_12
+
+  block ^loop_preheader_7:
+    %t10 = cmp ugt u32 %t6, 2
+    %t11 = binary and i64 %t9, %t10
+    branch %t11, ^loop_preheader_8, ^loop_preheader_10
+
+  block ^loop_preheader_8:
+    %t12 = binary add u32 %t6, 4294967294
+    %t13 = vector fromf64 0.5
+    %t14 = vector pshufd %t13, 68
+    jump ^wide_loop_9
+
+  block ^wide_loop_9:
+    %t15 = phi f64 [^loop_preheader_8: 8, ^wide_loop_9: %t21]
+    %t16 = phi u32 [^loop_preheader_8: 0, ^wide_loop_9: %t22]
+    %t17 = vector tof64 %t14
+    %t18 = binary mul f64 %t15, %t17
+    %t19 = vector pshufd %t14, 238
+    %t20 = vector tof64 %t19
+    %t21 = binary mul f64 %t18, %t20
+    %t22 = binary add u32 %t16, 2
+    %t23 = cmp ult u32 %t22, %t12
+    branch %t23, ^wide_loop_9, ^loop_preheader_10
+
+  block ^loop_preheader_10:
+    %t24 = phi f64 [^loop_preheader_7: 8, ^wide_loop_9: %t21]
+    %t25 = phi u32 [^loop_preheader_7: 0, ^wide_loop_9: %t22]
+    %t26 = copy f64 0.5
+    jump ^for_body_11
+
+  block ^for_body_11:
+    %t27 = phi u32 [^for_body_11: %t30, ^loop_preheader_10: %t25]
+    %t28 = phi f64 [^for_body_11: %t29, ^loop_preheader_10: %t24]
+    %t29 = binary mul f64 %t28, %t26
+    %t30 = binary add u32 %t27, 1
+    %t31 = cmp ult u32 %t30, %t6
+    branch %t31, ^for_body_11, ^for_end_12
+
+  block ^for_end_12:
+    %t32 = phi f64 [^for_body_6: 8, ^for_body_11: %t29]
+    %t33 = call u32 @scale_pair(%t7, %t7, %t6, 0.5)
+    %t34 = cmp ne u32 %t33, %t6
+    branch %t34, ^if_then_15, ^lor_rhs_13
+
+  block ^lor_rhs_13:
+    %t35 = load typed f64 %t7
+    %t36 = cmp ne f64 %t35, %t32
+    branch %t36, ^if_then_15, ^lor_rhs_14
+
+  block ^lor_rhs_14:
+    %t37 = load typed f64 %t8
+    %t38 = binary mul f64 %t32, -2
+    %t39 = cmp ne f64 %t37, %t38
+    branch %t39, ^if_then_15, ^if_end_16
+
+  block ^if_then_15:
+    return i32 3
+
+  block ^if_end_16:
+    store typed f64 -0, %t7
+    store typed f64 0, %t8
+    %t40 = call u32 @scale_pair(%t7, %t8, %t6, 0.5)
+    branch %t40, ^if_then_19, ^lor_rhs_17
+
+  block ^lor_rhs_17:
+    %t41 = load typed f64 %t7
+    %t42 = binary div f64 1, %t41
+    %t43 = cmp ge f64 %t42, 0
+    branch %t43, ^if_then_19, ^lor_rhs_18
+
+  block ^lor_rhs_18:
+    %t44 = load typed f64 %t8
+    %t45 = binary div f64 1, %t44
+    %t46 = cmp le f64 %t45, 0
+    branch %t46, ^if_then_19, ^if_end_20
+
+  block ^if_then_19:
+    return i32 4
+
+  block ^if_end_20:
+    %t47 = binary add u32 %t6, 1
+    %t48 = cmp ule u32 %t47, 12
+    branch %t48, ^for_body_6, ^for_end_21
+
+  block ^for_end_21:
+    %t49 = addr $p__shadow2
+    store typed f64 8, %t49
+    %t50 = index i8 [projection=field] %t49, 8
+    store typed f64 16, %t50
+    store volatile f64 0.5, @factor
+    store volatile u32 0, @destroyed
+    %t51 = load volatile u32 @destroyed
+    store volatile u32 %t51, @callbacks
+    %t52 = call u32 @guarded_pair(%t49, 3, 2, 1)
+    %t53 = cmp ne u32 %t52, 21
+    branch %t53, ^if_then_24, ^lor_rhs_22
+
+  block ^lor_rhs_22:
+    %t54 = load typed f64 %t49
+    %t55 = cmp ne f64 %t54, 0.25
+    branch %t55, ^if_then_24, ^lor_rhs_23
+
+  block ^lor_rhs_23:
+    %t56 = load typed f64 %t50
+    %t57 = cmp ne f64 %t56, 5.375
+    branch %t57, ^if_then_24, ^if_end_25
+
+  block ^if_then_24:
+    return i32 5
+
+  block ^if_end_25:
+    %t58 = load volatile u32 @callbacks
+    %t59 = cmp ne u32 %t58, 3
+    branch %t59, ^if_then_27, ^lor_rhs_26
+
+  block ^lor_rhs_26:
+    %t60 = load volatile u32 @destroyed
+    %t61 = cmp ne u32 %t60, 1
+    branch %t61, ^if_then_27, ^if_end_28
+
+  block ^if_then_27:
+    return i32 6
+
+  block ^if_end_28:
+    store typed f64 8, %t49
+    store typed f64 16, %t50
+    store volatile f64 0.5, @factor
+    store volatile u32 0, @destroyed
+    %t62 = load volatile u32 @destroyed
+    store volatile u32 %t62, @callbacks
+    eh_try ^catch_dispatch_29
+    %t63 = call u32 @guarded_pair(%t49, 3, 2, 2)
+    eh_end
+    return i32 7
+
+  block ^catch_dispatch_29:
+    eh_catch @__external_rtti__int, 1
+    %t64 = exception ptr
+    %t65 = exception_selector i32
+    %t66 = cmp eq i32 %t65, 1
+    branch %t66, ^catch_body_30, ^catch_next_34
+
+  block ^catch_body_30:
+    %t67 = call ptr @__external_runtime____cxa_begin_catch(%t64)
+    eh_cleanup ^catch_cleanup_33
+    %t68 = load typed i32 %t67
+    %t69 = cmp ne i32 %t68, 5
+    branch %t69, ^if_then_31, ^if_end_32
+
+  block ^if_then_31:
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    return i32 8
+
+  block ^if_end_32:
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    %t70 = load volatile u32 @callbacks
+    %t71 = cmp ne u32 %t70, 2
+    branch %t71, ^if_then_38, ^lor_rhs_35
+
+  block ^catch_cleanup_33:
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
+
+  block ^catch_next_34:
+    resume
+
+  block ^lor_rhs_35:
+    %t72 = load volatile u32 @destroyed
+    %t73 = cmp ne u32 %t72, 1
+    branch %t73, ^if_then_38, ^lor_rhs_36
+
+  block ^lor_rhs_36:
+    %t74 = load typed f64 %t49
+    %t75 = cmp ne f64 %t74, 1
+    branch %t75, ^if_then_38, ^lor_rhs_37
+
+  block ^lor_rhs_37:
+    %t76 = load typed f64 %t50
+    %t77 = cmp ne f64 %t76, 5.5
+    branch %t77, ^if_then_38, ^if_end_39
+
+  block ^if_then_38:
+    return i32 9
+
+  block ^if_end_39:
+    store volatile f64 0, $zero
+    %t78 = load volatile f64 $zero
+    %t79 = binary div f64 1, %t78
+    store typed f64 %t79, %t49
+    %t80 = binary sub f64 %t79, %t79
+    store typed f64 %t80, %t50
+    %t81 = call u32 @scale_pair(%t49, %t50, 3, 0.5)
+    branch %t81, ^if_then_42, ^lor_rhs_40
+
+  block ^lor_rhs_40:
+    %t82 = load typed f64 %t49
+    %t83 = cmp ne f64 %t79, %t82
+    branch %t83, ^if_then_42, ^lor_rhs_41
+
+  block ^lor_rhs_41:
+    %t84 = load typed f64 %t50
+    %t85 = cmp eq f64 %t84, %t84
+    branch %t85, ^if_then_42, ^if_end_43
+
+  block ^if_then_42:
+    return i32 10
+
+  block ^if_end_43:
+    return i32 0
+}

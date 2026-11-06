@@ -1,0 +1,3 @@
+# Behavior and serialization matter; the output envelope permits other designs.
+instructions <= 1200
+blocks <= 320

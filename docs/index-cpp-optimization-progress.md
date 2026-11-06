@@ -2,6 +2,8 @@
 
 Maintainer-only companion to [the plan](index-cpp-optimization-plan.md).
 The original plan remains the scope; the first fix does not close the group.
+See [refreshed target diagnoses](index-cpp-target-diagnoses.md) for current
+IR/MIR evidence, rejected explanations and the remaining proofs.
 
 ## Measurement setup
 
@@ -777,9 +779,72 @@ stores; normal reference regeneration and targeted checks resolve them.
 Receipts are in `exact-address-store-after-slot-fix/`, the corresponding
 source/literal-oracle and frozen/public/Boost folders, and
 `student-export-exact-address-after-slot-fix-v3/`. The full paired all-50
-scoreboard is running in `group2-exact-store-full-scoreboard/`; an earlier
+scoreboard is complete in `group2-exact-store-full-scoreboard/`; an earlier
 attempt with one-CPU affinity for threaded workloads is explicitly invalid
 and retained separately.
+
+The new complete comparison uses three isolated serial lanes and sixteen
+physical cores for threaded matrix workloads, retaining every case and all
+calibration warnings. Higher-is-better geometric means are:
+
+| Reference | Timed loops | Process CPU | Native instructions |
+| --- | ---: | ---: | ---: |
+| Original campaign compiler | 1.056× | 1.057× | 1.072× |
+| Corrected seventh compiler | 0.998× | 0.998× | 1.001× |
+| GCC | 1.005× | 1.003× | 0.956× |
+| Clang | 0.964× | 0.964× | 0.958× |
+
+These two-block timings contain substantial A/A warnings. They also expose a
+real individual regression: nine focused pairs reproduce a 12% Brainfuck
+recursion loss, with unchanged instructions and substantially more branch
+misses. The hot body is unchanged; removing other code moved its indirect
+dispatch address. This remains an open acceptance issue for closing the group,
+not something the aggregate cancels. The interpreter's apparent loss does not
+reproduce in a longer control. See the refreshed diagnosis and retained
+`exact-address-store-after-slot-fix-{brain,interpreter}-control/` observations.
+
+## Ninth mechanism: revisit invariants introduced by packing
+
+The Nbody diagnosis identifies a phase-ordering gap: packing creates invariant
+floating broadcasts after ordinary loop motion has finished. Reuse the existing
+motion pass once, only after packing changed a function that had loops. The
+earlier loop-presence check supplies that guard; there is no new whole-pipeline
+round or change to inlining, unrolling or allocation budgets.
+
+Compiler hash:
+`2bd2ecc6f4438b63df2e58f402a25af91dbfc2353ecc773560c284b268b13201`.
+Index binary hash:
+`60a1cdff823f1cf473ac37da6860456df2001fe75e11e8f50c50ae82f0363dca`.
+The port emits the private prototype's exact object bytes. All 50 checksums
+pass and direct/serialized objects agree. Five calibrated pairs give 1.024×
+Nbody instruction speed and 1.012× process CPU speed; small timing differences
+in unchanged Base64/Huffman work remain within calibration. Index text stays
+at 386,626 bytes.
+
+The new required PA32 source behavior fixture exercises zero-trip null
+pointers and division, aliases, volatile factors, callbacks, cleanup on throw,
+NaNs, infinities and signed zero. The shared scalar quality oracle checks
+adjacent updates through four observer aliases, with broad LowIR/native
+instruction bounds. Independent GCC/Clang and source/replay checks cover
+16,384 varied semantic cases per path. Student guidance describes changed-loop
+cleanup and safe motion without requiring our pass order or packed code.
+
+All 13 gates pass, including the strict 8,058-test report, debug info,
+self-host through PA5, PA35 smoke/quick, modern C++, audits and harness.
+All 74 public and four Boost sentinel objects are identical to the eighth
+compiler's outputs. Frozen compile instructions are unchanged within
+calibration at both levels; the separate whole-index compile control finds
+essentially unchanged instruction cost. The short frozen CPU measurements
+have substantial A/A variation and support no speed claim. Cumulative compile
+instruction cost remains about 0.43% above the original compiler.
+
+A fresh export verifies 22,565 portable references and 9,042 exit statuses,
+the installed tools, new source behavior fixture and both quality paths.
+No old reference output changes. Receipts are in
+`late-packed-invariants-ported/`, its oracle/frozen/public/Boost companion
+folders, `late-packed-invariants-v2/index-compile-cost/` and
+`student-export-late-packed-invariants/`. The separate Brainfuck layout loss
+persists and still needs resolution before this group can close.
 
 ## Outstanding work
 

@@ -8,10 +8,10 @@ or alignment requirements to either assignment.
 
 ## Required kernels and what they measure
 
-`make test-kernels` runs five small, original kernel families under
+`make test-kernels` runs six small, original kernel families under
 `tests/kernels/`: a bounded search, aliased and disjoint field updates, narrow
 arithmetic, values live across a cold call and conditionally updated floating
-state. The ordinary course suite runs
+state, plus adjacent updates with an invariant factor. The ordinary course suite runs
 these too. Their `.quality` files give the optimization level, work size,
 input scenarios and maximum instruction ratio. Every scenario must return the
 scalar oracle's result and leave the same observable data.
@@ -34,6 +34,10 @@ The floating-state kernel updates selected lanes over nested iterations.
 Inactive lanes and early exits preserve their previous values. It measures
 the cost of carrying many conditional values through merges without requiring
 either scalar replacement or a particular register allocation.
+
+The adjacent-update kernel asks whether combining independent operations
+exposes reusable loop-invariant work. It checks zero rounds and observations
+through aliases, with broad published instruction bounds.
 
 ## Optional experiments
 

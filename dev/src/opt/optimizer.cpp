@@ -519,7 +519,8 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 		RUN_PASS(cleanup_cfg);
 		changed = true;
 	}
-	if (has_loop(context))
+	const bool had_loops = has_loop(context);
+	if (had_loops)
 		changed = finish_loops(context, options.level) || changed;
 	if (options.level >= 3 && RUN_PASS(fold_bit_recurrences))
 	{
@@ -534,6 +535,9 @@ void finish_function(Program& program, SymbolId symbol, OptimizerStats& stats, c
 	{
 		RUN_PASS(simplify_values);
 		RUN_PASS(remove_dead_code);
+		// Packing creates lane splats after ordinary loop motion has run.
+		if (had_loops)
+			RUN_PASS(hoist_loop_invariants);
 		changed = true;
 	}
 	changed = RUN_PASS(sink_values) || changed;
