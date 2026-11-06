@@ -308,11 +308,67 @@ compare with the original baseline, inspect new failures and unexpected passes,
 and refresh counts without changing the denominator silently. Recheck closed
 issues whenever a source revision, host toolchain or runner changes.
 
-Declare the pinned core-compiler campaign complete only when every inventoried
+Declare the pinned core-compiler repair phase complete only when every inventoried
 in-scope variant has executed its relevant oracle or has a documented approved
-scope disposition; every confirmed in-scope compiler defect is closed; no
+scope disposition; every confirmed in-scope compiler defect, including later
+CWG/DR compatibility issues, is closed; no
 unexplained crashes/timeouts, hidden negative-test failures or unmeasured fixes
 remain; and final integrated correctness, export and performance checks pass.
 Harness-blocked checks and intentional extensions are named coverage limits,
 not successes. Library/target expansions have separate completion matrices.
 Upstream revision refreshes start a new manifest/comparison cycle.
+
+
+Stage 5 — upstream C++11 CI jobs and full-suite timing (user addition, 2026-11-06)
+
+Start this final stage after all compiler issues have been fixed through the
+normal PA regression, correctness and performance process, including the later
+CWG/DR decisions. Their later date changes repair priority and classification;
+it does not exempt them from this final repair gate. Keep the original N3485
+and later-DR evidence separate throughout that work.
+
+1. Create two new CI jobs, GCC C++11 tests and Clang C++11 tests, following the
+   repository's existing CI conventions for pull requests, pushes and manual
+   runs. Each job uses its validated upstream adapter: native GCC DejaGnu and
+   the dedicated Clang lit/RUN adapter. Pin corpus and toolchain revisions,
+   cache downloads by immutable identities, and retain source licenses and
+   manifests. Choose runners, worker counts and timeouts from measured full-
+   suite costs without reducing the declared coverage to fit a job budget.
+2. Each job runs the complete applicable, declared C++11 matrix with cppgm and
+   the matching upstream compiler: GCC for the GCC suite, Clang for the Clang
+   suite. Preserve ISO/GNU11 configurations, target and optimization variants,
+   native assertions, xfails, diagnostics and runtime checks. Retain explicit
+   per-case scope dispositions and interface adaptations. A compiler failure,
+   crash, new skip, missing variant or adapter blocker must not silently shrink
+   the workload or become a pass. Host baseline failures stay separate.
+3. Alongside every CI run, benchmark the time to execute the entire suite with
+   cppgm versus the matching upstream compiler. Freeze identical test inputs,
+   applicable variants, dependencies, environment and worker counts. Time the
+   complete test execution, including preprocessing, compilation, linking,
+   execution and checking where applicable; record one-time compiler builds,
+   downloads and setup separately. Document stage/adapter differences so a
+   timing ratio cannot conceal different work.
+4. Use paired ordering with a predeclared warmup/cache policy and A/A
+   calibration, following the existing performance protocol. Retain every full-
+   suite observation and the ordering. Record wall/user/system time, load and
+   available resource/counter data. Always report full-suite elapsed times;
+   under contention, keep uncertain timing conclusions inconclusive and use
+   reliable calibrated counters as supplementary evidence when available.
+   Record unavailable counters explicitly. If workers or shards are used,
+   retain end-to-end suite makespan separately from summed worker/CPU time.
+5. Publish a CI summary and machine-readable artifact for each suite containing
+   both compilers' full-suite times, paired cppgm/upstream ratios and uncertainty,
+   revisions/binary hashes, configuration, test/variant counts, outcomes,
+   exclusions and raw per-test/full-run logs. Incomplete or failing runs retain
+   their elapsed time and status; do not present them as successful comparable
+   whole-suite timings. Timing is reported on every run; establish any future
+   timing regression gate through calibration rather than inventing an
+   upstream speed-ratio threshold.
+6. Validate both jobs and benchmark/reporting paths, including controls for
+   omitted tests, changed skips, compiler crashes/timeouts, upstream baseline
+   failures, incomplete timings and noisy measurements. Run make test-harness
+   for the CI harness changes and retain a successful execution of each job.
+
+The repair-phase acceptance above enables this stage. The overall campaign is
+complete only after both CI jobs and their full-suite timing comparisons are
+implemented, exercised and verified as well as all earlier acceptance criteria.
