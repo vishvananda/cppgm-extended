@@ -120,6 +120,16 @@ protected:
 	bool skip_balanced();
 	bool skip_attributes();
 	bool at_attribute(uint32_t ahead = 0);
+	struct AttributeToken
+	{
+		const Identifier* name_space;
+		const Identifier* name;
+		bool scoped;
+		bool const_keyword;
+	};
+	const Identifier* attribute_using_prefix();
+	bool parse_attribute_token(AttributeToken& attribute, const Identifier* prefix);
+	bool attribute_end(bool ignored);
 	// At `<`: whether a `>` follows at the same bracket depth before the
 	// enclosing region ends (a template argument list needs one).
 	bool closing_angle_ahead();

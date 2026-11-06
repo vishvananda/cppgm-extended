@@ -224,31 +224,34 @@ bool Parser::collect_attribute_specifiers(Attribute*& list)
 		{
 			next();
 			next();
+			const Identifier* prefix = attribute_using_prefix();
 			while (!at(TokenKind::OP_RSQUARE))
 			{
+				if (accept(TokenKind::OP_COMMA))
+					continue;
 				// attribute-token attribute-argument-clause? (7.6.1p1); a
 				// gnu:: one of the GNU kinds above (aligned, section ...).
 				Attribute attribute = Attribute();
 				attribute.location = location();
 				attribute.standard = true;
-				const char* space = at_identifier() && at(TokenKind::OP_COLON2, 1) ? tok().identifier->spelling
-																				   : nullptr;
+				AttributeToken token;
+				if (!parse_attribute_token(token, prefix))
+					return false;
+				const char* space = token.name_space != nullptr ? token.name_space->spelling : nullptr;
 				const bool gnu = space != nullptr &&
 					(std::strcmp(space, "gnu") == 0 || std::strcmp(space, "__gnu__") == 0);
-				const char* spelling = gnu && at_identifier(2) ? tok(2).identifier->spelling
-					: gnu && at(TokenKind::KW_CONST, 2)        ? "const"
-															   : "";
+				const char* spelling = gnu && token.name != nullptr ? token.name->spelling
+					: gnu && token.const_keyword                    ? "const"
+																	: "";
 				bool skipped = false;
 				if (std::strcmp(spelling, "section") == 0 || std::strcmp(spelling, "__section__") == 0)
 				{
-					next(), next(), next();
 					if (!section_operand(attribute))
 						return false;
 					keep(attribute);
 				}
 				else if (std::strcmp(spelling, "abi_tag") == 0 || std::strcmp(spelling, "__abi_tag__") == 0)
 				{
-					next(), next(), next();
 					if (!abi_tag_operands(attribute))
 						return false;
 				}
@@ -256,7 +259,6 @@ bool Parser::collect_attribute_specifiers(Attribute*& list)
 				{
 					// Another gnu:: attribute: the GNU kinds as their
 					// __attribute__ forms (aligned, packed, vector_size ...).
-					next(), next(), next();
 					bool kept = false;
 					if (gnu_attribute(spelling, attribute, kept))
 						keep(attribute);
@@ -265,20 +267,18 @@ bool Parser::collect_attribute_specifiers(Attribute*& list)
 					else
 						skipped = true;
 				}
-				else if (space == nullptr && at_identifier() &&
-					(std::strcmp(tok().identifier->spelling, "no_unique_address") == 0 ||
-						std::strcmp(tok().identifier->spelling, "__no_unique_address__") == 0))
+				else if (!token.scoped && token.name != nullptr &&
+					(std::strcmp(token.name->spelling, "no_unique_address") == 0 ||
+						std::strcmp(token.name->spelling, "__no_unique_address__") == 0))
 				{
-					next();
 					attribute.kind = AttributeKind::NoUniqueAddress;
 					keep(attribute);
 				}
-				else if (space == nullptr && at_identifier() &&
-					(std::strcmp(tok().identifier->spelling, "noreturn") == 0 ||
-						std::strcmp(tok().identifier->spelling, "__noreturn__") == 0))
+				else if (!token.scoped && token.name != nullptr &&
+					(std::strcmp(token.name->spelling, "noreturn") == 0 ||
+						std::strcmp(token.name->spelling, "__noreturn__") == 0))
 				{
 					// 7.6.3p1: no attribute-argument-clause shall be present.
-					next();
 					if (at(TokenKind::OP_LPAREN))
 						return fail();
 					attribute.kind = AttributeKind::NoReturn;
@@ -286,23 +286,10 @@ bool Parser::collect_attribute_specifiers(Attribute*& list)
 				}
 				else
 					skipped = true;
-				if (skipped)
-				{
-					while (!at(TokenKind::OP_COMMA) && !at(TokenKind::OP_RSQUARE))
-					{
-						if (at(TokenKind::OP_LPAREN) || at(TokenKind::OP_LSQUARE) || at(TokenKind::OP_LBRACE))
-						{
-							if (!skip_balanced())
-								return false;
-						}
-						else if (tok().is_end() || at(TokenKind::OP_RPAREN) || at(TokenKind::OP_RBRACE))
-							return fail();
-						else
-							next();
-					}
-				}
-				if (!accept(TokenKind::OP_COMMA))
-					break;
+				if (skipped && at(TokenKind::OP_LPAREN) && !skip_balanced())
+					return false;
+				if (!attribute_end(skipped))
+					return false;
 			}
 			if (!expect(TokenKind::OP_RSQUARE) || !expect(TokenKind::OP_RSQUARE))
 				return false;

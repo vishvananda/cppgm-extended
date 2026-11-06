@@ -333,6 +333,68 @@ bool ParserState::at_attribute(uint32_t ahead)
 	return token.is(TokenKind::KW_ALIGNAS) || (token.is(TokenKind::OP_LSQUARE) && at(TokenKind::OP_LSQUARE, ahead + 1));
 }
 
+static bool IsAttributeIdentifier(const ParseToken& token)
+{
+	// 7.6.1p3: keywords and identifier-shaped alternative tokens are names
+	// inside an attribute-token. Punctuation alternatives are not names.
+	return token.is_identifier() ||
+		(token.kind == ParseTokenKind::Simple &&
+			((token.simple >= TokenKind::KW_ALIGNAS && token.simple <= TokenKind::KW_WHILE) ||
+				IsAlternativeSpelling(token.spelling.text, token.spelling.length)));
+}
+
+const Identifier* ParserState::attribute_using_prefix()
+{
+	// The C++17 prefix requires a namespace and colon; [[using]] is an
+	// ordinary keyword attribute-token, not an incomplete prefix.
+	if (!at(TokenKind::KW_USING) || !at_identifier(1) || !at(TokenKind::OP_COLON, 2))
+		return nullptr;
+	const Identifier* prefix = tok(1).identifier;
+	next();
+	next();
+	next();
+	return prefix;
+}
+
+bool ParserState::parse_attribute_token(AttributeToken& attribute, const Identifier* prefix)
+{
+	ParseToken token = tok();
+	if (!IsAttributeIdentifier(token))
+		return fail();
+	attribute = AttributeToken();
+	attribute.name = token.is_identifier() ? token.identifier : nullptr;
+	attribute.const_keyword = token.is(TokenKind::KW_CONST);
+	next();
+	if (accept(TokenKind::OP_COLON2))
+	{
+		if (prefix != nullptr)
+			return fail();
+		attribute.scoped = true;
+		attribute.name_space = attribute.name;
+		token = tok();
+		if (!IsAttributeIdentifier(token))
+			return fail();
+		attribute.name = token.is_identifier() ? token.identifier : nullptr;
+		attribute.const_keyword = token.is(TokenKind::KW_CONST);
+		next();
+	}
+	else if (prefix != nullptr)
+	{
+		attribute.scoped = true;
+		attribute.name_space = prefix;
+	}
+	return true;
+}
+
+bool ParserState::attribute_end(bool ignored)
+{
+	// Only unknown attributes have an ignored pack expansion here; known
+	// attributes retain their existing argument/ellipsis restrictions.
+	if (ignored)
+		accept(TokenKind::OP_DOTS);
+	return at(TokenKind::OP_COMMA) || at(TokenKind::OP_RSQUARE) || fail();
+}
+
 bool ParserState::skip_attributes()
 {
 	// attribute-specifier-seq (7.6.1), alignas and GNU __attribute__ are
@@ -342,7 +404,18 @@ bool ParserState::skip_attributes()
 		if (at(TokenKind::OP_LSQUARE))
 		{
 			next();
-			if (!skip_balanced() || !expect(TokenKind::OP_RSQUARE))
+			next();
+			const Identifier* prefix = attribute_using_prefix();
+			while (!at(TokenKind::OP_RSQUARE))
+			{
+				if (accept(TokenKind::OP_COMMA))
+					continue;
+				AttributeToken attribute;
+				if (!parse_attribute_token(attribute, prefix) || (at(TokenKind::OP_LPAREN) && !skip_balanced()) ||
+					!attribute_end(true))
+					return false;
+			}
+			if (!expect(TokenKind::OP_RSQUARE) || !expect(TokenKind::OP_RSQUARE))
 				return false;
 			continue;
 		}
