@@ -1,0 +1,82 @@
+{
+  "llvm-project/clang/test/CXX/dcl.decl/dcl.fct.def/dcl.fct.def.delete/p4.cpp#0#c++11": {
+    "expected": "diagnose-invalid",
+    "source_sha256": "70fe0af5f6c8bf923ecf549e8e85b6dc6656b1690df5a203eaa6e5a0b5419445",
+    "standards_basis": "original-cxx11",
+    "clause": "8.4.3 [dcl.fct.def.delete]p4",
+    "reason": "The deleted explicit specialization func2<int> follows an earlier declaration of that specialization. A deleted definition must be its first declaration.",
+    "standard_source": "doc/n3485.txt",
+    "standard_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+    "coverage": "Whole translation unit requires at least one diagnostic; isolated rule coverage and valid neighboring PA regressions remain required."
+  },
+  "llvm-project/clang/test/CXX/dcl.decl/dcl.fct.def/dcl.fct.def.delete/p4.cpp#0#gnu++11": {
+    "expected": "diagnose-invalid",
+    "source_sha256": "70fe0af5f6c8bf923ecf549e8e85b6dc6656b1690df5a203eaa6e5a0b5419445",
+    "standards_basis": "original-cxx11",
+    "clause": "8.4.3 [dcl.fct.def.delete]p4",
+    "reason": "The deleted explicit specialization func2<int> follows an earlier declaration of that specialization. A deleted definition must be its first declaration.",
+    "standard_source": "doc/n3485.txt",
+    "standard_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+    "coverage": "Whole translation unit requires at least one diagnostic; isolated rule coverage and valid neighboring PA regressions remain required."
+  },
+  "llvm-project/clang/test/CXX/dcl.decl/dcl.meaning/dcl.fct.default/p3.cpp#0#c++11": {
+    "expected": "diagnose-invalid",
+    "source_sha256": "aae73f501835a9f360ca91130776f203fcb7a2ac116d50303a62a6cf470f105f",
+    "standards_basis": "original-cxx11",
+    "clause": "8.3.6 [dcl.fct.default]p3",
+    "reason": "Default arguments appear inside nested pointer-to-function parameter declarators and abstract-declarators, outside the permitted function declaration parameter clause. The TU requires a diagnostic independently of the separate parameter-pack example.",
+    "standard_source": "doc/n3485.txt",
+    "standard_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+    "coverage": "Whole translation unit requires at least one diagnostic; isolated rule coverage and valid neighboring PA regressions remain required."
+  },
+  "llvm-project/clang/test/CXX/dcl.decl/dcl.meaning/dcl.fct.default/p3.cpp#0#gnu++11": {
+    "expected": "diagnose-invalid",
+    "source_sha256": "aae73f501835a9f360ca91130776f203fcb7a2ac116d50303a62a6cf470f105f",
+    "standards_basis": "original-cxx11",
+    "clause": "8.3.6 [dcl.fct.default]p3",
+    "reason": "Default arguments appear inside nested pointer-to-function parameter declarators and abstract-declarators, outside the permitted function declaration parameter clause. The TU requires a diagnostic independently of the separate parameter-pack example.",
+    "standard_source": "doc/n3485.txt",
+    "standard_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+    "coverage": "Whole translation unit requires at least one diagnostic; isolated rule coverage and valid neighboring PA regressions remain required."
+  },
+  "llvm-project/clang/test/CXX/dcl.dcl/dcl.enum/p1.cpp#0#c++11": {
+    "expected": "diagnose-invalid",
+    "source_sha256": "bf7b98ebb7168d6fbe7e145bc86b88b2b0c4717531378b7767ae3fd2d55d39f7",
+    "standards_basis": "original-cxx11",
+    "clause": "7.2 [dcl.enum]p1 opaque-enum-declaration grammar",
+    "reason": "The non-template namespace-scope opaque declarations enum S3::E2 : int and enum class S3::E3 use nested-name-specifiers, which the opaque-enum-declaration grammar does not permit.",
+    "standard_source": "doc/n3485.txt",
+    "standard_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+    "coverage": "Whole translation unit requires at least one diagnostic; isolated rule coverage and valid neighboring PA regressions remain required."
+  },
+  "llvm-project/clang/test/CXX/dcl.dcl/dcl.enum/p1.cpp#0#gnu++11": {
+    "expected": "diagnose-invalid",
+    "source_sha256": "bf7b98ebb7168d6fbe7e145bc86b88b2b0c4717531378b7767ae3fd2d55d39f7",
+    "standards_basis": "original-cxx11",
+    "clause": "7.2 [dcl.enum]p1 opaque-enum-declaration grammar",
+    "reason": "The non-template namespace-scope opaque declarations enum S3::E2 : int and enum class S3::E3 use nested-name-specifiers, which the opaque-enum-declaration grammar does not permit.",
+    "standard_source": "doc/n3485.txt",
+    "standard_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+    "coverage": "Whole translation unit requires at least one diagnostic; isolated rule coverage and valid neighboring PA regressions remain required."
+  },
+  "llvm-project/clang/test/CXX/dcl.dcl/dcl.attr/dcl.attr.grammar/p6.cpp#0#c++11": {
+    "expected": "diagnose-invalid",
+    "source_sha256": "44a6fc38f6081da1ba5c0030f09bdb516027449a0327f3cb3c94571551001941",
+    "standards_basis": "original-cxx11",
+    "clause": "7.6.1 [dcl.attr.grammar]p6",
+    "reason": "The function body uses consecutive left-square-bracket tokens in an expression where they cannot introduce an attribute-specifier; this requires a diagnostic.",
+    "standard_source": "doc/n3485.txt",
+    "standard_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+    "coverage": "Whole translation unit requires at least one diagnostic; isolated rule coverage and valid neighboring PA regressions remain required."
+  },
+  "llvm-project/clang/test/CXX/dcl.dcl/dcl.attr/dcl.attr.grammar/p6.cpp#0#gnu++11": {
+    "expected": "diagnose-invalid",
+    "source_sha256": "44a6fc38f6081da1ba5c0030f09bdb516027449a0327f3cb3c94571551001941",
+    "standards_basis": "original-cxx11",
+    "clause": "7.6.1 [dcl.attr.grammar]p6",
+    "reason": "The function body uses consecutive left-square-bracket tokens in an expression where they cannot introduce an attribute-specifier; this requires a diagnostic.",
+    "standard_source": "doc/n3485.txt",
+    "standard_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+    "coverage": "Whole translation unit requires at least one diagnostic; isolated rule coverage and valid neighboring PA regressions remain required."
+  }
+}

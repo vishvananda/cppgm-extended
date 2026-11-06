@@ -1,0 +1,125 @@
+Clang C++11 language-projection checkpoint
+2026-11-06 | investigate/clang-cxx11-correctness
+
+This adapter checks projected C++ language/object obligations. Candidate
+diagnostic words, counts, locations, notes, optional warnings and recovery do
+not enter the score. It is not a complete native lit adapter or a Clang corpus
+correctness percentage. Every original RUN and every remaining interface,
+configuration, runtime and standards question stays visible.
+
+Implementation
+
+scripts/upstream_clang_expectations.cpp uses LLVM21.1.8's public preprocessor
+and VerifyDiagnosticConsumer APIs to discover active required-error comments.
+It parses no C++ AST and receives no candidate diagnostic events. Native
+verification against an empty stream identifies required expectation severity
+through typed native diagnostic IDs/arguments; no candidate regex matching is
+performed. Native preprocessing and malformed expectation failures block.
+
+The same helper compares native preprocessed tokens with cppgm's documented
+PA4 stream, decoding source spellings with Clang's raw lexer. Differing compiler
+macros/branches cannot silently create a language failure or pass. Literal
+values remain outside this context-equivalence check. Source pragmas retain
+their native physical provenance and require reviewed policy equivalence.
+The two exact push_macro directives from Clang's nonphysical predefines are
+recorded as infrastructure; a physical source pretending to be <built-in>
+does not receive that exemption.
+
+scripts/upstream_clang_language.py explicitly maps reviewed cc1 arguments.
+Unknown semantic options, warning escalation, unsupported targets/dialects,
+explicit exception/RTTI-disable configurations and unprobed features block.
+Native typed throw/try/catch tokens under cc1's default disabled-exception
+policy also block: cppgm's driver accepts these modes without enforcing the
+same language restrictions. Strings/comments do not trigger the token guard.
+This is an explicit configuration limitation, not a C++ language defect.
+
+scripts/run_upstream_clang_language.py uses pinned native lit parsing, ordered
+file substitutions, native feature expressions and native shell structure.
+It predeclares every selected RUN/dialect task and accounts for the complete
+20,491-file metadata inventory. No local configuration is silently ignored:
+those require evaluation. The original153-file cohort has no local configs.
+Only a declared, limited Linux x86-64 language projection configuration is
+loaded; the complete upstream CMake-generated site configuration is unfinished.
+
+Positive syntax projections generate host and candidate relocatable objects;
+ELF headers/sections must be complete and target x86-64. FileCheck pipelines
+can yield an object obligation while retaining their original output oracle
+as unprojected coverage. Setup, other pipelines and runtime commands without a
+reviewed mapping remain blocked. Every receipt states full_upstream_pass=false.
+Negative diagnostic observations count as a required-language match/mismatch
+only after a source-pinned standards adjudication. Other negatives stay under
+review. A crash, timeout, internal failure or silent rejection never satisfies
+a required diagnostic. No compiler source is changed by this adapter commit.
+
+Evidence and selected-cohort results
+
+LLVM source:2078da43e25a4623cab2d0d60decddf709aaea28 (21.1.8).
+Native compiler: isolated Ubuntu21.1.8-6ubuntu1; packaging is disclosed.
+Candidate checkpoint:d1c5c14c9, SHA256:
+  fb3ba4ed31f33025d9f365f661d63c9749c5bac84aa2af36df1103f9c4b4bb66
+Evidence root:/mnt/vizier/cppgm-cxx11-upstream
+Native discovery/control evidence:clang-language-native-discovery-v1.
+Current campaign:clang-language-campaign-d1c5c14c9-v3.
+
+All674 original RUN/dialect records (337 RUNs,153 selected sources, ISO/GNU11)
+are terminal/accounted, including explicit outside-dialect/target and adapter
+limits. These are not674 executed language tests. The remaining20,338 inventory
+sources are individually recorded as unscheduled in this cohort.
+
+  Projected language/object matches                         4
+  Candidate differences needing root-cause/standards triage 116
+    host-positive object rejections                       108
+    missing reviewed mandatory diagnostics                   8
+  Other negative observations requiring adjudication        96
+  Native RUN/policy/interface projection limits             422
+  Exception/pragma configuration limits                      28
+  Preprocessed-token/context differences                      2
+  Candidate preprocessing reviews                             6
+  Total                                                     674
+
+The four matches are two positive translation units in both dialects:
+CXX/special/class.copy/p18-cxx11.cpp and
+SemaCXX/no-warn-user-defined-literals-in-system-headers.cpp.
+They do not establish unchecked IR/assembly, link or runtime requirements.
+The116 differences are not116 confirmed independent language bugs. This cohort
+was selected for earlier problems and cannot estimate a whole-corpus rate.
+
+Four required-diagnostic gaps have a direct original-N3485 basis; all are
+silently accepted in both dialects. Root owns main-ledger integration:
+  CXX11-031 CXX/dcl.dcl/dcl.attr/dcl.attr.grammar/p6.cpp:
+    7.6.1p6, consecutive [[ outside an attribute-specifier.
+  CXX11-032 CXX/dcl.dcl/dcl.enum/p1.cpp:
+    7.2p1 grammar, qualified opaque-enum declarations.
+  CXX11-033 CXX/dcl.decl/dcl.fct.def/dcl.fct.def.delete/p4.cpp:
+    8.4.3p4, deleted definition after an earlier declaration of the specialization.
+  CXX11-034 CXX/dcl.decl/dcl.meaning/dcl.fct.default/p3.cpp:
+    8.3.6p3, defaults in nested function-pointer parameter declarators.
+Exact source hashes, clauses and whole-TU rationale are in
+cxx11-clang-language-adjudications.json. Each fix still needs reduced owning-PA
+negatives, valid neighbors and the full normal correctness/performance cycle.
+
+Validation and retained experiments
+
+34 maintainer boundary controls cover argument/feature policy, shell pipelines,
+source snapshots, diagnostic presence, crashes, context changes, IFNDR and
+complete ELF structure. Native helper v6 passes20 controls plus one physical-
+pragma-origin fault control. Earlier build/control failures remain preserved.
+The initial campaign falsely blocked ordinary sources on Clang's two internal
+predefines pragmas; v2 records the corrected projection. V3 additionally freezes
+all adapter/native-parser/input code and validates ELF structure; its outcome
+counts match v2 exactly. Nothing in the earlier evidence was overwritten.
+
+The complete harness, formatting audit, fresh student export/reference bundle,
+and independent campaign-integrity/assessment verification are recorded in the
+clang-language-acceptance-v1.json artifact (37 harness suites,583 discovered
+tests;21 native controls;3 independent verifier fault controls). Maintainer adapter/report files do not ship in the export.
+The final full-corpus execution, native configuration/output/runtime coverage,
+remaining standards adjudications, compiler repairs, CI jobs and matched
+whole-suite timing are still required by cxx11-gap-plan.txt.
+
+Reproduce with a fresh output directory using
+scripts/run_upstream_clang_language.py --help and the retained configuration-v1,
+adjudications, isolated LLVM21 tools and helper build command. Then run
+scripts/verify_upstream_clang_language.py against that campaign; old campaign
+inputs and native parser sources are frozen in its inputs/adapter/native-lit
+directories, separately from the current working tree.
