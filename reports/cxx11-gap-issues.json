@@ -930,7 +930,8 @@
       "dev/src/sema/template_names.cpp"
     ],
     "expected": "N3485 14.5.3p5 requires rejection at template definition, even if never instantiated. Nested expansions, sizeof..., discarded dependent arguments and function parameter packs retain their original rules.",
-    "pending_checks": []
+    "pending_checks": [],
+    "native_diagnostic_followup": "CXX11-014; mandatory rejection remains repaired, full GCC diagnostic-pattern pass is not claimed."
   },
   {
     "id": "CXX11-006",
@@ -1750,7 +1751,7 @@
   {
     "id": "CXX11-013",
     "priority": "P1",
-    "status": "observed",
+    "status": "closed",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-010",
     "symptom": "Too many array initializers in a dependent functional cast within a trailing return type produce a hard diagnostic rather than substitution failure, rejecting an otherwise valid fallback-overload program.",
@@ -1758,26 +1759,318 @@
     "expected": "N3485 14.8.2p8: an invalid expression in the immediate context removes the candidate; the valid array-bound neighbor remains viable.",
     "owning_pa": 18,
     "handout": "pa18/README.md deduction/substitution, cluster 300",
-    "regressions": [],
-    "fix_revision": null,
+    "regressions": [
+      "pa18/tests/controls/300-excess-array-initializer-sfinae.t",
+      "pa18/tests/controls/300-excess-array-initializer-body-reject.t"
+    ],
+    "fix_revision": "d60af1c378153e44ce43b9cbeb7faa8d9ed663e9",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-013",
     "reproductions": [
       "excess-array-sfinae.cpp"
     ],
     "checks": {
-      "reduction": "results.json (both hosts accept and candidate rejects in both ISO/GNU11 modes)"
+      "baseline": "required-baseline.json: required positive fails by hard rejection, instantiated-body negative already rejects normally",
+      "focused": "focused-final-v2/results.json (96/96 current controls/reproducer across ISO/GNU11 O0-O3)",
+      "benchmark_oracles": "focused-final/oracles.json (12/12 host/parent/candidate O0 builds and runs)",
+      "affected": "affected.log: PA18 544/544, PA10 171/171",
+      "strict_report": "strict-report.log: 8067/8067",
+      "full_verification": "checks.json: build, debug info, self-host through PA5, inception, PA35 smoke, all architecture/format/file/placement audits and harness pass",
+      "export": "checks.json and export-bundle.log: fresh export, 42 reference wrappers and both packaged PA18 controls pass",
+      "final_fixture_refresh": "checks-fixture-v2.json (strengthened SFINAE signature/fallback body guard, strict 8067/8067, PA18 placement, fresh export, 42 wrappers, both packaged controls)"
     },
     "baseline": {
-      "revision": "894d34a2dbd351de1538b05c956b4951745fe317",
-      "binary": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007/cppgm-candidate",
-      "sha256": "3f57177814a93cef11afcedc48ece938ea6e9a629a8224cbee89030fafb534cd"
+      "revision": "b5ba258952fa8a8d08695592066f80218e96103f",
+      "binary_sha256": "3f57177814a93cef11afcedc48ece938ea6e9a629a8224cbee89030fafb534cd"
+    },
+    "performance": {
+      "status": "pass",
+      "protocol": "performance-protocol.json",
+      "assessment": "performance-counters/{aa,ab}-assessment.json",
+      "workloads": [
+        {
+          "name": "overload-o0",
+          "instructions": {
+            "ratios": [
+              0.9999999302131338,
+              1.0000000355137535,
+              0.9999999936416427,
+              1.0000000851399633,
+              1.000000003877048,
+              1.0000000279147496,
+              1.0000000173691772,
+              1.000000013181965,
+              1.0000000303960608,
+              1.0000000162836034
+            ],
+            "geometric_mean": 1.000000015353109,
+            "lower_95": 0.9999999876245951,
+            "upper_95": 1.0000000430816238,
+            "multiplicative_halfwidth": 2.7728514373492885e-08
+          },
+          "max_rss": {
+            "ratios": [
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.000084581696521,
+              1.0,
+              1.0,
+              1.0,
+              1.0000093980546028,
+              1.0
+            ],
+            "geometric_mean": 1.000009397657171,
+            "lower_95": 0.999990383231803,
+            "upper_95": 1.0000284124440908,
+            "multiplicative_halfwidth": 1.901460822706369e-05
+          }
+        },
+        {
+          "name": "overload-o2",
+          "instructions": {
+            "ratios": [
+              0.9999999991539369,
+              1.0000000109424152,
+              1.0000000583219437,
+              1.0000000464770606,
+              1.000000038129239,
+              1.0000000065992907,
+              0.9999999910317325,
+              0.999999904282085,
+              0.9999998722445035,
+              0.9999999967285578
+            ],
+            "geometric_mean": 0.9999999923910748,
+            "lower_95": 0.9999999496189761,
+            "upper_95": 1.0000000351631755,
+            "multiplicative_halfwidth": 4.277210097214379e-08
+          },
+          "max_rss": {
+            "ratios": [
+              1.0,
+              1.0,
+              1.0,
+              1.0000472156907183,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "geometric_mean": 1.0000047214687553,
+            "lower_95": 0.9999940407969844,
+            "upper_95": 1.0000154022546037,
+            "multiplicative_halfwidth": 1.0680735419654752e-05
+          }
+        },
+        {
+          "name": "self-calls-o0",
+          "instructions": {
+            "ratios": [
+              1.000000018636449,
+              1.000000048263631,
+              1.000000050652923,
+              1.0000000444407722,
+              1.0000000769350978,
+              1.0000000692893778,
+              0.9999996210589395,
+              1.0000000793243926,
+              0.9999999995221422,
+              1.0000000759793881
+            ],
+            "geometric_mean": 1.0000000084103027,
+            "lower_95": 0.9999999092611912,
+            "upper_95": 1.000000107559424,
+            "multiplicative_halfwidth": 9.91491204693773e-08
+          },
+          "max_rss": {
+            "ratios": [
+              0.9998485504110775,
+              0.9999134648667359,
+              0.9998485733445822,
+              1.0,
+              0.9999783643444397,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "geometric_mean": 0.9999588934501553,
+            "lower_95": 0.9999130708007972,
+            "upper_95": 1.0000047181994114,
+            "multiplicative_halfwidth": 4.582663303076551e-05
+          }
+        },
+        {
+          "name": "valid-array-query-128-o0",
+          "instructions": {
+            "ratios": [
+              1.0000100831169694,
+              1.000010073520384,
+              1.000010124704109,
+              1.000010089515209,
+              1.0000101119074336,
+              1.0000100319344047,
+              1.000010083117808,
+              1.0000100991124399,
+              1.0000100735201263,
+              1.0000100799182043
+            ],
+            "geometric_mean": 1.0000100850367086,
+            "lower_95": 1.0000100671410268,
+            "upper_95": 1.0000101029323907,
+            "multiplicative_halfwidth": 1.789550152508923e-08
+          },
+          "max_rss": {
+            "ratios": [
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "geometric_mean": 1.0,
+            "lower_95": 1.0,
+            "upper_95": 1.0,
+            "multiplicative_halfwidth": 0.0
+          }
+        },
+        {
+          "name": "valid-array-query-32-o0",
+          "instructions": {
+            "ratios": [
+              1.0000176249636241,
+              1.0000176472456963,
+              1.0000176472459912,
+              1.0000178032187284,
+              1.0000175915404188,
+              1.0000176750968597,
+              1.0000176082522174,
+              1.0000176249627406,
+              1.000017569258152,
+              1.0000176026820427
+            ],
+            "geometric_mean": 1.0000176394466451,
+            "lower_95": 1.000017592854031,
+            "upper_95": 1.0000176860392618,
+            "multiplicative_halfwidth": 4.6591794644612605e-08
+          },
+          "max_rss": {
+            "ratios": [
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "geometric_mean": 1.0,
+            "lower_95": 1.0,
+            "upper_95": 1.0,
+            "multiplicative_halfwidth": 0.0
+          }
+        },
+        {
+          "name": "valid-array-query-512-o0",
+          "instructions": {
+            "ratios": [
+              1.0000037469344225,
+              1.0000036937443881,
+              1.0000037008361806,
+              1.0000037008365306,
+              1.0000037658463945,
+              1.0000037280224463,
+              1.0000037611183081,
+              1.0000038308508188,
+              1.0000037481104223,
+              1.0000037150143137
+            ],
+            "geometric_mean": 1.0000037391314218,
+            "lower_95": 1.0000037094931167,
+            "upper_95": 1.0000037687697279,
+            "multiplicative_halfwidth": 2.963819523138511e-08
+          },
+          "max_rss": {
+            "ratios": [
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "geometric_mean": 1.0,
+            "lower_95": 1.0,
+            "upper_95": 1.0,
+            "multiplicative_halfwidth": 0.0
+          }
+        }
+      ],
+      "max_instruction_upper95_percent": 0.0017686039261777253,
+      "max_rss_upper95_percent": 0.002841244409079735,
+      "gates": {
+        "instructions_upper95_ratio": 1.01,
+        "rss_upper95_ratio": 1.03,
+        "aa_equivalence_halfband": 0.0001,
+        "counter_scheduling_min_percent": 99
+      },
+      "equality": "Every A/A and A/B object matches; all 3840 measured batched child objects checked and retained.",
+      "timing": "Descriptive under load; no macOS hardware gate pass or wall-time pass claimed.",
+      "comparison": "Immediate parent b5ba25895; original-baseline checkpoint evidence remains separately at 894d34a2d.",
+      "candidate_sha256": "b556c813467076303d89c3e0a5fe0d329f153cda17eb30f48f4ae9ea9bdff5e4"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "rationale": "N3485 14.8.2p8 and 8.5.1p6; invalid immediate-context expressions fail substitution."
+    },
+    "implementation": [
+      "dev/src/sema/analyzer_expressions.cpp"
+    ],
+    "regression_revision": "9a58a14cc0226d9293482e9c5f2c5db863f51a71",
+    "ownership_review": "PA18:300: the signature uses dependent decltype list-initialization with an overload fallback; the selected body must remain a hard-error context. PA18 explicitly owns this boundary. The placement audit only recognizes its broad PA14 function-template surface."
+  },
+  {
+    "id": "CXX11-014",
+    "priority": "P2",
+    "status": "observed",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-17.C"
+    ],
+    "discovered_neighbor_of": "CXX11-005",
+    "symptom": "Native GCC required-error regex and excess-error assertions fail despite a correct normal rejection at line 21.",
+    "root_cause": "The candidate message says an alias-declaration names a parameter pack it does not expand; the upstream regex requires parameter packs not expanded. Severity/location normalization alone preserves this mismatch.",
+    "expected": "Keep the mandatory diagnostic and accurately account for vendor diagnostic-pattern compatibility; do not call the native test a pass based only on nonzero exit.",
+    "owning_pa": null,
+    "ownership_note": "External diagnostic-oracle/driver compatibility; the course does not grade diagnostic prose. Determine the appropriate compatibility regression without imposing GCC-specific text on student language tests.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-experiment-3",
+    "checks": {
+      "native": "validated-manifest.json; host four PASS assertions, candidate two PASS/two FAIL assertions on two inputs",
+      "source": "candidate/calls/*.json preserves raw/normalized diagnostic and status 1"
     },
     "performance": {
       "status": "not-started"
     },
     "standards_basis": {
-      "category": "original-cxx11",
-      "rationale": "N3485 14.8.2p8 and 8.5.1p6; invalid immediate-context expressions fail substitution."
+      "category": "vendor-diagnostic-compatibility",
+      "rationale": "N3485 requires the diagnostic, which is present. GCC-specific message pattern is separate from original C++11 conformance and later CWG decisions."
     }
   }
 ]

@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "scope": "native DejaGnu bootstrap, two original GCC inputs; adapted diagnostic/object checks, not a complete execution adapter",
+  "target": "x86_64-pc-linux-gnu",
+  "dialect": "c++11",
+  "optimization": "driver default O0",
+  "cases": [
+    {
+      "repository": "gcc",
+      "revision": "5115c7e447fc07457443df874bf57840e8316d5f",
+      "path": "gcc/testsuite/g++.dg/cpp0x/sfinae57.C",
+      "sha256": "ca4d1081bf19f622e713087295ed1372fd280061d11c5011c41b3b873634e7ab",
+      "host_assertions": [
+        "PASS: g++.dg/cpp0x/sfinae57.C  -std=c++11  (test for bogus messages, line 5)",
+        "PASS: g++.dg/cpp0x/sfinae57.C  -std=c++11 (test for excess errors)"
+      ],
+      "candidate_assertions": [
+        "PASS: g++.dg/cpp0x/sfinae57.C  -std=c++11  (test for bogus messages, line 5)",
+        "PASS: g++.dg/cpp0x/sfinae57.C  -std=c++11 (test for excess errors)"
+      ]
+    },
+    {
+      "repository": "gcc",
+      "revision": "5115c7e447fc07457443df874bf57840e8316d5f",
+      "path": "gcc/testsuite/g++.dg/cpp0x/alias-decl-17.C",
+      "sha256": "8279054661cfd5c6fc8841a9bd11a8a0227620da408ba7d9963b72185fb5e798",
+      "host_assertions": [
+        "PASS: g++.dg/cpp0x/alias-decl-17.C  -std=c++11  (test for errors, line 21)",
+        "PASS: g++.dg/cpp0x/alias-decl-17.C  -std=c++11 (test for excess errors)"
+      ],
+      "candidate_assertions": [
+        "FAIL: g++.dg/cpp0x/alias-decl-17.C  -std=c++11  (test for errors, line 21)",
+        "FAIL: g++.dg/cpp0x/alias-decl-17.C  -std=c++11 (test for excess errors)"
+      ]
+    }
+  ],
+  "source_inventory": "inventory-3/inventory.jsonl",
+  "candidate": "b556c813467076303d89c3e0a5fe0d329f153cda17eb30f48f4ae9ea9bdff5e4",
+  "commands": [
+    {
+      "compiler": "host",
+      "command": [
+        "/mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/bin/runtest",
+        "--tool",
+        "g++",
+        "--srcdir",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite",
+        "--target",
+        "x86_64-pc-linux-gnu",
+        "dg.exp=cpp0x/sfinae57.C cpp0x/alias-decl-17.C"
+      ],
+      "status": 0
+    },
+    {
+      "compiler": "candidate",
+      "command": [
+        "/mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/bin/runtest",
+        "--tool",
+        "g++",
+        "--srcdir",
+        "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite",
+        "--target",
+        "x86_64-pc-linux-gnu",
+        "dg.exp=cpp0x/sfinae57.C cpp0x/alias-decl-17.C"
+      ],
+      "status": 1
+    }
+  ],
+  "driver_sha256": {
+    "/mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/bin/runtest": "c285da648b5514e9e06a506f6b6b229657a8001c8c8506d0e35a2bf0f754ab08",
+    "/mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/bin/expect": "f1ed432506c3da2c2d061f8ad86076a262a2cc6f071148c9ecee81eafe4b0d4a",
+    "/mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/share/dejagnu/dg.exp": "077ad124a343b7af6a406e44570539b267285007adfd665ce5acba064261f5e5",
+    "/mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/share/dejagnu/utils.exp": "c1bdc6bda71a46e74f48ce2b5bac989daa19086b87fe702bd9f8cce78b9aceed",
+    "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/lib/g++-dg.exp": "31f47f78eb951de7e0351e28525be2d35e8328a86dd95393b01a91ad43f063a5",
+    "/mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/lib/gcc-dg.exp": "628ec6a9c41e870f3c5a74d63b0c22fa7773a8e07be4d2314a33091f2e8232a7"
+  },
+  "adapter_sha256": {
+    "/mnt/vizier/cppgm-cxx11-upstream/native-dg-experiment-3/host/site.exp": "12171fa6219ce380028d16acace25e4b8038f4be7a2d87bff99fddc907217466",
+    "/mnt/vizier/cppgm-cxx11-upstream/native-dg-experiment-3/candidate/site.exp": "e3486144b855a654b1536d7e7d07ebd8fa52aafd012a38bc310a8de29c890469",
+    "/mnt/vizier/cppgm-cxx11-upstream/native-dg-experiment-3/candidate/compiler-proxy.py": "85896c4a174940e7eda82ffa50c4b13c60d3aaaf4b1f30e1ee87e049789b1c4c",
+    "/mnt/vizier/cppgm-cxx11-upstream/native-dg-experiment-3/candidate/config.json": "3e2626eb7865de03f513b31216e5f37813ee617f2c3d0dccf2decb70bbd9429f"
+  },
+  "adaptations": [
+    "Native compile-to-assembly action is compiled to an object; textual assembly checks are not supported.",
+    "Default pedantic flags are explicitly omitted in both host and candidate runs.",
+    "Two harness diagnostic-presentation flags are omitted; severity/location prefixes are normalized, original diagnostic message text is retained.",
+    "Unknown options are refused, not forwarded as supported; LTO/offload initialization probes are recorded as blockers."
+  ],
+  "limits": [
+    "Only two selected inputs; not full corpus or both dialect/optimization matrices.",
+    "No validated general target/capability/option policy or native result aggregator yet.",
+    "Compiler crash/internal/resource failures need a tested overriding disposition before corpus scoring.",
+    "Warning checks, multitranslation-unit/link/run and dg-final output checks remain unvalidated."
+  ],
+  "outcome": "Host 4 PASS assertions; candidate 2 PASS assertions for sfinae57 and 2 FAIL assertions for alias-decl-17 diagnostic pattern. No conformance percentage inferred.",
+  "candidate_fix_revision": "d60af1c378153e44ce43b9cbeb7faa8d9ed663e9"
+}

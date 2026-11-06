@@ -1,0 +1,34 @@
+Native GCC DejaGnu bootstrap (2026-11-06)
+
+The pinned GCC g++.dg driver now executes through native DejaGnu/Expect with
+the installed host GCC. The original sfinae57.C passes both native diagnostic
+assertions under its ordinary GCC defaults (native-dg-experiment-1).
+
+A separate paired experiment runs two original inputs with explicitly adapted
+flags/stages. Host GCC passes all four assertions. cppgm passes sfinae57.C
+(absence of the bogus diagnostic at line 5 and absence of excess errors).
+The alias-decl-17.C error is correctly emitted at line 21, but its text does not
+match GCC's required "parameter packs not expanded" expression. Both the
+required-error and excess-error assertions fail. This is one diagnostic-pattern
+compatibility gap, CXX11-014, not two semantic defects. CXX11-005's original
+missing-diagnostic repair remains valid.
+
+Native Tcl evaluates the directives and diagnostic oracles. The adapter turns
+assembly requests into object compilation, omits default pedantic and two
+harness presentation flags explicitly, and normalizes only severity/location
+prefixes. It preserves candidate diagnostic text, which is why the negative
+case remains a failure. LTO/offload initialization option blockers and every
+compiler invocation are retained in the candidate calls/ directory.
+
+This validates the native-harness route, not a complete execution adapter.
+A general capability/option policy, abnormal-status override, diagnostic/warning
+coverage, companion sources, linking/execution and unavailable output-check
+dispositions still need implementation and synthetic validation. Neither
+source-acceptance scores nor the native PASS assertion count establish full
+corpus coverage. The full campaign objective remains active.
+
+Commands, source/tool/adapter hashes and exact native assertion records:
+  reports/cxx11-native-dg-bootstrap.json
+  /mnt/vizier/cppgm-cxx11-upstream/native-dg-experiment-{1,2,3}/
+The third experiment retains host/candidate site.exp, compiler proxy, command
+JSON, g++.log, g++.sum, stdout/stderr and invocation/output records.

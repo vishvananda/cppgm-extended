@@ -1,0 +1,54 @@
+CXX11-013 repair evidence (2026-11-06)
+Fix: d60af1c378153e44ce43b9cbeb7faa8d9ed663e9
+Body-selection guard: 9a58a14cc0226d9293482e9c5f2c5db863f51a71
+Evidence root: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-013
+
+Excess array initializers in the immediate context of a dependent trailing
+return type must fail substitution (N3485 8.5.1p6, 14.8.2p8). The parent
+instead threw a hard diagnostic, preventing a valid fallback overload.
+Analyzer::braced_list now records the existing substitution failure and
+returns no expression facts. Ordinary code and instantiated function bodies
+retain their hard diagnostic. No parser replay or new hot-path state is added.
+
+The required PA18 positive fails on the immutable parent and passes with the
+candidate. Flat/nested arrays, exact/omitted bounds, scalar neighbors, reuse
+after failure and instantiated-body rejection are checked. The negative guard
+selects a viable dependent signature over a fallback, then fails in its body;
+the body cannot turn that failure into selection of the fallback. The original
+reproducer and ordinary PA10 excess-initializer error are included in the
+96-cell ISO/GNU11 O0-O3 GCC/Clang/candidate matrix. All cells pass.
+
+The strengthened control is in focused-final-v2/results.json and its final
+export/strict refresh is in checks-fixture-v2.json. Compiler source and measured
+binary hashes are unchanged by the control refinement.
+
+All required checks pass: strict report 8067/8067, affected PA18/PA10, debug
+info, self-host through PA5, inception, PA35 smoke, architecture/format/file/
+placement audits, harness, fresh export, 42 reference wrappers and both
+packaged PA18 controls. No tracked reference output changes.
+
+Counter/RSS comparison with the immediate parent:
+  overload-o0                  +0.000002%  upper95 +0.000004%
+  overload-o2                  -0.000001%  upper95 +0.000004%
+  self-calls-o0                +0.000001%  upper95 +0.000011%
+  valid-array-query-128-o0     +0.001009%  upper95 +0.001010%
+  valid-array-query-32-o0      +0.001764%  upper95 +0.001769%
+  valid-array-query-512-o0     +0.000374%  upper95 +0.000377%
+
+All six A/A equivalence and A/B gates pass at the predeclared +1% instruction
+and +3% RSS upper bounds, +/-0.01% A/A band and >=99% counter scheduling.
+The largest instruction upper bound is +0.001769%, and RSS +0.002842%.
+Every object agrees, including all 3840 measured batched child outputs.
+Sources/header closures and both binaries stay immutable. Timing is descriptive
+under load; counters are authoritative as requested. No macOS gate is claimed.
+
+The normal required-case baseline is not used as a speed comparison because
+it incorrectly rejects. The measured 32/128/512 array-query workloads are
+already correct with both binaries; twelve separate host/parent/candidate
+compile/link/run oracle cells pass. Original-baseline checkpoint results remain
+separately attached to 894d34a2d; these are immediate-parent measurements.
+
+The overall GCC/Clang campaign remains active. Native DG execution bootstrap
+is documented in reports/cxx11-native-dg-bootstrap.txt; CXX11-011/012 emission
+gaps, CXX11-002 adjudication, CXX11-014 vendor diagnostic compatibility,
+execution adapters and the untriaged corpus remain unfinished.

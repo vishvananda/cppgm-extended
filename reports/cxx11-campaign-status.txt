@@ -123,9 +123,40 @@ Sparse array checkpoint (2026-11-06):
   causes a hard error instead of substitution failure. Both hosts accept its
   fallback-overload control in ISO/GNU11. It remains open.
 
+CXX11-013 incremental repair (2026-11-06):
+- d60af1c37 uses the existing substitution-failure state for excess array
+  initializer clauses, returning no facts for the rejected expression.
+  Required PA18:300 controls cover flat/nested bounds, valid neighbors,
+  reuse after failure and the hard-error boundary in an instantiated body.
+  9a58a14cc strengthens the negative guard with a viable dependent signature
+  and an overload fallback; its refreshed matrix, strict report and fresh
+  packaged controls all pass. Compiler/performance binary hashes are unchanged.
+- PA18 544/544, PA10 171/171, strict 8067/8067, debug info, self-host through
+  PA5, inception, PA35 smoke, all architecture/format/file/placement audits,
+  harness, fresh student export, 42 wrappers and packaged controls pass.
+  All 96 host/candidate ISO/GNU11 O0-O3 cells and twelve benchmark runtime
+  oracle cells pass. No reference regeneration is needed for this fix.
+- All six calibrated parent counter/RSS pairs pass with identical objects.
+  The largest instruction upper bound is +0.001769%; largest RSS upper bound
+  +0.002842%. All 3840 measured batched children agree. Original-baseline
+  checkpoint evidence remains at 894d34a2d; this fix compares its immediate
+  parent b5ba25895. CXX11-013 is closed.
+- Native GCC DejaGnu/Expect execution now has a demonstrated baseline and
+  candidate route on original pinned sources. In a paired, explicitly adapted
+  experiment, the host passes all four assertions on two inputs; cppgm passes
+  both sfinae57.C assertions. alias-decl-17.C correctly rejects at line 21 but
+  fails GCC's diagnostic regex and excess-error checks. CXX11-014 records that
+  vendor diagnostic-pattern gap separately from CXX11-005's repaired semantic
+  failure. The ledger retains 527 observations.
+- reports/cxx11-native-dg-bootstrap.{txt,json} preserves the exact scope and
+  hashes. Assembly requests become object compilation; default pedantic flags
+  are explicitly omitted, and only severity/location presentation is normalized.
+  Unknown initialization options are logged as blockers. This is a native
+  harness bootstrap, not a complete execution adapter or corpus-pass claim.
+
 Next:
-- Add owning PA regressions and repair the confirmed CXX11-013 diagnostic and
-  CXX11-011/012 emission paths using the same correctness/performance process.
+- Add owning PA regressions and repair the confirmed CXX11-011/012 emission
+  paths using the same correctness/performance process.
   Adjudicate constant/static initialization before changing that behavior.
 - Continue execution adapters from the native metadata bridge, covering
   applicability, diagnostics, companion sources, target selection, failures
@@ -135,7 +166,8 @@ Next:
   compatibility, with its drafts and evidence retained.
 
 Evidence root: /mnt/vizier/cppgm-cxx11-upstream
-Current checkpoint: issues/CXX11-007/ (sparse arrays and empty-aggregate brace elision)
+Latest repair: issues/CXX11-013/ (excess-array initializer SFINAE)
+Last cumulative checkpoint: issues/CXX11-007/ (sparse arrays and empty-aggregate brace elision)
 Previous fix: issues/CXX11-006/ (abstract temporaries and direct list-reference binding)
 Return DR evidence: issues/CXX11-003/ (all original/version-2 results retained)
 Inventory: inventory-3/{manifest.json,inventory.jsonl}
