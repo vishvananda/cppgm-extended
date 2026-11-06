@@ -83,3 +83,30 @@ config_map/source-root redirections, suffix/exclusion changes, inherited
 feature/substitution changes and actual test ownership still require the
 validated configuration/execution adapter. In particular, a file-level RUN
 line alone cannot establish that a candidate is an executable C++11 test.
+
+Native file-owned substitution projection
+
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/clang-file-substitutions-v1
+
+The inventory contains 28 DEFINE and 51 REDEFINE directives in ten files.
+The new private prototype reparses those exact sources with the pinned native
+parser, compares the entire ordered directive sequence with the inventory,
+then uses native applySubstitutions with no invented global bindings and the
+default nonrecursive policy. All 223 RUN directives in those files are retained;
+201 change after expansion. All resulting shell projections parse. The other
+20,481 candidates have no file-owned bindings; that does not mean their global
+or local configuration requires no expansion.
+
+Six controls check ordered redefinition, a macro introducing a pipeline,
+escaped percent handling, nested definitions, missing redefinitions and
+duplicate definitions. Source and native helper hashes are rechecked before
+verification.json is written. inventory.json retains each original and expanded
+command, line ranges and full directive context, with explicit unresolved
+applicability and no execution claim.
+
+These projections deliberately leave configuration substitutions symbolic.
+Actual configuration ordering can introduce collisions or change recursion,
+features, tool flags and shell structure. The execution adapter must replay
+file bindings against the validated complete configuration, not execute these
+partial projections or treat their parse success as a test pass. The 22 native
+conditional RUN templates remain unresolved pending feature configuration.

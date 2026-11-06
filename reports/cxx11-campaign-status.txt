@@ -464,3 +464,15 @@ Per-fix performance acceptance for v12:
   explicit class-DAG/extent scaling, linked reducers and a fresh student
   export. The additional complex resource ladder is queued after that
   verified worker. CXX11-025/026 remain open pending all final gates.
+
+Cumulative counters and Clang file-binding progress:
+- The three cumulative instruction gates against the original compiler pass
+  after A/A calibration. Their upper95 ratios are 1.001015851852451,
+  1.00031563917901 and 1.0011131161277775; direct compiler RSS is still running.
+  Evidence: CXX11-026/cumulative-counters-v2/ab-assessment.json. Wall time under
+  current load remains inconclusive; no combined final acceptance is claimed.
+- Native file-owned substitution replay accounts for all 28 DEFINE and 51
+  REDEFINE directives in ten Clang files, retaining all 223 associated RUNs.
+  Expansion changes 201 command templates. Six native boundary controls pass.
+  Configuration stays symbolic and applicability/execution stay unresolved;
+  see cxx11-clang-command-shapes.txt and clang-file-substitutions-v1 evidence.
