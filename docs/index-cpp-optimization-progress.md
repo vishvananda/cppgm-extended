@@ -433,6 +433,56 @@ and unchanged instructions. Calibration drifts by up to 4%, so there is no
 resolved runtime regression. Receipts are `forward-calls-ported/public-full-v2*`,
 `public-full-comparison.json` and `tramp-parent-paired/` in that directory.
 
+## Narrow consumers: redundant extension cleanup
+
+The sixth optimizer/backend mechanism is committed as `3a87da68c`. The existing
+local MIR cleanup can omit an in-place 32-bit zero-extension when the next
+calculation reads only the low bits and itself clears the destination's upper
+half. Admission follows the actual emitted width. Memory operands, wider
+operations and conditional moves do not qualify; shifts and rotates require
+a nonzero constant effective count. A possible zero count can leave the
+destination unchanged. Flags and every other operand remain unchanged.
+
+This uses existing typed widths and the existing linear cleanup, with no new
+allocation or optimization wave. The C++11 driver covers signed byte/word
+inputs, arithmetic, shifts/rotates, wider live values and address consumers.
+An independent GCC-built caller checks GCC, Clang, the preceding compiler and
+the candidate at O0 through O3: all 16 combinations agree. The LowIR reducer
+also preserves zero/variable shifts and wider readers. Its aggregate arithmetic
+function permits 15 instructions: the candidate uses 12 and the older backend
+uses 16. The bound allows different instructions, registers and scheduling.
+
+Nine paired blocks on Base64 decoding give 1.03104x instruction speed, or
+3.01% fewer instructions, against the preceding compiler. Loop wall speed is
+1.0245x, within A/A variation of about 3.4%, so the instruction reduction is
+the firmer result. Stock-reference wall speeds are 0.612x GCC and 0.681x Clang;
+instruction speeds are 0.720x and 0.813x. A substantial gap remains.
+
+Index-cpp text size stays at 389,010 bytes. Only the two Base64 helpers and one
+regex helper change bytes or addresses among the executable's defined
+functions. The regex control gives 0.999x loop wall speed and unchanged
+instructions: no resolved regression. Huffman's decode function is byte- and
+address-identical; its repeat varies within calibration noise. All six public
+sentinels, FlatMap and Xpressive objects are byte-identical at both levels.
+
+Frozen compiler instructions are unchanged within 0.003% against the preceding
+compiler; cumulative O3 instruction cost remains about 0.31% above the campaign
+baseline. Frozen objects agree and peak RSS remains within 0.25%. A short
+compile-time estimate suggested a slowdown, but longer nine-block controls
+did not reproduce it. O0 task-clock speed is 1.045x with 14% A/A drift; O3 is
+1.009x with 13% drift. On the O0 control, the SMT sibling was busy 21–100% of
+the time and its activity correlates with cycles per instruction (0.89).
+These timings cannot resolve a small compiler throughput change.
+
+All 50 checksum workloads pass, and the direct/serialized index-cpp objects
+match. The 8,048-test strict report, debug-info checks, self-host through PA5,
+PA35 smoke/quick, optional modern-C++ checks, architecture/placement/format/file
+audits, harness checks and GCC/Clang `-Wall -Werror` checks pass. Receipts are
+`narrow-consumer-final/`, its frozen-guard sibling directories and its public
+and Boost object comparisons. The fresh student export verifies 22,547 portable
+reference outputs, installs all 42 wrappers and passes the new native fixture
+and all 12 driver paths through the exported tools.
+
 ## Refreshed investigation queue
 
 The completed five-fix reranking keeps Base64 decoding, Huffman decoding and
@@ -440,8 +490,22 @@ Calculator AST among the largest remaining gaps. Huffman's profile and typed
 LowIR show repeated bit-extraction work and branch/load diamonds; Clang selects
 the child address before loading. Select formation currently excludes loads
 from speculation, correctly: a possible improvement must move the one selected
-load, rather than speculating both reads. The independent Base64 narrow-extension
-prototype remains private pending its reducers and acceptance gates.
+load, rather than speculating both reads. The first narrow-extension improvement
+is now accepted; further Base64 work remains warranted by the stock comparisons.
+
+A private selected-address/load prototype passes all 50 checksums and preserves
+whole-index-cpp direct/replayed object identity. A three-block screen gives
+about 1.049x Huffman wall speed, but instruction speed is 0.881x: it executes
+13.5% more instructions. Branch count falls, while measured branch misses do
+not improve. Frozen compile instructions grow only 0.05% at O3, with unchanged
+objects. This is evidence for further work, not an accepted transformation.
+An initial hypothesis about lost compare/select fusion does not hold for this
+input: extending operand lifetimes across pure address setup emits an object
+and executable byte-identical to the first prototype. Different timing results
+for those identical programs underline the remaining measurement variation.
+Inspect the emitted address selection and reduce its extra work before
+acceptance; stronger correctness checks also remain outstanding. Receipts are
+`huffman-select-load-v{1,2}/` and `huffman-select-load-v1-frozen/`.
 
 Nbody's refreshed gap is smaller than the initial noisy estimate. Its movement
 helper is already inlined and its hot loop already uses packed SSE2 arithmetic.
@@ -489,20 +553,20 @@ The fresh student export verifies 22,541 portable reference outputs, installs
 all 42 reference wrappers and passes the new roundtrip fixture through the
 exported compiler. The fix is committed as `cc0e4f763`.
 
-For the next group, the existing narrow-consumer prototype now also passes an
-independent host-built arithmetic oracle across GCC, Clang, the preceding
-compiler and the prototype at O0 through O3 (16 combinations). It covers
-signed byte/word inputs, arithmetic/bit operations, zero and variable shifts,
-rotates, live wider uses and address consumers. This remains a private
-prototype, not an accepted optimization; receipts are `group2-next-u32-oracle/`.
+The earlier private narrow-consumer oracle is retained in
+`group2-next-u32-oracle/`; the accepted implementation and fresh controls are
+described above.
 
 ## Outstanding work
 
 Retain the completed public suite, 50-workload comparison, PA35 release and
-shared-entry replay/export receipts. Longer focused controls are checking
-the apparent slow cases in the full
-50-workload run, including cases with unchanged instruction counts and cases
-with calibration warnings; retain and investigate any repeatable slowdown.
+shared-entry replay/export receipts. Longer focused controls have checked 12
+apparent slow cases from the full 50-workload run, retaining calibration
+warnings and unchanged-instruction cases. The large slowdowns generally do
+not reproduce. Template parsing and JSON mapping still show smaller apparent
+losses within substantial calibration variation; keep them in the diagnosis
+queue rather than asserting that every individual runtime is unchanged.
+The complete controls are in `group1-final-remaining-controls/`.
 Profile Brainfuck's residual call
 chain and Calculator AST's remaining ownership/dispatch work on the new code.
 Investigate Base64 decoding, Huffman decoding and Nbody, then the named parser,
