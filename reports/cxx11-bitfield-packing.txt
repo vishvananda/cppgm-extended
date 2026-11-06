@@ -1,3 +1,14 @@
+Immediate-parent instruction and memory checkpoint (2026-11-06)
+
+Root independently verifies all13 A/A and13 A/B reports in each immediate-parent
+group. Instruction upper95 is at most1.000031272; target packed-bit-field work
+falls1.1498228%. All A/B actual compiler RSS ratios are1.0 (A/A max upper95
+1.002230160). Each group retains1040 measured observations and12800 batched
+children with exact objects. Evidence:per-fix-counter-acceptance-v1.json and
+per-fix-memory-acceptance-v1.json. Cumulative family/original comparisons and
+integration remain pending. Earlier live-process descriptions below are dated
+history; consult the latest measurement-group-hold/window records for activity.
+
 Packed constant bit-field performance followup (2026-11-06)
 
 CXX11-029 is an independent compiler-work performance repair. It is unrelated

@@ -1,3 +1,19 @@
+Functional and immediate-parent performance checkpoint (2026-11-06)
+
+CXX11-019 now has27 required controls in PA16/18. Parent/host evidence accounts
+for432 cells and16 negative acceptance witnesses; all112 candidate cells and28
+owning lanes pass. The added template controls distinguish SFINAE from a hard
+error in a selected body. Strict8178/8178, the required normal checks, fresh
+student export/all42 wrappers and28 packaged controls pass. Root independently
+verifies sources, native receipts, emitted artifacts and export. Integration,
+parent reconciliation and all performance gates remain pending.
+
+CXX11-029 immediate-parent retired instructions and actual compiler RSS each
+pass13 A/A and13 A/B comparisons. The packed-bit-field workload uses1.1498228%
+fewer instructions; maximum instruction upper95 is1.000031272 and actual-RSS
+upper95 is1.0. Family/original cumulative groups remain required. Main compiler
+remains d1c5c14c9; these candidate fixes are not yet accepted.
+
 Clang language adapter integrated and mutable repair implemented (2026-11-06)
 
 Clang adapter8d01f5b98 is integrated as7c69efdb2. Source/test/export hashes match

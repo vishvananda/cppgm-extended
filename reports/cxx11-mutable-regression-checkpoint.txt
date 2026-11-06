@@ -1,3 +1,24 @@
+Mutable constant-evaluation functional checkpoint (2026-11-06)
+
+Fixture revision dd227f8fc adds two PA18:300 controls: an invalid mutable read
+in a default template argument removes a candidate, while a selected function
+body's same invalid read is a hard error. The frozen parent rejects the valid
+substitution neighbor and accepts the invalid selected-body neighbor. GCC15,
+Clang21/22 and the repaired compiler agree on both outcomes in ISO/GNU11 O0/O2.
+
+required-controls-v4 has27 controls; parent-v4 accounts for432 cells/27 lanes
+and16 negative witnesses. Candidate-v3 passes112 cells/28 lanes including the
+shared union-copy negative. All13 original normal stages pass; PA18,strict8178,
+placement and harness rerun after the fixture additions and pass. Fresh export,
+all42 reference wrappers,28 packaged controls and exact compiler restoration
+pass32 export stages. Root's functional-acceptance-v1 independently verifies
+478 source files,9 symlinks,all544 native receipts and their object/executable
+artifacts,fixture bytes,exported references and raw normal/export logs.
+
+The implementation and fixtures remain isolated. Parent reconciliation and all
+performance acceptance are still required. Earlier preparation-only entries
+below describe prior states, not the current implementation status.
+
 Mutable constant-evaluation regression preparation (2026-11-06)
 
 Repair worktree:/mnt/vizier/cppgm-cxx11-constexpr-mutable

@@ -2627,7 +2627,9 @@
       "pa16/tests/controls/300-constexpr-mutable-unevaluated.t",
       "pa16/tests/controls/300-constexpr-mutable-temporary-member-read-reject.t",
       "pa16/tests/controls/300-constexpr-mutable-constructor-member-read-reject.t",
-      "pa16/tests/controls/300-constexpr-mutable-constructor-skipped-read.t"
+      "pa16/tests/controls/300-constexpr-mutable-constructor-skipped-read.t",
+      "pa18/tests/controls/300-constexpr-mutable-default-substitution.t",
+      "pa18/tests/controls/300-constexpr-mutable-selected-body-reject.t"
     ],
     "fix_revision": null,
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019",
@@ -2635,11 +2637,13 @@
       "controls": "controls.json: 30 exact-source/nonmutable-neighbor host/candidate ISO/GNU11 cells match the declared modern-host versus snapshot outcomes",
       "native": "native-dg-campaign-v1/summary-adapted-final and summary-host-native-final",
       "standards": "standards-sources.json; cwg-1405.html; doc/n3485.txt 5.19p2",
-      "required_parent": "required-parent-v3/assessment.json:400 cells/25 lanes;352 unchanged cells reused,48 fresh;15 required negative witnesses reproduced. Baseline source revalidated from immutable44ed7f4ee Git archive after implementation edits.",
-      "defaulted_union_copy": "Independent CWG2004 gap now tracked as CXX11-030; defaulted union copying is not an ordinary scalar lvalue conversion.",
-      "candidate": "candidate-v2/assessment.json:104 native cells/26 owning lanes pass, including the shared CXX11-030 reproducer and corrected runtime-initialization behavior.",
-      "normal": "checks-v1.json:13 required normal stages pass; strict8176/8176, affected11/12/16/18, debug, self-hostPA5,inception,PA35smoke,nine audits,file audit,placement,harness.",
-      "language_versions": "version-neighbors-v3/assessment.json:64 positive mode/parent/candidate/host cells verified,40 link/runs reused and24 missing link/runs completed. Version-neighbor-adjudication-v2.json retains a separate unresolved external-union C++17 question."
+      "required_parent": "required-parent-v4/assessment.json:432 parent/host cells in27 lanes;400 reused,32 fresh. All16 negative parent acceptance witnesses plus8 positive disagreements retained.",
+      "defaulted_union_copy": "CXX11-030 shares read validation; its specific external-copy C++11 negative passes. Blanket constructor-eligibility-ban hypothesis withdrawn after full resolution-history and mode probes.",
+      "candidate": "candidate-v3/assessment.json:112 native cells/28 required lanes pass, including shared CXX11-030 and PA18 substitution/body-context neighbors.",
+      "normal": "checks-v1.json:13 required stages pass; checks-v2.json:PA18,strict8178/8178,placement,harness rerun after adding the two fixtures, all pass.",
+      "language_versions": "version-neighbors-v3/assessment.json:64 positive mode/parent/candidate/host cells verified,40 link/runs reused and24 missing link/runs completed. Version-neighbor-adjudication-v2.json retains a separate unresolved external-union C++17 question.",
+      "export": "checks-export-v1.json:32 stages pass, including fresh student export,42 reference wrappers,28 packaged controls and exact frozen-v2 development compiler restoration.",
+      "independent_verification": "functional-acceptance-v1.json:root independently rehashes478 source files,9 symlinks,all544 native receipts,objects/executables,required fixtures and export artifacts. No performance acceptance."
     },
     "performance": {
       "status": "not-started-candidate-under-validation"
@@ -2654,12 +2658,12 @@
     "exclusion_note": "constexpr-mutable3.C involves a by-value parameter and is not grouped here without separate analysis.",
     "regression_preparation": {
       "worktree": "/mnt/vizier/cppgm-cxx11-constexpr-mutable",
-      "controls": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-controls-v3.json",
-      "assessment": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-parent-v3/assessment.json",
+      "controls": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-controls-v4.json",
+      "assessment": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-parent-v4/assessment.json",
       "correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/fixture-oracle-correction-v2.json",
-      "status": "25 required controls committed;400 parent/host cells account for15 negative witnesses. Candidate104 native cells/26 lanes and all13 normal gates pass. Further SFINAE/body-context neighbors are prepared externally for the next compiler window; export and performance acceptance remain pending."
+      "status": "27 committed controls,432 parent/host cells,16 negative witnesses;112 candidate cells/28 lanes,normal checks and fresh export pass. Parent reconciliation and all performance acceptance remain pending."
     },
-    "regression_revision": "6f8159fa4",
+    "regression_revision": "dd227f8fc",
     "implementation_revision": "b1c340fb5",
     "implementation": [
       "dev/src/sema/entity_records.h",
@@ -3334,10 +3338,11 @@
       "parent": "parent-v2/assessment.json:32 native cells; focused-v1/assessment.json:22 cells and9 exact A/B family objects",
       "normal": "checks-v2.json:affectedPA16/25, strict8130/8130, placement and harness pass; fixture-placement-correction-v2.json revalidates six unchanged-binary normal gates from checks-v1.json",
       "source": "candidate-source-verification-v1.json:484 regular tracked source/fixture/reference blobs match c4192b194; exactly one dev module changed",
-      "export": "final-stages-v2.json:fresh-export,bundle42wrappers,restore-development pass; exact candidate restored"
+      "export": "final-stages-v2.json:fresh-export,bundle42wrappers,restore-development pass; exact candidate restored",
+      "immediate_parent_performance": "per-fix-counter-acceptance-v1.json and per-fix-memory-acceptance-v1.json:13 AA+13 AB comparisons independently pass both unchanged gates. Each verifies1040 observations/12800 batched children. Target instructions -1.1498228%; max instruction upper95 1.000031272; AB actual compiler RSS upper95 1.0."
     },
     "performance": {
-      "status": "serial-per-fix-family-original-counter-and-direct-RSS-worker-running",
+      "status": "immediate-parent-counter-and-actual-RSS-pass-cumulative-family-original-pending",
       "instruction_upper95_gate": 1.01,
       "actual_compiler_rss_upper95_gate": 1.03,
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029/final-protocol-v2.json"
