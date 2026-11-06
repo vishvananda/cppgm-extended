@@ -2900,8 +2900,8 @@
   {
     "id": "CXX11-027",
     "priority": "P1",
-    "status": "triaged",
-    "introduced_by": "Present in frozen 269db parent and025/026 v9; earliest revision not yet established",
+    "status": "regression-fails",
+    "introduced_by": "Pre-existing in269db,025/026 v9 and accepted5acff6dfc; earliest revision not yet established",
     "discovered_neighbor_of": "CXX11-026",
     "upstream": [],
     "symptom": "A one-MiB zero aggregate declared as a whole constexpr class object, or passed by value to a constexpr function, exhausts48MiB despite a compact shared class-type graph. GCC and Clang accept both exact sources.",
@@ -2909,7 +2909,10 @@
     "expected": "Use bounded typed storage for whole zero class objects and by-value parameters as well as class prefixes, while retaining object identity, writes, caller lifetime, publication and ABI data.",
     "owning_pa": 16,
     "ownership_note": "PA16:300 owns whole object-valued constant evaluation, constexpr variables and by-value constexpr parameters. All source types are original C++11 literal aggregates.",
-    "regressions": [],
+    "regressions": [
+      "pa16/tests/controls/300-constexpr-whole-class-zero-storage.t",
+      "pa16/tests/controls/300-constexpr-by-value-class-zero-storage.t"
+    ],
     "fix_revision": null,
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027",
     "reproductions": [
@@ -2918,8 +2921,12 @@
     ],
     "checks": {
       "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/whole-class-neighbors-v1/results.json (eight cells: GCC/Clang accept both,269db and v9 each bad_alloc under 48 MiB)",
-      "baseline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/baseline.json",
-      "storage_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/storage-review-v1.txt"
+      "baseline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/baseline-v2.json",
+      "storage_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/storage-review-v1.txt",
+      "baseline_v9": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/baseline.json",
+      "required_parent": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/required-parent-v3/assessment.json",
+      "required_fixture_hashes": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/required-controls-v1.json",
+      "adapter_failure_retained": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/required-parent-v2/results.json (incorrect -std option in LowIR emit mode; retained, corrected in v3 without relabeling the course-default LowIR cell as GNU/ISO)"
     },
     "performance": {
       "status": "not-started"
@@ -2932,6 +2939,6 @@
         "spec.md bounded typed work/allocation requirements"
       ]
     },
-    "next_action": "Capture the accepted5acff6dfc parent without overwriting the retained v9 evidence, install and prove bounded PA16:300 whole-class/by-value regressions, extend typed compact storage through ordinary object paths, then complete correctness/performance/scaling/export validation."
+    "next_action": "Implement compact typed storage for ordinary class variables and by-value parameter objects from frozen accepted5acff6dfc baseline. Both required PA16 controls fail under48MiB in the actual owning lane; all16 GCC/Clang native cells pass. Complete boundary controls, full normal correctness/audits/self-host/lowering/export and calibrated per-fix/cumulative performance/scaling gates before closure."
   }
 ]

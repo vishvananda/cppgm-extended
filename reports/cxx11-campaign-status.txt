@@ -492,3 +492,14 @@ Accepted class-prefix repair checkpoint:
   claimed. All474 committed source files match the measured source manifest.
 - CXX11-027 and the combined reference-family validation remain open, as do
   the remaining corpus/adapter/CWG, historical-memory and final CI/timing work.
+
+Whole-class repair has required failing regressions:
+- The accepted5acff6dfc compiler and source are frozen as CXX11-027 baseline-v2;
+  older v9 evidence is preserved. Two PA16:300 controls are installed with48MiB
+  limits and fail in the actual owning lane, both reporting bad_alloc.
+- Sixteen GCC/Clang native cells pass across ISO/GNU11 and O0/O2. Ten bounded
+  parent syntax/object/course-LowIR cells reproduce the allocation failure.
+  Required-parent-v3 accounts for60 observations and reverified hashes. The
+  first emit-option adapter error is retained separately and is not a compiler
+  failure claim. See cxx11-whole-class-storage.txt.
+- CXX11-027 is regression-fails; implementation and all repair gates remain.

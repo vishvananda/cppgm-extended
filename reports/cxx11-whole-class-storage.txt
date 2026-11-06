@@ -1,0 +1,42 @@
+CXX11-027 whole-class storage regression checkpoint (2026-11-06)
+
+Status: regression-fails; no compiler repair or performance pass yet.
+Evidence root: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027
+
+The accepted immediate parent is compiler5acff6dfc, frozen as
+cppgm-baseline-v2 with baseline-v2.json and source-v2-manifest.json. Its binary
+SHA256 is41accc30b0ea60827ac7adbd99ddbef5e97692ebcb9094fa6d2cb6606438c6e4.
+The earlier v9 baseline and initial observations remain separately retained.
+
+Required PA16:300 controls now exist in the actual controls lane:
+- 300-constexpr-whole-class-zero-storage.t checks a one-MiB constexpr aggregate,
+  both extreme zero leaves, distinct subobject addresses and native loads.
+- 300-constexpr-by-value-class-zero-storage.t checks both extreme leaves and
+  distinct places in a by-value constexpr parameter.
+Each has a48MiB address-space,5 CPU-second,4MiB-output sidecar. The witnesses
+use original C++11 aggregate/constexpr rules; no later CWG decision is needed.
+
+required-parent-v3/assessment.json accounts for60 observations: sixteen native
+GCC/Clang cells across ISO/GNU11 and O0/O2, each compiling/linking/running with
+exit0 (48 observations), ten bounded parent phase failures reporting bad_alloc,
+and two actual make-Cpa16 check failures with the same allocation failure.
+Syntax/object phase cells preserve both dialects. Course LowIR emit mode does
+not accept -std, so its two cells are explicitly course-default, not labelled
+as separate ISO/GNU variants. The earlier incorrect emit-option attempt is
+retained in required-parent-v2 and supplies no compiler-allocation evidence.
+All fixture, baseline and host object hashes were reverified.
+
+storage-review-v1.txt identifies the implementation paths: initialize and
+new_object still preflight and allocate dense ordinary class trees. The leaves
+preflight also walks repeated subgraphs; retaining that walk after compacting
+allocation would leave logical-size work and unnecessary rejection thresholds.
+Reuse the accepted typed shared templates and lifetime-owned write paths,
+preserving identities, values, union activity, publication and flat-class costs.
+Do not remove dense-array representation/expansion bounds.
+
+Next: implement the repair, add semantic/lifetime/ABI neighbors in their proper
+PAs, and run all required correctness/audit/self-host/lowering/export and
+calibrated counter/direct-memory/scaling gates. The existing21 workloads remain
+required; add common-correct whole-class and parameter workloads before A/B
+inspection. Large broken parent inputs supply absolute/scaling evidence, not
+comparable speed ratios. The reference family and full campaign remain open.
