@@ -633,7 +633,7 @@ The public benchmark page links to the new detail table.
 Local validation exercised a real pinned network fetch, repeated builds,
 all three checksum runs, both full-input A/A and ABBA comparisons, report
 generation, failure retention and publication persistence/rejection tests.
-Eight new CI tests and four measurement-runner tests pass, as does actionlint.
+Nine new CI tests and four measurement-runner tests pass, as does actionlint.
 The full harness and existing public reporting tests also pass. The first real
 trial exposed loss of Clang's C++ driver configuration when resolving its
 symlink; compiler invocation now preserves that name and directory while
@@ -645,7 +645,16 @@ Its modified checkout is explicitly marked. Timings warn on 31 GCC and 44 Clang
 workloads, so this validates the pipeline rather than replacing the calibrated
 optimization scoreboard. Receipts are `index-cpp-ci-local-validation-v2/`,
 `index-cpp-ci-fetch-validation.json` and `index-cpp-ci-harness.log`.
-GitHub execution remains to be checked after pushing this workflow.
+The [GitHub run of `2b7b4840a`](https://github.com/vishvananda/cppgm-extended/actions/runs/42194810727)
+also passes: all 50 workloads validate on an AMD EPYC 9V45. The generated-code
+speed aggregates are 0.990× GCC and 0.992× Clang. Hardware counters are explicitly
+unavailable on that runner. The retained artifact also passes the publisher's
+revision/host/completeness checks and writes both the latest table and per-commit
+history in a local publication test; publication to the benchmark branch runs
+when this workflow reaches main. Receipts are `index-cpp-ci-github-2b7b/`.
+The first GitHub attempt exposed Git's mounted-checkout ownership check;
+the workflow now trusts its exact workspace, with a regression test verifying
+that a sibling checkout remains untrusted.
 
 A further private logical-shift selection experiment passes all checks but
 leaves Base64 and SHA256 runtime instruction counts unchanged. Admitting a
@@ -673,5 +682,5 @@ chain and Calculator AST's remaining ownership/dispatch work on the new code.
 Investigate Base64 decoding, Huffman decoding and Nbody, then the named parser,
 interpreter, SHA256, maze and container workloads using that refreshed evidence.
 Retain existing workload wins and every repeatable individual regression.
-The automatic index-cpp CI implementation is locally validated; check its
-first GitHub run and publication path before closing that final plan step.
+The automatic index-cpp CI job is validated locally and on GitHub. Its first
+main-branch execution will publish the retained results beside the public suite.
