@@ -564,3 +564,24 @@ Historical compiler-RSS replay preflight:
 - The three027/028 cumulative instruction gates pass against the original
   compiler, maximum upper95 ratio1.0011203074187318. Their direct RSS and the
   remaining absolute/linked/export checks are still running or queued.
+
+Accepted whole-class and omitted-default repairs:
+- Compiler commit d1c5c14c9 closes CXX11-027/028. final-acceptance-v2.json proves
+  all14 fresh normal checks, strict8128/8128,672 focused cells,1,936 scaling
+  observations,264 linked cells,18 prefix native oracles and47 fresh export
+  checks. All474 committed sources and58 fixtures/references match the measured
+  manifests; the restored live binary matches the frozen candidate.
+- All24 per-fix instruction/direct compiler RSS comparisons and3 cumulative
+  original-baseline comparisons pass. Cumulative maximum upper95 ratios are
+  1.0011203074187318 instructions and1.0007360581918947 actual compiler RSS.
+  No shared-host wall-time pass or larger readonly-native coverage is claimed.
+- The scaling collector's invalid blob-marker assumption was corrected to
+  validate full typed initializer spans/values. All289 earlier successful
+  observations remain and were verified before resuming543 new ones. No
+  compiler change, observation deletion or threshold relaxation occurred.
+- The60 audited historical actual-RSS workload replays have started serially
+  after verified final027/028 acceptance. Eleven groups remain pending until
+  measurements and independent aggregate output verification pass. Existing
+  instruction evidence and completed001 measurements are retained unchanged.
+- The combined reference family, broader corpus/adapters, remaining compiler
+  and later-CWG issues, final release and two CI/timing jobs remain open.
