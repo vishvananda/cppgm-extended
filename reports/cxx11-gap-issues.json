@@ -2614,7 +2614,13 @@
       "source": "https://cplusplus.github.io/CWG/issues/1405.html",
       "rationale": "The issue was proposed in February 2012 but moved to DR at the April 2013 meeting. N3485 still allows a sub-object of a constexpr object without the added non-mutable qualification. Modern rejection here is later-DR compatibility, not a failure of the original N3485 rule."
     },
-    "exclusion_note": "constexpr-mutable3.C involves a by-value parameter and is not grouped here without separate analysis."
+    "exclusion_note": "constexpr-mutable3.C involves a by-value parameter and is not grouped here without separate analysis.",
+    "regression_preparation": {
+      "worktree": "/mnt/vizier/cppgm-cxx11-constexpr-mutable",
+      "controls": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-controls-v1.json",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/required-parent-protocol-v1.json",
+      "status": "22 controls prepared; baseline/native probes queued after exact serial measurement worker. No new compiler run, implementation edit or closure."
+    }
   },
   {
     "id": "CXX11-020",
@@ -2691,7 +2697,7 @@
   {
     "id": "CXX11-021",
     "priority": "P2",
-    "status": "triaged",
+    "status": "repair-in-validation",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-011",
     "symptom": "A padded const character-array reference list-initialized from one string literal is rejected: const char (&text)[5] = {\"abc\"}; Clang accepts while GCC and cppgm reject.",
@@ -2699,26 +2705,47 @@
     "expected": "Create the differently bounded character-array temporary from the typed string literal, pad its omitted code units, and bind/extend the reference. Keep exact-bound literal identity, kind/length checking and invalid reference qualifiers.",
     "owning_pa": 11,
     "ownership_note": "PA11:100 owns character-array object initialization from string literals; PA10 explicitly excludes it. Class/member and rvalue-reference neighbors have their own later feature clusters.",
-    "regressions": [],
+    "regressions": [
+      "pa11/tests/controls/100-string-array-reference-bound-ambiguity-reject.t",
+      "pa11/tests/controls/100-string-array-reference-extra-clause-reject.t",
+      "pa11/tests/controls/100-string-array-reference-kind-reject.t",
+      "pa11/tests/controls/100-string-array-reference-kinds.t",
+      "pa11/tests/controls/100-string-array-reference-mutable-lvalue-reject.t",
+      "pa11/tests/controls/100-string-array-reference-nested-clause-reject.t",
+      "pa11/tests/controls/100-string-array-reference-nonliteral-reject.t",
+      "pa11/tests/controls/100-string-array-reference-overloads.t",
+      "pa11/tests/controls/100-string-array-reference-parameters.t",
+      "pa11/tests/controls/100-string-array-reference-parenthesized.t",
+      "pa11/tests/controls/100-string-array-reference-rows.t",
+      "pa11/tests/controls/100-string-array-reference-too-short-reject.t",
+      "pa11/tests/controls/100-string-array-reference-values.t",
+      "pa11/tests/controls/100-string-array-reference-volatile-reject.t",
+      "pa11/tests/controls/200-static-string-array-reference-initialization.t",
+      "pa11/tests/controls/200-string-array-reference-member.t",
+      "pa12/tests/controls/100-string-array-rvalue-exact-bound-reject.t",
+      "pa12/tests/controls/100-string-array-rvalue-exact-mutable-reject.t",
+      "pa12/tests/controls/100-string-array-rvalue-reference-overloads.t",
+      "pa12/tests/controls/100-string-array-rvalue-reference-values.t",
+      "pa16/tests/controls/300-constexpr-string-array-reference-values.t",
+      "pa18/tests/controls/300-string-array-reference-sfinae.t"
+    ],
     "fix_revision": null,
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021",
     "reproductions": [
       "padded-string-array-reference.cpp"
     ],
     "checks": {
-      "initial": "initial-evidence.json points to preserved CXX11-011 host/candidate diagnostics; final-v4 replay is pending until the live CXX11-015 performance experiment ends",
-      "source_review": "dev/src/sema/analyzer_initialization.cpp list_sequence array branch and list_argument array branch bypass the existing string-array list_initialize path",
-      "standards_ranking_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/standards-ranking-audit-v1/assessment.json",
-      "pinned_upstream_neighbor": "LLVM21.1.8 clang/test/CXX/drs/cwg14xx.cpp cwg1467::StringLiterals; reduced replay and full native verification pending",
-      "standards_qualification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/standards-ranking-audit-v1/qualification-v2.json",
-      "duplicate_observations": [
-        "OBS-0530",
-        "OBS-0550"
-      ],
-      "declaration_standards_adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/standards-adjudication-v3/assessment.json"
+      "required_parent": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/parent-v3/assessment.json",
+      "focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/candidate-focused-v2/assessment.json",
+      "normal_export_source": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/normal-export-source-verification-v1.json",
+      "common_correct_native_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/performance-oracles-v1/assessment.json",
+      "scaling_host_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/scaling-host-oracles-v1/assessment.json"
     },
     "performance": {
-      "status": "not-started-no-compiler-change"
+      "status": "serial-measurements-running",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/final-stages-protocol-v1.json",
+      "progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/final-stages-v1.json",
+      "scope": "Combined12-workload family,16 per-fix and3 cumulative comparisons plus absolute scaling. No final performance pass or issue closure yet."
     },
     "standards_basis": {
       "category": "later-defect-resolution",
@@ -2756,7 +2783,13 @@
         }
       ]
     },
-    "next_action": "Repair the later-DR initialization and ranking behavior using CWG1490/1467, after the active serial checkpoint work. Replay exact declaration/parameter/bound/kind/cv/identity and SFINAE neighbors, add owning PA regressions, share typed string-array facts and complete the normal correctness/performance/export workflow. The original-only defect claim is withdrawn; this issue remains in the explicitly authorized later-CWG scope."
+    "next_action": "Finish unchanged calibrated measurements and independent output/statistics verification before accepting the repair. The main accepted compiler is unchanged.",
+    "implementation_revision": "256c2cc36c8898532dd6fae894d6e113c6714740",
+    "repair_worktree": "/mnt/vizier/cppgm-cxx11-string-reference",
+    "implementation": [
+      "dev/src/sema/analyzer_initialization.cpp",
+      "dev/src/lower/global_lowering.cpp"
+    ]
   },
   {
     "id": "CXX11-022",

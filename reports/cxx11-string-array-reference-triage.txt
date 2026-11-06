@@ -1,12 +1,14 @@
 CXX11-021 character-array reference standards checkpoint (2026-11-06)
 
-Status: triaged later-DR compatibility; no implementation or new compiler run.
+Status: later-DR repair in validation; normal/export/source checks pass.
+Current implementation on repair/cxx11-string-array-references:256c2cc36.
+Main accepted compiler remains d1c5c14c9 until performance acceptance.
 Current evidence: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/
 standards-adjudication-v3/assessment.json
 
 The preserved declaration is const char (&text)[5] = {"abc"};
 Existing evidence has Clang acceptance and GCC/cppgm rejection. Reproduction
-with the accepted d1c5c14c9 compiler remains required. Duplicate observations
+with the accepted d1c5c14c9 compiler is now preserved in parent-v3/assessment.json. Duplicate observations
 OBS-0530 and OBS-0550 retain both identities and link to this one issue.
 
 CWG1490 directly identifies the missing string-literal array case in list
@@ -51,3 +53,36 @@ remain frozen while serial memory measurements and the combined family
 checkpoint are pending. After replay and required failing regressions, use
 the normal implementation/correctness/audit/performance/export process. No
 new issue is closed by this standards and source audit.
+
+Repair checkpoint (2026-11-06):
+The unchanged parent proof has352 cells,22 owning lanes and11 required
+rejection witnesses. Corrected native Clang21/22 oracles pass all expectations;
+48 GCC cells disagree. The initial invalid Clang22 path and mistaken
+bound-filtering control remain in parent-v1; the corrected run preserves and
+rehashes240 unchanged observations, then runs112 missing/changed cells. The
+strengthened aggregate identity case adds16 fresh cells while retaining336.
+
+The implemented rule shares literal syntax selection and already typed facts.
+Actual reference-array initialization uses existing string kind/length checks;
+length/kind failures become substitution failures in immediate contexts.
+Conversion ranking uses identity for an appropriately typed literal, without
+filtering a short bound: the two differently bounded overloads can remain
+ambiguous. Static aggregate reference members use typed constant evaluation to
+retain distinct correctly sized temporary backing objects. The old generic
+list unwrapping incorrectly pointed at the shorter literal instead.
+
+All14 fresh normal checks pass, including strict8150/8150, debug info, PA34
+throughPA5, inception, PA35 smoke and all architecture/placement/harness checks.
+The focused candidate has88 cells and22 owning lanes; all48 positive native
+executions pass. A fresh export passes26 checks, all22 packaged controls and
+all42 reference wrappers, and restores the exact frozen compiler. Independent
+verification proves478 regular committed dev blobs plus9 live binary aliases
+and22 packaged fixtures. Evidence: normal-export-source-verification-v1.json.
+
+All13 targeted common-correct sources pass52 A/B/GCC/Clang native oracles and
+have exact A/B objects. Clang21 additionally passes132 scaling-host cells,
+including80 native executions in ISO/GNU11 atO0/O2. The serial pipeline now
+measures the original12-workload family,16 per-fix workloads,3 original-
+baseline workloads and absolute extent/literal-size scaling. No new compiler
+performance pass or repair closure is claimed until its independent final
+verification. Larger native physical outputs remain explicitly unmeasured.
