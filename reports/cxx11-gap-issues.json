@@ -2900,7 +2900,7 @@
   {
     "id": "CXX11-027",
     "priority": "P1",
-    "status": "regression-fails",
+    "status": "fix-in-validation",
     "introduced_by": "Pre-existing in269db,025/026 v9 and accepted5acff6dfc; earliest revision not yet established",
     "discovered_neighbor_of": "CXX11-026",
     "upstream": [],
@@ -2911,7 +2911,12 @@
     "ownership_note": "PA16:300 owns whole object-valued constant evaluation, constexpr variables and by-value constexpr parameters. All source types are original C++11 literal aggregates.",
     "regressions": [
       "pa16/tests/controls/300-constexpr-whole-class-zero-storage.t",
-      "pa16/tests/controls/300-constexpr-by-value-class-zero-storage.t"
+      "pa16/tests/controls/300-constexpr-by-value-class-zero-storage.t",
+      "pa16/tests/controls/300-constexpr-whole-class-value-independence.t",
+      "pa16/tests/controls/300-constexpr-whole-class-constructor-storage.t",
+      "pa16/tests/controls/300-constexpr-class-parameter-dangling-reject.t",
+      "pa16/tests/controls/300-constexpr-whole-class-inactive-union-reject.t",
+      "pa16/tests/controls/300-constexpr-whole-class-runtime-member-reject.t"
     ],
     "fix_revision": null,
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027",
@@ -2926,10 +2931,19 @@
       "baseline_v9": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/baseline.json",
       "required_parent": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/required-parent-v3/assessment.json",
       "required_fixture_hashes": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/required-controls-v1.json",
-      "adapter_failure_retained": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/required-parent-v2/results.json (incorrect -std option in LowIR emit mode; retained, corrected in v3 without relabeling the course-default LowIR cell as GNU/ISO)"
+      "adapter_failure_retained": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/required-parent-v2/results.json (incorrect -std option in LowIR emit mode; retained, corrected in v3 without relabeling the course-default LowIR cell as GNU/ISO)",
+      "candidate": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/candidate-v3.json",
+      "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/source-v4-manifest.json",
+      "focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/focused-v3/assessment.json",
+      "normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/checks-v3.json",
+      "fixture_closure": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/fixture-closure-v3.json",
+      "reference_oracle": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/readonly-object-oracle-v1/assessment.json"
     },
     "performance": {
-      "status": "not-started"
+      "status": "not-measured",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/performance-protocol-v2.json",
+      "workload_pairs": 24,
+      "note": "All original21 plus two shallow ordinary-class workloads and a new common-correct partial-default workload. Counter/direct-child-RSS gates unchanged; no performance pass before calibrated serial measurements."
     },
     "standards_basis": {
       "category": "implementation-scaling",
@@ -2939,6 +2953,59 @@
         "spec.md bounded typed work/allocation requirements"
       ]
     },
-    "next_action": "Implement compact typed storage for ordinary class variables and by-value parameter objects from frozen accepted5acff6dfc baseline. Both required PA16 controls fail under48MiB in the actual owning lane; all16 GCC/Clang native cells pass. Complete boundary controls, full normal correctness/audits/self-host/lowering/export and calibrated per-fix/cumulative performance/scaling gates before closure."
+    "next_action": "Finish normal/audit/self-host/lowering checks,24-workload calibrated performance and original-baseline cumulative checks, ordinary-class/parameter scaling, exact linked reducers and fresh export. Resolve any failures without shrinking the matrix; combined028 remains in validation.",
+    "implementation": [
+      "dev/src/sema/constant_interpreter.cpp"
+    ]
+  },
+  {
+    "id": "CXX11-028",
+    "priority": "P1",
+    "status": "fix-in-validation",
+    "introduced_by": "Pre-existing in accepted5acff6dfc and027 prototype; earliest revision not yet established",
+    "discovered_neighbor_of": "CXX11-027",
+    "upstream": [],
+    "symptom": "Wholly omitted aggregate-array members are zero-initialized instead of invoking nonzero or runtime constructors in nested class leaves. Valid constexpr examples fail static assertions; an ordinary runtime object skips four required constructor side effects and exits1. GCC/Clang pass.",
+    "root_cause": "ConstantInterpreter::aggregate_element handles an omitted array of aggregate classes with unconditional zero_into. It ignores nonzero/default-argument constructor requirements of nested members, including omitted multidimensional rows.",
+    "expected": "Zero the omitted array only when typed zero-default facts prove that valid; otherwise use the existing bounded aggregate-array initialization path, preserving constructors/default arguments, runtime fallback and deleted-constructor rejection.",
+    "owning_pa": 16,
+    "ownership_note": "PA16:300 owns constexpr aggregate/default evaluation and the nested omitted-row checks. PA11:200 owns the earlier ordinary-runtime class construction/side-effect regression; its handout was read.",
+    "regressions": [
+      "pa16/tests/controls/300-constexpr-whole-class-nonzero-defaults.t",
+      "pa16/tests/controls/300-constexpr-omitted-multidimensional-class-defaults.t",
+      "pa16/tests/controls/300-constexpr-omitted-class-array-deleted-default-reject.t",
+      "pa11/tests/controls/200-omitted-aggregate-array-runtime-defaults.t"
+    ],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-028",
+    "reproductions": [
+      "whole-class-nonzero-defaults.cpp"
+    ],
+    "checks": {
+      "baseline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-028/baseline.json",
+      "initial_neighbors": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/neighbors-v1/assessment.json",
+      "field_probes": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/nonzero-default-probes-v1/results.json",
+      "required_candidate": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-028/required-candidate-v1.log",
+      "focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/focused-v3/assessment.json",
+      "normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/checks-v3.json"
+    },
+    "performance": {
+      "status": "shared-validation-with-CXX11-027",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/performance-protocol-v2.json",
+      "workload_pairs": 24
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "rationale": "N3485 8.5.1p7 requires omitted members to initialize from an empty initializer list; nested nonzero/default-argument constructors and their runtime effects cannot be replaced by zero bytes. N3485 5.19 governs the corresponding constexpr values. No later CWG decision is required.",
+      "references": [
+        "doc/n3485.txt 8.5.1p7,8.5,5.19,12.6.2",
+        "pa11/README.md",
+        "pa16/README.md"
+      ]
+    },
+    "implementation": [
+      "dev/src/sema/constant_construction.cpp"
+    ],
+    "next_action": "Complete combined027/028 full normal/performance/scaling/export validation and frozen-parent owning-lane replay before closure; retain all failed experiments."
   }
 ]

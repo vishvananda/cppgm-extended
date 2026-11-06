@@ -1,6 +1,7 @@
 CXX11-027 whole-class storage regression checkpoint (2026-11-06)
 
-Status: regression-fails; no compiler repair or performance pass yet.
+Status: fix-in-validation; prototypev3 passes the focused matrix and strict
+report. Full normal, performance/scaling and export acceptance remain pending.
 Evidence root: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027
 
 The accepted immediate parent is compiler5acff6dfc, frozen as
@@ -40,3 +41,56 @@ calibrated counter/direct-memory/scaling gates. The existing21 workloads remain
 required; add common-correct whole-class and parameter workloads before A/B
 inspection. Large broken parent inputs supply absolute/scaling evidence, not
 comparable speed ratios. The reference family and full campaign remain open.
+
+Implementation and expanded neighbors
+
+Candidatev3 (fb3ba4ed31f33025d9f365f661d63c9749c5bac84aa2af36df1103f9c4b4bb66)
+uses the existing shared unknown/zero class payloads for ordinary compound
+variables and by-value objects. A translation-unit-local typed shape check
+preserves the flat-class path. The compact paths skip the dense leaves walk;
+actual construction, reads, writes, object identity and lifetime still use the
+same evaluator. source-v4-manifest.json freezes474 source files. The two dev
+implementation files and required controls are staged, not committed/accepted.
+
+Neighbors exposed CXX11-028: an omitted aggregate-array member unconditionally
+called zero_into, losing nonzero defaults and runtime constructor side effects.
+The repair uses the typed zero-default proof before that shortcut, otherwise
+the existing bounded aggregate-array construction path. Four required controls
+cover single/multidimensional omission, deleted constructors and the earlier
+PA11 runtime path. The parent produces wrong runtime results in all four
+ISO/GNU11 O0/O2 cells; GCC/Clang and candidate pass. See CXX11-028/baseline.json.
+
+The combined family now has42 controls and57 fixture/metadata files. All672
+native matrix cells are accounted for in focused-v3/assessment.json, with no
+host/candidate failures:476 native passes,176 valid rejections,8 expected
+parent allocation failures and12 further parent semantic/runtime failures.
+The first runner looked only at the first comment line and misclassified64
+negative cells whose outcome is in a continued leading comment. The native
+course harness grammar was reapplied to the retained rows without rerunning
+compilation, preserving raw focused-v2/results.json and its failed assessment.
+All source and produced object hashes were rechecked.
+
+Normal checks-v2 stopped on one necessary LowIR reference spelling change:
+two zero integers became zero8 in a base subobject. All four independent native
+oracles pass with byte-identical parent/candidate objects; both LowIR spellings
+also compile and execute correctly. The documented selected ref-test command
+regenerated only400-readonly-const-class-objects.ref. The expectation generator
+rewrote no sidecars. readonly-object-oracle-v1 and regeneration logs retain the
+proof. Fresh checks-v3 includes the reference hash in fixture-closure-v3.json.
+Strict8128/8128, debug info, self-host throughPA5, inception, PA35 smoke,
+architecture and file audit pass; placement and harness are still running.
+
+Performance protocol-v3 retains all original21 workloads and adds three
+common-correct ordinary-class/parameter/partial-default cases before any
+measurements:24 pairs, the same A/A equivalence, ten ABBA blocks, +1% instruction
+and +3% direct compiler RSS gates, and >=99% counter scheduling. All84 native
+extra-input oracle cells pass. Twenty of21 extra-source A/B objects match.
+The remaining whole-class-small object differs only in its ELF readonly
+section alignment field4->16; all other bytes are identical. The complete
+byte proof and four independent native oracles are in changed-object-audit-v1.
+The gate runs23 exact pairs plus that single audited deterministic pair;
+no workload or threshold is dropped. performance-pipeline-v1 waits for the
+verified normal worker and all prerequisites, then runs counters/direct memory
+serially. Shared-host wall timing remains inconclusive. Ordinary whole-class
+and parameter scaling, cumulative checks, linked replay and export remain
+required after those gates. Neither027 nor028 is closed.

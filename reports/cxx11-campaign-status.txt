@@ -503,3 +503,24 @@ Whole-class repair has required failing regressions:
   first emit-option adapter error is retained separately and is not a compiler
   failure claim. See cxx11-whole-class-storage.txt.
 - CXX11-027 is regression-fails; implementation and all repair gates remain.
+
+Whole-class prototype and new omitted-default repair:
+- Candidatev3 stages compact ordinary class/parameter storage and the newly
+  discovered pre-existing CXX11-028 omission defect. Omitted aggregate-array
+  members now preserve nonzero defaults and runtime constructor side effects.
+  The ledger has28 issues and561 observations;507 original observations
+  remain untriaged. Neither new repair is closed.
+- All672 focused native cells are accounted for with no host/candidate failures.
+  The retained matrix's64 multiline negative-outcome classification mistakes
+  were corrected using the course harness's complete leading-comment rules;
+  raw observations and hashes remain. The parent has eight bounded allocation
+  failures and twelve additional semantic/runtime failures. See the whole-class
+  checkpoint and focused-v3/assessment.json for exact accounting.
+- Strict8128/8128 and the listed normal checks pass in fresh checks-v3; full
+  placement and harness checks remain live. A single zero-range reference
+  spelling was regenerated only after exact native A/B equality and independent
+  native/LowIR execution checks. No unrelated reference or sidecar changed.
+- All84 performance-input native oracle cells pass. The predeclared24-pair
+  gate retains23 exact pairs and one independently audited alignment-field
+  difference; counter and direct compiler RSS measurements wait for the
+  verified normal worker. Full scaling/cumulative/linked/export gates remain.
