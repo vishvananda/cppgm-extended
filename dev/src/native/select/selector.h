@@ -35,6 +35,7 @@ struct SelectStats
 	telemetry::Counter dynamic_copies = 0;    // unused-result builtin memcpy calls copied in place
 	telemetry::Counter jump_tables = 0;       // O1+: switches dispatched through a jump table
 	telemetry::Counter rotated_loops = 0;     // O1+: back edges given a copy of their loop test
+	telemetry::Counter dispatch_tails = 0;    // O1+: terminal dispatches copied into incoming jumps
 	telemetry::Counter loop_splits = 0;       // O1+: values given a register outside loops they skip
 	telemetry::Counter home_splits = 0;       // O1+: values given a register outside the blocks clobbering it
 	telemetry::Counter ordered_frames = 0;    // O1+: frames whose objects order_frame moved

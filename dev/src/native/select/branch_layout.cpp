@@ -100,17 +100,19 @@ uint32_t form_tail_jumps(Function& f)
 
 uint32_t FunctionSelector::layout_branches()
 {
-	const uint32_t rotated = rotate_loops(*out_);
-	stats_.rotated_loops += rotated;
+	const TailCopies copies = duplicate_short_tails(*out_);
+	stats_.rotated_loops += copies.rotations;
+	stats_.dispatch_tails += copies.dispatches;
+	const bool copied = copies.rotations != 0 || copies.dispatches != 0;
 	thread_decided_tests(*out_, program_);
 	place_blocks(*out_);
 	// A spill moved into a prologue block may meet its reload there, and a
 	// loop's test left only on its entry path (its copy closes the loop)
 	// may read a home the entry's block still holds in a register. A test
 	// copied to a back edge may follow the instruction that set its flags.
-	if (shrink_wrap(*out_) || rotated != 0)
+	if (shrink_wrap(*out_) || copied)
 		forward_home_reloads(*out_);
-	if (rotated != 0)
+	if (copied)
 		drop_redundant_tests(*out_);
 	drop_repeated_compares(*out_);
 	Function& f = *out_;

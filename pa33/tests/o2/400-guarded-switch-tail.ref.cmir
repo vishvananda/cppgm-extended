@@ -1,0 +1,310 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @dispatch
+  abi
+    param %selector -> rdi : i64
+    param %guard -> rsi : i64
+    param %seed -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    cmp.i64 rsi, 0
+    je ^skip
+
+  block ^check
+    cmp.i64 rdi, 5
+    ja ^outside
+
+  block ^choose
+    cmp.i64 rsi, 0
+    jl ^left
+
+  block ^right
+    xor rdx, 4
+    mov r8, rdx
+    mov <gpr0>, rdi
+    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case0
+    add r8, 1
+    ret r8
+
+  block ^skip
+    ret rdx
+
+  block ^outside
+    xor rdx, rdi
+    ret rdx
+
+  block ^left
+    add rdx, 17
+    mov r8, rdx
+    mov <gpr0>, rdi
+    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case1
+    sub r8, 7
+    ret r8
+
+  block ^table
+    mov <gpr0>, rdi
+    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case2
+    imul r8, 3
+    ret r8
+
+  block ^case3
+    xor r8, 19
+    ret r8
+
+  block ^case4
+    or r8, 16
+    ret r8
+
+  block ^case5
+    and r8, 127
+    ret r8
+
+  block ^impossible
+    trap
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr1>
+
+  block ^entry
+    mov rdi, 0
+    mov rsi, 0
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 43
+    setne rax
+    movzx rax, rax
+    mov <gpr1>, rax
+    or <gpr1>, 0
+    mov rdi, 1
+    mov rsi, 0
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 43
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2
+    mov rsi, 0
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 43
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 3
+    mov rsi, 0
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 43
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 4
+    mov rsi, 0
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 43
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 5
+    mov rsi, 0
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 43
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 6
+    mov rsi, 0
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 43
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 4294967296
+    mov rsi, 0
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 43
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -1
+    mov rsi, 0
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 43
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 0
+    mov rsi, -3
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 61
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 1
+    mov rsi, -3
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 53
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2
+    mov rsi, -3
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 180
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 3
+    mov rsi, -3
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 47
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 4
+    mov rsi, -3
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 60
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 5
+    mov rsi, -3
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 60
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 6
+    mov rsi, -3
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 45
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 4294967296
+    mov rsi, -3
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 4294967339
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -1
+    mov rsi, -3
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, -44
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 0
+    mov rsi, 1
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 48
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 1
+    mov rsi, 1
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 40
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 2
+    mov rsi, 1
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 141
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 3
+    mov rsi, 1
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 60
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 4
+    mov rsi, 1
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 63
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 5
+    mov rsi, 1
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 47
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 6
+    mov rsi, 1
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 45
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, 4294967296
+    mov rsi, 1
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, 4294967339
+    setne rax
+    movzx rax, rax
+    or <gpr1>, rax
+    mov rdi, -1
+    mov rsi, 1
+    mov rdx, 43
+    call @dispatch [args=(rdx,rsi,rdi)]
+    cmp.i64 rax, -44
+    setne rax
+    movzx rax, rax
+    or rax, <gpr1>
+    ret rax

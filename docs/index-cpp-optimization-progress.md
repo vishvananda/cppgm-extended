@@ -846,6 +846,73 @@ folders, `late-packed-invariants-v2/index-compile-cost/` and
 `student-export-late-packed-invariants/`. The separate Brainfuck layout loss
 persists and still needs resolution before this group can close.
 
+## Tenth mechanism: copy bounded dispatch tails
+
+The Brainfuck regression is a branch-prediction effect. Removing overwritten
+stores elsewhere moves the recursive visitor, while its hot LowIR and native
+instruction sequence remain unchanged. Nine calibrated pairs reproduce a 12%
+loss; last-branch records isolate almost all added misses to its shared
+indirect dispatch. A link-only padding sweep does not restore the earlier
+speed and supplies no shipping workaround.
+
+Extend the existing short-tail copying routine to straight-line terminal
+dispatch blocks reached by an unconditional jump. Keep guards, effects,
+landing pads and exceptional boundaries in place, and charge table entries
+against the existing growth bound. Each emitted copy receives its own table
+label. This uses typed MIR and changes no inlining or allocation budget.
+The loop-test and dispatch cases share their copying code. Geometric storage
+growth avoids repeated exact-size reservations: an independent 32–1,024-switch
+family preserves identical MIR/executable bytes and uses up to 47% fewer
+compile instructions than the initial implementation.
+
+Final compiler hash:
+`c292d37ba433839bca449ea4cf0ff13aca76b8fed948e5bad7ea2d8bf329fd60`.
+Index binary hash:
+`3a143c3e96b160e6457ea85a3bf918b818dc5cd5aca15143c574d6bee568681d`.
+Its object is identical to the measured private prototype, and direct and
+serialized paths agree. All 50 checksums pass. The visitor shrinks from 480
+to 420 bytes; complete index text falls from 386,626 to 386,514 bytes.
+
+Five paired blocks give 1.428× CPU speed against the ninth compiler and
+1.226× against the corrected seventh compiler, with unchanged instructions.
+Median branch misses fall from about 61 million to 8.5 million. Five
+independently linked offsets preserve a 20–26% gain against the seventh
+compiler. Reference CPU speeds are 1.096× GCC and 1.003× Clang; Clang's
+calibration warns. Those offsets are diagnostic, never compiler policy.
+
+The full 50-workload comparison retains separate original, previous, GCC and
+Clang scoreboards, including all observations and timing warnings. Nine
+apparent losses receive longer controls: seven pairs for threaded Matmul T8
+and nine for each other case. Their loop medians range from 0.992× to 1.039×
+the ninth compiler, with unchanged instruction counts; the earlier large
+losses do not reproduce. Words retains a small apparent loss within its
+substantial calibration variation. Do not claim that every runtime is exact.
+All 74 public and four Boost sentinel objects remain byte-identical.
+
+Independent guarded and unguarded packet-dispatch oracles cover 32,768 cases
+per path, including wide tags, zero-trip null/division inputs, callbacks,
+volatile accesses and unwinding. The required PA33 fixtures add an independent
+source oracle and raw signed/unsigned guards, phi inputs and broad quality
+bounds. Student guidance describes legality, growth and measurement without
+requiring duplication or any particular instruction sequence.
+
+All 13 validation gates pass, including the strict 8,059-test report,
+debug info, self-host through PA5, PA35 smoke/quick, modern C++, audits,
+harness and GCC/Clang warnings-as-errors. PA35's complete release check
+passes all 17 original gates and margins in both views; inception matches.
+A fresh export passes its document/reference bundle checks and both new
+fixtures through the installed tools. Frozen compile instructions grow
+about 0.008% at `-O3` against the ninth compiler and 0.438% cumulatively;
+`-O0` and peak RSS remain within calibration. CPU calibration is too noisy
+to support a compiler speed claim.
+
+Receipts: `dispatch-tail-final/` and its oracle/frozen/public/Boost companions,
+`dispatch-tail-duplication-v4/`, `dispatch-tail-efficient-growth-v2/`,
+`group3-dispatch-full-scoreboard/`, `group3-dispatch-native-controls/` and
+`student-export-dispatch-tail-final/`. The interrupted pre-refinement
+validation and initial invalid raw fixture are retained; final validation
+uses the corrected fixture and the amortized-growth implementation.
+
 ## Outstanding work
 
 Retain the completed public suite, 50-workload comparison, PA35 release and

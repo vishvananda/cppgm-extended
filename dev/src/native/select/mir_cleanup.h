@@ -69,10 +69,15 @@ uint32_t forward_return_slots(Function& function);
 // reserves none. Returns whether it dropped it.
 bool drop_unused_frame(Function& function);
 
-// Loop rotation by tail duplication: a block jumping back to an earlier
-// short loop test ends with a copy of it instead. Returns the back edges
-// rotated.
-uint32_t rotate_loops(Function& function);
+struct TailCopies
+{
+	uint32_t rotations = 0;
+	uint32_t dispatches = 0;
+};
+
+// Copy a short terminal dispatch into an incoming jump, or an earlier loop
+// test into its latch. Guards and table entries count toward the growth bound.
+TailCopies duplicate_short_tails(Function& function);
 
 // A jump to a test block that only decides between two successors on a
 // register the jumping block set to a known value goes to the decided

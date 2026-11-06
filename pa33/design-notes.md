@@ -137,6 +137,13 @@ use selective alignment rather than assuming more padding always helps.
 Entry placement can affect direct calls and table-driven indirect calls
 differently. Include both when measuring changes to compact leaf functions.
 
+A short shared dispatch tail can sometimes be copied into its incoming
+jumps. Preserve its guards, flag dependencies, memory accesses and exception
+boundaries. Count table data as well as instructions when bounding growth.
+Measure branch prediction across several layouts; unchanged instruction counts
+can still hide a substantial runtime difference. No particular duplication
+or block order is required.
+
 ## Validation and further experiments
 
 Use a behavior test for each counterexample, then an envelope broad enough to

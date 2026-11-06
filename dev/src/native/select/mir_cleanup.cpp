@@ -275,16 +275,53 @@ void merge_constant_stores(Function& function)
 	}
 }
 
-// Loop rotation by tail duplication: a block ending in a jump back to an
-// earlier rotatable test block ends instead with a copy of that test (its
-// range moves to the end of the instructions: ranges need not ascend), so
-// each iteration branches back once, conditionally, instead of jumping to
-// a test that branches forward (the layout below drops or inverts the
-// copied branches). The test still guards the loop's entry. Linear;
-// growth at most kRotateCap instructions per back edge.
-uint32_t rotate_loops(Function& f)
+// Copy a short straight-line dispatch into an incoming jump. Its guards stay
+// at their original sites; calls, stores, side exits and landing pads stay
+// shared. Charge the table data too. Each emitted copy gets its own table label.
+bool dispatch_tail(const Function& f, uint32_t b)
 {
-	uint32_t rotated = 0;
+	const Block& block = f.blocks[b];
+	if (b == 0 || block.landing || block.count == 0 || block.count > kRotateCap)
+		return false;
+	const Inst& table = f.insts[block.first + block.count - 1];
+	if (table.op != Op::JumpTable || table.aux2 == 0 || table.aux2 > kRotateCap - block.count)
+		return false;
+	for (uint32_t i = block.first; i + 1 < block.first + block.count; ++i)
+	{
+		switch (f.insts[i].op)
+		{
+		case Op::Mov:
+		case Op::Load:
+		case Op::Lea:
+		case Op::Add:
+		case Op::Sub:
+		case Op::And:
+		case Op::Or:
+		case Op::Xor:
+		case Op::Shl:
+		case Op::Shr:
+		case Op::Sar:
+		case Op::Rol:
+		case Op::Ror:
+		case Op::Cmp:
+		case Op::Test:
+		case Op::Bt:
+		case Op::Setcc:
+		case Op::Sext:
+		case Op::Zext:
+		case Op::Movzx:
+		case Op::Nop:
+			break;
+		default:
+			return false;
+		}
+	}
+	return true;
+}
+
+TailCopies duplicate_short_tails(Function& f)
+{
+	TailCopies copies;
 	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
 	for (uint32_t b = 0; b < blocks; ++b)
 	{
@@ -292,21 +329,30 @@ uint32_t rotate_loops(Function& f)
 		if (block.count == 0 || block.landing)
 			continue;
 		const Inst& last = f.insts[block.first + block.count - 1];
-		if (last.op != Op::Jmp || last.ops[0].kind != OperandKind::Label || last.ops[0].symbol >= b ||
-			!rotatable(f, last.ops[0].symbol))
+		if (last.op != Op::Jmp || last.ops[0].kind != OperandKind::Label)
 			continue;
-		const Block test = f.blocks[last.ops[0].symbol];
+		const uint32_t target = last.ops[0].symbol;
+		const bool dispatch = target != b && dispatch_tail(f, target);
+		if (!dispatch && (target >= b || !rotatable(f, target)))
+			continue;
+		const Block tail = f.blocks[target];
 		const uint32_t first = static_cast<uint32_t>(f.insts.size());
-		f.insts.reserve(f.insts.size() + block.count + test.count);
+		const size_t required = f.insts.size() + block.count - 1 + tail.count;
+		// Preserve amortized growth when many block tails are copied.
+		if (required > f.insts.capacity())
+			f.insts.reserve(std::max(required, f.insts.capacity() * 2));
 		for (uint32_t i = block.first; i + 1 < block.first + block.count; ++i)
 			f.insts.push_back(f.insts[i]);
-		for (uint32_t i = test.first; i < test.first + test.count; ++i)
+		for (uint32_t i = tail.first; i < tail.first + tail.count; ++i)
 			f.insts.push_back(f.insts[i]);
 		f.blocks[b].first = first;
 		f.blocks[b].count = static_cast<uint32_t>(f.insts.size()) - first;
-		++rotated;
+		if (dispatch)
+			++copies.dispatches;
+		else
+			++copies.rotations;
 	}
-	return rotated;
+	return copies;
 }
 
 // O1+: `mov b, a` then, at 32 or 64 bits, `add b, imm|c`, `sub b, imm`,

@@ -1,0 +1,4 @@
+# Quality permits any equivalent dispatch and block layout.
+instructions <= 400
+blocks <= 130
+instructions <= 90 in @dispatch

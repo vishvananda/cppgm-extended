@@ -117,25 +117,89 @@ to the visitor's indirect switch dispatch, at function offset `0x89`.
 This evidence points to branch prediction and address sensitivity, rather
 than extra semantic work or a missed recursive edge.
 
-A controlled link-only padding sweep is in progress. It changes no compiler
-decision or measured workload and cannot become a shipping workaround. The
-next optimizer/backend question is whether shared dispatch tails lose useful
-predecessor context, and whether a bounded, general tail-duplication or switch
-selection rule improves this across independent dispatch examples and code
-layouts. Preserve recursive continuation, tape mutation, exceptions and code
-size. Do not restore deleted stores or select padding by benchmark name.
+A link-only padding sweep does not restore the loss. The validated general
+remedy copies a short straight-line dispatch into its incoming jump.
+This keeps the guard at its original site and permits a fallthrough into the
+dispatch instead of branching to a shared site. Table data counts toward the
+existing tail-growth bound. Calls, stores, side exits and landing pads are
+excluded. The visitor shrinks from 480 to 420 bytes; index text also shrinks.
+
+Five paired blocks give 1.428× CPU speed against the ninth compiler and
+1.226× against the corrected seventh compiler. Median branch misses fall
+from about 61 million to 8.5 million, with unchanged executed instructions.
+Five independently linked code offsets retain a 20–26% gain against the
+seventh compiler. The reference comparisons are 1.096× GCC and about 1.003×
+Clang, with Clang calibration warnings. Public/Boost sentinel objects are
+unchanged. Independent guarded and unguarded packet-dispatch oracles cover
+32,768 cases per compilation path, including wide tags, zero trips, calls,
+volatile reads and cleanup on throw. This is a general dispatch improvement;
+no code or padding is selected by benchmark name.
+
+The implementation also shares the loop-test and dispatch copying code and
+uses amortized vector growth. A synthetic 32–1,024-switch family preserves
+identical MIR and executable bytes; the largest case uses 47% fewer compile
+instructions than reserving exact space for each copy. Frozen `-O3` compile
+instructions rise about 0.008% against the ninth compiler, with stable RSS.
+The final compiler passes full validation, PA35 release, inception and student
+export. The complete scoreboard and longer controls are recorded in the
+progress document; the earlier large apparent losses do not reproduce.
 Receipts: `exact-address-store-after-slot-fix-brain-control/`,
 `late-packed-invariants-ported-brain-control/` and
-`exact-store-brain-regression/`.
+`exact-store-brain-regression/`, plus `dispatch-tail-duplication-v4/`,
+`dispatch-tail-efficient-growth-v2/` and `dispatch-tail-final*`.
+
+## Maze generation: preserve a counting predicate through canonicalization
+
+`dig` is an iterative stack traversal; the separate finish-opening helper is
+recursive. About 89% of samples are in `dig`. Its hot neighbor loop counts
+three walkable cell kinds. GCC implements the count without a branch, using
+an unsigned interval comparison and carry addition. Our optimized LowIR still
+has a switch into an increment arm and a merge phi. The native code branches
+around the increment. There is no variable divide in this region.
+
+The first lost opportunity is before native selection: select formation
+accepts conditional branches, while this predicate is represented as a switch
+whose three cases share one destination. The backend already knows how to
+lower a conditional increment with carry; adding another native arithmetic
+idiom would miss the cause. The candidate is a typed interval predicate for a
+contiguous case set, followed by the existing predication proof.
+
+A private early-cleanup prototype passes all 50 workloads but fires too soon:
+it converts a partial two-case switch before the final comparison joins it.
+The switch former then sees different selectors and cannot combine the whole
+three-kind predicate. Its output remains a branch chain, so it establishes
+neither the intended simplification nor a native gain. A later private
+prototype at select formation exposes the intended interval predicate and
+existing conditional increment. All 50 checksums pass; a three-pair screen
+uses 4.4% fewer instructions on maze generation, with about 0.026% extra frozen
+compile instructions at `-O3`. Timing calibration warns. This remains an
+experiment: preserve existing speculation/profitability checks and prove
+arithmetic width, duplicate-case/default semantics, signed boundaries, holes,
+effects and increments that overflow only on an untaken path with independent
+oracles before porting it.
+
+A secondary gap is the explicit vector stack's cursor traffic. The 24-byte
+object survives in optimized LowIR across reserve/reallocation calls, while
+GCC keeps more cursor state in registers and spills it at the cold growth
+call. The census has no allocation spills or new frame homes; its frame
+accesses include the retained source object. Eliminating those reads needs a
+memory/capture proof, not a larger register budget or recognition of a library
+spelling. Test an independently varying growable buffer, escaping callbacks,
+alias writes and unwinding before changing that policy. Receipts:
+`remaining-workloads-profiles-dse/Maze__Generator/`,
+`remaining-workloads-code-dse/Maze__Generator/`, `range-switch-v1/`,
+`range-switch-v2/`, `range-switch-v3/` and `range-switch-v3-frozen/`
+(all range-switch variants are private and not accepted).
 
 ## Other refreshed targets: evidence and remaining proof
 
 All twelve named remaining targets have fresh profiles, O0/O3 host-object
 LowIR, actual host MIR and allocator census excerpts in
 `remaining-workloads-profiles-dse/`. Its manifests identify each input and
-filter. Reference warm-symbol disassembly is retained in
-`remaining-workloads-profiles-v2/code-manifest.json`; CSV's namespace is
-`csvm`, and its earlier empty disassembly capture needs replacement.
+filter. Warm-symbol disassembly for the same cppgm binary and both stock
+references is refreshed in `remaining-workloads-code-dse/manifest.json`.
+CSV's namespace is `csvm`; the refreshed capture includes it for all three
+compilers and preserves the earlier incomplete receipt.
 These records establish the following boundaries, but do not yet close every
 target's diagnosis.
 
@@ -143,7 +207,7 @@ target's diagnosis.
 | --- | --- | --- |
 | Calculator::Interpreter | Variant visits remain in separate helpers; the references fold visits into their evaluators. The binary-op evaluator is 58 MIR instructions with no spills. This is distinct from AST construction. | Inspect the recursive component and concrete inlining rejection; reduce the wrapper/visitor boundary while preserving alternative selection and exceptional state. Avoid a global budget increase. |
 | Hash::SHA256 | Almost all samples are the byte hash's digest. The exact-address overwrite fix removes its redundant intermediate store and cuts instructions by 5.55%. | Explain Clang's remaining scalar-loop difference. Its four-byte SIMD path only applies to short inputs; disabling vectorization changes other code too, so that ablation does not prove long-input vectorization is missing. |
-| Maze::Generator | About 89% of samples are recursive `dig`: 104 MIR instructions, twelve frame loads, three frame stores and no spills or new frame homes. | Compare pointer/neighbor live ranges and branch selection against stock references. Recursion is semantically necessary; do not infer that more slot promotion is useful here. |
+| Maze::Generator | About 89% of samples are iterative `dig`: 104 MIR instructions, twelve frame loads, three frame stores and no spills or new frame homes. | The detailed diagnosis above separates the counting predicate from vector-cursor memory facts; neither calls for recursion elimination. |
 | Maze::BFS | About 76% is traversal; its body has 639 MIR instructions and seven frame homes, with no allocation spills. Queue movement and visited-state accesses remain visible in optimized LowIR. | Separate queue maintenance from neighbor/visited queries and attribute the repeated loads to calls versus aliasing. A smaller repeated native loss requires a calibrated control first. |
 | Maze::AStar | About 79% is traversal: 651 MIR instructions, nine frame homes and no spills. Heap operations and integer distance arithmetic survive. | Compare heap updates and heuristic address arithmetic. Both references already use integer division; its presence alone proves no missing narrowing optimization. |
 | Etc::CacheSimulation | Hash-table lookup/insertion and string work dominate; printf also has a material share. The run body has two allocation spills and eleven frame homes. | Map the hot table specializations and remaining calls to their effect/live-range constraints. Both cppgm and GCC use 64-bit variable remainder here; do not invent a missing 32-bit rule without a range proof. |
