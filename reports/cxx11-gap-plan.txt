@@ -266,6 +266,12 @@ D. Record wall/user/system time, peak RSS, output sizes/hashes and load/pressure
    and RSS. Noisy wall time stays explicitly inconclusive; reliable counter
    and memory gates can establish the performance result without pretending
    timing passed. Predeclare counter tolerances before inspecting A/B data.
+   Measure compiler-process RSS separately from profiler/runner RSS: a larger
+   wrapper can hide changes in a smaller child. Validate that scope with a
+   touched-allocation control checked against the child's own getrusage value.
+   Keep whole-command resource data separately. When correcting measurement
+   scope, retain prior observations and recheck the affected closed repairs;
+   masked wrapper RSS does not prove the compiler's memory gate passed.
 E. Predeclare workload tolerances and the statistical method using A/A noise and
    repository gates before inspecting A/B results. Report paired ratios and
    uncertainty; retain existing PA35 thresholds unchanged. A material regression

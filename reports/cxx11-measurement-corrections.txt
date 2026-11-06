@@ -1,0 +1,53 @@
+Compiler memory measurement correction (2026-11-06)
+
+The prior Linux perf wrappers put GNU time around perf. That measures the
+maximum RSS of the command subtree, including the resident profiler. A child
+using less memory than perf can therefore change without changing reported
+RSS. A touched-allocation control confirms the effect: 4 MiB and 8 MiB children
+report 4980 and 9204 KiB in getrusage, while both outer time observations report
+17384 KiB. An inner time and a direct time match each child's own getrusage.
+
+Evidence: issues/CXX11-016/resource-measurement-controls-v1/{results,direct-results}.json
+and resource-scope-correction-v1.json under /mnt/vizier/cppgm-cxx11-upstream/.
+
+Retired-user-instruction comparisons remain valid. Raw whole-command time/RSS,
+including every previous observation and failed harness check, is retained.
+Compiler-only memory gates now use direct GNU time around the same immutable
+compiler/batch subtree, without perf. CPU affinity, disabled ASLR, frozen input
+closures, A/A calibration, ten ABBA blocks, three warmups, batch counts, output
+oracles and the 3% upper-confidence gate are preserved. Measured object hashes
+must match the counter experiment, including all batched child outputs.
+
+Checkpoint 212b6c031 passes 14 correctness stages, 208 focused cells (20 parent
+failures), 32 exact reducer cells, all 12 instruction/direct-RSS comparisons,
+272 counter plus 272 direct-RSS scaling observations, cumulative comparison
+and a fresh export with all 42 wrappers. The final neighbor sweep found
+CXX11-023/024 regressions; the reference family remains open. See
+cxx11-constexpr-reference-checkpoint.txt. These checkpoint memory measurements
+have the corrected direct-compiler scope; earlier-repair backfill remains open.
+
+Earlier closed compiler repairs retain their correctness/fix status and raw
+instruction evidence, but their performance metadata explicitly marks the
+compiler-RSS revalidation as pending. The queue currently accounts for 63 paired
+workload reports in 12 evidence groups across nine repair roots, including
+shared fixes and cumulative checkpoints. Scope audit must distinguish large
+compiler processes that dominated their wrapper from masked small cases. No
+untested disposition counts as a new pass. The initial CXX11-001 inputs manifest
+and CXX11-007 explicit-aggregate manifest have older formats and need explicit
+normalization; all binary/source hashes and old outputs must be preserved.
+Absolute scaling memory claims also need direct-child scope checks where the
+profiler could mask them. This is required campaign work, not a reduced corpus
+or a deferred acceptance exception.
+
+Queue: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-queue-v1.json
+Direct runner: issues/CXX11-016/run_direct_memory_v2.py (external evidence tool).
+
+A separate scaling-oracle correction is retained: the first LowIR regex stopped
+at storage=readonly metadata, although the full scalar plus zero span was
+present. The corrected 272-cell run validates the backing spans; old failures
+are preserved in scaling-v2-harness-assessment.json. No compiler changed for
+either measurement correction. Readonly native files have physical output costs;
+no constant native-time claim follows from the low retired-instruction spread.
+
+The final GCC/Clang CI and matched full-suite timing stage remains after all
+compiler repairs, later CWG/DR compatibility, and all validation work.

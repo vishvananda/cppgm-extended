@@ -1,0 +1,102 @@
+Typed constexpr-reference checkpoint (2026-11-06)
+
+Compiler commit 212b6c031 preserves typed reference initializer lists and
+compact array values. This checkpoint is measured and verified, but the
+reference family remains open: the final neighbor sweep found CXX11-023 and
+CXX11-024. The goal is still the full cxx11-gap-plan.txt, not this checkpoint.
+
+Implementation at the checkpoint
+
+Global direct braces, local reference initialization and aggregate reference
+members use the typed temporary/direct-binding facts. A directly bound element
+keeps its identity; an array or class temporary retains its initializer list
+and constructor facts. Array prvalues materialize directly in their storage.
+
+An array ConstValue stores its explicit prefix and full logical type bound.
+Its omitted tail is indeterminate until initialization proves zero values.
+Reads retain the original object/offset identity; writes expand through the
+storage budget. Nonliteral or runtime prefixes fail optional probes early.
+Nonzero constexpr defaults are sampled before dense expansion; that expansion
+uses a 16 MiB-equivalent value budget. Required constant expressions outside
+the evaluator's limits reject; ordinary runtime initialization remains usable.
+
+Constant lowering consumes these values and typed layouts. Sparse bit-field
+byte contributions replace a whole-object scratch image. The existing Itanium
+null-member-pointer patcher retains -1 tails and nonnull zero-offset members.
+Reference-array lowering reuses the semantic initialization value.
+
+CXX11-022's independent functional-cast reducer exposes an array cv guard:
+array qualification is carried by the leaf element. Bit-cast encoding reads
+zero tails without mutating published nested values. A repeated-cast regression
+with an intervening evaluation caught scratch pointers in an intermediate
+implementation; the failed observation is retained.
+
+Verified checkpoint evidence
+
+- Thirteen required controls live in PA10:100, PA11:100/200, PA16:300,
+  PA22:300 and PA29:600, with six 48 MiB resource guards. PA29 references were
+  generated through make ref-test. Fixtures are in default-discovered lanes.
+- All 14 validation stages pass: affected PA10/11/16/22/29, strict 8099/8099,
+  debug-info, PA34 through PA5, inception, PA35 smoke, nine architecture/format
+  audits, file audit, full feature placement and harness. Existing warnings
+  are retained; no claim that the historical late-placement list is empty.
+- The 208-cell GCC/Clang/parent/candidate ISO/GNU11 O0/O2 matrix has 20 parent
+  failures and no host/candidate failures. Every compiler uses the recorded
+  16 MiB runtime stack, since O2 inlines two 4 MiB frames in both parent and
+  candidate under the host's smaller default stack. No language failure is
+  inferred from that resource envelope.
+- Exact original reducers also pass all 24 host/candidate native cells;
+  the eight parent cells reject as expected.
+- All 12 instruction A/A and A/B comparisons pass. Maximum instruction
+  regression upper95 is +0.794104%; the parameter-array workload improves
+  retired work by 38.1641%. All nine targeted workload objects are equal
+  between parent and candidate and pass independent GCC/Clang native oracles.
+- A direct compiler-RSS companion also passes all 12 A/A and A/B comparisons:
+  maximum upper95 +0.113881%. All 11520 counter-batch and
+  11520 direct-memory child objects are checked and retained.
+- The original-baseline cumulative comparison passes all three counter and
+  direct-memory pairs: instruction upper95 +0.056202%, compiler RSS +0.084869%.
+- All 272 counter and 272 direct-RSS scaling observations pass, including 80
+  full native backing spans and 96 LowIR spans. With the element type fixed,
+  implicit zero-tail syntax/LowIR work stays flat through 1,073,741,824 elements.
+  Actual RSS is 6616 KiB for syntax and 7320 KiB for LowIR at every tested bound.
+  Runtime literal-prefix globals retain full BSS spans with native RSS 8024 KiB.
+  Readonly native files have physical output costs: the tested RSS rises from
+  8024 to 16472 KiB as output grows to 4,195,592 bytes. Larger readonly native
+  cases remain outside the declared output budget, not counted as passes.
+- A fresh export passes all 42 reference wrappers, thirteen packaged controls,
+  PA29's compile lane and the restored measured-binary hash.
+
+Evidence root: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016
+Final accepted checkpoint: final-acceptance-v5.json
+Source snapshot: source-v5-manifest.json
+Binary SHA256: 5c73b823a6bb6b60fe0b3d4904275cc7dd9b46587587681c25eb46b014191fe4
+Correctness: checks-v3.json; focused-v6/; linked-reducers-v1/
+Counters: performance-counters-v2/ and cumulative-counters-v2/
+Compiler RSS: performance-direct-memory-v1/ and cumulative-direct-memory-v1/
+Scaling: scaling-v3/ and scaling-direct-memory-v1/
+Export: checks-export-v2.json; student-export-v2/; restored-binary-v2.json
+Summary: performance-final-summary-v5.json
+
+Measurement correction and remaining compiler work
+
+Outer GNU time around perf masks children smaller than the profiler. A touched-
+allocation control reports actual 4980/9204 KiB but outer RSS 17384 KiB for both.
+Direct timing matches each child's getrusage. Raw observations remain intact.
+Earlier repairs now have explicit compiler-memory revalidation pending, covering
+63 workload reports in 12 evidence groups. See cxx11-measurement-corrections.txt.
+
+The fixed-element-type scaling above does not prove all structural dimensions
+scale well. CXX11-023 finds omitted multidimensional literal-class defaults
+rejecting, including a previously working parameter case. Its uncommitted
+prefix-aware initialization fix passes two new PA16 controls; full combined
+validation is pending. CXX11-024 varies a shared class-type graph and exposes an
+unused whole-class skeleton before the zero-tail check. A new PA16 48 MiB guard
+fails with bad_alloc. The class-zero trait and scalar-leaf projection need
+bounded handling as well. These followups keep CXX11-016/022 in validation.
+
+Padded string-array references (CXX11-021), later CWG/DR issues, corpus
+applicability, GCC specialized drivers, Clang lit/RUN adaptation and original
+untriaged findings remain open. The final two CI jobs and matched whole-suite
+timing comparisons start only after all compiler issues and required validation
+are resolved. Neither CI job has been implemented yet.

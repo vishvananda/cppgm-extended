@@ -87,7 +87,7 @@
       }
     },
     "performance": {
-      "status": "pass-instruction-and-memory-gates",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-001/performance-protocol.json",
       "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-001/performance-counters",
       "calibration": "three workload A/A assessments passed; confidence half-width 0.0012%-0.0041%",
@@ -207,7 +207,10 @@
           "object_sha256": "31d2172c46c09ae183aebd7248ad684757de60ca1f7f70a99caf5815970765b6"
         }
       ],
-      "integrity": "Original source/include/host-header hashes and underlying compiler hashes verified after all runs; all paired output objects identical; all perf events at least 99% scheduled."
+      "integrity": "Original source/include/host-header hashes and underlying compiler hashes verified after all runs; all paired output objects identical; all perf events at least 99% scheduled.",
+      "status_before_rss_scope_audit": "pass-instruction-and-memory-gates",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "pending_checks": [],
     "parent_revision": "7e31ecb743ef623d972cc12e9f3c3d04a5a81f2c",
@@ -336,7 +339,7 @@
       }
     },
     "performance": {
-      "status": "pass-controlled-layout-instruction-and-memory-gates",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-003/performance-protocol-v2-controlled.json",
       "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-003/performance-counters-v2-controlled",
       "earlier_experiment": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-003/performance-counters",
@@ -529,7 +532,10 @@
         "aa_equivalence_halfband": 0.0001
       },
       "timing": "Recorded but inconclusive under load; no wall-time speedup claim.",
-      "calibration": "Fixed process addresses; all five A/A intervals inside predeclared \u00b10.01% equivalence band; counter scheduling >=99%; all source/header/binary hashes unchanged."
+      "calibration": "Fixed process addresses; all five A/A intervals inside predeclared \u00b10.01% equivalence band; counter scheduling >=99%; all source/header/binary hashes unchanged.",
+      "status_before_rss_scope_audit": "pass-controlled-layout-instruction-and-memory-gates",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "implementation": [
       "dev/src/sema/analyzer_bodies.cpp",
@@ -577,8 +583,11 @@
       }
     },
     "performance": {
-      "status": "pass-shared-root-cause",
-      "shared_evidence": "CXX11-003"
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
+      "shared_evidence": "CXX11-003",
+      "status_before_rss_scope_audit": "pass-shared-root-cause",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "duplicate_of": "CXX11-003",
     "standards_basis": {
@@ -693,7 +702,7 @@
       }
     },
     "performance": {
-      "status": "pass-instruction-and-memory-gates",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-005/performance-protocol.json",
       "batching_addendum": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-005/performance-batching-addendum.json",
       "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-005/performance-counters-batched",
@@ -923,7 +932,10 @@
       },
       "timing": "Descriptive under load; no wall-time speed claim.",
       "calibration": "Six A/A intervals inside predeclared \u00b10.01% band, counter scheduling >=99%; all source/header/compiler/helper hashes unchanged. Each short workload batches 16 sequential compilations. Every one of 3,840 measured child objects has its hash checked; full outputs retained.",
-      "earlier_attempt": "All six first A/A observations retained. GNU time rounded user CPU to zero in five 32-alias and four 128-alias observations, so no candidate comparison ran. Fresh batched experiment keeps all instruction/RSS gates unchanged."
+      "earlier_attempt": "All six first A/A observations retained. GNU time rounded user CPU to zero in five 32-alias and four 128-alias observations, so no candidate comparison ran. Fresh batched experiment keeps all instruction/RSS gates unchanged.",
+      "status_before_rss_scope_audit": "pass-instruction-and-memory-gates",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -1058,7 +1070,7 @@
       }
     },
     "performance": {
-      "status": "pass-instruction-and-memory-gates",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/performance-protocol.json",
       "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/performance-counters",
       "results": [
@@ -1323,7 +1335,10 @@
           }
         ],
         "interpretation": "Candidate-only absolute work, not an A/B speedup: parent miscompiles the smallest program. All three scaled programs independently execute zero with GCC, Clang and candidate. Five measured batches of sixteen compilations per size; all 384 measured/warmup child objects verified; counts include fixed wrapper overhead."
-      }
+      },
+      "status_before_rss_scope_audit": "pass-instruction-and-memory-gates",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -1590,11 +1605,14 @@
       }
     },
     "performance": {
-      "status": "pass-shared-fix-instruction-and-memory-gates",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "shared_evidence": "CXX11-006",
       "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/performance-counters",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/performance-protocol.json",
-      "newly_correct_scaling": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/newly-correct-scaling"
+      "newly_correct_scaling": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/newly-correct-scaling",
+      "status_before_rss_scope_audit": "pass-shared-fix-instruction-and-memory-gates",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "related_issue": "CXX11-006",
     "standards_basis": {
@@ -1650,7 +1668,7 @@
       "sfinae_baseline": "empty-aggregate-sfinae-baseline.json (both hosts accept, parent hard-rejects)"
     },
     "performance": {
-      "status": "pass",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "protocol": "performance-protocol.json",
       "parent": "performance-counters/{aa,ab}-assessment.json (six workloads)",
       "targeted": "performance-explicit-aggregates/{aa,ab}-assessment.json (three brace-elision workloads)",
@@ -1673,7 +1691,10 @@
         "dev/src/lower/global_lowering.cpp": "52503cbd8f205db3cc3228760cdaa6910fdc97f6360a0554ab538c3209f2ee2d"
       },
       "measured_batched_child_objects": 7680,
-      "bss_span_oracle": "scaling-candidate/bss-size-checks.json (32/32 objects keep the declared size)"
+      "bss_span_oracle": "scaling-candidate/bss-size-checks.json (32/32 objects keep the declared size)",
+      "status_before_rss_scope_audit": "pass",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -1735,7 +1756,7 @@
       "sha256": "b556c813467076303d89c3e0a5fe0d329f153cda17eb30f48f4ae9ea9bdff5e4"
     },
     "performance": {
-      "status": "passed",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-011/performance-protocol.json",
       "scaling_protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-011/scaling-protocol.json",
       "parent_max_instruction_upper95_percent": 0.8857662628419138,
@@ -1747,7 +1768,10 @@
       "parent_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-011/performance-counters",
       "cumulative_protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-011/cumulative-performance-protocol.json",
       "cumulative_max_instruction_upper95_percent": 0.06046049179997404,
-      "cumulative_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-011/performance-cumulative"
+      "cumulative_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-011/performance-cumulative",
+      "status_before_rss_scope_audit": "passed",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -1815,7 +1839,7 @@
       "sha256": "3479190d9a0f236a8befab718fde6eda62a845e141529ac5de9891f1b8a78a0d"
     },
     "performance": {
-      "status": "passed",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012/performance-protocol-v2.json",
       "scaling_protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-012/scaling-protocol-v2.json",
       "last_original_baseline_checkpoint": "CXX11-011/performance-cumulative (current fix compares its immediate parent)",
@@ -1835,7 +1859,10 @@
       "scaling_max_rss_kib": 17436.0,
       "scaling_max_object_bytes": 560,
       "bss_span_checks": "scaling-candidate-v2/bss-size-checks.json (32/32 complete array symbol/BSS spans)",
-      "gates_unchanged": true
+      "gates_unchanged": true,
+      "status_before_rss_scope_audit": "passed",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "implementation-scaling",
@@ -1896,7 +1923,7 @@
       "binary_sha256": "3f57177814a93cef11afcedc48ece938ea6e9a629a8224cbee89030fafb534cd"
     },
     "performance": {
-      "status": "pass",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "protocol": "performance-protocol.json",
       "assessment": "performance-counters/{aa,ab}-assessment.json",
       "workloads": [
@@ -2146,7 +2173,10 @@
       "equality": "Every A/A and A/B object matches; all 3840 measured batched child objects checked and retained.",
       "timing": "Descriptive under load; no macOS hardware gate pass or wall-time pass claimed.",
       "comparison": "Immediate parent b5ba25895; original-baseline checkpoint evidence remains separately at 894d34a2d.",
-      "candidate_sha256": "b556c813467076303d89c3e0a5fe0d329f153cda17eb30f48f4ae9ea9bdff5e4"
+      "candidate_sha256": "b556c813467076303d89c3e0a5fe0d329f153cda17eb30f48f4ae9ea9bdff5e4",
+      "status_before_rss_scope_audit": "pass",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -2231,7 +2261,7 @@
       "restored_binary": "restored-binary-v5.json: development compiler exactly reproduces measured candidate SHA256 432fa16846f2fd1e7ed8372cc626e57bc21c472dc62f962e56c6f2ad00875733"
     },
     "performance": {
-      "status": "pass",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "protocol": "performance-protocol-v3.json and scaling-protocol-v3.json",
       "paired": "performance-counters-v3/{aa,ab}-assessment.json: all nine calibrated pairs pass; all 7680 measured child objects checked",
       "failed_absolute": "scaling-v3/{results,summary}.json: all 376 samples retained, scalar/helper native gates failed; CXX11-020 fixes the separate native estimate",
@@ -2246,7 +2276,10 @@
       "max_rss_upper95_percent": 0.0692730657661178,
       "max_absolute_instruction_spread_percent": 0.1261376707677453,
       "measured_batched_child_objects": 7680,
-      "timing": "Descriptive under load; calibrated instruction/RSS gates passed. No noisy wall-time pass or baseline-failing reproducer speed ratio claimed."
+      "timing": "Descriptive under load; calibrated instruction/RSS gates passed. No noisy wall-time pass or baseline-failing reproducer speed ratio claimed.",
+      "status_before_rss_scope_audit": "pass",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "implementation-scaling",
@@ -2275,17 +2308,30 @@
   {
     "id": "CXX11-016",
     "priority": "P1",
-    "status": "observed",
+    "status": "fix-in-validation",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-011",
     "symptom": "Both a constexpr const-array reference initialized by a braced list and a constant-expression read through a non-constexpr const-array reference are rejected; both hosts accept in C++11.",
     "root_cause": "Global and local reference constant initialization strips any braced initializer to a sole clause without consulting the typed temporary facts; global direct-braced initializer kind is also not selected. Array-reference parameters already use the existing typed binding/materialization engine successfully. Aggregate reference-member and class-reference temporary neighbors expose the same lost-list facts.",
     "expected": "Evaluate literal array-reference temporaries and permit the original C++11 constant-expression reads, retaining identity/lifetime and compact behavior for ordinary giant arrays.",
     "owning_pa": 16,
-    "ownership_note": "Provisional PA16:300 aggregate/object constant-evaluation owner. Read handout before implementation; PA10 references alone do not own constexpr array values.",
-    "regressions": [],
-    "fix_revision": null,
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-011",
+    "ownership_note": "PA16:300 owns array/class object constant evaluation and reference-value binding. PA10/11 own bounded ordinary-runtime controls; PA22 owns member-pointer ABI tails; PA29 owns the builtin bit-cast neighbor.",
+    "regressions": [
+      "pa10/tests/controls/100-runtime-array-reference-constant-probe.t",
+      "pa11/tests/controls/200-runtime-class-array-reference-constant-probe.t",
+      "pa11/tests/controls/100-zero-aggregate-array-reference-constant-probe.t",
+      "pa16/tests/controls/300-constexpr-array-reference-values.t",
+      "pa16/tests/controls/300-constexpr-list-reference-objects.t",
+      "pa16/tests/controls/300-constexpr-array-reference-runtime-read-reject.t",
+      "pa16/tests/controls/300-constexpr-array-reference-bounds-reject.t",
+      "pa16/tests/controls/300-constexpr-nonliteral-array-reference-reject.t",
+      "pa16/tests/controls/300-runtime-literal-array-reference-constant-probe.t",
+      "pa16/tests/controls/300-constexpr-zero-aggregate-array-reference.t",
+      "pa22/tests/controls/300-constexpr-array-reference-member-pointer-tail.t",
+      "pa16/tests/controls/300-runtime-constant-default-array-reference-probe.t"
+    ],
+    "fix_revision": "212b6c031f103f633e94ff90a07de7dc4e99ac96",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016",
     "reproductions": [
       "probes/constexpr-array-reference.cpp",
       "probes/constant-array-reference-read.cpp"
@@ -2293,10 +2339,21 @@
     "checks": {
       "reduction": "constexpr-array-reference-results.json (both GCC/Clang accept; immediate parent and candidate reject both probes)",
       "binding_neighbors_v1": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/binding-probes-v1/results.json: all 24 GCC/Clang syntax cells accept; parent fails nine of twelve probes, including direct-list existing-array binding, aggregate reference members and a class-reference temporary; copy-list existing-array and parameter-array references already pass.",
-      "binding_boundaries_v1": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/binding-boundaries-v1/results.json: direct scalar braces also fail, class parameter materialization already passes, runtime-value and out-of-bounds guards reject, ordinary million-element dynamic-prefix reference passes under a 64 MiB parent syntax cap"
+      "binding_boundaries_v1": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/binding-boundaries-v1/results.json: direct scalar braces also fail, class parameter materialization already passes, runtime-value and out-of-bounds guards reject, ordinary million-element dynamic-prefix reference passes under a 64 MiB parent syntax cap",
+      "focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/focused-v6/assessment.json: 208 cells, 188 passes, 20 parent failures, no host/candidate failures.",
+      "required": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/focused-prefix-v4/results.json: all 13 owning controls pass, including 48 MiB resource guards.",
+      "correctness": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/checks-v3.json: all 14 final candidate stages pass, including strict 8099/8099, debug info, PA34 through PA5, inception, PA35 smoke, all audits, full placement and harness.",
+      "accepted_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/final-acceptance-v5.json (tested checkpoint passes; subsequent CXX11-023 regression remains open)"
     },
     "performance": {
-      "status": "not-started"
+      "status": "counter-gates-pass-direct-compiler-rss-validation-running",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/performance-protocol-v2.json",
+      "oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/performance-oracles-v2.json",
+      "note": "All 12 instruction comparisons pass; peak regression upper95 +0.794104%, parameter-array work -38.1641%. All nine targeted workloads have equal A/B objects and pass four-compiler native oracles. Actual compiler RSS, scaling RSS, cumulative and export gates still pending; prior perf-wrapper RSS is not a compiler-memory pass.",
+      "counter_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/performance-counters-v2",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "direct_memory": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/performance-direct-memory-v1",
+      "scaling": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/scaling-v3"
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -2308,7 +2365,7 @@
         "https://cplusplus.github.io/CWG/issues/2126.html"
       ]
     },
-    "next_action": "Use typed list facts to preserve reference temporary initialization and handle direct braces through the shared binding engine. Cover global/local/member/class neighbors and retain successful existing-array and parameter bindings. Preserve lazy/bounded evaluation: do not allocate dense ConstValue arrays on ordinary giant arrays merely to probe constant initialization."
+    "next_action": "Complete CXX11-023 nested defaults and CXX11-024 compact-zero aggregate regressions, then validate the combined compiler and close the reference family."
   },
   {
     "id": "CXX11-017",
@@ -2437,7 +2494,7 @@
       "restored_binary": "restored-binary-v5.json: development compiler exactly reproduces measured candidate SHA256 432fa16846f2fd1e7ed8372cc626e57bc21c472dc62f962e56c6f2ad00875733"
     },
     "performance": {
-      "status": "pass",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "retained_failed_measurements": "scaling-v3/results.json and summary.json: scalar/helper native instruction spread 716.85x/403.49x; all 376 observations retained",
       "final_summary": "performance-final-summary-v4.json: all nine calibrated A/A and A/B pairs and all 376 absolute-scaling observations pass; 7680 batched child objects checked; 120 native scaling objects unchanged",
       "final_protocol": "performance-protocol-v4.json and scaling-protocol-v4.json",
@@ -2449,7 +2506,10 @@
       "max_rss_upper95_percent": 0.0692730657661178,
       "max_absolute_instruction_spread_percent": 0.1261376707677453,
       "measured_batched_child_objects": 7680,
-      "timing": "Descriptive under load; calibrated instruction/RSS gates passed. No noisy wall-time pass or baseline-failing reproducer speed ratio claimed."
+      "timing": "Descriptive under load; calibrated instruction/RSS gates passed. No noisy wall-time pass or baseline-failing reproducer speed ratio claimed.",
+      "status_before_rss_scope_audit": "pass",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "implementation-scaling",
@@ -2497,5 +2557,125 @@
       ]
     },
     "next_action": "Replay exact/reduced padded-string-reference and bounded/kind/identity neighbors with the final compiler and both hosts, then add owning regressions, share typed string-array initialization/ranking facts and complete normal correctness/performance/export validation. Keep this semantic acceptance failure separate from CXX11-016 evaluated reference values."
+  },
+  {
+    "id": "CXX11-022",
+    "priority": "P2",
+    "status": "fix-in-validation",
+    "upstream": [],
+    "discovered_neighbor_of": "CXX11-016",
+    "symptom": "__builtin_bit_cast rejects a const array member of a lifetime-extended class temporary because its array type stores cv qualification on the element.",
+    "root_cause": "RootKind::Temporary checks place.type->cv directly; array qualification is carried by the leaf element. Scalar-member access already works.",
+    "expected": "Read a const nonvolatile array temporary through its element qualification, retaining the existing write and volatile rejection rules.",
+    "owning_pa": 29,
+    "ownership_note": "PA29:600 owns hosted builtin bit-cast compatibility. The core const-array reference tests belong to PA16.",
+    "regressions": [
+      "pa29/tests/compile/600-builtin-bit-cast-array-reference.t"
+    ],
+    "fix_revision": "212b6c031f103f633e94ff90a07de7dc4e99ac96",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-022",
+    "reproductions": [
+      "const-array-member-bitcast.cpp"
+    ],
+    "checks": {
+      "independent": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-022/independent-reducer-v1.json: GCC and Clang accept; immutable parent rejects on temporary cv guard; candidate accepts. The class temporary binds by functional cast, independently of CXX11-016 braced-list binding.",
+      "focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/focused-v6/assessment.json",
+      "correctness": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/checks-v3.json (all 14 stages pass)",
+      "nested_encoding": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-022/nested-prefix-bitcast-reuse-v1.json: intermediate candidate-v4 corrupts a published nested array representation; candidate-v5 encodes without mutating source storage, covered by the repeated-cast PA29 fixture.",
+      "accepted_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/final-acceptance-v5.json (tested checkpoint passes; subsequent CXX11-023 regression remains open)"
+    },
+    "performance": {
+      "status": "shared-validation-with-CXX11-016",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/performance-protocol-v2.json",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json"
+    },
+    "standards_basis": {
+      "category": "vendor-extension-compatibility",
+      "rationale": "The builtin is a hosted GNU/Clang interface, not a C++11 bit-cast requirement. N3485 3.9.3p5 describes the core array cv qualification used by the existing storage-access check.",
+      "references": [
+        "doc/n3485.txt 3.9.3p5",
+        "pa29/README.md"
+      ]
+    },
+    "next_action": "Complete CXX11-023 nested defaults and CXX11-024 compact-zero aggregate regressions, then validate the combined compiler and close the reference family."
+  },
+  {
+    "id": "CXX11-023",
+    "priority": "P1",
+    "status": "fix-in-validation",
+    "introduced_by": "212b6c031f103f633e94ff90a07de7dc4e99ac96",
+    "discovered_neighbor_of": "CXX11-016",
+    "upstream": [],
+    "symptom": "Empty multidimensional literal-class array reference/parameter lists reject in constant evaluation after prefix storage was introduced; the previously working constexpr parameter case is a regression.",
+    "root_cause": "An omitted nonaggregate-class subarray calls value_initialize on an inner prefix array that has no stored elements. The dense value-initialization loop attempts to locate its first element before creating prefix storage, so it fails outside the designated object.",
+    "expected": "Initialize omitted subarrays through the shared prefix-aware array construction path, retaining nonzero constexpr defaults, full dimensions and bounded optional work; keep the dense array path correct.",
+    "owning_pa": 16,
+    "ownership_note": "PA16:300 owns object-valued constant evaluation, array reference temporaries and constexpr class defaults.",
+    "regressions": [
+      "pa16/tests/controls/300-constexpr-nested-array-reference-defaults.t",
+      "pa16/tests/controls/300-runtime-nested-array-reference-constant-probe.t"
+    ],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023",
+    "reproductions": [
+      "nested-reference.cpp",
+      "nested-parameter.cpp",
+      "nested-dense.cpp"
+    ],
+    "checks": {
+      "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/initial-neighbors-v1.json: all six GCC/Clang syntax cells accept; the pre-212b6c031 compiler accepts the parameter and dense cases, while 212b6c031 rejects both prefix cases and still accepts the dense case.",
+      "candidate_v1": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/required-candidate-v1.json (both owning controls pass)"
+    },
+    "performance": {
+      "status": "not-started",
+      "baseline_sha256": "5c73b823a6bb6b60fe0b3d4904275cc7dd9b46587587681c25eb46b014191fe4"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "rationale": "N3485 8.5p7 value-initializes each array element, 8.5.1p7 initializes omitted elements, and 7.1.5/5.19 allow the literal constexpr defaults and parameter expression. No later language feature is used.",
+      "references": [
+        "doc/n3485.txt 5.19, 7.1.5, 8.5p7, 8.5.1p7, 8.5.4p3"
+      ]
+    },
+    "next_action": "Complete CXX11-024 compact-zero aggregate followup before freezing the combined candidate; then run the normal full validation and performance process."
+  },
+  {
+    "id": "CXX11-024",
+    "priority": "P1",
+    "status": "observed",
+    "introduced_by": "212b6c031",
+    "discovered_neighbor_of": "CXX11-023",
+    "upstream": [],
+    "symptom": "An ordinary empty reference array of a large aggregate type now allocates a dense unused representative value and can abort during an optional constant-initialization probe. A 24-level shared class-type graph fails under 256 MiB, while the before-prefix compiler finishes syntax checking promptly.",
+    "root_cause": "aggregate_array constructs prefix_skeleton for every capacity cell, including the unused spare, before checking the implicit zero tail. The zero-class trait recursively revisits shared member types, and missing-tail reads materialize whole class values before projecting the requested leaf.",
+    "expected": "Allocate/construct only initialized prefix values, memoize proven type properties, and project known-zero subobjects through typed layout without materializing unrelated class fields; preserve full object bounds, identities, union activity and ABI null member pointers.",
+    "owning_pa": 16,
+    "ownership_note": "PA16:300 owns object-valued constant evaluation, literal aggregate references and bounded constant-initialization probes.",
+    "regressions": [
+      "pa16/tests/controls/300-constexpr-zero-class-array-reference-probe.t"
+    ],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024",
+    "reproductions": [
+      "../CXX11-023/zero-type-dag-probes-v1/tree-24.cpp",
+      "../CXX11-023/zero-type-dag-probes-v1/tree-18-leaves.cpp"
+    ],
+    "checks": {
+      "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/zero-type-dag-probes-v1/results.json (before-prefix syntax passes all sizes; prefix version grows and then reports bad_alloc at depth24 under256MiB)",
+      "host": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/zero-type-dag-probes-v1/host-leaf-controls-v1.json (GCC/Clang accept the 18-level constant leaf reads)",
+      "required": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/required-parent-v1.json (new owning control fails frontend under48MiB with bad_alloc)"
+    },
+    "performance": {
+      "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "implementation-scaling",
+      "rationale": "The source uses original C++11 literal aggregates and const-integral subobject reads. The defect is unbounded optional work/storage relative to the small shared type graph and implicit zero tail, rather than a later CWG-only acceptance expectation.",
+      "references": [
+        "doc/n3485.txt 5.19 and 8.5.1p7",
+        "spec.md bounded typed work and hot-path allocation requirements"
+      ]
+    },
+    "next_action": "Fix eager spare storage and type-DAG traversal, then project implicit-zero leaf reads without full-class allocation. Run owning regressions, full normal checks and calibrated instruction/direct-RSS verification on the combined CXX11-016/022/023/024 compiler."
   }
 ]

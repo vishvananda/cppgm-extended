@@ -4,6 +4,34 @@ The full objective and closure criteria remain in cxx11-gap-plan.txt.
 This is partial progress; corpus applicability, native adapters and remaining
 compiler defects still require work before the campaign can be complete.
 
+Reference checkpoint and followups (2026-11-06):
+- Commit 212b6c031 preserves typed reference lists and compact array values.
+  Its immutable checkpoint passes 8099 strict cases, 14 normal validation
+  stages, 208 focused cells, 32 exact reducer cells, 12 counter/direct-RSS
+  pairs, 272 counter plus 272 direct-RSS scaling observations, cumulative
+  counter/RSS checks and a fresh export with all 42 reference wrappers.
+- A final neighbor sweep found CXX11-023: omitted multidimensional class-array
+  defaults reject, including a previously working constexpr parameter case.
+  Its uncommitted prefix-aware value-initialization fix passes two new PA16
+  controls, but full combined validation is pending.
+- CXX11-024 exposes unused whole-class storage in an implicit zero tail.
+  The new PA16 48 MiB guard fails with bad_alloc. Shared type-property walks
+  and zero leaf projection also require bounded handling. The reference
+  family is not closed. Ledger: 24 issues, 553 observations.
+
+Measurement correction in progress (2026-11-06):
+- Outer GNU time around perf can mask a smaller compiler's RSS. A touched-page
+  control proves the floor: actual 4980/9204 KiB children both report 17384 KiB
+  through the outer wrapper. Direct timing matches child getrusage exactly.
+- All old instruction evidence and raw measurements are retained. Compiler-RSS
+  revalidation is explicitly pending for closed fixes; the initial queue has
+  63 workload reports across 12 evidence groups. See cxx11-measurement-corrections.txt.
+- Checkpoint 212b6c031 passes all 14 correctness/audit gates, strict 8099/8099,
+  focused and exact-reducer matrices, 12 instruction/direct-RSS comparisons,
+  cumulative comparisons and export. Its instruction upper regression is
+  +0.794104%, compiler RSS +0.113881%; parameter-array work improves 38.1641%.
+  Newly discovered CXX11-023/024 keep the reference family in validation.
+
 Implemented:
 - Immutable original and per-fix compiler binaries; frozen source/header
   closures and raw correctness/performance evidence under the evidence root.
@@ -301,12 +329,12 @@ Runtime omitted-tail checkpoint (2026-11-06):
   and 550 observations, with 507 original observations still unmapped.
 
 Next:
-- Repair semantic constexpr-reference CXX11-016 through owning PA regressions,
-  full checks and calibrated perf. Fresh host/parent probes isolate lost list
-  facts and missing direct-brace handling, including reference members and
-  class temporaries. Existing-array copy-list and array/class parameter
-  binding already pass. Preserve the 64 MiB ordinary large dynamic-prefix
-  control while fixing evaluated values; do not introduce dense optional work.
+- Complete CXX11-023 nested-array defaults and CXX11-024 compact zero-class
+  followups before closing CXX11-016/022. Freeze and validate the combined
+  compiler, preserving the 48 MiB ordinary-runtime controls and using direct
+  compiler RSS alongside calibrated instruction counters.
+- Finish the earlier-repair memory scope audit/backfill (63 paired reports in
+  12 evidence groups) and direct-memory checks of affected absolute scaling.
 - Repair CXX11-021 with owning string-array reference regressions and shared
   typed string initialization/ranking facts, preserving bounds and identities.
 - Extend GCC execution beyond the original-finding cohort and adapt specialized
@@ -321,8 +349,8 @@ Next:
   Implement and exercise both jobs before declaring the overall goal complete.
 
 Evidence root: /mnt/vizier/cppgm-cxx11-upstream
-Latest repair: issues/CXX11-015/ (runtime array tails and native zero-cost estimate)
-Last cumulative checkpoint: issues/CXX11-011/ (fresh original-baseline counter comparison)
+Latest measured checkpoint: issues/CXX11-016/ (212b6c031; reference followups remain open)
+Last cumulative checkpoint: issues/CXX11-016/ (original-baseline counters and direct compiler RSS)
 Previous fix: issues/CXX11-006/ (abstract temporaries and direct list-reference binding)
 Return DR evidence: issues/CXX11-003/ (all original/version-2 results retained)
 Inventory: inventory-3/{manifest.json,inventory.jsonl}
