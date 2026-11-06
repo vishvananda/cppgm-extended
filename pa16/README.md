@@ -217,7 +217,11 @@ C++11 `constexpr` forms that later template and library code expect:
 - reference initialization consumes the typed list's temporary or directly
   bound element, including direct braces and aggregate reference members.
   Array temporaries retain an explicit prefix and omitted zero tails during
-  evaluation; reads preserve their full bounds and identities.
+  evaluation; reads preserve their full bounds and identities. Omitted
+  multidimensional arrays retain nonzero constexpr class defaults. Construct
+  only initialized prefix elements, reuse proven zero-default type facts,
+  and project zero-tail subobjects through their typed layout rather than
+  constructing unrelated fields. Preserve union activity and bit-field values.
   Bound dense expansion of implicit tails as well as ordinary evaluation.
   An optional probe that exceeds its storage budget fails softly so an
   ordinary runtime initializer can still compile

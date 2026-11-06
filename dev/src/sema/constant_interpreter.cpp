@@ -487,7 +487,7 @@ void VariantStep(ConstPlace& place, const VariableEntity* member)
 
 } // namespace
 
-ConstValue* ConstantInterpreter::descend(
+ConstantInterpreter::StorageView ConstantInterpreter::descend(
 	ConstValue* value, const Type* type, int64_t offset, const Type* wanted, bool write, uint32_t depth)
 {
 	// The subobject of type `wanted` at `offset` bytes into the object of
@@ -495,27 +495,46 @@ ConstValue* ConstantInterpreter::descend(
 	// or member whose bytes contain it (an empty base may share its offset
 	// with a member). A union's active member only is read; a write to
 	// another member makes it the active one, its lifetime beginning.
+	// A null value is a proven zero subtree of an implicit array tail;
+	// follow its layout without constructing unrelated subobjects.
 	if (offset == 0 && SameObjectType(type, wanted))
-		return value;
+		return StorageView(value, value == nullptr ? type : nullptr);
 	if (subobjects_too_deep(depth))
-		return nullptr;
-	if (value->kind == ValueKind::Array)
+		return StorageView();
+	if (value != nullptr ? value->kind == ValueKind::Array
+						 : type->kind == TypeKind::Array || IsComplex(type) || LaneVector(type))
 	{
 		const uint64_t size = size_of(type->element, 0);
 		if (size == 0 || offset < 0)
-			return nullptr;
+			return StorageView();
 		const uint64_t index = static_cast<uint64_t>(offset) / size;
-		ConstValue* element = index < value->count ? &value->elements[index]
-												   : array_element(*value, type, index, write, 0);
-		if (element == nullptr)
-			return nullptr;
+		const uint64_t count = IsComplex(type) ? 2 : type->bound;
+		ConstValue* element = nullptr;
+		if (value == nullptr)
+		{
+			if (write || index >= count)
+				return StorageView();
+		}
+		else if (index < value->count)
+			element = &value->elements[index];
+		else
+		{
+			if ((value->flags & (kArrayPrefix | kArrayTailZero)) != (kArrayPrefix | kArrayTailZero) || index >= count)
+				return StorageView();
+			if (write)
+			{
+				if (!expand_array(*value, type, 0))
+					return StorageView();
+				element = &value->elements[index];
+			}
+		}
 		return descend(element, type->element, offset - static_cast<int64_t>(index * size), wanted, write, depth + 1);
 	}
-	if (value->kind != ValueKind::Class)
-		return nullptr;
+	if (value != nullptr && value->kind != ValueKind::Class)
+		return StorageView();
 	const ClassEntity* cls = ClassOf(type);
 	if (cls == nullptr)
-		return nullptr;
+		return StorageView();
 	uint32_t index = 0;
 	for (const BaseClass* base = cls->bases; base != nullptr; base = base->next, ++index)
 	{
@@ -524,8 +543,8 @@ ConstValue* ConstantInterpreter::descend(
 		const int64_t size = static_cast<int64_t>(base_class->size != 0 ? base_class->size : 1);
 		if (offset < start || offset >= start + size)
 			continue;
-		if (ConstValue* found = descend(
-				&value->elements[index], base_class->type, offset - start, wanted, write, depth + 1))
+		if (StorageView found = descend(value == nullptr ? nullptr : &value->elements[index], base_class->type,
+				offset - start, wanted, write, depth + 1))
 			return found;
 	}
 	const bool is_union = cls->key == TokenKind::KW_UNION;
@@ -535,14 +554,16 @@ ConstValue* ConstantInterpreter::descend(
 		// potentially-overlapping member lying there.
 		int64_t start = 0;
 		const DataMember* member = member_at(cls, offset, start);
-		ConstValue* found = member == nullptr ? nullptr
-											  : descend(&value->elements[index + member->ordinal],
-													member->variable->type, offset - start, wanted, write, depth + 1);
-		if (found == nullptr && (member = empty_member_at(cls, offset, wanted, start, depth)) != nullptr)
-			found = descend(&value->elements[index + member->ordinal], member->variable->type, offset - start, wanted,
-				write, depth + 1);
+		StorageView found;
+		if (member != nullptr)
+			found = descend(value == nullptr ? nullptr : &value->elements[index + member->ordinal],
+				member->variable->type, offset - start, wanted, write, depth + 1);
+		if (!found && (member = empty_member_at(cls, offset, wanted, start, depth)) != nullptr)
+			found = descend(value == nullptr ? nullptr : &value->elements[index + member->ordinal],
+				member->variable->type, offset - start, wanted, write, depth + 1);
 		return found;
 	}
+	const DataMember* first = value == nullptr ? first_zero_member(cls) : nullptr;
 	// The active member first: a subobject of it keeps it active, though an
 	// earlier member of the same type may share the offset (a union member
 	// under construction, 7.1.5p4, is active before its own members are
@@ -553,7 +574,8 @@ ConstValue* ConstantInterpreter::descend(
 		{
 			if (member->bit_field || member->variable->kind != EntityKind::Variable)
 				continue;
-			const bool inactive = value->extra != member->ordinal + 1;
+			const uint32_t active = value != nullptr ? value->extra : first != nullptr ? first->ordinal + 1 : 0;
+			const bool inactive = active != member->ordinal + 1;
 			if (inactive != (pass == 1))
 				continue;
 			const Type* member_type = member->variable->type;
@@ -561,7 +583,7 @@ ConstValue* ConstantInterpreter::descend(
 			const int64_t size = member_type->is_reference() ? 8 : static_cast<int64_t>(size_of(member_type, 0));
 			if (offset < start || offset >= start + (size != 0 ? size : 1))
 				continue;
-			ConstValue& slot = value->elements[index + member->ordinal];
+			ConstValue* slot = value == nullptr ? nullptr : &value->elements[index + member->ordinal];
 			if (inactive)
 			{
 				// The member becomes the active one when it holds the
@@ -570,14 +592,14 @@ ConstValue* ConstantInterpreter::descend(
 				// skeleton, kept while inactive) made indeterminate.
 				if (!holds(member_type, offset - start, wanted, depth + 1))
 					continue;
-				Indeterminate(slot);
+				Indeterminate(*slot);
 				value->extra = member->ordinal + 1;
 			}
-			if (ConstValue* found = descend(&slot, member_type, offset - start, wanted, write, depth + 1))
+			if (StorageView found = descend(slot, member_type, offset - start, wanted, write, depth + 1))
 				return found;
 		}
 	}
-	return nullptr;
+	return StorageView();
 }
 
 const DataMember* ConstantInterpreter::member_at(const ClassEntity* cls, int64_t offset, int64_t& start)
@@ -848,7 +870,15 @@ bool ConstantInterpreter::locate(const ConstPlace& place, bool write, ConstValue
 	{
 		// The bit-field member of the class object at the offset.
 		const ClassEntity* owner = static_cast<const ClassEntity*>(place.bit_field->owner->entity);
-		ConstValue* object = descend(storage, type, place.offset, owner->type, write, 0);
+		StorageView view = descend(storage, type, place.offset, owner->type, write, 0);
+		if (view.zero_type != nullptr)
+		{
+			if (owner->key == TokenKind::KW_UNION && first_zero_member(owner) != place.bit_field->data_member)
+				return fail(location, "a read of an inactive union member");
+			out = zero_storage(place.type);
+			return out != nullptr;
+		}
+		ConstValue* object = view.value;
 		if (object == nullptr || object->kind != ValueKind::Class)
 			return fail(location, "an access outside the designated object");
 		out = &object->elements[owner->base_count + place.bit_field->data_member->ordinal];
@@ -856,7 +886,8 @@ bool ConstantInterpreter::locate(const ConstPlace& place, bool write, ConstValue
 	}
 	if (place.variant != nullptr)
 		return locate_variant(place, storage, type, write, out, location);
-	out = descend(storage, type, place.offset, place.type, write, 0);
+	const StorageView view = descend(storage, type, place.offset, place.type, write, 0);
+	out = view.zero_type != nullptr ? zero_storage(view.zero_type) : view.value;
 	if (out == nullptr)
 		return fail(location, "an access outside the designated object or to an inactive union member");
 	return true;
@@ -874,7 +905,17 @@ bool ConstantInterpreter::locate_variant(
 	const DataMember* member = place.variant;
 	const ClassEntity* owner = static_cast<const ClassEntity*>(member->variable->owner->entity);
 	const int64_t at = static_cast<int64_t>(place.variant_offset);
-	ConstValue* object = descend(storage, type, at, owner->type, write, 0);
+	const StorageView view = descend(storage, type, at, owner->type, write, 0);
+	if (view.zero_type != nullptr)
+	{
+		if (first_zero_member(owner) != member)
+			return fail(location, "a read of an inactive union member");
+		const StorageView subobject = descend(nullptr, member->variable->type,
+			place.offset - at - static_cast<int64_t>(member->offset / 8), place.type, false, 0);
+		out = subobject.zero_type != nullptr ? zero_storage(subobject.zero_type) : nullptr;
+		return out != nullptr || fail(location, "an access outside the designated object");
+	}
+	ConstValue* object = view.value;
 	if (object == nullptr || object->kind != ValueKind::Class)
 		return fail(location, "an access outside the designated object or to an inactive union member");
 	ConstValue& slot = object->elements[owner->base_count + member->ordinal];
@@ -885,8 +926,9 @@ bool ConstantInterpreter::locate_variant(
 		Indeterminate(slot);
 		object->extra = member->ordinal + 1;
 	}
-	out = descend(&slot, member->variable->type, place.offset - at - static_cast<int64_t>(member->offset / 8),
-		place.type, write, 0);
+	const StorageView subobject = descend(&slot, member->variable->type,
+		place.offset - at - static_cast<int64_t>(member->offset / 8), place.type, write, 0);
+	out = subobject.zero_type != nullptr ? zero_storage(subobject.zero_type) : subobject.value;
 	if (out == nullptr)
 		return fail(location, "an access outside the designated object");
 	return true;
@@ -1383,13 +1425,10 @@ void ConstantInterpreter::zero_into(ConstValue& target)
 		const ClassEntity* cls = ClassOf(target.type);
 		if (cls != nullptr && cls->key == TokenKind::KW_UNION)
 		{
-			for (const DataMember* member = cls->members; member != nullptr; member = member->next)
+			if (const DataMember* member = first_zero_member(cls))
 			{
-				if (member->variable->name == nullptr && member->bit_field)
-					continue;
 				target.extra = member->ordinal + 1;
 				zero_into(target.elements[cls->base_count + member->ordinal]);
-				break;
 			}
 			return;
 		}

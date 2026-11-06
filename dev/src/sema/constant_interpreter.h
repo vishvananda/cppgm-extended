@@ -104,9 +104,10 @@ private:
 	bool new_object(const Type* type, ConstPlace& place, uint32_t location, bool prefix = false);
 	static bool scalar_array(const Type* type);
 	static ConstValue array_prefix(const Type* type);
-	static bool zero_array_tail(const Type* type, uint32_t depth);
+	bool zero_array_tail(const Type* type, uint32_t depth);
 	ConstValue prefix_skeleton(const Type* type, uint32_t depth);
-	ConstValue* array_element(ConstValue& array, const Type* type, uint64_t index, bool write, uint32_t location);
+	ConstValue* zero_storage(const Type* type);
+	static const DataMember* first_zero_member(const ClassEntity* cls);
 	bool expand_array(ConstValue& array, const Type* type, uint32_t location);
 	bool aggregate_array(const Type* type, const ConstPlace& target, const syntax::BracedInitList& list, uint32_t& next,
 		uint32_t location);
@@ -124,7 +125,18 @@ private:
 		const ClassEntity* cls, int64_t offset, const Type* wanted, int64_t& start, uint32_t depth);
 	bool ordered(const Type* type, int64_t a, int64_t b, uint32_t depth);
 	uint64_t leaves(const Type* type, uint32_t depth);
-	ConstValue* descend(
+	// A read of an implicit zero tail can project through the typed layout
+	// without allocating the enclosing class. Only the located value needs
+	// storage. A null value and null zero_type mean no matching subobject.
+	struct StorageView
+	{
+		StorageView(ConstValue* value = nullptr, const Type* zero_type = nullptr) : value(value), zero_type(zero_type)
+		{}
+		explicit operator bool() const { return value != nullptr || zero_type != nullptr; }
+		ConstValue* value;
+		const Type* zero_type;
+	};
+	StorageView descend(
 		ConstValue* value, const Type* type, int64_t offset, const Type* wanted, bool write, uint32_t depth);
 	const ConstValue* literal_object(const syntax::LiteralExpr* literal, uint32_t location);
 	bool read(const ConstPlace& place, ConstValue& out, uint32_t location);
@@ -363,6 +375,9 @@ private:
 	// base_search's classes found not to lead to the base sought (per
 	// query).
 	PointerMap base_misses_;
+	// Proven zero aggregate defaults, per evaluation. Cache successes only:
+	// a provisional incomplete/default-constructor failure is not a fact.
+	PointerMap zero_array_classes_;
 };
 
 } // namespace sema

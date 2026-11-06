@@ -354,6 +354,17 @@ bool ConstantInterpreter::value_initialize(
 	// not trivial runs; an array's elements each.
 	if (type->kind == TypeKind::Array)
 	{
+		ConstValue* value = nullptr;
+		if (!locate(target, true, value, location))
+			return false;
+		if ((value->flags & kArrayPrefix) != 0)
+		{
+			// Omitted subarrays still need storage for nonzero defaults.
+			// The shared path constructs one prefix before any expansion.
+			syntax::BracedInitList empty = syntax::BracedInitList();
+			uint32_t next = 0;
+			return aggregate_array(type, target, empty, next, location);
+		}
 		const uint64_t size = size_of(type->element, location);
 		for (uint64_t i = 0; i < type->bound; ++i)
 		{

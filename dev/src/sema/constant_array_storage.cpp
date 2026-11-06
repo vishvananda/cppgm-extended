@@ -36,15 +36,28 @@ bool ConstantInterpreter::zero_array_tail(const Type* type, uint32_t depth)
 	if (!IsAggregateClass(cls))
 		return cls->default_constructor != nullptr && cls->default_constructor->trivial &&
 			!cls->default_constructor->deleted;
+	if (zero_array_classes_.find(cls) != PointerMap::kMissing)
+		return true;
 	for (const DataMember* member = cls->members; member != nullptr; member = member->next)
 	{
 		if (member->variable->kind != EntityKind::Variable || (member->bit_field && member->variable->name == nullptr))
 			continue;
 		const bool zero = zero_array_tail(member->variable->type, depth + 1);
-		if (!zero || cls->key == TokenKind::KW_UNION)
-			return zero;
+		if (!zero)
+			return false;
+		if (cls->key == TokenKind::KW_UNION)
+			break;
 	}
+	zero_array_classes_.set(cls, 1);
 	return true;
+}
+
+const DataMember* ConstantInterpreter::first_zero_member(const ClassEntity* cls)
+{
+	for (const DataMember* member = cls->members; member != nullptr; member = member->next)
+		if (member->variable->kind == EntityKind::Variable && (!member->bit_field || member->variable->name != nullptr))
+			return member;
+	return nullptr;
 }
 
 ConstValue ConstantInterpreter::prefix_skeleton(const Type* type, uint32_t depth)
@@ -101,21 +114,16 @@ bool ConstantInterpreter::expand_array(ConstValue& array, const Type* type, uint
 	return true;
 }
 
-ConstValue* ConstantInterpreter::array_element(
-	ConstValue& array, const Type* type, uint64_t index, bool write, uint32_t location)
+ConstValue* ConstantInterpreter::zero_storage(const Type* type)
 {
-	if (index < array.count)
-		return &array.elements[index];
-	if ((array.flags & kArrayPrefix) == 0 || index >= type->bound || (array.flags & kArrayTailZero) == 0)
-		return nullptr;
-	if (write)
-		return expand_array(array, type, location) ? &array.elements[index] : nullptr;
 	// A read creates only its value. Its address remains the original
 	// place's root/offset, retaining distinct object and element identities.
-	if (!step(location))
+	if (!step(0))
 		return nullptr;
 	ConstValue* zero = static_cast<ConstValue*>(arena_.allocate(sizeof(ConstValue), alignof(ConstValue)));
-	*zero = prefix_skeleton(type->element, 0);
+	*zero = prefix_skeleton(type, 0);
+	if (steps_ >= kStepBudget)
+		return nullptr;
 	zero_into(*zero);
 	return zero;
 }
@@ -135,15 +143,18 @@ bool ConstantInterpreter::aggregate_array(
 		const uint64_t capacity = std::min(type->bound, remaining + 1);
 		if (capacity > kValueBudget || steps_ + capacity > kStepBudget)
 			return fail(location, "constant evaluation exceeds its storage budget");
-		value->count = static_cast<uint32_t>(capacity);
-		value->elements = arena_.allocate_array<ConstValue>(value->count);
-		for (uint32_t i = 0; i < value->count; ++i)
-			value->elements[i] = prefix_skeleton(type->element, 0);
-		if (steps_ >= kStepBudget)
-			return fail(location, "constant evaluation exceeds its storage budget");
+		value->count = 0;
+		value->elements = arena_.allocate_array<ConstValue>(static_cast<uint32_t>(capacity));
 	}
 	const uint64_t size = size_of(type->element, location);
 	auto initialize = [&](uint64_t index) {
+		if (prefix && index >= value->count)
+		{
+			value->elements[index] = prefix_skeleton(type->element, 0);
+			value->count = static_cast<uint32_t>(index + 1);
+			if (steps_ >= kStepBudget)
+				return fail(location, "constant evaluation exceeds its storage budget");
+		}
 		ConstPlace place = target;
 		place.offset += static_cast<int64_t>(index * size);
 		place.type = type->element;
