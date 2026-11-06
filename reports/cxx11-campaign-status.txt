@@ -535,3 +535,15 @@ Fresh combined027/028 normal acceptance:
   performance pipeline has begun A/A measurements. Its separate output verifier
   is queued behind the verified worker; no performance or repair closure is
   claimed. Cumulative/scaling/linked/export checks remain required.
+
+Combined027/028 per-fix performance acceptance:
+- All24 calibrated instruction/direct compiler RSS pairs pass, with maximum
+  upper95 ratios1.0021764854843866 and1.0010516512747245. The verifier rehashed
+  all53,760 measured batch children and3,840 observation outputs and checked
+  frozen inputs/binaries/sources and native oracle objects. No wall-time gate
+  pass is claimed under shared-host load.
+- Cumulative original-baseline checks are running in final-pipeline-v1, before
+ 1,936 declared scaling/resource observations,264 linked cells and fresh export.
+  Additional native-prefix oracle and final verification workers are queued
+  behind verified process identities. These later stages remain unproven;
+  CXX11-027/028 and the broader campaign stay open.

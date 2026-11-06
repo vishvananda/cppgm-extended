@@ -108,3 +108,27 @@ changed-output stages follow serially. A separate perfix verifier waits on the
 verified worker identity before rehashing every measurement/child output.
 No performance pass is inferred from normal acceptance. Cumulative, absolute
 ordinary-variable/parameter scaling, linked replay and export remain required.
+
+Completed per-fix performance verification
+
+per-fix-acceptance-v1.json verifies all24 calibrated instruction and actual
+compiler RSS workload pairs. Maximum instruction upper95 is1.0021764854843866;
+maximum compiler RSS upper95 is1.0010516512747245. All53,760 measured batch
+child outputs and3,840 ordinary observation outputs were rehashed, along with
+compiler/source/fixture/input identities and all84 native oracle objects.
+The23 exact-output and one audited-alignment pair both pass the unchanged
+calibration, scheduling, instruction and direct-memory gates. Raw timings are
+retained without a wall-time pass claim under shared-host load.
+
+final-pipeline-v1 now runs the original-baseline cumulative checks, then six
+absolute/resource ladders (1,936 observations),264 exact linked cells and a
+fresh export with42 packaged controls/reference wrappers. Its ten stages are
+serial and guarded by source-v4/fixture-v3/candidate-v3 identities. Fourteen
+producer/helper script hashes are frozen in final-producer-manifest-v1.json.
+After those stages, prefix-oracle-pipeline-v1 independently executes the
+measured explicit-prefix objects and exact GCC/Clang source variants; the
+ordinary-class producer also executes its native cases and host variants.
+The final verifier waits for these actual workers and rechecks all retained
+results before writing final-acceptance-v1.json. Prepared scripts or a waiting
+worker are not evidence of those later gates passing. Neither027 nor028 is
+closed; broader reference-family/corpus/CWG/historical-memory/CI work remains.

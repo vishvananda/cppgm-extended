@@ -2941,11 +2941,15 @@
       "normal_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/normal-acceptance-v3.json"
     },
     "performance": {
-      "status": "calibrated-counter-and-direct-compiler-rss-pipeline-running",
+      "status": "per-fix-instruction-and-actual-compiler-rss-gates-passed;final-checkpoint-pending",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/performance-protocol-v3.json",
       "workload_pairs": 24,
       "note": "All original21 plus two shallow ordinary-class workloads and a new common-correct partial-default workload. Counter/direct-child-RSS gates unchanged; no performance pass before calibrated serial measurements.",
-      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/performance-pipeline-v1.log"
+      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/performance-pipeline-v1.log",
+      "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/per-fix-acceptance-v1.json",
+      "instruction_upper95": 1.0021764854843866,
+      "compiler_rss_upper95": 1.0010516512747245,
+      "final_pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/final-pipeline-v1.log"
     },
     "standards_basis": {
       "category": "implementation-scaling",
@@ -2994,10 +2998,14 @@
       "required_parent": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-028/required-parent-v1/assessment.json"
     },
     "performance": {
-      "status": "calibrated-counter-and-direct-compiler-rss-pipeline-running",
+      "status": "per-fix-instruction-and-actual-compiler-rss-gates-passed;final-checkpoint-pending",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/performance-protocol-v3.json",
       "workload_pairs": 24,
-      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/performance-pipeline-v1.log"
+      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/performance-pipeline-v1.log",
+      "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/per-fix-acceptance-v1.json",
+      "instruction_upper95": 1.0021764854843866,
+      "compiler_rss_upper95": 1.0010516512747245,
+      "final_pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/final-pipeline-v1.log"
     },
     "standards_basis": {
       "category": "original-cxx11",
