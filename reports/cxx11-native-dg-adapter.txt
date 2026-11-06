@@ -1,0 +1,127 @@
+Native GCC dg execution adapter checkpoint (2026-11-06)
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/native-dg-adapter-v1
+
+The maintainer adapter is scripts/run_upstream_dg.py, with the strict compiler
+boundary in scripts/upstream_dg_proxy.py. Native GCC/DejaGnu evaluates original
+directives, conditional diagnostics, selectors, expected failures, additional
+sources, output patterns and runtime expectations. Each invocation selects one
+explicit ISO/GNU C++11 variant; it does not reproduce the original driver's
+multi-standard/torture matrix or establish full-corpus applicability.
+
+The native default remains the CLI default. cppgm's accepted-but-unimplemented
+pedantic/errors flags are explicit blockers. --defaults adapted deliberately
+omits GCC's default -pedantic-errors/-Wno-long-long; this is recorded in each
+manifest. Only reviewed stage/optimization/include/define flags are forwarded;
+arbitrary -f/-m/-W flags are blocked, not treated as semantic rejections. C++0x
+aliases are accepted only in the matching selected dialect. Conflicting dialects
+are blocked, including newer standards. Diagnostic normalization changes only
+cppgm's severity/location prefix; message text is preserved.
+
+Assembly requests are adapted to cppgm object compilation and cannot establish
+assembly-text coverage. Candidate dg-final checks remain explicit blockers,
+including cases whose final-check selector has not yet been resolved. Assembly
+capability probes may use objects only when native check_no_compiler_messages
+explicitly discards the result without inspecting it. Pattern-inspecting and
+unknown assembly probes are blocked. GCC_UNDER_TEST uses the candidate boundary
+too; compiler capability probes are not delegated to a more capable host.
+Initialization-only option/interface blockers are retained separately and do not
+poison unrelated tests. Their results are not a complete capability inventory.
+
+For hosted programs every source is compiled with cppgm -c, in separate TUs,
+and only the final link uses host g++. Object/library input order is preserved.
+Native runtime loading uses a recorded, bounded execution boundary; GCC's own
+shouldfail/environment/output handling wraps that loader. Runtime return 70 is
+an ordinary program outcome, distinct from compiler internal-error exit 70.
+Signals and timeouts remain abnormal even if native expected-failure assertions
+would count them as PASS. Intentionally signal-terminating upstream runtime
+cases need an explicit disposition; they are not silently called successes.
+
+Every invocation retains raw streams, commands, source snapshots, output hashes,
+resource limits and outcome classification. Compiler/runtime subprocess groups
+are killed on timeout and on adapter interruption. Success without the requested
+ELF artifact is abnormal. Crashes, internal-error status and allocation/resource
+errors override native expected-error passes. Native PASS/FAIL/XFAIL/XPASS counts
+remain available beside the independent disposition. Both scripts are copied
+into each output directory before the native compiler boundary is invoked.
+Use immutable compiler binaries; the pilot freezes the candidate and scripts.
+
+Validation
+
+All 25 boundary/native integration regressions pass (synthetic-6.log), including
+conditional diagnostics on both routes, skips, xfails, companion-source linking
+and execution, absent artifacts, unsupported/default options, newer dialects,
+compiler crashes/internal exits/timeouts, capability probes, unavailable assembly
+checks, runtime crashes/timeouts and expected ordinary nonzero runtime exits.
+The process-group regression also verifies that its descendant actually started.
+Native fixture results and raw output remain under synthetic-1 through -6; early
+adapter failures are retained. The full make test-harness passes (33 suites, 500 discovered
+tests; native integration is separately enabled below). The Makefile includes
+the boundary suite in make test-harness. Native integration is enabled with CPPGM_DG_RUNTEST,
+CPPGM_DG_TESTSUITE and CPPGM_DG_LIBRARY; CPPGM_DG_TEST_OUTPUT retains its evidence.
+
+The final original-source pilot has 32 cells: eight named inputs, ISO/GNU C++11,
+and host/candidate routes. All eight source hashes match inventory-3's pinned
+GCC revision 5115c7e447fc07457443df874bf57840e8316d5f. Host GCC passes all 16
+selected cells. Candidate outcomes are six native-assertion passes, eight native
+failures and two runtime-abnormal outcomes. The three passing inputs in both
+dialects are sfinae57.C, ref-qual19.C and ref-qual20.C. These are selected pilot
+results, not a corpus conformance percentage or full original-test pass claim.
+
+The two constexpr-static4.C cells confirm the known SIGABRT after actual cppgm
+object compilation, host linking and execution (CXX11-002 remains unadjudicated).
+alias-decl-17.C and abstract-default1.C remain GCC pattern/recovery compatibility
+failures, CXX11-014. CXX11-005 and CXX11-006's required semantic rejections stay
+closed. The abstract source receives the required abstract-object diagnosis at
+its first invalid default argument; cppgm does not emit GCC's four diagnostics.
+
+Two original survey observations now have explicit standards dispositions:
+- CXX11-017 / OBS-0003 / Wnarrowing13.C: an unused class template has nondependent
+  narrowing static-member initializers. N3485 14.6p8 permits no diagnostic when
+  no valid specialization exists and the template is not instantiated. cppgm
+  rejects the instantiated control and accepts valid integer neighbors, as do
+  both hosts. All 18 host/candidate/dialect control cells have the expected
+  outcomes (narrowing-triage/results.json). Eager diagnostic timing is a GCC
+  compatibility difference, not a required original-C++11 diagnostic failure.
+- CXX11-018 / OBS-0001 / Wliteral-suffix.C: PLUS_ONE and BAR become reserved
+  non-underscore ud-suffixes adjacent to character/string literals. N3485
+  2.14.8p10 and 17.6.4.3.5p1 make this ill-formed with no diagnostic required.
+  GCC warns and recovers by expanding adjacent macro names; cppgm rejects.
+  That recovery/default-warning behavior is an implementation compatibility gap.
+Neither disposition relies on a CWG change after the release snapshot. The
+compatibility cases remain visible in the native issue ledger at low priority.
+
+Reproduction
+
+Use the installed native tools and pinned test helpers; for this relocatable
+installation LD_LIBRARY_PATH must include:
+  /mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/lib/x86_64-linux-gnu
+Example single variant (choose a fresh output directory):
+  python3 -B scripts/run_upstream_dg.py \
+    --testsuite /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite \
+    --dejagnu-library /mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/share/dejagnu \
+    --runtest /mnt/vizier/cppgm-cxx11-upstream/tools/root/usr/bin/runtest \
+    --candidate IMMUTABLE_CPPGM_BINARY --defaults adapted --dialect c++11 \
+    --case /mnt/vizier/cppgm-cxx11-upstream/gcc/gcc/testsuite/g++.dg/cpp0x/sfinae57.C \
+    --output NEW_EVIDENCE_DIRECTORY
+Add --mode host for the paired native host route. pilot-2/run_pilot.py reproduces
+the selected matrix. Use native-dg-adapter-v1/reproduce_pilot.py --output NEWDIR
+to copy its frozen adapter/compiler into fresh per-cell directories; retain
+existing evidence.
+
+Remaining work
+
+The full corpus is not executed or adjudicated. Unknown options/directives,
+remaining effective-target interfaces, conditional final-check applicability,
+precompiled headers, old-deja/specialized .exp drivers, warning policies and
+unavailable textual backends still need per-case accounting/adaptation. The
+Clang lit adapter remains open. Host-link failures must be triaged from the
+recorded final host step before attributing a compiler defect. Runtime tests
+that intentionally terminate by signal require a specific disposition. No
+compiler source or generated reference changed, so this checkpoint makes no
+new compiler performance claim. The prior 8079-case strict compiler checkpoint
+remains the latest; harness changes use the harness checks.
+
+The ledger now contains 18 issues and 548 observations, with 511 original
+observations still unmapped. Full-corpus coverage, remaining compiler repairs,
+performance gates and final integrated release checks remain required. The
+campaign goal remains active.

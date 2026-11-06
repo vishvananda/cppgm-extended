@@ -364,6 +364,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_test_report_output.py \
 	scripts/tests/test_report_isolation.py \
 	scripts/tests/test_run_ab_compile_benchmark.py \
+	scripts/tests/test_upstream_dg.py \
 	scripts/tests/test_validate_perf_regression.py
 
 test-harness:

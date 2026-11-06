@@ -223,6 +223,25 @@ CXX11-012 scalar-initializer checkpoint (2026-11-06):
   conformance proof, and distinguish N3485's const-integral-subobject wording
   from later CWG 1757/2126 changes for CXX11-016.
 
+Native execution adapter checkpoint (2026-11-06):
+- scripts/run_upstream_dg.py and upstream_dg_proxy.py execute one explicit
+  C++11 variant with native Tcl expectations and independent compiler/runtime
+  abnormal-status overrides. Unknown options and unavailable final/assembly
+  probe interfaces are blockers; hosted programs use candidate objects and
+  host linking. Accepted-but-ignored flags never establish capability support.
+- All 25 boundary/native integration controls pass. The selected 32-cell
+  original-source pilot has 16 host passes; candidate results are six native
+  assertion passes, eight native failures and two recorded runtime SIGABRTs.
+  This is a pilot, not a corpus conformance percentage.
+- CXX11-017 (unused narrowing template) and CXX11-018 (reserved literal-suffix
+  recovery) explain two original observations using N3485 IFNDR rules, without
+  relying on later CWG decisions. Instantiated narrowing and valid controls
+  have the expected outcomes in all 18 compiler/dialect cells. Native GCC
+  diagnostic/recovery compatibility remains separate from mandatory semantics.
+- The ledger has 18 issues/548 observations; 511 original observations remain
+  unmapped. reports/cxx11-native-dg-adapter.txt and .json retain the limitations,
+  commands and evidence. Compiler sources/binary and references are unchanged.
+
 Next:
 - Repair runtime-tail CXX11-015 and semantic constexpr-reference CXX11-016
   through owning PA regressions, full checks and calibrated perf.

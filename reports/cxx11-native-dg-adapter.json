@@ -1,0 +1,89 @@
+{
+  "compiler_sha256": "2245243e624fce02c9cdc58ede413f04c94d404f011f7005409258ce48316238",
+  "pilot_cells": 32,
+  "counts": {
+    "host": {
+      "native-assertions-passed": 16
+    },
+    "candidate": {
+      "native-assertions-passed": 6,
+      "native-failed": 8,
+      "runtime-abnormal": 2
+    }
+  },
+  "verified_pinned_sources": [
+    {
+      "path": "gcc/testsuite/g++.dg/cpp0x/Wliteral-suffix.C",
+      "sha256": "e65db171b1c7e80bee7bdcf8777b052029106e699171afdd2c754140e7ad5ec7",
+      "revision": "5115c7e447fc07457443df874bf57840e8316d5f"
+    },
+    {
+      "path": "gcc/testsuite/g++.dg/cpp0x/Wnarrowing13.C",
+      "sha256": "c92c76cb75f1be40943e9ccc97665f3bc35892e158664d2633b419a38044086c",
+      "revision": "5115c7e447fc07457443df874bf57840e8316d5f"
+    },
+    {
+      "path": "gcc/testsuite/g++.dg/cpp0x/abstract-default1.C",
+      "sha256": "43c5bb5669b9326bac73c2b4edd48b9195e6b03cad2687a3d01206d674f743d6",
+      "revision": "5115c7e447fc07457443df874bf57840e8316d5f"
+    },
+    {
+      "path": "gcc/testsuite/g++.dg/cpp0x/alias-decl-17.C",
+      "sha256": "8279054661cfd5c6fc8841a9bd11a8a0227620da408ba7d9963b72185fb5e798",
+      "revision": "5115c7e447fc07457443df874bf57840e8316d5f"
+    },
+    {
+      "path": "gcc/testsuite/g++.dg/cpp0x/constexpr-static4.C",
+      "sha256": "3362d483f36b6d1416d78ee61a4bbfb644254a446925de249b54fc16e0259d1d",
+      "revision": "5115c7e447fc07457443df874bf57840e8316d5f"
+    },
+    {
+      "path": "gcc/testsuite/g++.dg/cpp0x/ref-qual19.C",
+      "sha256": "2880899eeccb05b61c39946c404f1c9ac46f77740eaa1dd99201fa6897a174c9",
+      "revision": "5115c7e447fc07457443df874bf57840e8316d5f"
+    },
+    {
+      "path": "gcc/testsuite/g++.dg/cpp0x/ref-qual20.C",
+      "sha256": "b84a001c9369ad6a81657981c89df029abf525e0919c34701e06384e51152621",
+      "revision": "5115c7e447fc07457443df874bf57840e8316d5f"
+    },
+    {
+      "path": "gcc/testsuite/g++.dg/cpp0x/sfinae57.C",
+      "sha256": "ca4d1081bf19f622e713087295ed1372fd280061d11c5011c41b3b873634e7ab",
+      "revision": "5115c7e447fc07457443df874bf57840e8316d5f"
+    }
+  ],
+  "issues": 18,
+  "observations": 548,
+  "original_unmapped": 511,
+  "synthetic": {
+    "tests": 25,
+    "log": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-adapter-v1/synthetic-6.log",
+    "status": "pass"
+  },
+  "full_upstream_pass": false,
+  "goal_complete": false,
+  "checks": {
+    "status": "pass",
+    "suites": 33,
+    "tests": 500,
+    "log": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-adapter-v1/test-harness-final.log",
+    "sha256": "7794ad64e5494ec32ab957bd0f3534d9234ee832b46ed8a937932d1bd262f8c9",
+    "command": "env -u CPPGM_LOWIR_DIRECT_TEXT_COMPARE make test-harness CXX=g++ CPPGM_HOST_CXX=g++",
+    "native_integration": {
+      "tests": 25,
+      "status": "pass",
+      "log": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-adapter-v1/synthetic-6.log",
+      "sha256": "6832c094f913613e9e6fa10c60ba27432b11f203e2078aa14596ae99193329d7"
+    },
+    "current_compiler_sha256": "2245243e624fce02c9cdc58ede413f04c94d404f011f7005409258ce48316238",
+    "frozen_compiler_sha256": "2245243e624fce02c9cdc58ede413f04c94d404f011f7005409258ce48316238",
+    "compiler_source_changed": false,
+    "goal_complete": false,
+    "scripts": {
+      "scripts/run_upstream_dg.py": "18651219ac399ec5968cb19a6bb8e76792c92596c198d1ff66971f976a0e7379",
+      "scripts/upstream_dg_proxy.py": "8f8b73f457f2fc5eb4f2ed57b62af1f3f9f5866b77439606b161b58056d5e5a7",
+      "scripts/tests/test_upstream_dg.py": "60365159086714730f87dcb688881de0d0c5b98ed2eb628f5b857a0e9d4f9e02"
+    }
+  }
+}
