@@ -1,20 +1,35 @@
 C++11 GCC/Clang gap discovery and repair plan
-2026-11-05 | investigate/upstream-cxx11
+2026-11-06 | investigate/upstream-cxx11
 Worktree: /mnt/vizier/cppgm-upstream-cxx11
 Evidence root: /mnt/vizier/cppgm-cxx11-upstream
 
 Objective and completion boundary
 
-Systematically discover and repair C++11 compatibility gaps exposed by pinned
+Systematically discover and repair C++ correctness defects exposed by pinned
 GCC and Clang compiler tests, using the repository's normal PA regression,
 compiler implementation, correctness, architecture and performance workflow.
+
+Grade acceptance of valid programs, required diagnosis of ill-formed programs,
+and required link/runtime/output behavior. Do not grade diagnostic wording,
+number, location, notes, recovery or optional warnings. Those upstream checks
+are retained as annotations, not compiler repair requirements. A normal
+required diagnostic is sufficient for a whole negative translation unit;
+reduced single-rule negatives and valid neighboring controls are needed to
+establish coverage of individual rules. A crash never satisfies a negative.
+
+Record original C++11, later CWG/DR resolutions, deliberate extensions,
+ill-formed-no-diagnostic-required cases, implementation-defined/unspecified
+behavior and unresolved standards questions separately. Both acceptance and
+rejection may be permitted for a no-diagnostic-required case; its vendor
+expectation cannot create a required language diagnostic. Host agreement
+supports investigation but does not replace a standards basis.
 
 “All gaps” means complete accounting of a declared upstream corpus and its
 applicable test configurations. No finite suite proves complete C++11
 conformance. Close each discovered defect and explain each excluded case;
 never infer completeness from the current source-acceptance percentages.
-The task here is the plan and initial finding ledger; compiler repairs follow
-this plan rather than being bundled into this planning change.
+Repairs and harness work follow this plan. Existing native diagnostic scores
+are historical oracle-compatibility measurements, not C++ correctness rates.
 
 Deliverables
 
@@ -91,7 +106,11 @@ Stage 2 — make the external oracle trustworthy
 Prefer upstream DejaGnu metadata evaluation for GCC. If an adapter supports a
 restricted grammar, reject unsupported directives explicitly. Honor dg-do,
 language/target selectors, effective-target requirements, options, additional
-sources, diagnostic expectations, dg-final checks and expected failures.
+sources and expected failures. Use active diagnostic directives to identify
+potential negative cases, then adjudicate the rule and retain diagnostic
+presence as the candidate check. Project dg-final requirements onto behavior,
+ABI or objects when possible; preserve unsupported output checks as coverage
+gaps. Diagnostic regexes/counts remain metadata only.
 Force the selected C++11 dialect; never silently run a test in a newer mode.
 Probe effective targets using the candidate's real capabilities. Accepted but
 ignored -f/-m/-W flags do not establish support.
@@ -99,8 +118,12 @@ ignored -f/-m/-W flags do not establish support.
 Use a dedicated Clang lit configuration/adapter for applicable RUN lines.
 Preserve substitutions, target triples, includes, split-file setup,
 REQUIRES/UNSUPPORTED/XFAIL and standard-specific verify prefixes. Do not
-redirect arbitrary %clang_cc1 commands to the cppgm driver. Diagnostic tests
-need severity/location/expectation checking, not just a nonzero exit status.
+redirect arbitrary %clang_cc1 commands to the cppgm driver. Use active
+standard-specific expected-error directives to discover negative cases, not
+to require Clang's diagnostic spelling, locations, counts or recovery. Remove
+-verify and its control options from candidate invocations. Classify each
+RUN line's actual language/behavior obligation; unsupported AST/IR checks
+remain explicit gaps until an equivalent independent oracle is implemented.
 
 For each case distinguish preprocessing, semantic analysis, object generation,
 linking and execution. Run positive syntax cases through object generation
@@ -123,11 +146,27 @@ include fixtures that exercise conditional diagnostics, xfails, skips, extra
 sources, crashes, timeouts and unavailable checker interfaces. Keep upstream
 baseline failures separate from candidate failures.
 
-Mixed positive/negative source files need diagnostic verification or isolated,
-faithfully reduced subcases. A shared rejection may hide untested valid paths.
-Compare required diagnostics, detect unexpected acceptance, and report missing
-warnings separately. Signals, timeout and internal error 70 always fail a
-negative case. Do not equate matching exit statuses with matching semantics.
+Mixed positive/negative source files need isolated, faithfully reduced subcases
+and positive mirrors: rejecting a whole file does not test all of its valid
+paths or prove every invalid construct is diagnosed. Establish each reduced
+case's required outcome from the relevant language rule. For negative cases,
+check normal compiler termination and a diagnostic from compilation, excluding
+linker output, capability probes and driver usage errors. A diagnosed extension
+may be accepted. For positive cases retain successful compilation, linking,
+execution and output checks as applicable. Signals, timeout and internal error
+70 always fail a negative case. Warning-escalation options require reviewed
+language-only replay; an optional warning promoted by -Werror is not a language
+error. Keep IFNDR, extensions and unresolved cases outside the graded denominator.
+
+First rescore immutable native receipts as a provisional language-outcome
+screen, keeping all raw evidence and native assertions. Show matches,
+mismatches, blocked cases, standards dispositions and coverage separately.
+This screen is not a complete conformance result: individual negative rules
+still require isolation and positive controls. Then replay with correctness
+projections and expand beyond the initially selected problem cohort. Publish
+separate positive-compile, required-negative, runtime/ABI and whole-corpus
+coverage counts; never present the old 3.6% diagnostic-parity score as C++
+correctness. Clang remains unmeasured until its language projections execute.
 
 Stage 3 — triage all findings and fill discovery blind spots
 
@@ -162,15 +201,15 @@ P1  constexpr-static4.C runtime abort: static/dynamic initialization; check
     PA27/28 check only if the defect specifically needs host object/ABI behavior.
 P1  ref-qual19.C and ref-qual20.C runtime aborts: implicit move/ref-qualified
     conversions; inspect PA12/20 contracts, choose after isolating the trigger.
-P1  alias-decl-17.C missing pack diagnostic: inspect PA15/17 alias/pack boundary.
-P1  abstract-default1.C missing abstract-type construction diagnostic: inspect
-    PA13 plus initialization requirements; use the latest feature in the reduction.
+Closed language defects: alias-decl-17.C and abstract-default1.C now receive
+    required diagnostics. Their residual native regex/count mismatches do not
+    require compiler changes. Preserve the PA regressions and repaired status.
 P1  cxx11-initializer-aggregate.cpp timeout at 15 and 45 seconds: inspect large
     sparse initialization handling; determine whether semantics or emission
     scales with the full 2^31-element array. Preserve bounded-resource coverage.
 P2  Remaining nine runtime compile failures and all acceptance discrepancies;
     prioritize wrong code, false acceptance, common valid features, then
-    diagnostics fidelity and vendor-extension compatibility.
+    remaining required language behavior. Diagnostic fidelity is outside scope.
 
 Priority sets order; it does not remove lower-priority findings from scope.
 
@@ -343,7 +382,9 @@ and later-DR evidence separate throughout that work.
 2. Each job runs the complete applicable, declared C++11 matrix with cppgm and
    the matching upstream compiler: GCC for the GCC suite, Clang for the Clang
    suite. Preserve ISO/GNU11 configurations, target and optimization variants,
-   native assertions, xfails, diagnostics and runtime checks. Retain explicit
+   applicable language expectations, xfails, required diagnostics and runtime
+   checks through the validated correctness projections. Diagnostic parity
+   is outside the CI acceptance criteria. Retain explicit
    per-case scope dispositions and interface adaptations. A compiler failure,
    crash, new skip, missing variant or adapter blocker must not silently shrink
    the workload or become a pass. Host baseline failures stay separate.

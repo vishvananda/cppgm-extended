@@ -1,0 +1,20 @@
+{
+  "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing13.C": {
+    "status": "not-required",
+    "reason": "N3485 14.6p8: an uninstantiated template with no valid specialization is ill-formed, no diagnostic required. This is diagnostic timing/quality compatibility, not a missing required original-C++11 diagnostic or a later CWG decision.",
+    "issue": "CXX11-017",
+    "sha256": "c92c76cb75f1be40943e9ccc97665f3bc35892e158664d2633b419a38044086c"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/Wliteral-suffix.C": {
+    "status": "not-required",
+    "reason": "N3485 2.14.8p10 and 17.6.4.3.5p1 make use of these non-underscore literal suffixes ill-formed, no diagnostic required. GCC recovery/default-warning compatibility is separate from required original-C++11 semantics and later CWG decisions.",
+    "issue": "CXX11-018",
+    "sha256": "e65db171b1c7e80bee7bdcf8777b052029106e699171afdd2c754140e7ad5ec7"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-static4.C": {
+    "status": "standards-review",
+    "reason": "GCC exits zero; Clang and cppgm abort. The permitted partial static-initialization behavior is unresolved; retain the runtime difference without treating GCC behavior as normative.",
+    "issue": "CXX11-002",
+    "sha256": "3362d483f36b6d1416d78ee61a4bbfb644254a446925de249b54fc16e0259d1d"
+  }
+}

@@ -1,3 +1,10 @@
+Scope correction (2026-11-06): retain native applicability, active prefixes,
+features and RUN commands, then project them onto C++ correctness obligations.
+Candidate diagnostic wording, counts, locations and recovery are outside scope.
+The historical requirement below to match severity/location/counts is superseded;
+see cxx11-language-correctness.txt. Metadata discovery remains useful and no
+Clang correctness percentage has been measured.
+
 Clang native lit metadata checkpoint (2026-11-06)
 
 The pinned LLVM 21.1.8 lit parser extracts metadata for all 20,491 Clang

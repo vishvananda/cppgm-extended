@@ -366,6 +366,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_run_ab_compile_benchmark.py \
 	scripts/tests/test_upstream_dg.py \
 	scripts/tests/test_upstream_dg_campaign.py \
+	scripts/tests/test_upstream_language_outcomes.py \
 	scripts/tests/test_upstream_clang_lit_metadata.py \
 	scripts/tests/test_validate_perf_regression.py
 

@@ -1,3 +1,9 @@
+Scope correction (2026-11-06): the native assertion counts below are historical
+measurements and are not C++ correctness pass rates. Diagnostic prose, count,
+location, recovery and optional warnings are outside the repair objective.
+See cxx11-language-correctness.txt for the revised outcome screen and limits.
+All original evidence is retained.
+
 Original-finding native GCC execution checkpoint (2026-11-06)
 Evidence: /mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-v1
 

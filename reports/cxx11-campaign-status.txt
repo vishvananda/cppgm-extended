@@ -1,3 +1,14 @@
+Current objective correction (2026-11-06)
+
+Validate C++ correctness: valid acceptance, required diagnosis, link/runtime/ABI
+behavior. Diagnostic wording/count/location/recovery and optional warnings are
+outside the compiler repair gate. CXX11-014 needs no compiler repair; original
+IFNDR CXX11-017/018 impose no required diagnostic. Later CWG fixes remain in
+scope. Native 26/720 (3.6%) is not a correctness pass rate. The new provisional
+screen is documented in cxx11-language-correctness.txt; Clang language scoring
+and full-corpus applicability/execution remain outstanding. The following dated
+entries preserve earlier states; diagnostic-parity requirements are superseded.
+
 Campaign active — compiler repairs and native execution checkpoints (2026-11-06)
 
 The full objective and closure criteria remain in cxx11-gap-plan.txt.

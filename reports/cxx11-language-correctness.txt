@@ -1,0 +1,102 @@
+C++ correctness campaign: revised oracle and first outcome screen
+2026-11-06 | investigate/upstream-cxx11
+
+The objective is C++ correctness. Diagnostic spelling, counts, source locations,
+notes, recovery and optional warnings are not repair requirements. The existing
+26/720 (3.6%) native assertion result is not a C++ correctness pass rate.
+
+Required checks
+
+- Valid programs: accept and produce objects; link and execute where required,
+  retaining program-output, ABI and other independent behavior checks.
+- Ill-formed programs requiring a diagnostic: normal compiler termination and
+  a diagnostic from compilation. A diagnosed extension may still be accepted.
+  Compiler crashes, timeouts, silent rejection and linker errors do not satisfy
+  this obligation. Diagnostic presence on a mixed-invalid source is only a
+  whole-translation-unit check: isolate each rule and add valid mirrors in the
+  owning PA to establish feature coverage.
+- Classify original C++11, later CWG/DR, IFNDR, deliberate extensions, unspecified
+  behavior and unresolved standards questions separately. Required later-DR
+  repairs stay in scope. Upstream compiler behavior is evidence, not the rule.
+- Keep warning escalation, unsupported interfaces, unprojected codegen checks
+  and incomplete runtime/output checks visible until reviewed and replayed.
+
+Implementation and validation
+
+scripts/upstream_language_outcomes.py classifies immutable native receipts using
+active host metadata to discover provisional positive/negative expectations.
+Candidate diagnostic regexes/counts never enter its decision. Compiler stages
+are separated from host linking and capability probes. Program execution and
+output obligations remain required. scripts/summarize_upstream_language_campaign.py
+first uses the existing campaign verifier to rehash sources, streams, artifacts,
+compiler and adapter; it then pairs identical source/dialect variants. Explicit
+standards dispositions are pinned to exact source hashes in
+reports/cxx11-language-dispositions.json.
+
+Twenty meaningful boundary controls pass, covering equivalent wording and
+first-error-only diagnosis, missing/silent diagnostics, diagnosed extensions,
+positive rejection, optional warnings, abnormal compilation, capability probes,
+warning escalation, IFNDR, runtime/output obligations, linker-only diagnostics,
+combined negative compile/link ambiguity, missing compiler stages, option
+blockers, preprocessing output and unprojected codegen checks. make test-harness
+passes: 36 suites, 549 discovered tests, including 20 new language controls;
+17 optional native integrations keep their explicit skips. A fresh student
+export and bundle install pass, including all 42 reference wrappers. Its
+maintainer harness/report files do not ship. The restored development compiler
+matches the accepted binary hash. Evidence: language-correctness-validation-v1.json
+under the evidence root. No compiler implementation changed here.
+
+First screen: accepted compiler checkpoint d1c5c14c9
+
+Evidence:
+  /mnt/vizier/cppgm-cxx11-upstream/language-outcome-screen-d1c5c14c9-v4/results.json
+Candidate SHA256:
+  fb3ba4ed31f33025d9f365f661d63c9749c5bac84aa2af36df1103f9c4b4bb66
+Inputs: 360 originally selected GCC problem sources, ISO/GNU C++11, 720 paired
+variants. All 1440 host/candidate cells, 9996 raw streams and 2871 emitted outputs
+are reverified. This rescoring reuses existing executions; it is not a fresh
+compiler run or a representative sample of the full corpus.
+
+  Outcome matches                          62
+    positive compilation                   10
+    positive compile/link/run               4
+    negative diagnostic presence           48
+  Outcome mismatches needing triage       543
+    positive rejection                    302
+    missing negative diagnostic           241
+  Candidate harness blockers               44
+  Baseline/unprojected-oracle unresolved    57
+  Warning-policy review                     8
+  Standards review                          2
+  Original IFNDR: no required diagnostic     4
+  Total                                   720
+
+Among the 605 provisionally screened variants, 62 match (10.25%). Neither that
+number nor 62/720 measures whole-corpus C++ correctness. The 543 differences
+are symptoms requiring standards/root-cause triage, not 543 confirmed compiler
+bugs. Even negative matches need isolated-rule coverage and valid neighbors.
+Clang correctness and full-corpus percentages remain unmeasured.
+
+alias-decl-17.C and abstract-default1.C match in both dialects: their required
+diagnostics are present. CXX11-014 is outside the repair gate; wording/count
+changes are unnecessary. Wnarrowing13.C and Wliteral-suffix.C are original IFNDR
+cases (CXX11-017/018). constexpr-static4.C stays under standards review
+(CXX11-002); its runtime difference is retained. No failure was hidden or raw
+observation changed. V1 incorrectly labeled option blockers as abnormal; V2
+corrected that. V3 additionally retains unprojected native/preprocessor oracles
+as baseline blockers. V4 also checks that every execution and program-output
+obligation is present; substituting duplicate execution checks cannot hide a
+missing output check or run. Counts are unchanged. All versions remain available.
+
+Reproduce into a fresh destination:
+  python3 scripts/summarize_upstream_language_campaign.py \
+    --campaign /mnt/vizier/cppgm-cxx11-upstream/native-dg-campaign-d1c5c14c9-v1/adapted \
+    --dispositions reports/cxx11-language-dispositions.json \
+    --output /absolute/new-output-directory
+
+Next: adjudicate and isolate mismatches, replay reviewed language-only variants,
+implement Clang RUN applicability and correctness projections, then expand to
+the full declared corpus. Continue the normal owning-PA regression, fix,
+correctness and calibrated performance cycle. The final GCC/Clang CI jobs use
+these correctness criteria and retain matched whole-suite timing; the campaign
+is incomplete until those jobs and all other plan requirements are satisfied.

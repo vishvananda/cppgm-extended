@@ -999,7 +999,7 @@
     ],
     "expected": "N3485 14.5.3p5 requires rejection at template definition, even if never instantiated. Nested expansions, sizeof..., discarded dependent arguments and function parameter packs retain their original rules.",
     "pending_checks": [],
-    "native_diagnostic_followup": "CXX11-014; mandatory rejection remains repaired, full GCC diagnostic-pattern pass is not claimed."
+    "native_diagnostic_followup": "CXX11-014 is outside scope: required language diagnosis is repaired; GCC wording/count parity is not a goal."
   },
   {
     "id": "CXX11-006",
@@ -2329,7 +2329,7 @@
   {
     "id": "CXX11-014",
     "priority": "P2",
-    "status": "observed",
+    "status": "out-of-scope-diagnostic-parity",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-17.C",
       "gcc/gcc/testsuite/g++.dg/cpp0x/abstract-default1.C"
@@ -2337,9 +2337,9 @@
     "discovered_neighbor_of": "CXX11-005",
     "symptom": "Native GCC diagnostic-pattern/count assertions fail for alias-decl-17.C and abstract-default1.C despite required normal rejection.",
     "root_cause": "The candidate message says an alias-declaration names a parameter pack it does not expand; the upstream regex requires parameter packs not expanded. Severity/location normalization alone preserves this mismatch. The abstract-default test requires the pattern abstract type at four locations; cppgm emits an object of an abstract class type at the first error and stops. The original mandatory-diagnostic defect CXX11-006 remains repaired.",
-    "expected": "Keep the mandatory diagnostic and accurately account for vendor diagnostic-pattern compatibility; do not call the native test a pass based only on nonzero exit.",
+    "expected": "Required language diagnostics are present. Retain native regex/count failures as annotations; no wording, count, location or recovery repair is required by this correctness campaign.",
     "owning_pa": null,
-    "ownership_note": "External diagnostic-oracle/driver compatibility; the course does not grade diagnostic prose. Determine the appropriate compatibility regression without imposing GCC-specific text on student language tests.",
+    "ownership_note": "No compiler change or PA regression is required for diagnostic parity. Existing mandatory-diagnostic regressions for CXX11-005/006 remain required.",
     "regressions": [],
     "fix_revision": null,
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-experiment-3",
@@ -2349,11 +2349,15 @@
       "expanded_native_pilot": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-adapter-v1/pilot-2/summary.json"
     },
     "performance": {
-      "status": "not-started"
+      "status": "not-applicable-no-compiler-change"
     },
     "standards_basis": {
       "category": "vendor-diagnostic-compatibility",
       "rationale": "N3485 requires the diagnostic, which is present. GCC-specific message pattern is separate from original C++11 conformance and later CWG decisions."
+    },
+    "disposition": {
+      "correctness_campaign": "out-of-scope-diagnostic-parity",
+      "user_direction": "Validate C++ correctness; diagnostic parity is not a goal (2026-11-06)."
     }
   },
   {
@@ -2523,7 +2527,7 @@
   {
     "id": "CXX11-017",
     "priority": "P3",
-    "status": "triaged",
+    "status": "not-required-original-ifndr",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing13.C"
     ],
@@ -2543,7 +2547,8 @@
     },
     "disposition": {
       "original_conformance": "excluded-original-ifndr",
-      "native_compatibility": "observed"
+      "native_compatibility": "observed",
+      "correctness_campaign": "No diagnostic required; native compatibility is outside the correctness repair gate."
     },
     "standards_basis": {
       "category": "original-cxx11-ifndr",
@@ -2554,7 +2559,7 @@
   {
     "id": "CXX11-018",
     "priority": "P3",
-    "status": "triaged",
+    "status": "not-required-original-ifndr",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/Wliteral-suffix.C"
     ],
@@ -2574,7 +2579,8 @@
     },
     "disposition": {
       "original_conformance": "excluded-original-ifndr",
-      "native_compatibility": "observed"
+      "native_compatibility": "observed",
+      "correctness_campaign": "No diagnostic required; native compatibility is outside the correctness repair gate."
     },
     "standards_basis": {
       "category": "original-cxx11-ifndr",

@@ -1,3 +1,14 @@
+Scope correction (2026-11-06): C++ correctness is the goal. The diagnostic
+parity prototype below is retained as historical evidence and possible
+metadata-discovery support. Integrating its candidate wording/count/location
+checks is no longer a requirement. The lit adapter must instead run positive
+translations, required-negative diagnostic-presence checks, and applicable
+runtime/ABI/output oracles. Active prefixes and applicability still matter;
+matching Clang diagnostic prose, counts and recovery does not. No Clang
+language-outcome percentage is available yet.
+
+Historical prototype record follows.
+
 Clang native diagnostic replay preparation (2026-11-06)
 
 Status: private prototype built;28 controls and complete toolchain rehash pass.
