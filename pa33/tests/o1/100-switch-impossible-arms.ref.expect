@@ -1,0 +1,8 @@
+# Dispatch bounds permit equivalent comparisons, arithmetic or tables.
+instructions <= 17 in @dense
+instructions <= 17 in @signed_byte
+instructions <= 17 in @unsigned_byte
+# Defined defaults, their effects and non-returning calls remain observable.
+instructions <= 22 in @defined_default
+instructions <= 22 in @throwing_default
+instructions <= 6 in @all_dead_cases

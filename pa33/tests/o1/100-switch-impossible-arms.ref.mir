@@ -1,0 +1,443 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @seed
+  storage scalar i64
+  init i64 882731
+
+global @events
+  storage scalar i64
+  init i64 0
+
+function @dense
+  abi
+    param %key -> rdi : i64
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r10, rdi
+    jump_table r10, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case0
+    imul rsi, 3
+    ret rsi
+
+  block ^case1
+    imul rsi, 5
+    ret rsi
+
+  block ^case2
+    imul rsi, 7
+    ret rsi
+
+  block ^case3
+    imul rsi, 9
+    ret rsi
+
+  block ^case4
+    imul rsi, 11
+    ret rsi
+
+  block ^case5
+    imul rsi, 13
+    ret rsi
+
+  block ^dead
+    trap
+
+function @signed_byte
+  abi
+    param %key -> rdi : i8
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea r10, [rdi+6]
+    jump_table r10, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case0
+    imul rsi, 3
+    ret rsi
+
+  block ^case1
+    imul rsi, 5
+    ret rsi
+
+  block ^case2
+    imul rsi, 7
+    ret rsi
+
+  block ^case3
+    imul rsi, 9
+    ret rsi
+
+  block ^case4
+    imul rsi, 11
+    ret rsi
+
+  block ^case5
+    imul rsi, 13
+    ret rsi
+
+  block ^dead
+    trap
+
+function @unsigned_byte
+  abi
+    param %key -> rdi : u8
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea r10, [rdi-250]
+    jump_table r10, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case0
+    imul rsi, 3
+    ret rsi
+
+  block ^case1
+    imul rsi, 5
+    ret rsi
+
+  block ^case2
+    imul rsi, 7
+    ret rsi
+
+  block ^case3
+    imul rsi, 9
+    ret rsi
+
+  block ^case4
+    imul rsi, 11
+    ret rsi
+
+  block ^case5
+    imul rsi, 13
+    ret rsi
+
+  block ^dead
+    trap
+
+function @defined_default
+  abi
+    param %key -> rdi : i64
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r10, rdi
+    cmp.i64 r10, 5
+    ja ^record
+    jump_table r10, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case0
+    imul rsi, 3
+    ret rsi
+
+  block ^case1
+    imul rsi, 5
+    ret rsi
+
+  block ^case2
+    imul rsi, 7
+    ret rsi
+
+  block ^case3
+    imul rsi, 9
+    ret rsi
+
+  block ^case4
+    imul rsi, 11
+    ret rsi
+
+  block ^case5
+    imul rsi, 13
+    ret rsi
+
+  block ^dead
+    trap
+
+  block ^record
+    mov rdi, rsi
+    call @record_default [args=(rdi)]
+    ret rax
+
+function @throwing_default
+  abi
+    param %key -> rdi : i64
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov r10, rdi
+    cmp.i64 r10, 5
+    ja ^raise
+    jump_table r10, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case0
+    imul rsi, 3
+    ret rsi
+
+  block ^case1
+    imul rsi, 5
+    ret rsi
+
+  block ^case2
+    imul rsi, 7
+    ret rsi
+
+  block ^case3
+    imul rsi, 9
+    ret rsi
+
+  block ^case4
+    imul rsi, 11
+    ret rsi
+
+  block ^case5
+    imul rsi, 13
+    ret rsi
+
+  block ^dead
+    trap
+
+  block ^raise
+    mov rdi, rsi
+    call @raise_default [args=(rdi), returns=noreturn]
+    trap
+
+function @all_dead_cases
+  abi
+    param %key -> rdi : i64
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+
+  block ^otherwise
+    mov rdi, rsi
+    call @record_default [args=(rdi)]
+    ret rax
+
+  block ^dead
+    trap
+
+function @record_default
+  abi
+    param %value -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, @events
+    add r8, 1
+    store.i64 @events, r8
+    add rdi, 19
+    ret rdi
+
+function @raise_default
+  abi
+    param %value -> rdi : i64
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, @events
+    add r8, 1
+    store.i64 @events, r8
+    throw rdi
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 96
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve rbx r12 r13 r14 r15
+    temp %i -> [rbp-8] : i64
+    temp %state -> [rbp-16] : i64
+    temp %errors -> [rbp-24] : i64
+    temp %expected -> [rbp-32] : i64
+    temp %e -> [rbp-40] : i64
+    temp %fallback_expected -> [rbp-48] : i64
+    temp %next_errors -> [rbp-56] : i64
+
+  block ^entry
+    load.i64 r8, @seed
+    store.i64 [rbp-8], 0
+    store.i64 [rbp-16], r8
+    store.i64 [rbp-24], 0
+
+  block ^loop
+    load.i64 r10, [rbp-8]
+    mov rax, r10
+    mov r11, -6148914691236517205
+    mul r11
+    shr rdx, 2
+    imul rdx, 6
+    mov rax, r10
+    sub rax, rdx
+    mov rbx, rax
+    lea r8, [rbx+rbx]
+    add r8, 3
+    mov r12, r8
+    imul r12, [rbp-16]
+    mov rdi, rbx
+    load.i64 rsi, [rbp-16]
+    call @dense [args=(rsi,rdi)]
+    mov r13, rax
+    lea r8, [rbx-6]
+    sext.i8 r8
+    mov rdi, r8
+    load.i64 rsi, [rbp-16]
+    call @signed_byte [args=(rsi,rdi)]
+    mov r14, rax
+    lea r8, [rbx+250]
+    zext.i8 r8
+    mov rdi, r8
+    load.i64 rsi, [rbp-16]
+    call @unsigned_byte [args=(rsi,rdi)]
+    mov r15, rax
+    mov rdi, rbx
+    load.i64 rsi, [rbp-16]
+    call @defined_default [args=(rsi,rdi)]
+    store.i64 [rbp-32], r12
+    mov r12, rax
+    mov rdi, rbx
+    load.i64 rsi, [rbp-16]
+    call @throwing_default [args=(rsi,rdi)]
+    mov r10, rax
+    store.i64 [rbp-40], r10
+    add rbx, 20
+    load.i64 r10, [rbp-16]
+    add r10, 19
+    store.i64 [rbp-48], r10
+    mov rdi, rbx
+    load.i64 rsi, [rbp-16]
+    call @defined_default [args=(rsi,rdi)]
+    mov rbx, rax
+    mov rdi, 500
+    load.i64 rsi, [rbp-16]
+    call @all_dead_cases [args=(rsi,rdi)]
+    cmp.i64 r13, [rbp-32]
+    setne r13
+    movzx r13, r13
+    cmp.i64 r14, [rbp-32]
+    setne r14
+    movzx r14, r14
+    cmp.i64 r15, [rbp-32]
+    setne r15
+    movzx r15, r15
+    cmp.i64 r12, [rbp-32]
+    setne r12
+    movzx r12, r12
+    load.i64 r10, [rbp-40]
+    cmp.i64 r10, [rbp-32]
+    setne r8
+    movzx r8, r8
+    cmp.i64 rbx, [rbp-48]
+    setne rbx
+    movzx rbx, rbx
+    cmp.i64 rax, [rbp-48]
+    setne rax
+    movzx rax, rax
+    or r13, r14
+    or r15, r12
+    or r8, rbx
+    or r13, r15
+    or r8, rax
+    or r13, r8
+    or r13, [rbp-24]
+    store.i64 [rbp-56], r13
+
+  block ^repeat
+    mov r11, 6364136223846793005
+    mov r8, r11
+    imul r8, [rbp-16]
+    add r8, 1442695040888963407
+    load.i64 r9, [rbp-8]
+    add r9, 1
+    cmp.i64 r9, 256
+    jae ^finished
+
+  block ^repeat~loop
+    store.i64 [rbp-8], r9
+    store.i64 [rbp-16], r8
+    load.i64 r11, [rbp-56]
+    store.i64 [rbp-24], r11
+    jmp ^loop
+
+  block ^finished
+    cmp.i64 [rbp-56], 0
+    je ^try_default
+
+  block ^wrong
+    mov rax, 1
+    ret rax
+
+  block ^try_default
+    eh_push ^handler, 0
+    mov rdi, 400
+    mov rsi, 99
+    call @throwing_default [args=(rsi,rdi)]
+    eh_pop
+    mov rax, 2
+    ret rax
+
+  block ^handler
+    load_exception r8
+    load.i64 r9, @events
+    cmp.i64 r8, 99
+    setne r8
+    movzx r8, r8
+    cmp.i64 r9, 513
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    ret r8

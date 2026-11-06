@@ -279,6 +279,58 @@ prototype, so the native executable is its unchanged copy. Compiler guards are
 in `scc-dispatch-ported-{frozen,cumulative-frozen}/`; Xpressive's raw repetitions
 are in `scc-dispatch-ported-boost-sentinels/runtime-precise/`.
 
+## First-group checkpoint
+
+Three optimizer mechanisms are pushed through `8b3b6efc6`: unused-ellipsis
+inlining, bit-recurrence folding and bounded recursive loop dispatch. Their
+all-50 comparison against the original campaign compiler gives a 1.06547x
+equal-weight geometric instruction speed, or 6.145% fewer instructions. The
+largest changes are recursive Brainfuck (2.373x instruction speed), CRC32
+(6.279x) and Calculator AST (1.324x). Frozen `-O0` cost remains unchanged;
+the cumulative `-O3` instruction cost is about 0.30% higher.
+
+The new full timing comparison is still provisional: A/A checks and individual
+blocks show substantial host variation. Preserve the raw results, including
+apparent slowdowns, rather than treating the overall mean as proof that every
+program is safe. The Clang reranking is still running. Results are under
+`optimization/20261105/group1-scc-full-scoreboard-isolated/`.
+
+The fourth mechanism uses an existing LowIR fact: a switch successor containing
+only `unreachable` cannot occur in a defined execution. Discard such arms before
+pricing dispatch, and omit a table's range check only when the default has that
+same proof. A call followed by `unreachable` can still perform observable work
+or unwind, so it does not qualify. This changes optimized native selection;
+the `-O0` path and the serialized LowIR contract stay unchanged.
+
+This reduces Brainfuck instructions by another 8.40% and Calculator
+AST instructions by 1.44%; CRC instructions are unchanged. Index-cpp `.text`
+falls from 391,250 to 389,538 bytes. Independent host calls check narrow signed
+and unsigned arguments, defined defaults, throwing defaults and varied inputs.
+Course tests use behavior and broad dispatch bounds. All 50 checksums, the
+8,043-test strict report, debug checks, self-host through PA5, PA35 quick/smoke,
+optional modern-C++ checks and architecture/placement/format/file audits pass.
+The harness also passes with its normal environment: an initial invocation
+inherited strict text-comparison mode and failed its relaxed-mode controls;
+both attempts are retained. All six public sentinels and the FlatMap/Xpressive
+objects are byte-identical to the preceding compiler at both optimization
+levels. Frozen compiler instructions and object bytes are unchanged. A longer
+CRC repeat gives 1.006x wall speed across nine paired blocks, with unchanged
+instructions and about 1% A/A drift: no resolved runtime change. It does not
+reproduce the earlier apparent slowdown. The fresh student export verifies
+22,535 portable reference outputs, passes its document audits and installs all
+42 wrappers; the new fixture also passes through the exported tool bundle.
+Receipts are under `switch-unreachable-prototype/`,
+`switch-unreachable-ported/` and `switch-unreachable-frozen/`.
+
+A private call-forwarding prototype substitutes typed arguments without
+cloning bodies or rerunning caller simplification. It improves Calculator AST
+with much less compiler work than broad recursive inlining, but earlier
+Brainfuck timings exposed sensitivity to placement and host activity. Keep
+this experiment private until the combined candidate and existing workloads
+have passed the same controls. A separate private Base64 prototype removes
+redundant narrow extensions before operations that consume only the low bits;
+its initial instruction gain also needs the full acceptance process.
+
 ## Outstanding work
 
 Close the first group with a full 50-workload paired reranking, the full public

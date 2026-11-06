@@ -42,6 +42,10 @@ Higher optimization levels must preserve the correctness established by
 previous assignments. In `cppgm++`, apply PA32's LowIR optimization before
 native lowering at the requested level.
 
+An `unreachable` continuation can justify removing switch arms or range checks
+that serve only impossible inputs. Preserve defined defaults and their effects,
+including a non-returning call before an unreachable terminator.
+
 The MIR dump uses PA24's text format and describes the same instructions and
 ABI/frame facts that produce the executable. When both outputs are requested,
 they must come from the same optimized program. Keep call argument uses,

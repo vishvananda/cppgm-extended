@@ -1096,14 +1096,29 @@ bool FunctionSelector::emit_clustered_switch(
 			selector = Operand::make_reg(kSelectScratch);
 		}
 	};
+	// Only the impossible continuation itself is dispensable. A call
+	// before it can still perform a reachable action or leave by unwinding.
+	auto undefined_target = [&](uint32_t id) {
+		const lowir::Block& block = body.blocks[id];
+		return block.first != lowir::kNoId && block.first == block.last &&
+			body.instructions[block.first].op == Opcode::Unreachable;
+	};
+	const bool undefined_default = undefined_target(inst.ops[1].index);
 	std::vector<std::pair<int64_t, uint32_t>> cases;
 	for (uint32_t k = 0; k + 1 < inst.extra_count; k += 2)
 	{
+		if (undefined_target(body.operands[inst.extra_first + k + 1].index))
+			continue;
 		const Value value = resolve(body.operands[inst.extra_first + k]);
 		if (value.kind != ValueKind::Integer)
 			return false;
 		cases.push_back(std::make_pair(
 			imm_for(value, Type::scalar(kind)).imm, edge_target(body.operands[inst.extra_first + k + 1].index)));
+	}
+	if (cases.empty())
+	{
+		emit1(Op::Jmp, TypeKind::Void, Operand::make_label(fallback));
+		return true;
 	}
 	std::stable_sort(cases.begin(), cases.end(),
 		[](const std::pair<int64_t, uint32_t>& a, const std::pair<int64_t, uint32_t>& b) { return a.first < b.first; });
@@ -1144,9 +1159,14 @@ bool FunctionSelector::emit_clustered_switch(
 			emit2(Op::Mov, TypeKind::I64, table_index, selector);
 		if (low != 0)
 			emit2(Op::Sub, TypeKind::I64, table_index, Operand::make_imm(low, low < 0 ? -1 : 0));
-		emit2(Op::Cmp, TypeKind::I64, table_index, Operand::make_imm(entries - 1));
-		Inst& bound = emit1(Op::Jcc, TypeKind::Void, Operand::make_label(fallback));
-		bound.sub = CC_A;
+		// With an impossible default, every defined selector indexes the
+		// table; holes and values outside its range need no chosen behavior.
+		if (!undefined_default)
+		{
+			emit2(Op::Cmp, TypeKind::I64, table_index, Operand::make_imm(entries - 1));
+			Inst& bound = emit1(Op::Jcc, TypeKind::Void, Operand::make_label(fallback));
+			bound.sub = CC_A;
+		}
 		Inst& table = emit1(Op::JumpTable, TypeKind::Void, table_index);
 		table.aux = first;
 		table.aux2 = entries;

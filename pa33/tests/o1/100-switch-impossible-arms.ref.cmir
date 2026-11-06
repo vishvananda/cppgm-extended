@@ -1,0 +1,443 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @seed
+  storage scalar i64
+  init i64 882731
+
+global @events
+  storage scalar i64
+  init i64 0
+
+function @dense
+  abi
+    param %key -> rdi : i64
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov <gpr0>, rdi
+    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case0
+    imul rsi, 3
+    ret rsi
+
+  block ^case1
+    imul rsi, 5
+    ret rsi
+
+  block ^case2
+    imul rsi, 7
+    ret rsi
+
+  block ^case3
+    imul rsi, 9
+    ret rsi
+
+  block ^case4
+    imul rsi, 11
+    ret rsi
+
+  block ^case5
+    imul rsi, 13
+    ret rsi
+
+  block ^dead
+    trap
+
+function @signed_byte
+  abi
+    param %key -> rdi : i8
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea <gpr0>, [rdi+<off0>]
+    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case0
+    imul rsi, 3
+    ret rsi
+
+  block ^case1
+    imul rsi, 5
+    ret rsi
+
+  block ^case2
+    imul rsi, 7
+    ret rsi
+
+  block ^case3
+    imul rsi, 9
+    ret rsi
+
+  block ^case4
+    imul rsi, 11
+    ret rsi
+
+  block ^case5
+    imul rsi, 13
+    ret rsi
+
+  block ^dead
+    trap
+
+function @unsigned_byte
+  abi
+    param %key -> rdi : u8
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    lea <gpr0>, [rdi-<off0>]
+    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case0
+    imul rsi, 3
+    ret rsi
+
+  block ^case1
+    imul rsi, 5
+    ret rsi
+
+  block ^case2
+    imul rsi, 7
+    ret rsi
+
+  block ^case3
+    imul rsi, 9
+    ret rsi
+
+  block ^case4
+    imul rsi, 11
+    ret rsi
+
+  block ^case5
+    imul rsi, 13
+    ret rsi
+
+  block ^dead
+    trap
+
+function @defined_default
+  abi
+    param %key -> rdi : i64
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov <gpr0>, rdi
+    cmp.i64 <gpr0>, 5
+    ja ^record
+    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case0
+    imul rsi, 3
+    ret rsi
+
+  block ^case1
+    imul rsi, 5
+    ret rsi
+
+  block ^case2
+    imul rsi, 7
+    ret rsi
+
+  block ^case3
+    imul rsi, 9
+    ret rsi
+
+  block ^case4
+    imul rsi, 11
+    ret rsi
+
+  block ^case5
+    imul rsi, 13
+    ret rsi
+
+  block ^dead
+    trap
+
+  block ^record
+    mov rdi, rsi
+    call @record_default [args=(rdi)]
+    ret rax
+
+function @throwing_default
+  abi
+    param %key -> rdi : i64
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    mov <gpr0>, rdi
+    cmp.i64 <gpr0>, 5
+    ja ^raise
+    jump_table <gpr0>, [^case0, ^case1, ^case2, ^case3, ^case4, ^case5]
+
+  block ^case0
+    imul rsi, 3
+    ret rsi
+
+  block ^case1
+    imul rsi, 5
+    ret rsi
+
+  block ^case2
+    imul rsi, 7
+    ret rsi
+
+  block ^case3
+    imul rsi, 9
+    ret rsi
+
+  block ^case4
+    imul rsi, 11
+    ret rsi
+
+  block ^case5
+    imul rsi, 13
+    ret rsi
+
+  block ^dead
+    trap
+
+  block ^raise
+    mov rdi, rsi
+    call @raise_default [args=(rdi), returns=noreturn]
+    trap
+
+function @all_dead_cases
+  abi
+    param %key -> rdi : i64
+    param %value -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+
+  block ^otherwise
+    mov rdi, rsi
+    call @record_default [args=(rdi)]
+    ret rax
+
+  block ^dead
+    trap
+
+function @record_default
+  abi
+    param %value -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, @events
+    add r8, 1
+    store.i64 @events, r8
+    add rdi, 19
+    ret rdi
+
+function @raise_default
+  abi
+    param %value -> rdi : i64
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+
+  block ^entry
+    load.i64 r8, @events
+    add r8, 1
+    store.i64 @events, r8
+    throw rdi
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues duplicated
+    preserve <gpr1> <gpr2> <gpr3> <gpr4> <gpr5>
+    temp %i -> [rbp-<off0>] : i64
+    temp %state -> [rbp-<off1>] : i64
+    temp %errors -> [rbp-<off2>] : i64
+    temp %expected -> [rbp-<off3>] : i64
+    temp %e -> [rbp-<off4>] : i64
+    temp %fallback_expected -> [rbp-<off5>] : i64
+    temp %next_errors -> [rbp-<off6>] : i64
+
+  block ^entry
+    load.i64 r8, @seed
+    store.i64 [rbp-<off0>], 0
+    store.i64 [rbp-<off1>], r8
+    store.i64 [rbp-<off2>], 0
+
+  block ^loop
+    load.i64 <gpr0>, [rbp-<off0>]
+    mov rax, <gpr0>
+    mov <gpr6>, -6148914691236517205
+    mul <gpr6>
+    shr rdx, 2
+    imul rdx, 6
+    mov rax, <gpr0>
+    sub rax, rdx
+    mov <gpr1>, rax
+    lea r8, [<gpr1>+<gpr1>]
+    add r8, 3
+    mov <gpr2>, r8
+    imul <gpr2>, [rbp-<off1>]
+    mov rdi, <gpr1>
+    load.i64 rsi, [rbp-<off1>]
+    call @dense [args=(rsi,rdi)]
+    mov <gpr3>, rax
+    lea r8, [<gpr1>-<off0>]
+    sext.i8 r8
+    mov rdi, r8
+    load.i64 rsi, [rbp-<off1>]
+    call @signed_byte [args=(rsi,rdi)]
+    mov <gpr4>, rax
+    lea r8, [<gpr1>+<off0>]
+    zext.i8 r8
+    mov rdi, r8
+    load.i64 rsi, [rbp-<off1>]
+    call @unsigned_byte [args=(rsi,rdi)]
+    mov <gpr5>, rax
+    mov rdi, <gpr1>
+    load.i64 rsi, [rbp-<off1>]
+    call @defined_default [args=(rsi,rdi)]
+    store.i64 [rbp-<off3>], <gpr2>
+    mov <gpr2>, rax
+    mov rdi, <gpr1>
+    load.i64 rsi, [rbp-<off1>]
+    call @throwing_default [args=(rsi,rdi)]
+    mov <gpr0>, rax
+    store.i64 [rbp-<off4>], <gpr0>
+    add <gpr1>, 20
+    load.i64 <gpr0>, [rbp-<off1>]
+    add <gpr0>, 19
+    store.i64 [rbp-<off5>], <gpr0>
+    mov rdi, <gpr1>
+    load.i64 rsi, [rbp-<off1>]
+    call @defined_default [args=(rsi,rdi)]
+    mov <gpr1>, rax
+    mov rdi, 500
+    load.i64 rsi, [rbp-<off1>]
+    call @all_dead_cases [args=(rsi,rdi)]
+    cmp.i64 <gpr3>, [rbp-<off3>]
+    setne <gpr3>
+    movzx <gpr3>, <gpr3>
+    cmp.i64 <gpr4>, [rbp-<off3>]
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    cmp.i64 <gpr5>, [rbp-<off3>]
+    setne <gpr5>
+    movzx <gpr5>, <gpr5>
+    cmp.i64 <gpr2>, [rbp-<off3>]
+    setne <gpr2>
+    movzx <gpr2>, <gpr2>
+    load.i64 <gpr0>, [rbp-<off4>]
+    cmp.i64 <gpr0>, [rbp-<off3>]
+    setne r8
+    movzx r8, r8
+    cmp.i64 <gpr1>, [rbp-<off5>]
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    cmp.i64 rax, [rbp-<off5>]
+    setne rax
+    movzx rax, rax
+    or <gpr3>, <gpr4>
+    or <gpr5>, <gpr2>
+    or r8, <gpr1>
+    or <gpr3>, <gpr5>
+    or r8, rax
+    or <gpr3>, r8
+    or <gpr3>, [rbp-<off2>]
+    store.i64 [rbp-<off6>], <gpr3>
+
+  block ^repeat
+    mov <gpr6>, 6364136223846793005
+    mov r8, <gpr6>
+    imul r8, [rbp-<off1>]
+    add r8, 1442695040888963407
+    load.i64 r9, [rbp-<off0>]
+    add r9, 1
+    cmp.i64 r9, 256
+    jae ^finished
+
+  block ^repeat~loop
+    store.i64 [rbp-<off0>], r9
+    store.i64 [rbp-<off1>], r8
+    load.i64 <gpr6>, [rbp-<off6>]
+    store.i64 [rbp-<off2>], <gpr6>
+    jmp ^loop
+
+  block ^finished
+    cmp.i64 [rbp-<off6>], 0
+    je ^try_default
+
+  block ^wrong
+    mov rax, 1
+    ret rax
+
+  block ^try_default
+    eh_push ^handler, 0
+    mov rdi, 400
+    mov rsi, 99
+    call @throwing_default [args=(rsi,rdi)]
+    eh_pop
+    mov rax, 2
+    ret rax
+
+  block ^handler
+    load_exception r8
+    load.i64 r9, @events
+    cmp.i64 r8, 99
+    setne r8
+    movzx r8, r8
+    cmp.i64 r9, 513
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    ret r8

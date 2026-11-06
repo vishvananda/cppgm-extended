@@ -61,7 +61,11 @@ signed zero and NaN payloads, not only freshly loaded scalar values.
 
 Switch tests can reuse ranges excluded by earlier comparisons on that path.
 Check gaps, signed boundaries and the selector's full width before omitting a
-bound or extension; an out-of-range value must still reach the default case.
+bound or extension; out-of-range values must still reach a defined default.
+An explicitly unreachable successor supplies another proof: defined executions
+cannot take that edge. Consider its effect on dispatch size and range checks,
+while preserving reachable actions before an impossible continuation. Include
+defined defaults, narrow incoming values and empty sets of live arms in tests.
 Equivalent indexed addresses can have different encoding costs. Preserve
 scale, width and flags when choosing the order of their operands.
 
