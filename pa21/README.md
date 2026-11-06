@@ -402,3 +402,11 @@ they can improve:
   the host model of PA26 allows. A runtime whose handler records restore
   callee-saved registers to their values when the region was entered does
   not, so allocation must follow the runtime contract used by the target.
+
+Runtime array initialization may represent an omitted suffix with a loop.
+Its partial-construction count must therefore advance at runtime, including
+completed nested rows. Preserve the lifetime of explicit initializer
+temporaries, the per-element lifetime of default-argument temporaries, and
+reverse destruction of every completed element if a later initialization
+throws. A completed nonthrowing array member still needs destruction if a
+later member throws.

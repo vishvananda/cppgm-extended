@@ -639,6 +639,11 @@ void FunctionLowering::aggregate_array(
 		throw LoweringError(location, "an array member initialized from an expression");
 	for (uint64_t i = 0; i < type->bound; ++i)
 	{
+		if (i >= units.size() && type->bound - i > 8)
+		{
+			omitted_array_tail(type, path_address(path), i, location);
+			break;
+		}
 		path_steps_.push_back(PathStep{ PathStep::Kind::Element, i, element_storage, 0 });
 		Place place = Place();
 		place.storage = path_address(path);
@@ -669,6 +674,11 @@ void FunctionLowering::aggregate_elements(const sema::Type* type, const AddressP
 		const PathStep step = element_step(type->element, location);
 		for (uint64_t i = 0; i < type->bound; ++i)
 		{
+			if ((list == nullptr || next >= list->elements.size) && type->bound - i > 8)
+			{
+				omitted_array_tail(type, path_address(path), i, location);
+				break;
+			}
 			path_steps_.push_back(step);
 			path_steps_.back().amount = i;
 			aggregate_item(type->element, path, list, next, false, location);
@@ -697,14 +707,26 @@ void FunctionLowering::aggregate_elements(const sema::Type* type, const AddressP
 		// automatic array's elements are).
 		const lowir::Value base = counted != SIZE_MAX ? storage : path_address(path);
 		for (uint64_t i = 0; i < type->bound; ++i)
+		{
+			if ((list == nullptr || next >= list->elements.size) && type->bound - i > 8)
+			{
+				omitted_array_tail(type, base, i, location);
+				break;
+			}
 			structured_item(type->element, structured_element(base, type->element, i, location, false), list, next,
 				location, false, true);
+		}
 	}
 	else
 	{
 		const PathStep step = element_step(type->element, location);
 		for (uint64_t i = 0; i < type->bound; ++i)
 		{
+			if ((list == nullptr || next >= list->elements.size) && type->bound - i > 8)
+			{
+				omitted_array_tail(type, path_address(path), i, location);
+				break;
+			}
 			path_steps_.push_back(step);
 			path_steps_.back().amount = i;
 			aggregate_item(type->element, path, list, next, false, location);
@@ -871,13 +893,7 @@ void FunctionLowering::element_made(ElementCount& count, size_t first)
 		close_region();
 		drop_member_cleanups(first);
 	}
-	if (++count.made < count.total)
-	{
-		const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-		Place slot = Place();
-		slot.storage = lowir::Value::slot(count.slot);
-		store(i64, integer(i64, count.made), slot);
-	}
+	elements_made(count, 1);
 }
 
 // ---------------------------------------------- arrays of class aggregates
@@ -996,7 +1012,7 @@ size_t FunctionLowering::push_counted(
 	// The array (at `storage`) joins the chain from the start, under its
 	// initializer's temporaries (as the partial array of g++ and clang),
 	// with none made: the course's counted form, linear in the elements.
-	count = ElementCount{ lowir::kNoId, 0, 1, false, lowir::kNoId };
+	count = ElementCount{ lowir::kNoId, 0, 1, false, lowir::kNoId, false };
 	for (const sema::Type* element = type; element->kind == sema::TypeKind::Array; element = element->element)
 		count.total *= element->bound;
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
@@ -1039,14 +1055,7 @@ void FunctionLowering::end_row(ElementCount* parent, const ElementCount& row, si
 {
 	element_count_ = parent;
 	end_counted(counted);
-	parent->made += row.total;
-	if (parent->made < parent->total)
-	{
-		const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
-		Place slot = Place();
-		slot.storage = lowir::Value::slot(parent->slot);
-		store(i64, integer(i64, parent->made), slot);
-	}
+	elements_made(*parent, row.total);
 }
 
 void FunctionLowering::member_made(const sema::Type* type, lowir::Value storage, size_t first)
@@ -1166,8 +1175,15 @@ void FunctionLowering::skip_item(const sema::Type* type, const syntax::BracedIni
 	}
 	if (type->kind == sema::TypeKind::Array)
 	{
-		for (uint64_t i = 0; i < type->bound; ++i)
+		for (uint64_t i = 0; i < type->bound && next < list->elements.size; ++i)
+		{
+			const uint32_t before = next;
 			skip_item(type->element, list, next);
+			// This helper only advances the input cursor. An identical
+			// omitted/empty element cannot consume a different clause.
+			if (next == before)
+				break;
+		}
 		return;
 	}
 	for (const sema::DataMember* member = sema::ClassOf(type)->members; member != nullptr; member = member->next)
@@ -1251,6 +1267,8 @@ bool FunctionLowering::helper_eligible(
 	bool any_full = false;
 	for (uint64_t i = 0; i < bound; ++i)
 	{
+		if (next >= list.elements.size)
+			return false;
 		const syntax::Expr* item = next < list.elements.size ? list.elements[next] : nullptr;
 		bool full = false;
 		if (item != nullptr && item->kind == syntax::ExprKind::BracedInit)
@@ -1615,6 +1633,11 @@ void FunctionLowering::structured_array(const sema::Type* type, lowir::Value add
 		const lowir::Type storage = lowering_.storage_type(element);
 		for (uint64_t i = 0; i < type->bound; ++i)
 		{
+			if (i >= units.size() && type->bound - i > 8)
+			{
+				omitted_array_tail(type, address, i, location);
+				break;
+			}
 			Place place = Place();
 			place.storage = structured_element(address, element, i, location, field);
 			qualify(place, element);
@@ -1623,8 +1646,15 @@ void FunctionLowering::structured_array(const sema::Type* type, lowir::Value add
 		return;
 	}
 	for (uint64_t i = 0; i < type->bound; ++i)
+	{
+		if ((list == nullptr || next >= list->elements.size) && type->bound - i > 8)
+		{
+			omitted_array_tail(type, address, i, location);
+			break;
+		}
 		structured_item(
 			element, structured_element(address, element, i, location, field), list, next, location, false, true);
+	}
 }
 
 bool ProgramLowering::moved_fields(const sema::Type* type, uint64_t offset, std::vector<MovedField>& fields)

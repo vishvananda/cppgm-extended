@@ -290,6 +290,8 @@ private:
 		uint64_t total;
 		bool rows;
 		lowir::SlotId row_slot;
+		// Inside a generated omitted-element loop, advance the slot at runtime.
+		bool repeated;
 	};
 
 	// A try statement's block or a handler being lowered
@@ -1275,6 +1277,9 @@ private:
 	void member_made(const sema::Type* type, lowir::Value storage, size_t first);
 	void end_counted(size_t counted);
 	void element_made(ElementCount& count, size_t first);
+	void elements_made(ElementCount& count, uint64_t amount);
+	void omitted_array_tail(const sema::Type* type, lowir::Value base, uint64_t first, uint32_t location);
+	void omitted_array_loop(const sema::Type* type, lowir::Value base, uint32_t location);
 	void drop_member_cleanups(size_t first);
 	void aggregate_elements(const sema::Type* type, const AddressPath& path, const syntax::BracedInitList* list,
 		uint32_t& next, uint32_t location);

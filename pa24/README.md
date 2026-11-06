@@ -218,6 +218,13 @@ It also checks the machine-IR dump:
   upper-clearing mask. Other selection policies remain your choice within
   the documented relationships and size bounds.
 
+A bounded large-zero control also requires encoding cost independent of an
+implicit zero extent. Its `.limits` sidecar caps compiler CPU, address space
+and output bytes through the shared resource-limit wrapper. Its large helper
+operations are encoded but never executed; an ordinary small zero operation
+checks runtime behavior. The machine-IR and executable checks ensure the large
+operations remain present and compact.
+
 Canonicalization absorbs interchangeable free registers and frame offsets;
 it preserves instruction families, widths, ordering and operand classes.
 The harness writes `.my.cmir` for diagnosis. Your backend emits only raw MIR.

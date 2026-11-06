@@ -229,19 +229,22 @@ void FunctionEmitter::zero_bytes(const Inst& inst)
 				asm_.mov_store_imm(to.displaced(static_cast<int32_t>(offset)), 0, widths[k]);
 		return;
 	}
+	const unsigned setup = (dst.kind == OperandKind::Reg ? (dst.reg == RDI ? 0 : 3) : 3 + rm_extra(to) + 1) + 2 +
+		(bytes <= 0xffffffffu ? 5 : 10) + 2;
 	unsigned direct = 0;
 	{
 		uint32_t offset = 0;
 		const unsigned widths[4] = { 8, 4, 2, 1 };
 		for (unsigned k = 0; k < 4; ++k)
-			while (bytes - offset >= widths[k])
+			while (bytes - offset >= widths[k] && direct <= setup)
 			{
+				// Once direct stores exceed the string-operation setup, no
+				// remaining store can change the choice. Bound this estimate
+				// independently of the amount of storage being initialized.
 				direct += zero_store_bytes(to.displaced(static_cast<int32_t>(offset)), widths[k]);
 				offset += widths[k];
 			}
 	}
-	const unsigned setup = (dst.kind == OperandKind::Reg ? (dst.reg == RDI ? 0 : 3) : 3 + rm_extra(to) + 1) + 2 +
-		(bytes <= 0xffffffffu ? 5 : 10) + 2;
 	if (always_direct_zero(bytes, function_->wide_bulk) || direct <= setup)
 	{
 		uint32_t offset = 0;

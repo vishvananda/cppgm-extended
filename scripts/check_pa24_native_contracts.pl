@@ -263,6 +263,9 @@ for my $test (@tests)
 	push @compile_command, '-o', $program
 		if $test !~ /strlen-prefix-(?:declaration|incompatible)/;
 	push @compile_command, $test;
+	(my $base = $test) =~ s/\.t$//;
+	@compile_command = ('python3', "$FindBin::Bin/run_resource_limited.py",
+		"$base.limits", '--', @compile_command) if -f "$base.limits";
 	my $status = run_command_capture(
 		cmd => \@compile_command,
 		stdout => "$directory/compile.stdout",
@@ -323,6 +326,15 @@ for my $test (@tests)
 	);
 	die "$test: generated program returned $run_status, expected " .
 		"$expected_status\n" if $run_status != $expected_status;
+
+	if($test =~ /bounded-large-zero-cost/) {
+		my $count = () = $mir =~ /^\s+zero_bytes 4294967295x1, /mg;
+		die "$test: a large zero operation disappeared before encoding\n"
+			if $count != 16;
+		die "$test: large zero operations expanded into an oversized executable\n"
+			if -s $program > 65536;
+		next;
+	}
 
 	if($test =~ /power-of-two-multiply/) {
 		my $code = main_code($test, $program);

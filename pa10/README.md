@@ -337,6 +337,11 @@ This PA10 milestone supports the following:
   dynamic initialization (3.6.2p2, 8.5.4p3, 12.2p5). Preserve their distinct
   identities and compact omitted tails; dynamic initialization and required
   destruction retain their ordinary lifetime actions
+- runtime array initialization lowers an omitted suffix compactly once it has
+  more than eight elements: nonvolatile zero-only initialization uses a bulk
+  zero with any ABI null-member-pointer patches; observable scalar accesses
+  and constructors use a loop. Explicit clauses retain their evaluation order
+  and each omitted object retains value-initialization semantics
 - automatic nonvolatile scalar arrays with completely known literal initializers
   use one copy from readonly constant data, including omitted zero elements;
   mutable arrays still have distinct automatic storage. PA16 extends eligibility

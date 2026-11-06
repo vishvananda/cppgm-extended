@@ -844,6 +844,33 @@ void FunctionLowering::initialize_storage(
 void FunctionLowering::initialize_object(
 	const sema::Type* type, lowir::Value base, const syntax::Expr& init, uint32_t location)
 {
+	if (type->kind == sema::TypeKind::Array && type->bound > 8 && type->element->kind != sema::TypeKind::Array &&
+		sema::ClassOf(type->element) == nullptr)
+	{
+		// The flattened scalar path must not materialize an omitted range.
+		// A string's already typed array bound counts its explicit code units.
+		const syntax::Expr* item = WithoutParentheses(&init);
+		uint64_t written = type->bound;
+		if (item->kind == syntax::ExprKind::BracedInit)
+		{
+			const syntax::BracedInitList* list = static_cast<const syntax::BracedInitList*>(item);
+			written = list->elements.size;
+			if (written == 1)
+				item = WithoutParentheses(list->elements[0]);
+		}
+		if (item->kind == syntax::ExprKind::Literal && item->facts->type->kind == sema::TypeKind::Array)
+			written = item->facts->type->bound;
+		if (written < type->bound && type->bound - written > 8)
+		{
+			const syntax::Expr* self = &init;
+			syntax::BracedInitList wrapper = syntax::BracedInitList();
+			wrapper.elements.data = const_cast<syntax::Expr**>(&self);
+			wrapper.elements.size = 1;
+			uint32_t next = 0;
+			structured_item(type, base, &wrapper, next, location);
+			return;
+		}
+	}
 	// Each scalar element stored at its byte offset from the object's
 	// address, elements without an initializer zeroed (8.5.1p7); an array
 	// of characters from a string literal takes its code units (8.5.2).
