@@ -32,6 +32,9 @@ class ConstantInterpreter
 {
 public:
 	explicit ConstantInterpreter(Analyzer& analyzer);
+	// Typed call eligibility; evaluating still checks its definition,
+	// arguments and body. Builtins have their own evaluator.
+	static bool constexpr_candidate(const FunctionEntity* function);
 	// Its steps are added to the graph's constant_steps.
 	~ConstantInterpreter();
 
@@ -40,6 +43,9 @@ public:
 	// recorded (a converted constant expression, 5.19p3, or a contextual
 	// conversion to bool).
 	bool evaluate(const syntax::Expr& expr, bool converted, ConstValue& out);
+	// A scalar initializer after its recorded conversion, published with
+	// only constant-address roots that survive this evaluation.
+	const ConstValue* evaluate_initializer(const syntax::Expr& expr);
 	// Its scalar value after the given conversion (a conversion function's
 	// result before its second standard conversion, see check_narrowing).
 	bool evaluate_after(const syntax::Expr& expr, const Conversion* conversion, ConstValue& out);

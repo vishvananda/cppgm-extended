@@ -401,6 +401,11 @@ bool ConstantInterpreter::call_place(const syntax::Expr& expr, ConstPlace& out)
 	return true;
 }
 
+bool ConstantInterpreter::constexpr_candidate(const FunctionEntity* function)
+{
+	return function->is_constexpr || function->implicit || (function->defaulted && function->member);
+}
+
 bool ConstantInterpreter::evaluable(const FunctionEntity* function, uint32_t location)
 {
 	// 5.19p2: a constexpr function or constructor, with a definition; an
@@ -408,8 +413,7 @@ bool ConstantInterpreter::evaluable(const FunctionEntity* function, uint32_t loc
 	// actions are (12.1p6, 12.8p13), which evaluating them checks.
 	if (function->deleted)
 		return fail(location, "a call of a deleted function");
-	const bool implicit_member = function->implicit || (function->defaulted && function->member);
-	if (!function->is_constexpr && !implicit_member)
+	if (!constexpr_candidate(function))
 		return fail(location, "a call of a function that is not constexpr");
 	if (frames_.size() - first_frame_ >= kCallDepth)
 		return fail(location, "constexpr calls nested too deeply");

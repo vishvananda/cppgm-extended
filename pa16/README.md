@@ -236,6 +236,10 @@ C++11 `constexpr` forms that later template and library code expect:
 - ordinary namespace objects whose constant-initialization probe encounters a
   core constant-expression failure use dynamic initialization; only contexts
   that require a constant expression are rejected for that failure
+- constant initialization of ordinary arrays evaluates their explicit scalar
+  elements, including pointer and floating results of constexpr calls and
+  conversions, while retaining omitted zero tails as compact ranges. It must
+  not require a dense constant value for every omitted element
 - a `constexpr` object is const, so one that is statically initialized states
   `storage=readonly` when its class has no `mutable` member and no
   non-trivial destructor, as PA11's const objects do; the temporary that a

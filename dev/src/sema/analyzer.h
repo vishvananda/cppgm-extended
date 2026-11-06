@@ -118,6 +118,10 @@ public:
 	// expression (3.6.2p2: constant initialization), published in the
 	// semantic arena; null when it is not one.
 	const ConstValue* constant_initialization(const VariableEntity* variable, const syntax::Initializer* initializer);
+	// A fully typed scalar initializer, after its recorded conversion, with
+	// no surrounding object or call frame. Cache successful values and
+	// failures so static aggregate emission need not evaluate a whole array.
+	const ConstValue* constant_scalar_initializer(const syntax::Expr& expr);
 	// Whether a function's exception-specification is non-throwing
 	// (15.4p12), a noexcept-specification's expression evaluated on first
 	// need.
@@ -2362,6 +2366,8 @@ private:
 	};
 	PointerMap evaluated_index_;
 	std::vector<const ConstValue*> evaluated_;
+	PointerMap scalar_initializer_index_;
+	std::vector<const ConstValue*> scalar_initializers_;
 	// The references read_through_storage holds.
 	PointerMap stored_references_;
 	// String literals' arrays as constant evaluation reads them (2.14.5p8),

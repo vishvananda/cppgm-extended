@@ -1532,7 +1532,10 @@ bool ProgramLowering::static_element(const sema::Type* type, const syntax::Expr&
 	}
 	// A pointer to member's value is the constant evaluation's.
 	if (type->unqualified->kind == sema::TypeKind::MemberPointer)
-		return false;
+	{
+		const sema::ConstValue* value = analyzer_->constant_scalar_initializer(element);
+		return value != nullptr && constant_data(type, *value, out, element.location);
+	}
 	if (type->is_reference())
 	{
 		// A reference member bound to an lvalue with static storage duration
@@ -1551,7 +1554,19 @@ bool ProgramLowering::static_element(const sema::Type* type, const syntax::Expr&
 	}
 	StaticValue value = StaticValue();
 	if (!static_converted(element, type->unqualified, value))
-		return false;
+	{
+		// Integral expressions already went through constant evaluation in
+		// static_value. Other scalar results (pointer/float calls and class
+		// conversions) use their typed value, without materializing the
+		// containing aggregate or its implicit array tail.
+		if (element.facts == nullptr || element.facts->type == nullptr)
+			return false;
+		sema::IntegralKind kind;
+		if (sema::IntegralKindOf(element.facts->type, kind))
+			return false;
+		const sema::ConstValue* evaluated = analyzer_->constant_scalar_initializer(element);
+		return evaluated != nullptr && constant_data(type, *evaluated, out, element.location);
+	}
 	lowir::DataItem item;
 	if (!static_item(type, value, item))
 		return false;

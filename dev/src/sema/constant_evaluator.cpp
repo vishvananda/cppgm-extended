@@ -935,6 +935,33 @@ const ConstValue* Analyzer::constant_initialization(
 	return interpreter.initialize(variable, initializer, value, false, variable->is_constinit) ? value : nullptr;
 }
 
+const ConstValue* Analyzer::constant_scalar_initializer(const syntax::Expr& expr)
+{
+	if (expr.facts == nullptr || expr.facts->type == nullptr || deferred_reserved_call())
+		return nullptr;
+	const syntax::Expr* direct = WithoutParentheses(&expr);
+	const ExprFacts* facts = direct->facts;
+	if (direct->kind == syntax::ExprKind::Call && facts != nullptr && (facts->flags & (kIntrinsic | kFolded)) == 0 &&
+		(facts->flags & kDirectCall) != 0 && facts->entity != nullptr && facts->entity->kind == EntityKind::Function)
+	{
+		const FunctionEntity* function = static_cast<const FunctionEntity*>(facts->entity);
+		if (function->builtin == BuiltinFunction::None && !ConstantInterpreter::constexpr_candidate(function))
+			return nullptr;
+	}
+	const uint32_t found = scalar_initializer_index_.find(&expr);
+	if (found != PointerMap::kMissing)
+		return scalar_initializers_[found];
+	ConstantInterpreter interpreter(*this);
+	const ConstValue* value = interpreter.evaluate_initializer(expr);
+	// A provisional class layout is not a permanent failure (or value).
+	if (!interpreter.met_incomplete_class())
+	{
+		scalar_initializer_index_.set(&expr, static_cast<uint32_t>(scalar_initializers_.size()));
+		scalar_initializers_.push_back(value);
+	}
+	return value;
+}
+
 void Analyzer::record_constant_initializer(
 	VariableEntity* variable, const syntax::Initializer* initializer, Scope* scope)
 {

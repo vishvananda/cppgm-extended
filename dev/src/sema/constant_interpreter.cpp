@@ -1534,6 +1534,12 @@ bool ConstantInterpreter::evaluate_after(const syntax::Expr& expr, const Convers
 	return true;
 }
 
+const ConstValue* ConstantInterpreter::evaluate_initializer(const syntax::Expr& expr)
+{
+	ConstValue value;
+	return evaluate(expr, true, value) && !incomplete_class_ ? publish(value, expr.location) : nullptr;
+}
+
 bool ConstantInterpreter::static_variable_place(const ConstPlace& place) const
 {
 	// A place in the variable of static storage duration (not thread-local)
