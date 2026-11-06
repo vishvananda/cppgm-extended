@@ -141,3 +141,46 @@ a compact one-MiB class-type graph. GCC/Clang accept both exact sources.
 Its frozen v9 baseline, reducers and evidence are retained under CXX11-027;
 it has no compiler repair yet. Do not close the overall reference family
 or campaign while that gap remains open.
+
+Performance failure and optimized candidate v12
+
+The complete twenty exact-output v9 A/A calibrations passed, with maximum
+instruction upper95 of 1.0000001496944175. Its A/B phase nevertheless failed
+seven unchanged workload gates, up to 5.0459401%: bitcast-dense, small class
+calls, GNU complex tail reads, repeated class temporaries, constructor
+parameters, dense nested defaults and array parameters. All raw observations
+and child outputs remain in performance-counters-v3. This is a real instruction
+regression; no noisy wall-time explanation or threshold change is used.
+The direct-memory, changed-output and final pipelines stopped on prerequisites
+and have no v9 pass claim.
+
+Candidate v12 preserves compact compound class graphs and reduces overhead:
+- Shared/owned storage state is lazy. Rewind marks belong to allocations, so
+  every constexpr call does not copy an unused arena mark. Detached paths
+  still survive callees and are reclaimed with their owning objects.
+- Root arrays and initialization outside a call retain the original scratch
+  path; caller-owned array members keep lifetime-tracked storage.
+- Flat classes allocate their declared scalar/reference fields before their
+  constructors. Compound graphs retain sharing; no extent/type is excluded.
+- Inline write guards, direct scalar root access and typed storage-kind checks
+  avoid unnecessary calls. Known-zero complex reads create their two scalar
+  parts in scratch instead of building template state.
+
+The affected PA16/22 suites pass 256/256 and 162/162. Single-observation diagnostics
+for the same seven workloads now range from +0.1986% to +0.7367%, with all 336
+measured child outputs checked; these are diagnostics, not calibrated passes.
+Diagnostics for earlier candidates and the corrected child-index resume are
+retained. One v11 affected invocation hit concurrent make metadata races;
+v12 affected suites ran sequentially and passed.
+
+Frozen candidate-v12.json and source-v12-manifest.json identify 474 compiler
+source files. Fresh full normal checks are checks-v12.json/state-v12; all 31
+controls pass the expanded 620-cell matrix in focused-v12. All 72 independent
+native oracles and the one changed-output object audit pass under v5 evidence.
+The new full gate uses performance-protocol-v5.json, the same twenty-one
+workloads, ten ABBA blocks and the original calibration/instruction/RSS gates.
+performance-pipeline-v5.log waits on verified workers for the fresh checks.
+final-pipeline-v2.log then validates prerequisites before cumulative counters,
+direct memory, explicit class-DAG/extent scaling, linked reducers and export.
+Source12's gates must be checked directly; earlier normal successes cannot
+prove this changed compiler. The whole campaign remains open.

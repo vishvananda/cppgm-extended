@@ -2745,17 +2745,21 @@
       "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-025/initial-neighbors-v1.json (GCC/Clang accept all; pre-prefix accepts class-prvalue and parameter forms; 212b6c031/current candidate reject only the array forms)",
       "required_parent": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-025/required-parent-v1.json",
       "focused_candidate_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v6-controls.json",
-      "latest_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/focused-v3/assessment.json (620 cells; no host/candidate failures)",
-      "latest_normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v10.json",
-      "native_performance_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-oracles-v3/assessment.json (72 cells)",
+      "latest_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/focused-v12/assessment.json (620 cells, no host/candidate failures)",
+      "latest_normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v12.json (fresh checks for changed compiler; prior v9 normal acceptance remains historical)",
+      "native_performance_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/oracles-v5-verification.json (72 cells; all changed object output audited)",
       "fixture_closure": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/controls-v3-fixture-closure.json",
       "normal_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v1.json (14 checks including explicit unchanged-source reuse; strict8117/8117; complete matrix accounted)"
     },
     "performance": {
-      "status": "pending",
-      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v3.json",
-      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v4.log",
-      "note": "A/A and A/B counters/direct memory, absolute scaling and cumulative gates required. No pass claimed."
+      "status": "v9-instruction-gate-failed;v12-full-validation-pending",
+      "failed_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-counters-v3/ab-assessment.json",
+      "failed_workloads": 7,
+      "largest_failed_instruction_upper95": 1.0504594010526667,
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v5.json",
+      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v5.log",
+      "diagnostics": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/diagnostic-v12/assessment.json",
+      "note": "Single-observation diagnostics only improve all seven failures below1%; full calibrated21 workloads, actual compiler RSS, absolute scaling, cumulative and export acceptance remain unproven."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -2768,8 +2772,8 @@
     "next_action": "Validate the trait guard repair together with CXX11-026 compact class storage; finish all normal, external, performance, cumulative and export gates before closing either issue.",
     "classification_note": "The implementation intentionally distinguishes its core literal_type predicate from the GCC-compatible trait_literal_type predicate. GCC, Clang and cppgm all report __is_literal_type(E) true for the trivial-default witness; the old core-predicate array guard is too strict. Actual constructor calls and destruction still check constexpr eligibility.",
     "prototype": {
-      "binary_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v9.json",
-      "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/source-v9-manifest.json",
+      "binary_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v12.json",
+      "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/source-v12-manifest.json",
       "compiler_changes": "staged, not committed or accepted"
     }
   },
@@ -2813,9 +2817,9 @@
       "focused_candidate_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v6-controls.json",
       "affected_pa16_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/affected-pa16-v6.log (254/254 pass)",
       "file_audit_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/file-audit-v6.log",
-      "latest_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/focused-v3/assessment.json (620 cells; no host/candidate failures)",
-      "latest_normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v10.json",
-      "native_performance_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-oracles-v3/assessment.json (72 cells)",
+      "latest_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/focused-v12/assessment.json (620 cells, no host/candidate failures)",
+      "latest_normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v12.json (fresh checks for changed compiler; prior v9 normal acceptance remains historical)",
+      "native_performance_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/oracles-v5-verification.json (72 cells; all changed object output audited)",
       "region_memory": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/required-region-memory-v1.json",
       "array_lifetime": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/array-member-lifetime-v1/results.json",
       "complex_memory": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/complex-memory-v1/results.json",
@@ -2826,10 +2830,14 @@
       "normal_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v1.json (14 checks including explicit unchanged-source reuse; strict8117/8117; complete matrix accounted)"
     },
     "performance": {
-      "status": "pending",
-      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v3.json",
-      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v4.log",
-      "note": "A/A and A/B counters/direct memory, absolute scaling and cumulative gates required. No pass claimed."
+      "status": "v9-instruction-gate-failed;v12-full-validation-pending",
+      "failed_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-counters-v3/ab-assessment.json",
+      "failed_workloads": 7,
+      "largest_failed_instruction_upper95": 1.0504594010526667,
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v5.json",
+      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v5.log",
+      "diagnostics": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/diagnostic-v12/assessment.json",
+      "note": "Single-observation diagnostics only improve all seven failures below1%; full calibrated21 workloads, actual compiler RSS, absolute scaling, cumulative and export acceptance remain unproven."
     },
     "standards_basis": {
       "category": "implementation-scaling",
@@ -2841,10 +2849,21 @@
     },
     "next_action": "Finish shared class payload ownership and region-memory controls, broader external/normal checks, all per-fix/cumulative performance gates and fresh packaged export; no closure claim from the focused pass.",
     "prototype": {
-      "binary_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v9.json",
-      "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/source-v9-manifest.json",
+      "binary_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v12.json",
+      "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/source-v12-manifest.json",
       "compiler_changes": "staged, not committed or accepted"
-    }
+    },
+    "implementation": [
+      "dev/src/sema/constant_storage.h",
+      "dev/src/sema/constant_class_storage.cpp",
+      "dev/src/sema/constant_array_storage.cpp",
+      "dev/src/sema/constant_interpreter.cpp",
+      "dev/src/sema/constant_interpreter.h",
+      "dev/src/sema/constant_frames.h",
+      "dev/src/sema/constant_values.h",
+      "dev/src/sema/constant_statements.cpp",
+      "dev/src/lower/constant_lowering.cpp"
+    ]
   },
   {
     "id": "CXX11-027",

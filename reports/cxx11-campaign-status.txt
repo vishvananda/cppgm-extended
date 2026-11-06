@@ -416,7 +416,21 @@ Whole-class neighbor discovered during prefix validation:
   are retained under CXX11-027; no repair or performance pass is claimed.
 - The PA16 member-pointer assertions from026 were split into the owning
   PA22:300 control after the full placement audit caught the early use.
-  Corrected focused-v3 passes all620 host/candidate cells; compiler v9 and
+  Corrected focused-v3 passes all 620 host/candidate cells; compiler v9 and
   the frozen21 performance workloads are unchanged. Final normal checks
   now use checks-v10 and performance-pipeline-v4; old failed prerequisites
   remain retained. The ledger has27 issues and558 observations.
+
+Class-prefix performance gate and optimized candidate:
+- Full v9 A/A calibration passed, but seven A/B workloads exceeded the 1%
+  instruction gate, up to 5.0459401%. Raw counter evidence is retained; the
+  memory/export/final pipeline stopped and 025/026 remain open.
+- Candidate v12 reduces eager state and per-call bookkeeping, keeps scratch
+  for its existing lifetimes, shares compound graphs, and uses direct scalar
+  and bounded complex paths. PA16/22 and all 620 focused cells pass. Seventy-two
+  native performance-input oracles pass, with the changed object audited.
+- Diagnostic instruction increases for the seven failures are now 0.1986% to
+  0.7367%; these are not full gate passes. Fresh normal checks, the unchanged
+  calibrated 21-workload gate and later stages are queued under CXX11-026's
+  checks-v12, performance-pipeline-v5 and final-pipeline-v2 artifacts.
+- CXX11-027 remains an independent unimplemented whole-class storage repair.
