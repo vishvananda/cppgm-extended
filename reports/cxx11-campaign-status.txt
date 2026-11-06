@@ -1,3 +1,54 @@
+Fresh rebased functional acceptance (2026-11-06)
+
+All five implemented pending repairs now pass fresh full normal and export
+checkpoints against upstream25f26d178. Root independently verifies021/string
+strict8184/8184,019/shared030/mutable8212/8212,and035/narrowing8178/8178,
+including37 normal obligations,75 export stages,66 packaged controls,and all
+three bundles'42 reference wrappers. The Clang subagent independently verifies
+031 and033:each strict8178/8178,all required normal checks,fresh export/all42
+wrappers,and16/17 packaged controls. Performance and eventual integration
+remain open; functional acceptance does not close any of these repairs.
+
+Integrated campaign export also passes:42 wrappers,the ordinary PA16 control,
+and the PA25 multi-translation-unit128-bit boundary fixture. An initial export
+post-check glob mistakenly included ignored .my artifacts and assumed the PA25
+control lane; the corrected verifier uses the six tracked fixtures/reference
+artifacts and the owning native toolchain lane. Its first continuation omitted
+the local-bundle environment and tried an unpublished GitHub URL; the corrected
+continuation selects the verified local bundle. Every failed observation and
+corrected receipt is retained; no fixture,reference,compiler or oracle changed.
+Narrowing's retained strict timeout is resolved by the source-unchanged core-
+limit rerun. All restored development binaries match their frozen candidates.
+
+Fresh029 comparison preparation passes70 native cells and complete exact-object
+preflight for13 immediate-parent,12 rebased-family and3 rebased-original
+workloads. Retired-instruction and actual compiler RSS measurements are queued
+behind explicit worker quiescence. Historical b7c overload-O2 produces different
+objects after upstream changes; new upstream and the campaign produce identical
+objects. That original-history comparison stays explicitly open pending an
+independent semantic/ABI oracle. Its output gate is not relaxed or dropped.
+
+008's later-DR basis is now pinned to primary adoption evidence:N4829 records
+CWG motion23 applyingP1825R0 as aDR,and Clang's official C++11 table lists it.
+The pending throw repair must honor function/catch parameters,rvalue-reference
+entities,and scope boundaries around ordinary/function try blocks,including
+ctor-initializers. Old GCC disagreements and the catch draft's earlier prvalue
+error are retained; they cannot establish a replacement regression oracle.
+032 likewise separates eight required non-template negatives from two unused
+dependent forms still needingIFNDR review. Its GCC-only valid-neighbor
+rejections do not override adoptedCWG1411/1638 or the original template rules.
+
+Evidence:
+  rebases/2026-11-06/root-functional-acceptance-v1.json
+  rebases/2026-11-06/campaign-export-v1/assessment.json
+  rebases/2026-11-06/bitfield-rebased-performance-v1/{protocol.json,native-oracles-v1/assessment.json}
+  issues/CXX11-031/rebased-18c45-checks-v1/functional-verification-v1.json
+  issues/CXX11-033/rebased-18c45-checks-v1/functional-verification-v1.json
+  issues/CXX11-008/standards-rebased-v1/manifest.json
+All paths are under /mnt/vizier/cppgm-cxx11-upstream.
+The nine-known-gap count and the full discovery/repair/CI completion boundary
+remain unchanged. Earlier entries retain their historical revision/scope.
+
 Rebased campaign checkpoint (2026-11-06)
 
 Campaign18c450526 and all six active repair branches descend from origin/main

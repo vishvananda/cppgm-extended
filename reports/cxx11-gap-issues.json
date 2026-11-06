@@ -1544,7 +1544,7 @@
   {
     "id": "CXX11-008",
     "priority": "P1",
-    "status": "observed",
+    "status": "triaged",
     "upstream": [
       "llvm-project/clang/test/SemaCXX/P1155.cpp"
     ],
@@ -1560,9 +1560,14 @@
     },
     "standards_basis": {
       "category": "later-defect-resolution",
-      "rationale": "P1825R0 (2019) function/catch parameter throw implicit move"
+      "rationale": "P1825R0 (2019) function/catch parameter throw implicit move",
+      "adoption_evidence": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/n4829.html",
+      "adoption": "CWG motion23,P1825R0,DR,July2019",
+      "wording": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html",
+      "cxx11_implementation_evidence": "https://clang.llvm.org/cxx_status.html",
+      "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/standards-rebased-v1/manifest.json"
     },
-    "triage_note": "Later-DR compatibility; original C++11 gaps prioritized per user steering. Draft probes retained externally, no compiler change. Function-try ctor-initializer host disagreement still requires adjudication; one initial deleted-move catch draft rejects for an earlier prvalue and needs reduction."
+    "triage_note": "P1825R0 adoption as aDR verified in N4829 motion23; Clang officially lists it for C++11. Honor implicitly movable entities plus ordinary/function-try/ctor-initializer scope. Preserve GCC disagreements and replace the old catch-deleted draft that diagnoses an earlier prvalue,with a faithfully isolated rule and valid neighbors. No compiler fix or new required regression committed yet."
   },
   {
     "id": "CXX11-009",
@@ -2687,7 +2692,10 @@
       "candidate_revision": "d96909fe0b4a6f9e45625703a14ee7302b950b8d",
       "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
       "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending.",
-      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/mutable/focused/assessment.json"
+      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/mutable/focused/assessment.json",
+      "normal_and_export_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/mutable-normal-export-v1/assessment.json",
+      "independent_functional_verification": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-functional-acceptance-v1.json",
+      "functional_status": "passed-performance-and-integration-pending"
     },
     "pre_rebase_performance_record": {
       "status": "not-started-candidate-under-validation"
@@ -2866,7 +2874,10 @@
       "candidate_revision": "1b2ad805d5ead8998f16421a61931e9f9f6ede0d",
       "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
       "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending.",
-      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/string/focused/assessment.json"
+      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/string/focused/assessment.json",
+      "normal_and_export_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/string-normal-export-v1/assessment.json",
+      "independent_functional_verification": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-functional-acceptance-v1.json",
+      "functional_status": "passed-performance-and-integration-pending"
     },
     "pre_rebase_performance_record": {
       "status": "family-counter-gate-failed-other-measurements-not-started",
@@ -3376,7 +3387,10 @@
     "performance": {
       "status": "rebased-actual-parent-and-cumulative-gates-pending",
       "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included.",
-      "historical_full_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029/performance-acceptance-v1.json"
+      "historical_full_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029/performance-acceptance-v1.json",
+      "rebased_protocol": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/protocol.json",
+      "rebased_native_oracles": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/native-oracles-v1/assessment.json",
+      "historical_original_blocker": "Historical b7c overload-O2 differs due upstream changes; new upstream and candidate exact. Retain the original comparison as open pending independent semantic/ABI adjudication. No output-gate relaxation or denominator shrink."
     },
     "standards_basis": {
       "category": "implementation-performance",
@@ -3390,7 +3404,8 @@
       "active_branch": "investigate/upstream-cxx11",
       "candidate_revision": "18c450526e89575ef86802806594466bdebb3f78",
       "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
-      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending."
+      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending.",
+      "fresh_export_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/campaign-export-v1/assessment.json"
     },
     "pre_rebase_performance_record": {
       "status": "immediate-parent-counter-and-actual-RSS-pass-cumulative-family-original-pending",
@@ -3449,7 +3464,10 @@
       "candidate_revision": "d96909fe0b4a6f9e45625703a14ee7302b950b8d",
       "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
       "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending.",
-      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/mutable/focused/assessment.json"
+      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/mutable/focused/assessment.json",
+      "normal_and_export_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/mutable-normal-export-v1/assessment.json",
+      "independent_functional_verification": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-functional-acceptance-v1.json",
+      "functional_status": "passed-performance-and-integration-pending"
     },
     "pre_rebase_performance_record": {
       "status": "shared-with-CXX11-019-pending"
@@ -3518,7 +3536,9 @@
       "active_branch": "repair/cxx11-consecutive-brackets-rebased",
       "candidate_revision": "d46f470b2b85d124c744554191eef7c4a25358d3",
       "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
-      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending."
+      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending.",
+      "normal_and_export_assessment": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-031/rebased-18c45-checks-v1/functional-verification-v1.json",
+      "functional_status": "passed-performance-and-integration-pending"
     },
     "pre_rebase_performance_record": {
       "status": "held-pending-029-acceptance-and-actual-parent-reconciliation"
@@ -3620,7 +3640,9 @@
       "active_branch": "repair/cxx11-deleted-specialization-rebased",
       "candidate_revision": "2078f40f6ced1b8941984677196d35c25e0f93be",
       "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
-      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending."
+      "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending.",
+      "normal_and_export_assessment": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-033/rebased-18c45-checks-v1/functional-verification-v1.json",
+      "functional_status": "passed-performance-and-integration-pending"
     },
     "pre_rebase_performance_record": {
       "status": "pending-coordinated-window-no-measurements-started"
@@ -3727,7 +3749,10 @@
       "candidate_revision": "172168d1b69da9fb80e05d649495e05741a3b91b",
       "transfer_evidence": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/fixture-only-rebase-v1.json",
       "validation_scope": "Compiler source/tool hashes are unchanged by the second,fixture-only rebase. First-rebase focused and full normal/export/performance obligations require their fresh evidence; pre-rebase receipts retain historical scope. Final acceptance remains pending.",
-      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/narrowing/focused/assessment.json"
+      "fresh_focused_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/narrowing/focused/assessment.json",
+      "normal_and_export_assessment": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/narrowing-normal-export-v2/assessment.json",
+      "independent_functional_verification": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-functional-acceptance-v1.json",
+      "functional_status": "passed-performance-and-integration-pending"
     },
     "pre_rebase_performance_record": {
       "status": "functional-pass-held-pending-029-acceptance-and-actual-parent-reconciliation",
