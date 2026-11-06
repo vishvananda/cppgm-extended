@@ -4,6 +4,10 @@ The full objective and closure criteria remain in cxx11-gap-plan.txt.
 This is partial progress; corpus applicability, native adapters and remaining
 compiler defects still require work before the campaign can be complete.
 
+Current checkpoint: commit5acff6dfc closes CXX11-025/026; CXX11-027 is next.
+The dated entries below retain earlier states and failed experiments. The
+latest acceptance evidence is CXX11-026/final-acceptance-v12.json.
+
 Reference checkpoint and followups (2026-11-06):
 - Commit 212b6c031 preserves typed reference lists and compact array values.
   Its immutable checkpoint passes 8099 strict cases, 14 normal validation
@@ -476,3 +480,15 @@ Cumulative counters and Clang file-binding progress:
   Expansion changes 201 command templates. Six native boundary controls pass.
   Configuration stays symbolic and applicability/execution stay unresolved;
   see cxx11-clang-command-shapes.txt and clang-file-substitutions-v1 evidence.
+
+Accepted class-prefix repair checkpoint:
+- Compiler commit5acff6dfc closes CXX11-025/026 after final-acceptance-v12.json
+  verified all required evidence. Strict8117/8117;620 focused cells;180 linked
+  cells (144 native passes,36 historical rejections);36 fresh export checks;
+  all21 per-fix and3 original-baseline cumulative performance pairs pass.
+- Type/extent scaling passes960 observations, and the additional GNU complex
+  resource ladder passes72 with flat direct compiler RSS in every phase.
+  Native readonly type output coverage stops at2 MiB; larger output is not
+  claimed. All474 committed source files match the measured source manifest.
+- CXX11-027 and the combined reference-family validation remain open, as do
+  the remaining corpus/adapter/CWG, historical-memory and final CI/timing work.

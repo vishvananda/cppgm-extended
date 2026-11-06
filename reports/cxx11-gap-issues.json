@@ -2350,7 +2350,8 @@
       "required": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/focused-prefix-v4/results.json: all 13 owning controls pass, including 48 MiB resource guards.",
       "correctness": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/checks-v3.json: all 14 final candidate stages pass, including strict 8099/8099, debug info, PA34 through PA5, inception, PA35 smoke, all audits, full placement and harness.",
       "accepted_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/final-acceptance-v5.json (tested checkpoint passes; subsequent CXX11-023 regression remains open)",
-      "nested_zero_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/final-acceptance-v2.json"
+      "nested_zero_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/final-acceptance-v2.json",
+      "class_prefix_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/final-acceptance-v12.json"
     },
     "performance": {
       "status": "counter-gates-pass-direct-compiler-rss-validation-running",
@@ -2372,7 +2373,7 @@
         "https://cplusplus.github.io/CWG/issues/2126.html"
       ]
     },
-    "next_action": "Repair CXX11-025 before closing the combined reference family; then replay the supported external matrix and compare the combined targeted workloads with the original family baseline."
+    "next_action": "CXX11-025/026 are repaired and accepted. Repair the separate whole-class storage CXX11-027, replay the complete supported external matrix and compare combined targeted workloads with the original family baseline before closing the reference family."
   },
   {
     "id": "CXX11-017",
@@ -2590,7 +2591,8 @@
       "correctness": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/checks-v3.json (all 14 stages pass)",
       "nested_encoding": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-022/nested-prefix-bitcast-reuse-v1.json: intermediate candidate-v4 corrupts a published nested array representation; candidate-v5 encodes without mutating source storage, covered by the repeated-cast PA29 fixture.",
       "accepted_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/final-acceptance-v5.json (tested checkpoint passes; subsequent CXX11-023 regression remains open)",
-      "nested_zero_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/final-acceptance-v2.json"
+      "nested_zero_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/final-acceptance-v2.json",
+      "class_prefix_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/final-acceptance-v12.json"
     },
     "performance": {
       "status": "shared-validation-with-CXX11-016",
@@ -2605,7 +2607,7 @@
         "pa29/README.md"
       ]
     },
-    "next_action": "Repair CXX11-025 before closing the combined reference family; then replay the supported external matrix and compare the combined targeted workloads with the original family baseline."
+    "next_action": "CXX11-025/026 are repaired and accepted. Repair the separate whole-class storage CXX11-027, replay the complete supported external matrix and compare combined targeted workloads with the original family baseline before closing the reference family."
   },
   {
     "id": "CXX11-023",
@@ -2718,7 +2720,7 @@
   {
     "id": "CXX11-025",
     "priority": "P1",
-    "status": "fix-in-validation",
+    "status": "closed",
     "introduced_by": "212b6c031",
     "discovered_neighbor_of": "CXX11-024",
     "upstream": [],
@@ -2734,7 +2736,7 @@
       "pa16/tests/controls/300-constexpr-array-reference-destructor-reject.t",
       "pa16/tests/controls/300-runtime-trivial-default-array-reference-probe.t"
     ],
-    "fix_revision": null,
+    "fix_revision": "5acff6dfc436d6e6e7b5e611634b2236b67869dc",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-025",
     "reproductions": [
       "trivial-array-parameter.cpp",
@@ -2750,23 +2752,31 @@
       "native_performance_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/oracles-v5-verification.json (72 cells; all changed object output audited)",
       "fixture_closure": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/controls-v3-fixture-closure.json",
       "normal_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v1.json (14 checks including explicit unchanged-source reuse; strict8117/8117; complete matrix accounted)",
-      "normal_acceptance_latest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v12.json (all14 fresh checks passed; source/fixture hashes and620 tuples verified)"
+      "normal_acceptance_latest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v12.json (all14 fresh checks passed; source/fixture hashes and620 tuples verified)",
+      "final_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/final-acceptance-v12.json",
+      "committed_source": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/committed-source-v12.json",
+      "linked": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/linked-reducers-v2/assessment.json",
+      "export": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-export-v2.json",
+      "complex_resource": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/complex-resource-v12/summary.json"
     },
     "performance": {
-      "status": "per-fix-instruction-and-direct-compiler-rss-gates-passed;final-checkpoint-pending",
+      "status": "passed",
       "failed_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-counters-v3/ab-assessment.json",
       "failed_workloads": 7,
       "largest_failed_instruction_upper95": 1.0504594010526667,
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v5.json",
       "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v5.log",
       "diagnostics": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/diagnostic-v12/assessment.json",
-      "note": "All21 per-fix calibrated instruction and actual compiler RSS pairs pass. All46080 measured batch children and3360 observation outputs reverified. Cumulative, absolute/extent/complex scaling, linked reducers and packaged export remain required; issues are not closed.",
-      "additional_required_resource_check": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/run_complex_resource_v12.py (prepared, not executed; run serially after active measurements)",
+      "note": "All21 per-fix instruction/direct compiler RSS gates and all3 original-baseline cumulative pairs pass. Source/fixture/output hashes, scaling,180 linked cells and36 export checks verified. Failed v9 observations retained; wall time under load inconclusive.",
+      "additional_required_resource_check": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/complex-resource-v12/summary.json (72 observations; all three phase RSS ladders flat and bounded; native oracles pass)",
       "exact_instruction_upper95": 1.0069872015477916,
       "exact_instruction_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-counters-v5/ab-assessment.json",
       "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/per-fix-acceptance-v5.json",
       "instruction_upper95": 1.0069872015477916,
-      "compiler_rss_upper95": 1.0
+      "compiler_rss_upper95": 1.0,
+      "final_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/final-acceptance-v12.json",
+      "cumulative_instruction_upper95": 1.0011131161277775,
+      "cumulative_compiler_rss_upper95": 1.0007360581918947
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -2776,18 +2786,18 @@
         "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_closed.html#1452"
       ]
     },
-    "next_action": "Validate the trait guard repair together with CXX11-026 compact class storage; finish all normal, external, performance, cumulative and export gates before closing either issue.",
+    "next_action": "Closed at verified v12 checkpoint. Replay when the compiler or supported external adapter changes; CXX11-027 and the remaining corpus/CWG/historical-memory/CI work stay open.",
     "classification_note": "The implementation intentionally distinguishes its core literal_type predicate from the GCC-compatible trait_literal_type predicate. GCC, Clang and cppgm all report __is_literal_type(E) true for the trivial-default witness; the old core-predicate array guard is too strict. Actual constructor calls and destruction still check constexpr eligibility.",
     "prototype": {
       "binary_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v12.json",
       "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/source-v12-manifest.json",
-      "compiler_changes": "staged, not committed or accepted"
+      "compiler_changes": "committed and accepted as 5acff6dfc436d6e6e7b5e611634b2236b67869dc"
     }
   },
   {
     "id": "CXX11-026",
     "priority": "P1",
-    "status": "fix-in-validation",
+    "status": "closed",
     "introduced_by": "uncommitted CXX11-025 candidate-v1 (trait-only guard repair)",
     "discovered_neighbor_of": "CXX11-025",
     "upstream": [],
@@ -2805,7 +2815,7 @@
       "pa16/tests/controls/300-constexpr-class-prefix-array-member-lifetime.t",
       "pa22/tests/controls/300-constexpr-class-prefix-member-pointer-zero.t"
     ],
-    "fix_revision": null,
+    "fix_revision": "5acff6dfc436d6e6e7b5e611634b2236b67869dc",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026",
     "reproductions": [
       "syntax-neighbors-v2/direct.cpp",
@@ -2835,23 +2845,31 @@
       "placement_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v9/placement.log (failed: member-pointer assertions placed early; split from PA16 identity fixture into required PA22:300 control)",
       "fixture_closure": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/controls-v3-fixture-closure.json",
       "normal_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v1.json (14 checks including explicit unchanged-source reuse; strict8117/8117; complete matrix accounted)",
-      "normal_acceptance_latest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v12.json (all14 fresh checks passed; source/fixture hashes and620 tuples verified)"
+      "normal_acceptance_latest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v12.json (all14 fresh checks passed; source/fixture hashes and620 tuples verified)",
+      "final_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/final-acceptance-v12.json",
+      "committed_source": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/committed-source-v12.json",
+      "linked": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/linked-reducers-v2/assessment.json",
+      "export": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-export-v2.json",
+      "complex_resource": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/complex-resource-v12/summary.json"
     },
     "performance": {
-      "status": "per-fix-instruction-and-direct-compiler-rss-gates-passed;final-checkpoint-pending",
+      "status": "passed",
       "failed_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-counters-v3/ab-assessment.json",
       "failed_workloads": 7,
       "largest_failed_instruction_upper95": 1.0504594010526667,
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v5.json",
       "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v5.log",
       "diagnostics": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/diagnostic-v12/assessment.json",
-      "note": "All21 per-fix calibrated instruction and actual compiler RSS pairs pass. All46080 measured batch children and3360 observation outputs reverified. Cumulative, absolute/extent/complex scaling, linked reducers and packaged export remain required; issues are not closed.",
-      "additional_required_resource_check": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/run_complex_resource_v12.py (prepared, not executed; run serially after active measurements)",
+      "note": "All21 per-fix instruction/direct compiler RSS gates and all3 original-baseline cumulative pairs pass. Source/fixture/output hashes, scaling,180 linked cells and36 export checks verified. Failed v9 observations retained; wall time under load inconclusive.",
+      "additional_required_resource_check": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/complex-resource-v12/summary.json (72 observations; all three phase RSS ladders flat and bounded; native oracles pass)",
       "exact_instruction_upper95": 1.0069872015477916,
       "exact_instruction_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-counters-v5/ab-assessment.json",
       "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/per-fix-acceptance-v5.json",
       "instruction_upper95": 1.0069872015477916,
-      "compiler_rss_upper95": 1.0
+      "compiler_rss_upper95": 1.0,
+      "final_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/final-acceptance-v12.json",
+      "cumulative_instruction_upper95": 1.0011131161277775,
+      "cumulative_compiler_rss_upper95": 1.0007360581918947
     },
     "standards_basis": {
       "category": "implementation-scaling",
@@ -2861,11 +2879,11 @@
         "spec.md typed work, allocation and canonical identity requirements"
       ]
     },
-    "next_action": "Finish shared class payload ownership and region-memory controls, broader external/normal checks, all per-fix/cumulative performance gates and fresh packaged export; no closure claim from the focused pass.",
+    "next_action": "Closed at verified v12 checkpoint. Replay when the compiler or supported external adapter changes; CXX11-027 and the remaining corpus/CWG/historical-memory/CI work stay open.",
     "prototype": {
       "binary_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v12.json",
       "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/source-v12-manifest.json",
-      "compiler_changes": "staged, not committed or accepted"
+      "compiler_changes": "committed and accepted as 5acff6dfc436d6e6e7b5e611634b2236b67869dc"
     },
     "implementation": [
       "dev/src/sema/constant_storage.h",
@@ -2900,7 +2918,8 @@
     ],
     "checks": {
       "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/whole-class-neighbors-v1/results.json (eight cells: GCC/Clang accept both,269db and v9 each bad_alloc under 48 MiB)",
-      "baseline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/baseline.json"
+      "baseline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/baseline.json",
+      "storage_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/storage-review-v1.txt"
     },
     "performance": {
       "status": "not-started"
@@ -2913,6 +2932,6 @@
         "spec.md bounded typed work/allocation requirements"
       ]
     },
-    "next_action": "After the current 025/026 checkpoint gates, add required bounded PA16:300 whole-class and by-value controls on the frozen v9 baseline, extend shared typed storage through the ordinary object paths, and run complete correctness/performance/scaling/export validation. Do not mark the reference family complete while this issue remains open."
+    "next_action": "Capture the accepted5acff6dfc parent without overwriting the retained v9 evidence, install and prove bounded PA16:300 whole-class/by-value regressions, extend typed compact storage through ordinary object paths, then complete correctness/performance/scaling/export validation."
   }
 ]

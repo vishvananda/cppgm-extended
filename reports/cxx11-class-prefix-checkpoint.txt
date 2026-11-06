@@ -2,18 +2,22 @@ C++11 class-prefix repair checkpoint (2026-11-06)
 
 Scope and acceptance
 
-CXX11-025 and CXX11-026 remain open. The compiler changes and eleven PA16:300
-regressions and one PA22:300 ABI regression are staged prototypes, not a completed or released repair. The
-previous completed checkpoint is 269dbf2ad. No CI job has been created early;
-Stage 5 still follows closure of every required defect, including later DRs.
+CXX11-025 and CXX11-026 are closed at compiler commit5acff6dfc. The accepted
+candidate is v12, SHA25641accc30b0ea60827ac7adbd99ddbef5e97692ebcb9094fa6d2cb6606438c6e4;
+final-acceptance-v12.json and committed-source-v12.json retain its verified
+evidence. Eleven PA16:300 regressions and one PA22:300 ABI regression are
+committed. See the final acceptance section below; earlier entries retain the
+investigation history. CXX11-027 and the wider campaign remain open. No CI job
+has been created early; Stage5 still follows closure of every required defect,
+including later DRs.
 
-Candidate v9 is frozen at:
+Historical candidate v9 is frozen at:
   /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/cppgm-candidate-v9
   SHA256 09feb33ae58e73231fa152cea0015bad2d902b5dfaf25d79b2265f99c84870d1
 Its source identity is source-v9-manifest.json in the same evidence directory.
 All earlier candidate binaries, successful/failed observations and logs remain.
 
-Implementation under validation
+Implementation and validation history
 
 - CXX11-025 uses the existing GCC-compatible trait_literal_type predicate for
   array temporary eligibility. GCC, Clang and cppgm all consider the trivial-
@@ -211,3 +215,39 @@ complex-resource check is now queued behind that worker via verified process
 identity in complex-pipeline-v12.log. No closure is claimed before all those
 results pass. CXX11-027 and the remaining upstream adapter/corpus/CI work
 remain open.
+
+Final v12 acceptance and compiler commit
+
+Compiler commit 5acff6dfc closes CXX11-025 and CXX11-026. The final evidence is
+final-acceptance-v12.json, produced by verify_final_v12.py only after all seven
+final stages, the complex ladder and restored compiler passed. All 474 source
+files in the commit match the accepted source manifest; committed-source-v12.json
+records the full commit identity. The campaign and whole-class027 remain open.
+
+The original-baseline cumulative pairs pass: maximum instruction upper95 is
+1.0011131161277775 and actual compiler RSS upper95 is 1.0007360581918947.
+All 480 cumulative observation outputs were rehashed. Together with the
+previously verified21 per-fix pairs, these retain the unchanged tolerances
+and failed v9 observations; no noisy wall-time or macOS gate pass is claimed.
+
+The explicit aggregate/trivial-default type ladders pass all416 observations.
+Depth8 through29 grows logical storage through4 GiB; syntax/LowIR work spreads
+by at most1.2871 and direct RSS stays flat at7268/7972 KiB respectively.
+Native readonly outputs are measured through2 MiB only and retain their full
+PROGBITS backing; larger native outputs are explicitly unmeasured. The extent
+ladders pass272 counter and272 direct-memory observations, with full spans
+retained and all declared flat-work/direct-memory gates passing. The GNU
+complex ladder passes72 observations at depths10/14/18: each phase's RSS is
+flat (6564/7268/8696 KiB), with native execution and48-byte backing verified.
+
+The exact linked replay accounts for180 cells:144 native passes and36 expected
+historical rejections. Fresh student export passes36 checks:42 reference
+wrappers, all31 packaged controls, the actual PA29 compile lane, fixture and
+metadata equality, and restored binary equality. Normal acceptance retains
+all14 fresh checks, strict8117/8117,620 focused cells with no host/candidate
+failures, debug info, self-hosting, lowering smoke and every required audit.
+
+The next repair is CXX11-027, whose whole-variable and by-value paths still
+construct dense trees. The broader reference family stays in validation,
+and remaining compiler/CWG repairs, exhaustive native adapters/applicability,
+historical compiler-RSS backfill and final two CI/timing jobs remain required.
