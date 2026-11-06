@@ -1027,6 +1027,10 @@ void ObjectCompiler::add_symbols()
 	for (const CodeRange& range : ranges_)
 		if (!range.dropped)
 			object_symbol(range.symbol);
+	// Shared entries have no code range. Register them before globals too:
+	// LowIR text groups globals before functions, unlike source order.
+	for (const lowir::EquivalentEntry& alias : shared_aliases_)
+		object_symbol(alias.symbol);
 	for (size_t i = 0; i < program_.order.size(); ++i)
 	{
 		if (placement_[slot(program_.order[i])].section != 0)

@@ -392,6 +392,8 @@ source-language clauses.
   explicit `-O0`. A parameter-object-extent case additionally makes O3 object
   shape depend on a source-produced member-object boundary, so byte equality
   checks compiler-object and textual LowIR transport of that fact.
+  Equivalent function entries mixed with global definitions must also remain
+  stable across the two paths.
 
 Run the debug metadata preservation lanes with:
 
