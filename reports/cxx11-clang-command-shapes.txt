@@ -64,3 +64,22 @@ This is progress toward the full corpus adapter. It closes no compiler issue
 and provides no execution, applicability or C++11 conformance pass. The final
 GCC/Clang CI jobs remain gated by the campaign's complete repair process,
 including later CWG decisions, and must report matched full-suite timing.
+
+Directory-configuration dependency inventory
+
+config-inventory.jsonl uses the pinned native discovery helpers' physical
+configuration-file precedence for every candidate. All 20,491 candidates find
+clang/test/lit.cfg.py as their physical suite candidate, across 628 directories.
+14,248 have no physical local config, 6,221 have one and 22 have two. All 26
+selected configuration/template source files are hashed, tracked and verified
+against the pinned commit; native helper hashes are checked again.
+config-verification.json retains those identities and selection-name rules.
+The first constructor invocation failed on a missing native order argument
+before producing output; inventory_configs_v2.py is the completed producer.
+
+This closes a configuration-dependency blind spot in the inventory, not an
+applicability decision. No configuration was executed. Generated site settings,
+config_map/source-root redirections, suffix/exclusion changes, inherited
+feature/substitution changes and actual test ownership still require the
+validated configuration/execution adapter. In particular, a file-level RUN
+line alone cannot establish that a candidate is an executable C++11 test.

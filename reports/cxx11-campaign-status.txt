@@ -445,3 +445,11 @@ Calibrated instruction and Clang structure progress:
   ledger round-trips every row and preserves every file's directives/features.
   See cxx11-clang-command-shapes.txt. This does not evaluate applicability or
   execute tests, and it closes no compiler gap.
+
+Clang directory-configuration closure:
+- Native physical-path config selection is recorded for all 20,491 candidates
+  across 628 directories: 6,243 have one or two local configuration files.
+  Twenty-six tracked config/template sources are pinned and verified.
+  This is dependency discovery only; no feature/default/suffix decisions or
+  tests were evaluated. See cxx11-clang-command-shapes.txt and its config
+  verification artifact before implementing the execution adapter.
