@@ -935,23 +935,410 @@
   {
     "id": "CXX11-006",
     "priority": "P1",
-    "status": "observed",
+    "status": "closed",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/abstract-default1.C"
     ],
     "symptom": "accepted abstract default-argument construction; GCC and Clang reject",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/triage/abstract-default1.C",
-    "root_cause": null,
-    "owning_pa": null,
-    "regressions": [],
-    "fix_revision": null,
-    "checks": {},
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006",
+    "root_cause": "List argument initialization created a referenced-type temporary without rejecting an abstract class. This includes default arguments, ordinary calls and reference declarations; immediate-context calls also incorrectly remained viable.",
+    "owning_pa": 13,
+    "regressions": [
+      "pa13/tests/controls/100-abstract-default-list-argument-reject.t",
+      "pa13/tests/controls/100-abstract-default-list-constructor-reject.t",
+      "pa13/tests/controls/100-abstract-list-call-argument-reject.t",
+      "pa13/tests/controls/100-abstract-list-converting-temporary-reject.t",
+      "pa13/tests/controls/100-abstract-list-reference-temporary-reject.t",
+      "pa18/tests/controls/300-abstract-list-argument-sfinae.t"
+    ],
+    "fix_revision": "33535a86489ad5a782ade616eb652d046a217445",
+    "checks": {
+      "baseline": {
+        "status": "five-false-acceptances-and-wrong-SFINAE-reproduced",
+        "log": "focused-final/results.json"
+      },
+      "focused": {
+        "status": "pass",
+        "log": "focused-final/results.json"
+      },
+      "upstream_variants": {
+        "status": "pass-adapted-required-diagnostic",
+        "variants": 8,
+        "log": "upstream-variants/results.json",
+        "coverage": "normal exit 1, abstract-construction diagnosis at original line 11; exact GCC dg-error wording/multiple-diagnostic coverage is not claimed"
+      },
+      "affected": {
+        "status": "pass",
+        "log": "affected.log"
+      },
+      "inception": {
+        "status": "pass",
+        "log": "inception.log"
+      },
+      "harness": {
+        "status": "pass",
+        "log": "harness.log"
+      },
+      "strict_report": {
+        "status": "pass",
+        "count": 8055,
+        "log": "strict-report.log"
+      },
+      "pa12": {
+        "status": "pass",
+        "count": 387,
+        "log": "affected.log"
+      },
+      "pa13": {
+        "status": "pass",
+        "count": 69,
+        "log": "affected.log"
+      },
+      "pa18": {
+        "status": "pass",
+        "count": 541,
+        "log": "affected.log"
+      },
+      "placement": {
+        "status": "pass",
+        "findings": 0,
+        "log": "placement-final.log"
+      },
+      "file_audit": {
+        "status": "pass-with-existing-warnings",
+        "log": "file-audit.log"
+      },
+      "regression_variants": {
+        "status": "pass",
+        "cells": 264,
+        "log": "regression-variants/results.json"
+      },
+      "preflight": {
+        "status": "six-exact-object-pairs-and-scaled-executions-pass",
+        "log": "preflight/results.json"
+      },
+      "debug_info": {
+        "status": "pass",
+        "log": "debuginfo.log"
+      },
+      "selfhost_pa5": {
+        "status": "pass",
+        "log": "selfhost-pa5.log"
+      },
+      "pa35_smoke": {
+        "status": "pass",
+        "log": "pa35-smoke.log"
+      },
+      "architecture": {
+        "status": "pass",
+        "log": "audits.log"
+      },
+      "student_export": {
+        "status": "pass",
+        "log": "export.log"
+      },
+      "reference_bundle": {
+        "status": "pass",
+        "wrappers": 42,
+        "log": "export-bundle.log"
+      }
+    },
     "performance": {
-      "status": "not-started"
+      "status": "pass-instruction-and-memory-gates",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/performance-protocol.json",
+      "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/performance-counters",
+      "results": [
+        {
+          "workload": "list-temporaries-128-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.000582385021616,
+              "lower_95": 1.0005823738405473,
+              "upper_95": 1.000582396202685,
+              "multiplicative_halfwidth": 1.117456105426129e-08
+            },
+            "cycles": {
+              "geometric_mean": 1.0156634358682575,
+              "lower_95": 0.9851997206886751,
+              "upper_95": 1.0470691305501219,
+              "multiplicative_halfwidth": 0.030921359943431037
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0194639778622356,
+              "lower_95": 0.9903620107044537,
+              "upper_95": 1.0494211115988024,
+              "multiplicative_halfwidth": 0.02938518121982625
+            },
+            "user_seconds": {
+              "geometric_mean": 1.0143313537126735,
+              "lower_95": 0.9678498877713326,
+              "upper_95": 1.0630451148718514,
+              "multiplicative_halfwidth": 0.04802549086240404
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0000463188132054,
+              "lower_95": 0.9999415414483432,
+              "upper_95": 1.0001511071570057,
+              "multiplicative_halfwidth": 0.0001047834903533662
+            }
+          },
+          "object_sha256": "b3c3c7747ae40db168a8f38d2f25f51cd6160dd94afeb6d05e9c0e084b19841e"
+        },
+        {
+          "workload": "list-temporaries-32-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.000480232954109,
+              "lower_95": 1.000480113429117,
+              "upper_95": 1.000480352479115,
+              "multiplicative_halfwidth": 1.1946763378567482e-07
+            },
+            "cycles": {
+              "geometric_mean": 1.0067416146225114,
+              "lower_95": 0.9278691884837703,
+              "upper_95": 1.0923184983315881,
+              "multiplicative_halfwidth": 0.08500382070841939
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0482130041832478,
+              "lower_95": 0.9374039168437329,
+              "upper_95": 1.1721206647379876,
+              "multiplicative_halfwidth": 0.11820847486173558
+            },
+            "user_seconds": {
+              "geometric_mean": 1.0400120519723524,
+              "lower_95": 0.9567610934310252,
+              "upper_95": 1.1305069527534244,
+              "multiplicative_halfwidth": 0.0870133193259166
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0000115788315929,
+              "lower_95": 0.9999504673624021,
+              "upper_95": 1.0000726940355804,
+              "multiplicative_halfwidth": 6.111449635315402e-05
+            }
+          },
+          "object_sha256": "5fe3a86987c85d0f75e9d0465dd29f4cc22fa3325696433db09513041846b80b"
+        },
+        {
+          "workload": "list-temporaries-512-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.0006157672177856,
+              "lower_95": 1.000615747177598,
+              "upper_95": 1.0006157872579735,
+              "multiplicative_halfwidth": 2.0027855374138426e-08
+            },
+            "cycles": {
+              "geometric_mean": 1.002731606347625,
+              "lower_95": 0.9754746675272022,
+              "upper_95": 1.0307501648580226,
+              "multiplicative_halfwidth": 0.027942231333919043
+            },
+            "wall_seconds": {
+              "geometric_mean": 0.9996552966649633,
+              "lower_95": 0.974821458913923,
+              "upper_95": 1.025121783083927,
+              "multiplicative_halfwidth": 0.025475267828745096
+            },
+            "user_seconds": {
+              "geometric_mean": 1.0032213845266893,
+              "lower_95": 0.973880988625124,
+              "upper_95": 1.0334457270723676,
+              "multiplicative_halfwidth": 0.030127290956759145
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "90e9582f538d33af37cd49c140babf33f2eaf3f2f2c11a470cab8c80460cd5eb"
+        },
+        {
+          "workload": "overload-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.000017593251364,
+              "lower_95": 1.0000175745613271,
+              "upper_95": 1.0000176119414013,
+              "multiplicative_halfwidth": 1.8689708447539033e-08
+            },
+            "cycles": {
+              "geometric_mean": 1.0043348115169257,
+              "lower_95": 0.9930382814459144,
+              "upper_95": 1.0157598478036887,
+              "multiplicative_halfwidth": 0.011375724664474118
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0151794350215615,
+              "lower_95": 0.997228683184341,
+              "upper_95": 1.033453311831975,
+              "multiplicative_halfwidth": 0.01800063730607948
+            },
+            "user_seconds": {
+              "geometric_mean": 1.015869022404299,
+              "lower_95": 0.9974737464604179,
+              "upper_95": 1.0346035415395445,
+              "multiplicative_halfwidth": 0.018441864770032845
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0000018798953652,
+              "lower_95": 0.9999976272819509,
+              "upper_95": 1.000006132526864,
+              "multiplicative_halfwidth": 4.252623504452657e-06
+            }
+          },
+          "object_sha256": "5298bd8e44284564cdc281f40d7ce8025b19065b587abddb36ce64e06fc776de"
+        },
+        {
+          "workload": "overload-o2-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.0000063849016616,
+              "lower_95": 1.0000063731810411,
+              "upper_95": 1.0000063966222823,
+              "multiplicative_halfwidth": 1.1720545867177634e-08
+            },
+            "cycles": {
+              "geometric_mean": 0.9971585064756742,
+              "lower_95": 0.988128351559783,
+              "upper_95": 1.0062711847780024,
+              "multiplicative_halfwidth": 0.009138645704919846
+            },
+            "wall_seconds": {
+              "geometric_mean": 1.0075483743972908,
+              "lower_95": 0.9946778380041579,
+              "upper_95": 1.020585447834598,
+              "multiplicative_halfwidth": 0.012939401986635124
+            },
+            "user_seconds": {
+              "geometric_mean": 1.0098158782445776,
+              "lower_95": 0.9974789213610367,
+              "upper_95": 1.0223054203125137,
+              "multiplicative_halfwidth": 0.012368137931884737
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "f27200393ce18b3aba089994c0429e16b46f3bf32e24c0a2a5d79b59937c1d60"
+        },
+        {
+          "workload": "self-calls-o0-ab",
+          "metrics": {
+            "instructions": {
+              "geometric_mean": 1.0000092885835874,
+              "lower_95": 1.0000092536407292,
+              "upper_95": 1.000009323526447,
+              "multiplicative_halfwidth": 3.494253486557852e-08
+            },
+            "cycles": {
+              "geometric_mean": 0.9590339460909869,
+              "lower_95": 0.8960761676219956,
+              "upper_95": 1.0264151006221598,
+              "multiplicative_halfwidth": 0.07025940510846129
+            },
+            "wall_seconds": {
+              "geometric_mean": 0.9618540501093671,
+              "lower_95": 0.9013769112418307,
+              "upper_95": 1.0263888526245826,
+              "multiplicative_halfwidth": 0.06709417349532143
+            },
+            "user_seconds": {
+              "geometric_mean": 0.9677906956832047,
+              "lower_95": 0.9021780632426089,
+              "upper_95": 1.0381751328386168,
+              "multiplicative_halfwidth": 0.0727269206754717
+            },
+            "max_rss_kib": {
+              "geometric_mean": 1.0,
+              "lower_95": 1.0,
+              "upper_95": 1.0,
+              "multiplicative_halfwidth": 0.0
+            }
+          },
+          "object_sha256": "31d2172c46c09ae183aebd7248ad684757de60ca1f7f70a99caf5815970765b6"
+        }
+      ],
+      "gates": {
+        "instructions_upper95_ratio": 1.01,
+        "rss_upper95_ratio": 1.03,
+        "aa_equivalence_halfband": 0.0001
+      },
+      "calibration": "All six fixed-address A/A instruction intervals inside predeclared \u00b10.01%; counter scheduling >=99%; frozen source/header/compiler/helper hashes unchanged.",
+      "batching": "16 sequential compilations per observation for short extra inputs; every one of 3840 comparative child objects checked and retained.",
+      "timing": "Descriptive under load; no wall-time speed claim.",
+      "newly_correct_scaling": {
+        "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/newly-correct-scaling-protocol.json",
+        "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/newly-correct-scaling",
+        "results": [
+          {
+            "size": 32,
+            "observations": 5,
+            "instructions_per_compilation_mean": 17996120.5375,
+            "instructions_per_compilation_min": 17996120.25,
+            "instructions_per_compilation_max": 17996120.75,
+            "max_rss_kib": 17280,
+            "mean_batch_wall_seconds": 0.14400000000000002,
+            "timing": "descriptive under external load; raw observations retained"
+          },
+          {
+            "size": 128,
+            "observations": 5,
+            "instructions_per_compilation_mean": 59351908.8,
+            "instructions_per_compilation_min": 59351901.625,
+            "instructions_per_compilation_max": 59351934.375,
+            "max_rss_kib": 17280,
+            "mean_batch_wall_seconds": 0.37,
+            "timing": "descriptive under external load; raw observations retained"
+          },
+          {
+            "size": 512,
+            "observations": 5,
+            "instructions_per_compilation_mean": 224829738.4125,
+            "instructions_per_compilation_min": 224829737.6875,
+            "instructions_per_compilation_max": 224829739.5625,
+            "max_rss_kib": 22008,
+            "mean_batch_wall_seconds": 1.266,
+            "timing": "descriptive under external load; raw observations retained"
+          }
+        ],
+        "interpretation": "Candidate-only absolute work, not an A/B speedup: parent miscompiles the smallest program. All three scaled programs independently execute zero with GCC, Clang and candidate. Five measured batches of sixteen compilations per size; all 384 measured/warmup child objects verified; counts include fixed wrapper overhead."
+      }
     },
     "standards_basis": {
       "category": "original-cxx11",
       "rationale": "N3485 10.4 [class.abstract], 8.5.4 [dcl.init.list]: no abstract object construction"
+    },
+    "additional_owning_pas": [
+      18
+    ],
+    "handout": "pa13/README.md: pure virtual declarations and supported temporary rejection; pa18/README.md: immediate substitution failures",
+    "implementation": [
+      "dev/src/sema/analyzer_initialization.cpp",
+      "dev/src/sema/analyzer.h"
+    ],
+    "expected": "N3485 10.4p2 and 8.5.4p3 forbid an abstract temporary, even for a reference default argument that is never used; immediate-context invalid construction fails substitution.",
+    "pending_checks": [],
+    "related_issue": "CXX11-009",
+    "triage_notes": [
+      "Initial build hit shared /tmp disk quota; all completed checks set TMPDIR to the issue evidence directory. Raw failed build remains build.log; no source fault was implicated.",
+      "A first lifetime control checked counters inside the same full-expression as the call; corrected it to check after the full-expression. Original fixture and diagnostic probes retained.",
+      "An initial PA13 rvalue case used a same-type cast caught by the broad PA23 detector; reduced it to binding a concrete prvalue. Final placement has zero findings."
+    ],
+    "adjacent_host_disagreement": {
+      "case": "access-probes/allowed.cpp",
+      "evidence": "access-probes/results.json",
+      "actual": "GCC rejects a call using a braced default argument that converts through a private base inside its owning class; Clang and cppgm compile and execute zero. Both hosts and cppgm reject the corresponding out-of-class default argument.",
+      "standard_basis": "N3485 8.3.6p5 and 11p8 check default-argument semantic/access constraints at their declaration; retained as separate host-oracle evidence, not counted in the 264 three-compiler cells.",
+      "status": "separate-host-oracle-disagreement; not scored as a compiler defect or pass",
+      "additional_evidence": "access-probes/unbraced-results.json",
+      "note": "The same GCC rejection occurs without braces, so it is not specific to this repair. Clang/cppgm execute zero in both forms; declaration-scope access wording is cited for later oracle adjudication."
     }
   },
   {
@@ -998,5 +1385,141 @@
       "rationale": "P1825R0 (2019) function/catch parameter throw implicit move"
     },
     "triage_note": "Later-DR compatibility; original C++11 gaps prioritized per user steering. Draft probes retained externally, no compiler change. Function-try ctor-initializer host disagreement still requires adjudication; one initial deleted-move catch draft rejects for an earlier prvalue and needs reduction."
+  },
+  {
+    "id": "CXX11-009",
+    "priority": "P1",
+    "status": "closed",
+    "upstream": [],
+    "discovered_neighbor_of": "CXX11-006",
+    "symptom": "Valid single-element list-reference arguments copy/slice an abstract base, causing wrong identity or a pure-virtual-call SIGABRT; nonconst and noncopyable related arguments are rejected.",
+    "root_cause": "list_sequence and list_argument only considered construction of a referenced-type temporary and omitted direct binding of a single reference-related element. Lowering needed to consume the recorded direct binding and traverse its element for lifetime extension.",
+    "expected": "N3485 8.5.4p3, 8.5.3p5: directly bind a compatible related element, preserve dynamic type/object identity and temporary lifetime, reject const-dropping bindings.",
+    "owning_pa": 12,
+    "additional_owning_pas": [
+      13
+    ],
+    "handout": "pa12/README.md value semantics; pa13/README.md polymorphic object subset",
+    "regressions": [
+      "pa12/tests/controls/100-list-reference-same-object.t",
+      "pa13/tests/controls/100-list-reference-binds-derived-object.t",
+      "pa13/tests/controls/100-list-reference-derived-temporary-lifetime.t",
+      "pa13/tests/controls/100-list-reference-drops-const-reject.t",
+      "pa13/tests/controls/100-list-reference-nonconst-derived-object.t"
+    ],
+    "implementation": [
+      "dev/src/sema/analyzer_initialization.cpp",
+      "dev/src/sema/analyzer.h",
+      "dev/src/sema/expression_facts.h",
+      "dev/src/lower/expression_lowering.cpp"
+    ],
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006",
+    "fix_revision": "33535a86489ad5a782ade616eb652d046a217445",
+    "checks": {
+      "baseline": {
+        "status": "runtime-abort-and-rejections-reproduced",
+        "logs": [
+          "initial-probes/results.json",
+          "focused-final/results.json"
+        ]
+      },
+      "focused": {
+        "status": "pass",
+        "log": "focused-final/results.json"
+      },
+      "affected": {
+        "status": "pass",
+        "log": "affected.log"
+      },
+      "inception": {
+        "status": "pass",
+        "log": "inception.log"
+      },
+      "harness": {
+        "status": "pass",
+        "log": "harness.log"
+      },
+      "strict_report": {
+        "status": "pass",
+        "count": 8055,
+        "log": "strict-report.log"
+      },
+      "pa12": {
+        "status": "pass",
+        "count": 387,
+        "log": "affected.log"
+      },
+      "pa13": {
+        "status": "pass",
+        "count": 69,
+        "log": "affected.log"
+      },
+      "pa18": {
+        "status": "pass",
+        "count": 541,
+        "log": "affected.log"
+      },
+      "placement": {
+        "status": "pass",
+        "findings": 0,
+        "log": "placement-final.log"
+      },
+      "file_audit": {
+        "status": "pass-with-existing-warnings",
+        "log": "file-audit.log"
+      },
+      "regression_variants": {
+        "status": "pass",
+        "cells": 264,
+        "log": "regression-variants/results.json"
+      },
+      "preflight": {
+        "status": "six-exact-object-pairs-and-scaled-executions-pass",
+        "log": "preflight/results.json"
+      },
+      "debug_info": {
+        "status": "pass",
+        "log": "debuginfo.log"
+      },
+      "selfhost_pa5": {
+        "status": "pass",
+        "log": "selfhost-pa5.log"
+      },
+      "pa35_smoke": {
+        "status": "pass",
+        "log": "pa35-smoke.log"
+      },
+      "architecture": {
+        "status": "pass",
+        "log": "audits.log"
+      },
+      "student_export": {
+        "status": "pass",
+        "log": "export.log"
+      },
+      "reference_bundle": {
+        "status": "pass",
+        "wrappers": 42,
+        "log": "export-bundle.log"
+      }
+    },
+    "performance": {
+      "status": "pass-shared-fix-instruction-and-memory-gates",
+      "shared_evidence": "CXX11-006",
+      "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/performance-counters",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/performance-protocol.json",
+      "newly_correct_scaling": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-006/newly-correct-scaling"
+    },
+    "related_issue": "CXX11-006",
+    "standards_basis": {
+      "category": "original-cxx11",
+      "rationale": "N3485 8.5.4p3 already specifies initializing a reference directly from a single reference-related element; 8.5.3p5 and 12.2p5 govern binding/lifetime."
+    },
+    "pending_checks": [],
+    "triage_notes": [
+      "Initial build hit shared /tmp disk quota; all completed checks set TMPDIR to the issue evidence directory. Raw failed build remains build.log; no source fault was implicated.",
+      "A first lifetime control checked counters inside the same full-expression as the call; corrected it to check after the full-expression. Original fixture and diagnostic probes retained.",
+      "An initial PA13 rvalue case used a same-type cast caught by the broad PA23 detector; reduced it to binding a concrete prvalue. Final placement has zero findings."
+    ]
   }
 ]

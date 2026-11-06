@@ -1,4 +1,4 @@
-Campaign active — fourth implementation checkpoint (2026-11-05)
+Campaign active — fifth implementation checkpoint (2026-11-06)
 
 The full objective and closure criteria remain in cxx11-gap-plan.txt.
 This is partial progress; corpus applicability, native adapters and remaining
@@ -21,7 +21,7 @@ Implemented:
   regressions are in PA12 with a local-static eligibility guard in PA16.
   The course documents P1825 return semantics in C++11; adjacent host probes
   expose GCC/Clang differences in retroactive DR application, retained in data.
-- Final compiler version passes PA12 386/386, PA16 227/227, PA21 255/255, full
+- The return-fix compiler version passes PA12 386/386, PA16 227/227, PA21 255/255, full
   strict report 8038/8038, debug info, self-host through PA5, inception, all
   architecture/format/placement audits, export and all 42 reference wrappers.
 - Initial counter experiment passed gates but a targeted rvalue-reference
@@ -59,18 +59,46 @@ Standards scope:
   compilations per short observation with unchanged gates. The valid original
   GCC prefix plus class instantiation passes all 24 host/candidate builds.
 
+Current implementation (2026-11-06):
+- CXX11-006/009 closed together in 33535a864: reject abstract list
+  temporaries and bind single reference-related elements directly. The new
+  CXX11-009 neighbor is a genuine wrong-code case (pure virtual call abort),
+  independent of later DRs; it is appended as OBS-0522, preserving the original
+  521 observations. PA12/13/18 required controls cover identity, dynamic type,
+  cv-qualification, noncopyable objects, arrays/functions, temporary lifetime,
+  default arguments, hard errors and immediate-context SFINAE.
+- PA12 387/387, PA13 69/69, PA18 541/541; full strict 8055/8055, debug info,
+  self-host through PA5, inception, PA35 smoke, architecture/format/file/
+  placement audits and harness pass. All 264 host/candidate regression cells
+  pass across both dialects and O0–O3. Six frozen performance pairs produce
+  identical objects; scaled programs execute correctly in both binaries.
+  Export and all 42 reference wrappers also pass. All six calibrated A/A and
+  A/B counter/RSS comparisons pass: instruction changes +0.00176% overload O0,
+  +0.000638% overload O2, +0.000929% frozen compiler source, and +0.0480%/
+  +0.0582%/+0.0616% on 32/128/512 constructor-heavy inputs. Largest RSS upper
+  bound is +0.0152%, within the unchanged 3% gate. All comparative objects and
+  3,840 batched child objects agree.
+- Newly correct binding inputs have separate absolute measurements, since
+  the parent miscompiles them: 32/128/512 class sets take about 18.0M/59.4M/
+  224.8M retired instructions per compilation (including fixed wrapper cost),
+  with peak RSS 17,280/17,280/22,008 KiB. Five measured 16-compile batches per
+  size and all raw outputs are retained; every program exits zero with both
+  hosts and candidate. No speedup or wall-time claim is made for these cases.
+
 Next:
 - Implement and validate execution adapters using the extracted metadata,
   including target/dialect selection, diagnostics, source companions and
   abnormal termination. Preserve explicit limits for unavailable output checks.
-- Prioritize original C++11 abstract initialization and sparse aggregate
-  scaling. Retain throw-parameter DR work
+- Reduce and repair original C++11 sparse aggregate scaling next. Source
+  inspection identifies a bound-sized semantic initialization loop; validate
+  that cause with bounded reproductions and cover later emission separately.
+  Retain throw-parameter DR work
   as separately labeled compatibility work, with drafts/evidence preserved.
 - Adjudicate CXX11-002 initialization semantics before prescribing a change;
   continue the other confirmed missing diagnostics and large-array timeout.
 
 Evidence root: /mnt/vizier/cppgm-cxx11-upstream
-Current fix: issues/CXX11-005/ (alias-pack original C++11 contract)
+Current fix: issues/CXX11-006/ (abstract temporaries and direct list-reference binding)
 Return DR evidence: issues/CXX11-003/ (all original/version-2 results retained)
 Inventory: inventory-3/{manifest.json,inventory.jsonl}
 Native GCC metadata: dg-metadata-1/{manifest.json,metadata.jsonl,tests-final.log}
