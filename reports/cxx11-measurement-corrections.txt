@@ -24,7 +24,8 @@ failures), 32 exact reducer cells, all 12 instruction/direct-RSS comparisons,
 and a fresh export with all 42 wrappers. The final neighbor sweep found
 CXX11-023/024 regressions; the reference family remains open. See
 cxx11-constexpr-reference-checkpoint.txt. These checkpoint memory measurements
-have the corrected direct-compiler scope; earlier-repair backfill remains open.
+have the corrected direct-compiler scope. The earlier-repair paired backfill
+is now accepted below; absolute scaling memory scope audits remain separate.
 
 Earlier closed compiler repairs retain their correctness/fix status and raw
 instruction evidence, but their performance metadata explicitly marks the
@@ -59,3 +60,19 @@ remaining queue has 60 workload reports across 11 evidence groups; closure of
 other historical memory gates is still pending. Updated queue:
 /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-queue-v2.json
 Evidence: closed-repair-memory-backfill-v2/first-group-verification.json.
+
+Historical paired memory correction accepted (2026-11-06):
+The remaining60 frozen workload reports across11 groups pass independent
+aggregate verification. All4800 new output observations,35840 measured batch
+children and2400 original outputs rehash correctly. The maximum upper95
+actual compiler RSS ratio is1.0115929583512238, within the unchanged1.03 gate.
+Together with the earlier three CXX11-001 reports, all63 paired reports in12
+historical groups are revalidated. Original instruction gates and all old raw
+observations remain; no new wall-time pass is claimed.
+
+Current queue: issues/CXX11-016/closed-repair-memory-queue-v4.json
+Acceptance: issues/CXX11-016/closed-memory-acceptance-v1.json
+The v1-v3 queues and failed/preflight evidence remain unchanged. This closes
+paired historical compiler RSS revalidation only. Absolute scaling memory
+claims still need their own direct-child scope checks; the combined reference
+family, full corpus/adapters, remaining compiler issues and final CI are open.
