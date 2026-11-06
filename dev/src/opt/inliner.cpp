@@ -131,6 +131,8 @@ struct Shape
 	bool guarded = false; // catches only in terminate guards (guard_landing)
 	bool call = false;
 	uint32_t calls = 0; // call instructions
+	// Current calls into the wave's component, refreshed with this shape.
+	uint32_t self_calls = 0, component_calls = 0;
 	bool loop = false;
 	bool loop_dispatch = false; // an indirect call outside cold blocks inside one
 								// of its natural loops
@@ -182,9 +184,11 @@ bool guard_landing(const Program& program, const FunctionBody& body, BlockId b)
 }
 
 template<bool source_required = false>
-Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_t>& nounwind)
+Shape shape_of(
+	const Program& program, SymbolId symbol, const std::vector<uint8_t>& nounwind, const CallGraph* graph = nullptr)
 {
 	Shape shape;
+	const uint32_t component = graph != nullptr ? graph->component[graph->function_of(symbol)] : kNoId;
 	const Function& function = program.functions[program.symbols[symbol].detail];
 	const FunctionBody& body = *function.body;
 	const Signature& sig = program.signatures[function.signature];
@@ -212,6 +216,12 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 			shape.catches = shape.catches || catching;
 			shape.call = shape.call || inst.op == Opcode::Call;
 			shape.calls += inst.op == Opcode::Call ? 1 : 0;
+			if (graph != nullptr && inst.op == Opcode::Call && inst.ops[0].is(ValueKind::Symbol))
+			{
+				const uint32_t target = graph->function_of(inst.ops[0].index);
+				shape.self_calls += inst.ops[0].index == symbol ? 1 : 0;
+				shape.component_calls += target != kNoId && graph->component[target] == component ? 1 : 0;
+			}
 			shape.returns += inst.op == Opcode::Return ? 1 : 0;
 			if (inst.op == Opcode::Return && same_result)
 			{
@@ -1185,7 +1195,13 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 	once = false;
 	if (source_required_ && (m.flags & SF_FORCE_INLINE) == 0)
 		return false;
-	if (graph_.recursive[g] || g == caller_ || (m.flags & SF_NO_INLINE) != 0 || shape.unsafe ||
+	// A loop can absorb a loop-free dispatcher or forwarder on its call
+	// cycle. Keep recursive workers out of the copy: no self call or second
+	// component edge, and the ordinary profitability/budget rules still apply.
+	const bool collapse = graph_.recursive[g] && !source_required_ && options_.level >= 2 && loop_site &&
+		graph_.component[g] == graph_.component[caller_] && !shape.loop && !shape.eh && shape.self_calls == 0 &&
+		shape.component_calls == 1;
+	if ((graph_.recursive[g] && !collapse) || g == caller_ || (m.flags & SF_NO_INLINE) != 0 || shape.unsafe ||
 		(!source_required_ &&
 			((m.flags & SF_REPLACEABLE) != 0 ||
 				(shape.eh && !cleanup_welcome(shape, handler_code, loop_site) &&
@@ -1639,11 +1655,7 @@ bool InlineWaveRunner::process(SymbolId caller)
 	if (wave_ == InlineWave::Late && options_.level >= 2 && graph_.recursive[caller_] && !shapes_[caller_].eh &&
 		!shapes_[caller_].unsafe && shapes_[caller_].size <= kRecursiveCap)
 	{
-		uint64_t self_calls = 0;
-		for (BlockId b : body.layout)
-			for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
-				self_calls += body.instructions[i].op == Opcode::Call &&
-					body.instructions[i].ops[0].is(ValueKind::Symbol) && body.instructions[i].ops[0].index == caller;
+		const uint64_t self_calls = shapes_[caller_].self_calls;
 		// (A loop's one self call, what is left of a tail-recursive function,
 		// is a chain: its copies nest loops.)
 		const bool chain = shapes_[caller_].loop && self_calls == 1;
@@ -1878,8 +1890,9 @@ void InlineWaveRunner::run()
 		{
 			if (source_required_)
 				simplify_(graph_.functions[f]);
-			shapes_[f] = source_required_ ? shape_of<true>(program_, graph_.functions[f], nounwind_)
-										  : shape_of(program_, graph_.functions[f], nounwind_);
+			shapes_[f] = source_required_
+				? shape_of<true>(program_, graph_.functions[f], nounwind_)
+				: shape_of(program_, graph_.functions[f], nounwind_, graph_.recursive[f] ? &graph_ : nullptr);
 		}
 	if (!source_required_ && wave_ == InlineWave::Ordinary)
 		input_shapes_ = shapes_;
@@ -1909,8 +1922,9 @@ void InlineWaveRunner::run()
 			if (!source_required_ || caller_cfg_changed_)
 				simplify_(caller);
 			if (!source_required_ || (program_.symbols[caller].metadata.flags & SF_FORCE_INLINE) != 0)
-				shapes_[f] = source_required_ ? shape_of<true>(program_, caller, nounwind_)
-											  : shape_of(program_, caller, nounwind_);
+				shapes_[f] = source_required_
+					? shape_of<true>(program_, caller, nounwind_)
+					: shape_of(program_, caller, nounwind_, graph_.recursive[f] ? &graph_ : nullptr);
 		}
 	}
 }

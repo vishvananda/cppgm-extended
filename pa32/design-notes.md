@@ -122,6 +122,13 @@ cold paths separately, and bound total growth rather than copying a large body
 at every site. Partial specialization may remove repeated work without copying
 the whole function. Recursion and address-taken functions need separate care.
 
+Membership in a call cycle does not make every member a recursive worker.
+Forwarding and dispatch layers can sometimes be combined around a loop while
+retaining the calls that perform recursive work. Establish where expansion
+stops, preserve argument evaluation and exceptional exits, and recheck the
+call structure after edits. A smaller call graph alone does not justify
+unbounded code growth or repeated analysis of unchanged functions.
+
 A short returning path around a larger calling path can be useful to inline
 even when the whole body is not. Keep growth in that slower path from
 duplicating work at every caller or hiding the useful wrapper. Measure both

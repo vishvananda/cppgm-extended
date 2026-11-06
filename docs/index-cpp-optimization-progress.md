@@ -219,6 +219,66 @@ contain compiler guards; `many-recurrences-v4-paired/` records scaling.
 object and reused identical native executable. Public/Boost object checks and
 student-export checks have separate receipts in that directory.
 
+## Recursive loop dispatch: bounded call-cycle collapse
+
+The current Brainfuck profile attributes about 55% to the variant dispatcher,
+26% to loop work and 17% to forwarding/invocation layers. The loop still called
+a checked visitor wrapper and a separate dispatcher; GCC and Clang combine
+those layers with the loop. The ordinary inliner rejected every member of a
+recursive call-graph component before considering its existing size budgets.
+
+At an optimized loop call site, allow a callee in the caller's component when
+the callee is loop-free, has no exception region, has no direct self call and
+has exactly one onward component call. Retain the actual recursive worker,
+the ordinary no-inline, effect and linkage checks, and every existing growth
+budget. Refresh these call counts with the existing function-shape scan after
+edits, so a newly exposed worker cannot be mistaken for the original forwarder.
+No source spelling or workload identity selects this rule.
+
+The first prototype also considered sites outside loops. It helped Calculator
+AST, but increased frozen `-O3` compile instructions by 1.60%. Restricting the
+rule to loop sites preserves the Brainfuck gain at 0.28% extra compile
+instructions against the preceding compiler and 0.30% against the campaign
+baseline. `-O0` instructions and object bytes are unchanged. Peak RSS stays
+within 0.2%; physical footprint is not available on this Linux host. A longer
+`-O0` timing repeat did not reproduce an initial apparent slowdown. Broad
+non-loop forwarding remains an opportunity requiring a more efficient design.
+
+For Brainfuck, three paired blocks give 1.300x instruction speed (23.1% fewer
+instructions) against the preceding compiler and approximately 1.44x loop wall
+speed. The wall blocks vary substantially, so the instruction reduction is the
+firmer result. Separate stock-reference pairs give 0.856x GCC and 0.847x Clang
+wall speed, with instruction speeds of 0.888x and 0.810x. There is still a
+dispatch/layout gap; this fix does not establish parity with either compiler.
+Calculator AST and CRC instruction counts are unchanged by the loop-site rule.
+Index-cpp `.text` grows by 16 bytes to 391,250, with unchanged read-only data.
+All 50 upstream checksum workloads pass.
+
+The final source passes the strict report (8,042/8,042), debug-info checks,
+self-host through PA5, PA35 quick/smoke, the optional C++14/17 suite and all
+architecture, placement, format, file and harness audits. GCC and Clang pass
+the CI `-Wall -Werror` syntax check. C++11 reducers exercise observable argument
+evaluation, recursive continuations, fan-out, no-inline functions and unwinding;
+they check broad call/size bounds and behavior through the serialized object
+path. Student guidance describes the proof obligations without private tuning.
+
+The six public sentinels pass against both reference compilers. FlatMap objects
+remain identical at both levels, as does Xpressive at `-O0`. Xpressive `-O3`
+changes, so it was linked against the same host-built test framework and run
+in 12 paired blocks of ten executions each, with A/A checks before and after.
+Its instruction speed is 0.99987x and task-clock speed 1.00035x: no resolved
+runtime regression. JSON also changes; six paired blocks show 1.021x instruction speed. Its A/A
+timing drifts by 15–42%, so these runs do not resolve a small wall-time effect.
+The fresh student export verifies 22,529 portable reference outputs and
+installs all 42 wrappers; both new fixtures pass through the exported tools.
+
+Receipts are under `optimization/20261105/scc-dispatch-prototype/` and
+`scc-dispatch-ported/`; the latter's manifest identifies the final compiler,
+source hashes and object. The final object matches the isolated loop-site
+prototype, so the native executable is its unchanged copy. Compiler guards are
+in `scc-dispatch-ported-{frozen,cumulative-frozen}/`; Xpressive's raw repetitions
+are in `scc-dispatch-ported-boost-sentinels/runtime-precise/`.
+
 ## Outstanding work
 
 Close the first group with a full 50-workload paired reranking, the full public

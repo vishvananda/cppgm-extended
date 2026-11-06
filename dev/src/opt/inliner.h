@@ -7,7 +7,8 @@
 
 // Bounded inlining of direct calls (PA32 O1+). Three waves over the
 // callee-first call graph (opt/call_graph.h):
-//   ordinary   small nonrecursive callees within a per-caller growth budget
+//   ordinary   small callees within a per-caller growth budget; a loop may
+//              absorb forwarding layers on its call cycle
 //              (trivial leaves exempt), plus single-call discardable
 //              callees within their own caller and unit budgets;
 //   once       after pruning, the single-call policy alone with fresh

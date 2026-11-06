@@ -1,0 +1,9 @@
+# Remove repeated forwarding layers; any equivalent dispatch is acceptable.
+none(call @relay) in @walk
+none(call @route) in @walk
+instructions <= 120 in @walk
+# Mutually recursive and branching recursions must keep bounded code growth.
+instructions <= 120 in @cycle_a
+instructions <= 120 in @cycle_b
+instructions <= 120 in @fan_a
+instructions <= 120 in @fan_b
