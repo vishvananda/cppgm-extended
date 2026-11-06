@@ -614,6 +614,50 @@ fixtures also pass through its installed reference tools. Export receipts are
 `huffman-indexed-ported/export-results-v2.json`; the export is
 `student-export-huffman-indexed-v2/`.
 
+## Continuous index-cpp reporting
+
+A separate `index-cpp benchmarks` workflow now runs on pushes and PR updates.
+It builds the pinned upstream with all three compilers, requires every checksum,
+pairs compilation and full-input runtime measurements with A/A calibration,
+and records code size, peak RSS, available counters and source/header/binary
+provenance. The detail table contains all 50 workloads and separate higher-is-
+better GCC and Clang comparisons. It does not change the public-suite aggregate
+or the default C++11 student requirements.
+
+PR jobs retain artifacts without publication credentials. A separate trusted
+main job publishes the table, result JSON and raw observation JSONL alongside
+the public benchmark data, retaining per-commit history. Incomplete, dirty,
+wrong-revision or wrong-host results cannot replace a published comparison.
+The public benchmark page links to the new detail table.
+
+Local validation exercised a real pinned network fetch, repeated builds,
+all three checksum runs, both full-input A/A and ABBA comparisons, report
+generation, failure retention and publication persistence/rejection tests.
+Eight new CI tests and four measurement-runner tests pass, as does actionlint.
+The full harness and existing public reporting tests also pass. The first real
+trial exposed loss of Clang's C++ driver configuration when resolving its
+symlink; compiler invocation now preserves that name and directory while
+hashing its binary. The failed receipt is retained.
+
+The successful local trial uses one paired/A/A block per reference; CI defaults
+to three paired blocks. It records 16 compile and 19 runtime/check observations.
+Its modified checkout is explicitly marked. Timings warn on 31 GCC and 44 Clang
+workloads, so this validates the pipeline rather than replacing the calibrated
+optimization scoreboard. Receipts are `index-cpp-ci-local-validation-v2/`,
+`index-cpp-ci-fetch-validation.json` and `index-cpp-ci-harness.log`.
+GitHub execution remains to be checked after pushing this workflow.
+
+A further private logical-shift selection experiment passes all checks but
+leaves Base64 and SHA256 runtime instruction counts unchanged. Admitting a
+signed carrier does not change its benchmark object; the captured optimized
+input uses unsigned carriers for those shifts. Neither variant is accepted.
+A bounded retry of values rejected before another callee-save register opens
+also leaves the Base64/Huffman instruction counts unchanged; it remains a
+diagnostic prototype. Fresh warm-function disassembly corrects an older GCC
+capture accidentally overwritten by its cold clone: GCC's small string wrapper
+calls a separate decoder, so its wrapper size alone is not an inlining result.
+The remaining Base64 diagnosis must include that worker and register pressure.
+
 ## Outstanding work
 
 Retain the completed public suite, 50-workload comparison, PA35 release and
@@ -629,6 +673,5 @@ chain and Calculator AST's remaining ownership/dispatch work on the new code.
 Investigate Base64 decoding, Huffman decoding and Nbody, then the named parser,
 interpreter, SHA256, maze and container workloads using that refreshed evidence.
 Retain existing workload wins and every repeatable individual regression.
-The final plan step now also requires automatic index-cpp CI on each commit,
-with correctness checks and performance results recorded beside the existing
-benchmark reports.
+The automatic index-cpp CI implementation is locally validated; check its
+first GitHub run and publication path before closing that final plan step.

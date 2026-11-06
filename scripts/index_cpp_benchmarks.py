@@ -146,7 +146,7 @@ def measure(args):
     report = dict(status='running', source_commit=commit, source_sha256=SOURCE_SHA256,
                   executables={label: dict(path=str(path), sha256=identities[label])
                                for label, path in binaries.items()},
-                  cpus=args.cpus, test_input=False, blocks=args.blocks, pairs={}, calibration={},
+                  cpus=args.cpus, test_input=False, blocks=args.blocks, pairs={}, calibration={}, correctness={},
                   drift_warning=args.drift_warning, timing_warnings={})
     if args.metadata:
         report['build_metadata'] = json.loads(args.metadata.read_text())
@@ -173,6 +173,8 @@ def measure(args):
             cases = parse_output(Path(row['stdout']).read_text(), universe)
             if len(cases) != 50:
                 raise ValueError('expected all 50 upstream checksum workloads')
+            report['correctness'][label] = dict(status=0, workloads=sorted(cases), stdout_sha256=timing.sha(row['stdout']))
+            save()
             universe = set(cases)
         filters = args.only or ['']
         selected = [sorted(name for name in universe if pattern.lower() in name.lower()) for pattern in filters]

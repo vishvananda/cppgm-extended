@@ -195,3 +195,29 @@ checks the scalar oracles, records Cachegrind work, and retains A/A calibration
 and six paired timing blocks under `course-quality/` in the results artifact.
 Use the same compiler revision in both lanes. These diagnostic timings do not
 change the badges or impose a hardware-specific course gate.
+
+## index-cpp comparison
+
+The **index-cpp benchmarks** workflow runs on every push and pull request.
+It builds the unchanged, pinned upstream C++17 program with cppgm, GCC and
+Clang and requires all 50 checksum workloads to pass. This reference-only
+lane does not add C++17 requirements to student assignments.
+
+[Latest index-cpp detail table](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/index-cpp/epyc/report.md)
+shows each workload, higher-is-better GCC and Clang speed ratios, compile
+cost, code size and A/A timing warnings. Its aggregate is separate from the
+public-suite badges. Main runs retain comparisons and raw observation JSON
+beside the existing results on `benchmark-badges`, with commit history under
+`index-cpp/history/`; all runs also attach full receipts to their CI summary.
+
+```sh
+python3 scripts/index_cpp_ci.py run --output obj/index-cpp
+```
+
+The runner uses full upstream inputs, three alternating ABBA/BAAB blocks per
+reference and one A/A block for runtime and compilation. It pins the source
+commit and hash, checks repeated compile outputs, and records CPU affinity,
+toolchains, binary hashes and header inventories. Hardware counters are used
+when permitted; an unavailable-counter reason remains in the report. A/A
+variation above 2% warns without omitting slow or noisy workloads. Checksums
+and build failures fail CI; timing changes remain measurements for review.

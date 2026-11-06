@@ -1,0 +1,106 @@
+name: index-cpp benchmarks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmarks:
+    name: index-cpp correctness and performance
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_STDLIB_FLAGS: ""
+      CPPGM_WARNINGS_AS_ERRORS: "1"
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential binutils ca-certificates clang git python3 time
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Build compiler
+        run: make -C dev cppgm++ -j "$(nproc)"
+      - name: Build, validate and measure all 50 workloads
+        run: python3 scripts/index_cpp_ci.py run --output obj/index-cpp
+      - name: Report
+        if: always()
+        run: |
+          if [ -f obj/index-cpp/details.md ]; then
+            cat obj/index-cpp/details.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Retain results and raw observations
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: index-cpp-${{ github.sha }}-${{ github.run_id }}
+          path: |
+            obj/index-cpp/*.json
+            obj/index-cpp/*.jsonl
+            obj/index-cpp/*.md
+            obj/index-cpp/*.stdout
+            obj/index-cpp/*.stderr
+            obj/index-cpp/*.time
+            obj/index-cpp/*.perf
+            obj/index-cpp/*probe
+            obj/index-cpp/*.log
+            obj/index-cpp/runtime/report.json
+            obj/index-cpp/runtime/observations.jsonl
+            obj/index-cpp/runtime/*.stdout
+            obj/index-cpp/runtime/*.stderr
+            obj/index-cpp/runtime/*.time
+            obj/index-cpp/runtime/*.perf
+          if-no-files-found: warn
+          retention-days: 14
+
+  publish:
+    name: publish index-cpp results
+    needs: benchmarks
+    # PRs have no publication credentials. Only trusted main results publish.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    concurrency:
+      group: benchmark-badge-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: tools
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: benchmark-badges
+          path: badge-branch
+      - uses: actions/download-artifact@v7
+        with:
+          name: index-cpp-${{ github.sha }}-${{ github.run_id }}
+          path: artifact
+      - name: Publish comparison and retained history
+        env:
+          REVISION: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 tools/scripts/index_cpp_ci.py publish artifact badge-branch \
+            --revision "$REVISION" --run-url "$RUN_URL"
+          cd badge-branch
+          git add index-cpp
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Publish index-cpp benchmarks of $REVISION"
+          git push origin HEAD:benchmark-badges
