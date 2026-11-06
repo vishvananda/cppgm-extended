@@ -5,6 +5,7 @@ Makefile routes with a stand-in frontend and reference backend."""
 from pathlib import Path
 import shutil
 import os
+import re
 from unittest.mock import patch
 import subprocess
 import tempfile
@@ -224,6 +225,95 @@ class CheckControlsTests(unittest.TestCase):
         missing = self.make("pa12", "check", f"TEST=tests/controls/{direct.name}")
         self.assertNotEqual(missing.returncode, 0)
         self.assertIn("direct member call lost its object extent", missing.stdout + missing.stderr)
+
+
+class ZeroBoundedControlTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory(prefix="zero-bounded-control.")
+        self.addCleanup(temp.cleanup)
+        self.root = Path(temp.name)
+        self.source = (REPO_ROOT / "pa32/tests/regression/controls/"
+                       "500-zero-bounded-signed-range.t").read_text()
+        self.fixture = self.root / "500-zero-bounded-signed-range.t"
+        self.fixture.write_text(self.source)
+        self.optimizer = self.root / "optimizer"
+        self.optimizer.write_text(textwrap.dedent("""\
+            #!/usr/bin/env python3
+            import pathlib, sys
+            args = sys.argv[1:]
+            source = (pathlib.Path(args[-1]) if args[0] in ['-O0', '-O1'] else
+                      pathlib.Path(__file__).parent / 'optimized.lowir')
+            pathlib.Path(args[args.index('-o') + 1]).write_text(source.read_text())
+            """))
+        self.driver = self.root / "driver"
+        self.driver.write_text(textwrap.dedent("""\
+            #!/usr/bin/env python3
+            import pathlib, sys
+            args = sys.argv[1:]
+            output = pathlib.Path(args[args.index('-o') + 1])
+            output.write_text('#!/bin/sh\\nexit 0\\n')
+            output.chmod(0o755)
+            """))
+        for tool in (self.optimizer, self.driver):
+            tool.chmod(0o755)
+
+    def check(self, decision, unsafe_negative=False):
+        output = self.source
+        for name in ("fold_zero_bounded", "fold_with_accept_phi"):
+            pattern = r"function @" + name + r"\(.*?^\}"
+            body = re.search(pattern, output, re.M | re.S).group()
+            replacement = re.sub(
+                r"  block \^lower:\n.*?(?=  block \^accept:)",
+                "  block ^lower:\n    " + decision + "\n\n", body,
+                flags=re.S).replace("^upper: 1", "^lower: 1")
+            output = output.replace(body, replacement)
+        if unsafe_negative:
+            output = output.replace("cmp lt i32 %lower_value, 0",
+                                    "cmp ult i32 %lower_value, 128")
+        (self.root / "optimized.lowir").write_text(output)
+        return subprocess.run([
+            "perl", str(REPO_ROOT / "scripts/check_lowir_zero_bounded_range.pl"),
+            str(self.optimizer), str(self.driver), str(self.fixture)],
+            capture_output=True, text=True, timeout=30)
+
+    def test_accepts_switch_and_equivalent_unsigned_predicates(self):
+        switch = "switch %value, ^reject, " + ", ".join(
+            f"{value}:^accept" for value in range(128))
+        decisions = [switch]
+        for predicate, bound, taken, other in (
+                ("ult", 128, "accept", "reject"),
+                ("ule", 127, "accept", "reject"),
+                ("uge", 128, "reject", "accept"),
+                ("ugt", 127, "reject", "accept")):
+            decisions.append(f"%range = cmp {predicate} i32 %value, {bound}\n"
+                             f"    branch %range, ^{taken}, ^{other}")
+        for decision in decisions:
+            with self.subTest(decision=decision[:50]):
+                result = self.check(decision)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_rejects_wrong_bounds_signed_tests_and_destinations(self):
+        for predicate, bound, taken, other in (
+                ("ult", 129, "accept", "reject"),
+                ("ule", 128, "accept", "reject"),
+                ("uge", 127, "reject", "accept"),
+                ("lt", 128, "accept", "reject"),
+                ("ult", 128, "reject", "accept")):
+            with self.subTest(predicate=predicate, bound=bound, taken=taken):
+                decision = (f"%range = cmp {predicate} i32 %value, {bound}\n"
+                            f"    branch %range, ^{taken}, ^{other}")
+                result = self.check(decision)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("did not combine the signed bounds", result.stderr)
+
+    def test_switch_holes_and_unsafe_negative_control_still_fail(self):
+        switch = "switch %value, ^reject, " + ", ".join(
+            f"{value}:^accept" for value in [*range(127), 128])
+        self.assertNotEqual(self.check(switch).returncode, 0)
+        decision = "%range = cmp ult i32 %value, 128\n    branch %range, ^accept, ^reject"
+        result = self.check(decision, unsafe_negative=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("combined unsafe bounds", result.stderr)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,9 @@
+#include <algorithm>
 #include <vector>
 
 #include "lowir/builder.h"
 #include "opt/passes.h"
+#include "opt/scalar_fold.h"
 
 namespace opt {
 
@@ -95,6 +97,7 @@ private:
 	bool arm(BlockId a, BlockId from, BlockId& to) const;
 	bool loads_through_merge(Value cond, BlockId join) const;
 	bool form(BlockId e);
+	bool range_switch(BlockId block, InstId id);
 	bool form_load(BlockId e);
 	InstId load_arm(BlockId a, BlockId from) const;
 	InstId hoist(BlockId a, BlockId e, InstId after);
@@ -655,14 +658,99 @@ bool SelectFormation::form_load(BlockId e)
 	return true;
 }
 
+bool SelectFormation::range_switch(BlockId block, InstId id)
+{
+	const Instruction term = body_.instructions[id];
+	if (term.op != Opcode::Switch || term.extra_count < 4)
+		return false;
+	Type type = term.type;
+	if (type.is_void())
+	{
+		const Value v = term.ops[0];
+		if (v.is(ValueKind::Temp))
+			type = body_.temps[v.index].type;
+		else if (v.is(ValueKind::Slot))
+			type = body_.slots[v.index].type;
+		else
+			return false;
+	}
+	if (!type.is_integer() || type.kind() == TypeKind::I128)
+		return false;
+	const BlockId target = body_.operands[term.extra_first + 1].index;
+	if (target == term.ops[1].index)
+		return false;
+	for (uint32_t k = 1; k < term.extra_count; k += 2)
+		if (body_.operands[term.extra_first + k].index != target)
+			return false;
+	const unsigned bits = static_cast<unsigned>(storage_bytes(type) * 8);
+	const uint64_t mask = bits == 64 ? UINT64_MAX : (uint64_t(1) << bits) - 1;
+	std::vector<uint64_t> values;
+	values.reserve(term.extra_count / 2);
+	for (uint32_t k = 0; k < term.extra_count; k += 2)
+	{
+		Constant c;
+		if (!literal_constant(body_, body_.operands[term.extra_first + k], c) || c.kind != ValueKind::Integer)
+			return false;
+		values.push_back(c.bits.low & mask);
+	}
+	std::sort(values.begin(), values.end());
+	values.erase(std::unique(values.begin(), values.end()), values.end());
+	// A singleton already lowers to one equality test.
+	if (values.size() < 2)
+		return false;
+	const uint64_t low = values.front(), width = values.back() - low;
+	if (width != values.size() - 1)
+		return false;
+	FunctionBuilder builder(c_.program, c_.symbol);
+	InstId at = previous_in_block(body_, block, id);
+	auto emit = [&](Instruction inst, Type result) -> Value {
+		inst.location = term.location;
+		const InstId n = append_instruction(body_, inst);
+		const TempId t = append_temp(body_, result, n);
+		body_.instructions[n].result = t;
+		insert_after(body_, block, at, n);
+		at = n;
+		return Value::temp(t);
+	};
+	Value selector = term.ops[0];
+	if (low != 0)
+	{
+		Instruction sub = make_instruction(Opcode::Binary, type);
+		sub.sub = static_cast<uint8_t>(BinaryOp::Sub);
+		sub.ops[0] = selector;
+		sub.ops[1] = builder.integer(static_cast<int64_t>(low));
+		selector = emit(sub, type);
+	}
+	Instruction cmp = make_instruction(Opcode::Compare, type);
+	cmp.sub = static_cast<uint8_t>(width < mask ? ComparePredicate::Ult : ComparePredicate::Ule);
+	cmp.ops[0] = selector;
+	cmp.ops[1] = builder.integer(static_cast<int64_t>(width < mask ? width + 1 : width));
+	const Value condition = emit(cmp, Type::scalar(TypeKind::I64));
+	Instruction branch = make_instruction(Opcode::Branch, Type::scalar(TypeKind::Void));
+	branch.location = term.location;
+	branch.ops[0] = condition;
+	branch.ops[1] = Value::block(target);
+	branch.ops[2] = term.ops[1];
+	body_.instructions[id] = branch;
+	++c_.stats.branches_folded;
+	return true;
+}
+
 bool SelectFormation::run()
 {
 	c_.ensure_cfg();
 	touched_.assign(body_.blocks.size(), 0);
 	bool changed = false;
 	for (BlockId b : body_.layout)
+	{
+		// Range normalization preserves the unique successors: reuse the CFG
+		// and this walk, rather than rebuilding it after a separate scan.
+		const InstId id = body_.blocks[b].last;
+		if (id != kNoId && body_.instructions[id].op == Opcode::Switch)
+			changed = range_switch(b, id) || changed;
 		if (c_.cfg.reachable(b) && !touched_[b] && !(c_.cfg.flags[b] & BF_EH))
 			changed = form(b) || form_load(b) || changed;
+	}
 	if (changed)
 		c_.invalidate_cfg();
 	return changed;

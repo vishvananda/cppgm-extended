@@ -971,20 +971,134 @@ sequence. Receipts: `uniform-local-fill-ported/`, `uniform-local-fill-v4/`,
 its oracle/edge/frozen companions, `uniform-fill-linear-scaling/`,
 `uniform-fill-ported-*` and `student-export-uniform-fill-ported/`.
 
-## Outstanding work
+## Twelfth mechanism: expose contiguous case membership
 
-Retain the completed public suite, 50-workload comparison, PA35 release and
-shared-entry replay/export receipts. Longer focused controls have checked 12
-apparent slow cases from the full 50-workload run, retaining calibration
-warnings and unchanged-instruction cases. The large slowdowns generally do
-not reproduce. Template parsing and JSON mapping still show smaller apparent
-losses within substantial calibration variation; keep them in the diagnosis
-queue rather than asserting that every individual runtime is unchanged.
-The complete controls are in `group1-final-remaining-controls/`.
-Profile Brainfuck's residual call
-chain and Calculator AST's remaining ownership/dispatch work on the new code.
-Investigate Base64 decoding, Huffman decoding and Nbody, then the named parser,
-interpreter, SHA256, maze and container workloads using that refreshed evidence.
-Retain existing workload wins and every repeatable individual regression.
-The automatic index-cpp CI job is validated locally and on GitHub. Its first
-main-branch execution will publish the retained results beside the public suite.
+Maze generation counts three neighboring cell kinds. The optimized LowIR
+retains a switch and a conditional increment; both references expose an
+interval predicate. Normalize a switch whose cases all share one destination
+when their typed values form a contiguous unsigned interval. Preserve the
+default and use wrapping subtraction where necessary. Existing predication
+then decides whether the guarded work can move; its effect and speculation
+checks remain unchanged. Singletons keep their existing equality path.
+
+The final implementation shares select formation's walk and preserves the
+unique successor set, so it reuses the CFG. The initial late prototype made
+an extra scan and rebuild. Earlier cleanup prototypes fired before the full
+case set formed and did not produce the desired simplification; they are not
+accepted performance results. No new LowIR fact or grammar is needed.
+
+Compiler hash:
+`e40b7bbfae16dc612b34c05f3a019f1101307f27b1f3e007a41bd7ca3bc4e6d7`.
+Index binary hash:
+`a0249b0cb1b895e085df693a30222f0ff655988c53549d326dbbe5d5c2ba7f6b`.
+The production compiler and measured private prototype emit identical native
+objects. All 50 checksums pass and direct/serialized output agrees. Index
+text falls another 224 bytes to 385,970, below the original 387,154 bytes.
+
+Five paired blocks give maze generation 1.226× process CPU speed and 1.046×
+instruction speed against the eleventh compiler. The same control gives BFS
+1.021× CPU speed and AStar 1.009×, with much smaller instruction changes.
+GCC and Clang remain separate references, with timing warnings retained.
+Seven-pair Brainfuck, log-parser and template-regex controls preserve their
+instruction counts and do not resolve a new runtime loss.
+
+Independent source oracles pass 98,608 cases per path; raw-IR oracles pass
+7,280,490. They cover widths, signed boundaries, duplicates, singletons,
+full ranges, holes, cyclic sets, unsupported wide values, guarded overflow,
+loads/division, throwing callbacks and cleanup. Uniform-fill oracles also
+pass again on the combined compiler. Course fixtures check behavior and broad
+quality bounds. An existing structural control required a 128-case switch;
+it now also accepts equivalent unsigned range decisions, retaining its wrong-
+bound, wrong-edge, signed, hole and effect negatives. Fourteen control tests
+pass, and the earlier singleton regression reference stays byte-unchanged.
+
+All 13 validation gates pass, including the strict 8,063-test report,
+debug info, self-host PA5, PA35 smoke/quick, optional modern C++, audits,
+harness and GCC/Clang warnings-as-errors. A temporary full disk interrupted
+receipt writing after ten successful gates. Their original logs and recorded
+statuses are retained; the final three checks were rerun successfully.
+`validation-results-recovered.json` records this distinction explicitly.
+Full PA35 release passes all 17 original gates and margins; inception matches.
+The fresh student export verifies 22,583 portable reference outputs, audits
+all 55 student documents and installs all 42 reference wrappers. Both new
+fixtures pass through its installed reference tools. All four export checks
+and all three closure steps pass.
+
+Frozen `-O3` compile instructions grow about 0.005% for this change and
+0.461% cumulatively. `-O0` cumulative growth is about 0.017%; its object
+bytes are unchanged. Peak RSS remains within the investigation bars; physical
+footprint is unavailable here. The walk reuse preserves identical native
+output while avoiding the earlier prototype's roughly 0.026% compile increment.
+
+Of 74 existing public objects, only JSON and RE2 at `-O3` change. Of four
+Boost sentinels, only release Xpressive changes. All behavior checks pass.
+Their paired native instruction speeds are effectively 1.000×; precise CPU
+speeds are respectively 0.999×, 1.017× and 0.992×, within the observed timing
+variation. Xpressive runs the fixed full regression input and requires all
+429 tests on every invocation, with the same host-built test framework.
+The first link attempt omitted that framework object; its failure is retained
+separately and is not a compiler correctness result.
+
+Receipts: `range-switch-final/`, `range-switch-v6-*`, `range-switch-v4/`,
+`range-switch-final-public-objects/`, `range-switch-final-boost-sentinels/`,
+`range-switch-final-changed-native-recovery/` and
+`range-switch-final-xpressive-native/`.
+
+## Fourth full-scoreboard checkpoint
+
+The final native payload completes all 50 full-input comparisons against the
+campaign baseline, previous accepted compiler, GCC and Clang: 200 pairs of
+workload/reference results, with no omissions. All ratios are higher is better.
+
+| Reference | Loop wall speed | Process CPU speed | Instruction speed |
+| --- | ---: | ---: | ---: |
+| Campaign baseline | 1.075× | 1.075× | 1.077× |
+| Eleventh compiler | 1.020× | 1.018× | 1.001× |
+| GCC | 1.007× | 1.009× | 0.961× |
+| Clang | 0.991× | 0.990× | 0.963× |
+
+These are equal-weight geometric means in this paired experiment. There are
+81 calibration warnings across the 200 comparisons. They do not establish
+small timing leads, nor should they multiply the initial uncalibrated 0.901×
+GCC estimate. The stable campaign instruction gain is about 7.2% fewer
+instructions. Original inputs and checksums remain unchanged; every measured
+binary has recorded provenance.
+
+Longer controls check the apparent individual losses against the eleventh
+compiler. The large cache-simulation, words, template-regex, single-matrix,
+arithmetic-decoder and array-Brainfuck losses do not reproduce. SortMerge and
+GraphAStar retain smaller apparent losses, roughly 1.1% and 1.6% in process
+CPU, within substantial A/A variation. Their instructions are unchanged;
+keep the uncertainty rather than claiming every runtime is exactly preserved.
+Threaded matrix timing also separates its nearly unchanged compute loop from
+more variable process CPU. Every initial observation remains in the receipts.
+
+The disk interruption truncated part of the first control reports. Complete
+observations were checked against output/status, counters, order and binary
+hashes before reuse; incomplete groups were rerun in fresh directories.
+Receipts: `group4-range-full-scoreboard/`, `group4-range-native-controls/`
+and `group4-range-native-controls-recovery/`.
+
+## Remaining work and ranked follow-ups
+
+Local validation is complete. Push the two validated local commits and review
+index-cpp, public and Boost CI at that head.
+The automatic index-cpp job is already validated locally and on GitHub; its
+first main execution will publish results beside the public suite.
+
+The new ranking and refreshed diagnoses leave these follow-ups. A diagnosis
+with an open legality or cost proof is not an implemented optimization.
+
+| Priority | Follow-up | Required evidence before a change |
+| --- | --- | --- |
+| 1 | NeuralNet and Base64 decode: leading GCC gaps, about 0.69–0.70× loop speed | Profile NeuralNet's newly leading region. For Base64, use the actual decoder worker and the retained pressure/shift probes; those probes found no resolved gain. |
+| 2 | Calculator AST and interpreter ownership/dispatch | Preserve the AST allocation/cleanup constraints. The final private trace proves the interpreter's non-loop recursive-wrapper rejection before pricing; replace the rejected broad policy with a cheaper guarded-forwarder design. |
+| 3 | Huffman and Base64 encode: leading Clang gaps | Isolate pointer/bit dependencies and encoding separately. The accepted indexed-load fix does not close the remaining Huffman gap; retain stock ISA and algorithms. |
+| 4 | Template parsing, NGram and cache/container helpers | Distinguish EH eligibility from helper pricing using the final admission trace. Prove collision, alias, lifetime and exception behavior; caller budget increases do not address the observed rejections. |
+| 5 | Nbody, SHA256 and maze residuals | Nbody needs an ordered producer/extraction packing and pressure proof. SHA256 needs an explanation of Clang's scalar-loop difference. Maze cursor promotion needs a memory/capture proof across growth calls. |
+| 6 | CSV and JSON scanners | Separate generated character/copy work from strtod, allocation and other shared runtime costs; preserve conversion and failure semantics. |
+
+`index-cpp-target-diagnoses.md` links the full IR/MIR, stock-reference
+disassembly, profiles, rejected experiments and first-phase evidence. Future
+groups must retain the frozen compiler, existing workload and individual
+regression checks instead of treating this aggregate as a blanket exemption.

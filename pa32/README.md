@@ -282,6 +282,9 @@ pass:
 - A conditional choice between fields can sometimes use one indexed address
   and one read. Prove the bit test and byte offsets, preserve which address
   is accessed, and keep volatile reads and memory dependencies observable.
+- Cases sharing one destination may describe an interval. Preserve widths,
+  signed boundaries, holes, default behavior and guarded effects when exposing
+  that choice to simplification or predication.
 - Combining independent operations can expose new loop-invariant work.
   Recheck affected loops without moving reads or trapping work onto paths
   where they did not execute, or changing floating-point evaluation order.

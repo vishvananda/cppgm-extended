@@ -178,13 +178,25 @@ The switch former then sees different selectors and cannot combine the whole
 three-kind predicate. Its output remains a branch chain, so it establishes
 neither the intended simplification nor a native gain. A later private
 prototype at select formation exposes the intended interval predicate and
-existing conditional increment. All 50 checksums pass; a three-pair screen
-uses 4.4% fewer instructions on maze generation, with about 0.026% extra frozen
-compile instructions at `-O3`. Timing calibration warns. This remains an
-experiment: preserve existing speculation/profitability checks and prove
-arithmetic width, duplicate-case/default semantics, signed boundaries, holes,
-effects and increments that overflow only on an untaken path with independent
-oracles before porting it.
+existing conditional increment. The final version normalizes the switch
+during that existing walk. Its unique successors do not change, so it can
+reuse the CFG rather than rebuilding it after a separate scan. Singletons
+retain their existing equality test. This is the twelfth mechanism.
+
+The final compiler and private prototype emit identical index objects. All
+50 checksums and direct/serialized identity checks pass. Independent source
+oracles check 98,608 cases per path; raw oracles check 7,280,490, including
+exhaustive narrow inputs, duplicates, full ranges, signed boundaries, holes,
+cyclic sets and unsupported widths. Throwing callbacks, guarded loads and
+division, cleanup, and increments that overflow only on an untaken path retain
+their behavior. Existing predication checks still decide which work can move.
+
+Five paired blocks give maze generation 1.046× instruction speed and 1.226×
+CPU speed against the eleventh compiler. BFS and AStar improve only slightly;
+retain their calibration warnings. Reusing the walk cuts the prototype's
+frozen compile-instruction increment from about 0.026% to 0.005% at `-O3`.
+Index text shrinks another 224 bytes. See the progress record for final
+validation and the full-scoreboard controls.
 
 A secondary gap is the explicit vector stack's cursor traffic. The 24-byte
 object survives in optimized LowIR across reserve/reallocation calls, while
@@ -196,8 +208,38 @@ spelling. Test an independently varying growable buffer, escaping callbacks,
 alias writes and unwinding before changing that policy. Receipts:
 `remaining-workloads-profiles-dse/Maze__Generator/`,
 `remaining-workloads-code-dse/Maze__Generator/`, `range-switch-v1/`,
-`range-switch-v2/`, `range-switch-v3/` and `range-switch-v3-frozen/`
-(all range-switch variants are private and not accepted).
+`range-switch-v2/`, `range-switch-v3/`, `range-switch-v4/`,
+`range-switch-v6-*`, and `range-switch-final/`. The first three experiments
+are retained separately; their results do not replace the final proof.
+
+## Interpreter and hash helpers: measured policy boundaries
+
+A private diagnostic compiler records the existing inlining facts and actual
+admission results without changing policy. Its complete native index object
+is byte-identical to the final compiler, and all 50 checksums and serialized
+replay checks pass. The logging code stays outside the repository.
+
+The recursive interpreter's binary and assignment evaluators call a guarded
+six-hot-instruction visitor wrapper. It is loop-free, has no EH region or
+direct self call, and has one onward component edge. Its call sites are
+outside loops, so the recursive-component gate rejects it before pricing;
+the remaining budget is 1,536. The binary evaluator itself has two component
+edges and must not be mistaken for a forwarding wrapper. The wrapper also
+checks the variant's valueless state and can throw, so replacing it with an
+unchecked call is invalid. This closes the rejection diagnosis, not the
+optimization: an earlier broad non-loop policy cost 1.60% more frozen compile
+instructions. A follow-up needs a bounded guarded-forwarder reduction with
+unwinding and recursion tests, without reopening that global policy.
+
+Template parsing retains two different boundaries. Its seven-hot-instruction
+hash helper contains a terminate guard around the library hash call and is
+rejected by the EH eligibility gate. Its node-search helper has 41 hot
+instructions and is unhinted; at a loop site the late call-containing cap
+is 24. The available budget is again 1,536. Raising the caller budget would
+address neither rejection. A follow-up must prove a reusable exception-effect
+fact or a profitable helper reduction, preserve collision and exception
+behavior, and recheck frozen compiler cost. Receipts:
+`inline-policy-diagnosis-final-v2/` and `inline-policy-diagnosis-final-v3/`.
 
 ## Other refreshed targets: evidence and remaining proof
 
@@ -213,16 +255,16 @@ target's diagnosis.
 
 | Target | Located work and typed/native evidence | Next proof before another transformation |
 | --- | --- | --- |
-| Calculator::Interpreter | Variant visits remain in separate helpers; the references fold visits into their evaluators. The binary-op evaluator is 58 MIR instructions with no spills. This is distinct from AST construction. | Inspect the recursive component and concrete inlining rejection; reduce the wrapper/visitor boundary while preserving alternative selection and exceptional state. Avoid a global budget increase. |
+| Calculator::Interpreter | Variant visits remain in separate helpers; the references fold visits into their evaluators. The private admission trace above proves the non-loop recursive-wrapper rejection before pricing. | A bounded guarded-forwarder reduction needs a cheaper design than the rejected broad policy. Preserve alternative selection and exceptional state. |
 | Hash::SHA256 | Almost all samples are the byte hash's digest. The exact-address overwrite fix removes its redundant intermediate store and cuts instructions by 5.55%. | Explain Clang's remaining scalar-loop difference. Its four-byte SIMD path only applies to short inputs; disabling vectorization changes other code too, so that ablation does not prove long-input vectorization is missing. |
-| Maze::Generator | About 89% of samples are iterative `dig`: 104 MIR instructions, twelve frame loads, three frame stores and no spills or new frame homes. | The detailed diagnosis above separates the counting predicate from vector-cursor memory facts; neither calls for recursion elimination. |
+| Maze::Generator | About 89% of samples are iterative `dig`. The counting-predicate fix now removes 4.4% of process instructions. | The residual vector-cursor traffic needs memory/capture facts across growth calls; it does not call for recursion elimination. |
 | Maze::BFS | About 76% is traversal; its body has 639 MIR instructions and seven frame homes, with no allocation spills. Queue movement and visited-state accesses remain visible in optimized LowIR. | Separate queue maintenance from neighbor/visited queries and attribute the repeated loads to calls versus aliasing. A smaller repeated native loss requires a calibrated control first. |
 | Maze::AStar | About 79% is traversal: 651 MIR instructions, nine frame homes and no spills. Heap operations and integer distance arithmetic survive. | Compare heap updates and heuristic address arithmetic. Both references already use integer division; its presence alone proves no missing narrowing optimization. |
 | Etc::CacheSimulation | Hash-table lookup/insertion and string work dominate; printf also has a material share. The run body has two allocation spills and eleven frame homes. | Map the hot table specializations and remaining calls to their effect/live-range constraints. Both cppgm and GCC use 64-bit variable remainder here; do not invent a missing 32-bit rule without a range proof. |
 | CSV::Parse | Roughly 42% is strtod; parse_record takes about 17%. Its host MIR has 186 instructions and no spills or frame homes. | Compare the character scanner and vector/string-view boundaries. Preserve numeric conversion, locale and error semantics; runtime parsing costs cannot be deleted because this input succeeds. |
 | Json::ParseDom | strtod, allocator and strncmp are substantial; generated parse_value is about 9%. Recursion, allocations and cleanup remain in optimized IR. | Isolate generated scanner/copy work from shared libc costs. Retain observable allocation failure and cleanup ordering. |
 | Json::ParseMapping | Similar parser/libc mix to DOM; parse_value is about 9%. A smaller apparent slowdown also existed before the eighth change. | Attribute mapping versus common parser work and repeat the suspicious native case before changing policy. |
-| Template::Parse | Hash-table helpers take about 41%; run is 435 MIR instructions with ten frame homes and zero spills. GCC folds more table work into run. | Inspect helper eligibility/effects and measured costs. More inlining is a hypothesis, not proof; preserve exceptions, string lifetime and current Clang wins. |
+| Template::Parse | Hash-table helpers take about 41%; run is 435 MIR instructions with ten frame homes and zero spills. The trace above distinguishes EH eligibility from the late helper-size cap. | Prove a reusable exception-effect fact or bounded helper reduction, preserving exceptions, string lifetime and current Clang wins. |
 | Distance::NGram | Hash lookup and insertion dominate. The main body has 260 MIR instructions and one frame home; separate table helpers remain. | Compare the lookup/insertion boundary, redundant key/hash work and call-preserved state. Use independently varied duplicate keys and collision patterns for a reducer. |
 
 Base64 and Huffman remain in the queue as well. Base64's full-input decoder

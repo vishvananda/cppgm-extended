@@ -1,0 +1,91 @@
+function @interval_i8_low(%x : i8, %count : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub i8 %x, 1
+    %t2 = cmp ult i8 %t1, 3
+    %next = binary add i32 %count, 1
+    %t4 = cmp ult i8 %t1, 3
+    %t5 = select i32 %t4, %next, %count
+    return i32 %t5
+}
+function @interval_u8_sign(%x : u8, %count : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub u8 %x, 127
+    %t2 = cmp ult u8 %t1, 3
+    %next = binary add i32 %count, 1
+    %t4 = cmp ult u8 %t1, 3
+    %t5 = select i32 %t4, %next, %count
+    return i32 %t5
+}
+function @interval_i32_sign(%x : i32, %count : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub i32 %x, 2147483647
+    %t2 = cmp ult i32 %t1, 3
+    %next = binary add i32 %count, 1
+    %t4 = cmp ult i32 %t1, 3
+    %t5 = select i32 %t4, %next, %count
+    return i32 %t5
+}
+function @interval_i64_high(%x : i64, %count : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub i64 %x, -3
+    %t2 = cmp ult i64 %t1, 3
+    %next = binary add i32 %count, 1
+    %t4 = cmp ult i64 %t1, 3
+    %t5 = select i32 %t4, %next, %count
+    return i32 %t5
+}
+function @interval_i64_cyclic(%x : i64, %count : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    switch %x, ^join, -1:^hit, 0:^hit, 1:^hit
+
+  block ^hit:
+    %next = binary add nowrap i32 %count, 1
+    jump ^join
+
+  block ^join:
+    %result = phi i32 [^hit: %next, ^entry: %count]
+    return i32 %result
+}
+function @interval_i16_sparse(%x : i16, %count : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    switch %x, ^join, 1:^hit, 3:^hit, 4:^hit
+
+  block ^hit:
+    %next = binary add nowrap i32 %count, 1
+    jump ^join
+
+  block ^join:
+    %result = phi i32 [^hit: %next, ^entry: %count]
+    return i32 %result
+}
+function @interval_u16_unsorted(%x : u16, %count : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    %t1 = binary sub u16 %x, 17
+    %t2 = cmp ult u16 %t1, 3
+    %next = binary add i32 %count, 1
+    %t4 = cmp ult u16 %t1, 3
+    %t5 = select i32 %t4, %next, %count
+    return i32 %t5
+}
+function @wide_selector(%x : i128, %count : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    switch %x, ^join, 1:^hit, 2:^hit, 3:^hit
+
+  block ^hit:
+    %next = binary add nowrap i32 %count, 1
+    jump ^join
+
+  block ^join:
+    %result = phi i32 [^hit: %next, ^entry: %count]
+    return i32 %result
+}
+function @singleton(%x : i32) -> i32 [no_inline=yes] {
+  block ^entry:
+    switch %x, ^miss, -1:^hit
+
+  block ^hit:
+    return i32 1
+
+  block ^miss:
+    return i32 0
+}

@@ -80,6 +80,26 @@ sub has_switch
 	return $body =~ /^\s+switch\b/m;
 }
 
+# Either representation must send exactly the unsigned interval [0,127]
+# to accept. The inverse predicate is valid with the destinations reversed.
+sub has_range_decision
+{
+	my ($body) = @_;
+	return 1 if has_range_switch($body);
+	my %accept_when_true = ('ult:128' => 1, 'ule:127' => 1,
+		'uge:128' => 0, 'ugt:127' => 0);
+	while ($body =~ /^\s+(%\w+) = cmp (ult|ule|uge|ugt) i32 %value, (\d+)$/mg)
+	{
+		my ($condition, $predicate, $bound) = ($1, $2, $3);
+		my $key = "$predicate:$bound";
+		next if !exists($accept_when_true{$key});
+		my ($taken, $other) = $accept_when_true{$key}
+			? ('accept', 'reject') : ('reject', 'accept');
+		return 1 if $body =~ /^\s+branch \Q$condition\E, \^\Q$taken\E, \^\Q$other\E$/m;
+	}
+	return 0;
+}
+
 if (scalar(@ARGV) != 3)
 {
 	die "Usage: check_lowir_zero_bounded_range.pl " .
@@ -118,7 +138,7 @@ for my $test (@tests)
 		{
 			my $body = function_body($test, $outputs{$level}, $name);
 			die "$test: $level did not combine the signed bounds in $name\n"
-				if !has_range_switch($body) || has_any_signed_bound($body);
+				if !has_range_decision($body) || has_any_signed_bound($body);
 		}
 		for my $name ('retain_distinct_rejections', 'retain_distinct_values',
 			'retain_shared_upper', 'retain_rejection_phi')

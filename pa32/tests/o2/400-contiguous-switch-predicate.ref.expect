@@ -1,0 +1,8 @@
+instructions <= 85
+blocks <= 40
+instructions <= 8 in @interval_i8_low
+instructions <= 8 in @interval_u8_sign
+instructions <= 8 in @interval_i32_sign
+instructions <= 8 in @interval_i64_high
+instructions <= 8 in @interval_u16_unsorted
+instructions <= 4 in @singleton

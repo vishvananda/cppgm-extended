@@ -56,6 +56,15 @@ Promoting all of them may turn a few memory updates into repeated register
 spills and transfers. Compare both native work and size, including inactive
 fields and early exits; a smaller SSA graph alone does not establish a win.
 
+## Case membership and predication
+
+Several switch cases with one destination can describe a numeric interval.
+Preserve the selector's width, signed boundaries, holes and default edge when
+expressing that membership as a predicate. This can expose conditional work
+to existing simplification and predication. An untaken increment must not gain
+overflow promises when speculated; loads, calls and trapping arithmetic need
+their own proofs. No particular representation is required.
+
 ## Memory facts and safe motion
 
 Distinguish the proof that accesses cannot overlap from the proof that a load
