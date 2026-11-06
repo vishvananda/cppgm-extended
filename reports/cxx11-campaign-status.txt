@@ -408,3 +408,15 @@ Class-prefix candidate progress (2026-11-06):
   counter/scaling, cumulative, linked-reducer and export gates before closure.
 - The ledger now contains 26 issues and 556 observations; 507 original
   observations and the remaining campaign coverage/CI work stay open.
+
+Whole-class neighbor discovered during prefix validation:
+- CXX11-027 is a separate pre-existing dense-storage gap: whole constexpr
+  class variables and by-value parameters fail under48MiB in both269db andv9,
+  while GCC/Clang accept both exact reducers. Its frozen baseline and sources
+  are retained under CXX11-027; no repair or performance pass is claimed.
+- The PA16 member-pointer assertions from026 were split into the owning
+  PA22:300 control after the full placement audit caught the early use.
+  Corrected focused-v3 passes all620 host/candidate cells; compiler v9 and
+  the frozen21 performance workloads are unchanged. Final normal checks
+  now use checks-v10 and performance-pipeline-v4; old failed prerequisites
+  remain retained. The ledger has27 issues and558 observations.

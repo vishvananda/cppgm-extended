@@ -3,7 +3,7 @@ C++11 class-prefix repair checkpoint (2026-11-06)
 Scope and acceptance
 
 CXX11-025 and CXX11-026 remain open. The compiler changes and eleven PA16:300
-regressions are staged prototypes, not a completed or released repair. The
+regressions and one PA22:300 ABI regression are staged prototypes, not a completed or released repair. The
 previous completed checkpoint is 269dbf2ad. No CI job has been created early;
 Stage 5 still follows closure of every required defect, including later DRs.
 
@@ -105,3 +105,39 @@ Campaign accounting remains 26 issues and 556 observations, with 507 original
 observations still unmapped. Other open compiler gaps, full upstream metadata
 applicability/execution, sixty historical RSS reports in eleven evidence groups,
 and the final two CI jobs with matched full-suite timings remain in scope.
+
+Placement correction and resumed gates
+
+The full v9 placement audit found one early feature: member-pointer assertions
+in the PA16 identity test. Those assertions now have their own PA22:300 control;
+PA16 retains the value, address and lifetime checks. The compiler binary and
+all frozen performance inputs are unchanged. The failed audit and prerequisite
+stop remain recorded; no measurements started from that failed pipeline.
+
+checks-v10.json retains source-identical passed checks with explicit old log
+paths, reruns PA16/22 and strict report, and then the full placement audit and
+harness. controls-v3.json and controls-v3-fixture-closure.json freeze all 31
+family controls and their metadata. focused-v3/ covers the expanded 620 cells.
+Their current state must be inspected; do not infer completion from this note.
+performance-pipeline-v4.log follows those verified workers and retains the
+same predeclared twenty-one workload protocol. The final queued pipeline
+final-pipeline-v1.log checks all prerequisites before cumulative measurements,
+explicit class-DAG and extent scaling, exact linked reducers and fresh export.
+
+Completed normal checks after placement correction
+
+normal-acceptance-v1.json verifies the measured compiler hash, all 473 compiler
+source files, all 44 fixture/metadata files and every matrix tuple. All fourteen
+normal stages pass (nine reused from the unchanged compiler source with exact
+log references), including strict 8117/8117, full placement and the harness.
+The corrected matrix has 620 cells, no host/candidate failures and twenty
+retained historical failures. The paired counter pipeline has now started;
+performance, scaling, cumulative, linked-reducer and export acceptance remain
+unproven until their actual results are checked.
+
+A new independent issue, CXX11-027, records whole constexpr class variables
+and by-value parameters: both 269db and v9 report bad_alloc under 48 MiB for
+a compact one-MiB class-type graph. GCC/Clang accept both exact sources.
+Its frozen v9 baseline, reducers and evidence are retained under CXX11-027;
+it has no compiler repair yet. Do not close the overall reference family
+or campaign while that gap remains open.

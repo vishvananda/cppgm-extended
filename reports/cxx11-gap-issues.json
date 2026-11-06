@@ -2745,14 +2745,16 @@
       "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-025/initial-neighbors-v1.json (GCC/Clang accept all; pre-prefix accepts class-prvalue and parameter forms; 212b6c031/current candidate reject only the array forms)",
       "required_parent": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-025/required-parent-v1.json",
       "focused_candidate_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v6-controls.json",
-      "latest_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/focused-v2/assessment.json (600 cells, no host/candidate failures)",
-      "latest_normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v9.json",
-      "native_performance_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-oracles-v3/assessment.json (72 cells)"
+      "latest_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/focused-v3/assessment.json (620 cells; no host/candidate failures)",
+      "latest_normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v10.json",
+      "native_performance_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-oracles-v3/assessment.json (72 cells)",
+      "fixture_closure": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/controls-v3-fixture-closure.json",
+      "normal_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v1.json (14 checks including explicit unchanged-source reuse; strict8117/8117; complete matrix accounted)"
     },
     "performance": {
       "status": "pending",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v3.json",
-      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v3.log",
+      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v4.log",
       "note": "A/A and A/B counters/direct memory, absolute scaling and cumulative gates required. No pass claimed."
     },
     "standards_basis": {
@@ -2782,14 +2784,15 @@
     "root_cause": "prefix_skeleton recursively allocates every class occurrence rather than sharing unchanged type-shaped payloads. Class-prvalue temporaries also use dense skeletons. Prewalking expressions handles some forbidden calls but does not solve legitimate zero values or computed control flow.",
     "expected": "Evaluate typed initialization once with bounded shared class payloads; detach modified paths, preserve per-object identity and caller lifetime, publish immutable values without expanding the shared graph, and retain typed ABI zero values.",
     "owning_pa": 16,
-    "ownership_note": "PA16:300 owns object-valued constant evaluation, array/reference initialization and bounded optional probes; native checks strengthen the same source regression.",
+    "ownership_note": "PA16:300 owns the reduced object-valued/reference constant-evaluation failure and bounded optional probes. The distinct typed member-pointer ABI neighbor belongs in PA22:300.",
     "regressions": [
       "pa16/tests/controls/300-runtime-class-prefix-constant-probe.t",
       "pa16/tests/controls/300-runtime-class-prefix-conditional-probe.t",
       "pa16/tests/controls/300-constexpr-class-prefix-zero-probe.t",
       "pa16/tests/controls/300-constexpr-class-prefix-value-identity.t",
       "pa16/tests/controls/300-constexpr-class-prefix-region-memory.t",
-      "pa16/tests/controls/300-constexpr-class-prefix-array-member-lifetime.t"
+      "pa16/tests/controls/300-constexpr-class-prefix-array-member-lifetime.t",
+      "pa22/tests/controls/300-constexpr-class-prefix-member-pointer-zero.t"
     ],
     "fix_revision": null,
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026",
@@ -2810,19 +2813,22 @@
       "focused_candidate_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v6-controls.json",
       "affected_pa16_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/affected-pa16-v6.log (254/254 pass)",
       "file_audit_v6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/file-audit-v6.log",
-      "latest_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/focused-v2/assessment.json (600 cells, no host/candidate failures)",
-      "latest_normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v9.json",
+      "latest_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/focused-v3/assessment.json (620 cells; no host/candidate failures)",
+      "latest_normal_progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v10.json",
       "native_performance_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-oracles-v3/assessment.json (72 cells)",
       "region_memory": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/required-region-memory-v1.json",
       "array_lifetime": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/array-member-lifetime-v1/results.json",
       "complex_memory": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/complex-memory-v1/results.json",
       "bounded_latest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/candidate-v9.json",
-      "changed_object_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/changed-object-audit-v1.json"
+      "changed_object_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/changed-object-audit-v1.json",
+      "placement_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/checks-v9/placement.log (failed: member-pointer assertions placed early; split from PA16 identity fixture into required PA22:300 control)",
+      "fixture_closure": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/controls-v3-fixture-closure.json",
+      "normal_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/normal-acceptance-v1.json (14 checks including explicit unchanged-source reuse; strict8117/8117; complete matrix accounted)"
     },
     "performance": {
       "status": "pending",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-protocol-v3.json",
-      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v3.log",
+      "pipeline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/performance-pipeline-v4.log",
       "note": "A/A and A/B counters/direct memory, absolute scaling and cumulative gates required. No pass claimed."
     },
     "standards_basis": {
@@ -2839,5 +2845,41 @@
       "source_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/source-v9-manifest.json",
       "compiler_changes": "staged, not committed or accepted"
     }
+  },
+  {
+    "id": "CXX11-027",
+    "priority": "P1",
+    "status": "triaged",
+    "introduced_by": "Present in frozen 269db parent and025/026 v9; earliest revision not yet established",
+    "discovered_neighbor_of": "CXX11-026",
+    "upstream": [],
+    "symptom": "A one-MiB zero aggregate declared as a whole constexpr class object, or passed by value to a constexpr function, exhausts48MiB despite a compact shared class-type graph. GCC and Clang accept both exact sources.",
+    "root_cause": "Non-prefix initialize/new_object paths still allocate dense skeleton storage for every logical class subobject. The new prefix/prvalue storage path does not cover whole class variables or by-value parameter objects.",
+    "expected": "Use bounded typed storage for whole zero class objects and by-value parameters as well as class prefixes, while retaining object identity, writes, caller lifetime, publication and ABI data.",
+    "owning_pa": 16,
+    "ownership_note": "PA16:300 owns whole object-valued constant evaluation, constexpr variables and by-value constexpr parameters. All source types are original C++11 literal aggregates.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027",
+    "reproductions": [
+      "global-zero.cpp",
+      "parameter-zero.cpp"
+    ],
+    "checks": {
+      "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-026/whole-class-neighbors-v1/results.json (eight cells: GCC/Clang accept both,269db and v9 each bad_alloc under 48 MiB)",
+      "baseline": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-027/baseline.json"
+    },
+    "performance": {
+      "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "implementation-scaling",
+      "rationale": "N3485 5.19 and 7.1.5 permit these literal aggregate values and constexpr parameters; 8.5/8.5.1 specify zero aggregate initialization. The defect is dense implementation allocation relative to the compact typed graph, not a later CWG-only requirement.",
+      "references": [
+        "doc/n3485.txt 5.19,7.1.5,8.5,8.5.1",
+        "spec.md bounded typed work/allocation requirements"
+      ]
+    },
+    "next_action": "After the current 025/026 checkpoint gates, add required bounded PA16:300 whole-class and by-value controls on the frozen v9 baseline, extend shared typed storage through the ordinary object paths, and run complete correctness/performance/scaling/export validation. Do not mark the reference family complete while this issue remains open."
   }
 ]
