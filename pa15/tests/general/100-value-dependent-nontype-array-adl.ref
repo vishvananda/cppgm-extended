@@ -1,7 +1,5 @@
 global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  i8 0
-  i8 0
-  i8 0
+  zero 3
 }
 
 function @operator__(%out : ptr [pass=by_address, object_bytes=4], %__param1 : ptr) -> ptr [binding=strong, object=_ZlsR6StreamPKc] {

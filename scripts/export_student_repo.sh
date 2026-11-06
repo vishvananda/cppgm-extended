@@ -92,7 +92,7 @@ copy_tracked_paths() {
         # Export reviewed student documents only, including public doc/ texts.
         next if (m{\.md$}i || m{^doc/}) && !$documents{$_};
         next if m{(^|/)[^/]+-ref$};
-        next if m{\.py$} && !m{^scripts/(?:check_lowir_seams|lowir_seam_rewrite|check_optimization_quality|check_macho)\.py$};
+        next if m{\.py$} && !m{^scripts/(?:check_lowir_seams|lowir_seam_rewrite|check_optimization_quality|check_macho|run_resource_limited)\.py$};
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
         # Tests-first audit controls run only under the maintainer
@@ -401,6 +401,7 @@ shared_scripts=(
   scripts/run_routed_test_spec.pl
   scripts/run_reference_binary.sh
   scripts/run_with_timeout.pl
+  scripts/run_resource_limited.py
   scripts/write_unresolved_symbol_report.pl
   scripts/expect_ir.pl
 )
@@ -836,7 +837,7 @@ check_exported_script_references() {
         echo "export: $script names $name, which did not ship" >&2
         missing=1
       fi
-    done < <(sed 's/#.*//' "$script" | LC_ALL=C grep -o '"[A-Za-z0-9_]*\.\(pl\|pm\|py\|sh\)"' | tr -d '"' | LC_ALL=C sort -u)
+    done < <(sed 's/#.*//' "$script" | LC_ALL=C grep -oE '"(\$FindBin::Bin/)?[A-Za-z0-9_]*\.(pl|pm|py|sh)"' | tr -d '"' | sed 's|^\$FindBin::Bin/||' | LC_ALL=C sort -u)
   done
   if [ "$missing" -ne 0 ]; then
     echo "export: exported files reference scripts that did not ship" >&2

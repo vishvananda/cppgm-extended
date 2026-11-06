@@ -1,12 +1,10 @@
 global @storage [binding=strong] = {
   i32 7
-  i32 0
-  i32 0
+  zero 8
 }
 global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   i32 7
-  i32 0
-  i32 0
+  zero 8
 }
 
 function @take_unsigned(%__param0 : i64) -> i32 [binding=strong, object=_Z13take_unsignedm] {

@@ -1,21 +1,5 @@
 global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
-  u8 0
+  zero 17
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

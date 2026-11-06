@@ -62,6 +62,7 @@ class ExportedDevMakefileTests(unittest.TestCase):
             self.assertTrue((REPO_ROOT / relative).is_file(), relative)
         fixtures = {
             'scripts/check_macho.py': '# optional public target checker\n',
+            'scripts/run_resource_limited.py': '# public resource wrapper\n',
             'pa8/tests/general/100-valid.t': 'program input\n',
             'pa27/tests/behavior/100-layout.ref.inspect.plan': 'object contract\n',
             'pa27/tests/controls/200-section-token-safe.t': 'graded control\n',
@@ -104,6 +105,24 @@ class ExportedDevMakefileTests(unittest.TestCase):
                               if path.is_file()}, set(fixtures))
             for relative, content in fixtures.items():
                 self.assertEqual((dest / relative).read_text(), content)
+
+    def test_script_dependencies_resolve_findbin_paths(self):
+        script = EXPORT_SCRIPT.read_text()
+        start = script.index('check_exported_script_references() {')
+        end = script.index('\n}\n', start) + len('\n}\n')
+        with tempfile.TemporaryDirectory(prefix='export-dependencies.') as temp:
+            dest = Path(temp)
+            (dest / 'scripts').mkdir()
+            (dest / 'scripts/checker.pl').write_text('my $tool = "$FindBin::Bin/worker.py";\n')
+            command = ['bash', '-euc', script[start:end] +
+                       '\ndest="$1"\nSTUDENT_ROOT_MAKEFILE_DROPPED_TARGETS=\n'
+                       'check_exported_script_references', 'bash', str(dest)]
+            missing = subprocess.run(command, capture_output=True, text=True)
+            self.assertNotEqual(missing.returncode, 0, missing.stdout + missing.stderr)
+            self.assertIn('worker.py', missing.stderr)
+            (dest / 'scripts/worker.py').write_text('# supplied\n')
+            supplied = subprocess.run(command, capture_output=True, text=True)
+            self.assertEqual(supplied.returncode, 0, supplied.stdout + supplied.stderr)
 
     def test_pa33_export_keeps_course_without_maintainer_dependencies(self):
         script = EXPORT_SCRIPT.read_text()

@@ -328,6 +328,10 @@ This PA10 milestone supports the following:
   from its initializer, missing elements are zero-initialized, and excess elements are
   rejected; an `extern` array of unknown bound may be referenced without requiring its
   layout in the current translation unit
+- omitted array tails with all-zero value-initialization use LowIR's
+  `zero <bytes>` data item. Analyze the omitted element type once and retain
+  the implicit range, so sparse initialization does not expand with the array
+  bound; preserve any required constructors and ABI null values
 - automatic nonvolatile scalar arrays with completely known literal initializers
   use one copy from readonly constant data, including omitted zero elements;
   mutable arrays still have distinct automatic storage. PA16 extends eligibility

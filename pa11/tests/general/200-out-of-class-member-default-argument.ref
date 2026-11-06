@@ -1,8 +1,5 @@
 global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  i8 0
-  i8 0
-  i8 0
-  i8 0
+  zero 4
 }
 
 function @Text__take(%this : ptr [object_bytes=1], %out : ptr, %n : i64, %pos : i64) -> i32 [binding=strong, object=_ZN4Text4takeEPcmm] {

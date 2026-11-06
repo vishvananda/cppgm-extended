@@ -1548,10 +1548,19 @@ bool ProgramLowering::static_aggregate(
 {
 	if (type->kind == sema::TypeKind::Array)
 	{
-		for (uint64_t i = 0; i < type->bound; ++i)
+		uint64_t i = 0;
+		for (; i < type->bound && list != nullptr && next < list->elements.size; ++i)
 		{
 			if (!static_item(type->element, false, list, next, out))
 				return false;
+		}
+		if (i < type->bound)
+		{
+			if (!zero_value_initialized(type->element, 0))
+				return false;
+			// An implicit tail is one byte range, independent of its bound.
+			// null_member_pointers later supplies any ABI null values of -1.
+			append_zero((type->bound - i) * size_of(type->element, 0), out);
 		}
 		return true;
 	}
@@ -1838,17 +1847,14 @@ bool ProgramLowering::zero_value_initialized(const sema::Type* type, uint32_t de
 
 bool ProgramLowering::missing_element(const sema::Type* type, bool member, StaticData& out)
 {
-	// A value-initialized element (8.5.1p7): the course data spells an
-	// arithmetic array element and a floating member as a scalar zero, an
-	// aggregate by its members, and other class objects, pointers and
-	// absent integral members as zero bytes; one a constructor initializes
-	// is the dynamic initialization's.
+	// A value-initialized element (8.5.1p7): omitted arrays are zero byte
+	// ranges, an aggregate is its members, a scalar its zero value; one a
+	// non-trivial constructor initializes is the dynamic initialization's.
 	if (!zero_value_initialized(type, 0))
 		return false;
 	if (type->kind == sema::TypeKind::Array)
 	{
-		for (uint64_t i = 0; i < type->bound; ++i)
-			missing_element(type->element, false, out);
+		append_zero(size_of(type, 0), out);
 		return true;
 	}
 	const sema::ClassEntity* cls = type->is_reference() ? nullptr : sema::ClassOf(type);

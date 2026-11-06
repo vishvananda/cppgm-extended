@@ -9,8 +9,7 @@ global @__constexpr_template__2 [storage=readonly, binding=internal] = {
   u32 2
 }
 global @__constexpr_template__3 [storage=readonly, binding=internal] = {
-  i128 0
-  i128 0
+  zero 32
 }
 
 function @fill_bytes(%p : ptr, %s : ptr, %n : u32) -> void [binding=strong, object=_Z10fill_bytesPcPKcj, no_inline=yes] {

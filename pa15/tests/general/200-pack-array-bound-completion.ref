@@ -2,9 +2,7 @@ global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   i32 9
 }
 global @__constexpr_template__2 [storage=readonly, binding=internal] = {
-  i32 0
-  i32 0
-  i32 0
+  zero 12
 }
 global @__constexpr_template__3 [storage=readonly, binding=internal] = {
   i32 1
@@ -14,7 +12,7 @@ global @__constexpr_template__3 [storage=readonly, binding=internal] = {
 global @__constexpr_template__4 [storage=readonly, binding=internal] = {
   i32 1
   i32 2
-  i32 0
+  zero 4
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

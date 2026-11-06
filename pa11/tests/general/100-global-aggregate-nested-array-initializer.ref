@@ -2,8 +2,7 @@ global @observed : i32 [binding=strong] = zero
 global @value [binding=strong] = {
   i64 7
   i8 0
-  i8 0
-  zero 6
+  zero 7
 }
 
 function @read() -> i32 [binding=strong, object=_Z4readv] {

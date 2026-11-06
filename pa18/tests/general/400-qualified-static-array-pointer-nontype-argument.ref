@@ -1,5 +1,5 @@
 global @holder_int___value [storage=readonly, binding=weak, object=_ZN6holderIiE5valueE] = {
-  i8 0
+  zero 1
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

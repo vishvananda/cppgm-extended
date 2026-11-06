@@ -612,11 +612,21 @@ void Analyzer::aggregate_element(const syntax::BracedInitList& list, uint32_t& n
 	{
 		if (type->kind == TypeKind::Array)
 		{
-			for (uint64_t i = 0; i < type->bound; ++i)
+			uint64_t i = 0;
+			for (; !failed() && i < type->bound && next < list.elements.size; ++i)
+				aggregate_element(list, next, type->element, scope);
+			if (!failed() && i < type->bound)
 				aggregate_element(list, next, type->element, scope);
 		}
 		else
+		{
+			const uint32_t first = next;
 			aggregate_members(list, next, static_cast<ClassEntity*>(type->unqualified->entity), scope);
+			// 8.5.1p8,12: an empty subaggregate requires its own clause.
+			// In particular, bound inference cannot advance without one.
+			if (next == first && !failed())
+				substitution_error(element.location, "brace elision of an aggregate with no elements");
+		}
 		return;
 	}
 	++next;

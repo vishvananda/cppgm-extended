@@ -3186,12 +3186,14 @@ ExprFacts* Analyzer::braced_list(const syntax::BracedInitList& list, const Type*
 	++empty_list_epoch_;
 	uint32_t next = 0;
 	uint64_t count = 0;
-	for (; target->bound == 0 ? next < list.elements.size : count < target->bound; ++count)
-	{
+	for (; !failed() && next < list.elements.size && (target->bound == 0 || count < target->bound); ++count)
 		aggregate_element(list, next, target->element, scope);
-		if (failed())
-			return nullptr;
-	}
+	// Every omitted element has the same value-initialization constraints.
+	// Check its type once, without visiting the implicit zero-filled tail.
+	if (!failed() && target->bound != 0 && count < target->bound)
+		aggregate_element(list, next, target->element, scope);
+	if (failed())
+		return nullptr;
 	if (next < list.elements.size)
 	{
 		substitution_error(list.location, "too many initializers for the array");

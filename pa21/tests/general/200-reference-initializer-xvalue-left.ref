@@ -34,7 +34,7 @@ global @expected_trace [storage=readonly, binding=internal, object=_ZL14expected
   i64 13200130
   i64 0
   i64 13200130
-  i64 0
+  zero 8
 }
 global @expected_count [storage=readonly, binding=internal, object=_ZL14expected_count] = {
   i32 2
@@ -44,7 +44,7 @@ global @expected_count [storage=readonly, binding=internal, object=_ZL14expected
   i32 2
   i32 0
   i32 2
-  i32 0
+  zero 4
 }
 
 function @construction_probe() -> void [linkage=c, binding=strong] {

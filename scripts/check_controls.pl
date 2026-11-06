@@ -124,11 +124,18 @@ sub grade
 {
 	my ($app, $native_reference, $test) = @_;
 	my ($kind, $status, $stdout) = expectation($test);
+	my @frontend = ($app, '--emit-lowir', '-O0');
+	(my $base = $test) =~ s/\.(?:cpp|t)$//;
+	if (-f "$base.limits")
+	{
+		return 'resource limits require a positive exit control' if $kind ne 'exit';
+		@frontend = ('python3', "$FindBin::Bin/run_resource_limited.py", "$base.limits", '--', @frontend);
+	}
 	my $directory = tempdir('cppgm-control-XXXXXX', TMPDIR => 1, CLEANUP => 1);
 	my $lowir = "$directory/control.lowir";
 	my %compile;
 	run_command_capture(
-		cmd => [$app, '--emit-lowir', '-O0', '-o', $lowir, $test],
+		cmd => [@frontend, '-o', $lowir, $test],
 		stdout => "$directory/frontend.stdout",
 		stderr => "$directory/frontend.stderr",
 		timeout => 60,

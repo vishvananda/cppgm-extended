@@ -1,13 +1,5 @@
 global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  i8 0
-  i8 0
-  i8 0
-  i8 0
-  i8 0
-  i8 0
-  i8 0
-  i8 0
-  i8 0
+  zero 9
 }
 global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 116

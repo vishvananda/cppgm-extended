@@ -3,6 +3,7 @@
 Makefile routes with a stand-in frontend and reference backend."""
 
 from pathlib import Path
+import json
 import shutil
 import os
 import re
@@ -140,6 +141,49 @@ class CheckControlsTests(unittest.TestCase):
         self.assertNotEqual(self.check("--owns", focused).returncode, 0)
         self.assertEqual(self.check("--owns", stated).returncode, 0)
         self.assertEqual(self.run_checker(stated).returncode, 0)
+
+    def test_frontend_resource_limits_are_inherited(self):
+        self.frontend.write_text(FRONTEND.replace(
+            "source = pathlib.Path(args[-1]).read_text()",
+            "import resource\n"
+            "assert resource.getrlimit(resource.RLIMIT_CPU) == (2, 3)\n"
+            "assert resource.getrlimit(resource.RLIMIT_AS) == (268435456, 268435456)\n"
+            "assert resource.getrlimit(resource.RLIMIT_FSIZE) == (1048576, 1048576)\n"
+            "source = pathlib.Path(args[-1]).read_text()"))
+        control = self.control("100-bounded.t", "// expect exit 0\nint main() { return 0; }\n",
+                               limits=json.dumps(dict(cpu_seconds=2, address_space_bytes=268435456,
+                                                      file_bytes=1048576)))
+        result = self.run_checker(control)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_resource_exhaustion_fails_a_positive_control(self):
+        control = self.control("100-bounded.t", "// expect exit 0\nint main() { return 0; }\n",
+                               limits=json.dumps(dict(cpu_seconds=1, address_space_bytes=268435456,
+                                                      file_bytes=1048576)))
+        self.frontend.write_text("#!/usr/bin/env python3\nwhile True: pass\n")
+        result = self.run_checker(control)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("frontend was killed by signal", result.stderr)
+        self.frontend.write_text("#!/usr/bin/env python3\nx = bytearray(536870912)\n")
+        result = self.run_checker(control)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("MemoryError", result.stderr)
+        self.frontend.write_text("#!/usr/bin/env python3\nimport sys\n"
+                                 "open(sys.argv[sys.argv.index('-o') + 1], 'wb').write(b'x' * 2097152)\n")
+        result = self.run_checker(control)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("frontend", result.stderr)
+
+    def test_invalid_resource_limits_and_bounded_rejections_fail(self):
+        control = self.control("100-bounded.t", "// expect exit 0\nint main() { return 0; }\n",
+                               limits='{"cpu_seconds": 1}')
+        result = self.run_checker(control)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("resource limit setup failed", result.stderr)
+        control.write_text("// expect reject\nREJECTED\n")
+        result = self.run_checker(control)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("resource limits require a positive exit control", result.stderr)
 
     def make(self, pa, *args):
         return subprocess.run(

@@ -1,12 +1,5 @@
 global @__constexpr_template__1 [storage=readonly, binding=internal] = {
-  i32 0
-  i32 0
-  i32 0
-  i32 0
-  i32 0
-  i32 0
-  i32 0
-  i32 0
+  zero 32
 }
 
 function @copy_observed(%node : ptr, %dst : ptr, %src : ptr, %n : u32) -> void [binding=strong, object=_Z13copy_observedPPiPViPKij, no_inline=yes] {

@@ -346,6 +346,9 @@ PA11 supports the following in addition to the PA10 procedural subset:
   subobject's), its members emitted once
 - aggregate initialization for the supported PA11 object subset, including namespace-scope
   aggregate arrays whose elements contain string-literal pointer members
+- an empty subaggregate requires an explicit initializer clause when later
+  members are initialized (8.5.1p8,12); brace elision cannot silently skip it,
+  including when inferring an array bound
 - local and namespace-scope class object lifetime:
   - constructor execution at declaration time / program startup
   - destructor execution at block exit, `return`, loop exit, and program shutdown

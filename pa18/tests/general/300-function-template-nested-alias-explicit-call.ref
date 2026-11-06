@@ -3,8 +3,7 @@ global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   i8 98
 }
 global @__constexpr_template__2 [storage=readonly, binding=internal] = {
-  i8 0
-  i8 0
+  zero 2
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

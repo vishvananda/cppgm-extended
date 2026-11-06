@@ -1,24 +1,12 @@
 global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   i32 5
-  i32 0
-  i32 0
-  i32 0
+  zero 12
 }
 global @__constexpr_template__2 [storage=readonly, binding=internal] = {
-  i32 0
-  i32 0
-  i32 0
-  i32 0
-  i32 0
-  i32 0
-  i32 0
-  i32 0
+  zero 32
 }
 global @__constexpr_template__3 [storage=readonly, binding=internal] = {
-  i32 0
-  i32 0
-  i32 0
-  i32 0
+  zero 16
 }
 
 function @increment(%value : i32) -> i32 [binding=strong, object=_Z9incrementi] {
