@@ -1,0 +1,145 @@
+CXX11-015/020 runtime omitted-array-tail checkpoint (2026-11-06)
+Worktree: /mnt/vizier/cppgm-upstream-cxx11
+Parent compiler source: fb67b5798
+Fix: 15ad2ec00cd0e3302574633b243d29fdf95c6f6b
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-015
+State: CXX11-015 and CXX11-020 closed; correctness, calibrated performance,
+corrected fixture ownership and fresh student export all verified
+
+Runtime-valued prefixes prevented static data emission, and lowering then
+expanded every omitted element of the array. The parent exhausted 512 MiB
+while lowering a giant lifetime-extended reference array. This is an original
+N3485 8.5.4p3 / 8.5.1p7 implementation-scaling issue, independent of later CWG
+decisions. Its runtime semantics include construction, volatile accesses,
+member-pointer null representations, temporary lifetime and exception cleanup.
+
+The fix consumes the existing typed initializer facts. After explicit clauses
+finish, an omitted suffix longer than eight elements uses bulk zeroing when
+the type permits it, or one typed initialization loop otherwise. The existing
+member-pointer ABI walker patches null data-member pointers. Type inspection
+visits element types and members rather than the implicit extent. Existing
+counted cleanups track completed scalar elements and rows at runtime, retaining
+constructor/default-argument temporary order and once-only reverse destruction.
+A completed nonthrowing member-array tail also survives until a later member
+constructor can throw. Automatic scalar arrays and padded string arrays use
+the same machinery. Small and fully explicit arrays keep their existing paths.
+
+A cursor-only helper had a second linear walk through omitted nested array
+elements even after emitted IR became compact. The final candidate stops that
+walk once no explicit clauses remain, or an element consumes none. Retained
+v2/v3 diagnostic counters show about 4.50M/23.36M/306.47M versus
+4.481M/4.483M/4.485M instructions for nested bounds 1024/1048576/16777216.
+These single diagnostic samples motivated the revision; the final scaling
+experiment supplies the separately declared acceptance measurements.
+
+The v3 absolute measurements then exposed a further native emitter estimate:
+zero_bytes computed the encoded size of every hypothetical scalar store before
+choosing rep stosb. Scalar native emission reached 3.226 billion instructions
+for a four-gigabyte tail, with constant-size output. Helper native emission
+also failed its scaling gate. Both failures and all 376 observations remain
+retained. The revised estimate stops as soon as stores already exceed the
+string-operation setup; later stores cannot change the choice. This bounds
+compiler work and avoids unsigned accumulation overflow without changing the
+selected encoding on ordinary inputs.
+
+Seven required controls live in PA10:100 (const references and volatile
+elements), PA11:200 (padded strings, aggregate/constructor tails and the helper cursor),
+PA12:100/200 (rvalue references and array-temporary destruction), PA21:300
+(nested-row unwinding, default-argument temporary cleanup and later throwing
+members), and PA22:300 (null data/function member pointers). Placement is
+verified against the owning handouts. They are default-discovered controls.
+An eighth control in PA24:100 retains sixteen maximum-size zero operations in
+machine IR and checks compact executable output, while executing a small zero
+at runtime. A one-second compiler CPU cap reliably kills the frozen old native
+tool with SIGXCPU; the revised tool passes. This cap uses the existing resource
+wrapper through the native control lane. Two harness controls verify inherited
+limits and invalid-limit rejection.
+
+The final v6 focused matrix has 168 cells: all 56 candidate and 56 Clang cells
+pass, while GCC has 48 passes and eight retained host-control runtime failures.
+GCC double-destroys a completed three-element row when the next row's first
+constructor throws. Parent, candidate and Clang destroy it once, as N3485
+15.2p2 requires. Deleting the element copy constructor retains the host
+disagreement, ruling out optional element copy elision. The failed GCC cells
+remain failed in raw results; expected zero exit is unchanged. The first
+unwind fixture required two user conversions and was corrected before this
+matrix; its invalid original bytes and failed observations remain retained.
+
+The final v4 correctness checkpoint passes strict report 8086/8086, debug info, self-host through
+PA5, inception, PA35 smoke, all architecture/format/file/placement audits and
+the test harness. Sequential affected suites passed as well. The file audit
+retains seven preexisting warnings. One PA18 template reference is regenerated
+normally because a volatile char[9] now initializes with a loop; independent
+parent/candidate/GCC/Clang runtime oracles all pass in ISO/GNU11. Earlier
+reference-mismatch, fixture-placement and parallel generated-header-race logs
+remain retained with the successful sequential reruns and final checks.
+The final placement audit scans 4213 tests with zero placement/hygiene findings;
+the harness runs 34 suites and 518 discovered cases. All 56 candidate focused
+objects and 24 performance-oracle objects are byte-identical before and after
+the native estimate revision. The renewed parent checks fail both final
+language resource fixtures with bad_alloc under their declared limits.
+
+Performance protocol: immutable parent/candidate binaries, frozen original
+O0/O2 overload and analyzer-call sources, five dynamic scalar/constructor-tail
+neighbors and one fully explicit 512-clause guard. Three warmups and ten
+paired ABBA blocks; short observations batch 16 compilations. A/A equivalence
+is +/-0.01%, instruction upper 95% bound <=1.01, RSS upper bound <=1.03 and
+counter scheduling >=99%. Unchanged broad and fully explicit objects must
+agree exactly. Changed tail objects must be deterministic per compiler and
+match predeclared independent host-linked runtime-oracle hashes. Every
+batched child is checked. Wall time remains descriptive under contention.
+All nine v3 A/A and A/B pairs passed; largest instruction upper bound was
++0.004435%, largest RSS upper bound +0.069274%. Dynamic scalar tails improved
+instruction upper bounds by 2.576949%/9.429964%/28.726633% at 32/128/512
+elements; constructor tails improved 8.305047%/27.989599% at 32/128.
+All 7680 measured batched child outputs were checked. These results do not
+override the separately failed native absolute-scaling gates.
+
+Candidate-only scaling covers scalar, volatile and constructor array-reference
+tails, plus automatic aggregate helper traversal. Bounds reach 1073741824
+elements. Syntax/LowIR/object observations retain all raw counters and caps;
+the global native object oracle checks the entire BSS symbol span and the
+helper LowIR oracle checks the full automatic slot. The largest helper native
+object cell is explicitly excluded after a separate regular capacity error:
+its 36 GiB automatic object exceeds the existing backend's 32-bit displacement
+limit. Syntax and LowIR for that bound remain measured. This is not counted
+as a native pass or silently excused as an original-language defect; capacity
+scope/disposition remains separate. N3485 Annex B documents implementation
+limits and makes its suggested object-size minimum a guideline.
+
+Final v4 performance passes all nine calibrated pairs: largest instruction
+upper 95% bound +0.004457%, largest RSS upper bound +0.069274%, with all 7680
+batched child objects checked. Dynamic scalar tails at 32/128/512 elements
+improve instruction upper bounds 2.578874%/9.437587%/28.750613%; constructor
+tails at 32/128 improve 8.305045%/27.989598%. All 376 absolute observations in
+twelve form/phase groups pass: instruction spread <=0.126138%, peak RSS
+17396 KiB, LowIR <=1510 bytes and objects <=1952 bytes. All 96 global native
+BSS span checks and 32 full-helper-slot LowIR checks pass. All 120 native
+scaling objects agree byte-for-byte before/after the bounded estimate.
+
+The exact original one-gigabyte dynamic-prefix reducer now passes syntax,
+LowIR (734 bytes) and native object emission (1528 bytes) under its bounded
+limits; its complete BSS symbol span remains present. The parent fails the
+two final required language resource controls with bad_alloc.
+
+Manual handout review found a placement issue the automatic audit missed:
+PA10 explicitly excludes character-array object initialization from string
+literals. Its plain padded-string assertion has therefore moved from the
+PA10 volatile control into the existing PA11 class/string control. The
+compiler and frozen benchmark inputs/binaries are unchanged. Renewed affected
+PA10/11, strict 8086/8086 and their 619-input placement audit pass, along with
+the renewed 34-suite/518-case harness, focused v6 and fresh v5 student export.
+All 42 packaged reference wrappers, seven language controls and the bounded
+native control pass. All eleven packaged PA fixture/limit files match the
+final source manifest. The restored development compiler exactly matches the
+measured immutable binary, SHA256
+432fa16846f2fd1e7ed8372cc626e57bc21c472dc62f962e56c6f2ad00875733.
+The earlier v4
+export passes its own controls but has the old fixture hashes and is not the
+final packaged result. Preserve both exports and all observations.
+
+final-acceptance-v4.json binds the verified source/binary identities, checks,
+measurements and export. This checkpoint does not claim full GCC or Clang
+corpus conformance. CXX11-016 semantic constexpr reference evaluation,
+CXX11-021 padded string-reference acceptance, native adapters, applicability,
+remaining compatibility defects and untriaged observations remain open.

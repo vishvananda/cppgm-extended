@@ -20,6 +20,24 @@ CWG 688 replaced the earlier explicit aggregate initialization wording in
 formulation to variables/temporaries, adopted in 2017. Neither historical
 fact alone settles the per-subobject interpretation of the original test.
 
+Fresh final-v4 execution exposes a host disagreement: on the exact test and
+two mutation/omitted-tail neighbors, GCC exits zero in all six ISO/GNU11
+cells; Clang and cppgm both abort in all six. The initial ad hoc checks
+incorrectly assumed Clang would agree with GCC and stopped on that assumption;
+their binaries/failures remain retained. The complete 18-cell observed-outcome
+matrix is issues/CXX11-002/runtime-host-disagreement-v1/results.json.
+
+A possible original-snapshot argument combines 3.7.5p1 (an array element
+inherits storage duration), 8.5.1p2 (a clause initializes each element) and
+3.6.2p2's per-object conditions. Applying the last rule independently to the
+literal-initialized element would require early initialization of that element.
+The unresolved point is whether 3.6.2's non-local-variable context constrains
+that application to the complete variable's initializer. Keep this as an
+explicit inference under review, rather than promoting GCC policy, test age
+or host agreement to a normative proof. The neighbors additionally show why
+a future partial-static repair must preserve writes to constant/omitted cells
+and must not reinitialize those cells later.
+
 Sources and retained raw evidence:
 https://github.com/gcc-mirror/gcc/commit/fa2200cbb1ef5a6a7bdb9a5ba708c7400eb6b404
 https://cplusplus.github.io/CWG/issues/688.html
@@ -48,3 +66,21 @@ doc/n3485.txt: 5.19p2, 7.1.5p9, 8.5.4p3, 12.2p5.
 https://cplusplus.github.io/CWG/issues/1757.html
 https://cplusplus.github.io/CWG/issues/2126.html
 Raw issue snapshots/hashes: issues/CXX11-002/standards-sources.json.
+
+CXX11-021: padded string-array reference temporaries are an original rule.
+
+The preserved const char (&text)[5] = {"abc"} probe is accepted by Clang and
+rejected by GCC/cppgm. N3485 8.5.4p3 creates the referenced-type array temporary
+when the one element is not reference-related; 8.5.2p1 then initializes its
+character array from the optionally braced literal, including zero padding.
+CWG 1232's array temporary list-initialization rule was adopted in March 2011,
+not after this snapshot. Retain the host disagreement and replay current
+compilers before using it as a repair oracle. This semantic acceptance gap is
+separate from CXX11-016's evaluated-value failures.
+
+The earliest fixture owner is PA11:100: PA10 explicitly excludes character-array
+object initialization from string literals. PA11:200 owns the mixed
+class/constructor/string control used by CXX11-015. The automatic placement
+audit did not detect an earlier PA10 string-array assertion; manual handout
+review moved it to that PA11 control and renewed affected checks/export.
+Source: https://cplusplus.github.io/CWG/issues/1232.html and doc/n3485.txt.

@@ -263,18 +263,65 @@ Native original-finding execution checkpoint (2026-11-06):
   has 19 issues/548 observations; 507 still need root-cause mapping. See
   cxx11-native-dg-original-cohort.txt/.json. Full corpus coverage remains open.
 
+Runtime omitted-tail checkpoint (2026-11-06):
+- 15ad2ec00 closes CXX11-015 and CXX11-020. Runtime omitted array ranges use
+  typed zero spans or initialization loops, with counted exception cleanup;
+  the helper cursor and native discarded-encoding estimate also stop walking
+  the implicit extent. Seven language controls and one bounded PA24 control
+  cover scalar/class arrays, references, strings, volatile accesses, member
+  pointers, default-argument temporaries, rows, destruction and resource caps.
+- Strict 8086/8086, debug info, self-host through PA5, inception, PA35 smoke,
+  all audits and the 34-suite/518-case harness pass. Manual handout review moved
+  a string-array assertion from PA10 into PA11; the renewed affected suites,
+  strict report, 619-input placement audit, harness and focused matrix pass.
+  All 56 candidate and 56 Clang focused cells pass; GCC's eight double-cleanup
+  runtime failures remain failed in the raw 168-cell matrix.
+- All nine final calibrated counter/RSS pairs pass, with largest instruction
+  upper bound +0.004457% and RSS upper bound +0.069274%. All 7680 batched child
+  outputs are checked. All 376 absolute scaling observations pass: instruction
+  spread <=0.126138%, RSS <=17396 KiB, objects <=1952 bytes, with full BSS spans
+  and helper slots retained. All 120 native scaling objects are byte-identical
+  across the native estimate change. No noisy wall-time pass is claimed.
+- The failed v3 native scaling observations remain retained; they exposed the
+  native estimate that consumed 3.226B instructions for a compact 4 GiB tail.
+  The old native tool fails the bounded PA24 control with SIGXCPU. A 36 GiB
+  automatic helper object still reaches the separate native displacement
+  capacity guard; that excluded native cell is explicitly not a pass.
+- The exact original 1 GiB runtime-prefix reducer now emits 734-byte LowIR
+  and a 1528-byte native object retaining its complete BSS span. Fresh student
+  export v5, all 42 reference wrappers, all eight packaged controls and final
+  fixture equality pass. Restored development binary equals the measured hash.
+  The stale v4 export and all earlier observations remain retained.
+- CXX11-021 records an original padded string-reference acceptance gap under
+  N3485 8.5.2/8.5.4 and the March 2011 array-temporary rule; its owner is PA11,
+  since PA10 explicitly excludes string-backed character-array initialization.
+  CXX11-002 remains unadjudicated: a new 18-cell exact/neighbor matrix has GCC
+  six exits0 but Clang/cppgm six SIGABRTs each. Host disagreement and candidate
+  per-subobject wording arguments remain explicit. The ledger has 21 issues
+  and 550 observations, with 507 original observations still unmapped.
+
 Next:
-- Repair runtime-tail CXX11-015 and semantic constexpr-reference CXX11-016
-  through owning PA regressions, full checks and calibrated perf.
+- Repair semantic constexpr-reference CXX11-016 through owning PA regressions,
+  full checks and calibrated perf. Fresh host/parent probes isolate lost list
+  facts and missing direct-brace handling, including reference members and
+  class temporaries. Existing-array copy-list and array/class parameter
+  binding already pass. Preserve the 64 MiB ordinary large dynamic-prefix
+  control while fixing evaluated values; do not introduce dense optional work.
+- Repair CXX11-021 with owning string-array reference regressions and shared
+  typed string initialization/ranking facts, preserving bounds and identities.
 - Extend GCC execution beyond the original-finding cohort and adapt specialized
   native drivers. Implement Clang lit/RUN handling and complete applicability,
   diagnostic, target/flag and unavailable-checker accounting for the full corpus.
 - Adjudicate CXX11-002 and continue the original untriaged observations.
   Preserve CXX11-008 throw-parameter work as separately labeled later-DR
   compatibility, with its drafts and evidence retained.
+- Complete the new final plan stage after all compiler issues, including
+  later CWG/DR compatibility, are resolved: separate GCC and Clang C++11 CI
+  jobs, each reporting matched full-suite cppgm/upstream timing every run.
+  Implement and exercise both jobs before declaring the overall goal complete.
 
 Evidence root: /mnt/vizier/cppgm-cxx11-upstream
-Latest repair: issues/CXX11-012/ (explicit scalar initializer evaluation)
+Latest repair: issues/CXX11-015/ (runtime array tails and native zero-cost estimate)
 Last cumulative checkpoint: issues/CXX11-011/ (fresh original-baseline counter comparison)
 Previous fix: issues/CXX11-006/ (abstract temporaries and direct list-reference binding)
 Return DR evidence: issues/CXX11-003/ (all original/version-2 results retained)

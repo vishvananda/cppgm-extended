@@ -231,7 +231,7 @@
     ],
     "symptom": "runtime SIGABRT; static/dynamic initialization ordering",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/runtime-1/logs/gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-static4.C",
-    "root_cause": null,
+    "root_cause": "Global array lowering discards the entire static image when one initializer clause is nonconstant and emits runtime initialization for all elements. GCC instead retains independently constant portions; Clang shares cppgm behavior on the exact test and two mutation/omitted-tail neighbors.",
     "owning_pa": null,
     "regressions": [],
     "fix_revision": null,
@@ -240,12 +240,14 @@
       "native_dg": {
         "status": "runtime-SIGABRT-confirmed-after-candidate-objects-and-host-link",
         "evidence": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-adapter-v1/pilot-2/summary.json"
-      }
+      },
+      "fresh_runtime_host_disagreement": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-002/runtime-host-disagreement-v1/results.json: all 18 ISO/GNU11 cells compile/link; GCC executes all six programs successfully, Clang and final-v4 cppgm both SIGABRT in all six",
+      "rejected_oracle_assumption": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-002/oracle-assumption-failures-v1.json retains the two initial stopped probes that incorrectly assumed Clang matched GCC"
     },
     "performance": {
       "status": "not-started"
     },
-    "triage_note": "The GCC test predates C++11 publication; its history is not evidence of a post-release CWG requirement. Mandatory per-subobject constant initialization versus permitted partial early initialization still needs adjudication against N3485 3.6.2p2-p3, 3.7 and 8.5.1. CWG 688 removed earlier explicit aggregate partial-initialization wording before N3485; CWG 1677 later recast objects as variables/temporaries. Preserve the failure as unadjudicated until the exact snapshot requirement is established.",
+    "triage_note": "The GCC test predates C++11 publication; its history is not evidence of a post-release CWG requirement. Mandatory per-subobject constant initialization versus permitted partial early initialization still needs adjudication against N3485 3.6.2p2-p3, 3.7 and 8.5.1. CWG 688 removed earlier explicit aggregate partial-initialization wording before N3485; CWG 1677 later recast objects as variables/temporaries. Preserve the failure as unadjudicated until the exact snapshot requirement is established. Fresh final-v4 replay establishes a GCC-versus-Clang disagreement, not host consensus. An inference from N3485 3.7.5p1, 8.5.1p2 and the per-object wording in 3.6.2p2 favors independent element constant initialization; whether 3.6.2 restricts that application to complete non-local variables remains unresolved. No compiler repair or original-language pass is claimed.",
     "standards_basis": {
       "category": "unadjudicated",
       "rationale": "N3485 3.6.2p2-p3 optional early initialization requires adjudication"
@@ -2189,30 +2191,86 @@
   {
     "id": "CXX11-015",
     "priority": "P1",
-    "status": "observed",
+    "status": "closed",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-011",
     "symptom": "A runtime-initialized giant reference-array temporary with one explicit element still exhausts memory during LowIR emission under 512 MiB.",
-    "root_cause": "FunctionLowering::structured_array lowers every omitted element separately after the runtime-valued explicit prefix; static reference data is inapplicable.",
+    "root_cause": "Runtime array-tail lowering and helper cursor traversal walked omitted elements; reusable typed bulk-zero/repeated-initialization lowering and exhausted-clause cursor termination now bound the implicit-extent work. Native zero-encoding estimate exposed afterward is tracked separately as CXX11-020.",
     "expected": "Retain compact runtime initialization of omitted array ranges while preserving evaluated-prefix order, volatile stores, ABI null member pointers, constructors and cleanups.",
-    "owning_pa": null,
-    "ownership_note": "Read the owning handouts and decide earliest dynamic-initialization lane before adding required fixtures; rvalue reference neighbor involves PA12.",
-    "regressions": [],
-    "fix_revision": null,
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-011",
+    "owning_pa": 10,
+    "ownership_note": "Owning handouts verified: const/scalar array reference PA10:100, class aggregate construction PA11:200, rvalue reference PA12:100 and destructor PA12:200, exception cleanup PA21:300, member pointer ABI PA22:300.",
+    "regressions": [
+      "pa10/tests/controls/100-sparse-runtime-array-reference-tail.t",
+      "pa10/tests/controls/100-volatile-runtime-array-tail.t",
+      "pa11/tests/controls/200-runtime-array-constructor-tail.t",
+      "pa12/tests/controls/100-sparse-runtime-rvalue-array-tail.t",
+      "pa12/tests/controls/200-runtime-array-reference-constructor-tail.t",
+      "pa21/tests/controls/300-runtime-array-tail-unwind.t",
+      "pa22/tests/controls/300-runtime-array-tail-member-pointers.t"
+    ],
+    "fix_revision": "15ad2ec00cd0e3302574633b243d29fdf95c6f6b",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-015",
     "reproductions": [
-      "probes/dynamic-array-reference-tail.cpp"
+      "focused-v4/100-sparse-runtime-array-reference-tail.cpp"
     ],
     "checks": {
-      "reduction": "dynamic-array-reference-tail-results.json (both hosts and parent/candidate syntax accept; both parent and candidate LowIR report bad_alloc)"
+      "initial_reduction": "../CXX11-011/dynamic-array-reference-tail-results.json: initial compiler bad_alloc under 512 MiB",
+      "focused": "focused-v4/assessment.json: candidate and Clang all pass; eight known GCC cleanup-control runtime failures retained as failures",
+      "correctness_v3": "checks-v3.json: strict 8086/8086 and all required checks passed before native CXX11-020 revision",
+      "correctness_final": "checks-v4.json / checks-state-v4.json: all ten stages pass, strict 8086/8086; final 34-suite/518-case harness and 4213-input placement audit pass",
+      "known_host_failure": "host-control-note.txt and unwind-no-copy-results.json: GCC double destruction persists with deleted copy constructor",
+      "reference": "one PA18 volatile char[9] LowIR reference regenerated normally; reference-oracles/results.json passes all eight native controls",
+      "focused_final": "focused-v6/assessment.json: all 56 candidate and 56 Clang cells pass; 48 GCC cells pass and eight GCC cleanup-control failures remain failed; no candidate failure",
+      "parent_final": "parent-resource-final.json: frozen original parent fails both final source-hashed required language resource fixtures with bad_alloc under their declared limits",
+      "native_revision_equivalence": "native-estimate-object-equivalence-v4.json: all 80 performance-oracle/focused candidate object comparisons are byte-identical",
+      "fixture_placement_correction": "fixture-ownership-adjustment-v4.json: plain padded-string assertion moved into the PA11 control; renewed affected checks, strict report, placement, harness, focused matrix and fresh v5 export all passed",
+      "exact_original_reducer": "original-reducer-final/results.json: exact one-gigabyte runtime-prefix source passes syntax/LowIR/object under CPU5/512MiB/16MiB limits, with complete native BSS symbol span",
+      "final_acceptance": "final-acceptance-v4.json: all required checks and final input/binary identities verified; whole campaign remains explicitly incomplete",
+      "final_fixtures": "checks-final-fixtures-v4.json: affected PA10/11, strict 8086/8086, 619-input placement audit, 34-suite/518-case harness, focused-v6 and fresh export all pass",
+      "export": "checks-export-v5.json: fresh student export, all 42 reference wrappers, all seven packaged language controls and bounded native control pass; all eleven PA fixture/limit files agree with source-final-v4-manifest.json",
+      "restored_binary": "restored-binary-v5.json: development compiler exactly reproduces measured candidate SHA256 432fa16846f2fd1e7ed8372cc626e57bc21c472dc62f962e56c6f2ad00875733"
     },
     "performance": {
-      "status": "not-started"
+      "status": "pass",
+      "protocol": "performance-protocol-v3.json and scaling-protocol-v3.json",
+      "paired": "performance-counters-v3/{aa,ab}-assessment.json: all nine calibrated pairs pass; all 7680 measured child objects checked",
+      "failed_absolute": "scaling-v3/{results,summary}.json: all 376 samples retained, scalar/helper native gates failed; CXX11-020 fixes the separate native estimate",
+      "next": "final candidate-v4 is immutable; repeat full declared performance and absolute scaling after final correctness",
+      "final_summary": "performance-final-summary-v4.json: all nine calibrated A/A and A/B pairs and all 376 absolute-scaling observations pass; 7680 batched child objects checked; 120 native scaling objects unchanged",
+      "final_protocol": "performance-protocol-v4.json and scaling-protocol-v4.json",
+      "final_paired": "performance-counters-v4/{aa,ab}-assessment.json",
+      "final_scaling": "scaling-v4/{results,summary}.json and scaling-object-equivalence-v4.json",
+      "source_manifest": "source-final-v4-manifest.json",
+      "binary_sha256": "432fa16846f2fd1e7ed8372cc626e57bc21c472dc62f962e56c6f2ad00875733",
+      "max_instruction_upper95_percent": 0.004456362520799395,
+      "max_rss_upper95_percent": 0.0692730657661178,
+      "max_absolute_instruction_spread_percent": 0.1261376707677453,
+      "measured_batched_child_objects": 7680,
+      "timing": "Descriptive under load; calibrated instruction/RSS gates passed. No noisy wall-time pass or baseline-failing reproducer speed ratio claimed."
     },
     "standards_basis": {
       "category": "implementation-scaling",
       "rationale": "Original N3485 8.5.4p3 array-reference list initialization and 8.5.1p7 omitted-element value-initialization; no later CWG decision."
-    }
+    },
+    "initial_evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-011",
+    "initial_reproductions": [
+      "probes/dynamic-array-reference-tail.cpp"
+    ],
+    "scope_limits": [
+      "The largest helper native cell rejects a 36 GiB automatic object at the existing 32-bit displacement capacity guard. Syntax/LowIR are measured; native rejection is retained in helper-native-large.json and is not counted as a pass. Capacity scope disposition remains separate."
+    ],
+    "baseline": {
+      "revision": "fb67b5798",
+      "binary_sha256": "2245243e624fce02c9cdc58ede413f04c94d404f011f7005409258ce48316238"
+    },
+    "measurement_report": "reports/cxx11-runtime-array-tail-fix.txt",
+    "implementation": [
+      "dev/src/lower/array_tail_lowering.cpp",
+      "dev/src/lower/aggregate_lowering.cpp",
+      "dev/src/lower/statement_lowering.cpp",
+      "dev/src/lower/function_lowering.h",
+      "dev/frontend_source_sets.mk"
+    ]
   },
   {
     "id": "CXX11-016",
@@ -2221,7 +2279,7 @@
     "upstream": [],
     "discovered_neighbor_of": "CXX11-011",
     "symptom": "Both a constexpr const-array reference initialized by a braced list and a constant-expression read through a non-constexpr const-array reference are rejected; both hosts accept in C++11.",
-    "root_cause": "ConstantInterpreter::initialize strips a braced reference initializer to its sole element or null without consulting the typed prvalue-array list facts, so array-reference temporaries never receive a constant evaluated value.",
+    "root_cause": "Global and local reference constant initialization strips any braced initializer to a sole clause without consulting the typed temporary facts; global direct-braced initializer kind is also not selected. Array-reference parameters already use the existing typed binding/materialization engine successfully. Aggregate reference-member and class-reference temporary neighbors expose the same lost-list facts.",
     "expected": "Evaluate literal array-reference temporaries and permit the original C++11 constant-expression reads, retaining identity/lifetime and compact behavior for ordinary giant arrays.",
     "owning_pa": 16,
     "ownership_note": "Provisional PA16:300 aggregate/object constant-evaluation owner. Read handout before implementation; PA10 references alone do not own constexpr array values.",
@@ -2233,7 +2291,9 @@
       "probes/constant-array-reference-read.cpp"
     ],
     "checks": {
-      "reduction": "constexpr-array-reference-results.json (both GCC/Clang accept; immediate parent and candidate reject both probes)"
+      "reduction": "constexpr-array-reference-results.json (both GCC/Clang accept; immediate parent and candidate reject both probes)",
+      "binding_neighbors_v1": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/binding-probes-v1/results.json: all 24 GCC/Clang syntax cells accept; parent fails nine of twelve probes, including direct-list existing-array binding, aggregate reference members and a class-reference temporary; copy-list existing-array and parameter-array references already pass.",
+      "binding_boundaries_v1": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/binding-boundaries-v1/results.json: direct scalar braces also fail, class parameter materialization already passes, runtime-value and out-of-bounds guards reject, ordinary million-element dynamic-prefix reference passes under a 64 MiB parent syntax cap"
     },
     "performance": {
       "status": "not-started"
@@ -2248,7 +2308,7 @@
         "https://cplusplus.github.io/CWG/issues/2126.html"
       ]
     },
-    "next_action": "Add owning regression and fix semantic reference-list binding using typed facts; preserve lazy/bounded evaluation so ordinary giant reference arrays do not start allocating dense ConstValue arrays. Distinguish this evaluated-value failure from CXX11-011 static emission."
+    "next_action": "Use typed list facts to preserve reference temporary initialization and handle direct braces through the shared binding engine. Cover global/local/member/class neighbors and retain successful existing-array and parameter bindings. Preserve lazy/bounded evaluation: do not allocate dense ConstValue arrays on ordinary giant arrays merely to probe constant initialization."
   },
   {
     "id": "CXX11-017",
@@ -2345,5 +2405,97 @@
       "rationale": "The issue was proposed in February 2012 but moved to DR at the April 2013 meeting. N3485 still allows a sub-object of a constexpr object without the added non-mutable qualification. Modern rejection here is later-DR compatibility, not a failure of the original N3485 rule."
     },
     "exclusion_note": "constexpr-mutable3.C involves a by-value parameter and is not grouped here without separate analysis."
+  },
+  {
+    "id": "CXX11-020",
+    "priority": "P2",
+    "status": "closed",
+    "upstream": [],
+    "discovered_neighbor_of": "CXX11-015",
+    "symptom": "Native emission of a compact four-gigabyte scalar zero tail retires about 3.226 billion compiler instructions despite constant-size IR and object output.",
+    "root_cause": "FunctionEmitter::zero_bytes estimates every hypothetical scalar zero store before selecting rep stosb; the discarded encoding cost walk is linear in the storage extent and can overflow its unsigned accumulator.",
+    "expected": "Stop estimating once the direct encoding is already larger than the fixed string-operation setup, retaining the same exact choice and bytes on ordinary inputs.",
+    "owning_pa": 24,
+    "ownership_note": "PA24 owns LowIR-to-native bulk-memory encoding. Its default controls lane runs the bounded native regression and checks all sixteen large operations remain in MIR with compact executable output.",
+    "regressions": [
+      "pa24/tests/controls/100-bounded-large-zero-cost.t",
+      "pa24/tests/controls/100-bounded-large-zero-cost.limits"
+    ],
+    "fix_revision": "15ad2ec00cd0e3302574633b243d29fdf95c6f6b",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-015",
+    "reproductions": [
+      "scaling-sources-v3/scalar-1073741824.cpp"
+    ],
+    "checks": {
+      "parent": "bounded-zero-parent-v3.json: frozen old native tool killed by SIGXCPU under the required one-second CPU cap",
+      "candidate": "bounded-zero-candidate-v4.log: required native control passes; checks-v4.json all ten stages pass, including affected PA24, strict 8086/8086, audits and 34-suite/518-case harness",
+      "harness": "two new native-resource inheritance/invalid-limit controls pass in scripts/tests/test_pa24_mir_modes.py",
+      "encoding_equivalence": "native-estimate-object-equivalence-v4.json: all 80 object comparisons agree byte-for-byte",
+      "final_acceptance": "final-acceptance-v4.json: all required checks and final input/binary identities verified; whole campaign remains explicitly incomplete",
+      "final_fixtures": "checks-final-fixtures-v4.json: affected PA10/11, strict 8086/8086, 619-input placement audit, 34-suite/518-case harness, focused-v6 and fresh export all pass",
+      "export": "checks-export-v5.json: fresh student export, all 42 reference wrappers, all seven packaged language controls and bounded native control pass; all eleven PA fixture/limit files agree with source-final-v4-manifest.json",
+      "restored_binary": "restored-binary-v5.json: development compiler exactly reproduces measured candidate SHA256 432fa16846f2fd1e7ed8372cc626e57bc21c472dc62f962e56c6f2ad00875733"
+    },
+    "performance": {
+      "status": "pass",
+      "retained_failed_measurements": "scaling-v3/results.json and summary.json: scalar/helper native instruction spread 716.85x/403.49x; all 376 observations retained",
+      "final_summary": "performance-final-summary-v4.json: all nine calibrated A/A and A/B pairs and all 376 absolute-scaling observations pass; 7680 batched child objects checked; 120 native scaling objects unchanged",
+      "final_protocol": "performance-protocol-v4.json and scaling-protocol-v4.json",
+      "final_paired": "performance-counters-v4/{aa,ab}-assessment.json",
+      "final_scaling": "scaling-v4/{results,summary}.json and scaling-object-equivalence-v4.json",
+      "source_manifest": "source-final-v4-manifest.json",
+      "binary_sha256": "432fa16846f2fd1e7ed8372cc626e57bc21c472dc62f962e56c6f2ad00875733",
+      "max_instruction_upper95_percent": 0.004456362520799395,
+      "max_rss_upper95_percent": 0.0692730657661178,
+      "max_absolute_instruction_spread_percent": 0.1261376707677453,
+      "measured_batched_child_objects": 7680,
+      "timing": "Descriptive under load; calibrated instruction/RSS gates passed. No noisy wall-time pass or baseline-failing reproducer speed ratio claimed."
+    },
+    "standards_basis": {
+      "category": "implementation-scaling",
+      "rationale": "A backend compile-time quality gap independent of later language or CWG decisions; the source/IR size is fixed while the implicit zero extent grows."
+    },
+    "baseline": {
+      "revision": "fb67b5798",
+      "binary_sha256": "2245243e624fce02c9cdc58ede413f04c94d404f011f7005409258ce48316238"
+    },
+    "measurement_report": "reports/cxx11-runtime-array-tail-fix.txt",
+    "implementation": [
+      "dev/src/native/x86/emitter_memory.cpp"
+    ]
+  },
+  {
+    "id": "CXX11-021",
+    "priority": "P2",
+    "status": "triaged",
+    "upstream": [],
+    "discovered_neighbor_of": "CXX11-011",
+    "symptom": "A padded const character-array reference list-initialized from one string literal is rejected: const char (&text)[5] = {\"abc\"}; Clang accepts while GCC and cppgm reject.",
+    "root_cause": "Array list-conversion ranking treats a sole string literal as a scalar-element conversion; reference-array temporary construction calls braced_list without the character-array string special case already used by list_initialize.",
+    "expected": "Create the differently bounded character-array temporary from the typed string literal, pad its omitted code units, and bind/extend the reference. Keep exact-bound literal identity, kind/length checking and invalid reference qualifiers.",
+    "owning_pa": 11,
+    "ownership_note": "PA11:100 owns character-array object initialization from string literals; PA10 explicitly excludes it. Class/member and rvalue-reference neighbors have their own later feature clusters.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021",
+    "reproductions": [
+      "padded-string-array-reference.cpp"
+    ],
+    "checks": {
+      "initial": "initial-evidence.json points to preserved CXX11-011 host/candidate diagnostics; final-v4 replay is pending until the live CXX11-015 performance experiment ends",
+      "source_review": "dev/src/sema/analyzer_initialization.cpp list_sequence array branch and list_argument array branch bypass the existing string-array list_initialize path"
+    },
+    "performance": {
+      "status": "not-started-no-compiler-change"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "rationale": "N3485 8.5.4p3 creates a reference-target prvalue temporary when the sole source element is not reference-related. The referenced char[5] is then list-initialized from its braced string under 8.5.2p1. Array temporary list initialization was adopted into C++11 by CWG 1232 in March 2011; modern host disagreement does not define the snapshot rule.",
+      "references": [
+        "doc/n3485.txt 8.5.2p1, 8.5.4p3 and 12.2p5",
+        "https://cplusplus.github.io/CWG/issues/1232.html"
+      ]
+    },
+    "next_action": "Replay exact/reduced padded-string-reference and bounded/kind/identity neighbors with the final compiler and both hosts, then add owning regressions, share typed string-array initialization/ranking facts and complete normal correctness/performance/export validation. Keep this semantic acceptance failure separate from CXX11-016 evaluated reference values."
   }
 ]
