@@ -1,0 +1,18 @@
+// P1825R0, adopted as a DR by N4829 CWG motion 23 (July 2019).
+// Related: clang/test/SemaCXX/P1155.cpp, LLVM21.1.8,2078da43e25a4623cab2d0d60decddf709aaea28.
+// CWG2549 (February2025 DR) replaces the earlier ctor-initializer restriction.
+// expect exit 0
+struct Value {
+  int tag;
+  Value() : tag(1) {}
+  Value(const Value&) : tag(2) {}
+  Value(Value&&) : tag(3) {}
+};
+struct Construction { int member; Construction(Value value) try : member((throw value, 0)) {} catch (...) { throw; } };
+void act(Value& input) { Construction value(input); }
+int main() {
+  Value input;
+  try { act(input); }
+  catch (const Value& out) { return (out.tag == 3) ? 0 : 1; }
+  return 2;
+}
