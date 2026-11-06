@@ -1,0 +1,96 @@
+CXX11-011 constant array-reference initialization checkpoint (2026-11-06)
+Worktree: /mnt/vizier/cppgm-upstream-cxx11
+Parent: e869773845782d3a6f72444690477abe5cdaf6f2
+Fix: c01452014a73ec9c7fefa0afe99d4e4ca6d16a52
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-011
+State: CXX11-011 closed; all required correctness/performance/export checks pass
+
+The constant-reference path used SingleInitializer, discarding the typed list
+that denotes an array temporary. It consequently left a constant-initialized
+reference null until dynamic initialization and expanded nonempty array lists
+through per-element runtime lowering. The parent segfaults when an earlier
+dynamic initializer reads the later-defined constant array reference. Both
+GCC and Clang, and the candidate, execute the required control successfully.
+This is original N3485 3.6.2p2, 8.5.4p3 and 12.2p5, without a later CWG change.
+
+ProgramLowering::define_reference now consumes the typed prvalue-array list
+and uses the existing static_element/static_aggregate data builder. The
+reference has a constant address and its lifetime-extended array has its own
+internal global, preserving the evaluated temporary identity, ABI name,
+alignment, readonly eligibility and null data-member-pointer representation.
+Omitted zero tails remain one range. Decisions consume the existing typed
+initializer facts and shared static-data builder. Dynamic initializers, required destruction and
+thread-local lifetime handling retain their existing runtime paths.
+
+Required controls live in PA10:100 (early constant initialization, nested
+arrays, distinct/aliased storage and the bounded const-array reducer),
+PA11:200 (aggregate elements and mutable members), PA12:100/200 (bounded
+rvalue-array reducer and runtime calls/destruction), and PA22:300 (ABI null
+member pointers). The parent fails both resource controls with bad_alloc and
+the early-read control with SIGSEGV; the candidate passes all six controls.
+The 144-cell GCC/Clang/candidate ISO/GNU11 O0-O3 object/link/runtime matrix
+passes. The original giant const/rvalue reducers emit 180/162 bytes of LowIR
+under the same CPU/memory/file caps. No whole-source LLVM FileCheck pass is
+claimed.
+
+Correctness evidence in checks.json passes all affected PAs, strict report
+8073/8073, debug info, self-host through PA5, inception, PA35 smoke, all
+architecture/format/file/placement audits and the harness. The placement
+audit scans 4199 inputs with no findings; broad-owner notes do not override
+the owning handouts. The file audit retains seven preexisting header warnings.
+There is no tracked reference regeneration.
+
+Performance protocol: six parent A/A and A/B workloads, including frozen
+original O0/O2 overload and analyzer-call inputs and 32/128/512 mixed scalar
+and dynamic-array reference neighbors. All twelve host/parent/candidate
+neighbor runtime oracles pass and the three parent/candidate objects agree
+exactly before measurement. Gates remain +1% instructions, +3% RSS upper
+95% bounds, +/-0.01% A/A equivalence and >=99% counter scheduling. CPU 84,
+ASLR disabled, immutable binaries and frozen sources, three warmups and ten
+paired ABBA blocks. Every measured batched child object is checked.
+
+Separate candidate-only scaling protocols cover 1024/1048576/67108864/
+1073741824 elements: rvalue references through syntax/LowIR/object, const
+references through syntax/LowIR, with three warmups and five measured
+repetitions. The current native backend materializes readonly object bytes,
+so the required const runtime control uses 1 MiB; mutable zero storage can use BSS, and its
+required runtime control uses 1 GiB. The BSS oracle checks all 32 object spans,
+temporary symbol sizes and reference relocations to rule out dead elimination.
+All six calibrated parent pairs pass: the largest instruction upper bound is
++0.885766% (reference-neighbors-512), largest RSS upper bound +0.004328%.
+All 3840 measured batched child objects agree. Scaling passes all 160 runs;
+instruction spread is at most 0.021557%, RSS <=17416 KiB, mutable objects
+784 bytes, and all 32 BSS span/identity/relocation predicates pass. This
+current readonly native layout is not a general lower bound for representing
+zero storage. Wall time is descriptive under load. The original-baseline
+checkpoint passes all three calibrated pairs against b7c6b8e72, with a largest
+instruction upper bound +0.060461% and RSS upper bound +0.004328%. Export
+validation passes: fresh student export, all 42 reference wrappers and all six
+packaged required controls. Restoring the development compiler reproduces the
+measured binary hash exactly.
+
+Restoring the original giant array reference to the adapted upstream core
+and omitting only its constexpr pointer-call declaration emits a 245996-byte
+LowIR program. Both hosts accept the adapted source, and nine static-layout
+and reference-binding predicates pass. The current candidate still fails
+the pointer-call reducer and complete adapted core; core-isolation-results.json
+and core-layout-checks.json retain the scope precisely.
+
+The new dynamic-prefix reducer is still a failure on both parent and
+candidate: syntax succeeds with all compilers but LowIR reports bad_alloc.
+CXX11-015 retains this separate runtime-tail expansion path as open work.
+A padded string-array reference neighbor is unadjudicated: GCC/cppgm reject
+and Clang accepts. Its source and complete diagnostics are retained, not used
+as an oracle or silently dropped.
+
+CXX11-016 records a separate semantic constant-evaluation gap: constexpr
+array-reference initialization and constant-expression reads through such
+references are accepted by both hosts but rejected by both parent and
+candidate. ConstantInterpreter::initialize still strips the array list before
+binding. Its source/diagnostics are retained in
+constexpr-array-reference-results.json; implementation and PA16 ownership
+verification remain ahead. The static-emission fix does not close that gap.
+
+The ledger retains 532 observations and 16 issues. The complete campaign is
+still active: execution adapters, applicability, untriaged observations and
+other original/DR defects are unfinished.

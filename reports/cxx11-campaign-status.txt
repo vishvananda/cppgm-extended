@@ -154,10 +154,44 @@ CXX11-013 incremental repair (2026-11-06):
   Unknown initialization options are logged as blockers. This is a native
   harness bootstrap, not a complete execution adapter or corpus-pass claim.
 
+CXX11-011 static array-reference checkpoint (2026-11-06):
+- c01452014a73ec9c7fefa0afe99d4e4ca6d16a52 repairs static array-reference emission/initialization;
+  CXX11-011 is closed.
+- The typed prvalue-array list now reaches the shared static-data builder.
+  Constant references and their lifetime-extended arrays initialize before
+  dynamic initializers. The parent segfaults on the early-read control and
+  reports bad_alloc on both bounded const/rvalue controls; candidate passes.
+- Required controls are PA10:100, PA11:200, PA12:100/200 and PA22:300.
+  The 144-cell ISO/GNU11 O0-O3 host/candidate matrix passes, with dynamic
+  calls/destructors, identities, mutable fields and ABI null pointers intact.
+- All affected PAs, strict 8073/8073, debug info, self-host through PA5,
+  inception, PA35 smoke, architecture/format/file/placement and harness pass.
+  There is no tracked reference regeneration. The fresh student export, all
+  42 wrappers and six packaged controls pass; the restored development
+  binary hash exactly matches the measured candidate.
+- All six calibrated parent counter pairs pass with exact objects and 3840
+  measured batched child outputs; max instruction upper +0.885767%, RSS
+  +0.004328%. The fresh three-workload original-b7c6b8e72 checkpoint passes
+  with max instruction upper +0.060461%. Wall time is descriptive under load.
+- All 160 bound-scaling runs pass from 1024 to 1073741824 elements. Largest
+  instruction spread 0.021557%, peak RSS 17416 KiB, mutable objects 784 bytes.
+  All 32 objects preserve full BSS/temporary spans and reference relocations.
+  The original giant reductions emit 180/162 bytes of LowIR. The current
+  native backend materializes readonly bytes; the const runtime control uses
+  1 MiB and is paired with giant LowIR-only measurements.
+- The ledger retains 532 observations and 16 issues. CXX11-015 records
+  runtime-prefix array-reference tail expansion (both parent/candidate
+  bad_alloc). CXX11-016 records rejected constexpr array-reference values
+  and reads (both hosts accept, both parent/candidate reject). Padded string
+  reference initialization remains an unadjudicated host disagreement.
+  CXX11-012 is source-triaged: pointer calls are not handled by static_value,
+  and whole-array constant evaluation is dense and budget-limited.
+- reports/cxx11-static-array-reference-fix.txt and issues/CXX11-011 retain
+  protocols, raw runs, matrices, parent failures, checks and new reductions.
+
 Next:
-- Add owning PA regressions and repair the confirmed CXX11-011/012 emission
-  paths using the same correctness/performance process.
-  Adjudicate constant/static initialization before changing that behavior.
+- Repair CXX11-012, runtime-tail CXX11-015 and semantic constexpr-reference
+  CXX11-016 through owning PA regressions, full checks and calibrated perf.
 - Continue execution adapters from the native metadata bridge, covering
   applicability, diagnostics, companion sources, target selection, failures
   and unavailable checker interfaces. The full corpus is not yet executed.
@@ -166,8 +200,8 @@ Next:
   compatibility, with its drafts and evidence retained.
 
 Evidence root: /mnt/vizier/cppgm-cxx11-upstream
-Latest repair: issues/CXX11-013/ (excess-array initializer SFINAE)
-Last cumulative checkpoint: issues/CXX11-007/ (sparse arrays and empty-aggregate brace elision)
+Latest repair: issues/CXX11-011/ (static array-reference emission and initialization)
+Last cumulative checkpoint: issues/CXX11-011/ (fresh original-baseline counter comparison)
 Previous fix: issues/CXX11-006/ (abstract temporaries and direct list-reference binding)
 Return DR evidence: issues/CXX11-003/ (all original/version-2 results retained)
 Inventory: inventory-3/{manifest.json,inventory.jsonl}
