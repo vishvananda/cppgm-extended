@@ -624,10 +624,18 @@ const Type* Analyzer::template_value(const syntax::Expr& expr, Scope* scope, con
 			BodyContext context = BodyContext();
 			if (body_ == nullptr)
 				body_ = &context;
-			convert(expr, target, false);
+			const Conversion* conversion = convert(expr, target, false);
 			body_ = saved;
+			if (conversion == nullptr)
+				return nullptr;
+			// Keep the conversion function's result before its second
+			// standard conversion: converted_value checks 14.3.2p5's
+			// representability before converting to the parameter's type.
+			// Evaluate the selected call once, including a reference read.
+			Conversion before = *conversion;
+			before.after = nullptr;
 			Constant converted;
-			if (!converted_constant(expr, converted, soft_substitution_ == 0))
+			if (!narrowing_constant(expr, &before, scope, &converted, nullptr))
 			{
 				substitution_error(expr.location, "a template argument that is not a constant expression");
 				return nullptr;
