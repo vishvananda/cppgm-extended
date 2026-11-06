@@ -379,8 +379,8 @@ installs all 42 wrappers and passes both new fixtures through the bundle.
 Receipts are in `forward-calls-ported/`, its two sibling frozen-guard directories,
 `forward-calls-ported-public-objects/` and `forward-calls-ported-boost-sentinels/`.
 The final all-50 comparison and full public run use this immutable compiler.
-The all-50 comparison and full PA35 release check have now finished; the
-public run remains in progress.
+The all-50 comparison, full PA35 release check and full public run have now
+finished.
 
 ## Five-fix comparison
 
@@ -416,9 +416,26 @@ The full PA35 release recipe passes for both the course build and the student
 build, with 100 generated seeds and the existing release margins. Calibration
 outputs and all measurements are retained under `forward-calls-ported/pa35-release/`.
 
+The completed public suite passes all 81 programs at both optimization levels
+against GCC and Clang. Against the preceding full run (the first three fixes),
+79 optimized executables are byte-identical. Only JSON and tramp3d change.
+All program outputs agree, all unoptimized executable sizes agree, and the
+43 counted native workloads have unchanged aggregate instruction cost within
+0.00001%. Across the 13 counted compilations, geometric instruction cost grows
+0.0225%; the largest increase is JSON at 0.262%, below the investigation trigger.
+
+The new public runtime CPU scoreboard gives 1.006x GCC and 0.993x Clang, versus
+0.983x and 0.974x in the preceding run. These cross-run changes cannot establish
+a gain: most executables are unchanged, and load variation remains substantial.
+JSON's focused control is described above. For tramp3d, nine paired blocks with
+two A/A blocks before and after give 1.002x CPU speed, 0.997x task-clock speed
+and unchanged instructions. Calibration drifts by up to 4%, so there is no
+resolved runtime regression. Receipts are `forward-calls-ported/public-full-v2*`,
+`public-full-comparison.json` and `tramp-parent-paired/` in that directory.
+
 ## Refreshed investigation queue
 
-The completed three-fix reranking keeps Base64 decoding, Huffman decoding and
+The completed five-fix reranking keeps Base64 decoding, Huffman decoding and
 Calculator AST among the largest remaining gaps. Huffman's profile and typed
 LowIR show repeated bit-extraction work and branch/load diamonds; Clang selects
 the child address before loading. Select formation currently excludes loads
@@ -431,29 +448,66 @@ helper is already inlined and its hot loop already uses packed SSE2 arithmetic.
 Missing inlining or wholly absent vectorization is not its cause. Profiles and
 disassembly are retained in `group2-{huffman,nbody}-discovery/` for the next work.
 
-A broader whole-index-cpp LowIR replay probe exposes a pre-existing byte-identity
-difference: it reproduces with both the preceding compiler and the candidate,
+A broader whole-index-cpp LowIR replay probe exposed a pre-existing byte-identity
+difference: it reproduced with both the preceding compiler and the candidate,
 although both replayed programs pass all 50 checksum checks. Match the
 `__OPTIMIZE__` preprocessing epoch when comparing paths; that alone does not
-resolve the difference. Reduce and explain this boundary gap before attributing
-differences in that replay to a new optimization. The new C++11 course reduction
-and existing object-roundtrip lanes continue to pass.
+resolve the difference. The investigation below isolates and fixes this
+boundary gap before using that replay to assess new optimizations.
 
 Private tracing finds identical canonical input text on both paths and the
 same live instruction count in every function throughout optimization. After
 normalizing local names and phi-input order, all 1,550 final function bodies
-also agree. The differing object bytes therefore do not establish a missing
-transformation. Investigate incidental value/block numbering, phi-copy order,
-allocation and module layout next. Global sections and alias records still
-need an equivalent comparison. No tracing or environment reads were added to
-the production compiler.
+also agree. Comparing the actual ELF sections then resolves the question:
+every code and data byte agrees, as do every defined symbol's name, type and
+size. Only symbol ordering, string ordering and references to symbol indexes
+differ. This is not a register-allocation or generated-instruction gap.
+
+Equivalent function entries share another definition's placement and have no
+code range of their own. Object symbol registration handled ordinary code
+ranges first, then mixed shared entries with globals in program order. The
+LowIR writer groups globals before functions; direct lowering can interleave
+them. Registering shared entries after ordinary functions and before globals
+removes that accidental order dependency. It adds no sorting, allocation or
+whole-program optimization pass. No tracing or environment reads were added
+to the production compiler.
+
+A C++11 constructor/destructor reduction fails byte identity at O1 through O3
+with the preceding compiler and passes at every level with the fix. Both paths
+also execute correctly. The whole index-cpp direct and replayed objects now
+match exactly; code and data remain identical to the accepted five-fix object,
+and all 50 checksum workloads pass. Frozen compile instructions and objects
+are unchanged at O0 and O3, with peak RSS within 0.05%. Receipts are
+`shared-entry-order/` and `shared-entry-order-frozen/`.
+The linked executable's allocated sections also agree with the accepted
+executable except for its build ID, so the retained native timings still apply.
+The fix passes the 8,047-test strict report, debug-info checks, self-host
+through PA5, PA35 smoke/quick, optional modern-C++ checks, harness checks and
+all architecture, placement, format and file audits. Both GCC and Clang pass
+the changed source's `-Wall -Werror` check.
+The fresh student export verifies 22,541 portable reference outputs, installs
+all 42 reference wrappers and passes the new roundtrip fixture through the
+exported compiler. The fix is committed as `cc0e4f763`.
+
+For the next group, the existing narrow-consumer prototype now also passes an
+independent host-built arithmetic oracle across GCC, Clang, the preceding
+compiler and the prototype at O0 through O3 (16 combinations). It covers
+signed byte/word inputs, arithmetic/bit operations, zero and variable shifts,
+rotates, live wider uses and address consumers. This remains a private
+prototype, not an accepted optimization; receipts are `group2-next-u32-oracle/`.
 
 ## Outstanding work
 
-Finish the first group's full public benchmark comparison and explain the
-whole-index-cpp direct/serialized byte-identity gap. Retain the completed
-50-workload comparison and PA35 release receipts. Profile Brainfuck's residual call
+Retain the completed public suite, 50-workload comparison, PA35 release and
+shared-entry replay/export receipts. Longer focused controls are checking
+the apparent slow cases in the full
+50-workload run, including cases with unchanged instruction counts and cases
+with calibration warnings; retain and investigate any repeatable slowdown.
+Profile Brainfuck's residual call
 chain and Calculator AST's remaining ownership/dispatch work on the new code.
 Investigate Base64 decoding, Huffman decoding and Nbody, then the named parser,
 interpreter, SHA256, maze and container workloads using that refreshed evidence.
 Retain existing workload wins and every repeatable individual regression.
+The final plan step now also requires automatic index-cpp CI on each commit,
+with correctness checks and performance results recorded beside the existing
+benchmark reports.

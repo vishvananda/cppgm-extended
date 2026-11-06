@@ -202,3 +202,31 @@ confirmed missing transformations from rejected hypotheses and deferred work.
 A group closes with a full-scoreboard comparison and a new ranked backlog;
 compiler throughput and existing workload performance remain acceptance criteria
 throughout, not checks deferred to the end.
+
+## 6. Add continuous index-cpp benchmarking
+
+After the optimization work, add an automated CI job for each pushed commit
+and PR update, using the existing benchmark workflow and result publication
+infrastructure. This lane must run automatically, rather than requiring a
+manual dispatch.
+
+Pin the unchanged upstream revision and source hash, build it in C++17 mode
+with cppgm, GCC and Clang, and require all 50 checksum workloads to pass for
+each compiler. Reuse the measurement runner and full benchmark inputs from
+this investigation. Keep this reference-compiler lane separate from the
+default C++11 student requirements.
+
+Record paired ABBA/BAAB runtime measurements with A/A calibration, per-workload
+results and geometric aggregate speeds against GCC and Clang, all expressed
+as higher-is-better ratios. Include compile cost and generated code size.
+Retain raw observations and the measured commit, source/binary hashes, CPU,
+toolchain versions, flags and calibration warnings. Use available counters;
+report unavailable metrics explicitly. Timing noise must remain visible.
+
+Store the results alongside the existing public benchmark data, with a clear
+detail table linked from the benchmark page and the CI job summary. Keep
+index-cpp's aggregate separate so existing benchmark histories stay comparable.
+Follow the existing trusted-publication rules: untrusted PR runs can upload artifacts
+without credentials to publish benchmark data. Validate the workflow triggers,
+checksum failures, report generation and result persistence before closing
+this step.
