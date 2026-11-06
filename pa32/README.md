@@ -263,6 +263,10 @@ pass:
   An `eh_try` landing that pops its own record with `eh_end` needs a
   targetless `eh_cleanup` to retain that record on entry, as specified in
   [LowIR's exception-handling contract](../pa8/lowir.md#exception-instructions).
+- An ellipsis alone does not require a separate call frame. A small function
+  that never inspects its unnamed arguments can be substituted like a fixed
+  argument function, preserving every argument's evaluation and cleanup.
+  `va_start` and `va_arg` require a separate proof about the argument area.
 - Keep the optimizer's own work bounded. PA34 compiles the whole compiler
   at `-O3` with this optimizer; [the design notes](design-notes.md) describe
   how to avoid repeating work.

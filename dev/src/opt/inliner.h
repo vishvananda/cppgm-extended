@@ -13,10 +13,12 @@
 //   once       after pruning, the single-call policy alone with fresh
 //              budgets (pruning dead callers exposes new single calls);
 //   late       a fresh budget for small optimized bodies.
-// A callee with EH instructions, va_start or stack_alloc, a variadic or
+// A callee with EH instructions, va_start/va_arg or stack_alloc, a
 // mismatched boundary, recursion, no_inline or GNU replaceability stays a
-// call; a call in handler code needs a callee that cannot unwind. Each
-// caller is simplified (`simplify`) after it changes, before its own
+// call; a call in handler code needs a callee that cannot unwind. A
+// variadic body that never reads unnamed arguments may substitute its named
+// parameters: extra arguments have already been evaluated in the caller.
+// Each caller is simplified (`simplify`) after it changes, before its own
 // callers decide, so a whole wave is one traversal. The budgets, in copied
 // instructions, are the constants at the top of opt/inliner.cpp.
 namespace opt {

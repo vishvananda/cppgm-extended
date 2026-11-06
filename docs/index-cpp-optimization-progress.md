@@ -18,6 +18,8 @@ Current receipts live under
 - `index-O3.lowir`, `lowir.stderr`: baseline optimized typed IR and work census.
 - `variadic-inline-paired/`: all observations from A/A followed by three
   ABBA/BAAB blocks for Brainfuck recursion, Calculator AST and CRC32.
+- `variadic-inline-safe-provenance.json`: corrected compiler/source hashes and
+  byte identity of its object with the object used for runtime measurements.
 - `variadic-inline-safe-frozen/`: source/header-validated frozen compiler
   instruction and memory checks at `-O0` and `-O3` for the corrected candidate.
 - `public-baseline*`, `public-variadic-inline*`: existing public sentinels,
@@ -107,9 +109,9 @@ observed wall ratio, 1.004x, is within calibration noise.
 The initial inlining candidate changes frozen compile instruction counts by
 less than 0.003% at both levels, within A/A noise. Peak RSS changes by less
 than 0.1%; both frozen object hashes are identical across baseline and candidate.
-Compile CPU timings are noisy, including 6–11% A/A drift, and cannot establish
-a wall-time improvement or regression. Recheck the corrected compiler receipt
-before accepting the change.
+Compile CPU timings are noisy and cannot establish a wall-time improvement or
+regression. The corrected candidate also changes instruction counts by less
+than 0.005%, with identical objects; its peak RSS is within 0.2% of baseline.
 
 Index-cpp `.text` grows from 387,154 to 391,618 bytes (1.15%). That cost must
 remain visible alongside the runtime gain; existing PA35 size gates remain
@@ -117,7 +119,8 @@ unchanged. The baseline was already larger than the two references.
 
 The initial prototype passed the full strict report (8,038/8,038), debug info,
 self-host through PA5, PA35 quick/smoke and architecture/format/file audits.
-The corrected candidate is being revalidated, including the stronger reducer.
+The corrected candidate also passes the strict report, debug info and self-host
+through PA5, including the stronger reducer.
 Public sentinels cover recursion, containers, JSON, regex, hashing and floating
 point. Student-export validation follows the shipped fixture/handout changes.
 

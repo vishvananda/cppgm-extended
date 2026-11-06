@@ -1,0 +1,5 @@
+# A small body that never observes its unnamed arguments can disappear.
+# Calls that compute those arguments still have their ordinary effects.
+none(call @first) in @use_first
+instructions <= 40 in @use_first
+instructions <= 30 in @main

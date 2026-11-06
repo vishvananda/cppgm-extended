@@ -1,0 +1,58 @@
+#include <cstdarg>
+
+int observed;
+volatile int input = 13;
+
+int first(int value, ...) { return value; }
+int observe(int value) { observed += value; return value; }
+
+struct Mark {
+  ~Mark() { ++observed; }
+};
+
+int throwing_argument()
+{
+  Mark mark;
+  throw 17;
+}
+
+int read_arguments(int tag, ...)
+{
+  va_list args;
+  va_start(args, tag);
+  int integer = va_arg(args, int);
+  double floating = va_arg(args, double);
+  va_end(args);
+  return tag + integer + static_cast<int>(floating);
+}
+
+__attribute__((noinline)) int keep_first(int value, ...) { return value; }
+
+int guarded_next(int value, ...)
+{
+  Mark mark;
+  if (value < 0) throw value;
+  return value + 1;
+}
+
+int main()
+{
+  if (first(7, observe(3), 2.5, observe(5), input) != 7 || observed != 8) return 1;
+  if (first(9) != 9 || keep_first(11, 3, 4.0) != 11) return 2;
+  if (read_arguments(4, 8, 16.0) != 28) return 3;
+  try {
+    first(0, throwing_argument());
+    return 4;
+  } catch (int value) {
+    if (value != 17 || observed != 9) return 5;
+  }
+  if (guarded_next(input, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) != 14) return 6;
+  input = -17;
+  try {
+    guarded_next(input, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    return 7;
+  } catch (int value) {
+    if (value != -17 || observed != 11) return 8;
+  }
+  return 0;
+}

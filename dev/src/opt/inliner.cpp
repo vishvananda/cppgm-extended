@@ -188,7 +188,9 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 	const Function& function = program.functions[program.symbols[symbol].detail];
 	const FunctionBody& body = *function.body;
 	const Signature& sig = program.signatures[function.signature];
-	shape.unsafe = sig.boundary.arity == ir_model::CAM_VARIADIC || body.layout.empty();
+	// An ellipsis alone needs no callee frame. Only operations that observe
+	// its argument area prevent substitution (checked below).
+	shape.unsafe = body.layout.empty();
 	bool unwinding = false, unguarded = false;
 	bool same_result = !source_required && sig.result.is_integer();
 	uint32_t result_literal = kNoId;
@@ -1056,7 +1058,9 @@ bool InlineWaveRunner::compatible(const Instruction& call, SymbolId callee) cons
 {
 	const Function& function = program_.functions[program_.symbols[callee].detail];
 	const Signature& sig = program_.signatures[function.signature];
-	if (call.extra_count != sig.parameter_count || call.type != sig.result)
+	const bool variadic = sig.boundary.arity == ir_model::CAM_VARIADIC;
+	if (call.extra_count < sig.parameter_count || (!variadic && call.extra_count != sig.parameter_count) ||
+		call.type != sig.result)
 		return false;
 	if ((call.flags & IF_SIGNATURE) != 0)
 	{
@@ -1107,13 +1111,14 @@ bool InlineWaveRunner::compatible(const Instruction& call, SymbolId callee) cons
 bool InlineWaveRunner::known_target(const Instruction& call) const
 {
 	const FunctionBody& body = *program_.functions[program_.symbols[graph_.functions[caller_]].detail].body;
+	const Function& target = program_.functions[program_.symbols[call.ops[0].index].detail];
 	auto function_symbol = [&](Value v) {
 		if (v.is(ValueKind::Temp) && body.temps[v.index].def != kNoId &&
 			body.instructions[body.temps[v.index].def].op == Opcode::Addr)
 			v = body.instructions[body.temps[v.index].def].ops[0];
 		return v.is(ValueKind::Symbol) && is_function_kind(program_.symbols[v.index].kind);
 	};
-	for (uint32_t k = 0; k < call.extra_count; ++k)
+	for (uint32_t k = 0; k < program_.signatures[target.signature].parameter_count; ++k)
 	{
 		const Value v = body.operands[call.extra_first + k];
 		if (function_symbol(v))
@@ -1424,7 +1429,10 @@ SymbolId InlineWaveRunner::folded_copy(
 		folded_failures_[g] >= kFoldedFailures || folded_budget_ == 0)
 		return kNoId;
 	std::vector<std::pair<uint32_t, Value>> constants;
-	for (uint32_t k = 0; k < call.extra_count; ++k)
+	// Only named parameters have parameter temporaries. An unnamed argument's
+	// position could otherwise replace an unrelated instruction's result.
+	const uint32_t parameters = program_.signatures[program_.functions[detail].signature].parameter_count;
+	for (uint32_t k = 0; k < parameters; ++k)
 	{
 		Value c;
 		if (constant_argument(program_, caller, caller.operands[call.extra_first + k], c))
