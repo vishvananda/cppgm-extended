@@ -1344,24 +1344,97 @@
   {
     "id": "CXX11-007",
     "priority": "P1",
-    "status": "observed",
+    "status": "performance-passed",
     "upstream": [
       "llvm-project/clang/test/CodeGenCXX/cxx11-initializer-aggregate.cpp"
     ],
     "symptom": "syntax-only timeout at 15 and 45 seconds; large sparse initialization",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/rechecks/aggregate",
-    "root_cause": null,
-    "owning_pa": null,
-    "regressions": [],
-    "fix_revision": null,
-    "checks": {},
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007",
+    "root_cause": "Semantic array and brace-elision walks visited the full declared bound after explicit initializers were consumed; static lowering likewise materialized one scalar zero per omitted element, causing time and memory proportional to implicit tails.",
+    "owning_pa": 10,
+    "regressions": [
+      "pa10/tests/controls/100-sparse-array-zero-tail.t",
+      "pa10/tests/controls/200-sparse-array-prefix-and-bound.t",
+      "pa11/tests/controls/200-sparse-aggregate-zero-tail.t",
+      "pa11/tests/controls/200-omitted-array-element-constructors.t",
+      "pa11/tests/controls/200-omitted-array-private-constructor-reject.t",
+      "pa11/tests/controls/200-omitted-array-reference-member-reject.t",
+      "pa22/tests/controls/300-omitted-array-member-pointer-null.t"
+    ],
+    "fix_revision": "894d34a2dbd351de1538b05c956b4951745fe317",
+    "checks": {
+      "status": "pass for repaired scope",
+      "final_compiler": "checks-final2.json (all final compiler/architecture checks passed; export v1 then found three stale course references)",
+      "strict_report": "strict-report-v3.log (8065/8065)",
+      "affected": "affected-final.log (PA10 171/171, PA11 156/156, PA18 542/542, PA22 442/442)",
+      "pa32": "pa32-final.log (589/589)",
+      "harness": "harness-v2.log (including resource and export dependency controls)",
+      "export": "checks-export-v3.json; current fresh export and 42 reference wrappers pass",
+      "packaged_controls": "packaged-controls-final.json and export-control-pa22-v3.log; all current v3 controls pass",
+      "focused": "focused-final-v2/results.json (312/312 ISO/GNU11 O0-O3 compiler/host cells)",
+      "additional_oracles": "performance-explicit-aggregates/oracles.json (12/12 GCC/Clang/parent/candidate O0 builds and runs)",
+      "reference_changes": "25 references regenerated with normal tools; reference-equivalence/allocation-results.json verifies identical named-object bytes and relocations for all 25. Two change only inter-object padding/alignment.",
+      "baseline": "required-baseline.json (CPU signal and bad_alloc)"
+    },
     "performance": {
-      "status": "not-started"
+      "status": "pass",
+      "protocol": "performance-protocol.json",
+      "parent": "performance-counters/{aa,ab}-assessment.json (six workloads)",
+      "targeted": "performance-explicit-aggregates/{aa,ab}-assessment.json (three brace-elision workloads)",
+      "cumulative": "performance-cumulative/{aa,ab}-assessment.json (three original-survey checkpoint workloads)",
+      "scaling": "scaling-candidate/{results,summary}.json (four extents, three phases, five measured repeats)",
+      "gates": {
+        "instruction_upper95_ratio": 1.01,
+        "rss_upper95_ratio": 1.03,
+        "aa_equivalence_halfband": 0.0001,
+        "counter_scheduling_min_percent": 99
+      },
+      "parent_max_instruction_upper95_percent": 0.567650480898152,
+      "parent_max_rss_upper95_percent": 0.03356783645520611,
+      "cumulative_max_instruction_upper95_percent": 0.04625493278158643,
+      "output_equality": "Exact objects on every A/A and A/B observation, including all 7680 measured batched child outputs; no speed ratios for parent-failing giant inputs.",
+      "timing": "Descriptive under load; no macOS hardware gate or wall-time pass claimed.",
+      "source_sha256": {
+        "dev/src/sema/analyzer_expressions.cpp": "7362a7b6cd7b72f99384f74117dc8da6b74e7f4e726ea8aa5c5b2c29f97e5dc4",
+        "dev/src/sema/analyzer_initialization.cpp": "c35b55deafa1f1321df531e98b4c14a088dd7d7907dcbd64546a3fd929f1df8a",
+        "dev/src/lower/global_lowering.cpp": "52503cbd8f205db3cc3228760cdaa6910fdc97f6360a0554ab538c3209f2ee2d"
+      },
+      "measured_batched_child_objects": 7680,
+      "bss_span_oracle": "scaling-candidate/bss-size-checks.json (32/32 objects keep the declared size)"
     },
     "standards_basis": {
       "category": "implementation-scaling",
-      "rationale": "Large sparse aggregate initialization; must isolate original C++11 subcase from mixed extensions"
-    }
+      "rationale": "Original N3485 8.5.1p7,11 ordinary braced arrays and aggregates; no later CWG decision required. Huge zero tails need compact semantic and static-data representation."
+    },
+    "additional_owning_pas": [
+      11,
+      22
+    ],
+    "handout": "pa10/README.md arrays and constant images; pa11/README.md aggregate initialization and constructors; pa22 member-pointer null representation",
+    "implementation": [
+      "dev/src/sema/analyzer_expressions.cpp",
+      "dev/src/sema/analyzer_initialization.cpp",
+      "dev/src/lower/global_lowering.cpp"
+    ],
+    "expected": "Check an omitted element type once, preserve required initialization of every object, and retain all-zero static tails as compact LowIR byte ranges.",
+    "baseline": {
+      "revision": "e96d5524ee0cba4f98962f835b2adc448178185b",
+      "binary_sha256": "dc50889cf1c93b6487d384341202ffb9c5f83d2db5ef557ead48d223702188a4"
+    },
+    "upstream_limitations": {
+      "full_source": "Both C++11 dialects now reject promptly at GNU imaginary literal 0i instead of timing out. This is not a full-source pass.",
+      "core_adaptation": "upstream-core-adaptation.json; all six host/candidate syntax cells and four host assembly cells pass, but complete adapted-core LowIR still exhausts memory.",
+      "remaining_original_gaps": [
+        "CXX11-011 array-reference temporary emission",
+        "CXX11-012 constexpr pointer-prefix emission"
+      ],
+      "isolated_positive_layout": "Removing those two declarations for phase isolation permits LowIR emission; phase-reductions/layout-checks-v2.json passes eight explicit prefix/zero-range checks (245784-byte program). This remains adapted partial coverage.",
+      "interfaces": "LLVM IR FileCheck is unavailable; no LLVM textual oracle pass is claimed.",
+      "native": "Huge nonzero native data has an output-size lower bound; general dense constexpr aggregate evaluation remains outside the narrow repair."
+    },
+    "repair_status": "partial upstream scope; ordinary zero tails repaired, separate emission gaps remain",
+    "regression_revision": "4d29974ecf64856fcd979cf6da1bbd999da667a4",
+    "measurement_report": "reports/cxx11-sparse-array-scaling.txt"
   },
   {
     "id": "CXX11-008",
@@ -1521,5 +1594,190 @@
       "A first lifetime control checked counters inside the same full-expression as the call; corrected it to check after the full-expression. Original fixture and diagnostic probes retained.",
       "An initial PA13 rvalue case used a same-type cast caught by the broad PA23 detector; reduced it to binding a concrete prvalue. Final placement has zero findings."
     ]
+  },
+  {
+    "id": "CXX11-010",
+    "priority": "P1",
+    "status": "closed",
+    "upstream": [],
+    "discovered_neighbor_of": "CXX11-007",
+    "symptom": "Unknown-bound array of empty aggregates with an unbraced scalar initializer never terminates; the same no-progress path can falsely accept a skipped empty aggregate member.",
+    "root_cause": "Brace elision descended into an aggregate with no elements and consumed no initializer; array bound inference repeated that unchanged state.",
+    "expected": "N3485 8.5.1p8,12 requires a clause for an empty subaggregate. Diagnose without nontermination, preserve immediate-context substitution failure, and keep explicit braces and omitted trailing members valid.",
+    "owning_pa": 11,
+    "handout": "pa11/README.md aggregate initialization",
+    "regressions": [
+      "pa11/tests/controls/200-empty-aggregate-array-elision-reject.t",
+      "pa11/tests/controls/200-empty-aggregate-array-braces.t",
+      "pa18/tests/controls/300-empty-array-aggregate-elision-sfinae.t"
+    ],
+    "implementation": [
+      "dev/src/sema/analyzer_initialization.cpp",
+      "dev/src/sema/analyzer_expressions.cpp"
+    ],
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007",
+    "baseline": {
+      "revision": "e96d5524ee0cba4f98962f835b2adc448178185b",
+      "binary_sha256": "dc50889cf1c93b6487d384341202ffb9c5f83d2db5ef557ead48d223702188a4"
+    },
+    "fix_revision": "894d34a2dbd351de1538b05c956b4951745fe317",
+    "checks": {
+      "status": "pass",
+      "final_compiler": "checks-final2.json (all final compiler/architecture checks passed; export v1 then found three stale course references)",
+      "strict_report": "strict-report-v3.log (8065/8065)",
+      "affected": "affected-final.log (PA10 171/171, PA11 156/156, PA18 542/542, PA22 442/442)",
+      "pa32": "pa32-final.log (589/589)",
+      "harness": "harness-v2.log (including resource and export dependency controls)",
+      "export": "checks-export-v3.json; current fresh export and 42 reference wrappers pass",
+      "packaged_controls": "packaged-controls-final.json and export-control-pa22-v3.log; all current v3 controls pass",
+      "focused": "focused-final-v2/results.json (312/312 ISO/GNU11 O0-O3 compiler/host cells)",
+      "additional_oracles": "performance-explicit-aggregates/oracles.json (12/12 GCC/Clang/parent/candidate O0 builds and runs)",
+      "reference_changes": "25 references regenerated with normal tools; reference-equivalence/allocation-results.json verifies identical named-object bytes and relocations for all 25. Two change only inter-object padding/alignment.",
+      "baseline": "empty-aggregate-baseline.json (CPU signal, not a rejection)",
+      "sfinae_baseline": "empty-aggregate-sfinae-baseline.json (both hosts accept, parent hard-rejects)"
+    },
+    "performance": {
+      "status": "pass",
+      "protocol": "performance-protocol.json",
+      "parent": "performance-counters/{aa,ab}-assessment.json (six workloads)",
+      "targeted": "performance-explicit-aggregates/{aa,ab}-assessment.json (three brace-elision workloads)",
+      "cumulative": "performance-cumulative/{aa,ab}-assessment.json (three original-survey checkpoint workloads)",
+      "scaling": "scaling-candidate/{results,summary}.json (four extents, three phases, five measured repeats)",
+      "gates": {
+        "instruction_upper95_ratio": 1.01,
+        "rss_upper95_ratio": 1.03,
+        "aa_equivalence_halfband": 0.0001,
+        "counter_scheduling_min_percent": 99
+      },
+      "parent_max_instruction_upper95_percent": 0.567650480898152,
+      "parent_max_rss_upper95_percent": 0.03356783645520611,
+      "cumulative_max_instruction_upper95_percent": 0.04625493278158643,
+      "output_equality": "Exact objects on every A/A and A/B observation, including all 7680 measured batched child outputs; no speed ratios for parent-failing giant inputs.",
+      "timing": "Descriptive under load; no macOS hardware gate or wall-time pass claimed.",
+      "source_sha256": {
+        "dev/src/sema/analyzer_expressions.cpp": "7362a7b6cd7b72f99384f74117dc8da6b74e7f4e726ea8aa5c5b2c29f97e5dc4",
+        "dev/src/sema/analyzer_initialization.cpp": "c35b55deafa1f1321df531e98b4c14a088dd7d7907dcbd64546a3fd929f1df8a",
+        "dev/src/lower/global_lowering.cpp": "52503cbd8f205db3cc3228760cdaa6910fdc97f6360a0554ab538c3209f2ee2d"
+      },
+      "measured_batched_child_objects": 7680,
+      "bss_span_oracle": "scaling-candidate/bss-size-checks.json (32/32 objects keep the declared size)"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "rationale": "N3485 8.5.1p8,12 explicitly excludes brace elision for subaggregates with no members."
+    },
+    "additional_owning_pas": [
+      18
+    ],
+    "regression_revision": "4d29974ecf64856fcd979cf6da1bbd999da667a4",
+    "measurement_report": "reports/cxx11-sparse-array-scaling.txt"
+  },
+  {
+    "id": "CXX11-011",
+    "priority": "P1",
+    "status": "observed",
+    "upstream": [
+      "llvm-project/clang/test/CodeGenCXX/cxx11-initializer-aggregate.cpp"
+    ],
+    "discovered_neighbor_of": "CXX11-007",
+    "symptom": "A large array temporary bound to either a const lvalue reference or an rvalue reference passes syntax but exhausts memory during LowIR emission under the 512 MiB cap.",
+    "root_cause": "Confirmed distinct reference-temporary lowering path; exact dynamic/static initialization trace remains to be completed.",
+    "expected": "Original C++11 list-reference initialization remains valid; preserve compact omitted array ranges during emission.",
+    "owning_pa": 10,
+    "additional_owning_pas": [
+      12
+    ],
+    "ownership_note": "Provisional reduction owner: PA10 const array reference; PA12 rvalue reference neighbor. Read handouts again before implementation.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007",
+    "reproductions": [
+      "large-const-array-reference.cpp",
+      "large-array-reference.cpp"
+    ],
+    "checks": {
+      "reduction": "phase-reductions/results.json (candidate syntax accepts, LowIR bad_alloc; GCC/Clang syntax accepts)"
+    },
+    "baseline": {
+      "revision": "894d34a2dbd351de1538b05c956b4951745fe317",
+      "binary": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007/cppgm-candidate",
+      "sha256": "3f57177814a93cef11afcedc48ece938ea6e9a629a8224cbee89030fafb534cd"
+    },
+    "performance": {
+      "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "implementation-scaling",
+      "rationale": "Original N3485 8.5.4p3 and 8.5.3 reference/list temporary rules; no later CWG decision is needed."
+    }
+  },
+  {
+    "id": "CXX11-012",
+    "priority": "P1",
+    "status": "observed",
+    "upstream": [
+      "llvm-project/clang/test/CodeGenCXX/cxx11-initializer-aggregate.cpp"
+    ],
+    "discovered_neighbor_of": "CXX11-007",
+    "symptom": "A large pointer array initialized with constexpr null() exhausts memory during LowIR emission, while the same extent with literal nullptr emits 76 bytes of LowIR.",
+    "root_cause": "Confirmed dependence on the pointer-returning constexpr prefix; static-value/constant-evaluation fallback and dynamic-array lowering need further tracing.",
+    "expected": "Accept the valid C++11 initializer and keep the omitted array tail compact without losing initializer effects or required initialization order.",
+    "owning_pa": 16,
+    "ownership_note": "Provisional PA16:300 constexpr-object boundary; adjudicate static/dynamic initialization before changing that behavior.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007",
+    "reproductions": [
+      "large-constexpr-pointer-element.cpp"
+    ],
+    "checks": {
+      "reduction": "phase-reductions/constexpr-pointer-results.json (candidate bad_alloc; GCC/Clang syntax accepts)",
+      "isolation": "Removing both reference-array and pointer-call declarations from the adapted core permits LowIR emission."
+    },
+    "baseline": {
+      "revision": "894d34a2dbd351de1538b05c956b4951745fe317",
+      "binary": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007/cppgm-candidate",
+      "sha256": "3f57177814a93cef11afcedc48ece938ea6e9a629a8224cbee89030fafb534cd"
+    },
+    "performance": {
+      "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "implementation-scaling",
+      "rationale": "Original C++11 constexpr pointer functions (N3485 7.1.5/5.19) and aggregate initialization; constant-initialization obligations still need exact adjudication."
+    }
+  },
+  {
+    "id": "CXX11-013",
+    "priority": "P1",
+    "status": "observed",
+    "upstream": [],
+    "discovered_neighbor_of": "CXX11-010",
+    "symptom": "Too many array initializers in a dependent functional cast within a trailing return type produce a hard diagnostic rather than substitution failure, rejecting an otherwise valid fallback-overload program.",
+    "root_cause": "Analyzer::braced_list still calls error for leftover initializer clauses after reaching the bound, outside the newly guarded empty-aggregate failure path.",
+    "expected": "N3485 14.8.2p8: an invalid expression in the immediate context removes the candidate; the valid array-bound neighbor remains viable.",
+    "owning_pa": 18,
+    "handout": "pa18/README.md deduction/substitution, cluster 300",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-013",
+    "reproductions": [
+      "excess-array-sfinae.cpp"
+    ],
+    "checks": {
+      "reduction": "results.json (both hosts accept and candidate rejects in both ISO/GNU11 modes)"
+    },
+    "baseline": {
+      "revision": "894d34a2dbd351de1538b05c956b4951745fe317",
+      "binary": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007/cppgm-candidate",
+      "sha256": "3f57177814a93cef11afcedc48ece938ea6e9a629a8224cbee89030fafb534cd"
+    },
+    "performance": {
+      "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "rationale": "N3485 14.8.2p8 and 8.5.1p6; invalid immediate-context expressions fail substitution."
+    }
   }
 ]

@@ -1,4 +1,4 @@
-Campaign active — fifth implementation checkpoint (2026-11-06)
+Campaign active — sixth implementation checkpoint (2026-11-06)
 
 The full objective and closure criteria remain in cxx11-gap-plan.txt.
 This is partial progress; corpus applicability, native adapters and remaining
@@ -85,20 +85,58 @@ Current implementation (2026-11-06):
   size and all raw outputs are retained; every program exits zero with both
   hosts and candidate. No speedup or wall-time claim is made for these cases.
 
+Sparse array checkpoint (2026-11-06):
+- 894d34a2d checks omitted element types once and compresses ordinary static
+  zero tails. Required bounded controls are in PA10:100 and PA11:200, with
+  PA10:200 prefix/bound controls, PA11 constructor/error controls, PA18:300
+  SFINAE and PA22:300 null member pointers. 4d29974ec strengthens the ABI
+  neighbor with wholly omitted scalar and aggregate member-pointer arrays.
+- CXX11-010 is closed: empty-aggregate brace elision could loop forever while
+  inferring a bound, and invalid immediate-context use escaped as a hard error.
+  The normal hard rejection, soft substitution and valid braces all pass.
+- Strict 8065/8065, affected PA10/11/18/22, debug info, self-host through PA5,
+  inception, PA35 smoke, architecture/format/file/placement, harness and PA32
+  589/589 pass. The final host/candidate matrix is 312/312 across both C++11
+  dialects and O0-O3, plus twelve explicit-aggregate runtime oracle cells.
+  All 25 reference changes are ordinary regeneration with matching named
+  object bytes and relocations. The final fresh student export, all 42
+  reference wrappers and packaged PA10/11/18/22 controls pass.
+- Nine calibrated parent A/A and A/B counter/RSS comparisons pass. Sparse
+  prefix extents 32/1024/65536 change instructions -0.4477%/-11.5670%/-89.1779%.
+  Explicit aggregate extents 32/128/512 cost +0.0721%/+0.2362%/+0.5676%, within
+  the unchanged 1% gate. All paired objects and 7680 batched children agree.
+  A separate original-baseline checkpoint passes all three workload gates,
+  with a largest instruction upper bound of +0.046255%.
+- Zero-array extents 1024 through 1073741824 show at most 0.014873% instruction
+  spread across syntax, LowIR and native object emission. Peak RSS <=17276 KiB,
+  LowIR <=63 bytes and objects 560 bytes. All 32 objects retain their full BSS
+  and symbol span. This is constant work in the implicit extent; distinct
+  source/initializer input still has a linear lower bound.
+- CXX11-007 is only partially resolved. The full source now rejects promptly
+  at GNU literal 0i. The adapted core still exposes CXX11-011 (array-reference
+  temporary emission) and CXX11-012 (constexpr pointer-prefix emission), both
+  original C++11 cases exhausting memory during LowIR emission. Removing
+  those two declarations for isolation passes eight static layout predicates;
+  no whole-source or LLVM textual-check pass is claimed.
+- The observation ledger now has 526 retained rows, including CXX11-013:
+  excess array initialization in a dependent trailing-return cast incorrectly
+  causes a hard error instead of substitution failure. Both hosts accept its
+  fallback-overload control in ISO/GNU11. It remains open.
+
 Next:
-- Implement and validate execution adapters using the extracted metadata,
-  including target/dialect selection, diagnostics, source companions and
-  abnormal termination. Preserve explicit limits for unavailable output checks.
-- Reduce and repair original C++11 sparse aggregate scaling next. Source
-  inspection identifies a bound-sized semantic initialization loop; validate
-  that cause with bounded reproductions and cover later emission separately.
-  Retain throw-parameter DR work
-  as separately labeled compatibility work, with drafts/evidence preserved.
-- Adjudicate CXX11-002 initialization semantics before prescribing a change;
-  continue the other confirmed missing diagnostics and large-array timeout.
+- Add owning PA regressions and repair the confirmed CXX11-013 diagnostic and
+  CXX11-011/012 emission paths using the same correctness/performance process.
+  Adjudicate constant/static initialization before changing that behavior.
+- Continue execution adapters from the native metadata bridge, covering
+  applicability, diagnostics, companion sources, target selection, failures
+  and unavailable checker interfaces. The full corpus is not yet executed.
+- Adjudicate CXX11-002 and continue the original untriaged observations.
+  Preserve CXX11-008 throw-parameter work as separately labeled later-DR
+  compatibility, with its drafts and evidence retained.
 
 Evidence root: /mnt/vizier/cppgm-cxx11-upstream
-Current fix: issues/CXX11-006/ (abstract temporaries and direct list-reference binding)
+Current checkpoint: issues/CXX11-007/ (sparse arrays and empty-aggregate brace elision)
+Previous fix: issues/CXX11-006/ (abstract temporaries and direct list-reference binding)
 Return DR evidence: issues/CXX11-003/ (all original/version-2 results retained)
 Inventory: inventory-3/{manifest.json,inventory.jsonl}
 Native GCC metadata: dg-metadata-1/{manifest.json,metadata.jsonl,tests-final.log}

@@ -1,0 +1,99 @@
+Sparse array scaling checkpoint (2026-11-06)
+Worktree: /mnt/vizier/cppgm-upstream-cxx11
+Compiler fix: 894d34a2dbd351de1538b05c956b4951745fe317
+ABI neighbor strengthening: 4d29974ecf64856fcd979cf6da1bbd999da667a4
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-007
+
+Compilation must read distinct source input, so distinct class definitions have
+a linear lower bound. An implicit array extent is different: retain a zero
+range and check its element type once. Compiler work can then be independent
+of the number of omitted elements. Native nonzero data still has to emit its
+bytes; zero-initialized writable storage can use BSS.
+
+The immutable candidate was measured on CPU 84 with ASLR disabled, perf user
+instructions/cycles, scheduling checks, GNU time/RSS and output hashes. There
+are three warmups and five measured repetitions for each extent and phase.
+The CPU/address-space/file caps are 5 seconds, 512 MiB and 16 MiB. All raw
+observations are retained. Wall time is descriptive under load; the counter
+and memory gates are authoritative. No macOS hardware-counter pass is claimed.
+
+Bound            Syntax instructions  LowIR instructions  Object instructions
+1024                       4,323,335           4,323,137            4,351,441
+1048576                    4,323,411           4,322,859            4,351,560
+67108864                   4,323,569           4,323,021            4,351,718
+1073741824                 4,323,976           4,323,379            4,352,002
+
+Across the 1,048,576-fold extent increase, the largest instruction spread is
+0.014873%. Observed peak RSS is at most 17,276 KiB, LowIR at most 63 bytes,
+and every object is 560 bytes. All 32 measured/warmup object files retain the
+complete global symbol size and BSS span; this is not dead-object elimination.
+The 1 GiB required PA10 and nested PA11 controls fail on the parent (CPU signal
+and bad_alloc) and pass on the candidate and packaged reference tools.
+
+Paired parent comparisons (instruction change; upper 95% confidence bound):
+  overload-o0                    +0.000247%  upper  +0.000256%
+  overload-o2                    +0.000086%  upper  +0.000091%
+  self-calls-o0                  -0.000078%  upper  -0.000076%
+  sparse-prefix-1024-o0         -11.567004%  upper -11.566999%
+  sparse-prefix-32-o0            -0.447712%  upper  -0.447704%
+  sparse-prefix-65536-o0        -89.177924%  upper -89.177923%
+  explicit-aggregate-128         +0.236186%  upper  +0.236190%
+  explicit-aggregate-32          +0.072068%  upper  +0.072071%
+  explicit-aggregate-512         +0.567648%  upper  +0.567650%
+
+All nine parent workloads pass calibrated A/A and A/B gates: instruction upper
+bound <= +1%, RSS upper bound <= +3%, A/A equivalence band +/-0.01%, counter
+scheduling >=99%. The largest parent RSS upper bound is +0.033568%. The small
+explicit-aggregate increase is the cost of the necessary brace-elision and
+failure checks; their source/initializer work still grows with element count.
+All objects match exactly in every measured A/A and A/B run. All 7,680 measured
+batched child objects were individually hashed and retained.
+
+The separate checkpoint against the original b7c6b8e72 survey compiler also
+passes all three workload gates; the largest instruction upper bound is
++0.046255%. There are no speed ratios for parent-failing giant inputs.
+
+The final compiler passes the 8,065-case strict report, affected PAs, debug info,
+self-host through PA5, inception, PA35 smoke, architecture/format/file/placement
+audits and the harness. PA32 passes 589/589 after reference regeneration.
+The final focused matrix passes 312/312 ISO/GNU11 O0-O3 compiler/host cells,
+plus 12 separate GCC/Clang/parent/candidate explicit-aggregate runtime oracles.
+All 25 changed references were regenerated through the ordinary tools; named
+object bytes and relocations agree in every old/new object pair. Two cases
+gain only inter-object padding/alignment. The fresh v3 student export, all 42
+reference wrappers and packaged PA10/11/18/22 controls pass.
+
+CXX11-010 is closed: an empty subaggregate cannot silently consume no clause
+during brace elision. The fix preserves substitution failure in immediate
+context, explicit empty braces, omitted trailing members, required constructor
+calls and member-pointer ABI null values.
+
+CXX11-007 remains partially resolved. The original full source now rejects
+promptly at the GNU imaginary literal 0i; it is not an upstream test pass.
+After removing GNU-only blocks, its C++11 core passes all six syntax cells and
+four host assembly cells, but still exhausts memory in LowIR emission. Two
+independent original C++11 emission gaps are reduced and left open:
+  CXX11-011: const/rvalue array-reference temporaries (PA10/12 provisionally).
+  CXX11-012: constexpr pointer-returning prefixes (PA16 provisionally).
+Removing both declarations solely for phase isolation produces a 245,784-byte
+LowIR program and passes eight prefix/zero-range layout predicates, including
+the 8 GiB array member. This is adapted partial coverage, not LLVM FileCheck.
+The initial layout oracle wrongly used i8 for unsigned char; the retained v1
+oracle error and corrected u8 checker run are separate from compiler results.
+
+A further original C++11 diagnostic gap, CXX11-013, remains open: excess array
+initializers in a dependent cast cause a hard error in an immediate context.
+Both hosts accept the fallback-overload program in both C++11 dialects.
+
+Reproducible inputs, commands and assessment JSON:
+  performance-protocol.json; explicit-aggregate-performance-protocol.json
+  cumulative-performance-protocol.json; scaling-protocol.json
+  performance-counters/; performance-explicit-aggregates/; performance-cumulative/
+  run_scaling.py; scaling-candidate/{results,summary,bss-size-checks}.json
+  run_focused_v2.py; focused-final-v2/results.json
+  upstream-core-adaptation.json; phase-reductions/; check_core_layout.py
+  checks-final2.json; checks-export-v2.json; checks-export-v3.json
+  packaged-controls-final.json; reference-equivalence/check_allocations.py
+
+The overall campaign remains active. Corpus applicability, execution adapters,
+untriaged observations and the remaining original/DR defects are not complete.
