@@ -205,6 +205,10 @@ throughout, not checks deferred to the end.
 
 ## 6. Add continuous index-cpp benchmarking
 
+Implemented on this branch in the [CI workflow](../.github/workflows/index-cpp.yml).
+See the [validation record](index-cpp-optimization-progress.md#continuous-index-cpp-reporting)
+for local and GitHub results; publication starts when the workflow reaches main.
+
 After the optimization work, add an automated CI job for each pushed commit
 and PR update, using the existing benchmark workflow and result publication
 infrastructure. This lane must run automatically, rather than requiring a
