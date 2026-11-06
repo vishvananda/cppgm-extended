@@ -2624,11 +2624,14 @@
     ],
     "checks": {
       "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/initial-neighbors-v1.json: all six GCC/Clang syntax cells accept; the pre-212b6c031 compiler accepts the parameter and dense cases, while 212b6c031 rejects both prefix cases and still accepts the dense case.",
-      "candidate_v1": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/required-candidate-v1.json (both owning controls pass)"
+      "candidate_v1": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/required-candidate-v1.json (both owning controls pass)",
+      "combined_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/focused-v1/assessment.json (304 ISO/GNU11 O0/O2 cells; no host/candidate failures)",
+      "combined_normal": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/checks-v1.json (strict 8105/8105; remaining stages recorded as they finish)"
     },
     "performance": {
-      "status": "not-started",
-      "baseline_sha256": "5c73b823a6bb6b60fe0b3d4904275cc7dd9b46587587681c25eb46b014191fe4"
+      "status": "instruction-and-direct-compiler-rss-gates-running",
+      "baseline_sha256": "5c73b823a6bb6b60fe0b3d4904275cc7dd9b46587587681c25eb46b014191fe4",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/performance-protocol-v1.json"
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -2637,12 +2640,12 @@
         "doc/n3485.txt 5.19, 7.1.5, 8.5p7, 8.5.1p7, 8.5.4p3"
       ]
     },
-    "next_action": "Complete CXX11-024 compact-zero aggregate followup before freezing the combined candidate; then run the normal full validation and performance process."
+    "next_action": "Complete immutable candidate-v2 full normal, per-fix and cumulative counter/direct-RSS, scaling and fresh export checks; record CXX11-025 separately and keep reference-family closure open."
   },
   {
     "id": "CXX11-024",
     "priority": "P1",
-    "status": "observed",
+    "status": "fix-in-validation",
     "introduced_by": "212b6c031",
     "discovered_neighbor_of": "CXX11-023",
     "upstream": [],
@@ -2652,7 +2655,10 @@
     "owning_pa": 16,
     "ownership_note": "PA16:300 owns object-valued constant evaluation, literal aggregate references and bounded constant-initialization probes.",
     "regressions": [
-      "pa16/tests/controls/300-constexpr-zero-class-array-reference-probe.t"
+      "pa16/tests/controls/300-constexpr-zero-class-array-reference-probe.t",
+      "pa16/tests/controls/300-constexpr-zero-tail-subobjects.t",
+      "pa16/tests/controls/300-constexpr-zero-tail-union-inactive-reject.t",
+      "pa16/tests/controls/300-constexpr-zero-tail-bitfield-union-inactive-reject.t"
     ],
     "fix_revision": null,
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024",
@@ -2663,10 +2669,15 @@
     "checks": {
       "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/zero-type-dag-probes-v1/results.json (before-prefix syntax passes all sizes; prefix version grows and then reports bad_alloc at depth24 under256MiB)",
       "host": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/zero-type-dag-probes-v1/host-leaf-controls-v1.json (GCC/Clang accept the 18-level constant leaf reads)",
-      "required": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/required-parent-v1.json (new owning control fails frontend under48MiB with bad_alloc)"
+      "required": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/required-parent-v1.json (new owning control fails frontend under48MiB with bad_alloc)",
+      "combined_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/focused-v1/assessment.json (304 ISO/GNU11 O0/O2 cells; no host/candidate failures)",
+      "combined_normal": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/checks-v1.json (strict 8105/8105; remaining stages recorded as they finish)",
+      "staged_root_causes": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/spare-only-type-walk-v1.json (after removing eager spare allocation, depth29 still hits CPU2s; memoized typed zero defaults and leaf projection pass)",
+      "type_scaling": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/scaling-types-v1/summary.json (368 counter/direct-memory observations; complete LowIR/native spans checked)"
     },
     "performance": {
-      "status": "not-started"
+      "status": "instruction-and-direct-compiler-rss-gates-running",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/performance-protocol-v1.json"
     },
     "standards_basis": {
       "category": "implementation-scaling",
@@ -2676,6 +2687,42 @@
         "spec.md bounded typed work and hot-path allocation requirements"
       ]
     },
-    "next_action": "Fix eager spare storage and type-DAG traversal, then project implicit-zero leaf reads without full-class allocation. Run owning regressions, full normal checks and calibrated instruction/direct-RSS verification on the combined CXX11-016/022/023/024 compiler."
+    "next_action": "Complete immutable candidate-v2 full normal, per-fix and cumulative counter/direct-RSS, scaling and fresh export checks; record CXX11-025 separately and keep reference-family closure open."
+  },
+  {
+    "id": "CXX11-025",
+    "priority": "P1",
+    "status": "observed",
+    "introduced_by": "212b6c031",
+    "discovered_neighbor_of": "CXX11-024",
+    "upstream": [],
+    "symptom": "A reference-array temporary of a nonliteral class with a trivial default constructor is rejected even though value initialization invokes no constructor; the previously working constexpr parameter form regresses.",
+    "root_cause": "ConstantInterpreter::temporary rejects all nonliteral array temporaries before value initialization can distinguish zero initialization with no constructor call from an actual non-constexpr constructor invocation.",
+    "expected": "Accept constant zero initialization that invokes no constructor while still rejecting non-constexpr constructor calls, nontrivial temporary destruction, indeterminate reads and forbidden nonliteral constructor calls.",
+    "owning_pa": 16,
+    "ownership_note": "PA16:300 owns reference-valued constant evaluation and object-valued initialization, including trivial zero initialization.",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-025",
+    "reproductions": [
+      "trivial-array-parameter.cpp",
+      "trivial-array-reference.cpp",
+      "trivial-class-prvalue.cpp"
+    ],
+    "checks": {
+      "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-025/initial-neighbors-v1.json (GCC/Clang accept all; pre-prefix accepts class-prvalue and parameter forms; 212b6c031/current candidate reject only the array forms)"
+    },
+    "performance": {
+      "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "original-cxx11",
+      "rationale": "N3485 8.5p8 zero-initializes this non-union class without invoking its trivial default constructor. The 5.19p2 non-constexpr-call exclusion therefore does not apply; the const integral leaf has a constant preceding initialization. CWG1452, submitted in 2011, supplies the analogous scalar-class example; its later NAD disposition is background, not the source of this rule.",
+      "references": [
+        "doc/n3485.txt 8.5p8 and 5.19p2",
+        "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_closed.html#1452"
+      ]
+    },
+    "next_action": "After the in-flight CXX11-023/024 checkpoint completes, create owning PA16 controls and fix the blanket temporary guard with typed initialization/destructor checks; run the full normal and performance process."
   }
 ]

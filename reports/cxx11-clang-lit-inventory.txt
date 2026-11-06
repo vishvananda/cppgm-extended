@@ -1,0 +1,44 @@
+Clang native lit metadata checkpoint (2026-11-06)
+
+The pinned LLVM 21.1.8 lit parser extracts metadata for all 20,491 Clang
+candidate files in inventory-3. Every source hash matches that inventory, and
+all native parser helpers are hashed and unchanged in the pinned Git revision
+2078da43e25a4623cab2d0d60decddf709aaea28. This is discovery evidence, not execution
+or an applicability decision.
+
+The 20,282 files with RUN lines contain 72,820 command directives. Of these,
+10,138 commands use explicit C++11/GNU11/C++0x spellings. Commands without an
+explicit spelling may also apply; commands with one may depend on other
+language/target settings. No configuration is selected solely by this count.
+The 209 files without RUN lines retain unresolved driver/support ownership.
+
+The inventory retains native command text and source-line ranges, complete
+ordered RUN/DEFINE/REDEFINE directives, and REQUIRES/UNSUPPORTED/XFAIL/retry
+metadata. Feature expressions are preserved without assuming probe results.
+Potential interface tags identify 22,601 diagnostic-verification commands,
+42,119 FileCheck commands, 21,258 LLVM-IR commands, 1,698 AST-interface commands
+and 408 split-file commands. These categories overlap and are not pass counts.
+Potential substitution tokens likewise remain discovery hints, not executed
+substitutions. All 153 original Clang finding files now have native parsed
+commands; their actual test adapter remains open.
+
+Six native integration controls pass: continued RUN lines and verifier prefixes,
+boolean feature expressions, interleaved substitution definitions, malformed
+continuations, END termination, absent RUN lines and malformed feature grammar.
+The six source cases group these boundary checks; no compiler is invoked.
+
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/clang-lit-metadata-v2
+- inventory_native_lit.py: extraction through pinned lit.TestRunner
+- inventory.jsonl: every candidate and its complete ordered directives
+- selected-original.json: the 153 original-finding files
+- summary.json: helpers, counts, unresolved scope and potential interfaces
+- synthetic/results.json and verification.json: integration and integrity checks
+
+The first extraction in clang-lit-metadata-v1 is retained. V2 additionally
+records directive ordering explicitly and labels regex token hints as potential
+substitutions. No measured compiler experiment was repeated for this update.
+The next adapter must evaluate real per-compiler capabilities and native local
+configuration, preserve selected RUN commands and verifier prefixes, check
+severity/location/counts, and account for unavailable AST/IR interfaces. Do
+not redirect arbitrary cc1 commands to the cppgm driver or claim that extracted
+commands have run. The final two CI jobs still wait for all compiler repairs.

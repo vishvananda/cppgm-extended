@@ -10,14 +10,20 @@ Reference checkpoint and followups (2026-11-06):
   stages, 208 focused cells, 32 exact reducer cells, 12 counter/direct-RSS
   pairs, 272 counter plus 272 direct-RSS scaling observations, cumulative
   counter/RSS checks and a fresh export with all 42 reference wrappers.
-- A final neighbor sweep found CXX11-023: omitted multidimensional class-array
-  defaults reject, including a previously working constexpr parameter case.
-  Its uncommitted prefix-aware value-initialization fix passes two new PA16
-  controls, but full combined validation is pending.
-- CXX11-024 exposes unused whole-class storage in an implicit zero tail.
-  The new PA16 48 MiB guard fails with bad_alloc. Shared type-property walks
-  and zero leaf projection also require bounded handling. The reference
-  family is not closed. Ledger: 24 issues, 553 observations.
+- CXX11-023/024 now have a combined candidate: prefix-aware omitted nested
+  defaults, construction of actual prefix elements only, memoized zero-class
+  defaults, and typed projection of implicit zero leaves. Six new PA16 controls
+  pass; strict 8105/8105 and the 304-cell focused matrix pass. Full normal and
+  counter/direct-RSS/cumulative/export validation is still in flight.
+- Type-graph scaling has 368 counter/direct-memory observations: depths 8–29
+  retain complete logical spans through 4 GiB, syntax/LowIR instructions grow
+  at most 17.5%, and compiler RSS stays below 8 MiB for those phases. Native
+  readonly outputs are measured only through 2 MiB of physical backing.
+- CXX11-025 is a further original-C++11 gap: a blanket nonliteral-array guard
+  rejects zero initialization that invokes no constructor. GCC/Clang accept
+  both reference and parameter forms; the parameter form worked before the
+  prefix change. Its repair has not started. The reference family remains open.
+  Ledger: 25 issues, 555 observations.
 
 Measurement correction in progress (2026-11-06):
 - Outer GNU time around perf can mask a smaller compiler's RSS. A touched-page
@@ -356,3 +362,12 @@ Return DR evidence: issues/CXX11-003/ (all original/version-2 results retained)
 Inventory: inventory-3/{manifest.json,inventory.jsonl}
 Native GCC metadata: dg-metadata-1/{manifest.json,metadata.jsonl,tests-final.log}
 Compiler issue/observation ledgers and metadata manifests live beside this file.
+
+Native Clang metadata checkpoint (2026-11-06):
+- Pinned native lit parses all 20,491 Clang candidates: 72,820 commands in
+  20,282 files, with 10,138 explicit C++11-spelled commands and 209 files
+  retaining unresolved driver/support ownership. Source and helper integrity,
+  all 153 original-finding files and six native boundary cases are verified.
+- Complete ordered directives, feature expressions and verifier prefixes are
+  retained. This is extraction only; applicability and execution remain open.
+  See cxx11-clang-lit-inventory.txt and clang-lit-metadata-v2/verification.json.
