@@ -3732,7 +3732,7 @@
   {
     "id": "CXX11-034",
     "priority": "P1",
-    "status": "observed-language-gap",
+    "status": "correctness-passed",
     "upstream": [
       "llvm-project/clang/test/CXX/dcl.decl/dcl.meaning/dcl.fct.default/p3.cpp"
     ],
@@ -3742,15 +3742,20 @@
     "owning_pa": null,
     "ownership_note": "Determine the earliest owning PA from the faithful reduction and read that handout before changing behavior.",
     "regressions": [],
-    "fix_revision": null,
+    "fix_revision": "e660a8374ee058f413d6bc6a58437e621deb22a2",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-campaign-d1c5c14c9-v3",
     "checks": {
-      "execution": "results.json:two source-pinned ISO/GNU11 variants; native host rejects normally, candidate emits a valid object without a diagnostic.",
-      "verification": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-root-verification-v1.json",
-      "adjudication": "reports/cxx11-clang-language-adjudications.json; sourceSHA256 aae73f501835a9f360ca91130776f203fcb7a2ac116d50303a62a6cf470f105f"
+      "status": "fresh-functional-export-passed",
+      "verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-034/rebased-18c45-checks-v1/functional-verification-v1.json",
+      "strict_tests": 8203,
+      "normal_stages": 14,
+      "export_stages": 21,
+      "required_controls": 41,
+      "packaged_controls": 41,
+      "wrappers": 42
     },
     "performance": {
-      "status": "not-started-no-compiler-change"
+      "status": "pending-actual-parent-measurement"
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3936,20 +3941,61 @@
   {
     "id": "CXX11-039",
     "priority": "P1",
-    "status": "triaged",
+    "status": "fixed",
     "upstream": [],
     "symptom": "Default arguments cannot find permitted own parameters,fail to hide globals,and can compute the wrong sizeof/runtime value.",
     "root_cause": "Default-argument lookup uses the surrounding declaration scope without the function parameter bindings.",
     "owning_pa": 7,
-    "regressions": [],
-    "fix_revision": null,
+    "regressions": [
+      "pa7/tests/general/300-default-parameter-earlier-shadow-reject.t",
+      "pa7/tests/general/300-default-parameter-self-shadow-reject.t",
+      "pa7/tests/general/300-default-parameter-address-reject.t",
+      "pa7/tests/general/300-default-parameter-type-hiding-reject.t",
+      "pa7/tests/general/300-default-parameter-sizeof-semantic.t",
+      "pa7/tests/general/300-default-parameter-self-sizeof-semantic.t",
+      "pa10/tests/controls/100-default-parameter-shadow-sizeof.t",
+      "pa10/tests/controls/100-default-parameter-self-sizeof.t",
+      "pa10/tests/controls/100-default-parameter-array-adjustment.t",
+      "pa10/tests/controls/100-default-parameter-function-adjustment.t",
+      "pa10/tests/controls/100-default-parameter-reference-sizeof.t",
+      "pa10/tests/controls/100-default-parameter-later-name-unavailable.t",
+      "pa10/tests/controls/100-default-parameter-qualified-global.t",
+      "pa10/tests/controls/100-default-parameter-declaration-names.t",
+      "pa11/tests/controls/100-default-parameter-member-shadow.t",
+      "pa11/tests/controls/100-default-parameter-member-evaluated-reject.t",
+      "pa14/tests/controls/100-default-parameter-template-sizeof.t",
+      "pa14/tests/controls/100-default-parameter-template-evaluated-reject.t",
+      "pa14/tests/controls/100-default-parameter-template-original-names.t",
+      "pa14/tests/controls/100-default-parameter-template-later-name.t",
+      "pa14/tests/controls/100-default-parameter-class-template-sizeof.t",
+      "pa10/tests/controls/100-default-parameter-decltype-self.t",
+      "pa10/tests/controls/100-default-parameter-decltype-cv.t",
+      "pa20/tests/controls/200-default-parameter-lambda-unevaluated-outer.t",
+      "pa20/tests/controls/200-default-parameter-lambda-default-scope.t",
+      "pa20/tests/controls/200-default-parameter-member-default-lambda.t",
+      "pa20/tests/controls/200-default-parameter-template-default-lambda.t",
+      "pa21/tests/controls/100-default-parameter-throw-own-move.t",
+      "pa21/tests/controls/100-default-parameter-throw-own-deleted-reject.t",
+      "pa10/tests/controls/100-default-parameter-future-prefix-snapshot.t",
+      "pa10/tests/controls/100-default-parameter-earlier-prefix-reuse.t",
+      "pa14/tests/controls/100-default-parameter-template-future-prefix.t",
+      "pa14/tests/controls/100-default-parameter-template-prefix-reuse.t"
+    ],
+    "fix_revision": "8f3dff5ea8ba9ce3089b96937d68e0eeaac9fbcd",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039",
     "checks": {
-      "adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/initial-adjudication-v1.json",
-      "source_pinned_cells": 20
+      "status": "focused-passed-full-normal-export-running",
+      "focused_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/focused-verification-v1.json",
+      "candidate_cells": 948,
+      "owning_lanes": 33,
+      "parent_host_preflight_cells": 624,
+      "performance_input_exact_pairs": 18,
+      "full_run": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/checks-v1"
     },
     "performance": {
-      "status": "not-started"
+      "status": "pending-actual-parent-measurement",
+      "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/preparation-v1.json",
+      "frozen_feature_inputs": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/performance-inputs-v1/protocol.json"
     },
     "standards_basis": {
       "category": "original-C++11-and-later-DR",
@@ -3959,7 +4005,20 @@
       ],
       "later": "CWG2082,February2016"
     },
-    "scope": "Required lookup regressions belong PA7:300; runtime procedural call PA10; throw composition PA21. Defect is reproduced on both008 parent andcandidate and remains separate from throw eligibility. Invalid negative throws blocked by undeclared-name errors are not counted as008 rule coverage."
+    "scope": "Required lookup regressions belong PA7:300; runtime procedural call PA10; throw composition PA21. Defect is reproduced on both008 parent andcandidate and remains separate from throw eligibility. Invalid negative throws blocked by undeclared-name errors are not counted as008 rule coverage.",
+    "implementation": [
+      "dev/src/sema/analyzer_types.cpp",
+      "dev/src/sema/analyzer_initialization.cpp",
+      "dev/src/sema/class_templates.cpp",
+      "dev/src/sema/lookup.cpp",
+      "dev/src/sema/lookup.h",
+      "dev/src/sema/analyzer.cpp",
+      "dev/src/sema/analyzer_handlers.cpp",
+      "dev/src/sema/analyzer.h",
+      "dev/src/sema/semantic_graph.h",
+      "dev/src/sema/analysis_records.h"
+    ],
+    "triage_note": "Frozen shared parameter index bounds each default by its declaration ordinal,preserves original names/cv and adjusted types,and prevents later-parameter leakage. Template prefix substitution is memoized by concrete specialization; closure declaration ownership/ABI preserved. All33 required controls and45 retained008 controls/originalP1155 pass acrossISO/GNU11/14/17,O0/O2. Full normal/export,actual-parent performance and eventual integration remain pending."
   },
   {
     "id": "CXX11-040",
