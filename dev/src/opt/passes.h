@@ -8,6 +8,11 @@
 // leaves a valid body; analyses are rebuilt by the pass that needs them.
 namespace opt {
 
+// Canonicalize implicit slot reads before value and memory analyses run.
+lowir::Value materialize_slot_read(lowir::FunctionBody& body, lowir::BlockId block, lowir::InstId& prev,
+	lowir::Value slot, lowir::Type type, uint32_t location);
+void materialize_slot_values(lowir::FunctionBody& body, lowir::BlockId block, lowir::InstId& prev, lowir::InstId id);
+
 struct BitTablePool;
 
 struct FunctionContext

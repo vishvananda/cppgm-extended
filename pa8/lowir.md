@@ -982,6 +982,13 @@ The PA8 subset uses:
 - block labels for terminators: `^entry`
 - scalar literals (`integer` or `floating`)
 
+A slot used as a scalar value reads its contents at that instruction. Storage
+operands name the slot's storage instead.
+A call argument reads the slot's value for ordinary direct passing, and names
+its storage for `by_address` or `indirect_result` passing. A `phi` incoming
+value must be a temporary, literal or global address; load a slot on its
+predecessor edge before using that value in a `phi`.
+
 A `v128` operand is a temporary or the literal `0`, the vector of zero bits. No
 other literal has this type.
 

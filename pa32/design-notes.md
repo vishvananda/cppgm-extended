@@ -47,6 +47,10 @@ that all its accesses are understood. Splitting an aggregate may expose more
 promotable fields. Preserve padding, bit-fields, volatile members, alignment
 and ABI carriers; splitting every object is not always profitable.
 
+A slot in a value operand reads memory at that instruction. Reusing an
+expression containing such an operand requires the same memory proof as an
+explicit load. Keep those reads distinct from operands naming storage.
+
 Conditionally updated fields can need many merge values inside a loop.
 Promoting all of them may turn a few memory updates into repeated register
 spills and transfers. Compare both native work and size, including inactive

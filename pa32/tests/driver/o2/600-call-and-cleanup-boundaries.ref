@@ -164,7 +164,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $input : i32
   slot $b : obj<8x8>
   slot $d : obj<8x8>
-  slot $cleanup_return__1 : i32
 
   block ^entry:
     store volatile i32 9, $input
@@ -181,7 +180,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = call i32 @dispatch(%t1, %t7)
     %t9 = cmp ne i32 %t8, 10
     eh_end
-    branch %t9, ^if_then_4, ^lor_rhs_2
+    branch %t9, ^return_cleanup_action_4, ^lor_rhs_2
 
   block ^cleanup_action_1:
     store typed ptr %t3, %t4
@@ -194,130 +193,114 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = call i32 @dispatch(%t4, %t10)
     %t12 = cmp ne i32 %t11, 16
     eh_end
-    branch %t12, ^if_then_4, ^lor_rhs_3
+    branch %t12, ^return_cleanup_action_4, ^lor_rhs_3
 
   block ^lor_rhs_3:
     %t13 = load typed i32 @live
-    branch %t13, ^if_then_4, ^if_end_6
+    branch %t13, ^return_cleanup_action_4, ^if_end_5
 
-  block ^if_then_4:
-    store typed i32 1, $cleanup_return__1
-    jump ^return_cleanup_action_5
-
-  block ^return_cleanup_action_5:
+  block ^return_cleanup_action_4:
+    %t14 = phi i32 [^if_end_18: 0, ^entry: 1, ^lor_rhs_2: 1, ^lor_rhs_3: 1, ^if_end_5: 2, ^lor_rhs_6: 2, ^if_end_7: 3, ^lor_rhs_8: 3, ^if_end_14: 6, ^lor_rhs_17: 6]
     store typed ptr %t3, %t4
     store typed ptr %t3, %t1
-    return i32 $cleanup_return__1
+    return i32 %t14
 
-  block ^if_end_6:
+  block ^if_end_5:
     eh_try ^cleanup_action_1
-    %t14 = addr @add
-    %t15 = load volatile i32 $input
-    %t16 = call i32 @through(%t14, %t15)
-    %t17 = cmp ne i32 %t16, 12
+    %t15 = addr @add
+    %t16 = load volatile i32 $input
+    %t17 = call i32 @through(%t15, %t16)
+    %t18 = cmp ne i32 %t17, 12
     eh_end
-    branch %t17, ^if_then_8, ^lor_rhs_7
+    branch %t18, ^return_cleanup_action_4, ^lor_rhs_6
 
-  block ^lor_rhs_7:
+  block ^lor_rhs_6:
     eh_try ^cleanup_action_1
-    %t18 = addr @twice
-    %t19 = load volatile i32 $input
-    %t20 = call i32 @through(%t18, %t19)
-    %t21 = cmp ne i32 %t20, 18
+    %t19 = addr @twice
+    %t20 = load volatile i32 $input
+    %t21 = call i32 @through(%t19, %t20)
+    %t22 = cmp ne i32 %t21, 18
     eh_end
-    branch %t21, ^if_then_8, ^if_end_9
+    branch %t22, ^return_cleanup_action_4, ^if_end_7
 
-  block ^if_then_8:
-    store typed i32 2, $cleanup_return__1
-    jump ^return_cleanup_action_5
+  block ^if_end_7:
+    eh_try ^cleanup_action_1
+    %t23 = load volatile i32 $input
+    %t24 = call i32 @throwing(%t23)
+    %t25 = cmp ne i32 %t24, 14
+    eh_end
+    branch %t25, ^return_cleanup_action_4, ^lor_rhs_8
+
+  block ^lor_rhs_8:
+    %t26 = load typed i32 @live
+    branch %t26, ^return_cleanup_action_4, ^if_end_9
 
   block ^if_end_9:
-    eh_try ^cleanup_action_1
-    %t22 = load volatile i32 $input
-    %t23 = call i32 @throwing(%t22)
-    %t24 = cmp ne i32 %t23, 14
-    eh_end
-    branch %t24, ^if_then_11, ^lor_rhs_10
-
-  block ^lor_rhs_10:
-    %t25 = load typed i32 @live
-    branch %t25, ^if_then_11, ^if_end_12
-
-  block ^if_then_11:
-    store typed i32 3, $cleanup_return__1
-    jump ^return_cleanup_action_5
-
-  block ^if_end_12:
-    eh_try ^catch_dispatch_13
-    %t26 = load volatile i32 $input
-    %t27 = unary neg i32 %t26
-    %t28 = call i32 @throwing(%t27)
+    eh_try ^catch_dispatch_10
+    %t27 = load volatile i32 $input
+    %t28 = unary neg i32 %t27
+    %t29 = call i32 @throwing(%t28)
     eh_end
     store typed ptr %t3, %t4
     store typed ptr %t3, %t1
     return i32 4
 
-  block ^catch_dispatch_13:
+  block ^catch_dispatch_10:
     eh_catch @__external_rtti__int, 1
     eh_cleanup
     eh_end
-    %t29 = exception ptr
-    %t30 = exception_selector i32
-    %t31 = cmp eq i32 %t30, 1
-    branch %t31, ^catch_body_14, ^catch_next_19
+    %t30 = exception ptr
+    %t31 = exception_selector i32
+    %t32 = cmp eq i32 %t31, 1
+    branch %t32, ^catch_body_11, ^catch_next_16
 
-  block ^catch_body_14:
-    %t32 = call ptr @__external_runtime____cxa_begin_catch(%t29)
-    eh_cleanup ^catch_cleanup_18
-    %t33 = load typed i32 %t32
-    %t34 = cmp ne i32 %t33, -9
-    branch %t34, ^if_then_16, ^lor_rhs_15
+  block ^catch_body_11:
+    %t33 = call ptr @__external_runtime____cxa_begin_catch(%t30)
+    eh_cleanup ^catch_cleanup_15
+    %t34 = load typed i32 %t33
+    %t35 = cmp ne i32 %t34, -9
+    branch %t35, ^if_then_13, ^lor_rhs_12
 
-  block ^lor_rhs_15:
-    %t35 = load typed i32 @live
-    branch %t35, ^if_then_16, ^if_end_17
+  block ^lor_rhs_12:
+    %t36 = load typed i32 @live
+    branch %t36, ^if_then_13, ^if_end_14
 
-  block ^if_then_16:
+  block ^if_then_13:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     store typed ptr %t3, %t4
     store typed ptr %t3, %t1
     return i32 5
 
-  block ^if_end_17:
+  block ^if_end_14:
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    %t36 = load typed i32 @destroyed
-    %t37 = cmp ne i32 %t36, 4
-    branch %t37, ^if_then_21, ^lor_rhs_20
+    %t37 = load typed i32 @destroyed
+    %t38 = cmp ne i32 %t37, 4
+    branch %t38, ^return_cleanup_action_4, ^lor_rhs_17
 
-  block ^catch_cleanup_18:
+  block ^catch_cleanup_15:
     call void @__external_runtime____cxa_end_catch()
     eh_end
     store typed ptr %t3, %t4
     store typed ptr %t3, %t1
     resume
 
-  block ^catch_next_19:
+  block ^catch_next_16:
     store typed ptr %t3, %t4
     store typed ptr %t3, %t1
     resume
 
-  block ^lor_rhs_20:
+  block ^lor_rhs_17:
     eh_try ^cleanup_action_1
-    %t38 = load volatile i32 $input
-    %t39 = call i32 @recursion(%t38)
-    %t40 = cmp ne i32 %t39, 45
+    %t39 = load volatile i32 $input
+    %t40 = call i32 @recursion(%t39)
+    %t41 = cmp ne i32 %t40, 45
     eh_end
-    branch %t40, ^if_then_21, ^if_end_22
+    branch %t41, ^return_cleanup_action_4, ^if_end_18
 
-  block ^if_then_21:
-    store typed i32 6, $cleanup_return__1
-    jump ^return_cleanup_action_5
-
-  block ^if_end_22:
-    store typed i32 0, $cleanup_return__1
-    jump ^return_cleanup_action_5
+  block ^if_end_18:
+    jump ^return_cleanup_action_4
 }
 function @Base__value(%this : ptr [object_bytes=8], %x : i32) -> i32 [binding=weak, object=_ZN4Base5valueEi, inline_hint=yes] {
   block ^entry:

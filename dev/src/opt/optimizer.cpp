@@ -48,13 +48,19 @@ void scalar_rounds(FunctionContext& context);
 // would replace the temporary by a literal, which the call then passes as
 // the pointer itself, so before any pass each such argument becomes the
 // storage it stands for: a slot of the temporary's type, stored just
-// before the call, whose address the call passes.
+// before the call, whose address the call passes. Likewise, scalar slot
+// value operands become explicit loads before SSA and memory analyses.
 void materialize_storage_arguments(Program& program, FunctionBody& body)
 {
 	for (BlockId b : body.layout)
 		for (InstId i = body.blocks[b].first, prev = kNoId; i != kNoId; prev = i, i = body.instructions[i].next)
+		{
 			if (body.instructions[i].op == Opcode::Call)
 				materialize_call_arguments(program, body, b, prev, i);
+			else if (body.instructions[i].ops[0].is(ValueKind::Slot) ||
+				body.instructions[i].ops[1].is(ValueKind::Slot) || body.instructions[i].ops[2].is(ValueKind::Slot))
+				materialize_slot_values(body, b, prev, i);
+		}
 }
 
 void materialize_storage_arguments(Program& program)
@@ -589,10 +595,19 @@ void materialize_call_arguments(Program& program, FunctionBody& body, BlockId b,
 	if (sig == nullptr)
 		return;
 	const Parameter* params = program.parameters_of(*sig);
-	for (uint32_t k = 0; k < body.instructions[call_id].extra_count && k < sig->parameter_count; ++k)
+	for (uint32_t k = 0; k < body.instructions[call_id].extra_count; ++k)
 	{
 		const Value v = body.operands[body.instructions[call_id].extra_first + k];
-		if (params[k].pass == ir_model::PPM_DIRECT || !v.is(ValueKind::Temp))
+		if (v.is(ValueKind::Slot) && !body.slots[v.index].type.is_object() &&
+			(k >= sig->parameter_count || params[k].pass == ir_model::PPM_DIRECT))
+		{
+			const Type type = body.slots[v.index].type;
+			const uint32_t location = body.instructions[call_id].location;
+			const Value loaded = materialize_slot_read(body, b, prev, v, type, location);
+			body.operands[body.instructions[call_id].extra_first + k] = loaded;
+			continue;
+		}
+		if (k >= sig->parameter_count || params[k].pass == ir_model::PPM_DIRECT || !v.is(ValueKind::Temp))
 			continue;
 		const Type type = body.temps[v.index].type;
 		if (type.is_pointer() || type.is_object())
@@ -684,6 +699,7 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 				++stats.functions;
 			}
 		}
+		materialize_storage_arguments(program);
 		const int level = options.level;
 		std::vector<uint8_t> nounwind(program.symbols.size(), 0);
 		std::vector<uint8_t> unwritten, moved;
@@ -700,7 +716,6 @@ void optimize_program(Program& program, const OptimizerOptions& options, Optimiz
 		budgets.once_unit = stats.instructions_in > 10240 ? stats.instructions_in : 10240;
 		budgets.force_unit = budgets.once_unit;
 		budgets.growth_unit = 2 * budgets.once_unit;
-		materialize_storage_arguments(program);
 		run_inline_wave(program, options, stats, InlineWave::Ordinary, budgets, original, nounwind, simplify);
 		prune_unreachable(program, stats);
 		if (level >= 2)

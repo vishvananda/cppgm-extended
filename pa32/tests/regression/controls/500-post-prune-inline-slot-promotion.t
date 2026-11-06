@@ -77,7 +77,8 @@ function @walk(%base : ptr, %take_step : i64) -> ptr
     branch %take_step, ^step, ^done
 
   block ^step:
-    call void @advance_slot($result)
+    %result_address = addr $result
+    call void @advance_slot(%result_address)
     jump ^done
 
   block ^done:

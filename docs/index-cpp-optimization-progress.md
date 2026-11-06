@@ -667,6 +667,58 @@ capture accidentally overwritten by its cold clone: GCC's small string wrapper
 calls a separate decoder, so its wrapper size alone is not an inlining result.
 The remaining Base64 diagnosis must include that worker and register pressure.
 
+## Correctness follow-up: scalar slot value reads
+
+Review of the next store-elimination candidate exposed a pre-existing LowIR
+correctness bug. A scalar `$slot` value reads memory where it appears, but
+SSA reuse and memory forwarding could overlook that implicit read. Small
+reducers returned 0 instead of 11, 3 instead of 14, and 0 instead of 6 at
+`-O3`; the previous compiler also fails them. The optimizer now makes scalar
+value reads explicit in its existing operand-materialization walk before
+analysis, retaining storage/address operands and aggregate boundaries.
+Direct and variadic calls preserve value-versus-storage passing.
+
+A required PA32 LowIR fixture covers reads across writes, calls, conversions,
+floating arithmetic, indexing, wide shifts and control flow. Its behavior
+fails on the old compiler at every optimized level and passes at all four
+levels after the fix. Independent host-driver checks cover 140,000 varied
+integer cases per level and 20,000 mixed direct/variadic argument cases per
+level. One older structural control accidentally passed a slot value where
+it intended an address; its explicit-address repair retains the original
+promotion proof and passes its native behavior check. The LowIR handout and
+PA32 design notes explain the distinction without prescribing a pass shape.
+
+All 13 gates pass, including the strict 8,052-test report, debug info,
+self-host through PA5, PA35 smoke/quick, modern-C++ tests, audits, harness,
+and GCC/Clang warnings-as-errors. All 50 index-cpp checksums pass; source and
+serialized object paths agree. The 74 public sentinel objects and four Boost
+sentinel objects build successfully. Changed public programs retain their
+outputs; Boost objects are unchanged. JSON and RE2 native instruction counts
+are unchanged within calibration. A 10-repeat RE2 CPU control does not
+reproduce its initial instrumented timing loss; every observation is retained.
+
+Against the seventh accepted compiler, frozen compile instructions increase
+0.01% at `-O0` and 0.07% at `-O3`; peak RSS is within 0.1%. The longer CPU
+controls are 0.998× and 1.005×, both within A/A variation. Cumulative `-O3`
+compile instructions are 0.40% above the original compiler, below the 0.5%
+investigation trigger. Index executable text remains 388,946 bytes. Timings
+remain noisy, so these are correctness and cost controls, not a claimed
+native speed improvement.
+
+A fresh student export verifies all 22,556 reference outputs and 9,038 exit
+statuses, the document inventory and installed reference tools. The new
+fixture also passes through its reference wrappers. The export caught one
+expected reference change: a scalar return through cleanup storage can now
+promote to a phi. That reference was regenerated normally and its behavior
+rechecked; both the failed export receipt and the successful rerun are kept.
+
+Receipts are `slot-value-reads-v4/`, `slot-value-width-oracle-v4/`,
+`slot-call-value-oracle-v4/`, `slot-value-reads-v4-frozen/`,
+`slot-value-reads-v4-cumulative-frozen-v2/` and the public/Boost sentinel
+folders; export receipts are `export-results-v5.json`, with the export at
+`student-export-slot-values-v5/`. The eighth optimization remains separate and unaccepted until it
+has been revalidated on this corrected memory model.
+
 ## Outstanding work
 
 Retain the completed public suite, 50-workload comparison, PA35 release and
