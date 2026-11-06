@@ -51,3 +51,11 @@ no constant native-time claim follows from the low retired-instruction spread.
 
 The final GCC/Clang CI and matched full-suite timing stage remains after all
 compiler repairs, later CWG/DR compatibility, and all validation work.
+
+First historical repair revalidated (2026-11-06):
+CXX11-001 passes all three original frozen workload A/A and A/B direct compiler-
+RSS comparisons. The original A/B counter reports rehash unchanged. The
+remaining queue has 60 workload reports across 11 evidence groups; closure of
+other historical memory gates is still pending. Updated queue:
+/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-queue-v2.json
+Evidence: closed-repair-memory-backfill-v2/first-group-verification.json.

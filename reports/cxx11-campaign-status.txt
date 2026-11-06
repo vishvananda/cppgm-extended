@@ -10,11 +10,15 @@ Reference checkpoint and followups (2026-11-06):
   stages, 208 focused cells, 32 exact reducer cells, 12 counter/direct-RSS
   pairs, 272 counter plus 272 direct-RSS scaling observations, cumulative
   counter/RSS checks and a fresh export with all 42 reference wrappers.
-- CXX11-023/024 now have a combined candidate: prefix-aware omitted nested
-  defaults, construction of actual prefix elements only, memoized zero-class
-  defaults, and typed projection of implicit zero leaves. Six new PA16 controls
-  pass; strict 8105/8105 and the 304-cell focused matrix pass. Full normal and
-  counter/direct-RSS/cumulative/export validation is still in flight.
+- CXX11-023/024 are closed in 269dbf2ad: prefix-aware nested defaults,
+  construction of actual prefix elements only, memoized zero-class defaults,
+  and typed projection of implicit zero leaves. Strict 8105/8105, all 14 normal
+  stages, 304 focused cells, 120 exact reducer cells, 15 per-fix instruction/RSS
+  pairs, three original-baseline pairs and fresh export all pass. Export checks
+  all 42 reference wrappers and nineteen packaged controls.
+- Per-fix maximum upper95 changes are +0.500028% instructions and +0.107147%
+  compiler RSS. Cumulative changes are +0.058909% and +0.073565%. All 15,360
+  measured batched children in each performance experiment are verified.
 - Type-graph scaling has 368 counter/direct-memory observations: depths 8–29
   retain complete logical spans through 4 GiB, syntax/LowIR instructions grow
   at most 17.5%, and compiler RSS stays below 8 MiB for those phases. Native
@@ -31,12 +35,13 @@ Measurement correction in progress (2026-11-06):
   through the outer wrapper. Direct timing matches child getrusage exactly.
 - All old instruction evidence and raw measurements are retained. Compiler-RSS
   revalidation is explicitly pending for closed fixes; the initial queue has
-  63 workload reports across 12 evidence groups. See cxx11-measurement-corrections.txt.
+  63 workload reports across 12 evidence groups. CXX11-001 now passes its three
+  direct-RSS pairs; 60 reports in 11 groups remain. See cxx11-measurement-corrections.txt.
 - Checkpoint 212b6c031 passes all 14 correctness/audit gates, strict 8099/8099,
   focused and exact-reducer matrices, 12 instruction/direct-RSS comparisons,
   cumulative comparisons and export. Its instruction upper regression is
   +0.794104%, compiler RSS +0.113881%; parameter-array work improves 38.1641%.
-  Newly discovered CXX11-023/024 keep the reference family in validation.
+  CXX11-023/024 are now repaired; CXX11-025 keeps the reference family in validation.
 
 Implemented:
 - Immutable original and per-fix compiler binaries; frozen source/header
@@ -371,3 +376,20 @@ Native Clang metadata checkpoint (2026-11-06):
 - Complete ordered directives, feature expressions and verifier prefixes are
   retained. This is extraction only; applicability and execution remain open.
   See cxx11-clang-lit-inventory.txt and clang-lit-metadata-v2/verification.json.
+
+Historical compiler-RSS revalidation progress (2026-11-06):
+- CXX11-001 passes its three original frozen workload A/A and A/B comparisons
+  with direct compiler RSS; old instruction evidence and raw reports remain
+  unchanged. There are 60 workload reports in 11 evidence groups still pending.
+  The updated queue is closed-repair-memory-queue-v2.json under CXX11-016.
+
+Completed nested-zero compiler checkpoint (2026-11-06):
+- 269dbf2ad closes CXX11-023/024 after complete normal, linked, counter, actual
+  memory, scaling and packaged-export checks. Evidence is CXX11-024's
+  final-acceptance-v2.json and committed-source-v2.json. The measured binary was
+  restored and hashes identically after export. Full details are in
+  cxx11-nested-zero-array-checkpoint.txt.
+- 7a02e91e6 adds the portable native Clang metadata CLI. All 20,491 records and
+  72,820 commands preserve native directive/feature metadata exactly. The full
+  harness passes 35 suites/529 discovered tests, including eleven new boundary
+  tests. Applicability, actual RUN execution and diagnostic adaptation remain open.

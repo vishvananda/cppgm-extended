@@ -87,7 +87,7 @@
       }
     },
     "performance": {
-      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
+      "status": "instruction-and-direct-compiler-rss-gates-passed",
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-001/performance-protocol.json",
       "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-001/performance-counters",
       "calibration": "three workload A/A assessments passed; confidence half-width 0.0012%-0.0041%",
@@ -210,7 +210,13 @@
       "integrity": "Original source/include/host-header hashes and underlying compiler hashes verified after all runs; all paired output objects identical; all perf events at least 99% scheduled.",
       "status_before_rss_scope_audit": "pass-instruction-and-memory-gates",
       "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
-      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
+      "compiler_rss_revalidation": {
+        "status": "passed",
+        "scope": "Three original frozen CXX11-001 workload A/A and A/B direct compiler-RSS comparisons; original instruction evidence retained",
+        "assessment": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-backfill-v2/CXX11-001-performance-counters-direct-memory/assessment.json",
+        "max_upper95_ratio": 1.0000011862217626,
+        "original_raw_evidence_unchanged": true
+      }
     },
     "pending_checks": [],
     "parent_revision": "7e31ecb743ef623d972cc12e9f3c3d04a5a81f2c",
@@ -2343,7 +2349,8 @@
       "focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/focused-v6/assessment.json: 208 cells, 188 passes, 20 parent failures, no host/candidate failures.",
       "required": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/focused-prefix-v4/results.json: all 13 owning controls pass, including 48 MiB resource guards.",
       "correctness": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/checks-v3.json: all 14 final candidate stages pass, including strict 8099/8099, debug info, PA34 through PA5, inception, PA35 smoke, all audits, full placement and harness.",
-      "accepted_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/final-acceptance-v5.json (tested checkpoint passes; subsequent CXX11-023 regression remains open)"
+      "accepted_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/final-acceptance-v5.json (tested checkpoint passes; subsequent CXX11-023 regression remains open)",
+      "nested_zero_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/final-acceptance-v2.json"
     },
     "performance": {
       "status": "counter-gates-pass-direct-compiler-rss-validation-running",
@@ -2365,7 +2372,7 @@
         "https://cplusplus.github.io/CWG/issues/2126.html"
       ]
     },
-    "next_action": "Complete CXX11-023 nested defaults and CXX11-024 compact-zero aggregate regressions, then validate the combined compiler and close the reference family."
+    "next_action": "Repair CXX11-025 before closing the combined reference family; then replay the supported external matrix and compare the combined targeted workloads with the original family baseline."
   },
   {
     "id": "CXX11-017",
@@ -2582,7 +2589,8 @@
       "focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/focused-v6/assessment.json",
       "correctness": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/checks-v3.json (all 14 stages pass)",
       "nested_encoding": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-022/nested-prefix-bitcast-reuse-v1.json: intermediate candidate-v4 corrupts a published nested array representation; candidate-v5 encodes without mutating source storage, covered by the repeated-cast PA29 fixture.",
-      "accepted_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/final-acceptance-v5.json (tested checkpoint passes; subsequent CXX11-023 regression remains open)"
+      "accepted_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/final-acceptance-v5.json (tested checkpoint passes; subsequent CXX11-023 regression remains open)",
+      "nested_zero_checkpoint": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/final-acceptance-v2.json"
     },
     "performance": {
       "status": "shared-validation-with-CXX11-016",
@@ -2597,12 +2605,12 @@
         "pa29/README.md"
       ]
     },
-    "next_action": "Complete CXX11-023 nested defaults and CXX11-024 compact-zero aggregate regressions, then validate the combined compiler and close the reference family."
+    "next_action": "Repair CXX11-025 before closing the combined reference family; then replay the supported external matrix and compare the combined targeted workloads with the original family baseline."
   },
   {
     "id": "CXX11-023",
     "priority": "P1",
-    "status": "fix-in-validation",
+    "status": "closed",
     "introduced_by": "212b6c031f103f633e94ff90a07de7dc4e99ac96",
     "discovered_neighbor_of": "CXX11-016",
     "upstream": [],
@@ -2615,7 +2623,7 @@
       "pa16/tests/controls/300-constexpr-nested-array-reference-defaults.t",
       "pa16/tests/controls/300-runtime-nested-array-reference-constant-probe.t"
     ],
-    "fix_revision": null,
+    "fix_revision": "269dbf2adfdcd5d2fd2f6c56ea5c25eb2cd91ade",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023",
     "reproductions": [
       "nested-reference.cpp",
@@ -2626,26 +2634,35 @@
       "initial": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/initial-neighbors-v1.json: all six GCC/Clang syntax cells accept; the pre-212b6c031 compiler accepts the parameter and dense cases, while 212b6c031 rejects both prefix cases and still accepts the dense case.",
       "candidate_v1": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/required-candidate-v1.json (both owning controls pass)",
       "combined_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/focused-v1/assessment.json (304 ISO/GNU11 O0/O2 cells; no host/candidate failures)",
-      "combined_normal": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/checks-v1.json (strict 8105/8105; remaining stages recorded as they finish)"
+      "combined_normal": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/checks-v1.json (14 stages passed; strict 8105/8105)",
+      "acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/final-acceptance-v2.json",
+      "source_binding": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/committed-source-v2.json",
+      "linked": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/linked-reducers-v1/assessment.json (120 exact reducer cells; 96 native passes and 24 expected historical rejections)",
+      "export": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/checks-export-v1.json (24 stages; 42 wrappers and 19 packaged controls)"
     },
     "performance": {
-      "status": "instruction-and-direct-compiler-rss-gates-running",
+      "status": "instruction-and-direct-compiler-rss-gates-passed",
       "baseline_sha256": "5c73b823a6bb6b60fe0b3d4904275cc7dd9b46587587681c25eb46b014191fe4",
-      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/performance-protocol-v1.json"
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/performance-protocol-v1.json",
+      "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/final-acceptance-v2.json",
+      "instruction_upper95": 1.0050002711615762,
+      "compiler_rss_upper95": 1.0010714619466512,
+      "cumulative_instruction_upper95": 1.0005890824550072,
+      "cumulative_compiler_rss_upper95": 1.000735644121338
     },
     "standards_basis": {
       "category": "original-cxx11",
-      "rationale": "N3485 8.5p7 value-initializes each array element, 8.5.1p7 initializes omitted elements, and 7.1.5/5.19 allow the literal constexpr defaults and parameter expression. No later language feature is used.",
+      "rationale": "N3485 8.5p8 value-initializes each array element, 8.5.1p7 initializes omitted elements, and 7.1.5/5.19 allow the literal constexpr defaults and parameter expression. No later language feature is used.",
       "references": [
-        "doc/n3485.txt 5.19, 7.1.5, 8.5p7, 8.5.1p7, 8.5.4p3"
+        "doc/n3485.txt 5.19, 7.1.5, 8.5p8, 8.5.1p7, 8.5.4p3"
       ]
     },
-    "next_action": "Complete immutable candidate-v2 full normal, per-fix and cumulative counter/direct-RSS, scaling and fresh export checks; record CXX11-025 separately and keep reference-family closure open."
+    "next_action": "Recheck at later compiler checkpoints; CXX11-025 is a separate still-open reference-temporary regression."
   },
   {
     "id": "CXX11-024",
     "priority": "P1",
-    "status": "fix-in-validation",
+    "status": "closed",
     "introduced_by": "212b6c031",
     "discovered_neighbor_of": "CXX11-023",
     "upstream": [],
@@ -2660,7 +2677,7 @@
       "pa16/tests/controls/300-constexpr-zero-tail-union-inactive-reject.t",
       "pa16/tests/controls/300-constexpr-zero-tail-bitfield-union-inactive-reject.t"
     ],
-    "fix_revision": null,
+    "fix_revision": "269dbf2adfdcd5d2fd2f6c56ea5c25eb2cd91ade",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024",
     "reproductions": [
       "../CXX11-023/zero-type-dag-probes-v1/tree-24.cpp",
@@ -2671,13 +2688,22 @@
       "host": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-023/zero-type-dag-probes-v1/host-leaf-controls-v1.json (GCC/Clang accept the 18-level constant leaf reads)",
       "required": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/required-parent-v1.json (new owning control fails frontend under48MiB with bad_alloc)",
       "combined_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/focused-v1/assessment.json (304 ISO/GNU11 O0/O2 cells; no host/candidate failures)",
-      "combined_normal": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/checks-v1.json (strict 8105/8105; remaining stages recorded as they finish)",
+      "combined_normal": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/checks-v1.json (14 stages passed; strict 8105/8105)",
       "staged_root_causes": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/spare-only-type-walk-v1.json (after removing eager spare allocation, depth29 still hits CPU2s; memoized typed zero defaults and leaf projection pass)",
-      "type_scaling": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/scaling-types-v1/summary.json (368 counter/direct-memory observations; complete LowIR/native spans checked)"
+      "type_scaling": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/scaling-types-v1/summary.json (368 counter/direct-memory observations; complete LowIR/native spans checked)",
+      "acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/final-acceptance-v2.json",
+      "source_binding": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/committed-source-v2.json",
+      "linked": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/linked-reducers-v1/assessment.json (120 exact reducer cells; 96 native passes and 24 expected historical rejections)",
+      "export": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/checks-export-v1.json (24 stages; 42 wrappers and 19 packaged controls)"
     },
     "performance": {
-      "status": "instruction-and-direct-compiler-rss-gates-running",
-      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/performance-protocol-v1.json"
+      "status": "instruction-and-direct-compiler-rss-gates-passed",
+      "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/performance-protocol-v1.json",
+      "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024/final-acceptance-v2.json",
+      "instruction_upper95": 1.0050002711615762,
+      "compiler_rss_upper95": 1.0010714619466512,
+      "cumulative_instruction_upper95": 1.0005890824550072,
+      "cumulative_compiler_rss_upper95": 1.000735644121338
     },
     "standards_basis": {
       "category": "implementation-scaling",
@@ -2687,7 +2713,7 @@
         "spec.md bounded typed work and hot-path allocation requirements"
       ]
     },
-    "next_action": "Complete immutable candidate-v2 full normal, per-fix and cumulative counter/direct-RSS, scaling and fresh export checks; record CXX11-025 separately and keep reference-family closure open."
+    "next_action": "Recheck at later compiler checkpoints; CXX11-025 is a separate still-open reference-temporary regression."
   },
   {
     "id": "CXX11-025",
@@ -2723,6 +2749,6 @@
         "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_closed.html#1452"
       ]
     },
-    "next_action": "After the in-flight CXX11-023/024 checkpoint completes, create owning PA16 controls and fix the blanket temporary guard with typed initialization/destructor checks; run the full normal and performance process."
+    "next_action": "Create required PA16:300 controls on frozen 269dbf2ad, fix the blanket nonliteral-array guard using actual initialization/destructor eligibility, and complete normal full/performance checks plus reference-family matrix/cumulative validation."
   }
 ]

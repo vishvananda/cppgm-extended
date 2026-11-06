@@ -100,3 +100,10 @@ applicability, GCC specialized drivers, Clang lit/RUN adaptation and original
 untriaged findings remain open. The final two CI jobs and matched whole-suite
 timing comparisons start only after all compiler issues and required validation
 are resolved. Neither CI job has been implemented yet.
+
+Subsequent verified repair: 269dbf2ad closes CXX11-023/024 with six additional
+required PA16 controls, strict 8105/8105 and all normal/performance/export gates.
+See cxx11-nested-zero-array-checkpoint.txt. CXX11-025 exposes the older blanket
+nonliteral-array guard and keeps the reference family open. Historical compiler
+RSS revalidation now has 60 workload reports pending after CXX11-001's three
+original pairs pass direct compiler-memory checks.

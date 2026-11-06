@@ -1,0 +1,81 @@
+Nested/default and implicit-zero array checkpoint (2026-11-06)
+
+Compiler commit 269dbf2ad closes CXX11-023 and CXX11-024. The combined reference
+family remains open for CXX11-025; this is not completion of the campaign.
+
+CXX11-023 routes omitted prefix subarrays through shared array construction so
+literal-class constexpr defaults are retained in every dimension. CXX11-024
+constructs only actual prefix elements, memoizes proven aggregate zero defaults,
+and projects implicit-zero subobjects through typed layout. The located value
+alone is materialized; full bounds, original object identities, union activity,
+bit-fields and ABI representations remain intact. No new serialized class-value
+shape or source reparsing is introduced.
+
+Six required regressions live in PA16:300, including two 48 MiB frontend guards.
+The large aggregate fixture reads actual native backing through volatile
+pointers as well as compile-time leaves. A spare-allocation-only intermediate
+still hit the two-second CPU limit on a 29-level shared type graph; the complete
+fix also bounds that repeated type work. The failed intermediate is retained.
+
+Validation
+
+- All 14 normal stages pass: affected PA10/11/16/22/29 suites, strict 8105/8105,
+  debug-info, PA34 through PA5, inception, PA35 smoke, nine architecture/format
+  audits, file audit, full placement audit and harness.
+- The 304-cell GCC/Clang/checkpoint/candidate ISO/GNU11 O0/O2 matrix has no
+  host/candidate failures. Historical parent failures remain reported. All
+  compilers use the recorded common 16 MiB native stack for the large frames.
+- Exact linked reducers have 120 cells: 96 native passes and 24 expected
+  historical rejections. These cover original scalar references, the independent
+  bit-cast reducer and all three nested-array witnesses.
+- All fifteen per-fix A/A and A/B instruction/direct-compiler-RSS comparisons
+  pass. Maximum upper95 changes are +0.500028% instructions and +0.107147% RSS.
+  Common-correct target objects are identical and all 48 independent compiler
+  native oracle cells pass. Each experiment checks 15,360 measured batch-child
+  objects. The shared-type workload reduces instructions by about 59.74%.
+- All three original-baseline cumulative counter/direct-RSS pairs pass:
+  maximum upper95 changes are +0.058909% instructions and +0.073565% RSS.
+  Raw timing remains descriptive under load; no wall-time or macOS gate pass
+  is inferred from retired instructions.
+- Extent scaling has 272 counter plus 272 direct-memory observations, all
+  nine groups passing. Fixed-element syntax/LowIR work remains flat through
+  1,073,741,824 elements, with complete LowIR and native backing spans checked.
+  Readonly physical output costs remain explicit; larger native outputs beyond
+  the declared budget are unmeasured, not counted as passes.
+- Type-graph scaling adds 368 counter/direct-memory observations in five groups.
+  Depths 8-29 retain logical spans through 4 GiB; syntax/LowIR instruction spread
+  is at most 1.175 and compiler RSS stays below 8 MiB for those phases. Native
+  readonly storage is checked through 2 MiB of actual backing. Source and
+  requested member paths grow with depth; this is not a constant-source claim.
+- Fresh export passes all 24 stages, including all 42 reference wrappers,
+  nineteen packaged controls and PA29's compile lane. The restored measured
+  compiler hashes identically. After the separate Clang metadata tool addition,
+  the full harness also passes 35 suites/529 discovered tests; optional native
+  integration skips remain explicit in the raw log.
+
+Evidence root: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-024
+Acceptance: final-acceptance-v2.json
+Commit binding: committed-source-v2.json (43 source/fixture hashes)
+Binary SHA256: 13295f1511aead6a9521f6c8e87af667860f5d2fd19a8a74596e252c722a7ce0
+Normal checks: checks-v1.json; focused-v1/; linked-reducers-v1/
+Performance: performance-counters-v1/; performance-direct-memory-v1/
+Cumulative: cumulative-counters-v1/; cumulative-direct-memory-v1/
+Scaling: scaling-extent-v1/; scaling-extent-direct-memory-v1/; scaling-types-v1/
+Export: checks-export-v1.json; restored-binary-v1.json; student-export-v1/
+
+Remaining work
+
+CXX11-025 is an original-C++11 regression from the earlier prefix change: a
+blanket nonliteral-array guard rejects value initialization that invokes no
+constructor. Its parameter witness worked before that change; GCC/Clang accept
+both it and the reference form. A frozen 269dbf2ad baseline is prepared. Create
+owning regressions and complete the normal repair process next, then replay the
+supported reference-family matrix and combined targeted cumulative workloads.
+
+CXX11-021, later CWG/DR repairs, native diagnostic compatibility, full Clang RUN
+execution and GCC specialized drivers, applicability and original untriaged
+findings remain open. Historical compiler-RSS revalidation has 60 workload
+reports in eleven evidence groups pending after CXX11-001's first three pass.
+The final GCC/Clang CI jobs and whole-suite timing comparisons remain unimplemented
+and start after all required compiler issues, including later CWG decisions,
+are fixed and verified.
