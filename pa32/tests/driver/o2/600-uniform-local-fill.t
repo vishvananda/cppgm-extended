@@ -1,5 +1,6 @@
 // Complete fills and their invalidations agree with an independent byte oracle.
-extern "C" void* memset(void*, int, unsigned long) noexcept;
+#include <cstring>
+
 extern "C" void mutate(unsigned char*, unsigned, unsigned);
 template<class T, int B> __attribute__((noinline)) unsigned long long positive(unsigned seed) {
  T data[32]; memset(data,B,sizeof data); return data[seed%32];
@@ -32,7 +33,6 @@ extern "C" unsigned long long sample(unsigned seed,unsigned kind,unsigned mode) 
 }
 
 #include <cstdio>
-#include <cstring>
 extern "C" unsigned long long sample(unsigned,unsigned,unsigned);
 static unsigned calls;
 extern "C" void mutate(unsigned char* p,unsigned size,unsigned seed) { ++calls; p[(seed>>5)%size]^=static_cast<unsigned char>(seed+17); }
