@@ -1,0 +1,70 @@
+Clang native diagnostic replay preparation (2026-11-06)
+
+Status: private prototype prepared, build/control validation queued.
+No imported Clang test or cppgm diagnostic pass is claimed.
+Evidence root: /mnt/vizier/cppgm-cxx11-upstream/clang-native-verifier-v1
+Authoritative current producer protocol: build-protocol-v2.json
+Read-only API evidence: api-readiness-v1.json
+
+The external adapter needs native prefix, source identity/line, severity,
+count, named-marker and regex checks. Matching exit status alone is inadequate.
+The prototype uses LLVM21.1.8's public VerifyDiagnosticConsumer rather than
+introducing a separate expected-comment grammar or pattern matcher. Its public
+header is byte-identical to pinned2078da43e25a4623cab2d0d60decddf709aaea28.
+The expected API symbols are exported by the same matching libclang-cpp shared
+library used by the acquired clang21 compiler. Original LLVM attribution is
+retained in the archived API/implementation source.
+
+The native header package adds one isolated dependency, libclang-21-dev, pinned
+to1:21.1.8-6ubuntu1. No system package/compiler changes. All3201 existing files
+and197 symlinks remain unchanged; extracted-manifest-v3.json now freezes4613
+files and203 symlinks with no unresolved links. The actual llvm-config C++ flags
+are retained, including the experimental-instruction ABI macro, for the helper's
+separate host build. Existing Clang22 campaign observations remain unchanged.
+
+The helper discovers expectations through native preprocessing in a supplied
+cc1 context and consumes structured diagnostic events. It performs no C++
+semantic analysis. Native preprocessing diagnostics stay separate from the
+supplied compiler stream; malformed expectation directives use the native
+verification engine. Event source mapping requires a discovered file and
+presumed line; ambiguous/unmappable locations become explicit blockers. Native
+verify does not assert diagnostic columns, which remain in the event artifact.
+
+Stored-message Diagnostic objects are replayed directly into the native
+consumer. Re-emitting a supplied stream through compiler warning policy could
+hide warnings under-w or upgrade them under-Werror. The old unbuilt draft is
+retained and its exact waiting worker was retired before any build/control
+invocation. The current v2 source and protocol add explicit fault controls for
+that distinction; no measured observation was deleted or rerun.
+
+Declared controls:21 native-verify equivalence cases, four abnormal/timeout/
+silent-rejection/unmappable blockers, one preprocessing-error boundary and two
+warning-policy fault cases,28 total. They cover diagnostics-free input, errors,
+warnings, notes, inactive conditionals, included files, presumed#line locations,
+named markers, multiple prefixes, regexes, exact/ranged counts, relative lines,
+CR/CRLF input, missing/unexpected diagnostics and malformed directives. The
+initial helper explicitly blocks preprocessing-error inputs until their
+expectation-discovery equivalence is established; full coverage remains needed.
+
+The build/control worker waits for the exact original native-dg replay worker,
+which itself waits behind the family oracles and the historical RSS aggregate
+verification. Compiler measurements, native replay and helper builds therefore
+remain serial. Frozen sources, tools, headers, symlinks and producer identities
+are checked before and after execution. A waiting worker and this API audit
+are not evidence that the helper compiled or the28 controls passed.
+
+Remaining requirements
+
+Validate the helper and fault controls, then integrate the native diagnostic
+oracle into the dedicated lit adapter with real configuration/substitutions,
+features, targets and supported flags. Establish per-case source/preprocessing
+context applicability and native host baselines before declaring candidate
+oracle satisfaction. Complete native-preprocessing-error support rather than
+counting its initial blocker as a pass. Run imported cases and retain unsupported
+AST/LLVM/assembly interfaces as named gaps. The original153 Clang finding files
+and the full inventory still have unresolved applicability/execution work.
+
+Moving this prototype into shipped maintainer tooling requires meaningful
+boundary/native integration regressions and the full harness check. It does
+not close compiler diagnostic/recovery gaps or the broader campaign. Final
+CI/timing jobs remain gated on all compiler repairs, including later CWG work.

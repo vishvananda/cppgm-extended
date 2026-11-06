@@ -38,7 +38,15 @@ or host agreement to a normative proof. The neighbors additionally show why
 a future partial-static repair must preserve writes to constant/omitted cells
 and must not reinitialize those cells later.
 
+Further premise evidence: CWG1421 (NAD, October2012) distinguishes independent
+full-expressions for aggregate-variable elements from temporary-expression
+contexts. That strengthens the element-initializer premise; it does not alone
+settle the surrounding non-local-variable scope. CWG2536's post-2019 constinit/
+default-constructor example is not an adjudication of this mixed scalar array.
+See issues/CXX11-002/standards-additional-v2/premise-assessment.json.
+
 Sources and retained raw evidence:
+https://cplusplus.github.io/CWG/issues/1421.html
 https://github.com/gcc-mirror/gcc/commit/fa2200cbb1ef5a6a7bdb9a5ba708c7400eb6b404
 https://cplusplus.github.io/CWG/issues/688.html
 https://cplusplus.github.io/CWG/issues/1677.html
@@ -67,25 +75,22 @@ https://cplusplus.github.io/CWG/issues/1757.html
 https://cplusplus.github.io/CWG/issues/2126.html
 Raw issue snapshots/hashes: issues/CXX11-002/standards-sources.json.
 
-CXX11-021: declaration/ranking classification requires separate adjudication.
+CXX11-021: later-DR string-array reference compatibility.
 
-The preserved const char (&text)[5] = {"abc"} probe is accepted by Clang and
-rejected by GCC/cppgm. The earlier original-only classification combined
-N3485 8.5.4p3 array temporary creation with8.5.2p1's permission for a braced
-string initializer, but8.5.4 also routes aggregate targets through aggregate
-initialization first. That interaction still needs adjudication. Array
-temporary creation's original date alone does not settle character-array
-conversion ranking; the explicit string-literal identity rule is later.
-Keep the original declaration rationale provisional, and retain the host
-disagreement. Replay declaration and ranking variants separately before
-repairing them. See cxx11-string-array-reference-triage.txt and the retained
-standards-ranking-audit-v1/qualification-v2.json. No original-only defect is
-established by that source review. The gap remains separate from CXX11-016.
+Current adjudication: CWG1490, resolved through CWG1467 in November2014.
+The earlier original-only claim and then-unadjudicated qualification are
+superseded; both remain in the retained evidence. CWG1232 alone did not settle
+the string-list initialization/ranking. See cxx11-string-array-reference-triage.txt
+and issues/CXX11-021/standards-adjudication-v3/assessment.json for the direct
+primary source and complete classification history. Host disagreement remains;
+no new compiler run or repair pass is inferred from this adjudication.
 
-The earliest fixture owner is PA11:100: PA10 explicitly excludes character-array
+The earliest fixture owner remains PA11:100: PA10 excludes character-array
 object initialization from string literals. PA11:200 owns the mixed
-class/constructor/string control used by CXX11-015. The automatic placement
-audit did not detect an earlier PA10 string-array assertion; manual handout
-review moved it to that PA11 control and renewed affected checks/export.
-Sources: https://cplusplus.github.io/CWG/issues/1232.html,
-https://cplusplus.github.io/CWG/issues/1467.html and doc/n3485.txt.
+class/constructor/string control used by CXX11-015. The placement audit did
+not detect an earlier PA10 string-array assertion; manual handout review moved
+it to that PA11 control and renewed affected checks/export.
+
+Sources: https://cplusplus.github.io/CWG/issues/1490.html,
+https://cplusplus.github.io/CWG/issues/1467.html,
+https://cplusplus.github.io/CWG/issues/1232.html and doc/n3485.txt.

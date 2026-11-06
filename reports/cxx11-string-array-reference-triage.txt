@@ -1,32 +1,30 @@
 CXX11-021 character-array reference standards checkpoint (2026-11-06)
 
-Status: triaged, declaration standards classification unadjudicated;
-no implementation or new compiler-run claim.
-Evidence: issues/CXX11-021/standards-ranking-audit-v1/assessment.json under
-/mnt/vizier/cppgm-cxx11-upstream. Retrieved issue pages, source hashes and
-exact pinned upstream context are retained there.
+Status: triaged later-DR compatibility; no implementation or new compiler run.
+Current evidence: /mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/
+standards-adjudication-v3/assessment.json
 
-The original declaration witness is const char (&text)[5] = {"abc"};
-Existing evidence has Clang acceptance and GCC/cppgm rejection. Its N3485
-8.5.2p1-3 and8.5.4p3 declaration rationale remains provisional and separate
-from overload ranking:8.5.4 initially routes aggregate targets to aggregate
-initialization. That interaction needs adjudication; see qualification-v2.json.
-The earlier original-only classification is not a proven result. Reproduction
-with the accepted d1c5c14c9 compiler is still required. Both duplicate neighbor
-observations OBS-0530 and OBS-0550 now link to this single root-cause issue.
+The preserved declaration is const char (&text)[5] = {"abc"};
+Existing evidence has Clang acceptance and GCC/cppgm rejection. Reproduction
+with the accepted d1c5c14c9 compiler remains required. Duplicate observations
+OBS-0530 and OBS-0550 retain both identities and link to this one issue.
 
-CWG1232 was adopted in March2011 and establishes array temporary creation.
-It does not date every later list-conversion rule. CWG1467's June2014 proposal,
-moved to DR in November2014, explicitly adds identity list conversion from a
-suitably typed single string literal to a character-array reference target.
-The original13.3.3.1.5p2 array-element-conversion rule lacks that provision.
-Those ranking neighbors are later-DR compatibility requirements; both kinds
-remain in this campaign's repair scope.
+CWG1490 directly identifies the missing string-literal array case in list
+initialization. Its resolution through CWG1467 was adopted in November2014.
+The earlier original-only classification is withdrawn. The original array
+temporary rule from CWG1232 does not settle the temporary's initialization.
+This later compatibility repair remains explicitly within the user's scope.
 
-Sources:
-  https://cplusplus.github.io/CWG/issues/1232.html
+Primary sources:
+  https://cplusplus.github.io/CWG/issues/1490.html
   https://cplusplus.github.io/CWG/issues/1467.html
-  doc/n3485.txt 8.5.2p1-3,8.5.4p3,13.3.3.1.5p2,p5
+  https://cplusplus.github.io/CWG/issues/1232.html
+  doc/n3485.txt 8.5.2,8.5.4,13.3.3.1.5
+
+The original declaration rationale, subsequent unadjudicated qualification
+and their raw sources remain retained in standards-ranking-audit-v1. The v3
+adjudication records the decisive primary source and supersedes those
+classifications; no compiler observation or test outcome was changed.
 
 Pinned LLVM21.1.8 clang/test/CXX/drs/cwg14xx.cpp, namespace
 cwg1467::StringLiterals, supplies an exact neighboring oracle. An exact-bound
@@ -35,18 +33,21 @@ temporary selects a deleted overload. Its narrow/wide/char16_t/char32_t and
 parenthesized variants must be reduced faithfully and executed with native
 verification; rejection of the mixed source file does not prove these paths.
 Its char8_t cases are C++20-only and must not enter the C++11 variant count.
-The source hash is verified against pinned commit2078da43e25a4623cab2d0d60decddf709aaea28.
+The source hash is verified against pinned2078da43e25a4623cab2d0d60decddf709aaea28.
 
 The implementation review confirms list_initialize already checks typed
 character-array string kind/bounds. list_argument instead sends a reference's
 temporary array directly to braced_list; list_sequence tries conversion to the
 scalar array element. The repair should share the typed string-array facts
 without retyping source or changing reference-related exact-bound identity.
-It also needs too-short/kind/cv rejection, scalar lists, parenthesized literals,
-parameter/overload ranking and SFINAE boundaries. Appropriate required fixtures
-belong in the earliest owning PA lane for the latest feature each uses;
-PA11:100 owns the basic character-array initialization behavior.
+It needs too-short/kind/cv rejection, scalar lists, parenthesized literals,
+parameter/overload ranking and SFINAE boundaries. Required fixtures belong in
+the earliest owning PA lane for the latest feature each uses; PA11:100 owns
+the basic character-array initialization behavior. Neighbor placement may be
+later when its own features require that.
 
-The owning PA11 handout and full architecture spec were read. Source and
-fixtures remain frozen while serial memory measurements and the combined
-family checkpoint are pending. No new issue is closed by this source audit.
+The owning PA11 handout and architecture spec were read. Source and fixtures
+remain frozen while serial memory measurements and the combined family
+checkpoint are pending. After replay and required failing regressions, use
+the normal implementation/correctness/audit/performance/export process. No
+new issue is closed by this standards and source audit.

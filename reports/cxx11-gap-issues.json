@@ -251,7 +251,8 @@
         "evidence": "/mnt/vizier/cppgm-cxx11-upstream/native-dg-adapter-v1/pilot-2/summary.json"
       },
       "fresh_runtime_host_disagreement": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-002/runtime-host-disagreement-v1/results.json: all 18 ISO/GNU11 cells compile/link; GCC executes all six programs successfully, Clang and final-v4 cppgm both SIGABRT in all six",
-      "rejected_oracle_assumption": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-002/oracle-assumption-failures-v1.json retains the two initial stopped probes that incorrectly assumed Clang matched GCC"
+      "rejected_oracle_assumption": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-002/oracle-assumption-failures-v1.json retains the two initial stopped probes that incorrectly assumed Clang matched GCC",
+      "full_expression_premise": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-002/standards-additional-v2/premise-assessment.json"
     },
     "performance": {
       "status": "not-started"
@@ -259,7 +260,13 @@
     "triage_note": "The GCC test predates C++11 publication; its history is not evidence of a post-release CWG requirement. Mandatory per-subobject constant initialization versus permitted partial early initialization still needs adjudication against N3485 3.6.2p2-p3, 3.7 and 8.5.1. CWG 688 removed earlier explicit aggregate partial-initialization wording before N3485; CWG 1677 later recast objects as variables/temporaries. Preserve the failure as unadjudicated until the exact snapshot requirement is established. Fresh final-v4 replay establishes a GCC-versus-Clang disagreement, not host consensus. An inference from N3485 3.7.5p1, 8.5.1p2 and the per-object wording in 3.6.2p2 favors independent element constant initialization; whether 3.6.2 restricts that application to complete non-local variables remains unresolved. No compiler repair or original-language pass is claimed.",
     "standards_basis": {
       "category": "unadjudicated",
-      "rationale": "N3485 3.6.2p2-p3 optional early initialization requires adjudication"
+      "rationale": "N3485 3.6.2p2-p3 optional early initialization requires adjudication",
+      "references": [
+        "doc/n3485.txt 1.9p10-11,3.6.2p2-p3,3.7.5p1,8.5.1p2",
+        "https://cplusplus.github.io/CWG/issues/1421.html",
+        "https://cplusplus.github.io/CWG/issues/688.html",
+        "https://cplusplus.github.io/CWG/issues/1677.html"
+      ]
     }
   },
   {
@@ -2645,18 +2652,20 @@
       "duplicate_observations": [
         "OBS-0530",
         "OBS-0550"
-      ]
+      ],
+      "declaration_standards_adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/standards-adjudication-v3/assessment.json"
     },
     "performance": {
       "status": "not-started-no-compiler-change"
     },
     "standards_basis": {
-      "category": "unadjudicated",
-      "rationale": "N3485 8.5.2 explicitly permits braced string-literal character-array initialization, but 8.5.4p3 initially routes aggregate targets through aggregate initialization. Their interaction for this reference temporary requires adjudication; the earlier original-only declaration classification is provisional. The separately dated conversion-ranking neighbor remains later-DR compatibility.",
+      "category": "later-defect-resolution",
+      "rationale": "CWG1490 explicitly identifies the missing character-array string-literal case in list-initialization and says its declaration example is ill-formed under the existing wording. Its adopted resolution is CWG1467. Original array temporary creation via1232 does not supply this later initialization/ranking rule.",
       "references": [
         "doc/n3485.txt 8.5.2p1, 8.5.4p3 and 12.2p5",
         "https://cplusplus.github.io/CWG/issues/1232.html",
-        "https://cplusplus.github.io/CWG/issues/1467.html"
+        "https://cplusplus.github.io/CWG/issues/1467.html",
+        "https://cplusplus.github.io/CWG/issues/1490.html"
       ],
       "ranking_neighbors": {
         "category": "later-defect-resolution",
@@ -2666,9 +2675,26 @@
         "reference": "https://cplusplus.github.io/CWG/issues/1467.html"
       },
       "previous_category": "original-cxx11",
-      "previous_declaration_rationale": "N3485 8.5.4p3 creates a reference-target prvalue temporary when the sole source element is not reference-related. The referenced char[5] is then list-initialized from its braced string under 8.5.2p1. Array temporary list initialization was adopted into C++11 by CWG 1232 in March 2011; modern host disagreement does not define the snapshot rule."
+      "previous_declaration_rationale": "N3485 8.5.4p3 creates a reference-target prvalue temporary when the sole source element is not reference-related. The referenced char[5] is then list-initialized from its braced string under 8.5.2p1. Array temporary list initialization was adopted into C++11 by CWG 1232 in March 2011; modern host disagreement does not define the snapshot rule.",
+      "previous_qualified_category": "unadjudicated",
+      "previous_qualification_rationale": "N3485 8.5.2 explicitly permits braced string-literal character-array initialization, but 8.5.4p3 initially routes aggregate targets through aggregate initialization. Their interaction for this reference temporary requires adjudication; the earlier original-only declaration classification is provisional. The separately dated conversion-ranking neighbor remains later-DR compatibility.",
+      "adopted": "November 2014 (CWG1490 via1467)",
+      "classification_history": [
+        {
+          "category": "original-cxx11",
+          "status": "withdrawn; original1232 date did not settle the missing string-list rule"
+        },
+        {
+          "category": "unadjudicated",
+          "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/standards-ranking-audit-v1/qualification-v2.json"
+        },
+        {
+          "category": "later-defect-resolution",
+          "evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/standards-adjudication-v3/assessment.json"
+        }
+      ]
     },
-    "next_action": "After the active serial measurements, freeze the accepted baseline; replay declaration, parameter and overload/SFINAE boundary variants, add regressions to the earliest appropriate PA lanes and repair the shared typed string-array logic. Keep original and later-DR evidence distinct. No compiler/fixture changes during frozen measurements."
+    "next_action": "Repair the later-DR initialization and ranking behavior using CWG1490/1467, after the active serial checkpoint work. Replay exact declaration/parameter/bound/kind/cv/identity and SFINAE neighbors, add owning PA regressions, share typed string-array facts and complete the normal correctness/performance/export workflow. The original-only defect claim is withdrawn; this issue remains in the explicitly authorized later-CWG scope."
   },
   {
     "id": "CXX11-022",

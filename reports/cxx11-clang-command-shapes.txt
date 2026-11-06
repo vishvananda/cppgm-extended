@@ -140,3 +140,15 @@ Source/feature/test invocations remain queued behind the serial RSS experiments.
 The matching release tools will permit native FileCheck/not/count/split-file,
 object/IR utilities and Clang diagnostics instead of depending on Clang22 for
 all future21.1.8 baseline cells. Existing older observations remain unchanged.
+
+Native diagnostic oracle preparation
+
+The public native VerifyDiagnosticConsumer API, pinned source/header identity,
+exported library symbols and exact LLVM21.1.8 build flags are now retained in
+clang-native-verifier-v1/api-readiness-v1.json. Matching libclang-21-dev adds
+one isolated package; toolchain manifestv3 freezes4613 files and203 symlinks.
+A private stored-diagnostic replay prototype and28 declared controls are queued
+behind the serial RSS/family/native-dg workers. No helper build, control pass,
+imported Clang execution or candidate diagnostic pass is claimed yet. Full native
+configuration and preprocessing-context applicability remain required; see
+cxx11-clang-diagnostic-oracle.txt for exact scope and the current v2 protocol.

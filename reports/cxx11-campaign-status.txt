@@ -616,3 +616,26 @@ Combined family preparation and next standards boundary:
   a missing development-layout dependency; the first failed query is retained.
   No system compiler change, feature-probe pass or Clang test execution is
   claimed. Earlier Clang22 observations and the frozen family protocol remain.
+
+Native diagnostic replay preparation and memory progress:
+- Historical actual compiler RSS replays finish0 for35 of60 pending workload
+  reports across seven groups; CXX11-011's cumulative group is active. Original
+  observations and completed001 data remain unchanged. Full aggregate output
+  verification remains required before the historical correction is accepted.
+- A private Clang21.1.8 diagnostic replay helper is prepared, with public header
+  identity, exported native symbols and exact ABI flags verified read-only.
+  Thirteen matching isolated packages freeze4613 files and203 symlinks. A
+  28-control build/validation worker waits behind the exact original-cohort
+  replay worker, preserving measurement isolation. It has not compiled or run.
+- The helper uses native expectation parsing/matching and stored-event replay;
+  warning flags cannot silently redefine the supplied diagnostic stream. The
+  earlier unbuilt draft and its retirement evidence remain. No corpus/candidate
+  pass, compiler repair closure or complete Clang configuration is claimed.
+
+String-reference classification adjudicated:
+- CWG1490 directly resolves CXX11-021's open standards boundary through1467.
+  The category is now later-defect-resolution (November2014); the original-only
+  classification is withdrawn, and the intermediate qualification remains in
+  the evidence. Both duplicate observation identities are retained. This repair
+  stays in the explicitly authorized later-CWG scope and is not yet implemented.
+  No compiler run or outcome was replaced by the standards adjudication.
