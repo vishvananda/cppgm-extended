@@ -327,8 +327,8 @@ bool Analyzer::stack_half_used() const
 
 Scope* Analyzer::declaration_scope(Scope* scope)
 {
-	while (scope->kind == ScopeKind::TemplateParameters)
-		scope = scope->parent;
+	while (scope->kind == ScopeKind::TemplateParameters || scope->default_parameters)
+		scope = scope->default_parameters ? names_.default_parameter_root(scope)->parent : scope->parent;
 	return scope;
 }
 

@@ -68,9 +68,14 @@ const Type* Analyzer::throw_operand(const syntax::Expr& operand, Scope* scope, u
 	// CWG2549: only block scopes may intervene, and no protected try
 	// compound. A prototype parameter can be eligible without BodyContext;
 	// a lambda, local class or nested parameter scope blocks an outer name.
+	// Frozen lookup prefixes of the default's own clause share its scope.
 	for (const Scope* current = scope; automatic && current != named->owner;)
 	{
-		if (current == nullptr || current->kind != ScopeKind::Block ||
+		if (current != nullptr && current->default_parameters && named->owner->default_parameters &&
+			names_.default_parameter_root(current) == names_.default_parameter_root(named->owner))
+			break;
+		if (current == nullptr ||
+			(current->kind != ScopeKind::Block && !(default_parent != nullptr && current->default_parameters)) ||
 			(try_parent != nullptr && current->parent == try_parent))
 			automatic = false;
 		else

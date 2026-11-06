@@ -94,8 +94,8 @@ struct BodyContext
 	// its own handlers and a ctor-initializer are outside that compound.
 	// Null outside one. Used for throw eligibility (P1825, CWG2549).
 	const Scope* try_parent;
-	// A default argument's parameter scope intervenes below this lookup
-	// context, even when the lookup graph has no parameter bindings.
+	// The declaration context outside a default argument's own parameter
+	// clause. An automatic entity from this context crosses that clause.
 	const Scope* default_argument_parent;
 	// A constructor's function-try-block's handlers are being analyzed: no
 	// return statement appears in them (15.3p14).

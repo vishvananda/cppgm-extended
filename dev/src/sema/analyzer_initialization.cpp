@@ -1336,6 +1336,12 @@ void Analyzer::list_argument(const syntax::BracedInitList& list, const Type* par
 	facts_of(list)->category = ValueCategory::PRValue;
 }
 
+Scope* Analyzer::default_argument_scope(const syntax::Expr* expression, Scope* fallback) const
+{
+	const uint32_t index = default_argument_scope_index_.find(expression);
+	return index != PointerMap::kMissing ? default_argument_scopes_[index] : fallback;
+}
+
 void Analyzer::type_default_arguments(FunctionEntity* function, const syntax::ParameterClause* clause, Scope* scope)
 {
 	// Each default argument this clause gives copy-initializes its
@@ -1347,30 +1353,34 @@ void Analyzer::type_default_arguments(FunctionEntity* function, const syntax::Pa
 		for (const syntax::ParameterDeclaration* parameter : clause->parameters)
 		{
 			if (parameter->default_argument != nullptr)
-				expression_walk(parameter->default_argument->expression, scope);
+				expression_walk(parameter->default_argument->expression,
+					default_argument_scope(parameter->default_argument->expression, scope));
 		}
 		return;
 	}
 	BodyContext* saved = body_;
 	BodyContext context = BodyContext();
 	body_ = &context;
+	const Scope* saved_defaults = default_argument_scope_;
 	const Type* type = function->type->canonical;
 	for (uint32_t i = 0; i < type->param_count; ++i)
 	{
 		const syntax::Initializer* initializer = clause->parameters[i]->default_argument;
 		if (initializer == nullptr)
 			continue;
+		Scope* parameters = default_argument_scope(initializer->expression, scope);
+		default_argument_scope_ = parameters;
 		context.closure_context = function;
 		context.default_argument = i;
 		context.default_argument_parent = scope;
 		if (initializer->expression->kind == syntax::ExprKind::BracedInit)
 		{
 			// 8.3.6p1, 8.5.4: `= {...}` copy-list-initializes the parameter.
-			list_argument(static_cast<const syntax::BracedInitList&>(*initializer->expression), type->params[i], scope,
-				initializer->expression->location);
+			list_argument(static_cast<const syntax::BracedInitList&>(*initializer->expression), type->params[i],
+				parameters, initializer->expression->location);
 			continue;
 		}
-		typed(*initializer->expression, scope);
+		typed(*initializer->expression, parameters);
 		// A deferred reserved builtin call (see deferrable_statement).
 		if (deferred_reserved_call())
 			break;
@@ -1380,10 +1390,11 @@ void Analyzer::type_default_arguments(FunctionEntity* function, const syntax::Pa
 		ClassEntity* cls = parameter->is_reference() ? nullptr : const_cast<ClassEntity*>(ClassOf(parameter));
 		if (cls != nullptr && same_class_source(cls, *initializer->expression))
 		{
-			expression_scope_ = scope;
+			expression_scope_ = parameters;
 			record_copy(cls, parameter, *initializer->expression, initializer->expression->location);
 		}
 	}
+	default_argument_scope_ = saved_defaults;
 	body_ = saved;
 }
 

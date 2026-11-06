@@ -1679,8 +1679,8 @@ const Type* Analyzer::dependent_member(const Type* qualifier, const Identifier* 
 	return dependent_member_binding(qualifier, name)->type;
 }
 
-Scope* Analyzer::substituted_scope(
-	Scope* scope, const Substitution& substitution, const TemplateParameterEntity* operand)
+Scope* Analyzer::substituted_scope(Scope* scope, const Substitution& substitution,
+	const TemplateParameterEntity* operand, const FunctionEntity* default_function)
 {
 	// A template definition's scope chain as its specialization sees it: the
 	// substituted template parameters' scope becomes their frame, and a
@@ -1694,6 +1694,13 @@ Scope* Analyzer::substituted_scope(
 	// position, an invalid type outside the immediate context).
 	if (scope == nullptr)
 		return nullptr;
+	const bool shared = default_function != nullptr && scope->default_parameters;
+	const DefaultKey key = DefaultKey{ scope, default_function };
+	if (shared)
+	{
+		if (Scope** found = default_argument_frames_.find(key))
+			return *found;
+	}
 	if (scope->kind == ScopeKind::TemplateParameters)
 	{
 		for (const Binding* binding = scope->bindings; binding != nullptr; binding = binding->next)
@@ -1706,10 +1713,11 @@ Scope* Analyzer::substituted_scope(
 	}
 	if (scope->kind != ScopeKind::Function || scope->entity != nullptr)
 		return enclosing_frame(scope, substitution);
-	Scope* result = new_scope(
-		ScopeKind::Function, substituted_scope(scope->parent, substitution, operand), nullptr, nullptr, nullptr);
+	Scope* result = new_scope(ScopeKind::Function,
+		substituted_scope(scope->parent, substitution, operand, default_function), nullptr, nullptr, nullptr);
 	result->dumped = false;
 	result->guarded = scope->guarded;
+	result->default_parameters = scope->default_parameters;
 	// A function parameter pack whose length the substitution knows is its
 	// elements' parameters, its name bound to their types' pack in a scope
 	// below (a copy's expansions expand it, see function_pack_scope).
@@ -1764,7 +1772,18 @@ Scope* Analyzer::substituted_scope(
 		if (binding->name != nullptr)
 			declare_in(result, declared);
 	}
-	return packs != nullptr ? packs : result;
+	if (scope->default_parameters)
+	{
+		Scope* previous = result->parent;
+		while (previous != nullptr && previous->kind == ScopeKind::TemplateParameters)
+			previous = previous->parent;
+		names_.index_default_parameters(
+			result, names_.default_parameter_root(scope) == scope ? result : names_.default_parameter_root(previous));
+	}
+	Scope* completed = packs != nullptr ? packs : result;
+	if (shared && !failed())
+		default_argument_frames_.insert(key, completed);
+	return completed;
 }
 
 Scope* Analyzer::enclosing_frame(Scope* scope, const Substitution& substitution)
@@ -2837,7 +2856,14 @@ void Analyzer::instantiate_default_argument(FunctionEntity* function, uint32_t i
 		HeadOf(primary)->argument_defaults != nullptr)
 	{
 		Scope* parameters = HeadOf(primary)->argument_defaults;
-		frame = instantiation_frame(parameters, ArgumentsOf(function), HeadOf(primary)->count, parameters->parent);
+		Scope* defaults = default_argument_scope(pattern, nullptr);
+		if (defaults != nullptr)
+			frame = substituted_scope(defaults,
+				Substitution{
+					HeadOf(primary)->parameters[0]->depth, ArgumentsOf(function), HeadOf(primary)->count, nullptr },
+				nullptr, function);
+		else
+			frame = instantiation_frame(parameters, ArgumentsOf(function), HeadOf(primary)->count, parameters->parent);
 		FrameExpander expander(*this, frame);
 		syntax::SyntaxCloner cloner(arena_, true, expander.get());
 		copy = cloner.expr(pattern);
@@ -2845,7 +2871,7 @@ void Analyzer::instantiate_default_argument(FunctionEntity* function, uint32_t i
 	}
 	else if (instance_class(function->owner))
 	{
-		frame = function->owner;
+		frame = default_argument_scope(pattern, function->owner);
 		if (PatternOf(function) != nullptr)
 			limit = class_definition_context(PatternOf(function)->owner);
 	}
@@ -2866,7 +2892,9 @@ void Analyzer::instantiate_default_argument(FunctionEntity* function, uint32_t i
 			body.default_argument = index;
 		}
 		body_ = &body;
-		body.default_argument_parent = frame;
+		body.default_argument_parent = declaration_scope(frame);
+		const Scope* saved_defaults = default_argument_scope_;
+		default_argument_scope_ = frame;
 		expression_scope_ = frame;
 		if (copy->kind == syntax::ExprKind::BracedInit)
 			list_argument(static_cast<const syntax::BracedInitList&>(*copy), parameter, frame, copy->location);
@@ -2878,6 +2906,7 @@ void Analyzer::instantiate_default_argument(FunctionEntity* function, uint32_t i
 			if (cls != nullptr && same_class_source(cls, *copy))
 				record_copy(cls, parameter, *copy, copy->location);
 		}
+		default_argument_scope_ = saved_defaults;
 	}
 	function->default_arguments[index] = copy;
 	++graph_.instantiated_arguments;

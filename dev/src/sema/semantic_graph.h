@@ -156,6 +156,10 @@ struct Scope
 	// const scope records an index entry, independently of name visibility
 	// and the printed bindings list (which can omit indexed declarations).
 	mutable bool indexed_names : 1;
+	// A frozen prefix of a default argument's function parameter clause.
+	// Lookup sees these bindings; declarations (including closures) belong
+	// to the surrounding declaration scope.
+	bool default_parameters : 1;
 	// A template parameter scope: the template parameter lists it stands
 	// for in the depth of template parameters declared below it (1 for a
 	// template-head's; none for an instantiation frame's, whose parameters

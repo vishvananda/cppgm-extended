@@ -229,6 +229,29 @@ const NameEntry* NameLookup::find(const Scope* scope, const Identifier* name) co
 	return nullptr;
 }
 
+Scope* NameLookup::default_parameter_root(const Scope* scope) const
+{
+	const uint32_t index = default_parameter_root_index_.find(scope);
+	return index != PointerMap::kMissing ? default_parameter_roots_[index] : const_cast<Scope*>(scope);
+}
+
+void NameLookup::index_default_parameters(Scope* scope, Scope* root)
+{
+	uint32_t index = default_parameter_root_index_.find(root);
+	if (index == PointerMap::kMissing)
+	{
+		index = static_cast<uint32_t>(default_parameter_roots_.size());
+		default_parameter_roots_.push_back(root);
+	}
+	default_parameter_root_index_.set(scope, index);
+	if (root != scope)
+	{
+		for (Binding* binding = scope->bindings; binding != nullptr; binding = binding->next)
+			if (binding->name != nullptr)
+				declare(root, binding);
+	}
+}
+
 void NameLookup::declare(const Scope* scope, Binding* binding)
 {
 	if (scope->kind == ScopeKind::Class)
@@ -414,6 +437,14 @@ const FunctionList* NameLookup::overload(
 LookupResult NameLookup::own(const Scope* scope, const Identifier* name, LookupFilter filter) const
 {
 	LookupResult result = LookupResult();
+	if (scope->default_parameters)
+	{
+		const NameEntry* entry = find(default_parameter_root(scope), name);
+		if (filter == LookupFilter::Ordinary && entry != nullptr && entry->value != nullptr &&
+			scope->last_binding != nullptr && entry->value->ordinal <= scope->last_binding->ordinal)
+			result.binding = entry->value;
+		return result;
+	}
 	const NameEntry* entry = find(scope, name);
 	if (entry == nullptr)
 		return result;
@@ -1018,6 +1049,8 @@ LookupResult NameLookup::unqualified(Scope* scope, const Identifier* name, Looku
 				++value_parameter_uses_;
 			return result;
 		}
+		if (current->default_parameters)
+			current = default_parameter_root(current);
 	}
 	return LookupResult();
 }

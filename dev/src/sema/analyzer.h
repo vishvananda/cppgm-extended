@@ -771,8 +771,8 @@ private:
 	static FunctionEntity* SoleFunction(const LookupResult& found);
 	const FunctionEntity* resolved_specialization(
 		FunctionEntity* function, const uint64_t* arguments, uint32_t count, uint32_t location);
-	Scope* substituted_scope(
-		Scope* scope, const Substitution& substitution, const TemplateParameterEntity* operand = nullptr);
+	Scope* substituted_scope(Scope* scope, const Substitution& substitution,
+		const TemplateParameterEntity* operand = nullptr, const FunctionEntity* default_function = nullptr);
 	const Type* substitute_decltype(const Type* type, const Substitution& substitution);
 	const Type* substitute_value(const Type* type, const Substitution& substitution);
 	const Type* failed_substitution(const TemplateParameterEntity* placeholder);
@@ -1219,6 +1219,7 @@ private:
 		FunctionEntity* function, const syntax::ParameterClause& clause, Scope* scope);
 	void instantiate_default_argument(FunctionEntity* function, uint32_t index);
 	void type_default_arguments(FunctionEntity* function, const syntax::ParameterClause* clause, Scope* scope);
+	Scope* default_argument_scope(const syntax::Expr* expression, Scope* fallback) const;
 	void name_local_type(ClassEntity* entity);
 
 	// ---------------------- construction (analyzer_construction.cpp)
@@ -1653,7 +1654,7 @@ private:
 			error(location, "constructs nested too deeply");
 	}
 	bool stack_half_used() const;
-	static Scope* declaration_scope(Scope* scope);
+	Scope* declaration_scope(Scope* scope);
 	static Scope* enclosing_namespace(Scope* scope);
 	bool hidden_below_namespace(const Scope* block, const Identifier* name) const;
 	static bool encloses(const Scope* outer, const Scope* inner);
@@ -1778,6 +1779,13 @@ private:
 	std::vector<const Type* const*> partial_deduced_;
 	// Prototype scopes' parameters' positions (see parameter_word).
 	mutable PointerMap parameter_positions_;
+	// Default expressions retain their own declaration's parameter names
+	// and object types, even after a differently named redeclaration.
+	PointerMap default_argument_scope_index_;
+	std::vector<Scope*> default_argument_scopes_;
+	// A specialization shares already-substituted default-parameter
+	// prefixes. Demanding each of N defaults does not rebuild N prefixes.
+	FlatMap<DefaultKey, Scope*, DefaultKeyHash> default_argument_frames_;
 	PointerMap placeholder_representatives_;
 	std::vector<const TemplateParameterEntity*> representatives_;
 	std::vector<uint64_t> decltype_words_;

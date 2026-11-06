@@ -1281,6 +1281,9 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 	// 3.3.4p1: a parameter is in scope from its declarator on; a later
 	// parameter's decltype-specifier may name it.
 	Scope* earlier = nullptr;
+	Scope* defaults = nullptr;
+	Scope* default_root = nullptr;
+	uint32_t default_prefix = 0;
 	// Whether the previous parameter's type made a placeholder in `earlier`.
 	bool placed = false;
 	for (const syntax::ParameterDeclaration* parameter : clause.parameters)
@@ -1330,6 +1333,29 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 		}
 		placed = placeholders_made_ != made;
 		parameter_scratch_.push_back(parameter_type);
+		if (parameter->default_argument != nullptr &&
+			parameter->default_argument->expression->kind != syntax::ExprKind::Literal &&
+			parameter->default_argument->expression->kind != syntax::ExprKind::KeywordLiteral)
+		{
+			// 3.3.4p1, 8.3.6p9 (CWG2082): this parameter and the
+			// preceding ones are visible, including their adjusted object
+			// types and cv. Freeze only at a default: each binding is made
+			// once, and a later parameter never leaks into an earlier one.
+			defaults = new_scope(
+				ScopeKind::Function, defaults != nullptr ? defaults : scope, nullptr, nullptr, nullptr);
+			defaults->dumped = false;
+			defaults->guarded = true;
+			defaults->default_parameters = true;
+			if (default_root == nullptr)
+				default_root = defaults;
+			for (; default_prefix <= index; ++default_prefix)
+				declare_parameter(
+					defaults, clause, default_prefix, parameter_object_type(parameter_scratch_[base + default_prefix]));
+			names_.index_default_parameters(defaults, default_root);
+			default_argument_scope_index_.set(
+				parameter->default_argument->expression, static_cast<uint32_t>(default_argument_scopes_.size()));
+			default_argument_scopes_.push_back(defaults);
+		}
 	}
 	uint32_t count = static_cast<uint32_t>(parameter_scratch_.size() - base);
 	// A sole unnamed parameter of non-dependent type void is an empty list

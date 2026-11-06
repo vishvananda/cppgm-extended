@@ -5,6 +5,7 @@
 
 #include "sema/semantic_graph.h"
 #include "support/flat_map.h"
+#include "support/pointer_map.h"
 #include "support/memory/arena.h"
 #include "support/memory/zeroed_allocator.h"
 #include "support/telemetry.h"
@@ -82,6 +83,11 @@ public:
 	// only a friend declaration declared (invisible, 7.3.1.2p3) joins the
 	// entry's overload set at its first visible declaration.
 	void declare(const Scope* scope, Binding* binding);
+	// Frozen prefixes of one parameter clause share a name index. The
+	// prefix's last binding bounds visibility; lookup skips the other
+	// prefixes instead of walking them for each default argument.
+	void index_default_parameters(Scope* scope, Scope* root);
+	Scope* default_parameter_root(const Scope* scope) const;
 	// Records an invisible friend function's declaration in the class of
 	// scope `befriending`, through which argument-dependent lookup finds
 	// it (3.4.2p4), and the functions so recorded for a class and name,
@@ -272,6 +278,8 @@ private:
 	// slots_.size() - 1, the probes' index mask.
 	uint64_t slot_mask_ = 1023;
 	std::vector<NameEntry> entries_;
+	PointerMap default_parameter_root_index_;
+	std::vector<Scope*> default_parameter_roots_;
 	uint32_t count_;
 	uint32_t visit_;
 	telemetry::Counter lookups_;
