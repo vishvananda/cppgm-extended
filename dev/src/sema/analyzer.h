@@ -421,11 +421,17 @@ private:
 	const Type* named_type(const syntax::Name& name, Scope* scope, NameTypeUse use = NameTypeUse::Type);
 	bool check_template_name_type(const Binding* binding, uint32_t location);
 	const Type* binding_type(const Binding* binding, uint32_t location);
+	enum class DeclaratorUse : uint8_t
+	{
+		Declaration,
+		Parameter,
+		TypeId
+	};
 	DeclaratorInfo declarator(const syntax::Declarator* declarator, const Type* type, Scope* scope, uint32_t location,
-		const Specifiers* specifiers = nullptr);
+		const Specifiers* specifiers = nullptr, DeclaratorUse use = DeclaratorUse::Declaration);
 	const Type* ptr_operator(const syntax::PtrOperator& pointer, const Type* type, Scope* scope, uint32_t location);
 	const Type* apply_suffix(const syntax::DeclaratorSuffix& suffix, const Type* type, Scope* scope, uint32_t location,
-		const ClassEntity* member = nullptr);
+		const ClassEntity* member = nullptr, const syntax::ParameterClause** defaults = nullptr);
 	Scope* prototype_scope(
 		const syntax::ParameterClause& clause, const Type* const* types, uint32_t count, Scope* scope);
 	// A parameter's object type: an array's or function's adjusted to a

@@ -522,7 +522,8 @@ const Type* Analyzer::new_auto_type(
 		return nullptr;
 	const bool saved_declarator = auto_declarator_;
 	auto_declarator_ = (specifiers.type == auto_placeholder_ || specifiers.type == decltype_auto_placeholder_);
-	const DeclaratorInfo info = declarator(type_syntax.declarator, specifiers.type, scope, type_syntax.location);
+	const DeclaratorInfo info = declarator(
+		type_syntax.declarator, specifiers.type, scope, type_syntax.location, nullptr, DeclaratorUse::TypeId);
 	auto_declarator_ = saved_declarator;
 	if (failed())
 		return nullptr;

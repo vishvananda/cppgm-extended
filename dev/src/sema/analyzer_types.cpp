@@ -948,7 +948,7 @@ const char* Analyzer::asm_label(const TokenSpelling& spelling)
 }
 
 DeclaratorInfo Analyzer::declarator(const syntax::Declarator* declarator, const Type* type, Scope* scope,
-	uint32_t location, const Specifiers* specifiers)
+	uint32_t location, const Specifiers* specifiers, DeclaratorUse use)
 {
 	DeclaratorInfo info = DeclaratorInfo();
 	info.location = declarator != nullptr ? declarator->location : location;
@@ -1018,6 +1018,7 @@ DeclaratorInfo Analyzer::declarator(const syntax::Declarator* declarator, const 
 	// return type of a function declarator.
 	bool specified = false;
 	uint32_t derivations = 0;
+	const syntax::ParameterClause* defaults = nullptr;
 	for (const syntax::Declarator* current = declarator; current != nullptr; current = current->nested)
 	{
 		check_stack(current->location);
@@ -1037,7 +1038,8 @@ DeclaratorInfo Analyzer::declarator(const syntax::Declarator* declarator, const 
 			const syntax::DeclaratorSuffix& suffix = current->suffixes[i];
 			if (&suffix != last && HasVirtSpecifier(suffix))
 				error(current->location, "a virt-specifier inside a declarator");
-			type = apply_suffix(suffix, type, after, current->location, &suffix == member_suffix ? member : nullptr);
+			type = apply_suffix(
+				suffix, type, after, current->location, &suffix == member_suffix ? member : nullptr, &defaults);
 			if (failed())
 				return info;
 			function = suffix.kind == syntax::DeclaratorSuffixKind::Function ? &suffix : nullptr;
@@ -1071,6 +1073,12 @@ DeclaratorInfo Analyzer::declarator(const syntax::Declarator* declarator, const 
 	if (info.virt_suffix != nullptr && type->kind != TypeKind::Function)
 		error(info.location, "a virt-specifier in a declaration of no function");
 	info.parameters = info.function_suffix != nullptr ? info.function_suffix->parameters : nullptr;
+	// 8.3.6p3: only the declared function's own clause may carry defaults;
+	// a parameter declarator, type-id or typedef declares no such function.
+	if (defaults != nullptr &&
+		(use != DeclaratorUse::Declaration || (specifiers != nullptr && specifiers->is_typedef) ||
+			defaults != info.parameters))
+		error(defaults->location, "default argument in a nested function type");
 	// The declared function's own prototype scope joins the dump here.
 	if (info.parameters != nullptr && pending_prototype_.clause == info.parameters && info.name != nullptr)
 	{
@@ -1249,7 +1257,7 @@ const Type* Analyzer::checked_array(const Type* element, uint64_t bound, uint32_
 }
 
 const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const Type* type, Scope* scope,
-	uint32_t location, const ClassEntity* member)
+	uint32_t location, const ClassEntity* member, const syntax::ParameterClause** defaults)
 {
 	if (suffix.kind == syntax::DeclaratorSuffixKind::Array)
 	{
@@ -1277,6 +1285,12 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 	bool placed = false;
 	for (const syntax::ParameterDeclaration* parameter : clause.parameters)
 	{
+		if (defaults != nullptr && parameter->default_argument != nullptr)
+		{
+			if (*defaults != nullptr && *defaults != &clause)
+				error(parameter->location, "default arguments in more than one function clause");
+			*defaults = &clause;
+		}
 		const uint32_t index = static_cast<uint32_t>(parameter_scratch_.size() - base);
 		if (earlier == nullptr && index != 0 && UsesDecltype(*parameter))
 		{
@@ -1489,7 +1503,7 @@ const Type* Analyzer::parameter_type(const syntax::ParameterDeclaration& paramet
 	if (specifiers.is_constexpr)
 		error(parameter.location, "constexpr in a parameter declaration");
 	const DeclaratorInfo info = declarator(parameter.declarator, specifiers.type, scope, parameter.location,
-		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
+		specifiers.mode_specifiers.empty() ? nullptr : &specifiers, DeclaratorUse::Parameter);
 	if (info.virt_suffix != nullptr)
 		error(parameter.location, "a virt-specifier in a parameter declaration");
 	return info.type;
@@ -1510,7 +1524,7 @@ const Type* Analyzer::type_id(const syntax::TypeId& type, Scope* scope, bool all
 	if (!specifiers.mode_specifiers.empty())
 		filter_mode_alias(specifiers);
 	const DeclaratorInfo info = declarator(type.declarator, specifiers.type, scope, type.location,
-		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
+		specifiers.mode_specifiers.empty() ? nullptr : &specifiers, DeclaratorUse::TypeId);
 	if (failed())
 		return nullptr;
 	if ((info.type == auto_placeholder_ || info.type == decltype_auto_placeholder_) && !allow_placeholder)

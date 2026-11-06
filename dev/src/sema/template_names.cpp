@@ -992,7 +992,7 @@ void Analyzer::declare_alias_template(const syntax::AliasDecl& decl, Scope* scop
 	if (!specifiers.mode_specifiers.empty())
 		filter_mode_alias(specifiers);
 	const DeclaratorInfo info = declarator(decl.type->declarator, specifiers.type, scope, decl.location,
-		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
+		specifiers.mode_specifiers.empty() ? nullptr : &specifiers, DeclaratorUse::TypeId);
 	check_alias_packs(info.type, decl.location);
 	if (info.virt_suffix != nullptr || specifiers.is_virtual)
 		error(decl.location, "a virt-specifier or virtual in an alias-declaration");

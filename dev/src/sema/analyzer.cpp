@@ -837,7 +837,7 @@ void Analyzer::alias_declaration(const syntax::AliasDecl& decl, Scope* scope)
 	if (!specifiers.mode_specifiers.empty())
 		filter_mode_alias(specifiers);
 	const DeclaratorInfo info = declarator(decl.type->declarator, specifiers.type, scope, decl.location,
-		specifiers.mode_specifiers.empty() ? nullptr : &specifiers);
+		specifiers.mode_specifiers.empty() ? nullptr : &specifiers, DeclaratorUse::TypeId);
 	const Type* type = info.type;
 	check_alias_packs(type, decl.location);
 	// 9.2p9, 7.1.2p1: no virt-specifier or function-specifier here.
@@ -1065,8 +1065,8 @@ const Type* Analyzer::non_type_parameter_type(const syntax::TemplateParameter& p
 	// A pack's `...` in the declarator declares the pack, not an expansion.
 	syntax::Declarator bare = parameter.declarator != nullptr ? *parameter.declarator : syntax::Declarator();
 	bare.pack = syntax::PackPosition::None;
-	const DeclaratorInfo info = declarator(
-		parameter.declarator != nullptr ? &bare : nullptr, specifiers.type, scope, parameter.location);
+	const DeclaratorInfo info = declarator(parameter.declarator != nullptr ? &bare : nullptr, specifiers.type, scope,
+		parameter.location, nullptr, DeclaratorUse::Parameter);
 	const Type* type = info.type->unqualified;
 	if (type->kind == TypeKind::Array)
 		type = types_.pointer(type->element);
