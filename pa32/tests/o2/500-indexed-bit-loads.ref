@@ -1,0 +1,77 @@
+function @shifted(%raw : i64, %base : ptr) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %x = convert trunc u32 i64 %raw
+    %s = binary ushr u32 %x, 7
+    %m = binary and u32 %s, 1
+    %c = cmp eq u32 %m, 1
+    %t5 = convert zext i64 u32 %x
+    %t6 = binary ushr i64 %t5, 3
+    %t7 = binary and i64 %t6, 16
+    %t8 = binary xor i64 %t7, 16
+    %t9 = binary add i64 %t8, 8
+    %t10 = index i8 %base, %t9
+    %v = load typed i64 %t10
+    return i64 %v
+}
+function @inverted(%raw : i64, %base : ptr) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %x = convert trunc i8 i64 %raw
+    %m = binary and i8 %x, -128
+    %c = cmp eq i8 %m, 0
+    %t4 = convert sext i64 i8 %x
+    %t5 = binary ushr i64 %t4, 2
+    %t6 = binary and i64 %t5, 32
+    %t7 = binary add i64 %t6, -16
+    %t8 = index i8 %base, %t7
+    %v = load typed i64 %t8
+    return i64 %v
+}
+function @high_bit(%raw : i64, %base : ptr) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %m = binary and i64 %raw, -9223372036854775808
+    %t2 = binary ushr i64 %raw, 58
+    %t3 = binary and i64 %t2, 32
+    %t4 = binary xor i64 %t3, 32
+    %t5 = binary add i64 %t4, 16
+    %t6 = index i8 %base, %t5
+    %v = load typed i64 %t6
+    return i64 %v
+}
+function @volatile_fields(%raw : i64, %base : ptr) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %m = binary and i64 %raw, 16
+    branch %m, ^left, ^right
+
+  block ^left:
+    %a = index i64 %base, 1
+    %va = load volatile typed i64 %a
+    jump ^join
+
+  block ^right:
+    %b = index i64 %base, 3
+    %vb = load volatile typed i64 %b
+    jump ^join
+
+  block ^join:
+    %v = phi i64 [^left: %va, ^right: %vb]
+    return i64 %v
+}
+function @uneven_fields(%raw : i64, %base : ptr) -> i64 [binding=strong, no_inline=yes] {
+  block ^entry:
+    %m = binary and i64 %raw, 16
+    branch %m, ^left, ^right
+
+  block ^left:
+    %a = index i8 %base, 16
+    %va = load typed i64 %a
+    jump ^join
+
+  block ^right:
+    %b = index i8 %base, 40
+    %vb = load typed i64 %b
+    jump ^join
+
+  block ^join:
+    %v = phi i64 [^left: %va, ^right: %vb]
+    return i64 %v
+}

@@ -1,0 +1,67 @@
+typedef unsigned long long U64;
+struct Node { unsigned flags, value; const Node* a; const Node* b; };
+
+__attribute__((always_inline)) inline const Node* a_child(const Node* n) { return n->a; }
+__attribute__((always_inline)) inline const Node* b_child(const Node* n) { return n->b; }
+extern "C" __attribute__((noinline)) U64 stream_path(const Node* root, const U64* bits, unsigned count) {
+  const Node* n=root; U64 hash=1469598103934665603ULL;
+  for(unsigned i=0;i<count;++i) {
+    const bool bit=((bits[(i>>6)&3]>>(i&63))&1)==1;
+    n=bit?b_child(n):a_child(n);
+    hash=(hash^n->value)*1099511628211ULL;
+    if(n->flags&1) n=root;
+  }
+  return hash;
+}
+extern "C" __attribute__((noinline)) U64 flags_path(const Node* root, const U64*, unsigned count) {
+  const Node* n=root; U64 hash=1469598103934665603ULL;
+  for(unsigned i=0;i<count;++i) {
+    n=((n->flags>>2)&1)==0?a_child(n):b_child(n);
+    hash=(hash^n->value)*1099511628211ULL;
+    if(n->flags&1) n=root;
+  }
+  return hash;
+}
+__attribute__((always_inline)) inline U64 read_volatile(const volatile U64* p) { return *p; }
+extern "C" __attribute__((noinline)) U64 selected_volatile(U64 bit, const volatile U64* a, const volatile U64* b) {
+  return (bit&16)!=0?read_volatile(a):read_volatile(b);
+}
+extern "C" __attribute__((noinline)) U64 selected_value(U64 bit, const U64* a, const U64* b) {
+  return (bit&64)==0?*a:*b;
+}
+
+
+extern "C" int printf(const char*, ...);
+extern "C" U64 stream_path(const Node*,const U64*,unsigned);
+extern "C" U64 flags_path(const Node*,const U64*,unsigned);
+extern "C" U64 selected_volatile(U64,const volatile U64*,const volatile U64*);
+extern "C" U64 selected_value(U64,const U64*,const U64*);
+U64 reference(const Node* root,const U64* bits,unsigned count,bool flags) {
+  const Node* n=root; U64 h=1469598103934665603ULL;
+  for(unsigned i=0;i<count;++i) {
+    const Node* children[2]={n->a,n->b};
+    const unsigned k=flags?((n->flags>>2)&1):unsigned((bits[(i>>6)&3]>>(i&63))&1);
+    n=children[k]; h=(h^n->value)*1099511628211ULL;
+    if(n->flags&1) n=root;
+  }
+  return h;
+}
+int main() {
+  unsigned counts[]={0,1,2,7,8,31,32,63,64,65,127,255};
+  U64 total=1469598103934665603ULL;
+  for(unsigned seed=0;seed<128;++seed) {
+    Node nodes[32]; U64 bits[4];
+    for(unsigned i=0;i<32;++i) { nodes[i].a=nodes+(i*3+7)%32;nodes[i].b=nodes+(i*5+9)%32;nodes[i].flags=(i*31+seed*73)%8;nodes[i].value=i*123457U+seed*78911U; }
+    for(unsigned i=0;i<4;++i) bits[i]=(U64(seed)*0xc6bc279692b5cc83ULL)^((U64(i)+1)*0xd1b54a32d192ed03ULL);
+    for(unsigned count:counts) {
+      const Node* r=count==0?nullptr:nodes+seed%32;
+      U64 a=stream_path(r,bits,count),b=flags_path(r,bits,count);
+      if(a!=reference(r,bits,count,false) || b!=reference(r,bits,count,true)) { printf("bad path seed %u count %u\n",seed,count);return 1; }
+      total=(total^a^b)*1099511628211ULL;
+    }
+    U64 a=seed*1003ULL,b=~a;
+    if(selected_volatile(16,&a,nullptr)!=a || selected_volatile(0,nullptr,&b)!=b) return 2;
+    if(selected_value(0,&a,nullptr)!=a || selected_value(64,nullptr,&b)!=b) return 3;
+  }
+  printf("%016llx\n",total);
+}

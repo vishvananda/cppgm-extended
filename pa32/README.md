@@ -270,6 +270,9 @@ pass:
 - A function that only forwards a call and returns its result may not need a
   separate call at each use. Preserve argument order, conversions, object
   materialization and cleanup when composing such boundaries.
+- A conditional choice between fields can sometimes use one indexed address
+  and one read. Prove the bit test and byte offsets, preserve which address
+  is accessed, and keep volatile reads and memory dependencies observable.
 - Keep the optimizer's own work bounded. PA34 compiles the whole compiler
   at `-O3` with this optimizer; [the design notes](design-notes.md) describe
   how to avoid repeating work.

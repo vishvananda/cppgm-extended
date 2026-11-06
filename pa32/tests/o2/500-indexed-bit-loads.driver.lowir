@@ -1,0 +1,63 @@
+global @cells = {
+  zero 64
+}
+
+function @main() -> i64 {
+  block ^entry:
+    %p0 = index i64 @cells, 0
+    store i64 11, %p0
+    %p1 = index i64 @cells, 1
+    store i64 22, %p1
+    %p2 = index i64 @cells, 2
+    store i64 33, %p2
+    %p3 = index i64 @cells, 3
+    store i64 44, %p3
+    %p4 = index i64 @cells, 4
+    store i64 55, %p4
+    %p5 = index i64 @cells, 5
+    store i64 66, %p5
+    %p6 = index i64 @cells, 6
+    store i64 77, %p6
+    %p7 = index i64 @cells, 7
+    store i64 88, %p7
+    %r0 = call i64 @shifted(128, @cells)
+    %d0 = cmp ne i64 %r0, 22
+    %v0 = convert zext i64 i1 %d0
+    %r1 = call i64 @shifted(127, @cells)
+    %d1 = cmp ne i64 %r1, 44
+    %v1 = convert zext i64 i1 %d1
+    %sum1 = binary add i64 %v0, %v1
+    %r2 = call i64 @inverted(128, %p4)
+    %d2 = cmp ne i64 %r2, 77
+    %v2 = convert zext i64 i1 %d2
+    %sum2 = binary add i64 %sum1, %v2
+    %r3 = call i64 @inverted(127, %p4)
+    %d3 = cmp ne i64 %r3, 33
+    %v3 = convert zext i64 i1 %d3
+    %sum3 = binary add i64 %sum2, %v3
+    %r4 = call i64 @high_bit(-9223372036854775808, @cells)
+    %d4 = cmp ne i64 %r4, 33
+    %v4 = convert zext i64 i1 %d4
+    %sum4 = binary add i64 %sum3, %v4
+    %r5 = call i64 @high_bit(0, @cells)
+    %d5 = cmp ne i64 %r5, 77
+    %v5 = convert zext i64 i1 %d5
+    %sum5 = binary add i64 %sum4, %v5
+    %r6 = call i64 @volatile_fields(16, @cells)
+    %d6 = cmp ne i64 %r6, 22
+    %v6 = convert zext i64 i1 %d6
+    %sum6 = binary add i64 %sum5, %v6
+    %r7 = call i64 @volatile_fields(0, @cells)
+    %d7 = cmp ne i64 %r7, 44
+    %v7 = convert zext i64 i1 %d7
+    %sum7 = binary add i64 %sum6, %v7
+    %r8 = call i64 @uneven_fields(16, @cells)
+    %d8 = cmp ne i64 %r8, 33
+    %v8 = convert zext i64 i1 %d8
+    %sum8 = binary add i64 %sum7, %v8
+    %r9 = call i64 @uneven_fields(0, @cells)
+    %d9 = cmp ne i64 %r9, 66
+    %v9 = convert zext i64 i1 %d9
+    %sum9 = binary add i64 %sum8, %v9
+    return i64 %sum9
+}

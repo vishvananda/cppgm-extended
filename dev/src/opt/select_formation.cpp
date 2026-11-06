@@ -54,6 +54,23 @@ bool speculatable(const FunctionBody& body, const Instruction& inst)
 	}
 }
 
+struct BitChoice
+{
+	Value source;
+	Type type;
+	unsigned bit;
+	bool when_set;
+};
+
+struct IndexedChoice
+{
+	Value base;
+	BitChoice bit;
+	int64_t bias;
+	uint64_t delta;
+	bool invert;
+};
+
 // A floating select the lanes' `min` and `max` give exactly: each is
 // `first < second ? first : second` (or `>`), the second when unordered.
 struct MinMax
@@ -69,9 +86,17 @@ public:
 	bool run();
 
 private:
+	const Instruction* producer(Value v) const;
+	Value pointer_source(Value v) const;
+	bool bit_choice(Value cond, BitChoice& choice) const;
+	bool match_indexed_choice(Value cond, Value a, Value b, IndexedChoice& choice) const;
+	Value emit_indexed(BlockId e, InstId& at, const IndexedChoice& choice, uint32_t location);
+	bool indexed_choice(BlockId e, InstId& at, Value cond, Value a, Value b, uint32_t location, Value& out);
 	bool arm(BlockId a, BlockId from, BlockId& to) const;
 	bool loads_through_merge(Value cond, BlockId join) const;
 	bool form(BlockId e);
+	bool form_load(BlockId e);
+	InstId load_arm(BlockId a, BlockId from) const;
 	InstId hoist(BlockId a, BlockId e, InstId after);
 	bool nonzero_literal(Value v) const;
 	bool min_or_max(Value cond, Value a, Value b, MinMax& out) const;
@@ -80,7 +105,187 @@ private:
 	FunctionContext& c_;
 	FunctionBody& body_;
 	std::vector<uint8_t> touched_;
+	const std::vector<uint32_t>* uses_ = nullptr;
 };
+
+const Instruction* SelectFormation::producer(Value v) const
+{
+	if (!v.is(ValueKind::Temp) || v.index < body_.parameter_count || body_.temps[v.index].def == kNoId)
+		return nullptr;
+	return &body_.instructions[body_.temps[v.index].def];
+}
+
+Value SelectFormation::pointer_source(Value v) const
+{
+	for (unsigned depth = 0; depth < 4; ++depth)
+	{
+		const Instruction* inst = producer(v);
+		if (inst == nullptr || inst->op != Opcode::Copy || !inst->type.is_pointer())
+			break;
+		v = inst->ops[0];
+	}
+	return v;
+}
+
+// A mask of one bit, optionally compared with zero or that mask. A
+// constant shift before the mask identifies the original input bit.
+bool SelectFormation::bit_choice(Value cond, BitChoice& choice) const
+{
+	const Instruction* test = producer(cond);
+	if (test == nullptr)
+		return false;
+	bool compared = test->op == Opcode::Compare;
+	uint64_t compared_value = 0;
+	ComparePredicate predicate = ComparePredicate::Ne;
+	if (compared)
+	{
+		predicate = static_cast<ComparePredicate>(test->sub);
+		if (predicate != ComparePredicate::Eq && predicate != ComparePredicate::Ne)
+			return false;
+		const unsigned k = test->ops[0].is(ValueKind::Integer) ? 0 : 1;
+		if (!test->ops[k].is(ValueKind::Integer))
+			return false;
+		compared_value = body_.literals[test->ops[k].index].low;
+		test = producer(test->ops[1 - k]);
+	}
+	if (test == nullptr || test->op != Opcode::Binary || static_cast<BinaryOp>(test->sub) != BinaryOp::And)
+		return false;
+	const unsigned width = lowir::integer_bits(test->type.kind());
+	if (width == 0 || width > 64)
+		return false;
+	const unsigned k = test->ops[0].is(ValueKind::Integer) ? 0 : 1;
+	if (!test->ops[k].is(ValueKind::Integer))
+		return false;
+	const uint64_t all = width == 64 ? ~0ull : (uint64_t(1) << width) - 1;
+	const uint64_t mask = body_.literals[test->ops[k].index].low & all;
+	if (mask == 0 || (mask & (mask - 1)) != 0)
+		return false;
+	compared_value &= all;
+	if (compared && compared_value != 0 && compared_value != mask)
+		return false;
+	choice.source = test->ops[1 - k];
+	choice.type = test->type;
+	choice.bit = static_cast<unsigned>(__builtin_ctzll(mask));
+	choice.when_set = !compared || (predicate == ComparePredicate::Eq ? compared_value == mask : compared_value == 0);
+	const Instruction* shift = producer(choice.source);
+	if (shift == nullptr || shift->op != Opcode::Binary || shift->type != choice.type ||
+		!shift->ops[1].is(ValueKind::Integer))
+		return true;
+	const BinaryOp op = static_cast<BinaryOp>(shift->sub);
+	if (op != BinaryOp::Shr && op != BinaryOp::UShr && op != BinaryOp::Shl)
+		return true;
+	const Literal count = body_.literals[shift->ops[1].index];
+	if (count.high != 0 || count.low >= width)
+		return false;
+	if (op == BinaryOp::Shl)
+	{
+		if (choice.bit < count.low)
+			return false;
+		choice.bit -= static_cast<unsigned>(count.low);
+	}
+	else
+	{
+		if (choice.bit + count.low >= width)
+			return false;
+		choice.bit += static_cast<unsigned>(count.low);
+	}
+	choice.source = shift->ops[0];
+	return true;
+}
+
+// A bit chooses two constant offsets from the same base. Their byte
+// distance is a power of two: compute that one scaled bit instead of
+// computing both full addresses. No load is introduced or speculated.
+bool SelectFormation::match_indexed_choice(Value cond, Value a, Value b, IndexedChoice& choice) const
+{
+	a = pointer_source(a);
+	b = pointer_source(b);
+	const Instruction* left = producer(a);
+	const Instruction* right = producer(b);
+	if (left == nullptr || right == nullptr || left->op != Opcode::Index || right->op != Opcode::Index ||
+		left->type != right->type || !(left->ops[0] == right->ops[0]) || !left->ops[1].is(ValueKind::Integer) ||
+		!right->ops[1].is(ValueKind::Integer))
+		return false;
+	const int64_t ta = static_cast<int64_t>(body_.literals[left->ops[1].index].low);
+	const int64_t fb = static_cast<int64_t>(body_.literals[right->ops[1].index].low);
+	const uint64_t distance = ta > fb ? static_cast<uint64_t>(ta) - static_cast<uint64_t>(fb)
+									  : static_cast<uint64_t>(fb) - static_cast<uint64_t>(ta);
+	const uint64_t element = storage_bytes(left->type);
+	if (distance == 0 || element == 0 || element > INT32_MAX || distance > INT32_MAX / element)
+		return false;
+	const uint64_t delta = distance * element;
+	if ((delta & (delta - 1)) != 0)
+		return false;
+	BitChoice bit;
+	if (!bit_choice(cond, bit))
+		return false;
+	const Value base = left->ops[0];
+	const int64_t offset = ta < fb ? ta : fb;
+	const int64_t bias = static_cast<int64_t>(static_cast<uint64_t>(offset) * element);
+	if (bias < INT32_MIN || bias > INT32_MAX)
+		return false;
+	const bool invert = (ta > fb) != bit.when_set;
+	choice = IndexedChoice{ base, bit, bias, delta, invert };
+	return true;
+}
+
+bool SelectFormation::indexed_choice(BlockId e, InstId& at, Value cond, Value a, Value b, uint32_t location, Value& out)
+{
+	IndexedChoice choice;
+	if (!match_indexed_choice(cond, a, b, choice))
+		return false;
+	out = emit_indexed(e, at, choice, location);
+	return true;
+}
+
+Value SelectFormation::emit_indexed(BlockId e, InstId& at, const IndexedChoice& choice, uint32_t location)
+{
+	const Value base = choice.base;
+	const BitChoice bit = choice.bit;
+	const int64_t bias = choice.bias;
+	const uint64_t delta = choice.delta;
+	const bool invert = choice.invert;
+	const unsigned output_bit = static_cast<unsigned>(__builtin_ctzll(delta));
+	const Type word = Type::scalar(TypeKind::I64);
+	auto emit = [&](Instruction inst, Type result) {
+		inst.location = location;
+		const InstId id = append_instruction(body_, inst);
+		body_.instructions[id].result = append_temp(body_, result, id);
+		insert_after(body_, e, at, id);
+		at = id;
+		return Value::temp(body_.instructions[id].result);
+	};
+	auto binary = [&](BinaryOp op, Value x, int64_t constant) {
+		Instruction inst = make_instruction(Opcode::Binary, word);
+		inst.sub = static_cast<uint8_t>(op);
+		inst.ops[0] = x;
+		inst.ops[1] = integer_value(body_, Literal{ static_cast<uint64_t>(constant), constant < 0 ? ~0ull : 0 });
+		return emit(inst, word);
+	};
+	Value source = bit.source;
+	if (bit.type != word)
+	{
+		Instruction extend = make_instruction(Opcode::Convert, word);
+		extend.sub = static_cast<uint8_t>(
+			lowir::is_unsigned(bit.type.kind()) || bit.type.kind() == TypeKind::I1 ? ConvertOp::ZExt : ConvertOp::SExt);
+		set_convert_source_type(extend, bit.type);
+		extend.ops[0] = source;
+		source = emit(extend, word);
+	}
+	if (bit.bit > output_bit)
+		source = binary(BinaryOp::UShr, source, bit.bit - output_bit);
+	else if (bit.bit < output_bit)
+		source = binary(BinaryOp::Shl, source, output_bit - bit.bit);
+	source = binary(BinaryOp::And, source, delta);
+	if (invert)
+		source = binary(BinaryOp::Xor, source, delta);
+	if (bias != 0)
+		source = binary(BinaryOp::Add, source, bias);
+	Instruction index = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
+	index.ops[0] = base;
+	index.ops[1] = source;
+	return emit(index, Type::scalar(TypeKind::Ptr));
+}
 
 // A block reached only from `from` that computes at most kArmCap
 // speculatable values and jumps on (to `to`).
@@ -310,7 +515,9 @@ bool SelectFormation::form(BlockId e)
 		MinMax lanes;
 		if (!(a == b) && !selectable(body_.instructions[i].type) && min_or_max(cond, a, b, lanes))
 			merged = emit_min_max(e, at, lanes, body_.instructions[i].type, body_.instructions[term].location);
-		else if (!(a == b))
+		else if (!(a == b) &&
+			(!body_.instructions[i].type.is_pointer() ||
+				!indexed_choice(e, at, cond, a, b, body_.instructions[term].location, merged)))
 		{
 			Instruction sel = make_instruction(Opcode::Select, body_.instructions[i].type);
 			sel.ops[0] = cond;
@@ -363,6 +570,91 @@ bool SelectFormation::form(BlockId e)
 	return true;
 }
 
+// A terminal ordinary load after at most the existing arm budget's pure
+// address computations. Nothing else is allowed to observe an arm's result.
+InstId SelectFormation::load_arm(BlockId a, BlockId from) const
+{
+	if (a == from || touched_[a] || (c_.cfg.flags[a] & (BF_HANDLER | BF_EH)) || c_.cfg.pred_count(a) != 1 ||
+		c_.cfg.preds[c_.cfg.pred_first[a]] != from)
+		return kNoId;
+	const InstId last = body_.blocks[a].last;
+	if (last == kNoId || body_.instructions[last].op != Opcode::Jump)
+		return kNoId;
+	unsigned count = 0;
+	for (InstId i = body_.blocks[a].first; i != last; i = body_.instructions[i].next)
+	{
+		const Instruction& inst = body_.instructions[i];
+		if (++count > kArmCap)
+			return kNoId;
+		if (inst.op == Opcode::Load && inst.next == last && !(inst.flags & IF_VOLATILE) && inst.result != kNoId &&
+			selectable(inst.type) && inst.ops[0].is(ValueKind::Temp) &&
+			body_.temps[inst.ops[0].index].type.is_pointer())
+			return i;
+		if (!speculatable(body_, inst))
+			return kNoId;
+	}
+	return kNoId;
+}
+
+// Factor one ordinary read through the selected indexed address. The
+// incoming loads have no other uses; their result phi becomes the one load.
+// Original arm computations disappear with their now-unreachable blocks.
+bool SelectFormation::form_load(BlockId e)
+{
+	const InstId term = body_.blocks[e].last;
+	if (term == kNoId || body_.instructions[term].op != Opcode::Branch)
+		return false;
+	const Value cond = body_.instructions[term].ops[0];
+	const uint32_t location = body_.instructions[term].location;
+	const BlockId t = body_.instructions[term].ops[1].index, f = body_.instructions[term].ops[2].index;
+	if (t == f)
+		return false;
+	const InstId ti = load_arm(t, e), fi = load_arm(f, e);
+	if (ti == kNoId || fi == kNoId)
+		return false;
+	const BlockId join = body_.instructions[body_.blocks[t].last].ops[0].index;
+	if (join != body_.instructions[body_.blocks[f].last].ops[0].index || join == e || touched_[join] ||
+		(c_.cfg.flags[join] & (BF_HANDLER | BF_EH)) || c_.cfg.pred_count(join) != 2 || c_.cfg.dominates(join, e))
+		return false;
+	const InstId phi = body_.blocks[join].first;
+	const Instruction left = body_.instructions[ti], right = body_.instructions[fi];
+	if (phi == kNoId || body_.instructions[phi].op != Opcode::Phi ||
+		(body_.instructions[phi].next != kNoId && body_.instructions[body_.instructions[phi].next].op == Opcode::Phi) ||
+		left.type != right.type || body_.instructions[phi].type != left.type ||
+		!(phi_incoming(body_, body_.instructions[phi], t) == Value::temp(left.result)) ||
+		!(phi_incoming(body_, body_.instructions[phi], f) == Value::temp(right.result)))
+		return false;
+	IndexedChoice choice;
+	if (!match_indexed_choice(cond, left.ops[0], right.ops[0], choice) || loads_through_merge(cond, join))
+		return false;
+	if (uses_ == nullptr)
+		uses_ = &c_.entry_uses(form_selects);
+	if (left.result >= uses_->size() || right.result >= uses_->size() || (*uses_)[left.result] != 1 ||
+		(*uses_)[right.result] != 1)
+		return false;
+	InstId at = previous_in_block(body_, e, term);
+	const Value address = emit_indexed(e, at, choice, location);
+	Instruction load = left;
+	load.result = body_.instructions[phi].result;
+	load.next = body_.instructions[phi].next;
+	load.ops[0] = address;
+	load.flags &= right.flags;
+	body_.instructions[phi] = load;
+	for (BlockId arm : { t, f })
+	{
+		Instruction& jump = body_.instructions[body_.blocks[arm].last];
+		jump.op = Opcode::Unreachable;
+		jump.ops[0] = Value::none();
+	}
+	Instruction jump = make_instruction(Opcode::Jump, Type::scalar(TypeKind::Void));
+	jump.ops[0] = Value::block(join);
+	jump.location = location;
+	body_.instructions[term] = jump;
+	touched_[e] = touched_[t] = touched_[f] = touched_[join] = 1;
+	++c_.stats.branches_folded;
+	return true;
+}
+
 bool SelectFormation::run()
 {
 	c_.ensure_cfg();
@@ -370,7 +662,7 @@ bool SelectFormation::run()
 	bool changed = false;
 	for (BlockId b : body_.layout)
 		if (c_.cfg.reachable(b) && !touched_[b] && !(c_.cfg.flags[b] & BF_EH))
-			changed = form(b) || changed;
+			changed = form(b) || form_load(b) || changed;
 	if (changed)
 		c_.invalidate_cfg();
 	return changed;

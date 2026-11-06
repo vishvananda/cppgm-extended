@@ -192,6 +192,23 @@ whose intermediate values have other observable users. Compare table space,
 memory latency and compile cost against the arithmetic removed. Variable
 polynomials and arithmetic shifts need their own proofs.
 
+## Conditional field access
+
+When a tested bit chooses two constant offsets from one base, their distance
+may allow that bit to form an array index. Account for element size, signed
+and narrow inputs, shifts, reversed arms and comparison polarity. Use the
+original base and drop field-specific facts that no longer describe the
+computed address. Only the selected address may be read; computing addresses
+does not authorize reading both fields.
+
+Factoring a read through a merge requires compatible load types, no intervening
+effects, valid operands on the new path and preserved exceptional behavior.
+Volatile accesses need their own proof. A branch can hide load latency on a
+predicted path: converting a load-dependent traversal to arithmetic can make
+it slower. Measure dependency chains and native execution alongside the
+reduction in branches; the fixtures allow equivalent arithmetic and control
+flow within their quality bounds.
+
 ## Register pressure and independent work
 
 Reducing LowIR instruction count can lengthen live ranges. A value moved out

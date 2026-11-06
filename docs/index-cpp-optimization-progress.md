@@ -557,6 +557,63 @@ The earlier private narrow-consumer oracle is retained in
 `group2-next-u32-oracle/`; the accepted implementation and fresh controls are
 described above.
 
+## Bit-indexed conditional field loads
+
+The refreshed Huffman profile puts over 94% of execution in the decoder for
+all three compilers. The decoder already uses raw pointers and an eight-bit
+unrolled loop. Its remaining conditional child accesses compute two field
+addresses and branch to one load. Clang instead uses the tested bit as an
+address index. The missing opportunity is address formation, not reference
+counting or absent loop unrolling.
+
+The new rule proves a one-bit test from typed AND/shift/comparison operations,
+then checks two constant indexes with the same base and element type. A
+power-of-two byte distance permits a scaled bit, optional polarity reversal
+and constant bias. The computed index uses the original base and retains no
+field-specific or speculative arithmetic facts. A compatible ordinary read
+can be factored through an acyclic, effect-free diamond only when each load
+feeds the single merge result. Volatile accesses, exceptional regions and
+load-dependent traversal latency retain their existing safeguards. The merge
+result becomes the one load in place; no extra optimizer pass or analysis is
+introduced.
+
+An earlier generic address-select/load prototype increased instructions by
+13.5% and was rejected. Requiring the indexed-address proof avoids that cost.
+A proposed compare-fusion change produced identical code and was also rejected.
+The accepted source matches the measured final prototype's benchmark object.
+Nine paired blocks, bracketed by A/A controls, show instruction speed 1.01538
+against the preceding compiler (1.51% fewer instructions). The observed wall
+ratio is 1.16559, but calibration ranges from 0.74 to 1.23, so it is not a
+precise timing claim. The paired wall/instruction comparisons remain 0.982/0.838
+against GCC and 0.777/0.781 against Clang; a residual Clang gap remains.
+Executable `.text` decreases from 389,010 to 388,946 bytes.
+
+Independent checks cover 1,840 typed LowIR cases across 640 inputs and both
+host callers at O0 through O3, plus 20 source/replay/compiler paths through a
+cyclic traversal oracle. All pass. C++11 course fixtures exercise shifted,
+inverted and high-bit tests, negative offsets, unequal strides, selected
+volatile reads, cyclic and load-dependent traversals and null unselected
+pointers. Their quality bounds allow equivalent implementations. The complete
+index-cpp object is identical through direct and serialized LowIR paths,
+and all 50 checksum workloads pass.
+
+Frozen compile instructions change by about +0.002% at O0 and +0.025% at O3;
+objects are unchanged on that input and peak RSS stays within 0.1%. Longer
+controls show paired CPU speeds 0.995 at O0 and 1.001 at O3, within the
+bracketing A/A variation; all initial observations are retained.
+All six public sentinels and both Boost container/Xpressive sentinels produce
+identical objects at both levels. The strict report passes 8,051 tests;
+debug-info, self-host through PA5, PA35 smoke/quick, optional modern-C++,
+architecture, placement, formatting, file and harness checks all pass.
+Receipts: `huffman-indexed-ported/`, `huffman-indexed-ported-frozen/`,
+`huffman-indexed-choice-matrix-v6/`, `huffman-indexed-source-oracle-v6/`,
+`huffman-select-load-v5/runtime/` and the ported public/Boost sentinel folders.
+The fresh student export verifies the portable reference outputs, all 55
+student documents and 42 wrappers. The new LowIR, host and object-roundtrip
+fixtures also pass through its installed reference tools. Export receipts are
+`huffman-indexed-ported/export-results-v2.json`; the export is
+`student-export-huffman-indexed-v2/`.
+
 ## Outstanding work
 
 Retain the completed public suite, 50-workload comparison, PA35 release and

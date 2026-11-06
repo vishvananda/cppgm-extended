@@ -1,0 +1,1 @@
+../host/o2/500-indexed-bit-loads.t.1
