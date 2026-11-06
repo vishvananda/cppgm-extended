@@ -541,7 +541,17 @@
       "calibration": "Fixed process addresses; all five A/A intervals inside predeclared \u00b10.01% equivalence band; counter scheduling >=99%; all source/header/binary hashes unchanged.",
       "status_before_rss_scope_audit": "pass-controlled-layout-instruction-and-memory-gates",
       "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
-      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
+      "compiler_rss_revalidation": {
+        "status": "inputs-audited-measurements-pending",
+        "scope_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-preflight-v4.json",
+        "queue": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-queue-v3.json",
+        "groups": [
+          "performance-counters-v2-controlled"
+        ],
+        "original_workload_reports": 5,
+        "note": "Original instruction evidence and raw observations retained. All frozen inputs/binaries/wrappers/raw reports and2400 original observation outputs rehashed across the11 pending groups. Direct compiler RSS is unmeasured until the serial replay passes unchanged gates."
+      },
+      "compiler_rss_revalidation_before_input_audit": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "implementation": [
       "dev/src/sema/analyzer_bodies.cpp",
@@ -941,7 +951,17 @@
       "earlier_attempt": "All six first A/A observations retained. GNU time rounded user CPU to zero in five 32-alias and four 128-alias observations, so no candidate comparison ran. Fresh batched experiment keeps all instruction/RSS gates unchanged.",
       "status_before_rss_scope_audit": "pass-instruction-and-memory-gates",
       "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
-      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
+      "compiler_rss_revalidation": {
+        "status": "inputs-audited-measurements-pending",
+        "scope_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-preflight-v4.json",
+        "queue": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-queue-v3.json",
+        "groups": [
+          "performance-counters-batched"
+        ],
+        "original_workload_reports": 6,
+        "note": "Original instruction evidence and raw observations retained. All frozen inputs/binaries/wrappers/raw reports and2400 original observation outputs rehashed across the11 pending groups. Direct compiler RSS is unmeasured until the serial replay passes unchanged gates."
+      },
+      "compiler_rss_revalidation_before_input_audit": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -1344,7 +1364,17 @@
       },
       "status_before_rss_scope_audit": "pass-instruction-and-memory-gates",
       "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
-      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
+      "compiler_rss_revalidation": {
+        "status": "inputs-audited-measurements-pending",
+        "scope_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-preflight-v4.json",
+        "queue": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-queue-v3.json",
+        "groups": [
+          "performance-counters"
+        ],
+        "original_workload_reports": 6,
+        "note": "Original instruction evidence and raw observations retained. All frozen inputs/binaries/wrappers/raw reports and2400 original observation outputs rehashed across the11 pending groups. Direct compiler RSS is unmeasured until the serial replay passes unchanged gates."
+      },
+      "compiler_rss_revalidation_before_input_audit": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -1379,7 +1409,7 @@
   {
     "id": "CXX11-007",
     "priority": "P1",
-    "status": "performance-passed",
+    "status": "fix-in-validation",
     "upstream": [
       "llvm-project/clang/test/CodeGenCXX/cxx11-initializer-aggregate.cpp"
     ],
@@ -1412,7 +1442,7 @@
       "baseline": "required-baseline.json (CPU signal and bad_alloc)"
     },
     "performance": {
-      "status": "pass",
+      "status": "instruction-gates-retained-compiler-rss-revalidation-pending",
       "protocol": "performance-protocol.json",
       "parent": "performance-counters/{aa,ab}-assessment.json (six workloads)",
       "targeted": "performance-explicit-aggregates/{aa,ab}-assessment.json (three brace-elision workloads)",
@@ -1435,7 +1465,21 @@
         "dev/src/lower/global_lowering.cpp": "52503cbd8f205db3cc3228760cdaa6910fdc97f6360a0554ab538c3209f2ee2d"
       },
       "measured_batched_child_objects": 7680,
-      "bss_span_oracle": "scaling-candidate/bss-size-checks.json (32/32 objects keep the declared size)"
+      "bss_span_oracle": "scaling-candidate/bss-size-checks.json (32/32 objects keep the declared size)",
+      "status_before_rss_scope_audit": "pass",
+      "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
+      "compiler_rss_revalidation": {
+        "status": "inputs-audited-measurements-pending",
+        "scope_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-preflight-v4.json",
+        "queue": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-queue-v3.json",
+        "groups": [
+          "performance-counters",
+          "performance-explicit-aggregates",
+          "performance-cumulative"
+        ],
+        "original_workload_reports": 12,
+        "note": "Original instruction evidence and raw observations retained. All frozen inputs/binaries/wrappers/raw reports and2400 original observation outputs rehashed across the11 pending groups. Direct compiler RSS is unmeasured until the serial replay passes unchanged gates."
+      }
     },
     "standards_basis": {
       "category": "implementation-scaling",
@@ -1468,7 +1512,8 @@
     },
     "repair_status": "Known original-core scaling paths repaired; full-source GNU-extension and LLVM textual-interface coverage remain partial.",
     "regression_revision": "4d29974ecf64856fcd979cf6da1bbd999da667a4",
-    "measurement_report": "reports/cxx11-sparse-array-scaling.txt"
+    "measurement_report": "reports/cxx11-sparse-array-scaling.txt",
+    "status_before_rss_scope_audit": "performance-passed"
   },
   {
     "id": "CXX11-008",
@@ -1777,7 +1822,18 @@
       "cumulative_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-011/performance-cumulative",
       "status_before_rss_scope_audit": "passed",
       "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
-      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
+      "compiler_rss_revalidation": {
+        "status": "inputs-audited-measurements-pending",
+        "scope_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-preflight-v4.json",
+        "queue": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-queue-v3.json",
+        "groups": [
+          "performance-counters",
+          "performance-cumulative"
+        ],
+        "original_workload_reports": 9,
+        "note": "Original instruction evidence and raw observations retained. All frozen inputs/binaries/wrappers/raw reports and2400 original observation outputs rehashed across the11 pending groups. Direct compiler RSS is unmeasured until the serial replay passes unchanged gates."
+      },
+      "compiler_rss_revalidation_before_input_audit": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -1868,7 +1924,17 @@
       "gates_unchanged": true,
       "status_before_rss_scope_audit": "passed",
       "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
-      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
+      "compiler_rss_revalidation": {
+        "status": "inputs-audited-measurements-pending",
+        "scope_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-preflight-v4.json",
+        "queue": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-queue-v3.json",
+        "groups": [
+          "performance-counters-v2"
+        ],
+        "original_workload_reports": 7,
+        "note": "Original instruction evidence and raw observations retained. All frozen inputs/binaries/wrappers/raw reports and2400 original observation outputs rehashed across the11 pending groups. Direct compiler RSS is unmeasured until the serial replay passes unchanged gates."
+      },
+      "compiler_rss_revalidation_before_input_audit": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "implementation-scaling",
@@ -2182,7 +2248,17 @@
       "candidate_sha256": "b556c813467076303d89c3e0a5fe0d329f153cda17eb30f48f4ae9ea9bdff5e4",
       "status_before_rss_scope_audit": "pass",
       "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
-      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
+      "compiler_rss_revalidation": {
+        "status": "inputs-audited-measurements-pending",
+        "scope_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-preflight-v4.json",
+        "queue": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-queue-v3.json",
+        "groups": [
+          "performance-counters"
+        ],
+        "original_workload_reports": 6,
+        "note": "Original instruction evidence and raw observations retained. All frozen inputs/binaries/wrappers/raw reports and2400 original observation outputs rehashed across the11 pending groups. Direct compiler RSS is unmeasured until the serial replay passes unchanged gates."
+      },
+      "compiler_rss_revalidation_before_input_audit": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -2285,7 +2361,17 @@
       "timing": "Descriptive under load; calibrated instruction/RSS gates passed. No noisy wall-time pass or baseline-failing reproducer speed ratio claimed.",
       "status_before_rss_scope_audit": "pass",
       "rss_scope_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/resource-scope-correction-v1.json",
-      "compiler_rss_revalidation": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
+      "compiler_rss_revalidation": {
+        "status": "inputs-audited-measurements-pending",
+        "scope_audit": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-preflight-v4.json",
+        "queue": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-016/closed-repair-memory-queue-v3.json",
+        "groups": [
+          "performance-counters-v4"
+        ],
+        "original_workload_reports": 9,
+        "note": "Original instruction evidence and raw observations retained. All frozen inputs/binaries/wrappers/raw reports and2400 original observation outputs rehashed across the11 pending groups. Direct compiler RSS is unmeasured until the serial replay passes unchanged gates."
+      },
+      "compiler_rss_revalidation_before_input_audit": "Pending direct-compiler replay/scope audit; original whole-command observations and instruction results are retained. The profiler footprint can mask smaller compiler processes."
     },
     "standards_basis": {
       "category": "implementation-scaling",

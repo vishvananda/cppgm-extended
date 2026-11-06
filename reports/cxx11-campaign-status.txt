@@ -547,3 +547,20 @@ Combined027/028 per-fix performance acceptance:
   Additional native-prefix oracle and final verification workers are queued
   behind verified process identities. These later stages remain unproven;
   CXX11-027/028 and the broader campaign stay open.
+
+Historical compiler-RSS replay preflight:
+- CXX11-016/closed-repair-memory-preflight-v4.json verifies all60 pending
+  workload reports across11 groups, all2,400 original retained observation
+  outputs and2,951 unique frozen input/binary/report/object files. Original
+  observations remain unchanged. Fifty-five reports use exact output; five
+  retain their declared deterministic output policy and four-compiler native
+  semantic oracles. The earlier all-modes-equal preflight assertion is recorded
+  and corrected; it supplied no RSS measurement or pass.
+- The v3 queue marks input-scope audit complete and actual compiler RSS replay
+  pending. CXX11-007's three groups now carry the same explicit pending RSS
+  status as the other affected repairs; their original instruction results are
+  retained. Only CXX11-001's three historical workload RSS rechecks are done.
+  No historical RSS comparison ran alongside the active027/028 measurements.
+- The three027/028 cumulative instruction gates pass against the original
+  compiler, maximum upper95 ratio1.0011203074187318. Their direct RSS and the
+  remaining absolute/linked/export checks are still running or queued.
