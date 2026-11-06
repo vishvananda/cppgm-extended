@@ -194,3 +194,20 @@ run_complex_resource_v12.py serially after active measurements: it prepares
 72 direct-RSS observations across three evaluation depths and three phases,
 with native execution and the complete 48-byte backing checked. This extra
 resource check is still unexecuted and is required before repair closure.
+
+Completed per-fix gate verification
+
+per-fix-acceptance-v5.json verifies all 21 calibrated instruction and direct
+compiler RSS pairs: maximum instruction upper95 is 1.0069872015477916 and
+maximum compiler RSS upper95 is 1.0. All 46,080 measured batch child outputs
+and 3,360 ordinary observation outputs were rehashed against the reports.
+Compiler, source, fixture and frozen input hashes remain valid. Both exact
+and independently audited changed-output groups pass. This repairs the
+measured v9 regressions without changing workload coverage or thresholds.
+
+final-pipeline-v2 has started the original-baseline cumulative measurements;
+its scaling, linked and fresh-export stages are still required. The additional
+complex-resource check is now queued behind that worker via verified process
+identity in complex-pipeline-v12.log. No closure is claimed before all those
+results pass. CXX11-027 and the remaining upstream adapter/corpus/CI work
+remain open.

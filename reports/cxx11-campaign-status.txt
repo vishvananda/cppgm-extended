@@ -453,3 +453,14 @@ Clang directory-configuration closure:
   This is dependency discovery only; no feature/default/suffix decisions or
   tests were evaluated. See cxx11-clang-command-shapes.txt and its config
   verification artifact before implementing the execution adapter.
+
+Per-fix performance acceptance for v12:
+- All 21 calibrated instruction and direct compiler RSS workload pairs pass;
+  maximum upper95 ratios are 1.0069872015477916 for instructions and 1.0 for
+  actual compiler RSS. All 46,080 measured batch children and 3,360 observation
+  outputs were reverified with source/binary/input hashes. See CXX11-026's
+  per-fix-acceptance-v5.json. The failed v9 evidence is preserved.
+- Cumulative original-baseline checks are running, followed serially by
+  explicit class-DAG/extent scaling, linked reducers and a fresh student
+  export. The additional complex resource ladder is queued after that
+  verified worker. CXX11-025/026 remain open pending all final gates.
