@@ -1544,12 +1544,12 @@
   {
     "id": "CXX11-008",
     "priority": "P1",
-    "status": "repair-in-validation",
+    "status": "correctness-passed",
     "upstream": [
       "llvm-project/clang/test/SemaCXX/P1155.cpp"
     ],
     "symptom": "P1825 throw of a value parameter still attempts deleted copy construction after return-side repair.",
-    "root_cause": "throw_operand excludes function and catch parameters from implicit-move eligibility.",
+    "root_cause": "Throw eligibility omitted automatic function/catch parameters and did not model intervening lexical and protected try scopes under P1825/CWG2549.",
     "owning_pa": 21,
     "regressions": [
       "pa21/tests/controls/100-throw-value-parameter-move-only.t",
@@ -1598,14 +1598,20 @@
       "pa21/tests/controls/100-throw-prototype-substitution-move.t",
       "pa21/tests/controls/100-throw-selected-template-deleted-move-reject.t"
     ],
-    "fix_revision": null,
+    "fix_revision": "97fa48fc074e695768be906723993eaf762f890b",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008",
-    "checks": {},
+    "checks": {
+      "functional_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-checks-v1/functional-verification-v1.json",
+      "candidate_cells": 552,
+      "strict_tests": 8207,
+      "normal_stages": 15,
+      "export_stages": 48,
+      "packaged_controls": 45,
+      "wrappers": 42
+    },
     "performance": {
-      "status": "not-started-full-functional-validation-running",
-      "pre_edit_design": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-preparation-v1.json",
-      "instruction_upper95_gate": 1.01,
-      "actual_rss_upper95_gate": 1.03
+      "status": "pending-actual-parent-measurement",
+      "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-preparation-v1.json"
     },
     "standards_basis": {
       "category": "later-defect-resolution",
@@ -1620,7 +1626,7 @@
       "scope_wording": "https://cplusplus.github.io/CWG/issues/2549.html",
       "scope_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/standards-cwg2549-v1/manifest.json"
     },
-    "triage_note": "P1825 and adopted2549 scope rules adjudicated with independent review. Ctor-initializer is outside the function-try compound; its current oracle moves. Local default-argument parent scopes block an outer local even in unevaluated context; optionalClangwarnings are replayed away and not counted as required diagnoses. The new039 own-parameter default lookup defect is separate and remains open.",
+    "triage_note": "45 required PA21 controls and originalClangP1155 verified acrossISO/GNU11/14/17,O0/O2. CWG2549 final approved wording,adoptedFeb2025 asDR,governs scope boundaries; superseded proposals do not. Optional Clang warnings replayed and excluded as language diagnoses. Isolated branch based on rebased campaign; performance and integration remain pending.",
     "rebased_checkpoint": {
       "active_worktree": "/mnt/vizier/cppgm-cxx11-throw-implicit-move-rebased",
       "active_branch": "repair/cxx11-throw-implicit-move-rebased",
@@ -3954,5 +3960,36 @@
       "later": "CWG2082,February2016"
     },
     "scope": "Required lookup regressions belong PA7:300; runtime procedural call PA10; throw composition PA21. Defect is reproduced on both008 parent andcandidate and remains separate from throw eligibility. Invalid negative throws blocked by undeclared-name errors are not counted as008 rule coverage."
+  },
+  {
+    "id": "CXX11-040",
+    "priority": "P2",
+    "status": "triaged",
+    "upstream": [
+      "llvm-project/clang/test/CXX/dcl.decl/dcl.meaning/dcl.fct.default/p3.cpp (neighbor discovery)"
+    ],
+    "symptom": "Valid new-expression with a deduced function-pointer return type rejects before any default argument rule.",
+    "root_cause": "apply_suffix restricts auto-return declarators to declared functions/trailing returns without preserving the permitted deduction context of new type-ids.",
+    "owning_pa": 20,
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-040",
+    "checks": {
+      "initial_source_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-034/auto-function-pointer-review-v1/standards-review.json",
+      "parent_normal_rejections": 4,
+      "gcc15_normal_rejections": 4,
+      "clang21_and22_valid_runtime_cells": 8
+    },
+    "performance": {
+      "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "later-defect-resolution",
+      "issue": "CWG2476",
+      "adopted": "March2024 asDR",
+      "wording": "https://cplusplus.github.io/CWG/issues/2476.html",
+      "approved_resolution": "2023-11-10,change5 explicitly permits placeholder in new-expression type-id; supersedes1892 restriction"
+    },
+    "triage_note": "Root independently reviewed adopted final2476 wording. Separate positive language gap from034 nested defaults; no compiler fix or required fixture. Native GCC disagreement retained. Verify earliest exact PA20 new/deduction cluster before repair."
   }
 ]
