@@ -285,7 +285,7 @@ struct EnumSpecifier
 	Name* name;
 	TypeId* underlying;
 	Slice<Enumerator> enumerators;
-	// Attributes retained after the enum-key for ABI and semantic checks.
+	// GNU abi_tag after the enum-key (pa28), plus attributes checked by analysis.
 	Attribute* attributes;
 	// The enumerator-list ends with a comma.
 	bool trailing_comma;
