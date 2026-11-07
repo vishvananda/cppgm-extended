@@ -1,0 +1,2 @@
+// N3485 5p11/5.16p1,p4: evaluate only selected bit-field glvalue effects; expect exit 0
+int left_calls,right_calls,left_value=3,right_value=7;int& left(){++left_calls;return left_value;}int& right(){++right_calls;return right_value;}int f(bool c){left_calls=right_calls=0;c?left():right();return left_calls!=(c?1:0)||right_calls!=(c?0:1)||left_value!=3||right_value!=7;}int main(){return f(true)||f(false);}
