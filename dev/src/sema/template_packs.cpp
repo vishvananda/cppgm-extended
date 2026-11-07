@@ -30,8 +30,24 @@ void AddPack(PackList& out, uint32_t index)
 	out.push_back(index);
 }
 
-// Finds the template parameter packs a template definition's expression
-// names, by ordinary lookup where it appears (see expression_packs).
+// A function parameter pack expands the packs in its type's pattern
+// (14.5.3p5), including when an expression's result type is not dependent.
+const Type* DefinitionPack(const Binding* binding)
+{
+	if (binding->kind == BindingKind::Parameter && binding->type != nullptr &&
+		binding->type->kind == TypeKind::Expansion)
+		return binding->type->element;
+	if (binding->entity != nullptr && binding->entity->kind == EntityKind::TemplateParameter)
+	{
+		const TemplateParameterEntity* parameter = static_cast<const TemplateParameterEntity*>(binding->entity);
+		if (parameter->pack)
+			return parameter->canonical->type;
+	}
+	return nullptr;
+}
+
+// Finds template and function parameter packs by ordinary lookup where
+// the expression appears (see expression_packs).
 class DefinitionPacks : public syntax::PackExpander
 {
 public:
@@ -40,33 +56,7 @@ public:
 	int32_t pack_length(const Identifier* name) override
 	{
 		const LookupResult found = names_.unqualified(scope_, name, LookupFilter::Ordinary);
-		if (!found.found() || found.ambiguous || found.binding->entity == nullptr ||
-			found.binding->entity->kind != EntityKind::TemplateParameter)
-			return -1;
-		return static_cast<const TemplateParameterEntity*>(found.binding->entity)->pack ? 0 : -1;
-	}
-	const Identifier* element_name(const Identifier* name, uint32_t) override { return name; }
-	void mismatch(uint32_t) override {}
-
-private:
-	NameLookup& names_;
-	Scope* scope_;
-};
-
-// The function parameter packs a template definition's expression names
-// (each expands its type's template parameter packs, 14.5.3p5).
-class ParameterPacks : public syntax::PackExpander
-{
-public:
-	ParameterPacks(NameLookup& names, Scope* scope) : names_(names), scope_(scope) {}
-
-	int32_t pack_length(const Identifier* name) override
-	{
-		const LookupResult found = names_.unqualified(scope_, name, LookupFilter::Ordinary);
-		return found.found() && !found.ambiguous && found.binding->kind == BindingKind::Parameter &&
-				found.binding->type != nullptr && found.binding->type->kind == TypeKind::Expansion
-			? 0
-			: -1;
+		return found.found() && !found.ambiguous && DefinitionPack(found.binding) != nullptr ? 0 : -1;
 	}
 	const Identifier* element_name(const Identifier* name, uint32_t) override { return name; }
 	void mismatch(uint32_t) override {}
@@ -355,10 +345,10 @@ void Analyzer::unexpanded_packs(const Type* type, uint32_t depth, PackList& out,
 
 const Type* Analyzer::expression_packs(const syntax::Expr& expr, Scope* scope, const Type** nested)
 {
-	// The template parameter packs a template definition's expression (a
-	// placeholder's) names outside the expansions nested in it: a Pack of
-	// their canonical types, null for none; and (`nested`) those the
-	// expansions nested in it name.
+	// The packs a template definition's expression (a placeholder's) names
+	// outside nested expansions: a Pack of canonical template parameter
+	// types or function parameter type patterns, null for none; and
+	// (`nested`) those the expansions nested in it name.
 	DefinitionPacks finder(names_, scope);
 	std::vector<const Identifier*> names, inner;
 	syntax::SyntaxCloner cloner(arena_, true, &finder);
@@ -367,39 +357,19 @@ const Type* Analyzer::expression_packs(const syntax::Expr& expr, Scope* scope, c
 	if (nested == nullptr)
 		return packs;
 	*nested = canonical_packs(inner, scope);
-	if (cloner.nested_expansions() != 0 && packs != nullptr)
-	{
-		// A nested expansion of a function parameter pack expands the packs
-		// its type's pattern names: the pattern joins the nested packs (see
-		// element_renames, which finds those packs in it).
-		ParameterPacks parameters(names_, scope);
-		std::vector<const Identifier*> outer, nested_parameters;
-		syntax::SyntaxCloner walker(arena_, true, &parameters);
-		walker.collect_packs(&expr, outer, &nested_parameters);
-		if (!nested_parameters.empty())
-		{
-			TypeList all;
-			for (uint32_t i = 0; *nested != nullptr && i < (*nested)->param_count; ++i)
-				all.push_back((*nested)->params[i]);
-			for (const Identifier* name : nested_parameters)
-				all.push_back(names_.unqualified(scope, name, LookupFilter::Ordinary).binding->type->element);
-			*nested = types_.pack(all.data(), static_cast<uint32_t>(all.size()));
-		}
-	}
 	return packs;
 }
 
 const Type* Analyzer::canonical_packs(const std::vector<const Identifier*>& names, Scope* scope)
 {
-	// The template parameter packs of these names (found by
-	// DefinitionPacks) as a Pack of their canonical types, null for none.
+	// The packs found by DefinitionPacks as canonical types/patterns.
 	if (names.empty())
 		return nullptr;
 	TypeList packs;
 	for (const Identifier* name : names)
 	{
 		const LookupResult found = names_.unqualified(scope, name, LookupFilter::Ordinary);
-		packs.push_back(static_cast<const TemplateParameterEntity*>(found.binding->entity)->canonical->type);
+		packs.push_back(DefinitionPack(found.binding));
 	}
 	return types_.pack(packs.data(), static_cast<uint32_t>(packs.size()));
 }
