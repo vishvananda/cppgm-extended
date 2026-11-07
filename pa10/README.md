@@ -179,7 +179,7 @@ Stating them now costs one flag each; deriving them again after lowering is
 not possible.
 
 For reference initialization, the course includes the later
-[CWG2352 resolution](https://cplusplus.github.io/CWG/issues/2352.html):
+[CWG2352 resolution](../doc/cwg/cwg-2352.txt):
 reference-related types include similar types, and a permitted qualification
 conversion can make them reference-compatible. Such a compatible lvalue binds
 directly; it does not require a converted pointer temporary. In case 2 of

@@ -14,3 +14,7 @@ project. Current PA numbers do not correspond to original CPPGM numbering.
 
 Questions about inherited material should be directed to the repository
 maintainers.
+
+The CWG issue references and WG21 papers under doc/cwg/ retain their source,
+contributor, revision and adoption information. The text is attributed to its
+original WG21 contributors; see doc/cwg/INDEX.txt and manifest.json.

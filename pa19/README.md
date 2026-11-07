@@ -169,7 +169,7 @@ PA19 owns integration among already-introduced template features, including:
   builtins, or later language features
 
 The course includes the later
-[CWG1315 resolution](https://cplusplus.github.io/CWG/issues/1315.html) for
+[CWG1315 resolution](../doc/cwg/cwg-1315.txt) for
 dependent non-type arguments in partial specializations: an argument expression
 may involve a specialization's template parameter when that parameter is
 deducible outside non-deduced contexts. Do not reject the declaration solely
