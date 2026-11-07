@@ -272,21 +272,29 @@ void Analyzer::check_subobject_destruction(const ClassEntity* entity, const Scop
 	// subobject of the class's object, not on a member of the base's own
 	// type (11.4). A union's variant members and an anonymous member's are
 	// not destroyed by it.
+	const bool abstract = entity->virtuals != nullptr && entity->virtuals->pure_count != 0;
+	const auto check = [this, scope, location](const ClassEntity* cls, const ClassEntity* object) {
+		FunctionEntity* destructor = cls->destructor;
+		check_not_deleted(destructor, location);
+		check_special_access(destructor, cls, scope, location, object);
+		if (destructor->noexcept_pending)
+			function_nothrow(destructor);
+		if (destructor->instantiated && !destructor->definition_demanded && semantic())
+			require_function_definition(destructor);
+	};
 	for (const BaseClass* base = entity->bases; base != nullptr; base = base->next)
 	{
 		const ClassEntity* cls = static_cast<const ClassEntity*>(base->base);
-		if (cls->destructor == nullptr)
+		if (cls->destructor == nullptr || (base->is_virtual && abstract))
 			continue;
-		check_not_deleted(cls->destructor, location);
-		check_special_access(cls->destructor, cls, scope, location, entity);
+		check(cls, entity);
 	}
-	for (uint32_t i = 0; i < VirtualBaseCount(entity); ++i)
+	for (uint32_t i = 0; i < (abstract ? 0 : VirtualBaseCount(entity)); ++i)
 	{
 		const ClassEntity* cls = static_cast<const ClassEntity*>(VirtualBases(entity)[i].base->base);
 		if (VirtualBases(entity)[i].direct || cls->destructor == nullptr)
 			continue;
-		check_not_deleted(cls->destructor, location);
-		check_special_access(cls->destructor, cls, scope, location, entity);
+		check(cls, entity);
 	}
 	if (entity->key == TokenKind::KW_UNION)
 		return;
@@ -296,8 +304,7 @@ void Analyzer::check_subobject_destruction(const ClassEntity* entity, const Scop
 		const ClassEntity* cls = type->is_reference() ? nullptr : ObjectClass(type);
 		if (cls == nullptr || cls->destructor == nullptr || cls->anonymous)
 			continue;
-		check_not_deleted(cls->destructor, location);
-		check_special_access(cls->destructor, cls, scope, location, cls);
+		check(cls, cls);
 	}
 }
 
