@@ -389,5 +389,11 @@
     "status": "required-diagnostic",
     "sha256": "e4755d1de35315c134c351e7a7036398a500e75fc24c9bc04cf708c5e7250ae4",
     "reason": "The typedef declaration combines a fixed-underlying enum head without enumerators with a following typedef declarator. N3485 7.2p1 opaque-enum grammar requires a standalone semicolon after enum-base, while 7.1.6.3 elaborated enum grammar contains no enum-base. No matching11form permits this combined declaration. Require any normal diagnostic; GCC extension warning and cppgm rejection both satisfy it."
+  },
+  "llvm-project/clang/test/SemaTemplate/function-pointer-qualifier.cpp": {
+    "status": "standards-review",
+    "issue": "CXX11-092",
+    "sha256": "4a6fc8ac147b415c62117f9d642c8574fb5db5f073f552ef3bb16b00505d401b",
+    "reason": "The coupled overloads deduce a function type through const T**. CWG1584 remains drafting in primary revision 121a (2026-10-10); its May 2015 consensus note has no adopted resolution. Adopted CWG295 ignores cv-qualification added to an already known function type, but does not resolve deduction from this cv-qualified pattern. cppgm permits the const-function deduction and finds the original call ambiguous; GCC15/Clang21 reject the single const-pattern deduction and select the unqualified overload. Shared required C++11 acceptance of the original whole file is therefore not established. Preserve its original failure as standards review, with no compiler pass claimed. Required PA6/PA14 controls independently preserve adopted295 known-function aliases/explicit substitution and ordinary object qualification rejection."
   }
 }
