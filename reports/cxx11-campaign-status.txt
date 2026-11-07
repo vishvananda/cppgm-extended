@@ -1,14 +1,16 @@
 Current checkpoint (2026-11-07; supersedes historical status entries below)
 
-Fifteen known individual compiler gaps remain unclosed. Fourteen have
+Fifteen known individual compiler gaps remain unclosed. All fifteen have
 independently validated functional/student-export repairs:008,019/shared030,
-021,031,032,033,034,035,036,038,039,040,041 and043.043 elaborated-return
+021,031,032,033,034,035,036,038,039,040,041,043 and044.043 elaborated-return
 parser repair passes8249strict,14normal and53export stages,50packaged
 controls and42reference wrappers,independently revalidated byroot.044missing
-virtual/final/override diagnosis has a focused-passing repair:33required
-controls,396candidate language cells,144exact parent objects and9exact
-performance-input pairs. Its full normal checkpoint reached a placement failure;
-that failure is retained for ownership review before export acceptance.
+virtual/final/override diagnosis repair passes8282strict,14normal and36export
+stages,33packaged controls and42reference wrappers,independently revalidated
+byroot.396candidate language cells,144exact parent objects and9exact
+performance-input pairs pass. Its original placement failure is retained;two
+byte-identical moves intoPA14:300 plus the046test-only fix precede corrected
+placement/harness andfresh export. Allfunctional workers are now terminal/held.
 Functional acceptance is
 not performance acceptance or integration. This is not an exhaustive corpus
 inventory or a current GCC/Clang whole-suite pass percentage.
@@ -40,6 +42,16 @@ pass18policy/release controls. The six-stage remaining029controller is prepared
 but unreleased:precise per-fix/family RSS,then rebased-original andhistorical-
 original counter/RSS pairs. Completed instruction cohorts are retained.
 
+Future isolated-repair countertools-v3 passes27policy/mode controls,preserving
+the six predeclared C++17 inputs for041 in addition to its three C++11 inputs.
+The029queue retains unchangedv2tools. No v3hardware measurement occurred.
+019's actual parent is021's1b2ad805d,not18c450526;fulltracked-source archive
+proof confirms the preserved parent. Nine newly frozen common-correct member/
+aggregate-copy inputs plus three newly-valid substitution scales pass96cells
+across actualparent/candidate/GCC/Clang atO0/O2,18exactparent/candidate pairs,
+and six expectedparent static-assert failures. Inputs were added after the
+repair,before performance measurement;no earlier predeclaration is claimed.
+
 Maintainer-only placement-audit045 is integrated without compiler changes.
 Its75focused controls andfull placement scan pass,with placement output byte
 identical to the earlier implementation. Broader harness validation initially hit046:
@@ -60,10 +72,14 @@ Evidence under /mnt/vizier/cppgm-cxx11-upstream:
   issues/CXX11-041/checks-v1/root-revalidation-v1.json
   issues/CXX11-043/checks-v1/root-revalidation-v1.json
   issues/CXX11-044/repair-v1/focused-verification-v1.json
+  issues/CXX11-044/checks-v1/root-revalidation-v1.json
+  issues/CXX11-044/checks-v1/quiescence-v1.json
+  issues/CXX11-019/performance-input-preflight-v2/independent-verification-v1.json
   issues/CXX11-045/campaign-integration-v3.json
   issues/CXX11-046/{initial-adjudication-v1.json,functional-verification-v1.json}
   rebases/2026-11-06/functional-window-open-v2.json
   rebases/2026-11-06/remaining-029-performance-v2/controller-preparation-verification-v1.json
+  rebases/2026-11-06/counter-tools-v3/preparation-verification-v1.json
   rebases/2026-11-06/family-memory-investigation-v1/{precision-controls-v3/independent-verification-v1.json,parser-controls-v2.json,batched-allocation-controls-v1/assessment.json}
 
 Historical checkpoints follow with their original revision/scope.

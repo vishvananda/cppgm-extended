@@ -2727,8 +2727,13 @@
       "independent_verification": "functional-acceptance-v1.json:root independently rehashes478 source files,9 symlinks,all544 native receipts,objects/executables,required fixtures and export artifacts. No performance acceptance."
     },
     "performance": {
-      "status": "rebased-actual-parent-and-cumulative-gates-pending",
-      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
+      "status": "pending-actual-parent-measurement",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included.",
+      "actual_rebased_parent_revision": "1b2ad805d5ead8998f16421a61931e9f9f6ede0d",
+      "actual_rebased_parent_binary": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/string/cppgm++",
+      "targeted_input_protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/performance-inputs-v2/protocol.json",
+      "targeted_correctness": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/performance-input-preflight-v2/independent-verification-v1.json",
+      "scope_correction": "Actualparentincludes021. Do not use18cwhichwouldconflatetworepairs. Fulltrackedsourcearchiveproof,96preflightcells,18exactcommonpairs and6expectedparentstaticassertfailures. Representativeinputsaddedafterrepair,beforeperformance;noearlierinputpredeclarationclaim."
     },
     "standards_basis": {
       "category": "later-dr",
@@ -4371,7 +4376,10 @@
       "candidate_language_cells": 396,
       "required_exact_parent_objects": 144,
       "performance_exact_input_pairs": 9,
-      "normal_export_status": "Fullnormal checkpointfailedplacementfor2dependentqualified-memberfixturesinPA14:100;retainoriginalevidenceandmovefixtures toPA14:300 beforefull/export acceptance."
+      "normal_export_status": "All14normal/36export stages pass;8282strict,21modern,33packaged controls,42wrappers. Original2fixture placement failure retained;byte-identicalPA14:300 moves plus046test-only fix permit12stage transfer andfreshplacement/harness/export. Performance/integrationpending.",
+      "normal_export_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-044/checks-v1/functional-verification-v2.json",
+      "normal_export_independent_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-044/checks-v1/root-revalidation-v1.json",
+      "quiescence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-044/checks-v1/quiescence-v1.json"
     },
     "standards_basis": {
       "file": "/mnt/vizier/cppgm-clang-elaborated-return-types/doc/n3485.txt",
@@ -4387,7 +4395,8 @@
     "performance": {
       "status": "pending-actual-parent-measurement"
     },
-    "triage_note": "Typed FunctionDeclaratorInfo virt_suffix/specifier flags and existing templated/class/qualified/friend context enforce modifier eligibility in declare_function. Ordinary virtual class-template members/dependent overrides remainvalid. Focusedpass;fullnormal/export andperformance/integrationpending."
+    "triage_note": "Typed FunctionDeclaratorInfo virt_suffix/specifier flags and existing templated/class/qualified/friend context enforce modifier eligibility in declare_function. Ordinary virtual class-template members/dependent overrides remainvalid. Allfocused/fullnormal/export checks pass. Performance/integrationpending.",
+    "validated_revision": "f0198c61a3e31c03f7bc21c5da2858383f95739f"
   },
   {
     "id": "CXX11-045",
