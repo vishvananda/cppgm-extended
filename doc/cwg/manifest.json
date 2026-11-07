@@ -753,6 +753,18 @@
       "adopted_papers": []
     },
     {
+      "issue": 2137,
+      "title": "List-initialization from object of same type",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-2137.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2137.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2137.html",
+      "source_html_sha256": "4b88b6935305fc632d6ab0076046102ad55ea5167d651639e5c0ac512e8a917b",
+      "text_sha256": "a7e0277dc8976884c2c485a938efbcb34fee68f9606c7b49a428bb3096fb2570",
+      "adopted_papers": []
+    },
+    {
       "issue": 2140,
       "title": "Lvalue-to-rvalue conversion of std::nullptr_t",
       "status": "CD4",

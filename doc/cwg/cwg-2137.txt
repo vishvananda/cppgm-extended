@@ -1,0 +1,106 @@
+CWG 2137: List-initialization from object of same type
+Source: https://cplusplus.github.io/CWG/issues/2137.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2137. List-initialization from object of same type
+Section: 9.5.5 [dcl.init.list [1]] Status: CD4 Submitter: Richard Smith Date: 2015-06-10
+
+[Adopted at the June, 2016 meeting.]
+
+It is not clear in code like the following that selecting a copy/move constructor is the
+correct choice when an initializer list contains a single element of the type being
+initialized, as required by issue 1467 [2]:
+
+
+  #include <initializer_list>
+  #include <iostream>
+
+  struct Q {
+    Q() { std::cout << "default\n"; }
+    Q(Q const&) { std::cout << "copy\n"; }
+    Q(Q&&) { std::cout << "move\n"; }
+    Q(std::initializer_list<Q>) { std::cout << "initializer list\n"; }
+  };
+
+  int main() {
+    Q x = Q { Q() };
+  }
+
+
+Here the intent is that Q objects can contain other Q objects, but this is broken by the
+resolution of issue 1467 [2].
+
+Perhaps the presence of an initializer-list constructor should change the outcome?
+
+Proposed resolution (April, 2016):
+
+1.
+
+Change 9.5.5 [dcl.init.list [3]] bullet 3.1 as follows:
+
+List-initialization of an object or reference of type T is defined as follows:
+
+-
+
+If T is [DELETE: a class type] [INSERT: an aggregate class] and the initializer list has
+a single element of type cv U, where U is T or a class derived from T, the object is
+initialized from that element (by copy-initialization for copy-list-initialization, or
+by direct-initialization for direct-list-initialization).
+
+-
+
+...
+
+2.
+
+Change 12.2.4.2.6 [over.ics.list [4]] paragraph 2 as follows:
+
+If the parameter type is [DELETE: a] [INSERT: an aggregate] class X and the initializer
+list has a single element of type cv U, where U is X or a class derived from X, the
+implicit conversion sequence is the one required to convert the element to the parameter
+type.
+
+3.
+
+Change 12.2.4.2.6 [over.ics.list [5]] paragraph 6 as follows, breaking the existing
+running text into a bulleted list:
+
+Otherwise, if the parameter is a non-aggregate class X and overload resolution per
+12.2.2.8 [over.match.list [6]] chooses a single best constructor [INSERT: C] of X to
+perform the initialization of an object of type X from the argument initializer [DELETE:
+list,] [INSERT: list:]
+
+-
+
+[INSERT: If C is not an initializer-list constructor and the initializer list has a
+single element of type cv U, where U is X or a class derived from X, the implicit
+conversion sequence has Exact Match rank if U is X, or Conversion rank if U is derived
+from X]
+
+-
+
+[INSERT: Otherwise,] the implicit conversion sequence is a user-defined conversion
+sequence with the second standard conversion sequence an identity conversion.
+
+If multiple constructors are viable...
+
+Source links:
+[1] https://wg21.link/dcl.init.list
+[2] cwg-1467.txt; https://cplusplus.github.io/CWG/issues/1467.html
+[3] https://wg21.link/dcl.init.list#3.1
+[4] https://wg21.link/over.ics.list#2
+[5] https://wg21.link/over.ics.list#6
+[6] https://wg21.link/over.match.list

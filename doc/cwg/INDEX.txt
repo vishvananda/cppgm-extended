@@ -143,6 +143,8 @@ CWG 2084 | CD4 | cwg-2084.txt
   NSDMIs and deleted union default constructors
 CWG 2101 | CD4 | cwg-2101.txt
   Incorrect description of type- and value-dependence
+CWG 2137 | CD4 | cwg-2137.txt
+  List-initialization from object of same type
 CWG 2140 | CD4 | cwg-2140.txt
   Lvalue-to-rvalue conversion of std::nullptr_t
 CWG 2176 | CD4 | cwg-2176.txt

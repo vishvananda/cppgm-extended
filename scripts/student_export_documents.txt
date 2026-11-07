@@ -59,6 +59,7 @@ doc/cwg/cwg-2079.txt
 doc/cwg/cwg-2082.txt
 doc/cwg/cwg-2084.txt
 doc/cwg/cwg-2101.txt
+doc/cwg/cwg-2137.txt
 doc/cwg/cwg-2140.txt
 doc/cwg/cwg-2176.txt
 doc/cwg/cwg-2273.txt
