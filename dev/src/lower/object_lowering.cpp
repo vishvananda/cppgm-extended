@@ -1980,17 +1980,37 @@ void FunctionLowering::initialize_subobjects(uint32_t location)
 		aggregate_extension_ = saved_extension;
 		destroy_temporaries(first);
 		end_full_expression(region);
-		// A union's members are variant members: never destroyed
-		// implicitly (12.4p8, 15.2p2).
+		// CWG1866: initialized variants join construction cleanup, though
+		// ordinary destruction still excludes them (12.4p8).
 		const sema::DataMember* member = init.member;
-		const sema::ClassEntity* owner = sema::ClassOf(function_->owner->entity->type);
-		if (owner->key != TokenKind::KW_UNION && member->variable->kind == sema::EntityKind::Variable &&
-			member->variable->name != nullptr && needs_destruction(member->variable->type))
+		if (init.inner != nullptr || entity->key == TokenKind::KW_UNION)
+			initialized_member_constructed(init, entity->key == TokenKind::KW_UNION, location);
+		else if (member->variable->kind == sema::EntityKind::Variable && member->variable->name != nullptr &&
+			needs_destruction(member->variable->type))
 			subobject_constructed(Subobject{ nullptr, member, -1 }, location);
 	}
 	if (!table_stored)
 		tables_stored(location);
 	bit_limit_ = UINT64_MAX;
+}
+
+void FunctionLowering::initialized_member_constructed(const sema::SubobjectInit& init, bool variant, uint32_t location)
+{
+	// The semantic plan selects each variant, including anonymous members.
+	// Unselected storage never joins the chain of constructed subobjects.
+	if (variant && !init.designated && init.mem_initializer == nullptr && init.default_initializer == nullptr)
+		return;
+	if (init.inner != nullptr)
+	{
+		const bool inner_variant = object_class(init.member->variable->type)->key == TokenKind::KW_UNION;
+		for (uint32_t i = 0; i < init.inner_count; ++i)
+			initialized_member_constructed(init.inner[i], inner_variant, location);
+		return;
+	}
+	const sema::DataMember* member = init.member;
+	if (member->variable->kind == sema::EntityKind::Variable && member->variable->name != nullptr &&
+		needs_destruction(member->variable->type))
+		subobject_constructed(Subobject{ nullptr, member, -1 }, location);
 }
 
 void FunctionLowering::tables_stored(uint32_t location)

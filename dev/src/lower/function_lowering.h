@@ -1227,6 +1227,7 @@ private:
 	const syntax::Initializer* mem_initializer_view(const syntax::MemInitializer* written, syntax::Initializer& view);
 	// Whether the member's initialization writes anything.
 	bool initialize_member(const sema::SubobjectInit& init, uint32_t location);
+	void initialized_member_constructed(const sema::SubobjectInit& init, bool variant, uint32_t location);
 	void initialize_scalar_member(const sema::VariableEntity* variable, const sema::DataMember* member,
 		const syntax::Initializer& written, uint32_t location);
 
