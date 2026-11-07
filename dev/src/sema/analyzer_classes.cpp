@@ -1088,6 +1088,11 @@ Entity* Analyzer::enum_specifier(
 	// 7.2p1: an enum-head's attributes appertain to the enumeration
 	// (7.6.3p1).
 	reject_noreturn(specifier.attributes, "noreturn attribute on an enumeration");
+	// CWG2354 removes enumeration declarations from alignas's subjects,
+	// including zero and dependent alignment operands. GNU aligned is separate.
+	for (const syntax::Attribute* attribute = specifier.attributes; attribute != nullptr; attribute = attribute->next)
+		if (attribute->kind == syntax::AttributeKind::Alignas && !attribute->gnu)
+			error(attribute->location, "alignment-specifier on an enumeration");
 	const Type* underlying = nullptr;
 	if (specifier.underlying != nullptr)
 	{

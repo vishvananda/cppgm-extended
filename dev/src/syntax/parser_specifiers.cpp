@@ -1157,8 +1157,8 @@ EnumSpecifier* Parser::parse_enum_specifier(TypeIdContext context)
 		specifier->key = tok().simple;
 		next();
 	}
-	// Its abi_tag attributes (GCC mangles them) and a standard noreturn,
-	// which the analysis rejects (7.6.3p1); the others are ignored.
+	// ABI tags and attributes whose applicability needs semantic checking;
+	// the remaining vendor attributes are ignored.
 	Attribute* attributes = nullptr;
 	if (!collect_attributes(attributes))
 		return nullptr;
@@ -1167,6 +1167,7 @@ EnumSpecifier* Parser::parse_enum_specifier(TypeIdContext context)
 	{
 		Attribute* const following = attribute->next;
 		if (attribute->kind == AttributeKind::AbiTag ||
+			(attribute->kind == AttributeKind::Alignas && !attribute->gnu) ||
 			(attribute->kind == AttributeKind::NoReturn && attribute->standard))
 		{
 			attribute->next = nullptr;
