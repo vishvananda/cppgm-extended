@@ -5135,10 +5135,12 @@
       "parent_owning": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/parent-owning-v1.log",
       "native48": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/native-proof-v1/results.json",
       "candidate_owning16": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/candidate-owning-v2.log",
-      "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057058059-acceptance-v1.json"
+      "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057060061064-acceptance-v1.json",
+      "composite_full_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/composite-v1/functional-verification-v2.json",
+      "evaluation_owned_followup": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/composite-v1/evaluation-owned-neighbors-v1/review-v1.json"
     },
-    "triage_note": "Accepted narrow ABI-empty ordinary-variable/by-value-parameter copy shortcut,16 required controls,full normal/export gate. Final predicate reordering changes no rule. GCC constexpr-empty13.C remains the same whole-class-read family: ordinary empty member makes the enclosing class nonempty for ABI, yet copying it reads no scalar state. Follow-up must use typed cached subobject facts, preserve union active-state and evaluation-owned lifetime checks, and avoid scans of array elements or repeated class DAGs.",
-    "fix_revision": "218a54ecc"
+    "triage_note": "Accepted ABI-empty and ordinary nested empty-subobject corrections. Cached typed SubobjectValues fact fits existing ClassEntity padding(280bytes unchanged),visits array types rather than logical elements,shares complete-type answers,and conservatively preserves scalar/reference/union state. Fourteen additional controls;array-tail prototype correction retained. Both strict native hosts additionally accept evaluation-owned const-ref copies of a class with a mutable empty member;current compiler rejects. This same-family follow-up remains open and must preserve source lifetime/generation/view and mutable scalar checks.",
+    "fix_revision": "f427dde42"
   },
   {
     "id": "CXX11-058",
@@ -5180,5 +5182,124 @@
       "review": "/mnt/vizier/cppgm-cxx11-upstream/clang-ci-verify-negatives-v1/triage-v1.json",
       "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057058059-acceptance-v1.json"
     }
+  },
+  {
+    "id": "CXX11-060",
+    "priority": "P1",
+    "status": "closed",
+    "compiler_language_gap": true,
+    "symptom": "Direct reference-to-reference declarator syntax is silently collapsed;alias/decltype/template collapse must remain valid.",
+    "owning_pa": 6,
+    "fix_revision": "423b5f310",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-060",
+    "checks": {
+      "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057060061064-acceptance-v1.json",
+      "actual_parent": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-060-parent-proof-v3.json",
+      "isolated_full": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-061/checks-v1/functional-verification-v2.json"
+    },
+    "integration": {
+      "strict": 8737,
+      "harness": {
+        "suites": 42,
+        "cases": 654
+      },
+      "focused_export_controls": 52,
+      "reference_wrappers": 42
+    },
+    "standards_basis": "N3485 8.3.2p5 forbids direct reference-to-reference formation; p6 permits alias/decltype/template collapsing. Clang parenthesized direct-form acceptance disagreement is retained against the primary rule.",
+    "regressions": "12 required PA6:200 and PA14:100 fixtures;seven intended actual-parent failures.",
+    "upstream": [
+      "clang/test/Parser/cxx0x-rvalue-reference.cpp"
+    ]
+  },
+  {
+    "id": "CXX11-061",
+    "priority": "P1",
+    "status": "closed",
+    "compiler_language_gap": true,
+    "symptom": "Namespace/block using-declarations silently import class members and constructors outside member scope.",
+    "owning_pa": 6,
+    "fix_revision": "ee02fbaef",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-061",
+    "checks": {
+      "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057060061064-acceptance-v1.json",
+      "actual_parent": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-061-parent-proof-v1.json",
+      "isolated_full": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-061/checks-v1/functional-verification-v2.json"
+    },
+    "integration": {
+      "strict": 8737,
+      "harness": {
+        "suites": 42,
+        "cases": 654
+      },
+      "focused_export_controls": 52,
+      "reference_wrappers": 42
+    },
+    "standards_basis": "N3485 7.3.3p8 requires member-declaration scope for class member imports. Enumerator mode applicability is separate062.",
+    "regressions": "11 new PA6:200/PA11:300,500 fixtures;one prior invalid positive corrected without losing its intended value/alias coverage. Four byte-identical lane renames recorded.",
+    "upstream": [
+      "clang/test/CXX/special/class.inhctor/elsewhere.cpp"
+    ]
+  },
+  {
+    "id": "CXX11-062",
+    "priority": "P1",
+    "status": "confirmed-unfixed",
+    "compiler_language_gap": true,
+    "symptom": "Scoped-enumerator and class-member-enumerator using declarations are silently accepted outside member scope in supported pre20 modes.",
+    "owning_pa": 6,
+    "standards_basis": "N3485 7.3.3p7/p8 requires diagnosis. CWG1742 was resolved by P1099R5 as a C++20 feature,not a retroactive defect waiver. No deliberate course exception found.",
+    "checks": {
+      "standards_mode_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-062/standards-mode-review-v1.json"
+    },
+    "triage_note": "36 mode cells/72 streams preserved. Normal Clang extension warning is a compliant diagnostic;severity parity is unnecessary. Namespace-owned unscoped enumerator remains valid. Fix/regressions/performance still pending."
+  },
+  {
+    "id": "CXX11-063",
+    "kind": "placement-harness",
+    "compiler_language_gap": false,
+    "status": "closed",
+    "symptom": "Placement audit mistakes directly invalid reference chains for forwarding-reference deduction,while four fixtures also needed their correct PA11 clusters.",
+    "fix_revision": "2efb7fd7c",
+    "placement_revision": "fc534ef6e",
+    "checks": {
+      "independent": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-063/functional-verification-v1.json",
+      "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057060061064-acceptance-v1.json"
+    },
+    "triage_note": "Maximal-munch ampersand classification preserves independent advanced types and later genuine forwarding matches.78 focused audit tests pass;full placement4673tests zero findings,harness42/654,all normal/export checks pass. Original failure and four byte-identical lane transfers retained."
+  },
+  {
+    "id": "CXX11-064",
+    "priority": "P1",
+    "status": "closed",
+    "compiler_language_gap": true,
+    "symptom": "Constant conversion of an ordinary cvnullptr_t glvalue incorrectly reads stored state,including volatile and inactive-union cases covered by adopted defects.",
+    "owning_pa": 16,
+    "fix_revision": "bd1a219dc",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-064",
+    "checks": {
+      "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057060061064-acceptance-v1.json",
+      "focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-064/focused-verification-v1.json"
+    },
+    "integration": {
+      "strict": 8737,
+      "harness": {
+        "suites": 42,
+        "cases": 654
+      },
+      "focused_export_controls": 52,
+      "reference_wrappers": 42
+    },
+    "standards_basis": "Original N3485 4.1p2 requires no stored-value read,but5.19p2 omitted the exception. Adopted CWG2907(Nov2024) expressly permits cvnullptr_t glvalues;CWG2140(Feb2016) clarifies no volatile read and inactive-union access.",
+    "primary": [
+      "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#2907",
+      "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#2140"
+    ],
+    "regressions": "14 required PA16:100 controls;parent5/14,candidate14/14. GCC15 volatile nullptr rejection retained as native disagreement;Clang21 agrees with adopted cv rule.",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/nullptr06.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/nullptr08.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/nullptr11.C"
+    ]
   }
 ]

@@ -211,3 +211,16 @@ correctness/performance validation; and each job reports matched upstream
 suite times, correctness counts and the explicitly labeled performance ratio.
 Publish the supported coverage and limitations without claiming unavailable
 interfaces or unexecuted tests passed. Keep historical observations intact.
+
+Concrete next coverage tranche (2026-11-07)
+
+Expand Clang beyond literal-std11 syntax RUNs. Preserve the existing253case
+records and all outcomes;qualify implicit-mode projections under native11
+with separate strict applicability checks. Never convert optional severity
+into diagnostic parity or automatically change a positive expectation.
+Raw660projections(653sources) include407newconfigurations;400strict-native
+qualify,sevenneed explicit source/standard review. Retain those observations
+and explicit dispositions before claiming current CI coverage. Then map
+simple inherited local configurations,not all site-config machinery at once.
+Continue same normal process for compiler failures,including057remaining
+evaluation-owned no-value copies and062pre20enumeratorusing scope.
