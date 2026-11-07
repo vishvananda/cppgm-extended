@@ -900,11 +900,16 @@ bool ConstantInterpreter::entity_place(const Entity* entity, const Type* type, C
 	switch (entity->kind)
 	{
 	case EntityKind::Function:
+	{
+		const auto* function = static_cast<const FunctionEntity*>(entity);
+		if (function->denotes != nullptr)
+			entity = function->denotes;
 		out = ConstPlace();
 		out.root = RootKind::Function;
 		out.entity = entity;
 		out.type = entity->type;
 		return true;
+	}
 	case EntityKind::Parameter:
 		// Naming a by-value parameter's object is not an lvalue-to-rvalue
 		// conversion. A constexpr member may return a value without reading

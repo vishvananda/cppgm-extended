@@ -427,6 +427,11 @@ bool ConstantInterpreter::invoke(const FunctionEntity* function, const ConstPlac
 {
 	if (!step(location))
 		return false;
+	// A block declaration keeps its own defaults, but calls the namespace
+	// entity's definition and binds that body's parameters (3.5p6).
+	const FunctionEntity* declaration = function;
+	if (function->denotes != nullptr)
+		function = function->denotes;
 	if (function->builtin != BuiltinFunction::None)
 		return builtin(function, arguments, count, result, location);
 	if (function->constructor)
@@ -452,7 +457,7 @@ bool ConstantInterpreter::invoke(const FunctionEntity* function, const ConstPlac
 	// caller's full-expression (5.2.2p4 leaves a parameter's end to the
 	// implementation); the callee's own objects with the call.
 	const size_t locals = locals_.size();
-	if (!bind_parameters(function, arguments, count, location))
+	if (!bind_parameters(declaration, arguments, count, location))
 		return false;
 	// A complex or vector result's parts or lanes outlive the callee's
 	// storage: made in the caller's before it.
@@ -709,8 +714,9 @@ bool ConstantInterpreter::bind_parameters(
 			return false;
 	}
 	SmallList<const Entity*, 8> entities;
-	for (const Binding* binding = function->scope != nullptr ? function->scope->bindings : nullptr; binding != nullptr;
-		binding = binding->next)
+	const FunctionEntity* definition = function->denotes != nullptr ? function->denotes : function;
+	for (const Binding* binding = definition->scope != nullptr ? definition->scope->bindings : nullptr;
+		binding != nullptr; binding = binding->next)
 	{
 		if (binding->kind == BindingKind::Parameter)
 			entities.push_back(binding->entity);
