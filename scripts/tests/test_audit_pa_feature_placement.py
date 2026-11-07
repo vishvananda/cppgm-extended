@@ -461,6 +461,13 @@ function @main() -> i32 {
             "violation",
         )
 
+    def test_operator_declarator_surface_preserves_lowir_owner(self) -> None:
+        operator = audit.FeatureMeta("operator.overload", "pa11", 300, "", "")
+        self.assertEqual(audit.placement_for(operator, "pa6", 200)[0], "semantic-surface")
+        self.assertEqual(audit.placement_for(operator, "pa10", 200)[0], "violation")
+        self.assertEqual(audit.placement_for(operator, "pa11", 200)[0], "cluster-early")
+        self.assertEqual(audit.placement_for(operator, "pa11", 300)[0], "ok")
+
     def test_pa7_semantic_output_does_not_claim_lowir_body_ownership(self) -> None:
         procedural = audit.FeatureMeta(
             "lowir.procedural", "pa10", 100, "", ""

@@ -176,6 +176,8 @@ PRE_LOWIR_SEMANTIC_SURFACE_PREFIXES = (
     "value.",
 )
 PRE_LOWIR_SEMANTIC_SURFACE_FEATURES = {
+    # PA6 names/types operator declarators; PA11 owns overload behavior.
+    "operator.overload",
     "static_assert",
     "lowir.procedural",
     "lowir.procedural.float_conversion",
