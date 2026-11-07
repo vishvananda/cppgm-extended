@@ -548,13 +548,13 @@ void Parser::leading_type_attributes(const Attribute* attributes, ListFrame<Decl
 	}
 }
 
-bool Parser::parse_type_specifier_seq(ListFrame<DeclSpecifier>& list, SpecifierInfo& info)
+bool Parser::parse_type_specifier_seq(ListFrame<DeclSpecifier>& list, SpecifierInfo& info, TypeIdContext context)
 {
 	info = SpecifierInfo();
-	return continue_type_specifier_seq(list, info);
+	return continue_type_specifier_seq(list, info, context);
 }
 
-bool Parser::continue_type_specifier_seq(ListFrame<DeclSpecifier>& list, SpecifierInfo& info)
+bool Parser::continue_type_specifier_seq(ListFrame<DeclSpecifier>& list, SpecifierInfo& info, TypeIdContext context)
 {
 	for (;;)
 	{
@@ -584,7 +584,7 @@ bool Parser::continue_type_specifier_seq(ListFrame<DeclSpecifier>& list, Specifi
 			{
 				if (info.has_type)
 					break;
-				if (!parse_class_or_enum_specifier(list, info))
+				if (!parse_class_or_enum_specifier(list, info, context))
 					return false;
 				continue;
 			}
@@ -737,26 +737,30 @@ bool Parser::parse_named_type_specifier(ListFrame<DeclSpecifier>& list, Specifie
 	return true;
 }
 
-bool Parser::parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, SpecifierInfo& info)
+bool Parser::parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, SpecifierInfo& info, TypeIdContext context)
 {
 	DeclSpecifier specifier = DeclSpecifier();
 	specifier.location = location();
 	info.has_type = true;
+	const bool definition_allowed = context != TypeIdContext::TrailingReturn;
 	if (at(TokenKind::KW_ENUM))
 	{
 		specifier.kind = DeclSpecKind::Enum;
-		specifier.enum_specifier = parse_enum_specifier();
+		specifier.enum_specifier = parse_enum_specifier(context);
 		if (specifier.enum_specifier == nullptr)
 			return false;
-		info.defines_type = true;
+		// An elaborated return type leaves the template head for the
+		// function; an enum declaration consumes it itself.
+		info.defines_type = specifier.enum_specifier->has_body || at(TokenKind::OP_SEMICOLON);
 		list.push(specifier);
 		return true;
 	}
 	const TokenKind key = tok().simple;
 	const uint32_t start = location();
 	const uint64_t first_token = tokens_.absolute_position();
-	const bool is_template = pending_template_;
-	pending_template_ = false;
+	const bool is_template = definition_allowed && pending_template_;
+	if (definition_allowed)
+		pending_template_ = false;
 	next();
 	Attribute* class_attributes = nullptr;
 	if (!collect_attributes(class_attributes))
@@ -774,14 +778,14 @@ bool Parser::parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, Speci
 			return false;
 	}
 	bool final = false;
-	if (at_identifier(final_) && (at(TokenKind::OP_LBRACE, 1) || at(TokenKind::OP_COLON, 1)))
+	if (definition_allowed && at_identifier(final_) && (at(TokenKind::OP_LBRACE, 1) || at(TokenKind::OP_COLON, 1)))
 	{
 		final = true;
 		next();
 	}
 	// A class-key and `:` start a base-clause, the class named or not
 	// (9p1: the class-head-name is optional).
-	if (at(TokenKind::OP_LBRACE) || at(TokenKind::OP_COLON))
+	if (definition_allowed && (at(TokenKind::OP_LBRACE) || at(TokenKind::OP_COLON)))
 	{
 		pending_template_ = is_template;
 		specifier.kind = DeclSpecKind::Class;
@@ -829,7 +833,10 @@ bool Parser::parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, Speci
 	specifier.kind = DeclSpecKind::Elaborated;
 	specifier.keyword = key;
 	specifier.name = name;
-	info.defines_type = true;
+	// A return type names a class; only a lone declaration declares a
+	// class template here. Do not replace that class's ordinary category.
+	info.defines_type = at(TokenKind::OP_SEMICOLON);
+	const bool template_type = is_template && info.defines_type;
 	info.type_scope = name_info.scope;
 	if (!name->qualified() && !name->last().has_arguments && name->last().kind == NameComponentKind::Identifier)
 	{
@@ -848,12 +855,12 @@ bool Parser::parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, Speci
 		// A template's declaration declares it in this scope, a friend's
 		// names an enclosing scope's class or declares none here (its
 		// definition elsewhere has a scope of its own).
-		const NameBinding existing = is_template && !info.has_friend ? scopes_.own(declaration_scope(), identifier)
-																	 : scopes_.lookup(identifier, true);
+		const NameBinding existing = template_type && !info.has_friend ? scopes_.own(declaration_scope(), identifier)
+																	   : scopes_.lookup(identifier, true);
 		Scope* declared = existing.scope;
 		if (declared == nullptr && !info.has_friend)
 			declared = class_scope_ahead(identifier);
-		if (is_template)
+		if (template_type)
 			scopes_.declare(
 				declaration_scope(), identifier, NameBinding{ NameCategory::TypeTemplate, false, declared });
 		else if (existing.category == NameCategory::None && !info.has_friend)
@@ -1132,7 +1139,7 @@ bool Parser::parse_base_clause(ListFrame<BaseSpecifier>& bases, Scope* class_sco
 	return true;
 }
 
-EnumSpecifier* Parser::parse_enum_specifier()
+EnumSpecifier* Parser::parse_enum_specifier(TypeIdContext context)
 {
 	EnumSpecifier* specifier = make<EnumSpecifier>();
 	*specifier = EnumSpecifier();
@@ -1141,6 +1148,11 @@ EnumSpecifier* Parser::parse_enum_specifier()
 		return nullptr;
 	if (at(TokenKind::KW_CLASS) || at(TokenKind::KW_STRUCT))
 	{
+		if (context == TypeIdContext::TrailingReturn)
+		{
+			fail();
+			return nullptr;
+		}
 		specifier->scoped = true;
 		specifier->key = tok().simple;
 		next();
@@ -1176,6 +1188,11 @@ EnumSpecifier* Parser::parse_enum_specifier()
 		if (!specifier->name->qualified() && !specifier->name->last().has_arguments)
 			simple_name = specifier->name->last().identifier;
 	}
+	if (context == TypeIdContext::TrailingReturn && at(TokenKind::OP_COLON))
+	{
+		fail();
+		return nullptr;
+	}
 	if (accept(TokenKind::OP_COLON))
 	{
 		TypeId* underlying = make<TypeId>();
@@ -1189,7 +1206,9 @@ EnumSpecifier* Parser::parse_enum_specifier()
 		specifier->underlying = underlying;
 	}
 	Scope* enclosing = scopes_.current();
-	if (!at(TokenKind::OP_LBRACE))
+	// A trailing return's next brace belongs to the function body, not
+	// to an enum-specifier (7.1.6p1's trailing-type-specifier grammar).
+	if (context == TypeIdContext::TrailingReturn || !at(TokenKind::OP_LBRACE))
 	{
 		if (specifier->name == nullptr)
 		{

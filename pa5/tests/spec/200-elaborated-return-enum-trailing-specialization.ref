@@ -1,0 +1,66 @@
+1 translation units
+start translation unit 1
+translation-unit
+  class-specifier A
+    class-key KW_STRUCT:struct
+    simple-declaration
+      decl-specifier-seq
+        enum-specifier E
+          enum-key KW_CLASS:class
+          enumerator zero
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier T
+    function-definition
+      decl-specifier-seq
+        decl-specifier KW_AUTO:auto
+      declarator
+        identifier f
+        parameter-clause
+          parameter-declaration
+            decl-specifier-seq
+              decl-specifier TT_IDENTIFIER:T
+        trailing-return-type enum A::E
+          type-id
+            type-specifier-seq
+              enum-specifier A::E
+      compound-statement
+        return-statement
+          id-expression A::E::zero
+  template-declaration
+    template-parameter-clause
+    function-definition
+      decl-specifier-seq
+        decl-specifier KW_AUTO:auto
+      declarator
+        identifier f<int>
+        parameter-clause
+          parameter-declaration
+            decl-specifier-seq
+              decl-specifier KW_INT:int
+        trailing-return-type enum A::E
+          type-id
+            type-specifier-seq
+              enum-specifier A::E
+      compound-statement
+        return-statement
+          id-expression A::E::zero
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier main
+      parameter-clause
+    compound-statement
+      return-statement
+        call-expression
+          id-expression int
+          paren-argument-list
+            call-expression
+              id-expression f
+              argument-list
+                literal 0
+end translation unit

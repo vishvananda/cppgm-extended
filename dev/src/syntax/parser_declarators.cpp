@@ -613,7 +613,7 @@ bool Parser::parse_function_qualifiers(ListFrame<FunctionQualifier>& qualifiers,
 		else if (accept(TokenKind::OP_ARROW))
 		{
 			qualifier.kind = FunctionQualifierKind::TrailingReturn;
-			qualifier.trailing = parse_type_id();
+			qualifier.trailing = parse_type_id(DeclaratorMode::Abstract, true, nullptr, TypeIdContext::TrailingReturn);
 			if (qualifier.trailing == nullptr)
 				return false;
 		}
@@ -631,7 +631,7 @@ bool Parser::parse_function_qualifiers(ListFrame<FunctionQualifier>& qualifiers,
 	}
 }
 
-TypeId* Parser::parse_type_id(DeclaratorMode mode, bool definite, SpecifierInfo* specified)
+TypeId* Parser::parse_type_id(DeclaratorMode mode, bool definite, SpecifierInfo* specified, TypeIdContext context)
 {
 	TypeId* type = make<TypeId>();
 	type->location = location();
@@ -641,7 +641,7 @@ TypeId* Parser::parse_type_id(DeclaratorMode mode, bool definite, SpecifierInfo*
 		ListFrame<DeclSpecifier> specifiers(specs_);
 		const bool saved_definite = definite_type_;
 		definite_type_ = definite;
-		const bool parsed = parse_type_specifier_seq(specifiers, info);
+		const bool parsed = parse_type_specifier_seq(specifiers, info, context);
 		definite_type_ = saved_definite;
 		if (!parsed)
 			return nullptr;

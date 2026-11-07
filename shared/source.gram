@@ -205,6 +205,7 @@ decl-specifier-seq:
 decl-specifier:
 	simple-type-specifier
 	qualified-type-name
+	elaborated-type-specifier
 	decltype-specifier
 	cv-qualifier
 	KW_TYPEDEF
@@ -235,10 +236,22 @@ type-specifier-seq:
 	type-specifier+
 
 type-specifier:
+	trailing-type-specifier
+
+trailing-type-specifier:
 	simple-type-specifier
 	qualified-type-name
+	elaborated-type-specifier
 	decltype-specifier
 	cv-qualifier
+
+elaborated-type-specifier:
+	class-key nested-name-specifier? TT_IDENTIFIER
+	class-key nested-name-specifier? KW_TEMPLATE? simple-template-id
+	KW_ENUM nested-name-specifier? TT_IDENTIFIER
+
+trailing-type-specifier-seq:
+	trailing-type-specifier+
 
 cv-qualifier:
 	KW_CONST
@@ -339,7 +352,7 @@ noexcept-specification:
 	KW_NOEXCEPT OP_LPAREN expression OP_RPAREN
 
 trailing-return-type:
-	OP_ARROW type-id
+	OP_ARROW trailing-type-specifier-seq abstract-declarator?
 
 parameter-clause:
 	OP_LPAREN parameter-declaration-list? OP_RPAREN

@@ -1,0 +1,36 @@
+1 translation units
+start translation unit 1
+translation-unit
+  enum-specifier E
+    enumerator zero
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier T
+    function-definition
+      decl-specifier-seq
+        enum-specifier E
+      declarator
+        identifier f
+        parameter-clause
+          parameter-declaration
+            decl-specifier-seq
+              decl-specifier TT_IDENTIFIER:T
+      compound-statement
+        return-statement
+          id-expression zero
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier main
+      parameter-clause
+    compound-statement
+      return-statement
+        call-expression
+          id-expression f<int>
+          argument-list
+            literal 0
+end translation unit

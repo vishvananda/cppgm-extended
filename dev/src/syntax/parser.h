@@ -111,6 +111,12 @@ private:
 		const TemplateArgument* prefix_arguments;
 	};
 
+	enum class TypeIdContext : uint8_t
+	{
+		General,
+		TrailingReturn
+	};
+
 	// What a decl-specifier-seq contained.
 	struct SpecifierInfo
 	{
@@ -177,9 +183,11 @@ private:
 	// GNU `__typeof__ ( type-id )` or `__typeof__ unary-expression` as a
 	// decltype-specifier of a TypeofOperand (parse_typeof_operand).
 	bool parse_typeof_specifier(ListFrame<DeclSpecifier>& list, SpecifierInfo& info);
-	bool parse_type_specifier_seq(ListFrame<DeclSpecifier>& list, SpecifierInfo& info);
+	bool parse_type_specifier_seq(
+		ListFrame<DeclSpecifier>& list, SpecifierInfo& info, TypeIdContext context = TypeIdContext::General);
 	bool parse_named_type_specifier(ListFrame<DeclSpecifier>& list, SpecifierInfo& info);
-	bool parse_class_or_enum_specifier(ListFrame<DeclSpecifier>& list, SpecifierInfo& info);
+	bool parse_class_or_enum_specifier(
+		ListFrame<DeclSpecifier>& list, SpecifierInfo& info, TypeIdContext context = TypeIdContext::General);
 	ClassSpecifier* parse_class_body(
 		TokenKind key, Name* name, bool final, uint32_t start, Scope* member_of, Scope*& declared);
 	void link_specialization(const Identifier* template_name, Scope* scope);
@@ -191,7 +199,7 @@ private:
 	// The binding's scope is such a scope, its class not defined yet.
 	bool defined_later(const NameBinding& binding, const Identifier* name) const;
 	bool parse_base_clause(ListFrame<BaseSpecifier>& bases, Scope* class_scope, bool primary_template);
-	EnumSpecifier* parse_enum_specifier();
+	EnumSpecifier* parse_enum_specifier(TypeIdContext context);
 	Initializer* parse_initializer(bool allow_parenthesized);
 	void declare_declarator(const Declarator* declarator, const SpecifierInfo& info);
 	bool parse_function_body(FunctionBody& body, bool allow_ctor_initializer);
@@ -220,14 +228,15 @@ private:
 	// return type ...) an undeclared name is a type; where a type-id competes
 	// with an expression (template arguments, sizeof, `(T)x`) it is not.
 	// `specified`: what its type specifiers named (SpecifierInfo).
-	TypeId* parse_type_id(
-		DeclaratorMode mode = DeclaratorMode::Abstract, bool definite = true, SpecifierInfo* specified = nullptr);
+	TypeId* parse_type_id(DeclaratorMode mode = DeclaratorMode::Abstract, bool definite = true,
+		SpecifierInfo* specified = nullptr, TypeIdContext context = TypeIdContext::General);
 	// A type-id whose leading type name was already parsed (see
 	// name_starts_here); the name is not parsed twice when the
 	// alternative is an expression.
 	TypeId* parse_type_id_from_name(Name* name, const NameInfo& name_info, uint32_t start);
 	TypeId* finish_type_id(TypeId* type, const SpecifierInfo& info, DeclaratorMode mode);
-	bool continue_type_specifier_seq(ListFrame<DeclSpecifier>& list, SpecifierInfo& info);
+	bool continue_type_specifier_seq(
+		ListFrame<DeclSpecifier>& list, SpecifierInfo& info, TypeIdContext context = TypeIdContext::General);
 	bool nested_declarator_ahead(DeclaratorMode mode);
 	bool ptr_operator_ahead(uint32_t ahead);
 	bool member_pointer_ahead(uint32_t ahead);

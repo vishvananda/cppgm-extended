@@ -1,0 +1,77 @@
+1 translation units
+start translation unit 1
+translation-unit
+  class-specifier S
+    class-key KW_STRUCT:struct
+    simple-declaration
+      decl-specifier-seq
+        decl-specifier KW_INT:int
+      init-declarator-list
+        init-declarator
+          declarator
+            identifier value
+  simple-declaration
+    decl-specifier-seq
+      decl-specifier TT_IDENTIFIER:S
+    init-declarator-list
+      init-declarator
+        declarator
+          identifier value
+        initializer
+          braced-init-list
+            literal 0
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier T
+    function-definition
+      decl-specifier-seq
+        decl-specifier KW_INT:int
+      declarator
+        identifier f
+        parameter-clause
+          parameter-declaration
+            decl-specifier-seq
+              class-forward-declaration S
+                class-key KW_STRUCT:struct
+            declarator
+              ptr-operator OP_STAR:*
+      compound-statement
+        return-statement
+          literal 1
+  template-declaration
+    template-parameter-clause
+    function-definition
+      decl-specifier-seq
+        decl-specifier KW_INT:int
+      declarator
+        identifier f<int>
+        parameter-clause
+          parameter-declaration
+            decl-specifier-seq
+              class-forward-declaration S
+                class-key KW_STRUCT:struct
+            declarator
+              ptr-operator OP_STAR:*
+              identifier p
+      compound-statement
+        return-statement
+          member-expression OP_ARROW:->
+            id-expression p
+            identifier value
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier main
+      parameter-clause
+    compound-statement
+      return-statement
+        call-expression
+          id-expression f<int>
+          argument-list
+            unary-expression OP_AMP:&
+              id-expression value
+end translation unit
