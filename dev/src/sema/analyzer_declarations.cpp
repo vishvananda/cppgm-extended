@@ -1736,10 +1736,13 @@ Binding* Analyzer::declare_function(const Specifiers& specifiers, const Declarat
 		if (!packs.empty())
 			error(location, "a function declaration names a parameter pack it does not expand");
 	}
-	// 14.5.2p3: a member function template is not virtual; 14.5.2p2: a
-	// destructor is not a member template.
-	if (templated && where->kind == ScopeKind::Class && specifiers.is_virtual)
-		error(location, "a virtual member function template");
+	// 7.1.2p5, 9.2p8, 14.5.2p3: virtual modifiers require an ordinary
+	// member declaration. An ordinary member of a class template is not
+	// itself a function template; its overriding is still checked later.
+	if ((specifiers.is_virtual || info.virt_suffix != nullptr) &&
+		(templated || where->kind != ScopeKind::Class || qualified || specifiers.is_friend))
+		error(location, "virtual specifiers require a non-template member declaration");
+	// 14.5.2p2: a destructor is not a member template.
 	if (templated && name.key == destructor_key_)
 		error(location, "a destructor declared as a template");
 	// Conversion functions share one lookup key, but the conversion type is
