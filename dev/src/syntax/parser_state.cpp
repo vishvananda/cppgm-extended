@@ -9,7 +9,7 @@
 
 namespace syntax {
 
-ParserState::ParserState(ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted)
+ParserState::ParserState(ParseTokenStream& tokens, IdentifierTable& identifiers, Arena& arena, bool hosted, bool cxx17)
 	: tokens_(tokens), identifiers_(identifiers), arena_(arena), scopes_(arena), deferred_lambdas_(0),
 	  deferred_tokens_(0), peak_run_bytes_(0), function_scope_(nullptr), parameter_scope_(nullptr),
 	  declarator_member_of_(nullptr), type_id_scope_(nullptr), angle_(false), definite_type_(false),
@@ -18,7 +18,7 @@ ParserState::ParserState(ParseTokenStream& tokens, IdentifierTable& identifiers,
 	  leading_attributes_(nullptr), tentative_depth_(0), speculation_(0), open_lists_base_(0), abandoning_lists_(false),
 	  abandoned_error_position_(0), abandoned_error_location_(0), nesting_(0), peak_nesting_(0), stack_base_(0),
 	  stack_budget_(stack_budget_bytes()), error_position_(0), error_location_(0), checkpoints_(0), rewinds_(0),
-	  deferred_count_(0), hosted_(hosted), gnu_names_(identifiers)
+	  deferred_count_(0), hosted_(hosted), cxx17_(cxx17), gnu_names_(identifiers)
 {
 	final_ = identifiers.intern("final", 5);
 	coroutine_keywords_[0] = identifiers.intern("co_await", 8);
@@ -347,7 +347,9 @@ const Identifier* ParserState::attribute_using_prefix()
 {
 	// The C++17 prefix requires a namespace and colon; [[using]] is an
 	// ordinary keyword attribute-token, not an incomplete prefix.
-	if (!at(TokenKind::KW_USING) || !at_identifier(1) || !at(TokenKind::OP_COLON, 2))
+	// Earlier modes use the ordinary attribute grammar, which rejects the
+	// extra namespace and colon after that keyword attribute-token.
+	if (!cxx17_ || !at(TokenKind::KW_USING) || !at_identifier(1) || !at(TokenKind::OP_COLON, 2))
 		return nullptr;
 	const Identifier* prefix = tok(1).identifier;
 	next();

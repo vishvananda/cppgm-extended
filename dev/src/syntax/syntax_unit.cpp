@@ -4,7 +4,8 @@ namespace syntax {
 
 SyntaxUnit::SyntaxUnit(const PreprocessorOptions& options, const std::string& path)
 	: preprocessor_(options, path), post_tokens_(preprocessor_, &preprocessor_.identifiers(), options.literals),
-	  tokens_(post_tokens_, spellings_), parser_(tokens_, preprocessor_.identifiers(), arena_, options.hosted),
+	  tokens_(post_tokens_, spellings_),
+	  parser_(tokens_, preprocessor_.identifiers(), arena_, options.hosted, options.cplusplus == "201703L"),
 	  tree_(nullptr)
 {
 	tokens_.observe_pack(preprocessor_.pack_state());
