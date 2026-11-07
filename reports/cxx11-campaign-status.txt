@@ -1,3 +1,37 @@
+Accepted checkpoint: compiler 11951f366, destructor/TLS repairs validated.
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-072075-acceptance-v1.json
+SHA256: fd4d30894fd12614825a7032aa13839fd8f3f5696ef4313c8daa3085ab132a9b
+
+CXX11-072 and CXX11-075 are closed for their observed rules. The integrated
+compiler passes 8,861 strict tests, 17 normal stages, 42 harness suites with
+667 cases (19 optional skips), and a fresh student export testing all 39 new
+required controls and 42 reference wrappers. Affected suites, debug, self-host
+through PA5, inception, architecture/file/placement, quick and smoke all pass.
+
+GCC: 3,696/4,112 (89.88%); upstream 4,112/4,112. Clang: 668/693 (96.39%);
+upstream 693/693. GCC has 220 compile failures and 196 missing diagnostics;
+Clang has 10 compile failures and 15 missing diagnostics. Neither run has
+abnormal or link outcomes. These are observations, not independent gap counts.
+GCC elapsed cppgm/upstream: 25.025/67.008 seconds, ratio 0.373. Clang:
+2.944/19.770 seconds, ratio 0.149. Both failed-suite ratios are NON-COMPARABLE.
+The manifests and all prior observations remain intact.
+
+Normal actual-parent instruction ratios: 072 at 1.002041/1.000670 (O0/O3),
+075 at 0.999929/0.999984. Frozen output objects are identical. Normal PA35
+quick passes at self/seed 0.9935/1.0253, zero behavior failures and kernels
+below 1.3. Campaign accumulation is 1.005132/1.001742, retained as data against
+the original baseline without the retired extra aggregate acceptance cap.
+
+Next: integrate 076 string arrays and 077 discarded bit-field glvalues.
+076 passes 23 required controls, 92 focused candidate checks, affected suites
+and the normal actual-parent gate (0.999947/0.999996, exact objects). It also
+repairs literal-operator results mistaken for ordinary string literals. The
+Clang worker has a 077 repair with 16 owning controls and passing focused/perf
+checks; independent handoff validation is finishing. Further failure-led fixes,
+useful coverage expansion and the final PA35 release check remain open.
+
+Earlier checkpoints retained below
+
 Accepted checkpoint: compiler12032b602, fullnormal/export validation completed.
 Receipt:/mnt/vizier/cppgm-cxx11-upstream/ci-next-062073074-acceptance-v1.json
 SHA256:0795c6d1cc014385359622bb8a3300d5cd2ce7a01fccbe0e72f59ff04c99240b
