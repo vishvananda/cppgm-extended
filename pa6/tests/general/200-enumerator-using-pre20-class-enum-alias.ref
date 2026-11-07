@@ -1,11 +1,1 @@
 1 translation units
-start translation unit 1
-translation-unit
-  scope namespace <global>
-    type S struct S
-    type-alias Alias enum E
-    enumerator value enum E 7
-    scope class S
-      type E enum E
-      enumerator value enum E 7
-end translation unit
