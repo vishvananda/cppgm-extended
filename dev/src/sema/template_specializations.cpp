@@ -417,8 +417,9 @@ void Analyzer::explicit_variable_instantiation(const syntax::ExplicitInstantiati
 		error(location, "an explicit instantiation names no static data member or variable template specialization");
 	if (variable->type->canonical != info.type->canonical)
 		error(location, "an explicit instantiation's type differs from the variable's");
-	if (specifiers.is_inline || specifiers.is_constexpr || specifiers.is_static || specifiers.is_extern ||
-		specifiers.is_thread_local)
+	// CWG1793 permits thread_local here. The instantiated definition,
+	// rather than this directive, supplies the variable's storage.
+	if (specifiers.is_inline || specifiers.is_constexpr || specifiers.is_static || specifiers.is_extern)
 		error(location, "a specifier an explicit instantiation may not have");
 	if (!encloses(declaration_scope(scope), enclosing_namespace(variable->owner)))
 		error(location, "an explicit instantiation outside its template's namespace");
