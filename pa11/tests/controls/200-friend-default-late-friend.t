@@ -1,0 +1,4 @@
+// N3485 focus: 8.3.6p4 [dcl.fct.default], adopted CWG136.
+// expect reject
+struct C { friend int f(int = 1) { return 0; } friend int f(int); };
+int main() { return 0; }
