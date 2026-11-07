@@ -488,6 +488,9 @@ struct FunctionEntity : Entity
 	// completes (a destructor's complete entry; its deleting entry is the
 	// next slot).
 	uint32_t vtable_slot;
+	// A friend definition supplied a default argument (8.3.6p4): no
+	// other reachable declaration may declare this function or template.
+	bool friend_defaults;
 	// A delegating constructor (12.6.2p6): its mem-initializer and the
 	// target constructor it selects (the plan then has no subobjects).
 	const syntax::MemInitializer* delegation;

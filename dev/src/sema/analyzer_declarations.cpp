@@ -666,6 +666,8 @@ void Analyzer::agree_block_linkage(const Entity* entity, bool c_linkage, bool in
 			const FunctionEntity* block = static_cast<const FunctionEntity*>(earlier);
 			if (signature_of(function->type) != signature_of(block->type))
 				continue;
+			if (function->friend_defaults || block->friend_defaults)
+				error(location, "a friend supplying defaults is not the only declaration");
 			if (declared_type(function->type)->element != declared_type(block->type)->element)
 				error(location, "a declaration of a function with another type than a block-scope declaration's");
 		}
@@ -1754,6 +1756,9 @@ Binding* Analyzer::declare_function(const Specifiers& specifiers, const Declarat
 		return member_template_specialization(info, scope, definition, location);
 	if (explicit_specialization_ && !specifiers.is_friend)
 		return explicit_function_specialization(specifiers, info, scope, definition, location, deleted);
+	// 8.3.6p4 (CWG136): a friend supplying defaults is a definition.
+	if (specifiers.is_friend && info.parameters != nullptr && info.parameters->has_defaults && !definition && !deleted)
+		error(location, "a friend supplying defaults must be a definition");
 	// 14.5.4p9: a friend declaration naming a function template's
 	// specialization has no default arguments and is not inline.
 	if (specifiers.is_friend && info.name->last().has_arguments &&
@@ -1993,6 +1998,8 @@ Binding* Analyzer::qualified_friend(
 	if (same == nullptr || same->binding->entity->owner != info.qualifier)
 		error(location, "a qualified friend declaration names no declared function");
 	FunctionEntity* function = static_cast<FunctionEntity*>(same->binding->entity);
+	if (function->friend_defaults)
+		error(location, "a friend supplying defaults is not the only declaration");
 	befriend_function(function, static_cast<ClassEntity*>(where->entity));
 	// 7.1.2p5, 9.2p9: no `virtual` or virt-specifier here.
 	if (semantic() && template_depth_ == 0)
@@ -2073,6 +2080,12 @@ void Analyzer::redeclare_function(FunctionEntity* function, const Specifiers& sp
 {
 	// A later declaration of a function agrees with the earlier ones
 	// (`exceptions`: its exception-specification is checked).
+	// CWG136, refined to reachable declarations by P1787: a friend that
+	// supplies defaults is the function's sole declaration. Block-scope
+	// declarations keep their own defaults but denote the same function.
+	if (function->friend_defaults || (function->denotes != nullptr && function->denotes->friend_defaults) ||
+		(specifiers.is_friend && info.parameters != nullptr && info.parameters->has_defaults))
+		error(location, "a friend supplying defaults is not the only declaration");
 	// 13.1p2: functions differing only in return type cannot overload;
 	// C++14's 7.1.6.4p13: a placeholder return type is redeclared as
 	// the placeholder (not the type its definition deduced).
@@ -2152,6 +2165,7 @@ FunctionEntity* Analyzer::new_function(const Specifiers& specifiers, const Decla
 	function->constructor = name.key == constructor_key_;
 	function->destructor = name.key == destructor_key_;
 	function->conversion = name.key == conversion_key_;
+	function->friend_defaults = specifiers.is_friend && info.parameters != nullptr && info.parameters->has_defaults;
 	if (function->member && info.type->canonical->ref != RefQualifier::None)
 		++ref_qualified_members_;
 	if (function->conversion && where->kind == ScopeKind::Class)
@@ -2181,6 +2195,8 @@ FunctionEntity* Analyzer::new_function(const Specifiers& specifiers, const Decla
 		FunctionEntity* outer = same != nullptr ? static_cast<FunctionEntity*>(same->binding->entity) : nullptr;
 		if (outer != nullptr && (!outer->internal_linkage || !hidden_below_namespace(where, name.key)))
 		{
+			if (outer->friend_defaults)
+				error(location, "a friend supplying defaults is not the only declaration");
 			// 3.5p10: with the function's type (13.1p2; C++14's
 			// 7.1.6.4p13: a placeholder return type as the placeholder).
 			if (declared_type(outer->type)->element != declared_type(info.type)->element ||
