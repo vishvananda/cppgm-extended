@@ -1,0 +1,59 @@
+Default-argument integration performance -- 2026-11-07
+
+The user requested further reduction of the 0.411% cumulative frozen compile
+cost. Commit 2c98d64c4 reduces it to 0.199% at O0 and 0.064% at O3. This is
+about half the reported increase; the initial unoptimized integration was
+0.557%/0.189%. Required language checks are preserved.
+
+Existing PA35 hardware counters, three repetitions, frozen input and host
+headers, same machine; output objects are byte-identical in every comparison:
+
+  Comparison                              O0 instructions    O3 instructions
+  Initial cumulative integration          +0.5571%           +0.1886%
+  Cold prefix extraction (user checkpoint) +0.4109%           +0.1344%
+  Further optimizations, 2c98d64c4          +0.1992%           +0.0640%
+  Final versus compiler just before 039    +0.0660%           +0.0151%
+
+The cumulative baseline is the immutable campaign compiler before integration,
+implementation 18c450526e, SHA256:
+578195b9fbd3ccdd3321311d43fa8e0e7fdedd456300a6b694b4628f56b55f4d.
+The last row is a net comparison that also includes optimization of 034's
+default-clause tracking; it is not an isolated attribution to 039 alone.
+
+The existing Callgrind workflow identified ordinary lookup growing enough to
+lose inlining: own gained 20.1M instructions and 264,599 calls. The changes:
+
+- Preserve public own's frozen-prefix semantics, while typed class/base and
+  namespace paths directly search their own declarations. Generic callers
+  retain the prefix guard, ordinal bounds and filters.
+- Check frozen parameter windows only on function scopes during unqualified
+  lookup. A prefix miss resumes outside its shared clause; dependent-use and
+  namespace handling remain intact.
+- Record source default-argument presence once in ParameterClause. Semantic
+  declarator analysis consumes that fact, removing apply_suffix's extra output
+  argument and repeated per-parameter presence checks. The original clause
+  obligation survives cloning. Direct lambda clauses retain their valid defaults.
+- Keep ordinary declaration-scope handling compact and inline; move the rare
+  parameter-window traversal into a cold helper using the existing annotation.
+
+The cached syntax fact uses existing padding: actual host layout checks confirm
+ParameterClause remains 32 bytes. This is a node-layout observation, not a
+claim that a macOS-only memory gate ran on Linux.
+
+Validation: 8,458 strict tests, optional C++14/17, debug-info, self-host through
+PA5, architecture/file/format audits and normal PA35 quick checks pass. Quick
+self/seed instruction ratios are 0.993738/1.025448, with identical objects,
+zero behavior failures and all kernel ratios below 1.3. Final combined
+placement/export validation follows the remaining prepared repairs.
+
+Evidence under /mnt/vizier/cppgm-cxx11-upstream:
+  ci-next-039-profile-v1/ and ci-next-039-profile-v2/
+  ci-next-039-decl-fast-cumulative-perf-v1/summary.tsv
+  ci-next-039-optimized-parent-perf-v1/summary.tsv
+  ci-next-039-layout-v1/results.json
+  ci-next-039-optimized-*-v1.log
+  ci-next-039-optimized-candidate-v1/manifest.json
+
+Failed/intermediate observations remain intact. No additional calibration,
+benchmark family, A/A campaign or RSS collector was introduced. The unrelated
+public runtime/codegen regression investigation remains assigned elsewhere.
