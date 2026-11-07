@@ -280,9 +280,9 @@ struct PendingSubstitution
 // An alias template (14.5.7): its template head, and as its type the
 // type-id it aliases, in terms of its (positional) parameters; a
 // template-id naming it is that type substituted (p2).
-// `discarded`: the parameter positions (below 64) its aliased type does not
-// name, whose dependent arguments an alias template-id keeps in its
-// stand-in's specialization (see ClassTemplateFacts::alias).
+// `discarded`: parameter positions (below 64) its aliased type may drop,
+// including through empty expansions. A dependent argument at such a
+// position stays in the stand-in's specialization (ClassTemplateFacts::alias).
 struct AliasTemplateEntity : Entity
 {
 	TemplateHead* head;

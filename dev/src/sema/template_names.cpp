@@ -473,7 +473,7 @@ const Type* Analyzer::without_stand_ins(const Type* type)
 
 void Analyzer::named_parameters(const Type* type, uint32_t depth, uint64_t& named, bool& opaque, uint32_t level)
 {
-	// The template parameters of `depth` a type names (bits by index); an
+	// The parameters of `depth` a type retains (bits by index); an
 	// expression placeholder (a decltype-specifier, a value-dependent
 	// argument or array bound) makes the answer unknown (`opaque`).
 	if (opaque || level > 256)
@@ -528,10 +528,22 @@ void Analyzer::named_parameters(const Type* type, uint32_t depth, uint64_t& name
 	case TypeKind::Pointer:
 	case TypeKind::LValueReference:
 	case TypeKind::RValueReference:
-	case TypeKind::Expansion:
 	case TypeKind::Mode:
 		named_parameters(type->element, depth, named, opaque, level + 1);
 		return;
+	case TypeKind::Expansion:
+	{
+		// An empty expansion erases non-pack parameters used only in its
+		// pattern. Its controlling packs remain part of substitution.
+		PackList packs;
+		unexpanded_packs(type->element, depth, packs);
+		for (uint32_t index : packs)
+		{
+			if (index < 64)
+				named |= uint64_t(1) << index;
+		}
+		return;
+	}
 	case TypeKind::Function:
 	case TypeKind::Pack:
 		for (uint32_t i = 0; i < type->param_count; ++i)
@@ -1025,8 +1037,8 @@ void Analyzer::declare_alias_template(const syntax::AliasDecl& decl, Scope* scop
 	AliasTemplateEntity* entity = new_entity<AliasTemplateEntity>(
 		EntityKind::AliasTemplate, decl.name, where, info.type);
 	entity->head = head;
-	// The parameters its type does not name (none known when it holds an
-	// expression, whose names the walk does not see).
+	// The parameters its type may discard, including names inside empty
+	// expansions (none known for expressions the walk cannot inspect).
 	uint64_t named = 0;
 	bool opaque = false;
 	if (head->count != 0)
