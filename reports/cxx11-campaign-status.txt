@@ -1699,3 +1699,75 @@ found historical HTML deletion/insertion markup was lost in some paper text.
 The converter/text correction is queued; byte equality does not establish
 editorial completeness. Compiler work114/115/116 and final PA35 release remain
 pending. Counts are selected configurations, not deduplicated compiler gaps.
+
+Accepted declaration identity, pack dependencies, literal correctness and offline wording
+
+Rebased integration includes origin/main7dbe6549e and all17 incoming commits.
+Source23c41225e; compiler codeepoch94c8645ac, SHA256
+e5df5bf907f83c34cd09009f61c5401a1ff4b7ba75b439a557614b49dfd29ea8.
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-114120-acceptance-v1.json
+
+114 retains function-parameter-pack type patterns in dependent expressions,
+including fixed-result decltype and function-pointer parameter clauses. One
+existing typed walk replaces two walks; no record growth. It repairs the two
+dialects of auto45.C AND variadic-nested2.C, independently reproduced on the
+actual f029 parent. 115 evaluates block redeclarations through their denoted
+constexpr definition while preserving declaration-local default arguments.
+
+116 implements adopted1839/P1787 namespace correspondence through intervening
+hiding for functions AND scalar extern variables. It distinguishes actual
+namespace declarations from using imports via existing entity ownership.
+An extra ownership probe caught a wrong imported target in the first candidate;
+that prototype and counters are preserved, superseded by the corrected source.
+Twenty required controls include seven two-TU import/inline/C-linkage neighbors;
+Clang80/80 and candidate80/80, with24 pre-P1787 GCC import rejections retained.
+The placement audit now distinguishes direct namespace imports from class
+features, with80 meaningful unit checks; fixtures remain in their actual PA.
+
+119 validates namespace ownership, C linkage and typed parameter forms for
+literal operators/templates. 120 prevents condition folding from treating a
+literal operator's dispatch metadata as its returned value, preserving calls,
+side effects and class conversions. Required tests use ordinary instantiated
+negatives rather than relying on eager diagnosis of unused invalid templates.
+
+117 fixes offline deletion/insertion annotations in11 issue texts and7 complete
+papers. All99 raw HTML source hashes, historical text and links are preserved;
+82 other catalog files are unchanged. The supported catalog remains88 issue
+texts plus12 complete papers,102 files with index/manifest. Fresh student export
+matches every file, including the corrected P1787 wording. Nothing applies or
+removes the historical edits; DELETE/INSERT markers let students read them.
+
+118 excludes exactly Wnarrowing19.C and alias-decl-61.C from BOTH paired roles:
+each unused template has no valid specialization (N3485 14.6p8). Four removed
+configurations are not passes. Four independent valid/ordinary negative guards
+remain required in PA12. All4102 retained GCC records are unchanged.
+
+Final validation:9445strict,320focused,44harness suites/717checks, all affected
+suites,modern C++,debug info,self-host throughPA5,inception,architecture/file/
+fullplacement/document audits,quick andsmoke pass. Fresh export verifies79new
+required fixtures,42reference wrappers,2133changed test artifacts and102catalog
+files plusLLVMlicense. Initial failed prototype/audit/controller observations
+remain intact; no waiver, diagnostic parity or candidate-based filtering.
+
+Normal actual-parent O0/O3 instruction ratios:
+  115:1.000001/1.000000;114:.999991/1.000014;116:1.000001/1.000001;
+  119:.999925/.999945;120:1.000012/1.000004. Frozen objects exactly match.
+These gates retain their precise source epochs before adding the17 main
+commits. The actual rebased compiler passes all normal checks and existing
+quick limits:self/seed .996566/1.028669,zero behavior failures,kernels<1.30.
+No extra cumulative cap or calibration campaign was introduced.
+
+Paired GCC3764/4102 (91.76%),upstream4102/4102:166compile failures and172missing
+diagnostics remain. Fourteen configurations genuinely improve and zero retained
+passes regress; the four IFNDR exclusions are a separate denominator change.
+GCC26.086486/65.687920s,ratio.397128,NON-COMPARABLE because failures remain.
+Paired Clang815/815 (100%),upstream815/815; all records remain byte-identical.
+Strict native applicability562/562. Clang3.705959/25.423040s,ratio.145772,
+a passing identical-suite observation, not a general throughput claim.
+
+Next:122 is an independently confirmed dependency-loss bug when an alias's
+syntactically used argument vanishes with an empty inner pack. Required owning
+regressions are in preparation. Exact121 alias-equivalence/fixed-head cases
+intersect unresolved1430/drafting1286 and need separate source review; they
+are not automatically required GCC behavior. Remaining GCC failure triage and
+the final PA35 release check keep the overall goal active.

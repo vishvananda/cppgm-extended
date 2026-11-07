@@ -6044,5 +6044,100 @@
     "compiler_language_gap": false,
     "kind": "Source-pinned IFNDR oracle review",
     "decision": "Exact alignas15/16 have only empty-pack valid specializations under N3485 14.6p8. Four configs excluded both roles, not passes; original raw results and independent PA11:300 required guard retained."
+  },
+  {
+    "id": "CXX11-114",
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-114",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-114120-acceptance-v1.json",
+    "integrated_candidate_revision": "23c41225ee94e021cf7638297b596a84082a15c8",
+    "compiler_sha256": "e5df5bf907f83c34cd09009f61c5401a1ff4b7ba75b439a557614b49dfd29ea8",
+    "compiler_language_gap": true,
+    "symptom": "Function parameter pack dependencies were lost in fixed-result decltype and function-pointer clauses.",
+    "owning_pa": "PA15:200;PA17:300",
+    "fix_revision": "1ddeea656",
+    "checks": "Joint9445strict/320focused/allnormal/newmainquick/fresh79fixture42wrapper102catalogexport passed; exactepoch actual-parent counters retained."
+  },
+  {
+    "id": "CXX11-115",
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-115",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-114120-acceptance-v1.json",
+    "integrated_candidate_revision": "23c41225ee94e021cf7638297b596a84082a15c8",
+    "compiler_sha256": "e5df5bf907f83c34cd09009f61c5401a1ff4b7ba75b439a557614b49dfd29ea8",
+    "compiler_language_gap": true,
+    "symptom": "Constant evaluation ignored the denoted definition of block function redeclarations.",
+    "owning_pa": "PA16:100",
+    "fix_revision": "b8ef69a07",
+    "checks": "Joint9445strict/320focused/allnormal/newmainquick/fresh79fixture42wrapper102catalogexport passed; exactepoch actual-parent counters retained."
+  },
+  {
+    "id": "CXX11-116",
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-116",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-114120-acceptance-v1.json",
+    "integrated_candidate_revision": "23c41225ee94e021cf7638297b596a84082a15c8",
+    "compiler_sha256": "e5df5bf907f83c34cd09009f61c5401a1ff4b7ba75b439a557614b49dfd29ea8",
+    "compiler_language_gap": true,
+    "symptom": "Block declarations failed adopted namespace correspondence under hiding, and initially mistook imported entities for actual namespace declarations.",
+    "owning_pa": "PA10:100;PA16:100",
+    "fix_revision": "a2d6372aa",
+    "offline_decisions": [
+      "doc/cwg/cwg-1839.txt",
+      "doc/cwg/paper-p1787r6.txt"
+    ],
+    "prototype": "eacf/9c/05ea raw import regression retained and superseded; final20controls80/80;24nativeGCCpreDRrejections retained",
+    "checks": "Joint9445strict/320focused/allnormal/newmainquick/fresh79fixture42wrapper102catalogexport passed; exactepoch actual-parent counters retained."
+  },
+  {
+    "id": "CXX11-117",
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-117",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-114120-acceptance-v1.json",
+    "integrated_candidate_revision": "23c41225ee94e021cf7638297b596a84082a15c8",
+    "compiler_sha256": "e5df5bf907f83c34cd09009f61c5401a1ff4b7ba75b439a557614b49dfd29ea8",
+    "compiler_language_gap": false,
+    "kind": "Offline reference rendering correction",
+    "fix_revision": "d554fc076",
+    "decision": "11issue+7paper bodies retain proven deletion/insertion annotations; all99rawHTMLhashes/historicalcontent/links preserved,82othercatalogfiles unchanged;102catalogfiles exportedbyteexact",
+    "checks": "Joint9445strict/320focused/allnormal/newmainquick/fresh79fixture42wrapper102catalogexport passed; exactepoch actual-parent counters retained."
+  },
+  {
+    "id": "CXX11-118",
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-118",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-114120-acceptance-v1.json",
+    "integrated_candidate_revision": "23c41225ee94e021cf7638297b596a84082a15c8",
+    "compiler_sha256": "e5df5bf907f83c34cd09009f61c5401a1ff4b7ba75b439a557614b49dfd29ea8",
+    "compiler_language_gap": false,
+    "kind": "Exact-source unused-template IFNDR review",
+    "decision": "Wnarrowing19 andalias-decl-61 unused no-valid-specialization templates under14.6p8; fourconfigurations excludedBOTHroles,notpasses;4ordinary/validguards retainedPA12:100/400",
+    "checks": "Joint9445strict/320focused/allnormal/newmainquick/fresh79fixture42wrapper102catalogexport passed; exactepoch actual-parent counters retained."
+  },
+  {
+    "id": "CXX11-119",
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-119",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-114120-acceptance-v1.json",
+    "integrated_candidate_revision": "23c41225ee94e021cf7638297b596a84082a15c8",
+    "compiler_sha256": "e5df5bf907f83c34cd09009f61c5401a1ff4b7ba75b439a557614b49dfd29ea8",
+    "compiler_language_gap": true,
+    "symptom": "Literal operator declarations lacked namespace/C-linkage/parameter-form checks.",
+    "owning_pa": "PA11:300;PA15:100/200",
+    "fix_revision": "0ede85b2c",
+    "checks": "19controls76/76 vsactualparent24/76; Clang76/GCC72 (GCCsilentlyacceptsforbiddenblockdecl); normalactual01f->439 .999925/.999945exactobjects"
+  },
+  {
+    "id": "CXX11-120",
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-120",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-114120-acceptance-v1.json",
+    "integrated_candidate_revision": "23c41225ee94e021cf7638297b596a84082a15c8",
+    "compiler_sha256": "e5df5bf907f83c34cd09009f61c5401a1ff4b7ba75b439a557614b49dfd29ea8",
+    "compiler_language_gap": true,
+    "symptom": "Condition folding dropped literal operator calls and conversion side effects by reading dispatch metadata as a value.",
+    "owning_pa": "PA11:300;PA12:400;PA15:200;PA16:100",
+    "fix_revision": "e67399a50",
+    "checks": "10controls40/40 vsactualparent4/40; natives40each; actual439->8801.000012/1.000004exactobjects"
   }
 ]
