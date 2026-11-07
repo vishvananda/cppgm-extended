@@ -294,6 +294,10 @@ void Analyzer::simple_declaration(const syntax::SimpleDecl& decl, Scope* scope)
 				error(decl.location, "friend declaration outside a class");
 			if (specifiers.type == auto_placeholder_)
 				error(decl.location, "auto in a friend declaration");
+			// 14p1, 14.5.4: this merely names a friend type. A friend
+			// template must declare a class or function, not a type alias.
+			if (template_scope_ != nullptr && scope == template_scope_)
+				error(decl.location, "a friend type template requires an elaborated type specifier");
 			const Type* type = specifiers.type->unqualified;
 			if (type->kind == TypeKind::Class && (template_depth_ == 0 || !dependent_type(type)))
 				befriend_class(static_cast<ClassEntity*>(type->entity), scope);
