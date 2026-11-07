@@ -1,4 +1,10 @@
 {
+  "llvm-project/clang/test/CXX/temp/temp.decls/temp.variadic/deduction.cpp": {
+    "status": "standards-review",
+    "reason": "The char_values<int C1, char C3> acceptance assertion is the exact unresolved example in CWG1647, still drafting in official active-list revision121 (2026-10-10). The issue states that the standard is silent about the type-agreement/conversion question. Adopted1770/2091 do not resolve1647. GCC15 and cppgm reject; Clang21 accepts. Host agreement is not a required C++11 oracle here. Independent DeductionForInstantiation lines1-27 are retained as required PA17:300 control300-clang-pack-instantiation-valid-slice.t; this whole-file disposition does not claim the conversion namespace passed.",
+    "issue": "CXX11-050",
+    "sha256": "25e49e3f90b14806069b280b2a671aebd0d8fb7ca5d7a5db420846575524a22d"
+  },
   "llvm-project/clang/test/SemaCXX/pr30559.cpp": {
     "status": "not-required",
     "reason": "The unused second f template returns decltype(f<T,1>). Its own declarator has not yet declared that overload (N3485 3.3.2p1), so lookup denotes the first template's specialization, whose function type is void(). Unparenthesized decltype preserves that type (7.1.6.2p4); functions cannot return function types (8.3.5p8). No specialization of this unused template can be valid, so 14.6p8 makes it ill-formed, no diagnostic required. GCC/Clang acceptance is not mandatory. The independent valid trailing-return foo case needs separate coverage; this whole-file disposition does not claim it passed.",
