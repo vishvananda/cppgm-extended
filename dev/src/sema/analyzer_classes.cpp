@@ -1468,7 +1468,13 @@ void Analyzer::finish_class_nesting(size_t first_deferred)
 			pending_member_scopes_.push_back(PendingMemberInitializer{ deferred_[i].parent, names_.limit() });
 			continue;
 		}
+		// A nested member class template is still a pattern after its
+		// non-template outer class completes, just like a deferred member
+		// function body below. Bind its initializer's names in that context.
+		const bool pattern = template_depth_ == 0 && templated_class(member->owner);
+		template_depth_ += pattern ? 1 : 0;
 		member_default_initializer(member, deferred_[i].parent);
+		template_depth_ -= pattern ? 1 : 0;
 	}
 	for (size_t i = first_deferred; i < deferred_.size(); ++i)
 	{
