@@ -664,6 +664,7 @@ void Analyzer::potential_use(const syntax::Expr& expr, const Conversion* binding
 	const bool read = !discarded && binding != nullptr && binding->constructor == nullptr &&
 		binding->first == LvalueTransform::LvalueToRvalue && (type->cv & kVolatile) == 0 &&
 		type->unqualified->kind != TypeKind::Class;
+	SmallList<const syntax::Expr*, 16> discards;
 	SmallList<const syntax::Expr*, 16> work;
 	work.push_back(&expr);
 	while (!work.empty())
@@ -675,7 +676,10 @@ void Analyzer::potential_use(const syntax::Expr& expr, const Conversion* binding
 			continue;
 		facts->potential_result = false;
 		if (discard)
+		{
 			facts->non_odr_value = true;
+			discards.push_back(e);
+		}
 		const Entity* entity = facts->entity;
 		const VariableEntity* variable = entity != nullptr && entity->kind == EntityKind::Variable
 			? static_cast<const VariableEntity*>(entity)
@@ -691,7 +695,8 @@ void Analyzer::potential_use(const syntax::Expr& expr, const Conversion* binding
 				(read && value != nullptr && present_mutable_subobjects(entity->type) == SubobjectMutability::None);
 			if (original)
 			{
-				facts->non_odr_value = discard || value != nullptr;
+				facts->non_odr_value = discard ? variable == nullptr || !OriginalStorageAvailable(variable)
+											   : value != nullptr;
 				continue;
 			}
 			const bool automatic = entity->owner != nullptr &&
@@ -723,6 +728,46 @@ void Analyzer::potential_use(const syntax::Expr& expr, const Conversion* binding
 			const syntax::ConditionalExpr& choice = static_cast<const syntax::ConditionalExpr&>(*e);
 			work.push_back(choice.then_expr != nullptr ? choice.then_expr : choice.condition);
 			work.push_back(choice.else_expr);
+			break;
+		}
+		default:
+			break;
+		}
+	}
+	// The forward walk settles each pending leaf once. Propagate the need
+	// to omit unavailable storage back through just those typed nodes;
+	// defined namespace/class objects keep ordinary discarded lowering.
+	for (size_t i = discards.size(); i-- > 0;)
+	{
+		const syntax::Expr* e = discards[i];
+		ExprFacts* facts = const_cast<ExprFacts*>(e->facts);
+		switch (e->kind)
+		{
+		case syntax::ExprKind::Member:
+			if (facts->entity != nullptr && facts->entity->kind == EntityKind::Variable &&
+				static_cast<const VariableEntity*>(facts->entity)->member)
+				facts->non_odr_value = facts_of(*static_cast<const syntax::MemberExpr*>(e)->base)->non_odr_value;
+			break;
+		case syntax::ExprKind::Subscript:
+		{
+			const syntax::SubscriptExpr& subscript = static_cast<const syntax::SubscriptExpr&>(*e);
+			facts->non_odr_value =
+				facts_of((facts->flags & kCommuted) != 0 ? *subscript.index : *subscript.base)->non_odr_value;
+			break;
+		}
+		case syntax::ExprKind::Binary:
+		{
+			const syntax::BinaryExpr& binary = static_cast<const syntax::BinaryExpr&>(*e);
+			facts->non_odr_value =
+				facts_of(binary.op == TokenKind::OP_COMMA ? *binary.right : *binary.left)->non_odr_value;
+			break;
+		}
+		case syntax::ExprKind::Conditional:
+		{
+			const syntax::ConditionalExpr& choice = static_cast<const syntax::ConditionalExpr&>(*e);
+			facts->non_odr_value =
+				facts_of(choice.then_expr != nullptr ? *choice.then_expr : *choice.condition)->non_odr_value ||
+				facts_of(*choice.else_expr)->non_odr_value;
 			break;
 		}
 		default:

@@ -1365,6 +1365,7 @@ void Analyzer::convert_arguments(
 		}
 		conversion.form = ConversionForm::Ellipsis;
 		conversion.rank = ConversionRank::Ellipsis;
+		odr_use_constants(argument, &conversion);
 		record_conversion(facts, conversion);
 		// 4.1p2: an evaluated class glvalue copy-initializes the temporary
 		// used by its lvalue-to-rvalue conversion (5.2.2p7).

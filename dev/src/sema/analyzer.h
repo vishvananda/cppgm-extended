@@ -228,6 +228,9 @@ public:
 	static bool InstantiationSuppressed(const FunctionEntity* function);
 	static bool Excluded(const FunctionEntity* function);
 	static bool InstantiationSuppressed(const VariableEntity* variable);
+	// An actual definition can preserve ordinary discarded storage lowering
+	// even when a no-odr-use would not require that definition.
+	static bool OriginalStorageAvailable(const VariableEntity* variable);
 
 private:
 	friend class ConstantEvaluator;

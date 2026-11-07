@@ -800,12 +800,7 @@ Place FunctionLowering::non_odr_place(const sema::VariableEntity* variable, cons
 	// CWG2083: a non-odr-use names the original published value, even
 	// inside a closure that also stores a copy. A usable reference instead
 	// designates its actual referent, whose value can change at runtime.
-	const sema::VariableTemplateFacts* definition = variable->templ;
-	const bool available = variable->defined ||
-		(definition != nullptr && definition->pattern != nullptr && definition->pattern->defined &&
-			!sema::Analyzer::InstantiationSuppressed(variable));
-	if (!variable->type->is_reference() && available && variable->owner != nullptr &&
-		(variable->owner->kind == sema::ScopeKind::Namespace || variable->owner->kind == sema::ScopeKind::Class))
+	if (sema::Analyzer::OriginalStorageAvailable(variable))
 		return variable_place(variable, type, location);
 	const sema::ConstValue* value = lowering_.evaluated_value(variable);
 	if (value == nullptr)

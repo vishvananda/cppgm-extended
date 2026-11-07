@@ -1431,6 +1431,8 @@ const Conversion* Analyzer::record_copy(ClassEntity* entity, const Type* target,
 	// one: the conversion records the constructor and the binding of the
 	// expression to its parameter; an elided copy records no constructor.
 	ExprFacts* facts = facts_of(*WithoutParentheses(&source));
+	if (facts->potential_result)
+		potential_use(source, nullptr);
 	const Conversion* before = facts->conversion;
 	FunctionEntity* constructor = copy_initialization(
 		entity, source, ConstructionKind::Copy, location, in_place, chosen);

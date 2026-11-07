@@ -523,6 +523,17 @@ bool Analyzer::InstantiationSuppressed(const VariableEntity* variable)
 	return owner != nullptr && owner->extern_instantiation && !owner->explicit_instantiation;
 }
 
+bool Analyzer::OriginalStorageAvailable(const VariableEntity* variable)
+{
+	if (variable->type->is_reference() || variable->owner == nullptr ||
+		(variable->owner->kind != ScopeKind::Namespace && variable->owner->kind != ScopeKind::Class))
+		return false;
+	const VariableTemplateFacts* definition = variable->templ;
+	return variable->defined ||
+		(definition != nullptr && definition->pattern != nullptr && definition->pattern->defined &&
+			!InstantiationSuppressed(variable));
+}
+
 Binding* Analyzer::member_template_specialization(
 	const DeclaratorInfo& info, Scope* scope, bool definition, uint32_t location)
 {
