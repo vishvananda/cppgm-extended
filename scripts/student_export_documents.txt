@@ -79,6 +79,7 @@ doc/cwg/cwg-2352.txt
 doc/cwg/cwg-2354.txt
 doc/cwg/cwg-2356.txt
 doc/cwg/cwg-2386.txt
+doc/cwg/cwg-2397.txt
 doc/cwg/cwg-2476.txt
 doc/cwg/cwg-2549.txt
 doc/cwg/cwg-2631.txt
@@ -146,4 +147,3 @@ pa8/lowir.md
 pa9/README.md
 shared/README.md
 student.tests/README.md
-doc/cwg/cwg-2397.txt
