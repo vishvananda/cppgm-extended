@@ -198,6 +198,7 @@ private:
 	uint64_t possible_bits(Value v, Type type, unsigned depth = 0);
 	bool mask_or(Instruction& inst);
 	bool packed_part(Instruction& inst);
+	bool project_or(BlockId block, InstId& prev, InstId id);
 	bool unsigned_division(Instruction& inst);
 	bool even_product_halved(Instruction& inst);
 	bool exact_reciprocal(Instruction& inst);
@@ -1562,6 +1563,14 @@ uint64_t Simplifier::possible_bits(Value v, Type type, unsigned depth)
 	const Instruction* def = producer(v);
 	if (def == nullptr || depth >= 6 || !type.is_integer() || type.kind() == TypeKind::I128 || def->type != type)
 		return all;
+	if (def->op == Opcode::Vector)
+	{
+		const VectorOp op = static_cast<VectorOp>(def->sub);
+		if (shape_of(op) == VectorShape::Mask)
+			return (op == VectorOp::Movmskps ? 15 : op == VectorOp::Movmskpd ? 3 : 65535) & all;
+		if (shape_of(op) == VectorShape::Test)
+			return 1 & all;
+	}
 	if (def->op == Opcode::Convert)
 	{
 		const ConvertOp convert = static_cast<ConvertOp>(def->sub);
@@ -1734,6 +1743,105 @@ bool Simplifier::packed_part(Instruction& inst)
 			return true;
 		}
 	return false;
+}
+
+// Project a bounded OR tree through a constant unsigned right shift.
+// Keep only terms intersecting the demanded region, and compose shifts
+// whose producer's possible bits prove that its left shift lost nothing.
+bool Simplifier::project_or(BlockId block, InstId& prev, InstId id)
+{
+	const Instruction seen = body_.instructions[id];
+	const Type type = seen.type;
+	if (seen.op != Opcode::Binary || static_cast<BinaryOp>(seen.sub) != BinaryOp::UShr ||
+		!type.is_integer() || type.kind() == TypeKind::I1 || type.kind() == TypeKind::I128)
+		return false;
+	Constant c;
+	Literal bits;
+	const unsigned width = static_cast<unsigned>(8 * storage_bytes(type));
+	if (!constant(seen.ops[1], type, c) || !integer_bits(type, c, bits) || bits.high != 0 ||
+		bits.low == 0 || bits.low >= width)
+		return false;
+	const unsigned right = static_cast<unsigned>(bits.low);
+	const uint64_t kept = ~uint64_t(0) << right;
+	const Instruction* source = producer(seen.ops[0]);
+	if (source == nullptr || source->op != Opcode::Binary || source->type != type ||
+		static_cast<BinaryOp>(source->sub) != BinaryOp::Or)
+		return false;
+	struct Part { Value value; unsigned shift; bool left; };
+	Part parts[8];
+	Value pending[8] = { seen.ops[0] };
+	unsigned pending_count = 1, count = 0, work = 0, removed = 1, created = 0;
+	while (pending_count != 0 && ++work <= 16)
+	{
+		const Value v = resolve(pending[--pending_count]);
+		if ((possible_bits(v, type) & kept) == 0)
+			continue;
+		const Instruction* def = producer(v);
+		if (def == nullptr || def->op != Opcode::Binary || def->type != type)
+			return false;
+		const bool unique = def->result < uses_.size() && uses_[def->result] == 1;
+		if (static_cast<BinaryOp>(def->sub) == BinaryOp::Or && unique && pending_count + 2 <= 8)
+		{
+			pending[pending_count++] = def->ops[1];
+			pending[pending_count++] = def->ops[0];
+			++removed;
+			continue;
+		}
+		Constant shift;
+		Literal amount;
+		if (static_cast<BinaryOp>(def->sub) != BinaryOp::Shl || count == 8 ||
+			!constant(def->ops[1], type, shift) || !integer_bits(type, shift, amount) ||
+			amount.high != 0 || amount.low == 0 || amount.low >= width ||
+			(possible_bits(def->ops[0], type) >> (width - amount.low)) != 0)
+			return false;
+		const unsigned left = static_cast<unsigned>(amount.low);
+		const unsigned by = left >= right ? left - right : right - left;
+		parts[count++] = Part{ resolve(def->ops[0]), by, left >= right };
+		created += by != 0 ? 1 : 0;
+		removed += unique ? 1 : 0;
+	}
+	if (pending_count != 0 || count == 0 || created + count - 1 >= removed)
+		return false;
+	Value value = Value::none();
+	for (unsigned k = 0; k < count; ++k)
+	{
+		Value part = parts[k].value;
+		Instruction inst = make_instruction(Opcode::Binary, type);
+		inst.location = seen.location;
+		if (parts[k].shift != 0)
+		{
+			inst.sub = static_cast<uint8_t>(parts[k].left ? BinaryOp::Shl : BinaryOp::UShr);
+			inst.ops[0] = part;
+			inst.ops[1] = literal(integer_constant(type, Literal{ parts[k].shift, 0 }));
+			const InstId at = append_instruction(body_, inst);
+			body_.instructions[at].result = append_temp(body_, type, at);
+			insert_after(body_, block, prev, at);
+			prev = at;
+			part = Value::temp(body_.instructions[at].result);
+		}
+		if (value.is(ValueKind::None))
+			value = part;
+		else
+		{
+			inst.sub = static_cast<uint8_t>(BinaryOp::Or);
+			inst.ops[0] = value;
+			inst.ops[1] = part;
+			const InstId at = append_instruction(body_, inst);
+			body_.instructions[at].result = append_temp(body_, type, at);
+			insert_after(body_, block, prev, at);
+			prev = at;
+			value = Value::temp(body_.instructions[at].result);
+		}
+	}
+	Instruction& result = body_.instructions[id];
+	result.op = Opcode::Copy;
+	result.sub = 0;
+	result.ops[0] = value;
+	result.ops[1] = Value::none();
+	result.flags = 0;
+	repl_.resize(body_.temps.size(), Value::none());
+	uses_.resize(body_.temps.size(), 0);
+	return true;
 }
 
 // ((x * a) +/- b) * c = x * (a * c) +/- (b * c), at the
@@ -2634,7 +2742,7 @@ void Simplifier::process_block(BlockId block)
 		canonicalize(inst);
 		// Appending the replacement product may move `inst`; take up the
 		// rewritten sum again with a fresh instruction reference.
-		if (affine_constant(block, prev, id))
+		if (affine_constant(block, prev, id) || project_or(block, prev, id))
 		{
 			changed_ = true;
 			continue;

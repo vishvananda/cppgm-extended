@@ -1,0 +1,46 @@
+name: Private simdjson bit-projection probe
+on:
+  push:
+    branches: [perf/simdjson-bit-projection-probe]
+permissions:
+  contents: read
+jobs:
+  paired:
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 45
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_WARNINGS_AS_ERRORS: '1'
+    steps:
+      - name: Install host tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends g++ clang-21 python3 git make ca-certificates time
+      - uses: actions/checkout@v6
+      - name: Build immutable compilers
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --depth=1 origin 9e248f3f2a5d2795b0d9f8f736a33c6f574e6860 963dbc3c8f2c429179dd0e9686fdb1f2c1efebd0
+          mkdir -p obj/probe
+          make -C dev -j4 cppgm++
+          cp dev/cppgm++ obj/probe/cppgm-candidate
+          git show 963dbc3c8f2c429179dd0e9686fdb1f2c1efebd0:dev/src/opt/value_simplify.cpp > dev/src/opt/value_simplify.cpp
+          make -C dev -j4 cppgm++
+          cp dev/cppgm++ obj/probe/cppgm-arithmetic
+      - name: Compare identical inputs and fixed GCC drivers
+        run: python3 scripts/simdjson_probe.py
+      - name: Report
+        if: always()
+        shell: bash
+        run: |
+          if [ -f obj/probe/results/details.md ]; then
+            cat obj/probe/results/details.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paired-simdjson-projection-probe
+          path: obj/probe
