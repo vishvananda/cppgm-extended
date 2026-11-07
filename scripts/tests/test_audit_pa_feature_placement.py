@@ -31,6 +31,17 @@ def write(path: Path, text: str) -> None:
 
 
 class AuditPAFeaturePlacementTests(unittest.TestCase):
+    def test_partial_heads_after_long_prefix_and_other_declarators(self) -> None:
+        source = "int padding;\n" * 2048 + (
+            "template<class T> struct A<T*>;\n"
+            "template<class T> struct A<int>* f(T);\n"
+            "template<class T> struct B<Pair<T, int>*> final {};\n"
+        )
+        self.assertEqual(audit.match_partial_specializations(source), [
+            "source:template<class T> struct A<T*>",
+            "source:template<class T> struct B<Pair<T, int>*>",
+        ])
+
     def test_partial_specializations_require_a_class_head(self) -> None:
         for source in (
             "template<class T> struct A<T*>;",

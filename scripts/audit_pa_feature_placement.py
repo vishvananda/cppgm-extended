@@ -994,23 +994,26 @@ def find_template_headers(code: str) -> list[TemplateHeader]:
     return headers
 
 
+PARTIAL_CLASS_HEAD_RE = rx(r"\s*(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*\s*<")
+PARTIAL_CLASS_CONTINUATION_RE = rx(r"\s*(?:[;{]|:(?!:)|final\s*(?:\{|:(?!:)))")
+
+
 def match_partial_specializations(code: str) -> list[str]:
     matched: list[str] = []
     for header in find_template_headers(code):
         if not header.params:
             continue
-        head = re.match(r"\s*(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*\s*<",
-                        code[header.end:])
+        head = PARTIAL_CLASS_HEAD_RE.match(code, header.end)
         if head is None:
             continue
-        opening = header.end + head.end() - 1
+        opening = head.end() - 1
         end = matching_delimiter(code, opening, "<", ">", skip_groups=True)
         if end is None:
             continue
         # A forward partial specialization ends with ';'. In a definition
         # the next token starts the body or bases, optionally after final.
         # `final` followed by ';' can instead name a variable template.
-        if re.match(r"\s*(?:[;{]|:(?!:)|final\s*(?:\{|:(?!:)))", code[end + 1:]):
+        if PARTIAL_CLASS_CONTINUATION_RE.match(code, end + 1):
             matched.append("source:" + code[header.start:end + 1].strip())
     return matched
 
