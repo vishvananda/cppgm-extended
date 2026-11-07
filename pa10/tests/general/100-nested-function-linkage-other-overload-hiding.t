@@ -1,5 +1,6 @@
-// N3485 3.5p6: visible redeclarations of the same function preserve its identity.
+// CWG1839/P1787R6: correspondence does not depend on ordinary lookup hiding.
+// After the inner block, ordinary lookup still selects the outer long overload.
 static int target(int value) { return value + 100; }
 long target(long value) { return value + 200; }
-int invoke() { long target(long value); { int target(int other); return target(4); } }
-int main() { return invoke() == 24 ? 0 : 1; }
+int invoke() { long target(long value); int result; { int target(int other); result = target(4); } return result + target(4L); }
+int main() { return invoke() == 308 ? 0 : 1; }

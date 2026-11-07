@@ -1,4 +1,5 @@
-// N3485 3.5p6: visible redeclarations of the same function preserve its identity.
+// CWG1839/P1787R6: the inner declaration corresponds to the namespace function.
+// Outside that inner block, ordinary lookup still names the parameter.
 static int target(int value) { return value + 100; }
-int invoke(int target) { { int target(int value); return target(4); } }
-int main() { return invoke(7) == 24 ? 0 : 1; }
+int invoke(int target) { int result; { int target(int value); result = target(4); } return target + result; }
+int main() { return invoke(7) == 111 ? 0 : 1; }
