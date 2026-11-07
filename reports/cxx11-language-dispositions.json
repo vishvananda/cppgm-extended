@@ -64,5 +64,11 @@
     "reason": "The GCC positive expectation relies on alias-template identity equivalence proposed by CWG1286, still drafting in the official2026-10-10 active list. N3485 14.4p1 requires the same template identity;14.5.7p2 equates alias specializations with substituted types,not the alias templates themselves. Preserve as standards/oracle review pending isolated required-diagnostic and valid-neighbor replay; do not infer an original acceptance defect or adopted later-DR requirement from the GCC result.",
     "issue": "CXX11-037",
     "sha256": "de453ffa2edd414b1ddb3507db881d8238d1371f6f1a75f42422a67374329db1"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/gen-attrs-66.C": {
+    "status": "required-diagnostic",
+    "reason": "N3485 7.6.1 attribute grammar has no using-prefix. The using gnu: syntax is a C++17 extension and requires a diagnostic in both C++11 dialects. GCC warning plus acceptance and cppgm diagnostic plus rejection both satisfy that obligation. Optional dg-warning metadata does not establish positive C++11 validity; preserve all configurations and check the required diagnostic, without severity parity. Existing CXX11-041 PA29 controls cover the version boundary.",
+    "issue": "CXX11-041",
+    "sha256": "98b004db13e0eadf6b0763900102adddfbf73874e10cd45ad911442104b52830"
   }
 }

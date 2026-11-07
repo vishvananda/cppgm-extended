@@ -3,7 +3,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from build_gcc_cxx11_ci_manifest import Excluded, project
+from build_gcc_cxx11_ci_manifest import Excluded, project, reviewed_projection
 
 
 def directive(command, *arguments):
@@ -11,6 +11,25 @@ def directive(command, *arguments):
 
 
 class GCCManifest(unittest.TestCase):
+    def test_reviewed_extension_requires_diagnostic_without_severity_parity(self):
+        review = dict(status='required-diagnostic', sha256='pinned', reason='C++17 syntax in C++11')
+        result = reviewed_projection([directive('dg-do', 'compile'),
+                                      directive('dg-warning', 'extension warning')],
+                                     'int x [[using gnu: aligned(4)]];', 'pinned', review)
+        self.assertEqual(result[:3], ('compile', 'diagnostic', []))
+        self.assertIn('Source-pinned language review: C++17 syntax in C++11', result[3])
+
+    def test_stale_review_fails_instead_of_changing_coverage(self):
+        with self.assertRaises(ValueError):
+            reviewed_projection([], '', 'changed',
+                                dict(status='required-diagnostic', sha256='pinned', reason='review'))
+
+    def test_diagnostic_review_does_not_waive_unknown_metadata_or_runtime(self):
+        review = dict(status='required-diagnostic', sha256='pinned', reason='review')
+        for directives in [[directive('dg-do', 'run')], [directive('dg-additional-sources', 'other.C')]]:
+            with self.subTest(directives=directives), self.assertRaises(Excluded):
+                reviewed_projection(directives, 'int main() {}', 'pinned', review)
+
     def test_native_active_negative_does_not_require_diagnostic_parity(self):
         action, expect, flags, _ = project([
             directive('dg-do', 'compile', ' target c++11 '),

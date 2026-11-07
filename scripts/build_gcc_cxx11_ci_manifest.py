@@ -132,6 +132,21 @@ def extract(paths, library):
     return result
 
 
+def reviewed_projection(directives, text, digest, disposition):
+    if disposition:
+        if disposition['sha256'] != digest:
+            raise ValueError('Stale language disposition')
+        if disposition['status'] != 'required-diagnostic':
+            raise Excluded(disposition['status'] + ': ' + disposition['reason'])
+    action, expect, flags, adaptations = project(directives, text)
+    if disposition:
+        if action != 'compile':
+            raise Excluded('Required-diagnostic review cannot retain runtime obligations')
+        expect = 'diagnostic'
+        adaptations.append('Source-pinned language review: ' + disposition['reason'])
+    return action, expect, flags, adaptations
+
+
 def build(root, library, dispositions):
     names = subprocess.check_output(['git', '-C', str(root), 'ls-files', '-z', '--',
                                      'gcc/testsuite/g++.dg/cpp0x'], text=True).split('\0')
@@ -146,11 +161,8 @@ def build(root, library, dispositions):
         digest = sha256(source)
         try:
             disposition = dispositions.get('gcc/' + path)
-            if disposition:
-                if disposition['sha256'] != digest:
-                    raise ValueError('Stale language disposition: ' + path)
-                raise Excluded(disposition['status'] + ': ' + disposition['reason'])
-            action, expect, flags, adaptations = project(metadata[str(source)], source.read_text())
+            action, expect, flags, adaptations = reviewed_projection(
+                metadata[str(source)], source.read_text(), digest, disposition)
         except Excluded as error:
             exclusions.append(dict(path=path, reason=str(error)))
             continue
@@ -164,7 +176,7 @@ def build(root, library, dispositions):
                          'native diagnostic text, counts and recovery are not correctness obligations.',
                 limitations=['Not the complete GCC suite; other families and unsupported cpp0x metadata excluded',
                              'No headers, conditional preprocessing, specialized target or additional-source support yet',
-                             'Required-diagnostic outcomes follow active dg-error declarations; mismatches need language-rule triage',
+                             'Required-diagnostic outcomes follow active dg-error declarations or source-pinned language reviews',
                              'Native pedantic escalation becomes diagnostic-only upstream qualification; baseline failures remain failures'],
                 metadata_parser={name: sha256(library / name) for name in ['dg.exp', 'utils.exp']})
 

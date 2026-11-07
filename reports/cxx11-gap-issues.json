@@ -4624,5 +4624,24 @@
       "parent_proof": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-051/parent-proof-verification-v1.json"
     },
     "triage_note": "Clang agent is implementing a typed residual-expansion fix; no integration or performance acceptance claimed."
+  },
+  {
+    "id": "CXX11-052",
+    "priority": "P0",
+    "status": "crash-confirmed-reduction-complete",
+    "compiler_language_gap": true,
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/defaulted43.C"
+    ],
+    "symptom": "Valid explicitly noexcept defaulted destructors crash object generation in native::FunctionSelector::build_cfg.",
+    "owning_pa": 21,
+    "handout": "pa21/README.md; provisional exception/lowering ownership, fixture placement still to verify",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-052",
+    "checks": {
+      "ci": "/mnt/vizier/cppgm-cxx11-upstream/gcc-ci-run-integrated-048049-v1/results.json",
+      "backtrace": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-052/original-gdb.log",
+      "reductions": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-052/reductions-v1/results.json"
+    },
+    "triage_note": "Out-of-line and inline noexcept(true) destructor reductions crash; noexcept(false) destructor and constructor neighbors do not. GCC15 accepts all six reductions under pedantic-errors. Emitted LowIR has eh_try targeting absent function_exception_landing_1 after empty member destruction is elided. Fix and required owning-PA regression pending."
   }
 ]

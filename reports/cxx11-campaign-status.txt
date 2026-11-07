@@ -33,11 +33,11 @@ objects; the combined normal checks are running. This is integration progress,
 not a claim that the entire external campaign is complete.
 
 Current declared results on that immutable combined compiler:
-  GCC:   3,668/4,114 (89.16%); upstream 4,114/4,114.
+  GCC:   3,670/4,114 (89.21%); upstream 4,114/4,114.
   Clang:    56/59    (94.92%); upstream    59/59.
-GCC has 244 compile failures, 198 missing required diagnostics, two compiler
-abnormal outcomes and two link failures. These are 446 failed configurations,
-not 446 distinct defects. Clang has three rejected inputs: explicit pack-prefix
+GCC has 242 compile failures, 198 missing required diagnostics, two compiler
+abnormal outcomes and two link failures. These are 444 failed configurations,
+not 444 distinct defects. Clang has three rejected inputs: explicit pack-prefix
 extension (051, being repaired) and two member-pointer conversion/overload
 inputs awaiting reductions. Neither rate describes the whole upstream suite.
 
@@ -47,7 +47,7 @@ a confirmed compiler defect. Their independently valid slices remain required
 PA20/PA17 controls. Exclusions are not passes; original 61-case evidence remains.
 
 Both CI jobs run matching upstream suites and retain times and ratios. This
-combined run records GCC 27.819/67.516 seconds (ratio0.412) and Clang0.375/2.106
+combined run records GCC 27.750/65.724 seconds (ratio 0.422) and Clang 0.375/2.106
 seconds (ratio0.178). Both ratios are explicitly NON-COMPARABLE because cppgm
 still fails cases. No GitHub-hosted execution is claimed.
 
@@ -62,9 +62,17 @@ Evidence under /mnt/vizier/cppgm-cxx11-upstream:
   ci-next-048049-candidate-v1/manifest.json
   ci-next-048049-strict-v1.log; ci-next-combined-checks-v1/
   ci-next-048049-cumulative-perf-v1/summary.tsv
-  gcc-ci-run-integrated-048049-v1/
+  gcc-ci-manifest-v5.json; gcc-ci-run-integrated-048049-v2/
   ci-first-clang-v1/manifest-v5.json; run-integrated-048049-v1/
   ci-next-integration-journal-v1.json
+GCC gen-attrs-66 is retained as a source-pinned required-diagnostic case: it
+uses C++17 attribute using-prefix syntax in C++11. GCC warns and accepts;
+cppgm diagnoses and rejects. Both satisfy the language rule. The v4 manifest's
+positive expectation was an oracle error; v5 changes only these two expectations,
+retaining all 4,114 cases and 705 exclusions. Original outcomes remain available.
+Crash052 is reduced to defaulted noexcept(true) destructors: an emitted eh_try
+points to an absent landing block. Constructor and noexcept(false) neighbors
+compile. The required PA regression and lowering fix remain pending.
 Public runtime/codegen regression investigation remains assigned elsewhere.
 
 Historical checkpoint before user realignment (2026-11-07)

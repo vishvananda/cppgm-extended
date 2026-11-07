@@ -108,13 +108,13 @@ Combined integration checkpoint, source0f572a156
 
 All fifteen prepared repairs plus047/048/049 are staged together. The immutable
 compiler passes8,606 required strict tests. The declared GCC manifest is unchanged:
-  cppgm3,668/4,114 (89.16%); upstream4,114/4,114;
-  elapsed27.819/67.516seconds; cppgm/upstream0.412, NON-COMPARABLE.
+  cppgm 3,670/4,114 (89.21%); upstream 4,114/4,114;
+  elapsed 27.750/65.724 seconds; cppgm/upstream 0.422, NON-COMPARABLE.
 Clang manifest-v5 has59cases and2,899exclusions:
   cppgm56/59 (94.92%); upstream59/59;
   elapsed0.375/2.106seconds; cppgm/upstream0.178, NON-COMPARABLE.
 Three Clang rejections remain: explicit-pack prefix deduction and two member
-pointer overload/conversion inputs. GCC retains446failed configurations; source
+pointer overload/conversion inputs. GCC retains 444 failed configurations; source
 counts and distinct root causes must not be inferred from that number.
 
 The second Clang disposition is deduction.cpp: mixed-type non-type partial
@@ -126,7 +126,15 @@ standards-review exclusion, not a pass; its independent valid lines1-27 remain
 verbatim in pa17/tests/controls/300-clang-pack-instantiation-valid-slice.t.
 The earlier pr30559 valid trailing-return slice is retained in PA20.
 
-The current results are under gcc-ci-run-integrated-048049-v1/ and
+The current results are under gcc-ci-run-integrated-048049-v2/ and
 ci-first-clang-v1/run-integrated-048049-v1/ at the evidence root. Earlier result
 sets and failed/intermediate performance observations are retained. Final
 combined normal/export/release checks and campaign-root integration are pending.
+
+GCC manifest-v5 retains every4,114configuration and705exclusion. Only the two
+gen-attrs-66 expectations change from acceptance to required diagnostic after
+N3485 7.6.1 review: this file uses C++17 attribute using-prefix syntax. GCC's
+warning and cppgm's rejection are both valid diagnostics in C++11. The override
+is hash-pinned, cannot waive unknown dependencies/runtime obligations, and is
+covered by three additional harness tests. Original v4 outcomes are retained;
+this correction is not a compiler regression or a dropped test.
