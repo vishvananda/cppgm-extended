@@ -1358,6 +1358,11 @@ void Analyzer::convert_arguments(
 		conversion.form = ConversionForm::Ellipsis;
 		conversion.rank = ConversionRank::Ellipsis;
 		record_conversion(facts, conversion);
+		// 4.1p2: an evaluated class glvalue copy-initializes the temporary
+		// used by its lvalue-to-rvalue conversion (5.2.2p7).
+		if (type->unqualified->kind == TypeKind::Class && unevaluated_ == 0 &&
+			facts->category != ValueCategory::PRValue)
+			record_copy(const_cast<ClassEntity*>(ClassOf(type)), type, argument, argument.location);
 	}
 	argument_scratch_.resize(first);
 }
