@@ -617,7 +617,9 @@ void Analyzer::agree_block_linkage(const Entity* entity, bool c_linkage, bool in
 	// int y;` is ill-formed) and language linkage (7.5p5).
 	if (block_linkages_.empty())
 		return;
-	const Scope* space = enclosing_namespace(entity->owner);
+	const Scope* space = entity->owner;
+	if (space->kind != ScopeKind::Namespace)
+		space = enclosing_namespace(entity->owner);
 	const uint32_t newest = block_linkage_index_.find(entity->name);
 	for (uint32_t i = newest == PointerMap::kMissing ? 0 : newest; i != 0; i = block_linkages_[i - 1].next)
 	{
