@@ -654,6 +654,10 @@ void Analyzer::odr_use_constant_operand(const syntax::Expr& expr)
 		(entity->owner->kind != ScopeKind::Block && entity->owner->kind != ScopeKind::Function))
 		return;
 	const VariableEntity* variable = static_cast<const VariableEntity*>(entity);
+	// Only automatic objects are local entities (CWG2346/P0588R1).
+	// Naming static storage never requires capture or an enclosing body.
+	if (variable->is_static || variable->is_extern || variable->is_thread_local)
+		return;
 	if ((facts->flags & kStaticConstant) == 0 &&
 		!(variable->is_constexpr && IsScalar(variable->type) && (facts->type->cv & kVolatile) == 0))
 		return;
