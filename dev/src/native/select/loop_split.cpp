@@ -27,6 +27,7 @@ uint64_t block_weight(const SelectorState& s, uint32_t b)
 
 void LoopSplitter::reset(const SelectorState& s)
 {
+	selected_.assign(loop_first.empty() ? 0 : loop_first.size() - 1, 0);
 	const uint32_t n = static_cast<uint32_t>(s.blocks_.size());
 	std::vector<uint8_t> eh(n, 0);
 	for (uint32_t b = 0; b < n; ++b)
@@ -119,11 +120,13 @@ bool LoopSplitter::plan(const SelectorState& s, uint32_t c, const std::vector<ui
 	// The loops kept: those holding a conflict, or all candidates.
 	const uint32_t e = ++split_epoch_;
 	bool any = false;
+	if (conflicts != nullptr)
+		for (uint32_t b : *conflicts)
+			if (inside(b))
+				selected_[loop_at_[b]] = e;
 	for (uint32_t l : chosen_)
 	{
-		bool keep = conflicts == nullptr;
-		for (size_t k = 0; conflicts != nullptr && k < conflicts->size() && !keep; ++k)
-			keep = inside((*conflicts)[k]) && loop_at_[(*conflicts)[k]] == l;
+		const bool keep = conflicts == nullptr || selected_[l] == e;
 		if (keep)
 			for (uint32_t k = loop_first[l]; k < loop_first[l + 1]; ++k)
 				split_at_[loop_blocks[k]] = e;
@@ -169,8 +172,20 @@ bool LoopSplitter::plan(const SelectorState& s, uint32_t c, const std::vector<ui
 	blocks.clear();
 	std::vector<BlockRange> split;
 	for (uint32_t r = s.ra_range_first_[c]; r < s.ra_range_first_[c + 1]; ++r)
-		if (!kept(s.ra_range_block_[r]))
-			split.push_back(BlockRange{ s.ra_range_block_[r], s.ra_ranges_[r].first, s.ra_ranges_[r].second });
+	{
+		const uint32_t b = s.ra_range_block_[r];
+		if (kept(b))
+			continue;
+		int32_t last = s.ra_ranges_[r].second;
+		bool entering = s.succ_first_[b] != s.succ_first_[b + 1];
+		for (uint32_t k = s.succ_first_[b]; k < s.succ_first_[b + 1] && entering; ++k)
+			entering = kept(s.succs_[k]);
+		// The home store reads the register before the edge's phi writes.
+		const int32_t read = s.ra_base_[b] + 2 + 2 * static_cast<int32_t>(s.blocks_[b].count);
+		if (entering && s.ra_ranges_[r].first <= read)
+			last = std::min(last, read);
+		split.push_back(BlockRange{ b, s.ra_ranges_[r].first, last });
+	}
 	for (const SplitMove& move : moves)
 	{
 		// (A predecessor ending in a conditional terminator reloads in the

@@ -77,6 +77,7 @@ private:
 	std::vector<uint32_t> reload_at_;      // per block: epoch when a reload's range was added
 	std::vector<uint32_t> loop_at_;        // per block: its chosen loop (when inside)
 	std::vector<uint32_t> chosen_;         // candidates' loops
+	std::vector<uint32_t> selected_;       // loop selection stamps
 	std::vector<uint32_t> split_at_;       // per block: split stamp when inside a loop plan keeps
 	std::vector<uint32_t> exc_succ_first_; // per block: the landings it enters (CSR)
 	std::vector<uint32_t> exc_succs_;

@@ -122,8 +122,16 @@ void PressureTree::add(uint32_t first, uint32_t last, int32_t delta, uint32_t re
 	auto cover = [&](size_t node) {
 		max_[node] += delta;
 		add_[node] += delta;
-		cover_[node] |= regs;
-		below_[node] |= regs;
+		if (delta >= 0)
+		{
+			cover_[node] |= regs;
+			below_[node] |= regs;
+		}
+		else
+		{
+			cover_[node] &= ~regs;
+			below_[node] = cover_[node] | (node < size_ ? below_[2 * node] | below_[2 * node + 1] : 0);
+		}
 	};
 	while (l <= r)
 	{
@@ -203,8 +211,16 @@ void PressureTree::update(size_t node, size_t lo, size_t hi, size_t first, size_
 	{
 		max_[node] += delta;
 		add_[node] += delta;
-		cover_[node] |= regs;
-		below_[node] |= regs;
+		if (delta >= 0)
+		{
+			cover_[node] |= regs;
+			below_[node] |= regs;
+		}
+		else
+		{
+			cover_[node] &= ~regs;
+			below_[node] = cover_[node] | (node < size_ ? below_[2 * node] | below_[2 * node + 1] : 0);
+		}
 		return;
 	}
 	const size_t mid = (lo + hi) / 2;
@@ -1135,9 +1151,86 @@ void FunctionSelector::assign_registers()
 			commit(w, reg, ra_range_first_[w], ra_range_first_[w + 1]);
 		return true;
 	};
+	uint64_t repair_budget = (body.instructions.size() + blocks_.size()) * kLivenessStepsPerItem + kLivenessSlack;
+	// Only an actual failed loop allocation can ask an assigned, unused-in-loop
+	// value to release its register there. A failed trial restores the exact tree.
+	auto make_room = [&](uint32_t c, Reg tied) -> Reg {
+		if (!ra_looped_[c] || temps_[ra_candidates_[c]].cls != VClass::Gpr)
+			return kNoReg;
+		const uint32_t first = ra_range_first_[c], past = ra_range_first_[c + 1];
+		std::vector<uint32_t> conflicts;
+		for (size_t k = global_temps_.size(); k-- > 0 && repair_budget != 0;)
+		{
+			--repair_budget;
+			const uint32_t victim = global_temps_[k];
+			const int32_t index = cand[victim];
+			if (index < 0 || temps_[victim].cls != VClass::Gpr || split[index].second != 0)
+				continue;
+			const uint32_t v = static_cast<uint32_t>(index), vf = ra_range_first_[v], vp = ra_range_first_[v + 1];
+			const uint64_t work = past - first + vp - vf + loop_splitter_.loop_blocks.size() + ra_use_first_[v + 1] -
+				ra_use_first_[v] + preds_.size();
+			if (work > repair_budget)
+				break;
+			repair_budget -= work;
+			conflicts.clear();
+			for (uint32_t a = first, b = vf; a < past && b < vp;)
+			{
+				if (ra_ranges_[a].first <= ra_ranges_[b].second && ra_ranges_[b].first <= ra_ranges_[a].second)
+					conflicts.push_back(ra_range_block_[a]);
+				if (ra_ranges_[a].second < ra_ranges_[b].second)
+					++a;
+				else
+					++b;
+			}
+			if (conflicts.empty() || !loop_splitter_.candidates(*this, v))
+				continue;
+			bool feasible = true;
+			for (uint32_t b : conflicts)
+				feasible = feasible && loop_splitter_.inside(b);
+			if (!feasible || !loop_splitter_.plan(*this, v, &conflicts) || loop_splitter_.cost >= ra_freq_[c])
+				continue;
+			const Reg held = temps_[victim].greg;
+			auto paint = [&](uint32_t lo, uint32_t hi, int32_t delta) {
+				for (uint32_t r = lo; r < hi; ++r)
+					ra_gpr_pressure_.add(static_cast<uint32_t>(ra_ranges_[r].first),
+						static_cast<uint32_t>(ra_ranges_[r].second), delta, 1u << held);
+			};
+			const uint32_t start = static_cast<uint32_t>(ra_ranges_.size());
+			ra_ranges_.insert(ra_ranges_.end(), loop_splitter_.ranges.begin(), loop_splitter_.ranges.end());
+			ra_range_block_.insert(ra_range_block_.end(), loop_splitter_.blocks.begin(), loop_splitter_.blocks.end());
+			const uint32_t end = static_cast<uint32_t>(ra_ranges_.size());
+			paint(vf, vp, -1);
+			Reg available = kNoReg;
+			bool placed = choose_register(v, start, end, held, kNoReg) == held;
+			if (placed)
+			{
+				paint(start, end, 1);
+				available = choose_register(c, first, past, group_reg[find(c)], tied);
+			}
+			if (available != kNoReg)
+			{
+				split[v] = std::make_pair(start, end);
+				for (SplitMove move : loop_splitter_.moves)
+				{
+					move.reg = held;
+					split_moves_.push_back(move);
+				}
+				++stats_.loop_splits;
+				return available;
+			}
+			if (placed)
+				paint(start, end, -1);
+			paint(vf, vp, 1);
+			ra_ranges_.resize(start);
+			ra_range_block_.resize(start);
+		}
+		return kNoReg;
+	};
 	auto assign_alone = [&](uint32_t c, Reg tied) {
 		uint32_t first = ra_range_first_[c], past = ra_range_first_[c + 1];
 		Reg reg = choose_register(c, first, past, group_reg[find(c)], tied);
+		if (reg == kNoReg)
+			reg = make_room(c, tied);
 		// Else one outside the loops it skips, or the blocks clobbering it (a phi: not in its block or predecessors).
 		const uint32_t temp = ra_candidates_[c];
 		const int32_t capacity = temps_[temp].cls != VClass::Gpr

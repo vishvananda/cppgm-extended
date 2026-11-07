@@ -2,6 +2,7 @@ name: Public benchmarks
 
 on:
   push:
+    branches-ignore: [perf/simdjson-lazy-split-probe]
   workflow_dispatch:
     inputs:
       platform:
