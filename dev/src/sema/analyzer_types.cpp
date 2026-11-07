@@ -1542,6 +1542,12 @@ const Type* Analyzer::parameter_type(const syntax::ParameterDeclaration& paramet
 		error(parameter.location, "constexpr in a parameter declaration");
 	const DeclaratorInfo info = declarator(parameter.declarator, specifiers.type, scope, parameter.location,
 		specifiers.mode_specifiers.empty() ? nullptr : &specifiers, DeclaratorUse::Parameter);
+	// 8.3p1,3.3.4: a parameter is not a special function or a
+	// specialization, and its name belongs to its parameter scope.
+	if (info.name != nullptr &&
+		(info.name->qualified() || info.name->last().kind != syntax::NameComponentKind::Identifier ||
+			info.name->last().has_arguments))
+		error(parameter.location, "a parameter declarator-id must be an unqualified identifier");
 	if (info.virt_suffix != nullptr)
 		error(parameter.location, "a virt-specifier in a parameter declaration");
 	return info.type;

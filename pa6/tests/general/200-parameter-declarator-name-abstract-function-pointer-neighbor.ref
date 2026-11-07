@@ -1,0 +1,9 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    function f function of (pointer to function of (int) returning int) returning void
+    function main function of () returning int
+    scope function main
+      scope block
+end translation unit
