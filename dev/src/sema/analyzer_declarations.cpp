@@ -2245,7 +2245,10 @@ FunctionEntity* Analyzer::new_function(const Specifiers& specifiers, const Decla
 		}
 	}
 	if (name.kind == syntax::NameComponentKind::LiteralOperator)
+	{
 		function->operator_token = TokenKind::KW_OPERATOR;
+		literal_operator_declaration(*function, location);
+	}
 	if (name.kind == syntax::NameComponentKind::Operator)
 	{
 		function->is_operator = true;

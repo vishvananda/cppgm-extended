@@ -13,6 +13,52 @@
 // operators, and the keyword literals (true, false, nullptr, this).
 namespace sema {
 
+namespace {
+
+bool LiteralCharacter(const Type* type)
+{
+	return type->kind == TypeKind::Fundamental &&
+		(type->fundamental == FundamentalType::Char || type->fundamental == FundamentalType::WcharT ||
+			type->fundamental == FundamentalType::Char16T || type->fundamental == FundamentalType::Char32T);
+}
+
+} // namespace
+
+void Analyzer::literal_operator_declaration(const FunctionEntity& function, uint32_t location)
+{
+	// 13.5.8p2-p6: these constraints describe the declaration, even if no
+	// user-defined literal ever calls it. Friends have their namespace owner.
+	if (function.owner->kind != ScopeKind::Namespace)
+		error(location, "a literal operator must be a namespace-scope function");
+	if (function.c_linkage)
+		error(location, "a literal operator cannot have C language linkage");
+	const Type* type = function.type->canonical;
+	if (function.templated)
+	{
+		if (type->param_count != 0 || type->variadic || template_entities_.size() != 1 ||
+			!template_entities_[0]->non_type || !template_entities_[0]->pack ||
+			template_entities_[0]->value_type == nullptr ||
+			template_entities_[0]->value_type->unqualified != types_.fundamental(FundamentalType::Char))
+			error(location, "a literal operator template requires an empty parameter clause and a char pack");
+		return;
+	}
+	if (type->variadic || (type->param_count != 1 && type->param_count != 2))
+		error(location, "invalid literal operator parameter clause");
+	const Type* first = type->params[0]->unqualified;
+	const Type* pointee = first->kind == TypeKind::Pointer ? first->element : nullptr;
+	const bool character_pointer = pointee != nullptr && pointee->cv == kConst && LiteralCharacter(pointee);
+	if (type->param_count == 1)
+	{
+		if (first == types_.fundamental(FundamentalType::UnsignedLongLongInt) ||
+			first == types_.fundamental(FundamentalType::LongDouble) || LiteralCharacter(first) ||
+			(character_pointer && pointee->fundamental == FundamentalType::Char))
+			return;
+	}
+	else if (character_pointer && type->params[1]->unqualified == types_.fundamental(FundamentalType::UnsignedLongInt))
+		return;
+	error(location, "invalid literal operator parameter types");
+}
+
 ExprFacts* Analyzer::literal(const syntax::LiteralExpr& expr)
 {
 	const TokenSpelling& spelling = expr.spelling;

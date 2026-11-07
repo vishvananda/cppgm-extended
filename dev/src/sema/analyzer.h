@@ -559,6 +559,7 @@ private:
 	ExprFacts* user_numeric_literal(const syntax::LiteralExpr& expr, const NumberLiteral& number);
 	ExprFacts* user_character_literal(const syntax::LiteralExpr& expr, const CharacterLiteralValue& character);
 	ExprFacts* literal_call(const syntax::LiteralExpr& expr, FunctionEntity* function, uint64_t form);
+	void literal_operator_declaration(const FunctionEntity& function, uint32_t location);
 	ExprFacts* keyword_literal(const syntax::KeywordLiteralExpr& expr, Scope* scope);
 	ExprFacts* binary(const syntax::BinaryExpr& expr, Scope* scope);
 	ExprFacts* binary_chain(const syntax::BinaryExpr& expr, Scope* scope);
