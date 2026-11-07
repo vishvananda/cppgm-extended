@@ -251,23 +251,42 @@ void Analyzer::simple_declaration(const syntax::SimpleDecl& decl, Scope* scope)
 		return;
 	}
 	const size_t shared = pending_access_.size();
-	if (lone && specifiers.declared == nullptr && specifiers.is_friend && specifiers.type != nullptr)
-	{
-		// 11.3p3: `friend simple-type-specifier ;` and `friend
-		// typename-specifier ;` befriend the class type they designate and
-		// are ignored for any other type. One that depends on a template
-		// parameter waits for the instantiations, which analyze it again.
-		if (declaration_scope(scope)->kind != ScopeKind::Class)
-			error(decl.location, "friend declaration outside a class");
-		if (specifiers.type == auto_placeholder_)
-			error(decl.location, "auto in a friend declaration");
-		const Type* type = specifiers.type->unqualified;
-		if (type->kind == TypeKind::Class && (template_depth_ == 0 || !dependent_type(type)))
-			befriend_class(static_cast<ClassEntity*>(type->entity), scope);
-		return;
-	}
 	if (lone)
 	{
+		// 7.1.1p1: storage requires a declarator. Register is an ignored
+		// hint elsewhere, so inspect its retained parser token only here.
+		bool storage = specifiers.is_static || specifiers.is_extern || specifiers.is_thread_local ||
+			specifiers.is_mutable;
+		if (!storage)
+			for (const syntax::DeclSpecifier& item : decl.specifiers)
+				if (item.kind == syntax::DeclSpecKind::Keyword && item.keyword == TokenKind::KW_REGISTER)
+					storage = true;
+		if (storage)
+		{
+			// 9.5p6: anonymous unions retain the namespace/block exception,
+			// but have no storage-class-specifier in a class scope.
+			const ClassEntity* cls = specifiers.declared != nullptr && specifiers.declared->kind == EntityKind::Class
+				? static_cast<const ClassEntity*>(specifiers.declared)
+				: nullptr;
+			if (cls == nullptr || !cls->anonymous || cls->key != TokenKind::KW_UNION ||
+				declaration_scope(scope)->kind == ScopeKind::Class)
+				error(decl.location, "storage-class-specifier in a declaration without a declarator");
+		}
+		if (specifiers.declared == nullptr && specifiers.is_friend && specifiers.type != nullptr)
+		{
+			// 11.3p3: `friend simple-type-specifier ;` and `friend
+			// typename-specifier ;` befriend the class type they designate and
+			// are ignored for any other type. One that depends on a template
+			// parameter waits for the instantiations, which analyze it again.
+			if (declaration_scope(scope)->kind != ScopeKind::Class)
+				error(decl.location, "friend declaration outside a class");
+			if (specifiers.type == auto_placeholder_)
+				error(decl.location, "auto in a friend declaration");
+			const Type* type = specifiers.type->unqualified;
+			if (type->kind == TypeKind::Class && (template_depth_ == 0 || !dependent_type(type)))
+				befriend_class(static_cast<ClassEntity*>(type->entity), scope);
+			return;
+		}
 		// No declarator: the declaration must declare a class or
 		// enumeration, or be an anonymous union (7p3, 9.5p5), without a
 		// function-specifier (7.1.2p1).
