@@ -1,0 +1,1 @@
+namespace chosen { int target(int n) { return n + 20; } }
