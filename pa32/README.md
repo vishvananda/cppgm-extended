@@ -315,6 +315,11 @@ searches, and computing independent values in vector lanes. These are useful
 directions for experiments; they add no named-pass requirement to this
 assignment. Vectorization and interchange remain optional.
 
+Packed integers may contain fields a later reader never uses. Track the
+possible bits through masks, conversions and shifts before simplifying a
+slice. Preserve clipping at the original width, shared readers and effects
+whose result bits are discarded; avoid duplicating shared computations.
+
 For each experiment, first write a small behavior test with runtime inputs.
 Include the cases that invalidate the proposed shortcut: aliasing and overlap,
 zero iterations and short tails, an early exit, calls and exception paths,

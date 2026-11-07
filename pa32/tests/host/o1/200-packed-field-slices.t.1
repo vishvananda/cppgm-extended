@@ -1,0 +1,92 @@
+#include <emmintrin.h>
+typedef unsigned long long U;
+
+__attribute__((noinline)) U read_value(volatile unsigned* reads, U value)
+{
+  ++*reads;
+  return value;
+}
+
+__attribute__((noinline)) U packed(U x, U y, U z, volatile unsigned* reads)
+{
+  U low = read_value(reads, z) & 0xffffffffull;
+  U first = read_value(reads, x) & 0xffffull;
+  U second = read_value(reads, y) & 0xffffull;
+  return (low | (first << 32) | (second << 48)) >> 32;
+}
+
+__attribute__((noinline)) U clipped(U x, U y, U z, U* shared)
+{
+  U value = z | (x << 16) | (y << 48);
+  *shared = value;
+  return value >> 32;
+}
+
+__attribute__((noinline)) unsigned narrow(unsigned x, unsigned y)
+{
+  unsigned value = ((x & 0xffu) << 8) | ((y & 0xffu) << 24);
+  return value >> 16;
+}
+
+__attribute__((noinline)) U vector_masks(U x, U y)
+{
+  __m128i a = _mm_set_epi64x(static_cast<long long>(x), static_cast<long long>(y));
+  __m128i b = _mm_set_epi64x(static_cast<long long>(y), static_cast<long long>(~x));
+  U low = static_cast<U>(_mm_movemask_epi8(a));
+  U first = static_cast<U>(_mm_movemask_epi8(b));
+  U second = static_cast<U>(_mm_movemask_epi8(_mm_xor_si128(a, b)));
+  return (low | (first << 32) | (second << 48)) >> 32;
+}
+
+// Independent bit-by-bit readers avoid constructing a packed intermediate.
+__attribute__((noinline)) U slice(U value, unsigned first, unsigned width)
+{
+  U result = 0;
+  for (unsigned bit = 0; bit != width; ++bit)
+    if ((value >> (first + bit)) & 1)
+      result |= 1ull << bit;
+  return result;
+}
+
+U merged_bits(U x, U y, U z)
+{
+  U value = 0;
+  for (unsigned bit = 0; bit != 64; ++bit) {
+    bool set = ((z >> bit) & 1) != 0;
+    if (bit >= 16) set = set || ((x >> (bit - 16)) & 1) != 0;
+    if (bit >= 48) set = set || ((y >> (bit - 48)) & 1) != 0;
+    if (set) value |= 1ull << bit;
+  }
+  return value;
+}
+
+unsigned byte_mask(U high, U low)
+{
+  unsigned result = 0;
+  for (unsigned byte = 0; byte != 8; ++byte) {
+    if ((low >> (byte * 8 + 7)) & 1) result |= 1u << byte;
+    if ((high >> (byte * 8 + 7)) & 1) result |= 1u << (byte + 8);
+  }
+  return result;
+}
+
+int main()
+{
+  U state = 0x123456789abcdef0ull;
+  for (unsigned test = 0; test != 64; ++test) {
+    state ^= state << 13; state ^= state >> 7; state ^= state << 17;
+    U x = state, y = ~x + test, z = (x << 19) ^ (y >> 11);
+    if (test == 0) x = y = z = 0;
+    if (test == 1) x = y = z = ~0ull;
+    if (test == 2) { x = 1ull << 63; y = 1ull << 31; z = 1ull << 48; }
+    volatile unsigned reads = 0;
+    U expected = slice(x, 0, 16) + (slice(y, 0, 16) << 16);
+    if (packed(x, y, z, &reads) != expected || reads != 3) return 1;
+    U shared = 0, merged = merged_bits(x, y, z);
+    if (clipped(x, y, z, &shared) != slice(merged, 32, 32) || shared != merged) return 2;
+    if (narrow(static_cast<unsigned>(x), static_cast<unsigned>(y)) != slice(y, 0, 8) * 256) return 3;
+    unsigned a = byte_mask(x, y), b = byte_mask(y, ~x);
+    expected = static_cast<U>(b) + (static_cast<U>(a ^ b) << 16);
+    if (vector_masks(x, y) != expected) return 4;
+  }
+}
