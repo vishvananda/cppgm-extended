@@ -508,9 +508,10 @@ void Analyzer::add_capture(LambdaFrame& frame, const Entity* entity, bool writte
 
 void Analyzer::local_name(const syntax::Expr& expr, ExprFacts* facts, const Entity* entity, Scope* scope)
 {
-	// A block-scope variable or a parameter named potentially evaluated: in
-	// no default argument (8.3.6p7, a constant's, a static or extern one's
-	// included). An automatic one of an enclosing function: odr-used by no
+	// A parameter named potentially evaluated cannot occur in a default
+	// argument (CWG2082). CWG2346 permits local variables there unless
+	// odr-used across the parameter scope: reuse the nested-body checks.
+	// An automatic one of an enclosing function: odr-used by no
 	// local class's declarations (9.8p1), captured by a lambda's body that
 	// odr-uses it (5.1.2p11-p13); a constant's name is read as its value
 	// (3.2p2: no odr-use, no capture).
@@ -520,8 +521,8 @@ void Analyzer::local_name(const syntax::Expr& expr, ExprFacts* facts, const Enti
 			defer_use(DeferredUse{ DeferredUse::Kind::Local, false, &expr, facts, entity, scope, nullptr, 0 });
 		return;
 	}
-	if (scope == default_argument_scope_ && scope != nullptr)
-		error(expr.location, "a local variable or parameter in a default argument (8.3.6p7)");
+	if (scope == default_argument_scope_ && scope != nullptr && entity->kind == EntityKind::Parameter)
+		error(expr.location, "a parameter used as an evaluated expression in a default argument");
 	const VariableEntity* variable = entity->kind == EntityKind::Variable ? static_cast<const VariableEntity*>(entity)
 																		  : nullptr;
 	if (!semantic() || template_depth_ != 0 || !InNestedBody(scope, entity->owner))
