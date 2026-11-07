@@ -31,6 +31,36 @@ def write(path: Path, text: str) -> None:
 
 
 class AuditPAFeaturePlacementTests(unittest.TestCase):
+    def test_partial_specializations_require_a_class_head(self) -> None:
+        for source in (
+            "template<class T> struct A<T*>;",
+            "template<class T> struct A<T*> {};",
+            "template<class T> class A<Pair<T, int>*>;",
+            "template<class T> struct A<Pair<T, int>*> final {};",
+            "template<class T> struct A<T*> : Base<T> {};",
+            "template<class T> struct A<T*> final : Base<T> {};",
+            "template<int N> struct A<(N > 0)>;",
+            "template<int N> struct A<(N < 3 ? 1 : 0)> {};",
+        ):
+            with self.subTest(source=source):
+                self.assertIn("template.partial_specialization", audit.detect_features(source))
+
+    def test_elaborated_template_types_are_not_partial_specializations(self) -> None:
+        for source in (
+            "template<class T> struct A<int>* f(T);",
+            "template<class T> struct A<int>* f(T) { return 0; }",
+            "template<class T> class A<Pair<T, int>>& f(T);",
+            "template<class T> struct A<int> (*f(T))(int);",
+            "template<class T> struct A<int>::Member f(T);",
+            "template<class T> struct A<int> value;",
+            "template<class T> struct A<int> final;",
+            "template<class T> struct A<int> final(T);",
+            "template<> struct A<int>;",
+            "template<> struct A<int> {};",
+        ):
+            with self.subTest(source=source):
+                self.assertNotIn("template.partial_specialization", audit.detect_features(source))
+
     def test_optimization_requirement_in_expanded_course_recipe(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

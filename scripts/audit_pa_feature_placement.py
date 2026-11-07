@@ -529,8 +529,9 @@ RULES: tuple[FeatureRule, ...] = (
                 path_patterns=(rx(r"constexpr-noexcept"),)),
     FeatureRule("constexpr.object", (),
                 path_patterns=(rx(r"constexpr-object|constexpr-class|constexpr-struct"),)),
-    FeatureRule("template.partial_specialization",
-                (rx(r"\btemplate\s*<[^>]+>\s*(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*\s*<[^>]*>\s*(?!::)"),)),
+    # The template-id must finish a class head, not an elaborated return
+    # type followed by a function or variable declarator.
+    FeatureRule("template.partial_specialization", ()),
     FeatureRule("template.alias", (rx(r"\btemplate\s*<[^>]*>\s*using\b"),)),
     FeatureRule("template.variable",
                 (rx(r"\btemplate\s*<[^>]*>\s*(?:constexpr\s+|const\s+|static\s+)?"
@@ -897,11 +898,18 @@ def overloaded_arrow_star_without_member_pointer(code: str) -> bool:
     return not re.search(r"::\s*\*|\.\*", code)
 
 
-def matching_delimiter(code: str, start: int, open_char: str, close_char: str) -> int | None:
+def matching_delimiter(code: str, start: int, open_char: str, close_char: str,
+                       skip_groups: bool = False) -> int | None:
     depth = 0
     i = start
     while i < len(code):
         c = code[i]
+        if skip_groups and c in "([{":
+            end = matching_delimiter(code, i, c, {"(": ")", "[": "]", "{": "}"}[c])
+            if end is None:
+                return None
+            i = end + 1
+            continue
         if c == open_char:
             depth += 1
         elif c == close_char:
@@ -984,6 +992,27 @@ def find_template_headers(code: str) -> list[TemplateHeader]:
         params = split_top_level_commas(code[i + 1:end])
         headers.append(TemplateHeader(match.start(), end + 1, params))
     return headers
+
+
+def match_partial_specializations(code: str) -> list[str]:
+    matched: list[str] = []
+    for header in find_template_headers(code):
+        if not header.params:
+            continue
+        head = re.match(r"\s*(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*\s*<",
+                        code[header.end:])
+        if head is None:
+            continue
+        opening = header.end + head.end() - 1
+        end = matching_delimiter(code, opening, "<", ">", skip_groups=True)
+        if end is None:
+            continue
+        # A forward partial specialization ends with ';'. In a definition
+        # the next token starts the body or bases, optionally after final.
+        # `final` followed by ';' can instead name a variable template.
+        if re.match(r"\s*(?:[;{]|:(?!:)|final\s*(?:\{|:(?!:)))", code[end + 1:]):
+            matched.append("source:" + code[header.start:end + 1].strip())
+    return matched
 
 
 def template_header_before(headers: Iterable[TemplateHeader], pos: int, code: str) -> TemplateHeader | None:
@@ -1299,6 +1328,8 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
         else:
             if rule.feature_id == "template.dependent_name":
                 matched = match_dependent_name_patterns(rule.patterns, haystack)
+            elif rule.feature_id == "template.partial_specialization":
+                matched = match_partial_specializations(haystack)
             else:
                 matched = match_rule_patterns(rule.patterns, haystack, rule.all_patterns, "source")
             matched.extend(match_rule_patterns(rule.ref_patterns, ref_text, rule.all_patterns, "ref"))
