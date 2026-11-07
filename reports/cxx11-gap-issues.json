@@ -4879,7 +4879,8 @@
     "compiler_language_gap": false,
     "status": "unresolved-standard-oracle",
     "upstream": [
-      "llvm-project/clang/test/CXX/temp/temp.decls/temp.variadic/deduction.cpp"
+      "llvm-project/clang/test/CXX/temp/temp.decls/temp.variadic/deduction.cpp",
+      "llvm-project/clang/test/CXX/temp/temp.decls/temp.class.spec/p9.cpp"
     ],
     "symptom": "Mixed-type non-type partial-specialization matching follows unresolved CWG1647; Clang accepts while GCC and cppgm reject.",
     "standards_basis": {
@@ -4889,13 +4890,15 @@
     },
     "disposition": "Whole source is a hash-pinned standards-review exclusion, not a pass or a confirmed compiler defect. Adopted1770/2091 do not resolve1647. Independent valid lines1-27 retained verbatim in required PA17 control.",
     "regressions": [
-      "pa17/tests/controls/300-clang-pack-instantiation-valid-slice.t"
+      "pa17/tests/controls/300-clang-pack-instantiation-valid-slice.t",
+      "pa17/tests/controls/100-clang-nttp-partial-same-type-neighbor.t"
     ],
     "fix_revision": "d2c05fced",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-050",
     "checks": {
       "valid_slice": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-050-valid-slice-v1.log"
-    }
+    },
+    "oracle_review_receipt": "/mnt/vizier/cppgm-cxx11-upstream/language-oracle-review-next-v1/acceptance-v2.json"
   },
   {
     "id": "CXX11-051",
@@ -5727,5 +5730,28 @@
     "integrated_candidate_revision": "7638a38554be5ae3c7b72b0f9c2722b59fcfcfd8",
     "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-090091-acceptance-v1.json",
     "checks": "15 required controls; integrated64/64 versus actual parent24/64. Full9042strict/16normal stages, fresh15focused export+42wrappers. Normal actual-parent instructions1.000039O0/1.000019O3, frozenobjects exact; quick passes. Original807Clang manifest gains array-redeclaration.cpp:791/807. GCC unchanged3704/4112. Broader619scope boundaries remain separate; no diagnostic wording matching."
+  },
+  {
+    "id": "CXX11-092",
+    "compiler_language_gap": false,
+    "kind": "standards-oracle-review",
+    "status": "unresolved-standard-oracle",
+    "upstream": [
+      "llvm-project/clang/test/SemaTemplate/function-pointer-qualifier.cpp"
+    ],
+    "symptom": "Function cv deduction viability determines whether the original overload call is ambiguous; CWG1584 remains drafting.",
+    "standards_basis": "AdoptedCWG295 covers known function types, not still-drafting1584 deduction. May2015consensus has no adopted resolution.",
+    "regressions": [
+      "pa6/tests/spec/200-function-alias-cv-ignored-dr295.t",
+      "pa14/tests/controls/100-explicit-function-template-cv-dr295.t",
+      "pa14/tests/controls/100-object-pointer-qualification-deduction-guard.t"
+    ],
+    "offline_decisions": [
+      "doc/cwg/cwg-0295.txt",
+      "doc/cwg/cwg-1584.txt"
+    ],
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-092",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/language-oracle-review-next-v1/acceptance-v2.json",
+    "checks": "96 original/reduced observations,36 native independent core checks,3 owning controls. No compiler repair or original pass claimed. Combined9047strict and5control/85document fresh export pass."
   }
 ]

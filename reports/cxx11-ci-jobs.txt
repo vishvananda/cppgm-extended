@@ -1,3 +1,42 @@
+Validated language-oracle review and offline CWG catalog (2026-11-07)
+
+The accepted compiler remains c251736e002f54fb80d1131ab776e55e37b120959a9af86b8616e9d88f2b52fb
+(source7638a3855, accepted090/091). Nine source-pinned oracle decisions and five
+independent required PA controls are now integrated. Receipt:
+/mnt/vizier/cppgm-cxx11-upstream/language-oracle-review-next-v1/acceptance-v2.json
+
+Reviewed GCC manifest: 4,110 configurations / 2,055 sources. cppgm passes
+3,710/4,110 (90.27%), GCC4,110/4,110. Six configurations now correctly require
+any normal diagnostic for invalid ISO11 constructs accepted as GCC extensions;
+two invalid-positive/IFNDR configurations remain explicit exclusions. All4,104
+other records are byte-identical. No compiler improvement is claimed here.
+
+Reviewed Clang manifest: 802 configurations / 783 sources. cppgm passes791/802
+(98.63%), Clang802/802. Five whole-source expectations lack an established shared
+required-language oracle (two unresolved CWG questions, two IFNDR templates,
+one vendor attribute rule); all802 remaining records are byte-identical.
+Their raw original failures remain available and are not counted as passes.
+Strict native C++11 qualification passes549/549. Clang still has10 missing
+required diagnostics and one positive non-ODR-use failure. GCC still has196
+missing required diagnostics and204 rejected-positive configurations.
+
+Whole-suite cppgm/upstream elapsed: GCC25.997/67.100seconds (ratio .387);
+Clang3.812/23.774seconds (ratio .160). Both ratios are NON-COMPARABLE because
+cppgm fails selected cases. Original4,112GCC/807Clang observations are retained.
+
+All9,047 strict tests pass, along with affected owners, unchanged-harness tests
+and CWG/student-document audits. Fresh student export passes5 focused core
+controls and42 reference wrappers; all85 offline catalog files match source.
+The catalog contains73 full issue texts and10 papers, with an index/provenance.
+Unresolved1584/1634/1647 are explicitly reference-only. CI checks coverage,
+checksums and student-export inclusion when new CWG references are introduced.
+
+Next: integrate093 friend-default uniqueness, fix094 aggregate list semantics,
+continue095 member-template constraints and088 aggregate/array non-ODR-use,
+remaining compiler gaps, useful coverage expansion and final PA35 release checks.
+
+Earlier accepted checkpoint (retained):
+
 Accepted dependent-array and block-extern repairs (2026-11-07)
 
 CXX11-090/091 are integrated at source7638a3855, compiler SHA256
