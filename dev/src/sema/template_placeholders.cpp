@@ -1498,7 +1498,9 @@ const Type* Analyzer::substitute_value(const Type* type, const Substitution& giv
 	}
 	bool own = dependent;
 	for (uint32_t i = 0; i < substitution.count && own; ++i)
-		own = OwnParameter(canonical[i], substitution.depth, i);
+		// A selected pack element can occupy its original parameter's
+		// position without standing for the original whole parameter pack.
+		own = (given.elements == nullptr || given.elements[i] < 0) && OwnParameter(canonical[i], substitution.depth, i);
 	if (own)
 		return type;
 	// sizeof... of a pack an enclosing expansion substitutes element by

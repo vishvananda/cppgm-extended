@@ -507,9 +507,15 @@ const Type* const* Analyzer::effective_arguments(const Substitution& substitutio
 	{
 		const Type* argument = substitution.arguments[i];
 		const int32_t element = substitution.elements[i];
-		scratch.push_back(element >= 0 && argument != nullptr && argument->kind == TypeKind::Pack
-				? argument->params[element]
-				: argument);
+		if (element >= 0 && argument != nullptr && argument->kind == TypeKind::Pack)
+		{
+			argument = argument->params[element];
+			// A residual expansion contributes its pattern here;
+			// substitute_list retains the expansion around the result.
+			if (argument->kind == TypeKind::Expansion)
+				argument = argument->element;
+		}
+		scratch.push_back(argument);
 	}
 	return scratch.data();
 }
