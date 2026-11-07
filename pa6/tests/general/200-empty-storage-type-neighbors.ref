@@ -1,0 +1,13 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type Forward struct Forward
+    type Forward struct Forward
+    type Other class Other
+    type Value enum Value
+    enumerator one enum Value 1
+    enumerator two enum Value 2
+    scope class Forward
+      variable member int
+end translation unit

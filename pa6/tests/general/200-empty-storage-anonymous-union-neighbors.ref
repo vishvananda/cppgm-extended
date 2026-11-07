@@ -1,0 +1,16 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    variable global_value int
+    scope class __anonymous_union_type__1_7
+      variable global_value int
+    scope namespace Named
+      variable named_value int
+      scope class __anonymous_union_type__12_18
+        variable named_value int
+    scope namespace <unnamed>
+      variable unnamed_value int
+      scope class __anonymous_union_type__22_29
+        variable unnamed_value int
+end translation unit

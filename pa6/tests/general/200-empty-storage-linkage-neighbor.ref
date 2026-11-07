@@ -1,0 +1,11 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type LinkageType struct LinkageType
+    type LinkageForward class LinkageForward
+    type LinkageEnum enum LinkageEnum
+    enumerator value enum LinkageEnum 0
+    scope class LinkageType
+      variable member int
+end translation unit

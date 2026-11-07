@@ -1,0 +1,28 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type ExternalType struct ExternalType
+    variable external_object struct ExternalType
+    variable external_object struct ExternalType
+    type StaticType struct StaticType
+    variable static_object struct StaticType
+    type ThreadType struct ThreadType
+    variable thread_object struct ThreadType
+    type Owner struct Owner
+    function f function of () returning void
+    scope class ExternalType
+      variable member int
+    scope class StaticType
+      variable member int
+    scope class ThreadType
+      variable member int
+    scope class Owner
+      type Item struct Item
+      variable item struct Item
+      scope class Item
+        variable member int
+    scope function f
+      scope block
+        variable value int
+end translation unit
