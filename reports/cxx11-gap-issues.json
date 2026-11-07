@@ -5551,12 +5551,14 @@
   {
     "id": "CXX11-079",
     "compiler_language_gap": false,
-    "status": "root-integration-validation-running",
+    "status": "coverage-integrated-validated",
     "symptom": "Clang input-closure, inherited configuration and reviewed optional-warning coverage expansion",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/clang-include-closure-ci-v1",
     "fix_revision": "95ea3cf07",
-    "checks": "807 configurations/788sources, all693old records byte-identical,114 additions including2realheader closures and19Sema configs. Root independent manifest equals source-pinned v7; independent receipt rehashes4336streams/823objects. Root harness42suites/675cases passes. Actual080native qualification and paired GCC/Clang replay running; raw818cohort/failures retained.",
-    "triage_note": "No diagnostic parity or candidate-based selection; p5.cpp private nonfriend access is a required-diagnostic whole TU, not mandatory positive acceptance. Source-pinned course/standards dispositions remain explicit."
+    "checks": "807 configurations/788sources, all693old records and outcomes unchanged,114additional records (112pass,2fail). Root regenerated identical manifest; native554/554 qualification and807/807 normal pass. Root shared-runner GCC replay3696/4112 unchanged, full harness42suites/675cases passes. Two actual header closures and19Sema inherited-config cases validated.",
+    "triage_note": "Actual080compiler passes784/807Clang (97.15%);14missing diagnostics/9compile failures retained. New failures are081storage class and082adoptedCWG727 specialization. Raw818 observations and primary/course dispositions retained. Original LLVM/FileCheck/runtime obligations remain unprojected; failed-suite time ratio non-comparable.",
+    "integrated_revision": "ea4993b1eb36fe74476405660e9359e3187dd81a",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-079-acceptance-v1.json"
   },
   {
     "id": "CXX11-081",
@@ -5567,7 +5569,8 @@
     "standards_basis": "N3485 7.1.1p1 and9.5p6; extern linkage specification is not a storage-class-specifier",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-081",
     "fixture_revision": "d6b7644e9",
-    "checks": "14required controls plus original source: parent24/60, Clang60/60, GCC56/60. GCC rejects unnamed-namespace anonymous union despite9.5p6; original limitation retained against primary/course contract. First candidate60/60; optimized declaration-path focused/perf/audits running. No closure claim."
+    "checks": "14required fixtures plus original source: optimized candidate60/60, parent24/60,Clang60/60,GCC56/60 (known unnamed-namespace union refusal retained). Affected PA6/12/16 and file/format/scoped placement pass. Normal actual-parent0.999971/1.000022 with identical output, versus retained first implementation1.000455/1.000162. Parent owning verification and isolated receipt pending.",
+    "fix_revision": "7258e7437"
   },
   {
     "id": "CXX11-082",

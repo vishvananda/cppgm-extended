@@ -1,34 +1,36 @@
-Accepted checkpoint: local-class static data repair, compiler 802c5644c.
-Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-080-acceptance-v1.json
-SHA256: 39498b183e7ae698e9f3111d2402cf24dbda659c5ac2b48c014c9b1ec788987d
+Accepted Clang coverage expansion: 807 configurations across 788 sources.
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-079-acceptance-v1.json
+Compiler:080 source802c5644c, SHA39498b183e7ae698e9f3111d2402cf24dbda659c5ac2b48c014c9b1ec788987d.
 
-CXX11-080 is closed for its observed rule. Eleven required regressions cover
-plain/const/constexpr members, nested local classes and unions, instantiated
-local classes, valid static member functions and function-local static objects.
-All 16 normal stages pass 8,918 strict tests, 42 harness suites/667 cases
-(19 optional skips), debug, self-host PA5, inception, architecture/file/placement,
-quick and smoke. Fresh student export passes 11 controls and 42 reference wrappers.
+The079adapter adds114configurations (90positive,24required-diagnostic) while
+preserving all693previous records and their actual080outcomes exactly. This
+adds112passes and2failures, not a compiler improvement on the older subset.
+Two cases use real corpus-local headers;19use audited Sema local configuration.
+Every selected dependency/lookup edge is frozen and validated for both compilers.
+No system-header fallback, diagnostic spelling/count matching or candidate-based
+selection is introduced. Native qualification passes554/554 and normal807/807.
+Root full harness passes42suites/675cases, including19optional skips.
 
-GCC: 3,696/4,112 (89.88%); matching upstream 4,112/4,112. Clang: 672/693
-(96.97%); matching upstream 693/693. GCC retains 220 compile failures and 196
-missing diagnostics; Clang retains 8 compile failures and 13 missing diagnostics.
-No abnormal or link outcomes. GCC suite elapsed cppgm/upstream26.154/64.230s,
-ratio0.407; Clang3.106/21.978s,ratio0.141. Both failed-suite timing ratios remain
-NON-COMPARABLE. These are selected-configuration rates, not whole-corpus proof.
+Clang:cppgm784/807(97.15%),upstream807/807. There are14missingdiagnostics and9
+compile failures, no abnormal/link outcomes. The old693subset remains672/693.
+GCC:cppgm3,696/4,112(89.88%),upstream4,112/4,112;220compile failures and196
+missing diagnostics, with every prior outcome unchanged by the shared runner.
+Clang elapsed cppgm/upstream3.542/25.927s,ratio0.137;GCC27.705/65.290s,ratio0.424.
+Both failed-suite ratios remain NON-COMPARABLE. Excluded/unexecuted sources and
+original LLVM/FileCheck/runtime obligations are not passes.
 
-Normal actual-parent O0/O3 instruction ratios1.000014/1.000012, objects exact.
-The valid measurement is reused only after proving actual parent/candidate bytes
-match. Quick self/seed0.9934/1.0253,zero behavior failures,kernels below1.3.
-Campaign1.005160/1.001745 remains reported data against the original baseline,
-without the retired extra aggregate cap or any changed normal threshold.
+The compiler itself remains the accepted080binary:8,918strict tests,16normal
+stages and fresh export11controls/42reference wrappers pass. Actual-parent
+instructions1.000014/1.000012,objects exact; normalquick/self-compile passes.
+Campaign1.005160/1.001745 is reported data without an extra acceptance cap.
+079changes maintainer Python adapters/tests/workflow only; those Python files
+are excluded by the export's explicit script filter.
 
-Next:079 expands Clang to807cases/788sources with2realheader closures and114new
-records, preserving all693old records exactly. Root manifest and harness checks
-pass; actual080native/paired replays are running before coverage acceptance.
-081empty storage declarations has14required controls and passing focused checks;
-its check is moving into the empty-declaration path for lower cost. Worker082
-is repairing adoptedCWG727in-class specializations. Remaining GCC/Clang failures,
-coverage expansion and the final PA35release check remain open.
+Next:081storage-class declarations without declarators now pass60focused checks
+and affected/perf/audits; integration/fullnormal remains. Worker082is repairing
+adoptedCWG727specialization scope and found shared body-fact contamination in
+its initial candidate; runtime order/instantiation controls remain required.
+Further GCC/Clang source/standards triage and the final PA35release remain open.
 
 Earlier checkpoints retained below
 
