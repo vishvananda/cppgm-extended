@@ -76,5 +76,11 @@
     "sha256": "730900fc9b15c388aeb5024188b9ab986e4ac9687dcd007d8d953795fce11602",
     "issue": "CXX11-055",
     "reason": "N3485 3.2p2-p4: link_error is odr-used by calls in potentially evaluated expressions and has no definition. A provably false ordinary if condition does not make its body an unevaluated operand. The missing definition makes this whole program ill-formed, no diagnostic required; upstream linking depends on optimization deleting dead calls, not required C++11 acceptance. Retain defined-helper range behavior as required PA10:200 control200-fixed-enum-negative-range.t. Exclusion is not a pass."
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/alignas7.C": {
+    "status": "required-diagnostic",
+    "sha256": "b843c92b7ebdcb2979581110091729cdc39ef470de7b392b90ddc49f7804a40f",
+    "issue": "CXX11-056",
+    "reason": "CWG2354, accepted as a DR in February2019, removes permission for alignas on enumeration declarations. Original N3485 7.6.2p1 allowed it. This source uses enum alignas(N) in an instantiated template, so current corrected C++11 requires a diagnostic; GCC warning plus acceptance and cppgm rejection both satisfy it. The source alignment static_assert is not a required positive C++11 oracle after this DR. Seven forbidden forms and valid class/variable/plain-enum neighbors are retained in required PA6:200 tests. Official source: https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#2354"
   }
 }
