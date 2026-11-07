@@ -491,6 +491,9 @@ struct FunctionEntity : Entity
 	// A friend definition supplied a default argument (8.3.6p4): no
 	// other reachable declaration may declare this function or template.
 	bool friend_defaults;
+	// Its declaration is usable, but defining this constructor would bind
+	// a reference subobject to a temporary through a default initializer.
+	bool temporary_reference_initializer;
 	// A delegating constructor (12.6.2p6): its mem-initializer and the
 	// target constructor it selects (the plan then has no subobjects).
 	const syntax::MemInitializer* delegation;

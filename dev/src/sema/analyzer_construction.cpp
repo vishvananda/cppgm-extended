@@ -6,6 +6,7 @@
 
 #include "lex/identifier_table.h"
 #include "sema/aggregates.h"
+#include "sema/constant_interpreter.h"
 #include "sema/instantiation_context.h"
 #include "support/small_list.h"
 
@@ -50,16 +51,44 @@ bool UserProvided(const FunctionEntity* function)
 // A plan's entries (and its anonymous member objects', at any depth) that
 // initialize `member` by its brace-or-equal-initializer take the
 // constructor that initialization runs.
-void TypedMemberInits(SubobjectInit* inits, uint32_t count, const VariableEntity* member)
+bool TypedMemberInits(SubobjectInit* inits, uint32_t count, const VariableEntity* member)
 {
+	bool temporary = false;
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		SubobjectInit& init = inits[i];
 		if (init.inner != nullptr)
-			TypedMemberInits(init.inner, init.inner_count, member);
+			temporary = TypedMemberInits(init.inner, init.inner_count, member) || temporary;
 		else if (init.member != nullptr && init.member->variable == member && init.default_initializer != nullptr)
+		{
 			init.constructor = member->constructor;
+			temporary = temporary || member->temporary_reference_initializer;
+		}
 	}
+	return temporary;
+}
+
+bool ReferenceSubobjects(const Type* type)
+{
+	if (type->is_reference())
+		return true;
+	while (type->kind == TypeKind::Array)
+		type = type->element;
+	const ClassEntity* cls = ClassOf(type);
+	return cls != nullptr && IsAggregateClass(cls);
+}
+
+bool TemporaryReferenceInit(const SubobjectInit& init)
+{
+	if (init.constructor != nullptr && init.constructor->temporary_reference_initializer)
+		return true;
+	if (init.default_initializer != nullptr && init.member != nullptr &&
+		static_cast<const VariableEntity*>(init.member->variable)->temporary_reference_initializer)
+		return true;
+	for (uint32_t i = 0; i < init.inner_count; ++i)
+		if (TemporaryReferenceInit(init.inner[i]))
+			return true;
+	return false;
 }
 
 } // namespace
@@ -1808,6 +1837,12 @@ void Analyzer::constructor_plan(FunctionEntity* constructor, ClassEntity* entity
 		variant_designated = variant_designated || designation != nullptr;
 	}
 	const bool user = constructor->body != nullptr && UserProvided(constructor);
+	// Defaulted after its first declaration, a constructor is defined here
+	// even when unused (8.4.2p5); an implicit/first-defaulted declaration
+	// remains available to traits and exception-specification queries.
+	const bool definition = user ||
+		(constructor->synthesized && UserProvided(constructor) && constructor->inherited == nullptr);
+	constructor->temporary_reference_initializer = false;
 	const ClassEntity* saved_object = base_object_;
 	for (uint32_t i = 0; i < count; ++i)
 	{
@@ -1824,6 +1859,8 @@ void Analyzer::constructor_plan(FunctionEntity* constructor, ClassEntity* entity
 			view.location = written.location;
 			ClassEntity* base = static_cast<ClassEntity*>(init.base->base);
 			init.constructor = initialize_class(base, base->type, view, scope, written.location);
+			if (!failed() && reference_member_temporary(base->type, view))
+				error(written.location, "a temporary bound to a reference subobject in a base initializer (CWG1696)");
 		}
 		else if (init.base != nullptr && constructor->inherited != nullptr &&
 			static_cast<const ClassEntity*>(init.base->base)->scope == constructor->inherited->owner)
@@ -1845,6 +1882,10 @@ void Analyzer::constructor_plan(FunctionEntity* constructor, ClassEntity* entity
 		}
 		else
 			member_plan(init, is_union, variant_designated, user, scope, location);
+		const bool temporary = TemporaryReferenceInit(init);
+		constructor->temporary_reference_initializer = constructor->temporary_reference_initializer || temporary;
+		if (definition && temporary)
+			error(location, "a constructor definition binds a reference subobject to a temporary (CWG1696)");
 		if (user && deferring_reserved_ == 0)
 			check_initializer_destruction(init, entity, scope, location, is_union);
 	}
@@ -1888,6 +1929,101 @@ const syntax::MemInitializer* Analyzer::plan_designated(const SubobjectInit& ini
 	return nullptr;
 }
 
+bool Analyzer::reference_member_temporary(const Type* type, const syntax::Initializer& initializer)
+{
+	// Follow only actual initialized subobjects, not reference parameters
+	// of constructors called by their initializers. All input is typed.
+	if (!ReferenceSubobjects(type))
+		return false;
+	if (initializer.kind == syntax::InitializerKind::Parenthesized)
+	{
+		if (!type->is_reference() && IsSubaggregate(type))
+		{
+			if (initializer.arguments.size == 1 && initializer.arguments[0]->facts != nullptr &&
+				initializer.arguments[0]->facts->type != nullptr &&
+				ClassOf(initializer.arguments[0]->facts->type) != nullptr)
+				return false;
+			syntax::BracedInitList list = syntax::BracedInitList();
+			list.elements = initializer.arguments;
+			list.location = initializer.location;
+			uint32_t next = 0;
+			return reference_temporary_members(type, list, next);
+		}
+		return initializer.arguments.size == 1 && reference_temporary_expression(type, *initializer.arguments[0]);
+	}
+	return initializer.expression != nullptr && reference_temporary_expression(type, *initializer.expression);
+}
+
+bool Analyzer::reference_temporary_expression(const Type* type, const syntax::Expr& expression)
+{
+	if (!ReferenceSubobjects(type))
+		return false;
+	check_stack(expression.location);
+	const syntax::Expr* e = WithoutParentheses(&expression);
+	const ExprFacts* facts = e->facts;
+	if (facts == nullptr)
+		return false;
+	if (type->is_reference())
+	{
+		if (e->kind != syntax::ExprKind::BracedInit)
+			return ConstantInterpreter::binds_temporary(*e, facts->conversion);
+		const syntax::BracedInitList& list = static_cast<const syntax::BracedInitList&>(*e);
+		// A reference-typed list binds directly to its one related element;
+		// another list constructs a temporary of the referenced type.
+		return facts->type == nullptr || !facts->type->is_reference() || list.elements.size != 1 ||
+			reference_temporary_expression(type, *list.elements[0]);
+	}
+	if (e->kind != syntax::ExprKind::BracedInit || facts->single_class_element || !IsSubaggregate(type))
+		return false;
+	uint32_t next = 0;
+	return reference_temporary_members(type, static_cast<const syntax::BracedInitList&>(*e), next);
+}
+
+bool Analyzer::reference_temporary_members(const Type* type, const syntax::BracedInitList& list, uint32_t& next)
+{
+	check_stack(list.location);
+	if (type->kind == TypeKind::Array)
+	{
+		// Only written elements can introduce a new binding. Never scan a
+		// logical array's omitted tail, even for empty aggregate elements.
+		for (uint64_t i = 0; i < type->bound && next < list.elements.size; ++i)
+		{
+			const uint32_t before = next;
+			if (reference_temporary_element(type->element, list, next))
+				return true;
+			if (next == before)
+				break;
+		}
+		return false;
+	}
+	const ClassEntity* cls = ClassOf(type);
+	if (cls == nullptr || !IsAggregateClass(cls))
+		return false;
+	if (cls->key == TokenKind::KW_UNION)
+	{
+		const DataMember* member = ListUnionMember(cls, &list, next);
+		return member != nullptr && reference_temporary_element(member->variable->type, list, next);
+	}
+	for (const DataMember* member = cls->members; member != nullptr && next < list.elements.size; member = member->next)
+	{
+		if (!(member->bit_field && member->variable->name == nullptr) &&
+			reference_temporary_element(member->variable->type, list, next))
+			return true;
+	}
+	return false;
+}
+
+bool Analyzer::reference_temporary_element(const Type* type, const syntax::BracedInitList& list, uint32_t& next)
+{
+	if (next >= list.elements.size)
+		return false;
+	const syntax::Expr& element = *list.elements[next];
+	if (element.kind != syntax::ExprKind::BracedInit && IsSubaggregate(type) && !InitializesSubaggregate(type, element))
+		return reference_temporary_members(type, list, next);
+	++next;
+	return reference_temporary_expression(type, element);
+}
+
 void Analyzer::member_plan(
 	SubobjectInit& init, bool variant, bool designated, bool user, Scope* scope, uint32_t location)
 {
@@ -1911,6 +2047,8 @@ void Analyzer::member_plan(
 		view.arguments = written.arguments;
 		view.location = written.location;
 		init.constructor = initialize_object(variable->type, view, scope, written.location);
+		if (!failed() && reference_member_temporary(variable->type, view))
+			error(written.location, "a temporary bound to a reference member in a constructor initializer (CWG1696)");
 		return;
 	}
 	if (init.inner != nullptr)
@@ -2134,6 +2272,8 @@ void Analyzer::member_default_initializer(VariableEntity* member, Scope* scope)
 	cls->member_initializer_active = true;
 	member->constructor = initialize_object(
 		member->type, *member->member_initializer, scope, member->member_initializer->location);
+	if (!failed())
+		member->temporary_reference_initializer = reference_member_temporary(member->type, *member->member_initializer);
 	// 15.4p14 (CWG 1351): the implicit constructor may throw what the
 	// initializer's potentially-throwing expressions may (5.3.7p3: calls
 	// among them, which the initialization's count does not see).
@@ -2182,14 +2322,16 @@ void Analyzer::typed_inheriting_plans(const VariableEntity* member)
 	// literal type: an answer given before is established again.
 	if (cls->literal_state != 3)
 		cls->literal_state = 0;
-	if (member->constructor == nullptr)
+	if (member->constructor == nullptr && !member->temporary_reference_initializer)
 		return;
 	const NameEntry* entry = names_.find(cls->scope, constructor_key_);
 	for (const FunctionList* node = entry != nullptr ? entry->functions : nullptr; node != nullptr; node = node->next)
 	{
 		FunctionEntity* constructor = static_cast<FunctionEntity*>(node->binding->entity);
 		if (constructor->inherited != nullptr && constructor->owner == cls->scope)
-			TypedMemberInits(constructor->inits, constructor->init_count, member);
+			constructor->temporary_reference_initializer = TypedMemberInits(
+															   constructor->inits, constructor->init_count, member) ||
+				constructor->temporary_reference_initializer;
 	}
 }
 

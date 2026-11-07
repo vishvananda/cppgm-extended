@@ -386,6 +386,9 @@ struct VariableEntity : Entity
 	// A non-static data member's brace-or-equal-initializer may throw (it
 	// calls a function or constructor that is not non-throwing, 15.4p14).
 	bool throwing_initializer : 1;
+	// CWG1696: the typed default initializer binds a reference subobject
+	// to a temporary. Only a constructor selecting it is ill-formed.
+	bool temporary_reference_initializer : 1;
 	// A class template instance's non-static data member whose
 	// brace-or-equal-initializer is analyzed only when a constructor uses
 	// it (14.7.1p1 as CWG 1396 reads it; see instantiate_member_initializer),

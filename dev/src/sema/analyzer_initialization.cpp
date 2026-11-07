@@ -243,6 +243,8 @@ void Analyzer::default_initialize(VariableEntity* variable, const Type* type, ui
 		check_special_access(constructor, entity, scope, location);
 		if ((object->cv & kConst) != 0)
 			check_const_default(entity, constructor, location);
+		if (unevaluated_ == 0 && constructor->temporary_reference_initializer)
+			error(location, "object construction binds a reference subobject to a temporary (CWG1696)");
 		variable->constructor = constructor;
 		// The course view shows an array's element construction as one
 		// action without demanding the constructor's definition.

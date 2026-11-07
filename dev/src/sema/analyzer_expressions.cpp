@@ -205,6 +205,8 @@ void Analyzer::odr_use(FunctionEntity* function, bool call)
 				DeferredUse{ DeferredUse::Kind::Function, call, nullptr, nullptr, function, nullptr, nullptr, 0 });
 		return;
 	}
+	if (function->temporary_reference_initializer)
+		error(0, "an odr-used constructor binds a reference subobject to a temporary (CWG1696)");
 	// Its exception-specification is needed now (15.4p13).
 	if (function->noexcept_pending)
 		function_nothrow(function);

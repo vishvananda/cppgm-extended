@@ -2313,33 +2313,65 @@ bool ConstantInterpreter::reference_cast(const syntax::Expr& expr, const syntax:
 
 bool ConstantInterpreter::binds_temporary(const syntax::Expr& expr, const Conversion* conversion)
 {
-	// Whether the object a reference is bound to is (a subobject of) a
-	// temporary of the initializer (8.5.3p5, 12.2p5): a conversion
-	// function's or converting constructor's class result, a converted
-	// value, a prvalue, or a member or element of a class or array prvalue.
-	const syntax::Expr* e = WithoutParentheses(&expr);
+	// 12.2p5: a converted temporary, prvalue, or a lifetime-extending
+	// subobject/cast/conditional/comma path to one. A function returning
+	// a reference does not itself extend its referent's lifetime.
 	if (ConversionFunction(conversion))
 		return !conversion->constructor->type->canonical->element->is_reference();
 	if (conversion != nullptr &&
 		(conversion->constructor != nullptr ||
 			(conversion->form == ConversionForm::Reference && conversion->temporary)))
 		return true;
-	for (uint32_t depth = 0; e->facts != nullptr && depth < 256; ++depth)
+	SmallList<const syntax::Expr*, 16> work;
+	work.push_back(&expr);
+	while (!work.empty())
 	{
+		const syntax::Expr* e = WithoutParentheses(work.back());
+		work.pop_back();
 		const ExprFacts* facts = e->facts;
+		if (facts == nullptr || facts->type == nullptr)
+			continue;
 		if (facts->category == ValueCategory::PRValue)
-			return facts->type->kind != TypeKind::Function && (facts->flags & kUserConverted) == 0;
+		{
+			if (facts->type->kind != TypeKind::Function && (facts->flags & kUserConverted) == 0)
+				return true;
+			continue;
+		}
+		if ((facts->flags & (kOperatorCall | kUserConverted | kUserLiteral)) != 0)
+			continue;
 		if (e->kind == syntax::ExprKind::Member && static_cast<const syntax::MemberExpr*>(e)->op == TokenKind::OP_DOT &&
 			facts->entity != nullptr && facts->entity->kind == EntityKind::Variable &&
 			static_cast<const VariableEntity*>(facts->entity)->member && !facts->entity->type->is_reference())
-			e = WithoutParentheses(static_cast<const syntax::MemberExpr*>(e)->base);
-		else if (e->kind == syntax::ExprKind::Subscript && (facts->flags & (kOperatorCall | kCommuted)) == 0 &&
-			WithoutParentheses(static_cast<const syntax::SubscriptExpr*>(e)->base)->facts != nullptr &&
-			WithoutParentheses(static_cast<const syntax::SubscriptExpr*>(e)->base)->facts->type->kind ==
-				TypeKind::Array)
-			e = WithoutParentheses(static_cast<const syntax::SubscriptExpr*>(e)->base);
-		else
-			return false;
+			work.push_back(static_cast<const syntax::MemberExpr*>(e)->base);
+		else if (e->kind == syntax::ExprKind::Subscript)
+		{
+			const syntax::SubscriptExpr& subscript = static_cast<const syntax::SubscriptExpr&>(*e);
+			const syntax::Expr* array = (facts->flags & kCommuted) != 0 ? subscript.index : subscript.base;
+			if (array->facts != nullptr && array->facts->type->kind == TypeKind::Array)
+				work.push_back(array);
+		}
+		else if ((facts->flags & kReferenceCast) != 0)
+		{
+			if (e->kind == syntax::ExprKind::Cast)
+				work.push_back(static_cast<const syntax::CastExpr*>(e)->operand);
+			else if (e->kind == syntax::ExprKind::FunctionalCast &&
+				static_cast<const syntax::FunctionalCastExpr*>(e)->arguments.size == 1)
+				work.push_back(static_cast<const syntax::FunctionalCastExpr*>(e)->arguments[0]);
+		}
+		else if (e->kind == syntax::ExprKind::Conditional)
+		{
+			const syntax::ConditionalExpr& choice = static_cast<const syntax::ConditionalExpr&>(*e);
+			work.push_back(choice.then_expr != nullptr ? choice.then_expr : choice.condition);
+			work.push_back(choice.else_expr);
+		}
+		else if (e->kind == syntax::ExprKind::Binary)
+		{
+			const syntax::BinaryExpr& binary = static_cast<const syntax::BinaryExpr&>(*e);
+			if (binary.op == TokenKind::OP_COMMA)
+				work.push_back(binary.right);
+			else if (binary.op == TokenKind::OP_DOTSTAR)
+				work.push_back(binary.left);
+		}
 	}
 	return false;
 }

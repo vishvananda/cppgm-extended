@@ -36,6 +36,9 @@ public:
 	// Typed call eligibility; evaluating still checks its definition,
 	// arguments and body. Builtins have their own evaluator.
 	static bool constexpr_candidate(const FunctionEntity* function);
+	// Typed reference binding, shared with constructor lifetime checking;
+	// this inspects recorded facts without evaluating the expression.
+	static bool binds_temporary(const syntax::Expr& expr, const Conversion* conversion);
 	// Its steps are added to the graph's constant_steps.
 	~ConstantInterpreter();
 
@@ -233,7 +236,6 @@ private:
 	bool member_object(const syntax::MemberExpr& expr);
 	bool reference_cast(const syntax::Expr& expr, const syntax::Expr& operand, ConstPlace& out);
 	bool bind(const syntax::Expr& expr, const Conversion* conversion, const Type* reference, ConstPlace& out);
-	static bool binds_temporary(const syntax::Expr& expr, const Conversion* conversion);
 	bool floating_operation(
 		TokenKind op, const Type* type, long double left, long double right, long double& out, uint32_t location);
 	// GNU complex values (sema/constant_complex.cpp): an Array value of the

@@ -1295,6 +1295,10 @@ private:
 	SubobjectInit* mem_initializer_target(
 		FunctionEntity* constructor, ClassEntity* entity, const syntax::MemInitializer& initializer, Scope* scope);
 	void member_default_initializer(VariableEntity* member, Scope* scope);
+	bool reference_member_temporary(const Type* type, const syntax::Initializer& initializer);
+	bool reference_temporary_expression(const Type* type, const syntax::Expr& expression);
+	bool reference_temporary_members(const Type* type, const syntax::BracedInitList& list, uint32_t& next);
+	bool reference_temporary_element(const Type* type, const syntax::BracedInitList& list, uint32_t& next);
 	void typed_inheriting_plans(const VariableEntity* member);
 	void instantiate_member_initializer(VariableEntity* member);
 	bool subobject_destructor_usable(
