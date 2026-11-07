@@ -1,0 +1,11 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    variable a array of 4 int
+    variable a array of 4 int
+    variable a array of 4 int
+    function main function of () returning int
+    scope function main
+      scope block
+end translation unit
