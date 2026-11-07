@@ -30,7 +30,14 @@ def qualification_cases(manifest):
         reviewed_iso = (policy['kind'] == 'reviewed-iso-cxx11' and case['dialect'] == 'c++11'
                         and policy['additional_upstream_flags'] == ['-pedantic-errors', '-Wno-comment']
                         and policy.get('source_policy_issue'))
-        if not (strict or extension or vendor_attribute or reviewed_iso):
+        standalone = (policy['kind'] == 'standalone-llvm-only-cxx11'
+                      and case['dialect'] in {'c++11', 'gnu++11'}
+                      and case['expect'] == 'accept' and case['action'] == 'compile'
+                      and case.get('projection_kind') == 'standalone-llvm-only-object-acceptance'
+                      and (policy['additional_upstream_flags'] == ['-pedantic-errors']
+                           or (policy['additional_upstream_flags'] == ['-pedantic-errors', '-Wno-comment']
+                               and policy.get('source_policy_issue'))))
+        if not (strict or extension or vendor_attribute or reviewed_iso or standalone):
             raise ValueError('Unknown strict native qualification policy')
         cases.append(dict(case, upstream_flags=[*case['upstream_flags'], *policy['additional_upstream_flags']]))
     return cases

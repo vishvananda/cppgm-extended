@@ -86,6 +86,7 @@ jobs:
           else
             python3 scripts/build_clang_cxx11_ci_manifest.py \
               --llvm-root upstream-sources --verify-negatives --implicit-cxx11 --llvm-object-projections --local-inputs \
+              --standalone-llvm-only-projections \
               --output "$RUNNER_TEMP/cxx11/manifest.json"
           fi
 

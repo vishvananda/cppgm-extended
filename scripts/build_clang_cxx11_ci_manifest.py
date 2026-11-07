@@ -121,7 +121,7 @@ def required_errors(text, verification, allow_positive=False):
 
 
 def project_run(command, native, policy_tokens, implicit_cxx11=False, llvm_objects=False,
-                input_context=None, optional_warnings=False):
+                input_context=None, optional_warnings=False, standalone_llvm_only=False):
     match = re.fullmatch(native.TestRunner.kPdbgRegex, command)
     body = match.group(2) if match else command
     tree = native.ShUtil.ShParser(body, win32Escapes=False, pipefail=True).parse()
@@ -143,7 +143,31 @@ def project_run(command, native, policy_tokens, implicit_cxx11=False, llvm_objec
             not all(isinstance(v, str) for v in node.args)):
         raise Excluded('Redirection/glob/nonliteral command needs a separate projection')
     args, tokens, extra = input_context(node.args) if input_context else (node.args, policy_tokens, {})
+    if standalone_llvm_only and '-emit-llvm-only' in args:
+        return dict(project_llvm_only_arguments(args, tokens, implicit_cxx11, optional_warnings),
+                    **extra)
     return dict(project_arguments(args, tokens, implicit_cxx11, optional_warnings), **extra)
+
+
+def project_llvm_only_arguments(args, policy_tokens, implicit_cxx11=False, optional_warnings=False):
+    if (not args or args[0] != '%clang_cc1' or args.count('-emit-llvm-only') != 1
+            or any(v in args for v in ['-fsyntax-only', '-emit-llvm', '-emit-obj', '-o'])):
+        raise Excluded('Standalone LLVM-only projection requires one cc1 action without output options')
+    remaining = [v for v in args if v != '-emit-llvm-only']
+    result = project_arguments([*remaining, '-fsyntax-only'], policy_tokens, implicit_cxx11,
+                              optional_warnings)
+    if result['verification']:
+        raise Excluded('Standalone LLVM-only projection does not map native verifier actions')
+    result['projection_kind'] = 'standalone-llvm-only-object-acceptance'
+    result['qualification'] = dict(
+        kind='standalone-llvm-only-cxx11', additional_upstream_flags=['-pedantic-errors'],
+        status='Separate strict native C++11 object qualification required for every standalone action')
+    result['adaptations'] = [v for v in result['adaptations'] if not v.startswith('Syntax-only acceptance')]
+    result['adaptations'].append('Project standalone LLVM-only action to common relocatable object '
+                                'acceptance; original LLVM action remains unexecuted')
+    result['unmet_native_oracles'] = dict(status='not-executed',
+                                        original_action_output_options=['-emit-llvm-only'])
+    return result
 
 
 def project_llvm_arguments(args, check, policy_tokens, implicit_cxx11=False, optional_warnings=False):
@@ -281,7 +305,7 @@ def disposition_reason(name, digest, dispositions):
 
 
 def collect(root, parse_keywords, native, dispositions=None, adjudications=None, verify_negatives=False,
-            implicit_cxx11=False, llvm_objects=False, local_inputs=False):
+            implicit_cxx11=False, llvm_objects=False, local_inputs=False, standalone_llvm_only=False):
     files = subprocess.check_output(['git', 'ls-files', '-z', '--', 'clang/test'], cwd=root)
     tracked = set(files.decode().split('\0'))
     cases, exclusions, grouped = [], [], {}
@@ -335,8 +359,21 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                 context = (lambda arguments: prepare(arguments, path, root, tracked, configs,
                            source_policy, SOURCE_PARTS, Excluded, input_cache)) if needs_inputs else None
                 projection = dict(project_run(directive.command, native, policy_tokens,
-                                              implicit_cxx11, llvm_objects, context, local_inputs))
+                                              implicit_cxx11, llvm_objects, context, local_inputs,
+                                              standalone_llvm_only))
                 oracle_text = projection.pop('_oracle_text', text)
+                standalone_qualification = None
+                if projection.get('projection_kind') == 'standalone-llvm-only-object-acceptance':
+                    if len(directives) != 1:
+                        raise Excluded('Standalone LLVM-only projection requires one file-owned RUN')
+                    if DIAGNOSTIC.search(oracle_text):
+                        raise Excluded('Diagnostic annotations in standalone LLVM-only sources remain unmapped')
+                    standalone_qualification = projection['qualification']
+                    projection['unmet_native_oracles'] = dict(
+                        projection['unmet_native_oracles'],
+                        all_original_RUNs=[directive.command],
+                        scope='Original standalone LLVM-only action is not executed; only common '
+                              'language object acceptance is graded, without IR or runtime parity')
                 if 'input_files' in projection:
                     projection['adaptations'].append('Freeze local input/config closure and identical '
                                                      'include search directories for both compilers')
@@ -379,6 +416,15 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                         source_policy_issue=mode['issue'],
                         status='Source-pinned ISO11 validity review; suppress only optional comment warning '
                                'in strict qualification, retaining original normal warning flags')
+                if standalone_qualification is not None:
+                    # Source policies may select GNU mode or suppress an optional warning,
+                    # but every new standalone action still receives strict qualification.
+                    previous = projection.get('qualification', {})
+                    projection['qualification'] = dict(standalone_qualification,
+                        additional_upstream_flags=list(dict.fromkeys(
+                            ['-pedantic-errors', *previous.get('additional_upstream_flags', [])])))
+                    if 'source_policy_issue' in previous:
+                        projection['qualification']['source_policy_issue'] = previous['source_policy_issue']
                 verification = projection.pop('verification', [])
                 expected = 'accept'
                 if mode.get('status') == 'required-diagnostic':
@@ -445,7 +491,9 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                          ('; LLVM pipelines add separately qualified object projections with unmet original oracles'
                           if llvm_objects else '') +
                          ('; audited local configs, frozen literal input closures and reviewed optional '
-                          'warning controls add separately qualified language projections' if local_inputs else ''),
+                          'warning controls add separately qualified language projections' if local_inputs else '') +
+                         ('; standalone LLVM-only actions add strictly qualified positive object acceptance'
+                          if standalone_llvm_only else ''),
                 limitations=['Selection is independent of cppgm acceptance; upstream qualification failures stay visible',
                              'Negative checks establish a whole-translation-unit diagnostic, not each annotation',
                              'No link, runtime, diagnostic wording, AST, LLVM or assembly parity claim',
@@ -462,7 +510,10 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                              if llvm_objects else []) +
                             (['Additional native active-error cases retain unreviewed language/IFNDR applicability; '
                               'all failures remain visible for triage, without candidate-based selection']
-                             if verify_negatives else []),
+                             if verify_negatives else []) +
+                            (['Standalone LLVM-only actions are not executed; common object acceptance '
+                              'does not establish original LLVM action or runtime parity']
+                             if standalone_llvm_only else []),
                 exclusions=exclusions, cases=cases)
 
 
@@ -487,6 +538,9 @@ def main(argv=None):
     parser.add_argument('--local-inputs', action='store_true',
                         help='Resolve tracked quoted-header closures and audited simple local configs; '
                              'freeze dependencies, qualify natively and retain all other blockers')
+    parser.add_argument('--standalone-llvm-only-projections', action='store_true',
+                        help='Project literal single-RUN positive cc1 -emit-llvm-only actions into '
+                             'common object acceptance; strictly qualify every added case')
     args = parser.parse_args(argv)
     root = args.llvm_root.resolve()
     parse_keywords, _ = native_parser(root, args.revision)
@@ -502,7 +556,7 @@ def main(argv=None):
             raise ValueError('Stale primary standard source: ' + str(source))
     manifest = collect(root, parse_keywords, native, json.loads(args.dispositions.read_text()),
                        adjudications, args.verify_negatives, args.implicit_cxx11, args.llvm_object_projections,
-                       args.local_inputs)
+                       args.local_inputs, args.standalone_llvm_only_projections)
     subprocess.run(['git', 'diff', '--quiet', 'HEAD', '--', *tracked], cwd=root, check=True)
     if not manifest['cases']:
         raise ValueError('The conservative selection produced no cases')

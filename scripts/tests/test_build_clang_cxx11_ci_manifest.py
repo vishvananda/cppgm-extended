@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Keep initial CI selection conservative, reproducible and compiler-independent."""
 import hashlib
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -19,6 +20,136 @@ def arguments(*flags):
 
 
 class PolicyTests(unittest.TestCase):
+    def test_standalone_llvm_only_preserves_flags_and_requires_strict_qualification(self):
+        args = ['%clang_cc1', '-std=c++11', '-emit-llvm-only', '-O2',
+                '-triple', 'x86_64-linux-gnu', '-fexceptions', '-fcxx-exceptions', '%s']
+        row = manifest.project_llvm_only_arguments(args, {'throw'})
+        self.assertEqual(row['candidate_flags'], ['-O2', '--target=x86_64-linux-gnu'])
+        self.assertEqual(row['upstream_flags'], ['-cc1', '-O2', '-triple',
+            'x86_64-linux-gnu', '-fexceptions', '-fcxx-exceptions'])
+        self.assertEqual(row['verification'], [])
+        self.assertEqual(row['qualification']['additional_upstream_flags'], ['-pedantic-errors'])
+        self.assertEqual(row['unmet_native_oracles'], dict(status='not-executed',
+            original_action_output_options=['-emit-llvm-only']))
+        implicit = manifest.project_llvm_only_arguments([a for a in args if a != '-std=c++11'],
+                                                       {'throw'}, implicit_cxx11=True)
+        self.assertEqual(implicit['upstream_flags'], row['upstream_flags'])
+        self.assertEqual(implicit['candidate_flags'], row['candidate_flags'])
+        self.assertEqual(implicit['qualification'], row['qualification'])
+
+    def test_standalone_llvm_only_does_not_weaken_existing_action_or_policy_guards(self):
+        base = ['%clang_cc1', '-std=c++11', '-emit-llvm-only', '%s']
+        for flag in ['-emit-llvm-only', '-fsyntax-only', '-emit-llvm', '-emit-obj',
+                     '-verify', '-verify=expected', '-fno-exceptions', '-fno-rtti',
+                     '-std=c++17', '-unknown-policy', '%s']:
+            with self.subTest(flag=flag), self.assertRaises(manifest.Excluded):
+                manifest.project_llvm_only_arguments([*base, flag], set())
+        for args in [['%clangxx', *base[1:]], [*base, '-o', '%t'],
+                     [*base, '-triple', 'aarch64-linux-gnu'], base[:-1]]:
+            with self.subTest(args=args), self.assertRaises(manifest.Excluded):
+                manifest.project_llvm_only_arguments(args, set())
+        with self.assertRaises(manifest.Excluded):
+            manifest.project_llvm_only_arguments(base, {'throw'})
+
+    def test_standalone_command_requires_opt_in_and_rejects_shell_structure(self):
+        class Command:
+            def __init__(self, args, redirects=()):
+                self.args, self.redirects = args, redirects
+        class Pipeline:
+            def __init__(self, commands, negate=False):
+                self.commands, self.negate = commands, negate
+        command = Command(['%clang_cc1', '-std=c++11', '-emit-llvm-only', '%s'])
+        tree = Pipeline([command])
+        native = SimpleNamespace(TestRunner=SimpleNamespace(kPdbgRegex=r'a^'),
+            ShCommands=SimpleNamespace(Command=Command, Pipeline=Pipeline),
+            ShUtil=SimpleNamespace(ShParser=lambda *a, **k: SimpleNamespace(parse=lambda: tree)))
+        with self.assertRaises(manifest.Excluded):
+            manifest.project_run('native', native, set(), llvm_objects=True)
+        self.assertEqual(manifest.project_run('native', native, set(), standalone_llvm_only=True)
+                         ['projection_kind'], 'standalone-llvm-only-object-acceptance')
+        for invalid in [Pipeline([command], negate=True), Pipeline([command, command]),
+                        Pipeline([Command(command.args, ['output'])]),
+                        Pipeline([Command([object()])]), object()]:
+            tree = invalid
+            with self.subTest(tree=tree), self.assertRaises(manifest.Excluded):
+                manifest.project_run('native', native, set(), standalone_llvm_only=True)
+
+    def test_standalone_selection_is_uncapped_and_keeps_old_case_bytes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            old = 'clang/test/old.cpp'
+            names = [old] + [f'clang/test/new{i}.cpp' for i in range(45)]
+            for name in names:
+                path = root/name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('// RUN: -std=c++11\nint n;\n')
+            parsed = {'RUN:': [SimpleNamespace(keyword='RUN:', command='native')]}
+            def project(command, native, tokens, implicit, llvm, context, warnings, standalone):
+                if project.current == old:
+                    return arguments()
+                if not standalone:
+                    raise manifest.Excluded('Unmapped action')
+                return manifest.project_llvm_only_arguments(
+                    ['%clang_cc1', '-std=c++11', '-emit-llvm-only', '%s'], tokens)
+            def parse(path, **kwargs):
+                project.current = str(Path(path).relative_to(root))
+                return parsed
+            with patch.object(manifest.subprocess, 'check_output',
+                              return_value=('\0'.join(names)+'\0').encode()), \
+                    patch.object(manifest, 'project_run', side_effect=project):
+                before = manifest.collect(root, parse, None)
+                after = manifest.collect(root, parse, None, standalone_llvm_only=True)
+            self.assertEqual(len(before['cases']), 1)
+            self.assertEqual(len(after['cases']), 46)
+            unchanged, = [c for c in after['cases'] if c['path'] == old]
+            self.assertEqual(json.dumps(before['cases'][0]), json.dumps(unchanged))
+            for case in after['cases']:
+                if case['path'] != old:
+                    self.assertEqual(case['expect'], 'accept')
+                    self.assertEqual(case['action'], 'compile')
+                    self.assertEqual(case['unmet_native_oracles']['all_original_RUNs'], ['native'])
+
+    def test_standalone_file_rejects_other_runs_diagnostics_and_verifier_actions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            name = 'clang/test/case.cpp'
+            path = root/name
+            path.parent.mkdir(parents=True)
+            path.write_text('// RUN: -std=c++11\nint n;\n')
+            row = manifest.project_llvm_only_arguments(
+                ['%clang_cc1', '-std=c++11', '-emit-llvm-only', '%s'], set())
+            for commands, annotation in [(['native', 'setup'], ''),
+                                          (['native'], '// expected-error {{invalid}}\n')]:
+                path.write_text('// RUN: -std=c++11\nint n;\n'+annotation)
+                parsed = {'RUN:': [SimpleNamespace(keyword='RUN:', command=c) for c in commands]}
+                with patch.object(manifest.subprocess, 'check_output',
+                                  return_value=(name+'\0').encode()), \
+                        patch.object(manifest, 'project_run', return_value=row):
+                    result = manifest.collect(root, lambda *a, **k: parsed, None,
+                                              standalone_llvm_only=True, verify_negatives=True)
+                self.assertEqual(result['cases'], [])
+                self.assertTrue(result['exclusions'])
+
+    def test_standalone_source_policy_cannot_disable_strict_qualification(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            name = 'clang/test/case.cpp'
+            path = root/name
+            path.parent.mkdir(parents=True)
+            path.write_text('// RUN: -std=c++11\nint n;\n')
+            row = manifest.project_llvm_only_arguments(
+                ['%clang_cc1', '-std=c++11', '-emit-llvm-only', '%s'], set())
+            parsed = {'RUN:': [SimpleNamespace(keyword='RUN:', command='native')]}
+            policy = {'llvm-project/'+name: dict(status='documented-gnu-extension-positive',
+                issue='review', sha256=hashlib.sha256(path.read_bytes()).hexdigest())}
+            with patch.object(manifest.subprocess, 'check_output', return_value=(name+'\0').encode()), \
+                    patch.object(manifest, 'project_run', return_value=row):
+                result = manifest.collect(root, lambda *a, **k: parsed, None, dispositions=policy,
+                                          standalone_llvm_only=True)
+            case, = result['cases']
+            self.assertEqual(case['dialect'], 'gnu++11')
+            self.assertEqual(case['qualification']['additional_upstream_flags'], ['-pedantic-errors'])
+
     def test_reviewed_optional_warning_order_and_mandatory_boundaries(self):
         args = ['%clang_cc1', '-std=c++11', '-fsyntax-only', '-Wno-unused', '-Wall',
                 '-Wno-tautological-compare', '%s']

@@ -157,6 +157,31 @@ class Suite(unittest.TestCase):
         with self.assertRaises(ValueError):
             qualification_cases(dict(cases=[case]))
 
+    def test_standalone_qualification_is_positive_compile_and_strict_only(self):
+        case = self.case()
+        case['projection_kind'] = 'standalone-llvm-only-object-acceptance'
+        case['qualification'] = dict(kind='standalone-llvm-only-cxx11',
+                                     additional_upstream_flags=['-pedantic-errors'])
+        original = json.dumps(case)
+        for dialect in ['c++11', 'gnu++11']:
+            case['dialect'] = dialect
+            qualified, = qualification_cases(dict(cases=[case]))
+            self.assertEqual(qualified['upstream_flags'], ['-pedantic-errors'])
+        case['dialect'] = 'c++11'
+        self.assertEqual(json.dumps(case), original)
+        for changes in [dict(expect='diagnostic'), dict(action='run'), dict(dialect='c++17'),
+                        dict(projection_kind='other'),
+                        dict(qualification=dict(kind='standalone-llvm-only-cxx11',
+                                                additional_upstream_flags=[])),
+                        dict(qualification=dict(kind='standalone-llvm-only-cxx11',
+                            additional_upstream_flags=['-pedantic-errors', '-Wno-c++11-extensions']))]:
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                qualification_cases(dict(cases=[dict(case, **changes)]))
+        case['qualification'].update(additional_upstream_flags=['-pedantic-errors', '-Wno-comment'],
+                                     source_policy_issue='review')
+        qualified, = qualification_cases(dict(cases=[case]))
+        self.assertEqual(qualified['upstream_flags'], ['-pedantic-errors', '-Wno-comment'])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -309,6 +334,7 @@ class Workflow(unittest.TestCase):
                     self.assertEqual('--implicit-cxx11' in args, suite == 'clang')
                     self.assertEqual('--llvm-object-projections' in args, suite == 'clang')
                     self.assertEqual('--local-inputs' in args, suite == 'clang')
+                    self.assertEqual('--standalone-llvm-only-projections' in args, suite == 'clang')
                     self.assertEqual(args[args.index('--output')+1],
                                      str(root/'run temp/cxx11/manifest.json'))
                     self.assertEqual(args[args.index('--'+('llvm' if suite == 'clang' else 'gcc')+'-root')+1],
