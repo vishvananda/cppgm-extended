@@ -545,7 +545,7 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("template.specialization_partial_ordering", (),
                 path_patterns=(rx(r"(?:partial-specialization-order|class-partial-order|partial_order_class|function-type-partial-specialization-preference|repeated-argument)"),)),
     FeatureRule("template.deduction_full",
-                (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*(?:&&|decltype|enable_if|typename\s+[A-Za-z_][A-Za-z0-9_:<>]*::)[^)]*\)"),),
+                (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+[A-Za-z_][A-Za-z0-9_]*\s*\((?P<parameters>[^)]*(?:&&|decltype|enable_if|typename\s+[A-Za-z_][A-Za-z0-9_:<>]*::)[^)]*)\)"),),
                 path_patterns=(rx(r"(?:deduc|forwarding-reference|explicit-template-(?:args|argument|id)|nondeduced|non-deduced|reference-cv|array-bound)"),)),
     FeatureRule("template.detector_idiom",
                 (rx(r"\b(?:void_t|detected_or|detector|is_detected)\b"),),
@@ -802,6 +802,32 @@ def match_builtin_trait_patterns(patterns: tuple[re.Pattern[str], ...],
             item = f"source:{evidence[:120]}"
             if item not in matched:
                 matched.append(item)
+    return matched
+
+
+def match_function_deduction_patterns(patterns: tuple[re.Pattern[str], ...],
+                                     code: str) -> list[str]:
+    matched: list[str] = []
+    for pattern in patterns:
+        for match in pattern.finditer(code):
+            parameters = match.group("parameters")
+            advanced = re.search(r"\b(?:decltype|enable_if)\b|"
+                                 r"\btypename\s+[A-Za-z_][A-Za-z0-9_:<>]*::", parameters)
+            # Maximal-munch ampersands: a direct reference-to-reference
+            # formation error does not exercise forwarding-reference deduction.
+            amps = list(re.finditer(r"&&|&", parameters))
+            direct: set[int] = set()
+            for index in range(1, len(amps)):
+                gap = parameters[amps[index - 1].end():amps[index].start()]
+                if re.fullmatch(r"[\s(]*", gap):
+                    direct.update((index - 1, index))
+            if not advanced and not any(
+                    amp.group() == "&&" and index not in direct
+                    for index, amp in enumerate(amps)):
+                continue
+            evidence = " ".join(match.group(0).split())
+            matched.append(f"source:{evidence[:120]}")
+            break
     return matched
 
 
@@ -1333,6 +1359,8 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
                 matched = match_dependent_name_patterns(rule.patterns, haystack)
             elif rule.feature_id == "template.partial_specialization":
                 matched = match_partial_specializations(haystack)
+            elif rule.feature_id == "template.deduction_full":
+                matched = match_function_deduction_patterns(rule.patterns, haystack)
             else:
                 matched = match_rule_patterns(rule.patterns, haystack, rule.all_patterns, "source")
             matched.extend(match_rule_patterns(rule.ref_patterns, ref_text, rule.all_patterns, "ref"))

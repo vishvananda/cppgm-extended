@@ -31,6 +31,33 @@ def write(path: Path, text: str) -> None:
 
 
 class AuditPAFeaturePlacementTests(unittest.TestCase):
+    def test_direct_reference_errors_do_not_require_function_deduction(self) -> None:
+        for parameters in ("T & &&value", "T && &value", "T && &&value", "T & (&&value)"):
+            for head in ("class T", "class T, int N = sizeof(T)"):
+                source = f"template<{head}> void f({parameters});"
+                with self.subTest(source=source):
+                    hits = audit.detect_features(source)
+                    self.assertNotIn("template.deduction_full", hits)
+                    self.assertIn("template.type", hits)
+
+    def test_genuine_forwarding_parameters_still_require_function_deduction(self) -> None:
+        for parameters in ("T&& value", "T &&value", "T&& value, int *p = &global",
+                           "T & &&bad, U&& good"):
+            source = f"template<class T, class U> void f({parameters});"
+            with self.subTest(source=source):
+                self.assertIn("template.deduction_full", audit.detect_features(source))
+        source = "template<class T> void bad(T & &&); template<class T> void good(T&&);"
+        hit = audit.detect_features(source)["template.deduction_full"]
+        self.assertEqual(hit.evidence, ["source:template<class T> void good(T&&)"])
+
+    def test_direct_reference_error_does_not_hide_other_advanced_parameters(self) -> None:
+        for parameters in ("T & &&bad, typename T::type good",
+                           "T & &&bad, decltype(expr) good",
+                           "T & &&bad, enable_if<T>::type good"):
+            source = f"template<class T> void f({parameters});"
+            with self.subTest(source=source):
+                self.assertIn("template.deduction_full", audit.detect_features(source))
+
     def test_partial_heads_after_long_prefix_and_other_declarators(self) -> None:
         source = "int padding;\n" * 2048 + (
             "template<class T> struct A<T*>;\n"
