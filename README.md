@@ -32,6 +32,10 @@ See [benchmark methodology](benchmarks/public/README.md) for how the numbers are
 Detailed compile timings: [EPYC](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/epyc/report.md)
 and [Intel Xeon](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/intel/report.md).
 
+Separate library comparisons: [index-cpp](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/index-cpp/epyc/report.md) and
+[simdjson scalar/SSE](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/simdjson/epyc/report.md)
+([methodology](benchmarks/simdjson/README.md)).
+
 ## Caveats
 
 - C++11 is the baseline; other dialects have only partial extension support.

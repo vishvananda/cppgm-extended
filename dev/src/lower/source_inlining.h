@@ -16,6 +16,9 @@ public:
 	void run();
 	lowir::SymbolId immediate_guard(lowir::SymbolId symbol);
 	lowir::SymbolId immediate_guard_id() const { return immediate_guard_; }
+	lowir::SymbolId vector_function(lowir::VectorOp operation) const;
+	lowir::SymbolId add_vector_function(lowir::SymbolId symbol, lowir::VectorOp operation);
+	const std::vector<std::pair<lowir::SymbolId, lowir::VectorOp>>& vectors() const { return vectors_; }
 	const std::vector<lowir::SymbolId>& deferred() const { return deferred_; }
 
 private:
@@ -24,6 +27,8 @@ private:
 		size_t operator()(uint32_t value) const { return value * 0x9e3779b9u; }
 	};
 	bool immediate_call(const lowir::Instruction& inst) const;
+	bool vector_call(const lowir::Instruction& inst, lowir::VectorOp* operation = nullptr) const;
+	void select_vectors();
 	bool direct_immediates(const lowir::FunctionBody& body) const;
 	void validate_immediates();
 	void remove_immediates(lowir::FunctionBody& body);
@@ -33,6 +38,7 @@ private:
 	FlatMap<lowir::SymbolId, lowir::SymbolId, Hash> required_;
 	std::vector<lowir::SymbolId> annotated_;
 	std::vector<lowir::SymbolId> deferred_;
+	std::vector<std::pair<lowir::SymbolId, lowir::VectorOp>> vectors_;
 };
 
 } // namespace lower

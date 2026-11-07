@@ -104,6 +104,7 @@ public:
 	// A class aggregate's initialization helper (`this` and a value per
 	// named member, each member stored from it).
 	void lower_aggregate_helper(const sema::ClassEntity* entity, uint32_t count);
+	void lower_vector_helper(lowir::VectorOp operation);
 	// A thread-local object's guarded per-thread initialization, and its
 	// wrapper returning the thread's object after running it.
 	void lower_thread_local_initializer(lowir::SymbolId global, lowir::SymbolId guard,
@@ -1389,6 +1390,7 @@ private:
 	bool direct_vector_compare(TokenKind op, const sema::Type* vector, const RValue& left, bool left_vector,
 		const RValue& right, bool right_vector, RValue& result);
 	bool direct_vector_list(const sema::Type* vector, const syntax::BracedInitList& list, RValue& result);
+	bool direct_small_vector_list(const sema::Type* vector, const syntax::BracedInitList& list, RValue& result);
 	bool vector_scalar_form(const sema::Type* vector, lowir::VectorOp& from);
 	RValue spread_vector(const sema::Type* vector, lowir::VectorOp from, const RValue& scalar);
 	bool whole_vectors(const sema::Type* vector, const RValue& left, bool left_vector, const RValue& right,
@@ -1422,6 +1424,8 @@ private:
 	RValue shift_vector_lanes(const syntax::CallExpr& expr);
 	RValue shuffle_vector(const syntax::CallExpr& expr);
 	RValue binary_immediate_vector(const syntax::CallExpr& expr);
+	RValue deferred_vector(lowir::VectorOp operation, const RValue& first, const RValue& second, const RValue& count);
+	RValue vector_helper_offset(lowir::VectorOp operation, uint32_t lane, const RValue& count, RValue& valid);
 	RValue reinterpret_bytes(const RValue& value, const sema::Type* to);
 	RValue bit_cast(const syntax::BuiltinTraitExpr& expr);
 	// A builtin's value: __builtin_va_arg's argument, a complex part, a

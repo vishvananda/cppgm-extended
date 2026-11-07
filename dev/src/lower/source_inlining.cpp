@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "lower/function_lowering.h"
 #include "lower/program_lowering.h"
 #include "opt/inliner.h"
 #include "opt/passes.h"
@@ -32,7 +33,7 @@ bool SourceInlining::defer(lowir::SymbolId symbol)
 		{
 			const lowir::Instruction& inst = body.instructions[i];
 			if (inst.op == lowir::Opcode::Call && inst.ops[0].is(lowir::ValueKind::Symbol) &&
-				(required_.find(inst.ops[0].index) != nullptr || immediate_call(inst)))
+				(required_.find(inst.ops[0].index) != nullptr || immediate_call(inst) || vector_call(inst)))
 			{
 				deferred_.push_back(symbol);
 				return true;
@@ -66,6 +67,8 @@ void SourceInlining::run()
 				}
 		}
 	opt::inline_source_required(program_);
+	if (!vectors_.empty())
+		select_vectors();
 	lowir::SymbolId incomplete = lowir::kNoId;
 	for (const lowir::SymbolId symbol : deferred_)
 	{
@@ -302,6 +305,20 @@ void ProgramLowering::finish_source_inlining()
 {
 	std::unique_ptr<SourceInlining> work = std::move(source_inlining_);
 	work->run();
+	for (const auto& entry : work->vectors())
+	{
+		// Complete the existing declaration in place: declaring it again
+		// would duplicate its entry in the program's definition order.
+		lowir::Symbol& symbol = program_.symbols[entry.first];
+		symbol.kind = lowir::SymbolKind::FunctionDefinition;
+		program_.functions[symbol.detail].body.reset(new lowir::FunctionBody());
+		{
+			FunctionLowering body(*this, entry.first, nullptr);
+			body.lower_vector_helper(entry.second);
+		}
+		release_definition(entry.first);
+		++counters_.functions;
+	}
 	for (const lowir::SymbolId symbol : work->deferred())
 		release_definition(symbol);
 }

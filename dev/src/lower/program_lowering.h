@@ -1149,6 +1149,7 @@ private:
 	void mark_source_inline(const sema::FunctionEntity* function, lowir::SymbolId symbol);
 	void finish_source_inlining();
 	lowir::SymbolId source_immediate_guard();
+	lowir::SymbolId source_vector_function(lowir::VectorOp operation);
 	// Special-member families (lower/definition_order.cpp): a definition's
 	// memberships (`base_object`: its base entry's object name if known),
 	// the identities they share, and the families' order among the

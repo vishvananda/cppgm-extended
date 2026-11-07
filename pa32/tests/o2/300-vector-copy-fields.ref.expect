@@ -1,0 +1,9 @@
+# explicit-outcomes
+
+# Preserve whole vector values through local copies. Registers and pass order
+# are free; memory used for an observable destination still has to be written.
+instructions <= 12
+instructions <= 3 in @copy_fields
+count(load) <= 1 in @copy_fields
+count(store) <= 1 in @copy_fields
+none(copyobj)

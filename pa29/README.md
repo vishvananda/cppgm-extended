@@ -567,6 +567,13 @@ selector must be constant. A runtime selector through the public intrinsic
 wrapper remains an error. This check uses typed LowIR facts and leaves
 ordinary generated code and named debug storage unchanged.
 
+Vector construction and wrapper substitution should retain whole-vector facts.
+Preserve lane bits and evaluation order when building narrow integer vectors;
+constant selectors exposed by required inlining can select native operations
+without first expanding into per-lane memory work. A still-variable selector
+must keep the operation's specified runtime behavior or diagnostic. No exact
+instruction sequence is required.
+
 ### SSE lane sign masks
 
 `__builtin_ia32_pmovmskb128`, `__builtin_ia32_movmskps` and

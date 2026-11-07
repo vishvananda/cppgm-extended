@@ -1,0 +1,28 @@
+typedef signed char Bytes __attribute__((vector_size(16)));
+typedef unsigned char UnsignedBytes __attribute__((vector_size(16)));
+typedef short Words __attribute__((vector_size(16)));
+unsigned order;
+int next(int index, int value) { if (order != static_cast<unsigned>(index)) return 0; ++order; return value; }
+int main() {
+  volatile int seed = -127;
+  Bytes bytes{static_cast<signed char>(next(0,seed)),static_cast<signed char>(next(1,2)),
+    static_cast<signed char>(next(2,-3)),static_cast<signed char>(next(3,4)),
+    static_cast<signed char>(next(4,-5)),static_cast<signed char>(next(5,6)),
+    static_cast<signed char>(next(6,-7)),static_cast<signed char>(next(7,8)),
+    static_cast<signed char>(next(8,-9)),static_cast<signed char>(next(9,10)),
+    static_cast<signed char>(next(10,-11)),static_cast<signed char>(next(11,12)),
+    static_cast<signed char>(next(12,-13)),static_cast<signed char>(next(13,14)),
+    static_cast<signed char>(next(14,-15)),static_cast<signed char>(next(15,16))};
+  for(int i=0;i<16;++i) if(bytes[i]!=(i==0?seed:(i%2?i+1:-i-1))) return 1;
+  if(order!=16) return 2;
+  UnsignedBytes unsigned_bytes{0,255,128,127,4,5,6,7,8,9,10,11,12,13,14,15};
+  if(unsigned_bytes[1]!=255 || unsigned_bytes[2]!=128) return 3;
+  order=0;
+  Words words{static_cast<short>(next(0,-32768)),static_cast<short>(next(1,32767)),
+    static_cast<short>(next(2,-1)),static_cast<short>(next(3,0)),
+    static_cast<short>(next(4,-12345)),static_cast<short>(next(5,12345)),
+    static_cast<short>(next(6,-200)),static_cast<short>(next(7,200))};
+  const short expected[8]={-32768,32767,-1,0,-12345,12345,-200,200};
+  for(int i=0;i<8;++i) if(words[i]!=expected[i]) return 4;
+  return order==8?0:5;
+}

@@ -320,6 +320,7 @@ test-cells:
 # The harness unit tests: the comparison, the workers, the audits and the
 # export, each a self-contained python unittest file under scripts/tests.
 HARNESS_TESTS = \
+	scripts/tests/test_simdjson_ci.py \
 	scripts/tests/test_index_cpp_ci.py \
 	scripts/tests/test_index_cpp_benchmarks.py \
 	scripts/tests/test_boost_ci.py \

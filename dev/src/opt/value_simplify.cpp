@@ -1343,6 +1343,41 @@ Value Simplifier::low_lane_source(Value v, unsigned bytes)
 bool Simplifier::vector_identity(Instruction& inst, Value& out)
 {
 	const VectorOp op = static_cast<VectorOp>(inst.sub);
+	// A packed shift reads its count from the low 64 bits. Required
+	// wrapper substitution often exposes a constant scalar only here.
+	if ((op >= VectorOp::Psllw && op <= VectorOp::Psllq) || (op >= VectorOp::Psrlw && op <= VectorOp::Psrlq) ||
+		(op >= VectorOp::Psraw && op <= VectorOp::Psrad))
+	{
+		const Instruction* count = producer(resolve(inst.ops[1]));
+		Constant bits;
+		if (count != nullptr && count->op == Opcode::Vector &&
+			(static_cast<VectorOp>(count->sub) == VectorOp::Fromi32 ||
+				static_cast<VectorOp>(count->sub) == VectorOp::Fromi64) &&
+			literal_constant(body_, resolve(count->ops[0]), bits) && bits.kind == ValueKind::Integer)
+		{
+			const uint64_t amount = static_cast<VectorOp>(count->sub) == VectorOp::Fromi32 ? bits.bits.low & 0xffffffffu
+																						   : bits.bits.low;
+			const unsigned width = op <= VectorOp::Psllq
+				? static_cast<unsigned>(op) - static_cast<unsigned>(VectorOp::Psllw)
+				: op <= VectorOp::Psrlq ? static_cast<unsigned>(op) - static_cast<unsigned>(VectorOp::Psrlw)
+										: static_cast<unsigned>(op) - static_cast<unsigned>(VectorOp::Psraw);
+			const uint64_t limit = uint64_t(16) << width;
+			const bool arithmetic = op >= VectorOp::Psraw;
+			const VectorOp base = op <= VectorOp::Psllq ? VectorOp::Psllwi
+				: op <= VectorOp::Psrlq                 ? VectorOp::Psrlwi
+														: VectorOp::Psrawi;
+			inst.sub = static_cast<uint8_t>(!arithmetic && amount >= limit
+					? VectorOp::Pzero
+					: static_cast<VectorOp>(static_cast<unsigned>(base) + width));
+			inst.ops[1] = Value::none();
+			if (!arithmetic && amount >= limit)
+				inst.ops[0] = inst.ops[2] = Value::none();
+			else
+				inst.ops[2] = integer_value(body_, Literal{ std::min(amount, limit - 1), 0 });
+			changed_ = true;
+			return false;
+		}
+	}
 	switch (op)
 	{
 	case VectorOp::Tof32:

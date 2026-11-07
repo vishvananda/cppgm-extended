@@ -22,6 +22,8 @@ RValue FunctionLowering::binary_immediate_vector(const syntax::CallExpr& expr)
 		const RValue given = operand(*expr.arguments[2], ConversionContext::Argument);
 		builder_.call(lowir::Type::scalar(lowir::TypeKind::Void),
 			lowir::Value::symbol(lowering_.source_immediate_guard()), &given.value, 1, lowir::kNoId, 0);
+		if (multiply && first.type.is_vector() && lowering_.host_objects())
+			return deferred_vector(lowir::VectorOp::Pclmulqdq, first, second, given);
 		count = convert_op(lowir::ConvertOp::ZExt, i64, given);
 	}
 	else
