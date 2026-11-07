@@ -1246,7 +1246,10 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 		definition = false;
 	if (variable != nullptr)
 	{
-		if (!CompatibleVariableTypes(variable->type, type))
+		// A dependent declaration may match after substitution (14.6p8).
+		// Its instantiations repeat this check with concrete types.
+		if (!CompatibleVariableTypes(variable->type, type) &&
+			(template_depth_ == 0 || (!dependent_type(variable->type) && !dependent_type(type))))
 			error(location, "conflicting declaration of a variable");
 		// 7.1.1p1: ordinary declarations all spell thread_local, or none do.
 		// Explicit-instantiation directives use their separate entity path.
@@ -1558,11 +1561,16 @@ VariableEntity* Analyzer::earlier_variable(const Specifiers& specifiers, const D
 	{
 		if (entry->value != nullptr)
 		{
-			if (entry->value->kind != BindingKind::Variable || where->kind == ScopeKind::Class ||
-				(where->kind != ScopeKind::Namespace &&
-					!(specifiers.is_extern && static_cast<VariableEntity*>(entry->value->entity)->is_extern)))
+			if (entry->value->kind != BindingKind::Variable || where->kind == ScopeKind::Class)
 				error(location, "redeclaration of a name in the same scope");
 			variable = static_cast<VariableEntity*>(entry->value->entity);
+			// 3.5p6: a block extern can denote a namespace definition;
+			// that entity need not itself have been declared extern first.
+			if (where->kind != ScopeKind::Namespace &&
+				(!specifiers.is_extern ||
+					!((variable->owner == where && variable->is_extern) ||
+						variable->owner == enclosing_namespace(where))))
+				error(location, "redeclaration of a name in the same scope");
 		}
 		// 14p5 makes a template name unique where the template is declared;
 		// its injected-class-name is instead its own class's type (9p2).
