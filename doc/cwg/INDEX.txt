@@ -73,6 +73,7 @@ CWG 1395 | C++17 | cwg-1395.txt
   Partial ordering of variadic templates reconsidered
 CWG 1396 | C++23 | cwg-1396.txt
   Deferred instantiation and checking of non-static data member initializers
+  Adopted resolution: cwg-2631.txt
 CWG 1397 | CD4 | cwg-1397.txt
   Class completeness in non-static data member initializers
 CWG 1402 | CD3 | cwg-1402.txt
@@ -185,6 +186,8 @@ CWG 2476 | CD7 | cwg-2476.txt
 CWG 2549 | CD7 | cwg-2549.txt
   Implicitly moving the operand of a throw-expression in unevaluated contexts
   Local paper: paper-p0527r1.txt, paper-p1155r3.txt, paper-p1825r0.txt, paper-p2266r2.txt
+CWG 2631 | C++23 | cwg-2631.txt
+  Immediate function evaluations in default arguments
 CWG 2907 | CD7 | cwg-2907.txt
   Constant lvalue-to-rvalue conversion on uninitialized std::nullptr_t
 

@@ -1010,6 +1010,20 @@
       ]
     },
     {
+      "issue": 2631,
+      "title": "Immediate function evaluations in default arguments",
+      "status": "C++23",
+      "role": "course-reference",
+      "file": "cwg-2631.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2631.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2631.html",
+      "source_html_sha256": "89b885c1643c69734d08b071f4ac54377387a92a5dc4e19c72fd6825fc560fc5",
+      "text_sha256": "0f58ab318440e9f41f604738d37a59dfdca65cf7027c1b0a02bb3af4c00399c4",
+      "adopted_papers": [
+        "P2720R0"
+      ]
+    },
+    {
       "issue": 2907,
       "title": "Constant lvalue-to-rvalue conversion on uninitialized std::nullptr_t",
       "status": "CD7",

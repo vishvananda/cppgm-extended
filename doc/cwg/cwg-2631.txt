@@ -1,0 +1,530 @@
+CWG 2631: Immediate function evaluations in default arguments
+Source: https://cplusplus.github.io/CWG/issues/2631.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++23
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2631. Immediate function evaluations in default arguments
+Section: 7.7 [expr.const [1]] Status: C++23 Submitter: Aaron Ballman Date: 2022-09-16
+Liaison: EWG
+
+P2720R0 comment FR 019-005
+[2]
+
+[Accepted as a DR at the November, 2022 meeting.]
+
+Consider:
+
+
+consteval int const_div(int a, int b) { return a / b; }
+int func(int x = const_div(10, 0));
+
+
+According to 7.7 [expr.const [3]] paragraph 14:
+
+An expression or conversion is an immediate invocation if it is a potentially-evaluated
+explicit or implicit invocation of an immediate function and is not in an immediate
+function context. An immediate invocation shall be a constant expression.
+
+Subclause 9.3.4.7 [dcl.fct.default [4]] paragraph 5 specifies:
+
+The default argument has the same semantic constraints as the initializer in a
+declaration of a variable of the parameter type, using the copy-initialization semantics
+(9.5 [dcl.init [5]]). The names in the default argument are looked up, and the semantic
+constraints are checked, at the point where the default argument appears. Name lookup
+and checking of semantic constraints for default arguments of templated functions are
+performed as described in 13.9.2 [temp.inst [6]].
+
+Checking the semantic constraints of the default argument appears to include a check
+whether the immediate invocation of const_div is actually a constant expression, even
+though the default argument's value might never actually be used for any function call
+in the program.
+
+However, instantiation of a consteval function template to be able to perform the
+constant evaluation is not permitted per 13.9.2 [temp.inst [7]] paragraph 11:
+
+... The use of a template specialization in a default argument shall not cause the
+template to be implicitly instantiated except that a class template may be instantiated
+where its complete type is needed to determine the correctness of the default argument.
+The use of a default argument in a function call causes specializations in the default
+argument to be implicitly instantiated.
+
+Example 2:
+
+
+constexpr int g();
+consteval int f() {
+  return g();
+}
+
+int k(int x = f()) {  // error: constexpr evaluation of undefined function g
+  return x;
+}
+
+constexpr int g() {
+  return 42;
+}
+
+int main() {
+  return k();
+}
+
+
+Example 3:
+
+
+#include <source_location>
+#include <iostream>
+
+consteval int const_div(int a, int b) {
+  return a / b;
+}
+
+#line 5
+void foo(int x = const_div(1000, std::source_location::current().line() - 15)) {
+  std::cout << x << "\n";
+}
+
+// Should the definition of `bar` produce errors? (division by zero during constant
+// evaluation for constraint checking)
+#line 10
+void bar(int x = const_div(1000, std::source_location::current().line() - 10)) {
+  std::cout << x << "\n";
+}
+
+int main() {
+  // Should this call produce errors? (division by zero during constant
+  // evaluation of the default argument)
+  #line 15
+  foo();
+  #line 20
+  bar();
+}
+
+
+Note that source_location::current() is specified to take its value from the location
+where it is evaluated, if it appears in a default argument (17.8.2.2
+[support.srcloc.cons [8]] paragraph 2):
+
+Remarks: Any call to current that appears as a default member initializer (11.4
+[class.mem [9]]), or as a subexpression thereof, should correspond to the location of
+the constructor definition or aggregate initialization that uses the default member
+initializer. Any call to current that appears as a default argument (9.3.4.7
+[dcl.fct.default [10]]), or as a subexpression thereof, should correspond to the
+location of the invocation of the function that uses the default argument (7.6.1.3
+[expr.call [11]]).
+
+Proposed resolution (September, 2022) [SUPERSEDED]:
+
+1.
+
+Split 9.3.4.7 [dcl.fct.default [4]] paragraph 5 and change as follows:
+
+The default argument has the same semantic constraints as the initializer in a
+declaration of a variable of the parameter type, using the copy-initialization semantics
+(9.5 [dcl.init [5]]).
+
+[INSERT: A default argument context is]
+
+- [INSERT: the initializer-clause in a parameter-declaration, including any conversions
+to the parameter type,]
+
+- [INSERT: a subexpression of one of the above that is not a subexpression of a nested
+unevaluated operand.]
+The names in the default argument are looked up, and the semantic constraints are
+checked, at the point where the default argument appears[INSERT: , except that an
+immediate invocation (7.7 [expr.const [1]]) in a default argument context is neither
+evaluated nor checked for whether it is a constant expression at that point]. Name
+lookup and checking of semantic constraints for default arguments of templated functions
+are performed as described in 13.9.2 [temp.inst [6]].
+
+2.
+
+Change in 13.9.2 [temp.inst [7]] paragraph 11 as follows:
+
+... The use of a template specialization in a default argument shall not cause the
+template to be implicitly instantiated except that a class template [INSERT: or a
+function template with a deduced return type] may be instantiated where its complete
+type is needed to determine the correctness of the default argument. The use of a
+default argument in a function call causes specializations in the default argument to be
+implicitly instantiated.
+
+Approved by EWG telecon 2022-09-29.
+
+Amendment to also cover default member initializers (October, 2022) [SUPERSEDED]:
+
+1.
+
+Split 9.3.4.7 [dcl.fct.default [4]] paragraph 5 and change as follows:
+
+The default argument has the same semantic constraints as the initializer in a
+declaration of a variable of the parameter type, using the copy-initialization semantics
+(9.5 [dcl.init [5]]).
+
+[INSERT: A default argument context of an initializer is]
+
+- [INSERT: the initializer, including any conversions to the target type, or]
+
+- [INSERT: a subexpression thereof that is not a subexpression of a nested unevaluated
+operand.]
+The names in the default argument are looked up, and the semantic constraints are
+checked, at the point where the default argument appears[INSERT: , except that an
+immediate invocation (7.7 [expr.const [1]]) in a default argument context of the
+initializer-clause in a parameter-declaration is neither evaluated nor checked for
+whether it is a constant expression at that point]. Name lookup and checking of semantic
+constraints for default arguments of templated functions are performed as described in
+13.9.2 [temp.inst [6]].
+
+2.
+
+Change in 11.4.1 [class.mem.general [12]] paragraph 11 as follows:
+
+A brace-or-equal-initializer for a non-static data member specifies a default member
+initializer for the member, and shall not directly or indirectly cause the implicit
+definition of a defaulted default constructor for the enclosing class or the exception
+specification of that constructor. [INSERT: An immediate invocation (7.7 [expr.const
+[1]]) in a default argument context (9.3.4.7 [dcl.fct.default [10]]) of a default member
+initializer is neither evaluated nor checked for whether it is a constant expression at
+the point where it appears.]
+
+3.
+
+Change in 13.9.2 [temp.inst [7]] paragraph 11 as follows:
+
+... The use of a template specialization in a default argument shall not cause the
+template to be implicitly instantiated except that a class template [INSERT: or a
+function template with a deduced return type] may be instantiated where its complete
+type is needed to determine the correctness of the default argument. The use of a
+default argument in a function call causes specializations in the default argument to be
+implicitly instantiated.
+
+CWG telecon 2022-10-07:
+
+The new term should be defined in 6.10.1 [intro.execution [13]] without reference to
+immediacy.
+
+Possible resolution [SUPERSEDED]:
+
+1.
+
+Change in 6.10.1 [intro.execution [14]] paragraph 4 as follows:
+
+A subexpression of an expression E is an immediate subexpression of E or a subexpression
+of an immediate subexpression of E. [ Note: ... -- end note ]
+
+The potentially-evaluated subexpressions of an expression, conversion, or initializer E
+are
+
+- the constituent expressions of E and
+
+- the subexpressions thereof that are not subexpressions of a nested unevaluated operand
+(7.2.3 [expr.context [15]]).
+
+2.
+
+Change in 7.7 [expr.const [16]] paragraph 16 as follows:
+
+An expression or conversion is potentially constant evaluated if it is:
+
+- ...
+
+- a [INSERT: potentially-evaluated] subexpression (6.10.1 [intro.execution [13]]) of one
+of the above[DELETE:  that is not a subexpression of a nested unevaluated operand (7.2.3
+[expr.context [15]])].
+
+3.
+
+Change in 9.3.4.7 [dcl.fct.default [4]] paragraph 5 as follows:
+
+The default argument has the same semantic constraints as the initializer in a
+declaration of a variable of the parameter type, using the copy-initialization semantics
+(9.5 [dcl.init [5]]). The names in the default argument are looked up, and the semantic
+constraints are checked, at the point where the default argument appears[INSERT: ,
+except that an immediate invocation (7.7 [expr.const [1]]) that is a
+potentially-evaluated subexpression (6.10.1 [intro.execution [13]]) of the
+initializer-clause in a parameter-declaration is neither evaluated nor checked for
+whether it is a constant expression at that point]. Name lookup and checking of semantic
+constraints for default arguments of templated functions are performed as described in
+13.9.2 [temp.inst [6]].
+
+4.
+
+Add a paragraph before 9.5.1 [dcl.init.general [17]] paragraph 17 as follows:
+
+An immediate invocation (7.7 [expr.const [1]]) that is not evaluated where it appears
+(9.3.4.7 [dcl.fct.default [10]], 11.4.1 [class.mem.general [18]]) is evaluated and
+checked for whether it is a constant expression at the point where the enclosing
+initializer is used in a function call, a constructor definition, or an aggregate
+initialization.
+
+An initializer-clause followed by an ellipsis is a pack expansion (13.7.4 [temp.variadic
+[19]]).
+
+5.
+
+Change in 11.4.1 [class.mem.general [12]] paragraph 11 as follows:
+
+A brace-or-equal-initializer for a non-static data member specifies a default member
+initializer for the member, and shall not directly or indirectly cause the implicit
+definition of a defaulted default constructor for the enclosing class or the exception
+specification of that constructor. [INSERT: An immediate invocation (7.7 [expr.const
+[1]]) that is a potentially-evaluated subexpression (6.10.1 [intro.execution [13]]) of a
+default member initializer is neither evaluated nor checked for whether it is a constant
+expression at the point where the subexpression appears.]
+
+6.
+
+Change in 13.9.2 [temp.inst [7]] paragraph 11 as follows:
+
+... The use of a template specialization in a default argument [INSERT: or default
+member initializer] shall not cause the template to be implicitly instantiated except
+that a [INSERT: templated] class [DELETE: template] [INSERT: , a templated function with
+a deduced return type, or a variable template with a deduced type] may be instantiated
+where its complete type is needed to determine the correctness of the default argument
+[INSERT: or default member initializer]. The use of a default argument in a function
+call causes specializations in the default argument to be implicitly instantiated.
+[INSERT: Similarly, the use of a default member initializer in a constructor definition
+or an aggregate initialization causes specializations in the default member initializer
+to be instantiated.]
+
+CWG telecon 2022-10-21:
+
+In the above wording, "constituent expression of a conversion" is not a defined term.
+
+Possible resolution [SUPERSEDED]:
+
+1.
+
+Change in 6.10.1 [intro.execution [20]] paragraph 2 as follows:
+
+A constituent expression is defined as follows:
+
+- The constituent expression of an expression is that expression.
+
+- [INSERT: The constituent expression of a conversion is the corresponding implicit
+function call, if any, or the converted expression otherwise.]
+
+- The constituent expressions of a braced-init-list or of a (possibly parenthesized)
+expression-list are the constituent expressions of the elements of the respective list.
+
+- The constituent expressions of a brace-or-equal-initializer of the form =
+initializer-clause are the constituent expressions of the initializer-clause.
+
+2.
+
+Change in 6.10.1 [intro.execution [14]] paragraph 4 as follows:
+
+A subexpression of an expression E is an immediate subexpression of E or a subexpression
+of an immediate subexpression of E. [ Note: ... -- end note ]
+
+The potentially-evaluated subexpressions of an expression, conversion, or initializer E
+are
+
+- the constituent expressions of E and
+
+- the subexpressions thereof that are not subexpressions of a nested unevaluated operand
+(7.2.3 [expr.context [15]]).
+
+3.
+
+Change in 7.7 [expr.const [16]] paragraph 16 as follows:
+
+An expression or conversion is potentially constant evaluated if it is:
+
+- ...
+
+- a [INSERT: potentially-evaluated] subexpression (6.10.1 [intro.execution [13]]) of one
+of the above[DELETE:  that is not a subexpression of a nested unevaluated operand (7.2.3
+[expr.context [15]])].
+
+4.
+
+Change in 9.3.4.7 [dcl.fct.default [4]] paragraph 5 as follows:
+
+The default argument has the same semantic constraints as the initializer in a
+declaration of a variable of the parameter type, using the copy-initialization semantics
+(9.5 [dcl.init [5]]). The names in the default argument are looked up, and the semantic
+constraints are checked, at the point where the default argument appears[INSERT: ,
+except that an immediate invocation (7.7 [expr.const [1]]) that is a
+potentially-evaluated subexpression (6.10.1 [intro.execution [13]]) of the
+initializer-clause in a parameter-declaration is neither evaluated nor checked for
+whether it is a constant expression at that point]. Name lookup and checking of semantic
+constraints for default arguments of templated functions are performed as described in
+13.9.2 [temp.inst [6]].
+
+5.
+
+Add a paragraph before 9.5.1 [dcl.init.general [17]] paragraph 17 as follows:
+
+An immediate invocation (7.7 [expr.const [1]]) that is not evaluated where it appears
+(9.3.4.7 [dcl.fct.default [10]], 11.4.1 [class.mem.general [18]]) is evaluated and
+checked for whether it is a constant expression at the point where the enclosing
+initializer is used in a function call, a constructor definition, or an aggregate
+initialization.
+
+An initializer-clause followed by an ellipsis is a pack expansion (13.7.4 [temp.variadic
+[19]]).
+
+6.
+
+Change in 11.4.1 [class.mem.general [12]] paragraph 11 as follows:
+
+A brace-or-equal-initializer for a non-static data member specifies a default member
+initializer for the member, and shall not directly or indirectly cause the implicit
+definition of a defaulted default constructor for the enclosing class or the exception
+specification of that constructor. [INSERT: An immediate invocation (7.7 [expr.const
+[1]]) that is a potentially-evaluated subexpression (6.10.1 [intro.execution [13]]) of a
+default member initializer is neither evaluated nor checked for whether it is a constant
+expression at the point where the subexpression appears.]
+
+7.
+
+Change in 13.9.2 [temp.inst [7]] paragraph 11 as follows:
+
+... The use of a template specialization in a default argument [INSERT: or default
+member initializer] shall not cause the template to be implicitly instantiated except
+that a [INSERT: templated] class [DELETE: template] [INSERT: , a templated function with
+a deduced return type, or a variable template with a deduced type] may be instantiated
+where its complete type is needed to determine the correctness of the default argument
+[INSERT: or default member initializer]. The use of a default argument in a function
+call causes specializations in the default argument to be implicitly instantiated.
+[INSERT: Similarly, the use of a default member initializer in a constructor definition
+or an aggregate initialization causes specializations in the default member initializer
+to be instantiated.]
+
+CWG 2022-11-07
+
+Expand requirement to avoid template instantiations in default arguments by not giving a
+specific, closed list.
+
+Proposed resolution (approved by CWG 2022-11-08):
+
+1.
+
+Change in 6.10.1 [intro.execution [20]] paragraph 2 as follows:
+
+A constituent expression is defined as follows:
+
+- The constituent expression of an expression is that expression.
+
+- [INSERT: The constituent expression of a conversion is the corresponding implicit
+function call, if any, or the converted expression otherwise.]
+
+- The constituent expressions of a braced-init-list or of a (possibly parenthesized)
+expression-list are the constituent expressions of the elements of the respective list.
+
+- The constituent expressions of a brace-or-equal-initializer of the form =
+initializer-clause are the constituent expressions of the initializer-clause.
+
+2.
+
+Change in 6.10.1 [intro.execution [14]] paragraph 4 as follows:
+
+A subexpression of an expression E is an immediate subexpression of E or a subexpression
+of an immediate subexpression of E. [ Note: ... -- end note ]
+
+The potentially-evaluated subexpressions of an expression, conversion, or initializer E
+are
+
+- the constituent expressions of E and
+
+- the subexpressions thereof that are not subexpressions of a nested unevaluated operand
+(7.2.3 [expr.context [15]]).
+
+3.
+
+Change in 7.7 [expr.const [16]] paragraph 16 as follows:
+
+An expression or conversion is potentially constant evaluated if it is:
+
+- ...
+
+- a [INSERT: potentially-evaluated] subexpression (6.10.1 [intro.execution [13]]) of one
+of the above[DELETE:  that is not a subexpression of a nested unevaluated operand (7.2.3
+[expr.context [15]])].
+
+4.
+
+Change in 9.3.4.7 [dcl.fct.default [4]] paragraph 5 as follows:
+
+The default argument has the same semantic constraints as the initializer in a
+declaration of a variable of the parameter type, using the copy-initialization semantics
+(9.5 [dcl.init [5]]). The names in the default argument are looked up, and the semantic
+constraints are checked, at the point where the default argument appears[INSERT: ,
+except that an immediate invocation (7.7 [expr.const [1]]) that is a
+potentially-evaluated subexpression (6.10.1 [intro.execution [13]]) of the
+initializer-clause in a parameter-declaration is neither evaluated nor checked for
+whether it is a constant expression at that point]. Name lookup and checking of semantic
+constraints for default arguments of templated functions are performed as described in
+13.9.2 [temp.inst [6]].
+
+5.
+
+Add a paragraph before 9.5.1 [dcl.init.general [17]] paragraph 17 as follows:
+
+An immediate invocation (7.7 [expr.const [1]]) that is not evaluated where it appears
+(9.3.4.7 [dcl.fct.default [10]], 11.4.1 [class.mem.general [18]]) is evaluated and
+checked for whether it is a constant expression at the point where the enclosing
+initializer is used in a function call, a constructor definition, or an aggregate
+initialization.
+
+An initializer-clause followed by an ellipsis is a pack expansion (13.7.4 [temp.variadic
+[19]]).
+
+6.
+
+Change in 11.4.1 [class.mem.general [12]] paragraph 11 as follows:
+
+A brace-or-equal-initializer for a non-static data member specifies a default member
+initializer for the member, and shall not directly or indirectly cause the implicit
+definition of a defaulted default constructor for the enclosing class or the exception
+specification of that constructor. [INSERT: An immediate invocation (7.7 [expr.const
+[1]]) that is a potentially-evaluated subexpression (6.10.1 [intro.execution [13]]) of a
+default member initializer is neither evaluated nor checked for whether it is a constant
+expression at the point where the subexpression appears.]
+
+7.
+
+Change in 13.9.2 [temp.inst [7]] paragraph 11 as follows:
+
+... The use of a template specialization in a default argument [INSERT: or default
+member initializer] shall not cause the template to be implicitly instantiated except
+[DELETE: that a class template may be instantiated] where [DELETE: its complete type is]
+needed to determine the correctness of the default argument [INSERT: or default member
+initializer]. The use of a default argument in a function call causes specializations in
+the default argument to be implicitly instantiated. [INSERT: Similarly, the use of a
+default member initializer in a constructor definition or an aggregate initialization
+causes specializations in the default member initializer to be instantiated.]
+
+Source links:
+[1] https://wg21.link/expr.const
+[2] http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2720r0.pdf#FR019-005
+[3] https://wg21.link/expr.const#14
+[4] https://wg21.link/dcl.fct.default#5
+[5] https://wg21.link/dcl.init
+[6] https://wg21.link/temp.inst
+[7] https://wg21.link/temp.inst#11
+[8] https://wg21.link/support.srcloc.cons#2
+[9] https://wg21.link/class.mem
+[10] https://wg21.link/dcl.fct.default
+[11] https://wg21.link/expr.call
+[12] https://wg21.link/class.mem.general#11
+[13] https://wg21.link/intro.execution
+[14] https://wg21.link/intro.execution#4
+[15] https://wg21.link/expr.context
+[16] https://wg21.link/expr.const#16
+[17] https://wg21.link/dcl.init.general#17
+[18] https://wg21.link/class.mem.general
+[19] https://wg21.link/temp.variadic
+[20] https://wg21.link/intro.execution#2

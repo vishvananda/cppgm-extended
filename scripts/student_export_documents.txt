@@ -78,6 +78,7 @@ doc/cwg/cwg-2356.txt
 doc/cwg/cwg-2386.txt
 doc/cwg/cwg-2476.txt
 doc/cwg/cwg-2549.txt
+doc/cwg/cwg-2631.txt
 doc/cwg/cwg-2907.txt
 doc/cwg/manifest.json
 doc/cwg/paper-p0135r1.txt
