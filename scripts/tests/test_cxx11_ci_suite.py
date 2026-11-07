@@ -23,6 +23,9 @@ pathlib.Path('working-directory.txt').write_text(str(pathlib.Path.cwd()))
 output = pathlib.Path(args[args.index('-o') + 1])
 if '-c' in args or '-emit-obj' in args:
     source = pathlib.Path(args[args.index('-o') - 1]).read_text()
+    if 'LOCATED_INTERNAL' in source:
+        print('input.C:2:80: internal compiler error: Segmentation fault', file=sys.stderr)
+        sys.exit(1)
     if 'INTERNAL' in source:
         print('internal compiler error', file=sys.stderr)
         sys.exit(70)
@@ -180,6 +183,10 @@ class Suite(unittest.TestCase):
 
     def test_internal_error_cannot_satisfy_diagnostic(self):
         self.assertEqual(self.run_one(self.case('INTERNAL', expect='diagnostic'))['status'], 'compiler-abnormal')
+
+    def test_located_internal_error_cannot_satisfy_diagnostic(self):
+        self.assertEqual(self.run_one(self.case('LOCATED_INTERNAL', expect='diagnostic'))['status'],
+                         'compiler-abnormal')
 
     def test_missing_required_diagnostic_fails(self):
         self.assertEqual(self.run_one(self.case(expect='diagnostic'))['status'], 'diagnostic-missing')

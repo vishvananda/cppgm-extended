@@ -93,6 +93,18 @@ class BoundaryTests(unittest.TestCase):
                 if index == 2:
                     self.assertEqual(result['returncode'], -signal.SIGSEGV)
 
+    def test_located_ice_and_ordinary_error_mention_are_distinct(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for index, (message, expected) in enumerate([
+                    ('input.C:2:80: internal compiler error: Segmentation fault', 'abnormal'),
+                    ('cc1plus: internal compiler error: Segmentation fault', 'abnormal'),
+                    ('input.C:2:1: error: #error internal compiler error', 'rejection')]):
+                code = 'import sys; print(' + repr(message) + ', file=sys.stderr); sys.exit(1)'
+                result, _, _ = proxy.execute([sys.executable, '-c', code], root / str(index),
+                                             self.config(root))
+                self.assertEqual(result['classification'], expected)
+
     def test_timeout_kills_descendant_process_group(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

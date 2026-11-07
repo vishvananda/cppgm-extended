@@ -24,7 +24,8 @@ STAGES = {"-c", "-S", "-E", "-fsyntax-only"}
 SOURCE_SUFFIXES = {".C", ".cc", ".cpp", ".cxx", ".c", ".i", ".ii"}
 RESOURCE_ERROR = re.compile(
     r"^(?:ERROR: )?(?:std::bad_alloc|std::bad_array_new_length|"
-    r"internal compiler error|terminate called|Assertion .* failed)", re.M | re.I)
+    r"terminate called|Assertion .* failed)|"
+    r"^(?:[^\n]*:\s*)?internal compiler error\b", re.M | re.I)
 
 
 class Blocked(ValueError):
