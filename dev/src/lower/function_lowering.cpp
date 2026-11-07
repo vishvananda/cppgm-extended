@@ -91,6 +91,8 @@ void FunctionLowering::lower_definition()
 	// An implicit (or defaulted) constructor or destructor has no body of
 	// its own: its subobject initializations or destructions are its code.
 	const syntax::FunctionBody* body = function_->body;
+	const bool inert_destructor = function_->destructor &&
+		lowering_.destructor_does_nothing(sema::ClassOf(function_->owner->entity->type));
 	// 15.5.1: a non-throwing function whose body may throw runs in a
 	// region whose handler calls std::terminate (a deleting entry calling
 	// the complete one has no code of its own: that entry has the region);
@@ -100,8 +102,8 @@ void FunctionLowering::lower_definition()
 	const sema::SemanticGraph::ThrowSpecification* specification = lowering_.host_objects()
 		? lowering_.graph().throw_specification(function_)
 		: nullptr;
-	if ((specification != nullptr || lowering_.function_nothrow(function_)) && definition_may_throw() &&
-		(!deleting_ || deleting_inlines_body(body != nullptr ? body->body->location : 0)))
+	if (!inert_destructor && (specification != nullptr || lowering_.function_nothrow(function_)) &&
+		definition_may_throw() && (!deleting_ || deleting_inlines_body(body != nullptr ? body->body->location : 0)))
 	{
 		unexpected_specification_ = specification;
 		terminate_landing_ = new_block(lowir::BlockKind::FunctionExceptionLanding);
@@ -239,9 +241,9 @@ void FunctionLowering::lower_definition()
 		body_detached_ = detached_body();
 		initialize_subobjects(location);
 	}
-	if (function_->destructor && lowering_.destructor_does_nothing(sema::ClassOf(function_->owner->entity->type)))
+	if (inert_destructor)
 	{
-		// No effect: nothing to destroy.
+		// No effect: nothing to destroy or guard against unwinding.
 		finish_body();
 		if (!lowering_.streaming())
 			builder_.finish();
