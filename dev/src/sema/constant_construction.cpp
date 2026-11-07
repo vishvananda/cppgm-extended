@@ -725,17 +725,21 @@ bool ConstantInterpreter::run_constructor(const FunctionEntity* constructor, con
 			if (!bind(*arguments[0].expr, arguments[0].conversion, constructor->type->canonical->params[0], source))
 				return false;
 		}
-		// A class containing only empty subobjects has no values to read. A variable or a
-		// by-value parameter need not itself be usable in constant expressions;
+		// A class containing only empty subobjects has no values to read.
+		// A variable or by-value parameter need not be usable in constant expressions;
 		// binding, invalid views and mutable-subobject restrictions still apply.
 		if ((source.root == RootKind::Variable || source.root == RootKind::Parameter) &&
 			(source.flags & (kPastEnd | kInvalidView | kMutableSubobject)) == 0 && (source.type->cv & kVolatile) == 0)
 		{
 			const ClassEntity* cls = ClassOf(constructor->owner->entity->type);
-			if (cls->empty || cls->subobject_values == SubobjectValues::None ||
+			if (cls->empty)
+				return true;
+			if (cls->subobject_values == SubobjectValues::None ||
 				(cls->subobject_values == SubobjectValues::Unknown &&
 					analyzer_.copied_subobject_values(cls->type) == SubobjectValues::None))
-				return true;
+				// The shared initialized shape also marks omitted empty array
+				// tails complete, without constructing their logical elements.
+				return write(target, prefix_value(cls->type, 0, true), location);
 		}
 		ConstValue value;
 		return read(source, value, location) && write(target, value, location);
