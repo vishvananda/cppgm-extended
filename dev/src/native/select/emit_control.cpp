@@ -64,7 +64,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 			prepass_block(b);
 	// Without a frame pointer (finish_frame decides it from the code: no
 	// instruction moves RSP), RBP holds values: no stack allocation, no
-	// variadic area, no i128 conversion through the stack, no call with
+	// variadic area, no i128 floating conversion through the stack, no call with
 	// a stack argument area or an over-aligned one. (A function whose
 	// calls' argument areas are all that moves RSP may drop its frame
 	// pointer too, keeping RBP unused.)
@@ -87,7 +87,10 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 		if (inst.op == Opcode::StackAlloc || inst.op == Opcode::VaStart || inst.op == Opcode::VaArg)
 			rbp_free_ = false;
 		else if (inst.op == Opcode::Convert &&
-			(inst.type.kind() == TypeKind::I128 || lowir::convert_source_type(inst).kind() == TypeKind::I128))
+			(inst.type.kind() == TypeKind::I128 || lowir::convert_source_type(inst).kind() == TypeKind::I128) &&
+			static_cast<lowir::ConvertOp>(inst.sub) != lowir::ConvertOp::SExt &&
+			static_cast<lowir::ConvertOp>(inst.sub) != lowir::ConvertOp::ZExt &&
+			static_cast<lowir::ConvertOp>(inst.sub) != lowir::ConvertOp::Trunc)
 			rbp_free_ = false;
 		else if (inst.op == Opcode::Call)
 		{

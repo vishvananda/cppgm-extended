@@ -13,6 +13,10 @@ Selection may fold operations or introduce temporaries, so LowIR liveness alone
 need not describe the selected instructions. Rewrites must keep those facts
 consistent with emission.
 
+Base frame requirements on the selected operations too. A wide integer
+conversion need not adjust the stack, while a runtime conversion may require
+it. Reserving a register unnecessarily can turn loop state into repeated spills.
+
 Begin with local improvements: identity copies, immediate operands, address
 arithmetic and jumps to the next block. Stop propagation at conflicting writes,
 unknown clobbers and exceptional boundaries. Keep meaningful debug locations
