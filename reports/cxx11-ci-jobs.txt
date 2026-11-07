@@ -53,6 +53,12 @@ C++11 rule. Compiler extensions and disputed outcomes still need standards
 triage; candidate failures are observations, not automatically compiler defects.
 Selection does not depend on whether cppgm passes. Coverage expansion remains.
 
+Later reviewed disposition: pr30559.cpp's unused template has no possible
+valid specialization (function returning a function), so N3485 14.6p8 permits
+diagnosis. Its source-pinned exclusion reduces the current Clang cohort to 60;
+the original 61-case observations below remain intact. Its independent valid
+trailing-return example needs separate coverage; exclusion is not a pass.
+
 Local result, compiler implementation 18c450526e
 Binary SHA256: 578195b9fbd3ccdd3321311d43fa8e0e7fdedd456300a6b694b4628f56b55f4d
 
@@ -81,3 +87,19 @@ normal frozen compile/self-compile checks; rerun these unchanged manifests;
 deduplicate/adjudicate failures and expand coverage. The custom calibration/RSS
 queue stays retired. Public runtime/codegen regression investigation stays out
 of scope at the user's request.
+
+First integrated repair: CXX11-008
+
+The throw implicit-move repair and 45 PA21 controls now pass fresh strict 8,207,
+owning suite, debug, self-host PA5, all required audits, export and 42 wrappers.
+Normal PA35 frozen perf counters (three repeats) give before/after instruction
+ratios 1.000002 at O0 and 1.000007 at O3; both objects are identical. PA35 quick
+passes, including self/seed ratios 0.992205/1.024927, behavior and kernels. These
+are Linux normal workflow results; no macOS-only memory gate pass is claimed.
+
+Rerunning both jobs with the integrated compiler preserves every GCC outcome
+(3,644/4,114), and fixes original Clang P1155. Current Clang is 54/60 (90%) after
+the independently justified IFNDR disposition; upstream is 60/60. Six remaining
+Clang inputs are rejection candidates, one now reduced and confirmed as 047.
+Latest results: gcc-ci-run-008-v1/ and ci-first-clang-v1/run-008-v2/ under the
+same evidence root. These failed-suite timing ratios remain non-comparable.

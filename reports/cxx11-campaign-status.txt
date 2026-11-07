@@ -32,10 +32,23 @@ exercised. GCC: 3,644/4,114 candidate configurations pass (88.58%), upstream 4,1
 Clang: 53/61 candidate checks pass (86.89%), upstream 61/61. These are declared
 subsets, not whole-suite percentages or deduplicated defect counts. Failed-suite
 timing ratios are explicitly non-comparable. See reports/cxx11-ci-jobs.txt.
-008's existing throw implicit-move repair and 45 PA21 controls are on this branch;
-fresh integrated correctness/normal perf checks are in progress. Other isolated
-repairs still need integration. The separate public-runtime investigation
-remains out of scope at the user's request.
+008 is now closed: its integrated repair and 45 PA21 controls pass 8,207 strict
+tests, PA21, debug-info, self-host through PA5, architecture/file/placement audits,
+student export and 42 reference wrappers. Normal frozen instructions change
++0.000221% at O0 and +0.000749% at O3, with identical objects. PA35 quick passes.
+The macOS-only memory validator is not claimed on Linux. Evidence:
+  /mnt/vizier/cppgm-cxx11-upstream/ci-first-008-integration-v1.json
+
+Current manifests: GCC still 3,644/4,114; Clang now 54/60 (90%), upstream all pass.
+P1155 is repaired. The pr30559 positive expectation is explicitly excluded as
+IFNDR with a source-pinned clause review; its original 61-case evidence remains.
+There are six remaining Clang rejection candidates. Qualified scalar
+pseudo-destructor gap 047 is confirmed by reduced PA11 controls and is being
+repaired by the Clang agent. The other five need reductions/deduplication.
+Fourteen earlier isolated repairs still need integration; 021 and 019 are staged
+together with 008 in /mnt/vizier/cppgm-cxx11-integrated-next, with normal per-fix
+frozen counters and combined checks underway. Public runtime regression
+investigation remains out of scope at the user's request.
 
 Historical checkpoint before user realignment (2026-11-07)
 

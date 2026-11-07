@@ -1544,7 +1544,7 @@
   {
     "id": "CXX11-008",
     "priority": "P1",
-    "status": "correctness-passed",
+    "status": "closed",
     "upstream": [
       "llvm-project/clang/test/SemaCXX/P1155.cpp"
     ],
@@ -1607,13 +1607,16 @@
       "normal_stages": 15,
       "export_stages": 48,
       "packaged_controls": 45,
-      "wrappers": 42
+      "wrappers": 42,
+      "integrated_verification": "/mnt/vizier/cppgm-cxx11-upstream/ci-first-008-integration-v1.json"
     },
     "performance": {
-      "status": "pending-actual-parent-measurement",
+      "status": "passed-normal-Linux-frozen-and-self-compile-checks",
       "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-preparation-v1.json",
       "frozen_feature_inputs": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/performance-inputs-v1/protocol.json",
-      "correctness_preflight": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/performance-input-preflight-v1/verification-v2.json"
+      "correctness_preflight": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/performance-input-preflight-v1/verification-v2.json",
+      "historical_status": "pending-actual-parent-measurement",
+      "normal_gate_evidence": "/mnt/vizier/cppgm-cxx11-upstream/ci-first-008-integration-v1.json"
     },
     "standards_basis": {
       "category": "later-defect-resolution",
@@ -1628,7 +1631,7 @@
       "scope_wording": "https://cplusplus.github.io/CWG/issues/2549.html",
       "scope_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/standards-cwg2549-v1/manifest.json"
     },
-    "triage_note": "45 required PA21 controls and originalClangP1155 verified acrossISO/GNU11/14/17,O0/O2. CWG2549 final approved wording,adoptedFeb2025 asDR,governs scope boundaries; superseded proposals do not. Optional Clang warnings replayed and excluded as language diagnoses. Isolated branch based on rebased campaign; performance and integration remain pending.",
+    "triage_note": "Integrated with 45 required PA21 controls; original Clang P1155 now passes. Fresh 8,207 strict tests, PA21, debug, self-host through PA5, architecture/file/placement audits, student export and 42 wrappers pass. Normal frozen instruction counters change +0.000221% at O0 and +0.000749% at O3 with identical objects. PA35 quick self/seed ratios are 0.992205/1.024927; behavior and kernels pass. Historical custom measurement requirements are retired. The macOS-only memory gate is not claimed on Linux.",
     "rebased_checkpoint": {
       "active_worktree": "/mnt/vizier/cppgm-cxx11-throw-implicit-move-rebased",
       "active_branch": "repair/cxx11-throw-implicit-move-rebased",
@@ -1638,7 +1641,8 @@
       "focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-candidate-v1/focused/assessment.json",
       "normal_export": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-008/rebased-checks-v1",
       "functional_status": "184focusedcells/45lanes-pass;strict8207,owning+optional+debug+selfhost+inception-pass;remainingaudits/export-running"
-    }
+    },
+    "integrated_revision": "66627d3384d70195425a598c39b4b0d894d42641"
   },
   {
     "id": "CXX11-009",
@@ -4451,5 +4455,48 @@
     },
     "scope": "OwnsyntheticLinuxchild disablesdumping withPR_SET_DUMPABLE0 beforeSIGSEGV. Productionproxyandresource/time/classificationlimitsunchanged;excludedcompiler-languagegapcount.",
     "fix_revision": "4c5d50326"
+  },
+  {
+    "id": "CXX11-047",
+    "priority": "P1",
+    "status": "regression-confirmed-fix-in-progress",
+    "upstream": [
+      "llvm-project/clang/test/CXX/basic/basic.lookup/basic.lookup.qual/p6-0x.cpp"
+    ],
+    "symptom": "Valid qualified scalar pseudo-destructor calls are rejected as though every qualified destructor required a complete class object.",
+    "owning_pa": 11,
+    "handout": "pa11/README.md: scalar/class pseudo-destructors; cluster300 qualified lookup",
+    "regressions": [
+      "pa11/tests/controls/300-qualified-scalar-pseudo-class-alias.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-class-distinct-alias.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-class-mismatch-neighbor-bad.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-class-neighbor.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-context-alias.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-cv-alias.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-dot-alias.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-global-alias.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-last-type-mismatch-bad.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-namespace-alias.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-object-mismatch-bad.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-private-last-type-bad.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-private-qualifier-bad.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-qualifier-mismatch-bad.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-unknown-last-type-bad.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-unqualified-neighbor.t"
+    ],
+    "regression_revision": "df0a94070",
+    "worktree": "/mnt/vizier/cppgm-clang-qualified-scalar-pseudo-destructor",
+    "branch": "repair/cxx11-qualified-scalar-pseudo-destructor",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-047",
+    "parent_reproduction": {
+      "parent_sha256": "632e77f07d5a3a4cebfd4a7d53ffaf2f31dcd0511667345280a8d1cf399863da",
+      "cells": 192,
+      "gcc_passed": 64,
+      "clang_passed": 64,
+      "parent_passed": 36,
+      "parent_wrong_rejections": 28,
+      "scope": "16 controls in ISO/GNU C++11 at O0/O2; seven valid qualified-scalar forms fail in four configurations each; two valid neighbors and seven invalid controls pass"
+    },
+    "triage_note": "Confirmed independently of diagnostic parity. Five other Clang rejection candidates remain pending reductions and root-cause deduplication; pr30559 is separately source-pinned IFNDR."
   }
 ]
