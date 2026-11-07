@@ -4897,7 +4897,7 @@
   {
     "id": "CXX11-051",
     "priority": "P1",
-    "status": "fix-validated-awaiting-integration",
+    "status": "closed",
     "compiler_language_gap": true,
     "upstream": [
       "llvm-project/clang/test/CXX/temp/temp.fct.spec/temp.arg.explicit/p9-0x.cpp"
@@ -4915,12 +4915,24 @@
       "parent_proof": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-051/parent-proof-verification-v1.json"
     },
     "triage_note": "All isolated correctness/audit/export and normal frozen/self-compile gates pass. Immutable branch held; actual-parent integrated validation remains required.",
-    "fix_revision": "61bc504933e6a184e9004c5917bf2c46e14029da"
+    "fix_revision": "61bc504933e6a184e9004c5917bf2c46e14029da",
+    "integrated_fix_revision": "6ddecb14c",
+    "integrated_fixture_revision": "72a9c9c63",
+    "actual_parent_reproduction": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-051-parent-v1/receipt.json",
+    "integrated_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-051-frozen-perf-v1/summary.tsv",
+    "integration": {
+      "source_revision": "48cd51fa7",
+      "strict": 8627,
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-051052055-acceptance-v1.json",
+      "per_fix_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-051-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "normal_and_export": "All required normal checks,42harness suites643cases,fresh reference/export checks,20focused controls and42wrappers pass."
+    }
   },
   {
     "id": "CXX11-052",
     "priority": "P0",
-    "status": "crash-confirmed-reduction-complete",
+    "status": "closed",
     "compiler_language_gap": true,
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/defaulted43.C"
@@ -4930,10 +4942,120 @@
     "handout": "pa21/README.md; provisional exception/lowering ownership, fixture placement still to verify",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-052",
     "checks": {
-      "ci": "/mnt/vizier/cppgm-cxx11-upstream/gcc-ci-run-integrated-048049-v1/results.json",
-      "backtrace": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-052/original-gdb.log",
-      "reductions": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-052/reductions-v1/results.json"
+      "parent_owning": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-052/parent-owning-v1.log",
+      "candidate_owning": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-052/candidate-owning-v1.log",
+      "affected_suite": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-052/affected-pa21-v1.log",
+      "native44": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-052/native-proof-v2/results.json",
+      "strict8627": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-051052055-strict-v1.log",
+      "normal": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-051052-checks-v1/stages.json",
+      "per_fix_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-052-frozen-perf-v1/summary.tsv"
     },
-    "triage_note": "Out-of-line and inline noexcept(true) destructor reductions crash; noexcept(false) destructor and constructor neighbors do not. GCC15 accepts all six reductions under pedantic-errors. Emitted LowIR has eh_try targeting absent function_exception_landing_1 after empty member destruction is elided. Fix and required owning-PA regression pending."
+    "triage_note": "Reuse existing typed inert-destructor fact before opening a guard; no guard is emitted when destruction was already known to have no effect. Five parent owning failures become passes; five live-neighbor controls retain cleanup/propagation/termination. Full declared GCC run has no compiler-abnormal outcomes. Student export acceptance pending.",
+    "fix_revision": "48cd51fa7",
+    "regression_revision": "961c44011",
+    "regressions": [
+      "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-array.t",
+      "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-base.t",
+      "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-constructor-neighbor.t",
+      "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-dynamic-spec.t",
+      "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-effectful.t",
+      "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-inline.t",
+      "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-out-of-line.t",
+      "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-potentially-throwing.t",
+      "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-propagate.t",
+      "pa21/tests/controls/100-defaulted-noexcept-inert-destructor-terminate.t"
+    ],
+    "integration": {
+      "source_revision": "48cd51fa7",
+      "strict": 8627,
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-051052055-acceptance-v1.json",
+      "per_fix_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-052-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "normal_and_export": "All required normal checks,42harness suites643cases,fresh reference/export checks,20focused controls and42wrappers pass."
+    }
+  },
+  {
+    "id": "CXX11-053",
+    "priority": "P1",
+    "status": "isolated-fix-in-validation",
+    "compiler_language_gap": true,
+    "upstream": [
+      "llvm-project/clang/test/SemaCXX/builtin-ptrtomember-overload.cpp"
+    ],
+    "symptom": "Missing built-in operator ->* candidates when class operands convert to object pointer and/or member pointer.",
+    "owning_pa": 22,
+    "handout": "pa22/README.md; required cluster300",
+    "fix_revision": "71e4d0f12",
+    "worktree": "/mnt/vizier/cppgm-clang-member-pointer-conversions",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-053",
+    "initial_proof": "/mnt/vizier/cppgm-cxx11-upstream/clang-member-pointer-triage-v1/initial-proof-v1/results.json",
+    "triage_note": "Independent Clang-agent repair and actual-parent normal frozen gate pass; combined full/export checks active. Campaign-root integration pending."
+  },
+  {
+    "id": "CXX11-054",
+    "priority": "P1",
+    "status": "isolated-fix-in-validation",
+    "compiler_language_gap": true,
+    "upstream": [
+      "llvm-project/clang/test/SemaCXX/ptrtomember-overload-resolution.cpp"
+    ],
+    "symptom": "Second standard-conversion ranking ignores conversion-function source member-pointer owners; causes wrong rejection, wrong code and missing ambiguity.",
+    "owning_pa": 22,
+    "handout": "pa22/README.md; required cluster300",
+    "fix_revision": "6ab7c72a7",
+    "worktree": "/mnt/vizier/cppgm-clang-member-pointer-source-ranking",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-054",
+    "initial_proof": "/mnt/vizier/cppgm-cxx11-upstream/clang-member-pointer-triage-v1/initial-proof-v1/results.json",
+    "triage_note": "Independent Clang-agent repair and actual-parent normal frozen gate pass; combined full/export checks active. Campaign-root integration pending."
+  },
+  {
+    "id": "CXX11-055",
+    "kind": "standards-oracle-review",
+    "compiler_language_gap": false,
+    "status": "closed",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/enum_base_warn.C"
+    ],
+    "symptom": "Upstream run test relies on dead-call optimization to link despite missing odr-used function definition.",
+    "standards_basis": "N3485 3.2p2-p4: ordinary if branches are potentially evaluated; link_error is odr-used and lacks the required definition, no diagnostic required.",
+    "regressions": [
+      "pa10/tests/controls/200-fixed-enum-negative-range.t"
+    ],
+    "fix_revision": "f70b71d4e",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-055",
+    "checks": {
+      "standards_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-055/standards-review-v1.json",
+      "owning": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-055/owning-v1.log",
+      "native6": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-055/native-v1/results.json",
+      "placement": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-055/placement-v1.log",
+      "export_owning": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-055/export-owning-v1.log",
+      "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-051052055-acceptance-v1.json"
+    },
+    "disposition": "Hash-pinned whole-source IFNDR exclusion, not a compiler pass. Independent range behavior retained with helper defined; no optimizer parity required. GCC manifestv6 retains4112configs/706exclusions; original4114results retained."
+  },
+  {
+    "id": "CXX11-056",
+    "priority": "P1",
+    "status": "isolated-fix-in-validation",
+    "compiler_language_gap": true,
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/alignas7.C"
+    ],
+    "symptom": "Standard alignas on enum declarations is silently ignored, including leading specifiers on lone declarations.",
+    "owning_pa": 6,
+    "handout": "pa6/README.md; required spec cluster200; dependent instantiated member neighbor PA15:100",
+    "standards_basis": {
+      "original": "N3485 7.6.2p1 permits alignment on enumeration declarations.",
+      "later_adopted_DR": "CWG2354 accepted February2019 removes this permission; explicitly requested later-CWG scope.",
+      "primary": "https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#2354"
+    },
+    "worktree": "/mnt/vizier/cppgm-cxx11-enum-alignas",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-056",
+    "checks": {
+      "initial_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-056/initial-review-v1.json",
+      "native45": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-056/focused-native-v3/results.json",
+      "initial_parser_filter_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-056/prototype-correction-v1.json"
+    },
+    "triage_note": "Parser retains existing typed Alignas attributes at enum heads and leading lone enum declarations; semantic enum applicability rejects standard alignas, leaving variable/class and vendor attribute behavior intact. Fifteen required controls. Final checks/performance for leading-prefix extension pending."
   }
 ]

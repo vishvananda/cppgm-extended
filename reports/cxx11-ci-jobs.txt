@@ -137,3 +137,26 @@ warning and cppgm's rejection are both valid diagnostics in C++11. The override
 is hash-pinned, cannot waive unknown dependencies/runtime obligations, and is
 covered by three additional harness tests. Original v4 outcomes are retained;
 this correction is not a compiler regression or a dropped test.
+
+Accepted integration051/052 and oracle055, source48cd51fa7
+
+Required strict8,627,harness42/643,modern/debug,selfhost/inception,all audits,
+placement,quick/smoke and fresh export/reference checks pass. GCC manifest-v6
+selects4,112configurations with706source exclusions:3,672pass(89.30%),upstream
+4,112/4,112. No compiler-abnormal or link-failed outcomes remain. The440failed
+configurations still require triage;they are not a distinct defect count.
+Clang remains59positive checks:57pass(96.61%),upstream59/59. Explicit-pack p9
+now passes;two member-pointer inputs remain until053/054integration.
+
+The two GCC configurations removed by055 are source-pinned IFNDR,not passes:
+N3485 3.2p2-p4requires a definition of odr-used link_error even in an ordinary
+if with a provably false condition. Preserve range correctness independently
+in PA10:200 with the helper defined. Native GCC/Clang/cppgmO0/O2 and the
+exported regression pass. Original4,114case results remain available.
+
+GCC elapsed27.690/67.764seconds(ratio0.409);Clang0.365/1.688(ratio0.216).
+Ratios remain NON-COMPARABLE because cppgm fails selected cases. Evidence:
+  gcc-ci-run-integrated-051052055-v1/
+  ci-first-clang-v1/run-integrated-051052-v1/
+  ci-next-051052055-acceptance-v1.json
+Final campaign PA35release check and coverage expansion remain pending.

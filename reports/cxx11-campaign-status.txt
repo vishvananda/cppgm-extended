@@ -23,58 +23,58 @@ marking the interrupted observation unusable as uninterrupted measurement:
   /mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/remaining-029-performance-v2/user-realignment-retirement-v1.json
 The old generated running-state files do not authorize queue resumption.
 
-The fifteen prepared repairs are now staged together with the additional
-qualified scalar pseudo-destructor (047), injected class-name member (048) and
-late constructor diagnostic (049) fixes in cppgm-cxx11-integrated-next, source
-0f572a156. Combined normal/export checks pass; these repairs are accepted for campaign-root integration. The final campaign PA35 release check remains pending.
-All 8,606 combined strict tests pass. Each compiler repair has its owning-PA
-regressions and a passing normal frozen counter comparison with identical
-objects. Combined modern, debug, selfhost PA5, inception, audits, placement,
-harness (42 suites/643 cases), quick, smoke and export/reference checks pass. This is integration progress,
-not a claim that the entire external campaign is complete.
+The fifteen prepared repairs plus047/048/049/051/052 now pass their normal
+integration gates. The accepted source48cd51fa7 fixes explicit pack-prefix
+extension and the defaulted noexcept destructor CFG crash. The current batch
+also retains055's valid enum range behavior without requiring optimization of
+an ill-formed upstream program. All8,627strict tests pass,with42harness suites
+(643cases),modern/debug,selfhostPA5,inception,all9audits,file/placement,normal
+quick/smoke,fresh export/reference checks,21focused exported controls and42
+reference wrappers. Final campaign release checking remains pending.
 
-Current declared results on that immutable combined compiler:
-  GCC:   3,670/4,114 (89.21%); upstream 4,114/4,114.
-  Clang:    56/59    (94.92%); upstream    59/59.
-GCC has 242 compile failures, 198 missing required diagnostics, two compiler
-abnormal outcomes and two link failures. These are 444 failed configurations,
-not 444 distinct defects. Clang has three rejected inputs: explicit pack-prefix
-extension (051, validated isolated; integration pending) and two member-pointer conversion/overload
-inputs awaiting reductions. Neither rate describes the whole upstream suite.
+Declared current subset results on the immutable accepted compiler:
+  GCC:   3,672/4,112 (89.30%); upstream4,112/4,112.
+  Clang:    57/59    (96.61%); upstream59/59.
+GCC has242compile failures and198missing required diagnostics. There are zero
+compiler-abnormal or link-failed outcomes in this declared manifest. These440
+failed configurations still require language triage/root-cause deduplication;
+they are not440known distinct defects. The two remaining Clang inputs are
+member-pointer operator candidates (053) and second conversion ranking (054).
+Both isolated repairs pass combined normal checks;export/integration is pending.
+Neither rate describes a complete upstream suite.
 
-The Clang cohort has two explicit hash-pinned dispositions: pr30559 is IFNDR;
-deduction.cpp's mixed-type non-type matching is unresolved CWG1647 (050), not
-a confirmed compiler defect. Their independently valid slices remain required
-PA20/PA17 controls. Exclusions are not passes; original 61-case evidence remains.
+GCC manifest-v6 removes enum_base_warn.C's two configurations as an explicit
+hash-pinned IFNDR disposition (055). Its undefined link_error is odr-used even
+inside a provably false ordinary if;GCC's linking relies on dead-call deletion.
+The defined-helper version remains a required PA10:200 control and passes both
+hosts and cppgm atO0/O2. Original4,114-case observations remain intact;exclusions
+are not passes. The earlier gen-attrs-66 required-diagnostic correction remains.
+Clang's two hash-pinned dispositions remain pr30559(IFNDR) and deduction.cpp's
+unresolvedCWG1647;independently valid slices remain required PA20/PA17 controls.
 
-Both CI jobs run matching upstream suites and retain times and ratios. This
-combined run records GCC 27.750/65.724 seconds (ratio 0.422) and Clang 0.375/2.106
-seconds (ratio0.178). Both ratios are explicitly NON-COMPARABLE because cppgm
-still fails cases. No GitHub-hosted execution is claimed.
+A further adopted-DR repair is isolated as056: CWG2354 disallows enum alignas.
+Fifteen PA6/PA15 regressions cover enum heads,leading lone declarations,dependent
+members,and valid class/variable neighbors. Typed parser retention and semantic
+applicability checks pass45native correctness cells;final integration remains.
+The Clang agent will expand explicit-C++11 negative correctness coverage next,
+starting with two already-adjudicated syntax-only cases;diagnostic text/count
+parity remains excluded. Existing59positive IDs will be retained.
 
-The requested lookup optimization is committed as2c98d64c4. It reduces the
-reported +0.411%/+0.134% cumulative O0/O3 instruction cost to +0.199%/+0.064%.
-With all later staged repairs the cumulative change is +0.255%/+0.078%, below
-the normal 0.5% instruction limit, with identical objects. See
-reports/cxx11-default-lookup-performance.txt. No new calibration campaign or
-macOS-only memory gate pass is claimed on Linux.
+Current full-suite timing observations:GCC27.690/67.764seconds(ratio0.409),
+Clang0.365/1.688seconds(ratio0.216). Both ratios are NON-COMPARABLE because cppgm
+still fails selected cases. No GitHub-hosted execution is claimed.
+
+Normal cumulative frozen compile cost is+0.2696%O0/+0.0905%O3,below the normal
+0.5%instruction limit,with identical objects. Quick self/seed ratios are
+0.993409/1.025331;objects identical,behavior failures zero,kernel ratios<1.3.
+No custom calibration or macOS-only memory gate pass is claimed on Linux.
 
 Evidence under /mnt/vizier/cppgm-cxx11-upstream:
-  ci-next-048049-candidate-v1/manifest.json
-  ci-next-048049-strict-v1.log; ci-next-combined-acceptance-v1.json
-  ci-next-combined-checks-v1/ and v2/; ci-next-combined-export-v2/ and v3/
-  ci-next-048049-cumulative-perf-v1/summary.tsv
-  gcc-ci-manifest-v5.json; gcc-ci-run-integrated-048049-v2/
-  ci-first-clang-v1/manifest-v5.json; run-integrated-048049-v1/
-  ci-next-integration-journal-v1.json
-GCC gen-attrs-66 is retained as a source-pinned required-diagnostic case: it
-uses C++17 attribute using-prefix syntax in C++11. GCC warns and accepts;
-cppgm diagnoses and rejects. Both satisfy the language rule. The v4 manifest's
-positive expectation was an oracle error; v5 changes only these two expectations,
-retaining all 4,114 cases and 705 exclusions. Original outcomes remain available.
-Crash052 is reduced to defaulted noexcept(true) destructors: an emitted eh_try
-points to an absent landing block. Constructor and noexcept(false) neighbors
-compile. The required PA regression and lowering fix remain pending.
+  ci-next-051052055-acceptance-v1.json;ci-next-051052055-strict-v1.log
+  ci-next-051052-checks-v1/;ci-next-051052-export-v1/
+  ci-next-051052-cumulative-perf-v1/summary.tsv
+  gcc-ci-manifest-v6.json;gcc-ci-run-integrated-051052055-v1/
+  ci-first-clang-v1/manifest-v5.json;run-integrated-051052-v1/
 Public runtime/codegen regression investigation remains assigned elsewhere.
 
 Historical checkpoint before user realignment (2026-11-07)
