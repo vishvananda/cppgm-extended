@@ -539,11 +539,25 @@ void Analyzer::local_name(const syntax::Expr& expr, ExprFacts* facts, const Enti
 	if (variable != nullptr && (variable->is_extern || variable->is_thread_local))
 		return;
 	Constant value;
+	const ConstValue* scalar = nullptr;
 	if (variable != nullptr && (facts->type->cv & kConst) != 0 && IsIntegralOrUnscopedEnum(facts->type) &&
 		constant_value(expr, scope, value, false))
 	{
 		facts->flags |= kStaticConstant;
 		facts->value = value.bits;
+	}
+	else if (variable != nullptr && variable->is_constexpr && IsScalar(variable->type) &&
+		(facts->type->cv & kVolatile) == 0 && (scalar = variable_value(variable)) != nullptr)
+	{
+		// 3.2p3: reading any constexpr scalar's value is no odr-use. Its
+		// typed value is already published on the variable; unlike the
+		// integral shortcut above, pointers and floating values need that
+		// value's kind and address identity rather than only its bits.
+		if (scalar->kind == ValueKind::Integer && HeldAsConstant(*scalar))
+		{
+			facts->flags |= kStaticConstant;
+			facts->value = scalar->bits;
+		}
 	}
 	else if (!capture_variable(entity, expr.location))
 		error(expr.location, "a local class odr-uses an automatic variable of an enclosing function (9.8p1)");
@@ -635,9 +649,13 @@ void Analyzer::odr_use_constant_operand(const syntax::Expr& expr)
 		return;
 	}
 	const Entity* entity = facts->entity;
-	if (e->kind != syntax::ExprKind::Id || (facts->flags & kStaticConstant) == 0 || entity == nullptr ||
-		entity->kind != EntityKind::Variable || entity->owner == nullptr ||
+	if (e->kind != syntax::ExprKind::Id || entity == nullptr || entity->kind != EntityKind::Variable ||
+		entity->owner == nullptr ||
 		(entity->owner->kind != ScopeKind::Block && entity->owner->kind != ScopeKind::Function))
+		return;
+	const VariableEntity* variable = static_cast<const VariableEntity*>(entity);
+	if ((facts->flags & kStaticConstant) == 0 &&
+		!(variable->is_constexpr && IsScalar(variable->type) && (facts->type->cv & kVolatile) == 0))
 		return;
 	if (!capture_variable(entity, e->location))
 		error(e->location, "a local class odr-uses an automatic variable of an enclosing function (9.8p1)");

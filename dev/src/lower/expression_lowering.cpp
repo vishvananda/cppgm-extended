@@ -370,9 +370,8 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 		// values, not their addresses.
 		if (e->kind == syntax::ExprKind::Conditional)
 			return conditional_value(static_cast<const syntax::ConditionalExpr&>(*e));
-		// A constexpr pointer's value is its evaluated address constant or
-		// null, and a constexpr static data member's floating value or
-		// pointer to member its evaluated value: reading either is no
+		// A constexpr scalar's value is its evaluated address constant,
+		// null, floating value or pointer to member: reading it is no
 		// odr-use (3.2p2), so the
 		// program need not define a member (as 9.4.2p3 reads an integral
 		// one); a member access's object expression is still evaluated. A
@@ -407,14 +406,14 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 				return pointer;
 			}
 		}
-		if (static_member && evaluated->kind == sema::ValueKind::Floating && storage.is_float())
+		if (evaluated->kind == sema::ValueKind::Floating && storage.is_float())
 		{
 			if (e->kind == syntax::ExprKind::Member)
 				member_object(static_cast<const syntax::MemberExpr&>(*e));
 			return floating(storage, lowir::float_literal(storage.kind(), evaluated->floating));
 		}
-		// So is a constexpr static data member's pointer to member.
-		if (static_member && evaluated->kind == sema::ValueKind::MemberPointer)
+		// So is a constexpr scalar's pointer to member.
+		if (evaluated->kind == sema::ValueKind::MemberPointer)
 		{
 			if (e->kind == syntax::ExprKind::Member)
 				member_object(static_cast<const syntax::MemberExpr&>(*e));
