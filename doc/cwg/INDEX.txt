@@ -225,6 +225,9 @@ P0527R1 | paper-p0527r1.txt
   https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0527r1.html
 P0588R1 | paper-p0588r1.txt
   https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0588r1.html
+  Adoption: Defect Report, November 2017, N4709 CWG motion 4.
+  https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4709.pdf
+  Issue snapshots retain their original October 2017 date label.
 P1099R5 | paper-p1099r5.txt
   https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1099r5.html
 P1155R3 | paper-p1155r3.txt

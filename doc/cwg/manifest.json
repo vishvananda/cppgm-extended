@@ -1119,7 +1119,14 @@
       "file": "paper-p0588r1.txt",
       "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0588r1.html",
       "source_html_sha256": "7dcba6106c5a2a9aa3466e54ca7846e8af04d907598a8693d03d6442457fcbfa",
-      "text_sha256": "3515ad51659c192e5445f149318d169dbb472a5fa8bb0fafdbe8c882b1cc2e9e"
+      "text_sha256": "3515ad51659c192e5445f149318d169dbb472a5fa8bb0fafdbe8c882b1cc2e9e",
+      "adoption_evidence": {
+        "document": "N4709",
+        "motion": "CWG motion 4",
+        "meeting": "November 2017 Albuquerque",
+        "kind": "Defect Report",
+        "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4709.pdf"
+      }
     },
     {
       "paper": "P1099R5",
