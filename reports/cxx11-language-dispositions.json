@@ -205,5 +205,11 @@
     "reason": "Native token-kind proof finds one _Generic token, entirely inside a balanced clang::annotate argument sequence, with no _Generic use outside attributes. N3485 7.6.1 balanced-token grammar does not require these tokens to be C++expressions; p5 gives vendor attribute behavior implementation-defined. The strict failure is Clang-specific C11processing inside its recognized attribute, not independent core invalidity. Qualify ordinary C++11object acceptance only; all original annotation metadata/FileCheck effects remain unmet.",
     "sha256": "443e3dab6c5943d95e359921e872abace5a69106c33a96bf288459f060f174ce",
     "issue": "CXX11-067"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing12.C": {
+    "status": "required-diagnostic",
+    "issue": "CXX11-070",
+    "sha256": "5948f29382267bce06e8719e8e675110eca7300bcf357ec1187c4ee459086b26",
+    "reason": "N3485 8.5.4p3/p7: list-initializing bool/char/char16_t/char32_t constructor arguments from nonconstant double requires forbidden narrowing. GCC dg-warning severity does not make the translation unit a valid-positive oracle. Any ordinary compiler diagnostic satisfies the required obligation;cppgm already diagnoses it."
   }
 }
