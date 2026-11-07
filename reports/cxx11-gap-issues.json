@@ -5515,22 +5515,25 @@
   {
     "id": "CXX11-078",
     "compiler_language_gap": true,
-    "status": "isolated-normal-validated-export-pending",
+    "status": "fixed-integrated-normal-validated",
     "symptom": "For initializer accepts block declarations outside simple-declaration grammar: static_assert, using declarations/directives and aliases; syntax mode also accepts a function definition",
     "owning_pa": "PA5:100 parser grammar",
     "standards_basis": "N3485 6.5 iteration-statement grammar and shared/source.gram for-init-statement",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-078",
-    "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-078/functional-verification-v1.json",
+    "checks": "Seven PA5 regressions, parent14/40 versus candidate40/40 focused and native32/32 each; all13normal stages pass8,907strict,42harness suites/667cases, fresh export7controls/42wrappers. Integrated compiler and dev/scripts/shared/pa* tree match the tested epoch exactly.",
     "fixture_revision": "53f69d582",
     "fix_revision": "9d4474c94",
-    "triage_note": "Seven required PA5 fixtures. Parent14/40 versus candidate40/40 focused; GCC32/32 and Clang32/32. Parent2/7 owning; affected PA5 289/289, PA7 247/247. Normal actual-parent1.000041/1.000010 and exact objects. Full normal running on isolated exact compiler; export/integration pending. Full13-stage normal passes8,907strict; source-pinned Clang671/693 and GCC3696/4112. Fresh export running; integrated exact-binary check pending."
+    "triage_note": "Normal actual-parent1.000041/1.000010 with exact objects, quick/self-compile pass. Campaign1.005128/1.001750 retained as data. Clang671/693, GCC3696/4112; original unsupported emit-mode -O producer failure remains archived separately.",
+    "historical_status": "isolated-normal-validated-export-pending",
+    "integrated_revision": "8ab4e928e61f3f72bc43129dbda5382b7f5d04e0",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-078-acceptance-v1.json"
   },
   {
     "id": "CXX11-080",
     "compiler_language_gap": true,
     "status": "repair-in-validation",
     "symptom": "Local and nested local classes silently accept static data members, including const/constexpr and instantiated template contexts",
-    "owning_pa": "PA11:100; PA14:300 instantiation; PA16:300 static-local valid neighbor",
+    "owning_pa": "PA11:100; PA12:300 union; PA14:300 instantiation; PA15:100 constexpr; PA16:300 static-local neighbor",
     "standards_basis": "N3485 9.8p3,p4",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-080",
     "fixture_revisions": [
@@ -5538,6 +5541,6 @@
       "20ce59c67"
     ],
     "fix_revision": "748e24608",
-    "checks": "11 required controls: parent20/44 focused, GCC44/44, Clang44/44, candidate44/44. Affected/file/format/scoped placement and actual-parent perf running. No integration or closure claim."
+    "checks": "11required controls,candidate44/44,GCC44/44,Clang44/44,parent20/44. Affected PA11/12/14/15/16 and format/file pass; placement identified two owning-fixture corrections now moved byte-for-byte and scoped audit passes. Normal actual-parent1.000014/1.000012 with exact objects. Fullnormal/export/integration pending."
   }
 ]
