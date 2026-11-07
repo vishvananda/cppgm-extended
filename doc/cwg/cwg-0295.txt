@@ -1,0 +1,133 @@
+CWG 295: cv-qualifiers on function types
+Source: https://cplusplus.github.io/CWG/issues/295.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD1
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+295. cv-qualifiers on function types
+Section: 9.3.4.6 [dcl.fct [1]] Status: CD1 Submitter: Nathan Sidwell Date: 29 Jun 2001
+
+[Moved to DR at October 2002 meeting.]
+
+This concerns the inconsistent treatment of cv qualifiers on reference types and
+function types. The problem originated with GCC bug report c++/2810. The bug report is
+available at  http://gcc.gnu.org/cgi-bin/gnatsweb.pl?cmd=view&pr=2810&database=gcc  [2]
+
+9.3.4.3 [dcl.ref [3]] describes references. Of interest is the statement (my emphasis)
+
+Cv-qualified references are ill-formed except when the cv-qualifiers are introduced
+through the use of a typedef or of a template type argument, in which case the
+cv-qualifiers are ignored.
+
+Though it is strange to ignore 'volatile' here, that is not the point of this defect
+report. 9.3.4.6 [dcl.fct [1]] describes function types. Paragraph 4 states,
+
+In fact, if at any time in the determination of a type a cv-qualified function type is
+formed, the program is ill-formed.
+
+No allowance for typedefs or template type parameters is made here, which is
+inconsistent with the equivalent reference case.
+
+The GCC bug report was template code which attempted to do,
+
+
+    template <typename T> void foo (T const &);
+    void baz ();
+    ...
+    foo (baz);
+
+
+in the instantiation of foo, T is `void ()' and an attempt is made to const qualify
+that, which is ill-formed. This is a surprise.
+
+Suggested resolution:
+
+Replace the quoted sentence from paragraph 4 in 9.3.4.6 [dcl.fct [1]] with
+
+cv-qualified functions are ill-formed, except when the cv-qualifiers are introduced
+through the use of a typedef or of a template type argument, in which case the
+cv-qualifiers are ignored.
+
+Adjust the example following to reflect this.
+
+Proposed resolution (10/01):
+
+In 9.3.4.6 [dcl.fct [4]] paragraph 4, replace
+
+The effect of a cv-qualifier-seq in a function declarator is not the same as adding
+cv-qualification on top of the function type, i.e., it does not create a cv-qualified
+function type. In fact, if at any time in the determination of a type a cv-qualified
+function type is formed, the program is ill-formed. [Example:
+
+  typedef void F();
+  struct S {
+    const F f;          // ill-formed
+  };
+
+
+-- end example]
+by
+
+The effect of a cv-qualifier-seq in a function declarator is not the same as adding
+cv-qualification on top of the function type. In the latter case, the cv-qualifiers are
+ignored. [Example:
+
+  typedef void F();
+  struct S {
+    const F f;          // ok; equivalent to void f();
+  };
+
+
+-- end example]
+
+Strike the last bulleted item in 13.10.3 [temp.deduct [5]] paragraph 2, which reads
+
+Attempting to create a cv-qualified function type.
+
+Nathan Sidwell comments (18 Dec 2001 ): The proposed resolution simply states attempts
+to add cv qualification on top of a function type are ignored. There is no mention of
+whether the function type was introduced via a typedef or template type parameter. This
+would appear to allow
+
+  void (const *fptr) ();
+
+
+but, that is not permitted by the grammar. This is inconsistent with the wording of
+adding cv qualifiers to a reference type, which does mention typedefs and template
+parameters, even though
+
+  int &const ref;
+
+
+is also not allowed by the grammar.
+
+Is this difference intentional? It seems needlessly confusing.
+
+Notes from 4/02 meeting:
+
+Yes, the difference is intentional. There is no way to add cv-qualifiers other than
+those cases.
+
+Notes from April 2003 meeting:
+
+Nathan Sidwell pointed out that some libraries use the inability to add const to a type
+T as a way of testing that T is a function type. He will get back to us if he has a
+proposal for a change.
+
+Source links:
+[1] https://wg21.link/dcl.fct
+[2] http://gcc.gnu.org/cgi-bin/gnatsweb.pl?cmd=view&pr=2810&database=gcc
+[3] https://wg21.link/dcl.ref
+[4] https://wg21.link/dcl.fct#4
+[5] https://wg21.link/temp.deduct#2

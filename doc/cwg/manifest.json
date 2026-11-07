@@ -17,6 +17,21 @@
       "adopted_papers": []
     },
     {
+      "issue": 136,
+      "title": "Default arguments and friend declarations",
+      "status": "CD1",
+      "role": "course-reference",
+      "file": "cwg-0136.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/136.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/136.html",
+      "source_html_sha256": "24e4e16cf0d0632cb004c30d633df84f7b8395b9fd007cf7a94bc51692317c28",
+      "text_sha256": "3f634d4a154c7eeed10beefafad57a712e38e61dc0757e4e7a9ad92a5c30f7c4",
+      "adopted_papers": [],
+      "local_papers": [
+        "paper-p1787r6.txt"
+      ]
+    },
+    {
       "issue": 138,
       "title": "Friend declaration name lookup",
       "status": "CD6",
@@ -49,6 +64,18 @@
       "local_papers": [
         "paper-p0490r0.txt"
       ]
+    },
+    {
+      "issue": 295,
+      "title": "cv-qualifiers on function types",
+      "status": "CD1",
+      "role": "course-reference",
+      "file": "cwg-0295.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/295.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/295.html",
+      "source_html_sha256": "db9e40e381b07a58037565e7306d89522363503c34cc240e095e2fc1932dd19e",
+      "text_sha256": "41ac2405a230664e87152475cca960420e8aeb28f76f4bff5327e10dff51c91f",
+      "adopted_papers": []
     },
     {
       "issue": 616,
@@ -473,6 +500,18 @@
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1579.html",
       "source_html_sha256": "e9e3c3b0b8ca2322d15d5c789d94b2596216ee67717a6996998a806f8085bc9a",
       "text_sha256": "b5d3a6c0e306870132458c5317e0e0a67cbda6fbe7a1fbe40a19413ed4f48fe4",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1584,
+      "title": "Deducing function types from cv-qualified types",
+      "status": "drafting",
+      "role": "reference-only",
+      "file": "cwg-1584.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1584.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1584.html",
+      "source_html_sha256": "fa57eb8bd7a6cc72e1b2c383ed0e6ffab39ec26de8a97a0bc061b813ba437708",
+      "text_sha256": "9a3fff7d12d76ac8ede25ccf193b1c5989494b6f6b8910d57b0ff7ef6058c3d5",
       "adopted_papers": []
     },
     {

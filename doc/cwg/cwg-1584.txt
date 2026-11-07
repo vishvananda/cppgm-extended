@@ -1,0 +1,90 @@
+CWG 1584: Deducing function types from cv-qualified types
+Source: https://cplusplus.github.io/CWG/issues/1584.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: drafting
+Catalog role: reference-only
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1584. Deducing function types from cv-qualified types
+Section: 13.10.3.2 [temp.deduct.call [1]] Status: drafting Submitter: Daniel Krügler
+Date: 2012-11-04
+
+It is not clear whether the following is well-formed or not:
+
+
+  void foo(){}
+
+  template<class T>
+  void deduce(const T*) { }
+
+  int main() {
+    deduce(foo);
+  }
+
+
+Implementations vary in their treatment of this example.
+
+Proposed resolution (April, 2013):
+
+Change 13.10.3.6 [temp.deduct.type [2]] paragraph 18 as follows:
+
+A template-argument can be deduced from a function, pointer to function, or pointer to
+member function type. [INSERT: [Note: cv-qualification of a deduced function type is
+ignored; see 9.3.4.6 [dcl.fct [3]]. —end note]] [Example:
+
+
+  template<class T> void f(void(*)(T,int));
+[INSERT:   template<class T> void f2(const T*);]
+  template<class T> void foo(T,int);
+  void g(int,int);
+  void g(char,int);
+[INSERT:   void g2();]
+
+  void h(int,int,int);
+  void h(char,int);
+  int m() {
+    f(&g);     // error: ambiguous
+    f(&h);     // OK: void h(char,int) is a unique match
+    f(&foo);   // error: type deduction fails because foo is a template
+[INSERT:     f2(g2);    // OK: cv-qualification of deduced function type ignored]
+  }
+
+
+—end example]
+
+Additional note, November, 2014:
+
+Concern was expressed regarding the proposed resolution over its treatment of an example
+like the following:
+
+
+  template<typename T> struct tuple_size {};
+  template<typename T> struct tuple_size<T const>: tuple_size<T> {};
+
+  tuple_size<void()> t;
+
+
+In this case T const is always considered to be more specialized for void(), leading to
+infinite self-derivation.
+
+The issue has been returned to "open" status for further consideration.
+
+Notes from the May, 2015 meeting:
+
+The consensus of CWG was that the cv-qualification of the argument and parameter must
+match, so the original example should be rejected.
+
+Source links:
+[1] https://wg21.link/temp.deduct.call
+[2] https://wg21.link/temp.deduct.type#18
+[3] https://wg21.link/dcl.fct

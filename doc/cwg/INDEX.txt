@@ -25,12 +25,17 @@ Decision references
 
 CWG 33 | TC1 | cwg-0033.txt
   Argument dependent lookup and overloaded functions
+CWG 136 | CD1 | cwg-0136.txt
+  Default arguments and friend declarations
+  Related later wording: paper-p1787r6.txt
 CWG 138 | CD6 | cwg-0138.txt
   Friend declaration name lookup
   Local paper: paper-p1787r6.txt
 CWG 253 | C++17 | cwg-0253.txt
   Why must empty or fully-initialized const objects be initialized?
   Local paper: paper-p0490r0.txt
+CWG 295 | CD1 | cwg-0295.txt
+  cv-qualifiers on function types
 CWG 616 | CD3 | cwg-0616.txt
   Definition of &#8220;indeterminate value&#8221;
 CWG 619 | C++11 | cwg-0619.txt
@@ -174,6 +179,8 @@ Unresolved references (not adopted decisions)
 These are included so a cited open question can also be read offline. They are
 not evidence of an adopted resolution or a compiler conformance requirement.
 
+CWG 1584 | drafting | cwg-1584.txt
+  Deducing function types from cv-qualified types
 CWG 1634 | open | cwg-1634.txt
   Temporary storage duration
 CWG 1647 | drafting | cwg-1647.txt

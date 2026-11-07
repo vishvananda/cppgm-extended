@@ -1,7 +1,9 @@
 doc/cwg/INDEX.txt
 doc/cwg/cwg-0033.txt
+doc/cwg/cwg-0136.txt
 doc/cwg/cwg-0138.txt
 doc/cwg/cwg-0253.txt
+doc/cwg/cwg-0295.txt
 doc/cwg/cwg-0616.txt
 doc/cwg/cwg-0619.txt
 doc/cwg/cwg-0727.txt
@@ -37,6 +39,7 @@ doc/cwg/cwg-1550.txt
 doc/cwg/cwg-1558.txt
 doc/cwg/cwg-1560.txt
 doc/cwg/cwg-1579.txt
+doc/cwg/cwg-1584.txt
 doc/cwg/cwg-1590.txt
 doc/cwg/cwg-1591.txt
 doc/cwg/cwg-1634.txt
