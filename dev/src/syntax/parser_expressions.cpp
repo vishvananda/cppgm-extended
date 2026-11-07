@@ -1342,6 +1342,12 @@ Expr* Parser::parse_lambda()
 			}
 			capture.name = tok().identifier;
 			next();
+			if (hosted_ && (at(TokenKind::OP_ASS) || at(TokenKind::OP_LBRACE)))
+			{
+				capture.initializer = parse_initializer(false);
+				if (capture.initializer == nullptr)
+					return nullptr;
+			}
 		}
 		capture.pack = accept(TokenKind::OP_DOTS);
 		captures.push(capture);

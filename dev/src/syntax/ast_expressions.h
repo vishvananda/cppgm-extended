@@ -206,6 +206,7 @@ struct LambdaCapture
 	bool by_reference;
 	bool pack;
 	const Identifier* name;
+	Initializer* initializer;
 };
 
 struct LambdaExpr : Expr

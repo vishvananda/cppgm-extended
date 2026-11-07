@@ -410,6 +410,29 @@ void FunctionLowering::construct(const sema::Type* type, lowir::Value object, co
 	call_special(constructor, variant, object, single, location, elidable_source(*init->expression, constructor));
 }
 
+void FunctionLowering::closure_capture(const sema::Capture& capture, const Place& member, uint32_t location)
+{
+	const sema::Type* type = capture.member->type;
+	if (capture.initializer != nullptr)
+	{
+		if (sema::ClassOf(type) == nullptr && BracedList(*capture.initializer) == nullptr)
+			store(lowering_.storage_type(type),
+				fit(operand(*capture.initializer->expression, ConversionContext::Initialization), type), member);
+		else
+			construct(type, member.storage, capture.initializer, capture.constructor, EntryVariant::Complete, location);
+		return;
+	}
+	const Place source = variable_place(capture.entity, capture.entity->type, location);
+	if (capture.constructor != nullptr && type->kind != sema::TypeKind::Array)
+		construct_from(capture.constructor, member.storage, address_of(source), location);
+	else if (capture.constructor != nullptr && !copies_storage(capture.constructor))
+		copy_captured_elements(type, capture.constructor, member.storage, address_of(source), location);
+	else if (sema::ClassOf(type) != nullptr || type->kind == sema::TypeKind::Array)
+		copy_object(type, address_of(source), member.storage, location);
+	else
+		store(lowering_.storage_type(type), load(lowering_.storage_type(type), source), member);
+}
+
 void FunctionLowering::closure_object(const syntax::LambdaExpr& lambda, lowir::Value object, uint32_t location)
 {
 	// Each member in order: the captured `this`, then each captured
@@ -431,6 +454,9 @@ void FunctionLowering::closure_object(const syntax::LambdaExpr& lambda, lowir::V
 	// Whether a member's copy calls a constructor that may throw; the last
 	// such member.
 	const auto copy_throws = [this](const sema::Capture& capture) {
+		if (capture.initializer != nullptr &&
+			static_cast<const sema::VariableEntity*>(capture.entity)->throwing_initializer)
+			return true;
 		const sema::FunctionEntity* constructor = capture.constructor;
 		const sema::Type* type = capture.member->type;
 		return constructor != nullptr && !type->is_reference() && call_may_throw(constructor) &&
@@ -453,22 +479,14 @@ void FunctionLowering::closure_object(const syntax::LambdaExpr& lambda, lowir::V
 		Place member = Place();
 		member.storage = offset == 0 ? object : index(i8, ir_model::IPK_FIELD, object, integer(i64, offset)).value;
 		const sema::Type* type = is_this ? nullptr : capture->member->type;
+		if (pending && capture != nullptr && copy_throws(*capture))
+		{
+			closure_member_region();
+			pending = false;
+		}
 		if (type != nullptr && !type->is_reference())
 		{
-			if (pending && copy_throws(*capture))
-			{
-				closure_member_region();
-				pending = false;
-			}
-			const Place source = variable_place(capture->entity, capture->entity->type, location);
-			if (capture->constructor != nullptr && type->kind != sema::TypeKind::Array)
-				construct_from(capture->constructor, member.storage, address_of(source), location);
-			else if (capture->constructor != nullptr && !copies_storage(capture->constructor))
-				copy_captured_elements(type, capture->constructor, member.storage, address_of(source), location);
-			else if (sema::ClassOf(type) != nullptr || type->kind == sema::TypeKind::Array)
-				copy_object(type, address_of(source), member.storage, location);
-			else
-				store(lowering_.storage_type(type), load(lowering_.storage_type(type), source), member);
+			closure_capture(*capture, member, location);
 			if (tracking && i < last_throwing && needs_destruction(type))
 			{
 				cleanups_.push_back(Cleanup{ member.storage, type, nullptr, lowir::kNoId, lowir::kNoId, lowir::kNoId,
@@ -480,7 +498,10 @@ void FunctionLowering::closure_object(const syntax::LambdaExpr& lambda, lowir::V
 		RValue value;
 		value.type = pointer;
 		value.value = is_this ? object_pointer_as(sema::ClassOf(facts->this_member->type->element), location)
-							  : address_of(variable_place(capture->entity, capture->entity->type, location));
+			: capture->initializer != nullptr
+			? bind_reference(
+				  *reference_initializer(capture->initializer->expression), type, ConversionContext::Initialization)
+			: address_of(variable_place(capture->entity, capture->entity->type, location));
 		store(pointer, value, member);
 	}
 	if (!tracked)

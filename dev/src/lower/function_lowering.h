@@ -1360,6 +1360,7 @@ private:
 	void set_vector_lane(lowir::Value address, const sema::Type* vector, uint64_t lane, const RValue& value);
 	lowir::Value zeroed_vector(const sema::Type* vector, lowir::SlotId& slot);
 	RValue vector_list(const sema::Type* vector, const syntax::BracedInitList& list);
+	RValue vector_scalar_cast(const sema::Type* vector, const sema::Type* from, const RValue& value);
 	Place vector_lane_place(const syntax::SubscriptExpr& expr);
 	RValue vector_lane_value(const syntax::SubscriptExpr& expr);
 	RValue vector_compare(const syntax::BinaryExpr& expr, const RValue& left, const RValue& right);
@@ -1516,6 +1517,7 @@ private:
 	// never needed; a call of it calls the function with its operator's
 	// effect through that function's address.
 	lowir::Value function_address(const sema::FunctionEntity* function, uint32_t location);
+	void closure_capture(const sema::Capture& capture, const Place& member, uint32_t location);
 	void closure_object(const syntax::LambdaExpr& lambda, lowir::Value object, uint32_t location);
 	void closure_member_region();
 	void copy_captured_elements(const sema::Type* type, const sema::FunctionEntity* constructor,

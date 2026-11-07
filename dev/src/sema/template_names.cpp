@@ -431,7 +431,8 @@ const Type* Analyzer::without_stand_ins(const Type* type)
 		if (type->kind == TypeKind::Array)
 			return types_.array(element, type->bound, type->owner);
 		if (type->kind == TypeKind::Vector)
-			return types_.qualified(types_.vector(element, type->bound, type->owner, type->variadic), type->cv);
+			return types_.qualified(
+				types_.vector(element, type->bound, type->owner, type->variadic, type->extended_vector()), type->cv);
 		return types_.reference(element, type->kind == TypeKind::RValueReference);
 	}
 	case TypeKind::TemplateParameter:

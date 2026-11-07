@@ -408,6 +408,8 @@ void SyntaxRenderer::lambda_introducer(const LambdaExpr& lambda)
 			text("this");
 		else
 			identifier(capture.name);
+		if (capture.initializer != nullptr)
+			initializer(*capture.initializer);
 		if (capture.pack)
 			text("...");
 	}

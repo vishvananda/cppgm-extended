@@ -638,11 +638,20 @@ Slice<LambdaCapture> SyntaxCloner::captures(const Slice<LambdaCapture>& list)
 	// names, as written (by copy or by reference); a capture in a pattern
 	// expanded around the lambda names that pattern's element. Shared with
 	// the pattern when nothing changes.
-	if (expander_ == nullptr)
+	bool initialized = false;
+	for (const LambdaCapture& capture : list)
+		initialized = initialized || capture.initializer != nullptr;
+	if (expander_ == nullptr && !initialized)
 		return list;
 	bool changes = false;
 	for (const LambdaCapture& capture : list)
 	{
+		changes = changes || capture.initializer != nullptr;
+		if (collecting_ != nullptr && capture.initializer != nullptr)
+		{
+			initializer(capture.initializer);
+			continue;
+		}
 		if (capture.kind == TokenKind::KW_THIS || capture.name == nullptr)
 			continue;
 		if (collecting_ != nullptr)
@@ -652,7 +661,8 @@ Slice<LambdaCapture> SyntaxCloner::captures(const Slice<LambdaCapture>& list)
 				collecting_->push_back(capture.name);
 			continue;
 		}
-		changes = changes || (capture.pack ? length(capture.name) >= 0 : renamed(capture.name) != nullptr);
+		changes = changes ||
+			(capture.pack ? expander_ != nullptr && length(capture.name) >= 0 : renamed(capture.name) != nullptr);
 	}
 	if (!changes)
 		return list;
@@ -660,8 +670,9 @@ Slice<LambdaCapture> SyntaxCloner::captures(const Slice<LambdaCapture>& list)
 	for (const LambdaCapture& capture : list)
 	{
 		const bool named = capture.kind != TokenKind::KW_THIS && capture.name != nullptr;
-		const int32_t count = named && capture.pack ? length(capture.name) : -1;
+		const int32_t count = named && capture.pack && expander_ != nullptr ? length(capture.name) : -1;
 		LambdaCapture item = capture;
+		item.initializer = initializer(capture.initializer);
 		if (count >= 0)
 		{
 			item.pack = false;
@@ -672,7 +683,8 @@ Slice<LambdaCapture> SyntaxCloner::captures(const Slice<LambdaCapture>& list)
 			}
 			continue;
 		}
-		if (const Identifier* element = named && !capture.pack ? renamed(capture.name) : nullptr)
+		if (const Identifier* element = named && !capture.pack && capture.initializer == nullptr ? renamed(capture.name)
+																								 : nullptr)
 			item.name = element;
 		out.push_back(item);
 	}
@@ -1058,7 +1070,16 @@ Expr* SyntaxCloner::call_like(const Expr* expr)
 		result->noexcept_operand = this->expr(result->noexcept_operand);
 		result->throw_types = pointers(lambda->throw_types, &SyntaxCloner::type_id);
 		result->trailing = type_id(result->trailing);
+		size_t initialized = 0;
+		for (const LambdaCapture& capture : lambda->captures)
+			if (capture.initializer != nullptr)
+			{
+				renames_.insert(renames_.begin(), std::make_pair(capture.name, capture.name));
+				shadows_.push_back(std::make_pair(capture.name, -1));
+				++initialized;
+			}
 		result->body = compound(result->body);
+		renames_.erase(renames_.begin(), renames_.begin() + initialized);
 		parameter_packs_.resize(packs);
 		shadows_.resize(shadows);
 		return result;

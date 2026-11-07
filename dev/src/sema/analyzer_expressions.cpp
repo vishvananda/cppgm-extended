@@ -2861,6 +2861,13 @@ ExprFacts* Analyzer::explicit_conversion(
 	}
 	if (!check_resolved(*operand))
 		return nullptr;
+	if (target->unqualified->extended_vector() && IsArithmetic(source->type) &&
+		(cast == TokenKind::KW_STATIC_CAST || cast == TokenKind::OP_LPAREN))
+	{
+		if (convert(*operand, target->unqualified->element, true) == nullptr)
+			return nullptr;
+		return new_facts(expr, target->unqualified, ValueCategory::PRValue);
+	}
 	if (target->is_reference())
 	{
 		// A glvalue of the referenced type: lvalue for an lvalue reference

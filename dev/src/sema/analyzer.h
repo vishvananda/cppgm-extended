@@ -947,7 +947,8 @@ private:
 		ClassEntity* closure, ClosureFacts* facts, const syntax::LambdaExpr& expr, Scope* scope);
 	bool sealed_frame(const ClassEntity* closure, LambdaFrame& frame);
 	void number_closure(ClassEntity* closure, ClosureFacts* facts);
-	void explicit_captures(LambdaFrame& frame, Scope* scope);
+	Scope* explicit_captures(LambdaFrame& frame, Scope* scope);
+	void initialized_capture(LambdaFrame& frame, const syntax::LambdaCapture& capture, Scope* outer, Scope* inner);
 	void add_capture(LambdaFrame& frame, const Entity* entity, bool written, bool by_copy, uint32_t location);
 	const FunctionEntity* capture_constructor(ClassEntity* closure, const Type* type, uint32_t location);
 	void local_name(const syntax::Expr& expr, ExprFacts* facts, const Entity* entity, Scope* scope);

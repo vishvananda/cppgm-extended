@@ -2170,6 +2170,10 @@ RValue FunctionLowering::cast(const syntax::Expr& expr, const syntax::Expr& oper
 	}
 	// A GNU vector's bytes as another vector or an integer, or the reverse.
 	const sema::Type* source = DecayedType(lowering_.graph().types, facts->type)->unqualified;
+	if (type->unqualified->extended_vector() && source->kind != sema::TypeKind::Vector &&
+		(expr.kind != syntax::ExprKind::Cast ||
+			static_cast<const syntax::CastExpr&>(expr).cast != TokenKind::KW_REINTERPET_CAST))
+		return vector_scalar_cast(type->unqualified, source, value);
 	if (source != type->unqualified &&
 		(source->kind == sema::TypeKind::Vector || type->unqualified->kind == sema::TypeKind::Vector))
 		return reinterpret_bytes(fit(value, source), type);

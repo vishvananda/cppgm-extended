@@ -543,6 +543,7 @@ struct Capture
 	const Entity* entity;
 	const VariableEntity* member;
 	const FunctionEntity* constructor;
+	const syntax::Initializer* initializer;
 };
 
 // A closure type's facts (5.1.2p3), kept beside the class: its function

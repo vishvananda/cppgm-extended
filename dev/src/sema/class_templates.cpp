@@ -1584,7 +1584,7 @@ bool Analyzer::dependent_type(const Type* type) const
 			break;
 		}
 		if (type->kind == TypeKind::Pointer || type->kind == TypeKind::LValueReference ||
-			type->kind == TypeKind::RValueReference || type->kind == TypeKind::Array)
+			type->kind == TypeKind::RValueReference || type->kind == TypeKind::Array || type->kind == TypeKind::Vector)
 		{
 			type = type->element;
 			continue;
@@ -1864,7 +1864,7 @@ const Type* Analyzer::substitute_vector_size(const Type* vector, const Substitut
 	for (uint32_t i = 0; i < substitution.count; ++i)
 	{
 		if (substitution.arguments[i] == nullptr || dependent_type(substitution.arguments[i]))
-			return types_.vector(lane, 0, vector->owner, vector->variadic);
+			return types_.vector(lane, 0, vector->owner, vector->variadic, vector->extended_vector());
 	}
 	const TemplateParameterEntity* placeholder = static_cast<const TemplateParameterEntity*>(vector->owner->entity);
 	Scope* scope = substituted_scope(placeholder->expression_scope, substitution, placeholder);

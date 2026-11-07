@@ -289,7 +289,10 @@ make check TEST=tests/modern-cxx/compile/600-hosted-generic-lambda.t
 
 The optional compile and run tests cover digit separators, nested namespace
 definitions, `decltype(auto)` variable and return deduction, generic lambda
-parameters (including packs and forwarding), and pack-expanded using-declarations.
+parameters (including packs and forwarding), initialized lambda captures, and
+pack-expanded using-declarations. An initialized capture deduces its type from
+its initializer in the enclosing scope; its new name is visible in the lambda
+body. Preserve reference binding, moves, and cleanup if a later capture throws.
 In C++14 and later, default member initializers do not disqualify an aggregate.
 Explicitly initialized members use the supplied values; omitted members use
 their default initializers in member order. Retain the C++11 restriction in
@@ -614,6 +617,13 @@ constant indexes into two matching inputs. Its result has one lane per
 index. An index of -1 leaves that lane unspecified; choosing zero is valid.
 Validate and retain these constants in typed facts. Both public GCC and
 Clang SSE wrappers can then use the same permutation lowering.
+
+### Clang vector scalar casts
+
+An explicit arithmetic scalar cast to a Clang `ext_vector_type` converts to the
+lane type and broadcasts the result to every lane. Evaluate the scalar once.
+Keep this distinct from GNU `vector_size` casts, which reinterpret equal-sized
+representations. Preserve the vector kind through template substitution.
 
 ### Whole-vector braced initialization
 

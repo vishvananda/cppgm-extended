@@ -271,6 +271,7 @@ void append_function_census(const lowir::Program& program, const Function& mir, 
 	field(line, "grants", after.register_grants - before.register_grants);
 	field(line, "releases", after.register_releases - before.register_releases);
 	field(line, "spills", after.spills - before.spills);
+	field(line, "liveness_fallbacks", after.hull_fallbacks - before.hull_fallbacks);
 	field(line, "frame_homes", after.homes - before.homes);
 	field(line, "grant_busy", after.grant_busy - before.grant_busy);
 	field(line, "grant_busy_parameters", after.grant_busy_parameters - before.grant_busy_parameters);

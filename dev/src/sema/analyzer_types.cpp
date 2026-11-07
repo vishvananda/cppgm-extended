@@ -361,7 +361,7 @@ const Type* Analyzer::vector_type(
 	const Type* lane = type->unqualified;
 	Constant value;
 	if (template_depth_ != 0 && (dependent_type(lane) || !constant_value(size, scope, value, false)))
-		return types_.qualified(types_.vector(lane, 0, dependent_decltype(size, scope), bytes), type->cv);
+		return types_.qualified(types_.vector(lane, 0, dependent_decltype(size, scope), bytes, !bytes), type->cv);
 	if (!integral_constant(size, scope, value))
 		error(location, "a vector size that is no positive integral constant");
 	const Type* vector = checked_vector(lane, value.bits, bytes, location);
@@ -387,7 +387,7 @@ const Type* Analyzer::checked_vector(const Type* lane, uint64_t size, bool bytes
 		substitution_error(location, "a vector size that is no positive power-of-two multiple of its lane's size");
 		return nullptr;
 	}
-	return types_.vector(lane, lanes);
+	return types_.vector(lane, lanes, nullptr, false, !bytes);
 }
 
 bool Analyzer::vector_reinterpretation(const Type* from, const Type* to)

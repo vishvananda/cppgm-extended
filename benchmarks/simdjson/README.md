@@ -2,6 +2,7 @@
 
 [Latest EPYC results](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/simdjson/epyc/report.md)
 · [CI runs and artifacts](https://github.com/vishvananda/cppgm-extended/actions/workflows/simdjson.yml)
+· [Initial analysis](../../docs/performance/simdjson-20261107.md)
 
 This reference-compiler benchmark runs on each push and pull request. Successful
 main results publish beside the public and index-cpp reports on the

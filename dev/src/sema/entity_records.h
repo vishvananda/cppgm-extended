@@ -381,6 +381,8 @@ struct VariableEntity : Entity
 	bool predefined_name : 1;
 	// A structured binding (a BindingEntity, sema/binding_records.h).
 	bool structured_binding : 1;
+	// C++14's variable introduced by an initialized lambda capture.
+	bool init_capture : 1;
 	// The alignment a member's alignment-specifiers request (7.6.2).
 	uint32_t alignment_request;
 	Constant value;
