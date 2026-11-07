@@ -41,6 +41,12 @@
     "issue": "CXX11-037",
     "sha256": "c35e1cbc6e6747bdb18240371ab97b4befae82ba2c0d2ba5df745211b94b59d4"
   },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/std_fno-ext-numeric-literals.C": {
+    "status": "not-required",
+    "reason": "N3485 2.14.8p10 and 17.6.4.3.5p1 reserve non-underscore literal suffixes to the implementation. This test defines and uses such suffixes, including GCC's imaginary suffixes; it is ill-formed, no diagnostic required. Acceptance or rejection is not a required C++11 outcome.",
+    "issue": "CXX11-018",
+    "sha256": "9d0ee1e674bdf086d0e24b046f2c6022aca1f37b77afae39d88e7e7a18ec57fe"
+  },
   "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-dr1286a.C": {
     "status": "standards-review",
     "reason": "The GCC positive expectation relies on alias-template identity equivalence proposed by CWG1286, still drafting in the official2026-10-10 active list. N3485 14.4p1 requires the same template identity;14.5.7p2 equates alias specializations with substituted types,not the alias templates themselves. Preserve as standards/oracle review pending isolated required-diagnostic and valid-neighbor replay; do not infer an original acceptance defect or adopted later-DR requirement from the GCC result.",

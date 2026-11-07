@@ -1,0 +1,117 @@
+name: Upstream C++11 correctness
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  upstream-cxx11:
+    # These are two independently reported jobs; a failure cannot cancel its peer.
+    name: ${{ matrix.suite }} C++11 correctness and suite timing
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: gcc
+            repository: gcc-mirror/gcc
+            revision: 5115c7e447fc07457443df874bf57840e8316d5f
+            sparse: gcc/testsuite/g++.dg/cpp0x
+            upstream: g++-15
+            version: 15.2.0
+          - suite: clang
+            repository: llvm/llvm-project
+            revision: 2078da43e25a4623cab2d0d60decddf709aaea28
+            sparse: |
+              clang/test
+              llvm/utils/lit
+            upstream: clang++-21
+            version: 21.1.8
+    defaults:
+      run:
+        shell: bash
+    env:
+      CXX: g++-15
+      CPPGM_HOST_CXX: g++-15
+      CPPGM_WARNINGS_AS_ERRORS: "1"
+
+    steps:
+      - name: Install pinned compiler and metadata tools
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates git make python3 \
+            g++-15=15.2.0-16ubuntu1 \
+            tcl=8.6.16build1 dejagnu=1.6.3-2
+          if [ '${{ matrix.suite }}' = clang ]; then
+            apt-get install -y --no-install-recommends clang-21=1:21.1.8-6ubuntu1
+          fi
+          mkdir -p "$RUNNER_TEMP/cxx11/environment"
+          dpkg-query -W > "$RUNNER_TEMP/cxx11/environment/packages.txt"
+          uname -a > "$RUNNER_TEMP/cxx11/environment/platform.txt"
+          env | sort | sed -n '/^CPPGM_/p; /^CXX=/p' > "$RUNNER_TEMP/cxx11/environment/build.txt"
+
+      - name: Check out compiler
+        uses: actions/checkout@v6
+
+      - name: Check out pinned upstream tests and native metadata parser
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.revision }}
+          path: upstream-sources
+          sparse-checkout: ${{ matrix.sparse }}
+          persist-credentials: false
+
+      - name: Build cppgm
+        run: |
+          ulimit -c 0
+          make -C dev -j2 cppgm++ CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+
+      - name: Freeze language test manifest
+        run: |
+          set -euo pipefail
+          if [ '${{ matrix.suite }}' = gcc ]; then
+            python3 scripts/build_gcc_cxx11_ci_manifest.py \
+              --gcc-root upstream-sources --dejagnu-library /usr/share/dejagnu \
+              --output "$RUNNER_TEMP/cxx11/manifest.json"
+          else
+            python3 scripts/build_clang_cxx11_ci_manifest.py \
+              --llvm-root upstream-sources --output "$RUNNER_TEMP/cxx11/manifest.json"
+          fi
+
+      - name: Run identical suite with cppgm and upstream compiler
+        run: |
+          ulimit -c 0
+          python3 scripts/run_cxx11_ci_suite.py \
+            --manifest "$RUNNER_TEMP/cxx11/manifest.json" \
+            --source-root upstream-sources --candidate dev/cppgm++ \
+            --upstream '${{ matrix.upstream }}' --upstream-version '${{ matrix.version }}' \
+            --workers 2 --output "$RUNNER_TEMP/cxx11/run"
+
+      - name: Publish counts and elapsed-time ratio
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/cxx11/run/summary.md" ]; then
+            cat "$RUNNER_TEMP/cxx11/run/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'The suite did not produce a complete timing report; see the failed setup/run step.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          tar -C "$RUNNER_TEMP" -czf "$RUNNER_TEMP/cxx11-${{ matrix.suite }}.tar.gz" cxx11
+
+      - name: Retain manifest, commands, raw output and results for both compilers
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: cxx11-${{ matrix.suite }}-${{ github.sha }}
+          path: ${{ runner.temp }}/cxx11-${{ matrix.suite }}.tar.gz
+          if-no-files-found: error
+          retention-days: 14

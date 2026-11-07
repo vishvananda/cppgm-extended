@@ -369,6 +369,9 @@ HARNESS_TESTS = \
 	scripts/tests/test_upstream_language_outcomes.py \
 	scripts/tests/test_upstream_clang_lit_metadata.py \
 	scripts/tests/test_upstream_clang_language.py \
+	scripts/tests/test_cxx11_ci_suite.py \
+	scripts/tests/test_gcc_cxx11_ci_manifest.py \
+	scripts/tests/test_build_clang_cxx11_ci_manifest.py \
 	scripts/tests/test_validate_perf_regression.py
 
 test-harness:

@@ -1,0 +1,54 @@
+from pathlib import Path
+import sys
+import unittest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from build_gcc_cxx11_ci_manifest import Excluded, project
+
+
+def directive(command, *arguments):
+    return dict(command=command, arguments=list(arguments))
+
+
+class GCCManifest(unittest.TestCase):
+    def test_native_active_negative_does_not_require_diagnostic_parity(self):
+        action, expect, flags, _ = project([
+            directive('dg-do', 'compile', ' target c++11 '),
+            directive('dg-error', 'exact GCC message', '', ' target c++11 ')], 'int x;')
+        self.assertEqual((action, expect, flags), ('compile', 'diagnostic', []))
+
+    def test_later_dialect_error_is_inactive(self):
+        self.assertEqual(project([directive('dg-do', 'compile'),
+                                  directive('dg-error', 'error', '', ' target c++14 ')], 'int x;')[1], 'accept')
+
+    def test_unknown_selector_dependency_and_runtime_checker_are_exclusions(self):
+        for directives, source in [
+                ([directive('dg-do', 'compile', ' target int32plus ')], 'int x;'),
+                ([directive('dg-additional-sources', 'other.C')], 'int x;'),
+                ([directive('dg-output', 'expected text')], 'int x;'),
+                ([directive('dg-do', 'run')], '#include <vector>'),
+                ([directive('dg-do', 'compile')], '#if __GNUC__\nint x;\n#endif'),
+                ([directive('dg-do', 'compile')], '%:include <vector>'),
+                ([directive('dg-do', 'compile')], '\ufeff#include <vector>'),
+                ([directive('dg-do', 'compile')], '#i\\\nnclude <vector>'),
+                ([directive('dg-do', 'compile')], '__complex__ float x;'),
+                ([directive('dg-excess-errors', '')], 'int x;')]:
+            with self.subTest(directives=directives, source=source), self.assertRaises(Excluded):
+                project(directives, source)
+
+    def test_message_only_crash_regression_is_not_positive_validity(self):
+        with self.assertRaises(Excluded):
+            project([directive('dg-do', 'compile'), directive('dg-message', 'required from here')], 'bad code')
+
+    def test_runtime_and_optimization_are_retained(self):
+        self.assertEqual(project([directive('dg-do', 'run'), directive('dg-options', '-O2')],
+                                 'int main() {}')[:3], ('run', 'accept', ['-O2']))
+
+    def test_semantic_and_escalating_flags_never_become_optional(self):
+        for flag in ['-Werror', '-Wno-narrowing', '-fno-exceptions', '-std=c++17']:
+            with self.subTest(flag=flag), self.assertRaises(Excluded):
+                project([directive('dg-options', flag)], 'int x;')
+
+
+if __name__ == '__main__':
+    unittest.main()
