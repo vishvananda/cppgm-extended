@@ -5488,21 +5488,56 @@
   {
     "id": "CXX11-076",
     "compiler_language_gap": true,
-    "status": "isolated-functional-validated-integration-pending",
+    "status": "fixed-integrated-normal-validated",
     "symptom": "Unknown-bound character arrays are not completed from parenthesized string literals; initializer inference can override a prior array bound",
     "owning_pa": "PA6:200, PA11:100/300, PA14:100",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-076",
-    "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-076/functional-verification-v1.json",
+    "checks": "39 new required controls, 8,900 strict tests, 15 normal stages, 42 harness suites/667 cases and fresh export of39 controls/42 reference wrappers pass.",
     "fix_revision": "978935af4",
-    "triage_note": "23 required controls: parent8/23 owning, candidate92/92 focused, GCC/Clang92/92 each; affected PA6/11/14 and file/format/scoped placement pass; normal actual-parent ratios0.999947/0.999996 with exact objects. Includes typed literal-operator distinction and global array-result reference initialization. Full integrated normal/export pending."
+    "triage_note": "076 integrated focused92/92, normal actual-parent1.000078/1.000007, exact output. Includes prior-bound completion and typed literal-operator array-result boundaries. Clang improves to670/693; full original LLVM/FileCheck obligations remain unmet. Campaign ratios1.005186/1.001748 retained as data.",
+    "historical_status": "isolated-functional-validated-integration-pending",
+    "integrated_revision": "998cfdd81607794577447a63df2918e2136cbc1d",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-076077-acceptance-v1.json"
   },
   {
     "id": "CXX11-077",
     "compiler_language_gap": true,
-    "status": "confirmed-unfixed",
+    "status": "fixed-integrated-normal-validated",
     "symptom": "Discarded bit-field member glvalues and bit-field conditional assignments attempt unsupported address lowering",
     "owning_pa": "PA11:400; PA21:100 adopted CWG1550/1560 throw neighbor",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-077",
-    "checks": "Clang worker reducing shared discard path; ordinary read/write neighbors preserved, including Clang21 differing-width write limitation against primary. No fix/closure claim."
+    "checks": "39 new required controls, 8,900 strict tests, 15 normal stages, 42 harness suites/667 cases and fresh export of39 controls/42 reference wrappers pass.",
+    "historical_status": "confirmed-unfixed",
+    "integrated_revision": "998cfdd81607794577447a63df2918e2136cbc1d",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-076077-acceptance-v1.json",
+    "triage_note": "077 integrated focused68/68, normal actual-parent0.999975/0.999999, exact output. Selected discarded effects and volatile access preserved; adopted CWG1550/1560 throw boundary included. Clang improves to670/693; full original LLVM/FileCheck obligations remain unmet. Campaign ratios1.005186/1.001748 retained as data."
+  },
+  {
+    "id": "CXX11-078",
+    "compiler_language_gap": true,
+    "status": "isolated-normal-validated-export-pending",
+    "symptom": "For initializer accepts block declarations outside simple-declaration grammar: static_assert, using declarations/directives and aliases; syntax mode also accepts a function definition",
+    "owning_pa": "PA5:100 parser grammar",
+    "standards_basis": "N3485 6.5 iteration-statement grammar and shared/source.gram for-init-statement",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-078",
+    "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-078/functional-verification-v1.json",
+    "fixture_revision": "53f69d582",
+    "fix_revision": "9d4474c94",
+    "triage_note": "Seven required PA5 fixtures. Parent14/40 versus candidate40/40 focused; GCC32/32 and Clang32/32. Parent2/7 owning; affected PA5 289/289, PA7 247/247. Normal actual-parent1.000041/1.000010 and exact objects. Full normal running on isolated exact compiler; export/integration pending. Full13-stage normal passes8,907strict; source-pinned Clang671/693 and GCC3696/4112. Fresh export running; integrated exact-binary check pending."
+  },
+  {
+    "id": "CXX11-080",
+    "compiler_language_gap": true,
+    "status": "repair-in-validation",
+    "symptom": "Local and nested local classes silently accept static data members, including const/constexpr and instantiated template contexts",
+    "owning_pa": "PA11:100; PA14:300 instantiation; PA16:300 static-local valid neighbor",
+    "standards_basis": "N3485 9.8p3,p4",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-080",
+    "fixture_revisions": [
+      "64e780fa4",
+      "20ce59c67"
+    ],
+    "fix_revision": "748e24608",
+    "checks": "11 required controls: parent20/44 focused, GCC44/44, Clang44/44, candidate44/44. Affected/file/format/scoped placement and actual-parent perf running. No integration or closure claim."
   }
 ]

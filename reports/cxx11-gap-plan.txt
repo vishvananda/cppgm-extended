@@ -187,19 +187,18 @@ use the established supported host/path; do not record a fabricated pass.
 Current implementation checkpoint (2026-11-07)
 
 The two CI jobs are implemented and locally exercised. Accepted compiler
-11951f366 passes 3,696/4,112 GCC checks (89.88%) and 668/693 Clang checks
-(96.39%); matching upstream compilers pass every selected configuration.
-Clang spans 685 sources, 207 positive and 486 required-diagnostic cases.
-Original LLVM/FileCheck obligations remain unmet for object projections.
+998cfdd81 passes3,696/4,112GCC checks (89.88%) and670/693Clang checks (96.68%);
+matching upstream compilers pass all selected configurations. Clang retains
+685sources,207positive and486required-diagnostic configurations, with original
+LLVM/FileCheck obligations explicitly unmet for independent object projections.
 
-072 destructor semantic demand and 075 ordinary TLS declaration consistency
-now pass all required integrated checks: 8,861 strict tests, 17 normal stages,
-42 harness suites/667 cases and fresh export of 39 controls/42 wrappers.
-Actual-parent instruction ratios are 1.002041/1.000670 for 072 and
-0.999929/0.999984 for 075, with identical objects; normal quick/self-compile
-also passes. Campaign accumulation 1.005132/1.001742 is reported data.
-See ci-next-072075-acceptance-v1.json under the evidence root for immutable
-source/manifest identities, checks and explicitly non-comparable suite times.
+076string arrays and077discarded bit-field glvalues pass39new required
+controls,8,900strict tests,15normal stages,42harness suites/667cases and fresh
+export of39controls/42reference wrappers. Actual-parent O0/O3 instruction
+ratios1.000078/1.000007 and0.999975/0.999999 pass with exact output; normal
+quick/self-compile passes. Campaign1.005186/1.001748 remains reported data.
+See ci-next-076077-acceptance-v1.json under the evidence root for immutable
+source identities, checks and explicitly non-comparable suite timing.
 The custom measurement queue stays retired.
 
 Immediate next work
@@ -222,12 +221,15 @@ suite times, correctness counts and the explicitly labeled performance ratio.
 Publish the supported coverage and limitations without claiming unavailable
 interfaces or unexecuted tests passed. Keep historical observations intact.
 
-Concrete next work after 072/075 acceptance (2026-11-07)
+Concrete next work after076/077acceptance (2026-11-07)
 
-Retain all 693 Clang configurations and their outcomes. Continue useful
-input-closure, implicit-mode and simple inherited-configuration coverage after
-applicability review; literal -std=c++11 is not a compatibility requirement.
+Retain all693Clang records and outcomes. Continue actual input-closure,
+inherited-configuration and reviewed optional-warning coverage. Literal
+-std=c++11 is not a compatibility requirement; unavailable original IR
+checkers are not a reason to block independent language obligations.
 
-Integrate 076 parenthesized string arrays and 077 discarded bit-field glvalues
-through actual integrated-parent, full normal and student-export checks, then
-continue failure-led GCC/Clang adjudication and required owning regressions.
+078for-initializer grammar has seven required PA5controls and all13normal
+stages passing; finish fresh export and verify identical integrated compiler
+and test/source epochs before carrying that evidence forward. Continue080
+local-class static-data prohibition through required normal validation, then
+remaining failure-led GCC/Clang adjudication and required owning regressions.

@@ -1,34 +1,31 @@
-Accepted checkpoint: compiler 11951f366, destructor/TLS repairs validated.
-Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-072075-acceptance-v1.json
-SHA256: fd4d30894fd12614825a7032aa13839fd8f3f5696ef4313c8daa3085ab132a9b
+Accepted checkpoint: compiler 998cfdd81, string arrays and discarded bit-fields.
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-076077-acceptance-v1.json
+SHA256: f8bc70bba3d68eba29cb506285334a41e3532fe07c2748aa3bf3c2c051d2dddb
 
-CXX11-072 and CXX11-075 are closed for their observed rules. The integrated
-compiler passes 8,861 strict tests, 17 normal stages, 42 harness suites with
-667 cases (19 optional skips), and a fresh student export testing all 39 new
-required controls and 42 reference wrappers. Affected suites, debug, self-host
-through PA5, inception, architecture/file/placement, quick and smoke all pass.
+CXX11-076 and CXX11-077 are closed for their observed rules. All 39 new required
+controls pass on the integrated compiler, with 8,900 strict tests, 15 normal
+stages, 42 harness suites/667 cases (19 optional skips), and a fresh student
+export testing 39 controls and 42 reference wrappers. Debug, self-host PA5,
+inception, all architecture/file/placement checks, quick and smoke pass.
 
-GCC: 3,696/4,112 (89.88%); upstream 4,112/4,112. Clang: 668/693 (96.39%);
-upstream 693/693. GCC has 220 compile failures and 196 missing diagnostics;
-Clang has 10 compile failures and 15 missing diagnostics. Neither run has
-abnormal or link outcomes. These are observations, not independent gap counts.
-GCC elapsed cppgm/upstream: 25.025/67.008 seconds, ratio 0.373. Clang:
-2.944/19.770 seconds, ratio 0.149. Both failed-suite ratios are NON-COMPARABLE.
-The manifests and all prior observations remain intact.
+GCC remains 3,696/4,112 (89.88%); upstream 4,112/4,112. Clang improves to
+670/693 (96.68%); upstream 693/693. GCC has220compile failures/196missing
+diagnostics; Clang has8compile failures/15missing diagnostics. No abnormal
+or link outcomes. GCC elapsed cppgm/upstream25.625/71.809s, ratio0.357;
+Clang3.377/20.945s, ratio0.161. Both failed-suite ratios are NON-COMPARABLE.
 
-Normal actual-parent instruction ratios: 072 at 1.002041/1.000670 (O0/O3),
-075 at 0.999929/0.999984. Frozen output objects are identical. Normal PA35
-quick passes at self/seed 0.9935/1.0253, zero behavior failures and kernels
-below 1.3. Campaign accumulation is 1.005132/1.001742, retained as data against
-the original baseline without the retired extra aggregate acceptance cap.
+Normal actual-parent O0/O3 instruction ratios are1.000078/1.000007 for076,
+0.999975/0.999999 for077; objects identical. Quick self/seed0.9934/1.0253,
+zero behavior failures and kernels below1.3. Campaign accumulation against
+the original baseline is1.005186/1.001748, retained as data without the
+retired extra aggregate acceptance cap. No threshold or manifest changed.
 
-Next: integrate 076 string arrays and 077 discarded bit-field glvalues.
-076 passes 23 required controls, 92 focused candidate checks, affected suites
-and the normal actual-parent gate (0.999947/0.999996, exact objects). It also
-repairs literal-operator results mistaken for ordinary string literals. The
-Clang worker has a 077 repair with 16 owning controls and passing focused/perf
-checks; independent handoff validation is finishing. Further failure-led fixes,
-useful coverage expansion and the final PA35 release check remain open.
+Next:078for-initializer declaration grammar passes all13normal stages and
+8,907strict tests, with Clang671/693; its export/integrated check is pending.
+080local-class static-data repair passes44focused checks and is completing
+isolated affected/performance checks. The Clang worker is expanding actual
+header/configuration and reviewed optional-warning coverage. Remaining suite
+failures still need standards triage and fixes; final PA35release is pending.
 
 Earlier checkpoints retained below
 
