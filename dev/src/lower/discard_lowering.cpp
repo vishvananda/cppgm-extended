@@ -113,14 +113,14 @@ void FunctionLowering::discard(const syntax::Expr& expr)
 	check_stack(e->location);
 	const DebugScope debug(*this, e->location);
 	const sema::ExprFacts* facts = e->facts;
-	const bool bitfield_glvalue = facts != nullptr && facts->category != sema::ValueCategory::PRValue &&
-		(facts->flags & sema::kBitField) != 0;
 	if (facts != nullptr && (facts->flags & sema::kOperatorCall) != 0 && e->kind != syntax::ExprKind::Call &&
 		(facts->category != sema::ValueCategory::PRValue || facts->type->unqualified->kind != sema::TypeKind::Class))
 	{
 		operator_call(*e);
 		return;
 	}
+	const bool bitfield_glvalue = facts != nullptr && (facts->flags & sema::kBitField) != 0 &&
+		facts->category != sema::ValueCategory::PRValue;
 	if (bitfield_glvalue && (e->kind == syntax::ExprKind::Assign || e->kind == syntax::ExprKind::Unary))
 	{
 		bit_field_value(*e);
