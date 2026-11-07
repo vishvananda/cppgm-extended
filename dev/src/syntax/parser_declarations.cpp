@@ -916,6 +916,24 @@ Decl* Parser::finish_simple_declaration(
 			// Anonymous record members participate in the enclosing scope's
 			// type/value disambiguation, including deferred inline bodies.
 			scopes_.add_new_edge(declaration_scope(), info.type_scope);
+		if (pending_attributes_ != nullptr && specifiers.size == 1 && specifiers[0].kind == DeclSpecKind::Enum)
+		{
+			// No declarator: keep leading alignas on the enum for applicability
+			// checking. With a declarator it instead appertains to its variable.
+			Attribute** link = &pending_attributes_;
+			while (*link != nullptr)
+			{
+				Attribute* attribute = *link;
+				if (attribute->kind == AttributeKind::Alignas && !attribute->gnu)
+				{
+					*link = attribute->next;
+					attribute->next = specifiers[0].enum_specifier->attributes;
+					specifiers[0].enum_specifier->attributes = attribute;
+				}
+				else
+					link = &attribute->next;
+			}
+		}
 		const bool member_enum = context == DeclContext::Class && specifiers[0].kind == DeclSpecKind::Enum;
 		// An elaborated-type-specifier with ABI tags (Attribute::on_class)
 		// stays a simple-declaration, which keeps its attributes.
