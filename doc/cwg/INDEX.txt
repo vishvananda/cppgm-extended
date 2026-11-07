@@ -275,3 +275,10 @@ CWG 1815 | cwg-1815.txt
   Historical aggregate temporary/reference member question, resolved by CWG 1696.
   Use cwg-1696.txt for the adopted wording. Inclusion does not claim exhaustive
   implementation of either issue; the compiler repair is tracked separately.
+
+CWG 39 | CD1 | cwg-0039.txt
+  Conflicting ambiguity rules; voted into the working paper, April 2005.
+  Local paper: paper-n1626.txt, the complete collected final resolution.
+  Lookup merges designated declarations; ambiguity of an actual object
+  conversion is a separate check. Read N3485 10.2 and the final paper rather
+  than the superseded proposals in the issue history.

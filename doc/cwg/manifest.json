@@ -17,6 +17,23 @@
       "adopted_papers": []
     },
     {
+      "issue": 39,
+      "title": "Conflicting ambiguity rules",
+      "status": "CD1",
+      "role": "course-reference",
+      "file": "cwg-0039.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/39.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/39.html",
+      "source_html_sha256": "faad2cf43e2550720c8791b7c2c16372130ac5f9b854627ad858581ae32764df",
+      "text_sha256": "0bc38a6384231630e6fbd4801ae24aadb4c88ea7e06e83accabedb4cb7f13b04",
+      "adopted_papers": [
+        "N1626"
+      ],
+      "local_papers": [
+        "paper-n1626.txt"
+      ]
+    },
+    {
       "issue": 136,
       "title": "Default arguments and friend declarations",
       "status": "CD1",
@@ -1212,6 +1229,13 @@
       "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3638.html",
       "source_html_sha256": "a510a242eeaa790c51d3667da29eaae509d393d938581c6fd8bf0b5b67738a1c",
       "text_sha256": "45da611c7f397ec523b39234f2b9eddb756323c48a9570fc27b5ceb01f92e32e"
+    },
+    {
+      "paper": "N1626",
+      "file": "paper-n1626.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2004/n1626.pdf",
+      "source_pdf_sha256": "57f1a3d6110867eaad7719b47d7fd2c0b982b0c9e4c74673d2485daad03667c7",
+      "text_sha256": "4be496b5ed0e80a5323e153f0d63c9f764c0e1f6d0e7ab22a8d24647d518340f"
     }
   ]
 }
