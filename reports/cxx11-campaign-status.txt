@@ -17,8 +17,7 @@ apply. The custom per-family/historical/RSS calibration campaign is retired
 as an active requirement; its results remain historical evidence. See the
 revised reports/cxx11-gap-plan.txt for the implementation order and acceptance.
 
-The user has paused the goal. No compiler/test/benchmark work was resumed by
-this plan correction. The previously stopped measurement tree has now been
+The user explicitly resumed the updated plan. The previous custom measurement tree has been
 terminated by its exact PID/start identities, preserving every artifact and
 marking the interrupted observation unusable as uninterrupted measurement:
   /mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/remaining-029-performance-v2/user-realignment-retirement-v1.json
@@ -28,10 +27,15 @@ Fifteen known compiler repairs already passed isolated functional/export
 validation. Their integration, normal performance checks and execution in the
 actual CI jobs remain required. The corpus/runner inventories and all prior
 findings remain useful; they do not establish a current whole-suite pass rate.
-The two new CI jobs and their matched suite-timing reports are not implemented
-yet. The next implementation work is the jobs/runners and their concrete
-coverage, rather than further custom calibration. The separate public-runtime
-regression investigation remains out of scope at the user's request.
+The two CI jobs and matched suite-timing reports are implemented and locally
+exercised. GCC: 3,644/4,114 candidate configurations pass (88.58%), upstream 4,114/4,114.
+Clang: 53/61 candidate checks pass (86.89%), upstream 61/61. These are declared
+subsets, not whole-suite percentages or deduplicated defect counts. Failed-suite
+timing ratios are explicitly non-comparable. See reports/cxx11-ci-jobs.txt.
+008's existing throw implicit-move repair and 45 PA21 controls are on this branch;
+fresh integrated correctness/normal perf checks are in progress. Other isolated
+repairs still need integration. The separate public-runtime investigation
+remains out of scope at the user's request.
 
 Historical checkpoint before user realignment (2026-11-07)
 

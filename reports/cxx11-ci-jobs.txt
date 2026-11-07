@@ -1,0 +1,83 @@
+C++11 correctness CI bring-up -- 2026-11-07
+
+.github/workflows/upstream-cxx11.yml creates two independent GCC/Clang jobs
+on pull requests, main pushes and manual dispatch. Their manifest/run/report
+commands have been exercised locally; no GitHub-hosted execution is claimed.
+The jobs pin upstream sources and compiler package versions, build cppgm,
+then select tests without invoking either compiler. Both execute the same
+declared configurations with two workers: cppgm first, matching upstream next.
+
+Fresh per-case working/output/temp directories isolate compilation and runtime.
+Diagnostic spelling, count, location and recovery are not correctness checks.
+A normal diagnostic satisfies a required-diagnostic case; internal errors,
+signals, timeouts and link errors cannot. Positive cases require an object and
+their declared link/execution checks. Unknown obligations remain exclusions.
+
+The suite elapsed times include compilation, required linking/execution and
+checking; download, build and metadata preparation precede timing. OS caches
+stay enabled. Ordering, load, commands, child user/system CPU times, source
+hashes, binaries and runner identities are recorded. Clang uses its native cc1
+interface versus cppgm's driver: the ratio describes these declared suite
+interfaces, not a pure frontend microbenchmark.
+
+Each summary prints counts, both elapsed times and cppgm_elapsed/upstream_elapsed.
+Failures, incomplete work or changed inputs/tools make the ratio non-comparable
+and fail the job. The second compiler still runs after ordinary compiler or
+harness failure. Always-run summary/artifact steps retain the manifest, visible
+exclusions, environment, actual commands, raw streams and JSON/Markdown results.
+No upstream speed-ratio acceptance threshold or new calibration is introduced.
+
+Initial declared coverage
+
+GCC 15.2.0: 5115c7e447fc07457443df874bf57840e8316d5f
+  2,057 self-contained g++.dg/cpp0x sources in ISO/GNU C++11:
+  4,114 configurations; 705 source exclusions.
+  Native DejaGnu dg-get-options parses expectations. Simple C++11 selectors,
+  compile, required-diagnostic and zero-exit runtime checks are supported.
+  Unknown selectors/options, headers, conditional preprocessing, extra sources
+  and output checks stay excluded. Native -pedantic-errors becomes upstream
+  -pedantic to preserve diagnostics without severity parity. Candidate uses its
+  normal diagnostics. Message-only/crash-only tests are not positive language
+  validity oracles. Known IFNDR/disputed rules have source-pinned dispositions.
+
+Clang 21.1.8: 2078da43e25a4623cab2d0d60decddf709aaea28
+  61 positive self-contained sources with explicit C++11/0x syntax RUNs;
+  2,897 source/RUN exclusions in that initial explicit-standard cohort.
+  Native lit parses RUN structure. Syntax acceptance is strengthened to object
+  generation. Negatives, headers/preprocessing, builtins, local configurations,
+  features, link/runtime and AST/IR/assembly need broader adapters/adjudication.
+  Other suffixes/default-standard families remain outside this initial cohort.
+
+These are useful subsets, not complete upstream suites or proof of every
+C++11 rule. Compiler extensions and disputed outcomes still need standards
+triage; candidate failures are observations, not automatically compiler defects.
+Selection does not depend on whether cppgm passes. Coverage expansion remains.
+
+Local result, compiler implementation 18c450526e
+Binary SHA256: 578195b9fbd3ccdd3321311d43fa8e0e7fdedd456300a6b694b4628f56b55f4d
+
+  Suite  cppgm passes       Upstream passes  cppgm s  upstream s  ratio
+  GCC    3,644/4,114 88.58%  4,114/4,114      27.646   62.984      0.439
+  Clang     53/61    86.89%     61/61          0.365    2.108      0.173
+
+Both ratios are NON-COMPARABLE because cppgm failed cases. They are retained
+observations, not passing-suite speed claims or compile regression gates.
+GCC: 246 positive compile failures, 220 missing diagnostics, two abnormal compiler
+observations (one source/both dialects), two link failures (one source/both dialects).
+Clang: eight positive compile failures. These are not deduplicated gap counts.
+
+Evidence root: /mnt/vizier/cppgm-cxx11-upstream
+  gcc-ci-manifest-v4.json; gcc-ci-run-v4/
+  ci-first-clang-v1/manifest-v3.json; ci-first-clang-v1/run-v2/
+  ci-first-harness-v2.log
+
+Validation: 42 harness suites, 638 cases including 19 platform/optional-tool skips;
+targeted current runner/manifest controls pass; workflow YAML parses. Independent
+Clang-agent review findings about private directories/incomplete workers were
+addressed. No compiler implementation changed for this CI commit.
+
+Next: integrate the fifteen isolated repairs with their required internal and
+normal frozen compile/self-compile checks; rerun these unchanged manifests;
+deduplicate/adjudicate failures and expand coverage. The custom calibration/RSS
+queue stays retired. Public runtime/codegen regression investigation stays out
+of scope at the user's request.

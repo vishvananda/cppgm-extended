@@ -181,10 +181,18 @@ calibration stages or a new RSS collector as routine acceptance requirements.
 If a normal measurement is unavailable or inconclusive, say so explicitly and
 use the established supported host/path; do not record a fabricated pass.
 
-Immediate next work after the user resumes the paused goal
+Current implementation checkpoint (user resumed 2026-11-07)
 
-1. Make the two correctness jobs run real, explicitly manifested C++11 tests
-   and emit both-compilers' counts, elapsed times and ratio artifacts.
+The two CI instances are implemented and locally exercised; see
+reports/cxx11-ci-jobs.txt. GCC selects 4,114 configurations and Clang 61 positive
+checks. Upstream baselines pass all selected checks; candidate failures remain
+visible. Coverage expansion, known repair integration and normal gates remain.
+The custom measurement queue stays retired.
+
+Immediate next work
+
+1. Exercise the two implemented jobs on the integrated compiler and expand
+   their explicit correctness coverage; preserve counts, times and ratio artifacts.
 2. Reconcile and integrate the existing fifteen functionally validated repairs
    through the normal gate; use their existing regression/correctness evidence.
    Do not resume the stopped custom measurement queue as a prerequisite.
