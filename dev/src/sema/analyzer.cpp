@@ -480,6 +480,7 @@ void Analyzer::namespace_definition(const syntax::NamespaceDecl& decl, Scope* sc
 		entity->depth = parent->depth + 1;
 		entity->is_inline = decl.is_inline;
 		entity->internal = decl.name == nullptr || parent->internal;
+		agree_block_linkage(entity, false, entity->internal, decl.location);
 		target = new_scope(
 			ScopeKind::Namespace, scope, scope, entity, decl.name != nullptr ? decl.name->spelling : "<unnamed>");
 		entity->scope = target;
@@ -542,6 +543,8 @@ void Analyzer::namespace_alias(const syntax::NamespaceAliasDecl& decl, Scope* sc
 	NamespaceAliasEntity* alias = new_entity<NamespaceAliasEntity>(
 		EntityKind::NamespaceAlias, decl.name, scope, nullptr);
 	alias->target = target;
+	if (scope->kind == ScopeKind::Namespace)
+		agree_block_linkage(alias, false, false, decl.location);
 	Binding* binding = new_binding(BindingKind::NamespaceAlias, decl.name, alias, nullptr);
 	binding->hidden = true;
 	declare_in(scope, binding);

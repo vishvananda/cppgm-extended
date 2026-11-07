@@ -1105,6 +1105,8 @@ Binding* Analyzer::declare_typedef(const DeclaredName& name, const Type* type, S
 	}
 	if (entity == nullptr)
 		entity = new_entity<Entity>(EntityKind::Typedef, name.key, where, type);
+	if (where->kind == ScopeKind::Namespace && !block_linkages_.empty())
+		agree_block_linkage(entity, false, false, location);
 	Binding* binding = new_binding(BindingKind::TypeAlias, name.key, entity, type);
 	print_in(scope, binding);
 	declare_in(where, binding);
@@ -2196,7 +2198,17 @@ FunctionEntity* Analyzer::new_function(const Specifiers& specifiers, const Decla
 		// declared (or a hidden one with external linkage, 3.5p9), and
 		// takes its linkage; it keeps its own entity, whose default
 		// arguments are its own (8.3.6p4).
-		const FunctionList* same = names_.overload(enclosing_namespace(where), name.key, signature);
+		// 3.3.1p4, CWG1839: its namespace declaration must also agree
+		// on the kind of entity. Class and enum tags may share a function's
+		// name; namespace names, aliases and objects may not.
+		Scope* space = enclosing_namespace(where);
+		if (const NameEntry* entry = names_.find(space, name.key))
+		{
+			if ((entry->value != nullptr && entry->value->kind != BindingKind::Function) ||
+				(entry->type != nullptr && (entry->type->kind != BindingKind::Type || IsClassTemplate(entry->type))))
+				error(location, "a block-scope function conflicts with another namespace entity");
+		}
+		const FunctionList* same = names_.overload(space, name.key, signature);
 		FunctionEntity* outer = same != nullptr ? static_cast<FunctionEntity*>(same->binding->entity) : nullptr;
 		if (outer != nullptr && (!outer->internal_linkage || !hidden_below_namespace(where, name.key)))
 		{
