@@ -540,13 +540,16 @@ void ProgramLowering::define_global(lowir::SymbolId symbol, const sema::Variable
 	{
 		// Used through its wrapper before this definition, which initializes
 		// it statically: the wrapper only gives the thread's address.
-		const lowir::SymbolId wrapper = tls_wrappers_.find(variable);
+		const lowir::SymbolId wrapper = thread_local_wrapper_symbol(symbol, variable);
+		if (!thread_local_wrapper_complete(wrapper))
 		{
-			FunctionLowering body(*this, wrapper, nullptr);
-			body.lower_thread_local_wrapper(lowir::kNoId, symbol);
+			{
+				FunctionLowering body(*this, wrapper, nullptr);
+				body.lower_thread_local_wrapper(lowir::kNoId, symbol);
+			}
+			release_definition(wrapper);
+			++counters_.functions;
 		}
-		release_definition(wrapper);
-		++counters_.functions;
 	}
 	else if (dynamic && program_.symbols[symbol].metadata.binding == ir_model::SBM_WEAK)
 	{
@@ -638,12 +641,15 @@ void ProgramLowering::define_global(lowir::SymbolId symbol, const sema::Variable
 		if (tls_wrappers_.find(variable) == PointerMap::kMissing)
 		{
 			const lowir::SymbolId wrapper = thread_local_wrapper_symbol(symbol, variable, false);
+			if (!thread_local_wrapper_complete(wrapper))
 			{
-				FunctionLowering body(*this, wrapper, nullptr);
-				body.lower_thread_local_wrapper(lowir::kNoId, symbol);
+				{
+					FunctionLowering body(*this, wrapper, nullptr);
+					body.lower_thread_local_wrapper(lowir::kNoId, symbol);
+				}
+				release_definition(wrapper);
+				++counters_.functions;
 			}
-			release_definition(wrapper);
-			++counters_.functions;
 		}
 	}
 	if (registered && !dynamic && !variable->is_thread_local &&
@@ -751,12 +757,15 @@ lowir::SymbolId ProgramLowering::thread_local_initialization(lowir::SymbolId glo
 		}
 	}
 	const lowir::SymbolId wrapper = thread_local_wrapper_symbol(global, variable);
+	if (!thread_local_wrapper_complete(wrapper))
 	{
-		FunctionLowering body(*this, wrapper, nullptr);
-		body.lower_thread_local_wrapper(entry, global);
+		{
+			FunctionLowering body(*this, wrapper, nullptr);
+			body.lower_thread_local_wrapper(entry, global);
+		}
+		release_definition(wrapper);
+		++counters_.functions;
 	}
-	release_definition(wrapper);
-	++counters_.functions;
 	return guard;
 }
 
@@ -814,14 +823,25 @@ lowir::SymbolId ProgramLowering::thread_local_init_entry(
 	const std::string object = special_object(abi_mangle::ABI_TARGET_TLS_INIT, thread_local_name(variable));
 	const lowir::SymbolId symbol = external_symbol(
 		object, "__cppgm_tls_init__" + std::string(program_.spelling(program_.symbols[global].name)));
-	if (program_.symbols[symbol].kind != lowir::SymbolKind::Unresolved)
+	lowir::Symbol& entry = program_.symbols[symbol];
+	if (entry.kind == lowir::SymbolKind::FunctionDeclaration && define)
+	{
+		// A block extern may have imported this entry before its definition.
+		// Upgrade the same signature and order entry, not a second function.
+		entry.kind = lowir::SymbolKind::FunctionDefinition;
+		program_.functions[entry.detail].body.reset(new lowir::FunctionBody());
+	}
+	else if (entry.kind != lowir::SymbolKind::Unresolved)
 		return symbol;
-	lowir::Signature signature = lowir::Signature();
-	signature.first_parameter = static_cast<uint32_t>(program_.parameters.size());
-	signature.result = lowir::Type::scalar(lowir::TypeKind::Void);
-	program_.declare_function(symbol,
-		define ? lowir::SymbolKind::FunctionDefinition : lowir::SymbolKind::FunctionDeclaration,
-		program_.add_signature(signature));
+	else
+	{
+		lowir::Signature signature = lowir::Signature();
+		signature.first_parameter = static_cast<uint32_t>(program_.parameters.size());
+		signature.result = lowir::Type::scalar(lowir::TypeKind::Void);
+		program_.declare_function(symbol,
+			define ? lowir::SymbolKind::FunctionDefinition : lowir::SymbolKind::FunctionDeclaration,
+			program_.add_signature(signature));
+	}
 	lowir::SymbolMetadata& metadata = program_.symbols[symbol].metadata;
 	// Another unit's entry is a weak reference (see lower_thread_local_wrapper).
 	metadata.binding = !define || program_.symbols[global].metadata.binding == ir_model::SBM_WEAK
@@ -847,7 +867,7 @@ lowir::SymbolId ProgramLowering::external_thread_local_wrapper(
 	const lowir::SymbolId wrapper = thread_local_wrapper_symbol(global, variable);
 	// Darwin exports the C++ wrapper, not the other unit's TLS storage.
 	// Calling its declaration also prevents inlining a locally invented body.
-	if (darwin_host_objects())
+	if (darwin_host_objects() || thread_local_wrapper_complete(wrapper))
 		return wrapper;
 	const lowir::SymbolId init = thread_local_init_entry(global, variable, false);
 	{
@@ -859,34 +879,57 @@ lowir::SymbolId ProgramLowering::external_thread_local_wrapper(
 	return wrapper;
 }
 
+bool ProgramLowering::thread_local_wrapper_complete(lowir::SymbolId wrapper) const
+{
+	const lowir::Symbol& symbol = program_.symbols[wrapper];
+	if (symbol.kind != lowir::SymbolKind::FunctionDefinition)
+		return false;
+	const lowir::FunctionBody* body = program_.functions[symbol.detail].body.get();
+	// A completed streamed body has been released; a reserved definition
+	// has an empty body. Both paths must define each ABI wrapper only once.
+	return body == nullptr || !body->blocks.empty();
+}
+
 lowir::SymbolId ProgramLowering::thread_local_wrapper_symbol(
 	lowir::SymbolId global, const sema::VariableEntity* variable, bool used)
 {
-	// A thread-local variable's wrapper (`_ZTW`), declared by its
-	// definition or by a use before it; the definition gives its body.
-	// Uses call one `used` (recorded for the variable).
+	// Distinct block extern declarations can name the same namespace TLS.
+	// Share its ABI wrapper just as variable_symbol shares the global.
+	const bool imported = darwin_host_objects() && !variable->defined;
 	const uint32_t found = tls_wrappers_.find(variable);
-	if (found != PointerMap::kMissing)
+	if (found != PointerMap::kMissing &&
+		(imported || program_.symbols[found].kind != lowir::SymbolKind::FunctionDeclaration))
 		return found;
 	const std::string base = program_.spelling(program_.symbols[global].name);
-	const lowir::SymbolId wrapper = new_symbol("__cppgm_tls_wrapper__" + base);
-	lowir::Signature returning = lowir::Signature();
-	returning.first_parameter = static_cast<uint32_t>(program_.parameters.size());
-	returning.result = lowir::Type::scalar(lowir::TypeKind::Ptr);
-	const bool imported = darwin_host_objects() && !variable->defined;
-	program_.declare_function(wrapper,
-		imported ? lowir::SymbolKind::FunctionDeclaration : lowir::SymbolKind::FunctionDefinition,
-		program_.add_signature(returning));
-	// The wrapper is its variable's unit's own when the variable is (an
-	// internal symbol's object spelling is claimed once in the program).
-	lowir::SymbolMetadata& metadata = program_.symbols[wrapper].metadata;
 	const std::string object = tls_wrapper_object(variable);
-	metadata.binding = imported ? ir_model::SBM_STRONG
-		: unit_local(variable)  ? ir_model::SBM_INTERNAL
-								: ir_model::SBM_WEAK;
-	metadata.object = metadata.binding == ir_model::SBM_INTERNAL
-		? local_object(object, false)
-		: intern(object.data(), static_cast<uint32_t>(object.size()));
+	const bool local = unit_local(variable);
+	const lowir::SymbolId wrapper = found != PointerMap::kMissing ? found
+		: local ? new_symbol("__cppgm_tls_wrapper__" + base)
+				: external_symbol(object, "__cppgm_tls_wrapper__" + base);
+	lowir::Symbol& symbol = program_.symbols[wrapper];
+	if (symbol.kind == lowir::SymbolKind::Unresolved)
+	{
+		lowir::Signature returning = lowir::Signature();
+		returning.first_parameter = static_cast<uint32_t>(program_.parameters.size());
+		returning.result = lowir::Type::scalar(lowir::TypeKind::Ptr);
+		program_.declare_function(wrapper,
+			imported ? lowir::SymbolKind::FunctionDeclaration : lowir::SymbolKind::FunctionDefinition,
+			program_.add_signature(returning));
+	}
+	else if (!imported && symbol.kind == lowir::SymbolKind::FunctionDeclaration)
+	{
+		symbol.kind = lowir::SymbolKind::FunctionDefinition;
+		program_.functions[symbol.detail].body.reset(new lowir::FunctionBody());
+	}
+	else
+	{
+		if (used)
+			tls_wrappers_.set(variable, wrapper);
+		return wrapper;
+	}
+	lowir::SymbolMetadata& metadata = program_.symbols[wrapper].metadata;
+	metadata.binding = imported ? ir_model::SBM_STRONG : local ? ir_model::SBM_INTERNAL : ir_model::SBM_WEAK;
+	metadata.object = local ? local_object(object, false) : symbol_objects_[wrapper];
 	metadata.tls_for = imported ? lowir::kNoId : global;
 	if (used)
 		tls_wrappers_.set(variable, wrapper);

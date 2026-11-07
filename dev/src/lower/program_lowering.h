@@ -1236,6 +1236,7 @@ private:
 	std::string special_object(abi_mangle::AbiTargetKind kind, abi_mangle::AbiNode name);
 	// A thread-local variable's wrapper symbol, or PointerMap::kMissing.
 	uint32_t thread_local_wrapper(const sema::VariableEntity* variable) const { return tls_wrappers_.find(variable); }
+	bool thread_local_wrapper_complete(lowir::SymbolId wrapper) const;
 	lowir::SymbolId thread_local_wrapper_symbol(
 		lowir::SymbolId global, const sema::VariableEntity* variable, bool used = true);
 	// Returns the guard of the object's per-thread initialization (none
