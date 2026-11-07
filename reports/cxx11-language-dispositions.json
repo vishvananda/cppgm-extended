@@ -70,5 +70,11 @@
     "reason": "N3485 7.6.1 attribute grammar has no using-prefix. The using gnu: syntax is a C++17 extension and requires a diagnostic in both C++11 dialects. GCC warning plus acceptance and cppgm diagnostic plus rejection both satisfy that obligation. Optional dg-warning metadata does not establish positive C++11 validity; preserve all configurations and check the required diagnostic, without severity parity. Existing CXX11-041 PA29 controls cover the version boundary.",
     "issue": "CXX11-041",
     "sha256": "98b004db13e0eadf6b0763900102adddfbf73874e10cd45ad911442104b52830"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/enum_base_warn.C": {
+    "status": "ifndr",
+    "sha256": "730900fc9b15c388aeb5024188b9ab986e4ac9687dcd007d8d953795fce11602",
+    "issue": "CXX11-055",
+    "reason": "N3485 3.2p2-p4: link_error is odr-used by calls in potentially evaluated expressions and has no definition. A provably false ordinary if condition does not make its body an unevaluated operand. The missing definition makes this whole program ill-formed, no diagnostic required; upstream linking depends on optimization deleting dead calls, not required C++11 acceptance. Retain defined-helper range behavior as required PA10:200 control200-fixed-enum-negative-range.t. Exclusion is not a pass."
   }
 }
