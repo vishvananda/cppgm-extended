@@ -23,65 +23,68 @@ marking the interrupted observation unusable as uninterrupted measurement:
   /mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/remaining-029-performance-v2/user-realignment-retirement-v1.json
 The old generated running-state files do not authorize queue resumption.
 
-Accepted integration through sourcefc534ef6e passes8,737strict tests,all
+Accepted integration through sourcece5338aea passes8,752strict tests,all
 required normal/audit/debug/modern/selfhostPA5/inception/quick/smoke checks,
-full placement(4673tests,zero findings),42harness suites/654cases,and fresh
-student export(52changed focused fixtures,42reference wrappers).
-Acceptance:/mnt/vizier/cppgm-cxx11-upstream/ci-next-057060061064-acceptance-v1.json
+42harness suites/660cases(19optional skips),and fresh student export:
+15newfocusedfixtures and42reference wrappers.
+Acceptance:/mnt/vizier/cppgm-cxx11-upstream/ci-next-057065-acceptance-v1.json
 
 Current declared CI cohorts with this immutable compiler:
   GCC:   3,692/4,112 (89.79%); upstream4,112/4,112.
-  Clang:   249/253   (98.42%); upstream253/253.
+  Clang:   630/656   (96.04%); upstream656/656.
+The expanded Clang job is activated with --verify-negatives --implicit-cxx11.
+All253prior case records stay byte-identical(249/253stillpass). It now has
+170acceptance and486required-diagnostic candidates across649sources:
+400newstrictISO11 plus3source-pinned documentedGNU11 configurations qualify
+403/403natively. Three later-standard whole sources and one unmappedGNU
+extension remain explicit exclusions. Raw660/all7strict failures and the
+p3specialization disagreement remain preserved;two valid core prefixes are
+required PA17/PA18regressions. No cppgm-basedselection,diagnosticwording/count/
+severity parity,or fullupstream-suite claim.
+
 GCC:222compile failures,198missing diagnostics;zero abnormal/link failures.
-Compared with source1a5,all8changed configurations improve(empty13 and
-nullptr06/08/11 ISO/GNU);no regressions. Clang fixes direct references and
-nonmember class using scope;four whole-TU missing-diagnostic candidates remain:
-class.temporary/p1.cpp,PR8012.cpp,union-member-destructor.cpp,warn-dangling-field.cpp.
-These failed configurations are not deduplicated gap counts. Both cohorts
-are useful subsets,not complete upstream suites or exhaustive C++11 proof.
+Clang:18missing diagnostics,8acceptance failures. These are observations,
+notdeduplicatedcompiler defects. GCC results are unchanged after057's final
+mutability-summary repair. Clang's wider denominator exposes new cases;
+original253outcomes remain unchanged. GCCtimes26.022/67.584seconds,ratio.385;
+Clang2.974/22.761seconds,ratio.131. Bothfailed-suite ratios remain NON-COMPARABLE.
+No GitHub-hosted execution is claimed.
 
-GCC times24.809/66.738seconds,cppgm/upstream.372;Clang1.123/8.156seconds,
-ratio.138. Both ratios remain NON-COMPARABLE because cppgm fails cases.
-No GitHub-hosted execution is claimed. All source selections remain independent
-of cppgm outcomes;three prior non-required Clang oracles stay explicit059
-exclusions,with original256observations retained and valid lookup required.
+057isclosedforitsobservedempty/mutable-empty copyrules. Its typed summary
+now counts actual mutable values requiring reads,so valueless mutable fields
+do not invalidate live scalar/reference/pointer/active-union copies. Thirteen
+additional PA16controls pass;source lifetime/generation/view checks remain.
+Normal per-fix instructions.999995/1.000011,objects identical. Cumulative
++0.2992%O0/+0.0995%O3,within normal0.5%gate. Quickself/seed.993286/1.025307,
+objects identical,behavior0,kernelsbelow1.3. No customcalibration ormacOS-only
+memory pass claimed. Exploratory native disagreements are recorded,notgraded
+as required outcomes without primary review.
 
-Normal per-fix instruction ratios:057composite1.000046/1.000000;
-064.999970/.999993;0601.000167/1.000100;061.999986/.999989.
-Cumulative+0.2895%O0/+0.0990%O3,within the normal0.5%gate,objects identical.
-Quick self/seed.993377/1.025343,objects identical,behavior0,kernelsbelow1.3.
-No custom calibration or macOS-only memory gate pass is claimed.
+Remaining confirmed gaps include062pre20enumeratorusing scope,066invalid
+parameterdeclarator names(isolated8fixture fix prepared),068ellipsis class
+copy-initialization,and069adoptedCWG1793 thread_local explicitinstantiation.
+Ownership/reduction/normal gates continue. Other failed configurations still
+need primary-rule triage and deduplication. Final campaign PA35release remains
+pending;no exhaustive C++11proof or all-gaps-complete claim.
 
-057's ordinary nested empty-subobject repair is accepted;cached typed facts
-fit existing class padding(280bytes unchanged),share type-DAG answers,and do
-not scan logical array elements. The same-family evaluation-owned const-ref
-copy with a mutable empty member still rejects,although strict native hosts
-accept;that follow-up remains open with lifetime/scalar restrictions intact.
-060/061/064 are closed for their observed rules.064 follows adopted CWG2907
-and2140;GCC15's volatile nullptr disagreement is retained against the explicit
-cv rule.062 enumerator-using mode correctness remains confirmed/unfixed;
-C++20 using-enum is not assumed retroactive.063 cold placement classification
-and correct PA11 lanes pass all checks. Final campaign PA35release remains pending.
-
-Clang coverage expansion now has priority alongside further compiler repairs.
-The59positives were an overly narrow bootstrap adapter boundary,not all
-C++11-compatible Clang tests. Current253=59accept+194diagnostic cases.
-Pinned checkout has8433materialized C++sources,2478mention explicit11/0x;
-5955were outside that literal-mode filter. Original660prospective configurations
-across653sources preserve all253old records byte-identically and add407no-std
-RUNs. Strict native11qualification400/407;seven positive projections need
-source-specific later-language/GNU-extension applicability review. Raw660and
-all qualification failures are retained. These are pending adapter coverage,
-not yet accepted current-CI results. Local configurations are the next tranche.
+Next Clang acceptance tranche067:44simple LLVM→FileCheck RUNs project to
+objectacceptance,while original LLVM/FileCheck/runtime obligations remain
+explicitly unmet. Raw700retains every656case plus44positives across42new
+sources;native ordinary700/700 andcppgm669/700. Strictqualification436/447
+finds11configuration reviews;documented GNUcomplex/anonymous-member and
+implementation-defined vendor-attribute grammar are reviewed separately from
+unsupported/later-language sources. Rawoutcomes retained;thistrancheisnotyet
+accepted currentCIcoverage. Localcfg totals are dominatedbyOpenMP/Analysis,
+so corepositive projections take priority over rawexcludedcounts.
 
 Evidence under /mnt/vizier/cppgm-cxx11-upstream:
-  ci-next-057060061064-{acceptance-v1.json,source-proofs-v1.json,checks-v1/,export-v1/}
-  ci-next-057060061064-{cumulative-perf-v1/,quick-artifacts-v1/}
-  gcc-ci-manifest-v7.json;gcc-ci-run-integrated-057060061064-v1/
-  ci-first-clang-v1/{manifest-v8-reviewed.json,run-integrated-057060061064-v1/}
-  issues/CXX11-057/composite-v1/;issues/CXX11-061/checks-v1/
-  issues/CXX11-062/standards-mode-review-v1.json;issues/CXX11-063/
-  issues/CXX11-064/;clang-coverage-expansion-v1/
+  ci-next-057065-{acceptance-v1.json,checks-v1/,export-v1/,cumulative-perf-v1/}
+  ci-next-057065-quick-artifacts-v1/
+  gcc-ci-manifest-v7.json;gcc-ci-run-integrated-057065-v1/
+  ci-first-clang-v1/{manifest-v9-expanded.json,run-integrated-057065-v1/}
+  clang-coverage-expansion-v1/{functional-verification-v1.json,root-revalidation-v1.json}
+  issues/CXX11-057/mutable-values-fix-v1/;issues/CXX11-065/
+  issues/CXX11-066/;issues/CXX11-068/;clang-codegen-coverage-inventory-v1/
 Public runtime/codegen regression investigation remains assigned elsewhere.
 
 Historical checkpoint before user realignment (2026-11-07)

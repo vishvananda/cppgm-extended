@@ -218,3 +218,17 @@ all253oldrecordsidentical;407additionalimplicit-modeprojections.Strict
 native11qualification400/407;sevenpositiveprojections awaitprimary
 later-standard/GNUextensionreview. Raw results retained,notcandidate-filtered.
 59positives reflected a bootstrapadapterboundary,not the wholeClangcorpus.
+
+Accepted expanded Clang job and057completion,sourcece5338aea
+
+Clang656configs/649sources(170accept,486diagnosticcandidates),630pass;
+upstream656pass. Original253recordsidentical;400newstrictISO+3documented
+GNUcases qualify403/403. Fourwhole-source modeexclusions preserve raw660
+andallstrictfailures;two independent coreprefixes required inPA17/PA18.
+Job enables--implicit-cxx11 with separate nativequalification and normalpair;
+anyordinarydiagnostic suffices forrequired negatives,noseverity/textparity.
+Clang2.974/22.761seconds,ratio.131non-comparable. GCC3692/4112unchanged.
+8752strict,42harness/660cases,allnormalchecks/audits,andfreshstudentexport
+15newfixtures/42wrapperspass. Normal cumulative instructions+0.2992%/+.0995%,
+identicalobjects.057observedmutable-empty copyfamilyclosed.066/068/069
+and062remainopen.067object-projection expansion ispending,notthese results.

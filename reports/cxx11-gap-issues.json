@@ -5101,7 +5101,7 @@
   {
     "id": "CXX11-057",
     "priority": "P1",
-    "status": "partial-fix-integrated-follow-up-open",
+    "status": "closed",
     "compiler_language_gap": true,
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-ctor20.C",
@@ -5137,10 +5137,12 @@
       "candidate_owning16": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/candidate-owning-v2.log",
       "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057060061064-acceptance-v1.json",
       "composite_full_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/composite-v1/functional-verification-v2.json",
-      "evaluation_owned_followup": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/composite-v1/evaluation-owned-neighbors-v1/review-v1.json"
+      "evaluation_owned_followup": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/composite-v1/evaluation-owned-neighbors-v1/review-v1.json",
+      "mutable_value_full_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057065-acceptance-v1.json",
+      "mutable_value_parent_native": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/mutable-values-fix-v1/parent-native-v1/results.json"
     },
-    "triage_note": "Accepted ABI-empty and ordinary nested empty-subobject corrections. Cached typed SubobjectValues fact fits existing ClassEntity padding(280bytes unchanged),visits array types rather than logical elements,shares complete-type answers,and conservatively preserves scalar/reference/union state. Fourteen additional controls;array-tail prototype correction retained. Both strict native hosts additionally accept evaluation-owned const-ref copies of a class with a mutable empty member;current compiler rejects. This same-family follow-up remains open and must preserve source lifetime/generation/view and mutable scalar checks.",
-    "fix_revision": "f427dde42"
+    "triage_note": "Accepted ABI-empty,ordinary nested empty-subobject and mutable-empty member corrections. The cached mutability summary now records actual mutable values requiring a read,so a valueless mutable member does not poison otherwise valid scalar/reference/pointer/active-union copies. All actual source reads still use existing lifetime/generation/view checks;ordinary nonconstant scalar reads,mutable scalar reads and inactive variants still reject.13further PA16controls,hosts26/26each,parent10/26,candidate26/26;owning5/13\u219213/13. Native disagreements about empty dangling sources,mutable scalar temporaries and GCC constexpr mutable-empty composites remain recorded separately;none is converted into a required oracle without primary review. Full8752strict/normal/export and flat per-fix counters pass.",
+    "fix_revision": "ce5338aea"
   },
   {
     "id": "CXX11-058",
@@ -5301,5 +5303,83 @@
       "gcc/gcc/testsuite/g++.dg/cpp0x/nullptr08.C",
       "gcc/gcc/testsuite/g++.dg/cpp0x/nullptr11.C"
     ]
+  },
+  {
+    "id": "CXX11-065",
+    "kind": "coverage-and-applicability",
+    "compiler_language_gap": false,
+    "status": "closed",
+    "symptom": "Initial Clang cohort only discovers explicitstd11 syntax RUNs,leaving many compatible sources outside discovery.",
+    "fix_revision": "2fe05ed92",
+    "adapter_revision": "d469a73ee",
+    "regression_revision": "cfd404219",
+    "coverage": {
+      "configurations": 656,
+      "sources": 649,
+      "original253_identical": true,
+      "new_strict_iso11": 400,
+      "new_documented_gnu11": 3,
+      "whole_source_applicability_exclusions": 4,
+      "positive": 170,
+      "required_diagnostic_candidates": 486
+    },
+    "standards_basis": "Three sources mix C++14/17 behavior;indirect-goto is unmapped GNU support. PA11 explicitly supports anonymous members,so three source-pinned GNU++11 positives remain. Independent C++11 array-initialization/overload prefixes retained in PA17/18. Native strict qualification remains distinct from normal any-diagnostic grading.",
+    "checks": {
+      "independent": "/mnt/vizier/cppgm-cxx11-upstream/clang-coverage-expansion-v1/functional-verification-v1.json",
+      "root_revalidation": "/mnt/vizier/cppgm-cxx11-upstream/clang-coverage-expansion-v1/root-revalidation-v1.json",
+      "primary_mode_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-065/standards-mode-review-v1.json",
+      "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057065-acceptance-v1.json"
+    },
+    "triage_note": "403/403native qualifications;paired630/656 vs656/656.26failure observations(18missing diagnostics,8acceptance),not26deduplicated defects. Raw660,all7strict failures and disputed explicit-specialization proposal retained. Two required valid slices and fifteen totalnewexportfixtures covered by freshrootexport;no IR/diagnostic parity claim."
+  },
+  {
+    "id": "CXX11-066",
+    "priority": "P1",
+    "status": "isolated-fix-in-validation",
+    "compiler_language_gap": true,
+    "symptom": "Special operator names and qualified names are silently treated as unnamed function parameters.",
+    "owning_pa": 6,
+    "handout": "pa6/README.md;parameter/declarator type model in general:200",
+    "standards_basis": "N3485 8.3p1 simple identifier requirement and3.3.4 parameter scope;special function/template-specialization exceptions do not apply to parameter entities.",
+    "upstream": [
+      "clang/test/SemaCXX/PR8012.cpp"
+    ],
+    "worktree": "/mnt/vizier/cppgm-cxx11-parameter-declarator-names",
+    "fix_revision": "29eee6a25",
+    "regression_revision": "c055180b2",
+    "checks": {
+      "parent_native": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-066/parent-native-v1/results.json",
+      "candidate_native": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-066/candidate-native-v1/results.json"
+    },
+    "triage_note": "Eight PA6controls;hosts16/16each,parent6/16,candidate16/16. Typed DeclaratorInfo.name validation adds no repeated AST/source parse. Owning/full/performance/export acceptance pending."
+  },
+  {
+    "id": "CXX11-068",
+    "priority": "P1",
+    "status": "confirmed-unfixed",
+    "compiler_language_gap": true,
+    "symptom": "Potentially evaluated class glvalues passed to an ellipsis skip required temporary copy-initialization,including deleted/private copy checks.",
+    "owning_pa": 12,
+    "standards_basis": "N3485 5.2.2p7 performs lvalue-to-rvalue conversion;4.1p2 copy-initializes a class temporary. Nontrivial conditional-support ABI policy and unevaluated contexts need separate boundaries.",
+    "upstream": [
+      "clang/test/CXX/special/class.temporary/p1.cpp"
+    ],
+    "checks": {
+      "initial_native": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-068/initial-native-v1.json"
+    },
+    "triage_note": "Both native hosts diagnose original file;cppgm silently accepts. PA11 explicitly excludes value-copy semantics,so PA12ownership toconfirm against owning handout/cluster before required fixtures. No source fix yet."
+  },
+  {
+    "id": "CXX11-069",
+    "priority": "P1",
+    "status": "confirmed-unfixed",
+    "compiler_language_gap": true,
+    "symptom": "Explicit thread_local template instantiations are rejected as forbidden storage specifiers.",
+    "standards_basis": "Adopted CWG1793(DRNovember2014) expressly exempts thread_local from explicit-instantiation/specialization storage-class ban.",
+    "primary": "https://cplusplus.github.io/CWG/issues/1793.html",
+    "upstream": [
+      "clang/test/CodeGenCXX/cxx11-thread-local.cpp"
+    ],
+    "triage_note": "Two positive pipeline configurations remain visible;primary/adoption confirmed byClangagent. Reduction and earliest PA17explicit-instantiation versus actualTLSownership still pending;no compiler fix."
   }
 ]
