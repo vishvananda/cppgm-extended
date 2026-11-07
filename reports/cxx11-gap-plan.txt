@@ -191,64 +191,77 @@ use the established supported host/path; do not record a fabricated pass.
 
 Current implementation checkpoint (2026-11-07)
 
-Accepted namespace, member-initializer and constructor-cycle fixes (2026-11-07)
+Accepted ODR-use, enum lookup, friend-template and array-placeholder repairs (2026-11-07)
 
-Compiler source: 264c9fda3 (exact tested source cabfe7739).
-SHA256: c939b64436185ec0ab3040baac70e92ce29ecfda0df76bd9008a1b68f49cf2dd
-Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-096097099-acceptance-v2.json
+Compiler code epoch: 27fd62458; source/export-list correction: 746e7dc90a34102894af4269f64053a15fb3e718.
+SHA256: 3540cf2357672d6b06bb0cb40df3ec8912abd793e8b08bb86834d9540b534658
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-088098100101-acceptance-v1.json
 
-CXX11-096/097/099 are accepted. Block functions enforce namespace entity-kind
-consistency; nested member-template initializers retain template context; adopted
-CWG1397 constructor/initializer cycles receive normal diagnostics. User-provided,
-copy/move and acyclic constructor paths remain valid. The located-ICE runner fix
-also prevents a source-location-prefixed internal compiler error from satisfying
-a negative test. Original failed/prototype observations remain available.
+CXX11-088/098/100/101 are accepted. Potential-result reads use the original
+value or referent when the adopted ODR rules permit it, while real object uses
+and observable capture effects remain. Elaborated enum references preserve
+ordinary function/object name categories. Friend-type template heads receive a
+normal diagnostic. Adopted CWG2397 permits array components in pointer/reference
+auto deduction patterns, while direct auto arrays remain invalid.
 
-All required checks pass: 9,138 strict tests, affected owners, debug, self-host
-through PA5, inception, architecture/file/full-placement audits, 42 harness suites
-with 677 checks, quick and smoke. Fresh student export passes 91 focused controls,
-42 reference wrappers and byte-verifies all 97 offline catalog files. Final direct
-checks pass 60/60 for096,56/56 for097,and68/68 for099. Two dependent-typename
-neighbors were moved unchanged toPA14:300 after the audit; the failed audit and
-successful owner/strict/full-audit rerun are retained. No compiler/perf change
-accompanied those fixture moves.
+The final compiler passes 9,209 strict tests and all 312 focused checks. Affected
+owners, debug info, self-host through PA5, inception, architecture/file/full
+placement audits, 42 harness suites with 677 checks, quick and smoke all pass.
+The fresh student export passes all 71 new required regressions and 42 reference
+wrappers, and byte-verifies all 98 CWG catalog files. ClassEntity280,
+VariableEntity96 and ExprFacts40 retain their sizes. Final PA35 release remains
+an end-of-campaign requirement.
 
 Normal actual-parent O0/O3 instruction ratios:
-  096: 1.000018 / 1.000001
-  097: 1.000016 / 0.999993
-  099: 0.999953 / 0.999995
-All frozen objects are identical. ClassEntity280,VariableEntity96,ExprFacts40 and
-FunctionEntity272 retain their sizes. Quick self/seed .993345/1.025211 passes,
-with zero behavior failures and all existing kernel limits satisfied.
+  088: c939 -> corrected8340 1.000582 / 1.000190
+  100: 8340 -> 168c          1.000012 / 1.000008
+  098: 168c -> 29bd          0.999980 / 1.000000
+  101: 29bd -> 3540          1.000014 / 1.000007
+Every frozen object pair is identical. Quick self/seed ratios .993275/1.025236,
+zero behavior failures and all existing kernel limits pass. No additional
+campaign-wide performance cap or custom calibration was introduced.
 
-Unchanged reviewed suites: GCC 3,736/4,110 (90.90%), upstream 4,110/4,110;
-Clang 794/802 (99.00%), upstream 802/802.
-Compared with accepted094/095, GCC gains12configurations across6sourcefiles and
-loses no passes; Clang repairs basic.link/p9.cpp. Remaining outcome counts:
-GCC {'passed': 3736, 'diagnostic-missing': 190, 'compile-failed': 184}; Clang {'passed': 794, 'diagnostic-missing': 7, 'compile-failed': 1}.
-These are test outcomes, not a deduplicated bug inventory. cppgm/upstream elapsed:
-GCC 26.186/67.911s, Clang 4.100/25.011s.
-Ratios 0.386/0.164 remain NON-COMPARABLE because cppgm still fails cases.
+Unchanged declared suites:
+  GCC:   3,742/4,110 (91.05%), upstream 4,110/4,110.
+  Clang: 796/802 (99.25%), upstream 802/802.
+Against accepted096/097/099, GCC gains six configurations across auto24,
+constexpr-64462 and constexpr-base7; Clang gains the friend-type-template and
+no-ODR-use cases. There are no lost passes. Remaining outcomes are:
+  GCC: {'passed': 3742, 'diagnostic-missing': 190, 'compile-failed': 178}
+  Clang: {'passed': 796, 'diagnostic-missing': 6}
+These are test outcomes, not a deduplicated bug count.
+cppgm/upstream suite elapsed: GCC 26.671/65.494s;
+Clang 4.370/25.846s.
+Ratios 0.407/0.169 remain NON-COMPARABLE because cppgm still fails cases.
+Both jobs retain the complete paired observations and unchanged manifests.
 
-Offline references: 84 issue texts, 11 complete papers, index and provenance
-manifest. All97catalogfiles match the fresh full student export. Source audits
-cover explicitCWG and bareCoreDR references. Draft1584/1634/1647 remain labeled
-reference-only. Source licenses, attribution and primary adoption history remain.
+The initial b934 candidate was not accepted: full integration found a strict
+LowIR change, a default-lambda crash and a lost ellipsis diagnostic. Corrected
+8340 restores all three before acceptance; original failed observations remain.
+The full harness also caught the newly appended export-document path needing
+sorting. Only list order changed, the compiler stayed3540, and all harness/doc,
+quick/smoke and fresh export checks subsequently passed. No existing reference
+output was regenerated to hide a compiler regression.
 
-Next: review/integrate088 aggregate/array/reference non-ODR-use and adoptedP0588
-capture behavior using its actual c939 parent. The Clang worker has120/120focused
-and28owning controls with normal gates, still awaiting root acceptance. Root098
-is reducing parser category pollution after elaborated enum references. Remaining
-GCC/Clang gaps, useful coverage expansion and finalPA35release remain open.
-No remote CI execution or exhaustive C++11 proof is claimed.
+Offline references now include 85 issue texts, 11 complete papers, index and
+provenance manifest. Every catalog file matches the fresh export. Draft1584,
+1634 and1647 remain reference-only. Further1696/1815 documents belong to the
+pending102 repair, not this accepted compiler epoch.
+
+Next: integrate103 explicit-declaration restrictions and complete102 adopted
+reference-member temporary lifetime rules with the normal actual-parent gates,
+required regressions, full checks and fresh export. Remaining GCC/Clang gaps,
+useful coverage expansion and final PA35 release remain open. No remote CI
+execution or exhaustive C++11 proof is claimed.
 
 Immediate next work
 
-1. Integrate the verified088non-ODR/capture fix with the normal full checks and
-   fresh student export; rerun both unchanged timed upstream suites.
-2. Complete098parser enum-reference/name-hiding regressions, fix and normal gate.
-3. Continue failure-led GCC/Clang standards review and compiler repairs, then
-   useful coverage expansion and the final PA35 release check.
+1. Integrate103 explicit context validation; complete102 reference temporary
+   rules against its actual103 parent, then run one full combined normal/export
+   validation and both unchanged paired suites.
+2. Continue remaining GCC/Clang failure-led language repairs and source-specific
+   oracle review, preserving required diagnostics without diagnostic parity.
+3. Expand useful coverage and complete the final PA35 release check.
 
 Completion
 
@@ -262,13 +275,3 @@ All explicitly supported CWG decisions have readable offline texts and necessary
 adopted wording in doc/cwg/, exported for students with coverage/provenance checks.
 Publish the supported coverage and limitations without claiming unavailable
 interfaces or unexecuted tests passed. Keep historical observations intact.
-
-Concrete next work after096/097/099 acceptance (2026-11-07)
-
-Review088's immutablecandidate and source, integrate onto acceptedc939, and run
-normal complete checks/export and both paired CI suites. Preserve adopted-DR
-host lags; they do not change the required oracle. Finish098enum name-category
-handling and remaining confirmed gaps through the same workflow. Keep original
-4112GCC/807Clang raw observations and reviewed4110/802selection separate.
-Maintain offline CWG wording/adoption/provenance, normal actual-parent gates and
-existing quick limits. FinalPA35release and useful coverage remain required.

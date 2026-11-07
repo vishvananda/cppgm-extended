@@ -5675,11 +5675,25 @@
   {
     "id": "CXX11-088",
     "compiler_language_gap": true,
-    "status": "primary-and-native-review",
-    "symptom": "Aggregate/array potential-result value reads incorrectly demand enclosing automatic object access",
-    "standards_basis": "N3485 3.2 plus adoptedCWG1926/2083/2170; actual object address/reference/copy and mutable restrictions remain distinct",
+    "status": "closed",
+    "symptom": "Aggregate, array and usable-reference potential-result reads incorrectly demanded enclosing object storage or captured copies.",
+    "standards_basis": "Adopted CWG1472/1741/1926/2083/2170 and P0588R1; preserve actual object uses, mutable and volatile restrictions and observable captures.",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-088",
-    "checks": "Eightbounded external witnesses+GCCconstexpr-base7:108cells,parent16/36,GCC20/36,Clang32/36. Discarded-local-object native disagreement needs further review. No compiler change or required-owning fixture implementation yet."
+    "checks": "33 required controls; final 120+32 focused cells pass. Initial b934 strict/ellipsis/default-lambda regressions retained and corrected before acceptance. Final 8340 actual c939 gate 1.000582/1.000190, exact frozen objects. Final combined compiler passes all 312 focused checks and full normal/export validation.",
+    "historical_status": "primary-and-native-review",
+    "owning_pa": "PA11:200; PA15:200; PA16:300; PA20:200; PA21:100; PA22:300",
+    "fix_revision": "60323d4e5",
+    "offline_decisions": [
+      "doc/cwg/cwg-1472.txt",
+      "doc/cwg/cwg-1741.txt",
+      "doc/cwg/cwg-1926.txt",
+      "doc/cwg/cwg-2083.txt",
+      "doc/cwg/cwg-2170.txt",
+      "doc/cwg/paper-p0588r1.txt"
+    ],
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-088098100101-acceptance-v1.json",
+    "integrated_candidate_revision": "746e7dc90a34102894af4269f64053a15fb3e718",
+    "compiler_sha256": "3540cf2357672d6b06bb0cb40df3ec8912abd793e8b08bb86834d9540b534658"
   },
   {
     "id": "CXX11-089",
@@ -5835,9 +5849,17 @@
   {
     "id": "CXX11-098",
     "compiler_language_gap": true,
-    "status": "open",
-    "symptom": "Elaborated enum type lookup fails when an ordinary function hides the enum tag;12native/parent observations retained, no requiredregression or compilerfix yet.",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-098"
+    "status": "closed",
+    "symptom": "An elaborated enum reference overwrote the parser category of a hiding function or object.",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-098",
+    "historical_status": "open",
+    "owning_pa": "PA7:200; PA10:100; PA14:100",
+    "standards_basis": "N3485 3.3.1,3.4.4,7.2; distinguish existing-tag references from opaque declarations and preserve current-scope ordinary names.",
+    "fix_revision": "76c16938e",
+    "checks": "13 required controls; final 52/52 versus actual b934 parent 20/52; both hosts 52/52. Required PA7 semantic reference generated normally. Final actual 168c\u219229bd gate .999980/1.000000, exact objects. Full normal and fresh export pass.",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-088098100101-acceptance-v1.json",
+    "integrated_candidate_revision": "746e7dc90a34102894af4269f64053a15fb3e718",
+    "compiler_sha256": "3540cf2357672d6b06bb0cb40df3ec8912abd793e8b08bb86834d9540b534658"
   },
   {
     "id": "CXX11-099",
@@ -5854,5 +5876,36 @@
       "doc/cwg/cwg-1397.txt"
     ],
     "checks": "17required controls;68/68final vsparent32/68;bothhosts68/68. Cached active-initializer fact preserves ClassEntity280/VariableEntity96;userprovided/copy/move and acyclicdependentcases pass. Actual778\u2192c939 .999953/.999995 exactobjects. All9138strict/fullnormal/fresh91focused export pass. Two dependenttypename neighbors moved unchanged toPA14:300 by audit; originalfailure retained."
+  },
+  {
+    "id": "CXX11-100",
+    "symptom": "A template head on a non-declaring friend type name was silently ignored.",
+    "owning_pa": "PA11:200; PA17:300",
+    "standards_basis": "N3485 14p1 and14.5.4; retain ordinary dependent friend type names inside class templates and valid elaborated class/function friend templates.",
+    "fix_revision": "98c0fb5e54e6be72f67bc5f6cfb017f312768760",
+    "checks": "10 required controls; final 44/44 including original Clang p3 versus parent 20/44. Actual corrected088 8340\u2192168c gate 1.000012/1.000008, exact objects. Two dependent friend controls moved unchanged to PA17:300; full normal and fresh export pass.",
+    "compiler_language_gap": true,
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-100",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-088098100101-acceptance-v1.json",
+    "integrated_candidate_revision": "746e7dc90a34102894af4269f64053a15fb3e718",
+    "compiler_sha256": "3540cf2357672d6b06bb0cb40df3ec8912abd793e8b08bb86834d9540b534658"
+  },
+  {
+    "id": "CXX11-101",
+    "symptom": "The array-suffix auto prohibition rejected pointers and references whose array components contain a deduced placeholder.",
+    "owning_pa": "PA20:100; PA22:300",
+    "standards_basis": "Adopted CWG2397; permit array components while rejecting an array as the complete deduction type.",
+    "fix_revision": "27fd62458",
+    "offline_decisions": [
+      "doc/cwg/cwg-2397.txt"
+    ],
+    "checks": "15 required controls; final 64/64 including GCC auto24 versus parent 24/60 controls; both hosts 60/60. PA20 handout owns auto deduction; 14 controls moved unchanged there, member pointer remains PA22. Actual29bd\u21923540 gate 1.000014/1.000007, exact objects. Full normal and fresh export pass.",
+    "compiler_language_gap": true,
+    "status": "closed",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-101",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-088098100101-acceptance-v1.json",
+    "integrated_candidate_revision": "746e7dc90a34102894af4269f64053a15fb3e718",
+    "compiler_sha256": "3540cf2357672d6b06bb0cb40df3ec8912abd793e8b08bb86834d9540b534658"
   }
 ]

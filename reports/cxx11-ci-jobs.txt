@@ -1,3 +1,68 @@
+Accepted ODR-use, enum lookup, friend-template and array-placeholder repairs (2026-11-07)
+
+Compiler code epoch: 27fd62458; source/export-list correction: 746e7dc90a34102894af4269f64053a15fb3e718.
+SHA256: 3540cf2357672d6b06bb0cb40df3ec8912abd793e8b08bb86834d9540b534658
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-088098100101-acceptance-v1.json
+
+CXX11-088/098/100/101 are accepted. Potential-result reads use the original
+value or referent when the adopted ODR rules permit it, while real object uses
+and observable capture effects remain. Elaborated enum references preserve
+ordinary function/object name categories. Friend-type template heads receive a
+normal diagnostic. Adopted CWG2397 permits array components in pointer/reference
+auto deduction patterns, while direct auto arrays remain invalid.
+
+The final compiler passes 9,209 strict tests and all 312 focused checks. Affected
+owners, debug info, self-host through PA5, inception, architecture/file/full
+placement audits, 42 harness suites with 677 checks, quick and smoke all pass.
+The fresh student export passes all 71 new required regressions and 42 reference
+wrappers, and byte-verifies all 98 CWG catalog files. ClassEntity280,
+VariableEntity96 and ExprFacts40 retain their sizes. Final PA35 release remains
+an end-of-campaign requirement.
+
+Normal actual-parent O0/O3 instruction ratios:
+  088: c939 -> corrected8340 1.000582 / 1.000190
+  100: 8340 -> 168c          1.000012 / 1.000008
+  098: 168c -> 29bd          0.999980 / 1.000000
+  101: 29bd -> 3540          1.000014 / 1.000007
+Every frozen object pair is identical. Quick self/seed ratios .993275/1.025236,
+zero behavior failures and all existing kernel limits pass. No additional
+campaign-wide performance cap or custom calibration was introduced.
+
+Unchanged declared suites:
+  GCC:   3,742/4,110 (91.05%), upstream 4,110/4,110.
+  Clang: 796/802 (99.25%), upstream 802/802.
+Against accepted096/097/099, GCC gains six configurations across auto24,
+constexpr-64462 and constexpr-base7; Clang gains the friend-type-template and
+no-ODR-use cases. There are no lost passes. Remaining outcomes are:
+  GCC: {'passed': 3742, 'diagnostic-missing': 190, 'compile-failed': 178}
+  Clang: {'passed': 796, 'diagnostic-missing': 6}
+These are test outcomes, not a deduplicated bug count.
+cppgm/upstream suite elapsed: GCC 26.671/65.494s;
+Clang 4.370/25.846s.
+Ratios 0.407/0.169 remain NON-COMPARABLE because cppgm still fails cases.
+Both jobs retain the complete paired observations and unchanged manifests.
+
+The initial b934 candidate was not accepted: full integration found a strict
+LowIR change, a default-lambda crash and a lost ellipsis diagnostic. Corrected
+8340 restores all three before acceptance; original failed observations remain.
+The full harness also caught the newly appended export-document path needing
+sorting. Only list order changed, the compiler stayed3540, and all harness/doc,
+quick/smoke and fresh export checks subsequently passed. No existing reference
+output was regenerated to hide a compiler regression.
+
+Offline references now include 85 issue texts, 11 complete papers, index and
+provenance manifest. Every catalog file matches the fresh export. Draft1584,
+1634 and1647 remain reference-only. Further1696/1815 documents belong to the
+pending102 repair, not this accepted compiler epoch.
+
+Next: integrate103 explicit-declaration restrictions and complete102 adopted
+reference-member temporary lifetime rules with the normal actual-parent gates,
+required regressions, full checks and fresh export. Remaining GCC/Clang gaps,
+useful coverage expansion and final PA35 release remain open. No remote CI
+execution or exhaustive C++11 proof is claimed.
+
+Earlier accepted checkpoint (retained):
+
 Accepted namespace, member-initializer and constructor-cycle fixes (2026-11-07)
 
 Compiler source: 264c9fda3 (exact tested source cabfe7739).
