@@ -1019,15 +1019,25 @@ DeclaratorInfo Analyzer::declarator(const syntax::Declarator* declarator, const 
 	bool specified = false;
 	uint32_t derivations = 0;
 	const syntax::ParameterClause* defaults = nullptr;
+	bool direct_reference = false;
 	for (const syntax::Declarator* current = declarator; current != nullptr; current = current->nested)
 	{
 		check_stack(current->location);
 		for (const syntax::PtrOperator& pointer : current->pointers)
 		{
+			// 8.3.2p5/p6: collapsing applies to a reference supplied by
+			// an alias, decltype or template parameter, not another
+			// reference formed directly in this declarator.
+			if (direct_reference && (pointer.kind == TokenKind::OP_AMP || pointer.kind == TokenKind::OP_LAND))
+			{
+				substitution_error(current->location, "reference to a reference in a declarator");
+				return info;
+			}
 			// An invalid type in a substitution (14.8.2p8) is its failure.
 			type = ptr_operator(pointer, type, scope, current->location);
 			if (failed())
 				return info;
+			direct_reference = type->is_reference();
 			function = nullptr;
 			array = nullptr;
 			if (specified && ++derivations > 1)
@@ -1041,6 +1051,7 @@ DeclaratorInfo Analyzer::declarator(const syntax::Declarator* declarator, const 
 			type = apply_suffix(suffix, type, after, current->location, &suffix == member_suffix ? member : nullptr);
 			if (failed())
 				return info;
+			direct_reference = false;
 			function = suffix.kind == syntax::DeclaratorSuffixKind::Function ? &suffix : nullptr;
 			if (function != nullptr && function->parameters->has_defaults)
 			{

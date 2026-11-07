@@ -1,0 +1,7 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    variable f lvalue-reference to function of () returning lvalue-reference to int
+    variable g rvalue-reference to function of () returning rvalue-reference to int
+end translation unit

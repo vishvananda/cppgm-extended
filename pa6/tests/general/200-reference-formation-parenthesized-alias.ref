@@ -1,0 +1,7 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type-alias R lvalue-reference to int
+    variable value lvalue-reference to int
+end translation unit

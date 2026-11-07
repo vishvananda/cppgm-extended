@@ -1,0 +1,8 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    variable x int
+    type-alias R lvalue-reference to int
+    function f function of (lvalue-reference to int, lvalue-reference to int) returning void
+end translation unit
