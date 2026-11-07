@@ -1,3 +1,37 @@
+Accepted dependent-array and block-extern repairs (2026-11-07)
+
+CXX11-090/091 are integrated at source7638a3855, compiler SHA256
+c251736e002f54fb80d1131ab776e55e37b120959a9af86b8616e9d88f2b52fb.
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-090091-acceptance-v1.json
+
+Dependent block-extern compatibility is checked after substitution. Canonical
+namespace definitions can be reused by block extern declarations without relying
+on their is_extern spelling. Foreign namespace using declarations, automatic and
+block-static conflicts, incompatible instantiated arrays, and ordinary static
+template definitions retain their required diagnostics.
+
+All16 normal stages pass, including9,042 strict tests, debug, selfhostPA5,
+inception, architecture/file/full placement, harness, quick and smoke. Fresh
+student export passes15 focused controls and42 reference wrappers. Focused
+checks pass64/64 versus24/64 on the actual parent. Normal parent/candidate
+instruction ratios are1.000039(O0)/1.000019(O3), with identical frozen objects.
+Quick self/seed ratios .993241/1.025389 pass, behavior failures0.
+
+Unchanged manifests: GCC3,704/4,112(90.08%);Clang791/807(98.02%). Both native
+compilers pass every selected case. Whole-suite cppgm/upstream times:
+GCC27.610/63.616seconds;Clang4.024/26.212seconds. Failed-suite timing ratios
+remain NON-COMPARABLE. One original Clang array-redeclaration case is repaired;
+no test was removed by these compiler fixes.
+
+A separate primary-source oracle review and its5 independent core controls are
+being validated. Its selection changes are not compiler improvements. The
+catalog addition provides73 CWG texts and10 papers; pending combined export
+integration will include85 catalog files. 088 aggregate/array non-ODR-use,
+093 friend-default uniqueness,094 one-element aggregate lists, other compiler
+gaps, useful coverage expansion and finalPA35release remain open.
+
+Earlier accepted checkpoint (retained):
+
 Accepted local-friend, scalar-constant and ADL repairs (2026-11-07)
 
 Compiler source: f3da504514d41a7936557d3d78665a95bfa9ebbd

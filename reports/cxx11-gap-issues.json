@@ -5699,25 +5699,33 @@
   {
     "id": "CXX11-090",
     "compiler_language_gap": true,
-    "status": "isolated-validation",
+    "status": "closed",
     "symptom": "Dependent block-extern array redeclaration compatibility checked before template substitution",
     "owning_pa": "PA14:100",
     "standards_basis": "N3485 3.5p10,8.3.4p3,14.6p8;CWG619 same-scope bound completion",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-090",
     "offline_decisions": [
       "doc/cwg/cwg-0619.txt"
-    ]
+    ],
+    "fix_revision": "a57af7eba",
+    "integrated_candidate_revision": "7638a38554be5ae3c7b72b0f9c2722b59fcfcfd8",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-090091-acceptance-v1.json",
+    "checks": "15 required controls; integrated64/64 versus actual parent24/64. Full9042strict/16normal stages, fresh15focused export+42wrappers. Normal actual-parent instructions1.000039O0/1.000019O3, frozenobjects exact; quick passes. Original807Clang manifest gains array-redeclaration.cpp:791/807. GCC unchanged3704/4112. Broader619scope boundaries remain separate; no diagnostic wording matching."
   },
   {
     "id": "CXX11-091",
     "compiler_language_gap": true,
-    "status": "isolated-validation",
+    "status": "closed",
     "symptom": "Block extern reuse incorrectly depends on canonical namespace definition is_extern flag rather than owning declaration scope",
     "owning_pa": "PA10:100;PA16:300 static neighbor",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-090",
     "standards_basis": "Block-extern namespace identity and same-scope array redeclarations; preserve foreign using and ordinary local conflicts",
     "offline_decisions": [
       "doc/cwg/cwg-0619.txt"
-    ]
+    ],
+    "fix_revision": "a57af7eba",
+    "integrated_candidate_revision": "7638a38554be5ae3c7b72b0f9c2722b59fcfcfd8",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-090091-acceptance-v1.json",
+    "checks": "15 required controls; integrated64/64 versus actual parent24/64. Full9042strict/16normal stages, fresh15focused export+42wrappers. Normal actual-parent instructions1.000039O0/1.000019O3, frozenobjects exact; quick passes. Original807Clang manifest gains array-redeclaration.cpp:791/807. GCC unchanged3704/4112. Broader619scope boundaries remain separate; no diagnostic wording matching."
   }
 ]
