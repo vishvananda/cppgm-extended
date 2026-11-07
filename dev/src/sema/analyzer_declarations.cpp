@@ -1246,10 +1246,12 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 		definition = false;
 	if (variable != nullptr)
 	{
-		// A dependent declaration may match after substitution (14.6p8).
-		// Its instantiations repeat this check with concrete types.
+		// A dependent block extern may match after substitution (14.6p8).
+		// Its instantiations repeat this check with concrete types; static
+		// member definitions still match their declaration's pattern now.
 		if (!CompatibleVariableTypes(variable->type, type) &&
-			(template_depth_ == 0 || (!dependent_type(variable->type) && !dependent_type(type))))
+			(where->kind != ScopeKind::Block || !specifiers.is_extern || template_depth_ == 0 ||
+				(!dependent_type(variable->type) && !dependent_type(type))))
 			error(location, "conflicting declaration of a variable");
 		// 7.1.1p1: ordinary declarations all spell thread_local, or none do.
 		// Explicit-instantiation directives use their separate entity path.
