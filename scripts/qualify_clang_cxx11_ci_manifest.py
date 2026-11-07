@@ -6,6 +6,7 @@ using cppgm outcomes. A failure remains an applicability/standard-specific
 triage observation; the ordinary paired run still executes the fixed manifest.
 """
 import argparse
+from collections import Counter
 import json
 from pathlib import Path
 
@@ -19,9 +20,13 @@ def qualification_cases(manifest):
         policy = case.get('qualification')
         if policy is None:
             continue
-        if policy['kind'] != 'implicit-mode-cxx11' or policy['additional_upstream_flags'] != ['-pedantic-errors']:
+        strict = (policy['kind'] == 'implicit-mode-cxx11' and case['dialect'] == 'c++11'
+                  and policy['additional_upstream_flags'] == ['-pedantic-errors'])
+        extension = (policy['kind'] == 'documented-gnu-cxx11' and case['dialect'] == 'gnu++11'
+                     and policy['additional_upstream_flags'] == [] and policy.get('source_policy_issue'))
+        if not (strict or extension):
             raise ValueError('Unknown strict native qualification policy')
-        cases.append(dict(case, upstream_flags=[*case['upstream_flags'], '-pedantic-errors']))
+        cases.append(dict(case, upstream_flags=[*case['upstream_flags'], *policy['additional_upstream_flags']]))
     return cases
 
 
@@ -55,19 +60,21 @@ def main(argv=None):
     passed = complete and result['passed'] == len(cases)
     scripts = Path(__file__).resolve().parent
     report = dict(schema=1, suite='clang', passed=passed, complete=complete,
+                  cohorts=dict(Counter(c['qualification']['kind'] for c in cases)),
                   manifest_sha256=sha256(args.manifest), binary=binary, workers=args.workers,
                   runner_scripts={n: sha256(scripts / n) for n in [
                       'qualify_clang_cxx11_ci_manifest.py', 'run_cxx11_ci_suite.py',
                       'upstream_dg_proxy.py', 'upstream_clang_language.py']},
                   result=result,
-                  interpretation='Strict native qualification only. Failures require applicability/standard '
+                  interpretation='Native qualification: strict ISO11 and source-pinned documented GNU11 '
+                                 'extension cohorts are distinct. Failures require applicability/standard '
                                  'triage; do not infer cppgm defects, promote warnings to mandatory errors, '
                                  'or automatically change positive expectations. The normal paired run '
                                  'must still execute the unchanged fixed manifest.')
     write_json(output / 'results.json', report)
     (output / 'summary.md').write_text(
         '### Clang implicit-mode C++11 qualification\n\n'
-        f"Strict native: {result['passed']} / {len(cases)}; executed {result['executed']}.\n\n"
+        f"Native qualified: {result['passed']} / {len(cases)}; executed {result['executed']}.\n\n"
         + report['interpretation'] + '\n')
     print(json.dumps(dict(passed=passed, qualified=result['passed'], selected=len(cases),
                           executed=result['executed'], output=str(output))))

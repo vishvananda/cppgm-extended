@@ -80,6 +80,11 @@ class Suite(unittest.TestCase):
         projected, = qualification_cases(dict(cases=[case]))
         self.assertEqual(projected['upstream_flags'], ['-pedantic-errors'])
         self.assertEqual(case['upstream_flags'], [])
+        case['dialect'] = 'gnu++11'
+        case['qualification'] = dict(kind='documented-gnu-cxx11', additional_upstream_flags=[],
+                                     source_policy_issue='CXX11-065')
+        extension, = qualification_cases(dict(cases=[case]))
+        self.assertEqual(extension['upstream_flags'], [])
         case['qualification']['additional_upstream_flags'] = ['-Werror']
         with self.assertRaises(ValueError):
             qualification_cases(dict(cases=[case]))

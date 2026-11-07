@@ -201,6 +201,8 @@ def disposition_reason(name, digest, dispositions):
     if reviewed:
         if reviewed['sha256'] != digest:
             raise ValueError('Stale source-pinned language disposition: ' + name)
+        if reviewed['status'] == 'documented-gnu-extension-positive':
+            return None
         return reviewed['status'] + ': ' + reviewed['reason']
     return None
 
@@ -250,6 +252,19 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                 projection = dict(project_run(directive.command, native, policy_tokens, True)
                                   if implicit_cxx11 else
                                   project_run(directive.command, native, policy_tokens))
+                mode = (dispositions or {}).get('llvm-project/' + name, {})
+                if mode.get('status') == 'documented-gnu-extension-positive':
+                    if 'qualification' not in projection:
+                        raise Excluded('Documented GNU projection requires a no-standard RUN')
+                    projection['dialect'] = 'gnu++11'
+                    projection['qualification'] = dict(
+                        kind='documented-gnu-cxx11', additional_upstream_flags=[],
+                        source_policy_issue=mode['issue'],
+                        status='Source-pinned documented GNU extension; ordinary native GNU++11 '
+                               'qualification, distinct from retained failed strict ISO observations')
+                    projection['adaptations'] = [*projection['adaptations'],
+                        'GNU++11 acceptance covers documented anonymous struct/union semantics; '
+                        'not an ISO11-positive claim']
                 verification = projection.pop('verification', [])
                 expected = 'accept'
                 if DIAGNOSTIC.search(text):
@@ -287,7 +302,7 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                 coverage='Positive object acceptance and ' +
                          ('active-error required-diagnostic candidates' if verify_negatives else
                           'adjudicated required diagnostics') + ' from self-contained ' +
-                         ('explicit C++11/0x and separately native-qualified implicit-mode syntax RUNs; '
+                         ('explicit C++11/0x and implicit-mode syntax RUNs requiring separate native qualification; '
                           if implicit_cxx11 else 'explicit C++11/0x syntax RUNs; ')
                          + 'both ISO and GNU spellings retain their declared dialect; no full Clang-suite claim',
                 limitations=['Selection is independent of cppgm acceptance; upstream qualification failures stay visible',

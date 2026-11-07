@@ -100,5 +100,47 @@
     "sha256": "806811685653b89bd2d8cb368c9e75145741ee3e0fa3a1595b636fd645ed9e90",
     "reason": "Active expected errors constrain nonstandard gsl::suppress/clang::suppress argument and appertainment rules. Nonstandard attribute behavior is implementation-defined; current wording specifically permits unrecognized attributes to be ignored. No independent standard C++ syntax violation was identified in the file.",
     "issue": "CXX11-059"
+  },
+  "llvm-project/clang/test/CXX/temp/temp.fct.spec/temp.deduct/temp.deduct.partial/p3.cpp": {
+    "status": "later-standard-positive-unmapped",
+    "sha256": "bc203ccf29a1a844fbd02cd07fcdaf280358459dcce859372749e0a3bd92c87b",
+    "reason": "Native defaultGNU17 source uses message-less static_assert (N3485 7 grammar requires a string) and its final DeducedArgs assertion fails under native11 overload identity. This whole-source default17 positive is not a valid11 acceptance oracle. Required PA18:100 100-clang-explicit-argument-overload-slice.t retains four independently valid primary-overload assertions with11messages. Disputed explicit specialization prefix remains065review, not silently accepted or declared a compiler defect.",
+    "issue": "CXX11-065"
+  },
+  "llvm-project/clang/test/SemaCXX/GH41441.cpp": {
+    "status": "mixed-later-standard-positive-unmapped",
+    "sha256": "5434f9212ff39e505075c3dc58965d48e85dfb7d3a6893b4bed0fe33d8084712",
+    "reason": "The original boro function deduces an auto return type without trailing-return-type, a C++14 feature (N3638); N3485 7.1.6.4p1,p2,p5 does not permit it. Whole-source default17 positive is not11valid. Required PA17:300 300-clang-array-value-initialization-slice.t retains independent11prefix with defined placement allocation and runtimezero checks; original LLVM-output obligations remain historical, not claimed satisfied by syntax projection.",
+    "issue": "CXX11-065"
+  },
+  "llvm-project/clang/test/SemaCXX/local-class-template-param-crash.cpp": {
+    "status": "later-standard-positive-unmapped",
+    "sha256": "a868bb0ec5e7ab76a57f8d3a5db856bff05af4ab8cc030e52d2532a0e159ded2",
+    "reason": "The instantiated lambda has an auto parameter, generic-lambda syntax introduced by N3649 for14, not a backported CWG decision. N3485 7.1.6.4p5 disallows auto in that parameter context. Whole-source default17 crash/positive test has no independent standalone11positive prefix; retain as unmapped later-feature coverage, not a cppgm language failure.",
+    "issue": "CXX11-065"
+  },
+  "llvm-project/clang/test/SemaCXX/indirect-goto.cpp": {
+    "status": "unmapped-gnu-extension",
+    "sha256": "ddbc4840deab6ddf3ee7c27fe5773fd7578fc3c17a819161da3f701caed86289",
+    "reason": "Original defaultGNU17 test exercises GNU computed goto and label addresses, documented in GCC Labels-as-Values. N3485 6.6.4 specifies identifier targets, not computed expressions. No supported handout policy found for this extension. Positive GNU semantics remain unmapped; not counted as mandatory ISO11acceptance or converted to requirednegative solely because pedantic rejects.",
+    "issue": "CXX11-065"
+  },
+  "llvm-project/clang/test/SemaCXX/PR22637.cpp": {
+    "status": "documented-gnu-extension-positive",
+    "sha256": "46d013d7c4a56cb9dd65d9194f6d40ea03edef94931ba3cedb79e16552976a8c",
+    "reason": "Original no-standard native cc1 RUN uses defaultGNU17; no inherited localcfg. Anonymous structs with injected member lookup are GNU extension semantics, explicitly supported by PA11 README370 and PA29 README41. Source contains no independent later-standard feature requirement. Project into GNU++11 and retain positive acceptance with ordinary nativeGNU11qualification; strictISO failure is retained externally, not interpreted as universal invalidity or required diagnostic severity. N3485 9.2p1/9.5p5 distinguish standard anonymous unions; no claim this whole source is ISO11valid.",
+    "issue": "CXX11-065"
+  },
+  "llvm-project/clang/test/SemaCXX/PR35832.cpp": {
+    "status": "documented-gnu-extension-positive",
+    "sha256": "4e636ff5385d9778148bdeecfa385744b8a45f545c781f4d60d9808dddcfb035",
+    "reason": "Original no-standard native cc1 RUN uses defaultGNU17; no inherited localcfg. Anonymous structs with injected member lookup are GNU extension semantics, explicitly supported by PA11 README370 and PA29 README41. Source contains no independent later-standard feature requirement. Project into GNU++11 and retain positive acceptance with ordinary nativeGNU11qualification; strictISO failure is retained externally, not interpreted as universal invalidity or required diagnostic severity. N3485 9.2p1/9.5p5 distinguish standard anonymous unions; no claim this whole source is ISO11valid.",
+    "issue": "CXX11-065"
+  },
+  "llvm-project/clang/test/SemaTemplate/instantiate-anonymous-union.cpp": {
+    "status": "documented-gnu-extension-positive",
+    "sha256": "afb71e0a7350673204ca6c089b091eda8b9f438940e3276128bf0128c0a32067",
+    "reason": "Original no-standard native cc1 RUN uses defaultGNU17; no inherited localcfg. Anonymous structs with injected member lookup are GNU extension semantics, explicitly supported by PA11 README370 and PA29 README41. Source contains no independent later-standard feature requirement. Project into GNU++11 and retain positive acceptance with ordinary nativeGNU11qualification; strictISO failure is retained externally, not interpreted as universal invalidity or required diagnostic severity. N3485 9.2p1/9.5p5 distinguish standard anonymous unions; no claim this whole source is ISO11valid.",
+    "issue": "CXX11-065"
   }
 }
