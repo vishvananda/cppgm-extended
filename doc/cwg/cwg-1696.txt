@@ -1,0 +1,118 @@
+CWG 1696: Temporary lifetime and non-static data member initializers
+Source: https://cplusplus.github.io/CWG/issues/1696.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1696. Temporary lifetime and non-static data member initializers
+Section: 6.8.7 [class.temporary [1]] Status: CD4 Submitter: Richard Smith Date:
+2013-05-31
+
+[Moved to DR at the November, 2014 meeting.]
+
+Presumably a temporary bound to a reference in a non-static data member initializer
+should be treated analogously with what happens in a ctor-initializer, but the current
+wording of 6.8.7 [class.temporary [2]] paragraph 5 is not clear on this point.
+
+See also issue 1815 [3] for similar questions regarding aggregate initialization.
+
+Proposed resolution (June, 2014):
+
+1.
+
+Add the following after 9.5.2 [dcl.init.aggr [4]] paragraph 7:
+
+[INSERT: If a reference member is initialized from its brace-or-equal-initializer and a
+potentially-evaluated subexpression thereof is an aggregate initialization that would
+use that brace-or-equal-initializer, the program is ill-formed. [Example:]
+
+
+[INSERT:   struct A;
+  extern A a;
+  struct A {
+    const A& a1 { A{a,a} };   // OK
+    const A& a2 { A{} };      // error
+  };
+  A a{a,a};                   // OK]
+
+
+If an aggregate class C contains a subaggregate...
+
+2.
+
+Delete the first bullet of 6.8.7 [class.temporary [2]] paragraph 5:
+
+The second context is when a reference is bound to a temporary.117 The temporary to
+which the reference is bound or the temporary that is the complete object of a subobject
+to which the reference is bound persists for the lifetime of the reference except:
+
+-
+
+[DELETE: A temporary bound to a reference member in a constructor's ctor-initializer
+(11.9.3 [class.base.init [5]]) persists until the constructor exits.]
+
+-
+
+...
+
+3.
+
+Insert the following as a new paragraph after 11.9.3 [class.base.init [6]] paragraph 7:
+
+[INSERT: A temporary expression bound to a reference member in a mem-initializer is
+ill-formed. [Example:]
+
+
+[INSERT:   struct A {
+    A() : v(42) { }  // error
+    const int& v;
+  };]
+
+
+[INSERT: —end example]]
+
+In a non-delegating constructor, if a given potentially constructed subobject...
+
+4.
+
+Insert the following as a new paragraph after 11.9.3 [class.base.init [7]] paragraph 9:
+
+[INSERT: A temporary expression bound to a reference member from a
+brace-or-equal-initializer is ill-formed. [Example:]
+
+
+[INSERT:   struct A {
+    A() = default;          // OK
+    A(int v) : v(v) { }     // OK
+    const int& v = 42;      // OK
+  };
+  A a1;                     // error: ill-formed binding of temporary to reference
+  A a2(1);                  // OK, unfortunately]
+
+
+[INSERT: —end example]]
+
+In a non-delegating constructor, the destructor for each potentially constructed
+subobject...
+
+This resolution also resolves issue 1815 [3].
+
+Source links:
+[1] https://wg21.link/class.temporary
+[2] https://wg21.link/class.temporary#5
+[3] cwg-1815.txt; https://cplusplus.github.io/CWG/issues/1815.html
+[4] https://wg21.link/dcl.init.aggr#7
+[5] https://wg21.link/class.base.init
+[6] https://wg21.link/class.base.init#7
+[7] https://wg21.link/class.base.init#9

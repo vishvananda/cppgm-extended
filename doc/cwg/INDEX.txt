@@ -266,3 +266,12 @@ CWG 2397: auto specifier for pointers and references to arrays
   Adopted as a DR, June 2021; full issue includes complete approved wording.
   Pointer/reference array patterns may contain auto; the deduction type itself
   must not be an array. Catalog inclusion is not an exhaustive interaction claim.
+
+CWG 1696 | cwg-1696.txt
+  Reference members initialized from temporaries; adopted DR, November 2014.
+  The issue contains the complete resolution, including the related CWG 1815
+  aggregate member/base initialization case.
+CWG 1815 | cwg-1815.txt
+  Historical aggregate temporary/reference member question, resolved by CWG 1696.
+  Use cwg-1696.txt for the adopted wording. Inclusion does not claim exhaustive
+  implementation of either issue; the compiler repair is tracked separately.

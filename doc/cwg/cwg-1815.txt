@@ -1,0 +1,58 @@
+CWG 1815: Lifetime extension in aggregate initialization
+Source: https://cplusplus.github.io/CWG/issues/1815.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1815. Lifetime extension in aggregate initialization
+Section: 9.5.2 [dcl.init.aggr [1]] Status: CD4 Submitter: Dinka Ranns Date: 2013-11-22
+
+[Moved to DR at the November, 2014 meeting.]
+
+With the recent addition of brace-or-equal-initializers to aggregates and the presumed
+resolution for issue 1696 [2], it is not clear how lifetime extension of temporaries
+should work in aggregate initialization. For example:
+
+
+  struct A { };
+  struct B { A&& a { A{} } };
+  B b;         // #1
+  B b{ A{} };  // #2
+  B b{};       // #3
+
+
+#1 is default initialization, so (presumably) the lifetime of the temporary persists
+only until B's default constructor exits. #2 is aggregate initialization, which binds
+B::a to the temporary in the initializer for b and thus extends its lifetime to that of
+b. #3 is aggregate initialization, but it is not clear whether the lifetime of the
+temporary in the non-static data member initializer for B::a should be lifetime-extended
+like #2 or not, like #1.
+
+One possibility might be to extend the lifetime in #3 but to give B a deleted default
+constructor since it would extend the lifetime of a temporary.
+
+See also issue 1696 [2].
+
+Notes from the February, 2014 meeting:
+
+CWG agreed with the suggested direction, which would treat #3 in the example like #2 and
+make the default constructor deleted, resulting in #1 being ill-formed.
+
+Proposed resolution (June, 2014):
+
+This issue is resolved by the resolution of issue 1696 [2].
+
+Source links:
+[1] https://wg21.link/dcl.init.aggr
+[2] cwg-1696.txt; https://cplusplus.github.io/CWG/issues/1696.html

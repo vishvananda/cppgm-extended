@@ -644,6 +644,18 @@
       "adopted_papers": []
     },
     {
+      "issue": 1696,
+      "title": "Temporary lifetime and non-static data member initializers",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1696.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1696.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1696.html",
+      "source_html_sha256": "9f7ce2e024d59bf51471273d3992a1cf301041f7306c904d6a60a08ea04631ec",
+      "text_sha256": "ff25d46289c5d6976bf00a9ebb0d039096c46071fca7c9300eab02f4449b25f9",
+      "adopted_papers": []
+    },
+    {
       "issue": 1722,
       "title": "Should lambda to function pointer conversion function be noexcept?",
       "status": "CD4",
@@ -707,6 +719,18 @@
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1793.html",
       "source_html_sha256": "99c1ddeb450f2458190bfc1d6d38d028e2a3caeb0cfebf2e4d6268f59da31f69",
       "text_sha256": "b6dc38a1a7630182f24a1064be6908f4b121899f63a21921d33e11d10d2ebf64",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1815,
+      "title": "Lifetime extension in aggregate initialization",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1815.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1815.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1815.html",
+      "source_html_sha256": "c0bd9ee0190866ef76d5799ed7043cc4c1eef45dae21a63c43179f8815c9613a",
+      "text_sha256": "f2e7e8a8c9d8c46355547410ef613511926a2fb6259d2112da44639bb5fb82ba",
       "adopted_papers": []
     },
     {
