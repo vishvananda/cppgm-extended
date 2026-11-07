@@ -440,6 +440,30 @@ function @main() -> i32 {
         nested = audit.detect_features("struct C { typedef int T; }; using T = C::T;")
         self.assertIn("class.nested_type", nested)
 
+    def test_namespace_using_is_not_a_class_feature(self) -> None:
+        for declaration in ("int target(int);", "int target;", "typedef int target;"):
+            source = "namespace other { " + declaration + " } using other::target;"
+            hits = audit.detect_features(source)
+            self.assertNotIn("class.nested_type", hits)
+            self.assertNotIn("class.using_declaration", hits)
+            self.assertIn("lookup.using_directive", hits)
+        mixed = audit.detect_features(
+            "namespace other { int target; } using other::target; "
+            "struct Base { typedef int Type; void f(); }; "
+            "struct Derived : Base { using Base::f; }; using Alias = Base::Type;"
+        )
+        self.assertIn("class.nested_type", mixed)
+        self.assertIn("class.using_declaration", mixed)
+        nested = audit.detect_features(
+            "namespace other { struct C { typedef int Type; }; } using other::C::Type;"
+        )
+        self.assertIn("class.nested_type", nested)
+        collision = audit.detect_features(
+            "namespace other { int target; } namespace inner { "
+            "struct other { static int target; }; using other::target; }"
+        )
+        self.assertIn("class.using_declaration", collision)
+
     def test_pre_lowir_semantic_surface_does_not_claim_later_runtime_owner(self) -> None:
         class_feature = audit.FeatureMeta(
             "class.basic", "pa11", 100, "", ""

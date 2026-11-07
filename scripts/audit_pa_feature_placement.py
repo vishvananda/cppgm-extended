@@ -1331,6 +1331,26 @@ def guard_only_eh(ref_text: str) -> bool:
     return saw_control
 
 
+def strip_known_namespace_using_declarations(code: str) -> str:
+    """Mask direct namespace imports only for class-feature heuristics."""
+    namespaces = set(re.findall(r"\bnamespace\s+([A-Za-z_]\w*)\s*\{", code))
+    # A same-spelled type in another scope makes this lexical shortcut
+    # inconclusive; retain the conservative class-feature finding there.
+    namespaces.difference_update(re.findall(r"\b(?:class|struct|union)\s+([A-Za-z_]\w*)", code))
+    namespaces.difference_update(re.findall(r"\busing\s+([A-Za-z_]\w*)\s*=", code))
+    namespaces.difference_update(re.findall(r"\btypedef\b[^;{}]*\b([A-Za-z_]\w*)\s*;", code))
+    imports = list(re.finditer(r"\busing\s+([A-Za-z_]\w*)\s*::\s*[A-Za-z_]\w*\s*;", code))
+    imports = [match for match in imports if match.group(1) in namespaces]
+    if not imports:
+        return code
+    spans = find_class_spans(code, find_template_headers(code))
+    out = list(code)
+    for match in imports:
+        if not inside_class_body(match.start(), spans):
+            out[match.start():match.end()] = " " * (match.end() - match.start())
+    return "".join(out)
+
+
 def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dict[str, FeatureHit]:
     if "/pa9/tests/abi/" in test_path or test_path.startswith("pa9/tests/abi/"):
         # PA9 consumes normalized ABI facts, not C++ source or LowIR. Words
@@ -1341,6 +1361,7 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
     no_comments = strip_comments(source)
     code = strip_string_literals(no_comments)
     exception_code = strip_dynamic_exception_specifications(code)
+    class_code = strip_known_namespace_using_declarations(code)
     declared_intrinsics = declared_intrinsic_like_names(code)
     hits: dict[str, FeatureHit] = {}
     if exception_code != code:
@@ -1348,6 +1369,8 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             "function.dynamic_exception_spec", ["source:dynamic exception specification"])
     for rule in RULES:
         haystack = no_comments if rule.use_raw else code
+        if rule.feature_id in {"class.nested_type", "class.using_declaration"}:
+            haystack = class_code
         if rule.feature_id == "exception.try_catch":
             haystack = exception_code
         if rule.feature_id == "template.builtin_traits":
