@@ -617,11 +617,12 @@ void Analyzer::agree_block_linkage(const Entity* entity, bool c_linkage, bool in
 	// int y;` is ill-formed) and language linkage (7.5p5).
 	if (block_linkages_.empty())
 		return;
+	const Scope* space = enclosing_namespace(entity->owner);
 	const uint32_t newest = block_linkage_index_.find(entity->name);
 	for (uint32_t i = newest == PointerMap::kMissing ? 0 : newest; i != 0; i = block_linkages_[i - 1].next)
 	{
 		const BlockLinkage& record = block_linkages_[i - 1];
-		if (record.space != entity->owner)
+		if (record.space != space)
 			continue;
 		const Entity* earlier = record.entity;
 		if (earlier->kind != entity->kind)
@@ -635,8 +636,14 @@ void Analyzer::agree_block_linkage(const Entity* entity, bool c_linkage, bool in
 			if (declared_type(function->type)->element != declared_type(block->type)->element)
 				error(location, "a declaration of a function with another type than a block-scope declaration's");
 		}
-		else if (!CompatibleVariableTypes(earlier->type, entity->type))
-			error(location, "a declaration of a variable with another type than a block-scope declaration's");
+		else
+		{
+			if (!CompatibleVariableTypes(earlier->type, entity->type))
+				error(location, "a declaration of a variable with another type than a block-scope declaration's");
+			if (static_cast<const VariableEntity*>(earlier)->is_thread_local !=
+				static_cast<const VariableEntity*>(entity)->is_thread_local)
+				error(location, "declarations of a variable with different thread storage duration");
+		}
 		if (internal)
 			error(location, "an internal declaration of an entity a block-scope declaration gave external linkage");
 		if (c_linkage != record.c_linkage)
@@ -1186,6 +1193,10 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	{
 		if (!CompatibleVariableTypes(variable->type, type))
 			error(location, "conflicting declaration of a variable");
+		// 7.1.1p1: ordinary declarations all spell thread_local, or none do.
+		// Explicit-instantiation directives use their separate entity path.
+		if (variable->is_thread_local != specifiers.is_thread_local)
+			error(location, "declarations of a variable with different thread storage duration");
 		// 7.1.1p7-p8 (`extern int d; static int d;`).
 		if (specifiers.is_static && where->kind == ScopeKind::Namespace && !variable->internal_linkage)
 			error(location, "a static declaration of a variable declared with external linkage");
@@ -1565,7 +1576,10 @@ VariableEntity* Analyzer::new_variable(const Specifiers& specifiers, const char*
 		agree_block_linkage(variable, variable->c_linkage, variable->internal_linkage, location);
 	}
 	else if (where->kind == ScopeKind::Block && is_extern)
+	{
+		agree_block_linkage(variable, c_language_, false, location);
 		note_block_linkage(variable, where, c_language_);
+	}
 	if (member && where->entity != nullptr && where->entity->kind == EntityKind::Class)
 	{
 		ClassEntity* owner = static_cast<ClassEntity*>(where->entity);
