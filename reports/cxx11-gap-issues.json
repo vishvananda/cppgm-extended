@@ -5970,10 +5970,16 @@
   {
     "id": "CXX11-107",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-107",
-    "status": "pending",
+    "status": "closed",
     "compiler_language_gap": true,
-    "checks": "Scoped proof ready; full next joint validation pending.",
-    "scoped_receipt": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-107/scoped-checkpoint-v1.json"
+    "checks": "9295strict/72focused/allnormalchecks/fresh16fixture42wrapper102catalogexport; actuale75->c967 .999984/.999993exactobjects.",
+    "scoped_receipt": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-107/scoped-checkpoint-v1.json",
+    "symptom": "Explicit function specializations accepted imported or unrelated namespace owners.",
+    "standards_basis": "N3485 8.3p1,7.3.1.2p2 and adopted727; retain inline namespace sets and aliases.",
+    "owning_pa": "PA15:300",
+    "fix_revision": "616ca9aee",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-107109-acceptance-v1.json",
+    "compiler_sha256": "c967bcc21f7b817114307a31e22d61834d5dc05ad94946cfa1d1ede60a871551"
   },
   {
     "id": "CXX11-108",
@@ -5991,9 +5997,12 @@
   {
     "id": "CXX11-109",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-109",
-    "status": "pending",
+    "status": "closed",
     "compiler_language_gap": false,
-    "checks": "Scoped proof ready; full next joint validation pending.",
-    "scoped_receipt": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-109/root-review-verification-v1.json"
+    "checks": "Rootreviewverifier and allintegratednormal/exportchecks pass. 799/799Clang bothroles. Native failures retained.",
+    "scoped_receipt": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-109/root-review-verification-v1.json",
+    "kind": "source-pinned valid upstream baseline limitation",
+    "decision": "Original sharedvirtualmember lookup valid underN348510.2/5.2.5/5.2.2 and adopted39. Entire original plus runtime/static/nonvirtual boundaries are required; exact source excluded from both timed roles, not a suite pass.",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-107109-acceptance-v1.json"
   }
 ]

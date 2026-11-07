@@ -1,3 +1,61 @@
+Accepted specialization ownership and shared virtual lookup review (2026-11-07)
+
+Compiler code epoch: 616ca9aee; integrated source af725080b.
+SHA256: c967bcc21f7b817114307a31e22d61834d5dc05ad94946cfa1d1ede60a871551
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-107109-acceptance-v1.json
+
+CXX11-107 is accepted. Explicit function specializations must name their actual
+primary definition scope, allowing inline namespaces and namespace aliases.
+Using declarations/directives cannot create namespace ownership, and unrelated
+namespaces cannot declare a specialization of that primary. Twelve required
+PA15:300 controls cover five forbidden forms and seven valid neighbors.
+
+CXX11-109 is a source-specific oracle review, not a compiler repair. N3485
+10.2 merges identical designated member declarations, and the original has
+one shared virtual base. Pinned Clang's expected lookup ambiguity is stale;
+GCC also rejects some valid static forms. Preserve the ENTIRE original as a
+required PA23:100 control, shared state/address runtime coverage, PA22 static
+positive and nonvirtual negative neighbors. Only that exact upstream source is
+excluded from BOTH paired roles as a valid/upstream-baseline limitation; it is
+not a paired-suite pass. Earlier original800/802 observations remain recorded.
+
+The combined compiler passes 9,295 strict tests, all 72 focused configurations,
+affected suites, modern C++, debug info, self-host through PA5, inception,
+architecture/file/full placement audits, all 42 harness suites/679 checks,
+quick and smoke. Fresh export passes all 16 new fixtures and 42 reference
+wrappers; all 102 CWG catalog files and the LLVM license match byte for byte.
+The offline catalog has 88 issue texts and 12 complete papers, now including
+the full CWG39 history and complete adopted N1626 wording. Existing record
+sizes are unchanged.
+
+Actual-parent e75 -> c967 instruction ratios: O0 .999984, O3 .999993.
+Frozen objects are identical. Quick self/seed .993309/1.025288, zero behavior
+failures and all existing kernel limits pass. No extra cumulative gate or
+custom calibration was added. Initial fixture placement findings were fixed
+with byte-identical moves into PA15:300 before acceptance.
+
+Paired suites:
+  GCC:   3,748/4,110 (91.19%), upstream 4,110/4,110, unchanged records/outcomes.
+  Clang: 799/799 (100%), upstream 799/799, all selected cases pass.
+Clang gains the actual107 specialization diagnostic; review109 removes one
+unjustified mandatory-diagnostic expectation. The other799 case records remain
+byte-identical; no retained case loses a pass. GCC still has178 compile-failed
+and184 diagnostic-missing configurations; these are not deduplicated bug counts.
+
+Clang suite elapsed: cppgm3.975s/upstream25.348s, ratio .156835 on this passing
+identical suite. GCC failed-suite timing remains NON-COMPARABLE; raw counts,
+commands and elapsed observations remain in the paired receipt. Coverage and
+original unmet LLVM/assembly oracles remain explicit. This is a CI timing
+observation, not a general speed or complete C++11 conformance claim.
+
+Next:110 alignment pack expansion and111 standalone positive LLVM-only action
+coverage are in progress. The new111 cohort retains an exposed incomplete
+member-function-pointer parameter-layout failure for112. Other GCC language
+repairs, justified oracle reviews and final PA35 release remain open. No remote
+CI execution is claimed.
+
+Earlier accepted checkpoint (retained):
+
 Accepted explicit declarations, reference initialization and exception comparisons (2026-11-07)
 
 Compiler code epoch: 52f007a0e.
