@@ -4,4 +4,4 @@ int operator "" _character(char x) { return x != 'x'; }
 int operator "" _character(wchar_t x) { return x != L'x'; }
 int operator "" _character(char16_t x) { return x != u'x'; }
 int operator "" _character(char32_t x) { return x != U'x'; }
-int main() { return 'x'_character || L'x'_character || u'x'_character || U'x'_character; }
+int main() { return 'x'_character != 0 || L'x'_character != 0 || u'x'_character != 0 || U'x'_character != 0; }
