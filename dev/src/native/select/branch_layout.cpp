@@ -114,6 +114,7 @@ uint32_t FunctionSelector::layout_branches()
 		forward_home_reloads(*out_);
 	if (copied)
 		drop_redundant_tests(*out_);
+	drop_guarded_integer_extensions(*out_);
 	drop_repeated_compares(*out_);
 	Function& f = *out_;
 	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());

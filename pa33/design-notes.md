@@ -62,7 +62,9 @@ Know which readers need a narrow value's upper bits. Removing an extension
 is safe for a low-bit store and may be unsafe for an address index. Follow
 requirements through phis, selects and copies, not just the next instruction.
 Do not assume incoming upper bits are initialized when the ABI leaves them
-unspecified. A proof such as `convert trunc exact` may help; an arbitrary cast
+unspecified. A guard can narrow the possible full-width values enough to
+make a later normalization redundant. Check the original range through any
+truncation, merge every incoming edge and forget facts at unknown clobbers. A proof such as `convert trunc exact` may help; an arbitrary cast
 supplies no such proof.
 
 A calculation that reads only the low bits and then writes the full result

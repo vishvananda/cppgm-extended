@@ -22,6 +22,8 @@ uint32_t fuse_copies_into_lea(Function& function);
 // become one lea; a 32-bit zero-extension of a register whose upper half
 // the block already zeroed, or the next low-bit calculation overwrites,
 // becomes a nop. Returns the instructions removed.
+// Every incoming edge must prove that the later extension is redundant.
+uint32_t drop_guarded_integer_extensions(Function& function);
 uint32_t fuse_adds_and_extensions(Function& function);
 
 // A `test r, r` repeating the flags the instruction before it set from r

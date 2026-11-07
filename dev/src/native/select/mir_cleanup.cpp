@@ -1,6 +1,7 @@
 #include "native/select/mir_cleanup.h"
 
 #include <algorithm>
+#include <array>
 #include <climits>
 
 #include "native/mir/type_kinds.h"
@@ -2824,6 +2825,365 @@ uint32_t thread_decided_tests(Function& f, const lowir::Program& program)
 		}
 	}
 	return threaded;
+}
+
+namespace {
+struct IntegerInterval
+{
+	int64_t lo = 0, hi = 0;
+	bool known = false;
+	static IntegerInterval make(int64_t lo, int64_t hi)
+	{
+		IntegerInterval r;
+		r.lo = lo;
+		r.hi = hi;
+		r.known = true;
+		return r;
+	}
+};
+using IntegerState = std::array<IntegerInterval, 16>;
+IntegerInterval interval_operand(const Operand& op, const IntegerState& state)
+{
+	if (op.kind == OperandKind::Reg && op.reg < 16)
+		return state[op.reg];
+	if (op.kind == OperandKind::Imm)
+		return IntegerInterval::make(op.imm, op.imm);
+	return IntegerInterval();
+}
+IntegerInterval interval_sum(IntegerInterval a, IntegerInterval b, int64_t scale = 1, int64_t disp = 0)
+{
+	if (!a.known || !b.known)
+		return IntegerInterval();
+	const __int128 lo = static_cast<__int128>(a.lo) + static_cast<__int128>(b.lo) * scale + disp;
+	const __int128 hi = static_cast<__int128>(a.hi) + static_cast<__int128>(b.hi) * scale + disp;
+	if (lo < INT64_MIN || hi > INT64_MAX)
+		return IntegerInterval();
+	return IntegerInterval::make(static_cast<int64_t>(lo), static_cast<int64_t>(hi));
+}
+IntegerInterval interval_extension(const Inst& inst)
+{
+	const unsigned bits = 8 * register_bytes(inst.type);
+	if (bits >= 64)
+		return IntegerInterval();
+	if (inst.op == Op::Sext)
+		return IntegerInterval::make(-(int64_t(1) << (bits - 1)), (int64_t(1) << (bits - 1)) - 1);
+	return IntegerInterval::make(0, (int64_t(1) << bits) - 1);
+}
+void transfer_integer_interval(const Inst& inst, IntegerState& state)
+{
+	if (inst.op == Op::Nop || inst.op == Op::Jcc || inst.op == Op::Jmp || inst.op == Op::Ret)
+		return;
+	const bool variable_shift = (inst.op == Op::Shl || inst.op == Op::Shr || inst.op == Op::Sar || inst.op == Op::Rol ||
+									inst.op == Op::Ror) &&
+		inst.ops[1].kind != OperandKind::Imm;
+	if (!simple_inst(inst) || variable_shift)
+	{
+		state = IntegerState();
+		return;
+	}
+	const Reg d = written_reg(inst);
+	if (d >= 16)
+		return;
+	IntegerInterval value;
+	const IntegerInterval old = state[d];
+	switch (inst.op)
+	{
+	case Op::Mov:
+		if (wide_kind(inst.type))
+			value = interval_operand(inst.ops[1], state);
+		break;
+	case Op::Load:
+		switch (inst.type)
+		{
+		case lowir::TypeKind::U8:
+		case lowir::TypeKind::U16:
+		case lowir::TypeKind::U32:
+			value = IntegerInterval::make(0, (int64_t(1) << (8 * register_bytes(inst.type))) - 1);
+			break;
+		case lowir::TypeKind::I8:
+		case lowir::TypeKind::I16:
+		case lowir::TypeKind::I32:
+			value = IntegerInterval::make(-(int64_t(1) << (8 * register_bytes(inst.type) - 1)),
+				(int64_t(1) << (8 * register_bytes(inst.type) - 1)) - 1);
+			break;
+		default:
+			break;
+		}
+		break;
+	case Op::Sext:
+	case Op::Zext:
+		value = interval_extension(inst);
+		break;
+	case Op::Movzx:
+		value = IntegerInterval::make(0, 255);
+		break;
+	case Op::Lea:
+		if (inst.ops[1].kind == OperandKind::Mem && inst.ops[1].symbol == lowir::kNoId)
+		{
+			const Operand& m = inst.ops[1];
+			const IntegerInterval a = m.reg == kNoReg ? IntegerInterval::make(0, 0)
+				: m.reg < 16                          ? state[m.reg]
+													  : IntegerInterval();
+			const IntegerInterval b = m.index == kNoReg ? IntegerInterval::make(0, 0)
+				: m.index < 16                          ? state[m.index]
+														: IntegerInterval();
+			value = interval_sum(a, b, m.scale, m.disp);
+			if (!wide_kind(inst.type) &&
+				!(inst.type == lowir::TypeKind::I32 && value.known && value.lo >= 0 && value.hi <= UINT32_MAX))
+				value = IntegerInterval();
+		}
+		break;
+	case Op::And:
+		if (inst.ops[1].kind == OperandKind::Imm && inst.ops[1].imm >= 0 &&
+			(wide_kind(inst.type) || inst.type == lowir::TypeKind::I32 || inst.type == lowir::TypeKind::U32))
+			value = IntegerInterval::make(0, inst.ops[1].imm);
+		break;
+	case Op::Add:
+	case Op::Sub:
+		if (inst.ops[1].kind == OperandKind::Imm && (wide_kind(inst.type) || inst.type == lowir::TypeKind::U32))
+		{
+			IntegerInterval rhs = interval_operand(inst.ops[1], state);
+			if (inst.op == Op::Sub && rhs.lo != INT64_MIN)
+			{
+				rhs.lo = -rhs.lo;
+				rhs.hi = -rhs.hi;
+			}
+			else if (inst.op == Op::Sub)
+				rhs = IntegerInterval();
+			value = interval_sum(old, rhs);
+			if (inst.type == lowir::TypeKind::U32 && value.known && (value.lo < 0 || value.hi > UINT32_MAX))
+				value = IntegerInterval();
+		}
+		break;
+	default:
+		break;
+	}
+	state[d] = value;
+}
+IntegerInterval filter_integer_interval(IntegerInterval value, unsigned bits, int64_t lo, int64_t hi)
+{
+	if (!value.known || bits >= 64 || lo > hi)
+		return IntegerInterval();
+	const int64_t modulus = int64_t(1) << bits;
+	auto floor = [&](int64_t v) {
+		const int64_t q = v / modulus;
+		return q - (v < 0 && v % modulus != 0 ? 1 : 0);
+	};
+	const int64_t first = floor(value.lo), last = floor(value.hi);
+	if (last - first > 1)
+		return value;
+	bool found = false;
+	int64_t lower = 0, upper = 0;
+	for (int64_t q = first;; ++q)
+	{
+		const __int128 base = static_cast<__int128>(q) * modulus;
+		const __int128 a = std::max<__int128>(value.lo, base + lo), b = std::min<__int128>(value.hi, base + hi);
+		if (a <= b)
+		{
+			if (!found)
+			{
+				lower = static_cast<int64_t>(a);
+				upper = static_cast<int64_t>(b);
+				found = true;
+			}
+			else
+				upper = static_cast<int64_t>(b);
+		}
+		if (q == last)
+			break;
+	}
+	return found ? IntegerInterval::make(lower, upper) : IntegerInterval();
+}
+class GuardedIntegerRanges
+{
+	Function& f_;
+	std::vector<IntegerState> inputs_;
+	std::vector<uint8_t> reached_;
+	void push(uint32_t b, const IntegerState& state)
+	{
+		if (b >= inputs_.size())
+			return;
+		if (!reached_[b])
+		{
+			inputs_[b] = state;
+			reached_[b] = 1;
+			return;
+		}
+		for (unsigned r = 0; r < 16; ++r)
+		{
+			IntegerInterval& old = inputs_[b][r];
+			const IntegerInterval& in = state[r];
+			if (!old.known)
+				continue;
+			if (!in.known)
+				old = IntegerInterval();
+			else
+			{
+				old.lo = std::min(old.lo, in.lo);
+				old.hi = std::max(old.hi, in.hi);
+			}
+		}
+	}
+	void edge(uint32_t target, const IntegerState& state, const Inst* cmp, Cond cond)
+	{
+		IntegerState refined = state;
+		if (cmp && cmp->op == Op::Cmp && plain_gpr(cmp->ops[0]) && cmp->ops[1].kind == OperandKind::Imm)
+		{
+			const unsigned bits = 8 * register_bytes(cmp->type);
+			if (bits <= 32)
+			{
+				const int64_t mask = (int64_t(1) << bits) - 1, c = cmp->ops[1].imm & mask;
+				int64_t lo = 0, hi = mask;
+				bool supported = true;
+				switch (cond)
+				{
+				case CC_BE:
+					hi = c;
+					break;
+				case CC_B:
+					hi = c - 1;
+					break;
+				case CC_A:
+					lo = c + 1;
+					break;
+				case CC_AE:
+					lo = c;
+					break;
+				case CC_E:
+					lo = hi = c;
+					break;
+				default:
+					supported = false;
+					break;
+				}
+				if (supported)
+					refined[cmp->ops[0].reg] = filter_integer_interval(state[cmp->ops[0].reg], bits, lo, hi);
+			}
+		}
+		push(target, refined);
+	}
+	void successors(uint32_t b, const IntegerState& state)
+	{
+		const Block& block = f_.blocks[b];
+		const Inst* tail[3] = { nullptr, nullptr, nullptr };
+		unsigned n = 0, branches = 0;
+		for (uint32_t i = block.first + block.count; i > block.first;)
+		{
+			const Inst& inst = f_.insts[--i];
+			if (inst.op == Op::Jcc || inst.op == Op::Jmp || inst.op == Op::WideCmpBranch || inst.op == Op::JumpTable)
+				++branches;
+			if (inst.op != Op::Nop && n < 3)
+				tail[2 - n++] = &inst;
+		}
+		if (branches == 2 && tail[1] && tail[2])
+		{
+			const Inst& j = *tail[1];
+			const Inst& end = *tail[2];
+			if (j.op == Op::Jcc && end.op == Op::Jmp && j.ops[0].kind == OperandKind::Label &&
+				end.ops[0].kind == OperandKind::Label)
+			{
+				edge(j.ops[0].symbol, state, tail[0], static_cast<Cond>(j.sub));
+				edge(end.ops[0].symbol, state, tail[0], invert(static_cast<Cond>(j.sub)));
+				return;
+			}
+		}
+		const bool one_terminal = branches == 1 && tail[2] &&
+			(tail[2]->op == Op::Jmp || tail[2]->op == Op::WideCmpBranch || tail[2]->op == Op::JumpTable);
+		const IntegerState outgoing = one_terminal ? state : IntegerState();
+		for (uint32_t i = block.first; i < block.first + block.count; ++i)
+		{
+			const Inst& inst = f_.insts[i];
+			if ((inst.op == Op::Jcc || inst.op == Op::Jmp) && inst.ops[0].kind == OperandKind::Label)
+				push(inst.ops[0].symbol, outgoing);
+			else if (inst.op == Op::WideCmpBranch)
+			{
+				push(inst.ops[2].symbol, outgoing);
+				push(inst.aux, outgoing);
+			}
+			else if (inst.op == Op::JumpTable)
+				for (uint32_t k = inst.aux; k < inst.aux + inst.aux2; ++k)
+					push(f_.jump_targets[k], outgoing);
+		}
+		// Unknown/implicit fallthrough contributes no register proof.
+		if (!tail[2] ||
+			(tail[2]->op != Op::Ret && tail[2]->op != Op::Jmp && tail[2]->op != Op::WideCmpBranch &&
+				tail[2]->op != Op::JumpTable))
+			push(b + 1, IntegerState());
+	}
+
+public:
+	explicit GuardedIntegerRanges(Function& f) : f_(f), inputs_(f.blocks.size()), reached_(f.blocks.size(), 0) {}
+	uint32_t run()
+	{
+		if (f_.blocks.empty())
+			return 0;
+		push(0, IntegerState());
+		for (uint32_t b = 0; b < f_.blocks.size(); ++b)
+			if (f_.blocks[b].landing)
+				push(b, IntegerState());
+		// Each predecessor proves its own outgoing facts without assuming any
+		// incoming bounds. Their meet therefore needs no iterative loop analysis.
+		for (uint32_t b = 0; b < f_.blocks.size(); ++b)
+		{
+			IntegerState state;
+			const Block& block = f_.blocks[b];
+			for (uint32_t i = block.first; i < block.first + block.count; ++i)
+				transfer_integer_interval(f_.insts[i], state);
+			successors(b, state);
+		}
+		uint32_t removed = 0;
+		for (uint32_t b = 0; b < f_.blocks.size(); ++b)
+		{
+			if (!reached_[b])
+				continue;
+			IntegerState state = inputs_[b];
+			const Block& block = f_.blocks[b];
+			for (uint32_t i = block.first; i < block.first + block.count; ++i)
+			{
+				Inst& inst = f_.insts[i];
+				if ((inst.op == Op::Sext || inst.op == Op::Zext) && inst.type >= lowir::TypeKind::I8 &&
+					inst.type <= lowir::TypeKind::U32 && plain_gpr(inst.ops[0]))
+				{
+					const Operand source = inst.nops == 1 ? inst.ops[0] : inst.ops[1];
+					const IntegerInterval value = interval_operand(source, state), range = interval_extension(inst);
+					if (plain_gpr(source) && value.known && range.known && value.lo >= range.lo && value.hi <= range.hi)
+					{
+						if (source == inst.ops[0])
+						{
+							inst.op = Op::Nop;
+							inst.nops = 0;
+							inst.ops[0] = inst.ops[1] = Operand();
+						}
+						else
+						{
+							inst.op = Op::Mov;
+							inst.type = lowir::TypeKind::Void;
+							inst.nops = 2;
+							inst.ops[1] = source;
+						}
+						++removed;
+					}
+				}
+				transfer_integer_interval(inst, state);
+			}
+		}
+		return removed;
+	}
+};
+} // namespace
+uint32_t drop_guarded_integer_extensions(Function& f)
+{
+	bool any = false;
+	for (const Inst& inst : f.insts)
+	{
+		if (inst.op == Op::Jmp && inst.ops[0].kind != OperandKind::Label)
+			return 0;
+		any |= inst.op == Op::Sext || inst.op == Op::Zext;
+	}
+	if (!any || f.blocks.size() > 65536)
+		return 0;
+	GuardedIntegerRanges ranges(f);
+	return ranges.run();
 }
 
 } // namespace native
