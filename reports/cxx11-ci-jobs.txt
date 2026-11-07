@@ -1,3 +1,58 @@
+Accepted friend-default, aggregate-list and member-template fixes (2026-11-07)
+
+Compiler source: fa736022a2018c18bcb2e6d00e7a0ce5365f5eaa
+SHA256: 0ca050724d0b8df9347908b6949d05ce1ec95fde096fae2233abdb11d37ebd96
+Receipts: /mnt/vizier/cppgm-cxx11-upstream/ci-next-093-acceptance-v1.json
+          /mnt/vizier/cppgm-cxx11-upstream/ci-next-094095-acceptance-v2.json
+
+CXX11-093/094/095 are accepted. They enforce friend-default definition and
+uniqueness rules, initialize/rank a one-expression aggregate list from its whole
+same/derived-type object, and reject non-static data-member templates while
+preserving the course's namespace/static variable-template extension.
+
+All required normal checks pass, including9,093strict tests, debug, selfhostPA5,
+inception, architecture/file/full placement,42harness suites/675cases,quick and
+smoke. A misplaced initializer-list constructor neighbor was moved unchanged to
+PA21:200; the retained failed audit and successful owner/strict/full-audit rerun
+are recorded explicitly. No compiler/performance change accompanied the move.
+Fresh student export passes46focused controls and42reference wrappers;86offline
+catalog files match source. Final focused checks:09372/72,09540/40,09480/80.
+
+Normal actual-parent instruction ratios O0/O3:
+  093: c251→a21 1.000064/1.000026
+  095: a21→df48 1.000111/1.000015
+  094: df48→0ca .999975/1.000004
+All frozen objects are identical. ExprFacts remains40bytes; the friend-default
+fact preserves FunctionEntity272bytes. Existing quick limits pass.
+
+Unchanged reviewed manifests: GCC3,724/4,110(90.61%),native4,110/4,110;
+Clang793/802(98.88%),native802/802.
+The aggregate fix repairs7GCCsource files/14dialect configurations;093and095 each
+repair an original Clang required-diagnostic case. GCC remaining counts:
+{'passed': 3724, 'diagnostic-missing': 196, 'compile-failed': 190}. Clang remaining counts:
+{'passed': 793, 'diagnostic-missing': 8, 'compile-failed': 1}. These are outcomes, not a deduplicated bug inventory.
+Whole-suite cppgm/upstream elapsed: GCC29.026/65.886s,
+Clang4.479/26.836s. Ratios
+0.441/0.167 are NON-COMPARABLE because cppgm still fails cases.
+Original4,112GCC/807Clang raw observations and reviewed oracle decisions remain
+unchanged; no diagnostic wording/count/location/recovery parity is required.
+
+Offline catalog:74full issue texts,10papers,index/provenance=86files. Draft
+1584/1634/1647 are reference-only. CWG136/295/2137 are included with adoption
+history, and student links/NOTICE/export inclusion remain checked by CI.
+Pending096097catalog expansion brings80issues/10papers/92files; it is still
+under joint validation and is not recorded as an accepted export here.
+
+Next: integrate096 namespace-entity conflicts and097 nested-template NSDMIs
+through normal checks; their9121strict pass and normal gates are isolated
+validation, not root acceptance. The located-ICE runner regression/fix is also
+in that tranche (all10,150prior compiler stderr streams rescanned,zeroICE).
+088 aggregate/array/reference non-ODR-use is active with the Clang worker;098
+enum-tag lookup, remaining GCC/Clang gaps, useful coverage and finalPA35release
+remain open. No remoteCIexecution or exhaustiveC++11 proof is claimed.
+
+Earlier accepted checkpoint (retained):
+
 Validated language-oracle review and offline CWG catalog (2026-11-07)
 
 The accepted compiler remains c251736e002f54fb80d1131ab776e55e37b120959a9af86b8616e9d88f2b52fb

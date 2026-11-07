@@ -5753,5 +5753,74 @@
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-092",
     "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/language-oracle-review-next-v1/acceptance-v2.json",
     "checks": "96 original/reduced observations,36 native independent core checks,3 owning controls. No compiler repair or original pass claimed. Combined9047strict and5control/85document fresh export pass."
+  },
+  {
+    "id": "CXX11-093",
+    "compiler_language_gap": true,
+    "status": "closed",
+    "symptom": "Friend default arguments did not enforce a definition and uniqueness across declarations",
+    "owning_pa": "PA11:200;PA12:100;PA17:300",
+    "standards_basis": "CWG136/P1787R6",
+    "fix_revision": "155b38ef1",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-093-acceptance-v1.json",
+    "integrated_candidate_revision": "fa736022a2018c18bcb2e6d00e7a0ce5365f5eaa",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-093",
+    "offline_decisions": [
+      "doc/cwg/cwg-0136.txt",
+      "doc/cwg/paper-p1787r6.txt"
+    ],
+    "checks": "17required controls,72/72focused vs28/72actualparent;final0ca72/72. Normalactualc251\u2192a21 1.000064/1.000026,objects exact. Joint9093strict/fullnormal andfresh46control/42wrapper/86document export pass."
+  },
+  {
+    "id": "CXX11-094",
+    "compiler_language_gap": true,
+    "status": "closed",
+    "symptom": "One-expression aggregate lists incorrectly initialized members and had incorrect same/derived-type conversion ranks",
+    "owning_pa": "PA12:100/200;PA16:200;PA21:200",
+    "standards_basis": "AdoptedCWG1467/2137",
+    "fix_revision": "a6ec2c36a",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-094095-acceptance-v2.json",
+    "integrated_candidate_revision": "fa736022a2018c18bcb2e6d00e7a0ce5365f5eaa",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-094",
+    "offline_decisions": [
+      "doc/cwg/cwg-1467.txt",
+      "doc/cwg/cwg-2137.txt"
+    ],
+    "checks": "20required controls,80/80 vs actualdf48parent24/80;seven originalGCCsources14configs repaired. Typed whole-object fact uses existingExprFacts padding(sizeof40). Normalactualdf48\u21920ca .999975/1.000004,objectsexact. Priorityneighbor moved byte-identically fromPA14toPA21 afterfullplacementfinding. Joint9093strict/fullnormal andfresh46control/42wrapper/86document export pass."
+  },
+  {
+    "id": "CXX11-095",
+    "compiler_language_gap": true,
+    "status": "closed",
+    "symptom": "Non-static data member templates silently became ordinary per-object fields",
+    "owning_pa": "PA14:100;PA17:200/300",
+    "standards_basis": "N3485 template declarations plus documented courseC++14 variable-template/static-member extension",
+    "fix_revision": "efd3ae6d6",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-094095-acceptance-v2.json",
+    "integrated_candidate_revision": "fa736022a2018c18bcb2e6d00e7a0ce5365f5eaa",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-095",
+    "offline_decisions": [],
+    "checks": "9required controls,40/40focused(final0ca too) vs actualparent6/9owning; qualified static definitions retained after firstprototype guard correction. Normalactuala21\u2192df48 1.000111/1.000015,objectsexact. Joint9093strict/fullnormal andfresh46control/42wrapper/86document export pass."
+  },
+  {
+    "id": "CXX11-096",
+    "compiler_language_gap": true,
+    "status": "isolated-validation",
+    "symptom": "Namespace/alias/typedef conflicts with block-function namespace entities; isolated60/60 on4f13,normalactual0ca gate passed, joint096097normal/export pending.",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-096"
+  },
+  {
+    "id": "CXX11-097",
+    "compiler_language_gap": true,
+    "status": "isolated-validation",
+    "symptom": "Nested member-template NSDMIs lost pattern context while outer class completion drained them; isolated56/56 on778bf vsactual4f13parent24/56,normalgate1.000016/.999993 passed,joint9121strict/fullnormal/export pending;GCC15ICE on validpartial-used witness retained.",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-097"
+  },
+  {
+    "id": "CXX11-098",
+    "compiler_language_gap": true,
+    "status": "open",
+    "symptom": "Elaborated enum type lookup fails when an ordinary function hides the enum tag;12native/parent observations retained, no requiredregression or compilerfix yet.",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-098"
   }
 ]
