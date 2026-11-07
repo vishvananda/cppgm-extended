@@ -1488,7 +1488,11 @@ VariableEntity* Analyzer::earlier_variable(const Specifiers& specifiers, const D
 				error(location, "redeclaration of a name in the same scope");
 			variable = static_cast<VariableEntity*>(entry->value->entity);
 		}
-		if (entry->type != nullptr && (entry->type->kind != BindingKind::Type || IsClassTemplate(entry->type)))
+		// 14p5 makes a template name unique where the template is declared;
+		// its injected-class-name is instead its own class's type (9p2).
+		if (entry->type != nullptr &&
+			(entry->type->kind != BindingKind::Type ||
+				(IsClassTemplate(entry->type) && entry->type->entity != where->entity)))
 			error(location, "variable name conflicts with an earlier declaration");
 		if (entry->type != nullptr && entry->type->entity->kind == EntityKind::TemplateParameter)
 			error(location, "variable name conflicts with a template parameter");
@@ -2334,7 +2338,17 @@ void Analyzer::special_member(const syntax::SpecialMemberDecl& decl, Scope* scop
 			copies_by_value = function->default_arguments != nullptr && function->default_arguments[i] != nullptr;
 		if (copies_by_value)
 			error(decl.location, "a constructor taking its own class by value");
-		static_cast<ClassEntity*>(owner->entity)->user_declared_constructor = true;
+		ClassEntity* cls = static_cast<ClassEntity*>(owner->entity);
+		// 9.2p15 also applies when the first user-declared constructor
+		// follows a data member bearing the class's name.
+		if (!cls->user_declared_constructor && cls->name != nullptr)
+		{
+			const NameEntry* entry = names_.find(owner, cls->name);
+			if (entry != nullptr && entry->value != nullptr && entry->value->kind == BindingKind::Variable &&
+				static_cast<const VariableEntity*>(entry->value->entity)->member)
+				error(decl.location, "a data member with its class's name in a class with a user-declared constructor");
+		}
+		cls->user_declared_constructor = true;
 	}
 	if (decl.definition)
 	{
