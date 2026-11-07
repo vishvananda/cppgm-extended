@@ -1,4 +1,4 @@
-CWG 616: Definition of &#8220;indeterminate value&#8221;
+CWG 616: Definition of “indeterminate value”
 Source: https://cplusplus.github.io/CWG/issues/616.html
 Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
 Retrieved: 2026-11-07

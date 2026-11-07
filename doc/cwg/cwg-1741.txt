@@ -1,0 +1,79 @@
+CWG 1741: odr-use of class object in lvalue-to-rvalue conversion
+Source: https://cplusplus.github.io/CWG/issues/1741.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++14
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1741. odr-use of class object in lvalue-to-rvalue conversion
+Section: 6.3 [basic.def.odr [1]] Status: C++14 Submitter: Richard Smith Date: 2013-08-21
+
+N3690 comment CA 28
+[2]
+
+[Moved to DR at the February, 2014 meeting.]
+
+According to 7.3.2 [conv.lval [3]] paragraph 2,
+
+if the glvalue has a class type, the [lvalue-to-rvalue] conversion copy-initializes a
+temporary of type T from the glvalue and the result of the conversion is a prvalue for
+the temporary.
+
+The implications of such a conversion for odr-use do not appear to have been factored
+into 6.3 [basic.def.odr [4]] paragraph 3, which exempts constant objects that are
+immediately lvalue-to-rvalue converted. For example, given
+
+
+  struct S { int n; };
+  struct T {
+    static constexpr S s = {};
+  };
+  void f(...);
+  void g() { f(T::s); }
+
+
+Does this odr-use T::s, requiring it to have a definition, because of binding it to the
+reference parameter of S's copy constructor? How about
+
+
+  struct S { int n; };
+  void f(...);
+  void g() {
+    constexpr S s = {};
+    [] { f(s); };
+  }
+
+
+Does s need to be captured? There is implementation variance on both these examples.
+
+Proposed resolution (September, 2013):
+
+Change 6.3 [basic.def.odr [4]] paragraph 3 as follows:
+
+A variable x whose name appears as a potentially-evaluated expression ex is odr-used
+unless [DELETE: x satisfies the requirements for appearing in a constant expression (7.7
+[expr.const [5]])] [INSERT: applying the lvalue-to-rvalue conversion (7.3.2 [conv.lval
+[6]]) to x yields a constant expression (7.7 [expr.const [5]]) that does not invoke any
+non-trivial functions] and, if x is an object, ex is an element of the set of potential
+results of an expression e, where either the lvalue-to-rvalue conversion (7.3.2
+[conv.lval [6]]) is applied to e, or e is a discarded-value expression ( Clause 7 [expr
+[7]]). this is odr-used...
+
+Source links:
+[1] https://wg21.link/basic.def.odr
+[2] http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3903.html#CA28
+[3] https://wg21.link/conv.lval#2
+[4] https://wg21.link/basic.def.odr#3
+[5] https://wg21.link/expr.const
+[6] https://wg21.link/conv.lval
+[7] https://wg21.link/expr

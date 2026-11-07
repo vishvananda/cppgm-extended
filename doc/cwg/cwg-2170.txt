@@ -1,0 +1,56 @@
+CWG 2170: Unclear definition of odr-use for arrays
+Source: https://cplusplus.github.io/CWG/issues/2170.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD5
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2170. Unclear definition of odr-use for arrays
+Section: 6.3 [basic.def.odr [1]] Status: CD5 Submitter: Hubert Tong Date: 2015-09-02
+
+[Accepted as a DR at the February, 2019 meeting.]
+
+The current definition of odr-use of a variable is problematic when applied to an array:
+
+A variable x whose name appears as a potentially-evaluated expression ex is odr-used by
+ex unless applying the lvalue-to-rvalue conversion (7.3.2 [conv.lval [2]]) to x yields a
+constant expression (7.7 [expr.const [3]]) that does not invoke any non-trivial
+functions and, if x is an object, ex is an element of the set of potential results of an
+expression e, where either the lvalue-to-rvalue conversion (7.3.2 [conv.lval [2]]) is
+applied to e, or e is a discarded-value expression (Clause 7 [expr [4]]).
+
+Consider an example like
+
+
+  struct S {
+    constexpr static const int arr[3] = { 0, 1, 2 };
+  };
+  int i = S::arr[1];  // Should not require S::arr to be defined
+
+
+Although the “set of potential results” test correctly handles the subscripting
+operation (since the resolution of issue 1926 [5]), it requires applying the
+lvalue-to-rvalue conversion to S::arr itself and not just to the result of the
+subscripting operation. Class objects exhibit a similar problem.
+
+Proposed resolution (January, 2019):
+
+This issue is resolved by the resolution of issue 2083 [6].
+
+Source links:
+[1] https://wg21.link/basic.def.odr
+[2] https://wg21.link/conv.lval
+[3] https://wg21.link/expr.const
+[4] https://wg21.link/expr
+[5] cwg-1926.txt; https://cplusplus.github.io/CWG/issues/1926.html
+[6] cwg-2083.txt; https://cplusplus.github.io/CWG/issues/2083.html

@@ -27,7 +27,7 @@ CWG 33 | TC1 | cwg-0033.txt
   Argument dependent lookup and overloaded functions
 CWG 136 | CD1 | cwg-0136.txt
   Default arguments and friend declarations
-  Related later wording: paper-p1787r6.txt
+  Local paper: paper-p1787r6.txt
 CWG 138 | CD6 | cwg-0138.txt
   Friend declaration name lookup
   Local paper: paper-p1787r6.txt
@@ -37,7 +37,7 @@ CWG 253 | C++17 | cwg-0253.txt
 CWG 295 | CD1 | cwg-0295.txt
   cv-qualifiers on function types
 CWG 616 | CD3 | cwg-0616.txt
-  Definition of &#8220;indeterminate value&#8221;
+  Definition of “indeterminate value”
 CWG 619 | C++11 | cwg-0619.txt
   Completeness of array types
 CWG 727 | C++17 | cwg-0727.txt
@@ -93,6 +93,8 @@ CWG 1464 | CD3 | cwg-1464.txt
   Negative array bound in a new-expression
 CWG 1467 | CD4 | cwg-1467.txt
   List-initialization of aggregate from same-type object
+CWG 1472 | CD3 | cwg-1472.txt
+  odr-use of reference variables
 CWG 1473 | CD3 | cwg-1473.txt
   Syntax of literal-operator-id
 CWG 1490 | CD4 | cwg-1490.txt
@@ -120,6 +122,8 @@ CWG 1722 | CD4 | cwg-1722.txt
   Should lambda to function pointer conversion function be noexcept?
 CWG 1734 | CD4 | cwg-1734.txt
   Nontrivial deleted copy functions
+CWG 1741 | C++14 | cwg-1741.txt
+  odr-use of class object in lvalue-to-rvalue conversion
 CWG 1742 | CD5 | cwg-1742.txt
   using-declarations and scoped enumerators
   Local paper: paper-p1099r5.txt
@@ -129,6 +133,8 @@ CWG 1850 | CD4 | cwg-1850.txt
   Differences between definition context and point of instantiation
 CWG 1866 | CD4 | cwg-1866.txt
   Initializing variant members with non-trivial destructors
+CWG 1926 | CD4 | cwg-1926.txt
+  Potential results of subscript operator
 CWG 1992 | CD4 | cwg-1992.txt
   new (std::nothrow) int[N] can throw
 CWG 2004 | CD4 | cwg-2004.txt
@@ -139,6 +145,8 @@ CWG 2079 | CD4 | cwg-2079.txt
   [[ appearing in a balanced-token-seq
 CWG 2082 | CD4 | cwg-2082.txt
   Referring to parameters in unevaluated operands of default arguments
+CWG 2083 | CD5 | cwg-2083.txt
+  Incorrect cases of odr-use
 CWG 2084 | CD4 | cwg-2084.txt
   NSDMIs and deleted union default constructors
 CWG 2101 | CD4 | cwg-2101.txt
@@ -147,6 +155,8 @@ CWG 2137 | CD4 | cwg-2137.txt
   List-initialization from object of same type
 CWG 2140 | CD4 | cwg-2140.txt
   Lvalue-to-rvalue conversion of std::nullptr_t
+CWG 2170 | CD5 | cwg-2170.txt
+  Unclear definition of odr-use for arrays
 CWG 2176 | CD4 | cwg-2176.txt
   Destroying the returned object when a destructor throws
 CWG 2273 | CD5 | cwg-2273.txt

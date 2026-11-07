@@ -1,0 +1,133 @@
+CWG 2083: Incorrect cases of odr-use
+Source: https://cplusplus.github.io/CWG/issues/2083.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD5
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2083. Incorrect cases of odr-use
+Section: 6.3 [basic.def.odr [1]] Status: CD5 Submitter: Hubert Tong Date: 2015-02-11
+
+[Accepted as a DR at the February, 2019 meeting.]
+
+The resolution of issue 1741 [2] was not intended to cause odr-use to occur in cases
+where it did not do so previously. However, in an example like
+
+
+  extern int globx;
+  int main() {
+    const int &x = globx;
+    struct A {
+     const int *foo() {
+       return &x;
+     }
+    } a;
+    return *a.foo();
+  }
+
+
+x satisfies the requirements for appearing in a constant expression, but applying the
+lvalue-to-rvalue converstion to x does not yield a constant expression. Similarly,
+
+
+  struct A {
+    int q;
+    constexpr A(int q) : q(q) { }
+    constexpr A(const A &a) : q(a.q * 2) { }
+  };
+
+  int main(void) {
+    constexpr A a(42);
+    constexpr int aq = a.q;
+    struct Q {
+     int foo() { return a.q; }
+    } q;
+    return q.foo();
+  }
+
+
+a satisfies the requirements for appearing in a constant expression, but applying the
+lvalue-to-rvalue conversion to a invokes a non-trivial function.
+
+Proposed resolution (January, 2019):
+
+1.
+
+Change 6.3 [basic.def.odr [3]] bullet 2.4 as follows:
+
+An expression is potentially evaluated unless it is an unevaluated operand (7.2
+[expr.prop [4]]) or a subexpression thereof. The set of potential results of an
+expression e is defined as follows:
+
+-
+
+...
+
+-
+
+If e is a pointer-to-member expression (7.6.4 [expr.mptr.oper [5]]) [DELETE: whose
+second operand is a constant expression], the set contains the potential results of the
+object expression.
+
+-
+
+...
+
+-
+
+Otherwise, the set is empty.
+
+2.
+
+Change 6.3 [basic.def.odr [6]] paragraph 4, converting the running text into bullets, as
+follows:
+
+A variable x whose name appears as a potentially-evaluated expression e[DELETE: x] is
+odr-used by e[DELETE: x] unless [DELETE: applying the lvalue-to-rvalue conversion (7.3.2
+[conv.lval [7]]) to x yields a constant expression (7.7 [expr.const [8]]) that does not
+invoke a function other than a trivial special member function (11.4.4 [special [9]])
+and, if x is an object,]
+
+-
+
+[INSERT: x is a reference that is usable in constant expressions (7.7 [expr.const [8]]),
+or]
+
+-
+
+[INSERT: x is a variable of non-reference type that is usable in constant expressions
+and has no mutable subobjects, and] e[DELETE: x] is an element of the set of potential
+results of an expression [DELETE: e, where either] [INSERT: of non-volatile-qualified
+non-class type to which] the lvalue-to-rvalue conversion (7.3.2 [conv.lval [7]]) is
+applied [DELETE: to e], or [DELETE: e is]
+
+-
+
+[INSERT: x is a variable of non-reference type, and e is an element of the set of
+potential results of] a discarded-value expression (7.2 [expr.prop [4]]) [INSERT: to
+which the lvalue-to-rvalue conversion is not applied.]
+
+This resolution also resolves issues 2103 [10] and 2170 [11].
+
+Source links:
+[1] https://wg21.link/basic.def.odr
+[2] cwg-1741.txt; https://cplusplus.github.io/CWG/issues/1741.html
+[3] https://wg21.link/basic.def.odr#2.4
+[4] https://wg21.link/expr.prop
+[5] https://wg21.link/expr.mptr.oper
+[6] https://wg21.link/basic.def.odr#4
+[7] https://wg21.link/conv.lval
+[8] https://wg21.link/expr.const
+[9] https://wg21.link/special
+[10] https://cplusplus.github.io/CWG/issues/2103.html
+[11] cwg-2170.txt; https://cplusplus.github.io/CWG/issues/2170.html

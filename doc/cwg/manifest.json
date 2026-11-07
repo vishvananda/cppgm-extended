@@ -79,14 +79,14 @@
     },
     {
       "issue": 616,
-      "title": "Definition of &#8220;indeterminate value&#8221;",
+      "title": "Definition of \u201cindeterminate value\u201d",
       "status": "CD3",
       "role": "course-reference",
       "file": "cwg-0616.txt",
       "source_url": "https://cplusplus.github.io/CWG/issues/616.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/616.html",
       "source_html_sha256": "3c3a0f5e4b70799e75fc2805072b87ad6010aea3ad124ea14b8389ab612040c1",
-      "text_sha256": "1aea0f776a3ec6c31e438dc41d8a99af73e7d9b81d2dafe6be35e2ed27616e11",
+      "text_sha256": "1bec41f297f0d55cb372763b802f40e1d3b721e12e986fc2e593cb484482ddd1",
       "adopted_papers": []
     },
     {
@@ -419,6 +419,19 @@
       "adopted_papers": []
     },
     {
+      "issue": 1472,
+      "title": "odr-use of reference variables",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1472.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1472.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1472.html",
+      "source_html_sha256": "dab1ee68a999e780d2e9781e1cafcb00daa20c0bc7540c73372bb1590523099c",
+      "text_sha256": "b5907f3b70c7e9f292e2fe6485562f9930a49b9df087d8afa7291383f6d557c1",
+      "adopted_papers": [],
+      "local_papers": []
+    },
+    {
       "issue": 1473,
       "title": "Syntax of literal-operator-id",
       "status": "CD3",
@@ -616,6 +629,19 @@
       "adopted_papers": []
     },
     {
+      "issue": 1741,
+      "title": "odr-use of class object in lvalue-to-rvalue conversion",
+      "status": "C++14",
+      "role": "course-reference",
+      "file": "cwg-1741.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1741.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1741.html",
+      "source_html_sha256": "305ce6e3bc235593336524415c2699008d894c61eed46bf9dc6e0299f8f0aa2b",
+      "text_sha256": "fd90b3ba2cf4572903e916fdff67d45e6ebb6ec8b9a92a8d059b428c3ae7f1fa",
+      "adopted_papers": [],
+      "local_papers": []
+    },
+    {
       "issue": 1742,
       "title": "using-declarations and scoped enumerators",
       "status": "CD5",
@@ -667,6 +693,19 @@
       "source_html_sha256": "f2cca698de8408872c687530958514d21d6b6f51b6006bd13b802c3199c07016",
       "text_sha256": "2f5033c4068f89f59c5cd0e77ee67379b4cfae6af51726fa2d51843440ade566",
       "adopted_papers": []
+    },
+    {
+      "issue": 1926,
+      "title": "Potential results of subscript operator",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1926.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1926.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1926.html",
+      "source_html_sha256": "85edac25fac4c57e5f367448e131ec19ad4f6400eca04185ef48462d361097c0",
+      "text_sha256": "94235d8f1ce028e25ed0e4e843f99dae2a5a59cba3709d1650528c37fb4a1812",
+      "adopted_papers": [],
+      "local_papers": []
     },
     {
       "issue": 1992,
@@ -729,6 +768,19 @@
       "adopted_papers": []
     },
     {
+      "issue": 2083,
+      "title": "Incorrect cases of odr-use",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-2083.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2083.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2083.html",
+      "source_html_sha256": "28bb3ab2b75d326af29c5929d5af12bf9e7784153ba737f740293b8abf7774bd",
+      "text_sha256": "1973aa979d5d19def0dab382ff69366fa485394b3568f55b69063c3a748d93d0",
+      "adopted_papers": [],
+      "local_papers": []
+    },
+    {
       "issue": 2084,
       "title": "NSDMIs and deleted union default constructors",
       "status": "CD4",
@@ -775,6 +827,19 @@
       "source_html_sha256": "29615f9e271d9e4f26e431d302b4229cc9647a5de60225c3887110de6f091cf4",
       "text_sha256": "b6bfef74d93479b2c728af02ff41654467b2316e91089b0cf9445cc0340d2418",
       "adopted_papers": []
+    },
+    {
+      "issue": 2170,
+      "title": "Unclear definition of odr-use for arrays",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-2170.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2170.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2170.html",
+      "source_html_sha256": "f306c8976528132316e5e85e40657513ea075227616d828f3e2841d5466c2f39",
+      "text_sha256": "a33d30ee173870b26c6a7c8e58f0d3c7b6e4a5b901bb43378b85cf8cd8cfb073",
+      "adopted_papers": [],
+      "local_papers": []
     },
     {
       "issue": 2176,
