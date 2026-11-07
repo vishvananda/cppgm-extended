@@ -6,7 +6,7 @@ translation-unit
     variable arr2 array of 3 int
     variable n const int
     variable N const int
-    type EY enum class EY
+    type-alias EY enum class EY
     variable ey enum class EY
     scope class CY
       variable N const int

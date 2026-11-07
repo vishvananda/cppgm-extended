@@ -1,0 +1,8 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type E enum E
+    enumerator value enum E 7
+    enumerator value enum E 7
+end translation unit

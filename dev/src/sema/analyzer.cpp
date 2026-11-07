@@ -611,6 +611,8 @@ void Analyzer::using_declaration(const syntax::UsingDecl& decl, Scope* scope)
 		last.kind == syntax::NameComponentKind::Identifier && (last.identifier == prefix.entity->name || names_owner))
 	{
 		Scope* where = declaration_scope(scope);
+		if (where->kind != ScopeKind::Class)
+			error(decl.location, "a constructor using-declaration outside a class");
 		if (where->kind == ScopeKind::Class && where->entity != nullptr)
 			static_cast<ClassEntity*>(where->entity)->inherits_constructors = static_cast<ClassEntity*>(prefix.entity);
 		return;
@@ -637,6 +639,11 @@ void Analyzer::using_declaration(const syntax::UsingDecl& decl, Scope* scope)
 		error(decl.location, "ambiguous name in a using-declaration");
 	if (IsNamespaceBinding(result.binding))
 		error(decl.location, "a using-declaration cannot name a namespace");
+	// 7.3.3p8: class members require a member-declaration. Enumerator
+	// imports retain their existing behavior, with mode policy separate.
+	if (prefix.scope != nullptr && prefix.scope->kind == ScopeKind::Class &&
+		result.binding->kind != BindingKind::Enumerator && declaration_scope(scope)->kind != ScopeKind::Class)
+		error(decl.location, "a class-member using-declaration outside a class");
 	// 7.3.3p17: each declaration it introduces is accessible where it
 	// appears, named in the class its nested-name-specifier names (11.2p5).
 	// Within a templated class of a dependent base the classes the point's
