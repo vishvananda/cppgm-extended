@@ -5,5 +5,7 @@ template<class... T> int choose(Both<T..., int>*) { return 7; }
 template<class... T> int choose(...) { return 11; }
 int main() {
   Pair<char, int>* argument = 0;
-  return choose<>(0) + choose<char>(argument) + choose<char, long>(0) - 29;
+  Pair<long, int>* incompatible = 0;
+  return choose<>(0) + choose<char>(argument) + choose<char, long>(0) +
+         choose<char>(incompatible) - 40;
 }

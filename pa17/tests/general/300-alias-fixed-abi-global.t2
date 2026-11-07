@@ -1,0 +1,4 @@
+// Same class/template declaration through the associated class specialization.
+template<class A, class... B> struct List { int value; };
+template<class... T> int inspect(List<T...> value);
+int main() { List<int, char> value = {7}; return inspect<int, char>(value) - 9; }

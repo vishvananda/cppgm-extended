@@ -1,0 +1,6 @@
+// Same class/template declaration through the associated class specialization.
+namespace N {
+template<class A, class... B> struct List { int value; };
+template<class... T> int inspect(List<T...> value);
+}
+int main() { N::List<int, char> value = {7}; return N::inspect<int, char>(value) - 9; }
