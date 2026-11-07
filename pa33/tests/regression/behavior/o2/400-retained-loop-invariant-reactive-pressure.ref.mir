@@ -128,33 +128,33 @@ function @walk
   block ^entry
     mov r14, rcx
     store.u32 [rbp-8], rdx
-    lea rbx, [rdi+24]
-    load.ptr r8, [rbx]
+    lea r13, [rdi+24]
+    load.ptr r8, [r13]
     lea rdi, [r8+32]
     call @node_at [args=(rsi,rdi), unwind=no]
-    load.u32 r12, [rax+12]
+    load.u32 rbx, [rax+12]
 
   block ^outer_condition
-    cmp.u32 r12, @no_edge
+    cmp.u32 rbx, @no_edge
     je ^outer_done
 
   block ^outer_body
-    load.ptr r8, [rbx]
+    load.ptr r8, [r13]
     lea rdi, [r8+56]
-    mov rsi, r12
+    mov rsi, rbx
     call @edge_at [args=(rsi,rdi), unwind=no]
-    load.u32 r13, [rax]
-    load.ptr r8, [rbx]
-    load.ptr r9, [r8+8]
-    cmp.ptr r9, 0
+    load.u32 r12, [rax]
+    load.ptr r9, [r13]
+    load.ptr r8, [r9+8]
+    cmp.ptr r8, 0
     je ^inspect
 
   block ^record
-    add [r9], 1
+    add [r8], 1
 
   block ^inspect
-    lea rdi, [r8+32]
-    mov rsi, r13
+    lea rdi, [r9+32]
+    mov rsi, r12
     call @node_at [args=(rsi,rdi), unwind=no]
     cmp.u16 [rax+30], 121
     sete r8
@@ -162,12 +162,12 @@ function @walk
     jne ^inner_start
 
   block ^outer_iterate
-    load.ptr r8, [rbx]
+    load.ptr r8, [r13]
     lea rdi, [r8+56]
-    mov rsi, r12
+    mov rsi, rbx
     call @edge_at [args=(rsi,rdi), unwind=no]
-    load.u32 r12, [rax+4]
-    cmp.u32 r12, @no_edge
+    load.u32 rbx, [rax+4]
+    cmp.u32 rbx, @no_edge
     jne ^outer_body
 
   block ^outer_done
@@ -177,35 +177,35 @@ function @walk
     ret
 
   block ^inner_body
-    load.ptr r13, [rbx]
-    lea rdi, [r13+56]
-    mov rsi, r12
+    load.ptr r12, [r13]
+    lea rdi, [r12+56]
+    mov rsi, rbx
     call @edge_at [args=(rsi,rdi), unwind=no]
     load.u32 rsi, [rax]
-    mov rdi, r13
+    mov rdi, r12
     call @payload [args=(rsi,rdi), unwind=no]
     store.u32 [rbp-16], rax
     mov rdi, r14
     lea rsi, [rbp-16]
     call @append [args=(rsi,rdi), unwind=no]
-    load.ptr r8, [rbx]
+    load.ptr r8, [r13]
     lea rdi, [r8+56]
-    mov rsi, r12
+    mov rsi, rbx
     call @edge_at [args=(rsi,rdi), unwind=no]
-    load.u32 r12, [rax+4]
-    cmp.u32 r12, @no_edge
+    load.u32 rbx, [rax+4]
+    cmp.u32 rbx, @no_edge
     jne ^inner_body
     jmp ^inner_done
 
   block ^inner_start
-    load.ptr r8, [rbx]
+    load.ptr r8, [r13]
     lea rdi, [r8+32]
-    mov rsi, r13
+    mov rsi, r12
     call @node_at [args=(rsi,rdi), unwind=no]
-    load.u32 r12, [rax+12]
+    load.u32 rbx, [rax+12]
 
   block ^inner_condition
-    cmp.u32 r12, @no_edge
+    cmp.u32 rbx, @no_edge
     jne ^inner_body
 
   block ^inner_done

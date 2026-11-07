@@ -226,6 +226,7 @@ struct SelectorState
 	std::vector<uint32_t> ra_range_block_;
 	std::vector<std::pair<int32_t, int32_t>> ra_ranges_;
 	std::vector<uint64_t> ra_freq_;
+	std::vector<double> ra_priority_;    // reusable allocation-order scores
 	std::vector<uint8_t> ra_looped_;     // per candidate: defined or used inside a loop
 	std::vector<Reg> ra_use_hint_;       // per candidate: a return's or call argument's register
 	LoopSplitter loop_splitter_;         // the natural loops; spilling around them

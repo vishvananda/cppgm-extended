@@ -17,26 +17,26 @@ function @pack
     epilogues duplicated
 
   block ^entry
-    mov r8, 0
     mov r9, 0
+    mov r8, 0
 
   block ^head
-    shl r9, 1
-    load.u8 rdx, [rdi+r8]
+    shl r8, 1
+    load.u8 rdx, [rdi+r9]
     and rdx, 1
-    mov rcx, r9
+    mov rcx, r8
     or rcx, 1
     test.u8 rdx, rdx
-    cmovne r9, rcx
-    add r8, 1
-    cmp.i64 r8, rsi
+    cmovne r8, rcx
+    add r9, 1
+    cmp.i64 r9, rsi
     jb ^head
 
   block ^out
-    sext.i8 r9
+    sext.i8 r8
     load.i8 rdi, [rdi]
-    add.i32 r9, rdi
-    ret r9
+    add.i32 r8, rdi
+    ret r8
 
 function @main
   abi
