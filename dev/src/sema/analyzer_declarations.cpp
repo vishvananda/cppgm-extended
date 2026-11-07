@@ -1451,6 +1451,16 @@ bool Analyzer::typed_initializer(
 void Analyzer::check_variable_specifiers(const Specifiers& specifiers, const Type* type, const Scope* where,
 	bool qualified, bool member, bool definition, bool initialized, uint32_t location)
 {
+	if (specifiers.is_static && where->kind == ScopeKind::Class)
+	{
+		// 9.8p3,p4: a local class, including one nested in another local
+		// class, has no static data members. Follow its declaration owner,
+		// not the active function that may instantiate a nonlocal class.
+		for (const Scope* owner = where->entity->owner; owner != nullptr && owner->kind != ScopeKind::Namespace;
+			owner = owner->parent)
+			if (owner->kind == ScopeKind::Block || owner->kind == ScopeKind::Function)
+				error(location, "static data member of a local class");
+	}
 	// 7.1.1p10: mutable applies to a non-static data member that is
 	// neither declared const nor a reference.
 	if (specifiers.is_mutable)
