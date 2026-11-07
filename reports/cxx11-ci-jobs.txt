@@ -1,3 +1,36 @@
+Accepted integration: compiler source07c0165d9, normal/audit revisiondfa74ce4d.
+Four fixes066/068/069/071 now have38required owning regressions, parent failure
+proofs, native neighbors and passing full normal gates:8,790strict,42harness
+suites/667cases(19optional skips), debug/modern/selfhostPA5/inception,
+architecture/file/fullplacement plus explicitPA6placement, quick/smoke and a
+fresh student export testing all38newcontrols and42reference wrappers.
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-066071-acceptance-v1.json
+Compiler SHA256:b0d3e5d8982e3c68b5e9516fb2ca70f2cd3dc45004261955ec7ed5b24ba7bf64
+
+Declared CI cohorts now exercised with that integrated compiler:
+  GCC:3,696/4,112 (89.88%); upstream4,112/4,112.
+  Clang:667/693 (96.25%); upstream693/693,685sources.
+Clang has207positive object-acceptance configurations and486required-diagnostic
+candidates. All656priorrecords remain identical;37additional configurations
+qualify independently. Original LLVM/FileCheck/runtime obligations remain
+explicitly unmet; object acceptance is not full upstream test parity.
+GCC retains220compile failures and196missing diagnostics;Clang retains10compile
+failures and16missing diagnostics. No abnormal/link failures in these runs.
+These are configuration observations,notdeduplicated defect counts.
+
+GCC elapsed cppgm/upstream25.890/66.435s,ratio0.390;Clang4.347/20.430s,ratio0.213.
+Both ratios are NON-COMPARABLE because the candidate fails cases. Two GCC
+Wnarrowing12 configurations improve only through corrected any-diagnostic
+language grading070;two defaulted28 configurations improve through compiler
+repairs. All four changed Clang outcomes are compiler improvements.
+
+Normal frozen cumulative instruction ratios1.003173O0/1.001074O3, within the
+unchanged0.5%limit; objects identical. Quick self/seed0.9934/1.0253,behavior0,
+objects identical and kernels below1.3. All raw observations retained.
+
+
+Earlier CI bring-up history
+
 C++11 correctness CI bring-up -- 2026-11-07
 
 .github/workflows/upstream-cxx11.yml creates two independent GCC/Clang jobs

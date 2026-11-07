@@ -4493,7 +4493,7 @@
     "id": "CXX11-042",
     "kind": "harness-metrology",
     "priority": "P1",
-    "status": "calibration-pending",
+    "status": "retired-custom-metrology",
     "upstream": [],
     "symptom": "Linux approximate highwater RSS reports a family memory ratio1.10020242915, while same-PID accurate page-table snapshots can exceed the alleged highwater. Original failed gate retained.",
     "expected": "Use independently validated precise per-MM resident-memory events, exact child attribution and paired calibrated runs to apply the unchanged3% memory gate. Revalidate affected prior Linux RSS acceptances before final closure.",
@@ -4514,7 +4514,10 @@
       "Revalidate affected historical approximate Linux RSS passes",
       "Retain all failed prototypes and original failed measurements;3% gate unchanged"
     ],
-    "scope": "Measurement-tool defect, excluded from confirmed distinct compiler-language gap count. No formal performance gate accepted from diagnostic controls."
+    "scope": "Measurement-tool defect, excluded from confirmed distinct compiler-language gap count. No formal performance gate accepted from diagnostic controls.",
+    "historical_status": "calibration-pending",
+    "active_requirement": false,
+    "retirement": "User realignment requires normal frozen compile/self-compile gates and explicitly retires custom calibration/RSS campaign. Preserve original measurements and failed assumptions; no custom RSS or calibration pass claimed."
   },
   {
     "id": "CXX11-043",
@@ -5246,15 +5249,13 @@
   {
     "id": "CXX11-062",
     "priority": "P1",
-    "status": "confirmed-unfixed",
+    "status": "isolated-fix-validated",
     "compiler_language_gap": true,
     "symptom": "Scoped-enumerator and class-member-enumerator using declarations are silently accepted outside member scope in supported pre20 modes.",
     "owning_pa": 6,
     "standards_basis": "N3485 7.3.3p7/p8 requires diagnosis. CWG1742 was resolved by P1099R5 as a C++20 feature,not a retroactive defect waiver. No deliberate course exception found.",
-    "checks": {
-      "standards_mode_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-062/standards-mode-review-v1.json"
-    },
-    "triage_note": "36 mode cells/72 streams preserved. Normal Clang extension warning is a compliant diagnostic;severity parity is unnecessary. Namespace-owned unscoped enumerator remains valid. Fix/regressions/performance still pending."
+    "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-062/functional-verification-v2.json",
+    "triage_note": "13required controls,56/56focused,1192affected checks,normal counters pass; root joint integration/full export pending."
   },
   {
     "id": "CXX11-063",
@@ -5335,31 +5336,32 @@
   {
     "id": "CXX11-066",
     "priority": "P1",
-    "status": "isolated-fix-in-validation",
+    "status": "closed",
     "compiler_language_gap": true,
     "symptom": "Special operator names and qualified names are silently treated as unnamed function parameters.",
-    "owning_pa": 6,
+    "owning_pa": "PA6:200",
     "handout": "pa6/README.md;parameter/declarator type model in general:200",
     "standards_basis": "N3485 8.3p1 simple identifier requirement and3.3.4 parameter scope;special function/template-specialization exceptions do not apply to parameter entities.",
     "upstream": [
       "clang/test/SemaCXX/PR8012.cpp"
     ],
     "worktree": "/mnt/vizier/cppgm-cxx11-parameter-declarator-names",
-    "fix_revision": "29eee6a25",
+    "fix_revision": "b6223bb69",
     "regression_revision": "c055180b2",
     "checks": {
       "parent_native": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-066/parent-native-v1/results.json",
       "candidate_native": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-066/candidate-native-v1/results.json"
     },
-    "triage_note": "Eight PA6controls;hosts16/16each,parent6/16,candidate16/16. Typed DeclaratorInfo.name validation adds no repeated AST/source parse. Owning/full/performance/export acceptance pending."
+    "triage_note": "Observed rule repaired and integrated; parent-failing owning regressions, native neighbors, full normal checks, fresh student export and normal frozen/per-fix/cumulative performance passed. No diagnostic parity or exhaustive language-family claim.",
+    "accepted_integration": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-066071-acceptance-v1.json"
   },
   {
     "id": "CXX11-068",
     "priority": "P1",
-    "status": "confirmed-unfixed",
+    "status": "closed",
     "compiler_language_gap": true,
     "symptom": "Potentially evaluated class glvalues passed to an ellipsis skip required temporary copy-initialization,including deleted/private copy checks.",
-    "owning_pa": 12,
+    "owning_pa": "PA12:100",
     "standards_basis": "N3485 5.2.2p7 performs lvalue-to-rvalue conversion;4.1p2 copy-initializes a class temporary. Nontrivial conditional-support ABI policy and unevaluated contexts need separate boundaries.",
     "upstream": [
       "clang/test/CXX/special/class.temporary/p1.cpp"
@@ -5367,12 +5369,14 @@
     "checks": {
       "initial_native": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-068/initial-native-v1.json"
     },
-    "triage_note": "Both native hosts diagnose original file;cppgm silently accepts. PA11 explicitly excludes value-copy semantics,so PA12ownership toconfirm against owning handout/cluster before required fixtures. No source fix yet."
+    "triage_note": "Observed rule repaired and integrated; parent-failing owning regressions, native neighbors, full normal checks, fresh student export and normal frozen/per-fix/cumulative performance passed. No diagnostic parity or exhaustive language-family claim.",
+    "fix_revision": "d06dd4758",
+    "accepted_integration": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-066071-acceptance-v1.json"
   },
   {
     "id": "CXX11-069",
     "priority": "P1",
-    "status": "confirmed-unfixed",
+    "status": "closed",
     "compiler_language_gap": true,
     "symptom": "Explicit thread_local template instantiations are rejected as forbidden storage specifiers.",
     "standards_basis": "Adopted CWG1793(DRNovember2014) expressly exempts thread_local from explicit-instantiation/specialization storage-class ban.",
@@ -5380,6 +5384,75 @@
     "upstream": [
       "clang/test/CodeGenCXX/cxx11-thread-local.cpp"
     ],
-    "triage_note": "Two positive pipeline configurations remain visible;primary/adoption confirmed byClangagent. Reduction and earliest PA17explicit-instantiation versus actualTLSownership still pending;no compiler fix."
+    "triage_note": "Observed rule repaired and integrated; parent-failing owning regressions, native neighbors, full normal checks, fresh student export and normal frozen/per-fix/cumulative performance passed. No diagnostic parity or exhaustive language-family claim.",
+    "fix_revision": "7c8f1d0f4",
+    "owning_pa": "PA17:300",
+    "accepted_integration": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-066071-acceptance-v1.json"
+  },
+  {
+    "id": "CXX11-067",
+    "kind": "coverage-adapter",
+    "compiler_language_gap": false,
+    "status": "closed",
+    "symptom": "Simple LLVM/FileCheck pipelines were excluded even when an independent C++11 object-acceptance check is usable",
+    "fix_revision": "c3c2ce1d8",
+    "selected_configurations": 693,
+    "selected_sources": 685,
+    "positive": 207,
+    "required_diagnostic": 486,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/clang-codegen-object-ci-v1",
+    "accepted_integration": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-066071-acceptance-v1.json",
+    "limitations": "Original LLVM/FileCheck/runtime obligations remain explicitly unmet. Native applicability qualification440/440; no cppgm-based selection or whole-suite claim."
+  },
+  {
+    "id": "CXX11-070",
+    "kind": "language-oracle",
+    "compiler_language_gap": false,
+    "status": "closed",
+    "symptom": "GCC Wnarrowing12.C was graded as positive acceptance from warning metadata although list-narrowing requires a diagnostic",
+    "fix_revision": "baad6da71",
+    "standards_basis": "N3485 8.5.4p3,p7",
+    "disposition": "Two configurations remain selected, now graded by any normal diagnostic; cppgm already complied. This adds two graded passes without a compiler repair.",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-070"
+  },
+  {
+    "id": "CXX11-071",
+    "compiler_language_gap": true,
+    "status": "closed",
+    "symptom": "Captureless lambdas cannot lower access to an enclosing block-local thread_local variable",
+    "owning_pa": "PA20:200",
+    "fix_revision": "07c0165d9",
+    "regressions": "11 required lambda/storage-duration controls",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-071",
+    "accepted_integration": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-066071-acceptance-v1.json",
+    "checks": "48/48focused;11/11owning;2/2sequential thread identity/lifetime; original Clang source4/4compile; full normal/export/performance passed"
+  },
+  {
+    "id": "CXX11-072",
+    "compiler_language_gap": true,
+    "status": "repair-performance-in-validation",
+    "symptom": "Non-delegating constructors omit required destructor access checks for initialized variants and semantic definition demand for class subobjects",
+    "owning_pa": "PA12:300 and PA14:300",
+    "standards_basis": "Adopted CWG1424,1658; initialized variant context clarified by1866",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-072",
+    "checks": "14 required controls; parent6/14 versus candidate14/14; native56/56each. First three normal frozen candidates pass per-fix but exceed unchanged cumulative0.5%O0 gate; profiling/optimization active. No integrated closure or runtime-cleanup fix claimed."
+  },
+  {
+    "id": "CXX11-073",
+    "compiler_language_gap": true,
+    "status": "confirmed-unfixed",
+    "symptom": "Block extern TLS before a later namespace definition duplicates the serialized wrapper; related reduced object paths crash",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-073",
+    "checks": "Native and parent direct-object/LowIR distinctions retained; Clang worker investigating common typed wrapper identity root"
+  },
+  {
+    "id": "CXX11-074",
+    "compiler_language_gap": true,
+    "status": "confirmed-unfixed",
+    "symptom": "An initialized union variant is not destroyed when its constructor body throws",
+    "owning_pa": "PA21:100",
+    "standards_basis": "CWG1866 adopted DR November2014",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-074",
+    "checks": "Parent and072candidate compile/link but return1; GCC/Clang return0. Destructor-failure exclusion neighbor passes all. Distinct lowering defect; no repair claimed."
   }
 ]

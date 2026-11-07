@@ -183,13 +183,18 @@ use the established supported host/path; do not record a fabricated pass.
 
 Current implementation checkpoint (user resumed 2026-11-07)
 
-The two CI instances are implemented and locally exercised; see
-reports/cxx11-ci-jobs.txt. GCC selects 4,112 configurations and Clang 256 positive/required-diagnostic
-checks. The accepted combined compiler passes 3,674/4,112 GCC configurations
-and 246/256 Clang checks; matching
-upstream compilers pass every selected check. These are subset rates, not
-whole-suite rates or deduplicated defect counts. Coverage expansion, remaining
-repairs and final integration checks remain.
+The two CI instances are implemented and locally exercised. The accepted
+compiler source07c0165d9 passes3,696/4,112GCC (89.88%) and667/693Clang
+(96.25%); matching upstream compilers pass every selected configuration.
+Clang spans685sources,207positive and486required-diagnostic configurations.
+The693cohort includes reviewed implicit-mode and simple LLVM-pipeline object
+projections, with original LLVM/FileCheck obligations explicitly unmet.
+Full normal checks pass8,790strict tests,42harness suites/667cases and a fresh
+student export of38newcontrols/42reference wrappers. Normal frozen cumulative
+instruction ratios1.003173O0/1.001074O3 pass with exact objects.
+See reports/cxx11-campaign-status.txt and the066071acceptance receipt for pins,
+counts, raw paired-suite times and explicitly non-comparable failed-suite ratios.
+These remain subset rates,notwhole-suite rates or deduplicated defects.
 The custom measurement queue stays retired.
 
 Immediate next work
@@ -212,15 +217,16 @@ suite times, correctness counts and the explicitly labeled performance ratio.
 Publish the supported coverage and limitations without claiming unavailable
 interfaces or unexecuted tests passed. Keep historical observations intact.
 
-Concrete next coverage tranche (2026-11-07)
+Concrete next work after066071acceptance (2026-11-07)
 
-Expand Clang beyond literal-std11 syntax RUNs. Preserve the existing253case
-records and all outcomes;qualify implicit-mode projections under native11
-with separate strict applicability checks. Never convert optional severity
-into diagnostic parity or automatically change a positive expectation.
-Raw660projections(653sources) include407newconfigurations;400strict-native
-qualify,sevenneed explicit source/standard review. Retain those observations
-and explicit dispositions before claiming current CI coverage. Then map
-simple inherited local configurations,not all site-config machinery at once.
-Continue same normal process for compiler failures,including057remaining
-evaluation-owned no-value copies and062pre20enumeratorusing scope.
+The initial59positive Clang subset was too narrow. Integrated coverage now
+contains693configurations; retain every current manifest record and its
+outcome. Continue expanding useful implicit-mode, input-closure and simple
+inherited-configuration cases after native applicability review. Do not infer
+compatibility solely from literal-std11 RUNs, nor claim upstream IR checkers
+are satisfied by independent object acceptance.
+
+Integrate062pre20enumerator using-scope repair through normal joint gates.
+Optimize072constructor-destructor semantic demand against the unchanged normal
+frozen gate; repair073lateTLS wrapper identity and074variant constructor-failure
+cleanup. Continue failure-led GCC/Clang standards triage and owning-PA repairs.
