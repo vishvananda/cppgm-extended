@@ -320,6 +320,8 @@ uint64_t Analyzer::attribute_alignment(
 			break;
 		case syntax::AttributeKind::Alignas:
 		{
+			if (attribute->pack)
+				error(attribute->location, "an alignment expansion that names no parameter pack");
 			if (attribute->on_type && !attribute->gnu)
 				error(attribute->location, "an alignment-specifier applied to a type");
 			uint64_t value = 0;

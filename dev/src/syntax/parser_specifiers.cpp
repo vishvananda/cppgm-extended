@@ -8,6 +8,18 @@ namespace syntax {
 
 namespace {
 
+void AlignmentType(Attribute& attribute, TypeId* type)
+{
+	attribute.type = type;
+	// A trailing ellipsis belongs to the alignment-specifier, rather than
+	// to its abstract declarator. Keep the parsed type's other derivations.
+	if (type->declarator != nullptr && type->declarator->pack != PackPosition::None)
+	{
+		attribute.pack = true;
+		type->declarator->pack = PackPosition::None;
+	}
+}
+
 // One of GCC's 128-bit and extended floating type names.
 bool ExtendedType(const Identifier* const (&names)[10], const Identifier* identifier)
 {
@@ -304,7 +316,11 @@ bool Parser::collect_attribute_specifiers(Attribute*& list)
 			*attribute = Attribute();
 			attribute->kind = AttributeKind::Alignas;
 			attribute->location = start;
-			if (!parse_alignment_operand(*attribute) || !expect(TokenKind::OP_RPAREN))
+			if (!parse_alignment_operand(*attribute))
+				return false;
+			if (!attribute->pack)
+				attribute->pack = accept(TokenKind::OP_DOTS);
+			if (!expect(TokenKind::OP_RPAREN))
 				return false;
 			*tail = attribute;
 			tail = &attribute->next;
@@ -369,10 +385,10 @@ bool Parser::parse_alignment_operand(Attribute& attribute)
 		{
 			Tentative tentative(*this);
 			TypeId* type = parse_type_id_from_name(name, info, start);
-			if (type != nullptr && at(TokenKind::OP_RPAREN))
+			if (type != nullptr && (at(TokenKind::OP_RPAREN) || at(TokenKind::OP_DOTS)))
 			{
 				tentative.commit();
-				attribute.type = type;
+				AlignmentType(attribute, type);
 				return true;
 			}
 			if (abandoning_lists_)
@@ -386,10 +402,10 @@ bool Parser::parse_alignment_operand(Attribute& attribute)
 	{
 		Tentative tentative(*this);
 		TypeId* type = parse_type_id(DeclaratorMode::Abstract, false);
-		if (type != nullptr && at(TokenKind::OP_RPAREN))
+		if (type != nullptr && (at(TokenKind::OP_RPAREN) || at(TokenKind::OP_DOTS)))
 		{
 			tentative.commit();
-			attribute.type = type;
+			AlignmentType(attribute, type);
 			return true;
 		}
 		if (abandoning_lists_)

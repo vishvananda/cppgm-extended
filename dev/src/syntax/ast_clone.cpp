@@ -788,6 +788,36 @@ Slice<DeclSpecifier> SyntaxCloner::specifiers(const Slice<DeclSpecifier>& list)
 Attribute* SyntaxCloner::attribute_list(const Attribute* list)
 {
 	Attribute* next = attributes(list->next);
+	if (list->pack && expander_ != nullptr)
+	{
+		std::vector<const Identifier*> packs;
+		const int32_t count = pattern_packs(
+			[&]() {
+				type_id(list->type);
+				expr(list->expression);
+			},
+			packs, list->location);
+		if (count >= 0)
+		{
+			std::vector<std::pair<const Identifier*, const Identifier*>> saved;
+			saved.swap(renames_);
+			Attribute* first = next;
+			Attribute** tail = &first;
+			for (int32_t i = 0; i < count; ++i)
+			{
+				rename_to(packs, static_cast<uint32_t>(i));
+				Attribute* item = copy(list);
+				item->pack = false;
+				item->type = type_id(list->type);
+				item->expression = expr(list->expression);
+				*tail = item;
+				tail = &item->next;
+			}
+			*tail = next;
+			renames_.swap(saved);
+			return first;
+		}
+	}
 	TypeId* type = list->kind == AttributeKind::Mode ? nullptr : type_id(list->type);
 	if (next == list->next && (list->kind == AttributeKind::Mode || type == list->type) && list->expression == nullptr)
 		return const_cast<Attribute*>(list);

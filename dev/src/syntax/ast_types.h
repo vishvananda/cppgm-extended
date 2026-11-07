@@ -119,6 +119,8 @@ struct Attribute
 	bool on_class;
 	// AbiTag: an argument after the first of its attribute.
 	bool continued;
+	// An alignment-specifier pack expansion (7.6.2, 14.5.3).
+	bool pack;
 	Expr* expression;
 	union
 	{
