@@ -1,0 +1,52 @@
+1 translation units
+start translation unit 1
+translation-unit
+  namespace-definition N
+    simple-declaration
+      decl-specifier-seq
+        decl-specifier KW_INT:int
+      init-declarator-list
+        init-declarator
+          declarator
+            identifier value
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_VOID:void
+    declarator
+      identifier f
+      parameter-clause
+    compound-statement
+      static-assert-declaration
+        keyword-literal KW_TRUE:true
+        message "block assertion"
+      using-directive
+        target N
+      using-declaration
+        target N::value
+      alias-declaration T
+        type-id
+          type-specifier-seq
+            type-specifier KW_INT:int
+      for-statement
+        for-init-statement
+          simple-declaration
+            decl-specifier-seq
+              decl-specifier TT_IDENTIFIER:T
+            init-declarator-list
+              init-declarator
+                declarator
+                  identifier i
+                initializer
+                  literal 0
+        condition
+          binary-expression OP_NE:!=
+            id-expression i
+            literal 1
+        iteration
+          unary-expression OP_INC:++
+            id-expression i
+        compound-statement
+          static-assert-declaration
+            keyword-literal KW_TRUE:true
+            message "loop body"
+end translation unit

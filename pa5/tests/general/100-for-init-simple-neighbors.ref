@@ -1,0 +1,115 @@
+1 translation units
+start translation unit 1
+translation-unit
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_VOID:void
+    declarator
+      identifier f
+      parameter-clause
+    compound-statement
+      for-statement
+        for-init-statement
+          class-specifier S
+            class-key KW_STRUCT:struct
+            simple-declaration
+              decl-specifier-seq
+                decl-specifier KW_INT:int
+              init-declarator-list
+                init-declarator
+                  declarator
+                    identifier value
+        condition
+          keyword-literal KW_FALSE:false
+        compound-statement
+          simple-declaration
+            decl-specifier-seq
+              decl-specifier TT_IDENTIFIER:S
+            init-declarator-list
+              init-declarator
+                declarator
+                  identifier s
+                initializer
+                  braced-init-list
+                    literal 1
+      for-statement
+        for-init-statement
+          enum-specifier E
+            enumerator value
+        condition
+          keyword-literal KW_FALSE:false
+        compound-statement
+          simple-declaration
+            decl-specifier-seq
+              decl-specifier TT_IDENTIFIER:E
+            init-declarator-list
+              init-declarator
+                declarator
+                  identifier e
+                initializer
+                  id-expression value
+      for-statement
+        for-init-statement
+          simple-declaration
+            decl-specifier-seq
+              decl-specifier KW_TYPEDEF:typedef
+              decl-specifier KW_INT:int
+            init-declarator-list
+              init-declarator
+                declarator
+                  identifier T
+        condition
+          keyword-literal KW_FALSE:false
+        compound-statement
+          simple-declaration
+            decl-specifier-seq
+              decl-specifier TT_IDENTIFIER:T
+            init-declarator-list
+              init-declarator
+                declarator
+                  identifier value
+                initializer
+                  literal 1
+      for-statement
+        for-init-statement
+          simple-declaration
+            decl-specifier-seq
+              decl-specifier KW_VOID:void
+            init-declarator-list
+              init-declarator
+                declarator
+                  identifier helper
+                  parameter-clause
+        condition
+          keyword-literal KW_FALSE:false
+        compound-statement
+      for-statement
+        for-init-statement
+          simple-declaration
+            decl-specifier-seq
+              decl-specifier KW_INT:int
+            init-declarator-list
+              init-declarator
+                declarator
+                  identifier i
+                initializer
+                  literal 0
+              init-declarator
+                declarator
+                  identifier j
+                initializer
+                  literal 1
+        condition
+          binary-expression OP_NE:!=
+            id-expression i
+            id-expression j
+        iteration
+          unary-expression OP_INC:++
+            id-expression i
+        compound-statement
+      for-statement
+        for-init-statement
+        condition
+          keyword-literal KW_FALSE:false
+        compound-statement
+end translation unit
