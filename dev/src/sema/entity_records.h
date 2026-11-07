@@ -202,6 +202,9 @@ struct ClassEntity : Entity
 	// trivial copy. Computed on demand for complete classes, independently
 	// of ABI emptiness (an ordinary empty member still occupies storage).
 	SubobjectValues subobject_values;
+	// Unlike copy mutability, odr-use excludes even mutable empty members
+	// (CWG2083). Memoized for each complete class.
+	SubobjectMutability mutable_subobject_presence;
 	// Declared with the class-virt-specifier final (9p3: it is no base).
 	bool is_final;
 	// It has a virtual table pointer (Itanium 2.4's dynamic class): it is

@@ -8,6 +8,7 @@
 #include "lex/text_literal.h"
 #include "lowir/literals.h"
 #include "sema/aggregates.h"
+#include "sema/analyzer.h"
 #include "sema/constant_values.h"
 #include "sema/conversions.h"
 #include "sema/integral_arithmetic.h"
@@ -596,6 +597,12 @@ Place FunctionLowering::glvalue(const syntax::Expr& expr)
 	if (facts == nullptr)
 		throw LoweringError(e->location, "an expression without semantic facts");
 	Place place = Place();
+	if (facts->non_odr_value && facts->entity != nullptr && facts->entity->kind == sema::EntityKind::Variable)
+	{
+		if (e->kind == syntax::ExprKind::Member)
+			member_object(static_cast<const syntax::MemberExpr&>(*e));
+		return non_odr_place(static_cast<const sema::VariableEntity*>(facts->entity), facts->type, e->location);
+	}
 	if ((facts->flags & sema::kUserConverted) != 0)
 	{
 		// A conversion function's reference result designates its referent.
@@ -784,6 +791,38 @@ Place FunctionLowering::reference_cast(const syntax::Expr& expr, const syntax::E
 					  VirtualBaseCount(from) != 0 ? member_base_access(operand_expr, false) : BaseAccess::Table)
 				: to_derived(object, from, to, expr.location);
 		}
+	}
+	return place;
+}
+
+Place FunctionLowering::non_odr_place(const sema::VariableEntity* variable, const sema::Type* type, uint32_t location)
+{
+	// CWG2083: a non-odr-use names the original published value, even
+	// inside a closure that also stores a copy. A usable reference instead
+	// designates its actual referent, whose value can change at runtime.
+	const sema::VariableTemplateFacts* definition = variable->templ;
+	const bool available = variable->defined ||
+		(definition != nullptr && definition->pattern != nullptr && definition->pattern->defined &&
+			!sema::Analyzer::InstantiationSuppressed(variable));
+	if (!variable->type->is_reference() && available && variable->owner != nullptr &&
+		(variable->owner->kind == sema::ScopeKind::Namespace || variable->owner->kind == sema::ScopeKind::Class))
+		return variable_place(variable, type, location);
+	const sema::ConstValue* value = lowering_.evaluated_value(variable);
+	if (value == nullptr)
+		throw LoweringError(location, "a non-odr-use without a published constant value");
+	Place place = Place();
+	qualify(place, type);
+	if (variable->type->is_reference())
+	{
+		if (!constant_address(*value, place.storage, location))
+			throw LoweringError(location, "a usable reference without a constant referent address");
+	}
+	else
+	{
+		const lowir::SymbolId symbol = lowering_.constant_temporary(value, location);
+		if (symbol == lowir::kNoId)
+			throw LoweringError(location, "a non-odr-use without a constant storage image");
+		place.storage = lowir::Value::symbol(symbol);
 	}
 	return place;
 }
@@ -1016,6 +1055,12 @@ bool FunctionLowering::constant_address(const sema::ConstValue& value, lowir::Va
 	case sema::RootKind::Variable:
 	{
 		const sema::VariableEntity* variable = static_cast<const sema::VariableEntity*>(value.address.entity);
+		if (variable->is_static && variable->owner != nullptr &&
+			(variable->owner->kind == sema::ScopeKind::Block || variable->owner->kind == sema::ScopeKind::Function))
+		{
+			place = variable_place(variable, variable->type, location);
+			break;
+		}
 		if (variable->owner == nullptr ||
 			(variable->owner->kind != sema::ScopeKind::Namespace && variable->owner->kind != sema::ScopeKind::Class) ||
 			variable->is_thread_local)

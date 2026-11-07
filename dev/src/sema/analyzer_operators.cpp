@@ -808,6 +808,7 @@ void Analyzer::operator_conversions(
 		// parameter's binding) needs an unambiguous accessible base.
 		if (i != 0 || !member)
 			check_conversion_access(operands[i]->facts, conversion, operands[i]->location);
+		odr_use_constants(*operands[i], &conversion);
 		if (conversion.constructor != nullptr)
 			apply_user_conversion(operands[i]->facts, conversion, operands[i]->location);
 		// A class prvalue operand bound to a reference parameter, or the
@@ -816,7 +817,6 @@ void Analyzer::operator_conversions(
 			check_binding_temporary(operands[i]->facts, conversion, operands[i]->location);
 		else
 			check_temporary_destruction(operands[i]->facts, operands[i]->location);
-		odr_use_constants(*operands[i], &conversion);
 		record_conversion(facts_of(*operands[i]), conversion);
 		// 8.5p16: a class parameter from an operand of its class (or a
 		// derived one) is initialized by the constructor it selects.

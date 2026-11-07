@@ -191,6 +191,7 @@ void Analyzer::replay_uses(size_t first)
 			break;
 		case DeferredUse::Kind::Local:
 			local_name(*use.expr, use.facts, use.entity, use.scope);
+			potential_use(*use.expr, nullptr);
 			break;
 		case DeferredUse::Kind::This:
 			capture_this(use.location);

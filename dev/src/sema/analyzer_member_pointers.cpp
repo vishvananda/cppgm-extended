@@ -87,6 +87,7 @@ ExprFacts* Analyzer::member_pointer_access(const syntax::BinaryExpr& expr, ExprF
 	const Type* member = member_pointer->element;
 	if (member->kind == TypeKind::Function)
 	{
+		potential_use(*expr.left, nullptr);
 		ExprFacts* facts = new_facts(expr, member, ValueCategory::PRValue);
 		facts->flags |= kBoundMember;
 		return facts;
@@ -95,8 +96,10 @@ ExprFacts* Analyzer::member_pointer_access(const syntax::BinaryExpr& expr, ExprF
 	// E1.E2 (5.2.5p4), an xvalue of another (CWG 616's reading, which
 	// g++ and clang++ apply to C++11): a prvalue object's member is that
 	// temporary's subobject, not a copy.
-	return new_facts(expr, types_.qualified(member, object->cv),
+	ExprFacts* facts = new_facts(expr, types_.qualified(member, object->cv),
 		category == ValueCategory::LValue ? ValueCategory::LValue : ValueCategory::XValue);
+	facts->potential_result = expr.op == TokenKind::OP_DOTSTAR && left->potential_result;
+	return facts;
 }
 
 ExprFacts* Analyzer::member_pointer_cast(

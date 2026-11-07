@@ -1492,7 +1492,9 @@ void Analyzer::expression(const syntax::Expr* expr, Scope* scope)
 		// A discarded or converted class prvalue (an expression statement,
 		// a for-statement's, a condition's operand of a conversion
 		// function) is a temporary (12.2p1).
-		check_temporary_destruction(typed_value(*expr, scope), expr->location);
+		ExprFacts* facts = typed_value(*expr, scope);
+		potential_use(*expr, nullptr, true);
+		check_temporary_destruction(facts, expr->location);
 		return;
 	}
 	expression_walk(expr, scope);

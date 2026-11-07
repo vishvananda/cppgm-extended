@@ -319,7 +319,13 @@ ExprFacts* Analyzer::typed_form(const syntax::Expr& expr, Scope* scope)
 		const syntax::ConditionalExpr& choice = static_cast<const syntax::ConditionalExpr&>(expr);
 		ExprFacts* facts = conditional(choice, scope);
 		if (facts != nullptr)
+		{
 			facts->value = folding_condition(*choice.condition) ? 1u : 0u;
+			if (facts->category != ValueCategory::PRValue)
+				facts->potential_result =
+					facts_of(choice.then_expr != nullptr ? *choice.then_expr : *choice.condition)->potential_result ||
+					facts_of(*choice.else_expr)->potential_result;
+		}
 		return facts;
 	}
 	case syntax::ExprKind::Unary:
@@ -890,6 +896,8 @@ void Analyzer::static_constant(ExprFacts* facts, const VariableEntity* variable)
 	// a template argument, a constant expression, 3.2p2).
 	if (template_arguments_ == 0 && variable->templ != nullptr)
 		demand_variable(variable);
+	if (!variable->defined && variable->is_constexpr && variable->constant == ConstantState::Object)
+		facts->potential_result = true;
 	if (variable->constant != ConstantState::Value || variable->type->is_reference())
 		return;
 	facts->flags |= kStaticConstant;
@@ -1087,11 +1095,15 @@ const Conversion* Analyzer::finish_conversion(const syntax::Expr& expr, Conversi
 		substitution_error(expr.location, "a non-const reference bound to a bit-field");
 		return nullptr;
 	}
+	const bool potential = facts->potential_result;
+	if (potential)
+		potential_use(expr, &conversion);
 	if (conversion.constructor != nullptr)
 		apply_user_conversion(facts, conversion, expr.location);
 	check_conversion_access(facts, conversion, expr.location);
 	check_binding_temporary(facts, conversion, expr.location);
-	odr_use_constants(expr, &conversion);
+	if (!potential)
+		odr_use_constants(expr, &conversion);
 	return record_conversion(facts, conversion);
 }
 
@@ -1299,10 +1311,12 @@ ExprFacts* Analyzer::combine(const syntax::BinaryExpr& expr, Scope* scope)
 			return nullptr;
 		if (!check_resolved(*expr.right))
 			return nullptr;
+		potential_use(*expr.left, nullptr, true);
 		check_temporary_destruction(left, expr.left->location);
 		ExprFacts* right = facts_of(*expr.right);
 		ExprFacts* facts = new_facts(expr, right->type, right->category);
 		facts->flags = right->flags & kBitField;
+		facts->potential_result = right->potential_result;
 		return facts;
 	}
 	case TokenKind::OP_LAND:
@@ -1731,6 +1745,7 @@ ExprFacts* Analyzer::assignment(const syntax::BinaryExpr& expr, Scope* scope)
 	ExprFacts* left = typed_value(*expr.left, scope);
 	if (left == nullptr)
 		return nullptr;
+	potential_use(*expr.left, nullptr);
 	if (expr.right->kind == syntax::ExprKind::BracedInit)
 	{
 		// 5.17p9: `x = {v}` of a scalar is `x = T{v}`, `x = {}` is `x = T{}`;
@@ -2178,6 +2193,7 @@ ExprFacts* Analyzer::increment(const syntax::UnaryExpr& expr, Scope* scope)
 		return nullptr;
 	// A class operand may now stand for its conversion function's result.
 	operand = facts_of(*expr.operand);
+	potential_use(*expr.operand, nullptr);
 	if (!modifiable_lvalue(operand))
 	{
 		substitution_error(expr.location, "increment or decrement of something that is not a modifiable lvalue");
@@ -2270,9 +2286,16 @@ ExprFacts* Analyzer::subscript(const syntax::SubscriptExpr& expr, Scope* scope)
 		substitution_error(expr.location, "invalid subscript operands");
 		return nullptr;
 	}
-	convert_operand(commuted ? *expr.index : *expr.base, bt);
+	const syntax::Expr& array = commuted ? *expr.index : *expr.base;
+	const bool potential = facts_of(array)->potential_result &&
+		facts_of(array)->type->unqualified->kind == TypeKind::Array;
+	if (potential)
+		potential_array_operand(array, bt);
+	else
+		convert_operand(array, bt);
 	convert_operand(commuted ? *expr.base : *expr.index, promoted(it));
 	ExprFacts* facts = new_facts(expr, bt->element, ValueCategory::LValue);
+	facts->potential_result = potential;
 	if (commuted)
 		facts->flags |= kCommuted;
 	return facts;
@@ -2383,6 +2406,8 @@ ExprFacts* Analyzer::member_access(const syntax::MemberExpr& expr, Scope* scope)
 		return nullptr;
 	if (result.binding->kind != BindingKind::Function)
 		check_access(result.binding, naming, cls, scope, name.location);
+	if (expr.op != TokenKind::OP_ARROW && (!nonstatic || named->kind == EntityKind::Function))
+		potential_use(*expr.base, nullptr, !nonstatic);
 	ExprFacts object_view = *object;
 	object_view.type = type;
 	if (expr.op == TokenKind::OP_ARROW)
@@ -2716,6 +2741,7 @@ ExprFacts* Analyzer::member_of_object(const syntax::Expr& expr, ExprFacts* objec
 		ExprFacts* facts = new_facts(expr, type, category);
 		facts->entity = variable;
 		facts->flags |= implicit | (variable->bit_field ? kBitField : 0);
+		facts->potential_result = object->potential_result;
 		return facts;
 	}
 	case BindingKind::Function:
@@ -2985,6 +3011,7 @@ ExprFacts* Analyzer::explicit_conversion(
 	// temporary, 12.2p1).
 	if (IsVoid(target))
 	{
+		potential_use(*operand, nullptr, true);
 		check_temporary_destruction(source, expr.location);
 		return new_facts(expr, target->unqualified, ValueCategory::PRValue);
 	}

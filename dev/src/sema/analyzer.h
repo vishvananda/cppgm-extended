@@ -967,13 +967,20 @@ private:
 	void add_capture(LambdaFrame& frame, const Entity* entity, bool written, bool by_copy, uint32_t location);
 	const FunctionEntity* capture_constructor(ClassEntity* closure, const Type* type, uint32_t location);
 	void local_name(const syntax::Expr& expr, ExprFacts* facts, const Entity* entity, Scope* scope);
-	bool capture_variable(const Entity* entity, uint32_t location);
+	bool capture_variable(const Entity* entity, uint32_t location, bool defer_failure = false);
+	void potential_use(const syntax::Expr& expr, const Conversion* binding, bool discarded = false);
+	const Conversion* potential_array_operand(const syntax::Expr& expr, const Type* target);
 	// An operand converted by `binding` (null: none) odr-uses the constants
 	// it designates: only a glvalue a reference binds directly, or none, in
 	// an evaluated operand (checked here, per conversion: the common case
 	// returns at once).
 	void odr_use_constants(const syntax::Expr& expr, const Conversion* binding)
 	{
+		if (unevaluated_ == 0 && expr.facts != nullptr && expr.facts->potential_result)
+		{
+			potential_use(expr, binding);
+			return;
+		}
 		if ((binding == nullptr ||
 				(binding->form == ConversionForm::Reference && !binding->temporary &&
 					binding->constructor == nullptr)) &&
@@ -1471,6 +1478,7 @@ private:
 	// -------------------------------- constexpr rules (analyzer_constexpr.cpp)
 	bool literal_type(const Type* type);
 	SubobjectMutability mutable_subobjects(const Type* type, uint32_t depth = 0);
+	SubobjectMutability present_mutable_subobjects(const Type* type, uint32_t depth = 0);
 	SubobjectValues copied_subobject_values(const Type* type, uint32_t depth = 0);
 	// ------------------------------ GNU type traits (analyzer_traits.cpp)
 	ExprFacts* builtin_trait(const syntax::BuiltinTraitExpr& expr, Scope* scope);

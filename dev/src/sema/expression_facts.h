@@ -270,6 +270,12 @@ struct ExprFacts
 	// CWG1467/2137: this class list initializes from its sole expression,
 	// rather than initializing aggregate members (including an elided copy).
 	bool single_class_element;
+	// An object name whose odr-use depends on the surrounding expression
+	// (3.2, CWG2083), or a potential-result chain carrying such a name.
+	bool potential_result;
+	// A non-odr-use reads the original published value or discards storage,
+	// not a captured copy. A reference retains its original referent.
+	bool non_odr_value;
 	uint32_t flags;
 	// What an id-expression, member access or direct call designates or
 	// selected: a variable, parameter, function, enumerator or member.

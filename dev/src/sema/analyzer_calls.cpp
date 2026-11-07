@@ -1321,9 +1321,9 @@ void Analyzer::convert_arguments(
 				conversion.initialization = true;
 				check_conversion_access(argument.facts, conversion, argument.location);
 				check_binding_temporary(argument.facts, conversion, argument.location);
+				odr_use_constants(argument, &conversion);
 				if (conversion.constructor != nullptr)
 					apply_user_conversion(argument.facts, conversion, argument.location);
-				odr_use_constants(argument, &conversion);
 				record_conversion(facts_of(argument), conversion);
 			}
 			else

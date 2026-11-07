@@ -119,6 +119,33 @@ void FunctionLowering::discard(const syntax::Expr& expr)
 		operator_call(*e);
 		return;
 	}
+	// CWG2083: a discarded potential-result object need not have storage
+	// in this body. Keep operand effects without manufacturing its address.
+	if (facts != nullptr && facts->non_odr_value && (facts->type->cv & sema::kVolatile) == 0)
+	{
+		if (e->kind == syntax::ExprKind::Id)
+			return;
+		if (e->kind == syntax::ExprKind::Member)
+		{
+			member_object(static_cast<const syntax::MemberExpr&>(*e));
+			return;
+		}
+		if (e->kind == syntax::ExprKind::Subscript)
+		{
+			const syntax::SubscriptExpr& subscript = static_cast<const syntax::SubscriptExpr&>(*e);
+			discard(*subscript.base);
+			discard(*subscript.index);
+			return;
+		}
+		if (e->kind == syntax::ExprKind::Binary &&
+			static_cast<const syntax::BinaryExpr*>(e)->op == TokenKind::OP_DOTSTAR)
+		{
+			const syntax::BinaryExpr& binary = static_cast<const syntax::BinaryExpr&>(*e);
+			discard(*binary.left);
+			discard(*binary.right);
+			return;
+		}
+	}
 	const bool bitfield_glvalue = facts != nullptr && (facts->flags & sema::kBitField) != 0 &&
 		facts->category != sema::ValueCategory::PRValue;
 	if (bitfield_glvalue && (e->kind == syntax::ExprKind::Assign || e->kind == syntax::ExprKind::Unary))
@@ -255,7 +282,7 @@ void FunctionLowering::discard(const syntax::Expr& expr)
 	case syntax::ExprKind::Conditional:
 		// 5.16p4: a discarded bit-field glvalue selects effects, not an
 		// address; a volatile read required by 5p11 was handled above.
-		if (sema::IsVoid(facts->type) || bitfield_glvalue)
+		if (sema::IsVoid(facts->type) || bitfield_glvalue || facts->non_odr_value)
 		{
 			conditional_discard(static_cast<const syntax::ConditionalExpr&>(*e));
 			return;
@@ -355,6 +382,11 @@ void FunctionLowering::discard_to_void(const syntax::Expr& expr)
 	// object it just wrote; other operands are evaluated for their effects.
 	const syntax::Expr* e = WithoutParentheses(&expr);
 	const sema::ExprFacts* facts = e->facts;
+	if (facts != nullptr && facts->non_odr_value && (facts->type->cv & sema::kVolatile) == 0)
+	{
+		discard(*e);
+		return;
+	}
 	// A call is not one of 5p11's forms that read a discarded volatile
 	// glvalue. Evaluate its effects without loading a returned reference.
 	if (e->kind == syntax::ExprKind::Call)

@@ -189,6 +189,40 @@ bool Analyzer::literal_type(const Type* type)
 	return literal;
 }
 
+SubobjectMutability Analyzer::present_mutable_subobjects(const Type* type, uint32_t depth)
+{
+	if (type->is_reference())
+		return SubobjectMutability::None;
+	while (type->kind == TypeKind::Array)
+	{
+		if (type->bound == 0)
+			return SubobjectMutability::None;
+		type = type->element;
+	}
+	ClassEntity* cls = const_cast<ClassEntity*>(ClassOf(type));
+	if (cls == nullptr)
+		return SubobjectMutability::None;
+	if (cls->mutable_subobject_presence != SubobjectMutability::Unknown)
+		return cls->mutable_subobject_presence;
+	if (depth > kInstantiationDepthLimit || !require_complete(cls))
+		return SubobjectMutability::Unknown;
+	SubobjectMutability result = SubobjectMutability::None;
+	for (const BaseClass* base = cls->bases; base != nullptr && result == SubobjectMutability::None; base = base->next)
+		result = present_mutable_subobjects(base->base->type, depth + 1);
+	for (const DataMember* member = cls->members; member != nullptr && result == SubobjectMutability::None;
+		member = member->next)
+	{
+		if (member->variable->kind != EntityKind::Variable || (member->bit_field && member->variable->name == nullptr))
+			continue;
+		const VariableEntity* variable = static_cast<const VariableEntity*>(member->variable);
+		result = variable->is_mutable ? SubobjectMutability::Mutable
+									  : present_mutable_subobjects(variable->type, depth + 1);
+	}
+	if (result != SubobjectMutability::Unknown)
+		cls->mutable_subobject_presence = result;
+	return result;
+}
+
 SubobjectMutability Analyzer::mutable_subobjects(const Type* type, uint32_t depth)
 {
 	if (type->is_reference())

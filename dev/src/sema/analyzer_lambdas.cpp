@@ -540,29 +540,42 @@ void Analyzer::local_name(const syntax::Expr& expr, ExprFacts* facts, const Enti
 	if (variable != nullptr && (variable->is_extern || variable->is_thread_local))
 		return;
 	Constant value;
-	const ConstValue* scalar = nullptr;
-	if (variable != nullptr && (facts->type->cv & kConst) != 0 && IsIntegralOrUnscopedEnum(facts->type) &&
-		constant_value(expr, scope, value, false))
+	const bool integer = variable != nullptr && (facts->type->cv & kConst) != 0 &&
+		IsIntegralOrUnscopedEnum(facts->type) && constant_value(expr, scope, value, false);
+	const ConstValue* published = variable != nullptr && (variable->is_constexpr || variable->type->is_reference())
+		? variable_value(variable)
+		: nullptr;
+	const bool scalar = variable != nullptr && variable->is_constexpr && IsScalar(variable->type) &&
+		(facts->type->cv & kVolatile) == 0 && published != nullptr;
+	if (integer)
 	{
 		facts->flags |= kStaticConstant;
 		facts->value = value.bits;
 	}
-	else if (variable != nullptr && variable->is_constexpr && IsScalar(variable->type) &&
-		(facts->type->cv & kVolatile) == 0 && (scalar = variable_value(variable)) != nullptr)
+	else if (scalar)
 	{
 		// 3.2p3: reading any constexpr scalar's value is no odr-use. Its
 		// typed value is already published on the variable; unlike the
 		// integral shortcut above, pointers and floating values need that
 		// value's kind and address identity rather than only its bits.
-		if (scalar->kind == ValueKind::Integer && HeldAsConstant(*scalar))
+		if (published->kind == ValueKind::Integer && HeldAsConstant(*published))
 		{
 			facts->flags |= kStaticConstant;
-			facts->value = scalar->bits;
+			facts->value = published->bits;
 		}
 	}
-	else if (!capture_variable(entity, expr.location))
-		error(expr.location, "a local class odr-uses an automatic variable of an enclosing function (9.8p1)");
-	else
+	// A member/array value read or a discarded glvalue is classified by
+	// its final context. P0588 still captures potentially referenced
+	// entities under a capture-default; no-ODR body uses name the original.
+	const bool original = variable != nullptr && published != nullptr &&
+		(variable->type->is_reference() || (!IsScalar(variable->type) && variable->is_constexpr));
+	facts->potential_result = original;
+	const bool capture = original || (!integer && !scalar) ||
+		(body_ != nullptr && body_->lambda != nullptr && body_->lambda->expr->has_default);
+	const bool captured = capture && capture_variable(entity, expr.location, true);
+	if (capture && !captured && !integer && !scalar)
+		facts->potential_result = true;
+	if (captured)
 	{
 		// p18: a name of an entity captured by copy designates the member of
 		// the innermost lambda that copied it, const in a call operator that
@@ -580,7 +593,7 @@ void Analyzer::local_name(const syntax::Expr& expr, ExprFacts* facts, const Enti
 	}
 }
 
-bool Analyzer::capture_variable(const Entity* entity, uint32_t location)
+bool Analyzer::capture_variable(const Entity* entity, uint32_t location, bool defer_failure)
 {
 	// p11-p13: an automatic variable of an enclosing function odr-used in
 	// a lambda's body is captured by each lambda between the use and the
@@ -604,10 +617,17 @@ bool Analyzer::capture_variable(const Entity* entity, uint32_t location)
 		if (context->lambda->sealed)
 		{
 			if (captured_.find(EntityPair{ context->lambda->closure, entity }) == nullptr)
+			{
+				if (defer_failure)
+					return false;
 				error(location, "a templated lambda's body names an automatic variable its closure did not capture");
+			}
 			sealed = true;
 			break;
 		}
+		if (defer_failure && !context->lambda->expr->has_default &&
+			captured_.find(EntityPair{ context->lambda->closure, entity }) == nullptr)
+			return false;
 		crossed.push_back(context->lambda);
 	}
 	if (!sealed && (context == nullptr || context->function == nullptr))
@@ -622,6 +642,93 @@ bool Analyzer::capture_variable(const Entity* entity, uint32_t location)
 		add_capture(frame, entity, false, frame.expr->capture_default == TokenKind::OP_ASS, location);
 	}
 	return true;
+}
+
+const Conversion* Analyzer::potential_array_operand(const syntax::Expr& expr, const Type* target)
+{
+	// The built-in subscript's array operand remains a potential result
+	// (CWG1926). Validate and record its ordinary array decay without
+	// prematurely treating that intermediate conversion as an odr-use.
+	Conversion conversion = Conversion();
+	if (!conversions_.implicit(operand_of(facts_of(expr)), target, false, conversion))
+		return substitution_error(expr.location, "invalid array operand conversion"), nullptr;
+	return record_conversion(facts_of(expr), conversion);
+}
+
+void Analyzer::potential_use(const syntax::Expr& expr, const Conversion* binding, bool discarded)
+{
+	if (unevaluated_ != 0 || expr.facts == nullptr || !expr.facts->potential_result)
+		return;
+	const Type* type = expr.facts->type;
+	const bool discard = discarded && (type->cv & kVolatile) == 0;
+	const bool read = !discarded && binding != nullptr && binding->constructor == nullptr &&
+		binding->first == LvalueTransform::LvalueToRvalue && (type->cv & kVolatile) == 0 &&
+		type->unqualified->kind != TypeKind::Class;
+	SmallList<const syntax::Expr*, 16> work;
+	work.push_back(&expr);
+	while (!work.empty())
+	{
+		const syntax::Expr* e = WithoutParentheses(work.back());
+		work.pop_back();
+		ExprFacts* facts = const_cast<ExprFacts*>(e->facts);
+		if (facts == nullptr || !facts->potential_result)
+			continue;
+		facts->potential_result = false;
+		if (discard)
+			facts->non_odr_value = true;
+		const Entity* entity = facts->entity;
+		const VariableEntity* variable = entity != nullptr && entity->kind == EntityKind::Variable
+			? static_cast<const VariableEntity*>(entity)
+			: nullptr;
+		const bool leaf = e->kind == syntax::ExprKind::Id ||
+			(e->kind == syntax::ExprKind::Member && variable != nullptr && !variable->member);
+		if (leaf && entity != nullptr)
+		{
+			const ConstValue* value = variable != nullptr ? variable_value(variable) : nullptr;
+			const bool reference = entity->type->is_reference();
+			const bool usable_reference = reference && value != nullptr;
+			const bool original = usable_reference || (discard && !reference) ||
+				(read && value != nullptr && present_mutable_subobjects(entity->type) == SubobjectMutability::None);
+			if (original)
+			{
+				facts->non_odr_value = discard || value != nullptr;
+				continue;
+			}
+			const bool automatic = entity->owner != nullptr &&
+				(entity->owner->kind == ScopeKind::Block || entity->owner->kind == ScopeKind::Function) &&
+				(variable == nullptr || (!variable->is_static && !variable->is_extern && !variable->is_thread_local));
+			if (automatic && !capture_variable(entity, e->location))
+				error(e->location, "a local class odr-uses an automatic variable of an enclosing function (9.8p1)");
+			continue;
+		}
+		switch (e->kind)
+		{
+		case syntax::ExprKind::Member:
+			work.push_back(static_cast<const syntax::MemberExpr*>(e)->base);
+			break;
+		case syntax::ExprKind::Subscript:
+		{
+			const syntax::SubscriptExpr& subscript = static_cast<const syntax::SubscriptExpr&>(*e);
+			work.push_back((facts->flags & kCommuted) != 0 ? subscript.index : subscript.base);
+			break;
+		}
+		case syntax::ExprKind::Binary:
+		{
+			const syntax::BinaryExpr& binary = static_cast<const syntax::BinaryExpr&>(*e);
+			work.push_back(binary.op == TokenKind::OP_COMMA ? binary.right : binary.left);
+			break;
+		}
+		case syntax::ExprKind::Conditional:
+		{
+			const syntax::ConditionalExpr& choice = static_cast<const syntax::ConditionalExpr&>(*e);
+			work.push_back(choice.then_expr != nullptr ? choice.then_expr : choice.condition);
+			work.push_back(choice.else_expr);
+			break;
+		}
+		default:
+			break;
+		}
+	}
 }
 
 void Analyzer::odr_use_constant_operand(const syntax::Expr& expr)
