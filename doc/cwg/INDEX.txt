@@ -129,6 +129,9 @@ CWG 1742 | CD5 | cwg-1742.txt
   Local paper: paper-p1099r5.txt
 CWG 1793 | CD4 | cwg-1793.txt
   thread_local in explicit specializations
+CWG 1839 | CD6 | cwg-1839.txt
+  Lookup of block-scope extern declarations
+  Local paper: paper-p1787r6.txt
 CWG 1850 | CD4 | cwg-1850.txt
   Differences between definition context and point of instantiation
 CWG 1866 | CD4 | cwg-1866.txt

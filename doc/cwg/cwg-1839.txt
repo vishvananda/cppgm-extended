@@ -1,0 +1,150 @@
+CWG 1839: Lookup of block-scope extern declarations
+Source: https://cplusplus.github.io/CWG/issues/1839.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD6
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1839. Lookup of block-scope extern declarations
+Section: 6.7 [basic.link [1]] Status: CD6 Submitter: Hubert Tong Date: 2014-01-18
+
+[Accepted at the November, 2020 meeting as part of paper P1787R6 and moved to DR at the
+February, 2021 meeting.]
+
+According to 6.7 [basic.link [2]] paragraph 6,
+
+The name of a function declared in block scope and the name of a variable declared by a
+block scope extern declaration have linkage. If there is a visible declaration of an
+entity with linkage having the same name and type, ignoring entities declared outside
+the innermost enclosing namespace scope, the block scope declaration declares that same
+entity and receives the linkage of the previous declaration. If there is more than one
+such matching entity, the program is ill-formed.
+
+It is not clear how declarations that are in the lexical scope of the block-scope
+declaration but not members of the nearest enclosing namespace (see 9.9.2 [namespace.def
+[3]] paragraph 6) should be treated. (For example, the definition of the function in
+which the block extern appears might be defined in an enclosing namespace, with a
+visible declaration of the name in that namespace, or it might be a member function of a
+class containing a member function of the name being declared.) Should such declarations
+be produce an error or should the lexically-nearer declaration simply be ignored? There
+is implementation divergence on this point.
+
+Proposed resolution, April, 2019:
+
+1.
+
+Change 6.7 [basic.link [4]] paragraph 8 as follows:
+
+[DELETE: The name of a] [INSERT: A] function declared in block scope [DELETE: and the
+name of] [INSERT: or] a variable declared by a block scope extern declaration [DELETE:
+have] [INSERT: is a member of the innermost enclosing namespace and its name has]
+linkage. If such a declaration is attached to a named module, the program is ill-formed.
+If there is a [DELETE: visible] [INSERT: prior] declaration of [DELETE: an entity with
+linkage, ignoring entities declared outside the innermost enclosing namespace scope]
+[INSERT: that name in that namespace], such that the block scope declaration would be a
+(possibly ill-formed) redeclaration if the two declarations appeared in the same
+declarative region, the block scope declaration declares that same entity and [INSERT:
+its name] receives the linkage of the previous declaration. [DELETE: If there is more
+than one such matching entity, the program is ill-formed.] Otherwise, [DELETE: if no
+matching entity is found,] the block scope entity receives [DELETE: external] [INSERT:
+the] linkage [INSERT: of the innermost enclosing namespace]. [DELETE: If, within a
+translation unit, the same entity is declared with both internal and external linkage,
+the program is ill-formed.] [Example:
+
+
+  static void f();
+  extern "C" void h();
+  static int i = 0;    // #1
+  void g() {
+    extern void f();   // internal linkage
+    extern void h();   // C language linkage
+[INSERT:     extern void k();   // ::k, external linkage]
+    int i;             // #2: i has no linkage
+    {
+      extern void f(); // internal linkage
+      extern int i;    // #3: [DELETE: external] [INSERT: internal] linkage[DELETE: , ill-formed]
+    }
+  }
+
+
+[DELETE: Without the declaration at line #2, the declaration at line #3 would link with
+the declaration at line #1. Because the declaration with internal linkage is hidden,
+however, #3 is given external linkage, making the program ill-formed.] [INSERT: Even
+though the declaration at line #2 hides the declaration at line #1, the declaration at
+line #3 still redeclares #1 and receives internal linkage.] —end example]
+
+2.
+
+Change 6.7 [basic.link [5]] paragraph 9 as follows:
+
+[DELETE: When a] [INSERT: A] block scope declaration of an entity with linkage [DELETE:
+is not found to refer to some other declaration, then that entity is a member of the
+innermost enclosing namespace. However such a declaration] does not [DELETE: introduce]
+[INSERT: by itself make] the member name [INSERT: visible to any form of name lookup] in
+its namespace scope [INSERT: or eligible for declaration by qualified-id]. [Example:
+
+
+  namespace X {
+    void p() {
+      q();                   // error: q not yet declared
+      extern void q();       // q is a member of namespace X
+[INSERT:       extern void r();       // r is a member of namespace X]
+    }
+
+    void middle() {
+      q();                   // error: q not [DELETE: yet declared] [INSERT: visible to name lookup]
+    }
+
+    void q() { /* ... */ }   // definition of X::q
+  }
+
+  void q() { /* ... */ }     // some other, unrelated q
+[INSERT:   void X::r() { /* ... */ }  // error: r cannot be declared by qualified-id]
+
+
+—end example]
+
+Additional note, July, 2019:
+
+The proposed resolution removes the sentence from the existing text reading:
+
+If, within a translation unit, the same entity is declared with both internal and
+external linkage, the program is ill-formed.
+
+Such a sitution can still arise, however:
+
+
+   void f() {
+     void g(); // external linkage
+   }
+   static void g(); // internal linkage
+
+
+The remaining wording dealing with linkage agreement, 9.2.2 [dcl.stc [6]] paragraph 6,
+
+The linkages implied by successive declarations for a given entity shall agree. That is,
+within a given scope, each declaration declaring the same variable name or the same
+overloading of a function name shall imply the same linkage.
+
+does not apply to this example because the declarations are not within the same scope.
+
+The issue has been returned to "review" status to allow consideration of how best to
+address this problem.
+
+Source links:
+[1] https://wg21.link/basic.link
+[2] https://wg21.link/basic.link#6
+[3] https://wg21.link/namespace.def#6
+[4] https://wg21.link/basic.link#8
+[5] https://wg21.link/basic.link#9
+[6] https://wg21.link/dcl.stc#6

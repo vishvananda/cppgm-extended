@@ -52,6 +52,7 @@ doc/cwg/cwg-1734.txt
 doc/cwg/cwg-1741.txt
 doc/cwg/cwg-1742.txt
 doc/cwg/cwg-1793.txt
+doc/cwg/cwg-1839.txt
 doc/cwg/cwg-1850.txt
 doc/cwg/cwg-1866.txt
 doc/cwg/cwg-1926.txt

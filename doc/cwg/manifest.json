@@ -671,6 +671,23 @@
       "adopted_papers": []
     },
     {
+      "issue": 1839,
+      "title": "Lookup of block-scope extern declarations",
+      "status": "CD6",
+      "role": "course-reference",
+      "file": "cwg-1839.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1839.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1839.html",
+      "source_html_sha256": "856397a6adf5d85750ebc093ce711db10b44035817cab4199f3872b5c8ccf863",
+      "text_sha256": "1180070273edb324871f0f82ea66d1d6638497aac3b1a7792d38f5f942827b5c",
+      "adopted_papers": [
+        "P1787R6"
+      ],
+      "local_papers": [
+        "paper-p1787r6.txt"
+      ]
+    },
+    {
       "issue": 1850,
       "title": "Differences between definition context and point of instantiation",
       "status": "CD4",
