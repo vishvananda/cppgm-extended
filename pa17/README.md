@@ -305,6 +305,17 @@ whose validity depends on supplied arguments. An already known result type
 does not prove that substitution is valid, including when an alias discards
 an argument from its result.
 
+A dependent pack expansion can supply an alias template's fixed parameters.
+Retain that template-id until expansion determines the argument positions, then
+apply the alias's defaults and substitute its type-id (N3485 14.5.3/14.5.7,
+with adopted CWG1558). Equal written argument and parameter counts do not
+establish the positions while an expansion remains. A concrete empty, excessive
+or wrong-kind argument list still fails the ordinary rules; PA18 applies those
+failures in immediate substitution contexts. Direct class-forwarding aliases
+preserve the associated class type in equivalent function declarations and their
+external ABI, including its namespace. This does not equate alias template names
+with class template names.
+
 Use canonical argument keys, PA16 constant values and template-entity bindings.
 Keep specialization selection separate from the demanded declaration,
 initializer or body. An instantiated member partial retains its selected

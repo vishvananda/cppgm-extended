@@ -1,5 +1,6 @@
 #include "sema/template_packs.h"
 
+#include <algorithm>
 #include <cstring>
 #include <string>
 
@@ -800,6 +801,16 @@ bool Analyzer::match_template_arguments(const TemplateHead* head, const Type* co
 	}
 	if (next < count)
 	{
+		// A residual expansion after the fixed head can still be empty.
+		// Any known extra argument, however, proves excess already.
+		if (std::all_of(given + next, given + count,
+				[](const Type* argument) { return argument->kind == TypeKind::Expansion; }))
+		{
+			out.clear();
+			for (uint32_t i = 0; i < count; ++i)
+				out.push_back(given[i]->canonical);
+			return true;
+		}
 		if (fatal)
 			error(location, "too many template arguments");
 		return false;
@@ -2014,8 +2025,8 @@ const Type* Analyzer::substitute_class(const Type* type, const Substitution& sub
 		return type;
 	if (facts->role == TemplateRole::Specialization && facts->dependent && IsStandIn(facts->pattern))
 		return substitute_stand_in(type, substitution);
-	// An alias template-id that drops dependent arguments (CWG 1558):
-	// formed again from the substituted arguments.
+	// An alias template-id with unresolved argument positions or dropped
+	// dependent arguments (CWG 1558): formed again after substitution.
 	if (facts->role == TemplateRole::Specialization && facts->pattern->templ->alias_stand_in)
 	{
 		TypeList given;

@@ -658,6 +658,16 @@ bool Analyzer::deduce_type(const Type* p, const Type* a, uint32_t depth, TypeLis
 		const Type* aliased_a = aliased_type(a);
 		if (aliased_p != p || aliased_a != a)
 			return deduce_type(aliased_p, aliased_a, depth, arguments, extra_cv);
+		// With unknown argument positions there is no associated type to
+		// deduce against yet. The alias name itself is never deduced
+		// (14.5.7p2); concrete substitution still checks its argument list.
+		if (p->unqualified->kind == TypeKind::Class)
+		{
+			const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(p->unqualified->entity)->templ;
+			if (facts != nullptr && facts->role == TemplateRole::Specialization &&
+				facts->pattern->templ->alias_stand_in)
+				return true;
+		}
 	}
 	if (p->kind != a->kind || (p->cv != a->cv && !(extra_cv && (a->cv & ~p->cv) == 0)))
 		return false;

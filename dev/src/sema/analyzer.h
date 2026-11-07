@@ -204,7 +204,7 @@ public:
 	const BaseClass* base_specifier(const ClassEntity* cls, const ClassEntity* base);
 	// An alias stand-in's specialization (CWG 1558, see
 	// ClassTemplateFacts::alias_stand_in): the type it aliases, which the
-	// ABI names; null for another type.
+	// ABI names; null for another type or an unavailable associated pattern.
 	const Type* aliased_of(const Type* type) const;
 	// Whether a type depends on a template parameter (14.6.2.1p7), as the
 	// ABI asks of a function template's non-type parameter's type.
@@ -877,6 +877,8 @@ private:
 		Scope* scope;
 	};
 	bool specialized_explicit(const PendingExplicit& pending, const TypeList& arguments);
+	const Type* pending_alias_specialization(
+		const AliasTemplateEntity* alias, const TypeList& arguments, uint32_t location);
 	const Type* alias_specialization(const AliasTemplateEntity* alias, TypeList& arguments, uint32_t location);
 
 	// ------------------------------ parameter packs (template_packs.cpp)
@@ -2639,7 +2641,7 @@ private:
 	uint32_t type_id_alignment_ = 0;
 	// The alias stand-ins' facts (see ClassTemplateFacts::alias_stand_in):
 	// a stand-in template's AliasTemplateEntity, a stand-in
-	// specialization's aliased Type, by class.
+	// specialization's associated Type or transparent dependent pattern.
 	PointerMap alias_index_;
 	std::vector<const void*> alias_facts_;
 	std::vector<PendingExplicit> explicits_;

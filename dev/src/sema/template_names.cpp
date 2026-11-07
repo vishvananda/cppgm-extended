@@ -317,13 +317,13 @@ ClassEntity* Analyzer::stand_in_template(const TemplateParameterEntity* name)
 
 ClassEntity* Analyzer::alias_stand_in(const AliasTemplateEntity* alias)
 {
-	// The class template whose dependent specializations are an alias
-	// template's template-ids that drop dependent arguments (CWG 1558):
-	// one per alias template, never defined nor declared in any scope.
+	// The class template retaining an alias template-id whose argument
+	// positions remain unknown, or whose result drops dependent arguments
+	// (CWG 1558): one per alias, never defined nor declared in any scope.
 	AliasTemplateEntity* owner = const_cast<AliasTemplateEntity*>(alias);
 	if (owner->stand_in != nullptr)
 		return owner->stand_in;
-	ClassEntity* entity = new_class(TokenKind::KW_STRUCT, alias->name, graph_.global);
+	ClassEntity* entity = new_class(TokenKind::KW_STRUCT, alias->name, alias->owner);
 	class_template_facts(entity, TemplateRole::Template)->alias_stand_in = true;
 	alias_index_.set(entity, static_cast<uint32_t>(alias_facts_.size()));
 	alias_facts_.push_back(alias);
@@ -1055,6 +1055,39 @@ void Analyzer::declare_alias_template(const syntax::AliasDecl& decl, Scope* scop
 		type_pack_element_ = entity;
 }
 
+const Type* Analyzer::pending_alias_specialization(
+	const AliasTemplateEntity* alias, const TypeList& arguments, uint32_t location)
+{
+	ClassEntity* pending = class_specialization(alias_stand_in(alias), arguments, location);
+	if (alias_index_.find(pending) != PointerMap::kMissing)
+		return pending->type;
+	// A direct class-forwarding alias has a transparent associated pattern
+	// even before its argument positions are known. Keep the alias wrapper
+	// too: its original argument constraints must still be substituted.
+	if (alias->type->kind != TypeKind::Class || alias->type->cv != 0)
+		return pending->type;
+	const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(alias->type->entity)->templ;
+	if (facts == nullptr || facts->role != TemplateRole::Specialization || facts->pattern == nullptr)
+		return pending->type;
+	ClassEntity* target = facts->pattern;
+	const TemplateHead* head = target->templ->head;
+	if (head == nullptr || target->templ->role != TemplateRole::Template || head->count != alias->head->count ||
+		!own_arguments(alias->head, facts->arguments, facts->argument_count))
+		return pending->type;
+	for (uint32_t i = 0; i < head->count; ++i)
+	{
+		const TemplateParameterEntity* from = alias->head->parameters[i];
+		const TemplateParameterEntity* to = head->parameters[i];
+		if (from->non_type || to->non_type || from->template_template || to->template_template ||
+			from->pack != to->pack || HasDefault(alias->head, i) || HasDefault(head, i))
+			return pending->type;
+	}
+	const Type* associated = class_specialization(target, arguments, location)->type;
+	alias_index_.set(pending, static_cast<uint32_t>(alias_facts_.size()));
+	alias_facts_.push_back(associated);
+	return pending->type;
+}
+
 const Type* Analyzer::alias_specialization(const AliasTemplateEntity* alias, TypeList& arguments, uint32_t location)
 {
 	// 14.5.7p2: the aliased type with the template arguments substituted for
@@ -1071,15 +1104,18 @@ const Type* Analyzer::alias_specialization(const AliasTemplateEntity* alias, Typ
 		substitution_error(location, "template arguments that do not match the alias template's parameters");
 		return nullptr;
 	}
-	if (canonical.size() != head->count)
-	{
-		substitution_error(location, "a pack expansion for an alias template's parameter that is no pack");
-		return nullptr;
-	}
 	const SpecializationKey probe = SpecializationKey{ alias, canonical.data(),
 		static_cast<uint32_t>(canonical.size()) };
 	if (Binding** found = alias_specializations_.find(probe))
 		return (*found)->type;
+	// 14.5.3p6/14.5.7p2: an expansion into a fixed parameter leaves
+	// argument positions unknown until it is expanded. Equal written
+	// argument and parameter counts do not resolve that correspondence.
+	bool pending = canonical.size() != head->count;
+	for (uint32_t i = 0; !pending && i < head->count; ++i)
+		pending = !head->parameters[i]->pack && canonical[i]->kind == TypeKind::Expansion;
+	if (pending)
+		return pending_alias_specialization(alias, arguments, location);
 	// Clang's and GCC's builtin __type_pack_element<I, T...> (the hosted
 	// builtin declarations' alias template): the I-th type of the pack,
 	// chosen directly once I and the pack are known (its declared recursive

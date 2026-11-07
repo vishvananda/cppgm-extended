@@ -130,7 +130,8 @@ struct ClassTemplateFacts
 	// substitution is the substitution's failure; the alias template, and
 	// each specialization's aliased type (what deduction and names see of
 	// it), are rare facts kept aside (see Analyzer::stand_in_alias and
-	// Analyzer::aliased_of).
+	// Analyzer::aliased_of). Unknown argument positions retain the written
+	// expansions; direct class forwarding can also retain its pattern.
 	bool alias_stand_in;
 	// A template's partial specializations that no argument indexes (the
 	// first, each linking the next), and the argument positions (below 64)
