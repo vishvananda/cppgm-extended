@@ -431,7 +431,7 @@ private:
 		const Specifiers* specifiers = nullptr, DeclaratorUse use = DeclaratorUse::Declaration);
 	const Type* ptr_operator(const syntax::PtrOperator& pointer, const Type* type, Scope* scope, uint32_t location);
 	const Type* apply_suffix(const syntax::DeclaratorSuffix& suffix, const Type* type, Scope* scope, uint32_t location,
-		const ClassEntity* member = nullptr, const syntax::ParameterClause** default_clause = nullptr);
+		const ClassEntity* member = nullptr);
 	Scope* prototype_scope(
 		const syntax::ParameterClause& clause, const Type* const* types, uint32_t count, Scope* scope);
 	// A parameter's object type: an array's or function's adjusted to a
@@ -1654,7 +1654,13 @@ private:
 			error(location, "constructs nested too deeply");
 	}
 	bool stack_half_used() const;
-	Scope* declaration_scope(Scope* scope);
+	[[gnu::cold]] Scope* default_parameter_declaration_scope(Scope* scope);
+	Scope* declaration_scope(Scope* scope)
+	{
+		while (scope->kind == ScopeKind::TemplateParameters)
+			scope = scope->parent;
+		return scope->default_parameters ? default_parameter_declaration_scope(scope) : scope;
+	}
 	static Scope* enclosing_namespace(Scope* scope);
 	bool hidden_below_namespace(const Scope* block, const Identifier* name) const;
 	static bool encloses(const Scope* outer, const Scope* inner);

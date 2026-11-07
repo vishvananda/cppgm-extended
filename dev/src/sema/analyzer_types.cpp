@@ -1038,11 +1038,16 @@ DeclaratorInfo Analyzer::declarator(const syntax::Declarator* declarator, const 
 			const syntax::DeclaratorSuffix& suffix = current->suffixes[i];
 			if (&suffix != last && HasVirtSpecifier(suffix))
 				error(current->location, "a virt-specifier inside a declarator");
-			type = apply_suffix(
-				suffix, type, after, current->location, &suffix == member_suffix ? member : nullptr, &defaults);
+			type = apply_suffix(suffix, type, after, current->location, &suffix == member_suffix ? member : nullptr);
 			if (failed())
 				return info;
 			function = suffix.kind == syntax::DeclaratorSuffixKind::Function ? &suffix : nullptr;
+			if (function != nullptr && function->parameters->has_defaults)
+			{
+				if (defaults != nullptr && defaults != function->parameters)
+					error(function->parameters->location, "default arguments in more than one function clause");
+				defaults = function->parameters;
+			}
 			array = suffix.kind == syntax::DeclaratorSuffixKind::Array ? &suffix : nullptr;
 			if (specified && function == nullptr)
 				error(current->location, "an exception-specification on a function type nested in a declarator");
@@ -1257,7 +1262,7 @@ const Type* Analyzer::checked_array(const Type* element, uint64_t bound, uint32_
 }
 
 const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const Type* type, Scope* scope,
-	uint32_t location, const ClassEntity* member, const syntax::ParameterClause** default_clause)
+	uint32_t location, const ClassEntity* member)
 {
 	if (suffix.kind == syntax::DeclaratorSuffixKind::Array)
 	{
@@ -1288,12 +1293,6 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 	bool placed = false;
 	for (const syntax::ParameterDeclaration* parameter : clause.parameters)
 	{
-		if (default_clause != nullptr && parameter->default_argument != nullptr)
-		{
-			if (*default_clause != nullptr && *default_clause != &clause)
-				error(parameter->location, "default arguments in more than one function clause");
-			*default_clause = &clause;
-		}
 		const uint32_t index = static_cast<uint32_t>(parameter_scratch_.size() - base);
 		if (earlier == nullptr && index != 0 && UsesDecltype(*parameter))
 		{

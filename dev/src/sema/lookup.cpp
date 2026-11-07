@@ -451,6 +451,11 @@ LookupResult NameLookup::own(const Scope* scope, const Identifier* name, LookupF
 	// path separate so ordinary scope lookup retains its compact body.
 	if (scope->default_parameters)
 		return default_parameter_lookup(scope, name, filter);
+	return own_declarations(scope, name, filter);
+}
+
+LookupResult NameLookup::own_declarations(const Scope* scope, const Identifier* name, LookupFilter filter) const
+{
 	LookupResult result = LookupResult();
 	const NameEntry* entry = find(scope, name);
 	if (entry == nullptr)
@@ -796,7 +801,7 @@ void NameLookup::merge_base(LookupResult& result, const LookupResult& found, con
 
 LookupResult NameLookup::class_members(Scope* scope, const Identifier* name, LookupFilter filter, bool unqualified)
 {
-	LookupResult result = own(scope, name, filter);
+	LookupResult result = own_declarations(scope, name, filter);
 	if (result.found() || scope->entity == nullptr || scope->entity->kind != EntityKind::Class || !member_name(name))
 		return result;
 	// 14.6.2p3: unqualified lookup from a class does not search its bases
@@ -842,7 +847,7 @@ LookupResult NameLookup::class_members(Scope* scope, const Identifier* name, Loo
 		frame.next = frame.next->next;
 		if (base == nullptr)
 			continue;
-		const LookupResult found = own(base, name, filter);
+		const LookupResult found = own_declarations(base, name, filter);
 		if (found.found())
 		{
 			merge_base(frame.found, found, base, via_virtual);
@@ -1020,9 +1025,22 @@ LookupResult NameLookup::unqualified(Scope* scope, const Identifier* name, Looku
 		}
 		else
 			outside = bridged;
-		LookupResult result = current->kind == ScopeKind::Class
-			? class_members(current, name, filter, !concrete_members)
-			: own(current, name, filter);
+		LookupResult result;
+		if (current->kind == ScopeKind::Class)
+			result = class_members(current, name, filter, !concrete_members);
+		else if (current->kind == ScopeKind::Function)
+		{
+			result = own(current, name, filter);
+			if (!result.found() && current->default_parameters)
+			{
+				// Only function scopes can be frozen parameter windows;
+				// a miss resumes outside their shared parameter clause.
+				current = default_parameter_root(current);
+				continue;
+			}
+		}
+		else
+			result = own_declarations(current, name, filter);
 		const Binding* declared_here = result.binding;
 		for (const NamespaceList* directive = directives(current); directive != nullptr; directive = directive->next)
 			nominate(current, directive->scope);
@@ -1036,7 +1054,7 @@ LookupResult NameLookup::unqualified(Scope* scope, const Identifier* name, Looku
 				std::pop_heap(pending_.begin(), pending_.end(), shallower);
 				const Scope* nominated = pending_.back().nominated;
 				pending_.pop_back();
-				const LookupResult found = own(nominated, name, filter);
+				const LookupResult found = own_declarations(nominated, name, filter);
 				if (declared_here != nullptr && found.found() && Converges(declared_here, found.binding))
 					continue;
 				merge(result, found);
@@ -1056,8 +1074,6 @@ LookupResult NameLookup::unqualified(Scope* scope, const Identifier* name, Looku
 				++value_parameter_uses_;
 			return result;
 		}
-		if (current->default_parameters)
-			current = default_parameter_root(current);
 	}
 	return LookupResult();
 }
@@ -1073,7 +1089,7 @@ void NameLookup::search_inline_set(Scope* scope, const Identifier* name, LookupF
 		if (current->visit == visit_)
 			continue;
 		current->visit = visit_;
-		merge(result, own(current, name, filter));
+		merge(result, own_declarations(current, name, filter));
 		const NamespaceEntity* entity = static_cast<const NamespaceEntity*>(current->entity);
 		for (NamespaceList* member = entity->inline_members; member != nullptr; member = member->next)
 			frontier_.push_back(member->scope);

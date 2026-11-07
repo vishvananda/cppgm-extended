@@ -163,6 +163,7 @@ public:
 
 private:
 	LookupResult default_parameter_lookup(const Scope* scope, const Identifier* name, LookupFilter filter) const;
+	LookupResult own_declarations(const Scope* scope, const Identifier* name, LookupFilter filter) const;
 	LookupResult limited(const NameEntry& entry, LookupFilter filter) const;
 	FunctionList* declared_by_limit(const NameEntry& entry) const;
 	const NamespaceList* directives(const Scope* scope) const;

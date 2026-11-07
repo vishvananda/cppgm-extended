@@ -444,6 +444,8 @@ ParameterClause* Parser::parse_parameter_clause(Scope* member_of, bool definite)
 			break;
 		}
 		definite = true;
+		if (parameter->default_argument != nullptr)
+			clause->has_defaults = true;
 		parameters.push(parameter);
 		if (accept(TokenKind::OP_COMMA))
 			continue;

@@ -185,6 +185,8 @@ struct ParameterClause
 	bool ellipsis;
 	// The ellipsis directly follows the last parameter (`int...`).
 	bool ellipsis_without_comma;
+	// A source default-argument obligation, retained by template copies.
+	bool has_defaults = false;
 	uint32_t location;
 	// Set by the analysis of a template definition: a sole unnamed
 	// parameter's type depends on a template parameter, so an

@@ -325,7 +325,7 @@ bool Analyzer::stack_half_used() const
 	return stack_bytes_used(stack_base_, reinterpret_cast<std::uintptr_t>(&marker)) > stack_budget_ / 2;
 }
 
-Scope* Analyzer::declaration_scope(Scope* scope)
+Scope* Analyzer::default_parameter_declaration_scope(Scope* scope)
 {
 	while (scope->kind == ScopeKind::TemplateParameters || scope->default_parameters)
 		scope = scope->default_parameters ? names_.default_parameter_root(scope)->parent : scope->parent;
