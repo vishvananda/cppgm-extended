@@ -2,6 +2,7 @@ name: Boost advisory
 
 on:
   push:
+    branches-ignore: [perf/simdjson-phase-analysis]
   workflow_dispatch:
 
 permissions:

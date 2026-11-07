@@ -1,0 +1,47 @@
+name: Private simdjson phase analysis
+on:
+  push:
+    branches: [perf/simdjson-phase-analysis]
+permissions:
+  contents: read
+jobs:
+  analysis:
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 45
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_WARNINGS_AS_ERRORS: '1'
+    steps:
+      - name: Install host tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends g++ clang-21 python3 git make ca-certificates time
+      - uses: actions/checkout@v6
+      - name: Build retained compiler
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make -C dev -j4 cppgm++
+      - name: Compare parser phases and compiler ablations
+        run: python3 scripts/simdjson_phase_analysis.py
+      - name: Report
+        if: always()
+        shell: bash
+        run: |
+          if [ -f obj/phase-analysis/details.md ]; then
+            cat obj/phase-analysis/details.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: simdjson-phase-analysis
+          path: |
+            obj/phase-analysis/*.json
+            obj/phase-analysis/*.jsonl
+            obj/phase-analysis/*.log
+            obj/phase-analysis/*.md
+            obj/phase-analysis/*.o
+            obj/phase-analysis/phase-*
+            obj/phase-analysis/check-*
