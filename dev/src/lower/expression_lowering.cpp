@@ -859,11 +859,14 @@ Place FunctionLowering::variable_place(const sema::Entity* entity, const sema::T
 		return place;
 	}
 	else if (entity->kind == sema::EntityKind::Variable &&
-		static_cast<const sema::VariableEntity*>(entity)->is_static && entity->owner != nullptr &&
+		(static_cast<const sema::VariableEntity*>(entity)->is_static ||
+			(static_cast<const sema::VariableEntity*>(entity)->is_thread_local &&
+				!static_cast<const sema::VariableEntity*>(entity)->is_extern)) &&
+		entity->owner != nullptr &&
 		(entity->owner->kind == sema::ScopeKind::Block || entity->owner->kind == sema::ScopeKind::Function))
 	{
-		// An enclosing function's block-scope static named in a lambda's or
-		// a local class's member's body: that function's global (6.7p4),
+		// An enclosing function's block static or TLS named in a lambda's
+		// or a local class's member's body: its duration-specific global (6.7p4),
 		// made where its lowering met the declaration, before it demanded
 		// the body naming it.
 		const lowir::SymbolId global = lowering_.local_static_symbol(static_cast<const sema::VariableEntity*>(entity));
