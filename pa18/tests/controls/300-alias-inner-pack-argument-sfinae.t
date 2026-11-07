@@ -1,7 +1,7 @@
 // Nested alias expansion boundary: N3485 14.5.3/14.5.7 and CWG1558.
+// expect exit 0
 template<class...> struct Pack {};
 // The alias ARGUMENT must substitute, even when the inner expansion is empty.
-// expect exit 0
 template<class A, class... B> using Erased = Pack<Pack<A, B>...>;
 struct Good { using Member = int; };
 struct Bad {};
