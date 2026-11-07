@@ -1,3 +1,44 @@
+Accepted081/082/083 compiler checkpoint (2026-11-07)
+
+Source cb67ef7fbc96638abc8ee1230cd87c4d8c56ca06; compiler SHA256
+18caa33d341b13f2cf6bd03ea85b6de288769b2164cdf07fbd81897213bc6841.
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-081082083-acceptance-v1.json
+
+GCC passes3,700/4,112(89.98%),upstream4,112/4,112;216compile failures and196
+missing diagnostics remain. Clang passes787/807(97.52%),upstream807/807;
+7compile failures and13missing diagnostics remain. No abnormal/link outcomes.
+The807Clang records still span788sources,297positive/510required-diagnostic.
+Both manifests are unchanged; all7changed outcomes improve through compiler
+repairs. GCC elapsed25.782/64.503seconds,ratio0.400;Clang3.787/25.308seconds,
+ratio0.150. Both failed-suite ratios are NON-COMPARABLE, not speed claims.
+
+081checks storage classes only in the cold empty-declarator branch.083permits
+C++11trailing-return function-type non-type parameters while rejecting unresolved
+auto.082implements adoptedCWG727in-class explicit specialization, retaining
+per-instance body facts across ordinary/deep member classes and Nested<U>.
+The original course-only namespace-scope prohibition fixture is replaced by
+an adopted-DR positive; the shipped PA17handout and new oracle are verified in
+the export, with the retired source and old generated status absent.
+
+All18normal stages pass:8,966strict,affected suites,debug,selfhostPA5,inception,
+architecture/file/full placement,42harness suites/675cases(19optional skips),
+quick/selfcompile and smoke. Fresh export verifies50focused controls across
+PA6/12/15/16/17/18/22 and42reference wrappers. Integrated focused candidate
+08160/60,08352/52,082108/108 versus actual parents24/60,16/52,40/108.
+Normal actual-parent O0/O3 instruction ratios:081 .999971/1.000022;
+0831.000021/1.000002;0821.000028/1.000027. Every frozen object is identical.
+Quick self/seed .9934/1.0253,behavior0,kernels below1.3. Campaign ratios
+1.005230/1.001779 remain reported data without a second acceptance cap.
+
+Next:084/085local-class friend scope/definition repairs have isolated proofs
+and the normal gate; integration remains.086nested constexpr scalar value
+reads and087ADL over overload-set function arguments are being repaired with
+earlier-owner required regressions. Other upstream failures, useful coverage
+expansion and finalPA35release checking remain open. No remote CI execution or
+exhaustive C++11 correctness claim is made.
+
+Previous accepted checkpoint retained below
+
 Accepted Clang coverage expansion: 807 configurations across 788 sources.
 Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-079-acceptance-v1.json
 Compiler:080 source802c5644c, SHA39498b183e7ae698e9f3111d2402cf24dbda659c5ac2b48c014c9b1ec788987d.

@@ -5563,23 +5563,83 @@
   {
     "id": "CXX11-081",
     "compiler_language_gap": true,
-    "status": "repair-in-validation",
+    "status": "closed",
     "symptom": "Storage-class specifiers on type declarations without init-declarators are silently accepted",
     "owning_pa": "PA6:200; PA12:300 anonymous union; PA16:300 static union neighbor",
     "standards_basis": "N3485 7.1.1p1 and9.5p6; extern linkage specification is not a storage-class-specifier",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-081",
     "fixture_revision": "d6b7644e9",
-    "checks": "14required fixtures plus original source: optimized candidate60/60, parent24/60,Clang60/60,GCC56/60 (known unnamed-namespace union refusal retained). Affected PA6/12/16 and file/format/scoped placement pass. Normal actual-parent0.999971/1.000022 with identical output, versus retained first implementation1.000455/1.000162. Parent owning verification and isolated receipt pending.",
-    "fix_revision": "7258e7437"
+    "checks": "14required controls; integrated60/60 versus parent24/60; isolated Clang60/60/GCC56/60 with unnamed-namespace union disagreement retained. All18normal stages,8966strict,42harness/675cases and fresh50control/42wrapper export pass. Normal actual-parent .999971/1.000022 exact objects; cold path improves retained prototype1.000455/1.000162.",
+    "fix_revision": "7258e7437",
+    "historical_status": "repair-in-validation",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-081082083-acceptance-v1.json",
+    "integrated_candidate_revision": "cb67ef7fbc96638abc8ee1230cd87c4d8c56ca06"
   },
   {
     "id": "CXX11-082",
     "compiler_language_gap": true,
-    "status": "repair-in-validation",
+    "status": "closed",
     "symptom": "Namespace-only specialization guard rejects in-class explicit specializations permitted by adopted CWG727",
-    "owning_pa": "PA17:300 member templates; PA15:200 ordinary namespace/block neighbors",
+    "owning_pa": "PA15:300 ordinary namespace/block neighbors; PA17:300 member specializations and nested bodies; PA18:300 dependent no-eager-body control",
     "standards_basis": "Adopted CWG727 DR2017; preserve resolved primary owner, invalid scopes, access and redefinition constraints",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-082",
-    "checks": "Clang worker confirms warn-member-not-needed.cpp and Modules/local-visibility.cpp share first namespace-only guard;16controls+2originals: parent/GCC32/72,Clang72/72. GCC lag retained as implementation limit. Isolated fix building; no root acceptance claim."
+    "checks": "Complete25control family and2originals: integrated108/108 versus actualparent40/108. Clang108/108,GCC40/108(retained adopted727lag). Initial candidate nested ordinary/deep and crossed T/U body holes fixed before acceptance. All18normal and fresh export pass; normal actual-parent1.000028/1.000027 exact objects. PA17README and replacementDRoracle shipped; retired negative absent.",
+    "historical_status": "repair-in-validation",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-081082083-acceptance-v1.json",
+    "integrated_candidate_revision": "cb67ef7fbc96638abc8ee1230cd87c4d8c56ca06",
+    "fix_revision": "8ff49e5429618338bda2a2e93461e097466d3fa2"
+  },
+  {
+    "id": "CXX11-083",
+    "compiler_language_gap": true,
+    "status": "closed",
+    "symptom": "auto with trailing return in function-type non-type template parameter rejected before declarator application",
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/auto23.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/auto46.C"
+    ],
+    "owning_pa": "PA18:400; PA22:300 member-function-pointer type neighbor",
+    "standards_basis": "N3485 7.1.6.4 trailing-return auto,14.1 function/array parameter adjustment; unresolved placeholder types remain invalid",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-083",
+    "fix_revision": "93c0214f399ab0f15376d35133929ca2872b664d",
+    "integrated_candidate_revision": "cb67ef7fbc96638abc8ee1230cd87c4d8c56ca06",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-081082083-acceptance-v1.json",
+    "checks": "11required controls+2originals:52/52candidate/GCC/Clang versus parent16/52; root18normal+fresh50control export. Normal actual-parent1.000021/1.000002 exact objects."
+  },
+  {
+    "id": "CXX11-084",
+    "compiler_language_gap": true,
+    "status": "isolated-validated-root-pending",
+    "symptom": "Unqualified local-class function friends fail to require corresponding declaration in innermost block",
+    "owning_pa": "PA11:200",
+    "standards_basis": "AdoptedCWG138/P1787; typed Binding.declared_in block identity",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-084"
+  },
+  {
+    "id": "CXX11-085",
+    "compiler_language_gap": true,
+    "status": "isolated-validated-root-pending",
+    "symptom": "Local-class or qualified friend function definitions are silently accepted",
+    "owning_pa": "PA11:200",
+    "standards_basis": "N3485 11.3p6",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-085"
+  },
+  {
+    "id": "CXX11-086",
+    "compiler_language_gap": true,
+    "status": "repair-in-validation",
+    "symptom": "Non-integral constexpr scalar value reads incorrectly demand capture or enclosing-function object access",
+    "owning_pa": "PA16:300; PA20:200 lambda; PA22:300 member-pointer",
+    "standards_basis": "N3485 3.2p2-p3,9.8p1,5.1.2p11; actual pointer-object address/reference remains odr-use",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-086"
+  },
+  {
+    "id": "CXX11-087",
+    "compiler_language_gap": true,
+    "status": "repair-in-validation",
+    "symptom": "Overloaded function argument signatures omitted from argument-dependent associated namespaces/classes",
+    "owning_pa": "PA11:200; PA14:100 function-template neighbor",
+    "standards_basis": "N3485 3.4.2p2, adoptedCWG33; all retained overload signatures associate, not declaration namespace",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-087"
   }
 ]
