@@ -113,14 +113,15 @@ void FunctionLowering::discard(const syntax::Expr& expr)
 	check_stack(e->location);
 	const DebugScope debug(*this, e->location);
 	const sema::ExprFacts* facts = e->facts;
+	const bool bitfield_glvalue = facts != nullptr && facts->category != sema::ValueCategory::PRValue &&
+		(facts->flags & sema::kBitField) != 0;
 	if (facts != nullptr && (facts->flags & sema::kOperatorCall) != 0 && e->kind != syntax::ExprKind::Call &&
 		(facts->category != sema::ValueCategory::PRValue || facts->type->unqualified->kind != sema::TypeKind::Class))
 	{
 		operator_call(*e);
 		return;
 	}
-	if (facts != nullptr && (facts->flags & sema::kBitField) != 0 &&
-		(e->kind == syntax::ExprKind::Assign || e->kind == syntax::ExprKind::Unary))
+	if (bitfield_glvalue && (e->kind == syntax::ExprKind::Assign || e->kind == syntax::ExprKind::Unary))
 	{
 		bit_field_value(*e);
 		return;
@@ -172,9 +173,17 @@ void FunctionLowering::discard(const syntax::Expr& expr)
 		array_temporary(functional, false, lowir::SlotKind::Discardarr);
 		return;
 	}
+	case syntax::ExprKind::Member:
+		// 5p11: a nonvolatile discarded bit-field has no value conversion
+		// or address. Its object expression still has its effects.
+		if (bitfield_glvalue)
+		{
+			member_object(static_cast<const syntax::MemberExpr&>(*e));
+			return;
+		}
+		// Fall through: other members designate their ordinary storage.
 	case syntax::ExprKind::Assign:
 	case syntax::ExprKind::Subscript:
-	case syntax::ExprKind::Member:
 		if (operator_prvalue)
 			break;
 		glvalue(*e);
@@ -244,7 +253,9 @@ void FunctionLowering::discard(const syntax::Expr& expr)
 		break;
 	}
 	case syntax::ExprKind::Conditional:
-		if (sema::IsVoid(facts->type))
+		// 5.16p4: a discarded bit-field glvalue selects effects, not an
+		// address; a volatile read required by 5p11 was handled above.
+		if (sema::IsVoid(facts->type) || bitfield_glvalue)
 		{
 			conditional_discard(static_cast<const syntax::ConditionalExpr&>(*e));
 			return;
