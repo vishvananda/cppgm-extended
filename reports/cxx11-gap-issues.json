@@ -5587,7 +5587,10 @@
     "historical_status": "repair-in-validation",
     "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-081082083-acceptance-v1.json",
     "integrated_candidate_revision": "cb67ef7fbc96638abc8ee1230cd87c4d8c56ca06",
-    "fix_revision": "8ff49e5429618338bda2a2e93461e097466d3fa2"
+    "fix_revision": "8ff49e5429618338bda2a2e93461e097466d3fa2",
+    "offline_decisions": [
+      "doc/cwg/cwg-0727.txt"
+    ]
   },
   {
     "id": "CXX11-083",
@@ -5617,7 +5620,11 @@
     "historical_status": "isolated-validated-root-pending",
     "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-084085086087089-acceptance-v2.json",
     "integrated_candidate_revision": "f3da504514d41a7936557d3d78665a95bfa9ebbd",
-    "checks": "Integrated80/80 focused shared084/085 controls+original versus parent32/80;19normal stages,9027strict and fresh62control/42wrapper export pass. Actual-parent1.000209/1.000059 exact objects. Qualified/member and prior-block valid neighbors retained; Clang adopted138 lag recorded."
+    "checks": "Integrated80/80 focused shared084/085 controls+original versus parent32/80;19normal stages,9027strict and fresh62control/42wrapper export pass. Actual-parent1.000209/1.000059 exact objects. Qualified/member and prior-block valid neighbors retained; Clang adopted138 lag recorded.",
+    "offline_decisions": [
+      "doc/cwg/cwg-0138.txt",
+      "doc/cwg/paper-p1787r6.txt"
+    ]
   },
   {
     "id": "CXX11-085",
@@ -5657,7 +5664,10 @@
     "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-084085086087089-acceptance-v2.json",
     "integrated_candidate_revision": "f3da504514d41a7936557d3d78665a95bfa9ebbd",
     "checks": "Tenrequired controls+original44/44 versus parent16/44. Retained typed overload signatures associate parameter/return classes/namespaces, not declaration namespace; ordinary operand path unchanged. Normal actual-parent1.000048/1.000032 exact. Fullnormal/export passed.",
-    "fix_revision": "a85e35c10a9d12db772561e515e4e17a1a6b5435"
+    "fix_revision": "a85e35c10a9d12db772561e515e4e17a1a6b5435",
+    "offline_decisions": [
+      "doc/cwg/cwg-0033.txt"
+    ]
   },
   {
     "id": "CXX11-088",
@@ -5679,7 +5689,12 @@
     "fix_revision": "1b7c88fc2ff92fd82ccfa8f0f2a8cb1bb8949fbf",
     "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-084085086087089-acceptance-v2.json",
     "integrated_candidate_revision": "f3da504514d41a7936557d3d78665a95bfa9ebbd",
-    "checks": "13required controls+original56/56 versus correctedactualparent24/56, owning13/13vs6/13. Changingstaticstorage/address/ref controls pass; automaticobject/address/ref and parameter negatives retained. Actual-parent .999998/.999986 exact; full19normal/fresh62control export pass. Native GCC/Clang incomplete2346support retained."
+    "checks": "13required controls+original56/56 versus correctedactualparent24/56, owning13/13vs6/13. Changingstaticstorage/address/ref controls pass; automaticobject/address/ref and parameter negatives retained. Actual-parent .999998/.999986 exact; full19normal/fresh62control export pass. Native GCC/Clang incomplete2346support retained.",
+    "offline_decisions": [
+      "doc/cwg/cwg-2082.txt",
+      "doc/cwg/cwg-2346.txt",
+      "doc/cwg/paper-p0588r1.txt"
+    ]
   },
   {
     "id": "CXX11-090",
@@ -5688,7 +5703,10 @@
     "symptom": "Dependent block-extern array redeclaration compatibility checked before template substitution",
     "owning_pa": "PA14:100",
     "standards_basis": "N3485 3.5p10,8.3.4p3,14.6p8;CWG619 same-scope bound completion",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-090"
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-090",
+    "offline_decisions": [
+      "doc/cwg/cwg-0619.txt"
+    ]
   },
   {
     "id": "CXX11-091",
@@ -5697,6 +5715,9 @@
     "symptom": "Block extern reuse incorrectly depends on canonical namespace definition is_extern flag rather than owning declaration scope",
     "owning_pa": "PA10:100;PA16:300 static neighbor",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-090",
-    "standards_basis": "Block-extern namespace identity and same-scope array redeclarations; preserve foreign using and ordinary local conflicts"
+    "standards_basis": "Block-extern namespace identity and same-scope array redeclarations; preserve foreign using and ordinary local conflicts",
+    "offline_decisions": [
+      "doc/cwg/cwg-0619.txt"
+    ]
   }
 ]

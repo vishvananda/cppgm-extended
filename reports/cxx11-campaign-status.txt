@@ -34,8 +34,12 @@ primary-rule/course/DR review. No source is removed merely because cppgm fails.
 
 Next: complete088aggregate/array non-ODR-use analysis and090/091block-extern array
 repairs. A separate reviewed oracle tranche retains original807raw observations;
-its proposed dispositions are not enacted in these results. Offline CWG texts
-are implemented separately with coverage/export checks. Other upstream failures,
+its proposed dispositions are not enacted in these results. Offline CWG references now ship under doc/cwg/:70issue texts,10full papers,
+an index and provenance manifest. All82catalog files are byte-verified in a
+fresh student export;42reference wrappers and42harness suites/675cases pass.
+The CI coverage audit requires offline copies for new explicit CWG references.
+Unresolved1634/1647are clearly reference-only, not adopted decisions.
+ Other upstream failures,
 useful coverage expansion and finalPA35release remain open.
 
 Previous accepted checkpoints retained below
