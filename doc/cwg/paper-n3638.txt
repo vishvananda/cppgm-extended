@@ -36,6 +36,7 @@ Revision 3: N3582
 - Allow auto in trailing-return-type
 
 - Prohibit deduction from an initializer-list
+
 Revision 4:
 
 - Prohibit virtual auto
@@ -43,6 +44,7 @@ Revision 4:
 - Require decltype(auto) to stand alone
 
 - Clarify explicit instantiation declaration
+
 Revision 5: N3638
 
 - Add friend and address overloading examples
@@ -50,6 +52,7 @@ Revision 5: N3638
 - Resolve core issue 1588
 
 - Clarify sfinae and instantiation time
+
 Changes since N3582 are bold and blue.
 
 Redeclaration
@@ -247,6 +250,7 @@ or if e names a set of overloaded func- tions, the program is ill-formed;
 - otherwise, if e is an lvalue, decltype(e) is T&, where T is the type of e;
 
 - otherwise, decltype(e) is the type of e.
+
 The operand of the decltype specifier is an unevaluated operand (Clause 5). [ Example:
 
 
@@ -456,7 +460,7 @@ template <typename T> struct A {
   friend T frf(T);
 };
 auto frf(int i) { return i; } // not a friend of A<int>
-
+]
 
 [INSERT: A function declared with a return type that uses a placeholder type shall not
 be virtual (10.3).]
@@ -465,10 +469,10 @@ be virtual (10.3).]
 of an entity declared using a placeholder type, but it also does not prevent that entity
 from being instantiated as needed to determine its type. [ Example:]
 
-[INSERT:
+[INSERT: 
 template <typename T> auto f(T t) { return t; }
 extern template auto f(int); // does not instantiate f<int>
-int (*p)(int) = f;           // instantiates f<int> to determine its return type,
+int (*p)(int) = f;           // instantiates f<int> to determine its return type, 
                              // but an explicit instantiation definition is still required somewhere in the program
 ]
 
@@ -486,6 +490,7 @@ trailing-return-type, it is as if the trailing-return-type denotes the following
 array-to-pointer conver- sion (4.2), and function-to-pointer conversion (4.3);]
 
 - [DELETE: otherwise, void.]
+
 [INSERT: The lambda return type is auto, which is replaced by the trailing-return-type
 if provided and/or deduced from return statements as described in 7.1.6.4.] [ Example:
 

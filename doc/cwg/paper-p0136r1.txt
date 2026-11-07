@@ -18,13 +18,20 @@ Rewording inheriting constructors (core issue 1941 et al)
 Fixing:
 
 - Core Issue 1573 [1]: Inherited constructor characteristics
+
 - Core Issue 1645 [2]: Identical inheriting constructors via default arguments
+
 - Core Issue 1715 [3]: Access and inherited constructor templates
+
 - Core Issue 1736 [4]: Inheriting constructor templates in a local class
+
 - Core Issue 1903 [5]: What declarations are introduced by a non-member
 using-declaration?
+
 - Core Issue 1941 [6]: SFINAE and inherited constructor default arguments
+
 - Core Issue 1959 [7]: Inadvertently inherited copy constructor
+
 - Core Issue 1991 [8]: Inheriting constructors vs default arguments
 
 Proposed wording
@@ -36,12 +43,15 @@ Change in 3.9 basic.types paragraph 10:
 A type is a literal type if it is:
 
 - …
+
 - a class type (Clause 9) that has all of the following properties:
 
 - …
+
 - it is an aggregate type (8.5.1) or has at least one constexpr constructor or
 constructor template [INSERT: (possibly inherited (7.3.3) from a base class)] that is
 not a copy or move constructor, and
+
 -  …
 
 Change in 7.1.5 dcl.constexpr paragraph 5:
@@ -57,7 +67,6 @@ declarative region in which the using-declaration appears.
 
 using-declaration:
     using typenameopt nested-name-specifier unqualified-id ;
-
 
 [INSERT:  The set of declarations introduced by the using-declaration is found by
 performing qualified name lookup (3.4.3, 10.2) for the name in the using-declaration,
@@ -123,7 +132,7 @@ using-declaration.] [DELETE: [ Note: For using-declarations that name a construc
 struct B {
 …
 }
-[INSERT:
+[INSERT: 
 struct B1 {
   B1(int);
 };
@@ -144,8 +153,7 @@ struct D2 : B1, B2 {
   D2(int);   // OK: D2::D2(int) hides B1::B1(int) and B2::B2(int)
 };
 D2 d2(0);    // calls D2::D2(int)
-
-
+]
 ]
 
 Change in 7.3.3 namespace.udecl paragraph 16:
@@ -205,6 +213,8 @@ members of the derived class, unless their names are hidden or ambiguous (10.2).
 
 Add a new subclause after 12.6.2 class.base.init:
 
+[INSERT:
+
 12.6.3 Initialization by inherited constructor [class.inhctor.init]
 
 1.
@@ -217,6 +227,7 @@ initialized by the invocation of the inherited constructor. The complete initial
 is considered to be a single function call; in particular, the initialization of the
 inherited constructor's parameters is sequenced before the initialization of any part of
 the D object. [ Example:
+
 
 struct B1 {
   B1(int, ...) { }
@@ -259,7 +270,6 @@ template<class T> struct Log : T {
   ~Log() { std::clog << "Destroying wrapper" << std::endl; }
 };
 
-
 Class template Log wraps any class and forwards all of its constructors, while writing a
 message to the standard log whenever an object of class Log is destroyed. ]
 
@@ -267,6 +277,7 @@ message to the standard log whenever an object of class Log is destroyed. ]
 
 If the constructor was inherited from multiple base class subobjects of type B, the
 program is ill-formed. [ Example:
+
 
 struct A { A(int); };
 struct B : A { using A::A; };
@@ -298,15 +309,16 @@ struct P : N, O {};
 P p(0); // OK: use M(0) to initialize N's base class,
         // use M() to initialize O's base class
 
+]  Drafting note: This is intended to mirror the behavior when invoking a non-static
+member function inherited from multiple base classes.
 
-]
-Drafting note: This is intended to mirror the behavior when invoking a non-static member
-function inherited from multiple base classes.
 3.
 
 When an object is initialized by an inheriting constructor, the principal constructor
 (12.6.2, 15.2) for the object is considered to have completed execution when the
 initialization of all subobjects is complete.
+
+]
 
 Do not change 15.2 except.ctor paragraph 3:
 
@@ -333,13 +345,16 @@ immediate subexpressions of e, including default argument expressions used in a 
 call, combined with a set S defined by the form of e, as follows:
 
 - If e is a function call, …
+
 - If e implicitly invokes a function …
+
 - [INSERT: If e initializes an object of type D using an inherited constructor for a
 class of type B ([class.inhctor.init]), S also contains the sets of potential exceptions
 of the implied constructor invocations for subobjects of D that are not subobjects of B
 (including default argument expressions used in such invocations) as selected by
 overload resolution, and the sets of potential exceptions of the initialization of
 non-static data members from brace-or-equal-initializers (12.6.2).]
+
 - …
 
 Change in 15.4 except.spec paragraph 16:
@@ -356,11 +371,15 @@ function (Clause 12) [DELETE: are][INSERT: is] considered to have an implicit ex
 specification, as follows, where S is the set of potential exceptions of the
 implicitly-declared [INSERT: special] member function.
 
-- … [DELETE:  [ Note: An instantiation of an inheriting constructor template has an
-implied exception specification as if it were a non-template inheriting constructor. —
-end note ] ] [ Example: … ]
+- …
+
+[DELETE:  [ Note: An instantiation of an inheriting constructor template has an implied
+exception specification as if it were a non-template inheriting constructor. — end note
+] ] [ Example: … ]
 
 Add a subclause to Annex C:
+
+[INSERT:
 
 Clause 12: Special member functions [special]
 Change: Inheriting a constructor no longer injects a constructor into the derived class.
@@ -381,6 +400,8 @@ struct B : A {
 B b(42L); // now calls B(int), used to call B<long>(long),
           // which called A(int) due to substitution failure
           // in A<long>(long).
+
+]
 
 Source links:
 [1] http://wg21.link/cwg1573

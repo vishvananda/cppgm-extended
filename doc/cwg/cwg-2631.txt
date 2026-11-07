@@ -142,6 +142,7 @@ to the parameter type,]
 
 - [INSERT: a subexpression of one of the above that is not a subexpression of a nested
 unevaluated operand.]
+
 The names in the default argument are looked up, and the semantic constraints are
 checked, at the point where the default argument appears[INSERT: , except that an
 immediate invocation (7.7 [expr.const [1]]) in a default argument context is neither
@@ -162,7 +163,8 @@ implicitly instantiated.
 
 Approved by EWG telecon 2022-09-29.
 
-Amendment to also cover default member initializers (October, 2022) [SUPERSEDED]:
+[INSERT: Amendment to also cover default member initializers (October, 2022)
+[SUPERSEDED]:]
 
 1.
 
@@ -178,6 +180,7 @@ declaration of a variable of the parameter type, using the copy-initialization s
 
 - [INSERT: a subexpression thereof that is not a subexpression of a nested unevaluated
 operand.]
+
 The names in the default argument are looked up, and the semantic constraints are
 checked, at the point where the default argument appears[INSERT: , except that an
 immediate invocation (7.7 [expr.const [1]]) in a default argument context of the
@@ -214,7 +217,7 @@ CWG telecon 2022-10-07:
 The new term should be defined in 6.10.1 [intro.execution [13]] without reference to
 immediacy.
 
-Possible resolution [SUPERSEDED]:
+[INSERT: Possible resolution [SUPERSEDED]:]
 
 1.
 
@@ -223,13 +226,15 @@ Change in 6.10.1 [intro.execution [14]] paragraph 4 as follows:
 A subexpression of an expression E is an immediate subexpression of E or a subexpression
 of an immediate subexpression of E. [ Note: ... -- end note ]
 
-The potentially-evaluated subexpressions of an expression, conversion, or initializer E
-are
+[INSERT:  The potentially-evaluated subexpressions of an expression, conversion, or
+initializer E are
 
 - the constituent expressions of E and
 
 - the subexpressions thereof that are not subexpressions of a nested unevaluated operand
 (7.2.3 [expr.context [15]]).
+
+]
 
 2.
 
@@ -262,11 +267,11 @@ constraints for default arguments of templated functions are performed as descri
 
 Add a paragraph before 9.5.1 [dcl.init.general [17]] paragraph 17 as follows:
 
-An immediate invocation (7.7 [expr.const [1]]) that is not evaluated where it appears
-(9.3.4.7 [dcl.fct.default [10]], 11.4.1 [class.mem.general [18]]) is evaluated and
-checked for whether it is a constant expression at the point where the enclosing
+[INSERT:  An immediate invocation (7.7 [expr.const [1]]) that is not evaluated where it
+appears (9.3.4.7 [dcl.fct.default [10]], 11.4.1 [class.mem.general [18]]) is evaluated
+and checked for whether it is a constant expression at the point where the enclosing
 initializer is used in a function call, a constructor definition, or an aggregate
-initialization.
+initialization. ]
 
 An initializer-clause followed by an ellipsis is a pack expansion (13.7.4 [temp.variadic
 [19]]).
@@ -302,7 +307,7 @@ CWG telecon 2022-10-21:
 
 In the above wording, "constituent expression of a conversion" is not a defined term.
 
-Possible resolution [SUPERSEDED]:
+[INSERT: Possible resolution [SUPERSEDED]:]
 
 1.
 
@@ -328,13 +333,15 @@ Change in 6.10.1 [intro.execution [14]] paragraph 4 as follows:
 A subexpression of an expression E is an immediate subexpression of E or a subexpression
 of an immediate subexpression of E. [ Note: ... -- end note ]
 
-The potentially-evaluated subexpressions of an expression, conversion, or initializer E
-are
+[INSERT:  The potentially-evaluated subexpressions of an expression, conversion, or
+initializer E are
 
 - the constituent expressions of E and
 
 - the subexpressions thereof that are not subexpressions of a nested unevaluated operand
 (7.2.3 [expr.context [15]]).
+
+]
 
 3.
 
@@ -367,11 +374,11 @@ constraints for default arguments of templated functions are performed as descri
 
 Add a paragraph before 9.5.1 [dcl.init.general [17]] paragraph 17 as follows:
 
-An immediate invocation (7.7 [expr.const [1]]) that is not evaluated where it appears
-(9.3.4.7 [dcl.fct.default [10]], 11.4.1 [class.mem.general [18]]) is evaluated and
-checked for whether it is a constant expression at the point where the enclosing
+[INSERT:  An immediate invocation (7.7 [expr.const [1]]) that is not evaluated where it
+appears (9.3.4.7 [dcl.fct.default [10]], 11.4.1 [class.mem.general [18]]) is evaluated
+and checked for whether it is a constant expression at the point where the enclosing
 initializer is used in a function call, a constructor definition, or an aggregate
-initialization.
+initialization. ]
 
 An initializer-clause followed by an ellipsis is a pack expansion (13.7.4 [temp.variadic
 [19]]).
@@ -434,13 +441,15 @@ Change in 6.10.1 [intro.execution [14]] paragraph 4 as follows:
 A subexpression of an expression E is an immediate subexpression of E or a subexpression
 of an immediate subexpression of E. [ Note: ... -- end note ]
 
-The potentially-evaluated subexpressions of an expression, conversion, or initializer E
-are
+[INSERT:  The potentially-evaluated subexpressions of an expression, conversion, or
+initializer E are
 
 - the constituent expressions of E and
 
 - the subexpressions thereof that are not subexpressions of a nested unevaluated operand
 (7.2.3 [expr.context [15]]).
+
+]
 
 3.
 
@@ -473,11 +482,11 @@ constraints for default arguments of templated functions are performed as descri
 
 Add a paragraph before 9.5.1 [dcl.init.general [17]] paragraph 17 as follows:
 
-An immediate invocation (7.7 [expr.const [1]]) that is not evaluated where it appears
-(9.3.4.7 [dcl.fct.default [10]], 11.4.1 [class.mem.general [18]]) is evaluated and
-checked for whether it is a constant expression at the point where the enclosing
+[INSERT:  An immediate invocation (7.7 [expr.const [1]]) that is not evaluated where it
+appears (9.3.4.7 [dcl.fct.default [10]], 11.4.1 [class.mem.general [18]]) is evaluated
+and checked for whether it is a constant expression at the point where the enclosing
 initializer is used in a function call, a constructor definition, or an aggregate
-initialization.
+initialization. ]
 
 An initializer-clause followed by an ellipsis is a pack expansion (13.7.4 [temp.variadic
 [19]]).

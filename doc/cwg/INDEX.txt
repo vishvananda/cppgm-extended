@@ -16,7 +16,9 @@ been revised again; use these texts together with ../n3485.txt and the handout.
 Catalog inclusion does not assert implementation of every example or later feature.
 
 Change markup is explicit: [DELETE: ...] is removed wording; [INSERT: ...] is
-replacement wording. Source code indentation and issue/paper discussions are retained.
+replacement wording. HTML del/ins, struck/underlined s/u, and marked blocks are
+retained as annotations; the edits are not silently applied. Source code indentation
+and issue/paper discussions are retained.
 When an issue refers to an adopted paper instead of including its wording, read the
 local paper listed below that issue. Paper contents can extend beyond C++11.
 

@@ -138,7 +138,6 @@ followed by a non-empty initializer. [ Example:
   [INSERT: auto (*fp)() -> auto = f;       // OK]
   ...
 
-
 -- end example ]
 
 4.
@@ -150,15 +149,16 @@ In a declaration T D where D has the form
 D1 ( parameter-declaration-clause ) cv-qualifier-seqopt
   ref-qualifieropt noexcept-specifieropt attribute-specifier-seqopt [INSERT: trailing-return-typeopt]
 
-
 and the type of the contained declarator-id in the declaration T D1 is
 "derived-declarator-type-list T"[DELETE: ,][INSERT: :]
 
+[INSERT:
 - If the trailing-return-type is present, T shall be the single type-specifier auto, and
 the declared return type of the function type is the type specified by the
 trailing-return-type.
 
 - Otherwise, the declared return type of the function type is T.
+]
 [DELETE: the][INSERT: The] type of the declarator-id in D is
 "derived-declarator-type-list noexceptopt function of parameter-type-list
 cv-qualifier-seqopt ref-qualifieropt returning [DELETE: T] [INSERT: U]", where
@@ -170,6 +170,7 @@ below[INSERT: ,]
 
 - the optional noexcept is present if and only if the exception specification (14.5
 [except.spec [10]]) is non-throwing.
+
 The optional attribute-specifier-seq appertains to the function type.
 
 5.
@@ -180,7 +181,6 @@ Remove 9.3.4.6 [dcl.fct [11]] paragraph 2:
 
 [DELETE: D1 ( parameter-declaration-clause ) cv-qualifier-seqopt
   ref-qualifieropt noexcept-specifieropt attribute-specifier-seqopt trailing-return-type]
-
 
 and the type ... The optional attribute-specifier-seq appertains to the function type.]
 
@@ -194,7 +194,6 @@ declares a conversion function; its declarator shall be a function declarator (9
 
 [DELETE: ptr-declarator] [INSERT: noptr-declarator] [DELETE: ( parameter-declaration-clause ) cv-qualifier-seqopt
       ref-qualifier-seqopt noexcept-specifieropt attribute-specifier-seqopt] [INSERT: parameters-and-qualifiers]
-
 
 where the [DELETE: ptr-declarator] [INSERT: noptr-declarator] consists solely of an
 id-expression, an optional attribute-specifier-seq, and optional surrounding
@@ -284,7 +283,6 @@ followed by a non-empty initializer. [ Example:
   [INSERT: auto (*fp)() -> auto = f;       // OK]
   ...
 
-
 -- end example ]
 
 5.
@@ -311,17 +309,18 @@ In a declaration T D where [INSERT: T may be empty and] D has the form
 D1 ( parameter-declaration-clause ) cv-qualifier-seqopt
   ref-qualifieropt noexcept-specifieropt attribute-specifier-seqopt [INSERT: trailing-return-typeopt]
 
-
 [INSERT: a derived-declarator-type-list is determined as follows:] [DELETE: and]
 
-- If the unqualified-id of the declarator-id is a conversion-function-id, the
-derived-declarator-type-list is empty.
+- [INSERT: If the unqualified-id of the declarator-id is a conversion-function-id, the
+derived-declarator-type-list is empty.]
 
 -  [INSERT: Otherwise, the derived-declarator-type-list is as appears in] the type
 [INSERT: "derived-declarator-type-list T"] of the contained declarator-id in the
 declaration T D1 [DELETE: is "derived-declarator-type-list T"].
+
 [INSERT: The declared return type U of the function type is determined as follows:]
 
+[INSERT:
 - If the trailing-return-type is present, T shall be the single type-specifier auto, and
 U is the type specified by the trailing-return-type.
 
@@ -329,6 +328,7 @@ U is the type specified by the trailing-return-type.
 [class.conv.fct [22]].
 
 - Otherwise, U is T.
+]
 [DELETE: the][INSERT: The] type of the declarator-id in D is
 "derived-declarator-type-list noexceptopt function of parameter-type-list
 cv-qualifier-seqopt ref-qualifieropt returning [DELETE: T] [INSERT: U]", where
@@ -338,6 +338,7 @@ below and
 
 - the optional noexcept is present if and only if the exception specification (14.5
 [except.spec [10]]) is non-throwing.
+
 The optional attribute-specifier-seq appertains to the function type.
 
 7.
@@ -348,7 +349,6 @@ Remove 9.3.4.6 [dcl.fct [11]] paragraph 2:
 
 [DELETE: D1 ( parameter-declaration-clause ) cv-qualifier-seqopt
   ref-qualifieropt noexcept-specifieropt attribute-specifier-seqopt trailing-return-type]
-
 
 and the type ... The optional attribute-specifier-seq appertains to the function type.]
 
@@ -362,7 +362,6 @@ declares a conversion function; its declarator shall be a function declarator (9
 
 [DELETE: ptr-declarator] [INSERT: noptr-declarator] [DELETE: ( parameter-declaration-clause ) cv-qualifier-seqopt
       ref-qualifier-seqopt noexcept-specifieropt attribute-specifier-seqopt] [INSERT: parameters-and-qualifiers]
-
 
 where the [DELETE: ptr-declarator] [INSERT: noptr-declarator] consists solely of an
 id-expression, an optional attribute-specifier-seq, and optional surrounding

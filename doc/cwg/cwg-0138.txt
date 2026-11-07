@@ -40,7 +40,6 @@ determination. For instance:
       };
     }
 
-
 Is the friend declaration a reference to ::foo or a different foo?
 
 Part of the question involves determining the meaning of the word "synonym" in 9.10
@@ -54,13 +53,13 @@ Is "using ::foo;" the declaration of a function or not?
 More generally, the question is how to describe the lookup of the name in a friend
 declaration.
 
-John Spicer: When a declaration specifies an unqualified name, that name is declared,
-not looked up. There is a mechanism in which that declaration is linked to a prior
-declaration, but that mechanism is not, in my opinion, via normal name lookup. So, the
-friend always declares a member of the nearest namespace scope regardless of how that
-name may or may not already be declared there.
+[INSERT: John Spicer]: When a declaration specifies an unqualified name, that name is
+declared, not looked up. There is a mechanism in which that declaration is linked to a
+prior declaration, but that mechanism is not, in my opinion, via normal name lookup. So,
+the friend always declares a member of the nearest namespace scope regardless of how
+that name may or may not already be declared there.
 
-Mike Miller: 6.5.3 [basic.lookup.unqual [4]] paragraph 7 says:
+[INSERT: Mike Miller]: 6.5.3 [basic.lookup.unqual [4]] paragraph 7 says:
 
 A name used in the definition of a class X outside of a member function body or nested
 class definition shall be declared in one of the following ways:... [Note: when looking
@@ -69,10 +68,10 @@ scopes outside of the innermost enclosing namespace scope are not considered.]
 The presence of this note certainly implies that this paragraph describes the lookup of
 names in friend declarations.
 
-John Spicer: It most certainly does not. If that section described the friend lookup it
-would yield the incorrect results for the friend declarations of f and g below. I don't
-know why that note is there, but it can't be taken to mean that that is how the friend
-lookup is done.
+[INSERT: John Spicer]: It most certainly does not. If that section described the friend
+lookup it would yield the incorrect results for the friend declarations of f and g
+below. I don't know why that note is there, but it can't be taken to mean that that is
+how the friend lookup is done.
 
 
     void f(){}
@@ -87,8 +86,8 @@ lookup is done.
     };
 
 
-Mike Miller: If so, the lookups for friend functions and classes behave differently.
-Consider the example in 6.5.6 [basic.lookup.elab [5]] paragraph 3:
+[INSERT: Mike Miller]: If so, the lookups for friend functions and classes behave
+differently. Consider the example in 6.5.6 [basic.lookup.elab [5]] paragraph 3:
 
 
     struct Base {
@@ -110,9 +109,9 @@ in this instance, undeclarable) A::foo? Another part of the example in 6.5.6
     };
 
 
-John Spicer: You can't refer to something that has not yet been declared. The friend is
-a declaration of Glob, it just happens to declare it in a such a way that its name
-cannot be used until it is redeclared.
+[INSERT: John Spicer]: You can't refer to something that has not yet been declared. The
+friend is a declaration of Glob, it just happens to declare it in a such a way that its
+name cannot be used until it is redeclared.
 
 (A somewhat similar question has been raised in connection with issue 36 [6]. Consider:
 

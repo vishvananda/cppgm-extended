@@ -109,7 +109,7 @@ duration that is either a non-volatile object or an rvalue reference to a non-vo
 object type. [DELETE: In the following contexts, an] [INSERT: An] id-expression is
 move-eligible[DELETE: :] [INSERT: if]
 
--  it names an implicitly movable entity,
+- [INSERT:  it names an implicitly movable entity, ]
 
 -  [DELETE: If][INSERT: it is] the [DELETE: id-expression] (possibly parenthesized)
 [DELETE: is the] operand of a return or co_return statement[DELETE: , and names an
@@ -120,9 +120,9 @@ implicitly movable entity that belongs to a scope that does not contain the
 compound-statement of the innermost lambda-expression, try-block, or function-try-block
 (if any) whose compound-statement or ctor-initializer encloses the throw-expression]
 
--  each intervening scope between the declaration of the entity and the innermost
-enclosing scope of the id-expression is a block scope and, for a throw-expression, is
-not the block scope of a try-block or function-try-block.
+- [INSERT:  each intervening scope between the declaration of the entity and the
+innermost enclosing scope of the id-expression is a block scope and, for a
+throw-expression, is not the block scope of a try-block or function-try-block. ]
 
 Source links:
 [1] https://wg21.link/expr.prim.id.qual

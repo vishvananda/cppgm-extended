@@ -47,7 +47,7 @@ following:
 
 - an lvalue-to-rvalue conversion (7.3.2 [conv.lval [6]]) unless it is applied to
 
-- a glvalue of type cv std::nullptr_t,
+- [INSERT: a glvalue of type cv std::nullptr_t,]
 
 - a non-volatile glvalue that refers to an object that is usable in constant
 expressions, or

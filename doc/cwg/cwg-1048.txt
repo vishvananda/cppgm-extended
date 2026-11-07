@@ -38,13 +38,13 @@ non-class types. As a result:
 
 This seems like an unnecessary inconsistency.
 
-John Spicer:
+[INSERT: John Spicer]:
 
 The difference is intentional; auto is intended only to give a const type if you
 explicitly ask for it, while the lambda return type should generally be the type of the
 expression.
 
-Daniel Krügler:
+[INSERT: Daniel Krügler]:
 
 Another inconsistency: with auto, use of a braced-init-list can deduce a specialization
 of std::initializer_list; it would be helpful if the same could be done for a lambda

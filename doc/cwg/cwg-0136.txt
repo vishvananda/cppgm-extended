@@ -35,7 +35,6 @@ It is unclear how this wording applies to friend function declarations. For exam
     };
     void f(int=0, int, int);             // #3
 
-
 Does the declaration at #2 acquire the default argument from #1, and does the one at #3
 acquire the default arguments from #2?
 
@@ -44,33 +43,33 @@ There are several related questions involved with this issue:
 1. Is the friend declaration in the scope of class C or in the surrounding namespace
 scope?
 
-Mike Miller: 9.3.4.7 [dcl.fct.default [2]] paragraph 4 is speaking about the lexical
-location of the declaration... The friend declaration occurs in a different declarative
-region from the declaration at #1, so I would read [this paragraph] as saying that it
-starts out with a clean slate of default arguments.
+[INSERT: Mike Miller]: 9.3.4.7 [dcl.fct.default [2]] paragraph 4 is speaking about the
+lexical location of the declaration... The friend declaration occurs in a different
+declarative region from the declaration at #1, so I would read [this paragraph] as
+saying that it starts out with a clean slate of default arguments.
 
-Bill Gibbons: Yes. It occurs in a different region, although it declares a name in the
-same region (i.e. a redeclaration). This is the same as with local externs and is
-intended to work the same way. We decided that local extern declarations cannot add
-(beyond the enclosing block) new default arguments, and the same should apply to friend
-declarations.
+[INSERT: Bill Gibbons]: Yes. It occurs in a different region, although it declares a
+name in the same region (i.e. a redeclaration). This is the same as with local externs
+and is intended to work the same way. We decided that local extern declarations cannot
+add (beyond the enclosing block) new default arguments, and the same should apply to
+friend declarations.
 
-John Spicer: The question is whether [this paragraph] does (or should) mean declarations
-that appear in the same lexical scope or declarations that declare names in the same
-scope. In my opinion, it really needs to be the latter. It seems somewhat paradoxical to
-say that a friend declaration declares a function in namespace scope yet the declaration
-in the class still has its own attributes. To make that work I think you'd have to make
-friends more like block externs that really do introduce a name into the scope in which
-the declaration is contained.
+[INSERT: John Spicer]: The question is whether [this paragraph] does (or should) mean
+declarations that appear in the same lexical scope or declarations that declare names in
+the same scope. In my opinion, it really needs to be the latter. It seems somewhat
+paradoxical to say that a friend declaration declares a function in namespace scope yet
+the declaration in the class still has its own attributes. To make that work I think
+you'd have to make friends more like block externs that really do introduce a name into
+the scope in which the declaration is contained.
 
 2. Should default arguments be permitted in friend function declarations, and what
 effect should they have?
 
-Bill Gibbons: In the absence of a declaration visible in class scope to which they could
-be attached, default arguments on friend declarations do not make sense. [They should
-be] ill-formed, to prevent surprises.
+[INSERT: Bill Gibbons]: In the absence of a declaration visible in class scope to which
+they could be attached, default arguments on friend declarations do not make sense.
+[They should be] ill-formed, to prevent surprises.
 
-John Spicer: It is important that the following case work correctly:
+[INSERT: John Spicer]: It is important that the following case work correctly:
 
 
         class X {
@@ -93,17 +92,17 @@ definition is the only place where the default arguments can be specified.
 3. What restrictions should be placed on default argument usage with friend
 declarations?
 
-John Spicer: We want to avoid instantiation side effects. IMO, the way to do this would
-be to prohibit a friend declaration from providing default arguments if a declaration of
-that function is already visible. Once a function has had a default specified in a
-friend declaration it should not be possible to add defaults in another declaration be
-it a friend or normal declaration.
+[INSERT: John Spicer]: We want to avoid instantiation side effects. IMO, the way to do
+this would be to prohibit a friend declaration from providing default arguments if a
+declaration of that function is already visible. Once a function has had a default
+specified in a friend declaration it should not be possible to add defaults in another
+declaration be it a friend or normal declaration.
 
-Mike Miller: The position that seems most reasonable to me is to allow default arguments
-in friend declarations to be used in Koenig lookup, but to say that they are completely
-unrelated to default arguments in declarations in the surrounding scope; and to forbid
-use of a default argument in a call if more than one declaration in the overload set has
-such a default, as in the proposed resolution for issue 1 [3].
+[INSERT: Mike Miller]: The position that seems most reasonable to me is to allow default
+arguments in friend declarations to be used in Koenig lookup, but to say that they are
+completely unrelated to default arguments in declarations in the surrounding scope; and
+to forbid use of a default argument in a call if more than one declaration in the
+overload set has such a default, as in the proposed resolution for issue 1 [3].
 
 (See also issues 21 [4], 95 [5], 138 [6], 139 [7], 143 [8], 165 [9], and 166 [10].)
 

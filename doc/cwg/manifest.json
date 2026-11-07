@@ -13,8 +13,13 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/33.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/33.html",
       "source_html_sha256": "eb46f524106ffd63677cf9ca57b528d7508bf35705e65c5be1254fc80435b5f0",
-      "text_sha256": "4c2bdabd2cd82b7118327524ea6fb27681c66500a02d916d22e64422f024b5a0",
-      "adopted_papers": []
+      "text_sha256": "1ac6b9275651009e19541ded9e48b8efdc7ce169f39367e279a87caa8bcc9c28",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 39,
@@ -42,11 +47,16 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/136.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/136.html",
       "source_html_sha256": "24e4e16cf0d0632cb004c30d633df84f7b8395b9fd007cf7a94bc51692317c28",
-      "text_sha256": "3f634d4a154c7eeed10beefafad57a712e38e61dc0757e4e7a9ad92a5c30f7c4",
+      "text_sha256": "c8999e2984ad4a9b32cb92919bd49518710cc5327acc43fb68a441821562d4df",
       "adopted_papers": [],
       "local_papers": [
         "paper-p1787r6.txt"
-      ]
+      ],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 138,
@@ -57,13 +67,18 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/138.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/138.html",
       "source_html_sha256": "48c9b8c9fcae38c88be05dfda314b529bd8574f31ac2763201a45ec27a94f1f5",
-      "text_sha256": "680743d0e3aada995f5696b3f79a028df461a45e3936711e3ac14b3f2a462e0a",
+      "text_sha256": "38b09432f73107132a17b22d89116bbe5c6938ab15e902d3d1a6555974c48c16",
       "adopted_papers": [
         "P1787R6"
       ],
       "local_papers": [
         "paper-p1787r6.txt"
-      ]
+      ],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 253,
@@ -91,8 +106,13 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/295.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/295.html",
       "source_html_sha256": "db9e40e381b07a58037565e7306d89522363503c34cc240e095e2fc1932dd19e",
-      "text_sha256": "41ac2405a230664e87152475cca960420e8aeb28f76f4bff5327e10dff51c91f",
-      "adopted_papers": []
+      "text_sha256": "a118e1fe8be82fd7e090dd9ead89dd50d285c4589190a92d4b03dc9b2686e659",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 388,
@@ -180,8 +200,13 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/903.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/903.html",
       "source_html_sha256": "31fbb27abd2bfc02933e8a436f6bd6ddeec15206635b18fb7bfe3e7942146a77",
-      "text_sha256": "cbea5652c440a0d2acd0579e30369796c33ee2dc098985707bf07c20637278ed",
-      "adopted_papers": []
+      "text_sha256": "559ab5ca6519c52e8700c65a4a779f4505ff130f84e6b59c38a5a2b766a75025",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 974,
@@ -221,13 +246,18 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/1048.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1048.html",
       "source_html_sha256": "84070e58b54beac854b059fd67845f9d5626a385d3107007f4f745b432226d6f",
-      "text_sha256": "a789c4ec2bc6da95cf5e373ff9dd5fefd9beee152333f38f539aaa890dbc8e64",
+      "text_sha256": "662895a293c9bcd7ac139a4b1de2dfd9ffe1b1751472839f8879469a2113c2b2",
       "adopted_papers": [
         "N3638"
       ],
       "local_papers": [
         "paper-n3638.txt"
-      ]
+      ],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 1059,
@@ -454,8 +484,13 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/1467.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1467.html",
       "source_html_sha256": "7eaae57d0d61b72a8a51e2edb64eba445c775110a005409dd682546be7f2f93a",
-      "text_sha256": "25dd080c01614cd9dd36df030e75e49f7c489633f7fef7673c93d38a359ffe23",
-      "adopted_papers": []
+      "text_sha256": "d11a6370dcb519a1f1457157351f69a9f81216f4e3df718080ffbc1e5a434202",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 1472,
@@ -1092,8 +1127,13 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/2476.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2476.html",
       "source_html_sha256": "168f0f791d5c8cf20ffe96053b0f8eabf9f2704f45dfdfc024060df591d2639a",
-      "text_sha256": "d1394d0df5b4e3cfe37c65c5b129118bbf017ac01febac8e4371d8046e16cbdb",
-      "adopted_papers": []
+      "text_sha256": "b5f3f68082feec634628c130708afd18a6c5c92e3bdd2b50588ae734ebfe62a0",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 2549,
@@ -1104,7 +1144,7 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/2549.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2549.html",
       "source_html_sha256": "4fc3264563044746d57058493633bc4bae563ee1d0b1fd561e8e2bdd385dee39",
-      "text_sha256": "8e4597d8e8ecc48ab94f90a255ffbfc6e163fe61942deff7574acf468334a607",
+      "text_sha256": "07225c100f18fef0fc8309d8d71801ef09127633e13499ad5a73e3f5aecfd46c",
       "adopted_papers": [
         "P0527R1",
         "P1155R3",
@@ -1116,7 +1156,12 @@
         "paper-p1155r3.txt",
         "paper-p1825r0.txt",
         "paper-p2266r2.txt"
-      ]
+      ],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 2631,
@@ -1127,10 +1172,15 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/2631.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2631.html",
       "source_html_sha256": "89b885c1643c69734d08b071f4ac54377387a92a5dc4e19c72fd6825fc560fc5",
-      "text_sha256": "0f58ab318440e9f41f604738d37a59dfdca65cf7027c1b0a02bb3af4c00399c4",
+      "text_sha256": "09a5e01f0db83f269db01acc9e5ae9b4b6aa0371ffdf3d8c8623a0302e2b0ba7",
       "adopted_papers": [
         "P2720R0"
-      ]
+      ],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 2907,
@@ -1141,8 +1191,13 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/2907.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2907.html",
       "source_html_sha256": "afbe50bd9d3cbf093fdd5df06e4f3e72fb83a61ce5bf7dacff3b8c4cce1e0267",
-      "text_sha256": "cd85fc08bf79a06a4727da9ea198f6cbc771bd1e5d819a551c3716fc1e1a9287",
-      "adopted_papers": []
+      "text_sha256": "94d842e36e2d45a6a8ef1d21e8fb8cb3743f7918747acc579235592ac653f6b4",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     }
   ],
   "supplemental_papers": [
@@ -1151,7 +1206,12 @@
       "file": "paper-p0135r1.txt",
       "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0135r1.html",
       "source_html_sha256": "2e83d5b751f8054589adcd492695e227dc2feea2168f831bc89b9f7d887c9b2b",
-      "text_sha256": "2f160ad9f6d250de0bdba2ebb446ac07c62d453655e364bbdf0c4ae71de6803f"
+      "text_sha256": "5a0718bd3bd2295d859420e395442f407d5e429857f7f0d80dbc970df8ecae88",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "paper": "P0490R0",
@@ -1172,13 +1232,18 @@
       "file": "paper-p0588r1.txt",
       "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0588r1.html",
       "source_html_sha256": "7dcba6106c5a2a9aa3466e54ca7846e8af04d907598a8693d03d6442457fcbfa",
-      "text_sha256": "3515ad51659c192e5445f149318d169dbb472a5fa8bb0fafdbe8c882b1cc2e9e",
+      "text_sha256": "d9ac47d6c2023aaf4afdf66663151a22a8d3eaa998db99a0c4bbf1feef296683",
       "adoption_evidence": {
         "document": "N4709",
         "motion": "CWG motion 4",
         "meeting": "November 2017 Albuquerque",
         "kind": "Defect Report",
         "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4709.pdf"
+      },
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
       }
     },
     {
@@ -1186,7 +1251,12 @@
       "file": "paper-p1099r5.txt",
       "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1099r5.html",
       "source_html_sha256": "bd896c9a3720ebdd3ef3746ec33c120e33c6f2c446d5e905e543b46c035aff6f",
-      "text_sha256": "37a89488dcc494865aa87eb23a2b5673ccf8748f3c4bb25970cdb8c52d3ee67c"
+      "text_sha256": "a5c724e64a845fcf17c2c8e9c989f54c0c160256a66bdcfcef7f9c08bd47fd44",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "paper": "P1155R3",
@@ -1200,14 +1270,24 @@
       "file": "paper-p1787r6.txt",
       "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/p1787r6.html",
       "source_html_sha256": "2c94378392f983183a26b056be074580273eacc27c6c2b50df2a6f4169f51fe4",
-      "text_sha256": "02aea8c8f30338ea195694772e491369a48823126d244c2351600f8f8cf08414"
+      "text_sha256": "8d102ab21d0646e57025ac6aa1a415e91ceafd28c0f75ff07796df1382473635",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "paper": "P1825R0",
       "file": "paper-p1825r0.txt",
       "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html",
       "source_html_sha256": "b420793836c0bb6632a9a4ac28a3e83d1ca8bb76fc550160377aa2736197e17b",
-      "text_sha256": "8f97cbc3ea8a7f5c167091b9d66b5bbc80c77954882eeece154d3fb379f9d0b2"
+      "text_sha256": "7ec9d25bdcea0d61b61c2c25e610705aaf86b1edeb4add568714d239d6f2d89e",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "paper": "P2266R2",
@@ -1221,14 +1301,24 @@
       "file": "paper-p0136r1.txt",
       "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/p0136r1.html",
       "source_html_sha256": "aba13233a139f27e6e4d4d4edf69d2e9454fa6afd5840872739ade4c3c06f375",
-      "text_sha256": "55dcb82f8542db6a7090dc0c8b9631d3aa8aa2871c9b9ffdd793783cc131f0f0"
+      "text_sha256": "85581fc16137247043567205b821e96818e087479930006d044632c1b5881d79",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "paper": "N3638",
       "file": "paper-n3638.txt",
       "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3638.html",
       "source_html_sha256": "a510a242eeaa790c51d3667da29eaae509d393d938581c6fd8bf0b5b67738a1c",
-      "text_sha256": "45da611c7f397ec523b39234f2b9eddb756323c48a9570fc27b5ceb01f92e32e"
+      "text_sha256": "059e884b35918763622a0005252b6829c9b84ca699319e5e2331b6bdc4bb87ed",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "paper": "N1626",

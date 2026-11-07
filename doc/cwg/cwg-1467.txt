@@ -36,7 +36,7 @@ aggregate from an object of the same type:
   X x2{x}; // error, {x} is not a valid aggregate initializer for X
 
 
-Suggested resolution:
+[INSERT: Suggested resolution:]
 
 Change 9.5.5 [dcl.init.list [2]] paragraph 3 as follows:
 

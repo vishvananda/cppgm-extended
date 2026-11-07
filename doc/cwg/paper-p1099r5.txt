@@ -13,15 +13,21 @@ Using Enum
 Published Proposal, 2019-07-16
 
 This version:
+
 https://github.com/atomgalaxy/using-enum/using-enum.bs [1]
+
 Authors:
 
 Gašper Ažman <gasper.azman@gmail.com>
 
 Jonathan Müller <jonathan.mueller@foonathan.net>
+
 Audience:
+
 CWG
+
 Project:
+
 ISO/IEC JTC1/SC22/WG21 14882: Programming Language — C++
 
 Abstract
@@ -31,41 +37,65 @@ Class enums are restricted namespaces. Let’s extend the using declaration to t
 Table of Contents
 
 1. 1 Revision History
+
 2. 2 Status of this paper
+
 3. 3 Motivation
+
 4.  4 Rationale
 
 1. 4.1 Consistency
+
 2. 4.2 Better Identifiers
+
 3. 4.3 Evidence of Need
+
 5.  5 Proposal
 
 1. 5.1 Syntax: using ENUM_ID::IDENTIFIER
+
 2. 5.2 Syntax: using enum IDENTIFIER
+
 6.  6 Examples
 
 1. 6.1 Strongly typed enums with global identifiers
+
 2. 6.2 Switching with no syntax overhead
+
 3. 6.3 Adding ADL-only Functions to Enumerations:
+
 7.  7 Frequently Asked Questions
 
 1. 7.1 Has this been implemented?
+
 2. 7.2 Can I do this with unscoped enums?
+
 3. 7.3 Are you proposing mirroring the namespace alias syntax as well?
+
 4. 7.4 Why not allow using enum struct/class ENUM_ID;?
+
 5. 7.5 Why propose using ENUM_ID::IDENTIFIER at all?
+
 8.  8 Clarifications for Special Cases
 
 1. 8.1 [namespace.udecl] p3
+
 2. 8.2 [namespace.udecl] p8
+
 3. 8.3 Commas in the using declaration
+
 4. 8.4 Commas in the using-enum-declaration
+
 5. 8.5 Names using-enum-declaration introduces
+
 9.  9 Proposed Wording
 
 1. 9.1 Preface
+
 2. 9.2 Changes
+
 10. 10 Acknowledgements
+
 11.   References
 
 1.  Informative References
@@ -306,7 +336,7 @@ The proposal allows for adding ADL-only functions to enumerations without enumer
 namespace ns {
   struct E_detail {
     enum E {
-      e1
+      e1 
     };
     friend void swap(E&, E&);  // adl-only swap in the only associated scope of the enum
   };
@@ -490,14 +520,17 @@ In a using-declaration used as a member-declaration, each using-declarator [DELE
 [INSERT: shall either name an enumerator or have a] nested-name-specifier [DELETE: shall
 name] [INSERT: naming] a base class of the class being defined. [INSERT: [Example:]
 
+[INSERT:
+
 enum class button { up, down };
 struct S {
    using button::up;
    button b = up; // OK
 };
 
+-- end example] ]
 
--- end example]   [DELETE: 7. A using-declaration shall not name a scoped enumerator.]
+[DELETE: 7. A using-declaration shall not name a scoped enumerator.]
 
 1.
 
@@ -506,7 +539,8 @@ be a member-declaration.
 
 Under [dcl.dcl], in [dcl.enum], add subclause titled "Using Enum Declaration", with the
 stable reference "[enum.udecl]".
-using-enum-declaration:
+
+[INSERT:  using-enum-declaration:
 using  elaborated-enum-specifier ;
 
 1.
@@ -533,7 +567,6 @@ void f() {
   S::orange; // OK, names fruit::orange
 }
 
-
 -- end example]
 
 Two using-enum-declarations that introduce two enumerators of the same name conflict.
@@ -546,11 +579,11 @@ void f() {
   using enum color; // error, color::orange and fruit::orange conflict
 }
 
-
--- end example] -- end note]
+-- end example] -- end note] ]
 
 Under [basic.def], add (just after using-directive) (and renumber section):
-2.17. — it is a using-enum-declaration
+
+[INSERT:  2.17. — it is a using-enum-declaration ]
 
 In [dcl.dcl], under block-declaration:
 
@@ -573,7 +606,7 @@ elaborated-type-specifier:
 [DELETE:  enum nested-name-specifieropt identifier ]
 [INSERT: elaborated-enum-specifier]
 
-elaborated-enum-specifier:
+[INSERT: elaborated-enum-specifier:]
 [INSERT:  enum nested-name-specifieropt identifier ]
 
 To table 17 (Feature-test macros), add the feature test macro:
@@ -655,6 +688,7 @@ References
 Informative References
 
 [P0945R0]
+
 Richard Smith. Generalizing alias declarations [3]. 10 February 2018. URL:
 https://wg21.link/p0945r0 [3]
 

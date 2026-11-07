@@ -72,7 +72,6 @@ void f() {
     // g(y); // error
   }
 }
-
 -- end example ]]
 
 Change Annex C.5: [diff.cpp17.class] to add an additional entry:
@@ -106,3 +105,5 @@ base f(base b) {
     derived d;
     return d;       // error: base(base &&) is private
 }
+
+]

@@ -339,6 +339,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_boost_ci.py \
 	scripts/tests/test_public_benchmarks.py \
 	scripts/tests/test_audit_pa_feature_placement.py \
+	scripts/tests/test_cwg_html_text.py \
 	scripts/tests/test_batch_timeout_harness.py \
 	scripts/tests/test_check_controls.py \
 	scripts/tests/test_audit_ir_expectations.py \

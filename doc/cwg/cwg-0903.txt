@@ -53,11 +53,11 @@ be a null pointer constant, even in cases like
 
 This would always be ill-formed, even when N is 0.
 
-John Spicer: It's clear that this treatment is required for overload resolution, but it
-seems too expansive given that there are other cases in which the value of a template
-parameter can affect the validity of the program, and an implementation is forbidden to
-issue a diagnostic on a template definition unless there are no possible valid
-specializations.
+[INSERT: John Spicer]: It's clear that this treatment is required for overload
+resolution, but it seems too expansive given that there are other cases in which the
+value of a template parameter can affect the validity of the program, and an
+implementation is forbidden to issue a diagnostic on a template definition unless there
+are no possible valid specializations.
 
 Notes from the July, 2009 meeting:
 

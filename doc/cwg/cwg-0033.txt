@@ -25,7 +25,7 @@ template?
 
 My inclination is to say no to both.
 
-From Mike Miller:
+[INSERT: From Mike Miller:]
 
 We discussed this on the reflector a few weeks ago. I'll leave the template case for the
 Core III experts, but I'd find it surprising if the overload case weren't handled as the
