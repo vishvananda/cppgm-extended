@@ -82,5 +82,23 @@
     "sha256": "b843c92b7ebdcb2979581110091729cdc39ef470de7b392b90ddc49f7804a40f",
     "issue": "CXX11-056",
     "reason": "CWG2354, accepted as a DR in February2019, removes permission for alignas on enumeration declarations. Original N3485 7.6.2p1 allowed it. This source uses enum alignas(N) in an instantiated template, so current corrected C++11 requires a diagnostic; GCC warning plus acceptance and cppgm rejection both satisfy it. The source alignment static_assert is not a required positive C++11 oracle after this DR. Seven forbidden forms and valid class/variable/plain-enum neighbors are retained in required PA6:200 tests. Official source: https://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#2354"
+  },
+  "llvm-project/clang/test/CXX/basic/basic.lookup/basic.lookup.classref/p1-cxx11.cpp": {
+    "status": "not-required-ifndr",
+    "sha256": "23e81981ce7ca21444fa4089e801b1319383d5ae22f6feab9de544befcf184b2",
+    "reason": "The sole active expected-error is the nondependent x->end access on fixed class X, which has no member end, inside unused Foo2<T>. No specialization can make that definition valid; Foo2 is not instantiated. Ordinary Value::set member-template calls find the member first under 3.4.5p1 and introduce no mandatory diagnostic. Later adopted CWG 1835 changes dependent lookup but does not change the fixed invalid X access or require instantiation. The independent valid Value::set prefix is retained as required PA17:300 control300-member-template-lookup-before-postfix-context.t; whole-source exclusion is not a pass.",
+    "issue": "CXX11-059"
+  },
+  "llvm-project/clang/test/SemaCXX/attr-lto-visibility-public.cpp": {
+    "status": "not-required-vendor-attribute-semantics",
+    "sha256": "1796a534372777bb88300581af75ba3a381f324d662f794930d07f864bc39591",
+    "reason": "All active expected errors constrain Clang-specific lto_visibility_public argument and appertainment semantics. Those attribute tokens are not standard C++11 attributes; their behavior is implementation-defined. No mandatory standard C++ diagnostic follows from not implementing these vendor semantic rules.",
+    "issue": "CXX11-059"
+  },
+  "llvm-project/clang/test/SemaCXX/attr-suppress.cpp": {
+    "status": "not-required-vendor-attribute-semantics",
+    "sha256": "806811685653b89bd2d8cb368c9e75145741ee3e0fa3a1595b636fd645ed9e90",
+    "reason": "Active expected errors constrain nonstandard gsl::suppress/clang::suppress argument and appertainment rules. Nonstandard attribute behavior is implementation-defined; current wording specifically permits unrecognized attributes to be ignored. No independent standard C++ syntax violation was identified in the file.",
+    "issue": "CXX11-059"
   }
 }
