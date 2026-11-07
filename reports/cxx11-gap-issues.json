@@ -5907,5 +5907,93 @@
     "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-088098100101-acceptance-v1.json",
     "integrated_candidate_revision": "746e7dc90a34102894af4269f64053a15fb3e718",
     "compiler_sha256": "3540cf2357672d6b06bb0cb40df3ec8912abd793e8b08bb86834d9540b534658"
+  },
+  {
+    "id": "CXX11-102",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-102",
+    "status": "closed",
+    "compiler_language_gap": true,
+    "symptom": "Reference-member temporaries were accepted in constructor/member initialization.",
+    "standards_basis": "Adopted CWG1696/1815; diagnose actual required constructor bodies without rejecting declaration-only queries.",
+    "fix_revision": "929b909a9",
+    "owning_pa": "PA11:200/500;PA12:400;PA29:200",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-102103104108-acceptance-v1.json",
+    "compiler_sha256": "e75f3a34a599b8797abd3a318186cf5704a96ac12bf615caf5971cef81f3dc75",
+    "checks": "Full9279strict/296focused/allnormalchecks/fresh70fixture42wrapper100catalogexport passed; actual-parent instruction gate passed with exact frozen objects."
+  },
+  {
+    "id": "CXX11-103",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-103",
+    "status": "closed",
+    "compiler_language_gap": true,
+    "symptom": "Explicit specifiers bypassed constructor/conversion declaration context checks.",
+    "standards_basis": "N3485 7.1.2p6; explicit is restricted to class constructor/conversion declarations.",
+    "fix_revision": "d033b5494",
+    "owning_pa": "PA11:200;PA12:100/400;PA14:100;PA17:300",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-102103104108-acceptance-v1.json",
+    "compiler_sha256": "e75f3a34a599b8797abd3a318186cf5704a96ac12bf615caf5971cef81f3dc75",
+    "checks": "Full9279strict/296focused/allnormalchecks/fresh70fixture42wrapper100catalogexport passed; actual-parent instruction gate passed with exact frozen objects."
+  },
+  {
+    "id": "CXX11-104",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-104",
+    "status": "closed",
+    "compiler_language_gap": true,
+    "symptom": "Constructor list initialization skipped narrowing for reference parameters.",
+    "standards_basis": "N3485 8.5.4p3/p7; the selected constructor arguments must not narrow.",
+    "fix_revision": "f84f79de2",
+    "owning_pa": "PA11:200;PA12:100/400;PA16:300",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-102103104108-acceptance-v1.json",
+    "compiler_sha256": "e75f3a34a599b8797abd3a318186cf5704a96ac12bf615caf5971cef81f3dc75",
+    "checks": "Full9279strict/296focused/allnormalchecks/fresh70fixture42wrapper100catalogexport passed; actual-parent instruction gate passed with exact frozen objects."
+  },
+  {
+    "id": "CXX11-105",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-105",
+    "status": "closed",
+    "compiler_language_gap": false,
+    "kind": "source-pinned language oracle review",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-102103104108-acceptance-v1.json",
+    "decision": "Valid after adopted1330, upstream baseline rejects; complete original plus reduced required controls retained; both paired roles exclude exact source.",
+    "checks": "Independent root review receipt and full integrated/export controls pass; old802 observations retained."
+  },
+  {
+    "id": "CXX11-106",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-106",
+    "status": "closed",
+    "compiler_language_gap": false,
+    "kind": "source-pinned language oracle review",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-102103104108-acceptance-v1.json",
+    "decision": "Unused template with no valid specialization is IFNDR; mandatory whole-TU diagnostic not required; exact valid prefix remains required. Both paired roles exclude exact source.",
+    "checks": "Independent root review receipt and full integrated/export controls pass; old802 observations retained."
+  },
+  {
+    "id": "CXX11-107",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-107",
+    "status": "pending",
+    "compiler_language_gap": true,
+    "checks": "Scoped proof ready; full next joint validation pending.",
+    "scoped_receipt": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-107/scoped-checkpoint-v1.json"
+  },
+  {
+    "id": "CXX11-108",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-108",
+    "status": "closed",
+    "compiler_language_gap": true,
+    "symptom": "Deferred concrete exception redeclaration comparisons were discarded.",
+    "standards_basis": "N3485 15.4p3-p4 and adopted1330; compare in complete-class context.",
+    "fix_revision": "52f007a0e",
+    "owning_pa": "PA6:300;PA16:200;PA17:300",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-102103104108-acceptance-v1.json",
+    "compiler_sha256": "e75f3a34a599b8797abd3a318186cf5704a96ac12bf615caf5971cef81f3dc75",
+    "checks": "Full9279strict/296focused/allnormalchecks/fresh70fixture42wrapper100catalogexport passed; actual-parent instruction gate passed with exact frozen objects."
+  },
+  {
+    "id": "CXX11-109",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-109",
+    "status": "pending",
+    "compiler_language_gap": false,
+    "checks": "Scoped proof ready; full next joint validation pending.",
+    "scoped_receipt": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-109/root-review-verification-v1.json"
   }
 ]

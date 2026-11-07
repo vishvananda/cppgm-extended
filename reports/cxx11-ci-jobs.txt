@@ -1,3 +1,68 @@
+Accepted explicit declarations, reference initialization and exception comparisons (2026-11-07)
+
+Compiler code epoch: 52f007a0e.
+SHA256: e75f3a34a599b8797abd3a318186cf5704a96ac12bf615caf5971cef81f3dc75
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-102103104108-acceptance-v1.json
+
+CXX11-102/103/104/108 are accepted. Explicit declarations enforce constructor/
+conversion-function placement before friend or specialization dispatch. Adopted
+CWG1696 rejects reference-member temporary bindings when constructor bodies are
+required while preserving declaration-only queries and ordinary reference
+argument temporaries. List initialization checks narrowing through selected
+reference parameters. Concrete exception-specification comparisons wait for
+complete-class lookup while preserving the first declaration's lazy facts.
+
+The combined compiler passes 9,279 strict tests and all 296 focused checks.
+Affected owners, modern C++, debug info, self-host through PA5, inception,
+all architecture/file/full placement audits, 42 harness suites with 679 checks,
+quick and smoke pass. A fresh student export passes all 70 new required fixtures
+and 42 reference wrappers; all 100 CWG catalog files and the retained LLVM
+license match byte for byte. Entity record sizes remain unchanged.
+
+Normal actual-parent O0/O3 instruction ratios:
+  103: 3540 -> 53cc  1.000085 / 1.000041
+  102: 53cc -> f07   1.000066 / 1.000022
+  104: f07  -> b79   1.000003 / 0.999958
+  108: b79  -> e75   1.000015 / 0.999992
+Every frozen object pair is identical. Quick self/seed ratios .993310/1.025217,
+zero behavior failures and all existing kernel limits pass. The normal per-change
+and self-compile gates apply; no extra cumulative cap or calibration was added.
+
+Paired correctness observations:
+  GCC:   3,748/4,110 (91.19%), upstream 4,110/4,110.
+  Clang: 798/800 (99.75%), upstream 800/800.
+GCC gains explicit8/explicit9 and noexcept46 in both dialects. Clang gains
+warn-dangling-field and GH63151. No retained case loses a pass. Remaining:
+  GCC: {'passed': 3748, 'diagnostic-missing': 184, 'compile-failed': 178}
+  Clang: {'passed': 798, 'diagnostic-missing': 2}
+These are test/configuration outcomes, not deduplicated bug counts.
+
+Oracle review is reported separately from compiler improvements. Four GCC
+configurations from constexpr-ctor11/constexpr-ice18 now require a diagnostic
+under adopted1696. Both roles receive the same nonescalating -Wextra option;
+GCC's warning satisfies the obligation. All 4,110 records remain selected and
+4,106 others are byte-identical. Two Clang sources are source-pinned exclusions
+from BOTH timed roles: CXX11-105 is valid after adopted1330 but the pinned
+upstream rejects it; its ENTIRE original and reduced positive controls remain
+required internal tests. CXX11-106's unused template is IFNDR; its exact valid
+prefix remains required. The other 800 Clang records are byte-identical; the
+original 802-case observations and upstream limitations remain recorded.
+Native strict qualification passes all 547 applicable cases. Exclusions are not
+passes, and neither oracle decision is counted as a compiler fix.
+
+cppgm/upstream suite elapsed: GCC 27.365/66.274s; Clang 3.777/24.888s.
+Ratios .413/.152 remain NON-COMPARABLE because cppgm still fails cases.
+Both jobs run complete identical declared sets per role and retain raw results.
+
+Offline references now contain 87 issue texts and 11 complete papers, plus
+index/provenance. Newly accepted1696/1815 include the full adopted resolution.
+CXX11-107's specialization ownership fix and CXX11-109's primary lookup review
+are scoped-ready for the next integrated validation. Remaining GCC gaps,
+coverage improvements and final PA35 release remain open. No remote CI run or
+exhaustive C++11 proof is claimed.
+
+Earlier accepted checkpoint (retained):
+
 Accepted ODR-use, enum lookup, friend-template and array-placeholder repairs (2026-11-07)
 
 Compiler code epoch: 27fd62458; source/export-list correction: 746e7dc90a34102894af4269f64053a15fb3e718.
