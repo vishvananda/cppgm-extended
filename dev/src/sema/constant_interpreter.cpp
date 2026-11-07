@@ -988,6 +988,18 @@ bool ConstantInterpreter::locate_variant(
 
 bool ConstantInterpreter::read(const ConstPlace& place, ConstValue& out, uint32_t location)
 {
+	// CWG2140/2907: conversion of cv nullptr_t fetches no stored value,
+	// including a volatile object or an inactive union member. Its glvalue
+	// has already been evaluated, retaining side effects and binding rules.
+	if (place.type->unqualified->kind == TypeKind::Fundamental &&
+		place.type->unqualified->fundamental == FundamentalType::NullptrT)
+	{
+		out = ConstValue();
+		out.kind = ValueKind::Pointer;
+		out.root = RootKind::Null;
+		out.type = place.type->unqualified;
+		return true;
+	}
 	// 4.1 as 5.19p2 allows it: an object initialized within the evaluation
 	// or a variable usable in constant expressions, not volatile.
 	if ((place.type->cv & kVolatile) != 0)
