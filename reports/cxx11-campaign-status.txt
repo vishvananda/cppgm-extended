@@ -1,10 +1,10 @@
 Current checkpoint (2026-11-07; supersedes historical status entries below)
 
-Thirteen confirmed distinct individual compiler gaps remain unclosed. Eleven
+Fourteen confirmed distinct individual compiler gaps remain unclosed. Eleven
 have independently validated functional/student-export repairs:008,019/shared030,
-021,031,032,033,034,035,036,039 and041. Two lack implementations:038 invalid
-explicit enum-specialization targets (Clang subagent) and040 adoptedCWG2476
-function-return-placeholder deduction in new (root). Functional acceptance is
+021,031,032,033,034,035,036,039 and041. 038 and040 now have candidate fixes undergoing full functional/export
+validation.043 elaborated-enum function-template specialization return-type
+parsing remains unfixed. Functional acceptance is
 not performance acceptance or integration. This is not an exhaustive corpus
 inventory or a current GCC/Clang whole-suite pass percentage.
 
@@ -19,13 +19,13 @@ Remaining rebased-original groups never started. Every original observation is
 retained; functional-window-open-v2.json authorizes functional work after this
 known failure. No new formal benchmarking runs alongside builds/test workers.
 
-Harness/metrology issue042 is separate from the13compiler gaps. Accurate
+Harness/metrology issue042 is separate from the14compiler gaps. Accurate
 same-process page-table snapshots exceed the alleged Linux highwater; precise
 RSS-event prototype gives9232/9368KiB(+1.47%) for the failing compiler pair,
 but no calibrated gate pass is claimed. Independent0/4/8/64MiB allocation and
 short-lived64MiB spike controls pass unchanged256KiB precision tolerance.
-Twenty-four parser corruption/attribution controls and three-child batching
-controls pass. Fresh paired/calibrated measurements and precise revalidation
+Twenty-six parser corruption/attribution controls,three-child allocation
+batching and sixteen-child real-compiler attribution controls pass. Fresh paired/calibrated measurements and precise revalidation
 of affected approximate Linux RSS acceptances remain required;3% gate is fixed.
 Historical original optimized-module semantic/ABI oracle also remains open.
 
@@ -1068,3 +1068,7 @@ its final GCC/Clang CI jobs with full-suite timing.
 2026-11-07 mode audit:041 split from036 for missing11/14 diagnosis of17 attribute-using-prefix.120 source-pinned observations independently rehashed:16 silent parent and16 silent036 candidate variants,48 native pre17 language diagnoses,and24 clean native17 positives. No course policy authorizes quiet earlier-mode acceptance; optional unknown-attribute warnings are excluded.036 grammar/17 effect subset remains independently validated but performance/export pending;041 remains unfixed. Missing historical source commits56afe/9764 recovered; exact51 header hashes and frozen moduleab00 match their epochs. Independent native/hybrid module-oracle protocol prepared only; no legacy build/replay or output-gate pass claimed.
 
 2026-11-07 measurement release:0362f0b74535 now passes full grammar/effect functional-export checkpoint:8203 strict,24 optional,44 packaged,42 wrappers.041 remains open/unfixed. All root andClang functional workers terminal;402 frozen file/tool/header guards pass. Resume exact original029 controller821381/start52528549 withSIGCONT (session93744); it reports per-fix-memory0 and starts family-counters. Hold all compiler/helper/build/suite/source-edit work while queuedfamily andrebased-original counter/directRSS groups run. Historical-original remains blocked for independent native/hybrid module oracle; no gate loosened. Source epochs56afe/9764 are recovered and verified,with a later-window protocol prepared only. All requested upstream rebases include25f26d178 and remote main remains there.
+
+2026-11-07 discovery:043 independently confirmed from038neighbors:24parent valid-source wrongrejections,72native compile/link/run successes and2parent AST failures;480rawstreams rehashed. No043fix or performance evidence. Known individual compiler gaps14,eleven functional/export fixed andthree unfixed;042metrology excluded.
+
+2026-11-07 root040candidate:f31d25960/fixture4e53dd4e4,compiler1363e23e4 passes336focused variants and8190strict tests.28required controls fail16valid immutable-parent owning lanes;1344parent/native observations independently rehashed.84performance-input correctness cells pass with18exact common A/B objects. Placement caught2memberpointer fixtures; byte-identical R100moves toPA22:300 preserveallsource/tools and9completed normal gates,then newPA22/placement/harness/fresh export runinchecks-v2. No full functional/export or performance acceptance yet. Historical native-module oracle construction has begun underfunctional-window-v2; all51headers matchfrozen epoch,fullnative rest-of-compiler build43335 active,no oracle/gate pass claimed.

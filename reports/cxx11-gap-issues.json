@@ -4092,25 +4092,63 @@
   {
     "id": "CXX11-040",
     "priority": "P2",
-    "status": "triaged",
+    "status": "repair-in-validation",
     "upstream": [
       "llvm-project/clang/test/CXX/dcl.decl/dcl.meaning/dcl.fct.default/p3.cpp (neighbor discovery)"
     ],
-    "symptom": "Valid new-expression with a deduced function-pointer return type rejects before any default argument rule.",
+    "symptom": "Valid initialized auto function-pointer variables and new-expressions with a placeholder in their declared function return type are rejected.",
     "root_cause": "apply_suffix restricts auto-return declarators to declared functions/trailing returns without preserving the permitted deduction context of new type-ids.",
     "owning_pa": 20,
-    "regressions": [],
-    "fix_revision": null,
+    "regressions": [
+      "pa20/tests/controls/100-placeholder-function-new-function-pointer.t",
+      "pa20/tests/controls/100-placeholder-function-new-trailing-placeholder.t",
+      "pa20/tests/controls/100-placeholder-function-new-reference-result.t",
+      "pa20/tests/controls/100-placeholder-function-new-const-pointer.t",
+      "pa20/tests/controls/100-placeholder-function-new-overload-selection.t",
+      "pa20/tests/controls/100-placeholder-function-new-variadic-function.t",
+      "pa20/tests/controls/100-placeholder-function-new-nested-function-result.t",
+      "pa22/tests/controls/300-placeholder-function-new-member-function-pointer.t",
+      "pa20/tests/controls/100-placeholder-function-variable-function-pointer.t",
+      "pa20/tests/controls/100-placeholder-function-variable-trailing-placeholder.t",
+      "pa20/tests/controls/100-placeholder-function-variable-reference-result.t",
+      "pa20/tests/controls/100-placeholder-function-variable-const-pointer.t",
+      "pa20/tests/controls/100-placeholder-function-variable-overload-selection.t",
+      "pa20/tests/controls/100-placeholder-function-variable-variadic-function.t",
+      "pa20/tests/controls/100-placeholder-function-variable-nested-function-result.t",
+      "pa22/tests/controls/300-placeholder-function-variable-member-function-pointer.t",
+      "pa20/tests/controls/100-placeholder-function-wrong-parameter-list-bad.t",
+      "pa20/tests/controls/100-placeholder-function-ambiguous-result-overload-bad.t",
+      "pa20/tests/controls/100-placeholder-function-no-new-initializer-bad.t",
+      "pa20/tests/controls/100-placeholder-function-empty-new-initializer-bad.t",
+      "pa20/tests/controls/100-placeholder-function-multiple-new-initializers-bad.t",
+      "pa20/tests/controls/100-placeholder-function-allocated-function-type-bad.t",
+      "pa20/tests/controls/100-placeholder-function-typedef-placeholder-bad.t",
+      "pa20/tests/controls/100-placeholder-function-template-argument-placeholder-bad.t",
+      "pa20/tests/controls/100-placeholder-function-parameter-placeholder-bad.t",
+      "pa20/tests/controls/100-placeholder-function-uninitialized-variable-bad.t",
+      "pa20/tests/controls/100-placeholder-function-variable-wrong-parameter-list-bad.t",
+      "pa20/tests/controls/100-placeholder-function-ordinary-explicit-function-pointer.t"
+    ],
+    "fix_revision": "f31d25960598d9ff7a91399d1374bbdb4a5dcc98",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-040",
     "checks": {
       "initial_source_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-034/auto-function-pointer-review-v1/standards-review.json",
       "parent_normal_rejections": 4,
       "gcc15_normal_rejections": 4,
       "clang21_and22_valid_runtime_cells": 8,
-      "independent_standards_adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-040/standards-adjudication-v1.json"
+      "independent_standards_adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-040/standards-adjudication-v1.json",
+      "parent_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-040/repair-v2/parent-verification-v1.json",
+      "candidate_focused": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-040/repair-v2/candidate-focused-v1/assessment.json",
+      "candidate_cells": 336,
+      "strict_tests": 8190,
+      "performance_input_preflight": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-040/repair-v2/performance-input-preflight-v1/assessment.json",
+      "performance_input_cells": 84,
+      "common_exact_object_pairs": 18,
+      "placement_transfer": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-040/repair-v2/fixture-placement-transfer-v1.json",
+      "normal_export_status": "Nine completed normal stages retained across two R100fixture moves. New PA22owning suite,placement,harness and fresh export running inchecks-v2. No complete functional/export claim yet."
     },
     "performance": {
-      "status": "not-started"
+      "status": "pending-actual-parent-measurement"
     },
     "standards_basis": {
       "category": "later-defect-resolution",
@@ -4119,7 +4157,9 @@
       "wording": "https://cplusplus.github.io/CWG/issues/2476.html",
       "approved_resolution": "2023-11-10,change5 explicitly permits placeholder in new-expression type-id; supersedes1892 restriction"
     },
-    "triage_note": "Root independently reviewed adopted final2476 wording. Separate positive language gap from034 nested defaults; no compiler fix or required fixture. Native GCC disagreement retained. Verify earliest exact PA20 new/deduction cluster before repair."
+    "triage_note": "Root independently reviewed adopted final2476 wording. Separate positive language gap from034 nested defaults; no compiler fix or required fixture. Native GCC disagreement retained. Verify earliest exact PA20 new/deduction cluster before repair.",
+    "fixture_revision": "4e53dd4e45469784921bad7851d8bc8644bcf8be",
+    "ownership_note": "PA20:100 placeholder/function-pointer deduction; member-function-pointer composition belongsPA22:300. Required controls split26/2 after handout review; failed placement retained with exact source/tool transfer proof."
   },
   {
     "id": "CXX11-041",
@@ -4188,7 +4228,7 @@
     "id": "CXX11-042",
     "kind": "harness-metrology",
     "priority": "P1",
-    "status": "measurement-validation",
+    "status": "calibration-pending",
     "upstream": [],
     "symptom": "Linux approximate highwater RSS reports a family memory ratio1.10020242915, while same-PID accurate page-table snapshots can exceed the alleged highwater. Original failed gate retained.",
     "expected": "Use independently validated precise per-MM resident-memory events, exact child attribution and paired calibrated runs to apply the unchanged3% memory gate. Revalidate affected prior Linux RSS acceptances before final closure.",
@@ -4198,14 +4238,51 @@
       "known_allocation_controls": "precision-controls-v3/independent-verification-v1.json:0/4/8/64MiB and immediately released64MiB spike; known-byte errors within unchanged256KiB tolerance, accurate same-process smaps snapshots bounded, raw loss/throttle checks.",
       "parser_controls": "parser-controls-v2.json:24 parser/error/attribution tests, including truncation/loss, child/PID/MM reuse, profiler exclusion, CPU migration, unsupported shared/remote MM and short spikes; all5 real known-allocation traces reparsed.",
       "batched_controls": "batched-allocation-controls-v1/assessment.json:3 exact subject children, peaks1944/10072/67416KiB;64MiB spike retained after release.",
-      "diagnostic_compiler_trace": "rss-trace-prototype-v1/:family-parent9232 vs campaign9368KiB,approximately+1.47%; diagnostic only, not calibrated gate pass."
+      "diagnostic_compiler_trace": "rss-trace-prototype-v1/:family-parent9232 vs campaign9368KiB,approximately+1.47%; diagnostic only, not calibrated gate pass.",
+      "parser_controls_v3": "parser-controls-v3.json:26 tests plus6 real traces,raw/decoded sample-count agreement,invalidcurr flags rejected,pre/post immutable binary hash checks.",
+      "actual_compiler_batch_control": "batched-compiler-control-v1/assessment.json:16individually attributed compiler children,16byte-identicalELF objects,all9368KiB peak. Unilateral correctness control underfunctional load; no performance-gate result."
     },
     "remaining": [
-      "Freeze production-capable collector and benchmark protocol",
+      "Freeze validated collectorv3 and final benchmark driver/protocol for precise paired observations",
       "Fresh A/A calibration and paired A/B comparisons with original binaries/frozen inputs/output checks",
       "Revalidate affected historical approximate Linux RSS passes",
       "Retain all failed prototypes and original failed measurements;3% gate unchanged"
     ],
     "scope": "Measurement-tool defect, excluded from confirmed distinct compiler-language gap count. No formal performance gate accepted from diagnostic controls."
+  },
+  {
+    "id": "CXX11-043",
+    "priority": "P1",
+    "status": "triaged",
+    "upstream": [],
+    "discovered_neighbor_of": "CXX11-038",
+    "symptom": "Valid function-template specialization definitions with elaborated enum leading or trailing return types fail during parsing.",
+    "expected": "Accept, emit and execute the valid specializations; preserve enum declarations/definitions and required invalid-target diagnostics.",
+    "owning_pa": 5,
+    "ownership_note": "pa5/tests/spec/200 (AST syntax), following existing200-explicit-specialization-syntax.t; PA15/300 supplementary semantic/runtime controls when repaired",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-043",
+    "checks": {
+      "adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-043/initial-adjudication-v1.json",
+      "independent_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-043/root-verification-v1.json",
+      "parent_wrong_rejections": 24,
+      "native_accept_link_run_cells": 72,
+      "AST_parent_failures": 2
+    },
+    "standards_basis": {
+      "historical_draft": "/mnt/vizier/cppgm-clang-enum-specialization-target/doc/n3485.txt",
+      "historical_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+      "clauses": [
+        "7.1.6.3p2 and elaborated-type-specifier grammar enum nested-name-specifier identifier",
+        "8.4.1p1/p2 function definition and trailing-return-type grammar",
+        "14.7.3p1 explicit specialization is template<> declaration"
+      ],
+      "explanation": "An existing enum may be named by an elaborated enum type in a function return type. Function definitions are declarations admitted by explicit-specialization grammar. Both exact programs define and call their specialization, no unused-template IFNDR or extension dependency."
+    },
+    "performance": {
+      "status": "not-started"
+    },
+    "triage_note": "Separate valid-source parser failure from038 typed enum-specialization target eligibility. Required regressions and implementation remain pending."
   }
 ]
