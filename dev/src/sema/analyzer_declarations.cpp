@@ -1608,12 +1608,12 @@ VariableEntity* Analyzer::earlier_variable(const Specifiers& specifiers, const D
 		// CWG1839/P1787R6: the declaration targets its enclosing namespace.
 		// A corresponding declaration there denotes the same entity even
 		// when a local name hides it during ordinary use-site lookup.
-		if (const NameEntry* outer = names_.find(enclosing_namespace(where), name.key))
+		const Scope* space = enclosing_namespace(where);
+		if (const NameEntry* outer = names_.find(space, name.key))
 		{
-			if (outer->value != nullptr && outer->value->kind == BindingKind::Variable)
-			{
+			if (outer->value != nullptr && outer->value->kind == BindingKind::Variable &&
+				outer->value->entity->owner == space)
 				variable = static_cast<VariableEntity*>(outer->value->entity);
-			}
 		}
 	}
 	return variable;
@@ -2219,12 +2219,18 @@ FunctionEntity* Analyzer::new_function(const Specifiers& specifiers, const Decla
 		Scope* space = enclosing_namespace(where);
 		if (const NameEntry* entry = names_.find(space, name.key))
 		{
-			if ((entry->value != nullptr && entry->value->kind != BindingKind::Function) ||
-				(entry->type != nullptr && (entry->type->kind != BindingKind::Type || IsClassTemplate(entry->type))))
+			// Using-declarations bind names here, but the introduced entities
+			// still belong to their original declaration target scopes.
+			if ((entry->value != nullptr && entry->value->entity->owner == space &&
+					entry->value->kind != BindingKind::Function) ||
+				(entry->type != nullptr && entry->type->entity->owner == space &&
+					(entry->type->kind != BindingKind::Type || IsClassTemplate(entry->type))))
 				error(location, "a block-scope function conflicts with another namespace entity");
 		}
 		const FunctionList* same = names_.overload(space, name.key, signature);
-		FunctionEntity* outer = same != nullptr ? static_cast<FunctionEntity*>(same->binding->entity) : nullptr;
+		FunctionEntity* outer = same != nullptr && same->binding->entity->owner == space
+			? static_cast<FunctionEntity*>(same->binding->entity)
+			: nullptr;
 		if (outer != nullptr)
 		{
 			if (outer->friend_defaults)
