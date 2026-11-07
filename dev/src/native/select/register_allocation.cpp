@@ -556,7 +556,7 @@ void FunctionSelector::loop_depths()
 // least 1. Work: O(blocks + edges) per loop level.
 void FunctionSelector::block_weights()
 {
-	const uint64_t kOne = static_cast<uint64_t>(1) << 16; // probability and frequency unit
+	const uint64_t kOne = static_cast<uint64_t>(1) << 20; // probability and frequency unit
 	const uint64_t kMaxBack = kOne * 9 / 10;
 	const uint64_t kMaxFrequency = kOne << 20;
 	const uint32_t n = static_cast<uint32_t>(blocks_.size());

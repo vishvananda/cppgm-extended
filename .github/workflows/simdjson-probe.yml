@@ -1,0 +1,47 @@
+name: Private simdjson block-frequency precision probe
+on:
+  push:
+    branches: [perf/simdjson-weight-precision-probe]
+permissions:
+  contents: read
+jobs:
+  paired:
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 45
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_WARNINGS_AS_ERRORS: '1'
+    steps:
+      - name: Install host tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends g++ clang-21 python3 git make ca-certificates time
+      - uses: actions/checkout@v6
+      - name: Build immutable compilers
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --depth=1 origin 235d3d8f3f601bd3837c35de5318ad86d0c7a160
+          mkdir -p obj/probe
+          make -C dev -j4 cppgm++
+          cp dev/cppgm++ obj/probe/cppgm-candidate
+          git show 235d3d8f3f601bd3837c35de5318ad86d0c7a160:dev/src/native/select/register_allocation.cpp > dev/src/native/select/register_allocation.cpp
+          git show 235d3d8f3f601bd3837c35de5318ad86d0c7a160:dev/src/native/select/selector_facts.h > dev/src/native/select/selector_facts.h
+          make -C dev -j4 cppgm++
+          cp dev/cppgm++ obj/probe/cppgm-baseline
+      - name: Compare identical inputs and fixed GCC drivers
+        run: python3 scripts/simdjson_probe.py
+      - name: Report
+        if: always()
+        shell: bash
+        run: |
+          if [ -f obj/probe/results/details.md ]; then
+            cat obj/probe/results/details.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paired-simdjson-weight-precision-probe
+          path: obj/probe
