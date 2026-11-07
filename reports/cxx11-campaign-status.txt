@@ -1,3 +1,21 @@
+Pending next batch after acceptedcc0e0a7dc (2026-11-07)
+
+Joint candidate12032b602/SHA0795c6d1cc014385359622bb8a3300d5cd2ce7a01fccbe0e72f59ff04c99240b
+integrates062enumerator scope,073lateTLS wrapper identity and074initialized
+variant cleanup. It passes8,822strict tests and668/693Clang checks (upstream
+693/693); fullnormal/export pending. GCC paired run is running/being collected.
+Normal cumulative counters1.003156O0/1.001088O3 pass with exact objects.
+The last fully accepted main work branch remainscc0e0a7dc, with its original
+066071acceptance receipt and667/693Clang result retained below.
+
+072has24requiredcontrols/96focused candidate passes but remains isolated at
+a5be95d88. Per-fix instruction ratios1.002106/1.000726 pass; cumulative O0
+1.005262 exceeds unchanged1.005limit. Existing frozen attribution was used to
+investigate this actual failure. A public-access typed fact fits existing
+FunctionEntity padding (272bytes unchanged); no normal or RSS gate waived.
+075ordinary TLS redeclaration consistency is being repaired by the Clangworker,
+with explicit-instantiation directive exceptions preserved.
+
 Accepted integration: compiler source07c0165d9, normal/audit revisiondfa74ce4d.
 Four fixes066/068/069/071 now have38required owning regressions, parent failure
 proofs, native neighbors and passing full normal gates:8,790strict,42harness

@@ -5249,13 +5249,14 @@
   {
     "id": "CXX11-062",
     "priority": "P1",
-    "status": "isolated-fix-validated",
+    "status": "integrated-full-validation-running",
     "compiler_language_gap": true,
     "symptom": "Scoped-enumerator and class-member-enumerator using declarations are silently accepted outside member scope in supported pre20 modes.",
     "owning_pa": 6,
     "standards_basis": "N3485 7.3.3p7/p8 requires diagnosis. CWG1742 was resolved by P1099R5 as a C++20 feature,not a retroactive defect waiver. No deliberate course exception found.",
     "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-062/functional-verification-v2.json",
-    "triage_note": "13required controls,56/56focused,1192affected checks,normal counters pass; root joint integration/full export pending."
+    "triage_note": "Actual root candidate matched isolated binary bit-for-bit before074/073 integration; joint source12032b602 passes8822strict, remaining normal/export pending.",
+    "fix_revision": "15fede22e"
   },
   {
     "id": "CXX11-063",
@@ -5432,27 +5433,44 @@
     "compiler_language_gap": true,
     "status": "repair-performance-in-validation",
     "symptom": "Non-delegating constructors omit required destructor access checks for initialized variants and semantic definition demand for class subobjects",
-    "owning_pa": "PA12:300 and PA14:300",
+    "owning_pa": "PA11:200/300,PA12:300,PA14:100/300,PA17:300,PA23:100",
     "standards_basis": "Adopted CWG1424,1658; initialized variant context clarified by1866",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-072",
-    "checks": "14 required controls; parent6/14 versus candidate14/14; native56/56each. First three normal frozen candidates pass per-fix but exceed unchanged cumulative0.5%O0 gate; profiling/optimization active. No integrated closure or runtime-cleanup fix claimed."
+    "checks": "24requiredcontrols; parent48/96 versus GCC/Clang/candidate96/96each. Adds destructor-body demand and abstract virtual-base exclusion; native/public/private/friend/template boundaries retained. Current scoped strict/affected/audits running.",
+    "fix_revision": "653de9f89",
+    "performance_prototype_revision": "a5be95d88",
+    "triage_note": "Normal per-fixO0 1.002106/O3 1.000726 pass with exact objects. Cumulative original baselineO0 1.005262 exceeds unchanged1.005 limit; O3 1.001810passes. Typed public-access fact is in existing FunctionEntity padding (272bytes unchanged); first280byte placement rejected. Normal frozen attribution justified optimization; no new calibration/RSS campaign. Not integrated/accepted."
   },
   {
     "id": "CXX11-073",
     "compiler_language_gap": true,
-    "status": "confirmed-unfixed",
+    "status": "integrated-full-validation-running",
     "symptom": "Block extern TLS before a later namespace definition duplicates the serialized wrapper; related reduced object paths crash",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-073",
-    "checks": "Native and parent direct-object/LowIR distinctions retained; Clang worker investigating common typed wrapper identity root"
+    "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-073/root-revalidation-v1.json",
+    "fix_revision": "ae8fde0b0",
+    "triage_note": "Root actual074parent3/11 owning; corrected final11 controls. PA11 class-lifetime neighbor byte-identical moved100\u2192200. Joint8822strict pass; fullnormal/export pending. Producer selection/parsing mistakes preserved separately, not language failures."
   },
   {
     "id": "CXX11-074",
     "compiler_language_gap": true,
-    "status": "confirmed-unfixed",
+    "status": "integrated-full-validation-running",
     "symptom": "An initialized union variant is not destroyed when its constructor body throws",
     "owning_pa": "PA21:100",
     "standards_basis": "CWG1866 adopted DR November2014",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-074",
-    "checks": "Parent and072candidate compile/link but return1; GCC/Clang return0. Destructor-failure exclusion neighbor passes all. Distinct lowering defect; no repair claimed."
+    "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-074/functional-verification-v1.json",
+    "fix_revision": "4942fe8f2",
+    "triage_note": "8required controls,parent2/8,candidate32/32native/runtime; PA21 321/321; per-fix1.000002/.999994exact. Fullnormal/export pending with062/073."
+  },
+  {
+    "id": "CXX11-075",
+    "compiler_language_gap": true,
+    "status": "isolated-fix-in-validation",
+    "symptom": "Ordinary redeclarations can add or omit thread_local contrary to all-declarations consistency",
+    "owning_pa": "PA6 declaration model plus PA17 explicit-instantiation directive neighbors",
+    "standards_basis": "N3485 7.1.1p1; CWG1793 directive exception remains separate",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-075",
+    "checks": "Parent20/60,Clang60/60,GCC44/60; GCC silent block-declaration disagreements preserved against primary rule. 15required fixtures; isolated source37a2f19e6 building, no acceptance claim."
   }
 ]
