@@ -5805,16 +5805,32 @@
   {
     "id": "CXX11-096",
     "compiler_language_gap": true,
-    "status": "isolated-validation",
-    "symptom": "Namespace/alias/typedef conflicts with block-function namespace entities; isolated60/60 on4f13,normalactual0ca gate passed, joint096097normal/export pending.",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-096"
+    "status": "closed",
+    "symptom": "Namespace/alias/typedef bindings were not checked against canonical block-function namespace entities.",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-096",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-096097099-acceptance-v2.json",
+    "integrated_candidate_revision": "264c9fda3",
+    "compiler_sha256": "c939b64436185ec0ab3040baac70e92ce29ecfda0df76bd9008a1b68f49cf2dd",
+    "owning_pa": "PA10:100;PA11:100",
+    "fix_revision": "e8ced62d5",
+    "offline_decisions": [
+      "doc/cwg/cwg-1839.txt",
+      "doc/cwg/paper-p1787r6.txt"
+    ],
+    "checks": "14required controls;60/60focused on finalc939;actual0ca\u21924f13 gate1.000018/1.000001,exactobjects. Foreign namespaces/ordinary tags/overloads and blockaliases preserved. Joint9138strict/fullnormal/91focusedfreshstudentexport pass."
   },
   {
     "id": "CXX11-097",
     "compiler_language_gap": true,
-    "status": "isolated-validation",
-    "symptom": "Nested member-template NSDMIs lost pattern context while outer class completion drained them; isolated56/56 on778bf vsactual4f13parent24/56,normalgate1.000016/.999993 passed,joint9121strict/fullnormal/export pending;GCC15ICE on validpartial-used witness retained.",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-097"
+    "status": "closed",
+    "symptom": "A non-template outer class drained nested member-template default initializers without their template-pattern context.",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-097",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-096097099-acceptance-v2.json",
+    "integrated_candidate_revision": "264c9fda3",
+    "compiler_sha256": "c939b64436185ec0ab3040baac70e92ce29ecfda0df76bd9008a1b68f49cf2dd",
+    "owning_pa": "PA11:100;PA15:100;PA17:300",
+    "fix_revision": "c565c7a91",
+    "checks": "14required controls;56/56focused on finalc939 versus actualparent24/56. Three originalGCCsources/sixconfigurations repaired. Actual4f13\u2192778bf gate1.000016/.999993 exactobjects.099corrects exposed1397negative before acceptance; unaccepted778epoch and allrawoutcomes retained. Joint9138strict/fullnormal/91focusedfreshstudentexport pass."
   },
   {
     "id": "CXX11-098",
@@ -5822,5 +5838,21 @@
     "status": "open",
     "symptom": "Elaborated enum type lookup fails when an ordinary function hides the enum tag;12native/parent observations retained, no requiredregression or compilerfix yet.",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-098"
+  },
+  {
+    "id": "CXX11-099",
+    "compiler_language_gap": true,
+    "status": "closed",
+    "symptom": "Default member initializers could cause implicit definition or exception-specification computation of their enclosing defaulted default constructor.",
+    "standards_basis": "AdoptedCWG1397; ordinarynon-template reductions and conditionalBad/Good instantiations establish mandatory checks independent of template IFNDR.",
+    "owning_pa": "PA11:200;PA12:100/200/300;PA14:100/300;PA15:100;PA16:200;PA17:300",
+    "fix_revision": "84394f531",
+    "integrated_candidate_revision": "264c9fda3",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-096097099-acceptance-v2.json",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-099",
+    "offline_decisions": [
+      "doc/cwg/cwg-1397.txt"
+    ],
+    "checks": "17required controls;68/68final vsparent32/68;bothhosts68/68. Cached active-initializer fact preserves ClassEntity280/VariableEntity96;userprovided/copy/move and acyclicdependentcases pass. Actual778\u2192c939 .999953/.999995 exactobjects. All9138strict/fullnormal/fresh91focused export pass. Two dependenttypename neighbors moved unchanged toPA14:300 by audit; originalfailure retained."
   }
 ]
