@@ -235,6 +235,20 @@ Binding* Analyzer::explicit_function_specialization(const Specifiers& specifiers
 	// another class's template merely found by ordinary lookup (CWG727).
 	if (declaration_scope(scope)->kind == ScopeKind::Class && function->owner != declaration_scope(scope))
 		error(location, "an explicit specialization outside its primary template's definition scope");
+	// CWG727 permits the scopes where the primary may be defined. A
+	// using-declaration or directive does not make it a member of the
+	// nominated namespace (8.3p1); inline namespaces do (7.3.1p8).
+	const Scope* home = declaration_scope(scope);
+	if (home->kind == ScopeKind::Namespace)
+	{
+		const Scope* target = info.qualifier != nullptr ? info.qualifier : home;
+		const Scope* owner = function->owner;
+		while (owner != target && owner->kind == ScopeKind::Namespace &&
+			static_cast<const NamespaceEntity*>(owner->entity)->is_inline)
+			owner = owner->parent;
+		if (owner != target || !encloses(home, target))
+			error(location, "an explicit specialization outside its primary template's definition scope");
+	}
 	// 8.4.3p4: the deleted definition is this specialization's first
 	// declaration; its primary template's declaration does not count.
 	if (deleted && function->explicit_specialization)
