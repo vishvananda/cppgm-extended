@@ -443,5 +443,17 @@
     "sha256": "90cc63612358657a10f9ca19d2ad88950abf174381bd049a11d45a4d558aa819",
     "issue": "CXX11-113",
     "reason": "The post-int alignas(T...) appertains to the fundamental type under N3485 7.1p1/7.6.1p5, which is not a permitted subject in 7.6.2p1. Every nonempty expansion is invalid; only the empty expansion removes that specifier. N3485 14.6p8 unconditionally makes a variadic template ill-formed, no diagnostic required when every valid specialization requires an empty pack. The original A<int> instantiation does not remove that separate NDR violation. N3485 1.4p2 places no requirements on an implementation for such a program. Native acceptance/recovery or rejection is not a mandatory C++11 outcome. Exclude this exact source from BOTH paired roles, not as a pass; preserve earlier4110-case observations and fresh parent/candidate/GCC/Clang outcomes. Independent valid empty/nonempty alignment packs and required invalid constraints remain in110 PA15/PA17 controls; ordinary enum-alignas negatives remain PA6:200, and ordinary fundamental-type misapplication is required PA11:300 control300-alignment-specifier-on-fundamental-type-bad.t."
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing19.C": {
+    "status": "not-required",
+    "reason": "The sole f template is never instantiated. Its result expression directly list-initializes S(int) from the fixed double return type of id(double). Floating-to-integer conversion is always narrowing (N3485 8.5.4p7), independent of the unused template parameter, so no valid specialization exists. N3485 14.6p8 makes this unused template IFNDR; 1.4p2 imposes no implementation requirements. Eager diagnostic timing is not required. Ordinary non-template narrowing and a valid exact-type neighbor remain required in PA12:100.",
+    "issue": "CXX11-118",
+    "sha256": "16fa49c8d410bc54beee654fd149b7ddeae0d21de361e5a8b9855ac141525e66"
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/alias-decl-61.C": {
+    "status": "not-required",
+    "reason": "The sole f template is never instantiated and its body is independent of T. e denotes class c, while e::d denotes unrelated class a; return copy-initialization cannot convert a to c (N3485 6.6.3p2/8.5). c has no converting constructor; a private conversion to int cannot produce c. No specialization is valid, so N3485 14.6p8 makes the unused template IFNDR and1.4p2 imposes no implementation requirements. Preserve independent valid member aliases in PA12:400 and a mandatory ordinary return-conversion rejection in PA12:400.",
+    "issue": "CXX11-118",
+    "sha256": "cdc6b36e31f79e1b5444271e5eb81fc8629314d9b3896c631248fa8a1a9c5d0a"
   }
 }
