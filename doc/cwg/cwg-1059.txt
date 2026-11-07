@@ -1,0 +1,108 @@
+CWG 1059: Cv-qualified array types (with rvalues)
+Source: https://cplusplus.github.io/CWG/issues/1059.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1059. Cv-qualified array types (with rvalues)
+Section: 6.9.6 [basic.type.qualifier [1]] Status: CD3 Submitter: Nikolay Ivchenkov Date:
+2010-03-20
+
+[Moved to DR at the October, 2012 meeting.]
+
+In spite of the resolution of issue 112 [2], the exact relationship between
+cv-qualifiers and array types is not clear. There does not appear to be a definitive
+normative statement answering the question of whether an array with a const-qualified
+element type is itself const-qualified; the statement in 6.9.6 [basic.type.qualifier
+[3]] paragraph 5,
+
+Cv-qualifiers applied to an array type attach to the underlying element type, so the
+notation “cv T,” where T is an array type, refers to an array whose elements are
+so-qualified. Such array types can be said to be more (or less) cv-qualified than other
+types based on the cv-qualification of the underlying element types.
+
+hints at an answer but is hardly decisive. For example, is the following example
+well-formed?
+
+
+    template <class T> struct is_const {
+        static const bool value = false;
+    };
+    template <class T> struct is_const<const T> {
+        static const bool value = true;
+    };
+
+    template <class T> void f(T &) {
+        char checker[is_const<T>::value];
+    }
+
+    int const arr[1] = {};
+
+    int main() {
+        f(arr);
+    }
+
+
+Also, when 7.2.1 [basic.lval [4]] paragraph 4 says,
+
+Class prvalues can have cv-qualified types; non-class prvalues always have
+cv-unqualified types.
+
+does this apply to array rvalues, as it appears? That is, given
+
+
+    struct S {
+        const int arr[10];
+    };
+
+
+is the array rvalue S().arr an array of int or an array of const int?
+
+(The more general question is, when the Standard refers to non-class types, should it be
+considered to include array types? Or perhaps only arrays of non-class types?)
+
+Proposed resolution (December, 2011):
+
+1.
+
+Change 6.9.6 [basic.type.qualifier [3]] paragraph 5 as follows:
+
+...Cv-qualifiers applied to an array type attach to the underlying element type, so the
+notation “cv T,” where T is an array type, refers to an array whose elements are
+so-qualified. [DELETE: Such array types can be said to be more (or less) cv-qualified
+than other types based on the cv-qualification of the underlying element types.]
+[INSERT: An array type whose elements are cv-qualified is also considered to have the
+same cv-qualification as its elements. [Example:]
+
+[INSERT:   typedef char CA[5];
+  typedef const char CC;
+  CC arr1[5] = { 0 };
+  const CA arr2 = { 0 };]
+
+
+[INSERT: The type of both arr1 and arr2 is “array of 5 const char,” and the array type
+is considered to be const-qualified. —end example]]
+
+2.
+
+Change 7.2.1 [basic.lval [4]] paragraph 4 as follows:
+
+Class [INSERT: and array] prvalues can have cv-qualified types; [DELETE: non-class]
+[INSERT: other] prvalues always have cv-unqualified types. Unless otherwise indicated...
+
+Source links:
+[1] https://wg21.link/basic.type.qualifier
+[2] https://cplusplus.github.io/CWG/issues/112.html
+[3] https://wg21.link/basic.type.qualifier#5
+[4] https://wg21.link/basic.lval#4

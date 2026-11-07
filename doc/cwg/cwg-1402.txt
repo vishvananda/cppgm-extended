@@ -1,0 +1,366 @@
+CWG 1402: Move functions too often deleted
+Source: https://cplusplus.github.io/CWG/issues/1402.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1402. Move functions too often deleted
+Section: 11.4.5.3 [class.copy.ctor [1]] Status: CD3 Submitter: Daniel Krügler Date:
+2011-10-03
+
+[Moved to DR status at the April, 2013 meeting as paper N3667.]
+
+Paragraphs 11 and 23 of 11.4.5.3 [class.copy.ctor [1]] make a defaulted move constructor
+and assignment operator, respectively, deleted if there is a subobject with no
+corresponding move function and for which the copy operation is non-trivial. This seems
+excessive and unnecessary. For example:
+
+
+    template<typename T>
+     struct wrap
+     {
+      wrap() = default;
+
+    #ifdef USE_DEFAULTED_MOVE
+      wrap(wrap&&) = default;
+    #else
+      wrap(wrap&& w) : t(static_cast<T&&>(w.t)) { }
+    #endif
+
+      wrap(const wrap&) = default;
+
+      T t;
+     };
+
+    struct S {
+      S(){}
+      S(const S&){}
+      S(S&&){}
+    };
+
+    typedef wrap<const S> W;
+
+    W get() { return W(); }  // Error, if USE_DEFAULTED_MOVE is defined, else OK
+
+
+In this example the defaulted move constructor of wrap is selected by overload
+resolution, but this move-constructor is deleted, because S has no trivial
+copy-constructor.
+
+I think that we overshoot here with the delete rules: I see no problem for the defaulted
+move-constructor in this example. Our triviality-deduction rules already cover this case
+(11.4.5.3 [class.copy.ctor [2]] paragraph 12: W::W(W&&) is not trivial) and our
+exception-specification rules (14.5 [except.spec [3]] paragraph 14) already correctly
+deduce a noexcept(false) specification for W::W(W&&).
+
+It would still be OK to prevent that a move-constructor would be generated for the
+following example where no user-declared defaulted copy/move members are present:
+
+
+    template<typename T>
+     struct wrap_2
+     {
+      wrap_2() = default;
+      T t;
+     };
+
+    typedef wrap_2<const S> W2;
+
+    W2 get() { return W2(); }  // OK, selects copy constructor
+
+
+if we want. This would mean that we add a new bullet to 11.4.5.3 [class.copy.ctor [4]]
+paragraph 9 and paragraph 20.
+
+Proposed resolution (February, 2012):
+
+1.
+
+Change 11.4.5.3 [class.copy.ctor [4]] paragraph 9 as follows:
+
+If the definition of a class X does not explicitly declare a move constructor, one will
+be implicitly declared as defaulted if and only if
+
+-
+
+...
+
+-
+
+X does not have a user-declared destructor, [DELETE: and]
+
+-
+
+the move constructor would not be implicitly defined as deleted[DELETE: .][INSERT: ,
+and]
+
+-
+
+[INSERT: each of X's non-static data members and direct or virtual base classes has a
+type that either has a move constructor or is trivially copyable.]
+
+[Note:...
+
+2.
+
+Change 11.4.5.3 [class.copy.ctor [5]] paragraph 11 as follows:
+
+An implicitly-declared copy/move constructor is an inline public member of its class. A
+defaulted copy/move constructor for a class X is defined as deleted (9.6.3
+[dcl.fct.def.delete [6]]) if X has:
+
+-
+
+...
+
+-
+
+any direct or virtual base class or non-static data member of a type with a destructor
+that is deleted or inaccessible from the defaulted constructor, [INSERT: or]
+
+-
+
+for the copy constructor, a non-static data member of rvalue reference type[INSERT:
+.][DELETE: , or]
+
+-
+
+[DELETE: for the move constructor, a non-static data member or direct or virtual base
+class with a type that does not have a move constructor and is not trivially copyable.]
+
+3.
+
+Change 11.4.5.3 [class.copy.ctor [7]] paragraph 20 as follows:
+
+If the definition of a class X does not explicitly declare a move assignment operator,
+one will be implicitly declared as defaulted if and only if
+
+-
+
+...
+
+-
+
+X does not have a user-declared destructor, [DELETE: and]
+
+-
+
+the move assignment operator would not be implicitly defined as deleted[DELETE:
+.][INSERT: ,]
+
+-
+
+[INSERT: X has no direct or indirect virtual base class with a non-trivial move
+assignment operator, and]
+
+-
+
+[INSERT: each of X's non-static data members and direct or virtual base classes has a
+type that either has a move assignment operator or is trivially copyable.]
+
+Example:...
+
+4.
+
+Change 11.4.5.3 [class.copy.ctor [8]] paragraph 23 as follows:
+
+A defaulted copy/move assignment operator for class X is defined as deleted if X has:
+
+-
+
+...
+
+-
+
+a direct or virtual base class B that cannot be copied/moved because overload resolution
+(12.2 [over.match [9]]), as applied to B's corresponding assignment operator, results in
+an ambiguity or a function that is deleted or inaccessible from the defaulted assignment
+operator[INSERT: .][DELETE: , or]
+
+-
+
+[DELETE: for the move assignment operator, a non-static data member or direct base class
+with a type that does not have a move assignment operator and is not trivially copyable,
+or any direct or indirect virtual base class.]
+
+Additional notes (August, 2012):
+
+The proposed resolution was extensively discussed and additional alternatives were
+suggested. A paper is being produced for the October, 2012 meeting describing the
+various options, so the issue has been returned to "review" status to wait for the
+outcome of that deliberation.
+
+See also the discussion of issue 1491 [10] for additional considerations.
+
+Proposed resolution (December, 2012):
+
+1.
+
+Change 11.4.5.3 [class.copy.ctor [4]] paragraph 9 as follows:
+
+If the definition of a class X does not explicitly declare a move constructor, one will
+be implicitly declared as defaulted if and only if
+
+-
+
+X does not have a user-declared copy constructor,
+
+-
+
+X does not have a user-declared copy assignment operator,
+
+-
+
+X does not have a user-declared move assignment operator, [INSERT: and]
+
+-
+
+X does not have a user-declared destructor[INSERT: .][DELETE: , and]
+
+-
+
+[DELETE: the move constructor would not be implicitly defined as deleted.]
+
+[Note:...
+
+2.
+
+Change 11.4.5.3 [class.copy.ctor [5]] paragraph 11 as follows:
+
+...A defaulted copy/move constructor for a class X is defined as deleted (9.6.3
+[dcl.fct.def.delete [6]]) if X has:
+
+-
+
+a variant member with a non-trivial corresponding constructor and X is a union-like
+class,
+
+-
+
+a non-static data member of class type M (or array thereof) that cannot be copied/moved
+because overload resolution (12.2 [over.match [9]]), as applied to M's corresponding
+constructor, results in an ambiguity or a function that is deleted or inaccessible from
+the defaulted constructor,
+
+-
+
+a direct or virtual base class B that cannot be copied/moved because overload resolution
+(12.2 [over.match [9]]), as applied to B's corresponding constructor, results in an
+ambiguity or a function that is deleted or inaccessible from the defaulted constructor,
+
+-
+
+any direct or virtual base class or non-static data member of a type with a destructor
+that is deleted or inaccessible from the defaulted constructor, [INSERT: or]
+
+-
+
+for the copy constructor, a non-static data member of rvalue reference type[INSERT:
+.][DELETE: , or]
+
+-
+
+[DELETE: for the move constructor, a non-static data member or direct or virtual base
+class with a type that does not have a move constructor and is not trivially copyable.]
+
+[INSERT: A defaulted move constructor that is defined as deleted is ignored by overload
+resolution (12.2 [over.match [9]]). [Note: A deleted move constructor would otherwise
+interfere with initialization from an rvalue which can use the copy constructor instead.
+—end note]]
+
+3.
+
+Change 11.4.5.3 [class.copy.ctor [7]] paragraph 20 as follows:
+
+If the definition of a class X does not explicitly declare a move assignment operator,
+one will be implicitly declared as defaulted if and only if
+
+-
+
+X does not have a user-declared copy constructor,
+
+-
+
+X does not have a user-declared move constructor,
+
+-
+
+X does not have a user-declared copy assignment operator, [INSERT: and]
+
+-
+
+X does not have a user-declared destructor[INSERT: .][DELETE: , and]
+
+-
+
+[DELETE: the move assignment operator would not be implicitly defined as deleted.]
+
+[Example:...
+
+4.
+
+Change 11.4.5.3 [class.copy.ctor [8]] paragraph 23 as follows:
+
+A defaulted copy/move assignment operator for class X is defined as deleted if X has:
+
+-
+
+a variant member with a non-trivial corresponding assignment operator and X is a
+union-like class, or
+
+-
+
+a non-static data member of const non-class type (or array thereof), or
+
+-
+
+a non-static data member of reference type, or
+
+-
+
+a non-static data member of class type M (or array thereof) that cannot be copied/moved
+because overload resolution (12.2 [over.match [9]]), as applied to M's corresponding
+assignment operator, results in an ambiguity or a function that is deleted or
+inaccessible from the defaulted assignment operator, or
+
+-
+
+a direct or virtual base class B that cannot be copied/moved because overload resolution
+(12.2 [over.match [9]]), as applied to B's corresponding assignment operator, results in
+an ambiguity or a function that is deleted or inaccessible from the defaulted assignment
+operator[INSERT: .][DELETE: , or]
+
+-
+
+[DELETE: for the move assignment operator, a non-static data member or direct base class
+with a type that does not have a move assignment operator and is not trivially copyable,
+or any direct or indirect virtual base class.]
+
+[INSERT: A defaulted move assignment operator that is defined as deleted is ignored by
+overload resolution (12.2 [over.match [9]], 12.3 [over.over [11]]).]
+
+This resolution also resolves issue 1491 [10].
+
+Source links:
+[1] https://wg21.link/class.copy.ctor
+[2] https://wg21.link/class.copy.ctor#12
+[3] https://wg21.link/except.spec#14
+[4] https://wg21.link/class.copy.ctor#9
+[5] https://wg21.link/class.copy.ctor#11
+[6] https://wg21.link/dcl.fct.def.delete
+[7] https://wg21.link/class.copy.ctor#20
+[8] https://wg21.link/class.copy.ctor#23
+[9] https://wg21.link/over.match
+[10] https://cplusplus.github.io/CWG/issues/1491.html
+[11] https://wg21.link/over.over

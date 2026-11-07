@@ -1,0 +1,202 @@
+CWG 1992: new (std::nothrow) int[N] can throw
+Source: https://cplusplus.github.io/CWG/issues/1992.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1992. new (std::nothrow) int[N] can throw
+Section: 7.6.2.8 [expr.new [1]] Status: CD4 Submitter: Martin Sebor Date: 2014-08-27
+
+[Adopted at the February, 2016 meeting.]
+
+According to 7.6.2.8 [expr.new [2]] paragraph 7,
+
+If the expression, after converting to std::size_t, is a core constant expression and
+the expression is erroneous, the program is ill-formed. Otherwise, a new-expression with
+an erroneous expression does not call an allocation function and terminates by throwing
+an exception of a type that would match a handler (14.4 [except.handle [3]]) of type
+std::bad_array_new_length (17.6.4.2 [new.badlength [4]]).
+
+This wording makes no provision for an expression like
+
+
+  new (std::nothrow) int[N]
+
+
+which most programmers would intuitively expect not to throw an exception under any
+condition.
+
+Proposed resolution (May, 2015) [SUPERSEDED]:
+
+Change the last part of 7.6.2.8 [expr.new [2]] paragraph 7 as follows, converting the
+running text into bullets, and making the last sentence into a paragraph 8:
+
+...If the expression[DELETE: ,] [INSERT: is erroneous] after converting to
+std::size_t[DELETE: ,][INSERT: :]
+
+-
+
+[INSERT: if the expression] is a core constant expression[DELETE:  and the expression is
+erroneous], the program is ill-formed[DELETE: .][INSERT: ;]
+
+-
+
+[DELETE: Otherwise] [INSERT: otherwise], [DELETE: a new-expression with an erroneous
+expression does not call] an allocation function [INSERT: is not called; instead]
+
+-
+
+[INSERT: if the allocation function that would have been called is non-throwing (14.5
+[except.spec [5]]), the value of the new-expression is the null pointer value of the
+required result type;]
+
+-
+
+[DELETE: and] [INSERT: otherwise, the new-expression] terminates by throwing an
+exception of a type that would match a handler (14.4 [except.handle [3]]) of type
+std::bad_array_new_length (17.6.4.2 [new.badlength [4]]).
+
+When the value of the expression is zero, the allocation function is called to allocate
+an array with no elements.
+
+Notes from the October, 2015 meeting:
+
+The text in 15.4 paragraph 15 should also be changed.
+
+Proposed resolution (January, 2016):
+
+1.
+
+Change 7.6.2.8 [expr.new [2]] paragraph 7 as follows, dividing the running text into
+bullets and making the last sentence into a new paragraph:
+
+The expression in a noptr-new-declarator is erroneous if:
+
+-
+
+...
+
+If the expression[DELETE: ,] [INSERT: is erroneous] after converting to
+std::size_t[DELETE: ,][INSERT: :]
+
+-
+
+[INSERT: if the expression] is a core constant expression [DELETE: and the expression is
+erroneous], the program is ill-formed[DELETE: .][INSERT: ;]
+
+-
+
+[DELETE: Otherwise] [INSERT: otherwise], [DELETE: a new-expression with an erroneous
+expression does not call] an allocation function [DELETE: and] [INSERT: is not called;
+instead]
+
+-
+
+[INSERT: if the allocation function that would have been called has a non-throwing
+exception specification (14.5 [except.spec [5]]), the value of the new-expression is the
+null pointer value of the required result type;]
+
+-
+
+[INSERT: otherwise, the new-expression] terminates by throwing an exception of a type
+that would match a handler (14.4 [except.handle [3]]) of type std::bad_array_new_length
+(17.6.4.2 [new.badlength [4]]).
+
+When the value of the expression is zero, the allocation function is called to allocate
+an array with no elements.
+
+2.
+
+Change 14.5 [except.spec [6]] paragraph 14 as follows:
+
+The set of potential exceptions of an expression e is empty if e is a core constant
+expression (7.7 [expr.const [7]]). Otherwise, it is the union of the sets of potential
+exceptions of the immediate subexpressions of e, including default argument expressions
+used in a function call, combined with a set S defined by the form of e, as follows:
+
+-
+
+...
+
+-
+
+If e implicitly invokes [DELETE: a] [INSERT: one or more] function[INSERT: s] (such as
+an overloaded operator, an allocation function in a new-expression, or a destructor if e
+is a full-expression (6.10.1 [intro.execution [8]])), S is the [DELETE: set of potential
+exceptions of the function.] [INSERT: union of:]
+
+-
+
+[INSERT: the sets of potential exceptions of all such functions, and]
+
+-
+
+[INSERT: if e is a new-expression with a non-constant expression in the
+noptr-new-declarator (7.6.2.8 [expr.new [1]]) and the allocation function selected for e
+has a non-empty set of potential exceptions, the set containing
+std::bad_array_new_length.]
+
+-
+
+...
+
+-
+
+[DELETE: If e is a new-expression with a non-constant expression in the
+noptr-new-declarator (7.6.2.8 [expr.new [1]]), S consists of the type
+std::bad_array_new_length.]
+
+[Example:...
+
+3.
+
+Change the example in 14.5 [except.spec [5]] bullet 17.2 as follows:
+
+
+  struct A {
+    A(int = (A(5), 0)) noexcept;
+    A(const A&) throw();
+    A(A&&) throw();
+    ~A() throw(X);
+  };
+  struct B {
+    B() throw();
+    B(const B&) = default; // exception specification contains no types
+    B(B&&, int = (throw Y(), 0)) noexcept;
+    ~B() throw(Y);
+  };
+  int n = 7;
+  struct D : public A, public B {
+    int * p = new (std::nothrow) int[n];
+  // exception specification of D::D() contains X [DELETE: and ][DELETE: std::bad_array_new_length]
+    // exception specification of D::D(const D&) contains no types
+    // exception specification of D::D(D&&) contains Y
+    // exception specification of D::~D() contains X and Y
+  };
+[INSERT:   struct exp : std::bad_alloc {};
+  void *operator new[](size_t) throws(exp);
+  struct E : public A {
+    int * p = new int[n];
+    // exception specification of E::E() contains X, exp, and std::bad_array_new_length
+};]
+
+Source links:
+[1] https://wg21.link/expr.new
+[2] https://wg21.link/expr.new#7
+[3] https://wg21.link/except.handle
+[4] https://wg21.link/new.badlength
+[5] https://wg21.link/except.spec
+[6] https://wg21.link/except.spec#14
+[7] https://wg21.link/expr.const
+[8] https://wg21.link/intro.execution

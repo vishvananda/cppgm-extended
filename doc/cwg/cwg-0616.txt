@@ -1,0 +1,151 @@
+CWG 616: Definition of &#8220;indeterminate value&#8221;
+Source: https://cplusplus.github.io/CWG/issues/616.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+616. Definition of “indeterminate value”
+Section: Clause 3 [intro.defs [1]] Status: CD3 Submitter: Bjarne Stroustrup Date: 2
+February 2007
+
+[Moved to DR at the April, 2013 meeting.]
+
+The C++ Standard uses the phrase “indeterminate value” without defining it. C99 defines
+it as “either an unspecified value or a trap representation.” Should C++ follow suit?
+
+In addition, 7.3.2 [conv.lval [2]] paragraph 1 says that applying the lvalue-to-rvalue
+conversion to an “object [that] is uninitialized” results in undefined behavior; this
+should be rephrased in terms of an object with an indeterminate value.
+
+Proposed resolution (October, 2012):
+
+1.
+
+Change 7.3.2 [conv.lval [3]] paragraphs 1 and 2 as follows (including changing the
+running text of paragraph 2 into bullets):
+
+A glvalue (7.2.1 [basic.lval [4]]) of a non-function, non-array type T can be converted
+to a prvalue.53 If T is an incomplete type, a program that necessitates this conversion
+is ill-formed. [DELETE: If the object to which the glvalue refers is not an object of
+type T and is not an object of a type derived from T, or if the object is uninitialized,
+a program that necessitates this conversion has undefined behavior.] If T is a non-class
+type, the type of the prvalue is the cv-unqualified version of T. Otherwise, the type of
+the prvalue is T.54
+
+When an lvalue-to-rvalue conversion occurs in an unevaluated operand or a subexpression
+thereof (Clause 7 [expr [5]]) the value contained in the referenced object is not
+accessed. [INSERT: In all other cases, the result of the conversion is determined
+according to the following rules:]
+
+-
+
+[INSERT: If T is (possibly cv-qualified) std::nullptr_t, the result is a null pointer
+constant (7.3.12 [conv.ptr [6]]).]
+
+-
+
+Otherwise, if [DELETE: the glvalue] [INSERT: T] has a class type, the conversion
+copy-initializes a temporary of type T from the glvalue and the result of the conversion
+is a prvalue for the temporary.
+
+-
+
+[INSERT: Otherwise, if the object to which the glvalue refers contains an invalid
+pointer value (6.8.6.5.3 [basic.stc.dynamic.deallocation [7]], _N4885_6.7.5.5.4
+[basic.stc.dynamic.safety [8]]), the behavior is implementation-defined.]
+
+-
+
+[INSERT: Otherwise, if T is a (possibly cv-qualified) unsigned character type (6.9.3
+[basic.fundamental [9]]), and the object to which the glvalue refers contains an
+indeterminate value (7.6.2.8 [expr.new [10]], 9.5 [dcl.init [11]], 11.9.3
+[class.base.init [12]]), and that object does not have automatic storage duration or the
+glvalue was the operand of a unary & operator or it was bound to a reference, the result
+is an unspecified value. [Footnote: The value may be different each time the
+lvalue-to-rvalue conversion is applied to the object. An unsigned char object with
+indeterminate value allocated to a register might trap. —end footnote]]
+
+-
+
+[INSERT: Otherwise, if the object to which the glvalue refers contains an indeterminate
+value, the behavior is undefined.]
+
+-
+
+[DELETE: Otherwise, if the glvalue has (possibly cv-qualified) type std::nullptr_t, the
+prvalue result is a null pointer constant (7.3.12 [conv.ptr [6]]).] Otherwise, the value
+contained in the object indicated by the glvalue is the prvalue result.
+
+2.
+
+Change 7.6.1.5 [expr.ref [13]] paragraph 4 second bullet as follows:
+
+-
+
+If E2 is a static data member...
+
+-
+
+...If E1 is an lvalue, then E1.E2 is an lvalue; [DELETE: if E1 is an xvalue, then]
+[INSERT: otherwise] E1.E2 is an xvalue[DELETE: ; otherwise, it is a prvalue]. Let the
+notation...
+
+-
+
+If E2 is a (possibly overloaded) member function...
+
+3.
+
+Change 7.6.4 [expr.mptr.oper [14]] paragraph 6 as follows:
+
+...The result of a .* expression whose second operand is a pointer to a data member is
+[DELETE: of the same value category (7.2.1 [basic.lval [4]]) as its first operand]
+[INSERT: an lvalue if the first operand is an lvalue and an xvalue otherwise]. The
+result of a .* expression whose second operand is a pointer to a member function...
+
+This resolution also resolves issues 129 [15], 240 [16], 312 [17], 623 [18], and 1013
+[19].
+
+(See also issue 1213 [20].)
+
+Additional note (August, 2012):
+
+It was observed that the phrase in the fourth bullet of the change to 7.3.2 [conv.lval
+[21]] paragraph 2 that reads “is not a local variable” should probably be changed to
+“does not have automatic storage duration,” because objects with static storage duration
+are zero-initialized and thus cannot have an indeterminate value. The issue was returned
+to "review" status for discussion of this point.
+
+Source links:
+[1] https://wg21.link/intro.defs
+[2] https://wg21.link/conv.lval#1
+[3] https://wg21.link/conv.lval
+[4] https://wg21.link/basic.lval
+[5] https://wg21.link/expr
+[6] https://wg21.link/conv.ptr
+[7] https://wg21.link/basic.stc.dynamic.deallocation
+[8] https://wg21.link/basic.stc.dynamic.safety
+[9] https://wg21.link/basic.fundamental
+[10] https://wg21.link/expr.new
+[11] https://wg21.link/dcl.init
+[12] https://wg21.link/class.base.init
+[13] https://wg21.link/expr.ref#4
+[14] https://wg21.link/expr.mptr.oper#6
+[15] https://cplusplus.github.io/CWG/issues/129.html
+[16] https://cplusplus.github.io/CWG/issues/240.html
+[17] https://cplusplus.github.io/CWG/issues/312.html
+[18] https://cplusplus.github.io/CWG/issues/623.html
+[19] https://cplusplus.github.io/CWG/issues/1013.html
+[20] cwg-1213.txt; https://cplusplus.github.io/CWG/issues/1213.html
+[21] https://wg21.link/conv.lval#2

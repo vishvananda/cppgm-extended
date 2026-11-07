@@ -1,0 +1,62 @@
+CWG 2079: [[ appearing in a balanced-token-seq
+Source: https://cplusplus.github.io/CWG/issues/2079.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2079. [[ appearing in a balanced-token-seq
+Section: 9.13.1 [dcl.attr.grammar [1]] Status: CD4 Submitter: Jonathan Caves Date:
+2015-02-03
+
+[Adopted at the February, 2016 meeting.]
+
+According to 9.13.1 [dcl.attr.grammar [2]] paragraph 6,
+
+Two consecutive left square bracket tokens shall appear only when introducing an
+attribute-specifier. [Note: If two consecutive left square brackets appear where an
+attribute-specifier is not allowed, the program is ill-formed even if the brackets match
+an alternative grammar production. —end note]
+
+In order to allow program fragments to appeae within attributes, this restriction should
+not apply within the balanced-token-seq of an attribute.
+
+Proposed resolution (September, 2015):
+
+Change 9.13.1 [dcl.attr.grammar [2]] paragraph 6 as follows:
+
+Two consecutive left square bracket tokens shall appear only when introducing an
+attribute-specifier [INSERT: or within the balanced-token-seq of an
+attribute-argument-clause]. [Note: If two consecutive left square brackets appear where
+an attribute-specifier is not allowed, the program is ill-formed even if the brackets
+match an alternative grammar production. —end note] [Example:
+
+
+  int p[10];
+  void f() {
+    int x = 42, y[5];
+    int(p[[x] { return x; }()]);  // error: invalid attribute on a nested
+                                  // declarator-id and not a function-style cast of
+                                  // an element of p.
+    y[[] { return 2; }()] = 2;    // error even though attributes are not allowed
+                                  // in this context.
+
+[INSERT:     int i [[vendor::attr([[]])]]; // well-formed implementation-defined attribute.]
+  }
+
+
+—end example]
+
+Source links:
+[1] https://wg21.link/dcl.attr.grammar
+[2] https://wg21.link/dcl.attr.grammar#6

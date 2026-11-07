@@ -1,0 +1,49 @@
+CWG 2386: tuple_size requirements for structured binding
+Source: https://cplusplus.github.io/CWG/issues/2386.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD5
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2386. tuple_size requirements for structured binding
+Section: 9.7 [dcl.struct.bind [1]] Status: CD5 Submitter: Stephan T. Lavavej Date:
+2018-09-19
+
+[Accepted as a DR at the February, 2019 meeting.]
+
+According to 9.7 [dcl.struct.bind [2]] paragraph 4,
+
+Otherwise, if the qualified-id std::tuple_size<E> names a complete type, the expression
+std::tuple_size<E>::value shall be a well-formed integral constant expression and the
+number of elements in the identifier-list shall be equal to the value of that
+expression.
+
+However, the common idiom in the library is that SFINAE tests the presence or absence of
+a value member rather than the completeness of the class; see 22.4.7 [tuple.helper [3]]
+paragraph 4. The core language requirement should be changed to match the common library
+practice.
+
+Proposed resolution (December, 2018):
+
+Change 9.6 [dcl.fct.def [4]] paragraph 4 as follows:
+
+Otherwise, if the qualified-id std::tuple_size<E> names a complete [INSERT: class] type
+[INSERT: with a member value], the expression std::tuple_size<E>::value shall be a
+well-formed integral constant expression and the number of elements in the
+identifier-list shall be equal to the value of that expression...
+
+Source links:
+[1] https://wg21.link/dcl.struct.bind
+[2] https://wg21.link/dcl.struct.bind#4
+[3] https://wg21.link/tuple.helper
+[4] https://wg21.link/dcl.fct.def#4

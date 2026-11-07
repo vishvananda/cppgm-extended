@@ -1,0 +1,141 @@
+CWG 2549: Implicitly moving the operand of a throw-expression in unevaluated contexts
+Source: https://cplusplus.github.io/CWG/issues/2549.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD7
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2549. Implicitly moving the operand of a throw-expression in unevaluated contexts
+Section: 7.5.5.3 [expr.prim.id.qual [1]] Status: CD7 Submitter: Richard Smith Date:
+2022-03-11
+
+[Accepted as a DR at the February, 2025 meeting.]
+
+Consider:
+
+
+  void f() {
+    X x;
+    // Is x an lvalue or an xvalue here?
+    void g(int n = (decltype((throw x, 0))()));  // status quo: x is move-eligible here
+  }
+
+  void f() {
+    X x;
+    struct A {
+      void g() {
+        try {
+          struct Y {
+            // Is x an lvalue or an xvalue here?
+            void h(int n = (decltype((throw x, 0))()));
+          };
+        } catch (...) { }
+      }
+    };
+  }
+
+
+11.9.6 [class.copy.elision [2]] paragraph 3 specifies:
+
+An implicitly movable entity is a variable of automatic storage duration that is either
+a non-volatile object or an rvalue reference to a non-volatile object type. In the
+following copy-initialization contexts, a move operation is first considered before
+attempting a copy operation:
+
+- ...
+
+- if the operand of a throw-expression (7.6.18 [expr.throw [3]]) is a (possibly
+parenthesized) id-expression that names an implicitly movable entity that belongs to a
+scope that does not contain the compound-statement of the innermost try-block or
+function-try-block (if any) whose compound-statement or ctor-initializer contains the
+throw-expression,
+
+Thus, in the first example above, x is treated as an xvalue, but it is treated as an
+lvalue in the second example. This outcome is surprising.
+
+(P2266R2 [4] (Simpler implicit move) moved this wording, introduced by P1825R0 [5]
+(Merged wording for P0527R1 and P1155R3), from 11.9.6 [class.copy.elision [6]] to
+7.5.5.2 [expr.prim.id.unqual [7]].)
+
+Proposed resolution [SUPERSEDED]:
+
+Change in 7.5.5.2 [expr.prim.id.unqual [8]] paragraph 4:
+
+An implicitly movable entity is a variable [DELETE: of] [INSERT: with] automatic storage
+duration that is either a non-volatile object or an rvalue reference to a non-volatile
+object type. [DELETE: In the following contexts, an] [INSERT: An] id-expression is
+move-eligible[DELETE: :] [INSERT: if]
+
+-  [INSERT: it names an implicitly movable entity declared in the body or
+parameter-declaration-clause of the innermost enclosing function or lambda-expression
+and]
+
+-  [DELETE: If] the [DELETE: id-expression] (possibly parenthesized) [INSERT:
+id-expression] is the operand of
+
+- a return or co_return statement[DELETE: , and names an implicitly movable entity
+declared in the body or parameter-declaration-clause of the innermost enclosing function
+or lambda-expression] or
+
+-  [DELETE: if the id-expression (possibly parenthesized) is the operand of] a [INSERT:
+potentially-evaluated] throw-expression, [DELETE: and names an implicitly movable entity
+that belongs to a scope that does not contain the compound-statement of the innermost
+lambda-expression, try-block, or function-try-block (if any) whose compound-statement or
+ctor-initializer encloses the throw-expression] [INSERT: where no try-block or
+function-try-block intervenes between the declaration of the entity and the innermost
+enclosing scope of the throw-expression].
+
+Additional notes (December, 2024)
+
+Treating potentially-evaluated expressions differently (as opposed to unevaluated ones)
+is surprising.
+
+Proposed resolution (approved by CWG 2025-02-14):
+
+Change in 7.5.5.2 [expr.prim.id.unqual [8]] paragraph 4:
+
+An implicitly movable entity is a variable [DELETE: of] [INSERT: with] automatic storage
+duration that is either a non-volatile object or an rvalue reference to a non-volatile
+object type. [DELETE: In the following contexts, an] [INSERT: An] id-expression is
+move-eligible[DELETE: :] [INSERT: if]
+
+-  it names an implicitly movable entity,
+
+-  [DELETE: If][INSERT: it is] the [DELETE: id-expression] (possibly parenthesized)
+[DELETE: is the] operand of a return or co_return statement[DELETE: , and names an
+implicitly movable entity declared in the body or parameter-declaration-clause of the
+innermost enclosing function or lambda-expression] or [DELETE: if the id-expression
+(possibly parenthesized) is the operand] of a throw-expression, and [DELETE: names an
+implicitly movable entity that belongs to a scope that does not contain the
+compound-statement of the innermost lambda-expression, try-block, or function-try-block
+(if any) whose compound-statement or ctor-initializer encloses the throw-expression]
+
+-  each intervening scope between the declaration of the entity and the innermost
+enclosing scope of the id-expression is a block scope and, for a throw-expression, is
+not the block scope of a try-block or function-try-block.
+
+Source links:
+[1] https://wg21.link/expr.prim.id.qual
+[2] https://wg21.link/class.copy.elision#3
+[3] https://wg21.link/expr.throw
+[4] http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p2266r2.html
+[5] http://open-std.org/JTC1/SC22/WG21/docs/papers/2019/p1825r0.html
+[6] https://wg21.link/class.copy.elision
+[7] https://wg21.link/expr.prim.id.unqual
+[8] https://wg21.link/expr.prim.id.unqual#4
+
+Offline paper references:
+P0527R1: paper-p0527r1.txt
+P1155R3: paper-p1155r3.txt
+P1825R0: paper-p1825r0.txt
+P2266R2: paper-p2266r2.txt

@@ -1,0 +1,44 @@
+CWG 1396: Deferred instantiation and checking of non-static data member initializers
+Source: https://cplusplus.github.io/CWG/issues/1396.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++23
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1396. Deferred instantiation and checking of non-static data member initializers
+Section: 13.9.2 [temp.inst [1]] Status: C++23 Submitter: Jason Merrill Date: 2011-09-22
+
+[Resolved by issue 2631 [2], which was accepted as a DR at the November, 2022 meeting.]
+
+Non-static data member initializers get the same late parsing as member functions and
+default arguments, but are they also instantiated as needed like them? And when is their
+validity checked?
+
+Notes from the October, 2012 meeting:
+
+CWG agreed that non-static data member initializers should be handled like default
+arguments.
+
+Additional note (March, 2013):
+
+Determining whether a defaulted constructor is constexpr or not requires parsing the
+class's non-static data member initializers; see also issue 1360 [3].
+
+CWG 2022-11-11
+
+Resolved by issue 2631 [2].
+
+Source links:
+[1] https://wg21.link/temp.inst
+[2] https://cplusplus.github.io/CWG/issues/2631.html
+[3] https://cplusplus.github.io/CWG/issues/1360.html

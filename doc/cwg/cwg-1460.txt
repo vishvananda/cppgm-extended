@@ -1,0 +1,181 @@
+CWG 1460: What is an empty union?
+Source: https://cplusplus.github.io/CWG/issues/1460.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++14
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1460. What is an empty union?
+Section: 11.5 [class.union [1]] Status: C++14 Submitter: Jason Merrill Date: 2012-02-08
+
+[Moved to DR at the September, 2013 meeting.]
+
+When a similar question was raised in issue 413 [2], the resolution was to remove the
+use of the term. The resolution of issue 1359 [3] has now reintroduced the concept of an
+“empty” union, so there is once again the need to define it.
+
+(See also issues 1562 [4] and 1622 [5].)
+
+Proposed resolution (February, 2013) [superseded]:
+
+Change 11.5 [class.union [6]] paragraph 2 as follows:
+
+...At most one non-static data member of a union may have a brace-or-equal-initializer.
+[INSERT: A union is an empty union if it has no non-static data members.] [Note: If
+any...
+
+Additional note (March, 2013):
+
+The question was raised as to whether an example like
+
+
+  union A {
+    union {};
+    union {};
+    constexpr A() {}
+  };
+  A a = A();
+
+
+is well-formed, which hinges on the question of whether A is an “empty union,” per 9.2.6
+[dcl.constexpr [7]] paragraph 4 bullet 5:
+
+-
+
+if the class is a non-empty union, or for each non-empty anonymous union member of a
+non-union class, exactly one non-static data member shall be initialized;
+
+Must one of the empty anonymous union members be initialized for A's constructor to be
+constexpr?
+
+The issue is being returned to "review" status for discussion of this point.
+
+See also issues 1562 [4], 1587 [8], 1621 [9], and 1623 [10].
+
+Proposed resolution (August, 2013):
+
+1.
+
+Change 9.2.6 [dcl.constexpr [7]] paragraph 4 as follows:
+
+...In addition, either its function-body shall be = delete, or it shall satisfy the
+following constraints:
+
+-
+
+...
+
+-
+
+[DELETE: if the class is a non-empty union, or for each non-empty anonymous union member
+of a non-union class, exactly one non-static data member shall be initialized;]
+
+-
+
+[INSERT: if the class is a union having variant members (11.5 [class.union [1]]),
+exactly one of them shall be initialized;]
+
+-
+
+[INSERT: if the class is a union-like class, but is not a union, for each of its
+anonymous union members having variant members, exactly one of them shall be
+initialized;]
+
+-
+
+every constructor involved...
+
+2.
+
+Change 11.5 [class.union [6]] paragraph 2 as follows:
+
+A union can have member functions (including constructors and destructors), but not
+virtual (11.7.3 [class.virtual [11]]) functions. A union shall not have base classes. A
+union shall not be used as a base class. If a union contains a non-static data member of
+reference type the program is ill-formed. [DELETE: At most one non-static data member of
+a union may have a brace-or-equal-initializer.] [Note: If any non-static data member...
+
+3.
+
+Change 11.5 [class.union [12]] paragraph 8 as follows:
+
+A union-like class is a union or a class that has an anonymous union as a direct member.
+A union-like class X has a set of variant members. [DELETE: If X is a union its variant
+members are the non-static data members; otherwise, its variant members are the
+non-static data members of all anonymous unions that are members of X.] [INSERT: If X is
+a union, a non-static data member of X that is not an anonymous union is a variant
+member of X. In addition, a non-static data member of an anonymous union that is a
+member of X is also a variant member of X. At most one variant member of a union may
+have a brace-or-equal-initializer. [Example:]
+
+
+[INSERT:   union U {
+    int x = 0;
+    union { };
+    union {
+      int z;
+      int y = 1; // error: initialization for second variant member of U
+    };
+  };]
+
+
+[INSERT: —end example]]
+
+4.
+
+Change 11.9.3 [class.base.init [13]] paragraph 8 as follows:
+
+In a non-delegating constructor, if a given non-static data member or base class is not
+designated by a mem-initializer-id (including the case where there is no
+mem-initializer-list because the constructor has no ctor-initializer) and the entity is
+not a virtual base class of an abstract class (11.7.4 [class.abstract [14]]), then
+
+-
+
+if the entity is a non-static data member that has a brace-or-equal-initializer [INSERT:
+and either]
+
+-
+
+[INSERT: the constructor's class is a union (11.5 [class.union [1]]), and no other
+variant member of that union is designated by a mem-initializer-id or]
+
+-
+
+[INSERT: the constructor's class is not a union, and, if the entity is a member of an
+anonymous union, no other member of that union is designated by a mem-initializer-id,]
+
+the entity is initialized as specified in 9.5 [dcl.init [15]];
+
+-
+
+otherwise, if the entity...
+
+(This resolution also resolves issue 1562 [4].)
+
+Source links:
+[1] https://wg21.link/class.union
+[2] https://cplusplus.github.io/CWG/issues/413.html
+[3] https://cplusplus.github.io/CWG/issues/1359.html
+[4] https://cplusplus.github.io/CWG/issues/1562.html
+[5] https://cplusplus.github.io/CWG/issues/1622.html
+[6] https://wg21.link/class.union#2
+[7] https://wg21.link/dcl.constexpr#4
+[8] https://cplusplus.github.io/CWG/issues/1587.html
+[9] https://cplusplus.github.io/CWG/issues/1621.html
+[10] https://cplusplus.github.io/CWG/issues/1623.html
+[11] https://wg21.link/class.virtual
+[12] https://wg21.link/class.union#8
+[13] https://wg21.link/class.base.init#8
+[14] https://wg21.link/class.abstract
+[15] https://wg21.link/dcl.init

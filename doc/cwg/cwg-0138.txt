@@ -1,0 +1,155 @@
+CWG 138: Friend declaration name lookup
+Source: https://cplusplus.github.io/CWG/issues/138.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD6
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+138. Friend declaration name lookup
+Section: _N4868_.9.8.2.3 [namespace.memdef [1]] Status: CD6 Submitter: Martin von Loewis
+Date: 14 Jul 1999
+
+[Accepted at the November, 2020 meeting as part of paper P1787R6 and moved to DR at the
+February, 2021 meeting.]
+
+_N4868_.9.8.2.3 [namespace.memdef [2]] paragraph 3 says,
+
+If a friend declaration in a non-local class first declares a class or function the
+friend class or function is a member of the innermost enclosing namespace... When
+looking for a prior declaration of a class or a function declared as a friend, scopes
+outside the innermost enclosing namespace scope are not considered.
+It is not clear from this passage how to determine whether an entity is "first declared"
+in a friend declaration. One question is whether a using-declaration influences this
+determination. For instance:
+
+    void foo();
+    namespace A{
+      using ::foo;
+      class X{
+	friend void foo();
+      };
+    }
+
+
+Is the friend declaration a reference to ::foo or a different foo?
+
+Part of the question involves determining the meaning of the word "synonym" in 9.10
+[namespace.udecl [3]] paragraph 1:
+
+A using-declaration introduces a name into the declarative region in which the
+using-declaration appears. That name is a synonym for the name of some entity declared
+elsewhere.
+Is "using ::foo;" the declaration of a function or not?
+
+More generally, the question is how to describe the lookup of the name in a friend
+declaration.
+
+John Spicer: When a declaration specifies an unqualified name, that name is declared,
+not looked up. There is a mechanism in which that declaration is linked to a prior
+declaration, but that mechanism is not, in my opinion, via normal name lookup. So, the
+friend always declares a member of the nearest namespace scope regardless of how that
+name may or may not already be declared there.
+
+Mike Miller: 6.5.3 [basic.lookup.unqual [4]] paragraph 7 says:
+
+A name used in the definition of a class X outside of a member function body or nested
+class definition shall be declared in one of the following ways:... [Note: when looking
+for a prior declaration of a class or function introduced by a friend declaration,
+scopes outside of the innermost enclosing namespace scope are not considered.]
+The presence of this note certainly implies that this paragraph describes the lookup of
+names in friend declarations.
+
+John Spicer: It most certainly does not. If that section described the friend lookup it
+would yield the incorrect results for the friend declarations of f and g below. I don't
+know why that note is there, but it can't be taken to mean that that is how the friend
+lookup is done.
+
+
+    void f(){}
+    void g(){}
+    class B {
+        void g();
+    };
+    class A : public B {
+        void f();
+        friend void f(); // ::f not A::f
+        friend void g(); // ::g not B::g
+    };
+
+
+Mike Miller: If so, the lookups for friend functions and classes behave differently.
+Consider the example in 6.5.6 [basic.lookup.elab [5]] paragraph 3:
+
+
+    struct Base {
+        struct Data;         // OK: declares nested Data
+        friend class Data;   // OK: nested Data is a friend
+    };
+
+
+If the friend declaration is not a reference to ::foo, there is a related but separate
+question: does the friend declaration introduce a conflicting (albeit "invisible")
+declaration into namespace A, or is it simply a reference to an as-yet undeclared (and,
+in this instance, undeclarable) A::foo? Another part of the example in 6.5.6
+[basic.lookup.elab [5]] paragraph 3 is related:
+
+
+    struct Data {
+        friend struct Glob;  // OK: Refers to (as yet) undeclared Glob
+                             // at global scope.
+    };
+
+
+John Spicer: You can't refer to something that has not yet been declared. The friend is
+a declaration of Glob, it just happens to declare it in a such a way that its name
+cannot be used until it is redeclared.
+
+(A somewhat similar question has been raised in connection with issue 36 [6]. Consider:
+
+
+    namespace N {
+        struct S { };
+    }
+    using N::S;
+    struct S;          // legal?
+
+
+According to 11.3 [class.name [7]] paragraph 2,
+
+A declaration consisting solely of class-key identifier ; is either a redeclaration of
+the name in the current scope or a forward declaration of the identifier as a class
+name.
+
+Should the elaborated type declaration in this example be considered a redeclaration of
+N::S or an invalid forward declaration of a different class?)
+
+(See also issues 95 [8], 136 [9], 139 [10], 143 [11], 165 [12], and 166 [13], as well as
+paper J16/00-0006 = WG21 N1229.)
+
+Source links:
+[1] https://wg21.link/namespace.memdef
+[2] https://wg21.link/namespace.memdef#3
+[3] https://wg21.link/namespace.udecl#1
+[4] https://wg21.link/basic.lookup.unqual#7
+[5] https://wg21.link/basic.lookup.elab#3
+[6] https://cplusplus.github.io/CWG/issues/36.html
+[7] https://wg21.link/class.name#2
+[8] https://cplusplus.github.io/CWG/issues/95.html
+[9] https://cplusplus.github.io/CWG/issues/136.html
+[10] https://cplusplus.github.io/CWG/issues/139.html
+[11] https://cplusplus.github.io/CWG/issues/143.html
+[12] https://cplusplus.github.io/CWG/issues/165.html
+[13] https://cplusplus.github.io/CWG/issues/166.html
+
+Offline paper references:
+P1787R6: paper-p1787r6.txt

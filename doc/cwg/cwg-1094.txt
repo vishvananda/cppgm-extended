@@ -1,0 +1,93 @@
+CWG 1094: Converting floating-point values to scoped enumeration types
+Source: https://cplusplus.github.io/CWG/issues/1094.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++11
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1094. Converting floating-point values to scoped enumeration types
+Section: 7.6.1.9 [expr.static.cast [1]] Status: C++11 Submitter: Daniel Krügler Date:
+2010-07-17
+
+[Voted into the WP at the March, 2011 meeting.]
+
+According to 9.8.1 [dcl.enum [2]] paragraph 10,
+
+An expression of arithmetic or enumeration type can be converted to an enumeration type
+explicitly.
+
+However, 7.6.1.9 [expr.static.cast [3]] paragraph 10 says only,
+
+A value of integral or enumeration type can be explicitly converted to an enumeration
+type.
+
+This omits floating-point values. Presumably unscoped enumeration types are covered by
+paragraph 7,
+
+The inverse of any standard conversion sequence ( 7.3 [conv [4]]), other than the
+lvalue-to-rvalue (7.3.2 [conv.lval [5]]), array-to- pointer (7.3.3 [conv.array [6]]),
+function-to-pointer (7.3.4 [conv.func [7]]), and boolean (7.3.14 [conv.fctptr [8]])
+conversions, can be performed explicitly using static_cast.
+
+because 7.3.11 [conv.fpint [9]] paragraph 2 allows an unscoped enumeration value to be
+implicitly converted to a floating point type. (Although that also covers the integral
+types, so it's not clear why they would be mentioned specifically in 7.6.1.9
+[expr.static.cast [3]] paragraph 10.) However, this should presumably say “arithmetic”
+instead of “integral” to match the statement in 9.8.1 [dcl.enum [2]] paragraph 10.
+
+Proposed resolution (November, 2010):
+
+1.
+
+Change 7.6.1.9 [expr.static.cast [3]] paragraph 10 as follows:
+
+A value of integral or enumeration type can be explicitly converted to an enumeration
+type. The value is unchanged if the original value is within the range of the
+enumeration values (9.8.1 [dcl.enum [10]]). Otherwise, the resulting [DELETE:
+enumeration] value is unspecified [INSERT: (and might not be in that range). A value of
+floating-point type can also be converted to an enumeration type. The resulting value is
+the same as converting the original value to the underlying type of the enumeration
+(7.3.11 [conv.fpint [11]]), and subsequently to the enumeration type].
+
+2.
+
+Add the following footnote to the end of 9.8.1 [dcl.enum [12]] paragraph 7:
+
+...If the enumerator-list is empty, the values of the enumeration are as if the
+enumeration had a single enumerator with value 0. [INSERT: [Footnote: This set of values
+is used to define promotion and conversion semantics for the enumeration type; it does
+not exclude an expression of enumeration type from having a value that falls outside
+this range. —end footnote]]
+
+3.
+
+Delete 9.8.1 [dcl.enum [2]] paragraph 10:
+
+[DELETE: An expression of arithmetic or enumeration type can be converted to an
+enumeration type explicitly. The value is unchanged if it is in the range of enumeration
+values of the enumeration type; otherwise the resulting enumeration value is
+unspecified.]
+
+Source links:
+[1] https://wg21.link/expr.static.cast
+[2] https://wg21.link/dcl.enum#10
+[3] https://wg21.link/expr.static.cast#10
+[4] https://wg21.link/conv
+[5] https://wg21.link/conv.lval
+[6] https://wg21.link/conv.array
+[7] https://wg21.link/conv.func
+[8] https://wg21.link/conv.fctptr
+[9] https://wg21.link/conv.fpint#2
+[10] https://wg21.link/dcl.enum
+[11] https://wg21.link/conv.fpint
+[12] https://wg21.link/dcl.enum#7

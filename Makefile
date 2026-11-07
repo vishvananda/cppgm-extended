@@ -89,7 +89,7 @@ SUBMAKE_OBJ_ARG = $(if $(strip $(OBJ)),OBJ=$(OBJ))
 SUBMAKE_GENERATED_ARG = $(if $(strip $(GENERATED)),GENERATED=$(GENERATED))
 SUBMAKE_CC_FLAGS_ARG = $(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)")
 
-.PHONY: all build build-telemetry-off test test-telemetry-off audit-student-documents audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-usage audit-scaffold-spellings audit-ir-expectations audit-clang-format ref-test ref-test-debuginfo \
+.PHONY: all build build-telemetry-off test test-telemetry-off audit-student-documents audit-cwg-references audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-usage audit-scaffold-spellings audit-ir-expectations audit-clang-format ref-test ref-test-debuginfo \
 	test-debuginfo test-debuginfo-nobuild test-modern-cxx test-modern-cxx-nobuild ref-test-modern-cxx \
 	test-target-features test-target-features-nobuild \
 	require-clang require-clang-libcxx asan-build test-cells \
@@ -104,6 +104,9 @@ all: build
 
 audit-student-documents:
 	@perl scripts/audit_student_documents.pl
+
+audit-cwg-references:
+	@python3 scripts/audit_cwg_references.py
 
 audit-lowir-contract:
 	@perl scripts/audit_lowir_contract.pl

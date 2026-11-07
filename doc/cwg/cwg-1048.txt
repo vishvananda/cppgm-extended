@@ -1,0 +1,71 @@
+CWG 1048: auto deduction and lambda return type deduction.
+Source: https://cplusplus.github.io/CWG/issues/1048.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1048. auto deduction and lambda return type deduction.
+Section: 7.5.6 [expr.prim.lambda [1]] Status: CD3 Submitter: Jason Merrill Date:
+2010-03-09
+
+[Moved to DR at the April, 2013 meeting as part of paper N3638.]
+
+auto and lambda return types use slightly different rules for determining the result
+type from an expression. auto uses the rules in 13.10.3.2 [temp.deduct.call [2]], which
+explicitly drops top-level cv-qualification in all cases, while the lambda return type
+is based on the lvalue-to-rvalue conversion, which drops cv-qualification only for
+non-class types. As a result:
+
+
+    struct A { };
+
+    const A f();
+
+    auto a = f();               // decltype(a) is A
+    auto b = []{ return f(); }; // decltype(b()) is const A
+
+
+This seems like an unnecessary inconsistency.
+
+John Spicer:
+
+The difference is intentional; auto is intended only to give a const type if you
+explicitly ask for it, while the lambda return type should generally be the type of the
+expression.
+
+Daniel Krügler:
+
+Another inconsistency: with auto, use of a braced-init-list can deduce a specialization
+of std::initializer_list; it would be helpful if the same could be done for a lambda
+return type.
+
+Additional note, February, 2014:
+
+EWG noted that g++ and clang differ in their treatment of this example and referred it
+back to CWG for resolution.
+
+Proposed resolution, November, 2014:
+
+This issue was actually resolved by paper N3638, adopted at the April, 2013 meeting. It
+is returned to "review" status to allow consideration of whether the resolution should
+be considered a change for C++14 or a retroactive change to C++11.
+
+Notes from the November, 2014 meeting:
+
+CWG agreed that the change embodied in paper N3638 should be considered to have been a
+DR against C++11.
+
+Source links:
+[1] https://wg21.link/expr.prim.lambda
+[2] https://wg21.link/temp.deduct.call

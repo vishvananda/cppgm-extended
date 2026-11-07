@@ -1,0 +1,91 @@
+CWG 2176: Destroying the returned object when a destructor throws
+Source: https://cplusplus.github.io/CWG/issues/2176.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2176. Destroying the returned object when a destructor throws
+Section: 7.6.1.3 [expr.call [1]] Status: CD4 Submitter: Richard Smith Date: 2015-09-28
+
+[Adopted at the February, 2016 meeting.]
+
+Consider the following example:
+
+
+  #include <stdio.h>
+
+  struct X {
+    X() { puts("X()"); }
+    X(const X&) { puts("X(const X&)"); }
+    ~X() { puts("~X()"); }
+  };
+
+  struct Y { ~Y() noexcept(false) { throw 0; } };
+
+  X f() {
+    try {
+      Y y;
+      return {};
+    } catch (...) {
+    }
+    return {};
+  }
+
+  int main() {
+    f();
+  }
+
+
+Current implementations print X() twice but ~X() only once. That is obviously wrong, but
+it is not clear that the current wording covers this case.
+
+Proposed resolution (February, 2016):
+
+Change 14.3 [except.ctor [2]] paragraph 2 as follows:
+
+The destructor is invoked for each automatic object of class type constructed[INSERT: ,
+but not yet destroyed,] since the try block was entered. [INSERT: If an exception is
+thrown during the destruction of temporaries or local variables for a return statement
+(8.8.4 [stmt.return [3]]), the destructor for the returned object (if any) is also
+invoked.] The [DELETE: automatic] objects are destroyed in the reverse order of the
+completion of their construction. [INSERT: [Example:]
+
+
+[INSERT:   struct A { };
+
+  struct Y { ~Y() noexcept(false) { throw 0; } };
+
+  A f() {
+    try {
+      A a;
+      Y y;
+      A b;
+      return {};   // #1
+    } catch (...) {
+    }
+    return {};     // #2
+  }]
+
+
+[INSERT: At #1, the returned object of type A is constructed. Then, the local variable b
+is destroyed (8.8 [stmt.jump [4]]). Next, the local variable y is destroyed, causing
+stack unwinding, resulting in the destruction of the returned object, followed by the
+destruction of the local variable a. Finally, the returned object is constructed again
+at #2. —end example]]
+
+Source links:
+[1] https://wg21.link/expr.call
+[2] https://wg21.link/except.ctor#2
+[3] https://wg21.link/stmt.return
+[4] https://wg21.link/stmt.jump

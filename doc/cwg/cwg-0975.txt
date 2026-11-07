@@ -1,0 +1,101 @@
+CWG 975: Restrictions on return type deduction for lambdas
+Source: https://cplusplus.github.io/CWG/issues/975.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+975. Restrictions on return type deduction for lambdas
+Section: 7.5.6 [expr.prim.lambda [1]] Status: CD3 Submitter: Jason Merrill Date: 4
+September, 2009
+
+N3092 comment US 30
+[2]
+
+[Moved to DR status at the April, 2013 meeting as part of paper N3638.]
+
+There does not appear to be any technical difficulty that would require the current
+restriction that the return type of a lambda can be deduced only if the body of the
+lambda consists of a single return statement. In particular, multiple return statements
+could be permitted if they all return the same type.
+
+Proposed resolution (August, 2011):
+
+Change 7.5.6 [expr.prim.lambda [3]] paragraph 4 as follows:
+
+...If a lambda-expression does not include a trailing-return-type, it is as if the
+trailing-return-type denotes the following type:
+
+-
+
+[DELETE: if the compound-statement is of the form]
+
+[DELETE: { attribute-specifier-seqopt return expression ;]
+
+[DELETE: the type of the returned expression after lvalue-to-rvalue conversion (7.3.2
+[conv.lval [4]]), array-to-pointer conversion (7.3.3 [conv.array [5]]), and
+function-to-pointer conversion (7.3.4 [conv.func [6]]);]
+
+-
+
+[DELETE: otherwise, void.]
+
+-
+
+[INSERT: if there are no return statements in the compound-statement, or all return
+statements return either an expression of type void or no expression or
+braced-init-list, the type void;]
+
+-
+
+[INSERT: otherwise, if all return statements return an expression and the types of the
+returned expressions after lvalue-to-rvalue conversion (7.3.2 [conv.lval [4]]),
+array-to-pointer conversion (7.3.3 [conv.array [5]]), and function-to-pointer conversion
+(7.3.4 [conv.func [6]]) are the same, that common type;]
+
+-
+
+[INSERT: otherwise, the program is ill-formed.]
+
+[Example:
+
+
+  auto x1 = [](int i){ return i; }; // OK: return type is int
+  auto x2 = []{ return { 1, 2 }; }; // error: the return type is void (a
+                                    // braced-init-list is not an expression)
+[INSERT:   struct A { int fn1(); const int& fn2(); };
+  template <class T> void f () {
+    [](T t, bool b){
+      if (b)
+        return t.fn1();
+      else
+        return t.fn2();
+    };
+  }
+  template void f<A>();             // OK: lambda return type is int]
+
+
+—end example]
+
+Additional note (February, 2012):
+
+EWG requested that the adoption of this proposed resolution be postponed to allow them
+to discuss it. The issue has thus been returned to "review" status pending EWG action.
+
+Source links:
+[1] https://wg21.link/expr.prim.lambda
+[2] http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2011/n3296.html#US30
+[3] https://wg21.link/expr.prim.lambda#4
+[4] https://wg21.link/conv.lval
+[5] https://wg21.link/conv.array
+[6] https://wg21.link/conv.func

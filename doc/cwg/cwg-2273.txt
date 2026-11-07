@@ -1,0 +1,112 @@
+CWG 2273: Inheriting constructors vs implicit default constructor
+Source: https://cplusplus.github.io/CWG/issues/2273.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD5
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2273. Inheriting constructors vs implicit default constructor
+Section: 11.4.5 [class.ctor [1]] Status: CD5 Submitter: Richard Smith Date: 2016-06-17
+
+[Voted into the WP at the July, 2017 meeting.]
+
+In an example like
+
+
+   struct A { A(int = 0); };
+   struct B : A { using A::A; };
+   B b0(0); // #1
+   B b;     // #2
+
+
+Is #2 valid (presumably calling the constructor inherited from A, or ill-formed due to
+ambiguity with 's implicit default constructor?
+
+Proposed resolution (May, 2017):
+
+1.
+
+Change 9.10 [namespace.udecl [2]] paragraph 16 as follows:
+
+For the purpose of [INSERT: forming a set of candidates during] overload resolution, the
+functions that are introduced by a using-declaration into a derived class are treated as
+though they were members of the derived class. In particular, the implicit this
+parameter shall be treated as if it were a pointer to the derived class rather than to
+the base class. This has no effect on the type of the function, and in all other
+respects the function remains a member of the base class. Likewise, constructors that
+are introduced by a using-declaration are treated as though they were constructors of
+the derived class when looking up the constructors of the derived class (6.5.5.2
+[class.qual [3]]) or forming a set of overload candidates (12.2.2.4 [over.match.ctor
+[4]], 12.2.2.5 [over.match.copy [5]], 12.2.2.8 [over.match.list [6]]). If such a
+constructor is selected to perform the initialization of an object of class type, all
+subobjects other than the base class from which the constructor originated are
+implicitly initialized (11.9.4 [class.inhctor.init [7]]). [INSERT: [Note: A member of a
+derived class is sometimes preferred to a member of a base class if they would otherwise
+be ambiguous (12.2.4 [over.match.best [8]]). —end note]]
+
+2.
+
+Insert the following as a new bullet following 12.2.4 [over.match.best [9]] bullet 1.7:
+
+-
+
+...
+
+-
+
+F1 and F2 are function template specializations, and the function template for F1 is
+more specialized than the template for F2 according to the partial ordering rules
+described in 13.7.7.3 [temp.func.order [10]], or, if not that,
+
+-
+
+[INSERT: F1 is a constructor for a class D, F2 is a constructor for a base class B of D,
+and for all arguments the corresponding parameters of F1 and F2 have the same type.
+[Example:]
+
+
+[INSERT:   struct A {
+    A(int = 0);
+  };
+
+  struct B: A {
+    using A::A;
+    B();
+  };
+
+  int main() {
+    B b;  // OK, B::B()
+  }]
+
+
+[INSERT: —end example], or, if not that,]
+
+-
+
+F1 is generated from a deduction-guide (12.2.2.9 [over.match.class.deduct [11]])...
+
+This resolution also resolves issue 2277 [12].
+
+Source links:
+[1] https://wg21.link/class.ctor
+[2] https://wg21.link/namespace.udecl#16
+[3] https://wg21.link/class.qual
+[4] https://wg21.link/over.match.ctor
+[5] https://wg21.link/over.match.copy
+[6] https://wg21.link/over.match.list
+[7] https://wg21.link/class.inhctor.init
+[8] https://wg21.link/over.match.best
+[9] https://wg21.link/over.match.best#1.7
+[10] https://wg21.link/temp.func.order
+[11] https://wg21.link/over.match.class.deduct
+[12] https://cplusplus.github.io/CWG/issues/2277.html

@@ -1,0 +1,69 @@
+CWG 253: Why must empty or fully-initialized const objects be initialized?
+Source: https://cplusplus.github.io/CWG/issues/253.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++17
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+253. Why must empty or fully-initialized const objects be initialized?
+Section: 9.5 [dcl.init [1]] Status: C++17 Submitter: Mike Miller Date: 11 Jul 2000
+
+[Adopted at the November, 2016 meeting as part of paper P0490R0.]
+
+Paragraph 9 of 9.5 [dcl.init [1]] says:
+
+If no initializer is specified for an object, and the object is of (possibly
+cv-qualified) non-POD class type (or array thereof), the object shall be
+default-initialized; if the object is of const-qualified type, the underlying class type
+shall have a user-declared default constructor. Otherwise, if no initializer is
+specified for an object, the object and its subobjects, if any, have an indeterminate
+initial value; if the object or any of its subobjects are of const-qualified type, the
+program is ill-formed.
+
+What if a const POD object has no non-static data members? This wording requires an
+empty initializer for such cases:
+
+
+    struct Z {
+        // no data members
+        operator int() const { return 0; }
+    };
+
+    void f() {
+        const Z z1;         // ill-formed: no initializer
+        const Z z2 = { };   // well-formed
+    }
+
+
+Similar comments apply to a non-POD const object, all of whose non-static data members
+and base class subobjects have default constructors. Why should the class of such an
+object be required to have a user-declared default constructor?
+
+(See also issue 78 [2].)
+
+Additional note (February, 2011):
+
+This issue should be brought up again in light of constexpr constructors and non-static
+data member initializers.
+
+Notes from the August, 2011 meeting:
+
+If the implicit default constructor initializes all subobjects, no initializer should be
+required.
+
+Source links:
+[1] https://wg21.link/dcl.init
+[2] https://cplusplus.github.io/CWG/issues/78.html
+
+Offline paper references:
+P0490R0: paper-p0490r0.txt

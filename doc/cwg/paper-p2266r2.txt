@@ -1,0 +1,704 @@
+P2266R2: WG21 paper reference
+Source: https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p2266r2.html
+Retrieved: 2026-11-07
+Source HTML SHA256: 4e2262e6d320247d88e1c0dcf62f3b71184650da3ed628073a3dd3d93609ec5f
+
+Full paper text follows. [DELETE: ...] and [INSERT: ...] retain the source's
+change markup. A paper may discuss changes beyond the course language modes;
+its inclusion supplies offline wording, not an implementation claim.
+
+P2266R2
+Simpler implicit move
+
+Published Proposal, 2021-08-31
+
+Author:
+Arthur O'Dwyer [1]
+Audience:
+EWG
+Project:
+ISO/IEC JTC1/SC22/WG21 14882: Programming Language — C++
+Current Source:
+github.com/Quuxplusone/draft/blob/gh-pages/d2266-implicit-move-rvalue-ref.bs [2]
+Current:
+rawgit.com/Quuxplusone/draft/gh-pages/d2266-implicit-move-rvalue-ref.html [3]
+
+Abstract
+
+In C++20, return statements can implicitly move from local variables of rvalue reference
+type; but a defect in the wording means that implicit move fails to apply to functions
+that return references. C++20’s implicit move is specified via a complicated process
+involving two overload resolutions, which is hard to implement, causing implementation
+divergence. We fix the defect and simplify the spec by saying that a returned
+move-eligible id-expression is always an xvalue.
+
+Table of Contents
+
+1. 1 Changelog
+2. 2 Background
+3.  3 Problems remaining in C++20
+
+1. 3.1 Conversion operators are treated inconsistently
+2.  3.2 "Perfect backwarding" is treated inconsistently
+
+1. 3.2.1 Interaction with decltype and decltype(auto)
+3. 3.3 Two overload resolutions are overly confusing
+4. 3.4 A specific case involving reference_wrapper
+4.  4 Straw polls
+
+1. 4.1 Polls taken in EWG telecon on 2021-03-17
+5.  5 Implementation experience
+
+1. 5.1 Microsoft’s rvalue std::getline
+2. 5.2 LibreOffice OString constructor
+3. 5.3 LibreOffice o3tl::temporary
+6.  6 Proposed wording relative to N4861
+
+1. 6.1 Non-normative clarifications
+7. 7 Acknowledgments
+8.   References
+
+1.  Informative References
+
+1. Changelog
+
+-
+
+R2:
+
+-
+
+Merged the drive-by bugfix into the main "proposed wording" section.
+
+-
+
+Added new wording for the note in [basic.lval]/4.
+
+-
+
+Added feature-test macro __cpp_implicit_move.
+
+-
+
+Added straw poll results.
+
+-
+
+Added a section on "Implementation Experience", mentioning [D99005].
+
+-
+
+R1:
+
+-
+
+Added the drive-by bugfix about lambda-expressions.
+
+2. Background
+
+Starting in C++11, implicit move ([class.copy.elision]/3 [4]) permits us to return
+move-only types by value:
+
+struct Widget {
+    Widget(Widget&&);
+};
+
+Widget one(Widget w) {
+    return w;  // OK since C++11
+}
+
+
+This wording was amended by [CWG1579], which made it legal to call converting
+constructors accepting an rvalue reference of the returned expression’s type.
+
+struct RRefTaker {
+    RRefTaker(Widget&&);
+};
+RRefTaker two(Widget w) {
+    return w;  // OK since C++11 + CWG1579
+}
+
+
+C++20 adopted [P1825], a wording paper created by merging [P0527] and [P1155]. The
+former introduced the category of "implicitly movable entities," and extended that
+category to include automatic variables of rvalue reference type. The latter increased
+the scope of the "implicit move" optimization beyond converting constructors — now, in
+C++20, the rule is simply that the first overload resolution to initialize the returned
+object is done by treating w as an rvalue. (The resolution may now produce candidates
+such as conversion operators and constructors-taking-Base&&.) Of these two changes,
+P0527’s was the more drastic:
+
+RRefTaker three(Widget&& w) {
+    return w;  // OK since C++20 because P0527
+}
+
+
+However, due to the placement of P1825’s new wording in [class.copy.elision]/3 [4], the
+new wording about "implicitly movable entities" is triggered only when initializing a
+return object. Functions that do not return objects, do not benefit from this wording.
+This leads to a surprising result:
+
+Widget&& four(Widget&& w) {
+    return w;  // Error
+}
+
+
+In return w, the implicitly movable entity w is treated as an rvalue when the return
+type of the function is RRefTaker as in example three, but it is treated as an lvalue
+when the return type of the function is Widget&& as in example four.
+
+3. Problems remaining in C++20
+
+3.1. Conversion operators are treated inconsistently
+
+struct Mutt {
+    operator int*() &&;
+};
+struct Jeff {
+    operator int&() &&;
+};
+
+int* five(Mutt x) {
+    return x;  // OK since C++20 because P1155
+}
+
+int& six(Jeff x) {
+    return x;  // Error
+}
+
+
+(Mutt here is isomorphic to example nine from [P1155]. P1155 did not explicitly consider
+Jeff because, at the time, Arthur hadn’t realized that the difference between Mutt and
+Jeff was significant to the wording.)
+
+3.2. "Perfect backwarding" is treated inconsistently
+
+template<class T>
+T&& seven(T&& x) { return x; }
+
+void test_seven(Widget w) {
+    Widget& r = seven(w);               // OK
+    Widget&& rr = seven(std::move(w));  // Error
+}
+
+
+The line marked "Error" instantiates seven<Widget>, with the signature Widget&&
+seven(Widget&& x). The rvalue-reference parameter x is an implicitly movable entity
+according to C++20; but, because the return type is not an object type, implicit move
+fails to happen — the return type Widget&& cannot bind to the lvalue id-expression x.
+
+The same surprise occurs with decltype(auto) return types:
+
+Widget val();
+Widget& lref();
+Widget&& rref();
+
+decltype(auto) eight() {
+    decltype(auto) x = val();  // OK, x is Widget
+    return x;  // OK, return type is Widget, we get copy elision
+}
+
+decltype(auto) nine() {
+    decltype(auto) x = lref();  // OK, x is Widget&
+    return x;  // OK, return type is Widget&
+}
+
+decltype(auto) ten() {
+    decltype(auto) x = rref();  // OK, x is Widget&&
+    return x;  // Error, return type is Widget&&, cannot bind to x
+}
+
+
+We propose to make ten work, by permitting — in fact requiring —the move-eligible
+id-expression x to be treated as an rvalue.
+
+3.2.1. Interaction with decltype and decltype(auto)
+
+We do not propose to change any of the rules around the deduction of decltype(auto)
+itself. However, functions with decltype(auto) return types have some subtlety to them.
+
+Consider this extremely contrived example:
+
+decltype(auto) eleven(Widget&& x) {
+    return (x);
+}
+
+
+Here, the return type of eleven is the decltype of the expression (x). This is governed
+by [dcl.type.auto.deduct]/5 [5]:
+
+If the placeholder-type-specifier is of the form type-constraintopt decltype(auto), T
+shall be the placeholder alone. The type deduced for T is determined as described in
+[dcl.type.decltype] [6], as though E had been the operand of the decltype.
+
+In C++17, the decltype of (x) was int&. No implicit move happened, because x (being a
+reference) was not an implicitly movable entity. The lvalue expression (x) happily binds
+to the function return type int&, and the code compiles OK.
+
+In C++20, the decltype of (x) is int&. x now is an implicitly movable entity, but
+(because the return type is not an object type) implicit move does not apply. The lvalue
+expression (x) happily binds to the function return type int&, and the code compiles OK.
+
+We propose to change the behavior of eleven!
+
+Under our proposal, the id-expression x (as the operand of return) is move-eligible,
+which means it is an xvalue. The function return type is deduced as decltype(E), which
+is to say, int&& since E is an xvalue. The xvalue expression (x) happily binds to the
+function return type int&&, and the code compiles OK. But now it returns int&&, not
+int&.
+
+This does produce surprising inconsistencies in the handling of parentheses; for
+example,
+
+auto f1(int x) -> decltype(x) { return (x); }     // int
+auto f2(int x) -> decltype((x)) { return (x); }   // int&
+auto f3(int x) -> decltype(auto) { return (x); }  // C++20: int&. Proposed: int&&
+auto g1(int x) -> decltype(x) { return x; }       // int
+auto g2(int x) -> decltype((x)) { return x; }     // int&
+auto g3(int x) -> decltype(auto) { return x; }    // int
+
+
+Note that f2 and g2 are well-formed in C++20, but we propose to make f2 and g2
+ill-formed, because they attempt to bind an lvalue reference to a move-eligible xvalue
+expression.
+
+However, C++ users already know to be wary of parentheses anywhere in the vicinity of
+decltype or decltype(auto). We don’t think we’re adding any significant amount of
+surprise in this already-arcane area.
+
+3.3. Two overload resolutions are overly confusing
+
+Implicit move is currently expressed in terms of two separate overload resolutions: one
+treating the operand as an rvalue, and then (if that resolution fails) another one
+treating the operand as an lvalue.
+
+As far as I know, this is the only place in the language where two separate resolutions
+are done on the same operand. This mechanism has some counterintuitive ramifications
+—not problems per se, but surprising and subtle quirks that would be nice to simplify
+out of the language.
+
+struct Sam {
+    Sam(Widget&);        // #1
+    Sam(const Widget&);  // #2
+};
+
+Sam twelve() {
+    Widget w;
+    return w;  // calls #2 since C++20 because P1155
+}
+
+
+Note: In C++17 (prior to P1155), #2 would not be found by the first pass because its
+argument type is not exactly Widget&&. The comment in twelve matches the current
+Standard wording, and matches the behavior of MSVC, Clang 13+, and GCC 7 through 10. (As
+of this writing, GCC 11+ have regressed and lost the correct behavior.)
+
+The first overload resolution succeeds, and selects a candidate (#2) that is a worse
+match than the candidate that would have been selected by the second overload
+resolution. This is a surprising quirk, which was discussed internally around the time
+P1825 was adopted (see [CoreReflector]); that discussion petered out with no conclusion
+except a general sense that the alternative mechanisms discussed (such as introducing a
+notion of "lvalues that preferentially bind to rvalue references" or "rvalues that
+reluctantly bind to lvalue references") were strictly worse than the status quo.
+
+struct Frodo {
+    Frodo(Widget&);
+    Frodo(Widget&&) = delete;
+};
+
+Frodo thirteen() {
+    Widget w;
+    return w;  // Error: the first overload resolution selects a deleted function
+}
+
+
+Here the first pass uniquely finds Frodo(Widget&&), which is a deleted function; does
+this count as "the first overload resolution fails," or does it count as a success and
+thus produce an error when we try to use that deleted function? Vendors currently
+disagree, but [over.match.general]/3 [7] is clear:
+
+If a best viable function exists and is unique, overload resolution succeeds and
+produces it as the result. Otherwise overload resolution fails and the invocation is
+ill-formed. [...] Overload resolution results in a usable candidate if overload
+resolution succeeds and the selected candidate is either not a function ([over.built]),
+or is a function that is not deleted and is accessible from the context in which
+overload resolution was performed.
+
+Error from use of deleted function: GCC 5,6,7; GCC 11+ with -std=c++20 ; MSVC; ICC
+
+Non-conforming fallback to Frodo(Widget&): GCC 8,9,10; GCC 11+ with -std=c++17 ; Clang
+before [D92936]
+
+This implementation divergence would be less likely to exist, if the specification were
+simplified to avoid relying on the precise formal meaning of "failure." We propose that
+simplification.
+
+Another example of vendors misinterpreting the meaning of "failure":
+
+struct Merry {};
+struct Pippin {};
+struct Together : Merry, Pippin {};
+struct Quest {
+    Quest(Merry&&);
+    Quest(Pippin&&);
+    Quest(Together&);
+};
+
+Quest fourteen() {
+    Together t;
+    return t;  // C++20: calls Quest(Together&). Proposed: ill-formed
+}
+
+
+Here the first pass finds both Quest(Merry&&) and Quest(Pippin&&).
+[over.match.general]/3 [7] is clear that ambiguity is an overload resolution failure and
+the second resolution must be performed. However, EDG’s front-end disagrees.
+
+Fallback to Quest(Together&): GCC; Clang; MSVC
+
+Non-conforming error due to ambiguity in the first pass: ICC
+
+3.4. A specific case involving reference_wrapper
+
+Consider this dangerous function:
+
+std::reference_wrapper<Widget> fifteen() {
+    Widget w;
+    return w;  // OK until CWG1579; OK after LWG2993. Proposed: ill-formed
+}
+
+
+Prior to [CWG1579] (circa 2014), implicit move was not done, and so w was treated as an
+lvalue and fifteen was well-formed — it returned a dangling reference to automatic
+variable w.
+
+CWG1579 made fifteen ill-formed (except on the non-conforming compilers listed above),
+because now the first overload resolution step would find reference_wrapper(type&&) =
+delete and hard-error.
+
+Then, [LWG2993] eliminated this deleted constructor from reference_wrapper and replaced
+it with a SFINAE-constrained constructor from U&&. Now, the first overload resolution
+step legitimately fails (it finds no viable candidates), and so the second overload
+resolution is performed and finds a usable candidate — it returns a dangling reference
+to automatic variable w. This is how the situation stands today in C++20.
+
+We propose to simplify [class.copy.elision]/3 [4] by eliminating the second "fallback"
+overload resolution. If this proposal is adopted, fifteen will once again become
+ill-formed.
+
+In the internal discussion of P1825 ([CoreReflector]) one participant opined that making
+fifteen ill-formed is a good thing, because it correctly diagnoses the dangling
+reference. The existing two-step mechanism works to defeat the clear intent of
+reference_wrapper's SFINAE-constrained constructor and permit the returning of dangling
+references when in fact we don’t want that.
+
+4. Straw polls
+
+4.1. Polls taken in EWG telecon on 2021-03-17
+
+Arthur O’Dwyer presented P2266R1. The following straw polls were taken. The second poll
+was interpreted as consensus, but with the strong "Against" vote indicating that
+implementation experience (and an updated paper) was needed before sending P2266 to
+electronic polling. (Two days later, the first draft of Clang patch [D99005] became
+available.)
+
+SF F N A SA
+
+We are interested in addressing the issue raised in P2266 (as proposed, or in another
+manner).  13  9  1  0  0
+
+Send P2266 (with minor wording fixes) to electronic polling, then CWG, targeting C++23.
+5  6  7  2  1
+
+Treat P2266 as a “Defect Report” against prior versions of C++ (i.e. not just C++23).  1
+2  5  7  5
+
+5. Implementation experience
+
+In June 2021, P2266R1 was implemented as the default behavior in Clang’s -std=c++2b
+mode. This was shipped in the Clang 13 release (July 2021). We are aware of three pieces
+of industry code that broke as a result of this change. All three have been treated as
+"dubious code, worth patching" and have been patched already. These are the only three
+breakages we have seen from deployment of Clang 13’s -std=c++2b mode. See [FieldTesting]
+for full details. The executive summary of the three breakages is:
+
+5.1. Microsoft’s rvalue std::getline
+
+std::istream& getline(std::istream&& in, ~~~) {
+    ~~~
+    return in;
+}
+
+
+was changed [8] to
+
+std::istream& getline(std::istream&& in, ~~~) {
+    ~~~
+    return static_cast<std::istream&>(in);
+}
+
+
+5.2. LibreOffice OString constructor
+
+This is a subtle one, but it boils down to the fact that
+
+struct X {
+    X(auto&);
+};
+
+X f() {
+    char a[10];
+    return a;
+}
+
+
+compiles in C++20 (deducing X(char (&)[10])) but not after P2266 (because the returned
+expression now has type char (&&)[10], which cannot bind to auto&). The solution was to
+change it [9] by making the return convert explicitly rather than implicitly:
+
+X f() {
+    char a[10];
+    return X(a);
+}
+
+
+5.3. LibreOffice o3tl::temporary
+
+template<class T>
+T& temporary(T&& x) { return x; }
+
+
+was changed [10] to
+
+template<class T>
+T& temporary(T&& x) { return static_cast<T&>(x); }
+
+
+6. Proposed wording relative to N4861
+
+Consensus is that [class.copy.elision] is no longer the best place to explain "implicit
+move." We propose to move the wording from [class.copy.elision] to
+[expr.prim.id.unqual], and introduce the term "move-eligible id-expression" for
+id-expressions that are xvalues.
+
+Modify [expr.prim.id.unqual]/2 [11] as follows:
+
+The expression is [INSERT: an xvalue if it is move-eligible (see below);] an lvalue if
+the entity is a function, variable, structured binding, data member, or template
+parameter object [INSERT: ;] and a prvalue otherwise; it is a bit-field if the
+identifier designates a bit-field.
+[INSERT: An implicitly movable entity is a variable of automatic storage duration that
+is either a non-volatile object or an rvalue reference to a non-volatile object type. In
+the following contexts, an id-expression is move-eligible:]
+
+-  [INSERT: If the id-expression (possibly parenthesized) is the operand of a return or
+co_return statement, and names an implicitly movable entity declared in the body or
+parameter-declaration-clause of the innermost enclosing function or lambda-expression,
+or]
+-  [INSERT:  if the id-expression (possibly parenthesized) is the operand of a
+throw-expression, and names an implicitly movable entity that belongs to a scope that
+does not contain the compound-statement of the innermost [INSERT: lambda-expression,]
+try-block [INSERT: ,] or function-try-block (if any) whose compound-statement or
+ctor-initializer encloses the throw-expression. ]
+
+Eliminate [class.copy.elision]/3 [4]:
+
+[DELETE: An implicitly movable entity is a variable of automatic storage duration that
+is either a non-volatile object or an rvalue reference to a non-volatile object type. In
+the following copy-initialization contexts, a move operation is first considered before
+attempting a copy operation:]
+
+-  [DELETE: If the expression in a return or co_return statement is a (possibly
+parenthesized) id-expression that names an implicitly movable entity declared in the
+body or parameter-declaration-clause of the innermost enclosing function or
+lambda-expression, or]
+-  [DELETE: if the operand of a throw-expression is a (possibly parenthesized)
+id-expression that names an implicitly movable entity that belongs to a scope that does
+not contain the compound-statement of the innermost try-block or function-try-block (if
+any) whose compound-statement or ctor-initializer encloses the throw-expression,]
+[DELETE: overload resolution to select the constructor for the copy or the return_value
+overload to call is first performed as if the expression or operand were an rvalue. If
+the first overload resolution fails or was not performed, overload resolution is
+performed again, considering the expression or operand as an lvalue.] [DELETE: [Note 3:
+This two-stage overload resolution is performed regardless of whether copy elision will
+occur. It determines the constructor or the return_value overload to be called if
+elision is not performed, and the selected constructor or return_value overload must be
+accessible even if the call is elided. — end note]]
+
+Also change the definition of g() in [class.copy.elision]/4 [12]:
+
+struct Weird {
+  Weird();
+  Weird(Weird&);
+};
+
+[DELETE: Weird g() {]
+  [DELETE: Weird w;]
+  [DELETE: return w;  // OK: first overload resolution fails, second overload resolution selects Weird(Weird&)]
+[DELETE: }]
+[INSERT: Weird g(bool b) {]
+  [INSERT: static Weird w1;]
+  [INSERT: Weird w2;]
+  [INSERT: if (b) {]
+    [INSERT: return w1;  // OK: Weird(Weird&)]
+  [INSERT: } else {]
+    [INSERT: return w2;  // error: w2 in this context is an xvalue]
+  [INSERT: }]
+[INSERT: }]
+
+
+Add a feature-test macro in [cpp.predefined] [13]:
+
+[INSERT: __cpp_implicit_move     DATE-OF-ADOPTION]
+
+6.1. Non-normative clarifications
+
+Modify [basic.lval]/4 [14] as follows:
+
+[Note: An expression is an xvalue if it is:
+
+-  [INSERT: a move-eligible id-expression ([expr.prim.id.unqual]),]
+-
+
+the result of calling a function, whether implicitly or explicitly, whose return type is
+an rvalue reference to object type,
+
+-
+
+a cast to an rvalue reference to object type,
+
+-
+
+a subscripting operation with an xvalue array operand,
+
+-
+
+a class member access expression designating a non-static data member of non-reference
+type in which the object expression is an xvalue, or
+
+-
+
+a .* pointer-to-member expression in which the first operand is an xvalue and the second
+operand is a pointer to data member.
+
+In general, the effect of this rule is that named rvalue references are treated as
+lvalues and unnamed rvalue references to objects are treated as xvalues; rvalue
+references to functions are treated as lvalues whether named or not. — end note]
+
+Modify [dcl.type.auto.deduct]/5 [15] as follows:
+
+If the placeholder-type-specifier is of the form type-constraintopt decltype(auto), T
+shall be the placeholder alone. The type deduced for T is determined as described in
+[dcl.type.decltype], as though E had been the operand of the decltype. [INSERT:
+[Example:]
+    [INSERT: auto f(int x) -> decltype((x)) { return (x); }   // return type is "int&"]
+    [INSERT: auto g(int x) -> decltype(auto) { return (x); }  // return type is "int&&"]
+
+
+[INSERT: — end example]]
+
+Add yet more examples to [class.copy.elision]/4 [12], showing how the new wording
+affects functions that return references:
+
+[INSERT: int& h(bool b, int i) {]
+  [INSERT: static int s;]
+  [INSERT: if (b) {]
+    [INSERT: return s;  // OK]
+  [INSERT: } else {]
+    [INSERT: return i;  // error: i is an xvalue]
+  [INSERT: }]
+[INSERT: }]
+
+[INSERT: decltype(auto) h2(Thing t) {]
+  [INSERT: return t;  // OK: t is an xvalue and h2’s return type is Thing]
+[INSERT: }]
+
+[INSERT: decltype(auto) h3(Thing t) {]
+  [INSERT: return (t);  // OK: (t) is an xvalue and h3’s return type is Thing&&]
+[INSERT: }]
+
+
+Add a note after [dcl.init.ref]/5.4.4 [16]:
+
+if the reference is an rvalue reference, the initializer expression shall not be an
+lvalue.
+[INSERT: [Note: This can be affected by whether the initializer expression is
+move-eligible ([expr.prim.id.unqual]). — end note]]
+
+7. Acknowledgments
+
+-
+
+Thanks to Ville Voutilainen for recommending Arthur write this paper.
+
+-
+
+Thanks to Aaron Puchert for inspiring fourteen via his comments on [D68845].
+
+-
+
+Thanks to Richard Smith and Jens Maurer for their feedback, and to Jens for proposing
+the term "move-eligible."
+
+References
+
+Informative References
+
+[CoreReflector]
+CWG internal email discussion. [isocpp-core] P1825 (more implicit moves) surprise [17].
+February 2020. URL: https://lists.isocpp.org/core/2020/02/8455.php [17]
+[CWG1579]
+Jeffrey Yasskin. Return by converting move constructor [18]. October 2012. URL:
+http://open-std.org/JTC1/SC22/WG21/docs/cwg_defects.html#1579 [18]
+[D68845]
+Aaron Puchert. Don't emit unwanted constructor calls in co_return statements [19].
+October 2019. URL: https://reviews.llvm.org/D68845 [19]
+[D92936]
+Yang Fan. [Sema] Fix deleted function problem in implicitly movable test [20]. December
+2020. URL: https://reviews.llvm.org/D92936 [20]
+[D99005]
+Matheus Izvekov. [clang] Implement P2266 Simpler implicit move [21]. March 2021. URL:
+https://reviews.llvm.org/D99005 [21]
+[FieldTesting]
+Arthur O'Dwyer. Field-testing P2266 'Simpler Implicit Move' [22]. August 2021. URL:
+https://quuxplusone.github.io/blog/2021/08/07/p2266-field-test-results/ [22]
+[LWG2993]
+Tim Song. reference_wrapper<T> conversion from T&& [23]. November 2017. URL:
+https://cplusplus.github.io/LWG/issue2993 [23]
+[P0527]
+David Stone. Implicitly move from rvalue references in return statements [24]. November
+2017. URL: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0527r1.html [24]
+[P1155]
+Arthur O'Dwyer; David Stone. More implicit moves [25]. June 2019. URL:
+http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1155r3.html [25]
+[P1825]
+David Stone. Merged wording for P0527R1 and P1155R3 [26]. July 2019. URL:
+http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html [26]
+
+Source links:
+[1] mailto:arthur.j.odwyer@gmail.com
+[2] https://github.com/Quuxplusone/draft/blob/gh-pages/d2266-implicit-move-rvalue-ref.bs
+[3] https://rawgit.com/Quuxplusone/draft/gh-pages/d2266-implicit-move-rvalue-ref.html
+[4] https://timsong-cpp.github.io/cppwp/n4861/class.copy.elision#3
+[5] https://eel.is/c++draft/dcl.spec.auto#dcl.type.auto.deduct-5
+[6] https://eel.is/c++draft/dcl.type.decltype
+[7] https://eel.is/c++draft/over.match.general#3
+[8] https://github.com/microsoft/STL/pull/2025
+[9] https://git.libreoffice.org/core/+/433ab39b2175bdadb4916373cd2dc8e1aabc08a5%5E%21
+[10] https://git.libreoffice.org/core/+/21da7d80aa1ee0f9661dcde37bc4629d5eb9d50e%5E%21
+[11] https://timsong-cpp.github.io/cppwp/n4861/expr.prim.id.unqual#2
+[12] https://timsong-cpp.github.io/cppwp/n4861/class.copy.elision#4
+[13] https://timsong-cpp.github.io/cppwp/n4861/cpp.predefined#tab:cpp.predefined.ft
+[14] https://timsong-cpp.github.io/cppwp/n4861/basic.lval#4
+[15] https://timsong-cpp.github.io/cppwp/n4861/dcl.type.auto.deduct#5
+[16] https://timsong-cpp.github.io/cppwp/n4861/dcl.init#ref-5.4.4
+[17] https://lists.isocpp.org/core/2020/02/8455.php
+[18] http://open-std.org/JTC1/SC22/WG21/docs/cwg_defects.html#1579
+[19] https://reviews.llvm.org/D68845
+[20] https://reviews.llvm.org/D92936
+[21] https://reviews.llvm.org/D99005
+[22] https://quuxplusone.github.io/blog/2021/08/07/p2266-field-test-results/
+[23] https://cplusplus.github.io/LWG/issue2993
+[24] http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0527r1.html
+[25] http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1155r3.html
+[26] http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html

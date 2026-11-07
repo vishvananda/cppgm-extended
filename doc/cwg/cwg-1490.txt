@@ -1,0 +1,56 @@
+CWG 1490: List-initialization from a string literal
+Source: https://cplusplus.github.io/CWG/issues/1490.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1490. List-initialization from a string literal
+Section: 9.5.5 [dcl.init.list [1]] Status: CD4 Submitter: Daveed Vandevoorde Date:
+2012-03-29
+
+[Moved to DR at the November, 2014 meeting.]
+
+Initialization of an array of characters from a string literal is handled by the third
+bullet of 9.5 [dcl.init [2]] paragraph 16, branching off to 9.5.3 [dcl.init.string [3]].
+However, list initialization is handled by the first bullet, branching off to 9.5.5
+[dcl.init.list [1]], and there is no corresponding special case in 9.5.5 [dcl.init.list
+[4]] paragraph 3 for an array of characters initialized by a brace-enclosed string
+literal. That is, an initialization like
+
+
+  char s[4]{"abc"};
+
+
+is ill-formed, which could be surprising. Similarly,
+
+
+  std::initializer_list<char>{"abc"};
+
+
+is plausible but also not permitted.
+
+Notes from the October, 2012 meeting:
+
+CWG agreed that the first example should be permitted, but not the second.
+
+Proposed resolution (June, 2014):
+
+This issue is resolved by the resolution of issue 1467 [5].
+
+Source links:
+[1] https://wg21.link/dcl.init.list
+[2] https://wg21.link/dcl.init#16
+[3] https://wg21.link/dcl.init.string
+[4] https://wg21.link/dcl.init.list#3
+[5] cwg-1467.txt; https://cplusplus.github.io/CWG/issues/1467.html

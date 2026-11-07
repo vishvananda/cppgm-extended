@@ -1,0 +1,604 @@
+P0135R1: WG21 paper reference
+Source: https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0135r1.html
+Retrieved: 2026-11-07
+Source HTML SHA256: 2e83d5b751f8054589adcd492695e227dc2feea2168f831bc89b9f7d887c9b2b
+
+Full paper text follows. [DELETE: ...] and [INSERT: ...] retain the source's
+change markup. A paper may discuss changes beyond the course language modes;
+its inclusion supplies offline wording, not an implementation claim.
+
+ISO/IEC JTC1 SC22 WG21
+P0135R1
+Richard Smith
+richard@metafoo.co.uk
+2016-06-20
+
+Wording for guaranteed copy elision through simplified value categories
+This paper provides wording for P0135R0 [1].
+
+This also resolves the following core issues:
+1565 [2]: Copy elision and lifetime of initializer_list underlying array
+1590 [3]: Bypassing non-copy/move constructor copying
+1599 [4]: Lifetime of initializer_list underlying array
+1697 [5]: Lifetime extension and copy elision
+2022 [6] [PARTIAL]: Copy elision in constant expressions (except for NRVO)
+
+Change in 3.10 [basic.lval] paragraph 1:
+
+Expressions are categorized according to the taxonomy in Figure 1. [Figure 1: Expression
+category taxonomy]
+
+- [DELETE: An lvalue […]]
+- [DELETE: […]]
+- [DELETE: A prvalue[…]]
+- [INSERT: A glvalue is an expression whose evaluation determines the identity of an
+object, bit-field, or function.]
+- [INSERT: A prvalue is an expression whose evaluation initializes an object or a
+bit-field, or computes the value of the operand of an operator, as specified by the
+context in which it appears.]
+- [INSERT: An xvalue is a glvalue that denotes an object or bit-field whose resources
+can be reused (usually because it is near the end of its lifetime). [ Example: Certain
+kinds of expressions involving rvalue references (8.3.2) yield xvalues, such as a call
+to a function whose return type is an rvalue reference or a cast to an rvalue reference
+type. ]]
+- [INSERT: An lvalue is a glvalue that is not an xvalue.]
+- [INSERT: An rvalue is a prvalue or an xvalue.]  [INSERT: [ Note: Historically, lvalues
+and rvalues were so-called because they could appear on the left- and right-hand side of
+an assignment (although this is no longer generally true); glvalues are "generalized"
+lvalues, prvalues are "pure" rvalues, and xvalues are "eXpiring" lvalues. Despite their
+names, these terms classify expressions, not values. ]] Every expression belongs to
+exactly one of the fundamental classifications in this taxonomy: lvalue, xvalue, or
+prvalue. This property of an expression is called its value category. […]
+
+Add a new paragraph after 3.10 [basic.lval] paragraph 1:
+
+The result of a prvalue is the value that the expression stores into its context. A
+prvalue whose result is the value V is sometimes said to have or name the value V. The
+result object of a prvalue is the object initialized by the prvalue; a prvalue that is
+used to compute the value of an operand of an operator or that has type (possibly
+cv-qualified) void has no result object. [ Note: Except when the prvalue is the operand
+of a decltype-specifier, a prvalue of class or array type always has a result object.
+For a discarded prvalue, a temporary object is materialized; see [expr]. ] The result of
+a glvalue is the entity denoted by the expression.
+
+Change in 3.10 [basic.lval] paragraph 2:
+
+[INSERT: [ Note:] Whenever a glvalue appears in a context where a prvalue is expected,
+the glvalue is converted to a prvalue; see 4.1, 4.2, and 4.3. [INSERT: ]] [ Note: … ] [
+Note: … ]
+
+Add a new paragraph after 3.10 [basic.lval] paragraph 2:
+
+[ Note: Whenever a prvalue appears in a context where an xvalue or glvalue is expected,
+the prvalue is converted to an xvalue; see [conv.rval]. ]
+
+Delete 3.10 [basic.lval] paragraphs 5 - 8 and change in paragraph 9:
+
+[DELETE: If an expression can be used to modify the object to which it refers, the
+expression is called modifiable.] An lvalue is modifiable unless its type is
+const-qualified or is a function type. [INSERT: [ Note:] A program that attempts to
+modify an object through a nonmodifiable lvalue [INSERT: expression] or [INSERT: through
+an] rvalue expression is ill-formed ([expr.ass], [expr.post.inc], [expr.pre.inc]).
+[INSERT: ]]
+
+Change in 4.1 [conv.lval] paragraph 1, second footnote (footnote 55):
+
+In C++ class [INSERT: and array] prvalues can have cv-qualified types[DELETE:  (because
+they are objects)]. This differs from ISO C, in which non-lvalues never have
+cv-qualified types.
+
+Change in 4.1 [conv.lval] paragraph 2:
+
+When an lvalue-to-rvalue conversion is applied to an expression e, and […] the value
+contained in the referenced object is not accessed. [ Example: … ] [DELETE: In all other
+cases,] The result of the conversion is determined according to the following rules:
+
+- If T is (possibly cv-qualified) std::nullptr_t, the result is a null pointer constant
+(4.10).
+- Otherwise, if T has a class type, the conversion copy-initializes [DELETE: a temporary
+of type T] [INSERT: the result object] from the glvalue [DELETE: and the result of the
+conversion is a prvalue for the temporary].
+- Otherwise, if the object to which the glvalue refers contains an invalid pointer value
+(3.7.4.2, 3.7.4.3), the behavior is implementation-defined.
+- Otherwise, the value contained in the object indicated by the glvalue is the prvalue
+result.
+
+Change in 4.2 [conv.array] paragraph 1:
+
+An lvalue or rvalue of type "array of N T" or "array of unknown bound of T" can be
+converted to a prvalue of type "pointer to T". [INSERT: The temporary materialization
+conversion ([conv.rval]) is applied.] The result is a pointer to the first element of
+the array.
+
+Add a new subclause after 4.3:
+
+4.4 Temporary materialization conversion [conv.rval]
+
+A prvalue of type T can be converted to an xvalue of type T. This conversion initializes
+a temporary object ([class.temporary]) of type T from the prvalue by evaluating the
+prvalue with the temporary object as its result object, and produces an xvalue denoting
+the temporary object. T shall be a complete type. [ Note: If T is a class type (or array
+thereof), it must have an accessible and non-deleted destructor; see [class.dtor]. ] [
+Example:
+struct X { int n; }
+int k = X().n; // ok, X() prvalue is converted to xvalue
+
+
+]
+
+Add a new paragraph after 5 [expr] paragraph 9 ("Whenever a glvalue expressions as an
+operand of an operator that expects a prvalue"):
+
+Whenever an rvalue expression appears as an operand of an operator that expects a
+glvalue for that operand, the temporary materialization conversion ([conv.rval]) is
+applied to convert the expression to an xvalue.
+
+Change in 5 [expr] paragraph 11:
+
+In some contexts, an expression only appears for its side effects. Such an expression is
+called a discarded-value expression. [DELETE: The expression is evaluated and its value
+is discarded.] The array-to-pointer (4.2) and function-to-pointer (4.3) standard
+conversions are not applied. The lvalue-to-rvalue conversion (4.1) is applied if and
+only if the expression is a glvalue of volatile-qualified type and it is one of the
+following: […] [ Note: Using an overloaded operator causes a function call; the above
+covers only operators with built-in meaning. [INSERT:  ] If the expression is a prvalue
+after this optional conversion, the temporary materialization conversion ([temp.rval])
+is applied. [ Note:] If the [INSERT: expression is an] lvalue [DELETE: is] of class
+type, it must have a volatile copy constructor to initialize the temporary that is the
+result [INSERT: object] of the lvalue-to-rvalue conversion. ] [INSERT: The glvalue
+expression is evaluated and its value is discarded.]
+Drafting note: it is no longer meaningful to evaluate a prvalue expression of class or
+array type without specifying an object to initialize from it, as the prvalue does not
+itself create such an object.
+
+Change in 5.1.2 [expr.prim.lambda] paragraph 2:
+
+The evaluation of a lambda-expression results in a prvalue [DELETE: temporary (12.2).
+This temporary is] [INSERT: whose result object is] called the closure object. […]
+
+Change in 5.2.1 [expr.sub] paragraph 1:
+
+A postfix expression followed by an expression in square brackets is a postfix
+expression. One of the expressions shall [DELETE: have the][INSERT: be a glvalue of]
+type "array of T" or [INSERT: a prvalue of type] "pointer to T" and the other shall
+[DELETE: have] [INSERT: be a prvalue of] unscoped enumeration or integral type. […] in
+the case of an array operand, the result is an lvalue if that operand is an lvalue and
+an xvalue otherwise.
+
+Change in 5.2.2 [expr.call] paragraph 4:
+
+[…] [DELETE:  During the initialization of a parameter, an implementation may avoid the
+construction of extra temporaries by combining the conversions on the associated
+argument and/or the construction of temporaries with the initialization of the parameter
+(see 12.2). ] [DELETE: The] [INSERT: It is implementation-defined whether the] lifetime
+of a parameter ends when the function in which it is defined returns [INSERT:  or at the
+end of the enclosing full-expression]. […] The [DELETE: value][INSERT: result] of a
+function call is the [DELETE: value returned by] [INSERT: result of the operand of the
+evaluated return statement ([stmt.return]) in] the called function [INSERT: (if any)],
+except in a virtual function call if the return type of the final overrider is different
+from the return type of the statically chosen function, the value returned from the
+final overrider is converted to the return type of the statically chosen function.
+
+Delete 5.2.2 [expr.call] paragraph 11:
+
+If a function call is a prvalue of object type:
+
+-  if the function call is either
+
+- the operand of a decltype-specifier or
+- the right operand of a comma operator that is the operand of a decltype-specifier, a
+temporary object is not introduced for the prvalue. The type of the prvalue may be
+incomplete. [ Note: … ] [ Note: … ]
+- otherwise, the type of the prvalue shall be complete.
+
+Change in 5.2.3 [expr.type.conv]:
+
+A simple-type-specifier (7.1.6.2) or typename-specifier (14.6) followed by a
+parenthesized [INSERT: optional] expression-list [INSERT:  or by a braced-init-list (the
+initializer) ] constructs a value of the specified type given the [DELETE: expression
+list] [INSERT: initializer]. If the [DELETE: expression list] [INSERT: initializer] is a
+[INSERT: parenthesized] single expression, the type conversion expression is equivalent
+(in definedness, and if defined in meaning) to the corresponding cast expression (5.4).
+[INSERT:  If the type is (possibly cv-qualified) void and the initializer is (), the
+expression is a prvalue of the specified type that performs no initialization.
+Otherwise, the expression is a prvalue of the specified type whose result object is
+direct-initialized (8.5) with the initializer. For an expression of the form T(), T
+shall not be an array type. ] [DELETE: […]]
+
+[DELETE: […]]
+
+[DELETE: […]]
+
+Change in 5.2.5 [expr.ref] paragraph 2:
+
+For the first option (dot) the first expression shall [INSERT: be a glvalue having]
+[DELETE: have] complete class type. […]
+Drafting note: if the left operand is a prvalue, a temporary will be materialized and it
+will be converted to an xvalue per [expr]/9+.
+
+Change in 5.2.7 [expr.dynamic.cast] paragraph 2:
+
+[…] If T is an rvalue reference type, v shall be [DELETE: an expression] [INSERT: a
+glvalue] having a complete class type, and the result is an xvalue of the type referred
+to by T.
+Drafting note: a temporary is materialized if the operand is a prvalue.
+
+Change in 5.2.9 [expr.static.cast] paragraph 3:
+
+A[INSERT: n] [DELETE: g]lvalue[DELETE: , class prvalue, or array prvalue] of type "cv1
+T1" can be cast to type "rvalue reference to cv2 T2" if "cv2 T2" is reference-compatible
+with "cv1 T1" (8.5.3). If the value is not a bit-field, the result refers to the object
+or the specified base class subobject thereof; otherwise, the lvalue-to-rvalue
+conversion (4.1) is applied to the bit-field and the resulting prvalue is used as the
+expression of the static_cast for the remainder of this section. If T2 is an
+inaccessible (Clause 11) or ambiguous (10.2) base class of T1, a program that
+necessitates such a cast is ill-formed.
+Drafting note: the deleted cases would also be handled by the immediately-following
+paragraph; we only need the special case above to convert lvalues to xvalues.
+
+Change in 5.2.9 [expr.static.cast] paragraph 4:
+
+An expression e can be explicitly converted to a type T using a static_cast of the form
+static_cast<T>(e) if the declaration T t(e); is well-formed, for some invented temporary
+variable t (8.5). [DELETE:  The effect of such an explicit conversion] [INSERT:  If T is
+a reference type, the effect] is the same as performing the declaration and
+initialization and then using the temporary variable as the result of the conversion.
+[INSERT:  Otherwise, the result object is direct-initialized from e.] [DELETE:  The
+expression e is used as a glvalue if and only if the initialization uses it as a
+glvalue. ]
+
+Change in 5.2.11 [expr.const.cast] paragraph 4:
+
+[…]
+The result of a reference const_cast refers to the original object [INSERT: if the
+operand is a glvalue and to the result of applying the temporary materialization
+conversion ([conv.rval]) otherwise].
+
+Change in 5.2.8 [expr.typeid] paragraph 3:
+
+When typeid is applied to an expression other than a glvalue of a polymorphic class
+type, the result refers to a std::type_info object representing the static type of the
+expression. Lvalue-to-rvalue (4.1), array-to-pointer (4.2), and function-to-pointer
+(4.3) conversions are not applied to the expression. [DELETE: If the type of the
+expression is a class type, the class shall be completely-defined.] [INSERT: If the
+expression is a prvalue, the temporary materialization conversion ([conv.rval]) is
+applied.] The expression is an unevaluated operand (Clause 5).
+
+Change in 5.3.3 [expr.sizeof] paragraph 4:
+
+The lvalue-to-rvalue (4.1), array-to-pointer (4.2), and function-to-pointer (4.3)
+standard conversions are not applied to the operand of sizeof. [INSERT: If the operand
+is a prvalue, the temporary materialization conversion ([conv.rval]) is applied.]
+Drafting note: this maintains the status quo. We could alternatively remove these
+conversions and allow typeid and sizeof to behave more like decltype.
+
+Change in 5.5 [expr.mptr.oper] paragraph 2:
+
+The binary operator .* binds its second operand, which shall be [INSERT: a glvalue] of
+type "pointer to member of T" to its first operand, which shall be of class T or of a
+class of which T is an unambiguous and accessible base class. The result is an object or
+a function of the type specified by the second operand.
+
+Change in 5.16 [expr.cond] bullet 7.1:
+
+The second and third operands have the same type; the result is of that type [INSERT:
+and the result object is initialized using the selected operand]. [DELETE:  If the
+operands have class type, the result is a prvalue temporary of the result type, which is
+copy-initialized from either the second operand or the third operand depending on the
+value of the first operand. ]
+
+Change in 5.19 [expr.comma] paragraph 1:
+
+[…] If the value of the right operand is a temporary [INSERT: expression] (12.2), the
+result is that temporary [INSERT: expression].
+
+Change in 6.6.3 [stmt.return] paragraph 2:
+
+[…] A return statement with any other operand shall be used only in a function whose
+return type is not cv void; the return statement initializes the [DELETE: object or
+reference to be returned] [INSERT: glvalue result or prvalue result object of the
+(explicit or implicit) function call] by copy-initialization (8.5) from the operand. [
+Note: A return statement can involve [DELETE: the construction and copy or move of a
+temporary object (12.2).] [INSERT: an invocation of a constructor to perform a copy or
+move of the operand if it is not a prvalue or if its type differs from the return type
+of the function.] A copy [DELETE: or move] operation associated with a return statement
+may be elided or [DELETE: considered as an rvalue for the purpose of overload resolution
+in selecting a constructor ] [INSERT: converted to a move operation if an automatic
+storage duration variable is returned] (12.8). ] […]
+Drafting note: while we no longer create elidable temporaries, we still have optional
+elision for the NRVO cases, and still convert copies to moves in some cases.
+
+Change in 6.6.3 [stmt.return] paragraph 3:
+
+The copy-initialization of the [DELETE: returned entity] [INSERT: result of the call] is
+sequenced before […]
+
+Change in 7.1.6.2 [dcl.type.simple] paragraph 5:
+
+[INSERT: If the operand of a decltype-specifier is a prvalue, the temporary
+materialization conversion is not applied ([conv.rval]) and no result object is provided
+for the prvalue. The type of the prvalue may be incomplete.] [ Note: [DELETE:  in the
+case where the operand of a decltype-specifier is a function call and the return type of
+the function is a class type, a special rule (5.2.2) ensures that the return type is not
+required to be complete (as it would be if the call appeared in a sub-expression or
+outside of a decltype-specifier).] [INSERT:  As a result, storage is not allocated for
+the prvalue and it is not destroyed. Thus, a class type is not instantiated as a result
+of being the type of a function call in this context. ] In this context, the common
+purpose of writing the expression is merely to refer to its type. In that sense, a
+decltype-specifier is analogous to a use of a typedef-name, so the usual reasons for
+requiring a complete type do not apply. In particular, it is not necessary to allocate
+storage for a temporary object or to enforce the semantic constraints associated with
+invoking the type's destructor. ] [INSERT:  [ Note: Unlike the preceding rule,
+parentheses have no special meaning in this context. ] ] [ Example: … ]
+
+Change in 8.5 [dcl.init] bullet 17.6:
+
+If the destination type is a (possibly cv-qualified) class type):
+
+-  [INSERT:  If the initializer expression is a prvalue and the cv-unqualified version
+of the source type is the same class as the class of the destination, the initializer
+expression is used to initialize the destination object. [ Example: T x = T(T(T()));
+calls the T default constructor to initialize x. ] ]
+-  [INSERT: Otherwise, if] [DELETE: If] the initialization is direct-initialization, or
+if it is copy-initialization where the cv-unqualified version of the source type is the
+same class as, or a derived class of, the class of the destination, constructors are
+considered. […]
+-  Otherwise (i.e., for the remaining copy-initialization cases), user-defined
+conversion sequences that can convert from the source type to the destination type or
+(when a conversion function is used) to a derived class thereof are enumerated as
+described in 13.3.1.4, and the best one is chosen through overload resolution (13.3). If
+the conversion cannot be done or is ambiguous, the initialization is ill-formed. The
+function selected is called with the initializer expression as its argument; if the
+function is a constructor, the call [INSERT: is a prvalue] [DELETE: initializes a
+temporary] of the cv-unqualified version of the destination type [INSERT: whose return
+object is initialized by the constructor]. [DELETE: The temporary is a prvalue.] The
+[DELETE: result of the] call [DELETE: (which is the temporary for the constructor case)]
+is [DELETE: then] used to direct-initialize, according to the rules above, the object
+that is the destination of the copy-initialization. [DELETE:  In certain cases, an
+implementation is permitted to eliminate the copying inherent in this
+direct-initialization by constructing the intermediate result directly into the object
+being initialized; see 12.2, 12.8. ]
+
+Change in 8.5.3 [decl.init.ref] bullet 5.2.1:
+
+If the initializer expression
+
+-  is an [DELETE: xvalue] [INSERT: rvalue] (but not a bit-field)[DELETE: , class
+prvalue, array prvalue] or function lvalue and "cv1 T1" is reference-compatible with
+"cv2 T2", or
+-  has a class type (i.e., T2 is a class type), where T1 is not reference-related to T2,
+and can be converted to an [DELETE: xvalue, class prvalue,] [INSERT: rvalue] or function
+lvalue of type "cv3 T3", where "cv1 T1" is reference-compatible with "cv3 T3" (see
+13.3.1.6),  then the reference is bound to the value of the initializer expression in
+the first case and to the result of the conversion in the second case (or, in either
+case, to an appropriate base class subobject) [INSERT: after applying the temporary
+materialization conversion ([conv.rval])]. [ Example: … ]
+Drafting note: this means that some cases now bind directly that did not before:
+struct X {};
+X &&a = X(); // binds directly
+int &&b = int(); // used to not bind directly, now does
+
+This does not appear to affect any of the places where we use the term "bind directly".
+
+Change in 8.5.3 [decl.init.ref] bullet 5.2.2:
+
+Otherwise
+
+-  If T1 or T2 is a class type and T1 is not reference-related to T2, user-defined
+conversions are considered using the rules for copy-initialization of an object of type
+"cv1 T1" by user-defined conversion (8.5, 13.3.1.4, 13.3.1.5); the program is ill-formed
+if the corresponding non-reference copy-initialization would be ill-formed. The result
+of the call to the conversion function, as described for the non-reference
+copy-initialization, is then used to direct-initialize the reference. For this
+direct-initialization, user-defined conversions are not considered.
+-  Otherwise, [DELETE: a temporary of type "cv1 T1" is created and copy-initialized
+(8.5) from the initializer expression. The reference is then bound to the temporary.]
+[INSERT: the initializer expression is implicitly converted to a prvalue of type "cv
+T1". The temporary materialization conversion is applied and the reference is bound to
+the result. ]  If T1 is reference-related to T2:
+
+- cv1 shall be the same cv-qualification as, or greater cv-qualification than, cv2; and
+- if the reference is an rvalue reference, the initializer expression shall not be an
+lvalue.  [ Example: … ] In all cases except the last (i.e., [DELETE:  creating and
+initializing a temporary from the initializer expression ] [INSERT: implicitly
+converting the initializer expression to the underlying type of the reference]), the
+reference is said to bind directly to the initializer expression.
+
+Change in 8.5.4 [dcl.init.list] bullet 3.5:
+
+Otherwise, if T is a specialization of std::initializer_list<E>, [DELETE:  a prvalue
+initializer_list ] [INSERT: the] object is constructed as described below [DELETE:  and
+used to initialize the object according to the rules for initialization of an object
+from a class of the same type (8.5)].
+
+Change in 8.5.4 [dcl.init.list] bullet 3.8:
+
+Otherwise, if T is a reference type, a prvalue [DELETE: temporary] of the type
+referenced by T is [INSERT: generated. The prvalue initializes its result object by]
+copy-list-initializ[DELETE: ed][INSERT: ation] or direct-list-initializ[DELETE:
+ed][INSERT: ation], depending on the kind of initialization for the reference[DELETE: ,
+and the reference is bound to that temporary]. [INSERT: The prvalue is then used to
+direct-initialize the reference.] [ Note: As usual, the binding will fail and the
+program is ill-formed if the reference type is an lvalue reference to a non-const type.
+]
+
+Change in 8.5.4 [dcl.init.list] paragraph 5:
+
+An object of type std::initializer_list<E> is constructed from an initializer list as if
+the implementation [DELETE: allocated a temporary] [INSERT: generated and materialized
+([conv.rval]) a prvalue of type "]array of N [DELETE: elements of type] const E[INSERT:
+"], where N is the number of elements in the initializer list. […]
+
+Change in 12.2 [class.temporary]:
+
+[DELETE: Temporaries of class type] [INSERT: Temporary objects] are created [DELETE: in
+various contexts:] [INSERT:  when a prvalue is materialized so that it can be used as a
+glvalue ([conv.rval]) [ Footnote: This occurs ]
+
+- [INSERT: when] binding a reference to a prvalue (8.5.3[INSERT: , 5.2.3, 5.2.7, 5.2.9,
+5.2.11, 5.4]), [INSERT:
+
+- when initializing an object of type std::initializer_list<T> from a braced-init-list
+(8.5.4),
+- when performing member access on a class prvalue (5.2.5, 5.5),
+- when performing an array-to-pointer conversion or subscripting on an array prvalue
+(5.2.1),
+- for certain unevaluated operands (5.2.8, 5.3.3), and
+- when a prvalue appears as a discarded-value expression (5).  ] ] [DELETE:  returning a
+prvalue (6.6.3), a conversion that creates a prvalue (4.1, 5.2.9, 5.2.11, 5.4)],
+[INSERT:  when needed by the implementation to pass or return an object of
+trivially-copyable type (see below), and when] throwing an exception (15.1)[DELETE: ,
+and in some initializations (8.5)]. [ Note: The lifetime of exception objects is
+described in 15.1. ] Even when the creation of the temporary object is unevaluated
+(Clause 5) [DELETE: or otherwise avoided (12.8)], all the semantic restrictions shall be
+respected as if the temporary object had been created and later destroyed. [ Note: This
+includes accessibility (11) and whether it is deleted, for the constructor selected and
+for the destructor. However, in the special case of [DELETE: a function call used as]
+the operand of a decltype-specifier (5.2.2), no temporary is introduced, so the
+foregoing does not apply to the prvalue of any such function call. ]
+
+[INSERT: The materialization of a temporary object is generally delayed as long as
+possible in order to avoid creating unnecessary temporary objects.] [ Example: Consider
+the following code:
+
+class X {
+public:
+  X(int);
+  X(const X&);
+  X& operator=(const X&); ~X();
+};
+class Y {
+public:
+  Y(int); Y(Y&&); ~Y();
+};
+X f(X);
+Y g(Y);
+void h() {
+  X a(1);
+  X b = f(X(2));
+  Y c = g(Y(3));
+  a = f(a);
+}
+
+
+[DELETE:  An implementation might use a temporary in which to construct X(2) before
+passing it to f() using X’s copy constructor; alternatively,] X(2) [DELETE: might be]
+[INSERT: is] constructed in the space used to hold [DELETE: the] [INSERT: f()'s]
+argument[DELETE: . Likewise, an implementation might use a temporary in which to
+construct Y(3) before passing it to g() using Y’s move constructor; alternatively,]
+[INSERT: and] Y(3) [DELETE: might be] [INSERT: is] constructed in the space used to hold
+[DELETE: the] [INSERT: g()'s] argument. [DELETE: Also, a temporary might be used to hold
+the result of f(X(2)) before copying it to b using X’s copy constructor; alternatively,
+] [INSERT: Likewise,] f()'s result [DELETE: might be] [INSERT: is] constructed [INSERT:
+directly] in b[DELETE: . Likewise, a temporary might be used to hold the result of
+g(Y(3)) before moving it to c using Y’s move constructor; alternatively,] [INSERT: and]
+g()'s result [DELETE: might be] [INSERT: is] constructed [INSERT: directly] in c. On the
+other hand, the expression a = f(a) requires a temporary for the result of f(a), which
+is [DELETE: then assigned to a] [INSERT: materialized so that the reference parameter of
+A::operator=(const A&) can bind to it] . ]
+
+When an object of class type X is passed to or returned from a function, if each copy
+constructor, move constructor, and destructor of X is either trivial or deleted, and X
+has at least one non-deleted copy or move constructor, implementations are permitted to
+create a temporary object to hold the function parameter or result object. The temporary
+object is constructed from the function argument or return value, respectively, and the
+function's parameter or return object is initialized as if by using the non-deleted
+trivial constructor to copy the temporary (even if that constructor is inaccessible or
+would not be selected by overload resolution to perform a copy or move of the object).
+[Note: This latitude is granted to allow objects of class type to be passed to or
+returned from functions in registers. ]
+
+[…]
+
+Change in 12.4 [class.dtor] paragraph 11 bullet 4:
+
+- for a constructed temporary object when its lifetime ends ([INSERT: [conv.rval], ]
+[class.temporary])
+
+Change in 12.8 [class.copy] bullet 31.1:
+
+[…] the copy/move operation can be omitted by constructing the automatic object directly
+into the function [INSERT: call]'s return [DELETE: value] [INSERT: object]
+
+Delete 12.8 [class.copy] bullet 31.3:
+
+when a temporary class object that has not been bound to a reference (12.2) would be
+copied/moved to a class object with the same type (ignoring cv-qualification), the
+copy/move operation can be omitted by constructing the temporary object directly into
+the target of the omitted copy/move
+
+Change in 12.8 [class.copy] paragraph 31's example:
+
+
+class Thing {
+public:
+  Thing();
+  ~Thing();
+  Thing(const Thing&);
+};
+
+Thing f() {
+  Thing t;
+  return t;
+}
+
+Thing t2 = f();
+
+
+Here the criteria for elision can [DELETE: be combined to] eliminate [DELETE: two calls
+to the copy constructor of class Thing:] the copying of the local automatic object t
+into the [DELETE: temporary] [INSERT: result] object for the [DELETE: return value of]
+function [INSERT: call] f() [DELETE: and the copying of that temporary object into
+object t2] [INSERT: which is the global object t2]. Effectively, the construction of the
+local object t can be viewed as directly initializing the global object t2, and that
+object's destruction will occur at program exit. Adding a move constructor to Thing has
+the same effect, but it is the move construction from the [DELETE: temporary] [INSERT:
+local automatic] object to t2 that is elided.
+
+Change in 13.3.1 [over.match.funcs] paragraph 5:
+
+During overload resolution, the implied object argument is indistinguishable from other
+arguments. The implicit object parameter, however, retains its identity since [DELETE:
+conversions on the corresponding argument shall obey these additional rules:]
+
+- [DELETE: no temporary object can be introduced to hold the argument for the implicit
+object parameter; and]
+- no user-defined conversions can be applied to achieve a type match with it.  […]
+
+Change in 13.3.3.1 [over.best.ics] paragraph 7:
+
+In all contexts, when converting to the implicit object parameter or when converting to
+the left operand of an assignment operation only standard conversion sequences [DELETE:
+that create no temporary object for the result] are allowed.
+Drafting note: standard conversion sequences never create temporary objects, so this
+wording appears to be redundant before this change, and after this change it would
+prevent cases like X().f(), which creates a temporary object while binding the implicit
+object parameter to the X() prvalue.
+
+Change in 13.3.3.1.4 [over.ics.ref] paragraph 3:
+
+[…] [ Note: This means, for example, that a candidate function cannot be a viable
+function if it has a non-const lvalue reference parameter (other than the implicit
+object parameter) and the corresponding argument [DELETE: is a temporary or] would
+require [DELETE: one] [INSERT: a temporary] to be created to initialize the lvalue
+reference (see 8.5.3). ]
+
+Change in 15.1 [except.throw] paragraph 3:
+
+Throwing an exception copy-initializes (8.5, 12.8) a temporary object, called the
+exception object. [DELETE: The temporary is an] [INSERT: An] lvalue [INSERT: denoting
+the temporary] [DELETE: and] is used to initialize the variable declared in the matching
+handler (15.3). […]
+
+Change in table 19 [defaultconstructible]:
+
+a[INSERT: n] [DELETE: temporary] object of type T is value-initialized or
+aggregate-initialized
+
+Source links:
+[1] http://wg21.link/p0135r0
+[2] http://wg21.link/cwg1565
+[3] http://wg21.link/cwg1590
+[4] http://wg21.link/cwg1599
+[5] http://wg21.link/cwg1697
+[6] http://wg21.link/cwg2022

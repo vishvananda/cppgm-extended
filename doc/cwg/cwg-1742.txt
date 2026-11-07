@@ -1,0 +1,63 @@
+CWG 1742: using-declarations and scoped enumerators
+Source: https://cplusplus.github.io/CWG/issues/1742.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD5
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1742. using-declarations and scoped enumerators
+Section: 9.10 [namespace.udecl [1]] Status: CD5 Submitter: Richard Smith Date:
+2013-08-28
+
+[Accepted at the July, 2019 meeting as part of paper P1099R5 (Using enum).]
+
+A using-declaration cannot name a scoped enumerator, according to 9.10 [namespace.udecl
+[2]] paragraph 7. This is presumably because a scoped enumerator belongs to an
+enumeration scope and thus logically cannot belong to the non-enumeration scope in which
+the using-declaration appears. It seems inconsistent, however, to permit
+using-declarations to name unscoped enumerators but not scoped enumerators.
+
+Also, 9.10 [namespace.udecl [3]] paragraph 3 says,
+
+In a using-declaration used as a member-declaration, the nested-name-specifier shall
+name a base class of the class being defined.
+
+The consequence of this is that
+
+
+  enum E { e0 };
+  void f() {
+    using E::e0;
+  }
+
+
+is well-formed, but
+
+
+  struct B {
+    enum E { e0 };
+  };
+  struct D : B {
+    using B::E::e0;
+  };
+
+
+is not. Again, this seems inconsistent. Should these rules be relaxed?
+
+Source links:
+[1] https://wg21.link/namespace.udecl
+[2] https://wg21.link/namespace.udecl#7
+[3] https://wg21.link/namespace.udecl#3
+
+Offline paper references:
+P1099R5: paper-p1099r5.txt

@@ -1,0 +1,66 @@
+CWG 2907: Constant lvalue-to-rvalue conversion on uninitialized std::nullptr_t
+Source: https://cplusplus.github.io/CWG/issues/2907.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD7
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2907. Constant lvalue-to-rvalue conversion on uninitialized std::nullptr_t
+Section: 7.7 [expr.const [1]] Status: CD7 Submitter: Jim X Date: 2023-01-10
+
+[Accepted as a DR at the November, 2024 meeting.]
+
+(From submission #215 [2].)
+
+Consider:
+
+
+  void f() {
+    std::nullptr_t np;       // uninitialized, thus np contains an erroneous value
+    constexpr void *p1 = np; // error: converted initializer is not a constant expression
+  }
+
+
+The lvalue-to-rvalue conversion on np does not actually read the value of np (7.3.2
+[conv.lval [3]] bullet 3.1), yet the situation is made ill-formed by 7.7 [expr.const
+[4]] bullet 5.9.
+
+Proposed resolution (approved by CWG 2024-10-11):
+
+Change in 7.7 [expr.const [4]] bullet 5.9 as follows:
+
+An expression E is a core constant expression unless the evaluation of E, following the
+rules of the abstract machine (6.10.1 [intro.execution [5]]), would evaluate one of the
+following:
+
+- ...
+
+- an lvalue-to-rvalue conversion (7.3.2 [conv.lval [6]]) unless it is applied to
+
+- a glvalue of type cv std::nullptr_t,
+
+- a non-volatile glvalue that refers to an object that is usable in constant
+expressions, or
+
+- a non-volatile glvalue of literal type that refers to a non-volatile object whose
+lifetime began within the evaluation of E;
+
+- ...
+
+Source links:
+[1] https://wg21.link/expr.const
+[2] https://github.com/cplusplus/CWG/issues/215
+[3] https://wg21.link/conv.lval#3.1
+[4] https://wg21.link/expr.const#5.9
+[5] https://wg21.link/intro.execution
+[6] https://wg21.link/conv.lval

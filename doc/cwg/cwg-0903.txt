@@ -1,0 +1,184 @@
+CWG 903: Value-dependent integral null pointer constants
+Source: https://cplusplus.github.io/CWG/issues/903.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+903. Value-dependent integral null pointer constants
+Section: 13.8.3.4 [temp.dep.constexpr [1]] Status: CD3 Submitter: Doug Gregor Date: 22
+May, 2009
+
+[Moved to DR status at the April, 2013 meeting.]
+
+Consider the following example:
+
+
+    void f(int*);
+    void f(...);
+
+    template <int N> void g() {
+      f(N);
+    }
+
+    int main() {
+      g<0>();
+      g<1>();
+    }
+
+
+The call to f in g is not type-dependent, so the overload resolution must be done at
+definition time rather than at instantiation time. As a result, both of the calls to g
+will result in calls to f(...), i.e., N will not be a null pointer constant, even if the
+value of N is 0.
+
+It would be most consistent to adopt a rule that a value-dependent expression can never
+be a null pointer constant, even in cases like
+
+
+    template <int N> void g() {
+      int* p = N;
+    }
+
+
+This would always be ill-formed, even when N is 0.
+
+John Spicer: It's clear that this treatment is required for overload resolution, but it
+seems too expansive given that there are other cases in which the value of a template
+parameter can affect the validity of the program, and an implementation is forbidden to
+issue a diagnostic on a template definition unless there are no possible valid
+specializations.
+
+Notes from the July, 2009 meeting:
+
+There was a strong consensus among the CWG that only the literal 0 should be considered
+a null pointer constant, not any arbitrary zero-valued constant expression as is
+currently specified.
+
+Proposed resolution (October, 2012):
+
+1.
+
+Change 7.3.12 [conv.ptr [2]] paragraph 1 as follows:
+
+A null pointer constant is an [DELETE: integral constant expression (7.7 [expr.const
+[3]]) prvalue of integer type that evaluates to] [INSERT: integer literal (5.13.2
+[lex.icon [4]]) with value] zero or a prvalue of type std::nullptr_t. A null pointer
+constant can be converted...
+
+2.
+
+Change 7.7 [expr.const [5]] paragraph 3 as follows:
+
+...[Note: Such expressions may be used as array bounds (9.3.4.5 [dcl.array [6]], 7.6.2.8
+[expr.new [7]]), as bit-field lengths (11.4.10 [class.bit [8]]), as enumerator
+initializers if the underlying type is not fixed (9.8.1 [dcl.enum [9]]), [DELETE: as
+null pointer constants (7.3.12 [conv.ptr [10]]),] and as alignments (9.13.2 [dcl.align
+[11]]). —end note]...
+
+3.
+
+Change 9.5 [dcl.init [12]] paragraph 5 as follows:
+
+To zero-initialize an object or reference of type T means:
+
+-
+
+if T is a scalar type (6.9 [basic.types [13]]), the object is [DELETE: set to the value
+0 (zero), taken as an integral constant expression, converted] [INSERT: initialized to
+the value obtained by converting integer literal 0 (zero)] to T; [Footnote: As specified
+in 7.3.12 [conv.ptr [10]], converting an [DELETE: integral constant expression] [INSERT:
+integer literal] whose value is 0 to a pointer type results in a null pointer value.
+—end footnote]
+
+-
+
+...
+
+4.
+
+Change 13.4.3 [temp.arg.nontype [14]] paragraph 5 as follows:
+
+-
+
+...
+
+-
+
+for a non-type template-parameter of type pointer to object, qualification conversions
+(7.3.6 [conv.qual [15]]) and the array-to-pointer conversion (7.3.3 [conv.array [16]])
+are applied; if the template-argument is of type std::nullptr_t, the null pointer
+conversion (7.3.12 [conv.ptr [10]]) is applied. [Note: In particular, neither the null
+pointer conversion for a zero-valued [DELETE: integral constant expression] [INSERT:
+integer literal] (7.3.12 [conv.ptr [10]]) nor the derived-to-base conversion (7.3.12
+[conv.ptr [10]]) are applied. Although 0 is...
+
+-
+
+...
+
+5.
+
+Change 14.4 [except.handle [17]] paragraph 3 as follows:
+
+...[Note: A throw-expression whose operand is an [DELETE: integral constant expression
+of integer type that evaluates to] [INSERT: integer literal with value] zero does not
+match a handler of pointer or pointer to member type. —end note]. [Example: ...
+
+6.
+
+Add a new section to C.7 [diff.cpp03 [18]] as follows:
+
+| [INSERT: C.2.x Clause 4: standard conversions]  | [INSERT: [diff.cpp03.conv]]
+
+[INSERT:  7.3.12 [conv.ptr [10]]
+Change: Only literals are integer null pointer constants
+Rationale: Removing surprising interactions with templates and constant expressions
+Effect on original feature: Valid C++ 2003 code may fail to compile or produce different
+results in this International Standard, as the following example illustrates:
+]
+
+
+[INSERT:   void f(void *);  // #1
+  void f(...);     // #2
+  template<int N> void g() {
+      f(0*N);      // calls #2; used to call #1
+  }]
+
+
+Additional note (January, 2013):
+
+Concerns were raised at the Portland (October, 2012) meeting that the value false has
+been used in existing code as a null pointer constant, and such code would be broken by
+this change. This issue has been returned to "review" status to allow discussion of
+whether to accommodate such code or not.
+
+Source links:
+[1] https://wg21.link/temp.dep.constexpr
+[2] https://wg21.link/conv.ptr#1
+[3] https://wg21.link/expr.const
+[4] https://wg21.link/lex.icon
+[5] https://wg21.link/expr.const#3
+[6] https://wg21.link/dcl.array
+[7] https://wg21.link/expr.new
+[8] https://wg21.link/class.bit
+[9] https://wg21.link/dcl.enum
+[10] https://wg21.link/conv.ptr
+[11] https://wg21.link/dcl.align
+[12] https://wg21.link/dcl.init#5
+[13] https://wg21.link/basic.types
+[14] https://wg21.link/temp.arg.nontype#5
+[15] https://wg21.link/conv.qual
+[16] https://wg21.link/conv.array
+[17] https://wg21.link/except.handle#3
+[18] https://wg21.link/diff.cpp03

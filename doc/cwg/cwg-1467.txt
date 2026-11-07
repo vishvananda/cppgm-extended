@@ -1,0 +1,425 @@
+CWG 1467: List-initialization of aggregate from same-type object
+Source: https://cplusplus.github.io/CWG/issues/1467.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1467. List-initialization of aggregate from same-type object
+Section: 9.5.5 [dcl.init.list [1]] Status: CD4 Submitter: Jason Merrill Date: 2012-02-06
+
+[Moved to DR at the November, 2014 meeting.]
+
+The current list-initialization rules do not provide for list-initialization of an
+aggregate from an object of the same type:
+
+
+  struct X {
+    X() = default;
+    X(const X&) = default;
+  #ifdef OK
+    X(int) { }
+  #endif
+  };
+
+  X x;
+  X x2{x}; // error, {x} is not a valid aggregate initializer for X
+
+
+Suggested resolution:
+
+Change 9.5.5 [dcl.init.list [2]] paragraph 3 as follows:
+
+List-initialization of an object or reference of type T is defined as follows:
+
+-
+
+[INSERT: If T is a class type and the initializer list has a single element of type cv T
+or a class type derived from T, the object is initialized from that element.]
+
+-
+
+[DELETE: If] [INSERT: Otherwise, if] T is an aggregate...
+
+Additional notes (September, 2012):
+
+(See messages 22368 [3], 22371 [4] through 22373 [5], 22388 [6], and 22494 [7].)
+
+It appears that 12.2.4.2.6 [over.ics.list [8]] will also need to be updated in parallel
+with this change. Alternatively, it may be better to change 9.5.2 [dcl.init.aggr [9]]
+instead of 9.5.5 [dcl.init.list [1]] and 12.2.4.2.6 [over.ics.list [8]].
+
+In a related note, given
+
+
+  struct NonAggregate {
+    NonAggregate() {}
+  };
+
+  struct WantsIt {
+    WantsIt(NonAggregate);
+  };
+
+  void f(NonAggregate n);
+  void f(WantsIt);
+
+  int main() {
+    NonAggregate n;
+    // ambiguous!
+    f({n});
+  }
+
+
+12.2.4.2.6 [over.ics.list [10]] paragraph 3 says that the call to f(NonAggregate) is a
+user-defined conversion, the same as the call to f(WantsIt) and thus ambiguous. Also,
+
+
+    NonAggregate n;
+    // #1 (n -> NonAggregate = Identity conversion)
+    NonAggregate m{n};
+    // #2 ({n} -> NonAggregate = User-defined conversion}
+    // (copy-ctor not considered according to 12.2.4.2 [over.best.ics [11]] paragraph 4)
+    NonAggregate m{{n}};
+
+
+Finally, the suggested resolution simply says “initialized from,” without specifying
+whether that means direct initialization or copy initialization. It should be explicit
+about which is intended, e.g., if it reflects the kind of list-initialization being
+done.
+
+Proposed resolution (February, 2014) [SUPERSEDED]:
+
+1.
+
+Change 9.5.5 [dcl.init.list [2]] paragraph 3 as follows:
+
+List-initialization of an object or reference of type T is defined as follows:
+
+-
+
+[INSERT: If T is a class type and the initializer list has a single element of type cv
+U, where U is T or a class derived from T, the object is initialized from that element
+(by copy-initialization for copy-list-initialization, or by direct-initialization for
+direct-list-initialization).]
+
+-
+
+[INSERT: Otherwise, if T is a character array and the initializer list has a single
+element that is an appropriately typed string literal (9.5.3 [dcl.init.string [12]]),
+initialization is done as described in that section.]
+
+-
+
+[DELETE: If] [INSERT: Otherwise, if] T is an aggregate...
+
+2.
+
+Delete the final bullet of 12.2.4.2 [over.best.ics [13]] paragraph 4, as follows:
+
+However, if the target is
+
+-
+
+the first parameter of a constructor or
+
+-
+
+the implicit object parameter of a user-defined conversion function
+
+and the constructor or user-defined conversion function is a candidate by
+
+-
+
+12.2.2.4 [over.match.ctor [14]], when the argument is the temporary in the second step
+of a class copy-initialization, [INSERT: or]
+
+-
+
+12.2.2.5 [over.match.copy [15]], 12.2.2.6 [over.match.conv [16]], or 12.2.2.7
+[over.match.ref [17]] (in all cases), [DELETE: or]
+
+-
+
+[DELETE: the second phase of 12.2.2.8 [over.match.list [18]] when the initializer list
+has exactly one element, and the target is the first parameter of a constructor of class
+X, and the conversion is to X or reference to (possibly cv-qualified) X,]
+
+user-defined conversion sequences are not considered. [Note:...
+
+3.
+
+Insert the following two paragraphs between 12.2.4.2.6 [over.ics.list [8]] paragraphs 1
+and 2, moving the footnote from the current paragraph 3 to the second inserted
+paragraph:
+
+When an argument is an initializer list (9.5.5 [dcl.init.list [1]]), it is not an
+expression and special rules apply for converting it to a parameter type.
+
+[INSERT: If the parameter type is a class C and the initializer list has a single
+element of type cv U, where U is C or a class derived from C, the implicit conversion
+sequence is the one required to convert the element to the parameter type.]
+
+[INSERT: Otherwise, if the parameter type is a character array [Footnote: Since there
+are no parameters of array type, this will only occur as the underlying type of a
+reference parameter. —end footnote] and the initializer list has a single element that
+is an appropriately typed string literal (9.5.3 [dcl.init.string [12]]), the implicit
+conversion is the identity conversion.]
+
+[DELETE: If] [INSERT: Otherwise, if] the parameter type is std::initializer_list<X>
+and...
+
+Otherwise, if the parameter type is “array of N X” [DELETE: [Footnote: ... —end
+footnote]], if the initializer list has...
+
+4.
+
+Change 12.2.4.2.6 [over.ics.list [19]] paragraph 7 as follows:
+
+Otherwise, if the parameter type is not a class:
+
+-
+
+if the initializer list has one element [INSERT: that is not itself an initializer
+list], the implicit conversion sequence is the one required to convert the element to
+the parameter type; [Example:...
+
+-
+
+...
+
+5.
+
+Change 12.2.4.3 [over.ics.rank [20]] paragraph 3 as follows:
+
+Two implicit conversion sequences of the same form are indistinguishable conversion
+sequences unless one of the following rules applies:
+
+-
+
+...
+
+-
+
+List-initialization sequence L1 is a better conversion sequence than list-initialization
+sequence L2 if
+
+-
+
+L1 converts to std::initializer_list<X> for some X and L2 does not, or, if not that,
+
+-
+
+L1 converts to type “array of N1 T”, L2 converts to type “array of N2 T”, and N1 is
+smaller than N2[DELETE: .][INSERT: ,]
+
+[INSERT: even if one of the above rules would otherwise apply. [Example:]
+
+
+[INSERT:   void f1(int);                                 // #1
+  void f1(std::initializer_list<long>);         // #2
+  void g1() { f1({42}); }                       // chooses #2
+
+  void f2(std::pair<const char*, const char*>); // #3
+  void f2(std::initializer_list<std::string>);  // #4
+  void g2() { f2({"foo","bar"}); }              // chooses #4]
+
+
+[INSERT: —end example]]
+
+This resolution also resolves issues 1490 [21], 1589 [22], and 1631 [23].
+
+Notes from the February, 2014 meeting:
+
+The resolution above does not adequately address the related issue 1758 [24]. It appears
+that conversion functions and constructors must be handled separately.
+
+Proposed resolution (June, 2014):
+
+1.
+
+Change 9.5.5 [dcl.init.list [2]] paragraph 3 as follows:
+
+List-initialization of an object or reference of type T is defined as follows:
+
+-
+
+[INSERT: If T is a class type and the initializer list has a single element of type cv
+U, where U is T or a class derived from T, the object is initialized from that element
+(by copy-initialization for copy-list-initialization, or by direct-initialization for
+direct-list-initialization).]
+
+-
+
+[INSERT: Otherwise, if T is a character array and the initializer list has a single
+element that is an appropriately-typed string literal (9.5.3 [dcl.init.string [12]]),
+initialization is performed as described in that section.]
+
+-
+
+[DELETE: If] [INSERT: Otherwise, if] T is an aggregate,
+
+-
+
+Otherwise, if the initializer list has no elements...
+
+-
+
+Otherwise, if T is a specialization of std::initializer_list<E>...
+
+-
+
+Otherwise, if T is a class type...
+
+-
+
+Otherwise, if the initializer list has a single element of type E and either T is not a
+reference type or its referenced type is reference-related to E, the object or reference
+is initialized from that element [INSERT: (by copy-initialization for
+copy-list-initialization, or by direct-initialization for direct-list-initialization)];
+if a narrowing conversion (see below) is required to convert the element to T, the
+program is ill-formed. [Example:...
+
+-
+
+Otherwise...
+
+2.
+
+Change 12.2.2.8 [over.match.list [25]] paragraph 1 as follows:
+
+When objects of non-aggregate class type T are list-initialized [DELETE: (9.5.5
+[dcl.init.list [1]])] [INSERT: such that 9.5.5 [dcl.init.list [1]] specifies that
+overload resolution is performed according to the rules in this section], overload
+resolution selects the constructor...
+
+3.
+
+Change 12.2.4.2 [over.best.ics [11]] paragraph 4 as follows:
+
+...and the constructor or user-defined conversion function is a candidate by
+
+-
+
+12.2.2.4 [over.match.ctor [14]], when the argument is the temporary in the second step
+of a class copy-initialization, [INSERT: or]
+
+-
+
+12.2.2.5 [over.match.copy [15]], 12.2.2.6 [over.match.conv [16]], or 12.2.2.7
+[over.match.ref [17]] (in all cases), [DELETE: or]
+
+-
+
+[DELETE: the second phase of 12.2.2.8 [over.match.list [18]] when the initializer list
+has exactly one element, and the target is the first parameter of a constructor of class
+X, and the conversion is to X or reference to (possibly cv-qualified) X,]
+
+user-defined conversion sequences are not considered.
+
+4.
+
+Change 12.2.4.2.6 [over.ics.list [8]] paragraphs 1-2 as follows, moving the footnote
+from paragraph 3:
+
+When an argument is an initializer list (9.5.5 [dcl.init.list [1]]), it is not an
+expression and special rules apply for converting it to a parameter type.
+
+[INSERT: If the parameter type is a class X and the initializer list has a single
+element of type cv U, where U is X or a class derived from X, the implicit conversion
+sequence is the one required to convert the element to the parameter type.]
+
+[INSERT: Otherwise, if the parameter type is a character array [Footnote: Since there
+are no parameters of array type, this will only occur as the underlying type of a
+reference parameter. —end footnote] and the initializer list has a single element that
+is an appropriately-typed string literal (9.5.3 [dcl.init.string [12]]), the implicit
+conversion sequence is the identity conversion.]
+
+[DELETE: If] [INSERT: Otherwise, if] the parameter type is std::initializer_list<X>
+and...
+
+5.
+
+Change 12.2.4.2.6 [over.ics.list [19]] paragraph 7 as follows:
+
+Otherwise, if the parameter type is not a class:
+
+-
+
+if the initializer list has one element [INSERT: that is not itself an initializer
+list], the implicit conversion sequence is the one required to convert the element to
+the parameter type; [Example:...
+
+6.
+
+Move the final bullet of 12.2.4.3 [over.ics.rank [20]] paragraph 3 to the beginning of
+the list and change it as follows:
+
+-
+
+List-initialization sequence L1 is a better conversion sequence than list-initialization
+sequence L2 if
+
+-
+
+L1 converts to std::initializer_list<X> for some X and L2 does not, or, if not that,
+
+-
+
+L1 converts to type “array of N1 T”, L2 converts to type “array of N2 T”, and N1 is
+smaller than N2[DELETE: .][INSERT: ,]
+
+[INSERT: even if one of the other rules in this paragraph would otherwise apply.
+[Example:]
+
+
+[INSERT:   void f1(int);                                 // #1
+  void f1(std::initializer_list<long>);         // #2
+  void g1() { f1({42}); }                       // chooses #2
+
+  void f2(std::pair<const char*, const char*>); // #3
+  void f2(std::initializer_list<std::string>);  // #4
+  void g2() { f2({"foo","bar"}); }              // chooses #4]
+
+
+[INSERT: —end example]]
+
+This resolution also resolves issues 1490 [21], 1589 [22], 1631 [23], 1756 [26], and
+1758 [24].
+
+Source links:
+[1] https://wg21.link/dcl.init.list
+[2] https://wg21.link/dcl.init.list#3
+[3] http://listarchives.isocpp.org/cgi-bin/wg21/message?wg=core&msg=22368
+[4] http://listarchives.isocpp.org/cgi-bin/wg21/message?wg=core&msg=22371
+[5] http://listarchives.isocpp.org/cgi-bin/wg21/message?wg=core&msg=22373
+[6] http://listarchives.isocpp.org/cgi-bin/wg21/message?wg=core&msg=22388
+[7] http://listarchives.isocpp.org/cgi-bin/wg21/message?wg=core&msg=22494
+[8] https://wg21.link/over.ics.list
+[9] https://wg21.link/dcl.init.aggr
+[10] https://wg21.link/over.ics.list#3
+[11] https://wg21.link/over.best.ics#4
+[12] https://wg21.link/dcl.init.string
+[13] https://wg21.link/over.best.ics
+[14] https://wg21.link/over.match.ctor
+[15] https://wg21.link/over.match.copy
+[16] https://wg21.link/over.match.conv
+[17] https://wg21.link/over.match.ref
+[18] https://wg21.link/over.match.list
+[19] https://wg21.link/over.ics.list#7
+[20] https://wg21.link/over.ics.rank#3
+[21] cwg-1490.txt; https://cplusplus.github.io/CWG/issues/1490.html
+[22] https://cplusplus.github.io/CWG/issues/1589.html
+[23] https://cplusplus.github.io/CWG/issues/1631.html
+[24] https://cplusplus.github.io/CWG/issues/1758.html
+[25] https://wg21.link/over.match.list#1
+[26] https://cplusplus.github.io/CWG/issues/1756.html

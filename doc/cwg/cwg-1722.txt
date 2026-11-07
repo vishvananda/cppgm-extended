@@ -1,0 +1,62 @@
+CWG 1722: Should lambda to function pointer conversion function be noexcept?
+Source: https://cplusplus.github.io/CWG/issues/1722.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1722. Should lambda to function pointer conversion function be noexcept?
+Section: 7.5.6.2 [expr.prim.lambda.closure [1]] Status: CD4 Submitter: Ville Voutilainen
+Date: 2013-07-31
+
+[Moved to DR at the October, 2015 meeting.]
+
+According to 7.5.6 [expr.prim.lambda [2]] paragraph 6,
+
+The closure type for a non-generic lambda-expression with no lambda-capture has a public
+non-virtual non-explicit const conversion function to pointer to function with C++
+language linkage (9.12 [dcl.link [3]]) having the same parameter and return types as the
+closure type's function call operator.
+
+This does not specify whether the conversion function is noexcept(true) or
+noexcept(false). It might be helpful to nail that down.
+
+Proposed resolution (May, 2015):
+
+Change 7.5.6 [expr.prim.lambda [2]] paragraph 6 as follows:
+
+The closure type for a non-generic lambda-expression with no lambda-capture has a
+[DELETE: public non-virtual non-explicit const] conversion function to pointer to
+function with C++ language linkage (9.12 [dcl.link [3]]) having the same parameter and
+return types as the closure type's function call operator. The value returned by this
+conversion function shall be the address of a function that, when invoked, has the same
+effect as invoking the closure type's function call operator. For a generic lambda with
+no lambda-capture, the closure type has a [DELETE: public non-virtual non-explicit
+const] conversion function template to pointer to function. The conversion function
+template... [Example:
+
+
+  auto GL = [](auto a) { std::cout << a; return a; };
+  int (*GL_int)(int) = GL; // OK: through conversion function template
+  GL_int(3);               // OK: same as GL(3)
+
+
+—end example] [INSERT: The conversion function or conversion function template is
+public, non-virtual, non-explicit, const, and has a non-throwing exception specification
+(14.5 [except.spec [4]]).]
+
+Source links:
+[1] https://wg21.link/expr.prim.lambda.closure
+[2] https://wg21.link/expr.prim.lambda#6
+[3] https://wg21.link/dcl.link
+[4] https://wg21.link/except.spec

@@ -1,0 +1,58 @@
+CWG 1866: Initializing variant members with non-trivial destructors
+Source: https://cplusplus.github.io/CWG/issues/1866.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1866. Initializing variant members with non-trivial destructors
+Section: 14.3 [except.ctor [1]] Status: CD4 Submitter: Vinny Romano Date: 2014-02-12
+
+[Moved to DR at the November, 2014 meeting.]
+
+According to 14.3 [except.ctor [2]] paragraph 2,
+
+An object of any storage duration whose initialization or destruction is terminated by
+an exception will have destructors executed for all of its fully constructed subobjects
+(excluding the variant members of a union-like class), that is, for subobjects for which
+the principal constructor (11.9.3 [class.base.init [3]]) has completed execution and the
+destructor has not yet begun execution.
+
+This introduces a potential leak if a variant member is initialized and has a
+non-trivial destructor. If the assumption can't be made that such an initialized member
+is the active member at the time an exception occurs so that it can be destroyed,
+perhaps variant members of types having a non-trivial destructor should be prohibited.
+
+Notes from the June, 2014 meeting:
+
+CWG favored removing the exclusion of variant members from the destruction following an
+exception during construction, though not during destruction. If the active member of
+the union has changed between the initialization and destruction, the behavior is
+undefined.
+
+Proposed Resolution (July, 2014):
+
+Change 14.3 [except.ctor [2]] paragraph 2 as follows:
+
+An object of any storage duration whose initialization or destruction is terminated by
+an exception will have destructors executed for all of its fully constructed subobjects
+[DELETE: (excluding the variant members of a union-like class)], that is, for subobjects
+for which the principal constructor (11.9.3 [class.base.init [3]]) has completed
+execution and the destructor has not yet begun execution[INSERT: , except that in the
+case of destruction, the variant members of a union-like class are not destroyed].
+Similarly, if the non-delegating constructor...
+
+Source links:
+[1] https://wg21.link/except.ctor
+[2] https://wg21.link/except.ctor#2
+[3] https://wg21.link/class.base.init

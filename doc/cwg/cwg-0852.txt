@@ -1,0 +1,63 @@
+CWG 852: using-declarations and dependent base classes
+Source: https://cplusplus.github.io/CWG/issues/852.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD6
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+852. using-declarations and dependent base classes
+Section: 9.10 [namespace.udecl [1]] Status: CD6 Submitter: Michael Wong Date: 2 April,
+2009
+
+[Accepted at the November, 2020 meeting as part of paper P1787R6 and moved to DR at the
+February, 2021 meeting.]
+
+The status of an example like the following is unclear in the current Standard:
+
+
+    struct B {
+        void f();
+    };
+    template<typename T> struct S: T {
+        using B::f;
+    };
+
+
+9.10 [namespace.udecl [1]] does not deal explicitly with dependent base classes, but
+does say in paragraph 3,
+
+In a using-declaration used as a member-declaration, the nested-name-specifier shall
+name a base class of the class being defined. If such a using-declaration names a
+constructor, the nested-name-specier shall name a direct base class of the class being
+defined; otherwise it introduces the set of declarations found by member name lookup
+(6.5.2 [class.member.lookup [2]], 6.5.5.2 [class.qual [3]]).
+
+In the definition of S, B::f is not a dependent name but resolves to an apparently
+unrelated class. However, because S could be instantiated as S<B>, presumably 13.8
+[temp.res [4]] paragraph 8 would apply:
+
+No diagnostic shall be issued for a template definition for which a valid specialization
+can be generated.
+
+Note also the resolution of issue 515 [5], which permitted a similar use of a dependent
+base class named with a non-dependent name.
+
+Source links:
+[1] https://wg21.link/namespace.udecl
+[2] https://wg21.link/class.member.lookup
+[3] https://wg21.link/class.qual
+[4] https://wg21.link/temp.res#8
+[5] https://cplusplus.github.io/CWG/issues/515.html
+
+Offline paper references:
+P1787R6: paper-p1787r6.txt

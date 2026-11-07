@@ -287,17 +287,17 @@ verify_expectation_sidecars() {
 }
 
 # The root Makefile carries maintainer-only targets: the architecture audits
-# (scripts/audit_*.pl), the harness unit tests and the telemetry-off build
+# (scripts/audit_*.pl and scripts/audit_*.py), the harness unit tests and the telemetry-off build
 # check (scripts/tests/*.py), whose scripts never ship, and test-cells, which
 # walks the course's three toolchain cells.  Drop those targets with their
 # comments, the audit prerequisite of test-report-nobuild, and their .PHONY
 # names.  The with-clang-% and with-clang-libcxx-% prefixes stay: they run
 # one target with a chosen toolchain.
-STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS='test-cells test-harness test-seams build-telemetry-off test-telemetry-off'
+STUDENT_ROOT_MAKEFILE_DROPPED_TARGETS='test-cells test-harness test-seams build-telemetry-off test-telemetry-off audit-cwg-references'
 sanitize_student_root_makefile() {
   perl -0pi -e '
     s/^test-report-nobuild: audit-compiler-exceptions$/test-report-nobuild:/m;
-    s/(?:^#[^\n]*\n)*^audit-[a-z-]+:[^\n]*\n\t\@perl scripts\/audit_[a-z_]+\.pl[^\n]*\n\n?//mg;
+    s/(?:^#[^\n]*\n)*^audit-[a-z-]+:[^\n]*\n\t\@(?:perl|python3) scripts\/audit_[a-z_]+\.(?:pl|py)[^\n]*\n\n?//mg;
     s/^build-telemetry-off:\n(?:\t[^\n]*\n)+\n?//m;
     s/^test-telemetry-off: build build-telemetry-off\n(?:\t[^\n]*\n)+\n?//m;
     s/(?:^#[^\n]*\n)*^test-cells:\n(?:\t[^\n]*\n)+\n?//m;

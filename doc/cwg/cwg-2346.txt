@@ -1,0 +1,40 @@
+CWG 2346: Local variables in default arguments
+Source: https://cplusplus.github.io/CWG/issues/2346.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD5
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2346. Local variables in default arguments
+Section: 9.3.4.7 [dcl.fct.default [1]] Status: CD5 Submitter: Geoffrey Romer Date:
+2017-04-26
+
+[Adopted as a DR as part of paper P0588R1 at the October, 2018 meeting.]
+
+According to 9.3.4.7 [dcl.fct.default [2]] paragraph 7,
+
+A local variable shall not appear as a potentially-evaluated expression in a default
+argument.
+
+This prohibits plausible uses of constexpr and static local variables. Presumably this
+rule should be similar to the one in 11.6 [class.local [3]] paragraph 1, regarding local
+classes, which applies to odr-use, not potential evaluation, and to variables with
+automatic storage duration.
+
+Source links:
+[1] https://wg21.link/dcl.fct.default
+[2] https://wg21.link/dcl.fct.default#7
+[3] https://wg21.link/class.local#1
+
+Offline paper references:
+P0588R1: paper-p0588r1.txt

@@ -1,0 +1,92 @@
+CWG 2076: List-initialization of arguments for constructor parameters
+Source: https://cplusplus.github.io/CWG/issues/2076.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2076. List-initialization of arguments for constructor parameters
+Section: 12.2.4.2 [over.best.ics [1]] Status: CD4 Submitter: Richard Smith Date:
+2015-01-27
+
+[Adopted at the June, 2016 meeting.]
+
+The resolution of issue 1467 [2] made some plausible constructs ill-formed. For example,
+
+
+   struct A { A(int); };
+   struct B { B(A); };
+   B b{{0}};
+
+
+This is now ambiguous, because the text disallowing user-defined conversions for B's
+copy and move constructors was removed from 12.2.4.2 [over.best.ics [3]] paragraph 4.
+Another example:
+
+
+  struct Params { int a; int b; };
+  class Foo {
+  public:
+    Foo(Params);
+  };
+  Foo foo{{1, 2}};
+
+
+This is now ambiguous between Foo(Params) and Foo(Foo&&).
+
+For non-class types, we allow initialization from a single-item list to perform a copy
+only if the element within the list is not itself a list (12.2.4.2.6 [over.ics.list [4]]
+bullet 9.1). The analogous rule for this case would be to add back the bullet in
+12.2.4.2 [over.best.ics [3]] paragraph 4, but only in the case where the initializer is
+itself an initializer list:
+
+the second phase of 12.2.2.8 [over.match.list [5]] when the initializer list has exactly
+one element [INSERT: that is itself an initializer list], where the target is the first
+parameter of a constructor of class X, and the conversion is to X or reference to
+(possibly cv-qualified) X,
+
+Proposed resolution (March, 2016):
+
+Change 12.2.4.2 [over.best.ics [3]] paragraph 4 as follows:
+
+...and the constructor or user-defined conversion function is a candidate by
+
+-
+
+12.2.2.4 [over.match.ctor [6]], when the argument is the temporary in the second step of
+a class copy-initialization, [DELETE: or]
+
+-
+
+12.2.2.5 [over.match.copy [7]], 12.2.2.6 [over.match.conv [8]], or 12.2.2.7
+[over.match.ref [9]] (in all cases), [INSERT: or]
+
+-
+
+[INSERT: the second phase of 12.2.2.8 [over.match.list [5]] when the initializer list
+has exactly one element that is itself an initializer list, and the target is the first
+parameter of a constructor of class X, and the conversion is to X or reference to
+(possibly cv-qualified) X,]
+
+user-defined conversion sequences are not considered. [Note:...
+
+Source links:
+[1] https://wg21.link/over.best.ics
+[2] cwg-1467.txt; https://cplusplus.github.io/CWG/issues/1467.html
+[3] https://wg21.link/over.best.ics#4
+[4] https://wg21.link/over.ics.list#9.1
+[5] https://wg21.link/over.match.list
+[6] https://wg21.link/over.match.ctor
+[7] https://wg21.link/over.match.copy
+[8] https://wg21.link/over.match.conv
+[9] https://wg21.link/over.match.ref

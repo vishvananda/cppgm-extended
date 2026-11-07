@@ -1,0 +1,70 @@
+CWG 2354: Extended alignment and object representation
+Source: https://cplusplus.github.io/CWG/issues/2354.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD5
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2354. Extended alignment and object representation
+Section: 6.8.3 [basic.align [1]] Status: CD5 Submitter: Mike Miller Date: 2017-09-05
+
+[Accepted as a DR at the February, 2019 meeting.]
+
+There is implementation variance in the treatment of an example like:
+
+
+  enum struct alignas(64) A {};
+  A a[10];
+
+
+The Standard does not appear to indicate whether padding bits are added to the object
+representation for an enumeration or not, affecting the result of sizeof and the
+alignment of the array elements.
+
+If the extended alignment does not affect the object representation of the type, it
+would be useful to specify that the array declaration is ill-formed because it requires
+violating the alignment requirement (and similarly for an array new-expression where the
+bound is known at compile time).
+
+Notes from the April, 2018 teleconference:
+
+It appears that the same question exists for class types that are directly given
+extended alignment, as opposed to receiving it from a subobject.
+
+Notes from the November, 2018 meeting:
+
+CWG agreed to remove permission for alignas to be applied to enumerations. The class
+case is already handled by the wording in 7.6.2.5 [expr.sizeof [2]] paragraph 2 that the
+size of a class “includes any padding required for placing objects of that type in an
+array.”
+
+Proposed resolution (December, 2018):
+
+Change 9.13.2 [dcl.align [3]] paragraph 1 as follows:
+
+An alignment-specifier may be applied to a variable or to a class data member, but it
+shall not be applied to a bit-field, a function parameter, or an exception-declaration
+(14.4 [except.handle [4]]). An alignment-specifier may also be applied to the
+declaration of a class (in an elaborated-type-specifier (9.2.9.5 [dcl.type.elab [5]]) or
+class-head ( Clause 11 [class [6]]), respectively)[DELETE:  and to the declaration of an
+enumeration (in an opaque-enum-declaration or enum-head, respectively (9.8.1 [dcl.enum
+[7]]))]. An alignment-specifier with an ellipsis...
+
+Source links:
+[1] https://wg21.link/basic.align
+[2] https://wg21.link/expr.sizeof#2
+[3] https://wg21.link/dcl.align#1
+[4] https://wg21.link/except.handle
+[5] https://wg21.link/dcl.type.elab
+[6] https://wg21.link/class
+[7] https://wg21.link/dcl.enum

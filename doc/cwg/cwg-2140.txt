@@ -1,0 +1,54 @@
+CWG 2140: Lvalue-to-rvalue conversion of std::nullptr_t
+Source: https://cplusplus.github.io/CWG/issues/2140.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2140. Lvalue-to-rvalue conversion of std::nullptr_t
+Section: 7.3.2 [conv.lval [1]] Status: CD4 Submitter: Richard Smith Date: 2015-06-12
+
+[Adopted at the February, 2016 meeting.]
+
+The current rules in 7.3.2 [conv.lval [2]] paragraph 2 do not require fetching the value
+in memory of an object of type std::nullpt_t in order to produce its prvalue. This
+choice has implications that may not have been considered for questions like whether use
+of a std::nullptr_t that is an inactive member of a union results in undefined behavior
+or whether a volatile std::nullptr_t variable in a discarded-value expression produces a
+side effect.
+
+Proposed resolution (January, 2016):
+
+Change 7.3.2 [conv.lval [3]] bullet 2.3 as follows:
+
+...In all other cases, the result of the conversion is determined according to the
+following rules:
+
+-
+
+If T is (possibly cv-qualified) std::nullptr_t, the result is a null pointer constant
+(7.3.12 [conv.ptr [4]]). [INSERT: [Note: Since no value is fetched from memory, there is
+no side effect for a volatile access (6.10.1 [intro.execution [5]]), and an inactive
+member of a union (11.5 [class.union [6]]) may be accessed. —end note]]
+
+-
+
+...
+
+Source links:
+[1] https://wg21.link/conv.lval
+[2] https://wg21.link/conv.lval#2
+[3] https://wg21.link/conv.lval#2.3
+[4] https://wg21.link/conv.ptr
+[5] https://wg21.link/intro.execution
+[6] https://wg21.link/class.union

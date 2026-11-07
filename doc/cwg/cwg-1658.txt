@@ -1,0 +1,248 @@
+CWG 1658: Deleted default constructor for abstract class via destructor
+Source: https://cplusplus.github.io/CWG/issues/1658.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++14
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1658. Deleted default constructor for abstract class via destructor
+Section: 11.4.5 [class.ctor [1]] Status: C++14 Submitter: Richard Smith Date: 2013-08-26
+
+[Moved to DR at the February, 2014 meeting.]
+
+While reviewing the resolution of issue 1611 [2], it was noticed that the final bullet
+of 11.4.5 [class.ctor [3]] paragraph 4 has a similar issue:
+
+...A defaulted default constructor for class X is defined as deleted if:
+
+-
+
+...
+
+-
+
+any direct or virtual base class or non-static data member has a type with a destructor
+that is deleted or inaccessible from the defaulted default constructor.
+
+Presumably destructors for virtual bases of abstract classes should not be considered in
+making this determination.
+
+A question was also raised regarding whether odr-use is correctly defined for
+destructors of virtual bases of abstract classes. 6.3 [basic.def.odr [4]] paragraph 3
+simply refers to 11.4.7 [class.dtor [5]], where the relevant passage (paragraph 8)
+reads,
+
+After executing the body of the destructor and destroying any automatic objects
+allocated within the body, a destructor for class X calls the destructors for X's direct
+non-variant non-static data members, the destructors for X's direct base classes and, if
+X is the type of the most derived class (11.9.3 [class.base.init [6]]), its destructor
+calls the destructors for X's virtual base classes.
+
+It could be argued, particularly in light of the reference to 11.9.3 [class.base.init
+[6]], that this is clear enough that the destructor for an abstract class does not
+invoke destructors for its virtual bases, but a note to that effect might be helpful.
+
+Proposed resolution (November, 2013):
+
+1.
+
+Add the following as a new paragraph at the end of 11.4.4 [special [7]]:
+
+[INSERT: For a class, its non-static data members, its non-virtual direct base classes,
+and, if the class is not abstract (11.7.4 [class.abstract [8]]), its virtual base
+classes are called its potentially constructed subobjects.]
+
+2.
+
+Change 11.4.5 [class.ctor [3]] paragraph 4 as follows:
+
+...A defaulted default constructor for class X is defined as deleted if:
+
+-
+
+...
+
+-
+
+any [DELETE: direct or virtual base class, or non-static data member] [INSERT:
+potentially constructed subobject, except for a non-static data member] with [DELETE:
+no] [INSERT: a] brace-or-equal-initializer, has class type M (or array thereof) and
+either M has no default constructor or overload resolution (12.2 [over.match [9]]) as
+applied to M's default constructor results in an ambiguity or in a function that is
+deleted or inaccessible from the defaulted default constructor, or
+
+-
+
+any [DELETE: direct or virtual base class or non-static data member] [INSERT:
+potentially constructed subobject] has a type with a destructor that is deleted or
+inaccessible from the defaulted default constructor.
+
+3.
+
+Change 11.4.7 [class.dtor [10]] paragraph 5 as follows:
+
+A defaulted destructor for a class X is defined as deleted if:
+
+-
+
+X is a union-like class that has a variant member with a non-trivial destructor,
+
+-
+
+any [DELETE: of the non-static data members] [INSERT: potentially constructed subobject]
+has class type M (or array thereof) and M has a deleted destructor or a destructor that
+is inaccessible from the defaulted destructor,
+
+-
+
+[DELETE: any direct or virtual base class has a deleted destructor or a destructor that
+is inaccessible from the defaulted destructor,]
+
+4.
+
+Change 11.9.3 [class.base.init [11]] paragraph 8 as follows:
+
+In a non-delegating constructor, if a given [DELETE: non-static data member or base
+class] [INSERT: potentially constructed subobject] is not designated by a
+mem-initializer-id (including the case where there is no mem-initializer-list because
+the constructor has no ctor-initializer) [DELETE: and the entity is not a virtual base
+class of an abstract class (11.7.4 [class.abstract [8]])], then...
+
+5.
+
+Change 11.9.3 [class.base.init [12]] paragraph 10 as follows:
+
+In a non-delegating constructor, the destructor for each [DELETE: direct or virtual base
+class and for each non-static data member] [INSERT: potentially constructed subobject]
+of class type is potentially invoked (11.4.7 [class.dtor [5]]). [Note: This provision
+ensures that destructors can be called for fully-constructed sub-objects in case an
+exception is thrown (14.3 [except.ctor [13]]). —end note]
+
+6.
+
+Change 11.4.5.3 [class.copy.ctor [14]] paragraph 8, replacing the bulleted list with a
+single sentence, as follows:
+
+The implicitly-declared copy constructor for a class X will have the form
+
+X::X(const X&)
+
+if [INSERT: each potentially constructed subobject]
+
+-
+
+[DELETE: each direct or virtual base class B of X has a copy constructor whose first
+parameter is of type const B& or const volatile B&, and]
+
+-
+
+[DELETE: for all the non-static data members of X that are] of a class type M (or array
+thereof)[DELETE: , each such class type] has a copy constructor whose first parameter is
+of type const M& or const volatile M&.121
+
+Otherwise...
+
+7.
+
+Change 11.4.5.3 [class.copy.ctor [15]] paragraph 11 as follows:
+
+An implicitly-declared copy/move constructor is an inline public member of its class. A
+defaulted copy/move constructor for a class X is defined as deleted (9.6.3
+[dcl.fct.def.delete [16]]) if X has:
+
+-
+
+a variant member with a non-trivial corresponding constructor and X is a union-like
+class,
+
+-
+
+a [DELETE: non-static data member] [INSERT: potentially constructed subobject] of class
+type M (or array thereof) that cannot be copied/moved because overload resolution (12.2
+[over.match [9]]), as applied to M's corresponding constructor, results in an ambiguity
+or a function that is deleted or inaccessible from the defaulted constructor,
+
+-
+
+[DELETE: a direct or virtual base class B that cannot be copied/moved because overload
+resolution (12.2 [over.match [9]]), as applied to B's corresponding constructor, results
+in an ambiguity or a function that is deleted or inaccessible from the defaulted
+constructor,]
+
+-
+
+any [DELETE: direct or virtual base class or non-static data member] [INSERT:
+potentially constructed subobject] of a type with a destructor that is deleted or
+inaccessible from the defaulted constructor, or,
+
+-
+
+...
+
+8.
+
+Change 11.4.5.3 [class.copy.ctor [17]] paragraph 14 as follows:
+
+Before the defaulted copy/move constructor for a class is implicitly defined, all
+non-user-provided copy/move constructors for its [DELETE: direct and virtual base
+classes and its non-static data members] [INSERT: potentially constructed subobjects]
+shall have been implicitly defined. [Note: An implicitly-declared copy/move constructor
+has an exception-specification (14.5 [except.spec [18]]). —end note]
+
+9.
+
+Change 11.4.5.3 [class.copy.ctor [19]] paragraph 23 as follows:
+
+A defaulted copy/move assignment operator for class X is defined as deleted if X has:
+
+-
+
+...
+
+-
+
+a [DELETE: non-static data member] [INSERT: potentially constructed subobject] of class
+type M (or array thereof) that cannot be copied/moved because overload resolution (12.2
+[over.match [9]]), as applied to M's corresponding assignment operator, results in an
+ambiguity or a function that is deleted or inaccessible from the defaulted assignment
+operator[DELETE: , or][INSERT: .]
+
+-
+
+[DELETE: a direct or virtual base class B that cannot be copied/moved because overload
+resolution (12.2 [over.match [9]]), as applied to B's corresponding assignment operator,
+results in an ambiguity or a function that is deleted or inaccessible from the defaulted
+assignment operator.]
+
+This resolution also resolves issue 1611 [2].
+
+Source links:
+[1] https://wg21.link/class.ctor
+[2] https://cplusplus.github.io/CWG/issues/1611.html
+[3] https://wg21.link/class.ctor#4
+[4] https://wg21.link/basic.def.odr#3
+[5] https://wg21.link/class.dtor
+[6] https://wg21.link/class.base.init
+[7] https://wg21.link/special
+[8] https://wg21.link/class.abstract
+[9] https://wg21.link/over.match
+[10] https://wg21.link/class.dtor#5
+[11] https://wg21.link/class.base.init#8
+[12] https://wg21.link/class.base.init#10
+[13] https://wg21.link/except.ctor
+[14] https://wg21.link/class.copy.ctor#8
+[15] https://wg21.link/class.copy.ctor#11
+[16] https://wg21.link/dcl.fct.def.delete
+[17] https://wg21.link/class.copy.ctor#14
+[18] https://wg21.link/except.spec
+[19] https://wg21.link/class.copy.ctor#23

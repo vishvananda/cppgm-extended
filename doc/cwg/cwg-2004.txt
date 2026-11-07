@@ -1,0 +1,81 @@
+CWG 2004: Unions with mutable members in constant expressions
+Source: https://cplusplus.github.io/CWG/issues/2004.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2004. Unions with mutable members in constant expressions
+Section: 7.7 [expr.const [1]] Status: CD4 Submitter: Richard Smith Date: 2014-09-16
+
+[Moved to DR at the October, 2015 meeting.]
+
+In an example like
+
+
+  union U { int a; mutable int b; };
+  constexpr U u1 = {1};
+  int k = (u1.b = 2);
+  constexpr U u2 = u1; // ok!!
+
+
+The initialization of u2 is not disqualified by the current wording of the Standard
+because the copy is done via the object representation, not formally involving an
+lvalue-to-rvalue conversion. A restriction should be added to 7.7 [expr.const [1]]
+forbidding the evaluation of a defaulted copy/move construction/assignment on a class
+type that has any variant mutable subobjects.
+
+Proposed resolution (May, 2015):
+
+1.
+
+Add the following bullet after bullet 3.1 of 9.2.6 [dcl.constexpr [2]]:
+
+The definition of a constexpr function shall satisfy the following constraints:
+
+-
+
+it shall not be virtual (11.7.3 [class.virtual [3]]);
+
+-
+
+[INSERT: for a defaulted copy/move assignment, the class of which it is a member shall
+not have a mutable subobject that is a variant member;]
+
+-
+
+...
+
+2.
+
+Add the following bullet after bullet 4.1 of 9.2.6 [dcl.constexpr [2]]
+
+The definition of a constexpr constructor shall satisfy the following constraints:
+
+-
+
+the class shall not have any virtual base classes;
+
+-
+
+[INSERT: for a defaulted copy/move constructor, the class shall not have a mutable
+subobject that is a variant member;]
+
+-
+
+...
+
+Source links:
+[1] https://wg21.link/expr.const
+[2] https://wg21.link/dcl.constexpr
+[3] https://wg21.link/class.virtual

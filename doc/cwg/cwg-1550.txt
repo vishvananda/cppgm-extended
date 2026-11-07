@@ -1,0 +1,73 @@
+CWG 1550: Parenthesized throw-expression operand of conditional-expression
+Source: https://cplusplus.github.io/CWG/issues/1550.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1550. Parenthesized throw-expression operand of conditional-expression
+Section: 7.6.16 [expr.cond [1]] Status: CD3 Submitter: Nikolay Ivchenkov Date:
+2012-09-04
+
+[Moved to DR at the April, 2013 meeting.]
+
+The current wording of 7.6.16 [expr.cond [2]] paragraph 2 says,
+
+If either the second or the third operand has type void, then the lvalue-to-rvalue
+(7.3.2 [conv.lval [3]]), array-to-pointer (7.3.3 [conv.array [4]]), and
+function-to-pointer (7.3.4 [conv.func [5]]) standard conversions are performed on the
+second and third operands, and one of the following shall hold:
+
+-
+
+The second or the third operand (but not both) is a throw-expression (14.2 [except.throw
+[6]]); the result is of the type of the other and is a prvalue.
+
+-
+
+Both the second and the third operands have type void; the result is of type void and is
+a prvalue. [Note: This includes the case where both operands are throw-expressions. —end
+note]
+
+A parenthesized throw-expression is a primary-expression, not a throw-expression. Should
+a parenthesized throw-expression be considered a throw-expression for this purpose?
+
+Proposed resolution (October, 2012):
+
+Change 7.6.16 [expr.cond [2]] paragraph 2 as follows:
+
+If either the second or the third operand has type void, [DELETE: then the
+lvalue-to-rvalue (7.3.2 [conv.lval [3]]), array-to-pointer (7.3.3 [conv.array [4]]), and
+function-to-pointer (7.3.4 [conv.func [5]]) standard conversions are performed on the
+second and third operands, and] one of the following shall hold:
+
+-
+
+The second or the third operand (but not both) is a [INSERT: (possibly parenthesized)]
+throw-expression (14.2 [except.throw [6]]); the result is of the type [INSERT: and value
+category] of the other [DELETE: and is a prvalue].
+
+-
+
+...
+
+(This resolution also resolves issue 1560 [7].)
+
+Source links:
+[1] https://wg21.link/expr.cond
+[2] https://wg21.link/expr.cond#2
+[3] https://wg21.link/conv.lval
+[4] https://wg21.link/conv.array
+[5] https://wg21.link/conv.func
+[6] https://wg21.link/except.throw
+[7] cwg-1560.txt; https://cplusplus.github.io/CWG/issues/1560.html

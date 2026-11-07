@@ -1,0 +1,79 @@
+CWG 2084: NSDMIs and deleted union default constructors
+Source: https://cplusplus.github.io/CWG/issues/2084.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2084. NSDMIs and deleted union default constructors
+Section: 11.4.5 [class.ctor [1]] Status: CD4 Submitter: Daveed Vandevoorde Date:
+2015-02-12
+
+[Adopted at the February, 2016 meeting.]
+
+According to 11.4.5 [class.ctor [2]] paragraph 4 says,
+
+A defaulted default constructor for class X is defined as deleted if:
+
+-
+
+X is a union-like class that has a variant member with a non-trivial default
+constructor,
+
+-
+
+...
+
+This should make the following example ill-formed:
+
+
+  struct S {
+    S();
+  };
+  union U {
+    S s{};
+  } u;
+
+
+because the default constructor of U is deleted. However, both clang and g++ accept this
+without error. Should the rule be relaxed for a union with an NSDMI?
+
+Notes from the May, 2015 meeting:
+
+An NSDMI is basically syntactic sugar for a mem-initializer, so the presence of one
+should be treated as if a user-declared default constructor were present.
+
+Proposed resolution (October, 2015):
+
+Change 11.4.5 [class.ctor [2]] paragraph 4 as follows:
+
+...A defaulted default constructor for class X is defined as deleted if:
+
+-
+
+[INSERT: X is a union that has a variant member with a non-trivial default constructor
+and no variant member of X has a default member initializer,]
+
+-
+
+X is a [DELETE: union-like] [INSERT: non-union] class that has a variant member [INSERT:
+M] with a non-trivial default constructor [INSERT: and no variant member of the
+anonymous union containing M has a default member initializer],
+
+-
+
+...
+
+Source links:
+[1] https://wg21.link/class.ctor
+[2] https://wg21.link/class.ctor#4

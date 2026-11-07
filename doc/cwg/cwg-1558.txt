@@ -1,0 +1,83 @@
+CWG 1558: Unused arguments in alias template specializations
+Source: https://cplusplus.github.io/CWG/issues/1558.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1558. Unused arguments in alias template specializations
+Section: 13.7.8 [temp.alias [1]] Status: CD4 Submitter: Nikolay Ivchenkov Date:
+2012-09-19
+
+[Moved to DR at the November, 2014 meeting.]
+
+The treatment of unused arguments in an alias template specialization is not specified
+by the current wording of 13.7.8 [temp.alias [1]]. For example:
+
+
+  #include <iostream>
+
+  template <class T, class...>
+    using first_of = T;
+
+  template <class T>
+    first_of<void, typename T::type> f(int)
+      { std::cout << "1\n"; }
+
+  template <class T>
+    void f(...)
+      { std::cout << "2\n"; }
+
+  struct X { typedef void type; };
+
+  int main() {
+    f<X>(0);
+    f<int>(0);
+  }
+
+
+Is the reference to first_of<void, T::type> with T being int equivalent to simply void,
+or is it a substitution failure?
+
+(See also issues 1430 [2], 1520 [3], and 1554 [4].)
+
+Notes from the October, 2012 meeting:
+
+The consensus of CWG was to treat this case as substitution failure.
+
+Proposed resolution (February, 2014):
+
+Add the following as a new paragraph before 13.7.8 [temp.alias [5]] paragraph 3:
+
+When a template-id refers to the specialization of an alias template, it is
+equivalent...
+
+[INSERT: However, if the template-id is dependent, subsequent template argument
+substitution still applies to the template-id. [Example:]
+
+
+[INSERT:   template<typename...> using void_t = void;
+  template<typename T> void_t<typename T::foo> f();
+  f<int>(); // error, int does not have a nested type foo]
+
+
+[INSERT: —end example]]
+
+The type-id in an alias template declaration shall not refer...
+
+Source links:
+[1] https://wg21.link/temp.alias
+[2] https://cplusplus.github.io/CWG/issues/1430.html
+[3] https://cplusplus.github.io/CWG/issues/1520.html
+[4] https://cplusplus.github.io/CWG/issues/1554.html
+[5] https://wg21.link/temp.alias#3

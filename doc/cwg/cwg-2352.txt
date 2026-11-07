@@ -1,0 +1,77 @@
+CWG 2352: Similar types and reference binding
+Source: https://cplusplus.github.io/CWG/issues/2352.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD5
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2352. Similar types and reference binding
+Section: 9.5.4 [dcl.init.ref [1]] Status: CD5 Submitter: Richard Smith Date: 2017-07-14
+
+[Accepted as a DR at the February, 2019 meeting.]
+
+In an example like
+
+
+  int *ptr;
+  const int *const &f() {
+    return ptr;
+  }
+
+
+What is returned is a reference to a temporary instead of binding directly to ptr. The
+rules for reference-related types should say that T is reference-related to U if U* can
+be converted to T* by a qualification conversion.
+
+Notes from the April, 2018 teleconference:
+
+CWG agreed with the proposed direction.
+
+Proposed resolution (November, 2018):
+
+Change 9.5.4 [dcl.init.ref [2]] paragraph 4 as follows:
+
+Given types “cv1 T1” and “cv2 T2”, “cv1 T1” is reference-related to “cv2 T2” if T1 is
+[DELETE: the same type as] [INSERT: similar (7.3.6 [conv.qual [3]]) to] T2, or T1 is a
+base class of T2. “cv1 T1” is reference-compatible with “cv2 T2” if
+
+-
+
+[DELETE: T1 is reference-related to T2, or]
+
+-
+
+[DELETE: T2 is “noexcept function” and T1 is “function”, where the function types are
+otherwise the same,]
+
+[DELETE: and cv1 is the same cv-qualification as, or greater cv-qualification than, cv2]
+[INSERT: a prvalue of type “pointer to cv2 T2” can be converted to the type “pointer to
+cv1 T1” via a standard conversion sequence (7.3 [conv [4]])]. In all cases where the
+[DELETE: reference-related or] reference-compatible relationship of two types is used to
+establish the validity of a reference binding[DELETE: , and T1 is a base class of T2]
+[INSERT: and the standard conversion sequence would be ill-formed], a program that
+necessitates such a binding is ill-formed [DELETE: if T1 is an inaccessible (11.8
+[class.access [5]]) or ambiguous (6.5.2 [class.member.lookup [6]]) base class of T2].
+
+Additional notes (September, 2023)
+
+Issue 2018 [7] is a duplicate of this issue.
+
+Source links:
+[1] https://wg21.link/dcl.init.ref
+[2] https://wg21.link/dcl.init.ref#4
+[3] https://wg21.link/conv.qual
+[4] https://wg21.link/conv
+[5] https://wg21.link/class.access
+[6] https://wg21.link/class.member.lookup
+[7] https://cplusplus.github.io/CWG/issues/2018.html

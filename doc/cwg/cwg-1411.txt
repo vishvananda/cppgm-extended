@@ -1,0 +1,53 @@
+CWG 1411: More on global scope :: in nested-name-specifier
+Source: https://cplusplus.github.io/CWG/issues/1411.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1411. More on global scope :: in nested-name-specifier
+Section: Clause 11 [class [1]] Status: CD3 Submitter: David Blaikie Date: 2011-10-28
+
+[Moved to DR at the April, 2013 meeting.]
+
+The resolution of issue 355 [2] failed to update the grammar for class-head-name in
+Clause 11 [class [3]] paragraph 1 and removed the optional :: from class-or-decltype in
+11.7 [class.derived [4]] paragraph 1, with the result that it is still not possible to
+globally-qualify a class name in a class definition, and the ability to globally-qualify
+a base class name has been lost.
+
+Proposed resolution (February, 2012):
+
+Change the grammar in _N4567_.5.1.1 [expr.prim.general [5]] paragraph 8 as follows:
+
+qualified-id:
+
+nested-name-specifier templateopt unqualified-id
+[DELETE: :: identifier
+:: operator-function-id
+:: literal-operator-id
+:: template-id]  nested-name-specifier:
+
+[INSERT: ::]
+[DELETE: ::opt] type-name ::
+[DELETE: ::opt] namespace-name ::
+decltype-specifier ::
+nested-name-specifier identifier ::
+nested-name-specifier templateopt simple-template-id ::
+
+Source links:
+[1] https://wg21.link/class
+[2] https://cplusplus.github.io/CWG/issues/355.html
+[3] https://wg21.link/class#1
+[4] https://wg21.link/class.derived#1
+[5] https://wg21.link/expr.prim.general#8

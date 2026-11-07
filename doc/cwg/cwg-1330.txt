@@ -1,0 +1,377 @@
+CWG 1330: Delayed instantiation of noexcept specifiers
+Source: https://cplusplus.github.io/CWG/issues/1330.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1330. Delayed instantiation of noexcept specifiers
+Section: 13.10.3 [temp.deduct [1]] Status: CD3 Submitter: Jason Merrill Date: 2011-06-05
+
+[Moved to DR at the April, 2013 meeting.]
+
+See also issues 595 [2] and 287 [3].
+
+The use of noexcept specifiers can cause instantiation of classes and functions that are
+not actually needed in the program, just to be able to complete the declaration. The
+actual value of the expression in the noexcept-specification is only needed if the
+function is defined (i.e., instantiated) or called, so it would significantly reduce the
+number of instantiations (and avoid certain kinds of errors when the value is currently
+required before a class is complete) if exception-specifications were treated like
+default arguments and only instantiated when they are actually needed.
+
+Proposed resolution (February, 2012):
+
+1.
+
+Change 13.7 [temp.decls [4]] paragraph 2 as follows:
+
+For purposes of name lookup and instantiation, default arguments [INSERT: and
+exception-specifications] of function templates and default arguments [INSERT: and
+exception-specifications] of member functions of class templates are considered
+definitions; each default argument [INSERT: or exception-specification] is a separate
+definition which is unrelated to the function template definition or to any other
+default arguments [INSERT: or exception-specifications].
+
+2.
+
+Change 13.8 [temp.res [5]] paragraph 11 as follows:
+
+[Note: For purposes of name lookup, default arguments [INSERT: and
+exception-specifications] of function templates and fdefault arguments [INSERT: and
+exception-specifications] of member functions of class templates are considered
+definitions (14.5). —end note]
+
+3.
+
+Add a new paragraph following 13.8.4.1 [temp.point [6]] paragraph 2:
+
+If a function template or member function of a class template is called in a way which
+uses the definition of a default argument of that function template or member function,
+the point of instantiation of the default argument is the point of instantiation of the
+function template or member function specialization.
+
+[INSERT: For an exception-specification of a function template specialization or
+specialization of a member function of a class template, if the exception-specification
+is implicitly instantiated because it is needed by another template specialization and
+the context that requires it depends on a template parameter, the point of instantiation
+of the exception-specification is the point of instantiation of the specialization that
+requires it. Otherwise, the point of instantiation for such an exception-specification
+immediately follows the namespace scope declaration or definition that requires the
+exception-specification.]
+
+4.
+
+Change 13.9.2 [temp.inst [7]] paragraph 1 as follows:
+
+...The implicit instantiation of a class template specialization causes the implicit
+instantiation of the declarations, but not of the definitions[INSERT: ,] [DELETE: or]
+default arguments, [INSERT: or exception-specifications,] of the class member functions,
+member classes...
+
+5.
+
+Add a new paragraph following 13.9.2 [temp.inst [8]] paragraph 13:
+
+Each default argument is instantiated independently. [Example: ... —end example]
+
+[INSERT: If the exception-specification of a specialization of a function template or
+member function of a class template has not yet been instantiated, but is needed (e.g.,
+to instantiate the function definition, to evaluate a noexcept-expression (7.6.2.7
+[expr.unary.noexcept [9]]), or to compare against the exception-specification of another
+declaration), the dependent names are looked up, the semantic constraints are checked,
+and the instantiation of any template used in the exception-specification is done as if
+it were being done as part of instantiating the declaration of the specialization. An
+exception-specification is not instantiated in order to calculate the
+exception-specification of a defaulted function in a derived class until the
+exception-specification of the derived member function becomes necessary.]
+
+6.
+
+Change the note 13.10.3 [temp.deduct [10]] paragraph 7 as follows:
+
+...[Note: The equivalent substitution in exception specifications is done only when the
+[DELETE: function] [INSERT: exception-specification] is instantiated, at which point a
+program is ill-formed if the substitution results in an invalid type or expression. —end
+note]
+
+7.
+
+Add a new paragraph following 14.5 [except.spec [11]] paragraph 15:
+
+A deallocation function (6.8.6.5.3 [basic.stc.dynamic.deallocation [12]]) with no
+explicit exception-specification is treated as if it were specified with noexcept(true).
+
+[INSERT: The exception-specification of a function template specialization is not
+instantiated along with the function declaration; it is instantiated when needed (13.9.2
+[temp.inst [13]]). The exception-specification of an implicitly-declared special member
+function is also evaluated as needed. [Note: Therefore, an implicit declaration of a
+member function of a derived class does not require the exception-specification of a
+base member function to be instantiated. —end note] ]
+
+Notes from the February, 2012 meeting:
+
+There should be a specific definition of when an exception-specification is needed and
+must thus be instantiated.
+
+Additional discussion (September, 2012):
+
+Daveed Vandevoorde brought up two additional points. First, the rule should be crafted
+so that an example like the following is ill-formed:
+
+
+  template<class T> T f() noexcept(sizeof(T) < 4);
+
+  int main() {
+    decltype(f<void>()) *p;
+  }
+
+
+Even though the exception-specification is not needed here, it should be instantiated
+(because of the unevaluated reference to f) in order to catch the ill-formed sizeof(T).
+
+In addition, the proposed change creates an asymmetry between class templates and
+ordinary classes:
+
+
+  struct S {
+    void f() noexcept(sizeof(g()) < 8); // Invalid forward reference.
+    static int g();
+  };
+
+
+but
+
+
+  template<typename> struct X {
+      void f() noexcept(sizeof(g()) < 8); // Okay.
+      static int g();
+  };
+
+
+If the proposed change is adopted, the rules for exception-specifications in ordinary
+classes should be revised to make the parallel usage well-formed.
+
+Proposed resolution (October, 2012):
+
+1.
+
+Change 6.4.7 [basic.scope.class [14]] paragraph 1 #1 as follows:
+
+The potential scope of a name declared in a class consists not only of the declarative
+region following the name's point of declaration, but also of all function bodies,
+default arguments, [INSERT: exception-specifications,] and brace-or-equal-initializers
+of non-static data members in that class (including such things in nested classes).
+
+2.
+
+Change 6.5.3 [basic.lookup.unqual [15]] paragraph 7 as follows:
+
+A name used in the definition of a class X outside of a member function body, default
+argument, [INSERT: exception-specification,] brace-or-equal-initializer of a non-static
+data member, or nested class definition29 shall be declared in one of the following
+ways:...
+
+3.
+
+Change 6.5.3 [basic.lookup.unqual [16]] paragraph 8 as follows:
+
+For the members of a class X, a name used in a member function body, in a default
+argument, [INSERT: in an exception-specification,] in the brace-or-equal-initializer of
+a non-static data member (11.4 [class.mem [17]]), or in the definition of a class member
+outside of the definition of X, following the member's declarator-id31 , shall be
+declared in one of the following ways:...
+
+4.
+
+Change 11.4 [class.mem [18]] paragraph 2 as follows:
+
+A class is considered a completely-defined object type (6.9 [basic.types [19]]) (or
+complete type) at the closing } of the class-specifier. Within the class
+member-specification, the class is regarded as complete within function bodies, default
+arguments, [INSERT: exception-specifications,] and brace-or-equal-initializers for
+non-static data members (including such things in nested classes). Otherwise it is
+regarded as incomplete within its own class member-specification.
+
+5.
+
+Change 13.7 [temp.decls [4]] paragraph 2 as follows:
+
+For purposes of name lookup and instantiation, default arguments [INSERT: and
+exception-specifications] of function templates and default arguments [INSERT: and
+exception-specifications] of member functions of class templates are considered
+definitions; each default argument [INSERT: or exception-specification] is a separate
+definition which is unrelated to the function template definition or to any other
+default arguments [INSERT: or exception-specifications].
+
+6.
+
+Change 13.8 [temp.res [5]] paragraph 11 as follows:
+
+[Note: For purposes of name lookup, default arguments [INSERT: and
+exception-specifications] of function templates and default arguments [INSERT: and
+exception-specifications] of member functions of class templates are considered
+definitions (13.7 [temp.decls [20]]). —end note]
+
+7.
+
+Add the following as a new paragraph after 13.8.4.1 [temp.point [6]] paragraph 2:
+
+If a function template or member function of a class template is called in a way which
+uses the definition of a default argument of that function template or member function,
+the point of instantiation of the default argument is the point of instantiation of the
+function template or member function specialization.
+
+[INSERT: For an exception-specification of a function template specialization or
+specialization of a member function of a class template, if the exception-specification
+is implicitly instantiated because it is needed by another template specialization and
+the context that requires it depends on a template parameter, the point of instantiation
+of the exception-specification is the point of instantiation of the specialization that
+requires it. Otherwise, the point of instantiation for such an exception-specification
+immediately follows the namespace scope declaration or definition that requires the
+exception-specification.]
+
+8.
+
+Change 13.9.2 [temp.inst [7]] paragraph 1 as follows:
+
+Unless a class template specialization has been explicitly instantiated (13.9.3
+[temp.explicit [21]]) or explicitly specialized (13.9.4 [temp.expl.spec [22]]), the
+class template specialization is implicitly instantiated when the specialization is
+referenced in a context that requires a completely-defined object type or when the
+completeness of the class type affects the semantics of the program. The implicit
+instantiation of a class template specialization causes the implicit instantiation of
+the declarations, but not of the definitions[INSERT: ,] [DELETE: or] default arguments,
+[INSERT: or exception-specifications] of the class member functions, member classes,
+scoped member enumerations, static data members and member templates; and it causes the
+implicit instantiation of the definitions of unscoped member enumerations and member
+anonymous unions. However, for the purpose...
+
+9.
+
+Insert the following as a new paragraph immediately preceding 13.9.2 [temp.inst [23]]
+paragraph 14:
+
+[INSERT: The exception-specification of a function template specialization is not
+instantiated along with the function declaration; it is instantiated when needed (14.5
+[except.spec [24]]). If such an exception-specification is needed but has not yet been
+instantiated, the dependent names are looked up, the semantics constraints are checked,
+and the instantiation of any template used in the exception-specification is done as if
+it were being done as part of instantiating the declaration of the specialization at
+that point.]
+
+[Note: 13.8.4.1 [temp.point [25]] defines the point of instantiation of a template
+specialization. —end note]
+
+10.
+
+Change 13.10.3 [temp.deduct [10]] paragraph 7 as follows:
+
+The substitution occurs in all types and expressions that are used in the function type
+and in template parameter declarations. The expressions include not only constant
+expressions such as those that appear in array bounds or as nontype template arguments
+but also general expressions (i.e., non-constant expressions) inside sizeof, decltype,
+and other contexts that allow non-constant expressions. [Note: The equivalent
+substitution in exception specifications is done only when the [DELETE: function]
+[INSERT: exception-specification] is instantiated, at which point a program is
+ill-formed if the substitution results in an invalid type or expression. —end note]
+
+11.
+
+Change 14.5 [except.spec [26]] paragraph 2 as follows:
+
+...A type denoted in an exception-specification shall not denote an incomplete type
+[DELETE: other than a class currently being defined]. A type denoted in an
+exception-specification shall not denote a pointer or reference to an incomplete type,
+other than cv void* [DELETE: or a pointer or reference to a class currently being
+defined]. A type cv T, “array of T”, or “function returning T” denoted in an
+exception-specification is adjusted to type T, “pointer to T”, or “pointer to function
+returning T” respectively.
+
+12.
+
+Add the following as a new paragraph following 14.5 [except.spec [11]] paragraph 15:
+
+A deallocation function (6.8.6.5.3 [basic.stc.dynamic.deallocation [12]]) with no
+explicit exception-specification is treated as if it were specified with noexcept(true).
+
+[INSERT: An exception-specification is considered to be needed when:]
+
+-
+
+[INSERT: in an expression, the function is the unique lookup result or the selected
+member of a set of overloaded functions (6.5 [basic.lookup [27]], 12.2 [over.match
+[28]], 12.3 [over.over [29]]);]
+
+-
+
+[INSERT: the function is odr-used (6.3 [basic.def.odr [30]]) or, if it appears in an
+unevaluated operand, would be odr-used if the expression were potentially-evaluated;]
+
+-
+
+[INSERT: the exception-specification is compared to that of another declaration (e.g. an
+explicit specialization or an overriding virtual function);]
+
+-
+
+[INSERT: the function is defined; or]
+
+-
+
+[INSERT: the exception-specification is needed for a defaulted special member function
+that calls the function. [Note: A defaulted declaration does not require the
+exception-specification of a base member function to be evaluated until the implicit
+exception-specification of the derived function is needed, but an explicit
+exception-specification needs the implicit exception-specification to compare against.
+—end note]]
+
+[INSERT: The exception-specification of a defaulted special member function is evaluated
+as described above only when needed; similarly, the exception-specification of a
+specialization of a function template or member function of a class template is
+instantiated only when needed.]
+
+[Note: this resolution reverses the decision in issue 1308 [31].]
+
+Source links:
+[1] https://wg21.link/temp.deduct
+[2] https://cplusplus.github.io/CWG/issues/595.html
+[3] https://cplusplus.github.io/CWG/issues/287.html
+[4] https://wg21.link/temp.decls#2
+[5] https://wg21.link/temp.res#11
+[6] https://wg21.link/temp.point#2
+[7] https://wg21.link/temp.inst#1
+[8] https://wg21.link/temp.inst#13
+[9] https://wg21.link/expr.unary.noexcept
+[10] https://wg21.link/temp.deduct#7
+[11] https://wg21.link/except.spec#15
+[12] https://wg21.link/basic.stc.dynamic.deallocation
+[13] https://wg21.link/temp.inst
+[14] https://wg21.link/basic.scope.class#1
+[15] https://wg21.link/basic.lookup.unqual#7
+[16] https://wg21.link/basic.lookup.unqual#8
+[17] https://wg21.link/class.mem
+[18] https://wg21.link/class.mem#2
+[19] https://wg21.link/basic.types
+[20] https://wg21.link/temp.decls
+[21] https://wg21.link/temp.explicit
+[22] https://wg21.link/temp.expl.spec
+[23] https://wg21.link/temp.inst#14
+[24] https://wg21.link/except.spec
+[25] https://wg21.link/temp.point
+[26] https://wg21.link/except.spec#2
+[27] https://wg21.link/basic.lookup
+[28] https://wg21.link/over.match
+[29] https://wg21.link/over.over
+[30] https://wg21.link/basic.def.odr
+[31] https://cplusplus.github.io/CWG/issues/1308.html

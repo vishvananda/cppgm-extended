@@ -1,0 +1,61 @@
+CWG 1405: constexpr and mutable members of literal types
+Source: https://cplusplus.github.io/CWG/issues/1405.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1405. constexpr and mutable members of literal types
+Section: 6.9 [basic.types [1]] Status: CD3 Submitter: Richard Smith Date: 2011-10-21
+
+[Moved to DR at the April, 2013 meeting.]
+
+Currently, literal class types can have mutable members. It is not clear whether that
+poses any particular problems with constexpr objects and constant expressions, and if
+so, what should be done about it.
+
+Proposed resolution (February, 2012):
+
+Change 7.7 [expr.const [2]] paragraph 2 as follows:
+
+-
+
+...
+
+-
+
+an lvalue-to-rvalue conversion (7.3.2 [conv.lval [3]]) unless it is applied to
+
+-
+
+a glvalue of integral or enumeration type that refers to a non-volatile const object
+with a preceding initialization, initialized with a constant expression, or
+
+-
+
+a glvalue of literal type that refers to a non-volatile object defined with constexpr,
+or that refers to a [INSERT: non-mutable] sub-object of such an object, or
+
+-
+
+a glvalue of literal type that refers to a non-volatile temporary object whose lifetime
+has not ended, initialized with a constant expression;
+
+-
+
+...
+
+Source links:
+[1] https://wg21.link/basic.types
+[2] https://wg21.link/expr.const#2
+[3] https://wg21.link/conv.lval

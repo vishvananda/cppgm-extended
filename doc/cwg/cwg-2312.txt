@@ -1,0 +1,84 @@
+CWG 2312: Structured bindings and mutable
+Source: https://cplusplus.github.io/CWG/issues/2312.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD6
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2312. Structured bindings and mutable
+Section: 9.7 [dcl.struct.bind [1]] Status: CD6 Submitter: Richard Smith Date: 2016-08-11
+
+[Accepted at the November, 2020 meeting.]
+
+An example like the following is currently ill-formed:
+
+
+  struct A { mutable int n; };
+  void f() {
+    const auto [a] = A();
+    a = 0;
+  }
+
+
+According to 9.7 [dcl.struct.bind [2]] paragraph 4, the type of a is const int, since
+the implicitly-declared variable is const. This seems obviously wrong: the member n is
+mutable, so the member access expression e.n has type int, which should also be the type
+of a. (mutable should presumably be taken into account when forming the referenced type
+too, so that decltype(a) is int as would presumably be expected, rather than const int.)
+
+Proposed resolution, March, 2018: [SUPERSEDED]
+
+Change 9.7 [dcl.struct.bind [2]] paragraph 4 as follows:
+
+...Designating the non-static data members of E as m0, m1, m2, ... (in declaration
+order), each vi is the name of an lvalue that refers to [DELETE: the member mi of e and
+whose type is cv Ti, where Ti is the declared type of that member] [INSERT: e.mi]; the
+referenced type is [DELETE: cv Ti] [INSERT: the type of e.mi]. The lvalue is a bit-field
+if...
+
+Notes from the June, 2018 meeting:
+
+It was observed that this resolution does not handle members with reference type
+correctly. The main problem seems to be the statement in 7.6.1.5 [expr.ref [3]]
+paragraph 4, which directly handles members with reference type rather than allowing the
+type of the member to be the result type and relying on the general rule that turns
+reference-typed expressions into lvalues.
+
+Proposed resolution (April, 2020):
+
+Change 9.7 [dcl.struct.bind [4]] paragraph 5 as follows:
+
+...Designating the non-static data members of E as m0, m1, m2, ... (in declaration
+order), each vi is the name of an lvalue that refers to the member mi of e and whose
+type is [DELETE: cv Ti, where Ti is the declared type of that member] [INSERT: that of
+e.mi (7.6.1.5 [expr.ref [5]])]; the referenced type is [DELETE: cv Ti] [INSERT: the
+declared type of mi if that type is a reference type, or the type of e.mi otherwise].
+The lvalue is a bit-field if that member is a bit-field.
+
+[Example 2:
+
+
+  struct S { [INSERT: mutable] int x1 : 2; volatile double y1; };
+  S f();
+  const auto [ x, y ] = f();
+
+
+The type of the id-expression x is “[DELETE: const] int”, the type of the id-expression
+y is “const volatile double”. —end example]
+
+Source links:
+[1] https://wg21.link/dcl.struct.bind
+[2] https://wg21.link/dcl.struct.bind#4
+[3] https://wg21.link/expr.ref#4
+[4] https://wg21.link/dcl.struct.bind#5
+[5] https://wg21.link/expr.ref

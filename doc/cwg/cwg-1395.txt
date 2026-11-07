@@ -1,0 +1,117 @@
+CWG 1395: Partial ordering of variadic templates reconsidered
+Source: https://cplusplus.github.io/CWG/issues/1395.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++17
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1395. Partial ordering of variadic templates reconsidered
+Section: 13.10.3.6 [temp.deduct.type [1]] Status: C++17 Submitter: John Spicer Date:
+2011-09-21
+
+[Moved to DR at the November, 2016 meeting.]
+
+The resolution of issue 692 [2] (found in document N3281) made the following example
+ambiguous and thus ill-formed:
+
+
+    template<class T>
+    void print(ostream &os, const T &t) {
+        os << t;
+    }
+
+    template <class T, class... Args>
+    void print(ostream &os, const T &t, const Args&... rest) {
+        os << t << ", ";
+        print(os, rest...);
+    }
+
+    int main() {
+        print(cout, 42);
+        print(cout, 42, 1.23);
+    }
+
+
+This pattern seems fairly intuitive; is it reason to reconsider or modify the outcome of
+issue 692 [2]?
+
+(See also issue 1432 [3].)
+
+Notes from the October, 2012 meeting:
+
+CWG agreed that the example should be accepted, handling this case as a late tiebreaker,
+preferring an omitted parameter over a parameter pack.
+
+Additional note (March, 2013):
+
+For another example:
+
+
+  template<typename ...T> int f(T*...) {
+    return 1;
+  }
+  template<typename T> int f(const T&) {
+    return 2;
+  }
+  int main() {
+    if (f((int*)0) != 1) {
+       return 1;
+    }
+    return 0;
+  }
+
+
+This worked as expected prior to the resolution of issue 692 [2].
+
+Proposed resolution (June, 2016):
+
+1.
+
+Change 13.10.3.5 [temp.deduct.partial [4]] paragraph 8 as follows:
+
+[DELETE: If A was transformed from a function parameter pack and P is not a parameter
+pack, type deduction fails. Otherwise, using] [INSERT: Using] the resulting types P and
+A, the deduction is then done as described in 13.10.3.6 [temp.deduct.type [1]]. If P is
+a function parameter pack, the type A of each remaining parameter type of the argument
+template is compared with the type P of the declarator-id of the function parameter
+pack. Each comparison deduces template arguments for subsequent positions in the
+template parameter packs expanded by the function parameter pack. [INSERT: Similarly, if
+A was transformed from a function parameter pack, it is compared with each remaining
+parameter type of the parameter template.] If deduction succeeds for a given type, the
+type from the argument template is considered to be at least as specialized as the type
+from the parameter template. [Example:...
+
+2.
+
+Add the following as a new paragraph following 13.10.3.5 [temp.deduct.partial [5]]
+paragraph 10:
+
+Function template F is at least as specialized as function template G if, for each pair
+of types used to determine the ordering, the type from F is at least as specialized as
+the type from G. F is more specialized than G if F is at least as specialized as G and G
+is not at least as specialized as F.
+
+[INSERT: If, after considering the above, function template F is at least as specialized
+as function template G and vice-versa, and if G has a trailing paramter pack for which F
+does not have a corresponding parameter, and if F does not have a trailing parameter
+pack, then F is more specialized than G. ]
+
+This resolution also resolves issue 1825 [6].
+
+Source links:
+[1] https://wg21.link/temp.deduct.type
+[2] https://cplusplus.github.io/CWG/issues/692.html
+[3] https://cplusplus.github.io/CWG/issues/1432.html
+[4] https://wg21.link/temp.deduct.partial#8
+[5] https://wg21.link/temp.deduct.partial#10
+[6] https://cplusplus.github.io/CWG/issues/1825.html

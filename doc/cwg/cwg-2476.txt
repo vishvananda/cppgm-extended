@@ -1,0 +1,411 @@
+CWG 2476: placeholder-type-specifiers and function declarators
+Source: https://cplusplus.github.io/CWG/issues/2476.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD7
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2476. placeholder-type-specifiers and function declarators
+Section: 9.2.9.7.1 [dcl.spec.auto.general [1]] Status: CD7 Submitter: Davis Herring
+Date: 2021-01-29
+
+[Accepted as a DR at the March, 2024 meeting.]
+
+According to 9.2.9.7.1 [dcl.spec.auto.general [2]] paragraph 3,
+
+The placeholder type can appear with a function declarator in the decl-specifier-seq,
+type-specifier-seq, conversion-function-id, or trailing-return-type, in any context
+where such a declarator is valid. If the function declarator includes a
+trailing-return-type (9.3.4.6 [dcl.fct [3]]), that trailing-return-type specifies the
+declared return type of the function. Otherwise, the function declarator shall declare a
+function.
+
+This wording disallows a declaration like
+
+
+   int f();
+   auto (*fp)()=f;
+
+
+The requirement to declare a function was introduced by the resolution of issue 1892
+[4].
+
+Proposed resolution (April, 2021) [SUPERSEDED]:
+
+Change 9.2.9.7.1 [dcl.spec.auto.general [2]] paragraph 3 as follows:
+
+The placeholder type can appear with a function declarator in the decl-specifier-seq,
+type-specifier-seq, conversion-function-id, or trailing-return-type[DELETE: , in any
+context where such a declarator is valid] [INSERT: if the function declarator includes a
+trailing-return-type T (9.3.4.6 [dcl.fct [3]]) or declares a function]. [DELETE: If the
+function declarator includes a trailing-return-type (9.3.4.6 [dcl.fct [3]]), that
+trailing-return-type specifies] [INSERT: In the former case, T is] the declared return
+type of the function. [DELETE: Otherwise, the function declarator shall declare a
+function.] If the declared return type of [DELETE: the] [INSERT: a] function contains a
+placeholder type, the return type of the function is deduced from non-discarded return
+statements, if any, in the body of the function (8.5.2 [stmt.if [5]]).
+
+Additional notes (May, 2021):
+
+It was observed that the proposed resolution above does not address the example in the
+issue, since fp neither has a trailing-return-type nor declares a function. Presumably
+another case in which a function declarator with a placeholder return type should be
+permitted is in the declaration of a variable in which the type is deduced from its
+initializer.
+
+It was also noted in passing that the deduction in the example is only partial: the
+parameter-type-list is specified by the declarator and only the return type is deduced
+from the initializer. Although this example is supported by current implementations,
+there is implementation divergence in the support of another case in which only part of
+the variable's type is deduced:
+
+
+    auto (&ar)[2] = L"a";  // Array bound declared, element type deduced
+
+
+This issue is related to issue 1892 [4], which prohibited cases like
+
+
+    std::vector<auto(*)()> v;
+
+
+The ultimate outcome of the two issues should be:
+
+
+    int f();
+    auto (*fp1)() = f;       // OK
+    auto (*fp2)()->int = f;  // OK
+    auto (*fp3)()->auto = f; // OK
+
+    template<typename T> struct C { };
+    C<auto(*)()> c1;         // Not OK
+    C<auto(*)()->int> c2;    // OK
+    C<auto(*)()->auto> c3;   // Not OK
+
+
+Proposed resolution (January, 2023) [SUPERSEDED]:
+
+1.
+
+Change in 9.2.9.7.1 [dcl.spec.auto.general [6]] paragraph 1 as follows:
+
+A placeholder-type-specifier designates a placeholder type that will be replaced
+later[INSERT: , typically] by deduction from an initializer.
+
+2.
+
+Change and split 9.2.9.7.1 [dcl.spec.auto.general [2]] paragraph 3 as follows:
+
+A placeholder type can appear [DELETE: with a function declarator] in the
+decl-specifier-seq[DELETE: , type-specifier-seq, conversion-function-id, or
+trailing-return-type, in any context where such] [INSERT: for] a [INSERT: function]
+declarator [DELETE: is valid] [INSERT: that includes a trailing-return-type (9.3.4.6
+[dcl.fct [3]])]. [DELETE: If the function declarator includes a trailing-return-type
+(9.3.4.6 [dcl.fct [3]]), that trailing-return-type specifies the declared return type of
+the function.]
+
+[DELETE: Otherwise, the] [INSERT: A placeholder type can appear in the
+decl-specifier-seq or type-specifier-seq in the declared return type of a] function
+declarator [DELETE: shall declare] [INSERT: that declares] a function[DELETE: . If the
+declared return type of the function contains a placeholder type,] [INSERT: ;] the
+return type of the function is deduced from non-discarded return statements, if any, in
+the body of the function (8.5.2 [stmt.if [5]]).
+
+3.
+
+Change in 9.2.9.7.1 [dcl.spec.auto.general [7]] paragraph 4 as follows:
+
+The type of a variable declared using a placeholder type is deduced from its
+initializer. This use is allowed in an initializing declaration (9.5 [dcl.init [8]]) of
+a variable. The placeholder type shall appear as one of the decl-specifiers in the
+decl-specifier-seq [DELETE: and] [INSERT: or as one of the type-specifiers in a
+trailing-return-type that specifies the type that replaces such a decl-specifier;] the
+decl-specifier-seq shall be followed by one or more declarators, each of which shall be
+followed by a non-empty initializer. [ Example:
+
+  ...
+  auto f() -> int;                // OK, f returns int
+  [INSERT: auto (*fp)() -> auto = f;       // OK]
+  ...
+
+
+-- end example ]
+
+4.
+
+Change in 9.3.4.6 [dcl.fct [9]] paragraph 1 as follows:
+
+In a declaration T D where D has the form
+
+D1 ( parameter-declaration-clause ) cv-qualifier-seqopt
+  ref-qualifieropt noexcept-specifieropt attribute-specifier-seqopt [INSERT: trailing-return-typeopt]
+
+
+and the type of the contained declarator-id in the declaration T D1 is
+"derived-declarator-type-list T"[DELETE: ,][INSERT: :]
+
+- If the trailing-return-type is present, T shall be the single type-specifier auto, and
+the declared return type of the function type is the type specified by the
+trailing-return-type.
+
+- Otherwise, the declared return type of the function type is T.
+[DELETE: the][INSERT: The] type of the declarator-id in D is
+"derived-declarator-type-list noexceptopt function of parameter-type-list
+cv-qualifier-seqopt ref-qualifieropt returning [DELETE: T] [INSERT: U]", where
+
+- the parameter-type-list is derived from the parameter-declaration-clause as described
+below[INSERT: ,]
+
+-  [INSERT: U is the declared return type,] and
+
+- the optional noexcept is present if and only if the exception specification (14.5
+[except.spec [10]]) is non-throwing.
+The optional attribute-specifier-seq appertains to the function type.
+
+5.
+
+Remove 9.3.4.6 [dcl.fct [11]] paragraph 2:
+
+[DELETE:  In a declaration T D where D has the form
+
+[DELETE: D1 ( parameter-declaration-clause ) cv-qualifier-seqopt
+  ref-qualifieropt noexcept-specifieropt attribute-specifier-seqopt trailing-return-type]
+
+
+and the type ... The optional attribute-specifier-seq appertains to the function type.]
+
+6.
+
+Change in 11.4.8.3 [class.conv.fct [12]] paragraph 1 as follows:
+
+A declaration whose declarator-id has an unqualified-id that is a conversion-function-id
+declares a conversion function; its declarator shall be a function declarator (9.3.4.6
+[dcl.fct [3]]) of the form
+
+[DELETE: ptr-declarator] [INSERT: noptr-declarator] [DELETE: ( parameter-declaration-clause ) cv-qualifier-seqopt
+      ref-qualifier-seqopt noexcept-specifieropt attribute-specifier-seqopt] [INSERT: parameters-and-qualifiers]
+
+
+where the [DELETE: ptr-declarator] [INSERT: noptr-declarator] consists solely of an
+id-expression, an optional attribute-specifier-seq, and optional surrounding
+parentheses, and the id-expression has one of the following forms: ...
+
+7.
+
+Change in 11.4.8.3 [class.conv.fct [13]] paragraph 2 as follows:
+
+A conversion function shall have no non-object parameters and shall be a non-static
+member function of a class or class template X; [INSERT: its declared return type is the
+conversion-type-id and] it specifies a conversion from X to the type specified by the
+conversion-type-id interpreted as a type-id (9.3.2 [dcl.name [14]]). A decl-specifier in
+the decl-specifier-seq of a conversion function (if any) shall not be a
+defining-type-specifier .
+
+8.
+
+Remove 11.4.8.3 [class.conv.fct [15]] paragraph 3:
+
+[DELETE: The type of the conversion function is “noexceptopt function taking no
+parameter cv-qualifier-seq opt ref-qualifier opt returning conversion-type-id”.]
+
+CWG 2023-06
+
+This does not address void f2(auto (*)() -> auto);
+
+Proposed resolution (approved by CWG 2023-11-10):
+
+1.
+
+Change in 9.2.9.7.1 [dcl.spec.auto.general [6]] paragraph 1 as follows:
+
+A placeholder-type-specifier designates a placeholder type that will be replaced
+later[INSERT: , typically] by deduction from an initializer.
+
+2.
+
+Change 9.2.9.7.1 [dcl.spec.auto.general [16]] paragraph 2 as follows:
+
+[DELETE: A] [INSERT: The type of a parameter-declaration of a function declaration
+(9.3.4.6 [dcl.fct [3]]), lambda-expression (7.5.6 [expr.prim.lambda [17]])[INSERT: , or
+template-parameter (13.2 [temp.param [18]])] can be declared using a]
+placeholder-type-specifier of the form type-constraintopt auto [DELETE: can be used as a
+decl-specifier of the decl-specifier-seq of a parameter-declaration of a function
+declaration or lambda-expression and, if it is not the auto type-specifier
+introducing][INSERT: . The placeholder type shall appear as one of the decl-specifiers
+in the decl-specifier-seq or as one of the type-specifiers in] a trailing-return-type
+[DELETE: ,] [INSERT: that specifies the type that replaces such a decl-specifier] (see
+below)[INSERT: ; the placeholder type] is a generic parameter type placeholder of the
+function declaration [DELETE: or][INSERT: ,] lambda-expression[INSERT: , or
+template-parameter, respectively].
+
+3.
+
+Change and split 9.2.9.7.1 [dcl.spec.auto.general [2]] paragraph 3 as follows:
+
+A placeholder type can appear [DELETE: with a function declarator] in the
+decl-specifier-seq[DELETE: , type-specifier-seq, conversion-function-id, or
+trailing-return-type, in any context where such] [INSERT: for] a [INSERT: function]
+declarator [DELETE: is valid] [INSERT: that includes a trailing-return-type (9.3.4.6
+[dcl.fct [3]])]. [DELETE: If the function declarator includes a trailing-return-type
+(9.3.4.6 [dcl.fct [3]]), that trailing-return-type specifies the declared return type of
+the function.]
+
+[DELETE: Otherwise, the] [INSERT: A placeholder type can appear in the
+decl-specifier-seq or type-specifier-seq in the declared return type of a] function
+declarator [DELETE: shall declare] [INSERT: that declares] a function[DELETE: . If the
+declared return type of the function contains a placeholder type,] [INSERT: ;] the
+return type of the function is deduced from non-discarded return statements, if any, in
+the body of the function (8.5.2 [stmt.if [5]]).
+
+4.
+
+Change in 9.2.9.7.1 [dcl.spec.auto.general [7]] paragraph 4 as follows:
+
+The type of a variable declared using a placeholder type is deduced from its
+initializer. This use is allowed in an initializing declaration (9.5 [dcl.init [8]]) of
+a variable. The placeholder type shall appear as one of the decl-specifiers in the
+decl-specifier-seq [DELETE: and] [INSERT: or as one of the type-specifiers in a
+trailing-return-type that specifies the type that replaces such a decl-specifier;] the
+decl-specifier-seq shall be followed by one or more declarators, each of which shall be
+followed by a non-empty initializer. [ Example:
+
+  ...
+  auto f() -> int;                // OK, f returns int
+  [INSERT: auto (*fp)() -> auto = f;       // OK]
+  ...
+
+
+-- end example ]
+
+5.
+
+Change and split 9.2.9.7.1 [dcl.spec.auto.general [19]] paragraph 5 as follows:
+
+A placeholder type can also be used in the type-specifier-seq [DELETE: in] [INSERT: of]
+the new-type-id or [INSERT: in the] type-id of a new-expression (7.6.2.8 [expr.new
+[20]]) [DELETE: and as a decl-specifier of the parameter-declaration's
+decl-specifier-seq in a template-parameter (13.2 [temp.param [18]])]. [INSERT: In such a
+type-id, the placeholder type shall appear as one of the type-specifiers in the
+type-specifier-seq or as one of the type-specifiers in a trailing-return-type that
+specifies the type that replaces such a type-specifier.]
+
+The auto type-specifier can also be used as the simple-type-specifier in an explicit
+type conversion (functional notation) (7.6.1.4 [expr.type.conv [21]]).
+
+6.
+
+Change in 9.3.4.6 [dcl.fct [9]] paragraph 1 as follows:
+
+In a declaration T D where [INSERT: T may be empty and] D has the form
+
+D1 ( parameter-declaration-clause ) cv-qualifier-seqopt
+  ref-qualifieropt noexcept-specifieropt attribute-specifier-seqopt [INSERT: trailing-return-typeopt]
+
+
+[INSERT: a derived-declarator-type-list is determined as follows:] [DELETE: and]
+
+- If the unqualified-id of the declarator-id is a conversion-function-id, the
+derived-declarator-type-list is empty.
+
+-  [INSERT: Otherwise, the derived-declarator-type-list is as appears in] the type
+[INSERT: "derived-declarator-type-list T"] of the contained declarator-id in the
+declaration T D1 [DELETE: is "derived-declarator-type-list T"].
+[INSERT: The declared return type U of the function type is determined as follows:]
+
+- If the trailing-return-type is present, T shall be the single type-specifier auto, and
+U is the type specified by the trailing-return-type.
+
+- Otherwise, if the declaration declares a conversion function, see 11.4.8.3
+[class.conv.fct [22]].
+
+- Otherwise, U is T.
+[DELETE: the][INSERT: The] type of the declarator-id in D is
+"derived-declarator-type-list noexceptopt function of parameter-type-list
+cv-qualifier-seqopt ref-qualifieropt returning [DELETE: T] [INSERT: U]", where
+
+- the parameter-type-list is derived from the parameter-declaration-clause as described
+below and
+
+- the optional noexcept is present if and only if the exception specification (14.5
+[except.spec [10]]) is non-throwing.
+The optional attribute-specifier-seq appertains to the function type.
+
+7.
+
+Remove 9.3.4.6 [dcl.fct [11]] paragraph 2:
+
+[DELETE:  In a declaration T D where D has the form
+
+[DELETE: D1 ( parameter-declaration-clause ) cv-qualifier-seqopt
+  ref-qualifieropt noexcept-specifieropt attribute-specifier-seqopt trailing-return-type]
+
+
+and the type ... The optional attribute-specifier-seq appertains to the function type.]
+
+8.
+
+Change in 11.4.8.3 [class.conv.fct [12]] paragraph 1 as follows:
+
+A declaration whose declarator-id has an unqualified-id that is a conversion-function-id
+declares a conversion function; its declarator shall be a function declarator (9.3.4.6
+[dcl.fct [3]]) of the form
+
+[DELETE: ptr-declarator] [INSERT: noptr-declarator] [DELETE: ( parameter-declaration-clause ) cv-qualifier-seqopt
+      ref-qualifier-seqopt noexcept-specifieropt attribute-specifier-seqopt] [INSERT: parameters-and-qualifiers]
+
+
+where the [DELETE: ptr-declarator] [INSERT: noptr-declarator] consists solely of an
+id-expression, an optional attribute-specifier-seq, and optional surrounding
+parentheses, and the id-expression has one of the following forms: ...
+
+9.
+
+Change in 11.4.8.3 [class.conv.fct [13]] paragraph 2 as follows:
+
+A conversion function shall have no non-object parameters and shall be a non-static
+member function of a class or class template X; [INSERT: its declared return type is the
+conversion-type-id and] it specifies a conversion from X to the type specified by the
+conversion-type-id interpreted as a type-id (9.3.2 [dcl.name [14]]). A decl-specifier in
+the decl-specifier-seq of a conversion function (if any) shall not be a
+defining-type-specifier .
+
+10.
+
+Remove 11.4.8.3 [class.conv.fct [15]] paragraph 3:
+
+[DELETE: The type of the conversion function is “noexceptopt function taking no
+parameter cv-qualifier-seq opt ref-qualifier opt returning conversion-type-id”.]
+
+Source links:
+[1] https://wg21.link/dcl.spec.auto.general
+[2] https://wg21.link/dcl.spec.auto.general#3
+[3] https://wg21.link/dcl.fct
+[4] https://cplusplus.github.io/CWG/issues/1892.html
+[5] https://wg21.link/stmt.if
+[6] https://wg21.link/dcl.spec.auto.general#1
+[7] https://wg21.link/dcl.spec.auto.general#4
+[8] https://wg21.link/dcl.init
+[9] https://wg21.link/dcl.fct#1
+[10] https://wg21.link/except.spec
+[11] https://wg21.link/dcl.fct#2
+[12] https://wg21.link/class.conv.fct#1
+[13] https://wg21.link/class.conv.fct#2
+[14] https://wg21.link/dcl.name
+[15] https://wg21.link/class.conv.fct#3
+[16] https://wg21.link/dcl.spec.auto.general#2
+[17] https://wg21.link/expr.prim.lambda
+[18] https://wg21.link/temp.param
+[19] https://wg21.link/dcl.spec.auto.general#5
+[20] https://wg21.link/expr.new
+[21] https://wg21.link/expr.type.conv
+[22] https://wg21.link/class.conv.fct

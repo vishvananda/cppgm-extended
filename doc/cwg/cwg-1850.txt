@@ -1,0 +1,92 @@
+CWG 1850: Differences between definition context and point of instantiation
+Source: https://cplusplus.github.io/CWG/issues/1850.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1850. Differences between definition context and point of instantiation
+Section: 13.8 [temp.res [1]] Status: CD4 Submitter: Richard Smith Date: 2014-02-04
+
+[Moved to DR at the November, 2014 meeting.]
+
+Various characteristics of entities referred to by a non-dependent reference in a
+template can change between the definition context and the point of instantiation of a
+specialization of that template. These include initialization (which affects whether an
+object can be used in a constant expression), function and template default arguments,
+and the completeness of types. There is implementation divergence as to whether these
+are checked in the definition context or at the point of instantiation. Presumably a
+rule is needed to make it ill-formed, no diagnostic required, if the validity of such a
+reference changes between the two contexts.
+
+Proposed resolution (February, 2014):
+
+Change 13.8 [temp.res [2]] paragraph 8 as follows:
+
+...If a [DELETE: type used in a non-dependent name is incomplete at the point at which a
+template is defined but is complete at the point at which an instantiation is done, and
+if the completeness of that type affects whether or not the program is well-formed or
+affects the semantics of the program,] [INSERT: hypothetical instantiation of a template
+immediately following its definition would be ill-formed due to a construct that does
+not depend on a template parameter, the program is ill-formed; no diagnostic is
+required. If the interpretation of such a construct in the hypothetical instantiation is
+different from the interpretation of the corresponding construct in any actual
+instantiation of the template,] the program is ill-formed; no diagnostic is required.
+[INSERT: [Note: This can happen in situations including the following:]
+
+-
+
+[INSERT: a type used in a non-dependent name is incomplete at the point at which a
+template is defined but is complete at the point at which an instantiation is performed,
+or]
+
+-
+
+[INSERT: an instantiation uses a default argument or default template argument that had
+not been defined at the point at which the template was defined, or]
+
+-
+
+[INSERT: constant expression evaluation (7.7 [expr.const [3]]) within the template
+instantiation uses]
+
+- [INSERT: the value of a const object of integral or unscoped enumeration type or]
+
+-
+
+[INSERT: the value of a constexpr object or]
+
+-
+
+[INSERT: the value of a reference or]
+
+-
+
+[INSERT: the definition of a constexpr function,]
+
+[INSERT: and that entity was not defined when the template was defined, or]
+
+-
+
+[INSERT: a class template specialization or variable template specialization that is
+specified by a non-dependent simple-template-id is used by the template, and either it
+is instantiated from a partial specialization that was not defined when the template was
+defined or it names an explicit specialization that was not declared when the template
+was defined.]
+
+[INSERT: —end note]] [Note: If a template is instantiated...
+
+Source links:
+[1] https://wg21.link/temp.res
+[2] https://wg21.link/temp.res#8
+[3] https://wg21.link/expr.const

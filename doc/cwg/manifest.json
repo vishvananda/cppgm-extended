@@ -1,0 +1,964 @@
+{
+  "snapshot_repository": "https://github.com/cplusplus/CWG",
+  "snapshot_revision": "38a43db15e384602a0c5debc3f7f22be32e186a1",
+  "retrieved": "2026-11-07",
+  "scope": "CWG references in compiler implementation, required tests and course handouts, plus explicitly identified interpretation references. Catalog inclusion is not a claim of full implementation of every issue example.",
+  "issues": [
+    {
+      "issue": 33,
+      "title": "Argument dependent lookup and overloaded functions",
+      "status": "TC1",
+      "role": "course-reference",
+      "file": "cwg-0033.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/33.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/33.html",
+      "source_html_sha256": "eb46f524106ffd63677cf9ca57b528d7508bf35705e65c5be1254fc80435b5f0",
+      "text_sha256": "4c2bdabd2cd82b7118327524ea6fb27681c66500a02d916d22e64422f024b5a0",
+      "adopted_papers": []
+    },
+    {
+      "issue": 138,
+      "title": "Friend declaration name lookup",
+      "status": "CD6",
+      "role": "course-reference",
+      "file": "cwg-0138.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/138.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/138.html",
+      "source_html_sha256": "48c9b8c9fcae38c88be05dfda314b529bd8574f31ac2763201a45ec27a94f1f5",
+      "text_sha256": "680743d0e3aada995f5696b3f79a028df461a45e3936711e3ac14b3f2a462e0a",
+      "adopted_papers": [
+        "P1787R6"
+      ],
+      "local_papers": [
+        "paper-p1787r6.txt"
+      ]
+    },
+    {
+      "issue": 253,
+      "title": "Why must empty or fully-initialized const objects be initialized?",
+      "status": "C++17",
+      "role": "course-reference",
+      "file": "cwg-0253.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/253.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/253.html",
+      "source_html_sha256": "fa7aec29fba709e3ca7f3a0d2403f29c8d1e123a0218fae0e50b797c66a63995",
+      "text_sha256": "9dcff360ebb582669f4ec9dfd7ca7ec7629235d0b48c232e324f83e21485a3b2",
+      "adopted_papers": [
+        "P0490R0"
+      ],
+      "local_papers": [
+        "paper-p0490r0.txt"
+      ]
+    },
+    {
+      "issue": 616,
+      "title": "Definition of &#8220;indeterminate value&#8221;",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-0616.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/616.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/616.html",
+      "source_html_sha256": "3c3a0f5e4b70799e75fc2805072b87ad6010aea3ad124ea14b8389ab612040c1",
+      "text_sha256": "1aea0f776a3ec6c31e438dc41d8a99af73e7d9b81d2dafe6be35e2ed27616e11",
+      "adopted_papers": []
+    },
+    {
+      "issue": 619,
+      "title": "Completeness of array types",
+      "status": "C++11",
+      "role": "course-reference",
+      "file": "cwg-0619.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/619.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/619.html",
+      "source_html_sha256": "c2452a67228f6744a95821f2a9179d209aff0433c25b8d0da2b0db98276ff2a2",
+      "text_sha256": "5ce618a29de8dc2b4eb0c0bc4bcc0e1d45247e1bca7941139618a6b3113471c9",
+      "adopted_papers": []
+    },
+    {
+      "issue": 727,
+      "title": "In-class explicit specializations",
+      "status": "C++17",
+      "role": "course-reference",
+      "file": "cwg-0727.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/727.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/727.html",
+      "source_html_sha256": "d7160dc030da581d57c2eb2585eac9378a5cd5e0020d4deb7ba490611fc5f204",
+      "text_sha256": "8179cec6a9f21ab9953cc9514ec07745ab079caa051785e9b325d0fde996421a",
+      "adopted_papers": []
+    },
+    {
+      "issue": 852,
+      "title": "using-declarations and dependent base classes",
+      "status": "CD6",
+      "role": "course-reference",
+      "file": "cwg-0852.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/852.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/852.html",
+      "source_html_sha256": "9d02b7480249c32e96d605b3778e1c9ac668fcadbbdbf85a4607e4d17bf8a491",
+      "text_sha256": "add7cb70f1af436e4f40483f1d79a51c9c3b61ea74edecfbf19ef6bcb706b75f",
+      "adopted_papers": [
+        "P1787R6"
+      ],
+      "local_papers": [
+        "paper-p1787r6.txt"
+      ]
+    },
+    {
+      "issue": 899,
+      "title": "Explicit conversion functions in direct class initialization",
+      "status": "CD2",
+      "role": "course-reference",
+      "file": "cwg-0899.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/899.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/899.html",
+      "source_html_sha256": "886c2667a0a27c5865aecc8ff5de694eeb09eb44787846d6d74e2cf0c04e71da",
+      "text_sha256": "0faf2d94862ec789cfa1adca0b5a9bba6e9bf88e0614e967732ca68f7da5a97a",
+      "adopted_papers": []
+    },
+    {
+      "issue": 903,
+      "title": "Value-dependent integral null pointer constants",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-0903.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/903.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/903.html",
+      "source_html_sha256": "31fbb27abd2bfc02933e8a436f6bd6ddeec15206635b18fb7bfe3e7942146a77",
+      "text_sha256": "cbea5652c440a0d2acd0579e30369796c33ee2dc098985707bf07c20637278ed",
+      "adopted_papers": []
+    },
+    {
+      "issue": 974,
+      "title": "Default arguments for lambdas",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-0974.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/974.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/974.html",
+      "source_html_sha256": "2fc4f9484b0b57c36d49b481ce8c8605f67c38661b3768ae0d8887418a51fd5e",
+      "text_sha256": "b30369d4ed7cb78987ecec5653290330d73c6bc5adb1713e4d50b4328aa2ff02",
+      "adopted_papers": []
+    },
+    {
+      "issue": 975,
+      "title": "Restrictions on return type deduction for lambdas",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-0975.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/975.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/975.html",
+      "source_html_sha256": "2303a5fd7f4e9baa276c675e648a88412520a29284237c27862803f68b7e1561",
+      "text_sha256": "0841aaf54cfd48853a5a370ced8335e95b3e35667b764fb36400d0cc4ab0fc1f",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1048,
+      "title": "auto deduction and lambda return type deduction.",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1048.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1048.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1048.html",
+      "source_html_sha256": "84070e58b54beac854b059fd67845f9d5626a385d3107007f4f745b432226d6f",
+      "text_sha256": "d6189fdb0675430524dfef58d1f95149458452676f94b78d0c60d2d1ca000bb0",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1059,
+      "title": "Cv-qualified array types (with rvalues)",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1059.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1059.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1059.html",
+      "source_html_sha256": "2c81a7e9d7ee5b94c3338a85e1bd1c804213ceb78d61377b0fbd362800d99786",
+      "text_sha256": "04336da3799e861567593b35e38273a96654d27c621239db4959cceb5f974043",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1094,
+      "title": "Converting floating-point values to scoped enumeration types",
+      "status": "C++11",
+      "role": "course-reference",
+      "file": "cwg-1094.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1094.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1094.html",
+      "source_html_sha256": "851661577983b4aef108fe2d373812c5fa972b5aee44965f90f1ea16280e3cc3",
+      "text_sha256": "e0568e2ce96bbcb6e42023353c1b2d327101acbedd451841b07837191dbb75d4",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1213,
+      "title": "Array subscripting and xvalues",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1213.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1213.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1213.html",
+      "source_html_sha256": "1a3f13db06e9f1bfac4f5d9755b8aa5b209333248159a24cc7697b299f6b83b0",
+      "text_sha256": "92ddeb4655b6c9b219d03577380370016e7665cff9b6f079077a273c9625cd07",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1315,
+      "title": "Restrictions on non-type template arguments in partial specializations",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1315.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1315.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1315.html",
+      "source_html_sha256": "d22bcfccfd6adc6dbfd9e6e111851d15a6388d4bef87f078079c0f7345033ba6",
+      "text_sha256": "43b7e491f11e32f704c60cb09630147be1289fce12259daa042dfd919c8853cc",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1330,
+      "title": "Delayed instantiation of noexcept specifiers",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1330.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1330.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1330.html",
+      "source_html_sha256": "7a17f584757dc61269433cca96b30d7e35a2f225e952004857b94fdb2201fb23",
+      "text_sha256": "3a786c3de2c5fa1fcb3e4c76bbe242c246b13db0dbb2c6d460572ed4e2ceec21",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1351,
+      "title": "Problems with implicitly-declared exception-specifications",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1351.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1351.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1351.html",
+      "source_html_sha256": "bdec41129dd4c6aa99a505f28151df5f7adc4d1d741427bdb91d6c4cd3123bb0",
+      "text_sha256": "e1b1a84e72ad925682f29e9b0fc5d5193abd262b3b447583200dfbf0dd8ce14b",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1391,
+      "title": "Conversions to parameter types with non-deduced template arguments",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1391.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1391.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1391.html",
+      "source_html_sha256": "33673f8dd4cc7ac6c88c7cb0be584d0fd3fa6766ad13bfea2eddeddfd2fb8bfa",
+      "text_sha256": "0b08b452cf1a2bed4b1bd29855566104d253ba983b701ccb269aa4bed7717ef8",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1395,
+      "title": "Partial ordering of variadic templates reconsidered",
+      "status": "C++17",
+      "role": "course-reference",
+      "file": "cwg-1395.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1395.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1395.html",
+      "source_html_sha256": "51001f98ed54cf9556e2b260285e9c405388d7a993518cfed81c3893b87a5b20",
+      "text_sha256": "ad03405db8641f82f574de9e3b6206225b3c046c836e295a95a7c02a6ded78e3",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1396,
+      "title": "Deferred instantiation and checking of non-static data member initializers",
+      "status": "C++23",
+      "role": "course-reference",
+      "file": "cwg-1396.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1396.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1396.html",
+      "source_html_sha256": "ec6d474a5099e7f8de593ef16b60677dd6547f673007c13df654bf11026b7c87",
+      "text_sha256": "8cc8ad3242c1f9c4b8586cf11d64a5041fc7e6f05d2b8510abaaa877ab5486e6",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1397,
+      "title": "Class completeness in non-static data member initializers",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1397.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1397.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1397.html",
+      "source_html_sha256": "b919a62f030e4300d696ddeded0285b1327a6fe6689b10bb66dfd352307af022",
+      "text_sha256": "a6d27cd21f4f03754819ac1e56d5cbb82070ceaa0afb1f38ebca47e5aec65ae3",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1402,
+      "title": "Move functions too often deleted",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1402.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1402.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1402.html",
+      "source_html_sha256": "76d017c9d4d80fa835813e1ca4133a389aea113ef5d328caef14d4485213244e",
+      "text_sha256": "2446a0166816376a2b4a8a9a27fe71d5a59362f8d87066b5b0e3a307f764df33",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1405,
+      "title": "constexpr and mutable members of literal types",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1405.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1405.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1405.html",
+      "source_html_sha256": "a6abe654db8106caec41797046fbcff48d82564519fdca9b912924144df0f4e1",
+      "text_sha256": "cf8b1c71b8ffc59afe2bf8ffbef66591c56c4afc808d9446003c413349aa0280",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1411,
+      "title": "More on global scope :: in nested-name-specifier",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1411.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1411.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1411.html",
+      "source_html_sha256": "630bd0fe09c92b50accca093734daf08a4584dcd0e20614f983c4d905a68a96a",
+      "text_sha256": "b3243d3fbdfd8fa40377632fd8bfef44d6d1666acfd98e47a45d45c911f4d25d",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1424,
+      "title": "When must sub-object destructors be accessible?",
+      "status": "C++14",
+      "role": "course-reference",
+      "file": "cwg-1424.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1424.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1424.html",
+      "source_html_sha256": "343958fcb0af7bce5fbd0895140fd140bdfdd5c9e6cf78acbb21802051743444",
+      "text_sha256": "6c94aef0e001c73f28387fd3ba9a4c7709b708c58b8349d513d3eb0d39947320",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1437,
+      "title": "alignas in alias-declaration",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1437.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1437.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1437.html",
+      "source_html_sha256": "2052cf14aac0b97579505844cbb803171f58e974e1fc8cb826e35cfa26eca99d",
+      "text_sha256": "e10c7c096100e054f8d539998f9c87229046d02ce4f53e832275bfd307b7060d",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1457,
+      "title": "Undefined behavior in left-shift",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1457.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1457.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1457.html",
+      "source_html_sha256": "0eb686cbaf520e973149aac619510246354f7da42b0134b25748733dcd2d86d9",
+      "text_sha256": "06948465286eeca5506bbfc033580394ad5cacbd2fd5250452563bb4dbd9134e",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1460,
+      "title": "What is an empty union?",
+      "status": "C++14",
+      "role": "course-reference",
+      "file": "cwg-1460.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1460.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1460.html",
+      "source_html_sha256": "8a81cea6838e5b6643bc0907b770e4cd1f714e59d06d1b4153afe9c20df7e964",
+      "text_sha256": "523987f78da3257613d79a44937c3f45cdbe4cead7a79cf0fc1c7071f68adc4b",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1464,
+      "title": "Negative array bound in a new-expression",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1464.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1464.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1464.html",
+      "source_html_sha256": "8360c8a4bd98a0cc3d651f8fdb25a88c992f521871ee386e3b22ad5176df517c",
+      "text_sha256": "c0b5206a9742beaa09cfa2ab7f77be5903f40d7dc3da917fb693aabfabf78486",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1467,
+      "title": "List-initialization of aggregate from same-type object",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1467.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1467.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1467.html",
+      "source_html_sha256": "7eaae57d0d61b72a8a51e2edb64eba445c775110a005409dd682546be7f2f93a",
+      "text_sha256": "25dd080c01614cd9dd36df030e75e49f7c489633f7fef7673c93d38a359ffe23",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1473,
+      "title": "Syntax of literal-operator-id",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1473.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1473.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1473.html",
+      "source_html_sha256": "8f12135ed9428968fb4b1f7a3734e0db259247e86948ce8a7d8a684ac3c3266b",
+      "text_sha256": "5f492c8d13a1d9e06164babf26a97f634da13e7064b9b6ded0c678d5424201e7",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1490,
+      "title": "List-initialization from a string literal",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1490.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1490.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1490.html",
+      "source_html_sha256": "233033fde34a845bbed5f6f08435776d34d33b7cdd43cb813a1e2a5de68b485d",
+      "text_sha256": "06242cc8c44bd052f1cd5eb2bd2021f551a712ab3bc55fd24fa4299cb3dc6b89",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1512,
+      "title": "Pointer comparison vs qualification conversions",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1512.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1512.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1512.html",
+      "source_html_sha256": "36a5ae73c58e19ffc2d815b8cc602e7ecf46f8d1f36d5c09bcd1ea15c950ae1a",
+      "text_sha256": "a8691af3b07fa65a2137e03a3c6aa3734d44361f50984bec4fa9a2daee5f8c17",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1550,
+      "title": "Parenthesized throw-expression operand of conditional-expression",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1550.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1550.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1550.html",
+      "source_html_sha256": "7a456081f224d4d6b1209f7c592b5d4e1914e1419109da1dd7fef63dffa08cd0",
+      "text_sha256": "43ed6919b1ed4530bb9050786759a84521c2394f37fc8162dd5c96efbf3e89af",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1558,
+      "title": "Unused arguments in alias template specializations",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1558.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1558.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1558.html",
+      "source_html_sha256": "0b2457e156eebfe9f5f722931ca881a6bf259f9baf805e7a667cf4aaa7d8d87c",
+      "text_sha256": "678d309f6840136010bf32a22d4ede1e3cdf936ca52320bc4f1ed9a8413d2171",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1560,
+      "title": "Gratuitous lvalue-to-rvalue conversion in conditional-expression with throw-expression operand",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-1560.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1560.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1560.html",
+      "source_html_sha256": "d2532e45825f977ac1cfc1b221d4eae0ed00f3a8b2aa956d6ab1f661ade68a11",
+      "text_sha256": "9365e3266bd45149cb4f72253f66d9a4d02158a95214845fe4dbc6e984c75860",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1579,
+      "title": "Return by converting move constructor",
+      "status": "C++14",
+      "role": "course-reference",
+      "file": "cwg-1579.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1579.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1579.html",
+      "source_html_sha256": "e9e3c3b0b8ca2322d15d5c789d94b2596216ee67717a6996998a806f8085bc9a",
+      "text_sha256": "b5d3a6c0e306870132458c5317e0e0a67cbda6fbe7a1fbe40a19413ed4f48fe4",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1590,
+      "title": "Bypassing non-copy/move constructor copying",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1590.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1590.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1590.html",
+      "source_html_sha256": "78eeee80a8e6509c86da2ed918a3eb0d5d886f872b27b707a7f61a09adedbc33",
+      "text_sha256": "8f2214b7ef58a6363067e377c75ffff1a7b5fe9038cf690df2fb74fd35e51622",
+      "adopted_papers": [
+        "P0135R1"
+      ],
+      "local_papers": [
+        "paper-p0135r1.txt"
+      ]
+    },
+    {
+      "issue": 1591,
+      "title": "Deducing array bound and element type from initializer list",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1591.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1591.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1591.html",
+      "source_html_sha256": "894e5093b723a78f2b3f5338783f8bc62c08361b4152e8054f9ff9c6f445bc26",
+      "text_sha256": "2d29427fce52a7bfd63ba74f59cca7e42a36f9b250baf071582ece4242a4e70e",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1634,
+      "title": "Temporary storage duration",
+      "status": "open",
+      "role": "reference-only",
+      "file": "cwg-1634.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1634.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1634.html",
+      "source_html_sha256": "2118e68485dffdbfebc48b4bd5f6648aee4ce60c4511f87723518cb55f9f6f23",
+      "text_sha256": "be476b74b7dd12aa003f3c44b519ba0320fb541e74121223c00a98e486bc23d2",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1638,
+      "title": "Declaring an explicit specialization of a scoped enumeration",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1638.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1638.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1638.html",
+      "source_html_sha256": "0563cbf4b321d558be2e18a4ffdd7523c1dc3125b91e4c213fa96c39b11d1c7e",
+      "text_sha256": "4c3e9e151b2a8e4ce9390833c65a1862dbda534f63244f3e6c1f0bb7a1936f10",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1647,
+      "title": "Type agreement of non-type template arguments in partial specializations",
+      "status": "drafting",
+      "role": "reference-only",
+      "file": "cwg-1647.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1647.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1647.html",
+      "source_html_sha256": "ad2ee1e9c61e76f872952d7cccf4c72387cb0a2f3d28064932c0a9d39288105e",
+      "text_sha256": "caf0f3edd60c477e4a2b193af184af3ff43625260ad9e60752721da495827e47",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1658,
+      "title": "Deleted default constructor for abstract class via destructor",
+      "status": "C++14",
+      "role": "course-reference",
+      "file": "cwg-1658.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1658.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1658.html",
+      "source_html_sha256": "b0c6f16f3dc27c1ae7e9f3c56d11a3f3fb898eaaafe6d6f45eb81b61a1cf9007",
+      "text_sha256": "7a1b868c834bd2487a9f57c72f2e098c96d48353a71449f8a7479d6a1167008a",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1722,
+      "title": "Should lambda to function pointer conversion function be noexcept?",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1722.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1722.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1722.html",
+      "source_html_sha256": "161f4c8a7fe3c87840177c119dea20f2ef3fbd70b8cf12cfc25c33bcfdcab709",
+      "text_sha256": "463d285d16363885512b5a0db01b87925797ad8d7443b03066f0dcf7ca4cdea1",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1734,
+      "title": "Nontrivial deleted copy functions",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1734.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1734.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1734.html",
+      "source_html_sha256": "dfc801eeaaa3aa0aedac1b12f2a9faf7fe78586ade0dad010738ed76ac484500",
+      "text_sha256": "db216f38e488703a1c6e508aad44ae3a47c08b078f7e9809bdb56a22357289cf",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1742,
+      "title": "using-declarations and scoped enumerators",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-1742.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1742.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1742.html",
+      "source_html_sha256": "9f176146002805509630527bd351d3046d5c44de85c4dd961d07188a7f6767f5",
+      "text_sha256": "e6faef28d2e6a83a7a863ea1678679e893dc4ef4072247dfa964e37ea2509e29",
+      "adopted_papers": [
+        "P1099R5"
+      ],
+      "local_papers": [
+        "paper-p1099r5.txt"
+      ]
+    },
+    {
+      "issue": 1793,
+      "title": "thread_local in explicit specializations",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1793.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1793.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1793.html",
+      "source_html_sha256": "99c1ddeb450f2458190bfc1d6d38d028e2a3caeb0cfebf2e4d6268f59da31f69",
+      "text_sha256": "b6dc38a1a7630182f24a1064be6908f4b121899f63a21921d33e11d10d2ebf64",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1850,
+      "title": "Differences between definition context and point of instantiation",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1850.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1850.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1850.html",
+      "source_html_sha256": "85ea079bde83ef1b4494236756454855b0f936924955256d4208189ca59abd07",
+      "text_sha256": "3ac29e0d0c475388112700fd4e1a9b333b4247929ad21c5e63c647e5b403e557",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1866,
+      "title": "Initializing variant members with non-trivial destructors",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1866.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1866.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1866.html",
+      "source_html_sha256": "f2cca698de8408872c687530958514d21d6b6f51b6006bd13b802c3199c07016",
+      "text_sha256": "2f5033c4068f89f59c5cd0e77ee67379b4cfae6af51726fa2d51843440ade566",
+      "adopted_papers": []
+    },
+    {
+      "issue": 1992,
+      "title": "new (std::nothrow) int[N] can throw",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-1992.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1992.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1992.html",
+      "source_html_sha256": "4e282d4eaa0a3701d97a5750e46b5625878d3aafee85ab038b590f21d1e74f70",
+      "text_sha256": "098eb6f773c3d8ffaed493e445ce94643435e64e6e87b21479d2ab6ce20dd37d",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2004,
+      "title": "Unions with mutable members in constant expressions",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-2004.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2004.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2004.html",
+      "source_html_sha256": "117562a6aa35ca42b0c0bdb12de37400392cabdd705fe966cb04a9e264771512",
+      "text_sha256": "5a13bd2e363ef6b7fe27f154e0fdd84666d96eb2d78f348ce54abe0f9e690ca3",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2076,
+      "title": "List-initialization of arguments for constructor parameters",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-2076.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2076.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2076.html",
+      "source_html_sha256": "f7a4ad6ee4b610ea3e15632a1ad48a88634a7f90a6ece2cd125aa44868b948c7",
+      "text_sha256": "534a036fe4ee86a36b13ac0722881ef76054517ab30069810ecea74fec4c5788",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2079,
+      "title": "[[ appearing in a balanced-token-seq",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-2079.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2079.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2079.html",
+      "source_html_sha256": "1e249df921c2dd8698f9e5f40cfdcfcc055fcaa1e95545316bb95490b001ebc3",
+      "text_sha256": "727ebaa3527a6ef191f6dfc3866762878525e2310bc964377845ce1dcd60ef99",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2082,
+      "title": "Referring to parameters in unevaluated operands of default arguments",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-2082.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2082.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2082.html",
+      "source_html_sha256": "b42ded8865d60efd9ed0bfbea617b9822c72ae81329e7303a11d946daae66f20",
+      "text_sha256": "3dfa1af175b24b175ae73d84f84c235e588020764efcdf9b1b727f60af338d08",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2084,
+      "title": "NSDMIs and deleted union default constructors",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-2084.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2084.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2084.html",
+      "source_html_sha256": "04444bb472a2a9cb31ce6e306e89a63383d24f48e403d9b72ffbb1cf09f43682",
+      "text_sha256": "2319cd8487d8099f49568cb16af52d9c55185e9e7a592b5541b579c354e397a1",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2101,
+      "title": "Incorrect description of type- and value-dependence",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-2101.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2101.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2101.html",
+      "source_html_sha256": "0e32a99f39eed1c895550f04aec937ab04f55574db7663c6bdffe013c9202ee4",
+      "text_sha256": "28c864ab4706615345cc91b0463f6b87230a6d154dbea83ef0072e8da3cfa1d7",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2140,
+      "title": "Lvalue-to-rvalue conversion of std::nullptr_t",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-2140.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2140.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2140.html",
+      "source_html_sha256": "29615f9e271d9e4f26e431d302b4229cc9647a5de60225c3887110de6f091cf4",
+      "text_sha256": "b6bfef74d93479b2c728af02ff41654467b2316e91089b0cf9445cc0340d2418",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2176,
+      "title": "Destroying the returned object when a destructor throws",
+      "status": "CD4",
+      "role": "course-reference",
+      "file": "cwg-2176.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2176.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2176.html",
+      "source_html_sha256": "7db6ea7ff96f0e67229ce25c1af7c6ee2be4ed0567d4e42491c4bb8727f4d23b",
+      "text_sha256": "d03c5863307c727864740bee93d64b892d45ad5651cba1f51deb47e54bbc36ed",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2273,
+      "title": "Inheriting constructors vs implicit default constructor",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-2273.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2273.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2273.html",
+      "source_html_sha256": "06b56e828355683611c411d0325d7e69b6fc59b11a23d39cdedfc3e00781f3da",
+      "text_sha256": "c7da0ad72248d15a4dcdc9c837f076ed9439fe5c6a4aeb23fe1b9ef06d09243a",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2312,
+      "title": "Structured bindings and mutable",
+      "status": "CD6",
+      "role": "course-reference",
+      "file": "cwg-2312.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2312.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2312.html",
+      "source_html_sha256": "75a1014b2896376f49a6ad1d41d954461f091eba3f5080b114b8a80389fb4ce3",
+      "text_sha256": "4e006c6696de0a81a1a5436034c0549f5f84f3f561ad4a28a4cc676eebb40ef0",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2346,
+      "title": "Local variables in default arguments",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-2346.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2346.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2346.html",
+      "source_html_sha256": "bffc87ce6041f936ad2d41008bb383b4edf31fc10abcaeb6535b59a75bc55638",
+      "text_sha256": "b721dd0d3c35dc1a5b3f9b5c13dd43682e9f21dbd0928936affb9c1883b2ed38",
+      "adopted_papers": [
+        "P0588R1"
+      ],
+      "local_papers": [
+        "paper-p0588r1.txt"
+      ]
+    },
+    {
+      "issue": 2351,
+      "title": "void{}",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-2351.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2351.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2351.html",
+      "source_html_sha256": "61e91ad51b27399b706095dd21e630ca75c001256fa13a2d5ebc12f32dbd52b9",
+      "text_sha256": "6e6c3026e9d53fb7fd4aabc007e2fa12003e3ab48568e3388ad23a14f537b533",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2352,
+      "title": "Similar types and reference binding",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-2352.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2352.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2352.html",
+      "source_html_sha256": "3e59d2822855aad1d21a9439e73ab4aa4e7113eb94580f61f3415bdb554de25f",
+      "text_sha256": "265706e90a6e45670ca04155c20533fc464d93bd09d750b63d5f7a23afbea19c",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2354,
+      "title": "Extended alignment and object representation",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-2354.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2354.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2354.html",
+      "source_html_sha256": "627765ad3b52c66790d00fbca7e34cce3793f692e170b100d94eb57cca8a21bc",
+      "text_sha256": "b5356011ff6b567ac2ebc0e28cc4f8f4aeef90240dde4b1f614a299dee809405",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2356,
+      "title": "Base class copy and move constructors should not be inherited",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-2356.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2356.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2356.html",
+      "source_html_sha256": "f22f98b250e34804f889dfce1a41ee8ad71776189cb90370f45ce81fa1275bec",
+      "text_sha256": "7edc792ff1caadeb741f0d6a7fa159e3ddc8921c3e7da4513d30cb70219667cc",
+      "adopted_papers": [],
+      "local_papers": [
+        "paper-p0136r1.txt"
+      ]
+    },
+    {
+      "issue": 2386,
+      "title": "tuple_size requirements for structured binding",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-2386.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2386.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2386.html",
+      "source_html_sha256": "b9afde59f5c78b044b9f5e517f2d4e395f31b6b87b38079266344f5537789a69",
+      "text_sha256": "058e2d6845b409d7138a89bf3dd82a440d4fcca7bf95861277617c76b62eb608",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2476,
+      "title": "placeholder-type-specifiers and function declarators",
+      "status": "CD7",
+      "role": "course-reference",
+      "file": "cwg-2476.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2476.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2476.html",
+      "source_html_sha256": "168f0f791d5c8cf20ffe96053b0f8eabf9f2704f45dfdfc024060df591d2639a",
+      "text_sha256": "d1394d0df5b4e3cfe37c65c5b129118bbf017ac01febac8e4371d8046e16cbdb",
+      "adopted_papers": []
+    },
+    {
+      "issue": 2549,
+      "title": "Implicitly moving the operand of a throw-expression in unevaluated contexts",
+      "status": "CD7",
+      "role": "course-reference",
+      "file": "cwg-2549.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2549.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2549.html",
+      "source_html_sha256": "4fc3264563044746d57058493633bc4bae563ee1d0b1fd561e8e2bdd385dee39",
+      "text_sha256": "8e4597d8e8ecc48ab94f90a255ffbfc6e163fe61942deff7574acf468334a607",
+      "adopted_papers": [
+        "P0527R1",
+        "P1155R3",
+        "P1825R0",
+        "P2266R2"
+      ],
+      "local_papers": [
+        "paper-p0527r1.txt",
+        "paper-p1155r3.txt",
+        "paper-p1825r0.txt",
+        "paper-p2266r2.txt"
+      ]
+    },
+    {
+      "issue": 2907,
+      "title": "Constant lvalue-to-rvalue conversion on uninitialized std::nullptr_t",
+      "status": "CD7",
+      "role": "course-reference",
+      "file": "cwg-2907.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2907.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2907.html",
+      "source_html_sha256": "afbe50bd9d3cbf093fdd5df06e4f3e72fb83a61ce5bf7dacff3b8c4cce1e0267",
+      "text_sha256": "cd85fc08bf79a06a4727da9ea198f6cbc771bd1e5d819a551c3716fc1e1a9287",
+      "adopted_papers": []
+    }
+  ],
+  "supplemental_papers": [
+    {
+      "paper": "P0135R1",
+      "file": "paper-p0135r1.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0135r1.html",
+      "source_html_sha256": "2e83d5b751f8054589adcd492695e227dc2feea2168f831bc89b9f7d887c9b2b",
+      "text_sha256": "2f160ad9f6d250de0bdba2ebb446ac07c62d453655e364bbdf0c4ae71de6803f"
+    },
+    {
+      "paper": "P0490R0",
+      "file": "paper-p0490r0.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0490r0.html",
+      "source_html_sha256": "b3a7d0f928267408b4aea54c1e47ade1d0f3b33ed5123ce361921ca742dc78b1",
+      "text_sha256": "0a69633b3657141590e710f627617982bc8c43d18dd30f388a86776b1c4f7bd3"
+    },
+    {
+      "paper": "P0527R1",
+      "file": "paper-p0527r1.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0527r1.html",
+      "source_html_sha256": "af347943924161f974c6b1baae66c4244441eb2e3c7ad5c2ec921755f4dc33fb",
+      "text_sha256": "1c6a69f42dfb55d732b35160a35670c6180f89991cac6d5170845d366131574d"
+    },
+    {
+      "paper": "P0588R1",
+      "file": "paper-p0588r1.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0588r1.html",
+      "source_html_sha256": "7dcba6106c5a2a9aa3466e54ca7846e8af04d907598a8693d03d6442457fcbfa",
+      "text_sha256": "3515ad51659c192e5445f149318d169dbb472a5fa8bb0fafdbe8c882b1cc2e9e"
+    },
+    {
+      "paper": "P1099R5",
+      "file": "paper-p1099r5.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1099r5.html",
+      "source_html_sha256": "bd896c9a3720ebdd3ef3746ec33c120e33c6f2c446d5e905e543b46c035aff6f",
+      "text_sha256": "37a89488dcc494865aa87eb23a2b5673ccf8748f3c4bb25970cdb8c52d3ee67c"
+    },
+    {
+      "paper": "P1155R3",
+      "file": "paper-p1155r3.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1155r3.html",
+      "source_html_sha256": "9afdfd59667d4ae73679415825488442046debfe7357ddc2bbde95b770f4ae0b",
+      "text_sha256": "61446668ef03e2c977af599fc3c7dfed8024ef072957ba632eb7be66f4b06d8c"
+    },
+    {
+      "paper": "P1787R6",
+      "file": "paper-p1787r6.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/p1787r6.html",
+      "source_html_sha256": "2c94378392f983183a26b056be074580273eacc27c6c2b50df2a6f4169f51fe4",
+      "text_sha256": "02aea8c8f30338ea195694772e491369a48823126d244c2351600f8f8cf08414"
+    },
+    {
+      "paper": "P1825R0",
+      "file": "paper-p1825r0.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html",
+      "source_html_sha256": "b420793836c0bb6632a9a4ac28a3e83d1ca8bb76fc550160377aa2736197e17b",
+      "text_sha256": "8f97cbc3ea8a7f5c167091b9d66b5bbc80c77954882eeece154d3fb379f9d0b2"
+    },
+    {
+      "paper": "P2266R2",
+      "file": "paper-p2266r2.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p2266r2.html",
+      "source_html_sha256": "4e2262e6d320247d88e1c0dcf62f3b71184650da3ed628073a3dd3d93609ec5f",
+      "text_sha256": "91407af8def348d1b842638f364b344d41517a15562395444635ea5a6c862fcd"
+    },
+    {
+      "paper": "P0136R1",
+      "file": "paper-p0136r1.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/p0136r1.html",
+      "source_html_sha256": "aba13233a139f27e6e4d4d4edf69d2e9454fa6afd5840872739ade4c3c06f375",
+      "text_sha256": "55dcb82f8542db6a7090dc0c8b9631d3aa8aa2871c9b9ffdd793783cc131f0f0"
+    }
+  ]
+}

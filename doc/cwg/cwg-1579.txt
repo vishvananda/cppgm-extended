@@ -1,0 +1,76 @@
+CWG 1579: Return by converting move constructor
+Source: https://cplusplus.github.io/CWG/issues/1579.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++14
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1579. Return by converting move constructor
+Section: 11.4.5.3 [class.copy.ctor [1]] Status: C++14 Submitter: Jeffrey Yasskin Date:
+2012-10-23
+
+N3690 comment US 13
+[2]
+
+[Moved to DR at the February, 2014 meeting.]
+
+Currently the conditions for moving from an object returned from a function are tied
+closely to the criteria for copy elision, which requires that the type of the object
+being returned be the same as the return type of the function. Another possibility that
+should be considered is to allow something like
+
+
+  optional<T> foo() {
+    T t;
+    ...
+    return t;
+  }
+
+
+and allow optional<T>::optional(T&&) to be used for the initialization of the return
+type. Currently this can be achieved explicitly by use of std::move, but it would be
+nice not to have to remember to do so.
+
+Similarly, the current rules apply only to complete objects; it could make sense to
+allow moving from subobjects of local objects.
+
+(See also issue 1493 [3] for other questions about the criteria for moving from a
+returned object.)
+
+Rationale (April, 2013):
+
+CWG felt that this suggestion should be considered in a broader context and was thus
+more appropriate for EWG.
+
+Additional note (September, 2013):
+
+Returned to "open" status in light of CD National Body comment.
+
+Proposed resolution (September, 2013):
+
+Change 11.4.5.3 [class.copy.ctor [4]] paragraph 32 as follows:
+
+When the criteria for elision of a copy operation are met [DELETE: or would be met save
+for the fact that the source object is a function parameter,] and the object to be
+copied is designated by an lvalue, [INSERT: or when the expression in a return statement
+is a (possibly parenthesized) id-expression that names an object with automatic storage
+duration declared in the body or parameter-declaration-clause of the innermost enclosing
+function or lambda-expression,] overload resolution to select the constructor for the
+copy is first performed as if the object were designated by an rvalue. If overload
+resolution fails...
+
+Source links:
+[1] https://wg21.link/class.copy.ctor
+[2] http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3903.html#US13
+[3] https://cplusplus.github.io/CWG/issues/1493.html
+[4] https://wg21.link/class.copy.ctor#32

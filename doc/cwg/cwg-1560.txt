@@ -1,0 +1,51 @@
+CWG 1560: Gratuitous lvalue-to-rvalue conversion in conditional-expression with throw-expression operand
+Source: https://cplusplus.github.io/CWG/issues/1560.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1560. Gratuitous lvalue-to-rvalue conversion in conditional-expression with
+throw-expression operand
+Section: 7.6.16 [expr.cond [1]] Status: CD3 Submitter: Nikolay Ivchenkov Date:
+2012-09-04
+
+[Moved to DR at the April, 2013 meeting.]
+
+A glvalue appearing as one operand of a conditional-expression in which the other
+operand is a throw-expression is converted to a prvalue, regardless of how the
+conditional-expression is used:
+
+If either the second or the third operand has type void, then the lvalue-to-rvalue
+(7.3.2 [conv.lval [2]]), array-to-pointer (7.3.3 [conv.array [3]]), and
+function-to-pointer (7.3.4 [conv.func [4]]) standard conversions are performed on the
+second and third operands, and one of the following shall hold:
+
+-
+
+The second or the third operand (but not both) is a throw-expression (14.2 [except.throw
+[5]]); the result is of the type of the other and is a prvalue.
+
+This seems to be gratuitous and surprising.
+
+Proposed resolution (October, 2012):
+
+This issue is resolved by the resolution of issue 1550 [6].
+
+Source links:
+[1] https://wg21.link/expr.cond
+[2] https://wg21.link/conv.lval
+[3] https://wg21.link/conv.array
+[4] https://wg21.link/conv.func
+[5] https://wg21.link/except.throw
+[6] cwg-1550.txt; https://cplusplus.github.io/CWG/issues/1550.html

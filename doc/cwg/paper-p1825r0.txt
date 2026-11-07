@@ -1,0 +1,108 @@
+P1825R0: WG21 paper reference
+Source: https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1825r0.html
+Retrieved: 2026-11-07
+Source HTML SHA256: b420793836c0bb6632a9a4ac28a3e83d1ca8bb76fc550160377aa2736197e17b
+
+Full paper text follows. [DELETE: ...] and [INSERT: ...] retain the source's
+change markup. A paper may discuss changes beyond the course language modes;
+its inclusion supplies offline wording, not an implementation claim.
+
+Merged wording for P0527R1 and P1155R3
+
+Document number: P1825R0
+Date: 2019-07-19
+Project: Programming Language C++, Core Working Group
+Reply-to: David Stone: david@doublewise.net, david.stone@uber.com
+
+
+P0527R1 ("Implicitly move from rvalue references in return statements" by David Stone)
+and P1155R3 ("More implicit moves" by Arthur O'Dwyer) both touch the same section of
+wording, including making some of the same changes. This wording accounts for all of the
+changes in both papers.
+
+Change 11.9.5 [class.copy.elision]/3:
+
+[INSERT: An implicitly movable entity is a variable of automatic storage duration that
+is either a non-volatile object or an rvalue reference to a non-volatile object type.]
+In the following copy-initialization contexts, a move operation might be used instead of
+a copy operation:
+
+-
+
+If the expression in a return or co_return statement ([stmt.return]) is a (possibly
+parenthesized) id-expression that names [DELETE: an object with automatic storage
+duration] [INSERT: an implicitly movable entity] declared in the body or
+parameter-declaration-clause of the innermost enclosing function or lambda-expression,
+or
+
+-
+
+if the operand of a throw-expression is [DELETE: the name of a non-volatile automatic
+object (other than a function or catch-clause parameter)] [INSERT: a (possibly
+parenthesized) id-expression that names an implicitly movable entity] whose scope does
+not extend beyond the [DELETE: end of the innermost enclosing try-block (if there is
+one)] [INSERT: compound-statement of the innermost try-block or function-try-block (if
+any) whose compound-statement or ctor-initializer encloses the throw-expression,]
+
+overload resolution to select the constructor for the copy or the return_value overload
+to call is first performed as if the [DELETE: object were designated by] [INSERT:
+expression or operand were] an rvalue. If the first overload resolution fails or was not
+performed, [DELETE: or if the type of the first parameter of the selected constructor or
+the return_value overload is not an rvalue reference to the object's type (possibly
+cv-qualified),] overload resolution is performed again, considering the [DELETE: object]
+[INSERT: expression or operand] as an lvalue. [ Note: This two-stage overload resolution
+must be performed regardless of whether copy elision will occur. It determines the
+constructor or the return_­value overload to be called if elision is not performed, and
+the selected constructor or [DELETE: the] return_­value overload must be accessible even
+if the call is elided. — end note ]
+[INSERT: [ Example:
+void f() {
+  T x;
+  try {
+    T y;
+    try {g(x);}
+    catch(...) {
+      if(/*...*/)
+        throw x;                // does not move
+      throw y;                  // moves
+    }
+    g(y);
+  } catch(...) {
+    g(x);
+    // g(y); // error
+  }
+}
+
+-- end example ]]
+
+Change Annex C.5: [diff.cpp17.class] to add an additional entry:
+
+[INSERT:
+
+Affected subclauses: [class.copy.elision]
+
+Change: A function returning an implicitly-movable entity may invoke a constructor
+taking an rvalue reference to a type different from that of the returned expression.
+Function and catch-clause parameters can be thrown using move constructors.
+
+Rationale: Side-effect of making it easier to write more efficient code that takes
+advantage of moves.
+
+Effect on original feature: Valid C++17 code may become ill-formed in this International
+Standard. For example:
+
+
+struct base {
+    base();
+    base(base const &);
+private:
+    base(base &&);
+};
+
+struct derived : base {};
+
+base f(base b) {
+    throw b;        // error: base(base &&) is private
+    derived d;
+    return d;       // error: base(base &&) is private
+}

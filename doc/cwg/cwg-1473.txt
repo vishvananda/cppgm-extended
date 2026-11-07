@@ -1,0 +1,87 @@
+CWG 1473: Syntax of literal-operator-id
+Source: https://cplusplus.github.io/CWG/issues/1473.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1473. Syntax of literal-operator-id
+Section: 12.6 [over.literal [1]] Status: CD3 Submitter: Richard Smith Date: 2012-03-05
+
+[Moved to DR at the April, 2013 meeting.]
+
+The current grammar requires that there be no whitespace between the literal and the
+ud-suffix, e.g., ""_abc, but that there be whitespace between the "" and the identifier
+in a literal-operator-id, e.g., operator "" _abc. This seems unfortunate. Would it be
+possible to provide an alternate production,
+
+operator user-defined-string-literal
+
+with the requirement that the string-literal be empty?
+
+The current wording is also unclear regarding interactions with phases of translation.
+We have the following production:
+
+literal-operator-id:
+
+operator "" identifier
+
+As this is after translation phase 6, would something like
+
+
+  operator "" "" _foo
+
+
+be accepted?
+
+Proposed resolution (October, 2012):
+
+1.
+
+Change 12.6 [over.literal [1]] as follows:
+
+literal-operator-id:
+
+operator [DELETE: ""] [INSERT: string-literal] identifier
+[INSERT: operator user-defined-string-literal]
+2.
+
+Change 12.6 [over.literal [2]] paragraph 1 as follows:
+
+[INSERT: The string-literal or user-defined-string-literal in a literal-operator-id
+shall have no encoding-prefix and shall contain no characters other than the implicit
+terminating '\0'.] The [INSERT: ud-suffix of the user-defined-string-literal or the]
+identifier in a literal-operator-id is called a literal suffix identifier. [Note: some
+literal suffix identifiers are reserved for future standardization; see 16.4.5.3.6
+[usrlit.suffix [3]]. —end note]
+
+3.
+
+Change the example in 12.6 [over.literal [4]] paragraph 8 as follows:
+
+
+  void operator "" _km(long double);                  // OK
+  string operator "" _i18n(const char*, std::size_t); // OK
+  template <char...> int operator "" \u03C0();        // OK: UCN for lowercase pi
+  float operator ""E(const char*);                    //[DELETE:  error: ""E (with no intervening space)
+                                                      // is a single token][INSERT:  OK]
+  float operator " " B(const char*);                  // error: non-[DELETE: adjacent quotes][INSERT: empty string-literal]
+  string operator "" 5X(const char*, std::size_t);    // error: invalid literal suffix identifier
+  double operator "" _miles(double);                  // error: invalid parameter-declaration-clause
+  template <char...> int operator "" [INSERT: _]j(const char*); // error: invalid parameter-declaration-clause
+
+Source links:
+[1] https://wg21.link/over.literal
+[2] https://wg21.link/over.literal#1
+[3] https://wg21.link/usrlit.suffix
+[4] https://wg21.link/over.literal#8

@@ -1,0 +1,57 @@
+CWG 1634: Temporary storage duration
+Source: https://cplusplus.github.io/CWG/issues/1634.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: open
+Catalog role: reference-only
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1634. Temporary storage duration
+Section: 6.8.6 [basic.stc [1]] Status: open Submitter: Richard Smith Date: 2013-03-04
+
+According to 6.8.6 [basic.stc [2]] paragraph 2,
+
+Static, thread, and automatic storage durations are associated with objects introduced
+by declarations (6.2 [basic.def [3]]) and implicitly created by the implementation
+(6.8.7 [class.temporary [4]]).
+
+The apparent intent of the reference to 6.8.7 [class.temporary [4]] is that a temporary
+whose lifetime is extended to be that of a reference with one of those storage durations
+is considered also to have that storage duration. This interpretation is buttressed by
+use of the phrase “an object with the same storage duration as the temporary” (twice) in
+6.8.7 [class.temporary [5]] paragraph 5.
+
+There are two problems, however: first, the specification of lifetime extension of
+temporaries (also in 6.8.7 [class.temporary [5]] paragraph 5) does not say anything
+about storage duration. Also, nothing is said in either of these locations about the
+storage duration of a temporary whose lifetime is not extended.
+
+The latter point is important because 6.8.4 [basic.life [6]] makes a distinction between
+the lifetime of an object and the acquisition and release of the storage the object
+occupies, at least for objects with non-trivial initialization and/or a non-trivial
+destructor. The assumption is made in 6.8.7 [class.temporary [4]] and elsewhere that the
+storage in which a temporary is created is no longer available for reuse, as specified
+in 6.8.4 [basic.life [6]], after the lifetime of the temporary has ended, but this
+assumption is not explicitly stated. One way to make that assumption explicit would be
+to define a storage duration for temporaries whose lifetime is not extended.
+
+See also issues 365 [7] and 2256 [8].
+
+Source links:
+[1] https://wg21.link/basic.stc
+[2] https://wg21.link/basic.stc#2
+[3] https://wg21.link/basic.def
+[4] https://wg21.link/class.temporary
+[5] https://wg21.link/class.temporary#5
+[6] https://wg21.link/basic.life
+[7] https://cplusplus.github.io/CWG/issues/365.html
+[8] https://cplusplus.github.io/CWG/issues/2256.html

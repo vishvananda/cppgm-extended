@@ -1,0 +1,45 @@
+CWG 1457: Undefined behavior in left-shift
+Source: https://cplusplus.github.io/CWG/issues/1457.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1457. Undefined behavior in left-shift
+Section: 7.6.7 [expr.shift [1]] Status: CD3 Submitter: Howard Hinnant Date: 2012-02-04
+
+[Moved to DR at the October, 2012 meeting.]
+
+The current wording of 7.6.7 [expr.shift [2]] paragraph 2 makes it undefined behavior to
+create the most-negative integer of a given type by left-shifting a (signed) 1 into the
+sign bit, even though this is not uncommonly done and works correctly on the majority of
+(twos-complement) architectures:
+
+...if E1 has a signed type and non-negative value, and E1 ⨯ 2E2 is representable in the
+result type, then that is the resulting value; otherwise, the behavior is undefined.
+
+As a result, this technique cannot be used in a constant expression, which will break a
+significant amount of code.
+
+Proposed resolution (February, 2012):
+
+Change 7.6.7 [expr.shift [2]] paragraph 2 as follows:
+
+...if E1 has a signed type and non-negative value, and E1 ⨯ 2E2 is representable in the
+[INSERT: corresponding unsigned type of the] result type, then that [INSERT: value,
+converted to the result type,] is the resulting value; otherwise, the behavior is
+undefined.
+
+Source links:
+[1] https://wg21.link/expr.shift
+[2] https://wg21.link/expr.shift#2

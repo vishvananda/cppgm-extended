@@ -1,0 +1,51 @@
+CWG 1638: Declaring an explicit specialization of a scoped enumeration
+Source: https://cplusplus.github.io/CWG/issues/1638.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1638. Declaring an explicit specialization of a scoped enumeration
+Section: 9.8.1 [dcl.enum [1]] Status: CD4 Submitter: Richard Smith Date: 2013-03-12
+
+[Adopted at the February, 2016 meeting.]
+
+There is no syntax currently for declaring an explicit specialization of a member scoped
+enumeration. A declaration (not a definition) of such an explicit specialization most
+resembles an opaque-enum-declaration, but the grammar for that requires that the name be
+a simple identifier, which will not be the case for an explicit specialization of a
+member enumeration. This could be remedied by adding a nested-name-specifier to the
+grammar with a restriction that a nested-name-specifier only appear in an explicit
+specialization.
+
+Proposed resolution (October, 2015):
+
+1.
+
+Change the grammar in 9.8.1 [dcl.enum [1]] paragraph 1 as follows:
+
+opaque-enum-declaration:
+
+enum-key attribute-specifier-seqopt [INSERT: nested-name-specifieropt] identifier
+enum-baseopt ;
+2.
+
+Add the following at the end of 9.8.1 [dcl.enum [2]] paragraph 1:
+
+[INSERT: If an opaque-enum-declaration contains a nested-name-specifier, the declaration
+shall be an explicit specialization (13.9.4 [temp.expl.spec [3]]).]
+
+Source links:
+[1] https://wg21.link/dcl.enum
+[2] https://wg21.link/dcl.enum#1
+[3] https://wg21.link/temp.expl.spec

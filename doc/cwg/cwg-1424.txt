@@ -1,0 +1,133 @@
+CWG 1424: When must sub-object destructors be accessible?
+Source: https://cplusplus.github.io/CWG/issues/1424.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++14
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1424. When must sub-object destructors be accessible?
+Section: 14.3 [except.ctor [1]] Status: C++14 Submitter: Daniel Krügler Date: 2011-12-07
+
+[Moved to DR at the September, 2013 meeting.]
+
+The current specification does not appear to say whether an implementation is
+permitted/required/forbidden to complain when a sub-object's destructor is inaccessible.
+In particular, if there is no possibility for an exception to be thrown following a
+given sub-object's construction, should an implementation issue an error if that
+sub-object's destructor is inaccessible?
+
+Proposed resolution (February, 2013):
+
+1.
+
+Change 6.3 [basic.def.odr [2]] paragraph 2 as follows:
+
+...A destructor for a class is odr-used [DELETE: as specified in] [INSERT: if it is
+potentially invoked (]11.4.7 [class.dtor [3]][INSERT: )].
+
+2.
+
+Change 7.6.2.8 [expr.new [4]] paragraph 17 as follows:
+
+If the new-expression creates an object or an array of objects of class type, access and
+ambiguity control are done for the allocation function, the deallocation function
+(11.4.11 [class.free [5]]), and the constructor (11.4.5 [class.ctor [6]]). If the
+[DELETE: new expression] [INSERT: new-expression] creates an array of objects of class
+type, [DELETE: access and ambiguity control are done for] the destructor [INSERT: is
+potentially invoked] (11.4.7 [class.dtor [3]]).
+
+3.
+
+Change 11.4.7 [class.dtor [7]] paragraph 11 as follows:
+
+[DELETE: Destructors are] [INSERT: A destructor is] invoked implicitly
+
+-
+
+for [INSERT: a] constructed object[DELETE: s] with static storage duration (6.8.6.2
+[basic.stc.static [8]]) at program termination (6.10.3.3 [basic.start.dynamic [9]]),
+
+-
+
+for [INSERT: a] constructed object[DELETE: s] with thread storage duration (6.8.6.3
+[basic.stc.thread [10]]) at thread exit,
+
+-
+
+for [INSERT: a] constructed object[DELETE: s] with automatic storage duration (6.8.6.4
+[basic.stc.auto [11]]) when the block in which an object is created exits (8.10
+[stmt.dcl [12]]),
+
+-
+
+for [INSERT: a] constructed temporary object[DELETE: s] when [DELETE: the] [INSERT: its]
+lifetime [DELETE: of a temporary object] ends (6.8.7 [class.temporary [13]])[DELETE:
+,][INSERT: .]
+
+-
+
+[DELETE: for constructed objects allocated by a new-expression (7.6.2.8 [expr.new
+[14]]), through use of a delete-expression (7.6.2.9 [expr.delete [15]]),]
+
+-
+
+[DELETE: in several situations due to the handling of exceptions (14.4 [except.handle
+[16]]).]
+
+[INSERT: In each case, the context of the invocation is the context of the construction
+of the object. A destructor is also invoked implicitly through use of a
+delete-expression (7.6.2.9 [expr.delete [15]]) for a constructed object allocated by a
+new-expression (7.6.2.8 [expr.new [14]]); the context of the invocation is the
+delete-expression. [Note: An array of class type contains several subobjects for each of
+which the destructor is invoked. —end note] A destructor can also be invoked explicitly.
+A destructor is potentially invoked if it is invoked or as specified in 7.6.2.8
+[expr.new [14]] and 11.9.3 [class.base.init [17]].] A program is ill-formed if [DELETE:
+an object of class type or array thereof is declared and the destructor for the class is
+not accessible at the point of the declaration] [INSERT: a destructor that is
+potentially invoked is deleted or not accessible from the context of the invocation].
+[DELETE: Destructors can also be invoked explicitly.]
+
+4.
+
+Add the following as a new paragraph following 11.9.3 [class.base.init [18]] paragraph
+9:
+
+If a given non-static data member has both...
+
+[INSERT: In a non-delegating constructor, the destructor for each direct or virtual base
+class and for each non-static data member of class type is potentially invoked (11.4.7
+[class.dtor [3]]). [Note: This provision ensures that destructors can be called for
+fully-constructed sub-objects in case an exception is thrown (14.3 [except.ctor [1]]).
+—end note]]
+
+In a non-delegating constructor, initialization proceeds...
+
+Source links:
+[1] https://wg21.link/except.ctor
+[2] https://wg21.link/basic.def.odr#2
+[3] https://wg21.link/class.dtor
+[4] https://wg21.link/expr.new#17
+[5] https://wg21.link/class.free
+[6] https://wg21.link/class.ctor
+[7] https://wg21.link/class.dtor#11
+[8] https://wg21.link/basic.stc.static
+[9] https://wg21.link/basic.start.dynamic
+[10] https://wg21.link/basic.stc.thread
+[11] https://wg21.link/basic.stc.auto
+[12] https://wg21.link/stmt.dcl
+[13] https://wg21.link/class.temporary
+[14] https://wg21.link/expr.new
+[15] https://wg21.link/expr.delete
+[16] https://wg21.link/except.handle
+[17] https://wg21.link/class.base.init
+[18] https://wg21.link/class.base.init#9

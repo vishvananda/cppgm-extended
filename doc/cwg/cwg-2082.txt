@@ -1,0 +1,113 @@
+CWG 2082: Referring to parameters in unevaluated operands of default arguments
+Source: https://cplusplus.github.io/CWG/issues/2082.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2082. Referring to parameters in unevaluated operands of default arguments
+Section: 9.3.4.7 [dcl.fct.default [1]] Status: CD4 Submitter: Faisal Vali Date:
+2015-02-09
+
+[Adopted at the February, 2016 meeting.]
+
+According to 9.3.4.7 [dcl.fct.default [2]] paragraph 9,
+
+A default argument is evaluated each time the function is called with no argument for
+the corresponding parameter. The order of evaluation of function arguments is
+unspecified. Consequently, parameters of a function shall not be used in a default
+argument, even if they are not evaluated.
+
+This prohibits use of parameters in unevaluated operands, e.g.,
+
+
+  void foo(int a = decltype(a){});
+
+
+This wording predates the concept of “unevaluated operands” (the phrase “not evaluated”
+refers to calls to the function where an actual argument is supplied and thus the
+default argument is not used, not to unevaluated operands) and should not apply to such
+cases.
+
+Proposed resolution (October, 2015):
+
+1.
+
+Change 9.3.4.7 [dcl.fct.default [3]] paragraph 7 as follows:
+
+[DELETE: Local variables] [INSERT: A local variable] shall not [DELETE: be used]
+[INSERT: appear as a potentially-evaluated expression] in a default argument. [Example:
+
+
+  void f() {
+    int i;
+    extern void g(int x = i);           //[INSERT:  ]error
+[INSERT:     extern void h(int x = sizeof(i));   // OK]
+    // ...
+  }
+
+
+—end example]
+
+2.
+
+Change 9.3.4.7 [dcl.fct.default [4]] paragraph 8 as follows:
+
+[INSERT: [Note:] The keyword this [DELETE: shall] [INSERT: may] not [DELETE: be used]
+[INSERT: appear] in a default argument of a member function[INSERT: ; see _N4567_.5.1.1
+[expr.prim.general [5]]]. [Example:
+
+
+  class A {
+    void f(A* p = this) { } // error
+  };
+
+
+—end example] [INSERT: —end note]]
+
+3.
+
+Change 9.3.4.7 [dcl.fct.default [2]] paragraph 9 as follows:
+
+A default argument is evaluated each time the function is called with no argument for
+the corresponding parameter. [DELETE: The order of evaluation of function arguments is
+unspecified. Consequently, parameters of a function shall not be used in a default
+argument, even if they are not evaluated.] [INSERT: A parameter shall not appear as a
+potentially-evaluated expression in a default argument.] Parameters of a function
+declared before a default argument are in scope and can hide namespace and class member
+names. [Example:
+
+
+  int a;
+  int f(int a, int b = a);         // error: parameter a
+                                   // used as default argument
+  typedef int I;
+  int g(float I, int b = I(2));    // error: parameter I found
+  int h(int a, int b = sizeof(a)); // [DELETE: error, parameter ][DELETE: a][DELETE:  used] [INSERT: OK, unevaluated operand]
+  [DELETE:                                    // in default argument]
+
+
+—end example] [DELETE: Similarly, a] [INSERT: A] non-static member shall not [DELETE: be
+used] [INSERT: appear] in a default argument[DELETE: , even if it is not evaluated,]
+unless it appears as the id-expression of a class member access expression (7.6.1.5
+[expr.ref [6]]) or unless it is used to form a pointer to member (7.6.2.2 [expr.unary.op
+[7]]). [Example:...
+
+Source links:
+[1] https://wg21.link/dcl.fct.default
+[2] https://wg21.link/dcl.fct.default#9
+[3] https://wg21.link/dcl.fct.default#7
+[4] https://wg21.link/dcl.fct.default#8
+[5] https://wg21.link/expr.prim.general
+[6] https://wg21.link/expr.ref
+[7] https://wg21.link/expr.unary.op

@@ -1,0 +1,68 @@
+CWG 2356: Base class copy and move constructors should not be inherited
+Source: https://cplusplus.github.io/CWG/issues/2356.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD5
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2356. Base class copy and move constructors should not be inherited
+Section: 12.2.2 [over.match.funcs [1]] Status: CD5 Submitter: Richard Smith Date:
+2018-02-26
+
+[Accepted as a DR at the June, 2018 (Rapperswil) meeting.]
+
+Base class copy and move constructors brought into a derived class via a
+using-declaration should not be considered by overload resolution when constructing a
+derived class object.
+
+Proposed resolution, February, 2018:
+
+Change 12.2.2 [over.match.funcs [2]] paragraph 8 as follows:
+
+A defaulted move special function (11.4.5.3 [class.copy.ctor [3]]) that is defined as
+deleted is excluded from the set of candidate functions in all contexts. [INSERT: A
+constructor inherited from class type C (11.9.4 [class.inhctor.init [4]]) that has a
+first parameter of type “reference to cv1 P” (including such a constructor instantiated
+from a template) is excluded from the set of candidate functions when constructing an
+object of type cv2 D if the argument list has exactly one argument and C is
+reference-related to P and P is reference-related to D. [Example:]
+
+
+[INSERT:   struct A {
+    A();
+    A(A &&);                        // #1
+    template<typename T> A(T &&);   // #2
+  };
+  struct B : A {
+    using A::A;
+    B(const B &);                   // #3
+    B(B &&) = default;              // #4, implicitly deleted
+
+    struct X { X(X &&) = delete; } x;
+  };
+  extern B b1;
+  B b2 = static_cast<B&&>(b1);      // calls #3: #1, #2, and #4 are not viable
+  struct C { operator B&&(); };
+  B b3 = C();                       // calls #3]
+
+
+[INSERT: —end example]]
+
+Source links:
+[1] https://wg21.link/over.match.funcs
+[2] https://wg21.link/over.match.funcs#8
+[3] https://wg21.link/class.copy.ctor
+[4] https://wg21.link/class.inhctor.init
+
+Offline paper references:
+P0136R1: paper-p0136r1.txt

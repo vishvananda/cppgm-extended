@@ -1,0 +1,169 @@
+CWG 619: Completeness of array types
+Source: https://cplusplus.github.io/CWG/issues/619.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++11
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+619. Completeness of array types
+Section: 6.9 [basic.types [1]] Status: C++11 Submitter: Steve Clamage Date: 16 February
+2007
+
+[Voted into WP at August, 2010 meeting.]
+
+Is the following example well-formed?
+
+
+    struct S {
+        static char a[5];
+    };
+    char S::a[];    // Unspecified bound in definition
+
+
+6.7 [basic.link [2]] paragraph 10 certainly makes allowance for declarations to differ
+in the presence or absence of a major array bound. However, 6.2 [basic.def [3]]
+paragraph 5 says that
+
+A program is ill-formed if the definition of any object gives the object an incomplete
+type (6.9 [basic.types [1]]).
+
+6.9 [basic.types [4]] paragraph 7 says,
+
+The declared type of an array object might be an array of unknown size and therefore be
+incomplete at one point in a translation unit and complete later on; the array types at
+those two points (“array of unknown bound of T” and “array of N T”) are different types.
+
+This wording appears to make no allowance for the C concept of “composite type;”
+instead, each declaration is said to have its own type. By this interpretation, the
+example is ill-formed, because the type declared by the definition of S::a is
+incomplete.
+
+If the example is intended to be well-formed, the Standard needs explicit wording
+stating that an omitted array bound in a declaration is implicitly taken from that of a
+visible declaration of that object, if any.
+
+Notes from the April, 2007 meeting:
+
+The CWG agreed that this usage should be permitted.
+
+Proposed resolution (June, 2008):
+
+1.
+
+Change 9.3.4.5 [dcl.array [5]] paragraph 1 as follows:
+
+...[DELETE: If] [INSERT: Except as noted below, if] the constant expression is omitted,
+the type of the identifier of D is “derived-declarator-type-list array of unknown bound
+of T,” an incomplete object type...
+
+2.
+
+Change 9.3.4.5 [dcl.array [6]] paragraph 3 as follows:
+
+When several “array of” specifications are adjacent, a multidimensional array is
+created; [INSERT: only the first of] the constant expressions that specify the bounds of
+the arrays [DELETE: can] [INSERT: may] be omitted [DELETE: only for the first member of
+the sequence. [Note: this elision is useful for function parameters of array types, and
+when the array is external and the definition, which allocates storage, is given
+elsewhere. —end note]] [INSERT: In addition to declarations in which an incomplete
+object type is allowed, an array bound may be omitted in the declaration of a function
+parameter (9.3.4.6 [dcl.fct [7]]).] [DELETE: The first constant-expression can] [INSERT:
+An array bound may] also be omitted when the declarator is followed by an initializer
+(9.5 [dcl.init [8]]). In this case the bound is calculated from the number of initial
+elements (say, N) supplied (9.5.2 [dcl.init.aggr [9]]), and the type of the identifier
+of D is “array of N T.” [INSERT: Furthermore, if there is a visible declaration of the
+name declared by the declarator-id (if any) in which the bound was specified, an omitted
+array bound is taken to be the same as in that earlier declaration.]
+
+Notes from the September, 2008 meeting:
+
+The proposed resolution does not capture the result favored by the CWG: array bound
+information should be accumulated across declarations within the same scope, but a block
+extern declaration in a nested scope should not inherit array bound information from the
+outer declaration. (This is consistent with the treatment of default arguments in
+function declarations.) For example:
+
+
+    int a[5];
+    void f() {
+        extern int a[];
+        sizeof(a);
+    }
+
+
+Although there was some confusion about the C99 wording dealing with this case, it is
+probably well-formed in C99. However, it should be ill-formed in C++, because we want to
+avoid the concept of “compatible types” as it exists in C.
+
+Proposed resolution (March, 2010):
+
+1.
+
+Change 9.3.4.5 [dcl.array [5]] paragraph 1 as follows:
+
+...[DELETE: If] [INSERT: Except as noted below, if] the constant expression is omitted,
+the type of the identifier of D is “derived-declarator-type-list array of unknown bound
+of T,” an incomplete object type...
+
+2.
+
+Change 9.3.4.5 [dcl.array [10]] paragraphs 3-4 as follows:
+
+When several “array of” specifications are adjacent, a multidimensional array is
+created; [INSERT: only the first of] the constant expressions that specify the bounds of
+the arrays [DELETE: can] [INSERT: may] be omitted [DELETE: only for the first member of
+the sequence. [Note: this elision is useful for function parameters of array types, and
+when the array is external and the definition, which allocates storage, is given
+elsewhere. —end note]] [INSERT: In addition to declarations in which an incomplete
+object type is allowed, an array bound may be omitted in some cases in the declaration
+of a function parameter (9.3.4.6 [dcl.fct [7]]).] [DELETE: The first constant-expression
+can] [INSERT: An array bound may] also be omitted when the declarator is followed by an
+initializer (9.5 [dcl.init [8]]). In this case the bound is calculated from the number
+of initial elements (say, N) supplied (9.5.2 [dcl.init.aggr [9]]), and the type of the
+identifier of D is “array of N T.” [INSERT: Furthermore, if there is a preceding
+declaration of the entity in the same scope in which the bound was specified, an omitted
+array bound is taken to be the same as in that earlier declaration, and similarly for
+the definition of a static data member of a class.]
+
+[Example:...
+
+...can reasonably appear in an expression. [INSERT: Finally,]
+
+
+[INSERT:   extern int x[10];
+  struct S {
+    static int y[10];
+  };
+
+  int x[];                //OK: bound is 10
+  int S::y[];             //OK: bound is 10
+
+  void f() {
+    extern int x[];
+    int i = sizeof(x);    //error: incomplete object type
+  }]
+
+
+—end example]
+
+Source links:
+[1] https://wg21.link/basic.types
+[2] https://wg21.link/basic.link#10
+[3] https://wg21.link/basic.def#5
+[4] https://wg21.link/basic.types#7
+[5] https://wg21.link/dcl.array#1
+[6] https://wg21.link/dcl.array#3
+[7] https://wg21.link/dcl.fct
+[8] https://wg21.link/dcl.init
+[9] https://wg21.link/dcl.init.aggr
+[10] https://wg21.link/dcl.array

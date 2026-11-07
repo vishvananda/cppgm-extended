@@ -1,0 +1,72 @@
+CWG 1397: Class completeness in non-static data member initializers
+Source: https://cplusplus.github.io/CWG/issues/1397.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1397. Class completeness in non-static data member initializers
+Section: 11.4 [class.mem [1]] Status: CD4 Submitter: Jason Merrill Date: 2011-09-23
+
+[Moved to DR at the November, 2014 meeting.]
+
+In Bloomington there was general agreement that given a class that uses non-static data
+member initializers, the exception-specification for the default constructor depends on
+whether those initializers are noexcept. However, according to 11.4 [class.mem [2]]
+paragraph 2, the class is regarded as complete within the brace-or-equal-initializers
+for non-static data members.
+
+This suggests that we need to finish processing the class before parsing the NSDMI, but
+our direction on issue 1351 [3] suggests that we need to parse the NSDMI in order to
+finish processing the class. Can't have both...
+
+Additional note (March, 2013):
+
+A specific example:
+
+
+  struct A {
+    void *p = A{};
+    operator void*() const { return nullptr; }
+  };
+
+
+Perhaps the best way of addressing this would be to make it ill-formed for a non-static
+data member initializer to use a defaulted constructor of its class.
+
+See also issue 1360 [4].
+
+Notes from the September, 2013 meeting:
+
+One approach that might be considered would be to parse deferred portions lazily, on
+demand, and then issue an error if this results in a cycle.
+
+Proposed resolution (February, 2014):
+
+Change 11.4 [class.mem [5]] paragraph 4 as follows:
+
+A brace-or-equal-initializer shall appear only in the declaration of a data member. (For
+static data members, see 11.4.9.3 [class.static.data [6]]; for non-static data members,
+see 11.9.3 [class.base.init [7]]). [INSERT: A brace-or-equal-initializer for a
+non-static data member shall not directly or indirectly cause the implicit definition of
+a defaulted default constructor for the enclosing class or the exception-specification
+of that constructor.]
+
+Source links:
+[1] https://wg21.link/class.mem
+[2] https://wg21.link/class.mem#2
+[3] cwg-1351.txt; https://cplusplus.github.io/CWG/issues/1351.html
+[4] https://cplusplus.github.io/CWG/issues/1360.html
+[5] https://wg21.link/class.mem#4
+[6] https://wg21.link/class.static.data
+[7] https://wg21.link/class.base.init

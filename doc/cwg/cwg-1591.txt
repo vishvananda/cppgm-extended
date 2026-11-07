@@ -1,0 +1,124 @@
+CWG 1591: Deducing array bound and element type from initializer list
+Source: https://cplusplus.github.io/CWG/issues/1591.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1591. Deducing array bound and element type from initializer list
+Section: 13.10.3.2 [temp.deduct.call [1]] Status: CD4 Submitter: Peter Dimov Date:
+2012-12-01
+
+[Moved to DR at the November, 2014 meeting.]
+
+Currently, 13.10.3.2 [temp.deduct.call [2]] paragraph 1 says,
+
+Template argument deduction is done by comparing each function template parameter type
+(call it P) with the type of the corresponding argument of the call (call it A) as
+described below. If removing references and cv-qualifiers from P gives
+std::initializer_list<P'> for some P' and the argument is an initializer list (9.5.5
+[dcl.init.list [3]]), then deduction is performed instead for each element of the
+initializer list, taking P' as a function template parameter type and the initializer
+element as its argument. Otherwise, an initializer list argument causes the parameter to
+be considered a non-deduced context (13.10.3.6 [temp.deduct.type [4]]).
+
+It would seem reasonable, however, to allow an array bound to be deduced from the number
+of elements in the initializer list, e.g.,
+
+
+  template<int N> void g(int const (&)[N]);
+  void f() {
+    g( { 1, 2, 3, 4 } );
+  }
+
+
+Additional note (March, 2013):
+
+The element type should also be deducible.
+
+Proposed resolution (February, 2014):
+
+1.
+
+Change 13.10.3.2 [temp.deduct.call [2]] paragraph 1 as follows:
+
+Template argument deduction is done by comparing each function template parameter type
+(call it P) with the type of the corresponding argument of the call (call it A) as
+described below. If [INSERT: P is a dependent type,] removing references and
+cv-qualifiers from P gives std::initializer_list<P'> [INSERT: or P'[N]] for some P'
+[INSERT: and N,] and the argument is [DELETE: an] [INSERT: a non-empty] initializer list
+(9.5.5 [dcl.init.list [3]]), then deduction is performed instead for each element of the
+initializer list, taking P' as a function template parameter type and the initializer
+element as its argument[INSERT: , and in the P'[N] case, if N is a non-type template
+parameter, N is deduced from the length of the initializer list]. Otherwise, an
+initializer list argument causes the parameter to be considered a non-deduced context
+(13.10.3.6 [temp.deduct.type [4]]). [Example:
+
+
+  template<class T> void f(std::initializer_list<T>);
+  f({1,2,3});              // T deduced to int
+  f({1,"asdf"});           // error: T deduced to both int and const char*
+
+  template<class T> void g(T);
+  g({1,2,3});              // error: no argument deduced for T
+
+[INSERT:   template<class T, int N> void h(T const(&)[N]);
+  h({1,2,3});              // T deduced to int, N deduced to 3
+
+  template<class T> void j(T const(&)[3]);
+  j({42});                 // T deduced to int, array bound not considered
+
+  struct Aggr { int i; int j; };
+  template<int N> void k(Aggr const(&)[N]);
+  k({1,2,3});              // error: deduction fails, no conversion from int to Aggr
+  k({{1},{2},{3}});        // OK, N deduced to 3
+
+  template<int M, int N> void m(int const(&)[M][N]);
+  m({{1,2},{3,4}});        // M and N both deduced to 2
+
+  template<class T, int N> void n(T const(&)[N], T);
+  n({{1},{2},{3}},Aggr()); // OK, T is Aggr, N is 3]
+
+
+—end example] For a function parameter pack...
+
+2.
+
+Change the penultimate bullet of 13.10.3.6 [temp.deduct.type [5]] paragraph 5 as
+follows:
+
+The non-deduced contexts are:
+
+-
+
+...
+
+-
+
+A function parameter for which the associated argument is an initializer list (9.5.5
+[dcl.init.list [3]]) but the parameter does not have [DELETE: std::initializer_list or
+reference to possibly cv-qualified std::initializer_list type] [INSERT: a type for which
+deduction from an initializer list is specified (13.10.3.2 [temp.deduct.call [1]])].
+[Example:...
+
+-
+
+A function parameter pack that does not occur at the end of the
+parameter-declaration-list.
+
+Source links:
+[1] https://wg21.link/temp.deduct.call
+[2] https://wg21.link/temp.deduct.call#1
+[3] https://wg21.link/dcl.init.list
+[4] https://wg21.link/temp.deduct.type
+[5] https://wg21.link/temp.deduct.type#5

@@ -1,0 +1,150 @@
+CWG 1734: Nontrivial deleted copy functions
+Source: https://cplusplus.github.io/CWG/issues/1734.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1734. Nontrivial deleted copy functions
+Section: 11.4.5.3 [class.copy.ctor [1]] Status: CD4 Submitter: James Widman Date:
+2013-08-09
+
+[Adopted at the February, 2016 meeting.]
+
+The intent was for PODs in C++11 to be a superset of C++03 PODs. Consequently, in the
+following example, C should be a POD but isn't:
+
+
+  struct A {
+    const int m;
+    A& operator=(A const&) = default; // deleted and trivial, so A is a
+                                      // POD, as it would be in 2003
+                                      // without this explicit op= decl
+  };
+  static_assert(__is_trivially_copyable(A), "");
+
+  struct B {
+    int i;
+    B& operator=(B &) & = default;      // non-trivial
+    B& operator=(B const&) & = default; // trivial
+  };
+
+  struct C {
+    const B m;
+    C& operator=(C const& r) = default; // deleted (apparently), but non-trivial (apparently)
+    /* Notionally:
+      C& operator=(C const& r) {
+        (*this).m.operator=(r.m);
+        return *this;
+      }
+    */
+  };
+  static_assert(!__is_trivially_copyable(C), "");
+
+
+This is because of the following text from 11.4.5.3 [class.copy.ctor [2]] paragraph 25:
+
+for each non-static data member of X that is of class type (or array thereof), the
+assignment operator selected to copy/move that member is trivial;
+
+In this case, overload resolution fails, so no assignment operator is selected, so
+C::operator=(const C&) is non-trivial.
+
+(See also issue 1928 [3].)
+
+Additional note, November, 2014:
+
+See paper N4148.
+
+Additional note, October, 2015:
+
+Moved from "extension" to "open" status, along with issue 1928 [3], to allow
+reconsideration by CWG. It has been suggested that the triviality of a deleted function
+should be irrelevant, since it cannot be used in any event. A possible change to
+implement that, more conservative than the one proposed in N4148, would be:
+
+A trivially copyable class is a class that:
+
+-
+
+has no non-trivial, non-deleted copy constructors (11.4.5.3 [class.copy.ctor [1]]),
+
+-
+
+has no non-trivial, non-deleted move constructors (11.4.5.3 [class.copy.ctor [1]]),
+
+-
+
+has no non-trivial, non-deleted copy assignment operators (12.4.3.2 [over.assign [4]],
+11.4.5.3 [class.copy.ctor [1]]),
+
+-
+
+has no non-trivial, non-deleted move assignment operators (12.4.3.2 [over.assign [4]],
+11.4.5.3 [class.copy.ctor [1]]),
+
+-
+
+has at least one non-deleted copy or move constructor or assignment operator, and
+
+-
+
+has a trivial, non-deleted destructor (11.4.7 [class.dtor [5]]).
+
+Proposed resolution (October, 2015):
+
+Change Clause 11 [class [6]] paragraph 6 as follows:
+
+A trivially copyable class is a class[DELETE:  that]:
+
+-
+
+[DELETE: has no non-trivial copy constructors (11.4.5.3 [class.copy.ctor [1]]),]
+
+-
+
+[DELETE: has no non-trivial move constructors (11.4.5.3 [class.copy.ctor [1]]),]
+
+-
+
+[DELETE: has no non-trivial copy assignment operators (12.4.3.2 [over.assign [4]],
+11.4.5.3 [class.copy.ctor [1]]),]
+
+-
+
+[DELETE: has no non-trivial move assignment operators (12.4.3.2 [over.assign [4]],
+11.4.5.3 [class.copy.ctor [1]]), and]
+
+-
+
+[INSERT: where each copy constructor, move constructor, copy assignment operator, and
+move assignment operator (11.4.5.3 [class.copy.ctor [1]], 12.4.3.2 [over.assign [4]]) is
+either deleted or trivial,]
+
+-
+
+[INSERT: that has at least one non-deleted copy constructor, move constructor, copy
+assignment operator, or move assignment operator, and]
+
+-
+
+[INSERT: that] has a trivial[INSERT: , non-deleted] destructor (11.4.7 [class.dtor
+[5]]).
+
+Source links:
+[1] https://wg21.link/class.copy.ctor
+[2] https://wg21.link/class.copy.ctor#25
+[3] https://cplusplus.github.io/CWG/issues/1928.html
+[4] https://wg21.link/over.assign
+[5] https://wg21.link/class.dtor
+[6] https://wg21.link/class#6

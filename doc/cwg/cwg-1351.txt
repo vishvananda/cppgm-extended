@@ -1,0 +1,768 @@
+CWG 1351: Problems with implicitly-declared exception-specifications
+Source: https://cplusplus.github.io/CWG/issues/1351.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1351. Problems with implicitly-declared exception-specifications
+Section: 14.5 [except.spec [1]] Status: CD4 Submitter: Richard Smith Date: 2011-08-16
+
+[Moved to DR at the November, 2014 meeting.]
+
+The determination of the exception-specification for an implicitly-declared special
+member function, as described in 14.5 [except.spec [2]] paragraph 14, does not take into
+account the fact that nonstatic data member initializers and default arguments in
+default constructors can contain throw-expressions, which are not part of the
+exception-specification of any function that is “directly invoked” by the implicit
+definition. Also, the reference to “directly invoked” functions is not restricted to
+potentially-evaluated expressions, thus possibly including irrelevant
+exception-specifications.
+
+Additional note (August, 2012):
+
+The direction established by CWG for resolving this issue was to consider functions
+called from default arguments and non-static data member initializers in determining the
+exception-specification. This leads to a problem with ordering: because non-static data
+member initializers can refer to members declared later, their effect cannot be known
+until the end of the class. However, a non-static data member initializer could possibly
+refer to an implicitly-declared constructor, either its own or that of an enclosing
+class.
+
+Proposed resolution (October, 2012) [SUPERSEDED]:
+
+1.
+
+Add the following two new paragraphs and make the indicated changes to 14.5 [except.spec
+[2]] paragraph 14:
+
+[INSERT: A set of potential exceptions may contain types and the special value “any.”
+The set of potential exceptions of an expression is the union of all sets of potential
+exceptions of each potentially-evaluated subexpression e:]
+
+-
+
+[INSERT: If e is a call to a function, member function, function pointer, or member
+function pointer (including implicit calls, such as a call to the allocation function in
+a new-expression):]
+
+-
+
+[INSERT: if it has a non-throwing exception-specification or the call is a core constant
+expression (7.7 [expr.const [3]]), the set is empty;]
+
+-
+
+[INSERT: otherwise, if it has a dynamic-exception-specification, the set consists of
+every type in that dynamic-exception-specification;]
+
+-
+
+[INSERT: otherwise, the set consists of “any.”]
+
+-
+
+[INSERT: If e is a throw-expression (14.2 [except.throw [4]]), the set consists of the
+type of the exception object that would be initialized by the operand if present, or
+“any” otherwise.]
+
+-
+
+[INSERT: If e is a dynamic_cast expression that casts to a reference type and requires a
+run-time check (7.6.1.7 [expr.dynamic.cast [5]]), the set consists of the type
+std::bad_cast.]
+
+-
+
+[INSERT: If e is a typeid expression applied to a glvalue expression whose type is a
+polymorphic class type (7.6.1.8 [expr.typeid [6]]), the set consists of the type
+std::bad_typeid.]
+
+-
+
+[INSERT: If e is a new-expression with a non-constant expression in the
+noptr-new-declarator (7.6.2.8 [expr.new [7]]), the set also includes the type
+std::bad_array_new_length.]
+
+-
+
+[INSERT: Otherwise, the set is the empty set.]
+
+[INSERT: The set of potential exceptions of a function f of some class X, where f is an
+inheriting constructor or an implicitly-declared special member function, is defined as
+follows: ]
+
+-
+
+[INSERT: If f is a constructor, the set is the union of the sets of potential exceptions
+of the constructor invocations for X's non-variant non-static data members, for X's
+direct base classes, and, if X is non-abstract (11.7.4 [class.abstract [8]]), for X's
+virtual base classes, as selected by overload resolution for the implicit definition of
+f (11.4.5 [class.ctor [9]]), including default argument expressions used in such
+invocations. [Note: Even though destructors for fully constructed subobjects are invoked
+when an exception is thrown during the execution of a constructor (14.3 [except.ctor
+[10]]), their exception-specifications do not contribute to the exception-specification
+of the constructor, because an exception thrown from such a destructor could never
+escape the constructor (14.2 [except.throw [4]], 14.6.2 [except.terminate [11]]). —end
+note]]
+
+-
+
+[INSERT: If f is a default constructor or inheriting constructor, the set also contains
+all members of the sets of potential exceptions of the initialization of non-static data
+members from brace-or-equal-initializers.]
+
+-
+
+[INSERT: If f is an assignment operator, the set is the union of the sets of potential
+exceptions of the assignment operator invocations for X's non-variant non-static data
+members and for X's virtual and direct base classes, as selected by overload resolution
+for the implicit definition of f (11.4.5.3 [class.copy.ctor [12]]), including default
+argument expressions used in such invocations.]
+
+-
+
+[INSERT: If f is a destructor, the set is the union of the sets of potential exceptions
+of the destructor invocations for X's non-variant non-static data members and for X's
+virtual and direct base classes.]
+
+An inheriting constructor (_N4527_.12.9 [class.inhctor [13]]) and an [DELETE: implicitly
+declared] [INSERT: implicitly-declared] special member function (11.4.4 [special [14]])
+[DELETE: have an] [INSERT: are considered to have an implicit] exception-specification.
+[DELETE: If f is an inheriting constructor or an implicitly declared default
+constructor, copy constructor, move constructor, destructor, copy assignment operator,
+or move assignment operator, its implicit exception-specification specifies the type-id
+T if and only if T is allowed by the exception-specification of a function directly
+invoked by f's implicit definition; f allows all exceptions if any function it directly
+invokes allows all exceptions, and f has the exception-specification noexcept(true) if
+every function it directly invokes allows no exceptions.] [INSERT: The implicit
+exception-specification is noexcept(false) if the set of potential exceptions of the
+function contains “any;” otherwise, if that set contains at least one type, the implicit
+exception-specification specifies each type T contained in the set; otherwise, the
+implicit exception-specification is noexcept(true).] [Note: An instantiation of an
+inheriting constructor template has an implied exception-specification as if it were a
+non-template inheriting constructor. —end note] [Example:
+
+
+  struct A {
+    A();
+    A(const A&) throw();
+    A(A&&) throw();
+    ~A() throw(X);
+  };
+  struct B {
+    B() throw();
+    B(const B&) throw();
+    B(B&&[INSERT: , int = (throw Y(), 0)]) throw(Y)[DELETE: ] [INSERT: noexcept];
+    ~B() throw(Y);
+  };
+  struct D : public A, public B {
+      // Implicit declaration of D::D();
+      // Implicit declaration of D::D(const D&) noexcept(true);
+      // Implicit declaration of D::D(D&&) throw(Y);
+      // Implicit declaration of D::~D() throw(X, Y);
+  };
+
+
+Furthermore, if...
+
+2.
+
+Change 7.6.2.7 [expr.unary.noexcept [15]] paragraph 3 as follows:
+
+The result of the noexcept operator is false if [DELETE: in a potentially-evaluated
+context] the [INSERT: set of potential exceptions of the] expression [INSERT: (14.5
+[except.spec [1]])] [DELETE: would contain] [INSERT: contains “any” or at least one type
+and true otherwise.]
+
+-
+
+[DELETE: a potentially evaluated call80 to a function, member function, function
+pointer, or member function pointer that does not have a non-throwing
+exception-specification (14.5 [except.spec [1]]), unless the call is a constant
+expression (7.7 [expr.const [3]]),]
+
+-
+
+[DELETE: a potentially evaluated throw-expression (14.2 [except.throw [4]]),]
+
+-
+
+[DELETE: a potentially evaluated dynamic_cast expression dynamic_cast<T>(v), where T is
+a reference type, that requires a run-time check (7.6.1.7 [expr.dynamic.cast [5]]), or]
+
+-
+
+[DELETE: a potentially evaluated typeid expression (7.6.1.8 [expr.typeid [6]]) applied
+to a glvalue expression whose type is a polymorphic class type (11.7.3 [class.virtual
+[16]]).]
+
+[DELETE: Otherwise, the result is true.]
+
+(This resolution also resolves issues 1356 [17] and 1465 [18].)
+
+Additional note (October, 2012):
+
+The preceding wording has been modified from the version that was reviewed following the
+October, 2012 meeting and thus has been returned to "review" status.
+
+Additional note (March, 2013):
+
+It has been suggested that it might be more consistent with other parts of the language,
+and particularly in view of the deprecation of dynamic-exception-specifications, if a
+potentially-throwing non-static data member initializer simply made an implicit
+constructor noexcept(false) instead of giving it a set of potential exception types.
+
+Additional note, April, 2013:
+
+One problem with the approach suggested in the preceding note would be something like
+the following example:
+
+
+  struct S {
+    virtual ~S() throw(int);
+  };
+  struct D: S { };
+
+
+This approach would make the example ill-formed, because the derived class destructor
+would be declared to throw types not permitted by the base class destructor's
+exception-specification. A further elaboration on the suggestion above that would not
+have this objection would be to define all dynamic-exception-specifications as simply
+equivalent to noexcept(false).
+
+(See also issue 1639 [19].)
+
+Additional note, April, 2013:
+
+The version of this resolution approved in Bristol assumed the underlying text of the
+C++11 IS; however, the wording of 14.5 [except.spec [2]] paragraph 14 has been changed
+by previous resolutions, so this and the related issues are being returned to "review"
+status.
+
+Proposed resolution, February, 2014 [SUPERSEDED]:
+
+1.
+
+Change 14.5 [except.spec [20]] paragraph 5 as follows:
+
+If a virtual function has an exception-specification, all declarations, including the
+definition, of any function that overrides that virtual function in any derived class
+shall only allow exceptions that are allowed by the exception-specification of the base
+class virtual function[INSERT: , unless the overriding function is defined as deleted].
+[Example:...
+
+2.
+
+Add the following two new paragraphs and change 14.5 [except.spec [2]] paragraph 14 as
+indicated:
+
+[INSERT: A set of potential exceptions may contain types and the special value “any”.
+The set of potential exceptions of an expression is the union of all sets of potential
+exceptions of each potentially-evaluated subexpression e:]
+
+-
+
+[INSERT: If e is a core constant expression (7.7 [expr.const [3]]), the set is empty.]
+
+-
+
+[INSERT: Otherwise, if e is a function call (7.6.1.3 [expr.call [21]]) whose
+postfix-expression is not a (possibly parenthesized) id-expression (_N4567_.5.1.1
+[expr.prim.general [22]]) or class member access (7.6.1.5 [expr.ref [23]]), the set
+consists of “any”.]
+
+-
+
+[INSERT: Otherwise, if e invokes a function, member function, or function pointer
+(including implicit calls, such as to an overloaded operator or to an allocation
+function in a new-expression):]
+
+-
+
+[INSERT: if its declaration has a non-throwing exception-specification, the set is
+empty;]
+
+-
+
+[INSERT: otherwise, if its declaration has a dynamic-exception-specification, the set
+consists of every type in that dynamic-exception-specification;]
+
+-
+
+[INSERT: otherwise, the set consists of “any”.]
+
+-
+
+[INSERT: If e is a throw-expression (14.2 [except.throw [4]]), the set consists of the
+type of the exception object that would be initialized by the operand if present, or
+“any” otherwise.]
+
+-
+
+[INSERT: If e is a dynamic_cast expression that casts to a reference type and requires a
+run-time check (7.6.1.7 [expr.dynamic.cast [5]]), the set consists of the type
+std::bad_cast.]
+
+-
+
+[INSERT: If e is a typeid expression applied to a glvalue expression whose type is a
+polymorphic class type (7.6.1.8 [expr.typeid [6]]), the set consists of the type
+std::bad_typeid.]
+
+-
+
+[INSERT: If e is a new-expression with a non-constant expression in the
+noptr-new-declarator (7.6.2.8 [expr.new [7]]), the set also includes the type
+std::bad_array_new_length.]
+
+-
+
+[INSERT: If none of the previous items applies, the set is the empty set.]
+
+[INSERT: The set of potential exceptions of an implicitly-declared special member
+function f of some class X is defined as follows:]
+
+-
+
+[INSERT: If f is a constructor, the set is the union of the sets of potential exceptions
+of the constructor invocations for X's non-variant non-static data members, for X's
+direct base classes, and, if X is non-abstract (11.7.4 [class.abstract [8]]), for X's
+virtual base classes, as selected by overload resolution for the implicit definition of
+f (11.4.5 [class.ctor [9]]), including default argument expressions used in such
+invocations. [Note: Even though destructors for fully constructed subobjects are invoked
+when an exception is thrown during the execution of a constructor (14.3 [except.ctor
+[10]]), their exception-specifications do not contribute to the exception-specification
+of the constructor, because an exception thrown from such a destructor could never
+escape the constructor (14.2 [except.throw [4]], 14.6.2 [except.terminate [11]]). —end
+note]]
+
+-
+
+[INSERT: If f is a default constructor, the set also contains all members of the sets of
+potential exceptions of the initialization of non-static data members from
+brace-or-equal-initializers.]
+
+-
+
+[INSERT: If f is an assignment operator, the set is the union of the sets of potential
+exceptions of the assignment operator invocations for X's non-variant non-static data
+members and for X's virtual and direct base classes, as selected by overload resolution
+for the implicit definition of f (11.4.5.3 [class.copy.ctor [12]]), including default
+argument expressions used in such invocations.]
+
+-
+
+[INSERT: If f is a destructor, the set is the union of the sets of potential exceptions
+of the destructor invocations for X's non-variant non-static data members and for X's
+virtual and direct base classes.]
+
+An inheriting constructor (_N4527_.12.9 [class.inhctor [13]]) and an implicitly[INSERT:
+-]declared special member function (11.4.4 [special [14]]) [DELETE: have] [INSERT: are
+considered to have] an [INSERT: implicit] exception-specification. [DELETE: If f is an
+inheriting constructor or an implicitly declared default constructor, copy constructor,
+move constructor, destructor, copy assignment operator, or move assignment operator, its
+implicit exception-specification specifies the type-id T if and only if T is allowed by
+the exception-specification of a function directly invoked by f's implicit definition; f
+allows all exceptions if any function it directly invokes allows all exceptions, and f
+has the exception-specification noexcept(true) if every function it directly invokes
+allows no exceptions. [Note: It follows that f has the exception-specification
+noexcept(true) if it invokes no other functions. —end note]] [Note: An instantiation of
+an inheriting constructor template has an implied exception-specification as if it were
+a non-template inheriting constructor. —end note] [INSERT: The implicit
+exception-specification is noexcept(false) if the set of potential exceptions of the
+special member function contains “any”; otherwise, if that set contains at least one
+type, the implicit exception-specification specifies each type T contained in the set;
+otherwise, the implicit exception-specification is noexcept(true).] [Example:
+
+
+  struct A {
+    A();
+    A(const A&) throw();
+    A(A&&) throw();
+    ~A() throw(X);
+  };
+  struct B {
+    B() throw();
+    B(const B&) [DELETE: = default; // Declaration of B::B(const B&) noexcept(true)] [INSERT: throw();]
+    B(B&&[INSERT: , int = (throw Y(), 0)]) [DELETE: throw(Y)] [INSERT: noexcept];
+    ~B() throw(Y);
+  };
+  struct D : public A, public B {
+      // Implicit declaration of D::D();
+      // Implicit declaration of D::D(const D&) noexcept(true);
+      // Implicit declaration of D::D(D&&) throw(Y);
+      // Implicit declaration of D::~D() throw(X, Y);
+  };
+
+
+Furthermore...
+
+3.
+
+Change 7.6.2.7 [expr.unary.noexcept [24]]paragraph 3 as follows:
+
+The result of the noexcept operator is [DELETE: false] [INSERT: true] if [DELETE: in a
+potentially-evaluated context] the [INSERT: set of potential exceptions of the]
+expression [INSERT: (14.5 [except.spec [1]])] [DELETE: would contain] [INSERT: is empty,
+and false otherwise.]
+
+-
+
+[DELETE: a potentially-evaluated call [[Footnote: This includes implicit calls such as
+the call to an allocation function in a new-expression. —end footnote] to a function,
+member function, function pointer, or member function pointer that does not have a
+non-throwing exception-specification (14.5 [except.spec [1]]), unless the call is a
+constant expression (7.7 [expr.const [3]]),]
+
+-
+
+[DELETE: a potentially-evaluated throw-expression (14.2 [except.throw [4]]),]
+
+-
+
+[DELETE: a potentially-evaluated dynamic_cast expression dynamic_cast<T>(v), where T is
+a reference type, that requires a run-time check (7.6.1.7 [expr.dynamic.cast [5]]), or]
+
+-
+
+[DELETE: a potentially-evaluated typeid expression (7.6.1.8 [expr.typeid [6]]) applied
+to a glvalue expression whose type is a polymorphic class type (11.7.3 [class.virtual
+[16]]).]
+
+[DELETE: Otherwise, the result is true.]
+
+(This resolution also resolves issues 1356 [17], 1465 [18], and 1639 [19].)
+
+Additional note, May, 2014:
+
+The current version of the proposed resolution only defines the set of potential
+exceptions for special member functions; since an inheriting constructor is not a
+special member function, the exception-specification for an inheriting constructor is no
+longer specified.
+
+In addition, the structure of the specification of the set of potential exceptions of an
+expression is unclear. If the bulleted list is intended to be the definition of general
+statement (“union of all sets of potential exceptions...”), it's incomplete because it
+doesn't consider exceptions thrown by the evaluation of function arguments in a call,
+just the exceptions thrown by the function itself; if it's intended to be a list of
+exceptions to the general rule, the rule about core constant expressions doesn't exclude
+unselected subexpressions that might throw, so those exceptions are incorrect included
+in the union.
+
+The issue has been returned to "review" status to allow discussion of these points.
+
+See also the discussion in messages 25290 [25] through 25293 [26].
+
+Proposed resolution (June, 2014):
+
+1. Change 14.5 [except.spec [20]] paragraph 5 as follows:
+
+If a virtual function has an exception-specification, all declarations, including the
+definition, of any function that overrides that virtual function in any derived class
+shall only allow exceptions that are allowed by the exception-specification of the base
+class virtual function[INSERT: , unless the overriding function is defined as deleted].
+[Example:...
+
+2.
+
+Add the following new paragraphs following 14.5 [except.spec [27]] paragraph 13:
+
+An exception-specification is not considered part of a function's type.
+
+[INSERT: A potential exception of a given context is either a type that might be thrown
+as an exception or a pseudo-type, denoted by “any”, that represents the situation where
+an exception of an arbitrary type might be thrown. A subexpression e1 of an expression e
+is an immediate subexpression if there is no subexpression e2 of e such that e1 is a
+subexpression of e2.]
+
+[INSERT: The set of potential exceptions of a function, function pointer, or member
+function pointer f is defined as follows:]
+
+-
+
+[INSERT: If the declaration of f has a non-throwing exception-specification, the set is
+empty.]
+
+-
+
+[INSERT: Otherwise, if the declaration of f has a dynamic-exception-specification, the
+set consists of every type in that dynamic-exception-specification.]
+
+-
+
+[INSERT: Otherwise, the set consists of the pseudo-type “any”.]
+
+[INSERT: The set of potential exceptions of an expression e is empty if e is a core
+constant expression (7.7 [expr.const [3]]). Otherwise, it is the union of the sets of
+potential exceptions of the immediate subexpressions of e, including default argument
+expressions used in a function call, combined with a set S defined by the form of e, as
+follows:]
+
+-
+
+[INSERT: If e is a function call (7.6.1.3 [expr.call [21]]):]
+
+-
+
+[INSERT: If its postfix-expression is a (possibly parenthesized) id-expression
+(_N4567_.5.1.1 [expr.prim.general [22]]), class member access (7.6.1.5 [expr.ref [23]]),
+or pointer-to-member operation (7.6.4 [expr.mptr.oper [28]]) whose cast-expression is an
+id-expression, S is the set of potential exceptions of the entity selected by the
+contained id-expression (after overload resolution, if applicable).]
+
+-
+
+[INSERT: Otherwise, S contains the pseudo-type “any”.]
+
+-
+
+[INSERT: If e implicitly invokes a function (such as an overloaded operator, an
+allocation function in a new-expression, or a destructor if e is a full-expression), S
+is the set of potential exceptions of the function.]
+
+-
+
+[INSERT: if e is a throw-expression (14.2 [except.throw [4]]), S consists of the type of
+the exception object that would be initialized by the operand, if present, or the
+pseudo-type “any” otherwise.]
+
+-
+
+[INSERT: if e is a dynamic_cast expression that casts to a reference type and requires a
+run-time check (7.6.1.7 [expr.dynamic.cast [5]]), S consists of the type std::bad_cast.]
+
+-
+
+[INSERT: if e is a typeid expression applied to a glvalue expression whose type is a
+polymorphic class type (7.6.1.8 [expr.typeid [6]]), S consists of the type
+std::bad_typeid.]
+
+-
+
+[INSERT: if e is a new-expression with a non-constant expression in the
+noptr-new-declarator (7.6.2.8 [expr.new [7]]), S consists of the type
+std::bad_array_new_length.]
+
+[INSERT: [Example: Given the following declarations]
+
+
+[INSERT:   void f() throw(int);
+  void g();
+  struct A { A(); };
+  struct B { B() noexcept; };
+  struct D() { D() throw (double); };]
+
+
+[INSERT: the set of potential exceptions for some sample expressions is:]
+
+-
+
+[INSERT: for f(), the set consists of int; ]
+
+-
+
+[INSERT: for g(), the set consists of “any”;]
+
+-
+
+[INSERT: for new A, the set consists of “any”;]
+
+-
+
+[INSERT: for B(), the set is empty;]
+
+-
+
+[INSERT: for new D, the set consists of “any” and double.]
+
+[INSERT: —end example]]
+
+[INSERT: Given a member function f of some class X, where f is an inheriting constructor
+(_N4527_.12.9 [class.inhctor [13]]) or an implicitly-declared special member function,
+the set of potential exceptions of the implicitly-declared member function f consists of
+all the members from the following sets:]
+
+-
+
+[INSERT: if f is a constructor,]
+
+-
+
+[INSERT: the sets of potential exceptions of the constructor invocations]
+
+-
+
+[INSERT: for X's non-variant non-static data members,]
+
+-
+
+[INSERT: for X's direct base classes, and]
+
+-
+
+[INSERT: if X is non-abstract (11.7.4 [class.abstract [8]]), for X's virtual base
+classes,]
+
+[INSERT: (including default argument expressions used in such invocations) as selected
+by overload resolution for the implicit definition of f (11.4.5 [class.ctor [9]]).
+[Note: Even though destructors for fully-constructed subobjects are invoked when an
+exception is thrown during the execution of a constructor (14.3 [except.ctor [10]]),
+their exception-specifications do not contribute to the exception-specification of the
+constructor, because an exception thrown from such a destructor could never escape the
+constructor (14.2 [except.throw [4]], 14.6.2 [except.terminate [11]]). —end note]]
+
+-
+
+[INSERT: the sets of potential exceptions of the initialization of non-static data
+members from brace-or-equal-initializers that are not ignored (11.9.3 [class.base.init
+[29]]);]
+
+-
+
+[INSERT: if f is an assignment operator, the sets of potential exceptions of the
+assignment operator invocations for X's non-variant non-static data members and for X's
+direct base classes (including default argument expressions used in such invocations),
+as selected by overload resolution for the implicit definition of f (11.4.5.3
+[class.copy.ctor [12]]);]
+
+-
+
+[INSERT: if f is a destructor, the sets of potential exceptions of the destructor
+invocations for X's non-variant non-static data members and for X's virtual and direct
+base classes.]
+
+3.
+
+Change 14.5 [except.spec [2]] paragraph 14 as follows:
+
+An inheriting constructor (_N4527_.12.9 [class.inhctor [13]]) and an [DELETE: implicitly
+declared] [INSERT: implicitly-declared] special member function (11.4.4 [special [14]])
+[INSERT: are considered to] have an [INSERT: implicit] exception-specification[INSERT: ,
+as follows, where f is the member function and S is the set of potential exceptions of
+the implicitly-declared member function f:].
+
+-
+
+[INSERT: if S contains the pseudo-type “any”, the implicit exception-specification is
+noexcept(false);]
+
+-
+
+[INSERT: otherwise, if S contains at least one type, the implicit
+exception-specification specifies each type T contained in S;]
+
+-
+
+[INSERT: otherwise, the implicit exception-specification is noexcept(true).]
+
+[DELETE: If f is an inheriting constructor or an implicitly declared default
+constructor, copy constructor, move constructor, destructor, copy assignment operator,
+or move assignment operator, its implicit exception-specification specifies the type-id
+T if and only if T is allowed by the exception-specification of a function directly
+invoked by f's implicit definition; f allows all exceptions if any function it directly
+invokes allows all exceptions, and f has the exception-specification noexcept(true) if
+every function it directly invokes allows no exceptions. [Note: It follows that f has
+the exception-specification noexcept(true) if it invokes no other functions. —end note]]
+[Note: An instantiation of an inheriting constructor template has an implied
+exception-specification as if it were a non-template inheriting constructor. —end note]
+[Example:
+
+
+  struct A {
+    A([INSERT: int = (A(5), 0)]) [INSERT: noexcept];
+    A(const A&) throw();
+    A(A&&) throw();
+    ~A() throw(X);
+  };
+  struct B {
+    B() throw();
+    B(const B&) = default; // Declaration of B::B(const B&) noexcept(true)
+    B(B&&[INSERT: , int = (throw Y(), 0)]) [DELETE: throw(Y)] [INSERT: noexcept];
+    ~B() throw(Y);
+  };
+[INSERT:   int n = 7;]
+  struct D : public A, public B {
+[INSERT:     int * p = new (std::nothrow) int[n];
+    // Implicit declaration of D::D() throw(X, std::bad_array_new_length);]
+[DELETE:     // Implicit declaration of D::D();]
+    // Implicit declaration of D::D(const D&) noexcept(true);
+    // Implicit declaration of D::D(D&&) throw(Y);
+    // Implicit declaration of D::~D() throw(X, Y);
+  };
+
+
+4.
+
+Change 7.6.2.7 [expr.unary.noexcept [15]] paragraph 3 as follows:
+
+The result of the noexcept operator is [DELETE: false] [INSERT: true] if [DELETE: in a
+potentially-evaluated context] the [INSERT: set of potential exceptions of the]
+expression [DELETE: would contain] [INSERT: is empty, and false otherwise.]
+
+-
+
+[DELETE: a potentially-evaluated call83 to a function, member function, function
+pointer, or member function pointer that does not have a non-throwing
+exception-specification (14.5 [except.spec [1]]), unless the call is a constant
+expression (7.7 [expr.const [3]]),]
+
+-
+
+[DELETE: a potentially-evaluated throw-expression (14.2 [except.throw [4]]),]
+
+-
+
+[DELETE: a potentially-evaluated dynamic_cast expression dynamic_cast<T>(v), where T is
+a reference type, that requires a run-time check (7.6.1.7 [expr.dynamic.cast [5]]), or]
+
+-
+
+[DELETE: a potentially-evaluated typeid expression (7.6.1.8 [expr.typeid [6]]) applied
+to a glvalue expression whose type is a polymorphic class type (11.7.3 [class.virtual
+[16]]).]
+
+[DELETE: Otherwise, the result is true.]
+
+This resolution also resolves issues 1356 [17], 1465 [18], and 1639 [19].
+
+Source links:
+[1] https://wg21.link/except.spec
+[2] https://wg21.link/except.spec#14
+[3] https://wg21.link/expr.const
+[4] https://wg21.link/except.throw
+[5] https://wg21.link/expr.dynamic.cast
+[6] https://wg21.link/expr.typeid
+[7] https://wg21.link/expr.new
+[8] https://wg21.link/class.abstract
+[9] https://wg21.link/class.ctor
+[10] https://wg21.link/except.ctor
+[11] https://wg21.link/except.terminate
+[12] https://wg21.link/class.copy.ctor
+[13] https://wg21.link/class.inhctor
+[14] https://wg21.link/special
+[15] https://wg21.link/expr.unary.noexcept#3
+[16] https://wg21.link/class.virtual
+[17] https://cplusplus.github.io/CWG/issues/1356.html
+[18] https://cplusplus.github.io/CWG/issues/1465.html
+[19] https://cplusplus.github.io/CWG/issues/1639.html
+[20] https://wg21.link/except.spec#5
+[21] https://wg21.link/expr.call
+[22] https://wg21.link/expr.prim.general
+[23] https://wg21.link/expr.ref
+[24] https://wg21.link/expr.unary.noexcept
+[25] http://listarchives.isocpp.org/cgi-bin/wg21/message?wg=core&msg=25290
+[26] http://listarchives.isocpp.org/cgi-bin/wg21/message?wg=core&msg=25293
+[27] https://wg21.link/except.spec#13
+[28] https://wg21.link/expr.mptr.oper
+[29] https://wg21.link/class.base.init

@@ -1,0 +1,218 @@
+CWG 1391: Conversions to parameter types with non-deduced template arguments
+Source: https://cplusplus.github.io/CWG/issues/1391.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD4
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1391. Conversions to parameter types with non-deduced template arguments
+Section: 13.10.2 [temp.arg.explicit [1]] Status: CD4 Submitter: Jason Merrill Date:
+2011-09-08
+
+[Moved to DR at the October, 2015 meeting.]
+
+According to 13.10.2 [temp.arg.explicit [2]] paragraph 6,
+
+Implicit conversions (7.3 [conv [3]]) will be performed on a function argument to
+convert it to the type of the corresponding function parameter if the parameter type
+contains no template-parameters that participate in template argument deduction. [Note:
+Template parameters do not participate in template argument deduction if they are
+explicitly specified...
+
+But this isn't clear about when these conversions are done. Consider
+
+
+    template<class T> struct A {
+       typename T::N n;
+    };
+    template<class T> struct B { };
+
+    template<class T, class T2>
+    void foo(const A<T>& r); // #1
+    template<class T>
+    void foo(const B<T>& r); // #2
+
+    void baz() {
+       B<char> b;
+       foo(b); // OK
+       foo<char>(b); // error
+    }
+
+
+With the explicit template argument, the first parameter of #1 no longer participates in
+template argument deduction, so implicit conversions are done. If we check for the
+implicit conversion during the deduction process, we end up instantiating A<char>,
+resulting in a hard error. If we wait until later to check the conversion, we can reject
+#1 because T2 is not deduced and never need to consider the conversion.
+
+But if we just accept the parameter and leave it up to normal overload resolution to
+reject an unsuitable candidate, that breaks this testcase:
+
+
+    template<class T>
+    struct A {
+       typename T::N n;
+    };
+
+    template<class T>
+    struct B { };
+
+    template <class T, class... U>
+    typename A<T>::value_t bar(int, T, U...);
+
+    template <class T>
+    T bar(T, T);
+
+    void baz()
+    {
+       B<char> b;
+       bar(b, b);
+    }
+
+
+Here, if deduction succeeds, we substitute in the deduced arguments of T = B<char>, U =
+{ }, and end up instantiating A<B<char>>, which fails.
+
+EDG and GCC currently reject the first testcase and accept the second; clang accepts
+both.
+
+Notes from the October, 2012 meeting:
+
+The position initially favored by CWG was that implicit conversions are not considered
+during deduction but are only applied afterwards, so the second example is ill-formed,
+and that the normative wording of the referenced paragraph should be moved into the
+note. This approach does not handle some examples currently accepted by some
+implementations, however; for example:
+
+
+   template <class T> struct Z {
+    typedef T::x xx;
+   };
+   template <class T> Z<T>::xx f(void *, T);
+   template <class T> void f(int, T);
+   struct A {} a;
+   int main() {
+     f(1, a); // If the implementation rules out the first overload
+              // because of the invalid conversion from int to void*,
+              // the error instantiating Z<A> will be avoided
+   }
+
+
+Additional discussion is required.
+
+Notes from the April, 2013 meeting:
+
+The approach needed to accept this code appears to be doing the convertibility check
+between deduction and substitution.
+
+Proposed resolution (May, 2015):
+
+1.
+
+Change 13.10.3.2 [temp.deduct.call [4]] paragraph 1 as follows:
+
+Template argument deduction is done by comparing each function template parameter type
+(call it P) [INSERT: that contains template-parameters that participate in template
+argument deduction] with the type of the corresponding argument of the call (call it A)
+as described below. If [DELETE: P is a dependent type,] removing references and
+cv-qualifiers from P gives std::initializer_list<P'> or P'[N] for some P' and N and the
+argument is a non-empty initializer list (9.5.5 [dcl.init.list [5]]), then deduction is
+performed instead for each element of the initializer list, taking P' as a function
+template parameter type and the initializer element as its argument, and in the P'[N]
+case, if N is a non-type template parameter, N is deduced from the length of the
+initializer list. Otherwise, an initializer list argument causes the parameter to be
+considered a non-deduced context (13.10.3.6 [temp.deduct.type [6]]). [Example:...
+
+2.
+
+Delete the note in 13.10.3.2 [temp.deduct.call [7]] paragraph 4:
+
+[DELETE: [Note: as specified in 13.10.2 [temp.arg.explicit [1]], implicit conversions
+will be performed on a function argument to convert it to the type of the corresponding
+function parameter if the parameter contains no template-parameters that participate in
+template argument deduction. Such conversions are also allowed, in addition to the ones
+described in the preceding list. —end note]]
+
+3.
+
+Add the following as a new paragraph at the end of 13.10.3.2 [temp.deduct.call [8]]:
+
+[INSERT: If deduction succeeds for all parameters that contain template-parameters that
+participate in template argument deduction, and all template arguments are explicitly
+specified, deduced, or obtained from default template arguments, remaining parameters
+are then compared with the corresponding arguments. For each remaining parameter P with
+a type that was non-dependent before substitution of any explicitly-specified template
+arguments, if the corresponding argument A cannot be implicitly converted to P,
+deduction fails. [Note: Parameters with dependent types in which no template-parameters
+participate in template argument deduction, and parameters that became non-dependent due
+to substitution of explicitly-specified template arguments, will be checked during
+overload resolution. —end note] [Example:]
+
+
+[INSERT:   template <class T> struct Z {
+    typedef typename T::x xx;
+  };
+  template <class T> typename Z<T>::xx f(void *, T); // #1
+  template <class T> void f(int, T);                 // #2
+  struct A {} a;
+  int main() {
+    f(1, a);                                         // OK, deduction fails for #1 because there is no conversion from int to void*
+  }]
+
+
+[INSERT: —end example]]
+
+4.
+
+Change 13.10.3.5 [temp.deduct.partial [9]] paragraph 4 as follows:
+
+Each type nominated above from the parameter template and the corresponding type from
+the argument template are used as the types of P and A. [INSERT: If a particular P
+contains no template-parameters that participate in template argument deduction, that P
+is not used to determine the ordering.]
+
+5.
+
+Change 13.10.3.6 [temp.deduct.type [10]] paragraph 4 as follows:
+
+In most cases, the types, templates, and non-type values that are used to compose P
+participate in template argument deduction. That is, they may be used to determine the
+value of a template argument, and the value so determined must be consistent with the
+values determined elsewhere. In certain contexts, however, the value does not
+participate in type deduction, but instead uses the values of template arguments that
+were either deduced elsewhere or explicitly specified. If a template parameter is used
+only in non-deduced contexts and is not explicitly specified, template argument
+deduction fails. [INSERT: [Note: Under 13.10.3.2 [temp.deduct.call [8]] and 13.10.3.5
+[temp.deduct.partial [11]], if P contains no template-parameters that appear in deduced
+contexts, no deduction is done, and so P and A need not have the same form. —end note]]
+
+This resolution also resolves issue 1847 [12].
+
+Additional note October, 2015:
+
+See also issue 1939 [13].
+
+Source links:
+[1] https://wg21.link/temp.arg.explicit
+[2] https://wg21.link/temp.arg.explicit#6
+[3] https://wg21.link/conv
+[4] https://wg21.link/temp.deduct.call#1
+[5] https://wg21.link/dcl.init.list
+[6] https://wg21.link/temp.deduct.type
+[7] https://wg21.link/temp.deduct.call#4
+[8] https://wg21.link/temp.deduct.call
+[9] https://wg21.link/temp.deduct.partial#4
+[10] https://wg21.link/temp.deduct.type#4
+[11] https://wg21.link/temp.deduct.partial
+[12] https://cplusplus.github.io/CWG/issues/1847.html
+[13] https://cplusplus.github.io/CWG/issues/1939.html

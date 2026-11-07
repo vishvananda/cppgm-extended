@@ -1,0 +1,97 @@
+CWG 727: In-class explicit specializations
+Source: https://cplusplus.github.io/CWG/issues/727.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: C++17
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+727. In-class explicit specializations
+Section: 13.9.4 [temp.expl.spec [1]] Status: C++17 Submitter: Faisal Vali Date: 5
+October, 2008
+
+[Adopted as a DR at the February/March, 2017 meeting.]
+
+13.9.4 [temp.expl.spec [2]] paragraph 2 requires that explicit specializations of member
+templates be declared in namespace scope, not in the class definition. This restriction
+does not apply to partial specializations of member templates; that is,
+
+
+    struct A {
+      template<class T> struct B;
+      template <class T> struct B<T*> { }; // well-formed
+      template <> struct B<int*> { }; // ill-formed
+    };
+
+
+There does not seem to be a good reason for this inconsistency.
+
+Additional note (October, 2013):
+
+EWG has requested CWG to consider resolving this issue. See EWG issue 41.
+
+Additional note, November, 2014:
+
+See also paper N4090.
+
+Proposed resolution (March, 2017):
+
+1.
+
+Change 13.7.6.1 [temp.spec.partial.general [3]] paragraph 6 as follows:
+
+A class template partial specialization may be declared [DELETE: or redeclared] in any
+[DELETE: namespace] scope in which the corresponding primary template may be defined
+(_N4868_.9.8.2.3 [namespace.memdef [4]] [DELETE: and] [INSERT: ], 11.4 [class.mem [5]],
+13.7.3 [temp.mem [6]]). [Example:
+
+
+  template<class T> struct A {
+    struct C {
+      template<class T2> struct B { };
+[INSERT:       template<class T2> struct B<T2**> { };  // partial specialization #1]
+    };
+  };
+
+  // partial specialization of A<T>::C::B<T2>
+  template<class T> template<class T2>
+    struct A<T>::C::B<T2*> { };    [INSERT: // #2
+]
+
+  A<short>::C::B<int*> absip; // uses partial specialization [INSERT: #2]
+
+
+
+—end example]
+
+2.
+
+Change 13.9.4 [temp.expl.spec [2]] paragraph 2 as follows:
+
+An explicit specialization [DELETE: shall be declared in a namespace enclosing the
+specialized template. An explicit specialization whose declarator-id or class-head-name
+is not qualified shall be declared in the nearest enclosing namespace of the template,
+or, if the namespace is inline (9.9.2 [namespace.def [7]]), any namespace from its
+enclosing namespace set. Such a declaration may also be a definition] [INSERT: may be
+declared in any scope in which the corresponding primary template may be defined
+(_N4868_.9.8.2.3 [namespace.memdef [4]], 11.4 [class.mem [5]], 13.7.3 [temp.mem [6]])].
+[DELETE: If the declaration is not a definition, the specialization may be defined later
+(_N4868_.9.8.2.3 [namespace.memdef [4]]).]
+
+Source links:
+[1] https://wg21.link/temp.expl.spec
+[2] https://wg21.link/temp.expl.spec#2
+[3] https://wg21.link/temp.spec.partial.general#6
+[4] https://wg21.link/namespace.memdef
+[5] https://wg21.link/class.mem
+[6] https://wg21.link/temp.mem
+[7] https://wg21.link/namespace.def
