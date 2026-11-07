@@ -143,5 +143,29 @@ class Suite(unittest.TestCase):
         self.assertTrue((output / 'summary.md').is_file())
 
 
+class Workflow(unittest.TestCase):
+    def test_freeze_step_enables_verify_negatives_only_for_clang(self):
+        workflow = Path(__file__).resolve().parents[2] / '.github/workflows/upstream-cxx11.yml'
+        step = workflow.read_text().split('      - name: Freeze language test manifest\n', 1)[1]
+        step = step.split('      - name:', 1)[0].split('        run: |\n', 1)[1]
+        script = '\n'.join(line[10:] for line in step.splitlines() if line.startswith('          '))
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for suite in ['gcc', 'clang']:
+                with self.subTest(suite=suite):
+                    trace = root / (suite + '.args')
+                    command = 'python3() { printf "%s\\0" "$@" > "$TRACE"; }\n' + script
+                    command = command.replace('${{ matrix.suite }}', suite)
+                    env = dict(os.environ, RUNNER_TEMP=str(root/'run temp'), TRACE=str(trace))
+                    subprocess.run(['bash', '-c', command], check=True, env=env)
+                    args = trace.read_bytes().decode().rstrip('\0').split('\0')
+                    self.assertEqual(args[0], 'scripts/build_'+suite+'_cxx11_ci_manifest.py')
+                    self.assertEqual('--verify-negatives' in args, suite == 'clang')
+                    self.assertEqual(args[args.index('--output')+1],
+                                     str(root/'run temp/cxx11/manifest.json'))
+                    self.assertEqual(args[args.index('--'+('llvm' if suite == 'clang' else 'gcc')+'-root')+1],
+                                     'upstream-sources')
+
+
 if __name__ == '__main__':
     unittest.main()
