@@ -77,7 +77,8 @@ bool FunctionLowering::literal_truth(const syntax::Expr& expr, bool& value) cons
 		}
 	}
 	if ((e->kind != syntax::ExprKind::Literal && !static_constant) || e->facts == nullptr ||
-		e->facts->type == nullptr || sema::IsFloating(e->facts->type) || e->facts->type->kind == sema::TypeKind::Array)
+		(e->facts->flags & (sema::kUserLiteral | sema::kUserConverted)) != 0 || e->facts->type == nullptr ||
+		sema::IsFloating(e->facts->type) || e->facts->type->kind == sema::TypeKind::Array)
 		return false;
 	value = e->facts->value != 0;
 	return true;
