@@ -434,17 +434,24 @@ const FunctionList* NameLookup::overload(
 	return nullptr;
 }
 
-LookupResult NameLookup::own(const Scope* scope, const Identifier* name, LookupFilter filter) const
+[[gnu::cold]] LookupResult NameLookup::default_parameter_lookup(
+	const Scope* scope, const Identifier* name, LookupFilter filter) const
 {
 	LookupResult result = LookupResult();
+	const NameEntry* entry = find(default_parameter_root(scope), name);
+	if (filter == LookupFilter::Ordinary && entry != nullptr && entry->value != nullptr &&
+		scope->last_binding != nullptr && entry->value->ordinal <= scope->last_binding->ordinal)
+		result.binding = entry->value;
+	return result;
+}
+
+LookupResult NameLookup::own(const Scope* scope, const Identifier* name, LookupFilter filter) const
+{
+	// Frozen parameter prefixes need an ordinal bound. Keep that uncommon
+	// path separate so ordinary scope lookup retains its compact body.
 	if (scope->default_parameters)
-	{
-		const NameEntry* entry = find(default_parameter_root(scope), name);
-		if (filter == LookupFilter::Ordinary && entry != nullptr && entry->value != nullptr &&
-			scope->last_binding != nullptr && entry->value->ordinal <= scope->last_binding->ordinal)
-			result.binding = entry->value;
-		return result;
-	}
+		return default_parameter_lookup(scope, name, filter);
+	LookupResult result = LookupResult();
 	const NameEntry* entry = find(scope, name);
 	if (entry == nullptr)
 		return result;
