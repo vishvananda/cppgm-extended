@@ -771,7 +771,24 @@ int Analyzer::user_candidate_order(const FunctionEntity* a, const Conversion& a_
 	// initializes (14.8.2.4p3).
 	int order = conversions_.compare(a_first, b_first);
 	if (order == 0 && !a->constructor && !b->constructor)
+	{
 		order = conversions_.compare(a_second, b_second);
+		if (a_second.second == ValueConversion::MemberToDerived && b_second.second == ValueConversion::MemberToDerived)
+		{
+			const Type* ar = a->type->canonical->element;
+			const Type* br = b->type->canonical->element;
+			ar = ar->is_reference() ? ar->element : ar;
+			br = br->is_reference() ? br->element : br;
+			const ClassEntity* ca = ClassOf(ar->owner);
+			const ClassEntity* cb = ClassOf(br->owner);
+			// 13.3.3.2p4: B::* to C::* beats A::* to C::* when
+			// B derives from A. With different source owners the two
+			// member-pointer conversions are different steps, so removing
+			// a qualification does not make either a proper subsequence.
+			if (ca != cb)
+				order = conversions_.is_base_of(ca, cb) ? -1 : conversions_.is_base_of(cb, ca) ? 1 : 0;
+		}
+	}
 	if (order == 0 && (a->primary != nullptr) != (b->primary != nullptr))
 		order = a->primary == nullptr ? 1 : -1;
 	if (order == 0 && a->primary != nullptr && b->primary != nullptr && a->primary != b->primary &&
