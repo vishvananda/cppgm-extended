@@ -629,7 +629,11 @@ const Type* Analyzer::substitute_template_name(const Type* type, const Substitut
 	const Type* argument = substitution.arguments[parameter->index];
 	if (parameter->pack && argument->kind == TypeKind::Pack && substitution.elements != nullptr &&
 		substitution.elements[parameter->index] >= 0)
+	{
 		argument = argument->params[substitution.elements[parameter->index]];
+		if (argument->kind == TypeKind::Expansion)
+			argument = argument->element;
+	}
 	return argument;
 }
 

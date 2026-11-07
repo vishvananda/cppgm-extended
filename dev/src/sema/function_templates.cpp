@@ -990,35 +990,23 @@ FunctionEntity* Analyzer::deduce_for_call(
 	}
 	const uint32_t depth = head->count != 0 ? head->parameters[0]->depth : 0;
 	const Type* type = primary->type->canonical;
-	// 14.8.1p9: a trailing function parameter pack whose packs were all
-	// given explicit arguments (of one length) and that has more call
-	// arguments takes those as its leading elements, whose parameters'
-	// types are fixed, and deduces the rest from the arguments after them.
-	TypeList prefixes(head->count, nullptr);
-	uint32_t prefix = 0;
-	if (explicit_arguments != nullptr && type->param_count != 0 &&
-		type->params[type->param_count - 1]->kind == TypeKind::Expansion)
+	// 14.8.1p9: an explicitly supplied pack is a fixed prefix, not a
+	// closed pack. Its residual expansion stays in nested template and
+	// function types as well as at the end of the call's parameter list.
+	TypeList prefixes;
+	if (explicit_arguments != nullptr && type->param_count != 0)
 	{
-		PackList packs;
-		unexpanded_packs(type->params[type->param_count - 1]->element, depth, packs);
-		int32_t length = packs.empty() ? -1 : 0;
-		for (uint32_t k = 0; k < packs.size() && length >= 0; ++k)
+		for (uint32_t i = 0; i < head->count; ++i)
 		{
-			const Type* given = arguments[packs[k]];
-			if (given == nullptr || given->kind != TypeKind::Pack ||
-				(k != 0 && static_cast<uint32_t>(length) != given->param_count))
-				length = -1;
-			else
-				length = static_cast<int32_t>(given->param_count);
-		}
-		if (length >= 0 && call_arguments.size > type->param_count - 1 + static_cast<uint32_t>(length))
-		{
-			prefix = static_cast<uint32_t>(length);
-			for (uint32_t index : packs)
-			{
-				prefixes[index] = arguments[index];
-				arguments[index] = nullptr;
-			}
+			if (!head->parameters[i]->pack || arguments[i] == nullptr || arguments[i]->kind != TypeKind::Pack)
+				continue;
+			if (prefixes.empty())
+				prefixes.resize(head->count, nullptr);
+			prefixes[i] = arguments[i];
+			TypeList elements;
+			flattened_arguments(&arguments[i], 1, elements);
+			elements.push_back(types_.expansion(head->parameters[i]->type));
+			arguments[i] = types_.pack(elements.data(), static_cast<uint32_t>(elements.size()));
 		}
 	}
 	// Parameters whose types involve explicitly specified arguments only
@@ -1045,6 +1033,11 @@ FunctionEntity* Analyzer::deduce_for_call(
 		for (uint32_t i = 0; i < type->param_count; ++i)
 			parameters.push_back(type->params[i]);
 	}
+	// The substituted parameter types retain the fixed prefix. Deduction
+	// now records only its residual, consistently across every occurrence.
+	for (uint32_t i = 0; i < prefixes.size(); ++i)
+		if (prefixes[i] != nullptr)
+			arguments[i] = nullptr;
 	const uint32_t total = static_cast<uint32_t>(parameters.size());
 	const bool trailing = total != 0 && parameters[total - 1]->kind == TypeKind::Expansion;
 	const uint32_t fixed = trailing ? total - 1 : total;
@@ -1077,10 +1070,10 @@ FunctionEntity* Analyzer::deduce_for_call(
 		else if (facts->type == nullptr || !deduce_argument(p, facts->type, facts->category, depth, arguments))
 			return nullptr;
 	}
-	if (trailing && call_arguments.size > fixed + prefix &&
-		!deduce_call_pack(parameters[total - 1]->element->canonical, call_arguments, fixed + prefix, depth, arguments))
+	if (trailing && call_arguments.size > fixed &&
+		!deduce_call_pack(parameters[total - 1]->element->canonical, call_arguments, fixed, depth, arguments))
 		return nullptr;
-	for (uint32_t index = 0; index < head->count; ++index)
+	for (uint32_t index = 0; index < prefixes.size(); ++index)
 	{
 		// The explicit elements lead the deduced ones.
 		if (prefixes[index] == nullptr)
