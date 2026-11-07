@@ -400,7 +400,9 @@ RValue FunctionLowering::bit_count(sema::Intrinsic kind, RValue x)
 		count.type = i32;
 		return count;
 	}
-	if (kind == sema::Intrinsic::PopCount)
+	if (kind == sema::Intrinsic::PopCount && lowering_.popcnt())
+		count = unary(lowir::UnaryOp::CountOnes, x);
+	else if (kind == sema::Intrinsic::PopCount)
 	{
 		// Bits summed in parallel (pairs, nibbles, bytes), the byte sums
 		// gathered by one multiplication.

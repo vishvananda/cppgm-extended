@@ -50,6 +50,7 @@ inline const char* cppgm_help_text()
 		   "  -L <dir> / -L<dir>\n"
 		   "  -l <name> / -l<name>\n"
 		   "  -O0 / -O1 / -O2 / -O3 (default: -O0)\n"
+		   "  -mpopcnt / -mno-popcnt  enable/disable the population-count ISA\n"
 		   "  -g0 / -gline-tables-only\n"
 		   "  -stdlib <name> / -stdlib=<name>\n"
 		   "  --target <target>\n";

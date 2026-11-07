@@ -32,6 +32,7 @@ CPPGM_STDLIB_FLAGS ?=
 CPPGM_TEST_RUNNER ?= 1
 REPORT_EMPTY_OPTIONAL_TEST_ROOTS ?= 0
 CPPGM_TEST_APP ?= ../dev/$(TARGET)
+LOWIR2NATIVE_APP ?= ../dev/lowir2native
 REF_TEST_APP ?= $(CPPGM_TEST_APP)-ref
 TEST_DEPS ?= dev-shared-target
 RUN_CHECK_DEPS ?= dev-shared-target
@@ -47,6 +48,7 @@ RUN_TEST_ROOT ?= tests/run
 MODERN_CXX_TEST_ROOT ?= tests/modern-cxx
 MODERN_CXX_COMPILE_TEST_ROOT ?= $(MODERN_CXX_TEST_ROOT)/compile
 MODERN_CXX_RUN_TEST_ROOT ?= $(MODERN_CXX_TEST_ROOT)/run
+TARGET_FEATURE_TEST_ROOT ?= tests/target-features
 ifneq ($(CPPGM_BATCH_TESTS),)
 export WRAPPED_BATCH_STDIN ?= 1
 endif
@@ -200,6 +202,12 @@ endif
 test-modern-cxx: $(TEST_DEPS)
 	$(call run_compile_course_bucket,$(MODERN_CXX_COMPILE_TEST_ROOT))
 	$(call run_course_bucket,$(MODERN_CXX_RUN_TEST_ROOT))
+
+# Optional CPU capabilities do not change the baseline C++11 report.
+test-target-features: $(TEST_DEPS)
+	@perl ../scripts/check_cppgm_native_programs.pl $(CPPGM_TEST_APP) "$(TARGET_FEATURE_TEST_ROOT)" $(LOWIR2NATIVE_APP)
+
+.PHONY: test-target-features
 
 ref-test-modern-cxx:
 	@perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref $(MODERN_CXX_COMPILE_TEST_ROOT)

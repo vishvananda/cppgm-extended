@@ -1296,6 +1296,13 @@ them, an operand narrower than 32 bits widened to `u32` first and, for
 x86-64 lowers them to `bsf`, and to `bsr` followed by an `xor` with the
 width less one.
 
+The optional target-feature extension adds `unary popcount` for `i32`, `u32`
+and `i64`. It counts set bits within the operand width, returning zero for
+zero; unlike `ctz` and `clz`, every operand is defined. Source lowering may
+select it with `-mpopcnt`. The reference native form requires POPCNT, like the
+explicit ISA requirements of vector operations; a behavior-equivalent sequence
+is also valid. This extension is not part of PA8's required unary operators.
+
 `unary sqrt` is the IEEE square root of an `f32` or `f64`, correctly rounded.
 It has no other effect: unlike the C library's `sqrt`, it does not set `errno`.
 The C++ lowering does not emit it. An optimizer may replace a library call

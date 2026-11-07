@@ -13,8 +13,9 @@ performance gates and from the public-suite aggregate.
 The source is unmodified simdjson v5.1.1, pinned to
 `40a686ab89dc5ee58ec10d0514dd5c99abbc472b`. Each compiler builds
 `src/simdjson.cpp` at `-std=c++17 -O3 -g0 -DNDEBUG`, once with only the
-scalar fallback and once with only Westmere SSE4.2/PCLMUL. Haswell and Icelake
-are disabled. The host needs x86-64 with those SSE capabilities.
+scalar fallback and once with only Westmere SSE4.2/PCLMUL/POPCNT. The SSE
+profile adds `-mpopcnt` for all three compilers; scalar keeps the baseline ISA.
+Haswell and Icelake are disabled. The host needs x86-64 with those capabilities.
 
 Compile measurements cover preprocessing through object emission, excluding
 fetching, compiler construction and linking. Runtime uses one fixed GCC-built

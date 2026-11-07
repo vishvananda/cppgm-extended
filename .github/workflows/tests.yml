@@ -257,6 +257,10 @@ jobs:
             name: optional C++14/17
             command: make test-modern-cxx-nobuild
             timeout: 30
+          - id: test-target-features
+            name: optional target features
+            command: make test-target-features-nobuild
+            timeout: 30
           - id: selfhost-through-pa5
             name: test-through-pa5
             command: make -C pa34 test-through-pa5 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"

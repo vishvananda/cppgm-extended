@@ -100,6 +100,8 @@ jobs:
           ci-report-config:; @echo "Report parallelism: $(TEST_REPORT_ASSIGNMENT_JOBS) assignments x $(TEST_REPORT_SUBTEST_JOBS) workers ($(DEFAULT_BUILD_JOBS) CPUs)"
           MAKE
           /usr/bin/time -lp make test-report CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+      - name: Check optional target features
+        run: make test-target-features-nobuild CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Compare self-built and inception compilers
         run: |
           make -C pa34 cppgm++-self CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \

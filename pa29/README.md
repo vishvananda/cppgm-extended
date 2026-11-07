@@ -532,6 +532,15 @@ The PA29 tests do not require:
 - recursive hosted-header coverage reporting
 - bootstrap or self-host builds
 
+### Optional target features
+
+On x86-64 with POPCNT, `-mpopcnt` enables population-count lowering and
+defines `__POPCNT__`; `-mno-popcnt` restores the portable default. The last
+option wins, and explicit `-D`/`-U` macro overrides still apply. Run
+`make test-target-features` to check this optional extension, including zero,
+operand widths and evaluating an argument once. It is separate from the
+required C++11 report and does not prescribe an instruction sequence.
+
 ### SSE2 unpack builtins
 
 The GNU `__builtin_ia32_punpck*128` family interleaves the low or high

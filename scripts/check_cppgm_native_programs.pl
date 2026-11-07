@@ -7,7 +7,7 @@ use warnings;
 use File::Temp qw(tempdir);
 use FindBin;
 use lib $FindBin::Bin;
-use CppgmBatchWorker qw(collect_tests resolve_host_command run_command_capture);
+use CppgmBatchWorker qw(collect_tests read_word_list resolve_host_command run_command_capture);
 
 die "Usage: check_cppgm_native_programs.pl <cppgm++> <test-or-directory> [lowir2native]\n"
 	if @ARGV != 2 && @ARGV != 3;
@@ -22,6 +22,8 @@ my @routes = qw(direct object native);
 push @routes, 'lowir' if defined $backend;
 for my $test (@tests)
 {
+	(my $base = $test) =~ s/\.t$//;
+	my @flags = read_word_list("$base.flags");
 	my $directory = tempdir('cppgm-native-program-XXXXXX', TMPDIR => 1, CLEANUP => 1);
 	my $stdout = "$directory/stdout";
 	my $stderr = "$directory/stderr";
@@ -32,14 +34,14 @@ for my $test (@tests)
 			my $program = "$directory/$route.program";
 			my $object = "$directory/$route" . ($route eq 'object' ? '.obj' : '.o');
 			my $lowir = "$directory/$route.lowir";
-			my @linker = $route eq 'native' ? @host : ($app, $level);
+			my @linker = $route eq 'native' ? @host : ($app, $level, @flags);
 			unlink($program, $object, $lowir);
 			my @commands = $route eq 'lowir'
-				? ([$app, '--emit-lowir', $level, '-o', $lowir, $test],
+				? ([$app, '--emit-lowir', $level, @flags, '-o', $lowir, $test],
 				   [$backend, $level, '-o', $program, $lowir])
 				: $route eq 'direct'
-				? ([$app, $level, '-o', $program, $test])
-				: ([$app, $level, '-c', '-o', $object, $test],
+				? ([$app, $level, @flags, '-o', $program, $test])
+				: ([$app, $level, @flags, '-c', '-o', $object, $test],
 				   [@linker, '-o', $program, $object]);
 			for my $command (@commands)
 			{

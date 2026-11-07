@@ -193,6 +193,7 @@ bool flags_dead_after(const std::vector<Inst>& insts, uint32_t i, uint32_t end)
 		case Op::Imul:
 		case Op::Bsf:
 		case Op::Bsr:
+		case Op::Popcnt:
 		case Op::Idiv:
 		case Op::Div:
 		case Op::MulWide:

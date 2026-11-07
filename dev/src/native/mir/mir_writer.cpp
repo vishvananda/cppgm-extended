@@ -364,7 +364,8 @@ void MirWriter::instruction(const Function& function, const Inst& inst)
 				 inst.op == Op::Shl || inst.op == Op::Shr || inst.op == Op::Sar || inst.op == Op::Rol ||
 				 inst.op == Op::Ror || inst.op == Op::Lea) &&
 				inst.type != TypeKind::I64 && inst.type != TypeKind::Ptr && inst.type != TypeKind::Void) ||
-			((inst.op == Op::Bswap || inst.op == Op::Bsf || inst.op == Op::Bsr) && inst.type != TypeKind::I64))
+			((inst.op == Op::Bswap || inst.op == Op::Bsf || inst.op == Op::Bsr || inst.op == Op::Popcnt) &&
+				inst.type != TypeKind::I64))
 		{
 			text_ += '.';
 			text_ += lowir::spelling(inst.type);

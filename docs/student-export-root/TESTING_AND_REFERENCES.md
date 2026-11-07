@@ -131,6 +131,9 @@ are not required for any assignment. `make test` and cumulative reports exclude
 them. Use root `make test-modern-cxx` to build and run both optional suites,
 or the same target inside one assignment to run its suite.
 
+PA29 also has an optional `make test-target-features` suite for x86 POPCNT.
+It is excluded from required reports; see the PA29 handout for the CPU option.
+
 ## Debug and inspection checks
 
 Run the debug, object and link checks required by the current handout.

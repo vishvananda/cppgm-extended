@@ -795,6 +795,8 @@ bool Validator::check_instruction(InstId id, const Instruction& inst, BlockId bl
 				static_cast<UnaryOp>(inst.sub) == UnaryOp::CountLeadingZeros) &&
 			!is_bit_scan_type(inst.type))
 			return fail("invalid ctz/clz type");
+		if (static_cast<UnaryOp>(inst.sub) == UnaryOp::CountOnes && !is_bit_scan_type(inst.type))
+			return fail("invalid popcount type");
 		if (static_cast<UnaryOp>(inst.sub) == UnaryOp::Sqrt && inst.type.kind() != TypeKind::F32 &&
 			inst.type.kind() != TypeKind::F64)
 			return fail("invalid sqrt type");

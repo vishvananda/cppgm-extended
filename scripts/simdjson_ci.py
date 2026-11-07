@@ -48,7 +48,7 @@ def flags(source, mode):
             '-DSIMDJSON_IMPLEMENTATION_HASWELL=0', '-DSIMDJSON_IMPLEMENTATION_ICELAKE=0',
             '-DSIMDJSON_IMPLEMENTATION_WESTMERE=' + str(int(mode == 'sse')),
             '-DSIMDJSON_IMPLEMENTATION_FALLBACK=' + str(int(mode == 'scalar')),
-            '-DSIMDJSON_BUILTIN_IMPLEMENTATION=' + backend]
+            '-DSIMDJSON_BUILTIN_IMPLEMENTATION=' + backend] + (['-mpopcnt'] if mode == 'sse' else [])
 
 
 def headers(source, compilers):
@@ -207,7 +207,8 @@ def report(document):
     metadata = document['metadata']
     text += (f"Compiler: `{metadata['revision']}` · CPU: {metadata['cpu']}\n\n"
              f"Unmodified simdjson v5.1.1 (`{COMMIT}`), C++17 `-O3 -g0 -DNDEBUG`. "
-             'Each backend is compiled separately. Compile times cover `src/simdjson.cpp` to an object; '
+             'Each backend is compiled separately; the SSE profile enables `-mpopcnt` for all three compilers. '
+             'Compile times cover `src/simdjson.cpp` to an object; '
              'runtime covers repeated DOM parsing of hot input with a reused parser. '
              'One GCC-built driver per backend isolates library code generation. '
              'All three libraries produce identical canonical JSON for both inputs.\n\n'

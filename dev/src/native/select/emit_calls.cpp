@@ -292,6 +292,7 @@ void FunctionSelector::narrow_params_observed(std::vector<uint8_t>& observed)
 				// the low bits alone.
 				safe = static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::CountTrailingZeros ||
 					static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::CountLeadingZeros ||
+					static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::CountOnes ||
 					static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::Neg ||
 					(static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::BitNot && low_read(inst.result));
 				break;
