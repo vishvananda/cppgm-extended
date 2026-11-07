@@ -1,0 +1,12 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type-alias Function function of () returning void
+    type-alias ConstFunction function of () returning void
+    type-alias VolatileFunction function of () returning void
+    type-alias BothFunction function of () returning void
+    variable first pointer to function of () returning void
+    variable second pointer to function of () returning void
+    variable third pointer to function of () returning void
+end translation unit
