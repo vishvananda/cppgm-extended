@@ -6004,5 +6004,45 @@
     "kind": "source-pinned valid upstream baseline limitation",
     "decision": "Original sharedvirtualmember lookup valid underN348510.2/5.2.5/5.2.2 and adopted39. Entire original plus runtime/static/nonvirtual boundaries are required; exact source excluded from both timed roles, not a suite pass.",
     "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-107109-acceptance-v1.json"
+  },
+  {
+    "id": "CXX11-110",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-110",
+    "status": "closed",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-110111112113-acceptance-v1.json",
+    "compiler_language_gap": true,
+    "symptom": "Alignment pack syntax and expansion were missing.",
+    "owning_pa": "PA15:200;PA17:300",
+    "fix_revision": "ea74a40c2",
+    "checks": "16 required controls; normal actual-parent gate1.000040/1.000025, exact objects. Integrated9331strict/116focused/full normal/fresh36fixture42wrapper102catalog export pass."
+  },
+  {
+    "id": "CXX11-111",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-111",
+    "status": "closed",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-110111112113-acceptance-v1.json",
+    "compiler_language_gap": false,
+    "kind": "Clang adapter coverage",
+    "decision": "16 opt-in standalone emit-llvm-only positive language projections; all old799 records unchanged; strict native562/562; final815/815 both roles. LLVM obligations explicitly unexecuted."
+  },
+  {
+    "id": "CXX11-112",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-112",
+    "status": "closed",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-110111112113-acceptance-v1.json",
+    "compiler_language_gap": true,
+    "symptom": "Address-only function declarations prematurely required complete parameter ABI.",
+    "owning_pa": "PA8:100/200;PA11:100/200;PA22:300",
+    "fix_revision": "90f617fbd",
+    "checks": "10 C++ controls,1 multi-TU,8 LowIR; actual-parent gate1.000032/1.000295 exact objects. Integrated9331strict/116focused/full normal/fresh36fixture42wrapper102catalog export pass."
+  },
+  {
+    "id": "CXX11-113",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-113",
+    "status": "closed",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-110111112113-acceptance-v1.json",
+    "compiler_language_gap": false,
+    "kind": "Source-pinned IFNDR oracle review",
+    "decision": "Exact alignas15/16 have only empty-pack valid specializations under N3485 14.6p8. Four configs excluded both roles, not passes; original raw results and independent PA11:300 required guard retained."
   }
 ]

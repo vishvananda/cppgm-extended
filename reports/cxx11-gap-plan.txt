@@ -247,14 +247,67 @@ member-function-pointer parameter-layout failure for112. Other GCC language
 repairs, justified oracle reviews and final PA35 release remain open. No remote
 CI execution is claimed.
 
+Accepted alignment packs, incomplete function addresses and expanded Clang coverage
+
+Integrated compiler code epoch90f617fbd, SHA256
+7d52d796efd0be0fd435ce272ed2efd2ba19ec34992cc058d77c19ed2bf1876e.
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-110111112113-acceptance-v1.json
+
+110 implements alignment pack expansion using existing typed syntax/cloning;
+16 required PA15:200/PA17:300 controls preserve empty, multiple, pointer,
+following-attribute and invalid patterns. 112 permits taking the address of a
+function with incomplete parameter/result types without inventing an ABI.
+Actual definitions/calls still require a complete validated signature; later
+translation units can supply one. Ten C++ controls, one multi-TU control and
+eight PA8 LowIR controls cover that boundary and the comparator vocabulary.
+
+111 adds 16 standalone positive emit-llvm-only projections to both paired roles.
+All earlier799 case records are unchanged. These are object/language acceptance
+checks, not claims of LLVM IR parity. Strict native qualification passes562/562.
+The newly exposed PR7040 failure was retained and repaired by112.
+
+113 independently reviews exact GCC alignas15/16 sources under N3485 14.6p8:
+every valid specialization requires an empty pack. These are IFNDR, not
+mandatory-diagnostic tests. Four configurations are excluded from BOTH roles,
+not counted as passes. Their raw results remain; an ordinary forbidden
+fundamental-type alignment control remains required in PA11:300.
+
+All9331 strict tests,116 focused configurations, affected suites, modern C++,
+debug info, self-host through PA5, inception, architecture/file/full placement,
+42 harness suites/689 checks, quick and smoke pass. Fresh export verifies all36
+new required fixtures,42 wrappers and102 offline catalog files plus the LLVM
+license. The external export controller initially combined different PA11
+lanes in one TEST string; grouping by owning PA AND lane corrects that test
+invocation. The original failed controller logs remain. Repository harness,
+source, exported bundle and compiler were unchanged by that correction.
+
+Actual-parent instruction gates:110 c967->8c406 1.000040/1.000025 (O0/O3);
+112 8c406->7d52 1.000032/1.000295. All frozen objects exactly match.
+Quick self/seed .993280/1.025152, zero behavior failures, kernels below1.30.
+No extra cumulative cap or calibration was added.
+
+Paired GCC3750/4106 (91.33%), upstream4106/4106:172 compile failures and184
+missing diagnostics remain. The improvement is TWO repaired configurations;
+the four IFNDR exclusions are a denominator change. All4106 retained records
+are unchanged. GCC27.036482/65.189511s, ratio.414737 NON-COMPARABLE.
+Paired Clang815/815 (100%), upstream815/815. Clang3.587225/24.059664s,
+ratio.149097 on the same passing suite; this is an observed suite timing.
+
+Offline catalog presence/provenance/export checks pass, but new review117
+found historical HTML deletion/insertion markup was lost in some paper text.
+The converter/text correction is queued; byte equality does not establish
+editorial completeness. Compiler work114/115/116 and final PA35 release remain
+pending. Counts are selected configurations, not deduplicated compiler gaps.
+
 Immediate next work
 
-1. Finish110 alignment pack expansion with required owning fixtures and the
-   normal actual-parent gate; integrate111 positive action coverage while
-   retaining every new failure, and fix112 incomplete parameter address demand.
-2. Continue remaining GCC failure-led language repairs and source-specific
-   oracle review without diagnostic parity or candidate-based selection.
-3. Complete useful coverage validation and the final PA35 release check.
+1. Repair114 function-parameter-pack dependency tracking using existing typed
+   patterns; retain115 constexpr declaration-identity repair and then fix116
+   adopted block-declaration correspondence on the actual parent chain.
+2. Correct117 offline paper markup with reproducible conversion and regression
+   checks; preserve full historical deleted and inserted text for students.
+3. Continue GCC failure-led repairs/reviews without diagnostic parity, run the
+   matched suites and required internal/export checks, and final PA35 release.
 
 Completion
 
