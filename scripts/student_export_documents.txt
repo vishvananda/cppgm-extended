@@ -146,3 +146,4 @@ pa8/lowir.md
 pa9/README.md
 shared/README.md
 student.tests/README.md
+doc/cwg/cwg-2397.txt

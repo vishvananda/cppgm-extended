@@ -1031,6 +1031,18 @@
       "adopted_papers": []
     },
     {
+      "issue": 2397,
+      "title": "auto specifier for pointers and references to arrays",
+      "status": "CD6",
+      "role": "course-reference",
+      "file": "cwg-2397.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2397.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2397.html",
+      "source_html_sha256": "5c6579316c1d52c07fa21725e856c6bb310bcb1082ff90a1c75d574b67302cf5",
+      "text_sha256": "8c1cc8623d947bc66ae7332a810296869d50e332b1885245119f639e9e7fae30",
+      "adopted_papers": []
+    },
+    {
       "issue": 2476,
       "title": "placeholder-type-specifiers and function declarators",
       "status": "CD7",

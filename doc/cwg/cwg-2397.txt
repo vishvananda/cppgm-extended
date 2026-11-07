@@ -1,0 +1,106 @@
+CWG 2397: auto specifier for pointers and references to arrays
+Source: https://cplusplus.github.io/CWG/issues/2397.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD6
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2397. auto specifier for pointers and references to arrays
+Section: 9.3.4.5 [dcl.array [1]] Status: CD6 Submitter: Hubert Tong Date: 2019-02-04
+
+[Accepted as a DR at the June, 2021 meeting.]
+
+According to 9.3.4.5 [dcl.array [2]] paragraph 1,
+
+In a declaration T D where D has the form
+
+D1 [ constant-expressionopt ] attribute-specifier-seqopt
+
+and the type of the identifier in the declaration T D1 is “derived-declarator-type-list
+T”, then the type of the identifier of D is an array type; if the type of the identifier
+of D contains the auto type-specifier, the program is ill-formed.
+
+This formulation forbids useful constructs like
+
+
+  int a[3];
+  auto (*p)[3] = &a;
+
+
+(accepted by current implementations) and should be relaxed to accommodate such cases.
+
+Notes from the February, 2019 meeting:
+
+CWG agreed that the example should be accepted.
+
+Notes from the May 25, 2021 teleconference:
+
+It was observed that CWG rejected the same example as being "not a defect" in
+considering issue 1222 [3]. However, the use of auto has significantly expanded since
+that time and the prohibition of such declarations now seems inconsistent.
+
+Proposed resolution, May, 2021:
+
+1.
+
+Change 9.3.4.5 [dcl.array [4]] paragraph 4 as follows:
+
+U is called the array element type; this type shall not be [DELETE: a placeholder type
+(9.2.9.7 [dcl.spec.auto [5]]),] a reference type, a function type, an array of unknown
+bound, or cv void.
+
+2.
+
+Change 9.3.4.6 [dcl.fct [6]] paragraph 11 as follows:
+
+The return type shall be a non-array object type, a reference type, or cv void. [INSERT:
+[Note: An array of placeholder type is considered an array type. —end note]]
+
+3.
+
+Change 9.2.9.7.2 [dcl.type.auto.deduct [7]] paragraph 2 as follows:
+
+A type T containing a placeholder type, and a corresponding initializer E, are
+determined as follows:
+
+-
+
+for a non-discarded return statement that occurs in a function declared with a return
+type that contains a placeholder type, T is the declared return type and E is the
+operand of the return statement. If the return statement has no operand, then E is
+void();
+
+-
+
+for a variable declared with a type that contains a placeholder type, T is the declared
+type of the variable and E is the initializer. If the initialization is
+direct-list-initialization, the initializer shall be a braced-init-list containing only
+a single assignment-expression and E is the assignment-expression;
+
+-
+
+for a non-type template parameter declared with a type that contains a placeholder type,
+T is the declared type of the non-type template parameter and E is the corresponding
+template argument.
+
+[INSERT: T shall not be an array type.] In the case of a return statement with no
+operand...
+
+Source links:
+[1] https://wg21.link/dcl.array
+[2] https://wg21.link/dcl.array#1
+[3] https://cplusplus.github.io/CWG/issues/1222.html
+[4] https://wg21.link/dcl.array#4
+[5] https://wg21.link/dcl.spec.auto
+[6] https://wg21.link/dcl.fct#11
+[7] https://wg21.link/dcl.type.auto.deduct#2

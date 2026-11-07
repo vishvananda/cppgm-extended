@@ -260,3 +260,9 @@ WG21 contributors named in the individual source texts. Papers retain their auth
 and revision information. These copies are reference material, not newly authored
 course wording. The canonical issue pages identify themselves as an unofficial
 snapshot; their original status and source links are preserved.
+
+CWG2397: auto specifier for pointers and references to arrays
+  File: cwg-2397.txt
+  Adopted as a DR, June2021; full issue includes complete approved wording.
+  Pointer/reference array patterns may contain auto; the deduction type itself
+  must not be an array. Catalog inclusion is not an exhaustive interaction claim.
