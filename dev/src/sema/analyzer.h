@@ -431,7 +431,7 @@ private:
 		const Specifiers* specifiers = nullptr, DeclaratorUse use = DeclaratorUse::Declaration);
 	const Type* ptr_operator(const syntax::PtrOperator& pointer, const Type* type, Scope* scope, uint32_t location);
 	const Type* apply_suffix(const syntax::DeclaratorSuffix& suffix, const Type* type, Scope* scope, uint32_t location,
-		const ClassEntity* member = nullptr, const syntax::ParameterClause** defaults = nullptr);
+		const ClassEntity* member = nullptr, const syntax::ParameterClause** default_clause = nullptr);
 	Scope* prototype_scope(
 		const syntax::ParameterClause& clause, const Type* const* types, uint32_t count, Scope* scope);
 	// A parameter's object type: an array's or function's adjusted to a

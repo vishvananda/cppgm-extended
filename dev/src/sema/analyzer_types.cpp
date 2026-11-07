@@ -1257,7 +1257,7 @@ const Type* Analyzer::checked_array(const Type* element, uint64_t bound, uint32_
 }
 
 const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const Type* type, Scope* scope,
-	uint32_t location, const ClassEntity* member, const syntax::ParameterClause** defaults)
+	uint32_t location, const ClassEntity* member, const syntax::ParameterClause** default_clause)
 {
 	if (suffix.kind == syntax::DeclaratorSuffixKind::Array)
 	{
@@ -1288,11 +1288,11 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 	bool placed = false;
 	for (const syntax::ParameterDeclaration* parameter : clause.parameters)
 	{
-		if (defaults != nullptr && parameter->default_argument != nullptr)
+		if (default_clause != nullptr && parameter->default_argument != nullptr)
 		{
-			if (*defaults != nullptr && *defaults != &clause)
+			if (*default_clause != nullptr && *default_clause != &clause)
 				error(parameter->location, "default arguments in more than one function clause");
-			*defaults = &clause;
+			*default_clause = &clause;
 		}
 		const uint32_t index = static_cast<uint32_t>(parameter_scratch_.size() - base);
 		if (earlier == nullptr && index != 0 && UsesDecltype(*parameter))
