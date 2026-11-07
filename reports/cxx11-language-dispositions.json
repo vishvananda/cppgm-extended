@@ -425,5 +425,11 @@
     "sha256": "f4a45ddbba2e574fd85ea10f1af3cdfee68b1ea52703f4297d78924052b0052e",
     "issue": "CXX11-106",
     "reason": "N3485 7.1.6.3p1 forbids the standalone qualified class Outer2<V>::Inner elaborated-type declaration in the unused PR12291 template for every specialization. No valid specialization can be generated and none is instantiated; 14.6p8 makes it ill-formed, no diagnostic required. A mandatory whole-TU diagnostic is unjustified. Preserve the exact independent valid prefix as required PA14:100 control100-qualified-id-original-valid-prefix.t, with defined runtime helpers. This exact-source IFNDR exclusion applies to BOTH paired roles; the excluded original is not reported as a pass."
+  },
+  "llvm-project/clang/test/CXX/class.derived/class.member.lookup/p9.cpp": {
+    "status": "valid-baseline-limitation",
+    "sha256": "cf378ba68a57a57f4c280be3f8a32e1a5ad5152acc623cfbda54a8f0f2a41db6",
+    "issue": "CXX11-109",
+    "reason": "N3485 10.2p3/p6 merges the same designated ClsA::g declaration found through the two public using declarations; 10.2p9 and 10.1 provide ONE shared virtual ClsA subobject. There is no ambiguous base under 5.2.5p5, and 5.2.2p4 does not perform a second access/ambiguity check on the this conversion. CWG39 and the complete adopted N1626 resolution are offline in doc/cwg/. Pinned Clang21 rejects this valid original due to stale lookup ambiguity handling; GCC15 also rejects related valid static forms. Preserve the ENTIRE original translation in required PA23:100 control100-member-using-shared-virtual-original.t, shared-state/address runtime proof, and PA22 static-positive/nonvirtual-required-negative controls. Exclude this exact source from BOTH paired timing roles because upstream cannot qualify valid acceptance. Original native failures and prior800-case observations remain recorded; the excluded case is not a paired-suite pass."
   }
 }
