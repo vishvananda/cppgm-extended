@@ -142,8 +142,17 @@ def reviewed_projection(directives, text, digest, disposition):
     if disposition:
         if action != 'compile':
             raise Excluded('Required-diagnostic review cannot retain runtime obligations')
+        options = disposition.get('diagnostic_options', [])
+        if not isinstance(options, list) or any(flag not in {'-Wextra'} for flag in options):
+            raise ValueError('Unreviewed diagnostic qualification options')
+        for flag in options:
+            if flag not in flags:
+                flags.append(flag)
         expect = 'diagnostic'
         adaptations.append('Source-pinned language review: ' + disposition['reason'])
+        if options:
+            adaptations.append('Both compilers use reviewed diagnostic qualification options: ' +
+                               ' '.join(options))
     return action, expect, flags, adaptations
 
 

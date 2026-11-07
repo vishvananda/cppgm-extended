@@ -19,6 +19,23 @@ class GCCManifest(unittest.TestCase):
         self.assertEqual(result[:3], ('compile', 'diagnostic', []))
         self.assertIn('Source-pinned language review: C++17 syntax in C++11', result[3])
 
+    def test_reviewed_diagnostic_options_are_retained_for_both_compilers(self):
+        review = dict(status='required-diagnostic', sha256='pinned',
+                      reason='Adopted DR rejects the temporary binding',
+                      diagnostic_options=['-Wextra'])
+        result = reviewed_projection([directive('dg-do', 'compile')],
+                                     'int& r = 1;', 'pinned', review)
+        self.assertEqual(result[:3], ('compile', 'diagnostic', ['-Wextra']))
+        self.assertIn('Both compilers use reviewed diagnostic qualification options: -Wextra',
+                      result[3])
+
+    def test_diagnostic_review_cannot_add_semantic_or_escalating_options(self):
+        for options in ['-Wextra', ['-fno-exceptions'], ['-Wextra', '-Werror']]:
+            with self.subTest(options=options), self.assertRaises(ValueError):
+                reviewed_projection([directive('dg-do', 'compile')], 'int& r = 1;',
+                                    'pinned', dict(status='required-diagnostic', sha256='pinned',
+                                                   reason='review', diagnostic_options=options))
+
     def test_stale_review_fails_instead_of_changing_coverage(self):
         with self.assertRaises(ValueError):
             reviewed_projection([], '', 'changed',

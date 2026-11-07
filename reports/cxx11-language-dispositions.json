@@ -395,5 +395,23 @@
     "issue": "CXX11-092",
     "sha256": "4a6fc8ac147b415c62117f9d642c8574fb5db5f073f552ef3bb16b00505d401b",
     "reason": "The coupled overloads deduce a function type through const T**. CWG1584 remains drafting in primary revision 121a (2026-10-10); its May 2015 consensus note has no adopted resolution. Adopted CWG295 ignores cv-qualification added to an already known function type, but does not resolve deduction from this cv-qualified pattern. cppgm permits the const-function deduction and finds the original call ambiguous; GCC15/Clang21 reject the single const-pattern deduction and select the unqualified overload. Shared required C++11 acceptance of the original whole file is therefore not established. Preserve its original failure as standards review, with no compiler pass claimed. Required PA6/PA14 controls independently preserve adopted295 known-function aliases/explicit substitution and ordinary object qualification rejection."
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-ctor11.C": {
+    "status": "required-diagnostic",
+    "reason": "The instantiated B<A&&> member-template constructor binds a converted A temporary to its reference member. Adopted CWG1696 (November 2014), also resolving1815, makes that binding ill-formed. The old GCC acceptance oracle predates or fails to apply the DR. GCC15 still permits the extension but emits the relevant normal diagnostic with -Wextra. Both compilers therefore receive the same reviewed warning flag and must diagnose; severity, wording, count and recovery are not parity obligations. Original fixed-manifest results remain retained, and required course regressions cover the invalid binding and valid reference neighbors.",
+    "issue": "CXX11-102",
+    "sha256": "df5886e2caed07ba83ef4606c5a9205effdeef8132efcc0d9b611e7e20060e41",
+    "diagnostic_options": [
+      "-Wextra"
+    ]
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-ice18.C": {
+    "status": "required-diagnostic",
+    "reason": "The ordinary Task constructor definition binds a TaskStaticData prvalue to its const-reference member. Adopted CWG1696 (November 2014), also resolving1815, makes that binding ill-formed. The old GCC acceptance oracle predates or fails to apply the DR. GCC15 still permits the extension but emits the relevant normal diagnostic with -Wextra. Both compilers therefore receive the same reviewed warning flag and must diagnose; severity, wording, count and recovery are not parity obligations. Original fixed-manifest results remain retained, and required course regressions cover the invalid binding and valid reference neighbors.",
+    "issue": "CXX11-102",
+    "sha256": "cb52a770a42bd05b4181e26bf09f6a2f30fa7027a1c08c215d538037f0267773",
+    "diagnostic_options": [
+      "-Wextra"
+    ]
   }
 }
