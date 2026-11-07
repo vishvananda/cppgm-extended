@@ -1,0 +1,9 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    function g function of () returning void
+    type A struct A
+    function g function of () returning void
+    scope class A
+end translation unit
