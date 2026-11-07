@@ -5531,7 +5531,7 @@
   {
     "id": "CXX11-080",
     "compiler_language_gap": true,
-    "status": "repair-in-validation",
+    "status": "integrated-normal-validation-running",
     "symptom": "Local and nested local classes silently accept static data members, including const/constexpr and instantiated template contexts",
     "owning_pa": "PA11:100; PA12:300 union; PA14:300 instantiation; PA15:100 constexpr; PA16:300 static-local neighbor",
     "standards_basis": "N3485 9.8p3,p4",
@@ -5541,6 +5541,9 @@
       "20ce59c67"
     ],
     "fix_revision": "748e24608",
-    "checks": "11required controls,candidate44/44,GCC44/44,Clang44/44,parent20/44. Affected PA11/12/14/15/16 and format/file pass; placement identified two owning-fixture corrections now moved byte-for-byte and scoped audit passes. Normal actual-parent1.000014/1.000012 with exact objects. Fullnormal/export/integration pending."
+    "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-080/functional-verification-v1.json",
+    "integrated_candidate_revision": "802c5644c249185057e1aad8a23a7ef41ad96604",
+    "triage_note": "Integrated binary39498b183e7a matches the isolated measured compiler exactly; its actual parent9648017a is the accepted078binary. Reused valid normal per-change1.000014/1.000012 exact-object evidence. Eleven byte-pinned fixtures use PA11/12/14/15/16 default controls lanes. Full16-stage normal, fixed GCC/Clang manifests and exact-parent focused checks are running; fresh export remains pending. No closure claim.",
+    "performance_reuse_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-080-perf-reuse-v1.json"
   }
 ]
