@@ -26,10 +26,11 @@ The old generated running-state files do not authorize queue resumption.
 The fifteen prepared repairs are now staged together with the additional
 qualified scalar pseudo-destructor (047), injected class-name member (048) and
 late constructor diagnostic (049) fixes in cppgm-cxx11-integrated-next, source
-0f572a156. Root integration awaits combined normal/export/release checks.
+0f572a156. Combined normal/export checks pass; these repairs are accepted for campaign-root integration. The final campaign PA35 release check remains pending.
 All 8,606 combined strict tests pass. Each compiler repair has its owning-PA
 regressions and a passing normal frozen counter comparison with identical
-objects; the combined normal checks are running. This is integration progress,
+objects. Combined modern, debug, selfhost PA5, inception, audits, placement,
+harness (42 suites/643 cases), quick, smoke and export/reference checks pass. This is integration progress,
 not a claim that the entire external campaign is complete.
 
 Current declared results on that immutable combined compiler:
@@ -38,7 +39,7 @@ Current declared results on that immutable combined compiler:
 GCC has 242 compile failures, 198 missing required diagnostics, two compiler
 abnormal outcomes and two link failures. These are 444 failed configurations,
 not 444 distinct defects. Clang has three rejected inputs: explicit pack-prefix
-extension (051, being repaired) and two member-pointer conversion/overload
+extension (051, validated isolated; integration pending) and two member-pointer conversion/overload
 inputs awaiting reductions. Neither rate describes the whole upstream suite.
 
 The Clang cohort has two explicit hash-pinned dispositions: pr30559 is IFNDR;
@@ -60,7 +61,8 @@ macOS-only memory gate pass is claimed on Linux.
 
 Evidence under /mnt/vizier/cppgm-cxx11-upstream:
   ci-next-048049-candidate-v1/manifest.json
-  ci-next-048049-strict-v1.log; ci-next-combined-checks-v1/
+  ci-next-048049-strict-v1.log; ci-next-combined-acceptance-v1.json
+  ci-next-combined-checks-v1/ and v2/; ci-next-combined-export-v2/ and v3/
   ci-next-048049-cumulative-perf-v1/summary.tsv
   gcc-ci-manifest-v5.json; gcc-ci-run-integrated-048049-v2/
   ci-first-clang-v1/manifest-v5.json; run-integrated-048049-v1/

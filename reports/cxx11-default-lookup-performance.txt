@@ -57,3 +57,13 @@ Evidence under /mnt/vizier/cppgm-cxx11-upstream:
 Failed/intermediate observations remain intact. No additional calibration,
 benchmark family, A/A campaign or RSS collector was introduced. The unrelated
 public runtime/codegen regression investigation remains assigned elsewhere.
+
+Final combined checkpoint, source0f572a156:8,606strict tests,42harness suites
+(643cases),modern modes,debug,selfhostPA5,inception,all audits/placement,
+normal quick/smoke and fresh student export/reference consistency pass,including
+42reference wrappers. With040/041/043/044/047/048/049 added after the optimized
+039checkpoint,the cumulative frozen cost is+0.2547%O0/+0.0775%O3,with identical
+objects. This stays below the normal0.5%instruction budget. Quick self/seed
+ratios are0.993460/1.025388;objects are identical,behavior failures zero,and
+kernel ratios below1.3. Final campaign release checking remains pending.
+Acceptance receipt:ci-next-combined-acceptance-v1.json under the evidence root.

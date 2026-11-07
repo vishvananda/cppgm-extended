@@ -128,8 +128,7 @@ The earlier pr30559 valid trailing-return slice is retained in PA20.
 
 The current results are under gcc-ci-run-integrated-048049-v2/ and
 ci-first-clang-v1/run-integrated-048049-v1/ at the evidence root. Earlier result
-sets and failed/intermediate performance observations are retained. Final
-combined normal/export/release checks and campaign-root integration are pending.
+sets and failed/intermediate performance observations are retained. Combined normal/export acceptance is recorded in ci-next-combined-acceptance-v1.json; the final campaign PA35 release check remains pending.
 
 GCC manifest-v5 retains every4,114configuration and705exclusion. Only the two
 gen-attrs-66 expectations change from acceptance to required diagnostic after

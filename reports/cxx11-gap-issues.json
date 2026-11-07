@@ -2676,7 +2676,7 @@
   {
     "id": "CXX11-019",
     "priority": "P3",
-    "status": "repair-in-validation",
+    "status": "closed",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-mutable1.C",
       "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-mutable2.C",
@@ -2731,13 +2731,11 @@
       "independent_verification": "functional-acceptance-v1.json:root independently rehashes478 source files,9 symlinks,all544 native receipts,objects/executables,required fixtures and export artifacts. No performance acceptance."
     },
     "performance": {
-      "status": "pending-actual-parent-measurement",
-      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included.",
-      "actual_rebased_parent_revision": "1b2ad805d5ead8998f16421a61931e9f9f6ede0d",
-      "actual_rebased_parent_binary": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/string/cppgm++",
-      "targeted_input_protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/performance-inputs-v2/protocol.json",
-      "targeted_correctness": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/performance-input-preflight-v2/independent-verification-v1.json",
-      "scope_correction": "Actualparentincludes021. Do not use18cwhichwouldconflatetworepairs. Fulltrackedsourcearchiveproof,96preflightcells,18exactcommonpairs and6expectedparentstaticassertfailures. Representativeinputsaddedafterrepair,beforeperformance;noearlierinputpredeclarationclaim."
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-019-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "later-dr",
@@ -2779,6 +2777,24 @@
     },
     "pre_rebase_performance_record": {
       "status": "not-started-candidate-under-validation"
+    },
+    "integration": {
+      "source_revision": "595001add",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-019-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "pending-actual-parent-measurement",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included.",
+      "actual_rebased_parent_revision": "1b2ad805d5ead8998f16421a61931e9f9f6ede0d",
+      "actual_rebased_parent_binary": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/root-repairs-focused-v1/string/cppgm++",
+      "targeted_input_protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/performance-inputs-v2/protocol.json",
+      "targeted_correctness": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-019/performance-input-preflight-v2/independent-verification-v1.json",
+      "scope_correction": "Actualparentincludes021. Do not use18cwhichwouldconflatetworepairs. Fulltrackedsourcearchiveproof,96preflightcells,18exactcommonpairs and6expectedparentstaticassertfailures. Representativeinputsaddedafterrepair,beforeperformance;noearlierinputpredeclarationclaim."
     }
   },
   {
@@ -2856,7 +2872,7 @@
   {
     "id": "CXX11-021",
     "priority": "P2",
-    "status": "repair-in-validation",
+    "status": "closed",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-011",
     "symptom": "A padded const character-array reference list-initialized from one string literal is rejected: const char (&text)[5] = {\"abc\"}; Clang accepts while GCC and cppgm reject.",
@@ -2901,8 +2917,11 @@
       "scaling_host_oracles": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/scaling-host-oracles-v1/assessment.json"
     },
     "performance": {
-      "status": "rebased-actual-parent-and-cumulative-gates-pending",
-      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-021-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "later-defect-resolution",
@@ -2964,6 +2983,19 @@
       "protocol": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/final-stages-protocol-v1.json",
       "progress": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-021/final-stages-v1.json",
       "scope": "The original12-workload family bit-field comparison exceeds the unchanged1% instruction gate at+1.3809909%. Raw observations retained. String-fix per-fix/cumulative/absolute measurements have not started."
+    },
+    "integration": {
+      "source_revision": "f9366b4c9",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-021-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
     }
   },
   {
@@ -3515,7 +3547,7 @@
   {
     "id": "CXX11-030",
     "priority": "P2",
-    "status": "shared-repair-in-validation",
+    "status": "closed",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-019",
     "symptom": "A constexpr defaulted copy of a union with an inactive mutable alternative is accepted. Modern GCC15 and Clang21/22 reject in C++11; an explicit selective user-written copy remains valid.",
@@ -3536,8 +3568,11 @@
       "revised_standards_boundary": "CXX11-019/version-neighbors-v3/assessment.json:64 verified positive parent/candidate/GCC/Clang cells. Intermediate CWG2004-only expectations were false after later CWG2268 evolution; raw earlier observations retained."
     },
     "performance": {
-      "status": "rebased-actual-parent-and-cumulative-gates-pending",
-      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-019-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "later-dr-compatibility",
@@ -3569,12 +3604,25 @@
     },
     "pre_rebase_performance_record": {
       "status": "shared-with-CXX11-019-pending"
+    },
+    "integration": {
+      "source_revision": "595001add",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-019-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
     }
   },
   {
     "id": "CXX11-031",
     "priority": "P1",
-    "status": "repair-in-validation",
+    "status": "closed",
     "upstream": [
       "llvm-project/clang/test/CXX/dcl.dcl/dcl.attr/dcl.attr.grammar/p6.cpp"
     ],
@@ -3615,8 +3663,11 @@
       "separate_grammar": "Five malformed attribute-list cases are separately tracked as036; their exclusion from this focused candidate matrix is explicit,not a pass."
     },
     "performance": {
-      "status": "rebased-actual-parent-and-cumulative-gates-pending",
-      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-031-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3640,12 +3691,25 @@
     },
     "pre_rebase_performance_record": {
       "status": "held-pending-029-acceptance-and-actual-parent-reconciliation"
+    },
+    "integration": {
+      "source_revision": "4284a9b65",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-031-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
     }
   },
   {
     "id": "CXX11-032",
     "priority": "P1",
-    "status": "repair-in-validation",
+    "status": "closed",
     "upstream": [
       "llvm-project/clang/test/CXX/dcl.dcl/dcl.enum/p1.cpp"
     ],
@@ -3663,7 +3727,11 @@
       "adjudication": "reports/cxx11-clang-language-adjudications.json; sourceSHA256 bf7b98ebb7168d6fbe7e145bc86b88b2b0c4717531378b7767ae3fd2d55d39f7"
     },
     "performance": {
-      "status": "pending-actual-parent-measurement"
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-032-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3680,12 +3748,24 @@
       "normal_export": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-032/rebased-18c45-checks-v1/functional-verification-v1.json",
       "functional_status": "all-required-functional-and-export-pass;performance-pending",
       "scope": "Eight mandatory non-template qualified-opaque forms fixed; dependent unused templates remain IFNDR review. Invalid fake-template<> target is distinct038,not claimedfixed."
+    },
+    "integration": {
+      "source_revision": "15f2f8799",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-032-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "pending-actual-parent-measurement"
     }
   },
   {
     "id": "CXX11-033",
     "priority": "P1",
-    "status": "repair-in-validation",
+    "status": "closed",
     "upstream": [
       "llvm-project/clang/test/CXX/dcl.decl/dcl.fct.def/dcl.fct.def.delete/p4.cpp"
     ],
@@ -3727,8 +3807,11 @@
       "performance_inputs": "performance-controls-v1/assessment.json:30 parent/candidate/GCC/Clang native cells validate six frozen specialization workloads. Measurements are held for the shared029 window."
     },
     "performance": {
-      "status": "rebased-actual-parent-and-cumulative-gates-pending",
-      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-033-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3752,12 +3835,25 @@
     },
     "pre_rebase_performance_record": {
       "status": "pending-coordinated-window-no-measurements-started"
+    },
+    "integration": {
+      "source_revision": "67bf365f6",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-033-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
     }
   },
   {
     "id": "CXX11-034",
     "priority": "P1",
-    "status": "correctness-passed",
+    "status": "closed",
     "upstream": [
       "llvm-project/clang/test/CXX/dcl.decl/dcl.meaning/dcl.fct.default/p3.cpp"
     ],
@@ -3780,7 +3876,11 @@
       "wrappers": 42
     },
     "performance": {
-      "status": "pending-actual-parent-measurement"
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-034-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3789,12 +3889,24 @@
       "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
       "rationale": "Default arguments appear inside nested pointer-to-function parameter declarators and abstract-declarators, outside the permitted function declaration parameter clause. The TU requires a diagnostic independently of the separate parameter-pack example."
     },
-    "assigned_agent": null
+    "assigned_agent": null,
+    "integration": {
+      "source_revision": "bdfaffd65",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-034-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "pending-actual-parent-measurement"
+    }
   },
   {
     "id": "CXX11-035",
     "priority": "P1",
-    "status": "repair-in-validation",
+    "status": "closed",
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing8.C"
     ],
@@ -3839,8 +3951,11 @@
       "independent_verification": "functional-acceptance-v1.json:382 native cells,1540 raw streams,all emitted artifacts,source/fixture hashes and export receipts independently verified; baseline source rechecked from exact Git archive. Twenty-four common-correct required objects and six performance-input objects match the parent."
     },
     "performance": {
-      "status": "rebased-actual-parent-and-cumulative-gates-pending",
-      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-035-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3868,12 +3983,25 @@
     "pre_rebase_performance_record": {
       "status": "functional-pass-held-pending-029-acceptance-and-actual-parent-reconciliation",
       "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-035/performance-predeclaration-v1.json"
+    },
+    "integration": {
+      "source_revision": "da1a47e8b",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-035-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "rebased-actual-parent-and-cumulative-gates-pending",
+      "scope": "All historical observations remain intact under pre_rebase_performance_record. Do not infer new-parent acceptance. No public runtime/inception codegen regression investigation is included."
     }
   },
   {
     "id": "CXX11-036",
     "priority": "P1",
-    "status": "correctness-passed",
+    "status": "closed",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-031",
     "symptom": "Malformed unknown attribute syntax is silently accepted: numeric token, extra token, incomplete scoped token, bare braced argument and excess namespace components.",
@@ -3945,7 +4073,11 @@
       "required_manifest": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-036/required-controls-v2.json"
     },
     "performance": {
-      "status": "pending-actual-parent-measurement"
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-036-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -3957,7 +4089,19 @@
     "assigned_agent": "/root/clang_correctness",
     "remaining_mode_obligation": "CXX11-041",
     "mode_policy_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-036/language-mode-boundary-v1/policy-review-v1.json",
-    "triage_note": " Final grammar and17 semantic-effect repair is independently functional/export verified. Separate language-mode propagation gap is open as041; no complete-language conformance claim. Actual-parent performance,integration and cumulative validation remain mandatory."
+    "triage_note": " Final grammar and17 semantic-effect repair is independently functional/export verified. Separate language-mode propagation gap is open as041; no complete-language conformance claim. Actual-parent performance,integration and cumulative validation remain mandatory.",
+    "integration": {
+      "source_revision": "d41342692",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-036-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "pending-actual-parent-measurement"
+    }
   },
   {
     "id": "CXX11-037",
@@ -3998,7 +4142,7 @@
   {
     "id": "CXX11-038",
     "priority": "P1",
-    "status": "correctness-passed",
+    "status": "closed",
     "upstream": [],
     "symptom": "Explicit enum-specialization syntax on three members of a non-template class is silently accepted.",
     "root_cause": "Explicit-specialization target validation does not establish an eligible member-of-class-template target.",
@@ -4043,7 +4187,11 @@
       "common_exact_object_pairs": 108
     },
     "performance": {
-      "status": "pending-actual-parent-measurement"
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-038-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "original-C++11",
@@ -4052,12 +4200,24 @@
       ]
     },
     "scope": "Three mandatory forms confirmed. The fourth form involving an explicitly specialized class remains standards review and is excluded. Separate from032 qualified opaque-declaration validation.",
-    "triage_note": "Original-language member enum specialization target/head-count repair functional/export verified on actual032parent. Explicit-class ordinary definitions and nested member/template positives preserved. Existing SmallList4helper spill accurately disclosed and tested atdepth5. Distinct043valid-return parser gap remains open; actual-parent/cumulative performance and integration pending."
+    "triage_note": "Original-language member enum specialization target/head-count repair functional/export verified on actual032parent. Explicit-class ordinary definitions and nested member/template positives preserved. Existing SmallList4helper spill accurately disclosed and tested atdepth5. Distinct043valid-return parser gap remains open; actual-parent/cumulative performance and integration pending.",
+    "integration": {
+      "source_revision": "4b3b0c771",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-038-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "pending-actual-parent-measurement"
+    }
   },
   {
     "id": "CXX11-039",
     "priority": "P1",
-    "status": "correctness-passed",
+    "status": "closed",
     "upstream": [],
     "symptom": "Default arguments cannot find permitted own parameters,fail to hide globals,and can compute the wrong sizeof/runtime value.",
     "root_cause": "Default-argument lookup uses the surrounding declaration scope without the function parameter bindings.",
@@ -4112,9 +4272,11 @@
       "placement_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/fixture-placement-correction-v1.json"
     },
     "performance": {
-      "status": "pending-actual-parent-measurement",
-      "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/preparation-v1.json",
-      "frozen_feature_inputs": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/performance-inputs-v1/protocol.json"
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-039-optimized-parent-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "original-C++11-and-later-DR",
@@ -4139,12 +4301,26 @@
     ],
     "triage_note": "Frozen shared parameter index bounds each default by its declaration ordinal,preserves original names/cv and adjusted types,and prevents later-parameter leakage. Template prefix substitution is memoized by concrete specialization; closure declaration ownership/ABI preserved. All33 required controls and45 retained008 controls/originalP1155 pass acrossISO/GNU11/14/17,O0/O2. Full normal/export acceptance passed; actual-parent performance and eventual integration remain pending. Two byte-identical cast fixtures moved toPA10:200; failed original placement and transfer proof retained.",
     "implementation_revision": "8f3dff5ea8ba9ce3089b96937d68e0eeaac9fbcd",
-    "fix_worktree": "/mnt/vizier/cppgm-cxx11-default-parameter-lookup-rebased"
+    "fix_worktree": "/mnt/vizier/cppgm-cxx11-default-parameter-lookup-rebased",
+    "integration": {
+      "source_revision": "2c98d64c4",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-039-optimized-parent-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "pending-actual-parent-measurement",
+      "predeclaration": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/preparation-v1.json",
+      "frozen_feature_inputs": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-039/performance-inputs-v1/protocol.json"
+    }
   },
   {
     "id": "CXX11-040",
     "priority": "P2",
-    "status": "correctness-passed",
+    "status": "closed",
     "upstream": [
       "llvm-project/clang/test/CXX/dcl.decl/dcl.meaning/dcl.fct.default/p3.cpp (neighbor discovery)"
     ],
@@ -4205,7 +4381,11 @@
       "wrappers": 42
     },
     "performance": {
-      "status": "pending-actual-parent-measurement"
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-040-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "later-defect-resolution",
@@ -4216,12 +4396,24 @@
     },
     "triage_note": "Both initialized-variable and new-expression function return placeholder deduction repaired using existing typed type/deduction data.16validparent owning controls fail beforefix,all336candidate variants pass. All normal/student-export requirements pass with explicit fixture-only placement transfer. Actual-parent/cumulative performance and integration remain required.",
     "fixture_revision": "4e53dd4e45469784921bad7851d8bc8644bcf8be",
-    "ownership_note": "PA20:100 placeholder/function-pointer deduction; member-function-pointer composition belongsPA22:300. Required controls split26/2 after handout review; failed placement retained with exact source/tool transfer proof."
+    "ownership_note": "PA20:100 placeholder/function-pointer deduction; member-function-pointer composition belongsPA22:300. Required controls split26/2 after handout review; failed placement retained with exact source/tool transfer proof.",
+    "integration": {
+      "source_revision": "35786104a",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-040-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "pending-actual-parent-measurement"
+    }
   },
   {
     "id": "CXX11-041",
     "priority": "P2",
-    "status": "correctness-passed",
+    "status": "closed",
     "upstream": [],
     "discovered_from": "CXX11-036 mode-boundary neighbors",
     "symptom": "C++17 attribute-using-prefix silently accepted under selectedC++11/14 modes,including an empty prefix; native compilers emit the language-extension diagnosis.",
@@ -4271,7 +4463,11 @@
       "common_exact_object_pairs": 99
     },
     "performance": {
-      "status": "pending-actual-parent-measurement"
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-041-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "standards_basis": {
       "category": "original-C++11-required-diagnostic",
@@ -4279,7 +4475,19 @@
       "later_language_feature": "P0028R2,C++17 (not a C++11 defect resolution)",
       "positive_neighbor": "C++17 prefix semantics and ordinary keyword attribute-token [[using]] remain accepted"
     },
-    "triage_note": "Typed selected-mode propagation and pre17 prefix diagnosis now pass required PA29 controls, focused/native/ABI checks, full normal and student-export validation. Preserve ordinary keyword attributes and C++17 effects. Actual-parent/cumulative performance and integration remain required; no full-corpus conformance claim."
+    "triage_note": "Typed selected-mode propagation and pre17 prefix diagnosis now pass required PA29 controls, focused/native/ABI checks, full normal and student-export validation. Preserve ordinary keyword attributes and C++17 effects. Actual-parent/cumulative performance and integration remain required; no full-corpus conformance claim.",
+    "integration": {
+      "source_revision": "562f3a252",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-041-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "pending-actual-parent-measurement"
+    }
   },
   {
     "id": "CXX11-042",
@@ -4311,7 +4519,7 @@
   {
     "id": "CXX11-043",
     "priority": "P1",
-    "status": "repair-in-validation",
+    "status": "closed",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-038",
     "symptom": "Valid elaborated enum/class leading or trailing return types in generic/specialized function definitions are rejected or misclassified during parsing.",
@@ -4349,14 +4557,30 @@
       "explanation": "An existing enum may be named by an elaborated enum type in a function return type. Function definitions are declarations admitted by explicit-specialization grammar. Both exact programs define and call their specialization, no unused-template IFNDR or extension dependency."
     },
     "performance": {
-      "status": "pending-actual-parent-measurement"
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-043-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
-    "triage_note": "Parameter-only typed trailing-type context and actual definition/category facts repair elaborated-return parsing;canonicalsharedgrammar synchronized.50required AST/runtime fixtures andfullnormal/export checks pass. Separate preexisting missingvirt-specifier diagnosis044 now has focused-passing repair. Performance/integration pending."
+    "triage_note": "Parameter-only typed trailing-type context and actual definition/category facts repair elaborated-return parsing;canonicalsharedgrammar synchronized.50required AST/runtime fixtures andfullnormal/export checks pass. Separate preexisting missingvirt-specifier diagnosis044 now has focused-passing repair. Performance/integration pending.",
+    "integration": {
+      "source_revision": "4dec24afe",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-043-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "pending-actual-parent-measurement"
+    }
   },
   {
     "id": "CXX11-044",
     "priority": "P1",
-    "status": "repair-in-validation",
+    "status": "closed",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-043",
     "symptom": "Instantiated free function templates with final/override can be silently accepted; elaborated-return parser failure previouslymasked oneform.",
@@ -4397,10 +4621,26 @@
       "basis": "All core probes call/instantiate their free function template,avoiding unused-template IFNDR. Syntax acceptance is an earlier PA5 obligation; semantic rejection is later."
     },
     "performance": {
-      "status": "pending-actual-parent-measurement"
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-044-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     },
     "triage_note": "Typed FunctionDeclaratorInfo virt_suffix/specifier flags and existing templated/class/qualified/friend context enforce modifier eligibility in declare_function. Ordinary virtual class-template members/dependent overrides remainvalid. Allfocused/fullnormal/export checks pass. Performance/integrationpending.",
-    "validated_revision": "f0198c61a3e31c03f7bc21c5da2858383f95739f"
+    "validated_revision": "f0198c61a3e31c03f7bc21c5da2858383f95739f",
+    "integration": {
+      "source_revision": "319ef2569",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-044-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
+      "status": "pending-actual-parent-measurement"
+    }
   },
   {
     "id": "CXX11-045",
@@ -4459,7 +4699,7 @@
   {
     "id": "CXX11-047",
     "priority": "P1",
-    "status": "staged-integration-checks-pending",
+    "status": "closed",
     "upstream": [
       "llvm-project/clang/test/CXX/basic/basic.lookup/basic.lookup.qual/p6-0x.cpp"
     ],
@@ -4467,6 +4707,7 @@
     "owning_pa": 11,
     "handout": "pa11/README.md: scalar/class pseudo-destructors; cluster300 qualified lookup",
     "regressions": [
+      "pa11/tests/controls/300-qualified-scalar-pseudo-array-bad.t",
       "pa11/tests/controls/300-qualified-scalar-pseudo-class-alias.t",
       "pa11/tests/controls/300-qualified-scalar-pseudo-class-distinct-alias.t",
       "pa11/tests/controls/300-qualified-scalar-pseudo-class-mismatch-neighbor-bad.t",
@@ -4477,6 +4718,7 @@
       "pa11/tests/controls/300-qualified-scalar-pseudo-global-alias.t",
       "pa11/tests/controls/300-qualified-scalar-pseudo-last-type-mismatch-bad.t",
       "pa11/tests/controls/300-qualified-scalar-pseudo-namespace-alias.t",
+      "pa11/tests/controls/300-qualified-scalar-pseudo-no-enclosing-fallback-bad.t",
       "pa11/tests/controls/300-qualified-scalar-pseudo-object-mismatch-bad.t",
       "pa11/tests/controls/300-qualified-scalar-pseudo-private-last-type-bad.t",
       "pa11/tests/controls/300-qualified-scalar-pseudo-private-qualifier-bad.t",
@@ -4504,12 +4746,28 @@
       "combined_strict": 8606,
       "combined_strict_log": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-strict-v1.log",
       "normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-047-frozen-perf-v1/summary.tsv"
+    },
+    "integration": {
+      "source_revision": "fc532b705",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-047-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "performance": {
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-047-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
     }
   },
   {
     "id": "CXX11-048",
     "priority": "P1",
-    "status": "staged-integration-checks-pending",
+    "status": "closed",
     "compiler_language_gap": true,
     "upstream": [
       "llvm-project/clang/test/SemaCXX/pr27047-default-init-expr-name-conflict.cpp"
@@ -4539,6 +4797,22 @@
       "normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-frozen-perf-v1/summary.tsv"
     },
     "performance": {
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
+    },
+    "integration": {
+      "source_revision": "0f572a156",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
       "O0_ratio": 1.000122,
       "O3_ratio": 1.000002,
       "objects_identical": true,
@@ -4548,7 +4822,7 @@
   {
     "id": "CXX11-049",
     "priority": "P1",
-    "status": "staged-integration-checks-pending",
+    "status": "closed",
     "compiler_language_gap": true,
     "upstream": [],
     "symptom": "A class-name data member followed by the first user-declared constructor silently escapes its required diagnostic.",
@@ -4574,6 +4848,22 @@
       "normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-frozen-perf-v1/summary.tsv"
     },
     "performance": {
+      "status": "passed-normal-frozen-and-self-compile",
+      "receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "per_fix": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-frozen-perf-v1/summary.tsv",
+      "objects_identical": true,
+      "scope": "Existing Linux-supported normal counter path; custom measurement requirements retired; no macOS-only memory gate claimed."
+    },
+    "integration": {
+      "source_revision": "0f572a156",
+      "combined_compiler_revision": "0f572a156",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-combined-acceptance-v1.json",
+      "strict_tests": 8606,
+      "per_fix_normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-frozen-perf-v1/summary.tsv",
+      "cumulative_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-cumulative-perf-v1/summary.tsv",
+      "normal_validation": "Required suites, debug, selfhostPA5, inception, all audits, placement, harness643, quick, smoke, fresh export/reference consistency and42wrappers pass. Final campaign release check remains pending."
+    },
+    "historical_performance_before_normal_integration": {
       "O0_ratio": 1.000122,
       "O3_ratio": 1.000002,
       "objects_identical": true,
@@ -4607,7 +4897,7 @@
   {
     "id": "CXX11-051",
     "priority": "P1",
-    "status": "regression-confirmed-fix-in-progress",
+    "status": "fix-validated-awaiting-integration",
     "compiler_language_gap": true,
     "upstream": [
       "llvm-project/clang/test/CXX/temp/temp.fct.spec/temp.arg.explicit/p9-0x.cpp"
@@ -4621,9 +4911,11 @@
     "regression_revision": "f9633cc1b",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-051",
     "checks": {
+      "functional_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-051/checks-v1/functional-verification-v1.json",
       "parent_proof": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-051/parent-proof-verification-v1.json"
     },
-    "triage_note": "Clang agent is implementing a typed residual-expansion fix; no integration or performance acceptance claimed."
+    "triage_note": "All isolated correctness/audit/export and normal frozen/self-compile gates pass. Immutable branch held; actual-parent integrated validation remains required.",
+    "fix_revision": "61bc504933e6a184e9004c5917bf2c46e14029da"
   },
   {
     "id": "CXX11-052",
