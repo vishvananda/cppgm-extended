@@ -603,6 +603,42 @@ function @main() -> i32 [role=entry] {
         result = self.compare(REFERENCE, generated)
         self.assertNotEqual(result.returncode, 0)
 
+    def test_address_only_function_declaration_preserves_addresses(self):
+        program = """declare function @opaque [object=external_function]
+global @saved : ptr = addr @opaque
+function @take() -> ptr {
+  block ^entry:
+    %p = addr @opaque
+    return ptr %p
+}
+"""
+        for direct in (False, True):
+            result = self.compare(program, program, direct=direct)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        missing = program.replace("declare function @opaque [object=external_function]\n", "")
+        self.assertNotEqual(self.compare(missing, missing).returncode, 0)
+
+    def test_address_only_function_calls_require_valid_explicit_boundary(self):
+        for result_type, result in (("i64", "%v = call i64"), ("void", "call void")):
+            program = f"""declare function @opaque
+function @invoke() -> {result_type} {{
+  block ^entry:
+    {result} @opaque(7) as (%arg : i64) -> {result_type}
+    return {result_type}{' %v' if result_type != 'void' else ''}
+}}
+"""
+            self.assertEqual(self.compare(program, program).returncode, 0)
+            for bad in (program.replace(f" as (%arg : i64) -> {result_type}", ""),
+                        program.replace("@opaque(7)", "@opaque(7, 8)"),
+                        program.replace(f"-> {result_type}\n", "-> i32\n")):
+                with self.subTest(result_type=result_type, bad=bad):
+                    self.assertNotEqual(self.compare(bad, bad).returncode, 0)
+
+    def test_address_only_function_rejects_boundary_metadata(self):
+        for metadata in ("arity=variadic", "effects=readonly", "unwind=no", "return=noreturn"):
+            program = f"declare function @opaque [{metadata}]\n"
+            self.assertNotEqual(self.compare(program, program).returncode, 0)
+
     def test_relaxed_compare_allows_declaration_to_definition_refinement(self):
         reference = "declare function @helper() -> i64\n"
         generated = """function @helper() -> i64 {

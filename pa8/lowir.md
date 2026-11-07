@@ -168,6 +168,7 @@ The declaration/definition split is explicit:
 ```text
 declare global @name
 declare global @name : <type>
+declare function @name
 declare function @name(%a : i64, %b : ptr) -> i64
 declare function @printf(%fmt : ptr) -> i32 [arity=variadic]
 ```
@@ -622,7 +623,13 @@ declare function @name(%a : i64, %b : ptr) -> i64
 ```
 
 A declaration names the imported/direct-call surface of the current IR unit
-without providing a body.
+without providing a body. The address-only form `declare function @name` has no
+ABI signature: its symbol may be stored or have its address taken before the
+source parameter types are complete. It may carry symbol metadata, but no
+boundary metadata. A direct call of it must state an explicit `as (...) -> ...`
+boundary, validated by the same rules as any other explicit call boundary.
+Omitting a signature does not imply an empty parameter list or a void result.
+Definitions always require a complete signature.
 
 A function has:
 

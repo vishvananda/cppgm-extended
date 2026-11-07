@@ -1881,7 +1881,7 @@ sub validate_lowir_instruction
 					if scalar(@{$call_sig->{params}}) != scalar(@{$sig->{params}});
 			}
 		}
-		elsif (exists($state->{global_symbols}{$callee}))
+		elsif (exists($state->{global_symbols}{$callee}) || exists($state->{function_symbols}{$callee}))
 		{
 			push @$errors, "$context indirect global call \@$callee requires explicit call signature"
 				if !$sig_ok || !$call_sig->{has_signature};
@@ -1953,7 +1953,7 @@ sub validate_lowir_instruction
 					if scalar(@{$call_sig->{params}}) != scalar(@{$sig->{params}});
 			}
 		}
-		elsif (exists($state->{global_symbols}{$callee}))
+		elsif (exists($state->{global_symbols}{$callee}) || exists($state->{function_symbols}{$callee}))
 		{
 			push @$errors, "$context indirect global call \@$callee requires explicit call signature"
 				if !$sig_ok || !$call_sig->{has_signature};
@@ -2793,6 +2793,17 @@ sub validate_lowir_text
 	{
 		$all_symbols{$1} = 1;
 		$global_symbols{$1} = 1;
+	}
+	# An address-only function declaration states a symbol, not an empty ABI.
+	while ($data =~ /^declare function @([A-Za-z0-9_]+)((?:[ \t]+\[[^\]\n]+\])*)$/gm)
+	{
+		my ($name, $suffix) = ($1, $2);
+		$all_symbols{$name} = 1;
+		$function_symbols{$name} = 1;
+		my ($ok, $metadata_or_error) = parse_lowir_function_metadata_suffix($suffix);
+		push @errors, "declare function \@$name has invalid metadata: $metadata_or_error" if !$ok;
+		push @errors, "address-only function \@$name cannot carry boundary metadata"
+			if $suffix =~ /\b(?:arity|effects|unwind|return|result_classes)\s*=/;
 	}
 	my %signatures;
 	while ($data =~ /^function @([A-Za-z0-9_]+)\((.*?)\) -> ($type_pattern)((?:\s+\[[^\]]+\])*) \{$/gm)

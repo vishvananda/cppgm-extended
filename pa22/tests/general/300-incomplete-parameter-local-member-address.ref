@@ -1,0 +1,13 @@
+declare function @C__target [binding=strong, object=_ZN1C6targetE3Arg]
+
+function @capture() -> void [binding=strong, object=_Z7capturev] {
+  slot $local : i128
+
+  block ^entry:
+    %t1 = addr @C__target
+    %t2 = copy i64 %t1
+    %t3 = convert zext i128 i64 %t2
+    store typed i128 %t3, $local
+    %t4 = load typed i128 $local
+    return void
+}

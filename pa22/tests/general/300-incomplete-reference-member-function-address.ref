@@ -1,0 +1,6 @@
+declare function @C__target(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address]) -> void [binding=strong, object=_ZN1C6targetERK3Arg]
+
+global @global [binding=strong] = {
+  ptr addr @C__target
+  i64 0
+}

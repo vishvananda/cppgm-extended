@@ -1,0 +1,8 @@
+declare function @Receiver__apply [binding=strong, object=_ZN8Receiver5applyE7Payload]
+declare function @target [binding=strong, object=_Z6target7Payload]
+
+global @selected [binding=strong] = {
+  ptr addr @Receiver__apply
+  i64 0
+}
+global @selected_free : ptr [binding=strong] = addr @target

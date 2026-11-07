@@ -84,7 +84,11 @@ an already defined symbol merely because a file boundary occurs between uses.
 
 Accept helper-only units, including declarations and globals without an entry
 function. An entry is needed when the supplied backend builds an executable,
-not when a reader writes a LowIR unit. Legacy entry/init/fini names have the
+not when a reader writes a LowIR unit. Preserve address-only function declarations
+(`declare function @name`) without inventing a parameter or result ABI. Definitions
+must state a signature; a call through an address-only declaration must supply an
+explicit validated call boundary. See `lowir.md`, "Functions".
+Legacy entry/init/fini names have the
 roles specified by `lowir.md`; the reference writer makes those inferred roles
 explicit in its output.
 

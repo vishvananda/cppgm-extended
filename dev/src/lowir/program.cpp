@@ -12,6 +12,8 @@ bool Program::same_entry_abi(SymbolId first, SymbolId second) const
 	if (first >= symbols.size() || second >= symbols.size() || !is_function_kind(symbols[first].kind) ||
 		!is_function_kind(symbols[second].kind))
 		return false;
+	if (functions[symbols[first].detail].signature == kNoId || functions[symbols[second].detail].signature == kNoId)
+		return false;
 	const Signature& a = signatures[functions[symbols[first].detail].signature];
 	const Signature& b = signatures[functions[symbols[second].detail].signature];
 	if (a.result != b.result || a.parameter_count != b.parameter_count || a.boundary.arity != b.boundary.arity ||
@@ -77,7 +79,8 @@ const Signature* Program::call_boundary(const Instruction& call) const
 		const SignatureId forward = callee.kind == SymbolKind::Unresolved ? forward_boundary(call.ops[0].index) : kNoId;
 		return forward != kNoId ? &signatures[forward] : nullptr;
 	}
-	return &signatures[functions[callee.detail].signature];
+	const SignatureId signature = functions[callee.detail].signature;
+	return signature != kNoId ? &signatures[signature] : nullptr;
 }
 
 void Program::set_forward_boundary(SymbolId symbol, SignatureId signature)

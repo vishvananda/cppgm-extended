@@ -1,0 +1,13 @@
+declare function @target [binding=strong, object=_Z6target3Arg]
+
+global @global : ptr [binding=strong] = addr @target
+
+function @capture() -> void [binding=strong, object=_Z7capturev] {
+  slot $local : ptr
+
+  block ^entry:
+    %t1 = addr @target
+    store typed ptr %t1, $local
+    %t2 = load typed ptr $local
+    return void
+}

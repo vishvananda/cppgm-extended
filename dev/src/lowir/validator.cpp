@@ -13,7 +13,8 @@ const uint32_t kHandlerBlock = 2;
 
 bool cpu_query_declaration(const Program& program, const Symbol& symbol)
 {
-	if (symbol.kind != SymbolKind::FunctionDeclaration || symbol.metadata.tls_for != kNoId)
+	if (symbol.kind != SymbolKind::FunctionDeclaration || symbol.metadata.tls_for != kNoId ||
+		program.functions[symbol.detail].signature == kNoId)
 		return false;
 	const bool xstate = symbol.metadata.role == ir_model::SR_XSTATE_QUERY;
 	const uint32_t count = xstate ? 1 : 3;
@@ -532,8 +533,13 @@ bool Validator::check_links()
 			return fail("invalid tls_for target", symbol.name);
 		if ((metadata.flags & SF_REPLACEABLE) != 0 && metadata.binding != ir_model::SBM_WEAK)
 			return fail("replaceable metadata requires binding=weak", symbol.name);
-		if (is_function_kind(symbol.kind) && program_.functions[symbol.detail].signature >= program_.signatures.size())
-			return fail("invalid function signature", symbol.name);
+		if (is_function_kind(symbol.kind))
+		{
+			const SignatureId signature = program_.functions[symbol.detail].signature;
+			if (signature >= program_.signatures.size() &&
+				!(symbol.kind == SymbolKind::FunctionDeclaration && signature == kNoId))
+				return fail("invalid function signature", symbol.name);
+		}
 		if (!is_global_kind(symbol.kind))
 			continue;
 		const Global& global = program_.globals[symbol.detail];
@@ -965,6 +971,8 @@ bool Validator::check_call(const Instruction& inst)
 	const Value callee = inst.ops[0];
 	const bool direct = callee.is(ValueKind::Symbol) && is_function_kind(program_.symbols[callee.index].kind);
 	const Signature* signature = program_.call_boundary(inst);
+	if (signature == nullptr)
+		return fail(direct ? "direct call requires signature" : "indirect call requires signature");
 	if ((inst.flags & IF_SIGNATURE) != 0)
 	{
 		if (inst.type != signature->result)

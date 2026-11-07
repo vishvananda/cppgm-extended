@@ -311,7 +311,8 @@ void ProgramLowering::finish()
 		if (symbol.kind != lowir::SymbolKind::Unresolved)
 			continue;
 		if (pending.function)
-			program_.declare_function(pending.symbol, lowir::SymbolKind::FunctionDeclaration, pending.signature);
+			program_.declare_function(pending.symbol, lowir::SymbolKind::FunctionDeclaration,
+				pending_[pending_index_[pending.symbol] - 1].signature);
 		else
 		{
 			lowir::Global global = lowir::Global();

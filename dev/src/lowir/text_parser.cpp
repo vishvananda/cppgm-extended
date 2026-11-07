@@ -391,8 +391,12 @@ void Parser::parse_function(bool definition)
 	const Position position = here();
 	const SymbolId symbol = begin_symbol(expect_name(TokenKind::Global, "function name"), position);
 	SymbolMetadata metadata;
-	const SignatureId signature = parse_signature(
-		definition ? MetadataContext::FunctionDefinition : MetadataContext::FunctionDeclaration, &metadata);
+	SignatureId signature = kNoId;
+	if (definition || at(TokenKind::LParen))
+		signature = parse_signature(
+			definition ? MetadataContext::FunctionDefinition : MetadataContext::FunctionDeclaration, &metadata);
+	else
+		parse_metadata(MetadataContext::FunctionDeclaration, &metadata, nullptr);
 	program_.declare_function(
 		symbol, definition ? SymbolKind::FunctionDefinition : SymbolKind::FunctionDeclaration, signature);
 	program_.symbols[symbol].metadata = metadata;
@@ -692,6 +696,8 @@ void Parser::parse_metadata_item(
 	{
 		if (on_global)
 			fail("function metadata on non-function");
+		if (boundary == nullptr)
+			fail("function metadata requires a signature");
 		if (key == MetadataKey::ResultClasses)
 		{
 			if (result_classes_ == nullptr)

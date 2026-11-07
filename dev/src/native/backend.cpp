@@ -61,7 +61,8 @@ const char* object_name(const lowir::Program& program, const lowir::Symbol& symb
 // declaration the runtime defines unless the program defines that object.
 bool declares_atexit(const lowir::Program& program, const lowir::Symbol& symbol)
 {
-	if (symbol.metadata.tls_for != lowir::kNoId || std::strcmp(object_name(program, symbol), "atexit") != 0)
+	if (symbol.metadata.tls_for != lowir::kNoId || std::strcmp(object_name(program, symbol), "atexit") != 0 ||
+		program.functions[symbol.detail].signature == lowir::kNoId)
 		return false;
 	const lowir::Signature& signature = program.signatures[program.functions[symbol.detail].signature];
 	return signature.parameter_count == 1 && signature.boundary.arity == ir_model::CAM_FIXED &&

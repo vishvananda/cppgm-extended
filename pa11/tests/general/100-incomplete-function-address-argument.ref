@@ -1,0 +1,9 @@
+declare function @target [binding=strong, object=_Z6target7Payload]
+declare function @consume(%arg0 : ptr) -> void [binding=strong, object=_Z7consumePFv7PayloadE]
+
+function @pass() -> void [binding=strong, object=_Z4passv] {
+  block ^entry:
+    %t1 = addr @target
+    call void @consume(%t1)
+    return void
+}

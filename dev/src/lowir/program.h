@@ -222,6 +222,7 @@ struct Global
 
 struct Function
 {
+	// kNoId only for an address-only declaration, never a definition.
 	SignatureId signature;
 	DebugLocation location;
 	std::unique_ptr<FunctionBody> body; // null for a declaration

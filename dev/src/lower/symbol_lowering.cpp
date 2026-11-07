@@ -1026,7 +1026,13 @@ void ProgramLowering::set_pending(lowir::SymbolId symbol, const PendingDeclarati
 {
 	grow_symbol_tables();
 	if (pending_index_[symbol] != 0)
-		return;
+	{
+		const PendingDeclaration& prior = pending_[pending_index_[symbol] - 1];
+		// A later translation unit can complete an address-only declaration.
+		// Keep its current typed entity until this unit states the boundary.
+		if (!prior.function || prior.signature != lowir::kNoId || prior.entity != nullptr)
+			return;
+	}
 	pending_.push_back(pending);
 	pending_index_[symbol] = static_cast<uint32_t>(pending_.size());
 	// A back end selecting code before finish declares the global knows
@@ -1046,8 +1052,18 @@ void ProgramLowering::state_pending_signatures(size_t first)
 		if (pending_[i].function && program_.symbols[pending_[i].symbol].kind == lowir::SymbolKind::Unresolved &&
 			pending_[i].signature == lowir::kNoId)
 		{
-			const lowir::SignatureId signature = function_signature(pending_[i].entity, false, pending_[i].variant);
-			pending_[i].signature = signature;
+			// Address-only declarations need no parameter layout (8.3.5p9).
+			// Calls and definitions still demand function_signature directly.
+			const sema::Type* type = pending_[i].entity->type->canonical;
+			bool complete = true;
+			for (uint32_t p = 0; p < type->param_count && complete; ++p)
+			{
+				const sema::Type* parameter = type->params[p]->unqualified;
+				complete = parameter->kind != sema::TypeKind::Class ||
+					static_cast<const sema::ClassEntity*>(parameter->entity)->complete;
+			}
+			if (complete)
+				pending_[i].signature = function_signature(pending_[i].entity, false, pending_[i].variant);
 		}
 		pending_[i].entity = nullptr;
 	}

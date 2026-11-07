@@ -1,0 +1,17 @@
+declare function @connection__bar [binding=strong, object=_ZN10connection3barE10fake_tuple]
+
+global @a [binding=strong] = {
+  ptr addr @connection__bar
+  i64 0
+}
+
+function @f() -> void [binding=strong, object=_Z1fv] {
+  slot $b : i128
+
+  block ^entry:
+    %t1 = addr @connection__bar
+    %t2 = copy i64 %t1
+    %t3 = convert zext i128 i64 %t2
+    store typed i128 %t3, $b
+    return void
+}

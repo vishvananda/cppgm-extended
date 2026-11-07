@@ -1,0 +1,13 @@
+// The complete later unit supplies the actual by-value ABI.
+struct Payload { long number; double real; };
+struct Receiver { int apply(Payload); };
+int target(Payload);
+extern int (Receiver::*selected)(Payload);
+extern int (*selected_free)(Payload);
+int use(Receiver& r, Payload p) { return r.apply(p) + target(p); }
+int Receiver::apply(Payload p) { return int(p.number) + int(p.real); }
+int target(Payload p) { return int(p.number) - int(p.real); }
+int main() {
+    Receiver r; Payload p = {9, 4.0};
+    return (r.*selected)(p) + selected_free(p) + use(r, p) == 36 ? 0 : 1;
+}

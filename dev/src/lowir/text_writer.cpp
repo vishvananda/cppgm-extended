@@ -530,11 +530,17 @@ void Writer::debug_info()
 
 void Writer::function_declaration(const Symbol& symbol)
 {
-	const Signature& signature = program_.signatures[program_.functions[symbol.detail].signature];
+	const SignatureId id = program_.functions[symbol.detail].signature;
 	text("declare function ");
 	name('@', symbol.name, 0);
-	parameters(signature);
-	metadata(&symbol.metadata, &signature.boundary, &signature);
+	if (id == kNoId)
+		metadata(&symbol.metadata, nullptr, nullptr);
+	else
+	{
+		const Signature& signature = program_.signatures[id];
+		parameters(signature);
+		metadata(&symbol.metadata, &signature.boundary, &signature);
+	}
 	out_.push_back('\n');
 }
 
