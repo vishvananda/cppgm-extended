@@ -1071,14 +1071,19 @@ const Type* Analyzer::non_type_parameter_type(const syntax::TemplateParameter& p
 	// or function type is adjusted to a pointer (14.1p8).
 	Specifiers specifiers;
 	this->specifiers(parameter.specifiers, scope, specifiers, false);
-	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_ ||
-		specifiers.type == decltype_auto_placeholder_)
+	if (specifiers.type == nullptr)
 		error(parameter.location, "non-type template parameter without a type");
 	// A pack's `...` in the declarator declares the pack, not an expansion.
 	syntax::Declarator bare = parameter.declarator != nullptr ? *parameter.declarator : syntax::Declarator();
 	bare.pack = syntax::PackPosition::None;
 	const DeclaratorInfo info = declarator(parameter.declarator != nullptr ? &bare : nullptr, specifiers.type, scope,
 		parameter.location, nullptr, DeclaratorUse::Parameter);
+	// 8.3.5p2: a trailing return resolves the leading auto before 14.1p8
+	// adjusts the declared function type. Unresolved placeholders still
+	// do not supply a C++11 non-type parameter type.
+	if ((specifiers.type == auto_placeholder_ || specifiers.type == decltype_auto_placeholder_) &&
+		holds_auto(info.type))
+		error(parameter.location, "non-type template parameter without a type");
 	const Type* type = info.type->unqualified;
 	if (type->kind == TypeKind::Array)
 		type = types_.pointer(type->element);
