@@ -319,3 +319,51 @@ Clang2.974/22.761seconds,ratio.131non-comparable. GCC3692/4112unchanged.
 15newfixtures/42wrapperspass. Normal cumulative instructions+0.2992%/+.0995%,
 identicalobjects.057observedmutable-empty copyfamilyclosed.066/068/069
 and062remainopen.067object-projection expansion ispending,notthese results.
+
+
+Clang local-input/config and optional-warning tranche (CXX11-079)
+
+The job enables --local-inputs alongside the existing three projection options.
+Selection remains independent of cppgm outcomes. Audited inherited Sema,
+Frontend, Headers and CodeGenHIP configs are recognized by exact hashes without
+executing arbitrary configuration Python; semantic/action/target guards remain.
+Literal headers resolve through source-local quoted search or explicit corpus
+-I directories, with complete transitive file hashes and include-resolution
+edges. Both compilers receive identical resolved include directories. Missing,
+changed, untracked and newly shadowing headers fail validation; host/system
+header fallback, generated inputs and arbitrary conditional branches are blocked.
+Only unique unreserved outer header guards, simple macro definitions without
+synthesis, and pragma once are mapped. Macro/context-dependent expectations
+remain blocked. The small source-pinned type_info implementation test stub only
+permits its declared __name/__arg identifiers; this does not relax arbitrary
+compiler-token guards or validate original RTTI layout/LLVM checks.
+
+Reviewed optional warning controls retain their original order upstream and
+are omitted for cppgm. Narrowing/extension suppressions and Werror remain
+unmapped. An active verifier without mandatory errors can establish qualified
+object acceptance, without requiring optional warning wording or presence.
+Source-pinned primary rules can require any normal diagnostic despite upstream
+warning-only metadata; no message/count/location/recovery matching is introduced.
+Strict native qualification is separate from normal grading and preserves all
+raw failures. Documented GNU complex/anonymous-member coverage, implementation-
+defined attributes and optional multi-line-comment diagnostics have distinct
+reviewed policies. Unsupported GNU/vendor/future whole files remain visible
+exclusions; no candidate failure is removed just to obtain a passing subset.
+
+External evidence: clang-include-closure-ci-v1 under the campaign evidence root.
+The raw818 manifest,549/565 strict qualifier and784/818 vs816/818 normal pair
+are retained. The reviewed final fixed manifest preserves all693 prior records
+byte-for-byte and adds114 configurations; original FileCheck/IR/runtime
+obligations remain explicitly unmet. Compiler failures are retained for repair;
+this is projected language coverage, not a full Clang-suite pass rate.
+
+Reviewed final tranche:807configs/788sources (297accept/510diagnostic),
+including114new (90accept/24diagnostic),19Sema config cases and two genuine
+header-backed sources. Native qualifier554/554 and full normalClang807/807
+pass. Frozen076077 compiler f8bc70bba passes782/807; two newly exposed
+failures remain: storage-class.cpp required diagnosis (081), and
+warn-member-not-needed.cpp in-class explicit specialization. Older23 failures
+remain visible. Whole-suite3.888/24.457seconds,ratio.159non-comparable.
+42harness suites/675cases pass. Regenerating after legacy platform-guard
+hardening produces byte-identical807manifest. No compiler implementation,
+required PA fixture or existing693record was changed by this tranche.

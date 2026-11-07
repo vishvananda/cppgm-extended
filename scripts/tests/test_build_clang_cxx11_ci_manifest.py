@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import build_clang_cxx11_ci_manifest as manifest
+import upstream_clang_input_closure as closure
 
 
 def arguments(*flags):
@@ -18,6 +19,129 @@ def arguments(*flags):
 
 
 class PolicyTests(unittest.TestCase):
+    def test_reviewed_optional_warning_order_and_mandatory_boundaries(self):
+        args = ['%clang_cc1', '-std=c++11', '-fsyntax-only', '-Wno-unused', '-Wall',
+                '-Wno-tautological-compare', '%s']
+        with self.assertRaises(manifest.Excluded):
+            manifest.project_arguments(args, set())
+        row = manifest.project_arguments(args, set(), optional_warnings=True)
+        self.assertEqual(row['upstream_flags'], ['-cc1', '-Wno-unused', '-Wall',
+                                                 '-Wno-tautological-compare'])
+        self.assertEqual(row['candidate_flags'], [])
+        self.assertEqual(row['qualification']['additional_upstream_flags'], ['-pedantic-errors'])
+        for flag in ['-Wno-c++11-narrowing', '-Wno-c++11-extensions', '-Wno-error=narrowing',
+                     '-Werror=unused', '-Wno-unknown-policy']:
+            with self.subTest(flag=flag), self.assertRaises(manifest.Excluded):
+                manifest.project_arguments([*args, flag], set(), optional_warnings=True)
+        oracle = manifest.required_errors('// expected-warning {{quality}}\n'
+                    '// cxx20-error {{inactive}}', ['-verify'], allow_positive=True)
+        self.assertFalse(oracle['active_mandatory_error'])
+        self.assertTrue(manifest.required_errors('// expected-error {{invalid}}', ['-verify'],
+                                                allow_positive=True)['active_mandatory_error'])
+        with self.assertRaises(manifest.Excluded):
+            manifest.required_errors('// expected-error-re {{unknown grammar}}', ['-verify'],
+                                     allow_positive=True)
+
+    def test_closed_headers_macros_and_guard_annotations_are_frozen(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root/'clang/test/case.cpp'
+            header = source.parent/'Inputs/a.h'
+            tail = header.parent/'b.h'
+            header.parent.mkdir(parents=True)
+            source.write_text('#include "a.h"\nint n = VALUE;\n')
+            header.write_text('#ifndef A_H\n#define A_H\n#include "b.h"\n#endif\n')
+            tail.write_text('#pragma once\n#define VALUE 4\n// expected-error {{required}}\n')
+            tracked = {str(p.relative_to(root)) for p in [source, header, tail]}
+            args = ['%clang_cc1', '-I', '%S/Inputs', '-std=c++11', '-fsyntax-only', '%s']
+            stripped, tokens, extra = closure.prepare(args, source, root, tracked, [],
+                manifest.source_policy, manifest.SOURCE_PARTS, manifest.Excluded)
+            self.assertEqual(stripped, [a for a in args if a not in ['-I', '%S/Inputs']])
+            self.assertEqual(tokens, set())
+            self.assertEqual(extra['include_directories'], ['clang/test/Inputs'])
+            self.assertEqual({p['path'] for p in extra['input_files']}, tracked)
+            self.assertTrue(manifest.required_errors(extra['_oracle_text'], ['-verify'])
+                            ['active_mandatory_error'])
+            old = extra['input_files']
+            tail.write_text('#define VALUE 5\n')
+            new = closure.prepare(args, source, root, tracked, [], manifest.source_policy,
+                                  manifest.SOURCE_PARTS, manifest.Excluded)[2]['input_files']
+            self.assertNotEqual(old, new)
+            tail.unlink()
+            with self.assertRaisesRegex(manifest.Excluded, 'missing'):
+                closure.prepare(args, source, root, tracked, [], manifest.source_policy,
+                                manifest.SOURCE_PARTS, manifest.Excluded)
+
+    def test_context_and_synthesized_or_untracked_headers_stay_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root/'case.cpp'
+            header = root/'a.h'
+            header.write_text('int n;')
+            for body in ['#if __clang__\nint n;\n#endif', '#include <a.h>',
+                         '#define NAME "a.h"\n#include NAME', '#define CAT(a,b) a##b',
+                         '#ifndef __PREDEFINED\n#define __PREDEFINED\nint n;\n#endif',
+                         '#ifndef linux\n#define linux\nint n;\n#endif',
+                         '#ifndef unix\n#define unix\nint n;\n#endif',
+                         '#define A_H\n#include "a.h"', '??=include "a.h"']:
+                source.write_text(body)
+                header.write_text('#ifndef A_H\n#define A_H\nint n;\n#endif')
+                with self.subTest(body=body), self.assertRaises(manifest.Excluded):
+                    closure.prepare(['%clang_cc1'], source, root, {'case.cpp', 'a.h'}, [],
+                        manifest.source_policy, manifest.SOURCE_PARTS, manifest.Excluded)
+            source.write_text('#include "a.h"')
+            with self.assertRaisesRegex(manifest.Excluded, 'not a tracked'):
+                closure.prepare([], source, root, {'case.cpp'}, [], manifest.source_policy,
+                                manifest.SOURCE_PARTS, manifest.Excluded)
+
+    def test_literals_comments_and_unterminated_input_do_not_invent_directives(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root/'case.cpp'
+            source.write_text('const char *s=R"tag(\n#include "absent.h"\n)tag";\n'
+                              '// #include "also-absent.h"\n')
+            self.assertEqual(closure.prepare([], source, root, {'case.cpp'}, [],
+                manifest.source_policy, manifest.SOURCE_PARTS, manifest.Excluded)[2], {})
+
+    def test_native_configuration_mapping_is_hash_bound_without_execution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root/'clang/test/Sema/case.cpp'
+            source.parent.mkdir(parents=True)
+            config = source.parent/'lit.local.cfg'
+            config.write_text('raise RuntimeError("must not execute")')
+            with self.assertRaisesRegex(manifest.Excluded, 'changed'):
+                closure.configurations(source, root, manifest.Excluded)
+            digest = hashlib.sha256(config.read_bytes()).hexdigest()
+            with patch.dict(closure.CONFIGS, {'clang/test/Sema/lit.local.cfg': (digest, 'reviewed')}):
+                self.assertEqual(closure.configurations(source, root, manifest.Excluded),
+                    [dict(path='clang/test/Sema/lit.local.cfg', sha256=digest, policy='reviewed')])
+            (source.parent/'lit.local.cfg.py').write_text('config.unsupported = True')
+            with self.assertRaises(manifest.Excluded):
+                closure.configurations(source, root, manifest.Excluded)
+
+    def test_angle_headers_require_explicit_local_search_and_reserved_stub_is_pinned(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root/'case.cpp'
+            source.write_text('#include <typeinfo>\n')
+            header = root/closure.TYPEINFO_STUB
+            header.parent.mkdir(parents=True)
+            header.write_text('struct type_info { int __name; };')
+            tracked = {'case.cpp', closure.TYPEINFO_STUB}
+            with self.assertRaisesRegex(manifest.Excluded, 'missing'):
+                closure.prepare([], source, root, tracked, [], manifest.source_policy,
+                                manifest.SOURCE_PARTS, manifest.Excluded)
+            with self.assertRaisesRegex(manifest.Excluded, 'Changed implementation'):
+                closure.prepare(['-I%S/clang/test/CodeGenCXX'], source, root, tracked, [],
+                                manifest.source_policy, manifest.SOURCE_PARTS, manifest.Excluded)
+            with patch.object(closure, 'TYPEINFO_SHA', hashlib.sha256(header.read_bytes()).hexdigest()):
+                row = closure.prepare(['-I%S/clang/test/CodeGenCXX'], source, root, tracked, [],
+                    manifest.source_policy, manifest.SOURCE_PARTS, manifest.Excluded)[2]
+            self.assertEqual(row['include_edges'], [dict(source='case.cpp', spelling='typeinfo',
+                kind='angled', resolved=closure.TYPEINFO_STUB)])
+
+
     def test_llvm_object_projection_preserves_semantic_flags_and_original_obligations(self):
         args = ['%clang_cc1', '-std=c++11', '-emit-llvm', '-disable-llvm-passes',
                 '-O2', '-triple', 'x86_64-linux-gnu', '%s', '-o', '-']
@@ -162,6 +286,32 @@ class PolicyTests(unittest.TestCase):
 
 
 class CatalogueTests(unittest.TestCase):
+    def test_primary_rule_override_is_source_pinned_and_not_warning_severity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            name = 'clang/test/rule.cpp'
+            path = root/name
+            path.parent.mkdir(parents=True)
+            path.write_text('// RUN: -std=c++11\nextern struct S {}; '
+                            '// expected-warning {{native quality}}\n')
+            policy = {'llvm-project/'+name: dict(status='required-diagnostic', issue='CXX11-079',
+                reason='Primary nonempty declarator rule', sha256=hashlib.sha256(path.read_bytes()).hexdigest())}
+            parsed = {'RUN:': [SimpleNamespace(keyword='RUN:', command='literal native command')]}
+            projection = manifest.project_arguments(['%clang_cc1', '-std=c++11', '-verify',
+                                                     '-fsyntax-only', '%s'], set())
+            with patch.object(manifest.subprocess, 'check_output', return_value=(name+'\0').encode()), \
+                    patch.object(manifest, 'project_run', return_value=projection):
+                row = manifest.collect(root, lambda *a, **k: parsed, None, dispositions=policy,
+                                       local_inputs=True)
+                case, = row['cases']
+                self.assertEqual(case['expect'], 'diagnostic')
+                self.assertFalse(case['language_oracle']['active_mandatory_error'])
+                self.assertTrue(case['language_oracle']['required_language_rule'])
+                path.write_text(path.read_text()+'int changed;')
+                with self.assertRaisesRegex(ValueError, 'Stale'):
+                    manifest.collect(root, lambda *a, **k: parsed, None, dispositions=policy,
+                                     local_inputs=True)
+
     def test_source_pinned_vendor_tokens_keep_attribute_effects_unmet(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

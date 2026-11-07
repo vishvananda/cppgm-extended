@@ -44,6 +44,48 @@ else:
 
 
 class Suite(unittest.TestCase):
+    def test_transitive_input_hashes_and_identical_include_arguments(self):
+        case = self.case()
+        headers = self.root/'Inputs'
+        headers.mkdir()
+        header = headers/'nested.h'
+        header.write_text('int nested;')
+        case.update(input_files=[dict(path='Inputs/nested.h', sha256=sha256(header))],
+                    include_directories=['Inputs'])
+        manifest = dict(schema=1, suite='clang', cases=[case])
+        validate_manifest(manifest, self.root)
+        cppgm = self.run_one(case)['stages'][0]['command']
+        other = self.root/'other'
+        other.mkdir()
+        upstream = run_case((case, str(self.root), str(self.compiler), str(self.compiler),
+                             'upstream', str(other)))['stages'][0]['command']
+        self.assertEqual([v for v in cppgm if v.startswith('-I')], ['-I'+str(headers)])
+        self.assertEqual([v for v in cppgm if v.startswith('-I')],
+                         [v for v in upstream if v.startswith('-I')])
+        case['input_files'].append(dict(path=case['path'], sha256=case['sha256']))
+        case['include_edges'] = [dict(source=case['path'], spelling='nested.h',
+                                     resolved='Inputs/nested.h')]
+        validate_manifest(manifest, self.root)
+        shadow = self.root/'nested.h'
+        shadow.write_text('int shadows;')
+        with self.assertRaisesRegex(ValueError, 'resolution changed'):
+            validate_manifest(manifest, self.root)
+        shadow.unlink()
+        case['include_edges'] = []
+        header.write_text('int changed;')
+        with self.assertRaisesRegex(ValueError, 'dependency hash'):
+            validate_manifest(manifest, self.root)
+        header.unlink()
+        with self.assertRaises(OSError):
+            validate_manifest(manifest, self.root)
+        case['input_files'] = [dict(path='../escape', sha256='irrelevant')]
+        with self.assertRaisesRegex(ValueError, 'outside corpus'):
+            validate_manifest(manifest, self.root)
+        case['input_files'] = []
+        case['include_directories'] = ['../escape']
+        with self.assertRaisesRegex(ValueError, 'outside corpus'):
+            validate_manifest(manifest, self.root)
+
     def test_object_projection_does_not_execute_unmet_native_ir_or_runtime_commands(self):
         case = self.case()
         case['unmet_native_oracles'] = dict(status='not-executed',
@@ -92,6 +134,9 @@ class Suite(unittest.TestCase):
         case['qualification']['kind'] = 'llvm-object-cxx11'
         llvm, = qualification_cases(dict(cases=[case]))
         self.assertEqual(llvm['upstream_flags'], ['-pedantic-errors'])
+        case['qualification']['kind'] = 'local-input-cxx11'
+        local, = qualification_cases(dict(cases=[case]))
+        self.assertEqual(local['upstream_flags'], ['-pedantic-errors'])
         case['dialect'] = 'gnu++11'
         case['qualification'] = dict(kind='documented-gnu-cxx11', additional_upstream_flags=[],
                                      source_policy_issue='CXX11-065')
@@ -101,6 +146,10 @@ class Suite(unittest.TestCase):
         case['qualification']['kind'] = 'vendor-attribute-cxx11'
         attribute, = qualification_cases(dict(cases=[case]))
         self.assertEqual(attribute['upstream_flags'], [])
+        case['qualification'].update(kind='reviewed-iso-cxx11',
+                                    additional_upstream_flags=['-pedantic-errors', '-Wno-comment'])
+        comment, = qualification_cases(dict(cases=[case]))
+        self.assertEqual(comment['upstream_flags'], ['-pedantic-errors', '-Wno-comment'])
         case['qualification']['additional_upstream_flags'] = ['-Werror']
         with self.assertRaises(ValueError):
             qualification_cases(dict(cases=[case]))
@@ -252,6 +301,7 @@ class Workflow(unittest.TestCase):
                     self.assertEqual('--verify-negatives' in args, suite == 'clang')
                     self.assertEqual('--implicit-cxx11' in args, suite == 'clang')
                     self.assertEqual('--llvm-object-projections' in args, suite == 'clang')
+                    self.assertEqual('--local-inputs' in args, suite == 'clang')
                     self.assertEqual(args[args.index('--output')+1],
                                      str(root/'run temp/cxx11/manifest.json'))
                     self.assertEqual(args[args.index('--'+('llvm' if suite == 'clang' else 'gcc')+'-root')+1],

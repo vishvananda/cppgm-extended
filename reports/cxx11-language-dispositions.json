@@ -211,5 +211,141 @@
     "issue": "CXX11-070",
     "sha256": "5948f29382267bce06e8719e8e675110eca7300bcf357ec1187c4ee459086b26",
     "reason": "N3485 8.5.4p3/p7: list-initializing bool/char/char16_t/char32_t constructor arguments from nonconstant double requires forbidden narrowing. GCC dg-warning severity does not make the translation unit a valid-positive oracle. Any ordinary compiler diagnostic satisfies the required obligation;cppgm already diagnoses it."
+  },
+  "llvm-project/clang/test/CXX/lex/lex.literal/lex.ext/p11.cpp": {
+    "status": "unmapped-gnu-extension-positive",
+    "issue": "CXX11-079",
+    "sha256": "7ecd9c1c1264353551c63450ad2745a6ffc8e492309e3683883fe7bc33a0c9d7",
+    "reason": "The CharT,type-dependent character pack string literal operator template is a GNU extension, outside N3485 13.5.8p5 single non-type char-pack literal-operator-template form. No explicit course policy found for the GNU string-template form. Preserve original explicit11 warning/acceptance as extension compatibility, not mandatory ISO11 acceptance or a negative inferred from pedantic severity."
+  },
+  "llvm-project/clang/test/CXX/temp/temp.res/temp.dep/temp.dep.type/p1.cpp": {
+    "status": "mixed-later-standard-positive-unmapped",
+    "issue": "CXX11-079",
+    "sha256": "28b89b261a2f208de534bfd015114beae15e642e8bb8a9807dc4fc7ebbb5b672",
+    "reason": "Whole source combines valid CWG1056 current-instantiation examples with a missing typename for a type outside current instantiation (N3485 14.6p2) and a declarative nested-name-specifier naming an alias template. Its own expected warnings acknowledge those extension cases. No whole-source ISO11 acceptance claim; independent valid prefix remains available for later slice coverage. This is not proof that the valid prefix passed."
+  },
+  "llvm-project/clang/test/Preprocessor/macro-reserved-cxx11.cpp": {
+    "status": "not-required",
+    "issue": "CXX11-079",
+    "sha256": "7cac27b8bb165726a981346d7df3fa13563aee74c1ad553d31b18010aa1066ad",
+    "reason": "Defines macros lexically identical to for, final and override. N3485 17.6.4.3.1p2 forbids keyword/Table3 identifier macro definitions and 17.6.4.3p2 makes defining names in their reserved context undefined behavior. Neither silent positive acceptance nor a mandatory diagnostic is a portable correctness oracle; retain raw warning/strict-error observations."
+  },
+  "llvm-project/clang/test/Sema/integer-overflow.cpp": {
+    "status": "unmapped-gnu-extension-positive",
+    "issue": "CXX11-079",
+    "sha256": "7d8457b83b6a38eb7c56d768ea9018d74d36a14c64cb0156bcb27de98236acbd",
+    "reason": "Line16 uses a C99 compound literal (long long){...}, outside ISO11 expression grammar (N3485 5.2). No explicit compound-literal course policy found. Keep original native warning/acceptance and raw qualification failure as unmapped extension coverage, not automatic mandatory-negative reclassification."
+  },
+  "llvm-project/clang/test/Sema/nullability-and-template-deduction.cpp": {
+    "status": "unmapped-vendor-extension-positive",
+    "issue": "CXX11-079",
+    "sha256": "1173d95e5c5b82d4ea949e35a58423857599d391dae167ef3040308f8baf4d75",
+    "reason": "The _Nonnull type nullability specifier is a Clang extension outside the ISO11 declarator/type qualifier grammar (N3485 7.1.6 and8.3). No mapped course contract found. Preserve the vendor-positive projection as unmapped, not required ISO11 acceptance."
+  },
+  "llvm-project/clang/test/SemaCXX/return-stack-addr.cpp": {
+    "status": "mixed-later-standard-positive-unmapped",
+    "issue": "CXX11-079",
+    "sha256": "eb0e376512e40aa324aab3eb62320f3ff0ba52da4df707d68320ee0607877fe4",
+    "reason": "Whole default-mode source includes initialized lambda captures on lines188/193, introduced by N3648 for C++14; N3485 5.1.2 capture grammar has no initializer. Preserve the warning/lifetime obligations and potential valid prefix as unexecuted rather than claiming whole-source ISO11 positive acceptance."
+  },
+  "llvm-project/clang/test/SemaCXX/warn-memset-bad-sizeof.cpp": {
+    "status": "unmapped-gnu-extension-positive",
+    "issue": "CXX11-079",
+    "sha256": "fe3e49e5ebd88b17c20b421e15608036658f662f22bc5caa68dabd8d060c4de7",
+    "reason": "Whole source uses GNU typeof and statement expressions, outside ISO11 primary/type grammar (N3485 5.1 and7.1.6). Original no-standard native RUN uses GNU default mode; projecting to strict ISO11 creates native errors too. No explicit course policy found for these forms. Preserve raw normal/strict results and optional memset warning obligations as unmapped GNU coverage."
+  },
+  "llvm-project/clang/test/SemaCXX/warn-variable-not-needed.cpp": {
+    "status": "later-standard-positive-unmapped",
+    "issue": "CXX11-079",
+    "sha256": "4da83b6af72c401377dce33ce39ee15084dde66588e5d221097c65852f1a3de3",
+    "reason": "Line7 declares a variable template, a C++14 feature introduced by N3651; N3485 14p1 permits templates of functions/classes/aliases, not variables. Preserve original default-mode acceptance as later-language coverage, not an ISO11-positive obligation."
+  },
+  "llvm-project/clang/test/SemaTemplate/instantiate-pure-virtual-function.cpp": {
+    "status": "mixed-later-standard-positive-unmapped",
+    "issue": "CXX11-079",
+    "sha256": "9bd6d628ab033a82c41237ffb06f719f06c03e71ec8e4d0eefeb8cc28ba3b5ff",
+    "reason": "The whole source uses constexpr void functions (C++14 relaxation) and constexpr virtual functions (C++20 P1064). N3485 7.1.5p3 requires literal return type and disallows virtual constexpr functions. Both native11 and cppgm reject; do not count the default-mode whole source as ISO11-positive or silently discard its independently valid later-function-template slice."
+  },
+  "llvm-project/clang/test/SemaCXX/warn-vla.cpp": {
+    "status": "unmapped-gnu-extension-positive",
+    "issue": "CXX11-079",
+    "sha256": "44dfd0d6d3238a265498ca7a4634c62f298ae276ebd30cc17ab5f8b8e308e673",
+    "reason": "The original no-standard native RUN enables -Wvla and exercises GNU variable-length arrays, including dependent templates. N3485 8.3.4p1 requires a converted constant expression bound. No documented course VLA policy found. The explicit -Wvla keeps this warning nonfatal even under pedantic-errors, so strict success is not an ISO11-validity proof; retain as unmapped extension coverage, independent of cppgm rejection."
+  },
+  "llvm-project/clang/test/Sema/attr-nomerge.cpp": {
+    "status": "not-required-vendor-attribute-semantics",
+    "issue": "CXX11-079",
+    "sha256": "54b49080f7df31182dc914048065f197542c42ee7da33a429d980da291f52723",
+    "reason": "All active expected errors constrain clang::nomerge argument/appertainment processing. N3485 7.6.1p5 makes nonstandard attribute behavior implementation-defined; balanced attribute-token sequences do not create a mandatory core diagnostic for these vendor rules. Preserve original expected errors as unmet vendor semantics, not required ISO11 diagnostics."
+  },
+  "llvm-project/clang/test/Parser/extra-semi-resulting-in-nullstmt.cpp": {
+    "status": "vendor-attribute-positive",
+    "issue": "CXX11-079",
+    "sha256": "78fc1c23d17fbb4003a95b50ffda1f30c5add84c4276a0bcb58f9995ff3cd38a",
+    "reason": "The fallthrough and clang::fallthrough tokens appear in balanced attribute-specifiers on null statements. N3485 7.6.1p5 makes otherwise unspecified attribute behavior implementation-defined; this syntax is valid in11 even though standardized fallthrough semantics arrive in17. Native pedantic extension warning is not a mandatory language error. Ordinary native11 qualification retains language object acceptance only; no fallthrough warning/effect parity."
+  },
+  "llvm-project/clang/test/SemaCXX/switch-implicit-fallthrough-per-method.cpp": {
+    "status": "vendor-attribute-positive",
+    "issue": "CXX11-079",
+    "sha256": "45dcc185fe3acfe098401be3edddade0f4e08771dae9bc87e84b3b4cbdd22c90",
+    "reason": "The fallthrough and clang::fallthrough tokens appear in balanced attribute-specifiers on null statements. N3485 7.6.1p5 makes otherwise unspecified attribute behavior implementation-defined; this syntax is valid in11 even though standardized fallthrough semantics arrive in17. Native pedantic extension warning is not a mandatory language error. Ordinary native11 qualification retains language object acceptance only; no fallthrough warning/effect parity."
+  },
+  "llvm-project/clang/test/SemaCXX/complex-init-list.cpp": {
+    "status": "documented-gnu-extension-positive",
+    "issue": "CXX11-079",
+    "sha256": "dc5fd5ad3a01cad2633d30b7c7f486a3881d6b55fd504789404307cf64836585",
+    "reason": "Source uses GNU _Complex float initialized by two scalar components. GNU complex category/component support is documented by PA29 README64-72/384-390; retain visibly as GNU11 extension acceptance, not ISO11 positive validity. The raw strictISO extension rejection remains historical.",
+    "coverage": "Documented GNU complex object initialization coverage; not an ISO11-positive claim"
+  },
+  "llvm-project/clang/test/SemaCXX/warn-reorder-ctor-initialization.cpp": {
+    "status": "documented-gnu-extension-positive",
+    "issue": "CXX11-079",
+    "sha256": "1dd1f3adca738f2c0c87ad36767c3ccab96169f59a8d8e4e763685a337448b5d",
+    "reason": "Anonymous structs/unions on lines116/135 use injected member names, explicitly documented by PA11 README370 and PA29 README41. Keep GNU11 object acceptance with ordinary nativeGNU qualification, distinct from retained failed strictISO observations; original reorder warnings remain ungraded.",
+    "coverage": "Documented GNU anonymous struct/union member initialization; no warning parity"
+  },
+  "llvm-project/clang/test/SemaCXX/unreachable-catch-clauses.cpp": {
+    "status": "reviewed-iso-cxx11-positive",
+    "issue": "CXX11-079",
+    "sha256": "cda1fda2399438d53c8ba2ac6406d29d45cbf2b709ff27b495ecb1a07db86703",
+    "reason": "Backslash-newline splicing extends a // comment, as required by N3485 2.2p2 before comment removal (2.2p3). No language violation follows. Native -pedantic-errors escalates optional -Wcomment; suppress only that optional warning for separate strict qualification, preserving all original normal-run flags.",
+    "qualification_flags": [
+      "-pedantic-errors",
+      "-Wno-comment"
+    ]
+  },
+  "llvm-project/clang/test/SemaCXX/warn-self-move.cpp": {
+    "status": "reviewed-iso-cxx11-positive",
+    "issue": "CXX11-079",
+    "sha256": "00e16f1b296d9f101250d01f0a661ad3095e3d73cc48c578d8e0cc85ed872cff",
+    "reason": "Backslash-newline splicing extends a // comment, as required by N3485 2.2p2 before comment removal (2.2p3). No language violation follows. Native -pedantic-errors escalates optional -Wcomment; suppress only that optional warning for separate strict qualification, preserving all original normal-run flags.",
+    "qualification_flags": [
+      "-pedantic-errors",
+      "-Wno-comment"
+    ]
+  },
+  "llvm-project/clang/test/CXX/lex/lex.literal/lex.ext/p4.cpp": {
+    "status": "required-diagnostic",
+    "issue": "CXX11-079",
+    "sha256": "c5f5707507d29694773cefcd7c49e4d0471755cd6c823ef5d0514c2c9f5385bc",
+    "reason": "The cooked long-double literal operator call for 1e1000000_x1 forms 1e1000000L under N3485 2.14.8p4. Its scaled value is outside representable long-double range, so 2.14.4p1 makes the program ill-formed. Raw/template literal forms elsewhere need no numeric conversion, but do not erase this mandatory whole-TU diagnostic. Clang normal warning and cppgm normal error both satisfy it; positive acceptance is not mandatory."
+  },
+  "llvm-project/clang/test/SemaCXX/storage-class.cpp": {
+    "status": "required-diagnostic",
+    "issue": "CXX11-079",
+    "sha256": "0ae62e0b3313c710ec63a68745a68e89f4463380b805b6820762e45e3c8a5976",
+    "reason": "extern struct Test1 {}; has an empty init-declarator-list. N3485 7.1.1p1 requires a nonempty list when a storage-class-specifier appears, except the specified static anonymous-union case. The declared Test1 class is not that exception. Any ordinary diagnostic satisfies the rule; native expected-warning severity does not make whole-source acceptance valid."
+  },
+  "llvm-project/clang/test/Parser/cxx2c-variadic-friends-ext-diags.cpp": {
+    "status": "required-diagnostic",
+    "issue": "CXX11-079",
+    "sha256": "a3ff94e342437131eb3488537105c94a308ffafd1e2f475edfcd47bd57081274",
+    "reason": "The explicit C++11 RUN exercises comma-separated/pack friend type declarations introduced by C++26 P2893R3. N3485 11.3p3 only permits one elaborated/simple/typename type specifier for a nonfunction friend. This is a later feature, not a retroactive DR. The required ISO11 diagnosis may be a normal warning or error; active pre2c-warning annotations are not a positive acceptance oracle."
+  },
+  "llvm-project/clang/test/CXX/temp/temp.decls/temp.friend/p5.cpp": {
+    "status": "required-diagnostic",
+    "issue": "CXX11-079",
+    "sha256": "c8992ea5dfe8e198844fe13ee9557f73fbe0e70021f592d44c89c1abd5e213b3",
+    "reason": "test2 defines ordinary member A<char>::f inside an explicit class specialization, and its body calls private C::foo. C befriends A<T>::g, not f. N3485 14.5.4p5 requires matching member name/kind/signature for friendship in explicit specializations; 11.3p1 grants private access only to nominated friends. Under14.7.3p5, members of the explicit class specialization are defined as normal class members, so this non-template f body needs diagnosis even if unused. Clang warns that dependent member friendship is unsupported; that normal diagnostic satisfies the whole-TU obligation. Independent valid dependent friend declarations remain unproven by this negative projection."
   }
 }

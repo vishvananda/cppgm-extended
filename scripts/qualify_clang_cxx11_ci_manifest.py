@@ -20,14 +20,17 @@ def qualification_cases(manifest):
         policy = case.get('qualification')
         if policy is None:
             continue
-        strict = (policy['kind'] in {'implicit-mode-cxx11', 'llvm-object-cxx11'}
+        strict = (policy['kind'] in {'implicit-mode-cxx11', 'llvm-object-cxx11', 'local-input-cxx11'}
                   and case['dialect'] == 'c++11'
                   and policy['additional_upstream_flags'] == ['-pedantic-errors'])
         extension = (policy['kind'] == 'documented-gnu-cxx11' and case['dialect'] == 'gnu++11'
                      and policy['additional_upstream_flags'] == [] and policy.get('source_policy_issue'))
         vendor_attribute = (policy['kind'] == 'vendor-attribute-cxx11' and case['dialect'] == 'c++11'
                             and policy['additional_upstream_flags'] == [] and policy.get('source_policy_issue'))
-        if not (strict or extension or vendor_attribute):
+        reviewed_iso = (policy['kind'] == 'reviewed-iso-cxx11' and case['dialect'] == 'c++11'
+                        and policy['additional_upstream_flags'] == ['-pedantic-errors', '-Wno-comment']
+                        and policy.get('source_policy_issue'))
+        if not (strict or extension or vendor_attribute or reviewed_iso):
             raise ValueError('Unknown strict native qualification policy')
         cases.append(dict(case, upstream_flags=[*case['upstream_flags'], *policy['additional_upstream_flags']]))
     return cases

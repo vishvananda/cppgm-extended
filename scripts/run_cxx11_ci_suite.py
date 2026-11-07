@@ -44,6 +44,31 @@ def validate_manifest(manifest, root):
             raise ValueError('Source outside corpus')
         if sha256(root / path) != case['sha256']:
             raise ValueError('Source hash mismatch: ' + str(path))
+        for dependency in case.get('input_files', []):
+            path = Path(dependency['path'])
+            if (path.is_absolute() or '..' in path.parts or
+                    not (root / path).resolve().is_relative_to(root)):
+                raise ValueError('Input dependency outside corpus')
+            if sha256(root / path) != dependency['sha256']:
+                raise ValueError('Input dependency hash mismatch: ' + str(path))
+        for spelling in case.get('include_directories', []):
+            path = Path(spelling)
+            if (path.is_absolute() or '..' in path.parts or
+                    not (root / path).resolve().is_relative_to(root) or not (root / path).is_dir()):
+                raise ValueError('Include directory missing or outside corpus')
+        inputs = {dependency['path'] for dependency in case.get('input_files', [])}
+        for edge in case.get('include_edges', []):
+            if edge['source'] not in inputs or edge['resolved'] not in inputs:
+                raise ValueError('Include edge lacks frozen input identity')
+            if edge.get('kind', 'quoted') not in {'quoted', 'angled'}:
+                raise ValueError('Unknown include search kind')
+            searched = ([(root / edge['source']).parent / edge['spelling']]
+                        if edge.get('kind', 'quoted') == 'quoted' else []) + [
+                            root / directory / edge['spelling']
+                            for directory in case.get('include_directories', [])]
+            selected = next((p.resolve() for p in searched if p.is_file()), None)
+            if selected != (root / edge['resolved']).resolve():
+                raise ValueError('Include resolution changed: ' + edge['spelling'])
         if case['dialect'] not in {'c++11', 'gnu++11'} or case['action'] not in {'compile', 'run'}:
             raise ValueError('Unsupported dialect/action')
         if case['expect'] not in {'accept', 'diagnostic'}:
@@ -92,9 +117,10 @@ def run_case(arguments):
         source = str(Path(root) / case['path'])
         obj = directory / 'test.o'
         flags = case['candidate_flags' if role == 'cppgm' else 'upstream_flags']
+        include_flags = ['-I' + str(Path(root) / path) for path in case.get('include_directories', [])]
         cc1 = flags[:1] == ['-cc1']
         command = [compiler, *(['-cc1'] if cc1 else []), '-std=' + case['dialect'],
-                   *(flags[1:] if cc1 else flags), '-emit-obj' if cc1 else '-c',
+                   *(flags[1:] if cc1 else flags), *include_flags, '-emit-obj' if cc1 else '-c',
                    source, '-o', str(obj)]
         compile_result, diagnostic = stage('compile', command)
         classification = compile_result['classification']

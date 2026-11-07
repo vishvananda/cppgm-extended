@@ -14,6 +14,7 @@ import subprocess
 import sys
 
 from upstream_clang_lit_metadata import native_parser
+from upstream_clang_input_closure import configurations, prepare
 
 
 REVISION = '2078da43e25a4623cab2d0d60decddf709aaea28'
@@ -27,6 +28,16 @@ SOURCE_PARTS = re.compile(r'//[^\n]*|/\*[\s\S]*?\*/|R"([^ ()\\\t\r\n]{0,16})\([\
                           r'|"(?:\\[\s\S]|[^"\\])*"|\'(?:\\[\s\S]|[^\'\\])*\'')
 DIRECTIVE = re.compile(r'(?<![\w-])([A-Za-z][A-Za-z0-9_-]*)-'
                        r'(error|warning|note|remark|no-diagnostics)(-re)?(?![\w-])')
+# Optional quality/deprecation warnings, not extension or narrowing diagnostics.
+# Keep their original upstream ordering; cppgm need not implement warning parity.
+OPTIONAL_WARNINGS = {'-Wno-' + name for name in [
+    'tautological-compare', 'tautological-pointer-compare', 'unused', 'unused-value',
+    'unused-lambda-capture', 'unused-but-set-variable', 'unused-local-typedefs',
+    'unused-const-variable', 'unused-template', 'unused-comparison', 'uninitialized',
+    'sometimes-uninitialized', 'inaccessible-base', 'dynamic-exception-spec',
+    'defaulted-function-deleted', 'reorder', 'unevaluated-expression',
+    'constant-logical-operand', 'bool-conversion', 'unreachable-code',
+    'inconsistent-missing-override', 'sizeof-array-argument']}
 
 
 class Excluded(ValueError):
@@ -55,7 +66,7 @@ def source_policy(text, allow_diagnostics=False):
     return set(re.findall(r'\b(?:throw|try|catch)\b', code))
 
 
-def required_errors(text, verification):
+def required_errors(text, verification, allow_positive=False):
     """Discover a supported active error, never compare compiler diagnostics.
 
     No source directives are allowed by source_policy. Only comments can own
@@ -104,12 +115,13 @@ def required_errors(text, verification):
             errors += int(kind == 'error' and minimum > 0)
     if no_diagnostics and other:
         raise Excluded('Conflicting active no-diagnostics and diagnostic expectations')
-    if not errors:
+    if not errors and not allow_positive:
         raise Excluded('No active mandatory expected-error under selected verifier prefixes')
-    return dict(prefixes=prefixes, active_mandatory_error=True)
+    return dict(prefixes=prefixes, active_mandatory_error=bool(errors))
 
 
-def project_run(command, native, policy_tokens, implicit_cxx11=False, llvm_objects=False):
+def project_run(command, native, policy_tokens, implicit_cxx11=False, llvm_objects=False,
+                input_context=None, optional_warnings=False):
     match = re.fullmatch(native.TestRunner.kPdbgRegex, command)
     body = match.group(2) if match else command
     tree = native.ShUtil.ShParser(body, win32Escapes=False, pipefail=True).parse()
@@ -118,8 +130,11 @@ def project_run(command, native, policy_tokens, implicit_cxx11=False, llvm_objec
         if not all(isinstance(n, native.ShCommands.Command) and not n.redirects
                    and all(isinstance(v, str) for v in n.args) for n in tree.commands):
             raise Excluded('LLVM projection requires two literal commands without redirection')
-        return project_llvm_arguments(tree.commands[0].args, tree.commands[1].args,
-                                      policy_tokens, implicit_cxx11)
+        args, tokens, extra = (input_context(tree.commands[0].args) if input_context else
+                               (tree.commands[0].args, policy_tokens, {}))
+        return dict(project_llvm_arguments(args, tree.commands[1].args, tokens, implicit_cxx11,
+                                          optional_warnings),
+                    **extra)
     if (not isinstance(tree, native.ShCommands.Pipeline) or tree.negate or
             len(tree.commands) != 1):
         raise Excluded('Setup, pipeline, negation or runtime RUN needs a separate projection')
@@ -127,10 +142,11 @@ def project_run(command, native, policy_tokens, implicit_cxx11=False, llvm_objec
     if (not isinstance(node, native.ShCommands.Command) or node.redirects or
             not all(isinstance(v, str) for v in node.args)):
         raise Excluded('Redirection/glob/nonliteral command needs a separate projection')
-    return project_arguments(node.args, policy_tokens, implicit_cxx11)
+    args, tokens, extra = input_context(node.args) if input_context else (node.args, policy_tokens, {})
+    return dict(project_arguments(args, tokens, implicit_cxx11, optional_warnings), **extra)
 
 
-def project_llvm_arguments(args, check, policy_tokens, implicit_cxx11=False):
+def project_llvm_arguments(args, check, policy_tokens, implicit_cxx11=False, optional_warnings=False):
     if not args or args[0] != '%clang_cc1' or args.count('-emit-llvm') != 1:
         raise Excluded('Only an explicit cc1 emit-llvm to FileCheck pipeline is mapped')
     if '-fsyntax-only' in args or args.count('-o') != 1:
@@ -156,7 +172,8 @@ def project_llvm_arguments(args, check, policy_tokens, implicit_cxx11=False):
             i += 1
         else:
             projected.append(value)
-    result = project_arguments([*projected, '-fsyntax-only'], policy_tokens, implicit_cxx11)
+    result = project_arguments([*projected, '-fsyntax-only'], policy_tokens, implicit_cxx11,
+                              optional_warnings)
     if result['verification']:
         raise Excluded('Verifier metadata in an LLVM pipeline needs separate active-oracle review')
     result['projection_kind'] = 'llvm-object-acceptance'
@@ -171,7 +188,7 @@ def project_llvm_arguments(args, check, policy_tokens, implicit_cxx11=False):
     return result
 
 
-def project_arguments(args, policy_tokens, implicit_cxx11=False):
+def project_arguments(args, policy_tokens, implicit_cxx11=False, optional_warnings=False):
     if not args or args[0] != '%clang_cc1':
         raise Excluded('Only an explicit native clang cc1 syntax action is mapped initially')
     standard = None
@@ -209,6 +226,9 @@ def project_arguments(args, policy_tokens, implicit_cxx11=False):
         elif value.startswith('-W') and not (value.startswith(('-Werror', '-Wno-')) or 'narrowing' in value):
             upstream.append(value)
             adaptations.append('Optional warning policy retained only for upstream')
+        elif optional_warnings and value in OPTIONAL_WARNINGS:
+            upstream.append(value)
+            adaptations.append('Reviewed optional warning control retained only for upstream: ' + value)
         elif value == '-pedantic':
             upstream.append(value)
         else:
@@ -230,6 +250,10 @@ def project_arguments(args, policy_tokens, implicit_cxx11=False):
                   adaptations=list(dict.fromkeys(adaptations)), verification=verification)
     if qualification:
         result['qualification'] = qualification
+    if optional_warnings and any(v in OPTIONAL_WARNINGS for v in args) and not qualification:
+        result['qualification'] = dict(kind='local-input-cxx11',
+            additional_upstream_flags=['-pedantic-errors'],
+            status='Separate native11 qualification of optional warning-control projection')
     return result
 
 
@@ -249,15 +273,17 @@ def disposition_reason(name, digest, dispositions):
     if reviewed:
         if reviewed['sha256'] != digest:
             raise ValueError('Stale source-pinned language disposition: ' + name)
-        if reviewed['status'] in {'documented-gnu-extension-positive', 'vendor-attribute-positive'}:
+        if reviewed['status'] in {'documented-gnu-extension-positive', 'vendor-attribute-positive',
+                                   'reviewed-iso-cxx11-positive', 'required-diagnostic'}:
             return None
         return reviewed['status'] + ': ' + reviewed['reason']
     return None
 
 
 def collect(root, parse_keywords, native, dispositions=None, adjudications=None, verify_negatives=False,
-            implicit_cxx11=False, llvm_objects=False):
+            implicit_cxx11=False, llvm_objects=False, local_inputs=False):
     files = subprocess.check_output(['git', 'ls-files', '-z', '--', 'clang/test'], cwd=root)
+    tracked = set(files.decode().split('\0'))
     cases, exclusions, grouped = [], [], {}
     for name in sorted(files.decode().split('\0')):
         if not name:
@@ -283,9 +309,15 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
         try:
             if 'Inputs' in Path(name).parts:
                 raise Excluded('Native Inputs support ownership is not a standalone language test')
-            if local_configs(path, root / 'clang/test'):
+            configs = configurations(path, root, Excluded) if local_inputs else []
+            if not local_inputs and local_configs(path, root / 'clang/test'):
                 raise Excluded('Native inherited local configuration is not mapped initially')
-            policy_tokens = source_policy(text, allow_diagnostics=True)
+            try:
+                policy_tokens = source_policy(text, allow_diagnostics=True)
+            except Excluded:
+                if not local_inputs:
+                    raise
+                policy_tokens = None
             parsed = parse_keywords(str(path), require_script=False)
             if any(parsed.get(key) for key in ['REQUIRES:', 'UNSUPPORTED:', 'XFAIL:']):
                 raise Excluded('Native feature/expected-failure configuration needs evaluation')
@@ -295,15 +327,25 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
         except (Excluded, ValueError) as error:
             exclusions.append(dict(path=name, reason=str(error)))
             continue
+        input_cache = {}
         for index, directive in enumerate(directives):
             try:
+                needs_inputs = local_inputs and (policy_tokens is None or configs or
+                                                 re.search(r'\s-I', directive.command))
+                context = (lambda arguments: prepare(arguments, path, root, tracked, configs,
+                           source_policy, SOURCE_PARTS, Excluded, input_cache)) if needs_inputs else None
                 projection = dict(project_run(directive.command, native, policy_tokens,
-                                              implicit_cxx11, True) if llvm_objects else
-                                  project_run(directive.command, native, policy_tokens, True)
-                                  if implicit_cxx11 else
-                                  project_run(directive.command, native, policy_tokens))
+                                              implicit_cxx11, llvm_objects, context, local_inputs))
+                oracle_text = projection.pop('_oracle_text', text)
+                if 'input_files' in projection:
+                    projection['adaptations'].append('Freeze local input/config closure and identical '
+                                                     'include search directories for both compilers')
+                    if 'qualification' not in projection:
+                        projection['qualification'] = dict(kind='local-input-cxx11',
+                            additional_upstream_flags=['-pedantic-errors'],
+                            status='Separate strict native11 input/config projection qualification')
                 if projection.get('projection_kind') == 'llvm-object-acceptance':
-                    if DIAGNOSTIC.search(text):
+                    if DIAGNOSTIC.search(oracle_text):
                         raise Excluded('Diagnostic annotations in LLVM sources need active-oracle review')
                     projection['unmet_native_oracles'] = dict(
                         projection['unmet_native_oracles'],
@@ -324,8 +366,6 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                         'GNU++11 acceptance covers documented anonymous struct/union semantics; '
                         'not an ISO11-positive claim')]
                 elif mode.get('status') == 'vendor-attribute-positive':
-                    if 'qualification' not in projection:
-                        raise Excluded('Reviewed vendor attribute projection needs native qualification')
                     projection['qualification'] = dict(
                         kind='vendor-attribute-cxx11', additional_upstream_flags=[],
                         source_policy_issue=mode['issue'],
@@ -333,27 +373,56 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                                'qualification, without requiring vendor processing parity')
                     projection['adaptations'] = [*projection['adaptations'],
                         'Vendor attribute arguments are balanced tokens; original annotation effects remain unmet']
+                elif mode.get('status') == 'reviewed-iso-cxx11-positive':
+                    projection['qualification'] = dict(kind='reviewed-iso-cxx11',
+                        additional_upstream_flags=mode['qualification_flags'],
+                        source_policy_issue=mode['issue'],
+                        status='Source-pinned ISO11 validity review; suppress only optional comment warning '
+                               'in strict qualification, retaining original normal warning flags')
                 verification = projection.pop('verification', [])
                 expected = 'accept'
-                if DIAGNOSTIC.search(text):
-                    discovered = required_errors(text, verification)
+                if mode.get('status') == 'required-diagnostic':
+                    discovered = required_errors(oracle_text, verification, allow_positive=True)
+                    expected = 'diagnostic'
+                    projection['language_oracle'] = dict(discovered, source_disposition=mode,
+                        required_language_rule=True)
+                    projection.setdefault('qualification', dict(kind='local-input-cxx11',
+                        additional_upstream_flags=['-pedantic-errors'],
+                        status='Source-pinned mandatory language rule, independent of verifier severity'))
+                    projection['adaptations'].append('Source-pinned primary rule requires any normal '
+                        'diagnostic; native warning-only annotations do not establish valid acceptance')
+                elif DIAGNOSTIC.search(oracle_text):
+                    discovered = required_errors(oracle_text, verification, allow_positive=local_inputs)
+                    if not discovered['active_mandatory_error']:
+                        projection.pop('verification', None)
+                        projection['language_oracle'] = dict(discovered,
+                            scope='Active verifier has no required error; warning/note spelling is not graded')
+                        if 'qualification' not in projection:
+                            projection['qualification'] = dict(kind='local-input-cxx11',
+                                additional_upstream_flags=['-pedantic-errors'],
+                                status='Warning-only acceptance requires separate strict native11 qualification')
+                    else:
+                        projection['language_oracle'] = dict(discovered)
                     key = 'llvm-project/' + name + '#' + str(index) + '#' + projection['dialect']
                     adjudication = (adjudications or {}).get(key)
-                    if not adjudication and not verify_negatives:
+                    if discovered['active_mandatory_error'] and not adjudication and not verify_negatives:
                         raise Excluded('Active verify error awaits language-rule triage for CI inclusion')
                     if adjudication and adjudication['source_sha256'] != digest:
                         raise RuntimeError('Stale source-pinned negative adjudication: ' + name)
                     if adjudication and adjudication['expected'] != 'diagnose-invalid':
                         raise Excluded('Reviewed language rule does not require a diagnostic')
-                    expected = 'diagnostic'
-                    projection['language_oracle'] = dict(adjudication=adjudication, **discovered)
-                    if not adjudication:
+                    expected = 'diagnostic' if discovered['active_mandatory_error'] else 'accept'
+                    if discovered['active_mandatory_error']:
+                        projection['language_oracle'] = dict(adjudication=adjudication, **discovered)
+                    if not adjudication and discovered['active_mandatory_error']:
                         projection['language_oracle']['standards_status'] = (
                             'Native active-error expectation; language/IFNDR applicability awaits failure-led triage')
                     projection['adaptations'] = [v for v in projection['adaptations']
                                                 if 'positive language acceptance' not in v]
-                    projection['adaptations'].append('Whole translation unit requires any normal diagnostic; '
-                                                     'no wording, count, location or recovery matching')
+                    projection['adaptations'].append(
+                        'Whole translation unit requires any normal diagnostic; no wording, count, location '
+                        'or recovery matching' if discovered['active_mandatory_error'] else
+                        'Warning-only active verifier projected to object acceptance; no warning parity')
             except (Excluded, ValueError) as error:
                 exclusions.append(dict(path=name, reason='RUN ' + str(index) + ': ' + str(error)))
                 continue
@@ -374,13 +443,17 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                           if implicit_cxx11 else 'explicit C++11/0x syntax RUNs; ')
                          + 'both ISO and GNU spellings retain their declared dialect; no full Clang-suite claim' +
                          ('; LLVM pipelines add separately qualified object projections with unmet original oracles'
-                          if llvm_objects else ''),
+                          if llvm_objects else '') +
+                         ('; audited local configs, frozen literal input closures and reviewed optional '
+                          'warning controls add separately qualified language projections' if local_inputs else ''),
                 limitations=['Selection is independent of cppgm acceptance; upstream qualification failures stay visible',
                              'Negative checks establish a whole-translation-unit diagnostic, not each annotation',
                              'No link, runtime, diagnostic wording, AST, LLVM or assembly parity claim',
                              ('Non-C++ suffixes remain outside this cohort' if implicit_cxx11 else
                               'Sources without literal C++11/0x spellings and non-C++ suffixes are outside this initial cohort'),
-                             'Preprocessing, builtins, local configs, features, support inputs and unmapped RUNs remain gaps'] +
+                             ('Arbitrary conditionals, generated/system headers, unreviewed configs, builtins, '
+                              'features and unmapped RUNs remain explicit gaps' if local_inputs else
+                              'Preprocessing, builtins, local configs, features, support inputs and unmapped RUNs remain gaps')] +
                             (['Implicit-mode projections require separate strict native C++11 qualification; '
                               'qualification failures remain applicability triage, without automatic oracle changes']
                              if implicit_cxx11 else []) +
@@ -411,6 +484,9 @@ def main(argv=None):
     parser.add_argument('--llvm-object-projections', action='store_true',
                         help='Project audited simple cc1 emit-llvm to FileCheck RUNs into object '
                              'acceptance; qualify natively and retain all original oracle obligations')
+    parser.add_argument('--local-inputs', action='store_true',
+                        help='Resolve tracked quoted-header closures and audited simple local configs; '
+                             'freeze dependencies, qualify natively and retain all other blockers')
     args = parser.parse_args(argv)
     root = args.llvm_root.resolve()
     parse_keywords, _ = native_parser(root, args.revision)
@@ -425,7 +501,8 @@ def main(argv=None):
         if hashlib.sha256(source.read_bytes()).hexdigest() != row['standard_sha256']:
             raise ValueError('Stale primary standard source: ' + str(source))
     manifest = collect(root, parse_keywords, native, json.loads(args.dispositions.read_text()),
-                       adjudications, args.verify_negatives, args.implicit_cxx11, args.llvm_object_projections)
+                       adjudications, args.verify_negatives, args.implicit_cxx11, args.llvm_object_projections,
+                       args.local_inputs)
     subprocess.run(['git', 'diff', '--quiet', 'HEAD', '--', *tracked], cwd=root, check=True)
     if not manifest['cases']:
         raise ValueError('The conservative selection produced no cases')
