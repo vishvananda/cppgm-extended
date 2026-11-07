@@ -490,6 +490,10 @@ bool Analyzer::user_conversion(const ExprFacts* from, const Type* target, Conver
 			}
 			if (!conversions_.implicit(produced, target, false, candidate.second))
 				continue;
+			// 13.3.3.1.2p3: a conversion-function-template specialization
+			// permits only an Exact Match second standard sequence.
+			if (function->primary != nullptr && candidate.second.rank != ConversionRank::Exact)
+				continue;
 			// 13.3.1.5p1: an explicit one's result is the target type (a
 			// qualification conversion apart).
 			if (function->is_explicit && entity == nullptr && candidate.second.second != ValueConversion::None)
@@ -729,6 +733,8 @@ bool Analyzer::direct_reference_conversion(
 		if (!object_sequence(from, function, true, first) ||
 			!conversions_.implicit(Operand{ returned->element, ValueCategory::LValue, 0 }, target, false, second) ||
 			second.temporary)
+			continue;
+		if (function->primary != nullptr && second.rank != ConversionRank::Exact)
 			continue;
 		const int order = best == nullptr
 			? 1
