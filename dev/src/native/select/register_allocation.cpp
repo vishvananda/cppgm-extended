@@ -32,10 +32,8 @@
 // write slots and conflict with ranges strictly across them; early
 // clobbers on read slots conflict with the values read there too.
 //
-// Scalar values are assigned by weighted uses per live-range slot; XMM
-// values retain weighted-use order because their copy and spill costs differ.
-// Each use and definition counts at its block's estimated executions
-// (block_weights). Each value
+// Values are assigned in order of their weighted use counts (each use and
+// the definition at its block's estimated executions, block_weights): each
 // takes a register no instruction inside
 // its range clobbers and no assigned range overlaps (per-register interval
 // maps), where adding it keeps every slot's live values within the class's
@@ -1007,21 +1005,13 @@ void FunctionSelector::assign_registers()
 	});
 	std::vector<uint32_t> order(m);
 	std::vector<int32_t> span(m, 0);
-	ra_priority_.resize(m);
 	for (size_t c = 0; c < m; ++c)
 	{
 		order[c] = static_cast<uint32_t>(c);
 		for (uint32_t r = ra_range_first_[c]; r < ra_range_first_[c + 1]; ++r)
 			span[c] += ra_ranges_[r].second - ra_ranges_[r].first + 1;
-		// Long retained scalars must not crowd frequently used loop state
-		// out of registers merely because they have many distant readers.
-		ra_priority_[c] = temps_[ra_candidates_[c]].cls == VClass::Gpr
-			? static_cast<double>(ra_freq_[c]) / std::max(1, span[c])
-			: static_cast<double>(ra_freq_[c]);
 	}
 	std::sort(order.begin(), order.end(), [&](uint32_t a, uint32_t b) {
-		if (ra_priority_[a] != ra_priority_[b])
-			return ra_priority_[a] > ra_priority_[b];
 		if (ra_freq_[a] != ra_freq_[b])
 			return ra_freq_[a] > ra_freq_[b];
 		if (span[a] != span[b])

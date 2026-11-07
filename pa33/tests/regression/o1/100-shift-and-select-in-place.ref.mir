@@ -24,26 +24,25 @@ function @walk
     mov rcx, rdx
     mov rdx, rsi
     mov rsi, rdi
-    mov r9, r8
-    mov r8, 0
+    mov r9, 0
     mov rdi, 0
 
   block ^head
-    shl r8, 1
-    lea rax, [r8+1]
-    mov rbx, r9
+    shl r9, 1
+    lea rax, [r9+1]
+    mov rbx, r8
     and rbx, rsi
-    add r8, 2
+    add r9, 2
     test.i64 rbx, rbx
-    cmove r8, rax
-    shr r9, 1
+    cmove r9, rax
+    shr r8, 1
     add rdi, 1
     cmp.i64 rdi, rdx
     jb ^head
 
   block ^done
-    add r8, rcx
-    ret r8
+    add r9, rcx
+    ret r9
 
 function @in_rcx
   abi
