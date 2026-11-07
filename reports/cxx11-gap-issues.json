@@ -5249,14 +5249,15 @@
   {
     "id": "CXX11-062",
     "priority": "P1",
-    "status": "integrated-full-validation-running",
+    "status": "closed",
     "compiler_language_gap": true,
     "symptom": "Scoped-enumerator and class-member-enumerator using declarations are silently accepted outside member scope in supported pre20 modes.",
     "owning_pa": 6,
     "standards_basis": "N3485 7.3.3p7/p8 requires diagnosis. CWG1742 was resolved by P1099R5 as a C++20 feature,not a retroactive defect waiver. No deliberate course exception found.",
     "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-062/functional-verification-v2.json",
-    "triage_note": "Actual root candidate matched isolated binary bit-for-bit before074/073 integration; joint source12032b602 passes8822strict, remaining normal/export pending.",
-    "fix_revision": "15fede22e"
+    "triage_note": "Integrated compiler12032b602 passes required parent/native/owning checks,8822strict tests,17normal stages,42harness suites/667cases,quick/self-host/debug/inception/architecture/placement/smoke and fresh student export32controls/42wrappers. All fixed manifest records retained; no complete-suite or whole-family claim.",
+    "fix_revision": "15fede22e",
+    "accepted_integration": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-062073074-acceptance-v1.json"
   },
   {
     "id": "CXX11-063",
@@ -5446,33 +5447,55 @@
   {
     "id": "CXX11-073",
     "compiler_language_gap": true,
-    "status": "integrated-full-validation-running",
+    "status": "closed",
     "symptom": "Block extern TLS before a later namespace definition duplicates the serialized wrapper; related reduced object paths crash",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-073",
     "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-073/root-revalidation-v1.json",
     "fix_revision": "ae8fde0b0",
-    "triage_note": "Root actual074parent3/11 owning; corrected final11 controls. PA11 class-lifetime neighbor byte-identical moved100\u2192200. Joint8822strict pass; fullnormal/export pending. Producer selection/parsing mistakes preserved separately, not language failures."
+    "triage_note": "Integrated compiler12032b602 passes required parent/native/owning checks,8822strict tests,17normal stages,42harness suites/667cases,quick/self-host/debug/inception/architecture/placement/smoke and fresh student export32controls/42wrappers. All fixed manifest records retained; no complete-suite or whole-family claim.",
+    "accepted_integration": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-062073074-acceptance-v1.json"
   },
   {
     "id": "CXX11-074",
     "compiler_language_gap": true,
-    "status": "integrated-full-validation-running",
+    "status": "closed",
     "symptom": "An initialized union variant is not destroyed when its constructor body throws",
     "owning_pa": "PA21:100",
     "standards_basis": "CWG1866 adopted DR November2014",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-074",
     "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-074/functional-verification-v1.json",
     "fix_revision": "4942fe8f2",
-    "triage_note": "8required controls,parent2/8,candidate32/32native/runtime; PA21 321/321; per-fix1.000002/.999994exact. Fullnormal/export pending with062/073."
+    "triage_note": "Integrated compiler12032b602 passes required parent/native/owning checks,8822strict tests,17normal stages,42harness suites/667cases,quick/self-host/debug/inception/architecture/placement/smoke and fresh student export32controls/42wrappers. All fixed manifest records retained; no complete-suite or whole-family claim.",
+    "accepted_integration": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-062073074-acceptance-v1.json"
   },
   {
     "id": "CXX11-075",
     "compiler_language_gap": true,
-    "status": "isolated-fix-in-validation",
+    "status": "isolated-functional-validated-normal-integration-pending",
     "symptom": "Ordinary redeclarations can add or omit thread_local contrary to all-declarations consistency",
     "owning_pa": "PA6 declaration model plus PA17 explicit-instantiation directive neighbors",
     "standards_basis": "N3485 7.1.1p1; CWG1793 directive exception remains separate",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-075",
-    "checks": "Parent20/60,Clang60/60,GCC44/60; GCC silent block-declaration disagreements preserved against primary rule. 15required fixtures; isolated source37a2f19e6 building, no acceptance claim."
+    "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-075/root-revalidation-v2.json",
+    "fix_revision": "d4e6e2d05",
+    "triage_note": "15required controls,parent5/15,candidate60/60;738affected;normal ratios1.000020/1.000001exact; reviewed directive exceptions preserved. Root actual combined-parent/fullnormal/export still pending."
+  },
+  {
+    "id": "CXX11-076",
+    "compiler_language_gap": true,
+    "status": "repair-in-validation",
+    "symptom": "Unknown-bound character arrays are not completed from parenthesized string literals; initializer inference can override a prior array bound",
+    "owning_pa": "PA6:200,PA10:100,PA14:100",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-076",
+    "checks": "16required fixtures,parent32/64,GCC64/64,Clang64/64; candidate build running. Primary N3485 8.3.4p3,8.5p14/p17,8.5.2. No closure/performance claim."
+  },
+  {
+    "id": "CXX11-077",
+    "compiler_language_gap": true,
+    "status": "confirmed-unfixed",
+    "symptom": "Discarded bit-field member glvalues and bit-field conditional assignments attempt unsupported address lowering",
+    "owning_pa": "PA11:400",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-077",
+    "checks": "Clang worker reducing shared discard path; ordinary read/write neighbors preserved, including Clang21 differing-width write limitation against primary. No fix/closure claim."
   }
 ]

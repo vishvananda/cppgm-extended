@@ -1,3 +1,23 @@
+Accepted checkpoint: compiler12032b602, fullnormal/export validation completed.
+Receipt:/mnt/vizier/cppgm-cxx11-upstream/ci-next-062073074-acceptance-v1.json
+SHA256:0795c6d1cc014385359622bb8a3300d5cd2ce7a01fccbe0e72f59ff04c99240b
+062enumerator using scope,073lateTLS wrapper identity and074initialized union
+variant cleanup are closed for their observed rules.32newrequired controls,
+8,822strict,42harness suites/667cases(19optional skips),17normal stages and
+fresh student export of32controls/42reference wrappers all pass.
+
+GCC3,696/4,112(89.88%),upstream4,112/4,112;Clang668/693(96.39%),upstream693/693.
+GCC220compilefailures/196missingdiagnostics;Clang10compilefailures/15missing
+diagnostics;zero abnormal/link outcomes. No manifest shrink or diagnostic parity.
+Suite times GCC24.458/67.124s,ratio0.364;Clang3.055/18.567s,ratio0.165. Both
+failed-suite ratios remain explicitly NON-COMPARABLE.
+Normal actual-parent073ratios0.999996/1.000014 pass,objects exact; campaign-wide
+ratios1.003156/1.001088 retained as data. Quickself/seed0.9934/1.0254,behavior0,
+objects exact,kernelsbelow1.3. Existing thresholds and original baseline retained.
+
+
+Earlier CI history
+
 Accepted integration: compiler source07c0165d9, normal/audit revisiondfa74ce4d.
 Four fixes066/068/069/071 now have38required owning regressions, parent failure
 proofs, native neighbors and passing full normal gates:8,790strict,42harness

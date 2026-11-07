@@ -186,18 +186,18 @@ use the established supported host/path; do not record a fabricated pass.
 
 Current implementation checkpoint (user resumed 2026-11-07)
 
-The two CI instances are implemented and locally exercised. The accepted
-compiler source07c0165d9 passes3,696/4,112GCC (89.88%) and667/693Clang
-(96.25%); matching upstream compilers pass every selected configuration.
-Clang spans685sources,207positive and486required-diagnostic configurations.
-The693cohort includes reviewed implicit-mode and simple LLVM-pipeline object
-projections, with original LLVM/FileCheck obligations explicitly unmet.
-Full normal checks pass8,790strict tests,42harness suites/667cases and a fresh
-student export of38newcontrols/42reference wrappers. Normal frozen cumulative
-instruction ratios1.003173O0/1.001074O3 pass with exact objects.
-See reports/cxx11-campaign-status.txt and the066071acceptance receipt for pins,
-counts, raw paired-suite times and explicitly non-comparable failed-suite ratios.
-These remain subset rates,notwhole-suite rates or deduplicated defects.
+The two CI instances are implemented and locally exercised. Accepted compiler
+12032b602 passes3,696/4,112GCC(89.88%) and668/693Clang(96.39%); matching upstream
+compilers pass every selected configuration. Clang spans685sources,207positive
+and486required-diagnostic configurations. Its original LLVM/FileCheck obligations
+remain explicitly unmet for independent object projections.
+Fullnormal checks pass8,822strict,42harness suites/667cases and fresh student
+export32controls/42reference wrappers. Actual-parent/per-fix and normal PA35
+quick/self-compile gates pass with exact objects. Campaign-wide instruction
+ratios1.003156O0/1.001088O3 remain reported data against the original binary.
+See reports/cxx11-campaign-status.txt and the062073074acceptance receipt for
+source/manifest pins, counts, times and explicitly non-comparable failed-suite
+ratios. These are subset rates,notwhole-suite rates or deduplicated defect counts.
 The custom measurement queue stays retired.
 
 Immediate next work
@@ -220,16 +220,16 @@ suite times, correctness counts and the explicitly labeled performance ratio.
 Publish the supported coverage and limitations without claiming unavailable
 interfaces or unexecuted tests passed. Keep historical observations intact.
 
-Concrete next work after066071acceptance (2026-11-07)
+Concrete next work after062073074acceptance (2026-11-07)
 
-The initial59positive Clang subset was too narrow. Integrated coverage now
-contains693configurations; retain every current manifest record and its
-outcome. Continue expanding useful implicit-mode, input-closure and simple
-inherited-configuration cases after native applicability review. Do not infer
-compatibility solely from literal-std11 RUNs, nor claim upstream IR checkers
-are satisfied by independent object acceptance.
+Clang coverage now contains693configurations; retain every current record and
+outcome. Continue useful input-closure, implicit-mode and simple inherited-config
+coverage after applicability review. Do not infer compatibility solely from
+literal-std11 RUNs or claim original upstream IR checkers passed.
 
-Integrate062pre20enumerator using-scope repair through normal joint gates.
-Optimize072constructor-destructor semantic demand against the unchanged normal
-frozen gate; repair073lateTLS wrapper identity and074variant constructor-failure
-cleanup. Continue failure-led GCC/Clang standards triage and owning-PA repairs.
+Integrate072subobject-destructor semantic demand and075ordinary TLS declaration
+consistency through normal actual-parent/fullnormal/export checks. Their isolated
+functional and usual per-change performance checks pass; preserve072campaign-wide
+accumulation as reported data without an extra campaign-wide acceptance cap.
+Repair076parenthesized string arrays and077discarded bit-field glvalues, then
+continue failure-led GCC/Clang adjudication, required owning regressions and fixes.
