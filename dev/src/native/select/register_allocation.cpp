@@ -678,6 +678,8 @@ void FunctionSelector::block_weights()
 	};
 	auto settle = [&](uint32_t b, uint64_t f) {
 		f = std::min(f, kMaxFrequency);
+		if (!ra_cold_[b] && blocks_[b].reachable)
+			f = std::max(f, kOne / kWeightScale);
 		if (header_of[b] != kNoId)
 			f = std::min(f * kOne / (kOne - again[b]), kMaxFrequency);
 		return f;
