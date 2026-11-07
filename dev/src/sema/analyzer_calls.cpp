@@ -581,6 +581,14 @@ void Analyzer::argument_dependent(const syntax::Slice<syntax::Expr*>& arguments,
 		const ExprFacts* facts = argument->facts;
 		if (facts->type != nullptr && (facts->flags & kOverloadSet) == 0)
 			associated(facts->type, 0);
+		else if ((facts->flags & kOverloadSet) != 0)
+		{
+			// 3.4.2p2: an overload set (or its address) contributes the
+			// union of its functions' parameter and return types, even
+			// when the eventual target selects a different overload.
+			for (const FunctionList* node = facts->functions; node != nullptr; node = node->next)
+				associated(static_cast<const FunctionEntity*>(node->binding->entity)->type, 0);
+		}
 	}
 	for (ClassEntity* cls : adl_enclosing_)
 	{
