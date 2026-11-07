@@ -37,11 +37,16 @@ Clang4.479/26.836s. Ratios
 Original4,112GCC/807Clang raw observations and reviewed oracle decisions remain
 unchanged; no diagnostic wording/count/location/recovery parity is required.
 
-Offline catalog:74full issue texts,10papers,index/provenance=86files. Draft
-1584/1634/1647 are reference-only. CWG136/295/2137 are included with adoption
-history, and student links/NOTICE/export inclusion remain checked by CI.
-Pending096097catalog expansion brings80issues/10papers/92files; it is still
-under joint validation and is not recorded as an accepted export here.
+Offline catalog:84full issue texts,11complete papers,index/provenance=97files.
+All97files are byte-verified through the actual student-export copy filter;
+receipt:cwg-docs-supplement-v2/acceptance-v1.json under the evidence root.
+The prior full compiler export checked86catalog files; this document-only
+supplement preserves its compiler/fixture/exporter epoch. Draft1584/1634/1647
+remain reference-only. Full2631wording follows1396's resolution redirect, and
+N3638supplies the adopted wording for975/1048. BareCoreDR388and related lambda
+capture decisions1632/1913 are included; P0588's DR adoption is annotated from
+primaryN4709motion4. CI checks explicitCWG/bareDRcoverage,checksums and export
+inclusion; catalog inclusion does not claim complete issue implementation.
 
 Next: integrate096 namespace-entity conflicts and097 nested-template NSDMIs
 through normal checks; their9121strict pass and normal gates are isolated
