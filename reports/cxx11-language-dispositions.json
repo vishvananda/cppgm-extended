@@ -142,5 +142,68 @@
     "sha256": "afb71e0a7350673204ca6c089b091eda8b9f438940e3276128bf0128c0a32067",
     "reason": "Original no-standard native cc1 RUN uses defaultGNU17; no inherited localcfg. Anonymous structs with injected member lookup are GNU extension semantics, explicitly supported by PA11 README370 and PA29 README41. Source contains no independent later-standard feature requirement. Project into GNU++11 and retain positive acceptance with ordinary nativeGNU11qualification; strictISO failure is retained externally, not interpreted as universal invalidity or required diagnostic severity. N3485 9.2p1/9.5p5 distinguish standard anonymous unions; no claim this whole source is ISO11valid.",
     "issue": "CXX11-065"
+  },
+  "llvm-project/clang/test/CodeGen/lifetime3.cpp": {
+    "status": "later-standard-positive-unmapped",
+    "reason": "Both candidate positive projections use switch(init;condition), introduced for C++17 by P0305, absent from N3485 6.4 grammar. Whole-source default17 lifetime tests are not ISO11acceptance oracles. Original lifetime/FileCheck obligations and independent lifetime behavior remain explicitly unmet; exclusion is not a pass. No severity-based expectation flip.",
+    "sha256": "56d309ef68fd23a310b93cb107173626f00b6c34377dcd6d73459214cf06132b",
+    "issue": "CXX11-067"
+  },
+  "llvm-project/clang/test/CodeGenCXX/dereferenceable.cpp": {
+    "status": "later-standard-positive-unmapped",
+    "reason": "Two static_assert declarations omit the string literal required by N3485 7 grammar; omission is the C++17 N3928 feature. Whole-source default17 acceptance is not an ISO11positive oracle. The independent reference/class-layout and LLVM dereferenceability obligations remain unmapped, not passed.",
+    "sha256": "3ba33528d78354921044521cc1d26c2b98d5e0e8c044eaa497691598f7adacbd",
+    "issue": "CXX11-067"
+  },
+  "llvm-project/clang/test/CodeGen/pr19841.cpp": {
+    "status": "unmapped-gnu-extension",
+    "reason": "A nonstatic unknown-bound array member is a GNU/C99 flexible-array extension, not ISO11complete member type (N3485 8.3.4p1,9.2p10). No explicit course policy found for flexible-array semantics. Retain as unmapped GNU compatibility and original LLVM PHI obligation, not a required ISO11positive or a negative inferred from pedantic severity.",
+    "sha256": "57a64a44649abd5ddea379f8a57c7604bec007ebfe6874f7632b6e2de9b04e0a",
+    "issue": "CXX11-067"
+  },
+  "llvm-project/clang/test/CodeGenCXX/empty-struct-init-list.cpp": {
+    "status": "unmapped-gnu-extension",
+    "reason": "The sole member is an unknown-bound flexible array; initializing the enclosing otherwise empty class relies on GNU flexible/zero-array semantics. N3485 9.2p10 prohibits incomplete nonstatic member types; no documented course extension policy found for this combination. Whole positive remains unmapped compatibility, not a pass or automatic required-negative reclassification.",
+    "sha256": "8d4c91773e123193f077378cb6c319cd610781f48b22d1a26a8fa9179ab17a94",
+    "issue": "CXX11-067"
+  },
+  "llvm-project/clang/test/CodeGenCXX/vlt_to_reference.cpp": {
+    "status": "unmapped-gnu-extension",
+    "reason": "The nonstatic int data[] member relies on GNU/C99 flexible arrays, outside ISO11complete-member rules (N3485 9.2p10) and without explicit course policy. Native pointer/reference IR assertions remain unmet. Preserve compatibility observation; do not interpret source-specific pedantic rejection as universal C++ invalidity.",
+    "sha256": "9a3f0b6ae02633016f2bcb78bf0df92b096f17335230dffaa68c82bdd6c71d2b",
+    "issue": "CXX11-067"
+  },
+  "llvm-project/clang/test/CodeGenCXX/designated-init.cpp": {
+    "status": "unmapped-gnu-extension",
+    "reason": "Whole source relies on C99/GNU compound literals, array/nested designators, mixed positional/designated initialization and overlapping writes. These are not ordinary ISO11aggregate initialization and several exceed even standard20designators; no explicit handout policy found. Retain unsupported GNU initializer coverage and all original LLVM obligations, without candidate-based selection or automatic diagnostic expectation.",
+    "sha256": "cca1e29eb2b1616970b7e569d6d50c5c7e8554d0cb653db6c8497bf9b2d1bbeb",
+    "issue": "CXX11-067"
+  },
+  "llvm-project/clang/test/CodeGen/long_double_fp128.cpp": {
+    "status": "documented-gnu-extension-positive",
+    "reason": "GNU _Complex scalar types are documented GCC C++extensions. PA29 specifies complex category/representations and GNU complex component operations. Only the supported x86_64Linux target RUN is projected; original other-target/mangling/FileCheck obligations remain unmet. Source has no independent later-standard feature. Qualify ordinary GNU++11 acceptance; retained strictISO rejection does not mean invalid GNUsemantics.",
+    "sha256": "c64a98aaa247cd1ecfc5b917d024945f95b0fa9bc29bc0a3c1d6c1635d6f6c48",
+    "issue": "CXX11-067",
+    "coverage": "GNU++11 object acceptance covers source-pinned documented GNU complex/anonymous-member semantics; original native IR obligations remain unmet"
+  },
+  "llvm-project/clang/test/CodeGenCXX/copy-assign-volatile-synthesis.cpp": {
+    "status": "documented-gnu-extension-positive",
+    "reason": "Anonymous struct fields/injected lookup match PA11 README370 and PA29 README41. Source otherwise exercises C++11member/array/bit-field/volatile assignment rules without later syntax. Keep ordinary GNU++11object acceptance; volatile-copy LLVM memcpy assertions remain unmet, not claimed validated.",
+    "sha256": "32a5811efe0003fe6ccb5ef2291da954d3183fa38f73b8388e6a0ad64864754f",
+    "issue": "CXX11-067",
+    "coverage": "GNU++11 object acceptance covers source-pinned documented GNU complex/anonymous-member semantics; original native IR obligations remain unmet"
+  },
+  "llvm-project/clang/test/CodeGenCXX/member-init-anon-union.cpp": {
+    "status": "documented-gnu-extension-positive",
+    "reason": "GNU anonymous struct injection and enclosing union member initialization are documented PA11/PA29 concessions; other anonymous-union/default-member forms are C++11. Source has no independent later syntax. Retain as ordinary GNU++11object coverage; original constructor-call/store FileCheck effects remain unmet.",
+    "sha256": "b885d14fb71f8be5108ae93ff86dbb04c8c98098f48e45438c0270c62e8ddf00",
+    "issue": "CXX11-067",
+    "coverage": "GNU++11 object acceptance covers source-pinned documented GNU complex/anonymous-member semantics; original native IR obligations remain unmet"
+  },
+  "llvm-project/clang/test/CodeGenCXX/attr-annotate2.cpp": {
+    "status": "vendor-attribute-positive",
+    "reason": "Native token-kind proof finds one _Generic token, entirely inside a balanced clang::annotate argument sequence, with no _Generic use outside attributes. N3485 7.6.1 balanced-token grammar does not require these tokens to be C++expressions; p5 gives vendor attribute behavior implementation-defined. The strict failure is Clang-specific C11processing inside its recognized attribute, not independent core invalidity. Qualify ordinary C++11object acceptance only; all original annotation metadata/FileCheck effects remain unmet.",
+    "sha256": "443e3dab6c5943d95e359921e872abace5a69106c33a96bf288459f060f174ce",
+    "issue": "CXX11-067"
   }
 }

@@ -162,6 +162,34 @@ class PolicyTests(unittest.TestCase):
 
 
 class CatalogueTests(unittest.TestCase):
+    def test_source_pinned_vendor_tokens_keep_attribute_effects_unmet(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            name = 'clang/test/attribute.cpp'
+            path = root/name
+            path.parent.mkdir(parents=True)
+            path.write_text('void f(){ [[clang::annotate(_Generic(0,int:0,default:1))]] int n; }\n')
+            policy = {'llvm-project/'+name: dict(status='vendor-attribute-positive',
+                sha256=hashlib.sha256(path.read_bytes()).hexdigest(), issue='CXX11-067')}
+            projection = manifest.project_llvm_arguments(
+                ['%clang_cc1', '-emit-llvm', '%s', '-o', '-'], ['FileCheck', '%s'], set(),
+                implicit_cxx11=True)
+            parsed = {'RUN:': [SimpleNamespace(keyword='RUN:', command='native LLVM pipeline')]}
+            with patch.object(manifest.subprocess, 'check_output', return_value=(name+'\0').encode()), \
+                    patch.object(manifest, 'project_run', return_value=projection):
+                row = manifest.collect(root, lambda *a, **k: parsed, None, dispositions=policy,
+                                       implicit_cxx11=True, llvm_objects=True)
+                case, = row['cases']
+                self.assertEqual(case['expect'], 'accept')
+                self.assertEqual(case['dialect'], 'c++11')
+                self.assertEqual(case['qualification']['kind'], 'vendor-attribute-cxx11')
+                self.assertEqual(case['qualification']['additional_upstream_flags'], [])
+                self.assertEqual(case['unmet_native_oracles']['status'], 'not-executed')
+                path.write_text(path.read_text()+'int x = _Generic(0,int:0,default:1);')
+                with self.assertRaisesRegex(ValueError, 'Stale'):
+                    manifest.collect(root, lambda *a, **k: parsed, None, dispositions=policy,
+                                     implicit_cxx11=True, llvm_objects=True)
+
     def test_llvm_case_keeps_all_native_runs_unmet_and_cannot_become_a_negative(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

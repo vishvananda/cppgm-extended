@@ -97,6 +97,10 @@ class Suite(unittest.TestCase):
                                      source_policy_issue='CXX11-065')
         extension, = qualification_cases(dict(cases=[case]))
         self.assertEqual(extension['upstream_flags'], [])
+        case['dialect'] = 'c++11'
+        case['qualification']['kind'] = 'vendor-attribute-cxx11'
+        attribute, = qualification_cases(dict(cases=[case]))
+        self.assertEqual(attribute['upstream_flags'], [])
         case['qualification']['additional_upstream_flags'] = ['-Werror']
         with self.assertRaises(ValueError):
             qualification_cases(dict(cases=[case]))

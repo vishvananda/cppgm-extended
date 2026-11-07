@@ -25,7 +25,9 @@ def qualification_cases(manifest):
                   and policy['additional_upstream_flags'] == ['-pedantic-errors'])
         extension = (policy['kind'] == 'documented-gnu-cxx11' and case['dialect'] == 'gnu++11'
                      and policy['additional_upstream_flags'] == [] and policy.get('source_policy_issue'))
-        if not (strict or extension):
+        vendor_attribute = (policy['kind'] == 'vendor-attribute-cxx11' and case['dialect'] == 'c++11'
+                            and policy['additional_upstream_flags'] == [] and policy.get('source_policy_issue'))
+        if not (strict or extension or vendor_attribute):
             raise ValueError('Unknown strict native qualification policy')
         cases.append(dict(case, upstream_flags=[*case['upstream_flags'], *policy['additional_upstream_flags']]))
     return cases
@@ -67,8 +69,9 @@ def main(argv=None):
                       'qualify_clang_cxx11_ci_manifest.py', 'run_cxx11_ci_suite.py',
                       'upstream_dg_proxy.py', 'upstream_clang_language.py']},
                   result=result,
-                  interpretation='Native qualification: strict ISO11 and source-pinned documented GNU11 '
-                                 'extension cohorts are distinct. Failures require applicability/standard '
+                  interpretation='Native qualification: strict ISO11, documented GNU11 extensions and '
+                                 'reviewed vendor-attribute grammar are distinct cohorts. '
+                                 'Failures require applicability/standard '
                                  'triage; do not infer cppgm defects, promote warnings to mandatory errors, '
                                  'or automatically change positive expectations. The normal paired run '
                                  'must still execute the unchanged fixed manifest.')

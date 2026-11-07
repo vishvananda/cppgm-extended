@@ -249,7 +249,7 @@ def disposition_reason(name, digest, dispositions):
     if reviewed:
         if reviewed['sha256'] != digest:
             raise ValueError('Stale source-pinned language disposition: ' + name)
-        if reviewed['status'] == 'documented-gnu-extension-positive':
+        if reviewed['status'] in {'documented-gnu-extension-positive', 'vendor-attribute-positive'}:
             return None
         return reviewed['status'] + ': ' + reviewed['reason']
     return None
@@ -320,9 +320,19 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                         source_policy_issue=mode['issue'],
                         status='Source-pinned documented GNU extension; ordinary native GNU++11 '
                                'qualification, distinct from retained failed strict ISO observations')
-                    projection['adaptations'] = [*projection['adaptations'],
+                    projection['adaptations'] = [*projection['adaptations'], mode.get('coverage',
                         'GNU++11 acceptance covers documented anonymous struct/union semantics; '
-                        'not an ISO11-positive claim']
+                        'not an ISO11-positive claim')]
+                elif mode.get('status') == 'vendor-attribute-positive':
+                    if 'qualification' not in projection:
+                        raise Excluded('Reviewed vendor attribute projection needs native qualification')
+                    projection['qualification'] = dict(
+                        kind='vendor-attribute-cxx11', additional_upstream_flags=[],
+                        source_policy_issue=mode['issue'],
+                        status='Source-pinned balanced vendor attribute arguments; ordinary native11 '
+                               'qualification, without requiring vendor processing parity')
+                    projection['adaptations'] = [*projection['adaptations'],
+                        'Vendor attribute arguments are balanced tokens; original annotation effects remain unmet']
                 verification = projection.pop('verification', [])
                 expected = 'accept'
                 if DIAGNOSTIC.search(text):
