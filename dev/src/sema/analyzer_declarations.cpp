@@ -20,6 +20,18 @@ const char* LiteralOperatorSuffix(const FunctionEntity* function)
 
 namespace {
 
+// A local class, including a class nested in it, inhabits this block.
+// Namespace-scope classes have no such enclosing block.
+Scope* LocalFriendBlock(Scope* scope)
+{
+	for (; scope != nullptr && scope->kind != ScopeKind::Namespace; scope = scope->parent)
+	{
+		if (scope->kind == ScopeKind::Block)
+			return scope;
+	}
+	return nullptr;
+}
+
 // Declarations of one variable agree on its type, except that an array's
 // major bound may be omitted in some (3.5p10, 3.9p3).
 bool CompatibleVariableTypes(const Type* a, const Type* b)
@@ -1743,14 +1755,20 @@ Binding* Analyzer::declare_function(const Specifiers& specifiers, const Declarat
 	bool invisible = false;
 	bool pattern_friend = false;
 	ClassEntity* befriending = nullptr;
+	Scope* friend_block = specifiers.is_friend ? LocalFriendBlock(where) : nullptr;
+	// 11.3p6: a friend definition has an unqualified name and belongs to
+	// a non-local class. Check before the qualified-friend dispatch too.
+	if (specifiers.is_friend && definition && (qualified || friend_block != nullptr))
+		error(location, "a friend definition requires an unqualified name in a non-local class");
 	if (qualified && specifiers.is_friend)
 		return qualified_friend(specifiers, info, scope, location);
 	if (qualified)
 		print = where = declarator_target(*info.name, info.qualifier, scope, location);
 	else if (specifiers.is_friend)
 	{
-		// A friend first declared in a class is a member of the innermost
-		// enclosing namespace, invisible to ordinary lookup there (7.3.1.2p3).
+		// A non-local class's friend may introduce a hidden namespace
+		// function (7.3.1.2p3). A local class's unqualified friend must
+		// correspond to a declaration in its innermost block (CWG138).
 		if (where->kind != ScopeKind::Class)
 			error(location, "friend declaration outside a class");
 		if (info.name->last().has_arguments)
@@ -1761,7 +1779,7 @@ Binding* Analyzer::declare_function(const Specifiers& specifiers, const Declarat
 		// the template's own declaration is only their pattern, which
 		// neither redeclares nor is found as the namespace's function.
 		pattern_friend = templated_class(where);
-		print = where = enclosing_namespace(where);
+		print = where = friend_block != nullptr ? friend_block : enclosing_namespace(where);
 		invisible = true;
 	}
 	// 7.1.1p1, 9.4: `static` only in a member's declaration in its class,
@@ -1825,6 +1843,8 @@ Binding* Analyzer::declare_function(const Specifiers& specifiers, const Declarat
 	FunctionEntity* function = pattern_friend
 		? nullptr
 		: earlier_function(name, where, signature, templated, invisible, location);
+	if (friend_block != nullptr && specifiers.is_friend && function == nullptr)
+		error(location, "a local class's friend names no function declared in its innermost block");
 	bool first = false;
 	// 8.3.5p6, 12.1p4, 12.4p2: a ref-qualifier only on a non-static member
 	// function other than a constructor or destructor.
