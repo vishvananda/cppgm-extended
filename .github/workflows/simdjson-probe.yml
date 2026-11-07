@@ -1,0 +1,59 @@
+name: Private simdjson vector-pool probe
+on:
+  push:
+    branches: [perf/simdjson-vector-pool-probe]
+permissions:
+  contents: read
+jobs:
+  paired:
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04
+    timeout-minutes: 45
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_WARNINGS_AS_ERRORS: '1'
+    steps:
+      - name: Install host tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends g++ clang-21 python3 git make ca-certificates time
+      - uses: actions/checkout@v6
+      - name: Build immutable compilers
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --depth=1 origin 235d3d8f3f601bd3837c35de5318ad86d0c7a160
+          mkdir -p obj/probe
+          make -C dev -j4 cppgm++
+          cp dev/cppgm++ obj/probe/cppgm-candidate
+          cp scripts/probe/register_allocation.cpp dev/src/native/select/register_allocation.cpp
+          cp scripts/probe/loop_split.cpp dev/src/native/select/loop_split.cpp
+          cp scripts/probe/loop_split.h dev/src/native/select/loop_split.h
+          make -C dev -j4 cppgm++
+          cp dev/cppgm++ obj/probe/cppgm-split
+          git show 235d3d8f3f601bd3837c35de5318ad86d0c7a160:dev/src/native/select/emit_vector.cpp > dev/src/native/select/emit_vector.cpp
+          git show 235d3d8f3f601bd3837c35de5318ad86d0c7a160:dev/src/native/select/function_selector.h > dev/src/native/select/function_selector.h
+          git show 235d3d8f3f601bd3837c35de5318ad86d0c7a160:dev/src/native/select/emit_control.cpp > dev/src/native/select/emit_control.cpp
+          git show 235d3d8f3f601bd3837c35de5318ad86d0c7a160:dev/src/native/x86/emitter.cpp > dev/src/native/x86/emitter.cpp
+          git show 235d3d8f3f601bd3837c35de5318ad86d0c7a160:dev/src/native/x86/emitter_floating.cpp > dev/src/native/x86/emitter_floating.cpp
+          git show 235d3d8f3f601bd3837c35de5318ad86d0c7a160:dev/src/native/mir/mir_writer.cpp > dev/src/native/mir/mir_writer.cpp
+          git show 235d3d8f3f601bd3837c35de5318ad86d0c7a160:dev/src/native/select/register_allocation.cpp > dev/src/native/select/register_allocation.cpp
+          git show 235d3d8f3f601bd3837c35de5318ad86d0c7a160:dev/src/native/select/loop_split.cpp > dev/src/native/select/loop_split.cpp
+          git show 235d3d8f3f601bd3837c35de5318ad86d0c7a160:dev/src/native/select/loop_split.h > dev/src/native/select/loop_split.h
+          make -C dev -j4 cppgm++
+          cp dev/cppgm++ obj/probe/cppgm-baseline
+      - name: Compare identical inputs and fixed GCC drivers
+        run: python3 scripts/simdjson_probe.py
+      - name: Report
+        if: always()
+        shell: bash
+        run: |
+          if [ -f obj/probe/results/details.md ]; then
+            cat obj/probe/results/details.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paired-simdjson-vector-pool-probe
+          path: obj/probe

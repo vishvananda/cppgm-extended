@@ -2,6 +2,7 @@ name: Public benchmarks
 
 on:
   push:
+    branches-ignore: [perf/simdjson-vector-pool-probe]
   workflow_dispatch:
     inputs:
       platform:
