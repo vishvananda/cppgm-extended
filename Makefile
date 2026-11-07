@@ -91,6 +91,7 @@ SUBMAKE_CC_FLAGS_ARG = $(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)")
 
 .PHONY: all build build-telemetry-off test test-telemetry-off audit-student-documents audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-usage audit-scaffold-spellings audit-ir-expectations audit-clang-format ref-test ref-test-debuginfo \
 	test-debuginfo test-debuginfo-nobuild test-modern-cxx test-modern-cxx-nobuild ref-test-modern-cxx \
+	test-target-features test-target-features-nobuild \
 	require-clang require-clang-libcxx asan-build test-cells \
 	test-report inception clean run-cppgm run-cppgm-nobuild \
 	test-report-nobuild test-report-through-% test-report-through-%-nobuild \
@@ -239,7 +240,16 @@ test-debuginfo-nobuild:
 	fi; \
 	echo "===== DEBUG-INFO TESTS PASSED SUCCESSFULLY! ====="
 
-# Optional later-language checks stay separate from the C++11 course report.
+# Optional language and target extensions stay separate from the course report.
+test-target-features: build
+	@$(MAKE) test-target-features-nobuild
+
+test-target-features-nobuild:
+	@$(MAKE) -C pa29 CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX) \
+		CPPGM_STDLIB_FLAGS=$(CPPGM_STDLIB_FLAGS) CPPGM_TEST_RUNNER=$(CPPGM_TEST_RUNNER) \
+		$(SUBMAKE_OBJ_ARG) $(SUBMAKE_GENERATED_ARG) $(SUBMAKE_CC_FLAGS_ARG) \
+		CPPGM_SKIP_DEV_REBUILD=1 test-target-features
+
 test-modern-cxx: build
 	@$(MAKE) test-modern-cxx-nobuild
 
@@ -320,6 +330,7 @@ test-cells:
 # The harness unit tests: the comparison, the workers, the audits and the
 # export, each a self-contained python unittest file under scripts/tests.
 HARNESS_TESTS = \
+	scripts/tests/test_simdjson_ci.py \
 	scripts/tests/test_index_cpp_ci.py \
 	scripts/tests/test_index_cpp_benchmarks.py \
 	scripts/tests/test_boost_ci.py \

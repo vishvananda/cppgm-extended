@@ -278,6 +278,20 @@ bool fold_unary(UnaryOp op, Type type, const Constant& a, Constant& out)
 			return false;
 		r = byte_swap(x, width);
 		break;
+	case UnaryOp::CountOnes:
+	{
+		if (width != 32 && width != 64)
+			return false;
+		u128 bits = x & mask_of(width);
+		unsigned n = 0;
+		while (bits != 0)
+		{
+			bits &= bits - 1;
+			++n;
+		}
+		r = n;
+		break;
+	}
 	case UnaryOp::CountTrailingZeros:
 	case UnaryOp::CountLeadingZeros:
 	{

@@ -1,0 +1,30 @@
+template<class T, int N> struct Vector { typedef T type __attribute__((ext_vector_type(N))); };
+int calls;
+short next(){++calls;return -7;}
+template<class T, int N> typename Vector<T,N>::type broadcast(T value) {
+ return static_cast<typename Vector<T,N>::type>(value);
+}
+int main(){
+ typedef signed char Bytes __attribute__((ext_vector_type(16)));
+ typedef short Words __attribute__((ext_vector_type(8)));
+ typedef int Ints __attribute__((ext_vector_type(4)));
+ typedef unsigned int UInts __attribute__((ext_vector_type(4)));
+ typedef long long Longs __attribute__((ext_vector_type(2)));
+ typedef float Floats __attribute__((ext_vector_type(4)));
+ typedef double Doubles __attribute__((ext_vector_type(2)));
+ typedef signed char GnuBytes __attribute__((vector_size(16)));
+ Bytes b=static_cast<Bytes>(-3);
+ Words w=static_cast<Words>(next());
+ Ints i=(Ints)(2.9);
+ UInts u=static_cast<UInts>(-1);
+ Longs l=static_cast<Longs>(0x123456789abcdefLL);
+ Floats f=static_cast<Floats>(3);
+ Doubles d=static_cast<Doubles>(-0.25f);
+ auto t=broadcast<signed char,16>(-9);
+ GnuBytes g=b; Bytes copied=g;
+ for(int lane=0;lane<16;++lane) if(b[lane]!=-3||copied[lane]!=-3||t[lane]!=-9)return 1;
+ for(int lane=0;lane<8;++lane)if(w[lane]!=-7)return 2;
+ for(int lane=0;lane<4;++lane)if(i[lane]!=2||u[lane]!=~0u||f[lane]!=3.0f)return 3;
+ for(int lane=0;lane<2;++lane)if(l[lane]!=0x123456789abcdefLL||d[lane]!=-0.25)return 4;
+ return calls!=1;
+}

@@ -82,7 +82,9 @@ enum class AsmOperation : uint8_t
 	// pand: all 128 bits of two XMM operands, preserving condition flags.
 	PackedAnd,
 	// cpuid: immediate holds the a,b,c,d output indices in successive bytes.
-	CpuId
+	CpuId,
+	// XGETBV: fixed ECX input, EAX and EDX outputs.
+	XGetBv
 };
 
 const uint8_t kAsmImmediateSource = 0xff;

@@ -255,6 +255,9 @@ After implementing PA29's optional function-type support, preserve C++17
 Host-compiled and compiler-generated objects must agree on function-pointer
 types, template arguments, conversions and exception matching.
 
+The optional lane also checks C++14 aggregate member initialization with
+hosted library members, building on PA29's initialization rules.
+
 The fixtures ship in `tests/modern-cxx/link/`. Run them explicitly:
 
 ```sh

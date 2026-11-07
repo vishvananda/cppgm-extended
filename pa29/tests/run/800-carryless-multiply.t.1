@@ -1,0 +1,30 @@
+// Every immediate byte is checked against an independent polynomial product.
+#include <wmmintrin.h>
+typedef long long Pair __attribute__((vector_size(16)));
+typedef unsigned long long Word;
+unsigned calls;
+Pair observe(Pair value) { ++calls; return value; }
+template<int Mask> __attribute__((target("pclmul"))) bool one(Word seed) {
+  Pair a{static_cast<long long>(seed ^ 0x82928a88def4ba91ULL),
+         static_cast<long long>(seed * 1337 + 0x9042020305060709ULL)};
+  Pair b{static_cast<long long>(seed * 79 + 0x8a650c031234abcdULL),
+         static_cast<long long>(seed ^ 0x80e0000203010603ULL)};
+  Pair result = _mm_clmulepi64_si128(observe(a), observe(b), Mask);
+  const Word left = static_cast<Word>(a[Mask & 1]);
+  const Word right = static_cast<Word>(b[(Mask >> 4) & 1]);
+  unsigned __int128 expected = 0;
+  for (unsigned i = 0; i < 64; ++i)
+    if ((right >> i) & 1) expected ^= static_cast<unsigned __int128>(left) << i;
+  return static_cast<Word>(result[0]) == static_cast<Word>(expected) &&
+         static_cast<Word>(result[1]) == static_cast<Word>(expected >> 64);
+}
+template<int Mask> bool all(Word seed) { return one<Mask>(seed) && all<Mask-1>(seed); }
+template<> bool all<-1>(Word) { return true; }
+int main() {
+  unsigned a = 1, b, c = 0, d;
+  asm volatile("cpuid" : "+a"(a), "=b"(b), "+c"(c), "=d"(d));
+  if (!(c & 2)) return 0;
+  const Word seeds[] = {0, 1, ~0ULL, 0x898790ab12345678ULL};
+  for (unsigned i = 0; i < 4; ++i) if (!all<255>(seeds[i])) return 1;
+  return calls == 2048 ? 0 : 2;
+}

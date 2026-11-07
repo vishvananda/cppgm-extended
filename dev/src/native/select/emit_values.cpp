@@ -703,6 +703,19 @@ void FunctionSelector::emit_unary(const Instruction& inst)
 		finish_result(inst, d);
 		return;
 	}
+	if (op == UnaryOp::CountOnes)
+	{
+		const Reg d = result_reg(inst, dying_reg(inst.ops[0]));
+		Operand src = a;
+		if (src.kind == OperandKind::Imm)
+		{
+			load_into(kSelectScratch, src, kind);
+			src = Operand::make_reg(kSelectScratch);
+		}
+		emit2(Op::Popcnt, kind, Operand::make_reg(d), src);
+		finish_result(inst, d);
+		return;
+	}
 	if (op == UnaryOp::CountTrailingZeros || op == UnaryOp::CountLeadingZeros)
 	{
 		// bsf, or bsr and 31 - index (63 - index) as index ^ 31 (^ 63):

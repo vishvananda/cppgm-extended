@@ -411,7 +411,12 @@ const Type* Analyzer::substitute(const Type* type, const Substitution& substitut
 	case TypeKind::Vector:
 	{
 		if (type->owner == nullptr)
-			return type;
+		{
+			const Type* lane = substitute(type->element, substitution);
+			return lane != nullptr
+				? types_.qualified(types_.vector(lane, type->bound, nullptr, false, type->extended_vector()), type->cv)
+				: nullptr;
+		}
 		const Type* vector = substitute_vector_size(type->unqualified, substitution);
 		return vector != nullptr ? types_.qualified(vector, type->cv) : nullptr;
 	}

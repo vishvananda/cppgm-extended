@@ -207,6 +207,8 @@ enum class Intrinsic : uint8_t
 	// SSE2 lane shuffles: selector in bits 8-15; bit 16 denotes a
 	// deferred selector; bit 17 selects the high half of eight word lanes.
 	VectorShuffle,
+	VectorCarrylessMultiply,
+	VectorPermuteHalves,
 	// __builtin_add/sub/mul_overflow(a, b, result): the infinitely precise
 	// a op b stored through `result` modulo its type, and whether that
 	// changed it.
@@ -541,6 +543,7 @@ struct Capture
 	const Entity* entity;
 	const VariableEntity* member;
 	const FunctionEntity* constructor;
+	const syntax::Initializer* initializer;
 };
 
 // A closure type's facts (5.1.2p3), kept beside the class: its function

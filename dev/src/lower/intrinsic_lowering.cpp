@@ -263,6 +263,9 @@ RValue FunctionLowering::gnu_intrinsic(const syntax::CallExpr& expr, sema::Intri
 		return shift_vector_lanes(expr);
 	case sema::Intrinsic::VectorShuffle:
 		return shuffle_vector(expr);
+	case sema::Intrinsic::VectorCarrylessMultiply:
+	case sema::Intrinsic::VectorPermuteHalves:
+		return binary_immediate_vector(expr);
 	case sema::Intrinsic::VectorLanewise:
 		return lanewise_vector(expr);
 	case sema::Intrinsic::SourceFile:
@@ -397,7 +400,9 @@ RValue FunctionLowering::bit_count(sema::Intrinsic kind, RValue x)
 		count.type = i32;
 		return count;
 	}
-	if (kind == sema::Intrinsic::PopCount)
+	if (kind == sema::Intrinsic::PopCount && lowering_.popcnt())
+		count = unary(lowir::UnaryOp::CountOnes, x);
+	else if (kind == sema::Intrinsic::PopCount)
 	{
 		// Bits summed in parallel (pairs, nibbles, bytes), the byte sums
 		// gathered by one multiplication.

@@ -306,8 +306,9 @@ Type AggregateSlots::hinted_filler(SlotId slot, uint64_t gap, uint64_t end) cons
 		for (const Field& f : facts_[other.slot].fields)
 		{
 			const uint64_t bytes = storage_bytes(f.type);
-			if (static_cast<int64_t>(f.offset) == at && bytes <= 8 && (bytes & (bytes - 1)) == 0 &&
-				gap + bytes <= end && gap % bytes == 0 && f.type.kind() != TypeKind::F80 && !f.type.is_object())
+			if (static_cast<int64_t>(f.offset) == at && (bytes <= 8 || f.type.is_vector()) &&
+				(bytes & (bytes - 1)) == 0 && gap + bytes <= end && gap % bytes == 0 &&
+				f.type.kind() != TypeKind::F80 && !f.type.is_object())
 				return f.type;
 		}
 	}
@@ -752,7 +753,15 @@ void AggregateSlots::expand_copy(BlockId block, InstId prev, const Instruction& 
 			continue;
 		const int64_t rel = static_cast<int64_t>(f.offset) - lead.offset;
 		Value value;
-		if (zero)
+		if (zero && f.type.is_vector())
+		{
+			Instruction clear = make_instruction(Opcode::Vector, f.type);
+			clear.sub = static_cast<uint8_t>(VectorOp::Pzero);
+			clear.location = inst.location;
+			at = emit(block, at, clear, f.type);
+			value = Value::temp(body_.instructions[at].result);
+		}
+		else if (zero)
 			value = f.type.is_float() ? literal_value(body_, ValueKind::Float, f.type.kind(), Literal{ 0, 0 })
 									  : integer_value(body_, Literal{ 0, 0 });
 		else

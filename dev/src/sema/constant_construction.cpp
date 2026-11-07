@@ -393,7 +393,7 @@ bool ConstantInterpreter::initialize_object(
 			ConstValue value;
 			return part_list(list->elements, type, value, location) && write(target, value, location);
 		}
-		if (type->unqualified->kind == TypeKind::Vector && !list->elements.empty())
+		if (type->unqualified->kind == TypeKind::Vector && LaneList(type, *list) && !list->elements.empty())
 		{
 			ConstValue value;
 			return lane_list(list->elements, type, value, location) && write(target, value, location);
@@ -540,8 +540,22 @@ bool ConstantInterpreter::aggregate_members(const ClassEntity* entity, const Con
 			continue;
 		const VariableEntity* variable = static_cast<const VariableEntity*>(member->variable);
 		ConstPlace place;
-		if (!member_slot(target, variable, place, location) ||
-			!aggregate_element(variable->type, place, list, next, location))
+		if (!member_slot(target, variable, place, location))
+			return false;
+		if (next >= list.elements.size && variable->member_initializer != nullptr)
+		{
+			Frame frame = Frame();
+			frame.has_this = true;
+			frame.self = target;
+			frame.first_local = locals_.size();
+			frames_.push_back(frame);
+			const bool done = construct(
+				variable->type, place, variable->member_initializer, variable->constructor, location);
+			frames_.pop_back();
+			if (!done)
+				return false;
+		}
+		else if (!aggregate_element(variable->type, place, list, next, location))
 			return false;
 		if (entity->key == TokenKind::KW_UNION)
 			break;

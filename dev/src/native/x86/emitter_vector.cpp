@@ -196,6 +196,7 @@ const VectorEncoding kVectorEncodings[] = {
 	{ 0x66, 0xf3a0c, 0 }, // blendps
 	{ 0x66, 0xf3a0d, 0 }, // blendpd
 	{ 0x66, 0xf3a0e, 0 }, // pblendw
+	{ 0x66, 0xf3a44, 0 }, // pclmulqdq
 	{ 0x66, 0x0f70, 0 },  // pshufd
 	{ 0xf2, 0x0f70, 0 },  // pshuflw
 	{ 0xf3, 0x0f70, 0 },  // pshufhw

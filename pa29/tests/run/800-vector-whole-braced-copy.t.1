@@ -1,0 +1,37 @@
+// Whole-vector copies preserve every lane and evaluate their operand once.
+typedef long long Words __attribute__((vector_size(16)));
+typedef unsigned char Bytes __attribute__((vector_size(16)));
+int calls;
+Words observe(Words value) { ++calls; return value; }
+struct Holder {
+  Words value;
+  constexpr Holder() : value{Words{3, 7}} {}
+  Holder(Words source) : value{observe(source)} {}
+};
+const Words original{13, 19};
+const Words constant_copy{original};
+constexpr Holder constant_holder;
+Words return_list(Words source) { return Words{source}; }
+int main() {
+  Words source{-3, 97};
+  Words direct{observe(source)};
+  Words assigned = {observe(source)};
+  Words first_lane{23};
+  Words zero{Words()};
+  Holder member(source);
+  Words returned = return_list(source);
+  volatile Words observed{31, 43};
+  Words volatile_copy{observed};
+  observed[0] = 61;
+  Bytes bytes{};
+  for (int i = 0; i < 16; ++i) bytes[i] = static_cast<unsigned char>(i * 19 + 131);
+  Bytes byte_copy{bytes};
+  for (int i = 0; i < 16; ++i) if (byte_copy[i] != bytes[i]) return 1;
+  return calls != 3 || direct[0] != -3 || direct[1] != 97 ||
+         assigned[0] != -3 || assigned[1] != 97 || member.value[0] != -3 ||
+         member.value[1] != 97 || returned[0] != -3 || returned[1] != 97 ||
+         first_lane[0] != 23 || first_lane[1] != 0 || zero[0] != 0 || zero[1] != 0 ||
+         constant_copy[0] != 13 || constant_copy[1] != 19 ||
+         constant_holder.value[0] != 3 || constant_holder.value[1] != 7 ||
+         volatile_copy[0] != 31 || volatile_copy[1] != 43;
+}

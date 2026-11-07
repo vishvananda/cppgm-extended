@@ -967,7 +967,7 @@ InstId MemoryForwarding::known_copy(BlockId block, InstId prev, InstId id)
 }
 
 // A small copy whose source the facts tile exactly -- each byte in one
-// stored integer or pointer value, a temp or a literal, at most
+// stored integer, pointer or vector value, a temp or a literal, at most
 // kWholeCopyStores of them -- becomes stores of those values: a pair
 // built from a variable and copied out (push_back(make_pair(b, 0u))) no
 // longer reloads the temporary whole right after its narrower stores,
@@ -991,7 +991,8 @@ InstId MemoryForwarding::field_copy(BlockId block, InstId prev, InstId id)
 		const Known& found = facts_[entry].known;
 		if (found.generation != generation_ ||
 			!(found.value.is(ValueKind::Integer) || found.value.is(ValueKind::Temp)) ||
-			!(found.type.is_pointer() || (found.type.is_integer() && found.type.kind() != TypeKind::I128)) ||
+			!(found.type.is_pointer() || found.type.is_vector() ||
+				(found.type.is_integer() && found.type.kind() != TypeKind::I128)) ||
 			(found.value.is(ValueKind::Temp) && !(body_.temps[found.value.index].type == found.type)))
 			continue;
 		const int64_t offset = found.at.offset - src.offset;

@@ -1,0 +1,20 @@
+function @logical(%value : v128) -> v128 {
+  block ^entry:
+    %answer = vector psrlwi %value, 4
+    return v128 %answer
+}
+function @zero(%value : v128) -> v128 {
+  block ^entry:
+    %answer = vector pzero
+    return v128 %answer
+}
+function @signed(%value : v128) -> v128 {
+  block ^entry:
+    %answer = vector psrawi %value, 15
+    return v128 %answer
+}
+function @variable(%value : v128, %count : v128) -> v128 {
+  block ^entry:
+    %answer = vector psrld %value, %count
+    return v128 %answer
+}

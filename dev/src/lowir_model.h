@@ -270,7 +270,8 @@ inline bool from_spelling(const char* text, std::size_t length, Opcode* op)
 // The operation of `unary`.  ctz/clz: the index of the lowest (highest)
 // set bit of a 32- or 64-bit integer, counted from bit 0 (from the top);
 // undefined for 0, as GCC's builtins. sqrt: IEEE square root of an f32 or
-// f64; it sets no errno.
+// f64; it sets no errno. popcount: the number of set bits, including 0
+// for zero. Its native form uses the optional POPCNT target capability.
 enum class UnaryOp : std::uint8_t
 {
 	Neg,
@@ -279,10 +280,11 @@ enum class UnaryOp : std::uint8_t
 	ByteSwap,
 	CountTrailingZeros,
 	CountLeadingZeros,
-	Sqrt
+	Sqrt,
+	CountOnes
 };
 
-const unsigned kUnaryOpCount = static_cast<unsigned>(UnaryOp::Sqrt) + 1;
+const unsigned kUnaryOpCount = static_cast<unsigned>(UnaryOp::CountOnes) + 1;
 
 enum class BinaryOp : std::uint8_t
 {
@@ -552,6 +554,7 @@ enum class VectorOp : std::uint8_t
 	Blendps,
 	Blendpd,
 	Pblendw,
+	Pclmulqdq,
 	Pshufd,
 	Pshuflw,
 	Pshufhw,
@@ -606,9 +609,10 @@ inline const char* spelling(VectorOp op)
 		"pmovsxbd", "pmovsxbq", "pmovsxwd", "pmovsxwq", "pmovsxdq", "pmovzxbw", "pmovzxbd", "pmovzxbq", "pmovzxwd",
 		"pmovzxwq", "pmovzxdq", "cvtdq2ps", "cvtdq2pd", "cvtps2dq", "cvttps2dq", "cvtpd2dq", "cvttpd2dq", "cvtps2pd",
 		"cvtpd2ps", "cmpps", "cmppd", "cmpss", "cmpsd", "shufps", "shufpd", "palignr", "blendps", "blendpd", "pblendw",
-		"pshufd", "pshuflw", "pshufhw", "psllwi", "pslldi", "psllqi", "psrlwi", "psrldi", "psrlqi", "psrawi", "psradi",
-		"pslldq", "psrldq", "blendvps", "blendvpd", "pblendvb", "movmskps", "movmskpd", "pmovmskb", "ptestz", "ptestc",
-		"ptestnzc", "pzero", "fromf32", "fromf64", "fromi32", "fromi64", "tof32", "tof64", "toi32", "toi64" };
+		"pclmulqdq", "pshufd", "pshuflw", "pshufhw", "psllwi", "pslldi", "psllqi", "psrlwi", "psrldi", "psrlqi",
+		"psrawi", "psradi", "pslldq", "psrldq", "blendvps", "blendvpd", "pblendvb", "movmskps", "movmskpd", "pmovmskb",
+		"ptestz", "ptestc", "ptestnzc", "pzero", "fromf32", "fromf64", "fromi32", "fromi64", "tof32", "tof64", "toi32",
+		"toi64" };
 	return kVectorOps[static_cast<unsigned>(op)];
 }
 
@@ -695,7 +699,8 @@ inline Type vector_result_type(VectorOp op)
 
 inline const char* spelling(UnaryOp op)
 {
-	static const char* const kUnaryOps[kUnaryOpCount] = { "neg", "not", "bitnot", "bswap", "ctz", "clz", "sqrt" };
+	static const char* const kUnaryOps[kUnaryOpCount] = { "neg", "not", "bitnot", "bswap", "ctz", "clz", "sqrt",
+		"popcount" };
 	return kUnaryOps[static_cast<unsigned>(op)];
 }
 

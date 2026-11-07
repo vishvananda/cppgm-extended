@@ -338,6 +338,13 @@ Source-driver cases also compare execution before and after LowIR
 serialization. Failed cases are checked by exit status. See Quality Bar
 for the sidecar syntax.
 
+Whole-vector values stored in private aggregates can remain whole through
+copies and zero initialization. Use typed access and escape facts to avoid
+scalar memory round trips; preserve observable writes and volatile accesses.
+Packed shifts whose count becomes constant may use immediate operations,
+with oversized logical counts producing zero and arithmetic counts retaining
+sign fill. Equivalent implementations satisfy the same behavior and bounds.
+
 ### Testing
 
 From this assignment directory, run:

@@ -1877,6 +1877,14 @@ void InlineWaveRunner::settle(
 
 void InlineWaveRunner::run()
 {
+	// Required substitutions see the live call graph. A constant-false
+	// template branch can contain a self call that is never executed;
+	// retaining that edge would incorrectly classify its body as recursive.
+	if (source_required_)
+		for (const SymbolId symbol : program_.order)
+			if (program_.symbols[symbol].kind == SymbolKind::FunctionDefinition &&
+				(program_.symbols[symbol].metadata.flags & SF_FORCE_INLINE) != 0)
+				simplify_(symbol);
 	build_call_graph(program_, graph_, source_required_);
 	shapes_.resize(graph_.functions.size());
 	if (!source_required_)
@@ -1888,8 +1896,6 @@ void InlineWaveRunner::run()
 	for (uint32_t f = 0; f < graph_.functions.size(); ++f)
 		if (!source_required_ || graph_.calls_in[f] != 0)
 		{
-			if (source_required_)
-				simplify_(graph_.functions[f]);
 			shapes_[f] = source_required_
 				? shape_of<true>(program_, graph_.functions[f], nounwind_)
 				: shape_of(program_, graph_.functions[f], nounwind_, graph_.recursive[f] ? &graph_ : nullptr);

@@ -1,0 +1,7 @@
+# Constant count construction should disappear without changing oversized
+# count semantics or removing a variable count's dependency.
+instructions <= 10
+instructions <= 2 in @logical
+instructions <= 2 in @zero
+instructions <= 2 in @signed
+instructions <= 2 in @variable

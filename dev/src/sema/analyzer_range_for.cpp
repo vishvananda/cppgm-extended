@@ -377,7 +377,14 @@ const Type* Analyzer::known_range_element(
 		return typed_range->type->element;
 	if (cls == nullptr || builtin_list_class(cls) || !require_complete(cls))
 		return nullptr;
-	typed_range->flags |= kImplicit;
+	// 6.5.4p1 calls begin on the named hidden range variable: an lvalue
+	// even when its initializer is a temporary. Keep the original expression's
+	// category intact for deduction and its eventual runtime initialization.
+	syntax::IdExpr* bound = implicit_node<syntax::IdExpr>(loop.location);
+	bound->kind = syntax::ExprKind::Id;
+	bound->name = implicit_name(range_for_identifier(kRangeKey), loop.location);
+	new_facts(*bound, typed_range->type, ValueCategory::LValue)->flags |= kImplicit;
+	range_node = bound;
 	const Identifier* begin_name = range_for_identifier(kBeginName);
 	implicit_members_for(cls->scope, begin_name);
 	const bool members = names_.qualified(cls->scope, begin_name, LookupFilter::Ordinary).found() ||

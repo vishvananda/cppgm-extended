@@ -217,6 +217,8 @@ ExprFacts* Analyzer::builtin_operation(const syntax::CallExpr& expr, const Funct
 		return vector_shift_builtin(expr, variant, scope);
 	case GnuBuiltin::VectorShuffle:
 		return vector_shuffle_builtin(expr, variant, scope);
+	case GnuBuiltin::VectorBinaryImmediate:
+		return vector_binary_immediate_builtin(expr, variant, scope);
 	case GnuBuiltin::VectorLanewise:
 		return vector_lanewise_builtin(expr, builtin, scope);
 	case GnuBuiltin::VectorElementwise:
@@ -729,7 +731,7 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 	{
 		if (count != 2)
 			error(expr.location, "wrong number of arguments to a packed saturating conversion");
-		const bool words = variant == 2;
+		const bool words = variant >= 2;
 		const Type* input = types_.vector(
 			types_.fundamental(words ? FundamentalType::Int : FundamentalType::ShortInt), words ? 4 : 8);
 		for (const syntax::Expr* argument : expr.arguments)
@@ -1023,6 +1025,39 @@ ExprFacts* Analyzer::vector_shuffle_builtin(const syntax::CallExpr& expr, uint8_
 	facts->value = static_cast<uint64_t>(Intrinsic::VectorShuffle) |
 		(constant ? (selector.bits & (doubles ? 3U : 255U)) << 8 : uint64_t(1) << 16) |
 		(variant == 3 ? uint64_t(1) << 17 : 0);
+	return facts;
+}
+
+ExprFacts* Analyzer::vector_binary_immediate_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope)
+{
+	if (expr.arguments.size != 3)
+		error(expr.location, "wrong number of arguments to an immediate vector operation");
+	const Type* vector = types_.vector(types_.fundamental(FundamentalType::LongLongInt), variant == 0 ? 2 : 4);
+	for (uint32_t i = 0; i < 3; ++i)
+	{
+		if (typed_value(*expr.arguments[i], scope) == nullptr)
+			return nullptr;
+		convert(*expr.arguments[i], i == 2 ? types_.fundamental(FundamentalType::Int) : vector, false);
+		if (failed())
+			return nullptr;
+	}
+	Constant selector;
+	const bool constant = constant_value(*expr.arguments[2], scope, selector, false);
+	if (!constant && template_depth_ == 0 &&
+		(body_ == nullptr || body_->function == nullptr || !body_->function->always_inline))
+		error(expr.arguments[2]->location, "a vector selector that is no integral constant expression");
+	// Clang's public carryless-multiply macro explicitly casts its selector
+	// to char. Preserve that byte's bits after promotion to int.
+	IntegralKind selector_kind;
+	const bool byte_selector = variant == 0 && IntegralKindOf(expr.arguments[2]->facts->type, selector_kind) &&
+		selector_kind.bits == 8;
+	if (constant && selector.bits > 255 && !byte_selector)
+		error(expr.arguments[2]->location, "a vector selector outside the unsigned-byte range");
+	ExprFacts* facts = new_facts(expr, vector, ValueCategory::PRValue);
+	facts->flags |= kIntrinsic;
+	facts->value = static_cast<uint64_t>(
+					   variant == 0 ? Intrinsic::VectorCarrylessMultiply : Intrinsic::VectorPermuteHalves) |
+		(constant ? (selector.bits & 255U) << 8 : uint64_t(1) << 16);
 	return facts;
 }
 

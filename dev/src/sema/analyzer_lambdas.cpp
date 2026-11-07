@@ -101,7 +101,7 @@ ExprFacts* Analyzer::lambda_expression(const syntax::LambdaExpr& expr, Scope* sc
 	frame.facts = facts;
 	frame.expr = &expr;
 	frame.this_captured = false;
-	explicit_captures(frame, scope);
+	Scope* capture_scope = explicit_captures(frame, scope);
 	// The body, analyzed where the lambda appears: the expression's state
 	// around it is set aside (the body is no unevaluated operand, p2, and
 	// no part of a substitution). An instantiation's copy whose parameter
@@ -111,10 +111,10 @@ ExprFacts* Analyzer::lambda_expression(const syntax::LambdaExpr& expr, Scope* sc
 		arena_.allocate(sizeof(syntax::FunctionBody), alignof(syntax::FunctionBody)));
 	*body = syntax::FunctionBody();
 	body->body = expr.body;
-	Scope* parent = scope;
+	Scope* parent = capture_scope;
 	if (expr.pattern_parameters != nullptr)
 		parent = function_pack_scope(
-			scope, *expr.pattern_parameters, expr.parameter_packs.data, expr.parameter_packs.size, call->type);
+			capture_scope, *expr.pattern_parameters, expr.parameter_packs.data, expr.parameter_packs.size, call->type);
 	Scope* saved_scope = expression_scope_;
 	const ClassEntity* saved_naming = naming_class_;
 	const NamePrefix saved_prefix = last_prefix_;
@@ -191,8 +191,8 @@ ExprFacts* Analyzer::templated_lambda(
 	frame.facts = facts;
 	frame.expr = &expr;
 	frame.this_captured = false;
-	explicit_captures(frame, scope);
-	facts->call = templated_closure_call(closure, expr, scope, frame);
+	Scope* capture_scope = explicit_captures(frame, scope);
+	facts->call = templated_closure_call(closure, expr, capture_scope, frame);
 	closure->complete = true;
 	if (semantic())
 		number_closure(closure, facts);
@@ -346,6 +346,11 @@ void Analyzer::scan_nested_lambda(const syntax::LambdaExpr& lambda, Scope* scope
 	// dependent names), a templated one's template parameters too.
 	for (const syntax::LambdaCapture& capture : lambda.captures)
 	{
+		if (capture.initializer != nullptr)
+		{
+			initializer_names(capture.initializer, scope, false);
+			continue;
+		}
 		if (capture.kind == TokenKind::KW_THIS)
 		{
 			if (capture_scan_->expr->has_default)
@@ -369,6 +374,15 @@ void Analyzer::scan_nested_lambda(const syntax::LambdaExpr& lambda, Scope* scope
 	Scope* inner = new_scope(ScopeKind::Block, scope, scope, nullptr, nullptr);
 	inner->dumped = false;
 	const Type* placeholder = types_.fundamental(FundamentalType::Int);
+	for (const syntax::LambdaCapture& capture : lambda.captures)
+		if (capture.initializer != nullptr)
+		{
+			Entity* variable = new_entity<VariableEntity>(EntityKind::Variable, capture.name, inner, placeholder);
+			Binding* binding = new_binding(BindingKind::Variable, capture.name, variable, placeholder);
+			binding->dependent = true;
+			binding->hidden = true;
+			declare_in(inner, binding);
+		}
 	for (uint32_t i = 0; lambda.parameters != nullptr && i < lambda.parameters->parameters.size; ++i)
 	{
 		const syntax::Name* id = DeclaratorId(lambda.parameters->parameters[i]->declarator);
@@ -406,15 +420,40 @@ bool Analyzer::sealed_frame(const ClassEntity* closure, LambdaFrame& frame)
 	return true;
 }
 
-void Analyzer::explicit_captures(LambdaFrame& frame, Scope* scope)
+Scope* Analyzer::explicit_captures(LambdaFrame& frame, Scope* scope)
 {
 	// p8: each capture once, and none repeating the capture-default's kind
 	// (`this` after `=` included, C++11); p10: an identifier names an
 	// automatic variable of the reaching scope, captured (by each enclosing
 	// lambda too, p13) where the lambda appears, by reference or by copy.
 	const syntax::LambdaExpr& expr = *frame.expr;
+	Scope* inner = scope;
+	for (const syntax::LambdaCapture& capture : expr.captures)
+		if (capture.initializer != nullptr && inner == scope)
+		{
+			inner = new_scope(ScopeKind::Block, scope, nullptr, nullptr, nullptr);
+			inner->dumped = false;
+			frame.closure->scope->parent = inner;
+		}
 	for (const syntax::LambdaCapture& capture : expr.captures)
 	{
+		if (inner != scope && capture.name != nullptr)
+		{
+			const LookupResult prior = names_.unqualified(inner, capture.name, LookupFilter::Ordinary);
+			if (prior.found() && prior.binding->declared_in == inner)
+				error(expr.location, "an identifier appears twice in a lambda capture list");
+		}
+		if (capture.initializer != nullptr)
+		{
+			for (uint32_t i = 0; expr.parameters != nullptr && i < expr.parameters->parameters.size; ++i)
+			{
+				const syntax::Name* name = DeclaratorId(expr.parameters->parameters[i]->declarator);
+				if (name != nullptr && name->last().identifier == capture.name)
+					error(expr.location, "an initialized capture and a lambda parameter have the same name");
+			}
+			initialized_capture(frame, capture, scope, inner);
+			continue;
+		}
 		if (capture.kind == TokenKind::KW_THIS)
 		{
 			if (frame.this_captured || (expr.has_default && expr.capture_default == TokenKind::OP_ASS))
@@ -446,7 +485,11 @@ void Analyzer::explicit_captures(LambdaFrame& frame, Scope* scope)
 		if (!capture_variable(entity, expr.location))
 			error(expr.location, "a capture of a variable a local class cannot use (5.1.2p10)");
 		add_capture(frame, entity, true, !capture.by_reference, expr.location);
+		if (inner != scope)
+			declare_in(
+				inner, new_binding(found.binding->kind, capture.name, const_cast<Entity*>(entity), entity->type));
 	}
+	return inner;
 }
 
 void Analyzer::add_capture(LambdaFrame& frame, const Entity* entity, bool written, bool by_copy, uint32_t location)
@@ -692,8 +735,15 @@ void Analyzer::finish_captures(LambdaFrame& frame)
 			EntityKind::Variable, nullptr, closure->scope, copy ? type : types_.reference(type, false));
 		member->member = true;
 		add_data_member(closure, member, 0, false);
+		const VariableEntity* variable = entity->kind == EntityKind::Variable
+			? static_cast<const VariableEntity*>(entity)
+			: nullptr;
+		const bool initialized = variable != nullptr && variable->init_capture;
 		captures[i] = Capture{ entity, member,
-			copy ? capture_constructor(closure, type, frame.expr->location) : nullptr };
+			initialized ? variable->constructor
+				: copy  ? capture_constructor(closure, type, frame.expr->location)
+						: nullptr,
+			initialized ? variable->member_initializer : nullptr };
 	}
 	facts->captures = captures;
 	facts->capture_count = count;

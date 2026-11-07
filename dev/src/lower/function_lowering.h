@@ -104,6 +104,7 @@ public:
 	// A class aggregate's initialization helper (`this` and a value per
 	// named member, each member stored from it).
 	void lower_aggregate_helper(const sema::ClassEntity* entity, uint32_t count);
+	void lower_vector_helper(lowir::VectorOp operation);
 	// A thread-local object's guarded per-thread initialization, and its
 	// wrapper returning the thread's object after running it.
 	void lower_thread_local_initializer(lowir::SymbolId global, lowir::SymbolId guard,
@@ -738,6 +739,7 @@ private:
 	RValue asm_source(const AsmState& state, const sema::AsmInstruction& instruction);
 	void asm_instruction(const sema::AsmInstruction& instruction, AsmState& state);
 	void asm_cpu_query(const sema::AsmInstruction& instruction, AsmState& state);
+	void asm_xstate_query(const sema::AsmInstruction& instruction, AsmState& state);
 	void asm_bit_instruction(const sema::AsmInstruction& instruction, AsmState& state, const RValue& source);
 	void asm_capture_flags(const sema::AsmInstruction& instruction, AsmState& state, const RValue& before,
 		const RValue& after, const RValue& source);
@@ -1230,15 +1232,19 @@ private:
 	bool aggregate_stores(const sema::ClassEntity* entity);
 	void aggregate_class(const sema::ClassEntity* entity, uint8_t cv, const AddressPath& path,
 		const syntax::BracedInitList* list, uint32_t& next, uint32_t location);
+	void aggregate_default_member(const sema::ClassEntity* owner, const sema::VariableEntity* member,
+		const sema::Type* type, const AddressPath& path, lowir::Value object, bool value_first, uint32_t location);
 	void aggregate_item(const sema::Type* type, const AddressPath& path, const syntax::BracedInitList* list,
 		uint32_t& next, bool value_first, uint32_t location);
 	// `element`: an array element (an omitted one's default construction
 	// ends its temporaries, see begin_element_temporaries).
 	void aggregate_class_item(const sema::ClassEntity* cls, const sema::Type* type, const AddressPath& path,
-		const syntax::BracedInitList* list, uint32_t& next, uint32_t location, bool element = false);
+		const syntax::BracedInitList* list, uint32_t& next, uint32_t location, bool element = false,
+		const sema::VariableEntity* default_member = nullptr);
 	void materialize_member(
 		const syntax::Expr& element, const AddressPath& path, uint32_t location, lowir::Value object = lowir::Value());
 	bool member_may_throw(const sema::ClassEntity* cls, const syntax::Expr* element);
+	bool default_member_may_throw(const sema::VariableEntity* member);
 	static bool does_nothing(const sema::FunctionEntity* constructor);
 	void aggregate_array(const sema::Type* type, const AddressPath& path, const syntax::Expr* item, uint32_t location);
 	RValue member_operand(const syntax::Expr& expr);
@@ -1354,6 +1360,7 @@ private:
 	void set_vector_lane(lowir::Value address, const sema::Type* vector, uint64_t lane, const RValue& value);
 	lowir::Value zeroed_vector(const sema::Type* vector, lowir::SlotId& slot);
 	RValue vector_list(const sema::Type* vector, const syntax::BracedInitList& list);
+	RValue vector_scalar_cast(const sema::Type* vector, const sema::Type* from, const RValue& value);
 	Place vector_lane_place(const syntax::SubscriptExpr& expr);
 	RValue vector_lane_value(const syntax::SubscriptExpr& expr);
 	RValue vector_compare(const syntax::BinaryExpr& expr, const RValue& left, const RValue& right);
@@ -1384,6 +1391,7 @@ private:
 	bool direct_vector_compare(TokenKind op, const sema::Type* vector, const RValue& left, bool left_vector,
 		const RValue& right, bool right_vector, RValue& result);
 	bool direct_vector_list(const sema::Type* vector, const syntax::BracedInitList& list, RValue& result);
+	bool direct_small_vector_list(const sema::Type* vector, const syntax::BracedInitList& list, RValue& result);
 	bool vector_scalar_form(const sema::Type* vector, lowir::VectorOp& from);
 	RValue spread_vector(const sema::Type* vector, lowir::VectorOp from, const RValue& scalar);
 	bool whole_vectors(const sema::Type* vector, const RValue& left, bool left_vector, const RValue& right,
@@ -1416,6 +1424,9 @@ private:
 	RValue unpack_vector(const syntax::CallExpr& expr);
 	RValue shift_vector_lanes(const syntax::CallExpr& expr);
 	RValue shuffle_vector(const syntax::CallExpr& expr);
+	RValue binary_immediate_vector(const syntax::CallExpr& expr);
+	RValue deferred_vector(lowir::VectorOp operation, const RValue& first, const RValue& second, const RValue& count);
+	RValue vector_helper_offset(lowir::VectorOp operation, uint32_t lane, const RValue& count, RValue& valid);
 	RValue reinterpret_bytes(const RValue& value, const sema::Type* to);
 	RValue bit_cast(const syntax::BuiltinTraitExpr& expr);
 	// A builtin's value: __builtin_va_arg's argument, a complex part, a
@@ -1506,6 +1517,7 @@ private:
 	// never needed; a call of it calls the function with its operator's
 	// effect through that function's address.
 	lowir::Value function_address(const sema::FunctionEntity* function, uint32_t location);
+	void closure_capture(const sema::Capture& capture, const Place& member, uint32_t location);
 	void closure_object(const syntax::LambdaExpr& lambda, lowir::Value object, uint32_t location);
 	void closure_member_region();
 	void copy_captured_elements(const sema::Type* type, const sema::FunctionEntity* constructor,
@@ -1857,6 +1869,9 @@ private:
 	bool closure_this_ = false;
 	uint64_t closure_this_offset_ = 0;
 	const sema::ClassEntity* closure_this_class_ = nullptr;
+	// The object whose default member initializer is being evaluated.
+	const sema::ClassEntity* initializer_class_ = nullptr;
+	lowir::Value initializer_object_;
 	// An indirect class result's destination (`%ret`), else none, and the
 	// local every return statement returns, constructed there (or null).
 	lowir::Value result_destination_;

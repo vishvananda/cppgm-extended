@@ -775,6 +775,8 @@ void FunctionSelector::resolve_aliases()
 			r = 1;
 			break;
 		case Opcode::Unary:
+			if (static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::CountOnes)
+				r = width == 64 ? 7 : 6;
 			// A bit scan's index: below 64.
 			if (static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::CountTrailingZeros ||
 				static_cast<lowir::UnaryOp>(inst.sub) == lowir::UnaryOp::CountLeadingZeros)

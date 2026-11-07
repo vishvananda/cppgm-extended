@@ -9,8 +9,9 @@
 namespace sema {
 
 // 8.5.1p1: no user-provided constructors, no private or protected
-// non-static data members, no brace-or-equal-initializers, no base classes
-// and no virtual functions.
+// non-static data members, no base classes and no virtual functions.
+// The analyzer's flag also excludes brace-or-equal-initializers in C++11;
+// C++14 permits them (N3653).
 inline bool IsAggregateClass(const ClassEntity* entity)
 {
 	return !entity->not_aggregate && entity->bases == nullptr && !entity->polymorphic;
@@ -104,7 +105,14 @@ inline bool PartList(const Type* type, const syntax::BracedInitList& list)
 // complex value's two parts (see PartList).
 inline bool LaneList(const Type* type, const syntax::BracedInitList& list)
 {
-	return !type->is_reference() && (type->unqualified->kind == TypeKind::Vector || PartList(type, list));
+	if (type->is_reference())
+		return false;
+	if (type->unqualified->kind != TypeKind::Vector)
+		return PartList(type, list);
+	// One value of the vector's own type initializes the whole vector,
+	// rather than its first lane. Its typed facts survive every lowering.
+	const ExprFacts* element = list.elements.size == 1 ? list.elements[0]->facts : nullptr;
+	return element == nullptr || element->type == nullptr || element->type->unqualified != type->unqualified;
 }
 
 } // namespace sema

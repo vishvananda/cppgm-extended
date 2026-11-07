@@ -1,0 +1,14 @@
+function @copy_fields(%value : v128) -> v128 {
+  block ^entry:
+    return v128 %value
+}
+function @zero_copied_fields() -> v128 {
+  block ^entry:
+    %t1 = vector pzero
+    return v128 %t1
+}
+function @escaped_fields(%value : v128, %dest : ptr) -> void {
+  block ^entry:
+    store v128 %value, %dest
+    return void
+}

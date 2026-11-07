@@ -1202,6 +1202,9 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 			asm_.byte(static_cast<uint8_t>(0xc8 + (a.reg & 7)));
 		}
 		break;
+	case Op::Popcnt:
+		asm_.op(0xf3, register_bytes(inst.type) == 8, 0x0fb8, 2, a.reg, rm(b));
+		break;
 	case Op::Bsf:
 	case Op::Bsr:
 	case Op::Cmov:

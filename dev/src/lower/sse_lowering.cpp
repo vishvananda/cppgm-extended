@@ -144,7 +144,15 @@ bool FunctionLowering::direct_vector_call(LanewiseCall& call, const syntax::Call
 	{
 		uint64_t bits = 0;
 		if (!is_integer_literal(call.values[use.literal_operand], bits))
-			return false;
+		{
+			if (!lowering_.host_objects() || !form.vector_result)
+				return false;
+			RValue count = call.values[use.literal_operand];
+			if (use.op == lowir::VectorOp::Palignr && call.types[0]->bound != 16)
+				count = binary(lowir::BinaryOp::UShr, count.type, count, integer(count.type, 3));
+			result = deferred_vector(use.op, call.values[0], call.values[1], count);
+			return true;
+		}
 		// GCC's palignr count is in bits, on 64-bit lanes.
 		const uint64_t count = use.op == lowir::VectorOp::Palignr && call.types[0]->bound != 16 ? bits >> 3 : bits;
 		if (count > 255)

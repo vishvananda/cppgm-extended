@@ -650,6 +650,10 @@ void inline_source_required(Program& program)
 			remove_dead_code(context);
 			strip_dead_regions(context);
 		}
+		// Fold template-dependent constant conditions before required
+		// substitution classifies recursion. Ordinary O0 bodies stay as lowered.
+		if ((program.symbols[symbol].metadata.flags & SF_FORCE_INLINE) != 0)
+			propagate_constants(context);
 		// Inlining turns a return after a noreturn call into a spurious
 		// continuation edge. Remove it before EH stacks meet at that join.
 		cleanup_cfg(context);

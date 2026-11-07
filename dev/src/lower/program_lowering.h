@@ -443,6 +443,10 @@ public:
 	bool darwin_host_objects() const { return host_objects_ && macho_objects_; }
 	// -fno-strict-aliasing: no access states its type.
 	void set_strict_aliasing(bool on) { strict_aliasing_ = on; }
+	// Explicit whole-unit ISA selection (-mpopcnt), independent of the
+	// host compiler's predefined macros and of the optimization level.
+	void set_popcnt(bool on) { popcnt_ = on; }
+	bool popcnt() const { return popcnt_; }
 	bool states_type(lowir::TypeKind kind) const
 	{
 		return strict_aliasing_ && (may_alias_kinds_ >> static_cast<unsigned>(kind) & 1) == 0;
@@ -738,6 +742,7 @@ public:
 	lowir::SymbolId soft_float_helper(SoftFloatHelper which);
 	lowir::SymbolId atomic_runtime_function(sema::Intrinsic kind);
 	lowir::SymbolId cpu_query_function();
+	lowir::SymbolId xstate_query_function();
 	// Object mode: the psABI classes of a binary16 or binary128 value (an
 	// SSE eightbyte; binary128's SSEUP upper half shares its register).
 	uint8_t soft_float_classes(SoftFloat kind) const;
@@ -1148,6 +1153,7 @@ private:
 	void mark_source_inline(const sema::FunctionEntity* function, lowir::SymbolId symbol);
 	void finish_source_inlining();
 	lowir::SymbolId source_immediate_guard();
+	lowir::SymbolId source_vector_function(lowir::VectorOp operation);
 	// Special-member families (lower/definition_order.cpp): a definition's
 	// memberships (`base_object`: its base entry's object name if known),
 	// the identities they share, and the families' order among the
@@ -1999,6 +2005,7 @@ private:
 	bool macho_objects_ = false;
 	bool optimizing_ = false;
 	bool strict_aliasing_ = true;
+	bool popcnt_ = false;
 	uint64_t may_alias_kinds_ = 0; // bit per TypeKind: a may_alias typedef of the unit names it
 	std::uintptr_t stack_base_;
 	std::uintptr_t stack_budget_;

@@ -385,7 +385,6 @@ RValue FunctionLowering::shift_vector_bytes(const syntax::CallExpr& expr, sema::
 		return vector_instruction(left ? lowir::VectorOp::Pslldq : lowir::VectorOp::Psrldq, &operand_value, nullptr,
 			nullptr, static_cast<int32_t>(bytes));
 	}
-	const lowir::Value source = vector_storage(operand_value);
 	RValue count;
 	if (runtime)
 	{
@@ -395,6 +394,10 @@ RValue FunctionLowering::shift_vector_bytes(const syntax::CallExpr& expr, sema::
 	}
 	else
 		discard(*expr.arguments[1]);
+	if (runtime && operand_value.type.is_vector() && lowering_.host_objects())
+		return deferred_vector(left ? lowir::VectorOp::Pslldq : lowir::VectorOp::Psrldq, operand_value, operand_value,
+			convert_op(lowir::ConvertOp::Trunc, lowir::Type::scalar(lowir::TypeKind::I32), count));
+	const lowir::Value source = vector_storage(operand_value);
 	lowir::SlotId slot = lowir::kNoId;
 	const lowir::Value out = zeroed_vector(vector, slot);
 	for (uint64_t i = 0; i < 16; ++i)
@@ -593,12 +596,13 @@ RValue FunctionLowering::pack_vector(const syntax::CallExpr& expr)
 	if (a_value.type.is_vector())
 		return vector_instruction(variant == 0 ? lowir::VectorOp::Packuswb
 				: variant == 1                 ? lowir::VectorOp::Packsswb
-											   : lowir::VectorOp::Packssdw,
+				: variant == 2                 ? lowir::VectorOp::Packssdw
+											   : lowir::VectorOp::Packusdw,
 			&a_value, &b_value);
 	const lowir::Value a = vector_storage(a_value);
 	const lowir::Value b = vector_storage(b_value);
-	const int64_t minimum = variant == 0 ? 0 : variant == 1 ? -128 : -32768;
-	const int64_t maximum = variant == 0 ? 255 : variant == 1 ? 127 : 32767;
+	const int64_t minimum = variant == 0 || variant == 3 ? 0 : variant == 1 ? -128 : -32768;
+	const int64_t maximum = variant == 0 ? 255 : variant == 1 ? 127 : variant == 2 ? 32767 : 65535;
 	const lowir::Type lane = lowering_.storage_type(input->element);
 	const lowir::Type narrowed = lowering_.storage_type(result->element);
 	lowir::SlotId slot = lowir::kNoId;
@@ -823,17 +827,15 @@ RValue FunctionLowering::shuffle_vector(const syntax::CallExpr& expr)
 	const RValue second_value = paired ? operand(*expr.arguments[1], ConversionContext::Argument) : first_value;
 	const syntax::Expr& selector = *expr.arguments[paired ? 2 : 1];
 	const bool runtime = (expr.facts->value >> 16 & 1) != 0;
+	const lowir::VectorOp op = paired ? (doubles ? lowir::VectorOp::Shufpd : lowir::VectorOp::Shufps)
+		: words                       ? (start != 0 ? lowir::VectorOp::Pshufhw : lowir::VectorOp::Pshuflw)
+									  : lowir::VectorOp::Pshufd;
 	if (!runtime && first_value.type.is_vector())
 	{
 		discard(selector);
-		const lowir::VectorOp op = paired ? (doubles ? lowir::VectorOp::Shufpd : lowir::VectorOp::Shufps)
-			: words                       ? (start != 0 ? lowir::VectorOp::Pshufhw : lowir::VectorOp::Pshuflw)
-										  : lowir::VectorOp::Pshufd;
 		return vector_instruction(op, &first_value, paired ? &second_value : nullptr, nullptr,
 			static_cast<int32_t>(expr.facts->value >> 8 & 0xff));
 	}
-	const lowir::Value first = vector_storage(first_value);
-	const lowir::Value second = paired ? vector_storage(second_value) : first;
 	const lowir::Type i64 = lowir::Type::scalar(lowir::TypeKind::I64);
 	RValue count;
 	if (runtime)
@@ -845,6 +847,11 @@ RValue FunctionLowering::shuffle_vector(const syntax::CallExpr& expr)
 	}
 	else
 		discard(selector);
+	if (runtime && first_value.type.is_vector() && lowering_.host_objects())
+		return deferred_vector(op, first_value, second_value,
+			convert_op(lowir::ConvertOp::Trunc, lowir::Type::scalar(lowir::TypeKind::I32), count));
+	const lowir::Value first = vector_storage(first_value);
+	const lowir::Value second = paired ? vector_storage(second_value) : first;
 	const uint64_t immediate = expr.facts->value >> 8 & 0xff;
 	lowir::SlotId slot = lowir::kNoId;
 	const lowir::Value out = zeroed_vector(vector, slot);
@@ -1247,6 +1254,8 @@ bool FunctionLowering::direct_vector_shift(
 bool FunctionLowering::direct_vector_list(const sema::Type* vector, const syntax::BracedInitList& list, RValue& result)
 {
 	using lowir::VectorOp;
+	if (direct_small_vector_list(vector, list, result))
+		return true;
 	const sema::Type* lane = vector->unqualified->element;
 	VectorOp from = VectorOp::Pzero;
 	if (list.elements.size != vector->unqualified->bound || !vector_scalar_form(vector, from))

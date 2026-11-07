@@ -204,6 +204,11 @@ void FunctionLowering::asm_instruction(const sema::AsmInstruction& instruction, 
 		asm_cpu_query(instruction, state);
 		return;
 	}
+	if (instruction.operation == sema::AsmOperation::XGetBv)
+	{
+		asm_xstate_query(instruction, state);
+		return;
+	}
 	if (instruction.operation >= sema::AsmOperation::SetCarry &&
 		instruction.operation <= sema::AsmOperation::SetNotZero)
 	{

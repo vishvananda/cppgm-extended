@@ -1,0 +1,1 @@
+declare function @query(%index : i32) -> i64 [unwind=no, role=xstate_query]

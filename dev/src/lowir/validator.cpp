@@ -15,14 +15,16 @@ bool cpu_query_declaration(const Program& program, const Symbol& symbol)
 {
 	if (symbol.kind != SymbolKind::FunctionDeclaration || symbol.metadata.tls_for != kNoId)
 		return false;
+	const bool xstate = symbol.metadata.role == ir_model::SR_XSTATE_QUERY;
+	const uint32_t count = xstate ? 1 : 3;
 	const Signature& signature = program.signatures[program.functions[symbol.detail].signature];
-	if (signature.result.kind() != TypeKind::Void || signature.parameter_count != 3 ||
+	if (signature.result.kind() != (xstate ? TypeKind::I64 : TypeKind::Void) || signature.parameter_count != count ||
 		signature.boundary.arity != ir_model::CAM_FIXED || signature.boundary.effects != ir_model::CFXM_DEFAULT ||
 		signature.boundary.returns != ir_model::CRM_DEFAULT || signature.boundary.result_classes != 0)
 		return false;
 	const Parameter* parameters = program.parameters_of(signature);
-	for (uint32_t i = 0; i < 3; ++i)
-		if (parameters[i].type.kind() != (i == 2 ? TypeKind::Ptr : TypeKind::I32) ||
+	for (uint32_t i = 0; i < count; ++i)
+		if (parameters[i].type.kind() != (!xstate && i == 2 ? TypeKind::Ptr : TypeKind::I32) ||
 			parameters[i].pass != ir_model::PPM_DIRECT || parameters[i].classes != 0 || parameters[i].object_bytes != 0)
 			return false;
 	return true;
@@ -372,6 +374,8 @@ bool Validator::check_symbols()
 				return fail("entry role requires a function definition", symbol.name);
 			if (metadata.role == ir_model::SR_CPU_QUERY && !cpu_query_declaration(program_, symbol))
 				return fail("cpu_query role requires an effectful void (i32, i32, ptr) declaration", symbol.name);
+			if (metadata.role == ir_model::SR_XSTATE_QUERY && !cpu_query_declaration(program_, symbol))
+				return fail("xstate_query role requires an effectful i64 (i32) declaration", symbol.name);
 		}
 		if (function && (metadata.storage != ir_model::GSM_DEFAULT || metadata.section != 0))
 			return fail("storage metadata on non-global", symbol.name);
@@ -791,6 +795,8 @@ bool Validator::check_instruction(InstId id, const Instruction& inst, BlockId bl
 				static_cast<UnaryOp>(inst.sub) == UnaryOp::CountLeadingZeros) &&
 			!is_bit_scan_type(inst.type))
 			return fail("invalid ctz/clz type");
+		if (static_cast<UnaryOp>(inst.sub) == UnaryOp::CountOnes && !is_bit_scan_type(inst.type))
+			return fail("invalid popcount type");
 		if (static_cast<UnaryOp>(inst.sub) == UnaryOp::Sqrt && inst.type.kind() != TypeKind::F32 &&
 			inst.type.kind() != TypeKind::F64)
 			return fail("invalid sqrt type");

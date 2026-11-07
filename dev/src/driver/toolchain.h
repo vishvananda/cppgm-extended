@@ -24,6 +24,7 @@
 // -stdlib=<the build's selection>, -f(no-)exceptions and -f(no-)rtti (the
 // hosted predefined macros and feature probes), -fPIC/-fpic (host objects),
 // -fno-PIC/-fno-pic (direct access to defined data), --stats,
+// -mpopcnt/-mno-popcnt (explicit population-count ISA and __POPCNT__),
 // -Wno-narrowing (suppress list-narrowing diagnostics outside SFINAE;
 // -Wnarrowing/-Werror=narrowing restore them); -O*, -g*, other -W*,
 // other -f* and -m*, -pedantic(-errors), -w, -pipe and dependency-file

@@ -54,6 +54,15 @@ the same source-file ordering and `-o` relaxations as the earlier source-to-LowI
 milestones. Preserve PA7's dump mode. Native driver behavior and optimized
 LowIR output are not required in PA17.
 
+### Member templates of explicit class specializations
+
+An explicitly specialized class has its own member-template declarations.
+An out-of-class definition such as `template<class U> R<U> R<int>::get() const`
+must match the declaration in `R<int>`. Its concrete class qualifier consumes
+no template parameter list; `U` belongs to the member template. Keep a return
+type such as `R<U>` distinct from the enclosing `R<int>`, and reject a
+definition whose signature differs from the declared member.
+
 ### Inherited member types in template arguments
 
 A concrete specialization can inherit a member type through a base selected by

@@ -1458,8 +1458,14 @@ ClassEntity* Analyzer::qualifying_template(const syntax::Decl& decl, Scope* scop
 			// template parameter names a class template specialization, whose
 			// explicitly specialized member class template the declaration's
 			// template-head belongs to (14.7.3p5, p16).
-			if (ClassEntity* specialization = explicit_specialization_ ? named_specialization(cls, component, scope)
-																	   : nullptr)
+			// A concrete enclosing specialization consumes no template-head,
+			// including a member template of an explicitly specialized class.
+			// An enclosing declaration can still have unparsed inner heads;
+			// defer those qualifiers until their parameters are available.
+			const bool complete_heads = decl.kind != syntax::DeclKind::Template;
+			if (ClassEntity* specialization = (explicit_specialization_ || complete_heads)
+					? named_specialization(cls, component, scope)
+					: nullptr)
 				cls = specialization;
 			else
 			{
@@ -1578,7 +1584,7 @@ bool Analyzer::dependent_type(const Type* type) const
 			break;
 		}
 		if (type->kind == TypeKind::Pointer || type->kind == TypeKind::LValueReference ||
-			type->kind == TypeKind::RValueReference || type->kind == TypeKind::Array)
+			type->kind == TypeKind::RValueReference || type->kind == TypeKind::Array || type->kind == TypeKind::Vector)
 		{
 			type = type->element;
 			continue;
@@ -1858,7 +1864,7 @@ const Type* Analyzer::substitute_vector_size(const Type* vector, const Substitut
 	for (uint32_t i = 0; i < substitution.count; ++i)
 	{
 		if (substitution.arguments[i] == nullptr || dependent_type(substitution.arguments[i]))
-			return types_.vector(lane, 0, vector->owner, vector->variadic);
+			return types_.vector(lane, 0, vector->owner, vector->variadic, vector->extended_vector());
 	}
 	const TemplateParameterEntity* placeholder = static_cast<const TemplateParameterEntity*>(vector->owner->entity);
 	Scope* scope = substituted_scope(placeholder->expression_scope, substitution, placeholder);

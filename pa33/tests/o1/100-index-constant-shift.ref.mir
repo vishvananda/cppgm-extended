@@ -179,8 +179,8 @@ function @wide_element
 
   block ^entry
     add rsi, 1
-    imul rsi, 12
-    add rsi, rdi
+    lea rsi, [rsi+rsi*2]
+    lea rsi, [rdi+rsi*4]
     sub rsi, rdi
     ret rsi
 

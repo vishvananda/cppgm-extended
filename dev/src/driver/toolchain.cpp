@@ -292,6 +292,8 @@ Invocation parse(const std::vector<std::string>& args, const PreprocessorOptions
 			invocation.preprocessor.modes.exceptions = arg == "-fexceptions";
 		else if (arg == "-fno-strict-aliasing" || arg == "-fstrict-aliasing")
 			invocation.strict_aliasing = arg == "-fstrict-aliasing";
+		else if (arg == "-mpopcnt" || arg == "-mno-popcnt")
+			invocation.preprocessor.popcnt = arg == "-mpopcnt";
 		else if (arg == "-fno-rtti" || arg == "-frtti")
 			invocation.preprocessor.modes.rtti = arg == "-frtti";
 		else if (arg == "-funsigned-char" || arg == "-fno-signed-char" || arg == "-fsigned-char" ||
@@ -499,6 +501,7 @@ bool compile_unit(
 	lowering.set_macho_objects(invocation.target == native::Target::MacOS);
 	lowering.set_optimizing(true);
 	lowering.set_strict_aliasing(invocation.strict_aliasing);
+	lowering.set_popcnt(invocation.preprocessor.popcnt);
 	double front_ms = 0;
 	UnitWork work;
 	try

@@ -77,6 +77,7 @@ bool frameless_inst(const Inst& inst)
 	case Op::Jmp:
 	case Op::Bsf:
 	case Op::Bsr:
+	case Op::Popcnt:
 	case Op::Bswap:
 		break;
 	// Direct bulk forms (xmm15 and r10/r11 chunks; bulk_policy.h), save a

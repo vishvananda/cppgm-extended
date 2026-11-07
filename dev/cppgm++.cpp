@@ -200,6 +200,7 @@ struct SourceOutputInvocation
 	// run_emit_lowir_mode). `-I`, `-D` and `-U` as the driver takes them.
 	bool hosted = false;
 	bool plain_char_unsigned = false;
+	bool popcnt = false;
 	bool strict_aliasing = true;
 	vector<string> include_paths;
 	string command_line;
@@ -292,6 +293,11 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 		if (args[i] == "-fno-strict-aliasing" || args[i] == "-fstrict-aliasing")
 		{
 			invocation.strict_aliasing = args[i] == "-fstrict-aliasing";
+			continue;
+		}
+		if (args[i] == "-mpopcnt" || args[i] == "-mno-popcnt")
+		{
+			invocation.popcnt = args[i] == "-mpopcnt";
 			continue;
 		}
 		if (args[i] == "-funsigned-char" || args[i] == "-fno-signed-char" || args[i] == "-fsigned-char" ||
@@ -595,6 +601,7 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 	if (!invocation.standard.empty())
 		driver::language_standard(invocation.standard, options);
 	options.plain_char_unsigned = invocation.plain_char_unsigned;
+	options.popcnt = invocation.popcnt;
 	if (invocation.hosted)
 		driver::add_host_environment(options, invocation.target != native::host_target());
 	driver::configure_target_environment(options, invocation.target);
@@ -956,6 +963,7 @@ int run_emit_lowir_mode(vector<string> args)
 	lowering.set_macho_objects(invocation.target == native::Target::MacOS);
 	lowering.set_optimizing(object_half || invocation.optimizer.level >= 2);
 	lowering.set_strict_aliasing(invocation.strict_aliasing);
+	lowering.set_popcnt(options.popcnt);
 	// The LowIR view carries the source's debug locations when debug
 	// information is asked for, including the object roundtrip's view.
 	lowering.set_debug_locations(invocation.debug_info);

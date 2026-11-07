@@ -209,13 +209,14 @@ void Analyzer::declare_implicit_copy_members(ClassEntity* entity)
 	const bool destructor = entity->destructor != nullptr && !entity->destructor->implicit;
 	const bool moves = move_constructor || move_assignment;
 	// A closure type has a deleted copy assignment operator (5.1.2p19),
-	// declared: no move member is (the copy constructor copies).
+	// declared. In C++14 and later it can still have a move constructor.
 	const bool closure = graph_.closure_call(entity) != nullptr;
-	const bool none = !copy_constructor && !move_constructor && !copy_assignment && !move_assignment && !destructor &&
-		!closure;
+	const bool undeclared = !copy_constructor && !move_constructor && !copy_assignment && !move_assignment &&
+		!destructor;
+	const bool none = undeclared && !closure;
 	if (!copy_constructor)
 		entity->copy_constructor = implicit_copy_member(entity, CopyKind::CopyConstructor, moves);
-	if (none)
+	if (undeclared && (!closure || cxx14_))
 		entity->move_constructor = implicit_copy_member(entity, CopyKind::MoveConstructor, false);
 	if (!copy_assignment)
 		entity->copy_assignment = implicit_copy_member(entity, CopyKind::CopyAssignment, moves || closure);

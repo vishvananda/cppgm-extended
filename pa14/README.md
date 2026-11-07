@@ -15,6 +15,12 @@ polymorphic compiler. It extends PA13 with:
 - template-backed operator overloads where the non-template PA7-PA13 machinery
   already exists
 
+A nondependent range in a template body is checked using the range-for
+variable's type and category. The hidden range variable is an lvalue even
+when its initializer returns a temporary; lookup and overload resolution for
+`begin` and `end` must use that category. Evaluate the range initializer once
+when the instantiated loop runs.
+
 ### Prerequisites
 
 You should complete Programming Assignment 13 before starting this assignment.

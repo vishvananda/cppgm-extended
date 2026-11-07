@@ -47,6 +47,8 @@ std::string PredefinedText(const PreprocessorOptions& options)
 	text += "\n";
 	if (options.plain_char_unsigned)
 		text += "#define __CHAR_UNSIGNED__ 1\n";
+	if (options.popcnt)
+		text += "#define __POPCNT__ 1\n";
 	return text;
 }
 

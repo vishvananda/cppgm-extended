@@ -33,8 +33,7 @@ function @eh_loop
   block ^for_body_2
     mov rdi, <gpr0>
     call @work [args=(rdi)]
-    shl rax, 1
-    add rax, <gpr0>
+    lea rax, [<gpr0>+rax*2]
     add <gpr1>, rax
     add [<gpr2>], 1
     add <gpr0>, 1

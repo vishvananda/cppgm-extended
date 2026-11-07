@@ -113,7 +113,8 @@ struct Type
 	// Top-level cv-qualifiers; never on arrays (qualifying an array
 	// qualifies its elements, 8.3.4p1), references or functions.
 	uint8_t cv;
-	// Function: a member function's cv-qualifier-seq.
+	// Function: a member function's cv-qualifier-seq. Vector: 1 for
+	// Clang's ext_vector_type (whose scalar casts broadcast), else 0.
 	uint8_t function_cv;
 	RefQualifier ref;
 	// Function: the parameter list ends with `...`.
@@ -150,6 +151,7 @@ struct Type
 	const Type* const* params;
 
 	bool is(TypeKind k) const { return kind == k; }
+	bool extended_vector() const { return kind == TypeKind::Vector && function_cv != 0; }
 	bool is_reference() const { return kind == TypeKind::LValueReference || kind == TypeKind::RValueReference; }
 	bool is_nothrow_function() const
 	{

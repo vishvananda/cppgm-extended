@@ -81,6 +81,9 @@ ship to students without adding assignment requirements.
 required suites; the student export runs both reference targets. Optional
 fixtures retain numbering, discovery and hygiene checks.
 
+PA29's optional x86 target-feature checks run with `make test-target-features`
+(or `-nobuild`). They require POPCNT and are excluded from cumulative reports.
+
 ## Boost advisory CI
 
 The independent **Boost advisory** workflow runs on every push, with a

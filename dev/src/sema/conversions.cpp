@@ -349,6 +349,12 @@ bool ConversionRules::standard(const Operand& from, const Type* target, bool dir
 		out.result = goal;
 		return true;
 	}
+	if (source->kind == TypeKind::Vector && goal->kind == TypeKind::Vector && source->owner == nullptr &&
+		goal->owner == nullptr && source->bound == goal->bound && source->element == goal->element)
+	{
+		out.result = goal;
+		return true;
+	}
 	return value_conversion(source, from.flags, goal, direct, out);
 }
 

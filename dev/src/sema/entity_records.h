@@ -185,9 +185,9 @@ struct ClassEntity : Entity
 	// It has a virtual table pointer (Itanium 2.4's dynamic class): it is
 	// polymorphic or has a virtual base; known once complete.
 	bool dynamic;
-	// An anonymous class some member of which has a brace-or-equal-
-	// initializer (directly or as an anonymous member's): its member
-	// object is a variant member with one (9.5p8); known once complete.
+	// Some member has a brace-or-equal-initializer (directly, or for an
+	// anonymous class through an anonymous member). In an anonymous
+	// class this also identifies a variant member with one (9.5p8).
 	bool members_initialized;
 	// This definition has a dependent base in its hierarchy, including a
 	// local class in a function template. Set while analyzing its bases.
@@ -381,6 +381,8 @@ struct VariableEntity : Entity
 	bool predefined_name : 1;
 	// A structured binding (a BindingEntity, sema/binding_records.h).
 	bool structured_binding : 1;
+	// C++14's variable introduced by an initialized lambda capture.
+	bool init_capture : 1;
 	// The alignment a member's alignment-specifiers request (7.6.2).
 	uint32_t alignment_request;
 	Constant value;

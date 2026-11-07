@@ -45,6 +45,7 @@ struct PreprocessorOptions
 	// The target's plain-char representation (-funsigned-char); distinct
 	// from the explicitly signed and unsigned character types.
 	bool plain_char_unsigned = false;
+	bool popcnt = false; // explicit -mpopcnt target capability
 	std::vector<std::string> system_include_paths;
 	std::string host_predefines;
 	// The builtin declarations a hosted translation unit is compiled with

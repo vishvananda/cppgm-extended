@@ -82,6 +82,9 @@ enum class GnuBuiltin : uint8_t
 	VectorShiftLanes,
 	// SSE immediate lane shuffles: 0 pshufd, 1 shufpd, 2 pshuflw, 3 pshufhw, 4 shufps.
 	VectorShuffle,
+	// Two integer vectors and an immediate: PCLMULQDQ (128 bits),
+	// or selection of two 128-bit halves from 256-bit inputs.
+	VectorBinaryImmediate,
 	// The SSE family computed lane by lane: the variant is a
 	// VectorLanewiseOp, the signature the shapes (see below), and `floating`
 	// is 's' for a scalar form, which leaves the first operand's other lanes.

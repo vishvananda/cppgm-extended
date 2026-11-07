@@ -272,13 +272,14 @@ const Type* TypeTable::array(const Type* element, uint64_t bound, const Type* de
 	return intern(key);
 }
 
-const Type* TypeTable::vector(const Type* lane, uint64_t lanes, const Type* dependent_size, bool bytes)
+const Type* TypeTable::vector(const Type* lane, uint64_t lanes, const Type* dependent_size, bool bytes, bool extended)
 {
 	Type key = Key(TypeKind::Vector);
 	key.element = lane;
 	key.bound = lanes;
 	key.owner = dependent_size;
 	key.variadic = dependent_size != nullptr && bytes;
+	key.function_cv = extended ? 1 : 0;
 	return intern(key);
 }
 
