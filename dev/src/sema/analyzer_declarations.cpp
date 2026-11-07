@@ -1209,6 +1209,11 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	if (type->unqualified == types_.fundamental(FundamentalType::Void))
 		error(location, "variable of type void");
 	const bool member = where->kind == ScopeKind::Class && !specifiers.is_static;
+	// A class variable template is a static data member template, not a
+	// non-static field. An enclosing class template's ordinary fields do
+	// not introduce their own template-head.
+	if (member && !qualified && template_scope_ != nullptr && scope == template_scope_)
+		error(location, "a non-static data member cannot be a template");
 	// A declaration directly in a linkage-specification is extern (7.5p7).
 	const bool is_extern = specifiers.is_extern || (linkage_extern_ && where->kind == ScopeKind::Namespace);
 	if (specifiers.is_constinit &&
