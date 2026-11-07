@@ -3641,12 +3641,12 @@
       "llvm-project/clang/test/CXX/dcl.dcl/dcl.enum/p1.cpp"
     ],
     "symptom": "The compiler silently accepts qualified opaque-enum declarations in ISO/GNU C++11.",
-    "root_cause": "Whole-TU required diagnostic confirmed; isolated reduction and typed parser/semantic root cause still pending.",
+    "root_cause": "Qualified non-template opaque enum declarations were not rejected;typed parser/semantic repair has passed full functional/export checks. Distinct explicit-specialization targets are tracked as038.",
     "expected": "Emit a normal required diagnostic while retaining valid neighboring declarations; diagnostic prose/count/recovery is outside scope.",
     "owning_pa": null,
     "ownership_note": "Determine the earliest owning PA from the faithful reduction and read that handout before changing behavior.",
     "regressions": [],
-    "fix_revision": null,
+    "fix_revision": "50a0f7a6a4f7fc0f0f3d043b9ffc65d536f21597",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/clang-language-campaign-d1c5c14c9-v3",
     "checks": {
       "execution": "results.json:two source-pinned ISO/GNU11 variants; native host rejects normally, candidate emits a valid object without a diagnostic.",
@@ -3654,7 +3654,7 @@
       "adjudication": "reports/cxx11-clang-language-adjudications.json; sourceSHA256 bf7b98ebb7168d6fbe7e145bc86b88b2b0c4717531378b7767ae3fd2d55d39f7"
     },
     "performance": {
-      "status": "not-started-no-compiler-change"
+      "status": "pending-actual-parent-measurement"
     },
     "standards_basis": {
       "category": "original-cxx11",
@@ -4325,7 +4325,9 @@
       "AST_controls": 25,
       "runtime_controls": 25,
       "strict_tests_passed": 8249,
-      "normal_export_status": "Full normal/export checks running; no finalacceptance yet. Original failed candidate semanticfinalcase retained andsplit as044."
+      "normal_export_status": "All14normal/53export stages pass;8249strict,21modern,50packaged controls,42wrappers. Rootindependent receipt verifiesfrozen source/binaries/logs/package. Performance/integrationpending.",
+      "normal_export_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-043/checks-v1/functional-verification-v4.json",
+      "normal_export_independent_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-043/checks-v1/root-revalidation-v1.json"
     },
     "standards_basis": {
       "historical_draft": "/mnt/vizier/cppgm-clang-enum-specialization-target/doc/n3485.txt",
@@ -4340,12 +4342,12 @@
     "performance": {
       "status": "pending-actual-parent-measurement"
     },
-    "triage_note": "Parameter-only typed trailing-type context and actual definition/category facts repair elaborated-return parsing;canonicalsharedgrammar synchronized.50required AST/runtime fixtures. Separatepreexisting missingvirt-specifier diagnosis044 isopen. Performance/integration pending."
+    "triage_note": "Parameter-only typed trailing-type context and actual definition/category facts repair elaborated-return parsing;canonicalsharedgrammar synchronized.50required AST/runtime fixtures andfullnormal/export checks pass. Separate preexisting missingvirt-specifier diagnosis044 now has focused-passing repair. Performance/integration pending."
   },
   {
     "id": "CXX11-044",
     "priority": "P1",
-    "status": "triaged",
+    "status": "repair-in-validation",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-043",
     "symptom": "Instantiated free function templates with final/override can be silently accepted; elaborated-return parser failure previouslymasked oneform.",
@@ -4353,7 +4355,7 @@
     "owning_pa": 14,
     "ownership_note": "PA14 generic-template control;also adjudicate corresponding non-template forms inPA13 virtual-function lane during repair",
     "regressions": [],
-    "fix_revision": null,
+    "fix_revision": "2482e9b1ab71c350f61ed55372f41bf7f2132b92",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-044",
     "checks": {
       "initial_adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-044/initial-adjudication-v1.json",
@@ -4363,20 +4365,82 @@
       "earlier_parent_silent_accepts": 4,
       "earlier_parser_masked": 2,
       "native_normal_diagnoses": 18,
-      "prior_failed043gates_retained": true
+      "prior_failed043gates_retained": true,
+      "focused_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-044/repair-v1/focused-verification-v1.json",
+      "required_controls": 33,
+      "candidate_language_cells": 396,
+      "required_exact_parent_objects": 144,
+      "performance_exact_input_pairs": 9,
+      "normal_export_status": "Fullnormal checkpointfailedplacementfor2dependentqualified-memberfixturesinPA14:100;retainoriginalevidenceandmovefixtures toPA14:300 beforefull/export acceptance."
     },
     "standards_basis": {
       "file": "/mnt/vizier/cppgm-clang-elaborated-return-types/doc/n3485.txt",
       "sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
       "clauses": [
         "9.2p8 virt-specifier-seq only in virtual member function declaration",
-        "8.4.1p1 virt-specifiers in function definition only if member-declaration"
+        "8.4.1p1 virt-specifiers in function definition only if member-declaration",
+        "7.1.2p5 virtualspecifier restrictions",
+        "14.5.2p3 member function templates shall not be virtual"
       ],
       "basis": "All core probes call/instantiate their free function template,avoiding unused-template IFNDR. Syntax acceptance is an earlier PA5 obligation; semantic rejection is later."
     },
     "performance": {
-      "status": "not-started"
+      "status": "pending-actual-parent-measurement"
     },
-    "triage_note": "Preexistingsemanticgap confirmed onplain-final/override old038parent;allmandatory negatives explicitlyinstantiate/usefunctiontemplate. Requiredfixture/fix follows043functional/exportcheckpoint; no blankettemplate-depth virtualban."
+    "triage_note": "Typed FunctionDeclaratorInfo virt_suffix/specifier flags and existing templated/class/qualified/friend context enforce modifier eligibility in declare_function. Ordinary virtual class-template members/dependent overrides remainvalid. Focusedpass;fullnormal/export andperformance/integrationpending."
+  },
+  {
+    "id": "CXX11-045",
+    "kind": "harness-placement",
+    "compiler_language_gap": false,
+    "priority": "P1",
+    "status": "closed",
+    "upstream": [],
+    "symptom": "Placement auditor incorrectly classifies elaborated class-template-id function return types as partial class specializations;tailcopies also cause unnecessary work.",
+    "fix_revision": [
+      "b679428fc",
+      "5a535e348"
+    ],
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-045",
+    "checks": {
+      "initial_adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-045/initial-adjudication-v1.json",
+      "campaign_independent_state": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-045/campaign-integration-v2-independent-state.json",
+      "focused_controls": 75,
+      "full_placement_pass": true,
+      "placement_output_byte_identical_to_v1": true,
+      "broader_harness": "Freshfullharness passes39suites/612cases including skips after046fixturecorrection;alloriginalfailuresretained.",
+      "compiler_source_and_binary_unchanged": true,
+      "campaign_integration_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-045/campaign-integration-v3.json"
+    },
+    "performance": {
+      "status": "not-applicable-maintainer-script-only"
+    },
+    "scope": "Excludedfromdistinctcompiler-language gapcount;maintainer auditor/tests areexcludedby studentexport whitelist."
+  },
+  {
+    "id": "CXX11-046",
+    "kind": "harness-fixture",
+    "compiler_language_gap": false,
+    "priority": "P1",
+    "status": "closed",
+    "upstream": [],
+    "symptom": "Synthetic SIGSEGV can timeoutwhile Linux pipedApport handler processes it despiteRLIMIT_CORE0.",
+    "expected": "Preserve realSIGSEGVstatus andfixed3secondtimeoutwithout invokingcoreservice forsyntheticfixture.",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-046",
+    "checks": {
+      "initial_adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-046/initial-adjudication-v1.json",
+      "focused": "test_upstream_dg.py boundary tests pass;17optionalnative skips",
+      "generated_native_fake": "realSIGSEGVnegative11 verified",
+      "full_harness": "All39suites/612casesincludingoptionalnative skips pass;unchanged3secondtimeout/classification;realSIGSEGVnegative11 verified.",
+      "independent_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-046/functional-verification-v1.json"
+    },
+    "implementation": [
+      "scripts/tests/test_upstream_dg.py"
+    ],
+    "performance": {
+      "status": "not-applicable-test-fixture-only"
+    },
+    "scope": "OwnsyntheticLinuxchild disablesdumping withPR_SET_DUMPABLE0 beforeSIGSEGV. Productionproxyandresource/time/classificationlimitsunchanged;excludedcompiler-languagegapcount.",
+    "fix_revision": "4c5d50326"
   }
 ]

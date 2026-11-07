@@ -1,11 +1,15 @@
 Current checkpoint (2026-11-07; supersedes historical status entries below)
 
-Fifteen known individual compiler gaps remain unclosed. Thirteen have
+Fifteen known individual compiler gaps remain unclosed. Fourteen have
 independently validated functional/student-export repairs:008,019/shared030,
-021,031,032,033,034,035,036,038,039,040 and041.043 elaborated-enum
-function-template specialization return-type parser candidate now passes8249strict
-tests,with full normal/export validation running.044missing final/override
-diagnosis on instantiated free function templates remains unfixed. Functional acceptance is
+021,031,032,033,034,035,036,038,039,040,041 and043.043 elaborated-return
+parser repair passes8249strict,14normal and53export stages,50packaged
+controls and42reference wrappers,independently revalidated byroot.044missing
+virtual/final/override diagnosis has a focused-passing repair:33required
+controls,396candidate language cells,144exact parent objects and9exact
+performance-input pairs. Its full normal checkpoint reached a placement failure;
+that failure is retained for ownership review before export acceptance.
+Functional acceptance is
 not performance acceptance or integration. This is not an exhaustive corpus
 inventory or a current GCC/Clang whole-suite pass percentage.
 
@@ -31,7 +35,20 @@ of affected approximate Linux RSS acceptances remain required;3% gate is fixed.
 Historical original optimized-module semantic/ABI oracle is now independently
 qualified for the exact frozen source/header/object hashes; measurements remain
 pending. A new preciseRSSdriver passes14fault/release controls andisprepared
-for a coordinated quiescent release after043/044functional work.
+for a coordinated quiescent release after044functional work. Newcounter tools
+pass18policy/release controls. The six-stage remaining029controller is prepared
+but unreleased:precise per-fix/family RSS,then rebased-original andhistorical-
+original counter/RSS pairs. Completed instruction cohorts are retained.
+
+Maintainer-only placement-audit045 is integrated without compiler changes.
+Its75focused controls andfull placement scan pass,with placement output byte
+identical to the earlier implementation. Broader harness validation initially hit046:
+synthetic SIGSEGV timed out under Linux's pipedApport core handler despite
+RLIMIT_CORE0. Original failure is retained. A fixture-only change disables
+dumping in its own child before the sameSIGSEGV;focused boundary tests and
+generated native fake compiler preserve actual signal11. All39full harness
+suites(612cases including skips)pass with unchanged timeout/classification.
+045/046are now validated andintegrated;neither is a compiler-language gap.
 
 All requested rebases include25f26d178's minor macOS fixture change. Full
 corpus inventory/replay,remaining repairs,actual-parent/cumulative performance,
@@ -41,7 +58,12 @@ of scope at the user's request.
 
 Evidence under /mnt/vizier/cppgm-cxx11-upstream:
   issues/CXX11-041/checks-v1/root-revalidation-v1.json
+  issues/CXX11-043/checks-v1/root-revalidation-v1.json
+  issues/CXX11-044/repair-v1/focused-verification-v1.json
+  issues/CXX11-045/campaign-integration-v3.json
+  issues/CXX11-046/{initial-adjudication-v1.json,functional-verification-v1.json}
   rebases/2026-11-06/functional-window-open-v2.json
+  rebases/2026-11-06/remaining-029-performance-v2/controller-preparation-verification-v1.json
   rebases/2026-11-06/family-memory-investigation-v1/{precision-controls-v3/independent-verification-v1.json,parser-controls-v2.json,batched-allocation-controls-v1/assessment.json}
 
 Historical checkpoints follow with their original revision/scope.
