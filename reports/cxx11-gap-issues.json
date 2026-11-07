@@ -3452,8 +3452,8 @@
       "normal": "checks-v2.json:affectedPA16/25, strict8130/8130, placement and harness pass; fixture-placement-correction-v2.json revalidates six unchanged-binary normal gates from checks-v1.json",
       "source": "candidate-source-verification-v1.json:484 regular tracked source/fixture/reference blobs match c4192b194; exactly one dev module changed",
       "export": "final-stages-v2.json:fresh-export,bundle42wrappers,restore-development pass; exact candidate restored",
-      "immediate_parent_performance": "per-fix-counter-acceptance-v1.json and per-fix-memory-acceptance-v1.json:13 AA+13 AB comparisons independently pass both unchanged gates. Each verifies1040 observations/12800 batched children. Target instructions -1.1498228%; max instruction upper95 1.000031272; AB actual compiler RSS upper95 1.0.",
-      "family_instructions": "family-counters-acceptance-v1.json:12 AA+12 AB reports independently pass,960 measured observations and11520 batched child outputs rehashed,max instruction upper95 1.003457704."
+      "immediate_parent_performance": "per-fix-counter-acceptance-v1.json and per-fix-memory-acceptance-v1.json:13 AA+13 AB comparisons independently pass both unchanged gates. Each verifies1040 observations/12800 batched children. Target instructions -1.1498228%; max instruction upper95 1.000031272; AB actual compiler RSS upper95 1.0. RSS receipt records the approximate Linux highwater method; precise RSS revalidation is mandatory under CXX11-042 before final memory acceptance.",
+      "family_instructions": "Fresh rebased verification: /mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/family-counter-acceptance-v1.json. Historical similarly named receipt under issues/CXX11-029 retains old-base scope."
     },
     "performance": {
       "status": "rebased-actual-parent-and-cumulative-gates-pending",
@@ -3463,9 +3463,12 @@
       "rebased_native_oracles": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/native-oracles-v1/assessment.json",
       "historical_original_blocker": "Historical b7c overload-O2 differs due upstream changes; new upstream and candidate exact. Retain the original comparison as open pending independent semantic/ABI adjudication. No output-gate relaxation or denominator shrink.",
       "rebased_per_fix_instruction": "13AA/13AB reports pass;maxupper95=1.0000305614253144;packedbitfieldratio=0.9885835057755644",
-      "rebased_per_fix_actual_rss": "13AA/13ABpass;child1449702/start52607671 terminal0;independentverificationpending",
-      "outer_controller": "821381/start52528549 heldT beforefamily groups;exec93744",
-      "functional_window": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/functional-window-open-v1.json"
+      "rebased_per_fix_actual_rss": "Original approximate-highwater13AA/13AB pass retained; precision audit requires accurate trace revalidation before final acceptance.",
+      "outer_controller": "821381/start52528549 exited1 on family-memory; session93744 terminal1. Do not resume/restart.",
+      "functional_window": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/functional-window-open-v2.json",
+      "family_actual_rss": "All24 approximate-highwater reports completed; auto-zero-aggregate-o0 fails unchanged3% gate at1.10020242915. Precision investigation CXX11-042, no acceptance or gate waiver.",
+      "measurement_issue": "CXX11-042",
+      "rebased_family_instructions": "Independent fresh verification passes12AA/12AB,960observations,11520batched child objects;maxupper95=1.007708520429205 belowunchanged1%gate."
     },
     "standards_basis": {
       "category": "implementation-performance",
@@ -4121,23 +4124,57 @@
   {
     "id": "CXX11-041",
     "priority": "P2",
-    "status": "triaged",
+    "status": "correctness-passed",
     "upstream": [],
     "discovered_from": "CXX11-036 mode-boundary neighbors",
     "symptom": "C++17 attribute-using-prefix silently accepted under selectedC++11/14 modes,including an empty prefix; native compilers emit the language-extension diagnosis.",
     "root_cause": "Selected language mode reaches semantic analysis only after parse. Typed attribute parser recognizes and discards/normalizes a using-prefix without carrying its minimum language version to validation; an empty prefix makes loss explicit.",
     "owning_pa": 29,
-    "placement_status": "Provisional mode-selected driver/host compatibility lane; verify earliest exact owner before required regression",
-    "regressions": [],
-    "fix_revision": null,
+    "placement_status": "Confirmed PA29 mode-selected driver compile lanes; earliest exposed -std control and cxx-standard sidecars. C++14/17 variants in optional modern-cxx lanes.",
+    "regressions": [
+      "pa29/tests/compile/500-attribute-prefix-mode-known-packed-cxx11-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-known-packed-cxx14-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-gnu-packed.t",
+      "pa29/tests/compile/500-attribute-prefix-mode-empty-list-cxx11-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx14-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-empty-list-cxx17.t",
+      "pa29/tests/compile/500-attribute-prefix-mode-post-name-used-cxx11-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx14-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-post-name-used-cxx17.t",
+      "pa29/tests/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx11-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx14-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-abstract-pointer-empty-cxx17.t",
+      "pa29/tests/compile/500-attribute-prefix-mode-statement-empty-cxx11-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx14-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-statement-empty-cxx17.t",
+      "pa29/tests/compile/500-attribute-prefix-mode-function-type-empty-cxx11-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx14-bad.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-function-type-empty-cxx17.t",
+      "pa29/tests/compile/500-attribute-prefix-mode-bare-using-keyword-cxx11.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-bare-using-keyword-cxx14.t",
+      "pa29/tests/compile/500-attribute-prefix-mode-other-keyword-attributes-cxx11.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-prefix-mode-other-keyword-attributes-cxx14.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-using-prefix.t",
+      "pa29/tests/modern-cxx/compile/500-attribute-grammar-optional-mixed-using-scoped-bad.t"
+    ],
+    "fix_revision": "1f67f1cf505a3450964610f37c1a2853bae94bf2",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-041",
     "checks": {
       "initial_adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-041/initial-adjudication-v1.json",
       "policy_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-036/language-mode-boundary-v1/policy-review-v1.json",
-      "native_cells": 120
+      "native_cells": 120,
+      "functional_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-041/checks-v1/functional-verification-v1.json",
+      "root_revalidation": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-041/checks-v1/root-revalidation-v1.json",
+      "strict_tests": 8211,
+      "normal_stages": 11,
+      "export_stages": 27,
+      "packaged_controls": 24,
+      "wrappers": 42,
+      "focused_cells": 653,
+      "common_exact_object_pairs": 99
     },
     "performance": {
-      "status": "not-started"
+      "status": "pending-actual-parent-measurement"
     },
     "standards_basis": {
       "category": "original-C++11-required-diagnostic",
@@ -4145,6 +4182,30 @@
       "later_language_feature": "P0028R2,C++17 (not a C++11 defect resolution)",
       "positive_neighbor": "C++17 prefix semantics and ordinary keyword attribute-token [[using]] remain accepted"
     },
-    "triage_note": "Separate driver/parser language-mode fact propagation from036 header grammar/recognized-namespace effects.48 nativepre17 language diagnostics use recognizedGNU packed and empty-prefix controls,not optional unknown-attribute warnings. Parent and036 candidate each silently accept16 variants. No handout/session policy authorizes this quiet version extension. No fix or required fixture installed; next functional window after queued029 performance."
+    "triage_note": "Typed selected-mode propagation and pre17 prefix diagnosis now pass required PA29 controls, focused/native/ABI checks, full normal and student-export validation. Preserve ordinary keyword attributes and C++17 effects. Actual-parent/cumulative performance and integration remain required; no full-corpus conformance claim."
+  },
+  {
+    "id": "CXX11-042",
+    "kind": "harness-metrology",
+    "priority": "P1",
+    "status": "measurement-validation",
+    "upstream": [],
+    "symptom": "Linux approximate highwater RSS reports a family memory ratio1.10020242915, while same-PID accurate page-table snapshots can exceed the alleged highwater. Original failed gate retained.",
+    "expected": "Use independently validated precise per-MM resident-memory events, exact child attribution and paired calibrated runs to apply the unchanged3% memory gate. Revalidate affected prior Linux RSS acceptances before final closure.",
+    "compiler_language_gap": false,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/family-memory-investigation-v1",
+    "checks": {
+      "known_allocation_controls": "precision-controls-v3/independent-verification-v1.json:0/4/8/64MiB and immediately released64MiB spike; known-byte errors within unchanged256KiB tolerance, accurate same-process smaps snapshots bounded, raw loss/throttle checks.",
+      "parser_controls": "parser-controls-v2.json:24 parser/error/attribution tests, including truncation/loss, child/PID/MM reuse, profiler exclusion, CPU migration, unsupported shared/remote MM and short spikes; all5 real known-allocation traces reparsed.",
+      "batched_controls": "batched-allocation-controls-v1/assessment.json:3 exact subject children, peaks1944/10072/67416KiB;64MiB spike retained after release.",
+      "diagnostic_compiler_trace": "rss-trace-prototype-v1/:family-parent9232 vs campaign9368KiB,approximately+1.47%; diagnostic only, not calibrated gate pass."
+    },
+    "remaining": [
+      "Freeze production-capable collector and benchmark protocol",
+      "Fresh A/A calibration and paired A/B comparisons with original binaries/frozen inputs/output checks",
+      "Revalidate affected historical approximate Linux RSS passes",
+      "Retain all failed prototypes and original failed measurements;3% gate unchanged"
+    ],
+    "scope": "Measurement-tool defect, excluded from confirmed distinct compiler-language gap count. No formal performance gate accepted from diagnostic controls."
   }
 ]

@@ -1,3 +1,47 @@
+Current checkpoint (2026-11-07; supersedes historical status entries below)
+
+Thirteen confirmed distinct individual compiler gaps remain unclosed. Eleven
+have independently validated functional/student-export repairs:008,019/shared030,
+021,031,032,033,034,035,036,039 and041. Two lack implementations:038 invalid
+explicit enum-specialization targets (Clang subagent) and040 adoptedCWG2476
+function-return-placeholder deduction in new (root). Functional acceptance is
+not performance acceptance or integration. This is not an exhaustive corpus
+inventory or a current GCC/Clang whole-suite pass percentage.
+
+041 final1f67f1cf505a passes8211 strict,37 optional-modern,11 normal and27 export
+stages,24 packaged controls and42 reference wrappers. Root independently
+revalidates the frozen source/binaries/logs/export/reference evidence. No formal
+performance observations exist for041; preserve its actual036 parent baseline.
+
+029 controller821381/start52528549 is terminal1,not held:all24family RSS reports
+completed,with auto-zero-aggregate-o0 failing the unchanged3% gate at+10.02%.
+Remaining rebased-original groups never started. Every original observation is
+retained; functional-window-open-v2.json authorizes functional work after this
+known failure. No new formal benchmarking runs alongside builds/test workers.
+
+Harness/metrology issue042 is separate from the13compiler gaps. Accurate
+same-process page-table snapshots exceed the alleged Linux highwater; precise
+RSS-event prototype gives9232/9368KiB(+1.47%) for the failing compiler pair,
+but no calibrated gate pass is claimed. Independent0/4/8/64MiB allocation and
+short-lived64MiB spike controls pass unchanged256KiB precision tolerance.
+Twenty-four parser corruption/attribution controls and three-child batching
+controls pass. Fresh paired/calibrated measurements and precise revalidation
+of affected approximate Linux RSS acceptances remain required;3% gate is fixed.
+Historical original optimized-module semantic/ABI oracle also remains open.
+
+All requested rebases include25f26d178's minor macOS fixture change. Full
+corpus inventory/replay,remaining repairs,actual-parent/cumulative performance,
+integration and final two CI jobs with whole-suite comparisons remain required.
+The separate public runtime/inception-codegen regression investigation is out
+of scope at the user's request.
+
+Evidence under /mnt/vizier/cppgm-cxx11-upstream:
+  issues/CXX11-041/checks-v1/root-revalidation-v1.json
+  rebases/2026-11-06/functional-window-open-v2.json
+  rebases/2026-11-06/family-memory-investigation-v1/{precision-controls-v3/independent-verification-v1.json,parser-controls-v2.json,batched-allocation-controls-v1/assessment.json}
+
+Historical checkpoints follow with their original revision/scope.
+
 Throw-move repair and additional lookup/specialization gaps (2026-11-06)
 
 008 now has45 required PA21 controls(f0b2927d1) and implementation97fa48fc0
