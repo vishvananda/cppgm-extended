@@ -1217,6 +1217,7 @@ private:
 	void initialize_element(const syntax::Expr& element, const Type* type, Scope* scope);
 	FunctionEntity* implicit_constructor(ClassEntity* entity);
 	FunctionEntity* queried_default_constructor(ClassEntity* entity);
+	bool check_member_initializer_constructor(const FunctionEntity* constructor, uint32_t location);
 	void record_default_arguments(FunctionEntity* function, const syntax::ParameterClause* clause, Scope* scope);
 	void record_template_default_arguments(
 		FunctionEntity* function, const syntax::ParameterClause& clause, Scope* scope);

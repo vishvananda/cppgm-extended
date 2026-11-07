@@ -100,7 +100,11 @@ FunctionEntity* Analyzer::implicit_constructor(ClassEntity* entity)
 	// failure, 14.8.2p8, where that is a result).
 	FunctionEntity*& slot = entity->default_constructor;
 	if (slot != nullptr)
+	{
+		if (entity->member_initializer_active && !check_member_initializer_constructor(slot, 0))
+			return nullptr;
 		return slot;
+	}
 	FunctionEntity* found = nullptr;
 	if (entity->scope != nullptr)
 	{
@@ -150,6 +154,8 @@ FunctionEntity* Analyzer::implicit_constructor(ClassEntity* entity)
 	}
 	if (found != nullptr)
 	{
+		if (entity->member_initializer_active && !check_member_initializer_constructor(found, 0))
+			return nullptr;
 		slot = found;
 		// A default constructor defaulted on its first declaration is
 		// defined as the implicit one would be (8.4.2p5).
@@ -158,6 +164,8 @@ FunctionEntity* Analyzer::implicit_constructor(ClassEntity* entity)
 		return found;
 	}
 	if (entity->user_declared_constructor)
+		return nullptr;
+	if (entity->member_initializer_active && !check_member_initializer_constructor(nullptr, 0))
 		return nullptr;
 	const char* label = entity->name != nullptr ? entity->name->spelling
 		: entity->local_label != nullptr        ? entity->local_label
@@ -191,7 +199,15 @@ FunctionEntity* Analyzer::queried_default_constructor(ClassEntity* entity)
 	// a substitution's. Null when there is none. A use of it reports it
 	// (check_not_deleted).
 	if (entity->default_constructor != nullptr)
+	{
+		if (entity->member_initializer_active)
+		{
+			SoftSubstitution soft(*this);
+			if (!check_member_initializer_constructor(entity->default_constructor, 0))
+				return nullptr;
+		}
 		return entity->default_constructor;
+	}
 	SoftSubstitution soft(*this);
 	return implicit_constructor(entity);
 }

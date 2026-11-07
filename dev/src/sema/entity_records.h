@@ -211,6 +211,9 @@ struct ClassEntity : Entity
 	// anonymous class through an anonymous member). In an anonymous
 	// class this also identifies a variant member with one (9.5p8).
 	bool members_initialized;
+	// A default member initializer is being typed. A defaulted default
+	// constructor of this class cannot be defined through it (CWG1397).
+	bool member_initializer_active;
 	// This definition has a dependent base in its hierarchy, including a
 	// local class in a function template. Set while analyzing its bases.
 	bool dependent_bases;

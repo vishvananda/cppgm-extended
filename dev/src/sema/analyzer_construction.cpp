@@ -1073,6 +1073,8 @@ FunctionEntity* Analyzer::select_constructor(ClassEntity* entity, const syntax::
 	FunctionEntity* selected = inherited_specialization(entity, chosen.function, arguments.size, location);
 	if (selected == nullptr)
 		return nullptr;
+	if (entity->member_initializer_active && !check_member_initializer_constructor(selected, location))
+		return nullptr;
 	check_inheriting_access(selected, entity, location);
 	if (kind == ConstructionKind::CopyList && selected->is_explicit)
 		error(location, "copy-list-initialization selects an explicit constructor");
@@ -2123,6 +2125,11 @@ void Analyzer::member_default_initializer(VariableEntity* member, Scope* scope)
 	demanding_ = nullptr;
 	current_epoch_ = root_epoch_;
 	const uint32_t throwing = potentially_throwing_;
+	ClassEntity* cls = static_cast<ClassEntity*>(member->owner->entity);
+	while (cls->anonymous && cls->storage != nullptr && cls->storage->entity->owner->kind == ScopeKind::Class)
+		cls = static_cast<ClassEntity*>(cls->storage->entity->owner->entity);
+	const bool saved_active = cls->member_initializer_active;
+	cls->member_initializer_active = true;
 	member->constructor = initialize_object(
 		member->type, *member->member_initializer, scope, member->member_initializer->location);
 	// 15.4p14 (CWG 1351): the implicit constructor may throw what the
@@ -2132,10 +2139,27 @@ void Analyzer::member_default_initializer(VariableEntity* member, Scope* scope)
 	member->throwing_initializer = potentially_throwing_ != throwing ||
 		(expression != nullptr && may_throw(*expression, 0));
 	member->initializer_typed = true;
+	cls->member_initializer_active = saved_active;
 	body_ = saved_body;
 	demanding_ = saved_demanding;
 	current_epoch_ = saved_epoch;
 	typed_inheriting_plans(member);
+}
+
+bool Analyzer::check_member_initializer_constructor(const FunctionEntity* constructor, uint32_t location)
+{
+	// CWG1397: defining a defaulted default constructor (or its exception
+	// specification) through the class's own initializer is ill-formed.
+	// Null denotes an implicit constructor not yet declared. User-provided
+	// constructors and copy/move construction do not create this cycle.
+	if (constructor == nullptr ||
+		((constructor->implicit || constructor->defaulted) && constructor->inherited == nullptr &&
+			constructor->type->canonical->param_count == 0))
+	{
+		substitution_error(location, "a default member initializer requires its enclosing defaulted constructor");
+		return false;
+	}
+	return true;
 }
 
 void Analyzer::typed_inheriting_plans(const VariableEntity* member)
