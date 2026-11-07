@@ -192,8 +192,12 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 		if (planned)
 		{
 			check_constexpr_constructor(function, body_location);
-			if (function->delegate == nullptr)
-				check_subobject_destruction(cls, scope, body_location);
+			// Ordinary plans check destruction while constructing each entry.
+			// Reserved wrappers must first establish that their plan is complete.
+			if (function->delegate == nullptr && deferring_reserved_ != 0)
+				for (uint32_t i = 0; i < function->init_count; ++i)
+					check_initializer_destruction(
+						function->inits[i], cls, scope, body_location, cls->key == TokenKind::KW_UNION);
 		}
 	}
 	else if (!shared && function->name == destructor_key_ && function->member && body_ == &context &&

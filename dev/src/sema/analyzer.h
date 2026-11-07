@@ -659,6 +659,7 @@ private:
 	static bool NonstaticMemberName(const ExprFacts* facts);
 	bool check_resolved(const syntax::Expr& expr);
 	bool resolve_lone_function(const syntax::Expr& expr);
+	void require_function_definition(FunctionEntity* function);
 	void odr_use(FunctionEntity* function, bool call = false);
 	// 8.4.3p2: naming a deleted function other than to declare it.
 	bool check_not_deleted(const FunctionEntity* function, uint32_t location);
@@ -1289,6 +1290,8 @@ private:
 	bool subobjects_destructible(const ClassEntity* entity);
 	bool members_destructible(const ClassEntity* holder, const ClassEntity* entity);
 	void check_subobject_destruction(const ClassEntity* entity, const Scope* scope, uint32_t location);
+	void check_initializer_destruction(
+		const SubobjectInit& init, const ClassEntity* entity, const Scope* scope, uint32_t location, bool variant);
 	void check_destruction(const Type* type, const Scope* scope, uint32_t location);
 	void check_temporary_destruction(const ExprFacts* facts, uint32_t location);
 	void check_binding_temporary(const ExprFacts* from, const Conversion& conversion, uint32_t location);

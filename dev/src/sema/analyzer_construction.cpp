@@ -226,11 +226,47 @@ bool Analyzer::subobject_destructor_usable(
 	return true;
 }
 
+void Analyzer::check_initializer_destruction(
+	const SubobjectInit& init, const ClassEntity* entity, const Scope* scope, uint32_t location, bool variant)
+{
+	// The retained constructor plan names initialized variant members,
+	// including those injected from anonymous members (CWG 1866).
+	if (variant && !init.designated && init.mem_initializer == nullptr && init.default_initializer == nullptr)
+		return;
+	if (init.inner != nullptr)
+	{
+		const bool inner_variant = ObjectClass(init.member->variable->type)->key == TokenKind::KW_UNION;
+		for (uint32_t i = 0; i < init.inner_count; ++i)
+			check_initializer_destruction(init.inner[i], entity, scope, location, inner_variant);
+		return;
+	}
+	const Type* type = init.base != nullptr ? init.base->base->type : init.member->variable->type;
+	// An abstract class never initializes its virtual bases (CWG 1658).
+	if (init.base != nullptr && init.base->is_virtual && entity->virtuals != nullptr &&
+		entity->virtuals->pure_count != 0)
+		return;
+	ClassEntity* cls = type->is_reference() ? nullptr : ObjectClass(type);
+	if (cls == nullptr || cls->destructor == nullptr)
+		return;
+	FunctionEntity* destructor = cls->destructor;
+	// Implicit trivial destructors are public and have no definition to
+	// instantiate. Their completed typed facts discharge this check.
+	if (destructor->implicit && destructor->trivial && !destructor->deleted && !destructor->noexcept_pending)
+		return;
+	check_not_deleted(destructor, location);
+	check_special_access(destructor, cls, scope, location, init.base != nullptr ? entity : cls);
+	// Potential invocation odr-uses the destructor even when no exception
+	// can occur and no constructor code is emitted (CWG 1424).
+	if (destructor->noexcept_pending)
+		function_nothrow(destructor);
+	if (destructor->instantiated && !destructor->definition_demanded && semantic())
+		require_function_definition(destructor);
+}
+
 void Analyzer::check_subobject_destruction(const ClassEntity* entity, const Scope* scope, uint32_t location)
 {
-	// A user-provided destructor destroys, and a non-delegating
-	// user-provided constructor potentially destroys (12.6.2p10 as CWG 1424
-	// has it), the bases (a most derived object's virtual bases too,
+	// A user-provided destructor destroys the bases
+	// (a most derived object's virtual bases too,
 	// 12.4p8) and non-static data members: their destructors not deleted
 	// and accessible there (12.4p11), a protected one acting on a base
 	// subobject of the class's object, not on a member of the base's own
@@ -1756,9 +1792,8 @@ void Analyzer::constructor_plan(FunctionEntity* constructor, ClassEntity* entity
 			view.location = written.location;
 			ClassEntity* base = static_cast<ClassEntity*>(init.base->base);
 			init.constructor = initialize_class(base, base->type, view, scope, written.location);
-			continue;
 		}
-		if (init.base != nullptr && constructor->inherited != nullptr &&
+		else if (init.base != nullptr && constructor->inherited != nullptr &&
 			static_cast<const ClassEntity*>(init.base->base)->scope == constructor->inherited->owner)
 		{
 			// 12.9p8: the inherited constructor with the parameters. The
@@ -1766,9 +1801,8 @@ void Analyzer::constructor_plan(FunctionEntity* constructor, ClassEntity* entity
 			// it is used: a private one is declared, not an error.
 			init.constructor = constructor->inherited;
 			init.forwards = true;
-			continue;
 		}
-		if (init.base != nullptr)
+		else if (init.base != nullptr)
 		{
 			ClassEntity* base = static_cast<ClassEntity*>(init.base->base);
 			init.constructor = default_constructor(base, location);
@@ -1776,9 +1810,11 @@ void Analyzer::constructor_plan(FunctionEntity* constructor, ClassEntity* entity
 			// view shows only a definition's odr-uses).
 			if (user)
 				odr_use(init.constructor, true);
-			continue;
 		}
-		member_plan(init, is_union, variant_designated, user, scope, location);
+		else
+			member_plan(init, is_union, variant_designated, user, scope, location);
+		if (user && deferring_reserved_ == 0)
+			check_initializer_destruction(init, entity, scope, location, is_union);
 	}
 	base_object_ = saved_object;
 	expression_scope_ = saved_scope;

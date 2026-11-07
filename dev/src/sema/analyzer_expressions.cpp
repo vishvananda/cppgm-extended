@@ -182,6 +182,14 @@ bool Analyzer::check_not_deleted(const FunctionEntity* function, uint32_t locati
 	return true;
 }
 
+void Analyzer::require_function_definition(FunctionEntity* function)
+{
+	// The caller has an instantiated definition not yet demanded. Sharing
+	// the queue insertion keeps ordinary odr-use's no-work path local.
+	function->definition_demanded = true;
+	demanded_definitions_.push_back(function);
+}
+
 void Analyzer::odr_use(FunctionEntity* function, bool call)
 {
 	// 3.2p2: a function named by a potentially evaluated expression is
@@ -202,10 +210,7 @@ void Analyzer::odr_use(FunctionEntity* function, bool call)
 		function_nothrow(function);
 	// An instantiated function's definition is then required (14.7.1p3).
 	if (function->instantiated && !function->definition_demanded && semantic())
-	{
-		function->definition_demanded = true;
-		demanded_definitions_.push_back(function);
-	}
+		require_function_definition(function);
 	// A constructor a static variable's initializer names (not in a body
 	// its evaluation instantiates) may run uncalled when the variable is
 	// constant-initialized: noted for the variable (see SemanticGraph).
