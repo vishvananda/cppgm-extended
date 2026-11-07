@@ -410,6 +410,21 @@ uint32_t Analyzer::builtin_operator(TokenKind op, const syntax::Slice<syntax::Ex
 	parameters[1] = promoted(t2);
 	switch (op)
 	{
+	case TokenKind::OP_ARROWSTAR:
+	{
+		// 13.6p11: CV1 C1* and CV2 T C2::*, C1 the same class as
+		// C2 or derived from it. Keep each operand's exact type: later
+		// member access checks the base path and combines qualifications.
+		if (p1->kind != TypeKind::Pointer || p2->kind != TypeKind::MemberPointer)
+			return 0;
+		const ClassEntity* object = ClassOf(p1->element);
+		const ClassEntity* owner = ClassOf(p2->owner);
+		if (object == nullptr || (object != owner && !conversions_.is_base_of(owner, object)))
+			return 0;
+		parameters[0] = p1;
+		parameters[1] = p2;
+		return 2;
+	}
 	case TokenKind::OP_LT:
 	case TokenKind::OP_GT:
 	case TokenKind::OP_LE:
