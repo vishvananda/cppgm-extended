@@ -1,0 +1,6 @@
+global @x [binding=strong] = {
+  zero 1
+}
+global @a [binding=strong] = {
+  zero 1
+}
