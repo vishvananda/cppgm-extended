@@ -2522,7 +2522,9 @@ bool ProgramLowering::static_lvalue(const syntax::Expr& expr, StaticValue& out)
 		return true;
 	}
 	case syntax::ExprKind::Literal:
-		if (facts->type->kind != sema::TypeKind::Array)
+		// A literal operator's array result is obtained by its call (2.14.8),
+		// not the static address of the literal used as its argument.
+		if (facts->type->kind != sema::TypeKind::Array || (facts->flags & sema::kUserLiteral) != 0)
 			return false;
 		symbol = string_literal(*static_cast<const syntax::LiteralExpr*>(e));
 		offset = 0;

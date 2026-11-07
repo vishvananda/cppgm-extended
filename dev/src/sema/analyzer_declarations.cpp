@@ -1099,26 +1099,43 @@ const Type* Analyzer::complete_array_from_initializer(
 	if (initializer == nullptr || type->kind != TypeKind::Array || type->bound != 0 || type->owner != nullptr)
 		return type;
 	const syntax::Expr* expr = initializer->expression;
-	if (initializer->kind != syntax::InitializerKind::Assign && initializer->kind != syntax::InitializerKind::Braced)
+	if (initializer->kind == syntax::InitializerKind::Parenthesized)
+	{
+		if (initializer->arguments.size != 1)
+			return type;
+		expr = initializer->arguments[0];
+	}
+	else if (initializer->kind != syntax::InitializerKind::Assign &&
+		initializer->kind != syntax::InitializerKind::Braced)
+		return type;
+	while (expr->kind == syntax::ExprKind::Paren)
+		expr = static_cast<const syntax::ParenExpr*>(expr)->inner;
+	// Parenthesized array initialization has only the string exception
+	// in C++11 (8.5p17), not aggregate element initialization.
+	if (initializer->kind == syntax::InitializerKind::Parenthesized && expr->kind != syntax::ExprKind::Literal)
 		return type;
 	uint64_t bound = 0;
 	if (expr->kind == syntax::ExprKind::BracedInit)
 	{
 		const syntax::BracedInitList* list = static_cast<const syntax::BracedInitList*>(expr);
 		bound = typed ? 0 : list->elements.size;
-		if (list->elements.size == 1 && list->elements[0]->kind == syntax::ExprKind::Literal &&
-			IsIntegralType(type->element) && type->element->unqualified->fundamental != FundamentalType::Bool)
+		const syntax::Expr* single = list->elements.size == 1 ? list->elements[0] : nullptr;
+		while (single != nullptr && single->kind == syntax::ExprKind::Paren)
+			single = static_cast<const syntax::ParenExpr*>(single)->inner;
+		if (single != nullptr && single->kind == syntax::ExprKind::Literal && IsIntegralType(type->element) &&
+			type->element->unqualified->fundamental != FundamentalType::Bool)
 		{
-			const syntax::LiteralExpr* literal = static_cast<const syntax::LiteralExpr*>(list->elements[0]);
+			const syntax::LiteralExpr* literal = static_cast<const syntax::LiteralExpr*>(single);
 			StringLiteralFacts string;
-			if (AnalyzeStringLiteral(literal->spelling, string))
+			if (AnalyzeStringLiteral(literal->spelling, string) && string.suffix_length == 0)
 				bound = string.units;
 		}
 	}
 	else if (expr->kind == syntax::ExprKind::Literal)
 	{
 		StringLiteralFacts string;
-		if (AnalyzeStringLiteral(static_cast<const syntax::LiteralExpr*>(expr)->spelling, string))
+		if (AnalyzeStringLiteral(static_cast<const syntax::LiteralExpr*>(expr)->spelling, string) &&
+			string.suffix_length == 0)
 			bound = string.units;
 	}
 	if (bound == 0)
@@ -1144,7 +1161,6 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	// is typed in the complete class.
 	const bool typed_initialization = semantic() && template_depth_ == 0 &&
 		(where->kind != ScopeKind::Class || qualified || (specifiers.is_static && initializer != nullptr));
-	type = complete_array_from_initializer(type, initializer, typed_initialization);
 	DeclaredName name = declared_name(*info.name, where);
 	// 9.2p13: a non-static data member may have its class's name unless the
 	// class has a user-declared constructor (it hides the injected-class-
@@ -1178,6 +1194,12 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	check_parameter_redeclaration(name.key, where, location);
 	VariableEntity* variable = earlier_variable(
 		specifiers, name, where, qualified, initializer != nullptr, definition, location);
+	// 8.3.4p3: an earlier bound applies before any initializer deduction.
+	// The ordinary lookup above supplies that entity without a second lookup.
+	if (variable != nullptr && type->kind == TypeKind::Array && type->bound == 0 &&
+		CompatibleVariableTypes(variable->type, type))
+		type = variable->type;
+	type = complete_array_from_initializer(type, initializer, typed_initialization);
 	const bool redeclaration = variable != nullptr;
 	// 9.4.2p3: a static data member initialized in its class (const
 	// integral, or constexpr) is still defined at namespace scope when

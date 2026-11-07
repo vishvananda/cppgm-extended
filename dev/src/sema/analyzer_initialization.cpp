@@ -337,8 +337,8 @@ void Analyzer::check_character_array(
 	const syntax::Expr* inner = &single;
 	while (inner->kind == syntax::ExprKind::Paren)
 		inner = static_cast<const syntax::ParenExpr*>(inner)->inner;
-	if (inner->kind != syntax::ExprKind::Literal || facts->type->kind != TypeKind::Array ||
-		!InitializesCharacterArray(facts->type->element, type->element))
+	if (inner->kind != syntax::ExprKind::Literal || (facts->flags & kUserLiteral) != 0 ||
+		facts->type->kind != TypeKind::Array || !InitializesCharacterArray(facts->type->element, type->element))
 		error(location, "array initialized from an expression");
 	if (type->bound != 0 && facts->type->bound > type->bound)
 		error(location, "string literal too long for the array");
@@ -437,7 +437,7 @@ void Analyzer::list_initialize(const syntax::BracedInitList& list, const Type* t
 			ExprFacts* facts = typed(*literal, scope);
 			if (facts == nullptr)
 				return;
-			if (facts->type->kind == TypeKind::Array)
+			if (facts->type->kind == TypeKind::Array && (facts->flags & kUserLiteral) == 0)
 			{
 				if (!InitializesCharacterArray(facts->type->element, type->element))
 				{
@@ -702,7 +702,7 @@ bool Analyzer::array_new_list(
 		const ExprFacts* string = typed(*literal, scope);
 		if (string == nullptr)
 			return false;
-		if (string->type->kind == TypeKind::Array)
+		if (string->type->kind == TypeKind::Array && (string->flags & kUserLiteral) == 0)
 		{
 			if (!InitializesCharacterArray(string->type->element, element))
 				error(list.location, "array initialized from a string literal of another kind");
@@ -973,7 +973,8 @@ bool Analyzer::list_sequence(const syntax::BracedInitList& list, const Type* par
 			return false;
 		const syntax::Expr* literal = CharacterArrayLiteral(list, target->element);
 		const ExprFacts* string = literal != nullptr ? facts_of(*literal) : nullptr;
-		const bool string_array = string != nullptr && string->type->kind == TypeKind::Array;
+		const bool string_array = string != nullptr && string->type->kind == TypeKind::Array &&
+			(string->flags & kUserLiteral) == 0;
 		// CWG1467: an appropriately typed string literal has an identity
 		// conversion. Its length is checked when initializing the selected
 		// target, not when ranking candidates (even a short bound can tie).
