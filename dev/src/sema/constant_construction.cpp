@@ -725,6 +725,13 @@ bool ConstantInterpreter::run_constructor(const FunctionEntity* constructor, con
 			if (!bind(*arguments[0].expr, arguments[0].conversion, constructor->type->canonical->params[0], source))
 				return false;
 		}
+		// An empty class has no member values to read. A variable or a
+		// by-value parameter need not itself be usable in constant expressions;
+		// binding, invalid views and mutable-subobject restrictions still apply.
+		if ((source.root == RootKind::Variable || source.root == RootKind::Parameter) &&
+			(source.flags & (kPastEnd | kInvalidView | kMutableSubobject)) == 0 && (source.type->cv & kVolatile) == 0 &&
+			ClassOf(constructor->owner->entity->type)->empty)
+			return true;
 		ConstValue value;
 		return read(source, value, location) && write(target, value, location);
 	}
