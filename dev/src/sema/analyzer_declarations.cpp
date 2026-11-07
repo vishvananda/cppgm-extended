@@ -1740,6 +1740,16 @@ Binding* Analyzer::declare_function(const Specifiers& specifiers, const Declarat
 {
 	if (specifiers.is_constinit)
 		error(location, "__constinit on a function declaration");
+	// 7.1.2p6: explicit is confined to constructor/conversion declarations
+	// inside their own class definition, including no friend declaration.
+	if (specifiers.is_explicit)
+	{
+		Scope* home = declaration_scope(scope);
+		if (info.qualifier != nullptr || specifiers.is_friend || home->kind != ScopeKind::Class ||
+			(info.name->last().kind != syntax::NameComponentKind::Conversion &&
+				declared_name(*info.name, home).key != constructor_key_))
+			error(location, "explicit requires a constructor or conversion declaration inside its class");
+	}
 	// 7.1.5p8 (C++11): a constexpr non-static member function other than a
 	// constructor is const (not under -std=c++14, see set_cxx14).
 	if (specifiers.is_constexpr && !cxx14_ && !specifiers.is_static && !specifiers.is_friend &&
