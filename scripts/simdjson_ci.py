@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Measure pinned simdjson scalar/SSE library compilation and DOM parsing."""
 import argparse
+import benchmark_hosts
 import json
 import math
 import os
@@ -285,16 +286,20 @@ def publish(args):
     metadata = document['metadata']
     if not re.fullmatch('[0-9a-f]{40}', args.revision) or metadata['revision'] != args.revision or metadata['dirty']:
         raise ValueError('results do not describe the clean measured revision')
-    if 'AMD EPYC' not in metadata['cpu']:
-        raise ValueError('EPYC publication requires EPYC hardware')
     files = ('results.json', 'metadata.json', 'compile-observations.jsonl', 'runtime-observations.jsonl')
     payloads = {name: (args.artifact / name).read_bytes() for name in files}
+    if json.loads(payloads['metadata.json']) != metadata:
+        raise ValueError('provenance differs from the measured results')
     details = report(document) + '\n[CI run and complete artifacts](' + args.run_url + ')\n'
-    for dest in (args.target / 'simdjson/epyc', args.target / 'simdjson/history' / args.revision):
+    platform = benchmark_hosts.hosted_platform(metadata['cpu'])
+    destinations = [args.target / 'simdjson' / platform,
+                    args.target / 'simdjson/history' / args.revision / platform]
+    for dest in destinations:
         dest.mkdir(parents=True, exist_ok=True)
         for name, content in payloads.items():
             (dest / name).write_bytes(content)
         (dest / 'report.md').write_text(details)
+    benchmark_hosts.library_index(args.target / 'simdjson', 'simdjson benchmark hosts')
 
 
 def main():

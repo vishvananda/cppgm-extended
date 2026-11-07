@@ -1,6 +1,7 @@
 # simdjson scalar and SSE comparison
 
-[Latest EPYC results](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/simdjson/epyc/report.md)
+[Results by host](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/simdjson/report.md)
+· [Last EPYC results](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/simdjson/epyc/report.md)
 · [CI runs and artifacts](https://github.com/vishvananda/cppgm-extended/actions/workflows/simdjson.yml)
 · [Initial analysis](../../docs/performance/simdjson-20261107.md)
 
@@ -9,6 +10,11 @@ main results publish beside the public and index-cpp reports on the
 `benchmark-badges` branch, with history by measured commit. PR results appear
 in the job summary and its artifact. It is separate from the course's required
 performance gates and from the public-suite aggregate.
+
+GitHub can assign Intel or AMD runners. Hosted Intel results use `github-intel`,
+separate from EPYC and the dedicated Intel runner's `intel` path. Each report
+names its CPU. History retains each host separately at each measured commit;
+compare results on the same CPU model when assessing a compiler change.
 
 The source is unmodified simdjson v5.1.1, pinned to
 `40a686ab89dc5ee58ec10d0514dd5c99abbc472b`. Each compiler builds

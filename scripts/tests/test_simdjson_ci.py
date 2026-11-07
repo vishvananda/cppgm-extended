@@ -76,6 +76,52 @@ class SimdjsonCITests(unittest.TestCase):
         self.assertIn('| sse | twitter.json |', text)
         self.assertIn('vs Clang CPU', text)
 
+    def test_publication_accepts_hosted_intel_without_replacing_epyc(self):
+        for cpu in ('Intel Xeon Platinum 8370C', 'AMD EPYC 7763'):
+            with self.subTest(cpu=cpu), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                artifact = root / 'artifact'
+                artifact.mkdir()
+                document = self.document()
+                document['metadata']['cpu'] = cpu
+                ci.save(artifact / 'results.json', document)
+                ci.save(artifact / 'metadata.json', document['metadata'])
+                for name in ('compile-observations.jsonl', 'runtime-observations.jsonl'):
+                    (artifact / name).write_text('{}\n')
+                target = root / 'target'
+                epyc = target / 'simdjson/epyc/report.md'
+                epyc.parent.mkdir(parents=True)
+                epyc.write_text('previous EPYC run')
+                ci.publish(SimpleNamespace(artifact=artifact, target=target, revision='a' * 40,
+                                           run_url='https://example.com/run'))
+                platform = 'epyc' if cpu.startswith('AMD EPYC') else 'github-intel'
+                for destination in ('simdjson/' + platform, 'simdjson/history/' + 'a' * 40 + '/' + platform):
+                    self.assertEqual((target / destination / 'results.json').read_bytes(),
+                                     (artifact / 'results.json').read_bytes())
+                    self.assertIn(cpu, (target / destination / 'report.md').read_text())
+                if cpu.startswith('AMD EPYC'):
+                    self.assertIn(cpu, epyc.read_text())
+                else:
+                    self.assertEqual(epyc.read_text(), 'previous EPYC run')
+                self.assertIn(cpu, (target / 'simdjson/report.md').read_text())
+
+    def test_mismatched_provenance_is_rejected_before_publication(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            artifact = root / 'artifact'
+            artifact.mkdir()
+            document = self.document()
+            ci.save(artifact / 'results.json', document)
+            ci.save(artifact / 'metadata.json', dict(document['metadata'], cpu='Intel Xeon'))
+            for name in ('compile-observations.jsonl', 'runtime-observations.jsonl'):
+                (artifact / name).write_text('{}\n')
+            target = root / 'target'
+            args = SimpleNamespace(artifact=artifact, target=target, revision='a' * 40,
+                                   run_url='https://example.com/run')
+            with self.assertRaisesRegex(ValueError, 'provenance'):
+                ci.publish(args)
+            self.assertFalse(target.exists())
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -152,13 +152,13 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           python3 tools/scripts/publish_benchmark_badges.py artifact badge-branch \
-            --platform epyc --revision "$REVISION" --run-url "$RUN_URL" --legacy-epyc
+            --platform github --revision "$REVISION" --run-url "$RUN_URL" --legacy-epyc
           cd badge-branch
           git add .
           if git diff --cached --quiet; then exit 0; fi
           git -c user.name='github-actions[bot]' \
             -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit -q -m "Publish EPYC benchmark badges of $REVISION"
+            commit -q -m "Publish hosted benchmark badges of $REVISION"
           git push origin HEAD:benchmark-badges
 
   intel:

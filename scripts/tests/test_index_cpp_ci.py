@@ -110,7 +110,7 @@ class IndexCppCITests(unittest.TestCase):
         (target / 'epyc/results.json').write_text('public suite')
         ci.publish(self.artifact, target, self.revision, 'https://example.test/run')
         self.assertEqual((target / 'epyc/results.json').read_text(), 'public suite')
-        for path in ['index-cpp/epyc', 'index-cpp/history/' + self.revision]:
+        for path in ['index-cpp/epyc', 'index-cpp/history/' + self.revision + '/epyc']:
             published = target / path
             self.assertEqual((published / 'results.json').read_bytes(), (self.artifact / 'results.json').read_bytes())
             self.assertEqual((published / 'runtime-observations.jsonl').read_bytes(), (self.artifact / 'runtime/observations.jsonl').read_bytes())
@@ -126,7 +126,7 @@ class IndexCppCITests(unittest.TestCase):
                      lambda d: d.update(source_sha256='0' * 64),
                      lambda d: d['metadata'].update(revision='b' * 40),
                      lambda d: d['metadata'].update(dirty=True),
-                     lambda d: d['metadata'].update(cpu='Intel Xeon')]
+                     lambda d: d['metadata'].update(cpu='unrecognized CPU')]
         target = self.root / 'published'
         target.mkdir()
         for mutate in mutations:
@@ -136,6 +136,29 @@ class IndexCppCITests(unittest.TestCase):
             with self.subTest(change=mutate), self.assertRaises((ValueError, KeyError)):
                 ci.publish(self.artifact, target, self.revision, 'https://example.test/run')
             self.assertEqual(list(target.iterdir()), [])
+
+    def test_hosted_intel_preserves_epyc_and_dedicated_intel(self):
+        self.document['metadata']['cpu'] = 'Intel Xeon Platinum 8370C'
+        self.write_document()
+        ci.save(self.artifact / 'metadata.json', self.document['metadata'])
+        target = self.root / 'published'
+        for platform in ('epyc', 'intel'):
+            directory = target / 'index-cpp' / platform
+            directory.mkdir(parents=True)
+            (directory / 'report.md').write_text(platform + ' previous run')
+        ci.publish(self.artifact, target, self.revision, 'https://example.test/run')
+        for platform in ('epyc', 'intel'):
+            self.assertEqual((target / 'index-cpp' / platform / 'report.md').read_text(), platform + ' previous run')
+        for path in ('index-cpp/github-intel', 'index-cpp/history/' + self.revision + '/github-intel'):
+            self.assertEqual((target / path / 'results.json').read_bytes(), (self.artifact / 'results.json').read_bytes())
+        self.assertIn('Intel Xeon Platinum 8370C', (target / 'index-cpp/report.md').read_text())
+
+    def test_mismatched_provenance_is_rejected_before_publication(self):
+        ci.save(self.artifact / 'metadata.json', dict(self.document['metadata'], cpu='Intel Xeon'))
+        target = self.root / 'published'
+        with self.assertRaisesRegex(ValueError, 'provenance'):
+            ci.publish(self.artifact, target, self.revision, 'https://example.test/run')
+        self.assertFalse(target.exists())
 
     def test_missing_raw_observations_does_not_replace_existing_measurement(self):
         (self.artifact / 'runtime/observations.jsonl').unlink()

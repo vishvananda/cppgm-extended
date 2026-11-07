@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 
 import public_benchmarks
+import benchmark_hosts
 
 BADGES = ('o0-compile', 'o0-generated', 'o3-compile', 'o3-generated',
           'self-compile', 'self-built')
@@ -40,7 +41,9 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
     document = json.loads((artifact / 'results.json').read_text())
     environment = document['environment']
     cpu = environment.get('cpu') or ''
-    expected = 'Intel' if platform == 'intel' else 'AMD EPYC'
+    if platform == 'github':
+        platform = benchmark_hosts.hosted_platform(cpu)
+    expected = 'Intel' if platform in ('intel', 'github-intel') else 'AMD EPYC'
     if expected not in cpu:
         raise ValueError(f'{platform} badges require {expected} hardware; measured {cpu!r}')
     # Validate the whole set before replacing any previous measurement.
@@ -64,7 +67,7 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
     if (artifact / 'selfhost.json').is_file():
         builds = json.loads((artifact / 'selfhost.json').read_text())
     report = public_benchmarks.summary(document, [], builds)
-    heading = 'Intel Xeon' if platform == 'intel' else 'AMD EPYC'
+    heading = {'intel': 'Intel Xeon (dedicated)', 'github-intel': 'Intel (GitHub)', 'epyc': 'AMD EPYC'}[platform]
     source = 'https://github.com/vishvananda/cppgm-extended/commit/' + revision
     report = report.replace('# Public benchmarks\n\n',
                             f'# Public benchmarks: {heading}\n\n'
@@ -91,7 +94,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('artifact', type=Path)
     parser.add_argument('target', type=Path)
-    parser.add_argument('--platform', choices=['epyc', 'intel'], required=True)
+    parser.add_argument('--platform', choices=['github', 'epyc', 'intel', 'github-intel'], required=True)
     parser.add_argument('--revision', required=True)
     parser.add_argument('--run-url', required=True)
     parser.add_argument('--legacy-epyc', action='store_true', help='also update main\'s original EPYC URLs')

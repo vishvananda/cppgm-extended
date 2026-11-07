@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build, measure and publish the pinned reference-only index-cpp comparison."""
 import argparse
+import benchmark_hosts
 import json
 import os
 from pathlib import Path
@@ -232,8 +233,6 @@ def publish(artifact, target, revision, run_url):
         raise ValueError('expected a full measured commit hash')
     document = json.loads((artifact / 'results.json').read_text())
     validate(document)
-    if 'AMD EPYC' not in document['metadata']['cpu']:
-        raise ValueError('EPYC publication requires AMD EPYC hardware')
     if document['metadata']['revision'] != revision or document['metadata']['dirty']:
         raise ValueError('results do not describe the clean measured revision')
     files = {'results.json': artifact / 'results.json', 'metadata.json': artifact / 'metadata.json',
@@ -241,12 +240,18 @@ def publish(artifact, target, revision, run_url):
              'runtime-observations.jsonl': artifact / 'runtime/observations.jsonl'}
     # Read and validate everything before replacing the previous successful run.
     payloads = {name: path.read_bytes() for name, path in files.items()}
+    if json.loads(payloads['metadata.json']) != document['metadata']:
+        raise ValueError('provenance differs from the measured results')
     details = report(document, artifact) + '\n[CI run and complete artifacts](' + run_url + ')\n'
-    for destination in [target / 'index-cpp/epyc', target / 'index-cpp/history' / revision]:
+    platform = benchmark_hosts.hosted_platform(document['metadata']['cpu'])
+    destinations = [target / 'index-cpp' / platform,
+                    target / 'index-cpp/history' / revision / platform]
+    for destination in destinations:
         destination.mkdir(parents=True, exist_ok=True)
         for name, data in payloads.items():
             (destination / name).write_bytes(data)
         (destination / 'report.md').write_text(details)
+    benchmark_hosts.library_index(target / 'index-cpp', 'index-cpp benchmark hosts')
 
 
 def main():

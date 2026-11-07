@@ -83,8 +83,9 @@ a `cppgm++` count differs from `baseline.json`:
 
 ## Reading the README table
 
-The [EPYC report](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/epyc/report.md)
-and [Intel report](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/intel/report.md)
+The [EPYC report](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/epyc/report.md),
+[dedicated Intel report](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/intel/report.md)
+and [GitHub Intel report](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/github-intel/report.md)
 list every program's O0, O3 and frontend compile CPU times for all three
 compilers, with higher-is-better speed ratios. They include compiler rebuild
 times, paired self-build blocks, toolchains and links to the exact CI run and
@@ -161,13 +162,14 @@ compiler. The current patches change:
 
 ## Optional Intel CI run
 
-The Public benchmarks workflow runs on GitHub's Linux pool by default. Its
-EPYC badges and the optional Intel badges occupy separate directories on
-`benchmark-badges`; publishing either keeps the other column's results.
+The Public benchmarks workflow runs on GitHub's Linux pool by default, which
+can supply EPYC or Intel CPUs. Automatic runs publish to `epyc` or `github-intel`
+according to the measured CPU. The dedicated Intel runner uses `intel`;
+publishing any host preserves the other hosts and the legacy EPYC URLs.
 [EPYC provenance](https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/epyc/provenance.json)
 and [Intel provenance](https://raw.githubusercontent.com/vishvananda/cppgm-extended/benchmark-badges/intel/provenance.json) record the exact CPU,
 compiler commit, toolchains and workflow URL. The README shows the measured
-commit because a manual Intel run can be older than the automatic EPYC run.
+commit because the hosts' latest measurements can be from different commits.
 
 On the Intel Linux host, with `gh` authenticated and Podman or Docker installed:
 
@@ -203,8 +205,8 @@ It builds the unchanged, pinned upstream C++17 program with cppgm, GCC and
 Clang and requires all 50 checksum workloads to pass. This reference-only
 lane does not add C++17 requirements to student assignments.
 
-[Latest index-cpp detail table](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/index-cpp/epyc/report.md)
-shows each workload, higher-is-better GCC and Clang speed ratios, compile
+[index-cpp reports by host](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/index-cpp/report.md)
+show each workload, higher-is-better GCC and Clang speed ratios, compile
 cost, code size and A/A timing warnings. Its aggregate is separate from the
 public-suite badges. Main runs retain comparisons and raw observation JSON
 beside the existing results on `benchmark-badges`, with commit history under

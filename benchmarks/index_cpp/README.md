@@ -1,5 +1,9 @@
 # index-cpp compatibility check
 
+[CI results by host](https://github.com/vishvananda/cppgm-extended/blob/benchmark-badges/index-cpp/report.md)
+retain separate EPYC and GitHub Intel measurements. The dedicated Intel host's
+`intel` path is separate from `github-intel`; compare CPU models and commits.
+
 [index-cpp](https://github.com/kostya/index-cpp) is an upstream C++17 compiler
 stress test with 50 checksummed workloads. Keep its source unchanged. The
 reference compiler passes all 50 checks at `-O0`, `-O2` and `-O3` with GCC 15's
