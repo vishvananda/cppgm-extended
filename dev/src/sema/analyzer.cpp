@@ -639,10 +639,12 @@ void Analyzer::using_declaration(const syntax::UsingDecl& decl, Scope* scope)
 		error(decl.location, "ambiguous name in a using-declaration");
 	if (IsNamespaceBinding(result.binding))
 		error(decl.location, "a using-declaration cannot name a namespace");
-	// 7.3.3p8: class members require a member-declaration. Enumerator
-	// imports retain their existing behavior, with mode policy separate.
+	// 7.3.3p7-p8: before C++20, scoped enumerators cannot be imported,
+	// and class members require a member-declaration (P1099R5).
+	if (result.binding->kind == BindingKind::Enumerator && IsScopedEnumeration(result.binding->type))
+		error(decl.location, "a using-declaration cannot name a scoped enumerator");
 	if (prefix.scope != nullptr && prefix.scope->kind == ScopeKind::Class &&
-		result.binding->kind != BindingKind::Enumerator && declaration_scope(scope)->kind != ScopeKind::Class)
+		declaration_scope(scope)->kind != ScopeKind::Class)
 		error(decl.location, "a class-member using-declaration outside a class");
 	// 7.3.3p17: each declaration it introduces is accessible where it
 	// appears, named in the class its nested-name-specifier names (11.2p5).
