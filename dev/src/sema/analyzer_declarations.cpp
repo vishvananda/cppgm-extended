@@ -928,7 +928,8 @@ bool Analyzer::holds_auto(const Type* type) const
 	// CWG 2476: an initialized variable or allocated object can deduce a
 	// placeholder inside its function pointer's declared return type.
 	while (type->is_reference() || type->unqualified->kind == TypeKind::Pointer ||
-		type->unqualified->kind == TypeKind::MemberPointer || type->kind == TypeKind::Function)
+		type->unqualified->kind == TypeKind::MemberPointer || type->kind == TypeKind::Function ||
+		type->kind == TypeKind::Array)
 		type = type->unqualified->element;
 	return type->unqualified == auto_placeholder_ || type->unqualified == decltype_auto_placeholder_;
 }
@@ -952,6 +953,10 @@ const Type* Analyzer::deduced_type(const Specifiers& specifiers, const Type* dec
 	// otherwise, and in a template definition, its decltype type (an
 	// lvalue's an lvalue reference, a named variable an lvalue), whose
 	// instantiations deduce when it is dependent.
+	// CWG2397 permits array components inside pointer/reference patterns,
+	// while the complete deduction type itself cannot be an array.
+	if (declared->kind == TypeKind::Array)
+		error(location, "auto deduction for an array object");
 	const syntax::Expr* expression = initializer == nullptr ? nullptr
 		: initializer->kind == syntax::InitializerKind::Assign || initializer->kind == syntax::InitializerKind::Braced
 		? initializer->expression
@@ -1063,6 +1068,8 @@ const Type* Analyzer::replaced_auto(const Type* declared, const Type* type, uint
 	if (declared->unqualified == auto_placeholder_ || declared->unqualified == decltype_auto_placeholder_)
 		return types_.qualified(type, static_cast<uint8_t>(cv | declared->cv));
 	const Type* element = replaced_auto(declared->unqualified->element, type, cv);
+	if (declared->kind == TypeKind::Array)
+		return types_.array(element, declared->bound, declared->owner);
 	if (declared->kind == TypeKind::Function)
 		return types_.function(element, declared->params, declared->param_count, declared->variadic,
 			declared->function_cv, declared->ref, declared->owner);

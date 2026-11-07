@@ -1277,8 +1277,6 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 {
 	if (suffix.kind == syntax::DeclaratorSuffixKind::Array)
 	{
-		if (holds_auto(type))
-			error(location, "array of auto");
 		const uint64_t bound = suffix.bound != nullptr ? array_bound(*suffix.bound, scope) : 0;
 		const Type* array = checked_array(type, bound, location);
 		if (array == nullptr)
