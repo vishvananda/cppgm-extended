@@ -2616,7 +2616,7 @@ ExprFacts* Analyzer::destructor_access(const syntax::MemberExpr& expr, const Typ
 		error(expr.location, "a destructor name outside the supported forms");
 	const ClassEntity* cls = ClassOf(object);
 	const bool complete = cls != nullptr && require_complete(cls) && cls->scope != nullptr;
-	const bool scalar_qualified = qualified && cls == nullptr;
+	const bool scalar_qualified = qualified && IsScalar(object);
 	if (qualified && !complete && !scalar_qualified)
 		error(expr.location, "a qualified destructor name for an object of no complete class type");
 	if (qualified && !scalar_qualified && (cls = member_qualifier(*expr.member, cls, scope)) == nullptr)
