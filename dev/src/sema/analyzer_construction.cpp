@@ -1237,8 +1237,7 @@ FunctionEntity* Analyzer::initialize_class(
 		{
 			const syntax::Expr* argument = WithoutParentheses(list->elements[i]);
 			const Conversion* conversion = argument->facts->conversion;
-			if (conversion != nullptr && conversion->form != ConversionForm::Reference &&
-				!check_narrowing(*argument, conversion, parameters->params[i], scope))
+			if (conversion != nullptr && !check_narrowing(*argument, conversion, parameters->params[i], scope))
 				return nullptr;
 		}
 		facts->entity = constructor;
