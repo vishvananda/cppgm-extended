@@ -99,3 +99,5 @@ Source links:
 [4] https://wg21.link/conv.lval
 [5] https://wg21.link/conv.array
 [6] https://wg21.link/conv.func
+
+Offline adopted resolution: N3638, paper-n3638.txt

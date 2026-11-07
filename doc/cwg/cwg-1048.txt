@@ -69,3 +69,5 @@ DR against C++11.
 Source links:
 [1] https://wg21.link/expr.prim.lambda
 [2] https://wg21.link/temp.deduct.call
+
+Offline adopted resolution: N3638, paper-n3638.txt

@@ -175,8 +175,13 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/975.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/975.html",
       "source_html_sha256": "2303a5fd7f4e9baa276c675e648a88412520a29284237c27862803f68b7e1561",
-      "text_sha256": "0841aaf54cfd48853a5a370ced8335e95b3e35667b764fb36400d0cc4ab0fc1f",
-      "adopted_papers": []
+      "text_sha256": "fed5b61f150158db748b674db8b986cebabc7cada21ec22f650fb7c4d465e3ba",
+      "adopted_papers": [
+        "N3638"
+      ],
+      "local_papers": [
+        "paper-n3638.txt"
+      ]
     },
     {
       "issue": 1048,
@@ -187,8 +192,13 @@
       "source_url": "https://cplusplus.github.io/CWG/issues/1048.html",
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1048.html",
       "source_html_sha256": "84070e58b54beac854b059fd67845f9d5626a385d3107007f4f745b432226d6f",
-      "text_sha256": "d6189fdb0675430524dfef58d1f95149458452676f94b78d0c60d2d1ca000bb0",
-      "adopted_papers": []
+      "text_sha256": "a789c4ec2bc6da95cf5e373ff9dd5fefd9beee152333f38f539aaa890dbc8e64",
+      "adopted_papers": [
+        "N3638"
+      ],
+      "local_papers": [
+        "paper-n3638.txt"
+      ]
     },
     {
       "issue": 1059,
@@ -1106,6 +1116,13 @@
       "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/p0136r1.html",
       "source_html_sha256": "aba13233a139f27e6e4d4d4edf69d2e9454fa6afd5840872739ade4c3c06f375",
       "text_sha256": "55dcb82f8542db6a7090dc0c8b9631d3aa8aa2871c9b9ffdd793783cc131f0f0"
+    },
+    {
+      "paper": "N3638",
+      "file": "paper-n3638.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3638.html",
+      "source_html_sha256": "a510a242eeaa790c51d3667da29eaae509d393d938581c6fd8bf0b5b67738a1c",
+      "text_sha256": "45da611c7f397ec523b39234f2b9eddb756323c48a9570fc27b5ceb01f92e32e"
     }
   ]
 }

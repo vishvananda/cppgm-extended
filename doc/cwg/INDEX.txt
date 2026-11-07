@@ -53,8 +53,10 @@ CWG 974 | CD3 | cwg-0974.txt
   Default arguments for lambdas
 CWG 975 | CD3 | cwg-0975.txt
   Restrictions on return type deduction for lambdas
+  Adopted paper: paper-n3638.txt
 CWG 1048 | CD3 | cwg-1048.txt
   auto deduction and lambda return type deduction.
+  Adopted paper: paper-n3638.txt
 CWG 1059 | CD3 | cwg-1059.txt
   Cv-qualified array types (with rvalues)
 CWG 1094 | C++11 | cwg-1094.txt
@@ -227,6 +229,9 @@ P2266R2 | paper-p2266r2.txt
   https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p2266r2.html
 P0136R1 | paper-p0136r1.txt
   https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/p0136r1.html
+
+N3638 | paper-n3638.txt
+  https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3638.html
 
 Adding a decision
 -----------------
