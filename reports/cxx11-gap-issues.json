@@ -3453,7 +3453,8 @@
       "source": "candidate-source-verification-v1.json:484 regular tracked source/fixture/reference blobs match c4192b194; exactly one dev module changed",
       "export": "final-stages-v2.json:fresh-export,bundle42wrappers,restore-development pass; exact candidate restored",
       "immediate_parent_performance": "per-fix-counter-acceptance-v1.json and per-fix-memory-acceptance-v1.json:13 AA+13 AB comparisons independently pass both unchanged gates. Each verifies1040 observations/12800 batched children. Target instructions -1.1498228%; max instruction upper95 1.000031272; AB actual compiler RSS upper95 1.0. RSS receipt records the approximate Linux highwater method; precise RSS revalidation is mandatory under CXX11-042 before final memory acceptance.",
-      "family_instructions": "Fresh rebased verification: /mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/family-counter-acceptance-v1.json. Historical similarly named receipt under issues/CXX11-029 retains old-base scope."
+      "family_instructions": "Fresh rebased verification: /mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/family-counter-acceptance-v1.json. Historical similarly named receipt under issues/CXX11-029 retains old-base scope.",
+      "historical_native_oracle_attempt": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/historical-native-module-oracle-v1/hybrid-link-failure-v1.json"
     },
     "performance": {
       "status": "rebased-actual-parent-and-cumulative-gates-pending",
@@ -3461,7 +3462,7 @@
       "historical_full_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029/performance-acceptance-v1.json",
       "rebased_protocol": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/protocol.json",
       "rebased_native_oracles": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/native-oracles-v1/assessment.json",
-      "historical_original_blocker": "Historical b7c overload-O2 differs due upstream changes; new upstream and candidate exact. Retain the original comparison as open pending independent semantic/ABI adjudication. No output-gate relaxation or denominator shrink.",
+      "historical_original_blocker": "Native exact frozen-module compile passed but first native hybrid link fails: frozen benchmark capsule has older7argument resolve target API and lacks3newer APIs required by header-matched56afe rest. Preserve native-link failure; investigate identical native support/direct API harness before any substantive oracle or output-gate qualification. No frozen source/object changes or waiver.",
       "rebased_per_fix_instruction": "13AA/13AB reports pass;maxupper95=1.0000305614253144;packedbitfieldratio=0.9885835057755644",
       "rebased_per_fix_actual_rss": "Original approximate-highwater13AA/13AB pass retained; precision audit requires accurate trace revalidation before final acceptance.",
       "outer_controller": "821381/start52528549 exited1 on family-memory; session93744 terminal1. Do not resume/restart.",
@@ -3978,21 +3979,52 @@
   {
     "id": "CXX11-038",
     "priority": "P1",
-    "status": "triaged",
+    "status": "correctness-passed",
     "upstream": [],
     "symptom": "Explicit enum-specialization syntax on three members of a non-template class is silently accepted.",
     "root_cause": "Explicit-specialization target validation does not establish an eligible member-of-class-template target.",
     "owning_pa": 15,
-    "regressions": [],
-    "fix_revision": null,
+    "regressions": [
+      "pa15/tests/controls/300-enum-specialization-target-fake-explicit-scoped-opaque-bad.t",
+      "pa15/tests/controls/300-enum-specialization-target-fake-explicit-unscoped-opaque-bad.t",
+      "pa15/tests/controls/300-enum-specialization-target-fake-explicit-scoped-definition-bad.t",
+      "pa15/tests/controls/300-enum-specialization-target-explicit-class-scoped-opaque-bad.t",
+      "pa15/tests/controls/300-enum-specialization-target-explicit-class-scoped-definition-bad.t",
+      "pa15/tests/controls/300-enum-specialization-target-explicit-class-unscoped-definition-bad.t",
+      "pa15/tests/controls/300-enum-specialization-target-namespace-scoped-opaque-bad.t",
+      "pa15/tests/controls/300-enum-specialization-target-namespace-unscoped-definition-bad.t",
+      "pa15/tests/controls/300-enum-specialization-target-global-scoped-opaque-bad.t",
+      "pa15/tests/controls/300-enum-specialization-target-global-unscoped-definition-bad.t",
+      "pa11/tests/controls/100-qualified-enum-unscoped-qualified-definition.t",
+      "pa10/tests/controls/100-qualified-enum-unscoped-namespace-qualified-definition.t",
+      "pa15/tests/controls/300-qualified-enum-definition-member-of-explicit-class.t",
+      "pa15/tests/controls/300-qualified-enum-explicit-scoped-opaque-then-definition.t",
+      "pa15/tests/controls/300-qualified-enum-explicit-unscoped-opaque-then-definition.t",
+      "pa15/tests/controls/300-enum-specialization-target-function-enum-parameter.t",
+      "pa15/tests/controls/300-enum-specialization-target-member-instance-enum.t",
+      "pa17/tests/controls/300-enum-specialization-target-nested-template-enum.t",
+      "pa17/tests/controls/300-enum-specialization-target-direct-too-many-heads-bad.t",
+      "pa17/tests/controls/300-enum-specialization-target-nested-too-few-heads-bad.t",
+      "pa17/tests/controls/300-enum-specialization-target-nested-too-many-heads-bad.t"
+    ],
+    "fix_revision": "731f7c0b2af3fa3730e6c69313525836c88d7227",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-038",
     "checks": {
       "adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-038/standards-adjudication-v1.json",
       "parent_silent": 12,
-      "native_required_diagnostics": 36
+      "native_required_diagnostics": 36,
+      "functional_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-038/checks-v1/functional-verification-v1.json",
+      "root_revalidation": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-038/checks-v1/root-revalidation-v1.json",
+      "strict_tests": 8199,
+      "normal_stages": 15,
+      "export_stages": 24,
+      "packaged_controls": 21,
+      "wrappers": 42,
+      "focused_cells": 1320,
+      "common_exact_object_pairs": 108
     },
     "performance": {
-      "status": "not-started"
+      "status": "pending-actual-parent-measurement"
     },
     "standards_basis": {
       "category": "original-C++11",
@@ -4000,7 +4032,8 @@
         "N3485 14.7.3p1/p3/p4"
       ]
     },
-    "scope": "Three mandatory forms confirmed. The fourth form involving an explicitly specialized class remains standards review and is excluded. Separate from032 qualified opaque-declaration validation."
+    "scope": "Three mandatory forms confirmed. The fourth form involving an explicitly specialized class remains standards review and is excluded. Separate from032 qualified opaque-declaration validation.",
+    "triage_note": "Original-language member enum specialization target/head-count repair functional/export verified on actual032parent. Explicit-class ordinary definitions and nested member/template positives preserved. Existing SmallList4helper spill accurately disclosed and tested atdepth5. Distinct043valid-return parser gap remains open; actual-parent/cumulative performance and integration pending."
   },
   {
     "id": "CXX11-039",
@@ -4092,7 +4125,7 @@
   {
     "id": "CXX11-040",
     "priority": "P2",
-    "status": "repair-in-validation",
+    "status": "correctness-passed",
     "upstream": [
       "llvm-project/clang/test/CXX/dcl.decl/dcl.meaning/dcl.fct.default/p3.cpp (neighbor discovery)"
     ],
@@ -4145,7 +4178,12 @@
       "performance_input_cells": 84,
       "common_exact_object_pairs": 18,
       "placement_transfer": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-040/repair-v2/fixture-placement-transfer-v1.json",
-      "normal_export_status": "Nine completed normal stages retained across two R100fixture moves. New PA22owning suite,placement,harness and fresh export running inchecks-v2. No complete functional/export claim yet."
+      "normal_export_status": "passed;12normal/31export,28packaged,42wrappers. Nine completed stages including8190strict retained with independently verified R100fixture-only transfer; newPA22suite,placement,harness and fresh export pass.",
+      "functional_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-040/repair-v2/checks-v2/functional-verification-v1.json",
+      "normal_stages": 12,
+      "export_stages": 31,
+      "packaged_controls": 28,
+      "wrappers": 42
     },
     "performance": {
       "status": "pending-actual-parent-measurement"
@@ -4157,7 +4195,7 @@
       "wording": "https://cplusplus.github.io/CWG/issues/2476.html",
       "approved_resolution": "2023-11-10,change5 explicitly permits placeholder in new-expression type-id; supersedes1892 restriction"
     },
-    "triage_note": "Root independently reviewed adopted final2476 wording. Separate positive language gap from034 nested defaults; no compiler fix or required fixture. Native GCC disagreement retained. Verify earliest exact PA20 new/deduction cluster before repair.",
+    "triage_note": "Both initialized-variable and new-expression function return placeholder deduction repaired using existing typed type/deduction data.16validparent owning controls fail beforefix,all336candidate variants pass. All normal/student-export requirements pass with explicit fixture-only placement transfer. Actual-parent/cumulative performance and integration remain required.",
     "fixture_revision": "4e53dd4e45469784921bad7851d8bc8644bcf8be",
     "ownership_note": "PA20:100 placeholder/function-pointer deduction; member-function-pointer composition belongsPA22:300. Required controls split26/2 after handout review; failed placement retained with exact source/tool transfer proof."
   },

@@ -1,10 +1,9 @@
 Current checkpoint (2026-11-07; supersedes historical status entries below)
 
-Fourteen confirmed distinct individual compiler gaps remain unclosed. Eleven
-have independently validated functional/student-export repairs:008,019/shared030,
-021,031,032,033,034,035,036,039 and041. 038 and040 now have candidate fixes undergoing full functional/export
-validation.043 elaborated-enum function-template specialization return-type
-parsing remains unfixed. Functional acceptance is
+Fourteen known individual compiler gaps remain unclosed. Thirteen have
+independently validated functional/student-export repairs:008,019/shared030,
+021,031,032,033,034,035,036,038,039,040 and041.043 elaborated-enum
+function-template specialization return-type parsing remains unfixed. Functional acceptance is
 not performance acceptance or integration. This is not an exhaustive corpus
 inventory or a current GCC/Clang whole-suite pass percentage.
 
@@ -1072,3 +1071,21 @@ its final GCC/Clang CI jobs with full-suite timing.
 2026-11-07 discovery:043 independently confirmed from038neighbors:24parent valid-source wrongrejections,72native compile/link/run successes and2parent AST failures;480rawstreams rehashed. No043fix or performance evidence. Known individual compiler gaps14,eleven functional/export fixed andthree unfixed;042metrology excluded.
 
 2026-11-07 root040candidate:f31d25960/fixture4e53dd4e4,compiler1363e23e4 passes336focused variants and8190strict tests.28required controls fail16valid immutable-parent owning lanes;1344parent/native observations independently rehashed.84performance-input correctness cells pass with18exact common A/B objects. Placement caught2memberpointer fixtures; byte-identical R100moves toPA22:300 preserveallsource/tools and9completed normal gates,then newPA22/placement/harness/fresh export runinchecks-v2. No full functional/export or performance acceptance yet. Historical native-module oracle construction has begun underfunctional-window-v2; all51headers matchfrozen epoch,fullnative rest-of-compiler build43335 active,no oracle/gate pass claimed.
+
+2026-11-07 functional checkpoints complete:038731f7c0b2 root-reverified1320
+focused cells,8199strict,15normal/24export,21packaged,42wrappers.040source
+f31d25960/fixture4e53dd4e4 passes336focused,8190strict,12normal/31export,
+28packaged,42wrappers and84performance-input correctness cells/18exactpairs.
+Independent receipts retain failedplacement and candidate bookkeeping-field
+correction without changing raw observations. Thirteen of14known compiler
+issues now have full functional/export repairs;043remainsunfixed/inprogress.
+No new performance acceptance or cumulative integration is claimed.
+
+Historical native oracle attempt:full56afehostcompiler build and exactfrozen
+moduleGCCO2compile pass. First native hybrid link fails because benchmarkcapsule
+exports an older7argument function-target resolver and lacks newer APIs needed
+by the header-matched rest compiler.51header hashes alone did not establish
+whole-module link compatibility. Failedv1,objects,commands and19frozen semantic
+inputs retained underhistorical-native-module-oracle-v1. Native support/direct
+API harness design remains required before semantic replay or anyqualified
+historical output oracle. No output-gate waiver;original performance group open.
