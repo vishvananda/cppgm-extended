@@ -406,14 +406,21 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 				return pointer;
 			}
 		}
-		if (evaluated->kind == sema::ValueKind::Floating && storage.is_float())
+		// An uncaptured enclosing automatic has no place in this body:
+		// semantics permitted only its constant value. Keep ordinary local,
+		// captured and namespace objects on their existing storage paths.
+		const bool enclosing_scalar = !named->is_static && !named->is_thread_local && !named->is_extern &&
+			named->owner != nullptr &&
+			(named->owner->kind == sema::ScopeKind::Block || named->owner->kind == sema::ScopeKind::Function) &&
+			local_index_.find(named) == PointerMap::kMissing;
+		if ((static_member || enclosing_scalar) && evaluated->kind == sema::ValueKind::Floating && storage.is_float())
 		{
 			if (e->kind == syntax::ExprKind::Member)
 				member_object(static_cast<const syntax::MemberExpr&>(*e));
 			return floating(storage, lowir::float_literal(storage.kind(), evaluated->floating));
 		}
 		// So is a constexpr scalar's pointer to member.
-		if (evaluated->kind == sema::ValueKind::MemberPointer)
+		if ((static_member || enclosing_scalar) && evaluated->kind == sema::ValueKind::MemberPointer)
 		{
 			if (e->kind == syntax::ExprKind::Member)
 				member_object(static_cast<const syntax::MemberExpr&>(*e));
