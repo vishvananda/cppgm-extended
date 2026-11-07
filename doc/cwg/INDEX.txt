@@ -209,6 +209,10 @@ Unresolved references (not adopted decisions)
 These are included so a cited open question can also be read offline. They are
 not evidence of an adopted resolution or a compiler conformance requirement.
 
+CWG 1286 | drafting | cwg-1286.txt
+  Equivalence of alias templates (BACKGROUND, no adopted identity rule)
+CWG 1430 | open | cwg-1430.txt
+  Pack expansion into fixed alias template parameter list (BACKGROUND, no adopted ban)
 CWG 1584 | drafting | cwg-1584.txt
   Deducing function types from cv-qualified types
 CWG 1634 | open | cwg-1634.txt

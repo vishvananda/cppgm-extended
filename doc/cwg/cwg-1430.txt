@@ -1,0 +1,129 @@
+CWG 1430: Pack expansion into fixed alias template parameter list
+Source: https://cplusplus.github.io/CWG/issues/1430.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: open
+Catalog role: reference-only
+
+BACKGROUND ONLY: This issue has no adopted resolution. Its historical questions,
+meeting notes and proposed wording are not an adopted course requirement.
+The C++11 alias-specialization contract remains N3485 14.5.7/14.5.3 together
+with adopted CWG1558; do not infer a prohibition or alias-template identity rule
+from the proposals reproduced below.
+
+The complete source issue is reproduced below as plain text. [DELETE: ...]
+and [INSERT: ...] preserve historical edits rather than applying them.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1430. Pack expansion into fixed alias template parameter list
+Section: 13.7.8 [temp.alias [1]] Status: open Submitter: Jason Merrill Date: 2011-12-13
+
+Originally, a pack expansion could not expand into a fixed-length template parameter
+list, but this was changed in N2555. This works fine for most templates, but causes
+issues with alias templates.
+
+In most cases, an alias template is transparent; when it's used in a template we can
+just substitute in the dependent template arguments. But this doesn't work if the
+template-id uses a pack expansion for non-variadic parameters. For example:
+
+
+    template<class T, class U, class V>
+    struct S {};
+
+    template<class T, class V>
+    using A = S<T, int, V>;
+
+    template<class... Ts>
+    void foo(A<Ts...>);
+
+
+There is no way to express A<Ts...> in terms of S, so we need to hold onto the A until
+we have the Ts to substitute in, and therefore it needs to be handled in mangling.
+
+Currently, EDG and Clang reject this testcase, complaining about too few template
+arguments for A. G++ did as well, but I thought that was a bug. However, on the ABI list
+John Spicer argued that it should be rejected.
+
+(See also issue 1558 [2].)
+
+Notes from the October, 2012 meeting:
+
+The consensus of CWG was that this usage should be prohibited, disallowing use of an
+alias template when a dependent argument can't simply be substituted directly into the
+type-id.
+
+Additional note, April, 2013:
+
+For another example, consider:
+
+
+  template<class... x> class list{};
+  template<class a, class... b> using tail=list<b...>;
+  template <class...T> void f(tail<T...>);
+
+  int main() {
+    f<int,int>({});
+  }
+
+
+There is implementation variance in the handling of this example.
+
+CWG 2022-11-11
+
+There is no more implementation divergence; all known implementations reject the
+example.
+
+Additional notes (January, 2025)
+
+Using pack-index-specifiers allows to express some such substitutions, but not others.
+In the below example, we cannot express X. And while we can express Y, we cannot deduce
+through the replacement.
+
+
+  template<typename A, typename...T> using X = std::tuple<T...>;
+  template<typename A, typename...T> using Y = A;
+
+  template<typename ...U> void f(X<U...> x, Y<U...> y);
+
+
+Additional notes (March, 2025)
+
+There is still implementation divergence for the following example:
+
+
+   template <template <typename...> class T> struct Template {
+   template <typename... Us> using type = T<Us...>;
+   };
+
+   template <class T> struct X { static constexpr T value = T(); };
+   template <class T> using alias = X<T>;
+
+   int main() { return Template<alias>::type<int>::value; }
+
+
+GCC and EDG accept, clang rejects.
+
+Also consider:
+
+
+  template <template <int...> class T> struct Template {
+    template <int... Us> using type = T<Us...>; 
+  };
+  template <T1 N> struct X { static constexpr int value = 0; };
+  template <T2 N> using alias = X<N>;
+
+
+If T1 = T2 = int, GCC and EDG accept and MSVC and Clang reject. If T1 = int and T2 =
+short, GCC accepts and everyone else rejects. If T1 = short and T2 = int, EDG accepts
+and everyone else rejects. See also issues 1979 [3] and 1286 [4]; the alias template
+above would be considered "simple" only if T1 = T2.
+
+Source links:
+[1] https://wg21.link/temp.alias
+[2] https://cplusplus.github.io/CWG/issues/1558.html
+[3] https://cplusplus.github.io/CWG/issues/1979.html
+[4] https://cplusplus.github.io/CWG/issues/1286.html

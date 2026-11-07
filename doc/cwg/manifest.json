@@ -296,6 +296,23 @@
       "adopted_papers": []
     },
     {
+      "issue": 1286,
+      "title": "Equivalence of alias templates",
+      "status": "drafting",
+      "role": "reference-only",
+      "file": "cwg-1286.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1286.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1286.html",
+      "source_html_sha256": "7a00f6fef607e9e540cb8ee3d376b4f235a28391a79a3e99fb457f24cb15829b",
+      "text_sha256": "a28bcd3e6525234bef3b7206e025dd5708261ff550df9a4ffc073f031be41be8",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
+    },
+    {
       "issue": 1315,
       "title": "Restrictions on non-type template arguments in partial specializations",
       "status": "CD4",
@@ -426,6 +443,23 @@
       "source_html_sha256": "343958fcb0af7bce5fbd0895140fd140bdfdd5c9e6cf78acbb21802051743444",
       "text_sha256": "6c94aef0e001c73f28387fd3ba9a4c7709b708c58b8349d513d3eb0d39947320",
       "adopted_papers": []
+    },
+    {
+      "issue": 1430,
+      "title": "Pack expansion into fixed alias template parameter list",
+      "status": "open",
+      "role": "reference-only",
+      "file": "cwg-1430.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1430.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1430.html",
+      "source_html_sha256": "3b8a6c29040d0db85c41a0dab78b3e1b559b85f0a1b7e11d8df2e899d6e1716d",
+      "text_sha256": "652dd248f57b47c88dd4f589296f4506d6aedb2369c0de49fd8034a3f50d6821",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      }
     },
     {
       "issue": 1437,

@@ -1,0 +1,166 @@
+CWG 1286: Equivalence of alias templates
+Source: https://cplusplus.github.io/CWG/issues/1286.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: drafting
+Catalog role: reference-only
+
+BACKGROUND ONLY: This issue has no adopted resolution. Its historical questions,
+meeting notes and proposed wording are not an adopted course requirement.
+The C++11 alias-specialization contract remains N3485 14.5.7/14.5.3 together
+with adopted CWG1558; do not infer a prohibition or alias-template identity rule
+from the proposals reproduced below.
+
+The complete source issue is reproduced below as plain text. [DELETE: ...]
+and [INSERT: ...] preserve historical edits rather than applying them.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1286. Equivalence of alias templates
+Section: 13.7.8 [temp.alias [1]] Status: drafting Submitter: Gabriel Dos Reis Date:
+2011-04-03
+
+Issue 1244 [2] was resolved by changing the example in 13.6 [temp.type [3]] paragraph 1
+from
+
+
+  template<template<class> class TT> struct X { };
+  template<class> struct Y { };
+  template<class T> using Z = Y<T>;
+  X<Y> y;
+  X<Z> z;
+
+
+to
+
+
+  template<class T> struct X { };
+  template<class> struct Y { };
+  template<class T> using Z = Y<T>;
+  X<Y<int> > y;
+  X<Z<int> > z;
+
+
+In fact, the original intent was that the example should have been correct as written;
+however, the normative wording to make it so was missing. The current wording of 13.7.8
+[temp.alias [1]] deals only with the equivalence of a specialization of an alias
+template with the type-id after substitution. Wording needs to be added specifying under
+what circumstances an alias template itself is equivalent to a class template.
+
+Proposed resolution (September, 2012):
+
+1.
+
+Add the following as a new paragraph following 13.7.8 [temp.alias [4]] paragraph 2:
+
+[INSERT: When the type-id in the declaration of alias template (call it A) consists of a
+simple-template-id in which the template-argument-list consists of a list of identifiers
+naming each template-parameter of A exactly once in the same order in which they appear
+in A's template-parameter-list, the alias template is equivalent to the template named
+in the simple-template-id (call it T) if A and T have the same number of
+template-parameters. [Footnote: This rule is transitive: if an alias template A is
+equivalent to another alias template B that is equivalent to a class template C, then A
+is also equivalent to C, and A and B are also equivalent to each other. —end footnote]
+[Example:]
+
+
+[INSERT:   template<typename T, U = T> struct A;
+
+  template<typename V, typename W>
+    using B = A<V, W>;                // equivalent to A
+
+  template<typename V, typename W>
+    using C = A<V>;                   // not equivalent to A:
+                                      // not all parameters used
+
+  template<typename V>
+    using D = A<V>;                   // not equivalent to A:
+                                      // different number of parameters
+
+  template<typename V, typename W>
+    using E = A<W, V>;                // not equivalent to A:
+                                      // template-arguments in wrong order
+
+  template<typename V, typename W = int>
+    using F = A<V, W>;                // equivalent to A:
+                                      // default arguments not considered
+
+  template<typename V, typename W>
+    using G = A<V, W>;                // equivalent to A and B
+
+  template<typename V, typename W>
+    using H = E<V, W>;                // equivalent to E
+
+  template<typename V, typename W>
+    using I = A<V, typename W::type>; // not equivalent to A:
+                                      // argument not identifier]
+
+
+
+[INSERT: —end example]]
+
+2.
+
+Change 13.6 [temp.type [3]] paragraph 1 as follows:
+
+Two template-ids refer to the same class or function if
+
+-
+
+...
+
+-
+
+their corresponding template template-arguments refer to the same [INSERT: or equivalent
+(13.7.8 [temp.alias [1]])] template[INSERT: s].
+
+[Example:
+
+...declares x2 and x3 to be of the same type. Their type differs from the types of x1
+and x4.
+
+
+  template<[DELETE: class T] [INSERT: template<class> class TT]> struct X { };
+  template<class> struct Y { };
+  template<class T> using Z = Y<T>;
+  X<[DELETE: Y<int>] [INSERT: Y]> y;
+  X<[DELETE: Z<int>] [INSERT: Z]> z;
+
+
+declares y and z to be of the same type. —end example]
+
+Additional note, November, 2014:
+
+Concern has been expressed over the proposed resolution with regard to its handling of
+default template arguments that differ between the template and its alias, e.g.,
+
+
+   template<typename T, typename U = int> struct A {};
+   template<typename T, typename U = char> using B = A<T, U>;
+   template<template<typename...> typename C> struct X { C<int> c; };
+
+
+Notes from the May, 2015 meeting:
+
+See also issue 1979 [5], which CWG is suggesting to be resolved by defining a “simple”
+alias, one in which the SFINAE conditions are the same as the referenced template and
+that uses all template parameters.
+
+CWG 2025-11-21
+
+Names resolve to underlying entities per 6.1 [basic.pre [6]] paragraph 8. Define the
+underlying entity of a simple alias template to be (the underlying entity of) the
+defining-type-id instead of introducing "equivalent". In order to qualify as a simple
+alias template, neither the alias template nor the referred-to template can have default
+template arguments in their template-heads.
+
+Source links:
+[1] https://wg21.link/temp.alias
+[2] https://cplusplus.github.io/CWG/issues/1244.html
+[3] https://wg21.link/temp.type#1
+[4] https://wg21.link/temp.alias#2
+[5] https://cplusplus.github.io/CWG/issues/1979.html
+[6] https://wg21.link/basic.pre#8
