@@ -1427,8 +1427,10 @@ const Type* Analyzer::apply_suffix(const syntax::DeclaratorSuffix& suffix, const
 	// The course's extension (the README): a function definition's
 	// placeholder return type without a trailing return type, deduced from
 	// its return statements (as C++14's 7.1.6.4p2 and p9; see
-	// deduced_result), on a declaration's own function declarator.
-	if (holds_auto(type) && &suffix != placeholder_suffix_ && type != decltype_auto_placeholder_)
+	// deduced_result), on a declaration's own function declarator. CWG
+	// 2476 also permits a placeholder in an initialized variable's or
+	// new-expression's function-pointer type, deduced from its initializer.
+	if (!auto_declarator_ && holds_auto(type) && &suffix != placeholder_suffix_ && type != decltype_auto_placeholder_)
 		error(location, "auto return type without a trailing return type");
 	if (type->kind == TypeKind::Function || type->kind == TypeKind::Array)
 	{

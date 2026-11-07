@@ -808,7 +808,7 @@ void Analyzer::declare_declarator(
 		init.declared = binding;
 		return;
 	}
-	const Type* declared_auto = holds_auto(info.type) ? info.type : nullptr;
+	const Type* declared_auto = info.type->kind != TypeKind::Function && holds_auto(info.type) ? info.type : nullptr;
 	if (declared_auto != nullptr)
 	{
 		// 7.1.6.4p4-p5: a data member declared auto is a static one.
@@ -879,8 +879,10 @@ bool Analyzer::holds_auto(const Type* type) const
 {
 	// The type of a declarator applying operators to auto (auto_declarator_;
 	// a function's placeholder return type keeps its decl-specifiers' cv).
+	// CWG 2476: an initialized variable or allocated object can deduce a
+	// placeholder inside its function pointer's declared return type.
 	while (type->is_reference() || type->unqualified->kind == TypeKind::Pointer ||
-		type->unqualified->kind == TypeKind::MemberPointer)
+		type->unqualified->kind == TypeKind::MemberPointer || type->kind == TypeKind::Function)
 		type = type->unqualified->element;
 	return type->unqualified == auto_placeholder_ || type->unqualified == decltype_auto_placeholder_;
 }
@@ -1015,6 +1017,9 @@ const Type* Analyzer::replaced_auto(const Type* declared, const Type* type, uint
 	if (declared->unqualified == auto_placeholder_ || declared->unqualified == decltype_auto_placeholder_)
 		return types_.qualified(type, static_cast<uint8_t>(cv | declared->cv));
 	const Type* element = replaced_auto(declared->unqualified->element, type, cv);
+	if (declared->kind == TypeKind::Function)
+		return types_.function(element, declared->params, declared->param_count, declared->variadic,
+			declared->function_cv, declared->ref, declared->owner);
 	if (declared->unqualified->kind == TypeKind::MemberPointer)
 		return types_.qualified(types_.member_pointer(declared->unqualified->owner, element), declared->cv);
 	if (!declared->is_reference())
