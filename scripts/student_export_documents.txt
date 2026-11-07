@@ -99,6 +99,7 @@ doc/cwg/paper-p1787r6.txt
 doc/cwg/paper-p1825r0.txt
 doc/cwg/paper-p2266r2.txt
 doc/itanium-mangling.txt
+doc/llvm-license.txt
 doc/n3485.txt
 pa1/README.md
 pa10/README.md

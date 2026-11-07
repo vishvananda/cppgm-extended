@@ -1,3 +1,6 @@
+// LLVM Project contributors, Apache-2.0 WITH LLVM-exception; see doc/llvm-license.txt.
+// Source: clang/test/CXX/except/except.spec/p13-friend.cpp
+// Revision: 2078da43e25a4623cab2d0d60decddf709aaea28
 // Adopted CWG1330: preserve the complete original valid translation, including both friend contexts.
 // expect exit 0
 // RUN: %clang_cc1 -fexceptions -fcxx-exceptions -fsyntax-only -verify %s

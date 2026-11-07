@@ -413,5 +413,17 @@
     "diagnostic_options": [
       "-Wextra"
     ]
+  },
+  "llvm-project/clang/test/CXX/except/except.spec/p13-friend.cpp": {
+    "status": "valid-baseline-limitation",
+    "sha256": "1652adbdb3a7737f05e12ce2c2d0b652d48cf01f467553d932ebcba1b9a6938e",
+    "issue": "CXX11-105",
+    "reason": "Valid under adopted CWG1330 (doc/cwg/cwg-1330.txt): exception specifications are complete-class contexts, including later constexpr static members. Both friend exception specifications agree with the preceding namespace declarations. Pinned Clang21 rejects because its member mapping has not instantiated x; GCC15 also rejects the ordinary late-member case. Preserve the complete original as required PA17:300 control300-friend-noexcept-original-complete-class-context.t, plus ordinary and templated runtime controls in PA16/PA17. This source is excluded from BOTH paired timing roles because the upstream compiler cannot qualify its valid-program acceptance; it is an upstream baseline limitation, not a cppgm failure or a language pass in the paired suite. Original 802-case observations and native rejection are retained in the evidence root."
+  },
+  "llvm-project/clang/test/SemaTemplate/qualified-id.cpp": {
+    "status": "not-required",
+    "sha256": "f4a45ddbba2e574fd85ea10f1af3cdfee68b1ea52703f4297d78924052b0052e",
+    "issue": "CXX11-106",
+    "reason": "N3485 7.1.6.3p1 forbids the standalone qualified class Outer2<V>::Inner elaborated-type declaration in the unused PR12291 template for every specialization. No valid specialization can be generated and none is instantiated; 14.6p8 makes it ill-formed, no diagnostic required. A mandatory whole-TU diagnostic is unjustified. Preserve the exact independent valid prefix as required PA14:100 control100-qualified-id-original-valid-prefix.t, with defined runtime helpers. This exact-source IFNDR exclusion applies to BOTH paired roles; the excluded original is not reported as a pass."
   }
 }

@@ -19,3 +19,10 @@ The plain-text CWG issue references and WG21 papers under doc/cwg/ retain
 their source, contributor, revision and adoption information. They are
 attributed to their original WG21 contributors; the project does not claim
 authorship of that reference material. See doc/cwg/INDEX.txt and manifest.json.
+
+Selected compiler regression fixtures preserve material from the LLVM Project,
+revision 2078da43e25a4623cab2d0d60decddf709aaea28, including
+clang/test/CXX/except/except.spec/p13-friend.cpp and
+clang/test/SemaTemplate/qualified-id.cpp. Copyright belongs to the LLVM Project
+contributors. These portions are licensed under Apache-2.0 WITH LLVM-exception;
+the complete upstream license is retained in doc/llvm-license.txt.
