@@ -10,6 +10,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from run_cxx11_ci_suite import comparison, run_case, run_suite, validate_manifest
 from upstream_dg_proxy import sha256
+from qualify_clang_cxx11_ci_manifest import qualification_cases
 
 
 FAKE = '''#!/usr/bin/env python3
@@ -43,6 +44,46 @@ else:
 
 
 class Suite(unittest.TestCase):
+    def test_strict_qualification_does_not_rewrite_normal_expectation_or_flags(self):
+        self.compiler.write_text(FAKE.replace("if 'REJECT' in source:",
+                                             "if 'REJECT' in source or ('STRICT_ONLY' in source "
+                                             "and '-pedantic-errors' in args):"))
+        case = self.case('STRICT_ONLY', flags=['-cc1'])
+        case['qualification'] = dict(kind='implicit-mode-cxx11',
+                                     additional_upstream_flags=['-pedantic-errors'])
+        self.assertEqual(self.run_one(case, role='upstream')['status'], 'passed')
+        manifest = self.root/'manifest.json'
+        manifest.write_text(json.dumps(dict(schema=1, suite='clang', cases=[case])))
+        original = manifest.read_bytes()
+        output = self.root/'qualification'
+        script = Path(__file__).resolve().parents[1]/'qualify_clang_cxx11_ci_manifest.py'
+        result = subprocess.run([sys.executable, str(script), '--manifest', str(manifest),
+                                 '--source-root', str(self.root), '--upstream', str(self.compiler),
+                                 '--upstream-version', '21.1.8', '--output', str(output)],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertEqual(manifest.read_bytes(), original)
+        report = json.loads((output/'results.json').read_text())
+        self.assertTrue(report['complete'])
+        self.assertFalse(report['passed'])
+        row, = report['result']['results']
+        self.assertEqual(row['expect'], 'accept')
+        self.assertEqual(row['status'], 'compile-failed')
+        self.assertIn('-pedantic-errors', row['stages'][0]['command'])
+        self.assertNotIn('-pedantic-errors', case['upstream_flags'])
+
+    def test_qualification_selects_only_explicit_policies_and_preserves_original_cases(self):
+        case = self.case()
+        self.assertEqual(qualification_cases(dict(cases=[case])), [])
+        case['qualification'] = dict(kind='implicit-mode-cxx11',
+                                     additional_upstream_flags=['-pedantic-errors'])
+        projected, = qualification_cases(dict(cases=[case]))
+        self.assertEqual(projected['upstream_flags'], ['-pedantic-errors'])
+        self.assertEqual(case['upstream_flags'], [])
+        case['qualification']['additional_upstream_flags'] = ['-Werror']
+        with self.assertRaises(ValueError):
+            qualification_cases(dict(cases=[case]))
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -144,6 +185,33 @@ class Suite(unittest.TestCase):
 
 
 class Workflow(unittest.TestCase):
+    def test_strict_qualification_failure_remains_visible_after_normal_pair(self):
+        workflow = Path(__file__).resolve().parents[2]/'.github/workflows/upstream-cxx11.yml'
+        text = workflow.read_text()
+        qualification = text.split('      - name: Qualify implicit-mode sources with strict native C++11\n', 1)[1]
+        qualification = qualification.split('      - name:', 1)[0]
+        self.assertIn('continue-on-error: true', qualification)
+        script = qualification.split('        run: |\n', 1)[1]
+        script = '\n'.join(line[10:] for line in script.splitlines() if line.startswith('          '))
+        with tempfile.TemporaryDirectory() as tmp:
+            trace = Path(tmp)/'args'
+            command = 'python3() { printf "%s\\0" "$@" > "$TRACE"; }\n'+script
+            command = command.replace('${{ matrix.upstream }}', 'clang++-21')
+            command = command.replace('${{ matrix.version }}', '21.1.8')
+            subprocess.run(['bash', '-c', command], check=True,
+                           env=dict(os.environ, RUNNER_TEMP=tmp, TRACE=str(trace)))
+            args = trace.read_bytes().decode().rstrip('\0').split('\0')
+            self.assertEqual(args[0], 'scripts/qualify_clang_cxx11_ci_manifest.py')
+            self.assertEqual(args[args.index('--upstream')+1], 'clang++-21')
+        gate = text.split('      - name: Require successful native C++11 qualification\n', 1)[1]
+        gate = gate.split('      - name:', 1)[0]
+        self.assertIn("if: always() && matrix.suite == 'clang'", gate)
+        command = gate.split('        run: ', 1)[1].strip()
+        for outcome, status in [('success', 0), ('failure', 1), ('skipped', 1)]:
+            with self.subTest(outcome=outcome):
+                result = subprocess.run(['bash', '-c', command.replace('${{ steps.qualification.outcome }}', outcome)])
+                self.assertEqual(result.returncode, status)
+
     def test_freeze_step_enables_verify_negatives_only_for_clang(self):
         workflow = Path(__file__).resolve().parents[2] / '.github/workflows/upstream-cxx11.yml'
         step = workflow.read_text().split('      - name: Freeze language test manifest\n', 1)[1]
@@ -161,6 +229,7 @@ class Workflow(unittest.TestCase):
                     args = trace.read_bytes().decode().rstrip('\0').split('\0')
                     self.assertEqual(args[0], 'scripts/build_'+suite+'_cxx11_ci_manifest.py')
                     self.assertEqual('--verify-negatives' in args, suite == 'clang')
+                    self.assertEqual('--implicit-cxx11' in args, suite == 'clang')
                     self.assertEqual(args[args.index('--output')+1],
                                      str(root/'run temp/cxx11/manifest.json'))
                     self.assertEqual(args[args.index('--'+('llvm' if suite == 'clang' else 'gcc')+'-root')+1],

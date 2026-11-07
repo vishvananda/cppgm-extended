@@ -18,6 +18,22 @@ def arguments(*flags):
 
 
 class PolicyTests(unittest.TestCase):
+    def test_implicit_mode_requires_separate_qualification_without_changing_normal_flags(self):
+        args = ['%clang_cc1', '-fsyntax-only', '-verify=expected,cxx11', '%s']
+        with self.assertRaises(manifest.Excluded):
+            manifest.project_arguments(args, set())
+        row = manifest.project_arguments(args, set(), implicit_cxx11=True)
+        self.assertEqual(row['dialect'], 'c++11')
+        self.assertEqual(row['upstream_flags'], ['-cc1'])
+        self.assertEqual(row['candidate_flags'], [])
+        self.assertEqual(row['verification'], ['-verify=expected,cxx11'])
+        self.assertEqual(row['qualification']['additional_upstream_flags'], ['-pedantic-errors'])
+        explicit = ['%clang_cc1', '-std=c++11', '-fsyntax-only', '%s']
+        self.assertEqual(manifest.project_arguments(explicit, set()),
+                         manifest.project_arguments(explicit, set(), implicit_cxx11=True))
+        with self.assertRaises(manifest.Excluded):
+            manifest.project_arguments([*args, '-std=c++17'], set(), implicit_cxx11=True)
+
     def test_comments_strings_and_raw_strings_are_not_active_policy(self):
         text = '// #include <missing>\n/* __clang__ try */\n' \
                'const char *s = R"tag(#if __clang__ throw)tag";\n'
@@ -86,6 +102,25 @@ class PolicyTests(unittest.TestCase):
 
 
 class CatalogueTests(unittest.TestCase):
+    def test_no_standard_sources_are_inventoried_only_with_explicit_projection_option(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            name = 'clang/test/implicit.cpp'
+            path = root/name
+            path.parent.mkdir(parents=True)
+            path.write_text('// RUN: %clang_cc1 -fsyntax-only %s\nint x;\n')
+            parsed = {'RUN:': [SimpleNamespace(keyword='RUN:', command='native command')]}
+            projection = manifest.project_arguments(['%clang_cc1', '-fsyntax-only', '%s'],
+                                                    set(), implicit_cxx11=True)
+            with patch.object(manifest.subprocess, 'check_output', return_value=(name+'\0').encode()), \
+                    patch.object(manifest, 'project_run', return_value=projection), \
+                    patch.object(manifest.subprocess, 'run', side_effect=AssertionError('compiler forbidden')):
+                self.assertEqual(manifest.collect(root, lambda *a, **k: parsed, None)['cases'], [])
+                row = manifest.collect(root, lambda *a, **k: parsed, None, implicit_cxx11=True)
+            self.assertEqual(len(row['cases']), 1)
+            self.assertEqual(row['cases'][0]['expect'], 'accept')
+            self.assertIn('qualification', row['cases'][0])
+
     def test_selection_hash_dedup_and_unresolved_cases_do_not_depend_on_compiler(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
