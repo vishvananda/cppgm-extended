@@ -110,7 +110,9 @@ class CatalogueTests(unittest.TestCase):
                     patch.object(manifest.subprocess, 'run', side_effect=AssertionError('compiler forbidden')):
                 row = manifest.collect(root, parse, None)
             self.assertEqual(len(row['cases']), 1)
-            self.assertEqual(len(row['exclusions']), 4)
+            # Each unsupported negative RUN retains its own position; the
+            # positive duplicate still deduplicates to one language case.
+            self.assertEqual(len(row['exclusions']), 5)
             case = row['cases'][0]
             self.assertEqual(case['path'], names[0])
             self.assertEqual(case['sha256'], hashlib.sha256((root/names[0]).read_bytes()).hexdigest())
@@ -130,6 +132,88 @@ class SourceDispositions(unittest.TestCase):
 
     def test_unreviewed_sources_stay_in_selection(self):
         self.assertIsNone(manifest.disposition_reason('clang/test/valid.cpp', 'known', {}))
+
+
+class RequiredDiagnosticDiscovery(unittest.TestCase):
+    def test_active_prefixes_use_complete_names(self):
+        source = '// expected-cxx11-error {{one}}\n// expected-note {{not an error}}'
+        with self.assertRaises(manifest.Excluded):
+            manifest.required_errors(source, ['-verify'])
+        row = manifest.required_errors(source, ['-verify=expected-cxx11,extra'])
+        self.assertTrue(row['active_mandatory_error'])
+        self.assertEqual(row['prefixes'], ['expected-cxx11', 'extra'])
+
+    def test_literals_and_raw_literals_cannot_create_expectations(self):
+        for source in ['const char*s="// expected-error {{x}}";',
+                       'const char*s=R"tag(/* expected-error {{x}} */)tag";',
+                       '// other-error {{x}}\n// expected-warning {{x}}']:
+            with self.subTest(source=source), self.assertRaises(manifest.Excluded):
+                manifest.required_errors(source, ['-verify'])
+
+    def test_only_positive_minimum_errors_are_mandatory(self):
+        for count in ['', '+', '1', '2+', '1-3']:
+            with self.subTest(count=count):
+                self.assertTrue(manifest.required_errors(
+                    '// expected-error@+1 '+count+' {{ignored text}}', ['-verify']))
+        for count in ['0', '0+', '0-1']:
+            with self.subTest(count=count), self.assertRaises(manifest.Excluded):
+                manifest.required_errors('// expected-error '+count+' {{optional}}', ['-verify'])
+
+    def test_unknown_verifier_forms_remain_blocked(self):
+        for flags in [[], ['-verify', '-verify'], ['-verify='], ['-verify=expected,*']]:
+            with self.subTest(flags=flags), self.assertRaises(manifest.Excluded):
+                manifest.required_errors('// expected-error {{bad}}', flags)
+        for text in ['// expected-error@#marker {{bad}}',
+                     '// expected-error@header.h:3 {{bad}}',
+                     '// expected-error@0 {{bad}}', '// expected-error 3-1 {{bad}}',
+                     '// expected-error-re {{regex {{.*}}}}',
+                     '// expected-error 1- {{bad}}', '// expected-error missing-body',
+                     '// expected-no-diagnostics\n// expected-error {{bad}}',
+                     'const char*s="unterminated; // expected-error {{bad}}']:
+            with self.subTest(text=text), self.assertRaises(manifest.Excluded):
+                manifest.required_errors(text, ['-verify'])
+
+    def test_line_splicing_precedes_comment_discovery(self):
+        source = '// expected-err\\\nor {{bad}}'
+        self.assertTrue(manifest.required_errors(source, ['-verify']))
+
+    def test_negative_sources_keep_preprocessing_and_exception_guards(self):
+        with self.assertRaises(manifest.Excluded):
+            manifest.source_policy('#if 0\n// expected-error {{hidden}}\n#endif',
+                                   allow_diagnostics=True)
+        tokens = manifest.source_policy('void f(){throw 1;} // expected-error {{bad}}',
+                                        allow_diagnostics=True)
+        with self.assertRaises(manifest.Excluded):
+            manifest.project_arguments(['%clang_cc1', '-std=c++11', '-fsyntax-only',
+                                        '-verify', '%s'], tokens)
+
+    def test_selection_requires_exact_source_language_adjudication(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            name = 'clang/test/negative.cpp'
+            path = root/name
+            path.parent.mkdir(parents=True)
+            path.write_text('// RUN: -std=c++11\nint bad; // expected-error {{bad}}\n')
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            adjudication = {'expected': 'diagnose-invalid', 'source_sha256': digest,
+                            'clause': 'required language rule'}
+            parsed = {'RUN:': [SimpleNamespace(keyword='RUN:', command='native command')]}
+            with patch.object(manifest.subprocess, 'check_output', return_value=(name+'\0').encode()), \
+                    patch.object(manifest, 'project_run', return_value=arguments('-verify')):
+                unreviewed = manifest.collect(root, lambda *a, **k: parsed, None)
+                self.assertEqual(unreviewed['cases'], [])
+                self.assertIn('language-rule triage', unreviewed['exclusions'][0]['reason'])
+                key = 'llvm-project/'+name+'#0#c++11'
+                reviewed = manifest.collect(root, lambda *a, **k: parsed, None,
+                                             adjudications={key: adjudication})
+                case, = reviewed['cases']
+                self.assertEqual(case['expect'], 'diagnostic')
+                self.assertTrue(case['language_oracle']['active_mandatory_error'])
+                self.assertNotIn('verification', case)
+                self.assertNotIn('-verify', case['upstream_flags'])
+                with self.assertRaisesRegex(RuntimeError, 'Stale'):
+                    manifest.collect(root, lambda *a, **k: parsed, None,
+                                     adjudications={key: dict(adjudication, source_sha256='stale')})
 
 
 if __name__ == '__main__':

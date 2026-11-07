@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze a conservative positive C++11 language cohort from pinned Clang RUNs.
+"""Freeze conservative C++11 language checks from pinned Clang RUNs.
 
 Selection never invokes either compiler. Native lit parses RUN structure, but
 this first cohort deliberately needs no generated site configuration or helper.
@@ -23,6 +23,10 @@ STANDARD = re.compile(r'-std=(?:gnu\+\+|c\+\+)(?:11|0x)\b')
 TARGETS = {'x86_64-pc-linux-gnu', 'x86_64-unknown-linux-gnu', 'x86_64-linux-gnu'}
 SUFFIXES = {'.cpp', '.cc', '.cxx', '.C'}
 DIAGNOSTIC = re.compile(r'\b[\w-]+-(?:error|warning|note|remark)(?:-re)?\b')
+SOURCE_PARTS = re.compile(r'//[^\n]*|/\*[\s\S]*?\*/|R"([^ ()\\\t\r\n]{0,16})\([\s\S]*?\)\1"'
+                          r'|"(?:\\[\s\S]|[^"\\])*"|\'(?:\\[\s\S]|[^\'\\])*\'')
+DIRECTIVE = re.compile(r'(?<![\w-])([A-Za-z][A-Za-z0-9_-]*)-'
+                       r'(error|warning|note|remark|no-diagnostics)(-re)?(?![\w-])')
 
 
 class Excluded(ValueError):
@@ -31,12 +35,10 @@ class Excluded(ValueError):
 
 def code_only(text):
     """Mask comments/literals before checking policy-sensitive source tokens."""
-    pattern = re.compile(r'//[^\n]*|/\*[\s\S]*?\*/|R"([^ ()\\\t\r\n]{0,16})\([\s\S]*?\)\1"'
-                         r'|"(?:\\[\s\S]|[^"\\])*"|\'(?:\\[\s\S]|[^\'\\])*\'')
-    return pattern.sub(lambda m: ''.join('\n' if c == '\n' else ' ' for c in m[0]), text)
+    return SOURCE_PARTS.sub(lambda m: ''.join('\n' if c == '\n' else ' ' for c in m[0]), text)
 
 
-def source_policy(text):
+def source_policy(text, allow_diagnostics=False):
     # A backslash-newline can extend a comment or construct a directive/token.
     logical = re.sub(r'\\\r?\n', '', text.lstrip('\ufeff'))
     code = code_only(logical)
@@ -44,13 +46,67 @@ def source_policy(text):
         raise Excluded('Trigraph translation needs an explicit preprocessing-context review')
     if re.search(r'^\s*(?:#|%:)', code, re.MULTILINE):
         raise Excluded('Preprocessing directives need active-context/input-closure validation')
-    if DIAGNOSTIC.search(text):
+    if not allow_diagnostics and DIAGNOSTIC.search(text):
         raise Excluded('Diagnostic expectations need active language-rule adjudication')
     if re.search(r'\b__builtin_\w+\b', code):
         raise Excluded('Builtin function semantics need an explicit language/extension review')
     if re.search(r'\b__\w+\b', code):
         raise Excluded('Predefined/compiler tokens need an explicit context review')
     return set(re.findall(r'\b(?:throw|try|catch)\b', code))
+
+
+def required_errors(text, verification):
+    """Discover a supported active error, never compare compiler diagnostics.
+
+    No source directives are allowed by source_policy. Only comments can own
+    annotations; optional zero-minimum errors and inactive prefixes do not make
+    a negative. Unsupported native verifier grammar remains an explicit gap.
+    """
+    if len(verification) != 1:
+        raise Excluded('Negative discovery requires one explicit verifier prefix selection')
+    flag = verification[0]
+    prefixes = ['expected'] if flag == '-verify' else flag[len('-verify='):].split(',')
+    if not prefixes or any(not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]*', p) for p in prefixes):
+        raise Excluded('Unknown native verifier prefix syntax')
+    logical = re.sub(r'\\\r?\n', '', text.lstrip('\ufeff'))
+    code = code_only(logical)
+    if any(v in code for v in ['"', "'", '/*']):
+        raise Excluded('Unterminated literal/comment prevents safe expectation discovery')
+    errors, no_diagnostics, other = 0, False, False
+    for part in SOURCE_PARTS.finditer(logical):
+        if not part[0].startswith(('//', '/*')):
+            continue
+        for directive in DIRECTIVE.finditer(part[0]):
+            prefix, kind, regex = directive.groups()
+            if prefix not in prefixes:
+                continue
+            if kind == 'no-diagnostics':
+                no_diagnostics = True
+                continue
+            other = True
+            if regex:
+                raise Excluded('Native regex expectation grammar needs separate discovery')
+            tail = part[0][directive.end():]
+            location = re.match(r'@(?:[+-]?\d+|\*)', tail)
+            if location:
+                if location[0] == '@0':
+                    raise Excluded('Invalid native absolute expectation line zero')
+                tail = tail[location.end():]
+            elif tail.startswith('@'):
+                raise Excluded('Native file/marker expectation location needs separate discovery')
+            count = re.match(r'\s*(\d+(?:\+|-\d+)?|\+)?\s*\{\{', tail)
+            if not count or '}}' not in tail[count.end():]:
+                raise Excluded('Unsupported or malformed native expectation count/body')
+            bounds = count[1] or '1'
+            minimum = 1 if bounds == '+' else int(re.match(r'\d+', bounds)[0])
+            if '-' in bounds and int(bounds.split('-')[1]) < minimum:
+                raise Excluded('Invalid native expectation count range')
+            errors += int(kind == 'error' and minimum > 0)
+    if no_diagnostics and other:
+        raise Excluded('Conflicting active no-diagnostics and diagnostic expectations')
+    if not errors:
+        raise Excluded('No active mandatory expected-error under selected verifier prefixes')
+    return dict(prefixes=prefixes, active_mandatory_error=True)
 
 
 def project_run(command, native, policy_tokens):
@@ -73,7 +129,7 @@ def project_arguments(args, policy_tokens):
     standard = None
     syntax = False
     source_count = 0
-    upstream, candidate, adaptations = ['-cc1'], [], []
+    upstream, candidate, adaptations, verification = ['-cc1'], [], [], []
     exceptions = False
     i = 1
     while i < len(args):
@@ -88,6 +144,7 @@ def project_arguments(args, policy_tokens):
         elif value == '-fsyntax-only':
             syntax = True
         elif value == '-verify' or value.startswith('-verify='):
+            verification.append(value)
             adaptations.append('Native verifier annotations omitted; positive language acceptance only')
         elif value in {'-fexceptions', '-fcxx-exceptions'}:
             upstream.append(value)
@@ -114,7 +171,7 @@ def project_arguments(args, policy_tokens):
         raise Excluded('Native cc1 disabled-exception policy is not equivalent for these tokens')
     adaptations.append('Syntax-only acceptance strengthened to relocatable object generation')
     return dict(dialect=standard, upstream_flags=upstream, candidate_flags=candidate,
-                adaptations=list(dict.fromkeys(adaptations)))
+                adaptations=list(dict.fromkeys(adaptations)), verification=verification)
 
 
 def local_configs(source, root):
@@ -137,7 +194,7 @@ def disposition_reason(name, digest, dispositions):
     return None
 
 
-def collect(root, parse_keywords, native, dispositions=None):
+def collect(root, parse_keywords, native, dispositions=None, adjudications=None):
     files = subprocess.check_output(['git', 'ls-files', '-z', '--', 'clang/test'], cwd=root)
     cases, exclusions, grouped = [], [], {}
     for name in sorted(files.decode().split('\0')):
@@ -166,7 +223,7 @@ def collect(root, parse_keywords, native, dispositions=None):
                 raise Excluded('Native Inputs support ownership is not a standalone language test')
             if local_configs(path, root / 'clang/test'):
                 raise Excluded('Native inherited local configuration is not mapped initially')
-            policy_tokens = source_policy(text)
+            policy_tokens = source_policy(text, allow_diagnostics=True)
             parsed = parse_keywords(str(path), require_script=False)
             if any(parsed.get(key) for key in ['REQUIRES:', 'UNSUPPORTED:', 'XFAIL:']):
                 raise Excluded('Native feature/expected-failure configuration needs evaluation')
@@ -178,7 +235,25 @@ def collect(root, parse_keywords, native, dispositions=None):
             continue
         for index, directive in enumerate(directives):
             try:
-                projection = project_run(directive.command, native, policy_tokens)
+                projection = dict(project_run(directive.command, native, policy_tokens))
+                verification = projection.pop('verification', [])
+                expected = 'accept'
+                if DIAGNOSTIC.search(text):
+                    discovered = required_errors(text, verification)
+                    key = 'llvm-project/' + name + '#' + str(index) + '#' + projection['dialect']
+                    adjudication = (adjudications or {}).get(key)
+                    if not adjudication:
+                        raise Excluded('Active verify error awaits language-rule triage for CI inclusion')
+                    if adjudication['source_sha256'] != digest:
+                        raise RuntimeError('Stale source-pinned negative adjudication: ' + name)
+                    if adjudication['expected'] != 'diagnose-invalid':
+                        raise Excluded('Reviewed language rule does not require a diagnostic')
+                    expected = 'diagnostic'
+                    projection['language_oracle'] = dict(adjudication=adjudication, **discovered)
+                    projection['adaptations'] = [v for v in projection['adaptations']
+                                                if 'positive language acceptance' not in v]
+                    projection['adaptations'].append('Whole translation unit requires any normal diagnostic; '
+                                                     'no wording, count, location or recovery matching')
             except (Excluded, ValueError) as error:
                 exclusions.append(dict(path=name, reason='RUN ' + str(index) + ': ' + str(error)))
                 continue
@@ -188,14 +263,16 @@ def collect(root, parse_keywords, native, dispositions=None):
                 continue
             case = dict(id='clang-' + hashlib.sha256(key.encode()).hexdigest()[:20],
                         path=name, sha256=digest, action='compile',
-                        expect='accept', original=[directive.command], **projection)
+                        expect=expected, original=[directive.command], **projection)
             grouped[key] = case
             cases.append(case)
     return dict(schema=1, suite='clang', revision=REVISION,
-                coverage='Positive object acceptance from self-contained explicit C++11/0x syntax RUNs; '
+                coverage='Positive object acceptance and adjudicated required diagnostics from self-contained '
+                         'explicit C++11/0x syntax RUNs; '
                          'both ISO and GNU spellings retain their declared dialect; no full Clang-suite claim',
                 limitations=['Selection is independent of cppgm acceptance; upstream qualification failures stay visible',
-                             'No negative, link, runtime, diagnostic wording, AST, LLVM or assembly parity claim',
+                             'Negative checks establish a whole-translation-unit diagnostic, not each annotation',
+                             'No link, runtime, diagnostic wording, AST, LLVM or assembly parity claim',
                              'Sources without literal C++11/0x spellings and non-C++ suffixes are outside this initial cohort',
                              'Preprocessing, builtins, local configs, features, support inputs and unmapped RUNs remain gaps'],
                 exclusions=exclusions, cases=cases)
@@ -208,6 +285,8 @@ def main(argv=None):
     parser.add_argument('--revision', default=REVISION, choices=[REVISION])
     parser.add_argument('--dispositions', type=Path,
                         default=Path(__file__).resolve().parents[1] / 'reports/cxx11-language-dispositions.json')
+    parser.add_argument('--adjudications', type=Path,
+                        default=Path(__file__).resolve().parents[1] / 'reports/cxx11-clang-language-adjudications.json')
     args = parser.parse_args(argv)
     root = args.llvm_root.resolve()
     parse_keywords, _ = native_parser(root, args.revision)
@@ -216,7 +295,12 @@ def main(argv=None):
     native = sys.modules['lit']
     from lit import ShCommands, ShUtil
     native.ShCommands, native.ShUtil = ShCommands, ShUtil
-    manifest = collect(root, parse_keywords, native, json.loads(args.dispositions.read_text()))
+    adjudications = json.loads(args.adjudications.read_text())
+    for row in adjudications.values():
+        source = Path(__file__).resolve().parents[1] / row['standard_source']
+        if hashlib.sha256(source.read_bytes()).hexdigest() != row['standard_sha256']:
+            raise ValueError('Stale primary standard source: ' + str(source))
+    manifest = collect(root, parse_keywords, native, json.loads(args.dispositions.read_text()), adjudications)
     subprocess.run(['git', 'diff', '--quiet', 'HEAD', '--', *tracked], cwd=root, check=True)
     if not manifest['cases']:
         raise ValueError('The conservative selection produced no cases')
