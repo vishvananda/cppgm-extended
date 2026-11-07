@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -14,6 +15,16 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / 'scripts'))
 import run_upstream_dg as runner
 import upstream_dg_proxy as proxy
+
+
+# Linux piped core handlers can delay waitpid despite RLIMIT_CORE=0. Keep this
+# synthetic crash local to its child process and retain the real signal status.
+CRASH_CODE = '''import os, signal, sys
+if sys.platform.startswith('linux'):
+    import ctypes
+    assert ctypes.CDLL(None).prctl(4, 0, 0, 0, 0) == 0  # PR_SET_DUMPABLE
+os.kill(os.getpid(), signal.SIGSEGV)
+'''
 
 
 class BoundaryTests(unittest.TestCase):
@@ -75,10 +86,12 @@ class BoundaryTests(unittest.TestCase):
             for index, code in enumerate([
                     "import sys; print('ERROR: std::bad_alloc', file=sys.stderr); sys.exit(1)",
                     'import sys; sys.exit(70)',
-                    'import os, signal; os.kill(os.getpid(), signal.SIGSEGV)']):
+                    CRASH_CODE]):
                 result, _, _ = proxy.execute([sys.executable, '-c', code], root / str(index),
                                              self.config(root))
                 self.assertEqual(result['classification'], 'abnormal')
+                if index == 2:
+                    self.assertEqual(result['returncode'], -signal.SIGSEGV)
 
     def test_timeout_kills_descendant_process_group(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -121,7 +134,7 @@ sources = [pathlib.Path(arg) for arg in sys.argv[1:] if pathlib.Path(arg).suffix
 text = '\\n'.join(path.read_text() for path in sources)
 if 'FAKE_CRASH' in text or 'FAKE_TIMEOUT' in text or 'FAKE_INTERNAL' in text:
     print('ERROR: ' + str(sources[0]) + ':1:1: marker', file=sys.stderr, flush=True)
-    if 'FAKE_CRASH' in text: os.kill(os.getpid(), signal.SIGSEGV)
+    if 'FAKE_CRASH' in text: exec(''' + repr(CRASH_CODE) + ''')
     if 'FAKE_TIMEOUT' in text: time.sleep(20)
     sys.exit(70)
 if 'FAKE_NO_OUTPUT' in text: sys.exit(0)
