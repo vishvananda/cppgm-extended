@@ -1728,6 +1728,47 @@ bool narrow_to_u32(std::vector<Inst>& insts, uint32_t k, Reg r, uint32_t end)
 	}
 }
 
+// A scale followed by an add can share an indexed address calculation.
+// The intermediate value and flags must be unobserved. Bound both searches
+// so this local selection costs constant work per instruction.
+bool fuse_scaled_add(std::vector<Inst>& insts, uint32_t i, uint32_t end)
+{
+	Inst& inst = insts[i];
+	if ((inst.op != Op::Shl && inst.op != Op::Imul) || inst.nops != 2 || !plain_gpr(inst.ops[0]) ||
+		inst.ops[0].reg == RSP || inst.ops[1].kind != OperandKind::Imm || inst.ops[1].imm <= 0 ||
+		(inst.type != lowir::TypeKind::U32 && !wide_kind(inst.type)))
+		return false;
+	int64_t odd = inst.op == Op::Shl ? 1 : inst.ops[1].imm;
+	unsigned shift = inst.op == Op::Shl ? static_cast<unsigned>(inst.ops[1].imm) : 0;
+	while ((odd & 1) == 0 && shift < 4)
+	{
+		odd >>= 1;
+		++shift;
+	}
+	if (shift < 1 || shift > 3 || (odd != 1 && odd != 3 && odd != 5 && odd != 9))
+		return false;
+	const Reg b = inst.ops[0].reg;
+	const uint32_t limit = std::min(end, i + 16);
+	uint32_t k = i + 1;
+	while (k < limit && !reads_or_writes(insts[k], b))
+		++k;
+	const bool narrow = inst.type == lowir::TypeKind::U32;
+	if (k == limit || insts[k].op != Op::Add || insts[k].nops != 2 || !plain_gpr(insts[k].ops[0]) ||
+		insts[k].ops[0].reg != b || !plain_gpr(insts[k].ops[1]) || insts[k].ops[1].reg == b ||
+		!(narrow ? narrow_kind(insts[k].type) : wide_kind(insts[k].type)) || !flags_dead_after(insts, k, limit))
+		return false;
+	Inst& add = insts[k];
+	add.op = Op::Lea;
+	add.type = narrow ? lowir::TypeKind::I32 : lowir::TypeKind::Void;
+	add.ops[1] = Operand::make_mem(add.ops[1].reg, 0, b, static_cast<uint8_t>(1u << shift));
+	inst.op = odd == 1 ? Op::Nop : Op::Lea;
+	inst.nops = odd == 1 ? 0 : 2;
+	inst.type = add.type;
+	inst.ops[0] = odd == 1 ? Operand() : Operand::make_reg(b);
+	inst.ops[1] = odd == 1 ? Operand() : Operand::make_mem(b, 0, b, static_cast<uint8_t>(odd - 1));
+	return true;
+}
+
 } // namespace
 
 // O1+: `add b, imm` next to `add b, c` (c another register, the same
@@ -1750,6 +1791,13 @@ uint32_t fuse_adds_and_extensions(Function& function)
 		for (uint32_t i = block.first; i < end; ++i)
 		{
 			Inst& inst = insts[i];
+			const Reg scaled = plain_gpr(inst.ops[0]) ? inst.ops[0].reg : kNoReg;
+			if (fuse_scaled_add(insts, i, end))
+			{
+				known &= ~(1u << scaled);
+				++removed;
+				continue;
+			}
 			// The add pair: the next instruction touching b (past ones that
 			// neither touch it nor read the flags).
 			uint32_t j = i + 1;

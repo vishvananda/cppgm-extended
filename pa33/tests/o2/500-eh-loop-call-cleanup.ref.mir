@@ -33,8 +33,7 @@ function @eh_loop
   block ^for_body_2
     mov rdi, rbx
     call @work [args=(rdi)]
-    shl rax, 1
-    add rax, rbx
+    lea rax, [rbx+rax*2]
     add r12, rax
     add [r13], 1
     add rbx, 1

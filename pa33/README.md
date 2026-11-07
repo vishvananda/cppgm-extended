@@ -171,6 +171,9 @@ retained for later readers. Use counts alone can favor a long live range
 that displaces several shorter ones. Include register occupancy in that
 tradeoff, and measure scalar and vector spill costs separately.
 
+When combining scaled arithmetic with an address calculation, preserve the
+operation width, wrapped bits, live intermediate values and any observed flags.
+
 Check results at the ABI boundary as well as inside a function: incoming
 upper bits, caller clobbers, phi transfers, exceptional exits and frame
 alignment all matter. Measure instruction counts for redundant work and
