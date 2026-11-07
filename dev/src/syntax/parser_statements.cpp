@@ -907,7 +907,18 @@ Stmt* Parser::parse_for()
 		if (init == nullptr)
 			parsed = false;
 		else if (init->kind == StmtKind::Declaration)
-			stmt->init_declaration = static_cast<DeclarationStmt*>(init)->declaration;
+		{
+			Decl* declaration = static_cast<DeclarationStmt*>(init)->declaration;
+			// 6.5: only a simple-declaration, not every block-declaration.
+			// Standalone class and enum specifiers have their own AST kinds.
+			if (declaration->kind != DeclKind::Simple && declaration->kind != DeclKind::Class &&
+				declaration->kind != DeclKind::Enum)
+			{
+				fail();
+				parsed = false;
+			}
+			stmt->init_declaration = declaration;
+		}
 		else if (init->kind == StmtKind::Ambiguous)
 			readings = init;
 		else
