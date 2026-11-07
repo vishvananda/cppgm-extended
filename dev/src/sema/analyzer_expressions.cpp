@@ -2564,6 +2564,43 @@ const ClassEntity* Analyzer::member_qualifier(const syntax::Name& name, const Cl
 	return base;
 }
 
+LookupResult Analyzer::scalar_destructor_name(const syntax::Name& name, const Type* object, Scope* scope)
+{
+	// 3.4.3p6, 5.2.4p2: in C::I::~J, I and J name the same
+	// scalar type, looked up in C; in I::~J both use the expression's
+	// context. The scalar qualifier is a type, not a lookup scope.
+	if (name.components.size < 2)
+		error(name.location, "a qualified scalar destructor name requires a type qualifier");
+	syntax::Name qualifier = name;
+	--qualifier.components.size;
+	const LookupResult type = lookup_name(qualifier, scope, LookupFilter::Elaborated);
+	Scope* const context = last_prefix_.scope;
+	if (failed())
+		return LookupResult();
+	if (binding_type(type.binding, name.location)->unqualified != object->unqualified)
+	{
+		substitution_error(name.location, "the pseudo-destructor qualifier does not name the object's type");
+		return LookupResult();
+	}
+	const LookupResult result = context != nullptr
+		? names_.qualified(context, name.last().identifier, LookupFilter::Elaborated)
+		: names_.unqualified(scope, name.last().identifier, LookupFilter::Elaborated);
+	if (result.ambiguous)
+	{
+		substitution_error(name.location, "ambiguous type in a pseudo-destructor name");
+		return LookupResult();
+	}
+	if (result.found() && semantic() && (template_depth_ == 0 || InstanceMemberTemplate(scope)))
+	{
+		if (context != nullptr && context->kind == ScopeKind::Class)
+			check_access(
+				result.binding, static_cast<const ClassEntity*>(context->entity), nullptr, scope, name.location);
+		else if (context == nullptr)
+			check_unqualified_access(result.binding, scope, name.location);
+	}
+	return result;
+}
+
 ExprFacts* Analyzer::destructor_access(const syntax::MemberExpr& expr, const Type* object, Scope* scope)
 {
 	// 12.4p12-p13: E.~T() or E->~T() calls the destructor of a class
@@ -2579,14 +2616,17 @@ ExprFacts* Analyzer::destructor_access(const syntax::MemberExpr& expr, const Typ
 		error(expr.location, "a destructor name outside the supported forms");
 	const ClassEntity* cls = ClassOf(object);
 	const bool complete = cls != nullptr && require_complete(cls) && cls->scope != nullptr;
-	if (qualified && !complete)
+	const bool scalar_qualified = qualified && cls == nullptr;
+	if (qualified && !complete && !scalar_qualified)
 		error(expr.location, "a qualified destructor name for an object of no complete class type");
-	if (qualified && (cls = member_qualifier(*expr.member, cls, scope)) == nullptr)
+	if (qualified && !scalar_qualified && (cls = member_qualifier(*expr.member, cls, scope)) == nullptr)
 		return nullptr;
-	LookupResult found = LookupResult();
+	LookupResult found = scalar_qualified ? scalar_destructor_name(*expr.member, object, scope) : LookupResult();
+	if (failed())
+		return nullptr;
 	if (complete)
 		found = names_.qualified(cls->scope, last.identifier, LookupFilter::Elaborated);
-	if (!found.found())
+	if (!found.found() && !scalar_qualified)
 		found = names_.unqualified(scope, last.identifier, LookupFilter::Elaborated);
 	if (!found.found() || (found.binding->kind != BindingKind::Type && found.binding->kind != BindingKind::TypeAlias))
 		error(expr.location, "the destructor name does not name a type");
@@ -2603,7 +2643,7 @@ ExprFacts* Analyzer::destructor_access(const syntax::MemberExpr& expr, const Typ
 		if (named == nullptr)
 			error(expr.location, "the destructor name's template-id names no class template");
 	}
-	const Type* target = qualified ? cls->type : object->unqualified;
+	const Type* target = qualified && !scalar_qualified ? cls->type : object->unqualified;
 	if (!qualified && !last.has_arguments && binding_type(named, expr.location)->unqualified != target)
 	{
 		// 3.4.5p3: either lookup may name the object's type. A member

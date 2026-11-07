@@ -586,6 +586,7 @@ private:
 	ExprFacts* conversion_name(const syntax::IdExpr& expr, Scope* scope);
 	const ClassEntity* member_qualifier(const syntax::Name& name, const ClassEntity* cls, Scope* scope);
 	ExprFacts* destructor_access(const syntax::MemberExpr& expr, const Type* object, Scope* scope);
+	LookupResult scalar_destructor_name(const syntax::Name& name, const Type* object, Scope* scope);
 	ExprFacts* cast_expression(const syntax::CastExpr& expr, Scope* scope);
 	ExprFacts* functional_cast(const syntax::FunctionalCastExpr& expr, Scope* scope);
 	ExprFacts* explicit_conversion(
