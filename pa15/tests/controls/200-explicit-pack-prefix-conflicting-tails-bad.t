@@ -1,0 +1,5 @@
+// expect reject
+// N3485 14.8.1p6,p9: fixed explicit prefix and deduced residual pack.
+template<class...T>struct Tuple{};
+template<class...T>int f(Tuple<T...>,Tuple<T...>){return 0;}
+int main(){Tuple<int,float> a;Tuple<int,double> b;return f<int>(a,b);}
