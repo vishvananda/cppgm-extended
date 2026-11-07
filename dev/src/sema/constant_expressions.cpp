@@ -7,6 +7,7 @@
 
 #include "lex/number_literal.h"
 #include "sema/analyzer.h"
+#include "sema/aggregates.h"
 #include "sema/integral_arithmetic.h"
 #include "sema/pretty_function.h"
 #include "sema/string_literals.h"
@@ -295,7 +296,7 @@ bool ConstantInterpreter::rvalue(const syntax::Expr& expr, ConstValue& out)
 		const syntax::BracedInitList& list = static_cast<const syntax::BracedInitList&>(*e);
 		if (IsComplex(facts->type) && list.elements.size == 2)
 			return part_list(list.elements, facts->type, out, e->location);
-		if (facts->type->unqualified->kind == TypeKind::Vector)
+		if (facts->type->unqualified->kind == TypeKind::Vector && LaneList(facts->type, list))
 			return lane_list(list.elements, facts->type, out, e->location);
 		if (list.elements.empty())
 		{
@@ -388,7 +389,8 @@ bool ConstantInterpreter::rvalue(const syntax::Expr& expr, ConstValue& out)
 																					: functional.arguments;
 		if (functional.braced != nullptr && operands.size == 2 && IsComplex(facts->type))
 			return part_list(operands, facts->type, out, e->location);
-		if (functional.braced != nullptr && facts->type->unqualified->kind == TypeKind::Vector)
+		if (functional.braced != nullptr && facts->type->unqualified->kind == TypeKind::Vector &&
+			LaneList(facts->type, *functional.braced))
 			return lane_list(operands, facts->type, out, e->location);
 		if (operands.size == 1)
 		{

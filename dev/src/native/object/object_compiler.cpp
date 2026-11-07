@@ -495,10 +495,14 @@ void ObjectCompiler::emit_remaining()
 	for (lowir::SymbolId s = 0; s < program_.symbols.size(); ++s)
 	{
 		const lowir::Symbol& symbol = program_.symbols[s];
-		if (symbol.kind == lowir::SymbolKind::FunctionDeclaration && symbol.metadata.role == ir_model::SR_CPU_QUERY)
+		if (symbol.kind == lowir::SymbolKind::FunctionDeclaration &&
+			(symbol.metadata.role == ir_model::SR_CPU_QUERY || symbol.metadata.role == ir_model::SR_XSTATE_QUERY))
 		{
 			UnwindFacts facts;
-			emit_cpu_query(image_, s, facts);
+			if (symbol.metadata.role == ir_model::SR_CPU_QUERY)
+				emit_cpu_query(image_, s, facts);
+			else
+				emit_xstate_query(image_, s, facts);
 			ranges_.push_back(CodeRange{ s, image_.symbol(s).offset, image_.text().size(), 0, 0, false });
 			if (eh_model_ == EhModel::Host)
 				record_unwind(static_cast<uint32_t>(ranges_.size() - 1), false, &facts);
@@ -520,7 +524,8 @@ bool ObjectCompiler::local_function(uint32_t image_symbol) const
 	// A function no other object can name (a local symbol, object_symbol):
 	// internal, or a thread-local wrapper the unit defines for itself.
 	const lowir::Symbol& s = program_.symbols[image_symbol];
-	if ((s.metadata.role != ir_model::SR_NONE && s.metadata.role != ir_model::SR_CPU_QUERY) ||
+	if ((s.metadata.role != ir_model::SR_NONE && s.metadata.role != ir_model::SR_CPU_QUERY &&
+			s.metadata.role != ir_model::SR_XSTATE_QUERY) ||
 		(s.metadata.flags & lowir::SF_OBJECT_ROOT) != 0)
 		return false;
 	return s.metadata.binding == ir_model::SBM_INTERNAL || s.kind == lowir::SymbolKind::FunctionDeclaration;

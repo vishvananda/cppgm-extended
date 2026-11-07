@@ -121,6 +121,7 @@ private:
 	bool control(const std::string& mnemonic, const std::string& text, size_t at);
 	bool transfer(const std::string& mnemonic, const std::string& text, size_t at);
 	bool cpu_query(const std::string& text, size_t at);
+	bool xstate_query(const std::string& text, size_t at);
 	bool set_flag(AsmFlag flag, const std::string& text, size_t at);
 	bool capture(AsmFlag flag)
 	{
@@ -216,6 +217,8 @@ bool Lifter::line(const std::string& text)
 		return fail("a repeated instruction other than nop");
 	if (mnemonic == "cpuid")
 		return cpu_query(text, at);
+	if (mnemonic == "xgetbv")
+		return xstate_query(text, at);
 	if (mnemonic == ".align" || mnemonic == ".p2align" || mnemonic == "jne" || mnemonic == "jnz" || mnemonic == "je" ||
 		mnemonic == "jz")
 		return control(mnemonic, text, at);
@@ -399,6 +402,44 @@ bool Lifter::cpu_query(const std::string& text, size_t at)
 		instruction.immediate |= static_cast<uint64_t>(found) << (reg * 8);
 	}
 	// CPUID leaves condition flags unchanged.
+	out_.push_back(instruction);
+	return true;
+}
+
+bool Lifter::xstate_query(const std::string& text, size_t at)
+{
+	if (lock_ || !rest_empty(text, at))
+		return fail("a prefixed XGETBV or one with explicit operands");
+	const char registers[] = { 'a', 'd', 'c' };
+	AsmInstruction instruction = AsmInstruction();
+	instruction.operation = AsmOperation::XGetBv;
+	instruction.bytes = 4;
+	for (uint32_t reg = 0; reg < 3; ++reg)
+	{
+		uint32_t found = count_;
+		for (uint32_t i = 0; i < count_; ++i)
+		{
+			if (operands_[i].fixed != registers[reg] || (reg != 2 && !operands_[i].output))
+				continue;
+			if (found != count_)
+				return fail("ambiguous XGETBV register bindings");
+			found = i;
+		}
+		if (found == count_ || operands_[found].binding != AsmOperandClass::Register ||
+			(operands_[found].bytes != 4 && operands_[found].bytes != 8))
+			return fail("XGETBV requires fixed EAX/EDX outputs and an ECX input");
+		if (reg == 2)
+		{
+			Operand input = Operand();
+			input.index = static_cast<uint8_t>(found);
+			if (!read(input, 4))
+				return false;
+		}
+		else
+			written(found, 4);
+		instruction.immediate |= static_cast<uint64_t>(found) << (reg * 8);
+	}
+	// XGETBV leaves condition flags unchanged.
 	out_.push_back(instruction);
 	return true;
 }

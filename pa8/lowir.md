@@ -260,6 +260,7 @@ The currently defined role values are:
   - `bad_typeid`
   - `bad_array_new_length`
   - `cpu_query`
+  - `xstate_query`
 - global roles:
   - `rtti_class`
   - `rtti_si`
@@ -279,6 +280,12 @@ are the CPUID leaf, subleaf and writable storage for four consecutive
 32-bit results in EAX, EBX, ECX, EDX order. It executes the actual instruction
 and preserves callee-saved registers. PA29 uses this role for GNU CPUID
 statements; its body is supplied directly by the native backend.
+
+The `xstate_query` function role is a fixed-arity, effectful `i64 (i32)`
+declaration. It executes XGETBV with the input's low 32 bits in ECX and
+returns EDX:EAX as one 64-bit value. Its native body preserves callee-saved
+registers. The caller retains the CPU/OS support and valid-index checks that
+make the original instruction safe; the role does not replace those checks.
 
 The `rtti_pointer` role identifies the vtable of the runtime's pointer
 type-information class. A pointer exception is caught by value: a standalone
@@ -1407,7 +1414,7 @@ destination. `vector` reads no memory, has no side effect and does not trap.
 | binary | `pmaxsb` `pmaxsw` `pmaxsd` `pmaxub` `pmaxuw` `pmaxud` `pminsb` `pminsw` `pminsd` `pminub` `pminuw` `pminud` `pand` `pandn` `por` `pxor` `pcmpeqb` `pcmpeqw` `pcmpeqd` `pcmpeqq` `pcmpgtb` `pcmpgtw` `pcmpgtd` `pcmpgtq` |
 | binary | `psllw` `pslld` `psllq` `psrlw` `psrld` `psrlq` `psraw` `psrad` `packsswb` `packssdw` `packuswb` `packusdw` `punpcklbw` `punpcklwd` `punpckldq` `punpcklqdq` `punpckhbw` `punpckhwd` `punpckhdq` `punpckhqdq` `pshufb` `psignb` `psignw` `psignd` `phaddw` `phaddd` `phaddsw` `phsubw` `phsubd` `phsubsw` |
 | unary | `sqrtps` `sqrtpd` `rcpps` `rsqrtps` `movshdup` `movsldup` `movddup` `pabsb` `pabsw` `pabsd` `pmovsxbw` `pmovsxbd` `pmovsxbq` `pmovsxwd` `pmovsxwq` `pmovsxdq` `pmovzxbw` `pmovzxbd` `pmovzxbq` `pmovzxwd` `pmovzxwq` `pmovzxdq` `cvtdq2ps` `cvtdq2pd` `cvtps2dq` `cvttps2dq` `cvtpd2dq` `cvttpd2dq` `cvtps2pd` `cvtpd2ps` |
-| binary with an immediate | `cmpps` `cmppd` `cmpss` `cmpsd` `shufps` `shufpd` `palignr` `blendps` `blendpd` `pblendw` |
+| binary with an immediate | `cmpps` `cmppd` `cmpss` `cmpsd` `shufps` `shufpd` `palignr` `blendps` `blendpd` `pblendw` `pclmulqdq` |
 | unary with an immediate | `pshufd` `pshuflw` `pshufhw` `psllwi` `pslldi` `psllqi` `psrlwi` `psrldi` `psrlqi` `psrawi` `psradi` `pslldq` `psrldq` |
 | blend | `blendvps` `blendvpd` `pblendvb` |
 | mask | `movmskps` `movmskpd` `pmovmskb` |
@@ -1417,6 +1424,9 @@ These forms have no single SSE name:
 
 - `psllwi` through `psradi` are the shifts by an immediate count.
 - `ptestz`, `ptestc` and `ptestnzc` are `ptest` with `ZF`, `CF` and neither.
+- `pclmulqdq` returns the 128-bit carryless product of one 64-bit lane from
+  each operand, selected by immediate bits 0 and 4; other bits are ignored.
+  Like other operations beyond SSE2, callers must ensure CPU support.
 - The blends take `xmm0` as the mask, so a backend moves `%mask` there.
 - `movss` and `movsd` are the register forms: the low lane of `%b` above the
   upper lanes of `%a`.

@@ -1458,8 +1458,14 @@ ClassEntity* Analyzer::qualifying_template(const syntax::Decl& decl, Scope* scop
 			// template parameter names a class template specialization, whose
 			// explicitly specialized member class template the declaration's
 			// template-head belongs to (14.7.3p5, p16).
-			if (ClassEntity* specialization = explicit_specialization_ ? named_specialization(cls, component, scope)
-																	   : nullptr)
+			// A concrete enclosing specialization consumes no template-head,
+			// including a member template of an explicitly specialized class.
+			// An enclosing declaration can still have unparsed inner heads;
+			// defer those qualifiers until their parameters are available.
+			const bool complete_heads = decl.kind != syntax::DeclKind::Template;
+			if (ClassEntity* specialization = (explicit_specialization_ || complete_heads)
+					? named_specialization(cls, component, scope)
+					: nullptr)
 				cls = specialization;
 			else
 			{

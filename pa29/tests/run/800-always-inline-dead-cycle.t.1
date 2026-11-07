@@ -1,0 +1,8 @@
+template<int Start, int End, int Step>
+__attribute__((always_inline)) inline int stepped(int x) {
+  if (Start + Step < End) {
+    x = stepped<(Start+Step<End?Start+Step:End), End, Step>(x) + Start;
+  }
+  return x + Step;
+}
+int main() { return stepped<0, 24, 4>(3) != 67; }

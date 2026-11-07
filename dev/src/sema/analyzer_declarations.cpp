@@ -1563,7 +1563,10 @@ VariableEntity* Analyzer::new_variable(const Specifiers& specifiers, const char*
 		add_data_member(owner, variable, 0, false);
 		owner->non_pod = owner->non_pod || current_access_ != TokenKind::KW_PUBLIC || initialized ||
 			type->is_reference();
-		owner->not_aggregate = owner->not_aggregate || current_access_ != TokenKind::KW_PUBLIC || initialized;
+		// C++14 permits default member initializers in an aggregate (N3653).
+		owner->not_aggregate = owner->not_aggregate || current_access_ != TokenKind::KW_PUBLIC ||
+			(initialized && !cxx14_);
+		owner->members_initialized = owner->members_initialized || initialized;
 	}
 	return variable;
 }

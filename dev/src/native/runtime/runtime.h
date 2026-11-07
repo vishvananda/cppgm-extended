@@ -75,6 +75,8 @@ void emit_tlv_lookup(Image& image, uint32_t symbol, UnwindFacts& facts);
 // role=cpu_query: void(i32 leaf, i32 subleaf, ptr four_word_result).
 // Execute CPUID, preserving callee-saved registers and recording its frame.
 void emit_cpu_query(Image& image, uint32_t symbol, UnwindFacts& facts);
+// role=xstate_query: i64(i32 index), the actual XGETBV result.
+void emit_xstate_query(Image& image, uint32_t symbol, UnwindFacts& facts);
 // A jump thunk (lowir::JumpThunk) defined at `symbol`: `self` moved by
 // `adjustment`, then by the vcall offset at `vcall_offset` from its
 // table's address point (none when 0), then a jump to `target`; it

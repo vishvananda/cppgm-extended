@@ -593,12 +593,13 @@ RValue FunctionLowering::pack_vector(const syntax::CallExpr& expr)
 	if (a_value.type.is_vector())
 		return vector_instruction(variant == 0 ? lowir::VectorOp::Packuswb
 				: variant == 1                 ? lowir::VectorOp::Packsswb
-											   : lowir::VectorOp::Packssdw,
+				: variant == 2                 ? lowir::VectorOp::Packssdw
+											   : lowir::VectorOp::Packusdw,
 			&a_value, &b_value);
 	const lowir::Value a = vector_storage(a_value);
 	const lowir::Value b = vector_storage(b_value);
-	const int64_t minimum = variant == 0 ? 0 : variant == 1 ? -128 : -32768;
-	const int64_t maximum = variant == 0 ? 255 : variant == 1 ? 127 : 32767;
+	const int64_t minimum = variant == 0 || variant == 3 ? 0 : variant == 1 ? -128 : -32768;
+	const int64_t maximum = variant == 0 ? 255 : variant == 1 ? 127 : variant == 2 ? 32767 : 65535;
 	const lowir::Type lane = lowering_.storage_type(input->element);
 	const lowir::Type narrowed = lowering_.storage_type(result->element);
 	lowir::SlotId slot = lowir::kNoId;

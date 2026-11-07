@@ -738,6 +738,7 @@ private:
 	RValue asm_source(const AsmState& state, const sema::AsmInstruction& instruction);
 	void asm_instruction(const sema::AsmInstruction& instruction, AsmState& state);
 	void asm_cpu_query(const sema::AsmInstruction& instruction, AsmState& state);
+	void asm_xstate_query(const sema::AsmInstruction& instruction, AsmState& state);
 	void asm_bit_instruction(const sema::AsmInstruction& instruction, AsmState& state, const RValue& source);
 	void asm_capture_flags(const sema::AsmInstruction& instruction, AsmState& state, const RValue& before,
 		const RValue& after, const RValue& source);
@@ -1230,15 +1231,19 @@ private:
 	bool aggregate_stores(const sema::ClassEntity* entity);
 	void aggregate_class(const sema::ClassEntity* entity, uint8_t cv, const AddressPath& path,
 		const syntax::BracedInitList* list, uint32_t& next, uint32_t location);
+	void aggregate_default_member(const sema::ClassEntity* owner, const sema::VariableEntity* member,
+		const sema::Type* type, const AddressPath& path, lowir::Value object, bool value_first, uint32_t location);
 	void aggregate_item(const sema::Type* type, const AddressPath& path, const syntax::BracedInitList* list,
 		uint32_t& next, bool value_first, uint32_t location);
 	// `element`: an array element (an omitted one's default construction
 	// ends its temporaries, see begin_element_temporaries).
 	void aggregate_class_item(const sema::ClassEntity* cls, const sema::Type* type, const AddressPath& path,
-		const syntax::BracedInitList* list, uint32_t& next, uint32_t location, bool element = false);
+		const syntax::BracedInitList* list, uint32_t& next, uint32_t location, bool element = false,
+		const sema::VariableEntity* default_member = nullptr);
 	void materialize_member(
 		const syntax::Expr& element, const AddressPath& path, uint32_t location, lowir::Value object = lowir::Value());
 	bool member_may_throw(const sema::ClassEntity* cls, const syntax::Expr* element);
+	bool default_member_may_throw(const sema::VariableEntity* member);
 	static bool does_nothing(const sema::FunctionEntity* constructor);
 	void aggregate_array(const sema::Type* type, const AddressPath& path, const syntax::Expr* item, uint32_t location);
 	RValue member_operand(const syntax::Expr& expr);
@@ -1416,6 +1421,7 @@ private:
 	RValue unpack_vector(const syntax::CallExpr& expr);
 	RValue shift_vector_lanes(const syntax::CallExpr& expr);
 	RValue shuffle_vector(const syntax::CallExpr& expr);
+	RValue binary_immediate_vector(const syntax::CallExpr& expr);
 	RValue reinterpret_bytes(const RValue& value, const sema::Type* to);
 	RValue bit_cast(const syntax::BuiltinTraitExpr& expr);
 	// A builtin's value: __builtin_va_arg's argument, a complex part, a
@@ -1857,6 +1863,9 @@ private:
 	bool closure_this_ = false;
 	uint64_t closure_this_offset_ = 0;
 	const sema::ClassEntity* closure_this_class_ = nullptr;
+	// The object whose default member initializer is being evaluated.
+	const sema::ClassEntity* initializer_class_ = nullptr;
+	lowir::Value initializer_object_;
 	// An indirect class result's destination (`%ret`), else none, and the
 	// local every return statement returns, constructed there (or null).
 	lowir::Value result_destination_;

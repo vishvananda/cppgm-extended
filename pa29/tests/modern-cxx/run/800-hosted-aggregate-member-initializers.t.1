@@ -1,0 +1,12 @@
+#include <string>
+#include <vector>
+struct Row {
+  std::string name = "default";
+  int year = 2011;
+  std::vector<double> readings = {0.25};
+};
+int main() {
+  std::vector<Row> rows = {{"first", 2014, {40.1, 39.9}}, {"second", 2017, {30.1, 31.0}}, {}};
+  return rows.size() != 3 || rows[0].name != "first" || rows[1].year != 2017 ||
+         rows[0].readings[1] != 39.9 || rows[2].name != "default" || rows[2].readings[0] != 0.25;
+}

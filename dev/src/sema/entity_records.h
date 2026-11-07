@@ -185,9 +185,9 @@ struct ClassEntity : Entity
 	// It has a virtual table pointer (Itanium 2.4's dynamic class): it is
 	// polymorphic or has a virtual base; known once complete.
 	bool dynamic;
-	// An anonymous class some member of which has a brace-or-equal-
-	// initializer (directly or as an anonymous member's): its member
-	// object is a variant member with one (9.5p8); known once complete.
+	// Some member has a brace-or-equal-initializer (directly, or for an
+	// anonymous class through an anonymous member). In an anonymous
+	// class this also identifies a variant member with one (9.5p8).
 	bool members_initialized;
 	// This definition has a dependent base in its hierarchy, including a
 	// local class in a function template. Set while analyzing its bases.

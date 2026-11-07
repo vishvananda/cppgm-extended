@@ -33,4 +33,23 @@ void emit_cpu_query(Image& image, uint32_t symbol, UnwindFacts& facts)
 	facts.size = facts.ret_end;
 }
 
+void emit_xstate_query(Image& image, uint32_t symbol, UnwindFacts& facts)
+{
+	while (image.text().size() % 16 != 0)
+		image.text().push_back(0xcc);
+	const uint32_t start = static_cast<uint32_t>(image.text().size());
+	image.define(symbol, Section::Text, start);
+	Assembler a(image.text());
+	facts = UnwindFacts();
+	a.op(0, false, 0x8b, 1, RCX, RM::r(RDI)); // ecx = index
+	a.byte(0x0f);
+	a.byte(0x01);
+	a.byte(0xd0); // xgetbv
+	a.shift_ri(4, RM::r(RDX), 32, 8);
+	a.alu_rr(1, RAX, RM::r(RDX), 8);
+	a.ret();
+	facts.ret_end = a.size() - start;
+	facts.size = facts.ret_end;
+}
+
 } // namespace native

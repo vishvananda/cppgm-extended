@@ -271,11 +271,17 @@ void FunctionLowering::aggregate_class(const sema::ClassEntity* entity, uint8_t 
 			continue;
 		}
 		bit_unit_ = 0;
+		const bool defaulted = (list == nullptr || next >= list->elements.size) &&
+			variable->member_initializer != nullptr;
+		const lowir::Value object = defaulted ? path_address(path) : lowir::Value();
 		path_steps_.push_back(PathStep{ PathStep::Kind::Field, lowering_.member_offset(variable, location),
 			lowir::Type(), 0, through_union(variable, entity) });
 		{
 			const OverlapScope overlap(overlapping_empty_, member);
-			aggregate_item(type, path, list, next, value_first, location);
+			if (defaulted)
+				aggregate_default_member(entity, variable, type, path, object, value_first, location);
+			else
+				aggregate_item(type, path, list, next, value_first, location);
 		}
 		path_steps_.pop_back();
 		bit_unit_ = 0;
@@ -285,6 +291,29 @@ void FunctionLowering::aggregate_class(const sema::ClassEntity* entity, uint8_t 
 	}
 	bit_unit_ = 0;
 	bit_limit_ = saved_limit;
+}
+
+void FunctionLowering::aggregate_default_member(const sema::ClassEntity* owner, const sema::VariableEntity* member,
+	const sema::Type* type, const AddressPath& path, lowir::Value object, bool value_first, uint32_t location)
+{
+	// Reuse ordinary aggregate-member construction and cleanup, with `this`
+	// bound to the containing object rather than the lexical caller.
+	const sema::ClassEntity* saved_class = initializer_class_;
+	const lowir::Value saved_object = initializer_object_;
+	initializer_class_ = owner;
+	initializer_object_ = object;
+	const syntax::Expr* element = member->member_initializer->expression;
+	syntax::BracedInitList single = syntax::BracedInitList();
+	single.elements.data = const_cast<syntax::Expr**>(&element);
+	single.elements.size = 1;
+	uint32_t next = 0;
+	const sema::ClassEntity* cls = type->is_reference() ? nullptr : sema::ClassOf(type);
+	if (cls != nullptr)
+		aggregate_class_item(cls, type, path, &single, next, location, false, member);
+	else
+		aggregate_item(type, path, &single, next, value_first, location);
+	initializer_class_ = saved_class;
+	initializer_object_ = saved_object;
 }
 
 uint64_t FunctionLowering::member_end_bits(const sema::DataMember* member, uint32_t location)
@@ -399,14 +428,15 @@ void FunctionLowering::aggregate_item(const sema::Type* type, const AddressPath&
 }
 
 void FunctionLowering::aggregate_class_item(const sema::ClassEntity* cls, const sema::Type* type,
-	const AddressPath& path, const syntax::BracedInitList* list, uint32_t& next, uint32_t location, bool array_element)
+	const AddressPath& path, const syntax::BracedInitList* list, uint32_t& next, uint32_t location, bool array_element,
+	const sema::VariableEntity* default_member)
 {
 	// A class member or element: an aggregate member by member (from its
 	// own list, or this one's elements); a class with constructors by the
 	// constructor its element selects, its default constructor without one
 	// (value-initialization), or the class prvalue that initializes it.
 	const syntax::Expr* element = list != nullptr && next < list->elements.size ? list->elements[next] : nullptr;
-	if (sema::IsAggregateClass(cls))
+	if (default_member == nullptr && sema::IsAggregateClass(cls))
 	{
 		// A tracked aggregate's aggregate member, once made, is one object
 		// (see member_made); an element of a counted array is counted.
@@ -439,7 +469,8 @@ void FunctionLowering::aggregate_class_item(const sema::ClassEntity* cls, const 
 	const bool tracked = aggregate_members_ != SIZE_MAX;
 	// (The previous region ends, the member's address is taken, then its
 	// region opens; one no member joined since stays open.)
-	bool region = tracked && member_may_throw(cls, element);
+	bool region = tracked &&
+		(default_member != nullptr ? default_member_may_throw(default_member) : member_may_throw(cls, element));
 	if (region && region_open_ && cleanups_.size() == region_depth_ && !stale_region_ &&
 		(open_serial_ > aggregate_serial_ || reopened_construction_))
 		region = false;
@@ -455,7 +486,10 @@ void FunctionLowering::aggregate_class_item(const sema::ClassEntity* cls, const 
 		member_regions_ = member_regions_ || region_open_;
 	}
 	const syntax::BracedInitList* listed = element != nullptr ? list_object(*element) : nullptr;
-	if (element == nullptr)
+	if (default_member != nullptr)
+		construct(type, object, default_member->member_initializer, default_member->constructor, EntryVariant::Complete,
+			location);
+	else if (element == nullptr)
 	{
 		// An omitted element's default construction ends its temporaries
 		// before the next element (12.2p4). No call inside
@@ -512,6 +546,12 @@ bool FunctionLowering::member_may_throw(const sema::ClassEntity* cls, const synt
 		return may_throw(element);
 	const sema::FunctionEntity* constructor = cls->default_constructor;
 	return constructor != nullptr && !constructor->trivial && call_may_throw(constructor);
+}
+
+bool FunctionLowering::default_member_may_throw(const sema::VariableEntity* member)
+{
+	return member->throwing_initializer ||
+		(member->constructor != nullptr && !member->constructor->trivial && call_may_throw(member->constructor));
 }
 
 void FunctionLowering::materialize_member(
@@ -936,6 +976,12 @@ bool FunctionLowering::omitted_may_throw(const sema::ClassEntity* cls, uint32_t 
 		return true;
 	for (const sema::DataMember* member = cls->members; member != nullptr; member = member->next)
 	{
+		if (cls->members_initialized && member->variable->kind == sema::EntityKind::Variable)
+		{
+			const sema::VariableEntity* variable = static_cast<const sema::VariableEntity*>(member->variable);
+			if (variable->member_initializer != nullptr && default_member_may_throw(variable))
+				return true;
+		}
 		const sema::Type* type = member->variable->type;
 		const sema::ClassEntity* inner = type->is_reference() ? nullptr : object_class(type);
 		if (member->variable->name != nullptr && inner != nullptr && omitted_may_throw(inner, depth + 1))
@@ -1158,6 +1204,9 @@ bool FunctionLowering::helper_members(
 		}
 		const sema::Type* type = variable->type;
 		const bool present = list != nullptr && next < list->elements.size;
+		if (!present && variable->kind == sema::EntityKind::Variable &&
+			static_cast<const sema::VariableEntity*>(variable)->member_initializer != nullptr)
+			eligible = false;
 		if (member->bit_field)
 			eligible = false;
 		else if (type->is_reference() || (type->kind != sema::TypeKind::Array && sema::ClassOf(type) == nullptr))
@@ -1256,7 +1305,14 @@ bool FunctionLowering::helper_shape(
 			count = index;
 		}
 		else
+		{
+			// An omitted default member initializer can read earlier members
+			// or call functions; this zero-filling helper cannot evaluate it.
+			if (variable->kind == sema::EntityKind::Variable &&
+				static_cast<const sema::VariableEntity*>(variable)->member_initializer != nullptr)
+				return false;
 			omitted = true;
+		}
 		skip_item(type, list, next);
 	}
 	return count != 0;
@@ -1345,6 +1401,14 @@ lowir::Value FunctionLowering::structured_element(
 void FunctionLowering::structured_class(const sema::ClassEntity* entity, uint8_t cv, lowir::Value object,
 	const syntax::BracedInitList* list, uint32_t& next, uint32_t location)
 {
+	// Default member initializers need the containing object as `this`.
+	// The general path already retains that context and member cleanups.
+	if (entity->members_initialized)
+	{
+		aggregate_class(
+			entity, cv, AddressPath{ AddressPath::Root::Value, object, path_steps_.size() }, list, next, location);
+		return;
+	}
 	// Each member's address from the object's, then its initialization.
 	bit_unit_ = 0;
 	bit_high_ = 0;

@@ -674,6 +674,8 @@ namespace {
 // constructor, 8.5p7; a C++11 aggregate has no member initializers).
 bool ZeroedByValue(const sema::ClassEntity* entity, unsigned depth)
 {
+	if (entity->members_initialized)
+		return false;
 	if (depth > 64)
 		return false;
 	for (const sema::DataMember* member = entity->members; member != nullptr; member = member->next)

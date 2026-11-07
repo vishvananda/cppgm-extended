@@ -552,6 +552,7 @@ enum class VectorOp : std::uint8_t
 	Blendps,
 	Blendpd,
 	Pblendw,
+	Pclmulqdq,
 	Pshufd,
 	Pshuflw,
 	Pshufhw,
@@ -606,9 +607,10 @@ inline const char* spelling(VectorOp op)
 		"pmovsxbd", "pmovsxbq", "pmovsxwd", "pmovsxwq", "pmovsxdq", "pmovzxbw", "pmovzxbd", "pmovzxbq", "pmovzxwd",
 		"pmovzxwq", "pmovzxdq", "cvtdq2ps", "cvtdq2pd", "cvtps2dq", "cvttps2dq", "cvtpd2dq", "cvttpd2dq", "cvtps2pd",
 		"cvtpd2ps", "cmpps", "cmppd", "cmpss", "cmpsd", "shufps", "shufpd", "palignr", "blendps", "blendpd", "pblendw",
-		"pshufd", "pshuflw", "pshufhw", "psllwi", "pslldi", "psllqi", "psrlwi", "psrldi", "psrlqi", "psrawi", "psradi",
-		"pslldq", "psrldq", "blendvps", "blendvpd", "pblendvb", "movmskps", "movmskpd", "pmovmskb", "ptestz", "ptestc",
-		"ptestnzc", "pzero", "fromf32", "fromf64", "fromi32", "fromi64", "tof32", "tof64", "toi32", "toi64" };
+		"pclmulqdq", "pshufd", "pshuflw", "pshufhw", "psllwi", "pslldi", "psllqi", "psrlwi", "psrldi", "psrlqi",
+		"psrawi", "psradi", "pslldq", "psrldq", "blendvps", "blendvpd", "pblendvb", "movmskps", "movmskpd", "pmovmskb",
+		"ptestz", "ptestc", "ptestnzc", "pzero", "fromf32", "fromf64", "fromi32", "fromi64", "tof32", "tof64", "toi32",
+		"toi64" };
 	return kVectorOps[static_cast<unsigned>(op)];
 }
 

@@ -1097,6 +1097,7 @@ private:
 	ExprFacts* vector_lane_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
 	ExprFacts* vector_shift_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
 	ExprFacts* vector_shuffle_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
+	ExprFacts* vector_binary_immediate_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
 	ExprFacts* vector_permute_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
 	ExprFacts* vector_index_shuffle_builtin(const syntax::CallExpr& expr, Scope* scope);
 	ExprFacts* overflow_builtin(const syntax::CallExpr& expr, uint8_t variant, Scope* scope);
@@ -1194,6 +1195,7 @@ private:
 	void list_initialize(const syntax::BracedInitList& list, const Type* type, Scope* scope);
 	void aggregate_initialize(const syntax::BracedInitList& list, ClassEntity* entity, Scope* scope);
 	void aggregate_members(const syntax::BracedInitList& list, uint32_t& next, ClassEntity* entity, Scope* scope);
+	bool aggregate_default_member(const DataMember* member);
 	void aggregate_element(const syntax::BracedInitList& list, uint32_t& next, const Type* type, Scope* scope);
 	void initialize_element(const syntax::Expr& element, const Type* type, Scope* scope);
 	FunctionEntity* implicit_constructor(ClassEntity* entity);

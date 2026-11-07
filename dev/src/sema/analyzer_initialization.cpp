@@ -361,6 +361,18 @@ void Analyzer::list_initialize(const syntax::BracedInitList& list, const Type* t
 	}
 	if (type->unqualified->kind == TypeKind::Vector)
 	{
+		// A same-type operand copies the whole GNU vector. Type the one
+		// operand before distinguishing it from a scalar lane initializer.
+		if (list.elements.size == 1 && list.elements[0]->kind != syntax::ExprKind::BracedInit &&
+			list.elements[0]->facts == nullptr && typed(*list.elements[0], scope) == nullptr)
+			return;
+		if (!LaneList(type, list))
+		{
+			initialize_element(*list.elements[0], type, scope);
+			if (!failed())
+				new_facts(list, type, ValueCategory::LValue);
+			return;
+		}
 		// A GNU vector: a lane from each element, the others zero.
 		if (list.elements.size > type->unqualified->bound)
 			error(list.location, "more initializers than the vector has lanes");
@@ -492,12 +504,15 @@ void Analyzer::aggregate_members(const syntax::BracedInitList& list, uint32_t& n
 	if (entity->key == TokenKind::KW_UNION)
 	{
 		if (const DataMember* member = ListUnionMember(entity, &list, next))
-			aggregate_element(list, next, member->variable->type, scope);
+			if (next < list.elements.size || !aggregate_default_member(member))
+				aggregate_element(list, next, member->variable->type, scope);
 		return;
 	}
 	for (const DataMember* member = entity->members; member != nullptr; member = member->next)
 	{
 		if (member->bit_field && member->variable->name == nullptr)
+			continue;
+		if (next >= list.elements.size && aggregate_default_member(member))
 			continue;
 		const Type* type = member->variable->type;
 		if (next < list.elements.size && hosted_ && type->kind == TypeKind::Array && type->bound == 0 &&
@@ -525,6 +540,21 @@ void Analyzer::aggregate_members(const syntax::BracedInitList& list, uint32_t& n
 		}
 		aggregate_element(list, next, type, scope);
 	}
+}
+
+bool Analyzer::aggregate_default_member(const DataMember* member)
+{
+	if (member->variable->kind != EntityKind::Variable)
+		return false;
+	VariableEntity* variable = static_cast<VariableEntity*>(member->variable);
+	if (variable->member_initializer == nullptr)
+		return false;
+	if (variable->initializer_pending)
+		instantiate_member_initializer(variable);
+	variable->initializer_used = true;
+	if (variable->throwing_initializer)
+		++potentially_throwing_;
+	return true;
 }
 
 void Analyzer::aggregate_element(const syntax::BracedInitList& list, uint32_t& next, const Type* type, Scope* scope)

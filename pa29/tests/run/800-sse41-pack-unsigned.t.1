@@ -1,0 +1,33 @@
+#include <smmintrin.h>
+unsigned first_calls, second_calls;
+__m128i first(const int* values) {
+  ++first_calls;
+  return _mm_loadu_si128(reinterpret_cast<const __m128i*>(values));
+}
+__m128i second(const int* values) {
+  ++second_calls;
+  return _mm_loadu_si128(reinterpret_cast<const __m128i*>(values));
+}
+__attribute__((target("sse4.1"))) bool check() {
+  const int values[] = {-2147483647-1, -65536, -1, 0, 1, 32767, 32768,
+                        65534, 65535, 65536, 2147483647};
+  for (unsigned i = 0; i < sizeof(values)/sizeof(*values); ++i) {
+    int a[4], b[4];
+    for (unsigned j = 0; j < 4; ++j) {
+      a[j] = values[(i+j)%11]; b[j] = values[(i+j+4)%11];
+    }
+    unsigned short out[8];
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(out), _mm_packus_epi32(first(a), second(b)));
+    for (unsigned j = 0; j < 8; ++j) {
+      const int x = j < 4 ? a[j] : b[j-4];
+      const unsigned expected = x < 0 ? 0 : x > 65535 ? 65535 : x;
+      if (out[j] != expected) return false;
+    }
+  }
+  return first_calls == 11 && second_calls == 11;
+}
+int main() {
+  unsigned a = 1, b, c = 0, d;
+  asm volatile("cpuid" : "+a"(a), "=b"(b), "+c"(c), "=d"(d));
+  return (c & (1u << 19)) && !check();
+}

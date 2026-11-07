@@ -290,6 +290,10 @@ make check TEST=tests/modern-cxx/compile/600-hosted-generic-lambda.t
 The optional compile and run tests cover digit separators, nested namespace
 definitions, `decltype(auto)` variable and return deduction, generic lambda
 parameters (including packs and forwarding), and pack-expanded using-declarations.
+In C++14 and later, default member initializers do not disqualify an aggregate.
+Explicitly initialized members use the supplied values; omitted members use
+their default initializers in member order. Retain the C++11 restriction in
+C++11 mode, along with the other aggregate restrictions in every mode.
 Preserve reference/value categories and reject invalid initializers and overload
 candidates. The selected language mode also controls later library interfaces.
 Deleted overloads with placeholder return types must not force deduction from
@@ -377,6 +381,8 @@ To complete PA29, implement hosted compatibility for:
   `__has_declspec_attribute`, answer no rather than failing
 - GNU `always_inline` direct calls in host objects substitute the available
   body at every optimization level, including constructors and destructors.
+  Determine recursion from reachable calls after constant branch cleanup; an
+  unreachable self call must not block substitution.
   Substitution preserves cleanup, noexcept termination, local-static identity
   and source locations. An ineligible required call is diagnosed. The course
   LowIR view and its optional `force_inline` profitability flag retain their
@@ -399,6 +405,11 @@ To complete PA29, implement hosted compatibility for:
   real CPU instruction through the typed LowIR `cpu_query` runtime role;
   retain all four results, 32-bit writes clearing wider register halves,
   operand evaluation once, condition flags and the native callee-save ABI
+- GNU `xgetbv` statements with fixed `a` and `d` outputs and a `c` input.
+  Return the real selected extended-control-register value through the typed
+  LowIR `xstate_query` role. Evaluate the index once, preserve condition flags,
+  and clear upper register halves on 32-bit writes. The caller must check CPU
+  and OS support before executing the instruction
 - GNU register-only `pand` statements over two 128-bit `x` vector operands,
   including matching constraints. Lift all operand bits to integer AND,
   evaluate each operand once, and preserve preceding condition flags
@@ -597,12 +608,34 @@ index. An index of -1 leaves that lane unspecified; choosing zero is valid.
 Validate and retain these constants in typed facts. Both public GCC and
 Clang SSE wrappers can then use the same permutation lowering.
 
+### Whole-vector braced initialization
+
+A single same-type vector operand in braces initializes the whole vector,
+including in a member initializer and constant initialization. Distinguish this
+from a scalar lane list: preserve every lane, evaluate the operand once, and
+retain volatile reads. A vector of a different size cannot initialize a lane
+implicitly.
+
+### Immediate vector operations
+
+`__builtin_ia32_pclmulqdq128` selects a 64-bit lane from each 128-bit input
+using immediate bits 0 and 4 and returns their 128-bit carryless polynomial
+product. `__builtin_ia32_permti256` independently selects each 128-bit half
+of a 256-bit result: each selector nibble chooses one of four source halves;
+its bit 3 zeros the result half and bit 2 is ignored. Preserve operand bits
+and evaluate inputs once. Selectors are immediate bytes; Clang's public
+carryless-multiply macro passes that byte as `char`. A deferred selector in a
+template or always-inline wrapper must become constant after substitution.
+Use typed operation facts; wider vector objects retain their existing ABI.
+
 ### SSE2 saturating packed conversions
 
 `__builtin_ia32_packuswb128` clamps signed 16-bit lanes to [0,255], then
 packs them into bytes. `__builtin_ia32_packsswb128` clamps to [-128,127];
 `__builtin_ia32_packssdw128` clamps signed 32-bit lanes to [-32768,32767]
-and packs them into words. The first input fills the low half of the
+and packs them into words. The SSE4.1 `__builtin_ia32_packusdw128` clamps
+signed 32-bit lanes to [0,65535] before packing them into unsigned words.
+The first input fills the low half of the
 128-bit result and the second fills the high half. Evaluate both once.
 Use the recorded input/output lane types and signed comparisons before
 narrowing; truncating first loses the saturation behavior.

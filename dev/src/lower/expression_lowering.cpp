@@ -1070,6 +1070,8 @@ lowir::Value FunctionLowering::this_pointer(uint32_t location)
 
 lowir::Value FunctionLowering::object_pointer(uint32_t location)
 {
+	if (initializer_class_ != nullptr)
+		return initializer_object_;
 	if (!closure_this_)
 		return this_pointer(location);
 	Place captured = Place();
@@ -1081,6 +1083,8 @@ lowir::Value FunctionLowering::object_pointer(uint32_t location)
 
 const sema::ClassEntity* FunctionLowering::object_class() const
 {
+	if (initializer_class_ != nullptr)
+		return initializer_class_;
 	return closure_this_ ? closure_this_class_ : sema::ClassOf(function_->owner->entity->type);
 }
 

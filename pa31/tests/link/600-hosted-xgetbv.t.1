@@ -1,0 +1,27 @@
+extern "C" bool host_xstate_available();
+extern "C" unsigned long long host_xstate();
+typedef unsigned long long Wide;
+unsigned evaluations;
+unsigned index() { ++evaluations; return 0; }
+Wide query() {
+  unsigned low, high;
+  asm volatile("xgetbv" : "=a"(low), "=d"(high) : "c"(index()) : "memory");
+  return low | (Wide(high) << 32);
+}
+bool wide_outputs(Wide expected) {
+  Wide low, high;
+  asm volatile("xgetbv" : "=a"(low), "=d"(high) : "c"(0));
+  return (low >> 32) == 0 && (high >> 32) == 0 && (low | (high << 32)) == expected;
+}
+bool unchanged_flags(Wide expected) {
+  unsigned low = ~0U, high;
+  bool zero;
+  asm volatile("addl $1, %0\n\txgetbv"
+               : "+a"(low), "=d"(high), "=@ccz"(zero) : "c"(0));
+  return zero && (low | (Wide(high) << 32)) == expected;
+}
+int main() {
+  if (!host_xstate_available()) return 0;
+  const Wide expected = host_xstate();
+  return query() != expected || evaluations != 1 || !wide_outputs(expected) || !unchanged_flags(expected);
+}
