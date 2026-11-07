@@ -5531,7 +5531,7 @@
   {
     "id": "CXX11-080",
     "compiler_language_gap": true,
-    "status": "integrated-normal-validation-running",
+    "status": "fixed-integrated-normal-validated",
     "symptom": "Local and nested local classes silently accept static data members, including const/constexpr and instantiated template contexts",
     "owning_pa": "PA11:100; PA12:300 union; PA14:300 instantiation; PA15:100 constexpr; PA16:300 static-local neighbor",
     "standards_basis": "N3485 9.8p3,p4",
@@ -5541,9 +5541,42 @@
       "20ce59c67"
     ],
     "fix_revision": "748e24608",
-    "checks": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-080/functional-verification-v1.json",
+    "checks": "11 required regressions, all16normal stages pass8,918strict tests,42harness suites/667cases and fresh export11controls/42reference wrappers. Integrated focused44/44 versus parent20/44. Actual-parent1.000014/1.000012 exact-object gate reused only after proving identical measured and integrated binaries.",
     "integrated_candidate_revision": "802c5644c249185057e1aad8a23a7ef41ad96604",
-    "triage_note": "Integrated binary39498b183e7a matches the isolated measured compiler exactly; its actual parent9648017a is the accepted078binary. Reused valid normal per-change1.000014/1.000012 exact-object evidence. Eleven byte-pinned fixtures use PA11/12/14/15/16 default controls lanes. Full16-stage normal, fixed GCC/Clang manifests and exact-parent focused checks are running; fresh export remains pending. No closure claim.",
-    "performance_reuse_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-080-perf-reuse-v1.json"
+    "triage_note": "Clang672/693 and GCC3696/4112, no abnormal/link outcomes. Normal quick/self-compile passes; campaign1.005160/1.001745 retained as data without an extra aggregate cap.",
+    "performance_reuse_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-080-perf-reuse-v1.json",
+    "historical_status": "integrated-normal-validation-running",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-080-acceptance-v1.json"
+  },
+  {
+    "id": "CXX11-079",
+    "compiler_language_gap": false,
+    "status": "root-integration-validation-running",
+    "symptom": "Clang input-closure, inherited configuration and reviewed optional-warning coverage expansion",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/clang-include-closure-ci-v1",
+    "fix_revision": "95ea3cf07",
+    "checks": "807 configurations/788sources, all693old records byte-identical,114 additions including2realheader closures and19Sema configs. Root independent manifest equals source-pinned v7; independent receipt rehashes4336streams/823objects. Root harness42suites/675cases passes. Actual080native qualification and paired GCC/Clang replay running; raw818cohort/failures retained.",
+    "triage_note": "No diagnostic parity or candidate-based selection; p5.cpp private nonfriend access is a required-diagnostic whole TU, not mandatory positive acceptance. Source-pinned course/standards dispositions remain explicit."
+  },
+  {
+    "id": "CXX11-081",
+    "compiler_language_gap": true,
+    "status": "repair-in-validation",
+    "symptom": "Storage-class specifiers on type declarations without init-declarators are silently accepted",
+    "owning_pa": "PA6:200; PA12:300 anonymous union; PA16:300 static union neighbor",
+    "standards_basis": "N3485 7.1.1p1 and9.5p6; extern linkage specification is not a storage-class-specifier",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-081",
+    "fixture_revision": "d6b7644e9",
+    "checks": "14required controls plus original source: parent24/60, Clang60/60, GCC56/60. GCC rejects unnamed-namespace anonymous union despite9.5p6; original limitation retained against primary/course contract. First candidate60/60; optimized declaration-path focused/perf/audits running. No closure claim."
+  },
+  {
+    "id": "CXX11-082",
+    "compiler_language_gap": true,
+    "status": "repair-in-validation",
+    "symptom": "Namespace-only specialization guard rejects in-class explicit specializations permitted by adopted CWG727",
+    "owning_pa": "PA17:300 member templates; PA15:200 ordinary namespace/block neighbors",
+    "standards_basis": "Adopted CWG727 DR2017; preserve resolved primary owner, invalid scopes, access and redefinition constraints",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-082",
+    "checks": "Clang worker confirms warn-member-not-needed.cpp and Modules/local-visibility.cpp share first namespace-only guard;16controls+2originals: parent/GCC32/72,Clang72/72. GCC lag retained as implementation limit. Isolated fix building; no root acceptance claim."
   }
 ]

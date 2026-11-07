@@ -1,33 +1,34 @@
-Accepted checkpoint: compiler8ab4e928e, for-initializer declaration grammar.
-Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-078-acceptance-v1.json
-SHA256:9648017a0193d8b176389a2afffa9c47b0cf4dadffc4c5da909df21af2cc4314
+Accepted checkpoint: local-class static data repair, compiler 802c5644c.
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-080-acceptance-v1.json
+SHA256: 39498b183e7ae698e9f3111d2402cf24dbda659c5ac2b48c014c9b1ec788987d
 
-CXX11-078 is closed for its observed rule. Seven required PA5 regressions and
-valid simple-declaration/block-declaration neighbors pass. All13normal stages
-pass8,907strict tests,42harness suites/667cases(19optional skips),debug,
-self-host PA5,inception,architecture/file/placement,quick and smoke. A fresh
-student export passes all7controls and42reference wrappers. This evidence is
-carried into the integrated tree only after proving identical compiler SHA,
-fixture hashes and dev/scripts/shared/pa* content. No duplicate full-normal
-pass or remote CI execution is claimed.
+CXX11-080 is closed for its observed rule. Eleven required regressions cover
+plain/const/constexpr members, nested local classes and unions, instantiated
+local classes, valid static member functions and function-local static objects.
+All 16 normal stages pass 8,918 strict tests, 42 harness suites/667 cases
+(19 optional skips), debug, self-host PA5, inception, architecture/file/placement,
+quick and smoke. Fresh student export passes 11 controls and 42 reference wrappers.
 
-GCC remains3,696/4,112(89.88%),upstream4,112/4,112. Clang improves to671/693
-(96.83%),upstream693/693:8compile failures and14missing diagnostics. GCC
-retains220compile failures/196missing diagnostics. No abnormal/link outcomes.
-GCC elapsed cppgm/upstream26.130/65.410s,ratio0.399;Clang4.121/19.452s,ratio0.212.
-Both failed-suite ratios remain NON-COMPARABLE; manifests and raw failures stay.
+GCC: 3,696/4,112 (89.88%); matching upstream 4,112/4,112. Clang: 672/693
+(96.97%); matching upstream 693/693. GCC retains 220 compile failures and 196
+missing diagnostics; Clang retains 8 compile failures and 13 missing diagnostics.
+No abnormal or link outcomes. GCC suite elapsed cppgm/upstream26.154/64.230s,
+ratio0.407; Clang3.106/21.978s,ratio0.141. Both failed-suite timing ratios remain
+NON-COMPARABLE. These are selected-configuration rates, not whole-corpus proof.
 
-Normal actual-parent O0/O3 instructions1.000041/1.000010,objects identical;
-quick self/seed0.9934/1.0253,zero behavior failures,kernels below1.3. Campaign
-accumulation1.005128/1.001750 remains reported data against the original binary,
-without the retired extra aggregate acceptance cap or any changed threshold.
+Normal actual-parent O0/O3 instruction ratios1.000014/1.000012, objects exact.
+The valid measurement is reused only after proving actual parent/candidate bytes
+match. Quick self/seed0.9934/1.0253,zero behavior failures,kernels below1.3.
+Campaign1.005160/1.001745 remains reported data against the original baseline,
+without the retired extra aggregate cap or any changed normal threshold.
 
-Next:080local-class static data repair passes44focused checks, affected suites,
-scoped placement and normal per-change perf; fullnormal/export integration
-remains. Coverage worker079 has a raw818-case Clang tranche preserving all693
-old records, including actual local headers and reviewed warning controls;
-native applicability reviews still precede acceptance. Remaining GCC/Clang
-failures and useful coverage expansion continue. Final PA35release is pending.
+Next:079 expands Clang to807cases/788sources with2realheader closures and114new
+records, preserving all693old records exactly. Root manifest and harness checks
+pass; actual080native/paired replays are running before coverage acceptance.
+081empty storage declarations has14required controls and passing focused checks;
+its check is moving into the empty-declaration path for lower cost. Worker082
+is repairing adoptedCWG727in-class specializations. Remaining GCC/Clang failures,
+coverage expansion and the final PA35release check remain open.
 
 Earlier checkpoints retained below
 

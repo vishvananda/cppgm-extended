@@ -187,19 +187,17 @@ use the established supported host/path; do not record a fabricated pass.
 Current implementation checkpoint (2026-11-07)
 
 The two CI jobs are implemented and locally exercised. Accepted compiler
-8ab4e928e passes3,696/4,112GCC checks(89.88%) and671/693Clang checks(96.83%);
+802c5644c passes3,696/4,112GCC checks(89.88%) and672/693Clang checks(96.97%);
 matching upstream compilers pass every selected configuration. Clang retains
-685sources,207positive and486required-diagnostic configurations. Original
-LLVM/FileCheck obligations remain unmet for independent object projections.
+685sources,207positive and486required-diagnostic records. Its original LLVM/
+FileCheck obligations remain unmet for independent object projections.
 
-078for-initializer grammar now has7requiredPA5regressions and all13normal
-stages passing8,907strict,42harness suites/667cases and fresh export7controls/
-42reference wrappers. The integrated compiler and dev/scripts/shared/pa*
-content match the tested epoch exactly, so normal/export evidence is carried
-forward without claiming a duplicate run. Actual-parent1.000041/1.000010 and
-normal quick/self-compile pass with exact frozen output. Campaign accumulation
-1.005128/1.001750 stays reported data. See ci-next-078-acceptance-v1.json for
-identities, normal checks and explicitly non-comparable suite timing.
+080local-class static-data prohibition has11required regressions and all16
+normal stages passing8,918strict,42harness suites/667cases and fresh export
+11controls/42reference wrappers. Actual-parent1.000014/1.000012 passes with
+exact output; normal quick/self-compile passes. Campaign1.005160/1.001745 is
+reported data, without an extra acceptance cap. See ci-next-080-acceptance-v1.json
+for identities, full checks and explicitly non-comparable suite timing.
 The custom measurement queue stays retired.
 
 Immediate next work
@@ -222,13 +220,15 @@ suite times, correctness counts and the explicitly labeled performance ratio.
 Publish the supported coverage and limitations without claiming unavailable
 interfaces or unexecuted tests passed. Keep historical observations intact.
 
-Concrete next work after078acceptance (2026-11-07)
+Concrete next work after080acceptance (2026-11-07)
 
-Preserve all693accepted Clang records and every raw outcome. Worker079 has
-818raw configurations from real input-closure/inherited-config/warning-control
-coverage; finish independent native applicability review and harness checks
-before accepting that larger cohort. Do not select by cppgm success.
+079has807reviewed Clang configurations/788sources, preserving all693old records
+and raw818observations. Root independent generation and harness checks pass;
+finish actual080native qualification and paired GCC/Clang replay before accepting
+the coverage change. Retain source-pinned applicability and mandatory-diagnostic
+reviews, actual header closure identities and all original unprojected oracles.
 
-Integrate080local-class static data prohibition with its11required owning
-controls, actual integrated-parent checks, fullnormal and fresh export. Then
-continue remaining failure-led GCC/Clang standards triage and compiler fixes.
+Finish081empty storage declarations and082adoptedCWG727in-class specialization
+repairs through owning regressions, actual-parent normal perf, fullnormal/export
+and integration. Continue failure-led GCC/Clang source/standards adjudication;
+message grouping alone never establishes either a defect or an oracle error.
