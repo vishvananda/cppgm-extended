@@ -160,3 +160,33 @@ Ratios remain NON-COMPARABLE because cppgm fails selected cases. Evidence:
   ci-first-clang-v1/run-integrated-051052-v1/
   ci-next-051052055-acceptance-v1.json
 Final campaign PA35release check and coverage expansion remain pending.
+
+Accepted053/054/056 and expanded Clang negative coverage
+
+Compiler source8b0d0aeae passes8,660strict tests,normal required checks and fresh
+export/reference validation(33focused exported cases,42wrappers). The final
+builder/workflow harness passes42suites/651cases,including19optional skips.
+Clang's --verify-negatives option is enabled by its actual CI manifest step;
+selection never invokes cppgm. All59positive records are retained unchanged.
+The2source-pinned reviewed negatives pass too,then195additional supported RUNs
+with active positive-minimum expected-error annotations extend the job to256.
+Native lit/RUN/verifier-prefix metadata establishes the whole-file candidate
+obligation;any normal diagnostic qualifies,no annotation matching is performed.
+Language/IFNDR applicability remains explicit and failures drive standards triage.
+
+Current results:GCC3,674/4,112(89.35%),upstream4,112/4,112;Clang246/256(96.09%),
+upstream256/256. All59positive and bothreviewed negatives pass. Ten broadactive
+error outcomes lack a diagnostic;3have separate non-required-oracle reviews,
+and7need primary-rule reduction/repair. They are not automatically10defects.
+GCC retains240compile failures and198missing diagnostics,no crashes/link failures.
+Neither percentage is a complete upstream-suite rate.
+
+GCC elapsed25.999/67.511seconds,ratio0.385;broader Clang1.249/7.659,ratio0.163.
+Both ratios are NON-COMPARABLE due to failures. The reviewed61-case Clang subset
+passes identically in0.400/2.109seconds,ratio0.190. Setup/build remains excluded.
+The compiler interfaces/order/workers/caches and raw observations are retained.
+
+Evidence:ci-next-053054056-acceptance-v1.json,gcc-ci-run-integrated-053054056-v1/,
+ci-first-clang-v1/manifest-v7-broad.json,run-integrated-61-v1/,
+clang-ci-verify-negatives-v1/run-combined-v1/ andtriage-v1.json.
+Remaining repairs,primary-rule triage and final campaign release checking remain.

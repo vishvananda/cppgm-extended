@@ -4977,7 +4977,7 @@
   {
     "id": "CXX11-053",
     "priority": "P1",
-    "status": "isolated-fix-in-validation",
+    "status": "closed",
     "compiler_language_gap": true,
     "upstream": [
       "llvm-project/clang/test/SemaCXX/builtin-ptrtomember-overload.cpp"
@@ -4989,12 +4989,25 @@
     "worktree": "/mnt/vizier/cppgm-clang-member-pointer-conversions",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-053",
     "initial_proof": "/mnt/vizier/cppgm-cxx11-upstream/clang-member-pointer-triage-v1/initial-proof-v1/results.json",
-    "triage_note": "Independent Clang-agent repair and actual-parent normal frozen gate pass; combined full/export checks active. Campaign-root integration pending."
+    "triage_note": "Independent Clang-agent repair and actual-parent normal frozen gate pass; combined full/export checks active. Campaign-root integration pending.",
+    "integration": {
+      "fix_revision": "6e97e3542",
+      "source_revision": "8b0d0aeae",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-053054056-acceptance-v1.json",
+      "strict": 8660,
+      "harness": {
+        "suites": 42,
+        "cases": 651,
+        "optional_platform_tool_skips": 19
+      },
+      "per_fix_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-053-frozen-perf-v1/summary.tsv",
+      "normal_and_export": "All required normal checks and fresh export/reference consistency pass;33focused exported cases and42wrappers."
+    }
   },
   {
     "id": "CXX11-054",
     "priority": "P1",
-    "status": "isolated-fix-in-validation",
+    "status": "closed",
     "compiler_language_gap": true,
     "upstream": [
       "llvm-project/clang/test/SemaCXX/ptrtomember-overload-resolution.cpp"
@@ -5006,7 +5019,20 @@
     "worktree": "/mnt/vizier/cppgm-clang-member-pointer-source-ranking",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-054",
     "initial_proof": "/mnt/vizier/cppgm-cxx11-upstream/clang-member-pointer-triage-v1/initial-proof-v1/results.json",
-    "triage_note": "Independent Clang-agent repair and actual-parent normal frozen gate pass; combined full/export checks active. Campaign-root integration pending."
+    "triage_note": "Independent Clang-agent repair and actual-parent normal frozen gate pass; combined full/export checks active. Campaign-root integration pending.",
+    "integration": {
+      "fix_revision": "25287db23",
+      "source_revision": "8b0d0aeae",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-053054056-acceptance-v1.json",
+      "strict": 8660,
+      "harness": {
+        "suites": 42,
+        "cases": 651,
+        "optional_platform_tool_skips": 19
+      },
+      "per_fix_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-054-frozen-perf-v1/summary.tsv",
+      "normal_and_export": "All required normal checks and fresh export/reference consistency pass;33focused exported cases and42wrappers."
+    }
   },
   {
     "id": "CXX11-055",
@@ -5036,7 +5062,7 @@
   {
     "id": "CXX11-056",
     "priority": "P1",
-    "status": "isolated-fix-in-validation",
+    "status": "closed",
     "compiler_language_gap": true,
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/alignas7.C"
@@ -5054,8 +5080,77 @@
     "checks": {
       "initial_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-056/initial-review-v1.json",
       "native45": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-056/focused-native-v3/results.json",
-      "initial_parser_filter_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-056/prototype-correction-v1.json"
+      "initial_parser_filter_correction": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-056/prototype-correction-v1.json",
+      "full_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-053054056-acceptance-v1.json"
     },
-    "triage_note": "Parser retains existing typed Alignas attributes at enum heads and leading lone enum declarations; semantic enum applicability rejects standard alignas, leaving variable/class and vendor attribute behavior intact. Fifteen required controls. Final checks/performance for leading-prefix extension pending."
+    "triage_note": "Existing typed Alignas nodes are retained for enum heads and leading lone enum declarations, then checked by semantic enum analysis. No new AST fields. Fifteen required PA6/PA15 regressions. GNU attributes and variable/class alignment remain separate. Corrected initial parser-filter prototype and restored inherited(pa28)comment attribution are recorded; all final checks pass.",
+    "integration": {
+      "fix_revision": "8b0d0aeae",
+      "source_revision": "8b0d0aeae",
+      "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-053054056-acceptance-v1.json",
+      "strict": 8660,
+      "harness": {
+        "suites": 42,
+        "cases": 651,
+        "optional_platform_tool_skips": 19
+      },
+      "per_fix_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-056-frozen-perf-v1/summary.tsv",
+      "normal_and_export": "All required normal checks and fresh export/reference consistency pass;33focused exported cases and42wrappers."
+    }
+  },
+  {
+    "id": "CXX11-057",
+    "priority": "P1",
+    "status": "isolated-fix-in-validation",
+    "compiler_language_gap": true,
+    "upstream": [
+      "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-ctor20.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-empty12.C"
+    ],
+    "symptom": "Trivial empty-class constant copies read whole ordinary object storage despite having no member values to read; valid constexpr copies/moves and by-value calls are rejected.",
+    "owning_pa": 16,
+    "handout": "pa16/README.md; constexpr object construction cluster100",
+    "worktree": "/mnt/vizier/cppgm-cxx11-empty-constant-copy",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057",
+    "regressions": [
+      "pa16/tests/controls/100-empty-constexpr-copy-array.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-base.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-by-value.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-global.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-live-reference-neighbor.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-local.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-member.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-move.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-nonconstexpr-copy-bad.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-nonempty-bad.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-reference-parameter-bad.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-temporary-neighbor.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-user-default.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-value-parameter.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-volatile-copy-bad.t",
+      "pa16/tests/controls/100-empty-constexpr-copy-volatile-view.t"
+    ],
+    "checks": {
+      "parent_owning": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/parent-owning-v1.log",
+      "native48": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/native-proof-v1/results.json",
+      "candidate_owning16": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/candidate-owning-v2.log"
+    },
+    "triage_note": "Typed empty-class copy shortcut for known ordinary-variable/by-value-parameter places; invalid view/past-end/mutable flags retain old read validation, evaluation-owned lifetimes retain normal reads.16owning controls and48native cells pass. Predicate reordered to keep ordinary evaluation-owned copies compact; rebuild/final performance/full checks pending. Null/one-past/mutable/dangling host disagreements remain exploratory; parent rejections must be preserved."
+  },
+  {
+    "id": "CXX11-058",
+    "priority": "P1",
+    "status": "isolated-fix-in-validation",
+    "compiler_language_gap": true,
+    "upstream": [
+      "llvm-project/clang/test/CXX/over/over.match/over.match.best/over.best.ics/over.ics.user/p3-0x.cpp"
+    ],
+    "symptom": "Conversion-function-template specialization candidates are admitted when their second standard conversion is worse than ExactMatch, causing silent acceptance and wrong overload selection.",
+    "owning_pa": 18,
+    "handout": "pa18/README.md; conversion-function-template deduction/candidate eligibility",
+    "fix_revision": "91c8e6177",
+    "regression_revision": "a9c3646f8",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-058",
+    "triage_note": "Agent9PA18controls,36focused,108native/parent;4silent accepts and1wrong-code parent control. Two existing primary/rank eligibility checks in value and direct-reference conversion paths. Isolated normal checks pass throughharness;quick/export pending. Actual-parent frozen ratios .999989/.999990 exactobjects."
   }
 ]

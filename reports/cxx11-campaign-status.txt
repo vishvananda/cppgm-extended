@@ -23,58 +23,63 @@ marking the interrupted observation unusable as uninterrupted measurement:
   /mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/remaining-029-performance-v2/user-realignment-retirement-v1.json
 The old generated running-state files do not authorize queue resumption.
 
-The fifteen prepared repairs plus047/048/049/051/052 now pass their normal
-integration gates. The accepted source48cd51fa7 fixes explicit pack-prefix
-extension and the defaulted noexcept destructor CFG crash. The current batch
-also retains055's valid enum range behavior without requiring optimization of
-an ill-formed upstream program. All8,627strict tests pass,with42harness suites
-(643cases),modern/debug,selfhostPA5,inception,all9audits,file/placement,normal
-quick/smoke,fresh export/reference checks,21focused exported controls and42
-reference wrappers. Final campaign release checking remains pending.
+The prepared repairs and new047-054/056 compiler fixes are integrated through
+source8b0d0aeae. Explicit-pack extension,defaulted noexcept destructor lowering,
+built-in arrow-star candidates,member-pointer conversion ranking and adopted
+CWG2354 enum-alignment restrictions pass8,660strict tests. All normal audits,
+modern/debug,selfhostPA5,inception,placement,quick/smoke and fresh export/reference
+checks pass,including33focused exported cases and42wrappers. After the Clang
+adapter/workflow changes,all42harness suites/651cases pass(19platform/tool skips).
+Final campaign release checking remains pending.
 
-Declared current subset results on the immutable accepted compiler:
-  GCC:   3,672/4,112 (89.30%); upstream4,112/4,112.
-  Clang:    57/59    (96.61%); upstream59/59.
-GCC has242compile failures and198missing required diagnostics. There are zero
-compiler-abnormal or link-failed outcomes in this declared manifest. These440
-failed configurations still require language triage/root-cause deduplication;
-they are not440known distinct defects. The two remaining Clang inputs are
-member-pointer operator candidates (053) and second conversion ranking (054).
-Both isolated repairs pass combined normal checks;export/integration is pending.
-Neither rate describes a complete upstream suite.
+Current declared CI coverage on the immutable integrated compiler:
+  GCC:   3,674/4,112 (89.35%); upstream4,112/4,112.
+  Clang:   246/256   (96.09%); upstream256/256.
+The Clang job now enables --verify-negatives. It retains every original59
+positive record and the2reviewed negatives,then adds195eligible active-error
+RUNs independently of cppgm outcomes. The61-case reviewed subset passes61/61;
+all59positives still pass in the broader job. Ten missing-diagnostic outcomes
+are retained for language triage,not automatically ten compiler defects.
+Three have external non-required-oracle reviews(vendorattribute semantics and
+an unused-template IFNDR case);source-pinned dispositions and an independent
+valid PA17slice are prepared separately. Seven other cases remain candidates;
+058conversion-function-template eligibility is already repaired in isolation.
+GCC has240compile failures and198missing required diagnostics;zero crashes or
+link failures. These438failed configurations still need root-cause deduplication
+and language triage. Neither percentage describes the complete upstream suite.
 
-GCC manifest-v6 removes enum_base_warn.C's two configurations as an explicit
-hash-pinned IFNDR disposition (055). Its undefined link_error is odr-used even
-inside a provably false ordinary if;GCC's linking relies on dead-call deletion.
-The defined-helper version remains a required PA10:200 control and passes both
-hosts and cppgm atO0/O2. Original4,114-case observations remain intact;exclusions
-are not passes. The earlier gen-attrs-66 required-diagnostic correction remains.
-Clang's two hash-pinned dispositions remain pr30559(IFNDR) and deduction.cpp's
-unresolvedCWG1647;independently valid slices remain required PA20/PA17 controls.
+The job runs each fixed manifest with both compilers and retains counts,commands,
+whole-suite time and ratio. Current GCC times25.999/67.511seconds(ratio0.385);
+broader Clang1.249/7.659seconds(ratio0.163). Both ratios are NON-COMPARABLE due
+to failed cases. The reviewed61-case Clang run is passing identical work:
+0.400/2.109seconds,ratio0.190. No GitHub-hosted execution is claimed.
 
-A further adopted-DR repair is isolated as056: CWG2354 disallows enum alignas.
-Fifteen PA6/PA15 regressions cover enum heads,leading lone declarations,dependent
-members,and valid class/variable neighbors. Typed parser retention and semantic
-applicability checks pass45native correctness cells;final integration remains.
-The Clang agent will expand explicit-C++11 negative correctness coverage next,
-starting with two already-adjudicated syntax-only cases;diagnostic text/count
-parity remains excluded. Existing59positive IDs will be retained.
-
-Current full-suite timing observations:GCC27.690/67.764seconds(ratio0.409),
-Clang0.365/1.688seconds(ratio0.216). Both ratios are NON-COMPARABLE because cppgm
-still fails selected cases. No GitHub-hosted execution is claimed.
-
-Normal cumulative frozen compile cost is+0.2696%O0/+0.0905%O3,below the normal
-0.5%instruction limit,with identical objects. Quick self/seed ratios are
-0.993409/1.025331;objects identical,behavior failures zero,kernel ratios<1.3.
+Normal cumulative frozen instruction cost is+0.2663%O0/+0.0907%O3,below the
+normal0.5%limit,with identical objects. Quick self/seed ratios0.993226/1.025243
+also preserve object equality,zero behavior failures and kernels below1.3.
 No custom calibration or macOS-only memory gate pass is claimed on Linux.
 
+Next repairs:057empty-class constexpr copy/move from ordinary object places
+(16PA16regressions;48native correctness cells and owning suite pass;normal
+performance/full validation pending) and058conversion-function-template
+second-standard-sequence ExactMatch eligibility(9PA18regressions;isolated full
+checks/normal counters pass;export acceptance pending). Other broader Clang
+outcomes need primary-rule reduction,not diagnostic wording parity. The GCC
+cohort continues to drive the same failure-led repair process.
+
+Existing reviewed exclusions remain explicit:GCC055undefined odr-used helper
+isIFNDR,with defined-helper range behavior required inPA10;Clangpr30559 isIFNDR
+and deduction.cpp uses unresolvedCWG1647,with valid slices retained inPA20/PA17.
+GCCalignas7 is now a required-diagnostic case under adoptedCWG2354;original
+N3485 permitted enum alignas. Original cohorts/results remain available.
+
 Evidence under /mnt/vizier/cppgm-cxx11-upstream:
-  ci-next-051052055-acceptance-v1.json;ci-next-051052055-strict-v1.log
-  ci-next-051052-checks-v1/;ci-next-051052-export-v1/
-  ci-next-051052-cumulative-perf-v1/summary.tsv
-  gcc-ci-manifest-v6.json;gcc-ci-run-integrated-051052055-v1/
-  ci-first-clang-v1/manifest-v5.json;run-integrated-051052-v1/
+  ci-next-053054056-acceptance-v1.json;ci-next-053054056-checks-v1/
+  ci-next-053054056-export-v1/;ci-next-clang-broad-harness-v1.log
+  ci-next-053054056-cumulative-perf-v1/summary.tsv
+  gcc-ci-manifest-v7.json;gcc-ci-run-integrated-053054056-v1/
+  ci-first-clang-v1/manifest-v7-broad.json;run-integrated-61-v1/
+  clang-ci-verify-negatives-v1/run-combined-v1/;triage-v1.json
 Public runtime/codegen regression investigation remains assigned elsewhere.
 
 Historical checkpoint before user realignment (2026-11-07)
