@@ -190,3 +190,16 @@ Evidence:ci-next-053054056-acceptance-v1.json,gcc-ci-run-integrated-053054056-v1
 ci-first-clang-v1/manifest-v7-broad.json,run-integrated-61-v1/,
 clang-ci-verify-negatives-v1/run-combined-v1/ andtriage-v1.json.
 Remaining repairs,primary-rule triage and final campaign release checking remain.
+
+Accepted057/058 and reviewed059 checkpoint,source1a5a15965
+
+GCC3684/4112(89.59%),upstream4112;Clang247/253(97.63%),upstream253.
+GCC230compile failures/198missing diagnostics;Clang6missing diagnostics.
+GCC24.716/66.223s(ratio.373);Clang1.189/7.698s(ratio.154):bothNON-COMPARABLE.
+Three Clang exclusions are source-pinned non-required-oracle reviews(059),not
+compiler passes;original256results retained,independent valid lookup required
+inPA17.058 fixes Exact second-SCS conversion-template eligibility.057 accepts
+ABI-empty constant copies but its nested ordinary empty-member family remains
+open.8686strict,allnormal/audits/export(26newfocused/42wrappers)pass.
+Per-fix counters are flat;cumulative+0.2688%/+0.0912%,identical frozen objects.
+Evidence:ci-next-057058059-acceptance-v1.json under the evidence root.

@@ -5101,11 +5101,12 @@
   {
     "id": "CXX11-057",
     "priority": "P1",
-    "status": "isolated-fix-in-validation",
+    "status": "partial-fix-integrated-follow-up-open",
     "compiler_language_gap": true,
     "upstream": [
       "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-ctor20.C",
-      "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-empty12.C"
+      "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-empty12.C",
+      "gcc/gcc/testsuite/g++.dg/cpp0x/constexpr-empty13.C"
     ],
     "symptom": "Trivial empty-class constant copies read whole ordinary object storage despite having no member values to read; valid constexpr copies/moves and by-value calls are rejected.",
     "owning_pa": 16,
@@ -5133,14 +5134,16 @@
     "checks": {
       "parent_owning": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/parent-owning-v1.log",
       "native48": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/native-proof-v1/results.json",
-      "candidate_owning16": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/candidate-owning-v2.log"
+      "candidate_owning16": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-057/candidate-owning-v2.log",
+      "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057058059-acceptance-v1.json"
     },
-    "triage_note": "Typed empty-class copy shortcut for known ordinary-variable/by-value-parameter places; invalid view/past-end/mutable flags retain old read validation, evaluation-owned lifetimes retain normal reads.16owning controls and48native cells pass. Predicate reordered to keep ordinary evaluation-owned copies compact; rebuild/final performance/full checks pending. Null/one-past/mutable/dangling host disagreements remain exploratory; parent rejections must be preserved."
+    "triage_note": "Accepted narrow ABI-empty ordinary-variable/by-value-parameter copy shortcut,16 required controls,full normal/export gate. Final predicate reordering changes no rule. GCC constexpr-empty13.C remains the same whole-class-read family: ordinary empty member makes the enclosing class nonempty for ABI, yet copying it reads no scalar state. Follow-up must use typed cached subobject facts, preserve union active-state and evaluation-owned lifetime checks, and avoid scans of array elements or repeated class DAGs.",
+    "fix_revision": "218a54ecc"
   },
   {
     "id": "CXX11-058",
     "priority": "P1",
-    "status": "isolated-fix-in-validation",
+    "status": "closed",
     "compiler_language_gap": true,
     "upstream": [
       "llvm-project/clang/test/CXX/over/over.match/over.match.best/over.best.ics/over.ics.user/p3-0x.cpp"
@@ -5148,9 +5151,34 @@
     "symptom": "Conversion-function-template specialization candidates are admitted when their second standard conversion is worse than ExactMatch, causing silent acceptance and wrong overload selection.",
     "owning_pa": 18,
     "handout": "pa18/README.md; conversion-function-template deduction/candidate eligibility",
-    "fix_revision": "91c8e6177",
-    "regression_revision": "a9c3646f8",
+    "fix_revision": "1a5a15965",
+    "regression_revision": "d2941e238",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-058",
-    "triage_note": "Agent9PA18controls,36focused,108native/parent;4silent accepts and1wrong-code parent control. Two existing primary/rank eligibility checks in value and direct-reference conversion paths. Isolated normal checks pass throughharness;quick/export pending. Actual-parent frozen ratios .999989/.999990 exactobjects."
+    "triage_note": "Nine PA18 controls;actual integrated parent fails five as intended. Exact second standard conversion required for conversion-function-template specializations in value and reference paths;ordinary conversions preserved. Full8686strict/normal/audits/export and flat per-fix frozen counters pass.",
+    "checks": {
+      "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057058059-acceptance-v1.json",
+      "isolated": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-058/checks-v1/functional-verification-v2.json"
+    }
+  },
+  {
+    "id": "CXX11-059",
+    "kind": "standards-oracle-review",
+    "compiler_language_gap": false,
+    "status": "closed",
+    "upstream": [
+      "clang/test/CXX/basic/basic.lookup/basic.lookup.classref/p1-cxx11.cpp",
+      "clang/test/SemaCXX/attr-lto-visibility-public.cpp",
+      "clang/test/SemaCXX/attr-suppress.cpp"
+    ],
+    "standards_basis": "N3485 14.6p8: unused fixed-invalid template IFNDR;7.6.1p3/p5: unknown/vendor attribute argument and appertainment semantics do not impose mandatory standard diagnostics.",
+    "disposition": "Three source-hash-pinned exclusions,not compiler passes;253 reviewed cohort retains all59 positives and194 diagnostic candidates. Independent valid member-template lookup is required in PA17:300.",
+    "regressions": [
+      "pa17/tests/controls/300-member-template-lookup-before-postfix-context.t"
+    ],
+    "fix_revision": "edd7d1289",
+    "checks": {
+      "review": "/mnt/vizier/cppgm-cxx11-upstream/clang-ci-verify-negatives-v1/triage-v1.json",
+      "combined_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-057058059-acceptance-v1.json"
+    }
   }
 ]
