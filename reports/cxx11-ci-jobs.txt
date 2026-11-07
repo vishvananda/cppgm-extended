@@ -103,3 +103,30 @@ the independently justified IFNDR disposition; upstream is 60/60. Six remaining
 Clang inputs are rejection candidates, one now reduced and confirmed as 047.
 Latest results: gcc-ci-run-008-v1/ and ci-first-clang-v1/run-008-v2/ under the
 same evidence root. These failed-suite timing ratios remain non-comparable.
+
+Combined integration checkpoint, source0f572a156
+
+All fifteen prepared repairs plus047/048/049 are staged together. The immutable
+compiler passes8,606 required strict tests. The declared GCC manifest is unchanged:
+  cppgm3,668/4,114 (89.16%); upstream4,114/4,114;
+  elapsed27.819/67.516seconds; cppgm/upstream0.412, NON-COMPARABLE.
+Clang manifest-v5 has59cases and2,899exclusions:
+  cppgm56/59 (94.92%); upstream59/59;
+  elapsed0.375/2.106seconds; cppgm/upstream0.178, NON-COMPARABLE.
+Three Clang rejections remain: explicit-pack prefix deduction and two member
+pointer overload/conversion inputs. GCC retains446failed configurations; source
+counts and distinct root causes must not be inferred from that number.
+
+The second Clang disposition is deduction.cpp: mixed-type non-type partial
+matching is unresolved CWG1647, which remains drafting in active revision121.
+Official issue: https://cplusplus.github.io/CWG/issues/1647.html
+GCC and cppgm reject the disputed case; Clang accepts. This does not establish
+Clang as the required language oracle. The complete source is a hash-pinned
+standards-review exclusion, not a pass; its independent valid lines1-27 remain
+verbatim in pa17/tests/controls/300-clang-pack-instantiation-valid-slice.t.
+The earlier pr30559 valid trailing-return slice is retained in PA20.
+
+The current results are under gcc-ci-run-integrated-048049-v1/ and
+ci-first-clang-v1/run-integrated-048049-v1/ at the evidence root. Earlier result
+sets and failed/intermediate performance observations are retained. Final
+combined normal/export/release checks and campaign-root integration are pending.

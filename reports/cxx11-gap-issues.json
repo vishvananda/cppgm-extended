@@ -4459,7 +4459,7 @@
   {
     "id": "CXX11-047",
     "priority": "P1",
-    "status": "regression-confirmed-fix-in-progress",
+    "status": "staged-integration-checks-pending",
     "upstream": [
       "llvm-project/clang/test/CXX/basic/basic.lookup/basic.lookup.qual/p6-0x.cpp"
     ],
@@ -4497,6 +4497,132 @@
       "parent_wrong_rejections": 28,
       "scope": "16 controls in ISO/GNU C++11 at O0/O2; seven valid qualified-scalar forms fail in four configurations each; two valid neighbors and seven invalid controls pass"
     },
-    "triage_note": "Confirmed independently of diagnostic parity. Five other Clang rejection candidates remain pending reductions and root-cause deduplication; pr30559 is separately source-pinned IFNDR."
+    "triage_note": "Qualified scalar calls now pass the declared Clang case on the combined compiler. Combined final checks and campaign-root integration remain pending.",
+    "validated_revision": "fc532b705",
+    "checks": {
+      "isolated_functional_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-047/checks-v1/functional-verification-v1.json",
+      "combined_strict": 8606,
+      "combined_strict_log": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-strict-v1.log",
+      "normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-047-frozen-perf-v1/summary.tsv"
+    }
+  },
+  {
+    "id": "CXX11-048",
+    "priority": "P1",
+    "status": "staged-integration-checks-pending",
+    "compiler_language_gap": true,
+    "upstream": [
+      "llvm-project/clang/test/SemaCXX/pr27047-default-init-expr-name-conflict.cpp"
+    ],
+    "symptom": "Valid non-static class-template data members sharing their class name are rejected.",
+    "owning_pa": 14,
+    "handout": "pa14/README.md",
+    "standards_basis": "N3485 9p2, 9.2p14-p15 and 14p5 distinguish an injected class name from the namespace template name.",
+    "regressions": [
+      "pa14/tests/controls/100-class-name-data-member-template-default-initializer.t",
+      "pa14/tests/controls/100-class-name-data-member-template-dependent-field.t",
+      "pa14/tests/controls/100-class-name-data-member-template-static-bad.t",
+      "pa14/tests/controls/100-class-name-data-member-template-constructor-before-bad.t",
+      "pa14/tests/controls/100-class-name-data-member-template-constructor-after-bad.t",
+      "pa14/tests/controls/100-class-name-data-member-namespace-template-conflict-bad.t"
+    ],
+    "implementation": [
+      "dev/src/sema/analyzer_declarations.cpp"
+    ],
+    "regression_revision": "244f70567",
+    "fix_revision": "0f572a156",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-048",
+    "checks": {
+      "isolated": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-048/checks-v1/functional-verification-v2.json",
+      "actual_parent_proof": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-047-candidate-v1/parent-proof-048-corrected.json",
+      "combined_strict": 8606,
+      "normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-frozen-perf-v1/summary.tsv"
+    },
+    "performance": {
+      "O0_ratio": 1.000122,
+      "O3_ratio": 1.000002,
+      "objects_identical": true,
+      "scope": "Combined 048+049 against actual integrated parent; final integration checks pending."
+    }
+  },
+  {
+    "id": "CXX11-049",
+    "priority": "P1",
+    "status": "staged-integration-checks-pending",
+    "compiler_language_gap": true,
+    "upstream": [],
+    "symptom": "A class-name data member followed by the first user-declared constructor silently escapes its required diagnostic.",
+    "owning_pa": 11,
+    "handout": "pa11/README.md",
+    "standards_basis": "N3485 9.2p15 applies independently of declaration order.",
+    "regressions": [
+      "pa11/tests/controls/100-class-name-data-member-ordinary-default-initializer.t",
+      "pa11/tests/controls/100-class-name-data-member-ordinary-static-bad.t",
+      "pa11/tests/controls/100-class-name-data-member-ordinary-constructor-before-bad.t",
+      "pa11/tests/controls/100-class-name-data-member-ordinary-constructor-after-bad.t"
+    ],
+    "implementation": [
+      "dev/src/sema/analyzer_declarations.cpp"
+    ],
+    "regression_revision": "244f70567",
+    "fix_revision": "0f572a156",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-049",
+    "checks": {
+      "isolated": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-048/checks-v1/functional-verification-v2.json",
+      "actual_parent_proof": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-047-candidate-v1/parent-proof-048049.json",
+      "combined_strict": 8606,
+      "normal_perf": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-048049-frozen-perf-v1/summary.tsv"
+    },
+    "performance": {
+      "O0_ratio": 1.000122,
+      "O3_ratio": 1.000002,
+      "objects_identical": true,
+      "scope": "Combined 048+049 against actual integrated parent; final integration checks pending."
+    }
+  },
+  {
+    "id": "CXX11-050",
+    "kind": "standards-oracle-review",
+    "compiler_language_gap": false,
+    "status": "unresolved-standard-oracle",
+    "upstream": [
+      "llvm-project/clang/test/CXX/temp/temp.decls/temp.variadic/deduction.cpp"
+    ],
+    "symptom": "Mixed-type non-type partial-specialization matching follows unresolved CWG1647; Clang accepts while GCC and cppgm reject.",
+    "standards_basis": {
+      "issue": "https://cplusplus.github.io/CWG/issues/1647.html",
+      "status": "drafting in active revision121, 2026-10-10",
+      "review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-050/standards-review-verification-v1.json"
+    },
+    "disposition": "Whole source is a hash-pinned standards-review exclusion, not a pass or a confirmed compiler defect. Adopted1770/2091 do not resolve1647. Independent valid lines1-27 retained verbatim in required PA17 control.",
+    "regressions": [
+      "pa17/tests/controls/300-clang-pack-instantiation-valid-slice.t"
+    ],
+    "fix_revision": "d2c05fced",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-050",
+    "checks": {
+      "valid_slice": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-050-valid-slice-v1.log"
+    }
+  },
+  {
+    "id": "CXX11-051",
+    "priority": "P1",
+    "status": "regression-confirmed-fix-in-progress",
+    "compiler_language_gap": true,
+    "upstream": [
+      "llvm-project/clang/test/CXX/temp/temp.fct.spec/temp.arg.explicit/p9-0x.cpp"
+    ],
+    "symptom": "Explicitly supplied template parameter packs are treated as closed before deduction can extend their prefix.",
+    "owning_pa": 15,
+    "handout": "pa15/README.md; PA18 owns non-type/template-template neighbors",
+    "standards_basis": "N3485 14.8.1p9 explicitly permits deduction to extend a supplied pack prefix.",
+    "worktree": "/mnt/vizier/cppgm-clang-explicit-pack-prefix-extension",
+    "branch": "repair/cxx11-explicit-pack-prefix-extension",
+    "regression_revision": "f9633cc1b",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-051",
+    "checks": {
+      "parent_proof": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-051/parent-proof-verification-v1.json"
+    },
+    "triage_note": "Clang agent is implementing a typed residual-expansion fix; no integration or performance acceptance claimed."
   }
 ]

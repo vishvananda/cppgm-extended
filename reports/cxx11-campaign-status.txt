@@ -23,32 +23,49 @@ marking the interrupted observation unusable as uninterrupted measurement:
   /mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/remaining-029-performance-v2/user-realignment-retirement-v1.json
 The old generated running-state files do not authorize queue resumption.
 
-Fifteen known compiler repairs already passed isolated functional/export
-validation. Their integration, normal performance checks and execution in the
-actual CI jobs remain required. The corpus/runner inventories and all prior
-findings remain useful; they do not establish a current whole-suite pass rate.
-The two CI jobs and matched suite-timing reports are implemented and locally
-exercised. GCC: 3,644/4,114 candidate configurations pass (88.58%), upstream 4,114/4,114.
-Clang: 53/61 candidate checks pass (86.89%), upstream 61/61. These are declared
-subsets, not whole-suite percentages or deduplicated defect counts. Failed-suite
-timing ratios are explicitly non-comparable. See reports/cxx11-ci-jobs.txt.
-008 is now closed: its integrated repair and 45 PA21 controls pass 8,207 strict
-tests, PA21, debug-info, self-host through PA5, architecture/file/placement audits,
-student export and 42 reference wrappers. Normal frozen instructions change
-+0.000221% at O0 and +0.000749% at O3, with identical objects. PA35 quick passes.
-The macOS-only memory validator is not claimed on Linux. Evidence:
-  /mnt/vizier/cppgm-cxx11-upstream/ci-first-008-integration-v1.json
+The fifteen prepared repairs are now staged together with the additional
+qualified scalar pseudo-destructor (047), injected class-name member (048) and
+late constructor diagnostic (049) fixes in cppgm-cxx11-integrated-next, source
+0f572a156. Root integration awaits combined normal/export/release checks.
+All 8,606 combined strict tests pass. Each compiler repair has its owning-PA
+regressions and a passing normal frozen counter comparison with identical
+objects; the combined normal checks are running. This is integration progress,
+not a claim that the entire external campaign is complete.
 
-Current manifests: GCC still 3,644/4,114; Clang now 54/60 (90%), upstream all pass.
-P1155 is repaired. The pr30559 positive expectation is explicitly excluded as
-IFNDR with a source-pinned clause review; its original 61-case evidence remains.
-There are six remaining Clang rejection candidates. Qualified scalar
-pseudo-destructor gap 047 is confirmed by reduced PA11 controls and is being
-repaired by the Clang agent. The other five need reductions/deduplication.
-Fourteen earlier isolated repairs still need integration; 021 and 019 are staged
-together with 008 in /mnt/vizier/cppgm-cxx11-integrated-next, with normal per-fix
-frozen counters and combined checks underway. Public runtime regression
-investigation remains out of scope at the user's request.
+Current declared results on that immutable combined compiler:
+  GCC:   3,668/4,114 (89.16%); upstream 4,114/4,114.
+  Clang:    56/59    (94.92%); upstream    59/59.
+GCC has 244 compile failures, 198 missing required diagnostics, two compiler
+abnormal outcomes and two link failures. These are 446 failed configurations,
+not 446 distinct defects. Clang has three rejected inputs: explicit pack-prefix
+extension (051, being repaired) and two member-pointer conversion/overload
+inputs awaiting reductions. Neither rate describes the whole upstream suite.
+
+The Clang cohort has two explicit hash-pinned dispositions: pr30559 is IFNDR;
+deduction.cpp's mixed-type non-type matching is unresolved CWG1647 (050), not
+a confirmed compiler defect. Their independently valid slices remain required
+PA20/PA17 controls. Exclusions are not passes; original 61-case evidence remains.
+
+Both CI jobs run matching upstream suites and retain times and ratios. This
+combined run records GCC 27.819/67.516 seconds (ratio0.412) and Clang0.375/2.106
+seconds (ratio0.178). Both ratios are explicitly NON-COMPARABLE because cppgm
+still fails cases. No GitHub-hosted execution is claimed.
+
+The requested lookup optimization is committed as2c98d64c4. It reduces the
+reported +0.411%/+0.134% cumulative O0/O3 instruction cost to +0.199%/+0.064%.
+With all later staged repairs the cumulative change is +0.255%/+0.078%, below
+the normal 0.5% instruction limit, with identical objects. See
+reports/cxx11-default-lookup-performance.txt. No new calibration campaign or
+macOS-only memory gate pass is claimed on Linux.
+
+Evidence under /mnt/vizier/cppgm-cxx11-upstream:
+  ci-next-048049-candidate-v1/manifest.json
+  ci-next-048049-strict-v1.log; ci-next-combined-checks-v1/
+  ci-next-048049-cumulative-perf-v1/summary.tsv
+  gcc-ci-run-integrated-048049-v1/
+  ci-first-clang-v1/manifest-v5.json; run-integrated-048049-v1/
+  ci-next-integration-journal-v1.json
+Public runtime/codegen regression investigation remains assigned elsewhere.
 
 Historical checkpoint before user realignment (2026-11-07)
 

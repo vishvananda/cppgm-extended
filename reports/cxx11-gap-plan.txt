@@ -184,9 +184,12 @@ use the established supported host/path; do not record a fabricated pass.
 Current implementation checkpoint (user resumed 2026-11-07)
 
 The two CI instances are implemented and locally exercised; see
-reports/cxx11-ci-jobs.txt. GCC selects 4,114 configurations and Clang 61 positive
-checks. Upstream baselines pass all selected checks; candidate failures remain
-visible. Coverage expansion, known repair integration and normal gates remain.
+reports/cxx11-ci-jobs.txt. GCC selects 4,114 configurations and Clang 59 positive
+checks after two source-pinned language-oracle dispositions. The staged combined
+compiler passes 3,668/4,114 GCC configurations and 56/59 Clang checks; matching
+upstream compilers pass every selected check. These are subset rates, not
+whole-suite rates or deduplicated defect counts. Coverage expansion, remaining
+repairs and final integration checks remain.
 The custom measurement queue stays retired.
 
 Immediate next work
