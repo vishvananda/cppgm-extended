@@ -194,7 +194,7 @@ def disposition_reason(name, digest, dispositions):
     return None
 
 
-def collect(root, parse_keywords, native, dispositions=None, adjudications=None):
+def collect(root, parse_keywords, native, dispositions=None, adjudications=None, verify_negatives=False):
     files = subprocess.check_output(['git', 'ls-files', '-z', '--', 'clang/test'], cwd=root)
     cases, exclusions, grouped = [], [], {}
     for name in sorted(files.decode().split('\0')):
@@ -242,14 +242,17 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None)
                     discovered = required_errors(text, verification)
                     key = 'llvm-project/' + name + '#' + str(index) + '#' + projection['dialect']
                     adjudication = (adjudications or {}).get(key)
-                    if not adjudication:
+                    if not adjudication and not verify_negatives:
                         raise Excluded('Active verify error awaits language-rule triage for CI inclusion')
-                    if adjudication['source_sha256'] != digest:
+                    if adjudication and adjudication['source_sha256'] != digest:
                         raise RuntimeError('Stale source-pinned negative adjudication: ' + name)
-                    if adjudication['expected'] != 'diagnose-invalid':
+                    if adjudication and adjudication['expected'] != 'diagnose-invalid':
                         raise Excluded('Reviewed language rule does not require a diagnostic')
                     expected = 'diagnostic'
                     projection['language_oracle'] = dict(adjudication=adjudication, **discovered)
+                    if not adjudication:
+                        projection['language_oracle']['standards_status'] = (
+                            'Native active-error expectation; language/IFNDR applicability awaits failure-led triage')
                     projection['adaptations'] = [v for v in projection['adaptations']
                                                 if 'positive language acceptance' not in v]
                     projection['adaptations'].append('Whole translation unit requires any normal diagnostic; '
@@ -267,14 +270,19 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None)
             grouped[key] = case
             cases.append(case)
     return dict(schema=1, suite='clang', revision=REVISION,
-                coverage='Positive object acceptance and adjudicated required diagnostics from self-contained '
+                coverage='Positive object acceptance and ' +
+                         ('active-error required-diagnostic candidates' if verify_negatives else
+                          'adjudicated required diagnostics') + ' from self-contained '
                          'explicit C++11/0x syntax RUNs; '
                          'both ISO and GNU spellings retain their declared dialect; no full Clang-suite claim',
                 limitations=['Selection is independent of cppgm acceptance; upstream qualification failures stay visible',
                              'Negative checks establish a whole-translation-unit diagnostic, not each annotation',
                              'No link, runtime, diagnostic wording, AST, LLVM or assembly parity claim',
                              'Sources without literal C++11/0x spellings and non-C++ suffixes are outside this initial cohort',
-                             'Preprocessing, builtins, local configs, features, support inputs and unmapped RUNs remain gaps'],
+                             'Preprocessing, builtins, local configs, features, support inputs and unmapped RUNs remain gaps'] +
+                            (['Additional native active-error cases retain unreviewed language/IFNDR applicability; '
+                              'all failures remain visible for triage, without candidate-based selection']
+                             if verify_negatives else []),
                 exclusions=exclusions, cases=cases)
 
 
@@ -287,6 +295,9 @@ def main(argv=None):
                         default=Path(__file__).resolve().parents[1] / 'reports/cxx11-language-dispositions.json')
     parser.add_argument('--adjudications', type=Path,
                         default=Path(__file__).resolve().parents[1] / 'reports/cxx11-clang-language-adjudications.json')
+    parser.add_argument('--verify-negatives', action='store_true',
+                        help='Include supported active-error RUNs for failure-led language/IFNDR triage; '
+                             'reviewed source-pinned dispositions still apply')
     args = parser.parse_args(argv)
     root = args.llvm_root.resolve()
     parse_keywords, _ = native_parser(root, args.revision)
@@ -300,7 +311,8 @@ def main(argv=None):
         source = Path(__file__).resolve().parents[1] / row['standard_source']
         if hashlib.sha256(source.read_bytes()).hexdigest() != row['standard_sha256']:
             raise ValueError('Stale primary standard source: ' + str(source))
-    manifest = collect(root, parse_keywords, native, json.loads(args.dispositions.read_text()), adjudications)
+    manifest = collect(root, parse_keywords, native, json.loads(args.dispositions.read_text()),
+                       adjudications, args.verify_negatives)
     subprocess.run(['git', 'diff', '--quiet', 'HEAD', '--', *tracked], cwd=root, check=True)
     if not manifest['cases']:
         raise ValueError('The conservative selection produced no cases')

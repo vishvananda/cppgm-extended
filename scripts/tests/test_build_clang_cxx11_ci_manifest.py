@@ -203,6 +203,11 @@ class RequiredDiagnosticDiscovery(unittest.TestCase):
                 unreviewed = manifest.collect(root, lambda *a, **k: parsed, None)
                 self.assertEqual(unreviewed['cases'], [])
                 self.assertIn('language-rule triage', unreviewed['exclusions'][0]['reason'])
+                broader = manifest.collect(root, lambda *a, **k: parsed, None, verify_negatives=True)
+                broad_case, = broader['cases']
+                self.assertEqual(broad_case['expect'], 'diagnostic')
+                self.assertIsNone(broad_case['language_oracle']['adjudication'])
+                self.assertIn('failure-led triage', broad_case['language_oracle']['standards_status'])
                 key = 'llvm-project/'+name+'#0#c++11'
                 reviewed = manifest.collect(root, lambda *a, **k: parsed, None,
                                              adjudications={key: adjudication})
@@ -211,6 +216,16 @@ class RequiredDiagnosticDiscovery(unittest.TestCase):
                 self.assertTrue(case['language_oracle']['active_mandatory_error'])
                 self.assertNotIn('verification', case)
                 self.assertNotIn('-verify', case['upstream_flags'])
+                blocked = manifest.collect(root, lambda *a, **k: parsed, None,
+                                           adjudications={key: dict(adjudication, expected='not-required')},
+                                           verify_negatives=True)
+                self.assertEqual(blocked['cases'], [])
+                common = manifest.collect(root, lambda *a, **k: parsed, None,
+                                          dispositions={'llvm-project/'+name: dict(
+                                              sha256=digest, status='not-required', reason='IFNDR')},
+                                          verify_negatives=True)
+                self.assertEqual(common['cases'], [])
+                self.assertIn('IFNDR', common['exclusions'][0]['reason'])
                 with self.assertRaisesRegex(RuntimeError, 'Stale'):
                     manifest.collect(root, lambda *a, **k: parsed, None,
                                      adjudications={key: dict(adjudication, source_sha256='stale')})
