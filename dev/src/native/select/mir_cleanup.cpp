@@ -2803,4 +2803,103 @@ uint32_t thread_decided_tests(Function& f, const lowir::Program& program)
 	return threaded;
 }
 
+
+// Reuse an unchanged vector temporary's frame value within one block,
+// including the selector's scratch XMMs. Unknown operations end the facts.
+uint32_t forward_vector_homes(Function& f)
+{
+	std::vector<int32_t> homes;
+	for (const FrameBinding& binding : f.bindings)
+		if (binding.kind == BindingKind::Temp && binding.type.kind() == lowir::TypeKind::V128)
+			homes.push_back(binding.offset);
+	if (homes.empty())
+		return 0;
+	std::sort(homes.begin(), homes.end());
+	int32_t held[16];
+	const auto clear = [&]() { std::fill(held, held + 16, kHoldsNothing); };
+	const auto forget = [&](const Operand& op) {
+		if (op.kind == OperandKind::Reg && is_xmm(op.reg))
+			held[op.reg - XMM0] = kHoldsNothing;
+	};
+	const auto home = [&](const Operand& op) {
+		return op.kind == OperandKind::Mem && op.reg == kFrame && op.index == kNoReg &&
+			op.symbol == lowir::kNoId && std::binary_search(homes.begin(), homes.end(), op.disp);
+	};
+	uint32_t removed = 0;
+	for (const Block& block : f.blocks)
+	{
+		clear();
+		for (uint32_t i = block.first; i < block.first + block.count; ++i)
+		{
+			Inst& inst = f.insts[i];
+			if (inst.op == Op::Nop)
+				continue;
+			if (inst.flags & MF_VOLATILE)
+			{
+				clear();
+				continue;
+			}
+			if (inst.op == Op::FMov && inst.type == lowir::TypeKind::V128 &&
+				inst.ops[0].kind == OperandKind::Reg && is_xmm(inst.ops[0].reg))
+			{
+				const Reg d = inst.ops[0].reg;
+				const Operand src = inst.ops[1];
+				int32_t at = kHoldsNothing;
+				if (home(src))
+				{
+					at = src.disp;
+					for (unsigned r = 0; r < 16; ++r)
+						if (held[r] == at)
+						{
+							if (XMM0 + r == d)
+							{
+								inst.op = Op::Nop;
+								inst.nops = 0;
+							}
+							else
+								inst.ops[1] = Operand::make_reg(static_cast<Reg>(XMM0 + r));
+							++removed;
+							break;
+						}
+				}
+				else if (src.kind == OperandKind::Reg && is_xmm(src.reg))
+					at = held[src.reg - XMM0];
+				held[d - XMM0] = at;
+				continue;
+			}
+			if (inst.op == Op::Vector)
+			{
+				const lowir::VectorOp op = static_cast<lowir::VectorOp>(inst.sub);
+				const lowir::VectorShape shape = lowir::shape_of(op);
+				if (shape != lowir::VectorShape::Test)
+					forget(inst.ops[0]);
+				// vector_operands may preserve an overlapping second source
+				// in xmm15. Fromf32's self-copy clears its upper lanes there.
+				if (((shape == lowir::VectorShape::Binary || shape == lowir::VectorShape::BinaryImmediate ||
+						 shape == lowir::VectorShape::Blend) && inst.ops[2].reg == inst.ops[0].reg &&
+						!(inst.ops[1].kind == OperandKind::Reg &&
+							(inst.ops[1].reg == inst.ops[0].reg || lowir::vector_commutes(op)))) ||
+					(op == lowir::VectorOp::Fromf32 && inst.ops[0].reg == inst.ops[1].reg))
+					held[15] = kHoldsNothing;
+				continue;
+			}
+			if ((inst.op == Op::Store || inst.op == Op::FMov) && inst.ops[0].kind == OperandKind::Mem)
+			{
+				const Operand& dest = inst.ops[0];
+				if (dest.reg != kFrame || dest.index != kNoReg || dest.symbol != lowir::kNoId)
+					clear();
+				else
+					for (unsigned r = 0; r < 16; ++r)
+						if (held[r] != kHoldsNothing && held[r] < dest.disp + 16 && dest.disp < held[r] + 16)
+							held[r] = kHoldsNothing;
+				continue;
+			}
+			if (simple_inst(inst))
+				continue;
+			clear();
+		}
+	}
+	return removed;
+}
+
 } // namespace native

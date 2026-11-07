@@ -2,6 +2,7 @@ name: index-cpp benchmarks
 
 on:
   push:
+    branches-ignore: [perf/simdjson-vector-forward-probe]
   pull_request:
   workflow_dispatch:
 

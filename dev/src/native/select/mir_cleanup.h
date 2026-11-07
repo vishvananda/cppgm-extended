@@ -50,6 +50,7 @@ uint32_t forward_home_reloads(Function& function);
 // Floating reads of a frame home an XMM register holds read the register.
 // Returns the reads forwarded.
 uint32_t forward_float_homes(Function& function);
+uint32_t forward_vector_homes(Function& function);
 
 // A load from a frame object a bulk copy of known bytes just filled reads
 // the copy's source instead, while nothing since wrote memory a pointer

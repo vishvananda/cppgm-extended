@@ -2,6 +2,7 @@ name: Boost advisory
 
 on:
   push:
+    branches-ignore: [perf/simdjson-vector-forward-probe]
   workflow_dispatch:
 
 permissions:
