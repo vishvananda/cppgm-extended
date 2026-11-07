@@ -347,5 +347,47 @@
     "issue": "CXX11-079",
     "sha256": "c8992ea5dfe8e198844fe13ee9557f73fbe0e70021f592d44c89c1abd5e213b3",
     "reason": "test2 defines ordinary member A<char>::f inside an explicit class specialization, and its body calls private C::foo. C befriends A<T>::g, not f. N3485 14.5.4p5 requires matching member name/kind/signature for friendship in explicit specializations; 11.3p1 grants private access only to nominated friends. Under14.7.3p5, members of the explicit class specialization are defined as normal class members, so this non-template f body needs diagnosis even if unused. Clang warns that dependent member friendship is unsupported; that normal diagnostic satisfies the whole-TU obligation. Independent valid dependent friend declarations remain unproven by this negative projection."
+  },
+  "llvm-project/clang/test/CXX/temp/temp.decls/temp.class.spec/p9.cpp": {
+    "status": "standards-review",
+    "issue": "CXX11-050",
+    "sha256": "0b0d72e5ad0a07db1a7a647b28fa76d75eb238e5c2e42a0a90593539a2a11abc",
+    "reason": "The required acceptance of X<1,1> depends on deduction between primary char parameters and an int parameter of X<C1,C1>; int_values has the inverse int/unsigned-char mismatch. CWG1647 explicitly says partial-specialization non-type argument type agreement/conversion is unspecified and remains drafting in primary revision121a(2026-10-10). N3485 14.5.5.1p2 delegates matching to deduction, without resolving this exact type-agreement issue; no adopted1770/2091 rule resolves1647. GCC15 and cppgm reject the original negative-array assertion; Clang21 accepts. Preserve raw outcomes as standards review rather than require conversion behavior. A separate matching-type PA17:100 neighbor tests unambiguous partial selection and explicitly does not resolve1647."
+  },
+  "llvm-project/clang/test/CXX/dcl.dcl/basic.namespace/namespace.udecl/p10.cpp": {
+    "status": "not-required",
+    "issue": "CXX11-CI-IFNDR-namespace-udecl-p10",
+    "sha256": "3d89bf598aff69d22d6ab475ad3f0ae142d9157471db5aa1541cdd7f07c1247f",
+    "reason": "Unused PR14768::Col<eT> contains using Col<eT>::operator(), whose qualifier is the current class itself. N3485 7.3.3p3 requires a base class, and no generated specialization can make a class its own base; the template is never instantiated, so14.6p8 makes this IFNDR. Adopted CWG852/P1787R6 permits dependent-base deferral but retains the base-class requirement(currentnamespace.udecl3); it does not permit a self-qualified member using. Faithful unused reduction preserves Clang acceptance, and explicit Col<int> instantiation makes Clang reject the self-using; GCC15/cppgm reject both. Native acceptance of this wholeTU is not mandatory. Its independent namespace prefix is retained verbatim as required PA6:200 metadata fixture; no whole-file pass is claimed."
+  },
+  "llvm-project/clang/test/SemaTemplate/non-integral-switch-cond.cpp": {
+    "status": "not-required",
+    "sha256": "dc214e458ebf0c95b45fa46a566e095e9d9853780abe5a6628807ca609d67053",
+    "reason": "foo<T>::run contains switch(Bad) with a complete fixed nondependent class NOT_AN_INTEGRAL_TYPE that has no conversion functions. No instantiation or useof foo/run occurs. Every generated run specialization is invalid, and original14.6p8 permits IFNDR; its own accompanying classX example says fixednondependent memberbodyerrors maybediagnosedbeforeinstantiation. Adopted1850(Nov2014) adds hypotheticalnondependent illformedinstantiation IFNDR; currenttemp.res6.1/6.7 andtemp.pre8.4 explicitlycovertemplatedmembers. Neither originalnorlatestcontractrequiresdiagnostic timing for this uninstantiatedalwaysinvalidbody. No host-consensus premise."
+  },
+  "llvm-project/clang/test/SemaCXX/address-space-placement.cpp": {
+    "status": "not-required",
+    "sha256": "374230f74bfa3965a9a8ec12f42adee501ddbad9369bd5b996c852fcbf7b0fe3",
+    "reason": "Allactive expected-errors attachto clang::address_space-specific appertainment/automaticaddressspace rules. N34857.6.1p3/p5 makes scopedvendorattribute behavior implementationdefined/conditionallysupported; no ISOdefinition of clang::address_space mandatesClangsemantics. Attributeclauses arebalancedliteral tokens andgeneric placements havegrammarproductions, includingusing-directive attributes. Thetwo variabletemplates are C++14syntax explicitlyacceptedincourseC++11byPA17README220ff, so they cannot independently supply mandatorycourseC++11negative. Vendorwarning/errorseverity isnotlanguageparity. This wholefilehasno establishedsharedrequirednegativeoracle; originalvendorobligationsremainunmet ratherthanpassed."
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/alignas1.C": {
+    "status": "required-diagnostic",
+    "sha256": "e34d9cb61e6cc0ee064e08194b50454e7449e2f57b78a7fe9122d6341a6452da",
+    "reason": "The two alignas-specifiers appertain to typedef array types, not variables, data members or enum/class heads. N3485 7.6.2p1 and adoptedCWG1437 restrict the permitted declarations. ISO11 requires a diagnostic; normal GCC warnings and cppgm rejection both satisfy it. This is not a required acceptance oracle for the GNU aligned-typedef extension."
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/alignas2.C": {
+    "status": "not-required",
+    "sha256": "fa3112817e182eaa45051e5fddaf9a65871527416ede93e9b0e09abb36977444",
+    "reason": "The fixed typedef appertainment of alignas(16) is forbidden under adoptedCWG1437 regardless of T<float>. Under adoptedCWG1850 the hypothetical-instantiation/nondependent-construct IFNDR rule has no uninstantiated-template proviso, so later BV2<BVector> instantiation does not establish a mandatory diagnostic obligation. GCC extension layout assertions are not required ISO11 acceptance. Preserve original normal warning/acceptance and cppgm rejection; exclude the invalid positive oracle without counting a compiler pass."
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/alignof3.C": {
+    "status": "required-diagnostic",
+    "sha256": "01c8f42d4c3232cf5a2a1d86077ec31e58e8410ef15b91746d0954315667875f",
+    "reason": "N3485 5.3.6p1 requires alignof operand to denote a complete object type, array thereof or reference to one. void(void) is a function type, so this expression requires a diagnostic. The original dg-warning is a diagnosed GCC extension; normal warning or rejection both satisfy the ISO11 negative."
+  },
+  "gcc/gcc/testsuite/g++.dg/cpp0x/elab-enum-base.C": {
+    "status": "required-diagnostic",
+    "sha256": "e4755d1de35315c134c351e7a7036398a500e75fc24c9bc04cf708c5e7250ae4",
+    "reason": "The typedef declaration combines a fixed-underlying enum head without enumerators with a following typedef declarator. N3485 7.2p1 opaque-enum grammar requires a standalone semicolon after enum-base, while 7.1.6.3 elaborated enum grammar contains no enum-base. No matching11form permits this combined declaration. Require any normal diagnostic; GCC extension warning and cppgm rejection both satisfy it."
   }
 }
