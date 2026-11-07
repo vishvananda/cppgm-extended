@@ -224,6 +224,42 @@ SubobjectMutability Analyzer::mutable_subobjects(const Type* type, uint32_t dept
 	return result;
 }
 
+SubobjectValues Analyzer::copied_subobject_values(const Type* type, uint32_t depth)
+{
+	if (type->is_reference())
+		return SubobjectValues::Present;
+	while (type->kind == TypeKind::Array)
+	{
+		if (type->bound == 0)
+			return SubobjectValues::None;
+		type = type->element;
+	}
+	ClassEntity* cls = const_cast<ClassEntity*>(ClassOf(type));
+	if (cls == nullptr)
+		return SubobjectValues::Present;
+	if (cls->subobject_values != SubobjectValues::Unknown)
+		return cls->subobject_values;
+	if (depth > kInstantiationDepthLimit || !require_complete(cls))
+		return SubobjectValues::Unknown;
+	SubobjectValues result = cls->dynamic || (cls->key == TokenKind::KW_UNION && cls->members != nullptr)
+		? SubobjectValues::Present
+		: SubobjectValues::None;
+	for (const BaseClass* base = cls->bases; base != nullptr && result == SubobjectValues::None; base = base->next)
+		result = copied_subobject_values(base->base->type, depth + 1);
+	for (const DataMember* member = cls->members; member != nullptr && result == SubobjectValues::None;
+		member = member->next)
+	{
+		if (member->variable->kind != EntityKind::Variable || (member->bit_field && member->variable->name == nullptr))
+			continue;
+		result = copied_subobject_values(member->variable->type, depth + 1);
+	}
+	// Complete class membership is immutable. Share answers across repeated
+	// subobject types, inspect array types once, and leave unknowns uncached.
+	if (result != SubobjectValues::Unknown)
+		cls->subobject_values = result;
+	return result;
+}
+
 bool Analyzer::constexpr_constructor(const FunctionEntity* constructor, uint32_t depth)
 {
 	// A user-provided constructor is constexpr as declared; an implicit or

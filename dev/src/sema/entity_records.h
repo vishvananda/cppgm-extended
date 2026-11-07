@@ -166,6 +166,13 @@ enum class SubobjectMutability : uint8_t
 	Mutable
 };
 
+enum class SubobjectValues : uint8_t
+{
+	Unknown,
+	None,
+	Present
+};
+
 struct ClassEntity : Entity
 {
 	// The class-key of the first declaration, which the type's spelling uses.
@@ -190,6 +197,10 @@ struct ClassEntity : Entity
 	// A complete class's by-value subobjects include a mutable member.
 	// Computed on demand; references do not include their referents.
 	SubobjectMutability subobject_mutability;
+	// Scalar/reference values or union active-member state needed by a
+	// trivial copy. Computed on demand for complete classes, independently
+	// of ABI emptiness (an ordinary empty member still occupies storage).
+	SubobjectValues subobject_values;
 	// Declared with the class-virt-specifier final (9p3: it is no base).
 	bool is_final;
 	// It has a virtual table pointer (Itanium 2.4's dynamic class): it is
