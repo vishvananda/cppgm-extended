@@ -44,6 +44,15 @@ else:
 
 
 class Suite(unittest.TestCase):
+    def test_object_projection_does_not_execute_unmet_native_ir_or_runtime_commands(self):
+        case = self.case()
+        case['unmet_native_oracles'] = dict(status='not-executed',
+            all_original_RUNs=['FileCheck %s', '%run %t'])
+        result = self.run_one(case)
+        self.assertEqual(result['status'], 'passed')
+        self.assertEqual([r['name'] for r in result['stages']], ['compile'])
+        self.assertEqual(case['unmet_native_oracles']['status'], 'not-executed')
+
     def test_strict_qualification_does_not_rewrite_normal_expectation_or_flags(self):
         self.compiler.write_text(FAKE.replace("if 'REJECT' in source:",
                                              "if 'REJECT' in source or ('STRICT_ONLY' in source "
@@ -80,6 +89,9 @@ class Suite(unittest.TestCase):
         projected, = qualification_cases(dict(cases=[case]))
         self.assertEqual(projected['upstream_flags'], ['-pedantic-errors'])
         self.assertEqual(case['upstream_flags'], [])
+        case['qualification']['kind'] = 'llvm-object-cxx11'
+        llvm, = qualification_cases(dict(cases=[case]))
+        self.assertEqual(llvm['upstream_flags'], ['-pedantic-errors'])
         case['dialect'] = 'gnu++11'
         case['qualification'] = dict(kind='documented-gnu-cxx11', additional_upstream_flags=[],
                                      source_policy_issue='CXX11-065')
@@ -235,6 +247,7 @@ class Workflow(unittest.TestCase):
                     self.assertEqual(args[0], 'scripts/build_'+suite+'_cxx11_ci_manifest.py')
                     self.assertEqual('--verify-negatives' in args, suite == 'clang')
                     self.assertEqual('--implicit-cxx11' in args, suite == 'clang')
+                    self.assertEqual('--llvm-object-projections' in args, suite == 'clang')
                     self.assertEqual(args[args.index('--output')+1],
                                      str(root/'run temp/cxx11/manifest.json'))
                     self.assertEqual(args[args.index('--'+('llvm' if suite == 'clang' else 'gcc')+'-root')+1],

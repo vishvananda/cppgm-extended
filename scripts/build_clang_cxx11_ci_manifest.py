@@ -109,10 +109,17 @@ def required_errors(text, verification):
     return dict(prefixes=prefixes, active_mandatory_error=True)
 
 
-def project_run(command, native, policy_tokens, implicit_cxx11=False):
+def project_run(command, native, policy_tokens, implicit_cxx11=False, llvm_objects=False):
     match = re.fullmatch(native.TestRunner.kPdbgRegex, command)
     body = match.group(2) if match else command
     tree = native.ShUtil.ShParser(body, win32Escapes=False, pipefail=True).parse()
+    if (llvm_objects and isinstance(tree, native.ShCommands.Pipeline)
+            and not tree.negate and len(tree.commands) == 2):
+        if not all(isinstance(n, native.ShCommands.Command) and not n.redirects
+                   and all(isinstance(v, str) for v in n.args) for n in tree.commands):
+            raise Excluded('LLVM projection requires two literal commands without redirection')
+        return project_llvm_arguments(tree.commands[0].args, tree.commands[1].args,
+                                      policy_tokens, implicit_cxx11)
     if (not isinstance(tree, native.ShCommands.Pipeline) or tree.negate or
             len(tree.commands) != 1):
         raise Excluded('Setup, pipeline, negation or runtime RUN needs a separate projection')
@@ -121,6 +128,47 @@ def project_run(command, native, policy_tokens, implicit_cxx11=False):
             not all(isinstance(v, str) for v in node.args)):
         raise Excluded('Redirection/glob/nonliteral command needs a separate projection')
     return project_arguments(node.args, policy_tokens, implicit_cxx11)
+
+
+def project_llvm_arguments(args, check, policy_tokens, implicit_cxx11=False):
+    if not args or args[0] != '%clang_cc1' or args.count('-emit-llvm') != 1:
+        raise Excluded('Only an explicit cc1 emit-llvm to FileCheck pipeline is mapped')
+    if '-fsyntax-only' in args or args.count('-o') != 1:
+        raise Excluded('LLVM projection requires one unambiguous native action/output')
+    if not check or check[0] != 'FileCheck' or check.count('%s') != 1:
+        raise Excluded('LLVM projection requires FileCheck of the source itself')
+    for option in check[1:]:
+        if option != '%s' and not (re.fullmatch(
+                r'--?check-prefix(?:es)?=[A-Za-z0-9_-]+(?:,[A-Za-z0-9_-]+)*', option)
+                or option.startswith('--implicit-check-not=')):
+            raise Excluded('Unmapped FileCheck input/policy: ' + option)
+    projected, omitted = [], []
+    i = 0
+    while i < len(args):
+        value = args[i]
+        i += 1
+        if value in {'-emit-llvm', '-disable-llvm-passes'}:
+            omitted.append(value)
+        elif value == '-o':
+            if i == len(args) or args[i] != '-':
+                raise Excluded('Only native LLVM stdout output is mapped')
+            omitted.extend(['-o', '-'])
+            i += 1
+        else:
+            projected.append(value)
+    result = project_arguments([*projected, '-fsyntax-only'], policy_tokens, implicit_cxx11)
+    if result['verification']:
+        raise Excluded('Verifier metadata in an LLVM pipeline needs separate active-oracle review')
+    result['projection_kind'] = 'llvm-object-acceptance'
+    result['qualification'] = dict(
+        kind='llvm-object-cxx11', additional_upstream_flags=['-pedantic-errors'],
+        status='Separate strict native C++11 object qualification required, including explicit11 RUNs')
+    result['adaptations'] = [v for v in result['adaptations'] if not v.startswith('Syntax-only acceptance')]
+    result['adaptations'].append('Project LLVM emission to relocatable object acceptance only; '
+                                 'original IR/FileCheck/setup/runtime obligations remain unmet')
+    result['unmet_native_oracles'] = dict(status='not-executed', filecheck_arguments=check,
+                                          original_action_output_options=omitted)
+    return result
 
 
 def project_arguments(args, policy_tokens, implicit_cxx11=False):
@@ -208,7 +256,7 @@ def disposition_reason(name, digest, dispositions):
 
 
 def collect(root, parse_keywords, native, dispositions=None, adjudications=None, verify_negatives=False,
-            implicit_cxx11=False):
+            implicit_cxx11=False, llvm_objects=False):
     files = subprocess.check_output(['git', 'ls-files', '-z', '--', 'clang/test'], cwd=root)
     cases, exclusions, grouped = [], [], {}
     for name in sorted(files.decode().split('\0')):
@@ -249,9 +297,19 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
             continue
         for index, directive in enumerate(directives):
             try:
-                projection = dict(project_run(directive.command, native, policy_tokens, True)
+                projection = dict(project_run(directive.command, native, policy_tokens,
+                                              implicit_cxx11, True) if llvm_objects else
+                                  project_run(directive.command, native, policy_tokens, True)
                                   if implicit_cxx11 else
                                   project_run(directive.command, native, policy_tokens))
+                if projection.get('projection_kind') == 'llvm-object-acceptance':
+                    if DIAGNOSTIC.search(text):
+                        raise Excluded('Diagnostic annotations in LLVM sources need active-oracle review')
+                    projection['unmet_native_oracles'] = dict(
+                        projection['unmet_native_oracles'],
+                        all_original_RUNs=[v.command for v in directives],
+                        scope='Original LLVM/FileCheck and any setup/runtime RUNs are not executed; '
+                              'only projected language object acceptance is graded')
                 mode = (dispositions or {}).get('llvm-project/' + name, {})
                 if mode.get('status') == 'documented-gnu-extension-positive':
                     if 'qualification' not in projection:
@@ -304,7 +362,9 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                           'adjudicated required diagnostics') + ' from self-contained ' +
                          ('explicit C++11/0x and implicit-mode syntax RUNs requiring separate native qualification; '
                           if implicit_cxx11 else 'explicit C++11/0x syntax RUNs; ')
-                         + 'both ISO and GNU spellings retain their declared dialect; no full Clang-suite claim',
+                         + 'both ISO and GNU spellings retain their declared dialect; no full Clang-suite claim' +
+                         ('; LLVM pipelines add separately qualified object projections with unmet original oracles'
+                          if llvm_objects else ''),
                 limitations=['Selection is independent of cppgm acceptance; upstream qualification failures stay visible',
                              'Negative checks establish a whole-translation-unit diagnostic, not each annotation',
                              'No link, runtime, diagnostic wording, AST, LLVM or assembly parity claim',
@@ -314,6 +374,9 @@ def collect(root, parse_keywords, native, dispositions=None, adjudications=None,
                             (['Implicit-mode projections require separate strict native C++11 qualification; '
                               'qualification failures remain applicability triage, without automatic oracle changes']
                              if implicit_cxx11 else []) +
+                            (['LLVM pipelines establish projected object acceptance only; original '
+                              'IR/FileCheck/setup/runtime obligations remain explicit unmet metadata']
+                             if llvm_objects else []) +
                             (['Additional native active-error cases retain unreviewed language/IFNDR applicability; '
                               'all failures remain visible for triage, without candidate-based selection']
                              if verify_negatives else []),
@@ -335,6 +398,9 @@ def main(argv=None):
     parser.add_argument('--implicit-cxx11', action='store_true',
                         help='Also project supported no-standard RUNs into C++11; requires separate '
                              'strict native qualification, retaining all qualification failures')
+    parser.add_argument('--llvm-object-projections', action='store_true',
+                        help='Project audited simple cc1 emit-llvm to FileCheck RUNs into object '
+                             'acceptance; qualify natively and retain all original oracle obligations')
     args = parser.parse_args(argv)
     root = args.llvm_root.resolve()
     parse_keywords, _ = native_parser(root, args.revision)
@@ -349,7 +415,7 @@ def main(argv=None):
         if hashlib.sha256(source.read_bytes()).hexdigest() != row['standard_sha256']:
             raise ValueError('Stale primary standard source: ' + str(source))
     manifest = collect(root, parse_keywords, native, json.loads(args.dispositions.read_text()),
-                       adjudications, args.verify_negatives, args.implicit_cxx11)
+                       adjudications, args.verify_negatives, args.implicit_cxx11, args.llvm_object_projections)
     subprocess.run(['git', 'diff', '--quiet', 'HEAD', '--', *tracked], cwd=root, check=True)
     if not manifest['cases']:
         raise ValueError('The conservative selection produced no cases')

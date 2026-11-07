@@ -18,6 +18,66 @@ def arguments(*flags):
 
 
 class PolicyTests(unittest.TestCase):
+    def test_llvm_object_projection_preserves_semantic_flags_and_original_obligations(self):
+        args = ['%clang_cc1', '-std=c++11', '-emit-llvm', '-disable-llvm-passes',
+                '-O2', '-triple', 'x86_64-linux-gnu', '%s', '-o', '-']
+        check = ['FileCheck', '--check-prefixes=CHECK,O2', '%s',
+                 '--implicit-check-not=call void @llvm.lifetime']
+        row = manifest.project_llvm_arguments(args, check, set())
+        self.assertEqual(row['candidate_flags'], ['-O2', '--target=x86_64-linux-gnu'])
+        self.assertEqual(row['upstream_flags'], ['-cc1', '-O2', '-triple', 'x86_64-linux-gnu'])
+        self.assertEqual(row['qualification']['kind'], 'llvm-object-cxx11')
+        self.assertEqual(row['qualification']['additional_upstream_flags'], ['-pedantic-errors'])
+        self.assertEqual(row['unmet_native_oracles']['filecheck_arguments'], check)
+        self.assertEqual(row['unmet_native_oracles']['status'], 'not-executed')
+        self.assertEqual(row['unmet_native_oracles']['original_action_output_options'],
+                         ['-emit-llvm', '-disable-llvm-passes', '-o', '-'])
+        implicit = manifest.project_llvm_arguments([v for v in args if v != '-std=c++11'],
+                                                   check, set(), implicit_cxx11=True)
+        self.assertEqual(implicit['dialect'], 'c++11')
+        self.assertEqual(implicit['qualification']['kind'], 'llvm-object-cxx11')
+
+    def test_llvm_projection_blocks_unmapped_policies_inputs_actions_and_verifiers(self):
+        base = ['%clang_cc1', '-std=c++11', '-emit-llvm', '%s', '-o', '-']
+        for flag in ['-fno-rtti', '-fno-exceptions', '-fms-extensions', '-Werror',
+                     '-verify', '-verify=expected', '-std=c++17', '-fsyntax-only']:
+            with self.subTest(flag=flag), self.assertRaises(manifest.Excluded):
+                manifest.project_llvm_arguments([*base, flag], ['FileCheck', '%s'], set())
+        for args, check in [([*base[:-1], '%t'], ['FileCheck', '%s']),
+                            (base, ['FileCheck', 'other.cpp']),
+                            (base, ['FileCheck', '%s', '--input-file=%t']),
+                            (base, ['FileCheck', '%s', '%s']),
+                            (base, ['other-helper', '%s']),
+                            ([v for v in base if v != '-emit-llvm'], ['FileCheck', '%s'])]:
+            with self.subTest(args=args, check=check), self.assertRaises(manifest.Excluded):
+                manifest.project_llvm_arguments(args, check, set())
+        with self.assertRaises(manifest.Excluded):
+            manifest.project_llvm_arguments(base, ['FileCheck', '%s'], {'throw'})
+
+    def test_native_pipeline_boundary_requires_opt_in_and_literal_two_stage_commands(self):
+        class Command:
+            def __init__(self, args, redirects=()):
+                self.args, self.redirects = args, redirects
+        class Pipeline:
+            def __init__(self, commands, negate=False):
+                self.commands, self.negate = commands, negate
+        first = Command(['%clang_cc1', '-std=c++11', '-emit-llvm', '%s', '-o', '-'])
+        last = Command(['FileCheck', '%s'])
+        tree = Pipeline([first, last])
+        native = SimpleNamespace(TestRunner=SimpleNamespace(kPdbgRegex=r'a^'),
+            ShCommands=SimpleNamespace(Command=Command, Pipeline=Pipeline),
+            ShUtil=SimpleNamespace(ShParser=lambda *a, **k: SimpleNamespace(parse=lambda: tree)))
+        with self.assertRaises(manifest.Excluded):
+            manifest.project_run('native', native, set())
+        self.assertEqual(manifest.project_run('native', native, set(), llvm_objects=True)
+                         ['projection_kind'], 'llvm-object-acceptance')
+        for invalid in [Pipeline([first, last], negate=True), Pipeline([first, last, last]),
+                        Pipeline([Command(first.args, redirects=['output']), last]),
+                        Pipeline([Command([object()]), last])]:
+            tree = invalid
+            with self.subTest(tree=tree), self.assertRaises(manifest.Excluded):
+                manifest.project_run('native', native, set(), llvm_objects=True)
+
     def test_implicit_mode_requires_separate_qualification_without_changing_normal_flags(self):
         args = ['%clang_cc1', '-fsyntax-only', '-verify=expected,cxx11', '%s']
         with self.assertRaises(manifest.Excluded):
@@ -102,6 +162,35 @@ class PolicyTests(unittest.TestCase):
 
 
 class CatalogueTests(unittest.TestCase):
+    def test_llvm_case_keeps_all_native_runs_unmet_and_cannot_become_a_negative(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            name = 'clang/test/ir.cpp'
+            path = root/name
+            path.parent.mkdir(parents=True)
+            path.write_text('// RUN: -std=c++11\nint x;\n')
+            projection = manifest.project_llvm_arguments(
+                ['%clang_cc1', '-std=c++11', '-emit-llvm', '%s', '-o', '-'], ['FileCheck', '%s'], set())
+            parsed = {'RUN:': [SimpleNamespace(keyword='RUN:', command='LLVM pipeline'),
+                              SimpleNamespace(keyword='RUN:', command='native runtime')]}
+            def project(command, *a, **k):
+                if command == 'native runtime':
+                    raise manifest.Excluded('Unmapped runtime')
+                return projection
+            with patch.object(manifest.subprocess, 'check_output', return_value=(name+'\0').encode()), \
+                    patch.object(manifest, 'project_run', side_effect=project):
+                row = manifest.collect(root, lambda *a, **k: parsed, None, llvm_objects=True)
+                case, = row['cases']
+                self.assertEqual(case['expect'], 'accept')
+                self.assertEqual(case['unmet_native_oracles']['all_original_RUNs'],
+                                 ['LLVM pipeline', 'native runtime'])
+                self.assertEqual(len(row['exclusions']), 1)
+                path.write_text(path.read_text()+'// expected-error {{bad}}\n')
+                negative = manifest.collect(root, lambda *a, **k: parsed, None,
+                                            llvm_objects=True, verify_negatives=True)
+                self.assertEqual(negative['cases'], [])
+                self.assertIn('active-oracle review', negative['exclusions'][0]['reason'])
+
     def test_documented_gnu_extension_uses_source_pinned_separate_mode(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

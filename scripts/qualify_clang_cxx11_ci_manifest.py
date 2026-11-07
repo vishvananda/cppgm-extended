@@ -20,7 +20,8 @@ def qualification_cases(manifest):
         policy = case.get('qualification')
         if policy is None:
             continue
-        strict = (policy['kind'] == 'implicit-mode-cxx11' and case['dialect'] == 'c++11'
+        strict = (policy['kind'] in {'implicit-mode-cxx11', 'llvm-object-cxx11'}
+                  and case['dialect'] == 'c++11'
                   and policy['additional_upstream_flags'] == ['-pedantic-errors'])
         extension = (policy['kind'] == 'documented-gnu-cxx11' and case['dialect'] == 'gnu++11'
                      and policy['additional_upstream_flags'] == [] and policy.get('source_policy_issue'))
