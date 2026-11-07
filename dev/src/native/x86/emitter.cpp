@@ -1208,7 +1208,7 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 	case Op::Bsf:
 	case Op::Bsr:
 	case Op::Cmov:
-		asm_.op(0, inst.op == Op::Cmov || register_bytes(inst.type) == 8,
+		asm_.op(inst.op == Op::Bsf ? 0xf3 : 0, inst.op == Op::Cmov || register_bytes(inst.type) == 8,
 			inst.op == Op::Bsf       ? 0x0fbc
 				: inst.op == Op::Bsr ? 0x0fbd
 									 : 0x0f40u + (inst.sub & 15u),
