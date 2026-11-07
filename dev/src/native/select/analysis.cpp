@@ -905,6 +905,8 @@ void FunctionSelector::resolve_aliases()
 					to = add_literal(norm);
 			}
 		}
+		else if (level_ >= 1 && inst.op == Opcode::Addr && inst.ops[0].kind == ValueKind::Symbol)
+			to = inst.ops[0];
 		else if (inst.op == Opcode::Copy)
 		{
 			// The representation of a floating value with its sign cleared, as
@@ -920,7 +922,9 @@ void FunctionSelector::resolve_aliases()
 				return;
 			}
 			const Value src = resolve(inst.ops[0]);
-			if (src.kind == ValueKind::Integer && (inst.type.is_integer() || inst.type.is_pointer()) &&
+			if (level_ >= 1 && src.kind == ValueKind::Symbol && inst.type.is_pointer())
+				to = src;
+			else if (src.kind == ValueKind::Integer && (inst.type.is_integer() || inst.type.is_pointer()) &&
 				inst.type.kind() != TypeKind::I128)
 			{
 				const Literal norm = normalize_literal(inst.type.kind(), literal(src));
