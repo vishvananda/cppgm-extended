@@ -643,8 +643,11 @@ void Analyzer::using_declaration(const syntax::UsingDecl& decl, Scope* scope)
 	// and class members require a member-declaration (P1099R5).
 	if (result.binding->kind == BindingKind::Enumerator && IsScopedEnumeration(result.binding->type))
 		error(decl.location, "a using-declaration cannot name a scoped enumerator");
-	if (prefix.scope != nullptr && prefix.scope->kind == ScopeKind::Class &&
-		declaration_scope(scope)->kind != ScopeKind::Class)
+	const Scope* owner_scope = result.binding->entity->owner;
+	const bool class_member = (prefix.scope != nullptr && prefix.scope->kind == ScopeKind::Class) ||
+		(result.binding->kind == BindingKind::Enumerator && owner_scope != nullptr &&
+			owner_scope->kind == ScopeKind::Class);
+	if (class_member && declaration_scope(scope)->kind != ScopeKind::Class)
 		error(decl.location, "a class-member using-declaration outside a class");
 	// 7.3.3p17: each declaration it introduces is accessible where it
 	// appears, named in the class its nested-name-specifier names (11.2p5).
