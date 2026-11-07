@@ -3875,7 +3875,9 @@
       "source_sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
       "rationale": "Unknown attribute behavior does not remove the syntactic requirements for attribute-token, a single optional namespace qualifier and a parenthesized argument clause."
     },
-    "assigned_agent": "/root/clang_correctness"
+    "assigned_agent": "/root/clang_correctness",
+    "remaining_mode_obligation": "CXX11-041",
+    "mode_policy_evidence": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-036/language-mode-boundary-v1/policy-review-v1.json"
   },
   {
     "id": "CXX11-037",
@@ -4058,5 +4060,34 @@
       "approved_resolution": "2023-11-10,change5 explicitly permits placeholder in new-expression type-id; supersedes1892 restriction"
     },
     "triage_note": "Root independently reviewed adopted final2476 wording. Separate positive language gap from034 nested defaults; no compiler fix or required fixture. Native GCC disagreement retained. Verify earliest exact PA20 new/deduction cluster before repair."
+  },
+  {
+    "id": "CXX11-041",
+    "priority": "P2",
+    "status": "triaged",
+    "upstream": [],
+    "discovered_from": "CXX11-036 mode-boundary neighbors",
+    "symptom": "C++17 attribute-using-prefix silently accepted under selectedC++11/14 modes,including an empty prefix; native compilers emit the language-extension diagnosis.",
+    "root_cause": "Selected language mode reaches semantic analysis only after parse. Typed attribute parser recognizes and discards/normalizes a using-prefix without carrying its minimum language version to validation; an empty prefix makes loss explicit.",
+    "owning_pa": 29,
+    "placement_status": "Provisional mode-selected driver/host compatibility lane; verify earliest exact owner before required regression",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-041",
+    "checks": {
+      "initial_adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-041/initial-adjudication-v1.json",
+      "policy_review": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-036/language-mode-boundary-v1/policy-review-v1.json",
+      "native_cells": 120
+    },
+    "performance": {
+      "status": "not-started"
+    },
+    "standards_basis": {
+      "category": "original-C++11-required-diagnostic",
+      "original": "N3485 7.6.1 attribute-specifier grammar lacks attribute-using-prefix",
+      "later_language_feature": "P0028R2,C++17 (not a C++11 defect resolution)",
+      "positive_neighbor": "C++17 prefix semantics and ordinary keyword attribute-token [[using]] remain accepted"
+    },
+    "triage_note": "Separate driver/parser language-mode fact propagation from036 header grammar/recognized-namespace effects.48 nativepre17 language diagnostics use recognizedGNU packed and empty-prefix controls,not optional unknown-attribute warnings. Parent and036 candidate each silently accept16 variants. No handout/session policy authorizes this quiet version extension. No fix or required fixture installed; next functional window after queued029 performance."
   }
 ]
