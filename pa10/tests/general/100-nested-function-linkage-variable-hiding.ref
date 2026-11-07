@@ -1,0 +1,42 @@
+function @target(%value : i32) -> i32 [binding=internal, object=_ZL6targeti] {
+  slot $value : i32
+
+  block ^entry:
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = binary add nowrap i32 %t1, 100
+    return i32 %t2
+}
+function @invoke(%target : i32) -> i32 [binding=strong, object=_Z6invokei] {
+  slot $target : i32
+  slot $result : i32
+
+  block ^entry:
+    store typed i32 %target, $target
+    %t1 = call i32 @target(4)
+    store typed i32 %t1, $result
+    %t2 = load typed i32 $target
+    %t3 = load typed i32 $result
+    %t4 = binary add nowrap i32 %t2, %t3
+    return i32 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = call i32 @invoke(7)
+    %t2 = cmp eq i32 %t1, 111
+    branch %t2, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t3 = load typed i32 $cond__1
+    return i32 %t3
+}

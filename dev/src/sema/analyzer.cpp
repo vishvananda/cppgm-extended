@@ -339,21 +339,6 @@ Scope* Analyzer::enclosing_namespace(Scope* scope)
 	return scope;
 }
 
-bool Analyzer::hidden_below_namespace(const Scope* block, const Identifier* name) const
-{
-	// 3.5p6 asks for a visible declaration: one of the scopes between the
-	// block and its innermost enclosing namespace (enclosing blocks,
-	// parameters, a local class's members) declaring the name hides the
-	// namespace's.
-	for (const Scope* scope = block->parent; scope != nullptr && scope->kind != ScopeKind::Namespace;
-		scope = scope->parent)
-	{
-		if (names_.own(scope, name, LookupFilter::Ordinary).found())
-			return true;
-	}
-	return false;
-}
-
 bool Analyzer::encloses(const Scope* outer, const Scope* inner)
 {
 	for (; inner != nullptr; inner = inner->parent)

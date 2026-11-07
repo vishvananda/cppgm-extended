@@ -1685,7 +1685,6 @@ private:
 		return scope->default_parameters ? default_parameter_declaration_scope(scope) : scope;
 	}
 	static Scope* enclosing_namespace(Scope* scope);
-	bool hidden_below_namespace(const Scope* block, const Identifier* name) const;
 	static bool encloses(const Scope* outer, const Scope* inner);
 
 	SemanticGraph& graph_;

@@ -1605,18 +1605,14 @@ VariableEntity* Analyzer::earlier_variable(const Specifiers& specifiers, const D
 	}
 	if (variable == nullptr && where->kind == ScopeKind::Block && specifiers.is_extern)
 	{
-		// 3.5p6: a block-scope extern declaration declares the variable of
-		// the innermost enclosing namespace that a visible earlier
-		// declaration there declared (a hidden one with external linkage is
-		// the same entity, 3.5p9); otherwise a variable with external
-		// linkage, distinct from a hidden internal one.
+		// CWG1839/P1787R6: the declaration targets its enclosing namespace.
+		// A corresponding declaration there denotes the same entity even
+		// when a local name hides it during ordinary use-site lookup.
 		if (const NameEntry* outer = names_.find(enclosing_namespace(where), name.key))
 		{
 			if (outer->value != nullptr && outer->value->kind == BindingKind::Variable)
 			{
-				VariableEntity* previous = static_cast<VariableEntity*>(outer->value->entity);
-				if (!previous->internal_linkage || !hidden_below_namespace(where, name.key))
-					variable = previous;
+				variable = static_cast<VariableEntity*>(outer->value->entity);
 			}
 		}
 	}
@@ -2214,11 +2210,9 @@ FunctionEntity* Analyzer::new_function(const Specifiers& specifiers, const Decla
 	}
 	else if (where->kind == ScopeKind::Block && !templated)
 	{
-		// 3.5p6: a block-scope function declaration denotes the function
-		// a visible earlier declaration of the enclosing namespace
-		// declared (or a hidden one with external linkage, 3.5p9), and
-		// takes its linkage; it keeps its own entity, whose default
-		// arguments are its own (8.3.6p4).
+		// CWG1839/P1787R6: a block declaration targets its enclosing
+		// namespace, so its matching function is the same entity despite
+		// local hiding. It keeps its own defaults (8.3.6p4).
 		// 3.3.1p4, CWG1839: its namespace declaration must also agree
 		// on the kind of entity. Class and enum tags may share a function's
 		// name; namespace names, aliases and objects may not.
@@ -2231,7 +2225,7 @@ FunctionEntity* Analyzer::new_function(const Specifiers& specifiers, const Decla
 		}
 		const FunctionList* same = names_.overload(space, name.key, signature);
 		FunctionEntity* outer = same != nullptr ? static_cast<FunctionEntity*>(same->binding->entity) : nullptr;
-		if (outer != nullptr && (!outer->internal_linkage || !hidden_below_namespace(where, name.key)))
+		if (outer != nullptr)
 		{
 			if (outer->friend_defaults)
 				error(location, "a friend supplying defaults is not the only declaration");
