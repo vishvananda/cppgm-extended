@@ -1,0 +1,46 @@
+CWG 1632: Lambda capture in member initializers
+Source: https://cplusplus.github.io/CWG/issues/1632.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD5
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1632. Lambda capture in member initializers
+Section: 7.5.6.3 [expr.prim.lambda.capture [1]] Status: CD5 Submitter: Vinny Romano
+Date: 2013-03-04
+
+[Accepted as a DR as part of paper P0588R1 at the October, 2017 meeting.]
+
+According to 7.5.6 [expr.prim.lambda [2]] paragraph 9,
+
+A lambda-expression whose smallest enclosing scope is a block scope (6.4.3
+[basic.scope.block [3]]) is a local lambda expression; any other lambda-expression shall
+not have a capture-list in its lambda-introducer. The reaching scope of a local lambda
+expression is the set of enclosing scopes up to and including the innermost enclosing
+function and its parameters.
+
+Consequently, lambdas appearing in mem-initializers and brace-or-equal-initializers
+cannot have a capture-list. However, these expressions are evaluated in the context of
+the constructor and are permitted to access this and non-static data members.
+
+Should the definition of a local lambda be modified to permit capturing lambdas within
+these contexts?
+
+Notes from the April, 2013 meeting:
+
+CWG agreed with the intent of this issue.
+
+Source links:
+[1] https://wg21.link/expr.prim.lambda.capture
+[2] https://wg21.link/expr.prim.lambda#9
+[3] https://wg21.link/basic.scope.block

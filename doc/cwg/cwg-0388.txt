@@ -1,0 +1,208 @@
+CWG 388: Catching base*&amp; from a throw of derived*
+Source: https://cplusplus.github.io/CWG/issues/388.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD3
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+388. Catching base*& from a throw of derived*
+Section: 14.4 [except.handle [1]] Status: CD3 Submitter: John Spicer Date: 28 Oct 2002
+
+[Voted into the WP at the February, 2012 meeting; moved to DR at the October, 2012
+meeting.]
+
+I have a question about exception handling with respect to derived to base conversions
+of pointers caught by reference.
+
+What should the result of this program be?
+
+
+  struct S             {};
+  struct SS : public S {};
+
+  int main()
+  {
+  	SS ss;
+  	int result = 0;
+  	try
+  	{
+  		throw &ss; // throw object has type SS*
+  		           // (pointer to derived class)
+  	}
+  	catch (S*& rs) // (reference to pointer to base class)
+  	{
+  		result = 1;
+  	}
+  	catch (...)
+  	{
+  		result = 2;
+  	}
+  	return result;
+  }
+
+
+The wording of 14.4 [except.handle [2]] paragraph 3 would seem to say that the catch of
+S*& does not match and so the catch ... would be taken.
+
+All of the compilers I tried (EDG, g++, Sun, and Microsoft) used the catch of S*&
+though.
+
+What do we think is the desired behavior for such cases?
+
+My initial reaction is that this is a bug in all of these compilers, but the fact that
+they all do the same thing gives me pause.
+
+On a related front, if the handler changes the parameter using the reference, what is
+caught by a subsequent handler?
+
+
+  extern "C" int printf(const char *, ...);
+  struct S             {};
+  struct SS : public S {};
+  SS ss;
+
+  int f()
+  {
+  	try
+  	{
+  		throw &ss;
+  	}
+  	catch (S*& rs) // (reference to pointer to base class)
+  	{
+  		rs = 0;
+  		throw;
+  	}
+  	catch (...)
+  	{
+  	}
+  	return 0;
+  }
+
+  int main()
+  {
+  	try { f(); }
+  	catch (S*& rs) {
+  		printf("rs=%p, &ss=%p\n", rs, &ss);
+  	}
+  }
+
+
+EDG, g++, and Sun all catch the original (unmodified) value. Microsoft catches the
+modified value. In some sense the EDG/g++/Sun behavior makes sense because the later
+catch could catch the derived class instead of the base class, which would be difficult
+to do if you let the catch clause update the value to be used by a subsequent catch.
+
+But on this non-pointer case, all of the compilers later catch the modified value:
+
+
+  extern "C" int printf(const char *, ...);
+  int f()
+  {
+  	try
+  	{
+  		throw 1;
+  	}
+  	catch (int& i)
+  	{
+  		i = 0;
+  		throw;
+  	}
+  	catch (...)
+  	{
+  	}
+  	return 0;
+  }
+
+  int main()
+  {
+  	try { f(); }
+  	catch (int& i) {
+  		printf("i=%p\n", i);
+  	}
+  }
+
+
+To summarize:
+
+1. Should "base*const&" be able to catch a "derived*"? The current standard seems to say
+"no" but parallels to how calls work, and existing practice, suggest that the answer
+should be "yes".
+
+2. Should "base*&" be able to catch a "derived*". Again, the standard seems seems to say
+"no". Parallels to how calls work still suggest "no", but existing practice suggests
+"yes".
+
+3. If either of the above is "yes", what happens if you modify the pointer referred to
+by the reference. This requires a cast to remove const for case #2.
+
+4. On a related front, if you catch "derived*&" when a "derived*" is thrown, what
+happens if you modify the pointer referred to by the reference? EDG/g++/Sun still don't
+modify the underlying value that would be caught by a rethrow in this case. This case
+seems like it should be the same as the "int&" example above, but is not on the three
+compilers mentioned.
+
+(See also issue 729 [3].)
+
+Notes from the October, 2009 meeting:
+
+The consensus of the CWG was that it should not be possible to catch a pointer to a
+derived class using a reference to a base class pointer, and that a handler that takes a
+reference to non-const pointer should allow the pointer to be modified by the handler.
+
+Proposed resolution (March, 2010):
+
+Change 14.4 [except.handle [2]] paragraph 3 as follows:
+
+A handler is a match for an exception object of type E if
+
+-
+
+The handler is of type cv T or cv T& and E and T are the same type (ignoring the
+top-level cv-qualifiers), or
+
+-
+
+the handler is of type cv T or cv T& and T is an unambiguous public base class of E, or
+
+-
+
+the handler is of type cv[DELETE: 1] T[DELETE: *][DELETE:  cv2] [INSERT: or const T&
+where T is a pointer type] and E is a pointer type that can be converted to [DELETE: the
+type of the handler] [INSERT: T] by either or both of
+
+-
+
+a standard pointer conversion (7.3.12 [conv.ptr [4]]) not involving conversions to
+pointers to private or protected or ambiguous classes
+
+-
+
+a qualification conversion
+
+-
+
+the handler is [INSERT: of type cv T or const T& where T is] a pointer or pointer to
+member type and E is std::nullptr_t.
+
+(This resolution also resolves issue 729 [3].)
+
+Notes from the March, 2011 meeting:
+
+This resolution would require an ABI change and was thus deferred for further
+consideration.
+
+Source links:
+[1] https://wg21.link/except.handle
+[2] https://wg21.link/except.handle#3
+[3] https://cplusplus.github.io/CWG/issues/729.html
+[4] https://wg21.link/conv.ptr

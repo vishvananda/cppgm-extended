@@ -78,6 +78,18 @@
       "adopted_papers": []
     },
     {
+      "issue": 388,
+      "title": "Catching base*&amp; from a throw of derived*",
+      "status": "CD3",
+      "role": "course-reference",
+      "file": "cwg-0388.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/388.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/388.html",
+      "source_html_sha256": "2a64f2aeb0c0a2c0d9fb60c9dad8a809b50ef5876d928a0fd2d70d7bef6faf00",
+      "text_sha256": "5a0fe48a4ca6a0245869b9ba28959eabcffa1a7dd5f5029548fe2825254943af",
+      "adopted_papers": []
+    },
+    {
       "issue": 616,
       "title": "Definition of \u201cindeterminate value\u201d",
       "status": "CD3",
@@ -567,6 +579,23 @@
       "adopted_papers": []
     },
     {
+      "issue": 1632,
+      "title": "Lambda capture in member initializers",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-1632.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1632.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1632.html",
+      "source_html_sha256": "4e52c013941156634c889d8b298e2f4d95b9a7903f9877c76ac5e8895ff086df",
+      "text_sha256": "102421336fc2c537eec104f987968c40708dc8aea0baa0a578c968fc3777fbe2",
+      "adopted_papers": [
+        "P0588R1"
+      ],
+      "local_papers": [
+        "paper-p0588r1.txt"
+      ]
+    },
+    {
       "issue": 1634,
       "title": "Temporary storage duration",
       "status": "open",
@@ -720,6 +749,23 @@
       "source_html_sha256": "f2cca698de8408872c687530958514d21d6b6f51b6006bd13b802c3199c07016",
       "text_sha256": "2f5033c4068f89f59c5cd0e77ee67379b4cfae6af51726fa2d51843440ade566",
       "adopted_papers": []
+    },
+    {
+      "issue": 1913,
+      "title": "decltype((x)) in lambda-expressions",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-1913.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1913.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1913.html",
+      "source_html_sha256": "8157b570b8eabdc088abf7b23bd0ccb7d33fbd791c7d581106ad2c9938e3b560",
+      "text_sha256": "44e997abb345fa574bb7d827eb1b22a3cf31c0a4ef6a502ae8ceb35358708850",
+      "adopted_papers": [
+        "P0588R1"
+      ],
+      "local_papers": [
+        "paper-p0588r1.txt"
+      ]
     },
     {
       "issue": 1926,

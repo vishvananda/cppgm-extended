@@ -36,6 +36,8 @@ CWG 253 | C++17 | cwg-0253.txt
   Local paper: paper-p0490r0.txt
 CWG 295 | CD1 | cwg-0295.txt
   cv-qualifiers on function types
+CWG 388 | CD3 | cwg-0388.txt
+  Catching base*&amp; from a throw of derived*
 CWG 616 | CD3 | cwg-0616.txt
   Definition of “indeterminate value”
 CWG 619 | C++11 | cwg-0619.txt
@@ -53,10 +55,10 @@ CWG 974 | CD3 | cwg-0974.txt
   Default arguments for lambdas
 CWG 975 | CD3 | cwg-0975.txt
   Restrictions on return type deduction for lambdas
-  Adopted paper: paper-n3638.txt
+  Local paper: paper-n3638.txt
 CWG 1048 | CD3 | cwg-1048.txt
   auto deduction and lambda return type deduction.
-  Adopted paper: paper-n3638.txt
+  Local paper: paper-n3638.txt
 CWG 1059 | CD3 | cwg-1059.txt
   Cv-qualified array types (with rvalues)
 CWG 1094 | C++11 | cwg-1094.txt
@@ -117,6 +119,9 @@ CWG 1590 | CD4 | cwg-1590.txt
   Local paper: paper-p0135r1.txt
 CWG 1591 | CD4 | cwg-1591.txt
   Deducing array bound and element type from initializer list
+CWG 1632 | CD5 | cwg-1632.txt
+  Lambda capture in member initializers
+  Local paper: paper-p0588r1.txt
 CWG 1638 | CD4 | cwg-1638.txt
   Declaring an explicit specialization of a scoped enumeration
 CWG 1658 | C++14 | cwg-1658.txt
@@ -139,6 +144,9 @@ CWG 1850 | CD4 | cwg-1850.txt
   Differences between definition context and point of instantiation
 CWG 1866 | CD4 | cwg-1866.txt
   Initializing variant members with non-trivial destructors
+CWG 1913 | CD5 | cwg-1913.txt
+  decltype((x)) in lambda-expressions
+  Local paper: paper-p0588r1.txt
 CWG 1926 | CD4 | cwg-1926.txt
   Potential results of subscript operator
 CWG 1992 | CD4 | cwg-1992.txt

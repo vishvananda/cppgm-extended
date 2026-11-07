@@ -4,6 +4,7 @@ doc/cwg/cwg-0136.txt
 doc/cwg/cwg-0138.txt
 doc/cwg/cwg-0253.txt
 doc/cwg/cwg-0295.txt
+doc/cwg/cwg-0388.txt
 doc/cwg/cwg-0616.txt
 doc/cwg/cwg-0619.txt
 doc/cwg/cwg-0727.txt
@@ -43,6 +44,7 @@ doc/cwg/cwg-1579.txt
 doc/cwg/cwg-1584.txt
 doc/cwg/cwg-1590.txt
 doc/cwg/cwg-1591.txt
+doc/cwg/cwg-1632.txt
 doc/cwg/cwg-1634.txt
 doc/cwg/cwg-1638.txt
 doc/cwg/cwg-1647.txt
@@ -55,6 +57,7 @@ doc/cwg/cwg-1793.txt
 doc/cwg/cwg-1839.txt
 doc/cwg/cwg-1850.txt
 doc/cwg/cwg-1866.txt
+doc/cwg/cwg-1913.txt
 doc/cwg/cwg-1926.txt
 doc/cwg/cwg-1992.txt
 doc/cwg/cwg-2004.txt

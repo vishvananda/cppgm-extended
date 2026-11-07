@@ -1,0 +1,38 @@
+CWG 1913: decltype((x)) in lambda-expressions
+Source: https://cplusplus.github.io/CWG/issues/1913.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-07
+Upstream status: CD5
+Catalog role: course-reference
+
+The source issue is reproduced below as plain text. [DELETE: ...] and
+[INSERT: ...] preserve the source's deletion/insertion markup. Historical
+questions and proposals remain historical; use the recorded adoption status
+and any locally supplied adopted paper identified in INDEX.txt.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1913. decltype((x)) in lambda-expressions
+Section: 7.5.6 [expr.prim.lambda [1]] Status: CD5 Submitter: Dinka Ranns Date:
+2014-04-15
+
+[Accepted as a DR as part of paper P0588R1 at the October, 2017 meeting.]
+
+According to 7.5.6 [expr.prim.lambda [2]] paragraph 19,
+
+Every occurrence of decltype((x)) where x is a possibly parenthesized id-expression that
+names an entity of automatic storage duration is treated as if x were transformed into
+an access to a corresponding data member of the closure type that would have been
+declared if x were an odr-use of the denoted entity.
+
+This formulation is problematic because it assumes that x can be captured and, if
+captured, would result in a member of the closure class. The former is not true if the
+lambda has no capture-default, and the latter is not guaranteed if the capture-default
+is &.
+
+Source links:
+[1] https://wg21.link/expr.prim.lambda
+[2] https://wg21.link/expr.prim.lambda#19

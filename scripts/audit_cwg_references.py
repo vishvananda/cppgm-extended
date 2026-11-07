@@ -15,6 +15,7 @@ def mentioned_issues(text):
         numbers.update(map(int, re.findall(r'\d+', match.group(2))))
     numbers.update(map(int, re.findall(
         r'https://cplusplus\.github\.io/CWG/issues/(\d+)\.html', text)))
+    numbers.update(map(int, re.findall(r'\bDR\s*#?\s*(\d+)\b(?!\.\d)', text, re.I)))
     return numbers
 
 
