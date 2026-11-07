@@ -433,6 +433,29 @@ void Analyzer::check_pending_exceptions()
 		else if (!noexcepts_[i].unit && noexcepts_[i].function->templated)
 			check_fixed_template_noexcept(i);
 	}
+	check_pending_exception_comparisons();
+}
+
+void Analyzer::check_pending_exception_comparisons()
+{
+	// Comparing redeclarations needs their specifications (DR1330), after
+	// their complete-class contexts exist. Evaluation can instantiate another
+	// class and append comparisons; copy the entry and drain those as well.
+	for (size_t i = 0; i < exception_comparisons_.size(); ++i)
+	{
+		const PendingExceptionComparison pending = exception_comparisons_[i];
+		DeclaratorInfo info = {};
+		info.function_suffix = pending.suffix;
+		info.parameters = pending.parameters;
+		const uint32_t limit = names_.limit();
+		const bool lexical = lexical_limit_;
+		names_.set_limit(pending.ordinal != 0 ? pending.ordinal : NameLookup::kNoLimit);
+		lexical_limit_ = pending.lexical;
+		check_redeclared_exceptions(pending.function, info, pending.scope, pending.location);
+		lexical_limit_ = lexical;
+		names_.set_limit(limit);
+	}
+	exception_comparisons_.clear();
 }
 
 void Analyzer::check_fixed_template_noexcept(size_t index)
@@ -547,7 +570,15 @@ void Analyzer::check_redeclared_exceptions(
 		return;
 	}
 	if ((operand != nullptr || function->noexcept_pending) && (template_depth_ != 0 || class_depth_ != 0))
+	{
+		// Patterns are checked when instantiated. A concrete declaration must
+		// still be compared after its class is complete; do not replace the
+		// first declaration's lazy specification or force early member lookup.
+		if (template_depth_ == 0)
+			exception_comparisons_.push_back(PendingExceptionComparison{ function, info.function_suffix,
+				info.parameters, scope, location, definition_point(), class_instantiations_.empty() });
 		return;
+	}
 	const bool implicit = function->destructor && !HasExceptionSpecification(info.function_suffix);
 	if (implicit && template_depth_ != 0)
 		return;

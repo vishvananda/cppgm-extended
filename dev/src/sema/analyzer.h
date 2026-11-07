@@ -1475,6 +1475,7 @@ private:
 	void check_redeclared_exceptions(
 		const FunctionEntity* function, const DeclaratorInfo& info, Scope* scope, uint32_t location);
 	void check_pending_exceptions();
+	void check_pending_exception_comparisons();
 	void check_fixed_template_noexcept(size_t index);
 	ExprFacts* noexcept_expression(const syntax::TypeTraitExpr& expr, Scope* scope);
 	bool function_may_throw(const FunctionEntity* function);
@@ -2408,6 +2409,18 @@ private:
 		// instance member's): the declaration ordinal where it is.
 		uint32_t ordinal;
 	};
+	// A concrete redeclaration needing its complete-class context. Keep its
+	// syntax and lookup context separately from the first declaration's value.
+	struct PendingExceptionComparison
+	{
+		const FunctionEntity* function;
+		const syntax::DeclaratorSuffix* suffix;
+		const syntax::ParameterClause* parameters;
+		Scope* scope;
+		uint32_t location;
+		uint32_t ordinal;
+		bool lexical;
+	};
 	PointerMap evaluated_index_;
 	std::vector<const ConstValue*> evaluated_;
 	PointerMap scalar_initializer_index_;
@@ -2441,6 +2454,7 @@ private:
 	PointerMap pending_member_initializers_;
 	std::vector<PendingMemberInitializer> pending_member_scopes_;
 	std::vector<PendingNoexcept> noexcepts_;
+	std::vector<PendingExceptionComparison> exception_comparisons_;
 	// Special member functions defaulted and declared constexpr on their
 	// first declaration, checked at the end of the unit (8.4.2p2).
 	struct DefaultedConstexpr
