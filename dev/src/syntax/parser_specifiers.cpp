@@ -1216,11 +1216,17 @@ EnumSpecifier* Parser::parse_enum_specifier(TypeIdContext context)
 			fail();
 			return nullptr;
 		}
-		if (simple_name != nullptr)
+		// An elaborated-type-specifier refers to an existing enum; it
+		// does not redeclare a type or hide an ordinary function/object.
+		// Only an opaque declaration introduces a local parsing hint.
+		if (simple_name != nullptr &&
+			(specifier->scoped || specifier->underlying != nullptr || at(TokenKind::OP_SEMICOLON)))
 		{
-			const NameBinding existing = scopes_.lookup(simple_name, true);
-			if (existing.category != NameCategory::Type)
-				scopes_.declare(declaration_scope(), simple_name, NameBinding{ NameCategory::Type, false, nullptr });
+			Scope* scope = declaration_scope();
+			const NameBinding existing = scopes_.own(scope, simple_name);
+			if (existing.category != NameCategory::Type && existing.category != NameCategory::Value &&
+				existing.category != NameCategory::FunctionTemplate)
+				scopes_.declare(scope, simple_name, NameBinding{ NameCategory::Type, false, nullptr });
 		}
 		return specifier;
 	}
