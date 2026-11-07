@@ -1,0 +1,11 @@
+// expect exit 0; N3485 8.5p14,p17 and8.5.2: character arrays initialized by a single string literal.
+// Reduced from LLVM clang/test/CXX/dcl.decl/dcl.init/dcl.init.string/p1.cpp (Apache-2.0 WITH LLVM-exception).
+char global[]("a" "b");
+char braced[] = { (("gh")) };
+char copied[] = (("ij"));
+extern char prior[5]; char prior[]("xy");
+int main(){char local[]((("cd"))); char tail[5]("ef");
+  return sizeof(global)!=3 || global[0]!='a' || global[2]!=0 ||
+    sizeof(local)!=3 || local[0]!='c' || local[2]!=0 || tail[2]!=0 || tail[4]!=0 ||
+    sizeof(braced)!=3 || braced[1]!='h' || copied[0]!='i' || sizeof(prior)!=5 || prior[4]!=0;
+}
