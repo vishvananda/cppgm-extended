@@ -215,7 +215,17 @@ SubobjectMutability Analyzer::mutable_subobjects(const Type* type, uint32_t dept
 		if (member->variable->kind != EntityKind::Variable || (member->bit_field && member->variable->name == nullptr))
 			continue;
 		const VariableEntity* variable = static_cast<const VariableEntity*>(member->variable);
-		result = variable->is_mutable ? SubobjectMutability::Mutable : mutable_subobjects(variable->type, depth + 1);
+		if (variable->is_mutable)
+		{
+			// A trivial copy of an empty mutable member reads no value.
+			// Other members still use their actual stored values and lifetimes.
+			const SubobjectValues values = copied_subobject_values(variable->type, depth + 1);
+			if (values == SubobjectValues::None)
+				continue;
+			result = values == SubobjectValues::Unknown ? SubobjectMutability::Unknown : SubobjectMutability::Mutable;
+		}
+		else
+			result = mutable_subobjects(variable->type, depth + 1);
 	}
 	// Class membership is fixed once complete. Never memoize an incomplete
 	// or budget-limited answer, and never walk an array's logical elements.

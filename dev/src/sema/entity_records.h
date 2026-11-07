@@ -194,7 +194,8 @@ struct ClassEntity : Entity
 	// Whether it is a literal type (3.9p10), once established (see
 	// Analyzer::literal_type): 0 unknown, 1 yes, 2 no, 3 being established.
 	uint8_t literal_state;
-	// A complete class's by-value subobjects include a mutable member.
+	// Copying a complete class's by-value subobjects reads a mutable value;
+	// empty mutable class members do not require such a read.
 	// Computed on demand; references do not include their referents.
 	SubobjectMutability subobject_mutability;
 	// Scalar/reference values or union active-member state needed by a
