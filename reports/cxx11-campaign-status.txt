@@ -1,9 +1,11 @@
 Current checkpoint (2026-11-07; supersedes historical status entries below)
 
-Fourteen known individual compiler gaps remain unclosed. Thirteen have
+Fifteen known individual compiler gaps remain unclosed. Thirteen have
 independently validated functional/student-export repairs:008,019/shared030,
 021,031,032,033,034,035,036,038,039,040 and041.043 elaborated-enum
-function-template specialization return-type parsing remains unfixed. Functional acceptance is
+function-template specialization return-type parser candidate now passes8249strict
+tests,with full normal/export validation running.044missing final/override
+diagnosis on instantiated free function templates remains unfixed. Functional acceptance is
 not performance acceptance or integration. This is not an exhaustive corpus
 inventory or a current GCC/Clang whole-suite pass percentage.
 
@@ -18,7 +20,7 @@ Remaining rebased-original groups never started. Every original observation is
 retained; functional-window-open-v2.json authorizes functional work after this
 known failure. No new formal benchmarking runs alongside builds/test workers.
 
-Harness/metrology issue042 is separate from the14compiler gaps. Accurate
+Harness/metrology issue042 is separate from the15compiler gaps. Accurate
 same-process page-table snapshots exceed the alleged Linux highwater; precise
 RSS-event prototype gives9232/9368KiB(+1.47%) for the failing compiler pair,
 but no calibrated gate pass is claimed. Independent0/4/8/64MiB allocation and
@@ -26,7 +28,10 @@ short-lived64MiB spike controls pass unchanged256KiB precision tolerance.
 Twenty-six parser corruption/attribution controls,three-child allocation
 batching and sixteen-child real-compiler attribution controls pass. Fresh paired/calibrated measurements and precise revalidation
 of affected approximate Linux RSS acceptances remain required;3% gate is fixed.
-Historical original optimized-module semantic/ABI oracle also remains open.
+Historical original optimized-module semantic/ABI oracle is now independently
+qualified for the exact frozen source/header/object hashes; measurements remain
+pending. A new preciseRSSdriver passes14fault/release controls andisprepared
+for a coordinated quiescent release after043/044functional work.
 
 All requested rebases include25f26d178's minor macOS fixture change. Full
 corpus inventory/replay,remaining repairs,actual-parent/cumulative performance,
@@ -1089,3 +1094,25 @@ whole-module link compatibility. Failedv1,objects,commands and19frozen semantic
 inputs retained underhistorical-native-module-oracle-v1. Native support/direct
 API harness design remains required before semantic replay or anyqualified
 historical output oracle. No output-gate waiver;original performance group open.
+
+2026-11-07 historical oracle qualified:335ordinary/direct correctness cells,
+2native direct-source controls,69exact native/A/B output groups,42GDBruns
+coverall13measured public entrypoints percomparator. Actualcode addresses map
+to capsule objects; identical native support handlesnewer APIs,withallcode/data/
+relocations unchanged and11overlap functionbindings weakened. No frozenA/B
+object or sourceedited. QualifiedonlyforpinnedoverloadO2objecthashes,notother
+revisions orperformanceacceptance; originalexact-outputfailures retained. Full
+receipt:rebases/2026-11-06/historical-native-module-oracle-v1/qualified-output-oracle-v1.json.
+PreciseRSSpaired driver prepared/tested14fault controls:everychildobject and
+exactexec/MM required,no profilerfloor,AAequivalence+ABupper95same3%gate,
+allAApassbeforeAB,releaseguard freezes codeandworkloads. No formalmeasurements
+started duringfunctionalwindow. Preparation receipt:precise-rss-tools-v1/preparation-verification-v1.json.
+
+044 independentlyconfirmed:30rawcells/60streams,6prototype and4old038silent
+accepts;2oldparser-masked variants;18native normaldiagnoses(GCCwarningcounts).
+9.2p8/8.4.1p1 applytoexplicitlyinstantiatedsources;noIFNDR negative promoted.
+043parserfix81ff2d66f passes1620focusedcells and8249strict,fullnormal/export
+running. Failed043v1semantic-final casesstayfailed/retained andbelong044;
+syntax-acceptance boundary remainsinPA5.15knowncompilerissues,13fullfunctional/
+export accepted,043candidateinvalidation,and044unfixed. Performance,integration,
+fullcorpus andfinalCIremainincomplete.

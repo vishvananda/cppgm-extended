@@ -3454,7 +3454,16 @@
       "export": "final-stages-v2.json:fresh-export,bundle42wrappers,restore-development pass; exact candidate restored",
       "immediate_parent_performance": "per-fix-counter-acceptance-v1.json and per-fix-memory-acceptance-v1.json:13 AA+13 AB comparisons independently pass both unchanged gates. Each verifies1040 observations/12800 batched children. Target instructions -1.1498228%; max instruction upper95 1.000031272; AB actual compiler RSS upper95 1.0. RSS receipt records the approximate Linux highwater method; precise RSS revalidation is mandatory under CXX11-042 before final memory acceptance.",
       "family_instructions": "Fresh rebased verification: /mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/family-counter-acceptance-v1.json. Historical similarly named receipt under issues/CXX11-029 retains old-base scope.",
-      "historical_native_oracle_attempt": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/historical-native-module-oracle-v1/hybrid-link-failure-v1.json"
+      "historical_native_oracle_attempt": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/historical-native-module-oracle-v1/hybrid-link-failure-v1.json",
+      "historical_native_oracle_qualification": {
+        "verification": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/historical-native-module-oracle-v1/qualified-output-oracle-v1.json",
+        "correctness_cells": 335,
+        "native_direct_source_controls": 2,
+        "threeway_exact_output_groups": 69,
+        "dynamic_coverage_runs": 42,
+        "measured_entrypoints_each": 13,
+        "scope": "Qualified for pinnedsource/header/object hashes only,no performancegate pass orwholecompiler-equivalence claim."
+      }
     },
     "performance": {
       "status": "rebased-actual-parent-and-cumulative-gates-pending",
@@ -3462,14 +3471,15 @@
       "historical_full_acceptance": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-029/performance-acceptance-v1.json",
       "rebased_protocol": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/protocol.json",
       "rebased_native_oracles": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/bitfield-rebased-performance-v1/native-oracles-v1/assessment.json",
-      "historical_original_blocker": "Native exact frozen-module compile passed but first native hybrid link fails: frozen benchmark capsule has older7argument resolve target API and lacks3newer APIs required by header-matched56afe rest. Preserve native-link failure; investigate identical native support/direct API harness before any substantive oracle or output-gate qualification. No frozen source/object changes or waiver.",
+      "historical_original_blocker": "Resolved for preciselypinned historicalA/campaignB O2moduleobject hashes by qualified native semantic/ABI oracle. Historical/perfix/new-upstream measurement groups remain pending; all original exact-output failures retained. Otherworkloads exact-output gates unchanged.",
       "rebased_per_fix_instruction": "13AA/13AB reports pass;maxupper95=1.0000305614253144;packedbitfieldratio=0.9885835057755644",
       "rebased_per_fix_actual_rss": "Original approximate-highwater13AA/13AB pass retained; precision audit requires accurate trace revalidation before final acceptance.",
       "outer_controller": "821381/start52528549 exited1 on family-memory; session93744 terminal1. Do not resume/restart.",
       "functional_window": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/functional-window-open-v2.json",
       "family_actual_rss": "All24 approximate-highwater reports completed; auto-zero-aggregate-o0 fails unchanged3% gate at1.10020242915. Precision investigation CXX11-042, no acceptance or gate waiver.",
       "measurement_issue": "CXX11-042",
-      "rebased_family_instructions": "Independent fresh verification passes12AA/12AB,960observations,11520batched child objects;maxupper95=1.007708520429205 belowunchanged1%gate."
+      "rebased_family_instructions": "Independent fresh verification passes12AA/12AB,960observations,11520batched child objects;maxupper95=1.007708520429205 belowunchanged1%gate.",
+      "historical_original_qualified_output_oracle": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/historical-native-module-oracle-v1/qualified-output-oracle-v1.json"
     },
     "standards_basis": {
       "category": "implementation-performance",
@@ -4278,10 +4288,11 @@
       "batched_controls": "batched-allocation-controls-v1/assessment.json:3 exact subject children, peaks1944/10072/67416KiB;64MiB spike retained after release.",
       "diagnostic_compiler_trace": "rss-trace-prototype-v1/:family-parent9232 vs campaign9368KiB,approximately+1.47%; diagnostic only, not calibrated gate pass.",
       "parser_controls_v3": "parser-controls-v3.json:26 tests plus6 real traces,raw/decoded sample-count agreement,invalidcurr flags rejected,pre/post immutable binary hash checks.",
-      "actual_compiler_batch_control": "batched-compiler-control-v1/assessment.json:16individually attributed compiler children,16byte-identicalELF objects,all9368KiB peak. Unilateral correctness control underfunctional load; no performance-gate result."
+      "actual_compiler_batch_control": "batched-compiler-control-v1/assessment.json:16individually attributed compiler children,16byte-identicalELF objects,all9368KiB peak. Unilateral correctness control underfunctional load; no performance-gate result.",
+      "paired_driver_preparation": "/mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/precise-rss-tools-v1/preparation-verification-v1.json:14realtrace/object-fault andquiescence-release controls pass. Driverandcollector prepared,notreleased/notmeasured;AAthenAB,allchildoutputs andunchanged3%gate."
     },
     "remaining": [
-      "Freeze validated collectorv3 and final benchmark driver/protocol for precise paired observations",
+      "Coordinate quiescent release then run fresh precise AA/AB cohorts;prepared driver/collector hashes frozen inrelease",
       "Fresh A/A calibration and paired A/B comparisons with original binaries/frozen inputs/output checks",
       "Revalidate affected historical approximate Linux RSS passes",
       "Retain all failed prototypes and original failed measurements;3% gate unchanged"
@@ -4291,22 +4302,30 @@
   {
     "id": "CXX11-043",
     "priority": "P1",
-    "status": "triaged",
+    "status": "repair-in-validation",
     "upstream": [],
     "discovered_neighbor_of": "CXX11-038",
-    "symptom": "Valid function-template specialization definitions with elaborated enum leading or trailing return types fail during parsing.",
+    "symptom": "Valid elaborated enum/class leading or trailing return types in generic/specialized function definitions are rejected or misclassified during parsing.",
     "expected": "Accept, emit and execute the valid specializations; preserve enum declarations/definitions and required invalid-target diagnostics.",
     "owning_pa": 5,
     "ownership_note": "pa5/tests/spec/200 (AST syntax), following existing200-explicit-specialization-syntax.t; PA15/300 supplementary semantic/runtime controls when repaired",
     "regressions": [],
-    "fix_revision": null,
+    "fix_revision": "81ff2d66faced971fd1f0bb66806b853b4a63b51",
     "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-043",
     "checks": {
       "adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-043/initial-adjudication-v1.json",
       "independent_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-043/root-verification-v1.json",
       "parent_wrong_rejections": 24,
       "native_accept_link_run_cells": 72,
-      "AST_parent_failures": 2
+      "AST_parent_failures": 2,
+      "focused_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-043/repair-v1/focused-verification-v2.json",
+      "focused_cells": 1620,
+      "newly_accepted_valid_variants": 204,
+      "required_controls": 50,
+      "AST_controls": 25,
+      "runtime_controls": 25,
+      "strict_tests_passed": 8249,
+      "normal_export_status": "Full normal/export checks running; no finalacceptance yet. Original failed candidate semanticfinalcase retained andsplit as044."
     },
     "standards_basis": {
       "historical_draft": "/mnt/vizier/cppgm-clang-enum-specialization-target/doc/n3485.txt",
@@ -4319,8 +4338,45 @@
       "explanation": "An existing enum may be named by an elaborated enum type in a function return type. Function definitions are declarations admitted by explicit-specialization grammar. Both exact programs define and call their specialization, no unused-template IFNDR or extension dependency."
     },
     "performance": {
+      "status": "pending-actual-parent-measurement"
+    },
+    "triage_note": "Parameter-only typed trailing-type context and actual definition/category facts repair elaborated-return parsing;canonicalsharedgrammar synchronized.50required AST/runtime fixtures. Separatepreexisting missingvirt-specifier diagnosis044 isopen. Performance/integration pending."
+  },
+  {
+    "id": "CXX11-044",
+    "priority": "P1",
+    "status": "triaged",
+    "upstream": [],
+    "discovered_neighbor_of": "CXX11-043",
+    "symptom": "Instantiated free function templates with final/override can be silently accepted; elaborated-return parser failure previouslymasked oneform.",
+    "expected": "Issue required normal language diagnosis for invalidvirt-specifier contexts while preserving validvirtualmembers ofclasstemplates and syntacticfunctiondefinitiongrammar. Diagnostictext/count/location andvendorfailureexit parity excluded.",
+    "owning_pa": 14,
+    "ownership_note": "PA14 generic-template control;also adjudicate corresponding non-template forms inPA13 virtual-function lane during repair",
+    "regressions": [],
+    "fix_revision": null,
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-044",
+    "checks": {
+      "initial_adjudication": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-044/initial-adjudication-v1.json",
+      "root_verification": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-044/root-verification-v1.json",
+      "cells": 30,
+      "prototype_silent_accepts": 6,
+      "earlier_parent_silent_accepts": 4,
+      "earlier_parser_masked": 2,
+      "native_normal_diagnoses": 18,
+      "prior_failed043gates_retained": true
+    },
+    "standards_basis": {
+      "file": "/mnt/vizier/cppgm-clang-elaborated-return-types/doc/n3485.txt",
+      "sha256": "a46755160cd2946a9c6fd0adf45efd40c18bf2fde66ba2b0eb931826b2188d03",
+      "clauses": [
+        "9.2p8 virt-specifier-seq only in virtual member function declaration",
+        "8.4.1p1 virt-specifiers in function definition only if member-declaration"
+      ],
+      "basis": "All core probes call/instantiate their free function template,avoiding unused-template IFNDR. Syntax acceptance is an earlier PA5 obligation; semantic rejection is later."
+    },
+    "performance": {
       "status": "not-started"
     },
-    "triage_note": "Separate valid-source parser failure from038 typed enum-specialization target eligibility. Required regressions and implementation remain pending."
+    "triage_note": "Preexistingsemanticgap confirmed onplain-final/override old038parent;allmandatory negatives explicitlyinstantiate/usefunctiontemplate. Requiredfixture/fix follows043functional/exportcheckpoint; no blankettemplate-depth virtualban."
   }
 ]
