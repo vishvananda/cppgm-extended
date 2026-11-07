@@ -128,7 +128,16 @@ def local_configs(source, root):
     return False
 
 
-def collect(root, parse_keywords, native):
+def disposition_reason(name, digest, dispositions):
+    reviewed = dispositions.get('llvm-project/' + name)
+    if reviewed:
+        if reviewed['sha256'] != digest:
+            raise ValueError('Stale source-pinned language disposition: ' + name)
+        return reviewed['status'] + ': ' + reviewed['reason']
+    return None
+
+
+def collect(root, parse_keywords, native, dispositions=None):
     files = subprocess.check_output(['git', 'ls-files', '-z', '--', 'clang/test'], cwd=root)
     cases, exclusions, grouped = [], [], {}
     for name in sorted(files.decode().split('\0')):
@@ -144,8 +153,13 @@ def collect(root, parse_keywords, native):
             exclusions.append(dict(path=name, reason='Tracked source resolves outside pinned corpus'))
             continue
         data = path.read_bytes()
+        digest = hashlib.sha256(data).hexdigest()
         text = data.decode('utf-8', errors='replace')
         if not STANDARD.search(text):
+            continue
+        reason = disposition_reason(name, digest, dispositions or {})
+        if reason:
+            exclusions.append(dict(path=name, sha256=digest, reason=reason))
             continue
         try:
             if 'Inputs' in Path(name).parts:
@@ -173,7 +187,7 @@ def collect(root, parse_keywords, native):
                 grouped[key]['original'].append(directive.command)
                 continue
             case = dict(id='clang-' + hashlib.sha256(key.encode()).hexdigest()[:20],
-                        path=name, sha256=hashlib.sha256(data).hexdigest(), action='compile',
+                        path=name, sha256=digest, action='compile',
                         expect='accept', original=[directive.command], **projection)
             grouped[key] = case
             cases.append(case)
@@ -192,6 +206,8 @@ def main(argv=None):
     parser.add_argument('--llvm-root', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--revision', default=REVISION, choices=[REVISION])
+    parser.add_argument('--dispositions', type=Path,
+                        default=Path(__file__).resolve().parents[1] / 'reports/cxx11-language-dispositions.json')
     args = parser.parse_args(argv)
     root = args.llvm_root.resolve()
     parse_keywords, _ = native_parser(root, args.revision)
@@ -200,7 +216,7 @@ def main(argv=None):
     native = sys.modules['lit']
     from lit import ShCommands, ShUtil
     native.ShCommands, native.ShUtil = ShCommands, ShUtil
-    manifest = collect(root, parse_keywords, native)
+    manifest = collect(root, parse_keywords, native, json.loads(args.dispositions.read_text()))
     subprocess.run(['git', 'diff', '--quiet', 'HEAD', '--', *tracked], cwd=root, check=True)
     if not manifest['cases']:
         raise ValueError('The conservative selection produced no cases')

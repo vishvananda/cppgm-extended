@@ -120,5 +120,17 @@ class CatalogueTests(unittest.TestCase):
             self.assertTrue(any('configuration' in v['reason'] for v in row['exclusions']))
 
 
+class SourceDispositions(unittest.TestCase):
+    def test_review_is_bound_to_exact_source(self):
+        name = 'clang/test/ifndr.cpp'
+        dispositions = {'llvm-project/' + name: dict(sha256='known', status='not-required', reason='IFNDR')}
+        self.assertEqual(manifest.disposition_reason(name, 'known', dispositions), 'not-required: IFNDR')
+        with self.assertRaisesRegex(ValueError, 'Stale'):
+            manifest.disposition_reason(name, 'changed', dispositions)
+
+    def test_unreviewed_sources_stay_in_selection(self):
+        self.assertIsNone(manifest.disposition_reason('clang/test/valid.cpp', 'known', {}))
+
+
 if __name__ == '__main__':
     unittest.main()

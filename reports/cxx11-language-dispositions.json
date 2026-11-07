@@ -1,4 +1,10 @@
 {
+  "llvm-project/clang/test/SemaCXX/pr30559.cpp": {
+    "status": "not-required",
+    "reason": "The unused second f template returns decltype(f<T,1>). Its own declarator has not yet declared that overload (N3485 3.3.2p1), so lookup denotes the first template's specialization, whose function type is void(). Unparenthesized decltype preserves that type (7.1.6.2p4); functions cannot return function types (8.3.5p8). No specialization of this unused template can be valid, so 14.6p8 makes it ill-formed, no diagnostic required. GCC/Clang acceptance is not mandatory. The independent valid trailing-return foo case needs separate coverage; this whole-file disposition does not claim it passed.",
+    "issue": "CXX11-CI-IFNDR-pr30559",
+    "sha256": "ee593fac401e87191e6ec974b5790aed894154a10b8cfe30d2564ca1e83b8412"
+  },
   "gcc/gcc/testsuite/g++.dg/cpp0x/Wnarrowing13.C": {
     "status": "not-required",
     "reason": "N3485 14.6p8: an uninstantiated template with no valid specialization is ill-formed, no diagnostic required. This is diagnostic timing/quality compatibility, not a missing required original-C++11 diagnostic or a later CWG decision.",
