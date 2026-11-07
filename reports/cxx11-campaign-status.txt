@@ -1,4 +1,40 @@
-Current checkpoint (2026-11-07; supersedes historical status entries below)
+Current direction (2026-11-07; user clarification supersedes prior run plans)
+
+The main deliverables are two C++11 correctness CI jobs, one using GCC tests
+and one using Clang tests. Bring up real test coverage in those jobs first;
+let their failures drive normal compiler regressions and fixes. Each job runs
+one fixed declared test list with cppgm and the matching upstream compiler,
+reports both correctness results and elapsed times, and reports the explicitly
+labeled cppgm_time / upstream_time ratio. Downloads/build/setup are separate;
+worker counts and test/configuration records match. Diagnostic parity is not
+a requirement. Missing/blocked/incomplete cases cannot silently become passes.
+
+For every compiler gap, preserve a failing parent reproducer, add the normal
+required regression at the earliest owning PA/feature cluster, fix dev/, run
+the required internal checks and use the existing frozen compile/self-compile
+performance gate. Existing normal commands, settings, baselines and limits
+apply. The custom per-family/historical/RSS calibration campaign is retired
+as an active requirement; its results remain historical evidence. See the
+revised reports/cxx11-gap-plan.txt for the implementation order and acceptance.
+
+The user has paused the goal. No compiler/test/benchmark work was resumed by
+this plan correction. The previously stopped measurement tree has now been
+terminated by its exact PID/start identities, preserving every artifact and
+marking the interrupted observation unusable as uninterrupted measurement:
+  /mnt/vizier/cppgm-cxx11-upstream/rebases/2026-11-06/remaining-029-performance-v2/user-realignment-retirement-v1.json
+The old generated running-state files do not authorize queue resumption.
+
+Fifteen known compiler repairs already passed isolated functional/export
+validation. Their integration, normal performance checks and execution in the
+actual CI jobs remain required. The corpus/runner inventories and all prior
+findings remain useful; they do not establish a current whole-suite pass rate.
+The two new CI jobs and their matched suite-timing reports are not implemented
+yet. The next implementation work is the jobs/runners and their concrete
+coverage, rather than further custom calibration. The separate public-runtime
+regression investigation remains out of scope at the user's request.
+
+Historical checkpoint before user realignment (2026-11-07)
+
 
 Fifteen known individual compiler gaps remain unclosed. All fifteen have
 independently validated functional/student-export repairs:008,019/shared030,
