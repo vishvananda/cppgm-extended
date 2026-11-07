@@ -249,6 +249,9 @@ implemented language surface, including:
   member definition available
 - integration with PA15 explicit specialization declarations/definitions when
   they interact with the PA17 specialization graph
+- the adopted CWG727 correction: a member-template explicit specialization may
+  be declared in its class, where its primary may be defined; copied definitions
+  retain separate facts for each enclosing class-template instance
 - collection/ownership behavior for constructor/member-template specializations
   and namespace-scope friend-template declarations
 - an explicit definition of a member template for a concrete class-template

@@ -379,6 +379,26 @@ bool Analyzer::WithinInstance(const Scope* scope)
 	return false;
 }
 
+bool Analyzer::SpecializedWithinInstance(const Scope* scope)
+{
+	// CWG727: a class specialization in a class template's definition is
+	// copied with each enclosing instance. Its members own their definitions,
+	// but those parsed bodies still wait for per-instance analysis on demand.
+	if (scope == nullptr || scope->kind != ScopeKind::Class || scope->entity == nullptr)
+		return false;
+	const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(scope->entity)->templ;
+	if (facts == nullptr || !facts->explicit_specialization)
+		return false;
+	for (const Scope* outer = static_cast<const ClassEntity*>(scope->entity)->owner;
+		outer != nullptr && outer->kind == ScopeKind::Class && outer->entity != nullptr;
+		outer = static_cast<const ClassEntity*>(outer->entity)->owner)
+	{
+		if (instance_class(outer))
+			return true;
+	}
+	return false;
+}
+
 bool Analyzer::InstanceMemberTemplate(const Scope* scope)
 {
 	// A scope of a member template's declaration (its template parameters,
@@ -2950,7 +2970,15 @@ bool Analyzer::instantiate_definition(const FunctionEntity* entity)
 		return true;
 	// The template's definition: the pattern member's (in its class or out
 	// of it), or the function template's.
-	const FunctionEntity* definition = PatternOf(function) != nullptr ? PatternOf(function) : function->primary;
+	Scope* copied_owner = function->owner->kind == ScopeKind::Class ? function->owner
+		: function->befriending != nullptr                          ? function->befriending->entity->scope
+																	: nullptr;
+	const bool own_copy = function->body != nullptr &&
+		((function->explicit_specialization && WithinInstance(copied_owner)) ||
+			(function->primary == nullptr && SpecializedWithinInstance(copied_owner)));
+	const FunctionEntity* definition = own_copy ? function
+		: PatternOf(function) != nullptr        ? PatternOf(function)
+												: function->primary;
 	// A member explicitly defaulted out of its class template (8.4.2p5):
 	// the implicit definition's, synthesized for the instance's class.
 	if (definition != nullptr && definition->synthesized && definition->body == nullptr &&
@@ -2999,16 +3027,19 @@ bool Analyzer::instantiate_definition(const FunctionEntity* entity)
 	// body only as the copy of the template's: it is instantiated from that
 	// (14.7.1p3), its names found in its class (the member template's in
 	// its parameter scope there).
-	const bool copied = definition != nullptr && definition->scope == nullptr && WithinInstance(definition->owner) &&
-		(PatternOf(function) != nullptr
-				? definition->template_parameters == nullptr
-				: definition == function->primary && definition->template_parameters != nullptr);
+	const bool copied = own_copy ||
+		(definition != nullptr && definition->scope == nullptr && WithinInstance(definition->owner) &&
+			(PatternOf(function) != nullptr
+					? definition->template_parameters == nullptr
+					: definition == function->primary && definition->template_parameters != nullptr));
 	if (definition == nullptr || !definition->defined || definition->body == nullptr ||
 		(definition->scope == nullptr && !copied))
 		return false;
 	function->instantiation = FactState::InProgress;
 	Scope* parent = nullptr;
-	if (outside)
+	if (own_copy)
+		parent = copied_owner;
+	else if (outside)
 		parent = member_template_frame(function, definition);
 	else if (PatternOf(function) != nullptr)
 	{

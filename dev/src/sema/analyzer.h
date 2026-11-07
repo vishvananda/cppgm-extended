@@ -690,6 +690,7 @@ private:
 	static bool templated_class(const Scope* scope);
 	static bool instance_class(const Scope* scope);
 	static bool WithinInstance(const Scope* scope);
+	static bool SpecializedWithinInstance(const Scope* scope);
 	static bool InstanceMemberTemplate(const Scope* scope);
 	static bool has_dependent_bases(const Scope* scope);
 	static ClassEntity* class_template_of(const Entity* entity);

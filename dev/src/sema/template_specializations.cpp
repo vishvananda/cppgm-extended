@@ -90,14 +90,18 @@ syntax::Name WithoutArguments(const syntax::Name& name, syntax::NameComponent& l
 
 void Analyzer::explicit_specialization(const syntax::TemplateDecl& decl, Scope* scope)
 {
-	// 14.7.3p2: at namespace scope (in C++11, not in a class), not in a
-	// template (a member template's specialization is outside PA15). The
-	// declaration it wraps is analyzed as a non-template one; the first
-	// class head or declarator that names a specialization takes the flag.
-	if (declaration_scope(scope)->kind != ScopeKind::Namespace)
-		error(decl.location, "an explicit specialization outside namespace scope");
-	if (template_depth_ != 0)
+	// CWG727 (DR): a specialization may appear where its primary may be
+	// defined, including its class scope. The resolved primary's owner is
+	// checked below; block scope and an unspecialized outer head remain
+	// invalid. The declaration's first specialization consumes the flag.
+	const ScopeKind home = declaration_scope(scope)->kind;
+	if (home != ScopeKind::Namespace && home != ScopeKind::Class)
+		error(decl.location, "an explicit specialization outside namespace or class scope");
+	if (template_depth_ != 0 && home != ScopeKind::Class)
 		error(decl.location, "an explicit specialization in a template is not supported");
+	// CWG727 changes placement, not 14.7.3p18's friend prohibition.
+	if (FriendDeclaration(*decl.declaration))
+		error(decl.location, "an explicit specialization declaration cannot be a friend");
 	const bool saved = explicit_specialization_;
 	const uint32_t saved_levels = specialization_levels_;
 	explicit_specialization_ = true;
@@ -126,8 +130,8 @@ uint32_t Analyzer::SpecializedEnclosing(const Scope* qualifier)
 ClassEntity* Analyzer::specialized_class(const syntax::Name& name, TokenKind key, Scope* scope)
 {
 	// The specialization a `template<>` class head names: a class template
-	// specialization whose arguments depend on no template parameter
-	// (a dependent one would be a partial specialization), not yet
+	// specialization whose arguments fix its own parameters (they may name
+	// enclosing class parameters under CWG727), not yet
 	// instantiated, declared in the template's namespace or one enclosing
 	// it (14.7.3p2). Access is not checked for the names of its head (a
 	// private member template, a private type as an argument: P0692's
@@ -143,13 +147,17 @@ ClassEntity* Analyzer::specialized_class(const syntax::Name& name, TokenKind key
 		error(name.location, "an explicit specialization names no class template specialization");
 	ClassEntity* entity = static_cast<ClassEntity*>(result.binding->entity);
 	ClassTemplateFacts* facts = entity->templ;
-	if (facts == nullptr || facts->role != TemplateRole::Specialization || facts->dependent)
+	if (facts == nullptr || facts->role != TemplateRole::Specialization)
+		error(name.location, "an explicit specialization names no class template specialization");
+	const Scope* home = declaration_scope(scope);
+	const bool member = home->kind == ScopeKind::Class && facts->pattern->owner == home;
+	if (facts->dependent && !member)
 		error(name.location, "an explicit specialization names no class template specialization");
 	if (!facts->explicit_specialization && facts->definition_state != FactState::NotStarted)
 		error(name.location, "an explicit specialization after the specialization's instantiation");
 	if ((key == TokenKind::KW_UNION) != (entity->key == TokenKind::KW_UNION))
 		error(name.location, "class-key does not agree with the template's");
-	if (!encloses(declaration_scope(scope), facts->pattern->owner))
+	if ((home->kind == ScopeKind::Class && !member) || !encloses(home, facts->pattern->owner))
 		error(name.location, "an explicit specialization outside its template's namespace");
 	facts->explicit_specialization = true;
 	facts->definition_state = FactState::Done;
@@ -223,6 +231,10 @@ Binding* Analyzer::explicit_function_specialization(const Specifiers& specifiers
 											  : function->instantiation != FactState::NotStarted)
 			error(location, "an explicit specialization after the specialization's instantiation or definition");
 	}
+	// A class may specialize its own member template, not a namespace or
+	// another class's template merely found by ordinary lookup (CWG727).
+	if (declaration_scope(scope)->kind == ScopeKind::Class && function->owner != declaration_scope(scope))
+		error(location, "an explicit specialization outside its primary template's definition scope");
 	// 8.4.3p4: the deleted definition is this specialization's first
 	// declaration; its primary template's declaration does not count.
 	if (deleted && function->explicit_specialization)

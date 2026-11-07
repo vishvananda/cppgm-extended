@@ -2600,7 +2600,8 @@ void Analyzer::define_function(FunctionEntity* function, const Type* type, const
 	// A member (or friend) defined in a class template instance's
 	// member-specification: its body is its pattern's, instantiated when
 	// the function is odr-used (14.7.1p2).
-	if (class_depth_ != 0 && instance_class(member_scope_) && !function->templated)
+	if (class_depth_ != 0 && !function->templated &&
+		(instance_class(member_scope_) || (!class_instantiations_.empty() && SpecializedWithinInstance(member_scope_))))
 	{
 		function->inline_member = true;
 		function->is_inline = true;
