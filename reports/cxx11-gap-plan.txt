@@ -173,7 +173,10 @@ Use the existing performance tools as documented:
   - the established platform-supported counter path under load when needed.
 
 Keep the normal gate's behavior and limits. Reuse immutable baselines and valid
-cached measurements. A few extra targeted resource/scaling checks are justified
+cached measurements. The normal repair comparison uses the immutable actual
+parent and candidate. Keep campaign-wide deltas against the original campaign
+binary as reported data; do not add a second campaign-wide acceptance cap.
+Existing per-change thresholds and PA35/self-compile limits remain unchanged. A few extra targeted resource/scaling checks are justified
 when the failure itself is a scaling/resource bug, or the normal gate exposes
 a regression; they are not mandatory for every language fix. Do not invent
 per-family/historical comparisons, dozens of extra workloads, repeated

@@ -1,3 +1,12 @@
+Performance-process correction: the agent-added campaign-wide0.5%cap is not
+an additional acceptance requirement under the updated normal per-change plan.
+072passes the unchanged actual-parent gate at1.002106O0/1.000726O3 with exact
+objects. Its campaign-wide1.005262O0 remains reported and does NOT pass that
+extra cap; original baselines and all raw failures stay intact. The isolated
+compiler passes8,814strict tests and affected/file/format/scoped-placement
+checks. Fullnormal/export/integrated validation still remains before closure.
+Provenance:/mnt/vizier/cppgm-cxx11-upstream/cumulative-gate-provenance-review-v1.json
+
 Pending next batch after acceptedcc0e0a7dc (2026-11-07)
 
 Joint candidate12032b602/SHA0795c6d1cc014385359622bb8a3300d5cd2ce7a01fccbe0e72f59ff04c99240b

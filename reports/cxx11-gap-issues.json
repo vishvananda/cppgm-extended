@@ -5431,7 +5431,7 @@
   {
     "id": "CXX11-072",
     "compiler_language_gap": true,
-    "status": "repair-performance-in-validation",
+    "status": "isolated-functional-validated-normal-integration-pending",
     "symptom": "Non-delegating constructors omit required destructor access checks for initialized variants and semantic definition demand for class subobjects",
     "owning_pa": "PA11:200/300,PA12:300,PA14:100/300,PA17:300,PA23:100",
     "standards_basis": "Adopted CWG1424,1658; initialized variant context clarified by1866",
@@ -5439,7 +5439,9 @@
     "checks": "24requiredcontrols; parent48/96 versus GCC/Clang/candidate96/96each. Adds destructor-body demand and abstract virtual-base exclusion; native/public/private/friend/template boundaries retained. Current scoped strict/affected/audits running.",
     "fix_revision": "653de9f89",
     "performance_prototype_revision": "a5be95d88",
-    "triage_note": "Normal per-fixO0 1.002106/O3 1.000726 pass with exact objects. Cumulative original baselineO0 1.005262 exceeds unchanged1.005 limit; O3 1.001810passes. Typed public-access fact is in existing FunctionEntity padding (272bytes unchanged); first280byte placement rejected. Normal frozen attribution justified optimization; no new calibration/RSS campaign. Not integrated/accepted."
+    "triage_note": "24requiredcontrols/96focused candidate passes and8814strict tests plus affected/file/format/scoped placement pass. Normal actual-parent O0 1.002106/O3 1.000726 passes with exact objects. Campaign O0 1.005262 still exceeds the agent-added extra1.005cap; raw result and original baseline retained. User-updated plan requires the normal per-change gate, not that additional aggregate hold. Remaining fullnormal/export and integrated actual-parent checks pending; not closed.",
+    "historical_status": "repair-performance-in-validation",
+    "performance_process_review": "/mnt/vizier/cppgm-cxx11-upstream/cumulative-gate-provenance-review-v1.json"
   },
   {
     "id": "CXX11-073",
