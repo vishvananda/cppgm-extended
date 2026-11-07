@@ -1,3 +1,45 @@
+Accepted local-friend, scalar-constant and ADL repairs (2026-11-07)
+
+Compiler source: f3da504514d41a7936557d3d78665a95bfa9ebbd
+SHA256: 954f65194ac4841f34db343e7de398b634a1828073cf52662e8a2b76f3c3044e
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-084085086087089-acceptance-v2.json
+
+CXX11-084/085,086,087 and089 are integrated and validated. They repair local-class
+friend lookup/definition constraints, non-ODR scalar constant reads, overloaded
+function argument ADL, and adopted CWG2346 local uses in default arguments.
+The scalar fix's static/TLS address/reference regression was found and corrected
+before acceptance. The superseded21b prototype and all failures remain recorded.
+
+All19normal stages pass:9,027strict tests, affected owners, debug, selfhostPA5,
+inception, architecture/file/full placement,42harness suites/675cases, quick and
+smoke. Fresh student export passes62focused cases across8owners and42reference
+wrappers. Integrated focused084/08580/80,08684/84,08744/44,08956/56; each has
+actual-parent failure evidence and valid neighbors. Normal actual-parent O0/O3
+ratios:084/0851.000209/1.000059;0861.000114/1.000020;0871.000048/1.000032;
+089 .999998/.999986. Frozen objects are identical. Quick self/seed .9933/1.0254,
+behavior0 and kernels below1.3 pass. Campaign1.005570/1.001906 is retained data,
+not another acceptance cap; it reuses existing baseline/final observations.
+
+Unchanged CI manifests: GCC3,704/4,112(90.08%),upstream4,112/4,112; Clang790/807
+(97.89%),upstream807/807. GCC has212compile failures/196missing diagnostics;
+Clang5compile failures/12missing diagnostics. No abnormal/link outcomes.
+GCC elapsed25.933/68.356seconds,ratio0.379;Clang3.959/24.826seconds,ratio0.159.
+Both ratios are NON-COMPARABLE because the candidate fails cases.
+
+GCC's408configuration failures are204source files, each in two dialects.
+106positive-failure files form55first-diagnostic categories, not55independent
+bugs;98negative files still need adjudication. Strict native11triage accepts97
+of the106positive files and rejects9; neither observation substitutes for
+primary-rule/course/DR review. No source is removed merely because cppgm fails.
+
+Next: complete088aggregate/array non-ODR-use analysis and090/091block-extern array
+repairs. A separate reviewed oracle tranche retains original807raw observations;
+its proposed dispositions are not enacted in these results. Offline CWG texts
+are implemented separately with coverage/export checks. Other upstream failures,
+useful coverage expansion and finalPA35release remain open.
+
+Previous accepted checkpoints retained below
+
 Accepted081/082/083 compiler checkpoint (2026-11-07)
 
 Source cb67ef7fbc96638abc8ee1230cd87c4d8c56ca06; compiler SHA256

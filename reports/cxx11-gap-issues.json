@@ -5609,37 +5609,94 @@
   {
     "id": "CXX11-084",
     "compiler_language_gap": true,
-    "status": "isolated-validated-root-pending",
+    "status": "closed",
     "symptom": "Unqualified local-class function friends fail to require corresponding declaration in innermost block",
     "owning_pa": "PA11:200",
     "standards_basis": "AdoptedCWG138/P1787; typed Binding.declared_in block identity",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-084"
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-084",
+    "historical_status": "isolated-validated-root-pending",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-084085086087089-acceptance-v2.json",
+    "integrated_candidate_revision": "f3da504514d41a7936557d3d78665a95bfa9ebbd",
+    "checks": "Integrated80/80 focused shared084/085 controls+original versus parent32/80;19normal stages,9027strict and fresh62control/42wrapper export pass. Actual-parent1.000209/1.000059 exact objects. Qualified/member and prior-block valid neighbors retained; Clang adopted138 lag recorded."
   },
   {
     "id": "CXX11-085",
     "compiler_language_gap": true,
-    "status": "isolated-validated-root-pending",
+    "status": "closed",
     "symptom": "Local-class or qualified friend function definitions are silently accepted",
     "owning_pa": "PA11:200",
     "standards_basis": "N3485 11.3p6",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-085"
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-085",
+    "historical_status": "isolated-validated-root-pending",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-084085086087089-acceptance-v2.json",
+    "integrated_candidate_revision": "f3da504514d41a7936557d3d78665a95bfa9ebbd",
+    "checks": "Integrated80/80 focused shared084/085 controls+original versus parent32/80;19normal stages,9027strict and fresh62control/42wrapper export pass. Actual-parent1.000209/1.000059 exact objects. Qualified/member and prior-block valid neighbors retained; Clang adopted138 lag recorded."
   },
   {
     "id": "CXX11-086",
     "compiler_language_gap": true,
-    "status": "repair-in-validation",
+    "status": "closed",
     "symptom": "Non-integral constexpr scalar value reads incorrectly demand capture or enclosing-function object access",
     "owning_pa": "PA16:300; PA20:200 lambda; PA22:300 member-pointer",
     "standards_basis": "N3485 3.2p2-p3,9.8p1,5.1.2p11; actual pointer-object address/reference remains odr-use",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-086"
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-086",
+    "historical_status": "repair-in-validation",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-084085086087089-acceptance-v2.json",
+    "integrated_candidate_revision": "f3da504514d41a7936557d3d78665a95bfa9ebbd",
+    "checks": "Final20required controls+original84/84 versus parent48/84. Static/TLS address/reference regression caught and fixed before acceptance; superseded21bnormal/export retained as historical. Complete actual-parent218->correctedbb4 gate1.000114/1.000020 exact;089thenusesbb4parent. Aggregate/array/ref potential-result rules remain088review. Full normal/export passed."
   },
   {
     "id": "CXX11-087",
     "compiler_language_gap": true,
-    "status": "repair-in-validation",
+    "status": "closed",
     "symptom": "Overloaded function argument signatures omitted from argument-dependent associated namespaces/classes",
     "owning_pa": "PA11:200; PA14:100 function-template neighbor",
     "standards_basis": "N3485 3.4.2p2, adoptedCWG33; all retained overload signatures associate, not declaration namespace",
-    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-087"
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-087",
+    "historical_status": "repair-in-validation",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-084085086087089-acceptance-v2.json",
+    "integrated_candidate_revision": "f3da504514d41a7936557d3d78665a95bfa9ebbd",
+    "checks": "Tenrequired controls+original44/44 versus parent16/44. Retained typed overload signatures associate parameter/return classes/namespaces, not declaration namespace; ordinary operand path unchanged. Normal actual-parent1.000048/1.000032 exact. Fullnormal/export passed.",
+    "fix_revision": "a85e35c10a9d12db772561e515e4e17a1a6b5435"
+  },
+  {
+    "id": "CXX11-088",
+    "compiler_language_gap": true,
+    "status": "primary-and-native-review",
+    "symptom": "Aggregate/array potential-result value reads incorrectly demand enclosing automatic object access",
+    "standards_basis": "N3485 3.2 plus adoptedCWG1926/2083/2170; actual object address/reference/copy and mutable restrictions remain distinct",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-088",
+    "checks": "Eightbounded external witnesses+GCCconstexpr-base7:108cells,parent16/36,GCC20/36,Clang32/36. Discarded-local-object native disagreement needs further review. No compiler change or required-owning fixture implementation yet."
+  },
+  {
+    "id": "CXX11-089",
+    "compiler_language_gap": true,
+    "status": "closed",
+    "symptom": "Blanket local-variable default-argument ban rejects non-ODR constants and static storage permitted by adopted2346",
+    "standards_basis": "CWG2346/P0588R1; retain2082evaluated-parameter restriction and automatic-object ODR usability",
+    "owning_pa": "PA7:300;PA10:100;PA11:200;PA15:100;PA16:100/300",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-089",
+    "fix_revision": "1b7c88fc2ff92fd82ccfa8f0f2a8cb1bb8949fbf",
+    "acceptance_receipt": "/mnt/vizier/cppgm-cxx11-upstream/ci-next-084085086087089-acceptance-v2.json",
+    "integrated_candidate_revision": "f3da504514d41a7936557d3d78665a95bfa9ebbd",
+    "checks": "13required controls+original56/56 versus correctedactualparent24/56, owning13/13vs6/13. Changingstaticstorage/address/ref controls pass; automaticobject/address/ref and parameter negatives retained. Actual-parent .999998/.999986 exact; full19normal/fresh62control export pass. Native GCC/Clang incomplete2346support retained."
+  },
+  {
+    "id": "CXX11-090",
+    "compiler_language_gap": true,
+    "status": "isolated-validation",
+    "symptom": "Dependent block-extern array redeclaration compatibility checked before template substitution",
+    "owning_pa": "PA14:100",
+    "standards_basis": "N3485 3.5p10,8.3.4p3,14.6p8;CWG619 same-scope bound completion",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-090"
+  },
+  {
+    "id": "CXX11-091",
+    "compiler_language_gap": true,
+    "status": "isolated-validation",
+    "symptom": "Block extern reuse incorrectly depends on canonical namespace definition is_extern flag rather than owning declaration scope",
+    "owning_pa": "PA10:100;PA16:300 static neighbor",
+    "evidence_root": "/mnt/vizier/cppgm-cxx11-upstream/issues/CXX11-090",
+    "standards_basis": "Block-extern namespace identity and same-scope array redeclarations; preserve foreign using and ordinary local conflicts"
   }
 ]

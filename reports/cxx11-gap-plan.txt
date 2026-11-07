@@ -28,6 +28,8 @@ The deliverables
 4. For compiler gaps found by those jobs: a regression in the normal required
    test format at the earliest owning PA, a compiler fix, the required internal
    checks and the normal frozen compile/self-compile performance gate.
+5. Offline plain-text CWG decisions and necessary adopted-paper wording under
+   doc/cwg/, with provenance, an index, student-export inclusion and coverage CI.
 
 Step 1 - bring up both real CI jobs
 
@@ -146,6 +148,9 @@ Step 4 - normal repair loop for each compiler gap
 4. Fix the shared compiler implementation in dev/ and dev/src/. Consume typed
    facts, parse source once, preserve canonical identities and avoid speculative
    work on hot paths. Keep frontend source lists current when needed.
+   When supporting a CWG decision, add its offline text/provenance and any adopted
+   paper needed to read its wording; keep student_export_documents.txt current
+   and run make audit-cwg-references. Unresolved references must be labeled.
 5. Run the owning suite, linked upstream reproducer and required internal
    correctness/architecture checks. Re-run the affected CI cases on the actual
    integrated compiler, then the job's declared suite.
@@ -186,42 +191,43 @@ use the established supported host/path; do not record a fabricated pass.
 
 Current implementation checkpoint (2026-11-07)
 
-Source cb67ef7fbc96638abc8ee1230cd87c4d8c56ca06; compiler SHA256
-18caa33d341b13f2cf6bd03ea85b6de288769b2164cdf07fbd81897213bc6841.
-Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-081082083-acceptance-v1.json
+Compiler source: f3da504514d41a7936557d3d78665a95bfa9ebbd
+SHA256: 954f65194ac4841f34db343e7de398b634a1828073cf52662e8a2b76f3c3044e
+Receipt: /mnt/vizier/cppgm-cxx11-upstream/ci-next-084085086087089-acceptance-v2.json
 
-GCC passes3,700/4,112(89.98%),upstream4,112/4,112;216compile failures and196
-missing diagnostics remain. Clang passes787/807(97.52%),upstream807/807;
-7compile failures and13missing diagnostics remain. No abnormal/link outcomes.
-The807Clang records still span788sources,297positive/510required-diagnostic.
-Both manifests are unchanged; all7changed outcomes improve through compiler
-repairs. GCC elapsed25.782/64.503seconds,ratio0.400;Clang3.787/25.308seconds,
-ratio0.150. Both failed-suite ratios are NON-COMPARABLE, not speed claims.
+CXX11-084/085,086,087 and089 are integrated and validated. They repair local-class
+friend lookup/definition constraints, non-ODR scalar constant reads, overloaded
+function argument ADL, and adopted CWG2346 local uses in default arguments.
+The scalar fix's static/TLS address/reference regression was found and corrected
+before acceptance. The superseded21b prototype and all failures remain recorded.
 
-081checks storage classes only in the cold empty-declarator branch.083permits
-C++11trailing-return function-type non-type parameters while rejecting unresolved
-auto.082implements adoptedCWG727in-class explicit specialization, retaining
-per-instance body facts across ordinary/deep member classes and Nested<U>.
-The original course-only namespace-scope prohibition fixture is replaced by
-an adopted-DR positive; the shipped PA17handout and new oracle are verified in
-the export, with the retired source and old generated status absent.
+All19normal stages pass:9,027strict tests, affected owners, debug, selfhostPA5,
+inception, architecture/file/full placement,42harness suites/675cases, quick and
+smoke. Fresh student export passes62focused cases across8owners and42reference
+wrappers. Integrated focused084/08580/80,08684/84,08744/44,08956/56; each has
+actual-parent failure evidence and valid neighbors. Normal actual-parent O0/O3
+ratios:084/0851.000209/1.000059;0861.000114/1.000020;0871.000048/1.000032;
+089 .999998/.999986. Frozen objects are identical. Quick self/seed .9933/1.0254,
+behavior0 and kernels below1.3 pass. Campaign1.005570/1.001906 is retained data,
+not another acceptance cap; it reuses existing baseline/final observations.
 
-All18normal stages pass:8,966strict,affected suites,debug,selfhostPA5,inception,
-architecture/file/full placement,42harness suites/675cases(19optional skips),
-quick/selfcompile and smoke. Fresh export verifies50focused controls across
-PA6/12/15/16/17/18/22 and42reference wrappers. Integrated focused candidate
-08160/60,08352/52,082108/108 versus actual parents24/60,16/52,40/108.
-Normal actual-parent O0/O3 instruction ratios:081 .999971/1.000022;
-0831.000021/1.000002;0821.000028/1.000027. Every frozen object is identical.
-Quick self/seed .9934/1.0253,behavior0,kernels below1.3. Campaign ratios
-1.005230/1.001779 remain reported data without a second acceptance cap.
+Unchanged CI manifests: GCC3,704/4,112(90.08%),upstream4,112/4,112; Clang790/807
+(97.89%),upstream807/807. GCC has212compile failures/196missing diagnostics;
+Clang5compile failures/12missing diagnostics. No abnormal/link outcomes.
+GCC elapsed25.933/68.356seconds,ratio0.379;Clang3.959/24.826seconds,ratio0.159.
+Both ratios are NON-COMPARABLE because the candidate fails cases.
 
-Next:084/085local-class friend scope/definition repairs have isolated proofs
-and the normal gate; integration remains.086nested constexpr scalar value
-reads and087ADL over overload-set function arguments are being repaired with
-earlier-owner required regressions. Other upstream failures, useful coverage
-expansion and finalPA35release checking remain open. No remote CI execution or
-exhaustive C++11 correctness claim is made.
+GCC's408configuration failures are204source files, each in two dialects.
+106positive-failure files form55first-diagnostic categories, not55independent
+bugs;98negative files still need adjudication. Strict native11triage accepts97
+of the106positive files and rejects9; neither observation substitutes for
+primary-rule/course/DR review. No source is removed merely because cppgm fails.
+
+Next: complete088aggregate/array non-ODR-use analysis and090/091block-extern array
+repairs. A separate reviewed oracle tranche retains original807raw observations;
+its proposed dispositions are not enacted in these results. Offline CWG texts
+are implemented separately with coverage/export checks. Other upstream failures,
+useful coverage expansion and finalPA35release remain open.
 
 Immediate next work
 
@@ -240,21 +246,20 @@ dispositions; no unexplained compiler crashes, timeouts or hidden failures
 remain; discovered compiler fixes have owning-PA regressions and normal
 correctness/performance validation; and each job reports matched upstream
 suite times, correctness counts and the explicitly labeled performance ratio.
+All explicitly supported CWG decisions have readable offline texts and necessary
+adopted wording in doc/cwg/, exported for students with coverage/provenance checks.
 Publish the supported coverage and limitations without claiming unavailable
 interfaces or unexecuted tests passed. Keep historical observations intact.
 
-Concrete next work after081/082/083 acceptance (2026-11-07)
+Concrete next work after084/085/086/087/089 acceptance (2026-11-07)
 
-Preserve all4,112GCC and807Clang manifest records and every raw outcome.
-Integrate084/085local-class friend declaration/definition repairs through the
-normal root correctness/export/CI checks. Complete086nested constexpr scalar
-value reads and087ADL overload-set argument association with parent proofs,
-required owning-PA controls, typed fixes and normal actual-parent perf gates.
+Finish and validate shipping doc/cwg's plain-text issue/paper catalog and CI
+coverage audit. Preserve all4,112GCC and807Clang records and every raw outcome
+until the separate primary-reviewed oracle tranche is explicitly validated.
 
-Continue failure-led GCC/Clang source and primary-rule adjudication. The110
-unique GCC positive-failure sources grouped in gcc-080-failure-families-v2.json
-are observations, not110independent bugs or oracle mistakes.083nowrepairs
-auto23/46as valid C++11trailing-return function-type template parameters.
-Aggregate/array/reference non-ODR-use rules require separate review;086scalar
-progress must not claim those families passed. Keep coverage expansion and the
-final PA35release open.
+Complete090/091block-extern dependent-array compatibility and canonical linkage
+provenance, preserving static-template-definition checks and incompatible-type
+neighbors. Continue088aggregate/array potential-result non-ODR-use investigation;
+086scalar progress does not establish those rules. Continue failure-led GCC and
+Clang primary-rule triage, source applicability review and normal repair gates.
+Retain final PA35release checking and useful coverage expansion.
