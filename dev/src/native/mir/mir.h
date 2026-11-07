@@ -30,7 +30,8 @@ struct Inst
 	uint8_t sub = 0;                               // Cond, ConvKind, WideOp, compare predicate
 	uint16_t flags = 0;
 	uint8_t nops = 0;
-	uint32_t aux = 0;      // Call: argument register mask; Copy/Zero: bytes; EhPush: kind; EhCatch: selector
+	uint32_t aux = 0;      // Call: argument register mask; Copy/Zero: bytes; EhPush: kind; EhCatch: selector;
+						   // Jcc: advisory taken probability per mille (0: unspecified)
 	uint32_t aux2 = 0;     // Call: stack bytes; Copy/Zero: alignment; EhPush: frame-slot record offset
 	uint32_t location = 0; // 1 + index of the LowIR debug location
 	uint32_t eh = 0;       // host EH Call: 1 + its landing (EhTables::landings), 0: none

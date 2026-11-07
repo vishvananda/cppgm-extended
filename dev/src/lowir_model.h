@@ -771,6 +771,34 @@ inline ComparePredicate inverted(ComparePredicate predicate)
 }
 
 // ---------------------------------------------------------------------------
+// Advisory branch prediction. It never proves that an outcome is impossible.
+enum class BranchPrediction : std::uint8_t
+{
+	None,
+	Likely,
+	Unlikely
+};
+
+const unsigned kBranchPredictionCount = 3;
+
+inline const char* spelling(BranchPrediction prediction)
+{
+	static const char* const kBranchPredictions[kBranchPredictionCount] = { "", "likely", "unlikely" };
+	return kBranchPredictions[static_cast<unsigned>(prediction)];
+}
+
+inline bool from_spelling(const char* text, std::size_t length, BranchPrediction* prediction)
+{
+	return detail::find_spelling(text, length, 1, kBranchPredictionCount, prediction);
+}
+
+inline BranchPrediction inverted(BranchPrediction prediction)
+{
+	return prediction == BranchPrediction::Likely  ? BranchPrediction::Unlikely
+		: prediction == BranchPrediction::Unlikely ? BranchPrediction::Likely
+												   : BranchPrediction::None;
+}
+
 // Instruction flags: the optional parts of an instruction's text, as bits.
 //
 // - IF_VOLATILE: `load volatile`, `store volatile`.

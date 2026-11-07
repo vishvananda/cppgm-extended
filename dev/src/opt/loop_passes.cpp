@@ -2605,7 +2605,11 @@ bool LoopPass::count_to_pointer(uint32_t loop)
 	const Value differs = emit(h, before, test, i64);
 	body_.instructions[t].ops[0] = differs;
 	if (!nonzero_true)
+	{
 		std::swap(body_.instructions[t].ops[1], body_.instructions[t].ops[2]);
+		body_.instructions[t].sub = static_cast<uint8_t>(
+			inverted(static_cast<BranchPrediction>(body_.instructions[t].sub)));
+	}
 	(void)compare;
 	map_instruction_blocks(body_, c_.block_of);
 	c_.invalidate_block_of();

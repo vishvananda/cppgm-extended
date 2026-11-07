@@ -1754,13 +1754,36 @@ bool fuse_scaled_add(std::vector<Inst>& insts, uint32_t i, uint32_t end)
 		++k;
 	const bool narrow = inst.type == lowir::TypeKind::U32;
 	if (k == limit || insts[k].op != Op::Add || insts[k].nops != 2 || !plain_gpr(insts[k].ops[0]) ||
-		insts[k].ops[0].reg != b || !plain_gpr(insts[k].ops[1]) || insts[k].ops[1].reg == b ||
+		!plain_gpr(insts[k].ops[1]) || insts[k].ops[0].reg == insts[k].ops[1].reg ||
 		!(narrow ? narrow_kind(insts[k].type) : wide_kind(insts[k].type)) || !flags_dead_after(insts, k, limit))
 		return false;
 	Inst& add = insts[k];
+	const bool reversed = add.ops[0].reg != b;
+	if (reversed)
+	{
+		if (add.ops[1].reg != b)
+			return false;
+		// The add may put its result in the other operand's register.
+		// Removing the scale then changes b until its next full overwrite;
+		// prove no instruction can observe that intermediate value.
+		bool killed = false;
+		for (uint32_t j = k + 1; j < std::min(end, k + 16); ++j)
+		{
+			const Inst& next = insts[j];
+			if (!simple_inst(next) || reads_reg(next, b))
+				break;
+			if (written_reg(next) == b)
+			{
+				killed = true;
+				break;
+			}
+		}
+		if (!killed)
+			return false;
+	}
 	add.op = Op::Lea;
 	add.type = narrow ? lowir::TypeKind::I32 : lowir::TypeKind::Void;
-	add.ops[1] = Operand::make_mem(add.ops[1].reg, 0, b, static_cast<uint8_t>(1u << shift));
+	add.ops[1] = Operand::make_mem(reversed ? add.ops[0].reg : add.ops[1].reg, 0, b, static_cast<uint8_t>(1u << shift));
 	inst.op = odd == 1 ? Op::Nop : Op::Lea;
 	inst.nops = odd == 1 ? 0 : 2;
 	inst.type = add.type;

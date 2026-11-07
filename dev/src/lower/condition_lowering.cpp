@@ -122,7 +122,18 @@ void FunctionLowering::branch_condition(
 		jump(value ? on_true : on_false);
 	}
 	else
-		branch(truth(*e), on_true, on_false);
+	{
+		const RValue value = truth(*e);
+		lowir::BranchPrediction prediction = lowir::BranchPrediction::None;
+		const syntax::CallExpr* call = e->kind == syntax::ExprKind::Call ? static_cast<const syntax::CallExpr*>(e)
+																		 : nullptr;
+		bool expected = false;
+		if (call != nullptr && e->facts != nullptr && (e->facts->flags & sema::kDirectCall) != 0 &&
+			static_cast<const sema::FunctionEntity*>(e->facts->entity)->builtin == sema::BuiltinFunction::Expect &&
+			call->arguments.size == 2 && literal_truth(*call->arguments[1], expected))
+			prediction = expected ? lowir::BranchPrediction::Likely : lowir::BranchPrediction::Unlikely;
+		branch(value, on_true, on_false, prediction);
+	}
 	for (size_t i = spine_.size(); i-- > base;)
 	{
 		const ChainTargets targets = targets_[target_base + (i - base)];

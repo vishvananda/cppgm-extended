@@ -18,7 +18,7 @@ namespace native {
 const uint32_t kResumeTerminal = 0xffffffffu;
 // The register allocator's block weights: per execution of the function's
 // entry (register_allocation.cpp block_weights).
-const uint64_t kWeightScale = 64;
+const uint64_t kWeightScale = 4096;
 
 // The fixed register a materialized integer comparison reads an immediate
 // from (a clobber of that instruction, so it stays allocatable).

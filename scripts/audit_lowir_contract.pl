@@ -213,17 +213,20 @@ for my $name (sort keys %ledger_role)
 # writer spells through the scaffold tables.  Every opcode head has a
 # retained row.
 my @opcodes = table_strings($vocabulary, 'kOpcodes', 'lowir_model.h');
+my @predictions = grep { $_ ne '' }
+	table_strings($vocabulary, 'kBranchPredictions', 'lowir_model.h');
 my @fact_words;
 if ($vocabulary =~ /spelling\(InstructionFlag \w+\)\s*\{(.*?)\n\}/s)
 {
 	@fact_words = $1 =~ /return\s+"([^"]+)"/g;
 }
 push @errors, 'cannot locate the instruction-fact words of lowir_model.h' if !@fact_words;
-my %keyword = map { $_ => 1 } @opcodes, @fact_words,
+my %keyword = map { $_ => 1 } @opcodes, @fact_words, @predictions,
 	table_strings($vocabulary, 'kKeywords', 'lowir_model.h'),
 	table_strings($vocabulary, 'kUnaryOps', 'lowir_model.h'),
 	grep { $_ ne '' } table_strings($scaffold, 'kStorages', 'ir_symbol_model.h');
 my %ledger_head;
+my %ledger_word;
 for my $row (@retained)
 {
 	next if $row->{category} ne 'instruction';
@@ -234,11 +237,19 @@ for my $row (@retained)
 		for my $word (@words)
 		{
 			next if $word eq 'clause';
+			$ledger_word{$word} = 1;
 			push @errors, "ledger instruction word '$word' is not a LowIR vocabulary word"
 				if !$keyword{$word};
 		}
 		++$count{instructions};
 	}
+}
+for my $prediction (@predictions)
+{
+	push @errors, "branch prediction '$prediction' has no retained ledger instruction row"
+		if !$ledger_word{$prediction};
+	push @errors, "branch prediction '$prediction' is absent from pa8/lowir.md"
+		if $documentation !~ /\b\Q$prediction\E\b/;
 }
 for my $head (@opcodes)
 {

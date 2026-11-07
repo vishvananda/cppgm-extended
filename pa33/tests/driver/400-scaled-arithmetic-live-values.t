@@ -29,6 +29,32 @@ __attribute__((noinline)) U64 conditioned(U64 x, U64 y)
 template<unsigned Shift>
 __attribute__((noinline)) U64 shifted(U64 x, U64 y) { return (x << Shift) + y; }
 
+template<unsigned Scale>
+__attribute__((noinline)) U64 reversed(U64 x, U64 y)
+{
+  U64 product = x * Scale;
+  return y + product;
+}
+
+template<unsigned Scale>
+__attribute__((noinline)) U64 observed_after(U64 x, U64 y, volatile U64* saved)
+{
+  U64 product = x * Scale;
+  U64 sum = y + product;
+  *saved = product;
+  return sum;
+}
+
+template<unsigned Scale>
+__attribute__((noinline)) U64 partially_overwritten(U64 x, U64 y, volatile U64* saved)
+{
+  U64 product = x * Scale;
+  U64 sum = y + product;
+  product = (product & ~255ull) | (y & 255ull);
+  *saved = product;
+  return sum;
+}
+
 const U64 inputs[4][2] = {
   {0x0ull, 0x1ull},
   {0x1ull, 0xffffffffffffffffull},
@@ -51,6 +77,13 @@ int check(const U64* expected, const unsigned* expected32)
     U64 conditional = expected[i] < y ? expected[i] : ~expected[i];
     if (conditioned<Scale>(x, y) != conditional)
       return 3;
+    if (reversed<Scale>(x, y) != expected[i] ||
+        observed_after<Scale>(x, y, &saved) != expected[i] ||
+        saved != expected[i] - y)
+      return 4;
+    if (partially_overwritten<Scale>(x, y, &saved) != expected[i] ||
+        saved != (((expected[i] - y) & ~255ull) | (y & 255ull)))
+      return 5;
   }
   return 0;
 }

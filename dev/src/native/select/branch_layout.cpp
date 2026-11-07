@@ -300,6 +300,8 @@ uint32_t FunctionSelector::layout_branches()
 			{
 				Inst& jcc = f.insts[block.first + count - 2];
 				jcc.sub = invert(static_cast<Cond>(jcc.sub));
+				if (jcc.aux > 0 && jcc.aux < 1000)
+					jcc.aux = 1000 - jcc.aux;
 				jcc.ops[0] = last.ops[0];
 				--count;
 			}
@@ -307,6 +309,8 @@ uint32_t FunctionSelector::layout_branches()
 			{
 				Inst& jcc = f.insts[block.first + count - 2];
 				jcc.sub = invert(static_cast<Cond>(jcc.sub));
+				if (jcc.aux > 0 && jcc.aux < 1000)
+					jcc.aux = 1000 - jcc.aux;
 				std::swap(jcc.ops[0], last.ops[0]);
 			}
 			while (count != 0 && branch_to(f.insts[block.first + count - 1], Op::Jcc, next))

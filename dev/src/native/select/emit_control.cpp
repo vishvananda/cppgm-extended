@@ -615,7 +615,27 @@ void FunctionSelector::emit_terminator(uint32_t id)
 		for (uint32_t k = edge_first_[block_]; k < edge_first_[block_ + 1]; ++k)
 			edge_mir_[edges_[k].to] = edges_[k].mir;
 		if (inst.op == Opcode::Branch)
+		{
+			const size_t first = out_->insts.size();
 			emit_branch(inst);
+			const lowir::BranchPrediction prediction = static_cast<lowir::BranchPrediction>(inst.sub);
+			if (prediction != lowir::BranchPrediction::None)
+			{
+				const uint32_t on_true = edge_target(inst.ops[1].index);
+				const uint32_t on_false = edge_target(inst.ops[2].index);
+				const uint32_t probability = prediction == lowir::BranchPrediction::Likely ? 999 : 1;
+				for (size_t i = first; i < out_->insts.size(); ++i)
+				{
+					Inst& branch = out_->insts[i];
+					if (branch.op != Op::Jcc)
+						continue;
+					if (branch.ops[0].symbol == on_true)
+						branch.aux = probability;
+					else if (branch.ops[0].symbol == on_false)
+						branch.aux = 1000 - probability;
+				}
+			}
+		}
 		else
 			emit_switch(inst);
 		break;

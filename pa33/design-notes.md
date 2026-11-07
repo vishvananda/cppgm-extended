@@ -44,10 +44,17 @@ operand before reading it. A conditional move leaves its destination unchanged
 on one path; model both paths. Fixed-register division and shifts can overlap
 other operands, implicit uses and ABI arguments.
 
+Count pressure at the actual reads and writes. An operand that dies before
+a result reuses its register need not overlap that result. Folded or deferred
+uses must remain live until the selected instruction reads them.
+
 Weight uses by expected execution frequency, and measure spills and reloads
 inside loops rather than counting only frame slots. Saving a callee-saved
 register costs work on each function entry and exit. Rematerializing a cheap
 constant or address may be better than carrying it across a long live range.
+Branch predictions can guide these costs and block layout. Retain enough
+precision to distinguish common and rare paths; a prediction is never proof
+that the other path is unreachable.
 
 ## Width and representation
 
@@ -77,6 +84,8 @@ while preserving reachable actions before an impossible continuation. Include
 defined defaults, narrow incoming values and empty sets of live arms in tests.
 Equivalent indexed addresses can have different encoding costs. Preserve
 scale, width and flags when choosing the order of their operands.
+Combining a scale with an add may work with either operand order. Preserve
+any later reader of the intermediate scaled value, including partial writes.
 
 Test signed extrema and wrapping unsigned arithmetic. Select a division at the
 intended width and preserve its trapping preconditions. A high-half product

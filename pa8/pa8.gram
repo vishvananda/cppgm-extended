@@ -231,7 +231,11 @@ jump-instruction:
 	KW_JUMP block-name
 
 branch-instruction:
-	KW_BRANCH value OP_COMMA block-name OP_COMMA block-name
+	KW_BRANCH branch-prediction? value OP_COMMA block-name OP_COMMA block-name
+
+branch-prediction:
+	KW_LIKELY
+	KW_UNLIKELY
 
 switch-instruction:
 	KW_SWITCH value OP_COMMA block-name (OP_COMMA value OP_COLON block-name)*

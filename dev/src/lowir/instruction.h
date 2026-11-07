@@ -132,7 +132,8 @@ struct DebugLocation
 //   EhCatchAll        immediate = selector
 //   Throw             ops[0]; type
 //   Jump              ops[0] block
-//   Branch            ops[0] condition, ops[1] true block, ops[2] false block
+//   Branch            ops[0] condition, ops[1] true block, ops[2] false block;
+//                     sub = advisory BranchPrediction
 //   Switch            ops[0] selector, ops[1] default block;
 //                     extra: (case value, Block) pairs
 //   Return            ops[0] value or none; type

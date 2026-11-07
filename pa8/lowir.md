@@ -1504,6 +1504,8 @@ consuming it is optional.
 ```text
 jump ^target
 branch %cond, ^then, ^else
+branch likely %cond, ^then, ^else
+branch unlikely %cond, ^then, ^else
 switch %selector, ^default, <case-value>:^case, ...
 return void
 return <type> <value>
@@ -1512,6 +1514,13 @@ unreachable
 
 `switch` is the first-class multi-way terminator form. It transfers control to
 the first matching `<case-value>:^case` arm, or to `^default` if no arm matches.
+
+`likely` and `unlikely` predict whether a branch's condition is nonzero.
+They are advisory: both outcomes retain their ordinary behavior, even when
+the prediction is wrong. Readers and writers preserve them; optimizers may
+discard them. Swapping a branch's true and false outcomes reverses its
+prediction. A new, unrelated condition needs a new prediction or none.
+No particular probability or native instruction sequence is required.
 
 `unreachable` states that execution cannot validly continue from that point.
 It takes no operands and emits no call or symbol declaration. A release backend

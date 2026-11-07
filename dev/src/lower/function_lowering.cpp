@@ -948,10 +948,12 @@ void FunctionLowering::jump(lowir::BlockId target)
 	terminate(inst);
 }
 
-void FunctionLowering::branch(const RValue& condition, lowir::BlockId if_true, lowir::BlockId if_false)
+void FunctionLowering::branch(
+	const RValue& condition, lowir::BlockId if_true, lowir::BlockId if_false, lowir::BranchPrediction prediction)
 {
 	lowir::Instruction inst = lowir::make_instruction(
 		lowir::Opcode::Branch, lowir::Type::scalar(lowir::TypeKind::Void));
+	inst.sub = static_cast<uint8_t>(prediction);
 	inst.ops[0] = condition.value;
 	inst.ops[1] = lowir::Value::block(if_true);
 	inst.ops[2] = lowir::Value::block(if_false);

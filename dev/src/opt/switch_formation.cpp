@@ -464,6 +464,7 @@ bool SwitchFormer::form(BlockId head)
 	}
 	Instruction& term = body_.instructions[body_.blocks[head].last];
 	term.op = Opcode::Switch;
+	term.sub = 0;
 	term.type = first.type;
 	term.ops[0] = Value::temp(first.x);
 	term.ops[1] = Value::block(exits[def].first);

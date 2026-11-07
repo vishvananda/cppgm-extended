@@ -464,8 +464,9 @@ To complete PA29, implement hosted compatibility for:
   `__builtin_va_start` and `__builtin_va_arg`, which lower to the `va_start`
   and `va_arg` of `../pa8/lowir.md`, `__builtin_va_copy` copies the
   argument-list object and `__builtin_va_end` does nothing.
-  `__builtin_expect(e, c)` is the value of `e` converted to `long`; LowIR has
-  no form for the expectation, so it leaves no other trace.
+  `__builtin_expect(e, c)` is the value of `e` converted to `long`. A known
+  expectation may guide a condition through LowIR's advisory `branch likely`
+  or `branch unlikely`; an incorrect prediction must not change behavior.
   `__builtin_unreachable()` lowers to `unreachable`, as in PA11.
   `__builtin_assume` is not required; without it
   `__has_builtin(__builtin_assume)` answers 0 and a header takes its fallback

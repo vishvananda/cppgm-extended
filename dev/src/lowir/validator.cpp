@@ -236,10 +236,10 @@ const OperandRule kOperandRules[] = {
 	{ { kValueOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // Throw
 	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // Resume
 	{ { kBlockOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                   // Jump
-	{ { kValueOperand, kBlockOperand, kBlockOperand }, ExtraOperands::None, 1 },             // Branch
-	{ { kValueOperand, kBlockOperand, kNoOperand }, ExtraOperands::CasePairs, 1 },           // Switch
-	{ { kValueOperand | kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },      // Return
-	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                      // Unreachable
+	{ { kValueOperand, kBlockOperand, kBlockOperand }, ExtraOperands::None, kBranchPredictionCount }, // Branch
+	{ { kValueOperand, kBlockOperand, kNoOperand }, ExtraOperands::CasePairs, 1 },                    // Switch
+	{ { kValueOperand | kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },               // Return
+	{ { kNoOperand, kNoOperand, kNoOperand }, ExtraOperands::None, 1 },                               // Unreachable
 };
 
 static_assert(sizeof kOperandRules / sizeof kOperandRules[0] == static_cast<unsigned>(Opcode::Unreachable) + 1,

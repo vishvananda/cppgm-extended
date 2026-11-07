@@ -321,6 +321,7 @@ bool JumpThreading::known_edges()
 		if (keep != drop)
 			remove_phi_incoming(body_, drop, b);
 		term.op = Opcode::Jump;
+		term.sub = 0;
 		term.ops[0] = Value::block(keep);
 		term.ops[1] = term.ops[2] = Value::none();
 		++c_.stats.branches_folded;
@@ -672,6 +673,7 @@ bool JumpThreading::copy_branch(BlockId m, BlockId p, const Value* inputs, std::
 	}
 	Instruction& branch = body_.instructions[pt];
 	branch.op = Opcode::Branch;
+	branch.sub = body_.instructions[term].sub;
 	branch.ops[0] = value(body_.instructions[term].ops[0]);
 	branch.ops[1] = Value::block(on_true);
 	branch.ops[2] = Value::block(on_false);

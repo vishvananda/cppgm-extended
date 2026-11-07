@@ -603,7 +603,8 @@ private:
 	// Places `block` next in layout and continues emission there.
 	void place(lowir::BlockId block);
 	void jump(lowir::BlockId target);
-	void branch(const RValue& condition, lowir::BlockId if_true, lowir::BlockId if_false);
+	void branch(const RValue& condition, lowir::BlockId if_true, lowir::BlockId if_false,
+		lowir::BranchPrediction prediction = lowir::BranchPrediction::None);
 	void terminate(const lowir::Instruction& inst);
 	lowir::InstId emit(const lowir::Instruction& inst);
 	// An index or copy of an address reached through a union member is one

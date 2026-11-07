@@ -97,6 +97,7 @@ The required representation includes the forms exercised by `tests/spec/`:
 - constants and copies, addresses and indexed addresses, memory operations,
   arithmetic/comparisons/conversions, direct and explicitly typed indirect calls;
 - jumps, branches, switches, phi values and terminators;
+- advisory `likely`/`unlikely` branch predictions, preserving both outcomes;
 - `select`, the `ctz`, `clz` and `sqrt` unary operators, and the instruction facts
   `typed`, `nowrap` and `exact` (`lowir.md`, "Instruction Facts");
 - the atomic and exception instruction records used by the fixtures;

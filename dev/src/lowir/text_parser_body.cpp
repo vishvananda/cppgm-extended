@@ -627,6 +627,13 @@ bool Parser::parse_control_instruction(FunctionBuilder& builder, Opcode keyword,
 		return true;
 	case Opcode::Branch:
 		inst.op = Opcode::Branch;
+		for (BranchPrediction prediction : { BranchPrediction::Likely, BranchPrediction::Unlikely })
+			if (at_word(lowir::spelling(prediction)))
+			{
+				inst.sub = static_cast<uint8_t>(prediction);
+				advance();
+				break;
+			}
 		inst.ops[0] = parse_value(builder, TypeKind::I64);
 		expect(TokenKind::Comma, ",");
 		inst.ops[1] = Value::block(expect_block(builder));

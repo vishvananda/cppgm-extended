@@ -296,6 +296,10 @@ uint32_t Placement::taken(uint32_t b) const
 	const uint32_t t = succs_[k], f = succs_[k + 1];
 	if (cold_[t] != cold_[f])
 		return cold_[t] ? kColdTarget : 1000 - kColdTarget;
+	const Block& hinted = f_.blocks[b];
+	const uint32_t probability = f_.insts[hinted.first + hinted.count - 2].aux;
+	if (probability > 0 && probability < 1000)
+		return probability;
 	if (back_[k] != back_[k + 1])
 		return back_[k] ? kBackEdge : 1000 - kBackEdge;
 	if (inner_[b] != kNone)

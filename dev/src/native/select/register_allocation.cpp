@@ -263,6 +263,12 @@ inline int32_t write_slot(int32_t base, int32_t pos)
 // operand.
 bool ties_first_operand(const Instruction& inst)
 {
+	if (inst.op == Opcode::Vector)
+	{
+		const lowir::VectorShape shape = lowir::shape_of(static_cast<lowir::VectorOp>(inst.sub));
+		return shape == lowir::VectorShape::Binary || shape == lowir::VectorShape::Unary ||
+			shape == lowir::VectorShape::BinaryImmediate || shape == lowir::VectorShape::UnaryImmediate;
+	}
 	return (inst.op == Opcode::Binary || inst.op == Opcode::Unary) && inst.type.kind() != TypeKind::F80 &&
 		inst.type.kind() != TypeKind::I128;
 }
@@ -284,7 +290,30 @@ void local_pressure(SelectorState& state)
 			continue;
 		const int32_t base = state.ra_base_[t.block];
 		const int32_t first = t.def < 0 ? base : write_slot(base, t.def);
-		const int32_t past = write_slot(base, t.last < t.def ? t.def : t.last) + 1;
+		bool tied_last = false;
+		if (t.user != kNoId && t.last >= t.def && state.pos_[t.user] == t.last && state.inst_block_[t.user] == t.block)
+		{
+			const Instruction& user = state.body_->instructions[t.user];
+			const bool deferred = user.result != kNoId &&
+				(state.temps_[user.result].flags & (TF_FOLDED | TF_FUSED | TF_TESTED | TF_ROTATED | TF_RMW));
+			if (!deferred && ties_first_operand(user))
+			{
+				auto resolved = [&](Value v) {
+					while (v.kind == ValueKind::Temp && state.alias_[v.index].kind != ValueKind::None)
+						v = state.alias_[v.index];
+					return v;
+				};
+				const Value first_operand = resolved(user.ops[0]);
+				const Value second_operand = user.op == Opcode::Binary || user.op == Opcode::Vector
+					? resolved(user.ops[1])
+					: Value::none();
+				tied_last = first_operand == Value::temp(temp) && !(second_operand == Value::temp(temp));
+			}
+		}
+		const int32_t last = t.last < t.def ? t.def : t.last;
+		// A tied operand dies when read, before the result is written.
+		// Emission already supports this reuse; count the same overlap.
+		const int32_t past = (tied_last ? read_slot(base, last) : write_slot(base, last)) + 1;
 		std::vector<int32_t>& diff = t.cls == VClass::Gpr ? gpr : xmm;
 		++diff[static_cast<size_t>(first)];
 		--diff[static_cast<size_t>(past)];
@@ -556,7 +585,7 @@ void FunctionSelector::loop_depths()
 // least 1. Work: O(blocks + edges) per loop level.
 void FunctionSelector::block_weights()
 {
-	const uint64_t kOne = static_cast<uint64_t>(1) << 16; // probability and frequency unit
+	const uint64_t kOne = static_cast<uint64_t>(1) << 20; // probability and frequency unit
 	const uint64_t kMaxBack = kOne * 9 / 10;
 	const uint64_t kMaxFrequency = kOne << 20;
 	const uint32_t n = static_cast<uint32_t>(blocks_.size());
@@ -646,7 +675,16 @@ void FunctionSelector::block_weights()
 			if (ra_cold_[succs_[k]])
 				continue;
 			const bool exit = inner[b] != kNoId && !contains(inner[b], succs_[k]);
-			if (exits == 0 || exits == warm)
+			const Instruction& term = body_->instructions[body_->blocks[blocks_[b].id].last];
+			const lowir::BranchPrediction prediction = static_cast<lowir::BranchPrediction>(term.sub);
+			if (warm == 2 && term.op == Opcode::Branch && prediction != lowir::BranchPrediction::None)
+			{
+				// An explicit expectation outweighs the generic loop/edge rules.
+				const bool on_true = term.ops[1].index == blocks_[succs_[k]].id;
+				const bool likely = on_true == (prediction == lowir::BranchPrediction::Likely);
+				prob[k] = likely ? kOne - kOne / 2001 : kOne / 2001;
+			}
+			else if (exits == 0 || exits == warm)
 				prob[k] = kOne / warm;
 			else
 				prob[k] = exit ? kOne / 10 / exits : (kOne - kOne / 10) / (warm - exits);
@@ -759,8 +797,8 @@ void FunctionSelector::collect_uses(const std::vector<int32_t>& index)
 		if (ties_first_operand(inst))
 		{
 			record(inst.ops[0], b, early, late, true);
-			if (inst.op == Opcode::Binary)
-				record(inst.ops[1], b, early, late, false);
+			for (unsigned k = 1; k < 3; ++k)
+				record(inst.ops[k], b, early, late, false);
 			return;
 		}
 		// A cmov keeps either arm in place: an arm dying there may be the
@@ -1475,6 +1513,11 @@ bool FunctionSelector::computed_from(uint32_t g, uint32_t from) const
 		return true;
 	if (!ties_first_operand(inst))
 		return false;
+	if (inst.op == Opcode::Vector)
+	{
+		const Value second = resolve(inst.ops[1]);
+		return !(second.kind == ValueKind::Temp && second.index == from);
+	}
 	if (inst.op == Opcode::Binary)
 	{
 		const lowir::BinaryOp op = static_cast<lowir::BinaryOp>(inst.sub);

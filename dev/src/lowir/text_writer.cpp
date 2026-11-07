@@ -1034,6 +1034,11 @@ void Writer::write_effect(const Instruction& inst)
 		return;
 	case Opcode::Branch:
 		head(inst.op);
+		if (inst.sub != static_cast<uint8_t>(BranchPrediction::None))
+		{
+			text(spelling(static_cast<BranchPrediction>(inst.sub)));
+			out_.push_back(' ');
+		}
 		operand(inst.ops[0], TypeKind::I64);
 		text(", ");
 		value(inst.ops[1]);

@@ -1,9 +1,29 @@
-int f(int n)
-{
-  return __builtin_expect(n, 0);
-}
+volatile unsigned calls;
+__attribute__((noinline)) bool flag(unsigned mask,unsigned bit) { calls=calls*5+bit+1;return (mask&(1u<<bit))!=0; }
+int likely_and(unsigned mask) { if(__builtin_expect(!!(flag(mask,0)&&flag(mask,1)&&flag(mask,2)),1))return 1;return 0; }
+int unlikely_or(unsigned mask) { if(__builtin_expect(!!(flag(mask,0)||flag(mask,1)||flag(mask,2)),0))return 1;return 0; }
+int negated_and(unsigned mask) { if(__builtin_expect(!(flag(mask,0)&&flag(mask,1)),0))return 1;return 0; }
+int negated_or(unsigned mask) { if(__builtin_expect(!(flag(mask,0)||flag(mask,1)),1))return 1;return 0; }
+int fallback_and(unsigned mask) { if(__builtin_expect(!!(flag(mask,0)&&flag(mask,1)),0))return 1;return 0; }
+int fallback_or(unsigned mask) { if(__builtin_expect(!!(flag(mask,0)||flag(mask,1)),1))return 1;return 0; }
+int nested(unsigned mask) { if(flag(mask,0) && __builtin_expect(!!(flag(mask,1)||flag(mask,2)),0))return 1;return 0; }
+int order;
+struct Guard { Guard(){++order;}~Guard(){--order;}operator bool() const { return true; } };
+int main() {
+ for(unsigned mask=0;mask<8;++mask) {
+  const bool a=(mask&1)!=0,b=(mask&2)!=0,c=(mask&4)!=0;
+  calls=0;int r=likely_and(mask);if(r!=(a&&b&&c)||calls!=(a?(b?38u:7u):1u))return 1;
+  calls=0;r=unlikely_or(mask);if(r!=(a||b||c)||calls!=(a?1u:(b?7u:38u)))return 2;
+  calls=0;r=negated_and(mask);if(r!=!(a&&b)||calls!=(a?7u:1u))return 3;
+  calls=0;r=negated_or(mask);if(r!=!(a||b)||calls!=(a?1u:7u))return 4;
+  calls=0;r=fallback_and(mask);if(r!=(a&&b)||calls!=(a?7u:1u))return 5;
+  calls=0;r=fallback_or(mask);if(r!=(a||b)||calls!=(a?1u:7u))return 6;
+  calls=0;r=nested(mask);if(r!=(a&&(b||c))||calls!=(a?(b?7u:38u):1u))return 7;
+ }
+ if(__builtin_expect(!!(Guard()&&true),1)) { if(order!=0)return 8; }else return 9;
+ const unsigned __int128 high=static_cast<unsigned __int128>(1)<<64;
+ if(__builtin_expect(high,1))return 10;
+ if(__builtin_expect(2,2)!=2 || __builtin_expect(3,0)!=3)return 11;
 
-int main()
-{
-  return f(3) - 3;
+ return 0;
 }
