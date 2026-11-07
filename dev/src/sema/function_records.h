@@ -376,6 +376,9 @@ struct FunctionEntity : Entity
 	// The registry entry a builtin was declared from (lex/gnu_builtins.h).
 	GnuBuiltin gnu_builtin;
 	uint8_t builtin_variant;
+	// Its own class declaration has public access; inherited constructors
+	// still use their originating declaration. Recorded by declare_in.
+	bool public_special_access;
 	// A VectorLanewise builtin's: its shapes, and whether it is a scalar form.
 	const char* builtin_shapes = nullptr;
 	bool builtin_scalar = false;

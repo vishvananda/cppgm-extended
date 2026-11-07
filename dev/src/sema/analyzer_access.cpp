@@ -87,7 +87,11 @@ void Analyzer::declare_in(Scope* scope, Binding* binding)
 	// access in effect; a redeclaration outside it keeps the member's.
 	binding->declared_in = scope;
 	if (scope->kind == ScopeKind::Class)
+	{
 		binding->access = scope == member_scope_ ? member_access() : redeclared_access(scope, binding);
+		if (binding->kind == BindingKind::Function && binding->entity != nullptr && binding->entity->owner == scope)
+			static_cast<FunctionEntity*>(binding->entity)->public_special_access = binding->access == Access::Public;
+	}
 	// A block-scope declaration is taken as dependent unless its
 	// declaration decides otherwise (see Binding::dependent).
 	if (scope->kind == ScopeKind::Block)
@@ -736,6 +740,8 @@ void Analyzer::check_special_access(const FunctionEntity* function, const ClassE
 	// the object of the class whose constructor is planned (base_object_).
 	if (function == nullptr || (function->implicit && function->inherited == nullptr) || entity == nullptr ||
 		entity->scope == nullptr)
+		return;
+	if (function->public_special_access && function->inherited == nullptr && function->owner == entity->scope)
 		return;
 	const ClassEntity* acted = object != nullptr ? object : base_object_ != nullptr ? base_object_ : entity;
 	const Identifier* key = function->destructor ? destructor_key_ : constructor_key_;

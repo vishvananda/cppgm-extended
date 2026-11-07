@@ -1599,6 +1599,7 @@ FunctionEntity* Analyzer::specialize(FunctionEntity* primary, const TypeList& gi
 	FunctionEntity* function = new_entity<FunctionEntity>(EntityKind::Function, primary->name, primary->owner, type);
 	function->label = primary->label;
 	function->member = primary->member;
+	function->public_special_access = primary->public_special_access;
 	function->is_static = primary->is_static;
 	function->constructor = primary->constructor;
 	function->conversion = primary->conversion;
