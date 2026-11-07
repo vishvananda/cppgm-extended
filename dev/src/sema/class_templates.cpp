@@ -384,17 +384,14 @@ bool Analyzer::SpecializedWithinInstance(const Scope* scope)
 	// CWG727: a class specialization in a class template's definition is
 	// copied with each enclosing instance. Its members own their definitions,
 	// but those parsed bodies still wait for per-instance analysis on demand.
-	if (scope == nullptr || scope->kind != ScopeKind::Class || scope->entity == nullptr)
-		return false;
-	const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(scope->entity)->templ;
-	if (facts == nullptr || !facts->explicit_specialization)
-		return false;
-	for (const Scope* outer = static_cast<const ClassEntity*>(scope->entity)->owner;
-		outer != nullptr && outer->kind == ScopeKind::Class && outer->entity != nullptr;
-		outer = static_cast<const ClassEntity*>(outer->entity)->owner)
+	bool specialized = false;
+	for (const Scope* owner = scope; owner != nullptr && owner->kind == ScopeKind::Class && owner->entity != nullptr;
+		owner = static_cast<const ClassEntity*>(owner->entity)->owner)
 	{
-		if (instance_class(outer))
-			return true;
+		if (instance_class(owner))
+			return specialized;
+		const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(owner->entity)->templ;
+		specialized = specialized || (facts != nullptr && facts->explicit_specialization);
 	}
 	return false;
 }
@@ -3028,7 +3025,9 @@ bool Analyzer::instantiate_definition(const FunctionEntity* entity)
 	// (14.7.1p3), its names found in its class (the member template's in
 	// its parameter scope there).
 	const bool copied = own_copy ||
-		(definition != nullptr && definition->scope == nullptr && WithinInstance(definition->owner) &&
+		(definition != nullptr && definition->scope == nullptr &&
+			(WithinInstance(definition->owner) ||
+				(definition->instantiated && SpecializedWithinInstance(definition->owner))) &&
 			(PatternOf(function) != nullptr
 					? definition->template_parameters == nullptr
 					: definition == function->primary && definition->template_parameters != nullptr));
