@@ -362,6 +362,11 @@ void FunctionLowering::construct(const sema::Type* type, lowir::Value object, co
 	}
 	if (const syntax::BracedInitList* list = BracedList(*init))
 	{
+		if (constructor == nullptr && list->facts != nullptr && list->facts->single_class_element)
+		{
+			materialize(*list->elements[0], object, location);
+			return;
+		}
 		// 8.5.4p5: std::initializer_list's object, or an initializer-list
 		// constructor's call with one.
 		if (list->facts != nullptr && (list->facts->flags & sema::kInitializerList) != 0)
@@ -857,7 +862,7 @@ void FunctionLowering::materialize_prvalue(const syntax::Expr& expr, lowir::Valu
 													  : nullptr;
 	const sema::ClassEntity* entity = sema::ClassOf(type);
 	uint32_t count = 0;
-	const bool helper = braced != nullptr &&
+	const bool helper = braced != nullptr && (braced->facts == nullptr || !braced->facts->single_class_element) &&
 		(constructor == nullptr || (braced->elements.empty() && constructor->implicit)) && entity != nullptr &&
 		sema::IsAggregateClass(entity) && helper_shape(entity, braced, count);
 	if (helper)
@@ -1518,7 +1523,8 @@ void FunctionLowering::local_object(const sema::VariableEntity* variable, const 
 	// An object its constructor or a prvalue initializes: its address is
 	// taken before its initializer's full-expression begins (the course's
 	// form).
-	const bool aggregate = list != nullptr && (variable->constructor == nullptr || elided != nullptr);
+	const bool aggregate = list != nullptr && (list->facts == nullptr || !list->facts->single_class_element) &&
+		(variable->constructor == nullptr || elided != nullptr);
 	const bool moved = source != nullptr && source->kind == syntax::ExprKind::Cast &&
 		(source->facts->flags & sema::kReferenceCast) != 0 &&
 		sema::ClassOf(source->facts->type) == sema::ClassOf(type) && variable->constructor != nullptr &&

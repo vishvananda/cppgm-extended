@@ -317,6 +317,8 @@ bool ConstantInterpreter::construct(const Type* type, const ConstPlace& target, 
 	}
 	if (const syntax::BracedInitList* list = BracedList(*init))
 	{
+		if (constructor == nullptr && list->facts != nullptr && list->facts->single_class_element)
+			return materialize(*list->elements[0], target);
 		if (constructor == nullptr && IsAggregateClass(cls))
 			return aggregate(type, target, *list, location);
 		if (list->elements.empty())

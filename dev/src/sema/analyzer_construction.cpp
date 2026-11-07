@@ -1126,6 +1126,27 @@ FunctionEntity* Analyzer::initialize_class(
 		// constructors are considered.
 		if (IsAggregateClass(entity))
 		{
+			// CWG1467/2137: a sole same/derived-class expression initializes
+			// the whole aggregate. Keep its selected copy/move and elision
+			// facts distinct from member-wise aggregate initialization.
+			if (list->designators == nullptr && list->elements.size == 1 &&
+				list->elements[0]->kind != syntax::ExprKind::BracedInit)
+			{
+				const syntax::Expr& element = *list->elements[0];
+				if (element.facts == nullptr && typed(element, scope) == nullptr)
+					return nullptr;
+				if (same_class_source(entity, element))
+				{
+					const ConstructionKind kind = init.kind == syntax::InitializerKind::Braced
+						? ConstructionKind::Direct
+						: ConstructionKind::Copy;
+					FunctionEntity* constructor = copy_initialization(entity, element, kind, location);
+					ExprFacts* facts = new_facts(*list, type->unqualified, ValueCategory::PRValue);
+					facts->single_class_element = true;
+					facts->entity = constructor;
+					return constructor;
+				}
+			}
 			aggregate_initialize(*list, entity, scope);
 			ExprFacts* facts = new_facts(*list, type->unqualified, ValueCategory::PRValue);
 			if (list == flexible_list_ && flexible_given_)

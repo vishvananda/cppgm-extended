@@ -1010,6 +1010,11 @@ bool Analyzer::list_sequence(const syntax::BracedInitList& list, const Type* par
 		sequence.rank = ConversionRank::UserDefined;
 		if (IsAggregateClass(cls))
 		{
+			// CWG1467/2137: rank the whole-object conversion for a sole
+			// same/derived-class expression, before aggregate members.
+			if (list.designators == nullptr && list.elements.size == 1 &&
+				list.elements[0]->kind != syntax::ExprKind::BracedInit && same_class_source(cls, *list.elements[0]))
+				return implicit_sequence(*list.elements[0], parameter, out);
 			if (!aggregate_accepts(list, cls))
 				return false;
 		}
@@ -1018,6 +1023,12 @@ bool Analyzer::list_sequence(const syntax::BracedInitList& list, const Type* par
 			sequence.constructor = list_constructor(list, cls);
 			if (sequence.constructor == nullptr)
 				return false;
+			// CWG2137 retains initializer-list constructor priority; other
+			// same/derived-class construction has the element's rank.
+			if (!initializer_list_constructor(sequence.constructor) && list.elements.size == 1 &&
+				list.elements[0]->kind != syntax::ExprKind::BracedInit && same_class_source(cls, *list.elements[0]))
+				sequence.rank = ClassOf(list.elements[0]->facts->type) == cls ? ConversionRank::Exact
+																			  : ConversionRank::Conversion;
 		}
 		sequence.result = target->unqualified;
 	}

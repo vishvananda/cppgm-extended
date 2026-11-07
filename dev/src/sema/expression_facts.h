@@ -267,6 +267,9 @@ struct ExprFacts
 	// direct binding to its single element rather than a temporary object.
 	const Type* type;
 	ValueCategory category;
+	// CWG1467/2137: this class list initializes from its sole expression,
+	// rather than initializing aggregate members (including an elided copy).
+	bool single_class_element;
 	uint32_t flags;
 	// What an id-expression, member access or direct call designates or
 	// selected: a variable, parameter, function, enumerator or member.
