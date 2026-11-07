@@ -1120,6 +1120,8 @@ Entity* Analyzer::enum_specifier(
 			error(name->location, "elaborated enum specifier does not name an enumeration");
 		return result.binding->entity;
 	}
+	if (explicit_specialization_ && (name == nullptr || !name->qualified()))
+		error(specifier.location, "enumeration specialization names no member of a class template instance");
 	if (name == nullptr)
 	{
 		if (!specifier.has_body || specifier.scoped)
@@ -1210,6 +1212,16 @@ Entity* Analyzer::qualified_enum_definition(
 	const NamePrefix prefix = name_prefix(name, scope, true);
 	if (prefix.scope == nullptr || prefix.scope->kind == ScopeKind::Enum)
 		error(name.location, "qualified enumeration name must name a class or namespace member");
+	if (explicit_specialization_)
+	{
+		// 14.7.3p4/p5: only members of an implicit class instance are
+		// specialized; an explicit class's own members are ordinary.
+		if (!instance_class(prefix.scope))
+			error(name.location, "enumeration specialization names no member of a class template instance");
+		if (specialization_levels_ != SpecializedEnclosing(prefix.scope))
+			error(name.location, "enumeration specialization with the wrong number of template<>");
+		explicit_specialization_ = false;
+	}
 	Scope* where = declaration_scope(scope);
 	if (!encloses(where, prefix.scope))
 		error(name.location, "enumeration definition in a scope that does not enclose it");
