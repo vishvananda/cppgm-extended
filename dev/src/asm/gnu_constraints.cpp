@@ -18,7 +18,7 @@ using namespace asm_model;
 
 void registers(PacketBuilder& packet, Alternative& alt, RegisterBank bank, unsigned mask)
 {
-	for (unsigned r = 0; r < 16; ++r)
+	for (unsigned r = 0; r < (bank == RegisterBank::Vector ? 32u : 16u); ++r)
 		if (((mask >> r) & 1u) != 0)
 		{
 			RegisterGroup group;
@@ -208,8 +208,8 @@ void constraints(PacketBuilder& packet, const std::vector<GnuOperand>& source)
 					registers(packet, alternative, RegisterBank::Gpr, 0xf);
 				else if (c == 'R')
 					registers(packet, alternative, RegisterBank::Gpr, 0xef);
-				else if (c == 'x')
-					registers(packet, alternative, RegisterBank::Vector, 0xffff);
+				else if (c == 'x' || c == 'v')
+					registers(packet, alternative, RegisterBank::Vector, c == 'v' ? 0xffffffffu : 0xffffu);
 				else if (c == 'm' || c == 'o')
 					alternative.locations |= AL_MEMORY;
 				else if (c == 'g' || c == 'X')

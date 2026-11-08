@@ -17,6 +17,11 @@ inline bool wide_assembly_operand(lowir::Type type)
 	return type.is_object() && (type.bytes == 32 || type.bytes == 64);
 }
 
+inline bool assembly_transfer_required(lowir::Type type, mir_model::Reg reg)
+{
+	return wide_assembly_operand(type) || (assembly_vector_register(reg) && reg >= 32);
+}
+
 struct AssemblyPlan : AssemblyBinding
 {
 	uint32_t definition = 0;

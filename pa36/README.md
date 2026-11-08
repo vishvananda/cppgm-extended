@@ -47,7 +47,7 @@ hosts are Linux and Intel macOS; qualify their object formats separately.
 ### Assignment boundary
 
 The current subset covers GNU basic/extended statements with register, memory
-and integer-immediate or symbol operands, fixed GPR and XMM domains, alternative columns,
+and integer-immediate or symbol operands, GPR and vector register domains, alternative columns,
 matching constraints, early writes, read/write operands, flag outputs and
 declared register clobbers. Support `m`/`o` memory constraints, `i`/`n`
 constants, `g` mixed locations and the integer ranges in `x86_asm_model.h`.
@@ -64,8 +64,8 @@ the producer must declare all registers and machine state its call can change.
 Output places include scalar/vector lvalues and bit-fields. Capture each
 selected place once, then assign register results in operand order, preserving
 neighboring bits and volatile accesses. Constraints requiring a bit-field's
-memory address are impossible and must fail. Register classes select the
-physical bank: scalar floating values can travel through GPRs, and scalar
+memory address are impossible and must fail. GNU `x` lists the initial 16 vector registers; `v` includes vector registers
+0..31. Register classes select the physical bank: scalar floating values can travel through GPRs, and scalar
 integer values through XMM registers, preserving their bits.
 Preserve named operands, supported width modifiers, volatility and memory/state
 effects through the [documented LowIR records](assembly.md).
@@ -97,7 +97,7 @@ scalar memory widths and merged upper lanes. Explicit XMM/YMM views must agree
 with the form; reject mixed widths, oversized control bytes and legacy prefixes
 before VEX. Support `vzeroupper` and `vzeroall`. Native observers check CPU support
 before executing feature-dependent forms. Use `obj<32xalign>` or `obj<64xalign>` storage for 256/512-bit operand payloads
-and YMM/ZMM register alternatives in registers 0..15. Capture every input byte before setting assembly registers and
+and YMM/ZMM register alternatives in registers 0..31. Capture every input byte before setting assembly registers and
 every output byte before assigning output places. Preserve XMM/YMM aliases,
 ties, early writes, volatile places and over-aligned local storage. This adds
 assembly transfers, not a general wide-vector call ABI.
@@ -126,9 +126,9 @@ compressed displacement scaling. Several families have no mask encoding;
 reject unsupported decorations rather than ignoring them. `kmovb/w/d/q`
 transports mask values between mask registers, matching memory and GPR views.
 Static rounding, suppression modifiers, mask-valued comparisons and additional
-ISA forms remain further goals. Declared upper-vector and opmask clobbers are caller-saved and need no ordinary
-allocator spill. Typed alternatives above vector register 15 and typed opmask
-operands remain further goals.
+ISA forms remain further goals. Honor declared upper-vector and opmask clobbers, preserving any live values
+your allocator places there. These banks are caller-saved in the supported ABI.
+Typed opmask operands remain a further goal.
 
 LowIR selects the initial dialect; the GNU source adapter starts in AT&T.
 Honor `.intel_syntax` and `.att_syntax` with `prefix`/`noprefix` register modes.
@@ -236,6 +236,8 @@ These targets use the shared Perl parallel runner and comparer. Set
 when iterating. Set both `CXX` and
 `CPPGM_HOST_CXX` when selecting a host toolchain. The observer needs `objdump`
 on Linux or `otool` on Intel macOS.
+A `lowir-native-reject` profile first validates transport, then requires a
+normal native rejection, such as an impossible clobber/operand assignment.
 A `.assembly-instructions` sidecar lists requested mnemonics to inspect even
 when the observer skips native execution on a CPU without the required ISA.
 A fixture using absolute text addresses declares `no-pie` in its

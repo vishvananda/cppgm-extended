@@ -29,7 +29,7 @@ lowir::TypeKind transfer_type(lowir::Type type, Reg reg)
 {
 	if (type.is_vector())
 		return lowir::TypeKind::V128;
-	if (type.is_float() || is_xmm(reg))
+	if (type.is_float() || assembly_vector_register(reg))
 		return register_bytes(type.kind()) <= 4 ? lowir::TypeKind::F32 : lowir::TypeKind::F64;
 	return type.kind();
 }
@@ -39,7 +39,7 @@ unsigned capture_bytes(lowir::Type type, Reg reg)
 	const unsigned bytes = wide_assembly_operand(type) ? type.bytes
 		: type.is_vector()                             ? 16
 													   : register_bytes(type.kind());
-	return is_xmm(reg) && bytes < 4 ? 4 : bytes;
+	return assembly_vector_register(reg) && bytes < 4 ? 4 : bytes;
 }
 
 } // namespace
@@ -115,8 +115,8 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 		reserved.push_back(std::make_pair(reg, frame));
 		emit2(Op::Store, TypeKind::Ptr, Operand::make_frame(frame), Operand::make_reg(reg));
 	}
-	uint32_t initialized = 0;
-	Operand initial[32];
+	uint64_t initialized = 0;
+	Operand initial[48];
 	moves_.clear();
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
@@ -132,13 +132,13 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 			const lowir::Type source_type = memory || source_operand.input_storage ? lowir::Type::scalar(TypeKind::Ptr)
 																				   : operand.type;
 			const Operand original = memory_value_operand(value, source_type);
-			if ((initialized & reg_bit(reg)) != 0 && !(initial[reg] == original))
+			if ((initialized & assembly_register_bit(reg)) != 0 && !(initial[reg] == original))
 				throw BackendError("assembly matching operands supply distinct input values to one register");
-			if ((initialized & reg_bit(reg)) == 0)
+			if ((initialized & assembly_register_bit(reg)) == 0)
 			{
 				const Operand captured = assembly_input(source_operand, value, reg, memory);
-				if (!memory && wide_assembly_operand(operand.type))
-					wide_inputs.push_back(WideInput{ reg, captured, operand.type.bytes });
+				if (!memory && assembly_transfer_required(operand.type, reg))
+					wide_inputs.push_back(WideInput{ reg, captured, capture_bytes(operand.type, reg) });
 				else
 				{
 					Move move;
@@ -148,7 +148,7 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 					moves_.push_back(move);
 				}
 				initial[reg] = original;
-				initialized |= reg_bit(reg);
+				initialized |= assembly_register_bit(reg);
 			}
 		}
 		if (operand.output != lowir::kNoId && !memory)
@@ -196,8 +196,9 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 		if (operand.output != lowir::kNoId && (operand.flags & (AO_FLAG | AO_EXIT_TAG)) == 0 &&
 			plan->locations[i] != AL_MEMORY)
 		{
-			if (wide_assembly_operand(operand.type))
-				assembly_transfer(plan->registers[i], Operand::make_frame(captures[i].value), true, operand.type.bytes);
+			if (assembly_transfer_required(operand.type, plan->registers[i]))
+				assembly_transfer(plan->registers[i], Operand::make_frame(captures[i].value), true,
+					capture_bytes(operand.type, plan->registers[i]));
 			else
 				emit2(floating(operand.type) || is_xmm(plan->registers[i]) ? Op::FMov : Op::Store,
 					transfer_type(operand.type, plan->registers[i]), Operand::make_frame(captures[i].value),
