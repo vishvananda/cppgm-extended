@@ -389,3 +389,53 @@ canonical enclosing-helper identities and no eager class completion. A fresh
 all-cppgm LLVM build is running. Stage 1 remains incomplete; stages 2-4 have
 not started and no paired LLVM build-time or final cppgm-object comparison
 is claimed. Evidence is retained outside the checkout in cppgm-llvm-evidence.
+
+Block 8: deduction contexts and inherited parsing categories (accepted)
+--------------------------------------------------------------------
+Implicit-guide constructor-template defaults now retain their owning class
+identity. Bound parameters use their existing frame; a member-helper lookup
+completes the canonical enclosing specialization on demand, so helper bodies
+and memo keys keep the outer arguments. The regression checks class packs,
+distinct/repeated enclosing identities and a nonviable guide that must not
+complete an unused class. A negative checks that one enclosing class's helper
+result cannot make another class's guide viable.
+
+For fixed specialization bases supplied through template arguments, parser
+lookup can lack the inherited member's category. The existing bounded
+type/value readings now defer that choice to semantic unqualified lookup,
+including constructor arguments and out-of-class definitions. Newly declared
+identifiers are excluded from guesses. PA14:200 owns the regression because
+it also exercises a default class-template argument; the placement audit
+caught and corrected the initial 100 prefix. Local hiding and inherited
+values hiding outer typedefs are covered. C++17 also accepts typename as a
+template-template parameter key, with packs/defaults/aliases and a C++14
+negative. N4051 is archived as offline text in doc/cwg.
+
+Strict 9872/9872, debug, modern suites, PA5 self-host, all required audits,
+PA35 quick and correctness smoke, fresh student export, 212-file document
+inventory, 42 installed wrappers and five new exported fixtures pass. Final
+positive and strict-dialect negative native oracles pass. The full harness
+passes in an isolated process group with its normal environment. An initial
+harness invocation accidentally inherited the strict-text switch, which is
+incompatible with its relaxed-comparison tests; later interrupted attempts
+remain retained, as does the final passing run. No harness/compiler rule was
+weakened. Frozen instruction ratios are O0 1.000863 and O3 1.000278, with
+byte-identical frozen objects: measured costs of about 0.086% and 0.028%.
+
+Compile replays clear 360 of the prior 388 failed actions. The fresh full
+build reaches 2130 actions and builds llvm-tblgen and clang-tblgen entirely
+with cppgm. There are 28 known failed compilations at 26 diagnostic locations,
+but the build was interrupted during generation, so this is not a complete
+inventory of later failures. A bounded RISC-V builtin generation comparison
+finishes in 0.172 s with native clang-tblgen while the cppgm-built tool times
+out after 5 s. Running under GDB localizes the loop to prototype parsing.
+Small descriptor tests also expose an incorrect enum result; a C++11 switch
+reducer passes O0 and GCC/Clang, but fails cppgm O3. Copied dispatches share
+a target slice that later block renumbering rewrites repeatedly. The next
+group in cppgm-llvm-gaps gives each copied dispatch its own target slice and
+adds a PA33 driver regression. Another reduced gap is missing constructor
+function defaults on implicit deduction guides. Both fixes are under test.
+
+All LLVM sources remain unmodified. Stage 1 is incomplete; the paired LLVM
+build-time, byte-identical cppgm output and compiled-Clang performance
+comparisons remain pending.
