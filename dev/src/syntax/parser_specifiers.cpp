@@ -1181,8 +1181,9 @@ bool Parser::parse_base_clause(ListFrame<BaseSpecifier>& bases, Scope* class_sco
 		{
 			scopes_.add_base_edge(class_scope, info.scope, template_parameter_mentions_ != parameters,
 				info.specialization || base.name->last().has_arguments, reached);
-			if (template_parameter_mentions_ == parameters &&
-				(info.scope->parameter_bases != 0 || info.scope->uncertain_bases))
+			const bool parameter_members = info.scope->parameter_bases != 0 || info.scope->parameter_dependent_bases;
+			class_scope->parameter_dependent_bases = class_scope->parameter_dependent_bases || parameter_members;
+			if (template_parameter_mentions_ == parameters && (parameter_members || info.scope->uncertain_bases))
 			{
 				class_scope->uncertain_bases = true;
 				scopes_.note_uncertain();

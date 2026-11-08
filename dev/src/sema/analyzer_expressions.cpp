@@ -2620,6 +2620,18 @@ const ClassEntity* Analyzer::member_qualifier(const syntax::Name& name, const Cl
 	const ClassEntity* base = named.entity != nullptr && named.entity->kind == EntityKind::Class
 		? static_cast<const ClassEntity*>(named.entity)
 		: nullptr;
+	if (named.entity != nullptr && named.entity->kind == EntityKind::Enum &&
+		name.last().kind == syntax::NameComponentKind::Identifier && !name.last().has_arguments)
+	{
+		// 7.2p10, 5.2.5p4: an unscoped member enumerator also belongs to
+		// the enclosing class, even when named through its enum qualifier.
+		// First verify that this enum actually declares the selected name.
+		const EnumEntity* enumeration = static_cast<const EnumEntity*>(named.entity);
+		const LookupResult value = lookup_in(named, name.last().identifier, LookupFilter::Ordinary);
+		if (!enumeration->scoped && enumeration->owner->kind == ScopeKind::Class && value.found() &&
+			value.binding->kind == BindingKind::Enumerator)
+			base = static_cast<const ClassEntity*>(enumeration->owner->entity);
+	}
 	if (base == nullptr || (base != cls && !conversions_.is_base_of(base, cls)))
 	{
 		substitution_error(name.location, "qualified member name does not name a base class");

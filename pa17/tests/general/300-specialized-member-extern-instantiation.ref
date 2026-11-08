@@ -1,0 +1,56 @@
+function @Manager_int___run(%this : ptr [object_bytes=1]) -> i32 [binding=strong, object=_ZN7ManagerIiE3runEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 42
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<1x1>
+  slot $other : obj<1x1>
+  slot $cond__1 : i32
+  slot $land__2 : i64
+
+  block ^entry:
+    %t1 = addr $value
+    %t2 = addr $other
+    %t3 = addr $value
+    %t4 = call i32 @Manager_int___run(%t3)
+    %t5 = cmp eq i32 %t4, 42
+    branch %t5, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t6 = addr $other
+    %t7 = call i32 @Manager_char___run(%t6)
+    %t8 = cmp eq i32 %t7, 7
+    %t9 = cmp ne i64 %t8, 0
+    store typed i64 %t9, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t10 = load typed i64 $land__2
+    branch %t10, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t11 = load typed i32 $cond__1
+    return i32 %t11
+}
+function @Manager_char___run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN7ManagerIcE3runEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 7
+}

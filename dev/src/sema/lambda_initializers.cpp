@@ -37,7 +37,9 @@ void Analyzer::initialized_capture(LambdaFrame& frame, const syntax::LambdaCaptu
 		initialize_variable(variable, type, capture.initializer, outer, location);
 	else
 		initializer_names(capture.initializer, outer, ClassOf(type) != nullptr);
-	const syntax::Expr* expression = capture.initializer->expression;
+	const syntax::Expr* expression = capture.initializer->kind == syntax::InitializerKind::Parenthesized
+		? capture.initializer->arguments[0]
+		: capture.initializer->expression;
 	variable->throwing_initializer = potentially_throwing_ != throwing ||
 		(expression != nullptr && may_throw(*expression, 0));
 	declare_in(inner, new_binding(BindingKind::Variable, capture.name, variable, type));

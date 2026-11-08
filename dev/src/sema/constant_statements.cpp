@@ -761,7 +761,7 @@ bool ConstantInterpreter::bind_parameters(
 			? entity->type
 			: parameter;
 		ConstValue value;
-		if (ClassOf(parameter) != nullptr)
+		if (const ClassEntity* cls = ClassOf(parameter))
 		{
 			if (!new_object(object, local.place, location))
 				return false;
@@ -769,6 +769,17 @@ bool ConstantInterpreter::bind_parameters(
 			{
 				ConstValue source;
 				if (!read(argument.place, source, location) || !write(local.place, source, location))
+					return false;
+			}
+			else if (WithoutParentheses(argument.expr)->kind == syntax::ExprKind::BracedInit &&
+				analyzer_.initializer_list_element(parameter) != nullptr)
+			{
+				// A list constructor's argument is the backing-array view,
+				// even when this same list's facts name the enclosing object.
+				// Materializing that object again would re-enter its constructor.
+				const syntax::BracedInitList& list = static_cast<const syntax::BracedInitList&>(
+					*WithoutParentheses(argument.expr));
+				if (!list_object(cls, local.place, list, location))
 					return false;
 			}
 			else if (!initialize_from(*argument.expr, argument.conversion, local.place))

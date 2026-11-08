@@ -1,0 +1,120 @@
+function @choose(%__param0 : i32) -> i32 [binding=strong, object=_Z6choosei] {
+  slot $__param0 : i32
+
+  block ^entry:
+    store typed i32 %__param0, $__param0
+    return i32 1
+}
+function @choose__ov2(%__param0 : i64) -> i32 [binding=strong, object=_Z6choosel] {
+  slot $__param0 : i64
+
+  block ^entry:
+    store typed i64 %__param0, $__param0
+    return i32 2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<8x4>
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+
+  block ^entry:
+    %t1 = addr $value
+    call void @Derived__Derived(%t1)
+    %t2 = addr $value
+    %t3 = index i8 %t2, 0
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load typed i32 %t4
+    %t6 = cmp eq i32 %t5, 7
+    branch %t6, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t7 = addr $value
+    %t8 = index i8 %t7, 0
+    %t9 = index i8 [projection=field] %t8, 4
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = load typed i32 %t10
+    %t12 = cmp eq i32 %t11, 13
+    %t13 = cmp ne i64 %t12, 0
+    store typed i64 %t13, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store typed i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t14 = load typed i64 $land__2
+    branch %t14, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t15 = addr $value
+    %t16 = call i32 @Derived__check(%t15)
+    %t17 = cmp eq i32 %t16, 1
+    %t18 = cmp ne i64 %t17, 0
+    store typed i64 %t18, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store typed i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t19 = load typed i64 $land__3
+    branch %t19, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t20 = load typed i32 $cond__1
+    return i32 %t20
+}
+function @Derived__Derived(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 7, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
+    %t3 = index i8 %t2, 0
+    %t4 = index i8 [projection=field] %t3, 0
+    store typed i32 %t1, %t4
+    %t5 = load typed ptr $this
+    %t6 = index i8 %t5, 0
+    %t7 = index i8 [projection=field] %t6, 4
+    call void @Root__ABI__set(%t7, 13)
+    return void
+}
+function @Derived__check(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN7Derived5checkEv, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 0, $value
+    %t1 = load typed i32 $value
+    %t2 = call i32 @choose(%t1)
+    return i32 %t2
+}
+function @Root__ABI__set(%this : ptr [object_bytes=4], %n : i32) -> void [binding=weak, object=_ZN4Root3ABI3setEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $n : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    return void
+}
+alias object _ZN7DerivedC2Ev = @Derived__Derived

@@ -1,0 +1,101 @@
+Source: https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3648.html
+Full historical text follows; DELETE/INSERT markers preserve, rather than apply, edits.
+
+ISO/IEC JTC1 SC22 WG21
+N3648
+Daveed Vandevoorde
+Ville Voutilainen
+2013-04-17
+
+Wording Changes for Generalized Lambda-capture
+
+In 5.1.2 [expr.prim.lambda] paragraph 1, replace the grammar for capture by:
+
+
+        capture:
+		simple-capture
+		init-capture
+
+	simple-capture:
+		identifier
+		& identifier
+		this
+
+	init-capture:
+		identifier initializer
+		& identifier initializer
+
+
+Amend 5.1.2 [expr.prim.lambda] paragraph 8 as follows:
+
+If a lambda-capture includes a capture-default that is &, [DELETE: the][INSERT: no]
+identifier[DELETE: s] in [DELETE: the] [INSERT: a simple-capture of that ]lambda-capture
+shall[DELETE: not ] be preceded by &. If a lambda-capture includes a capture-default
+that is =, [DELETE: the][INSERT: each simple-capture of that ] lambda-capture shall
+[DELETE: not contain this and each identifier it contains shall be preceded by
+&][INSERT: be of the form "& identifier"]. [INSERT: Ignoring appearances in initializers
+of init-captures, a][DELETE: A]n identifier or this shall not appear more than once in a
+lambda-capture. [ Example: ... ]
+
+Amend 5.1.2 [expr.prim.lambda] paragraph 9 as follows:
+
+A lambda-expression whose smallest enclosing scope is a block scope (3.3.3) is a local
+lambda expression; any other lambda-expression shall not have a [DELETE:
+capture-list][INSERT: capture-default or simple-capture] in its lambda-introducer. The
+reaching scope of ...
+
+Amend 5.1.2 [expr.prim.lambda] paragraph 10 as follows:
+
+The identifier[DELETE: s] in a [DELETE: capture-list are] [INSERT: simple-capture is]
+looked up using the usual rules for unqualified name lookup (3.4.1); each such lookup
+shall find a variable with automatic storage duration declared in the reaching scope of
+the local lambda expression. An entity (i.e. a variable or this) is said to be
+explicitly captured if it [DELETE: appears in the lambda-expression’s
+capture-list][INSERT: is found by this process].
+
+Append a new paragraph after 5.1.2 [expr.prim.lambda] paragraph 10:
+
+For every init-capture a non-static data member named by the identifier of the
+init-capture is declared in the closure type. This member is not a bit-field and not
+mutable. The type of that member corresponds to the type of a hypothetical variable
+declaration of the form "auto init-capture ;", except that the variable name (i.e., the
+identifier of the init-capture) is replaced by a unique identifier. [ Note: This enables
+an init-capture like "x = std::move(x)"; the second "x" must bind to a declaration in
+the surrounding context. --end note ] No entity is captured by an init-capture. Within
+the lambda-expression's lambda-declarator and compound-statement, the identifier in the
+init-capture hides any declaration of the same name in scopes enclosing the
+lambda-expression.  [ Example:
+
+    int x = 4;
+    auto y = [&r = x, x = x+1]()->int {
+                r += 2;
+                return x+2;
+             }();  // Updates ::x to 6, and initializes y to 7.
+
+--end example]
+
+Amend 5.1.2 [expr.prim.lambda] paragraph 11 as follows:
+
+If a lambda-expression has an associated capture-default [INSERT: ,] and its
+compound-statement odr-uses (3.2) this or a variable with automatic storage
+duration[INSERT:  (this excludes any id-expression that has been found to refer to an
+init-capture's associated non-static data member),] and the odr-used entity is not
+explicitly captured, then the odr-used entity is said to be implicitly captured; such
+entities shall be declared within the reaching scope of the lambda expression. [Note:
+... ]
+
+Amend 5.1.2 [expr.prim.lambda] paragraph 21 as follows:
+
+When the lambda-expression is evaluated, the entities that are captured by copy are used
+to direct-initialize each corresponding non-static data member of the resulting closure
+object[INSERT: , and the non-static data members corresponding to the init-captures are
+initialized as indicated by the corresponding initializer (which may be copy- or
+direct-initialization)]. (For array members, the array elements are direct-initialized
+in increasing subscript order.) These initializations are performed in the (unspecified)
+order in which the non-static data members are declared. [Note: This ensures that the
+destructions will occur in the reverse order of the constructions. -- end note ]
+
+Amend 5.1.2 [expr.prim.lambda] paragraph 23 as follows:
+
+A [INSERT: simple-]capture followed by an ellipsis is a pack expansion (14.5.3).
+[INSERT: An init-capture followed by an ellipsis is ill-formed.] [ Example: ... ]

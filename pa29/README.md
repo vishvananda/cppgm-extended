@@ -302,7 +302,9 @@ definitions, `decltype(auto)` variable and return deduction, generic lambda
 parameters (including packs and forwarding), initialized lambda captures, and
 pack-expanded using-declarations. An initialized capture deduces its type from
 its initializer in the enclosing scope; its new name is visible in the lambda
-body. Preserve reference binding, moves, and cleanup if a later capture throws.
+body. Both assignment and parenthesized initializers are supported; see the
+offline [generalized-capture wording](../doc/cwg/paper-n3648.txt).
+Preserve reference binding, moves, and cleanup if a later capture throws.
 Generic-lambda capture discovery includes callable objects named as callees;
 unevaluated calls do not acquire captures. Keep recursive generic calls bound
 to their parameters and captured objects through the closure's stored members.

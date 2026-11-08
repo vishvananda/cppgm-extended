@@ -72,6 +72,10 @@ struct Scope
 	// This scope is inside a class whose fixed specialization base can
 	// inherit names from a template argument unknown to parser lookup.
 	bool uncertain_bases;
+	// A base can inherit members from a template parameter, possibly
+	// through other dependent bases. Concrete specializations then need
+	// the bounded uncertain-name readings without flattening that graph.
+	bool parameter_dependent_bases;
 	// The parser's base-parameter record (index + 1), or zero. A
 	// specialization's members include its arguments' members when its
 	// template inherits a parameter (see Parser::parameter_base_lookup).

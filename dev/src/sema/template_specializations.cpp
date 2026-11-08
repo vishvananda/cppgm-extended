@@ -266,6 +266,15 @@ Binding* Analyzer::explicit_function_specialization(const Specifiers& specifiers
 	}
 	// Deleted as its own declarations say (8.4.3p4), not as the template
 	// or the member it replaces is.
+	if (!function->explicit_specialization)
+	{
+		// A first specialization declaration replaces the class template's
+		// retained member definition; that pattern is no prior definition
+		// of this independently declared function.
+		function->defined = false;
+		function->body = nullptr;
+		function->inline_member = false;
+	}
 	function->deleted = (function->explicit_specialization && function->deleted) || deleted;
 	// A function template's explicit specialization is a function of its
 	// own: its attributes are its declarations' (as GCC reads them, warning

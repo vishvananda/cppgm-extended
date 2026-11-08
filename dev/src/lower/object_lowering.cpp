@@ -427,6 +427,16 @@ void FunctionLowering::construct(const sema::Type* type, lowir::Value object, co
 	call_special(constructor, variant, object, single, location, elidable_source(*init->expression, constructor));
 }
 
+namespace {
+
+const syntax::Expr* CaptureInitializer(const syntax::Initializer& initializer)
+{
+	return initializer.kind == syntax::InitializerKind::Parenthesized ? initializer.arguments[0]
+																	  : initializer.expression;
+}
+
+} // namespace
+
 void FunctionLowering::closure_capture(const sema::Capture& capture, const Place& member, uint32_t location)
 {
 	const sema::Type* type = capture.member->type;
@@ -434,7 +444,8 @@ void FunctionLowering::closure_capture(const sema::Capture& capture, const Place
 	{
 		if (sema::ClassOf(type) == nullptr && BracedList(*capture.initializer) == nullptr)
 			store(lowering_.storage_type(type),
-				fit(operand(*capture.initializer->expression, ConversionContext::Initialization), type), member);
+				fit(operand(*CaptureInitializer(*capture.initializer), ConversionContext::Initialization), type),
+				member);
 		else
 			construct(type, member.storage, capture.initializer, capture.constructor, EntryVariant::Complete, location);
 		return;
@@ -516,8 +527,8 @@ void FunctionLowering::closure_object(const syntax::LambdaExpr& lambda, lowir::V
 		value.type = pointer;
 		value.value = is_this ? object_pointer_as(sema::ClassOf(facts->this_member->type->element), location)
 			: capture->initializer != nullptr
-			? bind_reference(
-				  *reference_initializer(capture->initializer->expression), type, ConversionContext::Initialization)
+			? bind_reference(*reference_initializer(CaptureInitializer(*capture->initializer)), type,
+				  ConversionContext::Initialization)
 			: address_of(variable_place(capture->entity, capture->entity->type, location));
 		store(pointer, value, member);
 	}

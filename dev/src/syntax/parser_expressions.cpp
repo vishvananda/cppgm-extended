@@ -1362,9 +1362,9 @@ Expr* Parser::parse_lambda()
 			}
 			capture.name = tok().identifier;
 			next();
-			if (hosted_ && (at(TokenKind::OP_ASS) || at(TokenKind::OP_LBRACE)))
+			if (hosted_ && (at(TokenKind::OP_ASS) || at(TokenKind::OP_LBRACE) || at(TokenKind::OP_LPAREN)))
 			{
-				capture.initializer = parse_initializer(false);
+				capture.initializer = parse_initializer(true);
 				if (capture.initializer == nullptr)
 					return nullptr;
 			}
@@ -1441,6 +1441,25 @@ Expr* Parser::parse_lambda()
 		}
 	}
 	pending_template_ = saved_template;
+	// Captured names are values in the body, including initialized captures
+	// that hide an enclosing type name. Their initializers and trailing
+	// return type still use the enclosing and parameter scopes above.
+	Scope* const before_captures = scopes_.current();
+	Scope* captures_scope = nullptr;
+	for (const LambdaCapture& capture : lambda->captures)
+	{
+		if (capture.name == nullptr)
+			continue;
+		if (captures_scope == nullptr)
+		{
+			scopes_.set_current(body_scope);
+			captures_scope = scopes_.push(ScopeKind::Block, nullptr);
+		}
+		scopes_.declare(captures_scope, capture.name, NameBinding{ NameCategory::Value, capture.pack, nullptr });
+	}
+	if (captures_scope != nullptr)
+		body_scope = captures_scope;
+	scopes_.set_current(before_captures);
 	lambda->body_token = static_cast<uint32_t>(tokens_.unit_position());
 	if (!lambda->has_declarator)
 		lambda->clause_token = lambda->body_token;

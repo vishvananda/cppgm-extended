@@ -431,3 +431,6 @@ P0170R1 | Wording for Constexpr Lambda | paper-p0170r1.txt
 
 N4051 | Allow typename in a template template parameter | paper-n4051.txt
   C++17 permits class and typename as equivalent template-template parameter keys.
+
+N3648 | Wording Changes for Generalized Lambda-capture | paper-n3648.txt
+  Historical C++14 initialized-capture wording, including parenthesized initializers.
