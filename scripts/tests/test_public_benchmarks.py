@@ -375,15 +375,18 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(badge['schemaVersion'], 1)
         self.assertEqual(badge['label'], '-O3 generated speed vs gcc')
         self.assertEqual(badge['message'], '0.80×')
-        self.assertEqual(badge['color'], '166534')
+        self.assertEqual(badge['color'], 'c2410c')
         badge = pb.badge(results, '-O3 compile speed vs gcc', 'compile_cpu_O3', 1)
         self.assertEqual(badge['message'], '5.0×')
         self.assertEqual(badge['color'], '14532d')
 
     def test_badge_color_follows_the_speed(self):
-        self.assertEqual(pb.badge_color(1.0), '14532d')
-        self.assertEqual(pb.badge_color(0.7), '854d0e')
-        self.assertEqual(pb.badge_color(0.5), '9a3412')
+        for speed, color in [(1.2, '14532d'), (1.0, '14532d'),
+                             (0.9999, 'a16207'), (0.95, 'a16207'),
+                             (0.9499, 'c2410c'), (0.80, 'c2410c'),
+                             (0.7999, 'b91c1c'), (0.5, 'b91c1c')]:
+            with self.subTest(speed=speed):
+                self.assertEqual(pb.badge_color(speed), color)
 
     def test_badge_turns_red_on_a_failure(self):
         results = [outcome('p', dict(compile_cpu_O0=1.0, run_cpu_O0=1.0),
@@ -405,7 +408,7 @@ class ReportTests(unittest.TestCase):
     def test_build_badge_compares_the_self_built_compiler_with_the_gcc_built_one(self):
         builds = dict(status='ok', gcc=500.0, self=100.0, inception=102.0)
         badge = pb.build_badge(builds, 'inception', 'self', 'self-built speed vs gcc', 2)
-        self.assertEqual((badge['message'], badge['color']), ('0.98×', '166534'))
+        self.assertEqual((badge['message'], badge['color']), ('0.98×', 'a16207'))
 
     def test_self_built_badge_uses_the_paired_result(self):
         builds = dict(status='ok', gcc=500.0, self=100.0, inception=102.0,

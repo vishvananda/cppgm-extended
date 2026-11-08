@@ -574,10 +574,10 @@ def mean_ratio(results, metric, reference):
 
 
 def badge_color(speed):
-    for limit, color in ((1.0, '14532d'), (0.8, '166534'), (0.67, '854d0e')):
+    for limit, color in ((1.0, '14532d'), (0.95, 'a16207'), (0.80, 'c2410c')):
         if speed >= limit:
             return color
-    return '9a3412'
+    return 'b91c1c'
 
 
 def speed_text(mean, digits=2):

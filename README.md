@@ -40,6 +40,8 @@ The export's references are generated from this compiler.
 **O3 speedups; higher is better.** Each badge links to its measured revision and details.
 CPU time, except index-cpp runtime uses elapsed time.
 
+Colors use unrounded speedups: green ≥1×; amber 0.95–<1×; orange 0.80–<0.95×; red <0.80×.
+
 | Workload · host | Compile vs GCC | Compile vs Clang | Runtime vs GCC | Runtime vs Clang |
 |---|---:|---:|---:|---:|
 | Public programs · EPYC 9V45 | [![Public programs · EPYC 9V45 O3 compile-gcc: 4.02×](docs/performance/preview/badges/public-compile-gcc.svg)](docs/performance/preview/public.md) | [![Public programs · EPYC 9V45 O3 compile-clang: 3.49×](docs/performance/preview/badges/public-compile-clang.svg)](docs/performance/preview/public.md) | [![Public programs · EPYC 9V45 O3 runtime-gcc: 0.99×](docs/performance/preview/badges/public-runtime-gcc.svg)](docs/performance/preview/public.md) | [![Public programs · EPYC 9V45 O3 runtime-clang: 1.00×](docs/performance/preview/badges/public-runtime-clang.svg)](docs/performance/preview/public.md) |

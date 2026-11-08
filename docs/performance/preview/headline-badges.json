@@ -85,14 +85,14 @@
     "public-runtime-gcc": {
       "label": "Public programs \u00b7 EPYC 9V45 O3 runtime-gcc",
       "message": "0.99\u00d7",
-      "color": "166534",
+      "color": "a16207",
       "target": "docs/performance/preview/public.md",
       "speedup": 0.9912148984393135
     },
     "public-runtime-clang": {
       "label": "Public programs \u00b7 EPYC 9V45 O3 runtime-clang",
       "message": "1.00\u00d7",
-      "color": "166534",
+      "color": "a16207",
       "target": "docs/performance/preview/public.md",
       "speedup": 0.9985122472431855
     },
@@ -113,14 +113,14 @@
     "index-runtime-gcc": {
       "label": "index-cpp \u00b7 EPYC 9V74 O3 runtime-gcc",
       "message": "0.99\u00d7",
-      "color": "166534",
+      "color": "a16207",
       "target": "docs/performance/preview/index-cpp.md",
       "speedup": 0.9943965563909242
     },
     "index-runtime-clang": {
       "label": "index-cpp \u00b7 EPYC 9V74 O3 runtime-clang",
       "message": "0.99\u00d7",
-      "color": "166534",
+      "color": "a16207",
       "target": "docs/performance/preview/index-cpp.md",
       "speedup": 0.9887067896745086
     },
@@ -141,14 +141,14 @@
     "scalar-runtime-gcc": {
       "label": "simdjson scalar \u00b7 EPYC 7763 O3 runtime-gcc",
       "message": "0.81\u00d7",
-      "color": "166534",
+      "color": "c2410c",
       "target": "docs/performance/preview/simdjson.md",
       "speedup": 0.8137598594570282
     },
     "scalar-runtime-clang": {
       "label": "simdjson scalar \u00b7 EPYC 7763 O3 runtime-clang",
       "message": "0.80\u00d7",
-      "color": "166534",
+      "color": "c2410c",
       "target": "docs/performance/preview/simdjson.md",
       "speedup": 0.8005651314266378
     },
@@ -169,14 +169,14 @@
     "sse-runtime-gcc": {
       "label": "simdjson SSE \u00b7 EPYC 7763 O3 runtime-gcc",
       "message": "0.90\u00d7",
-      "color": "166534",
+      "color": "c2410c",
       "target": "docs/performance/preview/simdjson.md",
       "speedup": 0.9000603431387565
     },
     "sse-runtime-clang": {
       "label": "simdjson SSE \u00b7 EPYC 7763 O3 runtime-clang",
       "message": "0.89\u00d7",
-      "color": "166534",
+      "color": "c2410c",
       "target": "docs/performance/preview/simdjson.md",
       "speedup": 0.8914454359887916
     },
@@ -204,10 +204,16 @@
     "inception": {
       "label": "cppgm++ codegen: self-built versus GCC-built compiler",
       "message": "0.97\u00d7",
-      "color": "166534",
+      "color": "a16207",
       "target": "docs/performance/preview/public.md#paired-self-built-compiler-measurements",
       "speedup": 0.9693896949444509
     }
   },
-  "performance_badge_method": "scripts/public_benchmarks.py:speed_badge; colors from unrounded speedups"
+  "performance_badge_method": "scripts/public_benchmarks.py:speed_badge; colors from unrounded speedups",
+  "performance_color_policy": {
+    "green": ">=1.0",
+    "amber": "0.95 <= speedup < 1.0",
+    "orange": "0.80 <= speedup < 0.95",
+    "red": "<0.80"
+  }
 }
