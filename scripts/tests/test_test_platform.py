@@ -70,6 +70,17 @@ class TestPlatform(unittest.TestCase):
         self.assertIn('elf.t', result.stdout)
         self.assertFalse((self.root / 'skips').exists())
 
+    def test_discovery_without_a_report_keeps_skip_diagnostics_out_of_paths(self):
+        self.fixture('elf', 'linux # ELF contract\n')
+        self.fixture('portable')
+        env = dict(self.env)
+        env.pop('CPPGM_TEST_SKIPS_FILE')
+        result = self.perl('print "$_\\n" for CppgmBatchWorker::collect_tests(".", qr/\\.t$/);',
+                           env=env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), './portable.t')
+        self.assertIn('SKIP ./elf.t: requires linux: ELF contract', result.stderr)
+
     def test_duplicate_skips_are_counted_once_and_never_as_passes(self):
         result = self.perl('CppgmTestPlatform::skip("x", "ELF"); '
                            'CppgmTestPlatform::skip("x", "ELF"); '

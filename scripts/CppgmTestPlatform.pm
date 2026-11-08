@@ -53,7 +53,9 @@ sub skip
 	}
 	else
 	{
-		print "SKIP $label: $reason\n";
+		# Discovery commands return fixture paths on stdout. Diagnostics
+		# must not become apparent paths when no report file is configured.
+		print STDERR "SKIP $label: $reason\n";
 	}
 }
 
