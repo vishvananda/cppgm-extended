@@ -1,0 +1,204 @@
+Source: https://cplusplus.github.io/CWG/issues/1299.html
+Snapshot/source retrieval: https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1299.html
+Full historical text; edits are preserved, not applied.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1299. “Temporary objects” vs “temporary expressions”
+Section: 6.8.7 [class.temporary [1]] Status: CD5 Submitter: Johannes Schaub Date:
+2011-04-16
+
+[Voted into the WP at the July, 2017 meeting as document P0727R0.]
+
+The Standard is insufficiently precise in dealing with temporaries. It is not always
+clear when the term “temporary” is referring to an expression whose result is a prvalue
+and when it is referring to a temporary object.
+
+(See also issue 1568 [2].)
+
+Proposed resolution (February, 2014) [SUPERSEDED]:
+
+The resolution is contained in document N3918.
+
+This resolution also resolves issues 1651 [3] and 1893 [4].
+
+Additional note, November, 2014:
+
+Concerns have been raised that the meaning of “corresponding temporary object” is not
+clear enough in the proposed wording. In addition, N3918 says that it resolves issue
+1300 [5], but that issue is 1) marked as a duplicate of issue 914 [6] and 2) the subject
+of continuing deliberations in EWG. This issue is being returned to "review" status to
+allow CWG to address these concerns.
+
+Proposed resolution (March, 2017):
+
+1.
+
+Change Clause 7 [expr [7]] paragraph 12 as follows:
+
+...is applied. [Note: If the expression is an lvalue of class type, it must have a
+volatile copy constructor to initialize the temporary [INSERT: object] that is the
+result object of the lvalue-to-rvalue conversion. —end note] The glvalue expression...
+
+2.
+
+Change 6.8.7 [class.temporary [8]] paragraph 6 as follows:
+
+The third context is when a reference is bound to a temporary [INSERT: object].116 The
+temporary [INSERT: object] to which the reference is bound or the temporary [INSERT:
+object] that is the complete object of a subobject to which the reference is bound
+persists for the lifetime of the reference [INSERT: if the glvalue referring to the
+temporary object was obtained through one of the following:]
+
+-
+
+[INSERT: a temporary materialization conversion (7.3.5 [conv.rval [9]]),]
+
+-
+
+[INSERT: ( expression ), where expression is one of these expressions,]
+
+-
+
+[INSERT: subscripting (7.6.1.2 [expr.sub [10]]) of an array operand, where that operand
+is one of these expressions,]
+
+-
+
+[INSERT: a class member access (7.6.1.5 [expr.ref [11]]) using the . operator where the
+left operand is one of these expressions and the right operand designates a non-static
+data member of non-reference type,]
+
+-
+
+[INSERT: a pointer-to-member operation (7.6.4 [expr.mptr.oper [12]]) using the .*
+operator where the left operand is one of these expressions and the right operand is a
+pointer to data member of non-reference type,]
+
+-
+
+[INSERT: a const_cast (7.6.1.11 [expr.const.cast [13]], static_cast (7.6.1.9
+[expr.static.cast [14]]), dynamic_cast (7.6.1.7 [expr.dynamic.cast [15]]), or
+reinterpret_cast (7.6.1.10 [expr.reinterpret.cast [16]]) converting a glvalue operand
+that is one of these expressions to a glvalue referring to that operand,]
+
+-
+
+[INSERT: a conditional expression (7.6.16 [expr.cond [17]]) that is a glvalue where the
+second or third operand is one of these expressions, or]
+
+-
+
+[INSERT: a comma expression (7.6.20 [expr.comma [18]]) that is a glvalue where the right
+operand is one of these expressions.]
+
+[INSERT: [Example:]
+
+
+[INSERT:   template<typename T> using id = T;
+
+  int&& a = id<int[3]>{1, 2, 3}[i];          // temporary array has same lifetime as a
+  const int& b = static_cast<const int&>(0); // temporary int has same lifetime as b
+  int&& c = cond ? id<int[3]>{1, 2, 3}[i] : static_cast<int&&>(0);
+                                             // exactly one of the two temporaries is lifetime-extended]
+
+
+[INSERT: —end example] [Note: If a temporary object has a reference member initialized
+by another temporary object, lifetime extension applies recursively to such a member's
+initializer. [Example:]
+
+
+[INSERT:   struct S {
+    const int& m;
+  };
+  const S& s = S{1};  // both S and int temporaries have lifetime of s]
+
+
+[INSERT: —end example] —end note]]
+
+[DELETE: except] [INSERT: The exceptions to this lifetime rule are]:
+
+-
+
+A temporary object bound to a reference parameter...
+
+3.
+
+Change 12.2.2.5 [over.match.copy [19]] bullet 1.2 as follows:
+
+-
+
+When the type of the initializer expression is a class type “cv S”, the non-explicit
+conversion functions of S and its base classes are considered. When initializing a
+temporary [INSERT: object (11.4 [class.mem [20]])] to be bound to the first parameter of
+a constructor...
+
+4.
+
+Change 16.4.5.9 [res.on.arguments [21]] bullet 1.3 as follows:
+
+-
+
+...[Note: If a program casts an lvalue to an xvalue while passing that lvalue to a
+library function (e.g. by calling the function with the argument std::move(x)), the
+program is effectively asking that function to treat that lvalue as a temporary [INSERT:
+object]. The implementation is free...
+
+5.
+
+Change 20.4.2.3.4 [util.smartptr.weak.assign [22]] paragraph 2 as follows:
+
+Remarks: The implementation may meet the effects (and the implied guarantees) via
+different means, without creating a temporary [INSERT: object].
+
+6.
+
+Change the footnote in 29.6.2.1 [template.valarray.overview [23]] paragraph 1 as
+follows:
+
+...generalized subscript operators. [Footnote: The intent is to specify an array
+template that hass the minimum functionality necessary to address aliasing ambiguities
+and the proliferation of [DELETE: temporaries] [INSERT: temporary objects]. Thus... —end
+footnote]
+
+7.
+
+Change the last bullet of C.7.16 [diff.cpp03.input.output [24]] as follows:
+
+-
+
+initializing a const bool & which would bind to a temporary [INSERT: object].
+
+This resolution also resolves issues 943 [25] and 1076 [26].
+
+Source links:
+[1] https://wg21.link/class.temporary
+[2] https://cplusplus.github.io/CWG/issues/1568.html
+[3] https://cplusplus.github.io/CWG/issues/1651.html
+[4] https://cplusplus.github.io/CWG/issues/1893.html
+[5] https://cplusplus.github.io/CWG/issues/1300.html
+[6] https://cplusplus.github.io/CWG/issues/914.html
+[7] https://wg21.link/expr#12
+[8] https://wg21.link/class.temporary#6
+[9] https://wg21.link/conv.rval
+[10] https://wg21.link/expr.sub
+[11] https://wg21.link/expr.ref
+[12] https://wg21.link/expr.mptr.oper
+[13] https://wg21.link/expr.const.cast
+[14] https://wg21.link/expr.static.cast
+[15] https://wg21.link/expr.dynamic.cast
+[16] https://wg21.link/expr.reinterpret.cast
+[17] https://wg21.link/expr.cond
+[18] https://wg21.link/expr.comma
+[19] https://wg21.link/over.match.copy#1.2
+[20] https://wg21.link/class.mem
+[21] https://wg21.link/res.on.arguments#1.3
+[22] https://wg21.link/util.smartptr.weak.assign#2
+[23] https://wg21.link/template.valarray.overview#1
+[24] https://wg21.link/diff.cpp03.input.output
+[25] https://cplusplus.github.io/CWG/issues/943.html
+[26] https://cplusplus.github.io/CWG/issues/1076.html
+

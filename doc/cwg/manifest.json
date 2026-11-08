@@ -313,6 +313,29 @@
       }
     },
     {
+      "file": "cwg-1299.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1299.html",
+      "source_html_sha256": "72fa9877247067e768d84ff2c6c51285d35007cb6ba2e5d9b7bf475def352791",
+      "text_sha256": "f8573e06cf7179f8db9f3a59ffe0c9cd2c83f995592f0e88aacf04136714b509",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "issue": 1299,
+      "title": "\u201cTemporary objects\u201d vs \u201ctemporary expressions\u201d",
+      "status": "CD5",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1299.html",
+      "adopted_papers": [
+        "P0727R0"
+      ],
+      "local_papers": [
+        "paper-p0727r0.txt"
+      ]
+    },
+    {
       "issue": 1307,
       "title": "Overload resolution based on size of array initializer-list",
       "status": "C++14",
@@ -340,6 +363,24 @@
       "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1315.html",
       "source_html_sha256": "d22bcfccfd6adc6dbfd9e6e111851d15a6388d4bef87f078079c0f7345033ba6",
       "text_sha256": "43b7e491f11e32f704c60cb09630147be1289fce12259daa042dfd919c8853cc",
+      "adopted_papers": []
+    },
+    {
+      "file": "cwg-1328.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1328.html",
+      "source_html_sha256": "ce453b687cd6230bab8c450b30f18169f09b9f1794a1139165ca023d7a86dc3c",
+      "text_sha256": "8d8063f53089ed566905ad2f37bef60bbe737adf104e4e4d3bdd9cdef03deabe",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "issue": 1328,
+      "title": "Conflict in reference binding vs overload resolution",
+      "status": "CD3",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1328.html",
       "adopted_papers": []
     },
     {
@@ -610,6 +651,29 @@
       "source_html_sha256": "36a5ae73c58e19ffc2d815b8cc602e7ecf46f8d1f36d5c09bcd1ea15c950ae1a",
       "text_sha256": "a8691af3b07fa65a2137e03a3c6aa3734d44361f50984bec4fa9a2daee5f8c17",
       "adopted_papers": []
+    },
+    {
+      "file": "cwg-1518.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1518.html",
+      "source_html_sha256": "2626f406e97e8c15ee7d65190e009d8d37abc31c8dc9cecc5bf1d75f458ca45b",
+      "text_sha256": "a5f32ac330f58e6a6fc6ea7798c015a3440e65e4be9b81f35a1275ec8bae8432",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "issue": 1518,
+      "title": "Explicit default constructors and copy-list-initialization",
+      "status": "CD4",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1518.html",
+      "adopted_papers": [
+        "P0398R0"
+      ],
+      "local_papers": [
+        "paper-p0398r0.txt"
+      ]
     },
     {
       "issue": 1550,
@@ -1091,6 +1155,24 @@
       "adopted_papers": []
     },
     {
+      "file": "cwg-2267.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2267.html",
+      "source_html_sha256": "08d6d1611edb2b2a8211920306f3445cf0d95dca3ade9e8a08021a8de62559ef",
+      "text_sha256": "c0e18761626ba196788b0ea5dc75acca378bff55ae15981a159dcf99694033a9",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "issue": 2267,
+      "title": "Copy-initialization of temporary in reference direct-initialization",
+      "status": "CD5",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2267.html",
+      "adopted_papers": []
+    },
+    {
       "issue": 2273,
       "title": "Inheriting constructors vs implicit default constructor",
       "status": "CD5",
@@ -1289,6 +1371,24 @@
       "retrieved": "2026-11-08"
     },
     {
+      "file": "cwg-2894.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2894.html",
+      "source_html_sha256": "1a0a1e0a5b7b22e6805f1a566231b6ba2168e0788dd5875f04a0b08173743c1a",
+      "text_sha256": "f91fbd47a60b6a321e27fbbb3da1095f1e826fbeff07d88de39447f078517ed3",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "issue": 2894,
+      "title": "Functional casts create prvalues of reference type",
+      "status": "CD7",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2894.html",
+      "adopted_papers": []
+    },
+    {
       "issue": 2907,
       "title": "Constant lvalue-to-rvalue conversion on uninitialized std::nullptr_t",
       "status": "CD7",
@@ -1304,6 +1404,24 @@
         "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
         "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
       }
+    },
+    {
+      "file": "cwg-2941.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2941.html",
+      "source_html_sha256": "61c872e8b8bcef2c4bb9499f3ea793e8d69cf7d7b1bb286ac5d6a06a10b24f17",
+      "text_sha256": "a60ebc1599fb93c5339043223ea3ed55c6bf6f2b89465c24074ac337fc03772a",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "issue": 2941,
+      "title": "Lifetime extension for function-style cast to reference type",
+      "status": "C++26",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2941.html",
+      "adopted_papers": []
     }
   ],
   "supplemental_papers": [
@@ -1432,6 +1550,45 @@
       "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2004/n1626.pdf",
       "source_pdf_sha256": "57f1a3d6110867eaad7719b47d7fd2c0b982b0c9e4c74673d2485daad03667c7",
       "text_sha256": "4be496b5ed0e80a5323e153f0d63c9f764c0e1f6d0e7ab22a8d24647d518340f"
+    },
+    {
+      "file": "paper-n3922.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3922.html",
+      "source_html_sha256": "f06c47446a4485d510f8bdafee85678af93ba8dea95e7759124abffe7d2e08b3",
+      "text_sha256": "d7f665cc608d7b75fdf5ec66998b1e57e3707a183e4b2545bc618ea36456d9d1",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "paper": "N3922"
+    },
+    {
+      "file": "paper-p0398r0.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0398r0.html",
+      "source_html_sha256": "68e38d218b7fa2015f4c17e634af384b4511b2a8a5ed213fc7f979137f88d9ea",
+      "text_sha256": "f301389a5c49cec7c6e04664cde57d5eec3b195327ebd2f2b5aa6c4f45c1144e",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "paper": "P0398R0"
+    },
+    {
+      "file": "paper-p0727r0.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0727r0.html",
+      "source_html_sha256": "986bf0a1ca682216f4b563ee099a0fe5a3cc642063db557003928913258dbd81",
+      "text_sha256": "9ec742d3cc334c79a393cfe96aa80e167234d67caa534aaea72077f8ff5b7790",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "paper": "P0727R0"
     }
   ]
 }

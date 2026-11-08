@@ -1,0 +1,79 @@
+Source: https://cplusplus.github.io/CWG/issues/1328.html
+Snapshot/source retrieval: https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1328.html
+Full historical text follows; deletion/insertion markers are preserved, not applied.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1328. Conflict in reference binding vs overload resolution
+Section: 9.5.4 [dcl.init.ref [1]] Status: CD3 Submitter: Johannes Schaub Date:
+2011-05-31
+
+[Moved to DR at the April, 2013 meeting.]
+
+According to 12.2.2.7 [over.match.ref [2]] paragraph 1, the determination of the
+candidate functions is based on whether 9.5.4 [dcl.init.ref [1]] requires an lvalue
+result or an rvalue result. It is not sufficiently clear exactly what this means,
+particularly with respect to function lvalues and rvalues.
+
+Proposed resolution (August, 2011):
+
+1.
+
+Change 12.2.2.7 [over.match.ref [2]] paragraph 1 as follows:
+
+-
+
+The conversion functions of S and its base classes are considered, except that for
+copy-initialization, only the non-explicit conversion functions are considered. Those
+that are not hidden within S and yield type “lvalue reference to cv2 T2” (when [DELETE:
+9.5.4 [dcl.init.ref [1]] requires an lvalue result] [INSERT: initializing an lvalue
+reference or an rvalue reference to function]) or “cv2 T2” or “rvalue reference to cv2
+T2” (when [DELETE: 9.5.4 [dcl.init.ref [1]] requires an rvalue result] [INSERT:
+initializing an rvalue reference or an lvalue reference to function]), where “cv1 T” is
+reference-compatible (9.5.4 [dcl.init.ref [1]]) with “cv2 T2”, are candidate functions.
+
+2.
+
+Change 12.2.4 [over.match.best [3]] paragraph 1 as follows:
+
+-
+
+...
+
+-
+
+the context is an initialization by user-defined conversion... or if not that,
+
+-
+
+[INSERT: the context is an initialization by conversion function for direct reference
+binding (12.2.2.7 [over.match.ref [4]]) of a reference to function type, the return type
+of F1 is the same kind of reference (i.e. lvalue or rvalue) as the reference being
+initialized, and the return type of F2 is not [Example:]
+
+
+[INSERT:   template <class T> struct A {
+    operator T&();  // #1
+    operator T&&(); // #2
+  };
+  typedef int Fn();
+  A<Fn> a;
+  Fn& lf = a;      // calls #1
+  Fn&& rf = a;     // calls #2]
+
+
+[INSERT: —end example] or, if not that,]
+
+-
+
+F1 is a non-template function...
+
+Source links:
+[1] https://wg21.link/dcl.init.ref
+[2] https://wg21.link/over.match.ref#1
+[3] https://wg21.link/over.match.best#1
+[4] https://wg21.link/over.match.ref
+

@@ -1,0 +1,96 @@
+Source: https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3922.html
+Snapshot/source retrieval: https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3922.html
+Full historical text follows; deletion/insertion markers are preserved, not applied.
+
+New Rules for auto deduction from braced-init-list
+
+ISO/IEC JTC1 SC22 WG21 N3922 - 2014-02-13
+James Dennett, james.dennett@gmail.com
+
+Synopsis
+
+This paper provides proposed wording to change the rules for auto deduction from a
+braced-init-list. In particular, the rules for deduction of init-captures from
+braced-init-list are modified.
+
+Background
+
+For background information see  N3681 [1], "Auto and braced-init-lists", by Voutilainen,
+and N3912, "Auto and braced-init-lists, continued", also by Voutilainen.
+
+In Issaquah, EWG considered two alternative resolutions; this paper offers wording for
+one of the two, and mentions the other only as an acceptable alternative in case CWG
+uncovers fatal problems with EWG's preferred resolution.
+
+Direction from EWG is that we consider this a defect in C++14.
+
+Summary of Proposed Changes
+
+For copy-list-initialization, auto deduction will either deduce a std::initializer_list
+(if the types of entries in the braced-init-list are all identical) or be ill-formed
+otherwise.
+
+For direct list-initialization:
+
+1. For a braced-init-list with only a single element, auto deduction will deduce from
+that entry;
+
+2. For a braced-init-list with more than one element, auto deduction will be ill-formed.
+
+The rules for range-based for are unaffected by the changes proposed here, as the rules
+for copy-list-initialization are unmodified.
+
+Note: C++14 already disallows deduction of an function return type from a
+braced-init-list, and that's a good thing.
+
+Alternative
+
+There was also support (though less strong) in EWG for an alternative proposal in which
+auto deduction does not distinguish between direct list-initialization and copy
+list-initialization, and which allows auto deduction from a braced-init-list only in the
+case where the braced-init-list consists of a single item. Possible wording was for that
+alternative was included in  N3681 [1] by Voutilainen.
+
+Wording
+
+Modify 7.1.6.4p7 [dcl.spec.auto] as shown below:
+
+When a variable declared using a placeholder type is initialized, or a return statement
+occurs in a function declared with a return type that contains a placeholder type, the
+deduced return type or variable type is determined from the type of its initializer. In
+the case of a return with no operand, the initializer is considered to be void(). Let T
+be the declared type of the variable or return type of the function. If the placeholder
+is the auto type-specifier the deduced type is determined using the rules for template
+argument deduction. [INSERT: If the initialization is direct-list-initialization then
+the braced-init-list shall contain only a single initializer-clause L.] If the deduction
+is for a return statement and the initializer is a braced-init-list (8.5.4), the program
+is ill-formed. Otherwise, obtain P from T by replacing the occurrences of auto with
+either a new invented type template parameter U or, if [DELETE: the initializer is a
+braced-init-list, ] [INSERT: the initialization is copy-list-initialization,] with
+std::initializer_list<U>. Deduce a value for U using the rules of template argument
+deduction from a function call (14.8.2.1), where P is a function template parameter type
+and [DELETE: the initializer is the corresponding argument.] [INSERT: the corresponding
+argument is the initializer, or L in the case of direct-list-initialization.] If the
+deduction fails, the declaration is ill-formed. Otherwise, the type deduced for the
+variable or return type is obtained by substituting the deduced U into P.
+
+and
+
+[Example:
+
+
+auto x1 = { 1, 2 }; // decltype(x1) is std::initializer_list<int>
+auto x2 = { 1, 2.0 }; // error: cannot deduce element type
+[INSERT: auto x3{ 1, 2 }; // error: not a single element
+auto x4 = { 3 }; // decltype(x4) is std::initializer_list<int>
+auto x5{ 3 }; // decltype(x5) is int]
+-- end example]
+
+Acknowledgements
+
+Thanks to Daveed Vandevoorde and Richard Smith for reviewing this paper, and to Ville
+Voutilainen for writing the papers preceding this one.
+
+Source links:
+[1] http://open-std.org/JTC1/SC22/WG21/docs/papers/2013/n3681.html
+

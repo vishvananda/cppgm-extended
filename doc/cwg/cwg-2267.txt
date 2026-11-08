@@ -1,0 +1,91 @@
+Source: https://cplusplus.github.io/CWG/issues/2267.html
+Snapshot/source retrieval: https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2267.html
+Full historical text follows; deletion/insertion markers are preserved, not applied.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2267. Copy-initialization of temporary in reference direct-initialization
+Section: 9.5.4 [dcl.init.ref [1]] Status: CD5 Submitter: Richard Smith Date: 2016-05-25
+
+[Accepted as a DR at the February, 2019 meeting.]
+
+Consider the following example:
+
+
+   struct A {} a;
+   struct B { explicit B(const A&); };
+
+   struct D { D(); };
+   struct C { explicit operator D(); } c;
+
+   B b1(a);            // #1, ok 
+   const B &b2{a};     // #2. ok 
+   const B &b3(a);     // #3, error 
+
+   D d1(c);            // ok 
+   const D &d2{c};     // ok 
+   const D &d3(c);     // #6, ok 
+
+
+The disparity between #3 and #6 is suprising, as is the difference from #1 and #2. The
+reason for this difference is in 9.5.5 [dcl.init.list [2]] bullet 3.10:
+
+Otherwise, if T is a reference type, a prvalue of the type referenced by T is generated.
+The prvalue initializes its result object by copy-list-initialization or
+direct-list-initialization, depending on the kind of initialization for the reference.
+The prvalue is then used to direct-initialize the reference.
+
+(reflecting the resolution of issue 1494 [3]).
+
+Notes from the March, 2018 meeting:
+
+CWG felt that initialization of the temporary should always be copy initialization,
+regardless of whether the top-level initialization is copy or direct initialization.
+This would make #2, #3, #5, and #6 all ill-formed.
+
+Proposed resolution (November, 2018):
+
+1.
+
+Change 9.5.5 [dcl.init.list [4]] bullet 3.10 as follows:
+
+Otherwise, if T is a reference type, a prvalue of the type referenced by T is generated.
+The prvalue initializes its result object by copy-list-initialization [DELETE: or
+direct-list-initialization, depending on the kind of initialization for the reference].
+The prvalue is then used to direct-initialize the reference. [Note: As usual, the
+binding will fail and the program is ill-formed if the reference type is an lvalue
+reference to a non-const type. —end note]
+
+2.
+
+Add the following to the example in 9.5.5 [dcl.init.list [2]] bullet 3.10:
+
+
+[INSERT:   struct A { } a;
+  struct B { explicit B(const A&); };
+  const B &b2(a);  // error: cannot copy-initialize B temporary from A]
+
+
+3.
+
+Change 12.2.2.7 [over.match.ref [5]] bullet 1.1 as follows:
+
+...For direct-initialization, those explicit conversion functions that are not hidden
+within S and yield type “lvalue reference to cv2 T2” [INSERT: (when initializing an
+lvalue reference or an rvalue reference to function)] [DELETE:  or “cv2 T2”] or “rvalue
+reference to cv2 T2” [INSERT: (when initializing an rvalue reference or an lvalue
+reference to function)], [DELETE: respectively,] where T2 is the same type as T or can
+be converted to type T with a qualification conversion (7.3.6 [conv.qual [6]]), are also
+candidate functions.
+
+Source links:
+[1] https://wg21.link/dcl.init.ref
+[2] https://wg21.link/dcl.init.list
+[3] https://cplusplus.github.io/CWG/issues/1494.html
+[4] https://wg21.link/dcl.init.list#3.10
+[5] https://wg21.link/over.match.ref#1.1
+[6] https://wg21.link/conv.qual
+

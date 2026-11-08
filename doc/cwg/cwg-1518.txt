@@ -1,0 +1,112 @@
+Source: https://cplusplus.github.io/CWG/issues/1518.html
+Snapshot/source retrieval: https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1518.html
+Full historical text follows; deletion/insertion markers are preserved, not applied.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1518. Explicit default constructors and copy-list-initialization
+Section: 9.5.5 [dcl.init.list [1]] Status: CD4 Submitter: Richard Smith Date: 2012-07-08
+
+[Adopted at the June, 2016 meeting as paper P0398R0.]
+
+Consider the following example:
+
+
+  struct A {
+   explicit A() = default;
+  };
+
+  struct B : A {
+   explicit B() = default;
+  };
+
+  struct C {
+   explicit C();
+  };
+
+  struct D : A {
+   C c;
+   explicit D() = default;
+  };
+
+  template<typename T> void f() {
+   T t = {};
+  }
+  template<typename T> void g() {
+   void x(T t);
+   x({});
+  }
+
+
+The question is whether f<B>, f<C>, f<D>, g<B>, g<C>, and g<D> are well-formed or
+ill-formed.
+
+The crux here is whether 12.2.2.8 [over.match.list [2]] is the governing law in each of
+these cases. If it is, the initialization is ill-formed, because
+copy-list-initialization has selected an explicit constructor. The standard seems clear
+that f<A> and g<A> are valid (because A is an aggregate, so 12.2.2.8 [over.match.list
+[2]] is not reached nor applicable), f<B> is valid (because value-initialization does
+not call the default constructor, so 12.2.2.8 [over.match.list [2]] is not reached), and
+that g<B>, g<C>, and g<D> are ill-formed (because 12.2.2.8 [over.match.list [2]] is
+reached from 12.2.4.2.6 [over.ics.list [3]] and selects an explicit constructor). The
+difference between f<B> and g<B> is troubling.
+
+For f<C> and f<D>, it's not clear whether the default constructor call within
+value-initialization within list-initialization uses 12.2.2.8 [over.match.list [2]] —
+but some form of overload resolution seems to be implied, since presumably we want to
+apply SFINAE to variadic constructor templates, diagnose classes which have multiple
+default constructors through the addition of default arguments, and the like.
+
+It has been suggested that perhaps we are supposed to reach 12.2.2.8 [over.match.list
+[2]] for an empty initializer list for a non-aggregate class with a default constructor
+only when we're coming from 12.2.4.2.6 [over.ics.list [3]], and not when 9.5.5
+[dcl.init.list [1]] delegates to value-initialization. That would make all the fs valid,
+but g<B>, g<C>, and g<D> ill-formed.
+
+11.4.8.2 [class.conv.ctor [4]] paragraph 2 says explicit constructors are only used for
+direct-initialization or casts, which argues for at least f<C>, f<D>, g<C> and g<D>
+being ill-formed.
+
+See also issue 2116 [5].
+
+Proposed resolution (May, 2015): [SUPERSEDED]
+
+This issue is resolved by the resolution of issue 1630 [6]: default initialization now
+uses 12.2.2.4 [over.match.ctor [7]], which now permits explicit constructors for
+default-initialization.
+
+Additional note, October, 2015:
+
+It has been suggested that the resolution of issue 1630 [6] went too far in allowing use
+of explicit constructors for default initialization, and that default initialization
+should be considered to model copy initialization instead. The resolution of this issue
+would provide an opportunity to adjust that.
+
+Proposed resolution (October, 2015):
+
+Change 12.2.2.4 [over.match.ctor [8]] paragraph 1 as follows:
+
+When objects of class type are direct-initialized (9.5 [dcl.init [9]]), copy-initialized
+from an expression of the same or a derived class type (9.5 [dcl.init [9]]), or
+default-initialized (9.5 [dcl.init [9]]), overload resolution selects the constructor.
+For direct-initialization [DELETE: or default-initialization], the candidate functions
+are all the constructors of the class of the object being initialized. For
+copy-initialization, the candidate functions are all the converting constructors
+(11.4.8.2 [class.conv.ctor [10]]) of that class. The argument list is the
+expression-list or assignment-expression of the initializer.
+
+Source links:
+[1] https://wg21.link/dcl.init.list
+[2] https://wg21.link/over.match.list
+[3] https://wg21.link/over.ics.list
+[4] https://wg21.link/class.conv.ctor#2
+[5] https://cplusplus.github.io/CWG/issues/2116.html
+[6] https://cplusplus.github.io/CWG/issues/1630.html
+[7] https://wg21.link/over.match.ctor
+[8] https://wg21.link/over.match.ctor#1
+[9] https://wg21.link/dcl.init
+[10] https://wg21.link/class.conv.ctor
+

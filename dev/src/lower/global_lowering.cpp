@@ -904,7 +904,7 @@ lowir::SymbolId ProgramLowering::thread_local_wrapper_symbol(
 	const std::string object = tls_wrapper_object(variable);
 	const bool local = unit_local(variable);
 	const lowir::SymbolId wrapper = found != PointerMap::kMissing ? found
-		: local ? new_symbol("__cppgm_tls_wrapper__" + base)
+		: local                                                   ? new_symbol("__cppgm_tls_wrapper__" + base)
 				: external_symbol(object, "__cppgm_tls_wrapper__" + base);
 	lowir::Symbol& symbol = program_.symbols[wrapper];
 	if (symbol.kind == lowir::SymbolKind::Unresolved)

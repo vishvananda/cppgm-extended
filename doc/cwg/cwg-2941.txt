@@ -1,0 +1,74 @@
+Source: https://cplusplus.github.io/CWG/issues/2941.html
+Snapshot/source retrieval: https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2941.html
+Full historical text follows; deletion/insertion markers are preserved, not applied.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2941. Lifetime extension for function-style cast to reference type
+Section: 6.8.7 [class.temporary [1]] Status: C++26 Submitter: Hubert Tong Date:
+2024-10-18
+
+[Accepted as a DR at the November, 2025 meeting.]
+N5028 comment CA 041
+[2]
+
+(From submission #625 [3].)
+
+Issue 2894 [4] will clarify that a function-style cast to reference type produces a
+glvalue, not a prvalue. However, 6.8.7 [class.temporary [1]] does not specify
+lifetime-extension for this case, even though implementations uniformly do extend the
+lifetime.
+
+For example:
+
+
+  int glob;
+  struct A {
+   constexpr ~A() { p = &glob; }
+   int *p;
+  };
+  constexpr int f() {
+   typedef const A &AR;
+   const A &ref = AR{0};
+   delete ref.p;
+   return 0;
+  }
+  extern constexpr int x = f(); // okay
+
+
+Proposed resolution (approved by CWG 2025-11-03):
+
+Change in 6.8.7 [class.temporary [5]] paragraph 6 as follows:
+
+- a
+
+- const_cast (7.6.1.11 [expr.const.cast [6]]),
+
+- ...
+
+- [INSERT: an explicit type conversion (functional notation) (7.6.1.4 [expr.type.conv
+[7]]) to a reference type whose initializer is a braced-init-list where the reference is
+
+- bound directly to the glvalue result of one of these expressions (necessarily the sole
+element of the braced-init-list) or
+
+- bound to the result of a temporary materialization conversion,
+
+]
+
+- a conditional expression (7.6.16 [expr.cond [8]]) that is a glvalue where the second
+or third operand is one of these expressions, or
+
+Source links:
+[1] https://wg21.link/class.temporary
+[2] http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2025/n5028.pdf#CA041
+[3] https://github.com/cplusplus/CWG/issues/625
+[4] https://cplusplus.github.io/CWG/issues/2894.html
+[5] https://wg21.link/class.temporary#6
+[6] https://wg21.link/expr.const.cast
+[7] https://wg21.link/expr.type.conv
+[8] https://wg21.link/expr.cond
+

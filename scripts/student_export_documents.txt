@@ -158,3 +158,12 @@ pa8/lowir.md
 pa9/README.md
 shared/README.md
 student.tests/README.md
+doc/cwg/cwg-1328.txt
+doc/cwg/cwg-1518.txt
+doc/cwg/cwg-2267.txt
+doc/cwg/cwg-2894.txt
+doc/cwg/cwg-2941.txt
+doc/cwg/paper-n3922.txt
+doc/cwg/paper-p0398r0.txt
+doc/cwg/cwg-1299.txt
+doc/cwg/paper-p0727r0.txt

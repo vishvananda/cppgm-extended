@@ -1,0 +1,109 @@
+Source: https://cplusplus.github.io/CWG/issues/2894.html
+Snapshot/source retrieval: https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2894.html
+Full historical text follows; deletion/insertion markers are preserved, not applied.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2894. Functional casts create prvalues of reference type
+Section: 7.6.1.4 [expr.type.conv [1]] Status: CD7 Submitter: Jan Schultke Date:
+2024-05-14
+
+[Accepted as a DR at the November, 2024 meeting.]
+
+(From submission #536 [2].)
+
+For T{...}, the rule in 7.6.1.4 [expr.type.conv [3]] paragraph 2 yields a prvalue of
+reference type if T is a reference type:
+
+... Otherwise, the expression is a prvalue of the specified type whose result object is
+direct-initialized (9.4) with the initializer. ...
+
+Also, it should be clarified that void(1, 2) and void{1} are ill-formed.
+
+[INSERT: Possible resolution [SUPERSEDED]:]
+
+Change in 7.6.1.4 [expr.type.conv [4]] paragraph 1 and 2 as follows:
+
+A simple-type-specifier (9.2.9.3 [dcl.type.simple [5]]) or typename-specifier (13.8
+[temp.res [6]]) followed by a parenthesized optional expression-list or by a
+braced-init-list (the initializer) constructs a value of the specified type given the
+initializer. If the type is a placeholder for a deduced class type, it is replaced by
+the return type of the function selected by overload resolution for class template
+deduction (12.2.2.9 [over.match.class.deduct [7]]) for the remainder of this subclause.
+Otherwise, if the type contains a placeholder type, it is replaced by the type
+determined by placeholder type deduction (9.2.9.7.2 [dcl.type.auto.deduct [8]]).
+[INSERT: Let T denote the resulting type.] [ Example: ... ]
+
+If the initializer is a parenthesized single expression, the type conversion expression
+is equivalent to the corresponding cast expression (7.6.3 [expr.cast [9]]). Otherwise,
+if [DELETE: the type] [INSERT: T] is cv void [DELETE: and] [INSERT: ,] the initializer
+[DELETE: is] [INSERT: shall be] () or {} (after pack expansion, if any), [INSERT: and]
+the expression is a prvalue of type void that performs no initialization. Otherwise, the
+expression [DELETE: is a prvalue of the specified type whose result object is
+direct-initialized (9.5 [dcl.init [10]]) with the initializer] [INSERT:  has the same
+effect as direct-initializing an invented variable t of type T from the initializer and
+then using t as the result of the expression. The result is an lvalue if T is an lvalue
+reference type or an rvalue reference to function type, an xvalue if T is an rvalue
+reference to object type, and a prvalue otherwise]. If the initializer is a
+parenthesized optional expression-list, [DELETE: the specified type] [INSERT: T] shall
+not be an array type.
+
+CWG 2024-06-14
+
+The resolution above introduces an additional variable even for a prvalue, which defeats
+mandatory copy elision. Use the pattern from 7.6.1.9 [expr.static.cast [11]] paragraph 4
+instead.
+
+Proposed resolution (approved by CWG 2024-10-25):
+
+Change in 7.6.1.4 [expr.type.conv [4]] paragraph 1 and 2 as follows, move the example to
+the bottom, and add bullets:
+
+A simple-type-specifier (9.2.9.3 [dcl.type.simple [5]]) or typename-specifier (13.8
+[temp.res [6]]) followed by a parenthesized optional expression-list or by a
+braced-init-list (the initializer) constructs a value of the specified type given the
+initializer. If the type is a placeholder for a deduced class type, it is replaced by
+the return type of the function selected by overload resolution for class template
+deduction (12.2.2.9 [over.match.class.deduct [7]]) for the remainder of this subclause.
+Otherwise, if the type contains a placeholder type, it is replaced by the type
+determined by placeholder type deduction (9.2.9.7.2 [dcl.type.auto.deduct [8]]).
+[INSERT: Let T denote the resulting type.] [DELETE: [ Example: ... ]]
+
+[INSERT: Then:]
+
+-  If the initializer is a parenthesized single expression, the type conversion
+expression is equivalent to the corresponding cast expression (7.6.3 [expr.cast [9]]).
+
+- Otherwise, if [DELETE: the type] [INSERT: T] is cv void [DELETE: and] [INSERT: ,] the
+initializer [DELETE: is] [INSERT: shall be] () or {} (after pack expansion, if any),
+[INSERT: and] the expression is a prvalue of type void that performs no initialization.
+
+- [INSERT: Otherwise, if T is a reference type, the expression has the same effect as
+direct-initializing an invented variable t of type T from the initializer and then using
+t as the result of the expression; the result is an lvalue if T is an lvalue reference
+type or an rvalue reference to function type and an xvalue otherwise.]
+
+- Otherwise, the expression is a prvalue of [DELETE: the specified] type [INSERT: T]
+whose result object is direct-initialized (9.5 [dcl.init [10]]) with the initializer.
+
+If the initializer is a parenthesized optional expression-list, [DELETE: the specified
+type] [INSERT: T] shall not be an array type.
+
+[INSERT: [Example: ... ]]
+
+Source links:
+[1] https://wg21.link/expr.type.conv
+[2] https://github.com/cplusplus/CWG/issues/536
+[3] https://wg21.link/expr.type.conv#2
+[4] https://wg21.link/expr.type.conv#1
+[5] https://wg21.link/dcl.type.simple
+[6] https://wg21.link/temp.res
+[7] https://wg21.link/over.match.class.deduct
+[8] https://wg21.link/dcl.type.auto.deduct
+[9] https://wg21.link/expr.cast
+[10] https://wg21.link/dcl.init
+[11] https://wg21.link/expr.static.cast#4
+

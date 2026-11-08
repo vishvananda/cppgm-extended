@@ -67,10 +67,15 @@ CWG 1094 | C++11 | cwg-1094.txt
   Converting floating-point values to scoped enumeration types
 CWG 1213 | CD3 | cwg-1213.txt
   Array subscripting and xvalues
+CWG 1299 | CD5 | cwg-1299.txt
+  “Temporary objects” vs “temporary expressions”
+  Local paper: paper-p0727r0.txt
 CWG 1307 | C++14 | cwg-1307.txt
   Overload resolution based on size of array initializer-list
 CWG 1315 | CD4 | cwg-1315.txt
   Restrictions on non-type template arguments in partial specializations
+CWG 1328 | CD3 | cwg-1328.txt
+  Conflict in reference binding vs overload resolution
 CWG 1330 | CD3 | cwg-1330.txt
   Delayed instantiation of noexcept specifiers
 CWG 1351 | CD4 | cwg-1351.txt
@@ -112,6 +117,9 @@ CWG 1495 | CD3 | cwg-1495.txt
   Partial specialization of variadic class template
 CWG 1512 | CD3 | cwg-1512.txt
   Pointer comparison vs qualification conversions
+CWG 1518 | CD4 | cwg-1518.txt
+  Explicit default constructors and copy-list-initialization
+  Local paper: paper-p0398r0.txt
 CWG 1550 | CD3 | cwg-1550.txt
   Parenthesized throw-expression operand of conditional-expression
 CWG 1558 | CD4 | cwg-1558.txt
@@ -181,6 +189,8 @@ CWG 2170 | CD5 | cwg-2170.txt
   Unclear definition of odr-use for arrays
 CWG 2176 | CD4 | cwg-2176.txt
   Destroying the returned object when a destructor throws
+CWG 2267 | CD5 | cwg-2267.txt
+  Copy-initialization of temporary in reference direct-initialization
 CWG 2273 | CD5 | cwg-2273.txt
   Inheriting constructors vs implicit default constructor
 CWG 2312 | CD6 | cwg-2312.txt
@@ -208,8 +218,14 @@ CWG 2631 | C++23 | cwg-2631.txt
   Immediate function evaluations in default arguments
 CWG 2746 | CD7 | cwg-2746.txt
   Checking of unused default template arguments (March 2024 DR)
+CWG 2894 | CD7 | cwg-2894.txt
+  Functional casts create prvalues of reference type
 CWG 2907 | CD7 | cwg-2907.txt
   Constant lvalue-to-rvalue conversion on uninitialized std::nullptr_t
+
+CWG 2941 | C++26 | cwg-2941.txt
+  Lifetime extension for function-style cast to reference type
+  Accepted as a DR, November 2025.
 
 Unresolved references (not adopted decisions)
 --------------------------------------------
@@ -257,6 +273,13 @@ P0136R1 | paper-p0136r1.txt
 
 N3638 | paper-n3638.txt
   https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3638.html
+
+N3922 | paper-n3922.txt
+  https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3922.html
+P0398R0 | paper-p0398r0.txt
+  https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0398r0.html
+P0727R0 | paper-p0727r0.txt
+  https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0727r0.html
 
 Adding a decision
 -----------------
