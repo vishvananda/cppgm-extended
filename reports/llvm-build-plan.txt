@@ -595,3 +595,37 @@ and zero generator failures. The complete LLVM build and downstream comparisons
 remain pending. Sources remain unchanged and every C++ object uses cppgm.
 Immutable tools: compiler-block12-frame-fixed-types. Receipt outside checkout:
 block12-frame-fixed-types-validation.json. All initial observations are retained.
+
+
+Block 13: fixed inherited names, namespace lookup and empty lists (accepted)
+---------------------------------------------------------------------------
+Namespace-only lookup for using-directives and namespace aliases ignores
+non-namespace names hiding the target, including class scopes. Parser readings
+retain fixed inherited parameter/range types without turning unrelated unknown
+function callees into type casts. Fixed nested template auto objects use type
+dependence rather than initializer value dependence. Empty constexpr lists pass
+one initializer_list argument when its constructor wins over value initialization.
+Eight required controls cover PA11:100, PA14:300, PA20:100 and PA21:200.
+
+Strict 9899/9899, debug, modern, architecture/format/file/placement/CWG audits,
+PA5 self-host, root inception, harness, PA35 quick and smoke pass. All 48 final
+cppgm/GCC/Clang O0/O3 observations pass. Final export v3 passes all 213 documents,
+42 wrappers and eight fixtures. The initial PA21 control had a misspelled exit
+marker and a too-early hosted include; both were corrected and affected checks
+rerun. Concurrent final exports collided in their shared reference build; the
+failed v2 log remains, and v3 ran alone. Compiler source hashes remain unchanged.
+
+Frozen parent/candidate instruction ratios are O0 1.000279 and O3 1.000093,
+with identical frozen objects. The initial full release passes all ordinary
+17 course/student gates but course scaling 2.42 misses the extra 25% margin
+(23.97% measured). A predeclared 60-observation paired counter diagnostic on the
+same member sources shows growth 2.002024 parent / 2.001717 candidate and identical
+objects; the candidate uses about 0.1% more instructions. One preserved speed-group
+recheck passes all gates and margins: course growth 1.97, student 2.21. Other
+full-release observations are reused unchanged in that combined judgment.
+
+A fresh LLVM build clears seven of the prior 20 failed C++ compilations, leaving
+13 failed compilations and zero generator failures. Sources remain unchanged and
+every C++ object uses cppgm. The full LLVM build and downstream comparisons remain
+pending. Immutable tools: compiler-block13-namespace-lists; receipt outside the
+checkout: block13-namespace-lists-validation.json. All initial results are retained.
