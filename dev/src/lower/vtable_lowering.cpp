@@ -1,4 +1,5 @@
 #include "lower/program_lowering.h"
+#include "lowir/assembly.h"
 
 #include "lower/function_lowering.h"
 
@@ -968,7 +969,9 @@ size_t ProgramLowering::ThunkHash::operator()(const ThunkKey& key) const
 void ProgramLowering::emit_thunk(const Thunk& thunk)
 {
 	// Defined with its function's entry, else left to its declaration.
-	if (thunk.target == lowir::kNoId || program_.symbols[thunk.target].kind != lowir::SymbolKind::FunctionDefinition ||
+	if (thunk.target == lowir::kNoId ||
+		(program_.symbols[thunk.target].kind != lowir::SymbolKind::FunctionDefinition &&
+			!lowir::find_assembly_function(program_, thunk.target)) ||
 		program_.symbols[thunk.symbol].kind != lowir::SymbolKind::Unresolved)
 		return;
 	program_.declare_function(thunk.symbol, lowir::SymbolKind::FunctionDefinition, thunk.signature);

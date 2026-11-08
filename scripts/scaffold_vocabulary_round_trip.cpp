@@ -157,7 +157,7 @@ void check_assembly()
 	for (std::size_t i = 0; i < count; ++i)
 	{
 		expect(forms[i].mnemonic != 0 && forms[i].mnemonic[0] != 0, "assembly mnemonic", i);
-		expect(forms[i].encoding <= x86_asm_model::Encoding::String, "assembly encoding", i);
+		expect(forms[i].encoding <= x86_asm_model::Encoding::Control, "assembly encoding", i);
 	}
 	const x86_asm_model::GnuIntegerRange* ranges = x86_asm_model::gnu_integer_ranges(count);
 	expect(ranges != 0 && count != 0, "assembly immediate domains", 0);

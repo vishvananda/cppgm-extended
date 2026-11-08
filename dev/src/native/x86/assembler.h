@@ -148,6 +148,7 @@ public:
 	void jmp_short(uint32_t label);
 	void jcc_short(Cond cond, uint32_t label);
 	void call_symbol(uint32_t symbol);
+	void call_label(uint32_t label);
 	void jmp_symbol(uint32_t symbol);
 	void call_rm(const RM& target);
 	void jmp_rm(const RM& target);

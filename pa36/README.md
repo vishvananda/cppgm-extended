@@ -8,7 +8,7 @@ that same contract directly as LowIR. Generate native instructions and object
 fixups with your own encoder.
 
 PA36 is optional and outside the required 35-assignment ladder. The current
-contract is the operand and local-control-flow subset below. The broader extensions at the end
+contract covers operands, local control flow and raw functions below. The broader extensions at the end
 are separate goals. PA29's bounded GNU compatibility remains unchanged.
 
 ### Prerequisites and starter kit
@@ -75,7 +75,8 @@ unrequested read of an output-only memory operand.
 
 Support the initial integer/SSE forms described by the supplied encoding facts,
 in Intel and AT&T syntax, including their register widths and addressing forms.
-Include unary arithmetic, shifts/rotates, `test`, multiply forms and
+Include returns, push/pop, local/symbol/indirect calls and jumps,
+unary arithmetic, shifts/rotates, `test`, multiply forms and
 `xadd`/`cmpxchg`. Validate `lock` against a lockable memory destination and
 repeat prefixes against string instructions. Implicit register operands and
 their clobbers remain the producer's responsibility.
@@ -87,6 +88,16 @@ outgoing edges and normal C++ scope-exit cleanup. Numeric label references
 count a `+` output twice. Represent destinations as real LowIR control flow;
 the shared boundary's exit-tag output can feed an ordinary `switch`.
 Preserve over-aligned local storage across declared register clobbers.
+Support GNU `__attribute__((naked))` functions under `--full-asm`. Their bodies
+contain only basic asm, nested braces and empty statements; reject extended
+operands and ordinary C++ statements. Combine their user source fragments so
+labels can span basic statements. The assembly owns all ABI inputs, results,
+stack changes and preserved registers. Emit no automatic frame or return.
+Use the shared `assembly_function` contract for this and other frontends' raw
+functions; callers retain ordinary typed declarations. Keep raw bodies opaque
+to inlining and return/argument inference. No automatic unwind description is
+promised by this subset.
+
 LowIR selects the dialect; the current GNU source adapter uses AT&T. Choose one
 alternative column jointly across operands. Respect register aliases
 and lifetimes, preserve the host ABI, and capture outputs before assigning
@@ -138,7 +149,7 @@ included in those reports or in the required course completion criteria.
 
 ### Further extensions
 
-Global/naked assembly, directives, further relocations, unwind state and broader
+Global assembly items, directives, further relocations, unwind state and broader
 x86/VEX/EVEX coverage remain extension goals. Original Rust assembly is a useful
 cross-frontend consumer. These goals require additional contracts and tests;
 the current suite does not establish their completion. Header vocabulary for

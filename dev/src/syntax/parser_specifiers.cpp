@@ -137,7 +137,7 @@ bool Parser::gnu_attribute(const char* spelling, Attribute& attribute, bool& kep
 			AttributeKind::ExcludeFromExplicitInstantiation },
 		{ "always_inline", "__always_inline__", AttributeKind::AlwaysInline },
 		{ "gnu_inline", "__gnu_inline__", AttributeKind::GnuInline }, { "used", "__used__", AttributeKind::Used },
-		{ "noreturn", "__noreturn__", AttributeKind::NoReturn } };
+		{ "noreturn", "__noreturn__", AttributeKind::NoReturn }, { "naked", "__naked__", AttributeKind::Naked } };
 	for (const auto& simple : kSimple)
 	{
 		if (std::strcmp(spelling, simple.spelling) == 0 || std::strcmp(spelling, simple.reserved) == 0)

@@ -4,6 +4,7 @@
 
 #include "lowir/literals.h"
 #include "lowir/assembly_writer.h"
+#include "lowir/assembly.h"
 #include "lowir/local_names.h"
 #include "ir_symbol_model.h"
 #include "support/internal_error.h"
@@ -67,6 +68,8 @@ public:
 	// released); set before write().
 	void use_definitions(DefinitionStream* definitions) { definitions_ = definitions; }
 	void function_definition(const Symbol& symbol);
+	void function_body();
+	void assembly_functions();
 	// Writes the buffered text to the sink; false if a write failed.
 	bool flush();
 
@@ -431,6 +434,7 @@ void Writer::write()
 		}
 		written = written || phase_written;
 	}
+	assembly_functions();
 	debug_info();
 	for (const ObjectAlias& alias : program_.aliases)
 	{
@@ -615,6 +619,26 @@ void Writer::function_definition(const Symbol& symbol)
 	metadata(&symbol.metadata, &signature.boundary, &signature);
 	location(function.location);
 	text(" {\n");
+	function_body();
+}
+
+void Writer::assembly_functions()
+{
+	if (!program_.assembly)
+		return;
+	for (const AssemblyFunction& function : program_.assembly->functions)
+	{
+		body_ = function.body.get();
+		names_.reset(*body_);
+		word(spelling(Keyword::AssemblyFunction));
+		symbol(function.symbol);
+		text(" {\n");
+		function_body();
+	}
+}
+
+void Writer::function_body()
+{
 	for (SlotId slot = 0; slot < body_->slots.size(); ++slot)
 	{
 		text("  slot $");

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "asm_model.h"
-#include "lowir/instruction.h"
+#include "lowir/program.h"
 
 namespace lowir {
 
@@ -29,6 +29,15 @@ struct AssemblyTemplate : asm_model::Template
 	DebugLocation location = {};
 };
 
+// The declaration retains the ABI; ordinary optimization never sees this body.
+// Raw bodies contain assembly invocations followed by unreachable, with only
+// constant or symbol arguments. The assembly owns every ABI register and stack.
+struct AssemblyFunction
+{
+	SymbolId symbol;
+	std::unique_ptr<FunctionBody> body;
+};
+
 // Allocated only for a program containing assembly. Flat tables retain source
 // ownership and keep the ordinary instruction and function-body records small.
 struct AssemblyModule
@@ -42,6 +51,11 @@ struct AssemblyModule
 	std::vector<AssemblyPiece> pieces;
 	std::vector<AssemblyRegister> registers;
 	std::vector<AssemblyRegister> clobbers;
+	std::vector<AssemblyFunction> functions;
 };
+
+const AssemblyFunction* find_assembly_function(const Program& program, SymbolId symbol);
+void retain_assembly_function(Program& program, SymbolId symbol);
+bool validate_assembly_functions(const Program& program, const char*& error);
 
 } // namespace lowir

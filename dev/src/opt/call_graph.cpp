@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "opt/function_ir.h"
+#include "lowir/assembly.h"
 
 namespace opt {
 
@@ -17,7 +18,7 @@ bool is_definition(const Program& program, SymbolId s)
 	return symbol.kind == SymbolKind::FunctionDefinition && program.functions[symbol.detail].body != nullptr;
 }
 
-// Marks function symbols named by globals' initializers and aliases.
+// Marks opaque symbol references outside ordinary optimized bodies.
 template<typename Mark>
 void mark_data_references(const Program& program, Mark mark)
 {
@@ -37,6 +38,13 @@ void mark_data_references(const Program& program, Mark mark)
 					mark(item.address);
 			}
 	}
+	// Raw bodies are not analyzed for calls or argument/return facts. A typed
+	// symbol input nevertheless observes its target's identity and full ABI.
+	if (program.assembly)
+		for (const AssemblyFunction& function : program.assembly->functions)
+			for (const Value value : function.body->operands)
+				if (value.kind == ValueKind::Symbol)
+					mark(value.index);
 	// An object alias is another name for its target's code: it keeps a
 	// target alive only when the target is kept for its own sake (pruning
 	// drops the aliases of what it removes). A jump thunk

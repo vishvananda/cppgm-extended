@@ -743,6 +743,13 @@ void Analyzer::effect_attributes(
 				function->used = true;
 			if (attribute->kind == syntax::AttributeKind::NoReturn)
 				function->noreturn = true;
+			if (attribute->kind == syntax::AttributeKind::Naked)
+			{
+				if (!full_asm_)
+					error(attribute->location, "naked functions require --full-asm");
+				function->naked = true;
+				function->no_inline = true;
+			}
 		}
 	};
 	apply(leading);
@@ -2728,6 +2735,8 @@ void Analyzer::define_function(FunctionEntity* function, const Type* type, const
 {
 	// A body in a class member-specification waits for the outermost class
 	// (9.2p2); such an inline member is emitted where odr-used.
+	if (function->naked)
+		check_naked_definition(function, body);
 	function->body = &body;
 	function->definition_ordinal = definition_point();
 	// A constexpr function is emitted where odr-used too (course view).

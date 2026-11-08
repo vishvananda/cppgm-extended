@@ -1118,6 +1118,7 @@ private:
 	// GNU asm statements (analyzer_asm.cpp).
 	void asm_statement(const syntax::AsmStmt& stmt, Scope* scope);
 	void full_asm_statement(const syntax::AsmStmt& stmt, Scope* scope);
+	void check_naked_definition(const FunctionEntity* function, const syntax::FunctionBody& body);
 	// ----------------------- builtin functions (analyzer_builtins.cpp)
 	// The registry's builtin `name` (lex/gnu_builtins.h), declared in the
 	// global namespace on first need; null for none.
