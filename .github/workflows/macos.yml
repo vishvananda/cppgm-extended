@@ -102,6 +102,8 @@ jobs:
           /usr/bin/time -lp make test-report CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Check optional target features
         run: make test-target-features-nobuild CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+      - name: Check optional inline assembly
+        run: make -C pa36 test-nobuild CXX="$CXX" CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
       - name: Compare self-built and inception compilers
         run: |
           make -C pa34 cppgm++-self CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
