@@ -19,13 +19,18 @@ bool floating(lowir::Type type)
 
 } // namespace
 
-const std::shared_ptr<const AssemblyPlan>& FunctionSelector::assembly_plan(uint32_t definition) const
+const std::shared_ptr<const AssemblyPlan>& FunctionSelector::assembly_plan(const lowir::Instruction& inst) const
 {
-	if (assembly_plans_.size() <= definition)
-		assembly_plans_.resize(definition + 1);
-	std::shared_ptr<const AssemblyPlan>& plan = assembly_plans_[definition];
+	const uint32_t index = static_cast<uint32_t>(&inst - body_->instructions.data());
+	const uint64_t key = (uint64_t(symbol_) << 32) | index;
+	std::shared_ptr<const AssemblyPlan>& plan = assembly_plans_[key];
 	if (!plan)
-		plan = bind_assembly(*program_.assembly, definition);
+	{
+		std::vector<lowir::Value> arguments(inst.extra_count);
+		for (uint32_t i = 0; i < inst.extra_count; ++i)
+			arguments[i] = resolve(body_->operands[inst.extra_first + i]);
+		plan = bind_assembly(*program_.assembly, static_cast<uint32_t>(inst.immediate), *body_, arguments);
+	}
 	return plan;
 }
 
@@ -33,7 +38,7 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 {
 	using namespace asm_model;
 	using lowir::TypeKind;
-	const std::shared_ptr<const AssemblyPlan>& plan = assembly_plan(static_cast<uint32_t>(inst.immediate));
+	const std::shared_ptr<const AssemblyPlan>& plan = assembly_plan(inst);
 	const lowir::AssemblyModule& module = *program_.assembly;
 	const lowir::AssemblyTemplate& definition = module.templates[plan->definition];
 	std::vector<Capture> captures(definition.operand_count);
@@ -43,10 +48,31 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];
-		if (operand.input != lowir::kNoId)
+		const bool memory = plan->locations[i] == AL_MEMORY;
+		const bool immediate = plan->locations[i] == AL_IMMEDIATE;
+		if (!immediate && (operand.input != lowir::kNoId || memory))
 		{
-			const lowir::Value value = resolve(body_->operands[inst.extra_first + operand.input]);
-			const Operand source = memory_value_operand(value, operand.type);
+			const uint32_t input = memory && !operand.input_storage ? operand.output : operand.input;
+			const lowir::Value value = resolve(body_->operands[inst.extra_first + input]);
+			const lowir::Type input_type = memory || operand.input_storage ? lowir::Type::scalar(TypeKind::Ptr)
+																		   : operand.type;
+			Operand source = memory_value_operand(value, input_type);
+			if (operand.input_storage && !memory)
+			{
+				// Capture a register alternative's value before setting up any
+				// assembly registers. The address expression has already run.
+				load_into(R10, source, TypeKind::Ptr);
+				const Reg scratch = floating(operand.type) ? XMM15 : R11;
+				Inst& load = emit2(floating(operand.type) ? Op::FMov : Op::Load, operand.type.kind(),
+					Operand::make_reg(scratch), Operand::make_mem(R10, 0));
+				if ((operand.flags & AO_VOLATILE) != 0)
+					load.flags |= MF_VOLATILE;
+				source = Operand::make_frame(
+					frame_alloc(operand.type.is_vector() ? 16 : register_bytes(operand.type.kind()),
+						lowir::data_alignment(operand.type)));
+				emit2(floating(operand.type) ? Op::FMov : Op::Store, operand.type.kind(), source,
+					Operand::make_reg(scratch));
+			}
 			const Reg reg = plan->registers[i];
 			if ((initialized & reg_bit(reg)) != 0 && !(initial[reg] == source))
 				throw BackendError("assembly matching operands supply distinct input values to one register");
@@ -55,13 +81,13 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 				Move move;
 				move.dst = Operand::make_reg(reg);
 				move.src = source;
-				move.type = operand.type.kind();
+				move.type = memory ? TypeKind::Ptr : operand.type.kind();
 				moves_.push_back(move);
 				initial[reg] = source;
 				initialized |= reg_bit(reg);
 			}
 		}
-		if (operand.output != lowir::kNoId)
+		if (operand.output != lowir::kNoId && !memory)
 		{
 			// Addresses are captured before any assembly writes. Their SSA
 			// registers therefore have ordinary input lifetimes; neither a
@@ -96,7 +122,7 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];
-		if (operand.output != lowir::kNoId && (operand.flags & AO_FLAG) == 0)
+		if (operand.output != lowir::kNoId && (operand.flags & AO_FLAG) == 0 && plan->locations[i] != AL_MEMORY)
 			emit2(floating(operand.type) ? Op::FMov : Op::Store, operand.type.kind(),
 				Operand::make_frame(captures[i].value), Operand::make_reg(plan->registers[i]));
 	}
@@ -114,7 +140,7 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
 		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];
-		if (operand.output == lowir::kNoId)
+		if (operand.output == lowir::kNoId || plan->locations[i] == AL_MEMORY)
 			continue;
 		load_into(R10, Operand::make_frame(captures[i].address), TypeKind::Ptr);
 		const Reg value = floating(operand.type) ? XMM15 : R11;

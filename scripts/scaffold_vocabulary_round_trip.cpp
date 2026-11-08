@@ -159,6 +159,10 @@ void check_assembly()
 		expect(forms[i].mnemonic != 0 && forms[i].mnemonic[0] != 0, "assembly mnemonic", i);
 		expect(forms[i].encoding <= x86_asm_model::Encoding::VectorMR, "assembly encoding", i);
 	}
+	const x86_asm_model::GnuIntegerRange* ranges = x86_asm_model::gnu_integer_ranges(count);
+	expect(ranges != 0 && count != 0, "assembly immediate domains", 0);
+	for (std::size_t i = 0; i < count; ++i)
+		expect(ranges[i].constraint != 0 && ranges[i].low <= ranges[i].high, "assembly immediate range", i);
 }
 
 void check_abi()

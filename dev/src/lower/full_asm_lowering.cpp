@@ -49,6 +49,11 @@ void FunctionLowering::full_asm_statement(const syntax::AsmStmt& stmt)
 			continue;
 		if (argument.input_storage)
 			values[argument.input] = destination;
+		else if (packet.constants.size != 0 && packet.constants.data[i].present)
+		{
+			const asm_model::Bits& bits = packet.constants.data[i].bits;
+			values[argument.input] = integer(type, lowir::Literal{ bits.low, bits.high }).value;
+		}
 		else if (argument.output != asm_model::kNoId)
 		{
 			Place place = Place();

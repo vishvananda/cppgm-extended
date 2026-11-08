@@ -4,6 +4,7 @@
 
 #include "asm/parser.h"
 #include "asm/registers.h"
+#include "x86_asm_model.h"
 
 namespace assembly {
 namespace {
@@ -28,6 +29,42 @@ void registers(PacketBuilder& packet, Alternative& alt, RegisterBank bank, unsig
 			++alt.group_count;
 		}
 	alt.locations |= AL_REGISTER;
+}
+
+void range(PacketBuilder& packet, Alternative& alt, int64_t low, int64_t high)
+{
+	Immediate value;
+	value.is_signed = true;
+	value.low = Bits{ static_cast<uint64_t>(low), low < 0 ? ~uint64_t(0) : 0 };
+	value.high = Bits{ static_cast<uint64_t>(high), high < 0 ? ~uint64_t(0) : 0 };
+	packet.immediates.push_back(value);
+	++alt.immediate_count;
+	alt.locations |= AL_IMMEDIATE;
+}
+
+bool immediate(PacketBuilder& packet, Alternative& alt, char code)
+{
+	if (code == 'i' || code == 'n' || code == 'g' || code == 'X')
+	{
+		Immediate value;
+		value.is_signed = true;
+		value.low = Bits{ 0, uint64_t(1) << 63 };
+		value.high = Bits{ ~uint64_t(0), (uint64_t(1) << 63) - 1 };
+		packet.immediates.push_back(value);
+		++alt.immediate_count;
+		alt.locations |= AL_IMMEDIATE;
+		return true;
+	}
+	std::size_t count = 0;
+	const x86_asm_model::GnuIntegerRange* ranges = x86_asm_model::gnu_integer_ranges(count);
+	bool found = false;
+	for (std::size_t i = 0; i < count; ++i)
+		if (ranges[i].constraint == code)
+		{
+			range(packet, alt, ranges[i].low, ranges[i].high);
+			found = true;
+		}
+	return found;
 }
 
 void constraints(PacketBuilder& packet, const std::vector<GnuOperand>& source)
@@ -149,10 +186,30 @@ void constraints(PacketBuilder& packet, const std::vector<GnuOperand>& source)
 					registers(packet, alternative, RegisterBank::Gpr, 0xef);
 				else if (c == 'x')
 					registers(packet, alternative, RegisterBank::Vector, 0xffff);
+				else if (c == 'm' || c == 'o')
+					alternative.locations |= AL_MEMORY;
+				else if (c == 'g' || c == 'X')
+				{
+					registers(packet, alternative, RegisterBank::Gpr, 0xffefu);
+					alternative.locations |= AL_MEMORY;
+					if (!input.output)
+						immediate(packet, alternative, c);
+				}
+				else if (immediate(packet, alternative, c))
+					continue;
+				else if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '!' || c == '?')
+					continue;
 				else
 					fail(std::string("GNU assembly constraint is not implemented yet: ") + c);
 			}
 			alternative.early_write = early;
+			if (input.output && (alternative.locations & AL_IMMEDIATE) != 0)
+			{
+				alternative.locations &= ~AL_IMMEDIATE;
+				alternative.immediate_count = 0;
+				if (alternative.locations == 0)
+					fail("assembly output cannot use an immediate location");
+			}
 			if (alternative.locations == 0 && alternative.matching == kNoId)
 				fail("empty assembly constraint alternative");
 			packet.alternatives.push_back(alternative);

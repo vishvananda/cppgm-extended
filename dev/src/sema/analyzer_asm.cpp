@@ -38,6 +38,70 @@ assembly::View<T> preserve(Arena& arena, const std::vector<T>& values)
 	return view;
 }
 
+const char* prepare_operands(
+	Analyzer& analyzer, const syntax::AsmStmt& stmt, Scope* scope, assembly::PacketBuilder& packet)
+{
+	using namespace asm_model;
+	packet.constants.resize(packet.operands.size());
+	for (uint32_t i = 0; i < packet.operands.size(); ++i)
+	{
+		asm_model::Operand& operand = packet.operands[i];
+		const syntax::Expr& expr = *(
+			i < stmt.outputs.size ? stmt.outputs[i].expression : stmt.inputs[i - stmt.outputs.size].expression);
+		uint8_t locations = 0;
+		for (uint32_t j = 0; j < operand.alternative_count; ++j)
+		{
+			const Alternative& alternative = packet.alternatives[operand.first_alternative + j];
+			locations |= alternative.locations;
+			if (alternative.matching != asm_model::kNoId)
+				locations |= AL_REGISTER;
+		}
+		const bool output = (operand.flags & AO_WRITE) != 0;
+		assembly::InputConstant& constant = packet.constants[i];
+		if (!output && (locations & AL_IMMEDIATE) != 0)
+		{
+			Constant value;
+			constant.present = analyzer.integral_constant(expr, scope, value, constant.bits.high);
+			if (constant.present)
+			{
+				constant.bits.low = value.bits;
+				IntegralKind mode;
+				const unsigned bits = IntegralKindOf(value.type, mode) ? mode.bits : 0;
+				if (bits != 0 && bits <= 64)
+				{
+					// GNU integer constraints see the operand's machine-mode
+					// constant: sign-extend its bits, including unsigned types.
+					if (bits < 64)
+					{
+						const uint64_t sign = uint64_t(1) << (bits - 1);
+						constant.bits.low = ((constant.bits.low & ((sign << 1) - 1)) ^ sign) - sign;
+					}
+					constant.bits.high = static_cast<int64_t>(constant.bits.low) < 0 ? ~uint64_t(0) : 0;
+				}
+			}
+		}
+		const bool addressable = expr.facts->category == ValueCategory::LValue && (expr.facts->flags & kBitField) == 0;
+		operand.input_storage = (operand.flags & AO_READ) != 0 && (locations & AL_MEMORY) != 0 && addressable &&
+			!constant.present;
+		const Type* type = expr.facts->type->unqualified;
+		const bool scalar = IsScalar(type) || type->kind == TypeKind::Vector;
+		if (!scalar && ((locations & AL_MEMORY) == 0 || !addressable))
+			return "assembly operand requires scalar/vector data or addressable memory";
+		if (!output && !constant.present && !operand.input_storage && (locations & AL_REGISTER) == 0)
+			return "assembly operand requires an addressable memory object or compile-time constant";
+		if ((locations & AL_MEMORY) != 0)
+		{
+			unsigned effect = static_cast<unsigned>(packet.definition.memory);
+			if ((operand.flags & AO_READ) != 0)
+				effect |= static_cast<unsigned>(Memory::Read);
+			if (output)
+				effect |= static_cast<unsigned>(Memory::Write);
+			packet.definition.memory = static_cast<Memory>(effect);
+		}
+	}
+	return nullptr;
+}
+
 } // namespace
 
 void Analyzer::asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
@@ -260,14 +324,12 @@ void Analyzer::full_asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 		IntegralKind flag_kind;
 		if (operand.constraint.compare(0, 4, "=@cc") == 0 && !IntegralKindOf(type, flag_kind))
 			error(source.location, "assembly flag output requires an integer type");
-		if (!IsScalar(type) && type->kind != TypeKind::Vector)
-			error(source.location, "this assembly operand requires a scalar or vector type");
 		uint64_t bytes = 0, alignment = 0;
-		if (!type_size(type, bytes, alignment, source.location) || bytes > UINT16_MAX / 8)
+		if (!type_size(type, bytes, alignment, source.location))
 			error(source.location, "assembly operand has incomplete or unsupported size");
-		operand.bits = static_cast<unsigned>(bytes * 8);
-		operand.is_volatile = output && (facts->type->cv & kVolatile) != 0;
-		if (!output)
+		operand.bits = bytes <= UINT16_MAX / 8 ? static_cast<unsigned>(bytes * 8) : 0;
+		operand.is_volatile = (facts->type->cv & kVolatile) != 0;
+		if (!output && (IsScalar(type) || type->kind == TypeKind::Vector))
 			convert_operand(*source.expression, type);
 		operands.push_back(operand);
 	}
@@ -283,6 +345,8 @@ void Analyzer::full_asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 	try
 	{
 		built = assembly::gnu_packet(text, operands, clobbers, stmt.is_volatile, !stmt.is_extended);
+		if (const char* message = prepare_operands(*this, stmt, scope, built))
+			error(stmt.location, message);
 	}
 	catch (const assembly::AssemblyError& failure)
 	{
@@ -301,6 +365,7 @@ void Analyzer::full_asm_statement(const syntax::AsmStmt& stmt, Scope* scope)
 	packet->pieces = preserve(arena_, built.pieces);
 	packet->registers = preserve(arena_, built.registers);
 	packet->clobbers = preserve(arena_, built.clobbers);
+	packet->constants = preserve(arena_, built.constants);
 	AsmProgram* program = arena_.allocate_array<AsmProgram>(1);
 	*program = AsmProgram();
 	program->full = packet;

@@ -14,6 +14,12 @@ struct View
 	uint32_t size = 0;
 };
 
+struct InputConstant
+{
+	asm_model::Bits bits = {};
+	bool present = false;
+};
+
 // A frontend's arena-owned checked packet; value types stay with that
 // frontend until it constructs the corresponding typed LowIR operands.
 struct Packet
@@ -28,6 +34,7 @@ struct Packet
 	View<asm_model::Piece> pieces;
 	View<asm_model::Register> registers;
 	View<asm_model::Register> clobbers;
+	View<InputConstant> constants;
 };
 
 struct PacketBuilder
@@ -41,6 +48,7 @@ struct PacketBuilder
 	std::vector<asm_model::Piece> pieces;
 	std::vector<asm_model::Register> registers;
 	std::vector<asm_model::Register> clobbers;
+	std::vector<InputConstant> constants;
 };
 
 struct GnuOperand

@@ -32,6 +32,22 @@ struct Form
 	bool memory_only;
 };
 
+struct GnuIntegerRange
+{
+	char constraint;
+	std::int64_t low;
+	std::int64_t high;
+};
+
+// Target constraint facts; repeated letters denote a union of ranges.
+inline const GnuIntegerRange* gnu_integer_ranges(std::size_t& count)
+{
+	static const GnuIntegerRange kRanges[] = { { 'I', 0, 31 }, { 'J', 0, 63 }, { 'K', -128, 127 }, { 'L', 255, 255 },
+		{ 'L', 65535, 65535 }, { 'M', 0, 3 }, { 'N', 0, 255 }, { 'e', INT32_MIN, INT32_MAX }, { 'Z', 0, UINT32_MAX } };
+	count = sizeof kRanges / sizeof kRanges[0];
+	return kRanges;
+}
+
 // Opcode bytes are most significant first. ALU forms carry their group digit.
 // bits=0 uses the operand width. RM/MR distinguish register destination/source;
 // mandatory prefix and memory-only restrictions are part of the form.

@@ -54,7 +54,7 @@ compiler effect; it must not introduce a CPU fence.
 An `operand` gives its value type, input argument index, output-address argument
 index, access bits, input-storage flag and flag-output condition. `-1` means
 absent. Access bits are read (1), write (2), commutative pair (4), flag output
-(8) and volatile output assignment (16). Register inputs are captured values;
+(8) and volatile storage access (16). Register inputs are captured values;
 explicit storage inputs and output arguments are pointers. Flag conditions use
 the architectural x86 condition-code nibble. Output places may alias: capture
 results before storing them in operand order. Discarded outputs have no address.
@@ -65,12 +65,18 @@ memory (2), immediate (4), symbol (8) and label (16). All ordinary operands have
 the same number of alternatives, and one alternative column is chosen jointly.
 An early output cannot overlap unrelated inputs or their address registers.
 A matching input shares its output's location.
+An explicit storage input can use a memory location or be loaded into a selected
+register. An output-only memory location uses the output-address argument.
+For a read/write memory binding, the input-storage and output arguments name
+one place. Distinct input and output places can instead use a register binding.
 
 A register alternative lists `group (...)` choices. Immediate domains use
 `range <kind> <signed> <low-lo> <low-hi> <high-lo> <high-hi>`; kinds are integer
 range (0), floating bits (1), relocatable (2), with each endpoint represented by
 two unsigned 64-bit words. An omitted domain permits any constant of the type.
 `clobber <register>` records an architectural clobber independently of operands.
+Integer ranges compare the invocation's complete two-word value. A frontend
+that uses machine-mode constants normalizes them before constructing LowIR.
 
 Template pieces are `text "..."`, `use <operand> <format> <bits> <offset>`, or
 `unique`. Formats are default (0), bare (1), negated (2), label (3), suffix (4).
