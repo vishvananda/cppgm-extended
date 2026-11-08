@@ -17,6 +17,7 @@ import platform
 from pathlib import Path
 import re
 import resource
+import shlex
 import shutil
 import signal
 import subprocess
@@ -77,6 +78,8 @@ BADGES = (
 BUILDS = (
     ('self', 'gcc', 'self-compile', 'self compile speed vs gcc', 1, 'Self compile CPU'),
     ('inception', 'self', 'self-built', 'self-built speed vs gcc', 2, 'Self-built compiler CPU'),
+    ('self', 'clang', 'self-compile-clang', 'self compile speed vs clang', 1, 'Self compile CPU vs Clang'),
+    ('inception', 'clang-built', 'self-built-clang', 'codegen speed vs clang', 2, 'cppgm codegen vs Clang'),
 )
 REFERENCES = (('gcc', 'g++'), ('clang', 'clang++'))
 
@@ -609,7 +612,12 @@ def badge(results, label, metric, digits):
 
 def build_ratio(builds, key, reference):
     """Return the CPU of a build over the CPU of its reference build."""
-    if not builds or builds.get('status') != 'ok' or not builds.get(reference):
+    if not builds or builds.get('status') != 'ok':
+        return None
+    if key == 'inception' and reference == 'clang-built':
+        paired = builds.get('paired_clang')
+        return paired['comparison']['ratio'] if paired else None
+    if not builds.get(reference):
         return None
     if key == 'inception' and reference == 'self' and builds.get('paired_self'):
         return builds['paired_self']['comparison']['ratio']
@@ -692,13 +700,17 @@ def timing_details(document, builds=None):
         lines += ['### Building the compiler', '',
                   '| Compiler doing the rebuild | CPU seconds |', '| --- | ---: |',
                   f'| GCC | {cpu_text(builds.get("gcc"))} |',
+                  f'| Clang | {cpu_text(builds.get("clang"))} |',
                   f'| GCC-built cppgm++ | {cpu_text(builds.get("self"))} |',
                   f'| Self-built cppgm++ | {cpu_text(builds.get("inception"))} |', '',
                   'These are the initial bootstrap builds. The GCC rebuild is measured once.']
-        paired = builds.get('paired_self', {})
-        if paired.get('comparison'):
-            lines += ['', '#### Paired self-built compiler measurements', '',
-                      '| Block | GCC-built cppgm++ (s) | Self-built cppgm++ (s) | Self-built speed ↑ |',
+        for key, reference in [('paired_self', 'GCC'), ('paired_clang', 'Clang')]:
+            paired = builds.get(key, {})
+            if not paired.get('comparison'):
+                continue
+            heading = 'Paired self-built compiler measurements' if key == 'paired_self' else 'Paired codegen measurements vs Clang-built compiler'
+            lines += ['', '#### ' + heading, '',
+                      f'| Block | {reference}-built cppgm++ (s) | Self-built cppgm++ (s) | Self-built speed ↑ |',
                       '| ---: | ---: | ---: | ---: |']
             for index, block in enumerate(paired['comparison']['blocks'], 1):
                 lines.append(f'| {index} | {cpu_text(block["reference_cpu"])} | '
@@ -706,6 +718,9 @@ def timing_details(document, builds=None):
             lines += ['', 'Each block averages its two observations per compiler. '
                       'The badge uses the median block ratio; calibration and every observation '
                       'are retained in the raw results.']
+            if paired.get('AA', {}).get('ratio') is not None:
+                lines += ['', f'{reference}-built A/A CPU ratio: {paired["AA"]["ratio"]:.3f}. '
+                          'A/A variation limits conclusions about small differences.']
     return '\n'.join(lines)
 
 
@@ -731,7 +746,8 @@ def summary(document, changes, builds=None):
     for key, reference, _, _, _, title in BUILDS:
         mean = build_ratio(builds, key, reference)
         if mean:
-            lines.append(f'| {title} | {speed_text(mean)} | - | - | - |')
+            cells = f'- | - | {speed_text(mean)} | -' if reference in ('clang', 'clang-built') else f'{speed_text(mean)} | - | - | -'
+            lines.append(f'| {title} | {cells} |')
     calibrations = [r['timing']['AA']['ratio'] for r in results
                     if r.get('timing', {}).get('AA', {}).get('ratio')]
     if calibrations:
@@ -819,30 +835,57 @@ def main_report(results_path, summary_path=None, baseline_path=None, write_basel
     return 1 if failed or (builds and builds.get('status') != 'ok') else 0
 
 
-def build_cpu(command):
+def build_cpu(command, log=None):
     """Return the CPU seconds of command and its children, or None if it fails."""
     def spent():
         usage = resource.getrusage(resource.RUSAGE_CHILDREN)
         return usage.ru_utime + usage.ru_stime
 
     before = spent()
-    completed = subprocess.run(command, cwd=ROOT, stdout=subprocess.DEVNULL,
-                               stderr=subprocess.PIPE, text=True, check=False)
+    with open(log if log else os.devnull, 'w') as output:
+        completed = subprocess.run(command, cwd=ROOT, stdout=output,
+                                   stderr=subprocess.PIPE, text=True, check=False)
+    if log:
+        Path(log).with_suffix('.stderr').write_text(completed.stderr)
     if completed.returncode != 0:
         print(completed.stderr[-2000:], file=sys.stderr)
         return None
     return round(spent() - before, 2)
 
 
-def selfhost_commands(work, jobs):
-    """Return the three builds of cppgm++, each at -O3 with the same job count."""
+def selfhost_commands(work, jobs, clangxx='clang++'):
+    """Build identical compiler sources at O3, with isolated objects per role."""
     work = Path(work).resolve()
     pa34 = ['make', '-C', 'pa34', f'-j{jobs}', 'CXX=../dev/cppgm++', 'CPPGM_HOST_CXX=g++',
             f'INCEPTION_OBJ_ROOT_BASE={work}/pa34', f'INCEPTION_BUILD_JOBS={jobs}',
             f'INCEPTION_OBJECT_BUILD_JOBS={jobs}']
-    return (('gcc', ['make', '-C', 'dev', f'-j{jobs}', 'cppgm++', f'OBJ={work}/gcc']),
+    return (('gcc', ['make', '-C', 'dev', f'-j{jobs}', 'cppgm++', f'OBJ={work}/gcc', 'CXX=g++', 'CPPGM_HOST_CXX=g++']),
             ('self', pa34 + ['cppgm++-self']),
-            ('inception', pa34 + ['cppgm++-inception']))
+            ('inception', pa34 + ['cppgm++-inception']),
+            ('clang', ['make', '-C', 'dev', f'-j{jobs}', 'cppgm++', f'OBJ={work}/clang',
+                       f'CXX={clangxx}', 'CPPGM_HOST_CXX=g++']))
+
+
+def paired_rebuilds(directory, jobs, seed, compiler, blocks, reference):
+    rebuild = timing.Rebuild(ROOT, directory, jobs, seed, compiler, measure)
+    paired = dict(method='ABBA/BAAB', reference=reference,
+                  compiler_sha256=rebuild.hashes, samples=rebuild.samples)
+
+    def rebuild_one(label, phase, block, position):
+        row = rebuild.run(label, phase, block, position)
+        print(f'{reference} {phase} block {block + 1}, {label}: {row["cpu"]:.3f} CPU s', flush=True)
+        return row
+
+    for position, label in enumerate(('seed', 'self')):
+        rebuild_one(label, 'warmup', -1, position)
+    paired['AA'] = timing.summarize(timing.observations(rebuild_one, 'seed', 'seed', 1, 'AA'))
+    paired['comparison'] = timing.summarize(timing.observations(rebuild_one, 'seed', 'self', blocks))
+    return paired
+
+
+def compiler_source_hashes():
+    return {str(p.relative_to(ROOT)): timing.sha(p) for p in sorted((ROOT / 'dev').rglob('*'))
+            if p.is_file() and (p.suffix in ('.cpp', '.h', '.mk', '.pl') or p.name == 'Makefile')}
 
 
 def selfhost(arguments):
@@ -850,34 +893,45 @@ def selfhost(arguments):
     work = Path(arguments.work).resolve()
     work.mkdir(parents=True, exist_ok=True)
     directory = Path(tempfile.mkdtemp(prefix='paired-', dir=work))
+    bootstrap = directory / 'bootstrap'
     seed = directory / 'bootstrap-seed'
+    clang_seed = directory / 'clang-seed'
+    clangxx = getattr(arguments, 'clangxx', 'clang++')
+    inputs = compiler_source_hashes()
+    builds['metadata'] = dict(cpu=cpu_model(), jobs=arguments.jobs,
+                              revision=tool_version(['git', '-C', str(ROOT), 'rev-parse', 'HEAD']),
+                              gcc=tool_version(['g++', '--version']),
+                              clang=tool_version(shlex.split(clangxx) + ['--version']),
+                              configured_host='g++', source_sha256=inputs)
+    builds['metadata']['runner_sha256'] = {p.name: timing.sha(p) for p in
+                                           [Path(__file__), Path(timing.__file__)]}
+    builds['bootstrap'] = {}
     try:
-        for key, command in selfhost_commands(work, arguments.jobs):
-            builds[key] = build_cpu(command)
+        for key, command in selfhost_commands(bootstrap, arguments.jobs, clangxx):
+            log = directory / f'bootstrap-{key}.log'
+            builds[key] = build_cpu(command, log)
+            builds['bootstrap'][key] = dict(command=command, cpu=builds[key], stdout=str(log),
+                                           stderr=str(log.with_suffix('.stderr')))
+            timing.retain(directory / 'bootstrap-observations.jsonl', builds['bootstrap'][key])
             if builds[key] is None:
                 raise RuntimeError(f'{key} build failed')
             if key == 'gcc':
                 shutil.copy2(ROOT / 'dev/cppgm++', seed)
                 seed.chmod(0o555)
-        compiler = work / 'pa34/bin/selfhost/cppgm++-self'
-        inception = work / 'pa34/bin/inception/cppgm++-inception'
+            if key == 'clang':
+                shutil.copy2(ROOT / 'dev/cppgm++', clang_seed)
+                clang_seed.chmod(0o555)
+        configs = {name: timing.sha(bootstrap / name / 'generated/cppgm_builtin_host_config.h') for name in ('gcc', 'clang')}
+        require(configs['gcc'] == configs['clang'], 'native compilers have different builtin host configurations')
+        builds['metadata']['builtin_host_config_sha256'] = configs
+        compiler = bootstrap / 'pa34/bin/selfhost/cppgm++-self'
+        inception = bootstrap / 'pa34/bin/inception/cppgm++-inception'
         require(timing.sha(compiler) == timing.sha(inception),
                 'self and inception compiler binaries differ')
-        rebuild = timing.Rebuild(ROOT, directory, arguments.jobs, seed, compiler, measure)
-        paired = builds['paired_self'] = dict(method='ABBA/BAAB',
-                                             compiler_sha256=rebuild.hashes,
-                                             samples=rebuild.samples)
-        def rebuild_one(label, phase, block, position):
-            row = rebuild.run(label, phase, block, position)
-            print(f'{phase} block {block + 1}, {label}: {row["cpu"]:.3f} CPU s', flush=True)
-            return row
-
-        for position, label in enumerate(('seed', 'self')):
-            rebuild_one(label, 'warmup', -1, position)
-        paired['AA'] = timing.summarize(timing.observations(
-            rebuild_one, 'seed', 'seed', 1, 'AA'))
-        paired['comparison'] = timing.summarize(timing.observations(
-            rebuild_one, 'seed', 'self', arguments.paired_blocks))
+        builds['paired_self'] = paired_rebuilds(directory, arguments.jobs, seed, compiler, arguments.paired_blocks, 'GCC-built cppgm++')
+        clang_directory = Path(tempfile.mkdtemp(prefix='paired-clang-', dir=work))
+        builds['paired_clang'] = paired_rebuilds(clang_directory, arguments.jobs, clang_seed, compiler, arguments.paired_blocks, 'Clang-built cppgm++')
+        require(inputs and inputs == compiler_source_hashes(), 'compiler source inputs changed during measurement')
     except (RuntimeError, ValueError, OSError) as error:
         builds['status'] = str(error)
     Path(arguments.output).write_text(json.dumps(builds, indent=1) + '\n')
@@ -926,6 +980,7 @@ def main():
     command = commands.add_parser('selfhost')
     command.add_argument('--work', required=True)
     command.add_argument('--output', required=True)
+    command.add_argument('--clangxx', default='clang++', help='native Clang toolchain for compiler build/codegen comparisons')
     command.add_argument('-j', '--jobs', type=int, default=os.cpu_count())
     command.add_argument('--paired-blocks', type=int, default=2,
                          help='paired seed/self compiler rebuild blocks (default: 2)')

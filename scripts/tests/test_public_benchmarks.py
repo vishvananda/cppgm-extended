@@ -440,6 +440,20 @@ class ReportTests(unittest.TestCase):
         badge = pb.build_badge(builds, 'inception', 'self', 'label', 2)
         self.assertEqual(badge['message'], '1.00×')
 
+    def test_clang_compilation_and_codegen_use_distinct_baselines(self):
+        def paired(ratio):
+            return dict(AA=dict(ratio=1.), comparison=dict(ratio=ratio, blocks=[
+                dict(ratio=ratio, reference_cpu=100., candidate_cpu=100.*ratio)]))
+        builds = dict(status='ok', gcc=500., clang=400., self=100., inception=102.,
+                      paired_self=paired(1.02), paired_clang=paired(.80))
+        self.assertEqual(pb.build_ratio(builds, 'self', 'clang'), .25)
+        self.assertEqual(pb.build_ratio(builds, 'inception', 'clang-built'), .80)
+        text = pb.summary(dict(programs=[]), [], builds)
+        self.assertIn('| Self compile CPU vs Clang | - | - | 4.00× | - |', text)
+        self.assertIn('| cppgm codegen vs Clang | - | - | 1.25× | - |', text)
+        del builds['paired_clang']
+        self.assertIsNone(pb.build_ratio(builds, 'inception', 'clang-built'))
+
     def test_build_badge_without_a_run_says_so(self):
         self.assertEqual(pb.build_badge(None, 'self', 'gcc', 'label', 1)['message'], 'no data')
 
@@ -457,7 +471,8 @@ class ReportTests(unittest.TestCase):
             pb.main_report(path, badges=self.root / 'badges', selfhost_path=builds)
         names = sorted(item.stem for item in (self.root / 'badges').iterdir())
         self.assertEqual(names, ['o0-compile', 'o0-generated', 'o3-compile',
-                                 'o3-generated', 'self-built', 'self-compile'])
+                                 'o3-generated', 'self-built', 'self-built-clang',
+                                 'self-compile', 'self-compile-clang'])
         written = json.loads((self.root / 'badges/self-built.json').read_text())
         self.assertEqual((written['label'], written['message']),
                          ('self-built speed vs gcc', '0.50×'))
@@ -513,11 +528,16 @@ class ReportTests(unittest.TestCase):
 
     def test_selfhost_builds_use_one_job_count(self):
         commands = dict(pb.selfhost_commands('/work', 3))
-        self.assertEqual(sorted(commands), ['gcc', 'inception', 'self'])
+        self.assertEqual(sorted(commands), ['clang', 'gcc', 'inception', 'self'])
         for command in commands.values():
             self.assertIn('-j3', command)
         self.assertIn('INCEPTION_OBJECT_BUILD_JOBS=3', commands['inception'])
         self.assertEqual(commands['self'][-1], 'cppgm++-self')
+        self.assertIn('CXX=clang++', commands['clang'])
+        self.assertIn('CXX=g++', commands['gcc'])
+        self.assertIn('CPPGM_HOST_CXX=g++', commands['clang'])
+        self.assertIn('OBJ=/work/clang', commands['clang'])
+        self.assertIn('OBJ=/work/gcc', commands['gcc'])
 
     def test_selfhost_records_the_failed_build(self):
         output = self.root / 'selfhost.json'

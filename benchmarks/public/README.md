@@ -104,20 +104,27 @@ either side are excluded. The `-O3` timed programs row shows how many programs
 contributed to that generated-code ratio. Cutoffs apply separately on each host,
 so counts can differ between columns.
 
-The two compiler build rows time the same compiler sources at `-O3`, with the
+The compiler build/codegen rows time the same compiler sources at `-O3`, with the
 same job count:
 
-- **Building `cppgm++`**: GCC's build time divided by the time taken by the
-  GCC-built `cppgm++` to build itself.
+- **Building `cppgm++`**: GCC's or Clang's native build CPU time divided by the
+  time taken by GCC-built `cppgm++` to build itself. Each native toolchain uses
+  a fresh, isolated object root.
 - **Self-built compiler speed**: that self-build time divided by the time
   taken by the self-built compiler to compile the same sources. After the
   initial bootstrap, fixed GCC-built and self-built binaries rebuild identical
   PA34 inputs in two ABBA/BAAB blocks, following warmups and four GCC-built A/A runs.
+  The Clang codegen comparison independently repeats this protocol with a frozen
+  Clang-built binary as the reference and the same self-built binary as candidate.
   The badge uses the median paired CPU ratio. Every rebuild must produce
   identical objects and compiler binaries.
 
-`selfhost --paired-blocks N` changes the rebuild block count. The initial GCC
-build is measured once for the **Building `cppgm++`** row. Pairing reduces
+`selfhost --paired-blocks N` changes the rebuild block count per native baseline;
+`--clangxx PATH` selects native Clang. The initial GCC and Clang builds are each
+measured once for **Building `cppgm++`**. All binaries keep `CPPGM_HOST_CXX=g++`
+and identical builtin host configuration hashes, so the compiler's target header
+environment stays fixed while its native code generator changes. Source hashes,
+toolchain identities, commands and bootstrap logs are retained. Pairing reduces
 order effects; A/A variation still limits claims about small differences.
 The results JSON and workflow artifacts retain the calibration, block ratios,
 raw observations and output hashes.

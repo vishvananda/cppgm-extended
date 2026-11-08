@@ -12,6 +12,7 @@ import benchmark_hosts
 
 BADGES = ('o0-compile', 'o0-generated', 'o3-compile', 'o3-generated',
           'self-compile', 'self-built')
+CLANG_BADGES = ('self-compile-clang', 'self-built-clang')
 
 
 def badge_svg(data):
@@ -68,8 +69,10 @@ def prepare(artifact, target, platform, revision, run_url, legacy_epyc=False):
         raise ValueError(f'{platform} badges require {expected} hardware; measured {cpu!r}')
     # Validate the whole set before replacing any previous measurement.
     badges = {}
-    for name in BADGES:
-        data = json.loads((artifact / 'badges' / f'{name}.json').read_text())
+    for name in BADGES + CLANG_BADGES:
+        path = artifact / 'badges' / f'{name}.json'
+        data = (dict(schemaVersion=1, label=name, message='no data', color='475569')
+                if name in CLANG_BADGES and not path.exists() else json.loads(path.read_text()))
         if data.get('schemaVersion') != 1 or not isinstance(data.get('message'), str):
             raise ValueError(f'invalid badge: {name}')
         badges[name] = data

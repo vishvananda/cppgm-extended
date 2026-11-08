@@ -77,7 +77,7 @@ jobs:
             --output obj/public-benchmarks/results.json \
             --jobs "$(nproc)"
 
-      - name: Time the g++, self-hosted and inception builds
+      - name: Compare compiler build and codegen against GCC and Clang
         run: |
           python3 scripts/public_benchmarks.py selfhost \
             --work obj/public-benchmarks/selfhost \
