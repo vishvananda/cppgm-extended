@@ -4,7 +4,8 @@ namespace captured {
 template<int...> struct Values {};
 template<class... T> using Counted = Values<(sizeof(T)+sizeof...(T))...>;
 template<class... T> using Append = Counted<T..., char>;
-template<class... T> using Cardinal = Values<sizeof...(T)>;
+template<int> struct Size {};
+template<class... T> using Cardinal = Size<sizeof...(T)>;
 template<class T> int scalar(Cardinal<T>*) { return 17; }
 template<class... T> int mixed(Append<T...>*) { return 7; }
 template<class Unused,class... T> int indexed(Counted<T...>*) { return 11; }
