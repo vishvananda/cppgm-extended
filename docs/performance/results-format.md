@@ -115,3 +115,19 @@ required. The normalized records and raw artifacts are retained together.
 
 This contract and prototype are ready for review. It does not claim that the
 existing publishers have already migrated or that Godot has been measured.
+
+## Producer migration checks
+
+The current upstream-suite artifacts retain platform/kernel, pinned sources,
+compiler hashes, commands and stage CPU measurements. They do not record the
+exact CPU model. Capture that identity before placing their times in a named
+hardware summary; do not infer a CPU from the GitHub runner label. Keep the
+existing CI run's measured source/merge commit distinct from its upstream corpus
+revision. Historical unknowns stay explicit and cannot be grouped into a known
+CPU profile.
+
+Public benchmark speed ratios currently use the opposite direction from this
+contract and need inversion on import. index-cpp's runtime score measures loop
+elapsed time; it must retain that metric. simdjson's existing paired speedups
+already use reference/cppgm. Each adapter must preserve those producers' original
+estimators, input membership and validation before shared publication is enabled.
