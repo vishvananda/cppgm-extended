@@ -863,7 +863,7 @@ Stmt* Parser::parse_for()
 		Tentative attempt(*this);
 		ListFrame<DeclSpecifier> specifiers(specs_);
 		SpecifierInfo info;
-		const bool specified = parse_decl_specifier_seq(specifiers, info) && info.has_type;
+		const bool specified = parse_decl_specifier_seq(specifiers, info, true) && info.has_type;
 		if (specified && at_structured_binding())
 		{
 			// for ( specifiers ref? [ names ] : range ): the object e is the

@@ -325,7 +325,7 @@ bool ConstantInterpreter::construct(const Type* type, const ConstPlace& target, 
 			return materialize(*list->elements[0], target);
 		if (constructor == nullptr && IsAggregateClass(cls))
 			return aggregate(type, target, *list, location);
-		if (list->elements.empty())
+		if (list->elements.empty() && (list->facts == nullptr || (list->facts->flags & kInitializerList) == 0))
 			return value_initialize(type, target, constructor, location);
 		if (constructor == nullptr && list->facts != nullptr && (list->facts->flags & kInitializerList) != 0)
 			return list_object(cls, target, *list, location);

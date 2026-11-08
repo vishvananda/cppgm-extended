@@ -128,20 +128,21 @@ void Parser::note_name_conflict(uint32_t conflicts, uint32_t component)
 }
 
 NameBinding Parser::resolve_component(
-	const Identifier* identifier, const NameInfo& info, bool prefix_only, bool declared)
+	const Identifier* identifier, const NameInfo& info, bool prefix_only, bool declared, bool namespace_only)
 {
 	switch (info.prefix)
 	{
 	case PrefixState::Unqualified:
 	{
-		NameBinding binding = scopes_.lookup(identifier, prefix_only);
+		NameBinding binding = scopes_.lookup(identifier, prefix_only, namespace_only);
 		if (!declared && !prefix_only && scopes_.current()->uncertain_bases && uncertain_base_name(identifier))
-			return guessed_component(binding);
+			return guessed_component(identifier, binding);
 		return binding;
 	}
 	case PrefixState::Known:
 	{
-		NameBinding binding = scopes_.lookup_in(info.prefix_scope, identifier, prefix_only, info.prefix_specialization);
+		NameBinding binding = scopes_.lookup_in(
+			info.prefix_scope, identifier, prefix_only, info.prefix_specialization, namespace_only);
 		// A specialization's member its template's scope lacks may be its
 		// argument's, through a base naming a template parameter.
 		if (binding.category == NameCategory::None && info.prefix_scope->parameter_bases && info.prefix_specialization)
@@ -159,14 +160,14 @@ NameBinding Parser::resolve_component(
 			!current_instantiation(info.prefix_scope))
 			return NameBinding{ NameCategory::Value, false, nullptr };
 		if (binding.conflicted || (info.prefix_approximate && !prefix_only))
-			return guessed_component(binding);
+			return guessed_component(identifier, binding);
 		return binding;
 	}
 	case PrefixState::Dependent:
 		// Outside every template definition a member of a type whose class
 		// is unknown: a value as a dependent name would be, or a type.
 		if (info.prefix_uncertain && !prefix_only)
-			return guessed_component(NameBinding{ NameCategory::None, false, nullptr });
+			return guessed_component(identifier, NameBinding{ NameCategory::None, false, nullptr });
 		break;
 	case PrefixState::Unknown:
 		break;
@@ -197,7 +198,7 @@ bool ParserState::uncertain_base_name(const Identifier* identifier)
 	return false;
 }
 
-NameBinding Parser::guessed_component(NameBinding binding)
+NameBinding Parser::guessed_component(const Identifier* identifier, NameBinding binding)
 {
 	// A member whose category the template's specializations disagree on,
 	// or one the parser can only guess (in a class that is a guess,
@@ -206,6 +207,14 @@ NameBinding Parser::guessed_component(NameBinding binding)
 	// declare it), or in another reading of a statement the category that
 	// reading takes where the name has it, a type or a value (see
 	// parse_declaration_or_expression_statement).
+	const Name* first = conflicts_.statement.name;
+	if (binding.category == NameCategory::None && !binding.conflicted && conflicts_.take != NameCategory::None &&
+		first != nullptr && first->components[conflicts_.statement.component].identifier != identifier)
+	{
+		// Choosing an unknown type for this statement must not turn an
+		// unrelated unknown function in its initializer into another type.
+		return binding;
+	}
 	if (!binding.conflicted)
 	{
 		if (!alternatives_active_)
@@ -349,7 +358,8 @@ void ParserState::record_parameter_base(Scope* class_scope, const Identifier* na
 	}
 }
 
-void Parser::advance_prefix(const NameComponent& component, NameInfo& info, bool dependent_arguments, bool declared)
+void Parser::advance_prefix(
+	const NameComponent& component, NameInfo& info, bool dependent_arguments, bool declared, bool namespace_only)
 {
 	// A component followed by `::` becomes the scope of the next one: a
 	// known class, enumeration or namespace; dependent when it is a type
@@ -364,7 +374,7 @@ void Parser::advance_prefix(const NameComponent& component, NameInfo& info, bool
 		info.prefix_approximate = false;
 		return;
 	}
-	const NameBinding binding = resolve_component(component.identifier, info, true);
+	const NameBinding binding = resolve_component(component.identifier, info, true, false, namespace_only);
 	if (binding.pack)
 		++pack_mentions_;
 	if (binding.parameter || binding.dependent())
@@ -595,15 +605,15 @@ bool Parser::parse_name_component(NameMode mode, ListFrame<NameComponent>& compo
 		if (continues)
 		{
 			advance_prefix(component, info, template_parameter_mentions_ != mentions,
-				mode == NameMode::Declarator || naming_declared_);
+				mode == NameMode::Declarator || naming_declared_, mode == NameMode::Namespace);
 			next();
 			note_name_conflict(conflicts, components.size());
 			components.push(component);
 			more = true;
 			return true;
 		}
-		const NameBinding binding = resolve_component(
-			component.identifier, info, false, mode == NameMode::Declarator || naming_declared_);
+		const NameBinding binding = resolve_component(component.identifier, info, false,
+			mode == NameMode::Declarator || naming_declared_, mode == NameMode::Namespace);
 		info.category = binding.category;
 		info.scope = binding.scope;
 		info.template_member = info.prefix == PrefixState::Known &&

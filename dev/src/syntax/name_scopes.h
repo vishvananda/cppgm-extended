@@ -230,14 +230,15 @@ public:
 
 	// Unqualified lookup from the current scope. With `prefix_only`, only
 	// types, templates and namespaces are found (a name before `::`).
-	NameBinding lookup(const Identifier* name, bool prefix_only);
+	NameBinding lookup(const Identifier* name, bool prefix_only, bool namespace_only = false);
 	// A value before `<` may share its namespace lookup set with an
 	// imported function template. Other lookups keep their first category.
 	bool unqualified_template(const Identifier* name);
 	// Qualified lookup in a class, enumeration or namespace scope; with
 	// `specialization`, in a class template specialization's (a
 	// template-id's), whose dependent bases are searched too.
-	NameBinding lookup_in(Scope* scope, const Identifier* name, bool prefix_only, bool specialization = false);
+	NameBinding lookup_in(Scope* scope, const Identifier* name, bool prefix_only, bool specialization = false,
+		bool namespace_only = false);
 	// A binding of the scope itself, without edges.
 	NameBinding own(Scope* scope, const Identifier* name) const;
 
@@ -321,6 +322,7 @@ private:
 	{
 		const Identifier* name;
 		bool prefix_only;
+		bool namespace_only;
 		uint32_t visit;
 		// Declared in some class or enumeration scope.
 		bool member;
@@ -330,7 +332,7 @@ private:
 		bool specialization;
 	};
 
-	Query query(const Identifier* name, bool prefix_only);
+	Query query(const Identifier* name, bool prefix_only, bool namespace_only = false);
 	static uint64_t memo_key(const Scope* scope, const Query& query);
 	NameBinding search(Scope* scope, Query& query);
 	NameBinding namespace_overloads(Scope* scope, Query& query, uint32_t depth);

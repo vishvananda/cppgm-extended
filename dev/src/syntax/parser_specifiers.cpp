@@ -751,7 +751,7 @@ bool Parser::parse_named_type_specifier(ListFrame<DeclSpecifier>& list, Specifie
 		const bool dependent = name_info.prefix != PrefixState::Unqualified &&
 			template_parameter_mentions_ != parameters;
 		if (!type && name_info.category == NameCategory::None &&
-			((definite_type_ && !dependent) ||
+			((definite_type_ && (!dependent || name_info.prefix_uncertain)) ||
 				(at_identifier() && !at_identifier(final_) && !at_identifier(override_)) || at(TokenKind::KW_OPERATOR)))
 		{
 			const uint8_t gnu = !name->global && name->components.size == 1 &&

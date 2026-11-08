@@ -1629,7 +1629,22 @@ bool Analyzer::dependent_object(const syntax::Expr& object, bool arrow, Scope* s
 		const ClassTemplateFacts* facts = static_cast<const ClassEntity*>(type->entity)->templ;
 		return facts == nullptr || facts->role == TemplateRole::Specialization;
 	}
-	return type->kind == TypeKind::TemplateParameter;
+	if (type->kind != TypeKind::TemplateParameter)
+		return false;
+	const auto* parameter = static_cast<const TemplateParameterEntity*>(type->entity);
+	if (parameter->expression != nullptr && !parameter->non_type && parameter->pending == nullptr &&
+		parameter->qualifier == nullptr)
+	{
+		// A local decltype placeholder can defer an initializer's values
+		// although its result type is fixed. Only type dependence requires
+		// the template introducer on the resulting object.
+		const bool precise = precise_dependence_;
+		precise_dependence_ = true;
+		const bool dependent = type_dependent(parameter->expression, parameter->expression_scope);
+		precise_dependence_ = precise;
+		return dependent;
+	}
+	return true;
 }
 
 void Analyzer::expression_names(const syntax::Expr& expr, Scope* scope, bool unevaluated)

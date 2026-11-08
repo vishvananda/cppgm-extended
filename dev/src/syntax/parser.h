@@ -58,7 +58,9 @@ private:
 		// After `.` or `->`: template-ids need `template` (14.2p4).
 		Member,
 		// A type name in a specifier position (no operator names).
-		Type
+		Type,
+		// A namespace-name: ordinary types and values do not hide it.
+		Namespace
 	};
 
 	// Where the prefix of a name being parsed was resolved.
@@ -270,13 +272,13 @@ private:
 	// `declared`: the name declares or defines its last component (a
 	// declarator-id, a class-head), whose prefix names the class or
 	// namespace it is a member of, whatever its template arguments.
-	void advance_prefix(
-		const NameComponent& component, NameInfo& info, bool dependent_arguments = true, bool declared = false);
+	void advance_prefix(const NameComponent& component, NameInfo& info, bool dependent_arguments = true,
+		bool declared = false, bool namespace_only = false);
 	uint8_t prefix_guesses(
 		const NameComponent& component, const NameInfo& info, const NameBinding& binding, bool declared);
-	NameBinding resolve_component(
-		const Identifier* identifier, const NameInfo& info, bool prefix_only, bool declared = false);
-	NameBinding guessed_component(NameBinding binding);
+	NameBinding resolve_component(const Identifier* identifier, const NameInfo& info, bool prefix_only,
+		bool declared = false, bool namespace_only = false);
+	NameBinding guessed_component(const Identifier* identifier, NameBinding binding);
 	void note_name_conflict(uint32_t conflicts, uint32_t component);
 	// For a typedef-name's or alias's binding of a type specifier's name
 	// (one of a class whose scope is known): whether the class it records

@@ -367,6 +367,7 @@ bool Parser::parse_declarator_suffixes(DeclaratorMode mode, Declarator* declarat
 			// Only a named declarator's clause competes with an initializer;
 			// an operator or special member name decides for the clause.
 			const bool definite = mode != DeclaratorMode::Named || special_member_clause_ ||
+				declaration_scope()->kind == ScopeKind::Class ||
 				(declarator->name != nullptr && declarator->name->last().kind != NameComponentKind::Identifier);
 			Tentative tentative(*this);
 			suffix.parameters = parse_parameter_clause(suffixes.size() == 0 ? member_of : nullptr, definite);

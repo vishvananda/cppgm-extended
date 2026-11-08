@@ -1,0 +1,62 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $d : obj<1x1>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $d
+    %t2 = addr $d
+    %t3 = call i32 @Derived__read(%t2)
+    %t4 = cmp eq i32 %t3, 7
+    branch %t4, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store typed i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store typed i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t5 = load typed i32 $cond__1
+    return i32 %t5
+}
+function @Derived__read(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK7Derived4readEv, inline_hint=yes] {
+  slot $this : ptr
+  slot $local : obj<4x4>
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = addr $local
+    %t2 = load typed ptr $this
+    %t3 = index i8 %t2, 0
+    %t4 = call obj<4x4> @State__get(%t3)
+    copyobj 4x4 %t4, %t1
+    %t5 = addr $local
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load typed i32 %t6
+    return i32 %t7
+}
+function @State__get(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK5State3getEv, inline_hint=yes] {
+  slot $this : ptr
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = addr $retobj__1
+    call void @State__item__item__aggregate(%t1, 7)
+    return obj<4x4> $retobj__1
+}
+function @State__item__item__aggregate(%this : ptr [object_bytes=4], %value : i32) -> void [unwind=no, binding=internal] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store typed i32 %t1, %t3
+    return void
+}

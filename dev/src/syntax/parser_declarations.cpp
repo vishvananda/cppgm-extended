@@ -262,7 +262,7 @@ Decl* Parser::parse_namespace()
 		next();
 		next();
 		NameInfo info;
-		alias->target = parse_name(NameMode::Type, info);
+		alias->target = parse_name(NameMode::Namespace, info);
 		if (alias->target == nullptr || !expect(TokenKind::OP_SEMICOLON))
 			return nullptr;
 		scopes_.declare(scopes_.current(), alias->name, NameBinding{ NameCategory::Namespace, false, info.scope });
@@ -348,7 +348,7 @@ Decl* Parser::parse_using()
 		directive->typename_keyword = false;
 		directive->if_exists = false;
 		NameInfo info;
-		directive->target = parse_name(NameMode::Type, info);
+		directive->target = parse_name(NameMode::Namespace, info);
 		if (directive->target == nullptr || !expect(TokenKind::OP_SEMICOLON))
 			return nullptr;
 		if (info.category == NameCategory::Namespace && info.scope != nullptr)

@@ -3024,6 +3024,8 @@ void Analyzer::explicitly_instantiate_members(ClassEntity* cls)
 
 const syntax::Expr* Analyzer::default_argument(const FunctionEntity* function, uint32_t index)
 {
+	if (function->default_arguments == nullptr)
+		return nullptr;
 	instantiate_default_argument(const_cast<FunctionEntity*>(function), index);
 	return function->default_arguments[index];
 }

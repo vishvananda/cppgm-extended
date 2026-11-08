@@ -38,8 +38,10 @@ const uint8_t kCompareMembers = 64;
 // namespace lookup may combine it with an ordinary function overload.
 const uint8_t kNamespaceTemplateValue = 128;
 
-bool Found(const NameBinding& binding, bool prefix_only)
+bool Found(const NameBinding& binding, bool prefix_only, bool namespace_only)
 {
+	if (namespace_only)
+		return binding.category == NameCategory::Namespace;
 	if (binding.category == NameCategory::None)
 		return false;
 	if (!prefix_only)
@@ -544,21 +546,25 @@ NameBinding NameScopes::own(Scope* scope, const Identifier* name) const
 	return slot.binding;
 }
 
-NameScopes::Query NameScopes::query(const Identifier* name, bool prefix_only)
+NameScopes::Query NameScopes::query(const Identifier* name, bool prefix_only, bool namespace_only)
 {
 	const uint8_t bits = marks(name);
-	return Query{ name, prefix_only, ++next_visit_, (bits & kMember) != 0, (bits & kMemo) != 0, false };
+	return Query{ name, prefix_only, namespace_only, ++next_visit_, (bits & kMember) != 0, (bits & kMemo) != 0, false };
 }
 
 NameBinding NameScopes::search(Scope* scope, Query& query)
 {
+	// A class cannot declare a namespace. Namespace-only lookup neither
+	// searches its members nor shares ordinary member-lookup memo entries.
+	if (query.namespace_only && scope->kind == ScopeKind::Class)
+		return NameBinding();
 	if (scope->visit == query.visit && (!query.specialization || scope->specialization_visit == query.visit))
 		return NameBinding{ NameCategory::None, false, nullptr };
 	scope->visit = query.visit;
 	if (query.specialization)
 		scope->specialization_visit = query.visit;
 	const NameBinding binding = own(scope, query.name);
-	if (Found(binding, query.prefix_only))
+	if (Found(binding, query.prefix_only, query.namespace_only))
 		return binding;
 	if (scope->kind == ScopeKind::Class && !query.member)
 		return NameBinding{ NameCategory::None, false, nullptr };
@@ -638,7 +644,7 @@ inline NameBinding NameScopes::search_level(Scope* scope, Query& query)
 	{
 		scope->visit = query.visit;
 		binding = own(scope, query.name);
-		if (Found(binding, query.prefix_only))
+		if (Found(binding, query.prefix_only, query.namespace_only))
 			return binding;
 		binding = NameBinding{ NameCategory::None, false, nullptr };
 		for (ScopeEdge* edge = scope->edges; edge != nullptr && binding.category == NameCategory::None;
@@ -667,14 +673,14 @@ inline NameBinding NameScopes::search_level(Scope* scope, Query& query)
 	return NameBinding{ NameCategory::None, false, nullptr };
 }
 
-NameBinding NameScopes::lookup(const Identifier* name, bool prefix_only)
+NameBinding NameScopes::lookup(const Identifier* name, bool prefix_only, bool namespace_only)
 {
 	// Each scope's own names and owned edges, then the using-directives
 	// whose names appear at this scope, then an out-of-class member's class.
 	++lookups_;
 	if ((marks(name) & kDeclared) == 0)
 		return NameBinding{ NameCategory::None, false, nullptr };
-	Query query = this->query(name, prefix_only);
+	Query query = this->query(name, prefix_only, namespace_only);
 	pending_.clear();
 	// The namespace of an out-of-class member's class (or a namespace
 	// member's namespace) once its class context is searched: it and the
@@ -711,12 +717,13 @@ NameBinding NameScopes::lookup(const Identifier* name, bool prefix_only)
 	return NameBinding{ NameCategory::None, false, nullptr };
 }
 
-NameBinding NameScopes::lookup_in(Scope* scope, const Identifier* name, bool prefix_only, bool specialization)
+NameBinding NameScopes::lookup_in(
+	Scope* scope, const Identifier* name, bool prefix_only, bool specialization, bool namespace_only)
 {
 	++lookups_;
 	if ((marks(name) & kDeclared) == 0)
 		return NameBinding{ NameCategory::None, false, nullptr };
-	Query query = this->query(name, prefix_only);
+	Query query = this->query(name, prefix_only, namespace_only);
 	query.specialization = specialization;
 	NameBinding result = search(scope, query);
 	if (specialization && result.category != NameCategory::None && scope->name != nullptr &&
@@ -798,9 +805,10 @@ NameBinding NameScopes::lookup_in(Scope* scope, const Identifier* name, bool pre
 	{
 		scope->visit = query.visit;
 		binding = own(scope, query.name);
-		if (Found(binding, query.prefix_only) && !(overloads && binding.category == NameCategory::Value))
+		if (Found(binding, query.prefix_only, query.namespace_only) &&
+			!(overloads && binding.category == NameCategory::Value))
 			return binding;
-		if (!Found(binding, query.prefix_only))
+		if (!Found(binding, query.prefix_only, query.namespace_only))
 			binding = NameBinding{ NameCategory::None, false, nullptr };
 		for (ScopeEdge* edge = scope->edges; edge != nullptr &&
 			(binding.category == NameCategory::None || (overloads && binding.category == NameCategory::Value));
