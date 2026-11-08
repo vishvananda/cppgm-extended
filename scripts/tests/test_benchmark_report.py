@@ -100,6 +100,19 @@ class Results(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'Impossible coverage'):
             report.validate(self.catalog,self.document())
 
+    def test_candidate_flags_cannot_be_silently_merged_between_baselines(self):
+        clang=copy.deepcopy(self.row);clang['baseline']='clang'
+        clang['context']['flags']={'cppgm':['-O3'], 'clang':['-O3','-fno-vectorize']}
+        self.assertEqual(len(report.missing_baselines([self.row,clang])),2)
+        clang['context']['flags']['cppgm'].append('-fno-inline')
+        self.assertEqual(len(report.missing_baselines([self.row,clang])),4)
+        with tempfile.TemporaryDirectory() as directory:
+            target=Path(directory)/'report';report.render(self.catalog,self.document([self.row,clang]),target)
+            rows=[line for line in (target/'summary.md').read_text().splitlines()
+                  if line.startswith('| [simdjson/scalar/twitter.json]')]
+            self.assertEqual(len(rows),2)
+            self.assertTrue(all('not-measured' in line for line in rows))
+
 
 if __name__=='__main__':
     unittest.main()

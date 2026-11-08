@@ -73,3 +73,9 @@ The prototype renderer is exercised on actual published simdjson observations:
 two backends, two exact host profiles, both native baselines, compilation and two
 runtime inputs, with CPU and elapsed metrics kept separate. Existing publisher
 migration remains a follow-up; the prototype does not claim it has occurred.
+
+The completed local [internal-source comparison](../../reports/internal-native-comparison.txt)
+provides a second concrete dataset: 5,614 common positive fixture groups at O0
+and O3, plus 1,210 matched normal-exit controls. Its linked evidence retains
+the broad qualification results, exclusions and per-fixture observations.
+Those single-run CPU observations must keep their quality label when imported.

@@ -100,13 +100,19 @@ def seconds(row, key):
     return f"{row[key]:.6f}" if row.get(key) is not None else 'not provided'
 
 
+def pairing_context(row):
+    context = dict(row['context'])
+    # Native flags may differ between baselines; candidate build flags may not.
+    context['flags'] = {'cppgm': context['flags'].get('cppgm')}
+    return json.dumps(context, sort_keys=True)
+
+
 def missing_baselines(rows):
     """Presentation placeholders do not become fabricated measurement records."""
     groups = defaultdict(dict)
     for row in rows:
-        context = {k: v for k, v in row['context'].items() if k != 'flags'}
         key = tuple(row[k] for k in ['configuration', 'test', 'optimization', 'phase', 'metric', 'revision'])
-        key += (row['coverage']['case_set_sha256'], json.dumps(context, sort_keys=True))
+        key += (row['coverage']['case_set_sha256'], pairing_context(row))
         groups[key][row['baseline']] = row
     result = list(rows)
     for comparisons in groups.values():
@@ -132,6 +138,7 @@ def render(catalog, document, output):
     lines = ['# Correctness and performance', '',
              'Speedup = reference time / cppgm time; higher is better. CPU and elapsed metrics are separate.',
              'Each row keeps GCC and Clang separate for one phase and metric. Missing values are not passes or zeros.', '',
+             'Availability describes the supplied records; measurements from other reports may not have been imported.', '',
              '| Workload / configuration | Optimization levels | Availability | Details |', '|---|---|---|---|']
     for key, entry in entries.items():
         for config in entry['configurations'] or [dict(id='', name='configuration not yet declared', optimizations=[])]:
@@ -146,33 +153,37 @@ def render(catalog, document, output):
         host = rows[0]['host']
         lines += ['', f'## {cell(host["cpu"])} — {cell(host["environment"])}', '',
                   f'Architecture: {cell(host["architecture"])}; host profile `{cell(host_id)}`.', '',
-                  '| Workload / configuration / test | Opt | Phase / metric | vs GCC | vs Clang | Case set | Revision |',
-                  '|---|---|---|---:|---:|---|---|']
+                  '| Workload / configuration / test | Opt | Phase / metric | vs GCC | vs Clang | Validation | Case set | Revision |',
+                  '|---|---|---|---:|---:|---|---|---|']
         # A workload name is part of the key: distinct suites may share test IDs.
         complete_rows = []
         for workload in {r['workload'] for r in rows}:
             complete_rows += missing_baselines([r for r in rows if r['workload'] == workload])
         paired = defaultdict(dict)
         for row in complete_rows:
-            context = {k: v for k, v in row['context'].items() if k != 'flags'}
             key = tuple(row[k] for k in ['workload', 'configuration', 'test', 'optimization', 'phase', 'metric', 'revision'])
-            key += (row['coverage']['case_set_sha256'], json.dumps(context, sort_keys=True))
+            key += (row['coverage']['case_set_sha256'], pairing_context(row))
             paired[key][row['baseline']] = row
         for _, comparisons in sorted(paired.items()):
             row = next(iter(comparisons.values()))
             cov = row['coverage']; label = '/'.join(row[k] for k in ['workload', 'configuration', 'test'])
             cases = f"{cov['selected']} {cov['unit']}; set {cov['case_set_sha256'][:8]}"
-            lines.append(f'| [{cell(label)}]({row["workload"]}.md) | {row["optimization"]} | {row["phase"]} / {row["metric"]} | {speed(comparisons["gcc"])} | {speed(comparisons["clang"])} | {cell(cases)} | `{row["revision"][:9]}` |')
+            validation = '; '.join(f"{name}: {r['coverage']['candidate_passed']}/{r['coverage']['selected']} cppgm, "
+                                   f"{r['coverage']['reference_passed']}/{r['coverage']['selected']} reference"
+                                   if r['status'] == 'passed' else f"{name}: {r['status']}"
+                                   for name, r in sorted(comparisons.items()))
+            lines.append(f'| [{cell(label)}]({row["workload"]}.md) | {row["optimization"]} | {row["phase"]} / {row["metric"]} | {speed(comparisons["gcc"])} | {speed(comparisons["clang"])} | {cell(validation)} | {cell(cases)} | `{row["revision"][:9]}` |')
     (output/'summary.md').write_text('\n'.join(lines)+'\n')
     for workload, rows in by_workload.items():
         detail = ['# '+entries[workload]['name'], '',
-                  '| Configuration / test | CPU / environment | Opt | Baseline | Phase / metric | cppgm seconds | Reference seconds | Speedup | Method | Evidence |',
-                  '|---|---|---|---|---|---:|---:|---:|---|---|']
+                  '| Configuration / test | CPU / environment | Opt | Baseline | Phase / metric | cppgm seconds | Reference seconds | Speedup | Validation | Revision | Method | Evidence |',
+                  '|---|---|---|---|---|---:|---:|---:|---|---|---|---|']
         for row in rows:
             detail.append('| '+ ' | '.join(cell(x) for x in [row['configuration']+'/'+row['test'],
                 row['host']['cpu']+' / '+row['host']['environment'], row['optimization'], row['baseline'],
                 row['phase']+' / '+row['metric'], seconds(row, 'candidate_seconds'), seconds(row, 'reference_seconds'),
-                speed(row), row['method'], f'[details]({row["details_url"]}) · [raw]({row["raw_url"]}) · [CI]({row["run_url"]})'])+' |')
+                speed(row), f"{row['coverage']['candidate_passed']} candidate / {row['coverage']['reference_passed']} reference / {row['coverage']['selected']} selected; {row['coverage']['excluded']} excluded", row['revision'][:9],
+                row['method'], f'[details]({row["details_url"]}) · [raw]({row["raw_url"]}) · [CI]({row["run_url"]})'])+' |')
         detail += ['', 'The retained records.json contains coverage, case-set hashes and producer provenance for every row.']
         (output/(workload+'.md')).write_text('\n'.join(detail)+'\n')
 

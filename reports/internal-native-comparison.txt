@@ -1,0 +1,69 @@
+Internal .t source comparison: local feasibility and timing observations
+=======================================================================
+
+Compiler source: 783dbfcf01360d923ff590d2048a0c1764761cc3.
+Host: Intel Xeon E5-2696 v4, x86_64 Linux, shared host, four workers,
+unpinned. Baselines: GCC 15.2.0 and Clang 21.1.8, both using the same
+host libstdc++ 15 headers. Each source keeps its declared language mode.
+
+Inventory: 9,974 tracked .t fixtures; 8,129 have C++ source projections.
+The remaining 1,845 are token/preprocessor, ABI-fact, LowIR or driver-only
+contracts. A source projection cannot replace its original course oracle.
+Early parser/type acceptance is not a full object-compilation oracle.
+
+The fixed positive object cohort has 5,614 fixture groups / 5,724 C++
+translation units, including companion .t.N units. All three compilers
+emit valid objects for all units at both O0 and O3. Unsupported harness
+metadata, negative contracts and qualification mismatches remain outside
+this cohort, with their original results retained.
+
+Summed compiler process-tree CPU seconds (driver startup included;
+linking, test execution and harness overhead excluded):
+
+ Opt      cppgm       GCC       Clang      GCC/cppgm   Clang/cppgm
+ O0       46.921     186.799     295.703       3.981x       6.302x
+ O3       50.269     224.273     344.306       4.461x       6.849x
+
+These are one complete observation per compiler/optimization under load,
+not calibrated paired estimates or the normal performance regression gate.
+
+All 1,241 declared course runtime controls pass with cppgm at both levels.
+GCC passes 1,221 at O0 and 1,220 at O3; Clang passes 1,238 and 1,233.
+These disagreements require source/oracle review and are not automatically
+native compiler defects. Two intentional termination controls use the
+course exit-134 versus host SIGABRT policy and are excluded from timing.
+
+A fixed overlap selected before fresh execution timing contains 1,210
+normal-exit controls. All three compilers pass every control at both levels.
+Test-execution CPU seconds, including process startup:
+
+ Opt      cppgm       GCC       Clang
+ O0      3.604615    3.361923    3.442534
+ O3      3.275626    2.931634    3.305209
+
+These short process-execution totals are not application/codegen scores.
+No claim about a small runtime regression follows from this experiment.
+
+Every role uses CPU 30 s, address space 2 GiB, file size 256 MiB and stack
+64 MiB per process. All roles were rerun under this common contract after
+an initial Clang object-file cap and a cppgm large-array stack probe hit
+the original smaller limits. The original failed observations are retained.
+Two GCC internal compiler errors in the broader initial qualification scan
+are retained as crashes and never counted as successful negative rejection.
+
+Local evidence directory (not committed build artifacts):
+ /mnt/vizier/cppgm-cxx11-upstream/pr116-internal-v1/
+
+ comparison-report-v1.md: linked per-PA, per-fixture object timing tables
+ comparison-metadata-v1.json: compiler hashes, platform and resource policy
+ matched-positive-cohort-v3.json: fixed object cohort and per-source modes
+ runtime-overlap-cohort-v1.json: execution cohort and all 31 exclusions
+ *-O?-timing-v2/results.json: every compile/link/run observation
+ *-O?-runtime-v1/results.json: fresh matched execution observations
+ manifest-v1.json and incremental-manifest-v2.json: broad qualification
+ comparison-verification-v1.json: PASS; 34,344 object hashes and 112,986
+ raw output streams checked against retained observations
+
+This report is a local feasibility result. The generic reporting contract
+is docs/performance/results-format.md; migration into published README/CI
+reporting is a separate step.
