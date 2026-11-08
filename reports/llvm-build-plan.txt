@@ -310,13 +310,43 @@ default in ClangASTNodesEmitter.cpp. These are the dependency frontier, not an
 exhaustive promise about later stages. ProgramStack.cpp and TrieRawHashMap.cpp
 now compile. LLVM sources remain unmodified.
 
-Continue the language families in /mnt/vizier/cppgm-llvm-next, based on this
-block, then integrate after its own required validation is complete. Its
-experimental constexpr-lambda implementation clears all seven lambda replay
-failures. The expanded build reaches 701 dependency steps and executes the
-cppgm-built llvm-min-tblgen, exposing a separate behavioral mismatch during
-record resolution (24 failed generated outputs share that execution family).
-A 15-line TableGen input reproduces it; native LLVM succeeds. A diagnostic
-link with native Record.cpp succeeds while cppgm's Record.cpp at O0 still
-fails. These hybrid links diagnose the failure and are not completed cppgm
-builds. The tuple compiler error is also still open. LLVM source is unchanged.
+Block 6: constexpr closure objects and calls (accepted)
+-----------------------------------------------------
+The C++17 lambda implementation clears all seven lambda replay failures.
+Explicit and inferred constexpr call operators use the normally analyzed
+body's eligibility facts. Constant evaluation initializes the recorded typed
+captures, binds references to their objects and copies array elements with
+their selected constructors. It supports nested/returned closures, mutable
+captures, captured this and ordinary captureless function-pointer calls.
+A separate C++14 regression covers namespace-scope initialized captures.
+The primary P0170R1 text and original PDF are available offline in doc/cwg.
+
+Strict 9870/9870, debug, optional modern suites, PA5 self-host, architecture,
+file/placement/CWG audits, normal PA35 quick checks, fresh student export,
+211-file document inventory, all 42 installed wrappers and the three exported
+runtime regressions pass. Independent cppgm/GCC/Clang regression runs pass.
+Frozen parent/candidate instruction ratios are O0 1.000124 and O3 1.000020;
+both frozen objects are byte-identical. This is a frontend/constant-evaluation
+change; the backend block's full release check remains recorded above.
+
+The optional suite caught a null aggregate frame in the initial closure
+implementation; that was fixed before acceptance. A class-array capture
+also required establishing its indeterminate array shape before element
+construction. The export harness initially assumed every student document
+was UTF-8 text; it now verifies bytes, including the original PDF. The full
+harness rerun passes. Earlier failed observations remain outside the checkout.
+
+The expanded LLVM build reaches 701 dependency steps and executes a
+cppgm-built llvm-min-tblgen. Of 25 failed actions, one is the known tuple
+constexpr-helper default and 24 generated outputs share a runtime failure.
+A 15-line TableGen input reproduces that failure. Diagnostic hybrid links
+localize it through TernOpInit::resolveReferences to ShadowResolver::addShadow;
+the emitted empty-value placement initialization overwrites the containing
+set bucket's key. A small C++11 reducer fails at O0 and O3 with the parent
+and passes GCC/Clang. The proposed general lowering fix and earliest PA12
+regression are under validation in /mnt/vizier/cppgm-llvm-runtime. A diagnostic
+relink with Record.cpp compiled by that candidate passes the TableGen reducer.
+Those hybrid links are diagnostic evidence, not completed cppgm LLVM builds.
+The fresh all-cppgm LLVM build is running; LLVM sources remain unchanged.
+The tuple compiler error is still open. Build-time ratios and byte identity
+of cppgm objects produced by the two finished Clang builds remain unmeasured.

@@ -90,17 +90,18 @@ class ExportedDevMakefileTests(unittest.TestCase):
             'doc/backend-review/newcomer-notes.md',
             'doc/backend-review/mutations.txt', 'doc/compiler-native-symbol-owners.tsv',
         ]
+        fixtures = {relative: content.encode() for relative, content in fixtures.items()}
         with tempfile.TemporaryDirectory(prefix='export-documents.') as temp:
             source = Path(temp) / 'source'
             dest = Path(temp) / 'export'
             source.mkdir()
             dest.mkdir()
             for relative in documents:
-                fixtures[relative] = (REPO_ROOT / relative).read_text()
-            for relative, content in {**fixtures, **dict.fromkeys(excluded, 'run notes\n')}.items():
+                fixtures[relative] = (REPO_ROOT / relative).read_bytes()
+            for relative, content in {**fixtures, **dict.fromkeys(excluded, b'run notes\n')}.items():
                 path = source / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(content)
+                path.write_bytes(content)
             subprocess.run(['git', 'init', '-q', str(source)], check=True)
             subprocess.run(['git', '-C', str(source), 'add', '.'], check=True)
             subprocess.run(
@@ -111,7 +112,7 @@ class ExportedDevMakefileTests(unittest.TestCase):
             self.assertEqual({str(path.relative_to(dest)) for path in dest.rglob('*')
                               if path.is_file()}, set(fixtures))
             for relative, content in fixtures.items():
-                self.assertEqual((dest / relative).read_text(), content)
+                self.assertEqual((dest / relative).read_bytes(), content)
 
     def test_script_dependencies_resolve_findbin_paths(self):
         script = EXPORT_SCRIPT.read_text()
