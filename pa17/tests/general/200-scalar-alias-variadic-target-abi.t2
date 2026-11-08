@@ -1,0 +1,12 @@
+// CXX11-127: external declarations must name the same scalar alias specializations.
+namespace captured {
+template<int...> struct Values {};
+template<class... T> using Cardinal = Values<sizeof...(T)>;
+template<class T> int scalar(Cardinal<T>*);
+}
+int provide();
+int main() {
+ return provide() != 20 + sizeof(int) + sizeof(char) ||
+        captured::scalar<int>(nullptr) != 10 + sizeof(int) ||
+        captured::scalar<char>(nullptr) != 10 + sizeof(char);
+}
