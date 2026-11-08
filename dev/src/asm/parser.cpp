@@ -13,8 +13,10 @@ class Parser
 {
 public:
 	Parser(const std::string& source, asm_model::Dialect dialect, const std::vector<SymbolUse>& symbols,
-		const std::vector<LabelUse>& labels, SymbolLookup* lookup)
-		: source_(source), symbols_(symbols), labels_(labels), dialect_(dialect), lookup_(lookup)
+		const std::vector<LabelUse>& labels, SymbolLookup* lookup, Syntax* state)
+		: source_(source), symbols_(symbols), labels_(labels), dialect_(state ? state->dialect : dialect),
+		  register_prefix_(state ? state->register_prefix : dialect == asm_model::Dialect::Att), lookup_(lookup),
+		  state_(state)
 	{}
 	std::vector<Instruction> run();
 
@@ -56,6 +58,7 @@ private:
 	void rip_register(Address& address);
 	void resolve_labels(std::vector<Instruction>& instructions);
 	uint64_t integer();
+	bool syntax(const std::string& name);
 	asm_model::Register reg();
 	Operand operand();
 	Operand intel_memory(uint16_t bits);
@@ -66,7 +69,9 @@ private:
 	const std::vector<SymbolUse>& symbols_;
 	const std::vector<LabelUse>& labels_;
 	asm_model::Dialect dialect_;
+	bool register_prefix_;
 	SymbolLookup* lookup_;
+	Syntax* state_;
 	std::size_t pos_ = 0;
 	uint32_t line_ = 1;
 	uint32_t column_ = 1;
@@ -132,7 +137,7 @@ uint64_t Parser::integer()
 asm_model::Register Parser::reg()
 {
 	space();
-	if (dialect_ == asm_model::Dialect::Att)
+	if (register_prefix_)
 		expect('%');
 	const std::string name = word();
 	asm_model::Register result;
@@ -174,13 +179,15 @@ Operand Parser::intel_memory(uint16_t bits)
 			result.address.relocation = bound.address.relocation;
 			displacement += bound.address.displacement;
 		}
-		else if (source_.compare(pos_, 3, "rip") == 0)
+		else if (source_.compare(pos_, register_prefix_ ? 4 : 3, register_prefix_ ? "%rip" : "rip") == 0)
 		{
 			if (minus)
 				fail("an assembly address cannot subtract RIP");
+			if (register_prefix_)
+				step();
 			rip_register(result.address);
 		}
-		else if (alpha(current()))
+		else if (register_prefix_ ? current() == '%' : alpha(current()))
 		{
 			if (minus)
 				fail("an assembly address cannot subtract a register");
@@ -237,11 +244,12 @@ Operand Parser::att_memory(int64_t displacement)
 	if (!take('('))
 		return result;
 	space();
-	if (current() == '%')
+	if (register_prefix_ ? current() == '%' : alpha(current()))
 	{
-		if (source_.compare(pos_, 4, "%rip") == 0)
+		if (source_.compare(pos_, register_prefix_ ? 4 : 3, register_prefix_ ? "%rip" : "rip") == 0)
 		{
-			step();
+			if (register_prefix_)
+				step();
 			rip_register(result.address);
 		}
 		else
@@ -290,7 +298,7 @@ Operand Parser::operand()
 			result.address.symbol = binding.symbol;
 			result.address.relocation = binding.relocation;
 		}
-		else if (current() == '%')
+		else if (register_prefix_ ? current() == '%' : alpha(current()))
 		{
 			result.kind = OperandKind::Register;
 			result.reg = reg();
@@ -298,6 +306,13 @@ Operand Parser::operand()
 		}
 		else
 			return att_memory(current() == '(' ? 0 : static_cast<int64_t>(integer()));
+		return result;
+	}
+	if (register_prefix_ && current() == '%')
+	{
+		result.kind = OperandKind::Register;
+		result.reg = reg();
+		result.bits = result.reg.bits;
 		return result;
 	}
 	if (current() == '[')
@@ -309,6 +324,8 @@ Operand Parser::operand()
 		const std::string name = word();
 		if (parse_register(name.data(), name.size(), result.reg))
 		{
+			if (register_prefix_)
+				fail("assembly register requires a percent prefix");
 			result.kind = OperandKind::Register;
 			result.bits = result.reg.bits;
 			return result;
@@ -422,6 +439,13 @@ Operand Parser::target()
 	result.kind = OperandKind::Label;
 	if (dialect_ == asm_model::Dialect::Intel && current() == '[')
 		return intel_memory(0);
+	if (dialect_ == asm_model::Dialect::Intel && register_prefix_ && current() == '%')
+	{
+		result.kind = OperandKind::Register;
+		result.reg = reg();
+		result.bits = result.reg.bits;
+		return result;
+	}
 	result.target = word(false);
 	if (lookup_ != nullptr && take('@'))
 	{
@@ -435,6 +459,8 @@ Operand Parser::target()
 	{
 		if (parse_register(result.target.data(), result.target.size(), result.reg))
 		{
+			if (register_prefix_)
+				fail("assembly register requires a percent prefix");
 			result.kind = OperandKind::Register;
 			result.bits = result.reg.bits;
 		}
@@ -502,6 +528,26 @@ void Parser::resolve_labels(std::vector<Instruction>& instructions)
 		}
 }
 
+bool Parser::syntax(const std::string& name)
+{
+	if (name != ".intel_syntax" && name != ".att_syntax")
+		return false;
+	dialect_ = name == ".intel_syntax" ? asm_model::Dialect::Intel : asm_model::Dialect::Att;
+	register_prefix_ = true;
+	space();
+	if (current() != '\n' && current() != ';' && current() != '#' && pos_ != source_.size())
+	{
+		const std::string mode = word();
+		if (mode != "prefix" && mode != "noprefix")
+			fail("unknown assembly register-prefix mode");
+		register_prefix_ = mode == "prefix";
+	}
+	space();
+	if (current() != '\n' && current() != ';' && current() != '#' && pos_ != source_.size())
+		fail("unexpected token after assembly syntax directive");
+	return true;
+}
+
 std::vector<Instruction> Parser::run()
 {
 	std::vector<Instruction> result;
@@ -546,6 +592,12 @@ std::vector<Instruction> Parser::run()
 		for (char& c : inst.mnemonic)
 			if (c >= 'A' && c <= 'Z')
 				c = static_cast<char>(c + ('a' - 'A'));
+		if (syntax(inst.mnemonic))
+		{
+			if (pending_prefix != 0)
+				fail("assembly prefix cannot precede a syntax directive");
+			continue;
+		}
 		const uint8_t prefix = inst.mnemonic == "lock"                                     ? 0xf0
 			: inst.mnemonic == "rep" || inst.mnemonic == "repe" || inst.mnemonic == "repz" ? 0xf3
 			: inst.mnemonic == "repne" || inst.mnemonic == "repnz"                         ? 0xf2
@@ -580,15 +632,20 @@ std::vector<Instruction> Parser::run()
 	if (pending_prefix != 0)
 		fail("assembly prefix has no instruction");
 	resolve_labels(result);
+	if (state_)
+	{
+		state_->dialect = dialect_;
+		state_->register_prefix = register_prefix_;
+	}
 	return result;
 }
 
 } // namespace
 
 std::vector<Instruction> parse(const std::string& source, asm_model::Dialect dialect,
-	const std::vector<SymbolUse>& symbols, const std::vector<LabelUse>& labels, SymbolLookup* lookup)
+	const std::vector<SymbolUse>& symbols, const std::vector<LabelUse>& labels, SymbolLookup* lookup, Syntax* state)
 {
-	return Parser(source, dialect, symbols, labels, lookup).run();
+	return Parser(source, dialect, symbols, labels, lookup, state).run();
 }
 
 } // namespace assembly

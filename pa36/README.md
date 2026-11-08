@@ -108,7 +108,9 @@ functions; callers retain ordinary typed declarations. Keep raw bodies opaque
 to inlining and return/argument inference. Request initial unwind state for GNU naked functions; describe subsequent
 stack and saved-register changes explicitly with the directives below.
 
-LowIR selects the dialect; the current GNU source adapter uses AT&T. Choose one
+LowIR selects the initial dialect; the GNU source adapter starts in AT&T.
+Honor `.intel_syntax` and `.att_syntax` with `prefix`/`noprefix` register modes.
+Syntax changes preserve the block's named and numeric labels. Choose one
 alternative column jointly across operands. Respect register aliases
 and lifetimes, preserve the host ABI, and capture outputs before assigning
 possibly aliased output places in the producer's order.

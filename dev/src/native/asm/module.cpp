@@ -46,7 +46,7 @@ void ModuleAssembler::flush()
 	std::vector<assembly::Instruction> instructions;
 	try
 	{
-		instructions = assembly::parse(code_, dialect_, uses_, {}, &symbols_);
+		instructions = assembly::parse(code_, syntax_.dialect, uses_, {}, &symbols_, &syntax_);
 	}
 	catch (const assembly::AssemblyError& error)
 	{
@@ -115,7 +115,13 @@ void ModuleAssembler::append(const assembly::ModuleLine& line)
 		unwind_.record(line, static_cast<uint32_t>(code_lines_.size() + 1), &symbols_);
 		return;
 	}
-	if (name[0] == '.' && !label)
+	const bool syntax = !label && (name == ".intel_syntax" || name == ".att_syntax");
+	if (syntax && out_.sections[section_].kind != object::SectionKind::Text)
+	{
+		assembly::parse(line.text, syntax_.dialect, line.symbols, line.labels, &symbols_, &syntax_);
+		return;
+	}
+	if (name[0] == '.' && !label && !syntax)
 	{
 		flush();
 		if (!directive(name, cursor))
@@ -147,7 +153,8 @@ void ModuleAssembler::append(const assembly::ModuleLine& line)
 void ModuleAssembler::begin(asm_model::Dialect dialect)
 {
 	flush();
-	dialect_ = dialect;
+	syntax_.dialect = dialect;
+	syntax_.register_prefix = dialect == asm_model::Dialect::Att;
 }
 void ModuleAssembler::finish()
 {

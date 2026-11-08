@@ -37,7 +37,7 @@ private:
 	Target target_;
 	ModuleSymbols symbols_;
 	ModuleUnwind unwind_;
-	asm_model::Dialect dialect_ = asm_model::Dialect::Att;
+	assembly::Syntax syntax_;
 	uint32_t section_ = 0;
 	uint32_t previous_ = 0;
 	std::vector<uint32_t> section_stack_;

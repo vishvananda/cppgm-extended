@@ -644,3 +644,16 @@ loads/addresses, asm-goto exits and raw functions. An invalid environment prefix
 has a normal rejection test. Full qualification remains deferred to assembly
 closure; expression/ISA/register coverage and original Rust integration remain
 open.
+
+## 2026-11-08 checkpoint: syntax switches retain local scope
+
+The single instruction parser now owns AT&T/Intel dialect and prefix/noprefix
+switches. Module buffers carry their final syntax state across directive flushes
+and sections; a syntax directive itself does not split local-label scope.
+Focused O0/O2/O3 tests pass for inline, naked and independent module LowIR,
+numeric forward/backward branches and addressing after section/alignment
+changes. GNU as supports both register-prefix modes; Clang IAS rejects Intel
+prefix and AT&T noprefix, so portable source fixtures use their common modes
+and independent LowIR observers exercise all four combinations. The retained
+private GNU source probe covers the additional modes. Malformed modes reject.
+Whole qualification is still deferred; wider ISA and register support follow.

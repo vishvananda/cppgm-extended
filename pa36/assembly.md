@@ -106,6 +106,8 @@ Template pieces are `text "..."`, `use <operand> <format> <bits> <offset>`, or
 Zero width chooses the operand's view; offset 8 selects an available high-byte
 view. The frontend handles its own string escapes and placeholder syntax. The
 backend parses the resulting assembly source once and retains typed operands.
+Source `.intel_syntax`/`.att_syntax` directives can change dialect and register
+prefix mode within a packet; its local-label scope survives those switches.
 Named/numeric labels and branches stay within the template. Numeric `1f`/`1b`
 references select the nearest matching label in that direction. A `unique`
 piece supplies a label suffix; every emitted occurrence has its own label
