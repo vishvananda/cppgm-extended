@@ -1,0 +1,92 @@
+CWG 2059: Linkage and deduced return types
+Source: https://cplusplus.github.io/CWG/issues/2059.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: CD5
+Catalog role: course-reference
+
+The full pinned issue follows. Historical changes are retained, not applied.
+The March 2018 defect resolution removes the same-translation-unit definition
+diagnostic requirement. The ordinary ODR still requires definitions; a missing
+definition is not made well-formed and need not be diagnosed during compilation.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2059. Linkage and deduced return types
+Section: 9.2.9.7 [dcl.spec.auto [1]] Status: CD5 Submitter: Richard Smith Date:
+2014-12-15
+
+[Accepted as a DR at the March, 2018 (Jacksonville) meeting.]
+
+Use of function return type deduction makes it possible to define functions whose return
+type is a type without linkage. Although 6.7 [basic.link [2]] paragraph 8 permits such a
+usage if the function is defined in the same translation unit as it is used, it may be
+helpful to consider changing the overall rules regarding the use of types with internal
+or no linkage. As an example, the following example permits access to a local static
+variable that has not been initialized:
+
+
+  auto f() {
+    static int n = 123;
+    struct X { int &f() { return n; } };
+    return X();
+  }
+  int &r = decltype(f())().f();
+
+
+Notes from the February, 2016 meeting:
+
+CWG agreed that the current rule in 6.7 [basic.link [2]] paragraph 8 is unneeded; the
+ODR already prohibits use of an entity that is not defined in the current translation
+unit and cannot be defined in a different translation unit.
+
+Proposed resolution (November, 2017)
+
+Change 6.7 [basic.link [2]] paragraph 8 as follows:
+
+...[DELETE: A type without linkage shall not be used as the type of a variable or
+function with external linkage unless]
+
+-
+
+[DELETE: the entity has C language linkage (9.12 [dcl.link [3]]), or]
+
+-
+
+[DELETE: the entity is declared within an unnamed namespace (9.9.2 [namespace.def [4]]),
+or]
+
+-
+
+[DELETE: the entity is not odr-used (6.3 [basic.def.odr [5]]) or is defined in the same
+translation unit.]
+
+[Note: In other words, a type without linkage contains a class or enumeration that
+cannot be named outside its translation unit. [DELETE: An entity with external linkage
+declared using such a type could not correspond to any other entity in another
+translation unit of the program and thus must be defined in the translation unit if it
+is odr-used. Also note that classes] [INSERT: Classes] with linkage may contain members
+whose types do not have linkage[DELETE: , and that typedef][INSERT: . Typedef] names are
+ignored in the determination of whether a type has linkage. —end note] [Example:
+
+
+  template <class T> struct B {
+    void g(T) { }
+    void h(T);
+    friend void i(B, T) { }
+  };
+
+  void f() {
+    struct A { int x; };  // no linkage
+    A a = { 1 };
+    B<A> ba;              // declares B<A>::g(A) and B<A>::h(A)
+    ba.g(a);              // OK
+    ba.h(a);              // error: B<A>::h(A) not defined[INSERT: ; ][INSERT: A][INSERT:  cannot be named] in [DELETE: the] [INSERT: another] translation unit
+    i(ba, a);             // OK
+  }
+
+
+—end example]

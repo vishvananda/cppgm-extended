@@ -913,10 +913,6 @@ ExprFacts* Analyzer::resolved_call(const syntax::CallExpr& expr, const FunctionL
 	// A class object's operator() is its member's call, never qualified.
 	if (selected->is_virtual && (operator_object || !QualifiedCallee(*expr.callee)))
 		facts->flags |= kVirtualCall;
-	// Virtual dispatch does not require a pure function's definition. A
-	// qualified call suppresses dispatch and still requires its body.
-	if (selected->pure && (facts->flags & kVirtualCall) == 0 && unevaluated_ == 0)
-		note_linkage_use(selected, expr.location);
 	if (implicit_this)
 		facts->flags |= kImplicitThis;
 	// A qualified call through `(*this)` whose naming class is neither the

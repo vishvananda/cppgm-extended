@@ -1164,6 +1164,24 @@
       "adopted_papers": []
     },
     {
+      "issue": 2059,
+      "title": "Linkage and deduced return types",
+      "status": "CD5",
+      "role": "course-reference",
+      "file": "cwg-2059.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/2059.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/2059.html",
+      "source_html_sha256": "017d708545efd938b4ccaddc3a58d0aa43f80670b99fd413065bef2f1ba090e4",
+      "text_sha256": "ab4dec89880e3fc8d2617b71ba10d37262065b1473dccdeda750a44bf3f8cbcb",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08"
+    },
+    {
       "issue": 2076,
       "title": "List-initialization of arguments for constructor parameters",
       "status": "CD4",

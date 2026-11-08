@@ -79,6 +79,7 @@ doc/cwg/cwg-1926.txt
 doc/cwg/cwg-1965.txt
 doc/cwg/cwg-1992.txt
 doc/cwg/cwg-2004.txt
+doc/cwg/cwg-2059.txt
 doc/cwg/cwg-2076.txt
 doc/cwg/cwg-2079.txt
 doc/cwg/cwg-2082.txt

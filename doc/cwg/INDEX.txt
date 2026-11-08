@@ -374,3 +374,8 @@ CWG 39 | CD1 | cwg-0039.txt
   Lookup merges designated declarations; ambiguity of an actual object
   conversion is a separate check. Read N3485 10.2 and the final paper rather
   than the superseded proposals in the issue history.
+
+CWG 2059 | CD5 | cwg-2059.txt
+  Adopted as a defect resolution in March 2018. Removes the same-TU
+  definition diagnostic obligation from linkage rules; the ODR still applies.
+  Old GCC missing-definition diagnostics are not mandatory C++ correctness tests.

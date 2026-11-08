@@ -704,8 +704,6 @@ void Analyzer::potential_use(const syntax::Expr& expr, const Conversion* binding
 			const bool automatic = entity->owner != nullptr &&
 				(entity->owner->kind == ScopeKind::Block || entity->owner->kind == ScopeKind::Function) &&
 				(variable == nullptr || (!variable->is_static && !variable->is_extern && !variable->is_thread_local));
-			if (variable != nullptr && !variable->defined && !variable->member && !variable->c_linkage)
-				note_linkage_use(variable, e->location);
 			if (automatic && !capture_variable(entity, e->location))
 				error(e->location, "a local class odr-uses an automatic variable of an enclosing function (9.8p1)");
 			continue;

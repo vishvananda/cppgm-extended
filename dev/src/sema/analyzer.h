@@ -391,9 +391,6 @@ private:
 	void note_block_linkage(const Entity* entity, Scope* block, bool c_linkage);
 	void agree_block_linkage(const Entity* entity, bool c_linkage, bool internal, uint32_t location);
 	void agree_language_linkage(bool c_linkage, uint32_t location);
-	bool no_linkage_type(const Type* type);
-	void note_linkage_use(const Entity* entity, uint32_t location);
-	void check_linkage_definitions();
 	void effect_attributes(
 		FunctionEntity* function, const syntax::Attribute* leading, const syntax::Declarator* declarator);
 	void reject_noreturn(const syntax::Attribute* list, const char* message) const;
@@ -1925,9 +1922,6 @@ private:
 	// (7.5p6); C++ overload lookup alone cannot establish that identity.
 	PointerMap c_function_index_;
 	std::vector<FunctionEntity*> c_functions_;
-	PointerMap no_linkage_types_;
-	PointerMap linkage_use_index_;
-	std::vector<std::pair<const Entity*, uint32_t>> linkage_uses_;
 	uintptr_t stack_base_;
 	uintptr_t stack_budget_;
 	const Identifier* constructor_key_;

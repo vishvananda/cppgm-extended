@@ -207,8 +207,6 @@ void Analyzer::odr_use(FunctionEntity* function, bool call)
 	}
 	if (function->temporary_reference_initializer)
 		error(0, "an odr-used constructor binds a reference subobject to a temporary (CWG1696)");
-	if (!function->defined && !function->implicit && !function->defaulted && !function->pure && !function->c_linkage)
-		note_linkage_use(function, function->parameters != nullptr ? function->parameters->location : 0);
 	// Its exception-specification is needed now (15.4p13).
 	if (function->noexcept_pending)
 		function_nothrow(function);
@@ -741,8 +739,6 @@ ExprFacts* Analyzer::binding_expression(
 		}
 		else if (owner != nullptr && (owner->kind == ScopeKind::Block || owner->kind == ScopeKind::Function))
 			local_name(expr, facts, variable, scope);
-		if (!variable->defined && !variable->member && !variable->c_linkage && no_linkage_type(variable->type))
-			facts->potential_result = true;
 		return facts;
 	}
 	case BindingKind::Parameter:
@@ -905,8 +901,6 @@ void Analyzer::static_constant(ExprFacts* facts, const VariableEntity* variable)
 	if (template_arguments_ == 0 && variable->templ != nullptr)
 		demand_variable(variable);
 	if (!variable->defined && variable->is_constexpr && variable->constant == ConstantState::Object)
-		facts->potential_result = true;
-	if (!variable->defined && !variable->c_linkage && no_linkage_type(variable->type))
 		facts->potential_result = true;
 	if (variable->constant != ConstantState::Value || variable->type->is_reference())
 		return;
