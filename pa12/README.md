@@ -383,6 +383,11 @@ PA12 supports the following in addition to the PA11 subset:
   site instead of forcing a separate synthesized trivial constructor call
 - empty class objects and subobjects use the same address-based class copy paths as
   other class objects; lowering must not invent a scalar payload for an empty class
+- placement construction of an empty class must preserve storage shared with
+  an empty base, including through a `void*` placement argument; it still calls
+  any selected non-trivial constructor, but does not write a synthetic padding
+  byte. This follows the GNU/Clang empty-object construction behavior used by
+  hosted libraries; the padding byte of a placed empty object is not a test oracle
 - an xvalue class glvalue bound to a reference through a derived-to-base
   conversion designates the existing base subobject; it is not materialized as
   a new complete object

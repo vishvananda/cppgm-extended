@@ -31,7 +31,9 @@ int check_padding() {
     if (reinterpret_cast<unsigned char*>(b)[i]) return 2;
   for (unsigned i = 0; i < sizeof(Choice); ++i)
     if (reinterpret_cast<unsigned char*>(c)[i]) return 3;
-  return *reinterpret_cast<unsigned char*>(e) != 0;
+  // Placement construction can target an empty base. An empty object's
+  // sizeof byte must not be treated as an observable scalar payload.
+  return e != reinterpret_cast<Empty*>(empty);
 }
 int main() {
   alignas(Iterator) unsigned char bytes[sizeof(Iterator)];

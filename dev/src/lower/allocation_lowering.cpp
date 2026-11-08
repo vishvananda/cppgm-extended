@@ -222,6 +222,12 @@ void FunctionLowering::allocation_initializer(
 	// local aggregate's (see local_object).
 	const syntax::Initializer* init = expr.initializer;
 	const sema::Entity* saved = aggregate_extension_;
+	const bool saved_overlap = overlapping_empty_;
+	// Placement storage can designate a zero-size empty base, even through
+	// void*. Its initialization must not write a sizeof-sized padding byte
+	// belonging to another subobject. Constructors still run normally.
+	if (entity != nullptr && entity->empty && !expr.placement.empty())
+		overlapping_empty_ = true;
 	aggregate_extension_ = nullptr;
 	if (entity != nullptr)
 	{
@@ -267,6 +273,7 @@ void FunctionLowering::allocation_initializer(
 			initialize_storage(type, place, init, expr.location);
 	}
 	aggregate_extension_ = saved;
+	overlapping_empty_ = saved_overlap;
 }
 
 FunctionLowering::ArrayNewShape FunctionLowering::array_new_shape(const syntax::NewExpr& expr)
