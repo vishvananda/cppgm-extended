@@ -422,3 +422,6 @@ CWG 1755 | drafting | cwg-1755.txt
   Out-of-class partial specializations of member templates (background-only; no adoption claim).
 CWG 2173 | open | cwg-2173.txt
   Partial specialization with non-deduced contexts (background-only; no adoption claim).
+CWG 2327 | drafting | cwg-2327.txt
+  Copy elision for direct-initialization with a conversion function
+  (optional hosted compatibility; no adoption claim).

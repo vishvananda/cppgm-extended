@@ -1,0 +1,60 @@
+CWG 2327: Copy elision for direct-initialization with a conversion function
+Source: https://cplusplus.github.io/CWG/issues/2327.html
+Snapshot: cplusplus/CWG gh-pages 38a43db15e384602a0c5debc3f7f22be32e186a1
+Retrieved: 2026-11-08
+Upstream status: drafting
+Catalog role: optional-hosted-compatibility-reference
+
+This is a drafting issue, not an adopted defect resolution. It documents the
+optional C++17 compatibility behavior checked against GCC and Clang.
+Historical wording and proposals below retain their original status.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+2327. Copy elision for direct-initialization with a conversion function
+Section: 9.5 [dcl.init [1]] Status: drafting Submitter: Richard Smith Date: 2016-09-30
+
+Consider an example like:
+
+
+  struct Cat {};
+  struct Dog { operator Cat(); };
+
+  Dog d;
+  Cat c(d);
+
+
+This goes to 9.5 [dcl.init [2]] bullet 17.6.2:
+
+Otherwise, if the initialization is direct-initialization, or if it is
+copy-initialization where the cv-unqualified version of the source type is the same
+class as, or a derived class of, the class of the destination, constructors are
+considered. The applicable constructors are enumerated (12.2.2.4 [over.match.ctor [3]]),
+and the best one is chosen through overload resolution (12.2 [over.match [4]]). The
+constructor so selected is called to initialize the object, with the initializer
+expression or expression-list as its argument(s). If no constructor applies, or the
+overload resolution is ambiguous, the initialization is ill-formed.
+
+Overload resolution selects the move constructor of Cat. Initializing the Cat&&
+parameter of the constructor results in a temporary, per 9.5.4 [dcl.init.ref [5]] bullet
+5.2.1.2. This precludes the possitiblity of copy elision for this case.
+
+This seems to be an oversight in the wording change for guaranteed copy elision. We
+should presumably be simultaneously considering both constructors and conversion
+functions in this case, as we would for copy-initialization, but we'll need to make sure
+that doesn't introduce any novel problems or ambiguities.
+
+See also issue 2311 [6].
+
+This issue is addressed by paper P2828.
+
+Source links:
+[1] https://wg21.link/dcl.init
+[2] https://wg21.link/dcl.init#17.6.2
+[3] https://wg21.link/over.match.ctor
+[4] https://wg21.link/over.match
+[5] https://wg21.link/dcl.init.ref
+[6] https://cplusplus.github.io/CWG/issues/2311.html

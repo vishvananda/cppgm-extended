@@ -102,6 +102,9 @@ def build(args, directory, source, compilers, cpus):
         row = measure.run(invocation, directory / ('build-' + label), cpus, args.build_timeout, counters=False)
         timing.retain(directory / 'compile-observations.jsonl', dict(row, label=label))
         if row['status'] != 0:
+            for stream in ('stdout', 'stderr'):
+                text = Path(row[stream]).read_text(errors='replace')
+                print(f'Godot {label} {stream} (tail):\n{text[-8000:]}', file=sys.stderr)
             raise ValueError('Godot full build failed: ' + label)
         observations[label] = row
         executable = tree / ('bin/godot.linuxbsd.template_release.x86_64' + ('.llvm' if label == 'clang' else ''))
