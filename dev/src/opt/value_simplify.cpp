@@ -2888,9 +2888,10 @@ bool same_computation(const FunctionBody& body, Value a, Value b, unsigned depth
 	Constant x, y;
 	if (literal_constant(body, a, x) && literal_constant(body, b, y))
 		return x.kind == y.kind && x.bits.low == y.bits.low && x.bits.high == y.bits.high;
-	if (!(a.is(ValueKind::Temp) || a.is(ValueKind::Symbol)) || !(b.is(ValueKind::Temp) || b.is(ValueKind::Symbol)) ||
-		depth == 0 || a.index < body.parameter_count || b.index < body.parameter_count ||
-		body.temps[a.index].def == kNoId || body.temps[b.index].def == kNoId)
+	// Equal symbols were handled above. Distinct symbol IDs cannot be
+	// interpreted as temporary IDs when comparing defining instructions.
+	if (!a.is(ValueKind::Temp) || !b.is(ValueKind::Temp) || depth == 0 || a.index < body.parameter_count ||
+		b.index < body.parameter_count || body.temps[a.index].def == kNoId || body.temps[b.index].def == kNoId)
 		return false;
 	const Instruction& p = body.instructions[body.temps[a.index].def];
 	const Instruction& q = body.instructions[body.temps[b.index].def];

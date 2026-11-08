@@ -73,8 +73,12 @@ RValue FunctionLowering::allocation(const syntax::NewExpr& expr)
 	const size_t base = arguments_.size();
 	arguments_.push_back(size.value);
 	const sema::Type* signature = function->type->canonical;
+	if (expr.implicit_alignment != 0)
+		arguments_.push_back(integer(i64, expr.implicit_alignment).value);
+	const uint32_t first_placement = expr.implicit_alignment != 0 ? 2 : 1;
 	for (uint32_t i = 0; i < expr.placement.size; ++i)
-		push_argument(*expr.placement[i], i + 1 < signature->param_count ? signature->params[i + 1] : nullptr);
+		push_argument(*expr.placement[i],
+			i + first_placement < signature->param_count ? signature->params[i + first_placement] : nullptr);
 	// 5.3.4p18-p20: an initialization that may throw frees the storage by
 	// the matching deallocation function, a placement one with the same
 	// further arguments (kept from the allocation's).
@@ -469,8 +473,12 @@ RValue FunctionLowering::array_allocation(const syntax::NewExpr& expr)
 	const size_t base = arguments_.size();
 	arguments_.push_back(size.value);
 	const sema::Type* signature = function->type->canonical;
+	if (expr.implicit_alignment != 0)
+		arguments_.push_back(integer(i64, expr.implicit_alignment).value);
+	const uint32_t first_placement = expr.implicit_alignment != 0 ? 2 : 1;
 	for (uint32_t i = 0; i < expr.placement.size; ++i)
-		push_argument(*expr.placement[i], i + 1 < signature->param_count ? signature->params[i + 1] : nullptr);
+		push_argument(*expr.placement[i],
+			i + first_placement < signature->param_count ? signature->params[i + first_placement] : nullptr);
 	// A placement deallocation function takes the same further arguments
 	// (5.3.4p20).
 	uint32_t placement_values = 0;
@@ -831,7 +839,8 @@ void FunctionLowering::construct_new_elements(const sema::Type* element, const R
 		}
 		// 5.3.4p20: no placement deallocation function matching, none.
 		if (deallocator != nullptr)
-			free_storage(deallocator, raw.value, size_argument, location, placement);
+			free_storage(
+				deallocator, raw.value, size_argument, location, placement, lowering_.alignment_of(element, location));
 		if (dispatched)
 			landing_exit(attempt);
 		else
@@ -841,7 +850,7 @@ void FunctionLowering::construct_new_elements(const sema::Type* element, const R
 }
 
 void FunctionLowering::free_storage(const sema::FunctionEntity* deallocator, lowir::Value raw, const RValue& size,
-	uint32_t location, uint32_t placement)
+	uint32_t location, uint32_t placement, uint64_t alignment)
 {
 	// 5.3.4p18-p20: the deallocation function matching the allocation
 	// function, as the analysis found it (a sized one also with the size
@@ -853,7 +862,10 @@ void FunctionLowering::free_storage(const sema::FunctionEntity* deallocator, low
 	arguments_.push_back(raw);
 	const uint32_t count = deallocator->type->canonical->param_count;
 	for (uint32_t i = 1; i < count; ++i)
-		arguments_.push_back(placement != 0 ? element_values_[placement - 2 + i] : size.value);
+		arguments_.push_back(placement != 0 ? element_values_[placement - 2 + i]
+				: i == deallocator->alignment_parameter
+				? integer(lowir::Type::scalar(lowir::TypeKind::I64), alignment).value
+				: size.value);
 	lowering_.demand(deallocator, EntryVariant::Complete);
 	emit_call(lowir::Type::scalar(lowir::TypeKind::Void), lowir::Value::symbol(lowering_.function_symbol(deallocator)),
 		base, lowir::kNoId, false);
@@ -885,8 +897,11 @@ size_t FunctionLowering::deleted_storage(
 	uint32_t saved = 0;
 	if (block.kind != lowir::ValueKind::None)
 	{
+		saved = static_cast<uint32_t>(element_values_.size()) + 1;
 		element_values_.push_back(block);
-		saved = static_cast<uint32_t>(element_values_.size());
+		if (deallocator->alignment_parameter != 0)
+			element_values_.push_back(
+				integer(lowir::Type::scalar(lowir::TypeKind::I64), lowering_.alignment_of(object, 0)).value);
 	}
 	const size_t freed = cleanups_.size();
 	cleanups_.push_back(Cleanup{
@@ -941,7 +956,7 @@ RValue FunctionLowering::deletion(const syntax::DeleteExpr& expr)
 	}
 	lowir::Value storage = value.value;
 	const uint64_t size = incomplete ? 0 : lowering_.size_of(object, expr.location);
-	const bool sized = function->type->canonical->param_count == 2;
+	const bool sized = function->type->canonical->param_count > 1 && function->alignment_parameter != 1;
 	RValue block = integer(i64, size);
 	size_t freed = SIZE_MAX;
 	if (cookie)
@@ -1004,6 +1019,8 @@ RValue FunctionLowering::deletion(const syntax::DeleteExpr& expr)
 	arguments_.push_back(storage);
 	if (sized)
 		arguments_.push_back(block.value);
+	if (function->alignment_parameter != 0)
+		arguments_.push_back(integer(i64, lowering_.alignment_of(object, expr.location)).value);
 	lowering_.demand(function, EntryVariant::Complete);
 	emit_call(lowir::Type::scalar(lowir::TypeKind::Void), lowir::Value::symbol(lowering_.function_symbol(function)),
 		base, lowir::kNoId, call_may_throw(function));

@@ -435,6 +435,9 @@ RValue FunctionLowering::rvalue(const syntax::Expr& expr)
 	{
 	case syntax::ExprKind::Literal:
 		return literal(static_cast<const syntax::LiteralExpr&>(*e));
+	case syntax::ExprKind::LabelAddress:
+		return RValue{ lowir::Value::symbol(lowering_.code_label(static_cast<const syntax::LabelAddressExpr&>(*e))),
+			lowir::Type::scalar(lowir::TypeKind::Ptr) };
 	case syntax::ExprKind::KeywordLiteral:
 		return keyword_literal(static_cast<const syntax::KeywordLiteralExpr&>(*e));
 	case syntax::ExprKind::Binary:
@@ -1322,7 +1325,7 @@ RValue FunctionLowering::literal(const syntax::LiteralExpr& expr, lowir::Value d
 		const bool indirect = lowering_.indirect_result(function);
 		if (indirect)
 			arguments_.push_back(destination);
-		if (expr.facts->value == sema::kLiteralCallString)
+		if ((expr.facts->value & 255) == sema::kLiteralCallString)
 		{
 			// 2.14.8p5: the literal operator called with the literal's array
 			// (its first code unit's address) and its length (an int constant
@@ -1339,7 +1342,7 @@ RValue FunctionLowering::literal(const syntax::LiteralExpr& expr, lowir::Value d
 				integer(lowir::Type::scalar(lowir::TypeKind::I32), string.units - 1))
 					.value);
 		}
-		else if (expr.facts->value == sema::kLiteralCallRaw)
+		else if ((expr.facts->value & 255) == sema::kLiteralCallRaw)
 		{
 			// 2.14.8p3-p4: the raw literal operator called with the
 			// number's characters (without the ud-suffix), a string
@@ -1348,7 +1351,7 @@ RValue FunctionLowering::literal(const syntax::LiteralExpr& expr, lowir::Value d
 			array.storage = lowir::Value::symbol(lowering_.string_literal(expr));
 			arguments_.push_back(address_of(array));
 		}
-		else if (expr.facts->value == sema::kLiteralCallCharacter)
+		else if ((expr.facts->value & 255) == sema::kLiteralCallCharacter)
 		{
 			// 2.14.8p6: the character's value converted to the parameter of
 			// the literal operator the call selected.
@@ -1358,42 +1361,23 @@ RValue FunctionLowering::literal(const syntax::LiteralExpr& expr, lowir::Value d
 				function->type->canonical->params[0], ConversionContext::Initialization, false)
 					.value);
 		}
-		else if (expr.facts->value == sema::kLiteralCallCooked)
+		else if ((expr.facts->value & 255) == sema::kLiteralCallCooked)
 		{
 			// 2.14.8p3-p4: the number's value (as its literal without the
 			// ud-suffix) converted to the parameter's type (a floating one's
 			// scanned in the long double parameter's precision).
-			const NumberLiteral number = ClassifyNumber(expr.spelling.text, expr.spelling.length);
+			const uint32_t length = expr.facts->value >> 8;
 			const sema::Type* parameter = function->type->canonical->params[0];
-			const NumberLiteral value = ClassifyNumber(expr.spelling.text, number.suffix_begin);
 			uint64_t digits = 0;
-			if (value.kind == NumberLiteralKind::Integer)
+			if (!sema::IsFloating(parameter))
 			{
-				const sema::Type* type = lowering_.graph().types.fundamental(value.type);
-				arguments_.push_back(convert(integer(lowering_.storage_type(type), value.integer), type, parameter,
-					ConversionContext::Initialization, false)
-						.value);
-			}
-			else if (number.kind == NumberLiteralKind::UserDefinedInteger)
-			{
-				// Digits no literal type holds: `n ULL` (the analysis checked
-				// unsigned long long does).
-				if (!UserIntegerValue(expr.spelling.text, number.suffix_begin, digits))
+				if (!UserIntegerValue(expr.spelling.text, length, digits))
 					throw LoweringError(expr.location, "a user-defined integer literal beyond unsigned long long");
 				arguments_.push_back(integer(lowering_.storage_type(parameter), digits).value);
 			}
 			else
-			{
-				const lowir::Type storage = lowering_.storage_type(parameter);
-				lowir::TypeKind kind = storage.kind();
-				lowir::Literal bits;
-				std::string scratch;
-				if (!storage.is_float() ||
-					!lowir::scan_float_literal(
-						expr.spelling.text, number.suffix_begin, false, storage.kind(), kind, bits, scratch))
-					throw LoweringError(expr.location, "a floating literal outside its type's range");
-				arguments_.push_back(floating(storage, bits).value);
-			}
+				arguments_.push_back(
+					source_floating_literal(parameter, expr.spelling.text, length, expr.location).value);
 		}
 		lowering_.demand(function);
 		RValue value;
@@ -1406,20 +1390,9 @@ RValue FunctionLowering::literal(const syntax::LiteralExpr& expr, lowir::Value d
 	}
 	const sema::Type* type = expr.facts->type;
 	const lowir::Type storage = lowering_.storage_type(type);
-	if (storage.is_object() && SoftFloatOf(type) != SoftFloat::None)
-		return soft_literal(SoftFloatOf(type), expr.spelling.text,
-			ClassifyNumber(expr.spelling.text, expr.spelling.length).suffix_begin, expr.location);
-	if (!storage.is_float())
-		return integer(storage, expr.facts->value);
-	// 2.14.4: the value in the literal's own type (its digits without the
-	// suffix: an extended type's is several characters).
-	lowir::TypeKind kind = storage.kind();
-	lowir::Literal bits;
-	std::string scratch;
-	const uint32_t digits = ClassifyNumber(expr.spelling.text, expr.spelling.length).suffix_begin;
-	if (!lowir::scan_float_literal(expr.spelling.text, digits, false, storage.kind(), kind, bits, scratch))
-		throw LoweringError(expr.location, "a floating literal outside its type's range");
-	return floating(storage, bits);
+	if (sema::IsFloating(type))
+		return source_floating_literal(type, expr.spelling.text, expr.facts->value, expr.location);
+	return integer(storage, expr.facts->value);
 }
 
 RValue FunctionLowering::builtin_trait_value(const syntax::BuiltinTraitExpr& trait)
@@ -3039,6 +3012,12 @@ lowir::Value FunctionLowering::bind_converted(const syntax::Expr& expr, const se
 	// named for what binds it (the course's spellings).
 	const syntax::Expr* e = WithoutParentheses(&expr);
 	const sema::ExprFacts* facts = e->facts;
+	if (e->kind == syntax::ExprKind::BracedInit)
+	{
+		const syntax::Expr* source = static_cast<const syntax::BracedInitList*>(e)->result_source;
+		if (source != nullptr)
+			return bind_converted(*source, conversion, reference, context, persistent);
+	}
 	const lowir::SlotKind reference_kind = context == ConversionContext::Argument ? lowir::SlotKind::Refarg
 		: context == ConversionContext::Return                                    ? lowir::SlotKind::Retref
 																				  : lowir::SlotKind::Tmpref;

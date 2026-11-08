@@ -274,7 +274,7 @@ bool ConstantInterpreter::user_literal(const syntax::LiteralExpr& expr, Result& 
 	SmallList<Argument, 2> arguments;
 	Argument argument = Argument();
 	argument.valued = true;
-	if (expr.facts->value == kLiteralCallString)
+	if ((expr.facts->value & 255) == kLiteralCallString)
 	{
 		const ConstValue* units = literal_object(&expr, expr.location);
 		if (units == nullptr)
@@ -288,7 +288,7 @@ bool ConstantInterpreter::user_literal(const syntax::LiteralExpr& expr, Result& 
 		argument.value = IntegerValue(parameters[1]->unqualified, units->count - 1);
 		arguments.push_back(argument);
 	}
-	else if (expr.facts->value == kLiteralCallRaw)
+	else if ((expr.facts->value & 255) == kLiteralCallRaw)
 	{
 		// p3-p4: the number's characters, a string literal's array.
 		const ConstValue* units = literal_object(&expr, expr.location);
@@ -301,7 +301,7 @@ bool ConstantInterpreter::user_literal(const syntax::LiteralExpr& expr, Result& 
 		argument.value = PointerTo(first, parameters[0]->unqualified);
 		arguments.push_back(argument);
 	}
-	else if (expr.facts->value == kLiteralCallCharacter)
+	else if ((expr.facts->value & 255) == kLiteralCallCharacter)
 	{
 		// p6: the character's value converted to the parameter.
 		const CharacterLiteralValue character = EvaluateCharacterLiteral(expr.spelling.text, expr.spelling.length);
@@ -313,13 +313,13 @@ bool ConstantInterpreter::user_literal(const syntax::LiteralExpr& expr, Result& 
 			return false;
 		arguments.push_back(argument);
 	}
-	else if (expr.facts->value == kLiteralCallCooked)
+	else if ((expr.facts->value & 255) == kLiteralCallCooked)
 	{
-		const NumberLiteral number = ClassifyNumber(expr.spelling.text, expr.spelling.length);
+		const uint32_t length = expr.facts->value >> 8;
 		uint64_t digits = 0;
-		if (number.kind == NumberLiteralKind::UserDefinedInteger)
+		if (!IsFloating(parameters[0]))
 		{
-			if (!UserIntegerValue(expr.spelling.text, number.suffix_begin, digits))
+			if (!UserIntegerValue(expr.spelling.text, length, digits))
 				return fail(expr.location, "a user-defined integer literal beyond unsigned long long");
 			argument.value = IntegerValue(parameters[0]->unqualified, digits);
 		}
@@ -328,8 +328,7 @@ bool ConstantInterpreter::user_literal(const syntax::LiteralExpr& expr, Result& 
 			unsigned char bytes[16];
 			std::string scratch;
 			long double value = 0;
-			if (!ScanFloatingValue(
-					expr.spelling.text, number.suffix_begin, FundamentalType::LongDouble, scratch, bytes))
+			if (!ScanFloatingValue(expr.spelling.text, length, FundamentalType::LongDouble, scratch, bytes))
 				return fail(expr.location, "a floating literal outside constant evaluation");
 			std::memcpy(&value, bytes, sizeof value);
 			argument.value = FloatingValue(parameters[0]->unqualified, value);

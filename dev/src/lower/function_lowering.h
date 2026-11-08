@@ -1353,7 +1353,7 @@ private:
 	// (`second`: a binary routine's right operand).
 	RValue soft_call(SoftFloatHelper which, const RValue& first, const RValue* second = nullptr);
 	RValue soft_constant(SoftFloat kind, uint64_t low, uint64_t high);
-	RValue soft_literal(SoftFloat kind, const char* text, uint32_t length, uint32_t location);
+	RValue source_floating_literal(const sema::Type* type, const char* text, uint32_t length, uint32_t location);
 	RValue soft_zero(SoftFloat kind);
 	RValue soft_convert(const RValue& value, const sema::Type* from, const sema::Type* to);
 	RValue bfloat_convert(const RValue& value, const sema::Type* from, const sema::Type* to);
@@ -1467,6 +1467,8 @@ private:
 	RValue shift_vector_lanes(const syntax::CallExpr& expr);
 	RValue shuffle_vector(const syntax::CallExpr& expr);
 	RValue binary_immediate_vector(const syntax::CallExpr& expr);
+	RValue immediate_vector(const syntax::CallExpr& expr);
+	bool immediate_vector_helper(lowir::VectorOp operation);
 	RValue deferred_vector(lowir::VectorOp operation, const RValue& first, const RValue& second, const RValue& count);
 	RValue vector_helper_offset(lowir::VectorOp operation, uint32_t lane, const RValue& count, RValue& valid);
 	RValue reinterpret_bytes(const RValue& value, const sema::Type* to);
@@ -1720,7 +1722,7 @@ private:
 	// `placement`: a placement deallocation function's further arguments
 	// in element_values_ (their first's index + 1), else none.
 	void free_storage(const sema::FunctionEntity* deallocator, lowir::Value raw, const RValue& size, uint32_t location,
-		uint32_t placement = 0);
+		uint32_t placement = 0, uint64_t alignment = 16);
 	RValue deletion(const syntax::DeleteExpr& expr);
 	// Pushes the deleted storage on the alive chain (its index); `block`: a
 	// sized array deallocation function's size argument, else none.

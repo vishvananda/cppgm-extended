@@ -11,7 +11,7 @@ class AssemblyEnvironment
 {
 public:
 	explicit AssemblyEnvironment(const lowir::Program& program);
-	assembly::ModuleExpander fork(uint32_t prefix);
+	assembly::ModuleExpander snapshot(uint32_t prefix);
 	const std::vector<std::vector<assembly::ModuleLine>>& globals();
 
 private:

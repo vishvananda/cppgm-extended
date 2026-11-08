@@ -86,7 +86,9 @@ FunctionEntity* Analyzer::builtin_function(const Identifier* name)
 		return nullptr;
 	// The type-generic and query builtins have no type of their own; a
 	// variadic int(...) stands for it.
-	const Type* type = entry.signature != nullptr && entry.builtin != GnuBuiltin::VectorLanewise
+	const bool vector_shapes = entry.builtin == GnuBuiltin::VectorLanewise ||
+		entry.builtin == GnuBuiltin::VectorImmediate;
+	const Type* type = entry.signature != nullptr && !vector_shapes
 		? builtin_signature(entry.signature, entry.floating)
 		: types_.function(types_.fundamental(FundamentalType::Int), nullptr, 0, true, 0, RefQualifier::None);
 	if (type == nullptr)
@@ -97,7 +99,7 @@ FunctionEntity* Analyzer::builtin_function(const Identifier* name)
 	function->builtin = FunctionKindOf(entry.builtin);
 	function->gnu_builtin = entry.builtin;
 	function->builtin_variant = entry.variant;
-	function->builtin_shapes = entry.builtin == GnuBuiltin::VectorLanewise ? entry.signature : nullptr;
+	function->builtin_shapes = vector_shapes ? entry.signature : nullptr;
 	function->builtin_scalar = entry.floating == 's';
 	function->nothrow = true;
 	function->c_linkage = true;
@@ -220,6 +222,7 @@ ExprFacts* Analyzer::builtin_operation(const syntax::CallExpr& expr, const Funct
 	case GnuBuiltin::VectorBinaryImmediate:
 		return vector_binary_immediate_builtin(expr, variant, scope);
 	case GnuBuiltin::VectorLanewise:
+	case GnuBuiltin::VectorImmediate:
 		return vector_lanewise_builtin(expr, builtin, scope);
 	case GnuBuiltin::VectorElementwise:
 		return vector_elementwise_builtin(expr, variant, scope);
@@ -564,8 +567,9 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 	{
 		// An address, then optionally rw (0 or 1) and locality (0 to 3),
 		// integral constants; a hint only.
-		if (count < 1 || count > 3)
-			error(expr.location, "wrong number of arguments to __builtin_prefetch");
+		if (variant != 0 ? count != 4 : (count < 1 || count > 3))
+			error(expr.location, "wrong number of arguments to a prefetch builtin");
+		bool deferred = false;
 		const ExprFacts* address = typed_value(*expr.arguments[0], scope);
 		if (address == nullptr)
 			return nullptr;
@@ -575,12 +579,17 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 			Constant value;
 			if (typed_value(*expr.arguments[i], scope) == nullptr)
 				return nullptr;
-			if (!integral_constant(*expr.arguments[i], scope, value) || value.bits > (i == 1 ? 1u : 3u))
-				error(expr.arguments[i]->location, "__builtin_prefetch takes constant rw and locality operands");
+			const bool constant = constant_value(*expr.arguments[i], scope, value, false);
+			if (!constant &&
+				(variant == 0 || body_ == nullptr || body_->function == nullptr || !body_->function->always_inline))
+				error(expr.arguments[i]->location, "a prefetch control must be an integral constant");
+			if (variant == 0 && constant && value.bits > (i == 1 ? 1u : 3u))
+				error(expr.arguments[i]->location, "__builtin_prefetch control is outside its permitted range");
+			deferred = deferred || !constant;
 			convert(*expr.arguments[i], int_type, false);
 		}
 		facts = new_facts(expr, void_type, ValueCategory::PRValue);
-		facts->value = static_cast<uint64_t>(Intrinsic::Prefetch);
+		facts->value = static_cast<uint64_t>(Intrinsic::Prefetch) | (uint64_t(deferred) << 8);
 		break;
 	}
 	case GnuBuiltin::Launder:
@@ -660,12 +669,9 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		facts->value = static_cast<uint64_t>(Intrinsic::ReduceAnd) + variant;
 		break;
 	}
+	case GnuBuiltin::Mxcsr:
 	case GnuBuiltin::FltRounds:
-		if (count != 0)
-			error(expr.location, "__builtin_flt_rounds takes no arguments");
-		facts = new_facts(expr, int_type, ValueCategory::PRValue);
-		facts->value = static_cast<uint64_t>(Intrinsic::FltRounds);
-		break;
+		return control_intrinsic(expr, builtin, variant, scope);
 	case GnuBuiltin::VectorTruncate:
 	{
 		if (count != 1)
@@ -803,6 +809,35 @@ ExprFacts* Analyzer::gnu_intrinsic(const syntax::CallExpr& expr, GnuBuiltin buil
 		break;
 	default:
 		error(expr.location, "a builtin that is no function");
+	}
+	facts->flags |= kIntrinsic;
+	return facts;
+}
+
+ExprFacts* Analyzer::control_intrinsic(const syntax::CallExpr& expr, GnuBuiltin builtin, uint8_t variant, Scope* scope)
+{
+	ExprFacts* facts;
+	if (builtin == GnuBuiltin::FltRounds)
+	{
+		if (!expr.arguments.empty())
+			error(expr.location, "__builtin_flt_rounds takes no arguments");
+		facts = new_facts(expr, types_.fundamental(FundamentalType::Int), ValueCategory::PRValue);
+		facts->value = static_cast<uint64_t>(Intrinsic::FltRounds);
+	}
+	else
+	{
+		if (expr.arguments.size != variant)
+			error(expr.location, "wrong number of arguments to an MXCSR builtin");
+		const Type* word = types_.fundamental(FundamentalType::UnsignedInt);
+		if (variant != 0)
+		{
+			if (typed_value(*expr.arguments[0], scope) == nullptr)
+				return nullptr;
+			convert(*expr.arguments[0], word, false);
+		}
+		facts = new_facts(
+			expr, variant != 0 ? types_.fundamental(FundamentalType::Void) : word, ValueCategory::PRValue);
+		facts->value = static_cast<uint64_t>(variant != 0 ? Intrinsic::WriteMxcsr : Intrinsic::ReadMxcsr);
 	}
 	facts->flags |= kIntrinsic;
 	return facts;
@@ -1138,8 +1173,10 @@ ExprFacts* Analyzer::vector_lanewise_builtin(const syntax::CallExpr& expr, const
 	// and Clang declare some of these on opposite lane signedness (__v8hi,
 	// __v8hu), which does not matter as lanes are read by width.
 	const VectorLanewiseOp operation = static_cast<VectorLanewiseOp>(builtin->builtin_variant);
-	const bool reads = operation == VectorLanewiseOp::Load || operation == VectorLanewiseOp::LoadHigh ||
-		operation == VectorLanewiseOp::LoadLow || operation == VectorLanewiseOp::Hint;
+	const bool immediate = builtin->gnu_builtin == GnuBuiltin::VectorImmediate;
+	const bool reads = !immediate &&
+		(operation == VectorLanewiseOp::Load || operation == VectorLanewiseOp::LoadHigh ||
+			operation == VectorLanewiseOp::LoadLow || operation == VectorLanewiseOp::Hint);
 	const char* shape = builtin->builtin_shapes;
 	const Type* result = vector_shape(shape, false);
 	for (const syntax::Expr* argument : expr.arguments)
@@ -1158,6 +1195,24 @@ ExprFacts* Analyzer::vector_lanewise_builtin(const syntax::CallExpr& expr, const
 	}
 	if (*shape != '\0')
 		error(expr.location, "too few arguments to a packed operation");
+	if (immediate)
+	{
+		const syntax::Expr& argument = *expr.arguments[expr.arguments.size - 1];
+		Constant selector;
+		const bool constant = constant_value(argument, scope, selector, false);
+		if (!constant && template_depth_ == 0 &&
+			(body_ == nullptr || body_->function == nullptr || !body_->function->always_inline))
+			error(argument.location, "a vector selector that is no integral constant expression");
+		IntegralKind kind;
+		const bool byte = IntegralKindOf(argument.facts->type, kind) && kind.bits == 8;
+		if (constant && selector.bits > 255 && !byte)
+			error(argument.location, "a vector selector outside the unsigned-byte range");
+		ExprFacts* facts = new_facts(expr, result, ValueCategory::PRValue);
+		facts->flags |= kIntrinsic;
+		facts->value = static_cast<uint64_t>(Intrinsic::VectorImmediate) | uint64_t(builtin->builtin_variant) << 8 |
+			(constant ? (selector.bits & 255) << 16 : uint64_t(1) << 24) | (byte ? uint64_t(1) << 25 : 0);
+		return facts;
+	}
 	ExprFacts* facts = new_facts(expr, result, ValueCategory::PRValue);
 	facts->value = static_cast<uint64_t>(Intrinsic::VectorLanewise) | (static_cast<uint64_t>(operation) << 8) |
 		(builtin->builtin_scalar ? uint64_t(1) << 16 : 0);

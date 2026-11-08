@@ -1158,6 +1158,24 @@ uint32_t ProgramLowering::overload_ordinal(const sema::FunctionEntity* function)
 	return 1;
 }
 
+lowir::SymbolId ProgramLowering::code_label(const syntax::LabelAddressExpr& expr)
+{
+	const lowir::SymbolId function = function_symbol(expr.function);
+	const std::string name = std::string(program_.spelling(program_.symbols[function].name)) + ".code_label." +
+		std::string(expr.label->spelling, expr.label->length);
+	const lowir::SymbolId symbol = program_.symbol_for(program_.names.intern(name.data(), name.size()));
+	if (program_.symbols[symbol].kind == lowir::SymbolKind::Unresolved)
+	{
+		lowir::Global global = lowir::Global();
+		global.typed = true;
+		global.type = lowir::Type::scalar(lowir::TypeKind::I8);
+		program_.declare_global(symbol, lowir::SymbolKind::GlobalDeclaration, global);
+		program_.symbols[symbol].metadata.binding = ir_model::SBM_INTERNAL;
+		code_labels_.push_back(PendingCodeLabel{ function, symbol, expr.label });
+	}
+	return symbol;
+}
+
 lowir::SymbolId ProgramLowering::function_symbol(const sema::FunctionEntity* function)
 {
 	// A block-scope declaration names the function it denotes (3.5p6).
@@ -1305,8 +1323,8 @@ lowir::SymbolId ProgramLowering::variable_symbol(const sema::VariableEntity* var
 	}
 	// A static data member defined inline in its class (C++17's 9.4.2p3)
 	// is defined where it is used too, weak as an inline variable.
-	else if (facts == nullptr && variable->is_inline && variable->defined && variable->owner != nullptr &&
-		variable->owner->kind == sema::ScopeKind::Class &&
+	else if (facts == nullptr && variable->inline_member_definition && variable->defined &&
+		variable->owner != nullptr && variable->owner->kind == sema::ScopeKind::Class &&
 		program_.symbols[symbol].kind == lowir::SymbolKind::Unresolved)
 	{
 		define_global(symbol, variable, nullptr, 0);
@@ -3218,7 +3236,7 @@ lowir::SignatureId ProgramLowering::member_call_signature(const sema::Type* memb
 	self.name = argument_name(signature.parameter_count - type->param_count);
 	self.type = lowir::Type::scalar(lowir::TypeKind::Ptr);
 	const sema::ClassEntity* owner = sema::ClassOf(member_pointer->owner);
-	if (owner != nullptr && owner->bases == nullptr)
+	if (owner != nullptr && owner->complete && owner->bases == nullptr)
 		self.object_bytes = size_of(member_pointer->owner, 0);
 	program_.parameters.push_back(self);
 	++signature.parameter_count;

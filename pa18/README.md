@@ -50,6 +50,11 @@ LowIR output are not required in PA18.
 
 ### Substituted member types
 
+For a built-in pointer comparison, a known pointer operand can supply the
+target for deducing the other operand's conversion-function template. Include
+the resulting candidate in normal overload resolution; explicit conversions
+remain unavailable implicitly.
+
 A substituted `typename T::member` must denote a type. A member class or alias
 template without template arguments rejects an overload in the immediate
 substitution context. An actual nested class remains a type even when incomplete;

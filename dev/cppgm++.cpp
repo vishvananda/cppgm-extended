@@ -202,7 +202,9 @@ struct SourceOutputInvocation
 	bool full_asm = false;
 	bool plain_char_unsigned = false;
 	bool popcnt = false;
+	uint8_t sse_level = 0;
 	bool strict_aliasing = true;
+	bool exceptions = true;
 	vector<string> include_paths;
 	string command_line;
 	// --emit-lowir -O<n>: the optimizer's level and limits.
@@ -296,6 +298,11 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 			invocation.hosted = true;
 			continue;
 		}
+		if (args[i] == "-fno-exceptions" || args[i] == "-fexceptions")
+		{
+			invocation.exceptions = args[i] == "-fexceptions";
+			continue;
+		}
 		if (args[i] == "-fno-strict-aliasing" || args[i] == "-fstrict-aliasing")
 		{
 			invocation.strict_aliasing = args[i] == "-fstrict-aliasing";
@@ -306,6 +313,8 @@ SourceOutputInvocation parse_source_output_invocation(const vector<string>& args
 			invocation.popcnt = args[i] == "-mpopcnt";
 			continue;
 		}
+		if (driver::sse_option(args[i], invocation.sse_level))
+			continue;
 		if (args[i] == "-funsigned-char" || args[i] == "-fno-signed-char" || args[i] == "-fsigned-char" ||
 			args[i] == "-fno-unsigned-char")
 		{
@@ -610,6 +619,8 @@ PreprocessorOptions source_preprocessor_options(const SourceOutputInvocation& in
 		driver::language_standard(invocation.standard, options);
 	options.plain_char_unsigned = invocation.plain_char_unsigned;
 	options.popcnt = invocation.popcnt;
+	options.modes.exceptions = invocation.exceptions;
+	options.sse_level = invocation.sse_level;
 	if (invocation.hosted)
 		driver::add_host_environment(options, invocation.target != native::host_target());
 	driver::configure_target_environment(options, invocation.target);
@@ -766,6 +777,7 @@ int run_emit_types_mode(vector<string> args)
 				analyzer.set_full_asm(invocation.full_asm);
 				analyzer.set_cxx14(options.cplusplus != "201103L");
 				analyzer.set_cxx17(options.cplusplus == "201703L");
+				analyzer.set_exceptions(options.modes.exceptions);
 				analyzer.set_source_positions(&unit.positions());
 				analyzer.analyze(unit.tree());
 			}
@@ -849,6 +861,7 @@ int run_emit_semantics_mode(vector<string> args)
 				analyzer.set_full_asm(invocation.full_asm);
 				analyzer.set_cxx14(options.cplusplus != "201103L");
 				analyzer.set_cxx17(options.cplusplus == "201703L");
+				analyzer.set_exceptions(options.modes.exceptions);
 				analyzer.set_source_positions(&unit.positions());
 				analyzer.analyze(unit.tree());
 			}
@@ -974,6 +987,7 @@ int run_emit_lowir_mode(vector<string> args)
 	lowering.set_optimizing(object_half || invocation.optimizer.level >= 2);
 	lowering.set_strict_aliasing(invocation.strict_aliasing);
 	lowering.set_popcnt(options.popcnt);
+	lowering.set_exceptions(options.modes.exceptions);
 	// The LowIR view carries the source's debug locations when debug
 	// information is asked for, including the object roundtrip's view.
 	lowering.set_debug_locations(invocation.debug_info);
@@ -997,6 +1011,7 @@ int run_emit_lowir_mode(vector<string> args)
 			analyzer.set_full_asm(invocation.full_asm);
 			analyzer.set_cxx14(options.cplusplus != "201103L");
 			analyzer.set_cxx17(options.cplusplus == "201703L");
+			analyzer.set_exceptions(options.modes.exceptions);
 			analyzer.set_source_positions(&unit.positions());
 			try
 			{

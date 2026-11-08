@@ -203,6 +203,8 @@ enum class Opcode : std::uint8_t
 	AtomicCompareExchange,
 	VaArg,
 	StackAlloc,
+	StackSave,
+	ReadMxcsr,
 	Call, // a value unless its result type is void
 	Exception,
 	ExceptionSelector,
@@ -213,6 +215,8 @@ enum class Opcode : std::uint8_t
 	AtomicThreadFence,
 	AtomicSignalFence,
 	VaStart,
+	StackRestore,
+	WriteMxcsr,
 	CopyObject,
 	ZeroInit,
 	EhTry,
@@ -227,11 +231,17 @@ enum class Opcode : std::uint8_t
 	Jump,
 	Branch,
 	Switch,
+	IndirectJump,
 	Return,
 	Unreachable
 };
 
 const unsigned kOpcodeCount = static_cast<unsigned>(Opcode::Unreachable) + 1;
+
+inline bool is_stack_instruction(Opcode op)
+{
+	return op == Opcode::StackAlloc || op == Opcode::StackSave || op == Opcode::StackRestore;
+}
 
 inline bool is_terminator(Opcode op)
 {
@@ -256,10 +266,11 @@ inline const char* spelling(Opcode op)
 {
 	static const char* const kOpcodes[kOpcodeCount] = { "const", "copy", "phi", "addr", "load", "atomic_load", "index",
 		"unary", "binary", "cmp", "select", "convert", "vector", "atomic_add_fetch", "atomic_exchange",
-		"atomic_compare_exchange", "va_arg", "stack_alloc", "call", "exception", "exception_selector", "asm", "store",
-		"atomic_store", "atomic_thread_fence", "atomic_signal_fence", "va_start", "copyobj", "zeroinit", "eh_try",
-		"eh_cleanup", "eh_catch", "eh_filter", "eh_catch_all", "eh_end", "throw", "resume", "jump", "branch", "switch",
-		"return", "unreachable" };
+		"atomic_compare_exchange", "va_arg", "stack_alloc", "stack_save", "read_mxcsr", "call", "exception",
+		"exception_selector", "asm", "store", "atomic_store", "atomic_thread_fence", "atomic_signal_fence", "va_start",
+		"stack_restore", "write_mxcsr", "copyobj", "zeroinit", "eh_try", "eh_cleanup", "eh_catch", "eh_filter",
+		"eh_catch_all", "eh_end", "throw", "resume", "jump", "branch", "switch", "indirect_jump", "return",
+		"unreachable" };
 	return kOpcodes[static_cast<unsigned>(op)];
 }
 
@@ -522,6 +533,7 @@ enum class VectorOp : std::uint8_t
 	Movshdup,
 	Movsldup,
 	Movddup,
+	Phminposuw,
 	Pabsb,
 	Pabsw,
 	Pabsd,
@@ -556,6 +568,13 @@ enum class VectorOp : std::uint8_t
 	Blendpd,
 	Pblendw,
 	Pclmulqdq,
+	Dpps,
+	Dppd,
+	Insertps,
+	Roundps,
+	Roundpd,
+	Roundss,
+	Roundsd,
 	Pshufd,
 	Pshuflw,
 	Pshufhw,
@@ -606,14 +625,14 @@ inline const char* spelling(VectorOp op)
 		"psllq", "psrlw", "psrld", "psrlq", "psraw", "psrad", "packsswb", "packssdw", "packuswb", "packusdw",
 		"punpcklbw", "punpcklwd", "punpckldq", "punpcklqdq", "punpckhbw", "punpckhwd", "punpckhdq", "punpckhqdq",
 		"pshufb", "psignb", "psignw", "psignd", "phaddw", "phaddd", "phaddsw", "phsubw", "phsubd", "phsubsw", "sqrtps",
-		"sqrtpd", "rcpps", "rsqrtps", "movshdup", "movsldup", "movddup", "pabsb", "pabsw", "pabsd", "pmovsxbw",
-		"pmovsxbd", "pmovsxbq", "pmovsxwd", "pmovsxwq", "pmovsxdq", "pmovzxbw", "pmovzxbd", "pmovzxbq", "pmovzxwd",
-		"pmovzxwq", "pmovzxdq", "cvtdq2ps", "cvtdq2pd", "cvtps2dq", "cvttps2dq", "cvtpd2dq", "cvttpd2dq", "cvtps2pd",
-		"cvtpd2ps", "cmpps", "cmppd", "cmpss", "cmpsd", "shufps", "shufpd", "palignr", "blendps", "blendpd", "pblendw",
-		"pclmulqdq", "pshufd", "pshuflw", "pshufhw", "psllwi", "pslldi", "psllqi", "psrlwi", "psrldi", "psrlqi",
-		"psrawi", "psradi", "pslldq", "psrldq", "blendvps", "blendvpd", "pblendvb", "movmskps", "movmskpd", "pmovmskb",
-		"ptestz", "ptestc", "ptestnzc", "pzero", "fromf32", "fromf64", "fromi32", "fromi64", "tof32", "tof64", "toi32",
-		"toi64" };
+		"sqrtpd", "rcpps", "rsqrtps", "movshdup", "movsldup", "movddup", "phminposuw", "pabsb", "pabsw", "pabsd",
+		"pmovsxbw", "pmovsxbd", "pmovsxbq", "pmovsxwd", "pmovsxwq", "pmovsxdq", "pmovzxbw", "pmovzxbd", "pmovzxbq",
+		"pmovzxwd", "pmovzxwq", "pmovzxdq", "cvtdq2ps", "cvtdq2pd", "cvtps2dq", "cvttps2dq", "cvtpd2dq", "cvttpd2dq",
+		"cvtps2pd", "cvtpd2ps", "cmpps", "cmppd", "cmpss", "cmpsd", "shufps", "shufpd", "palignr", "blendps", "blendpd",
+		"pblendw", "pclmulqdq", "dpps", "dppd", "insertps", "roundps", "roundpd", "roundss", "roundsd", "pshufd",
+		"pshuflw", "pshufhw", "psllwi", "pslldi", "psllqi", "psrlwi", "psrldi", "psrlqi", "psrawi", "psradi", "pslldq",
+		"psrldq", "blendvps", "blendvpd", "pblendvb", "movmskps", "movmskpd", "pmovmskb", "ptestz", "ptestc",
+		"ptestnzc", "pzero", "fromf32", "fromf64", "fromi32", "fromi64", "tof32", "tof64", "toi32", "toi64" };
 	return kVectorOps[static_cast<unsigned>(op)];
 }
 
@@ -649,6 +668,8 @@ inline bool vector_commutes(VectorOp op)
 
 inline VectorShape shape_of(VectorOp op)
 {
+	if (op == VectorOp::Roundps || op == VectorOp::Roundpd)
+		return VectorShape::UnaryImmediate;
 	if (op >= VectorOp::Tof32)
 		return VectorShape::ToScalar;
 	if (op >= VectorOp::Fromf32)
@@ -979,16 +1000,17 @@ enum class Keyword : std::uint8_t
 	Assembly,         // optional assembly template
 	EquivalentEntry,  // equivalent_entry @entry = @target
 	AssemblyFunction, // optional opaque assembly-defined function
-	AssemblyGlobal    // ordered module assembly invocation
+	AssemblyGlobal,   // ordered module assembly invocation
+	CodeLabel         // a named address of a block, inside its function
 };
 
-const unsigned kKeywordCount = static_cast<unsigned>(Keyword::AssemblyGlobal) + 1;
+const unsigned kKeywordCount = static_cast<unsigned>(Keyword::CodeLabel) + 1;
 
 inline const char* spelling(Keyword keyword)
 {
 	static const char* const kKeywords[kKeywordCount] = { "declare", "global", "function", "alias", "object", "slot",
 		"block", "zero", "as", "debug_type", "debug_scope", "debug_local", "assembly", "equivalent_entry",
-		"assembly_function", "assembly_global" };
+		"assembly_function", "assembly_global", "code_label" };
 	return kKeywords[static_cast<unsigned>(keyword)];
 }
 

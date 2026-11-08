@@ -19,6 +19,8 @@ unsigned value_slots(Opcode op)
 	case Opcode::Store:
 	case Opcode::AtomicStore:
 	case Opcode::StackAlloc:
+	case Opcode::WriteMxcsr:
+	case Opcode::StackRestore:
 	case Opcode::Throw:
 	case Opcode::Branch:
 	case Opcode::Switch:
@@ -49,6 +51,10 @@ Type read_type(const FunctionBody& body, const Instruction& inst, unsigned opera
 		(inst.sub == static_cast<unsigned>(BinaryOp::Shl) || inst.sub == static_cast<unsigned>(BinaryOp::Shr) ||
 			inst.sub == static_cast<unsigned>(BinaryOp::UShr)))
 		return Type::scalar(TypeKind::I64);
+	if (inst.op == Opcode::WriteMxcsr)
+		return Type::scalar(TypeKind::U32);
+	if (inst.op == Opcode::StackRestore)
+		return Type::scalar(TypeKind::Ptr);
 	if (inst.op == Opcode::Index || inst.op == Opcode::StackAlloc || inst.op == Opcode::Switch)
 		return Type::scalar(TypeKind::I64);
 	return inst.type;

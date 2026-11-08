@@ -70,7 +70,7 @@ void emit_assembly_function(ModuleAssembler& assembler, const lowir::Program& pr
 	};
 	std::vector<Source> sources;
 	uint32_t prefix = UINT32_MAX;
-	assembly::ModuleExpander expander = environment.fork(0);
+	assembly::ModuleExpander expander = environment.snapshot(0);
 	for (const lowir::Instruction& instruction : body.instructions)
 	{
 		if (instruction.op != lowir::Opcode::Asm)
@@ -86,7 +86,7 @@ void emit_assembly_function(ModuleAssembler& assembler, const lowir::Program& pr
 		if (prefix != definition.environment)
 		{
 			prefix = definition.environment;
-			expander = environment.fork(prefix);
+			expander = environment.snapshot(prefix);
 		}
 		Source source;
 		source.dialect = program.assembly->templates[instruction.immediate].dialect;

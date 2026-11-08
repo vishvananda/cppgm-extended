@@ -300,6 +300,17 @@ ExprFacts* Analyzer::typed_form(const syntax::Expr& expr, Scope* scope)
 	{
 	case syntax::ExprKind::Id:
 		return id_expression(static_cast<const syntax::IdExpr&>(expr), scope);
+	case syntax::ExprKind::LabelAddress:
+	{
+		if (!full_asm_ || body_ == nullptr || body_->function == nullptr)
+			error(expr.location, "label address requires --full-asm inside a function");
+		const syntax::LabelAddressExpr& label = static_cast<const syntax::LabelAddressExpr&>(expr);
+		label.function = body_->function;
+		// A label address requires a definition, but is not a jump and
+		// therefore cannot bypass an initialization at this point.
+		gotos_.push_back(PendingGoto{ label.label, expr.location, nullptr, 0 });
+		return new_facts(expr, types_.pointer(types_.fundamental(FundamentalType::Void)), ValueCategory::PRValue);
+	}
 	case syntax::ExprKind::Literal:
 		return literal(static_cast<const syntax::LiteralExpr&>(expr));
 	case syntax::ExprKind::KeywordLiteral:
@@ -2832,7 +2843,12 @@ ExprFacts* Analyzer::functional_cast(const syntax::FunctionalCastExpr& expr, Sco
 {
 	// 5.2.3: T(e) is the cast (T)e; T() and T{} value-initialize.
 	Specifiers specifiers;
-	this->specifiers(expr.type, scope, specifiers, false);
+	ClassEntity* deduction = cxx17_ ? deduction_template(expr.type, scope) : nullptr;
+	if (deduction != nullptr)
+		specifiers.type = deduce_class_type(
+			deduction, expr.braced != nullptr ? expr.braced->elements : expr.arguments, scope, expr.location);
+	else
+		this->specifiers(expr.type, scope, specifiers, false);
 	if (failed())
 		return nullptr;
 	if (specifiers.type == nullptr || specifiers.type == auto_placeholder_)
@@ -3094,7 +3110,7 @@ ExprFacts* Analyzer::explicit_conversion(
 			syntax::Slice<syntax::Expr*> arguments;
 			arguments.data = &argument;
 			arguments.size = 1;
-			constructor = select_constructor(entity, arguments, ConstructionKind::Direct, expr.location);
+			constructor = direct_initialization(entity, arguments, expr.location);
 		}
 		if (failed())
 			return nullptr;

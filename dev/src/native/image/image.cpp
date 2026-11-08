@@ -1,6 +1,7 @@
 #include "native/image/image.h"
 
 #include <cstring>
+#include <algorithm>
 
 #include "native/image/executable_file.h"
 
@@ -48,9 +49,9 @@ void Image::define(uint32_t symbol, Section section, uint64_t offset)
 void Image::align_code(uint32_t symbol, uint32_t align)
 {
 	if (symbol >= kLocalSymbols)
-		locals_[symbol - kLocalSymbols].code_align = align;
+		locals_[symbol - kLocalSymbols].code_align = std::max(locals_[symbol - kLocalSymbols].code_align, align);
 	else if (symbol < symbols_.size())
-		symbols_[symbol].code_align = align;
+		symbols_[symbol].code_align = std::max(symbols_[symbol].code_align, align);
 }
 
 uint64_t Image::reserve(Section section, uint64_t bytes, uint64_t align)
@@ -127,9 +128,13 @@ uint64_t Image::address_of(uint32_t symbol) const
 
 bool Image::write_executable(const std::string& path, uint32_t entry, std::string& error, uint32_t& undefined)
 {
-	// (A function's code may need a 32-byte boundary.)
+	uint32_t text_alignment = 32;
+	for (const auto& symbol : symbols_)
+		text_alignment = std::max(text_alignment, symbol.code_align);
+	for (const auto& symbol : locals_)
+		text_alignment = std::max(text_alignment, symbol.code_align);
 	const ExecutableLayout layout = layout_executable(
-		text_.size(), rodata_.size(), data_.size(), bss_size_, 32, 1, 1, 64, target);
+		text_.size(), rodata_.size(), data_.size(), bss_size_, text_alignment, 1, 1, 64, target);
 	text_address_ = layout.text_address;
 	rodata_address_ = layout.rodata_address;
 	data_address_ = layout.data_address;

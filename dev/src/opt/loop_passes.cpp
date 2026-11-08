@@ -1789,7 +1789,7 @@ bool LoopPass::try_unroll(uint32_t loop)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
 			const Instruction& inst = body_.instructions[i];
-			if (is_eh_instruction(inst.op) || inst.op == Opcode::StackAlloc || inst.op == Opcode::VaStart)
+			if (is_eh_instruction(inst.op) || is_stack_instruction(inst.op) || inst.op == Opcode::VaStart)
 				return false;
 			if (inst.op != Opcode::Phi && !is_terminator(inst.op))
 			{
@@ -2013,7 +2013,7 @@ bool LoopPass::unroll_search_shape(uint32_t loop, int64_t trips, TempId iv, std:
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
 		{
 			const Instruction& inst = body_.instructions[i];
-			if (is_eh_instruction(inst.op) || inst.op == Opcode::StackAlloc || inst.op == Opcode::VaStart)
+			if (is_eh_instruction(inst.op) || is_stack_instruction(inst.op) || inst.op == Opcode::VaStart)
 				return false;
 			slots = slots || (inst.op == Opcode::Load && slot_base(inst.ops[0])) ||
 				(inst.op == Opcode::Store && slot_base(inst.ops[1]));

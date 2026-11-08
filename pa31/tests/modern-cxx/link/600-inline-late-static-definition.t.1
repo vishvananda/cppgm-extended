@@ -1,0 +1,8 @@
+#include "600-inline-late-static-definition.h"
+extern "C" const Point *second();
+extern "C" const Point *host_address();
+extern "C" const int *second_answer();
+int main() {
+    return &Point::origin != second() || second() != host_address() ||
+        Point::origin.value != 19 || &answer != second_answer() || answer != 37;
+}

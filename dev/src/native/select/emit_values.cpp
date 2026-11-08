@@ -363,6 +363,38 @@ void FunctionSelector::emit_inst(uint32_t id)
 		finish_result(inst, d);
 		break;
 	}
+	case Opcode::ReadMxcsr:
+	case Opcode::WriteMxcsr:
+	{
+		const Operand home = Operand::make_frame(frame_alloc(4, 4));
+		if (inst.op == Opcode::WriteMxcsr)
+		{
+			const Operand value = reg_operand(inst.ops[0], Type::scalar(TypeKind::U32), kSelectScratch);
+			emit2(Op::Store, TypeKind::U32, home, value);
+			emit1(Op::WriteMxcsr, TypeKind::U32, home);
+		}
+		else
+		{
+			emit1(Op::ReadMxcsr, TypeKind::U32, home);
+			const Reg d = result_reg(inst);
+			load_into(d, home, TypeKind::U32);
+			finish_result(inst, d);
+		}
+		break;
+	}
+	case Opcode::StackSave:
+	{
+		const Reg d = result_reg(inst);
+		emit1(Op::StackSave, TypeKind::Ptr, Operand::make_reg(d));
+		finish_result(inst, d);
+		break;
+	}
+	case Opcode::StackRestore:
+	{
+		const Operand mark = reg_operand(inst.ops[0], Type::scalar(TypeKind::Ptr), kSelectScratch);
+		emit1(Op::StackRestore, TypeKind::Void, mark);
+		break;
+	}
 	case Opcode::StackAlloc:
 	{
 		Operand size = rm_operand(inst.ops[0], Type::scalar(TypeKind::I64), kSelectScratch);

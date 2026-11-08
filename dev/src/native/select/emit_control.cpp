@@ -84,7 +84,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 		const lowir::Instruction& inst = body_->instructions[id];
 		if (!rbp_free_ || (marks_[id] & IM_DEAD))
 			return;
-		if (inst.op == Opcode::StackAlloc || inst.op == Opcode::VaStart || inst.op == Opcode::VaArg)
+		if (lowir::is_stack_instruction(inst.op) || inst.op == Opcode::VaStart || inst.op == Opcode::VaArg)
 			rbp_free_ = false;
 		else if (inst.op == Opcode::Convert &&
 			(inst.type.kind() == TypeKind::I128 || lowir::convert_source_type(inst).kind() == TypeKind::I128) &&
@@ -104,10 +104,12 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 	allocate_globals();
 	layout_slots();
 	emit_blocks();
+	for (const lowir::CodeLabel& label : body_->code_labels)
+		out.code_labels.push_back(lowir::CodeLabel{ label.symbol, blocks_[layout_of_[label.block]].mir });
 	if (level_ >= 2)
 		mark_counted_loops();
 	finish_frame();
-	if (level_ >= 1)
+	if (level_ >= 1 && body_->code_labels.empty())
 	{
 		merge_constant_stores(out);
 		forward_return_slots(out);
@@ -125,7 +127,22 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out, uint32_t ex
 		if (!frame_pinned_)
 			stats_.ordered_frames += order_frame(out, frame_objects_) ? 1 : 0;
 	}
-	const uint32_t mir_instructions = level_ >= 1 ? layout_branches() : static_cast<uint32_t>(out.insts.size());
+	if (level_ >= 1 && !body_->code_labels.empty())
+	{
+		// Block-local rewrites preserve addressed entries and need no
+		// predecessor-specific register facts or edge transfers.
+		merge_constant_stores(out);
+		fuse_copies_into_lea(out);
+		drop_redundant_tests(out);
+		drop_redundant_copies(out);
+		fold_call_targets(out);
+		drop_redundant_constants(out);
+		forward_float_homes(out);
+		forward_frame_copies(out, frame_objects_);
+	}
+	const uint32_t mir_instructions = level_ >= 1 && body_->code_labels.empty()
+		? layout_branches()
+		: static_cast<uint32_t>(out.insts.size());
 	++stats_.functions;
 	stats_.lowir_instructions += body_->instructions.size();
 	stats_.mir_instructions += mir_instructions;
@@ -589,6 +606,9 @@ void FunctionSelector::emit_terminator(uint32_t id)
 	const Instruction& inst = body_->instructions[id];
 	switch (inst.op)
 	{
+	case Opcode::IndirectJump:
+		emit1(Op::IndirectJump, TypeKind::Ptr, reg_operand(inst.ops[0], Type::scalar(TypeKind::Ptr), kSelectScratch));
+		break;
 	case Opcode::Jump:
 	{
 		// Host EH: a jump to a resume-only block resumes (host_eh.cpp).

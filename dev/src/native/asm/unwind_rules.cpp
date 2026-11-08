@@ -1,5 +1,7 @@
 #include "native/asm/unwind_rules.h"
 
+#include "native/backend_error.h"
+
 #include "native/object/dwarf_bytes.h"
 #include <climits>
 
@@ -7,7 +9,7 @@ namespace native {
 namespace {
 [[noreturn]] void bad(const AssemblyCfiEvent& event, const char* message)
 {
-	throw assembly::AssemblyError{ message, event.line, 1 };
+	throw BackendError("assembly CFI line " + std::to_string(event.line) + ": " + message);
 }
 int64_t difference(const AssemblyCfiEvent& event, int64_t a, int64_t b)
 {
@@ -29,7 +31,7 @@ AssemblyCfiRules::AssemblyCfiRules(bool simple)
 void AssemblyCfiRules::advance(uint32_t pc)
 {
 	if (pc < pc_)
-		throw assembly::AssemblyError{ "CFI locations are not ordered", 1, 1 };
+		throw BackendError("assembly CFI line " + std::to_string(1) + ": " + "CFI locations are not ordered");
 	const uint32_t delta = pc - pc_;
 	DwarfBytes out(bytes_);
 	if (delta < 64)

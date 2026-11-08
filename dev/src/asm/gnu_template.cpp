@@ -198,7 +198,7 @@ PacketBuilder gnu_packet(const std::string& source, const std::vector<GnuOperand
 	{
 		if (name == "memory")
 			packet.definition.memory = Memory::ReadWrite;
-		else if (name == "cc")
+		else if (name == "cc" || name == "flags")
 			packet.definition.state_write |= AS_CONDITION_FLAGS;
 		else
 		{

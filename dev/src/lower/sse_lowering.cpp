@@ -279,6 +279,8 @@ RValue FunctionLowering::lanewise_vector(const syntax::CallExpr& expr)
 	case VectorLanewiseOp::ByteShuffle:
 	case VectorLanewiseOp::ByteAlign:
 		return lanewise_bytes(call);
+	case VectorLanewiseOp::MinPosition:
+		throw LoweringError(expr.location, "minimum-position operation requires its direct packed form");
 	case VectorLanewiseOp::HorizontalAdd:
 	case VectorLanewiseOp::HorizontalSub:
 	case VectorLanewiseOp::HorizontalAddSaturate:

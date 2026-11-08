@@ -22,6 +22,11 @@ bool is_definition(const Program& program, SymbolId s)
 template<typename Mark>
 void mark_data_references(const Program& program, Mark mark)
 {
+	// Code addresses retain their containing function and its ABI. Static
+	// dispatch tables can keep it alive without an ordinary call edge.
+	for (SymbolId s : program.order)
+		if (is_definition(program, s) && !program.functions[program.symbols[s].detail].body->code_labels.empty())
+			mark(s);
 	for (SymbolId s = 0; s < program.symbols.size(); ++s)
 	{
 		const Symbol& symbol = program.symbols[s];

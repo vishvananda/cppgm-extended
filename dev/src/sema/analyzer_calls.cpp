@@ -1025,18 +1025,36 @@ int Analyzer::function_template_order(
 	return 0;
 }
 
+const Conversion* Analyzer::elided_direct_sequence(const Candidate& candidate) const
+{
+	if (!eliding_direct_ || direct_class_ == nullptr || candidate.function == nullptr ||
+		candidate.function->owner != direct_class_->scope ||
+		(candidate.function->copy_kind != CopyKind::CopyConstructor &&
+			candidate.function->copy_kind != CopyKind::MoveConstructor))
+		return nullptr;
+	const Conversion& sequence = sequences_[candidate.first];
+	const FunctionEntity* converter = sequence.constructor;
+	if (converter == nullptr || converter->constructor || sequence.argument == nullptr)
+		return nullptr;
+	const Type* result = converter->type->canonical->element;
+	return !result->is_reference() && ClassOf(result) == direct_class_ ? sequence.argument : nullptr;
+}
+
 int Analyzer::compare_candidates(const Candidate& a, const Candidate& b, uint32_t count, bool object)
 {
 	// 13.3.3p1: no conversion sequence worse and at least one better. The
 	// implicit object parameter of a static member neither helps nor
 	// hurts (13.3.1p4).
 	bool better = false, worse = false;
+	const Conversion* ac = count == 1 && !object ? elided_direct_sequence(a) : nullptr;
+	const Conversion* bc = count == 1 && !object ? elided_direct_sequence(b) : nullptr;
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		if (i == 0 && object &&
 			(a.function->is_static || b.function->is_static || !a.function->member || !b.function->member))
 			continue;
-		const int order = conversions_.compare(sequences_[a.first + i], sequences_[b.first + i]);
+		const int order = conversions_.compare(
+			ac != nullptr ? *ac : sequences_[a.first + i], bc != nullptr ? *bc : sequences_[b.first + i]);
 		better = better || order > 0;
 		worse = worse || order < 0;
 	}
@@ -1044,6 +1062,16 @@ int Analyzer::compare_candidates(const Candidate& a, const Candidate& b, uint32_
 		return 1;
 	if (worse && !better)
 		return -1;
+	if (!better && !worse && (ac != nullptr || bc != nullptr))
+	{
+		// C++17 hosted compatibility (CWG 2327): compare an elidable
+		// conversion by its object binding. A real constructor wins a tie.
+		if ((ac != nullptr) != (bc != nullptr))
+			return ac != nullptr ? -1 : 1;
+		if (sequences_[a.first].constructor == sequences_[b.first].constructor &&
+			a.function->copy_kind != b.function->copy_kind)
+			return a.function->copy_kind == CopyKind::MoveConstructor ? 1 : -1;
+	}
 	// 13.3.3p1: otherwise a non-template beats a template specialization,
 	// and a specialization of a more specialized template another's
 	// (14.5.6.2, over the parameters the call has arguments for; without
@@ -1056,7 +1084,17 @@ int Analyzer::compare_candidates(const Candidate& a, const Candidate& b, uint32_
 	{
 		const uint32_t arguments = count - (object ? 1 : 0);
 		const Ordering form = object ? Ordering::Call : Ordering::CallInserting;
-		return function_template_order(a.function->primary, b.function->primary, arguments, form);
+		const int order = function_template_order(a.function->primary, b.function->primary, arguments, form);
+		if (order != 0)
+			return order;
+		const DeductionGuideKind ak = a.function->primary->templ->deduction_guide;
+		const DeductionGuideKind bk = b.function->primary->templ->deduction_guide;
+		if (ak != DeductionGuideKind::None && bk != DeductionGuideKind::None && ak != bk)
+		{
+			if (ak == DeductionGuideKind::Copy || bk == DeductionGuideKind::Copy)
+				return ak == DeductionGuideKind::Copy ? 1 : -1;
+			return ak == DeductionGuideKind::Constructor ? 1 : -1;
+		}
 	}
 	return 0;
 }

@@ -362,6 +362,11 @@ void FunctionLowering::construct(const sema::Type* type, lowir::Value object, co
 	}
 	if (const syntax::BracedInitList* list = BracedList(*init))
 	{
+		if (list->result_source != nullptr)
+		{
+			materialize(*list->result_source, object, location);
+			return;
+		}
 		if (constructor == nullptr && list->facts != nullptr && list->facts->single_class_element)
 		{
 			materialize(*list->elements[0], object, location);
@@ -397,7 +402,14 @@ void FunctionLowering::construct(const sema::Type* type, lowir::Value object, co
 		else if (constructor != nullptr)
 			call_special(constructor, variant, object, init->arguments, location);
 		else
-			materialize(*init->arguments[0], object, location);
+		{
+			const syntax::Expr& source = *init->arguments[0];
+			const sema::Conversion* conversion = WithoutParentheses(&source)->facts->conversion;
+			if (conversion_function(conversion))
+				initialize_from(source, conversion, object, location);
+			else
+				materialize(source, object, location);
+		}
 		return;
 	}
 	if (constructor == nullptr)
@@ -704,6 +716,12 @@ bool ZeroedByValue(const sema::ClassEntity* entity, unsigned depth)
 		return false;
 	if (depth > 64)
 		return false;
+	for (const sema::BaseClass* base = entity->bases; base != nullptr; base = base->next)
+	{
+		const sema::ClassEntity* cls = static_cast<const sema::ClassEntity*>(base->base);
+		if (!sema::IsAggregateClass(cls) || !ZeroedByValue(cls, depth + 1))
+			return false;
+	}
 	for (const sema::DataMember* member = entity->members; member != nullptr; member = member->next)
 	{
 		const sema::Type* type = member->variable->type;
@@ -1342,7 +1360,8 @@ void FunctionLowering::destroy_local(const Cleanup& cleanup, lowir::BlockId belo
 		// function, given a sized one's object size or a placement one's
 		// further arguments again (5.3.4p20, 3.7.4.2p2).
 		const RValue size = integer(lowir::Type::scalar(lowir::TypeKind::I64), lowering_.size_of(cleanup.type, 0));
-		free_storage(cleanup.deallocator, cleanup.storage, size, 0, cleanup.saved_elements);
+		free_storage(cleanup.deallocator, cleanup.storage, size, 0, cleanup.saved_elements,
+			lowering_.alignment_of(cleanup.type, 0));
 	}
 	else if (cleanup.counted)
 	{

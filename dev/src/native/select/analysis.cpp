@@ -193,6 +193,9 @@ void FunctionSelector::build_cfg()
 			for (uint32_t k = 1; k < term.extra_count; k += 2)
 				add(body.operands[term.extra_first + k].index);
 		}
+		else if (term.op == Opcode::IndirectJump)
+			for (uint32_t k = 0; k < term.extra_count; ++k)
+				add(body.operands[term.extra_first + k].index);
 	}
 	handler_first[n] = static_cast<uint32_t>(handlers.size());
 	succ_first_[n] = static_cast<uint32_t>(succs_.size());
@@ -200,6 +203,12 @@ void FunctionSelector::build_cfg()
 		return;
 	std::vector<uint32_t> work(1, 0);
 	blocks_[0].reachable = true;
+	for (const lowir::CodeLabel& label : body.code_labels)
+		if (!blocks_[layout_of_[label.block]].reachable)
+		{
+			blocks_[layout_of_[label.block]].reachable = true;
+			work.push_back(layout_of_[label.block]);
+		}
 	while (!work.empty())
 	{
 		const uint32_t b = work.back();

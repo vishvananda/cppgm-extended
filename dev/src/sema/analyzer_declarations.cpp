@@ -250,7 +250,7 @@ void Analyzer::simple_declaration(const syntax::SimpleDecl& decl, Scope* scope)
 		qualifying_template(decl, scope, &placeholder_home_);
 	const syntax::Attribute* saved_lone = lone_class_attributes_;
 	lone_class_attributes_ = lone ? decl.attributes : nullptr;
-	this->specifiers(decl.specifiers, scope, specifiers, lone);
+	this->specifiers(decl.specifiers, scope, specifiers, lone, cxx17_ && !lone);
 	lone_class_attributes_ = saved_lone;
 	owner_specifiers_ = saved_owner_specifiers;
 	placeholder_home_ = saved_home;
@@ -807,7 +807,12 @@ void Analyzer::declare_declarator(
 	auto_declarator_ = (specifiers.type == auto_placeholder_ || specifiers.type == decltype_auto_placeholder_) &&
 		!specifiers.is_typedef;
 	placeholder_suffix_ = !specifiers.is_typedef ? OwnFunctionSuffix(init.declarator) : nullptr;
-	DeclaratorInfo info = declarator(init.declarator, specifiers.type, scope, location, &specifiers);
+	const Type* base_type = specifiers.deduction != nullptr
+		? deduce_class_declaration(specifiers, init, scope, location)
+		: specifiers.type;
+	if (base_type == nullptr)
+		return;
+	DeclaratorInfo info = declarator(init.declarator, base_type, scope, location, &specifiers);
 	auto_declarator_ = false;
 	placeholder_suffix_ = nullptr;
 	// A deferred reserved builtin call in an array bound (see
@@ -1223,7 +1228,8 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	// complete-class context, 9.2p2); a non-static member's initializer
 	// is typed in the complete class.
 	const bool typed_initialization = semantic() && template_depth_ == 0 &&
-		(where->kind != ScopeKind::Class || qualified || (specifiers.is_static && initializer != nullptr));
+		(where->kind != ScopeKind::Class || qualified ||
+			(specifiers.is_static && (initializer != nullptr || (hosted_ && specifiers.is_inline))));
 	DeclaredName name = declared_name(*info.name, where);
 	// 9.2p13: a non-static data member may have its class's name unless the
 	// class has a user-declared constructor (it hides the injected-class-
@@ -1352,6 +1358,10 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	}
 	variable->defined = variable->defined || definition;
 	variable->is_constexpr = variable->is_constexpr || specifiers.is_constexpr;
+	variable->inline_member_definition = variable->inline_member_definition || inline_member;
+	// An out-of-class or namespace redeclaration may add explicit inline.
+	// The entity retains its original linkage and shares its definition.
+	variable->is_inline = variable->is_inline || (hosted_ && specifiers.is_inline);
 	variable->is_constinit = variable->is_constinit || specifiers.is_constinit;
 	variable->is_mutable = variable->is_mutable || specifiers.is_mutable;
 	// A namespace-scope variable or static data member under a
@@ -1480,7 +1490,7 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 		// constant expression (a constexpr one's is diagnosed with its
 		// evaluation, 7.1.5p9).
 		if (semantic() && template_depth_ == 0 && where->kind == ScopeKind::Class && !member && !qualified &&
-			!specifiers.is_constexpr && variable->constant == ConstantState::None)
+			!specifiers.is_constexpr && !inline_member && variable->constant == ConstantState::None)
 			error(location, "a static data member's in-class initializer is not a constant expression");
 	}
 	else if (typed_initialization && definition && !initialized_in_class)
@@ -2348,6 +2358,8 @@ FunctionEntity* Analyzer::new_function(const Specifiers& specifiers, const Decla
 		explicit_index_.set(function, static_cast<uint32_t>(explicits_.size()));
 		explicits_.push_back(PendingExplicit{ specifiers.explicit_condition, scope });
 	}
+	if (cxx17_ && function->constructor && function->is_explicit)
+		static_cast<ClassEntity*>(where->entity)->not_aggregate = true;
 	return function;
 }
 

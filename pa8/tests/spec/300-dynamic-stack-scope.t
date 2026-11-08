@@ -1,0 +1,14 @@
+function @main() -> i64 {
+  block ^entry:
+    %mark = stack_save
+    %first = stack_alloc 32
+    store i64 41, %first
+    %inner = stack_save
+    %second = stack_alloc 64
+    store i64 17, %second
+    stack_restore %inner
+    %value = load i64 %first
+    stack_restore %mark
+    %result = binary sub i64 %value, 41
+    return i64 %result
+}

@@ -534,6 +534,8 @@ void Analyzer::aggregate_initialize(const syntax::BracedInitList& list, ClassEnt
 
 void Analyzer::aggregate_members(const syntax::BracedInitList& list, uint32_t& next, ClassEntity* entity, Scope* scope)
 {
+	for (const BaseClass* base = entity->bases; base != nullptr; base = base->next)
+		aggregate_element(list, next, base->base->type, scope, false);
 	// Unnamed bit-fields take no element (9.6p2), an anonymous union's or
 	// struct's member object is a subaggregate; a union's one member is
 	// initialized (8.5.1p15, see UnionListMember).
@@ -593,7 +595,8 @@ bool Analyzer::aggregate_default_member(const DataMember* member)
 	return true;
 }
 
-void Analyzer::aggregate_element(const syntax::BracedInitList& list, uint32_t& next, const Type* type, Scope* scope)
+void Analyzer::aggregate_element(
+	const syntax::BracedInitList& list, uint32_t& next, const Type* type, Scope* scope, bool complete_object)
 {
 	// One member or array element from the list at `next`: a braced list
 	// initializes it; an expression initializes it too unless it is a
@@ -632,7 +635,16 @@ void Analyzer::aggregate_element(const syntax::BracedInitList& list, uint32_t& n
 	if (element.kind == syntax::ExprKind::BracedInit)
 	{
 		++next;
-		list_initialize(static_cast<const syntax::BracedInitList&>(element), type, scope);
+		if (!complete_object && type->unqualified->kind == TypeKind::Class)
+		{
+			syntax::Initializer initializer = syntax::Initializer();
+			initializer.kind = syntax::InitializerKind::Assign;
+			initializer.expression = const_cast<syntax::Expr*>(&element);
+			initialize_class(static_cast<ClassEntity*>(type->unqualified->entity), type, initializer, scope,
+				element.location, false);
+		}
+		else
+			list_initialize(static_cast<const syntax::BracedInitList&>(element), type, scope);
 		return;
 	}
 	// A substitution's failure (see soft_substitution_) ends the element.
@@ -679,7 +691,7 @@ void Analyzer::aggregate_element(const syntax::BracedInitList& list, uint32_t& n
 			return;
 		if (same_class_source(cls, element))
 		{
-			record_copy(cls, object, element, element.location);
+			record_copy(cls, object, element, element.location, false, nullptr, complete_object);
 			return;
 		}
 		Conversion conversion = Conversion();
@@ -971,6 +983,18 @@ bool Analyzer::list_sequence(const syntax::BracedInitList& list, const Type* par
 	const Type* target = reference ? parameter->element : parameter;
 	if (const Type* element = initializer_list_element(target))
 		return initializer_list_sequence(list, parameter, element, out);
+	// [over.ics.list]: one same-class or derived-class element uses its
+	// ordinary conversion sequence, including direct reference binding.
+	// It is not ranked as another user-defined list construction.
+	if (list.elements.size == 1 && list.elements[0]->facts != nullptr && list.elements[0]->facts->type != nullptr &&
+		list.elements[0]->kind != syntax::ExprKind::BracedInit)
+	{
+		const ClassEntity* destination = ClassOf(target);
+		const ClassEntity* source = ClassOf(list.elements[0]->facts->type);
+		if (destination != nullptr && source != nullptr &&
+			(destination == source || conversions_.is_base_of(destination, source)))
+			return implicit_sequence(*list.elements[0], parameter, out);
+	}
 	// An array's cv-qualifiers are its elements' (3.9.3p5).
 	const Type* qualified = target;
 	while (qualified->kind == TypeKind::Array)
@@ -1228,6 +1252,9 @@ bool Analyzer::designated_list(
 
 bool Analyzer::members_accept(const syntax::BracedInitList& list, uint32_t& next, const ClassEntity* cls)
 {
+	for (const BaseClass* base = cls->bases; base != nullptr; base = base->next)
+		if (!element_accepts(list, next, base->base->type))
+			return false;
 	// The members from the list at `next` in declaration order: an unnamed
 	// bit-field takes no element, a union's first named member alone takes
 	// one (8.5.1p15-p16).
@@ -1330,6 +1357,19 @@ void Analyzer::list_argument(const syntax::BracedInitList& list, const Type* par
 	if (failed())
 		return;
 	const Type* target = parameter->is_reference() ? parameter->element : parameter;
+	if (parameter->is_reference() && list.elements.size == 1 && list.elements[0]->kind != syntax::ExprKind::BracedInit)
+	{
+		const syntax::Expr& element = *list.elements[0];
+		const ExprFacts* source = element.facts != nullptr ? element.facts : typed(element, scope);
+		if (source != nullptr && source->type != nullptr && conversions_.reference_related(target, source->type))
+		{
+			initialize_element(element, parameter, scope);
+			ExprFacts* facts = new_facts(list, source->type, source->category);
+			facts->conversion = element.facts->conversion;
+			const_cast<syntax::BracedInitList&>(list).result_source = &element;
+			return;
+		}
+	}
 	const Type* qualified = target;
 	while (qualified->kind == TypeKind::Array)
 		qualified = qualified->element;

@@ -1,0 +1,29 @@
+#include <atomic>
+int constructed, destroyed;
+struct Object {
+  int value;
+  explicit Object(int n = 3) : value(n) { ++constructed; }
+  Object(const Object&) = delete;
+  Object(Object&&) = delete;
+  ~Object() { ++destroyed; }
+};
+Object make(int n) { return Object(n); }
+Object forward(int n) { return make(n); }
+int consume(Object object) { return object.value; }
+struct Holder { Object object; Holder() : object(make(11)) {} };
+enum State { idle, active };
+struct Status { std::atomic<State> state = idle; std::atomic<int*> pointer = nullptr; };
+int main() {
+  {
+    Object a = Object(5);
+    Object b(forward(7));
+    Object c = true ? make(13) : make(17);
+    Object d{make(23)};
+    Holder holder;
+    Status status;
+    if (a.value != 5 || b.value != 7 || c.value != 13 || d.value != 23 || holder.object.value != 11 ||
+        consume(make(19)) != 19 || status.state.load() != idle || status.pointer.load() != nullptr) return 1;
+    if (constructed != 6 || destroyed != 1) return 2;
+  }
+  return constructed != 6 || destroyed != 6;
+}

@@ -51,6 +51,9 @@ void for_each_successor(lowir::FunctionBody& body, lowir::Instruction& term, F f
 		for (uint32_t k = 1; k < term.extra_count; k += 2)
 			f(body.operands[term.extra_first + k].index);
 	}
+	else if (term.op == Opcode::IndirectJump)
+		for (uint32_t k = 0; k < term.extra_count; ++k)
+			f(body.operands[term.extra_first + k].index);
 }
 
 // Per slot: whether its address reaches more than accesses, copies, zeroing
@@ -86,8 +89,14 @@ inline bool is_pure(const lowir::Instruction& inst)
 	case lowir::Opcode::Compare:
 	case lowir::Opcode::Select:
 	case lowir::Opcode::Convert:
-	case lowir::Opcode::Vector:
 		return true;
+	case lowir::Opcode::Vector:
+	{
+		const auto op = static_cast<lowir::VectorOp>(inst.sub);
+		// Explicit rounding instructions can observe MXCSR between otherwise
+		// identical invocations. Keep their ordering around control writes.
+		return op < lowir::VectorOp::Roundps || op > lowir::VectorOp::Roundsd;
+	}
 	default:
 		return false;
 	}
@@ -154,6 +163,9 @@ inline bool may_write_memory(const lowir::Program& program, const lowir::Instruc
 	case lowir::Opcode::AtomicThreadFence:
 	case lowir::Opcode::AtomicSignalFence:
 	case lowir::Opcode::AtomicLoad:
+	case lowir::Opcode::ReadMxcsr:
+	case lowir::Opcode::WriteMxcsr:
+	case lowir::Opcode::StackRestore:
 	case lowir::Opcode::VaStart:
 	case lowir::Opcode::VaArg:
 	case lowir::Opcode::CopyObject:
@@ -206,7 +218,8 @@ enum BlockFlag : uint8_t
 	BF_PLACED = 1,
 	BF_REACHABLE = 2,
 	BF_HANDLER = 4, // the target of an eh_try or eh_cleanup
-	BF_EH = 8       // contains an eh_* instruction or throw/resume
+	BF_EH = 8,      // contains an eh_* instruction or throw/resume
+	BF_ADDRESS = 16 // a persistent code address names this entry
 };
 
 // Children of each block in the dominator tree (CSR), in RPO order.

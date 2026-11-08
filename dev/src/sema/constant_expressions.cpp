@@ -471,14 +471,12 @@ bool ConstantInterpreter::literal(const syntax::LiteralExpr& expr, ConstValue& o
 		out = IntegerValue(type, facts->value);
 		return true;
 	}
-	const NumberLiteral number = ClassifyNumber(expr.spelling.text, expr.spelling.length);
 	unsigned char bytes[16];
 	std::string scratch;
 	if (!ExactlyHeld(type))
 		return fail(expr.location, "a binary16 or binary128 constant is not supported");
-	const FundamentalType representation = FloatingRepresentation(number.type);
-	if (number.kind != NumberLiteralKind::Floating ||
-		!ScanFloatingValue(expr.spelling.text, number.suffix_begin, representation, scratch, bytes))
+	const FundamentalType representation = FloatingRepresentation(type->fundamental);
+	if (!ScanFloatingValue(expr.spelling.text, facts->value, representation, scratch, bytes))
 		return fail(expr.location, "a floating literal outside constant evaluation");
 	long double value = 0;
 	if (representation == FundamentalType::Float)

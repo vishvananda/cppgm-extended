@@ -111,7 +111,7 @@ bool LoopUnswitch::wanted(uint32_t loop) const
 		{
 			const Instruction& inst = body_.instructions[i];
 			if (++size > kUnswitchBody || inst.op == Opcode::Switch || may_unwind(c_.program, inst) ||
-				inst.op == Opcode::StackAlloc || (inst.op == Opcode::Load && inst.type.is_object()))
+				is_stack_instruction(inst.op) || (inst.op == Opcode::Load && inst.type.is_object()))
 				return false;
 		}
 	return test_of(loop) != kNoId;

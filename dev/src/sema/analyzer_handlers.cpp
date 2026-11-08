@@ -94,6 +94,8 @@ const Type* Analyzer::throw_operand(const syntax::Expr& operand, Scope* scope, u
 
 ExprFacts* Analyzer::throw_expression(const syntax::ThrowExpr& expr, Scope* scope)
 {
+	if (!exceptions_)
+		error(expr.location, "throw is disabled by -fno-exceptions");
 	// 15.1p2: a prvalue of type void; `throw` alone rethrows (15.1p8).
 	const Type* thrown = expr.operand != nullptr ? throw_operand(*expr.operand, scope, expr.location) : nullptr;
 	if (expr.operand != nullptr && thrown == nullptr)
@@ -106,6 +108,8 @@ ExprFacts* Analyzer::throw_expression(const syntax::ThrowExpr& expr, Scope* scop
 
 void Analyzer::try_statement(const syntax::TryStmt& stmt, Scope* scope)
 {
+	if (!exceptions_)
+		error(stmt.location, "try is disabled by -fno-exceptions");
 	// 15.3: the compound-statement, then each handler's exception-declaration
 	// in a block of its own with the handler's statements.
 	// No jump enters them (15p2: their blocks are marked, and the switch

@@ -669,6 +669,15 @@ void Writer::assembly_functions()
 
 void Writer::function_body()
 {
+	for (const CodeLabel& label : body_->code_labels)
+	{
+		text("  ");
+		word(spelling(Keyword::CodeLabel));
+		symbol(label.symbol);
+		text(" = ^");
+		names_.block(out_, label.block);
+		out_.push_back('\n');
+	}
 	for (SlotId slot = 0; slot < body_->slots.size(); ++slot)
 	{
 		text("  slot $");
@@ -764,6 +773,12 @@ bool Writer::write_value_instruction(const Instruction& inst)
 		head(inst.op);
 		type(inst.type);
 		return true;
+	case Opcode::ReadMxcsr:
+	case Opcode::StackSave:
+		spelled(kHeads[static_cast<unsigned>(inst.op)]);
+		return true;
+	case Opcode::WriteMxcsr:
+	case Opcode::StackRestore:
 	case Opcode::StackAlloc:
 		head(inst.op);
 		value(inst.ops[0]);
@@ -1100,6 +1115,15 @@ void Writer::write_effect(const Instruction& inst)
 	case Opcode::Jump:
 		head(inst.op);
 		value(inst.ops[0]);
+		return;
+	case Opcode::IndirectJump:
+		head(inst.op);
+		value(inst.ops[0]);
+		for (uint32_t k = 0; k < inst.extra_count; ++k)
+		{
+			text(", ");
+			value(body_->operands[inst.extra_first + k]);
+		}
 		return;
 	case Opcode::Branch:
 		head(inst.op);

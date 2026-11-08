@@ -314,7 +314,7 @@ bool TailRecursion::run()
 			return false;
 	for (BlockId b : body_.layout)
 		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
-			if (body_.instructions[i].op == Opcode::StackAlloc)
+			if (is_stack_instruction(body_.instructions[i].op))
 				return false;
 	if (!frame_private())
 		return false;

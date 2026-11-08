@@ -211,7 +211,14 @@ bool Parser::nested_declarator_ahead(DeclaratorMode mode)
 		// makes a type name start a parameter clause instead).
 		const NameBinding binding = scopes_.lookup(tok(1).identifier, false);
 		if (binding.category == NameCategory::None)
+		{
+			// Hosted source has declared its type names. An unclassified
+			// parameter identifier is a name being introduced, even when
+			// its spelling resembles the lexical type-name fallback.
+			if (hosted_ && mode == DeclaratorMode::Parameter)
+				return true;
 			return !names_type_hint(tok(1).identifier);
+		}
 		return binding.category != NameCategory::Type && binding.category != NameCategory::TypeTemplate;
 	}
 	return false;

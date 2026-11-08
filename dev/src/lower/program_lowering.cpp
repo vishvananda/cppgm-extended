@@ -518,6 +518,9 @@ void ProgramLowering::resolve_singleton_roles()
 
 void ProgramLowering::release_definition(lowir::SymbolId symbol)
 {
+	if (!exceptions_ && program_.symbols[symbol].kind == lowir::SymbolKind::FunctionDefinition &&
+		program_.functions[program_.symbols[symbol].detail].body != nullptr)
+		remove_exception_regions(symbol);
 	// The order of completion; a stream's appends are ordered again at the
 	// program's end (order_completed_definitions).
 	if (source_inlining_ && source_inlining_->defer(symbol))

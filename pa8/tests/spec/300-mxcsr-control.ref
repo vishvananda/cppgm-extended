@@ -1,0 +1,6 @@
+function @main() -> i64 [role=entry] {
+  block ^entry:
+    %control = read_mxcsr
+    write_mxcsr %control
+    return i64 0
+}

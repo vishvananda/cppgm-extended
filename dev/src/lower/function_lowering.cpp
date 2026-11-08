@@ -375,6 +375,31 @@ void FunctionLowering::finish_body()
 	if (!pending_terminates_.empty() && terminated_)
 		place_terminates();
 	patch_fallback_slots();
+	// Static local tables may introduce addresses before their labels, so
+	// bind them and the complete indirect successor sets after lowering.
+	if (function_ != nullptr && !lowering_.code_labels_.empty())
+	{
+		const lowir::SymbolId symbol = lowering_.function_symbol(function_);
+		lowir::FunctionBody& body = builder_.body();
+		std::vector<lowir::Value> targets;
+		for (const ProgramLowering::PendingCodeLabel& label : lowering_.code_labels_)
+			if (label.function == symbol)
+			{
+				const lowir::BlockId block = goto_label(label.label);
+				body.code_labels.push_back(lowir::CodeLabel{ label.symbol, block });
+				targets.push_back(lowir::Value::block(block));
+			}
+		if (!targets.empty())
+		{
+			const uint32_t first = builder_.add_operands(targets.data(), targets.size());
+			for (lowir::Instruction& inst : body.instructions)
+				if (inst.op == lowir::Opcode::IndirectJump)
+				{
+					inst.extra_first = first;
+					inst.extra_count = targets.size();
+				}
+		}
+	}
 }
 
 void FunctionLowering::finish_body_end()

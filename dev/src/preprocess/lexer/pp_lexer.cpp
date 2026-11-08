@@ -11,6 +11,7 @@ PPLexer::PPLexer(const SourceBuffer& source, const PPLexerOptions& options)
 	  base_(options.location_base), dirty_(false), header_names_on_request_(options.header_names_on_request),
 	  binary_exponents_(options.binary_exponents), digit_separators_(options.digit_separators),
 	  legacy_comment_bytes_(options.legacy_comment_bytes), lone_quotes_(options.lone_quotes),
+	  gnu_escapes_(options.gnu_escapes),
 	  context_(options.header_names_on_request ? DirectiveContext::Other : DirectiveContext::LineStart)
 {}
 

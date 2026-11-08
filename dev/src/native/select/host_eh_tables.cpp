@@ -303,6 +303,7 @@ bool FunctionSelector::eh_unmatched_work(uint32_t block)
 			}
 			// fall through
 		case Opcode::Switch:
+		case Opcode::IndirectJump:
 			for (uint32_t k = succ_first_[block]; k < succ_first_[block + 1] && !work; ++k)
 				work = eh_unmatched_work(succs_[k]);
 			break;

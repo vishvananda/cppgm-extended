@@ -114,6 +114,7 @@ struct Function
 	std::vector<lowir::DebugLocation> locations;
 	// The blocks the jump_table instructions name, each table a range.
 	std::vector<uint32_t> jump_targets;
+	std::vector<lowir::CodeLabel> code_labels;
 	bool variadic = false;
 	// Course EH: eh_push places its handler record below the static frame
 	// rather than in a frame slot (native/runtime/eh_record.h).
@@ -173,6 +174,7 @@ struct Function
 		assembly.reset();
 		locations.clear();
 		jump_targets.clear();
+		code_labels.clear();
 		variadic = false;
 		eh_records_pushed = false;
 		branches_laid_out = false;

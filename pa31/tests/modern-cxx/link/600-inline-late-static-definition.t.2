@@ -1,0 +1,3 @@
+#include "600-inline-late-static-definition.h"
+extern "C" const Point *second() { return &Point::origin; }
+extern "C" const int *second_answer() { return &answer; }

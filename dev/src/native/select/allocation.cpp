@@ -63,7 +63,8 @@ bool fixed_stack(const Function& f)
 	uint32_t accesses = 0;
 	for (const Inst& inst : f.insts)
 	{
-		if (inst.op == Op::StackAlloc || inst.op == Op::VaStart || inst.op == Op::VaArg ||
+		if (inst.op == Op::StackAlloc || inst.op == Op::StackSave || inst.op == Op::StackRestore ||
+			inst.op == Op::VaStart || inst.op == Op::VaArg ||
 			(inst.op == Op::Convert && (inst.type == TypeKind::I128 || inst.type2 == TypeKind::I128)))
 			return false;
 		bool frame = false;
@@ -538,7 +539,7 @@ void FunctionSelector::compute_clobbers()
 		const lowir::Opcode op = body.instructions[id].op;
 		if (op == Opcode::EhTry || op == Opcode::EhCleanup)
 			has_eh_ = true;
-		else if (op == Opcode::StackAlloc)
+		else if (lowir::is_stack_instruction(op))
 			has_stack_alloc_ = true;
 	});
 	// At O1 and above handler records go below the frame unless an

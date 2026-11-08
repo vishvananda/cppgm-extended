@@ -1,0 +1,69 @@
+#include <new>
+#include <cstddef>
+alignas(256) static unsigned char storage[2048];
+static unsigned allocated, freed, destroyed, tag_calls;
+static std::size_t seen_size, freed_size;
+static unsigned long seen_alignment, freed_alignment;
+static void reset() { allocated = freed = destroyed = tag_calls = 0; seen_size = freed_size = 0; seen_alignment = freed_alignment = 0; }
+struct alignas(64) Aligned {
+    int value;
+    Aligned() : value(19) {}
+    static void *operator new(std::size_t n, std::align_val_t a) { ++allocated; seen_size = n; seen_alignment = (unsigned long)a; return storage; }
+    static void operator delete(void *p, std::align_val_t a) noexcept { if (p == storage) ++freed; freed_alignment = (unsigned long)a; }
+};
+struct alignas(64) Fallback {
+    int value;
+    Fallback() : value(23) {}
+    static void *operator new(std::size_t n) { ++allocated; seen_size = n; return storage; }
+    static void operator delete(void *p) noexcept { if (p == storage) ++freed; }
+};
+struct alignas(64) Array {
+    int value;
+    Array() : value(29) {}
+    ~Array() { ++destroyed; }
+    static void *operator new[](std::size_t n, std::align_val_t a) { ++allocated; seen_size = n; seen_alignment = (unsigned long)a; return storage; }
+    static void operator delete[](void *p, std::size_t n, std::align_val_t a) noexcept { if (p == storage) ++freed; freed_size = n; freed_alignment = (unsigned long)a; }
+};
+struct alignas(64) Throwing {
+    Throwing() { throw 7; }
+    static void *operator new(std::size_t n, std::align_val_t a) { ++allocated; seen_size = n; seen_alignment = (unsigned long)a; return storage; }
+    static void operator delete(void *p, std::align_val_t a) noexcept { if (p == storage) ++freed; freed_alignment = (unsigned long)a; }
+};
+struct alignas(64) Placement {
+    Placement() { throw 11; }
+    static void *operator new(std::size_t, std::align_val_t a, int tag) { ++allocated; seen_alignment = (unsigned long)a; seen_size = tag; return storage; }
+    static void operator delete(void *p, std::align_val_t a, int tag) noexcept { if (p == storage) ++freed; freed_alignment = (unsigned long)a; freed_size = tag; }
+};
+int next_tag() { ++tag_calls; return 37; }
+struct Base { virtual ~Base() {} };
+struct alignas(64) Derived : Base { ~Derived() { ++destroyed; } };
+int main() {
+    static_assert(__STDCPP_DEFAULT_NEW_ALIGNMENT__ == 16, "x86-64 default allocation alignment");
+    reset();
+    Aligned *a = new Aligned;
+    if (a->value != 19 || allocated != 1 || seen_size != sizeof(Aligned) || seen_alignment != 64) return 1;
+    delete a;
+    if (freed != 1 || freed_alignment != 64) return 2;
+    reset();
+    Fallback *f = new Fallback;
+    if (f->value != 23 || allocated != 1 || seen_size != sizeof(Fallback)) return 3;
+    delete f;
+    if (freed != 1) return 4;
+    reset();
+    Array *array = new Array[4];
+    if (array[3].value != 29 || ((unsigned long)array & 63) || allocated != 1 || seen_alignment != 64) return 5;
+    delete[] array;
+    if (freed != 1 || destroyed != 4 || seen_size != freed_size || freed_alignment != 64) return 6;
+    reset();
+    try { new Throwing; return 7; } catch (int n) { if (n != 7) return 8; }
+    if (allocated != 1 || freed != 1 || seen_alignment != 64 || freed_alignment != 64) return 9;
+    reset();
+    try { new(next_tag()) Placement; return 10; } catch (int n) { if (n != 11) return 11; }
+    if (allocated != 1 || freed != 1 || tag_calls != 1 || seen_size != 37 || freed_size != 37 || seen_alignment != 64 || freed_alignment != 64) return 12;
+    reset();
+    Derived *d = new Derived;
+    if ((unsigned long)d & 63) return 13;
+    Base *base = d;
+    delete base;
+    if (destroyed != 1) return 14;
+}

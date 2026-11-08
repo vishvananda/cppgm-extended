@@ -493,6 +493,7 @@ void FunctionSelector::eh_walk(uint32_t b, bool record)
 			break;
 		}
 		case Opcode::Switch:
+		case Opcode::IndirectJump:
 			if (!record)
 				for (uint32_t k = succ_first_[b]; k < succ_first_[b + 1]; ++k)
 					eh_enter(succs_[k], node, eh_edge_mask(succs_[k], mask), work);

@@ -51,6 +51,8 @@ struct Address
 	bool rip = false;
 	asm_model::SymbolReference symbol;
 	Relocation relocation = Relocation::Address;
+	std::string local;
+	uint32_t label = asm_model::kNoId;
 };
 
 struct Operand
@@ -71,6 +73,11 @@ struct Operand
 struct Instruction
 {
 	bool label = false;
+	bool data = false;
+	uint32_t alignment = 0;
+	uint32_t max_padding = UINT32_MAX;
+	int16_t fill = -1;
+	std::vector<uint8_t> bytes;
 	uint32_t symbol_definition = asm_model::kNoId; // typed module label, if present
 	uint8_t prefix = 0;
 	bool is_exit = false;

@@ -243,7 +243,8 @@ void FunctionLowering::deallocate_object(uint32_t location)
 	// destructor is defined, a sized one given the object's size.
 	const sema::ClassEntity* entity = sema::ClassOf(function_->owner->entity->type);
 	RValue size = integer(lowir::Type::scalar(lowir::TypeKind::I64), lowering_.size_of(entity->type, location));
-	free_storage(entity->virtuals->deleting_deallocator, this_pointer(location), size, location);
+	free_storage(entity->virtuals->deleting_deallocator, this_pointer(location), size, location, 0,
+		lowering_.alignment_of(entity->type, location));
 }
 
 void FunctionLowering::virtual_deletion(const sema::ClassEntity* entity, const RValue& pointer)

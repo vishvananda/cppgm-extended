@@ -1,0 +1,8 @@
+using byte = unsigned char;
+void first(byte (currColor)[2][3]) { currColor[1][2] = 7; }
+void second(unsigned char (quantColor)[2][3]) { quantColor[0][1] = 9; }
+int main() {
+  byte data[2][3] = {};
+  first(data); second(data);
+  return data[1][2] != 7 || data[0][1] != 9;
+}

@@ -278,12 +278,11 @@ const ConstValue* ConstantInterpreter::literal_object(const syntax::LiteralExpr*
 	const ExprFacts* expr = literal->facts;
 	const bool user = expr != nullptr && (expr->flags & kUserLiteral) != 0;
 	// A raw literal operator's argument: the number's characters (2.14.8p3).
-	const bool raw = user && expr->value == kLiteralCallRaw;
+	const bool raw = user && (expr->value & 255) == kLiteralCallRaw;
 	if (raw)
 	{
-		const NumberLiteral number = ClassifyNumber(literal->spelling.text, literal->spelling.length);
 		facts.element = FundamentalType::Char;
-		for (uint32_t i = 0; i < number.suffix_begin; ++i)
+		for (uint32_t i = 0; i < (expr->value >> 8); ++i)
 			units.push_back(static_cast<unsigned char>(literal->spelling.text[i]));
 		units.push_back(0);
 	}

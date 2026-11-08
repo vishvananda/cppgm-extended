@@ -39,6 +39,9 @@ bool ConstantInterpreter::zero_array_tail(const Type* type, uint32_t depth)
 			!cls->default_constructor->deleted;
 	if (zero_array_classes_.find(cls) != PointerMap::kMissing)
 		return true;
+	for (const BaseClass* base = cls->bases; base != nullptr; base = base->next)
+		if (!zero_array_tail(base->base->type, depth + 1))
+			return false;
 	for (const DataMember* member = cls->members; member != nullptr; member = member->next)
 	{
 		if (member->variable->kind != EntityKind::Variable || (member->bit_field && member->variable->name == nullptr))

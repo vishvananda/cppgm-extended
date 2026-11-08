@@ -88,6 +88,8 @@ RValue FunctionLowering::vector_helper_offset(
 
 void FunctionLowering::lower_vector_helper(lowir::VectorOp operation)
 {
+	if (immediate_vector_helper(operation))
+		return;
 	const lowir::Type vector = lowir::Type::scalar(lowir::TypeKind::V128);
 	const lowir::Type word = lowir::Type::scalar(lowir::TypeKind::I64);
 	RValue inputs[3];

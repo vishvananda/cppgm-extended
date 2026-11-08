@@ -15,6 +15,11 @@ void materialize_slot_values(lowir::FunctionBody& body, lowir::BlockId block, lo
 
 struct BitTablePool;
 
+// Constant stack requests executed at most once per call can use fixed
+// frame storage, preserving repeated dynamic allocations in cycles.
+bool materialize_fixed_allocations(const lowir::Program& program, lowir::FunctionBody& body);
+void scope_dynamic_allocations(lowir::FunctionBody& body);
+
 struct FunctionContext
 {
 	FunctionContext(lowir::Program& p, lowir::SymbolId s, OptimizerStats& st, int l)

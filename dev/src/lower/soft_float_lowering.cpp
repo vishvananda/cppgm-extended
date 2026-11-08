@@ -712,15 +712,6 @@ RValue FunctionLowering::soft_constant(SoftFloat kind, uint64_t low, uint64_t hi
 	return load(type, storage);
 }
 
-RValue FunctionLowering::soft_literal(SoftFloat kind, const char* text, uint32_t length, uint32_t location)
-{
-	// 2.14.4p1: the value in the literal's own format, rounded once.
-	uint64_t low = 0, high = 0;
-	if (!ScanInterchangeValue(text, length, FormatOf(kind), low, high))
-		throw LoweringError(location, "a floating literal outside its type's range");
-	return soft_constant(kind, low, high);
-}
-
 RValue FunctionLowering::soft_zero(SoftFloat kind)
 {
 	return soft_constant(kind, 0, 0);

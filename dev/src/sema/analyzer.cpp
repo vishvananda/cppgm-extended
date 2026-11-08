@@ -1071,12 +1071,15 @@ const Type* Analyzer::non_type_parameter_type(const syntax::TemplateParameter& p
 	// A pack's `...` in the declarator declares the pack, not an expansion.
 	syntax::Declarator bare = parameter.declarator != nullptr ? *parameter.declarator : syntax::Declarator();
 	bare.pack = syntax::PackPosition::None;
-	const DeclaratorInfo info = declarator(parameter.declarator != nullptr ? &bare : nullptr, specifiers.type, scope,
-		parameter.location, nullptr, DeclaratorUse::Parameter);
+	const bool saved_auto = auto_declarator_;
+	auto_declarator_ = cxx17_ && holds_auto(specifiers.type);
+	const DeclaratorInfo info = declarator(
+		parameter.declarator != nullptr ? &bare : nullptr, specifiers.type, scope, parameter.location, nullptr, DeclaratorUse::Parameter);
+	auto_declarator_ = saved_auto;
 	// 8.3.5p2: a trailing return resolves the leading auto before 14.1p8
 	// adjusts the declared function type. Unresolved placeholders still
 	// do not supply a C++11 non-type parameter type.
-	if ((specifiers.type == auto_placeholder_ || specifiers.type == decltype_auto_placeholder_) &&
+	if (!cxx17_ && (specifiers.type == auto_placeholder_ || specifiers.type == decltype_auto_placeholder_) &&
 		holds_auto(info.type))
 		error(parameter.location, "non-type template parameter without a type");
 	const Type* type = info.type->unqualified;
@@ -1084,7 +1087,7 @@ const Type* Analyzer::non_type_parameter_type(const syntax::TemplateParameter& p
 		type = types_.pointer(type->element);
 	else if (type->kind == TypeKind::Function)
 		type = types_.pointer(type);
-	if (dependent_type(type))
+	if ((cxx17_ && holds_auto(type)) || dependent_type(type))
 		return type;
 	if (!IsIntegralType(type) && type->kind != TypeKind::Enum && !AddressParameterType(type))
 		error(parameter.location, "a non-type template parameter of a type 14.1p4 does not allow");

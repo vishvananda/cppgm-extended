@@ -125,12 +125,35 @@ void Analyzer::class_builtin_candidates(TokenKind op, const syntax::Slice<syntax
 		}
 		const size_t functions = conversion_scratch_.size();
 		if (require_complete(cls))
-			conversion_functions(cls, conversion_scratch_);
+			conversion_functions(cls, conversion_scratch_, true);
 		for (size_t k = functions; k < conversion_scratch_.size(); ++k)
 		{
 			const FunctionEntity* function = conversion_scratch_[k];
 			if (function->is_explicit)
 				continue;
+			if (function->templated)
+			{
+				// A known pointer operand supplies the other parameter of
+				// a built-in pointer candidate. Deduce a conversion template
+				// against that target instead of treating its dependent
+				// return type as a concrete operand option.
+				const ExprFacts* peer = count == 2 ? operands[1 - i]->facts : nullptr;
+				const Type* target = peer != nullptr ? peer->type : nullptr;
+				if (target != nullptr && target->kind == TypeKind::Array)
+					target = types_.pointer(target->element);
+				if (op == TokenKind::OP_ARROWSTAR && i == 0 && target != nullptr &&
+					target->unqualified->kind == TypeKind::MemberPointer)
+				{
+					const Type* result = function->type->canonical->element;
+					const uint8_t cv = result->kind == TypeKind::Pointer ? result->element->cv : 0;
+					target = types_.pointer(types_.qualified(target->owner, cv));
+				}
+				if (target == nullptr || target->unqualified->kind != TypeKind::Pointer)
+					continue;
+				function = deduce_for_conversion(const_cast<FunctionEntity*>(function), target->unqualified);
+				if (function == nullptr)
+					continue;
+			}
 			const Type* result = function->type->canonical->element;
 			const Type* object = result->is_reference() ? result->element : result;
 			if (object->kind == TypeKind::Array)
@@ -419,7 +442,7 @@ uint32_t Analyzer::builtin_operator(TokenKind op, const syntax::Slice<syntax::Ex
 			return 0;
 		const ClassEntity* object = ClassOf(p1->element);
 		const ClassEntity* owner = ClassOf(p2->owner);
-		if (object == nullptr || (object != owner && !conversions_.is_base_of(owner, object)))
+		if (object == nullptr || owner == nullptr || (object != owner && !conversions_.is_base_of(owner, object)))
 			return 0;
 		parameters[0] = p1;
 		parameters[1] = p2;
@@ -737,6 +760,8 @@ ExprFacts* Analyzer::overloaded_operator(
 		return nullptr;
 	}
 	check_not_deleted(selected, expr.location);
+	if (!require_deduced(selected, expr.location))
+		return nullptr;
 	const bool member = selected->member && !selected->is_static;
 	// Clause 11: a member operator function is named in the left operand's
 	// class (13.3.1.2p3, 11.2p5), its member of an unambiguous base

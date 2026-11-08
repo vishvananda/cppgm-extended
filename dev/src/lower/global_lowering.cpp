@@ -1528,6 +1528,9 @@ bool ProgramLowering::static_object(const sema::Type* type, const syntax::Initia
 
 bool ProgramLowering::static_element(const sema::Type* type, const syntax::Expr& element, StaticData& out)
 {
+	if (element.kind == syntax::ExprKind::BracedInit &&
+		static_cast<const syntax::BracedInitList&>(element).result_source != nullptr)
+		return static_element(type, *static_cast<const syntax::BracedInitList&>(element).result_source, out);
 	// One array element or class member from its initializer: a nested
 	// braced list, a string literal for a character array, or a scalar.
 	if (type->kind == sema::TypeKind::Array)
@@ -1643,6 +1646,11 @@ bool ProgramLowering::static_item(
 bool ProgramLowering::static_aggregate(
 	const sema::Type* type, const syntax::BracedInitList* list, uint32_t& next, StaticData& out)
 {
+	// Base subobjects may share tail padding with later elements. This
+	// sequential data builder cannot append their complete-object bytes;
+	// retain the typed initialization instead of inventing padding stores.
+	if (type->kind == sema::TypeKind::Class && sema::ClassOf(type)->bases != nullptr)
+		return false;
 	if (type->kind == sema::TypeKind::Array)
 	{
 		uint64_t i = 0;
@@ -1933,6 +1941,9 @@ bool ProgramLowering::zero_value_initialized(const sema::Type* type, uint32_t de
 		return cls->default_constructor != nullptr && cls->default_constructor->trivial;
 	if (depth > 64)
 		return false;
+	for (const sema::BaseClass* base = cls->bases; base != nullptr; base = base->next)
+		if (!zero_value_initialized(base->base->type, depth + 1))
+			return false;
 	for (const sema::DataMember* member = cls->members; member != nullptr; member = member->next)
 	{
 		if (member->variable->kind == sema::EntityKind::Variable && !member->variable->type->is_reference() &&
@@ -2182,6 +2193,13 @@ bool ProgramLowering::static_converted(
 bool ProgramLowering::static_value(const syntax::Expr& expr, StaticValue& out, bool nonconstant)
 {
 	const syntax::Expr* e = WithoutParentheses(&expr);
+	if (e->kind == syntax::ExprKind::LabelAddress)
+	{
+		out = StaticValue();
+		out.kind = StaticValue::Kind::Address;
+		out.symbol = code_label(static_cast<const syntax::LabelAddressExpr&>(*e));
+		return true;
+	}
 	const sema::ExprFacts* facts = e->facts;
 	if (facts == nullptr || facts->type == nullptr)
 		return false;
@@ -2215,26 +2233,25 @@ bool ProgramLowering::static_value(const syntax::Expr& expr, StaticValue& out, b
 	case syntax::ExprKind::Literal:
 	{
 		const syntax::LiteralExpr* literal = static_cast<const syntax::LiteralExpr*>(e);
-		if (!sema::IsFloating(type))
+		if (!sema::IsFloating(type) || (facts->flags & sema::kUserLiteral) != 0)
 			return false;
+		unsigned char bytes[16] = {};
+		std::string scratch;
+		if (!ScanFloatingValue(literal->spelling.text, static_cast<uint32_t>(facts->value),
+				type->unqualified->fundamental, scratch, bytes))
+			return false;
+		lowir::Literal bits = {};
+		std::memcpy(&bits.low, bytes, 8);
+		std::memcpy(&bits.high, bytes + 8, 8);
 		if (SoftFloatOf(type) != SoftFloat::None)
 		{
 			out = StaticValue();
 			out.kind = StaticValue::Kind::Soft;
-			return ScanInterchangeValue(literal->spelling.text,
-				ClassifyNumber(literal->spelling.text, literal->spelling.length).suffix_begin,
-				SoftFloatOf(type) == SoftFloat::Half         ? kBinary16
-					: SoftFloatOf(type) == SoftFloat::BFloat ? kBFloat16
-															 : kBinary128,
-				out.bits, out.high);
+			out.bits = bits.low;
+			out.high = bits.high;
+			return true;
 		}
 		const lowir::TypeKind kind = storage_type(type).kind();
-		lowir::TypeKind scanned = kind;
-		lowir::Literal bits;
-		std::string scratch;
-		if (!lowir::scan_float_literal(
-				literal->spelling.text, literal->spelling.length, false, kind, scanned, bits, scratch))
-			return false;
 		out = StaticValue();
 		out.kind = StaticValue::Kind::Floating;
 		out.floating = lowir::float_value(kind, bits);
@@ -2635,10 +2652,9 @@ lowir::SymbolId ProgramLowering::string_literal(const syntax::LiteralExpr& liter
 	// one value share one object in a unit (2.14.5p12 leaves it open, the
 	// course shares them). A raw literal operator's argument is the
 	// number's characters (2.14.8p3).
-	if ((literal.facts->flags & sema::kUserLiteral) != 0 && literal.facts->value == sema::kLiteralCallRaw)
-		return predefined_name(std::string(
-			literal.spelling.text, ClassifyNumber(literal.spelling.text, literal.spelling.length).suffix_begin)
-				.c_str());
+	if ((literal.facts->flags & sema::kUserLiteral) != 0 && (literal.facts->value & 255) == sema::kLiteralCallRaw)
+		return predefined_name(
+			std::string(literal.spelling.text, static_cast<uint32_t>(literal.facts->value >> 8)).c_str());
 	sema::StringLiteralFacts facts;
 	std::vector<uint64_t>& units = string_units_;
 	if (!sema::StringLiteralUnits(literal.spelling, facts, units))

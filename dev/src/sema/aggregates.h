@@ -14,7 +14,8 @@ namespace sema {
 // C++14 permits them (N3653).
 inline bool IsAggregateClass(const ClassEntity* entity)
 {
-	return !entity->not_aggregate && entity->bases == nullptr && !entity->polymorphic;
+	return !entity->not_aggregate && (entity->bases == nullptr || entity->aggregate_bases) && !entity->polymorphic &&
+		entity->inherits_constructors == nullptr;
 }
 
 // A member's brace-or-equal-initializer, or one of an anonymous struct's or

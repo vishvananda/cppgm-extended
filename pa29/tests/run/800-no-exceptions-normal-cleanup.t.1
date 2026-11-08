@@ -1,0 +1,20 @@
+static unsigned alive, destroyed;
+struct Guard {
+    Guard() { ++alive; }
+    ~Guard() { --alive; ++destroyed; }
+};
+__attribute__((noinline)) unsigned external_call(unsigned n) { return n + alive; }
+__attribute__((noinline)) unsigned work(bool first) noexcept {
+    Guard a;
+    if (first) { Guard b; return external_call(3); }
+    Guard c;
+    return external_call(7);
+}
+int main() {
+    if (work(true) != 5 || alive || destroyed != 2) return 1;
+    if (work(false) != 9 || alive || destroyed != 4) return 2;
+    Guard *array = new Guard[3];
+    if (alive != 3) return 3;
+    delete[] array;
+    return alive || destroyed != 7;
+}

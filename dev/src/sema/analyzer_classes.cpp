@@ -444,6 +444,10 @@ void Analyzer::class_body(ClassEntity* entity, const syntax::ClassSpecifier& spe
 		declare_in(scope, injected);
 	}
 	base_classes(entity, specifier, parent);
+	entity->aggregate_bases = cxx17_;
+	for (const BaseClass* base = entity->bases; base != nullptr && entity->aggregate_bases; base = base->next)
+		entity->aggregate_bases = base->access == Access::Public && !base->is_virtual &&
+			VirtualBaseCount(static_cast<const ClassEntity*>(base->base)) == 0;
 	const size_t first_deferred = deferred_.size();
 	const size_t first_throw = pending_throws_.size(), first_override = exception_overrides_.size();
 	const TokenKind saved_access = current_access_;
@@ -1084,6 +1088,10 @@ EnumEntity* Analyzer::redeclared_enum(const syntax::EnumSpecifier& specifier, Sc
 	EnumEntity* entity = static_cast<EnumEntity*>(entry->tag->entity);
 	if (target == member_scope_ && entry->tag->access != member_access())
 		error(specifier.location, "enumeration redeclared with different member access");
+	// `enum E;` can name an enumeration already declared. It does not
+	// introduce a new opaque unscoped enumeration or change its base.
+	if (!specifier.has_body && !specifier.scoped && underlying == nullptr && !entity->scoped)
+		return entity;
 	const Type* expected = underlying;
 	if (expected == nullptr && specifier.scoped)
 		expected = types_.fundamental(FundamentalType::Int);

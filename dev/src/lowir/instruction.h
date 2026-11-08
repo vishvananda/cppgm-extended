@@ -112,6 +112,10 @@ struct DebugLocation
 //   AtomicCompareExchange ops[0] pointer, ops[1] expected pointer,
 //                     ops[2] desired; order (success), sub = failure order
 //   VaArg             ops[0] list
+//   ReadMxcsr         no operands; current u32 SSE control/status register
+//   WriteMxcsr        ops[0] u32 control/status bits
+//   StackSave         no operands; current dynamic stack mark
+//   StackRestore      ops[0] mark returned by a dominating StackSave
 //   StackAlloc        ops[0] size
 //   Call              ops[0] callee; extra: arguments; immediate =
 //                     SignatureId when IF_SIGNATURE; type = result type

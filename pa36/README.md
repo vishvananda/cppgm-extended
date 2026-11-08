@@ -102,6 +102,11 @@ every output byte before assigning output places. Preserve XMM/YMM aliases,
 ties, early writes, volatile places and over-aligned local storage. This adds
 assembly transfers, not a general wide-vector call ABI.
 
+Within a packet, support numeric `.byte`/`.short`/`.word`/`.long`/`.quad` data,
+`.zero`/`.space`/`.skip` fills and `.p2align`/`.balign`, including fill and
+maximum-padding arguments. Preserve alignment in objects and standalone output.
+Local RIP-relative addresses can refer to embedded data.
+
 Support named and numeric local labels, forward/backward numeric references,
 GNU `%=` labels, and direct `jmp`/condition-code branches within one template.
 Keep label identities distinct when optimization clones or inlines a template.
@@ -128,7 +133,9 @@ transports mask values between mask registers, matching memory and GPR views.
 Static rounding, suppression modifiers, mask-valued comparisons and additional
 ISA forms remain further goals. Honor declared upper-vector and opmask clobbers, preserving any live values
 your allocator places there. These banks are caller-saved in the supported ABI.
-Typed opmask operands remain a further goal.
+Typed integer operands use GNU `k` (k0..k7) or `Yk` (k1..k7) constraints.
+Preserve 8-, 16-, 32- and 64-bit payloads, ties, early writes and mask clobbers;
+mask registers are separate from ordinary integer and vector registers.
 
 LowIR selects the initial dialect; the GNU source adapter starts in AT&T.
 Honor `.intel_syntax` and `.att_syntax` with `prefix`/`noprefix` register modes.
@@ -141,6 +148,22 @@ Keep ordinary compiler code in typed LowIR and MIR. Parse supplied assembly once
 after binding its placeholders, then emit bytes and fixups directly. Production
 compilation must not invoke an external assembler or depend on an encoding
 library. A compiler memory barrier must not introduce a hardware fence.
+
+### Addressed control flow
+
+Under `--full-asm`, support GNU label addresses (`&&label`) and computed goto
+(`goto *pointer;`). Label values have type `void*`, denote real code in the
+current function, and can initialize static dispatch tables. Preserve table
+identity across calls and keep different template specializations distinct.
+A computed goto skips destructors on the scopes it leaves, as GNU C++ specifies;
+ordinary goto and `asm goto` retain their cleanup rules. Reject missing labels
+and non-pointer destinations. Jumping into a different function is undefined.
+
+Expose the same capability to other frontends through `code_label` and
+`indirect_jump` in the [LowIR boundary](assembly.md). Keep addressed blocks alive
+and preserve their entry state and code identity through optimization. Tests
+observe dispatch and lifetime behavior; they do not prescribe register choices
+or instruction sequences.
 
 ### Module assembly
 

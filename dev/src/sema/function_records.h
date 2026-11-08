@@ -11,6 +11,14 @@ namespace sema {
 struct TemplateHead;
 struct FunctionEntity;
 
+enum class DeductionGuideKind : uint8_t
+{
+	None,
+	Constructor,
+	TemplateConstructor,
+	Copy
+};
+
 // A function's template facts, allocated only for the functions
 // that have some: a function template's head, a specialization's
 // arguments (in its template's head order; its mangled name encodes
@@ -31,6 +39,8 @@ struct FunctionTemplateFacts
 	// A function template declared with a trailing return type: its
 	// deduction substitutes the parameters before it (14.8.2p7).
 	bool trailing_result;
+	uint32_t class_deduction_parameters;
+	DeductionGuideKind deduction_guide;
 };
 
 // A function's call effects (GNU pure and const, pa28), ordered from the
@@ -159,6 +169,8 @@ enum class Intrinsic : uint8_t
 	// __builtin_flt_rounds(): FLT_ROUNDS (18.3.2.3) of the current
 	// rounding mode.
 	FltRounds,
+	ReadMxcsr,
+	WriteMxcsr,
 	// __builtin_object_size and __builtin_dynamic_object_size(pointer,
 	// type): the size_t GCC documents for an object it does not determine,
 	// all ones, or 0 when bit 8 of the facts' value is set (type 2 or 3);
@@ -202,6 +214,7 @@ enum class Intrinsic : uint8_t
 	// The SSE family computed lane by lane: bits 8-15 hold the
 	// VectorLanewiseOp and bit 16 is set for a scalar form.
 	VectorLanewise,
+	VectorImmediate, // variant 0..6 dot/insert/round, immediate bits 16..23
 	// SSE2 interleaves two vectors' low/high halves. Bits 8-15 hold
 	// twice the lane-width index (8/16/32/64 bits) plus the high-half bit.
 	VectorUnpack,
@@ -465,6 +478,9 @@ struct FunctionEntity : Entity
 	// type.
 	bool conversion;
 	AllocationRole allocation;
+	// Selected allocation/deallocation ABI: index of std::align_val_t,
+	// zero when absent. Recorded during semantic overload selection.
+	mutable uint8_t alignment_parameter = 0;
 	// Declared with a placeholder return type (the course's extension,
 	// C++14's 7.1.6.4): every declaration uses it (p13), even once its
 	// definition's return statements deduced the type.

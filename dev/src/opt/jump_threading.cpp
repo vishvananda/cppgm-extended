@@ -895,7 +895,7 @@ bool JumpThreading::known_compares()
 			{
 				const Instruction& inst = body_.instructions[i];
 				copyable = ++copied <= kThreadCopy && inst.op != Opcode::Call && inst.op != Opcode::Phi &&
-					!is_eh_instruction(inst.op) && inst.op != Opcode::StackAlloc && inst.op != Opcode::VaStart &&
+					!is_eh_instruction(inst.op) && !is_stack_instruction(inst.op) && inst.op != Opcode::VaStart &&
 					inst.op != Opcode::VaArg && inst.op != Opcode::AtomicLoad && inst.op != Opcode::AtomicStore &&
 					inst.op != Opcode::AtomicAddFetch && inst.op != Opcode::AtomicExchange &&
 					inst.op != Opcode::AtomicCompareExchange && (inst.flags & IF_VOLATILE) == 0 && i != def;
@@ -1229,7 +1229,7 @@ bool JumpThreading::mergeable(BlockId p, BlockId s, Value v) const
 		if (inst.op == Opcode::Phi)
 			continue;
 		if (++plain > kMergeCopy || inst.op == Opcode::Call || is_eh_instruction(inst.op) ||
-			inst.op == Opcode::StackAlloc || inst.op == Opcode::VaStart || inst.op == Opcode::VaArg ||
+			is_stack_instruction(inst.op) || inst.op == Opcode::VaStart || inst.op == Opcode::VaArg ||
 			inst.op == Opcode::AtomicLoad || inst.op == Opcode::AtomicStore || inst.op == Opcode::AtomicAddFetch ||
 			inst.op == Opcode::AtomicExchange || inst.op == Opcode::AtomicCompareExchange ||
 			(inst.flags & IF_VOLATILE) != 0)

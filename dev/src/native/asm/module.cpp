@@ -1,5 +1,7 @@
 #include "native/asm/module.h"
 
+#include <algorithm>
+
 #include "lowir/assembly.h"
 #include "asm/module_expand.h"
 #include "native/asm/binding.h"
@@ -56,7 +58,10 @@ void ModuleAssembler::flush()
 	}
 	std::vector<uint32_t> buffer_lines;
 	for (const assembly::Instruction& instruction : instructions)
+	{
 		buffer_lines.push_back(instruction.line);
+		section.align = std::max<uint64_t>(section.align, instruction.alignment);
+	}
 	for (assembly::Instruction& instruction : instructions)
 		if (instruction.line != 0 && instruction.line <= code_lines_.size())
 			instruction.line = code_lines_[instruction.line - 1];
@@ -121,7 +126,11 @@ void ModuleAssembler::append(const assembly::ModuleLine& line)
 		assembly::parse(line.text, syntax_.dialect, line.symbols, line.labels, &symbols_, &syntax_);
 		return;
 	}
-	if (name[0] == '.' && !label && !syntax)
+	const bool code_data = out_.sections[section_].kind == object::SectionKind::Text &&
+		(name == ".p2align" || name == ".balign" || name == ".zero" || name == ".space" || name == ".skip" ||
+			((name == ".byte" || name == ".short" || name == ".word" || name == ".long" || name == ".quad") &&
+				cursor.numeric()));
+	if (name[0] == '.' && !label && !syntax && !code_data)
 	{
 		flush();
 		if (!directive(name, cursor))

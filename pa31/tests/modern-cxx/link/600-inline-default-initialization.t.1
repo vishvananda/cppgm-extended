@@ -1,0 +1,12 @@
+#include "600-inline-default-initialization.h"
+int constructed;
+int observe(int n) { ++constructed; return n; }
+const Cell* second_default();
+const Cell* second_explicit();
+const Cell* host_default();
+int main() {
+    if (constructed != 2) return 1;
+    if (InlineCells::default_cell.value != 41 || InlineCells::explicit_cell.value != 43) return 2;
+    if (&InlineCells::default_cell != second_default() || &InlineCells::explicit_cell != second_explicit()) return 3;
+    return &InlineCells::default_cell != host_default();
+}

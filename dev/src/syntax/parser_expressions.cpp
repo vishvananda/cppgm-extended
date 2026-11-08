@@ -1061,6 +1061,19 @@ Expr* Parser::parse_primary_expression()
 	}
 	switch (token.simple)
 	{
+	case TokenKind::OP_LAND:
+	{
+		next();
+		if (!at_identifier())
+		{
+			fail();
+			return nullptr;
+		}
+		LabelAddressExpr* expr = make<LabelAddressExpr>(ExprKind::LabelAddress, start);
+		expr->label = tok().identifier;
+		next();
+		return expr;
+	}
 	case TokenKind::KW_TRUE:
 	case TokenKind::KW_FALSE:
 	case TokenKind::KW_NULLPTR:

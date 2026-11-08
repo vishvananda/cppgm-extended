@@ -132,9 +132,12 @@ bool Analyzer::type_dependent(const syntax::Expr* expr, Scope* scope)
 			return true;
 		const syntax::FunctionalCastExpr* cast = static_cast<const syntax::FunctionalCastExpr*>(expr);
 		Specifiers specifiers;
-		this->specifiers(cast->type, scope, specifiers, false);
-		if (specifiers.type == nullptr || dependent_type(specifiers.type))
-			return true;
+		if (!cxx17_ || deduction_template(cast->type, scope) == nullptr)
+		{
+			this->specifiers(cast->type, scope, specifiers, false);
+			if (specifiers.type == nullptr || dependent_type(specifiers.type))
+				return true;
+		}
 		if (cast->braced != nullptr)
 			return type_dependent(cast->braced, scope);
 		for (const syntax::Expr* argument : cast->arguments)

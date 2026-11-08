@@ -142,6 +142,12 @@ Stmt* Parser::parse_statement()
 	{
 		GotoStmt* jump = make<GotoStmt>(StmtKind::Goto, start);
 		next();
+		if (accept(TokenKind::OP_STAR))
+		{
+			jump->label = nullptr;
+			jump->target = parse_expression();
+			return jump->target != nullptr && expect(TokenKind::OP_SEMICOLON) ? jump : nullptr;
+		}
 		if (!at_identifier())
 		{
 			fail();

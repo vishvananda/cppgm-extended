@@ -379,13 +379,19 @@ bool ScanFloatingValue(
 	switch (FloatingRepresentation(type))
 	{
 	case FundamentalType::Float16:
+	case FundamentalType::BFloat16:
 	case FundamentalType::Float128:
 	case FundamentalType::GnuFloat128:
 	{
 		// Formats no host type has, rounded exactly.
-		const bool half = FloatingRepresentation(type) == FundamentalType::Float16;
+		const FundamentalType representation = FloatingRepresentation(type);
+		const bool half = representation == FundamentalType::Float16 || representation == FundamentalType::BFloat16;
 		uint64_t low = 0, high = 0;
-		if (!ScanInterchangeValue(scratch.data(), scratch.size(), half ? kBinary16 : kBinary128, low, high))
+		if (!ScanInterchangeValue(scratch.data(), scratch.size(),
+				representation == FundamentalType::BFloat16 ? kBFloat16
+					: half                                  ? kBinary16
+															: kBinary128,
+				low, high))
 			return false;
 		std::memcpy(bytes, &low, half ? 2 : 8);
 		if (!half)

@@ -649,7 +649,7 @@ ExprFacts* Analyzer::allocation(const syntax::NewExpr& expr, Scope* scope)
 		// an integral or unscoped enumeration type.
 		if (const ClassEntity* cls = ClassOf(bound->type))
 		{
-			if (const FunctionEntity* converter = unique_conversion(cls, IsIntegralOrUnscopedEnum))
+			if (const FunctionEntity* converter = unique_conversion(cls, IsIntegralOrUnscopedEnum, bound))
 			{
 				expression_scope_ = scope;
 				bound = convert_class_operand(*count, converter);
@@ -740,68 +740,46 @@ ExprFacts* Analyzer::allocation(const syntax::NewExpr& expr, Scope* scope)
 	new_facts(*size, types_.fundamental(FundamentalType::UnsignedLongInt), ValueCategory::PRValue);
 	// The placement list is set only with has_placement.
 	const uint32_t placements = expr.has_placement ? expr.placement.size : 0;
+	const Type* alignment = nullptr;
+	if (cxx17_)
+	{
+		if (!type_size(type, element_size, element_alignment, expr.location))
+			return nullptr;
+		if (element_alignment > 16)
+		{
+			alignment = alignment_type();
+			if (alignment == nullptr)
+				error(expr.location, "over-aligned allocation requires std::align_val_t from <new>");
+			expr.implicit_alignment = element_alignment;
+		}
+	}
 	syntax::Expr** arguments = static_cast<syntax::Expr**>(
-		arena_.allocate(sizeof(syntax::Expr*) * (placements + 1), alignof(syntax::Expr*)));
+		arena_.allocate(sizeof(syntax::Expr*) * (placements + 2), alignof(syntax::Expr*)));
 	arguments[0] = size;
+	const uint32_t leading = alignment != nullptr ? 2 : 1;
+	if (alignment != nullptr)
+	{
+		syntax::LiteralExpr* align = static_cast<syntax::LiteralExpr*>(
+			arena_.allocate(sizeof(syntax::LiteralExpr), alignof(syntax::LiteralExpr)));
+		*align = syntax::LiteralExpr();
+		align->kind = syntax::ExprKind::Literal;
+		align->location = expr.location;
+		new_facts(*align, alignment, ValueCategory::PRValue)->value = element_alignment;
+		arguments[1] = align;
+	}
 	for (uint32_t i = 0; i < placements; ++i)
 	{
 		if (typed(*expr.placement[i], scope) == nullptr)
 			return nullptr;
-		arguments[i + 1] = expr.placement[i];
+		arguments[i + leading] = expr.placement[i];
 	}
 	syntax::Slice<syntax::Expr*> call_arguments;
 	call_arguments.data = arguments;
-	call_arguments.size = placements + 1;
-	const Identifier* key = count != nullptr ? new_array_key_ : operator_key(TokenKind::KW_NEW);
+	call_arguments.size = placements + leading;
 	const bool bound = names_.limit() != NameLookup::kNoLimit && names_.dependent_uses() == uses;
-	LookupResult found = LookupResult();
-	const ClassEntity* naming = nullptr;
-	if (!expr.global && entity != nullptr && entity->scope != nullptr)
-	{
-		found = names_.qualified(entity->scope, key, LookupFilter::Ordinary);
-		naming = found.found() ? entity : nullptr;
-	}
-	// 10.2p7: members of different bases are an invalid set.
-	if (found.ambiguous)
-	{
-		substitution_error(expr.location, "ambiguous class allocation function name");
-		return nullptr;
-	}
-	std::vector<FunctionEntity*>& set = overload_set_;
-	if (!found.found() && bound)
-	{
-		// One its definition's context declares is viable there (the
-		// hosts' check), though the instantiation then selects among those
-		// declared by its point too, as GCC and Clang resolve it again.
-		const bool lexical = lexical_limit_;
-		lexical_limit_ = true;
-		const LookupResult declared = global_allocation_functions(key);
-		lexical_limit_ = lexical;
-		if (!declared.found() || declared.binding->kind != BindingKind::Function)
-			error(expr.location, "no allocation function for the new-expression");
-		set.clear();
-		for (const FunctionList* node = declared.functions; node != nullptr; node = node->next)
-			set.push_back(static_cast<FunctionEntity*>(node->binding->entity));
-		if (best_viable(call_arguments, expr.location, set, nullptr, true).function == nullptr)
-			return nullptr;
-	}
-	if (!found.found())
-		found = global_allocation_functions(key);
-	if (!found.found() || found.binding->kind != BindingKind::Function)
-		error(expr.location, "no allocation function for the new-expression");
-	set.clear();
-	for (const FunctionList* node = found.functions; node != nullptr; node = node->next)
-		set.push_back(static_cast<FunctionEntity*>(node->binding->entity));
-	const Candidate chosen = best_viable(call_arguments, expr.location, set, nullptr, true);
-	FunctionEntity* function = chosen.function;
+	FunctionEntity* function = allocation_function(expr, entity, call_arguments, scope, bound);
 	if (function == nullptr)
 		return nullptr;
-	check_not_deleted(function, expr.location);
-	check_function_access(function, found.functions, naming, nullptr, scope, expr.location);
-	convert_arguments(call_arguments, function->type->canonical, &chosen, 0);
-	odr_use(function, true);
-	if (!function->nothrow)
-		++potentially_throwing_;
 	// The object's (each element's) initialization.
 	const FunctionEntity* constructor = nullptr;
 	const syntax::BracedInitList* list = count != nullptr && expr.initializer != nullptr &&
@@ -909,7 +887,7 @@ void Analyzer::new_deallocation(const syntax::NewExpr& expr, const ClassEntity* 
 	if (!frees.found() || frees.binding->kind != BindingKind::Function)
 		return;
 	if (!expr.has_placement || expr.placement.size == 0)
-		expr.deallocation = usual_deallocation(frees.functions);
+		expr.deallocation = usual_deallocation(frees.functions, entity != nullptr ? entity->type : nullptr);
 	else
 	{
 		const Type* wanted = allocation->type->canonical;
@@ -927,6 +905,8 @@ void Analyzer::new_deallocation(const syntax::NewExpr& expr, const ClassEntity* 
 				expr.deallocation = candidate;
 		}
 	}
+	if (expr.deallocation != nullptr)
+		note_allocation_alignment(expr.deallocation);
 	if (expr.deallocation != nullptr && entity != nullptr)
 	{
 		check_function_access(expr.deallocation, frees.functions, naming, nullptr, scope, expr.location);
@@ -944,8 +924,9 @@ bool Analyzer::sized_array_delete(const ClassEntity* entity)
 	const LookupResult found = names_.qualified(entity->scope, delete_array_key_, LookupFilter::Ordinary);
 	if (!found.found() || found.ambiguous || found.binding->kind != BindingKind::Function)
 		return false;
-	const FunctionEntity* usual = usual_deallocation(found.functions);
-	return usual != nullptr && usual->member && usual->type->canonical->param_count == 2;
+	const FunctionEntity* usual = usual_deallocation(found.functions, entity->type);
+	return usual != nullptr && usual->member && usual->type->canonical->param_count > 1 &&
+		usual->type->canonical->params[1] == types_.fundamental(FundamentalType::UnsignedLongInt);
 }
 
 LookupResult Analyzer::global_allocation_functions(const Identifier* key)
@@ -966,26 +947,6 @@ LookupResult Analyzer::global_allocation_functions(const Identifier* key)
 	return found;
 }
 
-const FunctionEntity* Analyzer::usual_deallocation(const FunctionList* functions)
-{
-	// 3.7.4.2p2, 12.5p4: operator delete(void*) (or its array form), else
-	// a class's member with a second std::size_t parameter.
-	const Type* void_pointer = types_.pointer(types_.fundamental(FundamentalType::Void));
-	for (uint32_t pass = 0; pass < 2; ++pass)
-	{
-		for (const FunctionList* node = functions; node != nullptr; node = node->next)
-		{
-			const FunctionEntity* candidate = static_cast<const FunctionEntity*>(node->binding->entity);
-			const Type* type = candidate->type->canonical;
-			const bool usual = type->param_count == 1 + pass && type->params[0] == void_pointer &&
-				(pass == 0 || type->params[1] == types_.fundamental(FundamentalType::UnsignedLongInt));
-			if (usual && (pass == 0 || candidate->member))
-				return candidate;
-		}
-	}
-	return nullptr;
-}
-
 ExprFacts* Analyzer::deletion(const syntax::DeleteExpr& expr, Scope* scope)
 {
 	// 5.3.5: a pointer to an object type (a class operand by its single
@@ -999,7 +960,7 @@ ExprFacts* Analyzer::deletion(const syntax::DeleteExpr& expr, Scope* scope)
 		return nullptr;
 	if (const ClassEntity* cls = ClassOf(operand->type))
 	{
-		const FunctionEntity* converter = unique_conversion(cls, IsObjectPointerType);
+		const FunctionEntity* converter = unique_conversion(cls, IsObjectPointerType, operand);
 		if (converter == nullptr)
 		{
 			substitution_error(expr.location, "a delete-expression's operand is not a pointer");
@@ -1052,7 +1013,8 @@ ExprFacts* Analyzer::deletion(const syntax::DeleteExpr& expr, Scope* scope)
 		found = global_allocation_functions(key);
 	if (!found.found() || found.binding->kind != BindingKind::Function)
 		error(expr.location, "no deallocation function for the delete-expression");
-	FunctionEntity* function = const_cast<FunctionEntity*>(usual_deallocation(found.functions));
+	FunctionEntity* function = const_cast<FunctionEntity*>(
+		usual_deallocation(found.functions, incomplete ? nullptr : element));
 	if (function == nullptr)
 		error(expr.location, "no usual deallocation function for the delete-expression");
 	check_not_deleted(function, expr.location);
@@ -1100,6 +1062,25 @@ FunctionEntity* Analyzer::select_constructor(ClassEntity* entity, const syntax::
 		direct_class_ = saved_direct;
 		standard_only_ = saved_standard;
 	}
+	if (elided_direct_sequence(chosen) != nullptr)
+	{
+		ExprFacts* source = facts_of(*WithoutParentheses(arguments[0]));
+		Conversion conversion = sequences_[chosen.first];
+		conversion.form = ConversionForm::Standard;
+		conversion.target = entity->type;
+		conversion.result = entity->type;
+		conversion.temporary = false;
+		Conversion after = Conversion();
+		after.form = ConversionForm::Standard;
+		after.rank = ConversionRank::Exact;
+		after.target = entity->type;
+		after.result = entity->type;
+		after.initialization = true;
+		conversion.after = intern_conversion(after);
+		apply_user_conversion(source, conversion, location);
+		record_conversion(source, conversion);
+		return nullptr;
+	}
 	FunctionEntity* selected = inherited_specialization(entity, chosen.function, arguments.size, location);
 	if (selected == nullptr)
 		return nullptr;
@@ -1143,8 +1124,8 @@ FunctionEntity* Analyzer::value_initialize(ClassEntity* entity, uint32_t locatio
 	return constructor;
 }
 
-FunctionEntity* Analyzer::initialize_class(
-	ClassEntity* entity, const Type* type, const syntax::Initializer& init, Scope* scope, uint32_t location)
+FunctionEntity* Analyzer::initialize_class(ClassEntity* entity, const Type* type, const syntax::Initializer& init,
+	Scope* scope, uint32_t location, bool complete_object)
 {
 	// 8.5p16 for a class object.
 	expression_scope_ = scope;
@@ -1159,11 +1140,27 @@ FunctionEntity* Analyzer::initialize_class(
 		list = static_cast<const syntax::BracedInitList*>(init.expression);
 	if (list != nullptr)
 	{
+		auto initializes_result = [&]() {
+			if (!cxx17_ || !complete_object || list->elements.size != 1 ||
+				list->elements[0]->kind == syntax::ExprKind::BracedInit)
+				return false;
+			const syntax::Expr& source = *list->elements[0];
+			const ExprFacts* from = source.facts != nullptr ? source.facts : typed(source, scope);
+			if (from == nullptr)
+				return true;
+			if (from->type == nullptr || from->category != ValueCategory::PRValue || ClassOf(from->type) != entity)
+				return false;
+			list->result_source = &source;
+			new_facts(*list, type->unqualified, ValueCategory::PRValue);
+			return true;
+		};
 		// 8.5.4p3: an aggregate is aggregate-initialized; an empty list
 		// value-initializes a class with a default constructor; otherwise
 		// constructors are considered.
 		if (IsAggregateClass(entity))
 		{
+			if (initializes_result())
+				return nullptr;
 			// CWG1467/2137: a sole same/derived-class expression initializes
 			// the whole aggregate. Keep its selected copy/move and elision
 			// facts distinct from member-wise aggregate initialization.
@@ -1178,7 +1175,7 @@ FunctionEntity* Analyzer::initialize_class(
 					const ConstructionKind kind = init.kind == syntax::InitializerKind::Braced
 						? ConstructionKind::Direct
 						: ConstructionKind::Copy;
-					FunctionEntity* constructor = copy_initialization(entity, element, kind, location);
+					FunctionEntity* constructor = copy_initialization(entity, element, kind, location, false, nullptr, complete_object);
 					ExprFacts* facts = new_facts(*list, type->unqualified, ValueCategory::PRValue);
 					facts->single_class_element = true;
 					facts->entity = constructor;
@@ -1237,6 +1234,8 @@ FunctionEntity* Analyzer::initialize_class(
 		}
 		if (failed())
 			return nullptr;
+		if (initializes_result())
+			return nullptr;
 		FunctionEntity* constructor = select_constructor(entity, list->elements, kind, location);
 		if (constructor == nullptr)
 			return nullptr;
@@ -1268,7 +1267,7 @@ FunctionEntity* Analyzer::initialize_class(
 			if (failed())
 				return nullptr;
 		}
-		return direct_initialization(entity, init.arguments, location);
+		return direct_initialization(entity, init.arguments, location, complete_object);
 	}
 	if (init.kind != syntax::InitializerKind::Assign)
 		error(location, "only functions can be defaulted or deleted");
@@ -1285,7 +1284,7 @@ FunctionEntity* Analyzer::initialize_class(
 	if (!check_resolved(single))
 		return nullptr;
 	if (same_class_source(entity, single))
-		return copy_initialization(entity, single, ConstructionKind::Copy, location);
+		return copy_initialization(entity, single, ConstructionKind::Copy, location, false, nullptr, complete_object);
 	const ClassEntity* source = ClassOf(single.facts->type);
 	if (source != nullptr && source->has_conversion_functions)
 	{
@@ -1313,15 +1312,19 @@ FunctionEntity* Analyzer::initialize_class(
 }
 
 FunctionEntity* Analyzer::direct_initialization(
-	ClassEntity* entity, const syntax::Slice<syntax::Expr*>& arguments, uint32_t location)
+	ClassEntity* entity, const syntax::Slice<syntax::Expr*>& arguments, uint32_t location, bool complete_object)
 {
 	// `T x(args)` from its typed arguments (8.5p16): the constructor
 	// overload resolution selects (13.3.1.3); an expression of the class
 	// (or a derived one) alone is copied or moved, a prvalue of the class
 	// perhaps in place (see copy_initialization).
 	if (arguments.size == 1 && same_class_source(entity, *arguments[0]))
-		return copy_initialization(entity, *arguments[0], ConstructionKind::Direct, location);
-	return select_constructor(entity, arguments, ConstructionKind::Direct, location);
+		return copy_initialization(entity, *arguments[0], ConstructionKind::Direct, location, false, nullptr, complete_object);
+	const bool saved = eliding_direct_;
+	eliding_direct_ = cxx17_ && complete_object;
+	FunctionEntity* constructor = select_constructor(entity, arguments, ConstructionKind::Direct, location);
+	eliding_direct_ = saved;
+	return constructor;
 }
 
 ExprFacts* Analyzer::class_prvalue(
@@ -1439,7 +1442,7 @@ bool Analyzer::same_class_source(const ClassEntity* entity, const syntax::Expr& 
 }
 
 FunctionEntity* Analyzer::copy_initialization(ClassEntity* entity, const syntax::Expr& source, ConstructionKind kind,
-	uint32_t location, bool in_place, const Candidate* chosen)
+	uint32_t location, bool in_place, const Candidate* chosen, bool complete_object)
 {
 	// The constructor overload resolution selects with the expression as
 	// its argument (12.8p2-p3: a copy constructor for an lvalue, a move
@@ -1455,6 +1458,12 @@ FunctionEntity* Analyzer::copy_initialization(ClassEntity* entity, const syntax:
 	arguments.data = &pointer;
 	arguments.size = 1;
 	const syntax::Expr* inner = WithoutParentheses(&source);
+	// C++17 [dcl.init]: a same-class prvalue initializes its result
+	// object directly. No copy/move overload is selected. Base and
+	// delegating initializers can designate overlapping subobjects.
+	if (cxx17_ && complete_object && inner->facts->category == ValueCategory::PRValue &&
+		ClassOf(inner->facts->type) == entity)
+		return nullptr;
 	bool elided = inner->facts->category == ValueCategory::PRValue && ClassOf(inner->facts->type) == entity &&
 		(in_place || inner->kind != syntax::ExprKind::Conditional);
 	FunctionEntity* constructor = select_constructor(entity, arguments, kind, location, &elided, chosen);
@@ -1462,7 +1471,7 @@ FunctionEntity* Analyzer::copy_initialization(ClassEntity* entity, const syntax:
 }
 
 const Conversion* Analyzer::record_copy(ClassEntity* entity, const Type* target, const syntax::Expr& source,
-	uint32_t location, bool in_place, const Candidate* chosen)
+	uint32_t location, bool in_place, const Candidate* chosen, bool complete_object)
 {
 	// Copy-initialization of a class object (a parameter, a result, an
 	// aggregate's member) from an expression of its class or a derived
@@ -1473,7 +1482,7 @@ const Conversion* Analyzer::record_copy(ClassEntity* entity, const Type* target,
 		potential_use(source, nullptr);
 	const Conversion* before = facts->conversion;
 	FunctionEntity* constructor = copy_initialization(
-		entity, source, ConstructionKind::Copy, location, in_place, chosen);
+		entity, source, ConstructionKind::Copy, location, in_place, chosen, complete_object);
 	Conversion conversion = Conversion();
 	conversion.form = ConversionForm::Standard;
 	conversion.rank = ConversionRank::Exact;
@@ -1870,7 +1879,7 @@ void Analyzer::constructor_plan(FunctionEntity* constructor, ClassEntity* entity
 			view.arguments = written.arguments;
 			view.location = written.location;
 			ClassEntity* base = static_cast<ClassEntity*>(init.base->base);
-			init.constructor = initialize_class(base, base->type, view, scope, written.location);
+			init.constructor = initialize_class(base, base->type, view, scope, written.location, false);
 			if (!failed() && reference_member_temporary(base->type, view))
 				error(written.location, "a temporary bound to a reference subobject in a base initializer (CWG1696)");
 		}
@@ -2234,7 +2243,7 @@ void Analyzer::delegate_construction(
 	view.expression = initializer.list;
 	view.arguments = initializer.arguments;
 	view.location = initializer.location;
-	FunctionEntity* target = initialize_class(entity, entity->type, view, scope, initializer.location);
+	FunctionEntity* target = initialize_class(entity, entity->type, view, scope, initializer.location, false);
 	for (const FunctionEntity* next = target; next != nullptr; next = next->delegate)
 	{
 		if (next == constructor)

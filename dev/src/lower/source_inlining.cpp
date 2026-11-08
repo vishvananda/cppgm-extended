@@ -262,8 +262,13 @@ void SourceInlining::validate_immediates()
 				{
 					const lowir::Instruction& inst = body.instructions[i];
 					if (immediate_call(inst) && !body.operands[inst.extra_first].is(lowir::ValueKind::Integer))
-						throw LoweringError(
-							0, "a packed lane shuffle selector is not constant after mandatory inlining");
+					{
+						throw LoweringError(0,
+							(std::string(
+								 "a packed lane shuffle selector is not constant after mandatory inlining in ") +
+								program_.spelling(program_.symbols[symbol].name))
+								.c_str());
+					}
 				}
 		}
 		remove_immediates(original);
@@ -286,7 +291,7 @@ lowir::SymbolId ProgramLowering::source_immediate_guard()
 
 void ProgramLowering::mark_source_inline(const sema::FunctionEntity* function, lowir::SymbolId symbol)
 {
-	if (!host_objects_ || function->no_inline)
+	if (function->no_inline)
 		return;
 	const sema::FunctionEntity* pattern = function->instantiated ? sema::PatternOf(function) : nullptr;
 	if (!function->always_inline && (function->primary == nullptr || !function->primary->always_inline) &&

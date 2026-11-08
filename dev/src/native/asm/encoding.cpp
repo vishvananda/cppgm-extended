@@ -173,6 +173,17 @@ void encode_instruction(Assembler& out, const assembly::Instruction& inst)
 		encode_control_form(out, inst, *form, suffix);
 		return;
 	}
+	if (form->encoding == Encoding::Interrupt)
+	{
+		if (inst.prefix != 0 || inst.operands.size() != 1 || inst.operands[0].kind != OperandKind::Immediate ||
+			inst.operands[0].immediate > 255)
+			fail(inst, "interrupt requires an unsigned byte immediate and no prefix");
+		const uint8_t vector = inst.operands[0].immediate;
+		out.byte(vector == 3 ? 0xcc : 0xcd);
+		if (vector != 3)
+			out.byte(vector);
+		return;
+	}
 	if (form->encoding == Encoding::ExtendMove)
 	{
 		encode_extend_form(out, inst, *form);
@@ -203,7 +214,7 @@ void encode_instruction(Assembler& out, const assembly::Instruction& inst)
 	{
 		if (!inst.operands.empty())
 			fail(inst, "instruction takes no operands");
-		const unsigned bytes = form->opcode > 0xffff ? 3 : form->opcode > 0xff ? 2 : 1;
+		const unsigned bytes = form->opcode > 0xffffff ? 4 : form->opcode > 0xffff ? 3 : form->opcode > 0xff ? 2 : 1;
 		for (unsigned i = bytes; i != 0; --i)
 			out.byte(static_cast<uint8_t>(form->opcode >> ((i - 1) * 8)));
 	}
@@ -222,10 +233,33 @@ void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& i
 	for (size_t i = 0; i < instructions.size(); ++i)
 		if (instructions[i].label)
 			labels[i] = out.new_label();
-	for (const assembly::Instruction& inst : instructions)
+	for (const assembly::Instruction& original : instructions)
 	{
+		const size_t index = &original - instructions.data();
+		assembly::Instruction inst = original;
+		for (auto& operand : inst.operands)
+			if (operand.kind == OperandKind::Memory && operand.address.label != asm_model::kNoId)
+				operand.address.label = labels[operand.address.label];
 		if (positions != nullptr)
 			positions->push_back(out.size());
+		if (inst.alignment)
+		{
+			const uint32_t count = (uint32_t(0) - out.size()) & (inst.alignment - 1);
+			if (count <= inst.max_padding)
+			{
+				if (inst.fill < 0)
+					out.nops(count);
+				else
+					for (uint32_t i = 0; i < count; ++i)
+						out.byte(inst.fill);
+			}
+			continue;
+		}
+		if (inst.data)
+		{
+			out.code().insert(out.code().end(), inst.bytes.begin(), inst.bytes.end());
+			continue;
+		}
 		if (inst.is_exit)
 		{
 			out.mov_store_imm(exit_frame, inst.exit_tag, 4);
@@ -233,7 +267,7 @@ void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& i
 		}
 		if (inst.label)
 		{
-			out.bind(labels[&inst - instructions.data()]);
+			out.bind(labels[index]);
 			continue;
 		}
 		if (inst.mnemonic.empty() || inst.mnemonic[0] != 'v')

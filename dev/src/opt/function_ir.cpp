@@ -453,6 +453,8 @@ void build_cfg_light(const Program& program, const FunctionBody& body, Cfg& cfg)
 	cfg.succs.reserve(2 * static_cast<size_t>(n)); // (most blocks branch at most two ways)
 	cfg.handlers.clear();
 	cfg.flags.assign(n, 0);
+	for (const CodeLabel& label : body.code_labels)
+		cfg.flags[label.block] |= BF_ADDRESS;
 	cfg.rpo.clear();
 	build_edges(program, body, cfg);
 	build_order(body, cfg);
@@ -813,6 +815,8 @@ void compact_body(Program& program, FunctionBody& body)
 			out.instructions.push_back(inst);
 		}
 	}
+	for (CodeLabel& label : body.code_labels)
+		label.block = block_map[label.block];
 	out.locations.swap(body.locations);
 	out.argument_classes.swap(body.argument_classes);
 	for (ArgumentClasses& classes : out.argument_classes)
