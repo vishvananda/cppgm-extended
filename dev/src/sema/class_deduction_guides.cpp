@@ -2,8 +2,9 @@
 
 namespace sema {
 
-TemplateHead* Analyzer::class_deduction_head(const TemplateHead* outer, const TemplateHead* inner, TypeList& remap)
+TemplateHead* Analyzer::class_deduction_head(ClassEntity* owner, const TemplateHead* inner, TypeList& remap)
 {
+	const TemplateHead* outer = owner->templ->head;
 	if (inner == nullptr)
 		return const_cast<TemplateHead*>(outer);
 	TemplateHead* head = static_cast<TemplateHead*>(arena_.allocate(sizeof(TemplateHead), alignof(TemplateHead)));
@@ -57,7 +58,7 @@ TemplateHead* Analyzer::class_deduction_head(const TemplateHead* outer, const Te
 	head->shape = template_shape(head->parameters, head->count);
 	DeductionHeadOrigins* origins = static_cast<DeductionHeadOrigins*>(
 		arena_.allocate(sizeof(DeductionHeadOrigins), alignof(DeductionHeadOrigins)));
-	*origins = DeductionHeadOrigins{ outer, inner };
+	*origins = DeductionHeadOrigins{ owner, outer, inner };
 	head->deduction_origins = origins;
 	return head;
 }
@@ -67,7 +68,7 @@ FunctionEntity* Analyzer::class_deduction_guide(ClassEntity* cls, const Function
 	const TemplateHead* outer = cls->templ->head;
 	const TemplateHead* inner = constructor != nullptr && constructor->templated ? HeadOf(constructor) : nullptr;
 	TypeList remap;
-	TemplateHead* head = class_deduction_head(outer, inner, remap);
+	TemplateHead* head = class_deduction_head(cls, inner, remap);
 	TypeList parameters;
 	bool variadic = false;
 	if (copy)
@@ -128,6 +129,44 @@ void Analyzer::class_deduction_candidates(ClassEntity* cls, std::vector<Function
 	}
 	out = set.implicit;
 	out.insert(out.end(), set.declared.begin(), set.declared.end());
+}
+
+Analyzer::DeductionDefaultContext::DeductionDefaultContext(
+	Analyzer& a, const DeductionHeadOrigins& origins, const Type* const* args, Scope* scope)
+	: analyzer(a), previous(a.deduction_default_context_), pattern(origins.owner), arguments(args), frame(scope),
+	  instance(nullptr)
+{
+	a.deduction_default_context_ = this;
+}
+
+Analyzer::DeductionDefaultContext::~DeductionDefaultContext()
+{
+	analyzer.deduction_default_context_ = previous;
+}
+
+LookupResult Analyzer::deduction_default_lookup(
+	Scope* scope, const Identifier* name, LookupFilter filter, const LookupResult& found)
+{
+	for (DeductionDefaultContext* context = deduction_default_context_; context != nullptr; context = context->previous)
+	{
+		if (!found.found() || found.binding->declared_in != context->pattern->scope || !encloses(context->frame, scope))
+			continue;
+		// A direct use of a bound parameter needs no class completion. A
+		// member helper does: select its entity in the canonical enclosing
+		// specialization so its body and memo keys retain the outer arguments.
+		if (context->instance == nullptr)
+		{
+			TypeList arguments;
+			for (uint32_t i = 0; i < context->pattern->templ->head->count; ++i)
+				arguments.push_back(context->arguments[i]);
+			context->instance = class_specialization(context->pattern, arguments, 0, soft_substitution_ == 0);
+		}
+		ClassEntity* instance = context->instance;
+		if (instance == nullptr || instance->templ->dependent || !complete_class(instance))
+			return found;
+		return names_.members(instance->scope, name, filter);
+	}
+	return found;
 }
 
 } // namespace sema

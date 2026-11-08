@@ -428,3 +428,6 @@ CWG 2327 | drafting | cwg-2327.txt
 
 P0170R1 | Wording for Constexpr Lambda | paper-p0170r1.txt
   C++17 closure literal types, constexpr call operators and conversion functions.
+
+N4051 | Allow typename in a template template parameter | paper-n4051.txt
+  C++17 permits class and typename as equivalent template-template parameter keys.

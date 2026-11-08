@@ -309,6 +309,7 @@ Scope* Parser::member_lookup_scope(Scope* member_of)
 	Scope* outer = scopes_.current();
 	Scope* scope = scopes_.push(ScopeKind::Block, nullptr);
 	scope->member_of = member_of;
+	scope->uncertain_bases = scope->uncertain_bases || (member_of != nullptr && member_of->uncertain_bases);
 	scopes_.set_current(outer);
 	return scope;
 }
@@ -429,6 +430,7 @@ ParameterClause* Parser::parse_parameter_clause(Scope* member_of, bool definite)
 	Scope* outer = scopes_.current();
 	Scope* scope = scopes_.push(ScopeKind::Function, nullptr);
 	scope->member_of = member_of;
+	scope->uncertain_bases = scope->uncertain_bases || (member_of != nullptr && member_of->uncertain_bases);
 	const bool saved_angle = angle_;
 	const bool saved_template = pending_template_;
 	angle_ = false;

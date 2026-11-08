@@ -972,8 +972,8 @@ void Analyzer::template_parameters(const syntax::TemplateParameterList& list, Sc
 	{
 		const bool template_template = parameter->kind == syntax::TemplateParameterKind::Template;
 		const bool non_type = parameter->kind == syntax::TemplateParameterKind::NonType;
-		// C++11 14.1p1: a template template-parameter is introduced by class.
-		if (template_template && parameter->key == TokenKind::KW_TYPENAME)
+		// C++11 14.1p1 requires class; C++17 N4051 also permits typename.
+		if (!cxx17_ && template_template && parameter->key == TokenKind::KW_TYPENAME)
 			error(parameter->location, "a template template-parameter introduced by typename");
 		const TemplateHead* own_head = nullptr;
 		if (template_template)

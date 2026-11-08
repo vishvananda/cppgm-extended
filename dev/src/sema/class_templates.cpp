@@ -1070,6 +1070,7 @@ const Type* Analyzer::template_default(const TemplateHead* head, const Type* con
 		const uint32_t inner_index = index - origins.outer->count;
 		Scope* context = named_in != nullptr ? named_in : origins.inner->default_scopes[inner_index]->parent;
 		context = substituted_scope(context, substitution_of(origins.outer, arguments));
+		const DeductionDefaultContext defaults(*this, origins, arguments, context);
 		const Type* result = template_default(
 			origins.inner, arguments + origins.outer->count, inner_index, arguments_dependent, substitution, context);
 		return result != nullptr ? substitute(result, substitution_of(origins.outer, arguments)) : nullptr;

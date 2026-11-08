@@ -274,7 +274,8 @@ private:
 		const NameComponent& component, NameInfo& info, bool dependent_arguments = true, bool declared = false);
 	uint8_t prefix_guesses(
 		const NameComponent& component, const NameInfo& info, const NameBinding& binding, bool declared);
-	NameBinding resolve_component(const Identifier* identifier, const NameInfo& info, bool prefix_only);
+	NameBinding resolve_component(
+		const Identifier* identifier, const NameInfo& info, bool prefix_only, bool declared = false);
 	NameBinding guessed_component(NameBinding binding);
 	void note_name_conflict(uint32_t conflicts, uint32_t component);
 	// For a typedef-name's or alias's binding of a type specifier's name

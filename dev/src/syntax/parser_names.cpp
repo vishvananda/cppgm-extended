@@ -105,12 +105,18 @@ void Parser::note_name_conflict(uint32_t conflicts, uint32_t component)
 	}
 }
 
-NameBinding Parser::resolve_component(const Identifier* identifier, const NameInfo& info, bool prefix_only)
+NameBinding Parser::resolve_component(
+	const Identifier* identifier, const NameInfo& info, bool prefix_only, bool declared)
 {
 	switch (info.prefix)
 	{
 	case PrefixState::Unqualified:
-		return scopes_.lookup(identifier, prefix_only);
+	{
+		NameBinding binding = scopes_.lookup(identifier, prefix_only);
+		if (!declared && !prefix_only && scopes_.current()->uncertain_bases && uncertain_base_name(identifier))
+			return guessed_component(binding);
+		return binding;
+	}
 	case PrefixState::Known:
 	{
 		NameBinding binding = scopes_.lookup_in(info.prefix_scope, identifier, prefix_only, info.prefix_specialization);
@@ -144,6 +150,29 @@ NameBinding Parser::resolve_component(const Identifier* identifier, const NameIn
 		break;
 	}
 	return NameBinding{ NameCategory::None, false, nullptr };
+}
+
+bool ParserState::uncertain_base_name(const Identifier* identifier)
+{
+	// Keep a bounded type/value reading only when normal parser lookup
+	// cannot classify a name before reaching a fixed base's unknown
+	// argument members. Actual member lookup in sema selects the reading;
+	// do not flatten template arguments into extra inheritance edges.
+	for (Scope* scope = scopes_.current(); scope != nullptr && scope->kind != ScopeKind::Namespace;
+		scope = scope->parent)
+	{
+		if (scopes_.own(scope, identifier).category != NameCategory::None)
+			return false;
+		Scope* cls = scope->kind == ScopeKind::Class ? scope : scope->member_of;
+		if (cls != nullptr)
+		{
+			if (scopes_.lookup_in(cls, identifier, false, false).category != NameCategory::None)
+				return false;
+			if (cls->uncertain_bases)
+				return true;
+		}
+	}
+	return false;
 }
 
 NameBinding Parser::guessed_component(NameBinding binding)
@@ -410,7 +439,7 @@ Parser::TemplateIdChoice Parser::template_id_follows(
 	// compares, whatever follows its `>`.
 	if (mode == NameMode::Member && info.prefix == PrefixState::Unqualified)
 		return scopes_.ever_template(identifier) ? TemplateIdChoice::MaybeCall : TemplateIdChoice::No;
-	const NameBinding binding = resolve_component(identifier, info, false);
+	const NameBinding binding = resolve_component(identifier, info, false, mode == NameMode::Declarator);
 	if (IsTemplateCategory(binding.category))
 		return TemplateIdChoice::Yes;
 	if (binding.category == NameCategory::Value && info.prefix == PrefixState::Unqualified &&
@@ -551,7 +580,8 @@ bool Parser::parse_name_component(NameMode mode, ListFrame<NameComponent>& compo
 			more = true;
 			return true;
 		}
-		const NameBinding binding = resolve_component(component.identifier, info, false);
+		const NameBinding binding = resolve_component(
+			component.identifier, info, false, mode == NameMode::Declarator || naming_declared_);
 		info.category = binding.category;
 		info.scope = binding.scope;
 		info.template_member = info.prefix == PrefixState::Known &&

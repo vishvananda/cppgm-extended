@@ -58,6 +58,7 @@ struct TemplateHead
 // retain their original definition contexts, before the positional remapping.
 struct DeductionHeadOrigins
 {
+	ClassEntity* owner;
 	const TemplateHead* outer;
 	const TemplateHead* inner;
 };

@@ -320,7 +320,9 @@ supported PA13 subset. That LowIR is intended to be accepted by the later PA24
 
 A fixed base specialization retains that context through its inherited template
 bases when classifying local declarations and expressions, including reference
-declarations and inherited values hiding outer typedef names. Unresolved dependent
+declarations, constructor arguments and inherited values hiding outer typedef names.
+This includes bases supplied as template arguments, through further derived classes
+and out-of-class member definitions. Unresolved dependent
 bases remain excluded from unqualified lookup while defining a template.
 
 ### Dependent aliases in expression/type disambiguation

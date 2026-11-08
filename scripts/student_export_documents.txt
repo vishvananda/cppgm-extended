@@ -134,6 +134,7 @@ doc/cwg/manifest.json
 doc/cwg/paper-n1626.txt
 doc/cwg/paper-n3638.txt
 doc/cwg/paper-n3922.txt
+doc/cwg/paper-n4051.txt
 doc/cwg/paper-n4918.txt
 doc/cwg/paper-p0135r1.txt
 doc/cwg/paper-p0136r1.txt

@@ -1021,6 +1021,7 @@ ClassSpecifier* Parser::parse_class_body(
 	// A class defined out of its enclosing class (`struct A::B { ... }`)
 	// sees A's members (9.7p3).
 	scope->member_of = member_of;
+	scope->uncertain_bases = scope->uncertain_bases || (member_of != nullptr && member_of->uncertain_bases);
 	scopes_.set_current(enclosing);
 	if (class_identifier != nullptr && !name->qualified())
 	{
@@ -1180,6 +1181,12 @@ bool Parser::parse_base_clause(ListFrame<BaseSpecifier>& bases, Scope* class_sco
 		{
 			scopes_.add_base_edge(class_scope, info.scope, template_parameter_mentions_ != parameters,
 				info.specialization || base.name->last().has_arguments, reached);
+			if (template_parameter_mentions_ == parameters &&
+				(info.scope->parameter_bases != 0 || info.scope->uncertain_bases))
+			{
+				class_scope->uncertain_bases = true;
+				scopes_.note_uncertain();
+			}
 			if (class_scope->specialization)
 				scopes_.note_specialization_base(class_scope);
 		}

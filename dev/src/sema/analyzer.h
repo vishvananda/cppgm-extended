@@ -601,7 +601,7 @@ private:
 		uint32_t location, bool copy_initialization = false, bool list_initialization = false);
 	const Type* deduce_class_declaration(
 		const Specifiers& specifiers, const syntax::InitDeclarator& init, Scope* scope, uint32_t location);
-	TemplateHead* class_deduction_head(const TemplateHead* outer, const TemplateHead* inner, TypeList& remap);
+	TemplateHead* class_deduction_head(ClassEntity* owner, const TemplateHead* inner, TypeList& remap);
 	FunctionEntity* class_deduction_guide(ClassEntity* cls, const FunctionEntity* constructor, bool copy);
 	void deduction_guide_declaration(const syntax::DeductionGuideDecl& decl, Scope* scope);
 	void class_deduction_candidates(ClassEntity* cls, std::vector<FunctionEntity*>& out);
@@ -1744,6 +1744,21 @@ private:
 	};
 	ClassDeductionSet& class_deduction_set(ClassEntity* cls);
 	std::vector<ClassDeductionSet> class_deduction_sets_;
+	struct DeductionDefaultContext
+	{
+		Analyzer& analyzer;
+		DeductionDefaultContext* previous;
+		ClassEntity* pattern;
+		const Type* const* arguments;
+		Scope* frame;
+		ClassEntity* instance;
+		DeductionDefaultContext(
+			Analyzer& analyzer, const DeductionHeadOrigins& origins, const Type* const* arguments, Scope* frame);
+		~DeductionDefaultContext();
+	};
+	DeductionDefaultContext* deduction_default_context_ = nullptr;
+	LookupResult deduction_default_lookup(
+		Scope* scope, const Identifier* name, LookupFilter filter, const LookupResult& found);
 	bool full_asm_ = false;
 	bool exceptions_ = true;
 	bool ignore_narrowing_ = false;

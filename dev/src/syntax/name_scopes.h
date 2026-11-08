@@ -69,6 +69,9 @@ struct Scope
 	// A class template's partial or explicit specialization, whose members
 	// its primary template's scope shares (see add_specialization).
 	bool specialization;
+	// This scope is inside a class whose fixed specialization base can
+	// inherit names from a template argument unknown to parser lookup.
+	bool uncertain_bases;
 	// The parser's base-parameter record (index + 1), or zero. A
 	// specialization's members include its arguments' members when its
 	// template inherits a parameter (see Parser::parameter_base_lookup).

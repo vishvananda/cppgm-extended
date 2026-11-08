@@ -755,16 +755,18 @@ uint8_t Analyzer::ambiguous_reading(const syntax::AmbiguousStmt& stmt, Scope* sc
 		syntax::Name prefix = *stmt.name;
 		prefix.components.size = stmt.component + 1;
 		const syntax::NameComponent& member = prefix.last();
-		if (prefix.components.size < 2 || member.kind != syntax::NameComponentKind::Identifier)
+		if (member.kind != syntax::NameComponentKind::Identifier)
 			return 0;
-		const NamePrefix found = name_prefix(prefix, scope);
-		if (failed() || (found.dependent == nullptr && found.scope == nullptr))
+		const NamePrefix found = prefix.components.size == 1 ? NamePrefix() : name_prefix(prefix, scope);
+		if (failed() || (prefix.components.size > 1 && found.dependent == nullptr && found.scope == nullptr))
 			return 0;
 		if (found.dependent != nullptr)
 			stmt.dependent = true;
 		else
 		{
-			const LookupResult result = lookup_in(found, member.identifier, LookupFilter::Ordinary);
+			const LookupResult result = prefix.components.size == 1
+				? unqualified(scope, member.identifier, LookupFilter::Ordinary)
+				: lookup_in(found, member.identifier, LookupFilter::Ordinary);
 			if (!result.found())
 				return 0;
 			bool is_template = IsClassTemplate(result.binding);
@@ -1504,6 +1506,8 @@ LookupResult Analyzer::unqualified(Scope* scope, const Identifier* name, LookupF
 		implicit_members_for(found, name);
 	}
 	LookupResult result = names_.unqualified(scope, name, filter);
+	if (deduction_default_context_ != nullptr)
+		result = deduction_default_lookup(scope, name, filter, result);
 	const bool predefined = name == func_ || name == function_name_ || name == pretty_function_;
 	if (!result.found() && filter == LookupFilter::Ordinary && !predefined)
 		return builtin_lookup(name, result);

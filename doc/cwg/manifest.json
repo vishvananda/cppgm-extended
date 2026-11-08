@@ -2207,6 +2207,19 @@
         "historical_edits": "old and new PDF text retained without applying edits; authoritative strikeout/underline formatting preserved in adjacent original PDF"
       },
       "source_pdf_file": "paper-p0170r1.pdf"
+    },
+    {
+      "file": "paper-n4051.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4051.html",
+      "source_html_sha256": "97005234c5724d4075e79a1368cb9b49b8d3a5a528dd690d9c8c844370fa6e94",
+      "text_sha256": "752e19f52ac9c2757ffc904eafd3e41fd2a975419539ee67617fedb5f25a0b27",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08",
+      "paper": "N4051"
     }
   ]
 }

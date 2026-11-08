@@ -337,6 +337,9 @@ non-throwing types, allow discarding the guarantee, and preserve it through
 deduction. Static `constexpr` data members are implicitly inline; definitions
 across translation units denote one object, including arrays and class-valued
 members. PA31's optional suite checks the corresponding host ABI behavior.
+Template template parameters may use either `class` or `typename` in C++17,
+including packs, defaults and alias-template arguments; see
+[N4051](../doc/cwg/paper-n4051.txt). Earlier language modes retain the `class` requirement.
 
 Constructor-based class template argument deduction applies to temporary
 construction and initialized object declarations, including array references,

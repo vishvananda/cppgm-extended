@@ -1,0 +1,94 @@
+Source: https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4051.html
+Full historical text follows; DELETE/INSERT markers preserve, rather than apply, edits.
+
+﻿
+
+ISO/IEC JTC1 SC22 WG21
+N4051
+Richard Smith
+2014-05-26
+
+Allow typename in a template template parameter
+
+Rationale
+
+Since the introduction of alias templates, C++ has had type templates that are not class
+templates, and in particular now has template template arguments that are not class
+templates. However, the syntax for template template parameters still requires the class
+keyword be used:
+
+
+template<typename T> struct A {};
+template<typename T> using B = int;
+
+template<template<typename> class X> struct C;
+C<A> ca; // ok
+C<B> cb; // ok, not a class template
+template<template<typename> typename X> struct D; // error, cannot use typename here
+
+
+The relevant grammar rules are in 14.1 (temp.param) paragraph 1:
+
+type-parameter:
+
+…
+
+class ...opt identifieropt
+
+class identifieropt = id-expression
+
+typename ...opt identifieropt
+
+typename identifieropt = id-expression
+
+template < template-parameter-list > class ...opt identifieropt>
+
+template < template-parameter-list > class identifieropt = id-expression
+
+Note that typename is permitted for non-template type-parameters, but not for template
+type-parameters. This difference is artificial and is a common surprise. Removing it
+would make the language simpler.
+
+Proposed wording
+
+Change in 14.1 (temp.param) paragraph 1:
+
+type-parameter:
+
+…
+
+[DELETE: class] [INSERT: type-parameter-key] ...opt identifieropt
+
+[DELETE: class] [INSERT: type-parameter-key] identifieropt = id-expression
+
+[DELETE: typename ...opt identifieropt]
+
+[DELETE: typename identifieropt = id-expression]
+
+template < template-parameter-list > [DELETE: class] [INSERT: type-parameter-key] ...opt
+identifieropt>
+
+template < template-parameter-list > [DELETE: class] [INSERT: type-parameter-key]
+identifieropt = id-expression
+
+[INSERT: type-parameter-key:]
+
+[INSERT: class]
+
+[INSERT: typename]
+
+Change in 14.1 (temp.param) paragraph 2:
+
+There is no semantic difference between class and typename in a [DELETE:
+template-parameter] [INSERT: type-parameter-key]. typename followed by an unqualified-id
+names a template type parameter. typename followed by a qualified-id denotes the type in
+a non-type [Footnote: …] parameter-declaration. … [Note: A template [DELETE:
+parameter][INSERT: argument] may be a class template [INSERT: or alias template]. For
+example, …]
+
+Change in 14.1 (temp.param) paragraph 3:
+
+A type-parameter whose identifier does not follow an ellipsis defines its identifier to
+be a typedef-name (if declared [DELETE: with class or typename][INSERT: without
+template]) or template-name (if declared with template) in the scope of the template
+declaration. [Note: …]

@@ -115,6 +115,7 @@ Scope* NameScopes::push(ScopeKind kind, const Identifier* name)
 	scope->kind = kind;
 	scope->memo = false;
 	scope->specialization = false;
+	scope->uncertain_bases = current_ != nullptr && current_->uncertain_bases;
 	scope->parameter_bases = 0;
 	scope->id = next_scope_id_++;
 	scope->specialization_visit = 0;
