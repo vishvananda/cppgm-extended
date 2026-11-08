@@ -262,6 +262,10 @@ appears on a later definition. Inline static class members receive their
 required initialization once, including default construction without a written
 initializer.
 
+Hosted C++17 allocation also uses `<new>`'s alignment-aware declarations.
+Preserve placement arguments, array cookies and constructor-failure cleanup
+when selecting and calling allocation/deallocation overloads.
+
 The fixtures ship in `tests/modern-cxx/link/`. Run them explicitly:
 
 ```sh
