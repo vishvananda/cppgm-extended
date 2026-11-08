@@ -298,6 +298,7 @@ void Analyzer::simple_declaration(const syntax::SimpleDecl& decl, Scope* scope)
 			// template must declare a class or function, not a type alias.
 			if (template_scope_ != nullptr && scope == template_scope_)
 				error(decl.location, "a friend type template requires an elaborated type specifier");
+			check_type_packs(specifiers.type, decl.location);
 			const Type* type = specifiers.type->unqualified;
 			if (type->kind == TypeKind::Class && (template_depth_ == 0 || !dependent_type(type)))
 				befriend_class(static_cast<ClassEntity*>(type->entity), scope);

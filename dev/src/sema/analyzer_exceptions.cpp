@@ -396,7 +396,7 @@ void Analyzer::pending_noexcept(FunctionEntity* function, const syntax::Declarat
 	// evaluated when first needed (template definitions wait for their
 	// instances), its declarator's parameters in scope (3.3.4p1).
 	const syntax::Expr* operand = NoexceptOperand(suffix);
-	if (operand == nullptr || (template_depth_ != 0 && !function->templated))
+	if (operand == nullptr)
 		return;
 	// A function template's is its specializations', substituted (see
 	// function_nothrow).
@@ -405,7 +405,7 @@ void Analyzer::pending_noexcept(FunctionEntity* function, const syntax::Declarat
 	noexcept_index_.set(function, static_cast<uint32_t>(noexcepts_.size()));
 	// A class template instance's member waits for its need (14.7.1p1 as
 	// DR 1330 extends it); others are evaluated by the end of the unit.
-	const bool unit = !function->templated && class_instantiations_.empty();
+	const bool unit = template_depth_ == 0 && !function->templated && class_instantiations_.empty();
 	noexcepts_.push_back(PendingNoexcept{ operand, scope, parameters, function, unit, definition_point() });
 	function->noexcept_pending = true;
 	function->nothrow = false;
@@ -539,7 +539,8 @@ void Analyzer::check_redeclared_exceptions(
 	if (!exceptions_ && function->is_operator &&
 		(function->operator_token == TokenKind::KW_NEW || function->operator_token == TokenKind::KW_DELETE))
 		return;
-	if (operand != nullptr && function->templated && template_depth_ != 0)
+	if ((operand != nullptr || function->noexcept_pending) && template_depth_ != 0 &&
+		(function->templated || TemplatedClassScope(function->owner)))
 	{
 		// A function template's: two noexcept(constant-expression)s are
 		// compatible when their expressions are equivalent (15.4p3,
@@ -553,18 +554,34 @@ void Analyzer::check_redeclared_exceptions(
 			// has to agree when its operand is already independent of its head.
 			if (info.parameters != nullptr)
 				scope = prototype_scope(*info.parameters, function->type->params, function->type->param_count, scope);
-			if (fixed_expression(*operand, scope) && !failed() &&
+			if (!fixed_expression(*operand, scope) || failed() ||
 				noexcept_value(function, operand, scope) != function_nothrow(function))
 				error(location, "redeclaration with an incompatible exception-specification");
 			return;
 		}
-		const PendingNoexcept& first = noexcepts_[index];
+		const PendingNoexcept first = noexcepts_[index];
 		const Type* type = function->type;
 		Scope* earlier = first.parameters != nullptr
 			? prototype_scope(*first.parameters, type->params, type->param_count, first.scope)
 			: first.scope;
 		if (info.parameters != nullptr)
 			scope = prototype_scope(*info.parameters, type->params, type->param_count, scope);
+		// Known nonthrowing specifications are compatible regardless of form.
+		// Otherwise a dependent specification must have an equivalent pattern,
+		// including on an ordinary member of a class template (15.4p3-p4).
+		const bool first_fixed = fixed_expression(*first.operand, earlier) && !failed();
+		const bool next_fixed = operand == nullptr || (fixed_expression(*operand, scope) && !failed());
+		if (first_fixed && next_fixed)
+		{
+			const bool before = noexcept_value(function, first.operand, earlier);
+			const bool after = operand != nullptr ? noexcept_value(function, operand, scope)
+												  : NonThrowingSpecification(info.function_suffix);
+			if (before != after)
+				error(location, "redeclaration with an incompatible exception-specification");
+			return;
+		}
+		if (first_fixed != next_fixed)
+			error(location, "redeclaration with an incompatible exception-specification");
 		std::vector<uint64_t>& words = decltype_words_;
 		const size_t base = words.size();
 		bool known = decltype_words(first.operand, earlier);
@@ -684,7 +701,7 @@ bool Analyzer::function_nothrow(const FunctionEntity* entity)
 	// 15.4p12: the noexcept-specification's value, the expression
 	// contextually converted to bool (15.4p1) and evaluated once.
 	FunctionEntity* function = const_cast<FunctionEntity*>(entity);
-	if (!function->noexcept_pending || function->templated)
+	if (!function->noexcept_pending || function->templated || TemplatedClassScope(function->owner))
 		return record_function_exception_type(function);
 	function->noexcept_pending = false;
 	// An inheriting constructor's, from its implicit definition's plan (see

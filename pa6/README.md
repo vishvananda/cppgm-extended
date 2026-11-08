@@ -267,6 +267,9 @@ PA6 must support:
 
 PA6 also rejects the following declaration forms:
 
+- `decltype(auto)` in C++11: this placeholder type is a C++14 extension;
+  ordinary C++11 `decltype(expression)` declarations remain supported
+
 - an object declared with type `void`, which is an incomplete type that can
   never be completed; `void` return types and pointers to `void` remain valid
 - a reference declared without an initializer, except as a parameter, a

@@ -269,6 +269,8 @@ void Analyzer::specifiers(
 				keywords = false;
 			break;
 		case syntax::DeclSpecKind::DecltypeAuto:
+			if (!cxx14_)
+				error(specifier.location, "decltype(auto) requires C++14");
 			named = decltype_auto_placeholder_;
 			break;
 		case syntax::DeclSpecKind::Class:

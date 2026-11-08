@@ -882,7 +882,10 @@ Entity* Analyzer::elaborated_class(
 		if (IsUnion(key) != IsUnion(entity->key))
 			error(name.location, "class-key does not agree with an earlier declaration");
 		if (is_friend)
+		{
+			check_type_packs(entity->type, name.location);
 			befriend_class(entity, scope);
+		}
 		return entity;
 	}
 	// A named member class of an instance is defined when required.
