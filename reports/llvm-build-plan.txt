@@ -261,8 +261,8 @@ ratios are O0 0.999953 and O3 0.999996, with byte-identical objects. The normal
 quick self/seed ratios and kernels remain unchanged, with zero behavior
 failures. Evidence paths use block4-v3 and compiler-block4-v3 outside the repo.
 
-Fifth fix block: GNU frame-address builtin (release validation pending)
---------------------------------------------------------------------
+Fifth validated fix block: GNU frame-address builtin
+--------------------------------------------------
 __builtin_frame_address uses the builtin registry and typed intrinsic facts.
 A frontend-neutral LowIR frame_address operation reads the physical x86-64
 activation frame; a constant nonzero level follows saved frame pointers with
@@ -285,14 +285,23 @@ and O3 1.000922, with byte-identical frozen objects. This is a measured ~0.09%
 O3 cost, not a claim of zero cost. Accepted-parent and final binaries/manifests
 are compiler-block4-v3 and compiler-block5-final outside this checkout.
 
-Strict 9869/9869, debug, modern, PA5 self-host, PA35 correctness smoke and the
-initial student export/wrapper installation pass. The final fixture placement
-and strict rerun include the additional PA32 runtime group (9870 expected).
-Fresh final student export validation and the full PA35 release check remain
-pending; the block is not yet accepted against those gates. The initial full
-release course invocation collided with the smoke runner's shared seed path;
-its student half continues, then the missing course checks must be rerun with
-explicit immutable seed/self/tool paths before the release result is accepted.
+Strict 9870/9870, debug, modern, PA5 self-host, PA35 correctness smoke, final
+fixture placement, fresh student export and all 42 installed wrappers pass.
+Both course and exported compiler builds pass all 17 full PA35 release gates
+with the required release margins. The initial course invocation collided
+with the smoke runner's shared seed path; its successful replacement used
+explicit immutable seed/self/tool paths. All attempted observations remain.
+
+One course scaling observation passed the normal limit but missed the extra
+release headroom: 2.60 growth, from times near the timer's 10 ms resolution.
+A single predefined speed-group recheck measured 2.26, above 32% headroom;
+the student value is 2.35. Independent retained instruction counts on the
+normal template inputs show final-doubling growth of 1.9996218 for the parent
+and 1.9996635 for the candidate, with all emitted objects identical. Preserve
+the original SHORT result, the recheck and counter observations together.
+The accepted release reports combine the rechecked independent speed group
+with the original passing correctness/codegen groups; no other checks or
+thresholds changed. block5-final-release-accepted.log records 17/17 passing.
 
 A fresh full LLVM build with the final frozen compiler reaches the same 638
 dependency steps with eight failed compilations at only two locations: seven
@@ -301,6 +310,13 @@ default in ClangASTNodesEmitter.cpp. These are the dependency frontier, not an
 exhaustive promise about later stages. ProgramStack.cpp and TrieRawHashMap.cpp
 now compile. LLVM sources remain unmodified.
 
-Keep this worktree's source fixed while its release checks finish. Continue
-the two language families in /mnt/vizier/cppgm-llvm-next, based on this block,
-then integrate only after both sets of required validation are complete.
+Continue the language families in /mnt/vizier/cppgm-llvm-next, based on this
+block, then integrate after its own required validation is complete. Its
+experimental constexpr-lambda implementation clears all seven lambda replay
+failures. The expanded build reaches 701 dependency steps and executes the
+cppgm-built llvm-min-tblgen, exposing a separate behavioral mismatch during
+record resolution (24 failed generated outputs share that execution family).
+A 15-line TableGen input reproduces it; native LLVM succeeds. A diagnostic
+link with native Record.cpp succeeds while cppgm's Record.cpp at O0 still
+fails. These hybrid links diagnose the failure and are not completed cppgm
+builds. The tuple compiler error is also still open. LLVM source is unchanged.
