@@ -154,7 +154,9 @@ The reader checks bounds, alternative columns, access promises, references and
 invocation types. Native capability checks are separate: a packet can be
 structurally valid while requiring an unsupported register class, instruction
 form or control-flow feature. Such cases must fail clearly. The current native
-subset is listed in the [handout](README.md).
+subset is listed in the [handout](README.md). VEX instruction operands can use
+literal XMM/YMM views independently of ordinary LowIR value types. Wider typed
+operand bindings and further register classes remain separate capabilities.
 
 ## Nonreturning invocations
 

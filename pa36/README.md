@@ -90,6 +90,15 @@ Nonreturning packets have no outputs and use an explicit `unreachable`
 continuation in LowIR. Validate `lock` against a lockable memory destination and
 repeat prefixes against string instructions. Implicit register operands and
 their clobbers remain the producer's responsibility.
+The VEX form tables in `x86_asm_model.h` add XMM/YMM moves, packed and scalar
+arithmetic, comparisons, shuffles, variable/immediate shifts, lane
+insertion/extraction, broadcasts, mask extraction and fused arithmetic. Preserve
+scalar memory widths and merged upper lanes. Explicit XMM/YMM views must agree
+with the form; reject mixed widths, oversized control bytes and legacy prefixes
+before VEX. Support `vzeroupper` and `vzeroall`. Native observers check CPU support
+before executing feature-dependent forms. Literal wider registers and their
+clobbers do not yet establish wider typed operand or ABI support.
+
 Support named and numeric local labels, forward/backward numeric references,
 GNU `%=` labels, and direct `jmp`/condition-code branches within one template.
 Keep label identities distinct when optimization clones or inlines a template.
