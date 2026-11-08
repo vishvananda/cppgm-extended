@@ -1,0 +1,15 @@
+declare function @external(%arg0 : obj<4x4>) -> i32 [binding=strong, object=_Z8externalN9EnclosingUt_E]
+
+function @read(%value : obj<4x4>) -> i32 [binding=strong, object=_Z4readN9EnclosingUt_E] {
+  slot $value : obj<4x4>
+  slot $argobj__1 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $value
+    copyobj 4x4 %value, %t1
+    %t2 = addr $argobj__1
+    %t3 = addr $value
+    copyobj 4x4 %t3, %t2
+    %t4 = call i32 @external($argobj__1)
+    return i32 %t4
+}
