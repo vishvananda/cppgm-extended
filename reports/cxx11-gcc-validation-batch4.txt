@@ -1,0 +1,127 @@
+GCC C++11 validation batch 4
+2026-11-08 | repair/cxx11-gcc-validation-batch4
+
+Validated source: 7dacbf3aa (compiler/test source 5f08708e847a06879dfbcfcb6035983d98786bcf)
+Compiler SHA256: 59cca9feabe25d20a6d75b6e1d0047d10db8cf6faf04e7a53c94727be1551d46
+
+GCC advances from 3858/4092 to 3906/4092 (95.45%): 48 configurations from
+24 sources newly pass, with zero lost passes. Clang remains 815/815.
+The selected manifests, test expectations and runners are unchanged.
+Remaining: 186 GCC configurations from 93 sources. The inventory distinguishes
+27 likely repair sources, 2 conditional sources and 64 standards/course/vendor/
+adapter reviews. These are source counts, not independent defect counts.
+
+Grouped repairs
+
+Template parameter adjustment and matching, pack expansion and ordering,
+erased-alias substitution obligations and specialization identity are repaired
+at their existing typed boundaries. Initialization repairs preserve viability,
+ranking, selected-candidate access/deletion checks, reference category and
+lifetime, bit-field copies, arrays, function references and literal lookup.
+See the changed source and required fixtures for individual witnesses.
+
+A typed inherited scope fact avoids scanning expressions without visible
+parameter packs. Expanded constructor member initializers retain their already
+parsed expansion context; no token/source reparse or global reject scan is used.
+Scope stays 96 bytes and Conversion stays 56 bytes.
+
+Adopted CWG 1360/P2448R2 permits defaulted constexpr constructors whose scalar
+subobjects lack default member initializers. Actual constant evaluation still
+requires initialized values. Seven guards distinguish value-zero-initialization,
+indeterminate reads, references, deleted constructors and non-constexpr subobjects.
+PA16's existing constructor negative now actually demands an invalid constexpr
+object; no obsolete unused-declaration diagnostic is required. PA7's array
+subscript reference changes lvalue to xvalue under CWG 1213, confirmed by both
+native compilers and generated through normal ref-test. All old observations
+and the exact oracle reviews are retained.
+
+Validation
+
+66 new required fixtures in their earliest owning PA lanes; 264 cells per
+compiler (ISO/GNU C++11 at O0/O2, links/execution where applicable). cppgm and
+GCC pass all 264. Native Clang passes 248; the remaining 16 are four explicit
+primary-backed native lags: bit-field rvalue cast copying, CWG 2267 reference
+list initialization, CWG 1328 function-reference ranking, and unknown-bound
+array empty-list substitution. Native disagreement is retained, not hidden.
+
+All 9665 strict tests and 21 normal stages pass, including affected suites,
+modern C++, debug info, PA5 self-host, inception, all nine architecture/format
+checks, file/placement/document audits, harness, quick and smoke. The final
+normal receipt reuses the first 18 successful stages with explicit provenance
+when the only subsequent change sorted the student document manifest; it reruns
+harness, quick and smoke after that correction.
+
+Export validates all 220 accumulated controls, their companion bytes, changed
+fixtures, 42 reference wrappers, and all 119 offline catalog files. Full pinned
+texts were added for CWG 1299, 1328, 1360, 1495, 1518, 2267, 2894 and 2941,
+and N3922, P0398R0, P0727R0 and P2448R2. The catalog separates paper adoption
+and recorded issue status from the course's compatibility application; it does
+not invent a C++11 retroactivity motion for N3922.
+
+initlist-explicit3.C remains selected and unresolved: it is the exact OPEN
+CWG 2735 question. No unadopted overload preference is implemented merely to
+match native acceptance. variadic36.C newly receives a permitted diagnosis;
+it was an IFNDR-review source, not a mandatory missing diagnostic.
+
+Performance
+
+Actual accepted 9c parent -> final 59 candidate, identical frozen inputs,
+default normal repetitions and unchanged 1.005 instruction budget:
+O0=1.001607, O3=1.000523; exact output objects at both levels.
+The initial prototype's O0=1.007740 failed that budget. Its failed observations
+remain in performance-v1/perf-raw-v1. Cached pack visibility brought the second
+prototype within budget; the final constexpr adjustment was measured again.
+All four final role/level raw observations are hashed in perf-raw-v3.
+Normal quick/self-build ratios: O0=0.996515, O3=1.028587; zero behavior failures,
+all unchanged kernel limits pass. No separate public runtime campaign was run.
+
+Upstream timing (current load; same whole selected manifests)
+
+GCC: cppgm 26.182s, upstream 65.702s, raw ratio 0.398492.
+This ratio is explicitly non-comparable while 186 candidate cases fail.
+Clang: cppgm 3.675s, upstream 25.641s, passing ratio 0.143325.
+These job timings include the declared compile/link/runtime work, and are not
+cross-run performance claims.
+
+Newly passing GCC sources
+
+  alias-decl-80.C
+  alias-decl-ttp2.C
+  constexpr-delegating3.C
+  conv-tmpl5.C
+  explicit10.C
+  implicit-trivial1.C
+  initlist102.C
+  initlist47.C
+  overload-conv-5.C
+  pr32253.C
+  rv-bitfield.C
+  rv-func3.C
+  sfinae12.C
+  sfinae17.C
+  sfinae25.C
+  temp-extend2.C
+  temp_default8.C
+  udlit-namespace-ambiguous.C
+  variadic-ttp7.C
+  variadic121.C
+  variadic130.C
+  variadic36.C
+  vt-58156.C
+  vt-82936.C
+
+Remaining groups (sources/configurations)
+
+  T: 6/12  Templates: validation, substitution, deduction and identity
+  D: 0/0  Declaration grammar and class invariants
+  I: 0/0  Initialization, reference binding, overload ranking and lifetime
+  C: 10/20  Constant evaluation, object facts and cast validation
+  E: 8/16  Implicit object, exception specifications and TU linkage
+  P: 5/10  Declarators, parser disambiguation and literal operator IDs
+  R: 45/90  Standards, source expectations and IFNDR adjudication
+  X: 19/38  Course, language-mode, vendor-extension and adapter policy
+
+Next integrated block: constant evaluation plus remaining template, parser,
+implicit-object, exception and linkage repairs. Preserve the frozen original
+cohort while resolving the remaining standards and applicability reviews.
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/batches/gcc-04/acceptance-v1.json
