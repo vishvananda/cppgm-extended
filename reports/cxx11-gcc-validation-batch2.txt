@@ -1,5 +1,5 @@
 GCC C++11 validation batch 2
-2026-11-08 | repair/cxx 11-gcc-validation-batch 2
+2026-11-08 | repair/cxx11-gcc-validation-batch2
 
 Accepted source: 329d459f412ca4890dba57bbdf7336f4bdcdc61c
 Compiler SHA256: 6f4b519453e001051696800271e206dcc85076ef82c5774cf24094bb0b78f0f0
@@ -104,4 +104,4 @@ Remaining work packages (files/configurations)
 standards/policy/adapter adjudication. Counts are sources, not independent bugs.
 Next block: declaration grammar and class invariants, 18 files.
 
-Evidence: /mnt/vizier/cppgm-cxx 11-upstream/batches/gcc-02/acceptance-v1.json
+Evidence: /mnt/vizier/cppgm-cxx11-upstream/batches/gcc-02/acceptance-v1.json
