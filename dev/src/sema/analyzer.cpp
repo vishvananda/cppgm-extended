@@ -605,7 +605,9 @@ void Analyzer::using_declaration(const syntax::UsingDecl& decl, Scope* scope)
 		ClassEntity* base = static_cast<ClassEntity*>(prefix.entity);
 		// 7.3.3p3: inheriting constructors names a direct base, even when
 		// ordinary member lookup could reach an indirect or virtual base.
-		if (direct_base(derived, base) == nullptr)
+		// A dependent base list is checked when its specialization repeats
+		// this declaration, just as ordinary dependent member using-declarations.
+		if (!templated_class(where) && direct_base(derived, base) == nullptr)
 			error(decl.location, "a constructor using-declaration must name a direct base");
 		derived->inherits_constructors = base;
 		return;
