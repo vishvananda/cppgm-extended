@@ -67,6 +67,8 @@ CWG 1094 | C++11 | cwg-1094.txt
   Converting floating-point values to scoped enumeration types
 CWG 1213 | CD3 | cwg-1213.txt
   Array subscripting and xvalues
+CWG 1307 | C++14 | cwg-1307.txt
+  Overload resolution based on size of array initializer-list
 CWG 1315 | CD4 | cwg-1315.txt
   Restrictions on non-type template arguments in partial specializations
 CWG 1330 | CD3 | cwg-1330.txt
@@ -121,6 +123,8 @@ CWG 1590 | CD4 | cwg-1590.txt
   Local paper: paper-p0135r1.txt
 CWG 1591 | CD4 | cwg-1591.txt
   Deducing array bound and element type from initializer list
+CWG 1601 | C++14 | cwg-1601.txt
+  Promotion of enumeration with fixed underlying type
 CWG 1632 | CD5 | cwg-1632.txt
   Lambda capture in member initializers
   Local paper: paper-p0588r1.txt

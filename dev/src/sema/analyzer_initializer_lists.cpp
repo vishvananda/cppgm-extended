@@ -176,6 +176,7 @@ bool Analyzer::initializer_list_sequence(
 	}
 	sequence.form = ConversionForm::Standard;
 	sequence.constructor = nullptr;
+	sequence.array_list = false;
 	sequence.argument = nullptr;
 	sequence.after = nullptr;
 	sequence.initializer_list = true;
@@ -292,7 +293,10 @@ FunctionEntity* Analyzer::select_list_constructor(ClassEntity* entity, ExprFacts
 		return nullptr;
 	check_inheriting_access(selected, entity, location);
 	if (kind == ConstructionKind::CopyList && selected->is_explicit)
-		error(location, "copy-list-initialization selects an explicit constructor");
+	{
+		substitution_error(location, "copy-list-initialization selects an explicit constructor");
+		return nullptr;
+	}
 	check_not_deleted(selected, location);
 	check_special_access(selected, entity, expression_scope_, location);
 	const Type* parameter = selected->type->canonical->params[0];

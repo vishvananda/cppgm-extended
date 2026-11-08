@@ -313,6 +313,24 @@
       }
     },
     {
+      "issue": 1307,
+      "title": "Overload resolution based on size of array initializer-list",
+      "status": "C++14",
+      "role": "course-reference",
+      "file": "cwg-1307.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1307.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1307.html",
+      "source_html_sha256": "9b2078d2d8d930f68292fde4ab66f916362436de29eee9adaad4a4a1603c372c",
+      "text_sha256": "6ca4cdf35ad08f81090537af163b91b26cf5622a663714b616ae5608a527c2a1",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08"
+    },
+    {
       "issue": 1315,
       "title": "Restrictions on non-type template arguments in partial specializations",
       "status": "CD4",
@@ -663,6 +681,24 @@
       "source_html_sha256": "894e5093b723a78f2b3f5338783f8bc62c08361b4152e8054f9ff9c6f445bc26",
       "text_sha256": "2d29427fce52a7bfd63ba74f59cca7e42a36f9b250baf071582ece4242a4e70e",
       "adopted_papers": []
+    },
+    {
+      "issue": 1601,
+      "title": "Promotion of enumeration with fixed underlying type",
+      "status": "C++14",
+      "role": "course-reference",
+      "file": "cwg-1601.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1601.html",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1601.html",
+      "source_html_sha256": "851ffd6547622a90071e5e74721c6ed9b0a2801b56294261134b9e1c9b11aca0",
+      "text_sha256": "1ae1bc4d2a60a54478e77ae8278cfbc2ee918ec2e2dd5f6882330f699f450cf7",
+      "adopted_papers": [],
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "retrieved": "2026-11-08"
     },
     {
       "issue": 1632,

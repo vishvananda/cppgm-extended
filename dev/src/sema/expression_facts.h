@@ -33,6 +33,8 @@ enum class ValueConversion : uint8_t
 	None,
 	// 4.5, 4.6.
 	IntegralPromotion,
+	// CWG1601: prefer a fixed enum's underlying type to its promotion.
+	FixedEnumPromotion,
 	FloatingPromotion,
 	// 4.7, 4.8, 4.9.
 	IntegralConversion,
@@ -111,6 +113,8 @@ struct Conversion
 	// A braced-init-list converted to std::initializer_list<X> (13.3.3.1.5p2:
 	// its elements' worst conversion), which 13.3.3.2p3 prefers.
 	bool initializer_list;
+	// CWG1307's extent tie-break applies only to array list-initialization.
+	bool array_list;
 	// The type converted to (the reference type for a binding).
 	const Type* target;
 	// The type the standard conversion yields (for a binding, the referenced

@@ -1012,6 +1012,7 @@ bool Analyzer::list_sequence(const syntax::BracedInitList& list, const Type* par
 		sequence.form = ConversionForm::Standard;
 		sequence.result = target;
 		sequence.target = parameter;
+		sequence.array_list = true;
 		if (reference)
 		{
 			sequence.form = ConversionForm::Reference;

@@ -1163,7 +1163,10 @@ const Type* Analyzer::decltype_type(const syntax::Expr& operand, Scope* scope)
 				return nullptr;
 			const Entity* function = set != nullptr ? set->binding->entity : binding->entity;
 			if ((set != nullptr && set->next != nullptr) || static_cast<const FunctionEntity*>(function)->templated)
-				error(expr->location, "decltype of an overloaded function");
+			{
+				substitution_error(expr->location, "decltype of an overloaded function");
+				return nullptr;
+			}
 			// A function's type has its parameters adjusted (8.3.5p5).
 			if (cxx17_)
 				function_nothrow(static_cast<const FunctionEntity*>(function));
@@ -1173,7 +1176,8 @@ const Type* Analyzer::decltype_type(const syntax::Expr& operand, Scope* scope)
 		case BindingKind::Enumerator:
 			return static_cast<const EnumeratorEntity*>(binding->entity)->value.type;
 		default:
-			error(expr->location, "decltype operand is not an expression");
+			substitution_error(expr->location, "decltype operand is not an expression");
+			return nullptr;
 		}
 		// An entity of dependent type named in a template definition: the
 		// decltype-specifier is dependent (14.6.2.2p3), a placeholder, not its

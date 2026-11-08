@@ -1106,7 +1106,10 @@ FunctionEntity* Analyzer::select_constructor(ClassEntity* entity, const syntax::
 		return nullptr;
 	check_inheriting_access(selected, entity, location);
 	if (kind == ConstructionKind::CopyList && selected->is_explicit)
-		error(location, "copy-list-initialization selects an explicit constructor");
+	{
+		substitution_error(location, "copy-list-initialization selects an explicit constructor");
+		return nullptr;
+	}
 	check_not_deleted(selected, location);
 	check_special_access(selected, entity, expression_scope_, location);
 	if (elide != nullptr && *elide)
@@ -1145,7 +1148,10 @@ FunctionEntity* Analyzer::initialize_class(
 	// 8.5p16 for a class object.
 	expression_scope_ = scope;
 	if (!require_complete(entity) || entity->scope == nullptr)
-		error(location, "initialization of an incomplete class object");
+	{
+		substitution_error(location, "initialization of an incomplete class object", true);
+		return nullptr;
+	}
 	const syntax::BracedInitList* list = nullptr;
 	if (init.kind == syntax::InitializerKind::Braced ||
 		(init.kind == syntax::InitializerKind::Assign && init.expression->kind == syntax::ExprKind::BracedInit))
@@ -1511,7 +1517,10 @@ FunctionEntity* Analyzer::initialize_object(
 			return nullptr;
 		}
 		if (init.arguments.size != 1)
-			error(location, "direct-initialization from several values");
+		{
+			substitution_error(location, "direct-initialization from several values");
+			return nullptr;
+		}
 		single = init.arguments[0];
 		direct = true;
 		break;

@@ -764,6 +764,19 @@ bool Analyzer::match_template_arguments(const TemplateHead* head, const Type* co
 				: nullptr;
 			if (pattern != nullptr && pattern->kind == TypeKind::Expansion)
 				pattern = pattern->element;
+			if (size == 0 && pattern != nullptr)
+			{
+				// An empty pack still substitutes its parameter type. An
+				// expansion of outer packs instead creates no parameter.
+				PackList packs;
+				TypeList bound;
+				unexpanded_packs(pattern, kAnyDepth, packs, &bound);
+				if (packs.empty() && bound.empty() &&
+					substitute(pattern,
+						Substitution{ parameter->depth, out.data(), static_cast<uint32_t>(out.size()), nullptr }) ==
+						nullptr)
+					return false;
+			}
 			for (uint32_t j = 0; j < size; ++j)
 			{
 				const Type* target = pattern != nullptr

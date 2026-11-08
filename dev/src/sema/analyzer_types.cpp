@@ -1254,6 +1254,13 @@ const Type* Analyzer::checked_pointer(const Type* pointee, uint32_t location)
 
 const Type* Analyzer::checked_array(const Type* element, uint64_t bound, uint32_t location)
 {
+	// Even a byte array cannot exceed the implementation's signed offset
+	// range. Check the type itself, including an unused substituted default.
+	if (bound > uint64_t(INT64_MAX))
+	{
+		substitution_error(location, "an array bound exceeds PTRDIFF_MAX");
+		return nullptr;
+	}
 	// 8.3.4p1: no arrays of references, void, functions or arrays of
 	// unknown bound, nor of an abstract class (10.4p3; a complete class's).
 	const char* failure = element->is_reference()                           ? "array of references"

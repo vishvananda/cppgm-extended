@@ -230,6 +230,9 @@ bool ConversionRules::reference_related(const Type* a, const Type* b)
 		return true;
 	if (function_conversion(b, a))
 		return true;
+	bool added = false, convertible = false;
+	if (IsPointerLike(a) && IsPointerLike(b) && SimilarLevels(a, b, added, convertible))
+		return true;
 	return is_base_of(ClassEntityOf(a), ClassEntityOf(b));
 }
 
@@ -379,7 +382,10 @@ bool ConversionRules::value_conversion(
 	// 4.5, 4.6: promotions.
 	if (IsIntegralPromotion(types_, source, goal))
 	{
-		out.second = ValueConversion::IntegralPromotion;
+		out.second = source->kind == TypeKind::Enum && static_cast<const EnumEntity*>(source->entity)->fixed &&
+				static_cast<const EnumEntity*>(source->entity)->underlying == goal
+			? ValueConversion::FixedEnumPromotion
+			: ValueConversion::IntegralPromotion;
 		out.rank = ConversionRank::Promotion;
 		out.result = goal;
 		return true;
@@ -510,11 +516,18 @@ bool ConversionRules::reference(const Operand& from, const Type* target, Convers
 	const Type* referenced = target->element;
 	const Type* source = from.type->canonical;
 	const bool related = reference_related(referenced, source);
-	const bool compatible = related && (CvOf(source) & ~CvOf(referenced)) == 0;
+	bool compatible = related && (CvOf(source) & ~CvOf(referenced)) == 0;
+	if (compatible && IsPointerLike(source) && IsPointerLike(referenced) &&
+		without_cv(source) != without_cv(referenced))
+	{
+		compatible = qualification_convertible(types_.pointer(source), types_.pointer(referenced->canonical));
+		out.qualification = compatible;
+	}
 	const bool function_lvalue = source->kind == TypeKind::Function && from.category == ValueCategory::LValue;
 	out.function_lvalue = function_lvalue;
 	const bool function_adjustment = function_conversion(source, referenced);
-	const bool derived = related && without_cv(source) != without_cv(referenced) && !function_adjustment;
+	const bool derived = related && source->unqualified->kind == TypeKind::Class &&
+		without_cv(source) != without_cv(referenced) && !function_adjustment;
 	if (function_adjustment)
 		out.second = ValueConversion::FunctionPointer;
 	const bool const_lvalue = !rvalue_reference && CvOf(referenced) == kConst;
@@ -608,6 +621,10 @@ int ConversionRules::compare(const Conversion& a, const Conversion& b)
 	// std::initializer_list<X> beats one that does not.
 	if (a.initializer_list != b.initializer_list)
 		return a.initializer_list ? 1 : -1;
+	// CWG1307: the same array element type, initialized from a list,
+	// prefers the smaller viable bound. Ordinary array bindings do not.
+	if (a.array_list && b.array_list && a.result->element == b.result->element && a.result->bound != b.result->bound)
+		return a.result->bound < b.result->bound ? 1 : -1;
 	if (a_user && a.constructor != b.constructor)
 		return 0;
 	// One conversion function: its second standard conversions decide.
@@ -623,6 +640,10 @@ int ConversionRules::compare(const Conversion& a, const Conversion& b)
 		return a.qualification ? -1 : 1;
 	if (a.rank != b.rank)
 		return a.rank < b.rank ? 1 : -1;
+	if (a.second == ValueConversion::FixedEnumPromotion && b.second == ValueConversion::IntegralPromotion)
+		return 1;
+	if (b.second == ValueConversion::FixedEnumPromotion && a.second == ValueConversion::IntegralPromotion)
+		return -1;
 	// p4: of the same rank, a conversion that does not convert a pointer,
 	// member pointer or nullptr_t to bool beats one that does.
 	const bool a_bool = a.second == ValueConversion::PointerBoolean;
