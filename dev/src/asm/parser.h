@@ -60,6 +60,9 @@ struct Operand
 	Address address;
 	uint64_t immediate = 0;
 	uint16_t bits = 0;
+	uint8_t mask = 0;
+	bool zero = false;
+	uint8_t broadcast = 0;
 	std::string target;
 	uint32_t label = 0;
 	bool external_label = false;

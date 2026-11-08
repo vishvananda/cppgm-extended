@@ -120,6 +120,15 @@ functions; callers retain ordinary typed declarations. Keep raw bodies opaque
 to inlining and return/argument inference. Request initial unwind state for GNU naked functions; describe subsequent
 stack and saved-register changes explicitly with the directives below.
 
+EVEX supplements add the supplied XMM/YMM/ZMM forms and register views through
+31. Preserve write masks, merge/zero behavior, supported memory broadcasts and
+compressed displacement scaling. Several families have no mask encoding;
+reject unsupported decorations rather than ignoring them. `kmovb/w/d/q`
+transports mask values between mask registers, matching memory and GPR views.
+Static rounding, suppression modifiers, mask-valued comparisons and additional
+ISA forms remain further goals. Literal extended views do not yet establish
+extended-register or 512-bit typed operand bindings.
+
 LowIR selects the initial dialect; the GNU source adapter starts in AT&T.
 Honor `.intel_syntax` and `.att_syntax` with `prefix`/`noprefix` register modes.
 Syntax changes preserve the block's named and numeric labels. Choose one
@@ -226,6 +235,8 @@ These targets use the shared Perl parallel runner and comparer. Set
 when iterating. Set both `CXX` and
 `CPPGM_HOST_CXX` when selecting a host toolchain. The observer needs `objdump`
 on Linux or `otool` on Intel macOS.
+A `.assembly-instructions` sidecar lists requested mnemonics to inspect even
+when the observer skips native execution on a CPU without the required ISA.
 A fixture using absolute text addresses declares `no-pie` in its
 `.assembly-link-mode` sidecar; other fixtures use the host's default link mode.
 

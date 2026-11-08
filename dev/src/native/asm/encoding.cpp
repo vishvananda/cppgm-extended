@@ -7,6 +7,8 @@
 #include "native/asm/integer_forms.h"
 #include "native/asm/operands.h"
 #include "native/asm/vex_forms.h"
+#include "native/asm/evex_forms.h"
+#include "native/asm/mask_forms.h"
 #include "native/backend_error.h"
 
 namespace native {
@@ -157,7 +159,10 @@ void vector(Assembler& out, const assembly::Instruction& inst, const Form& form)
 
 void encode_instruction(Assembler& out, const assembly::Instruction& inst)
 {
-	if (!inst.mnemonic.empty() && inst.mnemonic[0] == 'v' && encode_vex_form(out, inst))
+	if (!inst.mnemonic.empty() && inst.mnemonic[0] == 'v' &&
+		(encode_evex_form(out, inst) || encode_vex_form(out, inst)))
+		return;
+	if (!inst.mnemonic.empty() && inst.mnemonic[0] == 'k' && encode_mask_form(out, inst))
 		return;
 	uint16_t suffix = 0;
 	const Form* form = asm_detail::assembly_form(inst.mnemonic, suffix, static_cast<uint32_t>(inst.operands.size()));
@@ -231,6 +236,10 @@ void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& i
 			out.bind(labels[&inst - instructions.data()]);
 			continue;
 		}
+		if (inst.mnemonic.empty() || inst.mnemonic[0] != 'v')
+			for (const auto& operand : inst.operands)
+				if (operand.mask || operand.zero || operand.broadcast)
+					fail(inst, "decorator requires an EVEX instruction form");
 		if (!encode_assembly_branch(out, inst, labels))
 		{
 			const size_t first = out.fixups().size();
