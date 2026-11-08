@@ -136,8 +136,8 @@ used to select a program for optimization.
    allocation, machine cleanup and layout in the compile-time investigation.
    Profile repeated graph construction, unchanged dataflow inputs, register
    effects and unnecessary queries. Preserve typed facts and respect the
-   mutations that invalidate them. The first change makes register-home
-   forwarding cheaper; [the measurements](codegen-pass-efficiency-20261108.md)
+   mutations that invalidate them. Register-home forwarding and the allocator's
+   pressure tree now perform less work; [the measurements](codegen-pass-efficiency-20261108.md)
    include a frozen compiler rebuild with byte-identical output.
 2. **Carry register equivalence across joins.** In the generated type hash,
    incoming phi transfers leave two registers equal, then the join copies one

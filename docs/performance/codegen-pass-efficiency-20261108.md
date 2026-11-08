@@ -1,7 +1,8 @@
 # Producing the same machine code with less work
 
-This change reduces the implementation cost of register-home forwarding in
-the native backend. It preserves the analysis lattice, predecessor order,
+These changes reduce the implementation cost of register-home forwarding and
+register allocation in the native backend. Register-home forwarding preserves
+the analysis lattice, predecessor order,
 reverse-postorder rounds, transfer rules, rewrite order and chosen registers.
 The baseline is `e28ecf189`, including the frontend dependence-cache change.
 This is maintainer measurement material, outside the student export.
@@ -83,6 +84,75 @@ variation. The self-built flat-map case has the clearest gain: its three paired
 scores are 1.0101×, 1.0072× and 1.0057×. These measurements support a small
 timing benefit, without establishing a general 1% wall-time improvement.
 
+## Pressure-tree follow-up
+
+The allocator's pressure tree tracks maximum register pressure and the
+registers assigned over instruction ranges. Its values and allocation choices
+stay the same; the implementation avoids repeated work:
+
+- Rebuild the two update paths until they join, then rebuild their shared
+  ancestors once.
+- Stop a query's ancestor walk when that side has no maximum to contribute.
+- Use node zero for an inactive boundary instead of carrying two separate
+  flags through the hot queries. Shifting zero keeps that boundary inactive.
+
+The following scores compare this follow-up with `3549afc87`, which already
+contains the register-home change. They are additional instruction savings,
+using the same three frozen inputs and immutable compiler controls.
+
+| Frozen input | GCC-built instructions ↑ | Self-built instructions ↑ |
+| --- | ---: | ---: |
+| Compiler loop workload | 1.0023× | 1.0028× |
+| Semantic workload | 1.0022× | 1.0025× |
+| Boost flat-map workload | 1.0038× | 1.0041× |
+
+On the quiet EPYC VM, the final implementation has these CPU scores:
+
+| Frozen input | GCC-built A/A | GCC-built CPU ↑ | Self-built A/A | Self-built CPU ↑ |
+| --- | ---: | ---: | ---: | ---: |
+| Compiler loop workload | 0.9996× | 1.0029× | 0.9988× | 1.0060× |
+| Semantic workload | 1.0002× | 1.0048× | 0.9975× | 1.0087× |
+| Boost flat-map workload | 1.0045× | 1.0032× | 1.0013× | 1.0054× |
+
+Every one of the eighteen paired blocks is faster. Calibration still limits
+the precision of small timing gains, but there is no repeated slowdown in
+these controls. Earlier versions showed small timing dips; a retained
+ten-block recheck did not reproduce the flat-map slowdown. The final version
+above was measured separately, with all 132 observations retained.
+
+All versions pass 526,336 range queries against a flat-array oracle. The final
+version also rebuilds all 321 frozen compiler objects and the linked executable
+byte for byte. A narrower integer-extension eligibility scan produced almost
+no instruction benefit and remains outside production.
+
+## Complete frozen compiler rebuild
+
+The full workload compiles the frozen `e28ecf189` compiler sources, rather than
+only selected translation units. Each side gets an A/A block and an ABBA
+comparison, with twelve workers pinned to the same six physical Intel cores
+and their SMT siblings. The measurement includes all build descendants and
+retains all commands, source/binary hashes, counters and output hashes. Every
+rebuild produces the same 321 objects and executable.
+
+| Compiler implementation | A/A instructions | Final instruction efficiency ↑ |
+| --- | ---: | ---: |
+| GCC-built | 1.0008× | 1.0023× |
+| Self-built | 0.9988× | 1.0034× |
+
+The complete rebuild saves about **0.23% and 0.34% of instructions** respectively.
+Its gain is smaller than the **0.7–1.5%** instruction reduction in the three
+selected workloads. The full report therefore keeps the complete-workload
+result separate from those screening inputs. Local CPU ratios are 0.9986× and
+0.9959×, with A/A ratios 1.0113× and 0.9890×; this loaded-host timing does not
+resolve changes below one percent.
+
+The full-workload instruction score for self-built versus GCC-built cppgm is
+1.0046× before these changes and 1.0060× afterward. The self-built compiler
+already executes fewer instructions overall, while executing more branches.
+Further generated-code work needs branch and latency attribution as well as
+instruction counts; retiring fewer instructions alone does not explain its
+remaining execution-time gap.
+
 ## Output and correctness
 
 All `-O0` and `-O3` measured objects match their baseline byte for byte. As a
@@ -91,10 +161,10 @@ all **321 objects** match, and the linked self-built compiler has the same
 SHA-256, `ab701839743b3504f32ab951e7fec9e46709119ae1447b96400bb66281b218c1`.
 This checks existing compiler output across the complete implementation.
 
-The qualified native compiler matches the final measured native binary. The
-profiled and final measured variants also have identical native `.text` on
-each toolchain; differences in private source-file metadata do not affect the
-measured instructions.
+The qualified native compiler's `.text` matches the final measured native
+binary. The register-home phase profiles measure the first qualified change
+separately from the pressure-tree follow-up. Private source-file metadata
+differences do not affect the measured instructions.
 
 - Strict report: 9,860/9,860; debug-info suites pass.
 - Optional C++14/17, 120 target-feature and 182 assembly checks pass.
@@ -111,8 +181,10 @@ change without prescribing a student's optimizer algorithm.
 ## Remaining pass work
 
 Continue profiling allocation, branch placement and integer-range propagation.
-Look for repeated ancestor updates, graph construction within an unchanged
-phase, and dataflow visits whose inputs did not change. Reuse facts only while
+Attribute the additional branches in full compiler rebuilds, then inspect the
+hot conditional choices, call boundaries and loop paths. Also look for graph
+construction within an unchanged phase and dataflow visits whose inputs did
+not change. Reuse facts only while
 their owning representation remains unchanged. Preserve deterministic choices
 and verify complete output equality for implementation-only changes.
 

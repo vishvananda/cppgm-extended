@@ -71,8 +71,9 @@ int32_t PressureTree::max(uint32_t first, uint32_t last) const
 	const int32_t none = INT32_MIN / 2;
 	int32_t left = none, right = none;
 	size_t l = first + size_, r = last + size_;
-	size_t la = first + size_ - 1, ra = last + size_ + 1; // (valid past the ends: no adds there)
-	const bool left_edge = first != 0, right_edge = last + 1 != size_;
+	// Node zero represents an inactive boundary; shifting keeps it inactive.
+	size_t la = first == 0 ? 0 : first + size_ - 1;
+	size_t ra = last + 1 == size_ ? 0 : last + size_ + 1;
 	while (l <= r)
 	{
 		if (l & 1)
@@ -89,23 +90,21 @@ int32_t PressureTree::max(uint32_t first, uint32_t last) const
 		r >>= 1;
 		la >>= 1;
 		ra >>= 1;
-		if (left_edge && la != 0 && left != none)
+		if (la != 0 && left != none)
 			left += add_[la];
-		if (right_edge && ra != 0 && right != none)
+		if (ra != 0 && right != none)
 			right += add_[ra];
 	}
 	// Above the last level both sides share their ancestors.
-	for (; la > 1 && left_edge;)
+	for (; la > 1 && left != none;)
 	{
 		la >>= 1;
-		if (left != none)
-			left += add_[la];
+		left += add_[la];
 	}
-	for (; ra > 1 && right_edge;)
+	for (; ra > 1 && right != none;)
 	{
 		ra >>= 1;
-		if (right != none)
-			right += add_[ra];
+		right += add_[ra];
 	}
 	return left > right ? left : right;
 }
@@ -134,16 +133,21 @@ void PressureTree::add(uint32_t first, uint32_t last, int32_t delta, uint32_t re
 		l >>= 1;
 		r >>= 1;
 	}
-	for (size_t i = l0 >> 1; i != 0; i >>= 1)
+	// Rebuild separate boundary paths up to their join, then their common path.
+	auto pull = [&](size_t node) {
+		max_[node] = (max_[2 * node] > max_[2 * node + 1] ? max_[2 * node] : max_[2 * node + 1]) + add_[node];
+		below_[node] = below_[2 * node] | below_[2 * node + 1] | cover_[node];
+	};
+	size_t left = l0 >> 1, right = r0 >> 1;
+	while (left != right)
 	{
-		max_[i] = (max_[2 * i] > max_[2 * i + 1] ? max_[2 * i] : max_[2 * i + 1]) + add_[i];
-		below_[i] = below_[2 * i] | below_[2 * i + 1] | cover_[i];
+		pull(left);
+		pull(right);
+		left >>= 1;
+		right >>= 1;
 	}
-	for (size_t i = r0 >> 1; i != 0; i >>= 1)
-	{
-		max_[i] = (max_[2 * i] > max_[2 * i + 1] ? max_[2 * i] : max_[2 * i + 1]) + add_[i];
-		below_[i] = below_[2 * i] | below_[2 * i + 1] | cover_[i];
-	}
+	for (; left != 0; left >>= 1)
+		pull(left);
 }
 
 uint32_t PressureTree::regs(uint32_t first, uint32_t last) const
@@ -153,8 +157,9 @@ uint32_t PressureTree::regs(uint32_t first, uint32_t last) const
 	uint32_t mask = 0;
 	bool left = false, right = false;
 	size_t l = first + size_, r = last + size_;
-	size_t la = first + size_ - 1, ra = last + size_ + 1;
-	const bool left_edge = first != 0, right_edge = last + 1 != size_;
+	// Node zero represents an inactive boundary; shifting keeps it inactive.
+	size_t la = first == 0 ? 0 : first + size_ - 1;
+	size_t ra = last + 1 == size_ ? 0 : last + size_ + 1;
 	while (l <= r)
 	{
 		if (l & 1)
@@ -171,14 +176,14 @@ uint32_t PressureTree::regs(uint32_t first, uint32_t last) const
 		r >>= 1;
 		la >>= 1;
 		ra >>= 1;
-		if (left && left_edge && la != 0)
+		if (left && la != 0)
 			mask |= cover_[la];
-		if (right && right_edge && ra != 0)
+		if (right && ra != 0)
 			mask |= cover_[ra];
 	}
-	for (; la > 1 && left && left_edge;)
+	for (; la > 1 && left;)
 		mask |= cover_[la >>= 1];
-	for (; ra > 1 && right && right_edge;)
+	for (; ra > 1 && right;)
 		mask |= cover_[ra >>= 1];
 	return mask;
 }
