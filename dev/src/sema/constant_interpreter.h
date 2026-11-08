@@ -272,6 +272,11 @@ private:
 
 	// --------------------------------------------------- construction
 	bool materialize(const syntax::Expr& expr, const ConstPlace& target);
+	bool closure_object(const syntax::LambdaExpr& expr, const ConstPlace& target);
+	bool closure_capture(const Capture& capture, const ConstPlace& target, uint32_t location);
+	bool copy_closure_capture(const Type* type, const FunctionEntity* constructor, const ConstPlace& target,
+		const ConstPlace& source, uint32_t location);
+	bool bind_closure_captures(const FunctionEntity* function, const ConstPlace& object, uint32_t location);
 	bool temporary(const syntax::Expr& expr, ConstPlace& out);
 	bool initialize_from(const syntax::Expr& expr, const Conversion* conversion, const ConstPlace& target);
 	bool construct(const Type* type, const ConstPlace& target, const syntax::Initializer* init,

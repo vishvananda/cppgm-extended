@@ -425,3 +425,6 @@ CWG 2173 | open | cwg-2173.txt
 CWG 2327 | drafting | cwg-2327.txt
   Copy elision for direct-initialization with a conversion function
   (optional hosted compatibility; no adoption claim).
+
+P0170R1 | Wording for Constexpr Lambda | paper-p0170r1.txt
+  C++17 closure literal types, constexpr call operators and conversion functions.

@@ -119,6 +119,8 @@ bool ConstantInterpreter::materialize(const syntax::Expr& expr, const ConstPlace
 	}
 	switch (e->kind)
 	{
+	case syntax::ExprKind::Lambda:
+		return closure_object(static_cast<const syntax::LambdaExpr&>(*e), target);
 	case syntax::ExprKind::FunctionalCast:
 	{
 		const syntax::FunctionalCastExpr& cast = static_cast<const syntax::FunctionalCastExpr&>(*e);

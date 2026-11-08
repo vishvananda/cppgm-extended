@@ -1014,6 +1014,19 @@ bool ConstantInterpreter::this_place(ConstPlace& out, uint32_t location)
 	if (!frames_.back().has_this)
 		return fail(location, "`this` outside a constexpr member function call");
 	out = frames_.back().self;
+	const FunctionEntity* function = frames_.back().function;
+	const ClosureFacts* closure = function != nullptr && function->owner != nullptr &&
+			function->owner->kind == ScopeKind::Class
+		? analyzer_.graph_.closure_facts(static_cast<const ClassEntity*>(function->owner->entity))
+		: nullptr;
+	if (closure != nullptr && closure->this_member != nullptr)
+	{
+		ConstPlace member;
+		ConstValue pointer;
+		if (!member_place(out, closure->this_member, member, location) || !read(member, pointer, location))
+			return false;
+		out = PlaceOf(pointer, closure->this_member->type->element);
+	}
 	return true;
 }
 

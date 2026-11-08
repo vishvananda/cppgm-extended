@@ -137,6 +137,8 @@ doc/cwg/paper-n3922.txt
 doc/cwg/paper-n4918.txt
 doc/cwg/paper-p0135r1.txt
 doc/cwg/paper-p0136r1.txt
+doc/cwg/paper-p0170r1.pdf
+doc/cwg/paper-p0170r1.txt
 doc/cwg/paper-p0398r0.txt
 doc/cwg/paper-p0490r0.txt
 doc/cwg/paper-p0527r1.txt

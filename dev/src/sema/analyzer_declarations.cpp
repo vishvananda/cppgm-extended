@@ -1506,6 +1506,9 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 	// 12.4p11: the object's destruction where its storage duration ends.
 	if (typed_initialization && definition && !member)
 		check_destruction(type, scope, location);
+	if (cxx17_ && body_ != nullptr && body_->lambda != nullptr && where->kind == ScopeKind::Block && definition &&
+		template_depth_ == 0)
+		constexpr_lambda_local(variable, initializer, location);
 	// One without, by its default constructor or destructor.
 	if (counted && initializer == nullptr && !pattern_body &&
 		((variable->constructor != nullptr && !variable->constructor->trivial) || nontrivial_destruction(type)))

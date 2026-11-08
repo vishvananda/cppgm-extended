@@ -933,6 +933,8 @@ void AstDumper::lambda(const LambdaExpr& lambda)
 		parameter_clause(*lambda.parameters);
 		if (lambda.is_mutable)
 			line("lambda-specifier", TokenText(TokenKind::KW_MUTABLE));
+		if (lambda.is_constexpr)
+			line("lambda-specifier", TokenText(TokenKind::KW_CONSTEXPR));
 		if (lambda.has_noexcept)
 		{
 			open("noexcept-specification");

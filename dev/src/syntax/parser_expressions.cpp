@@ -1402,7 +1402,17 @@ Expr* Parser::parse_lambda()
 		// GNU attributes may come before the specifiers.
 		if (!collect_attributes(lambda->attributes))
 			return nullptr;
-		lambda->is_mutable = accept(TokenKind::KW_MUTABLE);
+		while (at(TokenKind::KW_MUTABLE) || at(TokenKind::KW_CONSTEXPR))
+		{
+			bool& specifier = at(TokenKind::KW_MUTABLE) ? lambda->is_mutable : lambda->is_constexpr;
+			if (specifier)
+			{
+				fail();
+				return nullptr;
+			}
+			specifier = true;
+			next();
+		}
 		if (accept(TokenKind::KW_NOEXCEPT))
 		{
 			lambda->has_noexcept = true;

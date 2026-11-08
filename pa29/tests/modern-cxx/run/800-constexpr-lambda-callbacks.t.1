@@ -1,0 +1,27 @@
+// P0170R1: inferred constexpr call operators and captureless conversion
+// functions, including a constexpr callback initializer inside a template.
+template<class T> struct Holder {
+  struct Callback { int (*call)(int); };
+  static int invoke(int value) { return value + sizeof(T); }
+  inline static auto callback = []() constexpr { return Callback{&invoke}; }();
+};
+constexpr auto generic = [](auto value) {
+  if constexpr (__is_same(decltype(value), int)) return value + 1;
+  else return value + 2;
+};
+constexpr int (*function)(int) = [](int value) { return value + 1; };
+constexpr int empty_local() {
+  struct Empty {};
+  Empty value;
+  return []() { return 7; }();
+}
+struct Nonliteral { Nonliteral() {} };
+auto runtime_only = [](Nonliteral) { return 7; };
+static_assert(generic(2) == 3 && generic(2L) == 4L, "generic specializations");
+static_assert(function(6) == 7 && empty_local() == 7, "function conversion");
+int main() {
+  volatile int value = 5;
+  return Holder<short>::callback.call(value) == value + sizeof(short)
+    && function(value) == 6 && generic(value) == 6
+    && runtime_only(Nonliteral{}) == 7 ? 0 : 1;
+}

@@ -2193,6 +2193,20 @@
       },
       "retrieved": "2026-11-08",
       "paper": "N4918"
+    },
+    {
+      "paper": "P0170R1",
+      "file": "paper-p0170r1.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0170r1.pdf",
+      "source_pdf_sha256": "50e9eb2c270a2cd0b2c40a275c8f27a1caa025a38cd43ca41c62f4b8f5d7834a",
+      "text_sha256": "8dde490b10f754a9e238238c8924f0dc0b0c2f3dd465b4a6f503dc50492b4996",
+      "text_renderer": {
+        "module": "pypdf",
+        "version": "7.0.0",
+        "mode": "layout",
+        "historical_edits": "old and new PDF text retained without applying edits; authoritative strikeout/underline formatting preserved in adjacent original PDF"
+      },
+      "source_pdf_file": "paper-p0170r1.pdf"
     }
   ]
 }

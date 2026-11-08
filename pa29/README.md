@@ -309,6 +309,14 @@ to their parameters and captured objects through the closure's stored members.
 An explicit lambda trailing return type can itself be `auto` in C++14 and
 later; deduce it from the body while preserving `decltype(auto)`'s reference
 semantics and the restrictions on nested function types.
+The optional C++17 lane also evaluates lambda closure objects in constant
+expressions, following [P0170R1's offline text](../doc/cwg/paper-p0170r1.txt).
+The original PDF is retained beside that text for its change formatting.
+Call operators can be explicitly or implicitly constexpr; captured values,
+references, initialized captures and captured `this` retain their normal
+object identity and lifetime. Non-generic captureless conversions yield
+function pointers that preserve the call operator's constexpr eligibility. A static local or
+other forbidden constexpr body construct prevents an inferred constant call.
 In C++14 and later, contextual conversions such as array bounds and switch
 conditions can select among cv-qualified conversion overloads when all viable
 conversions lead to one permitted type. Distinct result types remain ambiguous.

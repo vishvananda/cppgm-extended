@@ -52,6 +52,8 @@ const syntax::Expr* WithoutParentheses(const syntax::Expr* expr)
 
 ExprFacts* Analyzer::lambda_expression(const syntax::LambdaExpr& expr, Scope* scope)
 {
+	if (expr.is_constexpr && !cxx17_)
+		error(expr.location, "a constexpr lambda requires C++17");
 	// p2: no lambda-expression appears in an unevaluated operand (sizeof's,
 	// decltype's, noexcept's; an auto variable's initializer is none, see
 	// deduced_type).
@@ -228,7 +230,7 @@ FunctionEntity* Analyzer::templated_closure_call(
 		syntax::NameComponent component;
 		syntax::DeclaratorSuffix suffix;
 		syntax::FunctionQualifier qualifiers[4];
-		syntax::DeclSpecifier specifier;
+		syntax::DeclSpecifier specifiers[2];
 		syntax::ParameterClause none;
 		syntax::Decl* list[1];
 	};
@@ -272,12 +274,14 @@ FunctionEntity* Analyzer::templated_closure_call(
 	built->declarator.location = expr.location;
 	built->declarator.name = &built->name;
 	built->declarator.suffixes = syntax::Slice<syntax::DeclaratorSuffix>{ &built->suffix, 1 };
-	built->specifier.kind = syntax::DeclSpecKind::Keyword;
-	built->specifier.keyword = TokenKind::KW_AUTO;
-	built->specifier.location = expr.location;
+	built->specifiers[0].kind = syntax::DeclSpecKind::Keyword;
+	built->specifiers[0].keyword = TokenKind::KW_AUTO;
+	built->specifiers[0].location = expr.location;
+	built->specifiers[1] = built->specifiers[0];
+	built->specifiers[1].keyword = TokenKind::KW_CONSTEXPR;
 	built->function.kind = syntax::DeclKind::Function;
 	built->function.location = expr.location;
-	built->function.specifiers = syntax::Slice<syntax::DeclSpecifier>{ &built->specifier, 1 };
+	built->function.specifiers = syntax::Slice<syntax::DeclSpecifier>{ built->specifiers, cxx17_ ? 2u : 1u };
 	built->function.declarator = &built->declarator;
 	built->function.body.body = expr.body;
 	built->templ.kind = syntax::DeclKind::Template;
@@ -614,6 +618,15 @@ bool Analyzer::capture_variable(const Entity* entity, uint32_t location, bool de
 			break;
 		if (context->lambda == nullptr)
 			return false;
+		// An initialized capture's object already belongs to a closure,
+		// including one declared at namespace scope. Its established
+		// capture supplies storage without an enclosing function frame.
+		if (entity->kind == EntityKind::Variable && static_cast<const VariableEntity*>(entity)->init_capture &&
+			captured_.find(EntityPair{ context->lambda->closure, entity }) != nullptr)
+		{
+			sealed = true;
+			break;
+		}
 		// A templated lambda's specialization: the closure's captures (no
 		// more), where the variable's function is not being analyzed.
 		if (context->lambda->sealed)
@@ -988,6 +1001,7 @@ void Analyzer::closure_conversion(const ClassEntity* entity, bool conversion_fun
 		invoker->member = true;
 		invoker->is_static = true;
 		invoker->is_inline = true;
+		invoker->is_constexpr = call->is_constexpr;
 		invoker->inline_member = true;
 		invoker->defined = true;
 		invoker->body = call->body;
@@ -1013,6 +1027,7 @@ void Analyzer::closure_conversion(const ClassEntity* entity, bool conversion_fun
 	conversion->member = true;
 	conversion->conversion = true;
 	conversion->is_inline = true;
+	conversion->is_constexpr = cxx17_;
 	conversion->inline_member = true;
 	conversion->nothrow = true;
 	Binding* binding = new_binding(BindingKind::Function, conversion_key_, conversion, conversion_type);
@@ -1086,6 +1101,9 @@ FunctionEntity* Analyzer::closure_call(ClassEntity* closure, const syntax::Lambd
 	call->is_operator = true;
 	call->operator_token = TokenKind::OP_LPAREN;
 	call->is_inline = true;
+	// A C++17 call operator is a constexpr candidate until its typed body
+	// and deduced result settle eligibility, including specializations.
+	call->is_constexpr = cxx17_;
 	call->inline_member = true;
 	call->defined = true;
 	call->parameters = expr.parameters;

@@ -1592,6 +1592,9 @@ private:
 	void check_defaulted_constexprs();
 	static const ClassEntity* ObjectClassOf(const Type* type);
 	void check_constexpr_function(const FunctionEntity* function, const Type* type, uint32_t location);
+	void finish_constexpr_lambda(FunctionEntity* function, const BodyContext& body, uint32_t location);
+	void constexpr_lambda_local(
+		const VariableEntity* variable, const syntax::Initializer* initializer, uint32_t location);
 	void check_constexpr_constructor(const FunctionEntity* constructor, uint32_t location);
 	void check_constexpr_subobject(const SubobjectInit& init, bool variant, uint32_t location);
 	void check_constexpr_member_initializer(const SubobjectInit& init, uint32_t location);

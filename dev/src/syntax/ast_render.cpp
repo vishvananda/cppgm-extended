@@ -718,6 +718,14 @@ void SyntaxRenderer::lambda(const LambdaExpr& lambda)
 		parameters(*lambda.parameters);
 		if (lambda.is_mutable)
 			text("mutable");
+		if (lambda.is_constexpr)
+		{
+			if (lambda.is_mutable)
+				text(" ");
+			text("constexpr");
+			if (lambda.has_noexcept || lambda.has_throw)
+				text(" ");
+		}
 		if (lambda.has_noexcept)
 		{
 			text("noexcept");

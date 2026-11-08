@@ -162,7 +162,7 @@ bool Analyzer::literal_type(const Type* type)
 		literal = member->variable->kind != EntityKind::Variable ||
 			(literal_type(type) && (type->is_reference() || (ObjectType(type)->cv & kVolatile) == 0));
 	}
-	if (literal && !IsAggregateClass(cls))
+	if (literal && !IsAggregateClass(cls) && !(cxx17_ && graph_.closure_facts(cls) != nullptr))
 	{
 		// A constexpr constructor (or constructor template) other than a
 		// copy or move constructor; an implicit default constructor is one
@@ -595,6 +595,10 @@ const ClassEntity* Analyzer::ObjectClassOf(const Type* type)
 
 void Analyzer::check_constexpr_function(const FunctionEntity* function, const Type* type, uint32_t location)
 {
+	// Lambda return types may still be deduced here. Their explicit or
+	// inferred C++17 eligibility is settled after the typed body walk.
+	if (cxx17_ && body_ != nullptr && body_->lambda != nullptr && body_->function == function)
+		return;
 	// 7.1.5p3: a constexpr function's return type and parameter types are
 	// literal types (not void in C++11). CWG 1684 removes p8's restriction
 	// on the enclosing class. p6: a
@@ -621,6 +625,30 @@ void Analyzer::check_constexpr_function(const FunctionEntity* function, const Ty
 		if (!literal_type(canonical->params[i]))
 			error(location, "a constexpr function's parameter type is not a literal type");
 	}
+}
+
+void Analyzer::finish_constexpr_lambda(FunctionEntity* function, const BodyContext& body, uint32_t location)
+{
+	const Type* type = function->type->canonical;
+	bool eligible = !body.constexpr_lambda_ineligible && !body.undeduced &&
+		(IsVoid(type->element) || literal_type(type->element));
+	for (uint32_t i = 0; eligible && i < type->param_count; ++i)
+		eligible = literal_type(type->params[i]);
+	if (body.lambda->expr->is_constexpr && !eligible && !function->instantiated && !function->templated)
+		error(location, "a constexpr lambda does not satisfy the constexpr function requirements");
+	function->is_constexpr = eligible;
+}
+
+void Analyzer::constexpr_lambda_local(
+	const VariableEntity* variable, const syntax::Initializer* initializer, uint32_t location)
+{
+	if (variable->is_extern)
+		return;
+	bool initialized = initializer != nullptr;
+	if (!initialized && variable->constructor != nullptr)
+		initialized = !variable->constructor->trivial || constexpr_constructor(variable->constructor, location);
+	body_->constexpr_lambda_ineligible = body_->constexpr_lambda_ineligible || variable->is_static ||
+		variable->is_thread_local || !literal_type(variable->type) || !initialized;
 }
 
 void Analyzer::check_constexpr_constructor(const FunctionEntity* constructor, uint32_t location)

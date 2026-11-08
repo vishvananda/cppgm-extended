@@ -251,6 +251,8 @@ bool Analyzer::function_body(FunctionEntity* function, const Type* type, const s
 	else if (body_ == &context && context.placeholder != nullptr && !context.deduced && body.body != nullptr && !shared)
 		deduced_result(nullptr, body_location);
 	const bool deducible = !context.undeduced || !context.deduce_result;
+	if (cxx17_ && semantic() && template_depth_ == 0 && body_ == &context && context.lambda != nullptr)
+		finish_constexpr_lambda(function, context, body_location);
 	body_ = saved_body;
 	demanding_ = saved_demanding;
 	current_epoch_ = saved_epoch;
@@ -525,6 +527,8 @@ void Analyzer::scoped_statement(const syntax::Stmt& stmt, Scope* scope, BodyCont
 	case syntax::StmtKind::Expression:
 		return expression(static_cast<const syntax::ExpressionStmt&>(stmt).expression, scope);
 	case syntax::StmtKind::Asm:
+		if (body != nullptr && body->lambda != nullptr)
+			body->constexpr_lambda_ineligible = true;
 		return asm_statement(static_cast<const syntax::AsmStmt&>(stmt), scope);
 	case syntax::StmtKind::Declaration:
 		return declaration(*static_cast<const syntax::DeclarationStmt&>(stmt).declaration, scope);
@@ -667,6 +671,8 @@ void Analyzer::scoped_statement(const syntax::Stmt& stmt, Scope* scope, BodyCont
 		}
 		return statement(*static_cast<const syntax::LabeledStmt&>(stmt).body, scope);
 	case syntax::StmtKind::Labeled:
+		if (body != nullptr && body->lambda != nullptr)
+			body->constexpr_lambda_ineligible = true;
 		if (body != nullptr)
 			label_statement(static_cast<const syntax::LabeledStmt&>(stmt), scope);
 		return statement(*static_cast<const syntax::LabeledStmt&>(stmt).body, scope);
@@ -693,6 +699,8 @@ void Analyzer::scoped_statement(const syntax::Stmt& stmt, Scope* scope, BodyCont
 		return;
 	}
 	case syntax::StmtKind::Try:
+		if (body != nullptr && body->lambda != nullptr)
+			body->constexpr_lambda_ineligible = true;
 		return try_statement(static_cast<const syntax::TryStmt&>(stmt), scope);
 	case syntax::StmtKind::Ambiguous:
 	{
@@ -711,6 +719,8 @@ void Analyzer::scoped_statement(const syntax::Stmt& stmt, Scope* scope, BodyCont
 		return;
 	case syntax::StmtKind::Goto:
 	{
+		if (body != nullptr && body->lambda != nullptr)
+			body->constexpr_lambda_ineligible = true;
 		const syntax::GotoStmt& jump = static_cast<const syntax::GotoStmt&>(stmt);
 		if (jump.target != nullptr)
 		{

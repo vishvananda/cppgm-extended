@@ -408,7 +408,9 @@ bool ConstantInterpreter::evaluable(const FunctionEntity* function, uint32_t loc
 		return fail(location, "constexpr calls nested too deeply");
 	if (!analyzer_.constexpr_definition(function))
 		return fail(location, "a constexpr function called before its definition");
-	return true;
+	// Instantiating a generic lambda's body settles its inferred constexpr
+	// eligibility. The initial candidate flag alone does not establish it.
+	return constexpr_candidate(function) || fail(location, "a call of a function that is not constexpr");
 }
 
 bool ConstantInterpreter::invoke(const FunctionEntity* function, const ConstPlace* object, const Argument* arguments,
@@ -423,6 +425,19 @@ bool ConstantInterpreter::invoke(const FunctionEntity* function, const ConstPlac
 		function = function->denotes;
 	if (function->builtin != BuiltinFunction::None)
 		return builtin(function, arguments, count, result, location);
+	if (function->conversion && function->is_constexpr && function->owner->kind == ScopeKind::Class)
+	{
+		const ClosureFacts* closure = analyzer_.graph_.closure_facts(
+			static_cast<const ClassEntity*>(function->owner->entity));
+		if (closure != nullptr && closure->conversion == function)
+		{
+			ConstPlace address;
+			if (!entity_place(closure->invoker, closure->invoker->type, address, location))
+				return false;
+			result.value = PointerTo(address, function->type->canonical->element);
+			return true;
+		}
+	}
 	if (function->constructor)
 	{
 		if (result.target == nullptr)
@@ -447,6 +462,8 @@ bool ConstantInterpreter::invoke(const FunctionEntity* function, const ConstPlac
 	// implementation); the callee's own objects with the call.
 	const size_t locals = locals_.size();
 	if (!bind_parameters(declaration, arguments, count, location))
+		return false;
+	if (object != nullptr && !bind_closure_captures(function, *object, location))
 		return false;
 	// A complex or vector result's parts or lanes outlive the callee's
 	// storage: made in the caller's before it.

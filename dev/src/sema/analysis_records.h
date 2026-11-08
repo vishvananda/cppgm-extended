@@ -100,6 +100,10 @@ struct BodyContext
 	// A constructor's function-try-block's handlers are being analyzed: no
 	// return statement appears in them (15.3p14).
 	bool constructor_handlers;
+	// C++17 lambda constexpr eligibility, collected by the normal typed
+	// body walk; it also sees unexecuted ordinary branches, but not a
+	// discarded if-constexpr branch.
+	bool constexpr_lambda_ineligible;
 	// A default member initializer's member, or a default argument's
 	// function and parameter: the context of the closures typed in it
 	// (Itanium 5.1.8; see Analyzer::number_closure).
