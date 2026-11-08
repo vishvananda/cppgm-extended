@@ -12,7 +12,8 @@ enum class OperandKind : uint8_t
 {
 	Register,
 	Memory,
-	Immediate
+	Immediate,
+	Label
 };
 
 struct Address
@@ -32,10 +33,13 @@ struct Operand
 	Address address;
 	uint64_t immediate = 0;
 	uint16_t bits = 0;
+	std::string target;
+	uint32_t label = 0;
 };
 
 struct Instruction
 {
+	bool label = false;
 	std::string mnemonic;
 	std::vector<Operand> operands; // destination first in either source dialect
 	uint32_t line = 1;

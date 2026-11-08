@@ -4,6 +4,14 @@
 
 namespace native {
 namespace asm_detail {
+int branch_condition(const std::string& mnemonic)
+{
+	for (const x86_asm_model::Branch& branch : x86_asm_model::branches)
+		if (mnemonic == branch.name)
+			return branch.condition;
+	return -1;
+}
+
 namespace {
 
 using E = Encoding;

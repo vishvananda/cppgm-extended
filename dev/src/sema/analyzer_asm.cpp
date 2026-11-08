@@ -43,6 +43,9 @@ const char* prepare_operands(
 {
 	using namespace asm_model;
 	packet.constants.resize(packet.operands.size());
+	bool captured_outputs = false;
+	for (const syntax::AsmOperand& output : stmt.outputs)
+		captured_outputs = captured_outputs || (output.expression->facts->flags & kBitField) != 0;
 	for (uint32_t i = 0; i < packet.operands.size(); ++i)
 	{
 		asm_model::Operand& operand = packet.operands[i];
@@ -57,6 +60,8 @@ const char* prepare_operands(
 				locations |= AL_REGISTER;
 		}
 		const bool output = (operand.flags & AO_WRITE) != 0;
+		if (output && ((expr.facts->flags & kBitField) != 0 || (captured_outputs && (locations & AL_REGISTER) != 0)))
+			operand.flags |= AO_NO_MEMORY;
 		assembly::InputConstant& constant = packet.constants[i];
 		if (!output && (locations & AL_IMMEDIATE) != 0)
 		{
@@ -81,8 +86,8 @@ const char* prepare_operands(
 			}
 		}
 		const bool addressable = expr.facts->category == ValueCategory::LValue && (expr.facts->flags & kBitField) == 0;
-		operand.input_storage = (operand.flags & AO_READ) != 0 && (locations & AL_MEMORY) != 0 && addressable &&
-			!constant.present;
+		operand.input_storage = (operand.flags & AO_READ) != 0 && (locations & AL_MEMORY) != 0 &&
+			(operand.flags & AO_NO_MEMORY) == 0 && addressable && !constant.present;
 		const Type* type = expr.facts->type->unqualified;
 		const bool scalar = IsScalar(type) || type->kind == TypeKind::Vector;
 		if (!scalar && ((locations & AL_MEMORY) == 0 || !addressable))

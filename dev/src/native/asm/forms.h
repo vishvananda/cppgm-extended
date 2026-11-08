@@ -5,6 +5,7 @@
 
 namespace native {
 namespace asm_detail {
+int branch_condition(const std::string& mnemonic);
 
 using x86_asm_model::Encoding;
 using x86_asm_model::Form;

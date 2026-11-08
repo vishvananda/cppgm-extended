@@ -11,6 +11,18 @@
 
 namespace x86_asm_model {
 
+struct Branch
+{
+	const char* name;
+	uint8_t condition;
+};
+
+const Branch branches[] = { { "jo", 0 }, { "jno", 1 }, { "jb", 2 }, { "jc", 2 }, { "jnae", 2 }, { "jae", 3 },
+	{ "jnb", 3 }, { "jnc", 3 }, { "je", 4 }, { "jz", 4 }, { "jne", 5 }, { "jnz", 5 }, { "jbe", 6 }, { "jna", 6 },
+	{ "ja", 7 }, { "jnbe", 7 }, { "js", 8 }, { "jns", 9 }, { "jp", 10 }, { "jpe", 10 }, { "jnp", 11 }, { "jpo", 11 },
+	{ "jl", 12 }, { "jnge", 12 }, { "jge", 13 }, { "jnl", 13 }, { "jle", 14 }, { "jng", 14 }, { "jg", 15 },
+	{ "jnle", 15 } };
+
 enum class Encoding : std::uint8_t
 {
 	Zero,
@@ -78,6 +90,9 @@ inline const Form* forms(std::size_t& count)
 		{ "sfence", E::Zero, 0x0faef8, 0, 0, false },
 		{ "cld", E::Zero, 0xfc, 0, 0, false },
 		{ "std", E::Zero, 0xfd, 0, 0, false },
+		{ "clc", E::Zero, 0xf8, 0, 0, false },
+		{ "stc", E::Zero, 0xf9, 0, 0, false },
+		{ "cmc", E::Zero, 0xf5, 0, 0, false },
 		{ "ud2", E::Zero, 0x0f0b, 0, 0, false },
 		{ "emms", E::Zero, 0x0f77, 0, 0, false },
 		{ "movaps", E::VectorRM, 0x0f28, 0, 128, false },

@@ -474,13 +474,15 @@ private:
 	// object) an lvalue designates: an assignment (5.17p2), a compound
 	// assignment (5.17p7) or an increment (5.3.2, 5.2.6). The right operand
 	// is evaluated once, when first needed.
+	struct AsmOutputCapture;
 	struct BitFieldUpdate
 	{
 		enum class Kind : uint8_t
 		{
 			Assign,
 			Compound,
-			Increment
+			Increment,
+			Capture
 		};
 		Kind kind;
 		// Compound: the arithmetic operator; increment: a decrement, and
@@ -488,7 +490,11 @@ private:
 		uint32_t op;
 		bool decrement;
 		bool prefix;
-		const syntax::BinaryExpr* source;
+		union
+		{
+			const syntax::BinaryExpr* source;
+			AsmOutputCapture* capture;
+		};
 		// The designated field's type, and a compound assignment's
 		// operation type.
 		const sema::Type* type;
@@ -497,6 +503,30 @@ private:
 		RValue right;
 		uint32_t location;
 	};
+
+	struct AsmOutputCase
+	{
+		BitField field;
+		Place place;
+		lowir::Type type;
+		bool bit_field;
+	};
+
+	struct AsmOutputCapture
+	{
+		std::vector<AsmOutputCase> cases;
+		std::vector<BitFieldUpdate> pending;
+		lowir::Value pointer_slot;
+		lowir::Value selector_slot;
+		lowir::Value result_slot;
+		RValue empty;
+		bool read;
+	};
+	RValue capture_asm_case(
+		AsmOutputCapture& capture, const BitField* field, const Place& place, const sema::Type* type);
+	RValue capture_asm_designator(const syntax::Expr& target, BitFieldUpdate& capture);
+	void finish_asm_output(const AsmOutputCapture& capture);
+	void write_asm_case(const AsmOutputCase& target, lowir::Value address, const RValue& value);
 
 	// A case or default label of the switch statements being lowered and
 	// its block, found by one scan of the switch's body.
@@ -1482,6 +1512,7 @@ private:
 	bool resolve_bit_field(const syntax::Expr& target, BitField& field, Place& unit);
 	RValue apply_bit_field_update(const BitField& field, const Place& unit, BitFieldUpdate& update);
 	RValue apply_object_update(const syntax::Expr& target, BitFieldUpdate& update);
+	RValue apply_object_update_at(const sema::Type* type, const Place& place, BitFieldUpdate& update);
 	const RValue& update_operand(BitFieldUpdate& update);
 
 	// --------------------------------------------- expressions

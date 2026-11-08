@@ -26,8 +26,12 @@ Reg physical(const Register& reg)
 
 unsigned width(lowir::Type type)
 {
-	if (type.kind() == lowir::TypeKind::V128 || type.is_float())
+	if (type.kind() == lowir::TypeKind::V128)
 		return 128;
+	if (type.kind() == lowir::TypeKind::F32)
+		return 32;
+	if (type.kind() == lowir::TypeKind::F64)
+		return 64;
 	if (type.is_pointer())
 		return 64;
 	return std::max(8u, lowir::integer_bits(type.kind()));
@@ -44,14 +48,27 @@ void expand(std::string& source, const lowir::AssemblyModule& module, const lowi
 			source.append(module.text, piece.first, piece.count);
 			continue;
 		}
-		if (piece.kind != PieceKind::Operand)
-			unsupported("assembly-local unique labels");
+		if (piece.kind == PieceKind::Unique)
+		{
+			// Each parsed packet has its own label namespace. The emitter
+			// allocates fresh label identities for every cloned occurrence.
+			source += '0';
+			continue;
+		}
 		if (piece.format == Format::Suffix)
 		{
 			const unsigned bits = piece.bits != 0
 				? piece.bits
 				: width(module.operands[definition.first_operand + piece.operand].type);
-			const char suffix = bits == 8 ? 'b' : bits == 16 ? 'w' : bits == 32 ? 'l' : bits == 64 ? 'q' : 0;
+			const lowir::TypeKind kind = module.operands[definition.first_operand + piece.operand].type.kind();
+			const char suffix = kind == lowir::TypeKind::F32 ? 's'
+				: kind == lowir::TypeKind::F64               ? 'l'
+				: kind == lowir::TypeKind::F80               ? 't'
+				: bits == 8                                  ? 'b'
+				: bits == 16                                 ? 'w'
+				: bits == 32                                 ? 'l'
+				: bits == 64                                 ? 'q'
+															 : 0;
 			if (suffix == 0)
 				throw BackendError("invalid assembly mnemonic width modifier");
 			source += suffix;
@@ -85,7 +102,9 @@ void expand(std::string& source, const lowir::AssemblyModule& module, const lowi
 			continue;
 		}
 		Register reg{ r < 16 ? RegisterBank::Gpr : RegisterBank::Vector, static_cast<uint8_t>(r < 16 ? r : r - 16),
-			static_cast<uint16_t>(width(module.operands[definition.first_operand + piece.operand].type)), 0 };
+			static_cast<uint16_t>(
+				r >= 16 ? 128 : width(module.operands[definition.first_operand + piece.operand].type)),
+			0 };
 		if (piece.bits != 0)
 			reg.bits = piece.bits;
 		reg.offset = piece.offset;

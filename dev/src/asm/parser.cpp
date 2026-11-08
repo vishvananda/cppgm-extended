@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <map>
 
 #include "asm/registers.h"
 
@@ -46,7 +47,9 @@ private:
 			fail(std::string("expected '") + c + "'");
 	}
 	[[noreturn]] void fail(const std::string& message) const { throw AssemblyError{ message, line_, column_ }; }
-	std::string word();
+	std::string word(bool fold = true);
+	Operand target();
+	void resolve_labels(std::vector<Instruction>& instructions);
 	uint64_t integer();
 	asm_model::Register reg();
 	Operand operand();
@@ -66,14 +69,14 @@ bool alpha(char c)
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '.';
 }
 
-std::string Parser::word()
+std::string Parser::word(bool fold)
 {
 	space();
 	std::string result;
 	while (alpha(current()) || (current() >= '0' && current() <= '9'))
 	{
 		const char c = current();
-		result += c >= 'A' && c <= 'Z' ? static_cast<char>(c + ('a' - 'A')) : c;
+		result += fold && c >= 'A' && c <= 'Z' ? static_cast<char>(c + ('a' - 'A')) : c;
 		step();
 	}
 	if (result.empty())
@@ -278,6 +281,58 @@ Operand Parser::operand()
 	return result;
 }
 
+Operand Parser::target()
+{
+	Operand result;
+	result.kind = OperandKind::Label;
+	result.target = word(false);
+	return result;
+}
+
+void Parser::resolve_labels(std::vector<Instruction>& instructions)
+{
+	std::map<std::string, uint32_t> named;
+	std::map<std::string, std::vector<uint32_t>> numbered;
+	for (uint32_t i = 0; i < instructions.size(); ++i)
+	{
+		const Instruction& inst = instructions[i];
+		if (!inst.label)
+			continue;
+		if (inst.mnemonic.find_first_not_of("0123456789") == std::string::npos)
+			numbered[inst.mnemonic].push_back(i);
+		else if (!named.emplace(inst.mnemonic, i).second)
+			throw AssemblyError{ "duplicate assembly label: " + inst.mnemonic, inst.line, inst.column };
+	}
+	for (uint32_t i = 0; i < instructions.size(); ++i)
+		for (Operand& operand : instructions[i].operands)
+		{
+			if (operand.kind != OperandKind::Label)
+				continue;
+			const std::string& name = operand.target;
+			uint32_t selected = UINT32_MAX;
+			if (name.size() >= 2 && (name.back() == 'f' || name.back() == 'b') &&
+				name.find_first_not_of("0123456789") == name.size() - 1)
+			{
+				const auto found = numbered.find(name.substr(0, name.size() - 1));
+				if (found != numbered.end())
+					for (uint32_t candidate : found->second)
+						if ((name.back() == 'f' && candidate > i && selected == UINT32_MAX) ||
+							(name.back() == 'b' && candidate < i))
+							selected = candidate;
+			}
+			else
+			{
+				const auto found = named.find(name);
+				if (found != named.end())
+					selected = found->second;
+			}
+			if (selected == UINT32_MAX)
+				throw AssemblyError{ "undefined assembly-local label: " + name, instructions[i].line,
+					instructions[i].column };
+			operand.label = selected;
+		}
+}
+
 std::vector<Instruction> Parser::run()
 {
 	std::vector<Instruction> result;
@@ -299,13 +354,23 @@ std::vector<Instruction> Parser::run()
 		Instruction inst;
 		inst.line = line_;
 		inst.column = column_;
-		inst.mnemonic = word();
+		inst.mnemonic = word(false);
 		space();
+		if (take(':'))
+		{
+			inst.label = true;
+			result.push_back(inst);
+			continue;
+		}
+		for (char& c : inst.mnemonic)
+			if (c >= 'A' && c <= 'Z')
+				c = static_cast<char>(c + ('a' - 'A'));
+		const bool branch = inst.mnemonic[0] == 'j' || inst.mnemonic == "call" || inst.mnemonic == "callq";
 		if (current() != '\n' && current() != ';' && current() != '#' && pos_ != source_.size())
 		{
 			do
 			{
-				inst.operands.push_back(operand());
+				inst.operands.push_back(branch && current() != '*' ? target() : operand());
 				if (inst.operands.size() > 5)
 					fail("too many assembly instruction operands");
 			} while (take(','));
@@ -317,6 +382,7 @@ std::vector<Instruction> Parser::run()
 			std::reverse(inst.operands.begin(), inst.operands.end());
 		result.push_back(inst);
 	}
+	resolve_labels(result);
 	return result;
 }
 

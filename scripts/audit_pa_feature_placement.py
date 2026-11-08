@@ -2501,7 +2501,7 @@ def row_for(path: Path,
     )
     raw_hits = (detect_features(detection_source, ref_text, relative_path.as_posix())
                 if input_contract == "cpp-source" else {})
-    if assembly_profile in {"lowir", "gnu", "lowir-reject", "gnu-reject"}:
+    if assembly_profile in {"lowir", "gnu", "gnu-native", "lowir-reject", "gnu-reject"}:
         raw_hits["assembly.shared_boundary"] = FeatureHit(
             "assembly.shared_boundary", [f"source:assembly-profile={assembly_profile}"])
     host_eh_evidence = host_eh_object_evidence(path, current_pa, detection_source)

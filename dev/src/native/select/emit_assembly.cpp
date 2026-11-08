@@ -17,13 +17,27 @@ bool floating(lowir::Type type)
 	return type.is_float() || type.is_vector();
 }
 
+lowir::TypeKind transfer_type(lowir::Type type, Reg reg)
+{
+	if (type.is_vector())
+		return lowir::TypeKind::V128;
+	if (type.is_float() || is_xmm(reg))
+		return register_bytes(type.kind()) <= 4 ? lowir::TypeKind::F32 : lowir::TypeKind::F64;
+	return type.kind();
+}
+
+unsigned capture_bytes(lowir::Type type, Reg reg)
+{
+	const unsigned bytes = type.is_vector() ? 16 : register_bytes(type.kind());
+	return is_xmm(reg) && bytes < 4 ? 4 : bytes;
+}
+
 } // namespace
 
 const std::shared_ptr<const AssemblyPlan>& FunctionSelector::assembly_plan(const lowir::Instruction& inst) const
 {
 	const uint32_t index = static_cast<uint32_t>(&inst - body_->instructions.data());
-	const uint64_t key = (uint64_t(symbol_) << 32) | index;
-	std::shared_ptr<const AssemblyPlan>& plan = assembly_plans_[key];
+	std::shared_ptr<const AssemblyPlan>& plan = assembly_plans_[index];
 	if (!plan)
 	{
 		std::vector<lowir::Value> arguments(inst.extra_count);
@@ -32,6 +46,36 @@ const std::shared_ptr<const AssemblyPlan>& FunctionSelector::assembly_plan(const
 		plan = bind_assembly(*program_.assembly, static_cast<uint32_t>(inst.immediate), *body_, arguments);
 	}
 	return plan;
+}
+
+Operand FunctionSelector::assembly_input(
+	const lowir::AssemblyOperand& operand, lowir::Value value, Reg reg, bool memory)
+{
+	using lowir::TypeKind;
+	const lowir::Type input_type = memory || operand.input_storage ? lowir::Type::scalar(TypeKind::Ptr) : operand.type;
+	Operand source = memory_value_operand(value, input_type);
+	if (operand.input_storage && !memory)
+	{
+		load_into(R10, source, TypeKind::Ptr);
+		const Reg scratch = floating(operand.type) ? XMM15 : R11;
+		Inst& load = emit2(floating(operand.type) ? Op::FMov : Op::Load, operand.type.kind(),
+			Operand::make_reg(scratch), Operand::make_mem(R10, 0));
+		if ((operand.flags & asm_model::AO_VOLATILE) != 0)
+			load.flags |= MF_VOLATILE;
+		source = Operand::make_reg(scratch);
+	}
+	// Capture inputs before setting any physical assembly register. The
+	// ordinary parallel-move scratch registers may themselves be operands.
+	const TypeKind transfer = memory ? TypeKind::Ptr : transfer_type(operand.type, reg);
+	const unsigned bytes = transfer == TypeKind::V128 ? 16 : register_bytes(transfer);
+	const Operand saved = Operand::make_frame(frame_alloc(bytes, bytes));
+	Move capture;
+	capture.dst = saved;
+	capture.src = source;
+	capture.type = transfer;
+	capture.src_type = memory || operand.input_storage ? transfer : operand.type.kind();
+	emit_move(capture);
+	return saved;
 }
 
 void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
@@ -54,36 +98,20 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 		{
 			const uint32_t input = memory && !operand.input_storage ? operand.output : operand.input;
 			const lowir::Value value = resolve(body_->operands[inst.extra_first + input]);
-			const lowir::Type input_type = memory || operand.input_storage ? lowir::Type::scalar(TypeKind::Ptr)
-																		   : operand.type;
-			Operand source = memory_value_operand(value, input_type);
-			if (operand.input_storage && !memory)
-			{
-				// Capture a register alternative's value before setting up any
-				// assembly registers. The address expression has already run.
-				load_into(R10, source, TypeKind::Ptr);
-				const Reg scratch = floating(operand.type) ? XMM15 : R11;
-				Inst& load = emit2(floating(operand.type) ? Op::FMov : Op::Load, operand.type.kind(),
-					Operand::make_reg(scratch), Operand::make_mem(R10, 0));
-				if ((operand.flags & AO_VOLATILE) != 0)
-					load.flags |= MF_VOLATILE;
-				source = Operand::make_frame(
-					frame_alloc(operand.type.is_vector() ? 16 : register_bytes(operand.type.kind()),
-						lowir::data_alignment(operand.type)));
-				emit2(floating(operand.type) ? Op::FMov : Op::Store, operand.type.kind(), source,
-					Operand::make_reg(scratch));
-			}
 			const Reg reg = plan->registers[i];
-			if ((initialized & reg_bit(reg)) != 0 && !(initial[reg] == source))
+			const lowir::Type source_type = memory || operand.input_storage ? lowir::Type::scalar(TypeKind::Ptr)
+																			: operand.type;
+			const Operand original = memory_value_operand(value, source_type);
+			if ((initialized & reg_bit(reg)) != 0 && !(initial[reg] == original))
 				throw BackendError("assembly matching operands supply distinct input values to one register");
 			if ((initialized & reg_bit(reg)) == 0)
 			{
 				Move move;
 				move.dst = Operand::make_reg(reg);
-				move.src = source;
-				move.type = memory ? TypeKind::Ptr : operand.type.kind();
+				move.src = assembly_input(operand, value, reg, memory);
+				move.type = memory ? TypeKind::Ptr : transfer_type(operand.type, reg);
 				moves_.push_back(move);
-				initial[reg] = source;
+				initial[reg] = original;
 				initialized |= reg_bit(reg);
 			}
 		}
@@ -94,17 +122,18 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 			// clobber nor an overlapping output can destroy a later address.
 			Capture& capture = captures[i];
 			capture.address = frame_alloc(8, 8);
-			capture.value = frame_alloc(operand.type.is_vector() ? 16 : register_bytes(operand.type.kind()),
+			capture.value = frame_alloc(capture_bytes(operand.type, plan->registers[i]),
 				operand.type.is_vector() ? 16 : lowir::data_alignment(operand.type));
 			Move move;
 			move.dst = Operand::make_frame(capture.address);
 			const lowir::Value address = resolve(body_->operands[inst.extra_first + operand.output]);
 			move.src = memory_value_operand(address, lowir::Type::scalar(TypeKind::Ptr));
 			move.type = TypeKind::Ptr;
-			moves_.push_back(move);
+			emit_move(move);
 		}
 	}
-	parallel_moves(moves_);
+	for (const Move& move : moves_)
+		emit_move(move);
 	if (!out_->assembly)
 		out_->assembly.reset(new AssemblySites());
 	const uint32_t site = static_cast<uint32_t>(out_->assembly->plans.size());
@@ -123,8 +152,9 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	{
 		const lowir::AssemblyOperand& operand = module.operands[definition.first_operand + i];
 		if (operand.output != lowir::kNoId && (operand.flags & AO_FLAG) == 0 && plan->locations[i] != AL_MEMORY)
-			emit2(floating(operand.type) ? Op::FMov : Op::Store, operand.type.kind(),
-				Operand::make_frame(captures[i].value), Operand::make_reg(plan->registers[i]));
+			emit2(floating(operand.type) || is_xmm(plan->registers[i]) ? Op::FMov : Op::Store,
+				transfer_type(operand.type, plan->registers[i]), Operand::make_frame(captures[i].value),
+				Operand::make_reg(plan->registers[i]));
 	}
 	for (uint32_t i = 0; i < definition.operand_count; ++i)
 	{
