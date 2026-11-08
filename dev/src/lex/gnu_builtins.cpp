@@ -605,6 +605,8 @@ const struct
 	{ "__builtin_va_end", { GnuBuiltin::VaList, 1, nullptr, 0 } },
 	{ "__builtin_va_start", { GnuBuiltin::VaList, 0, nullptr, 0 } },
 	{ "__builtin_vsnprintf", { GnuBuiltin::Library, 0, "ic*zCc*V", 0 } },
+	{ "_mm_getcsr", { GnuBuiltin::Mxcsr, 0, "u", 0 } },
+	{ "_mm_setcsr", { GnuBuiltin::Mxcsr, 1, "vu", 0 } },
 };
 
 // The libm functions whose builtin forms hosted <cmath> and <complex>
@@ -816,9 +818,18 @@ bool IsProvidedBuiltin(const char* spelling, uint32_t length)
 	return FindGnuTrait(spelling, length, trait) || FindGnuBuiltin(spelling, length, entry);
 }
 
+bool IsGnuBuiltinCandidate(const char* spelling, uint32_t length)
+{
+	if (length < 7 || spelling[0] != '_')
+		return false;
+	return spelling[1] == '_' ||
+		(length == 10 && std::memcmp(spelling, "_mm_", 4) == 0 &&
+			(std::memcmp(spelling + 4, "getcsr", 6) == 0 || std::memcmp(spelling + 4, "setcsr", 6) == 0));
+}
+
 bool FindGnuBuiltin(const char* spelling, uint32_t length, GnuBuiltinEntry& entry)
 {
-	if (length < 7 || spelling[0] != '_' || spelling[1] != '_')
+	if (!IsGnuBuiltinCandidate(spelling, length))
 		return false;
 	const auto has_prefix = [&](const char* prefix, uint32_t size) {
 		return length > size && std::memcmp(spelling, prefix, size) == 0;

@@ -179,8 +179,10 @@ A program killed by a signal fails whatever status it states (SIGABRT is not
 error (status 70), does not reject.
 A positive control may supply an `x.limits` JSON sidecar with positive integer
 `cpu_seconds`, `address_space_bytes` and `file_bytes` fields. These bound the
-frontend's CPU time, virtual address space and size of each output file on Linux
-and macOS; the ordinary wall timeout still applies. CPU time measures work even
+frontend's CPU time and size of each output file; Linux also enforces the virtual
+address-space ceiling. Darwin's shared-library mappings exceed these small
+memory budgets, so the report explicitly skips that memory gate while still
+running correctness and CPU/file checks. The ordinary wall timeout still applies. CPU time measures work even
 on a loaded host. The backend and executed program keep their ordinary limits.
 Limit exhaustion or setup failure fails the control. Rejection controls cannot
 use resource limits, since a resource failure cannot establish a diagnostic.

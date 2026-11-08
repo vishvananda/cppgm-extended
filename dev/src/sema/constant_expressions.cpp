@@ -1787,6 +1787,8 @@ bool ConstantInterpreter::intrinsic_value(const syntax::CallExpr& call_expr, Con
 	// GCC's floating classifications of a constant operand (a
 	// signaling NaN, whose bits an evaluation in long double would
 	// quiet, is no constant here).
+	if (which > Intrinsic::IsSignaling)
+		return fail(call_expr.location, "an intrinsic without constant-evaluation semantics");
 	ConstValue x;
 	if (which == Intrinsic::NanSignaling || !operand(*arguments[arguments.size - 1], x) ||
 		x.kind != ValueKind::Floating)

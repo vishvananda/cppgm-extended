@@ -98,6 +98,10 @@ or exits with status 70 does not reject. Any LowIR with the right behavior
 passes. Run one assignment's controls alone with `make -C paN test-controls`.
 Your own native backend is introduced in PA24.
 
+A positive control's `.limits` sidecar can bound frontend CPU time, output-file
+size and, on Linux, virtual address space. macOS reports the small address-space
+gate as a platform skip; correctness and CPU/file limits still run.
+
 Reference wrappers download and verify a pinned bundle built from the current
 cppgm-extended solution. They provide examples of the required behavior and
 are not the original CPPGM binaries. Fetch them ahead of time with:

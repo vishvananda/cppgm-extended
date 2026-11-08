@@ -1,0 +1,15 @@
+extern "C" unsigned int _mm_getcsr(void);
+extern "C" void _mm_setcsr(unsigned int);
+extern "C" unsigned host_mxcsr(void);
+namespace user { int _mm_getcsr() { return 17; } }
+int main() {
+    const unsigned original = _mm_getcsr();
+    int result = user::_mm_getcsr() != 17;
+    for (unsigned mode = 0; mode != 4; ++mode) {
+        unsigned next = ((original ^ 0x8000u) & ~0x6000u) | (mode << 13);
+        _mm_setcsr(next);
+        if (_mm_getcsr() != next || host_mxcsr() != next) result = 1;
+    }
+    _mm_setcsr(original);
+    return result || host_mxcsr() != original;
+}

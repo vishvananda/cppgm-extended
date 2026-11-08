@@ -216,7 +216,7 @@ struct GnuBuiltinEntry
 	GnuBuiltin builtin;
 	uint8_t variant;
 	// Function and Library: the type, result first and then the
-	// parameters, one letter each -- v void, c char, i int, l long, x long
+	// parameters, one letter each -- v void, c char, i int, u unsigned int, l long, x long
 	// long, z size_t (unsigned long), f float, d double, e long double, V
 	// __builtin_va_list, T the libm family's floating type, Z its complex
 	// type -- `C` before a letter making it const and `*` after it a
@@ -228,6 +228,7 @@ struct GnuBuiltinEntry
 
 // The entry `spelling` names; false for none.
 bool FindGnuBuiltin(const char* spelling, uint32_t length, GnuBuiltinEntry& entry);
+bool IsGnuBuiltinCandidate(const char* spelling, uint32_t length);
 
 // GCC's __atomic builtins by their names' suffixes, in sema::Intrinsic's
 // order from AtomicLoadN (the lock-free queries last): the operand roles --
