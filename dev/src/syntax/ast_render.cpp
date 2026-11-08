@@ -1134,6 +1134,18 @@ void SyntaxRenderer::declaration(const Decl& decl)
 		function_body(function.body);
 		break;
 	}
+	case DeclKind::DeductionGuide:
+	{
+		const DeductionGuideDecl& guide = static_cast<const DeductionGuideDecl&>(decl);
+		if (guide.is_explicit)
+			text("explicit ");
+		identifier(guide.name);
+		parameters(*guide.parameters);
+		text("->");
+		type_id(*guide.result);
+		text(";");
+		break;
+	}
 	case DeclKind::Simple:
 	{
 		const SimpleDecl& simple = static_cast<const SimpleDecl&>(decl);

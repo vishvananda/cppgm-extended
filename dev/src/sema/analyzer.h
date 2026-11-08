@@ -597,12 +597,13 @@ private:
 	ExprFacts* cast_expression(const syntax::CastExpr& expr, Scope* scope);
 	ExprFacts* functional_cast(const syntax::FunctionalCastExpr& expr, Scope* scope);
 	ClassEntity* deduction_template(const syntax::Slice<syntax::DeclSpecifier>& type, Scope* scope);
-	const Type* deduce_class_type(
-		ClassEntity* templ, const syntax::Slice<syntax::Expr*>& arguments, Scope* scope, uint32_t location);
+	const Type* deduce_class_type(ClassEntity* templ, const syntax::Slice<syntax::Expr*>& arguments, Scope* scope,
+		uint32_t location, bool copy_initialization = false, bool list_initialization = false);
 	const Type* deduce_class_declaration(
 		const Specifiers& specifiers, const syntax::InitDeclarator& init, Scope* scope, uint32_t location);
 	TemplateHead* class_deduction_head(const TemplateHead* outer, const TemplateHead* inner, TypeList& remap);
 	FunctionEntity* class_deduction_guide(ClassEntity* cls, const FunctionEntity* constructor, bool copy);
+	void deduction_guide_declaration(const syntax::DeductionGuideDecl& decl, Scope* scope);
 	void class_deduction_candidates(ClassEntity* cls, std::vector<FunctionEntity*>& out);
 	ExprFacts* explicit_conversion(
 		const syntax::Expr& expr, const Type* target, const syntax::Expr* operand, TokenKind cast, Scope* scope);
@@ -1733,7 +1734,13 @@ private:
 	bool cxx14_ = false;
 	bool cxx17_ = false;
 	PointerMap class_deduction_index_;
-	std::vector<std::vector<FunctionEntity*>> class_deduction_sets_;
+	struct ClassDeductionSet
+	{
+		std::vector<FunctionEntity*> implicit;
+		std::vector<FunctionEntity*> declared;
+	};
+	ClassDeductionSet& class_deduction_set(ClassEntity* cls);
+	std::vector<ClassDeductionSet> class_deduction_sets_;
 	bool full_asm_ = false;
 	bool exceptions_ = true;
 	bool ignore_narrowing_ = false;

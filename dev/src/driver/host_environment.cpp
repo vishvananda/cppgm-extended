@@ -28,8 +28,8 @@ bool OwnMacro(const char* name, size_t length)
 {
 	static const char* const kOwn[] = { "__cplusplus", "__STDC_HOSTED__", "__DATE__", "__TIME__", "__FILE__",
 		"__LINE__", "__CPPGM__", "__CPPGM_AUTHOR__", "__STDC__", "__CHAR_UNSIGNED__", "__POPCNT__",
-		"__STDCPP_DEFAULT_NEW_ALIGNMENT__", "__cpp_aligned_new", "__SSE__", "__SSE2__", "__SSE3__", "__SSSE3__",
-		"__SSE4_1__", "__SSE4_2__" };
+		"__STDCPP_DEFAULT_NEW_ALIGNMENT__", "__cpp_aligned_new", "__cpp_deduction_guides", "__SSE__", "__SSE2__",
+		"__SSE3__", "__SSSE3__", "__SSE4_1__", "__SSE4_2__" };
 	for (const char* own : kOwn)
 	{
 		if (std::strlen(own) == length && std::memcmp(own, name, length) == 0)

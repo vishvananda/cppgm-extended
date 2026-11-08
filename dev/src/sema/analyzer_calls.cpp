@@ -1091,6 +1091,8 @@ int Analyzer::compare_candidates(const Candidate& a, const Candidate& b, uint32_
 		const DeductionGuideKind bk = b.function->primary->templ->deduction_guide;
 		if (ak != DeductionGuideKind::None && bk != DeductionGuideKind::None && ak != bk)
 		{
+			if (ak == DeductionGuideKind::Declared || bk == DeductionGuideKind::Declared)
+				return ak == DeductionGuideKind::Declared ? 1 : -1;
 			if (ak == DeductionGuideKind::Copy || bk == DeductionGuideKind::Copy)
 				return ak == DeductionGuideKind::Copy ? 1 : -1;
 			return ak == DeductionGuideKind::Constructor ? 1 : -1;

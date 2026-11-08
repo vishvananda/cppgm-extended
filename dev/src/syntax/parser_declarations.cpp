@@ -233,15 +233,20 @@ bool Parser::at_deduction_guide()
 
 Decl* Parser::parse_deduction_guide(uint32_t start)
 {
-	// A guide only class template argument deduction (C++17) reads, which
-	// C++11 code never performs: parsed and dropped (hosted headers declare
-	// them in later-standard sections their C++11 mode still reads).
-	accept(TokenKind::KW_EXPLICIT);
+	DeductionGuideDecl* guide = make<DeductionGuideDecl>(DeclKind::DeductionGuide, start);
+	guide->is_explicit = accept(TokenKind::KW_EXPLICIT);
+	guide->name = tok().identifier;
 	next();
-	if (!skip_balanced() || !expect(TokenKind::OP_ARROW) || parse_type_id() == nullptr ||
-		!expect(TokenKind::OP_SEMICOLON))
+	guide->parameters = parse_parameter_clause(nullptr, true);
+	if (guide->parameters == nullptr || !expect(TokenKind::OP_ARROW))
 		return nullptr;
-	return make<Decl>(DeclKind::Empty, start);
+	Scope* outer = scopes_.enter(parameter_scope_);
+	guide->result = parse_type_id();
+	if (outer != nullptr)
+		scopes_.set_current(outer);
+	if (guide->result == nullptr || !expect(TokenKind::OP_SEMICOLON))
+		return nullptr;
+	return guide;
 }
 
 Decl* Parser::parse_namespace()

@@ -16,7 +16,8 @@ enum class DeductionGuideKind : uint8_t
 	None,
 	Constructor,
 	TemplateConstructor,
-	Copy
+	Copy,
+	Declared
 };
 
 // A function's template facts, allocated only for the functions

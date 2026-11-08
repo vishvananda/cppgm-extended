@@ -1700,6 +1700,15 @@ Decl* SyntaxCloner::decl(const Decl* decl)
 		parameter_packs_.resize(packs);
 		return result;
 	}
+	case DeclKind::DeductionGuide:
+	{
+		const size_t packs = parameter_packs_.size();
+		DeductionGuideDecl* result = copy(static_cast<const DeductionGuideDecl*>(decl));
+		result->parameters = parameter_clause(result->parameters);
+		result->result = type_id(result->result);
+		parameter_packs_.resize(packs);
+		return result;
+	}
 	case DeclKind::Simple:
 	{
 		const size_t packs = parameter_packs_.size();

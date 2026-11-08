@@ -232,6 +232,18 @@ void AstDumper::declaration(const Decl& decl)
 		close();
 		break;
 	}
+	case DeclKind::DeductionGuide:
+	{
+		const DeductionGuideDecl& guide = static_cast<const DeductionGuideDecl&>(decl);
+		open("deduction-guide");
+		line("name", guide.name->spelling);
+		if (guide.is_explicit)
+			line("explicit");
+		parameter_clause(*guide.parameters);
+		type_id(*guide.result);
+		close();
+		break;
+	}
 	case DeclKind::Simple:
 	{
 		const SimpleDecl& simple = static_cast<const SimpleDecl&>(decl);

@@ -24,7 +24,8 @@ enum class DeclKind : uint8_t
 	Linkage,
 	BitField,
 	Access,
-	Asm
+	Asm,
+	DeductionGuide
 };
 
 struct Decl
@@ -184,6 +185,16 @@ struct FunctionDecl : Decl
 	Attribute* attributes = nullptr;
 	// The declaration semantic analysis made of it.
 	mutable const sema::Binding* declared = nullptr;
+};
+
+// A C++17 deduction guide has a signature but is not found by name lookup
+// and never defines a callable function.
+struct DeductionGuideDecl : Decl
+{
+	const Identifier* name;
+	ParameterClause* parameters;
+	TypeId* result;
+	bool is_explicit;
 };
 
 // A constructor, destructor or conversion function declared without a

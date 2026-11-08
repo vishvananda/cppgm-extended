@@ -99,12 +99,24 @@ FunctionEntity* Analyzer::class_deduction_guide(ClassEntity* cls, const Function
 	return guide;
 }
 
-void Analyzer::class_deduction_candidates(ClassEntity* cls, std::vector<FunctionEntity*>& out)
+Analyzer::ClassDeductionSet& Analyzer::class_deduction_set(ClassEntity* cls)
 {
 	uint32_t index = class_deduction_index_.find(cls);
 	if (index == PointerMap::kMissing)
 	{
-		std::vector<FunctionEntity*> guides;
+		index = static_cast<uint32_t>(class_deduction_sets_.size());
+		class_deduction_sets_.push_back(ClassDeductionSet());
+		class_deduction_index_.set(cls, index);
+	}
+	return class_deduction_sets_[index];
+}
+
+void Analyzer::class_deduction_candidates(ClassEntity* cls, std::vector<FunctionEntity*>& out)
+{
+	ClassDeductionSet& set = class_deduction_set(cls);
+	if (set.implicit.empty())
+	{
+		std::vector<FunctionEntity*>& guides = set.implicit;
 		const NameEntry* entry = names_.find(cls->scope, constructor_key_);
 		for (const FunctionList* node = entry != nullptr ? entry->functions : nullptr; node != nullptr;
 			node = node->next)
@@ -113,11 +125,9 @@ void Analyzer::class_deduction_candidates(ClassEntity* cls, std::vector<Function
 		if (guides.empty())
 			guides.push_back(class_deduction_guide(cls, nullptr, false));
 		guides.push_back(class_deduction_guide(cls, nullptr, true));
-		index = static_cast<uint32_t>(class_deduction_sets_.size());
-		class_deduction_sets_.push_back(std::move(guides));
-		class_deduction_index_.set(cls, index);
 	}
-	out = class_deduction_sets_[index];
+	out = set.implicit;
+	out.insert(out.end(), set.declared.begin(), set.declared.end());
 }
 
 } // namespace sema

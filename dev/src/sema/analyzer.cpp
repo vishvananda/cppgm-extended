@@ -411,6 +411,8 @@ void Analyzer::declaration(const syntax::Decl& decl, Scope* scope)
 		return special_member(static_cast<const syntax::SpecialMemberDecl&>(decl), scope);
 	case syntax::DeclKind::Function:
 		return function_definition(static_cast<const syntax::FunctionDecl&>(decl), scope);
+	case syntax::DeclKind::DeductionGuide:
+		return deduction_guide_declaration(static_cast<const syntax::DeductionGuideDecl&>(decl), scope);
 	case syntax::DeclKind::Simple:
 		return simple_declaration(static_cast<const syntax::SimpleDecl&>(decl), scope);
 	case syntax::DeclKind::Linkage:

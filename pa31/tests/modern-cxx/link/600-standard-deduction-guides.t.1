@@ -1,0 +1,7 @@
+#include <optional>
+#include <utility>
+int main() {
+  std::optional optional(5);
+  auto pair = std::pair(6, 7L);
+  return *optional != 5 || pair.first != 6 || pair.second != 7;
+}

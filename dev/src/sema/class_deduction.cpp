@@ -1,6 +1,8 @@
 #include "sema/analyzer.h"
 #include "sema/instantiation_context.h"
 
+#include <algorithm>
+
 namespace sema {
 
 const Type* Analyzer::deduce_class_declaration(
@@ -38,7 +40,9 @@ const Type* Analyzer::deduce_class_declaration(
 		type = dependent_decltype(*cast, scope);
 	}
 	else
-		type = deduce_class_type(specifiers.deduction, arguments, scope, location);
+		type = deduce_class_type(specifiers.deduction, arguments, scope, location,
+			initializer.kind == syntax::InitializerKind::Assign,
+			initializer.expression != nullptr && initializer.expression->kind == syntax::ExprKind::BracedInit);
 	return type != nullptr ? types_.qualified(type, specifiers.cv) : nullptr;
 }
 
@@ -60,8 +64,8 @@ ClassEntity* Analyzer::deduction_template(const syntax::Slice<syntax::DeclSpecif
 		: nullptr;
 }
 
-const Type* Analyzer::deduce_class_type(
-	ClassEntity* templ, const syntax::Slice<syntax::Expr*>& arguments, Scope* scope, uint32_t location)
+const Type* Analyzer::deduce_class_type(ClassEntity* templ, const syntax::Slice<syntax::Expr*>& arguments, Scope* scope,
+	uint32_t location, bool copy_initialization, bool list_initialization)
 {
 	// [over.match.class.deduct]: constructors supply deduction candidates;
 	// selecting a specialization and initializing its object are separate
@@ -77,6 +81,13 @@ const Type* Analyzer::deduce_class_type(
 		return nullptr;
 	std::vector<FunctionEntity*> candidates;
 	class_deduction_candidates(templ, candidates);
+	// Explicit notional constructors do not participate in ordinary copy
+	// initialization. Copy-list initialization considers them but rejects
+	// an explicit winner, just as ordinary constructor overload resolution.
+	if (copy_initialization && !list_initialization)
+		candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
+							 [](const FunctionEntity* guide) { return guide->is_explicit; }),
+			candidates.end());
 	Candidate chosen = Candidate();
 	const Resolution resolution = resolve(arguments, candidates, nullptr, chosen);
 	if (resolution != Resolution::Selected)
@@ -84,6 +95,9 @@ const Type* Analyzer::deduce_class_type(
 		substitution_error(location, "class template argument deduction has no unique viable candidate");
 		return nullptr;
 	}
+	if (copy_initialization && list_initialization && chosen.function->is_explicit)
+		return substitution_error(location, "an explicit deduction guide selected in copy-list initialization"),
+			   nullptr;
 	return chosen.function->type->element;
 }
 

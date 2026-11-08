@@ -138,3 +138,56 @@ in CMAKE_C_FLAGS, and the native libraries are being rebuilt as PIC. A later
 change to CMAKE_C_COMPILER_ARG1 alone cannot override the value CMake already
 persisted in its compiler file. Keep these qualification failures separate
 from compiler gaps and from the final paired timing runs.
+
+Second validated fix block: declared C++17 deduction guides
+---------------------------------------------------------
+Retain guide syntax as its own typed AST declaration, analyze it once, keep
+its candidates with class deduction facts and include them during overload
+resolution. Guides remain absent from ordinary name lookup and emit no code.
+Handle defaults, forwarding, later guide declarations, ordering against
+implicit guides, invalid/duplicate results and explicit-copy restrictions.
+Advertise __cpp_deduction_guides only in C++17 so hosted library guides are
+actually declared. No LLVM-specific name or path handling is introduced.
+
+PA29's optional suite owns the small language regressions: one runtime group
+and four negative compilation cases. PA31's optional suite owns the separate
+std::optional/std::pair runtime check, since it emits hosted STL code. All six
+final translation units distinguish the parent from the candidate and agree
+with both GCC and Clang. Regenerate references through the normal harness;
+all positive compile and runtime statuses are zero.
+
+Full strict 9860/9860, debug-info, optional C++14/17, PA5 self-host, harness,
+architecture/format/file/placement/CWG checks and fresh student export pass.
+The fresh client installs the local reference bundle and exercises 42 wrappers;
+both new runtime groups also pass through its shipped wrappers. The first
+placement audit correctly caught STL includes in PA29; those were split into
+PA31 before the final validation. A focused final renderer correction removes
+doubled parentheses in guide spellings; final compiler and source hashes have
+been frozen separately, and strict/debug/modern/self/perf/export checks rerun.
+
+Normal parent/candidate instruction ratios: O0 0.999988, O3 0.999971, with
+identical frozen objects. The normal self/seed ratio remains approximately
+0.9997 at O0 and 1.0291 at O3; zero behavior failures, all quick kernels below
+1.30. The ordinary gate finds no meaningful performance regression.
+
+Twenty-five of the 35 failed translation units in the expanded first-block
+batch now compile, including repeated ArrayRef type/member/conversion errors
+and the direct scope_exit/optional/pair deduction failures. A new full build
+reaches 638 steps before dependency blockers stop further progress, with 12
+failed compilations at six diagnostic locations. This is the current build
+frontier, not a proof that no later compiler or runtime gaps remain:
+ - constexpr-lambda syntax: seven compilation failures;
+ - captured callable variables in generic lambdas: two locations/failures;
+ - private-base access through TrailingObjects: one;
+ - __builtin_frame_address: one;
+ - outer parameter-pack default during tuple deduction: one.
+A small captured-callable generic-lambda reducer already reproduces that
+family; the simple CRTP friend example does not yet reproduce base access.
+
+Native LLVM + Clang qualification is now complete, from the pinned Ubuntu
+22.1.2 source/configuration with PIC corrected. The rebuilt Clang reports
+Ubuntu 22.1.2 (1ubuntu1), assertions OFF, and compiles a real cppgm translation
+unit. Its binary/configuration records live in native-reference-qualified.json.
+No final paired LLVM build timing or cppgm object-equality comparison is claimed
+until cppgm-built LLVM is available. All initial failed setup/build observations
+remain retained as qualification evidence.

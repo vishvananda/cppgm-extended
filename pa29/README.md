@@ -332,6 +332,14 @@ For hosted compatibility in this mode, a conversion function returning that
 class by value can also construct the direct-initialization result. Compare
 its object binding with competing constructors; a constructor wins a tie.
 
+Declared deduction guides also contribute candidates in C++17. They are
+associated with their class template and never enter ordinary name lookup or
+emit functions. Preserve guide defaults and forwarding, consider declarations
+added after an earlier deduction, and prefer a declared guide when otherwise
+tied with an implicit guide. Reject invalid result types, equivalent guide
+declarations and explicit-guide selection in copy-list initialization; ordinary
+copy initialization considers only non-explicit candidates.
+
 Placeholder non-type template parameters (`auto`, `auto*`, `auto&` and
 `decltype(auto)`) deduce the argument's type as well as its value. Preserve
 function and object identities, reference binding and heterogeneous packs;
