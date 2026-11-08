@@ -1036,6 +1036,25 @@ AbiNode ProgramLowering::qualifier_levels(const sema::Type* qualifier)
 	return unresolved;
 }
 
+bool ProgramLowering::scalar_sizeof_pack_argument(const sema::Type* type)
+{
+	// A captured singleton names the substituted scalar's canonical entity.
+	// Ordinary sizeof...(P) names a pack; sizeof(T) has a different key.
+	if (type->kind != sema::TypeKind::TemplateParameter)
+		return false;
+	const auto* placeholder = static_cast<const sema::TemplateParameterEntity*>(type->entity);
+	const uint64_t* key = placeholder->key;
+	if (!placeholder->non_type || key == nullptr || key[0] != sema::kPlaceholderKeyPrefix + 2 || (key[1] & 1) == 0 ||
+		key[1 + sema::kPlaceholderKeyPrefix] !=
+			sema::Word(sema::kWordNode, static_cast<uint64_t>(syntax::ExprKind::SizeofPack)))
+		return false;
+	const sema::Entity* entity = EntityWord(key[2 + sema::kPlaceholderKeyPrefix]);
+	if (entity == nullptr || entity->kind != sema::EntityKind::TemplateParameter)
+		return false;
+	const auto* parameter = static_cast<const sema::TemplateParameterEntity*>(entity);
+	return !parameter->pack && !sema::IsPlaceholder(parameter);
+}
+
 AbiNode ProgramLowering::placeholder_expression(const sema::TemplateParameterEntity* placeholder)
 {
 	// Memoized per unit (the graph's nodes are the unit's); ABI_NONE for a

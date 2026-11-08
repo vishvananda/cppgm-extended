@@ -1281,6 +1281,7 @@ private:
 	// template argument it stands for, and whether a type names one the
 	// key does not mangle (the specialization's type stands in).
 	abi_mangle::AbiNode placeholder_expression(const sema::TemplateParameterEntity* placeholder);
+	static bool scalar_sizeof_pack_argument(const sema::Type* type);
 	abi_mangle::AbiNode unresolved_prefix(const sema::Type* qualifier);
 	abi_mangle::AbiNode qualifier_levels(const sema::Type* qualifier);
 	abi_mangle::AbiNode placeholder_type(const sema::TemplateParameterEntity* placeholder);

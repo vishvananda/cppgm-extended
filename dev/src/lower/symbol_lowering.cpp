@@ -1894,7 +1894,16 @@ AbiNode ProgramLowering::class_name_node(const sema::ClassEntity* entity)
 		const uint32_t count = specialization ? facts->argument_count : facts->head->count;
 		for (uint32_t i = 0; i < count; ++i)
 		{
-			const AbiNode argument = abi_type(specialization ? facts->arguments[i] : facts->head->parameters[i]->type);
+			const sema::Type* argument_type = specialization ? facts->arguments[i] : facts->head->parameters[i]->type;
+			// Clang emits a scalar alias's captured sizeof-pack argument
+			// without J/E, unlike an ordinary pack or sizeof(type) argument.
+			// This is only an ABI view: the matched semantic pack is intact.
+			if (specialization && argument_type->kind == sema::TypeKind::Pack && argument_type->param_count == 1 &&
+				facts->pattern->templ->head != nullptr && count == facts->pattern->templ->head->count &&
+				facts->pattern->templ->head->parameters[i]->non_type &&
+				scalar_sizeof_pack_argument(argument_type->params[0]))
+				argument_type = argument_type->params[0];
+			const AbiNode argument = abi_type(argument_type);
 			abi_scratch_.push_back(argument);
 		}
 		name = abi_graph_.abbreviated_template_id(name, abi_scratch_.data() + base, count);
