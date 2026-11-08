@@ -1351,6 +1351,18 @@ def strip_known_namespace_using_declarations(code: str) -> str:
     return "".join(out)
 
 
+def strip_invalid_condition_storage(code: str) -> str:
+    """A forbidden condition specifier does not exercise local-static lowering."""
+    out = list(code)
+    for match in re.finditer(r"\b(?:if|switch|while)\s*(\()\s*"
+                             r"(?:(?:const|volatile)\s+)*(static)\b", code):
+        end = matching_delimiter(code, match.start(1), "(", ")")
+        # Retain init-statements and bodies nested in condition expressions.
+        if end is not None and not re.search(r"[;{}]", code[match.end():end]):
+            out[match.start(2):match.end(2)] = " " * len(match.group(2))
+    return "".join(out)
+
+
 def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dict[str, FeatureHit]:
     if "/pa9/tests/abi/" in test_path or test_path.startswith("pa9/tests/abi/"):
         # PA9 consumes normalized ABI facts, not C++ source or LowIR. Words
@@ -1362,6 +1374,7 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
     code = strip_string_literals(no_comments)
     exception_code = strip_dynamic_exception_specifications(code)
     class_code = strip_known_namespace_using_declarations(code)
+    local_static_code = strip_invalid_condition_storage(no_comments)
     declared_intrinsics = declared_intrinsic_like_names(code)
     hits: dict[str, FeatureHit] = {}
     if exception_code != code:
@@ -1373,6 +1386,8 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             haystack = class_code
         if rule.feature_id == "exception.try_catch":
             haystack = exception_code
+        if rule.feature_id.startswith("lowir.procedural.local_static"):
+            haystack = local_static_code
         if rule.feature_id == "template.builtin_traits":
             matched = match_builtin_trait_patterns(
                 rule.patterns,

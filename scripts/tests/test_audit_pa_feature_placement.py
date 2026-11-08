@@ -951,6 +951,20 @@ function @main() -> i32 {
             audit.detect_features(function_local),
         )
 
+    def test_invalid_static_condition_does_not_require_local_static_lowering(self) -> None:
+        for control in ("if", "switch", "while"):
+            for initializer in ("1", "read()"):
+                source = f"int main() {{ {control} (static int n = {initializer}) return 0; }}"
+                with self.subTest(source=source):
+                    self.assertNotIn("lowir.procedural.local_static", audit.detect_features(source))
+                    with_static = source[:-1] + "static int other = 0; }"
+                    self.assertIn("lowir.procedural.local_static", audit.detect_features(with_static))
+        for statement in ("static int n = 0;", "if (static int n = 0; n) return 0;",
+                          "for (static int n = 0; n; ++n) return 0;"):
+            with self.subTest(statement=statement):
+                self.assertIn("lowir.procedural.local_static",
+                              audit.detect_features("int main() { " + statement + " }"))
+
     def test_local_static_ref_detector_ignores_guard_class_symbols(self) -> None:
         source = textwrap.dedent(
             """\
