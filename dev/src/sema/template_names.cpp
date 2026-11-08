@@ -2,6 +2,8 @@
 
 #include "support/small_list.h"
 
+#include <algorithm>
+
 // Template names: template template-parameters and their arguments
 // (14.3.3), dependent template-ids, and alias templates (14.5.7). A
 // template-name as a template argument is a Template type (a class or
@@ -216,7 +218,55 @@ const TemplateHead* Analyzer::TemplateHeadOf(const Type* templ)
 	return static_cast<const TemplateParameterEntity*>(templ->entity)->template_head;
 }
 
-bool Analyzer::template_parameters_match(const TemplateParameterEntity* p, const TemplateParameterEntity* a)
+void Analyzer::template_head_packs(const TemplateHead* head, TypeList& bound)
+{
+	// The outer packs expanded by a template template-parameter pack's
+	// head (14.1p15). An expansion nested in the head consumes its own packs.
+	PackList parameters;
+	for (uint32_t i = 0; i < head->count; ++i)
+	{
+		const TemplateParameterEntity* parameter = head->parameters[i];
+		if (parameter->template_template && parameter->template_head != nullptr)
+			template_head_packs(parameter->template_head, bound);
+		else if (parameter->value_type != nullptr)
+			unexpanded_packs(parameter->value_type, kAnyDepth, parameters, &bound);
+	}
+}
+
+const Type* Analyzer::matched_template_pack(const TemplateParameterEntity* parameter, const Type* const* given,
+	uint32_t count, const TypeList& earlier, bool fatal, uint32_t location)
+{
+	// A pack-expanded head consumes exactly its outer packs' known length,
+	// with each argument checked against that position's head (14.5.3p5).
+	TypeList bound;
+	template_head_packs(parameter->template_head, bound);
+	bool concrete = std::none_of(
+		given, given + count, [](const Type* argument) { return argument->kind == TypeKind::Expansion; });
+	for (const Type* pack : bound)
+		concrete = concrete &&
+			std::none_of(pack->element->params, pack->element->params + pack->element->param_count,
+				[](const Type* argument) { return argument->kind == TypeKind::Expansion; });
+	if (!bound.empty() && concrete && BoundLength(bound) != static_cast<int32_t>(count))
+	{
+		if (fatal)
+			error(location, "a template template-parameter expansion with a different number of arguments");
+		return nullptr;
+	}
+	TypeList elements;
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		const Substitution selection = Substitution{ parameter->depth, earlier.data(),
+			static_cast<uint32_t>(earlier.size()), nullptr, &i };
+		const Type* element = matched_template_element(parameter, given[i], fatal, location, &selection);
+		if (element == nullptr)
+			return nullptr;
+		elements.push_back(element);
+	}
+	return types_.pack(elements.data(), static_cast<uint32_t>(elements.size()));
+}
+
+bool Analyzer::template_parameters_match(
+	const TemplateParameterEntity* p, const TemplateParameterEntity* a, const Substitution* selection)
 {
 	// 14.3.3p3: template parameters of one kind; non-type parameters of
 	// equivalent types (one naming a parameter of its own list names the
@@ -226,10 +276,13 @@ bool Analyzer::template_parameters_match(const TemplateParameterEntity* p, const
 		return false;
 	if (p->template_template)
 		return p->template_head == nullptr || a->template_head == nullptr ||
-			template_heads_match(p->template_head, a->template_head);
+			template_heads_match(p->template_head, a->template_head, selection);
 	if (!p->non_type)
 		return true;
-	const Type* first = p->value_type->canonical;
+	const Type* first = selection != nullptr ? substitute(p->value_type, *selection) : p->value_type;
+	if (first == nullptr)
+		return false;
+	first = first->canonical;
 	const Type* second = a->value_type->canonical;
 	if (first == second)
 		return true;
@@ -256,7 +309,8 @@ bool Analyzer::template_parameters_match(const TemplateParameterEntity* p, const
 		x->index == y->index && x->non_type == y->non_type && x->pack == y->pack;
 }
 
-bool Analyzer::template_heads_match(const TemplateHead* parameter, const TemplateHead* argument)
+bool Analyzer::template_heads_match(
+	const TemplateHead* parameter, const TemplateHead* argument, const Substitution* selection)
 {
 	// 14.3.3p3: each parameter of the argument template's list matches the
 	// template template-parameter's at its position; a parameter pack of the
@@ -271,7 +325,7 @@ bool Analyzer::template_heads_match(const TemplateHead* parameter, const Templat
 		if (next == parameter->count)
 			return false;
 		const TemplateParameterEntity* p = parameter->parameters[next];
-		bool matching = template_parameters_match(p, a);
+		bool matching = template_parameters_match(p, a, selection);
 		if (!matching && p->non_type && a->non_type && !p->template_template && !a->template_template)
 		{
 			// 14.3.3p3: corresponding parameters of the two lists denote
@@ -279,8 +333,11 @@ bool Analyzer::template_heads_match(const TemplateHead* parameter, const Templat
 			TypeList corresponding;
 			for (uint32_t j = 0; j < argument->count; ++j)
 				corresponding.push_back(argument->parameters[j]->canonical->type);
-			const Type* rebound = substitute(p->value_type,
-				Substitution{ p->depth, corresponding.data(), static_cast<uint32_t>(corresponding.size()) });
+			const Type* type = selection != nullptr ? substitute(p->value_type, *selection) : p->value_type;
+			const Type* rebound = type != nullptr
+				? substitute(
+					  type, Substitution{ p->depth, corresponding.data(), static_cast<uint32_t>(corresponding.size()) })
+				: nullptr;
 			matching = rebound != nullptr && rebound->canonical == a->value_type->canonical;
 		}
 		if (!matching || (a->pack && !p->pack))

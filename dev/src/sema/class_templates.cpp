@@ -782,6 +782,14 @@ bool Analyzer::match_template_arguments(const TemplateHead* head, const Type* co
 			const Type* const* from = formed ? given[next]->params : given + next;
 			const uint32_t size = formed ? given[next]->param_count : count - next;
 			next = formed ? next + 1 : count;
+			if (parameter->template_template && parameter->template_head != nullptr)
+			{
+				const Type* pack = matched_template_pack(parameter, from, size, out, fatal, location);
+				if (pack == nullptr)
+					return false;
+				out.push_back(pack);
+				continue;
+			}
 			// An expanded pack (14.1p15: a non-type pack whose type names
 			// packs an enclosing instance binds, `Ts... Vs`): each value
 			// converts to its position's type (14.3.2p5).
@@ -863,6 +871,8 @@ const Type* Analyzer::matched_element(const TemplateParameterEntity* parameter, 
 	// One argument of its parameter's kind, a value converted; an expansion
 	// of a dependent pack as it is (its pattern of the parameter's kind).
 	argument = argument->canonical;
+	if (parameter->template_template)
+		return matched_template_element(parameter, argument, fatal, location);
 	const Type* element = argument->kind == TypeKind::Expansion ? argument->element : argument;
 	const bool value = value_argument(element);
 	const bool templ = element->kind == TypeKind::Template || element->kind == TypeKind::TemplateTemplateParameter ||
@@ -880,18 +890,36 @@ const Type* Analyzer::matched_element(const TemplateParameterEntity* parameter, 
 	}
 	if (argument->kind == TypeKind::Expansion)
 		return argument;
-	// 14.3.3p3: the argument template's parameters match the template
-	// template-parameter's.
-	const TemplateHead* own = templ ? TemplateHeadOf(argument) : nullptr;
-	if (own != nullptr && parameter->template_head != nullptr && !template_heads_match(parameter->template_head, own))
+	return argument->kind == TypeKind::Value
+		? converted_value(parameter, argument, earlier, fatal, location, element_type)
+		: argument;
+}
+
+const Type* Analyzer::matched_template_element(const TemplateParameterEntity* parameter, const Type* argument,
+	bool fatal, uint32_t location, const Substitution* selection)
+{
+	// 14.3.3p3, with an outer pack's selected element in an expanded head.
+	argument = argument->canonical;
+	const Type* element = argument->kind == TypeKind::Expansion ? argument->element : argument;
+	if (element->kind != TypeKind::Template && element->kind != TypeKind::TemplateTemplateParameter &&
+		!(element->kind == TypeKind::BoundPack &&
+			static_cast<const TemplateParameterEntity*>(element->entity)->template_template))
+	{
+		if (fatal)
+			error(location, "a template template-parameter's argument that is no template");
+		return nullptr;
+	}
+	if (argument->kind == TypeKind::Expansion)
+		return argument;
+	const TemplateHead* own = TemplateHeadOf(argument);
+	if (own != nullptr && parameter->template_head != nullptr &&
+		!template_heads_match(parameter->template_head, own, selection))
 	{
 		if (fatal)
 			error(location, "a template template-argument whose template parameters do not match");
 		return nullptr;
 	}
-	return argument->kind == TypeKind::Value
-		? converted_value(parameter, argument, earlier, fatal, location, element_type)
-		: argument;
+	return argument;
 }
 
 const Type* Analyzer::converted_value(const TemplateParameterEntity* parameter, const Type* argument,

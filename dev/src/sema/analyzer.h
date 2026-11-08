@@ -715,6 +715,10 @@ private:
 	// the parameter's declared type.
 	const Type* matched_element(const TemplateParameterEntity* parameter, const Type* argument, const TypeList& earlier,
 		bool fatal, uint32_t location, const Type* element = nullptr);
+	const Type* matched_template_element(const TemplateParameterEntity* parameter, const Type* argument, bool fatal,
+		uint32_t location, const Substitution* selection = nullptr);
+	const Type* matched_template_pack(const TemplateParameterEntity* parameter, const Type* const* given,
+		uint32_t count, const TypeList& earlier, bool fatal, uint32_t location);
 	const Type* converted_value(const TemplateParameterEntity* parameter, const Type* argument, const TypeList& earlier,
 		bool fatal, uint32_t location, const Type* element = nullptr);
 	static const TemplateHead* SoleTemplateHead(const FunctionList* functions);
@@ -834,8 +838,11 @@ private:
 	const Type* template_name_argument(const syntax::Name& name, Scope* scope, bool injected);
 	static const syntax::Name* PlainTemplateName(const syntax::TemplateArgument& argument, bool* expansion = nullptr);
 	static const TemplateHead* TemplateHeadOf(const Type* templ);
-	bool template_heads_match(const TemplateHead* parameter, const TemplateHead* argument);
-	bool template_parameters_match(const TemplateParameterEntity* p, const TemplateParameterEntity* a);
+	void template_head_packs(const TemplateHead* head, TypeList& bound);
+	bool template_heads_match(
+		const TemplateHead* parameter, const TemplateHead* argument, const Substitution* selection = nullptr);
+	bool template_parameters_match(
+		const TemplateParameterEntity* p, const TemplateParameterEntity* a, const Substitution* selection = nullptr);
 	const Type* dependent_template_name(const Type* qualifier, const Identifier* name);
 	ClassEntity* stand_in_template(const TemplateParameterEntity* name);
 	static bool IsStandIn(const ClassEntity* entity)
