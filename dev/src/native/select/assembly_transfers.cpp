@@ -3,17 +3,17 @@
 #include "native/backend_error.h"
 
 namespace native {
-void FunctionSelector::assembly_transfer(Reg reg, const Operand& memory, bool store)
+void FunctionSelector::assembly_transfer(Reg reg, const Operand& memory, bool store, unsigned bytes)
 {
-	if (!is_xmm(reg) || memory.kind != OperandKind::Mem)
+	if (!is_xmm(reg) || memory.kind != OperandKind::Mem || (bytes != 32 && bytes != 64))
 		throw BackendError("invalid wide assembly transfer location");
 	if (!out_->assembly)
 		out_->assembly.reset(new AssemblySites());
 	std::shared_ptr<AssemblyPlan> plan(new AssemblyPlan());
-	plan->transfer_bytes = 32;
+	plan->transfer_bytes = static_cast<uint16_t>(bytes);
 	plan->transfer_store = store;
 	plan->transfer_register = asm_model::Register{ asm_model::RegisterBank::Vector, static_cast<uint8_t>(reg - XMM0),
-		256, 0 };
+		static_cast<uint16_t>(bytes * 8), 0 };
 	const uint32_t site = static_cast<uint32_t>(out_->assembly->plans.size());
 	out_->assembly->plans.push_back(plan);
 	Inst& effect = emit2(Op::Asm, lowir::TypeKind::Void, Operand::make_imm(site), memory);
@@ -36,11 +36,12 @@ Operand FunctionSelector::wide_assembly_input(const lowir::AssemblyOperand& oper
 	}
 	if (source.kind != OperandKind::Mem)
 		throw BackendError("wide assembly input requires stored bytes");
-	const Operand saved = Operand::make_frame(frame_alloc(32, 16));
+	const unsigned bytes = operand.type.bytes;
+	const Operand saved = Operand::make_frame(frame_alloc(bytes, 16));
 	// Capture the complete input before installing any assembly register.
 	// A pointer and an object value share this transfer without scalar proxies.
-	assembly_transfer(XMM15, source, false);
-	assembly_transfer(XMM15, saved, true);
+	assembly_transfer(XMM15, source, false, bytes);
+	assembly_transfer(XMM15, saved, true, bytes);
 	return saved;
 }
 } // namespace native

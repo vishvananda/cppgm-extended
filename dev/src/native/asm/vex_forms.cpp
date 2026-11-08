@@ -1,6 +1,7 @@
 #include "native/asm/vex_forms.h"
 
 #include "native/asm/operands.h"
+#include "native/asm/evex_forms.h"
 #include "native/asm/vector_operands.h"
 #include "native/backend_error.h"
 #include "x86_asm_model.h"
@@ -57,6 +58,11 @@ void encode_vex_plan(Assembler& out, const x86_asm_model::VexForm& form, const V
 }
 void encode_assembly_vector_transfer(Assembler& out, const asm_model::Register& reg, const RM& memory, bool store)
 {
+	if (reg.bits == 512)
+	{
+		encode_evex_vector_transfer(out, reg, memory, store);
+		return;
+	}
 	if (reg.bank != RegisterBank::Vector || reg.number >= 16 || reg.bits != 256 || reg.offset != 0 || memory.is_reg)
 		throw BackendError("invalid assembly vector transfer");
 	const VexForm form = { "vmovdqu", L::Move, 0x6f, 1, 2, 0, 3, 0, 0, 0 };

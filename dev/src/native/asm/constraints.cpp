@@ -14,7 +14,7 @@ using namespace mir_model;
 unsigned width(lowir::Type type, RegisterBank bank)
 {
 	if (bank == RegisterBank::Vector)
-		return wide_assembly_operand(type) ? 256 : 128;
+		return wide_assembly_operand(type) ? type.bytes * 8 : 128;
 	return type.is_vector()                                        ? 128
 		: type.kind() == lowir::TypeKind::F32                      ? 32
 		: type.kind() == lowir::TypeKind::F64 || type.is_pointer() ? 64

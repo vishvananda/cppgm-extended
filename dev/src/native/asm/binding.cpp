@@ -165,6 +165,12 @@ std::shared_ptr<AssemblyPlan> prepare_assembly_source(const lowir::AssemblyModul
 	uint32_t clobbers = 0;
 	for (uint32_t i = 0; i < definition.clobber_count; ++i)
 	{
+		const Register& view = module.clobbers[definition.first_clobber + i];
+		// The ordinary allocator has no upper vector or opmask values. Both
+		// banks are caller-saved on the supported ABI, so they need no spill.
+		if ((view.bank == RegisterBank::Vector && view.number >= 16 && view.number < 32) ||
+			(view.bank == RegisterBank::Mask && view.number < 8))
+			continue;
 		const Reg reg = physical(module.clobbers[definition.first_clobber + i]);
 		if (reg == RSP || reg == RBP)
 			unsupported("stack or frame register clobbers");

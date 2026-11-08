@@ -13,6 +13,13 @@ struct Capture
 	int32_t value = 0;
 };
 
+struct WideInput
+{
+	Reg reg;
+	Operand saved;
+	unsigned bytes;
+};
+
 bool floating(lowir::Type type)
 {
 	return type.is_float() || type.is_vector();
@@ -99,7 +106,7 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	const lowir::AssemblyModule& module = *program_.assembly;
 	const lowir::AssemblyTemplate& definition = module.templates[plan->definition];
 	std::vector<Capture> captures(definition.operand_count);
-	std::vector<std::pair<Reg, Operand>> wide_inputs;
+	std::vector<WideInput> wide_inputs;
 	std::vector<std::pair<Reg, int32_t>> reserved;
 	for (uint32_t mask = plan->writes & reserved_gprs(*out_); mask != 0; mask &= mask - 1)
 	{
@@ -131,7 +138,7 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 			{
 				const Operand captured = assembly_input(source_operand, value, reg, memory);
 				if (!memory && wide_assembly_operand(operand.type))
-					wide_inputs.emplace_back(reg, captured);
+					wide_inputs.push_back(WideInput{ reg, captured, operand.type.bytes });
 				else
 				{
 					Move move;
@@ -165,7 +172,7 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 	for (const Move& move : moves_)
 		emit_move(move);
 	for (const auto& move : wide_inputs)
-		assembly_transfer(move.first, move.second, false);
+		assembly_transfer(move.reg, move.saved, false, move.bytes);
 	if (!out_->assembly)
 		out_->assembly.reset(new AssemblySites());
 	const uint32_t site = static_cast<uint32_t>(out_->assembly->plans.size());
@@ -190,7 +197,7 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 			plan->locations[i] != AL_MEMORY)
 		{
 			if (wide_assembly_operand(operand.type))
-				assembly_transfer(plan->registers[i], Operand::make_frame(captures[i].value), true);
+				assembly_transfer(plan->registers[i], Operand::make_frame(captures[i].value), true, operand.type.bytes);
 			else
 				emit2(floating(operand.type) || is_xmm(plan->registers[i]) ? Op::FMov : Op::Store,
 					transfer_type(operand.type, plan->registers[i]), Operand::make_frame(captures[i].value),
@@ -221,8 +228,8 @@ void FunctionSelector::emit_assembly(const lowir::Instruction& inst)
 		load_into(R10, Operand::make_frame(captures[i].address), TypeKind::Ptr);
 		if (wide_assembly_operand(operand.type))
 		{
-			assembly_transfer(XMM15, Operand::make_frame(captures[i].value), false);
-			assembly_transfer(XMM15, Operand::make_mem(R10, 0), true);
+			assembly_transfer(XMM15, Operand::make_frame(captures[i].value), false, operand.type.bytes);
+			assembly_transfer(XMM15, Operand::make_mem(R10, 0), true, operand.type.bytes);
 			continue;
 		}
 		const Reg value = floating(operand.type) ? XMM15 : R11;

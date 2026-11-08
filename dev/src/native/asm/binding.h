@@ -14,7 +14,7 @@ class AssemblyEnvironment;
 
 inline bool wide_assembly_operand(lowir::Type type)
 {
-	return type.is_object() && type.bytes == 32;
+	return type.is_object() && (type.bytes == 32 || type.bytes == 64);
 }
 
 struct AssemblyPlan : AssemblyBinding

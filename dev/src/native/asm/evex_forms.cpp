@@ -1,6 +1,7 @@
 #include "native/asm/evex_forms.h"
 
 #include "native/asm/operands.h"
+#include "native/backend_error.h"
 #include "native/asm/vector_operands.h"
 
 namespace native {
@@ -114,6 +115,17 @@ void emit(Assembler& out, const EvexForm& form, const VectorEncodingPlan& plan, 
 		out.byte(plan.control);
 }
 }
+void encode_evex_vector_transfer(Assembler& out, const asm_model::Register& reg, const RM& memory, bool store)
+{
+	if (reg.bank != asm_model::RegisterBank::Vector || reg.number >= 32 || reg.bits != 512 || reg.offset ||
+		memory.is_reg)
+		throw BackendError("invalid EVEX assembly vector transfer");
+	const EvexForm form = { { "vmovdqu64", L::Move, 0x6f, 1, 2, 1, 4, 0, 0, 0 }, 64, 3 };
+	const VectorEncodingPlan plan = { 512, 512, reg.number, 0, memory, static_cast<uint8_t>(store ? 0x7f : 0x6f), 0,
+		false };
+	emit(out, form, plan, 0, false, false);
+}
+
 bool encode_evex_form(Assembler& out, const assembly::Instruction& inst)
 {
 	EvexForm form;
