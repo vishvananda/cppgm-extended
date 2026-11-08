@@ -12,7 +12,10 @@ function @provide() -> i32 [binding=strong, object=_Z7providev] {
     %t8 = copy ptr 0
     %t9 = call i32 @captured__Holder_int_char___member(%t7, %t8)
     %t10 = binary add nowrap i32 %t6, %t9
-    return i32 %t10
+    %t11 = copy ptr 0
+    %t12 = call i32 @captured__scalar(%t11)
+    %t13 = binary add nowrap i32 %t10, %t12
+    return i32 %t13
 }
 function @captured__mixed(%__param0 : ptr) -> i32 [binding=weak, object=_ZN8captured5mixedIJiEEEiPNS_6ValuesIJXspplstT_sPDpS2_cEEXplLm1EsPS3_cEEEEE, object_root=yes] {
   slot $__param0 : ptr
@@ -36,4 +39,11 @@ function @captured__Holder_int_char___member(%this : ptr [object_bytes=1], %__pa
     store typed ptr %this, $this
     store typed ptr %__param1, $__param1
     return i32 13
+}
+function @captured__scalar(%__param0 : ptr) -> i32 [binding=weak, object=_ZN8captured6scalarIiEEiPNS_4SizeIXsZT_EEE, object_root=yes] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    return i32 17
 }
