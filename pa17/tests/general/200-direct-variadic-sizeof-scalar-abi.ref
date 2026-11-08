@@ -1,0 +1,22 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $value
+    %t2 = addr $value
+    %t3 = call i32 @measure(%t2)
+    %t4 = const i64 4
+    %t5 = convert sext i64 i32 %t3
+    %t6 = cmp ne i64 %t5, %t4
+    %t7 = convert trunc i32 i64 %t6
+    return i32 %t7
+}
+function @measure(%__param0 : ptr) -> i32 [binding=weak, object=_Z7measureIiEiP6ValuesIJXstT_EEE] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    %t1 = const i64 4
+    %t2 = convert trunc i32 i64 %t1
+    return i32 %t2
+}

@@ -1,0 +1,32 @@
+global @captured__keep_int : ptr [binding=strong, object=_ZN8captured8keep_intE] = addr @captured__scalar
+global @captured__keep_char : ptr [binding=strong, object=_ZN8captured9keep_charE] = addr @captured__scalar__2
+
+function @provide() -> i32 [binding=strong, object=_Z7providev] {
+  block ^entry:
+    %t1 = copy ptr 0
+    %t2 = call i32 @captured__scalar(%t1)
+    %t3 = copy ptr 0
+    %t4 = call i32 @captured__scalar__2(%t3)
+    %t5 = binary add nowrap i32 %t2, %t4
+    return i32 %t5
+}
+function @captured__scalar(%__param0 : ptr) -> i32 [binding=weak, object=_ZN8captured6scalarIiEEiPNS_6ValuesIXsZT_EEE] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    %t1 = const i64 4
+    %t2 = binary add i64 10, %t1
+    %t3 = convert trunc i32 i64 %t2
+    return i32 %t3
+}
+function @captured__scalar__2(%__param0 : ptr) -> i32 [binding=weak, object=_ZN8captured6scalarIcEEiPNS_6ValuesIXsZT_EEE] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store typed ptr %__param0, $__param0
+    %t1 = const i64 1
+    %t2 = binary add i64 10, %t1
+    %t3 = convert trunc i32 i64 %t2
+    return i32 %t3
+}
