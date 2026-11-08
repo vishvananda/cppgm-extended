@@ -412,6 +412,7 @@ private:
 	void check_parameter_redeclaration(const Identifier* name, Scope* scope, uint32_t location);
 	void check_type_name_conflict(Scope* target, const Identifier* name, const Entity* entity, uint32_t location);
 	void record_constant_initializer(VariableEntity* variable, const syntax::Initializer* initializer, Scope* scope);
+	void record_fixed_class_initializer(VariableEntity* variable, const syntax::Initializer* initializer, Scope* scope);
 	const Type* complete_array_from_initializer(const Type* type, const syntax::Initializer* initializer, bool typed);
 
 	// ---------------------------------------------- specifiers, types

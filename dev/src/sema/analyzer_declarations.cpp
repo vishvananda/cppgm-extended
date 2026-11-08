@@ -1522,6 +1522,10 @@ Binding* Analyzer::declare_variable(const Specifiers& specifiers, const Declarat
 			((type->cv & kConst) != 0 && (IsIntegralType(type) || type->kind == TypeKind::Enum)))
 			binding->value_dependent = names_.value_parameter_uses() != values || names_.dependent_uses() != uses ||
 				(initial != nullptr && (initial->flags & kValueDependentUse) != 0);
+		if (semantic() && template_depth_ != 0 && where->kind == ScopeKind::Class && variable->is_static &&
+			variable->is_constexpr && !qualified && !binding->value_dependent && ClassOf(type) != nullptr &&
+			!dependent_type(type))
+			record_fixed_class_initializer(variable, initializer, lookup);
 		// A fixed local integral constant can be a template argument in this
 		// retained body. Publish its value now; dependent initializers still
 		// wait for instantiation, even when their result type is fixed.

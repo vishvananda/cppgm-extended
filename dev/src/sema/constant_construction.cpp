@@ -327,6 +327,13 @@ bool ConstantInterpreter::construct(const Type* type, const ConstPlace& target, 
 			return list_object(cls, target, *list, location);
 		if (constructor == nullptr)
 			return fail(location, "a list-initialization outside constant evaluation");
+		if (list->facts != nullptr && (list->facts->flags & kInitializerList) != 0)
+		{
+			// 13.3.1.7: the first phase passes the entire list as its
+			// initializer_list argument, not each backing-array element.
+			syntax::Expr* argument = const_cast<syntax::BracedInitList*>(list);
+			return constructor_call(constructor, target, syntax::Slice<syntax::Expr*>{ &argument, 1 }, location);
+		}
 		return constructor_call(constructor, target, list->elements, location);
 	}
 	if (init->kind == syntax::InitializerKind::Parenthesized)
@@ -540,6 +547,11 @@ bool ConstantInterpreter::list_object(
 	const Type* array = list.facts->target;
 	ConstPlace elements;
 	if (!new_object(array, elements, location) || !aggregate(array, elements, list, location))
+		return false;
+	// 8.5.4p6: a list variable of static storage duration extends its
+	// backing array's lifetime. Argument-list temporaries remain local
+	// to this evaluation and cannot escape in a published value.
+	if (static_variable_place(target) && !extend_temporary(elements, location))
 		return false;
 	elements.type = array->element;
 	const VariableEntity* members[2] = { static_cast<const VariableEntity*>(first->variable),

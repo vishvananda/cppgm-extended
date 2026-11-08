@@ -365,6 +365,8 @@ bool ConstantInterpreter::root_storage(
 		return true;
 	case RootKind::Parameter:
 		return fail(location, "a parameter is not usable in a constant expression");
+	case RootKind::Unknown:
+		return fail(location, "a read or modification of an unspecified object");
 	case RootKind::Variable:
 	{
 		const VariableEntity* variable = static_cast<const VariableEntity*>(place.entity);
@@ -439,6 +441,11 @@ bool ConstantInterpreter::root_type(const ConstPlace& place, const Type*& type, 
 	case RootKind::Parameter:
 		type = static_cast<const Entity*>(place.entity)->type;
 		return true;
+	case RootKind::Unknown:
+		type = static_cast<const Entity*>(place.entity)->type;
+		if (type->is_reference())
+			type = type->element;
+		return true;
 	case RootKind::Temporary:
 		type = static_cast<const ConstValue*>(place.entity)->type;
 		return true;
@@ -471,7 +478,9 @@ bool SameObjectType(const Type* a, const Type* b)
 		a = a->element;
 		b = b->element;
 	}
-	return a->unqualified == b->unqualified || (a->is_reference() && a == b);
+	return a->unqualified == b->unqualified || (a->is_reference() && a == b) ||
+		(a->unqualified->kind == TypeKind::Pointer && b->unqualified->kind == TypeKind::Pointer &&
+			ConversionRules::const_castable(a, b));
 }
 
 // An empty potentially-overlapping member has no bytes of its own: it
@@ -1635,7 +1644,7 @@ bool ConstantInterpreter::publishable(const ConstValue& value) const
 	// a thread-local object's address is each thread's own, 3.7.2).
 	if (value.kind == ValueKind::Pointer)
 	{
-		if (value.root == RootKind::Object || value.root == RootKind::Parameter)
+		if (value.root == RootKind::Object || value.root == RootKind::Parameter || value.root == RootKind::Unknown)
 			return false;
 		if (value.root == RootKind::Variable)
 		{
@@ -1682,6 +1691,22 @@ void CopyValue(
 	}
 	for (uint32_t i = 0; i < source.count; ++i)
 		CopyValue(target.elements[i], source.elements[i], arena, shared, payloads);
+}
+
+// Moving one lifetime-extended object into published storage also moves
+// its self/subobject pointers, without legitimizing any other local root.
+void RebaseTemporaryPointers(ConstValue& value, const ConstPlace& source, const ConstValue* target)
+{
+	if (value.kind == ValueKind::Pointer && value.root == RootKind::Object && value.count == source.object &&
+		value.extra == source.generation)
+	{
+		value.root = RootKind::Temporary;
+		value.address.entity = target;
+		value.count = value.extra = 0;
+	}
+	if ((value.kind == ValueKind::Array || value.kind == ValueKind::Class) && (value.flags & kSharedElements) == 0)
+		for (uint32_t i = 0; i < value.count; ++i)
+			RebaseTemporaryPointers(value.elements[i], source, target);
 }
 
 } // namespace
@@ -1747,9 +1772,14 @@ bool ConstantInterpreter::extend_temporary(ConstPlace& place, uint32_t location)
 	const ConstValue& temporary = *objects_[place.object].value;
 	if (!complete(temporary))
 		return fail(location, "a temporary bound to a reference leaves a subobject uninitialized");
-	const ConstValue* published = publish(temporary, location);
-	if (published == nullptr)
-		return false;
+	ConstValue* published = static_cast<ConstValue*>(
+		analyzer_.arena_.allocate(sizeof(ConstValue), alignof(ConstValue)));
+	PointerMap shared;
+	std::vector<ConstValue*> payloads;
+	CopyValue(*published, temporary, analyzer_.arena_, &shared, &payloads);
+	RebaseTemporaryPointers(*published, place, published);
+	if (!publishable(*published))
+		return fail(location, "a constant designates another object without static storage duration");
 	place.root = RootKind::Temporary;
 	place.entity = published;
 	place.object = 0;

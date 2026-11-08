@@ -234,6 +234,7 @@ private:
 	bool subscript(const syntax::SubscriptExpr& expr, ConstPlace& out);
 	bool member(const syntax::MemberExpr& expr, ConstPlace& out);
 	bool member_object(const syntax::MemberExpr& expr);
+	bool member_base(const syntax::MemberExpr& expr, ConstPlace* out);
 	bool reference_cast(const syntax::Expr& expr, const syntax::Expr& operand, ConstPlace& out);
 	bool bind(const syntax::Expr& expr, const Conversion* conversion, const Type* reference, ConstPlace& out);
 	bool floating_operation(

@@ -888,13 +888,21 @@ lowir::SymbolId ProgramLowering::constant_temporary(const sema::ConstValue* temp
 	const uint32_t found = constant_temporaries_.find(temporary);
 	if (found != PointerMap::kMissing)
 		return found;
+	// Publish the symbol before its data: a lifetime-extended object can
+	// contain a pointer to itself (or one of its own subobjects).
+	const lowir::SymbolId symbol = new_symbol("__ref_tmp__" + std::to_string(++static_temporaries_));
+	constant_temporaries_.set(temporary, symbol);
+	const auto unavailable = [&]() {
+		constant_temporaries_.set(temporary, PointerMap::kMissing);
+		return lowir::kNoId;
+	};
 	const sema::Type* type = temporary->type;
 	lowir::Global global = lowir::Global();
 	if (type->kind == sema::TypeKind::Array || type->unqualified->kind == sema::TypeKind::Class)
 	{
 		StaticData data;
 		if (!constant_data(type, *temporary, data, location))
-			return lowir::kNoId;
+			return unavailable();
 		PreserveStaticOffsets(data);
 		global.init = lowir::GlobalInit::Data;
 		global.first_item = static_cast<uint32_t>(program_.data_items.size());
@@ -906,17 +914,15 @@ lowir::SymbolId ProgramLowering::constant_temporary(const sema::ConstValue* temp
 		global.typed = true;
 		global.type = storage_type(type);
 		if (!constant_global(type, *temporary, global, location))
-			return lowir::kNoId;
+			return unavailable();
 	}
 	state_storage_type(global, size_of(type, location), alignment_of(type, location));
-	const lowir::SymbolId symbol = new_symbol("__ref_tmp__" + std::to_string(++static_temporaries_));
 	program_.declare_global(symbol, lowir::SymbolKind::GlobalDefinition, global);
 	program_.symbols[symbol].metadata.binding = ir_model::SBM_INTERNAL;
 	if (readonly_object(type))
 		program_.symbols[symbol].metadata.storage = ir_model::GSM_READONLY;
 	name_temporary(symbol);
 	++counters_.globals;
-	constant_temporaries_.set(temporary, symbol);
 	return symbol;
 }
 

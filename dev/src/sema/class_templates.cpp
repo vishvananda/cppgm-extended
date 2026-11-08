@@ -535,6 +535,29 @@ const Type* Analyzer::template_argument(
 		// value.
 		if (kind == BindingKind::TemplateValue)
 			return result.binding->entity->type;
+		// A previously evaluated, fixed class constant can undergo its
+		// public constexpr conversion at definition time. Reuse this
+		// lookup, rather than speculating during every value evaluation.
+		if (semantic() && template_depth_ != 0 && kind == BindingKind::Variable && result.binding->entity != nullptr &&
+			result.binding->entity->kind == EntityKind::Variable)
+		{
+			const auto* variable = static_cast<const VariableEntity*>(result.binding->entity);
+			const ClassEntity* cls = ClassOf(variable->type);
+			if (variable->is_static && variable->is_constexpr && variable->constant == ConstantState::Object &&
+				cls != nullptr && !dependent_type(variable->type))
+			{
+				const FunctionEntity* conversion = unique_conversion(cls, IsIntegralOrUnscopedEnum);
+				if (conversion != nullptr && conversion->is_constexpr && conversion->public_special_access &&
+					conversion->owner == cls->scope)
+				{
+					const uint32_t depth = template_depth_;
+					template_depth_ = 0;
+					const Type* value = fixed_template_value(argument, scope, target, unknown);
+					template_depth_ = depth;
+					return value;
+				}
+			}
+		}
 		// A dependent using-declaration also introduces an unqualified
 		// value name unless the parser recorded a type-id with `typename`.
 		const bool dependent = !name.last().template_keyword &&

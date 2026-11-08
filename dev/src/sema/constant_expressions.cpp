@@ -355,6 +355,10 @@ bool ConstantInterpreter::rvalue(const syntax::Expr& expr, ConstValue& out)
 			return true;
 		}
 		ConstPlace self;
+		// The P2280R4 exception for unknown this is a member-access
+		// context, not an arbitrary use of the pointer's value.
+		if (frames_.size() == first_frame_)
+			return fail(e->location, "`this` outside a constexpr member access");
 		if (!this_place(self, e->location))
 			return false;
 		out = PointerTo(self, facts->type->unqualified);
@@ -913,15 +917,12 @@ bool ConstantInterpreter::entity_place(const Entity* entity, const Type* type, C
 		return true;
 	}
 	case EntityKind::Parameter:
-		// Naming a by-value parameter's object is not an lvalue-to-rvalue
-		// conversion. A constexpr member may return a value without reading
-		// the object; an unknown reference parameter still needs its value.
-		if (entity->type->is_reference())
-			return fail(location, "a parameter is not usable in a constant expression");
+		// P2280R4: an unknown reference designates an unspecified object;
+		// passing it or querying its type reads no stored object value.
 		out = ConstPlace();
-		out.root = RootKind::Parameter;
+		out.root = entity->type->is_reference() ? RootKind::Unknown : RootKind::Parameter;
 		out.entity = entity;
-		out.type = entity->type;
+		out.type = entity->type->is_reference() ? entity->type->element : entity->type;
 		return true;
 	case EntityKind::Variable:
 	{
@@ -976,7 +977,13 @@ bool ConstantInterpreter::entity_place(const Entity* entity, const Type* type, C
 			// its referent (5.19p2).
 			const ConstValue* bound = analyzer_.variable_value(variable);
 			if (bound == nullptr || bound->kind != ValueKind::Pointer)
-				return fail(location, "a reference is not usable in a constant expression");
+			{
+				out = ConstPlace();
+				out.root = RootKind::Unknown;
+				out.entity = variable;
+				out.type = variable->type->element;
+				return true;
+			}
 			out = PlaceOf(*bound, variable->type->element);
 			return true;
 		}
@@ -995,7 +1002,18 @@ bool ConstantInterpreter::entity_place(const Entity* entity, const Type* type, C
 bool ConstantInterpreter::this_place(ConstPlace& out, uint32_t location)
 {
 	// 9.3.2p1: the object of the member function call being evaluated.
-	if (frames_.size() == first_frame_ || !frames_.back().has_this)
+	if (frames_.size() == first_frame_)
+	{
+		const Type* type = analyzer_.body_ != nullptr ? analyzer_.body_->this_type : nullptr;
+		if (type == nullptr || ClassOf(type->element) == nullptr)
+			return fail(location, "`this` outside a member function");
+		out = ConstPlace();
+		out.root = RootKind::Unknown;
+		out.entity = ClassOf(type->element);
+		out.type = type->element;
+		return true;
+	}
+	if (!frames_.back().has_this)
 		return fail(location, "`this` outside a constexpr member function call");
 	out = frames_.back().self;
 	return true;
@@ -1305,6 +1323,9 @@ bool ConstantInterpreter::comparison(const syntax::BinaryExpr& expr, const Const
 			convert_scalar(right, left.type, expr.location);
 		if (left.kind != ValueKind::Pointer || right.kind != ValueKind::Pointer)
 			return fail(expr.location, "a comparison of a pointer with a non-pointer");
+		if ((left.root == RootKind::Unknown || right.root == RootKind::Unknown) && left.root != RootKind::Null &&
+			right.root != RootKind::Null && (left.root != right.root || left.address.entity != right.address.entity))
+			return fail(expr.location, "a comparison of unspecified object identities");
 		const bool same_object = left.root == right.root && left.count == right.count && left.extra == right.extra &&
 			(left.address.entity == right.address.entity || same_literal(left, right));
 		if (expr.op == TokenKind::OP_EQ || expr.op == TokenKind::OP_NE)
@@ -2108,6 +2129,9 @@ bool ConstantInterpreter::cast(const syntax::Expr& expr, const syntax::Expr& ope
 	ConstValue value;
 	if (!rvalue(operand_expr, value))
 		return false;
+	if (value.kind == ValueKind::Pointer && IsPointer(type) &&
+		(value.type->element->kind == TypeKind::Function) != (type->unqualified->element->kind == TypeKind::Function))
+		return fail(expr.location, "a function/object pointer reinterpretation in a constant expression");
 	if ((expr.facts->flags & kBaseCast) != 0 && value.kind == ValueKind::MemberPointer)
 	{
 		// 5.2.9p12: to a pointer to member of a base class.
@@ -2231,18 +2255,44 @@ bool ConstantInterpreter::vector_lane(const syntax::SubscriptExpr& expr, ConstPl
 
 bool ConstantInterpreter::member_object(const syntax::MemberExpr& expr)
 {
+	return member_base(expr, nullptr);
+}
+
+bool ConstantInterpreter::member_base(const syntax::MemberExpr& expr, ConstPlace* out)
+{
 	// 5.2.5p1: the object expression is evaluated even when the member is
-	// static or an enumerator (9.4p2).
+	// static or an enumerator (out == nullptr, 9.4p2). P2280R4 admits
+	// unknown this only as the object of an explicit member access.
 	const syntax::Expr* base = WithoutParentheses(expr.base);
 	if (base->facts == nullptr)
 		return true;
-	if (expr.op == TokenKind::OP_ARROW)
+	const syntax::Expr* self = base;
+	if (expr.op != TokenKind::OP_ARROW && self->kind == syntax::ExprKind::Unary &&
+		static_cast<const syntax::UnaryExpr*>(self)->op == TokenKind::OP_STAR)
+		self = WithoutParentheses(static_cast<const syntax::UnaryExpr*>(self)->operand);
+	ConstPlace object;
+	if (self->kind == syntax::ExprKind::KeywordLiteral &&
+		static_cast<const syntax::KeywordLiteralExpr*>(self)->keyword == TokenKind::KW_THIS)
+	{
+		if (!this_place(object, expr.location))
+			return false;
+	}
+	else if (expr.op == TokenKind::OP_ARROW)
 	{
 		ConstValue pointer;
-		return rvalue(*base, pointer);
+		if (!rvalue(*base, pointer))
+			return false;
+		if (out == nullptr)
+			return true;
+		if (pointer.kind != ValueKind::Pointer || pointer.root == RootKind::Null)
+			return fail(expr.location, "a member access through a null pointer");
+		object = PlaceOf(pointer, pointer.type->element);
 	}
-	ConstPlace place;
-	return object_place(*base, place);
+	else if (!object_place(*base, object))
+		return false;
+	if (out != nullptr)
+		*out = object;
+	return true;
 }
 
 bool ConstantInterpreter::member(const syntax::MemberExpr& expr, ConstPlace& out)
@@ -2256,16 +2306,7 @@ bool ConstantInterpreter::member(const syntax::MemberExpr& expr, ConstPlace& out
 	if (!data_member)
 		return member_object(expr) && entity_place(entity, expr.facts->type, out, expr.location);
 	ConstPlace object;
-	if (expr.op == TokenKind::OP_ARROW)
-	{
-		ConstValue pointer;
-		if (!rvalue(*expr.base, pointer))
-			return false;
-		if (pointer.kind != ValueKind::Pointer || pointer.root == RootKind::Null)
-			return fail(expr.location, "a member access through a null pointer");
-		object = PlaceOf(pointer, pointer.type->element);
-	}
-	else if (!object_place(*expr.base, object))
+	if (!member_base(expr, &object))
 		return false;
 	return through_naming(object, analyzer_.member_naming_class(expr), expr.location) &&
 		member_place(object, static_cast<const VariableEntity*>(entity), out, expr.location);
@@ -2402,6 +2443,15 @@ bool ConstantInterpreter::bind(
 	if (facts == nullptr || facts->type == nullptr)
 		return fail(e->location, "an expression outside constant evaluation");
 	const Type* referenced = reference->is_reference() ? reference->element : reference;
+	if (e->kind == syntax::ExprKind::BracedInit && (facts->flags & kInitializerList) != 0 &&
+		analyzer_.initializer_list_element(referenced) != nullptr)
+	{
+		// A constructor's first-phase list has the constructed class as
+		// its expression type. Its argument still materializes the typed
+		// initializer_list parameter object, not that outer class.
+		return new_object(referenced, out, e->location) &&
+			list_object(ClassOf(referenced), out, static_cast<const syntax::BracedInitList&>(*e), e->location);
+	}
 	if (ConversionFunction(conversion))
 	{
 		// 13.3.1.6: a conversion function's reference result, else a

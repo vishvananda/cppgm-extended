@@ -68,7 +68,11 @@ enum class RootKind : uint8_t
 	// A by-value parameter outside the evaluation: its object can be
 	// designated without reading its unknown value (5.19p2). Its address
 	// cannot be published as an address constant expression (5.19p3).
-	Parameter
+	Parameter,
+	// P2280R4: a reference/implicit object outside this evaluation may
+	// designate an unspecified object. Its type/lifetime can propagate,
+	// but its stored values and address are not constant results.
+	Unknown
 };
 
 // ConstValue::flags.

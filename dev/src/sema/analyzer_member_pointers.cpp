@@ -134,6 +134,13 @@ ExprFacts* Analyzer::member_pointer_cast(
 			substitution_error(expr.location, "invalid conversion to a pointer to member");
 			return nullptr;
 		}
+		// 5.2.9p12: inverse member-pointer conversion needs the complete
+		// derived class, even when its base and named member are known.
+		if (!require_complete(derived))
+		{
+			substitution_error(expr.location, "a member-pointer conversion with an incomplete derived class");
+			return nullptr;
+		}
 		const uint32_t paths = base_path_facts(base, derived, expr.location);
 		if ((paths & kBasePathCount) != 1 || (paths & kVirtualBasePath) != 0)
 		{

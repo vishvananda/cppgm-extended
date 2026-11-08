@@ -962,6 +962,42 @@ const ConstValue* Analyzer::constant_scalar_initializer(const syntax::Expr& expr
 	return value;
 }
 
+void Analyzer::record_fixed_class_initializer(
+	VariableEntity* variable, const syntax::Initializer* initializer, Scope* scope)
+{
+	// 14.6.2.2: a fixed literal class and fixed initialization do not
+	// acquire value dependence merely from the member's class template.
+	// Materialize an access-independent value-initialization now; other
+	// initializers and specialization-dependent access wait as before.
+	ClassEntity* cls = const_cast<ClassEntity*>(ClassOf(variable->type));
+	if (TemplatedClassScope(cls->scope))
+		return;
+	const syntax::Expr* expression = initializer->expression;
+	if (initializer->kind == syntax::InitializerKind::Assign && expression != nullptr &&
+		expression->kind == syntax::ExprKind::FunctionalCast)
+	{
+		const auto& cast = static_cast<const syntax::FunctionalCastExpr&>(*expression);
+		if (!cast.arguments.empty() || (cast.braced != nullptr && !cast.braced->elements.empty()))
+			return;
+		Specifiers specifiers;
+		this->specifiers(cast.type, scope, specifiers, false);
+		if (ClassOf(specifiers.type) != cls)
+			return;
+	}
+	else if (expression == nullptr || expression->kind != syntax::ExprKind::BracedInit ||
+		!static_cast<const syntax::BracedInitList*>(expression)->elements.empty())
+		return;
+	FunctionEntity* constructor = default_constructor(cls, initializer->location);
+	if (constructor == nullptr || (!constructor->implicit && !constructor->public_special_access) ||
+		!constexpr_constructor(constructor, 0))
+		return;
+	const uint32_t depth = template_depth_;
+	template_depth_ = 0;
+	initialize_variable(variable, variable->type, initializer, scope, initializer->location);
+	record_constant_initializer(variable, initializer, scope);
+	template_depth_ = depth;
+}
+
 void Analyzer::record_constant_initializer(
 	VariableEntity* variable, const syntax::Initializer* initializer, Scope* scope)
 {

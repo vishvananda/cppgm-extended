@@ -3003,7 +3003,12 @@ ExprFacts* Analyzer::explicit_conversion(
 		const Type* to_pointer = types_.pointer(referenced);
 		const bool keeps_const = !ConversionRules::casts_away_constness(from_pointer, to_pointer);
 		const bool static_kind = cast != TokenKind::KW_CONST_CAST && cast != TokenKind::KW_REINTERPET_CAST;
-		bool allowed = glvalue_cast && constness && ConversionRules::const_castable(from_pointer, to_pointer);
+		// CWG1965/2879: const_cast may materialize a class or array
+		// prvalue for an rvalue reference, but never a scalar prvalue.
+		const bool const_operand = source->category != ValueCategory::PRValue ||
+			(rvalue && (ClassOf(source->type) != nullptr || source->type->kind == TypeKind::Array));
+		bool allowed = glvalue_cast && const_operand && constness &&
+			ConversionRules::const_castable(from_pointer, to_pointer);
 		uint32_t hierarchy = 0;
 		Conversion conversion = Conversion();
 		bool converted = false;
@@ -3037,7 +3042,7 @@ ExprFacts* Analyzer::explicit_conversion(
 			}
 		}
 		if (!allowed && reinterpret)
-			allowed = glvalue_cast && (keeps_const || constness);
+			allowed = source->category != ValueCategory::PRValue && glvalue_cast && (keeps_const || constness);
 		if (!allowed)
 		{
 			substitution_error(expr.location,

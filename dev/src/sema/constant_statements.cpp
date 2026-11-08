@@ -139,17 +139,7 @@ bool ConstantInterpreter::call(const syntax::CallExpr& expr, Result& result)
 			else if (callee->kind == syntax::ExprKind::Member)
 			{
 				const syntax::MemberExpr& access = static_cast<const syntax::MemberExpr&>(*callee);
-				if (access.op == TokenKind::OP_ARROW)
-				{
-					ConstValue pointer;
-					located = rvalue(*access.base, pointer);
-					if (located && (pointer.kind != ValueKind::Pointer || pointer.root == RootKind::Null))
-						return fail(expr.location, "a member function called through a null pointer");
-					if (located)
-						object = PlaceOf(pointer, pointer.type->element);
-				}
-				else
-					located = object_place(*access.base, object);
+				located = member_base(access, &object);
 				located = located && through_naming(object, analyzer_.member_naming_class(access), expr.location);
 			}
 			else
