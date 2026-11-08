@@ -432,6 +432,7 @@ void Parser::resolve_labels(std::vector<Instruction>& instructions)
 std::vector<Instruction> Parser::run()
 {
 	std::vector<Instruction> result;
+	uint8_t pending_prefix = 0;
 	while (pos_ < source_.size())
 	{
 		space();
@@ -454,6 +455,8 @@ std::vector<Instruction> Parser::run()
 		space();
 		if (take(':'))
 		{
+			if (pending_prefix != 0)
+				fail("assembly prefix cannot precede a label");
 			inst.label = true;
 			result.push_back(inst);
 			continue;
@@ -461,6 +464,19 @@ std::vector<Instruction> Parser::run()
 		for (char& c : inst.mnemonic)
 			if (c >= 'A' && c <= 'Z')
 				c = static_cast<char>(c + ('a' - 'A'));
+		const uint8_t prefix = inst.mnemonic == "lock"                                     ? 0xf0
+			: inst.mnemonic == "rep" || inst.mnemonic == "repe" || inst.mnemonic == "repz" ? 0xf3
+			: inst.mnemonic == "repne" || inst.mnemonic == "repnz"                         ? 0xf2
+																						   : 0;
+		if (prefix != 0)
+		{
+			if (pending_prefix != 0)
+				fail("conflicting assembly instruction prefixes");
+			pending_prefix = prefix;
+			continue;
+		}
+		inst.prefix = pending_prefix;
+		pending_prefix = 0;
 		const bool branch = inst.mnemonic[0] == 'j' || inst.mnemonic == "call" || inst.mnemonic == "callq";
 		if (current() != '\n' && current() != ';' && current() != '#' && pos_ != source_.size())
 		{
@@ -478,6 +494,8 @@ std::vector<Instruction> Parser::run()
 			std::reverse(inst.operands.begin(), inst.operands.end());
 		result.push_back(inst);
 	}
+	if (pending_prefix != 0)
+		fail("assembly prefix has no instruction");
 	resolve_labels(result);
 	return result;
 }

@@ -370,3 +370,32 @@ PA35 smoke, architecture/placement audits and the harness checks.
 Symbol/relocation operands, outgoing CFG edges, assembly items/unwind state,
 wider ISA/register coverage and Rust source/pin qualification remain open.
 Godot is paused until the assembly work is finished.
+
+### Symbol and integer-form checkpoint (2026-11-08)
+
+The native boundary now binds actual LowIR symbol IDs and byte addends, including
+constant index projections. GNU address constants come from semantic constant
+evaluation. Typed source-span bindings retain their identity through the single
+assembly parse; native fixups do not recover identities from rendered names.
+RIP-relative loads/addresses, GOT references and direct symbol calls have native
+observers. Declared stack effects preserve ABI call alignment in frame-free
+bodies. The stack check stays behind the optional per-function assembly state.
+
+Commutative pairs can exchange values or explicit storage inputs while retaining
+their original types and storage identities. Overlapping pairs are rejected.
+The form tables additionally cover unary arithmetic, shifts/rotates, test,
+multiply, locked exchange/add and compare/exchange, and repeated string forms.
+Prefix validation rejects incompatible or incomplete combinations.
+
+All 50 fixtures pass at O0/O2/O3 with GCC and Clang observers and the self-built
+compiler, including contended atomic updates, guarded copies and high-byte
+aliases. A private LLVM 22 oracle corpus covers 9,264 Intel and 9,264 AT&T
+encodings, with no mismatches after accounting for 64 legal legacy-prefix-order
+variants. The required strict report, debug-info, self-host through PA5, inception
+equality, PA35 smoke, harness and mandatory audits pass. Frozen instruction work
+changes by -0.0016% at O0 and +0.0130% at O3 against the pre-assembly baseline,
+with byte-identical output objects. This is not a wall-time measurement.
+
+Outgoing exits, global/naked assembly, directives/unwind state, wider register/ISA
+coverage and Rust source/immutable-pin qualification remain open. Godot is
+paused. The implementation is still a supported subset, not full assembly.
