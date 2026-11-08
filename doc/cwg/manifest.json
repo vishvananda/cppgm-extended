@@ -408,6 +408,29 @@
       "adopted_papers": []
     },
     {
+      "file": "cwg-1360.txt",
+      "source_url": "https://cplusplus.github.io/CWG/issues/1360.html",
+      "source_html_sha256": "09027cc0710ab2ed9a68fc95f685b0c2928d9e9461ff48184826573da55c9a86",
+      "text_sha256": "f5caea0e1f482d15a1b2b6c5d0bc99fc038c6cd60364a4d16eab437e56ed93fa",
+      "retrieved": "2026-11-08",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "issue": 1360,
+      "title": "constexpr defaulted default constructors",
+      "status": "CD6",
+      "role": "course-reference",
+      "snapshot_url": "https://raw.githubusercontent.com/cplusplus/CWG/38a43db15e384602a0c5debc3f7f22be32e186a1/issues/1360.html",
+      "adopted_papers": [
+        "P2448R2"
+      ],
+      "local_papers": [
+        "paper-p2448r2.txt"
+      ]
+    },
+    {
       "issue": 1391,
       "title": "Conversions to parameter types with non-deduced template arguments",
       "status": "CD4",
@@ -1603,6 +1626,27 @@
       },
       "retrieved": "2026-11-08",
       "paper": "P0727R0"
+    },
+    {
+      "file": "paper-p2448r2.txt",
+      "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2448r2.html",
+      "source_html_sha256": "5406caa97e1e55595f1254131bfa52283738d101fc382aa96b15657511d1253e",
+      "text_sha256": "f274fba8e3e1dd7a1b1508a338d6dd5d6b6cf7d96f271744d3636a4e53ea3940",
+      "retrieved": "2026-11-08",
+      "text_renderer": {
+        "path": "scripts/cwg_html_text.py",
+        "sha256": "9f54db3aee8c6beec374ecea9a96ae5172f584cfcaf793c2d41dbf775afc43aa",
+        "historical_edits": "del/ins, s/u, marked blocks and source-defined stddel/stdins retained, not applied"
+      },
+      "paper": "P2448R2",
+      "implemented_scope": "Defaultedscalarconstructor suitability only; no generalbackportofeveryP2448 restrictionchange, actualconstantobject/readvalidationretained.",
+      "adoption_evidence": {
+        "document": "N4918",
+        "motion": "CWG poll 9",
+        "meeting": "July 2022",
+        "kind": "Working paper wording",
+        "source_url": "https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/n4918.html"
+      }
     }
   ]
 }

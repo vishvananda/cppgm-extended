@@ -1,0 +1,140 @@
+Source: https://cplusplus.github.io/CWG/issues/1360.html
+Full historical text follows; DELETE/INSERT changes are preserved, not applied.
+
+This is an unofficial snapshot of the ISO/IEC JTC1 SC22 WG21 Core Issues List revision
+121a. See http://www.open-std.org/jtc1/sc22/wg21/ for the official list.
+
+2026-10-10
+
+1360. constexpr defaulted default constructors
+Section: 11.4.5 [class.ctor [1]] Status: CD6 Submitter: Richard Smith Date: 2011-08-16
+
+[ Resolved by P2448R2, applied in July 2022. ]
+
+According to 11.4.5 [class.ctor [2]] paragraph 6, a defaulted default constructor is
+constexpr if the corresponding user-written constructor would satisfy the constexpr
+requirements. However, the requirements apply to the definition of a constructor, and a
+defaulted constructor is defined only if it is odr-used, leaving it indeterminate at
+declaration time whether the defaulted constructor is constexpr or not.
+
+(See also issue 1358 [3].)
+
+Additional notes (February, 2013):
+
+As an example of this issue, consider:
+
+
+  struct S {
+    int i = sizeof(S);
+  };
+
+
+You can't determine the value of the initializer, and thus whether the initializer is a
+constant expression, until the class is complete, but you can't complete the class
+without declaring the default constructor, and whether that constructor is constexpr or
+not depends on whether the member initializer is a constant expression.
+
+A similar issue arises with the following example:
+
+
+  struct A {
+    int x = 37;
+    struct B { int x = 37; } b;
+    B b2[2][3] = { { } };
+  };
+
+
+This introduces an order dependency that is not specified in the current text:
+determining whether the default constructor of A is constexpr requires first determining
+the characteristics of the initializer of B::x and whether B::B() is constexpr or not.
+
+The problem is exacerbated with class templates, since the current direction of CWG is
+to instantiate member initializers only when they are needed (see issue 1396 [4]). For a
+specific example:
+
+
+  struct S;
+  template<class T> struct X {
+    int i = T().i;
+  };
+  unsigned n = sizeof(X<S>); // Error?
+  struct S { int i; };
+
+
+This also affects determining whether a class template specialization is a literal type
+or not; presumably getting the right answer to that requires instantiating the class and
+all its nonstatic data member initializers.
+
+See also issues 1397 [5] and 1594 [6].
+
+Notes from the September, 2013 meeting:
+
+This issue should be resolved together with issue 1397 [5].
+
+Proposed resolution (May, 2014):
+
+Change 11.4.5 [class.ctor [1]] paragraphs 4-5 as follows:
+
+A defaulted default constructor for class X is defined as deleted if:
+
+-
+
+...
+
+-
+
+any potentially constructed subobject has a type with a destructor that is deleted or
+inaccessible from the defaulted default constructor.
+
+[INSERT: An implicitly-declared default constructor is constexpr if:]
+
+-
+
+[INSERT: X has no virtual bases; and]
+
+-
+
+[INSERT: for each non-variant non-static data member or base class subobject M, either M
+is initialized via brace-or-equal-initializer or default-initialization of M uses a
+constexpr constructor; and]
+
+-
+
+[INSERT: if X is a union having variant members, or, if X is a non-union-class, for each
+anonymous union member having variant members, exactly one non-static data member is
+initialized via brace-or-equal-initializer.]
+
+A default constructor is trivial if it is not user-provided and if:
+
+-
+
+...
+
+-
+
+for all the non-static data members of its class that are of class type (or array
+thereof), each such class has a trivial default constructor.
+
+Otherwise, the default constructor is non-trivial.
+
+A default constructor that is defaulted and not defined as deleted is implicitly defined
+when it is odr-used (6.3 [basic.def.odr [7]]) to create an object of its class type
+(6.8.2 [intro.object [8]]) or when it is explicitly defaulted after its first
+declaration. The implicitly-defined default constructor performs the set of
+initializations of the class that would be performed by a user-written default
+constructor for that class with no ctor-initializer (11.9.3 [class.base.init [9]]) and
+an empty compound-statement. If that user-written default constructor would be
+ill-formed, the program is ill-formed. [DELETE: If that user-written default constructor
+would satisfy the requirements of a constexpr constructor (9.2.6 [dcl.constexpr [10]]),
+the implicitly-defined default constructor is constexpr.] Before the defaulted default
+constructor for a class is implicitly defined, all the non-user-provided default
+constructors for its base classes and its non-static data members shall have been
+implicitly defined. [Note:...
+
+Additional notes, May, 2014:
+
+The proposed resolution inadvertently allows a defaulted default constructor of a class
+with virtual bases to be constexpr. It has been updated with a change addressing that
+oversight and returned to "review" status.
+
+See also issue 1890 [11].

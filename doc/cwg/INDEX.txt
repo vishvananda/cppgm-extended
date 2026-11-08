@@ -80,6 +80,9 @@ CWG 1330 | CD3 | cwg-1330.txt
   Delayed instantiation of noexcept specifiers
 CWG 1351 | CD4 | cwg-1351.txt
   Problems with implicitly-declared exception-specifications
+CWG 1360 | CD6 | cwg-1360.txt
+  constexpr defaulted default constructors
+  Local paper: paper-p2448r2.txt
 CWG 1391 | CD4 | cwg-1391.txt
   Conversions to parameter types with non-deduced template arguments
 CWG 1395 | C++17 | cwg-1395.txt
@@ -282,6 +285,12 @@ P0398R0 | paper-p0398r0.txt
   https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0398r0.html
 P0727R0 | paper-p0727r0.txt
   https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0727r0.html
+
+P2448R2 | paper-p2448r2.txt
+  https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2448r2.html
+  CWG 1360 identifies this adopted July 2022 resolution.
+  Implemented here: defaulted scalar constructor suitability; actual constant
+  initialization and indeterminate reads still use the ordinary evaluator.
 
 Adding a decision
 -----------------

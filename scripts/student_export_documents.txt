@@ -167,3 +167,5 @@ doc/cwg/paper-n3922.txt
 doc/cwg/paper-p0398r0.txt
 doc/cwg/cwg-1299.txt
 doc/cwg/paper-p0727r0.txt
+doc/cwg/cwg-1360.txt
+doc/cwg/paper-p2448r2.txt
