@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "results_sha256": "65fe78e8def6e1181ed46588b644a9f939eccefa402378504f26f6ac1c82ebfb",
+  "source_revision": "17a21ad27ace6eda20b948e57c2e78ab3d568374",
+  "frozen_source_files": 484,
+  "successful_rebuilds": 28,
+  "paired_blocks_each": 2,
+  "builtin_configs_identical": true
+}

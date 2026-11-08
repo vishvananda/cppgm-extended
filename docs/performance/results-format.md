@@ -46,9 +46,10 @@ time includes harness work and cannot silently become pure compilation time.
 Link time is separate from object compilation; a complete Godot build can report
 `build` time. Correctness test execution, with process startup, is separate from
 an application runtime benchmark. Inception is cppgm's codegen benchmark: the
-self-built and GCC-built compilers process identical compiler source inputs.
-Its speedup is GCC-built compiler CPU time divided by self-built compiler CPU
-time. This appears as the cppgm++ runtime result beside its compilation result.
+self-built and native GCC-built or Clang-built compilers process identical
+compiler source inputs. Its speedup is the native-built compiler CPU time divided
+by self-built compiler CPU time. This appears as the cppgm++ runtime result beside
+its compilation result.
 
 Each linked detail table includes every test/input, absolute times when available,
 paired ratios and their methods, validation results, flags, language mode, target

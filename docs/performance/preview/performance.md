@@ -63,4 +63,8 @@ This preview uses pinned snapshots. Existing automatic publishers still need mig
 - [Dedicated Xeon E5-2696 v4: public programs and cppgm self-build/codegen](public-intel.md).
 - [Hosted Xeon Platinum 8370C: index-cpp](index-cpp-hosted-intel.md).
 
-Processor badges retain independent measured revisions and environments. The shared local E5 internal-test observation is labeled `local E5`.
+Processor badges retain independent measured revisions and environments. Local shared-host measurements retain their environment in each badge tooltip and linked report.
+
+## cppgm comparisons against both native compilers
+
+[Local Intel: compiler build time and paired codegen vs GCC and Clang](cppgm-local.md).
