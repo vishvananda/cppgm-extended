@@ -1,5 +1,15 @@
 // expect exit 0
-#include <initializer_list>
+typedef decltype(sizeof(0)) Size;
+namespace std {
+template<class T> class initializer_list {
+  const T* data;
+  Size count;
+public:
+  constexpr initializer_list() : data(nullptr), count(0) {}
+  constexpr const T* begin() const { return data; }
+  constexpr Size size() const { return count; }
+};
+}
 struct OnlyList {
   int n;
   constexpr OnlyList(std::initializer_list<int> values) : n(values.size()) {}
