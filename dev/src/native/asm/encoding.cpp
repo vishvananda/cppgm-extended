@@ -34,6 +34,12 @@ RM rm(const Operand& op, const assembly::Instruction& inst)
 	if (op.kind != OperandKind::Memory)
 		fail(inst, "expected register or memory operand");
 	const assembly::Address& address = op.address;
+	if (address.symbol.symbol != asm_model::kNoId || address.rip)
+	{
+		if (!address.rip || address.symbol.symbol == asm_model::kNoId || address.has_base || address.has_index)
+			fail(inst, "symbol memory requires an unindexed RIP-relative address");
+		return RM::rip(address.symbol.symbol, address.displacement);
+	}
 	return RM::m(address.has_base ? physical(address.base, inst) : kNoReg, address.displacement,
 		address.has_index ? physical(address.index, inst) : kNoReg, address.scale);
 }
@@ -91,10 +97,28 @@ void integer(Assembler& out, const assembly::Instruction& inst, const Form& form
 		(bits != form.bits || dst.kind != OperandKind::Register || src.kind != OperandKind::Immediate))
 		fail(inst, "this absolute move form requires a 64-bit register and immediate");
 	const unsigned bytes = bits / 8;
+	if (src.kind == OperandKind::Symbol)
+	{
+		if (form.encoding != Encoding::Move || bits != 64 || dst.kind != OperandKind::Register ||
+			src.address.relocation != assembly::Relocation::Address)
+			fail(inst, "symbol immediate requires a 64-bit register move");
+		out.op_plus(0, true, 0xb8, physical(dst.reg, inst));
+		CodeFixup fixup;
+		fixup.offset = out.size();
+		fixup.target = src.address.symbol.symbol;
+		fixup.addend = src.address.displacement;
+		fixup.end = 8;
+		fixup.absolute = true;
+		fixup.branch = false;
+		out.fixups().push_back(fixup);
+		out.imm(0, 8);
+		return;
+	}
 	const uint8_t prefix = bits == 16 ? 0x66 : 0;
 	const bool byte_regs = bits == 8 && byte_rex(inst);
 	const bool wide = bits == 64;
-	if (dst.kind == OperandKind::Immediate || (dst.kind == OperandKind::Memory && src.kind == OperandKind::Memory))
+	if ((dst.kind != OperandKind::Register && dst.kind != OperandKind::Memory) ||
+		(dst.kind == OperandKind::Memory && src.kind == OperandKind::Memory))
 		fail(inst, "invalid integer destination or two memory operands");
 	if (form.encoding == Encoding::Move)
 	{
@@ -230,8 +254,25 @@ void encode_assembly(Assembler& out, const std::vector<assembly::Instruction>& i
 			else
 				out.jcc(static_cast<Cond>(condition), label);
 		}
+		else if (inst.mnemonic == "call" || inst.mnemonic == "callq")
+		{
+			if (inst.operands.size() != 1 || inst.operands[0].kind != OperandKind::Symbol ||
+				inst.operands[0].address.relocation != assembly::Relocation::Address)
+				fail(inst, "expected one symbol call target");
+			out.call_symbol(inst.operands[0].address.symbol.symbol);
+			out.fixups().back().addend += inst.operands[0].address.displacement;
+		}
 		else
+		{
+			const size_t first = out.fixups().size();
 			encode_instruction(out, inst);
+			for (const assembly::Operand& operand : inst.operands)
+				if (operand.kind == OperandKind::Memory && operand.address.relocation != assembly::Relocation::Address)
+					for (size_t i = first; i < out.fixups().size(); ++i)
+						out.fixups()[i].kind = operand.address.relocation == assembly::Relocation::Got ? FixupKind::Got
+							: operand.address.relocation == assembly::Relocation::GotTpOff ? FixupKind::GotTpOff
+																						   : FixupKind::Tlv;
+		}
 	}
 }
 

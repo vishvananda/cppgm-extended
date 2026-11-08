@@ -38,7 +38,7 @@ unsigned width(lowir::Type type)
 }
 
 void expand(std::string& source, const lowir::AssemblyModule& module, const lowir::AssemblyTemplate& definition,
-	const AssemblyPlan& plan)
+	const AssemblyPlan& plan, std::vector<assembly::SymbolUse>& symbols)
 {
 	for (uint32_t i = 0; i < definition.piece_count; ++i)
 	{
@@ -72,6 +72,18 @@ void expand(std::string& source, const lowir::AssemblyModule& module, const lowi
 			if (suffix == 0)
 				throw BackendError("invalid assembly mnemonic width modifier");
 			source += suffix;
+			continue;
+		}
+		if (plan.locations[piece.operand] == AL_SYMBOL)
+		{
+			if (piece.format != Format::Default && piece.format != Format::Bare)
+				unsupported("this symbol formatting modifier");
+			if (definition.dialect == Dialect::Att && piece.format == Format::Default)
+				source += '$';
+			const std::string marker = "__cppgm_symbol";
+			symbols.push_back(assembly::SymbolUse{ static_cast<uint32_t>(source.size()),
+				static_cast<uint32_t>(marker.size()), plan.symbols[piece.operand] });
+			source += marker;
 			continue;
 		}
 		if (plan.locations[piece.operand] == AL_IMMEDIATE)
@@ -154,10 +166,11 @@ std::shared_ptr<const AssemblyPlan> bind_assembly(const lowir::AssemblyModule& m
 			plan->reads |= bit;
 	}
 	std::string source;
-	expand(source, module, definition, *plan);
+	std::vector<assembly::SymbolUse> symbols;
+	expand(source, module, definition, *plan, symbols);
 	try
 	{
-		plan->instructions = assembly::parse(source, definition.dialect);
+		plan->instructions = assembly::parse(source, definition.dialect, symbols);
 	}
 	catch (const assembly::AssemblyError& error)
 	{

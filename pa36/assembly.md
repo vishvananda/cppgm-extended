@@ -67,7 +67,10 @@ matching-output operand index (`-1` if absent). Location bits are register (1),
 memory (2), immediate (4), symbol (8) and label (16). All ordinary operands have
 the same number of alternatives, and one alternative column is chosen jointly.
 An early output cannot overlap unrelated inputs or their address registers.
-A matching input shares its output's location.
+A matching input shares its output's location. A commutative flag pairs two
+adjacent read-only operands. Their evaluated inputs may exchange constraint
+slots when their value types agree; retain whether each input denotes captured
+bits or explicit storage. A pair cannot overlap another pair.
 An explicit storage input can use a memory location or be loaded into a selected
 register. An output-only memory location uses the output-address argument.
 For a read/write memory binding, the input-storage and output arguments name
@@ -77,6 +80,13 @@ A register alternative lists `group (...)` choices. Immediate domains use
 `range <kind> <signed> <low-lo> <low-hi> <high-lo> <high-hi>`; kinds are integer
 range (0), floating bits (1), relocatable (2), with each endpoint represented by
 two unsigned 64-bit words. An omitted domain permits any constant of the type.
+A symbol location uses an ordinary `ptr` input naming a LowIR symbol address,
+optionally through `addr` and a constant `index`. The symbol ID and byte addend
+remain typed through native parsing and object fixups. Symbol operands are
+distinct from numeric immediate ranges. RIP-relative operands can use
+`@GOTPCREL`; direct symbol calls use the target's branch relocation rules.
+The stack-use property keeps the ABI's call alignment even in a frame-free
+function. The producer supplies the call's clobbers and memory/state effects.
 `clobber <register>` records an architectural clobber independently of operands.
 Integer ranges compare the invocation's complete two-word value. A frontend
 that uses machine-mode constants normalizes them before constructing LowIR.

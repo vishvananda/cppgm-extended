@@ -179,6 +179,13 @@ enum State : uint32_t
 // A view of one architectural register. Overlap is determined by bank and
 // number, not by spelling: e.g. AH and RAX, or XMM3 and ZMM3. Zero width in a
 // constraint domain means the operand's width; encoded operands have a width.
+// A producer's symbol identity and constant byte displacement.
+struct SymbolReference
+{
+	uint32_t symbol = kNoId;
+	int64_t addend = 0;
+};
+
 struct Register
 {
 	RegisterBank bank;

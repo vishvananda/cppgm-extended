@@ -119,6 +119,7 @@ void pieces(PacketBuilder& packet, const std::string& source, const std::vector<
 				case 'g':
 					piece.bits = 512;
 					break;
+				case 'P':
 				case 'c':
 					piece.format = Format::Bare;
 					break;

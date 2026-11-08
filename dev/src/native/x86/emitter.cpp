@@ -444,7 +444,8 @@ Reg written_gpr(const Inst& inst)
 bool calls_out(const Function& function)
 {
 	for (const Inst& inst : function.insts)
-		if (inst.op == Op::Call || inst.op == Op::EhCatch || inst.op == Op::Resume || inst.op == Op::Throw ||
+		if (inst.op == Op::Call || (inst.op == Op::Asm && (inst.sub & 4) != 0) || inst.op == Op::EhCatch ||
+			inst.op == Op::Resume || inst.op == Op::Throw ||
 			(inst.op == Op::Wide &&
 				(static_cast<WideOp>(inst.sub) == WideOp::Div || static_cast<WideOp>(inst.sub) == WideOp::UDiv ||
 					static_cast<WideOp>(inst.sub) == WideOp::Mod || static_cast<WideOp>(inst.sub) == WideOp::UMod)) ||
