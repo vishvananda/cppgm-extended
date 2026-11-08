@@ -948,8 +948,23 @@ Entity* Analyzer::elaborated_class(
 				if (s->kind == ScopeKind::Class)
 				{
 					result = names_.declared(s, last.identifier, LookupFilter::Elaborated);
+					// 3.4.1p8: class member lookup also considers base classes,
+					// including their injected-class-names (9p2).
+					if (!result.found() && static_cast<ClassEntity*>(s->entity)->base_count != 0)
+						result = names_.qualified(s, last.identifier, LookupFilter::Elaborated);
 					if (result.found() && result.binding->entity == s->entity)
 						result = LookupResult();
+					if (result.found() && template_scope_ != nullptr && scope == template_scope_ &&
+						result.binding->entity->kind == EntityKind::Class)
+					{
+						ClassEntity* cls = static_cast<ClassEntity*>(result.binding->entity);
+						ClassEntity* templ = class_template_of(cls);
+						// For a friend template, the prior declaration is the
+						// template's, still bounded by 7.3.1.2p3.
+						if (result.binding->declared_in == cls->scope && templ != nullptr &&
+							!encloses(enclosing_namespace(scope), templ->owner))
+							result = LookupResult();
+					}
 				}
 				else if (s->kind == ScopeKind::Namespace || s->kind == ScopeKind::Block)
 				{
@@ -971,6 +986,9 @@ Entity* Analyzer::elaborated_class(
 		}
 		if (result.found())
 		{
+			const bool friend_template = is_friend && template_scope_ != nullptr && scope == template_scope_;
+			if (result.ambiguous && !(friend_template && result.injected_template))
+				return substitution_error(name.location, "ambiguous elaborated class name"), nullptr;
 			// 7.1.6.3p2-p3, a substitution's failure (14.8.2p8).
 			const char* failure = result.binding->kind == BindingKind::TypeAlias
 				? "elaborated type specifier names a typedef"
@@ -987,8 +1005,17 @@ Entity* Analyzer::elaborated_class(
 			entity = static_cast<ClassEntity*>(result.binding->entity);
 			// A friend template declaration redeclares the class template
 			// (every specialization is befriended, 14.5.4p1).
-			if (is_friend && template_scope_ != nullptr && scope == template_scope_)
+			if (friend_template)
+			{
+				// An inherited injected-class-name used in this context
+				// denotes its template, not one specialization (14.6.1p1).
+				if (result.binding->declared_in == entity->scope)
+				{
+					if (ClassEntity* templ = class_template_of(entity))
+						entity = templ;
+				}
 				declare_class_template(entity, true, name.location);
+			}
 			// An elaborated-type-specifier redeclaring a class only friend
 			// declarations declared makes it visible (3.3.2p7).
 			if (!is_friend && result.binding->invisible)

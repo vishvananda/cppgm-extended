@@ -232,3 +232,31 @@ Its public artifact independently verifies 14 successful rebuilds per GCC/
 Clang comparison, identical objects and compiler outputs within each pair,
 and matching native builtin host configurations. The merged PR description
 records these links; main remains fast-forwarded to 67f175d75 as requested.
+
+Fourth fix block: inherited friend-class lookup
+---------------------------------------------
+Class lookup for an unqualified friend now includes base classes, including
+injected class names. Friend template declarations interpret an injected name
+as its template and still respect the innermost namespace boundary. Ambiguous
+base member names are rejected; injected names of several specializations of
+one template remain usable as a template name.
+
+The PA11 required regression checks private-base downcast and private member
+access from a friend inherited from a base outside a nested namespace. PA17
+retains the namespace boundary control; PA22 covers ambiguous member names
+and a friend template inherited through two specializations. The existing
+PA17 protected-member/template-friend regression caught an initial incomplete
+fix; that version and its failed strict/export observations remain retained
+outside the checkout and are superseded by the v3 candidate.
+
+The positive regression and same-namespace template case agree with GCC and
+Clang. GCC 15 accepts the two new negative cases that Clang rejects; these
+cases are anchored to N3485's lookup and namespace-boundary rules, not to
+diagnostic text parity. Their per-compiler observations are retained.
+
+The final candidate clears LLVM Support/TrieRawHashMap.cpp. Strict 9864/9864,
+debug, modern, PA5 self-host, all architecture/format/file/placement/CWG checks
+and regenerated student references pass. Frozen parent/candidate instruction
+ratios are O0 0.999953 and O3 0.999996, with byte-identical objects. The normal
+quick self/seed ratios and kernels remain unchanged, with zero behavior
+failures. Evidence paths use block4-v3 and compiler-block4-v3 outside the repo.
